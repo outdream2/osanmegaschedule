@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>오산 메가타운 약국 · UI 프레임워크 목업 · 2026-08-21</title>
+<!--
+  UI 프레임워크 최신 목업 · 2026-08-21 (#149)
+  · 원본 유지: docs/UI_MOCKUP_PC_2026-08-17.html · docs/UI_MOCKUP_MOBILE_2026-08-17.html
+  · 반영: Card / Spinner (11 tone) / common/features/ · Linear/Vercel/Notion 2026 톤 · Attio 세련
+  · 폰트 +2 원칙 · 40대+ 가독성
+  · 프리미티브 카탈로그: Card · Spinner · StatusPill · IconTile · AccentBar · KpiCard · PageToolbar
+  · common/features/: InventoryEditModal · VendorInfoModal · BreakModal · ProductSearchInput · PurchaseHistoryModal · VendorSearchModal
+  · src/lib/: hangulSearch · settingsTypography
+-->
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{
+    /* Attio / Linear / Vercel 2026 base */
+    --bg:#F7F8FA;
+    --surface:#FFFFFF;
+    --ink:#0F172A;          /* zinc-900 근사 */
+    --ink-soft:#52606D;
+    --line:#E5E9EF;         /* line */
+    /* Brand · deep navy */
+    --brand:#1E5C8E;
+    --brand-deep:#0A2E4A;
+    --brand-tint:#E7F0F9;
+    --brand-soft:#3E7CB1;
+    /* Semantic */
+    --emerald:#0F7A57;  --emerald-tint:#E4F3EC;
+    --amber:#B45309;    --amber-tint:#FDEEE0;
+    --rose:#B4413C;     --rose-tint:#FBE7E5;
+    --sky:#2563EB;      --sky-tint:#E8F1F9;
+    --violet:#6D3FCB;   --violet-tint:#EEE9FA;
+    --teal:#0F766E;     --teal-tint:#E1F1EF;
+    --indigo:#3D3F9E;   --indigo-tint:#E6E7F5;
+    --pine:#01796F;     --pine-tint:#DDECEA;
+    /* Zinc palette */
+    --zinc-50:#FAFAFA; --zinc-100:#F4F4F5; --zinc-200:#E4E4E7;
+    --zinc-500:#71717A; --zinc-700:#3F3F46; --zinc-900:#18181B;
+    /* Radius */
+    --radius-sm:8px; --radius-md:12px; --radius-lg:14px; --radius-xl:18px; --radius-pill:999px;
+    /* Attio shadow · 2-layer + inset light */
+    --shadow-attio:
+      0 1px 0 rgba(255,255,255,0.7) inset,
+      0 1px 2px rgba(15,23,42,0.04),
+      0 8px 24px -12px rgba(15,23,42,0.10);
+    --shadow-lift:
+      0 1px 0 rgba(255,255,255,0.7) inset,
+      0 4px 8px rgba(15,23,42,0.06),
+      0 14px 32px -14px rgba(15,23,42,0.18);
+    --shadow-brand-modal:
+      0 0 0 1px rgba(10,46,74,0.08),
+      0 12px 24px -12px rgba(10,46,74,0.30),
+      0 32px 64px -24px rgba(10,46,74,0.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Pretendard Variable','Pretendard',-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    text-rendering:optimizeLegibility;
+    display:flex; min-height:100vh;
+  }
+
+  /* ─── Sidebar · Deep teal navy · 240px ─── */
+  .sidebar{
+    width:240px; flex-shrink:0;
+    background:var(--brand-deep);
+    color:#DCE8F3;
+    padding:24px 16px;
+    display:flex; flex-direction:column; gap:4px;
+    position:relative; overflow:hidden;
+  }
+  .sidebar::before{
+    /* aurora radial glow · signature */
+    content:""; position:absolute; inset:0; pointer-events:none; opacity:.32;
+    background:
+      radial-gradient(400px 240px at 12% 10%, rgba(94,169,232,0.25), transparent 60%),
+      radial-gradient(360px 200px at 90% 90%, rgba(1,121,111,0.22), transparent 60%);
+  }
+  .brand{ display:flex; align-items:center; gap:11px; padding:6px 8px 20px; position:relative; z-index:1; }
+  .brand-mark{
+    width:36px; height:36px; border-radius:11px;
+    background:linear-gradient(135deg,#5EA9E8,#1E5C8E);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 2px rgba(94,169,232,0.35), 0 8px 20px -8px rgba(94,169,232,0.6);
+    position:relative;
+  }
+  .brand-mark::before{ content:""; width:15px; height:15px; background:#fff; border-radius:8px 8px 0 8px; transform:rotate(45deg); }
+  .brand-name{ font-weight:700; font-size:16px; letter-spacing:-0.2px; color:#fff; }
+  .brand-sub{ font-size:11px; color:#93B4D0; margin-top:2px; letter-spacing:0.04em; text-transform:uppercase; }
+  .nav-group-label{ font-size:11px; color:#7A9BB6; text-transform:uppercase; letter-spacing:0.08em; padding:16px 10px 6px; font-weight:600; position:relative; z-index:1; }
+  .nav-item{
+    display:flex; align-items:center; gap:12px;
+    padding:10px 12px; border-radius:10px;
+    font-size:14px; font-weight:500;
+    color:#C4DAEE; cursor:pointer;
+    transition:background .2s ease, color .2s ease, transform .2s ease;
+    position:relative; z-index:1;
+  }
+  .nav-item i{ width:16px; text-align:center; font-size:14px; opacity:.85; }
+  .nav-item:hover{ background:rgba(255,255,255,0.06); color:#fff; transform:translateX(2px); }
+  .nav-item.active{
+    background:rgba(255,255,255,0.12); color:#fff;
+    box-shadow:inset 3px 0 0 #5EA9E8;
+  }
+  .nav-item.active i{ color:#6FB3F2; opacity:1; }
+  .nav-badge{
+    margin-left:auto; background:var(--rose); color:#fff;
+    font-size:11px; font-weight:700; padding:2px 8px; border-radius:var(--radius-pill);
+  }
+  .sidebar-foot{
+    margin-top:auto; padding-top:14px;
+    border-top:1px solid rgba(255,255,255,0.08);
+    display:flex; align-items:center; gap:10px;
+    position:relative; z-index:1;
+  }
+  .avatar-mini{
+    width:34px; height:34px; border-radius:50%;
+    background:#5EA9E8; color:var(--brand-deep);
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:700;
+    box-shadow:0 0 0 2px rgba(94,169,232,0.35);
+  }
+  .sidebar-foot .who{ font-size:13px; font-weight:600; color:#DCE8F3; }
+  .sidebar-foot .role{ font-size:11px; color:#8FB6AC; margin-top:1px; }
+
+  /* ─── Main ─── */
+  .main{ flex:1; min-width:0; padding:28px 36px 60px; }
+
+  /* Topbar */
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+  .breadcrumb{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-soft); font-weight:500; }
+  .breadcrumb .sep{ opacity:.4; }
+  .breadcrumb .now{ color:var(--ink); font-weight:600; }
+  .topbar-actions{ display:flex; align-items:center; gap:10px; }
+  .icon-btn{
+    width:36px; height:36px; border-radius:10px;
+    background:var(--surface); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--ink-soft); font-size:14px; cursor:pointer; position:relative;
+    box-shadow:var(--shadow-attio);
+    transition:box-shadow .2s ease, border-color .2s ease;
+  }
+  .icon-btn:hover{ border-color:var(--brand); box-shadow:var(--shadow-lift); color:var(--brand); }
+  .icon-btn .dot-notif{
+    position:absolute; top:7px; right:7px;
+    width:8px; height:8px; border-radius:50%;
+    background:var(--rose); border:1.5px solid var(--surface);
+  }
+
+  /* ─── Hero · gradient + aurora + hairline ─── */
+  .hero{
+    position:relative; overflow:hidden;
+    border-radius:20px;
+    background:linear-gradient(120deg, var(--brand-deep) 0%, var(--brand) 62%, var(--brand-soft) 100%);
+    color:#fff;
+    padding:28px 32px;
+    margin-bottom:26px;
+    display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 20px 40px -20px rgba(10,46,74,0.45), 0 4px 12px -4px rgba(10,46,74,0.25);
+  }
+  .hero::before{
+    /* top hairline */
+    content:""; position:absolute; top:0; left:0; right:0; height:1px;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  }
+  .hero::after{
+    /* aurora */
+    content:""; position:absolute; inset:-20% -10% -10% -10%; pointer-events:none;
+    background:
+      radial-gradient(600px 300px at 85% 10%, rgba(94,169,232,0.25), transparent 60%),
+      radial-gradient(400px 200px at 20% 90%, rgba(1,121,111,0.20), transparent 60%);
+  }
+  .hero-eyebrow{ font-size:12px; font-weight:700; color:#B9E7DA; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px; position:relative; z-index:1; }
+  .hero h1{ font-size:24px; font-weight:800; margin:0 0 8px; letter-spacing:-0.4px; position:relative; z-index:1; }
+  .hero p{ font-size:14px; color:#CFEBE2; margin:0; position:relative; z-index:1; }
+  .hero-actions{ display:flex; gap:10px; position:relative; z-index:1; }
+  .hero-btn{
+    background:#fff; color:var(--brand-deep);
+    font-weight:700; font-size:13px;
+    padding:11px 20px; border-radius:var(--radius-pill);
+    cursor:pointer; display:flex; align-items:center; gap:8px;
+    box-shadow:0 8px 18px -8px rgba(0,0,0,0.35);
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .hero-btn:hover{ transform:translateY(-1px); box-shadow:0 12px 24px -10px rgba(0,0,0,0.45); }
+  .hero-btn.ghost{
+    background:rgba(255,255,255,0.14); color:#fff;
+    box-shadow:none; border:1px solid rgba(255,255,255,0.35);
+  }
+
+  /* ─── Section label · accent bar + text ─── */
+  .section-label{
+    display:flex; align-items:center; gap:10px;
+    font-size:14px; font-weight:700; color:var(--ink);
+    margin:6px 0 14px;
+  }
+  .accent-bar{
+    width:3px; height:16px;
+    border-radius:2px;
+    background:linear-gradient(180deg, var(--brand-soft), var(--brand-deep));
+  }
+  .section-desc{ font-size:12px; color:var(--ink-soft); font-weight:500; margin-left:2px; }
+
+  /* ─── KpiCard · Vercel Dashboard 톤 ─── */
+  .kpi-strip{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:32px; }
+  .kpi-card{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius-lg); padding:16px 18px;
+    box-shadow:var(--shadow-attio);
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .kpi-card:hover{ transform:translateY(-2px); box-shadow:var(--shadow-lift); }
+  .kpi-label{ font-size:12px; color:var(--ink-soft); font-weight:600; margin-bottom:8px; letter-spacing:0.02em; }
+  .kpi-value{ font-size:24px; font-weight:800; letter-spacing:-0.5px; color:var(--zinc-900); display:flex; align-items:baseline; gap:6px; }
+  .kpi-unit{ font-size:13px; font-weight:700; color:var(--ink-soft); }
+  .kpi-delta{ font-size:12px; font-weight:700; margin-top:4px; display:flex; align-items:center; gap:4px; }
+  .kpi-delta.up{ color:var(--emerald); }
+  .kpi-delta.down{ color:var(--rose); }
+
+  /* ─── Card (primitive) ─── */
+  .card{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius-lg); padding:18px;
+    box-shadow:var(--shadow-attio);
+    transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    cursor:pointer;
+    display:flex; flex-direction:column; gap:12px;
+    position:relative; overflow:hidden;
+  }
+  .card:hover{ transform:translateY(-2px); box-shadow:var(--shadow-lift); border-color:var(--zinc-200); }
+  .card-outlined{ box-shadow:none; }
+  .card-ghost{ background:transparent; border-color:transparent; box-shadow:none; }
+  .card-title{ font-size:15px; font-weight:700; margin:0; letter-spacing:-0.1px; }
+  .card-desc{ font-size:12.5px; color:var(--ink-soft); line-height:1.55; margin:0; }
+
+  /* ─── IconTile · 11 tone · 5 size · 4 shape ─── */
+  .icon-tile{
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:16px;
+  }
+  .it-sm{ width:24px; height:24px; border-radius:6px; font-size:12px; }
+  .it-md{ width:28px; height:28px; border-radius:8px; font-size:13px; }
+  .it-lg{ width:36px; height:36px; border-radius:10px; font-size:15px; }
+  .it-xl{ width:44px; height:44px; border-radius:12px; font-size:18px; }
+  .it-2xl{ width:64px; height:64px; border-radius:16px; font-size:24px; }
+  .tone-brand{ background:var(--brand-tint); color:var(--brand); }
+  .tone-sky{ background:var(--sky-tint); color:var(--sky); }
+  .tone-emerald{ background:var(--emerald-tint); color:var(--emerald); }
+  .tone-amber{ background:var(--amber-tint); color:var(--amber); }
+  .tone-rose{ background:var(--rose-tint); color:var(--rose); }
+  .tone-violet{ background:var(--violet-tint); color:var(--violet); }
+  .tone-teal{ background:var(--teal-tint); color:var(--teal); }
+  .tone-indigo{ background:var(--indigo-tint); color:var(--indigo); }
+  .tone-pine{ background:var(--pine-tint); color:var(--pine); }
+  .tone-zinc{ background:var(--zinc-100); color:var(--zinc-700); }
+
+  /* ─── StatusPill · dot + text · 10 tone ─── */
+  .pill{
+    display:inline-flex; align-items:center; gap:5px;
+    padding:2px 9px; border-radius:var(--radius-pill);
+    font-size:12px; font-weight:600; line-height:1.6;
+    height:22px;
+  }
+  .pill-xs{ height:20px; font-size:11px; padding:1px 7px; }
+  .pill-md{ height:24px; font-size:13px; padding:3px 10px; }
+  .pill-dot{ width:5px; height:5px; border-radius:50%; background:currentColor; opacity:.8; }
+  .pill-pulse .pill-dot{ animation:pulse 1.6s infinite; }
+  @keyframes pulse{ 0%,100%{opacity:.9;} 50%{opacity:.35;} }
+
+  /* ─── Spinner · Loader2 + label · 11 tone ─── */
+  .spinner{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:12px; color:var(--ink-soft); font-weight:500;
+  }
+  .spinner i{
+    animation:spin 0.9s linear infinite; font-size:14px; color:var(--brand);
+  }
+  @keyframes spin{ from{transform:rotate(0);} to{transform:rotate(360deg);} }
+
+  /* ─── PageToolbar ─── */
+  .page-toolbar{
+    display:flex; align-items:center; gap:12px;
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius-md); padding:10px 14px;
+    box-shadow:var(--shadow-attio);
+    margin-bottom:16px;
+  }
+  .page-toolbar .title{ font-size:15px; font-weight:700; color:var(--ink); }
+  .page-toolbar .count-pill{
+    background:var(--zinc-100); color:var(--zinc-700);
+    font-size:12px; font-weight:600;
+    padding:2px 8px; border-radius:var(--radius-pill);
+  }
+  .page-toolbar .search-input{
+    flex:1; min-width:0;
+    background:var(--zinc-50); border:1px solid var(--line);
+    border-radius:8px; padding:7px 12px 7px 32px;
+    font-size:13px; color:var(--ink);
+    position:relative;
+  }
+  .page-toolbar .search-wrap{ flex:1; position:relative; }
+  .page-toolbar .search-wrap i{
+    position:absolute; left:11px; top:50%; transform:translateY(-50%);
+    color:var(--ink-soft); font-size:12px; pointer-events:none;
+  }
+  .page-toolbar .search-wrap input{ width:100%; }
+
+  /* ─── Menu grid (Landing) ─── */
+  .menu-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:32px; }
+  .menu-card{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius-lg); padding:18px;
+    box-shadow:var(--shadow-attio);
+    transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    cursor:pointer;
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .menu-card:hover{ transform:translateY(-3px); box-shadow:var(--shadow-lift); border-color:var(--brand); }
+  .menu-card-top{ display:flex; align-items:flex-start; justify-content:space-between; }
+
+  /* ─── Today status dots ─── */
+  .today-status{ display:flex; gap:22px; flex-wrap:wrap; margin-bottom:8px; }
+  .today-item{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink); font-weight:600; }
+  .today-dot{ width:8px; height:8px; border-radius:50%; }
+  .today-dot.emerald{ background:var(--emerald); box-shadow:0 0 0 3px rgba(15,122,87,0.15); }
+  .today-dot.amber{ background:var(--amber); box-shadow:0 0 0 3px rgba(180,83,9,0.15); }
+  .today-dot.rose{ background:var(--rose); box-shadow:0 0 0 3px rgba(180,65,60,0.15); }
+  .today-dot.sky{ background:var(--sky); box-shadow:0 0 0 3px rgba(37,99,235,0.15); }
+  .today-count{ font-size:12px; color:var(--ink-soft); font-weight:500; margin-left:2px; }
+
+  /* ─── Buttons ─── */
+  .btn{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:8px 16px; height:36px;
+    border-radius:10px; font-size:14px; font-weight:600;
+    cursor:pointer; transition:all .2s ease;
+    border:1px solid transparent;
+  }
+  .btn-primary{
+    background:var(--brand-deep); color:#fff;
+    box-shadow:0 1px 0 rgba(255,255,255,0.15) inset, 0 4px 10px -4px rgba(10,46,74,0.4);
+  }
+  .btn-primary:hover{ background:var(--brand); box-shadow:0 6px 14px -4px rgba(10,46,74,0.55); }
+  .btn-secondary{
+    background:var(--surface); color:var(--ink);
+    border-color:var(--line);
+    box-shadow:var(--shadow-attio);
+  }
+  .btn-secondary:hover{ border-color:var(--brand); color:var(--brand); }
+  .btn-ghost{ background:transparent; color:var(--ink-soft); }
+  .btn-ghost:hover{ background:var(--zinc-100); color:var(--ink); }
+  .btn-danger{
+    background:var(--rose); color:#fff;
+    box-shadow:0 4px 10px -4px rgba(180,65,60,0.4);
+  }
+
+  /* ─── Modal ─── */
+  .modal-preview{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-brand-modal);
+    max-width:520px;
+    overflow:hidden;
+  }
+  .modal-header{
+    background:var(--zinc-50);
+    padding:16px 20px;
+    border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:12px;
+  }
+  .modal-title-accent{ width:3px; height:20px; border-radius:2px; background:linear-gradient(180deg, var(--brand-soft), var(--brand-deep)); }
+  .modal-title{ font-size:15px; font-weight:700; }
+  .modal-body{ padding:18px 20px; font-size:13.5px; color:var(--ink-soft); line-height:1.6; }
+  .modal-footer{
+    padding:14px 20px; border-top:1px solid var(--line);
+    background:var(--zinc-50); display:flex; justify-content:flex-end; gap:8px;
+  }
+
+  /* ─── Field & Input ─── */
+  .field-row{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+  .field-label{
+    font-size:13px; font-weight:600; color:var(--ink);
+    display:flex; align-items:center; gap:6px;
+  }
+  .field-label .req{ color:var(--rose); font-weight:700; }
+  .field-input{
+    height:40px; padding:0 12px;
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:10px; font-size:14px; color:var(--ink);
+    transition:border-color .2s ease, box-shadow .2s ease;
+  }
+  .field-input:focus{
+    outline:none; border-color:var(--brand);
+    box-shadow:0 0 0 3px var(--brand-tint);
+  }
+
+  /* ─── Grids ─── */
+  .grid-3{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:20px; }
+  .grid-4{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+  .flex-wrap-row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:20px; }
+
+  /* ─── Panel demo ─── */
+  .panel-note{
+    background:var(--zinc-50); border:1px dashed var(--line);
+    border-radius:var(--radius-md); padding:14px 16px;
+    font-size:12.5px; color:var(--ink-soft); line-height:1.6;
+    margin-top:24px;
+  }
+  .panel-note code{
+    background:var(--surface); border:1px solid var(--line);
+    padding:1px 6px; border-radius:5px;
+    font-family:'JetBrains Mono', ui-monospace, monospace;
+    font-size:11.5px; color:var(--brand);
+  }
+  .primitive-header{
+    display:flex; align-items:center; gap:10px; margin:32px 0 14px;
+    padding-bottom:8px; border-bottom:1px solid var(--line);
+  }
+  .primitive-header h2{ font-size:18px; font-weight:800; letter-spacing:-0.3px; margin:0; }
+  .primitive-header .tag{
+    font-size:11px; font-weight:600; color:var(--ink-soft);
+    background:var(--zinc-100); border-radius:var(--radius-pill);
+    padding:2px 10px;
+  }
+
+  /* ─── Responsive ─── */
+  .hamburger{ display:none; }
+  .overlay{ display:none; position:fixed; inset:0; background:rgba(10,20,17,0.45); z-index:20; opacity:0; transition:opacity .2s ease; }
+  .overlay.show{ display:block; opacity:1; }
+
+  @media (max-width:1180px){
+    .menu-grid, .kpi-strip, .grid-4{ grid-template-columns:repeat(2,1fr); }
+    .grid-3{ grid-template-columns:repeat(2,1fr); }
+  }
+  @media (max-width:900px){
+    .hamburger{ display:flex; }
+    .sidebar{
+      position:fixed; top:0; left:0; height:100vh; z-index:30;
+      transform:translateX(-100%); transition:transform .22s ease;
+      box-shadow:20px 0 40px rgba(0,0,0,0.25);
+    }
+    .sidebar.open{ transform:translateX(0); }
+    .main{ padding:20px 20px 50px; }
+  }
+  @media (max-width:560px){
+    .menu-grid, .kpi-strip, .grid-4, .grid-3{ grid-template-columns:1fr; }
+    .hero{ flex-direction:column; align-items:flex-start; gap:16px; padding:22px; }
+    .hero-actions{ flex-wrap:wrap; }
+    .topbar h1, .hero h1{ font-size:20px; }
+  }
+</style>
+</head>
+<body>
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <!-- ═════════════ Sidebar · Deep teal + aurora ═════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div>
+        <div class="brand-name">오산 메가타운 약국</div>
+        <div class="brand-sub">STORE MANAGEMENT</div>
+      </div>
+    </div>
+
+    <div class="nav-item active"><i class="fa-solid fa-house"></i>홈</div>
+    <div class="nav-item"><i class="fa-regular fa-calendar"></i>스케줄</div>
+    <div class="nav-item"><i class="fa-regular fa-square-check"></i>승인요청<span class="nav-badge">12</span></div>
+    <div class="nav-item"><i class="fa-solid fa-store"></i>매장</div>
+    <div class="nav-item"><i class="fa-solid fa-briefcase"></i>경영</div>
+    <div class="nav-item"><i class="fa-solid fa-mortar-pestle"></i>약사</div>
+    <div class="nav-item"><i class="fa-regular fa-comment-dots"></i>이슈</div>
+    <div class="nav-item"><i class="fa-solid fa-truck-fast"></i>거래처</div>
+
+    <div class="nav-group-label">시스템</div>
+    <div class="nav-item"><i class="fa-solid fa-gear"></i>설정</div>
+
+    <div class="sidebar-foot">
+      <div class="avatar-mini">강남</div>
+      <div>
+        <div class="who">강남규 이사</div>
+        <div class="role">관리자</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═════════════ Main ═════════════ -->
+  <main class="main">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="breadcrumb">
+        <span>홈</span>
+        <span class="sep">/</span>
+        <span class="now">오늘 현황</span>
+      </div>
+      <div class="topbar-actions">
+        <div class="icon-btn hamburger" onclick="openSidebar()"><i class="fa-solid fa-bars"></i></div>
+        <div class="icon-btn"><i class="fa-regular fa-bell"></i><span class="dot-notif"></span></div>
+        <div class="icon-btn"><i class="fa-solid fa-right-from-bracket"></i></div>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div>
+        <div class="hero-eyebrow">TODAY · 2026-08-21 · 목요일</div>
+        <h1>안녕하세요, 강남규님</h1>
+        <p>오늘 스케줄 8명 · 대기 요청 12건 · 발주 미승인 3건</p>
+      </div>
+      <div class="hero-actions">
+        <div class="hero-btn"><i class="fa-solid fa-arrow-right"></i>스케줄 열기</div>
+        <div class="hero-btn ghost">공지 3건</div>
+      </div>
+    </section>
+
+    <!-- Today status dots (4-color semantic) -->
+    <div class="section-label">
+      <div class="accent-bar"></div>
+      오늘 현황
+      <span class="section-desc">· 실시간 · 4색 상태 dot</span>
+    </div>
+    <div class="today-status">
+      <div class="today-item"><span class="today-dot emerald"></span>정상 근무<span class="today-count">7명</span></div>
+      <div class="today-item"><span class="today-dot amber"></span>지연 확인<span class="today-count">1명</span></div>
+      <div class="today-item"><span class="today-dot rose"></span>미승인<span class="today-count">3건</span></div>
+      <div class="today-item"><span class="today-dot sky"></span>휴게 중<span class="today-count">2명</span></div>
+    </div>
+
+    <!-- KPI Strip -->
+    <div class="section-label">
+      <div class="accent-bar"></div>
+      KPI 요약
+      <span class="section-desc">· Vercel Dashboard 톤 · 뉴트럴 value + semantic delta</span>
+    </div>
+    <div class="kpi-strip">
+      <div class="kpi-card">
+        <div class="kpi-label">총 매입 건수</div>
+        <div class="kpi-value">125<span class="kpi-unit">건</span></div>
+        <div class="kpi-delta up"><i class="fa-solid fa-caret-up"></i>3.2%</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">전월비 매출</div>
+        <div class="kpi-value">12.4<span class="kpi-unit">%</span></div>
+        <div class="kpi-delta up"><i class="fa-solid fa-caret-up"></i>+1.8%</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">발주 대기</div>
+        <div class="kpi-value">7<span class="kpi-unit">건</span></div>
+        <div class="kpi-delta down"><i class="fa-solid fa-caret-down"></i>-2건</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">이번주 인건비</div>
+        <div class="kpi-value">4.82<span class="kpi-unit">M</span></div>
+        <div class="kpi-delta up"><i class="fa-solid fa-caret-up"></i>+120K</div>
+      </div>
+    </div>
+
+    <!-- Menu grid -->
+    <div class="section-label">
+      <div class="accent-bar"></div>
+      메뉴 바로가기
+      <span class="section-desc">· Card 프리미티브 · hover lift</span>
+    </div>
+    <div class="menu-grid">
+      <div class="menu-card">
+        <div class="menu-card-top">
+          <div class="icon-tile it-lg tone-brand"><i class="fa-solid fa-store"></i></div>
+          <span class="pill" style="background:var(--emerald-tint); color:var(--emerald);"><span class="pill-dot"></span>운영중</span>
+        </div>
+        <div class="card-title">매장 관리</div>
+        <div class="card-desc">재고 · 진열 · 스캔 · 발주까지 한 화면</div>
+      </div>
+      <div class="menu-card">
+        <div class="menu-card-top">
+          <div class="icon-tile it-lg tone-sky"><i class="fa-regular fa-calendar"></i></div>
+          <span class="pill" style="background:var(--amber-tint); color:var(--amber);"><span class="pill-dot"></span>대기 3</span>
+        </div>
+        <div class="card-title">스케줄</div>
+        <div class="card-desc">근무표 · 휴게 · 교대 · 승인</div>
+      </div>
+      <div class="menu-card">
+        <div class="menu-card-top">
+          <div class="icon-tile it-lg tone-emerald"><i class="fa-solid fa-mortar-pestle"></i></div>
+          <span class="pill" style="background:var(--emerald-tint); color:var(--emerald);"><span class="pill-dot"></span>정상</span>
+        </div>
+        <div class="card-title">약사 업무</div>
+        <div class="card-desc">복약 지도 · DUR · 처방 확인</div>
+      </div>
+      <div class="menu-card">
+        <div class="menu-card-top">
+          <div class="icon-tile it-lg tone-amber"><i class="fa-solid fa-truck-fast"></i></div>
+          <span class="pill pill-pulse" style="background:var(--rose-tint); color:var(--rose);"><span class="pill-dot"></span>3건 미결</span>
+        </div>
+        <div class="card-title">거래처</div>
+        <div class="card-desc">공급사 · 매입이력 · OCR 매칭</div>
+      </div>
+    </div>
+
+    <!-- ═════════════ Primitive Catalog ═════════════ -->
+
+    <!-- Card -->
+    <div class="primitive-header">
+      <h2>Card</h2><span class="tag">45+ 곳 확산</span>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title">Default</div>
+        <div class="card-desc">기본 카드 · inset light + 2-layer shadow · hover lift</div>
+      </div>
+      <div class="card card-outlined">
+        <div class="card-title">Outlined</div>
+        <div class="card-desc">테두리만 · shadow 없음 · 정보 밀도 높은 뷰</div>
+      </div>
+      <div class="card card-ghost">
+        <div class="card-title">Ghost</div>
+        <div class="card-desc">배경/테두리 투명 · 내부 그루핑 전용</div>
+      </div>
+    </div>
+
+    <!-- Spinner · 11 tone -->
+    <div class="primitive-header">
+      <h2>Spinner</h2><span class="tag">11 tone · 110+ 곳 확산</span>
+    </div>
+    <div class="flex-wrap-row">
+      <div class="spinner"><i class="fa-solid fa-circle-notch" style="color:var(--brand);"></i>brand</div>
+      <div class="spinner"><i class="fa-solid fa-circle-notch" style="color:var(--emerald);"></i>emerald</div>
+      <div class="spinner"><i class="fa-solid fa-circle-notch" style="color:var(--amber);"></i>amber</div>
+      <div class="spinner"><i class="fa-solid fa-circle-notch" style="color:var(--rose);"></i>rose</div>
+      <div class="spinner"><i class="fa-solid fa-circle-notch" style="color:var(--sky);"></i>sky</div>
+      <div class="spinner"><i class="fa-solid fa-circle-notch" style="color:var(--violet);"></i>violet</div>
+      <div class="spinner"><i class="fa-solid fa-circle-notch" style="color:var(--teal);"></i>teal</div>
+      <div class="spinner"><i class="fa-solid fa-circle-notch" style="color:var(--indigo);"></i>indigo</div>
+      <div class="spinner"><i class="fa-solid fa-circle-notch" style="color:var(--pine);"></i>pine</div>
+      <div class="spinner"><i class="fa-solid fa-circle-notch" style="color:var(--zinc-500);"></i>zinc</div>
+      <div class="spinner"><i class="fa-solid fa-circle-notch"></i>저장 중...</div>
+    </div>
+
+    <!-- StatusPill -->
+    <div class="primitive-header">
+      <h2>StatusPill</h2><span class="tag">10 tone · 3 size · dot + pulse</span>
+    </div>
+    <div class="flex-wrap-row">
+      <span class="pill" style="background:var(--brand-tint); color:var(--brand);"><span class="pill-dot"></span>12건</span>
+      <span class="pill" style="background:var(--emerald-tint); color:var(--emerald);"><span class="pill-dot"></span>승인 완료</span>
+      <span class="pill pill-pulse" style="background:var(--rose-tint); color:var(--rose);"><span class="pill-dot"></span>미결</span>
+      <span class="pill" style="background:var(--amber-tint); color:var(--amber);"><span class="pill-dot"></span>대기 3</span>
+      <span class="pill" style="background:var(--sky-tint); color:var(--sky);"><span class="pill-dot"></span>진행 중</span>
+      <span class="pill" style="background:var(--violet-tint); color:var(--violet);"><span class="pill-dot"></span>검토 중</span>
+      <span class="pill" style="background:var(--teal-tint); color:var(--teal);"><span class="pill-dot"></span>휴게</span>
+      <span class="pill" style="background:var(--pine-tint); color:var(--pine);"><span class="pill-dot"></span>완료</span>
+      <span class="pill" style="background:var(--zinc-100); color:var(--zinc-700);"><span class="pill-dot"></span>비활성</span>
+      <span class="pill pill-xs" style="background:var(--rose-tint); color:var(--rose);"><span class="pill-dot"></span>XS</span>
+      <span class="pill pill-md" style="background:var(--brand-tint); color:var(--brand);"><span class="pill-dot"></span>MD</span>
+    </div>
+
+    <!-- IconTile -->
+    <div class="primitive-header">
+      <h2>IconTile</h2><span class="tag">11 tone · 5 size · 4 shape</span>
+    </div>
+    <div class="flex-wrap-row">
+      <div class="icon-tile it-sm tone-brand"><i class="fa-solid fa-box"></i></div>
+      <div class="icon-tile it-md tone-sky"><i class="fa-solid fa-bell"></i></div>
+      <div class="icon-tile it-lg tone-emerald"><i class="fa-solid fa-user"></i></div>
+      <div class="icon-tile it-xl tone-amber"><i class="fa-solid fa-upload"></i></div>
+      <div class="icon-tile it-2xl tone-zinc"><i class="fa-solid fa-inbox"></i></div>
+      <div class="icon-tile it-lg tone-rose"><i class="fa-solid fa-heart"></i></div>
+      <div class="icon-tile it-lg tone-violet"><i class="fa-solid fa-star"></i></div>
+      <div class="icon-tile it-lg tone-teal"><i class="fa-solid fa-mug-hot"></i></div>
+      <div class="icon-tile it-lg tone-indigo"><i class="fa-solid fa-diamond"></i></div>
+      <div class="icon-tile it-lg tone-pine"><i class="fa-solid fa-tree"></i></div>
+    </div>
+
+    <!-- AccentBar -->
+    <div class="primitive-header">
+      <h2>AccentBar</h2><span class="tag">77곳 100% 통합 · 브랜드 좌측 3px</span>
+    </div>
+    <div class="flex-wrap-row">
+      <div class="section-label"><div class="accent-bar"></div>기간</div>
+      <div class="section-label"><div class="accent-bar" style="height:14px;"></div>정렬 (sm)</div>
+      <div class="section-label"><div class="accent-bar" style="height:18px;"></div>분류 (lg)</div>
+      <div class="section-label"><div class="accent-bar" style="height:24px;"></div>큰 라벨 (xl)</div>
+    </div>
+
+    <!-- KpiCard (already shown above; recap in catalog) -->
+    <div class="primitive-header">
+      <h2>KpiCard</h2><span class="tag">Vercel Dashboard 톤 · 뉴트럴 value</span>
+    </div>
+    <div class="grid-3">
+      <div class="kpi-card">
+        <div class="kpi-label">발주 대기</div>
+        <div class="kpi-value">0<span class="kpi-unit">건</span></div>
+        <div class="kpi-label" style="margin-top:6px;">없음</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">전월비</div>
+        <div class="kpi-value">12.4<span class="kpi-unit">%</span></div>
+        <div class="kpi-delta up"><i class="fa-solid fa-caret-up"></i>3.2%</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">이번주 인건비</div>
+        <div class="kpi-value">4.82<span class="kpi-unit">M</span></div>
+        <div class="kpi-delta down"><i class="fa-solid fa-caret-down"></i>-120K</div>
+      </div>
+    </div>
+
+    <!-- PageToolbar -->
+    <div class="primitive-header">
+      <h2>PageToolbar</h2><span class="tag">accent + icon + title + count + search</span>
+    </div>
+    <div class="page-toolbar">
+      <div class="accent-bar"></div>
+      <div class="icon-tile it-md tone-brand"><i class="fa-solid fa-box"></i></div>
+      <div class="title">재고 관리</div>
+      <span class="count-pill">234</span>
+      <div class="search-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input class="search-input" placeholder="상품명 · 코드 · 공급사 검색..." />
+      </div>
+      <div class="btn btn-primary"><i class="fa-solid fa-plus"></i>추가</div>
+    </div>
+
+    <!-- Form & Buttons -->
+    <div class="primitive-header">
+      <h2>Form · Button</h2><span class="tag">4 variant · 3 size · 폰트 +2</span>
+    </div>
+    <div class="grid-3">
+      <div class="card card-outlined">
+        <div class="field-row">
+          <div class="field-label"><i class="fa-solid fa-user"></i>이름<span class="req">*</span></div>
+          <input class="field-input" placeholder="홍길동" />
+        </div>
+        <div class="field-row">
+          <div class="field-label"><i class="fa-solid fa-phone"></i>연락처</div>
+          <input class="field-input" placeholder="010-0000-0000" />
+        </div>
+        <div class="flex-wrap-row" style="margin:4px 0 0;">
+          <div class="btn btn-primary"><i class="fa-solid fa-check"></i>저장</div>
+          <div class="btn btn-secondary">취소</div>
+          <div class="btn btn-ghost">더보기</div>
+          <div class="btn btn-danger"><i class="fa-solid fa-trash"></i>삭제</div>
+        </div>
+      </div>
+
+      <!-- Badges -->
+      <div class="card card-outlined">
+        <div class="card-title">배지 · Status</div>
+        <div class="flex-wrap-row" style="margin:0;">
+          <span class="pill" style="background:var(--brand-tint); color:var(--brand);"><span class="pill-dot"></span>신규</span>
+          <span class="pill" style="background:var(--emerald-tint); color:var(--emerald);"><span class="pill-dot"></span>완료</span>
+          <span class="pill" style="background:var(--amber-tint); color:var(--amber);"><span class="pill-dot"></span>대기</span>
+          <span class="pill pill-pulse" style="background:var(--rose-tint); color:var(--rose);"><span class="pill-dot"></span>긴급</span>
+        </div>
+        <div class="card-desc">파스텔·이모지·촌스러움 지양 · Linear/Vercel 톤</div>
+      </div>
+
+      <!-- Modal preview -->
+      <div class="modal-preview">
+        <div class="modal-header">
+          <div class="modal-title-accent"></div>
+          <div class="icon-tile it-md tone-brand"><i class="fa-solid fa-box"></i></div>
+          <div class="modal-title">상품 상세</div>
+          <span class="pill" style="background:var(--emerald-tint); color:var(--emerald); margin-left:auto;"><span class="pill-dot"></span>완료</span>
+        </div>
+        <div class="modal-body">
+          Modal v2 · titleAccent · headerRight · frosted backdrop · 3-layer shadow<br />
+          <code style="background:var(--zinc-100); padding:1px 6px; border-radius:5px; font-size:12px;">backdrop-brand</code> 유틸 사용
+        </div>
+        <div class="modal-footer">
+          <div class="btn btn-secondary">취소</div>
+          <div class="btn btn-primary">확인</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- common/features/ -->
+    <div class="primitive-header">
+      <h2>common/features/</h2><span class="tag">도메인 · 재사용 wrapper (2026-08-21 신규)</span>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="menu-card-top">
+          <div class="icon-tile it-lg tone-brand"><i class="fa-solid fa-boxes-stacked"></i></div>
+          <span class="pill" style="background:var(--brand-tint); color:var(--brand);"><span class="pill-dot"></span>재고</span>
+        </div>
+        <div class="card-title">InventoryEditModal</div>
+        <div class="card-desc">창고1/2 · 매장1/2/3 · 실재고 입력 · 구역 연동</div>
+      </div>
+      <div class="card">
+        <div class="menu-card-top">
+          <div class="icon-tile it-lg tone-sky"><i class="fa-solid fa-truck-fast"></i></div>
+          <span class="pill" style="background:var(--sky-tint); color:var(--sky);"><span class="pill-dot"></span>거래처</span>
+        </div>
+        <div class="card-title">VendorInfoModal</div>
+        <div class="card-desc">공급사 정보 · CollapseCard · 편집/조회 통합</div>
+      </div>
+      <div class="card">
+        <div class="menu-card-top">
+          <div class="icon-tile it-lg tone-teal"><i class="fa-solid fa-mug-hot"></i></div>
+          <span class="pill" style="background:var(--teal-tint); color:var(--teal);"><span class="pill-dot"></span>휴게</span>
+        </div>
+        <div class="card-title">BreakModal</div>
+        <div class="card-desc">근무 중 휴게 시작/종료 · 자동 시간 기록</div>
+      </div>
+      <div class="card">
+        <div class="menu-card-top">
+          <div class="icon-tile it-lg tone-emerald"><i class="fa-solid fa-magnifying-glass"></i></div>
+          <span class="pill" style="background:var(--emerald-tint); color:var(--emerald);"><span class="pill-dot"></span>검색</span>
+        </div>
+        <div class="card-title">ProductSearchInput</div>
+        <div class="card-desc">한글 초성 검색 · hangulSearch · debounce · 최근검색</div>
+      </div>
+      <div class="card">
+        <div class="menu-card-top">
+          <div class="icon-tile it-lg tone-violet"><i class="fa-solid fa-clock-rotate-left"></i></div>
+          <span class="pill" style="background:var(--violet-tint); color:var(--violet);"><span class="pill-dot"></span>이력</span>
+        </div>
+        <div class="card-title">PurchaseHistoryModal</div>
+        <div class="card-desc">매입 이력 · 공급사별 · Zoho/Odoo/QuickBooks 벤치마크</div>
+      </div>
+      <div class="card">
+        <div class="menu-card-top">
+          <div class="icon-tile it-lg tone-amber"><i class="fa-solid fa-store"></i></div>
+          <span class="pill" style="background:var(--amber-tint); color:var(--amber);"><span class="pill-dot"></span>공급사</span>
+        </div>
+        <div class="card-title">VendorSearchModal</div>
+        <div class="card-desc">공급사 검색 + 새 공급사 등록 인라인</div>
+      </div>
+    </div>
+
+    <!-- src/lib/ -->
+    <div class="primitive-header">
+      <h2>src/lib/</h2><span class="tag">공통 유틸 (2026-08-21 이동)</span>
+    </div>
+    <div class="grid-3">
+      <div class="card card-outlined">
+        <div class="card-title">hangulSearch</div>
+        <div class="card-desc">한글 초성 · 자모 분리 · 유사도 매칭 · 검색 UX 표준</div>
+      </div>
+      <div class="card card-outlined">
+        <div class="card-title">settingsTypography</div>
+        <div class="card-desc">폰트 +2 원칙 · 40대+ 가독성 · 페이지별 preset</div>
+      </div>
+      <div class="card card-outlined">
+        <div class="card-title">approvalEvents</div>
+        <div class="card-desc">실시간 배지 갱신 · window focus refresh · scope 별 구독</div>
+      </div>
+    </div>
+
+    <!-- Note -->
+    <div class="panel-note">
+      <strong>2026-08-21 프레임워크 반영</strong> · <code>Card</code> 45+ 확산 · <code>Spinner</code> 11 tone · 110+ 확산 · <code>common/features/</code> 6개 신설<br />
+      · 디자인 톤: Linear / Vercel / Notion 2026 (Attio 세련) · <code>brand-deep</code> / <code>brand-tint</code> · <code>ink</code> / <code>ink-soft</code> · <code>line</code> · zinc palette<br />
+      · 폰트 +2 원칙 · 40대+ 가독성 (12 → 14 · 14 → 15) · 파스텔 다색 지양 · 최상위 UI 원칙 준수<br />
+      · 참조: <code>src/components/common/README.md</code> · <code>docs/FRAMEWORK.md</code> · <code>docs/UI_MOCKUP_PC_2026-08-17.html</code> (원본 유지)
+    </div>
+  </main>
+
+  <script>
+    function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
+    function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+  </script>
+</body>
+</html>
