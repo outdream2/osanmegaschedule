@@ -884,11 +884,12 @@ export const PaymentInfoTab: React.FC = () => {
   return (
     <>
     <div className="flex flex-col gap-2 h-full min-h-0">
+      {/* 2026-08-21 · 사용자 요청 · 조정 폭 확장 · minWidth 200→220 · maxWidth 400→720 (조정 500px 가능) */}
       <SplitPanel
         storageKey="paymentInfo.leftWidth"
-        defaultWidth={256}
-        minWidth={200}
-        maxWidth={400}
+        defaultWidth={280}
+        minWidth={220}
+        maxWidth={720}
         dividerColor="sky"
         wrapLeft={false}
         wrapRight={false}
