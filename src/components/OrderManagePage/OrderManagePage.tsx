@@ -220,7 +220,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // 2026-08-10 · #16 · 발주이력 탭 추가
   const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "critical" | "history">("need");
   const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history">("receipt");
-  const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input" | "vat-prepare">("vendor");
+  // 2026-08-21 · 사용자 요청 · 결제입력 기본 탭 (맨 앞) · 초기값 변경
+  const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input" | "vat-prepare">("payment-input");
   const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff" | "supplier">("trending");
 
   // 2026-08-03 · 관리자(level>=8) 전용 · 서브탭 long-press 드래그 재정렬 (useSortableTabs 훅)
@@ -1312,10 +1313,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     { key: "productarrival",   label: "상품입고",   icon: PackagePlus,    color: "blue"    },  // 2026-08-10 · 파랑 (사용자 요청)
     { key: "reconciliation",   label: "실재고",     icon: CheckCircle2,   color: "emerald" },
   ], []);
+  // 2026-08-21 · 사용자 요청 · 결제입력 기본 탭 (맨 앞) · 공급사관리 → 공급사별결제내역 라벨 변경
   const paymentDefaultTabs: SubTabDef<PaymentKey>[] = useMemo(() => [
-    { key: "vendor",        label: "공급사관리", icon: Building2,     color: "teal"   },
-    { key: "payment-input", label: "결제입력",   icon: Wallet,        color: "amber"  },
-    { key: "vat-prepare",   label: "부가세 준비", icon: Calculator,    color: "rose"   },
+    { key: "payment-input", label: "결제입력",       icon: Wallet,        color: "amber"  },
+    { key: "vendor",        label: "공급사별결제내역", icon: Building2,     color: "teal"   },
+    { key: "vat-prepare",   label: "부가세 준비",     icon: Calculator,    color: "rose"   },
   ], []);
   const statDefaultTabs: SubTabDef<StatKey>[] = useMemo(() => [
     { key: "trending", label: "급상승",         icon: TrendingUp,    color: "indigo" },
