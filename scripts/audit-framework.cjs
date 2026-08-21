@@ -17,11 +17,19 @@ const OUTPUT = path.join(ROOT, "docs", "FRAMEWORK_AUDIT.md");
 // ────────────────────────────────────────────────────────────
 const RULES = [
   { id: "raw-fetch", severity: "high", weight: 3,
-    pattern: /(?<!\/\*.*)\bfetch\s*\(\s*["`']\//g,
+    // 2026-08-21 · JSDoc/주석 라인 안 매칭 · pattern 개선 (line-start 공백 뒤 * 이면 skip)
+    pattern: /^(?!\s*[*/]).*\bfetch\s*\(\s*["`']\//gm,
     fix: "apiClient (api.get/post/put)",
-    // 예외 · errorReporter · window.error 핸들러 · apiClient 401 → SESSION_EXPIRED 무한 루프 위험
-    // 예외 · cloudinaryUpload · 외부 res.cloudinary.com 은 apiClient 스코프 밖
-    skip: /apiClient|test|errorReporter/ },
+    // 예외 · 인프라 파일 · apiClient 스코프 밖 (SSE·초기화·정적파일·401 loop 방지)
+    //  - apiClient.ts   · 자체 refresh
+    //  - errorReporter  · window.error · apiClient 401 loop 위험
+    //  - App.tsx        · logout · apiClient 401 loop 위험
+    //  - main.tsx       · 앱 초기화 (apiClient 준비 전)
+    //  - productsCache  · 정적 /products.json
+    //  - zoneLabels     · 모듈 초기 로드
+    //  - geminiEngine   · Gemini 전용 · OCR SSE 관련
+    //  - OcrPage.tsx    · /api/ocr?stream=1 · SSE 스트리밍
+    skip: /apiClient|test|errorReporter|App\.tsx|main\.tsx|productsCache|zoneLabels|geminiEngine|OcrPage\/OcrPage/ },
   { id: "raw-alert", severity: "high", weight: 3,
     pattern: /(?<!\/\/.*)\balert\s*\(/g,
     fix: "useToast (showError·showSuccess)",
