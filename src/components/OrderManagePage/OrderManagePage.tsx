@@ -2140,7 +2140,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   />
                 );
               })()}
-              <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
+              <Card padding="none" clip>
                 <table className="w-full text-[14px] tabular-nums">
                   <thead className="bg-zinc-50/80 text-[15px] font-bold text-zinc-500 uppercase tracking-wider border-b border-line">
                     <tr>
@@ -2197,7 +2197,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     })()}
                   </tbody>
                 </table>
-              </div>
+              </Card>
             </div>
           )}
           {/* 2026-08-10 · #16 · 발주이력 서브탭 · GET /api/order-history · order_number 그룹 · 마이그레이션 대기 시 empty */}
