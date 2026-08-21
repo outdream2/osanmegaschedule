@@ -20,6 +20,8 @@ import { AccentBar } from "../common/AccentBar";
 import { Spinner } from "../common/Spinner";
 import { StatusPill } from "../common/StatusPill";
 import { uploadImagesToCloudinary, type UploadedImage } from "../../lib/cloudinaryUpload";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 import { fmtDateShort } from "../../lib/format";
 import { useConfirm } from "../../hooks/useConfirm";
 
@@ -567,9 +569,11 @@ function ComposerModal({
   const [mentionIds, setMentionIds] = useState<number[]>([]);
   const [showMentionPicker, setShowMentionPicker] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError } = useToast();
 
   const submit = async () => {
-    if (!title.trim()) { alert("제목을 입력해 주세요"); return; }
+    if (!title.trim()) { showError("제목을 입력해 주세요"); return; }
     setSaving(true);
     try {
       await api.post("/api/board/posts", {
@@ -585,7 +589,7 @@ function ComposerModal({
       });
       onCreated();
     } catch (e: any) {
-      alert(e?.message ?? "등록 실패");
+      showError(e?.message ?? "등록 실패");
     } finally { setSaving(false); }
   };
 
@@ -598,7 +602,7 @@ function ComposerModal({
       const uploaded = await uploadImagesToCloudinary(list, (done, total) => setUploadProgress({ done, total }));
       setImages(prev => [...prev, ...uploaded]);
     } catch (e: any) {
-      alert(e?.message ?? "이미지 업로드 실패");
+      showError(e?.message ?? "이미지 업로드 실패");
     } finally { setUploading(false); setUploadProgress(null); }
   };
 
@@ -711,6 +715,8 @@ function ComposerModal({
           </button>
         </div>
       </div>
+      {/* 2026-08-21 · Framework Phase 3 · toast · alert 대체 */}
+      {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
     </div>
   );
 }
@@ -722,6 +728,8 @@ function DetailModal({
   postId: number; authSession: AuthSession | null; employees: Employee[]; isManager: boolean; initialEdit?: boolean; onClose: () => void; onChanged: () => void;
 }) {
   const confirm = useConfirm();
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError } = useToast();
   const [post, setPost] = useState<BoardPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [commentBody, setCommentBody] = useState("");
@@ -771,11 +779,11 @@ function DetailModal({
     setEditUploadProgress({ done: 0, total: files.length });
     try {
       const list = Array.from(files).slice(0, 8 - editImages.length);
-      if (list.length === 0) { alert("이미지는 최대 8장까지 첨부 가능합니다."); return; }
+      if (list.length === 0) { showError("이미지는 최대 8장까지 첨부 가능합니다."); return; }
       const uploaded = await uploadImagesToCloudinary(list, (done, total) => setEditUploadProgress({ done, total }));
       setEditImages(prev => [...prev, ...uploaded]);
     } catch (e: any) {
-      alert(e?.message ?? "이미지 업로드 실패");
+      showError(e?.message ?? "이미지 업로드 실패");
     } finally {
       setEditUploading(false);
       setEditUploadProgress(null);
@@ -874,7 +882,7 @@ function DetailModal({
       const uploaded = await uploadImagesToCloudinary(list);
       setCommentImages(prev => [...prev, ...uploaded]);
     } catch (e: any) {
-      alert(e?.message ?? "이미지 업로드 실패");
+      showError(e?.message ?? "이미지 업로드 실패");
     } finally { setUploadingCmt(false); }
   };
 
@@ -1159,6 +1167,8 @@ function DetailModal({
           </div>
         )}
       </div>
+      {/* 2026-08-21 · Framework Phase 3 · toast · alert 대체 */}
+      {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
     </div>
   );
 }

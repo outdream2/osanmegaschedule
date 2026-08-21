@@ -9,16 +9,16 @@
 | 지표 | 값 |
 |---|---:|
 | 스캔 파일 | 458 |
-| 위반 파일 | 73 |
-| 클린 파일 | 385 (84%) |
-| 총 위반 개수 | 363 |
+| 위반 파일 | 72 |
+| 클린 파일 | 386 (84%) |
+| 총 위반 개수 | 350 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
-| `raw-fetch` | 91 | 31 | high | apiClient (api.get/post/put) |
-| `raw-alert` | 104 | 25 | high | useToast (showError·showSuccess) |
+| `raw-fetch` | 86 | 29 | high | apiClient (api.get/post/put) |
+| `raw-alert` | 96 | 22 | high | useToast (showError·showSuccess) |
 | `raw-loader2` | 2 | 1 | medium | Spinner 프리미티브 |
 | `raw-card-wrapper` | 65 | 20 | medium | Card 프리미티브 (padding·variant·clip) |
 | `raw-confirm` | 57 | 26 | medium | useConfirm (ConfirmDialog 프리미티브) |
@@ -43,23 +43,23 @@
 | 13 | `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2675 | 27 | large-file(1) · raw-fetch(4) |
 | 14 | `src/components/ContractSettingsPage/ContractSettingsPage.tsx` | 919 | 25 | raw-card-wrapper(7) · raw-confirm(3) · large-file(1) |
 | 15 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 25 | large-file(1) · raw-confirm(5) |
-| 16 | `src/components/LunchPage/LunchPage.tsx` | 564 | 21 | raw-fetch(4) · large-file(1) · raw-card-wrapper(2) |
-| 17 | `src/components/PharmacistMenuSettingsPage/PharmacistMenuSettingsPage.tsx` | 509 | 21 | raw-alert(4) · large-file(1) · raw-card-wrapper(1) · raw-confirm(1) |
-| 18 | `src/components/ScanPage/ProductInfoCard.tsx` | 1014 | 21 | large-file(1) · raw-fetch(3) · raw-confirm(1) |
-| 19 | `src/components/HrFormsPage/HrFormsPage.tsx` | 1117 | 19 | large-file(1) · raw-card-wrapper(2) · raw-alert(1) · raw-confirm(1) |
-| 20 | `src/components/ScanPage/ScanPage.tsx` | 1163 | 19 | large-file(1) · raw-confirm(3) · raw-fetch(1) |
-| 21 | `src/components/LandingPage/VendorListEditor.tsx` | 2038 | 17 | large-file(1) · raw-confirm(1) |
-| 22 | `src/components/LeavePage/LeavePage.tsx` | 538 | 17 | raw-card-wrapper(6) · large-file(1) |
-| 23 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 1085 | 17 | large-file(1) · raw-confirm(2) · raw-alert(1) |
-| 24 | `src/components/ResignationApprovalPage/ResignationApprovalPage.tsx` | 411 | 15 | raw-alert(3) · raw-card-wrapper(2) · raw-confirm(1) |
-| 25 | `src/components/StockManagePage/FlowTab.tsx` | 1101 | 13 | large-file(1) · raw-alert(1) |
-| 26 | `src/components/common/EmployeeProfileCard.tsx` | 347 | 12 | raw-alert(3) · raw-fetch(1) |
-| 27 | `src/components/OrderManagePage/PurchaseHistoryTab/PurchaseSubTabs.tsx` | 1214 | 12 | large-file(1) · raw-card-wrapper(1) |
-| 28 | `src/components/PharmacistPage/PharmacistPage.tsx` | 942 | 12 | large-file(1) · raw-alert(1) · raw-card-wrapper(1) · raw-confirm(1) |
-| 29 | `src/components/OrderManagePage/CategoryTab.tsx` | 599 | 11 | raw-fetch(2) · large-file(1) |
-| 30 | `src/components/OrderManagePage/TrendingTab.tsx` | 572 | 11 | raw-fetch(2) · large-file(1) |
+| 16 | `src/components/ScanPage/ProductInfoCard.tsx` | 1014 | 21 | large-file(1) · raw-fetch(3) · raw-confirm(1) |
+| 17 | `src/components/ScanPage/ScanPage.tsx` | 1163 | 19 | large-file(1) · raw-confirm(3) · raw-fetch(1) |
+| 18 | `src/components/LandingPage/VendorListEditor.tsx` | 2038 | 17 | large-file(1) · raw-confirm(1) |
+| 19 | `src/components/LeavePage/LeavePage.tsx` | 538 | 17 | raw-card-wrapper(6) · large-file(1) |
+| 20 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 1085 | 17 | large-file(1) · raw-confirm(2) · raw-alert(1) |
+| 21 | `src/components/HrFormsPage/HrFormsPage.tsx` | 1123 | 16 | large-file(1) · raw-card-wrapper(2) · raw-confirm(1) |
+| 22 | `src/components/ResignationApprovalPage/ResignationApprovalPage.tsx` | 411 | 15 | raw-alert(3) · raw-card-wrapper(2) · raw-confirm(1) |
+| 23 | `src/components/StockManagePage/FlowTab.tsx` | 1101 | 13 | large-file(1) · raw-alert(1) |
+| 24 | `src/components/OrderManagePage/PurchaseHistoryTab/PurchaseSubTabs.tsx` | 1214 | 12 | large-file(1) · raw-card-wrapper(1) |
+| 25 | `src/components/PharmacistPage/PharmacistPage.tsx` | 942 | 12 | large-file(1) · raw-alert(1) · raw-card-wrapper(1) · raw-confirm(1) |
+| 26 | `src/components/OrderManagePage/CategoryTab.tsx` | 599 | 11 | raw-fetch(2) · large-file(1) |
+| 27 | `src/components/OrderManagePage/TrendingTab.tsx` | 572 | 11 | raw-fetch(2) · large-file(1) |
+| 28 | `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx` | 955 | 10 | large-file(1) · raw-fetch(1) · raw-confirm(1) |
+| 29 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 1926 | 10 | large-file(1) |
+| 30 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1192 | 10 | large-file(1) |
 
-## 📝 모든 위반 파일 (73개)
+## 📝 모든 위반 파일 (72개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -80,17 +80,14 @@
 | `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2675 | 27 |
 | `src/components/ContractSettingsPage/ContractSettingsPage.tsx` | 919 | 25 |
 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 25 |
-| `src/components/LunchPage/LunchPage.tsx` | 564 | 21 |
-| `src/components/PharmacistMenuSettingsPage/PharmacistMenuSettingsPage.tsx` | 509 | 21 |
 | `src/components/ScanPage/ProductInfoCard.tsx` | 1014 | 21 |
-| `src/components/HrFormsPage/HrFormsPage.tsx` | 1117 | 19 |
 | `src/components/ScanPage/ScanPage.tsx` | 1163 | 19 |
 | `src/components/LandingPage/VendorListEditor.tsx` | 2038 | 17 |
 | `src/components/LeavePage/LeavePage.tsx` | 538 | 17 |
 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 1085 | 17 |
+| `src/components/HrFormsPage/HrFormsPage.tsx` | 1123 | 16 |
 | `src/components/ResignationApprovalPage/ResignationApprovalPage.tsx` | 411 | 15 |
 | `src/components/StockManagePage/FlowTab.tsx` | 1101 | 13 |
-| `src/components/common/EmployeeProfileCard.tsx` | 347 | 12 |
 | `src/components/OrderManagePage/PurchaseHistoryTab/PurchaseSubTabs.tsx` | 1214 | 12 |
 | `src/components/PharmacistPage/PharmacistPage.tsx` | 942 | 12 |
 | `src/components/OrderManagePage/CategoryTab.tsx` | 599 | 11 |
@@ -99,6 +96,8 @@
 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 1926 | 10 |
 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1192 | 10 |
 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 1205 | 10 |
+| `src/components/LunchPage/LunchPage.tsx` | 561 | 9 |
+| `src/components/PharmacistMenuSettingsPage/PharmacistMenuSettingsPage.tsx` | 515 | 9 |
 | `src/App.tsx` | 552 | 8 |
 | `src/components/StockManagePage/SupplierTab.tsx` | 995 | 8 |
 | `src/hooks/useLeaveManager.ts` | 125 | 8 |
