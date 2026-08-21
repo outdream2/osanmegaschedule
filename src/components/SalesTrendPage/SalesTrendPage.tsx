@@ -1444,9 +1444,9 @@ export const StockFlowPanel: React.FC<{
                 const q = query.trim();
                 if (displayRows.length > 0) onOpenProductInfo(displayRows[0]);
                 else if (q) {
-                  fetch(`/api/products-search?q=${encodeURIComponent(q)}`)
-                    .then(r => r.ok ? r.json() : [])
-                    .then(list => { if (Array.isArray(list) && list.length > 0) onOpenProductInfo(list[0]); })
+                  // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+                  api.get<any[]>(`/api/products-search?q=${encodeURIComponent(q)}`)
+                    .then(({ data }) => { if (Array.isArray(data) && data.length > 0) onOpenProductInfo(data[0]); })
                     .catch(() => { });
                 }
               }}
@@ -1667,11 +1667,12 @@ const ZoneCategoryContent: React.FC = () => {
     const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.MAX) });
     if (season) params.set("season", season);
     else if (months > 0) params.set("months", String(months));
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
     Promise.all([
-      fetch(`/api/stock-manage/top-sales?${params}`).then(r => r.ok ? r.json() : { rows: [] }),
+      api.get<{ rows?: any[] }>(`/api/stock-manage/top-sales?${params}`).catch(() => ({ data: { rows: [] } })),
       getProductsMap(),
     ])
-      .then(([s, p]) => { setSales(Array.isArray(s.rows) ? s.rows : []); setProducts(p ?? {}); })
+      .then(([s, p]) => { setSales(Array.isArray(s.data?.rows) ? s.data.rows : []); setProducts(p ?? {}); })
       .catch(() => { setSales([]); setProducts({}); })
       .finally(() => setLoading(false));
   }, [season, months]);
@@ -2003,11 +2004,12 @@ const ZoneCategoryContent: React.FC = () => {
             const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.MAX) });
             if (season) params.set("season", season);
             else if (months > 0) params.set("months", String(months));
+            // 2026-08-21 · Framework Phase 3 · fetch → apiClient
             Promise.all([
-              fetch(`/api/stock-manage/top-sales?${params}`).then(r => r.ok ? r.json() : { rows: [] }),
+              api.get<{ rows?: any[] }>(`/api/stock-manage/top-sales?${params}`).catch(() => ({ data: { rows: [] } })),
               getProductsMap(),
             ])
-              .then(([s, p]) => { setSales(Array.isArray(s.rows) ? s.rows : []); setProducts(p ?? {}); })
+              .then(([s, p]) => { setSales(Array.isArray(s.data?.rows) ? s.data.rows : []); setProducts(p ?? {}); })
               .catch(() => { setSales([]); setProducts({}); })
               .finally(() => setLoading(false));
           }}
@@ -2194,9 +2196,9 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
     setLoading(true);
     const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.LARGE) });
     if (season) params.set("season", season);
-    fetch(`/api/stock-manage/top-sales?${params}`)
-      .then(r => r.ok ? r.json() : { rows: [] })
-      .then(j => setRows(Array.isArray(j.rows) ? j.rows : []))
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    api.get<{ rows?: any[] }>(`/api/stock-manage/top-sales?${params}`)
+      .then(({ data: j }) => setRows(Array.isArray(j?.rows) ? j.rows : []))
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
   }, [season]);

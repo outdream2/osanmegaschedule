@@ -174,10 +174,11 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
     setOrderConfirm(false);
 
     if (!product.code) return;
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
     // 기존 실재고 데이터 로드 · 하위호환 · warehouse1_stock 없으면 warehouse_stock 값을 창고1로 채움
-    fetch(`/api/inventory-checks?product_code=${encodeURIComponent(product.code)}`)
-      .then(r => r.ok ? r.json() : [])
-      .then((list: any[]) => {
+    api.get<any[]>(`/api/inventory-checks?product_code=${encodeURIComponent(product.code)}`)
+      .then(({ data }) => {
+        const list = Array.isArray(data) ? data : [];
         const last = list[0];
         if (!last) return;
         // 창고1 · 신규 컬럼 우선 · 없으면 레거시 warehouse_stock
@@ -193,9 +194,9 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
         if (last.store3_stock != null) setStore3Stock(Number(last.store3_stock));
       }).catch(() => {});
     // 기존 발주요청 로드
-    fetch(`/api/order-requests?product_code=${encodeURIComponent(product.code)}`)
-      .then(r => r.ok ? r.json() : [])
-      .then((list: any[]) => {
+    api.get<any[]>(`/api/order-requests?product_code=${encodeURIComponent(product.code)}`)
+      .then(({ data }) => {
+        const list = Array.isArray(data) ? data : [];
         if (list[0]) setExistingOrder({ current_stock: list[0].current_stock, requested_at: list[0].requested_at });
       }).catch(() => {});
   }, [product.code]);
@@ -897,9 +898,9 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
   useEffect(() => {
     if (!productCode) return;
     setLoading(true);
-    fetch(`/api/purchase-details?product_code=${encodeURIComponent(productCode)}&limit=200`)
-      .then(r => r.ok ? r.json() : { rows: [] })
-      .then(j => setRows(Array.isArray(j.rows) ? j.rows : []))
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    api.get<{ rows?: any[] }>(`/api/purchase-details?product_code=${encodeURIComponent(productCode)}&limit=200`)
+      .then(({ data: j }) => setRows(Array.isArray(j?.rows) ? j.rows : []))
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
   }, [productCode]);

@@ -1221,9 +1221,9 @@ export const DayTimelineModal: React.FC<Props> = ({
       Object.values(zs).some((sm: unknown) => Object.values(sm as Record<string, number[]>).some(a => a.length > 0));
 
     // 1. DB 날짜별 배정 우선 조회
-    fetch(`/api/zone-day/${date}`)
-      .then(r => r.ok ? r.json() : null)
-      .then((dayData: (Record<string, unknown> & { _empty?: boolean; is_confirmed?: boolean }) | null) => {
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    api.get<Record<string, unknown> & { _empty?: boolean; is_confirmed?: boolean }>(`/api/zone-day/${date}`)
+      .then(({ data: dayData }) => {
         if (!dayData) throw new Error("no day data");
         if (dayData._empty) throw new Error("empty");
         // 데이터가 있으면 적용
@@ -1243,9 +1243,8 @@ export const DayTimelineModal: React.FC<Props> = ({
       .catch(() => {
         // 2. DOW 템플릿 조회
         const currentDow = new Date(date + "T00:00:00").getDay();
-        fetch(`/api/zone-assignments/${currentDow}`)
-          .then(r => r.ok ? r.json() : null)
-          .then((dowData: (Record<string, unknown>) | null) => {
+        api.get<Record<string, unknown> | null>(`/api/zone-assignments/${currentDow}`)
+          .then(({ data: dowData }) => {
             if (!dowData) throw new Error("no dow");
             const hasSlots = slotHasData(
               (dowData.lunch_slots as SlotMap) ?? {},
@@ -1363,16 +1362,13 @@ export const DayTimelineModal: React.FC<Props> = ({
   ) => {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(() => {
-      fetch(`/api/zone-day/${date}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          zone_slots: zs, lunch_slots: ls, rest_slots: rs,
-          lunch_offset: lo, rest_offset: ro,
-          lunch_interval: li, rest_interval: ri,
-          lunch_count: lc, rest_count: rc,
-          is_confirmed: false,
-        }),
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient · fire-and-forget
+      api.put(`/api/zone-day/${date}`, {
+        zone_slots: zs, lunch_slots: ls, rest_slots: rs,
+        lunch_offset: lo, rest_offset: ro,
+        lunch_interval: li, rest_interval: ri,
+        lunch_count: lc, rest_count: rc,
+        is_confirmed: false,
       }).catch(() => {});
     }, 1500);
   }, [date]);
@@ -1593,25 +1589,25 @@ export const DayTimelineModal: React.FC<Props> = ({
         lunch_count: lunchCount,
         rest_count: restCount,
       };
-      const responses = await Promise.all([
-        // DOW 템플릿 저장
-        fetch(`/api/zone-assignments/${saveDow}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dayPayload),
-        }),
-        // 해당 날짜들의 zone_day_assignments도 업데이트 (is_confirmed: false)
-        ...dayDates.map(d => fetch(`/api/zone-day/${d}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...dayPayload, is_confirmed: false }),
-        })),
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient · Promise.allSettled 로 실패 개수 집계
+      const labels = [
+        `/api/zone-assignments/${saveDow}`,
+        ...dayDates.map(d => `/api/zone-day/${d}`),
+      ];
+      const results = await Promise.allSettled([
+        api.put(`/api/zone-assignments/${saveDow}`, dayPayload),
+        ...dayDates.map(d => api.put(`/api/zone-day/${d}`, { ...dayPayload, is_confirmed: false })),
       ]);
-      // 실패한 응답 확인 — 조용한 실패로 저장 안됨 문제 방지
-      const failed = responses.filter(r => !r.ok);
-      if (failed.length > 0) {
-        const details = await Promise.all(failed.map(async r => `${r.url}: ${r.status} ${await r.text().catch(() => "")}`));
-        mainShowError("일부 저장 실패:\n" + details.join("\n"));
+      const failedDetails = results
+        .map((r, i) => ({ r, url: labels[i] }))
+        .filter(({ r }) => r.status === "rejected")
+        .map(({ r, url }) => {
+          const err = (r as PromiseRejectedResult).reason;
+          const msg = err instanceof ApiError ? `${err.status} ${err.message}` : String(err?.message ?? err);
+          return `${url}: ${msg}`;
+        });
+      if (failedDetails.length > 0) {
+        mainShowError("일부 저장 실패:\n" + failedDetails.join("\n"));
       }
     } catch (e) {
       mainShowError("저장 실패: " + (e as Error).message);
