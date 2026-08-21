@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 502 |
+| 스캔 파일 | 503 |
 | 위반 파일 | 24 |
-| 클린 파일 | 478 (95%) |
+| 클린 파일 | 479 (95%) |
 | 총 위반 개수 | 24 |
 
 ## 🚨 규칙별 위반 현황
@@ -33,7 +33,7 @@
 | 7 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 | large-file-critical(1) |
 | 8 | `src/components/StaffManagePage/StaffManagePage.tsx` | 2729 | 24 | large-file-critical(1) |
 | 9 | `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1338 | 6 | large-file-warn(1) |
-| 10 | `src/components/LandingPage/VendorListEditor.tsx` | 1938 | 6 | large-file-warn(1) |
+| 10 | `src/components/LandingPage/VendorListEditor.tsx` | 1549 | 6 | large-file-warn(1) |
 | 11 | `src/components/OcrPage/OcrPage.tsx` | 1149 | 6 | large-file-warn(1) |
 | 12 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 1514 | 6 | large-file-warn(1) |
 | 13 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1159 | 6 | large-file-warn(1) |
@@ -64,7 +64,7 @@
 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 |
 | `src/components/StaffManagePage/StaffManagePage.tsx` | 2729 | 24 |
 | `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1338 | 6 |
-| `src/components/LandingPage/VendorListEditor.tsx` | 1938 | 6 |
+| `src/components/LandingPage/VendorListEditor.tsx` | 1549 | 6 |
 | `src/components/OcrPage/OcrPage.tsx` | 1149 | 6 |
 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 1514 | 6 |
 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1159 | 6 |

@@ -93,7 +93,11 @@ export interface LedgerRow {
 }
 
 export interface OpenInvoiceRow {
-  invoice_date: string;
-  total_amount: number;
+  id: number;
+  date: string;
+  product_name: string;
+  amount: number;
+  allocated: number;
   remaining: number;
+  status: "open" | "partial" | "paid";
 }

@@ -92,3 +92,8 @@ export const METHOD_OPTIONS: Array<{ key: string; label: string }> = [
   { key: "offset",   label: "상계" },
   { key: "etc",      label: "기타" },
 ];
+
+// shadcn form input · h-8 · focus ring teal
+// 2026-08-10 · 입력창 여백 반 축소 (px-3→px-1.5 · h-10→h-8)
+export const inputCls =
+  "w-full h-8 px-1.5 text-[16px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white transition placeholder:text-zinc-300";
