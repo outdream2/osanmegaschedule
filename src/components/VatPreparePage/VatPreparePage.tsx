@@ -35,6 +35,7 @@ import SalesTab from "./tabs/SalesTab";
 import SupplierVatTab from "./tabs/SupplierVatTab";
 import { AccentBar } from "../common/AccentBar";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 import { useKvSetting } from "../../hooks/useKvSetting";
 
 // ─── 타입 ────────────────────────────────────────────────────────
@@ -301,7 +302,7 @@ const VatPreparePage: React.FC = () => {
     <div className="flex flex-col gap-3 min-h-0 h-full">
 
       {/* ── 상단: 다음 신고일 · Preset 선택 ── */}
-      <div className="bg-white rounded-xl border border-line shadow-sm p-4">
+      <Card>
         <div className="flex flex-col lg:flex-row lg:items-center gap-3">
           {/* 로고·타이틀 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
           <div className="flex items-center gap-3 shrink-0">
@@ -382,7 +383,7 @@ const VatPreparePage: React.FC = () => {
             <span><b className="text-zinc-700">매입 건수</b> · {fmt(summary.rowCount)}건</span>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* ── 경고 · 에러 ── */}
       {error && (
@@ -436,7 +437,7 @@ const VatPreparePage: React.FC = () => {
       </div>
 
       {/* 신고 준비도 (별도 · 5 KPI 카드 정렬 유지 위해 하단 얇은 바) */}
-      <div className="bg-white rounded-xl border border-line shadow-sm px-4 py-3 flex items-center gap-3">
+      <Card padding="none" className="px-4 py-3 flex items-center gap-3">
         <CheckSquare size={14} className="text-sky-500 shrink-0" />
         <div className="text-[11px] font-bold text-zinc-600 shrink-0">신고 준비도</div>
         <div className="flex-1 h-2 bg-zinc-100 rounded-full overflow-hidden">
@@ -449,7 +450,7 @@ const VatPreparePage: React.FC = () => {
         <div className="text-[10px] text-zinc-500 shrink-0 hidden sm:block">
           체크리스트 {Object.values(checklist).filter(Boolean).length}/4 완료
         </div>
-      </div>
+      </Card>
 
       {/* ── 메인 탭 (매출 / 매입 / 신고서 미리보기) ── */}
       <div className="bg-white rounded-xl border border-line shadow-sm">
@@ -490,15 +491,15 @@ const VatPreparePage: React.FC = () => {
         />
       )}
       {mainTab === "sales" && !summary?.range && (
-        <div className="bg-white rounded-xl border border-line shadow-sm p-8 text-center">
+        <Card padding="none" className="p-8 text-center">
           <Spinner size={20} tone="zinc" />
           <div className="text-[11px] text-zinc-400 mt-2">기간 정보를 불러오는 중…</div>
-        </div>
+        </Card>
       )}
 
       {/* ── 신고서 미리보기 탭 (Phase 3 placeholder) ── */}
       {mainTab === "preview" && (
-        <div className="bg-white rounded-xl border border-line shadow-sm p-10 text-center">
+        <Card padding="none" className="p-10 text-center">
           <FileCheck2 size={32} className="text-sky-400 mx-auto" />
           <div className="mt-3 text-[13px] font-bold text-zinc-700">신고서 미리보기 · Phase 3 예정</div>
           <div className="mt-1 text-[11px] text-zinc-500 leading-relaxed max-w-lg mx-auto">
@@ -506,7 +507,7 @@ const VatPreparePage: React.FC = () => {
             <br />
             자동 생성 · PDF 미리보기 기능을 Phase 3 에서 추가 예정입니다.
           </div>
-        </div>
+        </Card>
       )}
 
       {/* ── 매입 탭 (기존 좌 공급사별 리스트 · 우 매입 명세) ── */}
