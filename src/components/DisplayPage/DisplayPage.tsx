@@ -528,30 +528,22 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     setRequests((prev) => [req, ...prev]);
     setQuickReqToast(`${zone.assignedStaffName}님께 ${zone.num}번 ${zone.label} 보충 요청 전송됨`);
     setTimeout(() => setQuickReqToast(null), 3500);
-    // Save to DB
-    fetch("/api/display-requests", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        zone_id: zone.id,
-        zone_label: `${zone.num}번 ${zone.label}`,
-        category: zone.category,
-        requested_at: new Date().toISOString(),
-        assigned_staff_id: zone.assignedStaffId,
-        assigned_staff_name: zone.assignedStaffName,
-        note: "빠른 요청",
-      }),
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient · fire-and-forget 유지
+    api.post("/api/display-requests", {
+      zone_id: zone.id,
+      zone_label: `${zone.num}번 ${zone.label}`,
+      category: zone.category,
+      requested_at: new Date().toISOString(),
+      assigned_staff_id: zone.assignedStaffId,
+      assigned_staff_name: zone.assignedStaffName,
+      note: "빠른 요청",
     }).catch(() => { });
     // Fire-and-forget push notification
-    fetch("/api/push-send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        employeeId: zone.assignedStaffId,
-        title: "📦 진열 보충 요청",
-        body: `${zone.num}번 ${zone.label} (${zone.category}) 보충이 필요합니다.`,
-        url: "/",
-      }),
+    api.post("/api/push-send", {
+      employeeId: zone.assignedStaffId,
+      title: "📦 진열 보충 요청",
+      body: `${zone.num}번 ${zone.label} (${zone.category}) 보충이 필요합니다.`,
+      url: "/",
     }).catch(() => { });
   }, []);
 
@@ -792,15 +784,12 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     let sent = 0;
     for (const [empId, { name, zones: zList }] of grouped) {
       const zonesText = zList.map(z => `• ${z.zoneLabel} (${z.category})`).join("\n");
-      fetch("/api/push-send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          employeeId: empId,
-          title: `📍 ${dateLabel} 진열 담당구역 (${zList.length}곳)`,
-          body: `${name}님, ${dateLabel} 진열 담당 구역 ${zList.length}곳입니다.\n${zonesText}`,
-          url: "/",
-        }),
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient · fire-and-forget
+      api.post("/api/push-send", {
+        employeeId: empId,
+        title: `📍 ${dateLabel} 진열 담당구역 (${zList.length}곳)`,
+        body: `${name}님, ${dateLabel} 진열 담당 구역 ${zList.length}곳입니다.\n${zonesText}`,
+        url: "/",
       }).catch(() => { });
       sent++;
     }
@@ -899,10 +888,11 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   // 재고관리 페이지와 동일한 소스로 통합해서 구역 모달에서 ERP/창고/매장/실재고 컬럼이 항상 채워지도록 함.
   useEffect(() => {
     let cancelled = false;
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
     Promise.all([
       getProductsMap().catch(() => ({} as Record<string, ProductInfo>)),
-      fetch("/api/products-map").then(r => r.ok ? r.json() : {}).catch(() => ({} as Record<string, ProductInfo>)),
-      fetch("/api/inventory-latest").then(r => r.ok ? r.json() : {}).catch(() => ({} as Record<string, any>)),
+      api.get<Record<string, ProductInfo>>("/api/products-map").then(({ data }) => data ?? {}).catch(() => ({} as Record<string, ProductInfo>)),
+      api.get<Record<string, any>>("/api/inventory-latest").then(({ data }) => data ?? {}).catch(() => ({} as Record<string, any>)),
     ]).then(([staticMap, serverMap, invMap]) => {
       if (cancelled) return;
       const merged: Record<string, ProductInfo> = { ...staticMap };
@@ -932,9 +922,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
   // ── Load zone groups from DB on mount ────────────────────────────────────────
   useEffect(() => {
-    fetch("/api/zone-groups")
-      .then((r) => r.json())
-      .then((data) => setZoneGroups(Array.isArray(data) ? data : []))
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    api.get<any[]>("/api/zone-groups")
+      .then(({ data }) => setZoneGroups(Array.isArray(data) ? data : []))
       .catch(() => { })
       .finally(() => setZoneGroupsLoaded(true));
   }, []);
@@ -943,11 +933,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   useEffect(() => {
     if (!zoneGroupsLoaded) return;
     const t = setTimeout(() => {
-      fetch("/api/zone-groups", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(zoneGroups),
-      }).catch(() => { });
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient · fire-and-forget
+      api.put("/api/zone-groups", zoneGroups).catch(() => { });
     }, 800);
     return () => clearTimeout(t);
   }, [zoneGroups, zoneGroupsLoaded]);
@@ -1169,19 +1156,15 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       status: "pending", note: requestNote,
     };
     setRequests((prev) => [req, ...prev]);
-    // Save to DB
-    fetch("/api/display-requests", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        zone_id: activeZone.id,
-        zone_label: `${activeZone.num}번 ${activeZone.label}`,
-        category: draftCategory,
-        requested_at: new Date().toISOString(),
-        assigned_staff_id: staff.id,
-        assigned_staff_name: staff.name,
-        note: requestNote,
-      }),
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient · fire-and-forget
+    api.post("/api/display-requests", {
+      zone_id: activeZone.id,
+      zone_label: `${activeZone.num}번 ${activeZone.label}`,
+      category: draftCategory,
+      requested_at: new Date().toISOString(),
+      assigned_staff_id: staff.id,
+      assigned_staff_name: staff.name,
+      note: requestNote,
     }).catch(() => { });
     setRequestFlash(true);
     setTimeout(() => setRequestFlash(false), 1500);
