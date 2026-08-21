@@ -31,7 +31,9 @@ const RULES = [
     fix: "Spinner 프리미티브",
     skip: /Spinner|Button|ListLoading|test/ },
   { id: "raw-card-wrapper", severity: "medium", weight: 2,
-    pattern: /className="[^"]*bg-white\s+border\s+border-line\s+rounded-(xl|lg|2xl)[^"]*"/g,
+    // 2026-08-21 · 정확도 개선 · <div|<section|<article|<aside 만 · <input/<select/<textarea 제외
+    //   (form input 은 Card wrapper 대상 아님 · false positive 방지)
+    pattern: /<(?:div|section|article|aside)\b[^>]*className="[^"]*bg-white\s+border\s+border-line\s+rounded-(xl|lg|2xl)[^"]*"/g,
     fix: "Card 프리미티브 (padding·variant·clip)",
     skip: /Card\.tsx|Panel\.tsx|Toolbar\.tsx|ImageUploadField|test/ },
   { id: "raw-confirm", severity: "medium", weight: 2,
