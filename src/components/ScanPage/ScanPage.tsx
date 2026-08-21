@@ -49,6 +49,11 @@ import { StockRowCard } from "./StockRowCard";
 import type { StockRow } from "./stockRowTypes";
 import { calcRowTotal, calcSlotTotal, calcTotalAdded } from "./stockRowTypes";
 import { useToast } from "../../hooks/useToast";
+// 2026-08-21 · Framework Phase 4 · large-file 분리
+import {
+  parseRealMap, Toast, SortIcon, SCAN_SORT_CMP,
+  type InventoryHistoryRow, type ScanSortKey,
+} from "./helpers";
 
 // ─────────────────────────────────────────────────────────────
 // Props
@@ -62,73 +67,9 @@ interface ScanPageProps {
   embedded?: boolean;
 }
 
-// ─────────────────────────────────────────────────────────────
-// real_map 파싱 · "/" 기준 분할 → 매장1 · 매장2 · 매장3
-// 예: "8A/냉/2B" → ["8A", "냉", "2B"]
-//     "8A/냉"    → ["8A", "냉", null]
-//     "9B"       → ["9B", null, null]
-// ─────────────────────────────────────────────────────────────
-function parseRealMap(realMap: string | null | undefined): [string | null, string | null, string | null] {
-  if (!realMap) return [null, null, null];
-  const parts = String(realMap).split("/").map(s => s.trim()).filter(Boolean);
-  return [parts[0] ?? null, parts[1] ?? null, parts[2] ?? null];
-}
-
 // StockRow 타입은 stockRowTypes.ts 에서 import (위 참조)
-
-// 실재고 이력 · /api/inventory-checks 응답 요소 (부분)
-interface InventoryHistoryRow {
-  id: number;
-  product_code: string;
-  product_name?: string | null;
-  warehouse_stock?: number | null;
-  warehouse1_stock?: number | null;
-  warehouse2_stock?: number | null;
-  store_stock?: number | null;
-  store_stock_2?: number | null;
-  store3_stock?: number | null;
-  store1_zone?: string | null;
-  store2_zone?: string | null;
-  store3_zone?: string | null;
-  checked_by?: string | null;
-  checked_at?: string | null;
-  note?: string | null;
-}
-
-// ─────────────────────────────────────────────────────────────
-// 2026-08-18 · 공용 NotificationToast 사용 (common/NotificationToast) · 중복 제거
-import { NotificationToast } from "../common/NotificationToast";
-const Toast: React.FC<{ message: string }> = ({ message }) => (
-  <NotificationToast message={message} tone="teal" />
-);
-
-// ─────────────────────────────────────────────────────────────
-// SortIcon
-// ─────────────────────────────────────────────────────────────
-const SortIcon: React.FC<{ active: boolean; dir: SortDir }> = ({ active, dir }) => {
-  if (!active) return <ArrowUpDown size={10} className="text-zinc-300 ml-0.5 inline" />;
-  return dir === "asc"
-    ? <ArrowUp size={10} className="text-teal-500 ml-0.5 inline" />
-    : <ArrowDown size={10} className="text-teal-500 ml-0.5 inline" />;
-};
-
 // NumberInput·ZoneInput 은 StockRowDesktop / StockRowMobile 에서 로컬 정의
 // (scanModal 은 직접 <input type="number"> 사용 · 별도 컴포넌트 불필요)
-
-// ─────────────────────────────────────────────────────────────
-// 정렬 비교 함수 (컴포넌트 외부 · 안정 참조)
-// ─────────────────────────────────────────────────────────────
-type ScanSortKey = "addedAt" | "name" | "supplier" | "realMap";
-const SCAN_SORT_CMP: Record<ScanSortKey, Comparator<any>> = {
-  addedAt:  (a, b) => a.addedAt - b.addedAt,
-  name:     (a, b) => a.product.name.localeCompare(b.product.name, "ko"),
-  supplier: (a, b) => ((a.product as any).supplier ?? "").localeCompare(((b.product as any).supplier ?? ""), "ko"),
-  realMap:  (a, b) => {
-    const ra = (a.product as any).realMap ?? (a.product as any).real_map ?? "";
-    const rb = (b.product as any).realMap ?? (b.product as any).real_map ?? "";
-    return String(ra).localeCompare(String(rb), "ko");
-  },
-};
 
 // ─────────────────────────────────────────────────────────────
 // Main Component
