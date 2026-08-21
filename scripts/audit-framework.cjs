@@ -49,11 +49,18 @@ const RULES = [
     fix: "useConfirm (ConfirmDialog 프리미티브)",
     // 2026-08-21 · window.confirm 만 잡음 · 로컬 `const confirm = useConfirm()` 은 정상 사용
     skip: /useConfirm|test/ },
-  { id: "large-file", severity: "high", weight: 5,
-    pattern: null, // 특수 · 라인 수 기반
-    fix: "500+라인 · 서브 컴포넌트 분리",
+  // 2026-08-21 · tier 화 · 500-라인 borderline · 800+ 실질 문제 · 2000+ 시급
+  { id: "large-file-critical", severity: "high", weight: 8,
+    pattern: null,
+    fix: "2000+라인 · 시급 · 서브 컴포넌트/훅 분리 필수",
     skip: null,
-    lineThreshold: 500 },
+    lineThreshold: 2000 },
+  { id: "large-file-warn", severity: "medium", weight: 3,
+    pattern: null,
+    fix: "800-2000라인 · 서브 컴포넌트 분리 권장",
+    skip: null,
+    lineThreshold: 800,
+    lineCeiling: 2000 },
 ];
 
 // ────────────────────────────────────────────────────────────
@@ -85,8 +92,10 @@ function scanFile(filePath) {
   for (const rule of RULES) {
     if (rule.skip && rule.skip.test(relPath)) continue;
 
-    if (rule.id === "large-file") {
-      if (lineCount > rule.lineThreshold) {
+    if (rule.id === "large-file-critical" || rule.id === "large-file-warn") {
+      const above = lineCount > rule.lineThreshold;
+      const below = rule.lineCeiling ? lineCount <= rule.lineCeiling : true;
+      if (above && below) {
         violations.push({ ruleId: rule.id, count: 1, severity: rule.severity, weight: rule.weight * Math.ceil(lineCount / 1000) });
       }
       continue;
