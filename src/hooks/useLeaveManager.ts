@@ -98,13 +98,14 @@ export function useLeaveManager(
           employeeId: empId, date, type: "", workingHours: "", actualHours: "", memo: "",
         });
       } catch (e: any) {
-        alert(`삭제 실패: ${e?.message ?? "네트워크 오류"}`);
+        // 2026-08-21 · Framework Phase 3 · alert 제거 · leaveError state 로 UI 표시 (LeavePage 에서 렌더)
+        setLeaveError(`삭제 실패: ${e?.message ?? "네트워크 오류"}`);
         return;
       }
       // 로컬 상태 즉시 반영
       setUsedLeaves(prev => prev.filter(l => l.date !== date));
     } catch (err: unknown) {
-      alert(`삭제 오류: ${err instanceof Error ? err.message : String(err)}`);
+      setLeaveError(`삭제 오류: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setDeletingLeaveDate(null);
     }

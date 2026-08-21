@@ -119,9 +119,9 @@ export function useSaveConfirmed({
   const handleSaveConfirmed = useCallback(async (filterPage?: number) => {
     if (!onSaveConfirmed || nameIdx < 0) return;
     if (missingSupplierPages.length > 0) {
+      // 2026-08-21 · Framework Phase 3 · window.alert 제거 (blocking) · setSaveConfirmedToast 로 대체
       const pagesLabel = missingSupplierPages.join(", ");
-      window.alert(`공급사가 지정되지 않은 페이지가 있습니다: ${pagesLabel}번\n\n1차보정 표의 "공급처" 셀을 클릭하여 공급사명을 먼저 입력하세요.`);
-      setSaveConfirmedToast({ type: "error", msg: `공급사 미입력 (${pagesLabel}번 페이지)` });
+      setSaveConfirmedToast({ type: "error", msg: `공급사 미입력 (${pagesLabel}번 페이지) · 1차보정에서 공급처 셀을 클릭해 입력하세요` });
       setTimeout(() => setSaveConfirmedToast(null), TIMING.TOAST_MEDIUM);
       return;
     }

@@ -9,15 +9,15 @@
 | 지표 | 값 |
 |---|---:|
 | 스캔 파일 | 458 |
-| 위반 파일 | 61 |
-| 클린 파일 | 397 (87%) |
-| 총 위반 개수 | 186 |
+| 위반 파일 | 58 |
+| 클린 파일 | 400 (87%) |
+| 총 위반 개수 | 181 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
-| `raw-fetch` | 13 | 11 | high | apiClient (api.get/post/put) |
+| `raw-fetch` | 8 | 7 | high | apiClient (api.get/post/put) |
 | `raw-alert` | 5 | 3 | high | useToast (showError·showSuccess) |
 | `raw-loader2` | 2 | 1 | medium | Spinner 프리미티브 |
 | `raw-card-wrapper` | 65 | 20 | medium | Card 프리미티브 (padding·variant·clip) |
@@ -59,7 +59,7 @@
 | 29 | `src/components/PharmacistMenuSettingsPage/PharmacistMenuSettingsPage.tsx` | 515 | 9 | large-file(1) · raw-card-wrapper(1) · raw-confirm(1) |
 | 30 | `src/components/PharmacistPage/PharmacistPage.tsx` | 952 | 9 | large-file(1) · raw-card-wrapper(1) · raw-confirm(1) |
 
-## 📝 모든 위반 파일 (61개)
+## 📝 모든 위반 파일 (58개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -101,8 +101,6 @@
 | `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx` | 957 | 7 |
 | `src/components/SettingsModal/SettingsModal.tsx` | 690 | 7 |
 | `src/components/BarcodeScanner/handlers.ts` | 321 | 6 |
-| `src/components/OcrPage/RawOcrTable/useHandleMatchPage.ts` | 301 | 6 |
-| `src/components/OcrPage/RawOcrTable/useSaveConfirmed.ts` | 310 | 6 |
 | `src/components/ResignationApprovalPage/ResignationApprovalPage.tsx` | 421 | 6 |
 | `src/main.tsx` | 98 | 6 |
 | `src/components/BarcodeScanner/BarcodeScanner.tsx` | 538 | 5 |
@@ -117,8 +115,7 @@
 | `src/components/VatPreparePage/VatPreparePage.tsx` | 764 | 5 |
 | `src/components/common/EmployeeInfoForm.tsx` | 484 | 4 |
 | `src/components/OcrPage/geminiEngine.ts` | 38 | 3 |
-| `src/components/OcrPage/RawOcrTable/useAutoTemplateSave.ts` | 41 | 3 |
-| `src/components/OcrPage/RawOcrTable/usePurchaseHistoryMatch.ts` | 130 | 3 |
+| `src/components/OcrPage/RawOcrTable/useSaveConfirmed.ts` | 309 | 3 |
 | `src/constants/zoneLabels.ts` | 124 | 3 |
 | `src/lib/contract/index.ts` | 339 | 3 |
 | `src/lib/productsCache.ts` | 38 | 3 |
