@@ -13,6 +13,7 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { SettingsPageShell } from "../common/SettingsPageShell";
 import { AccentBar } from "../common/AccentBar";
 import { StatusPill } from "../common/StatusPill";
+import { Card } from "../common/Card";
 import { Lock, DeviceMobile } from "@phosphor-icons/react";
 import { SettingsModal } from "../SettingsModal";
 import { MobileVisibilitySection } from "../BrandingSettingsPage/BrandingSettingsPage";
@@ -631,7 +632,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           </div>
         </div>
         {/* 2026-08-16 · #111 · 사이드바 구조 · 표 형식 · 2026-08-17 · #148 · 반응형 · 모바일 컬럼 축소 */}
-        <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
+        <Card padding="none" clip>
           {/* Table header · 4 컬럼 · 보기·페이지·읽기·쓰기 */}
           <div className="grid grid-cols-[44px_minmax(0,1fr)_110px_110px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-5 py-2.5 bg-zinc-50 border-b border-zinc-100 text-[16px] font-bold text-zinc-500 tracking-tight">
             <span className="text-center">보기</span>
@@ -762,7 +763,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
               </div>
             );
           })}
-        </div>
+        </Card>
 
         <p className="text-[11px] text-zinc-400 mt-2 mb-6 pl-1">
           레벨 9(최고관리자)는 항상 모든 페이지에 접근할 수 있습니다. 각 페이지 설명은 마우스를 올리면 표시됩니다.
@@ -787,7 +788,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
             className="text-xs px-3 py-1.5 rounded-lg border border-line bg-white text-zinc-700 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep w-44"
           />
         </div>
-        <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
+        <Card padding="none" clip>
           <div className="grid grid-cols-[1fr_90px_130px_36px] px-5 py-2 bg-zinc-50 border-b border-zinc-100 text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
             <span>성명</span>
             <span>직군</span>
@@ -834,7 +835,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
               );
             })}
           </div>
-        </div>
+        </Card>
         <p className="text-[11px] text-zinc-400 mt-2 pl-1">
           변경 즉시 서버에 저장됩니다. 실패 시 이전 값으로 되돌립니다.
         </p>
