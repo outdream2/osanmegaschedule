@@ -4026,9 +4026,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     ? employees.filter(e => matchHangul(e.name ?? "", q)).slice(0, 8)
                     : employees.slice(0, 8);
                   if (matches.length === 0) return (
-                    <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-line rounded-xl shadow-lg p-2.5 text-[14px] text-zinc-400 text-center">
+                    <Card variant="raw-lg" padding="none" className="absolute left-0 right-0 top-full mt-1 z-30 p-2.5 text-[14px] text-zinc-400 text-center">
                       일치하는 직원 없음 · 직접 입력
-                    </div>
+                    </Card>
                   );
                   return (
                     <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-line rounded-xl shadow-lg max-h-52 overflow-y-auto divide-y divide-zinc-100">
@@ -4087,7 +4087,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               className="w-full text-[14px] text-zinc-700 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[14px] file:font-bold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 file:cursor-pointer cursor-pointer"
             />
             {uploadFile && (
-              <div className="mt-1 flex items-center gap-2 text-[15px] text-zinc-600 bg-white border border-line rounded-lg px-2 py-1.5">
+              <Card variant="flat" rounded="lg" padding="none" className="mt-1 flex items-center gap-2 text-[15px] text-zinc-600 px-2 py-1.5">
                 <ClipboardText size={12} weight="fill" className="text-indigo-500 shrink-0" />
                 <span className="truncate flex-1 font-semibold">{uploadFile.name}</span>
                 <span className="tabular-nums text-[14px] text-zinc-400 shrink-0">
@@ -4104,7 +4104,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 >
                   <XIcon size={11} weight="bold" />
                 </button>
-              </div>
+              </Card>
             )}
           </div>
 

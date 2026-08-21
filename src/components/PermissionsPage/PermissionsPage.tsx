@@ -1071,7 +1071,7 @@ const PositionsField: React.FC<PositionsFieldProps> = ({ selected, allPositions,
         title="직군 지정 · 레벨과 함께 OR 조건"
       >+ 직군</button>
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 z-30 w-40 bg-white border border-line rounded-lg shadow-lg p-2 flex flex-col gap-1">
+        <Card variant="raw-lg" rounded="lg" padding="none" className="absolute right-0 top-full mt-1 z-30 w-40 p-2 flex flex-col gap-1">
           <div className="text-[10px] font-bold text-zinc-400 uppercase mb-1 px-1">직군 (OR 조건)</div>
           {allPositions.length === 0 ? (
             <div className="text-[11px] text-zinc-400 px-1 py-2 text-center">직군 없음</div>
@@ -1086,7 +1086,7 @@ const PositionsField: React.FC<PositionsFieldProps> = ({ selected, allPositions,
               <span className="text-[12px] font-semibold text-zinc-700">{p}</span>
             </label>
           ))}
-        </div>
+        </Card>
       )}
     </div>
   );

@@ -11,6 +11,8 @@ import {
   ListOrdered, Package2,
 } from "lucide-react";
 import { Spinner } from "../../common/Spinner";
+// 2026-08-21 · Framework Phase 3 · Card 프리미티브
+import { Card } from "../../common/Card";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -566,11 +568,11 @@ const ChartTooltip: React.FC<{
   const { name, value } = payload[0];
   const pct = total > 0 ? ((value / total) * 100).toFixed(1) : "0.0";
   return (
-    <div className="bg-white border border-line rounded-lg shadow-md px-3 py-2 text-[11px] min-w-[120px]">
+    <Card variant="raw-md" rounded="lg" padding="none" className="px-3 py-2 text-[11px] min-w-[120px]">
       <div className="font-semibold text-zinc-700 mb-1 break-words whitespace-normal leading-snug">{name}</div>
       <div className="tabular-nums text-emerald-700 font-bold">{value.toLocaleString()}{unit}</div>
       <div className="tabular-nums text-zinc-500 mt-0.5">{pct}%</div>
-    </div>
+    </Card>
   );
 };
 

@@ -2112,7 +2112,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   </div>
 
                   {/* SECTION 2: 동측 윙 — 전체 폭 */}
-                  <div className="w-full mt-2 bg-white border border-line rounded-2xl p-3 flex flex-col gap-3 shadow-md shadow-zinc-200/60 relative">
+                  <Card variant="raw-md" rounded="2xl" padding="none" className="w-full mt-2 p-3 flex flex-col gap-3 shadow-zinc-200/60 relative">
 
                     <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
                       <div className="flex items-center gap-2">
@@ -2209,7 +2209,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       <span>🛗 1층 연결 EV · 🛒 카트존</span>
                       <span>🚰 수도 시설</span>
                     </div>
-                  </div>{/* end SECTION 2 동측 윙 */}
+                  </Card>{/* end SECTION 2 동측 윙 (raw-md) */}
 
                 </div>
               </div>{/* end overflow-x-auto */}

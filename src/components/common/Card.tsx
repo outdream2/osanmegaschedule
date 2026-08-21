@@ -11,14 +11,21 @@
 import React from "react";
 import type { CSSProperties, ReactNode } from "react";
 
-// 2026-08-21 · raw-sm 추가 · tailwind shadow-sm 그대로 (레거시 wrapper 이관 시 시각 동일 · 나중에 sm 으로 승격 예정)
-export type CardVariant = "flat" | "raw-sm" | "sm" | "md" | "lg";
+// 2026-08-21 · raw-* 추가 · tailwind 원본 shadow 그대로 (레거시 wrapper 이관 시 시각 동일 · 나중에 sm/md/lg 으로 승격)
+//   · raw-sm  · tailwind shadow-sm
+//   · raw-md  · tailwind shadow-md
+//   · raw-lg  · tailwind shadow-lg
+//   · brand-modal · shadow-brand-modal (모달 · 이미 프로젝트 정의 토큰)
+export type CardVariant = "flat" | "raw-sm" | "raw-md" | "raw-lg" | "brand-modal" | "sm" | "md" | "lg";
 export type CardPadding = "none" | "sm" | "md" | "lg";
 export type CardRounded = "md" | "lg" | "xl" | "2xl";
 
 const VARIANT_SHADOW: Record<CardVariant, string> = {
   flat: "",
   "raw-sm": "shadow-sm",
+  "raw-md": "shadow-md",
+  "raw-lg": "shadow-lg",
+  "brand-modal": "shadow-brand-modal",
   sm: "shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.05),0_2px_8px_-2px_rgba(10,46,74,0.06)]",
   md: "shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_3px_rgba(10,46,74,0.08),0_4px_16px_-4px_rgba(10,46,74,0.10)]",
   lg: "shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_3px_rgba(10,46,74,0.12),0_8px_32px_-8px_rgba(10,46,74,0.24)]",

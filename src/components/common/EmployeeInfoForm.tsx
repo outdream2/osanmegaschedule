@@ -20,6 +20,8 @@ import { matchHangul } from "../../lib/hangulSearch";
 import { TIMING } from "../../constants/timing";
 import { POSITIONS } from "../../constants/jobCategories";
 import { useSettings } from "../../hooks/useSettings";
+// 2026-08-21 · Framework Phase 3 · Card 프리미티브
+import { Card } from "./Card";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 
@@ -175,9 +177,9 @@ const NameField: React.FC<NameFieldProps> = ({
       />
       {hasSearch && searchOpen && (
         matches.length === 0 ? (
-          <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-line rounded-xl shadow-lg p-2.5 text-[12px] text-zinc-400 text-center">
+          <Card variant="raw-lg" padding="none" className="absolute left-0 right-0 top-full mt-1 z-30 p-2.5 text-[12px] text-zinc-400 text-center">
             일치하는 직원 없음 · 직접 입력
-          </div>
+          </Card>
         ) : (
           <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-line rounded-xl shadow-lg max-h-52 overflow-y-auto divide-y divide-zinc-100">
             {!value.trim() && (

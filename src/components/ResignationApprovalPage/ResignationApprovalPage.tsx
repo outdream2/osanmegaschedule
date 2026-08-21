@@ -335,14 +335,14 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                           </div>
                         )}
                         {r.signature_data_url && (
-                          <div className="bg-white border border-line rounded-lg px-2.5 py-2">
+                          <Card variant="flat" rounded="lg" padding="none" className="px-2.5 py-2">
                             <div className="text-[10px] font-bold text-zinc-500 mb-0.5">서명</div>
                             <img
                               src={r.signature_data_url}
                               alt="서명"
                               className="max-h-16 object-contain"
                             />
-                          </div>
+                          </Card>
                         )}
                         {r.reject_reason && (
                           <div className="bg-rose-50 border border-rose-200 rounded-lg px-2.5 py-2">

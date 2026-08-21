@@ -915,9 +915,9 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                       .filter(e => (e.name ?? "").toLowerCase().includes(q))
                       .slice(0, 8);
                     if (matches.length === 0) return (
-                      <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-line rounded-xl shadow-lg p-2.5 text-[17px] text-ink-soft text-center">
+                      <Card variant="raw-lg" padding="none" className="absolute left-0 right-0 top-full mt-1 z-30 p-2.5 text-[17px] text-ink-soft text-center">
                         일치하는 직원 없음 · 직접 입력 가능
-                      </div>
+                      </Card>
                     );
                     return (
                       <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-line rounded-xl shadow-lg max-h-56 overflow-y-auto divide-y divide-zinc-100">
