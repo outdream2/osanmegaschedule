@@ -10,6 +10,8 @@ import type { AuthSession } from "../../types";
 import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient (SSE 스트리밍 fetch 는 유지)
+import { api } from "../../lib/apiClient";
 import { IconTile } from "../common/IconTile";
 import { Modal } from "../common/Modal";
 import { StatusPill } from "../common/StatusPill";
@@ -1204,14 +1206,13 @@ const clearFiles = () => {
 const fetchSynonyms = useCallback(async () => {
   setSynLoading(true);
   try {
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
     const [synRes, aliasRes] = await Promise.all([
-      fetch("/api/ocr-synonyms"),
-      fetch("/api/ocr-supplier-aliases"),
+      api.get<{ synonyms?: ProductSynonym[] }>("/api/ocr-synonyms"),
+      api.get<{ aliases?: SupplierAlias[] }>("/api/ocr-supplier-aliases"),
     ]);
-    const synData = await synRes.json();
-    const aliasData = await aliasRes.json();
-    setProductSynonyms(synData.synonyms ?? []);
-    setSupplierAliases(aliasData.aliases ?? []);
+    setProductSynonyms(synRes.data.synonyms ?? []);
+    setSupplierAliases(aliasRes.data.aliases ?? []);
   } finally { setSynLoading(false); }
 }, []);
 
@@ -1222,33 +1223,40 @@ const addProductSynonym = async () => {
   if (!addProdOld.trim() || !addProdCode.trim()) return;
   setSynSaving(true);
   try {
-    const res = await fetch("/api/ocr-synonyms", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prod_name_old: addProdOld.trim(), prod_name_new: addProdNew.trim() || null, product_code: addProdCode.trim(), supplier_new: addProdSuppNew.trim() || null, supplier_old: addProdSuppOld.trim() || null }),
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    await api.post("/api/ocr-synonyms", {
+      prod_name_old: addProdOld.trim(),
+      prod_name_new: addProdNew.trim() || null,
+      product_code: addProdCode.trim(),
+      supplier_new: addProdSuppNew.trim() || null,
+      supplier_old: addProdSuppOld.trim() || null,
     });
-    if (res.ok) { setAddProdOld(""); setAddProdNew(""); setAddProdCode(""); setAddProdSuppNew(""); setAddProdSuppOld(""); await fetchSynonyms(); }
-  } finally { setSynSaving(false); }
+    setAddProdOld(""); setAddProdNew(""); setAddProdCode(""); setAddProdSuppNew(""); setAddProdSuppOld("");
+    await fetchSynonyms();
+  } catch { /* silent · ApiError 는 서버 오류 */ }
+  finally { setSynSaving(false); }
 };
 
 const addSupplierAlias = async () => {
   if (!addSuppAlias.trim() || !addSuppName.trim()) return;
   setSynSaving(true);
   try {
-    const res = await fetch("/api/ocr-supplier-aliases", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ alias: addSuppAlias.trim(), supplier_name: addSuppName.trim() }),
-    });
-    if (res.ok) { setAddSuppAlias(""); setAddSuppName(""); await fetchSynonyms(); }
-  } finally { setSynSaving(false); }
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    await api.post("/api/ocr-supplier-aliases", { alias: addSuppAlias.trim(), supplier_name: addSuppName.trim() });
+    setAddSuppAlias(""); setAddSuppName("");
+    await fetchSynonyms();
+  } catch { /* silent */ }
+  finally { setSynSaving(false); }
 };
 
 const deleteProductSynonym = async (id: number) => {
-  await fetch(`/api/ocr-synonyms/${id}`, { method: "DELETE" });
+  // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+  await api.del(`/api/ocr-synonyms/${id}`).catch(() => {});
   setProductSynonyms(prev => prev.filter(s => s.id !== id));
 };
 
 const deleteSupplierAlias = async (id: number) => {
-  await fetch(`/api/ocr-supplier-aliases/${id}`, { method: "DELETE" });
+  await api.del(`/api/ocr-supplier-aliases/${id}`).catch(() => {});
   setSupplierAliases(prev => prev.filter(a => a.id !== id));
 };
 
@@ -1261,12 +1269,20 @@ const saveEditProd = async () => {
   if (!editingProd || !editingProdId || !editingProd.prod_name_old.trim() || !editingProd.product_code.trim()) return;
   setEditSaving(true);
   try {
-    const res = await fetch(`/api/ocr-synonyms/${editingProdId}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prod_name_old: editingProd.prod_name_old.trim(), prod_name_new: editingProd.prod_name_new.trim() || null, product_code: editingProd.product_code.trim(), supplier_new: editingProd.supplier_new.trim() || null, supplier_old: editingProd.supplier_old.trim() || null }),
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    const { data } = await api.patch<{ synonym?: ProductSynonym }>(`/api/ocr-synonyms/${editingProdId}`, {
+      prod_name_old: editingProd.prod_name_old.trim(),
+      prod_name_new: editingProd.prod_name_new.trim() || null,
+      product_code: editingProd.product_code.trim(),
+      supplier_new: editingProd.supplier_new.trim() || null,
+      supplier_old: editingProd.supplier_old.trim() || null,
     });
-    if (res.ok) { const { synonym } = await res.json(); setProductSynonyms(prev => prev.map(s => s.id === editingProdId ? synonym : s)); cancelEditProd(); }
-  } finally { setEditSaving(false); }
+    if (data?.synonym) {
+      setProductSynonyms(prev => prev.map(s => s.id === editingProdId ? (data.synonym as ProductSynonym) : s));
+      cancelEditProd();
+    }
+  } catch { /* silent */ }
+  finally { setEditSaving(false); }
 };
 
 const startEditSupp = (a: SupplierAlias) => { setEditingSuppId(a.id); setEditingSupp({ alias: a.alias, supplier_name: a.supplier_name }); };
@@ -1275,12 +1291,17 @@ const saveEditSupp = async () => {
   if (!editingSupp || !editingSuppId || !editingSupp.alias.trim() || !editingSupp.supplier_name.trim()) return;
   setEditSaving(true);
   try {
-    const res = await fetch(`/api/ocr-supplier-aliases/${editingSuppId}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ alias: editingSupp.alias.trim(), supplier_name: editingSupp.supplier_name.trim() }),
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    const { data } = await api.patch<{ alias?: SupplierAlias }>(`/api/ocr-supplier-aliases/${editingSuppId}`, {
+      alias: editingSupp.alias.trim(),
+      supplier_name: editingSupp.supplier_name.trim(),
     });
-    if (res.ok) { const { alias: updated } = await res.json(); setSupplierAliases(prev => prev.map(a => a.id === editingSuppId ? updated : a)); cancelEditSupp(); }
-  } finally { setEditSaving(false); }
+    if (data?.alias) {
+      setSupplierAliases(prev => prev.map(a => a.id === editingSuppId ? (data.alias as SupplierAlias) : a));
+      cancelEditSupp();
+    }
+  } catch { /* silent */ }
+  finally { setEditSaving(false); }
 };
 
 const cellCls = "border border-line rounded px-2 py-1 text-xs outline-none focus:border-brand-deep w-full";
