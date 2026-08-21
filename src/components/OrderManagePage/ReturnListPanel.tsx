@@ -23,22 +23,10 @@ import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { api, ApiError } from "../../lib/apiClient";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 
-// ── 반품 요청서 모달 (발주서 포맷) · 2026-08-03 ─────────────────────────
-type ReturnReasonKey = "재고 과다" | "유통기한 임박" | "저조 판매" | "기타";
-interface ReturnLineItem {
-  product_code: string;
-  product_name: string;
-  current_stock: number;
-  actual_stock: number | null;
-  return_qty: number;
-  purchase_price: number;
-  memo: string;
-  // 스냅샷 · 서버 전송용
-  purchase_cycle: number | null;
-  sale_qty_month: number | null;
-  sale_qty_60d: number | null;
-  sale_qty_90d: number | null;
-}
+// 2026-08-21 · Framework Phase 4 · large-file 분리 · types + helpers 이관
+import type { ReturnReasonKey, ReturnLineItem } from "./ReturnListPanel.types";
+import { buildReturnNumber, todayStr } from "./ReturnListPanel.types";
+
 interface ReturnRequestModalProps {
   item: any;                            // 트리거된 단일 상품 (기본)
   items?: any[];                        // 일괄 반품 · 선택 상품 배열 (있으면 우선)
@@ -49,19 +37,6 @@ interface ReturnRequestModalProps {
     category: string | null;
   } | null;
   onClose: () => void;
-}
-
-// 반품 번호 자동 생성 · REQ-YYYYMMDD-NNN (모달 open 시 1회)
-function buildReturnNumber(): string {
-  const now = new Date();
-  const yyyymmdd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
-  const rnd = String(Math.floor(Math.random() * 900) + 100); // 100~999
-  return `REQ-${yyyymmdd}-${rnd}`;
-}
-function todayStr(offsetDays = 0): string {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, supplierInfo, onClose }) => {
