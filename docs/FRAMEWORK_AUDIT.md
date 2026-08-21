@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 466 |
+| 스캔 파일 | 469 |
 | 위반 파일 | 27 |
-| 클린 파일 | 439 (94%) |
+| 클린 파일 | 442 (94%) |
 | 총 위반 개수 | 27 |
 
 ## 🚨 규칙별 위반 현황
@@ -47,10 +47,10 @@
 | 21 | `src/components/ScanPage/ScanPage.tsx` | 1165 | 6 | large-file-warn(1) |
 | 22 | `src/components/StockManagePage/FlowTab.tsx` | 1111 | 6 | large-file-warn(1) |
 | 23 | `src/components/StockManagePage/SupplierTab.tsx` | 1005 | 6 | large-file-warn(1) |
-| 24 | `src/components/ContractSettingsPage/ContractSettingsPage.tsx` | 919 | 3 | large-file-warn(1) |
+| 24 | `src/components/ContractSettingsPage/ContractSettingsPage.tsx` | 887 | 3 | large-file-warn(1) |
 | 25 | `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx` | 962 | 3 | large-file-warn(1) |
 | 26 | `src/components/PermissionsPage/PermissionsPage.tsx` | 965 | 3 | large-file-warn(1) |
-| 27 | `src/components/PharmacistPage/PharmacistPage.tsx` | 952 | 3 | large-file-warn(1) |
+| 27 | `src/components/PharmacistPage/PharmacistPage.tsx` | 874 | 3 | large-file-warn(1) |
 
 ## 📝 모든 위반 파일 (27개)
 
@@ -81,10 +81,10 @@
 | `src/components/ScanPage/ScanPage.tsx` | 1165 | 6 |
 | `src/components/StockManagePage/FlowTab.tsx` | 1111 | 6 |
 | `src/components/StockManagePage/SupplierTab.tsx` | 1005 | 6 |
-| `src/components/ContractSettingsPage/ContractSettingsPage.tsx` | 919 | 3 |
+| `src/components/ContractSettingsPage/ContractSettingsPage.tsx` | 887 | 3 |
 | `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx` | 962 | 3 |
 | `src/components/PermissionsPage/PermissionsPage.tsx` | 965 | 3 |
-| `src/components/PharmacistPage/PharmacistPage.tsx` | 952 | 3 |
+| `src/components/PharmacistPage/PharmacistPage.tsx` | 874 | 3 |
 
 </details>
 
