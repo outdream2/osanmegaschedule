@@ -1039,14 +1039,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   <span className={`w-2 h-2 rounded-full ${leavePendingCount > 0 ? "bg-amber-500" : "bg-zinc-300"}`} />
                   연차 승인 <b className={`font-bold tabular-nums ${leavePendingCount > 0 ? "text-amber-700" : "text-ink"}`}>{leavePendingCount}</b>건
                 </button>
+                {/* 2026-08-21 · #171 · 진열/발주 분리 · 사용자 요청 · 발주 별도 항목 (teal) */}
                 <button
                   type="button"
                   onClick={() => onNavigate("requests", authSession!)}
                   className="inline-flex items-center gap-1.5 hover:text-sky-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
-                  title="요청 목록 페이지로 이동"
+                  title="진열 요청 · 요청 목록으로 이동"
                 >
-                  <span className={`w-2 h-2 rounded-full ${(requestsCounts.display + requestsCounts.order) > 0 ? "bg-sky-500" : "bg-zinc-300"}`} />
-                  진열·발주 요청 <b className={`font-bold tabular-nums ${(requestsCounts.display + requestsCounts.order) > 0 ? "text-sky-700" : "text-ink"}`}>{requestsCounts.display + requestsCounts.order}</b>건
+                  <span className={`w-2 h-2 rounded-full ${requestsCounts.display > 0 ? "bg-sky-500" : "bg-zinc-300"}`} />
+                  진열 요청 <b className={`font-bold tabular-nums ${requestsCounts.display > 0 ? "text-sky-700" : "text-ink"}`}>{requestsCounts.display}</b>건
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate("display", authSession!)}
+                  className="inline-flex items-center gap-1.5 hover:text-teal-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
+                  title="발주 요청 · 매장>발주로 이동"
+                >
+                  <span className={`w-2 h-2 rounded-full ${requestsCounts.order > 0 ? "bg-teal-500" : "bg-zinc-300"}`} />
+                  발주 요청 <b className={`font-bold tabular-nums ${requestsCounts.order > 0 ? "text-teal-700" : "text-ink"}`}>{requestsCounts.order}</b>건
                 </button>
                 <button
                   type="button"
@@ -1102,7 +1112,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[14px]">
                     {[
                       { label: "연차 승인", count: leavePendingCount, dot: "bg-amber-500", text: "text-amber-700", nav: "leave" as Exclude<AppNavPage, "landing"> },
-                      { label: "진열·발주 요청", count: requestsCounts.display + requestsCounts.order, dot: "bg-sky-500", text: "text-sky-700", nav: "requests" as Exclude<AppNavPage, "landing"> },
+                      { label: "진열 요청", count: requestsCounts.display, dot: "bg-sky-500", text: "text-sky-700", nav: "requests" as Exclude<AppNavPage, "landing"> },
+                      { label: "발주 요청", count: requestsCounts.order, dot: "bg-teal-500", text: "text-teal-700", nav: "display" as Exclude<AppNavPage, "landing"> },
                       { label: "배치구역 불일치", count: requestsCounts.mismatch, dot: "bg-rose-500", text: "text-rose-700", nav: "requests" as Exclude<AppNavPage, "landing"> },
                       { label: "점심 신청", count: requestsCounts.lunch, dot: "bg-emerald-500", text: "text-emerald-700", nav: "lunch" as Exclude<AppNavPage, "landing"> },
                       { label: "재고 점검", count: requestsCounts.inventory, dot: "bg-violet-500", text: "text-violet-700", nav: "stockcheck" as Exclude<AppNavPage, "landing"> },
