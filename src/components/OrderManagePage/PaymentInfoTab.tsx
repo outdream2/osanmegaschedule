@@ -14,11 +14,10 @@
 //   · U-pharm/Cresoty/Platpharm/Baropharm · 유팜 · 크레소티 등 벤치마크
 //   · Zoho/QuickBooks · payment_method + reference_number + tax_invoice_no
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useVendors } from "../../hooks/useVendors";
 import {
-  Building2, Wallet, CalendarDays,
-  Check, X, Plus, Calendar,
+  Building2, Wallet,
 } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 // T-COMMON-VendorInfo · 공급사 헤더 공통 컴포넌트 (2026-08-06)
@@ -35,26 +34,27 @@ import { IconTile } from "../common/IconTile";
 import { Spinner } from "../common/Spinner";
 import { useColumnResize } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
-import { api, ApiError } from "../../lib/apiClient";
+import { api } from "../../lib/apiClient";
 // 2026-08-21 · Framework Phase 4 · large-file 분리
 import type {
-  VendorItem, PayMethod, PaymentRow, BalanceResp, MonthlyBreakdown,
+  VendorItem, PaymentRow, BalanceResp, MonthlyBreakdown,
   SalesStockBreakdown, PeriodDays, VendorSortKey, SortDir,
   ProductPurchaseSummary, ProdSortKey,
 } from "./PaymentInfoTab.types";
 import {
   PERIOD_STORAGE_KEY, PERIOD_OPTIONS, DEFAULT_PERIOD, loadPeriodPref,
-  CARD_ISSUERS, BANKS, METHOD_OPTIONS, CATEGORY_COLORS,
-  todayYmd, recentMonthKeys, fmtWonShort, fmtBizNum, fmtPhone,
-  encodeMemo, decodeMemo, computeVat,
+  CATEGORY_COLORS,
+  recentMonthKeys, fmtWonShort, fmtBizNum, fmtPhone,
+  decodeMemo,
 } from "./PaymentInfoTab.utils";
 import {
-  AmountField, SortHeaderBtn, VendorListHeader, FieldLabel, KpiMini, inputCls,
+  SortHeaderBtn, VendorListHeader, KpiMini,
 } from "./PaymentInfoTab.subcomponents";
-// 2026-08-22 · Framework Phase 4 · 3섹션 분리 (Monthly/RecentPayments/ProductSummary)
+// 2026-08-22 · Framework Phase 4 · 3섹션 분리 + PaymentEntryForm 별도 파일 (2차)
 import {
   MonthlyBreakdownSection, RecentPaymentsSection, ProductSummarySection,
 } from "./PaymentInfoTab.sections";
+import { PaymentEntryForm } from "./PaymentEntryForm";
 
 // ─── PaymentInfoTab ──────────────────────────────────────────────────────────
 
@@ -173,36 +173,7 @@ export const PaymentInfoTab: React.FC = () => {
     last_date:{ default: 80,  min: 60, max: 140  },
   });
 
-  // 폼 상태
-  const [paymentDate, setPaymentDate] = useState<string>(todayYmd());
-  const [amount, setAmount] = useState<string>("");
-  const [method, setMethod] = useState<PayMethod>("card");
-  const [cardIssuer, setCardIssuer] = useState<string>("");
-  const [cardIssuerCustom, setCardIssuerCustom] = useState<string>("");
-  const [bankName, setBankName] = useState<string>("");
-  const [bankNameCustom, setBankNameCustom] = useState<string>("");
-  // #225 · 기타(etc) 옵션 자유 텍스트 · 저장 시 memo prefix 또는 payload method_note
-  const [etcNote, setEtcNote] = useState<string>("");
-  const [referenceNo, setReferenceNo] = useState<string>("");
-  const [taxInvoiceIssued, setTaxInvoiceIssued] = useState<boolean>(false);
-  const [taxInvoiceNo, setTaxInvoiceNo] = useState<string>("");
-  const [note, setNote] = useState<string>("");
-
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-
-  // 결제일 date input ref · 캘린더 아이콘 클릭 시 native picker 트리거 (2026-08-04 · #74)
-  const paymentDateRef = useRef<HTMLInputElement | null>(null);
-  const openDatePicker = useCallback(() => {
-    const el = paymentDateRef.current;
-    if (!el) return;
-    // showPicker 는 Chrome 99+/Safari 16+/Firefox 101+ 지원 · 미지원 시 focus fallback
-    if (typeof (el as any).showPicker === "function") {
-      try { (el as any).showPicker(); return; } catch { /* fallthrough */ }
-    }
-    el.focus();
-    try { el.click(); } catch { /* ignore */ }
-  }, []);
+  // 2026-08-22 · Framework Phase 4 · 폼 상태 + handleSubmit · PaymentEntryForm 컴포넌트로 이관
 
   // supplier-payment-added 이벤트 · 결제 등록 후 공급사 캐시 재fetch (vendors-changed 는 useVendors 내부에서 이미 구독)
   useEffect(() => {
@@ -485,20 +456,7 @@ export const PaymentInfoTab: React.FC = () => {
     loadRecentPayments(selectedVendor.company_name);
     loadMonthlyBreakdown(selectedVendor.company_name);
     loadSalesStockBreakdown(selectedVendor.company_name, breakdownMonths);
-    // 폼 리셋
-    setPaymentDate(todayYmd());
-    setAmount("");
-    setMethod("card");
-    setCardIssuer("");
-    setCardIssuerCustom("");
-    setBankName("");
-    setBankNameCustom("");
-    setEtcNote("");
-    setReferenceNo("");
-    setTaxInvoiceIssued(false);
-    setTaxInvoiceNo("");
-    setNote("");
-    setMsg(null);
+    // 2026-08-22 · Phase 4 · 폼 리셋 · PaymentEntryForm 의 key={selectedVendor.id} 로 자동 remount → 별도 setter 호출 불필요
   }, [selectedVendor, loadBalance, loadRecentPayments, loadMonthlyBreakdown, loadSalesStockBreakdown, breakdownMonths]);
 
   // 2026-08-09 · breakdownMonths 변경 시 재조회
@@ -542,95 +500,25 @@ export const PaymentInfoTab: React.FC = () => {
     });
   }, [vendors, vendorSearch, vendorCategoryFilter, sortKey, sortDir, paymentByVendor, salesByVendor, stockValueByVendor]);
 
-  // ── VAT 자동 계산 (2026-08-06 · null 기본 true · 이름 힌트 반영) ─
-  const amountNum = Number(String(amount).replace(/[^0-9]/g, "")) || 0;
+  // ── VAT included 판정 (PaymentEntryForm 에 넘김) ──────────────
+  // 2026-08-06 · null 기본 true · 이름 힌트 반영
+  // 2026-08-22 · Phase 4 · VAT 계산 · 저장 로직은 PaymentEntryForm 내부로 이관
   const vatIncluded = useMemo(() => {
     if (!selectedVendor) return true;
     if (selectedVendor.vat_included === true) return true;
     if (selectedVendor.vat_included === false) return false;
-    // null · 이름 힌트로 추론 · 없으면 true 기본
     const nm = selectedVendor.company_name ?? "";
     return /vat\s*(미포함|별도|없음)/i.test(nm) ? false : true;
   }, [selectedVendor]);
-  const { supply: supplyAmt, vat: vatAmt } = useMemo(
-    () => computeVat(amountNum, vatIncluded),
-    [amountNum, vatIncluded]
-  );
 
-  // ── 최대치 (현재 잔고) ──────────────────────────────────────
-  const currentBalance = balance?.balance ?? 0;
-  const overBalance = amountNum > 0 && currentBalance > 0 && amountNum > currentBalance;
-
-  // ── 저장 ────────────────────────────────────────────────────
-  const handleSubmit = async () => {
-    if (!selectedVendor) return;
-    setMsg(null);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate)) {
-      setMsg({ type: "err", text: "결제일 형식 오류 (YYYY-MM-DD)" });
-      return;
-    }
-    if (amountNum <= 0) {
-      setMsg({ type: "err", text: "결제 금액은 양수여야 합니다" });
-      return;
-    }
-
-    const resolvedCard = method === "card"
-      ? (cardIssuer === "직접입력" ? cardIssuerCustom.trim() : cardIssuer)
-      : "";
-    const resolvedBank = method === "transfer"
-      ? (bankName === "직접입력" ? bankNameCustom.trim() : bankName)
-      : "";
-
-    if (method === "card" && !resolvedCard) {
-      setMsg({ type: "err", text: "카드사를 선택하세요" });
-      return;
-    }
-    if (method === "transfer" && !resolvedBank) {
-      setMsg({ type: "err", text: "은행을 선택하세요" });
-      return;
-    }
-
-    const meta: NonNullable<PaymentRow["meta"]> = {
-      card_issuer: resolvedCard || undefined,
-      bank_name: resolvedBank || undefined,
-      reference_no: referenceNo.trim() || undefined,
-      tax_invoice_issued: taxInvoiceIssued || undefined,
-      tax_invoice_no: taxInvoiceIssued ? (taxInvoiceNo.trim() || undefined) : undefined,
-      vat_amount: taxInvoiceIssued ? vatAmt : undefined,
-    };
-    const finalMemo = encodeMemo(meta, note);
-
-    setSaving(true);
-    try {
-      await api.post("/api/supplier-payments", {
-        supplier_name: selectedVendor.company_name,
-        payment_date: paymentDate,
-        amount: amountNum,
-        method,
-        memo: finalMemo || null,
-      });
-      setMsg({ type: "ok", text: "결제 등록 완료" });
-      // 리셋
-      setAmount("");
-      setReferenceNo("");
-      setTaxInvoiceNo("");
-      setNote("");
-      setTaxInvoiceIssued(false);
-      // 리로드
-      await Promise.all([
-        loadBalance(selectedVendor.company_name),
-        loadRecentPayments(selectedVendor.company_name),
-        loadMonthlyBreakdown(selectedVendor.company_name),
-      ]);
-      window.dispatchEvent(new CustomEvent("supplier-payment-added", {
-        detail: { supplier: selectedVendor.company_name },
-      }));
-    } catch (e: any) {
-      setMsg({ type: "err", text: `저장 실패: ${e instanceof ApiError ? e.message : (e?.message ?? String(e))}` });
-    } finally {
-      setSaving(false);
-    }
-  };
+  // 결제 등록 성공 시 부모의 데이터 재로드 (PaymentEntryForm.onSubmitted)
+  const handlePaymentSubmitted = useCallback(async (supplierName: string) => {
+    await Promise.all([
+      loadBalance(supplierName),
+      loadRecentPayments(supplierName),
+      loadMonthlyBreakdown(supplierName),
+    ]);
+  }, [loadBalance, loadRecentPayments, loadMonthlyBreakdown]);
 
   // ═══════════════════════════════════════════════════════════════════
   return (
@@ -853,280 +741,15 @@ export const PaymentInfoTab: React.FC = () => {
               {/* 결제 입력 + 최근 결제 내역 · 좌우 분할 · 반응형 stack (2026-08-04 · xl 이상만 2열) */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 items-start">
 
-              {/* ── 결제 입력 폼 (리디자인 · 깔끔·세련 · 2026-08-04) ── */}
-              <div className="bg-white rounded-2xl border border-line shadow-sm overflow-hidden flex flex-col">
-
-                {/* 폼 헤더 */}
-                <div className="flex items-center gap-2.5 px-4 py-3 border-b border-zinc-100 bg-emerald-50/60 shrink-0">
-                  <div className="w-7 h-7 rounded-xl bg-emerald-100 flex items-center justify-center ring-1 ring-emerald-200 shrink-0">
-                    <Plus size={14} className="text-emerald-700" strokeWidth={2.5} />
-                  </div>
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-[15px] font-bold text-zinc-800">결제 등록</span>
-                    <span className="text-[14px] text-zinc-400">{selectedVendor?.company_name}</span>
-                  </div>
-                  {vatIncluded && (
-                    <span className="ml-auto text-[14px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-0.5 shrink-0">
-                      VAT 포함가
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-0 divide-y divide-zinc-50">
-
-                  {/* ── 그룹 A · 날짜 + 결제방법 ──────────────────── */}
-                  <div className="px-4 py-3 flex flex-col gap-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      {/* 결제일 */}
-                      <FieldLabel label="결제일" icon={<CalendarDays size={11} />} required>
-                        <div className="flex items-center gap-1.5">
-                          <input
-                            ref={paymentDateRef}
-                            type="date"
-                            value={paymentDate}
-                            onChange={e => setPaymentDate(e.target.value)}
-                            className={`${inputCls} flex-1 min-w-0 px-2 [&::-webkit-calendar-picker-indicator]:hidden`}
-                          />
-                          <button
-                            type="button"
-                            onClick={openDatePicker}
-                            title="달력 열기"
-                            aria-label="달력 열기"
-                            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-line bg-white hover:bg-emerald-50 hover:border-emerald-400 text-zinc-400 hover:text-emerald-600 transition cursor-pointer shrink-0"
-                          >
-                            <Calendar size={13} strokeWidth={2.25} />
-                          </button>
-                        </div>
-                      </FieldLabel>
-
-                      {/* 결제방법 */}
-                      <FieldLabel label="결제 방법" required>
-                        <div className="flex items-center gap-1.5">
-                          {METHOD_OPTIONS.map(opt => (
-                            <button
-                              key={opt.key}
-                              type="button"
-                              onClick={() => setMethod(opt.key)}
-                              className={`flex-1 h-9 rounded-lg text-[15px] font-bold border transition cursor-pointer ${
-                                method === opt.key
-                                  ? opt.key === "card"
-                                    ? "bg-brand-deep border-indigo-600 text-white shadow-sm"
-                                    : opt.key === "cash"
-                                    ? "bg-amber-500 border-amber-500 text-white shadow-sm"
-                                    : "bg-zinc-600 border-zinc-600 text-white shadow-sm"
-                                  : "bg-white border-line text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
-                              }`}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-                      </FieldLabel>
-                    </div>
-
-                    {/* sub-option + 결제금액 · 같은 줄 flex row (2026-08-04 · #102)
-                        · card/cash/etc 각각 좌측(flex-1) · 결제금액 우측(flex-1)
-                        · sub-option 없을 때(etc 텍스트 포함) 결제금액 full width */}
-                    {/* card: 카드사 선택 (좌) + 결제금액 (우) */}
-                    {method === "card" && (
-                      <div className="flex items-end gap-3">
-                        <div className="flex-1 min-w-0">
-                          {cardIssuer === "직접입력" ? (
-                            <FieldLabel label="카드사명 직접입력">
-                              <input
-                                type="text"
-                                value={cardIssuerCustom}
-                                onChange={e => setCardIssuerCustom(e.target.value)}
-                                placeholder="카드사 이름"
-                                className={inputCls}
-                              />
-                            </FieldLabel>
-                          ) : (
-                            <FieldLabel label="카드사">
-                              <select
-                                value={cardIssuer}
-                                onChange={e => setCardIssuer(e.target.value)}
-                                className={inputCls}
-                              >
-                                <option value="">카드사 선택...</option>
-                                {CARD_ISSUERS.map(c => <option key={c} value={c}>{c}</option>)}
-                                <option value="직접입력">직접 입력...</option>
-                              </select>
-                            </FieldLabel>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <AmountField
-                            amount={amount}
-                            setAmount={setAmount}
-                            inputCls={inputCls}
-                            overBalance={overBalance}
-                            currentBalance={currentBalance}
-                          />
-                        </div>
-                      </div>
-                    )}
-                    {/* cash: 은행 선택 (좌) + 결제금액 (우) */}
-                    {method === "cash" && (
-                      <div className="flex items-end gap-3">
-                        <div className="flex-1 min-w-0">
-                          {bankName === "직접입력" ? (
-                            <FieldLabel label="은행명 직접입력">
-                              <input
-                                type="text"
-                                value={bankNameCustom}
-                                onChange={e => setBankNameCustom(e.target.value)}
-                                placeholder="은행 이름"
-                                className={inputCls}
-                              />
-                            </FieldLabel>
-                          ) : (
-                            <FieldLabel label="은행">
-                              <select
-                                value={bankName}
-                                onChange={e => setBankName(e.target.value)}
-                                className={inputCls}
-                              >
-                                <option value="">은행 선택...</option>
-                                {BANKS.map(b => <option key={b} value={b}>{b}</option>)}
-                                <option value="직접입력">직접 입력...</option>
-                              </select>
-                            </FieldLabel>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <AmountField
-                            amount={amount}
-                            setAmount={setAmount}
-                            inputCls={inputCls}
-                            overBalance={overBalance}
-                            currentBalance={currentBalance}
-                          />
-                        </div>
-                      </div>
-                    )}
-                    {/* etc: 결제방법 설명 (좌) + 결제금액 (우) */}
-                    {method === "etc" && (
-                      <div className="flex items-end gap-3">
-                        <div className="flex-1 min-w-0">
-                          <FieldLabel label="결제 방법 설명">
-                            <input
-                              type="text"
-                              value={etcNote}
-                              onChange={e => setEtcNote(e.target.value)}
-                              placeholder="예: 페이코 · 카카오페이 · 상계 · 어음 등"
-                              className={inputCls}
-                            />
-                          </FieldLabel>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <AmountField
-                            amount={amount}
-                            setAmount={setAmount}
-                            inputCls={inputCls}
-                            overBalance={overBalance}
-                            currentBalance={currentBalance}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ── 그룹 B · VAT 분리 표시 + 초과 경고 ────────────── */}
-                  {(amountNum > 0 || overBalance) && (
-                  <div className="px-4 pb-3 -mt-1">
-                    <div className={`rounded-lg px-3 py-2 flex flex-col gap-1 ${overBalance ? "bg-amber-50 border border-amber-200" : "bg-zinc-50 border border-zinc-100"}`}>
-                      {amountNum > 0 && taxInvoiceIssued && (
-                        <div className="flex items-center justify-between text-[15px] tabular-nums">
-                          <span className="text-zinc-500">공급가액</span>
-                          <span className="font-bold text-zinc-700">{supplyAmt.toLocaleString()}원</span>
-                        </div>
-                      )}
-                      {amountNum > 0 && taxInvoiceIssued && (
-                        <div className="flex items-center justify-between text-[15px] tabular-nums">
-                          <span className="text-zinc-500">부가세 (10%)</span>
-                          <span className="font-bold text-teal-700">{vatAmt.toLocaleString()}원</span>
-                        </div>
-                      )}
-                      {amountNum > 0 && !taxInvoiceIssued && (
-                        <div className="text-[14px] text-zinc-400">세금계산서 체크 시 VAT 자동 분리</div>
-                      )}
-                      {overBalance && (
-                        <div className="flex items-center gap-1 text-[15px] font-bold text-amber-700">
-                          <span>잔고 초과</span>
-                          <span className="tabular-nums text-amber-600">({fmtWonShort(currentBalance)} 잔고)</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  )}
-
-                  {/* ── 그룹 C · 세금계산서 (접이식 토글) ────────────── */}
-                  <div className="px-4 py-3">
-                    <label className={`flex items-center gap-2.5 cursor-pointer group`}>
-                      <div className={`relative w-8 h-4.5 rounded-full transition-colors shrink-0 ${taxInvoiceIssued ? "bg-teal-500" : "bg-zinc-200"}`}
-                        style={{ height: "18px" }}>
-                        <input
-                          type="checkbox"
-                          checked={taxInvoiceIssued}
-                          onChange={e => setTaxInvoiceIssued(e.target.checked)}
-                          className="sr-only"
-                        />
-                        <div className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-transform ${taxInvoiceIssued ? "translate-x-4" : "translate-x-0.5"}`} />
-                      </div>
-                      <div className="flex flex-col leading-tight">
-                        <span className={`text-[14px] font-bold transition ${taxInvoiceIssued ? "text-teal-700" : "text-zinc-600 group-hover:text-zinc-800"}`}>
-                          세금계산서 발행
-                        </span>
-                        {!taxInvoiceIssued && (
-                          <span className="text-[14px] text-zinc-400">활성화 시 공급가액·VAT 자동 계산</span>
-                        )}
-                      </div>
-                      {taxInvoiceIssued && amountNum > 0 && (
-                        <span className="ml-auto text-[14px] font-bold text-teal-700 bg-teal-50 border border-teal-200 rounded-md px-2 py-0.5 tabular-nums shrink-0">
-                          VAT {vatAmt.toLocaleString()}원
-                        </span>
-                      )}
-                    </label>
-                  </div>
-
-                  {/* ── 그룹 D · 메모 ──────────────────────────────── */}
-                  <div className="px-4 py-3">
-                    <FieldLabel label="메모 (선택)">
-                      <textarea
-                        value={note}
-                        onChange={e => setNote(e.target.value)}
-                        placeholder="6월분 결제 · 부분 결제 · 특이사항 등"
-                        rows={2}
-                        className={`${inputCls} py-2 resize-none leading-snug`}
-                      />
-                    </FieldLabel>
-                  </div>
-
-                </div>{/* divide-y wrapper close */}
-
-                {/* ── 상태 메시지 + 저장 버튼 ────────────────────── */}
-                <div className="px-4 py-3 border-t border-zinc-100 bg-zinc-50/50 flex items-center gap-2 shrink-0">
-                  {msg && (
-                    <span className={`inline-flex items-center gap-1 text-[14px] font-bold ${
-                      msg.type === "ok" ? "text-emerald-600" : "text-rose-600"
-                    }`}>
-                      {msg.type === "ok" ? <Check size={13} strokeWidth={3} /> : <X size={13} strokeWidth={3} />}
-                      {msg.text}
-                    </span>
-                  )}
-                  <div className="flex-1" />
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={saving || amountNum <= 0}
-                    className="inline-flex items-center gap-1.5 h-9 px-6 rounded-xl bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] active:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[14px] font-bold shadow-sm hover:shadow-md transition-all cursor-pointer"
-                  >
-                    {saving ? <Spinner size={13} tone="white" /> : <Check size={13} strokeWidth={3} />}
-                    {saving ? "등록 중..." : "결제 등록"}
-                  </button>
-                </div>
-              </div>
+              {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 (PaymentEntryForm)
+                  · key={selectedVendor.id} 로 vendor 변경 시 자동 remount → 폼 상태 리셋 */}
+              <PaymentEntryForm
+                key={selectedVendor.id}
+                selectedVendor={selectedVendor}
+                balance={balance}
+                vatIncluded={vatIncluded}
+                onSubmitted={handlePaymentSubmitted}
+              />
 
               {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 (RecentPaymentsSection) */}
               <RecentPaymentsSection
