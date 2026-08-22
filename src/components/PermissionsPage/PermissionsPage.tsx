@@ -1,7 +1,7 @@
 // 2026-08-16 · apiClient 마이그레이션
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { api } from "../../lib/apiClient";
-import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Plus, Trash2, GripVertical, Save, Pencil, Eye, EyeOff } from "lucide-react";
+import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Save, Eye, EyeOff } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { invalidatePagePermissions } from "../../hooks/usePagePermissions";
 import { useSidebarEnabled, invalidateSidebarEnabled } from "../../hooks/useSidebar";
@@ -28,6 +28,8 @@ import { CaretDown, CaretRight } from "@phosphor-icons/react";
 import { PAGE_LABELS, LEVELS, GROUP_COLOR_CLS } from "./constants";
 import { LevelSelect } from "./LevelSelect";
 import { PositionsField } from "./PositionsField";
+// 2026-08-22 · Framework Phase 4 · 2섹션 별도 컴포넌트 이관 (Positions·Construction)
+import { PositionsTab, ConstructionTab } from "./PermissionsPage.panels";
 
 interface PermissionsPageProps {
   authSession: AuthSession | null;
@@ -836,126 +838,32 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           </div>
         )}
 
-        {/* 2026-08-11 · 직군 설정 탭 (SettingsModal positions 탭 이관 · 3열 그리드) */}
+        {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · PositionsTab · ConstructionTab */}
         {tab === "positions" && (
-          <div className="w-full min-w-0 space-y-4">
-            <div className="flex items-center gap-2">
-              <IdCard size={14} className="text-zinc-500" />
-              <h2 className="text-[13px] font-bold text-zinc-700">직군 설정</h2>
-            </div>
-            <p className="text-[12px] text-zinc-500 font-semibold">
-              직원 등록/수정 화면의 직군 드롭박스에 표시될 목록입니다. 이름 클릭 또는 <Pencil size={11} className="inline align-middle text-violet-500 mx-0.5" /> 아이콘으로 편집 · 드래그로 순서 변경 · <Trash2 size={11} className="inline align-middle text-rose-500 mx-0.5" /> 로 삭제 (사용중이면 재매핑 안내).
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-              {PRESET_POSITIONS.map((pos, idx) => (
-                <div
-                  key={pos}
-                  draggable
-                  onDragStart={() => setPosDragIdx(idx)}
-                  onDragOver={(e) => { e.preventDefault(); setPosDragOverIdx(idx); }}
-                  onDrop={() => {
-                    if (posDragIdx !== null) reorderPosition(posDragIdx, idx);
-                    setPosDragIdx(null); setPosDragOverIdx(null);
-                  }}
-                  onDragEnd={() => { setPosDragIdx(null); setPosDragOverIdx(null); }}
-                  className={`flex items-center gap-2 bg-white border rounded-lg px-3 py-2 transition ${
-                    posDragOverIdx === idx && posDragIdx !== idx
-                      ? "border-violet-400 bg-violet-50"
-                      : "border-line hover:border-zinc-300"
-                  } ${posDragIdx === idx ? "opacity-40" : ""}`}
-                >
-                  <div className="text-zinc-300 hover:text-zinc-500 cursor-grab active:cursor-grabbing shrink-0">
-                    <GripVertical size={14} />
-                  </div>
-                  {editingPosIdx === idx ? (
-                    <input
-                      autoFocus
-                      value={editingPosValue}
-                      onChange={(e) => setEditingPosValue(e.target.value)}
-                      onBlur={commitEditPosition}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") { e.preventDefault(); commitEditPosition(); }
-                        else if (e.key === "Escape") { setEditingPosIdx(null); }
-                      }}
-                      className="flex-1 text-[13px] font-semibold text-zinc-800 bg-white border border-violet-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-brand-tint min-w-0"
-                    />
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => { setEditingPosIdx(idx); setEditingPosValue(pos); }}
-                        className="flex-1 text-[13px] font-semibold text-zinc-800 truncate text-left hover:text-violet-700 cursor-text"
-                        title="클릭하여 이름 수정"
-                      >
-                        {pos}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setEditingPosIdx(idx); setEditingPosValue(pos); }}
-                        className="text-zinc-300 hover:text-violet-500 transition cursor-pointer p-0.5 rounded"
-                        title="이름 편집"
-                      >
-                        <Pencil size={13} />
-                      </button>
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => removePositionAt(idx)}
-                    className="text-zinc-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
-                    title="삭제"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2 pt-1">
-              <input
-                type="text"
-                value={newPositionInput}
-                onChange={(e) => setNewPositionInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNewPosition(); } }}
-                placeholder="새 직군 입력 (Enter)"
-                className="flex-1 text-[13px] rounded-lg border border-line focus:border-brand-deep p-2 bg-white focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={addNewPosition}
-                className="px-3 py-2 text-[12px] font-bold bg-violet-600 hover:bg-violet-700 text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
-              >
-                <Plus size={13} />
-                추가
-              </button>
-            </div>
-          </div>
+          <PositionsTab
+            presetPositions={PRESET_POSITIONS}
+            posDragIdx={posDragIdx}
+            posDragOverIdx={posDragOverIdx}
+            setPosDragIdx={setPosDragIdx}
+            setPosDragOverIdx={setPosDragOverIdx}
+            editingPosIdx={editingPosIdx}
+            editingPosValue={editingPosValue}
+            setEditingPosIdx={setEditingPosIdx}
+            setEditingPosValue={setEditingPosValue}
+            commitEditPosition={commitEditPosition}
+            removePositionAt={removePositionAt}
+            reorderPosition={reorderPosition}
+            newPositionInput={newPositionInput}
+            setNewPositionInput={setNewPositionInput}
+            addNewPosition={addNewPosition}
+          />
         )}
 
-        {/* 2026-08-11 · 공사중 탭 (SettingsModal 상단 카드 이관) */}
         {tab === "construction" && (
-          <div className="w-full min-w-0 space-y-4 max-w-xl">
-            <div className="flex items-center gap-2">
-              <Construction size={14} className="text-amber-600" />
-              <h2 className="text-[13px] font-bold text-zinc-700">공사중 (Under Construction)</h2>
-            </div>
-            <label className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 hover:border-amber-400 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settingsUnderConstruction === true}
-                onChange={(e) => updateSettings({ underConstruction: e.target.checked })}
-                className="w-4 h-4 accent-amber-500"
-              />
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-bold text-zinc-800 leading-tight">공사중 모드 활성화</div>
-                <div className="text-[11px] font-semibold text-zinc-500 leading-tight mt-0.5">
-                  비로그인 랜딩페이지 · 재고 검색 숨김 · "곧 오픈 예정입니다" 표시
-                </div>
-              </div>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${settingsUnderConstruction ? "bg-amber-500 text-white" : "bg-zinc-200 text-zinc-500"}`}>
-                {settingsUnderConstruction ? "ON" : "OFF"}
-              </span>
-            </label>
-          </div>
+          <ConstructionTab
+            underConstruction={settingsUnderConstruction === true}
+            onChange={(v) => updateSettings({ underConstruction: v })}
+          />
         )}
     </>;
   }

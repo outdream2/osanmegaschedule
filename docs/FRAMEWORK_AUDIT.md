@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 524 |
+| 스캔 파일 | 525 |
 | 위반 파일 | 17 |
-| 클린 파일 | 507 (97%) |
+| 클린 파일 | 508 (97%) |
 | 총 위반 개수 | 17 |
 
 ## 🚨 규칙별 위반 현황
@@ -38,7 +38,7 @@
 | 12 | `src/components/DayTimelineModal/ZoneSection.tsx` | 924 | 3 | large-file-warn(1) |
 | 13 | `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx` | 962 | 3 | large-file-warn(1) |
 | 14 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 806 | 3 | large-file-warn(1) |
-| 15 | `src/components/PermissionsPage/PermissionsPage.tsx` | 965 | 3 | large-file-warn(1) |
+| 15 | `src/components/PermissionsPage/PermissionsPage.tsx` | 873 | 3 | large-file-warn(1) |
 | 16 | `src/components/ScanPage/ProductInfoCard.tsx` | 895 | 3 | large-file-warn(1) |
 | 17 | `src/components/StockManagePage/FlowTab.tsx` | 901 | 3 | large-file-warn(1) |
 
@@ -62,7 +62,7 @@
 | `src/components/DayTimelineModal/ZoneSection.tsx` | 924 | 3 |
 | `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx` | 962 | 3 |
 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 806 | 3 |
-| `src/components/PermissionsPage/PermissionsPage.tsx` | 965 | 3 |
+| `src/components/PermissionsPage/PermissionsPage.tsx` | 873 | 3 |
 | `src/components/ScanPage/ProductInfoCard.tsx` | 895 | 3 |
 | `src/components/StockManagePage/FlowTab.tsx` | 901 | 3 |
 
