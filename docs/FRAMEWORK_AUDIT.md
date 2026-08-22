@@ -1,6 +1,6 @@
 # Framework Audit Report (자동 생성)
 
-> 생성 · 2026-08-21 · `scripts/audit-framework.cjs` · 매 세션 재실행
+> 생성 · 2026-08-22 · `scripts/audit-framework.cjs` · 매 세션 재실행
 >
 > **로드맵 · `docs/FRAMEWORK_ROADMAP.md` Phase 1 (인벤토리)**
 
@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 503 |
+| 스캔 파일 | 506 |
 | 위반 파일 | 24 |
-| 클린 파일 | 479 (95%) |
+| 클린 파일 | 482 (95%) |
 | 총 위반 개수 | 24 |
 
 ## 🚨 규칙별 위반 현황
@@ -31,7 +31,7 @@
 | 5 | `src/components/LandingPage/LandingPage.tsx` | 2467 | 24 | large-file-critical(1) |
 | 6 | `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2677 | 24 | large-file-critical(1) |
 | 7 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 | large-file-critical(1) |
-| 8 | `src/components/StaffManagePage/StaffManagePage.tsx` | 2729 | 24 | large-file-critical(1) |
+| 8 | `src/components/StaffManagePage/StaffManagePage.tsx` | 2304 | 24 | large-file-critical(1) |
 | 9 | `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1338 | 6 | large-file-warn(1) |
 | 10 | `src/components/LandingPage/VendorListEditor.tsx` | 1549 | 6 | large-file-warn(1) |
 | 11 | `src/components/OcrPage/OcrPage.tsx` | 1149 | 6 | large-file-warn(1) |
@@ -62,7 +62,7 @@
 | `src/components/LandingPage/LandingPage.tsx` | 2467 | 24 |
 | `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2677 | 24 |
 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 |
-| `src/components/StaffManagePage/StaffManagePage.tsx` | 2729 | 24 |
+| `src/components/StaffManagePage/StaffManagePage.tsx` | 2304 | 24 |
 | `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1338 | 6 |
 | `src/components/LandingPage/VendorListEditor.tsx` | 1549 | 6 |
 | `src/components/OcrPage/OcrPage.tsx` | 1149 | 6 |

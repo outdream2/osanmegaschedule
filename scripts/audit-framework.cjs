@@ -11,6 +11,7 @@ const path = require("path");
 const ROOT = path.resolve(__dirname, "..");
 const SRC = path.join(ROOT, "src");
 const OUTPUT = path.join(ROOT, "docs", "FRAMEWORK_AUDIT.md");
+const BASELINE = path.join(ROOT, "docs", ".framework-baseline.json");
 
 // ────────────────────────────────────────────────────────────
 // Rule definitions · pattern + severity + fix hint
@@ -196,16 +197,145 @@ function renderReport(agg, totalFiles) {
 }
 
 // ────────────────────────────────────────────────────────────
+// Baseline (Phase 2 · pre-commit 가드레일)
+// ────────────────────────────────────────────────────────────
+function loadBaseline() {
+  if (!fs.existsSync(BASELINE)) return null;
+  try { return JSON.parse(fs.readFileSync(BASELINE, "utf8")); }
+  catch { return null; }
+}
+
+function saveBaseline(agg) {
+  const files = {};
+  for (const f of agg.files) {
+    files[f.relPath] = {
+      lines: f.lineCount,
+      violations: f.violations.map(v => ({ ruleId: v.ruleId, count: v.count })),
+      totalWeight: f.totalWeight,
+    };
+  }
+  const totalViolations = Object.values(agg.ruleTotals).reduce((s, r) => s + r.count, 0);
+  const payload = {
+    created: new Date().toISOString().slice(0, 10),
+    version: 1,
+    totalViolations,
+    files,
+  };
+  fs.writeFileSync(BASELINE, JSON.stringify(payload, null, 2) + "\n", "utf8");
+  return payload;
+}
+
+// Compare current agg vs baseline · returns array of "new/worsened" 위반 문자열
+function diffAgainstBaseline(agg, baseline) {
+  const diffs = [];
+  const baseFiles = baseline.files || {};
+  const currFiles = {};
+  for (const f of agg.files) currFiles[f.relPath] = f;
+
+  for (const [relPath, f] of Object.entries(currFiles)) {
+    const base = baseFiles[relPath];
+    if (!base) {
+      diffs.push(`  ⊕ NEW · ${relPath} (${f.lineCount} lines · weight ${f.totalWeight})`);
+      continue;
+    }
+    // per-rule count · 신규 or 증가만 잡음
+    const baseCounts = {};
+    for (const v of base.violations || []) baseCounts[v.ruleId] = v.count;
+    for (const v of f.violations) {
+      const baseC = baseCounts[v.ruleId] ?? 0;
+      if (v.count > baseC) {
+        diffs.push(`  ↑ WORSE · ${relPath} · ${v.ruleId} · ${baseC} → ${v.count}`);
+      }
+    }
+  }
+  return diffs;
+}
+
+// ────────────────────────────────────────────────────────────
 // Main
 // ────────────────────────────────────────────────────────────
+function parseArgs(argv) {
+  const flags = { check: false, checkNew: false, updateBaseline: false, quiet: false, help: false };
+  for (const a of argv.slice(2)) {
+    if (a === "--check") flags.check = true;
+    else if (a === "--check-new") flags.checkNew = true;
+    else if (a === "--update-baseline") flags.updateBaseline = true;
+    else if (a === "--quiet" || a === "-q") flags.quiet = true;
+    else if (a === "--help" || a === "-h") flags.help = true;
+  }
+  return flags;
+}
+
+function printHelp() {
+  console.log(`Framework Audit · scripts/audit-framework.cjs
+
+기본 · docs/FRAMEWORK_AUDIT.md 리포트 생성 · exit 0
+
+옵션:
+  --check              위반 1개라도 있으면 exit 1 (strict · 신규 프로젝트용)
+  --check-new          baseline 대비 신규/증가된 위반만 exit 1 (pre-commit 권장)
+  --update-baseline    현재 상태를 baseline (docs/.framework-baseline.json) 로 저장
+  --quiet, -q          리포트 파일 미생성 · 콘솔 최소 출력
+  --help, -h           도움말
+`);
+}
+
 function main() {
+  const flags = parseArgs(process.argv);
+  if (flags.help) { printHelp(); process.exit(0); }
+
   const files = walk(SRC);
   const results = files.map(scanFile);
   const agg = aggregate(results);
-  const md = renderReport(agg, files.length);
-  fs.writeFileSync(OUTPUT, md, "utf8");
+  const totalViolations = Object.values(agg.ruleTotals).reduce((s, r) => s + r.count, 0);
+
+  if (!flags.quiet) {
+    const md = renderReport(agg, files.length);
+    fs.writeFileSync(OUTPUT, md, "utf8");
+  }
+
+  if (flags.updateBaseline) {
+    const bp = saveBaseline(agg);
+    console.log(`✓ Baseline 저장 · ${path.relative(ROOT, BASELINE)}`);
+    console.log(`  ${bp.totalViolations} 위반 · ${Object.keys(bp.files).length} 파일`);
+    process.exit(0);
+  }
+
+  if (flags.check) {
+    if (totalViolations > 0) {
+      console.error(`✗ Framework audit FAILED (strict) · ${totalViolations} 위반 · ${agg.files.length} 파일`);
+      console.error(`  리포트 · ${path.relative(ROOT, OUTPUT)}`);
+      process.exit(1);
+    }
+    console.log(`✓ Framework audit PASS (strict) · ${files.length} files clean`);
+    process.exit(0);
+  }
+
+  if (flags.checkNew) {
+    const baseline = loadBaseline();
+    if (!baseline) {
+      console.error(`✗ Baseline 파일 없음 · ${path.relative(ROOT, BASELINE)}`);
+      console.error(`  먼저 실행 · node scripts/audit-framework.cjs --update-baseline`);
+      process.exit(1);
+    }
+    const diffs = diffAgainstBaseline(agg, baseline);
+    if (diffs.length > 0) {
+      console.error(`✗ Framework audit FAILED · 신규/증가 위반 ${diffs.length}건 (baseline: ${baseline.totalViolations} · 현재: ${totalViolations})`);
+      for (const d of diffs) console.error(d);
+      console.error(``);
+      console.error(`  → 프레임워크 프리미티브 사용 (Card·useToast·apiClient·useConfirm·Spinner) 또는 large-file 분리`);
+      console.error(`  → 의도적 증가 시 · node scripts/audit-framework.cjs --update-baseline 로 갱신`);
+      process.exit(1);
+    }
+    if (!flags.quiet) {
+      console.log(`✓ Framework audit PASS (baseline) · ${totalViolations} 위반 (baseline ${baseline.totalViolations}) · 신규 증가 없음`);
+    }
+    process.exit(0);
+  }
+
+  // 기본 모드 · 기존 동작 유지
   console.log(`✓ Audit complete · ${files.length} files scanned`);
-  console.log(`  Violations · ${agg.files.length} files · ${Object.values(agg.ruleTotals).reduce((s, r) => s + r.count, 0)} total`);
+  console.log(`  Violations · ${agg.files.length} files · ${totalViolations} total`);
   console.log(`  Report · ${path.relative(ROOT, OUTPUT)}`);
 }
 
