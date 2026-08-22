@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TIMING } from "../../constants/timing";
 import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
@@ -10,9 +10,8 @@ import { Wand2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck,
 import { Spinner } from "../common/Spinner";
 // 2026-08-21 · Framework Phase 3 · Card 프리미티브 (raw wrapper 이관)
 import { Card } from "../common/Card";
-import { isNonProductText, isValidSupplierHint, isValidProductName, scoreProductRow, cleanProductName } from "../../lib/ocrRowFilter";
-import { reextractCellCandidates } from "../../lib/cellReextract";
 import { VendorDetailModal, type Vendor } from "../LandingPage/VendorListEditor";
+
 import { useVendors } from "../../hooks/useVendors";
 import type {
   ConfirmedItem,
@@ -46,8 +45,6 @@ import {
   writeXlsxFresh as _writeXlsxFresh,
   writeErpUploadXlsx as _writeErpUploadXlsx,
 } from "./RawOcrTable/exportHelpers";
-import { computePageBalanceFromConfig as _computePageBalanceFromConfig } from "./RawOcrTable/balanceHelpers";
-import { CrossCheckBadge } from "./RawOcrTable/CrossCheckBadge";
 import { useOcrDerived } from "./RawOcrTable/useOcrDerived";
 import { useAutoTemplateSave } from "./RawOcrTable/useAutoTemplateSave";
 import { useAutoBalanceLoad } from "./RawOcrTable/useAutoBalanceLoad";
@@ -58,18 +55,10 @@ import { usePurchaseHistoryMatch } from "./RawOcrTable/usePurchaseHistoryMatch";
 import { useAutoPipeline } from "./RawOcrTable/useAutoPipeline";
 import { useHandleMatchPage } from "./RawOcrTable/useHandleMatchPage";
 import { ErpMatchSubRow } from "./RawOcrTable/ErpMatchSubRow";
-import {
-  findNameHeaderIdx,
-  findRowPositionInRawText,
-  computeScanText,
-  collectNameCandidates,
-  scoreProductNameToken,
-  koreanJaccardSimilarity,
-} from "./RawOcrTable/productNameReextract";
-import { XlsxExportSection } from "./RawOcrTable/XlsxExportSection";
 import { useSaveConfirmed } from "./RawOcrTable/useSaveConfirmed";
 import { useReextractCell } from "./RawOcrTable/useReextractCell";
 import { useReextractProductName } from "./RawOcrTable/useReextractProductName";
+import { useHandleMatch } from "./RawOcrTable/useHandleMatch";
 import { useInvoiceImageControls } from "./RawOcrTable/useInvoiceImageControls";
 import { usePageTotalsComputation } from "./RawOcrTable/usePageTotalsComputation";
 import { ConfirmedTableSection } from "./RawOcrTable/ConfirmedTableSection";
@@ -643,29 +632,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     });
   }
 
-  // 페이지별 수량×단가 계산합 (행합 vs 명세서 소계 · vs OCR 추출 소계 대조용)
-  const _qtyIdxForQP = dispHeaders.indexOf("수량");
-  const _priIdxForQP = dispHeaders.indexOf("단가");
-  const effectivePageQtyPrice = new Map<number, number>();
-  if (_qtyIdxForQP >= 0 && _priIdxForQP >= 0) {
-    effectiveDispRows.forEach((row, ri) => {
-      if (isRowDeleted(ri)) return;
-      const q = parseNumber(row[_qtyIdxForQP]);
-      const p = parseNumber(row[_priIdxForQP]);
-      if (q > 0 && p > 0) {
-        const pn = pageNums[ri];
-        effectivePageQtyPrice.set(pn, (effectivePageQtyPrice.get(pn) ?? 0) + q * p);
-      }
-    });
-  }
-
   // ── 페이지 소계 계산 함수들 → usePageTotalsComputation 훅으로 분리 ─────────────────
   const {
     getPageDiscounts, getPageDiscount, getPageCrossCheckWarning,
     getPageDisplayTotal, getPageDisplayTotalWithVat, getPageConfirmedSubtotal,
     total, totalBreakdownTitle, meta, balanceConfig,
-    pageTotals, uniquePageNums, pageBalanceFromConfig, supplierOcrBalance,
-    supplierTotals, pageMismatches, isPageResolved, _discountIdxEarly,
+    uniquePageNums, pageBalanceFromConfig,
+    supplierTotals, _discountIdxEarly,
   } = usePageTotalsComputation({
     structuredPages, pages, pageNums, amtIdx,
     dispRows, dispHeaders, effectiveDispRows, effectivePageTotals,
@@ -909,14 +882,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     console.groupEnd();
   }, [missingSupplierPages, structuredPages]);
   const hasMissingSupplier = missingSupplierPages.length > 0;
-
-  // ── Feature 1: 금액 자동보정 콜백 ────────────────────────────────────────
-  // WARNING: 재추출 격리 정책 (2026-07-18) — 이 함수는 수량×단가로 금액을 자동계산합니다.
-  // 격리 정책에 따라 절대 호출하면 안 됩니다. dead function 으로 유지.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const autoCorrectAmounts = useCallback((_pageNum: number) => {
-    void _pageNum; // 재추출 격리 정책으로 비활성화 (2026-07-18) — 절대 호출 금지
-  }, []);
 
   // ── Feature 2: 공급사 변경 + 동의어 일괄 추가 ───────────────────────────
   const handleSynonymBulkAdd = useCallback(async (pageNum: number, newSupplier: string) => {
@@ -1178,70 +1143,18 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     setSavingConfirmed,
   });
 
-  const handleMatch = useCallback(async () => {
-    if (nameIdx < 0) return;
-    // 공급사 필수 입력 검증 (2026-07-15) — 미입력 페이지가 있으면 차단
-    //   supplier 힌트 없이 2차보정을 실행하면 잘못된 매칭 · 동의어 오학습 위험
-    if (missingSupplierPages.length > 0) {
-      const pagesLabel = missingSupplierPages.join(", ");
-      showError(`공급사가 지정되지 않은 페이지가 있습니다: ${pagesLabel}번\n\n1차보정 표의 "공급처" 셀을 클릭하여 공급사명을 먼저 입력하세요.\n(공급사 정보 없이 상품명 매칭 시 잘못된 결과가 저장될 수 있습니다)`);
-      return;
-    }
-    // 2026-07-09: 강화된 필터
-    // - 빈 품명 · 배송·행정 라벨(차람번호/기사명/담당자/주소 등) · 사람이름/사업자번호 등을 스킵
-    // - 공급자 힌트도 상품명·배송정보로 오분류된 것 페이지 fallback
-    // 이는 1차보정에서 발생하는 무의미한 매칭 결과를 방지 (실제 매칭은 2차보정에서 ERP 로)
-    const nameSupplierPairs = dispRows.map((row, ri) => {
-      // 2026-07-28 · 사용자 요청 "1차보정 상품명값으로 ERP 매칭"
-      //   우선순위: cellEdits (직접 편집) > autoSynonymMatches.name (DB 드롭다운) > 원본 OCR
-      const editedName = cellEdits[ri]?.[nameIdx];
-      const autoSynName = autoSynonymMatches[ri]?.name;
-      const rawName = String(editedName ?? autoSynName ?? row[nameIdx] ?? "").trim();
-      const pn = pageNums[ri];
-      let sup = "";
-      if (rawSupplierByPage[pn] !== undefined) sup = rawSupplierByPage[pn];
-      else if (ocrSuppIdx >= 0) {
-        const cell = String(dispRows[ri]?.[ocrSuppIdx] ?? "").trim();
-        if (cell) sup = cell;
-      }
-      if (!sup) sup = structuredPages.find(p => p.page === pn)?.meta.supplier ?? globalSupplier ?? "";
-
-      // supplier 힌트가 유효하지 않으면 (상품명/배송정보) 페이지 폴백 시도
-      if (!isValidSupplierHint(sup)) {
-        const pageSup = structuredPages.find(p => p.page === pn)?.meta.supplier;
-        sup = (pageSup && isValidSupplierHint(pageSup)) ? pageSup :
-              (globalSupplier && isValidSupplierHint(globalSupplier)) ? globalSupplier : "";
-      }
-
-      // 상품명이 아닌 것 (배송·행정·주소·사람이름·번호 등) 스킵
-      // 2026-07-19 · 체크박스로 제외한 행 · 완전 삭제 행 · DB필터 행도 매칭 요청에서 제외
-      const skip = !rawName || isNonProductText(rawName)
-        || hiddenRawRows.has(ri)
-        || permanentlyDeletedRawRows.has(ri)
-        || isRowDbDeleted(ri);
-      return { rowIdx: ri, name: rawName, supplier: sup, skip };
-    });
-
-    const skippedCount = nameSupplierPairs.filter(p => p.skip).length;
-    if (skippedCount > 0) console.log(`[handleMatch] ${skippedCount}행 스킵 (빈 품명·배송정보·잡문자·삭제행)`);
-    const activePairs = nameSupplierPairs.filter(p => !p.skip);
-    const names = activePairs.map(p => p.name);
-    const suppliers = activePairs.map(p => p.supplier);
-    console.log(`[handleMatch] ${names.length}개 행 매칭 요청 · 고유 공급자: ${[...new Set(suppliers)].filter(Boolean).length}개`);
-
-    setMatching(true); setMatchItems(null); setOverrides({}); setSupplierOverrides({}); setConfirmed(false); setSavedSynonyms(new Set()); setSavedSupplierAliases(new Set());
-    setRetryingRows(new Set()); setCandidatesMap({}); setOpenCandRow(null); setSelectedCands({}); setCancelledRows(new Set());
-    try {
-      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-      const { data } = await api.post<{ matches?: MatchedItem[] }>("/api/ocr-match", { names, suppliers });
-      // matchItems 를 원본 dispRows 인덱스 순서로 재배열 (skip 된 행은 null)
-      const returned: MatchedItem[] = data.matches ?? [];
-      const aligned: (MatchedItem | null)[] = dispRows.map(() => null);
-      activePairs.forEach((p, ai) => { aligned[p.rowIdx] = returned[ai] ?? null; });
-      setMatchItems(aligned.map(m => m ?? { input: "", matched: null }));
-    } catch { /* silent */ }
-    finally { setMatching(false); }
-  }, [dispRows, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx, structuredPages, globalSupplier, missingSupplierPages]);
+  // ── 2차보정 매칭 → useHandleMatch 훅으로 분리 ─────────────────────────────────────
+  const { handleMatch } = useHandleMatch({
+    nameIdx, ocrSuppIdx, dispRows, pageNums,
+    rawSupplierByPage, structuredPages, globalSupplier,
+    missingSupplierPages, cellEdits, autoSynonymMatches,
+    hiddenRawRows, permanentlyDeletedRawRows, isRowDbDeleted,
+    showError, setMatching, setMatchItems,
+    setOverrides, setSupplierOverrides, setConfirmed,
+    setSavedSynonyms, setSavedSupplierAliases,
+    setRetryingRows, setCandidatesMap, setOpenCandRow,
+    setSelectedCands, setCancelledRows,
+  });
 
   // 2026-07-28 · 리팩터 · handleMatchPage · fillMissingPricesFromDB · verifyAndSwapPricesWithDB
   //   → useHandleMatchPage 훅으로 분리
@@ -1359,7 +1272,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     "마스터 매입단가","전표 매입단가","매입수량","매입총계",
     "판매단가","이익률","유통기한",
   ];
-  const CONF_NUM = new Set(["마스터 매입단가","전표 매입단가","매입수량","매입총계","판매단가","이익률"]);
 
   const COL_ALIAS: Record<string, string> = {
     "품명":"상품명","품목명":"상품명","상품명":"상품명",
