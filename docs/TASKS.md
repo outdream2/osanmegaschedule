@@ -29,6 +29,7 @@
 | `ContractSettings` | 886 | 탈출 | constants |
 | `PharmacistPage` | 952 | 755 | constants + utils + subcomponents |
 | `ProductInfoCard` | 1015 | 894 | PurchaseHistorySection |
+| `DisplayPage` | 3126 | 790 | 11 신규파일 (2026-08-22) |
 | `BoardPage` | 1177 | 231 | types + constants + utils + PostCard + InlineDetail + ComposerModal + DetailModal |
 | `ResignationWriter` | 1241 | 768 | types + utils + SignatureModal + ResignationPreview |
 
@@ -39,7 +40,7 @@
 | `StaffManagePage` | 2728 | **2153** | types.ts (200) + helpers.ts (148) + CreateModal.tsx (110) + subcomponents.tsx (163) | `2d9ec295`·`11244343` |
 | `OrderManagePage` | 3205 | **3089** | types.ts (90) + utils.ts (54) | `41b5455e` |
 | `LandingPage` | 2467 | **2319** | PeriodCoverageWidget.tsx (163) | `d2dbcc20` |
-| `DisplayPage` | 3126 | **2713** | types.ts (61) + helpers.ts (185) + VendorManageSplit.tsx (236) | `f4d9e841`·`0358650b` |
+| `DisplayPage` | 3126 | **790** ✅ | types+helpers+VendorManageSplit+ZoneDetailModal+StaffInfoModal+ZoneProductsModal+ProductInfoModal+DisplayStoreMap+DisplaySearchBar+DisplayMobileList+DisplayProductPanel+useDisplayData | `0358650b`·`ec957313` |
 | `SalesTrendPage` | 2676 | **2501** | helpers.ts (203) | `3e694ebd` |
 | `OcrPage` | 1768 | 1215 | types + ConfirmedRecordsTab | — |
 | `PaymentInfoTab` | 1926 | 1513 | types + utils + subcomponents | — |
@@ -57,7 +58,7 @@
 
 1. `OcrPage` (1215) · `PaymentInfoTab` (1513) · 최우선
 2. `PurchaseSubTabs` (1145) · `RequestsPage` (1225) · `ScanPage` (1105) · 차순
-3. `OrderManagePage` (3089) · `DisplayPage` (2713) · `LandingPage` (2319) · 대형 · 추가 분리 필요
+3. `OrderManagePage` (3089) · `LandingPage` (2319) · 대형 · 추가 분리 필요
 4. `ContractWriterPage` (2680+) · `OcrPage/RawOcrTable` (5268+) · critical · 대규모 리팩터
 
 ---
