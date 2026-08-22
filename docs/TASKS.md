@@ -64,6 +64,28 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #192 · 거래처 로그인 · 공급사정보 등록 → 승인 → 공급자재고확인 flow (신규 · 2026-08-22)
+- 📄 대상 · 거래처(vendor) 로그인 후 진입 페이지 · 3단계 승인 flow 구현
+- 🔲 **Step 1** · 거래처 로그인 성공 시 · **공급사정보 등록 메뉴** 자동 오픈 (or 사이드바 상단 강조)
+  - 로그인 직후 첫 화면 · 공급사정보 미완성 시 강제 노출
+  - 미완성 항목 진행률 표시 (예: 7/10 필드 완료)
+- 🔲 **Step 2** · 정보 다 채우면 · **[승인 요청] 버튼 활성화**
+  - 필수 필드 검증 (회사명·사업자번호·담당자·연락처·주소·계좌·이메일 등)
+  - 모든 필수 필드 통과 시 · 회색 disabled → 활성 CTA 전환
+  - 클릭 시 · `/api/vendor-approval-requests` POST · 관리자 알림
+  - 승인 대기 상태 · "관리자 승인 대기 중" 배너
+- 🔲 **Step 3** · 관리자가 승인 → **[공급자재고확인] 버튼 활성화**
+  - 관리자 UI · 승인 대기 목록 (RequestsPage 확장 or 신규 탭)
+  - 승인 시 · vendors.approval_status = "approved" · vendor 세션 UI 갱신
+  - 승인 후 vendor 재로그인 or 실시간 갱신 → 공급자재고확인 메뉴 노출·활성
+- 🔲 DB · vendors ALTER · `approval_status` (pending·approved·rejected) · `approval_requested_at` · `approved_at` · `approved_by`
+- 🔲 서버 · Zod schemas · asyncHandler · HttpError (feedback_logging_principle)
+- 🔲 프레임워크 · Card·Modal·StatusPill·Button·useToast·useConfirm 재사용
+- 🔲 이력 로그 · 승인/거절/재신청 audit trail (선택)
+- 💡 관련 · #178 (공급사 정보 스키마 확장 · xlsx 원본 반영) 과 연계 · vendors 컬럼 스키마 검토 필요
+- 💡 관련 · #94 (공급사 재고확인 페이지 A1 완료 · Phase 2 유보) · gate 재활성화 필요
+- 💡 프레임워크 원칙 · 대원칙 19 · 설계 후 구현 · vendors 스키마·인증 flow·UI gate 3-way 정합성
+
 ### #191 · Modal 프레임워크화 · inline modal 35+ 마이그레이션 (신규 · 2026-08-22)
 - 📄 배경 · Modal 프리미티브 이미 존재 (src/components/common/Modal.tsx · v2 확장 · 2026-08-18)
 - 🔲 문제 · 35+ 파일에서 여전히 `<div className="fixed inset-0 z-[N] backdrop-brand...">` inline 패턴 사용
