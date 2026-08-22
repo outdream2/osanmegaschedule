@@ -11,7 +11,7 @@
 >  - 다른 참조 문서 만들지 말고 이 파일 하나에 통합 (사용자 명시 요구 · 2026-08-06)
 
 **프로젝트**: megatown-staff-scheduler
-**최종 업데이트**: 2026-08-21 (12차 · Framework Phase 4 large-file 분리 현황)
+**최종 업데이트**: 2026-08-22 (13차 · Framework Phase 2 가드레일 완료 · husky pre-commit + audit-framework + PR 템플릿)
 **생성**: 2026-08-05 (초판) · **확장**: 2026-08-06 (공통 자산 통합 · 백엔드/DB/RPC 심화)
 **출처**: 코드 실측 (LandingPage · 각 페이지 컴포넌트 · TAB 정의 · src/styles · src/components/common · src/hooks · migrations · server/routes)
 **용도**: 새 페이지·기능 추가 시 · 새 세션 진입 시 · 다른 에이전트 위임 시 · **먼저 참고**해야 할 단일 소스
@@ -868,6 +868,7 @@ server/routes/
 | 스캔 · OCR | @zxing · @ericblade/quagga2 · @undecaf/zbar-wasm · ppu-paddle-ocr · onnxruntime-node · @google/genai |
 | 알림 | web-push (VAPID) |
 | 테스트 | Vitest 4.1 |
+| Git 훅 | husky ^9.1.7 (devDep · 2026-08-22 · #framework-2) |
 | 배포 | Render (예정) · cross-env NODE_OPTIONS 메모리 제한 |
 
 ### 20-2. 스크립트 (`package.json`)
@@ -881,6 +882,10 @@ server/routes/
 | `npm run lint` | tsc --noEmit · 타입 체크 |
 | `npm run test` | vitest run |
 | `npm run test:watch` | vitest 감시 모드 |
+| `npm run audit` | audit-framework 실행 (전체 보고) |
+| `npm run audit:check` | audit-framework --check · 위반 시 exit 1 (CI 용) |
+| `npm run audit:strict` | audit-framework --check · baseline 무시 · 전체 zero-tolerance |
+| `npm run audit:update` | audit-framework --update-baseline · 현재 상태를 새 baseline 으로 저장 |
 
 ### 20-3. 편집 후 필수 검증
 
@@ -1083,9 +1088,15 @@ megatown-staff-scheduler/
 ├── package.json                  # Node 20+ · dev: tsx · build: vite + esbuild
 ├── vite.config.ts · vitest.config.ts · tsconfig.json
 ├── render.yaml                   # Render 배포 설정
+├── .husky/                       # Git 훅 (2026-08-22 · #framework-2 · husky ^9.1.7)
+│   └── pre-commit                # 매 커밋 시 `audit-framework --check-new --quiet` 자동 실행
+├── .github/
+│   └── PULL_REQUEST_TEMPLATE.md  # PR 체크리스트 · 프레임워크 8항 + 검증 5항 (2026-08-22)
 ├── docs/                         # 이 문서 · TASKS · PAYROLL · AGENT_PRINCIPLES · SQL
+│   └── .framework-baseline.json  # audit-framework 기준선 · 24 기존 위반 baseline (2026-08-22)
 ├── migrations/                   # 19개 DDL SQL 파일 (수동 apply)
 ├── scripts/                      # 진단·마이그레이션 스크립트 (mjs · ts · py)
+│   └── audit-framework.cjs       # 프레임워크 위반 감사 · 5 CLI 옵션 (--check · --check-new · --update-baseline · --quiet · --help)
 ├── public/                       # sw.js · products.json · YOLO 모델 (best.onnx · ppocr)
 ├── prisma/                       # (미사용 · 정리 후보)
 ├── uploads/                      # multer 업로드 임시
@@ -1347,6 +1358,38 @@ npm run test        # vitest (필요 시)
 ---
 
 ## CHANGELOG · 변경 이력
+
+### 2026-08-22 (13차 · Framework Phase 2 · 가드레일 · husky pre-commit + audit-framework + PR 템플릿)
+
+**요약**: 신규 위반이 커밋될 수 없도록 pre-commit 가드레일을 구축한 Framework Phase 2 완료.
+audit-framework CLI 확장 → 5 옵션 · husky pre-commit 훅 · PR 체크리스트 · baseline.json 체계 정비.
+
+#### 신규 파일 (3 커밋)
+
+| 파일 | 내용 | 커밋 |
+|-----|-----|-----|
+| `scripts/audit-framework.cjs` (확장) | 5 CLI 옵션 (`--check` · `--check-new` · `--update-baseline` · `--quiet` · `--help`) · `--check-new` = baseline 초과 신규 위반만 감지 | `9c979f16` |
+| `docs/.framework-baseline.json` | 신설 · 24 기존 위반 baseline · `--check-new` 비교 기준 | `9c979f16` |
+| `.husky/pre-commit` | 신설 · 매 `git commit` 시 `audit-framework --check-new --quiet` 자동 실행 · 신규 위반 발견 시 커밋 차단 · exit 1 | `ded52c96` |
+| `package.json` (scripts 추가) | `audit` · `audit:check` · `audit:strict` · `audit:update` 4개 npm 스크립트 신설 | `ded52c96` |
+| `.github/PULL_REQUEST_TEMPLATE.md` | 신설 · 프레임워크 준수 8항 + 검증 체크리스트 5항 | `051c7787` |
+| `docs/FRAMEWORK_ROADMAP.md` | Phase 2 상태 `🔜` → `✅` 업데이트 | `051c7787` |
+
+#### pre-commit 훅 워크플로우
+
+```
+git commit
+  └─ .husky/pre-commit 실행
+       └─ audit-framework --check-new --quiet
+            ├─ 신규 위반 없음 → 커밋 통과
+            └─ 신규 위반 있음 → exit 1 · 커밋 차단 (위반 파일/라인 출력)
+```
+
+- baseline(`docs/.framework-baseline.json`)에 없는 새 위반만 감지 → 기존 24 위반은 허용·신규 도입 금지
+- `npm run audit:update` → baseline 갱신 (기술부채 정리 후 기준선 높이기)
+- `npm run audit:strict` → 전체 zero-tolerance CI 용
+
+---
 
 ### 2026-08-21 (12차 · Framework Phase 4 · large-file 분리 · 50% 완료)
 
