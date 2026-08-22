@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import { UploadDataModal } from "./UploadDataModal";
+import { LoginModals } from "./LoginModals";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useApprovalRefreshListener } from "../../lib/approvalEvents";
@@ -11,15 +12,10 @@ import { useSettings } from "../../hooks/useSettings";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { useContactInfo } from "../../hooks/useContactInfo";
 import kakaoQrImg from "../../images/kakao_QR.png";
-// 2026-08-17 · 사용자 지시 · 로그인 모달 · pharmacy cross(+) 대신 로고 이미지
-import logo2Img from "../../images/logo2.png";
 import {
   Clock,
   Lock,
   X,
-  AlertCircle,
-  Eye,
-  EyeOff,
   Bell,
   Search,
   Building2,
@@ -27,7 +23,6 @@ import {
 import {
   SquaresFour,
   ShieldCheck,
-  User,
   Briefcase,
   CalendarDots,
   CalendarCheck,
@@ -41,7 +36,7 @@ import {
   ChatCircle,
   FirstAid,
 } from "@phosphor-icons/react";
-import type { AuthSession, AuthRole } from "../../types";
+import type { AuthSession } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { TIMING } from "../../constants/timing";
 // 2026-08-09 · 거래처 담당자 로그인 시 · 본인 공급사 조회·수정 · 공통 VendorDetailModal 재사용
@@ -160,22 +155,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const { settings } = useSettings();
   const underConstruction = settings.underConstruction === true;
 
-  const [empNumber, setEmpNumber] = useState(() => localStorage.getItem("megatown_remembered_phone") ?? "");
-  const [empPassword, setEmpPassword] = useState("");
-  const [empError, setEmpError] = useState<string | null>(null);
-  const [empLoading, setEmpLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
-  const empNumberRef = useRef<HTMLInputElement>(null);
-
-  // 거래처 로그인
+  // 로그인 모달 (LoginModals.tsx 로 분리 · 2026-08-22)
   const [vendorLoginOpen, setVendorLoginOpen] = useState(false);
-  const [vendorPhone, setVendorPhone] = useState("");
-  const [vendorPassword, setVendorPassword] = useState("");
-  const [vendorError, setVendorError] = useState<string | null>(null);
-  const [vendorLoading, setVendorLoading] = useState(false);
-  const [showVendorPassword, setShowVendorPassword] = useState(false);
-  const vendorPhoneRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // 2026-08-21 · Framework Phase 3 · fetch → apiClient
@@ -189,113 +170,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     setPushSubscribed(localStorage.getItem("anon_push_subscribed") === "1");
   }, []);
 
-  useEffect(() => {
-    if (pendingPage) {
-      setEmpNumber(localStorage.getItem("megatown_remembered_phone") ?? "");
-      setEmpPassword("");
-      setEmpError(null);
-      setEmpLoading(false);
-      setShowPassword(false);
-      setTimeout(() => empNumberRef.current?.focus(), 50);
-    }
-  }, [pendingPage]);
-
-  useEffect(() => {
-    if (vendorLoginOpen) {
-      setVendorPhone("");
-      setVendorPassword("");
-      setVendorError(null);
-      setVendorLoading(false);
-      setShowVendorPassword(false);
-      setTimeout(() => vendorPhoneRef.current?.focus(), 50);
-    }
-  }, [vendorLoginOpen]);
-
-  const handleVendorSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const phone = vendorPhone.trim().replace(/[^0-9]/g, "");
-    if (!phone || !vendorPassword) {
-      setVendorError("핸드폰번호와 비밀번호를 모두 입력해 주세요.");
-      return;
-    }
-    setVendorLoading(true);
-    setVendorError(null);
-    try {
-      const { data } = await api.post<{ id?: number; name?: string; contactName?: string; role?: string; level?: number }>(
-        "/api/auth/vendor-login",
-        { phone, password: vendorPassword },
-      );
-      const { id, name, contactName, level } = data ?? {};
-      if (!id) { setVendorError("로그인에 실패했습니다."); setVendorLoading(false); return; }
-      setVendorLoginOpen(false);
-      setVendorPassword("");
-      const auth: AuthSession = { role: "vendor", employeeId: id, employeeName: name ?? "", employeeRank: contactName || undefined, level: level ?? 0 };
-      onAuthOnly?.(auth);
-    } catch (err: unknown) {
-      const isApi = err instanceof ApiError;
-      const status = isApi ? err.status : 0;
-      setVendorError(status === 401 || status === 400 ? (isApi ? err.message : "핸드폰번호 또는 비밀번호가 올바르지 않습니다") : "로그인 중 오류가 발생했습니다.");
-      setVendorPassword("");
-    } finally {
-      setVendorLoading(false);
-    }
-  };
-
-  const closeModal = () => setPendingPage(null);
-
   // If already logged in, go directly; otherwise open login modal
   const handleMenuClick = (page: "schedule" | "display") => {
     if (authSession) {
       onNavigate(page, authSession);
     } else {
       setPendingPage(page);
-    }
-  };
-
-  const handleEmployeeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const phone = empNumber.trim().replace(/[^0-9]/g, "");
-    if (!phone || !empPassword) {
-      setEmpError("핸드폰번호와 비밀번호를 모두 입력해 주세요.");
-      return;
-    }
-    setEmpLoading(true);
-    setEmpError(null);
-    try {
-      const { data } = await api.post<{ id?: number; name?: string; role?: string; level?: number; rank?: string | null }>(
-        "/api/auth/login",
-        { employee_id: phone, password: empPassword, rememberMe: rememberMe || undefined },
-      );
-      const { id, name, role, level, rank } = data ?? {};
-      if (!id) {
-        setEmpError("핸드폰번호 또는 비밀번호가 올바르지 않습니다");
-        setEmpLoading(false);
-        return;
-      }
-      const page = pendingPage;
-      setPendingPage(null);
-      setEmpPassword("");
-      if (rememberMe) {
-        localStorage.setItem("megatown_remembered_phone", phone);
-      } else {
-        localStorage.removeItem("megatown_remembered_phone");
-        setEmpNumber("");
-      }
-      const validRoles = ["superadmin", "admin", "manager", "employee", "vendor"] as const;
-      const authRole: AuthRole = (validRoles as readonly string[]).includes(role) ? (role as AuthRole) : "employee";
-      const auth: AuthSession = { role: authRole, employeeId: id, employeeName: name, level: level ?? 1, employeeRank: rank ?? undefined, rememberMe: rememberMe || undefined };
-      onAuthOnly?.(auth);
-    } catch (err: unknown) {
-      const isApi = err instanceof ApiError;
-      const status = isApi ? err.status : 0;
-      if (status === 401 || status === 400) {
-        setEmpError(isApi ? err.message : "핸드폰번호 또는 비밀번호가 올바르지 않습니다");
-      } else {
-        setEmpError("로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
-      }
-      setEmpPassword("");
-    } finally {
-      setEmpLoading(false);
     }
   };
 
@@ -996,93 +876,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         />
       )}
 
-      {/* ── 거래처 로그인 모달 ── */}
-      {vendorLoginOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(15, 23, 42, 0.72)", backdropFilter: "blur(12px)" }}
-          onClick={() => setVendorLoginOpen(false)}
-        >
-          <div
-            className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
-            style={{ background: "rgba(255,255,255,0.98)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header · 2026-08-17 · 딥네이비 gradient 통일 (모든 로그인 모달 · 브랜드 톤 일관) */}
-            <div className="relative px-7 pt-8 pb-6 overflow-hidden" style={{ background: "linear-gradient(120deg, #0A2E4A 0%, #1E5C8E 62%, #3E7CB1 100%)" }}>
-              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-20" style={{ background: "radial-gradient(circle, #93B4D0, transparent)" }} />
-              <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full opacity-15" style={{ background: "radial-gradient(circle, #C4DAEE, transparent)" }} />
-              <button onClick={() => setVendorLoginOpen(false)} aria-label="닫기" className="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white transition cursor-pointer">
-                <X size={14} />
-              </button>
-              <div className="relative flex items-center gap-4 mb-3">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shrink-0" style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.35)" }}>
-                  <CalendarCheck size={28} className="text-white" weight="fill" />
-                </div>
-                <div>
-                  <div className="text-white/70 text-[10px] font-semibold tracking-widest uppercase mb-0.5">Vendor Portal</div>
-                  <div className="text-white font-bold text-2xl leading-tight tracking-tight">거래처 로그인</div>
-                  <div className="text-emerald-100 text-[11px] font-medium tracking-wide mt-0.5">방문예약 이용</div>
-                </div>
-              </div>
-            </div>
-            {/* Form */}
-            <div className="px-7 pt-5 pb-7">
-              <form onSubmit={handleVendorSubmit} className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-600 text-xs font-semibold pl-1">핸드폰번호</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none"><User size={14} className="text-zinc-400" weight="fill" /></div>
-                    <input
-                      ref={vendorPhoneRef}
-                      type="tel" inputMode="numeric"
-                      value={vendorPhone}
-                      onChange={(e) => { setVendorPhone(e.target.value); setVendorError(null); }}
-                      placeholder="01012345678"
-                      style={{ fontSize: "16px" }}
-                      className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-brand-tint" : "border-2 border-line bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"}`}
-                      autoComplete="username" disabled={vendorLoading}
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-600 text-xs font-semibold pl-1">비밀번호</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none"><Lock size={14} className="text-zinc-400" /></div>
-                    <input
-                      type={showVendorPassword ? "text" : "password"}
-                      value={vendorPassword}
-                      onChange={(e) => { setVendorPassword(e.target.value); setVendorError(null); }}
-                      placeholder="비밀번호 입력"
-                      style={{ fontSize: "16px" }}
-                      className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-brand-tint" : "border-2 border-line bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"}`}
-                      autoComplete="current-password" disabled={vendorLoading}
-                    />
-                    <button type="button" onClick={() => setShowVendorPassword((v) => !v)} className="absolute inset-y-0 right-4 flex items-center text-zinc-400 hover:text-zinc-600 transition cursor-pointer">
-                      {showVendorPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-                </div>
-                {vendorError && (
-                  <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
-                    <AlertCircle size={13} className="text-rose-500 mt-0.5 shrink-0" />
-                    <p className="text-rose-600 text-xs font-semibold leading-relaxed">{vendorError}</p>
-                  </div>
-                )}
-                <button
-                  type="submit" disabled={vendorLoading}
-                  className="w-full py-3.5 rounded-2xl text-white font-bold text-sm mt-1 transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
-                 
-                >
-                  {vendorLoading ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /><span>로그인 중...</span></> : <span>거래처로 입장하기</span>}
-                </button>
-                <p className="text-[11px] text-zinc-400 text-center leading-relaxed">비밀번호 분실 시 관리자에게 문의하세요</p>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── Unauthorized toast ── */}
       {unauthorizedToast && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[9999] px-5 py-2.5 bg-rose-600 text-white text-sm font-bold rounded-2xl shadow-xl pointer-events-none animate-in fade-in duration-150">
@@ -1090,168 +883,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         </div>
       )}
 
-      {/* ── Auth modal ── */}
-      {pendingPage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(15, 23, 42, 0.72)", backdropFilter: "blur(12px)" }}
-          onClick={closeModal}
-        >
-          <div
-            className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
-            style={{ background: "rgba(255,255,255,0.98)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* ── Branded hero panel · 2026-08-17 · 딥네이비 톤 (Hero/사이드바와 통일) ── */}
-            <div
-              className="relative px-7 pt-8 pb-6 overflow-hidden"
-              style={{
-                background: "linear-gradient(120deg, #0A2E4A 0%, #1E5C8E 62%, #3E7CB1 100%)",
-              }}
-            >
-              {/* Decorative blobs */}
-              <div
-                className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-20"
-                style={{ background: "radial-gradient(circle, #a5b4fc, transparent)" }}
-              />
-              <div
-                className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full opacity-15"
-                style={{ background: "radial-gradient(circle, #c7d2fe, transparent)" }}
-              />
-              <div
-                className="absolute top-4 left-1/2 w-64 h-64 rounded-full opacity-[0.07]"
-                style={{ transform: "translateX(-50%)", background: "radial-gradient(circle, #e0e7ff, transparent)" }}
-              />
-
-              {/* Close button */}
-              <button
-                onClick={closeModal}
-                aria-label="닫기"
-                className="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-indigo-200 hover:text-white transition cursor-pointer"
-              >
-                <X size={14} />
-              </button>
-
-              {/* Brand identity · 2026-08-17 · 사용자 지시 · + 아이콘 대신 로고 · 한 줄 "오산 메가타운약국" */}
-              <div className="relative flex items-center gap-4 mb-3">
-                <img
-                  src={logo2Img}
-                  alt={`${lpBrand.region ? lpBrand.region + " " : ""}${lpBrand.shortName} 로고`}
-                  className="w-14 h-14 object-cover rounded-2xl ring-1 ring-white/30 shadow-lg shrink-0 bg-white"
-                />
-                <div className="min-w-0">
-                  <div className="text-white font-bold text-2xl leading-tight tracking-tight truncate">
-                    {(lpBrand.region ? lpBrand.region + " " : "오산 ") + (lpBrand.shortName || "메가타운약국")}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ── Form area ── */}
-            <div className="px-7 pt-5 pb-7">
-
-              {/* ── Employee login form ── */}
-              <form onSubmit={handleEmployeeSubmit} className="flex flex-col gap-4">
-
-                {/* Phone number field */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-600 text-xs font-semibold pl-1">
-                    핸드폰번호
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                      <User size={14} className="text-zinc-400" weight="fill" />
-                    </div>
-                    <input
-                      ref={empNumberRef}
-                      type="tel"
-                      inputMode="numeric"
-                      value={empNumber}
-                      onChange={(e) => { setEmpNumber(e.target.value); setEmpError(null); }}
-                      placeholder="01012345678"
-                      style={{ fontSize: "16px" }}
-                      className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${empError
-                        ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-brand-tint"
-                        : "border-2 border-line bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"
-                        }`}
-                      autoComplete="username"
-                      disabled={empLoading}
-                    />
-                  </div>
-                </div>
-
-                {/* Password field */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-zinc-600 text-xs font-semibold pl-1">
-                    비밀번호
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                      <Lock size={14} className="text-zinc-400" />
-                    </div>
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={empPassword}
-                      onChange={(e) => { setEmpPassword(e.target.value); setEmpError(null); }}
-                      placeholder="비밀번호 입력"
-                      style={{ fontSize: "16px" }}
-                      className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${empError
-                        ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-brand-tint"
-                        : "border-2 border-line bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"
-                        }`}
-                      autoComplete="current-password"
-                      disabled={empLoading}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      className="absolute inset-y-0 right-4 flex items-center text-zinc-400 hover:text-zinc-600 transition cursor-pointer"
-                      aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
-                    >
-                      {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Remember me checkbox */}
-                <label className="flex items-center gap-2.5 cursor-pointer select-none group">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-2 border-zinc-300 text-indigo-600 accent-indigo-600 cursor-pointer"
-                  />
-                  <span className="text-xs text-zinc-500 group-hover:text-zinc-700 transition">자동 로그인</span>
-                </label>
-
-                {/* Error message */}
-                {empError && (
-                  <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
-                    <AlertCircle size={13} className="text-rose-500 mt-0.5 shrink-0" />
-                    <p className="text-rose-600 text-xs font-semibold leading-relaxed">{empError}</p>
-                  </div>
-                )}
-
-                {/* Submit button · 2026-08-17 · 공용 Button · primary lg · 딥네이비 */}
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  loading={empLoading}
-                  className="mt-1"
-                >
-                  {empLoading ? "로그인 중..." : "직원으로 입장하기"}
-                </Button>
-
-                <p className="text-[11px] text-zinc-400 text-center leading-relaxed">
-                  비밀번호 분실 시 관리자에게 문의하세요
-                </p>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── 로그인 모달 (LoginModals.tsx · 2026-08-22 분리) ── */}
+      <LoginModals
+        vendorLoginOpen={vendorLoginOpen}
+        onVendorLoginClose={() => setVendorLoginOpen(false)}
+        pendingPage={pendingPage}
+        onPendingPageClose={() => setPendingPage(null)}
+        onAuthOnly={onAuthOnly}
+        lpBrand={lpBrand}
+      />
       {/* 2026-08-21 · Framework Phase 3 · toast */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-[9999]">
