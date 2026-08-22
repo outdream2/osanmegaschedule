@@ -68,6 +68,10 @@ import {
 } from "./RawOcrTable/productNameReextract";
 import { XlsxExportSection } from "./RawOcrTable/XlsxExportSection";
 import { useSaveConfirmed } from "./RawOcrTable/useSaveConfirmed";
+import { ConfirmedTableSection } from "./RawOcrTable/ConfirmedTableSection";
+import { FallbackPageSection } from "./RawOcrTable/FallbackPageSection";
+import { NumericEditableCell, ExpiryCell, NameCell } from "./RawOcrTable/RawOcrCellRenderer";
+import { RawPageImageCell } from "./RawOcrTable/RawPageImageCell";
 
 // 외부 소비자(OcrPage.tsx)가 `import { type ConfirmedItem } from "./RawOcrTable"` 로 사용 중 → re-export 유지
 export type { ConfirmedItem };
@@ -3375,127 +3379,26 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                         <tr className="border-t-2 select-none bg-amber-100/70 border-amber-300">
                           {/* 이미지 셀: rowSpan으로 이 명세서 전체 행을 커버 */}
                           {pageImages?.length ? (
-                            <td
-                              rowSpan={imgRowSpan}
-                              className="align-top bg-gray-50 border-r border-line"
-                              style={{
-                                width: effectiveInvColWidth, minWidth: effectiveInvColWidth, maxWidth: effectiveInvColWidth,
-                                verticalAlign: "top", padding: 0, position: "relative", boxSizing: "border-box",
-                                /* 2026-07-28 · 이미지가 데이터 행 높이를 늘리지 않도록 높이 명시 */
-                                height: imgCellHeightRaw,
-                                overflow: "hidden",
-                              }}
-                            >
-                              {/* 2026-07-21: inline style 로 통일 · 세로 전체 span · 클릭영역 확대 · z-index 최상단 */}
-                              <div
-                                role="separator"
-                                aria-label="이미지 폭 조절"
-                                onMouseDown={onInvColResizeStart}
-                                onDoubleClick={() => setInvoiceColWidth(INV_COL_DEFAULT)}
-                                onDragStart={e => { e.preventDefault(); e.stopPropagation(); }}
-                                draggable={false}
-                                title="드래그하여 이미지 폭 조절 · 더블클릭 초기화"
-                                style={{
-                                  position: "absolute",
-                                  top: 0,
-                                  right: 0,
-                                  bottom: 0,
-                                  width: 4,
-                                  cursor: "col-resize",
-                                  zIndex: 50,
-                                  backgroundColor: invColResizing ? "#10b981" : "transparent",
-                                  transition: "background-color 0.15s",
-                                }}
-                                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = "#10b981"; }}
-                                onMouseLeave={(e) => { if (!invColResizing) (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; }}
-                              />
-                              {(() => {
-                                const imgSrc = pageImages[pn - 1];
-                                if (!imgSrc) return (
-                                  <div className="flex items-center justify-center h-full p-3 text-[11px] text-gray-400">이미지 없음</div>
-                                );
-                                const currentZoom = pageZoom[pn] ?? 1;
-                                const currentPan = pagePan[pn] ?? { x: 0, y: 0 };
-                                const canPan = currentZoom > 1;
-                                return (
-                                  <div
-                                    style={{ position: "relative", width: "100%", height: "100%", cursor: canPan ? (panDragRef.current?.pn === pn ? "grabbing" : "grab") : "zoom-in" }}
-                                    onMouseDown={canPan ? (e => onImgPanStart(pn, e)) : undefined}
-                                    onClick={!canPan ? () => openPageModal(pn) : undefined}
-                                    title={canPan ? "🖐 드래그로 이동 · +/- 로 확대·축소" : `${pn}번 명세서 이미지 · 클릭 확대`}
-                                  >
-                                    {/* 2026-07-21: 페이지별 줌 인/아웃 버튼 · 우측 상단 오버레이 */}
-                                    <div style={{
-                                      position: "absolute", top: 4, right: 4, zIndex: 5,
-                                      display: "flex", gap: 2, background: "rgba(255,255,255,0.9)",
-                                      borderRadius: 6, padding: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
-                                    }} onClick={e => e.stopPropagation()}>
-                                      <button type="button" onClick={() => zoomOut(pn)}
-                                        title="축소" disabled={currentZoom <= 0.5}
-                                        style={{
-                                          width: 22, height: 22, fontSize: 14, fontWeight: 900,
-                                          color: currentZoom <= 0.5 ? "#cbd5e1" : "#475569",
-                                          cursor: currentZoom <= 0.5 ? "not-allowed" : "pointer",
-                                          background: "transparent", border: "none", borderRadius: 4,
-                                        }}>−</button>
-                                      <button type="button" onClick={() => zoomReset(pn)}
-                                        title={`초기화 (현재 ${Math.round(currentZoom * 100)}%)`}
-                                        style={{
-                                          minWidth: 34, height: 22, fontSize: 10, fontWeight: 800,
-                                          color: "#475569", cursor: "pointer", padding: "0 4px",
-                                          background: currentZoom !== 1 ? "#fef3c7" : "transparent",
-                                          border: "none", borderRadius: 4,
-                                        }}>{Math.round(currentZoom * 100)}%</button>
-                                      <button type="button" onClick={() => zoomIn(pn)}
-                                        title="확대" disabled={currentZoom >= 3}
-                                        style={{
-                                          width: 22, height: 22, fontSize: 14, fontWeight: 900,
-                                          color: currentZoom >= 3 ? "#cbd5e1" : "#475569",
-                                          cursor: currentZoom >= 3 ? "not-allowed" : "pointer",
-                                          background: "transparent", border: "none", borderRadius: 4,
-                                        }}>+</button>
-                                    </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => openPageModal(pn)}
-                                    className="block bg-gray-50 hover:bg-gray-100 transition cursor-zoom-in p-1.5"
-                                    style={{ width: "100%", height: "100%", maxWidth: effectiveInvColWidth - 12, overflow: "hidden" }}
-                                    title={`${pn}번 명세서 이미지 보기 (모달)`}
-                                  >
-                                    <img
-                                      src={imgSrc}
-                                      alt={`${pn}번 명세서`}
-                                      draggable={false}
-                                      style={{
-                                        display: "block",
-                                        margin: "0 auto",
-                                        transform: `translate(${currentPan.x}px, ${currentPan.y}px) rotate(${rotation}deg) scale(${currentZoom})`,
-                                        transformOrigin: "top center",
-                                        transition: panDragRef.current ? "none" : "transform 0.15s ease-out",
-                                        maxWidth: (rotation === 90 || rotation === -90 || rotation === 270) ? "60%" : "100%",
-                                        width: "auto",
-                                        height: "auto",
-                                        objectFit: "contain",
-                                        userSelect: "none",
-                                        pointerEvents: canPan ? "none" : "auto",
-                                      }}
-                                    />
-                                    <div className="mt-1 flex items-center justify-between px-0.5">
-                                      <span className="text-[10px] text-gray-400">{pn}번</span>
-                                      <a
-                                        href={imgSrc}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        onClick={e => e.stopPropagation()}
-                                        className="text-[10px] font-bold text-indigo-500 hover:text-indigo-700"
-                                        title="원본 이미지 새 창으로 열기"
-                                      >원본↗</a>
-                                    </div>
-                                  </button>
-                                  </div>
-                                );
-                              })()}
-                            </td>
+                            <RawPageImageCell
+                              pn={pn}
+                              imgSrc={pageImages[pn - 1]}
+                              imgRowSpan={imgRowSpan}
+                              imgCellHeight={imgCellHeightRaw}
+                              effectiveInvColWidth={effectiveInvColWidth}
+                              invColResizing={invColResizing}
+                              pageZoom={pageZoom}
+                              pagePan={pagePan}
+                              panDragRef={panDragRef}
+                              rotation={rotation}
+                              onInvColResizeStart={onInvColResizeStart}
+                              setInvoiceColWidth={setInvoiceColWidth}
+                              INV_COL_DEFAULT={INV_COL_DEFAULT}
+                              onImgPanStart={onImgPanStart}
+                              openPageModal={openPageModal}
+                              zoomOut={zoomOut}
+                              zoomReset={zoomReset}
+                              zoomIn={zoomIn}
+                            />
                           ) : null}
                           <td colSpan={rawColSpan} className="px-3 py-1.5">
                             <span className="flex items-center gap-2 text-xs font-bold text-amber-800">
@@ -3705,546 +3608,78 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                             );
                           }
 
-                          // 수량/단가/금액 인라인 편집 — 입력 중 · 입력창은 데이터 길이에 맞게 (2026-07-18)
-                          if (isEditingThisNum) {
-                            return (
-                              <td key={ci} className="px-1 py-1 text-right" onClick={e => e.stopPropagation()}>
-                                <input
-                                  key={`edit-${ri}-${ci}`}
-                                  autoFocus
-                                  type="text"
-                                  inputMode="numeric"
-                                  size={Math.max(6, editingCellVal.length + 2)}
-                                  style={{ width: `${Math.max(6, editingCellVal.length + 2)}ch`, minWidth: numInputMinW, maxWidth: "100%" }}
-                                  className="text-xs font-bold text-right text-indigo-700 bg-indigo-50 border border-indigo-300 rounded px-2 py-0.5 outline-none"
-                                  value={editingCellVal}
-                                  onChange={e => setEditingCellVal(e.target.value)}
-                                  onKeyDown={e => {
-                                    const moveToCell = (nextRi: number, nextCi: number) => {
-                                      setEditingCell({ ri: nextRi, ci: nextCi });
-                                      // 이동 시에도 값 비움 · 새로 입력 (2026-07-19)
-                                      setEditingCellVal("");
-                                    };
-                                    const editableIdxs = [dispHeaders.indexOf("수량"), dispHeaders.indexOf("단가"), dispHeaders.indexOf("금액")].filter(i => i >= 0).sort((a,b) => a - b);
-                                    const curPos = editableIdxs.indexOf(ci);
-
-                                    if (e.key === "Enter") {
-                                      // 2026-07-24 · 사용자 요청 "엔터 치면 값이 들어가야지 · 방향키로 셀 이동"
-                                      //   commit + 편집 종료 + focusedCell 유지 · document keydown 리스너가 방향키 catch → 이동
-                                      e.preventDefault();
-                                      commitCellEdit(ri, ci, editingCellVal);
-                                      setEditingCell(null);
-                                      setFocusedCell({ ri, ci });
-                                      return;
-                                    }
-                                    if (e.key === "Tab") {
-                                      e.preventDefault();
-                                      commitCellEdit(ri, ci, editingCellVal);
-                                      const nextCi = e.shiftKey
-                                        ? (curPos > 0 ? editableIdxs[curPos - 1] : editableIdxs[editableIdxs.length - 1])
-                                        : (curPos >= 0 && curPos < editableIdxs.length - 1 ? editableIdxs[curPos + 1] : editableIdxs[0]);
-                                      if (nextCi != null && nextCi !== ci) moveToCell(ri, nextCi);
-                                      else setEditingCell(null);
-                                      return;
-                                    }
-                                    if (e.key === "Escape") { setEditingCell(null); return; }
-
-                                    // 2026-07-22 방향키 wrap 이동 · 스프레드시트처럼 경계에서 다음/이전 행으로 자동 랩
-                                    const isVisibleRow = (r: number) =>
-                                      r >= 0 && r < effectiveDispRows.length
-                                      && !permanentlyDeletedRawRows.has(r)
-                                      && !hiddenRawRows.has(r)
-                                      && !isRowDbDeleted(r);
-                                    const findNextVisible = (start: number, dir: 1 | -1) => {
-                                      let r = start;
-                                      while (r >= 0 && r < effectiveDispRows.length) {
-                                        if (isVisibleRow(r)) return r;
-                                        r += dir;
-                                      }
-                                      return -1;
-                                    };
-                                    if (e.key === "ArrowLeft") {
-                                      e.preventDefault();
-                                      commitCellEdit(ri, ci, editingCellVal);
-                                      if (curPos > 0) {
-                                        moveToCell(ri, editableIdxs[curPos - 1]);
-                                      } else {
-                                        // 좌측 끝 · 이전 행의 우측 끝 editable 로 wrap
-                                        const prev = findNextVisible(ri - 1, -1);
-                                        if (prev >= 0 && editableIdxs.length > 0) moveToCell(prev, editableIdxs[editableIdxs.length - 1]);
-                                      }
-                                      return;
-                                    }
-                                    if (e.key === "ArrowRight") {
-                                      e.preventDefault();
-                                      commitCellEdit(ri, ci, editingCellVal);
-                                      if (curPos < editableIdxs.length - 1) {
-                                        moveToCell(ri, editableIdxs[curPos + 1]);
-                                      } else {
-                                        // 우측 끝 · 다음 행의 좌측 끝 editable 로 wrap
-                                        const next = findNextVisible(ri + 1, 1);
-                                        if (next >= 0 && editableIdxs.length > 0) moveToCell(next, editableIdxs[0]);
-                                      }
-                                      return;
-                                    }
-                                    // ArrowDown/Up · 삭제·숨김 행 건너뛰고 다음 가시 행으로 이동 (2026-07-19)
-                                    if (e.key === "ArrowDown") {
-                                      let nextRi = ri + 1;
-                                      while (nextRi < effectiveDispRows.length
-                                        && (permanentlyDeletedRawRows.has(nextRi)
-                                          || hiddenRawRows.has(nextRi)
-                                          || isRowDbDeleted(nextRi))) {
-                                        nextRi++;
-                                      }
-                                      if (nextRi < effectiveDispRows.length) {
-                                        e.preventDefault();
-                                        commitCellEdit(ri, ci, editingCellVal);
-                                        moveToCell(nextRi, ci);
-                                      }
-                                      return;
-                                    }
-                                    if (e.key === "ArrowUp") {
-                                      let prevRi = ri - 1;
-                                      while (prevRi >= 0
-                                        && (permanentlyDeletedRawRows.has(prevRi)
-                                          || hiddenRawRows.has(prevRi)
-                                          || isRowDbDeleted(prevRi))) {
-                                        prevRi--;
-                                      }
-                                      if (prevRi >= 0) {
-                                        e.preventDefault();
-                                        commitCellEdit(ri, ci, editingCellVal);
-                                        moveToCell(prevRi, ci);
-                                      }
-                                      return;
-                                    }
-                                  }}
-                                  onBlur={() => commitCellEdit(ri, ci, editingCellVal)}
-                                />
-                              </td>
-                            );
-                          }
-
-                          // 2026-07-23 · VAT 컬럼 · OCR VAT 값 우선 · 없으면 단가*10% (자동계산)
-                          if (h === "VAT") {
-                            const priIdxLocal = dispHeaders.indexOf("단가");
-                            const priceEff = priIdxLocal >= 0 ? (cellEdits[ri]?.[priIdxLocal] ?? row[priIdxLocal]) : null;
-                            const priceNum = priceEff == null ? 0 : parseNumber(priceEff);
-                            const ocrVat = cell == null ? null : parseNumber(cell);
-                            const hasOcrVat = ocrVat != null && Number.isFinite(ocrVat) && ocrVat > 0;
-                            const autoVat = priceNum > 0 ? Math.round(priceNum * 0.1) : 0;
-                            const showVat = hasOcrVat ? ocrVat : autoVat;
-                            return (
-                              <td key={ci} className="px-1 py-2 whitespace-nowrap text-right text-zinc-600 text-[11px]"
-                                title={hasOcrVat ? `OCR VAT ${fmt(ocrVat!)}원` : `단가 ${fmt(priceNum)} × 10% = ${fmt(autoVat)}원 (자동)`}>
-                                {showVat > 0 ? (
-                                  <span className={hasOcrVat ? "font-bold text-zinc-700" : "text-zinc-400"}>
-                                    {fmt(showVat)}
-                                    {!hasOcrVat && <span className="ml-0.5 text-[9px] text-zinc-300">자동</span>}
-                                  </span>
-                                ) : <span className="text-gray-300">—</span>}
-                              </td>
-                            );
-                          }
-
-                          // 수량/단가/금액 인라인 편집 — 클릭 가능 셀
-                          //   · 일반 클릭: 편집 모드
-                          //   · Alt+Click: 셀 체크 토글 (재추출/삭제 대상)
+                          // 수량/단가/금액 셀 렌더
                           if (isEditableNum) {
-                            const cellKey = `${ri}:${ci}`;
-                            const isCellChecked = checkedCells.has(cellKey);
                             return (
-                              <td key={ci}
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  if (e.altKey || e.ctrlKey || e.metaKey) {
-                                    toggleCellCheck(ri, ci);
-                                    return;
-                                  }
-                                  setEditingCell({ ri, ci });
-                                  setFocusedCell({ ri, ci });
-                                  // 입력창 오픈 시 값 비움 · 새로 입력받음 (2026-07-19 · 사용자 요청)
-                                  setEditingCellVal("");
-                                }}
-                                style={{ minWidth: numCellMinW }}
-                                className={`px-1 py-2 whitespace-nowrap text-right cursor-pointer hover:bg-indigo-50/60 group ${
-                                  isCellChecked ? "bg-sky-100 ring-1 ring-sky-400" :
-                                  focusedCell?.ri === ri && focusedCell?.ci === ci ? "ring-2 ring-indigo-500 bg-indigo-50/50" :
-                                  "font-bold text-amber-800"
-                                }`}
-                                title={isCellChecked ? "체크됨 (Alt+Click 해제)" : "클릭하여 수정 · Alt+Click 으로 선택 · Enter/방향키 이동"}
-                              >
-                                <span className={numCellInnerCls}>
-                                  <span className="flex items-center justify-end gap-1">
-
-                                    {(() => {
-                                      if (cell == null || (typeof cell === "number" && cell <= 0 && !hasDirectEdit)) {
-                                        return <span className="text-gray-300">—</span>;
-                                      }
-                                      return (
-                                        // 2026-07-28 · 수정된 셀 (단가/금액) · 빨간색 텍스트 표시 · "수정" 배지 제거 (사용자 요청)
-                                        <span className={hasDirectEdit ? "text-rose-600 font-bold" : isCorrectedAmt ? "text-emerald-700" : ""}>
-                                          {typeof cell === "number" ? fmt(cell) : String(cell)}
-                                        </span>
-                                      );
-                                    })()}
-                                    {isCorrectedAmt && <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1 rounded font-bold">보정</span>}
-                                    {dbFilledCells.has(`${ri}-${ci}`) && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1 rounded font-bold" title="products DB 에서 자동 채움">DB</span>}
-                                    <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
-                                  </span>
-                                  {/* 2026-07-28 · 사입가 표시 제거 (ERP sub-row 에 이미 표시 · 중복) */}
-                                  {(h === "수량" || h === "단가") && (() => {
-                                    const cellKey = `${ri}-${ci}`;
-                                    const cycleIdx = numericCellCycle[cellKey] ?? -1;
-                                    const totalCands = (numericCellCandidates[cellKey] as number[] | undefined)?.length ?? 0;
-                                    const noCands = noCandidateCells.has(cellKey);
-                                    const isQty = h === "수량";
-                                    const activeCls = isQty ? "bg-sky-500 text-white hover:bg-sky-600" : "bg-emerald-500 text-white hover:bg-emerald-600";
-                                    const idleCls = isQty ? "bg-sky-50 text-sky-600 hover:bg-sky-500 hover:text-white" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white";
-                                    // 2026-07-28 · 사입적용 버튼 제거 (ERP sub-row 에 정보 있음 · 중복)
-                                    return (
-                                      <span className="inline-flex items-center gap-1 justify-end max-w-full overflow-hidden flex-wrap">
-                                        <button
-                                          type="button"
-                                          onClick={(e) => { e.stopPropagation(); reextractOneCell(ri, ci, h as "수량" | "단가"); }}
-                                          className={`opacity-70 hover:opacity-100 shrink-0 flex items-center justify-center rounded transition cursor-pointer ${reextBtnCls} ${
-                                            noCands
-                                              ? "bg-rose-100 text-rose-500 hover:bg-rose-200"
-                                              : cycleIdx >= 0
-                                                ? activeCls
-                                                : idleCls
-                                          }`}
-                                          title={noCands
-                                            ? `${h} 후보 없음 · 이 명세서 rawText에서 ${h}으로 인식 가능한 값을 찾지 못함`
-                                            : cycleIdx >= 0
-                                              ? `${h} 재추출 순환 중 (${cycleIdx + 1}/${totalCands}) · 클릭하면 다음 후보 · 마지막이면 원본 복원`
-                                              : `${h} 재추출 · 이 명세서 rawText의 ${h} 후보 순환 · 이 셀만 갱신 (다른 셀 절대 연동 안 됨)`}
-                                        >{noCands ? "⌀" : "🔄"}</button>
-                                      </span>
-                                    );
-                                  })()}
-                                </span>
-                              </td>
+                              <NumericEditableCell
+                                ri={ri} ci={ci} h={h} cell={cell}
+                                hasDirectEdit={hasDirectEdit} isCorrectedAmt={isCorrectedAmt}
+                                focusedCell={focusedCell} editingCell={editingCell} editingCellVal={editingCellVal}
+                                numCellMinW={numCellMinW} numInputMinW={numInputMinW}
+                                numCellInnerCls={numCellInnerCls} reextBtnCls={reextBtnCls}
+                                numericCellCycle={numericCellCycle} numericCellCandidates={numericCellCandidates}
+                                noCandidateCells={noCandidateCells} dbFilledCells={dbFilledCells}
+                                checkedCells={checkedCells}
+                                dispHeaders={dispHeaders} effectiveDispRows={effectiveDispRows}
+                                permanentlyDeletedRawRows={permanentlyDeletedRawRows}
+                                hiddenRawRows={hiddenRawRows} isRowDbDeleted={isRowDbDeleted}
+                                setEditingCell={setEditingCell} setEditingCellVal={setEditingCellVal}
+                                setFocusedCell={setFocusedCell} commitCellEdit={commitCellEdit}
+                                reextractOneCell={reextractOneCell} toggleCellCheck={toggleCellCheck}
+                              />
                             );
                           }
 
-                          // 바코드 100% 확정 매칭 (매칭 후에도 1차 품명 편집 유지 · 2026-07-16)
-                          if (isName && barcodeMatch) {
-                            return (
-                              <td key={ci} className="px-3 py-2 max-w-[240px]">
-                                <div className="flex flex-col gap-0">
-                                  <span className="flex items-center gap-1">
-                                    <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-1 rounded shrink-0">BC</span>
-                                    <span className="font-semibold text-emerald-700 break-words whitespace-normal">{renderTextWithBreaks(barcodeMatch.name)}</span>
-                                    <button
-                                      type="button"
-                                      title="ERP 자동보정 취소 → 원본 이름으로 복원"
-                                      onClick={e => { e.stopPropagation(); setCancelledAutoMap(prev => new Set([...prev, ri])); }}
-                                      className="text-[10px] px-1 py-px rounded bg-rose-100 text-rose-600 hover:bg-rose-200 cursor-pointer shrink-0"
-                                    >✕</button>
-                                  </span>
-                                  <span className="text-gray-300 text-[11px] line-through break-words whitespace-normal">{renderTextWithBreaks(String(origCell ?? ""))}</span>
-                                </div>
-                              </td>
-                            );
-                          }
-
-                          // ── 품명 인라인 편집 (autoMatch/일반/취소 통합 · 매칭 후에도 편집 가능) ──────────
+                          // 품명 셀 렌더 (바코드 매칭 + 자동보정 + 편집 통합)
                           if (isName) {
-                            const rawSupplierForRow = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? globalSupplier ?? "";
-                            // 편집 중: 입력창 + fixed-position 드롭다운(별도 렌더)
-                            if (editingNameRow === ri) {
-                              return (
-                                <td key={ci} className="px-2 py-1.5 max-w-[260px]" onClick={e => e.stopPropagation()}>
-                                  <input
-                                    ref={nameInputRef}
-                                    autoFocus
-                                    lang="ko"
-                                    inputMode="text"
-                                    autoCapitalize="off"
-                                    autoCorrect="off"
-                                    spellCheck={false}
-                                    style={{ imeMode: "active" } as React.CSSProperties}
-                                    className="w-full text-[12px] font-semibold text-gray-800 bg-indigo-50 border border-indigo-300 rounded px-2 py-0.5 outline-none"
-                                    value={editingNameVal}
-                                    placeholder={String(origCell ?? cell ?? "")}
-                                    onChange={e => {
-                                      const v = e.target.value;
-                                      setEditingNameVal(v);
-                                      if (nameEditSearchRef.current) clearTimeout(nameEditSearchRef.current);
-                                      if (v.trim().length < 2) {
-                                        setNameEditResults([]);
-                                        setNameEditSearchDone(false);
-                                        setNameDropdownRect(null);
-                                        return;
-                                      }
-                                      // rect를 즉시 설정하여 드롭다운 위치 확보
-                                      if (nameInputRef.current) {
-                                        const r = nameInputRef.current.getBoundingClientRect();
-                                        setNameDropdownRect({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 220) });
-                                      }
-                                      setNameEditSearchDone(false);
-                                      nameEditSearchRef.current = setTimeout(async () => {
-                                        const params = new URLSearchParams({ q: v.trim() });
-                                        if (rawSupplierForRow) params.set("supplier", rawSupplierForRow);
-                                        try {
-                                          // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-                                          const { data } = await api.get<any[]>(`/api/products-search?${params}`);
-                                          const results = Array.isArray(data) ? data : [];
-                                          setNameEditResults(results);
-                                          setNameEditSearchDone(true);
-                                        } catch {
-                                          setNameEditResults([]);
-                                          setNameEditSearchDone(false);
-                                          setNameDropdownRect(null);
-                                        }
-                                      }, 280);
-                                    }}
-                                    onKeyDown={async e => {
-                                      if (e.key === "Escape") {
-                                        setEditingNameRow(null);
-                                        setNameEditResults([]);
-                                        setNameEditSearchDone(false);
-                                        setNameDropdownRect(null);
-                                      }
-                                      if (e.key === "Enter") {
-                                        // 2026-07-21: Enter 시 · 편집값 저장 + 동의어 DB 자동 등록
-                                        //   dropdown 최상위 매치 있으면 그것으로 · 없으면 raw text edit
-                                        // 2026-07-28 · B 옵션 · orig = 셀에 표시되던 값 (autoSyn 있으면 그 이름 · 없으면 OCR)
-                                        const v = editingNameVal.trim();
-                                        const orig = String((autoSynonymMatches[ri]?.name ?? origCell) ?? "").trim();
-                                        if (v && v !== orig) {
-                                          const topMatch = nameEditResults[0];
-                                          // 2026-07-28 · 동의어보정사전 등록 confirm 다시 활성화 (사용자 요청 재변경)
-                                          if (topMatch?.product_code) {
-                                            setAutoSynonymMatches(prev => ({ ...prev, [ri]: { code: topMatch.product_code, name: topMatch.product_name } }));
-                                            setCancelledAutoSyn(prev => { const s = new Set(prev); s.delete(ri); return s; });
-                                            setCancelledAutoMap(prev => { const s = new Set(prev); s.delete(ri); return s; });
-                                            if (orig !== topMatch.product_name) {
-                                              if (await confirm({ message: `동의어보정사전에 등록할까요?\n\n· 보정 전: ${orig}\n· 보정 후: ${topMatch.product_name}` })) {
-                                                saveSynonym(ri, orig, topMatch.product_code, rawSupplierForRow || undefined, topMatch.product_name);
-                                              }
-                                            }
-                                          } else {
-                                            setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [ci]: v } }));
-                                            if (orig && orig !== v) {
-                                              const existingCode = autoSynonymMatches[ri]?.code;
-                                              if (await confirm({ message: `동의어보정사전에 등록할까요?\n\n· 보정 전: ${orig}\n· 보정 후: ${v}` })) {
-                                                saveSynonym(ri, orig, existingCode ?? "", rawSupplierForRow || undefined, v);
-                                              }
-                                            }
-                                          }
-                                        }
-                                        e.currentTarget.blur();
-                                      }
-                                    }}
-                                    onBlur={() => setTimeout(() => {
-                                      // 2026-07-24 · 사용자 문제 "품명 리스트 아래쪽 선택 안됨"
-                                      //   dropdown 클릭 처리 시간 확보 · 150ms → 500ms 로 증가
-                                      //   preventDefault 만으로 완전 방어 어려운 브라우저 (Safari 등) 대비
-                                      setEditingNameRow(null);
-                                      setNameEditResults([]);
-                                      setNameEditSearchDone(false);
-                                      setNameDropdownRect(null);
-                                    }, 500)}
-                                  />
-                                </td>
-                              );
-                            }
-
-                            // autoMatch 존재: 보정된 이름 + 연필(수정) + 원본명(클릭 → 삭제 확인)
-                            if (autoMatch) {
-                              return (
-                                <td key={ci}
-                                  onClick={e => {
-                                    e.stopPropagation();
-                                    setEditingNameRow(ri);
-                                    // 2026-07-28 · 사용자 요청 · 클릭 시 · 현재 표시값 (autoMatch.name) 을 입력창 초기값으로
-                                    setEditingNameVal(String(autoMatch.name ?? origCell ?? ""));
-                                    setNameEditResults([]);
-                                    setNameEditSearchDone(false);
-                                    setNameDropdownRect(null);
-                                  }}
-                                  className="px-3 py-2 max-w-[240px] cursor-pointer hover:bg-indigo-50/60 group"
-                                  title="클릭하여 상품명 수정">
-                                  <div className="flex flex-col gap-0">
-                                    <span className="flex items-center gap-1">
-                                      {/* 2026-07-23 · 사용자 요청 "db매칭 한 경우 품명에 db배지 표시해" */}
-                                      <span className="text-[9px] font-bold bg-brand-deep text-white px-1 py-px rounded shrink-0" title="products DB 에서 자동 매칭">DB</span>
-                                      <BookOpen size={9} className="text-indigo-400 shrink-0" />
-                                      <span className="font-semibold text-indigo-700 break-words whitespace-normal">{renderTextWithBreaks(autoMatch.name)}</span>
-                                      <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
-                                      <button
-                                        type="button"
-                                        title="ERP 자동보정 취소 → 원본 이름으로 복원"
-                                        onClick={e => { e.stopPropagation(); setCancelledAutoMap(prev => new Set([...prev, ri])); }}
-                                        className="text-[10px] px-1 py-px rounded bg-rose-100 text-rose-600 hover:bg-rose-200 cursor-pointer shrink-0"
-                                      >✕</button>
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={e => { e.stopPropagation(); setDeleteSynConfirm({ ri, origName: String(origCell ?? "") }); }}
-                                      className="text-gray-300 text-[11px] line-through break-words whitespace-normal hover:text-rose-400 cursor-pointer text-left"
-                                      title="클릭하여 동의어 삭제"
-                                    >
-                                      {renderTextWithBreaks(String(origCell ?? ""))}
-                                    </button>
-                                  </div>
-                                </td>
-                              );
-                            }
-
-                            // 일반 품명 (autoMatch 없음, barcodeMatch도 없음) → 클릭 편집
-                            // 2026-07-28 · 사용자 요청 · 잡문자 경고 배지 제거 · 원본 데이터 그대로 표시
-                            const isCancelledAutoMap = cancelledAutoMap.has(ri);
-                            const cellStr = String(cell ?? "");
                             return (
-                              <td key={ci}
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  setEditingNameRow(ri);
-                                  setEditingNameVal(cellStr);
-                                  setNameEditResults([]);
-                                  setNameEditSearchDone(false);
-                                  setNameDropdownRect(null);
-                                }}
-                                className="px-3 py-2 cursor-pointer hover:bg-indigo-50/60 group"
-                                title="클릭하여 상품명 수정">
-                                <div className="flex flex-col gap-0.5 items-start">
-                                  <span className="flex items-center gap-1">
-                                    <span className="font-semibold break-words whitespace-normal text-gray-900">
-                                      {cell == null ? <span className="text-gray-300">—</span> : renderTextWithBreaks(cellStr)}
-                                    </span>
-                                    <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    {(() => {
-                                      const cycleIdxN = nameCellCycle[ri];
-                                      const totalCandsN = nameCellCandidates[ri]?.length ?? 0;
-                                      const cycleLabel = cycleIdxN != null && totalCandsN > 0
-                                        ? ` (${cycleIdxN + 1}/${totalCandsN})`
-                                        : "";
-                                      const isCycling = cycleIdxN != null && totalCandsN > 0;
-                                      return (
-                                        <button
-                                          type="button"
-                                          title={isCycling ? `순환 재추출 · 클릭하면 다음 후보 · 마지막이면 원본 복원` : "품명 재추출 · rawText 한글 토큰 → 공급사 DB 매칭 · 실패 시 순환 모드"}
-                                          onClick={e => {
-                                            e.stopPropagation();
-                                            reextractProductName(ri);
-                                          }}
-                                          disabled={reextractingName.has(ri)}
-                                          className={`text-[10px] px-1.5 py-0.5 rounded disabled:opacity-50 cursor-pointer shrink-0 transition font-bold ${
-                                            isCycling
-                                              ? "bg-brand-deep text-white hover:bg-brand-deep"
-                                              : "bg-sky-100 text-sky-700 hover:bg-sky-500 hover:text-white"
-                                          }`}
-                                        >{reextractingName.has(ri) ? "⏳ 재추출중" : `🔄 재추출${cycleLabel}`}</button>
-                                      );
-                                    })()}
-                                    {isCancelledAutoMap && (
-                                      <button
-                                        type="button"
-                                        title="ERP 자동보정 복원"
-                                        onClick={e => {
-                                          e.stopPropagation();
-                                          setCancelledAutoMap(prev => { const s = new Set(prev); s.delete(ri); return s; });
-                                        }}
-                                        className="text-[10px] px-1 py-px rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 cursor-pointer shrink-0"
-                                      >↩ 복원</button>
-                                    )}
-                                  </span>
-                                </div>
-                              </td>
+                              <NameCell
+                                ri={ri} ci={ci} pn={pn} cell={cell}
+                                dispRows={dispRows} autoSynonymMatches={autoSynonymMatches}
+                                cancelledAutoMap={cancelledAutoMap} barcodeAutoMap={barcodeAutoMap}
+                                nameCellCycle={nameCellCycle} nameCellCandidates={nameCellCandidates}
+                                reextractingName={reextractingName} nameIdx={nameIdx}
+                                editingNameRow={editingNameRow} editingNameVal={editingNameVal}
+                                rawSupplierByPage={rawSupplierByPage} structuredPages={structuredPages}
+                                globalSupplier={globalSupplier} pageNums={pageNums}
+                                nameInputRef={nameInputRef} nameEditSearchRef={nameEditSearchRef}
+                                editingNameRowRef={editingNameRowRef}
+                                setEditingNameRow={setEditingNameRow} setEditingNameVal={setEditingNameVal}
+                                setAutoSynonymMatches={setAutoSynonymMatches}
+                                setCancelledAutoMap={setCancelledAutoMap}
+                                setCancelledAutoSyn={setCancelledAutoSyn}
+                                setCellEdits={setCellEdits}
+                                setNameEditResults={setNameEditResults}
+                                setNameEditSearchDone={setNameEditSearchDone}
+                                setNameDropdownRect={setNameDropdownRect}
+                                setMatchItems={setMatchItems}
+                                setDeleteSynConfirm={setDeleteSynConfirm}
+                                reextractProductName={reextractProductName}
+                                saveSynonym={saveSynonym}
+                                confirm={confirm}
+                                handleMatchPage={handleMatchPage}
+                                matchRawToPurchaseHistory={matchRawToPurchaseHistory}
+                                nameEditResults={nameEditResults}
+                                nameEditSearchDone={nameEditSearchDone}
+                              />
                             );
                           }
 
-                          // 규격 컬럼: 폭 제한 + 줄바꿈 + 2줄 이상 말줄임
-                          if (h === "규격") {
-                            return (
-                              <td key={ci} className="px-3 py-2 max-w-[80px] text-gray-600">
-                                <span className="block line-clamp-2 break-words text-[11px]">
-                                  {cell == null ? <span className="text-gray-300">—</span> : String(cell)}
-                                </span>
-                              </td>
-                            );
-                          }
-
-                          // 유통기한/유효기한/유통기간 컬럼: 클릭 편집 + 재추출 버튼 · 순환 (2026-07-18 · 2026-07-22 확장)
+                          // 유통기한/유효기한/유통기간 셀 렌더
                           if (h === "유통기한" || h === "유효기한" || h === "유통기간") {
-                            const cellKey = `${ri}-${ci}`;
-                            const cycleIdx = numericCellCycle[cellKey] ?? -1;
-                            const totalCands = (numericCellCandidates[cellKey] as string[] | undefined)?.length ?? 0;
-                            const isEditingExp = editingCell?.ri === ri && editingCell?.ci === ci;
-                            if (isEditingExp) {
-                              return (
-                                <td key={ci} className="px-1 py-1 text-right" onClick={e => e.stopPropagation()}>
-                                  <input
-                                    key={`edit-exp-${ri}-${ci}`}
-                                    autoFocus
-                                    type="text"
-                                    placeholder="2026-12-31"
-                                    size={Math.max(13, editingCellVal.length + 2)}
-                                    style={{ width: `${Math.max(13, editingCellVal.length + 2)}ch`, minWidth: expInputMinW, maxWidth: "100%" }}
-                                    className="text-[11px] font-mono text-amber-700 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5 outline-none text-right"
-                                    value={editingCellVal}
-                                    onChange={e => setEditingCellVal(e.target.value)}
-                                    onKeyDown={e => {
-                                      if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        const v = normalizeExpiryDate(editingCellVal.trim());
-                                        setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [ci]: v === "" ? null : v } }));
-                                        setEditingCell(null);
-                                      } else if (e.key === "Escape") {
-                                        setEditingCell(null);
-                                      }
-                                    }}
-                                    onBlur={() => {
-                                      const v = normalizeExpiryDate(editingCellVal.trim());
-                                      setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [ci]: v === "" ? null : v } }));
-                                      setEditingCell(null);
-                                    }}
-                                  />
-                                </td>
-                              );
-                            }
-                            const expCellKey = `${ri}-${ci}`;
-                            const expCycleIdx = numericCellCycle[expCellKey] ?? -1;
-                            const expTotalCands = (numericCellCandidates[expCellKey] as string[] | undefined)?.length ?? 0;
-                            const expNoCands = noCandidateCells.has(expCellKey);
                             return (
-                              <td key={ci} style={{ minWidth: numCellMinW }}
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  setEditingCell({ ri, ci });
-                                  setEditingCellVal("");  // 입력창 오픈 시 값 비움 (2026-07-19)
-                                }}
-                                className="px-1 py-2 text-gray-500 text-[11px] group cursor-pointer hover:bg-amber-50/60 text-right"
-                                title="클릭하여 유통기한 수정">
-                                <span className={numCellInnerCls}>
-                                  <span className="flex items-center justify-end gap-1">
-                                    {cell == null ? <span className="text-gray-300">—</span> : String(cell)}
-                                    <Pencil size={8} className="text-amber-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
-                                  </span>
-                                  {/* 2026-07-22: 유통기한 재추출 버튼 다음줄 · 항상 표시 */}
-                                  <button
-                                    type="button"
-                                    onClick={e => { e.stopPropagation(); reextractOneCell(ri, ci, "유통기한"); }}
-                                    className={`opacity-70 hover:opacity-100 shrink-0 flex items-center justify-center rounded transition cursor-pointer ${reextBtnCls} ${
-                                      expNoCands
-                                        ? "bg-rose-100 text-rose-500 hover:bg-rose-200"
-                                        : expCycleIdx >= 0
-                                          ? "bg-amber-500 text-white hover:bg-amber-600"
-                                          : "bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white"
-                                    }`}
-                                    title={expNoCands
-                                      ? "유통기한 후보 없음 · 이 명세서 rawText 에서 20xx 년도 날짜를 찾지 못함"
-                                      : expCycleIdx >= 0
-                                        ? `유통기한 재추출 순환 중 (${expCycleIdx + 1}/${expTotalCands}) · 클릭하면 다음 후보 · 마지막이면 원본 복원`
-                                        : "유통기한 재추출 · 이 명세서 rawText 의 20xx+ 날짜 순환 · 이 셀만 갱신"}
-                                  >{expNoCands ? "⌀" : "🔄"}</button>
-                                </span>
-                              </td>
+                              <ExpiryCell
+                                ri={ri} ci={ci} cell={cell}
+                                editingCell={editingCell} editingCellVal={editingCellVal}
+                                numericCellCycle={numericCellCycle}
+                                numericCellCandidates={numericCellCandidates}
+                                noCandidateCells={noCandidateCells}
+                                numCellMinW={numCellMinW} numCellInnerCls={numCellInnerCls}
+                                reextBtnCls={reextBtnCls} expInputMinW={expInputMinW}
+                                setEditingCell={setEditingCell} setEditingCellVal={setEditingCellVal}
+                                setCellEdits={setCellEdits}
+                                reextractOneCell={reextractOneCell}
+                              />
                             );
                           }
 
@@ -4742,510 +4177,73 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
         </Card>
       )}
 
-      {/* ── 상품명 보정 · 2026-07-28 · 2차보정 시작 버튼 · 2차 뷰 섹션 완전 삭제 (사용자 요청) ── */}
-      {structuredPages.length > 0 && nameIdx >= 0 && (
-        <>
-          {/* 2차보정 뷰 제거됨 (2026-07-22) · showSecondCorrection UI 전체 비활성 */}
-
-          {/* ── 확정 결과표 섹션 ── */}
-          {matchItems && confirmed && (
-            <div className="w-full max-w-[1400px] mx-auto pl-3 pr-8 box-border">
-            <div className="w-full bg-white border border-emerald-200 rounded-2xl overflow-hidden shadow-sm">
-              <div className="px-4 py-2.5 border-b border-emerald-100 bg-emerald-50 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                  <CheckCircle size={13} className="text-emerald-600" />
-                  <span className="text-xs font-bold text-emerald-800">거래명세서 확정표</span>
-                  {/* 2026-07-28 · 총 건수·합계·미수금 · 각 명세서 헤더에 이미 표시 · 중복 제거 (사용자 요청) */}
-                  {/* 2026-07-28 · 이미지 컬럼 접기/펴기 (사용자 요청) */}
-                  {pageImages?.length ? (
-                    <button type="button"
-                      onClick={() => setConfImageCollapsed(v => !v)}
-                      className="ml-1 flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 rounded-lg px-2 py-1 cursor-pointer whitespace-nowrap"
-                      title={confImageCollapsed ? "명세서 이미지 컬럼 펼치기" : "명세서 이미지 컬럼 접기"}>
-                      {confImageCollapsed ? "▶ 이미지 펼치기" : "◀ 이미지 접기"}
-                    </button>
-                  ) : null}
-                </div>
-                <XlsxExportSection
-                  xlsInputRef={xlsInputRef}
-                  handleTemplateUpload={handleTemplateUpload}
-                  xlsTemplateSaved={xlsTemplateSaved}
-                  setXlsTemplateSaved={setXlsTemplateSaved}
-                  xlsTemplate={xlsTemplate}
-                  xlsTemplateName={xlsTemplateName}
-                  xlsTemplateHdrs={xlsTemplateHdrs}
-                  handleErpUploadExport={handleErpUploadExport}
-                  handleExcelExport={handleExcelExport}
-                  handleExport={handleExport}
-                  confHeaders={CONF_HEADERS}
-                  confRows={confRows}
-                />
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs border-collapse table-fixed">
-                  <thead>
-                    <tr className="bg-emerald-50/60 border-b-2 border-emerald-200">
-                      {/* 2026-07-27 · 왼쪽 거래명세서 이미지 컬럼 · 접기/펴기 (2026-07-28) */}
-                      {pageImages?.length ? (
-                        <th
-                          className="p-0 text-center bg-gray-50 border-r border-line text-[10px] font-bold text-gray-500 whitespace-nowrap select-none"
-                          style={{
-                            width: confImageCollapsed ? 24 : effectiveInvColWidth,
-                            minWidth: confImageCollapsed ? 24 : effectiveInvColWidth,
-                            maxWidth: confImageCollapsed ? 24 : effectiveInvColWidth,
-                          }}
-                        >
-                          <div style={{ padding: "8px 2px", textAlign: "center" }}>
-                            {confImageCollapsed ? "▶" : <span>거래명세서</span>}
-                          </div>
-                        </th>
-                      ) : null}
-                      {CONF_HEADERS.map((h, origIdx) => {
-                        const collapsed = collapsedConfCols.has(h);
-                        // 2026-07-21: 확정표도 컬럼별 명시 폭 · 상품명은 최소 160px (10글자+ 한줄 보장)
-                        const CONF_COL_WIDTHS: Record<string, number> = {
-                          "거래일": 82, "확정일": 82, "상품코드": 90, "상품명": 0, // 0 = 남은 공간
-                          "공급처": 90, "공급사": 90, "규격": 60, "유통기한": 95,
-                          "마스터 매입단가": 95,
-                          // 2026-07-28 · 통합 컬럼 폭 (긴 상품명 대비 넉넉)
-                          "거래일·공급사": 110,
-                          "상품코드·상품명": 0, // 0 = 남은 공간 · 실제 min 260px 은 렌더에서 보장
-                          "OCR수량": 55, "OCR단가": 78, "OCR금액": 92,
-                          "매입수량": 55, "매입단가": 78, "매입금액": 92, "매입총계": 92,
-                          "전표 매입단가": 78, "마스터단가": 78, "판매가": 78, "이익률": 60,
-                          "잔고": 82, "메모": 60,
-                        };
-                        const cw = CONF_COL_WIDTHS[h];
-                        const cellWidth = collapsed ? undefined : (cw && cw > 0 ? cw : undefined);
-                        const isNameCol = h === "상품명";
-                        return (
-                          <th key={origIdx}
-                            onClick={() => setCollapsedConfCols(prev => { const s = new Set(prev); s.has(h) ? s.delete(h) : s.add(h); return s; })}
-                            title={collapsed ? `${h} (클릭해서 펼치기)` : "클릭해서 접기"}
-                            style={{
-                              cursor: 'pointer',
-                              width: cellWidth,
-                              minWidth: collapsed ? 16 : (isNameCol ? 160 : (cellWidth ?? 40)),
-                            }}
-                            className={`py-2 font-bold select-none transition-colors hover:bg-emerald-100/60 ${
-                              collapsed ? "px-1 text-center text-emerald-300 w-4 max-w-[16px]" :
-                              CONF_NUM.has(h) ? "px-3 text-right text-emerald-900 whitespace-nowrap" :
-                              isNameCol ? "px-3 text-left text-emerald-900 break-words" :
-                              "px-3 text-left text-emerald-900 whitespace-nowrap"
-                            }`}>
-                            {collapsed ? "·" : h}
-                          </th>
-                        );
-                      })}
-                    </tr>
-                  </thead>
-                    <tbody>
-                      {(() => {
-                        // 2026-07-27 · 확정표 · 페이지별 첫/마지막 렌더될 ri 사전 계산 (skip 행 반영)
-                        //   확정 안 된 페이지 · 필터된 행 · 빈 행은 제외
-                        const _confFirstByPage = new Map<number, number>();
-                        const _confLastByPage = new Map<number, number>();
-                        confRows.forEach((r, i) => {
-                          if (!r || r.length === 0) return;
-                          if (permanentlyDeletedRawRows.has(i)) return;
-                          if (isRowDbDeleted(i)) return;
-                          if (hiddenRawRows.has(i)) return;
-                          const pn = pageNums[i];
-                          if (!_confFirstByPage.has(pn)) _confFirstByPage.set(pn, i);
-                          _confLastByPage.set(pn, i);
-                        });
-                        return confRows.map((row, ri) => {
-                        // 2026-07-24 · 사용자 반복 요청 "1차보정 삭제행 2차보정 안 나타나야" · 3중 방어
-                        //   confRows 자체는 이미 필터되지만 · 렌더 시 안전 재확인
-                        if (permanentlyDeletedRawRows.has(ri)) return null;
-                        if (isRowDbDeleted(ri)) return null;
-                        if (hiddenRawRows.has(ri)) return null;
-                        // 빈 배열 (필터로 제거됐지만 잔여 케이스)
-                        if (!row || row.length === 0) return null;
-                        const m        = cancelledRows.has(ri) ? null : (selectedCands[ri] ?? matchItems![ri]?.matched ?? null);
-                        const score    = m?.score ?? 0;
-                        const masterP  = m?.masterPrice ?? null;
-                        const invoiceP = row[CONF_HEADERS.indexOf("전표 매입단가")];
-                        const priceDiff = masterP != null && typeof invoiceP === "number" && invoiceP !== masterP
-                          ? (invoiceP > masterP ? "high" : "low") : null;
-                        const pn = pageNums[ri];
-                        // 2026-07-27 · isFirstInPage/LastInPage · skip 행 반영한 실제 첫/마지막 여부
-                        const isFirstInPage = ri === _confFirstByPage.get(pn);
-                        const isLastInPage = ri === _confLastByPage.get(pn);
-                        // 우측 명세서 접기 제거 (2026-07-19) · 항상 펼침
-                        const isPageCollapsedConf = false;
-                        const pageRowCountConf = isFirstInPage ? confRows.filter((r, i) => r.length > 0 && pageNums[i] === pn && !permanentlyDeletedRawRows.has(i) && !isRowDbDeleted(i) && !hiddenRawRows.has(i)).length : 0;
-                        const pageSupplierHeadConf = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
-                        // 2026-07-28 · 확정표 이미지 rowSpan · 페이지 헤더(1) + 컬럼 헤더 반복(1) + 데이터 N + spacer(1)
-                        const imgRowSpanConf = isFirstInPage ? 3 + pageRowCountConf : 0;
-                        // 2026-07-28 · 이미지 td 높이 · 데이터 행 height 를 이미지가 늘리지 않도록 명시 지정
-                        //   헤더44 + 컬럼헤더34 + 데이터N*36 + spacer(shortfall+24)
-                        const MIN_PAGE_HEIGHT = 240;
-                        const naturalHeightConf = 44 + 34 + pageRowCountConf * 36;
-                        const shortfallConf = Math.max(0, MIN_PAGE_HEIGHT - naturalHeightConf);
-                        const imgCellHeightConf = naturalHeightConf + shortfallConf + 24;
-                        return (
-                          <React.Fragment key={ri}>
-                            {/* 확정표 페이지 헤더 — 접기 제거 (2026-07-19) · 명세서 정보만 표시 */}
-                            {isFirstInPage && (
-                              <tr className="bg-emerald-100/70 border-t-2 border-emerald-300 select-none">
-                                {/* 2026-07-28 · 이미지 셀 · rowSpan 자연 스트레치 (row 고정 높이 · MIN_PAGE_HEIGHT spacer 로 커버)
-                                    이미지 회전 정상 작동 · height:1 트릭 제거 (회전 깨지던 문제) */}
-                                {pageImages?.length ? (
-                                  <td
-                                    rowSpan={imgRowSpanConf}
-                                    className="align-top bg-gray-50 border-r border-line"
-                                    style={{
-                                      width: confImageCollapsed ? 24 : effectiveInvColWidth,
-                                      minWidth: confImageCollapsed ? 24 : effectiveInvColWidth,
-                                      maxWidth: confImageCollapsed ? 24 : effectiveInvColWidth,
-                                      /* 2026-07-28 · 이미지가 데이터 행을 늘리지 않도록 높이 명시 고정
-                                         브라우저는 height 명시된 td 에 한해 rowspan 행 분배 시 내용 크기 무시 */
-                                      height: imgCellHeightConf,
-                                      verticalAlign: "top",
-                                      padding: 0,
-                                      overflow: "hidden",
-                                    }}
-                                  >
-                                    {confImageCollapsed ? (
-                                      <button type="button" onClick={() => setConfImageCollapsed(false)}
-                                        className="w-full h-full flex items-center justify-center text-emerald-500 text-[11px] font-bold hover:bg-emerald-50 cursor-pointer"
-                                        title="이미지 펼치기">▶</button>
-                                    ) : (() => {
-                                      const imgSrc = pageImages[pn - 1];
-                                      if (!imgSrc) return (
-                                        <div className="flex items-center justify-center h-full p-3 text-[11px] text-gray-400">이미지 없음</div>
-                                      );
-                                      const isPortraitRotated = rotation === 90 || rotation === -90 || rotation === 270;
-                                      // 2026-07-28 · 사용자 요청 · 페이지별 zoom+pan · 손바닥 드래그
-                                      const zoom = confImageZoom[pn] ?? 1;
-                                      const pan = confImagePan[pn] ?? { x: 0, y: 0 };
-                                      const canDrag = zoom > 1;
-                                      return (
-                                        <div className="relative w-full h-full overflow-hidden bg-gray-50">
-                                          {/* 페이지별 zoom 조작 · 우측 상단 */}
-                                          <div className="absolute top-1 right-1 z-10 flex flex-col gap-0.5 bg-white/95 border border-zinc-300 rounded shadow-sm">
-                                            <button type="button" onClick={e => { e.stopPropagation(); setConfImageZoom(prev => ({ ...prev, [pn]: Math.min(4, (prev[pn] ?? 1) + 0.25) })); }}
-                                              className="text-[11px] font-bold px-1.5 py-0.5 hover:bg-emerald-50 cursor-pointer" title="확대">+</button>
-                                            <button type="button" onClick={e => { e.stopPropagation(); setConfImageZoom(prev => ({ ...prev, [pn]: Math.max(0.5, (prev[pn] ?? 1) - 0.25) })); }}
-                                              className="text-[11px] font-bold px-1.5 py-0.5 hover:bg-emerald-50 cursor-pointer border-t border-line" title="축소">−</button>
-                                            <button type="button" onClick={e => { e.stopPropagation(); setConfImageZoom(prev => { const n = { ...prev }; delete n[pn]; return n; }); setConfImagePan(prev => { const n = { ...prev }; delete n[pn]; return n; }); }}
-                                              className="text-[9px] font-bold px-1.5 py-0.5 hover:bg-zinc-100 cursor-pointer border-t border-line" title="원본 크기">⛶</button>
-                                          </div>
-                                          <div
-                                            onMouseDown={canDrag ? e => {
-                                              e.preventDefault();
-                                              confImageDragRef.current = { pn, startX: e.clientX, startY: e.clientY, baseX: pan.x, baseY: pan.y };
-                                            } : undefined}
-                                            onClick={e => { if (!canDrag) { e.stopPropagation(); openPageModal(pn); } }}
-                                            className="w-full h-full flex items-start justify-center p-1.5 overflow-hidden"
-                                            style={{ cursor: canDrag ? (confImageDragRef.current?.pn === pn ? "grabbing" : "grab") : "zoom-in" }}
-                                            title={canDrag ? "🖐 드래그로 이동 · +/- 로 확대·축소" : `${pn}번 명세서 이미지 · 클릭 확대`}
-                                          >
-                                            <img
-                                              src={imgSrc}
-                                              alt={`${pn}번 거래명세서`}
-                                              draggable={false}
-                                              style={{
-                                                display: "block",
-                                                margin: "0 auto",
-                                                transform: `translate(${pan.x}px, ${pan.y}px) rotate(${rotation}deg) scale(${zoom})`,
-                                                transformOrigin: "top center",
-                                                transition: confImageDragRef.current?.pn === pn ? "none" : "transform 0.15s ease-out",
-                                                maxWidth: isPortraitRotated ? "60%" : "100%",
-                                                width: "auto",
-                                                height: "auto",
-                                                objectFit: "contain",
-                                                userSelect: "none",
-                                                pointerEvents: canDrag ? "none" : "auto",
-                                              }}
-                                            />
-                                          </div>
-                                        </div>
-                                      );
-                                    })()}
-                                  </td>
-                                ) : null}
-                                <td colSpan={CONF_HEADERS.length} className="px-4 text-center overflow-hidden" style={{ height: 44, minHeight: 44, maxHeight: 44, lineHeight: "1.2" }}>
-                                  {/* 2026-07-28 · 사용자 요청 순서: N번 명세서 → 공급사 → DB저장 버튼 → 총 소계 X원 · 간격 넉넉 · 폰트 up */}
-                                  <span className="inline-flex items-center gap-4 text-[14px] font-bold text-emerald-800 flex-wrap justify-center">
-                                    <span className="bg-white border border-emerald-300 rounded px-2 py-0.5 text-emerald-700 text-[14px]">{pn}번 명세서</span>
-                                    {pageSupplierHeadConf && <span className="text-emerald-700 font-bold text-[15px]">{pageSupplierHeadConf}</span>}
-                                    {/* 2026-07-28 · VAT 포함 여부 표시 (사용자 요청) */}
-                                    <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${pageVatIncluded[pn] ? "text-amber-700 bg-amber-50 border-amber-300" : "text-zinc-500 bg-zinc-50 border-zinc-300"}`}>
-                                      {pageVatIncluded[pn] ? "VAT 별도" : "VAT 포함"}
-                                    </span>
-                                    {(confPageTotals.get(pn) ?? 0) > 0 && (
-                                      <>
-                                        <button type="button"
-                                          onClick={async e => {
-                                            e.stopPropagation();
-                                            if (!onSaveConfirmed) return;
-                                            const invDate = pageDateOverride[pn] ?? structuredPages.find(p => p.page === pn)?.meta?.date ?? "";
-                                            const supp = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta?.supplier ?? "";
-                                            if (!supp) { showError(`${pn}번 명세서 · 공급사 없음 · 저장 불가`); return; }
-                                            if (!await confirm({ message: `${pn}번 · "${supp}" · ${invDate || "날짜미상"}\n· DB 저장하시겠습니까?` })) return;
-                                            try {
-                                              // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-                                              const q = new URLSearchParams();
-                                              if (invDate) q.set("invoice_date", invDate);
-                                              q.set("supplier", supp);
-                                              const chk = await api.get<{ items?: any[] }>(`/api/ocr-confirmed-items?${q}`)
-                                                .then(({ data }) => data)
-                                                .catch(() => ({ items: [] } as { items?: any[] }));
-                                              const existing = Array.isArray(chk?.items) ? chk.items : [];
-                                              if (existing.length > 0) {
-                                                if (!await confirm({ message: `이미 ${existing.length}건 저장됨 · 덮어쓰시겠습니까?`, danger: true })) return;
-                                                for (const it of existing) if (it.id) await api.del(`/api/ocr-confirmed-items/${it.id}`).catch(() => {});
-                                              }
-                                            } catch { /* skip check */ }
-                                            await handleSaveConfirmed(pn);
-                                          }}
-                                          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-white tracking-tight bg-rose-600 hover:bg-rose-500 border border-rose-800 rounded-md px-3.5 py-1.5 cursor-pointer whitespace-nowrap transition-all duration-150 ease-out shadow-sm hover:shadow-md hover:-translate-y-[1px] active:translate-y-0 active:shadow-inner active:bg-rose-700"
-                                          title={`${pn}번 명세서 · 확정표 DB 저장`}
-                                        >💾 거래명세서 DB저장</button>
-                                        <span className="text-[14px] font-bold text-emerald-900">총 소계 <span className="text-emerald-700">{fmt(confPageTotals.get(pn) ?? 0)}</span>원</span>
-                                      </>
-                                    )}
-                                  </span>
-                                </td>
-                              </tr>
-                            )}
-                            {/* 2026-07-28 · 각 명세서 페이지 헤더 아래에 · 데이터 컬럼 헤더 반복 · "마스터/전표 매입단가" 두 줄 · max-height 강제 */}
-                            {isFirstInPage && (
-                              <tr className="bg-emerald-50/60 border-b border-emerald-200 select-none" style={{ height: 34, minHeight: 34, maxHeight: 34 }}>
-                                {CONF_HEADERS.map((h, oi) => {
-                                  const collapsed = collapsedConfCols.has(h);
-                                  const twoLine =
-                                    h === "마스터 매입단가" ? ["마스터", "매입단가"] :
-                                    h === "전표 매입단가" ? ["전표", "매입단가"] :
-                                    h === "거래일·공급사" ? ["거래일", "공급사"] :
-                                    h === "상품코드·상품명" ? ["상품코드", "상품명"] :
-                                    null;
-                                  return (
-                                    <th key={oi}
-                                      className={`py-1 font-bold text-[11px] text-emerald-800 leading-tight ${
-                                        collapsed ? "px-0 text-center w-4" : "px-3 text-center whitespace-nowrap"
-                                      }`}>
-                                      {collapsed ? "·" : twoLine ? (
-                                        <span className="flex flex-col items-center">
-                                          <span>{twoLine[0]}</span>
-                                          <span>{twoLine[1]}</span>
-                                        </span>
-                                      ) : h}
-                                    </th>
-                                  );
-                                })}
-                              </tr>
-                            )}
-                            {!isPageCollapsedConf && (
-                            <tr
-                              className={`border-t border-gray-100 transition-colors hover:bg-indigo-50/40 align-middle ${ri % 2 !== 0 ? "bg-gray-50/30" : ""}`}
-                              style={{ height: 36, maxHeight: 36, overflow: "hidden" }}
-                            >
-                              {CONF_HEADERS.map((h, origIdx) => {
-                                const ci = origIdx;
-                                if (collapsedConfCols.has(h)) return <td key={origIdx} className="px-0 py-2 w-1 max-w-[4px] bg-emerald-50/30" />;
-                                const cell          = row[ci];
-                                const isNum         = typeof cell === "number";
-                                const isName        = h === "상품코드·상품명";
-                                const isDateSupp    = h === "거래일·공급사";
-                                const isMasterPrice = h === "마스터 매입단가";
-                                const isInvoiceP    = h === "전표 매입단가";
-                                const isProfitRate  = h === "이익률";
-                                const isBalance     = h === "공급사잔고";
-                                const isSpec = h === "규격";
-                                // 2026-07-28 · 두 줄 셀 (거래일/공급사 · 상품코드/상품명) · 가운데 정렬
-                                if ((isDateSupp || isName) && cell != null) {
-                                  const [line1, line2] = String(cell).split("\n");
-                                  const cellCls = isName
-                                    ? "px-3 py-1 align-middle min-w-[260px] max-w-[360px] whitespace-normal break-words text-center overflow-hidden"
-                                    : "px-3 py-1 align-middle whitespace-nowrap text-center overflow-hidden";
-                                  return (
-                                    <td key={ci} className={cellCls}>
-                                      <div className="flex flex-col leading-tight gap-0.5 items-center justify-center">
-                                        <span className={isName ? "text-gray-400 text-[11px] font-mono" : "text-gray-500 text-[11px] font-mono"}>{line1 || "—"}</span>
-                                        {line2 && (
-                                          <span className={isName
-                                            ? `font-semibold text-[13px] leading-snug break-words text-center ${m ? (score >= 80 ? "text-emerald-700" : score >= 50 ? "text-amber-700" : "text-rose-600") : "text-rose-500 italic"}`
-                                            : "font-bold text-emerald-700 text-[12px] whitespace-nowrap"}>{line2}</span>
-                                        )}
-                                      </div>
-                                    </td>
-                                  );
-                                }
-                                return (
-                                  <td key={ci}
-                                    className={`px-3 py-1.5 align-middle text-center ${isSpec || isName ? "whitespace-normal max-w-[240px]" : "whitespace-nowrap"} ${
-                                      h === "매입총계"                       ? "font-bold text-emerald-700" :
-                                      isMasterPrice                          ? `font-bold ${priceDiff ? "text-blue-600" : "text-blue-400"}` :
-                                      isInvoiceP && priceDiff === "high"     ? "font-bold text-rose-600" :
-                                      isInvoiceP && priceDiff === "low"      ? "font-bold text-blue-600" :
-                                      isInvoiceP                             ? "text-gray-700" :
-                                      isProfitRate                           ? "text-emerald-700 font-semibold" :
-                                      isBalance                              ? "text-indigo-600 font-bold" :
-                                      isNum                                  ? "text-gray-700" :
-                                      h === "상품코드"                       ? "text-gray-400 text-[11px] font-mono" :
-                                      h === "유통기한"                       ? "text-gray-500 text-[11px]" :
-                                      isSpec                                 ? "text-gray-400 text-[11px]" :
-                                      h === "거래일"                         ? "text-gray-500 text-[11px]" :
-                                      isName ? `font-semibold ${m ? (score >= 80 ? "text-emerald-700" : score >= 50 ? "text-amber-700" : "text-rose-600") : "text-rose-500 italic"}` :
-                                               "text-gray-600"
-                                    }`}>
-                                    {h === "거래일" ? (
-                                      // 2026-07-27 · OCR 거래일 없거나 편집 · 인풋 인라인 (사용자 요청)
-                                      editingConfDate === pn ? (
-                                        <input type="text" inputMode="text" autoFocus
-                                          value={editingConfDateVal}
-                                          placeholder="YYYY-MM-DD"
-                                          onChange={e => setEditingConfDateVal(e.target.value)}
-                                          onKeyDown={e => {
-                                            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                                            if (e.key === "Escape") { setEditingConfDate(null); setEditingConfDateVal(""); }
-                                          }}
-                                          onBlur={() => {
-                                            const v = editingConfDateVal.trim();
-                                            if (v) setPageDateOverride(prev => ({ ...prev, [pn]: v }));
-                                            else setPageDateOverride(prev => { const n = { ...prev }; delete n[pn]; return n; });
-                                            setEditingConfDate(null); setEditingConfDateVal("");
-                                          }}
-                                          className="w-[100px] text-[11px] bg-white border border-emerald-400 rounded px-1.5 py-0.5 focus:outline-none focus:border-brand-deep"
-                                        />
-                                      ) : (
-                                        <button type="button"
-                                          onClick={() => { setEditingConfDate(pn); setEditingConfDateVal(cell != null ? String(cell) : ""); }}
-                                          className={`cursor-pointer hover:underline ${cell == null ? "text-gray-400 italic" : ""}`}
-                                          title="클릭하여 거래일 편집"
-                                        >
-                                          {cell != null ? String(cell) : "날짜 입력..."}
-                                        </button>
-                                      )
-                                    ) : cell == null
-                                      ? isMasterPrice
-                                        ? <span className="text-rose-500 font-bold text-xs">✕</span>
-                                        : <span className="text-gray-300">—</span>
-                                      : isProfitRate && isNum ? `${cell}%`
-                                      : isNum ? fmt(cell)
-                                      : isName ? (() => {
-                                          const origOcr = nameIdx >= 0 ? String(effectiveDispRows[ri]?.[nameIdx] ?? "").trim() : null;
-                                          const hasCorrected = origOcr && String(cell) !== origOcr;
-                                          const isCancelled = cancelledAutoSyn.has(ri);
-                                          return (
-                                            <div className="flex items-start gap-1">
-                                              <span className="block break-words line-clamp-2 flex-1">{String(cell)}</span>
-                                              {hasCorrected && !isCancelled && (
-                                                <button
-                                                  onClick={e => { e.stopPropagation(); setCancelledAutoSyn(prev => new Set([...prev, ri])); }}
-                                                  title={`취소 → 원본: ${origOcr}`}
-                                                  className="text-[10px] px-1 py-px rounded bg-rose-100 text-rose-600 hover:bg-rose-200 cursor-pointer shrink-0 mt-0.5">✕</button>
-                                              )}
-                                              {hasCorrected && isCancelled && (
-                                                <button
-                                                  onClick={e => { e.stopPropagation(); setCancelledAutoSyn(prev => { const n = new Set(prev); n.delete(ri); return n; }); }}
-                                                  title="보정 복원"
-                                                  className="text-[10px] px-1 py-px rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 cursor-pointer shrink-0 mt-0.5">↩</button>
-                                              )}
-                                            </div>
-                                          );
-                                        })()
-                                      : isSpec ? <span className="block break-words line-clamp-2">{String(cell)}</span>
-                                      : String(cell)}
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                            )}
-                            {/* 2026-07-28 · 별도 소계 행 제거 (반복) · 페이지 헤더에 소계+DB저장 통합 */}
-                            {/* 2026-07-28 · 각 명세서 마지막 행 뒤에 · 여백 spacer (사용자 요청) */}
-                            {/* 2026-07-28 · 사용자 요청 "각 명세서마다 기본 높이 · 시인성 좋게"
-                                각 페이지 최소 240px 유지 · 콘텐츠 부족하면 그 차이만큼 spacer + 여백 24px */}
-                            {isLastInPage && (() => {
-                              // 2026-07-28 · shortfallConf / MIN_PAGE_HEIGHT 는 위 imgCellHeightConf 계산과 동일값 사용
-                              return (
-                                <tr aria-hidden="true" style={{ height: shortfallConf + 24 }}>
-                                  {/* 이미지 td 는 rowSpan(3+N) 으로 이 spacer tr 까지 이미 커버 · colSpan 에서 제외 */}
-                                  <td colSpan={CONF_HEADERS.length} className="bg-zinc-50 border-b-2 border-line" style={{ padding: 0 }} />
-                                </tr>
-                              );
-                            })()}
-                            {/* 확정표 소계·잔고 행 제거됨 (2026-07-27) */}
-                          </React.Fragment>
-                        );
-                        });
-                      })()}
-                    </tbody>
-                    {/* 확정 tfoot 제거됨 (2026-07-28) · 헤더에 통합 */}
-                  </table>
-                </div>
-                {onSaveConfirmed && (
-                  <div className="px-4 py-3 flex justify-end items-center gap-3 border-t border-emerald-100 bg-white">
-                    {hasMissingSupplier && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-300 rounded px-2 py-0.5">
-                        <AlertTriangle size={10} className="shrink-0" />
-                        공급사 미입력 ({missingSupplierPages.join(", ")}번) — 저장 차단
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => handleSaveConfirmed()}
-                      disabled={savingConfirmed || hasMissingSupplier}
-                      className="flex items-center gap-1.5 text-xs font-bold text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition cursor-pointer shrink-0 shadow-sm"
-                      title={hasMissingSupplier ? `공급사 미입력 페이지 (${missingSupplierPages.join(", ")}번) 를 먼저 채워주세요` : "현재 표시된 항목들을 확정표(DB)에 저장합니다"}
-                    >
-                      {savingConfirmed
-                        ? <><Spinner size={12} />저장 중</>
-                        : <><Save size={12} />확정표 저장</>}
-                    </button>
-                  </div>
-                )}
-            </div>
-            </div>
-          )}
-        </>
-      )}
+      {/* ── 확정 결과표 섹션 ── */}
+      <ConfirmedTableSection
+        structuredPages={structuredPages}
+        nameIdx={nameIdx}
+        matchItems={matchItems}
+        confirmed={confirmed}
+        pageImages={pageImages}
+        confImageCollapsed={confImageCollapsed}
+        setConfImageCollapsed={setConfImageCollapsed}
+        effectiveInvColWidth={effectiveInvColWidth}
+        rotation={rotation}
+        confImageZoom={confImageZoom}
+        setConfImageZoom={setConfImageZoom}
+        confImagePan={confImagePan}
+        setConfImagePan={setConfImagePan}
+        confImageDragRef={confImageDragRef}
+        openPageModal={openPageModal}
+        xlsInputRef={xlsInputRef}
+        handleTemplateUpload={handleTemplateUpload}
+        xlsTemplateSaved={xlsTemplateSaved}
+        setXlsTemplateSaved={setXlsTemplateSaved}
+        xlsTemplate={xlsTemplate}
+        xlsTemplateName={xlsTemplateName}
+        xlsTemplateHdrs={xlsTemplateHdrs}
+        handleErpUploadExport={handleErpUploadExport}
+        handleExcelExport={handleExcelExport}
+        handleExport={handleExport}
+        CONF_HEADERS={CONF_HEADERS}
+        confRows={confRows}
+        collapsedConfCols={collapsedConfCols}
+        setCollapsedConfCols={setCollapsedConfCols}
+        confPageTotals={confPageTotals}
+        permanentlyDeletedRawRows={permanentlyDeletedRawRows}
+        isRowDbDeleted={isRowDbDeleted}
+        hiddenRawRows={hiddenRawRows}
+        pageNums={pageNums}
+        cancelledRows={cancelledRows}
+        selectedCands={selectedCands}
+        cancelledAutoSyn={cancelledAutoSyn}
+        setCancelledAutoSyn={setCancelledAutoSyn}
+        rawSupplierByPage={rawSupplierByPage}
+        pageVatIncluded={pageVatIncluded}
+        pageDateOverride={pageDateOverride}
+        setPageDateOverride={setPageDateOverride}
+        editingConfDate={editingConfDate}
+        setEditingConfDate={setEditingConfDate}
+        editingConfDateVal={editingConfDateVal}
+        setEditingConfDateVal={setEditingConfDateVal}
+        effectiveDispRows={effectiveDispRows}
+        onSaveConfirmed={onSaveConfirmed}
+        savingConfirmed={savingConfirmed}
+        hasMissingSupplier={hasMissingSupplier}
+        missingSupplierPages={missingSupplierPages}
+        handleSaveConfirmed={handleSaveConfirmed}
+        showError={showError}
+        confirm={confirm}
+      />
 
 
 
-      {/* ── 표 감지 실패 원문 (컬럼 매핑 · 재추출 버튼 포함) ── */}
-      {fallbackPages.map(p => {
-        const supplier = p.meta?.supplier ?? "";
-        return (
-          <div key={p.page} className="w-full bg-white border border-rose-200 rounded-2xl overflow-hidden">
-            <div className="px-4 py-2 border-b border-rose-100 bg-rose-50 flex items-center gap-2 flex-wrap">
-              <span className="text-[12px] font-bold text-rose-700">
-                페이지 {p.page} — 표 감지 실패 (원문)
-              </span>
-              {supplier && (
-                <span className="text-[12px] font-bold text-amber-700">공급: {supplier}</span>
-              )}
-              {/* 상품명 자동보정 버튼 */}
-              <button
-                type="button"
-                onClick={() => handleMatchPage(p.page)}
-                disabled={!!matchingPage[p.page]}
-                className="ml-auto inline-flex items-center gap-1 text-[11px] font-bold text-white bg-violet-500 hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed rounded px-1.5 py-0.5 whitespace-nowrap"
-                title={`${p.page}번 명세서 상품명만 자동보정`}
-              >
-                {matchingPage[p.page] ? <Spinner size={10} /> : <Wand2 size={10} />}
-                {p.page}번 상품명 보정
-              </button>
-              {/* 🔄 재추출 (다시 파싱 시도) */}
-              {onReparsePage && supplier && (
-                <button
-                  type="button"
-                  onClick={() => onReparsePage(p.page, supplier).catch(() => {})}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded px-1.5 py-0.5 whitespace-nowrap"
-                  title="이 페이지 재파싱 시도"
-                >🔄 재파싱</button>
-              )}
-            </div>
-            <pre className="px-4 py-3 text-[12px] text-gray-600 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
-              {p.rawText ?? p.rows.filter(r => Array.isArray(r)).map(r => r[0]).join("\n")}
-            </pre>
-          </div>
-        );
-      })}
+      {/* ── 표 감지 실패 원문 ── */}
+      <FallbackPageSection
+        fallbackPages={fallbackPages}
+        matchingPage={matchingPage}
+        handleMatchPage={handleMatchPage}
+        onReparsePage={onReparsePage}
+      />
       </div>{/* end 콘텐츠 래퍼 */}
     </div>{/* end 명세서별 2컬럼 그리드 래퍼 */}
     {/* 2026-08-21 · Framework Phase 3 · toast */}
