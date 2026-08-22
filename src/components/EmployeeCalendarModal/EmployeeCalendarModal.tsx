@@ -7,6 +7,8 @@ import { Employee, Schedule } from "../../types";
 import { SCHEDULE_TYPES, getTypeHex, isLightHex } from "../../constants";
 import type { ScheduleTypeEntry } from "../../constants";
 import { ZoneAssignTab, type LogisticsZoneProps } from "./ZoneAssignTab";
+// 2026-08-22 · Framework Phase 4 · BulkTab 별도 파일 이관
+import { BulkTab } from "./BulkTab";
 import { EmployeeInfoForm, type EmployeeInfoValues } from "../common/EmployeeInfoForm";
 import { EmployeeProfileCard } from "../common/EmployeeProfileCard";
 import { AccentBar } from "../common/AccentBar";
@@ -76,17 +78,14 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // 로컬 employee state · 자식 (EmployeeProfileCard) 파일 업로드 성공 시 반영
   const [localEmployee, setLocalEmployee] = useState<Employee>(employee);
   useEffect(() => { setLocalEmployee(employee); }, [employee]);
 
-  // 2026-08-17 · 사용자 지시 · 반응형 · 직원정보 접기 · 달력·일괄등록 우선 노출
-  //   · md 미만 기본 접힘 (달력 우선) · 토글로 펼침 · md+ 항상 노출 (좌측 sidebar)
+  // 반응형 · 직원정보 접기 (md+ 항상 노출 · md 미만 토글)
   const [profileCollapsedMobile, setProfileCollapsedMobile] = useState(true);
 
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
-  // 2026-08-17 · 사용자 지시 · 기본 탭은 달력 (logistics 여부 무관 · 관리자·물류 모두 달력 우선)
   const [activeTab, setActiveTab] = useState<"calendar" | "bulk" | "zone" | "info">("calendar");
 
   // Schedules for the currently displayed month (may differ from initialYear/initialMonth)
@@ -120,16 +119,13 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   const [editMemo, setEditMemo] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  // 2026-08-10 · 사용자 요청 · 달력 셀 편집 · 즉시 서버 저장 X · 로컬 pending 에 저장 후 [저장] 클릭 시 batch 반영
+  // 달력 셀 편집 · 로컬 pending 에 저장 후 [저장] 클릭 시 batch 반영 (2026-08-10)
   const [pendingChanges, setPendingChanges] = useState<
     Record<string, { type: string; workingHours: string; actualHours: string; memo: string }>
   >({});
   const [isBatchSaving, setIsBatchSaving] = useState(false);
 
-  // 월 이동 시 pending 초기화
-  useEffect(() => {
-    setPendingChanges({});
-  }, [year, month]);
+  useEffect(() => { setPendingChanges({}); }, [year, month]); // 월 이동 시 pending 초기화
 
   // ── Bulk tab state ──────────────────────────────────────────────
   const [bulkSelectedDates, setBulkSelectedDates] = useState<string[]>([]);
@@ -138,7 +134,6 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   const [bulkActualHours, setBulkActualHours] = useState("");
   const [bulkMemo, setBulkMemo] = useState("");
   const [isBulkSaving, setIsBulkSaving] = useState(false);
-  const [contractModalOpen, setContractModalOpen] = useState(false);
 
   // ── Shared helpers ──────────────────────────────────────────────
   const prevMonth = () => {
@@ -763,193 +758,34 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
           />
         )}
 
-        {/* ── BULK TAB · 2026-08-17 · 사용자 지시 · 최신 트렌드 · 깔끔 · 배지 지양 · 폰트 +4 ── */}
+        {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · BulkTab */}
         {activeTab === "bulk" && (
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5 text-ink">
-
-            {isLocked && (
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg">
-                <Lock size={14} className="text-amber-500 shrink-0" />
-                <span className="text-[14px] font-semibold text-amber-800">이달 스케줄이 확정된 상태입니다. 메인에서 확정해제 후 사용하세요.</span>
-              </div>
-            )}
-
-            {employee.description && (
-              <div className="px-3 py-2 bg-amber-50/70 border border-amber-100 rounded-lg text-[14px] text-amber-800">
-                <span className="font-bold mr-1.5">비고</span>{employee.description}
-              </div>
-            )}
-
-            {/* Section 1 · 날짜 선택 · 배지 없음 · accent bar · 폰트 +4 */}
-            <section className="space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  <AccentBar />
-                  <h3 className="text-[16px] font-bold tracking-tight text-ink">날짜 선택</h3>
-                  <span className="text-[14px] font-medium text-ink-soft tabular-nums">· {bulkSelectedDates.length}일</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  <button type="button" onClick={selectAll} className="px-2.5 py-1.5 text-[14px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg cursor-pointer transition-colors">전체</button>
-                  <button type="button" onClick={deselectAll} className="px-2.5 py-1.5 text-[14px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg cursor-pointer transition-colors">해제</button>
-                  <button type="button" onClick={selectWeekdays} className="px-2.5 py-1.5 text-[14px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg cursor-pointer transition-colors">평일</button>
-                  <button type="button" onClick={selectWeekends} className="px-2.5 py-1.5 text-[14px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg cursor-pointer transition-colors">주말</button>
-                </div>
-              </div>
-
-              {/* 요일 단위 · 배지 대신 flat pill · 폰트 +4 */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[14px] font-semibold text-ink-soft shrink-0">요일:</span>
-                {[
-                  { label: "월", val: 1 }, { label: "화", val: 2 }, { label: "수", val: 3 },
-                  { label: "목", val: 4 }, { label: "금", val: 5 },
-                  { label: "토", val: 6 },
-                  { label: "일", val: 0 },
-                ].map((w) => (
-                  <button
-                    key={w.val}
-                    type="button"
-                    onClick={() => toggleWeekday(w.val)}
-                    className="min-w-[36px] px-2.5 py-1.5 text-[14px] font-semibold text-ink border border-line rounded-lg hover:border-brand-deep hover:bg-brand-tint transition-colors cursor-pointer"
-                  >
-                    {w.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Day grid · 선택시 딥네이비 fill · 폰트 +4 */}
-              <div className="grid grid-cols-7 gap-1.5 p-2 bg-zinc-50/60 border border-line rounded-xl">
-                {daysList.map((dayNum) => {
-                  const { dayWord, dayIndex, fullDate } = getDayDetails(dayNum);
-                  const isChecked = bulkSelectedDates.includes(fullDate);
-                  return (
-                    <label
-                      key={dayNum}
-                      className={`flex flex-col items-center justify-center py-1.5 border rounded-lg cursor-pointer text-center select-none transition-colors ${
-                        isChecked
-                          ? "bg-brand-deep border-brand-deep text-white"
-                          : "bg-white border-line hover:border-brand hover:bg-brand-tint"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => {
-                          if (isChecked) setBulkSelectedDates(bulkSelectedDates.filter(d => d !== fullDate));
-                          else setBulkSelectedDates([...bulkSelectedDates, fullDate]);
-                        }}
-                        className="sr-only"
-                      />
-                      <span className={`text-[13px] font-medium ${isChecked ? "text-white/80" : dayIndex === 6 ? "text-sky-500" : dayIndex === 0 ? "text-rose-500" : "text-ink-soft"}`}>
-                        {dayWord}
-                      </span>
-                      <span className="text-[16px] font-bold tabular-nums">{dayNum}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </section>
-
-            {/* Section 2 · 근무 조건 · 배지 없음 · accent bar · 폰트 +4 */}
-            <section className="space-y-3">
-              <div className="flex items-center gap-2.5">
-                <AccentBar />
-                <h3 className="text-[16px] font-bold tracking-tight text-ink">근무 조건</h3>
-              </div>
-
-              {/* 근태 빠른 지정 · 이모지 제거 · 통일 톤 */}
-              <div className="space-y-2">
-                <label className="block text-[14px] font-semibold text-ink-soft">근태 빠른 지정</label>
-                <div className="flex flex-wrap gap-1.5">
-                  <button type="button" onClick={() => setBulkActualHours("")} className="px-3 py-1.5 text-[14px] font-semibold text-ink-soft hover:text-ink border border-line hover:border-ink-soft rounded-lg cursor-pointer transition-colors">초기화</button>
-                  <button type="button" onClick={() => { setBulkActualHours("지각"); setBulkWorkingHours(typeHoursMap?.["오픈"] ?? ""); }} className="px-3 py-1.5 text-[14px] font-semibold text-amber-800 border border-amber-200 hover:bg-amber-50 rounded-lg cursor-pointer transition-colors">지각</button>
-                  <button type="button" onClick={() => setBulkActualHours("조퇴")} className="px-3 py-1.5 text-[14px] font-semibold text-violet-800 border border-violet-200 hover:bg-violet-50 rounded-lg cursor-pointer transition-colors">조퇴</button>
-                  <button type="button" onClick={() => { setBulkActualHours("결근"); setBulkType("결근"); setBulkWorkingHours(""); }} className="px-3 py-1.5 text-[14px] font-semibold text-rose-800 border border-rose-200 hover:bg-rose-50 rounded-lg cursor-pointer transition-colors">결근</button>
-                </div>
-              </div>
-
-              {/* Shift presets · 딥네이비 active */}
-              <div className="space-y-2">
-                <label className="block text-[14px] font-semibold text-ink-soft">근무 패턴</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {activeTypes.map((t) => {
-                    const hours = typeHoursMap?.[t.value];
-                    return (
-                      <button
-                        key={t.value}
-                        type="button"
-                        onClick={() => handleBulkTypeChange(t.value)}
-                        className={`px-3 py-1.5 text-[14px] font-semibold rounded-lg border transition-colors cursor-pointer ${
-                          bulkType === t.value
-                            ? "bg-brand-deep text-white border-brand-deep"
-                            : "bg-white text-ink border-line hover:border-brand-deep hover:bg-brand-tint"
-                        }`}
-                      >
-                        {hours ? `${t.label} · ${hours}` : t.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Fields · 2026-08-17 · 사용자 지시 · 근무 시간 필드 제거 (근무 패턴 pick 시 자동 · 중복) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[14px] font-semibold text-ink-soft mb-1.5 flex items-center gap-1.5">
-                    <MessageSquare size={13} strokeWidth={2.2} /> 특이사항
-                  </label>
-                  <input
-                    type="text"
-                    value={bulkActualHours}
-                    onChange={e => setBulkActualHours(e.target.value)}
-                    placeholder="예: 2시간 연장, 지각, 조퇴"
-                    className="w-full text-[15px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2 bg-white focus:outline-none transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="text-[14px] font-semibold text-ink-soft mb-1.5 flex items-center gap-1.5">
-                    <MessageSquare size={13} strokeWidth={2.2} /> 메모
-                  </label>
-                  <input
-                    type="text"
-                    value={bulkMemo}
-                    onChange={e => setBulkMemo(e.target.value)}
-                    placeholder="마우스 오버 시 표시될 메모"
-                    className="w-full text-[15px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2 bg-white focus:outline-none transition-colors"
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* Save · 공용 Button 통일 · 딥네이비 primary */}
-            <div className="flex justify-end gap-2 pt-2 pb-1">
-              <button
-                type="button"
-                onClick={() => setActiveTab("calendar")}
-                className="h-10 px-4 text-[15px] font-semibold bg-white hover:bg-zinc-50 border border-line hover:border-brand-deep hover:text-brand-deep text-ink rounded-lg transition-colors cursor-pointer"
-                disabled={isBulkSaving}
-              >
-                취소
-              </button>
-              <button
-                type="button"
-                onClick={handleBulkSave}
-                disabled={isBulkSaving || bulkSelectedDates.length === 0 || isLocked}
-                className="h-10 px-5 text-[15px] font-semibold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
-              >
-                {isBulkSaving ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                    <span>반영 중...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle size={15} strokeWidth={2.2} />
-                    <span>{bulkSelectedDates.length}일 일괄 등록</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+          <BulkTab
+            employee={employee}
+            isLocked={isLocked}
+            bulkSelectedDates={bulkSelectedDates}
+            setBulkSelectedDates={setBulkSelectedDates}
+            bulkType={bulkType}
+            bulkActualHours={bulkActualHours}
+            setBulkActualHours={setBulkActualHours}
+            bulkMemo={bulkMemo}
+            setBulkMemo={setBulkMemo}
+            setBulkType={setBulkType}
+            setBulkWorkingHours={setBulkWorkingHours}
+            isBulkSaving={isBulkSaving}
+            daysList={daysList}
+            getDayDetails={getDayDetails}
+            selectAll={selectAll}
+            deselectAll={deselectAll}
+            selectWeekdays={selectWeekdays}
+            selectWeekends={selectWeekends}
+            toggleWeekday={toggleWeekday}
+            handleBulkTypeChange={handleBulkTypeChange}
+            handleBulkSave={handleBulkSave}
+            activeTypes={activeTypes}
+            typeHoursMap={typeHoursMap}
+            onCancel={() => setActiveTab("calendar")}
+          />
         )}
 
         {/* ── (기존 info 탭 · 좌측 항상 노출로 이관됨 · 2026-08-17) ── */}
