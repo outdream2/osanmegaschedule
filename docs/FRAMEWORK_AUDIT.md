@@ -32,7 +32,7 @@
 | 6 | `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2502 | 24 | large-file-critical(1) |
 | 7 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 | large-file-critical(1) |
 | 8 | `src/components/StaffManagePage/StaffManagePage.tsx` | 2154 | 24 | large-file-critical(1) |
-| 9 | `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1338 | 6 | large-file-warn(1) |
+| 9 | `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1151 | 6 | large-file-warn(1) |
 | 10 | `src/components/ScanPage/ProductInfoCard.tsx` | 895 | 3 | large-file-warn(1) |
 | 11 | `src/components/StockManagePage/FlowTab.tsx` | 872 | 3 | large-file-warn(1) |
 
@@ -50,7 +50,7 @@
 | `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2502 | 24 |
 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 |
 | `src/components/StaffManagePage/StaffManagePage.tsx` | 2154 | 24 |
-| `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1338 | 6 |
+| `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1151 | 6 |
 | `src/components/ScanPage/ProductInfoCard.tsx` | 895 | 3 |
 | `src/components/StockManagePage/FlowTab.tsx` | 872 | 3 |
 

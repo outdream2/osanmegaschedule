@@ -1,6 +1,7 @@
 // 2026-08-16 · #8 · Phase 2A · DayTimelineModal slim helpers
 import { getTypeHex, derivePresetTones, type ScheduleTypeEntry } from "../../constants";
-import { DEFAULT_TONE, type TypeTone } from "./types";
+import { DEFAULT_TONE, type TypeTone, type WorkerEntry, type ZoneMap } from "./types";
+import { isPharmEmp as _isPharmEmp } from "../../lib/employeeCategory";
 
 export const DISPLAY_START = 10 * 60;
 export const DISPLAY_END = 22 * 60;
@@ -94,3 +95,158 @@ export function buildTypeTones(entries?: ScheduleTypeEntry[]): Record<string, Ty
 }
 
 export { DEFAULT_TONE };
+
+// 2026-08-22 · Framework Phase 4 · DayTimelineModal 이관 · 자동배치 빌더
+// ZONE_SLOTS 은 ZoneSection 내부 (const) · 여기서는 파라미터로 받음 (순환 참조 방지)
+// 2026-08-22 · 점심 배정 계산 · pure function (onAutoSuggest 콜백 이관)
+//   · 매장 인원 우선 · 카운터 팀 후순위 · 근무 범위 내만 · lunchCount 명 제한 라운드로빈
+export function computeLunchAssignments(
+  tabWorkers: WorkerEntry[],
+  shiftedLunchSlots: string[],
+  workRanges: Record<number, { start: number; end: number } | null>,
+  lunchCount: number,
+): Map<number, string> {
+  const lunchAssignments = new Map<number, string>();
+  const lunchSlotArr = [...shiftedLunchSlots];
+  if (lunchSlotArr.length === 0) return lunchAssignments;
+
+  const perSlotCount: Record<string, number> = {};
+  lunchSlotArr.forEach(s => { perSlotCount[s] = 0; });
+
+  const lunchCandidates = tabWorkers.filter(w => {
+    const r = workRanges[w.emp.id];
+    if (!r) return true;
+    return lunchSlotArr.some(slot => {
+      const [lh, lm] = slot.split(":").map(Number);
+      const lStart = lh * 60 + lm;
+      return lStart >= r.start && lStart < r.end;
+    });
+  });
+
+  const pharmAndCashier = new Set(
+    tabWorkers
+      .filter(w => _isPharmEmp(w.emp) || w.emp.position.includes("캐셔"))
+      .map(w => w.emp.id)
+  );
+  const sortedCandidates = [...lunchCandidates].sort((a, b) => {
+    const aCounter = pharmAndCashier.has(a.emp.id) ? 1 : 0;
+    const bCounter = pharmAndCashier.has(b.emp.id) ? 1 : 0;
+    return aCounter - bCounter;
+  });
+
+  let si = 0;
+  for (const w of sortedCandidates) {
+    const empId = w.emp.id;
+    const r = workRanges[empId];
+    for (let tries = 0; tries < lunchSlotArr.length; tries++) {
+      const slotKey = lunchSlotArr[(si + tries) % lunchSlotArr.length];
+      if (perSlotCount[slotKey] >= lunchCount) continue;
+      if (r) {
+        const [lh, lm] = slotKey.split(":").map(Number);
+        const lStart = lh * 60 + lm;
+        if (lStart < r.start || lStart >= r.end) continue;
+      }
+      lunchAssignments.set(empId, slotKey);
+      perSlotCount[slotKey]++;
+      si = (lunchSlotArr.indexOf(slotKey) + 1) % lunchSlotArr.length;
+      break;
+    }
+  }
+  return lunchAssignments;
+}
+
+export function buildAutoSuggestZoneMap(
+  workerList: WorkerEntry[],
+  zoneSlots: readonly string[],
+  lunchMap: Map<number, string> = new Map(),
+  rangeMap: Record<number, { start: number; end: number } | null> = {},
+): ZoneMap {
+  if (workerList.length === 0) return {};
+  const newZoneMap: ZoneMap = { 카운터: {}, 매장: {} };
+
+  const inRange = (empId: number, slotH: number): boolean => {
+    const r = rangeMap[empId];
+    if (!r) return true;
+    return slotH < r.end && slotH + 60 > r.start;
+  };
+
+  const conflictsWithLunch = (empId: number, slotH: number): boolean => {
+    const lKey = lunchMap.get(empId);
+    if (!lKey) return false;
+    const [lh, lm] = lKey.split(":").map(Number);
+    const lStart = lh * 60 + lm;
+    const lEnd = lStart + 30;
+    return slotH < lEnd && slotH + 60 > lStart;
+  };
+
+  const pharmWorkers = workerList.filter(w => _isPharmEmp(w.emp));
+  const cashierWorkers = workerList.filter(w =>
+    !_isPharmEmp(w.emp) && w.emp.position.includes("캐셔")
+  );
+  const otherWorkers = workerList.filter(w =>
+    !_isPharmEmp(w.emp) && !w.emp.position.includes("캐셔")
+  );
+
+  let pharmRIdx = 0;
+  let cashier1Idx = 0;
+
+  for (const slot of zoneSlots) {
+    const slotH = parseInt(slot.split(":")[0], 10) * 60;
+
+    let pharmAssigned: number | null = null;
+    if (pharmWorkers.length > 0) {
+      for (let tries = 0; tries < pharmWorkers.length; tries++) {
+        const candidate = pharmWorkers[(pharmRIdx + tries) % pharmWorkers.length];
+        if (inRange(candidate.emp.id, slotH) && !conflictsWithLunch(candidate.emp.id, slotH)) {
+          pharmAssigned = candidate.emp.id;
+          pharmRIdx = (pharmRIdx + 1) % pharmWorkers.length;
+          break;
+        }
+      }
+    }
+    if (pharmAssigned != null) {
+      if (!newZoneMap["카운터"][slot]) newZoneMap["카운터"][slot] = [];
+      newZoneMap["카운터"][slot].push(pharmAssigned);
+    }
+
+    if (cashierWorkers.length > 0) {
+      const c1 = cashierWorkers.length;
+      let assigned = 0;
+      for (let offset = 0; offset < c1 && assigned < 2; offset++) {
+        const idx = (cashier1Idx + offset) % c1;
+        const candidate = cashierWorkers[idx];
+        if (inRange(candidate.emp.id, slotH) && !conflictsWithLunch(candidate.emp.id, slotH)) {
+          if (!newZoneMap["카운터"][slot]) newZoneMap["카운터"][slot] = [];
+          newZoneMap["카운터"][slot].push(candidate.emp.id);
+          assigned++;
+        }
+      }
+      cashier1Idx = (cashier1Idx + 1) % Math.max(1, c1);
+    }
+
+    for (const w of pharmWorkers) {
+      if (w.emp.id === pharmAssigned) continue;
+      if (inRange(w.emp.id, slotH) && !conflictsWithLunch(w.emp.id, slotH)) {
+        if (!newZoneMap["매장"][slot]) newZoneMap["매장"][slot] = [];
+        newZoneMap["매장"][slot].push(w.emp.id);
+      }
+    }
+
+    for (const w of otherWorkers) {
+      if (inRange(w.emp.id, slotH) && !conflictsWithLunch(w.emp.id, slotH)) {
+        if (!newZoneMap["매장"][slot]) newZoneMap["매장"][slot] = [];
+        newZoneMap["매장"][slot].push(w.emp.id);
+      }
+    }
+
+    const counterCashierSet = new Set(newZoneMap["카운터"][slot] ?? []);
+    for (const w of cashierWorkers) {
+      if (!counterCashierSet.has(w.emp.id) && inRange(w.emp.id, slotH) && !conflictsWithLunch(w.emp.id, slotH)) {
+        if (!newZoneMap["매장"][slot]) newZoneMap["매장"][slot] = [];
+        newZoneMap["매장"][slot].push(w.emp.id);
+      }
+    }
+  }
+
+  return newZoneMap;
+}

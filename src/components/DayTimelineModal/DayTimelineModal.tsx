@@ -14,7 +14,7 @@ import {
   cleanupStaleTimelineKeys, safeSetTimelineItem,
   parseRange, pct, widthPct, minToStr, shiftSlot, datesInMonth,
   createGhost, moveGhost, removeGhost,
-  buildTypeTones,
+  buildTypeTones, buildAutoSuggestZoneMap, computeLunchAssignments,
 } from "./utils";
 import { WorkerChips } from "./WorkerChips";
 import { BreakTimeline } from "./BreakTimeline";
@@ -165,128 +165,14 @@ export const DayTimelineModal: React.FC<Props> = ({
     }
   }, []);
 
-  // ─── 임의배치 생성 (정교화) ─────────────────────────────────────────────────
-  // 알고리즘:
-  //  1) 약사 1시간 로테이션 → 슬롯마다 약사 한 명씩 순환 배정 (근무 시간 밖 스킵)
-  //  2) 캐셔 풀 → 슬롯마다 2명씩 순환 배정 (카운터 팀 = 약사 1 + 캐셔 2)
-  //  3) 사원(정규) 중 캐셔가 아닌 인원 → 매장 고정
-  //  4) 기타/알바 → 매장 고정
-  //  ※ 점심 배정은 별도 lunchAssignments 결과를 onAutoSuggest에서 주입하므로
-  //    buildAutoSuggest 자체는 zone 배정만 담당 (충돌 제거는 onAutoSuggest에서)
+  // 2026-08-22 · Framework Phase 4 · buildAutoSuggest 을 utils.buildAutoSuggestZoneMap 으로 이관
+  // 알고리즘 · 1) 약사 로테이션 · 2) 캐셔 2명 로테이션 · 3) 사원 매장 · 4) 기타 매장
   const buildAutoSuggest = useCallback((
     workerList: WorkerEntry[],
-    // 점심 배정 맵: empId → lunchSlotKey (점심 시간과 겹치는 zone slot에서 제외하기 위해)
     lunchMap: Map<number, string> = new Map(),
-    // 근무 범위 맵: workRanges 를 파라미터로 받아 선언 순서 문제 해소
     rangeMap: Record<number, { start: number; end: number } | null> = {},
-  ): ZoneMap => {
-    if (workerList.length === 0) return {};
-    const newZoneMap: ZoneMap = { 카운터: {}, 매장: {} };
-
-    // 근무 범위 헬퍼 (슬롯 시작 분 기준 — slotH 는 분)
-    const inRange = (empId: number, slotH: number): boolean => {
-      const r = rangeMap[empId];
-      if (!r) return true; // 근무 시간 미정이면 포함
-      return slotH < r.end && slotH + 60 > r.start;
-    };
-
-    // 점심 충돌 헬퍼: 이 empId 가 이 zone slot 시간과 겹치는 점심을 가졌으면 true
-    const conflictsWithLunch = (empId: number, slotH: number): boolean => {
-      const lKey = lunchMap.get(empId);
-      if (!lKey) return false;
-      const [lh, lm] = lKey.split(":").map(Number);
-      const lStart = lh * 60 + lm;
-      const lEnd = lStart + 30;
-      return slotH < lEnd && slotH + 60 > lStart;
-    };
-
-    // 그룹 분류
-    // 캐셔 풀: 포지션에 "캐셔" 포함
-    const pharmWorkers = workerList.filter(w => isPharmEmp(w.emp));
-    const cashierWorkers = workerList.filter(w =>
-      !isPharmEmp(w.emp) && w.emp.position.includes("캐셔")
-    );
-    // 나머지 사원/기타 (매장 담당)
-    const otherWorkers = workerList.filter(w =>
-      !isPharmEmp(w.emp) && !w.emp.position.includes("캐셔")
-    );
-
-    // 약사 / 캐셔 각자의 로테이션 인덱스 (슬롯 횟수 기준)
-    let pharmRIdx = 0; // 다음에 배정할 약사 인덱스
-    let cashier1Idx = 0; // 카운터 캐셔 시작 인덱스 (슬롯마다 1씩 shift)
-
-    for (const slot of ZONE_SLOTS) {
-      const slotH = parseInt(slot.split(":")[0], 10) * 60;
-
-      // ── 카운터: 약사 한 명 배정 (로테이션, 근무 시간·점심 충돌 고려) ──────
-      let pharmAssigned: number | null = null;
-      if (pharmWorkers.length > 0) {
-        // 현재 인덱스부터 순환하며 근무 가능한 약사 탐색
-        for (let tries = 0; tries < pharmWorkers.length; tries++) {
-          const candidate = pharmWorkers[(pharmRIdx + tries) % pharmWorkers.length];
-          if (inRange(candidate.emp.id, slotH) && !conflictsWithLunch(candidate.emp.id, slotH)) {
-            pharmAssigned = candidate.emp.id;
-            // 다음 슬롯에서 다음 약사로 넘어감 (한 바퀴 돌도록)
-            pharmRIdx = (pharmRIdx + 1) % pharmWorkers.length;
-            break;
-          }
-          // 이 약사를 이 슬롯에서 못 쓰는 경우 — 다음 약사로 시도하되 index 넘기지 않음
-        }
-        // 탐색 실패 시 pharmRIdx 그대로 유지 (다음 슬롯에서 재시도)
-      }
-      if (pharmAssigned != null) {
-        if (!newZoneMap["카운터"][slot]) newZoneMap["카운터"][slot] = [];
-        newZoneMap["카운터"][slot].push(pharmAssigned);
-      }
-
-      // ── 카운터: 캐셔 2명 배정 (로테이션) ─────────────────────────────────
-      if (cashierWorkers.length > 0) {
-        const c1 = cashierWorkers.length;
-        let assigned = 0;
-        // cashier1Idx 부터 2명을 순환 배정
-        for (let offset = 0; offset < c1 && assigned < 2; offset++) {
-          const idx = (cashier1Idx + offset) % c1;
-          const candidate = cashierWorkers[idx];
-          if (inRange(candidate.emp.id, slotH) && !conflictsWithLunch(candidate.emp.id, slotH)) {
-            if (!newZoneMap["카운터"][slot]) newZoneMap["카운터"][slot] = [];
-            newZoneMap["카운터"][slot].push(candidate.emp.id);
-            assigned++;
-          }
-        }
-        // 다음 슬롯에서 다음 캐셔 쌍으로 로테이션 (1씩 shift)
-        cashier1Idx = (cashier1Idx + 1) % Math.max(1, c1);
-      }
-
-      // ── 매장: 카운터에 배정 안 된 약사 (규칙: 카운터에 없는 약사는 매장 배치) ──
-      for (const w of pharmWorkers) {
-        if (w.emp.id === pharmAssigned) continue;
-        if (inRange(w.emp.id, slotH) && !conflictsWithLunch(w.emp.id, slotH)) {
-          if (!newZoneMap["매장"][slot]) newZoneMap["매장"][slot] = [];
-          newZoneMap["매장"][slot].push(w.emp.id);
-        }
-      }
-
-      // ── 매장: 기타/나머지 사원들 ──────────────────────────────────────────
-      for (const w of otherWorkers) {
-        if (inRange(w.emp.id, slotH) && !conflictsWithLunch(w.emp.id, slotH)) {
-          if (!newZoneMap["매장"][slot]) newZoneMap["매장"][slot] = [];
-          newZoneMap["매장"][slot].push(w.emp.id);
-        }
-      }
-
-      // ── 매장: 카운터에 배정 안 된 캐셔 (점심/범위 걸리거나 슬롯 오버일 때) ──
-      // 카운터 배정된 캐셔 셋
-      const counterCashierSet = new Set(newZoneMap["카운터"][slot] ?? []);
-      for (const w of cashierWorkers) {
-        if (!counterCashierSet.has(w.emp.id) && inRange(w.emp.id, slotH) && !conflictsWithLunch(w.emp.id, slotH)) {
-          if (!newZoneMap["매장"][slot]) newZoneMap["매장"][slot] = [];
-          newZoneMap["매장"][slot].push(w.emp.id);
-        }
-      }
-    }
-
-    return newZoneMap;
-  }, []);
+  ): ZoneMap => buildAutoSuggestZoneMap(workerList, ZONE_SLOTS, lunchMap, rangeMap), []);
+  // 원본 로직 유지 (재사용 참조)
 
   useEffect(() => {
     if (dataLoadedRef.current === date) return;
@@ -1190,85 +1076,12 @@ export const DayTimelineModal: React.FC<Props> = ({
               isTabAll={isTabAll}
               onUserInteract={() => setIsAutoSuggested(false)}
               onAutoSuggest={() => {
-                // ─────────────────────────────────────────────────────────────
-                // 임의배치 콜백 (정교화 버전)
-                //
-                // 단계:
-                //  1) 점심 배정 계산 (구역 배정보다 먼저 — 겹침 방지용)
-                //     - "카운터에 없는 사람(매장/기타)"이 먼저 점심 slot 앞쪽
-                //     - 같은 카운터 팀(같은 슬롯에 배정될 예정인 3명) 동시 점심 방지
-                //     - 근무 시간(workRanges) 안에 있는 slot만 배정
-                //     - lunchCount 명까지 동시 배정 허용 (라운드로빈)
-                //  2) 점심 배정 결과를 buildAutoSuggest에 전달 → zone 배정
-                //     (buildAutoSuggest 내부에서 점심 충돌 slot 자동 제외)
-                //  3) 기존 zoneSlots에 현재 탭 인원 배정만 병합 (다른 탭 보존)
-                //  4) lunchSlots 업데이트
-                // ─────────────────────────────────────────────────────────────
-
+                // 2026-08-22 · 점심 배정 계산 · zone 배정 · utils 함수 재사용
+                //   1) computeLunchAssignments · 매장 우선 · 카운터 후순위 · 라운드로빈
+                //   2) buildAutoSuggest (utils.buildAutoSuggestZoneMap) · 점심 충돌 자동 제외
+                //   3) 기존 zoneSlots 병합 · 4) lunchSlots 업데이트
                 const tabIdSet = new Set(tabWorkers.map(w => w.emp.id));
-
-                // ── 1단계: 점심 배정 계산 ─────────────────────────────────
-                const lunchAssignments = new Map<number, string>(); // empId → slot
-
-                const lunchSlotArr = [...shiftedLunchSlots];
-                if (lunchSlotArr.length > 0) {
-                  // 각 슬롯 가용 인원 카운터
-                  const perSlotCount: Record<string, number> = {};
-                  lunchSlotArr.forEach(s => { perSlotCount[s] = 0; });
-
-                  // 점심 가능 후보: 근무 범위 내 어느 슬롯이라도 포함하는 사람
-                  const lunchCandidates = tabWorkers.filter(w => {
-                    const r = workRanges[w.emp.id];
-                    if (!r) return true;
-                    // 최소 하나의 lunch slot이 근무 범위 안에 있으면 후보
-                    return lunchSlotArr.some(slot => {
-                      const [lh, lm] = slot.split(":").map(Number);
-                      const lStart = lh * 60 + lm;
-                      return lStart >= r.start && lStart < r.end;
-                    });
-                  });
-
-                  // "매장/기타" 인원이 앞에 오도록 정렬 (카운터 없는 사람 먼저 점심)
-                  // 임의배치 전 기준: 약사/캐셔(카운터 후보) 후순위
-                  const pharmAndCashier = new Set(
-                    tabWorkers
-                      .filter(w => isPharmEmp(w.emp) || w.emp.position.includes("캐셔"))
-                      .map(w => w.emp.id)
-                  );
-                  const sortedCandidates = [...lunchCandidates].sort((a, b) => {
-                    const aCounter = pharmAndCashier.has(a.emp.id) ? 1 : 0;
-                    const bCounter = pharmAndCashier.has(b.emp.id) ? 1 : 0;
-                    return aCounter - bCounter; // 매장 인원(0) 먼저
-                  });
-
-                  // 라운드로빈으로 slot 배정 (lunchCount 명 제한)
-                  let si = 0;
-                  for (const w of sortedCandidates) {
-                    const empId = w.emp.id;
-                    const r = workRanges[empId];
-                    // 이 사람이 쓸 수 있는 슬롯 찾기 (근무 범위 + 아직 꽉 안 참)
-                    let assigned = false;
-                    for (let tries = 0; tries < lunchSlotArr.length; tries++) {
-                      const slotKey = lunchSlotArr[(si + tries) % lunchSlotArr.length];
-                      if (perSlotCount[slotKey] >= lunchCount) continue;
-                      if (r) {
-                        const [lh, lm] = slotKey.split(":").map(Number);
-                        const lStart = lh * 60 + lm;
-                        if (lStart < r.start || lStart >= r.end) continue;
-                      }
-                      lunchAssignments.set(empId, slotKey);
-                      perSlotCount[slotKey]++;
-                      si = (lunchSlotArr.indexOf(slotKey) + 1) % lunchSlotArr.length;
-                      assigned = true;
-                      break;
-                    }
-                    if (!assigned) {
-                      // 사용 가능한 slot 없음 — 다음 라운드에서 처리 (배정 안 됨)
-                    }
-                  }
-                }
-
-                // ── 2단계: zone 배정 (점심 맵 + workRanges 전달) ─────────────
+                const lunchAssignments = computeLunchAssignments(tabWorkers, shiftedLunchSlots, workRanges, lunchCount);
                 const suggested = buildAutoSuggest(tabWorkers, lunchAssignments, workRanges);
 
                 // ── 3단계: 기존 zoneSlots에 현재 탭 인원 배정 병합 ───────────
