@@ -8,16 +8,16 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 548 |
-| 위반 파일 | 7 |
-| 클린 파일 | 541 (99%) |
-| 총 위반 개수 | 7 |
+| 스캔 파일 | 554 |
+| 위반 파일 | 6 |
+| 클린 파일 | 548 (99%) |
+| 총 위반 개수 | 6 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
-| `large-file-critical` | 5 | 5 | high | 2000+라인 · 시급 · 서브 컴포넌트/훅 분리 필수 |
+| `large-file-critical` | 4 | 4 | high | 2000+라인 · 시급 · 서브 컴포넌트/훅 분리 필수 |
 | `large-file-warn` | 2 | 2 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
@@ -28,11 +28,10 @@
 | 2 | `src/components/OcrPage/RawOcrTable.tsx` | 5260 | 48 | large-file-critical(1) |
 | 3 | `src/components/OrderManagePage/OrderManagePage.tsx` | 3090 | 32 | large-file-critical(1) |
 | 4 | `src/components/DisplayPage/DisplayPage.tsx` | 2714 | 24 | large-file-critical(1) |
-| 5 | `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2502 | 24 | large-file-critical(1) |
-| 6 | `src/components/StaffManagePage/StaffManagePage.tsx` | 1917 | 6 | large-file-warn(1) |
-| 7 | `src/components/LandingPage/UploadDataModal.tsx` | 911 | 3 | large-file-warn(1) |
+| 5 | `src/components/StaffManagePage/StaffManagePage.tsx` | 1917 | 6 | large-file-warn(1) |
+| 6 | `src/components/LandingPage/UploadDataModal.tsx` | 911 | 3 | large-file-warn(1) |
 
-## 📝 모든 위반 파일 (7개)
+## 📝 모든 위반 파일 (6개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -42,7 +41,6 @@
 | `src/components/OcrPage/RawOcrTable.tsx` | 5260 | 48 |
 | `src/components/OrderManagePage/OrderManagePage.tsx` | 3090 | 32 |
 | `src/components/DisplayPage/DisplayPage.tsx` | 2714 | 24 |
-| `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2502 | 24 |
 | `src/components/StaffManagePage/StaffManagePage.tsx` | 1917 | 6 |
 | `src/components/LandingPage/UploadDataModal.tsx` | 911 | 3 |
 

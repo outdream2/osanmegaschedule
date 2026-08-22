@@ -1,7 +1,7 @@
 {
   "created": "2026-08-22",
   "version": 1,
-  "totalViolations": 8,
+  "totalViolations": 6,
   "files": {
     "src/components/ContractWriterPage/ContractWriterPage.tsx": {
       "lines": 5483,
@@ -35,26 +35,6 @@
     },
     "src/components/DisplayPage/DisplayPage.tsx": {
       "lines": 2714,
-      "violations": [
-        {
-          "ruleId": "large-file-critical",
-          "count": 1
-        }
-      ],
-      "totalWeight": 24
-    },
-    "src/components/SalesTrendPage/SalesTrendPage.tsx": {
-      "lines": 2502,
-      "violations": [
-        {
-          "ruleId": "large-file-critical",
-          "count": 1
-        }
-      ],
-      "totalWeight": 24
-    },
-    "src/components/SchedulePage/SchedulePage.tsx": {
-      "lines": 2379,
       "violations": [
         {
           "ruleId": "large-file-critical",
