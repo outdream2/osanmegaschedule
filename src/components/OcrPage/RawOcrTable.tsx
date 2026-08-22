@@ -71,6 +71,7 @@ import { useSaveConfirmed } from "./RawOcrTable/useSaveConfirmed";
 import { useReextractCell } from "./RawOcrTable/useReextractCell";
 import { useReextractProductName } from "./RawOcrTable/useReextractProductName";
 import { useInvoiceImageControls } from "./RawOcrTable/useInvoiceImageControls";
+import { usePageTotalsComputation } from "./RawOcrTable/usePageTotalsComputation";
 import { ConfirmedTableSection } from "./RawOcrTable/ConfirmedTableSection";
 import { FallbackPageSection } from "./RawOcrTable/FallbackPageSection";
 import { NumericEditableCell, ExpiryCell, NameCell } from "./RawOcrTable/RawOcrCellRenderer";
@@ -658,270 +659,22 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     });
   }
 
-  // 페이지의 에누리/차액 금액 감지
-  //   1순위: summary_rows 라벨 매칭 (서버 09-totals 이 채운 경우)
-  //   2순위: meta.discount 직접 참조 (KV 파서 · extractDiscount 직접 감지)
-  //   3순위: 교차검증 역산값 (meta.discountCrossCheck.discEst)
-  //   2026-07-22 · 첫 하나만 반환 (구버전 호환용)
-  const getPageDiscount = (pn: number): { amount: number; label: string; isEstimated?: boolean; valid?: boolean } | null => {
-    const list = getPageDiscounts(pn);
-    if (list.length === 0) return null;
-    // 여러 항목 있으면 총합으로 · valid 는 하나라도 valid=true 있으면 true
-    const totalAmt = list.reduce((s, d) => s + d.amount, 0);
-    const anyValid = list.some(d => d.valid !== false);
-    return { amount: totalAmt, label: list.map(d => d.label).join("·"), isEstimated: list.some(d => d.isEstimated), valid: anyValid };
-  };
-  // 2026-07-22 · 사용자 요청 "에누리랑 차액 항목 있는 경우 정산차액에 다 나와야" → 전체 리스트 반환
-  // 2026-07-24 · 사용자 요청 "총 소계금액과 - 맞는 합계값이 있을 때만 에누리·차액 인정 · 수식 검증 고려"
-  //   검증식: rowsSum ≈ stated + discount(합계) · 오차 ≤ max(1, stated × 0.02)
-  //   맞으면 valid=true · 아니면 valid=false → UI 에서 회색 처리 · 적용 기본 X
-  const getPageDiscounts = (pn: number): { amount: number; label: string; isEstimated?: boolean; valid?: boolean }[] => {
-    // 2026-07-23 · 사용자 override 최우선 (있으면 그것만 반환)
-    const ov = pageDiscountOverride[pn];
-    if (ov && ov.amount > 0) return [{ amount: ov.amount, label: ov.label || "수정", valid: true }];
-    const pageData = structuredPages.find(p => p.page === pn);
-    const summary = pageData?.meta?.summary_rows ?? [];
-    const discRe = /에누리|할인|차액|차감|DC|D\.C/i;
-    const results: { amount: number; label: string; isEstimated?: boolean; valid?: boolean }[] = [];
-    const seenLabels = new Set<string>();
-    for (const s of summary) {
-      const norm = String(s.label ?? "").replace(/\s+/g, "");
-      if (!discRe.test(norm)) continue;
-      if (!(Math.abs(s.amount) > 0)) continue;
-      const label = String(s.label ?? "에누리").trim();
-      if (seenLabels.has(label)) continue;
-      seenLabels.add(label);
-      results.push({ amount: Math.abs(s.amount), label, isEstimated: label.includes("역산") || label.includes("추정") });
-    }
-    if (results.length === 0) {
-      const metaDisc = pageData?.meta?.discount;
-      if (typeof metaDisc === "number" && metaDisc > 0) {
-        const label = String(pageData?.meta?.discountLabel ?? "에누리").trim();
-        results.push({ amount: metaDisc, label, isEstimated: label.includes("역산") || label.includes("추정") });
-      }
-    }
-    // 2026-07-28 · 사용자 요청 "정산차액에 쉼표 금액 항목 (에누리·차액) 포함"
-    //   summary_rows 에 없어도 rawText 에서 라벨 + 쉼표 금액 직접 스캔 (fallback)
-    //   패턴 · (에누리|할인|차액|차감|DC) 뒤/앞 3자리 이상 쉼표 금액 (예 "12,340")
-    if (results.length === 0 && pageData?.rawText) {
-      const raw = String(pageData.rawText);
-      const re = /(에누리|할인|차액|차감|DC|D\.C)[\s:￦₩\-]*([+-]?\d{1,3}(?:,\d{3})+)/gi;
-      let m;
-      while ((m = re.exec(raw)) !== null) {
-        const label = m[1].trim();
-        const amount = Math.abs(parseInt(m[2].replace(/,/g, ""), 10));
-        if (amount > 0 && !seenLabels.has(label)) {
-          seenLabels.add(label);
-          results.push({ amount, label, isEstimated: true });
-        }
-      }
-    }
-    // 2026-07-24 · 수식 검증 · rowsSum vs stated 차이가 discount 합 과 매치되어야 인정
-    if (results.length > 0) {
-      const rowsSum = effectivePageTotals.get(pn) ?? 0;
-      const stated = pageData?.meta?.total;
-      const totalDisc = results.reduce((s, d) => s + d.amount, 0);
-      if (typeof stated === "number" && stated > 0 && rowsSum > 0) {
-        const expectedDiff = rowsSum - stated;  // > 0 이면 에누리로 소계에서 차감된 것
-        const tol = Math.max(1, stated * 0.02);
-        const mathOk = Math.abs(expectedDiff - totalDisc) <= tol;
-        for (const r of results) r.valid = mathOk;
-      } else {
-        // stated 없으면 검증 불가 · 인정
-        for (const r of results) r.valid = true;
-      }
-    }
-    return results;
-  };
+  // ── 페이지 소계 계산 함수들 → usePageTotalsComputation 훅으로 분리 ─────────────────
+  const {
+    getPageDiscounts, getPageDiscount, getPageCrossCheckWarning,
+    getPageDisplayTotal, getPageDisplayTotalWithVat, getPageConfirmedSubtotal,
+    total, totalBreakdownTitle, meta, balanceConfig,
+    pageTotals, uniquePageNums, pageBalanceFromConfig, supplierOcrBalance,
+    supplierTotals, pageMismatches, isPageResolved, _discountIdxEarly,
+  } = usePageTotalsComputation({
+    structuredPages, pages, pageNums, amtIdx,
+    dispRows, dispHeaders, effectiveDispRows, effectivePageTotals,
+    hiddenRawRows, permanentlyDeletedRawRows, isRowDbDeleted,
+    pageDiscountOverride, pageSubtotalChoices, pageSubtotalCustom,
+    pageDiscountApplied, discountApplyMode, pageVatIncluded,
+    rawSupplierByPage, balanceConfigProp,
+  });
 
-  // 페이지 교차검증: 공급가액 > 합계 이면서 에누리로 설명 안 되는 경우 경고
-  // 한국 거래명세서 기본 관계식 (세액 별도 항목 명세서):
-  //   합계(T) = 공급가액(A) - 에누리(D)   ∴ A - D == T
-  // 주의: T > A 이면 VAT 포함 합계일 수 있으므로 A > T 인 경우에만 검증
-  // 역산값이 이미 적용된 경우(isEstimated) 서버가 보정한 것이므로 경고 없음
-  const getPageCrossCheckWarning = (pn: number): string | null => {
-    const pageData = structuredPages.find(p => p.page === pn);
-    if (!pageData?.meta) return null;
-    const A = typeof pageData.meta.supplyAmount === "number" ? pageData.meta.supplyAmount : null;
-    const T = typeof pageData.meta.total === "number" ? pageData.meta.total : null;
-    if (A == null || T == null) return null;
-    // T >= A 이면 VAT 포함 합계이므로 이 관계식 미적용
-    if (T >= A) return null;
-    const disc = getPageDiscount(pn);
-    // 역산값이 이미 적용됐으면 경고 없음
-    if (disc?.isEstimated) return null;
-    const D = disc?.amount ?? 0;
-    // A - D == T 이어야 함
-    const diff = Math.abs((A - D) - T);
-    if (diff > Math.max(1, A * 0.01)) {
-      const V = typeof pageData.meta.vat === "number" ? pageData.meta.vat : null;
-      const vatNote = V != null && Math.abs(V - A) < 1 ? ` (세액=${V.toLocaleString()} 이 공급가액과 같아 OCR 오독 의심)` : "";
-      return `공급가액(${A.toLocaleString()}) - 에누리(${D.toLocaleString()}) ≠ 합계(${T.toLocaleString()}) · 차이 ${diff.toLocaleString()}원${vatNote}`;
-    }
-    return null;
-  };
-
-  // 페이지의 소계 계산
-  // - 기본: 명세서의 합계(stated) 반영
-  // - 에누리/차액이 있으면: stated + 에누리 (에누리 적용 전 금액)
-  // - 사용자가 직접 입력했으면 그 값 우선
-  // - 🔔 사용자가 체크박스로 행을 제외/DB 삭제행 있으면 computed 우선 (2026-07-10)
-  const getPageDisplayTotal = (pn: number): number => {
-    const stated = structuredPages.find(p => p.page === pn)?.meta?.total;
-    const computed = effectivePageTotals.get(pn) ?? 0;
-
-    // 1) 사용자 직접 입력
-    if (pageSubtotalChoices[pn] === "custom") {
-      return pageSubtotalCustom[pn] ?? stated ?? computed;
-    }
-    // 2026-07-22 · 교차검증 배지에서 사용자가 명시 선택한 경우 · 그 값 우선
-    if (pageSubtotalChoices[pn] === "computed") {
-      return computed;
-    }
-    if (pageSubtotalChoices[pn] === "stated") {
-      // stated 명시 선택 · 에누리 로직은 뒤에서 처리하지 않고 stated 그대로
-      return stated ?? computed;
-    }
-
-    // 2) 이 페이지에 사용자가 제외한 행이 있으면 → 계산된 값을 우선 사용 (실시간 반영)
-    const pageHasExclusion = effectiveDispRows.some((_, ri) =>
-      pageNums[ri] === pn && (hiddenRawRows.has(ri) || permanentlyDeletedRawRows.has(ri) || isRowDbDeleted(ri))
-    );
-    if (pageHasExclusion) return computed;
-
-    // 3) 명세서 합계 기본값
-    const base = stated ?? computed;
-    if (base <= 0) return computed;
-
-    // 4) 에누리/차액이 있으면 · 모드에 따라 처리
-    //   "before" (기본): stated + 에누리 (에누리 적용 전 금액 표시)
-    //   "after": stated 그대로 (에누리 이미 반영된 최종 금액)
-    // 2026-07-24 · 사용자 요청 "정산차액 적용 체크박스" + "수식 검증":
-    //   - pageDiscountApplied 미지정 (undefined) · valid 만 자동 적용
-    //   - pageDiscountApplied 명시 true/false · 사용자 뜻 존중
-    const disc = getPageDiscount(pn);
-    const explicitApplied = pageDiscountApplied[pn];
-    const autoApplied = disc ? disc.valid !== false : false;  // valid=true 또는 undefined 이면 적용
-    const applied = explicitApplied !== undefined ? explicitApplied : autoApplied;
-    if (applied && disc) {
-      const mode = discountApplyMode[pn] ?? "before";
-      return mode === "after" ? base : base + disc.amount;
-    }
-
-    // 5) 명세서 합계 그대로
-    return base;
-  };
-
-  // 2026-07-24 · VAT 포함 총액 (사용자 요청) · pageVatIncluded[pn] true 이면 base × 1.1
-  const getPageDisplayTotalWithVat = (pn: number): number => {
-    const base = getPageDisplayTotal(pn);
-    if (pageVatIncluded[pn]) return Math.round(base * 1.1);
-    return base;
-  };
-
-  // 2026-07-28 · 사용자 반복 지적 "1차에서 이미 부가세 처리됨 · 확정표 재계산 X"
-  //   → custom (사용자 직접 입력) · 그 값 자체가 최종값 · × 1.1 재적용 X
-  //   → rowSum (자동 계산) · pageVatIncluded 시 × 1.1
-  //   → VAT 배지는 표시용만 · 값은 1차 UI 와 정확히 일치
-  const getPageConfirmedSubtotal = (pn: number): number => {
-    if (pageSubtotalChoices[pn] === "custom") {
-      // 사용자 입력값 · 최종값 그대로 · VAT 재적용 X
-      return getPageDisplayTotal(pn);
-    }
-    const shown = effectivePageTotals.get(pn) ?? 0;
-    return pageVatIncluded[pn] ? Math.round(shown * 1.1) : shown;
-  };
-  // 총 합계 = 각 명세서(page)의 확정 소계값 합계 — supplierTotals · 페이지별 표시와 동일 기준
-  const _uniquePageNumsForTotal = [...new Set(pageNums)].sort((a, b) => a - b);
-  const total = amtIdx >= 0
-    ? _uniquePageNumsForTotal.reduce((s, pn) => s + getPageConfirmedSubtotal(pn), 0)
-    : 0;
-  // 툴팁용 계산 내역: "명세서1 X원 + 명세서2 Y원 + ... = 총 Z원"
-  const totalBreakdownTitle = amtIdx >= 0 && _uniquePageNumsForTotal.length > 0
-    ? _uniquePageNumsForTotal.map(pn => `명세서${pn} ${fmt(getPageConfirmedSubtotal(pn))}원`).join(" + ")
-      + ` = 총 ${fmt(total)}원`
-    : "";
-
-  const meta = pages.map(p => p.meta).find(m => m.date || m.supplier) ?? {};
-
-  const balanceConfig: Record<string, string> = balanceConfigProp ?? {};
-
-  // ── 이미지(페이지)별 합계 (원본, mismatch 감지용) ─────────────────────────
-  const pageTotals = new Map<number, number>();
-  if (amtIdx >= 0) {
-    dispRows.forEach((row, ri) => {
-      const pn = pageNums[ri];
-      pageTotals.set(pn, (pageTotals.get(pn) ?? 0) + parseNumber(row[amtIdx]));
-    });
-  }
-  const uniquePageNums = [...new Set(pageNums)].sort((a, b) => a - b);
-
-  const pageBalanceFromConfig = React.useMemo(
-    () => _computePageBalanceFromConfig(structuredPages, uniquePageNums, rawSupplierByPage, balanceConfig ?? {}),
-    [structuredPages, uniquePageNums, rawSupplierByPage, balanceConfig],
-  );
-
-  // 공급사별 OCR 잔고 합산
-  const supplierOcrBalance = new Map<string, number>();
-  for (const [pn, balance] of pageBalanceFromConfig) {
-    const pageData = structuredPages.find(p => p.page === pn);
-    const pageSupplier = (rawSupplierByPage[pn] ?? pageData?.meta.supplier ?? "").trim() || "미상";
-    supplierOcrBalance.set(pageSupplier, (supplierOcrBalance.get(pageSupplier) ?? 0) + balance);
-  }
-
-  // ── 공급처별 합계 — 페이지별 표시 소계와 동일 (getPageConfirmedSubtotal · 2026-07-27) ─
-  const supplierTotals: { supplier: string; total: number; count: number }[] = amtIdx >= 0
-    ? (() => {
-        const map = new Map<string, { total: number; count: number }>();
-        for (const pn of uniquePageNums) {
-          const supp = (
-            rawSupplierByPage[pn] !== undefined
-              ? rawSupplierByPage[pn]
-              : (structuredPages.find(p => p.page === pn)?.meta.supplier ?? "미상")
-          ).trim() || "미상";
-          const subtotal = getPageConfirmedSubtotal(pn);
-          const prev = map.get(supp) ?? { total: 0, count: 0 };
-          map.set(supp, { total: prev.total + subtotal, count: prev.count + 1 });
-        }
-        return [...map.entries()].map(([supplier, v]) => ({ supplier, ...v }));
-      })()
-    : [];
-
-  // ── 명세서 소계 불일치 감지 (원본 기준) ──────────────────────────────────
-  // 페이지별 "수량×단가 ≠ 금액" 불일치 카운트 (에누리액 있으면 할인으로 반영 후 비교)
-  const _qtyIdxEarly = dispHeaders.indexOf("수량");
-  const _priIdxEarly = dispHeaders.indexOf("단가");
-  const _discountIdxEarly = (() => {
-    // "에누리액", "에누리", "할인액", "할인" 등 (공백 허용)
-    for (const h of dispHeaders) {
-      const norm = String(h).replace(/\s+/g, "");
-      if (/에누리|할인|디씨|D\.?C/i.test(norm)) return dispHeaders.indexOf(h);
-    }
-    return -1;
-  })();
-  // 2026-07-28 · 수식오탐(Q×P vs 금액 불일치) 카운트·시각 표시 완전 제거 (사용자 요청) · pageQtyPriceAmtMismatch 삭제
-
-  const pageMismatches: { pageNum: number; computed: number; stated: number }[] = [];
-  if (amtIdx >= 0) {
-    for (const pn of uniquePageNums) {
-      const pageData = structuredPages.find(p => p.page === pn);
-      const stated = pageData?.meta?.total;
-      if (stated != null && stated > 0) {
-        const computed = pageTotals.get(pn) ?? 0;
-        if (Math.abs(stated - computed) > 1) {
-          pageMismatches.push({ pageNum: pn, computed, stated });
-        }
-      }
-    }
-  }
-
-  // 보정 후 아직 불일치인 페이지
-  const isPageResolved = (pn: number) => {
-    if (pageSubtotalChoices[pn]) return true;
-    const stated = structuredPages.find(p => p.page === pn)?.meta?.total ?? 0;
-    const effective = effectivePageTotals.get(pn) ?? 0;
-    return stated > 0 && Math.abs(stated - effective) <= 1;
-  };
 
   // ── 이미지 컬럼 리사이즈 · 줌/팬 · 모달 → useInvoiceImageControls 훅으로 분리 ────
   const {
