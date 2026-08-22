@@ -85,213 +85,26 @@ import { usePagePermissions } from "../../hooks/usePagePermissions";
 import type { AuthSession } from "../../types";
 import { api, ApiError } from "../../lib/apiClient";
 
-// ── DisplayPage 서브탭 (level 2) 정의 · 상수 · 컴포넌트 외부 배치 (참조 안정성 · 훅 재등록 방지) ──
-type DpSubTabKey = "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals" | "store" | "vendor-manage";
-const DP_SUBTAB_DEFAULTS: CommonTabDef<DpSubTabKey>[] = [
-  { key: "purchase-order", label: "발주",       icon: ClipboardList, color: "sky"    },
-  { key: "purchase",       label: "매입",       icon: Package,       color: "amber"  },
-  { key: "payment",        label: "결제",       icon: Wallet,        color: "teal"   },
-  { key: "statistics",     label: "통계",       icon: BarChart2,     color: "indigo" },
-  { key: "stock-arrivals", label: "입고알림",   icon: Bell,          color: "orange" },
-  // "display-request" 서브탭 제거 · RequestsPage 진열요청 탭으로 통합 (2026-08-05)
-  { key: "store",          label: "매장구역도", icon: Store,         color: "violet" },
-  // 2026-08-09 · 사용자 요청 · 공급사관리 (경영관리에서 이동)
-  { key: "vendor-manage",  label: "공급사관리", icon: Building2,     color: "rose"   },
-];
+// 2026-08-22 · Framework Phase 4 · 대형 파일 분리
+//   · types → DisplayPage.types.ts (DpSubTabKey · DisplayPageProps · DisplayRequest · ScheduleEntry · Employee · TodayStaff · PopoverAnchor)
+//   · helpers → DisplayPage.helpers.ts (DP_SUBTAB_DEFAULTS · DOW_ALL/LABELS/isDowActive · ZONES_KEY/REQS_KEY · loadZones/saveZones/loadRequests/saveRequests · STATUS_LABEL · statusCell/Dot/Badge · SHIFT_BADGE · SKIP_TYPES · formatRel · STAFF_COLORS · STAFF_AVATAR_COLORS · fetchZonesFromDB · saveZonesToDB · fetchRequestsFromDB · MULTI_ASSIGN_ZONE_NUMS)
+import type {
+  DpSubTabKey, DisplayPageProps, DisplayRequest, ScheduleEntry, Employee, TodayStaff, PopoverAnchor,
+} from "./DisplayPage.types";
+import {
+  DP_SUBTAB_DEFAULTS,
+  DOW_ALL, DOW_LABELS, isDowActive,
+  ZONES_KEY, REQS_KEY,
+  loadZones, saveZones, loadRequests, saveRequests,
+  STATUS_LABEL, statusCell, statusDot, statusBadge,
+  SHIFT_BADGE, SKIP_TYPES, formatRel,
+  STAFF_COLORS, STAFF_AVATAR_COLORS,
+  fetchZonesFromDB, saveZonesToDB, fetchRequestsFromDB,
+  MULTI_ASSIGN_ZONE_NUMS,
+} from "./DisplayPage.helpers";
 
-interface DisplayPageProps {
-  onBack: () => void;
-  onOpenEmployeeEdit?: (employeeId: number) => void;
-  authSession?: AuthSession | null;
-  onNavigate?: (page: AppNavPage) => void;
-  onLogout?: () => void;
-}
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-// ZoneStatus · DowMap · DisplayZone → src/utils/zoneUtils.ts 로 이동 (god-phase1)
-
-// ─── DOW(요일) 마스크 유틸 ───────────────────────────────────────────
-// 비트: 일(1) 월(2) 화(4) 수(8) 목(16) 금(32) 토(64) → 모든요일=127
-export const DOW_ALL = 127;
-export const DOW_LABELS = ["일", "월", "화", "수", "목", "금", "토"] as const;
-export const isDowActive = (mask: number | undefined | null, dow: number): boolean =>
-  mask == null ? true : ((mask >> dow) & 1) === 1;
-
-interface DisplayRequest {
-  id: string;
-  zoneId: string;
-  zoneLabel: string;
-  category: string;
-  requestedAt: string;
-  assignedStaffId: number | null;
-  assignedStaffName: string;
-  status: "pending" | "done";
-  note: string;
-}
-
-interface ScheduleEntry { date: string; type: string; workingHours?: string; }
-interface Employee { id: number; name: string; position: string; schedules?: ScheduleEntry[]; }
-interface TodayStaff { employee: Employee; scheduleType: string; workingHours: string; }
-
-// ─── Popover anchor ──────────────────────────────────────────────────────────
-interface PopoverAnchor {
-  zoneId: string;
-  rect: DOMRect;
-}
-
-// expandZoneDef · buildDefaultZones → src/utils/zoneUtils.ts 로 이동 (god-phase1)
-
-// ─── localStorage helpers ─────────────────────────────────────────────────────
-const ZONES_KEY = ZONES_STORAGE_KEY;
-const REQS_KEY = "megatown_display_requests";
-
-const loadZones = (): DisplayZone[] => {
-  try {
-    const raw = localStorage.getItem(ZONES_KEY);
-    if (!raw) { const d = buildDefaultZones(); localStorage.setItem(ZONES_KEY, JSON.stringify(d)); return d; }
-    const parsed = JSON.parse(raw) as DisplayZone[];
-    if (!Array.isArray(parsed) || parsed.length === 0) { const d = buildDefaultZones(); localStorage.setItem(ZONES_KEY, JSON.stringify(d)); return d; }
-    // merge: expand A/B for aisles 1-8, preserve saved status/staff/products by id
-    return ZONE_DEFS.flatMap((def) => {
-      const expanded = expandZoneDef(def);
-      return expanded.map(base => {
-        // 하위 호환: 옛 id (예: "1")로 저장된 값은 A로 매핑, B는 새로 시작
-        const saved = parsed.find((z) => z.id === base.id)
-          ?? (base.id.endsWith("A") ? parsed.find((z) => z.id === String(def.num)) : null);
-        return {
-          ...base,
-          assignedStaffId: saved?.assignedStaffId ?? null,
-          assignedStaffName: saved?.assignedStaffName ?? "",
-          status: saved?.status ?? "normal",
-          products: saved?.products ?? "",
-          dowMap: (saved as any)?.dowMap ?? null,
-        };
-      });
-    });
-  } catch { return buildDefaultZones(); }
-};
-const saveZones = (z: DisplayZone[]) => { try { localStorage.setItem(ZONES_KEY, JSON.stringify(z)); } catch { } };
-
-const loadRequests = (): DisplayRequest[] => {
-  try { const r = localStorage.getItem(REQS_KEY); return r ? (JSON.parse(r) as DisplayRequest[]) : []; }
-  catch { return []; }
-};
-const saveRequests = (r: DisplayRequest[]) => { try { localStorage.setItem(REQS_KEY, JSON.stringify(r)); } catch { } };
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-const STATUS_LABEL: Record<ZoneStatus, string> = { normal: "정상", low: "부족", empty: "품절" };
-
-const statusCell = (s: ZoneStatus, extra = ""): string => {
-  const m = {
-    normal: "bg-emerald-50 border-emerald-300 hover:border-emerald-400 text-emerald-900",
-    low: "bg-amber-50 border-amber-300 hover:border-amber-400 text-amber-900",
-    empty: "bg-red-50 border-red-300 hover:border-red-400 text-red-900"
-  };
-  return `${m[s]} ${extra}`;
-};
-const statusDot = (s: ZoneStatus) => ({ normal: "bg-emerald-500", low: "bg-amber-500", empty: "bg-red-500" }[s]);
-const statusBadge = (s: ZoneStatus) => ({ normal: "bg-emerald-100 text-emerald-700 border-emerald-300", low: "bg-amber-100 text-amber-700 border-amber-300", empty: "bg-red-100 text-red-700 border-red-300" }[s]);
-
-const SHIFT_BADGE: Record<string, string> = {
-  "오픈": "bg-emerald-100 text-emerald-800 border-emerald-300",
-  "미들": "bg-blue-100 text-blue-800 border-blue-300",
-  "마감": "bg-rose-100 text-rose-800 border-rose-300",
-  "오전반차": "bg-lime-100 text-lime-800 border-lime-300",
-  "오후반차": "bg-amber-100 text-amber-800 border-amber-300",
-};
-
-const SKIP_TYPES = new Set(["휴무", "월차", "지정휴무"]);
-
-const formatRel = (iso: string) => {
-  const diff = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
-  if (diff < 60) return "방금 전";
-  if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;
-  return `${Math.floor(diff / 86400)}일 전`;
-};
-
-// ─── Staff color palette (for assigned zone chip coloring) ────────────────────
-const STAFF_COLORS = [
-  "bg-violet-100 text-violet-800 border-violet-300",
-  "bg-sky-100 text-sky-800 border-sky-300",
-  "bg-rose-100 text-rose-800 border-rose-300",
-  "bg-teal-100 text-teal-800 border-teal-300",
-  "bg-orange-100 text-orange-800 border-orange-300",
-  "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300",
-];
-
-const STAFF_AVATAR_COLORS = [
-  "bg-violet-600 text-white",
-  "bg-sky-600 text-white",
-  "bg-rose-600 text-white",
-  "bg-teal-600 text-white",
-  "bg-orange-600 text-white",
-  "bg-fuchsia-600 text-white",
-];
-
-// ─── API helpers ──────────────────────────────────────────────────────────────
-const fetchZonesFromDB = async (): Promise<DisplayZone[] | null> => {
-  try {
-    const { data: rows } = await api.get<Array<{ zone_id: string; employee_id: number | null; employee_name: string; status: string; products: string; dow_map?: DowMap }>>("/api/zones");
-    if (!Array.isArray(rows) || rows.length === 0) return null;
-    // A/B 확장 + 하위 호환: 옛 zone_id ("1") → 1A로 매핑
-    return ZONE_DEFS.flatMap((def) => {
-      const expanded = expandZoneDef(def);
-      return expanded.map(base => {
-        const row = rows.find((r) => r.zone_id === base.id)
-          ?? (base.id.endsWith("A") ? rows.find((r) => r.zone_id === String(def.num)) : null);
-        return {
-          ...base,
-          assignedStaffId: row?.employee_id ?? null,
-          assignedStaffName: row?.employee_name ?? "",
-          status: (row?.status as ZoneStatus) ?? "normal",
-          products: row?.products ?? "",
-          dowMap: (row?.dow_map ?? null) as DowMap,
-        };
-      });
-    });
-  } catch { return null; }
-};
-
-const saveZonesToDB = async (zones: DisplayZone[]): Promise<{ ok: boolean; error?: string }> => {
-  try {
-    await api.post("/api/zones", {
-      zones: zones.map((z) => ({
-        zone_id: z.id,
-        employee_id: z.assignedStaffId,
-        employee_name: z.assignedStaffName,
-        status: z.status,
-        products: z.products,
-        dow_map: z.dowMap ?? null,
-      })),
-    });
-    return { ok: true };
-  } catch (err: any) {
-    const msg = err instanceof ApiError ? err.message : (err?.message ?? String(err));
-    console.error("[saveZonesToDB] exception:", msg);
-    return { ok: false, error: msg };
-  }
-};
-
-const fetchRequestsFromDB = async (): Promise<DisplayRequest[] | null> => {
-  try {
-    const { data: rows } = await api.get<any[]>("/api/display-requests");
-    return rows.map((r) => ({
-      id: String(r.id),
-      zoneId: r.zone_id ?? "",
-      zoneLabel: r.zone_label ?? "",
-      category: r.category ?? "",
-      requestedAt: r.requested_at ?? new Date().toISOString(),
-      assignedStaffId: r.assigned_staff_id ?? null,
-      assignedStaffName: r.assigned_staff_name ?? "",
-      status: (r.status ?? "pending") as "pending" | "done",
-      note: r.note ?? "",
-    }));
-  } catch { return null; }
-};
-
-// Zones that allow multiple staff assignments (comma-separated names)
-const MULTI_ASSIGN_ZONE_NUMS = new Set([36, 42]);
+// 기존 DOW_* export 하위 호환 유지 (외부 import 대응)
+export { DOW_ALL, DOW_LABELS, isDowActive };
 
 // ─── Main component ────────────────────────────────────────────────────────────
 export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployeeEdit, authSession, onNavigate, onLogout }) => {
