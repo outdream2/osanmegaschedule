@@ -57,6 +57,16 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #186 · 무동작 30분 자동 로그아웃 + 로그인 화면 이동 (신규 · 2026-08-22)
+- 📄 대상 · 전체 앱 · 로그인 후 30분 이상 마우스·키보드·터치 무동작 시 자동 세션 종료
+- 🔲 유저 activity 감지 · `mousemove` / `keydown` / `click` / `touchstart` 이벤트 → 타이머 reset
+- 🔲 30분 (= 1800s) 카운트다운 · 만료 시 `onLogout()` 호출 + 로그인 페이지 리다이렉트
+- 🔲 기존 `src/components/common/SessionTimeoutWarning.tsx` 재사용/확장 (이미 존재)
+- 🔲 프레임워크 원칙 · `useAuth` 훅 · `onLogout()` 사용 · useEffect + 이벤트 리스너 등록/해제
+- 🔲 기존 401 감지 즉시 로그아웃 (feedback_session_expiry.md) 과 별개 · 무동작 timeout 추가 요건
+- 💡 SessionTimeoutWarning · 만료 전 경고 UI (예: 5분 전 알림) 재사용 가능 여부 확인
+- 💡 주의 · 이벤트 리스너 cleanup · 메모리 누수 방지 · 컴포넌트 unmount 시 clearTimeout
+
 ### #185 · 통계 메뉴 상단 세션 · UI 프레임워크 통일 (신규 · 2026-08-21)
 - 📄 대상 · 발주관리 > 통계 서브탭 상단 (CategoryTab · TrendingTab · SupplierTab · PurchaseSubTabs 등)
 - 🔲 현재 · 각 서브탭 상단 세션 (제목·필터·기간선택 등) · 스타일·간격·색상 통일 안 됨
