@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useConfirm } from "../../hooks/useConfirm";
-import { Pencil, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck, ScanLine, Check, X, DollarSign, Package, Info, EyeOff, Eye, TrendingUp, ChevronRight, ChevronDown } from "lucide-react";
+import { Pencil, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, ScanLine, Check, X, DollarSign, Package, Info, EyeOff, Eye, TrendingUp, ChevronRight, ChevronDown } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
@@ -14,6 +14,8 @@ import { Card } from "../common/Card";
 import { fmtWonCompact } from "../../lib/format";
 // 2026-08-21 · Framework Phase 4 · large-file 분리
 import { PurchaseHistorySection } from "./PurchaseHistorySection";
+// 2026-08-22 · Framework Phase 4 · 5-slot 반복 → StockSlotCard 프리미티브
+import { StockSlotCard } from "./StockSlotCard";
 
 // 인라인 편집 가능 필드 종류
 type InlineEditableKey = "optimal_stock" | "sale_price" | "purchase_price" | "cost_price" | "brand" | "manufacturer" | "barcode" | "expiry_date" | "memo";
@@ -567,126 +569,27 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                     - 매장1/2/3: violet 계열 */}
               {S.actualStockInput && !stockSectionCollapsed && (
                 <div className="grid grid-cols-2 min-[360px]:grid-cols-3 min-[520px]:grid-cols-5 gap-1.5 mt-1.5">
-                  {/* 창고1 */}
-                  <div className="bg-white rounded-lg border border-cyan-200 py-1 px-1 text-center">
-                    <p className="text-[12px] font-semibold text-cyan-600 mb-0.5 flex items-center justify-center gap-0.5"><Warehouse size={10} />창고1</p>
-                    <input
-                      type="number" min="0"
-                      value={warehouse1Stock}
-                      onChange={e => { setWarehouse1Stock(e.target.value === "" ? "" : Number(e.target.value)); setW1Status("idle"); }}
-                      className="w-full text-sm font-bold text-center bg-cyan-50/50 border border-cyan-200 rounded px-1 py-0 outline-none focus:border-cyan-400 transition"
-                      placeholder="—"
-                    />
-                    {w1Status === "done" ? (
-                      <div className="mt-0.5 text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-0.5"><CheckCircle2 size={10} /> 저장됨</div>
-                    ) : (
-                      <button
-                        onClick={handleW1Submit}
-                        disabled={w1Status === "loading" || warehouse1Stock === ""}
-                        className="mt-0.5 w-full text-[11px] font-bold rounded transition cursor-pointer disabled:opacity-40 bg-cyan-500 hover:bg-cyan-600 text-white py-0.5 flex items-center justify-center gap-0.5"
-                      >
-                        {w1Status === "loading" ? <Spinner size={9} /> : <ClipboardCheck size={9} />}
-                        {w1Status === "loading" ? "저장중" : w1Status === "error" ? "재시도" : "저장"}
-                      </button>
-                    )}
-                  </div>
-                  {/* 창고2 · cyan 진하게 (cyan-300/700) */}
-                  <div className="bg-white rounded-lg border border-cyan-300 py-1 px-1 text-center">
-                    <p className="text-[12px] font-semibold text-cyan-700 mb-0.5 flex items-center justify-center gap-0.5"><Warehouse size={10} />창고2</p>
-                    <input
-                      type="number" min="0"
-                      value={warehouse2Stock}
-                      onChange={e => { setWarehouse2Stock(e.target.value === "" ? "" : Number(e.target.value)); setW2Status("idle"); }}
-                      className="w-full text-sm font-bold text-center bg-cyan-100/40 border border-cyan-300 rounded px-1 py-0 outline-none focus:border-cyan-500 transition"
-                      placeholder="—"
-                    />
-                    {w2Status === "done" ? (
-                      <div className="mt-0.5 text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-0.5"><CheckCircle2 size={10} /> 저장됨</div>
-                    ) : (
-                      <button
-                        onClick={handleW2Submit}
-                        disabled={w2Status === "loading" || warehouse2Stock === ""}
-                        className="mt-0.5 w-full text-[11px] font-bold rounded transition cursor-pointer disabled:opacity-40 bg-cyan-600 hover:bg-cyan-700 text-white py-0.5 flex items-center justify-center gap-0.5"
-                      >
-                        {w2Status === "loading" ? <Spinner size={9} /> : <ClipboardCheck size={9} />}
-                        {w2Status === "loading" ? "저장중" : w2Status === "error" ? "재시도" : "저장"}
-                      </button>
-                    )}
-                  </div>
-                  {/* 매장1 · violet 기본 · #224 real_map 슬래시[0] 표시 · #237 · 매장 수 = storeZones.length (0이면 매장1 default 표시) */}
+                  {/* 2026-08-22 · Framework Phase 4 · StockSlotCard 프리미티브 재사용 */}
+                  <StockSlotCard kind="warehouse" label="창고1" value={warehouse1Stock}
+                    onChange={v => { setWarehouse1Stock(v); setW1Status("idle"); }}
+                    status={w1Status} onSubmit={handleW1Submit} toneKey="wh1" />
+                  <StockSlotCard kind="warehouse" label="창고2" value={warehouse2Stock}
+                    onChange={v => { setWarehouse2Stock(v); setW2Status("idle"); }}
+                    status={w2Status} onSubmit={handleW2Submit} toneKey="wh2" />
                   {(storeZones.length === 0 || storeZones.length >= 1) && (
-                  <div className="bg-white rounded-lg border border-violet-200 py-1 px-1 text-center">
-                    <p className="text-[12px] font-semibold text-violet-600 mb-0.5 flex items-center justify-center gap-0.5 flex-wrap"><Store size={10} />매장1{zoneS1 && <span className="text-[10px] font-semibold text-violet-800 leading-tight">{zoneS1}</span>}</p>
-                    <input
-                      type="number" min="0"
-                      value={store1Stock}
-                      onChange={e => { setStore1Stock(e.target.value === "" ? "" : Number(e.target.value)); setS1Status("idle"); }}
-                      className="w-full text-sm font-bold text-center bg-violet-50/50 border border-violet-200 rounded px-1 py-0 outline-none focus:border-brand-deep transition"
-                      placeholder="—"
-                    />
-                    {s1Status === "done" ? (
-                      <div className="mt-0.5 text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-0.5"><CheckCircle2 size={10} /> 저장됨</div>
-                    ) : (
-                      <button
-                        onClick={handleS1Submit}
-                        disabled={s1Status === "loading" || store1Stock === ""}
-                        className="mt-0.5 w-full text-[11px] font-bold rounded transition cursor-pointer disabled:opacity-40 bg-violet-500 hover:bg-violet-600 text-white py-0.5 flex items-center justify-center gap-0.5"
-                      >
-                        {s1Status === "loading" ? <Spinner size={9} /> : <ClipboardCheck size={9} />}
-                        {s1Status === "loading" ? "저장중" : s1Status === "error" ? "재시도" : "저장"}
-                      </button>
-                    )}
-                  </div>
+                    <StockSlotCard kind="store" label="매장1" zone={zoneS1} value={store1Stock}
+                      onChange={v => { setStore1Stock(v); setS1Status("idle"); }}
+                      status={s1Status} onSubmit={handleS1Submit} toneKey="s1" />
                   )}
-                  {/* 매장2 · violet 중간 · #224 real_map 슬래시[1] 표시 · #237 · storeZones ≥ 2 만 노출 */}
                   {storeZones.length >= 2 && (
-                  <div className="bg-white rounded-lg border border-violet-300 py-1 px-1 text-center">
-                    <p className="text-[12px] font-semibold text-violet-700 mb-0.5 flex items-center justify-center gap-0.5 flex-wrap"><Store size={10} />매장2{zoneS2 && <span className="text-[10px] font-semibold text-violet-800 leading-tight">{zoneS2}</span>}</p>
-                    <input
-                      type="number" min="0"
-                      value={store2Stock}
-                      onChange={e => { setStore2Stock(e.target.value === "" ? "" : Number(e.target.value)); setS2Status("idle"); }}
-                      className="w-full text-sm font-bold text-center bg-violet-100/40 border border-violet-300 rounded px-1 py-0 outline-none focus:border-brand-deep transition"
-                      placeholder="—"
-                    />
-                    {s2Status === "done" ? (
-                      <div className="mt-0.5 text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-0.5"><CheckCircle2 size={10} /> 저장됨</div>
-                    ) : (
-                      <button
-                        onClick={handleS2Submit}
-                        disabled={s2Status === "loading" || store2Stock === ""}
-                        className="mt-0.5 w-full text-[11px] font-bold rounded transition cursor-pointer disabled:opacity-40 bg-violet-600 hover:bg-violet-700 text-white py-0.5 flex items-center justify-center gap-0.5"
-                      >
-                        {s2Status === "loading" ? <Spinner size={9} /> : <ClipboardCheck size={9} />}
-                        {s2Status === "loading" ? "저장중" : s2Status === "error" ? "재시도" : "저장"}
-                      </button>
-                    )}
-                  </div>
+                    <StockSlotCard kind="store" label="매장2" zone={zoneS2} value={store2Stock}
+                      onChange={v => { setStore2Stock(v); setS2Status("idle"); }}
+                      status={s2Status} onSubmit={handleS2Submit} toneKey="s2" />
                   )}
-                  {/* 매장3 · violet 진한 (purple 톤) · #224 real_map 슬래시[2] 표시 · #237 · storeZones ≥ 3 만 노출 */}
                   {storeZones.length >= 3 && (
-                  <div className="bg-white rounded-lg border border-purple-300 py-1 px-1 text-center">
-                    <p className="text-[12px] font-semibold text-purple-700 mb-0.5 flex items-center justify-center gap-0.5 flex-wrap"><Store size={10} />매장3{zoneS3 && <span className="text-[10px] font-semibold text-purple-800 leading-tight">{zoneS3}</span>}</p>
-                    <input
-                      type="number" min="0"
-                      value={store3Stock}
-                      onChange={e => { setStore3Stock(e.target.value === "" ? "" : Number(e.target.value)); setS3Status("idle"); }}
-                      className="w-full text-sm font-bold text-center bg-purple-100/40 border border-purple-300 rounded px-1 py-0 outline-none focus:border-purple-500 transition"
-                      placeholder="—"
-                    />
-                    {s3Status === "done" ? (
-                      <div className="mt-0.5 text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-0.5"><CheckCircle2 size={10} /> 저장됨</div>
-                    ) : (
-                      <button
-                        onClick={handleS3Submit}
-                        disabled={s3Status === "loading" || store3Stock === ""}
-                        className="mt-0.5 w-full text-[11px] font-bold rounded transition cursor-pointer disabled:opacity-40 bg-purple-600 hover:bg-purple-700 text-white py-0.5 flex items-center justify-center gap-0.5"
-                      >
-                        {s3Status === "loading" ? <Spinner size={9} /> : <ClipboardCheck size={9} />}
-                        {s3Status === "loading" ? "저장중" : s3Status === "error" ? "재시도" : "저장"}
-                      </button>
-                    )}
-                  </div>
+                    <StockSlotCard kind="store" label="매장3" zone={zoneS3} value={store3Stock}
+                      onChange={v => { setStore3Stock(v); setS3Status("idle"); }}
+                      status={s3Status} onSubmit={handleS3Submit} toneKey="s3" />
                   )}
                 </div>
               )}
