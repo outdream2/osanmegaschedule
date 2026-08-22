@@ -8,17 +8,17 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 522 |
-| 위반 파일 | 19 |
-| 클린 파일 | 503 (96%) |
-| 총 위반 개수 | 19 |
+| 스캔 파일 | 523 |
+| 위반 파일 | 18 |
+| 클린 파일 | 505 (97%) |
+| 총 위반 개수 | 18 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
 | `large-file-critical` | 8 | 8 | high | 2000+라인 · 시급 · 서브 컴포넌트/훅 분리 필수 |
-| `large-file-warn` | 11 | 11 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `large-file-warn` | 10 | 10 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
@@ -34,17 +34,16 @@
 | 8 | `src/components/StaffManagePage/StaffManagePage.tsx` | 2154 | 24 | large-file-critical(1) |
 | 9 | `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1338 | 6 | large-file-warn(1) |
 | 10 | `src/components/LandingPage/VendorListEditor.tsx` | 1549 | 6 | large-file-warn(1) |
-| 11 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 1041 | 6 | large-file-warn(1) |
-| 12 | `src/components/ContractSettingsPage/ContractSettingsPage.tsx` | 887 | 3 | large-file-warn(1) |
-| 13 | `src/components/DayTimelineModal/ZoneSection.tsx` | 924 | 3 | large-file-warn(1) |
-| 14 | `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx` | 962 | 3 | large-file-warn(1) |
-| 15 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 806 | 3 | large-file-warn(1) |
-| 16 | `src/components/PermissionsPage/PermissionsPage.tsx` | 965 | 3 | large-file-warn(1) |
-| 17 | `src/components/ScanPage/ProductInfoCard.tsx` | 895 | 3 | large-file-warn(1) |
-| 18 | `src/components/StockManagePage/FlowTab.tsx` | 905 | 3 | large-file-warn(1) |
-| 19 | `src/components/StockManagePage/SupplierTab.tsx` | 991 | 3 | large-file-warn(1) |
+| 11 | `src/components/ContractSettingsPage/ContractSettingsPage.tsx` | 887 | 3 | large-file-warn(1) |
+| 12 | `src/components/DayTimelineModal/ZoneSection.tsx` | 924 | 3 | large-file-warn(1) |
+| 13 | `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx` | 962 | 3 | large-file-warn(1) |
+| 14 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 806 | 3 | large-file-warn(1) |
+| 15 | `src/components/PermissionsPage/PermissionsPage.tsx` | 965 | 3 | large-file-warn(1) |
+| 16 | `src/components/ScanPage/ProductInfoCard.tsx` | 895 | 3 | large-file-warn(1) |
+| 17 | `src/components/StockManagePage/FlowTab.tsx` | 901 | 3 | large-file-warn(1) |
+| 18 | `src/components/StockManagePage/SupplierTab.tsx` | 991 | 3 | large-file-warn(1) |
 
-## 📝 모든 위반 파일 (19개)
+## 📝 모든 위반 파일 (18개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -60,14 +59,13 @@
 | `src/components/StaffManagePage/StaffManagePage.tsx` | 2154 | 24 |
 | `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1338 | 6 |
 | `src/components/LandingPage/VendorListEditor.tsx` | 1549 | 6 |
-| `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 1041 | 6 |
 | `src/components/ContractSettingsPage/ContractSettingsPage.tsx` | 887 | 3 |
 | `src/components/DayTimelineModal/ZoneSection.tsx` | 924 | 3 |
 | `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx` | 962 | 3 |
 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 806 | 3 |
 | `src/components/PermissionsPage/PermissionsPage.tsx` | 965 | 3 |
 | `src/components/ScanPage/ProductInfoCard.tsx` | 895 | 3 |
-| `src/components/StockManagePage/FlowTab.tsx` | 905 | 3 |
+| `src/components/StockManagePage/FlowTab.tsx` | 901 | 3 |
 | `src/components/StockManagePage/SupplierTab.tsx` | 991 | 3 |
 
 </details>
