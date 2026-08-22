@@ -8,17 +8,17 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 523 |
-| 위반 파일 | 18 |
-| 클린 파일 | 505 (97%) |
-| 총 위반 개수 | 18 |
+| 스캔 파일 | 524 |
+| 위반 파일 | 17 |
+| 클린 파일 | 507 (97%) |
+| 총 위반 개수 | 17 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
 | `large-file-critical` | 8 | 8 | high | 2000+라인 · 시급 · 서브 컴포넌트/훅 분리 필수 |
-| `large-file-warn` | 10 | 10 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `large-file-warn` | 9 | 9 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
@@ -41,9 +41,8 @@
 | 15 | `src/components/PermissionsPage/PermissionsPage.tsx` | 965 | 3 | large-file-warn(1) |
 | 16 | `src/components/ScanPage/ProductInfoCard.tsx` | 895 | 3 | large-file-warn(1) |
 | 17 | `src/components/StockManagePage/FlowTab.tsx` | 901 | 3 | large-file-warn(1) |
-| 18 | `src/components/StockManagePage/SupplierTab.tsx` | 991 | 3 | large-file-warn(1) |
 
-## 📝 모든 위반 파일 (18개)
+## 📝 모든 위반 파일 (17개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -66,7 +65,6 @@
 | `src/components/PermissionsPage/PermissionsPage.tsx` | 965 | 3 |
 | `src/components/ScanPage/ProductInfoCard.tsx` | 895 | 3 |
 | `src/components/StockManagePage/FlowTab.tsx` | 901 | 3 |
-| `src/components/StockManagePage/SupplierTab.tsx` | 991 | 3 |
 
 </details>
 
