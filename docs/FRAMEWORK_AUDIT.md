@@ -8,17 +8,17 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 537 |
+| 스캔 파일 | 540 |
 | 위반 파일 | 8 |
-| 클린 파일 | 529 (99%) |
+| 클린 파일 | 532 (99%) |
 | 총 위반 개수 | 8 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
-| `large-file-critical` | 7 | 7 | high | 2000+라인 · 시급 · 서브 컴포넌트/훅 분리 필수 |
-| `large-file-warn` | 1 | 1 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `large-file-critical` | 6 | 6 | high | 2000+라인 · 시급 · 서브 컴포넌트/훅 분리 필수 |
+| `large-file-warn` | 2 | 2 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
@@ -28,10 +28,10 @@
 | 2 | `src/components/OcrPage/RawOcrTable.tsx` | 5260 | 48 | large-file-critical(1) |
 | 3 | `src/components/OrderManagePage/OrderManagePage.tsx` | 3090 | 32 | large-file-critical(1) |
 | 4 | `src/components/DisplayPage/DisplayPage.tsx` | 2714 | 24 | large-file-critical(1) |
-| 5 | `src/components/LandingPage/LandingPage.tsx` | 2320 | 24 | large-file-critical(1) |
-| 6 | `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2502 | 24 | large-file-critical(1) |
-| 7 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 | large-file-critical(1) |
-| 8 | `src/components/StaffManagePage/StaffManagePage.tsx` | 1917 | 6 | large-file-warn(1) |
+| 5 | `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2502 | 24 | large-file-critical(1) |
+| 6 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 | large-file-critical(1) |
+| 7 | `src/components/StaffManagePage/StaffManagePage.tsx` | 1917 | 6 | large-file-warn(1) |
+| 8 | `src/components/LandingPage/UploadDataModal.tsx` | 911 | 3 | large-file-warn(1) |
 
 ## 📝 모든 위반 파일 (8개)
 
@@ -43,10 +43,10 @@
 | `src/components/OcrPage/RawOcrTable.tsx` | 5260 | 48 |
 | `src/components/OrderManagePage/OrderManagePage.tsx` | 3090 | 32 |
 | `src/components/DisplayPage/DisplayPage.tsx` | 2714 | 24 |
-| `src/components/LandingPage/LandingPage.tsx` | 2320 | 24 |
 | `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2502 | 24 |
 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 |
 | `src/components/StaffManagePage/StaffManagePage.tsx` | 1917 | 6 |
+| `src/components/LandingPage/UploadDataModal.tsx` | 911 | 3 |
 
 </details>
 

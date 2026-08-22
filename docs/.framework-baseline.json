@@ -1,7 +1,7 @@
 {
   "created": "2026-08-22",
   "version": 1,
-  "totalViolations": 9,
+  "totalViolations": 8,
   "files": {
     "src/components/ContractWriterPage/ContractWriterPage.tsx": {
       "lines": 5483,
@@ -62,16 +62,6 @@
         }
       ],
       "totalWeight": 24
-    },
-    "src/components/LandingPage/LandingPage.tsx": {
-      "lines": 1264,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 6
     },
     "src/components/StaffManagePage/StaffManagePage.tsx": {
       "lines": 1917,
