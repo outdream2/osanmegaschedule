@@ -8,17 +8,17 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 532 |
-| 위반 파일 | 10 |
-| 클린 파일 | 522 (98%) |
-| 총 위반 개수 | 10 |
+| 스캔 파일 | 533 |
+| 위반 파일 | 9 |
+| 클린 파일 | 524 (98%) |
+| 총 위반 개수 | 9 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
 | `large-file-critical` | 8 | 8 | high | 2000+라인 · 시급 · 서브 컴포넌트/훅 분리 필수 |
-| `large-file-warn` | 2 | 2 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `large-file-warn` | 1 | 1 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
@@ -33,9 +33,8 @@
 | 7 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 | large-file-critical(1) |
 | 8 | `src/components/StaffManagePage/StaffManagePage.tsx` | 2154 | 24 | large-file-critical(1) |
 | 9 | `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1151 | 6 | large-file-warn(1) |
-| 10 | `src/components/StockManagePage/FlowTab.tsx` | 872 | 3 | large-file-warn(1) |
 
-## 📝 모든 위반 파일 (10개)
+## 📝 모든 위반 파일 (9개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -50,7 +49,6 @@
 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 |
 | `src/components/StaffManagePage/StaffManagePage.tsx` | 2154 | 24 |
 | `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1151 | 6 |
-| `src/components/StockManagePage/FlowTab.tsx` | 872 | 3 |
 
 </details>
 
