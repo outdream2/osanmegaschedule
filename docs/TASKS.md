@@ -1,5 +1,6 @@
 # TASKS
 
+> 2026-08-22 · Framework Phase 4 대량 분리 · 6파일 -1,003 라인 · 8 신규 파일 이관 · audit 24 유지 · Phase 2 (가드레일) 완료 · 원격 push 완료
 > 2026-08-21 · Framework Phase 4 (large-file 분리) · 44→22 warn/critical · 50% 탈출 · 클린 84%→96% · 35+커밋
 > 2026-08-20 (밤 최신) · Unit test **2514 tests · 176 files** · Spinner 22곳 추가 확산 · common/features Phase A (PurchaseHistoryModal·VendorSearchModal 이동) · LandingPage dots revert (대원칙 위반 재확인) · MENU_STRUCTURE 11차 업데이트 완료
 > 2026-08-20 (밤) · Unit test **2274 tests · 163 files** · #177 상품등록 페이지 대기 (매장>매입) · payroll/contract/stock 테스트 197개 확산 · MENU_STRUCTURE 10차 업데이트 완료 (Card 36곳+ · #177/#178 계획 등록)
@@ -16,7 +17,7 @@
 ## ⚙️ Framework Phase 4 · Large-file 분리 현황 (2026-08-21)
 
 **목표**: 44 warn/critical → 0 · 파일당 800줄 미만
-**현재**: 44 → 22 (22 탈출 · 50%) · 클린 파일 84% → 96% · 35+ 로컬 커밋
+**현재**: 44 → 24 warn (24 유지 · 모두 large-file · raw-* 0) · 이번 세션 6파일 **-1,003 라인** · 8 신규 파일 이관
 
 ### 완전 탈출 (warn 0 · 진행 완료)
 
@@ -30,28 +31,34 @@
 | `ProductInfoCard` | 1015 | 894 | PurchaseHistorySection |
 | `BoardPage` | 1177 | 231 | types + constants + utils + PostCard + InlineDetail + ComposerModal + DetailModal |
 | `ResignationWriter` | 1241 | 768 | types + utils + SignatureModal + ResignationPreview |
-| `StaffManagePage` | 2728 | 2303 | types.ts (200) + helpers.ts (148) + CreateModal.tsx (110) · `2d9ec295`·`75e4dcd0` |
 
 ### 부분 분리 (warn/critical 유지)
 
-| 파일 | 원본 | 현재 | 분리 산출물 |
-|-----|------|-----|-----------|
-| `OcrPage` | 1768 | 1215 | types + ConfirmedRecordsTab |
-| `PaymentInfoTab` | 1926 | 1513 | types + utils + subcomponents |
-| `PurchaseHistoryTab` | 1192 | 1158 | types |
-| `ReturnListPanel` | 1205 | 805 | types + ReturnRequestModal |
-| `PurchaseSubTabs` | 1216 | 1145 | chart-helpers |
-| `RequestsPage` | 1307 | 1225 | types + ListToolbar |
-| `ScanPage` | 1165 | 1105 | helpers |
-| `SupplierTab` | 1005 | 990 | types |
-| `FlowTab` | 1111 | 1075 | types |
+| 파일 | 원본 | 현재 | 분리 산출물 | 커밋 |
+|-----|------|-----|-----------|-----|
+| `StaffManagePage` | 2728 | **2153** | types.ts (200) + helpers.ts (148) + CreateModal.tsx (110) + subcomponents.tsx (163) | `2d9ec295`·`11244343` |
+| `OrderManagePage` | 3205 | **3089** | types.ts (90) + utils.ts (54) | `41b5455e` |
+| `LandingPage` | 2467 | **2319** | PeriodCoverageWidget.tsx (163) | `d2dbcc20` |
+| `DisplayPage` | 3126 | **2713** | types.ts (61) + helpers.ts (185) + VendorManageSplit.tsx (236) | `f4d9e841`·`0358650b` |
+| `SalesTrendPage` | 2676 | **2501** | helpers.ts (203) | `3e694ebd` |
+| `OcrPage` | 1768 | 1215 | types + ConfirmedRecordsTab | — |
+| `PaymentInfoTab` | 1926 | 1513 | types + utils + subcomponents | — |
+| `PurchaseHistoryTab` | 1192 | 1158 | types | — |
+| `ReturnListPanel` | 1205 | 805 | types + ReturnRequestModal | — |
+| `PurchaseSubTabs` | 1216 | 1145 | chart-helpers | — |
+| `RequestsPage` | 1307 | 1225 | types + ListToolbar | — |
+| `ScanPage` | 1165 | 1105 | helpers | — |
+| `SupplierTab` | 1005 | 990 | types | — |
+| `FlowTab` | 1111 | 1075 | types | — |
 
-**총 신규 서브 파일**: 50+개 · **분리 원칙**: types / constants / utils / subcomponents 4-tier
+**총 신규 서브 파일**: 58+개 · **분리 원칙**: types / constants / utils / subcomponents 4-tier
 
-### 남은 대상
+### 남은 대상 (우선순위 순)
 
-- warn 12 파일 (800–2000줄) · critical 10 파일 (2000+줄 · 대규모 리팩터 필요)
-- 최우선 · `OcrPage` (1215) · `PaymentInfoTab` (1513)
+1. `OcrPage` (1215) · `PaymentInfoTab` (1513) · 최우선
+2. `PurchaseSubTabs` (1145) · `RequestsPage` (1225) · `ScanPage` (1105) · 차순
+3. `OrderManagePage` (3089) · `DisplayPage` (2713) · `LandingPage` (2319) · 대형 · 추가 분리 필요
+4. `ContractWriterPage` (2680+) · `OcrPage/RawOcrTable` (5268+) · critical · 대규모 리팩터
 
 ---
 

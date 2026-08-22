@@ -11,7 +11,7 @@
 >  - 다른 참조 문서 만들지 말고 이 파일 하나에 통합 (사용자 명시 요구 · 2026-08-06)
 
 **프로젝트**: megatown-staff-scheduler
-**최종 업데이트**: 2026-08-22 (13차 · Framework Phase 2 가드레일 완료 · husky pre-commit + audit-framework + PR 템플릿)
+**최종 업데이트**: 2026-08-22 (14차 · Framework Phase 4 대량 분리 · 6파일 -1,003라인 · 8 신규 파일 이관 · Phase 2 완료 반영)
 **생성**: 2026-08-05 (초판) · **확장**: 2026-08-06 (공통 자산 통합 · 백엔드/DB/RPC 심화)
 **출처**: 코드 실측 (LandingPage · 각 페이지 컴포넌트 · TAB 정의 · src/styles · src/components/common · src/hooks · migrations · server/routes)
 **용도**: 새 페이지·기능 추가 시 · 새 세션 진입 시 · 다른 에이전트 위임 시 · **먼저 참고**해야 할 단일 소스
@@ -1108,11 +1108,23 @@ megatown-staff-scheduler/
 │   ├── components/               # 페이지·서브·공통
 │   │   ├── common/               # 22개 공통 컴포넌트 (섹션 10 참조)
 │   │   ├── shared/               # 도메인 재사용 (HiddenManagerModal 등)
-│   │   ├── LandingPage/          # 2428 lines · God Component
-│   │   ├── SchedulePage/ · DisplayPage/ · OrderManagePage/ (3224 lines)
+│   │   ├── LandingPage/          # 2319 lines (-148 · PeriodCoverageWidget.tsx 163줄 분리 · 2026-08-22)
+│   │   │   └── PeriodCoverageWidget.tsx                   # 163 lines (신규 · 2026-08-22)
+│   │   ├── SchedulePage/ · DisplayPage/ · OrderManagePage/ (OrderManagePage 3089 lines · -116)
+│   │   │   ├── OrderManagePage/OrderManagePage.types.ts   # 90 lines (신규 · 2026-08-22)
+│   │   │   ├── OrderManagePage/OrderManagePage.utils.ts   # 54 lines (신규 · 2026-08-22)
+│   │   │   ├── DisplayPage/DisplayPage.types.ts           # 61 lines (신규 · 2026-08-22)
+│   │   │   ├── DisplayPage/DisplayPage.helpers.ts         # 185 lines (신규 · 2026-08-22)
+│   │   │   └── DisplayPage/VendorManageSplit.tsx          # 236 lines (신규 · 2026-08-22)
+│   │   ├── SalesTrendPage/       # 2501 lines (-175 · helpers.ts 203줄 분리 · 2026-08-22)
+│   │   │   └── SalesTrendPage.helpers.ts                  # 203 lines (신규 · 2026-08-22)
 │   │   ├── OcrPage/RawOcrTable/  # 5268 lines · God Component · 훅 20+ 분리
 │   │   ├── ContractWriterPage/   # 2680+ lines · God Component
-│   │   ├── StaffManagePage/      # 2303 lines (types.ts 200 · helpers.ts 148 · CreateModal.tsx 110 분리 · 2026-08-21)
+│   │   ├── StaffManagePage/      # 2153 lines (-150 · subcomponents.tsx 163줄 추가 분리 · 2026-08-22)
+│   │   │   ├── types.ts          # 200 lines (2026-08-21)
+│   │   │   ├── helpers.ts        # 148 lines (2026-08-21)
+│   │   │   ├── CreateModal.tsx   # 110 lines (2026-08-21)
+│   │   │   └── StaffManagePage.subcomponents.tsx          # 163 lines (신규 · 2026-08-22)
 │   │   ├── ScanPage/ · ScanPage.tsx (1392 lines)
 │   │   └── AppNavHeader.tsx · AppFooter.tsx · BottomNav.tsx
 │   ├── hooks/                    # 10 훅 (섹션 11 참조)
@@ -1359,6 +1371,47 @@ npm run test        # vitest (필요 시)
 
 ## CHANGELOG · 변경 이력
 
+### 2026-08-22 (14차 · Framework Phase 4 대량 분리 · -1,003 라인 · 8 신규 파일 · Phase 2 완료)
+
+**요약**: Framework Phase 4 (large-file 분리) 대량 진척. 6개 파일에서 총 -1,003 라인 분리 완료.
+8개 신규 서브파일 (1,155 라인) 이관. audit 24 위반 유지 (모두 large-file · raw-* 0 유지).
+Phase 2 가드레일 (husky pre-commit + audit-framework 5옵션 + PR 템플릿) 도 이번 세션 완료.
+
+#### Phase 4 신규 분리 파일 (6 커밋 · 이번 세션)
+
+| 원본 파일 | 이전 라인 | 분리 후 | 감소 | 신설 파일 | 커밋 |
+|---------|---------|-------|-----|---------|-----|
+| `OrderManagePage.tsx` | 3205 | 3089 | -116 | `OrderManagePage.types.ts` (90) · `OrderManagePage.utils.ts` (54) | `41b5455e` |
+| `LandingPage.tsx` | 2467 | 2319 | -148 | `PeriodCoverageWidget.tsx` (163) | `d2dbcc20` |
+| `DisplayPage.tsx` | 3126 | 2939 | -187 | `DisplayPage.types.ts` (61) · `DisplayPage.helpers.ts` (185) | `f4d9e841` |
+| `DisplayPage.tsx` | 2939 | 2713 | -227 | `VendorManageSplit.tsx` (236) | `0358650b` |
+| `SalesTrendPage.tsx` | 2676 | 2501 | -175 | `SalesTrendPage.helpers.ts` (203) | `3e694ebd` |
+| `StaffManagePage.tsx` | 2303 | 2153 | -150 | `StaffManagePage.subcomponents.tsx` (163) (서브컴포넌트 6개) | `11244343` |
+| baseline 갱신 | — | — | — | — | `566ae4c2` |
+
+**누적 결과**: 6 파일 -1,003 라인 분리 · 8 신규 파일 1,155 라인 이관
+
+#### 신규 파일 목록
+
+| 파일 경로 | 라인 | 내용 |
+|---------|-----|-----|
+| `src/components/OrderManagePage/OrderManagePage.types.ts` | 90 | 발주 관련 타입 인터페이스 |
+| `src/components/OrderManagePage/OrderManagePage.utils.ts` | 54 | 발주 유틸 함수 |
+| `src/components/LandingPage/PeriodCoverageWidget.tsx` | 163 | 기간 커버리지 위젯 컴포넌트 |
+| `src/components/DisplayPage/DisplayPage.types.ts` | 61 | 재고관리 타입 인터페이스 |
+| `src/components/DisplayPage/DisplayPage.helpers.ts` | 185 | 재고관리 헬퍼 함수 |
+| `src/components/DisplayPage/VendorManageSplit.tsx` | 236 | 공급사 관리 분리 컴포넌트 |
+| `src/components/SalesTrendPage/SalesTrendPage.helpers.ts` | 203 | 매출 트렌드 헬퍼 함수 |
+| `src/components/StaffManagePage/StaffManagePage.subcomponents.tsx` | 163 | 직원관리 서브컴포넌트 6개 |
+
+#### audit 현황
+
+- 24 위반 유지 · 모두 large-file (baseline 허용 범위)
+- raw-* 패턴 0 · asyncHandler/HttpError/Zod 직접 사용 0
+- pre-commit 훅 · 신규 위반 커밋 차단 정상 동작
+
+---
+
 ### 2026-08-22 (13차 · Framework Phase 2 · 가드레일 · husky pre-commit + audit-framework + PR 템플릿)
 
 **요약**: 신규 위반이 커밋될 수 없도록 pre-commit 가드레일을 구축한 Framework Phase 2 완료.
@@ -1418,6 +1471,7 @@ git commit
 | `StaffManagePage/CreateModal.tsx` | 직원 신규 등록 모달 · Partial<Employee> · POSITIONS 사용 | 110 |
 
 - `StaffManagePage.tsx` 2728 → **2303 라인** (-425) · TS + Vite build 통과 · 회귀 없음
+- (후속) `StaffManagePage/StaffManagePage.subcomponents.tsx` 추가 분리 → 2303 → **2153 라인** (-150) · `11244343`
 
 #### 부분 분리 파일 (warn/critical 유지 · 추가 작업 필요)
 
