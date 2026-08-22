@@ -64,6 +64,17 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #191 · Modal 프레임워크화 · inline modal 35+ 마이그레이션 (신규 · 2026-08-22)
+- 📄 배경 · Modal 프리미티브 이미 존재 (src/components/common/Modal.tsx · v2 확장 · 2026-08-18)
+- 🔲 문제 · 35+ 파일에서 여전히 `<div className="fixed inset-0 z-[N] backdrop-brand...">` inline 패턴 사용
+- 🔲 대상 파일 예 · DayTimelineModal · CellPickerPopup · DisplayPage · ContractWriterPage · BoardPage · LandingPage · EmployeeCalendarModal · ScanPage · PurchaseSubTabs · CategoryTab · ColumnMappingModal · ConfirmedRecordsTab · ImageZoomModal · OrderManagePage · VendorListEditor · VendorStockModal · PaymentRegisterModal 등
+- 🔲 Phase A · 저위험 신규 (3~5개) · ImageZoomModal · CellPickerPopup 등 self-contained
+- 🔲 Phase B · 중위험 (5~10개) · 각 대형 페이지 내부 modal
+- 🔲 Phase C · 고위험 · 복잡한 상태 얽힌 모달 (VendorDetailModal 등)
+- 🔲 각 마이그레이션 · Modal props (open · onClose · title · icon · titleAccent · headerRight · size · backdropIntensity · footer) 사용
+- 🔲 회귀 방지 · 기능 100% 유지 · className 만 조정
+- 💡 프레임워크 원칙 14 · 매 단계 검증 · 19 · 설계 후 구현
+
 ### #190 · 매장구역도 · 설정 vs 매장진열 통합 (신규 · 2026-08-22)
 - 📄 현재 · **2곳에 별도 존재** · 설정 페이지 매장구역 (편집용 · ZoneSettingsPage) + 매장진열 페이지 매장구역도 (표시용 · StoreZoneMap)
 - 🔲 목표 · **하나로 통합** · 한 페이지에서 관리 + 다른 페이지에서 재사용
