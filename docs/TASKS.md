@@ -64,6 +64,19 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #188 · 메뉴 설정 · 모바일 가시성 · PC/모바일 체크박스 (신규 · 2026-08-22)
+- 📄 대상 · PermissionsPage > 권한 조정 > **모바일 가시성** 서브탭 (MobileVisibilitySection · BrandingSettingsPage.tsx)
+- 🔲 현재 · `useMobilePageLevel` 레벨 기반 (0~10) · 단일 슬라이더
+- 🔲 개선 · **페이지별 PC 체크박스 + 모바일 체크박스** 2개씩 · 각각 노출 여부 제어
+- 🔲 기본값 · 두 체크박스 모두 ON (=모두 보이게) · 하위호환 유지
+- 🔲 체크 해제된 곳 → 해당 뷰포트(PC or 모바일)에서 페이지 숨김
+- 🔲 UI · 페이지 리스트별 [ PC ☑] [모바일 ☑] · CardRow 형태 · SIDE_NAV_GROUPS 순회
+- 🔲 저장 · 서버 KV · 신규 API `/api/settings/page-visibility` or 기존 확장
+- 🔲 라우팅 gate · 사이드바 (sideNavGroups.ts) · 공통헤더 (AppNavHeader) · 각각 뷰포트별 필터
+- 🔲 기존 `useMobilePageLevel` deprecated · 마이그레이션 스크립트 (레벨 5+ → mobile OFF)
+- 💡 프레임워크 원칙 · 신규 훅 `usePageVisibility(pageKey, viewport)` · 재사용
+- 💡 관련 이력 · #172 (모바일 가시성 탭 이관 · 2026-08-20 완료)
+
 ### #187 · 실재고 입력 · 현재재고 위치 개선 (모바일 가독성) (신규 · 2026-08-22)
 - 📄 대상 · ScanPage (실재고 입력) · StockRowCard (스캔한 상품 정보)
 - 🔲 문제 · 반응형 (모바일)에서 창고1/창고2 입력창 (−/+ 사이) 너무 작아 · 현재재고 표시 잘 안 보임
