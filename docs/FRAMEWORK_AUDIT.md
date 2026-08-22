@@ -8,17 +8,17 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 526 |
-| 위반 파일 | 16 |
-| 클린 파일 | 510 (97%) |
-| 총 위반 개수 | 16 |
+| 스캔 파일 | 527 |
+| 위반 파일 | 15 |
+| 클린 파일 | 512 (97%) |
+| 총 위반 개수 | 15 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
 | `large-file-critical` | 8 | 8 | high | 2000+라인 · 시급 · 서브 컴포넌트/훅 분리 필수 |
-| `large-file-warn` | 8 | 8 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `large-file-warn` | 7 | 7 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
@@ -35,13 +35,12 @@
 | 9 | `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1338 | 6 | large-file-warn(1) |
 | 10 | `src/components/LandingPage/VendorListEditor.tsx` | 1549 | 6 | large-file-warn(1) |
 | 11 | `src/components/ContractSettingsPage/ContractSettingsPage.tsx` | 887 | 3 | large-file-warn(1) |
-| 12 | `src/components/DayTimelineModal/ZoneSection.tsx` | 924 | 3 | large-file-warn(1) |
-| 13 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 806 | 3 | large-file-warn(1) |
-| 14 | `src/components/PermissionsPage/PermissionsPage.tsx` | 873 | 3 | large-file-warn(1) |
-| 15 | `src/components/ScanPage/ProductInfoCard.tsx` | 895 | 3 | large-file-warn(1) |
-| 16 | `src/components/StockManagePage/FlowTab.tsx` | 901 | 3 | large-file-warn(1) |
+| 12 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 806 | 3 | large-file-warn(1) |
+| 13 | `src/components/PermissionsPage/PermissionsPage.tsx` | 873 | 3 | large-file-warn(1) |
+| 14 | `src/components/ScanPage/ProductInfoCard.tsx` | 895 | 3 | large-file-warn(1) |
+| 15 | `src/components/StockManagePage/FlowTab.tsx` | 901 | 3 | large-file-warn(1) |
 
-## 📝 모든 위반 파일 (16개)
+## 📝 모든 위반 파일 (15개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -58,7 +57,6 @@
 | `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1338 | 6 |
 | `src/components/LandingPage/VendorListEditor.tsx` | 1549 | 6 |
 | `src/components/ContractSettingsPage/ContractSettingsPage.tsx` | 887 | 3 |
-| `src/components/DayTimelineModal/ZoneSection.tsx` | 924 | 3 |
 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 806 | 3 |
 | `src/components/PermissionsPage/PermissionsPage.tsx` | 873 | 3 |
 | `src/components/ScanPage/ProductInfoCard.tsx` | 895 | 3 |
