@@ -5,14 +5,11 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../lib/apiClient";
-import * as XLSX from "xlsx";
-import { Wand2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
+import { X, Search, Check, Save } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 // 2026-08-21 · Framework Phase 3 · Card 프리미티브 (raw wrapper 이관)
 import { Card } from "../common/Card";
-import { VendorDetailModal, type Vendor } from "../LandingPage/VendorListEditor";
 
-import { useVendors } from "../../hooks/useVendors";
 import type {
   ConfirmedItem,
   RawPage,
@@ -36,15 +33,6 @@ import {
   normalizeExpiryDate,
 } from "./RawOcrTable/utils";
 import { ImageZoomModal } from "./RawOcrTable/ImageZoomModal";
-import { SupplierChangeDialog } from "./RawOcrTable/SupplierChangeDialog";
-import { DeleteSynonymDialog } from "./RawOcrTable/DeleteSynonymDialog";
-import {
-  exportCsv as _exportCsv,
-  parseXlsxTemplateHeaders as _parseXlsxTemplateHeaders,
-  writeXlsxWithTemplate as _writeXlsxWithTemplate,
-  writeXlsxFresh as _writeXlsxFresh,
-  writeErpUploadXlsx as _writeErpUploadXlsx,
-} from "./RawOcrTable/exportHelpers";
 import { useOcrDerived } from "./RawOcrTable/useOcrDerived";
 import { useAutoTemplateSave } from "./RawOcrTable/useAutoTemplateSave";
 import { useAutoBalanceLoad } from "./RawOcrTable/useAutoBalanceLoad";
@@ -60,6 +48,13 @@ import { useSaveConfirmed } from "./RawOcrTable/useSaveConfirmed";
 import { useReextractCell } from "./RawOcrTable/useReextractCell";
 import { useReextractProductName } from "./RawOcrTable/useReextractProductName";
 import { useHandleMatch } from "./RawOcrTable/useHandleMatch";
+import { useMissingSupplierAutoFill } from "./RawOcrTable/useMissingSupplierAutoFill";
+import { useSynonymCallbacks } from "./RawOcrTable/useSynonymCallbacks";
+import { useExportHandlers } from "./RawOcrTable/useExportHandlers";
+import { useVendorEdit } from "./RawOcrTable/useVendorEdit";
+import { useErpViewState } from "./RawOcrTable/useErpViewState";
+import { useMatchingState } from "./RawOcrTable/useMatchingState";
+import { useXlsTemplate } from "./RawOcrTable/useXlsTemplate";
 import { useInvoiceImageControls } from "./RawOcrTable/useInvoiceImageControls";
 import { usePageTotalsComputation } from "./RawOcrTable/usePageTotalsComputation";
 import { ConfirmedTableSection } from "./RawOcrTable/ConfirmedTableSection";
@@ -67,6 +62,7 @@ import { FallbackPageSection } from "./RawOcrTable/FallbackPageSection";
 import { NumericEditableCell, ExpiryCell, NameCell } from "./RawOcrTable/RawOcrCellRenderer";
 import { RawPageImageCell } from "./RawOcrTable/RawPageImageCell";
 import { RawInvoiceCard } from "./RawOcrTable/RawInvoiceCard";
+import { RawOcrTableOverlays } from "./RawOcrTable/RawOcrTableOverlays";
 
 // 외부 소비자(OcrPage.tsx)가 `import { type ConfirmedItem } from "./RawOcrTable"` 로 사용 중 → re-export 유지
 export type { ConfirmedItem };
@@ -76,66 +72,46 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   // 2026-08-21 · Framework Phase 3 · alert → useToast
   const { toast, showError } = useToast();
 
-  // 공급사 목록 · 자동완성·조회 공용 (inline fetch 제거)
-  const { vendors: _ocrVendors, refresh: refreshVendors } = useVendors();
-  // 2026-07-24 · 리팩터 · 페이지 snapshot 은 usePagesSnapshot 훅으로 분리
-  //   props.pages (SSE 업데이트) → 내부 스냅샷 (append-only) → dispRows 파생
+  // 2026-07-24 · 리팩터 · 페이지 snapshot
   const pages = usePagesSnapshot(pagesFromProps);
-  // 2026-07-24 · 리팩터 · 파생값 계산은 useOcrDerived 훅으로 분리 (원래 85줄 → 1줄)
+  // 2026-07-24 · 리팩터 · 파생값 계산은 useOcrDerived 훅으로 분리
   const derived = useOcrDerived(pages);
   const { structuredPages, fallbackPages, masterH, dispHeaders, dispRows, rawRows, pageNums, amtIdx, nameIdx } = derived;
 
-  // ── 공급처 편집 상태 — supplierTotals 계산보다 먼저 선언해야 참조 가능
+  // ── 공급사 편집 상태 → useVendorEdit 훅으로 분리 ─────────────────────────
+  const {
+    vendorNames,
+    vendorEditModal, setVendorEditModal,
+    editingRawSuppRow, setEditingRawSuppRow,
+    editingRawSuppVal, setEditingRawSuppVal,
+    supplierConfirm, setSupplierConfirm,
+    suppDropdownRect, setSuppDropdownRect,
+    suppInputRef,
+    openVendorEdit,
+  } = useVendorEdit({ confirm, showError });
+
+  // ── 공급사 페이지별 편집값 (공급사 헤더 영역 인라인 편집) ───────────────
   const [rawSupplierByPage, setRawSupplierByPage] = useState<Record<number, string>>({});
-  // 공급사 조회·수정 모달 (2026-07-18 · 명세서 헤더 공급사 클릭 시)
-  const [vendorEditModal, setVendorEditModal] = useState<Vendor | null>(null);
-  const openVendorEdit = useCallback(async (supplierName: string) => {
-    const name = supplierName.trim();
-    if (!name) return;
-    const norm = (s: string) => s.toLowerCase().replace(/[()（）\s㈜(주)주식회사]/g, "");
-    const target = norm(name);
-    // 캐시된 목록에서 조회 (정확일치 우선 · 부분일치 fallback)
-    let match = (_ocrVendors as unknown as Vendor[]).find(v => norm(String(v.company_name ?? "")) === target);
-    if (!match) match = (_ocrVendors as unknown as Vendor[]).find(v => norm(String(v.company_name ?? "")).includes(target) || target.includes(norm(String(v.company_name ?? ""))));
-    if (match) { setVendorEditModal(match); return; }
-    // 신규 공급사 등록 유도
-    if (await confirm({ message: `"${name}" 은(는) 공급사 DB 에 없습니다.\n신규 등록하시겠습니까?` })) {
-      try {
-        // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-        const { data: newV } = await api.post<Vendor>("/api/vendors", { company_name: name });
-        setVendorEditModal(newV);
-        refreshVendors(); // 캐시 갱신
-      } catch (e) {
-        console.error("[공급사조회] 실패:", e);
-        showError("공급사 신규 등록 실패");
-      }
-    }
-  }, [_ocrVendors, refreshVendors, showError]);
-  const [editingRawSuppRow, setEditingRawSuppRow] = useState<number | null>(null);
-  const [editingRawSuppVal, setEditingRawSuppVal] = useState("");
-  const [supplierConfirm,   setSupplierConfirm  ] = useState<{ pageNum: number; newVal: string; rowCount: number; addSynonyms: boolean } | null>(null);
-  // 셀 단위 선택 (Alt+Click · 재추출/삭제 대상 · 2026-07-14)
-  //   key 형식: "ri:ci"
+
+  // ── 품명 인라인 편집 상태 ─────────────────────────────────────────────────
+  const [editingNameRow, setEditingNameRow] = useState<number | null>(null);
+  const [editingNameVal, setEditingNameVal] = useState<string>("");
+  const editingNameRowRef = useRef<number | null>(null);
+  useEffect(() => { if (editingNameRow != null) editingNameRowRef.current = editingNameRow; }, [editingNameRow]);
+  const nameEditSearchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [nameEditResults, setNameEditResults] = useState<any[]>([]);
+  const [nameEditSearchDone, setNameEditSearchDone] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
+  const [nameDropdownRect, setNameDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [deleteSynConfirm, setDeleteSynConfirm] = useState<{ ri: number; origName: string } | null>(null);
+
+  // ── 셀 체크 (복수 선택 · 다중 편집용) ───────────────────────────────────
   const [checkedCells, setCheckedCells] = useState<Set<string>>(new Set());
   const toggleCellCheck = useCallback((ri: number, ci: number) => {
-    setCheckedCells(prev => {
-      const n = new Set(prev);
-      const k = `${ri}:${ci}`;
-      if (n.has(k)) n.delete(k);
-      else n.add(k);
-      return n;
-    });
+    setCheckedCells(prev => { const n = new Set(prev); const k = `${ri}:${ci}`; if (n.has(k)) n.delete(k); else n.add(k); return n; });
   }, []);
   const clearCheckedCells = useCallback(() => setCheckedCells(new Set()), []);
-
-  // 공급사 DB 리스트 (자동완성 · 2026-07-14) · useVendors 캐시에서 파생
-  const vendorNames = useMemo<string[]>(
-    () => _ocrVendors.map(v => String(v.company_name ?? "").trim()).filter(Boolean),
-    [_ocrVendors],
-  );
-  // 공급처 편집 시 드롭다운 위치 (fixed positioning · 테이블 안 stacking context 우회)
-  const [suppDropdownRect, setSuppDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
-  const suppInputRef = useRef<HTMLInputElement | null>(null);
+  void clearCheckedCells;
 
   // ── Feature 1: 금액 자동보정 ──────────────────────────────────────────────
   const [amountCorrections, setAmountCorrections] = useState<Record<number, number>>({});
@@ -227,9 +203,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   // 확정표 컬럼 접기
   const [collapsedConfCols, setCollapsedConfCols] = useState<Set<string>>(new Set());
   // 페이지별 접기 상태 제거 (2026-07-19) · 우측 명세서는 항상 펼침
-  // ERP 상품코드 → 현재고 매핑 (products-map API 캐시)
-  const [erpStockMap, setErpStockMap] = useState<Record<string, number | null>>({});
-  const [erpStockLoaded, setErpStockLoaded] = useState(false);
   // 2026-07-22 · 상세정보 토글 삭제 후 · 항상 compact 모드 강제 (사용자 요청 "유통기한 이후 비고 등 표시 X")
   //   localStorage 잔여 값 무시 · false 상수
   const showRawDetail = false;
@@ -243,51 +216,15 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   const [colWidths, setColWidths] = useState<Record<number, number>>({});
   const resizeRef = useRef<{ ci: number; startX: number; startW: number } | null>(null);
 
-  // ── 2차 보정 뷰 전환 (검토 목록 / 명세서 뷰) ─────────────────────────────
-  // 기본: 명세서 뷰 (거래명세서 포맷으로 2차 보정 전체 항목 표시)
-  const [erpViewTab, setErpViewTab] = useState<'list' | 'table'>('table');
-  // 명세서 뷰 셀 수동 편집 (컬럼명 기반)
-  const [erpCellEdits, setErpCellEdits] = useState<Record<number, Record<string, string>>>({});
-  const [editingErpCell, setEditingErpCell] = useState<{ ri: number; col: string } | null>(null);
-  const [editingErpCellVal, setEditingErpCellVal] = useState("");
-  // ERP 명세서 뷰 컬럼별 폭(px) — 상품명이 2줄 안에서 다 보이도록 넓게, 나머지 최소화
-  const ERP_TABLE_COLS_DEFAULT: Record<string, number> = {
-    "ERP 코드": 100,
-    "공급사": 88,
-    "OCR 품명": 260,
-    "ERP 품명": 260,
-    "OCR수량": 60,
-    "ERP수량": 60,
-    "단가": 76,
-    "금액": 92,
-    "유통기한": 88,
-  };
-  const [erpColWidths, setErpColWidths] = useState<Record<string, number>>(() => {
-    try {
-      const raw = localStorage.getItem("ocr_erp_col_widths");
-      if (raw) return { ...ERP_TABLE_COLS_DEFAULT, ...JSON.parse(raw) };
-    } catch { /* empty */ }
-    return { ...ERP_TABLE_COLS_DEFAULT };
-  });
-  useEffect(() => {
-    try { localStorage.setItem("ocr_erp_col_widths", JSON.stringify(erpColWidths)); } catch { /* empty */ }
-  }, [erpColWidths]);
-  const startErpColResize = useCallback((col: string, e: React.MouseEvent) => {
-    e.preventDefault(); e.stopPropagation();
-    const startX = e.clientX;
-    const startW = erpColWidths[col] ?? ERP_TABLE_COLS_DEFAULT[col] ?? 100;
-    const onMove = (ev: MouseEvent) => {
-      const next = Math.max(40, Math.min(600, startW + (ev.clientX - startX)));
-      setErpColWidths(prev => ({ ...prev, [col]: next }));
-    };
-    const onUp = () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-  }, [erpColWidths]);
-
+  // ── ERP 뷰 상태 → useErpViewState 훅으로 분리 ─────────────────────────────
+  const {
+    ERP_TABLE_COLS_DEFAULT,
+    erpViewTab, setErpViewTab,
+    erpCellEdits, setErpCellEdits,
+    editingErpCell, setEditingErpCell,
+    editingErpCellVal, setEditingErpCellVal,
+    erpColWidths, startErpColResize,
+  } = useErpViewState();
   // ── 셀 인라인 편집 (수량/단가/금액) ───────────────────────────────────────
   // 2026-07-15: shiftRowLeft 지원 위해 string 값도 허용 (품명·규격·유통기한 등 이동)
   const [cellEdits,      setCellEdits     ] = useState<Record<number, Record<number, string | number | null>>>({});
@@ -491,17 +428,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     "gemini":        "Gemini",
   };
 
-  // ── Feature 3: OCR 추출 후 자동 동의어 1차 보정 ──────────────────────────
-  const [autoSynonymMatches, setAutoSynonymMatches] = useState<Record<number, { code: string; name: string }>>({});
-  useEffect(() => {
-    if (!onUserEdit) return;
-    if (Object.keys(autoSynonymMatches).length > 0) onUserEdit();
-  }, [autoSynonymMatches, onUserEdit]);
-  // 2026-07-24 · 리팩터 · 편집 stable-key 마이그레이션은 useEditMigration 훅으로 분리
-  useEditMigration({ pageNums, dispHeaders, setCellEdits, setAutoSynonymMatches });
-  const [autoSynonymLoading, setAutoSynonymLoading] = useState(false);
-  // barcodeAutoMap: 바코드 자동 매핑 · 2026-07-28 자동 바인딩 제거 후 항상 {} · BarcodeProduct 타입 유지 (useSaveConfirmed/ErpMatchSubRow 호환)
-  const [barcodeAutoMap, setBarcodeAutoMap] = useState<Record<number, BarcodeProduct>>({});
+  // ── Feature 3: OCR 추출 후 자동 동의어 1차 보정 · onUserEdit 트리거 ────
+  // autoSynonymMatches/autoSynonymLoading/barcodeAutoMap 은 useMatchingState 에서 선언됨 (아래)
+  // useEditMigration 은 autoSynonymMatches 선언 이후에 호출해야 하므로 여기 위치 유지 불가 · 아래로 이동
 
   // effectiveDispRows: 자동보정 + 셀 인라인 편집 결과를 반영한 행 (cellEdits 우선)
   // 2026-07-18 v2 · 금액 무조건 자동 반영 (사용자 요청)
@@ -666,110 +595,43 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   } = useInvoiceImageControls({ pageImages, pageNums, dispRows, nameIdx });
 
   // ── 상품명 보정 ──────────────────────────────────────────────────────────
-  const [matching,         setMatching        ] = useState(false);
-  const [matchItems,       setMatchItems      ] = useState<MatchedItem[] | null>(null);
-  // 2026-07-27 · 페이지별 "ERP 매칭" 버튼 클릭 후 · 해당 페이지 1차 표에 ERP sub-row 노출
-  //   기존 flow 그대로 · 확정 버튼은 유지 · 이 flag 는 sub-row 표시 여부만 제어
-  const [erpSubRowPages, setErpSubRowPages] = useState<Set<number>>(new Set());
-  // 2026-07-22 · matchItems ref 동기화 (reextractOneCell forward reference용)
-  useEffect(() => { matchItemsRef.current = matchItems; }, [matchItems]);
-  // matchItems가 준비되면 products-map을 한 번 로드해서 code → current_stock 매핑 생성
+  // ── 매칭 상태 → useMatchingState 훅으로 분리 ──────────────────────────────
+  const {
+    matching, setMatching, matchItems, setMatchItems,
+    erpSubRowPages, setErpSubRowPages,
+    erpStockMap, setErpStockMap, erpStockLoaded, setErpStockLoaded,
+    overrides, setOverrides, supplierOverrides, setSupplierOverrides,
+    confirmed, setConfirmed, confirmedAt, setConfirmedAt,
+    savedSynonyms, setSavedSynonyms,
+    savedSupplierAliases, setSavedSupplierAliases,
+    retryingRows, setRetryingRows,
+    candidatesMap, setCandidatesMap, openCandRow, setOpenCandRow,
+    selectedCands, setSelectedCands,
+    nameSearchResults, setNameSearchResults,
+    nameSearchOpenRow, setNameSearchOpenRow, nameSearchDebounce,
+    restoredRows, setRestoredRows,
+    pendingSyn, setPendingSyn, savedSynonymIds, setSavedSynonymIds,
+    cancelledAutoSyn, setCancelledAutoSyn,
+    cancelledAutoMap, setCancelledAutoMap,
+    cancelledRows, setCancelledRows,
+    savingConfirmed, setSavingConfirmed,
+    saveConfirmedToast, setSaveConfirmedToast,
+    rawEditValues, setRawEditValues, rawSearchDebounce,
+    confirmedPages, setConfirmedPages,
+    dbFilledCells, setDbFilledCells,
+    autoSynonymMatches, setAutoSynonymMatches,
+    autoSynonymLoading, setAutoSynonymLoading,
+    barcodeAutoMap, setBarcodeAutoMap,
+    deleteSynonymByName, selectCandidate,
+  } = useMatchingState({ matchItemsRef });
+
+  // autoSynonymMatches 변경 시 onUserEdit 트리거 (Feature 3 · 자동 동의어 보정)
   useEffect(() => {
-    if (!matchItems || matchItems.length === 0) return;
-    if (erpStockLoaded) return;
-    (async () => {
-      try {
-        // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-        const { data } = await api.get<Record<string, any>>("/api/products-map");
-        const map: Record<string, number | null> = {};
-        for (const code in data) {
-          const p = data[code];
-          const s = p?.current_stock;
-          map[code] = (s === null || s === undefined) ? null : Number(s);
-        }
-        setErpStockMap(map);
-        setErpStockLoaded(true);
-      } catch (e) {
-        console.warn("[products-map] 로드 실패:", e);
-      }
-    })();
-  }, [matchItems, erpStockLoaded]);
-  const [overrides,        setOverrides       ] = useState<Record<number, string>>({});
-  const [supplierOverrides,setSupplierOverrides] = useState<Record<number, string>>({});
-  const [confirmed,        setConfirmed       ] = useState(false);
-  // 2차보정 확정 버튼 누른 작업일 (YYYY-MM-DD)
-  const [confirmedAt, setConfirmedAt] = useState<string | null>(null);
-  const [savedSynonyms,      setSavedSynonyms      ] = useState<Set<number>>(new Set());
-  const [savedSupplierAliases, setSavedSupplierAliases] = useState<Set<number>>(new Set());
-  const [retryingRows,     setRetryingRows    ] = useState<Set<number>>(new Set());
-  const [candidatesMap,    setCandidatesMap   ] = useState<Record<number, CandidateInfo[]>>({});
-  const [openCandRow,      setOpenCandRow     ] = useState<number | null>(null);
-  const [selectedCands,    setSelectedCands   ] = useState<Record<number, CandidateInfo>>({});
-  const [nameSearchResults,setNameSearchResults] = useState<Record<number, any[]>>({});
-  const [nameSearchOpenRow,setNameSearchOpenRow] = useState<number | null>(null);
-  const nameSearchDebounce = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
-  const [restoredRows,     setRestoredRows     ] = useState<Set<number>>(new Set());
-  const [pendingSyn,       setPendingSyn        ] = useState<Record<number, { inputName: string; code: string; supplier?: string; name: string }>>({});
-  const [savedSynonymIds,  setSavedSynonymIds   ] = useState<Record<number, number>>({});
-  const [cancelledAutoSyn, setCancelledAutoSyn ] = useState<Set<number>>(new Set());
-  const [cancelledAutoMap, setCancelledAutoMap ] = useState<Set<number>>(new Set());
-  const [cancelledRows,    setCancelledRows    ] = useState<Set<number>>(new Set());
-  const [savingConfirmed,  setSavingConfirmed  ] = useState(false);
-  const [saveConfirmedToast, setSaveConfirmedToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
-  const [rawEditValues,    setRawEditValues    ] = useState<Record<number, string>>({});
-  const rawSearchDebounce = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
-
-  // ── 품명 인라인 편집 (fixed-position 드롭다운) ──────────────────────────
-  const [editingNameRow, setEditingNameRow] = useState<number | null>(null);
-  const [editingNameVal, setEditingNameVal] = useState<string>("");
-  // 2026-07-24 · 사용자 문제 "품명 드롭다운 선택 안됨" · blur 로 state 지워도 · 최근 ri 보존
-  const editingNameRowRef = useRef<number | null>(null);
-  useEffect(() => { if (editingNameRow != null) editingNameRowRef.current = editingNameRow; }, [editingNameRow]);
-  const nameEditSearchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [nameEditResults, setNameEditResults] = useState<any[]>([]);
-  const [nameEditSearchDone, setNameEditSearchDone] = useState(false);
-  const nameInputRef = useRef<HTMLInputElement | null>(null);
-  const [nameDropdownRect, setNameDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
-  const [deleteSynConfirm, setDeleteSynConfirm] = useState<{ ri: number; origName: string } | null>(null);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      // 다이얼로그 우선 처리 · Esc (구브라우저 호환) + Escape
-      if (e.key === "Escape" || e.key === "Esc") {
-        if (modalImg) { e.preventDefault(); closeModal(); return; }
-        if (deleteSynConfirm) { setDeleteSynConfirm(null); return; }
-        if (supplierConfirm) { setSupplierConfirm(null); return; }
-        return;
-      }
-      // 명세서 이미지 모달 키보드 조작 (페이지 이동은 PgUp/PgDn만 · 화살표는 셀 이동 전용)
-      if (modalImg && modalPageNum != null && pageImages?.length) {
-        const t = e.target as HTMLElement | null;
-        if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-        if (e.key === "PageDown") { e.preventDefault(); gotoModalPage(modalPageNum + 1); return; }
-        if (e.key === "PageUp") { e.preventDefault(); gotoModalPage(modalPageNum - 1); return; }
-        if (e.key === "Home") { e.preventDefault(); gotoModalPage(1); return; }
-        if (e.key === "End")  { e.preventDefault(); gotoModalPage(pageImages.length); return; }
-        if (e.key === "+" || e.key === "=") { e.preventDefault(); setZoom(z => Math.min(6, +(z + 0.25).toFixed(2))); return; }
-        if (e.key === "-" || e.key === "_") { e.preventDefault(); setZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2))); return; }
-        if (e.key === "0")   { e.preventDefault(); setZoom(1); setPan({ x: 0, y: 0 }); return; }
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [modalImg, modalPageNum, pageImages, deleteSynConfirm, supplierConfirm, closeModal, gotoModalPage]);
-
-  // ── 이름 기반 동의어 삭제 ────────────────────────────────────────────────
-  const deleteSynonymByName = useCallback(async (origName: string, productCode?: string) => {
-    const name = origName.trim();
-    if (!name) return;
-    try {
-      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-      // cancel-by-name 사용: 삭제 대신 cancelled=true 마킹 → 동의어 관리에서 관리 가능, 재적용 방지
-      await api.post("/api/ocr-synonyms/cancel-by-name", { prod_name_old: name, product_code: productCode ?? null });
-    } catch (e) {
-      console.warn("[ocr-synonyms/cancel-by-name] 취소 오류:", e);
-    }
-  }, []);
+    if (!onUserEdit) return;
+    if (Object.keys(autoSynonymMatches).length > 0) onUserEdit();
+  }, [autoSynonymMatches, onUserEdit]);
+  // 2026-07-24 · 편집 stable-key 마이그레이션
+  useEditMigration({ pageNums, dispHeaders, setCellEdits, setAutoSynonymMatches });
 
   const ocrQtyIdx  = dispHeaders.indexOf("수량");
   const ocrPriIdx  = dispHeaders.indexOf("단가");
@@ -780,272 +642,28 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   // ── 공급사 미입력 페이지 검출 (필수 입력 검증 · 2026-07-15) ────────────
   //   rawSupplierByPage 편집값 우선 → structuredPages meta.supplier 폴백
   //   빈 문자열/null 이면 미입력으로 간주 → 자동보정·저장 차단
-  const effectiveSupplierForPage = useCallback((pn: number): string => {
-    const edited = rawSupplierByPage[pn];
-    if (edited !== undefined) return String(edited ?? "").trim();
-    const meta = structuredPages.find(p => p.page === pn)?.meta.supplier;
-    return String(meta ?? "").trim();
-  }, [rawSupplierByPage, structuredPages]);
-  const missingSupplierPages: number[] = React.useMemo(() => {
-    const uniquePages = Array.from(new Set(structuredPages.map(p => p.page)));
-    return uniquePages.filter(pn => !effectiveSupplierForPage(pn));
-  }, [structuredPages, effectiveSupplierForPage]);
+  // ── 공급사 미입력 자동보완 → useMissingSupplierAutoFill 훅으로 분리 ──
+  const { missingSupplierPages, hasMissingSupplier } = useMissingSupplierAutoFill({
+    structuredPages, rawSupplierByPage, vendorNames, setRawSupplierByPage,
+  });
 
-  // 2026-07-21: 서버 vendor-match 실패 폴백 · 클라이언트에서 직접 상품앞2자→vendor 다수결
-  //   페이지가 미상일 때 · vendors DB (vendorNames) 로 즉시 자동 채움
-  useEffect(() => {
-    if (missingSupplierPages.length === 0 || vendorNames.length === 0) return;
-    const normV = (s: string) => s.replace(/[\s()（）·・.,\-*/[\]{}]/g, "")
-      .replace(/주식회사|유한회사|㈜|\(주\)|\(유\)/gi, "").toLowerCase();
-    const vendorNorms = vendorNames.map(v => ({ name: v, n: normV(v) }));
-    const autoFill: Record<number, string> = {};
-    for (const pn of missingSupplierPages) {
-      const pd = structuredPages.find(p => p.page === pn);
-      if (!pd) continue;
-      const nameIdx = pd.headers.indexOf("품명");
-      if (nameIdx < 0) continue;
-      // 상품명에서 한글 앞2자 추출
-      const productPrefixes: string[] = [];
-      for (const row of pd.rows) {
-        if (!Array.isArray(row)) continue;
-        const nm = String(row[nameIdx] ?? "").trim();
-        if (nm.length < 2 || !/[가-힣]/.test(nm)) continue;
-        const koreanOnly = nm.replace(/[^가-힣]/g, "").slice(0, 2);
-        if (koreanOnly.length >= 2) productPrefixes.push(koreanOnly);
-      }
-      // vendor 앞2자 매칭 다수결
-      const votes = new Map<string, number>();
-      for (const p of productPrefixes) {
-        for (const v of vendorNorms) {
-          if (v.n.startsWith(p)) votes.set(v.name, (votes.get(v.name) ?? 0) + 1);
-        }
-      }
-      if (votes.size > 0) {
-        let bestName = "", bestVotes = 0;
-        for (const [n, c] of votes) if (c > bestVotes) { bestName = n; bestVotes = c; }
-        // 이미 사용자가 편집한 값 있으면 스킵
-        if (rawSupplierByPage[pn] === undefined && bestVotes >= 1) {
-          autoFill[pn] = bestName;
-          console.log(`[client/auto-supplier] page ${pn}: "${bestName}" (${bestVotes}/${productPrefixes.length}상품 매칭 · prefixes=${JSON.stringify(productPrefixes)})`);
-        }
-      } else {
-        // 상품에서 못 찾으면 rawText 전체에서 vendor 이름/prefix2 스캔
-        const rtNorm = (pd.rawText ?? "").replace(/\s+/g, "");
-        let best = "";
-        let bestLen = 0;
-        for (const v of vendorNorms) {
-          if (v.n.length < 2) continue;
-          if (rtNorm.includes(v.n) && v.n.length > bestLen) {
-            best = v.name; bestLen = v.n.length;
-          }
-        }
-        if (!best) {
-          for (const v of vendorNorms) {
-            if (v.n.length < 2) continue;
-            const prefix2 = v.n.slice(0, 2);
-            if (rtNorm.includes(prefix2) && v.n.length > bestLen) {
-              best = v.name; bestLen = v.n.length;
-            }
-          }
-        }
-        if (best && rawSupplierByPage[pn] === undefined) {
-          autoFill[pn] = best;
-          console.log(`[client/auto-supplier] page ${pn}: "${best}" (rawText 스캔)`);
-        }
-      }
-    }
-    if (Object.keys(autoFill).length > 0) {
-      setRawSupplierByPage(prev => ({ ...prev, ...autoFill }));
-    }
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [missingSupplierPages, vendorNames, structuredPages]);
-
-  // 2026-07-21: 미상 페이지 진단 로그 · 목록이 실제 변경될 때만 1회 출력 (useEffect · spam 방지)
-  const _prevMissingKeyRef = useRef<string>("");
-  useEffect(() => {
-    const key = missingSupplierPages.join(",");
-    if (key === _prevMissingKeyRef.current) return;
-    _prevMissingKeyRef.current = key;
-    if (missingSupplierPages.length === 0) return;
-    console.group(`[missingSupplier] ${missingSupplierPages.length}개 페이지 미상 · 원인 분석`);
-    for (const pn of missingSupplierPages) {
-      const pd = structuredPages.find(p => p.page === pn);
-      const rawText = pd?.rawText ?? "";
-      console.log(`━━━ page ${pn} ━━━`);
-      console.log(`meta.supplier: "${pd?.meta?.supplier ?? "(undefined)"}"`);
-      console.log(`meta.recipient: "${pd?.meta?.recipient ?? "(undefined)"}"`);
-      console.log(`meta.date: "${pd?.meta?.date ?? "(undefined)"}"`);
-      console.log(`headers (${pd?.headers?.length ?? 0}): ${JSON.stringify(pd?.headers ?? [])}`);
-      console.log(`rowCount: ${pd?.rows?.length ?? 0}`);
-      console.log(`rawTextLen: ${rawText.length}`);
-      console.log(`--- rawText (첫 500자) ---\n${rawText.slice(0, 500)}`);
-      if (rawText.length > 500) console.log(`--- ... 총 ${rawText.length}자 ---`);
-    }
-    console.groupEnd();
-  }, [missingSupplierPages, structuredPages]);
-  const hasMissingSupplier = missingSupplierPages.length > 0;
-
-  // ── Feature 2: 공급사 변경 + 동의어 일괄 추가 ───────────────────────────
-  const handleSynonymBulkAdd = useCallback(async (pageNum: number, newSupplier: string) => {
-    if (nameIdx < 0) return;
-    // 빈 이름 제외하되 인덱스 유지
-    const entries: { ri: number; name: string }[] = [];
-    pageNums.forEach((pn, ri) => {
-      if (pn !== pageNum) return;
-      const n = String(dispRows[ri][nameIdx] ?? "").trim();
-      if (n) entries.push({ ri, name: n });
-    });
-    if (entries.length === 0) return;
-    setSynonymAddStatus({ pageNum, status: 'loading', count: 0 });
-    try {
-      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-      const { data } = await api.post<{ matches?: MatchedItem[] }>("/api/ocr-match", {
-        names: entries.map(e => e.name),
-        suppliers: entries.map(() => newSupplier),
-      });
-      const matches: MatchedItem[] = data.matches ?? [];
-      let count = 0;
-      for (let i = 0; i < entries.length; i++) {
-        const m = matches[i]?.matched;
-        if (!m) continue;
-        try {
-          await api.post("/api/ocr-synonyms", {
-            prod_name_old: entries[i].name,
-            prod_name_new: m.name,
-            product_code: m.code,
-            supplier_new: newSupplier,
-          });
-          count++;
-        } catch { /* silent · 개별 실패 흡수 */ }
-      }
-      setSynonymAddStatus({ pageNum, status: count > 0 ? 'done' : 'error', count });
-    } catch {
-      setSynonymAddStatus({ pageNum, status: 'error', count: 0 });
-    }
-  }, [nameIdx, pageNums, dispRows]);
-
-  // 2026-07-28 · 사용자 요청 "OCR 에 있는 바코드 기능은 제거" · barcodeAutoMap 자동 바인딩 로직 완전 제거
-  //   barcodeAutoMap state · barcodeMatches prop 은 backward-compat 유지 (props · 다른 컴포넌트 재사용 대비)
-  //   downstream 의 bc 참조 · 모두 null 로 흘러가서 자연 fallback (autoSyn/matched/OCR)
+  // ── 동의어/공급사 콜백 → useSynonymCallbacks 훅으로 분리 ──────────────
+  const _handleSynonymBulkAddRef = useRef<(pageNum: number, newSupplier: string) => Promise<void>>(async () => {});
+  const {
+    saveSynonym, deleteSynonymForRow, saveSupplierAlias, saveSupplierBalance,
+    handleSynonymBulkAdd, saveTemplate,
+  } = useSynonymCallbacks({
+    nameIdx, pageNums, dispRows, structuredPages, rawSupplierByPage,
+    savedSynonymIds, synonymsMap,
+    setSavedSynonyms, setSavedSynonymIds, setSynonymsMap, setSynonymAddStatus,
+    setOverrides, setSelectedCands, setPendingSyn, setCancelledRows,
+    setReparseStatus, setSupplierBalanceRecords,
+    handleSynonymBulkAddRef: _handleSynonymBulkAddRef,
+  });
+  // 2026-07-28 · barcodeAutoMap 자동 바인딩 제거 · backward-compat 유지
   void barcodeMatches;
-
-  // ── 1차보정에서 자동 매칭 제거 (2026-07-14 사용자 정책 재확립) ─────────
-  //   1차보정 = OCR 원본 그대로 표시
-  //   수동편집(직접 셀 편집·후보 선택) → 2차보정(handleMatch 버튼) → 확정
-  // 2026-07-27 · 사용자 문제 "DB 보정된 상품명이 다른 페이지 로드되면 리로드"
-  //   원인 · pages 변경 (SSE append 포함) 마다 autoSynonymMatches 완전 초기화 → 편집 손실
-  //   수정 · 완전 새 업로드(pages.length===0)일 때만 초기화 · SSE append 는 유지
-  //   useEditMigration 이 이미 새 페이지 append 시 stable-key 로 remap 처리
-  useEffect(() => {
-    if (pages.length === 0) {
-      setAutoSynonymMatches({});
-      setAutoSynonymLoading(false);
-    }
-  }, [pages.length]);
-
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      if (!resizeRef.current) return;
-      const { ci, startX, startW } = resizeRef.current;
-      setColWidths(prev => ({ ...prev, [ci]: Math.max(40, startW + e.clientX - startX) }));
-    };
-    const onUp = () => { resizeRef.current = null; };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
-  }, []);
-
-  const saveTemplate = useCallback(async (pageNum: number, supplierName: string) => {
-    const pageHdrs = structuredPages.find(p => p.page === pageNum)?.headers;
-    if (!pageHdrs?.length) return;
-    try {
-      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-      await api.post("/api/ocr-templates", { supplier_name: supplierName, headers: pageHdrs });
-      setReparseStatus(prev => ({ ...prev, [pageNum]: 'saved' }));
-    } catch { /* silent */ }
-    // 이 페이지 상품명을 해당 공급사의 동의어로 일괄 저장
-    await handleSynonymBulkAdd(pageNum, supplierName);
-  }, [structuredPages, handleSynonymBulkAdd]);
-
-  // 2026-07-24 · 리팩터 · 템플릿 자동 저장은 useAutoTemplateSave 훅으로 분리
+  // 2026-07-24 · 템플릿 자동 저장 훅
   useAutoTemplateSave({ structuredPages, rawSupplierByPage, saveTemplate });
-
-  const saveSynonym = useCallback(async (
-    ri: number,
-    nameOld: string,
-    productCode: string,
-    supplierNew?: string,
-    nameNew?: string,
-    supplierOld?: string,
-  ) => {
-    try {
-      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-      const { data: json } = await api.post<{ synonym?: { id?: number } }>("/api/ocr-synonyms", {
-        prod_name_old: nameOld,
-        prod_name_new: nameNew ?? null,
-        product_code: productCode,
-        supplier_new: supplierNew?.trim() || null,
-        supplier_old: supplierOld?.trim() || null,
-      });
-      setSavedSynonyms(prev => new Set([...prev, ri]));
-      if (json?.synonym?.id) setSavedSynonymIds(prev => ({ ...prev, [ri]: json.synonym!.id! }));
-      // 2026-07-28 · 재추출 캐시에 즉시 반영
-      if (nameOld && nameNew && productCode) {
-        setSynonymsMap(prev => {
-          const m = new Map(prev);
-          m.set(nameOld.trim().toLowerCase(), { name: nameNew, code: productCode });
-          return m;
-        });
-      }
-    } catch (e) {
-      console.warn("[ocr-synonyms] 네트워크 오류:", e);
-    }
-  }, []);
-
-  const deleteSynonymForRow = useCallback(async (ri: number) => {
-    const id = savedSynonymIds[ri];
-    if (!id) return;
-    try {
-      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-      await api.del(`/api/ocr-synonyms/${id}`);
-    } catch (e) {
-      console.warn("[ocr-synonyms] 삭제 오류:", e);
-    }
-    setSavedSynonyms(prev => { const s = new Set(prev); s.delete(ri); return s; });
-    setSavedSynonymIds(prev => { const s = { ...prev }; delete s[ri]; return s; });
-    setOverrides(prev => ({ ...prev, [ri]: undefined as unknown as string }));
-    setSelectedCands(prev => { const s = { ...prev }; delete s[ri]; return s; });
-    setPendingSyn(prev => { const s = { ...prev }; delete s[ri]; return s; });
-    setCancelledRows(prev => { const s = new Set(prev); s.delete(ri); return s; });
-  }, [savedSynonymIds]);
-
-  // 공급사 이름 보정: OCR 오인식 공급사명 → 정확한 공급사명 저장 (ocr_supplier_aliases)
-  const saveSupplierAlias = useCallback(async (ri: number, aliasOld: string, supplierNew: string) => {
-    const alias = aliasOld.trim();
-    const name  = supplierNew.trim();
-    if (!alias || !name || alias === name) return;
-    try {
-      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-      await api.post("/api/ocr-supplier-aliases", { alias, supplier_name: name });
-      setSavedSupplierAliases(prev => new Set([...prev, ri]));
-    } catch (e) {
-      console.warn("[ocr-supplier-aliases] 네트워크 오류:", e);
-    }
-  }, []);
-
-  const saveSupplierBalance = useCallback(async (supplierName: string, amount: number, invoiceDate: string | null) => {
-    // 2026-07-28 · setSavingBalance / savingBalance state · dead code 정리에서 제거됨 · 여기서는 fire-and-forget
-    try {
-      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-      const { data: d } = await api.post<{ balance?: any }>("/api/supplier-balances", {
-        supplier_name: supplierName,
-        invoice_date: invoiceDate,
-        balance: amount,
-      });
-      if (d.balance) setSupplierBalanceRecords(prev => [d.balance, ...prev]);
-    } catch { /* silent */ }
-  }, []);
-
   const commitCellEdit = useCallback((ri: number, ci: number, rawVal: string) => {
     // 2026-07-22: 빈 입력 (아무것도 안 입력하고 blur/Enter) → 원래 값 복원 · cellEdits 미변경
     //   (기존: cellEdits[ri][ci] = null 로 저장 · 원래 값 사라짐 문제 해결)
@@ -1116,14 +734,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     }, 280);
   }, []);
 
-  const selectCandidate = useCallback((ri: number, cand: CandidateInfo) => {
-    setSelectedCands(prev => ({ ...prev, [ri]: cand }));
-    setOverrides(prev => ({ ...prev, [ri]: cand.name }));
-    setCancelledRows(prev => { const s = new Set(prev); s.delete(ri); return s; });
-    setOpenCandRow(null);
-    setNameSearchOpenRow(null);
-  }, []);
-
   const handleSelectCandidate = useCallback((ri: number, cand: CandidateInfo, inputName: string, supplier: string) => {
     selectCandidate(ri, cand);
     saveSynonym(ri, inputName, cand.code, supplier || undefined, cand.name);
@@ -1160,11 +770,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
 
   // 2026-07-28 · 리팩터 · handleMatchPage · fillMissingPricesFromDB · verifyAndSwapPricesWithDB
   //   → useHandleMatchPage 훅으로 분리
-  // 2026-07-22 · 확정 → 2차보정 완료 페이지 추적 · 버튼 색 변경 (사용자 요청)
-  const [confirmedPages, setConfirmedPages] = useState<Set<number>>(new Set());
-  // 2026-07-22 · DB 에서 채워진 셀 추적 (사용자 요청: "옆에 표시해")
-  const [dbFilledCells, setDbFilledCells] = useState<Set<string>>(new Set()); // key: `${ri}-${ci}`
-
   const { matchingPage, handleMatchPage, fillMissingPricesFromDB, verifyAndSwapPricesWithDB } = useHandleMatchPage({
     dispHeaders, dispRows, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx,
     structuredPages, globalSupplier, cellEdits, autoSynonymMatches,
@@ -1290,26 +895,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     "거래일":"거래일","일자":"거래일","날짜":"거래일","거래일자":"거래일","거래날짜":"거래일",
   };
 
-  const [xlsTemplate,    setXlsTemplate   ] = useState<ArrayBuffer | null>(null);
-  const [xlsTemplateName,setXlsTemplateName] = useState<string | null>(null);
-  const [xlsTemplateHdrs,setXlsTemplateHdrs] = useState<string[] | null>(null);
-  const [xlsTemplateSaved,setXlsTemplateSaved] = useState(false);
-  const xlsInputRef = useRef<HTMLInputElement | null>(null);
-
-  // localStorage에서 서식 파일 자동 복원
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("ocr_xls_template");
-      if (!raw) return;
-      const { name, hdrs, data } = JSON.parse(raw);
-      const buf = Uint8Array.from(atob(data), c => c.charCodeAt(0)).buffer;
-      setXlsTemplate(buf);
-      setXlsTemplateName(name);
-      setXlsTemplateHdrs(hdrs);
-      setXlsTemplateSaved(true);
-    } catch { /* 손상된 캐시 무시 */ }
-  }, []);
-
+  // ── XLS 서식 파일 상태 → useXlsTemplate 훅으로 분리 ─────────────────────
+  const {
+    xlsTemplate, setXlsTemplate,
+    xlsTemplateName, setXlsTemplateName,
+    xlsTemplateHdrs, setXlsTemplateHdrs,
+    xlsTemplateSaved, setXlsTemplateSaved,
+    xlsInputRef,
+  } = useXlsTemplate();
   useEffect(() => {
     // 2026-08-21 · Framework Phase 3 · fetch → apiClient
     api.get<{ balances?: any[] }>("/api/supplier-balances")
@@ -1333,288 +926,71 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     CONF_HEADERS, uniquePageNums, getPageConfirmedSubtotal,
   });
   // 2026-07-20: export 로직 → ./RawOcrTable/exportHelpers.ts 분리 · state 는 부모 유지
-  const handleExport = useCallback((headers: string[], rows: (string | number | null)[][], suffix: string) => {
-    _exportCsv(headers, rows, `거래명세서_${meta.date?.replace(/-/g, "") ?? "OCR"}_${suffix}.csv`);
-  }, [meta]);
-
-  const handleTemplateUpload = useCallback((file: File) => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const buf = e.target?.result as ArrayBuffer;
-      const hdrs = _parseXlsxTemplateHeaders(buf);
-      if (hdrs) {
-        setXlsTemplate(buf);
-        setXlsTemplateName(file.name);
-        setXlsTemplateHdrs(hdrs);
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  }, []);
-
-  // 2026-07-28 · ERP 업로드 전용 엑셀 · 고정 서식 (사용자 요청)
-  //   컬럼: 상품코드(*) · 상품명(*) · 규격 · 마스터매입단가 · 공급처 · 전표매입단가 · 매입수량(*) · 매입총계 · 판매단가 · 이익률 · 소비기한
-  //   소비기한 = 유통기한 값 매핑
-  const handleErpUploadExport = useCallback(() => {
-    if (!matchItems || confRows.length === 0) return;
-    const filename = `ERP업로드_${meta.date?.replace(/-/g, "") ?? "OCR"}.xlsx`;
-    const rows = confRows
-      .map((r, ri) => {
-        if (!r || r.length === 0) return null;
-        // confRows 구조: [dateSuppCombined, codeNameCombined, masterP, pri, qty, amt, salePrice, profitRate, expiry]
-        // ERP 서식은 각각 분리 필요 · confRows 만들 때 사용한 소스 재구성
-        const pn = pageNums[ri];
-        const dateVal = pageDateOverride[pn] ?? structuredPages.find(p => p.page === pn)?.meta.date ?? "";
-        const supp = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
-        const codeName = String(r[1] ?? "").split("\n");
-        const code = codeName[0] ?? "";
-        const name = codeName[1] ?? codeName[0] ?? "";
-        const matched = matchItems[ri]?.matched;
-        const bc = barcodeAutoMap[ri] ?? null;
-        const spec = matched?.spec ?? bc?.spec ?? "";
-        void dateVal; // ERP 서식에 거래일 없음
-        return {
-          code,
-          name,
-          spec,
-          masterPrice: typeof r[2] === "number" ? r[2] : null,
-          supplier: supp,
-          invoicePrice: typeof r[3] === "number" ? r[3] : null,
-          qty: typeof r[4] === "number" ? r[4] : null,
-          amount: typeof r[5] === "number" ? r[5] : null,
-          salePrice: typeof r[6] === "number" ? r[6] : null,
-          profitRate: typeof r[7] === "number" ? r[7] : null,
-          expiry: r[8] ?? "",
-        };
-      })
-      .filter((x): x is NonNullable<typeof x> => x !== null);
-    _writeErpUploadXlsx({ rows, filename });
-  }, [matchItems, confRows, meta, pageNums, pageDateOverride, structuredPages, rawSupplierByPage, barcodeAutoMap]);
-
-  const handleExcelExport = useCallback(() => {
-    if (!matchItems || confRows.length === 0) return;
-    const filename = `거래명세서_${meta.date?.replace(/-/g, "") ?? "OCR"}_확정.xlsx`;
-
-    if (xlsTemplate && xlsTemplateHdrs) {
-      _writeXlsxWithTemplate({
-        templateBuf: xlsTemplate,
-        templateHdrs: xlsTemplateHdrs,
-        confHeaders: CONF_HEADERS,
-        colAlias: COL_ALIAS,
-        confRows,
-        filename,
-      });
-    } else {
-      _writeXlsxFresh({
-        confHeaders: CONF_HEADERS,
-        confRows,
-        pageNums,
-        uniquePageNums,
-        confAmtIdx,
-        confPageTotals,
-        confTotal,
-        rawSupplierByPage,
-        supplierByPageFallback: (pn) => structuredPages.find(p => p.page === pn)?.meta.supplier ?? "",
-        filename,
-      });
-    }
-  }, [matchItems, confRows, CONF_HEADERS, COL_ALIAS, pageNums, uniquePageNums, confAmtIdx,
-      confPageTotals, confTotal, rawSupplierByPage, structuredPages, meta, xlsTemplate, xlsTemplateHdrs]);
-
+  const { handleExport, handleErpUploadExport, handleExcelExport, handleTemplateUpload } = useExportHandlers({
+    matchItems, confRows, CONF_HEADERS, COL_ALIAS, pageNums, uniquePageNums,
+    confAmtIdx, confPageTotals, confTotal, rawSupplierByPage, structuredPages, meta,
+    xlsTemplate, xlsTemplateName, xlsTemplateHdrs, pageDateOverride, barcodeAutoMap,
+    setXlsTemplate, setXlsTemplateName, setXlsTemplateHdrs,
+  });
   if (pages.length === 0) return null;
 
   const autoSynonymCount = Object.keys(autoSynonymMatches).length;
 
   return (
     <>
-    {/* ── 저장 완료 토스트 ── */}
-    {saveConfirmedToast && (
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] px-4 py-2.5 rounded-xl shadow-2xl text-xs font-bold flex items-center gap-2 pointer-events-none"
-        style={{
-          background: saveConfirmedToast.type === "success" ? "#059669" : "#e11d48",
-          color: "white",
-        }}
-      >
-        {saveConfirmedToast.type === "success" ? <CheckCircle size={13} /> : <XCircle size={13} />}
-        {saveConfirmedToast.msg}
-      </div>
-    )}
-    {/* ── 품명 검색 드롭다운 (position:fixed — overflow 클리핑 우회) ── */}
-    {nameDropdownRect && (nameEditResults.length > 0 || nameEditSearchDone) && (
-      <div
-        // 2026-07-24 · 사용자 문제 "아래쪽 항목 선택 안됨"
-        //   기존 max-h-48 (192px · 약 5개만) → max-h-[70vh] (뷰포트의 70%) 로 확장
-        //   화면 아래 짤리지 않게 · viewport 초과 시 스크롤
-        style={{ position: "fixed", top: nameDropdownRect.top, left: nameDropdownRect.left, width: nameDropdownRect.width, zIndex: 9999, maxHeight: "70vh" }}
-        className="bg-white border border-indigo-200 rounded-xl shadow-2xl overflow-y-auto"
-        onMouseDown={e => e.preventDefault()}
-      >
-        {nameEditResults.length === 0 ? (
-          <div className="px-3 py-2.5 text-[12px] text-gray-400 text-center">상품이 없습니다</div>
-        ) : nameEditResults.map((p, pi) => (
-          <button key={pi}
-            onMouseDown={e => e.preventDefault()}
-            onClick={async () => {
-              // 2026-07-24 · state 지워졌으면 ref 폴백 · 클릭 항상 작동
-              const ri = editingNameRow ?? editingNameRowRef.current;
-              if (ri == null) { console.warn("[dropdown click] editingNameRow null · 무시"); return; }
-              // 2026-07-28 · B 옵션 · "셀에 표시되던 값" (autoSyn 있으면 그 이름 · 없으면 OCR 원본)
-              const origName = String(autoSynonymMatches[ri]?.name ?? dispRows[ri]?.[nameIdx] ?? "");
-              const pnLocal = pageNums[ri];
-              const supplier = rawSupplierByPage[pnLocal] ?? structuredPages.find(pg => pg.page === pnLocal)?.meta.supplier ?? globalSupplier ?? "";
-              setAutoSynonymMatches(prev => ({ ...prev, [ri]: { code: p.product_code, name: p.product_name } }));
-              setCancelledAutoSyn(prev => { const s = new Set(prev); s.delete(ri); return s; });
-              // 2026-07-27 · 사용자 문제 "품명 리스트 선택 반영 안 됨"
-              //   원인 · cancelledAutoMap 안 지우면 autoMatch = undefined 라서 새 선택 무시됨
-              setCancelledAutoMap(prev => { const s = new Set(prev); s.delete(ri); return s; });
-              setRawEditValues(prev => { const n = { ...prev }; delete n[ri]; return n; });
-              // 2026-07-28 · 드롭다운 선택 즉시 · matchItems 에 판매가·사입가·이익률 반영 (ERP row 표시)
-              setMatchItems(prev => {
-                const next = prev ? [...prev] : dispRows.map(() => ({ input: "", matched: null }));
-                next[ri] = {
-                  input: origName,
-                  matched: {
-                    code: String(p.product_code ?? ""),
-                    name: String(p.product_name ?? ""),
-                    spec: String(p.spec ?? ""),
-                    score: 100,
-                    masterPrice: p.purchase_price != null ? Number(p.purchase_price) : null,
-                    salePrice: p.sale_price != null ? Number(p.sale_price) : null,
-                    profitRate: p.profit_rate != null ? Number(p.profit_rate) : null,
-                    expiryDate: p.expiry_date ?? null,
-                    supplier: p.supplier ?? null,
-                  },
-                };
-                return next;
-              });
-              // 2026-07-28 · 사용자 요청 (재변경) · 동의어보정사전 등록 confirm 다시 활성화
-              //   흐름 · 재추출 → 상품명 클릭 → 기존 저장 → 입력 후 선택 → 확인창 → DB 등록
-              if (origName && origName !== p.product_name) {
-                if (await confirm({ message: `동의어보정사전에 등록할까요?\n\n· 보정 전: ${origName}\n· 보정 후: ${p.product_name}` })) {
-                  saveSynonym(ri, origName, p.product_code, supplier || undefined, p.product_name);
-                }
-              }
-              // 2026-07-28 · 사용자 문제 "확정표에 1차 값이 들어감" · cellEdits 의 상품명 항목 클리어
-              //   → userEditedName 이 corrName 을 덮어쓰지 못하게 · autoSyn/matched.name 이 확정표에 반영
-              setCellEdits(prev => {
-                if (!prev[ri]) return prev;
-                const rowEdits = { ...prev[ri] };
-                delete rowEdits[nameIdx];
-                if (Object.keys(rowEdits).length === 0) { const n = { ...prev }; delete n[ri]; return n; }
-                return { ...prev, [ri]: rowEdits };
-              });
-              setEditingNameRow(null);
-              setNameEditResults([]);
-              setNameEditSearchDone(false);
-              setNameDropdownRect(null);
-              // 2026-07-28 · 사용자 요청 "1차보정값에서 제품명 찾으면 바로 ERP 자동 업데이트"
-              //   드롭다운 선택 즉시 · 해당 페이지 ERP 매칭 재실행 → autoSyn 값으로 masterPrice·유통기한 등 조회
-              //   + 매입이력 매칭 · 해당 상품 최근 매입 수량·단가와 유사한 raw 값 자동 채움
-              setTimeout(() => {
-                (async () => {
-                  try {
-                    await handleMatchPage(pnLocal);
-                    await matchRawToPurchaseHistory(pnLocal);
-                  } catch { /* silent */ }
-                })();
-              }, 100);
-            }}
-            className="flex items-center gap-2 w-full text-left px-3 py-1.5 hover:bg-indigo-50 text-[12px] border-b border-gray-50 last:border-0">
-            <span className="flex-1 font-semibold text-gray-800 break-words">{p.product_name}</span>
-            {p.spec && <span className="text-gray-400 shrink-0 max-w-[60px] break-words">{p.spec}</span>}
-            {p.supplier && <span className="text-sky-500 shrink-0 max-w-[60px] break-words">{p.supplier}</span>}
-          </button>
-        ))}
-      </div>
-    )}
-
-    {/* ── 동의어 삭제 확인 다이얼로그 ── */}
-    {deleteSynConfirm && (
-      <DeleteSynonymDialog
-        deleteSynConfirm={deleteSynConfirm}
-        setDeleteSynConfirm={setDeleteSynConfirm}
-        deleteSynonymByName={deleteSynonymByName}
-        setAutoSynonymMatches={setAutoSynonymMatches}
-      />
-    )}
-
-    {/* ── 공급처 자동완성 드롭다운 (fixed · 테이블 stacking context 우회) ── */}
-    {/* editing 활성 시 무조건 표시 · vendorNames 없어도 진단용 안내 · rect 없으면 input 재추적 */}
-    {editingRawSuppRow != null && (() => {
-      // rect 없으면 input 을 지금 다시 조회 (ref callback 놓쳤을 경우 대비)
-      let rect = suppDropdownRect;
-      if (!rect && suppInputRef.current) {
-        const r = suppInputRef.current.getBoundingClientRect();
-        rect = { top: r.bottom, left: r.left, width: Math.max(220, r.width) };
-      }
-      if (!rect) return null;
-      const q = editingRawSuppVal.trim().toLowerCase().replace(/[\s()（）]/g, "");
-      const matches = vendorNames.length === 0 ? [] : (q.length === 0
-        ? vendorNames.slice(0, 8)
-        : vendorNames.filter(n => n.toLowerCase().replace(/[\s()（）]/g, "").includes(q)).slice(0, 8));
-      const commit = (val: string) => {
-        const trimmed = val.trim();
-        const pn = pageNums[editingRawSuppRow];
-        const currentSupp = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
-        if (trimmed && trimmed !== currentSupp) {
-          const rowCount = pageNums.filter(p => p === pn).length;
-          setSupplierConfirm({ pageNum: pn, newVal: trimmed, rowCount, addSynonyms: addSynonymsOnChange });
-        }
-        setSuppDropdownRect(null);
-        setEditingRawSuppRow(null);
-      };
-      return (
-        <div
-          className="fixed z-[9999] max-h-52 overflow-y-auto bg-white border border-sky-300 rounded-lg shadow-xl text-xs"
-          style={{ top: rect.top + 2, left: rect.left, width: rect.width }}
-        >
-          <div className="px-2 py-1 text-[10px] text-zinc-500 border-b border-zinc-100 bg-zinc-50 font-bold">
-            공급사 DB · {vendorNames.length === 0 ? "⚠ vendors 로드 안 됨 (F5 시도)" : `${matches.length}건${q ? ` ("${q}" 매칭)` : " (전체)"} / 총 ${vendorNames.length}`}
-          </div>
-          {vendorNames.length === 0 ? (
-            <div className="px-2 py-3 text-[11px] text-rose-500 text-center">
-              공급사 DB 목록이 로드되지 않았어요.<br />/api/vendors 응답 확인 필요.
-            </div>
-          ) : matches.length === 0 ? (
-            <div className="px-2 py-2 text-[11px] text-zinc-400 text-center">"{q}" 매칭 없음</div>
-          ) : matches.map(name => (
-            <button
-              key={name}
-              type="button"
-              onMouseDown={e => { e.preventDefault(); commit(name); }}
-              className="w-full text-left px-2 py-1.5 hover:bg-sky-50 text-sky-800 font-semibold border-b border-zinc-50 last:border-0 cursor-pointer"
-            >
-              {name}
-            </button>
-          ))}
-        </div>
-      );
-    })()}
-
-    {/* 2026-07-22: 이미지 모달 렌더링 제거 (사용자 요청) · state/함수는 유지 (다른 코드 참조 대비) */}
-
-    {/* ── 공급사 조회·수정 모달 (2026-07-18 · 공급사명 클릭 시) ── */}
-    {vendorEditModal && (
-      <VendorDetailModal
-        vendor={vendorEditModal}
-        onClose={() => setVendorEditModal(null)}
-        onSaved={() => { setVendorEditModal(null); }}
-      />
-    )}
-
-    {/* ── 공급처 변경 확인 다이얼로그 ── */}
-    {supplierConfirm && (
-      <SupplierChangeDialog
-        supplierConfirm={supplierConfirm}
-        setSupplierConfirm={setSupplierConfirm}
-        nameIdx={nameIdx}
-        structuredPages={structuredPages}
-        setRawSupplierByPage={setRawSupplierByPage}
-        handleSynonymBulkAdd={handleSynonymBulkAdd}
-        onReparsePage={onReparsePage}
-        setReparseStatus={setReparseStatus}
-        setReparseSupplier={setReparseSupplier}
-      />
-    )}
+    <RawOcrTableOverlays
+      saveConfirmedToast={saveConfirmedToast}
+      toast={toast}
+      toastClass={toastClass}
+      nameDropdownRect={nameDropdownRect}
+      nameEditResults={nameEditResults}
+      nameEditSearchDone={nameEditSearchDone}
+      editingNameRow={editingNameRow}
+      editingNameRowRef={editingNameRowRef}
+      autoSynonymMatches={autoSynonymMatches}
+      dispRows={dispRows}
+      nameIdx={nameIdx}
+      pageNums={pageNums}
+      rawSupplierByPage={rawSupplierByPage}
+      structuredPages={structuredPages}
+      globalSupplier={globalSupplier}
+      matchItems={matchItems}
+      setAutoSynonymMatches={setAutoSynonymMatches}
+      setCancelledAutoSyn={setCancelledAutoSyn}
+      setCancelledAutoMap={setCancelledAutoMap}
+      setRawEditValues={setRawEditValues}
+      setMatchItems={setMatchItems}
+      confirm={confirm}
+      saveSynonym={saveSynonym}
+      setCellEdits={setCellEdits}
+      setEditingNameRow={setEditingNameRow}
+      setNameEditResults={setNameEditResults}
+      setNameEditSearchDone={setNameEditSearchDone}
+      setNameDropdownRect={setNameDropdownRect}
+      handleMatchPage={handleMatchPage}
+      matchRawToPurchaseHistory={matchRawToPurchaseHistory}
+      deleteSynConfirm={deleteSynConfirm}
+      setDeleteSynConfirm={setDeleteSynConfirm}
+      deleteSynonymByName={deleteSynonymByName}
+      editingRawSuppRow={editingRawSuppRow}
+      suppDropdownRect={suppDropdownRect}
+      suppInputRef={suppInputRef}
+      editingRawSuppVal={editingRawSuppVal}
+      vendorNames={vendorNames}
+      addSynonymsOnChange={addSynonymsOnChange}
+      setSupplierConfirm={setSupplierConfirm}
+      setSuppDropdownRect={setSuppDropdownRect}
+      setEditingRawSuppRow={setEditingRawSuppRow}
+      vendorEditModal={vendorEditModal}
+      setVendorEditModal={setVendorEditModal}
+      supplierConfirm={supplierConfirm}
+      nameIdxForDialog={nameIdx}
+      setRawSupplierByPage={setRawSupplierByPage}
+      handleSynonymBulkAdd={handleSynonymBulkAdd}
+      onReparsePage={onReparsePage}
+      setReparseStatus={setReparseStatus}
+      setReparseSupplier={setReparseSupplier}
+    />
 
     {/* ── 명세서별 이미지+테이블 2컬럼 그리드 (per-page pair) ── */}
     {/* 이미지 컬럼 폭 CSS variable · 드래그 리사이즈로 조절 */}
@@ -1859,11 +1235,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
       </div>{/* end 콘텐츠 래퍼 */}
     </div>{/* end 명세서별 2컬럼 그리드 래퍼 */}
     {/* 2026-08-21 · Framework Phase 3 · toast */}
-    {toast && (
-      <div className="fixed bottom-6 right-6 z-[9999]">
-        <div className={toastClass(toast.tone)}>{toast.message}</div>
-      </div>
-    )}
+    {/* toast · moved to RawOcrTableOverlays */}
     </>
   );
 };
