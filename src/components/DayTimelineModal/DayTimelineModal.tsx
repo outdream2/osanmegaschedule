@@ -26,6 +26,12 @@ import { useToast, toastClass } from "../../hooks/useToast";
 
 // 2026-08-21 · Framework Phase 4 · ZoneSection 별도 파일 이관
 import { ZoneSection, ZONE_SLOTS } from "./ZoneSection";
+// 2026-08-22 · Framework Phase 4 · WorkTimeSection 별도 파일 이관
+import { WorkTimeSection } from "./WorkTimeSection";
+// 2026-08-22 · Framework Phase 4 · HeaderBar 별도 파일 이관
+import { HeaderBar } from "./HeaderBar";
+// 2026-08-22 · Framework Phase 4 · slot 핸들러 6개 훅 이관
+import { useSlotHandlers } from "./useSlotHandlers";
 
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -374,169 +380,14 @@ export const DayTimelineModal: React.FC<Props> = ({
   const handleRowDrop    = useCallback((e: React.DragEvent) => { e.preventDefault(); setDragRowId(null); }, []);
   const handleRowDragEnd = useCallback(() => setDragRowId(null), []);
 
-  // ── Slot handlers ─────────────────────────────────────────────────────────
-  const dropToLunchSlot = useCallback((slot: string, empId: number,
-    source?: { type: "zone" | "lunch" | "rest"; zone?: ZoneRow; slot: string }
-  ) => {
-    const [lh, lm] = slot.split(":").map(Number);
-    const lStart = lh * 60 + lm;
-    const lEnd = lStart + 30;
-    // 점심 시간 겹침 검사 — 같은 사람이 시간이 겹치는 점심 슬롯에 배정될 수 없음
-    // source slot(= 같은 lunch에서 이동)은 skip해서 정상 이동 허용
-    const lunchDup = Object.entries(lunchSlots).some(([ls, ids]) => {
-      if (source?.type === "lunch" && source.slot === ls) return false;
-      if (!(ids as number[]).includes(empId)) return false;
-      const [oh, om] = ls.split(":").map(Number);
-      const oStart = oh * 60 + om;
-      const oEnd = oStart + 30;
-      return oStart < lEnd && oEnd > lStart;
-    });
-    if (lunchDup) { mainShowError("이미 배정되었습니다.\n같은 시간대에 이미 점심이 배정되어 있습니다."); return; }
-    // 2026-08-11 · 같은 30분 슬롯에 약사 2명 이상 배치 금지 (매장에 최소 1명 약사 유지)
-    const targetEmp = employees.find(e => e.id === empId);
-    if (targetEmp?.position === "약사") {
-      const existingIds = (lunchSlots[slot] ?? []).filter(id => id !== empId);
-      const hasOtherPharm = existingIds.some(id => employees.find(e => e.id === id)?.position === "약사");
-      if (hasOtherPharm) { mainShowError("한 시간대에 약사는 1명만 점심 배정할 수 있습니다.\n(매장에 최소 1명 약사가 남아있어야 합니다)"); return; }
-    }
-    // 출발지가 zone이고 그 slot이 이 lunch 시간대와 겹치면 zone 충돌 검사 스킵
-    const zoneConflict = ZONE_ROWS.some(zone =>
-      Object.entries(zoneSlots[zone] ?? {}).some(([zSlot, ids]) => {
-        if (!(ids as number[]).includes(empId)) return false;
-        if (source?.type === "zone" && source.zone === zone && source.slot === zSlot) return false;
-        const zh = parseInt(zSlot.split(":")[0], 10) * 60;
-        return zh < lEnd && zh + 60 > lStart;
-      })
-    );
-    if (zoneConflict) { mainShowError("중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 카운터/매장 구역이 배정되어 있습니다)"); return; }
-    const restConflict = Object.entries(restSlots).some(([rs, ids]) => {
-      if (!(ids as number[]).includes(empId)) return false;
-      if (source?.type === "rest" && source.slot === rs) return false;
-      const [rh, rm] = rs.split(":").map(Number);
-      const rStart = rh * 60 + rm;
-      return rStart < lEnd && rStart + 30 > lStart;
-    });
-    if (restConflict) { mainShowError("중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 휴게시간이 배정되어 있습니다)"); return; }
-    // 출발지 lunch/rest/zone에서 자동 제거 (atomic 이동)
-    if (source?.type === "lunch" && source.slot !== slot) {
-      setLunchSlots(prev => ({ ...prev, [source.slot]: (prev[source.slot] ?? []).filter(id => id !== empId) }));
-    } else if (source?.type === "rest") {
-      setRestSlots(prev => ({ ...prev, [source.slot]: (prev[source.slot] ?? []).filter(id => id !== empId) }));
-    } else if (source?.type === "zone" && source.zone) {
-      const srcZone = source.zone;
-      setZoneSlots(prev => {
-        const z = { ...(prev[srcZone] ?? {}) };
-        z[source.slot] = (z[source.slot] ?? []).filter(id => id !== empId);
-        return { ...prev, [srcZone]: z };
-      });
-    }
-    setLunchSlots(prev => {
-      const next = { ...prev, [slot]: [...(prev[slot] ?? []).filter(id => id !== empId), empId] };
-      safeSetTimelineItem(`tl_lunch_slots_${date}`, JSON.stringify(next));
-      scheduleAutoSave(zoneSlots, next, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
-      return next;
-    });
-  }, [date, zoneSlots, restSlots, lunchSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount, scheduleAutoSave, employees]);
-
-  const removeFromLunchSlot = useCallback((slot: string, empId: number) => {
-    setLunchSlots(prev => {
-      const next = { ...prev, [slot]: (prev[slot] ?? []).filter(id => id !== empId) };
-      safeSetTimelineItem(`tl_lunch_slots_${date}`, JSON.stringify(next));
-      scheduleAutoSave(zoneSlots, next, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
-      return next;
-    });
-  }, [date, zoneSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount, scheduleAutoSave]);
-
-  const dropToRestSlot = useCallback((slot: string, empId: number,
-    source?: { type: "zone" | "lunch" | "rest"; zone?: ZoneRow; slot: string }
-  ) => {
-    const [rh, rm] = slot.split(":").map(Number);
-    const rStart = rh * 60 + rm;
-    const rEnd = rStart + 30;
-    const zoneConflict = ZONE_ROWS.some(zone =>
-      Object.entries(zoneSlots[zone] ?? {}).some(([zSlot, ids]) => {
-        if (!(ids as number[]).includes(empId)) return false;
-        if (source?.type === "zone" && source.zone === zone && source.slot === zSlot) return false;
-        const zh = parseInt(zSlot.split(":")[0], 10) * 60;
-        return zh < rEnd && zh + 60 > rStart;
-      })
-    );
-    if (zoneConflict) { mainShowError("중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 카운터/매장 구역이 배정되어 있습니다)"); return; }
-    const lunchConflict = Object.entries(lunchSlots).some(([ls, ids]) => {
-      if (!(ids as number[]).includes(empId)) return false;
-      if (source?.type === "lunch" && source.slot === ls) return false;
-      const [lh, lm] = ls.split(":").map(Number);
-      const lStart = lh * 60 + lm;
-      return lStart < rEnd && lStart + 30 > rStart;
-    });
-    if (lunchConflict) { mainShowError("중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 점심시간이 배정되어 있습니다)"); return; }
-    // 출발지에서 자동 제거 (atomic 이동)
-    if (source?.type === "rest" && source.slot !== slot) {
-      setRestSlots(prev => ({ ...prev, [source.slot]: (prev[source.slot] ?? []).filter(id => id !== empId) }));
-    } else if (source?.type === "lunch") {
-      setLunchSlots(prev => ({ ...prev, [source.slot]: (prev[source.slot] ?? []).filter(id => id !== empId) }));
-    } else if (source?.type === "zone" && source.zone) {
-      const srcZone = source.zone;
-      setZoneSlots(prev => {
-        const z = { ...(prev[srcZone] ?? {}) };
-        z[source.slot] = (z[source.slot] ?? []).filter(id => id !== empId);
-        return { ...prev, [srcZone]: z };
-      });
-    }
-    setRestSlots(prev => {
-      const next = { ...prev, [slot]: [...(prev[slot] ?? []).filter(id => id !== empId), empId] };
-      safeSetTimelineItem(`tl_rest_slots_${date}`, JSON.stringify(next));
-      scheduleAutoSave(zoneSlots, lunchSlots, next, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
-      return next;
-    });
-  }, [date, zoneSlots, lunchSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount, scheduleAutoSave]);
-
-  const removeFromRestSlot = useCallback((slot: string, empId: number) => {
-    setRestSlots(prev => {
-      const next = { ...prev, [slot]: (prev[slot] ?? []).filter(id => id !== empId) };
-      safeSetTimelineItem(`tl_rest_slots_${date}`, JSON.stringify(next));
-      scheduleAutoSave(zoneSlots, lunchSlots, next, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
-      return next;
-    });
-  }, [date, zoneSlots, lunchSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount, scheduleAutoSave]);
-
-  const dropToZone = useCallback((zone: ZoneRow, slot: string, empId: number,
-    source?: { type: "zone" | "lunch" | "rest"; zone?: ZoneRow; slot: string }
-  ) => {
-    // 출발지가 lunch/rest이면 그 곳에서 자동 제거
-    if (source?.type === "lunch") {
-      setLunchSlots(prev => ({ ...prev, [source.slot]: (prev[source.slot] ?? []).filter(id => id !== empId) }));
-    } else if (source?.type === "rest") {
-      setRestSlots(prev => ({ ...prev, [source.slot]: (prev[source.slot] ?? []).filter(id => id !== empId) }));
-    }
-    // 출발지가 zone이면 그 zone/slot에서 제거 (같은 zone/slot이면 이동 아니므로 skip)
-    setZoneSlots(prev => {
-      let base = prev;
-      if (source?.type === "zone" && source.zone && !(source.zone === zone && source.slot === slot)) {
-        const srcZone = source.zone;
-        const zSrc = { ...(base[srcZone] ?? {}) };
-        zSrc[source.slot] = (zSrc[source.slot] ?? []).filter(id => id !== empId);
-        base = { ...base, [srcZone]: zSrc };
-      }
-      const z = { ...(base[zone] ?? {}) };
-      z[slot] = [...(z[slot] ?? []).filter(id => id !== empId), empId];
-      const next = { ...base, [zone]: z };
-      safeSetTimelineItem(`tl_zone_slots_${date}`, JSON.stringify(next));
-      scheduleAutoSave(next, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
-      return next;
-    });
-  }, [date, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount, scheduleAutoSave]);
-
-  const removeFromZone = useCallback((zone: ZoneRow, slot: string, empId: number) => {
-    setZoneSlots(prev => {
-      const z = { ...(prev[zone] ?? {}) };
-      z[slot] = (z[slot] ?? []).filter(id => id !== empId);
-      const next = { ...prev, [zone]: z };
-      safeSetTimelineItem(`tl_zone_slots_${date}`, JSON.stringify(next));
-      scheduleAutoSave(next, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
-      return next;
-    });
-  }, [date, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount, scheduleAutoSave]);
+  // ── Slot handlers · 2026-08-22 · useSlotHandlers 훅 이관 ──────────────────
+  const { dropToLunchSlot, removeFromLunchSlot, dropToRestSlot, removeFromRestSlot, dropToZone, removeFromZone } = useSlotHandlers({
+    date, employees,
+    lunchSlots, restSlots, zoneSlots,
+    setLunchSlots, setRestSlots, setZoneSlots,
+    lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount,
+    scheduleAutoSave, mainShowError,
+  });
 
   // ── 요일별 템플릿 DB 저장 ─────────────────────────────────────────────────
   const saveTemplateToDow = useCallback(async (saveDow: number) => {
@@ -697,318 +548,52 @@ export const DayTimelineModal: React.FC<Props> = ({
         style={{ maxHeight: "92vh" }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Header · 2026-08-17 · 최신 트렌드 · 딥네이비 · 사이드바 통일 · 폰트 +2 */}
-        <div className="flex items-center justify-between px-5 py-3.5 bg-brand-deep text-white flex-shrink-0 gap-2 min-w-0">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            {onDateChange && (
-              <button onClick={() => onDateChange(offsetDate(-1))}
-                className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/80 hover:text-white cursor-pointer shrink-0">
-                <ChevronLeft size={16} />
-              </button>
-            )}
-            <span className="text-[19px] font-extrabold tracking-tight shrink-0 break-keep">{title}</span>
-            {onDateChange && (
-              <button onClick={() => onDateChange(offsetDate(1))}
-                className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/80 hover:text-white cursor-pointer shrink-0">
-                <ChevronRight size={16} />
-              </button>
-            )}
-            <span className="bg-white/[0.12] text-white text-[15px] px-2.5 py-1 rounded-full font-semibold shrink-0 hidden sm:inline tabular-nums">
-              근무 {workers.length}명 · 사원 {staffWorkers.length} · 약사 {pharmacistWorkers.length}
-              {otherWorkers.length > 0 ? ` · 기타 ${otherWorkers.length}` : ""}
-            </span>
-            <span className="bg-white/[0.12] text-white text-[15px] px-2.5 py-1 rounded-full font-semibold shrink-0 sm:hidden tabular-nums">
-              {workers.length}명
-            </span>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/80 hover:text-white shrink-0">
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Position filter tabs · 2026-08-17 · 최신 트렌드 · segmented pill · 파스텔 지양 · 폰트 +2 */}
-        <div className="flex items-center gap-1.5 px-4 sm:px-5 pt-3 pb-2 bg-white border-b border-line flex-shrink-0 min-w-0 overflow-x-auto scrollbar-none">
-          {tabs.map(({ key, count }) => (
-            <button key={key} onClick={() => setActiveTab(key)}
-              className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 text-[15px] font-semibold rounded-lg transition-colors cursor-pointer ${
-                activeTab === key
-                  ? "bg-brand-deep text-white shadow-sm"
-                  : "text-ink-soft hover:bg-zinc-100 hover:text-ink"
-              }`}>
-              {key}
-              <span className={`text-[13px] px-1.5 py-0.5 rounded-full tabular-nums ${activeTab === key ? "bg-white/20 text-white" : "bg-zinc-200 text-ink-soft"}`}>{count}</span>
-            </button>
-          ))}
-          {/* 확정 버튼 · 딥네이비 accent · 최신 트렌드 */}
-          <div className="ml-auto flex items-center gap-2 shrink-0 pl-2">
-            {isConfirmed ? (
-              <StatusPill tone="emerald" size="md" dot>
-                <CheckCircle size={14} className="inline mr-1" />
-                확정됨
-              </StatusPill>
-            ) : (
-              <button
-                onClick={handleConfirm}
-                disabled={confirming}
-                className="flex items-center gap-1.5 text-[15px] font-semibold px-3.5 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] text-white cursor-pointer disabled:opacity-40 transition-colors shadow-sm">
-                <CheckCircle size={14} />
-                {confirming ? "저장중…" : "확정"}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* 임의배치 배너 · 2026-08-17 · 최신 트렌드 · flat · 이모지 지양 */}
-        {isAutoSuggested && (
-          <div className="flex items-center justify-between px-4 py-2.5 bg-amber-50 border-b border-amber-200 flex-shrink-0">
-            <span className="text-[15px] font-semibold text-amber-800 tracking-tight">
-              임의배치 · 확정하기 전에 배치를 조정하세요
-            </span>
-            <button
-              onClick={handleConfirm}
-              disabled={confirming}
-              className="text-[14px] font-semibold px-3.5 py-1.5 rounded-lg bg-brand-deep text-white hover:bg-[#0d3a5c] cursor-pointer disabled:opacity-40 transition-colors ml-3 shrink-0 shadow-sm">
-              {confirming ? "저장중…" : "지금 확정"}
-            </button>
-          </div>
-        )}
+        {/* Header + tabs + 임의배치 배너 (HeaderBar · 별도 파일 이관) */}
+        <HeaderBar
+          title={title}
+          workersCount={workers.length}
+          staffCount={staffWorkers.length}
+          pharmCount={pharmacistWorkers.length}
+          otherCount={otherWorkers.length}
+          onClose={onClose}
+          onDateChange={onDateChange}
+          offsetDate={offsetDate}
+          tabs={tabs}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          isConfirmed={isConfirmed}
+          handleConfirm={handleConfirm}
+          confirming={confirming}
+          isAutoSuggested={isAutoSuggested}
+        />
 
         {/* Scrollable body */}
         <div className="overflow-y-auto flex-1 select-none">
-
-          {/* ── 근무시간 섹션 ── */}
-          <div className="px-4 pt-3 pb-2">
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="text-[12px] font-bold text-zinc-400 uppercase tracking-widest">근무시간</span>
-              {/* 미배정 직원 수 배지 — 클릭 시 이름 목록 토글 */}
-              {(() => {
-                const unassignedList = workers.filter(w => {
-                  const inZone  = ZONE_ROWS.some(zone => Object.values(zoneSlots[zone] ?? {}).some(ids => (ids as number[]).includes(w.emp.id)));
-                  const inLunch = Object.values(lunchSlots).some(ids => (ids as number[]).includes(w.emp.id));
-                  const inRest  = Object.values(restSlots).some(ids => (ids as number[]).includes(w.emp.id));
-                  return !inZone && !inLunch && !inRest;
-                });
-                if (unassignedList.length === 0) return null;
-                return (
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowUnassigned(v => !v)}
-                      className="text-[13px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 border border-orange-200 hover:bg-orange-200 cursor-pointer transition flex items-center gap-1"
-                      title="클릭하여 미배정 인원 명단 보기"
-                    >
-                      미배정 {unassignedList.length}명
-                      <span className={`text-[12px] transition-transform ${showUnassigned ? "rotate-180" : ""}`}>▾</span>
-                    </button>
-                    {showUnassigned && (
-                      <div className="absolute z-30 mt-1 left-0 bg-white border border-orange-200 rounded-lg shadow-lg p-2 min-w-[180px] max-w-[280px] max-h-64 overflow-y-auto">
-                        <div className="text-[12px] font-bold text-orange-500 uppercase tracking-wider mb-1 px-1">미배정 인원</div>
-                        <div className="flex flex-wrap gap-1">
-                          {unassignedList.map(w => (
-                            <span key={w.emp.id}
-                              className="text-[13px] font-bold px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-100">
-                              {w.emp.name}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-              {[...new Set(workers.map(w => w.schedule.type))].map(type => {
-                const colors = typeTones[type] ?? DEFAULT_TONE;
-                return (
-                  <div key={type} className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.dot }} />
-                    <span className="text-[12px] font-semibold text-zinc-500">{type}</span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {displayWorkers.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-20 gap-2">
-                <span className="text-xl">📅</span>
-                <span className="text-zinc-400 text-[17px] font-medium">이 날 근무자가 없습니다</span>
-              </div>
-            ) : (
-              <div className="flex gap-3 min-w-0">
-                {/* Name column */}
-                <div className="flex-shrink-0 w-[132px]">
-                  <div className="h-7" />
-                  {displayGroups.flatMap(g => [
-                    <div key={`hdr-${g.label}`}
-                      className={`mb-1 h-5 px-1 flex items-end text-[12px] font-bold uppercase tracking-wider border-b border-line ${g.hdrCls}`}>
-                      {g.label} · {g.items.length}
-                    </div>,
-                    ...g.items.map(({ emp, schedule }) => {
-                    const colors = typeTones[schedule.type] ?? DEFAULT_TONE;
-                    const isPharmacist = emp.position === "약사";
-                    const hasLunch = Object.values(lunchSlots ?? {}).some(ids => Array.isArray(ids) && (ids as number[]).includes(emp.id));
-                    const hasRest  = Object.values(restSlots ?? {}).some(ids => Array.isArray(ids) && (ids as number[]).includes(emp.id));
-
-                    // 물류 담당 구역 (물류 또는 캐셔+물류 겸직인 경우 표시)
-                    const isLogistics = emp.position.includes("물류");
-                    const isCashierLogistics = emp.position.includes("캐셔") && emp.position.includes("물류");
-                    const showZoneBadge = isLogistics || isCashierLogistics;
-                    return (
-                      <div key={emp.id}
-                        className={`mb-1 h-8 flex flex-col justify-center gap-0 group cursor-grab active:cursor-grabbing transition-opacity ${dragRowId === emp.id ? "opacity-40" : "opacity-100"}`}
-                        draggable
-                        onDragStart={e => handleRowDragStart(e, emp.id)}
-                        onDragOver={e => handleRowDragOver(e, emp.id)}
-                        onDrop={handleRowDrop}
-                        onDragEnd={handleRowDragEnd}
-                      >
-                        <div className="flex items-center gap-1 min-w-0">
-                          {isPharmacist
-                            ? <Pill size={10} className="text-indigo-500 shrink-0" />
-                            : <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: colors.dot }} />
-                          }
-                          <span className={`text-[14px] whitespace-nowrap ${isPharmacist ? "text-purple-600 font-bold" : "text-zinc-800 font-bold"}`}>{emp.name}</span>
-                          {/* 입사일/퇴사일 배지 — 오늘 보고 있는 날짜가 그날인 경우 표시 */}
-                          {!!emp.hireDate && date === emp.hireDate && (
-                            <span className="text-[11px] font-bold px-1 py-px rounded bg-emerald-500 text-white leading-none shrink-0" title={`입사일 (${emp.hireDate})`}>입사</span>
-                          )}
-                          {!!emp.retireDate && date === emp.retireDate && (
-                            <span className="text-[11px] font-bold px-1 py-px rounded bg-rose-500 text-white leading-none shrink-0" title={`퇴사일 (${emp.retireDate})`}>퇴사</span>
-                          )}
-                          {/* 오픈/마감 등 근무유형을 이름 옆에 배지로 인라인 표시 (기존 별도 줄 제거) */}
-                          <span className="text-[12px] font-bold leading-none shrink-0" style={{ color: colors.text }}>{schedule.type}</span>
-                          {/* 배정 구역 배지: 물류 또는 캐셔+물류 직원의 담당구역 (파란색) */}
-                          {showZoneBadge && (() => {
-                            const zoneNumsRaw = (emp as any).zone_nums ?? (emp as any).zoneNums;
-                            const zoneNums: number[] = Array.isArray(zoneNumsRaw) ? zoneNumsRaw : [];
-                            if (zoneNums.length === 0) return null;
-                            return (
-                              <span className={`text-[11px] font-bold px-1 py-px rounded leading-none shrink-0 ${isCashierLogistics ? "bg-blue-100 text-blue-700 ring-1 ring-blue-300" : "bg-blue-50 text-blue-600"}`}
-                                title={isCashierLogistics ? "캐셔·물류 겸직" : "물류 담당구역"}>
-                                {zoneNums.slice(0, 3).join("·")}{zoneNums.length > 3 ? "…" : ""}
-                              </span>
-                            );
-                          })()}
-                          {hasLunch && (
-                            <span className="text-[11px] font-bold px-1 py-px rounded bg-yellow-100 text-yellow-600 leading-none shrink-0">점심</span>
-                          )}
-                          {hasRest && (
-                            <span className="text-[11px] font-bold px-1 py-px rounded bg-violet-100 text-violet-600 leading-none shrink-0">휴게</span>
-                          )}
-                          {onEditEmployee && (
-                            <button onClick={() => onEditEmployee(emp)}
-                              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-zinc-200 transition-all cursor-pointer shrink-0">
-                              <Pencil size={9} className="text-zinc-400" />
-                            </button>
-                          )}
-                        </div>
-                        {/* Editable work hours */}
-                        {(() => {
-                          const hoursMap = emp.position === "약사" ? (pharmTypeHoursMap ?? typeHoursMap) : typeHoursMap;
-                          const displayHours = schedule.workingHours || hoursMap?.[schedule.type] || "";
-                          if (editingWork?.empId === emp.id) {
-                            return (
-                              <div className="flex items-center gap-0.5 mt-0.5" onClick={e => e.stopPropagation()}>
-                                <input
-                                  autoFocus
-                                  value={editingWork.value}
-                                  onChange={e => setEditingWork({ empId: emp.id, value: e.target.value })}
-                                  onKeyDown={async e => {
-                                    if (e.key === "Enter") {
-                                      await onUpdateSchedule?.({ employeeId: emp.id, date, type: schedule.type, workingHours: editingWork.value, actualHours: schedule.actualHours || "", memo: schedule.memo || "" });
-                                      setEditingWork(null);
-                                    }
-                                    if (e.key === "Escape") setEditingWork(null);
-                                  }}
-                                  placeholder="09:00-18:00"
-                                  className="text-[12px] font-mono border border-line rounded px-1 py-0 w-[70px] bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors"
-                                />
-                                <button className="text-[11px] text-indigo-500 hover:text-indigo-700 cursor-pointer font-bold"
-                                  onClick={async e => { e.stopPropagation(); await onUpdateSchedule?.({ employeeId: emp.id, date, type: schedule.type, workingHours: editingWork.value, actualHours: schedule.actualHours || "", memo: schedule.memo || "" }); setEditingWork(null); }}>✓</button>
-                                <button className="text-[11px] text-zinc-400 hover:text-zinc-600 cursor-pointer"
-                                  onClick={e => { e.stopPropagation(); setEditingWork(null); }}>✕</button>
-                              </div>
-                            );
-                          }
-                          return displayHours ? (
-                            <span
-                              className={`text-[12px] font-mono leading-none cursor-pointer hover:text-indigo-600 hover:underline ${onUpdateSchedule ? "text-zinc-400" : "text-zinc-300"}`}
-                              onClick={e => { if (!onUpdateSchedule) return; e.stopPropagation(); setEditingWork({ empId: emp.id, value: displayHours }); }}
-                              title={onUpdateSchedule ? "클릭해서 근무시간 편집" : undefined}
-                            >{displayHours}</span>
-                          ) : (
-                            onUpdateSchedule ? (
-                              <span className="text-[12px] text-zinc-300 leading-none cursor-pointer hover:text-indigo-400"
-                                onClick={e => { e.stopPropagation(); setEditingWork({ empId: emp.id, value: "" }); }}>+ 시간</span>
-                            ) : null
-                          );
-                        })()}
-                      </div>
-                    );
-                  }),
-                  ])}
-                </div>
-
-                {/* Timeline grid */}
-                <div className="flex-1 min-w-0 overflow-x-auto">
-                  <div style={{ minWidth: "560px" }}>
-                    {/* 1-hour time axis */}
-                    <div className="relative h-7 mb-0.5">
-                      <div className="absolute top-0 bottom-0 bg-orange-100 rounded pointer-events-none flex items-end justify-center pb-0.5"
-                        style={{ left: `${pct(14 * 60)}%`, width: `${widthPct(14 * 60, 17 * 60)}%` }}>
-                        <span className="text-[11px] font-bold text-orange-500 tracking-tight">피크타임</span>
-                      </div>
-                      {HOUR_SLOTS.map((slot, i) => (
-                        <div key={slot} className="absolute top-0 flex flex-col items-center"
-                          style={{ left: `${(i / (HOUR_SLOTS.length - 1)) * 100}%`, transform: "translateX(-50%)" }}>
-                          <span className={`text-[12px] whitespace-nowrap font-medium ${parseInt(slot) >= 14 && parseInt(slot) <= 17 ? "text-orange-500 font-bold" : "text-zinc-400"}`}>{slot}</span>
-                          <span className={`mt-0.5 block w-px h-1.5 ${parseInt(slot) >= 14 && parseInt(slot) <= 17 ? "bg-orange-300" : "bg-zinc-300"}`} />
-                        </div>
-                      ))}
-                    </div>
-                    {/* Work bars */}
-                    <div className="relative">
-                      <div className="absolute top-0 bottom-0 bg-orange-50 border-l-2 border-r-2 border-orange-200/70 pointer-events-none"
-                        style={{ left: `${pct(14 * 60)}%`, width: `${widthPct(14 * 60, 17 * 60)}%` }} />
-                      {HOUR_SLOTS.map((slot, i) => (
-                        <div key={`g-${slot}`} className="absolute top-0 bottom-0 border-l pointer-events-none"
-                          style={{ left: `${(i / (HOUR_SLOTS.length - 1)) * 100}%`, borderColor: "#e2e8f0" }} />
-                      ))}
-                      {displayGroups.flatMap(g => [
-                        <div key={`sp-${g.label}`} className="mb-1 h-5" />,
-                        ...g.items.map(({ emp, schedule }) => {
-                        const colors = typeTones[schedule.type] ?? DEFAULT_TONE;
-                        const workRange = workRanges[emp.id];
-                        return (
-                          <div key={emp.id}
-                            className={`relative mb-1 h-8 bg-zinc-50 rounded-lg border border-zinc-100 transition-opacity ${dragRowId === emp.id ? "opacity-40" : "opacity-100"}`}>
-                            {workRange ? (
-                              <div className="absolute top-1 bottom-1 rounded-md opacity-90"
-                                style={{
-                                  left: `${pct(workRange.start)}%`,
-                                  width: `${Math.max(widthPct(workRange.start, workRange.end), 0.5)}%`,
-                                  backgroundColor: colors.bg,
-                                }}>
-                                <div className="flex items-center justify-center h-full">
-                                  <span className="text-[12px] font-bold select-none truncate px-1" style={{ color: colors.text }}>
-                                    {minToStr(workRange.start)}~{minToStr(workRange.end)}
-                                  </span>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-center h-full">
-                                <span className="text-[13px] text-zinc-300 font-medium">시간 미정</span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      }),
-                      ])}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* ── 근무시간 섹션 (WorkTimeSection · 별도 파일 이관) ── */}
+          <WorkTimeSection
+            workers={workers}
+            displayWorkers={displayWorkers}
+            displayGroups={displayGroups}
+            workRanges={workRanges}
+            zoneSlots={zoneSlots}
+            lunchSlots={lunchSlots}
+            restSlots={restSlots}
+            showUnassigned={showUnassigned}
+            setShowUnassigned={setShowUnassigned}
+            typeTones={typeTones}
+            date={date}
+            dragRowId={dragRowId}
+            editingWork={editingWork}
+            setEditingWork={setEditingWork}
+            pharmTypeHoursMap={pharmTypeHoursMap}
+            typeHoursMap={typeHoursMap}
+            onEditEmployee={onEditEmployee}
+            onUpdateSchedule={onUpdateSchedule}
+            handleRowDragStart={handleRowDragStart}
+            handleRowDragOver={handleRowDragOver}
+            handleRowDrop={handleRowDrop}
+            handleRowDragEnd={handleRowDragEnd}
+          />
 
           <div className="mx-4 h-px bg-zinc-100" />
 
