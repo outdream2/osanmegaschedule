@@ -1,0 +1,4 @@
+# Phase 2 · Framework 가드레일 · 2026-08-22
+# audit-framework · baseline 대비 신규/증가 위반만 fail (기존 24 위반은 통과)
+# 의도적 증가 시 · npm run audit:update
+node scripts/audit-framework.cjs --check-new --quiet
