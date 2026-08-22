@@ -86,3 +86,14 @@ export type PeriodDays = 10 | 30 | 60 | 90;
 // 2026-08-09 · 사용자 요청 재구성 · 4컬럼 (총재고자산·총판매액·총결제액·총잔고)
 export type VendorSortKey = "name" | "balance" | "payment" | "sales" | "stockValue";
 export type SortDir = "asc" | "desc";
+
+// ─── T11 · 상품별 매입 그루핑 (supplier-purchase-detail rows 를 product_code 로 aggregate)
+export interface ProductPurchaseSummary {
+  product_code: string;
+  product_name: string;
+  totalAmount: number;
+  totalQty: number;
+  invoiceCount: number;
+  latestDate: string;
+}
+export type ProdSortKey = "product_name" | "product_code" | "totalQty" | "totalAmount" | "invoiceCount" | "latestDate";
