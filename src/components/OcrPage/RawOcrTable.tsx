@@ -66,6 +66,7 @@ import { ConfirmedTableSection } from "./RawOcrTable/ConfirmedTableSection";
 import { FallbackPageSection } from "./RawOcrTable/FallbackPageSection";
 import { NumericEditableCell, ExpiryCell, NameCell } from "./RawOcrTable/RawOcrCellRenderer";
 import { RawPageImageCell } from "./RawOcrTable/RawPageImageCell";
+import { RawInvoiceCard } from "./RawOcrTable/RawInvoiceCard";
 
 // 외부 소비자(OcrPage.tsx)가 `import { type ConfirmedItem } from "./RawOcrTable"` 로 사용 중 → re-export 유지
 export type { ConfirmedItem };
@@ -1625,1167 +1626,167 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
       {/* ── 콘텐츠 래퍼 ── */}
       <div className="w-full flex flex-col gap-3">
 
-      {/* ── OCR 원본 표 (이미지+테이블 2컬럼 · rowSpan 방식) ── */}
+      {/* ── OCR 원본 표 (이미지+테이블 2컨럼 · rowSpan 방식) ── */}
       {structuredPages.length > 0 && (
-        <Card variant="raw-sm" rounded="2xl" padding="none" clip className="w-full">
-          <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-bold text-white bg-sky-500 px-1.5 py-0.5 rounded shrink-0">1차보정</span>
-              <span className="text-xs font-bold text-gray-800">거래명세서 품목</span>
-              <span className="text-[11px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded font-bold">
-                {rawRows.length - permanentlyDeletedRawRows.size - hiddenRawRows.size}행 · {structuredPages.length}페이지
-                {(permanentlyDeletedRawRows.size + hiddenRawRows.size) > 0 && (
-                  <span className="ml-1 text-rose-500">
-                    ({permanentlyDeletedRawRows.size + hiddenRawRows.size}행 제외)
-                  </span>
-                )}
-              </span>
-              {/* DB 필터·행선택·원본복원 배지 제거됨 (2026-07-22) */}
-              {/* 2026-07-24 · 사용자 요청 "헤더 쪽 선택 재추출 버튼 제거 · 필요없음"
-                  기존 · Alt+Click 셀 체크 → 선택 재추출 / 지우기 / 취소 버튼 표시
-                  대체 · 각 셀에 재추출 버튼(🔄) 이미 있음 · 개별 재추출로 충분 */}
-              {/* 2026-07-22 · 사용자 요청 삭제: ☑ 행 선택 배지 · ↺ 원본 복원 버튼 제거
-                   🗑 선택 삭제만 유지 (편집·삭제 기능 필요) */}
-              {hiddenRawRows.size > 0 && (
-                <button
-                  type="button"
-                  onClick={commitRawRowsDeletion}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-rose-500 hover:bg-rose-600 active:bg-rose-700 px-2 py-0.5 rounded shadow-sm transition cursor-pointer whitespace-nowrap"
-                  title={`선택된 ${hiddenRawRows.size}행 완전 삭제 + DB 서명 저장 (다음 스캔에도 자동 필터)`}
-                >
-                  🗑 {hiddenRawRows.size}행 삭제
-                </button>
-              )}
-              {meta.date      && <span className="text-[11px] text-gray-400">{meta.date}</span>}
-              {meta.supplier  && <span className="text-[11px] text-gray-400">공급: {meta.supplier}</span>}
-              {/* Feature 3: 동의어 자동보정 뱃지 */}
-              {autoSynonymLoading && (
-                <span className="text-[11px] text-indigo-500 font-bold flex items-center gap-1">
-                  <Spinner size={10} />동의어 검색 중...
-                </span>
-              )}
-              {!autoSynonymLoading && autoSynonymCount > 0 && (
-                <span className="text-[11px] bg-indigo-50 border border-indigo-200 text-indigo-600 px-1.5 py-0.5 rounded font-bold flex items-center gap-1">
-                  <BookOpen size={9} />{autoSynonymCount}건 동의어 보정
-                </span>
-              )}
-              {/* Feature 2: 동의어 추가 완료 상태 */}
-              {synonymAddStatus?.status === 'loading' && (
-                <span className="text-[11px] text-sky-500 font-bold flex items-center gap-1">
-                  <Spinner size={10} />동의어 추가 중...
-                </span>
-              )}
-              {synonymAddStatus?.status === 'done' && (
-                <span className="text-[11px] bg-emerald-50 border border-emerald-200 text-emerald-600 px-1.5 py-0.5 rounded font-bold flex items-center gap-1">
-                  <CheckCircle size={9} />{synonymAddStatus.count}건 동의어 추가 완료
-                </span>
-              )}
-              {synonymAddStatus?.status === 'error' && (
-                <span className="text-[11px] bg-rose-50 border border-rose-200 text-rose-600 px-1.5 py-0.5 rounded font-bold">
-                  동의어 추가 실패
-                </span>
-              )}
-              {/* 2026-07-22: "📄 행 클릭 → 이미지 보기" 배지 삭제 (사용자 요청) */}
-            </div>
-            {/* 2026-07-22: 상세정보 토글 · CSV 다운로드 모두 삭제 (사용자 요청) · 다운로드는 3차 확정표에만 */}
-          </div>
-
-
-          {/* ── 공급사 미입력 페이지 경고 배너 (2026-07-15 · 필수 검증) ── */}
-          {hasMissingSupplier && (
-            <div className="mx-3 my-2 px-3 py-2 rounded-lg bg-rose-50 border-2 border-rose-300 flex items-start gap-2 text-[12px] font-semibold text-rose-800">
-              <AlertTriangle size={14} className="shrink-0 mt-0.5 text-rose-600" />
-              <div className="flex-1">
-                <div className="font-bold text-rose-900 mb-0.5">
-                  공급사 미입력 페이지 {missingSupplierPages.length}개 — 입력이 필요합니다
-                </div>
-                <div className="font-normal text-rose-700">
-                  <span className="font-bold">{missingSupplierPages.join(", ")}번 명세서</span>의 공급사가 지정되지 않았습니다.
-                  아래 표 <span className="font-bold text-sky-700">"공급처"</span> 셀(rose 배경)을 클릭하여 공급사명을 입력해주세요.
-                  공급사 정보 없이는 <span className="font-bold">상품명 자동보정 · 확정표 저장</span>이 차단됩니다.
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── 공급처 변경 재파싱 상태 ── */}
-          {Object.entries(reparseStatus).map(([pnStr, status]) => {
-            const pn = Number(pnStr);
-            const supplier = reparseSupplier[pn] ?? "";
-            if (!supplier) return null;
-            if (status === 'loading') return (
-              <div key={pn} className="px-4 py-2 bg-indigo-50 border-b border-indigo-200 flex items-center gap-2 text-[12px] font-semibold text-indigo-700">
-                <Spinner size={12} className="shrink-0" />
-                {pn}번 명세서 "{supplier}" 공급처 템플릿으로 재파싱 중...
-              </div>
-            );
-            if (status === 'error') return (
-              <div key={pn} className="px-4 py-2 bg-rose-50 border-b border-rose-200 flex items-center gap-2 text-[12px] font-semibold text-amber-700">
-                <XCircle size={12} className="shrink-0" />{pn}번 명세서 재파싱 실패 — 원본 결과를 유지합니다
-              </div>
-            );
-            if (status === 'done') return (
-              <div key={pn} className="px-4 py-2 bg-emerald-50 border-b border-emerald-200 flex items-center gap-2 flex-wrap text-[12px] font-semibold text-emerald-700">
-                <CheckCircle size={12} className="shrink-0" />
-                <span>{pn}번 명세서 재파싱 완료</span>
-                <span className="text-gray-500 font-normal">이 결과를 <span className="font-bold text-sky-700">"{supplier}"</span> 공급처 템플릿으로 저장하면 다음부터 자동 적용됩니다.</span>
-                <button onClick={() => saveTemplate(pn, supplier)}
-                  className="ml-auto text-[11px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] px-2 py-0.5 rounded transition cursor-pointer shrink-0">
-                  템플릿 저장
-                </button>
-                <button onClick={() => setReparseStatus(prev => { const s = { ...prev }; delete s[pn]; return s; })}
-                  className="text-gray-400 hover:text-gray-600 cursor-pointer shrink-0">
-                  <X size={10} />
-                </button>
-              </div>
-            );
-            if (status === 'saved') return (
-              <div key={pn} className="px-4 py-2 bg-emerald-50 border-b border-emerald-200 flex items-center gap-2 text-[12px] font-semibold text-emerald-700">
-                <BookmarkCheck size={12} className="shrink-0" /><span className="font-bold text-sky-700">"{supplier}"</span> 공급처 템플릿 저장 완료 — 다음 스캔부터 자동 적용됩니다
-              </div>
-            );
-            return null;
-          })}
-
-          {/* 2026-07-22 · 양쪽 여백 (사용자 요청 "양쪽에 여백") · px-3 */}
-          {/* 2026-07-23 · 최대 폭 제한 · 보기 좋게 (사용자 요청 "일정 넓이 이상 안 넓어지게") · max-w-[1400px] mx-auto */}
-          <div className="w-full max-w-[1400px] mx-auto overflow-x-auto pl-3 pr-8 box-border" ref={invTableWrapRef}>
-            <table className={`w-full border-collapse ${_cw < 500 ? "text-[10px]" : "text-xs"}`} style={{ tableLayout: "fixed" }}>
-              <thead>
-                <tr className="bg-amber-50 border-b-2 border-amber-200">
-                  {/* 이미지 컬럼 헤더 (이미지가 있을 때) */}
-                  {pageImages?.length ? (
-                    <th
-                      className="p-0 text-center bg-gray-50 border-r border-line text-[10px] font-bold text-gray-500 whitespace-nowrap select-none"
-                      style={{ width: effectiveInvColWidth, minWidth: effectiveInvColWidth, maxWidth: effectiveInvColWidth, position: "relative", boxSizing: "border-box" }}
-                    >
-                      <div style={{ padding: "8px 4px", textAlign: "center" }}>
-                        <span>거래명세서</span>
-                      </div>
-                      {/* 2026-07-21: 얇고 은은한 리사이즈 핸들 · hover 시 emerald 강조 */}
-                      <div
-                        role="separator"
-                        aria-label="이미지 폭 조절"
-                        onMouseDown={onInvColResizeStart}
-                        onDoubleClick={() => setInvoiceColWidth(INV_COL_DEFAULT)}
-                        onDragStart={e => { e.preventDefault(); e.stopPropagation(); }}
-                        draggable={false}
-                        title="드래그하여 이미지 폭 조절 · 더블클릭 초기화"
-                        style={{
-                          position: "absolute",
-                          top: 0,
-                          right: 0,
-                          bottom: 0,
-                          width: 4,
-                          cursor: "col-resize",
-                          zIndex: 50,
-                          backgroundColor: invColResizing ? "#10b981" : "transparent",
-                          transition: "background-color 0.15s",
-                        }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = "#10b981"; }}
-                        onMouseLeave={(e) => { if (!invColResizing) (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; }}
-                      />
-                    </th>
-                  ) : null}
-                  <th className="px-1 py-2 text-center" style={{ width: 56 }} title="선택 · 재추출">
-                    <span className="text-[10px] font-bold text-amber-700">선택 · 🔄</span>
-                  </th>
-                  {(() => {
-                    // 표시할 (원본 인덱스, 순서 인덱스) 리스트 계산
-                    const baseOrder = dispHeaders.map((_, i) => i);
-                    let colList: { origIdx: number; orderIdx: number }[];
-                    if (showRawDetail) {
-                      colList = baseOrder.map((origIdx, orderIdx) => ({ origIdx, orderIdx }));
-                    } else {
-                      // 압축 모드: RAW_ESSENTIAL_COLS 순서(존재하는 것만)
-                      const list: { origIdx: number; orderIdx: number }[] = [];
-                      for (const name of RAW_ESSENTIAL_COLS) {
-                        let idx = dispHeaders.indexOf(name);
-                        if (idx < 0 && name === "유통기한") {
-                          for (const a of ["유효기한", "유통기간"]) {
-                            idx = dispHeaders.indexOf(a);
-                            if (idx >= 0) break;
-                          }
-                        }
-                        if (idx >= 0) list.push({ origIdx: idx, orderIdx: baseOrder.indexOf(idx) });
-                      }
-                      colList = list;
-                    }
-
-                    // ── 가중치 기반 가용 폭 배분 (IIFE 밖에서 계산) ──────────────
-                    // 가중치 테이블: 중요도 기반 상대 비율
-                    const COL_WEIGHTS: Record<string, number> = {
-                      품명: 4.5,
-                      금액: 2.2, 유통기한: 2.0, 유효기한: 2.0, 유통기간: 2.0,
-                      단가: 1.6, 규격: 1.5, 세액: 1.4, 배치번호: 1.4, "Batch.No": 1.4,
-                      수량: 1.0, 비고: 1.0, 단위: 1.0,
-                      번호: 0.6, 순번: 0.6,
-                    };
-                    // 고정 폭 합산: 이미지 컬럼 + 선택·재추출 컬럼
-                    const fixedUsed = (pageImages?.length ? effectiveInvColWidth : 0) + 56;
-                    // containerWidth 가 아직 0이면 fallback 으로 700 사용
-                    const totalAvail = Math.max((containerWidth || 700) - fixedUsed, 60);
-                    // 사용자가 리사이즈한 컬럼의 폭 합산 → 나머지 가용 폭 계산
-                    const userFixedTotal = colList.reduce((sum, { origIdx }) => {
-                      const w = colWidths[origIdx];
-                      return w != null ? sum + w : sum;
-                    }, 0);
-                    const autoColList = colList.filter(({ origIdx }) => colWidths[origIdx] == null);
-                    const autoAvail = Math.max(totalAvail - userFixedTotal, 0);
-                    const totalWeight = autoColList.reduce((sum, { origIdx }) => {
-                      const h = dispHeaders[origIdx];
-                      return sum + (COL_WEIGHTS[h] ?? 1.0);
-                    }, 0);
-
-                    return colList.map(({ origIdx }) => {
-                      const h = dispHeaders[origIdx];
-                      const ci = origIdx;
-                      const explicitW = colWidths[ci];
-                      // 사용자 리사이즈 값 우선 · 없으면 가중치 비율로 배분
-                      const weight = COL_WEIGHTS[h] ?? 1.0;
-                      const computedW = totalWeight > 0
-                        ? Math.round((weight / totalWeight) * autoAvail)
-                        : Math.round(autoAvail / Math.max(autoColList.length, 1));
-                      // 숫자/날짜 셀은 breakpoint 기반 최소 폭 보장 (사용자 리사이즈 없을 때만)
-                      // 유통기한 계열은 별도 expCellMinW(82px+) 로 더 넓게 보장
-                      // 2026-07-24 · 사용자 문제 "2번째 페이지 나오면서 컬럼 확 줄어듬"
-                      //   원인 · 새 페이지가 새 컬럼 추가 시 totalWeight 증가 → 텍스트 컬럼도 shrink
-                      //   해결 · 텍스트 컬럼도 최소 폭 보장
-                      const isExpCol = h === "유통기한" || h === "유효기한" || h === "유통기간";
-                      const isCompactCell = NUM_COLS.has(h) || isExpCol;
-                      const TEXT_COL_MIN: Record<string, number> = {
-                        품명: 160, 공급처: 90, 규격: 60, 비고: 50, 단위: 40, 번호: 40, 순번: 40,
-                        배치번호: 80, "Batch.No": 80, 거래일: 82, 일자: 82, 날짜: 82,
-                      };
-                      const minGuard = explicitW == null
-                        ? (isExpCol ? expCellMinW
-                          : isCompactCell ? numCellMinW
-                          : (TEXT_COL_MIN[h] ?? 40))
-                        : 0;
-                      const colW = explicitW ?? Math.max(computedW, minGuard);
-                      return (
-                        <th key={origIdx}
-                          style={{
-                            width: colW,
-                            position: 'relative',
-                            overflow: 'hidden',
-                          }}
-                          className={`px-1.5 py-1.5 font-bold text-amber-900 select-none text-[11px] ${NUM_COLS.has(h) ? "text-right" : "text-left"} truncate`}>
-                          {`OCR ${h}`}
-                          {/* 2026-07-23 · 사용자 요청 "헤더 넓이 조절 라인 안보여" · 항상 보이게 · hover 진하게 */}
-                          <div
-                            style={{ position: 'absolute', right: 0, top: 4, bottom: 4, width: 4, cursor: 'col-resize', zIndex: 2 }}
-                            className="bg-amber-300/40 hover:bg-amber-600/80 active:bg-amber-700 transition-colors rounded-sm"
-                            title="드래그하여 컬럼 폭 조절"
-                            draggable={false}
-                            onDragStart={e => { e.preventDefault(); e.stopPropagation(); }}
-                            onMouseDown={e => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              const th = (e.currentTarget as HTMLElement).parentElement as HTMLTableCellElement;
-                              resizeRef.current = { ci, startX: e.clientX, startW: th.offsetWidth };
-                            }}
-                          />
-                        </th>
-                      );
-                    });
-                  })()}
-                </tr>
-              </thead>
-              <tbody className="[&_td]:max-lg:py-4 [&_td]:lg:py-3 [&_tr]:border-b [&_tr]:border-zinc-100">
-                {/* 2026-07-23 · 사용자 요청 "행간격 충분히" · 모바일 py-4 · 데스크탑 py-3 · 행별 얇은 구분선 */}
-                {(() => {
-                  // 페이지별 마지막 표시 행 인덱스 사전 계산 (완전삭제 · DB삭제 제외)
-                  //   → 마지막 행이 삭제돼도 요약 행 안 사라지도록 (2026-07-10)
-                  const _lastVisibleByPage = new Map<number, number>();
-                  const _firstVisibleByPage = new Map<number, number>();
-                  // 2026-07-27 · 사용자 요청 "거래명세표 사이에 없는 공급사 데이터 생겨 · 삭제도 안돼"
-                  //   유효 행이 하나도 없는 페이지는 · 페이지 헤더·소계도 렌더 안 함 (phantom page 완전 제거)
-                  //   유효 조건: 삭제·숨김 아니고 · 품명·수량·단가 중 하나라도 있음
-                  const _qtyIdxSkip0 = dispHeaders.indexOf("수량");
-                  const _priIdxSkip0 = dispHeaders.indexOf("단가");
-                  effectiveDispRows.forEach((row, i) => {
-                    if (permanentlyDeletedRawRows.has(i) || isRowDbDeleted(i) || hiddenRawRows.has(i)) return;
-                    const nmVal0 = nameIdx >= 0 ? String(row[nameIdx] ?? "").trim() : "";
-                    const qtVal0 = _qtyIdxSkip0 >= 0 ? parseNumber(row[_qtyIdxSkip0]) : 0;
-                    const prVal0 = _priIdxSkip0 >= 0 ? parseNumber(row[_priIdxSkip0]) : 0;
-                    if (!nmVal0 && qtVal0 === 0 && prVal0 === 0) return;  // 잡음 행 스킵
-                    const pn = pageNums[i];
-                    if (!_firstVisibleByPage.has(pn)) _firstVisibleByPage.set(pn, i);
-                    _lastVisibleByPage.set(pn, i);
-                  });
-                  return effectiveDispRows.map((row, ri) => {
-                  // 확정 삭제된 행 · DB 서명 매치 → 완전 스킵 (체크 상태는 취소선만 표시)
-                  if (permanentlyDeletedRawRows.has(ri)) return null;
-                  if (isRowDbDeleted(ri)) return null;
-                  // 2026-07-28 · 사용자 요청 "선택삭제한 행이 보여" · 체크된 행 완전 숨김
-                  //   페이지 헤더에 "N개 숨김 · 복원" 링크로 되돌리기 가능
-                  if (hiddenRawRows.has(ri)) return null;
-                  // 2026-07-24 · 사용자 요청 "품명·단가·수량에 값이 없으면 행 만들지 마"
-                  //   세 필드 모두 비어있으면 렌더 스킵 (OCR 잡음 행 자동 배제)
-                  {
-                    const _qtyIdxSkip = dispHeaders.indexOf("수량");
-                    const _priIdxSkip = dispHeaders.indexOf("단가");
-                    const nmVal = nameIdx >= 0 ? String(row[nameIdx] ?? "").trim() : "";
-                    const qtVal = _qtyIdxSkip >= 0 ? parseNumber(row[_qtyIdxSkip]) : 0;
-                    const prVal = _priIdxSkip >= 0 ? parseNumber(row[_priIdxSkip]) : 0;
-                    if (!nmVal && qtVal === 0 && prVal === 0) return null;
-                  }
-                  const isFirstInPage = ri === _firstVisibleByPage.get(pageNums[ri]);
-                  const isLastInPage = ri === _lastVisibleByPage.get(pageNums[ri]);
-                  const pn = pageNums[ri];
-                  // 우측 명세서 접기 제거 (2026-07-19) · 항상 펼침
-                  const isPageCollapsedRaw = false;
-                  const pageRowCountRaw = isFirstInPage
-                    ? effectiveDispRows.filter((_, i) => pageNums[i] === pn && !permanentlyDeletedRawRows.has(i) && !hiddenRawRows.has(i)).length
-                    : 0;
-                  // 2026-07-28 · 이미지 rowSpan · 실제 DOM 에 렌더될 <tr> 수와 정확히 일치
-                  //   hiddenRawRows 는 이제 완전 숨김 (return null) · 카운트에서 제외
-                  const _visibleDataRowsForImg = isFirstInPage
-                    ? effectiveDispRows.filter((r, i) => {
-                        if (pageNums[i] !== pn) return false;
-                        if (permanentlyDeletedRawRows.has(i)) return false;
-                        if (isRowDbDeleted(i)) return false;
-                        if (hiddenRawRows.has(i)) return false;
-                        const _n = nameIdx >= 0 ? String(r[nameIdx] ?? "").trim() : "";
-                        const _q = _qtyIdxSkip0 >= 0 ? parseNumber(r[_qtyIdxSkip0]) : 0;
-                        const _p = _priIdxSkip0 >= 0 ? parseNumber(r[_priIdxSkip0]) : 0;
-                        if (!_n && _q === 0 && _p === 0) return false;
-                        return true;
-                      }).length
-                    : 0;
-                  // 2026-07-27 · ERP 매칭 sub-row 는 데이터 행마다 1개 · 헤더 sub-row 는 이제 없음 (컬럼 정렬 방식으로 변경)
-                  const _subRowMultiplier = erpSubRowPages.has(pn) ? 2 : 1;
-                  // 2026-07-28 · imgRowSpan · 페이지 헤더(1) + 데이터N*_subRowMultiplier + 소계(amtIdx>=0?1:0) + spacer(1)
-                  const imgRowSpan = isFirstInPage
-                    ? 1 + (_visibleDataRowsForImg * _subRowMultiplier) + (amtIdx >= 0 ? 1 : 0) + 1
-                    : 0;
-                  // 2026-07-28 · 이미지 td 높이 명시 (확정표와 동일 방식) · 데이터 행 stretch 방지
-                  //   페이지 헤더(44) + 데이터N*44 + 소계(amtIdx>=0?44:0) + spacer(shortfall+24)
-                  const RAW_MIN_PAGE_HEIGHT = 240;
-                  const RAW_DATA_ROW_H = 44;
-                  const naturalHeightRaw = 44 + (_visibleDataRowsForImg * _subRowMultiplier * RAW_DATA_ROW_H) + (amtIdx >= 0 ? 44 : 0);
-                  const shortfallRaw = Math.max(0, RAW_MIN_PAGE_HEIGHT - naturalHeightRaw);
-                  const imgCellHeightRaw = naturalHeightRaw + shortfallRaw + 24;
-                  const pageSupplierHeadRaw = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
-                  const rawColSpan = (() => {
-                    const baseOrder = dispHeaders.map((_, i) => i);
-                    if (showRawDetail) return baseOrder.length + 1; // +1 = 체크박스 컬럼
-                    let cnt = 1; // 체크박스 컬럼
-                    for (const name of RAW_ESSENTIAL_COLS) {
-                      let idx = dispHeaders.indexOf(name);
-                      if (idx < 0 && name === "유통기한") {
-                        for (const a of ["유효기한", "유통기간"]) { idx = dispHeaders.indexOf(a); if (idx >= 0) break; }
-                      }
-                      if (idx >= 0) cnt++;
-                    }
-                    return cnt;
-                  })();
-                  // 2026-07-28 · 수식오탐 빨강 강조 완전 제거 (사용자 요청) · 관련 변수·분기 삭제
-                  void ocrQtyIdx; void ocrPriIdx; void _discountIdxEarly;
-                  return (
-                    <React.Fragment key={ri}>
-                      {/* 페이지 헤더 — 접기 제거 (2026-07-19) · 명세서 정보만 표시 */}
-                      {isFirstInPage && (
-                        <tr className="border-t-2 select-none bg-amber-100/70 border-amber-300">
-                          {/* 이미지 셀: rowSpan으로 이 명세서 전체 행을 커버 */}
-                          {pageImages?.length ? (
-                            <RawPageImageCell
-                              pn={pn}
-                              imgSrc={pageImages[pn - 1]}
-                              imgRowSpan={imgRowSpan}
-                              imgCellHeight={imgCellHeightRaw}
-                              effectiveInvColWidth={effectiveInvColWidth}
-                              invColResizing={invColResizing}
-                              pageZoom={pageZoom}
-                              pagePan={pagePan}
-                              panDragRef={panDragRef}
-                              rotation={rotation}
-                              onInvColResizeStart={onInvColResizeStart}
-                              setInvoiceColWidth={setInvoiceColWidth}
-                              INV_COL_DEFAULT={INV_COL_DEFAULT}
-                              onImgPanStart={onImgPanStart}
-                              openPageModal={openPageModal}
-                              zoomOut={zoomOut}
-                              zoomReset={zoomReset}
-                              zoomIn={zoomIn}
-                            />
-                          ) : null}
-                          <td colSpan={rawColSpan} className="px-3 py-1.5">
-                            <span className="flex items-center gap-2 text-xs font-bold text-amber-800">
-                              <span className="bg-white border rounded px-1.5 py-0.5 border-amber-300 text-amber-700">{pn}번 명세서</span>
-                              {pageSupplierHeadRaw && <span className="text-amber-700 font-bold">{pageSupplierHeadRaw}</span>}
-                              {/* 공급사 정보 조회·수정 버튼 (2026-07-19 · 명세서 헤더 · 공급사관리 상세 페이지 재사용) */}
-                              {pageSupplierHeadRaw && (
-                                <button
-                                  type="button"
-                                  onClick={e => { e.stopPropagation(); openVendorEdit(pageSupplierHeadRaw); }}
-                                  className="inline-flex items-center gap-0.5 text-[10px] font-bold text-white bg-teal-500 hover:bg-teal-600 rounded px-1.5 py-0.5 whitespace-nowrap"
-                                  title={`${pageSupplierHeadRaw} 공급사 정보 조회·수정`}
-                                >
-                                  🔍 조회
-                                </button>
-                              )}
-                              <span className="text-amber-500 font-normal">· {pageRowCountRaw}건</span>
-                              {/* 페이지별 상품명 보정 버튼 제거 (2026-07-19 · 실수 클릭 방지)
-                                  전체 매칭은 아래 "1차보정 완료 · 2차보정 시작" 버튼으로 진행 */}
-                              {/* 2026-07-22: "이 명세서 재추출" 버튼 삭제 (사용자 요청) */}
-                              {/* 2026-07-28 · 선택 재추출/삭제 배지·버튼 제거 (체크박스 = 즉시 삭제로 변경 · 안 씀) */}
-                              {/* 2026-07-28 · 자동정리 버튼 유지 (사용자 재요청 "일단 놔둬") · autoPipeline 자동 실행과 병행 · 수동 재실행용 */}
-                              <button type="button"
-                                onClick={() => runColumnPipeline(pn)}
-                                disabled={!!runningPipeline[pn]}
-                                className="ml-1 text-[10px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-zinc-300 disabled:cursor-not-allowed rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
-                                title="상품명 매칭 → 빈 단가 DB 조회 → OCR vs DB 큰차이 스왑 · 페이지 로드 시 자동 실행됨 · 재실행용"
-                              >{runningPipeline[pn] ? "⏳ 정리중..." : "🎯 자동정리"}</button>
-                              {/* 2026-07-22 · 명세서마다 행추가 (사용자 요청) */}
-                              <button type="button"
-                                onClick={() => addManualRow(pn)}
-                                className="ml-1 text-[10px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
-                                title={`${pn}번 명세서 하단에 빈 상품 행 추가 · 수동 입력`}
-                              >➕ 행추가</button>
-                            </span>
-                          </td>
-                        </tr>
-                      )}
-                      {!isPageCollapsedRaw && (
-                      <tr
-                        className={`border-t-4 transition-colors hover:bg-amber-50/50 ${
-                          hiddenRawRows.has(ri) ? "opacity-40 line-through bg-zinc-100/60" : ""
-                        } ${ri % 2 !== 0 ? "bg-gray-50/40 border-gray-100" : "border-gray-100"}`}
-                        style={{ height: RAW_DATA_ROW_H, maxHeight: RAW_DATA_ROW_H, overflow: "hidden" }}
-                      >
-                        <td className="w-14 px-1 py-1 text-center align-middle">
-                          <div className="flex items-center justify-center gap-1">
-                            <input
-                              type="checkbox"
-                              checked={false}
-                              onChange={async () => {
-                                // 2026-07-28 · 사용자 요청 "체크된 데이터 자체를 삭제 · 숨기는게 아니고"
-                                //   체크 즉시 · 확인 후 · 완전 삭제 (DB signature 저장 · 다음 스캔 자동 필터)
-                                const nmIdx = dispHeaders.indexOf("품명");
-                                const rowName = nmIdx >= 0 ? String(effectiveDispRows[ri]?.[nmIdx] ?? "").trim() : "";
-                                if (!await confirm({ message: `이 행을 완전 삭제하시겠습니까?\n${rowName ? `· 품명: ${rowName}` : ""}\n· DB 서명 저장 · 다음 스캔에도 자동 필터`, danger: true })) return;
-                                setPermanentlyDeletedRawRows(prev => { const n = new Set(prev); n.add(ri); return n; });
-                                const supplier = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
-                                if (supplier && rowName) {
-                                  setDbDeletedSignatures(prev => { const n = new Set(prev); n.add(makeRowSignature(supplier, rowName)); return n; });
-                                  // 2026-08-21 · Framework Phase 3 · fetch → apiClient · fire-and-forget
-                                  api.post("/api/ocr-deleted-rows", { items: [{ supplier, name: rowName }] }).catch(() => {});
-                                }
-                              }}
-                              className="w-4 h-4 cursor-pointer accent-rose-500"
-                              title="체크하면 이 행 완전 삭제 (DB 서명 저장)"
-                            />
-                            {/* 재추출·행 밀기 버튼 전면 제거 (2026-07-18 · 사용자 요청) */}
-                          </div>
-                        </td>
-                        {(() => {
-                          const baseOrder = dispHeaders.map((_, i) => i);
-                          if (showRawDetail) return baseOrder;
-                          const list: number[] = [];
-                          for (const name of RAW_ESSENTIAL_COLS) {
-                            let idx = dispHeaders.indexOf(name);
-                            if (idx < 0 && name === "유통기한") {
-                              for (const a of ["유효기한", "유통기간"]) {
-                                idx = dispHeaders.indexOf(a);
-                                if (idx >= 0) break;
-                              }
-                            }
-                            if (idx >= 0) list.push(idx);
-                          }
-                          return list;
-                        })().map(origIdx => {
-                          const h = dispHeaders[origIdx];
-                          const ci = origIdx;
-                          const isSupplier = h === "공급처";
-                          const rawCell = row[ci];
-                          const cell = isSupplier && rawSupplierByPage[pn] !== undefined
-                            ? rawSupplierByPage[pn]
-                            : rawCell;
-                          const isEditingThisSupp = isSupplier && editingRawSuppRow === ri;
-                          const isNum = typeof cell === "number";
-                          const isAmt = h === "금액";
-                          const isName = h === "품명";
-                          const isEditableNum = h === "수량" || h === "단가" || h === "금액";
-                          const hasDirectEdit = isEditableNum && cellEdits[ri]?.[ci] !== undefined;
-                          const isCorrectedAmt = isAmt && amountCorrections[ri] !== undefined && !hasDirectEdit;
-                          const isEditingThisNum = isEditableNum && editingCell?.ri === ri && editingCell?.ci === ci;
-                          const barcodeMatch = isName && !cancelledAutoMap.has(ri) ? barcodeAutoMap[ri] : undefined;
-                          const autoMatch = isName && !cancelledAutoMap.has(ri) ? autoSynonymMatches[ri] : undefined;
-                          const origCell = isName ? dispRows[ri]?.[ci] : null;
-
-                          if (isEditingThisSupp) {
-                            return (
-                              <td key={ci} className="px-1 py-1" onClick={e => e.stopPropagation()}>
-                                <div className="flex items-center gap-1">
-                                  <input
-                                    ref={el => {
-                                      if (el && suppInputRef.current !== el) {
-                                        suppInputRef.current = el;
-                                        // 한 번만 좌표 계산 (매 렌더마다 setState 호출 방지)
-                                        const r = el.getBoundingClientRect();
-                                        setSuppDropdownRect({ top: r.bottom, left: r.left, width: Math.max(220, r.width) });
-                                      }
-                                    }}
-                                    autoFocus
-                                    className="flex-1 text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-300 rounded px-2 py-0.5 outline-none min-w-[120px]"
-                                    value={editingRawSuppVal}
-                                    onChange={e => setEditingRawSuppVal(e.target.value)}
-                                    onKeyDown={e => {
-                                      if (e.key === "Enter") { e.currentTarget.blur(); }
-                                      if (e.key === "Escape") { setSuppDropdownRect(null); setEditingRawSuppRow(null); }
-                                    }}
-                                    onBlur={() => {
-                                      setTimeout(() => {
-                                        const trimmed = editingRawSuppVal.trim();
-                                        const current = String(cell ?? "");
-                                        if (trimmed && trimmed !== current) {
-                                          const rowCount = pageNums.filter(p => p === pn).length;
-                                          setSupplierConfirm({ pageNum: pn, newVal: trimmed, rowCount, addSynonyms: addSynonymsOnChange });
-                                        }
-                                        setSuppDropdownRect(null);
-                                        setEditingRawSuppRow(null);
-                                      }, 150);
-                                    }}
-                                  />
-                                  {/* 공급사 정보 조회·수정 버튼 (2026-07-19 · 입력창 옆) */}
-                                  <button
-                                    type="button"
-                                    onMouseDown={e => { e.preventDefault(); e.stopPropagation(); const name = editingRawSuppVal.trim() || String(cell ?? "").trim(); if (name) openVendorEdit(name); }}
-                                    className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-sky-700 bg-white border border-sky-300 hover:bg-sky-50 rounded px-1.5 py-0.5 whitespace-nowrap cursor-pointer transition"
-                                    title="공급사 정보 조회·수정"
-                                  >
-                                    <Search size={10} /> 조회
-                                  </button>
-                                </div>
-                              </td>
-                            );
-                          }
-
-                          if (isSupplier) {
-                            // 공급사 미입력 검증 (2026-07-15) — 빈 값이면 rose 배경 + "⚠ 공급사 필수" 강조
-                            const cellStr = cell == null ? "" : String(cell).trim();
-                            const isEmpty = !cellStr;
-                            return (
-                              <td key={ci}
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  setEditingRawSuppRow(ri);
-                                  setEditingRawSuppVal(String(cell ?? ""));
-                                }}
-                                className={
-                                  isEmpty
-                                    ? "px-2 sm:px-3 py-2 font-bold cursor-pointer bg-rose-50 hover:bg-rose-100 text-rose-700 border-l-2 border-rose-400 group max-w-[80px] sm:max-w-[140px] animate-pulse"
-                                    : "px-2 sm:px-3 py-2 text-sky-700 font-semibold cursor-pointer hover:bg-sky-50 group max-w-[60px] sm:max-w-[120px]"
-                                }
-                                title={
-                                  isEmpty
-                                    ? "공급사 미입력 — 클릭하여 입력하세요 (자동보정/저장 차단)"
-                                    : `클릭하여 공급처 변경${cell != null ? ` (${String(cell)})` : ""}`
-                                }
-                              >
-                                <span className="flex items-center gap-1">
-                                  {isEmpty ? (
-                                    <span className="flex items-center gap-0.5 text-[11px] font-bold whitespace-nowrap">
-                                      <AlertTriangle size={10} className="shrink-0" />
-                                      공급사 필수
-                                    </span>
-                                  ) : (
-                                    <>
-                                      <span className="break-words">{String(cell)}</span>
-                                      <Pencil size={9} className="text-sky-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
-                                    </>
-                                  )}
-                                </span>
-                              </td>
-                            );
-                          }
-
-                          // 일자: 날짜 + 이미지 보기 버튼
-                          if (h === "일자" && pageImages?.length) {
-                            return (
-                              <td key={ci} className="px-2 py-1.5" onClick={e => e.stopPropagation()}>
-                                <div className="flex flex-col items-start gap-0.5">
-                                  {cell != null && <span className="text-gray-400 text-[11px]">{String(cell)}</span>}
-                                  <button
-                                    onClick={() => openModal(ri)}
-                                    className="text-[11px] font-bold text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100 rounded px-1.5 py-0.5 leading-tight"
-                                  >
-                                    보기
-                                  </button>
-                                </div>
-                              </td>
-                            );
-                          }
-
-                          // 수량/단가/금액 셀 렌더
-                          if (isEditableNum) {
-                            return (
-                              <NumericEditableCell
-                                ri={ri} ci={ci} h={h} cell={cell}
-                                hasDirectEdit={hasDirectEdit} isCorrectedAmt={isCorrectedAmt}
-                                focusedCell={focusedCell} editingCell={editingCell} editingCellVal={editingCellVal}
-                                numCellMinW={numCellMinW} numInputMinW={numInputMinW}
-                                numCellInnerCls={numCellInnerCls} reextBtnCls={reextBtnCls}
-                                numericCellCycle={numericCellCycle} numericCellCandidates={numericCellCandidates}
-                                noCandidateCells={noCandidateCells} dbFilledCells={dbFilledCells}
-                                checkedCells={checkedCells}
-                                dispHeaders={dispHeaders} effectiveDispRows={effectiveDispRows}
-                                permanentlyDeletedRawRows={permanentlyDeletedRawRows}
-                                hiddenRawRows={hiddenRawRows} isRowDbDeleted={isRowDbDeleted}
-                                setEditingCell={setEditingCell} setEditingCellVal={setEditingCellVal}
-                                setFocusedCell={setFocusedCell} commitCellEdit={commitCellEdit}
-                                reextractOneCell={reextractOneCell} toggleCellCheck={toggleCellCheck}
-                              />
-                            );
-                          }
-
-                          // 품명 셀 렌더 (바코드 매칭 + 자동보정 + 편집 통합)
-                          if (isName) {
-                            return (
-                              <NameCell
-                                ri={ri} ci={ci} pn={pn} cell={cell}
-                                dispRows={dispRows} autoSynonymMatches={autoSynonymMatches}
-                                cancelledAutoMap={cancelledAutoMap} barcodeAutoMap={barcodeAutoMap}
-                                nameCellCycle={nameCellCycle} nameCellCandidates={nameCellCandidates}
-                                reextractingName={reextractingName} nameIdx={nameIdx}
-                                editingNameRow={editingNameRow} editingNameVal={editingNameVal}
-                                rawSupplierByPage={rawSupplierByPage} structuredPages={structuredPages}
-                                globalSupplier={globalSupplier} pageNums={pageNums}
-                                nameInputRef={nameInputRef} nameEditSearchRef={nameEditSearchRef}
-                                editingNameRowRef={editingNameRowRef}
-                                setEditingNameRow={setEditingNameRow} setEditingNameVal={setEditingNameVal}
-                                setAutoSynonymMatches={setAutoSynonymMatches}
-                                setCancelledAutoMap={setCancelledAutoMap}
-                                setCancelledAutoSyn={setCancelledAutoSyn}
-                                setCellEdits={setCellEdits}
-                                setNameEditResults={setNameEditResults}
-                                setNameEditSearchDone={setNameEditSearchDone}
-                                setNameDropdownRect={setNameDropdownRect}
-                                setMatchItems={setMatchItems}
-                                setDeleteSynConfirm={setDeleteSynConfirm}
-                                reextractProductName={reextractProductName}
-                                saveSynonym={saveSynonym}
-                                confirm={confirm}
-                                handleMatchPage={handleMatchPage}
-                                matchRawToPurchaseHistory={matchRawToPurchaseHistory}
-                                nameEditResults={nameEditResults}
-                                nameEditSearchDone={nameEditSearchDone}
-                              />
-                            );
-                          }
-
-                          // 유통기한/유효기한/유통기간 셀 렌더
-                          if (h === "유통기한" || h === "유효기한" || h === "유통기간") {
-                            return (
-                              <ExpiryCell
-                                ri={ri} ci={ci} cell={cell}
-                                editingCell={editingCell} editingCellVal={editingCellVal}
-                                numericCellCycle={numericCellCycle}
-                                numericCellCandidates={numericCellCandidates}
-                                noCandidateCells={noCandidateCells}
-                                numCellMinW={numCellMinW} numCellInnerCls={numCellInnerCls}
-                                reextBtnCls={reextBtnCls} expInputMinW={expInputMinW}
-                                setEditingCell={setEditingCell} setEditingCellVal={setEditingCellVal}
-                                setCellEdits={setCellEdits}
-                                reextractOneCell={reextractOneCell}
-                              />
-                            );
-                          }
-
-                          {
-                            const cellStr = cell == null ? "" : String(cell);
-                            const hasEllipsis = !isNum && /\.{3}|…/.test(cellStr);
-                            // 2026-07-24 · 거래일·일자·날짜 표시 간단히 (저장은 풀로 · 표시는 MM/DD)
-                            //   사용자 요청: "1차보정 거래일 간단히 · 저장은 풀로 표시는 간단히"
-                            const isDateCol = ["거래일", "일자", "날짜", "거래일자", "거래날짜"].includes(h);
-                            const dateShort = (() => {
-                              if (!isDateCol || cell == null) return null;
-                              const s = String(cell).trim();
-                              // 2026-07-24 · 2026-7-24 · 2026/07/24 · 26-07-24 등 → MM/DD 로 축약
-                              const m = s.match(/(\d{2,4})[-./](\d{1,2})[-./](\d{1,2})/);
-                              if (m) return `${m[2].padStart(2, "0")}/${m[3].padStart(2, "0")}`;
-                              return s.length > 6 ? s.slice(-5) : s;
-                            })();
-                            // 2026-07-27 · 사용자 요청 "1차보정에서 거래일 편집 가능하게"
-                            const isEditingThisDate = isDateCol && editingCell?.ri === ri && editingCell?.ci === ci;
-                            if (isEditingThisDate) {
-                              // 2026-07-28 · 사용자 요청 "거래일 입력 시 같은 명세서면 일괄 적용"
-                              //   → 페이지 내 모든 행의 거래일 셀 (cellEdits[ri][ci]) 를 동일 값으로 세팅 + pageDateOverride 도 갱신
-                              const commitDatePage = (v: string) => {
-                                const val = v === "" ? null : v;
-                                setCellEdits(prev => {
-                                  const next = { ...prev };
-                                  pageNums.forEach((rowPn, rowRi) => {
-                                    if (rowPn !== pn) return;
-                                    next[rowRi] = { ...(next[rowRi] ?? {}), [ci]: val };
-                                  });
-                                  return next;
-                                });
-                                if (val) setPageDateOverride(prev => ({ ...prev, [pn]: val }));
-                                else setPageDateOverride(prev => { const n = { ...prev }; delete n[pn]; return n; });
-                              };
-                              return (
-                                <td key={ci} className="px-1 py-1" onClick={e => e.stopPropagation()}>
-                                  <input
-                                    autoFocus
-                                    type="text"
-                                    inputMode="text"
-                                    placeholder="YYYY-MM-DD"
-                                    value={editingCellVal}
-                                    onChange={e => setEditingCellVal(e.target.value)}
-                                    onKeyDown={e => {
-                                      if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        commitDatePage(normalizeExpiryDate(editingCellVal.trim()));
-                                        setEditingCell(null);
-                                      } else if (e.key === "Escape") {
-                                        setEditingCell(null);
-                                      }
-                                    }}
-                                    onBlur={() => {
-                                      commitDatePage(normalizeExpiryDate(editingCellVal.trim()));
-                                      setEditingCell(null);
-                                    }}
-                                    className="w-[100px] text-[11px] font-mono text-amber-800 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5 outline-none"
-                                    title="이 명세서의 모든 행에 일괄 적용됩니다"
-                                  />
-                                </td>
-                              );
-                            }
-                            return (
-                              <td key={ci}
-                                onClick={isDateCol ? (e => { e.stopPropagation(); setEditingCell({ ri, ci }); setEditingCellVal(cell != null ? String(cell) : ""); }) : undefined}
-                                className={`px-3 py-2 ${
-                                  isAmt ? "text-right font-bold text-amber-800 whitespace-nowrap" :
-                                  isNum ? "text-right text-gray-700 whitespace-nowrap" :
-                                  isDateCol ? "text-gray-500 text-[11px] font-mono whitespace-nowrap cursor-pointer hover:bg-amber-50/60" :
-                                  h === "품명" ? "font-semibold text-gray-900 break-words whitespace-normal align-top min-w-[180px] max-w-[240px]" :
-                                  hasEllipsis ? "text-gray-600 break-words whitespace-normal" :
-                                                "text-gray-600 whitespace-nowrap"
-                                }`}
-                                title={isDateCol ? (cell != null ? `클릭하여 거래일 수정 · 저장값: ${cellStr}` : "클릭하여 거래일 입력") : undefined}>
-                                {h === "품명"
-                                  ? <span className="block line-clamp-2">{cell == null ? <span className="text-gray-300">—</span> : renderTextWithBreaks(cellStr)}</span>
-                                  : isDateCol
-                                    ? (cell == null ? <span className="text-gray-400 italic">입력...</span> : <span>{dateShort}</span>)
-                                    : (cell == null ? <span className="text-gray-300">—</span> : isNum ? fmt(cell) : renderTextWithBreaks(cellStr))}
-                              </td>
-                            );
-                          }
-                        })}
-                      </tr>
-                      )}
-                      {/* 2026-07-27 · 페이지별 "ERP 매칭" 버튼 클릭한 페이지만 · 각 행 아래 violet ERP sub-row (1차 컬럼 정렬) */}
-                      {!isPageCollapsedRaw && erpSubRowPages.has(pn) && (() => {
-                        const qtyIdxLoc = dispHeaders.indexOf("수량");
-                        const qtyVal = qtyIdxLoc >= 0 ? parseNumber(row[qtyIdxLoc]) : null;
-                        const m = cancelledRows.has(ri) ? null : (selectedCands[ri] ?? matchItems?.[ri]?.matched ?? null);
-                        const autoSyn = cancelledAutoMap.has(ri) ? undefined : autoSynonymMatches[ri];
-                        const bc = cancelledAutoMap.has(ri) ? null : (barcodeAutoMap[ri] ?? null);
-                        // parent 와 동일한 colList 재계산 (없는 것은 skip)
-                        const colListForSub: { origIdx: number }[] = showRawDetail
-                          ? dispHeaders.map((_, i) => ({ origIdx: i }))
-                          : (() => {
-                              const list: { origIdx: number }[] = [];
-                              for (const name of RAW_ESSENTIAL_COLS) {
-                                let idx = dispHeaders.indexOf(name);
-                                if (idx < 0 && name === "유통기한") {
-                                  for (const a of ["유효기한", "유통기간"]) {
-                                    idx = dispHeaders.indexOf(a); if (idx >= 0) break;
-                                  }
-                                }
-                                if (idx >= 0) list.push({ origIdx: idx });
-                              }
-                              return list;
-                            })();
-                        // 2026-07-28 · ERP 매칭에 supplier 없을 때 · 페이지 공급사로 폴백
-                        const pageSupp = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
-                        return (
-                          <ErpMatchSubRow
-                            key={`erp-sub-${ri}`}
-                            colList={colListForSub}
-                            dispHeaders={dispHeaders}
-                            colWidthPx={(idx) => colWidths[idx]}
-                            matched={m}
-                            autoSyn={autoSyn}
-                            barcode={bc}
-                            ocrQty={qtyVal}
-                            pageSupplier={pageSupp}
-                            onCancel={() => {
-                              setCancelledRows(prev => new Set([...prev, ri]));
-                              setCancelledAutoMap(prev => new Set([...prev, ri]));
-                            }}
-                          />
-                        );
-                      })()}
-                      {/* 자동정리 버튼 · 명세서 시작 부분(페이지 헤더 행)에 배치 */}
-                      {isLastInPage && amtIdx >= 0 && (() => {
-                        const pageSupplier = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
-                        // 현재 렌더링 중인 컬럼 순서 (compact/detail 모드에 따라)
-                        const baseOrder2 = dispHeaders.map((_, i) => i);
-                        const orderNow: number[] = (() => {
-                          if (showRawDetail) return baseOrder2;
-                          const list: number[] = [];
-                          for (const name of RAW_ESSENTIAL_COLS) {
-                            let idx = dispHeaders.indexOf(name);
-                            if (idx < 0 && name === "유통기한") {
-                              for (const a of ["유효기한", "유통기간"]) {
-                                idx = dispHeaders.indexOf(a);
-                                if (idx >= 0) break;
-                              }
-                            }
-                            if (idx >= 0) list.push(idx);
-                          }
-                          return list;
-                        })();
-                        const totalColSpan = orderNow.length + 1; // +1 = 체크박스 컬럼
-                        return (
-                          <>
-                            {/* ── 통합 소계+잔고 요약 행 ── */}
-                            <tr className="border-t-2 border-amber-400">
-                              <td
-                                colSpan={totalColSpan}
-                                className="px-0 py-0"
-                                style={{
-                                  background: "linear-gradient(90deg, #fef3c7 0%, #ffedd5 55%, #fed7aa 100%)"
-                                }}
-                              >
-                                {/* 2026-07-22 · 사용자 요청 한 줄 요약: "N번 공급사 총 XXX원 정산차액 YYY원 (없으면 -)" · 우측 [확정] */}
-                                <div className="flex flex-col gap-0 px-3 py-2">
-                                  <div className="flex items-center justify-between gap-3 min-w-0 flex-wrap">
-                                    {/* 좌: 번호 + 공급사 + 총소계 + 정산차액 · 한 줄 · 같은 톤 */}
-                                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                                      {(() => {
-                                        const rowSum = effectivePageTotals.get(pn) ?? 0;
-                                        const displayTotal = getPageDisplayTotal(pn);
-                                        const isCustom = pageSubtotalChoices[pn] === "custom";
-                                        const shown = isCustom ? displayTotal : rowSum;
-                                        const discs = getPageDiscounts(pn);
-                                        const balForShow = pageSupplierBalances[pn] ?? pageBalanceOverride[pn];
-                                        const manualBalForShow = pageBalanceModeManual.has(pn) ? parseNumber(pageBalanceManualInput[pn] ?? "") : 0;
-                                        const displayBalForShow = balForShow ?? (manualBalForShow > 0 ? manualBalForShow : null);
-                                        return (
-                                          <>
-                                            <span className="text-[12px] font-bold text-amber-700 whitespace-nowrap">{pn}번</span>
-                                            {pageSupplier ? (
-                                              <button type="button"
-                                                onClick={e => { e.stopPropagation(); openVendorEdit(pageSupplier); }}
-                                                className="text-[14px] font-bold text-amber-900 whitespace-nowrap hover:text-amber-600 cursor-pointer transition truncate max-w-[160px]"
-                                                title="클릭 · 공급사 정보 조회·수정"
-                                              >{pageSupplier}</button>
-                                            ) : (
-                                              <span className="text-[13px] font-bold text-amber-400 italic">공급사 미지정</span>
-                                            )}
-                                            <span className="text-[12px] font-semibold text-amber-700">총</span>
-                                            {isCustom ? (
-                                              <>
-                                                <input type="text" inputMode="numeric"
-                                                  value={(() => { const raw = String(pageSubtotalCustom[pn] ?? ""); const n = parseNumber(raw); return n > 0 ? fmt(n) : raw; })()}
-                                                  onChange={e => { const raw = e.target.value.replace(/[^\d-]/g, ""); setPageSubtotalCustom(prev => ({ ...prev, [pn]: parseNumber(raw) })); }}
-                                                  placeholder="금액"
-                                                  className="w-[110px] text-[16px] font-bold text-amber-900 bg-white border-2 border-amber-400 rounded px-1.5 py-0.5 focus:outline-none focus:border-brand-deep text-right"
-                                                  autoFocus
-                                                />
-                                                <span className="text-[16px] font-bold text-amber-900">원</span>
-                                                <button type="button" onClick={() => setPageSubtotalChoices(prev => { const n = { ...prev }; delete n[pn]; return n; })}
-                                                  className="text-[10px] font-bold text-zinc-500 hover:text-zinc-700 underline"
-                                                >취소</button>
-                                              </>
-                                            ) : (
-                                              <>
-                                                {(() => {
-                                                  const vatOn = !!pageVatIncluded[pn];
-                                                  const finalShown = vatOn ? Math.round(shown * 1.1) : shown;
-                                                  const vatAmount = vatOn ? Math.round(shown * 0.1) : 0;
-                                                  return (
-                                                    <>
-                                                      {/* 2026-07-24 · 사용자 요청 "총소계 금액도 수정 가능하게" · 클릭 시 인라인 입력 */}
-                                                      <input type="text" inputMode="numeric"
-                                                        value={(() => {
-                                                          if (editingSummary?.pn === pn && editingSummary.kind === "subtotal") return editingSummary.value;
-                                                          return fmt(finalShown);
-                                                        })()}
-                                                        placeholder={fmt(finalShown)}
-                                                        onFocus={() => setEditingSummary({ pn, kind: "subtotal", value: "", dirty: false })}
-                                                        onChange={e => setEditingSummary({ pn, kind: "subtotal", value: e.target.value, dirty: true })}
-                                                        onBlur={() => {
-                                                          if (!editingSummary || editingSummary.pn !== pn || (editingSummary.kind as string) !== "subtotal") { setEditingSummary(null); return; }
-                                                          if (!editingSummary.dirty) { setEditingSummary(null); return; }
-                                                          const n = parseNumber(editingSummary.value.replace(/[^\d-]/g, ""));
-                                                          if (n > 0) {
-                                                            setPageSubtotalChoices(prev => ({ ...prev, [pn]: "custom" }));
-                                                            setPageSubtotalCustom(prev => ({ ...prev, [pn]: n }));
-                                                          } else {
-                                                            setPageSubtotalChoices(prev => { const c = { ...prev }; delete c[pn]; return c; });
-                                                            setPageSubtotalCustom(prev => { const c = { ...prev }; delete c[pn]; return c; });
-                                                          }
-                                                          setEditingSummary(null);
-                                                        }}
-                                                        onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
-                                                        className="w-[130px] text-[16px] font-bold text-amber-900 bg-amber-50 border border-amber-300 hover:border-amber-500 focus:bg-white rounded px-2 py-0.5 focus:outline-none focus:border-brand-deep text-right tracking-tight"
-                                                        title={vatOn ? `공급가액 ${fmt(shown)} + VAT ${fmt(vatAmount)} · 클릭하여 수정` : "금액 컬럼 합 · 클릭하여 수정"}
-                                                      />
-                                                      <span className="text-[14px] font-bold text-amber-900">원</span>
-                                                      {vatOn && (
-                                                        <span className="text-[10px] font-bold text-amber-600 bg-amber-100 border border-amber-300 rounded px-1 py-px whitespace-nowrap">
-                                                          +VAT {fmt(vatAmount)}
-                                                        </span>
-                                                      )}
-                                                    </>
-                                                  );
-                                                })()}
-                                                {/* 2026-07-24 · 사용자 요청 "각 페이지 소계 부분 VAT 포함 체크박스 · 체크 시 금액계산 반영" */}
-                                                <label className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 cursor-pointer hover:text-amber-900 ml-1"
-                                                  title="체크 시 · 소계에 VAT 10% 자동 합산 (매입총계 · 정산 반영)">
-                                                  <input type="checkbox"
-                                                    checked={!!pageVatIncluded[pn]}
-                                                    onChange={e => setPageVatIncluded(prev => ({ ...prev, [pn]: e.target.checked }))}
-                                                    className="w-3.5 h-3.5 accent-amber-500 cursor-pointer"
-                                                  />
-                                                  VAT 별도
-                                                </label>
-                                              </>
-                                            )}
-                                            {/* 2026-07-24 · 사용자 요청 "정산차액 = 차액+에누리+할인 합 · 적용 체크박스" */}
-                                            <span className="text-[12px] font-semibold text-orange-700 ml-2"
-                                              title={discs.length > 0 ? discs.map(d => `${d.label}: ${fmt(d.amount)}`).join(" · ") : "차액·에누리·할인 자동 감지"}>정산차액</span>
-                                            {(() => {
-                                              const totalDisc = discs.reduce((s, d) => s + d.amount, 0);
-                                              return (
-                                                <input type="text" inputMode="numeric"
-                                                  value={
-                                                    editingSummary?.pn === pn && editingSummary.kind === "discount"
-                                                      ? editingSummary.value
-                                                      : (totalDisc > 0 ? String(totalDisc) : "")
-                                                  }
-                                                  placeholder={totalDisc > 0 ? String(totalDisc) : "0"}
-                                                  // 2026-07-24 · 사용자 요청 "클릭하면 비어있게 · 아무것도 안하고 나오면 원래 금액"
-                                                  //   onFocus 에서 value=""로 비움 · dirty=false · onBlur 시 dirty 안하면 스킵
-                                                  onFocus={() => setEditingSummary({ pn, kind: "discount", value: "", dirty: false })}
-                                                  onChange={e => setEditingSummary({ pn, kind: "discount", value: e.target.value, dirty: true })}
-                                                  onBlur={() => {
-                                                    if (!editingSummary || editingSummary.pn !== pn || editingSummary.kind !== "discount") { setEditingSummary(null); return; }
-                                                    if (!editingSummary.dirty) { setEditingSummary(null); return; }  // 아무것도 안 함 · 원본 유지
-                                                    const n = parseNumber(editingSummary.value.replace(/[^\d-]/g, ""));
-                                                    if (n > 0) setPageDiscountOverride(prev => ({ ...prev, [pn]: { amount: n, label: "수정" } }));
-                                                    else setPageDiscountOverride(prev => { const c = { ...prev }; delete c[pn]; return c; });
-                                                    setEditingSummary(null);
-                                                  }}
-                                                  onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
-                                                  className="w-[110px] text-[13px] font-bold text-orange-800 bg-orange-50 border border-orange-300 hover:border-orange-500 focus:bg-white rounded px-1.5 py-0.5 focus:outline-none focus:border-brand-deep text-right"
-                                                />
-                                              );
-                                            })()}
-                                            {(() => {
-                                              // 2026-07-24 · 수식 검증 반영 · valid=false 면 자동 적용 안 함 · 회색 경고 표시
-                                              const anyValid = discs.some(d => d.valid !== false);
-                                              const anyInvalid = discs.some(d => d.valid === false);
-                                              const explicit = pageDiscountApplied[pn];
-                                              const isChecked = explicit !== undefined ? explicit : anyValid;
-                                              return (
-                                                <label className={`inline-flex items-center gap-1 text-[11px] font-bold cursor-pointer transition ${anyInvalid ? "text-zinc-400 hover:text-zinc-600" : "text-orange-700 hover:text-orange-900"}`}
-                                                  title={anyInvalid
-                                                    ? "수식 미매칭 (rowsSum - stated ≠ 정산차액) · 자동 미적용 · 체크로 강제 적용 가능"
-                                                    : "체크 시 · 매입총계에서 정산차액 반영 · 해제 시 소계 그대로"}>
-                                                  <input type="checkbox"
-                                                    checked={isChecked}
-                                                    onChange={e => setPageDiscountApplied(prev => ({ ...prev, [pn]: e.target.checked }))}
-                                                    className={`w-3.5 h-3.5 cursor-pointer ${anyInvalid ? "accent-zinc-400" : "accent-orange-500"}`}
-                                                  />{anyInvalid ? "적용(⚠수식×)" : "적용"}
-                                                </label>
-                                              );
-                                            })()}
-                                            {/* 2026-07-23 · 미수금(=잔고) · 사용자 요청 "미수금 = 잔고 · 잔고항목에 미수금 추가" */}
-                                            <span className="text-[12px] font-semibold text-rose-700 ml-2" title="잔고 = 미수금 (동의어)">미수금</span>
-                                            <input type="text" inputMode="numeric"
-                                              value={
-                                                editingSummary?.pn === pn && editingSummary.kind === "balance"
-                                                  ? editingSummary.value
-                                                  : (displayBalForShow != null && displayBalForShow > 0 ? String(displayBalForShow) : "")
-                                              }
-                                              placeholder={displayBalForShow != null && displayBalForShow > 0 ? String(displayBalForShow) : "0"}
-                                              // 2026-07-24 · 정산차액과 동일 정책 · 클릭 시 비우고 · 아무것도 안하면 원본 유지
-                                              onFocus={() => setEditingSummary({ pn, kind: "balance", value: "", dirty: false })}
-                                              onChange={e => setEditingSummary({ pn, kind: "balance", value: e.target.value, dirty: true })}
-                                              onBlur={() => {
-                                                if (!editingSummary || editingSummary.pn !== pn || editingSummary.kind !== "balance") { setEditingSummary(null); return; }
-                                                if (!editingSummary.dirty) { setEditingSummary(null); return; }
-                                                const n = parseNumber(editingSummary.value.replace(/[^\d-]/g, ""));
-                                                if (n > 0) {
-                                                  setPageBalanceOverride(prev => ({ ...prev, [pn]: n }));
-                                                  setPageBalanceModeManual(prev => { const s = new Set(prev); s.delete(pn); return s; });
-                                                  // 2026-07-28 · setPageBalanceModeSkip · dead state 정리에서 제거됨
-                                                  // 2026-07-24 · 사용자 요청 "지금 잔고 저장돼?" · 편집 시 즉시 DB 저장
-                                                  const supForSave = (rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "").trim();
-                                                  const dateForSave = structuredPages.find(p => p.page === pn)?.meta.date ?? null;
-                                                  if (supForSave) {
-                                                    saveSupplierBalance(supForSave, n, dateForSave);
-                                                    console.log(`[미수금 저장] "${supForSave}" ${dateForSave ?? "날짜없음"} → ${n}원`);
-                                                  }
-                                                } else {
-                                                  setPageBalanceOverride(prev => { const c = { ...prev }; delete c[pn]; return c; });
-                                                }
-                                                setEditingSummary(null);
-                                              }}
-                                              onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
-                                              className="w-[110px] text-[13px] font-bold text-rose-800 bg-rose-50 border border-rose-300 hover:border-rose-500 focus:bg-white rounded px-1.5 py-0.5 focus:outline-none focus:border-brand-deep text-right"
-                                            />
-                                            {/* 2026-07-24 · 사용자 요청 "확정 버튼 미수금 입력창 옆으로 이동" · 우측 배치 X · 인라인 */}
-                                            {!hasMissingSupplier && (() => {
-                                              const isConfirmed = confirmedPages.has(pn);
-                                              const hasErpSubRow = erpSubRowPages.has(pn);
-                                              return (
-                                                // 2026-07-28 · ERP매칭·확정 버튼 다음 줄로 (사용자 요청) · basis-full 로 새 줄 강제
-                                                <div className="basis-full flex items-center gap-1 mt-1 flex-wrap">
-                                                  {/* 2026-07-27 · ERP 매칭 버튼 · 클릭 시 handleMatchPage + sub-row 노출 */}
-                                                  <button type="button"
-                                                    onClick={async () => {
-                                                      setErpSubRowPages(prev => new Set([...prev, pn]));
-                                                      await handleMatchPage(pn);
-                                                    }}
-                                                    disabled={!!matchingPage[pn]}
-                                                    className={`text-[13px] font-bold text-white disabled:bg-zinc-300 disabled:cursor-not-allowed border-2 rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-md ring-1 transition shrink-0 ${
-                                                      hasErpSubRow
-                                                        ? "bg-violet-500 hover:bg-violet-600 border-violet-700 ring-violet-200"
-                                                        : "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border-indigo-700 ring-indigo-200"
-                                                    }`}
-                                                    title={hasErpSubRow ? `${pn}번 · ERP 재매칭` : `${pn}번 · ERP 매칭 실행 · 각 행 아래 ERP 정보 표시`}
-                                                  >
-                                                    {matchingPage[pn]
-                                                      ? (<><Spinner size={12} /> 매칭중...</>)
-                                                      : (<><Wand2 size={12} /> ERP 매칭</>)}
-                                                  </button>
-                                                  {/* 확정 · 확정표 반영 */}
-                                                  <button type="button"
-                                                    onClick={async () => {
-                                                      // 2026-07-27 · 사용자 요청 "확정 누르면 확정하시겠습니까 알림창"
-                                                      const supp = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "미상";
-                                                      if (!await confirm({ message: `${pn}번 명세서 · "${supp}" · 확정하시겠습니까?\n(3차 거래명세서 확정표에 추가됩니다)` })) return;
-                                                      if (!matchItems || !hasErpSubRow) {
-                                                        await handleMatchPage(pn);
-                                                        setErpSubRowPages(prev => new Set([...prev, pn]));
-                                                      }
-                                                      setConfirmedPages(prev => new Set([...prev, pn]));
-                                                      setConfirmed(true);
-                                                    }}
-                                                    disabled={!!matchingPage[pn]}
-                                                    className={`text-[13px] font-bold text-white disabled:bg-zinc-300 disabled:cursor-not-allowed border-2 rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-md ring-1 transition shrink-0 ${
-                                                      isConfirmed
-                                                        ? "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border-emerald-800 ring-emerald-200"
-                                                        : "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border-emerald-700 ring-emerald-200 animate-pulse"
-                                                    }`}
-                                                    title={isConfirmed ? `${pn}번 · 확정 완료 · 확정표 반영` : `${pn}번 · 확정 → 3차 거래명세서 확정표에 반영`}
-                                                  >
-                                                    {isConfirmed ? (<><Check size={12} /> 확정완료</>) : (<><Check size={12} /> 확정</>)}
-                                                  </button>
-                                                </div>
-                                              );
-                                            })()}
-                                          </>
-                                        );
-                                      })()}
-                                    </div>
-                                  </div>
-
-
-                                  {/* 잔고 기록 행 제거됨 (2026-07-24) */}
-
-                                </div>
-                              </td>
-                            </tr>
-                          </>
-                        );
-                      })()}
-                      {/* 2026-07-28 · 1차보정 페이지별 spacer · 이미지 td rowSpan 여분 1칸 채움
-                          MIN_PAGE_HEIGHT 보장 + 여백 24px · 확정표와 동일 방식 */}
-                      {isLastInPage && (() => {
-                        return (
-                          <tr aria-hidden="true" style={{ height: shortfallRaw + 24 }}>
-                            <td colSpan={rawColSpan} />
-                          </tr>
-                        );
-                      })()}
-                    </React.Fragment>
-                  );
-                });
-                })()}
-              </tbody>
-              {total > 0 && (() => {
-                const orderNow = dispHeaders.map((_, i) => i);
-                const amtOrderIdx = orderNow.indexOf(amtIdx);
-                const imgColOffset = pageImages?.length ? 1 : 0; // 이미지 컬럼 추가 시 colSpan 보정
-                return (
-                <tfoot>
-                  {supplierTotals.length >= 1 && supplierTotals.map(({ supplier, total: sTotal, count }) => {
-                    // 2026-07-27 · 사용자 요청 "각 공급사의 잔고도 같이 표시"
-                    const balRec = supplierBalanceRecords.find(r => String(r.supplier_name).trim() === supplier.trim());
-                    const balAmt = balRec ? Number(balRec.balance) : null;
-                    return (
-                    <tr key={supplier} className="border-t border-amber-100 bg-amber-50/40">
-                      {imgColOffset > 0 && <td />}
-                      {amtOrderIdx > 0 && (
-                        <td colSpan={Math.max(1, amtOrderIdx)} className="px-3 py-2 text-right font-semibold text-gray-500">
-                          {supplier} <span className="text-gray-400">({count}매)</span>
-                          {balAmt != null && balAmt > 0 && (
-                            <span className="ml-2 text-[11px] text-rose-600 font-bold" title={`최신 미수금 · ${balRec?.invoice_date ?? ""}`}>
-                              미수 {fmt(balAmt)}원
-                            </span>
-                          )}
-                        </td>
-                      )}
-                      <td className="px-3 py-2 text-right font-bold text-amber-600 whitespace-nowrap">{fmt(sTotal)}원</td>
-                      {orderNow.slice(amtOrderIdx + 1).map((_, i) => <td key={i} />)}
-                    </tr>
-                    );
-                  })}
-                  <tr className="bg-amber-50 border-t-2 border-amber-300">
-                    {imgColOffset > 0 && <td />}
-                    {amtOrderIdx > 0 && (
-                      <td
-                        colSpan={Math.max(1, amtOrderIdx)}
-                        className="px-3 py-2.5 text-right font-bold text-gray-700 cursor-help"
-                        title={totalBreakdownTitle}
-                      >합 계</td>
-                    )}
-                    <td className="px-3 py-2.5 text-right font-bold text-amber-700 text-sm whitespace-nowrap">
-                      {/* 2026-07-27 · 사용자 요청 "1차보정 총소계금액도 편집가능하게" · 클릭 인라인 입력 */}
-                      {editingGrandTotal !== null ? (
-                        <input type="text" inputMode="numeric" autoFocus
-                          value={editingGrandTotal}
-                          onChange={e => setEditingGrandTotal(e.target.value)}
-                          onBlur={() => {
-                            const n = parseNumber(editingGrandTotal.replace(/[^\d-]/g, ""));
-                            if (n > 0) setGrandTotalOverride(n);
-                            else setGrandTotalOverride(null);
-                            setEditingGrandTotal(null);
-                          }}
-                          onKeyDown={e => {
-                            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                            if (e.key === "Escape") { setEditingGrandTotal(null); }
-                          }}
-                          className="w-[150px] text-right bg-white border-2 border-amber-400 rounded px-2 py-0.5 focus:outline-none focus:border-brand-deep text-amber-800"
-                        />
-                      ) : (
-                        <button type="button"
-                          onClick={() => setEditingGrandTotal(String(grandTotalOverride ?? total))}
-                          title={grandTotalOverride != null ? `수정값 · 원본 자동계산: ${fmt(total)}원 · ${totalBreakdownTitle}` : `클릭하여 총합계 수정 · ${totalBreakdownTitle}`}
-                          className={`cursor-pointer hover:underline ${grandTotalOverride != null ? "text-orange-700" : ""}`}
-                        >
-                          {fmt(grandTotalOverride ?? total)}원
-                          {grandTotalOverride != null && <span className="text-[10px] font-bold text-orange-500 ml-1">✎</span>}
-                        </button>
-                      )}
-                    </td>
-                    {orderNow.slice(amtOrderIdx + 1).map((_, i) => <td key={i} />)}
-                  </tr>
-                </tfoot>
-                );
-              })()}
-            </table>
-          </div>
-        </Card>
+        <RawInvoiceCard
+          rawRows={rawRows}
+          dispHeaders={dispHeaders}
+          dispRows={dispRows}
+          effectiveDispRows={effectiveDispRows}
+          pageNums={pageNums}
+          nameIdx={nameIdx}
+          amtIdx={amtIdx}
+          ocrQtyIdx={ocrQtyIdx}
+          ocrPriIdx={ocrPriIdx}
+          _discountIdxEarly={_discountIdxEarly}
+          structuredPages={structuredPages}
+          meta={meta}
+          RAW_ESSENTIAL_COLS={RAW_ESSENTIAL_COLS}
+          NUM_COLS={NUM_COLS}
+          showRawDetail={showRawDetail}
+          permanentlyDeletedRawRows={permanentlyDeletedRawRows}
+          hiddenRawRows={hiddenRawRows}
+          isRowDbDeleted={isRowDbDeleted}
+          invTableWrapRef={invTableWrapRef}
+          effectiveInvColWidth={effectiveInvColWidth}
+          invColResizing={invColResizing}
+          INV_COL_DEFAULT={INV_COL_DEFAULT}
+          containerWidth={containerWidth}
+          _cw={_cw}
+          numCellMinW={numCellMinW}
+          expCellMinW={expCellMinW}
+          reextBtnCls={reextBtnCls}
+          numCellInnerCls={numCellInnerCls}
+          numInputMinW={numInputMinW}
+          expInputMinW={expInputMinW}
+          colWidths={colWidths}
+          resizeRef={resizeRef}
+          pageImages={pageImages}
+          pageZoom={pageZoom}
+          pagePan={pagePan}
+          panDragRef={panDragRef}
+          rotation={rotation}
+          rawSupplierByPage={rawSupplierByPage}
+          globalSupplier={globalSupplier}
+          editingRawSuppRow={editingRawSuppRow}
+          editingRawSuppVal={editingRawSuppVal}
+          suppInputRef={suppInputRef}
+          addSynonymsOnChange={addSynonymsOnChange}
+          autoSynonymLoading={autoSynonymLoading}
+          autoSynonymMatches={autoSynonymMatches}
+          synonymAddStatus={synonymAddStatus}
+          hasMissingSupplier={hasMissingSupplier}
+          missingSupplierPages={missingSupplierPages}
+          reparseStatus={reparseStatus}
+          reparseSupplier={reparseSupplier}
+          cellEdits={cellEdits}
+          editingCell={editingCell}
+          editingCellVal={editingCellVal}
+          focusedCell={focusedCell}
+          amountCorrections={amountCorrections}
+          editingNameRow={editingNameRow}
+          editingNameVal={editingNameVal}
+          editingNameRowRef={editingNameRowRef}
+          nameInputRef={nameInputRef}
+          nameEditSearchRef={nameEditSearchRef}
+          nameEditResults={nameEditResults}
+          nameEditSearchDone={nameEditSearchDone}
+          nameCellCycle={nameCellCycle}
+          nameCellCandidates={nameCellCandidates}
+          reextractingName={reextractingName}
+          matchItems={matchItems}
+          cancelledAutoMap={cancelledAutoMap}
+          cancelledRows={cancelledRows}
+          selectedCands={selectedCands}
+          barcodeAutoMap={barcodeAutoMap}
+          numericCellCycle={numericCellCycle}
+          numericCellCandidates={numericCellCandidates}
+          noCandidateCells={noCandidateCells}
+          dbFilledCells={dbFilledCells}
+          checkedCells={checkedCells}
+          effectivePageTotals={effectivePageTotals}
+          pageSubtotalChoices={pageSubtotalChoices}
+          pageSubtotalCustom={pageSubtotalCustom}
+          pageVatIncluded={pageVatIncluded}
+          pageDiscountApplied={pageDiscountApplied}
+          pageSupplierBalances={pageSupplierBalances}
+          supplierBalanceRecords={supplierBalanceRecords}
+          pageBalanceOverride={pageBalanceOverride}
+          pageBalanceModeManual={pageBalanceModeManual}
+          pageBalanceManualInput={pageBalanceManualInput}
+          editingSummary={editingSummary}
+          supplierTotals={supplierTotals}
+          total={total}
+          totalBreakdownTitle={totalBreakdownTitle}
+          editingGrandTotal={editingGrandTotal}
+          grandTotalOverride={grandTotalOverride}
+          erpSubRowPages={erpSubRowPages}
+          matchingPage={matchingPage}
+          confirmedPages={confirmedPages}
+          pageDateOverride={pageDateOverride}
+          onInvColResizeStart={onInvColResizeStart}
+          setInvoiceColWidth={setInvoiceColWidth}
+          onImgPanStart={onImgPanStart}
+          openPageModal={openPageModal}
+          zoomOut={zoomOut}
+          zoomReset={zoomReset}
+          zoomIn={zoomIn}
+          openModal={openModal}
+          commitRawRowsDeletion={commitRawRowsDeletion}
+          setEditingRawSuppRow={setEditingRawSuppRow}
+          setEditingRawSuppVal={setEditingRawSuppVal}
+          setSuppDropdownRect={setSuppDropdownRect}
+          setSupplierConfirm={setSupplierConfirm}
+          openVendorEdit={openVendorEdit}
+          saveTemplate={saveTemplate}
+          setReparseStatus={setReparseStatus}
+          setEditingCell={setEditingCell}
+          setEditingCellVal={setEditingCellVal}
+          setFocusedCell={setFocusedCell}
+          setCellEdits={setCellEdits}
+          commitCellEdit={commitCellEdit}
+          setPageDateOverride={setPageDateOverride}
+          reextractOneCell={reextractOneCell}
+          toggleCellCheck={toggleCellCheck}
+          setEditingNameRow={setEditingNameRow}
+          setEditingNameVal={setEditingNameVal}
+          setAutoSynonymMatches={setAutoSynonymMatches}
+          setCancelledAutoMap={setCancelledAutoMap}
+          setCancelledAutoSyn={setCancelledAutoSyn}
+          setMatchItems={setMatchItems}
+          setNameEditResults={setNameEditResults}
+          setNameEditSearchDone={setNameEditSearchDone}
+          setNameDropdownRect={setNameDropdownRect}
+          setDeleteSynConfirm={setDeleteSynConfirm}
+          reextractProductName={reextractProductName}
+          saveSynonym={saveSynonym}
+          confirm={confirm}
+          handleMatchPage={handleMatchPage}
+          matchRawToPurchaseHistory={matchRawToPurchaseHistory}
+          setCancelledRows={setCancelledRows}
+          setPageSubtotalChoices={setPageSubtotalChoices}
+          setPageSubtotalCustom={setPageSubtotalCustom}
+          setPageVatIncluded={setPageVatIncluded}
+          setPageDiscountApplied={setPageDiscountApplied}
+          setPageDiscountOverride={setPageDiscountOverride}
+          setPageBalanceOverride={setPageBalanceOverride}
+          setPageBalanceModeManual={setPageBalanceModeManual}
+          setEditingSummary={setEditingSummary}
+          saveSupplierBalance={saveSupplierBalance}
+          setErpSubRowPages={setErpSubRowPages}
+          setConfirmedPages={setConfirmedPages}
+          setConfirmed={setConfirmed}
+          runColumnPipeline={runColumnPipeline}
+          runningPipeline={runningPipeline}
+          addManualRow={addManualRow}
+          setPermanentlyDeletedRawRows={setPermanentlyDeletedRawRows}
+          setDbDeletedSignatures={setDbDeletedSignatures}
+          makeRowSignature={makeRowSignature}
+          getPageDisplayTotal={getPageDisplayTotal}
+          getPageDiscounts={getPageDiscounts}
+          setEditingGrandTotal={setEditingGrandTotal}
+          setGrandTotalOverride={setGrandTotalOverride}
+        />
       )}
 
       {/* ── 확정 결과표 섹션 ── */}

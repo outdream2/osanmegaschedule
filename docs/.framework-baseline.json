@@ -1,7 +1,7 @@
 {
   "created": "2026-08-22",
   "version": 1,
-  "totalViolations": 6,
+  "totalViolations": 5,
   "files": {
     "src/components/ContractWriterPage/ContractWriterPage.tsx": {
       "lines": 5483,
@@ -13,35 +13,25 @@
       ],
       "totalWeight": 48
     },
+    "src/components/OcrPage/RawOcrTable/RawInvoiceCard.tsx": {
+      "lines": 1322,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 6
+    },
     "src/components/OcrPage/RawOcrTable.tsx": {
-      "lines": 5260,
+      "lines": 1870,
       "violations": [
         {
-          "ruleId": "large-file-critical",
+          "ruleId": "large-file-warn",
           "count": 1
         }
       ],
-      "totalWeight": 48
-    },
-    "src/components/OrderManagePage/OrderManagePage.tsx": {
-      "lines": 3090,
-      "violations": [
-        {
-          "ruleId": "large-file-critical",
-          "count": 1
-        }
-      ],
-      "totalWeight": 32
-    },
-    "src/components/DisplayPage/DisplayPage.tsx": {
-      "lines": 2714,
-      "violations": [
-        {
-          "ruleId": "large-file-critical",
-          "count": 1
-        }
-      ],
-      "totalWeight": 24
+      "totalWeight": 6
     },
     "src/components/StaffManagePage/StaffManagePage.tsx": {
       "lines": 1917,
