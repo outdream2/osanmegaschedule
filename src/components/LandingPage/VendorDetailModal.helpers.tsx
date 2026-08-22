@@ -1,0 +1,80 @@
+// 2026-08-22 · Framework Phase 4 · VendorDetailModal helpers 분리
+// 결제 등록 모달 관련 상수 + Field / SectionTitle / StatCard 재사용 소형 컴포넌트
+
+import React from "react";
+
+export const METHOD_OPTIONS: Array<{ key: string; label: string }> = [
+  { key: "transfer", label: "이체" },
+  { key: "cash",     label: "현금" },
+  { key: "card",     label: "카드" },
+  { key: "check",    label: "수표" },
+  { key: "offset",   label: "상계" },
+  { key: "etc",      label: "기타" },
+];
+
+// 2026-08-10 · 사용자 요청 · Field 라벨 -1 (15→14) · 유지
+export const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <label className="block space-y-1">
+    <span className="text-[14px] font-semibold text-zinc-600 tracking-tight">{label}</span>
+    {children}
+  </label>
+);
+
+export const colorMap = {
+  sky:     { bar: "bg-sky-500",     text: "text-sky-700",     icon: "text-sky-600"     },
+  emerald: { bar: "bg-emerald-500", text: "text-emerald-700", icon: "text-emerald-600" },
+  amber:   { bar: "bg-amber-500",   text: "text-amber-700",   icon: "text-amber-600"   },
+  rose:    { bar: "bg-rose-500",    text: "text-rose-700",    icon: "text-rose-600"    },
+  teal:    { bar: "bg-teal-500",    text: "text-teal-700",    icon: "text-teal-600"    },
+  indigo:  { bar: "bg-brand-deep",  text: "text-indigo-700",  icon: "text-indigo-600"  },
+  violet:  { bar: "bg-violet-500",  text: "text-violet-700",  icon: "text-violet-600"  },
+} as const;
+
+export type ColorKey = keyof typeof colorMap;
+
+// 2026-08-10 · 사용자 요청 · 아이콘 제거 · 제목 폰트 +2 (13→15)
+export const SectionTitle: React.FC<{
+  icon?: React.ReactNode;
+  title: string;
+  color: ColorKey;
+  hint?: string;
+}> = ({ title, color, hint }) => {
+  const c = colorMap[color];
+  return (
+    <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-100">
+      <span className={`w-1 h-4 rounded-full ${c.bar} shrink-0`} />
+      <span className={`text-[15px] font-bold ${c.text}`}>{title}</span>
+      {hint && <span className="ml-auto text-[12px] text-zinc-400 font-mono tabular-nums">{hint}</span>}
+    </div>
+  );
+};
+
+// 2026-08-17 · 세련 · Vercel Dashboard 톤 · 뉴트럴 body + status dot + 값 semantic color
+const statColorMap: Record<string, { dot: string; text: string; iconBg: string; iconColor: string }> = {
+  emerald: { dot: "bg-emerald-500", text: "text-emerald-700", iconBg: "bg-emerald-50", iconColor: "text-emerald-600" },
+  indigo:  { dot: "bg-indigo-500",  text: "text-indigo-700",  iconBg: "bg-indigo-50",  iconColor: "text-indigo-600" },
+  violet:  { dot: "bg-violet-500",  text: "text-violet-700",  iconBg: "bg-violet-50",  iconColor: "text-violet-600" },
+  rose:    { dot: "bg-rose-500",    text: "text-rose-700",    iconBg: "bg-rose-50",    iconColor: "text-rose-600" },
+};
+
+export const StatCard: React.FC<{
+  icon: React.ReactNode;
+  color: "emerald" | "indigo" | "violet" | "rose";
+  label: string;
+  value: string;
+  sub?: string;
+}> = ({ icon, color, label, value, sub }) => {
+  const c = statColorMap[color];
+  return (
+    <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] px-3 py-2.5">
+      <div className="flex items-center gap-1.5 mb-1">
+        <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold text-ink-soft tracking-tight`}>
+          <span className={c.iconColor}>{icon}</span><span>{label}</span>
+        </span>
+      </div>
+      <div className={`text-[15px] font-extrabold ${c.text} font-mono tabular-nums truncate leading-tight`} title={value}>{value}</div>
+      {sub && <div className="text-[11px] font-medium text-ink-soft mt-0.5 truncate" title={sub}>{sub}</div>}
+    </div>
+  );
+};
