@@ -35,7 +35,7 @@
 | 9 | `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1338 | 6 | large-file-warn(1) |
 | 10 | `src/components/LandingPage/VendorListEditor.tsx` | 1549 | 6 | large-file-warn(1) |
 | 11 | `src/components/ScanPage/ProductInfoCard.tsx` | 895 | 3 | large-file-warn(1) |
-| 12 | `src/components/StockManagePage/FlowTab.tsx` | 901 | 3 | large-file-warn(1) |
+| 12 | `src/components/StockManagePage/FlowTab.tsx` | 872 | 3 | large-file-warn(1) |
 
 ## 📝 모든 위반 파일 (12개)
 
@@ -54,7 +54,7 @@
 | `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1338 | 6 |
 | `src/components/LandingPage/VendorListEditor.tsx` | 1549 | 6 |
 | `src/components/ScanPage/ProductInfoCard.tsx` | 895 | 3 |
-| `src/components/StockManagePage/FlowTab.tsx` | 901 | 3 |
+| `src/components/StockManagePage/FlowTab.tsx` | 872 | 3 |
 
 </details>
 

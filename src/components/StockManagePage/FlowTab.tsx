@@ -15,6 +15,7 @@ import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { useHiddenManager } from "../../hooks/useHiddenManager";
 import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
+import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
 import { EmptyState } from "../common/EmptyState";
@@ -74,7 +75,7 @@ export const FlowTab: React.FC = () => {
   const flowSnapshotAutoSet = useRef(false);
 
   // 검색
-  const [flowSearch, setFlowSearch] = useState<string>("");
+  // 2026-08-22 · flowSearch state 제거 · UI 없음 · dead code
   const [salesQtyMin, setSalesQtyMin] = useState<string>("");
   const [salesQtyMax, setSalesQtyMax] = useState<string>("");
   // 분류 필터
@@ -116,8 +117,7 @@ export const FlowTab: React.FC = () => {
   // 데이터
   const [stockFlow, setStockFlow] = useState<StockFlowRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [availableSnapshots, setAvailableSnapshots] = useState<string[]>([]);
-  const [snapshotPeriods, setSnapshotPeriods] = useState<Record<string, string | null>>({});
+  // 2026-08-22 · dead code 제거 (availableSnapshots · snapshotPeriods · read 안 됨)
   const [flowPeriodType, setFlowPeriodType] = useState<string | null>(null);
 
   // 우측 패널 — 선택 상품
@@ -153,29 +153,13 @@ export const FlowTab: React.FC = () => {
     } catch { /* cache load 실패 무시 */ }
   }, []);
 
-  // 패널 폭 조절
-  const [flowPanelWidth, setFlowPanelWidth] = useState<number>(() => {
-    const defaultW = typeof window !== "undefined" ? Math.floor(window.innerWidth * 0.6) : 800;
-    try { const v = Number(localStorage.getItem("megatown_stockmanage_flow_w")); return Number.isFinite(v) && v > 0 ? v : defaultW; } catch { return defaultW; }
+  // 2026-08-22 · 패널 폭 조절 · useResizablePanel 프레임워크 훅 재사용 (기존 inline resize 로직 제거)
+  const { width: flowPanelWidth, startResize: onFlowResizeStart } = useResizablePanel({
+    storageKey: "megatown_stockmanage_flow_w",
+    defaultWidth: typeof window !== "undefined" ? Math.floor(window.innerWidth * 0.6) : 800,
+    minWidth: 320,
+    maxWidth: 1000,
   });
-  useEffect(() => { try { localStorage.setItem("megatown_stockmanage_flow_w", String(flowPanelWidth)); } catch { /* ignore */ } }, [flowPanelWidth]);
-  const flowResizeRef = useRef<{ startX: number; startW: number } | null>(null);
-  const onFlowResizeStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    flowResizeRef.current = { startX: e.clientX, startW: flowPanelWidth };
-    const move = (ev: MouseEvent) => {
-      const r = flowResizeRef.current;
-      if (!r) return;
-      setFlowPanelWidth(Math.min(1000, Math.max(320, r.startW + (ev.clientX - r.startX))));
-    };
-    const up = () => {
-      flowResizeRef.current = null;
-      window.removeEventListener("mousemove", move);
-      window.removeEventListener("mouseup", up);
-    };
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
-  };
 
   // 분류 맵 · 공용 훅 (vendorCategoryMap + findVendorByName 함께 사용)
   const { vendorCategoryMap, findVendorByName } = useVendors();
@@ -251,7 +235,6 @@ export const FlowTab: React.FC = () => {
       if (cached && Date.now() - cached.ts < FLOW_CACHE_TTL) {
         const d = cached.data;
         setStockFlow(Array.isArray(d.rows) ? d.rows : []);
-        setAvailableSnapshots(Array.isArray(d.dates) ? d.dates : []);
         setFlowPeriodType(d.period_type ?? null);
       }
 
@@ -261,13 +244,7 @@ export const FlowTab: React.FC = () => {
       const { data } = await api.get<any>(`/api/stock-manage/top-sales?${basicParams}`);
       if (data) {
         setStockFlow(Array.isArray(data.rows) ? data.rows : []);
-        setAvailableSnapshots(Array.isArray(data.dates) ? data.dates : []);
         setFlowPeriodType(data.period_type ?? null);
-        if (Array.isArray(data.dates_with_period)) {
-          const map: Record<string, string | null> = {};
-          for (const d of data.dates_with_period) map[d.snapshot_date] = d.period_type ?? null;
-          setSnapshotPeriods(map);
-        }
         if (flowMonths === 0 && !flowSnapshotAutoSet.current && data.snapshot_date) {
           flowSnapshotAutoSet.current = true;
           if (!flowSnapshot) setFlowSnapshot(data.snapshot_date);
@@ -336,17 +313,11 @@ export const FlowTab: React.FC = () => {
   const baseFlow = useMemo(() => {
     const minN = salesQtyMin.trim() === "" ? null : parseInt(salesQtyMin, 10);
     const maxN = salesQtyMax.trim() === "" ? null : parseInt(salesQtyMax, 10);
-    const q = flowSearch.trim().toLowerCase();
+    // 2026-08-22 · flowSearch UI 없음 · dead code path 제거 (기존 flowSearch 상태도 삭제)
     const filtered = stockFlow.filter(p => {
       const qty = p.sale_qty;
       if (minN != null && Number.isFinite(minN) && qty < minN) return false;
       if (maxN != null && Number.isFinite(maxN) && qty > maxN) return false;
-      if (q) {
-        const hit = String(p.product_name ?? "").toLowerCase().includes(q)
-          || String(p.product_code ?? "").toLowerCase().includes(q)
-          || String(p.supplier ?? "").toLowerCase().includes(q);
-        if (!hit) return false;
-      }
       if (flowCategoryFilter !== "전체") {
         const sup = String(p.supplier ?? "").trim();
         if (vendorCategoryMap[sup] !== flowCategoryFilter) return false;
@@ -396,7 +367,7 @@ export const FlowTab: React.FC = () => {
       });
     }
     return filtered;
-  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowSearch, flowMonths, flowCategoryFilter, vendorCategoryMap]);
+  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowMonths, flowCategoryFilter, vendorCategoryMap]);
 
   // 3-way tab 카운트
   const getRealMap = useCallback((p: any) => (p as any).real_map ?? productRealMapById[String(p.product_code)] ?? null, [productRealMapById]);
