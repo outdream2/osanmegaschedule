@@ -64,6 +64,29 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #193 · 통계 설정 · 계절정의 + 적정재고설정 통합 (신규 · 2026-08-22)
+- 📄 대상 · 설정 페이지의 **"계절정의"** 메뉴 → **"통계설정"** 으로 이름 변경
+- 🔲 통계설정 · 탭 페이지 구조 (2탭)
+  - **탭 1 · 계절정의** (기존 SeasonRangesEditor 재사용)
+  - **탭 2 · 적정재고설정** (신규)
+- 🔲 적정재고설정 탭
+  - 계산법 · **오늘 기준 * 일 판매량** 을 적정재고로 설정
+  - 현재 하드코딩 · 30일 (한달) 사용중
+  - UI · 숫자 입력창 · 기본값 30 · 범위 예: 7~90일
+  - 저장 · KV setting `optimal_stock_period_days` · debounce 자동 저장 (useKvSetting)
+- 🔲 서버 · GET/PUT `/api/settings` · zod schema
+- 🔲 모든 소비처 (LowStockService · OrderManagePage · RequestsPage 등) · 이 값 참조하도록 업데이트
+- 🔲 현재 참조 파일 (grep 결과)
+  - `src/components/common/ProductDetailPanel.tsx` · optimal_stock 계산·표시
+  - `src/components/OrderManagePage/CategoryTab.tsx` · 하드코딩 30일
+  - `src/components/OrderManagePage/OrderManagePage.tsx` · 발주요청 트리거
+  - `src/components/OrderManagePage/TrendingTab.tsx` · 트렌드 분석
+  - `src/components/RequestsPage/RequestsPage.tsx` · 발주 필요 상품 필터
+  - `src/components/DisplayPage/DisplayPage.tsx` · 진열 표시
+- 🔲 서버 라우터 · `/api/stock-manage/low-stock` · `/api/products/*` · 계산 로직 통일
+- 💡 프레임워크 원칙 · useKvSetting 재사용 · Card·InputField·Tabs 프리미티브 활용
+- 💡 관련 · SeasonRangesEditor 재사용 · 이름만 변경 · 하위호환 유지 (route/import)
+
 ### #192 · 거래처 로그인 · 공급사정보 등록 → 승인 → 공급자재고확인 flow (신규 · 2026-08-22)
 - 📄 대상 · 거래처(vendor) 로그인 후 진입 페이지 · 3단계 승인 flow 구현
 - 🔲 **Step 1** · 거래처 로그인 성공 시 · **공급사정보 등록 메뉴** 자동 오픈 (or 사이드바 상단 강조)
