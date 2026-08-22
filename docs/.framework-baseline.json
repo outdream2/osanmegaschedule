@@ -1,7 +1,7 @@
 {
   "created": "2026-08-22",
   "version": 1,
-  "totalViolations": 24,
+  "totalViolations": 8,
   "files": {
     "src/components/ContractWriterPage/ContractWriterPage.tsx": {
       "lines": 5483,
@@ -74,17 +74,7 @@
       "totalWeight": 24
     },
     "src/components/StaffManagePage/StaffManagePage.tsx": {
-      "lines": 2154,
-      "violations": [
-        {
-          "ruleId": "large-file-critical",
-          "count": 1
-        }
-      ],
-      "totalWeight": 24
-    },
-    "src/components/DayTimelineModal/DayTimelineModal.tsx": {
-      "lines": 1338,
+      "lines": 1917,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -92,156 +82,6 @@
         }
       ],
       "totalWeight": 6
-    },
-    "src/components/LandingPage/VendorListEditor.tsx": {
-      "lines": 1549,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 6
-    },
-    "src/components/OcrPage/OcrPage.tsx": {
-      "lines": 1149,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 6
-    },
-    "src/components/OrderManagePage/PaymentInfoTab.tsx": {
-      "lines": 1514,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 6
-    },
-    "src/components/OrderManagePage/PurchaseHistoryTab.tsx": {
-      "lines": 1159,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 6
-    },
-    "src/components/ProductArrivalPage/ProductArrivalPage.tsx": {
-      "lines": 1041,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 6
-    },
-    "src/components/RequestsPage/RequestsPage.tsx": {
-      "lines": 1226,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 6
-    },
-    "src/components/ScanPage/ScanPage.tsx": {
-      "lines": 1106,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 6
-    },
-    "src/components/StockManagePage/FlowTab.tsx": {
-      "lines": 1076,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 6
-    },
-    "src/components/ContractSettingsPage/ContractSettingsPage.tsx": {
-      "lines": 887,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/DayTimelineModal/ZoneSection.tsx": {
-      "lines": 924,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx": {
-      "lines": 962,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/OrderManagePage/ReturnListPanel.tsx": {
-      "lines": 806,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/PermissionsPage/PermissionsPage.tsx": {
-      "lines": 965,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/ScanPage/ProductInfoCard.tsx": {
-      "lines": 895,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/StockManagePage/SupplierTab.tsx": {
-      "lines": 991,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
     }
   }
 }
