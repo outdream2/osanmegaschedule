@@ -23,8 +23,8 @@
       ],
       "totalWeight": 48
     },
-    "src/components/DisplayPage/DisplayPage.tsx": {
-      "lines": 3127,
+    "src/components/OrderManagePage/OrderManagePage.tsx": {
+      "lines": 3090,
       "violations": [
         {
           "ruleId": "large-file-critical",
@@ -33,18 +33,18 @@
       ],
       "totalWeight": 32
     },
-    "src/components/OrderManagePage/OrderManagePage.tsx": {
-      "lines": 3206,
+    "src/components/DisplayPage/DisplayPage.tsx": {
+      "lines": 2714,
       "violations": [
         {
           "ruleId": "large-file-critical",
           "count": 1
         }
       ],
-      "totalWeight": 32
+      "totalWeight": 24
     },
     "src/components/LandingPage/LandingPage.tsx": {
-      "lines": 2467,
+      "lines": 2320,
       "violations": [
         {
           "ruleId": "large-file-critical",
@@ -54,7 +54,7 @@
       "totalWeight": 24
     },
     "src/components/SalesTrendPage/SalesTrendPage.tsx": {
-      "lines": 2677,
+      "lines": 2502,
       "violations": [
         {
           "ruleId": "large-file-critical",
@@ -74,7 +74,7 @@
       "totalWeight": 24
     },
     "src/components/StaffManagePage/StaffManagePage.tsx": {
-      "lines": 2304,
+      "lines": 2154,
       "violations": [
         {
           "ruleId": "large-file-critical",

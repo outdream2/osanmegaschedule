@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 506 |
+| 스캔 파일 | 514 |
 | 위반 파일 | 24 |
-| 클린 파일 | 482 (95%) |
+| 클린 파일 | 490 (95%) |
 | 총 위반 개수 | 24 |
 
 ## 🚨 규칙별 위반 현황
@@ -26,12 +26,12 @@
 |---:|---|---:|---:|---|
 | 1 | `src/components/ContractWriterPage/ContractWriterPage.tsx` | 5483 | 48 | large-file-critical(1) |
 | 2 | `src/components/OcrPage/RawOcrTable.tsx` | 5260 | 48 | large-file-critical(1) |
-| 3 | `src/components/DisplayPage/DisplayPage.tsx` | 3127 | 32 | large-file-critical(1) |
-| 4 | `src/components/OrderManagePage/OrderManagePage.tsx` | 3206 | 32 | large-file-critical(1) |
-| 5 | `src/components/LandingPage/LandingPage.tsx` | 2467 | 24 | large-file-critical(1) |
-| 6 | `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2677 | 24 | large-file-critical(1) |
+| 3 | `src/components/OrderManagePage/OrderManagePage.tsx` | 3090 | 32 | large-file-critical(1) |
+| 4 | `src/components/DisplayPage/DisplayPage.tsx` | 2714 | 24 | large-file-critical(1) |
+| 5 | `src/components/LandingPage/LandingPage.tsx` | 2320 | 24 | large-file-critical(1) |
+| 6 | `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2502 | 24 | large-file-critical(1) |
 | 7 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 | large-file-critical(1) |
-| 8 | `src/components/StaffManagePage/StaffManagePage.tsx` | 2304 | 24 | large-file-critical(1) |
+| 8 | `src/components/StaffManagePage/StaffManagePage.tsx` | 2154 | 24 | large-file-critical(1) |
 | 9 | `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1338 | 6 | large-file-warn(1) |
 | 10 | `src/components/LandingPage/VendorListEditor.tsx` | 1549 | 6 | large-file-warn(1) |
 | 11 | `src/components/OcrPage/OcrPage.tsx` | 1149 | 6 | large-file-warn(1) |
@@ -57,12 +57,12 @@
 |---|---:|---:|
 | `src/components/ContractWriterPage/ContractWriterPage.tsx` | 5483 | 48 |
 | `src/components/OcrPage/RawOcrTable.tsx` | 5260 | 48 |
-| `src/components/DisplayPage/DisplayPage.tsx` | 3127 | 32 |
-| `src/components/OrderManagePage/OrderManagePage.tsx` | 3206 | 32 |
-| `src/components/LandingPage/LandingPage.tsx` | 2467 | 24 |
-| `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2677 | 24 |
+| `src/components/OrderManagePage/OrderManagePage.tsx` | 3090 | 32 |
+| `src/components/DisplayPage/DisplayPage.tsx` | 2714 | 24 |
+| `src/components/LandingPage/LandingPage.tsx` | 2320 | 24 |
+| `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2502 | 24 |
 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 |
-| `src/components/StaffManagePage/StaffManagePage.tsx` | 2304 | 24 |
+| `src/components/StaffManagePage/StaffManagePage.tsx` | 2154 | 24 |
 | `src/components/DayTimelineModal/DayTimelineModal.tsx` | 1338 | 6 |
 | `src/components/LandingPage/VendorListEditor.tsx` | 1549 | 6 |
 | `src/components/OcrPage/OcrPage.tsx` | 1149 | 6 |
