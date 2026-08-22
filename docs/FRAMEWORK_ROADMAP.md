@@ -36,14 +36,13 @@
 - `docs/FRAMEWORK_AUDIT.md` · 리포트 생성
 - 6개 규칙 · 위반 파일 우선순위 도출
 
-### 🔜 Phase 2 · 가드레일 (1주 예상)
-- **ESLint 룰 신설**
-  - `no-restricted-globals` · `fetch`·`alert`·`confirm` 금지
-  - `no-restricted-syntax` · `<Loader2 className="animate-spin"`
-  - `no-restricted-syntax` · Raw Card wrapper 패턴
-- **Pre-commit hook** · husky + lint-staged · 위반 시 커밋 차단
-- **PR 체크리스트** · `.github/PULL_REQUEST_TEMPLATE.md`
-- **README 업데이트** · "새 페이지 튜토리얼" 섹션
+### ✅ Phase 2 · 가드레일 (완료 · 2026-08-22 · 옵션 C · 3커밋)
+- ~~ESLint 룰~~ → **audit-framework.cjs 활용** (경량 · zero-dep · 5MB→0MB 절감)
+- **pre-commit hook** · husky ^9.1.7 · `audit --check-new --quiet` 자동 실행 (~1초)
+- **baseline 시스템** · `docs/.framework-baseline.json` · 신규/증가 위반만 차단
+- **PR 체크리스트** · `.github/PULL_REQUEST_TEMPLATE.md` · 8 프레임워크 준수 + 5 검증
+- **npm scripts** · `audit` · `audit:check` · `audit:strict` · `audit:update`
+- 커밋 · `9c979f16` (audit 확장) · `ded52c96` (husky) · Step 3 (PR + roadmap · 진행중)
 
 ### 🔜 Phase 3 · 페이지 이관 (2~4개월 · 매 페이지 1 커밋 격리)
 
@@ -109,6 +108,13 @@
 
 ## 🚀 다음 실행 (지시 대기)
 
-**Phase 2 착수** · ESLint 룰 도입 · pre-commit hook · 가드레일 구축 · **사용자 승인 시 즉시 진행**
+**Phase 2 완료** ✅ · 2026-08-22 · husky + audit --check-new · 신규 위반 자동 차단
 
-**or Phase 3 첫 파일 (employeeApi.ts · 저위험 · 30분)** · **사용자 승인 시 즉시 진행**
+**Phase 3 (page 이관)** 는 Phase 4 (large-file 분리) 완료 후 · 5 raw-* 규칙 위반이 이미 0 이므로 Phase 3 는 사실상 불필요
+
+**Phase 4 진행 중** · 24 large-file 위반 남음 · 매 세션 2~3파일 순차 분리 (StaffManagePage · OrderManagePage 등)
+
+**추천 다음 액션**:
+- `Phase 4 · OrderManagePage 분리 (3205 라인 · critical)` 계속
+- `Phase 5 · 신규 프리미티브 발굴 (FormField · DataTable · PageSection 후보)`
+- `README · 새 페이지 튜토리얼 섹션 추가` (신규 개발자용)
