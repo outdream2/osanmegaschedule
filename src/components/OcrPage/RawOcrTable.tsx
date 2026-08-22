@@ -54,6 +54,7 @@ import { usePagesSnapshot } from "./RawOcrTable/usePagesSnapshot";
 import { usePurchaseHistoryMatch } from "./RawOcrTable/usePurchaseHistoryMatch";
 import { useAutoPipeline } from "./RawOcrTable/useAutoPipeline";
 import { useHandleMatchPage } from "./RawOcrTable/useHandleMatchPage";
+import { useConfRows } from "./RawOcrTable/useConfRows";
 import { ErpMatchSubRow } from "./RawOcrTable/ErpMatchSubRow";
 import { useSaveConfirmed } from "./RawOcrTable/useSaveConfirmed";
 import { useReextractCell } from "./RawOcrTable/useReextractCell";
@@ -1318,147 +1319,18 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   useAutoBalanceLoad({ supplierBalanceRecords, structuredPages, rawSupplierByPage, setPageBalanceOverride });
 
 
-  const confRows: (string | number | null)[][] = matchItems
-    ? effectiveDispRows.map((row, ri) => {
-        // 2026-07-24 · 사용자 요청 "1차보정에서 선택 삭제한 행은 2차보정에 안 들어감 · 확정 상태만"
-        //   permanentlyDeletedRawRows + isRowDbDeleted + hiddenRawRows (체크박스 숨김) 모두 제외
-        if (permanentlyDeletedRawRows.has(ri) || isRowDbDeleted(ri) || hiddenRawRows.has(ri)) return [] as (string | number | null)[];
-        // 2026-07-27 · 사용자 요청 "확정 누르면 확정표 1페이지씩" · 페이지별 확정된 것만 확정표에 표시
-        if (!confirmedPages.has(pageNums[ri])) return [] as (string | number | null)[];
-        // 2026-07-27 · 사용자 문제 "확정표에 빈 행이 들어감" · 1차와 동일 규칙 · 품명·수량·단가 모두 없으면 skip
-        {
-          const _nm = nameIdx >= 0 ? String(row[nameIdx] ?? "").trim() : "";
-          const _q = ocrQtyIdx >= 0 ? parseNumber(row[ocrQtyIdx]) : 0;
-          const _p = ocrPriIdx >= 0 ? parseNumber(row[ocrPriIdx]) : 0;
-          if (!_nm && _q === 0 && _p === 0) return [] as (string | number | null)[];
-        }
-        const m        = cancelledRows.has(ri) ? null : (selectedCands[ri] ?? matchItems[ri]?.matched ?? null);
-        const autoSyn  = cancelledAutoMap.has(ri) ? undefined : autoSynonymMatches[ri];
-        const bc       = cancelledAutoMap.has(ri) ? null : (barcodeAutoMap[ri] ?? null);
-        const origOcrName = nameIdx >= 0 ? String(row[nameIdx] ?? "").trim() || null : null;
-        // 2026-07-28 · 사용자 요청 재변경 "ERP 상품명 없으면 1차보정 상품명을 확정표로"
-        //   corrName 우선순위 · erpEdits (2차편집) > matched.name (ERP 서버매칭) > 1차보정값 (cellEdits > autoSyn > OCR)
-        //   → ERP 매칭 실패해도 확정표에 최소 1차보정 상품명 표시
-        const erpEdits = erpCellEdits[ri];
-        const firstCorrectionName =
-          (nameIdx >= 0 && cellEdits[ri]?.[nameIdx] != null && String(cellEdits[ri][nameIdx]).trim())
-            ? String(cellEdits[ri][nameIdx]).trim()
-            : (autoSyn?.name ?? origOcrName ?? null);
-        const corrName = erpEdits?.["ERP 품명"] !== undefined
-          ? erpEdits["ERP 품명"]
-          : (m?.name ?? firstCorrectionName ?? null);
-        const corrCode = erpEdits?.["ERP 코드"] !== undefined
-          ? erpEdits["ERP 코드"]
-          : (m?.code ?? null);
-        const qtyEditVal = erpEdits?.["OCR수량"] ?? erpEdits?.["수량"];
-        const priEditVal = erpEdits?.["단가"];
-        const amtEditVal = erpEdits?.["금액"];
-        const qty = qtyEditVal !== undefined
-          ? parseNumber(qtyEditVal)
-          : (ocrQtyIdx >= 0 ? row[ocrQtyIdx] : null);
-        const pri = priEditVal !== undefined
-          ? parseNumber(priEditVal)
-          : (ocrPriIdx >= 0 ? row[ocrPriIdx] : null);
-        let amt: number | null;
-        if (amtEditVal !== undefined) amt = parseNumber(amtEditVal);
-        // 2차보정 원복 (2026-07-18): 수량/단가 편집 있으면 금액 자동계산
-        else if ((qtyEditVal !== undefined || priEditVal !== undefined) && parseNumber(qty) > 0 && parseNumber(pri) > 0) {
-          amt = Math.round(parseNumber(qty) * parseNumber(pri));
-        }
-        else {
-          const rawA = amtIdx >= 0 && row[amtIdx] != null ? parseNumber(row[amtIdx]) : 0;
-          if (rawA > 0) amt = rawA;
-          else if (parseNumber(qty) > 0 && parseNumber(pri) > 0) amt = Math.round(parseNumber(qty) * parseNumber(pri));
-          else amt = null;
-        }
-        const pn = pageNums[ri];
-        // 2026-07-28 · 사용자 지적 "1차 보정에서 이미 부가세 처리됨 · 확정표에서 재계산 X"
-        //   row amt · pre-VAT 유지 (1차 UI 의 행 amt 와 동일 · 부가세는 페이지 소계에만 적용됨)
-        const spec = ocrSpecIdx >= 0 ? (row[ocrSpecIdx] ?? m?.spec ?? bc?.spec ?? null) : (m?.spec ?? bc?.spec ?? null);
-        const rawSupp = rawSupplierByPage[pn] !== undefined
-          ? rawSupplierByPage[pn]
-          : (ocrSuppIdx >= 0 ? (row[ocrSuppIdx] ?? globalSupplier) : (structuredPages.find(p => p.page === pn)?.meta.supplier ?? globalSupplier));
-        const supp    = supplierOverrides[ri] !== undefined ? supplierOverrides[ri] : rawSupp;
-        // 2026-07-27 · 사용자 편집 (pageDateOverride) 우선 · 없으면 OCR meta.date
-        const dateVal = pageDateOverride[pn] ?? structuredPages.find(p => p.page === pn)?.meta.date ?? null;
-        // 2026-07-27 · 사용자 원칙 "1차 최종값 + ERP 매칭값 → 3차"
-        //   유통기한: 2차편집(erpEdits) > 1차 편집(cellEdits/row) > ERP matched > barcode
-        const expiryEdit = erpEdits?.["유통기한"];
-        const expiryIdxL = (() => {
-          for (const a of ["유통기한","유효기한","유통기간"]) {
-            const i = dispHeaders.indexOf(a); if (i >= 0) return i;
-          }
-          return -1;
-        })();
-        const ocrExpiry = expiryIdxL >= 0 ? String(row[expiryIdxL] ?? "").trim() || null : null;
-        const expiry = expiryEdit !== undefined ? expiryEdit : (ocrExpiry ?? m?.expiryDate ?? bc?.expiryDate ?? null);
-        // 확정일: erpCellEdits 우선, 없으면 batch confirmedAt
-        const confirmedDateEdit = erpEdits?.["확정일"];
-        const confirmedDateCell = confirmedDateEdit !== undefined ? confirmedDateEdit : (confirmedAt ?? null);
-        // 2026-07-27 · 사용자 요청 "잔고는 각 명세서의 소계부분의 정보를 넣어야지"
-        //   1차보정 소계 area 의 displayBal 계산과 완전 동일 규칙 (미수금 input · 수동입력 · OCR 감지 순)
-        //   pageBalanceOverride = 미수금 input 편집값 · pageSupplierBalances = OCR 감지값 · pageBalanceManualInput = 수동 입력값
-        const _balDetected = pageSupplierBalances[pn] ?? pageBalanceOverride[pn];
-        const _balManual = pageBalanceModeManual.has(pn) ? parseNumber(pageBalanceManualInput[pn] ?? "") : 0;
-        const pnBalance = _balDetected ?? (_balManual > 0 ? _balManual : null);
-        // 2026-07-27 · CONF_HEADERS 축소 반영 · 확정일·규격·공급사잔고 제외
-        //   (confirmedDateCell · spec · pnBalance 는 handleSaveConfirmed 에서 별도 참조 · 표에는 미표시)
-        // 2026-07-28 · 거래일 / 공급사 · 한 셀에 두 줄로 (\n · CSS whitespace-pre-line 렌더)
-        void confirmedDateCell; void spec; void pnBalance;
-        const dateSuppCombined = (() => {
-          const d = dateVal ? String(dateVal) : "";
-          const s = supp ? String(supp) : "";
-          if (d && s) return `${d}\n${s}`;
-          return d || s || null;
-        })();
-        const codeNameCombined = (() => {
-          const c = corrCode ? String(corrCode) : "";
-          const n = corrName ? String(corrName) : "";
-          if (c && n) return `${c}\n${n}`;
-          return c || n || null;
-        })();
-        return [dateSuppCombined, codeNameCombined, m?.masterPrice ?? bc?.masterPrice ?? null, pri, qty, amt,
-                m?.salePrice ?? bc?.salePrice ?? null,
-                m?.profitRate != null ? m.profitRate : (bc?.profitRate ?? null),
-                expiry];
-      })
-      // 2026-07-24 · filter 제거 · 빈 행은 map 렌더에서 return null · ri 를 effectiveDispRows 와 일치 유지
-    : [];
-
-  const confAmtIdx  = CONF_HEADERS.indexOf("매입총계");
-  const confSuppIdx = CONF_HEADERS.indexOf("공급사");
-
-  // 2026-07-27 · 사용자 요청 "1차보정 총금액값이 확정표에도 적용" · 1차 UI 소계와 완전 동일
-  //   getPageConfirmedSubtotal 사용 (finalShown 계산 · VAT × 1.1 포함)
-  const confPageTotals = new Map<number, number>();
-  if (confAmtIdx >= 0) {
-    uniquePageNums.forEach(pn => {
-      confPageTotals.set(pn, getPageConfirmedSubtotal(pn));
-    });
-  }
-
-  // 2026-07-27 · 사용자 요청 "확정표 합계 · 1차보정 값 반영 · VAT 포함 총 소계"
-  //   confRows 개별 amt 합산 → confirmedPages 의 페이지 소계 (VAT 포함) 합산으로 변경
-  //   1차 보정에서 사용자가 확정한 페이지 소계 (VAT 포함/미포함 반영) 을 그대로 반영
-  const confTotal   = confAmtIdx >= 0
-    ? [...confirmedPages].reduce((s, pn) => s + (confPageTotals.get(pn) ?? 0), 0)
-    : 0;
-  // 2026-07-27 · confSupplierTotals · 1차 소계 (VAT 포함) 기준으로 페이지별 그룹화
-  //   기존: 개별 row amt 합산 → 빈 [] 행 · VAT 미반영 (사용자 지적)
-  //   수정: confirmedPages 만 · getPageDisplayTotalWithVat(pn) 사용 · 공급사별 페이지 매(=1건 = 1페이지) 카운트
-  const confSupplierTotals: { supplier: string; total: number; count: number }[] = confAmtIdx >= 0
-    ? (() => {
-        const m = new Map<string, { total: number; count: number }>();
-        for (const pn of [...confirmedPages].sort((a, b) => a - b)) {
-          const supp = (rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "미상").trim() || "미상";
-          const pageTotal = confPageTotals.get(pn) ?? 0;
-          const prev = m.get(supp) ?? { total: 0, count: 0 };
-          m.set(supp, { total: prev.total + pageTotal, count: prev.count + 1 });
-        }
-        return [...m.entries()].map(([supplier, v]) => ({ supplier, ...v }));
-      })()
-    : [];
-
+  // ── 확정표 행 계산 → useConfRows 훅으로 분리 ───────────────────────────────────────
+  const { confRows, confAmtIdx, confPageTotals, confTotal, confSupplierTotals } = useConfRows({
+    matchItems, effectiveDispRows, pageNums,
+    permanentlyDeletedRawRows, isRowDbDeleted, hiddenRawRows,
+    confirmedPages, nameIdx, ocrQtyIdx, ocrPriIdx, ocrSpecIdx, ocrSuppIdx,
+    amtIdx, dispHeaders, cancelledRows, selectedCands, cancelledAutoMap,
+    autoSynonymMatches, barcodeAutoMap, erpCellEdits, cellEdits,
+    rawSupplierByPage, structuredPages, globalSupplier, supplierOverrides,
+    pageDateOverride, pageSupplierBalances, pageBalanceOverride,
+    pageBalanceModeManual, pageBalanceManualInput, confirmedAt,
+    CONF_HEADERS, uniquePageNums, getPageConfirmedSubtotal,
+  });
   // 2026-07-20: export 로직 → ./RawOcrTable/exportHelpers.ts 분리 · state 는 부모 유지
   const handleExport = useCallback((headers: string[], rows: (string | number | null)[][], suffix: string) => {
     _exportCsv(headers, rows, `거래명세서_${meta.date?.replace(/-/g, "") ?? "OCR"}_${suffix}.csv`);
