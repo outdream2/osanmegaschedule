@@ -1,20 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { Upload, X, Zap, AlertCircle, Images, BookOpen, Building2, Plus, Trash2, Pencil, Check, RefreshCw, FileText } from "lucide-react";
+import { Upload, X, Zap, AlertCircle, Images, BookOpen, FileText } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import { PageImageViewer } from "./PageImageViewer";
 import { RawOcrTable, type ConfirmedItem } from "./RawOcrTable";
 import type { OcrPageResult } from "./types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
-import { useConfirm } from "../../hooks/useConfirm";
-// 2026-08-21 · Framework Phase 3 · alert → useToast
-import { useToast, toastClass } from "../../hooks/useToast";
-// 2026-08-21 · Framework Phase 3 · fetch → apiClient (SSE 스트리밍 fetch 는 유지)
-import { api } from "../../lib/apiClient";
 import { IconTile } from "../common/IconTile";
-import { Modal } from "../common/Modal";
-import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 // 2026-08-20 · #149 · Card 프리미티브 확산 · bg-white border border-line rounded-xl shadow-sm overflow-hidden 반복 통합
 import { Card } from "../common/Card";
@@ -33,141 +26,17 @@ interface OcrPageProps {
   embedded?: boolean;
 }
 
-async function detectTextOrientation(dataUrl: string): Promise<number> {
-  return new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
-      const MAX = 320;
-      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
-      const sw = Math.floor(img.width * scale);
-      const sh = Math.floor(img.height * scale);
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return resolve(0);
-
-      // Render at `deg` CW degrees, return row-projection + variance
-      function renderProj(deg: number) {
-        const swap = deg === 90 || deg === 270;
-        const cw = swap ? sh : sw;
-        const ch = swap ? sw : sh;
-        canvas.width = cw; canvas.height = ch;
-        ctx.clearRect(0, 0, cw, ch);
-        ctx.save();
-        ctx.translate(cw / 2, ch / 2);
-        ctx.rotate((deg * Math.PI) / 180);
-        ctx.drawImage(img, -sw / 2, -sh / 2, sw, sh);
-        ctx.restore();
-        const px = ctx.getImageData(0, 0, cw, ch).data;
-        const proj = new Float64Array(ch);
-        for (let y = 0; y < ch; y++) {
-          let d = 0;
-          for (let x = 0; x < cw; x++) {
-            const i = (y * cw + x) * 4;
-            if (px[i]*0.299 + px[i+1]*0.587 + px[i+2]*0.114 < 180) d++;
-          }
-          proj[y] = d;
-        }
-        const mean = proj.reduce((a, b) => a + b, 0) / ch;
-        const variance = proj.reduce((a, b) => a + (b - mean)**2, 0) / ch;
-        return { proj, ch, variance };
-      }
-
-      // Ratio of top-quarter dark pixels to bottom-quarter
-      // > 1 → text heavier at top (document is right-side-up)
-      // < 1 → text heavier at bottom (document is upside-down / needs 180°)
-      function topHeavyRatio(proj: Float64Array, ch: number) {
-        const slice = Math.max(1, Math.floor(ch * 0.22));
-        let top = 0, bot = 0;
-        for (let y = 0; y < slice; y++) top += proj[y];
-        for (let y = ch - slice; y < ch; y++) bot += proj[y];
-        return top / (bot + 1);
-      }
-
-      // Step 1: is text horizontal or vertical?
-      const r0  = renderProj(0);
-      const r90 = renderProj(90);
-
-      let bestDeg: number;
-      if (r0.variance >= r90.variance) {
-        // Horizontal text — distinguish 0° vs 180° by top-heavy ratio at 0°
-        // Documents (invoices): title/supplier at top → topRatio > 1 when upright
-        const ratio = topHeavyRatio(r0.proj, r0.ch);
-        bestDeg = ratio >= 0.9 ? 0 : 180;
-      } else {
-        // Vertical text — distinguish 90° vs 270° by top-heavy ratio at 90°
-        // At deg=90 rendering: if doc header lands at TOP → topRatio > 1 → bestDeg=90
-        // If doc header lands at BOTTOM → topRatio < 1 → bestDeg=270
-        const ratio = topHeavyRatio(r90.proj, r90.ch);
-        bestDeg = ratio >= 0.9 ? 90 : 270;
-      }
-
-      // Convert to UI correction: deg > 180 → wrap to negative
-      resolve(bestDeg > 180 ? bestDeg - 360 : bestDeg);
-    };
-    img.onerror = () => resolve(0);
-    img.src = dataUrl;
-  });
-}
-
-async function physicallyRotate(
-  b64: string,
-  mimeType: string,
-  degrees: number,
-): Promise<{ data: string; mimeType: string }> {
-  if (degrees === 0) return { data: b64, mimeType };
-  return new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
-      const rad = (degrees * Math.PI) / 180;
-      const swap = degrees === 90 || degrees === 270 || degrees === -90 || degrees === -270;
-      const canvas = document.createElement("canvas");
-      canvas.width = swap ? img.height : img.width;
-      canvas.height = swap ? img.width : img.height;
-      const ctx = canvas.getContext("2d")!;
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate(rad);
-      ctx.drawImage(img, -img.width / 2, -img.height / 2);
-      resolve({ data: canvas.toDataURL("image/jpeg", 0.95).split(",")[1], mimeType: "image/jpeg" });
-    };
-    img.src = `data:${mimeType};base64,${b64}`;
-  });
-}
-
-/** OCR 전송 전 이미지 리사이징: 최대 1500px, JPEG 82% — 5MB→~250KB */
-async function resizeImageForOcr(
-  b64: string,
-  mimeType: string,
-): Promise<{ data: string; mimeType: string }> {
-  return new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
-      const MAX = 2400;
-      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
-      const canvas = document.createElement("canvas");
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0, w, h);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-      resolve({ data: dataUrl.split(",")[1], mimeType: "image/jpeg" });
-    };
-    img.onerror = () => resolve({ data: b64, mimeType });
-    img.src = `data:${mimeType};base64,${b64}`;
-  });
-}
-
 // 2026-08-21 · Framework Phase 4 · large-file 분리
-import type { ProductSynonym, SupplierAlias, ProdEditState, SuppEditState } from "./OcrPage.types";
-import { BALANCE_LABEL_OPTIONS } from "./OcrPage.types";
 import { ConfirmedRecordsTab } from "./ConfirmedRecordsTab";
 import { BalanceConfigTab } from "./BalanceConfigTab";
+// 2026-08-22 · Framework Phase 4 · helpers + SynonymsTab 분리
+import { detectTextOrientation, physicallyRotate, resizeImageForOcr } from "./OcrPage.helpers";
+import { SynonymsTab } from "./SynonymsTab";
 
 // 2026-08-21 · ConfirmedRecord · fmtNum · toNum 는 ./OcrPage.types 로 이관
 
 
 export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigate, onLogout, embedded = false }) => {
-  const confirm = useConfirm();
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -243,26 +112,6 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
 
   // Tab state
   const [mainTab, setMainTab] = useState<"ocr" | "synonyms" | "balance" | "records">("ocr");
-
-  // Synonym management state
-  const [synTab, setSynTab] = useState<"product" | "supplier">("product");
-  const [prodListView, setProdListView] = useState<"prodname" | "supplier">("prodname");
-  const [productSynonyms, setProductSynonyms] = useState<ProductSynonym[]>([]);
-  const [supplierAliases, setSupplierAliases] = useState<SupplierAlias[]>([]);
-  const [synLoading, setSynLoading] = useState(false);
-  const [addProdOld, setAddProdOld] = useState("");
-  const [addProdNew, setAddProdNew] = useState("");
-  const [addProdCode, setAddProdCode] = useState("");
-  const [addProdSuppNew, setAddProdSuppNew] = useState("");
-  const [addProdSuppOld, setAddProdSuppOld] = useState("");
-  const [addSuppAlias, setAddSuppAlias] = useState("");
-  const [addSuppName, setAddSuppName] = useState("");
-  const [synSaving, setSynSaving] = useState(false);
-  const [editingProdId, setEditingProdId] = useState<number | null>(null);
-  const [editingProd, setEditingProd] = useState<ProdEditState | null>(null);
-  const [editingSuppId, setEditingSuppId] = useState<number | null>(null);
-  const [editingSupp, setEditingSupp] = useState<SuppEditState | null>(null);
-  const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => {
     axios.get("/api/ocr-ping")
@@ -582,112 +431,6 @@ const clearFiles = () => {
   setPageCount(0); setError(null); setRotation(0);
 };
 
-// ─── 동의어 관리 ───────────────────────────────────────────────────────────────
-
-const fetchSynonyms = useCallback(async () => {
-  setSynLoading(true);
-  try {
-    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-    const [synRes, aliasRes] = await Promise.all([
-      api.get<{ synonyms?: ProductSynonym[] }>("/api/ocr-synonyms"),
-      api.get<{ aliases?: SupplierAlias[] }>("/api/ocr-supplier-aliases"),
-    ]);
-    setProductSynonyms(synRes.data.synonyms ?? []);
-    setSupplierAliases(aliasRes.data.aliases ?? []);
-  } finally { setSynLoading(false); }
-}, []);
-
-// Load synonyms when switching to the synonyms tab
-useEffect(() => { if (mainTab === "synonyms") fetchSynonyms(); }, [mainTab, fetchSynonyms]);
-
-const addProductSynonym = async () => {
-  if (!addProdOld.trim() || !addProdCode.trim()) return;
-  setSynSaving(true);
-  try {
-    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-    await api.post("/api/ocr-synonyms", {
-      prod_name_old: addProdOld.trim(),
-      prod_name_new: addProdNew.trim() || null,
-      product_code: addProdCode.trim(),
-      supplier_new: addProdSuppNew.trim() || null,
-      supplier_old: addProdSuppOld.trim() || null,
-    });
-    setAddProdOld(""); setAddProdNew(""); setAddProdCode(""); setAddProdSuppNew(""); setAddProdSuppOld("");
-    await fetchSynonyms();
-  } catch { /* silent · ApiError 는 서버 오류 */ }
-  finally { setSynSaving(false); }
-};
-
-const addSupplierAlias = async () => {
-  if (!addSuppAlias.trim() || !addSuppName.trim()) return;
-  setSynSaving(true);
-  try {
-    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-    await api.post("/api/ocr-supplier-aliases", { alias: addSuppAlias.trim(), supplier_name: addSuppName.trim() });
-    setAddSuppAlias(""); setAddSuppName("");
-    await fetchSynonyms();
-  } catch { /* silent */ }
-  finally { setSynSaving(false); }
-};
-
-const deleteProductSynonym = async (id: number) => {
-  // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-  await api.del(`/api/ocr-synonyms/${id}`).catch(() => {});
-  setProductSynonyms(prev => prev.filter(s => s.id !== id));
-};
-
-const deleteSupplierAlias = async (id: number) => {
-  await api.del(`/api/ocr-supplier-aliases/${id}`).catch(() => {});
-  setSupplierAliases(prev => prev.filter(a => a.id !== id));
-};
-
-const startEditProd = (s: ProductSynonym) => {
-  setEditingProdId(s.id);
-  setEditingProd({ prod_name_old: s.prod_name_old, prod_name_new: s.prod_name_new ?? "", product_code: s.product_code, supplier_new: s.supplier_new ?? "", supplier_old: s.supplier_old ?? "" });
-};
-const cancelEditProd = () => { setEditingProdId(null); setEditingProd(null); };
-const saveEditProd = async () => {
-  if (!editingProd || !editingProdId || !editingProd.prod_name_old.trim() || !editingProd.product_code.trim()) return;
-  setEditSaving(true);
-  try {
-    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-    const { data } = await api.patch<{ synonym?: ProductSynonym }>(`/api/ocr-synonyms/${editingProdId}`, {
-      prod_name_old: editingProd.prod_name_old.trim(),
-      prod_name_new: editingProd.prod_name_new.trim() || null,
-      product_code: editingProd.product_code.trim(),
-      supplier_new: editingProd.supplier_new.trim() || null,
-      supplier_old: editingProd.supplier_old.trim() || null,
-    });
-    if (data?.synonym) {
-      setProductSynonyms(prev => prev.map(s => s.id === editingProdId ? (data.synonym as ProductSynonym) : s));
-      cancelEditProd();
-    }
-  } catch { /* silent */ }
-  finally { setEditSaving(false); }
-};
-
-const startEditSupp = (a: SupplierAlias) => { setEditingSuppId(a.id); setEditingSupp({ alias: a.alias, supplier_name: a.supplier_name }); };
-const cancelEditSupp = () => { setEditingSuppId(null); setEditingSupp(null); };
-const saveEditSupp = async () => {
-  if (!editingSupp || !editingSuppId || !editingSupp.alias.trim() || !editingSupp.supplier_name.trim()) return;
-  setEditSaving(true);
-  try {
-    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-    const { data } = await api.patch<{ alias?: SupplierAlias }>(`/api/ocr-supplier-aliases/${editingSuppId}`, {
-      alias: editingSupp.alias.trim(),
-      supplier_name: editingSupp.supplier_name.trim(),
-    });
-    if (data?.alias) {
-      setSupplierAliases(prev => prev.map(a => a.id === editingSuppId ? (data.alias as SupplierAlias) : a));
-      cancelEditSupp();
-    }
-  } catch { /* silent */ }
-  finally { setEditSaving(false); }
-};
-
-const cellCls = "border border-line rounded px-2 py-1 text-xs outline-none focus:border-brand-deep w-full";
-const cellClsSky = "border border-line rounded px-2 py-1 text-xs outline-none focus:border-brand-deep w-full";
-
 return (
   <div className={embedded ? "flex-1 flex flex-col min-h-0 bg-gray-50" : "min-h-screen bg-gray-50 flex flex-col"}>
     {/* Shared App Nav Header · 임베드 모드에선 숨김 (부모 페이지의 헤더 사용) */}
@@ -741,200 +484,7 @@ return (
       <BalanceConfigTab pages={pages} config={balanceConfig} onConfigChange={handleBalanceConfigChange} />
     ) : mainTab === "synonyms" ? (
       /* ── 동의어 관리 탭 ── */
-      <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 flex flex-col gap-4">
-        {/* 동의어 서브 탭 */}
-        <Card clip padding="none">
-          <div className="flex items-center gap-1 px-4 py-2 border-b border-zinc-100/80">
-            <div className="flex flex-wrap bg-zinc-100/70 border border-line/60 rounded-2xl p-1 gap-0.5">
-            <button onClick={() => setSynTab("product")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors duration-150 cursor-pointer ${synTab === "product" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}>
-              <BookOpen size={12} className={synTab === "product" ? "text-zinc-800" : "text-zinc-400"} /> 상품명 동의어 ({productSynonyms.length})
-            </button>
-            <button onClick={() => setSynTab("supplier")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors duration-150 cursor-pointer ${synTab === "supplier" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}>
-              <Building2 size={12} className={synTab === "supplier" ? "text-zinc-800" : "text-zinc-400"} /> 공급사 별칭 ({supplierAliases.length})
-            </button>
-            </div>
-            <button onClick={fetchSynonyms} className="ml-auto p-1.5 self-center rounded-lg hover:bg-gray-100 cursor-pointer">
-              <RefreshCw size={13} className={`text-gray-400 ${synLoading ? "animate-spin" : ""}`} />
-            </button>
-          </div>
-
-          {synTab === "product" ? (
-            <div className="p-4 flex flex-col gap-3">
-              {/* 추가 폼 */}
-              <p className="text-xs font-bold text-indigo-700 flex items-center gap-1.5"><Plus size={12} /> 상품명 동의어 추가</p>
-              <div className="grid grid-cols-2 gap-2">
-                <input className="col-span-2 border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep font-mono" placeholder="상품코드 (필수)" value={addProdCode} onChange={e => setAddProdCode(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
-                <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="상품명(OCR) — 필수" value={addProdOld} onChange={e => setAddProdOld(e.target.value)} />
-                <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="상품명(보정후)" value={addProdNew} onChange={e => setAddProdNew(e.target.value)} />
-                <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="공급사명(OCR)" value={addProdSuppOld} onChange={e => setAddProdSuppOld(e.target.value)} />
-                <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="공급사명(보정후)" value={addProdSuppNew} onChange={e => setAddProdSuppNew(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
-              </div>
-              <button onClick={addProductSynonym} disabled={!addProdOld.trim() || !addProdCode.trim() || synSaving} className="self-end px-4 py-1.5 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg transition disabled:opacity-40 cursor-pointer">추가</button>
-            </div>
-          ) : (
-            <div className="p-4 flex flex-col gap-3">
-              <p className="text-xs font-bold text-sky-700 flex items-center gap-1.5"><Plus size={12} /> 공급사 별칭 추가</p>
-              <div className="grid grid-cols-2 gap-2">
-                <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="OCR 오인식 공급사명 (필수)" value={addSuppAlias} onChange={e => setAddSuppAlias(e.target.value)} onKeyDown={e => e.key === "Enter" && addSupplierAlias()} />
-                <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="실제 공급사명 (필수)" value={addSuppName} onChange={e => setAddSuppName(e.target.value)} onKeyDown={e => e.key === "Enter" && addSupplierAlias()} />
-              </div>
-              <button onClick={addSupplierAlias} disabled={!addSuppAlias.trim() || !addSuppName.trim() || synSaving} className="self-end px-4 py-1.5 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg transition disabled:opacity-40 cursor-pointer">추가</button>
-            </div>
-          )}
-        </Card>
-
-        {/* 리스트 테이블 */}
-        {synTab === "product" ? (
-          <Card clip padding="none">
-            {/* 상품명 / 공급사명 뷰 토글 */}
-            <div className="flex items-center gap-1 px-3 py-2 border-b border-zinc-100 bg-zinc-50">
-              <button
-                onClick={() => setProdListView("prodname")}
-                className={`px-3 py-1 text-[15px] font-bold rounded-lg transition cursor-pointer ${prodListView === "prodname" ? "bg-indigo-100 text-indigo-700" : "text-gray-400 hover:text-gray-700"}`}
-              >
-                상품명
-              </button>
-              <button
-                onClick={() => setProdListView("supplier")}
-                className={`px-3 py-1 text-[15px] font-bold rounded-lg transition cursor-pointer ${prodListView === "supplier" ? "bg-sky-100 text-sky-700" : "text-gray-400 hover:text-gray-700"}`}
-              >
-                공급사명
-              </button>
-              <span className="ml-auto text-[15px] text-gray-400">{productSynonyms.length}건</span>
-            </div>
-            <table className="w-full text-xs border-collapse">
-              <thead>
-                {prodListView === "prodname" ? (
-                  <tr className="bg-indigo-50 border-b border-indigo-100">
-                    <th className="px-3 py-2 text-left font-bold text-indigo-800 font-mono w-28">상품코드</th>
-                    <th className="px-3 py-2 text-left font-bold text-indigo-800">상품명(OCR)</th>
-                    <th className="px-3 py-2 text-left font-bold text-indigo-800">상품명(보정후)</th>
-                    <th className="px-2 py-2 w-14" />
-                  </tr>
-                ) : (
-                  <tr className="bg-sky-50 border-b border-sky-100">
-                    <th className="px-3 py-2 text-left font-bold text-sky-800 font-mono w-28">상품코드</th>
-                    <th className="px-3 py-2 text-left font-bold text-sky-800">공급사명(OCR)</th>
-                    <th className="px-3 py-2 text-left font-bold text-sky-800">공급사명(보정후)</th>
-                    <th className="px-2 py-2 w-14" />
-                  </tr>
-                )}
-              </thead>
-              <tbody>
-                {productSynonyms.length === 0 && (
-                  <tr><td colSpan={4} className="px-3 py-8 text-center text-gray-400">{synLoading ? "불러오는 중..." : "등록된 상품명 동의어 없음"}</td></tr>
-                )}
-                {productSynonyms.map(s => {
-                  const isEditing = editingProdId === s.id && editingProd;
-                  return (
-                    <tr key={s.id} className={`border-t border-gray-50 ${isEditing ? "bg-indigo-50/40" : "hover:bg-gray-50"}`}>
-                      {isEditing ? (
-                        prodListView === "prodname" ? (
-                          <>
-                            <td className="px-2 py-1.5"><input className={`${cellCls} font-mono`} value={editingProd.product_code} onChange={e => setEditingProd(p => p && ({ ...p, product_code: e.target.value }))} /></td>
-                            <td className="px-2 py-1.5"><input className={cellCls} value={editingProd.prod_name_old} onChange={e => setEditingProd(p => p && ({ ...p, prod_name_old: e.target.value }))} /></td>
-                            <td className="px-2 py-1.5"><input className={cellCls} value={editingProd.prod_name_new} onChange={e => setEditingProd(p => p && ({ ...p, prod_name_new: e.target.value }))} placeholder="(없음)" /></td>
-                            <td className="px-2 py-1.5">
-                              <div className="flex items-center gap-1">
-                                <button onClick={saveEditProd} disabled={editSaving || !editingProd.prod_name_old.trim() || !editingProd.product_code.trim()} className="p-1 text-indigo-500 hover:text-indigo-700 cursor-pointer disabled:opacity-40"><Check size={13} /></button>
-                                <button onClick={cancelEditProd} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer"><X size={13} /></button>
-                              </div>
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="px-2 py-1.5"><input className={`${cellClsSky} font-mono`} value={editingProd.product_code} onChange={e => setEditingProd(p => p && ({ ...p, product_code: e.target.value }))} /></td>
-                            <td className="px-2 py-1.5"><input className={cellClsSky} value={editingProd.supplier_old} onChange={e => setEditingProd(p => p && ({ ...p, supplier_old: e.target.value }))} placeholder="(없음)" /></td>
-                            <td className="px-2 py-1.5"><input className={cellClsSky} value={editingProd.supplier_new} onChange={e => setEditingProd(p => p && ({ ...p, supplier_new: e.target.value }))} placeholder="(없음)" /></td>
-                            <td className="px-2 py-1.5">
-                              <div className="flex items-center gap-1">
-                                <button onClick={saveEditProd} disabled={editSaving || !editingProd.prod_name_old.trim() || !editingProd.product_code.trim()} className="p-1 text-sky-500 hover:text-sky-700 cursor-pointer disabled:opacity-40"><Check size={13} /></button>
-                                <button onClick={cancelEditProd} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer"><X size={13} /></button>
-                              </div>
-                            </td>
-                          </>
-                        )
-                      ) : prodListView === "prodname" ? (
-                        <>
-                          <td className="px-3 py-2.5 text-gray-500 font-mono text-[15px] leading-snug">{s.product_code}</td>
-                          <td className="px-3 py-2.5 font-semibold text-gray-700 leading-snug">{s.prod_name_old}</td>
-                          <td className="px-3 py-2.5 text-indigo-700 leading-snug">{s.prod_name_new ?? <span className="text-gray-300">—</span>}</td>
-                          <td className="px-2 py-2.5">
-                            <div className="flex items-center gap-0.5">
-                              <button onClick={() => startEditProd(s)} className="p-1 text-gray-300 hover:text-indigo-500 cursor-pointer"><Pencil size={13} /></button>
-                              <button onClick={() => deleteProductSynonym(s.id)} className="p-1 text-gray-300 hover:text-rose-500 cursor-pointer"><Trash2 size={13} /></button>
-                            </div>
-                          </td>
-                        </>
-                      ) : (
-                        <>
-                          <td className="px-3 py-2.5 text-gray-500 font-mono text-[15px] leading-snug">{s.product_code}</td>
-                          <td className="px-3 py-2.5 text-gray-500 leading-snug">{s.supplier_old ?? <span className="text-gray-300">—</span>}</td>
-                          <td className="px-3 py-2.5 text-sky-700 font-semibold leading-snug">{s.supplier_new ?? <span className="text-gray-300">—</span>}</td>
-                          <td className="px-2 py-2.5">
-                            <div className="flex items-center gap-0.5">
-                              <button onClick={() => startEditProd(s)} className="p-1 text-gray-300 hover:text-sky-500 cursor-pointer"><Pencil size={13} /></button>
-                              <button onClick={() => deleteProductSynonym(s.id)} className="p-1 text-gray-300 hover:text-rose-500 cursor-pointer"><Trash2 size={13} /></button>
-                            </div>
-                          </td>
-                        </>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </Card>
-        ) : (
-          <Card clip padding="none">
-            <table className="w-full text-xs border-collapse">
-              <thead>
-                <tr className="bg-sky-50 border-b border-sky-100">
-                  <th className="px-3 py-2 text-left font-bold text-sky-800">OCR 공급사명 (별칭)</th>
-                  <th className="px-3 py-2 text-left font-bold text-sky-800">실제 공급사명</th>
-                  <th className="px-3 py-2 text-left font-bold text-sky-800 text-[15px]">등록일</th>
-                  <th className="px-2 py-2 w-16" />
-                </tr>
-              </thead>
-              <tbody>
-                {supplierAliases.length === 0 && <tr><td colSpan={4} className="px-3 py-8 text-center text-gray-400">{synLoading ? "불러오는 중..." : "등록된 공급사 별칭 없음"}</td></tr>}
-                {supplierAliases.map(a => {
-                  const isEditing = editingSuppId === a.id && editingSupp;
-                  return (
-                    <tr key={a.id} className={`border-t border-gray-50 ${isEditing ? "bg-sky-50/40" : "hover:bg-gray-50"}`}>
-                      {isEditing ? (
-                        <>
-                          <td className="px-2 py-1.5"><input className={cellClsSky} value={editingSupp.alias} onChange={e => setEditingSupp(p => p && ({ ...p, alias: e.target.value }))} /></td>
-                          <td className="px-2 py-1.5"><input className={cellClsSky} value={editingSupp.supplier_name} onChange={e => setEditingSupp(p => p && ({ ...p, supplier_name: e.target.value }))} /></td>
-                          <td className="px-2 py-1.5 text-gray-400">{new Date(a.created_at).toLocaleDateString("ko-KR")}</td>
-                          <td className="px-2 py-1.5">
-                            <div className="flex items-center gap-1">
-                              <button onClick={saveEditSupp} disabled={editSaving || !editingSupp.alias.trim() || !editingSupp.supplier_name.trim()} className="p-1 text-sky-500 hover:text-sky-700 cursor-pointer disabled:opacity-40"><Check size={13} /></button>
-                              <button onClick={cancelEditSupp} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer"><X size={13} /></button>
-                            </div>
-                          </td>
-                        </>
-                      ) : (
-                        <>
-                          <td className="px-3 py-2 font-semibold text-gray-700">{a.alias}</td>
-                          <td className="px-3 py-2 text-sky-700 font-bold">{a.supplier_name}</td>
-                          <td className="px-3 py-2 text-gray-400 text-[15px]">{new Date(a.created_at).toLocaleDateString("ko-KR")}</td>
-                          <td className="px-2 py-2">
-                            <div className="flex items-center gap-0.5">
-                              <button onClick={() => startEditSupp(a)} className="p-1 text-gray-300 hover:text-sky-500 cursor-pointer"><Pencil size={13} /></button>
-                              <button onClick={() => deleteSupplierAlias(a.id)} className="p-1 text-gray-300 hover:text-rose-500 cursor-pointer"><Trash2 size={13} /></button>
-                            </div>
-                          </td>
-                        </>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </Card>
-        )}
-      </div>
+      <SynonymsTab />
     ) : (
     /* ── OCR 추출 탭 ── */
     <div className="flex-1 flex flex-col px-4 py-6 gap-5 w-full max-w-[1500px] mx-auto">
