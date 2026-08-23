@@ -1,6 +1,7 @@
 import React from "react";
 import { CheckCircle, AlertTriangle, Save } from "lucide-react";
 import { Spinner } from "../../common/Spinner";
+import { Badge } from "../../common/Badge";
 import { api } from "../../../lib/apiClient";
 import { XlsxExportSection } from "./XlsxExportSection";
 import type { MatchedItem, CandidateInfo } from "./types";
@@ -308,9 +309,9 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
                           <span className="inline-flex items-center gap-4 text-[14px] font-bold text-emerald-800 flex-wrap justify-center">
                             <span className="bg-white border border-emerald-300 rounded px-2 py-0.5 text-emerald-700 text-[14px]">{pn}번 명세서</span>
                             {pageSupplierHeadConf && <span className="text-emerald-700 font-bold text-[15px]">{pageSupplierHeadConf}</span>}
-                            <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${pageVatIncluded[pn] ? "text-amber-700 bg-amber-50 border-amber-300" : "text-zinc-500 bg-zinc-50 border-zinc-300"}`}>
+                            <Badge tone={pageVatIncluded[pn] ? "amber" : "zinc"} size="xs">
                               {pageVatIncluded[pn] ? "VAT 별도" : "VAT 포함"}
-                            </span>
+                            </Badge>
                             {(confPageTotals.get(pn) ?? 0) > 0 && (
                               <>
                                 <button type="button"

@@ -5,6 +5,7 @@ import React from "react";
 import { MapPin, Sparkles, X } from "lucide-react";
 import { Modal } from "../common/Modal";
 import { StatusPill } from "../common/StatusPill";
+import { Badge } from "../common/Badge";
 import { SHIFT_BADGE, STAFF_COLORS } from "./DisplayPage.helpers";
 import type { DisplayZone } from "../../utils/zoneUtils";
 import type { TodayStaff, Employee } from "./DisplayPage.types";
@@ -48,9 +49,9 @@ export const StaffInfoModal: React.FC<StaffInfoModalProps> = ({
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/25 text-white">
               {employee.position || "약사"}
             </span>
-            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${SHIFT_BADGE[scheduleType] ?? "bg-zinc-100 text-zinc-700 border-line"}`}>
+            <Badge shape="pill" size="xs" className={SHIFT_BADGE[scheduleType] ?? "bg-zinc-100 text-zinc-700 border-line"}>
               {scheduleType}
-            </span>
+            </Badge>
             {workingHours && (
               <span className="text-[11px] text-white/80 font-medium">{workingHours}</span>
             )}
