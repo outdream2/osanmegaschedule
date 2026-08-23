@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 // 2026-08-20 · BottomNav · 모바일 하단 5탭 · 더보기 sheet
+// 2026-08-23 · #191 · BottomSheet primitive 마이그레이션 · 애니메이션 250ms 대기 필요
 import { describe, it, expect, vi } from "vitest";
-import { render, fireEvent } from "@testing-library/react";
+import { render, fireEvent, waitFor } from "@testing-library/react";
 import { BottomNav } from "./BottomNav";
 import type { AuthSession } from "../../types";
 
@@ -136,7 +137,7 @@ describe("BottomNav · 더보기 sheet", () => {
     expect(container.textContent).not.toContain("로그아웃");
   });
 
-  it("sheet 안 tile 클릭 · sheet 닫힘 + onNavigate", () => {
+  it("sheet 안 tile 클릭 · sheet 닫힘 + onNavigate", async () => {
     const onNavigate = vi.fn();
     const { container } = render(
       <BottomNav activePage={"landing" as any} authSession={employeeSession} onNavigate={onNavigate} />
@@ -147,8 +148,10 @@ describe("BottomNav · 더보기 sheet", () => {
     const lunchTile = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("점심불참"))!;
     fireEvent.click(lunchTile);
     expect(onNavigate).toHaveBeenCalledWith("lunch");
-    // sheet 닫혔는지 · 점심불참 텍스트가 sheet 안에만 있었으므로 사라짐
-    expect(container.textContent).not.toContain("점심불참");
+    // sheet 닫혔는지 · BottomSheet 는 250ms 애니메이션 후 unmount · waitFor 대기
+    await waitFor(() => {
+      expect(container.textContent).not.toContain("점심불참");
+    }, { timeout: 500 });
   });
 });
 

@@ -6,12 +6,14 @@
 
 import React, { useState } from "react";
 import {
-  Home, Calendar, MessageSquare, MessageCircleQuestion, Menu, X,
+  Home, Calendar, MessageSquare, MessageCircleQuestion, Menu,
   LayoutGrid, ScanLine, FileText, UtensilsCrossed, CalendarDays,
   Lock, LogOut, Package, Bell,
 } from "lucide-react";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "./AppNavHeader";
+// 2026-08-23 · #191 확장 · BottomSheet primitive · 인라인 fixed inset-0 제거
+import { BottomSheet } from "../common/BottomSheet";
 
 interface Props {
   activePage: AppNavPage;
@@ -81,49 +83,40 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
         </div>
       </nav>
 
-      {sheetOpen && (
-        // 2026-08-17 v2 · Modal 통일
-        <div className="sm:hidden fixed inset-0 z-50 backdrop-brand flex items-end" onClick={() => setSheetOpen(false)}>
-          <div className="w-full bg-white rounded-t-3xl shadow-brand-modal max-h-[80vh] overflow-y-auto animate-[slideUp_0.2s_ease-out]" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-zinc-100 px-4 py-3 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-zinc-800">더보기</h3>
-              <button onClick={() => setSheetOpen(false)} className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-500"><X size={18} /></button>
-            </div>
-            <div className="p-3 grid grid-cols-3 gap-2">
-              {isManager && (
-                <SheetTile icon={LayoutGrid} label="매장관리" color="sky" onClick={() => { setSheetOpen(false); onNavigate("display"); }} />
-              )}
-              {isManager && (
-                <SheetTile icon={Package} label="상품관리" color="violet" onClick={() => { setSheetOpen(false); onNavigate("scan"); }} />
-              )}
-              {isManager && (
-                <SheetTile icon={FileText} label="거래명세서" color="amber" onClick={() => { setSheetOpen(false); onNavigate("ocr"); }} />
-              )}
-              {isManager && (
-                <SheetTile icon={Bell} label="입고알림" color="emerald" onClick={() => { setSheetOpen(false); onNavigate("stockarrivals"); }} />
-              )}
-              {isManager && (
-                <SheetTile icon={CalendarDays} label="연차승인" color="rose" onClick={() => { setSheetOpen(false); onNavigate("leave"); }} />
-              )}
-              <SheetTile icon={UtensilsCrossed} label="점심불참" color="red" onClick={() => { setSheetOpen(false); onNavigate("lunch"); }} />
-              <SheetTile icon={ScanLine} label="상품스캔" color="violet" onClick={() => { setSheetOpen(false); onNavigate("scan"); }} />
-              {isSuperAdmin && (
-                <SheetTile icon={Lock} label="권한관리" color="slate" onClick={() => { setSheetOpen(false); onNavigate("permissions"); }} />
-              )}
-              {onLogout && (
-                <SheetTile icon={LogOut} label="로그아웃" color="red" onClick={() => { setSheetOpen(false); onLogout(); }} />
-              )}
-            </div>
-          </div>
+      {/* 2026-08-23 · #191 확장 · BottomSheet primitive 마이그레이션 */}
+      <BottomSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        title={<h3 className="text-sm font-bold text-zinc-800">더보기</h3>}
+        maxHeight="80vh"
+        className="sm:hidden"
+      >
+        <div className="p-3 grid grid-cols-3 gap-2">
+          {isManager && (
+            <SheetTile icon={LayoutGrid} label="매장관리" color="sky" onClick={() => { setSheetOpen(false); onNavigate("display"); }} />
+          )}
+          {isManager && (
+            <SheetTile icon={Package} label="상품관리" color="violet" onClick={() => { setSheetOpen(false); onNavigate("scan"); }} />
+          )}
+          {isManager && (
+            <SheetTile icon={FileText} label="거래명세서" color="amber" onClick={() => { setSheetOpen(false); onNavigate("ocr"); }} />
+          )}
+          {isManager && (
+            <SheetTile icon={Bell} label="입고알림" color="emerald" onClick={() => { setSheetOpen(false); onNavigate("stockarrivals"); }} />
+          )}
+          {isManager && (
+            <SheetTile icon={CalendarDays} label="연차승인" color="rose" onClick={() => { setSheetOpen(false); onNavigate("leave"); }} />
+          )}
+          <SheetTile icon={UtensilsCrossed} label="점심불참" color="red" onClick={() => { setSheetOpen(false); onNavigate("lunch"); }} />
+          <SheetTile icon={ScanLine} label="상품스캔" color="violet" onClick={() => { setSheetOpen(false); onNavigate("scan"); }} />
+          {isSuperAdmin && (
+            <SheetTile icon={Lock} label="권한관리" color="slate" onClick={() => { setSheetOpen(false); onNavigate("permissions"); }} />
+          )}
+          {onLogout && (
+            <SheetTile icon={LogOut} label="로그아웃" color="red" onClick={() => { setSheetOpen(false); onLogout(); }} />
+          )}
         </div>
-      )}
-
-      <style>{`
-        @keyframes slideUp {
-          from { transform: translateY(100%); }
-          to   { transform: translateY(0); }
-        }
-      `}</style>
+      </BottomSheet>
     </>
   );
 };
