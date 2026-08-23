@@ -12,6 +12,9 @@ import { Spinner } from "../common/Spinner";
 import { SplitPanel } from "../common/SplitPanel";
 import { NewVendorModal } from "../common/features/NewVendorModal";
 import { StatusPill } from "../common/StatusPill";
+// 2026-08-23 · #151 · Card + EmptyState 프리미티브 확산
+import { Card } from "../common/Card";
+import { EmptyState } from "../common/EmptyState";
 // 2026-08-23 · #198 Phase 3A · SplitListPanel 프리미티브 (v2 · countDisplay + CategoryChips 프리미티브)
 // UI 목업 대원칙 준수 · docs/UI_MOCKUP_2026-08-21.html · Linear/Vercel 톤 · 딥네이비 accent
 import { SplitListPanel } from "../common/SplitListPanel";
@@ -195,13 +198,14 @@ export const VendorManageSplit: React.FC = () => {
       <VendorDetailModalLazy vendor={selected as any} onClose={() => setSelectedId(null)} onSaved={refresh} panel />
     </React.Suspense>
   ) : (
-    <div className="bg-white rounded-xl border border-line flex-1 flex flex-col items-center justify-center p-10 min-h-[400px] gap-3 shadow-sm">
-      <div className="w-16 h-16 rounded-2xl bg-brand-tint flex items-center justify-center">
-        <Building2 size={30} className="text-brand-deep/70" />
-      </div>
-      <div className="text-[15px] font-semibold text-ink tracking-tight">좌측에서 공급사를 선택하세요</div>
-      <div className="text-[13px] text-ink-soft">사업자번호 · 담당자 · 결제 조건 상세</div>
-    </div>
+    <Card padding="none" rounded="xl" className="flex-1 min-h-[400px]">
+      <EmptyState
+        icon={Building2}
+        title="좌측에서 공급사를 선택하세요"
+        hint="사업자번호 · 담당자 · 결제 조건 상세"
+        size="large"
+      />
+    </Card>
   );
 
   return (
