@@ -15,6 +15,7 @@ import { StatusPill } from "../common/StatusPill";
 import { Card } from "../common/Card";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api, ApiError } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 
 interface OrderHistoryItem {
   id: string | number;
@@ -43,6 +44,7 @@ interface OrderHistoryOrder {
 }
 
 export const OrderHistoryTab: React.FC = () => {
+  const { toast, showError } = useToast();
   const [orders, setOrders] = useState<OrderHistoryOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +65,7 @@ export const OrderHistoryTab: React.FC = () => {
       .catch((e: unknown) => {
         const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "조회 실패";
         setError(msg);
+        showError(`발주이력 조회 실패: ${msg}`);
       })
       .finally(() => setLoading(false));
   }, [days]);
@@ -84,6 +87,10 @@ export const OrderHistoryTab: React.FC = () => {
   const totalItems = orders.reduce((s, o) => s + o.items.length, 0);
 
   return (
+    <>
+    {toast && (
+      <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
+    )}
     <div className="flex flex-col gap-2">
       {/* 상단 툴바 · 2026-08-17 · PageToolbar 프레임워크 · PeriodSelector 공통 · 조회기간 통일 */}
       <PageToolbar
@@ -239,6 +246,7 @@ export const OrderHistoryTab: React.FC = () => {
         )}
       </Card>
     </div>
+    </>
   );
 };
 

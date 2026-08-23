@@ -24,6 +24,7 @@ import { InlineLabel } from "../common/InlineLabel";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
+import { useToast, toastClass } from "../../hooks/useToast";
 
 // ─── 구역 코드 → 카테고리 설명 매핑 ──────────────────────────────────────────
 const ZONE_CATEGORY_MAP: Record<string, string> = (() => {
@@ -49,6 +50,7 @@ type ZoneItemSortKey = "name" | "sale" | "current" | "amount";
 
 // ─── ZoneCategoryContent ────────────────────────────────────────────────────
 const ZoneCategoryContent: React.FC = () => {
+  const { toast, showError } = useToast();
   // zone-labels-changed 이벤트 수신 → 강제 리렌더 (getZoneLabel 이 mutable 모듈 변수 참조)
   const [, setZoneLabelVersion] = useState(0);
   useEffect(() => {
@@ -96,7 +98,7 @@ const ZoneCategoryContent: React.FC = () => {
       getProductsMap(),
     ])
       .then(([s, p]) => { setSales(Array.isArray(s.data?.rows) ? s.data.rows : []); setProducts(p ?? {}); })
-      .catch(() => { setSales([]); setProducts({}); })
+      .catch((e: any) => { setSales([]); setProducts({}); showError(`구역현황 로드 실패: ${e?.message ?? "네트워크 오류"}`); })
       .finally(() => setLoading(false));
   }, [season, months]);
 
@@ -423,6 +425,10 @@ const ZoneCategoryContent: React.FC = () => {
   }, [grouped]);
 
   return (
+    <>
+    {toast && (
+      <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
+    )}
     <div className="flex flex-col gap-2">
       {/* 2026-08-17 · 상단 필터바 · 공용 프레임워크 톤 · 딥네이비 accent + 라벨 · 폰트 통일 */}
       <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2`}>
@@ -465,7 +471,7 @@ const ZoneCategoryContent: React.FC = () => {
               getProductsMap(),
             ])
               .then(([s, p]) => { setSales(Array.isArray(s.data?.rows) ? s.data.rows : []); setProducts(p ?? {}); })
-              .catch(() => { setSales([]); setProducts({}); })
+              .catch((e: any) => { setSales([]); setProducts({}); showError(`새로고침 실패: ${e?.message ?? "네트워크 오류"}`); })
               .finally(() => setLoading(false));
           }}
           disabled={loading}
@@ -593,6 +599,7 @@ const ZoneCategoryContent: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

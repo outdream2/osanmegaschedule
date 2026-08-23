@@ -16,6 +16,7 @@ import { InlineLabel } from "../common/InlineLabel";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 interface TrendingRow {
@@ -255,6 +256,7 @@ const PeriodTrendingSection: React.FC<{
 
 // ─── TrendingTab (main export) ───────────────────────────────────────────────
 export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProductClick }) => {
+  const { toast, showError } = useToast();
   const { getWidth, resizerProps } = useColumnResize("trendingTab", {
     num:     { default: 36,  min: 28, max: 60  },
     name:    { default: 200, min: 100, max: 400 },
@@ -298,7 +300,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
         setRows(Array.isArray(j?.rows) ? j.rows : []);
         setMeta({ recent_from: j?.recent_from ?? "", prior_from: j?.prior_from ?? "", total: Number(j?.total ?? 0) });
       })
-      .catch(() => { setRows([]); setMeta(null); })
+      .catch((e: any) => { setRows([]); setMeta(null); showError(`급상승 로드 실패: ${e?.message ?? "네트워크 오류"}`); })
       .finally(() => setLoading(false));
   }, [windowDays]);
 
@@ -354,6 +356,10 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
   const fmt = (n: number) => n.toLocaleString();
 
   return (
+    <>
+    {toast && (
+      <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
+    )}
     <div className="flex flex-col gap-2">
       {/* ── 카드: 헤더 툴바 + 컨트롤 ── */}
       <div className={`${CARD_BASE} overflow-hidden`}>
@@ -378,7 +384,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
                     setRows(Array.isArray(j?.rows) ? j.rows : []);
                     setMeta({ recent_from: j?.recent_from ?? "", prior_from: j?.prior_from ?? "", total: Number(j?.total ?? 0) });
                   })
-                  .catch(() => { setRows([]); setMeta(null); })
+                  .catch((e: any) => { setRows([]); setMeta(null); showError(`새로고침 실패: ${e?.message ?? "네트워크 오류"}`); })
                   .finally(() => setLoading(false));
               }}
               disabled={loading}
@@ -569,5 +575,6 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
         )}
       </div>
     </div>
+    </>
   );
 };
