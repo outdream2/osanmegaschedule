@@ -67,6 +67,20 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #203 · SplitPanel 왼쪽·오른쪽 높이 정렬 · 아래 부분 높이 맞춤 (신규 · 2026-08-23)
+- 📄 대상 · SplitPanel · SplitListPanel · 모든 마스터-디테일 페이지 (StaffManagePage · ProductInfoPage · VendorManageSplit · PaymentInfoTab · PurchaseHistoryTab · SupplierTab 등)
+- 🎯 증상 · 좌측 리스트 내용이 길거나 짧을 때 · 우측 상세와 하단 높이 불일치 · 시각적 어긋남
+- 🔲 목표 · **좌측 · 우측 · 컨테이너 아래 부분** 높이 100% 정렬 · 시각 통일
+- 🔲 조사 필요:
+  - 현재 flex 컨테이너 · min-h-0 · h-full 사용 여부 확인
+  - 좌측 body (SplitListPanel body · overflow-y-auto) · 최대 높이 계산
+  - 우측 상세 · overflow-hidden or overflow-y-auto · 하단 정렬 여부
+  - 부모 컨테이너 · flex items-stretch 인지 확인
+- 🔲 예상 원인 · flex align-items · stretch 미적용 · min-h-0 누락 · lg:sticky vs 자연 흐름 혼재
+- 🔲 대상 페이지별 검증 필요 (스크린샷 or 개발서버)
+- 💡 프레임워크 확산 · 문제 해결 후 · SplitPanel/SplitListPanel 프리미티브 옵션 추가 (equalHeight prop 등)
+- 💡 대원칙 · 회귀 X · 시각 검증 필수
+
 ### #202 · 스캔페이지 UX · 위치+수량 스크롤 제거 · 등록리스트 확장 (✅ 완료 · 2026-08-23 · `79dafe85`)
 > StockRowCard 리스트 · max-h/overflow 제거 · 자연 높이 확장
 > SaveCard · 전체 등록 버튼 바로 위 · "등록 준비 요약" 리스트 (상품명·위치·수량) 신설
