@@ -19,6 +19,9 @@
 // 2026-08-23 · v3.3 · align "top-mobile" · 반응형 하이브리드 (mobile=top-slide · desktop=center)
 //   - `items-start sm:items-center p-0 sm:p-4 pt-4 sm:pt-0` backdrop · `rounded-t-2xl sm:rounded-2xl` card
 //   - 대형 스케쥴 모달 (DayTimelineModal 등) 용 · 카드가 위에서 슬라이드
+// 2026-08-23 · v3.4 · headerBgClass · headerTextClass · 커스텀 헤더 배경 지원
+//   - LoginModals (그라디언트 · deep navy) · StaffInfoModal (bg-brand-deep) · StaffMobileDetail (bg-indigo-50) 대응
+//   - default 시 · 기존 headerTint 유지 (bg-zinc-50/60)
 //
 // 사용 예 (기본):
 //   <Modal open={open} onClose={() => setOpen(false)} title="상세" size="md">
@@ -98,6 +101,21 @@ export interface ModalProps {
   align?: "center" | "bottom-mobile" | "top-mobile";
   /** card div 인라인 style override · maxHeight 등 특수 케이스 (기본 undefined) */
   cardStyle?: React.CSSProperties;
+
+  // ── v3.4 · 확장 (2026-08-23) · 모두 optional ──
+  /**
+   * 헤더 배경 override · Tailwind class 문자열
+   *   - 기본 undefined · headerTint 로직 적용 (bg-zinc-50/60 or none)
+   *   - 예: "bg-indigo-50/80" · "bg-brand-deep text-white" · "bg-gradient-to-br from-brand-deep to-sky-600 text-white"
+   *   - 설정 시 · headerTint 무시
+   */
+  headerBgClass?: string;
+  /**
+   * 헤더 텍스트/아이콘 색 override · Tailwind class
+   *   - 기본 undefined · text-ink · text-brand-deep icon
+   *   - dark 헤더 (bg-brand-deep 등) 사용 시 · "text-white" 지정
+   */
+  headerTextClass?: string;
 }
 
 /**
@@ -128,6 +146,9 @@ export const Modal: React.FC<ModalProps> = ({
   bodyPadding = "default",
   align = "center",
   cardStyle,
+  // v3.4 · 확장
+  headerBgClass,
+  headerTextClass,
 }) => {
   // ESC 키 핸들링
   useEffect(() => {
@@ -167,9 +188,15 @@ export const Modal: React.FC<ModalProps> = ({
   // 2026-08-23 v3.2/v3.3 · align="bottom-mobile"|"top-mobile" 시 card 는 rounded-t-2xl (mobile) sm+ rounded-2xl
   const cardRoundedCls = (align === "bottom-mobile" || align === "top-mobile") ? "rounded-t-2xl sm:rounded-2xl" : "";
   // 2026-08-18 v2 · 헤더 tint 옵션 · 인라인 모달들의 zinc-50/60 스타일과 일관
-  const headerCls = headerTint
-    ? "modal-header bg-zinc-50/60"
-    : "modal-header";
+  // 2026-08-23 v3.4 · headerBgClass override · 커스텀 배경 (indigo · brand-deep · gradient 등)
+  const headerCls = headerBgClass
+    ? `modal-header ${headerBgClass}`
+    : headerTint
+      ? "modal-header bg-zinc-50/60"
+      : "modal-header";
+  // v3.4 · headerTextClass · 헤더 title·icon 텍스트 색 override
+  const headerTitleCls = `flex-1 min-w-0 text-[16px] font-bold tracking-tight truncate ${headerTextClass ?? "text-ink"}`;
+  const headerIconCls = `shrink-0 inline-flex ${headerTextClass ?? "text-brand-deep"}`;
 
   const hasHeader = title != null || icon != null || headerRight != null || showClose;
 
@@ -190,10 +217,10 @@ export const Modal: React.FC<ModalProps> = ({
           <div className={headerCls}>
             {titleAccent && <AccentBar size="lg" className="shrink-0" />}
             {icon != null && (
-              <span className="text-brand-deep shrink-0 inline-flex" aria-hidden="true">{icon}</span>
+              <span className={headerIconCls} aria-hidden="true">{icon}</span>
             )}
             {title != null && (
-              <div id="modal-title" className="flex-1 min-w-0 text-[16px] font-bold text-ink tracking-tight truncate">
+              <div id="modal-title" className={headerTitleCls}>
                 {title}
               </div>
             )}
