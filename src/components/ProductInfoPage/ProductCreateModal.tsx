@@ -17,6 +17,14 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onCreated: (code: string) => void;
+  /** 2026-08-23 · #179 · 바코드 스캔 미등록 즉시 등록 · product_code 사전 채움 */
+  initialCode?: string;
+  /** 2026-08-23 · #179 · barcode 사전 채움 (스캔 코드가 바코드 = product_code 인 경우 함께) */
+  initialBarcode?: string;
+  /** 2026-08-23 · #179 · product_code 필드 readonly (스캔 값 고정) */
+  lockCode?: boolean;
+  /** 2026-08-23 · #179 · 초기 상품명 (예: OCR/스캔 힌트) */
+  initialName?: string;
 }
 
 type Form = {
@@ -63,11 +71,26 @@ const parseNum = (s: string): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
-export const ProductCreateModal: React.FC<Props> = ({ open, onClose, onCreated }) => {
+export const ProductCreateModal: React.FC<Props> = ({
+  open, onClose, onCreated,
+  initialCode, initialBarcode, lockCode = false, initialName,
+}) => {
   const { toast, showSuccess, showError } = useToast();
   const [form, setForm] = useState<Form>(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 2026-08-23 · #179 · open + initialCode 변경 시 · 사전 채움 (한 번만)
+  React.useEffect(() => {
+    if (!open) return;
+    setForm({
+      ...EMPTY,
+      product_code: initialCode ?? "",
+      barcode: initialBarcode ?? initialCode ?? "",
+      product_name: initialName ?? "",
+    });
+    setError(null);
+  }, [open, initialCode, initialBarcode, initialName]);
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm(prev => ({ ...prev, [k]: v }));
 
@@ -148,15 +171,16 @@ export const ProductCreateModal: React.FC<Props> = ({ open, onClose, onCreated }
             <Card variant="flat" padding="md" rounded="lg" className="bg-white">
               <h3 className="text-[13px] font-bold text-ink mb-2 tracking-tight">필수 정보</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Field label="상품코드 *" required>
+                <Field label={lockCode ? "상품코드 * (스캔 고정)" : "상품코드 *"} required>
                   <input
                     type="text"
                     value={form.product_code}
                     onChange={(e) => set("product_code", e.target.value)}
-                    className={inputCls}
+                    className={inputCls + (lockCode ? " bg-zinc-100 cursor-not-allowed" : "")}
                     placeholder="예: 20250823001"
                     maxLength={50}
-                    autoFocus
+                    readOnly={lockCode}
+                    autoFocus={!lockCode}
                   />
                 </Field>
                 <Field label="상품명 *" required>

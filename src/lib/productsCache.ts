@@ -35,3 +35,19 @@ export function updateCachedProduct(code: string, updates: Record<string, any>):
   const stripped = q.replace(/^0+/, "");
   if (stripped && stripped !== q && _map[stripped]) _map[stripped] = { ..._map[stripped], ...updates };
 }
+
+// 2026-08-23 · #179 · 미등록 상품 등록 후 · 로컬 캐시 즉시 삽입 · 재스캔 즉시 lookupProduct hit
+export function addCachedProduct(code: string, info: Partial<ProductInfo>): void {
+  if (!_map) _map = {};
+  const q = code.trim();
+  if (!q) return;
+  const merged: ProductInfo = {
+    code: q,
+    name: info.name ?? "",
+    spec: info.spec ?? "",
+    ...info,
+  };
+  _map[q] = merged;
+  const stripped = q.replace(/^0+/, "");
+  if (stripped && stripped !== q) _map[stripped] = merged;
+}

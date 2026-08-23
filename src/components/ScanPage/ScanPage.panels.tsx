@@ -36,12 +36,16 @@ interface ScanLeftPanelProps {
   onOpenScanner: () => void;
   onScan: (code: string) => void;
   onRequestDisplay: (row: StockRow) => void;
+  /** 2026-08-23 · #179 · 미등록 상품 즉시 등록 · 권한자만 노출 */
+  canManageProducts?: boolean;
+  onOpenCreate?: (code: string) => void;
 }
 
 export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
   mapLoading, autoIncOn, onToggleAutoInc,
   notFoundCode, lastProduct, lastCode, requestingKey, rows,
   onOpenScanner, onScan, onRequestDisplay,
+  canManageProducts, onOpenCreate,
 }) => {
   return (
     <Card clip padding="none">
@@ -83,15 +87,30 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
         </label>
 
         {notFoundCode && !lastProduct && (
-          <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200/80" padding="sm" className="flex items-start gap-2.5">
-            <AlertCircle size={15} className="text-amber-500 shrink-0 mt-0.5" />
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-amber-800 leading-none">미등록 상품 코드</p>
-              <p className="text-[15px] font-mono tabular-nums text-amber-700 break-all mt-1.5
-                bg-amber-100/60 px-2 py-1 rounded-md">
-                {notFoundCode}
-              </p>
+          <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200/80" padding="sm" className="flex flex-col gap-2">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle size={15} className="text-amber-500 shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-amber-800 leading-none">미등록 상품 코드</p>
+                <p className="text-[15px] font-mono tabular-nums text-amber-700 break-all mt-1.5
+                  bg-amber-100/60 px-2 py-1 rounded-md">
+                  {notFoundCode}
+                </p>
+              </div>
             </div>
+            {/* 2026-08-23 · #179 · 권한자만 등록 유도 · #177 ProductCreateModal 재사용 */}
+            {canManageProducts && onOpenCreate && (
+              <button
+                type="button"
+                onClick={() => onOpenCreate(notFoundCode)}
+                className="w-full inline-flex items-center justify-center gap-1.5 min-h-[40px] rounded-md
+                  bg-amber-600 hover:bg-amber-700 active:bg-amber-800
+                  text-white text-[13px] font-bold shadow-sm transition-colors cursor-pointer"
+                title="스캔한 바코드로 상품 신규 등록"
+              >
+                + 이 코드로 상품 등록
+              </button>
+            )}
           </Card>
         )}
 

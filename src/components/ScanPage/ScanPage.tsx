@@ -52,6 +52,9 @@ import {
 } from "./helpers";
 // 2026-08-22 · Framework Phase 4 · 4개 UI 섹션 이관 (ScanLeftPanel/SaveCard/HistoryModal/ReviewSheet)
 import { ScanLeftPanel, SaveCard, HistoryModal, ReviewSheet } from "./ScanPage.panels";
+// 2026-08-23 · #179 · 미등록 상품 즉시 등록 · ProductCreateModal 재사용
+import { ProductCreateModal } from "../ProductInfoPage/ProductCreateModal";
+import { addCachedProduct } from "../../lib/productsCache";
 
 // ─────────────────────────────────────────────────────────────
 // Props
@@ -87,6 +90,13 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   const [lastProduct, setLastProduct]           = useState<ProductInfo | null>(null);
   const [lastCode, setLastCode]                 = useState<string | null>(null);
   const [notFoundCode, setNotFoundCode]         = useState<string | null>(null);
+
+  // 2026-08-23 · #179 · 미등록 상품 즉시 등록 · Modal + 권한 게이트
+  const [createOpen, setCreateOpen]             = useState(false);
+  const canManageProducts =
+    authSession?.role === "admin" ||
+    authSession?.role === "superadmin" ||
+    (authSession?.role === "manager" && (authSession?.level ?? 0) >= 5);
 
   // ── 우측 테이블
   const [rows, setRows]                         = useState<StockRow[]>([]);
@@ -614,6 +624,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               onOpenScanner={() => setScannerOpen(true)}
               onScan={handleScan}
               onRequestDisplay={requestDisplay}
+              canManageProducts={canManageProducts}
+              onOpenCreate={() => setCreateOpen(true)}
             />
           )}
           right={(
@@ -753,6 +765,25 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           )}
         />
       </main>
+
+      {/* 2026-08-23 · #179 · 미등록 상품 즉시 등록 · #177 ProductCreateModal 재사용 */}
+      {canManageProducts && (
+        <ProductCreateModal
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          initialCode={notFoundCode ?? ""}
+          initialBarcode={notFoundCode ?? ""}
+          lockCode
+          onCreated={(code) => {
+            // 로컬 캐시 즉시 삽입 · 재스캔 시 lookupProduct hit
+            addCachedProduct(code, { code, name: "", spec: "" });
+            setNotFoundCode(null);
+            setCreateOpen(false);
+            // 등록 완료 후 다시 handleScan 호출 → 리스트에 자동 추가
+            void handleScan(code);
+          }}
+        />
+      )}
 
       {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · HistoryModal · ReviewSheet */}
       <HistoryModal
