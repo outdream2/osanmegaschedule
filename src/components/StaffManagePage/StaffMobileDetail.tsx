@@ -1,7 +1,9 @@
 // src/components/StaffManagePage/StaffMobileDetail.tsx
 // 2026-08-23 · Framework Phase 4 · StaffManagePage 분리 · 모바일 상세 모달
+// 2026-08-23 · #191 · Modal v3.4 재마이그레이션 · headerBgClass + footer prop
 import React from "react";
-import { Edit2, ExternalLink, Trash2, X } from "lucide-react";
+import { Edit2, ExternalLink, Trash2 } from "lucide-react";
+import { Modal } from "../common/Modal";
 import { Avatar } from "./StaffManagePage.subcomponents";
 import type { Employee } from "./types";
 import { contractTypeMeta, calcTenure, positionColor } from "./helpers";
@@ -28,33 +30,50 @@ const INFO_ROWS: { label: string; getValue: (e: Employee) => string | null | und
 export const StaffMobileDetail: React.FC<StaffMobileDetailProps> = ({
   selectedEmp, onClose, onEdit, onDelete,
 }) => (
-  <div
-    className="lg:hidden fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-[2.5vw]"
-    onClick={onClose}
-  >
-    <div
-      className="bg-white w-full max-w-[95vw] rounded-2xl shadow-brand-modal max-h-[92vh] overflow-hidden flex flex-col"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {/* 헤더 */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-100 bg-indigo-50/80 shrink-0">
-        <div className="flex items-center gap-2.5">
+  <div className="lg:hidden">
+    <Modal
+      open
+      onClose={onClose}
+      size="full"
+      headerBgClass="bg-indigo-50/80"
+      showClose={false}
+      bodyPadding="none"
+      title={
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <Avatar name={selectedEmp.name} photoUrl={selectedEmp.photo_url} size="xs" />
-          <div>
+          <div className="min-w-0">
             <span className="text-sm font-bold text-zinc-800">{selectedEmp.name}</span>
             <span className={`ml-2 text-[15px] font-semibold px-1.5 py-px rounded-md border ${positionColor(selectedEmp.position)}`}>
               {selectedEmp.position || "직책 없음"}
             </span>
           </div>
         </div>
+      }
+      headerRight={
         <button
           onClick={onClose}
           className="text-zinc-400 hover:text-zinc-700 cursor-pointer w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/70 transition-colors"
         >
-          <X size={15} />
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
-      </div>
-
+      }
+      footer={
+        <div className="w-full flex gap-1.5">
+          <button
+            onClick={onEdit}
+            className="flex-1 h-9 text-[14px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer hover:bg-indigo-100 transition-colors"
+          >
+            <Edit2 size={13} /> 편집
+          </button>
+          <button
+            onClick={onDelete}
+            className="h-9 px-4 text-[14px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded-xl flex items-center gap-1.5 cursor-pointer hover:bg-red-100 transition-colors"
+          >
+            <Trash2 size={13} /> 삭제
+          </button>
+        </div>
+      }
+    >
       {/* 본문 */}
       <div className="flex-1 overflow-y-auto p-3.5 bg-zinc-50/40 space-y-2.5">
         <div className="grid grid-cols-2 gap-2.5 bg-white rounded-xl border border-line p-3.5 shadow-sm">
@@ -92,22 +111,6 @@ export const StaffMobileDetail: React.FC<StaffMobileDetailProps> = ({
           </div>
         )}
       </div>
-
-      {/* 하단 액션 */}
-      <div className="px-3.5 py-2.5 border-t border-zinc-100 bg-white flex gap-1.5 shrink-0">
-        <button
-          onClick={onEdit}
-          className="flex-1 h-9 text-[14px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer hover:bg-indigo-100 transition-colors"
-        >
-          <Edit2 size={13} /> 편집
-        </button>
-        <button
-          onClick={onDelete}
-          className="h-9 px-4 text-[14px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded-xl flex items-center gap-1.5 cursor-pointer hover:bg-red-100 transition-colors"
-        >
-          <Trash2 size={13} /> 삭제
-        </button>
-      </div>
-    </div>
+    </Modal>
   </div>
 );
