@@ -34,6 +34,8 @@ export default defineConfig({
       "src/components/ScanPage/**/*.test.ts",
       // 2026-08-21 · BarcodeScanner · pure helpers (extractBarcodeDigits · 이미지 처리)
       "src/components/BarcodeScanner/**/*.test.ts",
+      // 2026-08-23 · #177 · ProductInfoPage · CreateModal + page (jsdom · 파일별 지시자)
+      "src/components/ProductInfoPage/**/*.test.tsx",
     ],
     globals: false,
     environment: "node", // 기본 · jsdom 은 파일별 지시자 opt-in
