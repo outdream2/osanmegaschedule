@@ -310,7 +310,10 @@
 - 💡 SessionTimeoutWarning · 만료 전 경고 UI (예: 5분 전 알림) 재사용 가능 여부 확인
 - 💡 주의 · 이벤트 리스너 cleanup · 메모리 누수 방지 · 컴포넌트 unmount 시 clearTimeout
 
-### #185 · 통계 메뉴 상단 세션 · UI 프레임워크 통일 (부분 완료 · 2026-08-23 · CategoryTab `1dee1e17`)
+### #185 · 통계 메뉴 상단 세션 · UI 프레임워크 통일 (✅ 완료 · 2026-08-23 · CategoryTab `1dee1e17` · SupplierFilterBar `1a64746f`)
+> PurchaseSubTabs · 이미 상단 툴바 통합됨 (2026-08-10) · 추가 작업 불필요
+
+### #185-원본스펙 (기록)
 - 📄 대상 · 발주관리 > 통계 서브탭 상단 (CategoryTab · TrendingTab · SupplierTab · PurchaseSubTabs 등)
 - 🔲 현재 · 각 서브탭 상단 세션 (제목·필터·기간선택 등) · 스타일·간격·색상 통일 안 됨
 - 🔲 개선 · 프레임워크 프리미티브 적용 · PageToolbar · AccentBar · SeasonButtons · PeriodSelector · CategoryChips 일관 사용
