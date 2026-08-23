@@ -12,6 +12,7 @@ import type { AuthSession } from "../../types";
 import SplitPanel from "../common/SplitPanel";
 import { Card } from "../common/Card";
 import { IconTile } from "../common/IconTile";
+import { Modal } from "../common/Modal";
 import { calcWageBase } from "../../lib/wageCalc";
 import { grossUp as payrollGrossUp } from "../../lib/payroll";
 import { SIGN_LABEL } from "../../hooks/useContractSignatures";
@@ -110,72 +111,78 @@ const ExtendContractModal: React.FC<{
     return { start: iso(newStart), end: iso(newEnd) };
   }, [existingEnd, months]);
 
-  if (!open) return null;
   return (
-    // 2026-08-17 v2 · Modal 통일
-    <div className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-brand-modal w-full max-w-md overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-        <div className="px-4 py-3 border-b border-line bg-indigo-50 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-brand-deep flex items-center justify-center shadow-sm">
-              <ClockCounterClockwise size={13} weight="fill" className="text-white" />
-            </div>
-            <span className="text-sm font-bold text-zinc-800">근로계약 연장</span>
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="sm"
+      backdropIntensity="brand"
+      showClose={false}
+      bodyPadding="none"
+      closeOnBackdrop={true}
+      closeOnEsc={true}
+    >
+      {/* 커스텀 헤더 · indigo 톤 · 원본 완전 재현 */}
+      <div className="px-4 py-3 border-b border-line bg-indigo-50 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-brand-deep flex items-center justify-center shadow-sm">
+            <ClockCounterClockwise size={13} weight="fill" className="text-white" />
           </div>
-          <button type="button" onClick={onClose} className="text-zinc-400 hover:text-zinc-700 w-7 h-7 rounded-md hover:bg-white/70 cursor-pointer flex items-center justify-center" title="닫기">
-            <XIcon size={13} weight="bold" />
-          </button>
+          <span className="text-sm font-bold text-zinc-800">근로계약 연장</span>
         </div>
-        <div className="p-4 flex flex-col gap-3">
-          <div className="text-[14px] text-zinc-700 leading-relaxed">
-            현재 계약 종료일 <b className="text-zinc-900">{existingEnd ?? "-"}</b> 다음 날부터 지정한 개월수만큼 자동으로 신규 계약서를 작성합니다.
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-[14px] font-bold text-zinc-600 flex items-center gap-1">연장 개월수 <span className="text-rose-500">*</span></label>
-            <div className="flex flex-wrap gap-1.5">
-              {["1", "3", "6", "12", "24"].map(m => {
-                const active = months === m;
-                return (
-                  <button key={m} type="button" onClick={() => setMonths(m)}
-                    className={`px-3 py-1.5 rounded-lg border text-[15px] font-bold transition-colors cursor-pointer ${
-                      active ? "bg-brand-deep text-white border-indigo-600 shadow-sm" : "bg-white text-zinc-600 border-line hover:bg-zinc-50"
-                    }`}
-                  >
-                    {m}개월
-                  </button>
-                );
-              })}
-              <div className="flex items-center gap-1 ml-1">
-                <input type="number" min={1} max={120} value={months} onChange={(e) => setMonths(e.target.value.replace(/[^0-9]/g, ""))}
-                  className="w-16 bg-white border border-line rounded-lg px-2 py-1.5 text-[15px] text-zinc-800 font-bold text-right focus:outline-none focus:border-brand-deep focus:shadow-sm transition" placeholder="직접" />
-                <span className="text-[15px] font-semibold text-zinc-500">개월</span>
-              </div>
+        <button type="button" onClick={onClose} className="text-zinc-400 hover:text-zinc-700 w-7 h-7 rounded-md hover:bg-white/70 cursor-pointer flex items-center justify-center" title="닫기">
+          <XIcon size={13} weight="bold" />
+        </button>
+      </div>
+      <div className="p-4 flex flex-col gap-3">
+        <div className="text-[14px] text-zinc-700 leading-relaxed">
+          현재 계약 종료일 <b className="text-zinc-900">{existingEnd ?? "-"}</b> 다음 날부터 지정한 개월수만큼 자동으로 신규 계약서를 작성합니다.
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="text-[14px] font-bold text-zinc-600 flex items-center gap-1">연장 개월수 <span className="text-rose-500">*</span></label>
+          <div className="flex flex-wrap gap-1.5">
+            {["1", "3", "6", "12", "24"].map(m => {
+              const active = months === m;
+              return (
+                <button key={m} type="button" onClick={() => setMonths(m)}
+                  className={`px-3 py-1.5 rounded-lg border text-[15px] font-bold transition-colors cursor-pointer ${
+                    active ? "bg-brand-deep text-white border-indigo-600 shadow-sm" : "bg-white text-zinc-600 border-line hover:bg-zinc-50"
+                  }`}
+                >
+                  {m}개월
+                </button>
+              );
+            })}
+            <div className="flex items-center gap-1 ml-1">
+              <input type="number" min={1} max={120} value={months} onChange={(e) => setMonths(e.target.value.replace(/[^0-9]/g, ""))}
+                className="w-16 bg-white border border-line rounded-lg px-2 py-1.5 text-[15px] text-zinc-800 font-bold text-right focus:outline-none focus:border-brand-deep focus:shadow-sm transition" placeholder="직접" />
+              <span className="text-[15px] font-semibold text-zinc-500">개월</span>
             </div>
-          </div>
-          <div className="rounded-lg border border-indigo-200 bg-indigo-50/40 px-3 py-2 text-[14px] flex flex-col gap-1">
-            <div className="font-bold text-indigo-800 flex items-center gap-1">
-              <CalendarBlank size={12} weight="fill" />신규 계약 기간
-            </div>
-            {preview ? (
-              <div className="text-zinc-800">
-                <b className="font-bold">{preview.start}</b><span className="mx-1 text-zinc-400">~</span><b className="font-bold">{preview.end}</b>
-              </div>
-            ) : <div className="text-rose-600 font-semibold">개월수를 입력하면 신규 기간이 계산됩니다.</div>}
-            {hireDateReference && <div className="text-[15px] text-zinc-500 mt-0.5">· 입사일 <b className="text-zinc-700">{hireDateReference}</b> 은 변경되지 않고 유지됩니다 (근속 산정용).</div>}
-          </div>
-          <div className="text-[15px] text-amber-700 bg-amber-50/70 border border-amber-200 rounded-lg px-2.5 py-1.5">
-            확정 시 현재 폼에 신규 계약 기간이 반영되고 · 서명 상태가 초기화됩니다. 서명 후 [계약완료 승인] 을 눌러 저장하세요.
           </div>
         </div>
-        <div className="px-4 py-3 border-t border-line bg-zinc-50/70 flex items-center justify-end gap-2">
-          <button type="button" onClick={onClose} className="text-[14px] font-bold text-zinc-600 bg-white border border-zinc-300 rounded-md h-8 px-3 hover:bg-zinc-50 cursor-pointer">취소</button>
-          <button type="button" onClick={onConfirm} disabled={!preview}
-            className="text-[14px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-md h-8 px-4 cursor-pointer disabled:bg-zinc-300 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm">
-            <Check size={12} weight="bold" />연장 확정
-          </button>
+        <div className="rounded-lg border border-indigo-200 bg-indigo-50/40 px-3 py-2 text-[14px] flex flex-col gap-1">
+          <div className="font-bold text-indigo-800 flex items-center gap-1">
+            <CalendarBlank size={12} weight="fill" />신규 계약 기간
+          </div>
+          {preview ? (
+            <div className="text-zinc-800">
+              <b className="font-bold">{preview.start}</b><span className="mx-1 text-zinc-400">~</span><b className="font-bold">{preview.end}</b>
+            </div>
+          ) : <div className="text-rose-600 font-semibold">개월수를 입력하면 신규 기간이 계산됩니다.</div>}
+          {hireDateReference && <div className="text-[15px] text-zinc-500 mt-0.5">· 입사일 <b className="text-zinc-700">{hireDateReference}</b> 은 변경되지 않고 유지됩니다 (근속 산정용).</div>}
+        </div>
+        <div className="text-[15px] text-amber-700 bg-amber-50/70 border border-amber-200 rounded-lg px-2.5 py-1.5">
+          확정 시 현재 폼에 신규 계약 기간이 반영되고 · 서명 상태가 초기화됩니다. 서명 후 [계약완료 승인] 을 눌러 저장하세요.
         </div>
       </div>
-    </div>
+      <div className="px-4 py-3 border-t border-line bg-zinc-50/70 flex items-center justify-end gap-2">
+        <button type="button" onClick={onClose} className="text-[14px] font-bold text-zinc-600 bg-white border border-zinc-300 rounded-md h-8 px-3 hover:bg-zinc-50 cursor-pointer">취소</button>
+        <button type="button" onClick={onConfirm} disabled={!preview}
+          className="text-[14px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-md h-8 px-4 cursor-pointer disabled:bg-zinc-300 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm">
+          <Check size={12} weight="bold" />연장 확정
+        </button>
+      </div>
+    </Modal>
   );
 };
 
