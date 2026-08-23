@@ -6,6 +6,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { Layers, Loader2 as LoaderIcon, ChevronRight, ChevronDown, ListChecks, History } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { AccentBar } from "../common/AccentBar";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";

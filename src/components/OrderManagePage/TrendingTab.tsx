@@ -5,6 +5,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { TrendingUp, AlertTriangle, Loader2 as LoaderIcon, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { getProductsMap } from "../../lib/productsCache";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
@@ -169,7 +170,7 @@ const PeriodBucketCard: React.FC<{
       </div>
       {bucket.loading ? (
         <div className="flex items-center justify-center py-8 gap-2 text-zinc-400">
-          <div className="w-5 h-5 border-2 border-indigo-100 border-t-indigo-400 rounded-full animate-spin" />
+          <Spinner size={20} tone="sky" />
           <span className="text-[15px]">불러오는 중...</span>
         </div>
       ) : bucket.error ? (
@@ -444,7 +445,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
         </div>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-14 gap-3 text-zinc-400">
-            <div className="w-9 h-9 border-4 border-indigo-100 border-t-indigo-400 rounded-full animate-spin" />
+            <Spinner size={36} tone="sky" />
             <span className="text-[14px] font-semibold">불러오는 중...</span>
           </div>
         ) : displayed.length === 0 ? (

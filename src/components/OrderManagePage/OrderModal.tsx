@@ -2,7 +2,8 @@
 // 2026-08-22 · Framework Phase 4 · 발주서 모달 분리
 // 2026-08-23 · Modal primitive 마이그레이션 (#191)
 import React from "react";
-import { Loader2, ShoppingCart, MessageSquare, Mail } from "lucide-react";
+import { ShoppingCart, MessageSquare, Mail } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { Modal } from "../common/Modal";
 import { Card } from "../common/Card";
 
@@ -264,7 +265,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
           </button>
           <button onClick={onSubmit} disabled={sendingBulk}
             className="inline-flex items-center gap-1 h-8 px-3 rounded-md text-[15px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer">
-            {sendingBulk && <Loader2 size={12} strokeWidth={2.5} className="animate-spin" />}
+            {sendingBulk && <Spinner size={12} tone="white" />}
             {sendingBulk ? "발송 중..." : "발주 발송"}
           </button>
         </div>
