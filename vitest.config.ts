@@ -40,6 +40,8 @@ export default defineConfig({
       "src/components/ProductInfoPage/**/*.test.tsx",
       // 2026-08-23 · OrderManagePage · #182 등 · jsdom 컴포넌트 테스트
       "src/components/OrderManagePage/**/*.test.tsx",
+      // 2026-08-23 · StockManagePage · #185 SupplierFilterBar 등 · jsdom
+      "src/components/StockManagePage/**/*.test.tsx",
     ],
     globals: false,
     environment: "node", // 기본 · jsdom 은 파일별 지시자 opt-in
