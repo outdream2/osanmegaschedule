@@ -13,8 +13,9 @@
 //   4. 저장 → 부모의 saveMappingTemplate
 
 import React, { useState, useRef, useLayoutEffect, useEffect } from "react";
-import { X, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+import { Modal } from "../common/Modal";
 
 interface Props {
   supplier: string;
@@ -190,191 +191,188 @@ export const ColumnMappingModal: React.FC<Props> = ({
     }
   }
 
-  return (
-    // 2026-08-17 v2 · backdrop-brand + shadow-brand-modal · Modal 통일
-    <div className="fixed inset-0 z-[110] backdrop-brand flex items-center justify-center p-4"
-      onClick={onCancel}>
-      <div className="bg-white rounded-2xl shadow-brand-modal w-full max-w-5xl max-h-[90vh] flex flex-col"
-        onClick={e => e.stopPropagation()}>
-        {/* 헤더 */}
-        <div className="px-5 py-3 border-b border-line flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-zinc-800">🔧 공급사 컬럼 매핑</h3>
-            <p className="text-[11px] text-zinc-500 mt-0.5">
-              <span className="font-bold text-indigo-600">{supplier || "(공급사 미지정)"}</span> — <span className="text-zinc-600">OCR 원본 컬럼</span>을 표준 필드에 연결. 저장하면 다음 스캔부터 자동 적용됩니다.
-            </p>
-            <p className="text-[10px] text-emerald-700 mt-0.5">
-              💡 나눠진 데이터: 같은 필드에 여러 원본을 연결하면 자동 합침 (예: 품·명 → 품명)
-            </p>
-            <p className="text-[10px] text-amber-700 mt-0.5">
-              ✂️ 한 셀에 여러 값 붙어있을 때: 한 원본 선택 후 <b>Shift·Ctrl 누른 채 오른쪽 필드 여러 개 클릭</b> → 공백으로 자동 분리 (예: "20281221 454" → 유통기한 · 단가)
-            </p>
-          </div>
-          <button onClick={onCancel} className="text-zinc-400 hover:text-zinc-600 cursor-pointer">
-            <X size={18} />
-          </button>
-        </div>
+  const modalTitle = (
+    <div className="flex flex-col gap-0.5 min-w-0">
+      <span className="text-sm font-bold text-zinc-800">공급사 컬럼 매핑</span>
+      <p className="text-[11px] text-zinc-500">
+        <span className="font-bold text-indigo-600">{supplier || "(공급사 미지정)"}</span> — <span className="text-zinc-600">OCR 원본 컬럼</span>을 표준 필드에 연결. 저장하면 다음 스캔부터 자동 적용됩니다.
+      </p>
+      <p className="text-[10px] text-emerald-700">
+        💡 나눠진 데이터: 같은 필드에 여러 원본을 연결하면 자동 합침 (예: 품·명 → 품명)
+      </p>
+      <p className="text-[10px] text-amber-700">
+        ✂️ 한 셀에 여러 값 붙어있을 때: 한 원본 선택 후 <b>Shift·Ctrl 누른 채 오른쪽 필드 여러 개 클릭</b> → 공백으로 자동 분리 (예: "20281221 454" → 유통기한 · 단가)
+      </p>
+    </div>
+  );
 
-        {/* 본문 · 좌우 리스트 + SVG 연결선 */}
-        <div ref={containerRef} className="flex-1 overflow-y-auto px-5 py-4 relative">
-          {/* SVG 오버레이 (연결선) */}
-          <svg className="absolute inset-0 pointer-events-none" style={{ width: "100%", height: "100%" }}>
-            {lines.map((l, i) => {
-              const midX = (l.from.x + l.to.x) / 2;
-              const d = `M ${l.from.x} ${l.from.y} C ${midX} ${l.from.y}, ${midX} ${l.to.y}, ${l.to.x} ${l.to.y}`;
+  const modalFooter = (
+    <>
+      <div className="text-[10px] text-zinc-500 mr-auto">
+        {mapping.filter(f => f && f !== "제외").length}개 컬럼 매핑됨 · 나머지는 자동 "제외"
+      </div>
+      <button onClick={onCancel}
+        className="text-[11px] font-bold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 rounded-lg px-3 py-1.5 cursor-pointer">
+        취소
+      </button>
+      <button onClick={onSave}
+        disabled={saving || !supplier}
+        className="text-[11px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 rounded-lg px-3 py-1.5 cursor-pointer flex items-center gap-1"
+      >
+        {saving ? <><Spinner size={12} tone="white" />저장 중</> : <><Save size={12} />공급사에 저장</>}
+      </button>
+    </>
+  );
+
+  return (
+    <Modal
+      open
+      onClose={onCancel}
+      title={modalTitle}
+      footer={modalFooter}
+      size="xl"
+      closeOnEsc
+    >
+      {/* 본문 · 좌우 리스트 + SVG 연결선 */}
+      <div ref={containerRef} className="relative">
+        {/* SVG 오버레이 (연결선) */}
+        <svg className="absolute inset-0 pointer-events-none" style={{ width: "100%", height: "100%" }}>
+          {lines.map((l, i) => {
+            const midX = (l.from.x + l.to.x) / 2;
+            const d = `M ${l.from.x} ${l.from.y} C ${midX} ${l.from.y}, ${midX} ${l.to.y}, ${l.to.x} ${l.to.y}`;
+            return (
+              <g key={i}>
+                <path d={d} stroke="#6366f1" strokeWidth="2" fill="none" strokeLinecap="round" />
+                <circle cx={l.from.x} cy={l.from.y} r={3} fill="#6366f1" />
+                <circle cx={l.to.x} cy={l.to.y} r={3} fill="#6366f1" />
+              </g>
+            );
+          })}
+        </svg>
+
+        <div className="grid grid-cols-[1fr_120px_180px] gap-4 relative">
+          {/* 좌측: raw 헤더 + 샘플 값 */}
+          <div className="flex flex-col gap-2">
+            <div className="text-[10px] font-bold text-zinc-500 uppercase mb-1">원본 컬럼</div>
+            {rawHeaders.map((h, ci) => {
+              const isSelected = selectedRawIdx === ci;
+              const mappingVal = mapping[ci];
+              const isMapped = mappingVal && mappingVal !== "제외";
+              const mappedFieldsCount = isMapped ? mappingVal.split("|").length : 0;
+              const tokenCount = rawTokenCounts[ci] ?? 1;
+              const isSplittable = tokenCount >= 2;
               return (
-                <g key={i}>
-                  <path d={d} stroke="#6366f1" strokeWidth="2" fill="none" strokeLinecap="round" />
-                  <circle cx={l.from.x} cy={l.from.y} r={3} fill="#6366f1" />
-                  <circle cx={l.to.x} cy={l.to.y} r={3} fill="#6366f1" />
-                </g>
+                <div key={ci} className="flex items-center gap-1">
+                  <button
+                    ref={el => { leftRefs.current[ci] = el; }}
+                    type="button"
+                    onClick={() => handleLeftClick(ci)}
+                    className={`flex-1 text-left px-3 py-2 rounded-lg border-2 transition ${
+                      isSelected
+                        ? "bg-indigo-100 border-indigo-500 shadow-md"
+                        : isMapped
+                          ? "bg-indigo-50 border-indigo-200 hover:border-indigo-400"
+                          : isSplittable
+                            ? "bg-amber-50 border-amber-300 hover:border-amber-500"
+                            : "bg-zinc-50 border-line hover:border-indigo-400"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="text-[12px] font-bold text-zinc-800 whitespace-nowrap overflow-hidden text-ellipsis">
+                        {h || <span className="text-zinc-400 italic">(빈 헤더)</span>}
+                      </div>
+                      {isSplittable && (
+                        <span
+                          className="text-[9px] font-bold text-amber-700 bg-white border border-amber-300 rounded px-1 py-0.5 whitespace-nowrap"
+                          title={`이 컬럼은 값이 ${tokenCount}개로 감지됨 · 클릭 후 오른쪽 필드 여러 개 선택하면 자동 분할`}
+                        >
+                          ✂️ 값 {tokenCount}개
+                        </span>
+                      )}
+                      {isMapped && isSplittable && mappedFieldsCount < tokenCount && isSelected && (
+                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 rounded px-1 py-0.5 whitespace-nowrap animate-pulse">
+                          {mappedFieldsCount}/{tokenCount} 지정 · 계속 선택
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-zinc-500 font-mono whitespace-nowrap overflow-hidden text-ellipsis mt-0.5">
+                      {sampleRows.map((r, ri) => {
+                        const v = r[ci];
+                        const str = v == null ? "—" : String(v);
+                        return (
+                          <span key={ri} className="mr-1.5">{str.length > 12 ? str.slice(0, 12) + "…" : str}</span>
+                        );
+                      })}
+                    </div>
+                  </button>
+                  {isMapped && (
+                    <button
+                      type="button"
+                      onClick={() => handleClearMapping(ci)}
+                      className="text-zinc-400 hover:text-rose-500 cursor-pointer p-1"
+                      title="매핑 해제"
+                    >
+                      <span className="text-zinc-400 hover:text-rose-500 text-xs font-bold">✕</span>
+                    </button>
+                  )}
+                </div>
               );
             })}
-          </svg>
-
-          <div className="grid grid-cols-[1fr_120px_180px] gap-4 relative">
-            {/* 좌측: raw 헤더 + 샘플 값 */}
-            <div className="flex flex-col gap-2">
-              <div className="text-[10px] font-bold text-zinc-500 uppercase mb-1">원본 컬럼</div>
-              {rawHeaders.map((h, ci) => {
-                const isSelected = selectedRawIdx === ci;
-                const mappingVal = mapping[ci];
-                const isMapped = mappingVal && mappingVal !== "제외";
-                const mappedFieldsCount = isMapped ? mappingVal.split("|").length : 0;
-                const tokenCount = rawTokenCounts[ci] ?? 1;
-                const isSplittable = tokenCount >= 2;
-                return (
-                  <div key={ci} className="flex items-center gap-1">
-                    <button
-                      ref={el => { leftRefs.current[ci] = el; }}
-                      type="button"
-                      onClick={() => handleLeftClick(ci)}
-                      className={`flex-1 text-left px-3 py-2 rounded-lg border-2 transition ${
-                        isSelected
-                          ? "bg-indigo-100 border-indigo-500 shadow-md"
-                          : isMapped
-                            ? "bg-indigo-50 border-indigo-200 hover:border-indigo-400"
-                            : isSplittable
-                              ? "bg-amber-50 border-amber-300 hover:border-amber-500"
-                              : "bg-zinc-50 border-line hover:border-indigo-400"
-                      }`}
-                    >
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <div className="text-[12px] font-bold text-zinc-800 whitespace-nowrap overflow-hidden text-ellipsis">
-                          {h || <span className="text-zinc-400 italic">(빈 헤더)</span>}
-                        </div>
-                        {isSplittable && (
-                          <span
-                            className="text-[9px] font-bold text-amber-700 bg-white border border-amber-300 rounded px-1 py-0.5 whitespace-nowrap"
-                            title={`이 컬럼은 값이 ${tokenCount}개로 감지됨 · 클릭 후 오른쪽 필드 여러 개 선택하면 자동 분할`}
-                          >
-                            ✂️ 값 {tokenCount}개
-                          </span>
-                        )}
-                        {isMapped && isSplittable && mappedFieldsCount < tokenCount && isSelected && (
-                          <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 rounded px-1 py-0.5 whitespace-nowrap animate-pulse">
-                            {mappedFieldsCount}/{tokenCount} 지정 · 계속 선택
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[10px] text-zinc-500 font-mono whitespace-nowrap overflow-hidden text-ellipsis mt-0.5">
-                        {sampleRows.map((r, ri) => {
-                          const v = r[ci];
-                          const str = v == null ? "—" : String(v);
-                          return (
-                            <span key={ri} className="mr-1.5">{str.length > 12 ? str.slice(0, 12) + "…" : str}</span>
-                          );
-                        })}
-                      </div>
-                    </button>
-                    {isMapped && (
-                      <button
-                        type="button"
-                        onClick={() => handleClearMapping(ci)}
-                        className="text-zinc-400 hover:text-rose-500 cursor-pointer p-1"
-                        title="매핑 해제"
-                      >
-                        <X size={12} />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* 중앙: 안내 (선택된 좌측 표시) */}
-            <div className="flex flex-col items-center justify-center gap-2 text-[10px] text-zinc-400 font-bold">
-              {selectedRawIdx != null ? (
-                <div className="text-center text-indigo-600">
-                  <div className="text-[11px] font-bold mb-1">→</div>
-                  <div className="text-[10px]">오른쪽 필드<br/>클릭</div>
-                </div>
-              ) : (
-                <div className="text-center">
-                  <div className="text-[11px] font-bold mb-1">↔</div>
-                  <div className="text-[10px]">왼쪽 → 오른쪽<br/>순서로 클릭</div>
-                </div>
-              )}
-            </div>
-
-            {/* 우측: 표준 필드 */}
-            <div className="flex flex-col gap-2">
-              <div className="text-[10px] font-bold text-zinc-500 uppercase mb-1">표준 필드</div>
-              {fieldOptions.filter(f => f !== "제외").map(field => {
-                const usageCount = fieldUsageCount.get(field) ?? 0;
-                const isTarget = selectedRawIdx != null;
-                return (
-                  <button
-                    key={field}
-                    ref={el => { rightRefs.current[field] = el; }}
-                    type="button"
-                    onClick={e => handleRightClick(field, e)}
-                    disabled={selectedRawIdx == null}
-                    className={`text-left px-3 py-2 rounded-lg border-2 transition ${
-                      selectedRawIdx == null
-                        ? "bg-zinc-50 border-line opacity-50 cursor-not-allowed"
-                        : usageCount > 0
-                          ? "bg-indigo-50 border-indigo-300 hover:bg-indigo-100 cursor-pointer"
-                          : "bg-white border-zinc-300 hover:border-indigo-400 hover:bg-indigo-50 cursor-pointer"
-                    } ${isTarget ? "ring-2 ring-indigo-200 ring-offset-1" : ""}`}
-                  >
-                    <span className="text-[12px] font-bold text-zinc-800">{field}</span>
-                    {usageCount === 1 && (
-                      <span className="ml-1.5 text-[9px] font-bold text-indigo-600 bg-white border border-indigo-300 rounded px-1 py-0.5">
-                        연결됨
-                      </span>
-                    )}
-                    {usageCount >= 2 && (
-                      <span className="ml-1.5 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 rounded px-1 py-0.5">
-                        🔗 {usageCount}개 병합
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
           </div>
-        </div>
 
-        {/* 푸터 */}
-        <div className="px-5 py-3 border-t border-line flex items-center justify-between gap-2">
-          <div className="text-[10px] text-zinc-500">
-            {mapping.filter(f => f && f !== "제외").length}개 컬럼 매핑됨 · 나머지는 자동 "제외"
+          {/* 중앙: 안내 (선택된 좌측 표시) */}
+          <div className="flex flex-col items-center justify-center gap-2 text-[10px] text-zinc-400 font-bold">
+            {selectedRawIdx != null ? (
+              <div className="text-center text-indigo-600">
+                <div className="text-[11px] font-bold mb-1">→</div>
+                <div className="text-[10px]">오른쪽 필드<br/>클릭</div>
+              </div>
+            ) : (
+              <div className="text-center">
+                <div className="text-[11px] font-bold mb-1">↔</div>
+                <div className="text-[10px]">왼쪽 → 오른쪽<br/>순서로 클릭</div>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={onCancel}
-              className="text-[11px] font-bold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 rounded-lg px-3 py-1.5 cursor-pointer">
-              취소
-            </button>
-            <button onClick={onSave}
-              disabled={saving || !supplier}
-              className="text-[11px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 rounded-lg px-3 py-1.5 cursor-pointer flex items-center gap-1"
-            >
-              {saving ? <><Spinner size={12} tone="white" />저장 중</> : <><Save size={12} />공급사에 저장</>}
-            </button>
+
+          {/* 우측: 표준 필드 */}
+          <div className="flex flex-col gap-2">
+            <div className="text-[10px] font-bold text-zinc-500 uppercase mb-1">표준 필드</div>
+            {fieldOptions.filter(f => f !== "제외").map(field => {
+              const usageCount = fieldUsageCount.get(field) ?? 0;
+              const isTarget = selectedRawIdx != null;
+              return (
+                <button
+                  key={field}
+                  ref={el => { rightRefs.current[field] = el; }}
+                  type="button"
+                  onClick={e => handleRightClick(field, e)}
+                  disabled={selectedRawIdx == null}
+                  className={`text-left px-3 py-2 rounded-lg border-2 transition ${
+                    selectedRawIdx == null
+                      ? "bg-zinc-50 border-line opacity-50 cursor-not-allowed"
+                      : usageCount > 0
+                        ? "bg-indigo-50 border-indigo-300 hover:bg-indigo-100 cursor-pointer"
+                        : "bg-white border-zinc-300 hover:border-indigo-400 hover:bg-indigo-50 cursor-pointer"
+                  } ${isTarget ? "ring-2 ring-indigo-200 ring-offset-1" : ""}`}
+                >
+                  <span className="text-[12px] font-bold text-zinc-800">{field}</span>
+                  {usageCount === 1 && (
+                    <span className="ml-1.5 text-[9px] font-bold text-indigo-600 bg-white border border-indigo-300 rounded px-1 py-0.5">
+                      연결됨
+                    </span>
+                  )}
+                  {usageCount >= 2 && (
+                    <span className="ml-1.5 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 rounded px-1 py-0.5">
+                      🔗 {usageCount}개 병합
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };
