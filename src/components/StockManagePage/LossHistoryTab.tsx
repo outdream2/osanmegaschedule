@@ -9,6 +9,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Calendar, Loader2, TrendingDown, Package, Building2, Camera } from "lucide-react";
 import { Spinner } from "../common/Spinner";
@@ -85,6 +86,7 @@ interface SummaryResponse {
 }
 
 export const LossHistoryTab: React.FC = () => {
+  const { toast, showError, showSuccess } = useToast();
   const [period, setPeriod] = useState<PeriodKey>("month");
   const [supplierFilter, setSupplierFilter] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -126,6 +128,7 @@ export const LossHistoryTab: React.FC = () => {
         setSnapshotMsg("테이블 미생성 · migrations/loss_tracking_daily.sql 실행 필요");
       } else if (j.ok) {
         setSnapshotMsg(`저장 완료 · ${j.saved}건`);
+        showSuccess(`스냅샷 저장 완료 · ${j.saved}건`);
         await fetchAll();
       } else {
         setSnapshotMsg(j.error ?? "스냅샷 실패");
@@ -133,6 +136,7 @@ export const LossHistoryTab: React.FC = () => {
     } catch (e: any) {
       const msg = e instanceof ApiError ? e.message : (e?.message ?? "스냅샷 실패");
       setSnapshotMsg(msg);
+      showError(`스냅샷 실패: ${msg}`);
     } finally {
       setSnapshotting(false);
       setTimeout(() => setSnapshotMsg(null), 4000);
@@ -160,6 +164,7 @@ export const LossHistoryTab: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-3">
+      {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
       {/* ── 필터바 ── */}
       <div className={`${CARD_BASE} px-3 py-2 flex flex-wrap items-center gap-2`}>
         <div className="flex items-center gap-2">

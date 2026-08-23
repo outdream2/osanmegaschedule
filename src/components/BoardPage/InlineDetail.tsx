@@ -4,6 +4,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { MessageCircle, Send, Pencil, Check } from "lucide-react";
 import { api } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 import { Spinner } from "../common/Spinner";
 import type { AuthSession } from "../../types";
 import type { BoardPost, Employee } from "./types";
@@ -18,6 +19,7 @@ export const InlineDetail: React.FC<{
   onChanged: () => void;
 }> = ({ postId, authSession, employees, isManager, onOpenFull, onChanged }) => {
   void employees; void isManager; // 확장 필요 시 사용
+  const { toast, showError, showSuccess } = useToast();
   const [post, setPost] = useState<BoardPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [commentBody, setCommentBody] = useState("");
@@ -46,17 +48,26 @@ export const InlineDetail: React.FC<{
         body: commentBody.trim(),
       });
       setCommentBody(""); await load(); onChanged();
+      showSuccess("댓글이 등록되었습니다");
+    } catch (e: any) {
+      showError(`댓글 등록 실패: ${e?.message ?? "네트워크 오류"}`);
     } finally { setPosting(false); }
   };
 
   const saveEdit = async (id: number) => {
     if (!editingCommentBody.trim() || !authSession) return;
-    await api.patch(`/api/board/comments/${id}`, { editor_id: authSession.employeeId, body: editingCommentBody.trim() });
-    setEditingCommentId(null); setEditingCommentBody(""); await load(); onChanged();
+    try {
+      await api.patch(`/api/board/comments/${id}`, { editor_id: authSession.employeeId, body: editingCommentBody.trim() });
+      setEditingCommentId(null); setEditingCommentBody(""); await load(); onChanged();
+      showSuccess("댓글이 수정되었습니다");
+    } catch (e: any) {
+      showError(`댓글 수정 실패: ${e?.message ?? "네트워크 오류"}`);
+    }
   };
 
   return (
     <div className="bg-zinc-50/60 border-t border-line px-3 py-2.5">
+      {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
       {loading || !post ? (
         <div className="flex justify-center py-3 text-zinc-400"><Spinner size={16} tone="zinc" /></div>
       ) : (

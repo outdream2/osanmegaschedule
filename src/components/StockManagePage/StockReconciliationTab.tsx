@@ -30,6 +30,7 @@ import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { StatusPill } from "../common/StatusPill";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api, ApiError } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -111,6 +112,7 @@ export const StockReconciliationTab: React.FC<{
   onOpenOcr?: () => void;
   authSession?: AuthSession | null;
 }> = () => {
+  const { toast, showError } = useToast();
   const { getWidth, resizerProps } = useColumnResize("stockRecon", {
     num:        { default: 40,  min: 28, max: 60  },
     name:       { default: 200, min: 80, max: 400 },
@@ -175,7 +177,9 @@ export const StockReconciliationTab: React.FC<{
       setRows(diffs);
       setRefreshedAt(new Date());
     } catch (e: any) {
-      setError(e?.message ?? "로드 실패");
+      const msg = e instanceof ApiError ? e.message : (e?.message ?? "로드 실패");
+      setError(msg);
+      showError(`실재고 로드 실패: ${msg}`);
     } finally {
       setLoading(false);
     }
@@ -231,6 +235,7 @@ export const StockReconciliationTab: React.FC<{
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="flex-1 flex flex-col min-h-0 gap-3">
+      {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
 
       {/* ── 헤더 카드 · 2026-08-17 · StatusPill 통일 · 딥네이비 accent + semantic status ── */}
       <div className={`${CARD_BASE} p-3 flex flex-wrap items-center gap-2`}>

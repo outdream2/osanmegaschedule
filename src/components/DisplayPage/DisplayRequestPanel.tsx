@@ -14,6 +14,7 @@ import { IconTile } from "../common/IconTile";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -213,27 +214,40 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
   setRequests,
   formatRel,
 }) => {
+  const { toast, showError, showSuccess } = useToast();
   const pendingCount = useMemo(() => requests.filter((r) => r.status === "pending").length, [requests]);
   const doneCount = useMemo(() => requests.filter((r) => r.status === "done").length, [requests]);
   const urgentCount = useMemo(() => requests.filter(isUrgent).length, [requests]);
 
   const handleComplete = (req: DisplayRequest) => {
+    // optimistic update
     setRequests((prev) => prev.map((r) => r.id === req.id ? { ...r, status: "done" as const } : r));
-    // 2026-08-21 · Framework Phase 3 · fetch → apiClient · fire-and-forget
     api.patch(`/api/display-requests/${req.id}`, { status: "done" })
-      .then(() => dispatchApprovalChange("display")).catch(() => {});
+      .then(() => { dispatchApprovalChange("display"); showSuccess("완료 처리되었습니다"); })
+      .catch((e: any) => {
+        // 낙관적 업데이트 롤백
+        setRequests((prev) => prev.map((r) => r.id === req.id ? { ...r, status: "pending" as const } : r));
+        showError(`완료 처리 실패: ${e?.message ?? "네트워크 오류"}`);
+      });
   };
 
   const handleDelete = (req: DisplayRequest) => {
+    // optimistic update
     setRequests((prev) => prev.filter((r) => r.id !== req.id));
     api.del(`/api/display-requests/${req.id}`)
-      .then(() => dispatchApprovalChange("display")).catch(() => {});
+      .then(() => { dispatchApprovalChange("display"); showSuccess("삭제되었습니다"); })
+      .catch((e: any) => {
+        // 낙관적 업데이트 롤백
+        setRequests((prev) => [...prev, req].sort((a, b) => a.requestedAt < b.requestedAt ? 1 : -1));
+        showError(`삭제 실패: ${e?.message ?? "네트워크 오류"}`);
+      });
   };
 
   return (
     <div
       className="w-full bg-white rounded-2xl border border-line shadow-md shadow-zinc-200/60 flex flex-col overflow-hidden"
     >
+      {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
       {/* ── 헤더 ── */}
       <div className="px-3 pt-3 pb-2.5 border-b border-zinc-100 flex items-center justify-between flex-wrap gap-2">
         {/* 좌: 아이콘 + 제목 + 카운트 pills */}

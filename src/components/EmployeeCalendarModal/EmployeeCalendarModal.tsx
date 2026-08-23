@@ -17,6 +17,7 @@ import { Modal } from "../common/Modal";
 import { api } from "../../lib/apiClient";
 // 2026-08-21 · Framework Phase 3 · window.confirm → useConfirm
 import { useConfirm } from "../../hooks/useConfirm";
+import { useToast, toastClass } from "../../hooks/useToast";
 
 export type { LogisticsZoneProps };
 
@@ -70,6 +71,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
 }) => {
   // 2026-08-21 · Framework Phase 3 · window.confirm → useConfirm
   const confirm = useConfirm();
+  const { toast, showError } = useToast();
   const activeTypes = scheduleTypesProp ?? SCHEDULE_TYPES;
   const isLogistics = employee.position.includes("물류");
 
@@ -269,8 +271,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
       }
       setPendingChanges({});
       setEditingDay(null);
-    } catch (err) {
-      console.error("Batch save failed:", err);
+    } catch (err: any) {
+      showError(`변경사항 저장 실패: ${err?.message ?? "네트워크 오류"}`);
     } finally {
       setIsBatchSaving(false);
     }
@@ -323,8 +325,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
       setBulkActualHours("");
       setBulkMemo("");
       setActiveTab("calendar");
-    } catch (err) {
-      console.error("Bulk save failed:", err);
+    } catch (err: any) {
+      showError(`일괄 등록 실패: ${err?.message ?? "네트워크 오류"}`);
     } finally {
       setIsBulkSaving(false);
     }
@@ -341,6 +343,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
       cardStyle={{ maxHeight: "95vh" }}
       className="w-full max-w-3xl lg:max-w-4xl overflow-hidden flex flex-col"
     >
+      {toast && <div className={toastClass(toast.tone)} style={{ position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)", zIndex: 10 }}>{toast.message}</div>}
       {/* 내부 wrapper · flex-col · 헤더 fixed + body 스크롤 구조 유지 */}
       <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         {/* Header · 2026-08-17 · 사용자 지시 · "직원정보 / 월별 스케쥴" 타이틀 · 딥네이비 톤 */}

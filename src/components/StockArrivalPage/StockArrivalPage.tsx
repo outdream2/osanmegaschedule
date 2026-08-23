@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useToast, toastClass } from "../../hooks/useToast";
 import {
   Bell, BellOff, Calendar, Check, Clock,
   Package, Pencil, RefreshCw, Send, Trash2, X, Loader2,
@@ -54,6 +55,7 @@ const ARRIVAL_SORT_CMP: Record<ArrivalSortKey, Comparator<StockArrival>> = {
 
 export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession, onBack, onNavigate, onLogout, embedded = false }) => {
   const confirm = useConfirm();
+  const { toast, showError, showSuccess } = useToast();
 
   const [arrivals, setArrivals] = useState<StockArrival[]>([]);
   const [loading, setLoading] = useState(false);
@@ -130,6 +132,9 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
     try {
       await api.post("/api/stock-arrivals", { title: newTitle.trim(), body: newBody.trim() || null, employeeId, send_now: false });
       setNewTitle(""); setNewBody(""); await fetchArrivals(); titleRef.current?.focus();
+      showSuccess("입고 알림이 저장되었습니다");
+    } catch (e: any) {
+      showError(`저장 실패: ${e?.message ?? "네트워크 오류"}`);
     } finally { setSubmitting(false); }
   };
 
@@ -140,6 +145,9 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
     try {
       await api.post("/api/stock-arrivals", { title: newTitle.trim(), body: newBody.trim() || null, employeeId, send_now: true });
       setNewTitle(""); setNewBody(""); await fetchArrivals(); titleRef.current?.focus();
+      showSuccess("입고 알림이 즉시 발송되었습니다");
+    } catch (e: any) {
+      showError(`발송 실패: ${e?.message ?? "네트워크 오류"}`);
     } finally { setSubmitting(false); }
   };
 
@@ -164,6 +172,9 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
       }
       setSchedPickerId(null);
       if (schedPickerId === "new") await fetchArrivals();
+      showSuccess("예약 발송이 설정되었습니다");
+    } catch (e: any) {
+      showError(`예약 발송 실패: ${e?.message ?? "네트워크 오류"}`);
     } finally { setSubmitting(false); }
   };
 
@@ -187,13 +198,21 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
       const { data: updated } = await api.patch<StockArrival>(`/api/stock-arrivals/${id}`, { title: editTitle.trim(), body: editBody.trim() || null, employeeId });
       setArrivals(prev => prev.map(a => a.id === id ? updated : a));
       setEditId(null);
+      showSuccess("수정되었습니다");
+    } catch (e: any) {
+      showError(`수정 실패: ${e?.message ?? "네트워크 오류"}`);
     } finally { setEditSaving(false); }
   };
 
   const handleDelete = async (id: number) => {
     if (!await confirm({ message: "이 입고 알림을 삭제하시겠습니까?", danger: true })) return;
-    await api.del(`/api/stock-arrivals/${id}`, { data: { employeeId } });
-    setArrivals(prev => prev.filter(a => a.id !== id));
+    try {
+      await api.del(`/api/stock-arrivals/${id}`, { data: { employeeId } });
+      setArrivals(prev => prev.filter(a => a.id !== id));
+      showSuccess("삭제되었습니다");
+    } catch (e: any) {
+      showError(`삭제 실패: ${e?.message ?? "네트워크 오류"}`);
+    }
   };
 
   const arrow = (k: ArrivalSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
@@ -236,6 +255,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
 
   return (
     <div className={embedded ? "flex-1 bg-zinc-50" : "min-h-screen bg-zinc-50"}>
+      {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
       {embedded ? embeddedToolbar : (
       <AppNavHeader
         activePage="stockarrivals"

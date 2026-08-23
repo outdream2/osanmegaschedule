@@ -2,6 +2,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useState, useCallback, useEffect } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 import {
   Calendar,
   Home,
@@ -84,6 +85,7 @@ const getTargetFromNote = (noteStr: string): string => {
 const STAFF_NAMES = ["대표", "이사", "부장"];
 
 export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSession }) => {
+  const { toast, showError, showSuccess } = useToast();
   const isVendor = authSession?.role === "vendor";
   // Internal staff (level >= 2) can block/unblock time slots
   const isInternalStaff = !isVendor && (authSession?.level ?? 0) >= 2;
@@ -283,9 +285,11 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
       setSubmitted(true);
       setModalTime(null);
       fetchReservations(selectedDate);
+      showSuccess("예약이 접수되었습니다");
     } catch (e: unknown) {
-      if (e instanceof ApiError) setError(e.message);
-      else setError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+      const msg = e instanceof ApiError ? e.message : "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.";
+      setError(msg);
+      showError(`예약 실패: ${msg}`);
     } finally {
       setSubmitting(false);
     }
@@ -295,6 +299,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
 
       {/* 2026-07-29 · 사용자 요청 · 공통 헤더 (AppNavHeader) 로 통일 · reservation 은 AppNavPage 에 없어서 landing 표시 */}
       <AppNavHeader activePage="landing" authSession={authSession ?? null} onBack={onBack} />
