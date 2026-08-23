@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { StatusPill } from "../common/StatusPill";
+import { useToast, toastClass } from "../../hooks/useToast";
 
 export type CoverageResp = {
   periods?: Array<{ ym: string; early: number; mid: number; late: number; total: number }>;
@@ -17,6 +18,7 @@ export const PeriodCoverageWidget: React.FC<{
   color: "indigo" | "sky";
   refreshTrigger?: any;
 }> = ({ endpoint, label, color, refreshTrigger }) => {
+  const { toast, showError } = useToast();
   const [data, setData] = useState<CoverageResp | null>(null);
   const [loading, setLoading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -25,8 +27,12 @@ export const PeriodCoverageWidget: React.FC<{
     // 2026-08-21 · Framework Phase 3 · fetch → apiClient
     api.get<CoverageResp>(endpoint)
       .then(({ data: j }) => setData(j ?? { periods: [], missing: [] }))
-      .catch(() => setData({ periods: [], missing: [] }))
+      .catch(() => {
+        setData({ periods: [], missing: [] });
+        showError("커버리지 데이터 로드 실패");
+      })
       .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endpoint, refreshTrigger]);
   const ptxt: Record<string, string> = { early: "초순", mid: "중순", late: "하순" };
   const cellClsFilled = color === "indigo"
@@ -39,6 +45,11 @@ export const PeriodCoverageWidget: React.FC<{
   const missingCount = (data?.missing ?? []).length;
   return (
     <div className="mb-4 border border-line rounded-xl overflow-hidden">
+      {toast && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
       <button type="button" onClick={() => setCollapsed(c => !c)}
         className={`w-full flex items-center justify-between px-3 py-2 bg-zinc-50 hover:bg-zinc-100 transition cursor-pointer`}>
         <div className="flex items-center gap-2 min-w-0">

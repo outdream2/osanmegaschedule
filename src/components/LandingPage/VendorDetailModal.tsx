@@ -6,6 +6,7 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { api } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useToast, toastClass } from "../../hooks/useToast";
 import {
   Check, X, Building2, Package, RefreshCw, ChevronRight,
   Wallet, Plus, Trash2, CircleDollarSign, TrendingUp,
@@ -84,6 +85,7 @@ export const VendorDetailModal: React.FC<{
   panel?: boolean;
 }> = ({ vendor, onClose, onSaved, panel }) => {
   const confirm = useConfirm();
+  const { toast, showSuccess, showError } = useToast();
 
   const [draft, setDraft] = useState<EditDraft>(emptyDraft(vendor));
   const [saving, setSaving] = useState(false);
@@ -180,9 +182,12 @@ export const VendorDetailModal: React.FC<{
     try {
       await api.del(`/api/supplier-payments/${id}`);
       setPayMsg({ type: "ok", text: "삭제 완료" });
+      showSuccess("결제 기록이 삭제되었습니다");
       await loadPaymentData();
     } catch (e: any) {
-      setPayMsg({ type: "err", text: `삭제 실패: ${e?.message ?? e}` });
+      const msg = `삭제 실패: ${e?.message ?? e}`;
+      setPayMsg({ type: "err", text: msg });
+      showError(msg);
     }
   };
 
@@ -267,11 +272,14 @@ export const VendorDetailModal: React.FC<{
         emergency_contact: draft.emergency_contact.trim() || null,
       });
       setSaveMsg({ type: "ok", text: "저장 완료" });
+      showSuccess("저장되었습니다");
       // 2026-07-30 · 사용자 요청 · 분류(category) 저장 시 · 리스트 배지 즉시 반영 이벤트
       try { window.dispatchEvent(new CustomEvent("vendors-changed")); } catch { /* ignore */ }
       onSaved();
     } catch (e: any) {
-      setSaveMsg({ type: "err", text: `저장 실패: ${e?.message ?? e}` });
+      const msg = `저장 실패: ${e?.message ?? e}`;
+      setSaveMsg({ type: "err", text: msg });
+      showError(msg);
     } finally {
       setSaving(false);
     }
@@ -729,9 +737,17 @@ export const VendorDetailModal: React.FC<{
             onSaved={async () => {
               setShowPayModal(false);
               setPayMsg({ type: "ok", text: "결제 등록 완료" });
+              showSuccess("결제가 등록되었습니다");
               await loadPaymentData();
             }}
           />
+        )}
+
+        {/* toast */}
+        {toast && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[10002] pointer-events-none">
+            <div className={toastClass(toast.tone)}>{toast.message}</div>
+          </div>
         )}
       </div>
     </div>

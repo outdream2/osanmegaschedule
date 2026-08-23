@@ -9,6 +9,7 @@ import { api } from "../../../lib/apiClient";
 import { Modal } from "../Modal";
 import { InventoryEditPanel, type ZoneKey } from "../InventoryEditPanel";
 import type { CurrentValues } from "../InventoryEditPanel";
+import { useToast, toastClass } from "../../../hooks/useToast";
 
 // ─────────────────────────────────────────────────────────────
 // Types
@@ -60,6 +61,7 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
   onSaved,
   onClose,
 }) => {
+  const { toast, showSuccess, showError } = useToast();
   const [currentValues, setCurrentValues] = useState<CurrentValues>(() => normalizeInitial(initialValues));
   const [savingZone, setSavingZone] = useState<ZoneKey | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -106,10 +108,13 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
         warehouse_stock:  next.w1, // 레거시 mirror
       });
       setCurrentValues(next);
+      showSuccess("재고가 저장되었습니다");
       window.dispatchEvent(new CustomEvent("inventory-checks-updated"));
       onSaved?.();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "저장 중 오류가 발생했습니다.");
+      const msg = e instanceof Error ? e.message : "저장 중 오류가 발생했습니다.";
+      setError(msg);
+      showError(msg);
     } finally {
       setSavingZone(null);
     }
@@ -126,10 +131,13 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
           {error && (
             <span className="flex-1 text-[11px] text-rose-600 font-medium truncate">{error}</span>
           )}
+          {toast && (
+            <span className={toastClass(toast.tone)}>{toast.message}</span>
+          )}
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-[12px] font-semibold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors cursor-pointer"
+            className="ml-auto px-4 py-2 rounded-lg text-[12px] font-semibold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors cursor-pointer"
           >
             닫기
           </button>

@@ -9,6 +9,7 @@ import { api } from "../../lib/apiClient";
 import type { OpenInvoiceRow } from "./VendorListEditor.types";
 import { fmtWon, inputCls, METHOD_OPTIONS } from "./VendorListEditor.utils";
 import { Spinner } from "../common/Spinner";
+import { useToast, toastClass } from "../../hooks/useToast";
 
 const todayYmd = (): string => {
   const d = new Date();
@@ -55,6 +56,7 @@ const PaymentRegisterModal: React.FC<{
   onClose: () => void;
   onSaved: () => void;
 }> = ({ supplierName, onClose, onSaved }) => {
+  const { toast, showSuccess, showError } = useToast();
   const [paymentDate, setPaymentDate] = useState<string>(todayYmd());
   const [amount, setAmount] = useState<string>("");
   const [method, setMethod] = useState<string>("transfer");
@@ -166,9 +168,12 @@ const PaymentRegisterModal: React.FC<{
         memo: memo.trim() || null,
         allocations,
       });
+      showSuccess("결제가 등록되었습니다");
       onSaved();
     } catch (e: any) {
-      setErrMsg(`저장 실패: ${e?.message ?? e}`);
+      const msg = `저장 실패: ${e?.message ?? e}`;
+      setErrMsg(msg);
+      showError(msg);
     } finally {
       setSaving(false);
     }
@@ -354,6 +359,13 @@ const PaymentRegisterModal: React.FC<{
           </div>
         </div>
 
+        {/* toast */}
+        {toast && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[10001] pointer-events-none">
+            <div className={toastClass(toast.tone)}>{toast.message}</div>
+          </div>
+        )}
+
         {/* 합계 요약 · 2026-08-17 · Vercel Dashboard 톤 · white body + status dot */}
         <div className="grid grid-cols-3 gap-2.5">
           <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] px-3 py-2.5">
@@ -393,3 +405,4 @@ const PaymentRegisterModal: React.FC<{
 };
 
 export { PaymentRegisterModal };
+
