@@ -1532,11 +1532,25 @@ git commit
 - 오늘 현황 카드 점(dot) 색상 · amber/sky/rose/emerald 다색 → **blue 단일** 통일
 - 구조 변경 없음 · className 만 변경
 
-#### #178 · 공급사 스키마 확장 계획 (신규 등록 · 2026-08-20 · 구현 대기)
+#### #178 · 공급사 스키마 확장 (2026-08-20 등록 · **2026-08-23 스펙 확정** · 구현 대기)
 - 원본: `src/sample/메가타운약국공급사관리정보.xlsx` · 57 시트 · 52 vendor
-- DB 신규 컬럼 계획 · `vendors` 테이블 ALTER: `order_method` · `region` · `invoice_method` · `login_credentials` · `special_notes`
-- DB 신규 테이블 계획 · `vendor_order_templates` (기본 주문 템플릿)
-- Phase A~E 계획만 · 구현 미착수 · 사용자 결정 대기
+- **스코프** · **첫 시트 (마스터) 만** · 시트 2~57 (공급사별 상품) 무시 · `vendor_order_templates` 테이블 신설 X
+- **DB 신규 컬럼 (5)** · `vendors` ALTER: `order_method` · `region` · `invoice_method` · `order_status` · `special_notes`
+- **로그인 규칙** · ID = 담당자 핸드폰 (`vendors.phone`) · 비번 = 핸드폰 + `.env VENDOR_PW_SUFFIX` (기본 "00") · **DB 저장 X · 서버 파생** (`src/lib/vendorPassword.ts`)
+- **note vs special_notes** · **분리** · `note` (일반) + `special_notes` (발주 특이사항 · 경고 톤 배너)
+- **UI 조회/수정** · VendorListEditor + VendorDetailModal · 프레임워크 활용 (Modal · Card · SplitListPanel · CategoryChips · Badge · StatusPill · PageToolbar · CollapseCard · useApiCall · useToast · useConfirm)
+- **Import** · 일회성 스크립트 · `scripts/import-vendors.mjs` · 매칭 (company_name) · UPDATE/INSERT · DELETE X
+- 규모 · 예상 8-12시간 · 5 Phase (A DB · B Zod · C 서버 · D UI · E 스크립트)
+- 관련 메모리 · `.claude/memory/project_vendor_{login_rule,special_notes,scope}.md`
+
+#### #181 · 매장구역도 인라인 편집 (2026-08-21 등록 · **2026-08-23 스펙 확정** · 구현 대기)
+- **편집 방식** · **팝오버 + 드래그 둘 다** (Option C)
+- **ZoneSettingsPage 완전 제거** · StoreZoneMap 인라인 편집만 · 페이지·라우팅·사이드바 gate 삭제
+- **드래그 동작** · num 재배정 (같은 section swap) + section 이동 (target 중복 검사) 둘 다
+- **편집 권한** · **관리자만** (admin · superadmin)
+- **UI** · `StoreZoneMap` · `editing` prop · InlineEditPopover (or Modal size=sm) · long-press 드래그 (모바일)
+- **저장** · useZoneDefs · debounce 자동
+- 관련 메모리 · `.claude/memory/project_zone_map_edit.md`
 
 #### #177 · 상품정보 페이지 (✅ 완료 · 2026-08-23 · Phase A/B/C/D · `fe33f65d`·`f43afc45`·`3ee0b766`)
 - 매장 > 매입 > **"상품정보"** 서브탭 (productinfo · indigo · Info 아이콘)

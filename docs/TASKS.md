@@ -354,7 +354,45 @@
 - 💡 **의존** · #180 (발주이력 검색 기능) 과 연계 · 같은 데이터 소스
 - 💡 프레임워크 원칙 준수 (대원칙 17·19)
 
-### #181 · 매장구역도 · 인라인 편집 + 드래그 위치 변경 (신규 · 2026-08-21)
+### #181 · 매장구역도 · 인라인 편집 + 드래그 위치 변경 (신규 · 2026-08-21 · **스펙 확정 2026-08-23**)
+
+**🎯 스펙 확정 (2026-08-23 사용자 결정)**:
+- **편집 방식** · **C · 팝오버 + 드래그 둘 다** (Option C)
+- **ZoneSettingsPage** · **완전 제거** · StoreZoneMap 인라인 편집만 · 페이지·라우팅·사이드바 gate 삭제
+- **드래그 동작** · **num 재배정 + section 이동 둘 다** · 같은 section swap · 다른 section 이동 (중복 검사)
+- **편집 권한** · **관리자만** (`role === "admin"` OR `"superadmin"`)
+
+**Phase 1 · StoreZoneMap 확장 (프리미티브 관점)**:
+- 🔲 `editing` prop 추가 (default false · readonly)
+- 🔲 `onZoneUpdate` prop · 팝오버 편집 콜백 (label · category · num)
+- 🔲 `onZoneReorder` prop · 드래그 재배정 콜백 (num swap or section 이동)
+- 🔲 InlineEditPopover 신규 프리미티브 (or Modal size=sm 활용) · label + category + num input
+- 🔲 useZoneDefs · setZones · debounce 자동 저장
+
+**Phase 2 · 드래그 구현**:
+- 🔲 드래그 라이브러리 · react-dnd or 커스텀 pointer events
+- 🔲 long-press (모바일) · 500ms · 드래그 활성
+- 🔲 같은 section · swap 방식 (num 교환)
+- 🔲 다른 section · 이동 (target section num 중복 검사 · 중복 시 다음 available num or 사용자 확인)
+- 🔲 드롭 인디케이터 · 드래그 위치 시각화
+
+**Phase 3 · 권한 gate**:
+- 🔲 관리자만 편집 · `authSession.role in ["admin", "superadmin"]`
+- 🔲 매니저·직원 · 조회만 · 편집 UI 미노출
+
+**Phase 4 · ZoneSettingsPage 제거**:
+- 🔲 `src/components/ZoneSettingsPage/` · 파일 삭제 (destructive · 관리자 승인)
+- 🔲 사이드바 · `sideNavGroups.ts` · zone-settings 항목 제거
+- 🔲 라우팅 · App.tsx · zone-settings 라우팅 제거
+- 🔲 관련 테스트 · 정리
+
+**의존 · 프리미티브**:
+- Modal (팝오버) · Card · useZoneDefs · useKvSetting (debounce)
+
+**관련 메모리**:
+- `.claude/memory/project_zone_map_edit.md` · 편집 방식 · 드래그 · 권한 · 페이지 제거
+
+### #181-원본스펙 (기록 · 2026-08-21)
 
 **현재 상태 (조사 완료)**:
 - `StoreZoneMap` · 표시 전용 · 편집 없음
@@ -422,7 +460,50 @@
   - 스캐너 사용처 · ScanPage·ProductArrivalPage·재고체크 등 · 어디서 자동 유도?
 - 💡 **의존** · #177 (상품 등록 페이지) 선행 완료 필요
 
-### #178 · 공급사 정보 스키마 확장 · xlsx 원본 반영 (신규 · 2026-08-20)
+### #178 · 공급사 정보 스키마 확장 · xlsx 원본 반영 (신규 · 2026-08-20 · **스펙 확정 2026-08-23**)
+
+**🎯 스펙 확정 (2026-08-23 사용자 결정)**:
+- **스코프** · xlsx **첫 시트 (마스터)** 만 사용 · 시트 2~57 (공급사별 상품) 완전 무시
+- **로그인 규칙** · ID = 담당자 핸드폰 (`vendors.phone`) · 비번 = 핸드폰 + `.env VENDOR_PW_SUFFIX` (기본 "00") · DB 저장 X · 서버 파생
+- **note vs special_notes** · **분리** · `note` (일반) + `special_notes` (발주 특이사항 · 경고 톤 배너)
+- **Import 방식** · 일회성 스크립트 + 기존 vendors 연동/병합 (매칭 키: company_name)
+- **UI 조회/수정** · 프레임워크 모두 활용 (Modal · Card · SplitListPanel · CategoryChips · Badge · StatusPill · PageToolbar · CollapseCard · useApiCall · useToast · useConfirm)
+
+**Phase A · DB 마이그레이션**:
+- 🔲 `vendors` ALTER · 5개 신규 컬럼 (`order_method` · `region` · `invoice_method` · `order_status` · `special_notes`)
+- 🔲 `login_credentials` 컬럼 신설 **X** · 파생 방식
+- 🔲 `vendor_order_templates` 테이블 신설 **X** · 공급사별 상품 시트 무시
+
+**Phase B · Zod 스키마**:
+- 🔲 `src/shared/schemas/vendors.ts` · VendorSchema 확장 · 5 신규 필드 optional
+- 🔲 UpdateVendorSchema · partial 유지
+
+**Phase C · 서버**:
+- 🔲 GET `/api/vendors` · 신규 컬럼 포함
+- 🔲 PUT `/api/vendors/:id` · 신규 필드 지원 · authorize(5) or admin
+- 🔲 파생 함수 · `src/lib/vendorPassword.ts` · getVendorLoginId + getVendorPassword
+
+**Phase D · UI 조회/수정 (프레임워크 활용)**:
+- 🔲 VendorListEditor · 리스트 컬럼 확장 (order_method · region · order_status 표시 옵션)
+- 🔲 VendorDetailModal · 편집 폼 확장 · 5 신규 필드 · Zod 검증
+- 🔲 CollapseCard · 특이사항 접기/펴기
+- 🔲 Badge · order_status · StatusPill · 특이사항 rose 배지
+- 🔲 발주요청 페이지 · 공급사 선택 시 · `special_notes` 배너 노출
+
+**Phase E · xlsx import 스크립트 (일회성)**:
+- 🔲 `scripts/import-vendors.mjs` · xlsx 첫 시트 파싱 · 52 vendors
+- 🔲 매칭 키 · company_name (phone fallback)
+- 🔲 매칭 O · UPDATE (신규 컬럼) · 매칭 X · INSERT · DELETE 없음
+- 🔲 콘솔 리포트 · `matched: N · inserted: M · errors: K`
+
+**규모** · 예상 **8-12시간** · UI 확장 포함
+
+**관련 메모리**:
+- `.claude/memory/project_vendor_login_rule.md` · 로그인 규칙
+- `.claude/memory/project_vendor_special_notes.md` · note 분리
+- `.claude/memory/project_vendor_scope.md` · xlsx 스코프 + import
+
+### #178-원본스펙 (기록 · 2026-08-20)
 - 📄 원본 · `src/sample/메가타운약국공급사관리정보.xlsx` · 57 시트 · 52 vendor
 - 마스터 헤더 · 제약사·주문방식(사이트)·지역·거래명세서·담당자·연락처·주문현황·계정/비밀번호·특이사항
 - 각 제약사 시트 · `no.·제품명·주문수량·비고` · 기본 주문 템플릿
