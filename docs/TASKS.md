@@ -573,10 +573,13 @@
 - 🔲 GET `/api/vendors` · 신규 컬럼 반환 (Supabase select 자동 · 별도 작업 불필요)
 - 🔲 파생 함수 · `src/lib/vendorPassword.ts` · 별도 태스크
 
-**Phase D · UI 조회/수정** 🔲 **미착수 · 별도 세션 권장**:
-- 🔲 VendorListEditor (2400라인) · 편집 폼 확장 · 5 신규 필드
-- 🔲 VendorDetailModal · 편집 UI · CollapseCard · Badge · StatusPill
-- 🔲 발주요청 페이지 · special_notes 경고 배너
+**Phase D · UI 조회/수정** ✅ **완료** (`9b131edd`):
+- ✅ Vendor 타입 + EditDraft 타입 · 5 신규 필드 확장 · approval_status enum
+- ✅ emptyDraft utility · 초기값 매핑
+- ✅ VendorDetailModal · isDirty + handleSave payload + 5 신규 form fields
+- ✅ 발주 특이사항 · amber 톤 border (경고 강조 · 목업 준수)
+- ✅ 서버 fallback · DB migration 미실행 시 · 자동 skip (안전)
+- 🔲 발주요청 페이지 · special_notes 경고 배너 (별도 태스크 · Phase F)
 
 **Phase E · xlsx import 스크립트** ✅ **완료** (`53e6e98a`):
 - ✅ `scripts/import-vendors.mjs` · Node ESM
