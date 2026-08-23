@@ -41,7 +41,7 @@
 | `productsCache.test.ts` (addCachedProduct) | 5 | 신규·기존 병합·leading zero·빈 코드·기본값 |
 | `Modal.test.tsx` (v3+ 확장) | 10 | size (3xl · lg-narrow · xl · full) · dark backdrop · bodyPadding · zIndex · headerBgClass · headerTextClass · cardStyle |
 
-**전체**: 3055 → **3118 tests** (63 신규) · 209 files · all pass
+**전체**: 3055 → **3138 tests** (83 신규) · 209 files · all pass
 
 **프레임워크 프리미티브 커버리지 · 이번 세션 강화**:
 - Modal v3/v3.1/v3.2/v3.3/v3.4 (+10 tests · 25 total)
@@ -59,10 +59,13 @@
 
 ---
 
-## 📝 이번 세션 커밋 로그 (최신 → 과거 · 40개)
+## 📝 이번 세션 커밋 로그 (최신 → 과거 · 43개)
 
 | # | SHA | 파일 | 요약 |
 |---|-----|------|------|
+| 43 | `646daa45` | IconTile.test.tsx | test: 전 tone 완성 (sky/amber/teal/indigo/zinc) · 9→10 tests |
+| 42 | `59a8a0c0` | Spinner.test.tsx | test: 전 tone 커버리지 (10 tones + 기본값) · 8→21 tests |
+| 41 | `a969be64` | TASKS_HANDBOOK.md | docs: SplitListPanel v2 반영 |
 | 40 | `98dcbbd7` | SplitListPanel.tsx + test | feat: v2 확장 (countDisplay/footer/bodyClassName) · #198 Phase 3 지원 · 6 신규 tests |
 | 39 | `4b9abe79` | TASKS.md | docs: #198 Phase 2 완료 · Phase 3 진행중 명시 |
 | 38 | `a7304513` | SESSION_STATUS.md | 심야 세션 갱신 |
