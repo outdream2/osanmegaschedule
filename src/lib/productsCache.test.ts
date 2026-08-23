@@ -147,3 +147,50 @@ describe("updateCachedProduct", () => {
     expect(lookupProduct("8801234")?.spec).toBe("updated");
   });
 });
+
+// 2026-08-23 · #179 · addCachedProduct · 미등록 상품 등록 후 로컬 캐시 즉시 삽입
+describe("addCachedProduct", () => {
+  it("로드 전 · 새 캐시 생성 · 항목 삽입", async () => {
+    mockFetch.mockResolvedValue(okResponse({}));
+    const { addCachedProduct, lookupProduct } = await import("./productsCache");
+    addCachedProduct("NEW001", { name: "신규상품" });
+    expect(lookupProduct("NEW001")?.name).toBe("신규상품");
+  });
+
+  it("로드 후 · 기존 캐시에 추가", async () => {
+    mockFetch.mockResolvedValue(okResponse(sampleMap));
+    const { getProductsMap, addCachedProduct, lookupProduct } = await import("./productsCache");
+    await getProductsMap();
+    addCachedProduct("NEW002", { name: "신규상품2", spec: "10정" });
+    expect(lookupProduct("NEW002")?.name).toBe("신규상품2");
+    // 기존 항목 유지
+    expect(lookupProduct("8801234")?.name).toBe("타이레놀 500mg");
+  });
+
+  it("빈 코드 · 무시 (no-op)", async () => {
+    mockFetch.mockResolvedValue(okResponse({}));
+    const { addCachedProduct, lookupProduct } = await import("./productsCache");
+    addCachedProduct("", { name: "X" });
+    expect(lookupProduct("")).toBeNull();
+  });
+
+  it("leading zero · 원본+stripped 양쪽 삽입", async () => {
+    mockFetch.mockResolvedValue(okResponse({}));
+    const { addCachedProduct, lookupProduct } = await import("./productsCache");
+    addCachedProduct("00PC001", { name: "테스트" });
+    // 원본 코드로 lookup
+    expect(lookupProduct("00PC001")?.name).toBe("테스트");
+    // stripped 코드로도 lookup 가능
+    expect(lookupProduct("PC001")?.name).toBe("테스트");
+  });
+
+  it("info 없이 · 기본값 (name 빈 문자열)", async () => {
+    mockFetch.mockResolvedValue(okResponse({}));
+    const { addCachedProduct, lookupProduct } = await import("./productsCache");
+    addCachedProduct("MIN001", {});
+    const p = lookupProduct("MIN001");
+    expect(p?.code).toBe("MIN001");
+    expect(p?.name).toBe("");
+    expect(p?.spec).toBe("");
+  });
+});
