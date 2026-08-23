@@ -41,14 +41,32 @@
 | `productsCache.test.ts` (addCachedProduct) | 5 | 신규·기존 병합·leading zero·빈 코드·기본값 |
 | `Modal.test.tsx` (v3+ 확장) | 10 | size (3xl · lg-narrow · xl · full) · dark backdrop · bodyPadding · zIndex · headerBgClass · headerTextClass · cardStyle |
 
-**전체**: 3055 → **3081 tests** (26 신규 · OrderHistorySupplierModal 7 추가) · 208 files · all pass
+**전체**: 3055 → **3103 tests** (48 신규) · 209 files · all pass
+
+**프레임워크 프리미티브 커버리지 · 이번 세션 강화**:
+- Modal v3/v3.1/v3.2/v3.3/v3.4 (+10 tests · 25 total)
+- Card v2 · bg + borderColor (+5 · 34 total)
+- StatusPill v2 · shape (+3 · 17 total)
+- BottomSheet v2 · header/fullscreen/disableHandle/backdropClass/zIndex/footer (+7 · 24 total)
+- SplitListPanel · #198 (기존 18)
+- ProductCreateModal (신규 10)
+- SupplierFilterBar #185 (신규 7)
+- OrderHistorySupplierModal #182 (신규 7)
+- ScanLeftPanel #179 (신규 8)
+- productsCache addCachedProduct #179 (신규 5)
+- ProductInfoPage 통합 (신규 11)
+- products Zod schema (신규 17)
 
 ---
 
-## 📝 이번 세션 커밋 로그 (최신 → 과거 · 22개)
+## 📝 이번 세션 커밋 로그 (최신 → 과거 · 26개)
 
 | # | SHA | 파일 | 요약 |
 |---|-----|------|------|
+| 26 | `58ac824b` | BottomSheet.test.tsx | test: v2 확장 7 tests (header/fullscreen/disableHandle/backdropClass/zIndex/footer) |
+| 25 | `5b559cfd` | Card.test.tsx | test: v2 · bg + borderColor 5 tests |
+| 24 | `78fcaca9` | StatusPill.test.tsx | test: v2 shape prop 3 tests |
+| 23 | `c35e5ab3` | SupplierFilterBar.test.tsx + vitest.config | test: #185 SupplierFilterBar PageToolbar 회귀 방지 7 tests |
 | 22 | `2837596a` | OrderHistorySupplierModal.test.tsx + vitest.config | test: #182 · 7 tests · Modal+PeriodSelector 커버리지 |
 | 21 | `e597f675` | FRAMEWORK_AUDIT.md | audit baseline 갱신 · 647 files · 645 clean (100%) |
 | 20 | `5a8c1cc5` | TASKS_HANDBOOK.md | 커밋 로그 갱신 |
