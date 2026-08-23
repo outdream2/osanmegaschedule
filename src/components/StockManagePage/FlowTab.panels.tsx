@@ -8,6 +8,7 @@ import React from "react";
 import {
   Search, Boxes, Info, EyeOff, Loader2 as LoaderIcon,
 } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
 import { CARD_BASE } from "../../styles/tokens";
@@ -246,7 +247,7 @@ export const HiddenManagerModal: React.FC<HiddenManagerModalProps> = ({
         <div className="overflow-y-auto bg-zinc-50 max-h-[60vh]">
           {hiddenLoading ? (
             <div className="flex flex-col items-center justify-center gap-3 py-8">
-              <div className="w-10 h-10 border-4 border-line border-t-orange-500 rounded-full animate-spin" />
+              <Spinner size={40} tone="orange" />
               <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
             </div>
           ) : hiddenList.length === 0 ? (

@@ -241,7 +241,7 @@ export const DiffTab: React.FC = () => {
             <div className="flex-1 overflow-y-auto relative">
               {loading && diffList.length > 0 && (
                 <div className="flex items-center justify-center gap-1.5 text-[10px] text-violet-600 font-bold py-1.5 mb-1 bg-violet-50 border border-violet-200 rounded-md sticky top-0 z-10">
-                  <LoaderIcon size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+                  <Spinner size={11} tone="violet" /> 조건 변경 · 새로 불러오는 중...
                 </div>
               )}
               {loading && diffList.length === 0 ? (
