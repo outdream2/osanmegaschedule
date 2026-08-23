@@ -8,30 +8,32 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 609 |
-| 위반 파일 | 1 |
-| 클린 파일 | 608 (100%) |
-| 총 위반 개수 | 1 |
+| 스캔 파일 | 623 |
+| 위반 파일 | 2 |
+| 클린 파일 | 621 (100%) |
+| 총 위반 개수 | 2 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
-| `large-file-critical` | 1 | 1 | high | 2000+라인 · 시급 · 서브 컴포넌트/훅 분리 필수 |
+| `large-file-warn` | 2 | 2 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
-| 1 | `src/components/ContractWriterPage/ContractWriterPage.tsx` | 5483 | 48 | large-file-critical(1) |
+| 1 | `src/components/ContractWriterPage/ContractLeftForm.tsx` | 1320 | 6 | large-file-warn(1) |
+| 2 | `src/components/ContractWriterPage/useContractWriterState.ts` | 1351 | 6 | large-file-warn(1) |
 
-## 📝 모든 위반 파일 (1개)
+## 📝 모든 위반 파일 (2개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
-| `src/components/ContractWriterPage/ContractWriterPage.tsx` | 5483 | 48 |
+| `src/components/ContractWriterPage/ContractLeftForm.tsx` | 1320 | 6 |
+| `src/components/ContractWriterPage/useContractWriterState.ts` | 1351 | 6 |
 
 </details>
 

@@ -1,0 +1,80 @@
+// src/components/ContractWriterPage/emptyForm.ts
+// 기본 폼 초기값
+
+import type { ContractForm } from "./types";
+import { DEFAULT_EMPLOYER } from "./constants";
+import { todayIso } from "./wageCalc";
+import { DEFAULT_PAYMENT_DAY_TEXT } from "../../types";
+
+export function emptyForm(): ContractForm {
+  return {
+    employeeId: null,
+    employeeName: "",
+    employeePhone: "",
+    employeeAddress: "",
+    employeeBirth: "",
+    employeeBankAccount: "",
+    bankName: "",
+    bankAccountNumber: "",
+    bankbookImageUrl: "",
+    employeeEmail: "",
+    employeeGender: "",
+    employeeRank: "",
+    employeeWorkplace: "",
+    employeeNumber: "",
+    contractType: "정규직",
+    contractMonths: "2",
+    workDays: { "월": true, "화": true, "수": true, "목": true, "금": true, "토": false, "일": false },
+    startTime: "10:00",
+    endTime: "19:00",
+    breakMinutes: "60",
+    breakStart: "12:00",
+    breakEnd: "13:00",
+    weekdayHourly: "35000",
+    weekendHourly: "40000",
+    startDate: todayIso(),
+    endDate: "",
+    indefinite: true,
+    jobDuty: "약국 카운터 · OTC 판매 · 재고 관리",
+    socialInsurance: true,
+    additionalContent: "",
+    annualLeaveDays: "15",
+    employeeCategory: "매장",
+    employeeCategoryCustom: "",
+    primaryFocus: "매장",
+    primaryFocusPercent: 70,
+    employerName: (DEFAULT_EMPLOYER.employerName as string) ?? "",
+    companyName:  (DEFAULT_EMPLOYER.companyName as string) ?? "",
+    companyAddress: (DEFAULT_EMPLOYER.companyAddress as string) ?? "",
+    companyRegNo: (DEFAULT_EMPLOYER.companyRegNo as string) ?? "",
+    useWageComponents: true,
+    wageComponents: {
+      basicSalary:          { hours: 209, minutes: 0,  amount: 4671298 },
+      fixedOvertime:        { hours: 55,  minutes: 56, amount: 1250408 },
+      fixedHoliday:         { hours: 22,  minutes: 0,  amount: 491716  },
+      fixedHolidayOvertime: { hours: 0,   minutes: 0,  amount: 0       },
+      fixedNight:           { hours: 0,   minutes: 0,  amount: 0       },
+      fixedAnnualLeave:     { hours: 10,  minutes: 0,  amount: 223508  },
+      mealAllowance:        0,
+      vehicleAllowance:     0,
+    },
+    privacyConsent: {
+      recipientName: "",
+      recipientAddress: "",
+      agreedCollection: true,
+      agreedCCTV: true,
+    },
+    paymentDayText: DEFAULT_PAYMENT_DAY_TEXT,
+    contractSignDate: todayIso(),
+    targetNetInput: "",
+    grossSalaryInput: "",
+    clauseAcks: { wage: false, workTime: false, etc: false },
+    wageDisabled: {
+      fixedOvertime: false,
+      fixedHoliday: false,
+      fixedHolidayOvertime: true,
+      fixedNight: true,
+      fixedAnnualLeave: false,
+    },
+  };
+}
