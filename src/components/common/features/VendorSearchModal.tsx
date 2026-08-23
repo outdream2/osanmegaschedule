@@ -22,6 +22,7 @@ import { IconTile } from "../IconTile";
 import { Spinner } from "../Spinner";
 import { VendorDetailModal, type Vendor as VendorFull } from "../../LandingPage/VendorListEditor";
 import { Modal } from "../Modal";
+import { Card } from "../Card";
 
 interface VendorSearchModalProps {
   onClose: () => void;
@@ -142,7 +143,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
               )}
             </div>
           ) : (
-            <div className="divide-y divide-zinc-100 border border-line rounded-lg overflow-hidden">
+            <Card variant="flat" padding="none" rounded="lg" clip className="divide-y divide-zinc-100">
               {filtered.map(v => {
                 const active = v.id === selectedId;
                 return (
@@ -172,7 +173,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
                   </button>
                 );
               })}
-            </div>
+            </Card>
           )}
         </div>
 

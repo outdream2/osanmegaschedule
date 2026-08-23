@@ -615,7 +615,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
               {/* 2026-08-11 · 카카오톡 채널 친구추가 · 하단 · 세련된 카드 · 공사중 모드에선 숨김 */}
               {!underConstruction && (
-              <div className="w-full mt-3 rounded-2xl overflow-hidden shadow-md border border-[#F0D700]/70 bg-[#FEE500]">
+              <Card variant="raw-md" rounded="2xl" padding="none" bg="bg-[#FEE500]" borderColor="border-[#F0D700]/70" clip className="w-full mt-3">
                 <div className="px-4 pt-3 pb-2 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-md bg-zinc-900 text-[#FEE500] font-bold text-[10px] flex items-center justify-center">talk</span>
                   <span className="text-zinc-900 font-bold text-[13px]">카카오톡 채널</span>
@@ -640,7 +640,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     </a>
                   </div>
                 </div>
-              </div>
+              </Card>
               )}
             </div>
           )}

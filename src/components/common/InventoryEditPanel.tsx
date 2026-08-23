@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Package, MapPin } from "lucide-react";
+import { Card } from "./Card";
 
 // ─────────────────────────────────────────────────────────────
 // Types (InventoryValues 는 backwards compat 용 export 유지)
@@ -184,7 +185,7 @@ const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
 }) => {
   const d = delta === "" ? 0 : Number(delta);
   return (
-    <div className="px-2.5 py-2 rounded-xl bg-emerald-50 border border-emerald-100 space-y-1.5">
+    <Card variant="flat" bg="bg-emerald-50" borderColor="border-emerald-100" rounded="xl" padding="none" className="px-2.5 py-2 space-y-1.5">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[10px] font-bold text-emerald-700 shrink-0">{label}</span>
         <div className="flex items-center gap-2">
@@ -222,7 +223,7 @@ const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
           저장 후: <span className="font-bold text-violet-700">{current + d}</span>
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

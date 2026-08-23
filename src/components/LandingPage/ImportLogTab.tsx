@@ -1,6 +1,7 @@
 // src/components/LandingPage/ImportLogTab.tsx
 // 2026-08-23 · Framework Phase 4 · UploadDataModal 에서 분리
 import React, { useMemo } from "react";
+import { Card } from "../common/Card";
 
 type UnifiedLogEntry =
   | { kind: "products"; timestamp: string; count: number }
@@ -117,7 +118,7 @@ export const ImportLogTab: React.FC<ImportLogTabProps> = ({
           ℹ️ 시작재고일 저장 기능 이전에 임포트된 이력은 종료일만 표시됩니다. 이후 임포트부터는 <b>시작재고일 ~ 종료재고일</b> 이 함께 표시됩니다.
         </div>
       )}
-      <div className="flex flex-col gap-2 mb-3 p-2.5 bg-zinc-50 border border-line rounded-xl">
+      <Card variant="flat" bg="bg-zinc-50" padding="none" rounded="xl" className="flex flex-col gap-2 mb-3 p-2.5">
         <div className="flex flex-wrap items-center gap-1">
           {([
             { k: "all", label: "전체", cls: "text-zinc-700 border-zinc-300" },
@@ -145,7 +146,7 @@ export const ImportLogTab: React.FC<ImportLogTabProps> = ({
               className="text-[10px] text-zinc-400 hover:text-zinc-700 font-bold cursor-pointer">초기화</button>
           )}
         </div>
-      </div>
+      </Card>
       {allImportLogs.length === 0
         ? <div className="flex flex-col items-center justify-center py-10 text-gray-400 gap-2"><p className="text-sm">임포트 이력이 없습니다</p></div>
         : filtered.length === 0
@@ -153,7 +154,7 @@ export const ImportLogTab: React.FC<ImportLogTabProps> = ({
         : (
           <>
             <div className="text-[10px] text-zinc-400 mb-1.5 px-1"><b className="text-zinc-600">{filtered.length}</b> / {allImportLogs.length} 건</div>
-            <div className="max-h-[400px] overflow-y-auto border border-line rounded-xl bg-white">
+            <Card variant="flat" padding="none" rounded="xl" clip className="max-h-[400px] overflow-y-auto">
               <table className="w-full text-[11px]">
                 <thead>
                   <tr className="text-[10px] uppercase tracking-wider text-gray-400 border-b border-line bg-gray-50/70">
@@ -206,7 +207,7 @@ export const ImportLogTab: React.FC<ImportLogTabProps> = ({
                   })}
                 </tbody>
               </table>
-            </div>
+            </Card>
           </>
         )
       }
