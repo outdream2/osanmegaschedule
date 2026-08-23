@@ -13,6 +13,8 @@ import { useSortableTable, type Comparator } from "../../hooks/useSortableTable"
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
+// 2026-08-23 · #185 · PageToolbar 프리미티브 통일
+import { PageToolbar } from "../common/PageToolbar";
 import { InlineLabel } from "../common/InlineLabel";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
@@ -362,40 +364,40 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
       <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
     )}
     <div className="flex flex-col gap-2">
-      {/* ── 카드: 헤더 툴바 + 컨트롤 ── */}
-      <div className={`${CARD_BASE} overflow-hidden`}>
-        {/* h-12 툴바 */}
-        <div className="flex items-center gap-2 px-4 h-12 border-b border-indigo-100 bg-indigo-50/40 shrink-0">
-          <TrendingUp size={14} className="text-indigo-500 shrink-0" />
-          <span className="text-[15px] font-semibold text-zinc-800">판매 급상승</span>
-          {meta && (
-            <StatusPill tone="indigo" size="md">{fmt(meta.total)}건</StatusPill>
-          )}
-          <span className="text-[15px] text-zinc-400 hidden sm:block">
+      {/* 2026-08-23 · #185 · PageToolbar 프리미티브 통일 (CategoryTab 등 통계 서브탭 동일 패턴) */}
+      <PageToolbar
+        icon={<TrendingUp size={16} />}
+        title="판매 급상승"
+        count={meta?.total}
+        leftSlot={
+          <span className="text-[15px] text-ink-soft hidden sm:block">
             {meta ? `최근 ${windowDays}일 (${meta.recent_from} ~) vs 이전 ${windowDays}일 비교` : `최근 ${windowDays}일 vs 이전 기간 판매 비교 · 신규진입 상단`}
           </span>
-          <div className="ml-auto flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => {
-                setLoading(true);
-                // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-                api.get<{ rows?: TrendingRow[]; recent_from?: string; prior_from?: string; total?: number }>(`/api/stock-manage/trending?window=${windowDays}&limit=1000`)
-                  .then(({ data: j }) => {
-                    setRows(Array.isArray(j?.rows) ? j.rows : []);
-                    setMeta({ recent_from: j?.recent_from ?? "", prior_from: j?.prior_from ?? "", total: Number(j?.total ?? 0) });
-                  })
-                  .catch((e: any) => { setRows([]); setMeta(null); showError(`새로고침 실패: ${e?.message ?? "네트워크 오류"}`); })
-                  .finally(() => setLoading(false));
-              }}
-              disabled={loading}
-              className="w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-indigo-50 hover:border-indigo-300 text-zinc-400 hover:text-indigo-500 transition disabled:opacity-40 cursor-pointer"
-              title="새로고침"
-            >
-              <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
-            </button>
-          </div>
-        </div>
+        }
+        right={
+          <button
+            type="button"
+            onClick={() => {
+              setLoading(true);
+              api.get<{ rows?: TrendingRow[]; recent_from?: string; prior_from?: string; total?: number }>(`/api/stock-manage/trending?window=${windowDays}&limit=1000`)
+                .then(({ data: j }) => {
+                  setRows(Array.isArray(j?.rows) ? j.rows : []);
+                  setMeta({ recent_from: j?.recent_from ?? "", prior_from: j?.prior_from ?? "", total: Number(j?.total ?? 0) });
+                })
+                .catch((e: any) => { setRows([]); setMeta(null); showError(`새로고침 실패: ${e?.message ?? "네트워크 오류"}`); })
+                .finally(() => setLoading(false));
+            }}
+            disabled={loading}
+            className="w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-brand-tint hover:border-brand-deep text-ink-soft hover:text-brand-deep transition-colors disabled:opacity-40 cursor-pointer"
+            title="새로고침"
+          >
+            <LoaderIcon size={14} className={loading ? "animate-spin" : ""} />
+          </button>
+        }
+      />
+
+      {/* ── 카드: 컨트롤 ── */}
+      <div className={`${CARD_BASE} overflow-hidden`}>
         {/* 2026-08-17 · 컨트롤 · 공용 FilterSortBar 톤 · accent bar + segmented pill · 딥네이비 */}
         <div className="flex items-center gap-3 px-4 py-2.5 flex-wrap border-b border-line bg-white">
           {/* 비교기간 */}
