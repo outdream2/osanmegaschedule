@@ -67,6 +67,16 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #196 · 빈 폴더 정리 · 미사용 디렉토리 삭제 (신규 · 2026-08-23)
+- 📄 대상 · 빈 폴더 5개 조사 완료 · 처리 방침 결정 필요
+- 🔲 **`src/controllers/`** · 참조 0건 · 삭제 가능 (Express controller 계획된 것 · 실사용 X)
+- 🔲 **`src/services/`** · 참조 0건 · 삭제 가능 (Service layer 계획된 것 · 실사용 X)
+- 🔒 `server/models/.cache/huggingface/download` · HuggingFace 자동 생성 · **유지** · `.gitignore` 추가 검토
+- ⚠️ `sql/fresh-install/` · `docs/DB_SETUP.md` 참조 · 신중 판단 (실사용 SQL 파일 있으면 필요) · **참조 문서 확인 후 결정**
+- 🔒 `uploads/resignations/` · `server/routes/schedule/schedules.ts` 참조 · **유지** (런타임 사직서 저장 폴더)
+- 💡 회귀 방지 · 삭제 전 `git log` 로 최근 커밋 이력 확인 · 계획된 기능 놓치지 않도록
+- 💡 삭제 시 · `git rm -r <dir>` 로 tracked empty 처리 · commit
+
 ### #195 · 스케쥴표 확정 버튼 · 재확정 프로세스 (신규 · 2026-08-23)
 - 📄 대상 · 스케쥴표 페이지 (확정 버튼 위치 확인 필요 · `SchedulePage.tsx` or `DayTimelineModal.tsx`)
 - 🔲 확정된 스케쥴이면 · 버튼 텍스트 **"확정됨"** 으로 표시 (현재는 "확정" 등)
