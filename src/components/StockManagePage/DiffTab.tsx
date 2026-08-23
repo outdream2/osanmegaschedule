@@ -11,6 +11,8 @@ import { Card } from "../common/Card";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { AccentBar } from "../common/AccentBar";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
+// 2026-08-23 · #191 Phase A · Modal 프레임워크화 · 인라인 backdrop → Modal 프리미티브
+import { Modal } from "../common/Modal";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
 import { useVendors } from "../../hooks/useVendors";
@@ -393,19 +395,24 @@ export const DiffTab: React.FC = () => {
         />
       </div>
 
-      {/* 공급사 상세 모달 */}
-      {supplierDetailModal && (
-        // 2026-08-17 v2 · Modal 통일
-        <div className="fixed inset-0 z-[100] backdrop-brand flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierDetailModal(null)}>
-          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-xl shadow-brand-modal" onClick={e => e.stopPropagation()}>
-            <VendorDetailModal
-              vendor={supplierDetailModal}
-              onClose={() => setSupplierDetailModal(null)}
-              onSaved={() => setSupplierDetailModal(null)}
-            />
-          </div>
-        </div>
-      )}
+      {/* 공급사 상세 모달 · 2026-08-23 · #191 Phase A · Modal 프리미티브 이관 */}
+      <Modal
+        open={!!supplierDetailModal}
+        onClose={() => setSupplierDetailModal(null)}
+        size="3xl"
+        zIndex={100}
+        bodyPadding="none"
+        showClose={false}
+        cardStyle={{ maxHeight: "90vh" }}
+      >
+        {supplierDetailModal && (
+          <VendorDetailModal
+            vendor={supplierDetailModal}
+            onClose={() => setSupplierDetailModal(null)}
+            onSaved={() => setSupplierDetailModal(null)}
+          />
+        )}
+      </Modal>
       </>
       )}
       {/* 2026-08-21 · Framework Phase 3 · toast */}
