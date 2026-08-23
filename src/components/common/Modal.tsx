@@ -7,6 +7,11 @@
 // 2026-08-18 · v2 확장 (모달 프레임워크화 · 인라인 모달 30+ 통합 지원)
 //   - icon · titleAccent (accent bar 3px) · headerRight · backdropIntensity
 //   - 기존 API 완전 하위호환 (모든 신규 prop 옵셔널)
+// 2026-08-23 · v3 확장 (Modal 프레임워크 완성 · skip 되었던 특수 케이스 지원)
+//   - zIndex · 팝오버 위 (z-50 override)
+//   - bodyPadding · none 옵션 (내부 wrapper 이미 padding 있을 때)
+//   - size "lg-narrow" · max-w-lg 추가 (기존 md=max-w-2xl · lg=max-w-4xl 사이 공백 채움)
+//   - backdropIntensity "dark" · bg-zinc-950/95 (PDF 뷰어 등)
 //
 // 사용 예 (기본):
 //   <Modal open={open} onClose={() => setOpen(false)} title="상세" size="md">
@@ -31,14 +36,16 @@ import React, { useEffect } from "react";
 import { X } from "lucide-react";
 import { AccentBar } from "./AccentBar";
 
-type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
+// 2026-08-23 · v3 · "lg-narrow" (max-w-lg · 512px) 추가 · md 와 lg 사이 공백 채움
+type ModalSize = "sm" | "md" | "lg-narrow" | "lg" | "xl" | "full";
 
 const SIZE_MAP: Record<ModalSize, string> = {
-  sm:   "max-w-md",
-  md:   "max-w-2xl",
-  lg:   "max-w-4xl",
-  xl:   "max-w-6xl",
-  full: "max-w-[95vw]",
+  sm:         "max-w-md",     // 448px
+  md:         "max-w-2xl",    // 672px
+  "lg-narrow":"max-w-lg",     // 512px · v3 신규
+  lg:         "max-w-4xl",    // 896px
+  xl:         "max-w-6xl",    // 1152px
+  full:       "max-w-[95vw]",
 };
 
 export interface ModalProps {
@@ -63,10 +70,16 @@ export interface ModalProps {
   titleAccent?: boolean;
   /** 헤더 우측 slot (close 버튼 앞) · 액션·배지 등 */
   headerRight?: React.ReactNode;
-  /** backdrop 강도 · brand (기본) or strong (이미지 뷰어) */
-  backdropIntensity?: "brand" | "brand-strong";
+  /** backdrop 강도 · brand (기본) · strong (이미지 뷰어) · dark (PDF 뷰어 · zinc-950/95) */
+  backdropIntensity?: "brand" | "brand-strong" | "dark";
   /** 헤더 배경 · zinc-50/60 tint 적용 (기본 true · 인라인 모달 일관성) */
   headerTint?: boolean;
+
+  // ── v3 · 확장 (2026-08-23) · 모두 optional ──
+  /** z-index override · 기본 CSS z-50 · 부모 모달 위 팝오버 (예: 60·100+) */
+  zIndex?: number;
+  /** body padding · default=p-5 · none=p-0 (내부 wrapper 이미 padding 있을 때) */
+  bodyPadding?: "default" | "none";
 }
 
 /**
@@ -92,6 +105,9 @@ export const Modal: React.FC<ModalProps> = ({
   headerRight,
   backdropIntensity = "brand",
   headerTint = true,
+  // v3 · 확장
+  zIndex,
+  bodyPadding = "default",
 }) => {
   // ESC 키 핸들링
   useEffect(() => {
@@ -113,9 +129,12 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   // 2026-08-18 v2 · backdrop 강도 · brand-strong 은 이미지 뷰어 등
-  const backdropCls = backdropIntensity === "brand-strong"
-    ? "fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-brand-strong"
-    : "modal-backdrop";
+  // 2026-08-23 v3 · dark 는 PDF 뷰어 (bg-zinc-950/95 · backdrop-blur-sm)
+  const backdropCls = backdropIntensity === "dark"
+    ? "fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/95 backdrop-blur-sm"
+    : backdropIntensity === "brand-strong"
+      ? "fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-brand-strong"
+      : "modal-backdrop";
   // 2026-08-18 v2 · 헤더 tint 옵션 · 인라인 모달들의 zinc-50/60 스타일과 일관
   const headerCls = headerTint
     ? "modal-header bg-zinc-50/60"
@@ -123,9 +142,13 @@ export const Modal: React.FC<ModalProps> = ({
 
   const hasHeader = title != null || icon != null || headerRight != null || showClose;
 
+  // 2026-08-23 v3 · zIndex override · 팝오버 위·부모 모달 위 등
+  const backdropStyle = zIndex != null ? { zIndex } : undefined;
+
   return (
     <div
       className={backdropCls}
+      style={backdropStyle}
       onClick={handleBackdrop}
       role="dialog"
       aria-modal="true"
@@ -159,7 +182,8 @@ export const Modal: React.FC<ModalProps> = ({
             )}
           </div>
         )}
-        <div className="modal-body">
+        {/* 2026-08-23 v3 · bodyPadding=none · 내부 wrapper 이미 padding 있을 때 */}
+        <div className={bodyPadding === "none" ? "flex-1 overflow-y-auto min-h-0" : "modal-body"}>
           {children}
         </div>
         {footer != null && (
