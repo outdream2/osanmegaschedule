@@ -187,10 +187,35 @@
 - jsdom · `// @vitest-environment jsdom` 지시자 opt-in
 - afterEach cleanup · 다중 render 격리
 
-### mock 패턴
-- apiClient · `vi.mock("../../lib/apiClient", () => ({ api: {...}, ApiError: class MockApiError extends Error {} }))`
-- useConfirm · `vi.mock("../../hooks/useConfirm", () => ({ useConfirm: () => async () => true }))`
-- useResizablePanel · mockable isDesktop (모바일/데스크탑 케이스)
+### mock 패턴 (2026-08-23 세션 정립)
+- **apiClient**:
+  ```ts
+  const mockGet = vi.fn(); const mockPost = vi.fn(); const mockPatch = vi.fn();
+  vi.mock("../../lib/apiClient", () => ({
+    api: { get: (...a: any[]) => mockGet(...a), post: (...a: any[]) => mockPost(...a), patch: (...a: any[]) => mockPatch(...a) },
+    ApiError: class MockApiError extends Error {
+      status: number; data: unknown;
+      constructor(msg: string, status = 500, data: unknown = null) { super(msg); this.status = status; this.data = data; this.name = "ApiError"; }
+    },
+  }));
+  beforeEach(() => { mockGet.mockReset(); mockPost.mockReset(); mockPatch.mockReset(); });
+  ```
+- **useConfirm** · `vi.mock("../../hooks/useConfirm", () => ({ useConfirm: () => async () => true }))`
+- **useResizablePanel** · `vi.mock` 후 mockIsDesktop 변수로 desktop/mobile 케이스 제어
+- **useToast** · 필요 시 · `vi.mock("../../hooks/useToast", () => ({ useToast: () => ({ toast: null, showSuccess: vi.fn(), showError: vi.fn() }), toastClass: () => "" }))`
+- **vendorNameNormalize** 등 lib · 간단 mock · `vi.mock("../../utils/vendorNameNormalize", () => ({ displayVendorName: (s: string) => s }))`
+
+### 다중 render / cleanup
+- 다중 `render()` 파일 · **`afterEach(() => cleanup())` 필수** (jsdom 격리 · #modal-title 등 id 충돌 방지)
+- 예: `import { render, cleanup } from "@testing-library/react"; afterEach(() => cleanup());`
+
+### 확장된 콜백 시그니처
+- 신규 콜백 · 기존 호출자 회귀 방지 → **optional 인자로 확장** (예: `onCreated: (code: string, product?: {...}) => void`)
+- 테스트 · `expect(fn).toHaveBeenCalledWith("code", expect.objectContaining({...}))`
+
+### 회귀 방지 원칙 (프리미티브 수정 시)
+- 프리미티브 (Modal · Card · StatusPill 등) 확장 시 · **기존 사용처 grep + 신규 props 테스트 필수**
+- v2/v3 확장 · 기존 v1 동작 완전 유지 · TS `size` union 타입 확장으로 처리
 
 ---
 
