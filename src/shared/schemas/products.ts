@@ -21,3 +21,7 @@ export const CreateProductSchema = z.object({
   memo: z.string().max(500).nullable().optional(),
 });
 export type CreateProductInput = z.infer<typeof CreateProductSchema>;
+
+/** PATCH /api/products/:code · 상품 편집 (partial · product_code 변경 금지) */
+export const UpdateProductSchema = CreateProductSchema.omit({ product_code: true }).partial();
+export type UpdateProductInput = z.infer<typeof UpdateProductSchema>;
