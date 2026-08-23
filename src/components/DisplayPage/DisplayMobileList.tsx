@@ -1,7 +1,9 @@
 // src/components/DisplayPage/DisplayMobileList.tsx
 // 2026-08-22 · Framework Phase 4 · DisplayPage 모바일 구역 리스트 + fullscreen 구역도 분리
+// 2026-08-23 · #191 · BottomSheet v2 재마이그레이션 · fullmap overlay → fullscreen+backdropClass+disableHandle
 import React from "react";
 import { Card } from "../common/Card";
+import { BottomSheet } from "../common/BottomSheet";
 import { StoreZoneMap } from "../common/StoreZoneMap";
 import type { DisplayZone } from "../../utils/zoneUtils";
 import type { ZoneDef } from "../../hooks/useZoneDefs";
@@ -69,14 +71,28 @@ export const DisplayMobileList: React.FC<DisplayMobileListProps> = ({
         </ul>
       </Card>
 
-      {/* 모바일 fullscreen 구역도 */}
-      {fullMapOpen && (
-        <div className="sm:hidden fixed inset-0 z-50 bg-zinc-900/70 backdrop-blur-sm flex flex-col" onClick={() => setFullMapOpen(false)}>
-          <div className="flex items-center justify-between px-3 py-2 bg-white border-b border-line shadow-sm">
-            <span className="text-sm font-bold text-zinc-800">매장 구역도 (읽기 전용)</span>
-            <button onClick={() => setFullMapOpen(false)} className="w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-600 text-lg font-bold">×</button>
-          </div>
-          <div className="flex-1 overflow-auto" onClick={e => e.stopPropagation()}>
+      {/* 모바일 fullscreen 구역도 · BottomSheet v2 */}
+      <div className="sm:hidden">
+        <BottomSheet
+          open={fullMapOpen}
+          onClose={() => setFullMapOpen(false)}
+          fullscreen
+          disableHandle
+          backdropClass="bg-zinc-900/70"
+          zIndex={50}
+          header={
+            <div className="flex items-center justify-between px-3 py-2 bg-white border-b border-line shadow-sm">
+              <span className="text-sm font-bold text-zinc-800">매장 구역도 (읽기 전용)</span>
+              <button onClick={() => setFullMapOpen(false)} className="w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-600 text-lg font-bold">×</button>
+            </div>
+          }
+          footer={
+            <div className="text-[10px] text-zinc-500 text-center py-1">
+              좌우로 드래그하여 전체 구역도 확인 · 셀 클릭 → 진열상품 조회
+            </div>
+          }
+        >
+          <div className="flex-1 overflow-auto">
             <div className="p-2 bg-zinc-100">
               <div className="p-2 bg-zinc-200 rounded-2xl border-4 border-emerald-500 shadow-inner">
                 <StoreZoneMap onZoneClick={(zoneId) => {
@@ -90,9 +106,8 @@ export const DisplayMobileList: React.FC<DisplayMobileListProps> = ({
               </div>
             </div>
           </div>
-          <div className="px-3 py-2 bg-white border-t border-line text-[10px] text-zinc-500 text-center">좌우로 드래그하여 전체 구역도 확인 · 셀 클릭 → 진열상품 조회</div>
-        </div>
-      )}
+        </BottomSheet>
+      </div>
     </>
   );
 };
