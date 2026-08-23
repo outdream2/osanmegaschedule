@@ -19,9 +19,10 @@ import {
 import { WorkerChips } from "./WorkerChips";
 import { BreakTimeline } from "./BreakTimeline";
 import { api, ApiError } from "../../lib/apiClient";
-import { StatusPill } from "../common/StatusPill";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-08-23 · #191 · Modal primitive 마이그레이션
+import { Modal } from "../common/Modal";
 
 
 // 2026-08-21 · Framework Phase 4 · ZoneSection 별도 파일 이관
@@ -63,12 +64,6 @@ export const DayTimelineModal: React.FC<Props> = ({
   const { toast: mainToast, showError: mainShowError } = useToast();
   const [editingWork, setEditingWork] = useState<{ empId: number; value: string } | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("전체");
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
   // 모달 첫 마운트 시 30일 초과된 tl_* localStorage 키 정리 (Quota 방어)
   useEffect(() => { cleanupStaleTimelineKeys(); }, []);
@@ -541,12 +536,19 @@ export const DayTimelineModal: React.FC<Props> = ({
   ], [workers, staffWorkers, pharmacistWorkers, otherWorkers]);
 
   return (
-    // 2026-08-17 v2 · Modal 통일
-    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center backdrop-brand-strong p-0 sm:p-4 pt-4 sm:pt-0" onClick={onClose}>
-      <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-brand-modal w-full sm:max-w-3xl lg:max-w-4xl xl:max-w-[1100px] overflow-hidden flex flex-col"
-        style={{ maxHeight: "92vh" }}
-        onClick={e => e.stopPropagation()}
+    <>
+      {/* 2026-08-23 · #191 · Modal primitive (v3.3 · align="top-mobile") 마이그레이션 */}
+      <Modal
+        open
+        onClose={onClose}
+        showClose={false}
+        closeOnEsc
+        closeOnBackdrop
+        backdropIntensity="brand-strong"
+        align="top-mobile"
+        bodyPadding="none"
+        className="!max-w-full sm:!max-w-3xl lg:!max-w-4xl xl:!max-w-[1100px] shadow-brand-modal overflow-hidden flex flex-col"
+        cardStyle={{ maxHeight: "92vh" }}
       >
         {/* Header + tabs + 임의배치 배너 (HeaderBar · 별도 파일 이관) */}
         <HeaderBar
@@ -723,13 +725,13 @@ export const DayTimelineModal: React.FC<Props> = ({
           </div>
 
         </div>
-      </div>
+      </Modal>
       {/* 2026-08-21 · Framework Phase 3 · toast */}
       {mainToast && (
         <div className="fixed bottom-6 right-6 z-[9999]">
           <div className={toastClass(mainToast.tone)}>{mainToast.message}</div>
         </div>
       )}
-    </div>
+    </>
   );
 };
