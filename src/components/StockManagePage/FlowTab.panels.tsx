@@ -271,7 +271,7 @@ export const HiddenManagerModal: React.FC<HiddenManagerModalProps> = ({
                     </div>
                     <button onClick={() => onUnhideProduct(code)} disabled={busy}
                       className="shrink-0 flex items-center gap-1 text-[14px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-2.5 py-1.5 cursor-pointer transition">
-                      {busy ? <LoaderIcon size={11} className="animate-spin" /> : <EyeOff size={11} />}
+                      {busy ? <Spinner size={11} /> : <EyeOff size={11} />}
                       다시 표시
                     </button>
                   </li>

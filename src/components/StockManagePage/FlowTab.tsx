@@ -7,9 +7,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { api } from "../../lib/apiClient";
 import { useVendors } from "../../hooks/useVendors";
 import {
-  Boxes, EyeOff, Loader2 as LoaderIcon,
+  Boxes, EyeOff,
   ChevronRight, ChevronDown, CheckSquare, Square, X as XIcon,
 } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { useHiddenManager } from "../../hooks/useHiddenManager";
@@ -474,7 +475,7 @@ export const FlowTab: React.FC = () => {
               <div className="relative flex-1 overflow-auto max-h-[50vh]">
                 {loading && filteredFlow.length > 0 && (
                   <div className="flex items-center justify-center gap-1.5 py-1.5 mx-1 mb-1 bg-sky-50 border border-sky-200 rounded-md shrink-0">
-                    <LoaderIcon size={11} className="animate-spin text-sky-600" />
+                    <Spinner size={11} tone="sky" />
                     <span className="text-[14px] font-bold text-sky-700">조건 변경 · 새로 불러오는 중...</span>
                   </div>
                 )}
@@ -501,7 +502,7 @@ export const FlowTab: React.FC = () => {
                                 <span className="font-bold text-rose-700">{selectedFlowCodes.size}개 선택됨</span>
                                 <button onClick={bulkHideFlow} disabled={flowBulkHiding}
                                   className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold shadow-sm disabled:opacity-50">
-                                  {flowBulkHiding ? <LoaderIcon size={11} className="animate-spin" /> : <EyeOff size={11} />}
+                                  {flowBulkHiding ? <Spinner size={11} tone="white" /> : <EyeOff size={11} />}
                                   선택 숨김
                                 </button>
                                 <button onClick={() => setSelectedFlowCodes(new Set())}
