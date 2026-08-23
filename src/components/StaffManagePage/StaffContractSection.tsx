@@ -7,6 +7,7 @@ import {
   PenSquare as NotePencilIcon,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+import { StatusPill } from "../common/StatusPill";
 import { SectionCard, InlineField } from "./StaffManagePage.subcomponents";
 import type { Employee, EditDraft } from "./types";
 import { CONTRACT_TYPES, PERFORMANCE_RATINGS } from "./types";
@@ -339,14 +340,10 @@ export const StaffContractSection: React.FC<StaffContractSectionProps> = ({
                 <li key={h.id} className={`py-2 px-2 rounded-md ${isActive ? "bg-emerald-50/70 border border-emerald-200 my-1" : ""}`}>
                   <div className="flex items-center gap-1.5 flex-wrap mb-1">
                     {isActive && (
-                      <span className="text-[14px] font-bold px-1.5 py-0.5 rounded-md border bg-emerald-600 text-white border-emerald-700 leading-tight">
-                        활성
-                      </span>
+                      <StatusPill tone="emerald" size="sm">활성</StatusPill>
                     )}
                     {!isActive && h.is_active === false && (
-                      <span className="text-[14px] font-semibold px-1.5 py-0.5 rounded-md border bg-zinc-100 text-zinc-500 border-line leading-tight">
-                        이전
-                      </span>
+                      <StatusPill tone="zinc" size="sm">이전</StatusPill>
                     )}
                     {ctMeta ? (
                       <span className={`text-[14px] font-semibold px-1.5 py-0.5 rounded-md border leading-tight ${ctMeta.color}`}>

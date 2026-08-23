@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { AccentBar } from "../common/AccentBar";
 import { Card } from "../common/Card";
+import { StatusPill } from "../common/StatusPill";
 import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
@@ -46,11 +47,11 @@ const STATUS_LABEL: Record<string, string> = {
   rejected: "반려",
   withdrawn: "철회",
 };
-const STATUS_COLOR: Record<string, string> = {
-  pending:   "text-amber-600 bg-amber-50 border-amber-200",
-  approved:  "text-emerald-600 bg-emerald-50 border-emerald-200",
-  rejected:  "text-rose-600 bg-rose-50 border-rose-200",
-  withdrawn: "text-zinc-500 bg-zinc-50 border-line",
+const STATUS_TONE: Record<string, "amber" | "emerald" | "rose" | "zinc"> = {
+  pending:   "amber",
+  approved:  "emerald",
+  rejected:  "rose",
+  withdrawn: "zinc",
 };
 
 const fmtDate = fmtDateYMD;
@@ -286,9 +287,9 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                           <span>마지막 근무: <span className="font-bold text-zinc-800">{fmtDate(r.last_work_date)}</span></span>
                         </div>
                       </div>
-                      <span className={`shrink-0 text-[10px] font-bold px-2 py-1 rounded-full border ${STATUS_COLOR[r.status]}`}>
+                      <StatusPill tone={STATUS_TONE[r.status] ?? "zinc"} size="xs" className="shrink-0">
                         {STATUS_LABEL[r.status]}
-                      </span>
+                      </StatusPill>
                     </div>
 
                     {/* 사유 요약 */}
