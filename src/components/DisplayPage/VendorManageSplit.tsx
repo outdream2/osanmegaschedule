@@ -5,15 +5,17 @@
 //   Right · VendorDetailModal panel 모드 (사업자번호·이메일 · 상세에서만)
 //   Mobile · SplitPanel mobileRightAsModal · 우측 자동 모달
 import React, { useMemo, useState } from "react";
-import { Building2, ChevronDown, ChevronUp, Search as SearchIcon } from "lucide-react";
+import { Building2, ChevronDown, ChevronUp } from "lucide-react";
 import { useVendors as useVendorsHook } from "../../hooks/useVendors";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
-import { CARD_BASE } from "../../styles/tokens";
-import { AccentBar } from "../common/AccentBar";
 import { Spinner } from "../common/Spinner";
 import { SplitPanel } from "../common/SplitPanel";
 import { NewVendorModal } from "../common/features/NewVendorModal";
 import { StatusPill } from "../common/StatusPill";
+// 2026-08-23 · #198 Phase 3A · SplitListPanel 프리미티브 (v2 · countDisplay + CategoryChips 프리미티브)
+// UI 목업 대원칙 준수 · docs/UI_MOCKUP_2026-08-21.html · Linear/Vercel 톤 · 딥네이비 accent
+import { SplitListPanel } from "../common/SplitListPanel";
+import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 
 const VendorDetailModalLazy = React.lazy(() => import("../LandingPage/VendorListEditor").then(m => ({ default: m.VendorDetailModal })));
 
@@ -81,57 +83,46 @@ export const VendorManageSplit: React.FC = () => {
     </button>
   );
 
+  // 2026-08-23 · #198 Phase 3A · CategoryChips 프리미티브 · 5 카테고리 통일
+  //   · UI 목업 준수 · Linear/Vercel 톤 · 파스텔 지양 · 프레임워크 색상 시스템
+  const CAT_OPTIONS: Array<{ value: string; label: string; tone: ChipTone }> = [
+    { value: "전체",    label: "전체",    tone: "zinc"    },
+    { value: "위탁",    label: "위탁",    tone: "violet"  },
+    { value: "선결제",  label: "선결제",  tone: "rose"    },
+    { value: "60회전",  label: "60회전",  tone: "emerald" },
+    { value: "90회전",  label: "90회전",  tone: "teal"    },
+  ];
+
   const left = (
-    <div className="flex flex-col h-full min-h-0 gap-2">
-      {/* 툴바 · 공통 CARD_BASE · 2026-08-17 · 최신 트렌드 · 좌측 accent bar */}
-      <div className={`${CARD_BASE} px-4 py-3 flex flex-col gap-2.5 shrink-0`}>
-        {/* 헤더 · 좌 accent bar + 제목 + count */}
-        <div className="flex items-center gap-2.5">
-          <AccentBar />
-          <span className="text-[17px] font-bold text-ink tracking-tight">공급사관리</span>
-          <StatusPill tone="brand" size="md">
-            {loading ? <Spinner size={12} tone="brand" className="inline" /> : `${filtered.length}건`}
-          </StatusPill>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 min-w-0">
-            <SearchIcon size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-soft pointer-events-none" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="회사명 · 담당자 · 전화"
-              className="w-full h-9 pl-9 pr-2 text-[14px] border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors"
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-0.5">
-          {(["전체", "위탁", "선결제", "60회전", "90회전"] as const).map(cat => (
-            <button
-              key={cat}
-              onClick={() => setCatFilter(cat)}
-              className={`h-8 px-3 rounded-md text-[12px] font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
-                catFilter === cat
-                  ? cat === "전체"    ? "bg-zinc-700 text-white shadow-sm"
-                  : cat === "위탁"    ? "bg-violet-500 text-white shadow-sm"
-                  : cat === "선결제"  ? "bg-rose-500 text-white shadow-sm"
-                  : cat === "60회전" ? "bg-emerald-500 text-white shadow-sm"
-                  :                    "bg-teal-500 text-white shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 rounded-md"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-          {/* 2026-08-10 · 사용자 요청 · 90회전 옆 · 신규 공급사 등록 버튼 */}
-          <button
-            onClick={() => setShowNewVendor(true)}
-            className="ml-auto h-8 px-3 rounded-md text-[12px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] transition cursor-pointer whitespace-nowrap shrink-0"
-            title="새 공급사 등록"
-          >
-            + 신규 등록
-          </button>
-        </div>
-      </div>
+    // 2026-08-23 · #198 Phase 3A · SplitListPanel 프리미티브 · UI 통일 (목업 준수)
+    //   · CARD_BASE 인라인 헤더 → SplitListPanel · countDisplay 로 loading + N건 표시
+    //   · CategoryChips 프리미티브로 chip 필터 통일 · 하드코딩 색상 제거
+    //   · onAdd 로 신규 등록 버튼 통일 (딥네이비 · h-8)
+    <SplitListPanel
+      title="공급사관리"
+      countDisplay={
+        <StatusPill tone="brand" size="md">
+          {loading ? <Spinner size={12} tone="brand" className="inline" /> : `${filtered.length}건`}
+        </StatusPill>
+      }
+      search={search}
+      onSearchChange={setSearch}
+      searchPlaceholder="회사명 · 담당자 · 전화"
+      onAdd={() => setShowNewVendor(true)}
+      addLabel="신규 등록"
+      addTitle="새 공급사 등록"
+      filters={
+        <CategoryChips
+          value={catFilter}
+          onChange={(v) => setCatFilter(String(v))}
+          options={CAT_OPTIONS}
+          size="sm"
+          ariaLabel="공급사 카테고리 필터"
+        />
+      }
+      bodyClassName="flex-1 min-h-0 overflow-auto"
+    >
+      <>
       {/* 2026-08-10 · 신규 공급사 등록 모달 */}
       {showNewVendor && (
         <NewVendorModal
@@ -139,10 +130,7 @@ export const VendorManageSplit: React.FC = () => {
           onSaved={() => { setShowNewVendor(false); refresh(); }}
         />
       )}
-
-      {/* 리스트 · 통일 CARD_BASE · 헤더 정렬 · 모바일도 4컬럼 (컴팩트) · 2026-08-10 */}
-      <div className={`${CARD_BASE} flex-1 min-h-0 overflow-auto`}>
-        <table className="w-full text-left border-collapse">
+      <table className="w-full text-left border-collapse">
           <thead className="sticky top-0 z-10 bg-zinc-50 border-b border-line">
             <tr>
               {/* 2026-08-10 · #20 · 분류 컬럼 제거 · 공급사 셀에 [분류][줄바꿈][공급사명] 통합 (사용자 요청) */}
@@ -198,8 +186,8 @@ export const VendorManageSplit: React.FC = () => {
             })}
           </tbody>
         </table>
-      </div>
-    </div>
+      </>
+    </SplitListPanel>
   );
 
   const right = selected ? (
