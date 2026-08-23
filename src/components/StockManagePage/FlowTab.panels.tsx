@@ -6,7 +6,7 @@
 
 import React from "react";
 import {
-  Search, Boxes, Info, EyeOff, Loader2 as LoaderIcon, X as XIcon,
+  Search, Boxes, Info, EyeOff, Loader2 as LoaderIcon,
 } from "lucide-react";
 import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
@@ -14,6 +14,7 @@ import { CARD_BASE } from "../../styles/tokens";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
+import { Modal } from "../common/Modal";
 // 2026-08-22 · Framework Phase 4 · props 유연성 위해 any 사용
 // ProductInfo / ProductSearchResult / HiddenProduct 다양한 형태 모두 지원 (구조적으로 유사)
 type AnyProduct = any;
@@ -216,28 +217,25 @@ export const HiddenManagerModal: React.FC<HiddenManagerModalProps> = ({
   open, onClose, hiddenList, hiddenLoading, hiddenUnhideBusyCode,
   loadHiddenList, onUnhideProduct,
 }) => {
-  if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-1 sm:p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-brand-modal w-full max-w-2xl max-h-[98vh] sm:max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-zinc-50/60">
-          <div className="flex items-center gap-3 min-w-0">
-            <AccentBar size="xl" className="shrink-0" />
-            <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
-              <EyeOff size={18} className="text-white" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[17px] font-bold text-ink tracking-tight">숨김 항목 관리</div>
-              <div className="text-[13px] font-medium text-ink-soft mt-0.5">숨김 처리된 상품 · 검색·발주 리스트에서 노출되지 않음</div>
-            </div>
-          </div>
-          <button onClick={onClose}
-            className="w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint text-ink-soft hover:text-brand-deep transition-colors cursor-pointer flex items-center justify-center shrink-0"
-            aria-label="닫기"
-          >
-            <XIcon size={16} />
-          </button>
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="md"
+      titleAccent
+      icon={
+        <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
+          <EyeOff size={18} className="text-white" />
         </div>
+      }
+      title={
+        <div className="min-w-0">
+          <div className="text-[17px] font-bold text-ink tracking-tight">숨김 항목 관리</div>
+          <div className="text-[13px] font-medium text-ink-soft mt-0.5">숨김 처리된 상품 · 검색·발주 리스트에서 노출되지 않음</div>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-0 -m-5">
         <div className="flex items-center justify-between px-5 py-2.5 border-b border-zinc-100 bg-white">
           <span className="text-[15px] font-bold text-zinc-500">총 <span className="text-amber-700 font-bold">{hiddenList.length}</span>개 숨김</span>
           <button onClick={loadHiddenList} disabled={hiddenLoading}
@@ -245,7 +243,7 @@ export const HiddenManagerModal: React.FC<HiddenManagerModalProps> = ({
             {hiddenLoading ? "..." : "새로고침"}
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto bg-zinc-50">
+        <div className="overflow-y-auto bg-zinc-50 max-h-[60vh]">
           {hiddenLoading ? (
             <div className="flex flex-col items-center justify-center gap-3 py-8">
               <div className="w-10 h-10 border-4 border-line border-t-orange-500 rounded-full animate-spin" />
@@ -282,7 +280,7 @@ export const HiddenManagerModal: React.FC<HiddenManagerModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };
 
