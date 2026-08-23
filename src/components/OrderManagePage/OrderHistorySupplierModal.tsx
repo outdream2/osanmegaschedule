@@ -5,15 +5,18 @@
 //   · 90일 기본 · 기간 선택 (7 · 30 · 90 · 180 · 365)
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Package, Calendar, CalendarCheck, ChevronDown, ChevronRight } from "lucide-react";
+import { Package, Calendar, CalendarCheck, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
 import { Modal } from "../common/Modal";
 import { Spinner } from "../common/Spinner";
 import { StatusPill } from "../common/StatusPill";
 import { PeriodSelector } from "../common/PeriodSelector";
 import { InlineLabel } from "../common/InlineLabel";
 import { EmptyState } from "../common/EmptyState";
+import { Card } from "../common/Card";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-08-23 · #178 Phase F · 공급사 special_notes 경고 배너
+import { useVendors } from "../../hooks/useVendors";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 interface OrderHistoryItem {
@@ -62,6 +65,18 @@ export const OrderHistorySupplierModal: React.FC<Props> = ({ supplier, onClose }
   const [loading, setLoading] = useState(false);
   const [days, setDays] = useState(90);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // 2026-08-23 · #178 Phase F · 공급사 special_notes · 발주 특이사항 경고 배너
+  const { vendors: allVendors } = useVendors();
+  const matchedVendor = useMemo(() => {
+    const target = String(supplier ?? "").trim().toLowerCase();
+    if (!target) return null;
+    return allVendors.find(v => {
+      const name = String((v as { company_name?: string }).company_name ?? "").trim().toLowerCase();
+      const displayName = String(displayVendorName(name) ?? "").toLowerCase();
+      return name === target || displayName === target || name.includes(target) || target.includes(name);
+    }) ?? null;
+  }, [allVendors, supplier]);
+  const specialNotes = String((matchedVendor as { special_notes?: string | null } | null)?.special_notes ?? "").trim();
 
   useEffect(() => {
     let alive = true;
@@ -130,6 +145,26 @@ export const OrderHistorySupplierModal: React.FC<Props> = ({ supplier, onClose }
           </div>
         }
       >
+        {/* 2026-08-23 · #178 Phase F · 발주 특이사항 경고 배너 · special_notes 있을 시 노출 */}
+        {specialNotes && (
+          <Card
+            variant="flat"
+            padding="md"
+            rounded="lg"
+            bg="bg-amber-50"
+            borderColor="border-amber-200"
+            className="mb-3 flex items-start gap-2"
+          >
+            <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+            <div className="min-w-0 flex-1">
+              <div className="text-[13px] font-bold text-amber-800 leading-tight mb-1">발주 특이사항</div>
+              <div className="text-[13px] text-amber-900 leading-relaxed whitespace-pre-wrap break-words">
+                {specialNotes}
+              </div>
+            </div>
+          </Card>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Spinner label="불러오는 중..." size={20} tone="brand" />
