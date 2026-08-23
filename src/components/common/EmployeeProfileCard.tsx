@@ -16,6 +16,7 @@ import type { Employee } from "../../types";
 import { uploadResume, uploadContract, uploadBankbook } from "../../lib/employeeApi";
 import { getEmploymentStatus, EMPLOYMENT_STATUS_LABEL } from "../../lib/employmentStatus";
 import { Card } from "./Card";
+import { StatusPill } from "./StatusPill";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient · alert → useToast
 import { api } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -128,16 +129,13 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
             {(() => {
               const status = getEmploymentStatus(localEmployee.retireDate);
               if (status === "active") return null;
-              const tone = status === "pending_resignation"
-                ? "bg-amber-50 text-amber-700 border-amber-200"
-                : "bg-zinc-100 text-zinc-500 border-zinc-200";
+              const tone = status === "pending_resignation" ? "amber" : "zinc";
               return (
-                <span
-                  className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${tone} tabular-nums`}
-                  title={localEmployee.retireDate ? `퇴사(예정)일 ${localEmployee.retireDate}` : undefined}
-                >
-                  {EMPLOYMENT_STATUS_LABEL[status]}
-                  {status === "pending_resignation" && localEmployee.retireDate ? ` · ${localEmployee.retireDate}` : ""}
+                <span title={localEmployee.retireDate ? `퇴사(예정)일 ${localEmployee.retireDate}` : undefined}>
+                  <StatusPill tone={tone} size="xs">
+                    {EMPLOYMENT_STATUS_LABEL[status]}
+                    {status === "pending_resignation" && localEmployee.retireDate ? ` · ${localEmployee.retireDate}` : ""}
+                  </StatusPill>
                 </span>
               );
             })()}
