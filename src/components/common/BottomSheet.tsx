@@ -4,16 +4,17 @@
 //   · 하단에서 슬라이드업 · frosted backdrop · rounded-t-2xl
 //   · ESC/backdrop/drag-down 으로 닫기
 //   · 컨텐츠: children · scrollable · maxHeight 60vh 기본
+// 2026-08-23 · v2 확장 · mobile fullscreen 마이그레이션 커버리지 확대
+//   · header · 커스텀 헤더 JSX 지원 (indigo/dark bg · Avatar 등 표현)
+//   · fullscreen · maxHeight="100vh" + mt-0 (RealMapSelector · StaffMobileDetail 등)
+//   · disableHandle · drag handle indicator 숨김 (fullscreen 모드용)
+//   · backdropClass · backdrop 배경 override (dark · custom color)
+//   · zIndex · z-index override (default z-[100])
 //
 // 사용 예:
-//   const [open, setOpen] = useState(false);
-//   <BottomSheet
-//     open={open}
-//     onClose={() => setOpen(false)}
-//     title="발주 서브탭 선택"
-//   >
-//     {items.map(...)}
-//   </BottomSheet>
+//   <BottomSheet open={open} onClose={onClose} title="선택">...</BottomSheet>
+//   <BottomSheet open fullscreen disableHandle header={<CustomHeader />}>...</BottomSheet>
+//   <BottomSheet open backdropClass="bg-zinc-900/70" zIndex={70}>...</BottomSheet>
 
 import React, { useEffect, useCallback, useRef, useState } from "react";
 import { X } from "lucide-react";
@@ -33,6 +34,24 @@ export interface BottomSheetProps {
   /** children · 스크롤 가능 컨텐츠 */
   children: React.ReactNode;
   className?: string;
+
+  // ── v2 · 확장 (2026-08-23) · 모두 optional ──
+  /**
+   * 커스텀 헤더 JSX · title/right 대신 완전 커스텀 헤더 사용
+   *   · 지정 시 · title/right/기본 헤더 무시
+   *   · Avatar · custom bg · gradient 등 표현 시 사용
+   */
+  header?: React.ReactNode;
+  /** fullscreen · maxHeight 100vh + rounded-t-2xl 유지 · mt-0 (RealMapSelector 등) */
+  fullscreen?: boolean;
+  /** drag handle indicator 숨김 · fullscreen 시 권장 */
+  disableHandle?: boolean;
+  /** backdrop 배경 override · 기본 rgba(10,46,74,0.35) · dark 필요 시 "bg-zinc-900/70" */
+  backdropClass?: string;
+  /** z-index override · 기본 z-[100] · 부모 modal 위 등 */
+  zIndex?: number;
+  /** footer · 하단 액션 바 (편집·삭제 등) */
+  footer?: React.ReactNode;
 }
 
 /**
@@ -46,10 +65,19 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   onClose,
   title,
   right,
-  maxHeight = "60vh",
+  maxHeight,
   children,
   className = "",
+  // v2 확장
+  header,
+  fullscreen = false,
+  disableHandle = false,
+  backdropClass,
+  zIndex,
+  footer,
 }) => {
+  // v2 · fullscreen 시 maxHeight 100vh · 기본 60vh
+  const resolvedMaxHeight = maxHeight ?? (fullscreen ? "100vh" : "60vh");
   const [visible, setVisible] = useState(open);
   const [animating, setAnimating] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -92,10 +120,18 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
   if (!visible) return null;
 
+  // v2 · backdrop 커스텀 지원 · zIndex override · fullscreen 시 max-w 확대
+  const backdropStyle: React.CSSProperties = backdropClass
+    ? (zIndex != null ? { zIndex } : {})
+    : { backgroundColor: "rgba(10,46,74,0.35)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)", ...(zIndex != null ? { zIndex } : {}) };
+  const zIndexCls = zIndex != null ? "" : "z-[100]";
+  const backdropCls = `fixed inset-0 ${zIndexCls} flex items-end justify-center transition-opacity duration-250 ${animating ? "opacity-100" : "opacity-0"} ${backdropClass ?? ""}`.trim();
+  const sheetMaxWidth = fullscreen ? "" : "max-w-[600px]";
+
   return (
     <div
-      className={`fixed inset-0 z-[100] flex items-end justify-center transition-opacity duration-250 ${animating ? "opacity-100" : "opacity-0"}`}
-      style={{ backgroundColor: "rgba(10,46,74,0.35)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}
+      className={backdropCls}
+      style={backdropStyle}
       onClick={handleBackdrop}
       role="dialog"
       aria-modal="true"
@@ -103,17 +139,21 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     >
       <div
         ref={sheetRef}
-        className={`w-full max-w-[600px] bg-white rounded-t-2xl shadow-[0_-8px_32px_-4px_rgba(10,46,74,0.20),0_-2px_8px_-2px_rgba(10,46,74,0.10)] flex flex-col overflow-hidden transition-transform duration-250 ease-out ${animating ? "translate-y-0" : "translate-y-full"} ${className}`}
-        style={{ maxHeight }}
+        className={`w-full ${sheetMaxWidth} bg-white rounded-t-2xl shadow-[0_-8px_32px_-4px_rgba(10,46,74,0.20),0_-2px_8px_-2px_rgba(10,46,74,0.10)] flex flex-col overflow-hidden transition-transform duration-250 ease-out ${animating ? "translate-y-0" : "translate-y-full"} ${className}`.trim()}
+        style={{ maxHeight: resolvedMaxHeight }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drag handle (indicator only · 실제 drag 는 향후 추가) */}
-        <div className="flex justify-center pt-2.5 pb-1 shrink-0">
-          <span className="w-10 h-1 rounded-full bg-zinc-300" />
-        </div>
+        {/* Drag handle · disableHandle 시 숨김 (fullscreen 등) */}
+        {!disableHandle && (
+          <div className="flex justify-center pt-2.5 pb-1 shrink-0">
+            <span className="w-10 h-1 rounded-full bg-zinc-300" />
+          </div>
+        )}
 
-        {/* 헤더 · 제목 + 우측 슬롯 + 닫기 */}
-        {(title || right) && (
+        {/* v2 · 커스텀 헤더 우선 · 지정 시 title/right/기본 헤더 무시 */}
+        {header ? (
+          <div className="shrink-0">{header}</div>
+        ) : (title || right) && (
           <div className="flex items-center gap-2.5 px-5 py-3 border-b border-line shrink-0">
             <AccentBar size="lg" />
             {title && (
@@ -138,6 +178,11 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         <div className="flex-1 overflow-y-auto min-h-0">
           {children}
         </div>
+
+        {/* v2 · footer · 하단 액션 바 */}
+        {footer && (
+          <div className="shrink-0 border-t border-line px-4 py-3">{footer}</div>
+        )}
       </div>
     </div>
   );
