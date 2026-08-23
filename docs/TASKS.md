@@ -83,7 +83,7 @@
 - 💡 관련 · 이전 세션 · SideBar z-index 이슈 있었으면 참조
 - 💡 목업 파일 톤 유지 · `docs/UI_MOCKUP_2026-08-21.html`
 
-### #200 · 랜딩페이지 · 전체 글씨 사이즈 +2 (신규 · 2026-08-23)
+### #200 · 랜딩페이지 · 전체 글씨 사이즈 +2 (✅ 완료 · 2026-08-23 · `cf7a92be`)
 - 📄 대상 · `src/components/LandingPage/LandingPage.tsx` 및 서브 컴포넌트들
 - 🔲 모든 텍스트 · 글씨 사이즈 **+2 통일** (대원칙 · `feedback_font_plus2_default.md`)
 - 🔲 대상 컴포넌트:
@@ -299,7 +299,7 @@
 - 💡 SessionTimeoutWarning · 만료 전 경고 UI (예: 5분 전 알림) 재사용 가능 여부 확인
 - 💡 주의 · 이벤트 리스너 cleanup · 메모리 누수 방지 · 컴포넌트 unmount 시 clearTimeout
 
-### #185 · 통계 메뉴 상단 세션 · UI 프레임워크 통일 (신규 · 2026-08-21)
+### #185 · 통계 메뉴 상단 세션 · UI 프레임워크 통일 (부분 완료 · 2026-08-23 · CategoryTab `1dee1e17`)
 - 📄 대상 · 발주관리 > 통계 서브탭 상단 (CategoryTab · TrendingTab · SupplierTab · PurchaseSubTabs 등)
 - 🔲 현재 · 각 서브탭 상단 세션 (제목·필터·기간선택 등) · 스타일·간격·색상 통일 안 됨
 - 🔲 개선 · 프레임워크 프리미티브 적용 · PageToolbar · AccentBar · SeasonButtons · PeriodSelector · CategoryChips 일관 사용
