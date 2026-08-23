@@ -435,21 +435,20 @@ export const ConfirmedRecordsTab: React.FC = () => {
       </Card>
 
       {/* 2026-07-28 · 이미지 모달 · Cloudinary 저장된 거래명세서 이미지 */}
-      {imageModalUrl && (
-        // 2026-08-17 v2 · Modal 통일 (이미지 뷰어 · 강조 backdrop)
-        <div className="fixed inset-0 z-[100] backdrop-brand-strong flex items-center justify-center p-4" onClick={() => setImageModalUrl(null)}>
-          <div className="relative max-w-[95vw] max-h-[95vh]" onClick={e => e.stopPropagation()}>
-            <button
-              type="button"
-              onClick={() => setImageModalUrl(null)}
-              className="absolute -top-8 right-0 text-white text-sm font-bold hover:text-gray-300"
-              title="닫기 (Esc · 배경 클릭)"
-            >✕ 닫기</button>
-            <div className="text-white text-sm font-bold mb-2">{imageModalTitle}</div>
-            <img src={imageModalUrl} alt="거래명세서" className="max-w-full max-h-[85vh] object-contain rounded shadow-2xl" />
+      {/* 2026-08-23 #191 · Modal primitive 마이그레이션 */}
+      <Modal
+        open={!!imageModalUrl}
+        onClose={() => setImageModalUrl(null)}
+        title={imageModalTitle}
+        backdropIntensity="brand-strong"
+        size="full"
+      >
+        {imageModalUrl && (
+          <div className="-m-5 flex items-center justify-center p-4 bg-black/10 rounded-b-2xl">
+            <img src={imageModalUrl} alt="거래명세서" className="max-w-full max-h-[80vh] object-contain rounded shadow-2xl" />
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       {/* ── 공급처 잔고 히스토리 모달 · 2026-08-18 · <Modal> 프레임워크 통합 */}
       <Modal
