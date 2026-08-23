@@ -7,6 +7,7 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { Plus, Check, X, CalendarDays, Calendar } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 import { api } from "../../lib/apiClient";
 import { useApiCall } from "../../hooks/useApiCall";
 import type {
@@ -131,7 +132,7 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-line shadow-sm overflow-hidden flex flex-col">
+    <Card padding="none" rounded="2xl" clip className="flex flex-col">
 
       {/* 폼 헤더 */}
       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-zinc-100 bg-emerald-50/60 shrink-0">
@@ -400,6 +401,6 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
           {saving ? "등록 중..." : "결제 등록"}
         </button>
       </div>
-    </div>
+    </Card>
   );
 };
