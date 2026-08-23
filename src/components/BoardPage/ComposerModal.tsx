@@ -1,10 +1,11 @@
 // src/components/BoardPage/ComposerModal.tsx
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · BoardPage 새 글 작성 모달 이관
-// 프레임워크: Spinner · useToast · toastClass · apiClient · cloudinaryUpload
+// 프레임워크: Spinner · useToast · toastClass · apiClient · cloudinaryUpload · Modal primitive
 import React, { useRef, useState } from "react";
-import { X as XIcon, Camera, Send } from "lucide-react";
+import { Camera, Send } from "lucide-react";
 import { api } from "../../lib/apiClient";
 import { Spinner } from "../common/Spinner";
+import { Modal } from "../common/Modal";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { uploadImagesToCloudinary, type UploadedImage } from "../../lib/cloudinaryUpload";
 import type { AuthSession } from "../../types";
@@ -24,10 +25,7 @@ export function ComposerModal({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [mentionIds, setMentionIds] = useState<number[]>([]);
-  const [showMentionPicker, setShowMentionPicker] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  // 2026-08-21 · Framework Phase 3 · alert → useToast
   const { toast, showError } = useToast();
 
   const submit = async () => {
@@ -42,7 +40,7 @@ export function ComposerModal({
         title: title.trim(),
         body,
         category: category || null,
-        mentions: mentionIds,
+        mentions: [],
         images,
       });
       onCreated();
@@ -66,19 +64,32 @@ export function ComposerModal({
 
   const removeImg = (i: number) => setImages(prev => prev.filter((_, idx) => idx !== i));
 
-  const mentionable = employees.filter(e => e.id !== authSession.employeeId);
-  const mentionedList = mentionable.filter(e => mentionIds.includes(e.id));
-  const toggleMention = (id: number) => setMentionIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  void employees;
+
+  const footer = (
+    <>
+      <button onClick={onClose} className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[15px] font-bold">취소</button>
+      <button onClick={submit} disabled={saving || uploading || !title.trim()}
+        className="px-4 py-2 rounded-xl bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[15px] font-bold shadow-sm disabled:opacity-40 flex items-center gap-1">
+        {saving ? <Spinner size={13} /> : <Send size={13} />}
+        등록
+      </button>
+    </>
+  );
 
   return (
-    // 2026-08-17 v2 · Modal 통일
-    <div className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white w-full sm:w-[560px] sm:rounded-xl sm:max-h-[86vh] max-h-[92vh] overflow-y-auto rounded-t-2xl shadow-brand-modal flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-line px-4 py-3 flex items-center justify-between">
-          <h2 className="text-base font-bold text-zinc-900">새 글 작성</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-500"><XIcon size={18} /></button>
-        </div>
-
+    <>
+      <Modal
+        open
+        onClose={onClose}
+        title="새 글 작성"
+        size="md"
+        backdropIntensity="brand"
+        closeOnBackdrop
+        closeOnEsc
+        footer={footer}
+        className="sm:max-w-[560px]"
+      >
         <div className="p-4 flex flex-col gap-3">
           {/* 타입 선택 */}
           <div className="grid grid-cols-3 gap-2">
@@ -152,7 +163,7 @@ export function ComposerModal({
                     <img src={img.image_url} alt="" className="w-full h-full object-cover" />
                     <button onClick={() => removeImg(i)}
                       className="absolute top-1 right-1 w-6 h-6 rounded-full bg-white/90 text-rose-600 hover:bg-white shadow-md flex items-center justify-center">
-                      <XIcon size={12} strokeWidth={3} />
+                      ✕
                     </button>
                   </div>
                 ))}
@@ -163,18 +174,9 @@ export function ComposerModal({
           {/* @멘션 */}
           {/* 담당자 지정 기능 제거됨 · 관리자 전원 자동 알림만 유지 */}
         </div>
-
-        <div className="sticky bottom-0 bg-white border-t border-line px-4 py-3 flex items-center justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[15px] font-bold">취소</button>
-          <button onClick={submit} disabled={saving || uploading || !title.trim()}
-            className="px-4 py-2 rounded-xl bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[15px] font-bold shadow-sm disabled:opacity-40 flex items-center gap-1">
-            {saving ? <Spinner size={13} /> : <Send size={13} />}
-            등록
-          </button>
-        </div>
-      </div>
-      {/* 2026-08-21 · Framework Phase 3 · toast · alert 대체 */}
+      </Modal>
+      {/* toast */}
       {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
-    </div>
+    </>
   );
 }
