@@ -128,24 +128,39 @@ interface StockRowCardProps {
   onRemove: (key: string) => void;
   onHistory: (code: string, name: string) => void;
   onRequestDisplay: (row: StockRow) => void;
+  // 2026-08-23 · #204 · 개별 저장 (bulk endpoint · items=[one])
+  onSaveRow?: (key: string) => Promise<void> | void;
 }
 
 export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
   row, isRecent, requestingKey, onPatch, onRemove, onHistory, onRequestDisplay,
+  onSaveRow,
 }) => {
   const rowTotal = calcRowTotal(row);
   const totalAdded = calcTotalAdded(row);
   const hasAdd = totalAdded !== 0;
+  // 2026-08-23 · #204 · 이번 세션에 개별 저장 완료 여부 · 저장 후 카드 자동 접힘
+  const savedThisSession = !!row.savedThisSession;
 
   const isWarn = useMemo(() => {
     const a = (v: number | "") => v !== "" ? Number(v) : 0;
     return SLOTS.some(s => a(row[s.addKey] as any) >= WARN_THRESHOLD);
   }, [row]);
 
-  // 최근/입력됨/이상값 자동 확장 · 그 외 사용자 토글
-  const autoExpanded = isRecent || hasAdd || isWarn;
+  // 2026-08-23 · #204 · 자동 확장 규칙
+  //   · isRecent (최근 스캔) 은 유지 · 다음 스캔이 오면 자동 접힘
+  //   · savedThisSession 이면 hasAdd 무시 (저장 완료 후 사용자가 열지 않는 한 접힘)
+  //   · 이상값 (isWarn) 은 계속 강조
+  const autoExpanded = isRecent || (hasAdd && !savedThisSession) || isWarn;
   const [manuallyExpanded, setManuallyExpanded] = useState(false);
   const expanded = autoExpanded || manuallyExpanded;
+  // 2026-08-23 · #204 · 저장 진행 상태 (버튼 disable 방지)
+  const [saving, setSaving] = useState(false);
+  const handleSaveClick = async () => {
+    if (!onSaveRow || saving || !hasAdd) return;
+    setSaving(true);
+    try { await onSaveRow(row.key); } finally { setSaving(false); }
+  };
 
   // product.spec 파싱 (매장별 ERP 위치)
   const specParts = String((row.product as any).spec ?? "").split("/").map(s => s.trim());
@@ -310,8 +325,29 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
             );
           })}
 
-          {/* 액션 (기존 StockActionsCell 재사용) */}
-          <div className="mt-1 pt-2 border-t border-line/50 flex items-center justify-end">
+          {/* 액션 · 2026-08-23 · #204 · 개별 [저장] 버튼 + 기존 StockActionsCell */}
+          <div className="mt-1 pt-2 border-t border-line/50 flex items-center justify-between gap-2 flex-wrap">
+            {onSaveRow ? (
+              <button
+                type="button"
+                onClick={handleSaveClick}
+                disabled={saving || !hasAdd}
+                className={[
+                  "inline-flex items-center gap-1 h-8 px-3 rounded-lg text-[14px] font-bold cursor-pointer transition",
+                  saving
+                    ? "bg-zinc-100 text-zinc-400 cursor-wait"
+                    : savedThisSession
+                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                      : hasAdd
+                        ? "bg-brand-deep text-white hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm"
+                        : "bg-zinc-100 text-zinc-400 cursor-not-allowed",
+                ].join(" ")}
+                title={hasAdd ? (savedThisSession ? "저장됨 · 다시 저장 (덮어쓰기)" : "이 행만 저장") : "입력값이 있어야 저장 가능"}
+                aria-label={savedThisSession ? "다시 저장" : "이 행만 저장"}
+              >
+                {saving ? "저장 중..." : savedThisSession ? "✓ 저장됨" : "저장"}
+              </button>
+            ) : <span />}
             <StockActionsCell
               row={row}
               requestingKey={requestingKey}

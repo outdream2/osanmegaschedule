@@ -410,9 +410,16 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       .catch(() => {});
   }, [rows, showToast, autoIncOn]);
 
-  // ── 행 필드 업데이트
+  // ── 행 필드 업데이트 · 2026-08-23 · #204 · qty/zone 변경 시 savedThisSession 해제 (dirty 표시)
   const patchRow = useCallback((key: string, patch: Partial<StockRow>) => {
-    setRows(prev => prev.map(r => r.key === key ? { ...r, ...patch } : r));
+    const touchesInput = Object.keys(patch).some(k =>
+      /AddQty$|Zone$/.test(k)
+    );
+    setRows(prev => prev.map(r => (
+      r.key === key
+        ? { ...r, ...patch, ...(touchesInput ? { savedThisSession: false } : {}) }
+        : r
+    )));
   }, []);
 
   const removeRow = useCallback((key: string) => {
@@ -444,6 +451,45 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       setHistoryRows(Array.isArray(data) ? data : []);
     } catch { /* noop */ } finally { setHistoryLoading(false); }
   }, []);
+
+  // ── 2026-08-23 · #204 · 개별 행 저장 · bulk endpoint 재사용 (items=[one])
+  const handleSaveRow = useCallback(async (rowKey: string) => {
+    const row = rows.find(r => r.key === rowKey);
+    if (!row) return;
+    const w1 = calcSlotTotal(row.prevWarehouse1Qty, row.warehouse1AddQty);
+    const w2 = calcSlotTotal(row.prevWarehouse2Qty, row.warehouse2AddQty);
+    const s1 = calcSlotTotal(row.prevStore1Qty,     row.store1AddQty);
+    const s2 = calcSlotTotal(row.prevStore2Qty,     row.store2AddQty);
+    const s3 = calcSlotTotal(row.prevStore3Qty,     row.store3AddQty);
+    const hasW1 = row.prevWarehouse1Qty != null || row.warehouse1AddQty !== "";
+    const hasW2 = row.prevWarehouse2Qty != null || row.warehouse2AddQty !== "";
+    const hasS1 = row.prevStore1Qty != null || row.store1AddQty !== "";
+    const hasS2 = row.prevStore2Qty != null || row.store2AddQty !== "";
+    const hasS3 = row.prevStore3Qty != null || row.store3AddQty !== "";
+    try {
+      await api.post("/api/inventory-checks/bulk", {
+        checked_by: authSession?.employeeName ?? "익명",
+        items: [{
+          product_code:     row.code,
+          product_name:     row.product.name,
+          warehouse1_stock: hasW1 ? w1 : null,
+          warehouse2_stock: hasW2 ? w2 : null,
+          store_stock:      hasS1 ? s1 : null,
+          store_stock_2:    hasS2 ? s2 : null,
+          store3_stock:     hasS3 ? s3 : null,
+          store1_zone:      row.store1Zone,
+          store2_zone:      row.store2Zone,
+          store3_zone:      row.store3Zone,
+          warehouse_stock:  hasW1 ? w1 : null,
+        }],
+      });
+      setRows(prev => prev.map(r => (r.key === rowKey ? { ...r, savedThisSession: true, lastCheckedAt: new Date().toISOString() } : r)));
+      showToast(`${row.product.name} · 저장 완료`);
+    } catch (e: unknown) {
+      const msg = e instanceof ApiError ? e.message : (e instanceof Error ? e.message : "저장 실패");
+      showToast(`저장 실패 · ${msg}`);
+    }
+  }, [rows, authSession?.employeeName, showToast]);
 
   // ── 전체 저장
   const handleBulkSave = async () => {
@@ -754,6 +800,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                     onRemove={removeRow}
                     onHistory={openHistory}
                     onRequestDisplay={requestDisplay}
+                    onSaveRow={handleSaveRow}
                   />
                 ))}
               </div>

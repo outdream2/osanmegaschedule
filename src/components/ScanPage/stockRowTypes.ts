@@ -25,6 +25,8 @@ export interface StockRow {
   store3Zone:    string | null;
   lastCheckedAt?: string | null;
   historyCount?: number;
+  // 2026-08-23 · #204 · 개별 저장 완료 여부 · true 시 카드 자동 접힘 (재편집 가능)
+  savedThisSession?: boolean;
 }
 
 /** prev + add 합산 · prev 없으면 add 만 · add 없으면 prev 만 */
