@@ -41,7 +41,7 @@
 | `productsCache.test.ts` (addCachedProduct) | 5 | 신규·기존 병합·leading zero·빈 코드·기본값 |
 | `Modal.test.tsx` (v3+ 확장) | 10 | size (3xl · lg-narrow · xl · full) · dark backdrop · bodyPadding · zIndex · headerBgClass · headerTextClass · cardStyle |
 
-**전체**: 3055 → **3138 tests** (83 신규) · 209 files · all pass
+**전체**: 3055 → **3141 tests** (86 신규) · 209 files · all pass
 
 **프레임워크 프리미티브 커버리지 · 이번 세션 강화**:
 - Modal v3/v3.1/v3.2/v3.3/v3.4 (+10 tests · 25 total)
@@ -59,10 +59,12 @@
 
 ---
 
-## 📝 이번 세션 커밋 로그 (최신 → 과거 · 46개)
+## 📝 이번 세션 커밋 로그 (최신 → 과거 · 48개)
 
 | # | SHA | 파일 | 요약 |
 |---|-----|------|------|
+| 48 | `779aed47` | SplitListPanel.tsx + test | **feat** v3 · subHeader 슬롯 (KPI/부가정보) · #198 Phase 3C 지원 · 3 신규 tests |
+| 47 | `92c7e27c` | TASKS_HANDBOOK.md | docs: Phase 3A+3B 반영 |
 | 46 | `65ca302b` | StaffListPanel.tsx | **refactor** #198 Phase 3B · StaffListPanel → SplitListPanel v2 wrapper (footer+countDisplay) |
 | 45 | `dd2d63f8` | VendorManageSplit.tsx | **refactor** #198 Phase 3A · VendorManageSplit → SplitListPanel + CategoryChips (UI 통일) |
 | 44 | `2c44eee0` | TASKS_HANDBOOK.md | docs: 3138 tests · IconTile/Spinner tone 완성 |
