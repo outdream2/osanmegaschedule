@@ -556,32 +556,34 @@
 - **Import 방식** · 일회성 스크립트 + 기존 vendors 연동/병합 (매칭 키: company_name)
 - **UI 조회/수정** · 프레임워크 모두 활용 (Modal · Card · SplitListPanel · CategoryChips · Badge · StatusPill · PageToolbar · CollapseCard · useApiCall · useToast · useConfirm)
 
-**Phase A · DB 마이그레이션**:
-- 🔲 `vendors` ALTER · 5개 신규 컬럼 (`order_method` · `region` · `invoice_method` · `order_status` · `special_notes`)
-- 🔲 `login_credentials` 컬럼 신설 **X** · 파생 방식
-- 🔲 `vendor_order_templates` 테이블 신설 **X** · 공급사별 상품 시트 무시
+**Phase A · DB 마이그레이션** ✅ **SQL 파일 완료** (`6b155ed9`) · Supabase 실행 대기:
+- ✅ `sql/migrations/2026-08-23_vendors_xlsx_columns.sql` · IF NOT EXISTS · idempotent
+- ✅ 5 신규 컬럼 (`order_method` · `region` · `invoice_method` · `order_status` · `special_notes`)
+- ✅ `login_credentials` 컬럼 신설 **X** (규칙 파생 · `.env`)
+- ✅ `vendor_order_templates` 테이블 신설 **X** (첫 시트만)
+- ⏳ **사용자 실행 대기** · Supabase Dashboard > SQL Editor
 
-**Phase B · Zod 스키마**:
-- 🔲 `src/shared/schemas/vendors.ts` · VendorSchema 확장 · 5 신규 필드 optional
-- 🔲 UpdateVendorSchema · partial 유지
+**Phase B · Zod 스키마** ✅ **완료** (`1081fe3e`):
+- ✅ CreateVendorSchema · 5 신규 optional 필드 + `approval_status` enum
+- ✅ 10 신규 tests · 17→27
 
-**Phase C · 서버**:
-- 🔲 GET `/api/vendors` · 신규 컬럼 포함
-- 🔲 PUT `/api/vendors/:id` · 신규 필드 지원 · authorize(5) or admin
-- 🔲 파생 함수 · `src/lib/vendorPassword.ts` · getVendorLoginId + getVendorPassword
+**Phase C · 서버** ✅ **완료** (`6b155ed9`):
+- ✅ PATCH `/api/vendors/:id` · 신규 5 필드 수신 · approval_status enum
+- ✅ Fallback · 신규 컬럼 없음 시 · 자동 skip (마이그레이션 미실행 안전)
+- 🔲 GET `/api/vendors` · 신규 컬럼 반환 (Supabase select 자동 · 별도 작업 불필요)
+- 🔲 파생 함수 · `src/lib/vendorPassword.ts` · 별도 태스크
 
-**Phase D · UI 조회/수정 (프레임워크 활용)**:
-- 🔲 VendorListEditor · 리스트 컬럼 확장 (order_method · region · order_status 표시 옵션)
-- 🔲 VendorDetailModal · 편집 폼 확장 · 5 신규 필드 · Zod 검증
-- 🔲 CollapseCard · 특이사항 접기/펴기
-- 🔲 Badge · order_status · StatusPill · 특이사항 rose 배지
-- 🔲 발주요청 페이지 · 공급사 선택 시 · `special_notes` 배너 노출
+**Phase D · UI 조회/수정** 🔲 **미착수 · 별도 세션 권장**:
+- 🔲 VendorListEditor (2400라인) · 편집 폼 확장 · 5 신규 필드
+- 🔲 VendorDetailModal · 편집 UI · CollapseCard · Badge · StatusPill
+- 🔲 발주요청 페이지 · special_notes 경고 배너
 
-**Phase E · xlsx import 스크립트 (일회성)**:
-- 🔲 `scripts/import-vendors.mjs` · xlsx 첫 시트 파싱 · 52 vendors
-- 🔲 매칭 키 · company_name (phone fallback)
-- 🔲 매칭 O · UPDATE (신규 컬럼) · 매칭 X · INSERT · DELETE 없음
-- 🔲 콘솔 리포트 · `matched: N · inserted: M · errors: K`
+**Phase E · xlsx import 스크립트** ✅ **완료** (`53e6e98a`):
+- ✅ `scripts/import-vendors.mjs` · Node ESM
+- ✅ 첫 시트 파싱 · company_name 매칭 · phone fallback
+- ✅ 매칭 O · UPDATE · 매칭 X · INSERT · DELETE 없음
+- ✅ `npm run import:vendors:dry` · `npm run import:vendors`
+- ⏳ **사용자 실행 대기** · `.env` SUPABASE_URL/KEY 설정 후
 
 **규모** · 예상 **8-12시간** · UI 확장 포함
 
