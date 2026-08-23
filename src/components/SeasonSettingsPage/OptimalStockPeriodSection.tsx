@@ -2,9 +2,10 @@
 // 2026-08-23 · #193 · 적정재고 계산 기준 일수 설정
 //   · 하드코딩 30일 → KV setting optimal_stock_period_days · 사용자 조정 가능
 //   · 계산법 · 오늘 기준 * 일 판매량 = 적정재고
-//   · 범위 · 7~90일 · 기본 30일
+// 2026-08-24 · 기본 15일 (사용자 지시) · MIN 1일 (7 clamp 이슈 fix)
+//   · 입력 중 clamp 제거 · onBlur/Enter 에서만 확정 · 자유 타이핑 허용
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Package } from "@phosphor-icons/react";
 import { Card } from "../common/Card";
 import { useKvSetting } from "../../hooks/useKvSetting";
@@ -31,12 +32,29 @@ export const OptimalStockPeriodSection: React.FC = () => {
     sanitize,
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const n = Number(e.target.value);
-    if (!Number.isFinite(n)) return;
-    // clamp on input
+  // 2026-08-24 · 로컬 입력 buffer · 사용자 자유 타이핑 (clamp X · onBlur/Enter 에 확정)
+  const [inputValue, setInputValue] = useState<string>("");
+  useEffect(() => {
+    if (loaded) setInputValue(String(days));
+  }, [loaded, days]);
+
+  const commit = () => {
+    const n = Number(inputValue);
+    if (!Number.isFinite(n)) {
+      setInputValue(String(days));  // 무효 입력 시 · 이전 값 복원
+      return;
+    }
     const clamped = Math.max(MIN_DAYS, Math.min(MAX_DAYS, Math.round(n)));
     setDays(clamped);
+    setInputValue(String(clamped));  // 사용자에게 clamp 결과 반영
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 타이핑 중 · clamp X · 자유 입력
+    setInputValue(e.target.value);
+  };
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") { commit(); (e.target as HTMLInputElement).blur(); }
   };
 
   return (
@@ -71,8 +89,10 @@ export const OptimalStockPeriodSection: React.FC = () => {
           min={MIN_DAYS}
           max={MAX_DAYS}
           step={1}
-          value={loaded ? days : DEFAULT_DAYS}
+          value={loaded ? inputValue : String(DEFAULT_DAYS)}
           onChange={handleChange}
+          onBlur={commit}
+          onKeyDown={handleKeyDown}
           disabled={!loaded}
           className="w-24 h-9 px-2.5 text-[15px] font-semibold text-ink text-right border border-line rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"
         />

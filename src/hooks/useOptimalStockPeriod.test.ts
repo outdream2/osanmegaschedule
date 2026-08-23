@@ -31,11 +31,12 @@ describe("useOptimalStockPeriod", () => {
     try { localStorage.clear(); } catch { /* noop */ }
   });
 
-  it("KV 부재 시 · DEFAULT (30) fallback", async () => {
+  it("KV 부재 시 · DEFAULT (15) fallback (2026-08-24 사용자 15로 변경)", async () => {
     (api.get as any).mockResolvedValueOnce({ data: null });
     const { result } = renderHook(() => useOptimalStockPeriod());
     await waitFor(() => expect(result.current.loaded).toBe(true));
     expect(result.current.days).toBe(OPTIMAL_STOCK_DEFAULT_DAYS);
+    expect(OPTIMAL_STOCK_DEFAULT_DAYS).toBe(15);
   });
 
   it("KV 유효 값 (14일) · 그대로 반환", async () => {
@@ -53,8 +54,8 @@ describe("useOptimalStockPeriod", () => {
     expect(result.current.days).toBe(OPTIMAL_STOCK_DEFAULT_DAYS);
   });
 
-  it("KV 범위 밖 (3 · 미달) · sanitize null → DEFAULT", async () => {
-    (api.get as any).mockResolvedValueOnce({ data: { value: 3 } });
+  it("KV 범위 밖 (0 · 미달) · sanitize null → DEFAULT", async () => {
+    (api.get as any).mockResolvedValueOnce({ data: { value: 0 } });
     const { result } = renderHook(() => useOptimalStockPeriod());
     await waitFor(() => expect(result.current.loaded).toBe(true));
     expect(result.current.days).toBe(OPTIMAL_STOCK_DEFAULT_DAYS);
