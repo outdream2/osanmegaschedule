@@ -20,6 +20,7 @@ import { StatusPill } from "../common/StatusPill";
 import { IconTile } from "../common/IconTile";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
+import { Modal } from "../common/Modal";
 // 2026-08-12 · 연차승인 탭 · LeavePage mode="approval" 로 임베드 (관리자용 승인 UI)
 import { LeavePage } from "../LeavePage/LeavePage";
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · types + ListToolbar
@@ -717,10 +718,17 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       </main>
 
       {/* 발주요청 중복 확인 모달 */}
-      {dupOrderModal && (
-        // 2026-08-17 v2 · Modal 통일
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-brand px-4">
-          <div className="bg-white rounded-xl shadow-brand-modal p-5 max-w-sm w-full flex flex-col gap-4">
+      <Modal
+        open={!!dupOrderModal}
+        onClose={() => setDupOrderModal(null)}
+        size="sm"
+        showClose={false}
+        closeOnBackdrop={false}
+        backdropIntensity="brand"
+        className="!max-w-sm"
+      >
+        {dupOrderModal && (
+          <div className="flex flex-col gap-4">
             <div className="flex items-start gap-3">
               {/* 2026-08-18 · IconTile 확산 · lg + orange · rounded-xl */}
               <IconTile icon={<ShoppingCart size={18} />} tone="orange" size="lg" shape="rounded-xl" />
@@ -773,8 +781,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
       {/* 2026-08-21 · Framework Phase 3 · toast */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-[9999]">
