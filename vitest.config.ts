@@ -32,6 +32,8 @@ export default defineConfig({
       "src/styles/**/*.test.ts",
       // 2026-08-21 · ScanPage · pure helpers (calcSlotTotal · calcRowTotal 등)
       "src/components/ScanPage/**/*.test.ts",
+      // 2026-08-23 · ScanPage panels · jsdom · #179 canManageProducts + onOpenCreate props
+      "src/components/ScanPage/**/*.test.tsx",
       // 2026-08-21 · BarcodeScanner · pure helpers (extractBarcodeDigits · 이미지 처리)
       "src/components/BarcodeScanner/**/*.test.ts",
       // 2026-08-23 · #177 · ProductInfoPage · CreateModal + page (jsdom · 파일별 지시자)
