@@ -107,3 +107,24 @@ describe("StatusPill · tabular-nums (숫자 정렬)", () => {
     expect(container.querySelector("span")!.className).not.toContain("tabular-nums");
   });
 });
+
+// 2026-08-23 · v2 · shape prop 커버리지
+describe("StatusPill · shape prop (v2)", () => {
+  it("기본 shape=pill · rounded-full", () => {
+    const { container } = render(<StatusPill>x</StatusPill>);
+    expect(container.querySelector("span")!.className).toContain("rounded-full");
+  });
+
+  it("shape=rounded · rounded-md", () => {
+    const { container } = render(<StatusPill shape="rounded">x</StatusPill>);
+    expect(container.querySelector("span")!.className).toContain("rounded-md");
+    expect(container.querySelector("span")!.className).not.toContain("rounded-full");
+  });
+
+  it("shape=square · rounded 없음", () => {
+    const { container } = render(<StatusPill shape="square">x</StatusPill>);
+    const cls = container.querySelector("span")!.className;
+    expect(cls).not.toContain("rounded-full");
+    expect(cls).not.toContain("rounded-md");
+  });
+});
