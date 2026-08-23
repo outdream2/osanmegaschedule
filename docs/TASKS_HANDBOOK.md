@@ -59,10 +59,17 @@
 
 ---
 
-## 📝 이번 세션 커밋 로그 (최신 → 과거 · 26개)
+## 📝 이번 세션 커밋 로그 (최신 → 과거 · 33개)
 
 | # | SHA | 파일 | 요약 |
 |---|-----|------|------|
+| 33 | `76b11cb3` | ProductCreateModal · ScanPage · test | **fix** #179 신규 등록 상품 빈 name 버그 · onCreated (code, product) 확장 |
+| 32 | `c3d93a7d` | SESSION_STATUS.md | 밤 세션 갱신 · 3112 tests |
+| 31 | `7c24426c` | ProductInfoPage.tsx | polish: 편집 number input min=0 + optimal_stock step=1 |
+| 30 | `e2d94ce8` | ProductCreateModal.tsx | polish: optimal_stock step=1 (Zod int 일치) |
+| 29 | `06470815` | FRAMEWORK_AUDIT.md | audit: 649 files scan · 645 clean (100%) |
+| 28 | `86995986` | MENU_STRUCTURE.md | docs: #177 계획→완료 반영 |
+| 27 | `f2b3c903` | ScanPage.panels.test.tsx | test: #202 SaveCard 등록 준비 요약 9 tests |
 | 26 | `58ac824b` | BottomSheet.test.tsx | test: v2 확장 7 tests (header/fullscreen/disableHandle/backdropClass/zIndex/footer) |
 | 25 | `5b559cfd` | Card.test.tsx | test: v2 · bg + borderColor 5 tests |
 | 24 | `78fcaca9` | StatusPill.test.tsx | test: v2 shape prop 3 tests |
