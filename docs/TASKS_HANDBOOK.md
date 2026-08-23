@@ -59,10 +59,13 @@
 
 ---
 
-## 📝 이번 세션 커밋 로그 (최신 → 과거 · 43개)
+## 📝 이번 세션 커밋 로그 (최신 → 과거 · 46개)
 
 | # | SHA | 파일 | 요약 |
 |---|-----|------|------|
+| 46 | `65ca302b` | StaffListPanel.tsx | **refactor** #198 Phase 3B · StaffListPanel → SplitListPanel v2 wrapper (footer+countDisplay) |
+| 45 | `dd2d63f8` | VendorManageSplit.tsx | **refactor** #198 Phase 3A · VendorManageSplit → SplitListPanel + CategoryChips (UI 통일) |
+| 44 | `2c44eee0` | TASKS_HANDBOOK.md | docs: 3138 tests · IconTile/Spinner tone 완성 |
 | 43 | `646daa45` | IconTile.test.tsx | test: 전 tone 완성 (sky/amber/teal/indigo/zinc) · 9→10 tests |
 | 42 | `59a8a0c0` | Spinner.test.tsx | test: 전 tone 커버리지 (10 tones + 기본값) · 8→21 tests |
 | 41 | `a969be64` | TASKS_HANDBOOK.md | docs: SplitListPanel v2 반영 |
