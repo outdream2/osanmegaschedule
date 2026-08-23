@@ -24,6 +24,8 @@ import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { VendorInfoHeader } from "../common/VendorInfoHeader";
 import { useVendorInfoModal } from "../common/features/VendorInfoModal";
 import { SplitPanel } from "../common/SplitPanel";
+// 2026-08-23 · #198 Phase 3C · SplitListPanel v3 (subHeader = KPI) · 좌측 리스트 프레임워크화
+import { SplitListPanel } from "../common/SplitListPanel";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
@@ -555,94 +557,89 @@ export const PaymentInfoTab: React.FC = () => {
         className="flex-1 min-h-0"
         left={
           /* ── 좌측 · 공급사 리스트 ─────────────────────────────── */
-          <div className="w-full lg:flex-col shrink-0 flex flex-col gap-2 h-full min-h-0">
-          <div className={`${CARD_BASE} px-3 py-2.5 flex flex-col gap-2 shrink-0`}>
-            <input
-              type="text"
-              value={vendorSearch}
-              onChange={e => setVendorSearch(e.target.value)}
-              placeholder="공급사명 검색"
-              className="w-full h-7 px-2.5 text-[15px] border border-line rounded-lg outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
-            />
-            <CategoryChips
-              value={vendorCategoryFilter}
-              onChange={(v) => setVendorCategoryFilter(String(v))}
-              size="sm"
-              ariaLabel="공급사 카테고리 필터"
-              options={(["전체", ...dbVendorCategories] as string[]).map(cat => ({
-                value: cat,
-                label: cat,
-                tone: (cat === "전체"   ? "zinc"
-                     : cat === "위탁"   ? "violet"
-                     : cat === "선결제" ? "rose"
-                     : cat === "60회전" ? "emerald"
-                     : cat === "90회전" ? "teal"
-                     : "zinc") as ChipTone,
-              }))}
-            />
-            {/* 기간 필터 · 공용 PeriodSelector (2026-08-09) · 매입·결제 집계 기간
-                · localStorage megatown_payment_period 유지 */}
-            <div className="flex items-center gap-2 pt-1 border-t border-zinc-100">
-              <span className="text-[15px] font-bold text-zinc-400 uppercase tracking-wider shrink-0" title="매입·결제 집계 기간">기간</span>
-              <PeriodSelector
-                options={PERIOD_DAYS_PRESET}
-                value={periodDays}
-                onChange={(d) => setPeriodDays(d as PeriodDays)}
-                accent="sky"
-                className="flex-1"
-                ariaLabel="매입·결제 집계 기간"
-              />
-              {aggregatesLoading && (
-                <Spinner size={11} tone="sky" className="shrink-0" />
-              )}
-            </div>
-          </div>
-
-          {/* ── KPI 텍스트 한 줄 (2026-08-06 · T-PAYMENT-Enhance #3) ───────────
-               총 잔고 · 최근 결제일 · 최근 결제액 · 텍스트 inline 형태
-               라벨: text-zinc-400 / 값: text-emerald-700 or text-sky-700 */}
-          {(() => {
-            const totalBalance = vendors.reduce((s, v) => s + (Number(v.balance ?? 0)), 0);
-            // latestPaymentByVendor 전체 중 가장 최근 결제 찾기
-            let latestDate = "";
-            let latestAmount = 0;
-            for (const [, v] of latestPaymentByVendor) {
-              if (!latestDate || v.date > latestDate) {
-                latestDate = v.date;
-                latestAmount = v.amount;
-              }
-            }
-            const latestDateShort = latestDate && /^\d{4}-\d{2}-\d{2}$/.test(latestDate)
-              ? latestDate.slice(2) // "YY-MM-DD"
-              : latestDate || "-";
-            return (
-              <div className="flex items-center gap-3 px-1 py-0.5 text-[14px] shrink-0 flex-wrap">
-                <span className="flex items-center gap-1">
-                  <span className="text-zinc-400 font-semibold">총 잔고</span>
-                  <span className={`font-bold tabular-nums ${totalBalance > 0 ? "text-amber-700" : totalBalance < 0 ? "text-rose-700" : "text-zinc-400"}`}>
-                    {totalBalance === 0 ? "-" : fmtWonShort(Math.abs(totalBalance))}
-                  </span>
-                </span>
-                <span className="text-zinc-200 select-none">·</span>
-                <span className="flex items-center gap-1">
-                  <span className="text-zinc-400 font-semibold">최근 결제일</span>
-                  <span className="font-bold text-zinc-600 tabular-nums">{latestDateShort}</span>
-                </span>
-                <span className="text-zinc-200 select-none">·</span>
-                <span className="flex items-center gap-1">
-                  <span className="text-zinc-400 font-semibold">최근 결제액</span>
-                  <span className={`font-bold tabular-nums ${latestAmount > 0 ? "text-sky-700" : "text-zinc-400"}`}>
-                    {latestAmount > 0 ? fmtWonShort(latestAmount) : "-"}
-                  </span>
-                </span>
+          /* 2026-08-23 · #198 Phase 3C · SplitListPanel v3 (subHeader = KPI) 이관
+             · toolbar (search + CategoryChips + PeriodSelector) · header + filters slot
+             · KPI 3-inline · subHeader slot
+             · VendorListHeader + list · children slot */
+          <SplitListPanel
+            search={vendorSearch}
+            onSearchChange={setVendorSearch}
+            searchPlaceholder="공급사명 검색"
+            filters={
+              <div className="flex flex-col gap-2 w-full">
+                <CategoryChips
+                  value={vendorCategoryFilter}
+                  onChange={(v) => setVendorCategoryFilter(String(v))}
+                  size="sm"
+                  ariaLabel="공급사 카테고리 필터"
+                  options={(["전체", ...dbVendorCategories] as string[]).map(cat => ({
+                    value: cat,
+                    label: cat,
+                    tone: (cat === "전체"   ? "zinc"
+                         : cat === "위탁"   ? "violet"
+                         : cat === "선결제" ? "rose"
+                         : cat === "60회전" ? "emerald"
+                         : cat === "90회전" ? "teal"
+                         : "zinc") as ChipTone,
+                  }))}
+                />
+                {/* 기간 필터 · PeriodSelector · localStorage megatown_payment_period */}
+                <div className="flex items-center gap-2 pt-1 border-t border-zinc-100">
+                  <span className="text-[15px] font-bold text-zinc-400 uppercase tracking-wider shrink-0" title="매입·결제 집계 기간">기간</span>
+                  <PeriodSelector
+                    options={PERIOD_DAYS_PRESET}
+                    value={periodDays}
+                    onChange={(d) => setPeriodDays(d as PeriodDays)}
+                    accent="sky"
+                    className="flex-1"
+                    ariaLabel="매입·결제 집계 기간"
+                  />
+                  {aggregatesLoading && (
+                    <Spinner size={11} tone="sky" className="shrink-0" />
+                  )}
+                </div>
               </div>
-            );
-          })()}
-
-          <div className={`${CARD_BASE} flex-1 min-h-0 max-h-[42vh] lg:max-h-none flex flex-col overflow-hidden`}>
-            {/* 헤더 · 자동 정렬 (Task #103 · 2026-08-04)
-                · 컬럼: 분류 / 공급사명 / 매입 / 결제 / 잔고
-                · 클릭 시 asc/desc 토글 · 활성 컬럼 화살표 표시 */}
+            }
+            subHeader={(() => {
+              /* KPI · 총 잔고 · 최근 결제일 · 최근 결제액 · #198 Phase 3C · subHeader 슬롯 */
+              const totalBalance = vendors.reduce((s, v) => s + (Number(v.balance ?? 0)), 0);
+              let latestDate = "";
+              let latestAmount = 0;
+              for (const [, v] of latestPaymentByVendor) {
+                if (!latestDate || v.date > latestDate) {
+                  latestDate = v.date;
+                  latestAmount = v.amount;
+                }
+              }
+              const latestDateShort = latestDate && /^\d{4}-\d{2}-\d{2}$/.test(latestDate)
+                ? latestDate.slice(2)
+                : latestDate || "-";
+              return (
+                <div className="flex items-center gap-3 px-1 py-0.5 text-[14px] flex-wrap">
+                  <span className="flex items-center gap-1">
+                    <span className="text-zinc-400 font-semibold">총 잔고</span>
+                    <span className={`font-bold tabular-nums ${totalBalance > 0 ? "text-amber-700" : totalBalance < 0 ? "text-rose-700" : "text-zinc-400"}`}>
+                      {totalBalance === 0 ? "-" : fmtWonShort(Math.abs(totalBalance))}
+                    </span>
+                  </span>
+                  <span className="text-zinc-200 select-none">·</span>
+                  <span className="flex items-center gap-1">
+                    <span className="text-zinc-400 font-semibold">최근 결제일</span>
+                    <span className="font-bold text-zinc-600 tabular-nums">{latestDateShort}</span>
+                  </span>
+                  <span className="text-zinc-200 select-none">·</span>
+                  <span className="flex items-center gap-1">
+                    <span className="text-zinc-400 font-semibold">최근 결제액</span>
+                    <span className={`font-bold tabular-nums ${latestAmount > 0 ? "text-sky-700" : "text-zinc-400"}`}>
+                      {latestAmount > 0 ? fmtWonShort(latestAmount) : "-"}
+                    </span>
+                  </span>
+                </div>
+              );
+            })()}
+            bodyClassName={`${CARD_BASE} flex-1 min-h-0 max-h-[42vh] lg:max-h-none flex flex-col overflow-hidden mt-2`}
+          >
+            <>
             <VendorListHeader
               sortKey={sortKey}
               sortDir={sortDir}
@@ -722,8 +719,8 @@ export const PaymentInfoTab: React.FC = () => {
               </div>
             )}
             </div>
-          </div>
-          </div>
+            </>
+          </SplitListPanel>
         }
         right={
           /* ── 우측 · 결제 입력 · 최근 결제 ─────────────────────── */
