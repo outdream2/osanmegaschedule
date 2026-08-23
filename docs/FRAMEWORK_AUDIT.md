@@ -1,6 +1,6 @@
 # Framework Audit Report (자동 생성)
 
-> 생성 · 2026-08-22 · `scripts/audit-framework.cjs` · 매 세션 재실행
+> 생성 · 2026-08-23 · `scripts/audit-framework.cjs` · 매 세션 재실행
 >
 > **로드맵 · `docs/FRAMEWORK_ROADMAP.md` Phase 1 (인벤토리)**
 
@@ -8,39 +8,35 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 554 |
-| 위반 파일 | 6 |
-| 클린 파일 | 548 (99%) |
-| 총 위반 개수 | 6 |
+| 스캔 파일 | 595 |
+| 위반 파일 | 4 |
+| 클린 파일 | 591 (99%) |
+| 총 위반 개수 | 4 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
-| `large-file-critical` | 4 | 4 | high | 2000+라인 · 시급 · 서브 컴포넌트/훅 분리 필수 |
-| `large-file-warn` | 2 | 2 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `large-file-critical` | 1 | 1 | high | 2000+라인 · 시급 · 서브 컴포넌트/훅 분리 필수 |
+| `large-file-warn` | 3 | 3 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
 | 1 | `src/components/ContractWriterPage/ContractWriterPage.tsx` | 5483 | 48 | large-file-critical(1) |
-| 2 | `src/components/OcrPage/RawOcrTable.tsx` | 5260 | 48 | large-file-critical(1) |
-| 3 | `src/components/OrderManagePage/OrderManagePage.tsx` | 3090 | 32 | large-file-critical(1) |
-| 4 | `src/components/DisplayPage/DisplayPage.tsx` | 2714 | 24 | large-file-critical(1) |
-| 5 | `src/components/StaffManagePage/StaffManagePage.tsx` | 1917 | 6 | large-file-warn(1) |
-| 6 | `src/components/LandingPage/UploadDataModal.tsx` | 911 | 3 | large-file-warn(1) |
+| 2 | `src/components/OcrPage/RawOcrTable/RawInvoiceCard.tsx` | 1322 | 6 | large-file-warn(1) |
+| 3 | `src/components/StaffManagePage/StaffManagePage.tsx` | 1917 | 6 | large-file-warn(1) |
+| 4 | `src/components/LandingPage/UploadDataModal.tsx` | 911 | 3 | large-file-warn(1) |
 
-## 📝 모든 위반 파일 (6개)
+## 📝 모든 위반 파일 (4개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
 | `src/components/ContractWriterPage/ContractWriterPage.tsx` | 5483 | 48 |
-| `src/components/OcrPage/RawOcrTable.tsx` | 5260 | 48 |
-| `src/components/OrderManagePage/OrderManagePage.tsx` | 3090 | 32 |
-| `src/components/DisplayPage/DisplayPage.tsx` | 2714 | 24 |
+| `src/components/OcrPage/RawOcrTable/RawInvoiceCard.tsx` | 1322 | 6 |
 | `src/components/StaffManagePage/StaffManagePage.tsx` | 1917 | 6 |
 | `src/components/LandingPage/UploadDataModal.tsx` | 911 | 3 |
 

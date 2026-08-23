@@ -1,8 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useConfirm } from "../../hooks/useConfirm";
-// 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
-// 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../lib/apiClient";
 
 import type {
@@ -42,21 +40,14 @@ import { REPARSE_APPROACH_CYCLE, APPROACH_LABEL, APPROACH_SHORT, CONF_HEADERS, C
 import { useRowCallbacks } from "./RawOcrTable/useRowCallbacks";
 import { useAutoReparse } from "./RawOcrTable/useAutoReparse";
 
-// 외부 소비자(OcrPage.tsx)가 `import { type ConfirmedItem } from "./RawOcrTable"` 로 사용 중 → re-export 유지
-export type { ConfirmedItem };
+export type { ConfirmedItem }; // re-export for OcrPage.tsx consumers
 
 export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps, pageImages, rotation = -90, onReparsePage, barcodeMatches, balanceConfig: balanceConfigProp, onSaveConfirmed, onUserEdit }) => {
   const confirm = useConfirm();
-  // 2026-08-21 · Framework Phase 3 · alert → useToast
   const { toast, showError } = useToast();
-
-  // 2026-07-24 · 리팩터 · 페이지 snapshot
   const pages = usePagesSnapshot(pagesFromProps);
-  // 2026-07-24 · 리팩터 · 파생값 계산은 useOcrDerived 훅으로 분리
-  const derived = useOcrDerived(pages);
-  const { structuredPages, fallbackPages, masterH, dispHeaders, dispRows, rawRows, pageNums, amtIdx, nameIdx } = derived;
+  const { structuredPages, fallbackPages, dispHeaders, dispRows, rawRows, pageNums, amtIdx, nameIdx } = useOcrDerived(pages);
 
-  // ── 공급사 편집 상태 → useVendorEdit 훅으로 분리 ─────────────────────────
   const {
     vendorNames,
     vendorEditModal, setVendorEditModal,
@@ -67,11 +58,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     suppInputRef,
     openVendorEdit,
   } = useVendorEdit({ confirm, showError });
-
-  // ── 공급사 페이지별 편집값 (공급사 헤더 영역 인라인 편집) ───────────────
   const [rawSupplierByPage, setRawSupplierByPage] = useState<Record<number, string>>({});
-
-  // ── 품명 인라인 편집 상태 ─────────────────────────────────────────────────
   const [editingNameRow, setEditingNameRow] = useState<number | null>(null);
   const [editingNameVal, setEditingNameVal] = useState<string>("");
   const editingNameRowRef = useRef<number | null>(null);
@@ -82,8 +69,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const [nameDropdownRect, setNameDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const [deleteSynConfirm, setDeleteSynConfirm] = useState<{ ri: number; origName: string } | null>(null);
-
-  // ── 셀 체크 (복수 선택 · 다중 편집용) ───────────────────────────────────
   const [checkedCells, setCheckedCells] = useState<Set<string>>(new Set());
   const toggleCellCheck = useCallback((ri: number, ci: number) => {
     setCheckedCells(prev => { const n = new Set(prev); const k = `${ri}:${ci}`; if (n.has(k)) n.delete(k); else n.add(k); return n; });
@@ -104,7 +89,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     try { localStorage.setItem("ocr-discount-mode", JSON.stringify(discountApplyMode)); } catch { /* empty */ }
   }, [discountApplyMode]);
   const [pageSubtotalCustom, setPageSubtotalCustom] = useState<Record<number, number>>({});
-  const [pageSubtotalDropdownOpen, setPageSubtotalDropdownOpen] = useState<Set<number>>(new Set());
   const [pageSupplierBalances, setPageSupplierBalances] = useState<Record<number, number>>({});
   const [supplierBalanceRecords, setSupplierBalanceRecords] = useState<{ id: number; supplier_name: string; invoice_date: string | null; balance: number; created_at: string }[]>([]);
   const [pageBalanceOverride, setPageBalanceOverride] = useState<Record<number, number>>({});
@@ -223,21 +207,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     setCellEdits, setAmountCorrections, setPermanentlyDeletedRawRows,
     setHiddenRawRows, setReextractCycle,
   });
-
-  const shiftRowLeft = useCallback((ri: number) => {
-    const baseRow = effectiveDispRowsRef.current[ri] ?? dispRows[ri];
-    if (!Array.isArray(baseRow) || baseRow.length === 0) return;
-    const nextEdits: Record<number, string | number | null> = {};
-    for (let ci = 0; ci < baseRow.length; ci++) {
-      const src = ci + 1 < baseRow.length ? baseRow[ci + 1] : null;
-      nextEdits[ci] = src == null ? null : typeof src === "number" ? src : typeof src === "string" ? src : String(src);
-    }
-    setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), ...nextEdits } }));
-    setReextractCycle(prev => { if ((prev[ri] ?? 0) === 0) return prev; const next = { ...prev }; delete next[ri]; return next; });
-    console.log(`[shiftRowLeft] ri=${ri} · ${baseRow.length}개 셀 왼쪽 이동`);
-  }, [dispRows]);
-
-  // effectiveDispRows 참조용 ref (revertSingleRawRow 가 자기보다 뒤에 선언된 값 접근용)
 
   const [addSynonymsOnChange, setAddSynonymsOnChange] = useState(true);
   const [synonymAddStatus, setSynonymAddStatus] = useState<{ pageNum: number; status: 'loading' | 'done' | 'error'; count: number } | null>(null);
@@ -409,15 +378,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   const ocrSuppIdx = dispHeaders.indexOf("공급처");
   const globalSupplier = pages.map(p => p.meta.supplier).find(Boolean) ?? null;
 
-  // ── 공급사 미입력 페이지 검출 (필수 입력 검증 · 2026-07-15) ────────────
-  //   rawSupplierByPage 편집값 우선 → structuredPages meta.supplier 폴백
-  //   빈 문자열/null 이면 미입력으로 간주 → 자동보정·저장 차단
-  // ── 공급사 미입력 자동보완 → useMissingSupplierAutoFill 훅으로 분리 ──
   const { missingSupplierPages, hasMissingSupplier } = useMissingSupplierAutoFill({
     structuredPages, rawSupplierByPage, vendorNames, setRawSupplierByPage,
   });
-
-  // ── 동의어/공급사 콜백 → useSynonymCallbacks 훅으로 분리 ──────────────
   const _handleSynonymBulkAddRef = useRef<(pageNum: number, newSupplier: string) => Promise<void>>(async () => {});
   const {
     saveSynonym, deleteSynonymForRow, saveSupplierAlias, saveSupplierBalance,
@@ -430,50 +393,31 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     setReparseStatus, setSupplierBalanceRecords,
     handleSynonymBulkAddRef: _handleSynonymBulkAddRef,
   });
-  // 2026-07-28 · barcodeAutoMap 자동 바인딩 제거 · backward-compat 유지
   void barcodeMatches;
-  // 2026-07-24 · 템플릿 자동 저장 훅
   useAutoTemplateSave({ structuredPages, rawSupplierByPage, saveTemplate });
   const { commitCellEdit, handleRetry, searchByName, handleSelectCandidate } = useRowCallbacks({
-    dispHeaders, dispRows,
-    retryingRows, openCandRow, nameSearchDebounce,
-    selectCandidate, saveSynonym,
-    setCellEdits, setEditingCell,
-    setRetryingRows, setCandidatesMap, setOpenCandRow,
-    setNameSearchResults, setNameSearchOpenRow,
+    dispHeaders, dispRows, retryingRows, openCandRow, nameSearchDebounce,
+    selectCandidate, saveSynonym, setCellEdits, setEditingCell,
+    setRetryingRows, setCandidatesMap, setOpenCandRow, setNameSearchResults, setNameSearchOpenRow,
   });
-
-  // ── 확정표에 저장 (외부 콜백에 ConfirmedItem[] 전달) ──────────────────────
-  // 2026-07-28 · 리팩터 · useSaveConfirmed 훅으로 분리
   const { handleSaveConfirmed } = useSaveConfirmed({
-    onSaveConfirmed,
-    pageImages,
+    onSaveConfirmed, pageImages,
     rowData: { effectiveDispRows, pageNums, dispHeaders, nameIdx, amtIdx, ocrSuppIdx, ocrQtyIdx, ocrPriIdx },
     supplierData: { rawSupplierByPage, supplierOverrides, globalSupplier, missingSupplierPages, structuredPages },
     matchData: { matchItems, cancelledRows, selectedCands, cancelledAutoMap, autoSynonymMatches, barcodeAutoMap, cancelledAutoSyn, overrides },
     balanceData: { pageSupplierBalances, pageBalanceOverride, pageBalanceFromConfig, discountApplyMode, pageSubtotalChoices, erpCellEdits, confirmedAt },
     filterData: { permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted },
-    getPageDiscount,
-    getPageDisplayTotal,
-    setSaveConfirmedToast,
-    setSavingConfirmed,
+    getPageDiscount, getPageDisplayTotal, setSaveConfirmedToast, setSavingConfirmed,
   });
-
-  // ── 2차보정 매칭 → useHandleMatch 훅으로 분리 ─────────────────────────────────────
   const { handleMatch } = useHandleMatch({
     nameIdx, ocrSuppIdx, dispRows, pageNums,
     rawSupplierByPage, structuredPages, globalSupplier,
     missingSupplierPages, cellEdits, autoSynonymMatches,
     hiddenRawRows, permanentlyDeletedRawRows, isRowDbDeleted,
-    showError, setMatching, setMatchItems,
-    setOverrides, setSupplierOverrides, setConfirmed,
-    setSavedSynonyms, setSavedSupplierAliases,
-    setRetryingRows, setCandidatesMap, setOpenCandRow,
+    showError, setMatching, setMatchItems, setOverrides, setSupplierOverrides, setConfirmed,
+    setSavedSynonyms, setSavedSupplierAliases, setRetryingRows, setCandidatesMap, setOpenCandRow,
     setSelectedCands, setCancelledRows,
   });
-
-  // 2026-07-28 · 리팩터 · handleMatchPage · fillMissingPricesFromDB · verifyAndSwapPricesWithDB
-  //   → useHandleMatchPage 훅으로 분리
   const { matchingPage, handleMatchPage, fillMissingPricesFromDB, verifyAndSwapPricesWithDB } = useHandleMatchPage({
     dispHeaders, dispRows, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx,
     structuredPages, globalSupplier, cellEdits, autoSynonymMatches,
@@ -483,22 +427,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     setCellEdits, setDbFilledCells, setSaveConfirmedToast, matchItemsRef,
   });
 
-  // 2026-07-28 · 리팩터 · matchRawToPurchaseHistory → usePurchaseHistoryMatch 훅으로 분리
   const { matchRawToPurchaseHistory } = usePurchaseHistoryMatch({
     dispHeaders, matchItems, dispRows, pageNums,
     permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted,
     setCellEdits, setDbFilledCells, setSaveConfirmedToast,
   });
 
-  // 2026-07-23 · 사용자 요청 "품명 재추출 · 수량·금액 있는 행의 한글 · 공급사 DB 매칭되는 것으로"
-  //   1. 현재 행의 수량·금액 있는지 확인 (없으면 스킵 · 경고)
-  //   2. rawText 에서 현재 품명 앵커 앞뒤로 한글 토큰(3자+) 수집
-  //   3. 각 후보를 /api/products-search 에 공급사 필터로 조회
-  //   4. 첫 매칭 → autoSynonymMatches[ri] 저장 (동의어 자동 등록)
-  //   5. 매칭 실패 시 · 가장 긴 한글 토큰을 cellEdits 로 저장 (사용자 확인용)
   const [reextractingName, setReextractingName] = useState<Set<number>>(new Set());
-  // 2026-07-24 · 사용자 요청 "재추출 순환 · 품명 헤더 이후 값 우선순위"
-  //   ri → 후보 배열 · 현재 순환 인덱스 (-1 = DB 매칭 시도 중, 0+ = 후보 순환)
   const [nameCellCandidates, setNameCellCandidates] = useState<Record<number, string[]>>({});
   const [nameCellCycle, setNameCellCycle] = useState<Record<number, number>>({});
   const { reextractProductName } = useReextractProductName({
@@ -511,7 +446,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     setMatchItems, setCellEdits,
   });
 
-  // 2026-07-28 · 리팩터 · runColumnPipeline + 자동파이프라인 → useAutoPipeline 훅으로 분리
   const { runColumnPipeline, runningPipeline } = useAutoPipeline({
     structuredPages, confirmedPages, pageNums,
     cellEdits, autoSynonymMatches,
@@ -521,9 +455,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
 
   useAutoReparse({ structuredPages, pageImages, effectivePageTotals, rawSupplierByPage, onReparsePage, setSaveConfirmedToast });
 
-  // CONF_HEADERS / COL_ALIAS imported from ocrConstants
-
-  // ── XLS 서식 파일 상태 → useXlsTemplate 훅으로 분리 ─────────────────────
   const {
     xlsTemplate, setXlsTemplate,
     xlsTemplateName, setXlsTemplateName,
@@ -537,7 +468,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
       .then(({ data }) => { if (Array.isArray(data.balances)) setSupplierBalanceRecords(data.balances); })
       .catch(() => {});
   }, []);
-  // 2026-07-24 · 리팩터 · 잔고 자동 로드는 useAutoBalanceLoad 훅으로 분리
   useAutoBalanceLoad({ supplierBalanceRecords, structuredPages, rawSupplierByPage, setPageBalanceOverride });
 
 
