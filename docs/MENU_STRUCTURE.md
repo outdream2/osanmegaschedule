@@ -1816,6 +1816,7 @@ Part I 이 서브탭·기능 요약이라면 · Part IV 는 **"어떤 버튼을 
 | `receipt` (violet) | goods_receipts · **[OCR]** · **[확정]** → `PATCH /api/goods-receipts/:id/confirm` |
 | `scan` (amber) | `ScanPage` (embedded) |
 | `productarrival` (teal) | `ProductArrivalPage` (embedded) · 검수 |
+| `productinfo` (indigo · **#177 · 2026-08-23**) | `ProductInfoPage` · 마스터-디테일 (좌 리스트 · 우 상세) · **상품 신규 등록**(POST `/api/products` · `authorize(5)`) · **인라인 편집**(PATCH `/api/products/:code`) · SplitListPanel + Modal + Card 프리미티브 · 권한: admin OR manager lv5+ |
 | `reconciliation` (emerald) | `StockReconciliationTab` · 시스템 vs 실재고 |
 
 매입이력 세부 (Phase A/B/C · #191): 좌 vendor (`SupplierTab` embedded) or product (`ProductRowCard`) · 우 KPI 4카드 (`VendorHeaderPanel`) + 매입원장/상품별/추이 3탭 (`PurchaseSubTabs`) + 3파이차트 (`CategoryPieChart` · `TopProductsPieChart` · `MonthlyPieChart`) · 계절 필터 (`SeasonButtons` · `useSeasonRanges` · MyPage 편집)
