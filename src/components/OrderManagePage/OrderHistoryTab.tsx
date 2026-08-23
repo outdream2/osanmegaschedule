@@ -8,6 +8,8 @@ import { Package, ChevronDown, ChevronRight, Mail, Phone, User, Calendar, Calend
 import { Spinner } from "../common/Spinner";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { PageToolbar } from "../common/PageToolbar";
+// 2026-08-23 · #180 · 공급사·상품 검색 SearchBar
+import { SearchBar } from "../common/SearchBar";
 import { AccentBar } from "../common/AccentBar";
 import { InlineLabel } from "../common/InlineLabel";
 import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
@@ -51,6 +53,8 @@ export const OrderHistoryTab: React.FC = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [days, setDays] = useState(90);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // 2026-08-23 · #180 · 검색 · 공급사·상품 부분일치 (한글 초성 지원 시 SearchBar 내장)
+  const [search, setSearch] = useState("");
 
   const load = React.useCallback(() => {
     setLoading(true);
@@ -83,8 +87,18 @@ export const OrderHistoryTab: React.FC = () => {
     });
 
   const fmtWon = (n: number) => n.toLocaleString() + "원";
-  const totalAmount = orders.reduce((s, o) => s + (o.total_amount ?? 0), 0);
-  const totalItems = orders.reduce((s, o) => s + o.items.length, 0);
+  // 2026-08-23 · #180 · 검색어 · 공급사명 or 상품명 부분일치 필터
+  const filteredOrders = React.useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return orders;
+    return orders.filter(o => {
+      const vendorMatch = String(displayVendorName(o.supplier ?? "")).toLowerCase().includes(q);
+      const productMatch = o.items.some(it => String(it.product_name ?? "").toLowerCase().includes(q));
+      return vendorMatch || productMatch;
+    });
+  }, [orders, search]);
+  const totalAmount = filteredOrders.reduce((s, o) => s + (o.total_amount ?? 0), 0);
+  const totalItems = filteredOrders.reduce((s, o) => s + o.items.length, 0);
 
   return (
     <>
@@ -96,7 +110,7 @@ export const OrderHistoryTab: React.FC = () => {
       <PageToolbar
         icon={<Package size={18} strokeWidth={2.2} />}
         title="발주이력"
-        count={orders.length}
+        count={filteredOrders.length}
         leftSlot={
           <span className="text-[13px] font-medium text-ink-soft tracking-tight tabular-nums">
             {totalItems}종 · {fmtWon(totalAmount)}
@@ -122,6 +136,13 @@ export const OrderHistoryTab: React.FC = () => {
         }
       />
 
+      {/* 2026-08-23 · #180 · 검색바 · 공급사명·상품명 부분일치 */}
+      <SearchBar
+        value={search}
+        onChange={setSearch}
+        placeholder="공급사·상품 검색"
+      />
+
       {/* 마이그레이션 안내 · 폰트 +2 */}
       {notice && (
         <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" padding="sm" className="text-[14px] text-amber-800">
@@ -139,11 +160,13 @@ export const OrderHistoryTab: React.FC = () => {
           </div>
         ) : error ? (
           <div className="p-8 text-center text-rose-600 text-[15px] font-bold">⚠ {error}</div>
-        ) : orders.length === 0 ? (
-          <div className="p-12 text-center text-zinc-400 text-[15px]">발주 이력 없음 · 발주 완료 시 여기에 표시</div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="p-12 text-center text-zinc-400 text-[15px]">
+            {search.trim() ? "검색 결과 없음 · 다른 검색어로 시도하세요" : "발주 이력 없음 · 발주 완료 시 여기에 표시"}
+          </div>
         ) : (
           <div className="divide-y divide-zinc-100">
-            {orders.map((o) => {
+            {filteredOrders.map((o) => {
               const key = String(o.order_number ?? o.sent_at);
               const isOpen = expanded.has(key);
               return (
