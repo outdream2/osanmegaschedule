@@ -6,6 +6,7 @@ import { MessageCircle, Send, Pencil, Check } from "lucide-react";
 import { api } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { Spinner } from "../common/Spinner";
+import { Modal } from "../common/Modal";
 import type { AuthSession } from "../../types";
 import type { BoardPost, Employee } from "./types";
 import { timeAgo, AuthorBadge } from "./utils";
@@ -156,18 +157,27 @@ export const InlineDetail: React.FC<{
           )}
         </div>
       )}
-      {/* 사진 원본 미리보기 모달 (닫기 버튼 · 배경 클릭 · × 버튼) */}
+      {/* 사진 원본 미리보기 · 2026-08-23 · #191 · Modal primitive · brand-strong backdrop */}
       {previewImg && (
-        // 2026-08-17 v2 · 이미지 뷰어 · 강조 backdrop
-        <div className="fixed inset-0 z-[60] backdrop-brand-strong flex items-center justify-center p-4" onClick={() => setPreviewImg(null)}>
-          <button
-            type="button"
-            onClick={() => setPreviewImg(null)}
-            className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-zinc-800 text-2xl leading-none font-bold shadow-lg flex items-center justify-center cursor-pointer"
-            aria-label="닫기"
-          >×</button>
-          <img src={previewImg} alt="" className="max-w-full max-h-full object-contain rounded-xl" onClick={e => e.stopPropagation()} />
-        </div>
+        <Modal
+          open
+          onClose={() => setPreviewImg(null)}
+          size="full"
+          bodyPadding="none"
+          showClose={false}
+          backdropIntensity="brand-strong"
+          zIndex={60}
+        >
+          <div className="relative flex items-center justify-center p-4 min-h-[80vh]">
+            <button
+              type="button"
+              onClick={() => setPreviewImg(null)}
+              className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-zinc-800 text-2xl leading-none font-bold shadow-lg flex items-center justify-center cursor-pointer"
+              aria-label="닫기"
+            >×</button>
+            <img src={previewImg} alt="" className="max-w-full max-h-[85vh] object-contain rounded-xl" />
+          </div>
+        </Modal>
       )}
     </div>
   );

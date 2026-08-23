@@ -393,8 +393,9 @@
 - ✅ SideNav · 사이드바 items · 뷰포트별 필터 · isVisible(pageKey, viewport)
 - ✅ 빈 그룹 자동 제거 · landing 예외 (무조건 노출)
 
-**남은 작업** (선택):
-- 🔲 공통헤더 (AppNavHeader) · 뷰포트별 탭 필터 (사이드바와 동일 원칙)
+**Phase 5 · 공통헤더 뷰포트 필터** ✅ **완료 (2026-08-23)**:
+- ✅ AppNavHeader · `usePageVisibility` · `isPageVisible(t.key, viewport)` · line 181
+- ✅ visibleTabs · 뷰포트별 필터 · 사이드바와 동일 원칙 · 회귀 없음
 
 **관련 메모리** · `.claude/memory/project_page_visibility.md`
 

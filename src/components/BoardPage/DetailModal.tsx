@@ -469,17 +469,27 @@ export function DetailModal({
           </>
         )}
 
-        {/* 이미지 프리뷰 */}
+        {/* 이미지 프리뷰 · 2026-08-23 · #191 · Modal primitive · brand-strong backdrop */}
         {previewImg && (
-          <div className="fixed inset-0 z-[60] backdrop-brand-strong flex items-center justify-center p-4" onClick={() => setPreviewImg(null)}>
-            <img src={previewImg} alt="" className="max-w-full max-h-full object-contain rounded-xl" onClick={e => e.stopPropagation()} />
-            <button
-              type="button"
-              onClick={() => setPreviewImg(null)}
-              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-zinc-800 text-2xl leading-none font-bold shadow-lg flex items-center justify-center cursor-pointer"
-              aria-label="닫기"
-            >×</button>
-          </div>
+          <Modal
+            open
+            onClose={() => setPreviewImg(null)}
+            size="full"
+            bodyPadding="none"
+            showClose={false}
+            backdropIntensity="brand-strong"
+            zIndex={60}
+          >
+            <div className="relative flex items-center justify-center p-4 min-h-[80vh]">
+              <img src={previewImg} alt="" className="max-w-full max-h-[85vh] object-contain rounded-xl" />
+              <button
+                type="button"
+                onClick={() => setPreviewImg(null)}
+                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-zinc-800 text-2xl leading-none font-bold shadow-lg flex items-center justify-center cursor-pointer"
+                aria-label="닫기"
+              >×</button>
+            </div>
+          </Modal>
         )}
       </Modal>
       {/* toast */}
