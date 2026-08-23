@@ -166,3 +166,37 @@ describe("Card · className + style + a11y", () => {
     expect(container.firstElementChild!.getAttribute("role")).toBe("region");
   });
 });
+
+// 2026-08-23 · v2 · bg + borderColor 커스텀 색상 지원
+describe("Card · v2 · bg + borderColor", () => {
+  it("bg=undefined (기본) · bg-white", () => {
+    const { container } = render(<Card>x</Card>);
+    expect(container.firstElementChild!.className).toContain("bg-white");
+  });
+
+  it("bg=bg-rose-50 · 커스텀 배경 적용 · bg-white 대체", () => {
+    const { container } = render(<Card bg="bg-rose-50">x</Card>);
+    const cls = container.firstElementChild!.className;
+    expect(cls).toContain("bg-rose-50");
+    expect(cls).not.toContain("bg-white");
+  });
+
+  it("borderColor=undefined (기본) · border-line", () => {
+    const { container } = render(<Card>x</Card>);
+    expect(container.firstElementChild!.className).toContain("border-line");
+  });
+
+  it("borderColor=border-rose-200 · 커스텀 border 적용 · border-line 대체", () => {
+    const { container } = render(<Card borderColor="border-rose-200">x</Card>);
+    const cls = container.firstElementChild!.className;
+    expect(cls).toContain("border-rose-200");
+    expect(cls).not.toContain("border-line");
+  });
+
+  it("bg + borderColor 조합 · 둘 다 반영", () => {
+    const { container } = render(<Card bg="bg-amber-50" borderColor="border-amber-200/80">x</Card>);
+    const cls = container.firstElementChild!.className;
+    expect(cls).toContain("bg-amber-50");
+    expect(cls).toContain("border-amber-200/80");
+  });
+});
