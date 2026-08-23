@@ -289,13 +289,17 @@
   - 서버 API 확장 필요 여부 (현재 client-side filter 가능 · limit 초과 시 서버 filter 필요)
 - 💡 프레임워크 원칙 준수 · SearchBar·EmptyState·useSortableTable 재사용
 
-### #179 · 바코드 스캔 · 미등록 상품 즉시 등록 UX (신규 · 2026-08-21)
+### #179 · 바코드 스캔 · 미등록 상품 즉시 등록 UX (신규 · 2026-08-21 · **권한 확정 2026-08-23**)
 - 🔲 BarcodeScanner · 스캔 결과 · products 테이블에 없으면 · **"상품 추가" 자동 유도**
 - 🔲 미등록 감지 시 · 상품 등록 모달 (#177 페이지의 모달 버전) 오픈
 - 🔲 모달 · `product_code` 필드 · 스캔된 바코드로 **자동 채움** · readonly 표시
 - 🔲 저장 성공 시 · 스캔 흐름 계속 (예: 실재고 입력·발주 등 원래 flow)
 - 🔲 취소 시 · 스캔 화면 복귀
 - 🔲 #177 상품 등록 페이지 · 모달 형태로도 재사용 가능한 구조 필요 (프레임워크화)
+- ✅ **권한 확정 (2026-08-23 사용자 지시)** · **관리자 전체 + 매니저 level 5 이상만** 상품 등록 가능
+  - `authSession.role === "admin"` OR (`role === "manager"` AND `level >= 5`)
+  - 서버 라우터 · 미들웨어에서 권한 검증 (401/403)
+  - 프론트 · 조건부 UI (버튼 노출 여부)
 - 💡 스펙 결정 필요:
   - 모달 재사용 · 페이지 컴포넌트 안에 `Modal` wrapper 감쌈 or 페이지·모달 각각 별도 컴포넌트?
   - 자동 감지 조건 · products.product_code 정확 일치 시만 or fuzzy?
@@ -317,51 +321,62 @@
   - `vendor_order_templates` 별도 페이지 or 조회 전용
   - xlsx import 즉시 vs 수동 트리거
 
-### #177 · 상품 등록/조회 · 매장>매입 서브탭 통합 (신규 · 2026-08-20 · **확장 · 2026-08-21**)
+### #177 · 상품정보 페이지 신설 · 매장>매입 탭 확장 (신규 · 2026-08-20 · **확장 · 2026-08-21 · 스펙 확정 2026-08-23**)
 
-**Phase A · 서브탭 이름 및 구조 변경**
-- 🔲 매장>매입 서브탭 · **"상품입고" → "상품조회"** 라벨 변경 (OrderManagePage.tsx 1313행 · `productarrival` key)
-- 🔲 ProductArrivalPage 내부 · **"입고내역" 탭 삭제** · 상품입고 탭 하나로 통일
-- 🔲 페이지 명 통일 · "상품입고 페이지" → "상품조회 페이지" (내부 문구·주석)
-- 🔲 사이드바 · 관련 라벨도 갱신 (sideNavGroups.ts 확인)
+**최종 스펙 (2026-08-23 사용자 확정)**:
+- **구조** · 매장 > 매입 > **"상품입고"** 옆에 **"상품정보"** 페이지 신설 · **탭으로 상품입고 ↔ 상품정보 전환**
+- **UI 레이아웃** · 마스터-디테일 · SplitPanel 프리미티브 사용
+  - **PC (lg+)** · 좌측 상품리스트 · 오른쪽 상세정보 (SplitPanel · 리사이저)
+  - **모바일** · 좌측 상품리스트만 표시 · 클릭 시 상세정보 **모달** 오픈 (반응형)
+- **UI 프레임워크 필수** · SplitPanel · Card · Modal · SearchBar · StatusPill · SortableTable 등 프리미티브 활용
+- **권한 (2026-08-23 확정)** · 관리자 전체 + 매니저 **level 5 이상** (조회·등록·수정 모두)
+  - `authSession.role === "admin"` OR (`role === "manager"` AND `level >= 5`)
+  - 서버 · 미들웨어 검증 · 프론트 · 조건부 UI
 
-**Phase B · 상품 조회 기능 추가**
-- 🔲 상품 검색 (SearchBar 프리미티브 · 한글 초성 검색 지원)
-- 🔲 필터 · 공급사·카테고리·재고 상태
-- 🔲 리스트 · 상품명·코드·공급사·재고 컬럼 · 정렬
-- 🔲 클릭 시 · ProductDetailPanel or 상세 모달
+**Phase A · 매장>매입 탭 확장**
+- 🔲 매장>매입 서브탭에 **"상품정보"** 탭 신규 추가 (`productinfo` key)
+- 🔲 기존 "상품입고" 탭 유지 (ProductArrivalPage) · "상품정보" 신설 (ProductInfoPage)
+- 🔲 탭 순서 · 상품입고 → 상품정보 (또는 사용자 결정)
+- 🔲 사이드바 · sideNavGroups.ts · 관련 라벨 확인
 
-**Phase C · 상품 등록 기능 추가**
-- 🔲 "+ 상품 등록" 버튼 · 모달 or 페이지 상단 폼
+**Phase B · ProductInfoPage 신설 · UI 레이아웃 (마스터-디테일)**
+- 🔲 **SplitPanel 사용** · 좌측 리스트 (기본 40%) · 우측 상세 (60%) · 리사이저 (useResizablePanel 훅)
+- 🔲 **좌측 상품리스트**:
+  - SearchBar 프리미티브 (한글 초성 검색)
+  - 필터 · 공급사·카테고리·재고 상태 (Card · StatusPill)
+  - 리스트 · 상품명·코드·공급사·재고 컬럼 · 정렬 (useSortableTable)
+  - 클릭 시 · 선택된 상품 highlight + 우측 상세 로드
+- 🔲 **PC (lg+)** · 우측 패널에 상세 표시 (ProductDetailPanel 재사용 · 편집 모드 토글)
+- 🔲 **모바일 (max-lg)** · 상세 · Modal primitive (v3 · align="bottom-mobile" or center) · SplitPanel 자동 스택
+  - Modal · `size="lg-narrow"` or `"3xl"` · title=상품명
+  - useMediaQuery 훅 활용 (또는 CSS `lg:hidden`/`hidden lg:block`)
+- 🔲 상세 필드 조회 · product_name · code · supplier · category · unit · barcode · spec · price · optimal_stock · real_map · 이미지 등
+
+**Phase C · 상품 등록 기능**
+- 🔲 좌측 리스트 상단 · **"+ 상품 등록" 버튼** (권한 통과 시만 노출)
+- 🔲 클릭 시 · Modal (신규 등록 폼) 열림
 - 🔲 기능 · `products` 테이블 INSERT (기존 컬럼 재사용 · 파생컬럼 X)
-- 🔲 서버 · POST `/api/products` · asyncHandler + HttpError + Zod
+- 🔲 서버 · POST `/api/products` · asyncHandler + HttpError + Zod · **권한 미들웨어**
 - 🔲 Zod 스키마 · `src/shared/schemas/products.ts` 확장 or 신규 CreateProductSchema
 - 🔲 프론트 · apiClient · useToast · 프레임워크 원칙 준수
 - 🔲 중복 검사 · product_code unique
 
-**Phase D · 상품 수정 기능 추가 (2026-08-21)**
-- 🔲 상세 패널/모달 · **편집 모드 토글** (조회 → 편집 → 저장/취소 UX · StaffManagePage 벤치마크)
+**Phase D · 상품 수정 기능 (인라인 편집)**
+- 🔲 우측 상세 (PC) / 모달 (Mobile) · **편집 모드 토글** (조회 → 편집 → 저장/취소 UX · StaffManagePage 벤치마크)
 - 🔲 편집 가능 필드 · product_name · supplier · category · unit · barcode · spec · price · optimal_stock · real_map 등 (product_code 는 read-only)
-- 🔲 서버 · PATCH `/api/products/:id` · asyncHandler + HttpError + Zod (UpdateProductSchema · partial fields)
-- 🔲 Zod 스키마 · `src/shared/schemas/products.ts` · UpdateProductSchema (모든 필드 optional)
+- 🔲 서버 · PATCH `/api/products/:id` · asyncHandler + HttpError + Zod (UpdateProductSchema · partial fields) · **권한 미들웨어**
+- 🔲 Zod 스키마 · UpdateProductSchema (모든 필드 optional)
 - 🔲 프론트 · api.patch · useToast (성공 · 실패 tone) · useConfirm (변경 취소 확인)
 - 🔲 유효성 · product_code 변경 금지 · barcode 중복 검사 (자기 자신 제외)
 - 🔲 편집 후 · productsCache 무효화 (lookupProduct fresh)
-- 🔲 권한 · 관리자 lv8+ 만 수정 가능 (조회는 lv2+)
 - 🔲 감사 로그 (선택) · 누가·언제·무엇을 바꿨는지 (product_edit_log 별도 태스크로 분리 가능)
 
 **공통 · 프레임워크 원칙 준수**
-- Card·SearchBar·Modal·SortableHeader 프리미티브 재사용
-- 대원칙 14·16 · 매 단계 TS+test 검증 · 위험 작업 전 로컬 커밋
+- **필수 프리미티브** · SplitPanel · Card · Modal · SearchBar · SortableHeader · StatusPill · useResizablePanel · useSortableTable · useToast · useConfirm · apiClient
+- 대원칙 · 매 단계 TS+build+test 검증 · 위험 작업 전 로컬 커밋 · UI 목업 파일 기준
+- **StaffManagePage 마스터-디테일 벤치마크** (참고 구조 · StaffToolbar · StaffListPanel · StaffDetailPanel · StaffMobileDetail 등)
 
-**의존 · #179 (바코드 스캔 미등록 상품 즉시 등록)** · 상품 등록 모달 재사용 구조 필요
-
-**💡 스펙 확정 필요**:
-- 최소권한 (매니저 lv2 or 관리자 lv9)
-- 필드 세트 (product_code · product_name · supplier · category · unit · barcode · spec · price · ...)
-- 배치 · 조회/등록 통합 페이지 or 별도 탭
-- 등록 방식 · 모달 vs 페이지 상단 폼
-- 스캔 연동 · 바코드 자동 채움 (→ #179 연계)
+**의존 · #179 (바코드 스캔 미등록 상품 즉시 등록)** · 상품 등록 모달 재사용 구조 필요 (권한도 동일 · 관리자+매니저lv5+)
 
 ### #175 · 직원정보 · 퇴사예정 분류 + 사직서 조건부 노출 (✅ 완료 · 2026-08-20 · `2bc6ef8`)
 - ✅ 3-state 파생 · retire_date null=재직 · 미래=**퇴사예정** · 오늘이하=퇴사 (`d2cc2a6`)
