@@ -67,6 +67,24 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #205 · 모든 페이지 · 공통 푸터 (Footer) 적용 (신규 · 2026-08-23)
+- 📄 대상 · 앱 전체 · 모든 라우팅 페이지 (Landing · StaffManage · OrderManage · Display · Schedule · ScanPage · PermissionsPage · Board · MyPage · Contract · Resignation · ProductInfoPage 등)
+- 🎯 목표 · **모든 페이지 하단** · 공통 푸터 · 통일된 정보 노출
+- 🔲 구현 방향:
+  - **신규 프리미티브** · `src/components/common/AppFooter.tsx` (또는 `layout/AppFooter.tsx`)
+  - App.tsx or 라우팅 shell · 모든 페이지 wrapping · 자동 하단 노출
+  - 또는 각 페이지 · `<AppFooter />` 명시적 삽입
+- 🔲 푸터 내용 (기본):
+  - © 2026 오산 메가타운 약국 (or 브랜드 · useBrandIdentity 활용)
+  - 버전 정보 (선택 · package.json version)
+  - 관리자 링크 (선택 · 조건부)
+  - 링크 · 이용약관 · 개인정보처리방침 (선택)
+- 🔲 스타일 · Linear/Vercel 톤 · 얇은 회색 border-t · 12-14px · zinc-400 · min-h-40px
+- 🔲 예외 페이지 · 로그인 · 전체화면 모달 · BarcodeScanner 등 · footer 미노출 옵션
+- 🔲 반응형 · 모바일 vs PC · 축약 vs 상세
+- 💡 프레임워크 · Card · IconTile · StatusPill 등 재사용 여부
+- 💡 대원칙 · UI 목업 참조 · Linear/Vercel 톤 · 회귀 X
+
 ### #204 · 스캔페이지 · 개별 상품 저장 버튼 + 다음 스캔 시 이전 상세 접기 (신규 · 2026-08-23)
 - 📄 대상 · ScanPage · StockRowCard (스캔한 상품 카드)
 - 🎯 요구사항:
