@@ -1,13 +1,14 @@
 // src/components/LandingPage/UploadDataModal.tsx
 // 2026-08-23 · Framework Phase 4 · ImportLogTab + StockUploadTab 분리
+// 2026-08-23 · #191 · Modal primitive 마이그레이션
 import React, { useState, useRef, useEffect } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../hooks/useToast";
-import { X, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import { Table, CheckCircle } from "@phosphor-icons/react";
 import type { AuthSession } from "../../types";
-import { Card } from "../common/Card";
+import { Modal } from "../common/Modal";
 import { IconTile } from "../common/IconTile";
 import { StatusPill } from "../common/StatusPill";
 import { PeriodCoverageWidget } from "./PeriodCoverageWidget";
@@ -304,18 +305,15 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-brand p-2 sm:p-4" onClick={onClose}>
-      <Card variant="brand-modal" rounded="2xl" padding="none" className="p-4 sm:p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <IconTile icon={<Table size={15} weight="fill" />} tone="orange" size="lg" />
-            <span className="text-gray-900 font-bold text-sm">데이터 업로드</span>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition cursor-pointer"><X size={18} /></button>
-        </div>
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="md"
+      icon={<IconTile icon={<Table size={15} weight="fill" />} tone="orange" size="lg" />}
+      title="데이터 업로드"
+      className="max-h-[92vh]"
+    >
 
         {/* 서브탭 */}
         <div className="w-full mb-4">
@@ -618,7 +616,6 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
             setLogFilter={setLogFilter}
           />
         )}
-      </Card>
-    </div>
+    </Modal>
   );
 };
