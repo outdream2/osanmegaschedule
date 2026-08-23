@@ -9,6 +9,8 @@ import { Monitor } from "lucide-react";
 import type { AuthSession } from "../../types";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { useMobilePageLevel } from "../../hooks/useMobilePageLevel";
+// 2026-08-23 · #188 · usePageVisibility 통합 · PC/모바일 체크박스 우선 · 없으면 레벨 fallback
+import { usePageVisibility } from "../../hooks/usePageVisibility";
 import { deriveUserLevel } from "../layout/sideNavGroups";
 
 interface MobileOnlyGateProps {
@@ -24,6 +26,8 @@ export const MobileOnlyGate: React.FC<MobileOnlyGateProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const { getMinLevel } = useMobilePageLevel();
+  // 2026-08-23 · #188 · usePageVisibility (PC/모바일 체크박스) · 우선
+  const { isVisible } = usePageVisibility();
 
   // PC · 무조건 통과
   if (!isMobile) return <>{children}</>;
@@ -31,12 +35,23 @@ export const MobileOnlyGate: React.FC<MobileOnlyGateProps> = ({
   // landing 은 · 누구나 · 예외 없이 통과 (로그인 화면 · 접근 차단 금지)
   if (pageKey === "landing") return <>{children}</>;
 
+  // 2026-08-23 · #188 · usePageVisibility · mobile OFF · 차단 (레벨 무시)
+  //   · 신규 UI 에서 명시적으로 체크 해제한 경우 · 사용자 의도 우선
+  if (!isVisible(pageKey, "mobile")) {
+    return renderBlocked();
+  }
+
   const minLevel = getMinLevel(pageKey);
   if (minLevel <= 0) return <>{children}</>;
 
   const userLevel = deriveUserLevel(authSession);
   if (userLevel >= minLevel) return <>{children}</>;
 
+  return renderBlocked();
+};
+
+// 2026-08-23 · #188 · PC 전용 차단 UI · usePageVisibility 와 레벨 gate 양쪽 재사용
+function renderBlocked() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-50 p-8">
       <div className="max-w-sm text-center space-y-3">
@@ -50,6 +65,6 @@ export const MobileOnlyGate: React.FC<MobileOnlyGateProps> = ({
       </div>
     </div>
   );
-};
+}
 
 export default MobileOnlyGate;

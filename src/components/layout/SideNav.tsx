@@ -8,6 +8,8 @@ import { LogOut } from "lucide-react";
 // 2026-08-12 · 접힘 아이콘 · CaretDown (Radix/shadcn 표준 · 부드러운 화살표)
 import { CaretDown } from "@phosphor-icons/react";
 import { useIsMobile } from "../../hooks/use-mobile";
+// 2026-08-23 · #188 · usePageVisibility · 사이드바 items · 뷰포트별 필터
+import { usePageVisibility } from "../../hooks/usePageVisibility";
 import { NotificationBell } from "../NotificationBell";
 import { NotificationToggle } from "../NotificationToggle";
 import {
@@ -337,7 +339,16 @@ export const SideNav: React.FC<SideNavProps> = ({
   const { perms } = usePagePermissions();
   // 2026-08-20 · #175 · 본인 재직 상태 · document-writer 서브탭 filter · admin·pending_resignation 만 노출
   const { status: employmentStatus } = useEmploymentStatus(authSession);
-  const groups = filterGroupsForSession(authSession, perms, employmentStatus).filter(g => !(isMobile && g.hideOnMobile));
+  // 2026-08-23 · #188 · usePageVisibility (PC/모바일 체크박스) · 뷰포트별 필터
+  const { isVisible } = usePageVisibility();
+  const viewport = isMobile ? "mobile" : "pc";
+  const groups = filterGroupsForSession(authSession, perms, employmentStatus)
+    .filter(g => !(isMobile && g.hideOnMobile))
+    .map(g => ({
+      ...g,
+      items: g.items.filter(it => it.key === "landing" || isVisible(it.key as string, viewport)),
+    }))
+    .filter(g => g.items.length > 0);
   const { width, startResize } = useSidebarWidth();
   const { brand } = useBrandIdentity();
 
