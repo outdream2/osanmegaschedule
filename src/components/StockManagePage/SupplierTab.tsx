@@ -26,6 +26,8 @@ import type { SupplierAgg, SupListSortKey, SupDetailSortKey, SupplierGroup } fro
 import { fmt } from "./SupplierTab.types";
 // 2026-08-22 · Framework Phase 4 · 3섹션 별도 컴포넌트 이관
 import { SupplierDetailPanel, SupplierDetailModalWrapper, ProductPurchaseHistoryModalWrapper, SupplierFilterBar } from "./SupplierTab.panels";
+// 2026-08-23 · #198 Phase 3 · SplitListPanel v3 이관 · 프레임워크 통일
+import { SplitListPanel } from "../common/SplitListPanel";
 
 const fmtWon = fmtWonCompact;
 
@@ -376,38 +378,42 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   }, [showCycleColumn]);
 
   // ── 좌측 리스트 카드 내부 (헤더 + 분류 + 정렬 + 테이블) · embedded/non-embedded 공용 ──
+  // 2026-08-23 · #198 Phase 3 · SplitListPanel v3 이관 · 프레임워크 통일
   const renderSupplierListCard = () => (
-    <>
-      {/* 카드 헤더 */}
-      <div className="flex items-center gap-2 px-4 h-10 border-b border-zinc-100 bg-white shrink-0">
-        <Building2 size={14} className="text-sky-500 shrink-0" />
-        <span className={`${TEXT.body} text-zinc-800`}>공급사별 현황</span>
+    <SplitListPanel
+      title={
+        <span className="inline-flex items-center gap-1.5">
+          <Building2 size={14} className="text-sky-500 shrink-0" />
+          <span className={TEXT.body}>공급사별 현황</span>
+        </span>
+      }
+      countDisplay={
         <span className="text-[15px] font-semibold tabular-nums text-zinc-400 bg-zinc-50 border border-line rounded px-1.5 py-0.5">
           {displayedXlsxSuppliers.length}{supListLimit < xlsxSuppliers.length ? `/${xlsxSuppliers.length}` : ""}개 사
         </span>
-      </div>
-
-      {/* 분류 필터 */}
-      <div className="flex items-center gap-1.5 px-4 py-2 border-b border-zinc-100 bg-white shrink-0 flex-wrap">
-        <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider mr-0.5">분류</span>
-        {([
-          { k: "전체" as const, activeCls: "bg-zinc-700 text-white shadow-sm" },
-          { k: "위탁" as const, activeCls: "bg-violet-500 text-white shadow-sm" },
-          { k: "선결제" as const, activeCls: "bg-rose-500 text-white shadow-sm" },
-          { k: "60회전" as const, activeCls: "bg-emerald-500 text-white shadow-sm" },
-          { k: "90회전" as const, activeCls: "bg-teal-500 text-white shadow-sm" },
-          { k: "기타" as const, activeCls: "bg-zinc-500 text-white shadow-sm" },
-        ]).map(o => (
-          <button key={o.k} onClick={() => setSupListCategory(o.k)}
-            className={`h-7 px-2.5 rounded-md text-[15px] font-semibold transition cursor-pointer ${supListCategory === o.k ? o.activeCls : "text-zinc-500 bg-zinc-50 hover:bg-zinc-100 border border-line"}`}>
-            {o.k}
-          </button>
-        ))}
-      </div>
-
-      {/* 정렬 행 */}
-      <div className="flex items-center gap-1.5 px-4 py-2 border-b border-zinc-100 bg-white shrink-0 flex-wrap">
-        <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider mr-0.5">정렬</span>
+      }
+      filters={
+        <div className="flex flex-col gap-1 w-full">
+          {/* 분류 필터 */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider mr-0.5">분류</span>
+            {([
+              { k: "전체" as const, activeCls: "bg-zinc-700 text-white shadow-sm" },
+              { k: "위탁" as const, activeCls: "bg-violet-500 text-white shadow-sm" },
+              { k: "선결제" as const, activeCls: "bg-rose-500 text-white shadow-sm" },
+              { k: "60회전" as const, activeCls: "bg-emerald-500 text-white shadow-sm" },
+              { k: "90회전" as const, activeCls: "bg-teal-500 text-white shadow-sm" },
+              { k: "기타" as const, activeCls: "bg-zinc-500 text-white shadow-sm" },
+            ]).map(o => (
+              <button key={o.k} onClick={() => setSupListCategory(o.k)}
+                className={`h-7 px-2.5 rounded-md text-[15px] font-semibold transition cursor-pointer ${supListCategory === o.k ? o.activeCls : "text-zinc-500 bg-zinc-50 hover:bg-zinc-100 border border-line"}`}>
+                {o.k}
+              </button>
+            ))}
+          </div>
+          {/* 정렬 행 */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider mr-0.5">정렬</span>
         {([
           { k: "totalStockAmount" as SupListSortKey, label: "재고자산", color: "amber", hideWhenNoSale: false, showOnlyWithCycle: false },
           { k: "saleQty" as SupListSortKey, label: "판매량", color: "emerald", hideWhenNoSale: true, showOnlyWithCycle: false },
@@ -431,10 +437,11 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
             </button>
           );
         })}
-      </div>
-
-      {/* 테이블 영역 */}
-      <div className="relative flex-1 overflow-auto">
+          </div>
+        </div>
+      }
+      bodyClassName="relative flex-1 overflow-auto"
+    >
         {loading && xlsxSuppliers.length > 0 && (
           <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mt-2">
             <Spinner size={12} tone="sky" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
@@ -668,8 +675,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
             </tbody>
           </table>
         )}
-      </div>
-    </>
+    </SplitListPanel>
   );
 
   // ── embedded 모드 · 좌측 리스트만 (부모 SplitPanel 안에 배치) ─────────────
