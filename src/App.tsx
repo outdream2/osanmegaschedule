@@ -58,10 +58,9 @@ const CompanyInfoSettingsPage = React.lazy(() => import("./components/CompanyInf
 const SeasonSettingsPage = React.lazy(() => import("./components/SeasonSettingsPage/SeasonSettingsPage"));
 // 2026-08-12 · 시스템 설정 (env 편집 · 서버 재시작 반영)
 const SystemSettingsPage = React.lazy(() => import("./components/SystemSettingsPage/SystemSettingsPage"));
-// 2026-08-17 · 매장 구역 설정 (label · category 편집 · useZoneDefs · 관리자 lv≥9)
-const ZoneSettingsPage = React.lazy(() => import("./components/ZoneSettingsPage/ZoneSettingsPage"));
+// 2026-08-23 · #181 · ZoneSettingsPage 제거 · StoreZoneMap 인라인 편집만 유지
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding" | "company-info" | "season-settings" | "system-settings" | "zone-settings";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding" | "company-info" | "season-settings" | "system-settings";
 
 export default function App() {
   // 2026-08-16 · 사이드바 활성 · 서버 KV 설정 (env 아님)
@@ -435,18 +434,6 @@ export default function App() {
     pageContent = (
       <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
         <SystemSettingsPage
-          authSession={authSession}
-          onBack={goBack}
-          onNavigate={navigateInner}
-          onLogout={handleLogout}
-        />
-      </React.Suspense>
-    );
-  } else if (page === "zone-settings") {
-    // 2026-08-17 · 매장 구역 설정 페이지 (label · category 편집 · 관리자 lv≥9)
-    pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
-        <ZoneSettingsPage
           authSession={authSession}
           onBack={goBack}
           onNavigate={navigateInner}

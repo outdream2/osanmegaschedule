@@ -8,7 +8,7 @@ import {
   SquaresFour, ScanSmiley, Package, Bell,
   ShoppingCart, FileMagnifyingGlass, Truck, CurrencyKrw, ChartBar, Storefront, Buildings,
   ChatCircle, FirstAid, FileText,
-  Briefcase, Chat, Lock, MapPin,
+  Briefcase, Chat, Lock,
   UserCircle, UsersThree, CheckSquare, PencilLine,
   Palette, Gear,
   type Icon,
@@ -169,8 +169,7 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     managerOnly: true,
     items: [
       { key: "permissions", label: "메뉴 설정", icon: Lock, color: "slate", minLevel: 9 },
-      // 2026-08-17 · 매장 구역 설정 (label · category 편집 · useZoneDefs)
-      { key: "zone-settings", label: "매장 구역", icon: MapPin, color: "slate", minLevel: 9 },
+      // 2026-08-23 · #181 · "매장 구역" 설정 페이지 제거 · StoreZoneMap 인라인 편집만 유지
       // 2026-08-12 · 회사정보 + 앱브랜딩 통합 페이지 (약국명·대표·사업자·주소·전화·브랜드·연락처·도장·모바일)
       { key: "company-info", label: "회사·브랜드", icon: Buildings, color: "slate", minLevel: 9 },
       // 2026-08-12 · 계절 정의 (MyPage 에서 이동)

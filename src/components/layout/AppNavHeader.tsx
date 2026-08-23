@@ -51,8 +51,8 @@ export type AppNavPage =
   | "branding"             // 2026-08-12 · Phase 5 · 브랜딩/연락처/도장/모바일 가시성 통합 설정 페이지
   | "company-info"         // 2026-08-12 · 회사정보 설정 페이지 (약국명·대표·사업자·주소·전화)
   | "season-settings"      // 2026-08-12 · 계절 정의 설정 페이지 (MyPage 에서 이동)
-  | "system-settings"      // 2026-08-12 · 시스템 설정 페이지 (env 편집 · 재시작 반영)
-  | "zone-settings";       // 2026-08-17 · 매장 구역 설정 (label · category · admin lv≥9)
+  | "system-settings";     // 2026-08-12 · 시스템 설정 페이지 (env 편집 · 재시작 반영)
+  // 2026-08-23 · #181 · zone-settings 제거 · StoreZoneMap 인라인 편집만
 
 // 헤더 내부 탭 렌더용 확장 키 (경영관리 · business-manage 로 라우팅)
 type TabKey = AppNavPage | "business";
