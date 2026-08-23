@@ -507,7 +507,7 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
   }, [rows, metric]);
 
   if (loading) {
-    return <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[11px]">불러오는 중...</div>;
+    return <div className="flex-1 flex items-center justify-center py-12"><Spinner label="불러오는 중..." size={13} tone="zinc" labelSize={11} /></div>;
   }
   if (rows.length === 0) {
     return <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[11px]">해당 기간 매입 데이터 없음</div>;

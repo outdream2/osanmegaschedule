@@ -24,6 +24,7 @@ import {
   SET_LABEL, SET_INPUT, SET_BADGE,
 } from "../../lib/settingsTypography";
 import { CARD_BASE } from "../../styles/tokens";
+import { Spinner } from "../common/Spinner";
 
 interface Props {
   onBack: () => void;
@@ -154,7 +155,7 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
           </div>
 
           {!loaded && (
-            <p className="text-[15px] text-zinc-400 text-center">서버에서 최신 값을 불러오는 중...</p>
+            <div className="flex justify-center"><Spinner label="서버에서 최신 값을 불러오는 중..." size={14} tone="zinc" labelSize={15} /></div>
           )}
         </div>
       )}

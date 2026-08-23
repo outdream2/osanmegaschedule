@@ -9,6 +9,7 @@ import { BookOpen, Building2, Plus, Trash2, Pencil, Check, X, RefreshCw } from "
 import { api } from "../../lib/apiClient";
 import { Card } from "../common/Card";
 import { useToast, toastClass } from "../../hooks/useToast";
+import { Spinner } from "../common/Spinner";
 import type { ProductSynonym, SupplierAlias, ProdEditState, SuppEditState } from "./OcrPage.types";
 
 const cellCls = "border border-line rounded px-2 py-1 text-xs outline-none focus:border-brand-deep w-full";
@@ -224,7 +225,7 @@ export const SynonymsTab: React.FC = () => {
             </thead>
             <tbody>
               {productSynonyms.length === 0 && (
-                <tr><td colSpan={4} className="px-3 py-8 text-center text-gray-400">{synLoading ? "불러오는 중..." : "등록된 상품명 동의어 없음"}</td></tr>
+                <tr><td colSpan={4} className="px-3 py-8 text-center text-gray-400">{synLoading ? <Spinner label="불러오는 중..." size={13} tone="zinc" /> : "등록된 상품명 동의어 없음"}</td></tr>
               )}
               {productSynonyms.map(s => {
                 const isEditing = editingProdId === s.id && editingProd;
@@ -299,7 +300,7 @@ export const SynonymsTab: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {supplierAliases.length === 0 && <tr><td colSpan={4} className="px-3 py-8 text-center text-gray-400">{synLoading ? "불러오는 중..." : "등록된 공급사 별칭 없음"}</td></tr>}
+              {supplierAliases.length === 0 && <tr><td colSpan={4} className="px-3 py-8 text-center text-gray-400">{synLoading ? <Spinner label="불러오는 중..." size={13} tone="zinc" /> : "등록된 공급사 별칭 없음"}</td></tr>}
               {supplierAliases.map(a => {
                 const isEditing = editingSuppId === a.id && editingSupp;
                 return (

@@ -596,7 +596,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         </main>
       ) : dpSubTab === "vendor-manage" && dpCanSeeStockManage ? (
         <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-3">
-          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 py-16">공급사관리 로딩 중...</div>}>
+          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="공급사관리 로딩 중..." size={16} tone="brand" /></div>}>
             <VendorManageSplit />
           </React.Suspense>
         </main>

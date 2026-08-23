@@ -6,6 +6,7 @@
 // 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬 (useSortableTabs · tabOrder.documentWriter)
 import React, { Suspense, useState, useEffect } from "react";
 import { NotePencil, SignOut, Gear } from "@phosphor-icons/react";
+import { Spinner } from "../common/Spinner";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../layout/AppNavHeader";
 import { TabBar, type TabDef } from "../common/TabBar";
@@ -94,17 +95,17 @@ const DocumentWriterPage: React.FC<DocumentWriterPageProps> = (props) => {
       {/* ── 내부 탭 컨텐츠 ── */}
       <div className="flex-1 min-h-0 flex flex-col">
         {tab === "contract" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 text-sm font-bold py-16">근로계약서 로딩 중...</div>}>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="근로계약서 로딩 중..." size={16} tone="brand" /></div>}>
             <ContractWriterPage {...props} />
           </Suspense>
         )}
         {tab === "resignation" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 text-sm font-bold py-16">사직서 로딩 중...</div>}>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="사직서 로딩 중..." size={16} tone="brand" /></div>}>
             <ResignationWriterPage {...props} />
           </Suspense>
         )}
         {tab === "settings" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 text-sm font-bold py-16">설정 로딩 중...</div>}>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="설정 로딩 중..." size={16} tone="brand" /></div>}>
             <ContractSettingsPage {...props} />
           </Suspense>
         )}

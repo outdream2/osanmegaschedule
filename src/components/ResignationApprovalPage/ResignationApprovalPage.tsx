@@ -12,6 +12,8 @@ import {
   Clock, CheckCircle, XCircle, ArrowsClockwise,
   Warning, FileText, User, Calendar, ChatCenteredText,
 } from "@phosphor-icons/react";
+import { Spinner } from "../common/Spinner";
+import { Badge } from "../common/Badge";
 import type { AuthSession } from "../../types";
 import { fmtDateYMD, fmtDateMD } from "../../lib/format";
 
@@ -248,9 +250,8 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
           )}
 
           {loading && rows.length === 0 ? (
-            <div className="flex items-center justify-center py-10 text-zinc-400 text-xs font-bold gap-2">
-              <ArrowsClockwise size={14} className="animate-spin" />
-              로딩 중...
+            <div className="flex items-center justify-center py-10">
+              <Spinner label="로딩 중..." size={14} tone="zinc" labelSize={12} />
             </div>
           ) : rows.length === 0 ? (
             <div className="text-center text-[12px] text-zinc-300 py-8">
@@ -277,9 +278,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                           <User size={13} weight="fill" className="text-zinc-400 shrink-0" />
                           <span className="text-sm font-bold text-zinc-800">{r.employee_name}</span>
                           {r.position && (
-                            <span className="text-[11px] font-semibold text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded-md">
-                              {r.position}
-                            </span>
+                            <Badge tone="zinc" size="xs">{r.position}</Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-1 mt-1 text-[12px] text-zinc-600 font-semibold">

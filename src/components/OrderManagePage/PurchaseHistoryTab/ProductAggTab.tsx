@@ -6,6 +6,7 @@ import React, { useMemo } from "react";
 import { useSortableTable, type Comparator } from "../../../hooks/useSortableTable";
 import { useColumnResize, RESIZER_CLS } from "../../../hooks/useColumnResize";
 import { fmtWonNoUnit, fmtDateSlice } from "../../../lib/format";
+import { Spinner } from "../../common/Spinner";
 
 // PurchaseDetailRow · PurchaseSubTabs 에서 export 하지만 순환 방지 위해 local 재정의
 export interface PurchaseDetailRow {
@@ -111,7 +112,7 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
   const totalAmount = useMemo(() => aggregated.reduce((s, a) => s + a.total_amount, 0), [aggregated]);
 
   if (loading) {
-    return <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[11px]">불러오는 중...</div>;
+    return <div className="flex-1 flex items-center justify-center py-12"><Spinner label="불러오는 중..." size={13} tone="zinc" labelSize={11} /></div>;
   }
   if (aggregated.length === 0) {
     return <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[11px]">해당 기간 매입 상품 없음</div>;

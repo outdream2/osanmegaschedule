@@ -108,7 +108,7 @@ export const StaffContractSection: React.FC<StaffContractSectionProps> = ({
                     {manualMeta.short}
                   </span>
                 )}
-                {latestContractLoading && <span className="text-[14px] text-zinc-300">불러오는 중...</span>}
+                {latestContractLoading && <Spinner size={13} tone="zinc" label="불러오는 중..." labelSize={14} />}
               </div>
             );
           })()}

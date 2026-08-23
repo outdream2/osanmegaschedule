@@ -5,6 +5,7 @@
 import React from "react";
 import { Info, Warning, Check, FloppyDisk } from "@phosphor-icons/react";
 import { Card } from "../common/Card";
+import { Spinner } from "../common/Spinner";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -54,10 +55,10 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
           <p className="text-[11px] text-zinc-500 font-semibold mt-0.5">근로계약서 사업주란 자동 채움 · 편집 즉시 저장</p>
         </div>
         {!companyInfoLoaded && (
-          <span className="text-[11px] text-zinc-400 font-semibold shrink-0">로딩 중...</span>
+          <Spinner size={11} tone="zinc" label="로딩 중..." labelSize={11} className="shrink-0" />
         )}
         {companyInfoLoaded && companyInfoSaveState === "saving" && (
-          <span className="text-[11px] text-indigo-500 font-semibold shrink-0">저장 중...</span>
+          <Spinner size={11} tone="violet" label="저장 중..." labelSize={11} className="shrink-0" />
         )}
         {companyInfoLoaded && companyInfoSaveState === "saved" && (
           <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 font-semibold shrink-0">

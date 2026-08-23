@@ -7,6 +7,7 @@
 //   · 초기 서브탭 · localStorage("sidebar.subtab.approval-request") · 없으면 "leave"
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { CalendarDots, Coffee, PencilLine } from "@phosphor-icons/react";
+import { Spinner } from "../common/Spinner";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { useSidebarEnabled } from "../../hooks/useSidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
@@ -142,7 +143,7 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
         )}
         {subTab === "document-writer" && (
           <ResignationGate authSession={authSession}>
-            <Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 py-16">사직서 로딩 중...</div>}>
+            <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="사직서 로딩 중..." size={16} tone="brand" /></div>}>
               <DocumentWriterPage {...commonSubPageProps} allowedTabs={["resignation"]} />
             </Suspense>
           </ResignationGate>

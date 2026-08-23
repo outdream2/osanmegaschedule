@@ -34,6 +34,7 @@ import { TabBar, type TabDef } from "../common/TabBar";
 import { ImageUploadField } from "../common/ImageUploadField";
 import { IconTile } from "../common/IconTile";
 import { Card } from "../common/Card";
+import { Spinner } from "../common/Spinner";
 
 // ─── 공통 카드 스타일 (ContractSettingsPage 톤과 통일) ───────────────────────
 // 2026-08-20 · Card 프리미티브 확산 · <Card as="section" clip padding="none">
@@ -59,7 +60,7 @@ function StatusBadge({ state, label }: { state: SaveState; label?: string }) {
   if (state === "saving") {
     return (
       <span className="inline-flex items-center gap-1 text-[15px] text-zinc-500 font-bold">
-        저장 중…
+        <Spinner size={13} tone="zinc" label="저장 중…" labelSize={15} />
       </span>
     );
   }
@@ -179,7 +180,7 @@ const BrandSection: React.FC = () => {
         />
       </div>
       {!loaded && (
-        <div className="px-4 pb-3 text-[15px] text-zinc-400">서버에서 설정을 불러오는 중…</div>
+        <div className="px-4 pb-3"><Spinner label="서버에서 설정을 불러오는 중…" size={14} tone="zinc" labelSize={15} /></div>
       )}
     </Card>
   );
@@ -250,7 +251,7 @@ export const ContactSection: React.FC = () => {
         </div>
       </div>
       {!loaded && (
-        <div className="px-4 pb-3 text-[15px] text-zinc-400">서버에서 설정을 불러오는 중…</div>
+        <div className="px-4 pb-3"><Spinner label="서버에서 설정을 불러오는 중…" size={14} tone="zinc" labelSize={15} /></div>
       )}
     </Card>
   );
@@ -457,7 +458,7 @@ export const StampsSection: React.FC = () => {
         </div>
       </div>
       {!loaded && (
-        <div className="px-4 pb-3 text-[15px] text-zinc-400">서버에서 설정을 불러오는 중…</div>
+        <div className="px-4 pb-3"><Spinner label="서버에서 설정을 불러오는 중…" size={14} tone="zinc" labelSize={15} /></div>
       )}
     </Card>
   );
@@ -559,7 +560,7 @@ export const MobileVisibilitySection: React.FC = () => {
         ))}
       </div>
       {!loaded && (
-        <div className="px-4 pb-3 text-[15px] text-zinc-400">서버에서 설정을 불러오는 중…</div>
+        <div className="px-4 pb-3"><Spinner label="서버에서 설정을 불러오는 중…" size={14} tone="zinc" labelSize={15} /></div>
       )}
     </Card>
   );

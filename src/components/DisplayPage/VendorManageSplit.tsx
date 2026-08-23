@@ -203,7 +203,7 @@ export const VendorManageSplit: React.FC = () => {
   );
 
   const right = selected ? (
-    <React.Suspense fallback={<div className="flex-1 flex items-center justify-center text-ink-soft py-16 text-[14px]">공급사 상세 로딩 중...</div>}>
+    <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="공급사 상세 로딩 중..." size={16} tone="brand" /></div>}>
       <VendorDetailModalLazy vendor={selected as any} onClose={() => setSelectedId(null)} onSaved={refresh} panel />
     </React.Suspense>
   ) : (

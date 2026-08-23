@@ -11,6 +11,7 @@ import {
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { StatusPill } from "../common/StatusPill";
 import { fmtWonFull, fmtDateSlice } from "../../lib/format";
+import { Spinner } from "../common/Spinner";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -242,7 +243,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
 
       {/* 월별 데이터 표 (2026-08-04 · Task #97 · KPI 카드 → 표 형식 전환) */}
       {loading ? (
-        <div className="text-[12px] text-zinc-400 pl-1 py-4">로딩 중...</div>
+        <div className="pl-1 py-4"><Spinner label="로딩 중..." size={13} tone="zinc" labelSize={12} /></div>
       ) : !hasMonthly ? (
         <div className="text-[12px] text-zinc-400 pl-1 py-4">
           월별 데이터가 없습니다.

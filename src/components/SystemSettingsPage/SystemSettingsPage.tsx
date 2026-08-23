@@ -16,6 +16,7 @@ import {
   SET_NOTICE_AMBER, SET_NOTICE_ROSE, SET_NOTICE_EMERALD,
 } from "../../lib/settingsTypography";
 import { CARD_BASE } from "../../styles/tokens";
+import { Spinner } from "../common/Spinner";
 
 interface Props {
   onBack: () => void;
@@ -195,7 +196,7 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
                 </div>
               );
             })}
-            {!loaded && <p className="text-sm text-zinc-400 text-center">불러오는 중...</p>}
+            {!loaded && <div className="flex justify-center"><Spinner label="불러오는 중..." size={14} tone="zinc" labelSize={14} /></div>}
           </section>
         )}
 

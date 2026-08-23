@@ -9,6 +9,7 @@
 // 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬 (useSortableTabs · tabOrder.approvalCenter)
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDots, SignOut } from "@phosphor-icons/react";
+import { Spinner } from "../common/Spinner";
 import { LeavePage } from "../LeavePage/LeavePage";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../layout/AppNavHeader";
@@ -99,7 +100,7 @@ const ApprovalCenterPage: React.FC<ApprovalCenterPageProps> = (props) => {
           />
         )}
         {tab === "resignation" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 text-sm font-bold py-16">사직서 승인 로딩 중...</div>}>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="사직서 승인 로딩 중..." size={16} tone="brand" /></div>}>
             <ResignationApprovalPage authSession={props.authSession} />
           </Suspense>
         )}
