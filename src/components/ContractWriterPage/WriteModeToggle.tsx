@@ -10,6 +10,7 @@ import { CONTRACT_TYPES } from "./constants";
 import { SelectOrCustom } from "./subcomponents";
 import { Card } from "../common/Card";
 import { IconTile } from "../common/IconTile";
+import { Badge } from "../common/Badge";
 import { matchHangul } from "../../lib/hangulSearch";
 import { TIMING } from "../../constants/timing";
 import type { Employee } from "../../types";
@@ -145,7 +146,7 @@ export const WriteModeToggle: React.FC<WriteModeToggleProps> = ({
                           className="w-full text-left px-3 py-2 hover:bg-indigo-50 transition-colors flex items-center gap-2"
                         >
                           <span className="text-[15px] font-bold text-zinc-800">{e.name}</span>
-                          {e.position && <span className="text-[15px] text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded-md">{e.position}</span>}
+                          {e.position && <Badge tone="zinc" size="xs">{e.position}</Badge>}
                           {e.phone && <span className="text-[15px] text-zinc-400 ml-auto tabular-nums">{e.phone}</span>}
                         </button>
                       </li>
