@@ -8,11 +8,12 @@ import React from "react";
 import { Package } from "@phosphor-icons/react";
 import { Card } from "../common/Card";
 import { useKvSetting } from "../../hooks/useKvSetting";
-
-/** 기본값 · 오늘 기준 30일 (한달) */
-const DEFAULT_DAYS = 30;
-const MIN_DAYS = 7;
-const MAX_DAYS = 90;
+// 2026-08-23 · #193 · 상수 단일 소스 · useOptimalStockPeriod 훅과 통일
+import {
+  OPTIMAL_STOCK_DEFAULT_DAYS as DEFAULT_DAYS,
+  OPTIMAL_STOCK_MIN_DAYS as MIN_DAYS,
+  OPTIMAL_STOCK_MAX_DAYS as MAX_DAYS,
+} from "../../hooks/useOptimalStockPeriod";
 
 /** sanitize · 숫자 검증 + 범위 clamp */
 function sanitize(raw: unknown): number | null {
