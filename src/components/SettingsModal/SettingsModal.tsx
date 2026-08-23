@@ -1,5 +1,6 @@
-﻿// src/components/SettingsModal.tsx
+// src/components/SettingsModal.tsx
 // 2026-08-17 · apiClient 마이그레이션
+// #191 · Modal primitive 마이그레이션 (inline wrapper → Modal)
 import React, { useState, useEffect, useRef } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { X, Plus, Trash2, GripVertical, Check, MapPin, ShieldCheck, ChevronRight } from "lucide-react";
@@ -7,6 +8,8 @@ import { AppSettings, WageRate, ScheduleTypeEntry, defaultWageForPosition } from
 import { COLOR_PRESETS, findPresetByBg } from "../../constants";
 // 2026-08-21 · Framework Phase 3 · Card 프리미티브
 import { Card } from "../common/Card";
+// #191 · Modal primitive
+import { Modal } from "../common/Modal";
 
 interface SettingsModalProps {
   settings: AppSettings;
@@ -43,8 +46,6 @@ const HOUR_TABS: { id: ScheduleHourTab; label: string }[] = [
 ];
 
 // ─── ColorPicker ──────────────────────────────────────────────────────────────
-// A compact popover picker: click the swatch to open a palette of preset colors,
-// or use the "직접" native color input for a custom hex.
 interface ColorPickerProps {
   value: string;
   onChange: (hex: string) => void;
@@ -327,325 +328,357 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
 
   // ── render ────────────────────────────────────────────────────────────────
 
-  // 2026-08-17 v2 · backdrop-brand + shadow-brand-modal · Modal 통일
-  const outerCls = embedded
-    ? "w-full"
-    : "fixed inset-0 z-50 flex items-center justify-center backdrop-brand p-4 overflow-y-auto";
-  const innerCls = embedded
-    ? "relative w-full bg-white rounded-2xl border border-line flex flex-col"
-    : "relative w-full max-w-2xl bg-white rounded-2xl shadow-brand-modal border border-zinc-100 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150";
-  return (
-    <div className={outerCls}>
-      <div className={innerCls}>
+  // #191 · 공통 body · embedded/modal 양쪽 공유
+  const body = (
+    <>
+      {/* Tabs */}
+      <div className="flex gap-0 border-b border-zinc-100 shrink-0 overflow-x-auto">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-5 py-3 text-xs font-bold whitespace-nowrap transition border-b-2 cursor-pointer ${
+              activeTab === tab.id
+                ? "border-[#2563eb] text-[#2563eb] bg-blue-50/40"
+                : "border-transparent text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        {/* Header · 임베디드 모드에선 X 버튼 숨김 */}
-        {!embedded && (
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 shrink-0">
-          <h2 className="text-base font-extrabold text-zinc-900 flex items-center gap-2">
-            <span>⚙️</span>
-            <span>환경 설정</span>
-          </h2>
+      {/* 2026-08-12 · 사용자 지시 · 스케쥴 설정 · 근무지 종류 · 구역 라벨 관리 링크 일단 제거 */}
+
+      {/* 2026-08-03 · 직원권한 관리 링크 (경영관리에서 이동) */}
+      {onNavigatePermissions && (
+        <div className="px-6 pt-3 shrink-0">
           <button
             type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition cursor-pointer"
-            title="닫기"
+            onClick={() => { onNavigatePermissions(); onClose(); }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-indigo-200 bg-indigo-50 hover:border-indigo-400 hover:shadow-sm active:scale-[0.99] transition-all cursor-pointer text-left group"
           >
-            <X size={18} />
+            <div className="w-9 h-9 rounded-lg bg-white border border-indigo-200 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition">
+              <ShieldCheck size={16} className="text-indigo-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-bold text-zinc-800 leading-tight">직원권한 관리</div>
+              <div className="text-[11px] font-semibold text-zinc-500 leading-tight mt-0.5">페이지별 · 직원별 접근 권한 (level 0~9) 설정</div>
+            </div>
+            <ChevronRight size={16} className="text-indigo-500 shrink-0 group-hover:translate-x-0.5 transition-transform" />
           </button>
         </div>
-        )}
+      )}
 
-        {/* Tabs */}
-        <div className="flex gap-0 border-b border-zinc-100 shrink-0 overflow-x-auto">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-5 py-3 text-xs font-bold whitespace-nowrap transition border-b-2 cursor-pointer ${
-                activeTab === tab.id
-                  ? "border-[#2563eb] text-[#2563eb] bg-blue-50/40"
-                  : "border-transparent text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      {/* Tab Content */}
+      <div className="flex-1 overflow-y-auto overflow-x-auto min-w-0 px-6 py-5 space-y-4">
 
-        {/* 2026-08-12 · 사용자 지시 · 스케쥴 설정 · 근무지 종류 · 구역 라벨 관리 링크 일단 제거 */}
-
-        {/* 2026-08-03 · 직원권한 관리 링크 (경영관리에서 이동) */}
-        {onNavigatePermissions && (
-          <div className="px-6 pt-3 shrink-0">
-            <button
-              type="button"
-              onClick={() => { onNavigatePermissions(); onClose(); }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-indigo-200 bg-indigo-50 hover:border-indigo-400 hover:shadow-sm active:scale-[0.99] transition-all cursor-pointer text-left group"
-            >
-              <div className="w-9 h-9 rounded-lg bg-white border border-indigo-200 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition">
-                <ShieldCheck size={16} className="text-indigo-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-bold text-zinc-800 leading-tight">직원권한 관리</div>
-                <div className="text-[11px] font-semibold text-zinc-500 leading-tight mt-0.5">페이지별 · 직원별 접근 권한 (level 0~9) 설정</div>
-              </div>
-              <ChevronRight size={16} className="text-indigo-500 shrink-0 group-hover:translate-x-0.5 transition-transform" />
-            </button>
+        {/* ─── Workplaces Tab ────────────────────────────────────────── */}
+        {activeTab === "workplaces" && (
+          <div className="space-y-4">
+            <p className="text-xs text-zinc-500 font-semibold">
+              직원의 근무지(부서) 목록을 관리합니다. 기본값: 매장, 창고
+            </p>
+            {/* 2026-08-16 · 사용자 지시 · 근무지 종류 · 매장·창고 나란히 (grid 2열) */}
+            <div className="grid grid-cols-2 gap-2">
+              {workplaces.map((wp, idx) => (
+                <div
+                  key={wp}
+                  className="flex items-center gap-2 bg-white border border-line hover:border-zinc-300 rounded-lg px-3 py-2 transition"
+                >
+                  <span className="flex-1 text-xs font-semibold text-zinc-800">{wp}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeWorkplace(idx)}
+                    className="text-zinc-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
+                    title="삭제"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 pt-1">
+              <input
+                type="text"
+                value={newWorkplace}
+                onChange={(e) => setNewWorkplace(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addWorkplace(); } }}
+                placeholder="새 근무지 입력 (Enter)"
+                className="flex-1 text-xs rounded-lg border border-line focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={addWorkplace}
+                className="px-3 py-2 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
+              >
+                <Plus size={13} />
+                추가
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto overflow-x-auto min-w-0 px-6 py-5 space-y-4">
+        {/* ─── Schedule Types Tab ────────────────────────────────────── */}
+        {activeTab === "scheduleTypes" && (
+          <div className="space-y-4">
+            <p className="text-xs text-zinc-500 font-semibold">
+              근무 유형과 직원 유형별 기본 근무시간을 관리합니다. 비워두면 상위(기본) 시간이 사용됩니다.
+            </p>
 
-          {/* ─── Workplaces Tab ────────────────────────────────────────── */}
-          {activeTab === "workplaces" && (
-            <div className="space-y-4">
-              <p className="text-xs text-zinc-500 font-semibold">
-                직원의 근무지(부서) 목록을 관리합니다. 기본값: 매장, 창고
-              </p>
-              {/* 2026-08-16 · 사용자 지시 · 근무지 종류 · 매장·창고 나란히 (grid 2열) */}
-              <div className="grid grid-cols-2 gap-2">
-                {workplaces.map((wp, idx) => (
-                  <div
-                    key={wp}
-                    className="flex items-center gap-2 bg-white border border-line hover:border-zinc-300 rounded-lg px-3 py-2 transition"
-                  >
-                    <span className="flex-1 text-xs font-semibold text-zinc-800">{wp}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeWorkplace(idx)}
-                      className="text-zinc-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
-                      title="삭제"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2 pt-1">
-                <input
-                  type="text"
-                  value={newWorkplace}
-                  onChange={(e) => setNewWorkplace(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addWorkplace(); } }}
-                  placeholder="새 근무지 입력 (Enter)"
-                  className="flex-1 text-xs rounded-lg border border-line focus:border-[#2563eb] p-2 bg-white focus:outline-none"
-                />
+            {/* Hour type sub-tabs */}
+            <div className="flex flex-wrap gap-1">
+              {HOUR_TABS.map(t => (
                 <button
+                  key={t.id}
                   type="button"
-                  onClick={addWorkplace}
-                  className="px-3 py-2 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
+                  onClick={() => setScheduleHourTab(t.id)}
+                  className={`flex-1 min-w-[72px] py-1.5 px-2 text-[11px] font-bold rounded-lg border transition cursor-pointer whitespace-nowrap ${
+                    scheduleHourTab === t.id
+                      ? "bg-brand-deep border-[#2563eb] text-white"
+                      : "bg-white border-line text-zinc-500 hover:bg-zinc-50"
+                  }`}
                 >
-                  <Plus size={13} />
-                  추가
+                  {t.label}
                 </button>
-              </div>
+              ))}
             </div>
-          )}
 
-          {/* ─── Schedule Types Tab ────────────────────────────────────── */}
-          {activeTab === "scheduleTypes" && (
-            <div className="space-y-4">
-              <p className="text-xs text-zinc-500 font-semibold">
-                근무 유형과 직원 유형별 기본 근무시간을 관리합니다. 비워두면 상위(기본) 시간이 사용됩니다.
-              </p>
-
-              {/* Hour type sub-tabs */}
-              <div className="flex flex-wrap gap-1">
-                {HOUR_TABS.map(t => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setScheduleHourTab(t.id)}
-                    className={`flex-1 min-w-[72px] py-1.5 px-2 text-[11px] font-bold rounded-lg border transition cursor-pointer whitespace-nowrap ${
-                      scheduleHourTab === t.id
-                        ? "bg-brand-deep border-[#2563eb] text-white"
-                        : "bg-white border-line text-zinc-500 hover:bg-zinc-50"
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
+            <div className="space-y-1.5">
+              <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)_28px] gap-2 px-3 py-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wide">
+                <span>유형명</span>
+                <span>색</span>
+                <span>{HOUR_TABS.find(t => t.id === scheduleHourTab)?.label} 시간</span>
+                <span></span>
               </div>
-
-              <div className="space-y-1.5">
-                <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)_28px] gap-2 px-3 py-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wide">
-                  <span>유형명</span>
-                  <span>색</span>
-                  <span>{HOUR_TABS.find(t => t.id === scheduleHourTab)?.label} 시간</span>
-                  <span></span>
-                </div>
-                {scheduleTypes.map((st, idx) => (
-                  <div
-                    key={idx}
-                    className="flex flex-col sm:grid sm:grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)_28px] gap-2 items-start sm:items-center bg-white border border-line hover:border-zinc-300 rounded-lg px-3 py-2 transition"
-                  >
-                    <div className="flex items-center gap-2 w-full min-w-0">
-                      <span
-                        className="flex-1 min-w-0 text-xs font-semibold text-zinc-800 truncate px-1.5 py-0.5 rounded"
-                        style={{ backgroundColor: st.color ?? "#e2e8f0" }}
-                      >
-                        {st.type}
-                      </span>
-                      <div className="shrink-0 sm:hidden">
-                        <ColorPicker
-                          value={st.color ?? "#e2e8f0"}
-                          onChange={(hex) => updateScheduleTypeEntry(idx, "color", hex)}
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeScheduleType(idx)}
-                        className="sm:hidden text-zinc-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded shrink-0"
-                        title="삭제"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                    <div className="hidden sm:block shrink-0">
+              {scheduleTypes.map((st, idx) => (
+                <div
+                  key={idx}
+                  className="flex flex-col sm:grid sm:grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)_28px] gap-2 items-start sm:items-center bg-white border border-line hover:border-zinc-300 rounded-lg px-3 py-2 transition"
+                >
+                  <div className="flex items-center gap-2 w-full min-w-0">
+                    <span
+                      className="flex-1 min-w-0 text-xs font-semibold text-zinc-800 truncate px-1.5 py-0.5 rounded"
+                      style={{ backgroundColor: st.color ?? "#e2e8f0" }}
+                    >
+                      {st.type}
+                    </span>
+                    <div className="shrink-0 sm:hidden">
                       <ColorPicker
                         value={st.color ?? "#e2e8f0"}
                         onChange={(hex) => updateScheduleTypeEntry(idx, "color", hex)}
                       />
                     </div>
-                    <input
-                      type="text"
-                      value={st[scheduleHourTab]}
-                      onChange={(e) => updateScheduleTypeEntry(idx, scheduleHourTab, e.target.value)}
-                      placeholder={scheduleHourTab === "hours" ? "예: 10:00-18:00" : "비워두면 기본값"}
-                      className="w-full text-xs rounded border border-line focus:border-[#2563eb] p-1.5 font-mono bg-white focus:outline-none"
-                    />
                     <button
                       type="button"
                       onClick={() => removeScheduleType(idx)}
-                      className="hidden sm:block text-zinc-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
+                      className="sm:hidden text-zinc-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded shrink-0"
                       title="삭제"
                     >
                       <Trash2 size={13} />
                     </button>
                   </div>
-                ))}
-              </div>
-              <div className="flex gap-2 pt-1">
-                <input
-                  type="text"
-                  value={newScheduleType}
-                  onChange={(e) => setNewScheduleType(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addScheduleType(); } }}
-                  placeholder="새 근무 유형 입력 (Enter)"
-                  className="flex-1 text-xs rounded-lg border border-line focus:border-[#2563eb] p-2 bg-white focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={addScheduleType}
-                  className="px-3 py-2 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
-                >
-                  <Plus size={13} />
-                  추가
-                </button>
-              </div>
-              <div className="flex justify-end pt-2">
-                <button
-                  type="button"
-                  disabled={applying}
-                  onClick={() => {
-                    if (editMode === false) {
-                      setShowEditConfirm(true);
-                    } else {
-                      setApplying(true);
-                      onApplyShiftHours().finally(() => setApplying(false));
-                    }
-                  }}
-                  className="px-4 py-2 text-xs font-bold bg-brand-deep hover:bg-brand-deep disabled:bg-indigo-300 text-white rounded-lg transition cursor-pointer flex items-center gap-1.5 shadow-sm"
-                >
-                  {applying ? (
-                    <>
-                      <span className="animate-spin inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full" />
-                      적용 중...
-                    </>
-                  ) : "📋 현재 스케줄에 전체적용"}
-                </button>
-              </div>
+                  <div className="hidden sm:block shrink-0">
+                    <ColorPicker
+                      value={st.color ?? "#e2e8f0"}
+                      onChange={(hex) => updateScheduleTypeEntry(idx, "color", hex)}
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={st[scheduleHourTab]}
+                    onChange={(e) => updateScheduleTypeEntry(idx, scheduleHourTab, e.target.value)}
+                    placeholder={scheduleHourTab === "hours" ? "예: 10:00-18:00" : "비워두면 기본값"}
+                    className="w-full text-xs rounded border border-line focus:border-[#2563eb] p-1.5 font-mono bg-white focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeScheduleType(idx)}
+                    className="hidden sm:block text-zinc-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
+                    title="삭제"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
             </div>
-          )}
+            <div className="flex gap-2 pt-1">
+              <input
+                type="text"
+                value={newScheduleType}
+                onChange={(e) => setNewScheduleType(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addScheduleType(); } }}
+                placeholder="새 근무 유형 입력 (Enter)"
+                className="flex-1 text-xs rounded-lg border border-line focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={addScheduleType}
+                className="px-3 py-2 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
+              >
+                <Plus size={13} />
+                추가
+              </button>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                disabled={applying}
+                onClick={() => {
+                  if (editMode === false) {
+                    setShowEditConfirm(true);
+                  } else {
+                    setApplying(true);
+                    onApplyShiftHours().finally(() => setApplying(false));
+                  }
+                }}
+                className="px-4 py-2 text-xs font-bold bg-brand-deep hover:bg-brand-deep disabled:bg-indigo-300 text-white rounded-lg transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+              >
+                {applying ? (
+                  <>
+                    <span className="animate-spin inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full" />
+                    적용 중...
+                  </>
+                ) : "📋 현재 스케줄에 전체적용"}
+              </button>
+            </div>
+          </div>
+        )}
 
 
-          {/* ─── Account Tab (비밀번호 변경) ─────────────────────── */}
-          {activeTab === "account" && (
-            <div className="space-y-4 max-w-md">
-              <p className="text-xs text-zinc-500 font-semibold leading-relaxed">
-                로그인 중인 계정의 비밀번호를 변경합니다. 변경 후에도 세션은 유지됩니다.
-              </p>
-              {!sessionEmployeeId ? (
-                <div className="text-xs text-rose-600 font-semibold bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
-                  로그인 세션 정보를 찾을 수 없습니다. 다시 로그인해주세요.
+        {/* ─── Account Tab (비밀번호 변경) ─────────────────────── */}
+        {activeTab === "account" && (
+          <div className="space-y-4 max-w-md">
+            <p className="text-xs text-zinc-500 font-semibold leading-relaxed">
+              로그인 중인 계정의 비밀번호를 변경합니다. 변경 후에도 세션은 유지됩니다.
+            </p>
+            {!sessionEmployeeId ? (
+              <div className="text-xs text-rose-600 font-semibold bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+                로그인 세션 정보를 찾을 수 없습니다. 다시 로그인해주세요.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">현재 비밀번호</label>
+                  <input
+                    type="password"
+                    value={pwCurrent}
+                    onChange={(e) => setPwCurrent(e.target.value)}
+                    autoComplete="current-password"
+                    className="w-full px-3 py-2 text-sm border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+                    placeholder="현재 비밀번호"
+                  />
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-zinc-600 mb-1">현재 비밀번호</label>
-                    <input
-                      type="password"
-                      value={pwCurrent}
-                      onChange={(e) => setPwCurrent(e.target.value)}
-                      autoComplete="current-password"
-                      className="w-full px-3 py-2 text-sm border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
-                      placeholder="현재 비밀번호"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-zinc-600 mb-1">새 비밀번호 (4자 이상)</label>
-                    <input
-                      type="password"
-                      value={pwNew}
-                      onChange={(e) => setPwNew(e.target.value)}
-                      autoComplete="new-password"
-                      className="w-full px-3 py-2 text-sm border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
-                      placeholder="새 비밀번호"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-zinc-600 mb-1">새 비밀번호 확인</label>
-                    <input
-                      type="password"
-                      value={pwConfirm}
-                      onChange={(e) => setPwConfirm(e.target.value)}
-                      autoComplete="new-password"
-                      className="w-full px-3 py-2 text-sm border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
-                      placeholder="새 비밀번호 확인"
-                      onKeyDown={(e) => { if (e.key === "Enter" && !pwSubmitting) submitPasswordChange(); }}
-                    />
-                  </div>
-                  {pwMsg && (
-                    <div className={`text-xs font-semibold rounded-lg px-3 py-2 ${
-                      pwMsg.type === "ok"
-                        ? "bg-emerald-50 border border-emerald-200 text-emerald-700"
-                        : "bg-rose-50 border border-rose-200 text-rose-600"
-                    }`}>
-                      {pwMsg.text}
-                    </div>
-                  )}
-                  <div className="pt-1">
-                    <button
-                      type="button"
-                      onClick={submitPasswordChange}
-                      disabled={pwSubmitting}
-                      className="px-4 py-2 text-xs font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition cursor-pointer"
-                    >
-                      {pwSubmitting ? "변경 중..." : "비밀번호 변경"}
-                    </button>
-                  </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">새 비밀번호 (4자 이상)</label>
+                  <input
+                    type="password"
+                    value={pwNew}
+                    onChange={(e) => setPwNew(e.target.value)}
+                    autoComplete="new-password"
+                    className="w-full px-3 py-2 text-sm border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+                    placeholder="새 비밀번호"
+                  />
                 </div>
-              )}
-            </div>
-          )}
+                <div>
+                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">새 비밀번호 확인</label>
+                  <input
+                    type="password"
+                    value={pwConfirm}
+                    onChange={(e) => setPwConfirm(e.target.value)}
+                    autoComplete="new-password"
+                    className="w-full px-3 py-2 text-sm border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+                    placeholder="새 비밀번호 확인"
+                    onKeyDown={(e) => { if (e.key === "Enter" && !pwSubmitting) submitPasswordChange(); }}
+                  />
+                </div>
+                {pwMsg && (
+                  <div className={`text-xs font-semibold rounded-lg px-3 py-2 ${
+                    pwMsg.type === "ok"
+                      ? "bg-emerald-50 border border-emerald-200 text-emerald-700"
+                      : "bg-rose-50 border border-rose-200 text-rose-600"
+                  }`}>
+                    {pwMsg.text}
+                  </div>
+                )}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={submitPasswordChange}
+                    disabled={pwSubmitting}
+                    className="px-4 py-2 text-xs font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition cursor-pointer"
+                  >
+                    {pwSubmitting ? "변경 중..." : "비밀번호 변경"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </>
+  );
+
+  // #191 · 편집 모드 확인 sub-modal · Modal primitive
+  const editConfirmModal = (
+    <Modal
+      open={showEditConfirm}
+      onClose={() => setShowEditConfirm(false)}
+      size="sm"
+      title="편집 모드를 켜겠습니까?"
+      showClose={false}
+      closeOnBackdrop={false}
+      footer={
+        <div className="flex gap-2 w-full">
+          <button
+            type="button"
+            onClick={() => { setShowEditConfirm(false); onClose(); }}
+            className="flex-1 px-4 py-2 text-xs font-bold bg-zinc-50 hover:bg-zinc-100 border border-line rounded-lg text-zinc-600 transition cursor-pointer"
+          >
+            아니오
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              setShowEditConfirm(false);
+              onEnableEditMode?.();
+              setApplying(true);
+              try { await onApplyShiftHours(); } finally { setApplying(false); }
+              onClose();
+            }}
+            className="flex-1 px-4 py-2 text-xs font-bold bg-brand-deep hover:bg-brand-deep text-white rounded-lg transition cursor-pointer"
+          >
+            켜기
+          </button>
         </div>
+      }
+    >
+      <p className="text-xs text-zinc-500 text-center py-2">켜면 전체 스케줄에 수정사항이 반영되고, 이후 편집 모드가 유지됩니다.</p>
+    </Modal>
+  );
 
-        {/* Footer · 임베디드 모드에선 숨김 (탭 UI 에서 자체 저장) */}
-        {!embedded && (
-        <div className="flex justify-end px-6 py-4 border-t border-zinc-100 shrink-0">
+  // #191 · embedded: 인라인 div 유지 · !embedded: Modal primitive
+  if (embedded) {
+    return (
+      <div className="w-full">
+        <div className="relative w-full bg-white rounded-2xl border border-line flex flex-col">
+          {body}
+        </div>
+        {editConfirmModal}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Modal
+        open={true}
+        onClose={onClose}
+        title="환경 설정"
+        size="md"
+        closeOnEsc={false}
+        footer={
           <button
             type="button"
             onClick={onClose}
@@ -653,42 +686,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
           >
             완료 및 닫기
           </button>
-        </div>
-        )}
-      </div>
-
-      {/* Edit mode confirm dialog */}
-      {showEditConfirm && (
-        // 2026-08-17 v2 · Modal 통일
-        <div className="fixed inset-0 z-[60] flex items-center justify-center backdrop-brand">
-          <div className="bg-white rounded-2xl shadow-brand-modal border border-zinc-100 p-6 w-full max-w-xs animate-in zoom-in-95 duration-150 space-y-4">
-            <p className="text-sm font-bold text-zinc-800 text-center">편집 모드를 켜겠습니까?</p>
-            <p className="text-xs text-zinc-500 text-center">켜면 전체 스케줄에 수정사항이 반영되고, 이후 편집 모드가 유지됩니다.</p>
-            <div className="flex gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => { setShowEditConfirm(false); onClose(); }}
-                className="flex-1 px-4 py-2 text-xs font-bold bg-zinc-50 hover:bg-zinc-100 border border-line rounded-lg text-zinc-600 transition cursor-pointer"
-              >
-                아니오
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  setShowEditConfirm(false);
-                  onEnableEditMode?.();
-                  setApplying(true);
-                  try { await onApplyShiftHours(); } finally { setApplying(false); }
-                  onClose();
-                }}
-                className="flex-1 px-4 py-2 text-xs font-bold bg-brand-deep hover:bg-brand-deep text-white rounded-lg transition cursor-pointer"
-              >
-                켜기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+        }
+      >
+        {body}
+      </Modal>
+      {editConfirmModal}
+    </>
   );
 };
