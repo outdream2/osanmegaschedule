@@ -15,6 +15,7 @@ import type { Vendor } from "../../LandingPage/VendorListEditor";
 import { useVendors } from "../../../hooks/useVendors";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../../hooks/useToast";
+import { Modal } from "../Modal";
 
 // ─── VendorInfoModal ──────────────────────────────────────────────────────────
 
@@ -32,20 +33,17 @@ export const VendorInfoModal: React.FC<VendorInfoModalProps> = ({ vendor, onClos
   }, [onSaved, onClose]);
 
   return (
-    // 2026-08-17 v2 · frosted backdrop + 3-layer shadow · Modal 통일
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4"
-      style={{ background: "rgba(10, 46, 74, 0.35)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
-      onClick={onClose}
+    // 2026-08-23 v3 · Modal primitive · zIndex=100 · bodyPadding=none (VendorDetailModal 자체 padding)
+    <Modal
+      open
+      onClose={onClose}
+      zIndex={100}
+      size="3xl"
+      bodyPadding="none"
+      showClose={false}
     >
-      <div
-        className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-xl"
-        style={{ boxShadow: "0 1px 3px rgba(10,46,74,0.12), 0 8px 32px -8px rgba(10,46,74,0.24), 0 24px 64px -24px rgba(10,46,74,0.28)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <VendorDetailModal vendor={vendor} onClose={onClose} onSaved={handleSaved} />
-      </div>
-    </div>
+      <VendorDetailModal vendor={vendor} onClose={onClose} onSaved={handleSaved} />
+    </Modal>
   );
 };
 

@@ -37,12 +37,14 @@ import { X } from "lucide-react";
 import { AccentBar } from "./AccentBar";
 
 // 2026-08-23 · v3 · "lg-narrow" (max-w-lg · 512px) 추가 · md 와 lg 사이 공백 채움
-type ModalSize = "sm" | "md" | "lg-narrow" | "lg" | "xl" | "full";
+// 2026-08-23 · v3.1 · "3xl" (max-w-3xl · 768px) 추가 · md 와 lg 사이 상세정보용
+type ModalSize = "sm" | "md" | "lg-narrow" | "3xl" | "lg" | "xl" | "full";
 
 const SIZE_MAP: Record<ModalSize, string> = {
   sm:         "max-w-md",     // 448px
   md:         "max-w-2xl",    // 672px
   "lg-narrow":"max-w-lg",     // 512px · v3 신규
+  "3xl":      "max-w-3xl",    // 768px · v3.1 신규 (VendorDetailModal wrapper 등)
   lg:         "max-w-4xl",    // 896px
   xl:         "max-w-6xl",    // 1152px
   full:       "max-w-[95vw]",

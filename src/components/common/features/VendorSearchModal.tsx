@@ -15,12 +15,13 @@
 //   · src/components/LandingPage/VendorListEditor.tsx 에 export 됨 · 그대로 재사용
 
 import { useMemo, useState } from "react";
-import { X, Search, Loader2, Building2, Plus, PencilLine } from "lucide-react";
+import { X, Search, Building2, Plus, PencilLine } from "lucide-react";
 import { useVendors } from "../../../hooks/useVendors";
 import { NewVendorModal } from "./NewVendorModal";
 import { IconTile } from "../IconTile";
 import { Spinner } from "../Spinner";
 import { VendorDetailModal, type Vendor as VendorFull } from "../../LandingPage/VendorListEditor";
+import { Modal } from "../Modal";
 
 interface VendorSearchModalProps {
   onClose: () => void;
@@ -53,19 +54,17 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
   const showEditButton = selected != null;
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      // 2026-08-17 v2 · frosted backdrop + 3-layer shadow · Modal 통일
-      className="fixed inset-0 z-[9998] flex items-center justify-center p-3"
-      style={{ background: "rgba(10, 46, 74, 0.35)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
-      onClick={onClose}
+    <>
+    {/* 2026-08-23 v3 · Modal primitive · zIndex=9998 · size=lg-narrow · bodyPadding=none (자체 헤더·body·footer 완결) */}
+    <Modal
+      open
+      onClose={onClose}
+      zIndex={9998}
+      size="lg-narrow"
+      bodyPadding="none"
+      showClose={false}
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg max-h-[85vh] bg-white rounded-2xl border border-line overflow-hidden flex flex-col"
-        style={{ boxShadow: "0 1px 3px rgba(10,46,74,0.12), 0 8px 32px -8px rgba(10,46,74,0.24), 0 24px 64px -24px rgba(10,46,74,0.28)" }}
-      >
+      <div className="flex flex-col max-h-[85vh]">
         {/* 헤더 */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-100 bg-sky-50/60 shrink-0">
           {/* 2026-08-18 · IconTile 확산 */}
@@ -182,24 +181,25 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
           검색 후 결과 선택 → [조회수정] · 결과 없으면 → [신규등록]
         </div>
       </div>
+    </Modal>
 
-      {/* 신규 등록 서브 모달 */}
-      {openNew && (
-        <NewVendorModal
-          onClose={() => setOpenNew(false)}
-          onSaved={() => { setOpenNew(false); refresh(); }}
-        />
-      )}
+    {/* 신규 등록 서브 모달 */}
+    {openNew && (
+      <NewVendorModal
+        onClose={() => setOpenNew(false)}
+        onSaved={() => { setOpenNew(false); refresh(); }}
+      />
+    )}
 
-      {/* 조회수정 서브 모달 · 공통 · VendorDetailModal (매입이력 > 공급사조회 · 동일) */}
-      {detailVendor && (
-        <VendorDetailModal
-          vendor={detailVendor}
-          onClose={() => setOpenDetailId(null)}
-          onSaved={refresh}
-        />
-      )}
-    </div>
+    {/* 조회수정 서브 모달 · 공통 · VendorDetailModal (매입이력 > 공급사조회 · 동일) */}
+    {detailVendor && (
+      <VendorDetailModal
+        vendor={detailVendor}
+        onClose={() => setOpenDetailId(null)}
+        onSaved={refresh}
+      />
+    )}
+    </>
   );
 }
 
