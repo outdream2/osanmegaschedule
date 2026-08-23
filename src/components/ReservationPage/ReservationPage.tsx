@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import type { AuthSession } from "../../types";
 import { AppNavHeader } from "../layout/AppNavHeader";
+import { Modal } from "../common/Modal";
 
 interface ReservationPageProps {
   onBack: () => void;
@@ -594,40 +595,40 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
       </div>
 
       {/* ====== MODAL: Reservation Info Form ====== */}
-      {modalTime && (
-        // 2026-08-17 v2 · Modal 통일
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center backdrop-brand animate-in fade-in duration-200"
-          onClick={closeModal}
-        >
-          <div
-            className="bg-white border-t sm:border border-line w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl shadow-brand-modal max-h-[92vh] flex flex-col"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Modal header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
-              <div>
-                <h3 className="text-gray-900 font-bold text-sm sm:text-base leading-tight">예약 정보 입력</h3>
-                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                  <span className="text-emerald-700 text-xs font-semibold">{formatKoreanDate(selectedDate)}</span>
-                  <span className="text-gray-300 text-xs">·</span>
-                  <span className="text-emerald-700 text-xs font-bold flex items-center gap-1">
-                    <Clock size={11} /> {modalTime}
-                  </span>
-                  <span className="text-gray-300 text-xs">·</span>
-                  <span className="text-indigo-600 text-xs font-bold">
-                    대상: {modalTarget}
-                  </span>
-                </div>
+      {/* 2026-08-23 · v3.2 · Modal primitive · align="bottom-mobile" 재마이그레이션 */}
+      <Modal
+        open={!!modalTime}
+        onClose={closeModal}
+        align="bottom-mobile"
+        size="lg-narrow"
+        bodyPadding="none"
+        showClose={false}
+      >
+        <div className="flex flex-col h-full">
+          {/* Modal header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
+            <div>
+              <h3 className="text-gray-900 font-bold text-sm sm:text-base leading-tight">예약 정보 입력</h3>
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                <span className="text-emerald-700 text-xs font-semibold">{formatKoreanDate(selectedDate)}</span>
+                <span className="text-gray-300 text-xs">·</span>
+                <span className="text-emerald-700 text-xs font-bold flex items-center gap-1">
+                  <Clock size={11} /> {modalTime}
+                </span>
+                <span className="text-gray-300 text-xs">·</span>
+                <span className="text-indigo-600 text-xs font-bold">
+                  대상: {modalTarget}
+                </span>
               </div>
-              <button onClick={closeModal} className="text-gray-400 hover:text-gray-700 transition cursor-pointer">
-                <X size={20} />
-              </button>
             </div>
+            <button onClick={closeModal} className="text-gray-400 hover:text-gray-700 transition cursor-pointer">
+              <X size={20} />
+            </button>
+          </div>
 
-            {/* Modal body */}
-            <div className="overflow-y-auto p-5 flex-1">
-              <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Modal body */}
+          <div className="overflow-y-auto p-5 flex-1 min-h-0">
+            <form onSubmit={handleSubmit} className="space-y-4">
 
                 {error && (
                   <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 text-rose-700 text-sm">
@@ -734,10 +735,9 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                   )}
                 </button>
               </form>
-            </div>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 };

@@ -265,83 +265,85 @@ interface HistoryModalProps {
 export const HistoryModal: React.FC<HistoryModalProps> = ({
   historyModal, historyRows, historyLoading, onClose,
 }) => {
-  if (!historyModal) return null;
+  // 2026-08-23 · v3.2 · Modal primitive · align="bottom-mobile" 재마이그레이션
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-[9998] flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-brand"
-      onClick={onClose}
+    <Modal
+      open={!!historyModal}
+      onClose={onClose}
+      align="bottom-mobile"
+      zIndex={9998}
+      size="md"
+      bodyPadding="none"
+      showClose={false}
     >
-      <div
-        onClick={e => e.stopPropagation()}
-        className="w-full sm:max-w-2xl max-h-[85vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-brand-modal border border-line overflow-hidden flex flex-col"
-      >
-        <div className="px-5 py-3.5 border-b border-zinc-100 bg-zinc-50/60 flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <div className="text-[14px] font-bold text-teal-600 uppercase tracking-widest">실재고 저장 이력</div>
-            <div className="text-sm font-bold text-zinc-800 truncate">{historyModal.name}</div>
-            <div className="text-[14px] text-zinc-400 font-mono">{historyModal.code}</div>
+      {historyModal && (
+        <div className="flex flex-col h-full">
+          <div className="px-5 py-3.5 border-b border-zinc-100 bg-zinc-50/60 flex items-center justify-between gap-2 shrink-0">
+            <div className="min-w-0">
+              <div className="text-[14px] font-bold text-teal-600 uppercase tracking-widest">실재고 저장 이력</div>
+              <div className="text-sm font-bold text-zinc-800 truncate">{historyModal.name}</div>
+              <div className="text-[14px] text-zinc-400 font-mono">{historyModal.code}</div>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition cursor-pointer shrink-0"
+              title="닫기"
+            >
+              <X size={16} />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition cursor-pointer shrink-0"
-            title="닫기"
-          >
-            <X size={16} />
-          </button>
+          <div className="flex-1 overflow-auto min-h-0">
+            {historyLoading ? (
+              <div className="flex items-center justify-center py-12 text-zinc-400 text-xs font-semibold">
+                <Spinner size={16} className="mr-2" /> 이력 조회 중...
+              </div>
+            ) : historyRows.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-zinc-400 text-xs font-semibold">
+                <History size={22} className="mb-2 text-zinc-300" />
+                저장 이력이 없습니다.
+              </div>
+            ) : (
+              <table className="w-full text-[15px]">
+                <thead className="bg-zinc-50 border-b border-line text-[14px] uppercase tracking-widest text-zinc-500 font-bold">
+                  <tr>
+                    <th className="px-3 py-2 text-left">일시</th>
+                    <th className="px-2 py-2 text-center">창1</th>
+                    <th className="px-2 py-2 text-center">창2</th>
+                    <th className="px-2 py-2 text-center">매1</th>
+                    <th className="px-2 py-2 text-center">매2</th>
+                    <th className="px-2 py-2 text-center">매3</th>
+                    <th className="px-3 py-2 text-left">담당</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {historyRows.map(h => {
+                    const dt = h.checked_at ? new Date(h.checked_at) : null;
+                    const dtLabel = dt
+                      ? `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")} ${String(dt.getHours()).padStart(2,"0")}:${String(dt.getMinutes()).padStart(2,"0")}`
+                      : "-";
+                    const w1 = h.warehouse1_stock ?? h.warehouse_stock;
+                    return (
+                      <tr key={h.id} className="hover:bg-teal-50/40">
+                        <td className="px-3 py-2 font-mono text-zinc-700 whitespace-nowrap">{dtLabel}</td>
+                        <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{w1 ?? "-"}</td>
+                        <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.warehouse2_stock ?? "-"}</td>
+                        <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.store_stock ?? "-"}</td>
+                        <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.store_stock_2 ?? "-"}</td>
+                        <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.store3_stock ?? "-"}</td>
+                        <td className="px-3 py-2 text-zinc-600 truncate max-w-[100px]">{h.checked_by ?? "-"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+          <div className="px-5 py-2.5 border-t border-zinc-100 bg-zinc-50/60 text-[14px] text-zinc-400 font-semibold text-center shrink-0">
+            같은 날 저장은 덮어쓰고, 다른 날 저장은 이력으로 추가됩니다.
+          </div>
         </div>
-        <div className="flex-1 overflow-auto">
-          {historyLoading ? (
-            <div className="flex items-center justify-center py-12 text-zinc-400 text-xs font-semibold">
-              <Spinner size={16} className="mr-2" /> 이력 조회 중...
-            </div>
-          ) : historyRows.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-zinc-400 text-xs font-semibold">
-              <History size={22} className="mb-2 text-zinc-300" />
-              저장 이력이 없습니다.
-            </div>
-          ) : (
-            <table className="w-full text-[15px]">
-              <thead className="bg-zinc-50 border-b border-line text-[14px] uppercase tracking-widest text-zinc-500 font-bold">
-                <tr>
-                  <th className="px-3 py-2 text-left">일시</th>
-                  <th className="px-2 py-2 text-center">창1</th>
-                  <th className="px-2 py-2 text-center">창2</th>
-                  <th className="px-2 py-2 text-center">매1</th>
-                  <th className="px-2 py-2 text-center">매2</th>
-                  <th className="px-2 py-2 text-center">매3</th>
-                  <th className="px-3 py-2 text-left">담당</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {historyRows.map(h => {
-                  const dt = h.checked_at ? new Date(h.checked_at) : null;
-                  const dtLabel = dt
-                    ? `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")} ${String(dt.getHours()).padStart(2,"0")}:${String(dt.getMinutes()).padStart(2,"0")}`
-                    : "-";
-                  const w1 = h.warehouse1_stock ?? h.warehouse_stock;
-                  return (
-                    <tr key={h.id} className="hover:bg-teal-50/40">
-                      <td className="px-3 py-2 font-mono text-zinc-700 whitespace-nowrap">{dtLabel}</td>
-                      <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{w1 ?? "-"}</td>
-                      <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.warehouse2_stock ?? "-"}</td>
-                      <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.store_stock ?? "-"}</td>
-                      <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.store_stock_2 ?? "-"}</td>
-                      <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.store3_stock ?? "-"}</td>
-                      <td className="px-3 py-2 text-zinc-600 truncate max-w-[100px]">{h.checked_by ?? "-"}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-        <div className="px-5 py-2.5 border-t border-zinc-100 bg-zinc-50/60 text-[14px] text-zinc-400 font-semibold text-center">
-          같은 날 저장은 덮어쓰고, 다른 날 저장은 이력으로 추가됩니다.
-        </div>
-      </div>
-    </div>
+      )}
+    </Modal>
   );
 };
 
