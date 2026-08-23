@@ -172,9 +172,9 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
         <CalendarCheck size={28} className="text-white" weight="fill" />
       </div>
       <div className="relative">
-        <div className="text-white/70 text-[10px] font-semibold tracking-widest uppercase mb-0.5">Vendor Portal</div>
-        <div className="text-white font-bold text-2xl leading-tight tracking-tight">거래처 로그인</div>
-        <div className="text-emerald-100 text-[11px] font-medium tracking-wide mt-0.5">방문예약 이용</div>
+        <div className="text-white/70 text-[12px] font-semibold tracking-widest uppercase mb-0.5">Vendor Portal</div>
+        <div className="text-white font-bold text-3xl leading-tight tracking-tight">거래처 로그인</div>
+        <div className="text-emerald-100 text-[13px] font-medium tracking-wide mt-0.5">방문예약 이용</div>
       </div>
     </div>
   );
@@ -194,7 +194,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
         className="relative w-14 h-14 object-cover rounded-2xl ring-1 ring-white/30 shadow-lg shrink-0 bg-white"
       />
       <div className="relative min-w-0">
-        <div className="text-white font-bold text-2xl leading-tight tracking-tight truncate">
+        <div className="text-white font-bold text-3xl leading-tight tracking-tight truncate">
           {(lpBrand.region ? lpBrand.region + " " : "오산 ") + (lpBrand.shortName || "메가타운약국")}
         </div>
       </div>
@@ -217,7 +217,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
         <div className="px-7 pt-5 pb-7">
           <form onSubmit={handleVendorSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-zinc-600 text-xs font-semibold pl-1">핸드폰번호</label>
+              <label className="text-zinc-600 text-sm font-semibold pl-1">핸드폰번호</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none"><User size={14} className="text-zinc-400" weight="fill" /></div>
                 <input
@@ -233,7 +233,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-zinc-600 text-xs font-semibold pl-1">비밀번호</label>
+              <label className="text-zinc-600 text-sm font-semibold pl-1">비밀번호</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none"><Lock size={14} className="text-zinc-400" /></div>
                 <input
@@ -253,16 +253,16 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
             {vendorError && (
               <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
                 <AlertCircle size={13} className="text-rose-500 mt-0.5 shrink-0" />
-                <p className="text-rose-600 text-xs font-semibold leading-relaxed">{vendorError}</p>
+                <p className="text-rose-600 text-sm font-semibold leading-relaxed">{vendorError}</p>
               </div>
             )}
             <button
               type="submit" disabled={vendorLoading}
-              className="w-full py-3.5 rounded-2xl text-white font-bold text-sm mt-1 transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
+              className="w-full py-3.5 rounded-2xl text-white font-bold text-base mt-1 transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
             >
               {vendorLoading ? <><Spinner size={16} tone="white" /><span>로그인 중...</span></> : <span>거래처로 입장하기</span>}
             </button>
-            <p className="text-[11px] text-zinc-400 text-center leading-relaxed">비밀번호 분실 시 관리자에게 문의하세요</p>
+            <p className="text-[13px] text-zinc-400 text-center leading-relaxed">비밀번호 분실 시 관리자에게 문의하세요</p>
           </form>
         </div>
       </Modal>
@@ -281,7 +281,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
         <div className="px-7 pt-5 pb-7">
           <form onSubmit={handleEmployeeSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-zinc-600 text-xs font-semibold pl-1">핸드폰번호</label>
+              <label className="text-zinc-600 text-sm font-semibold pl-1">핸드폰번호</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                   <User size={14} className="text-zinc-400" weight="fill" />
@@ -299,7 +299,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-zinc-600 text-xs font-semibold pl-1">비밀번호</label>
+              <label className="text-zinc-600 text-sm font-semibold pl-1">비밀번호</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                   <Lock size={14} className="text-zinc-400" />
@@ -330,18 +330,18 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-4 h-4 rounded border-2 border-zinc-300 text-indigo-600 accent-indigo-600 cursor-pointer"
               />
-              <span className="text-xs text-zinc-500 group-hover:text-zinc-700 transition">자동 로그인</span>
+              <span className="text-sm text-zinc-500 group-hover:text-zinc-700 transition">자동 로그인</span>
             </label>
             {empError && (
               <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
                 <AlertCircle size={13} className="text-rose-500 mt-0.5 shrink-0" />
-                <p className="text-rose-600 text-xs font-semibold leading-relaxed">{empError}</p>
+                <p className="text-rose-600 text-sm font-semibold leading-relaxed">{empError}</p>
               </div>
             )}
             <Button type="submit" variant="primary" size="lg" fullWidth loading={empLoading} className="mt-1">
               {empLoading ? "로그인 중..." : "직원으로 입장하기"}
             </Button>
-            <p className="text-[11px] text-zinc-400 text-center leading-relaxed">비밀번호 분실 시 관리자에게 문의하세요</p>
+            <p className="text-[13px] text-zinc-400 text-center leading-relaxed">비밀번호 분실 시 관리자에게 문의하세요</p>
           </form>
         </div>
       </Modal>

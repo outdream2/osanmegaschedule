@@ -74,8 +74,8 @@ interface MenuCardProps {
 
 export function MenuCard({ color, icon: Icon, title, description, onClick, orderClass, badge, descClass, statChips }: MenuCardProps) {
   const c = COLOR_MAP[color];
-  // 2026-08-17 · 사용자 지시 · 반응형 랜딩 메뉴 폰트 +2 (기존 15 → 17)
-  const descSize = descClass ?? "text-[17px] leading-[1.5]";
+  // 2026-08-17 · 사용자 지시 · 반응형 랜딩 메뉴 폰트 +2 (기존 15 → 17) · 2026-08-23 · #200 +2 (17 → 19)
+  const descSize = descClass ?? "text-[19px] leading-[1.5]";
   return (
     <button
       data-menu-card
@@ -92,8 +92,8 @@ export function MenuCard({ color, icon: Icon, title, description, onClick, order
         </div>
         {badge}
       </div>
-      {/* 제목 · 2026-08-17 · 반응형 랜딩 +2 (사용자 지시) · 19px bold */}
-      <div className="text-[19px] font-bold text-ink tracking-[-0.2px] leading-tight">
+      {/* 제목 · 2026-08-17 · 반응형 랜딩 +2 (사용자 지시) · 19px bold · 2026-08-23 · #200 +2 (19 → 21) */}
+      <div className="text-[21px] font-bold text-ink tracking-[-0.2px] leading-tight">
         {title}
       </div>
       {/* 설명 · 2026-08-17 · +2 폰트 (15px) */}
@@ -106,7 +106,7 @@ export function MenuCard({ color, icon: Icon, title, description, onClick, order
           {statChips.map((chip, i) => (
             <div
               key={i}
-              className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-[9px] py-[3px] pl-[7px] rounded-full ${CHIP_TONE[chip.tone ?? "zinc"]}`}
+              className={`inline-flex items-center gap-1.5 text-[13px] font-bold px-[9px] py-[3px] pl-[7px] rounded-full ${CHIP_TONE[chip.tone ?? "zinc"]}`}
             >
               <span className="tabular-nums">{chip.value}</span>
               {chip.label}

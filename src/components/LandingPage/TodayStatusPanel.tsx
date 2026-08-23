@@ -34,7 +34,7 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
     <div className="w-full mb-6">
       <div className="flex items-center gap-2.5 mb-2 flex-wrap">
         <AccentBar />
-        <div className="text-ink font-bold tracking-tight text-[16px]">오늘의 현황</div>
+        <div className="text-ink font-bold tracking-tight text-[18px]">오늘의 현황</div>
         {/* 전체 요청 N건 요약 · 클릭 → 상세 리스트 토글 · 2026-08-21 · #171 Phase 3 */}
         {(() => {
           const totalCount = leavePendingCount
@@ -46,7 +46,7 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
             <button
               type="button"
               onClick={() => setStatusDetailOpen(v => !v)}
-              className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[13px] font-semibold text-brand-deep bg-brand-tint hover:brightness-95 border border-brand/15 cursor-pointer transition-colors"
+              className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[15px] font-semibold text-brand-deep bg-brand-tint hover:brightness-95 border border-brand/15 cursor-pointer transition-colors"
               title={statusDetailOpen ? "상세 리스트 접기" : "상세 리스트 펼치기"}
               aria-expanded={statusDetailOpen}
             >
@@ -57,7 +57,7 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
         })()}
       </div>
       {/* 7항목 (연차·진열발주·불일치·점심·재고점검·반품·사직서) · 각 클릭 → 페이지 이동 */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[17px] text-ink-soft pl-[13px]">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[19px] text-ink-soft pl-[13px]">
         <button
           type="button"
           onClick={() => onNavigate("leave", authSession)}
@@ -136,8 +136,8 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
       {/* 2026-08-21 · #171 Phase 3 · 상세 리스트 (전체 N건 클릭 시 토글) · 7항목 breakdown table */}
       {statusDetailOpen && (
         <Card variant="raw-sm" padding="none" className="mt-3 px-4 py-3">
-          <div className="text-[13px] font-bold text-ink-soft mb-2 tracking-tight">요청 상세 · 카테고리별 대기 건수</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[14px]">
+          <div className="text-[15px] font-bold text-ink-soft mb-2 tracking-tight">요청 상세 · 카테고리별 대기 건수</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[16px]">
             {[
               { label: "연차 승인", count: leavePendingCount, dot: "bg-amber-500", text: "text-amber-700", nav: "leave" as Exclude<AppNavPage, "landing"> },
               { label: "진열 요청", count: requestsCounts.display, dot: "bg-sky-500", text: "text-sky-700", nav: "requests" as Exclude<AppNavPage, "landing"> },

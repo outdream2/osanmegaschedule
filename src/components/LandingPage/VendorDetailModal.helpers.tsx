@@ -43,8 +43,8 @@ export const SectionTitle: React.FC<{
   return (
     <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-100">
       <span className={`w-1 h-4 rounded-full ${c.bar} shrink-0`} />
-      <span className={`text-[15px] font-bold ${c.text}`}>{title}</span>
-      {hint && <span className="ml-auto text-[12px] text-zinc-400 font-mono tabular-nums">{hint}</span>}
+      <span className={`text-[17px] font-bold ${c.text}`}>{title}</span>
+      {hint && <span className="ml-auto text-[14px] text-zinc-400 font-mono tabular-nums">{hint}</span>}
     </div>
   );
 };
@@ -69,12 +69,12 @@ export const StatCard: React.FC<{
     <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] px-3 py-2.5">
       <div className="flex items-center gap-1.5 mb-1">
         <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold text-ink-soft tracking-tight`}>
+        <span className={`inline-flex items-center gap-1 text-[13px] font-semibold text-ink-soft tracking-tight`}>
           <span className={c.iconColor}>{icon}</span><span>{label}</span>
         </span>
       </div>
-      <div className={`text-[15px] font-extrabold ${c.text} font-mono tabular-nums truncate leading-tight`} title={value}>{value}</div>
-      {sub && <div className="text-[11px] font-medium text-ink-soft mt-0.5 truncate" title={sub}>{sub}</div>}
+      <div className={`text-[17px] font-extrabold ${c.text} font-mono tabular-nums truncate leading-tight`} title={value}>{value}</div>
+      {sub && <div className="text-[13px] font-medium text-ink-soft mt-0.5 truncate" title={sub}>{sub}</div>}
     </div>
   );
 };

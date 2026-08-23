@@ -73,9 +73,9 @@ export function StockSearch() {
           <Package size={20} className="text-white" weight="fill" />
         </div>
         <div className="relative text-left flex-1 min-w-0">
-          <div className="text-[11px] font-bold uppercase tracking-[0.08em] mb-0.5" style={{ color: "#B9D6EA" }}>Realtime Stock</div>
-          <div className="text-white font-extrabold text-[18px] sm:text-[20px] tracking-tight leading-tight">재고 확인</div>
-          <div className="text-[12px] mt-1 leading-tight" style={{ color: "#DCE8F3" }}>약품·제품명 입력 시 실시간 재고 확인</div>
+          <div className="text-[13px] font-bold uppercase tracking-[0.08em] mb-0.5" style={{ color: "#B9D6EA" }}>Realtime Stock</div>
+          <div className="text-white font-extrabold text-[20px] sm:text-[22px] tracking-tight leading-tight">재고 확인</div>
+          <div className="text-[14px] mt-1 leading-tight" style={{ color: "#DCE8F3" }}>약품·제품명 입력 시 실시간 재고 확인</div>
         </div>
       </div>
       {/* 검색바 */}
@@ -87,7 +87,7 @@ export function StockSearch() {
             value={query}
             onChange={e => handleSearch(e.target.value)}
             placeholder="예: 타이레놀, 판콜에이…"
-            className="w-full rounded-xl pl-10 pr-9 py-2.5 text-zinc-900 text-sm font-semibold placeholder:text-zinc-300 placeholder:font-normal focus:outline-none border-2 border-line bg-zinc-50 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition-all"
+            className="w-full rounded-xl pl-10 pr-9 py-2.5 text-zinc-900 text-base font-semibold placeholder:text-zinc-300 placeholder:font-normal focus:outline-none border-2 border-line bg-zinc-50 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition-all"
           />
           {query && (
             <button type="button"
@@ -101,10 +101,10 @@ export function StockSearch() {
       {/* 결과 리스트 */}
       <div className="bg-white px-4 pb-3 pt-1 max-h-80 overflow-y-auto">
         {query.trim() && searching && results === null && (
-          <div className="text-center text-zinc-400 text-xs py-4">검색 중…</div>
+          <div className="text-center text-zinc-400 text-sm py-4">검색 중…</div>
         )}
         {results !== null && results.length === 0 && !searching && (
-          <div className="text-center text-zinc-400 text-xs py-4">일치하는 상품이 없습니다.</div>
+          <div className="text-center text-zinc-400 text-sm py-4">일치하는 상품이 없습니다.</div>
         )}
         {results !== null && results.length > 0 && (
           <div className="flex flex-col divide-y divide-zinc-100">
@@ -113,9 +113,9 @@ export function StockSearch() {
               return (
                 <div key={idx} className="py-2 flex items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="text-zinc-800 font-bold text-xs truncate">{item.product_name}</div>
+                    <div className="text-zinc-800 font-bold text-sm truncate">{item.product_name}</div>
                     {item.supplier && (
-                      <div className="text-[10px] text-zinc-400 truncate mt-0.5">{item.supplier}</div>
+                      <div className="text-[12px] text-zinc-400 truncate mt-0.5">{item.supplier}</div>
                     )}
                   </div>
                   <div className="shrink-0 flex items-center gap-1">
@@ -129,7 +129,7 @@ export function StockSearch() {
               );
             })}
             {results.length > 20 && (
-              <div className="text-center text-[10px] text-zinc-400 pt-2">
+              <div className="text-center text-[12px] text-zinc-400 pt-2">
                 외 {results.length - 20}건 · 더 자세히 보려면 로그인
               </div>
             )}

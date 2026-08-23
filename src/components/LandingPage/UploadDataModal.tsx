@@ -332,11 +332,11 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
                     if (tab === "log") { fetchImportLog(); fetchStockImportLog(); fetchPurchaseImportLog(); }
                     setUploadTab(tab);
                   }}
-                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-colors duration-150 cursor-pointer leading-tight ${isActive ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
+                  className={`flex-1 min-w-0 px-2 py-1.5 text-[13px] sm:text-sm font-bold rounded-lg transition-colors duration-150 cursor-pointer leading-tight ${isActive ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
                 >
                   {labels[tab]}
                   {tab === "log" && (importLog.length + stockImportLog.length + purchaseImportBatches.length) > 0 && (
-                    <span className={`ml-1 text-[9px] font-mono rounded-full px-1.5 py-0.5 ${isActive ? "bg-indigo-100 text-indigo-700" : "bg-zinc-100 text-zinc-400"}`}>
+                    <span className={`ml-1 text-[11px] font-mono rounded-full px-1.5 py-0.5 ${isActive ? "bg-indigo-100 text-indigo-700" : "bg-zinc-100 text-zinc-400"}`}>
                       {importLog.length + stockImportLog.length + purchaseImportBatches.length}
                     </span>
                   )}
@@ -349,16 +349,16 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
         {/* ── 상품목록 탭 ── */}
         {uploadTab === "products" && (
           <>
-            <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+            <p className="text-sm text-gray-500 mb-4 leading-relaxed">
               xlsx 파일을 업로드하면 전체 상품 데이터가 DB에 임포트됩니다.<br />
               <span className="text-gray-400">기존 데이터는 모두 덮어씁니다.</span>
             </p>
             {uploadResult?.ok ? (
               <div className="flex flex-col items-center gap-3 py-4">
                 <CheckCircle size={36} className="text-emerald-500" weight="fill" />
-                <p className="text-sm font-bold text-emerald-700">업로드 완료</p>
-                <p className="text-xs text-gray-500">{uploadResult.count?.toLocaleString()}개 상품 등록됨</p>
-                <button onClick={() => { setUploadResult(null); setUploadFile(null); }} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">확인</button>
+                <p className="text-base font-bold text-emerald-700">업로드 완료</p>
+                <p className="text-sm text-gray-500">{uploadResult.count?.toLocaleString()}개 상품 등록됨</p>
+                <button onClick={() => { setUploadResult(null); setUploadFile(null); }} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl transition cursor-pointer">확인</button>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
@@ -375,15 +375,15 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
                   setUploadFile(file);
                 }} />
                 <button type="button" onClick={() => uploadInputRef.current?.click()}
-                  className="w-full py-3 border-2 border-dashed border-gray-300 hover:border-orange-400 text-gray-500 hover:text-orange-600 text-sm font-semibold rounded-xl transition cursor-pointer flex items-center justify-center gap-2">
+                  className="w-full py-3 border-2 border-dashed border-gray-300 hover:border-orange-400 text-gray-500 hover:text-orange-600 text-base font-semibold rounded-xl transition cursor-pointer flex items-center justify-center gap-2">
                   <Upload size={16} />
                   {uploadFile ? uploadFile.name : "파일 선택 (.xlsx)"}
                 </button>
                 {uploadResult?.ok === false && (
-                  <p className="text-xs text-rose-500 font-semibold text-center">{uploadResult.msg}</p>
+                  <p className="text-sm text-rose-500 font-semibold text-center">{uploadResult.msg}</p>
                 )}
                 <button type="button" disabled={!uploadFile || uploadLoading} onClick={handleUpload}
-                  className="w-full py-3 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-orange-200 disabled:cursor-not-allowed text-white font-bold rounded-xl transition cursor-pointer text-sm flex items-center justify-center gap-2">
+                  className="w-full py-3 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-orange-200 disabled:cursor-not-allowed text-white font-bold rounded-xl transition cursor-pointer text-base flex items-center justify-center gap-2">
                   {uploadLoading ? <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /><span>임포트 중...</span></> : <><Upload size={14} /><span>DB 임포트</span></>}
                 </button>
               </div>
@@ -391,12 +391,12 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
             {importLog.length > 0 && (
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">상품 임포트 이력</p>
-                  <button onClick={handleClearImportLog} className="text-[10px] text-gray-400 hover:text-rose-500 transition cursor-pointer">clear</button>
+                  <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">상품 임포트 이력</p>
+                  <button onClick={handleClearImportLog} className="text-[12px] text-gray-400 hover:text-rose-500 transition cursor-pointer">clear</button>
                 </div>
                 <div className="flex flex-col gap-1 max-h-[180px] overflow-y-auto">
                   {importLog.map((entry, i) => (
-                    <div key={i} className="flex items-center justify-between text-[11px]">
+                    <div key={i} className="flex items-center justify-between text-[13px]">
                       <span className="text-gray-500">
                         {new Date(entry.timestamp).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                       </span>
@@ -431,19 +431,19 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
         {/* ── 공급사관리 탭 ── */}
         {uploadTab === "vendors" && (
           <>
-            <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+            <p className="text-sm text-gray-500 mb-3 leading-relaxed">
               공급사관리 xlsx 파일을 업로드하면 <b>회사명</b> 기준으로 담당자·전화·이메일·카테고리·비고·사업자번호가 갱신됩니다.<br />
               <span className="text-gray-400">기존에 없는 공급사는 신규 등록됩니다.</span>
             </p>
             {vendorUploadResult?.ok ? (
               <div className="flex flex-col items-center gap-3 py-4 mb-4">
                 <CheckCircle size={36} className="text-emerald-500" weight="fill" />
-                <p className="text-sm font-bold text-emerald-700">공급사 임포트 완료</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-base font-bold text-emerald-700">공급사 임포트 완료</p>
+                <p className="text-sm text-gray-500">
                   총 {vendorUploadResult.count?.toLocaleString()}건 · 신규 {vendorUploadResult.inserted ?? 0} · 갱신 {vendorUploadResult.updated ?? 0}
                   {vendorUploadResult.failed ? <> · <span className="text-rose-500">실패 {vendorUploadResult.failed}</span></> : null}
                 </p>
-                <button onClick={() => { setVendorUploadResult(null); setVendorUploadFile(null); }} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">확인</button>
+                <button onClick={() => { setVendorUploadResult(null); setVendorUploadFile(null); }} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl transition cursor-pointer">확인</button>
               </div>
             ) : (
               <div className="flex flex-col gap-2 mb-4">
@@ -460,17 +460,17 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
                 }} />
                 <div className="flex gap-2 items-stretch">
                   <button type="button" onClick={() => vendorUploadInputRef.current?.click()}
-                    className="flex-1 min-w-0 py-2.5 border-2 border-dashed border-gray-300 hover:border-emerald-400 text-gray-500 hover:text-emerald-600 text-xs font-semibold rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 truncate">
+                    className="flex-1 min-w-0 py-2.5 border-2 border-dashed border-gray-300 hover:border-emerald-400 text-gray-500 hover:text-emerald-600 text-sm font-semibold rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 truncate">
                     <Upload size={14} className="shrink-0" />
                     <span className="truncate">{vendorUploadFile ? vendorUploadFile.name : "파일 선택 (.xlsx)"}</span>
                   </button>
                   <button type="button" disabled={!vendorUploadFile || vendorUploadLoading} onClick={handleVendorUpload}
-                    className="shrink-0 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-200 disabled:cursor-not-allowed text-white font-bold rounded-xl transition cursor-pointer text-xs flex items-center gap-1.5">
+                    className="shrink-0 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-200 disabled:cursor-not-allowed text-white font-bold rounded-xl transition cursor-pointer text-sm flex items-center gap-1.5">
                     {vendorUploadLoading ? <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /><span>임포트 중</span></> : <><Upload size={13} /><span>DB 임포트</span></>}
                   </button>
                 </div>
                 {vendorUploadResult?.ok === false && (
-                  <p className="text-xs text-rose-500 font-semibold text-center">{vendorUploadResult.msg}</p>
+                  <p className="text-sm text-rose-500 font-semibold text-center">{vendorUploadResult.msg}</p>
                 )}
               </div>
             )}
@@ -480,7 +480,7 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
         {/* ── 매입상세 탭 ── */}
         {uploadTab === "purchase" && (
           <>
-            <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+            <p className="text-sm text-gray-500 mb-3 leading-relaxed">
               매입상세현황 xlsx 파일을 업로드하면 개별 매입 건마다 저장됩니다.<br />
               <span className="text-gray-400">상품코드·매입일자·수량·금액·공급사 컬럼을 자동 감지 · 없으면 products DB 로 보강.</span>
             </p>
@@ -488,30 +488,30 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
             {purchaseUploadResult?.ok ? (
               <div className="flex flex-col items-center gap-3 py-4">
                 <CheckCircle size={36} className="text-emerald-500" weight="fill" />
-                <p className="text-sm font-bold text-emerald-700">매입 임포트 완료</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-base font-bold text-emerald-700">매입 임포트 완료</p>
+                <p className="text-sm text-gray-500">
                   총 {(purchaseUploadResult.total ?? 0).toLocaleString()}행 · 저장 {(purchaseUploadResult.inserted ?? 0).toLocaleString()}행
                   {purchaseUploadResult.skipped ? <> · <span className="text-amber-600">skip {purchaseUploadResult.skipped.toLocaleString()}</span></> : null}
                 </p>
-                <button onClick={() => { setPurchaseUploadResult(null); setPurchaseUploadFile(null); }} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">확인</button>
+                <button onClick={() => { setPurchaseUploadResult(null); setPurchaseUploadFile(null); }} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl transition cursor-pointer">확인</button>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
                 <div>
-                  <div className="text-[11px] font-bold text-gray-500 mb-1.5">매입 기간 (필수)</div>
+                  <div className="text-[13px] font-bold text-gray-500 mb-1.5">매입 기간 (필수)</div>
                   <div className="grid grid-cols-2 gap-2">
                     <label className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-gray-500">시작매입일</span>
+                      <span className="text-[12px] font-bold text-gray-500">시작매입일</span>
                       <input type="date" value={purchaseFromDate} onChange={(e) => setPurchaseFromDate(e.target.value)}
-                        className="w-full px-2 py-1.5 text-xs font-mono border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep" />
+                        className="w-full px-2 py-1.5 text-sm font-mono border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep" />
                     </label>
                     <label className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-gray-500">종료매입일</span>
+                      <span className="text-[12px] font-bold text-gray-500">종료매입일</span>
                       <input type="date" value={purchaseToDate} onChange={(e) => setPurchaseToDate(e.target.value)}
-                        className="w-full px-2 py-1.5 text-xs font-mono border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep" />
+                        className="w-full px-2 py-1.5 text-sm font-mono border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep" />
                     </label>
                   </div>
-                  <div className="mt-2 flex items-center gap-2 flex-wrap text-[10px]">
+                  <div className="mt-2 flex items-center gap-2 flex-wrap text-[12px]">
                     {purchasePeriodType ? (
                       <StatusPill tone={purchasePeriodType === "early" ? "sky" : purchasePeriodType === "mid" ? "indigo" : "violet"} size="xs">
                         자동판정: {purchasePeriodType === "early" ? "초순 (1-10일)" : purchasePeriodType === "mid" ? "중순 (11-20일)" : "하순 (21-말일)"}
@@ -523,7 +523,7 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
                       <span className="text-rose-600 font-bold">⚠ 시작일이 종료일보다 뒤</span>
                     )}
                   </div>
-                  <p className="text-[10px] text-gray-400 mt-1">예: 7월 매입 → 시작 2026-07-01 · 종료 2026-07-31 (파일명 자동 파싱 지원)</p>
+                  <p className="text-[12px] text-gray-400 mt-1">예: 7월 매입 → 시작 2026-07-01 · 종료 2026-07-31 (파일명 자동 파싱 지원)</p>
                 </div>
                 <input ref={purchaseUploadInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => {
                   const file = e.target.files?.[0] ?? null;
@@ -557,23 +557,23 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
                   } catch { /* 파싱 실패 시 무시 */ }
                 }} />
                 <button type="button" onClick={() => purchaseUploadInputRef.current?.click()}
-                  className="w-full py-3 border-2 border-dashed border-gray-300 hover:border-sky-400 text-gray-500 hover:text-sky-600 text-sm font-semibold rounded-xl transition cursor-pointer flex items-center justify-center gap-2">
+                  className="w-full py-3 border-2 border-dashed border-gray-300 hover:border-sky-400 text-gray-500 hover:text-sky-600 text-base font-semibold rounded-xl transition cursor-pointer flex items-center justify-center gap-2">
                   <Upload size={16} />
                   {purchaseUploadFile ? purchaseUploadFile.name : "파일 선택 (.xlsx)"}
                 </button>
                 {purchaseUploadResult?.ok === false && (
-                  <p className="text-xs text-rose-500 font-semibold text-center">{purchaseUploadResult.msg}</p>
+                  <p className="text-sm text-rose-500 font-semibold text-center">{purchaseUploadResult.msg}</p>
                 )}
                 <button type="button" disabled={!purchaseUploadFile || purchaseUploadLoading || !purchaseFromDate || !purchaseToDate || purchaseFromDate > purchaseToDate}
                   onClick={handlePurchaseUpload}
-                  className="w-full py-3 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-sky-200 disabled:cursor-not-allowed text-white font-bold rounded-xl transition cursor-pointer text-sm flex items-center justify-center gap-2">
+                  className="w-full py-3 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-sky-200 disabled:cursor-not-allowed text-white font-bold rounded-xl transition cursor-pointer text-base flex items-center justify-center gap-2">
                   {purchaseUploadLoading ? <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /><span>임포트 중...</span></> : <><Upload size={14} /><span>매입 임포트</span></>}
                 </button>
                 {purchaseImportBatches.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-100">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">매입 임포트 이력</p>
-                      <button onClick={fetchPurchaseImportLog} className="text-[10px] text-gray-400 hover:text-sky-500 transition cursor-pointer">새로고침</button>
+                      <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">매입 임포트 이력</p>
+                      <button onClick={fetchPurchaseImportLog} className="text-[12px] text-gray-400 hover:text-sky-500 transition cursor-pointer">새로고침</button>
                     </div>
                     <div className="flex flex-col gap-1 max-h-[220px] overflow-y-auto">
                       {purchaseImportBatches.map((b, i) => {
@@ -588,11 +588,11 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
                         const d = new Date(b.imported_at);
                         const ts = isNaN(d.getTime()) ? b.imported_at : d.toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
                         return (
-                          <div key={i} className="flex items-center justify-between gap-2 text-[11px] py-0.5">
+                          <div key={i} className="flex items-center justify-between gap-2 text-[13px] py-0.5">
                             <div className="flex items-center gap-1.5 min-w-0 flex-1">
                               <span className="text-gray-500 font-mono shrink-0">{ts}</span>
                               <span className="text-emerald-700 font-mono font-bold shrink-0" title={`매입기간 ${b.periodStart ?? b.startDate} ~ ${b.endDate}`}>{rangeLabel}</span>
-                              {periodLabel && <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${periodChipClass} shrink-0`}>{periodLabel}</span>}
+                              {periodLabel && <span className={`text-[12px] font-bold px-1.5 py-0.5 rounded-full border ${periodChipClass} shrink-0`}>{periodLabel}</span>}
                             </div>
                             <span className="text-emerald-700 font-bold font-mono shrink-0">{b.count.toLocaleString()}건</span>
                           </div>

@@ -105,7 +105,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
   const hdrCls = "px-3 py-2 cursor-pointer hover:bg-zinc-100 transition select-none";
 
   const footerNode = (
-    <div className="w-full text-[11px] text-zinc-400">
+    <div className="w-full text-[13px] text-zinc-400">
       ERP 재고 · 매장 시스템 기준 · 실재고 (창고·매장별) 세부는 추후 반영
     </div>
   );
@@ -124,8 +124,8 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
       }
       title={
         <div className="min-w-0">
-          <div className="text-[17px] font-bold text-ink tracking-tight">공급사 재고확인</div>
-          <div className="text-[13px] text-ink-soft truncate mt-0.5">{vendorName}</div>
+          <div className="text-[19px] font-bold text-ink tracking-tight">공급사 재고확인</div>
+          <div className="text-[15px] text-ink-soft truncate mt-0.5">{vendorName}</div>
         </div>
       }
       footer={footerNode}
@@ -141,10 +141,10 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`${TEXT.label} text-zinc-500 shrink-0`}>기간</span>
           <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-            className="text-[13px] px-2 py-1 border border-line rounded-md focus:outline-none focus:border-brand-deep" />
-          <span className="text-zinc-400 text-[13px]">~</span>
+            className="text-[15px] px-2 py-1 border border-line rounded-md focus:outline-none focus:border-brand-deep" />
+          <span className="text-zinc-400 text-[15px]">~</span>
           <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-            className="text-[13px] px-2 py-1 border border-line rounded-md focus:outline-none focus:border-brand-deep" />
+            className="text-[15px] px-2 py-1 border border-line rounded-md focus:outline-none focus:border-brand-deep" />
           <div className="relative flex-1 min-w-[180px]">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
@@ -152,7 +152,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="상품명·코드 검색"
-              className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-line rounded-md focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+              className="w-full pl-8 pr-3 py-1.5 text-[15px] border border-line rounded-md focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
             />
           </div>
         </div>
@@ -173,13 +173,13 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
             <Spinner size={16} tone="zinc" label="불러오는 중..." labelSize={14} />
           </div>
         ) : error ? (
-          <div className="p-8 text-center text-rose-600 text-sm font-bold">⚠ {error}</div>
+          <div className="p-8 text-center text-rose-600 text-base font-bold">⚠ {error}</div>
         ) : sorted.length === 0 ? (
-          <div className="p-12 text-center text-zinc-400 text-sm">
+          <div className="p-12 text-center text-zinc-400 text-base">
             {search ? "검색 결과 없음" : "상품 없음"}
           </div>
         ) : (
-          <table className="w-full text-[13px]">
+          <table className="w-full text-[15px]">
             <thead className="sticky top-0 bg-zinc-50 border-b border-line z-10">
               <tr className={`${TEXT.label} text-zinc-500`}>
                 <th className="text-center px-2 py-2 w-10">#</th>
@@ -194,7 +194,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
               {sorted.map((p, i) => (
                 <tr key={p.code} className="hover:bg-sky-50/40">
                   <td className="text-center px-2 py-1.5 text-zinc-400 tabular-nums">{i + 1}</td>
-                  <td className="px-3 py-1.5 font-mono text-[11px] text-zinc-500 tabular-nums">{p.code}</td>
+                  <td className="px-3 py-1.5 font-mono text-[13px] text-zinc-500 tabular-nums">{p.code}</td>
                   <td className="px-3 py-1.5 font-semibold text-zinc-800 truncate max-w-[280px]">{p.name}</td>
                   <td className="text-right px-3 py-1.5 font-mono font-bold text-sky-700 tabular-nums">
                     {p.current_stock ?? "-"}

@@ -321,8 +321,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-amber-50 border border-amber-300 text-amber-900 rounded-xl shadow-lg px-4 py-3 flex items-center gap-3 max-w-md animate-pulse">
           <span className="text-lg">⏱️</span>
           <div className="flex-1">
-            <p className="text-sm font-bold">세션이 만료되었습니다</p>
-            <p className="text-xs text-amber-700 mt-0.5">30분간 활동이 없어 자동 로그아웃되었습니다. 다시 로그인해 주세요.</p>
+            <p className="text-base font-bold">세션이 만료되었습니다</p>
+            <p className="text-sm text-amber-700 mt-0.5">30분간 활동이 없어 자동 로그아웃되었습니다. 다시 로그인해 주세요.</p>
           </div>
           <button
             onClick={() => setSessionExpiredNotice(false)}
@@ -367,7 +367,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   value={menuSearch}
                   onChange={e => setMenuSearch(e.target.value)}
                   placeholder="메뉴 검색"
-                  className="w-full h-10 pl-9 pr-9 text-[13px] font-semibold text-zinc-800 bg-white border border-line rounded-xl shadow-sm placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
+                  className="w-full h-10 pl-9 pr-9 text-[15px] font-semibold text-zinc-800 bg-white border border-line rounded-xl shadow-sm placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
                 />
                 {menuSearch && (
                   <button
@@ -436,7 +436,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <MenuCard color="sky" icon={Briefcase} title="경영관리" description="직원관리 · 연차승인 · 점심불참 · 권한"
                   onClick={() => onNavigate("business-manage", authSession!)}
                   badge={leavePendingCount > 0 ? (
-                    <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[11px] font-bold tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
+                    <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[13px] font-bold tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
                       {leavePendingCount}
                     </div>
                   ) : undefined} />
@@ -448,7 +448,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     const total = requestsCounts.display + requestsCounts.order + requestsCounts.mismatch + requestsCounts.lunch;
                     if (total === 0) return undefined;
                     return (
-                      <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[11px] font-bold tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
+                      <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[13px] font-bold tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
                         {total}
                       </div>
                     );
@@ -528,7 +528,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     onClick={() => onNavigate("requests", authSession!)}
                     badge={myPendingCount > 0 ? (
                       <div className="absolute top-2 right-2 z-10">
-                        <span className="min-w-[24px] h-[24px] px-1.5 rounded-full flex items-center justify-center text-[11px] font-bold text-white bg-rose-500 shadow-lg ring-2 ring-white animate-pulse">
+                        <span className="min-w-[24px] h-[24px] px-1.5 rounded-full flex items-center justify-center text-[13px] font-bold text-white bg-rose-500 shadow-lg ring-2 ring-white animate-pulse">
                           {myPendingCount > 99 ? "99+" : myPendingCount}
                         </span>
                       </div>
@@ -559,14 +559,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     const after  = idx >= 0 ? en.slice(idx + accent.length).trim() : "";
                     return (
                       <>
-                        {before && <span className="text-red-500 text-lg leading-none">{before}</span>}
-                        {idx >= 0 && <span className="text-gray-900 text-sm leading-none">{accent}</span>}
-                        {after && <span className="text-red-500 text-lg leading-none">{after}</span>}
+                        {before && <span className="text-red-500 text-xl leading-none">{before}</span>}
+                        {idx >= 0 && <span className="text-gray-900 text-base leading-none">{accent}</span>}
+                        {after && <span className="text-red-500 text-xl leading-none">{after}</span>}
                       </>
                     );
                   })()}
                 </div>
-                <div className="text-zinc-400 text-[11px] sm:text-xs mt-1 font-semibold tracking-wide whitespace-pre-line leading-tight">{lpBrand.shortName || "오산\n메가타운약국"}</div>
+                <div className="text-zinc-400 text-[13px] sm:text-sm mt-1 font-semibold tracking-wide whitespace-pre-line leading-tight">{lpBrand.shortName || "오산\n메가타운약국"}</div>
               </div>
               {/* 2026-08-17 · 사용자 지시 · 공사중 배너 · 최신 트렌드 · 노랑 → 딥네이비 modern (Linear/Vercel 톤) */}
               {underConstruction ? (
@@ -580,9 +580,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <Clock size={30} className="text-white animate-pulse" strokeWidth={2} />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <div className="text-[13px] font-bold uppercase tracking-[0.06em]" style={{ color: "#B9D6EA" }}>Coming Soon</div>
-                      <div className="text-white font-extrabold text-[22px] sm:text-[26px] tracking-tight leading-tight">곧 오픈 예정입니다</div>
-                      <div className="text-[14px] font-medium" style={{ color: "#DCE8F3" }}>서비스 준비 중 · 잠시만 기다려주세요</div>
+                      <div className="text-[15px] font-bold uppercase tracking-[0.06em]" style={{ color: "#B9D6EA" }}>Coming Soon</div>
+                      <div className="text-white font-extrabold text-[24px] sm:text-[28px] tracking-tight leading-tight">곧 오픈 예정입니다</div>
+                      <div className="text-[16px] font-medium" style={{ color: "#DCE8F3" }}>서비스 준비 중 · 잠시만 기다려주세요</div>
                     </div>
                   </div>
                 </div>
@@ -617,9 +617,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               {!underConstruction && (
               <Card variant="raw-md" rounded="2xl" padding="none" bg="bg-[#FEE500]" borderColor="border-[#F0D700]/70" clip className="w-full mt-3">
                 <div className="px-4 pt-3 pb-2 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-md bg-zinc-900 text-[#FEE500] font-bold text-[10px] flex items-center justify-center">talk</span>
-                  <span className="text-zinc-900 font-bold text-[13px]">카카오톡 채널</span>
-                  <span className="ml-auto text-zinc-800/70 font-semibold text-[11px]">새 소식 알림받기</span>
+                  <span className="w-6 h-6 rounded-md bg-zinc-900 text-[#FEE500] font-bold text-[12px] flex items-center justify-center">talk</span>
+                  <span className="text-zinc-900 font-bold text-[15px]">카카오톡 채널</span>
+                  <span className="ml-auto text-zinc-800/70 font-semibold text-[13px]">새 소식 알림받기</span>
                 </div>
                 <div className="bg-white px-4 py-3 flex items-center gap-3">
                   <img
@@ -628,15 +628,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     className="w-20 h-20 rounded-lg bg-white p-1 shrink-0 object-contain border border-line"
                   />
                   <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-                    <div className="text-zinc-900 font-bold text-[13px] leading-tight whitespace-pre-line">{lpBrand.shortName || "오산\n메가타운약국"}</div>
-                    <div className="text-zinc-500 text-[11px] leading-tight">QR 스캔 또는 아래 버튼 클릭</div>
+                    <div className="text-zinc-900 font-bold text-[15px] leading-tight whitespace-pre-line">{lpBrand.shortName || "오산\n메가타운약국"}</div>
+                    <div className="text-zinc-500 text-[13px] leading-tight">QR 스캔 또는 아래 버튼 클릭</div>
                     <a
                       href={lpContact.kakaoChannelUrl || "https://pf.kakao.com/_XWuiX/friend"}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="mt-1 inline-flex items-center justify-center rounded-lg px-3 py-2 bg-[#FEE500] hover:bg-[#FADA0A] active:scale-[0.99] transition-all shadow-sm border border-[#F0D700]/60 cursor-pointer"
                     >
-                      <span className="text-zinc-900 font-bold text-[13px]">친구추가</span>
+                      <span className="text-zinc-900 font-bold text-[15px]">친구추가</span>
                     </a>
                   </div>
                 </div>
@@ -686,12 +686,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <button
                   onClick={handleAnonSubscribe}
                   disabled={pushLoading}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[14px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition-colors disabled:opacity-40 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[16px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition-colors disabled:opacity-40 cursor-pointer"
                 >
                   <Bell size={13} fill="currentColor" />알림 받기
                 </button>
               ) : (
-                <span className="inline-flex items-center gap-1.5 text-[14px] text-brand-deep font-semibold bg-brand-tint border border-brand/15 rounded-full px-3 py-1.5">
+                <span className="inline-flex items-center gap-1.5 text-[16px] text-brand-deep font-semibold bg-brand-tint border border-brand/15 rounded-full px-3 py-1.5">
                   <Bell size={13} fill="currentColor" /> 구독 중
                 </span>
               )
@@ -702,7 +702,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             {arrivalsLoading && stockArrivals.length === 0 ? (
               <div className="flex items-center justify-center py-10"><Spinner tone="zinc" size={16} label="로딩 중..." labelSize={14} /></div>
             ) : !arrivalsLoading && stockArrivals.length === 0 ? (
-              <Card variant="flat" padding="none" className="text-center text-[14px] text-ink-soft py-8">데이터 없음</Card>
+              <Card variant="flat" padding="none" className="text-center text-[16px] text-ink-soft py-8">데이터 없음</Card>
             ) : (
               <Card clip padding="none" className={`divide-y divide-line/70 ${arrivalsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {stockArrivals.slice(0, 5).map(a => (
@@ -710,8 +710,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <div className="w-8 h-8 rounded-lg bg-brand-tint flex items-center justify-center shrink-0">
                       <Package size={15} className="text-brand-deep" weight="fill" />
                     </div>
-                    <span className="flex-1 text-[15px] font-semibold text-ink truncate">{a.title}</span>
-                    <span className="text-[13px] text-ink-soft shrink-0 whitespace-nowrap tabular-nums">
+                    <span className="flex-1 text-[17px] font-semibold text-ink truncate">{a.title}</span>
+                    <span className="text-[15px] text-ink-soft shrink-0 whitespace-nowrap tabular-nums">
                       {new Date(a.created_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
@@ -752,7 +752,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
       {/* ── Unauthorized toast ── */}
       {unauthorizedToast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[9999] px-5 py-2.5 bg-rose-600 text-white text-sm font-bold rounded-2xl shadow-xl pointer-events-none animate-in fade-in duration-150">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[9999] px-5 py-2.5 bg-rose-600 text-white text-base font-bold rounded-2xl shadow-xl pointer-events-none animate-in fade-in duration-150">
           권한이 없습니다
         </div>
       )}

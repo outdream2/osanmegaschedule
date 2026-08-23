@@ -308,8 +308,8 @@ export const VendorDetailModal: React.FC<{
             {/* 분류 · 위쪽 별도 라인 */}
             <div className="mb-1"><VendorCategoryBadge category={vendor.category} /></div>
             {/* 공급사명 + 사업자·담당·전화 · PC 한줄 · 모바일 wrap */}
-            <div className="flex items-baseline gap-x-4 gap-y-1 flex-wrap text-[15px]">
-              <div className="text-[18px] font-bold text-zinc-900 leading-tight break-words shrink-0">{vendor.company_name}</div>
+            <div className="flex items-baseline gap-x-4 gap-y-1 flex-wrap text-[17px]">
+              <div className="text-[20px] font-bold text-zinc-900 leading-tight break-words shrink-0">{vendor.company_name}</div>
               <span className="inline-flex items-baseline gap-1.5">
                 <span className="text-zinc-400 font-semibold">사업자</span>
                 {vendor.business_number
@@ -360,7 +360,7 @@ export const VendorDetailModal: React.FC<{
           {(true) && (
           <>
           {/* 2026-08-10 · 사용자 요청 · 안내 문구 위 · 공급요약 · PC 항상 노출 (한줄) · 모바일 details 접기 (2줄) */}
-          <div className="mb-1 text-[12px] text-zinc-400 leading-relaxed px-1">
+          <div className="mb-1 text-[14px] text-zinc-400 leading-relaxed px-1">
             💡 자세한 내용은 <span className="font-bold text-amber-700">매입 &gt; 매입이력 &gt; 공급사 관리</span> 에서 확인
           </div>
           {/* PC: 제목 옆 나란히 · 한줄 */}
@@ -368,25 +368,25 @@ export const VendorDetailModal: React.FC<{
             <div className="flex items-center gap-x-5 gap-y-1 flex-wrap">
               <div className="flex items-center gap-2 shrink-0">
                 <span className="w-1 h-4 rounded-full bg-emerald-500 shrink-0" />
-                <span className="text-[16px] font-bold text-emerald-700">공급 요약</span>
+                <span className="text-[18px] font-bold text-emerald-700">공급 요약</span>
               </div>
-              <span className="inline-flex items-baseline gap-1.5 text-[14px] leading-tight" title="공급사 상품 각각 · 현재고 × 최근 사입단가 합산">
+              <span className="inline-flex items-baseline gap-1.5 text-[16px] leading-tight" title="공급사 상품 각각 · 현재고 × 최근 사입단가 합산">
                 <span className="text-zinc-400 font-semibold">총재고</span>
                 <span className="tabular-nums font-bold text-sky-700">{vendorTotalStock != null ? fmtWon(vendorTotalStock) : "-"}</span>
               </span>
               <span className="text-zinc-200">·</span>
-              <span className="inline-flex items-baseline gap-1.5 text-[14px] leading-tight">
+              <span className="inline-flex items-baseline gap-1.5 text-[16px] leading-tight">
                 <span className="text-zinc-400 font-semibold">총 상품</span>
                 <span className="tabular-nums font-bold text-violet-700">{summary ? `${summary.uniqueProducts.toLocaleString()}종` : "-"}</span>
               </span>
               <span className="text-zinc-200">·</span>
-              <span className="inline-flex items-baseline gap-1.5 text-[14px] leading-tight">
+              <span className="inline-flex items-baseline gap-1.5 text-[16px] leading-tight">
                 <span className="text-zinc-400 font-semibold">총매입</span>
                 <span className="tabular-nums font-bold text-indigo-700">{summary ? fmtWon(summary.totalAmount) : "-"}</span>
               </span>
             </div>
             {/* 2026-08-10 · 사용자 요청 · 총재고 계산 방법 · 상품별 · ERP 남은 재고 × 사입단가 · 합산 */}
-            <div className="mt-1 text-[11px] text-zinc-400 leading-relaxed px-4">
+            <div className="mt-1 text-[13px] text-zinc-400 leading-relaxed px-4">
               총재고 = 상품별로 <span className="font-mono">ERP 남은 재고 수량 × 사입단가</span> · 합산
             </div>
           </div>
@@ -395,9 +395,9 @@ export const VendorDetailModal: React.FC<{
             <summary className="flex items-center gap-2 cursor-pointer select-none list-none pb-1.5 border-b border-zinc-100">
               <ChevronRight size={14} className="chevron text-emerald-500 shrink-0 transition-transform" />
               <span className="w-1 h-4 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-[16px] font-bold text-emerald-700">공급 요약</span>
+              <span className="text-[18px] font-bold text-emerald-700">공급 요약</span>
             </summary>
-            <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[13px] leading-tight px-2">
+            <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[15px] leading-tight px-2">
               <span className="inline-flex items-baseline gap-1">
                 <span className="text-zinc-400 font-semibold">총재고</span>
                 <span className="tabular-nums font-bold text-sky-700">{vendorTotalStock != null ? fmtWon(vendorTotalStock) : "-"}</span>
@@ -420,9 +420,9 @@ export const VendorDetailModal: React.FC<{
             <div className="flex items-center gap-x-4 gap-y-1 flex-wrap">
               <div className="flex items-center gap-2 shrink-0">
                 <span className="w-1 h-4 rounded-full bg-amber-500 shrink-0" />
-                <span className="text-[16px] font-bold text-amber-700">결제 정보</span>
+                <span className="text-[18px] font-bold text-amber-700">결제 정보</span>
               </div>
-              <span className="text-[12px] text-zinc-400 shrink-0">거래명세서 금액</span>
+              <span className="text-[14px] text-zinc-400 shrink-0">거래명세서 금액</span>
               <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -430,7 +430,7 @@ export const VendorDetailModal: React.FC<{
                   onChange={() => setDraft({ ...draft, vat_included: "included" })}
                   className="w-4 h-4 accent-emerald-500 cursor-pointer"
                 />
-                <span className={`text-[14px] font-semibold ${draft.vat_included === "included" ? "text-emerald-700" : "text-zinc-500"}`}>부가세 포함</span>
+                <span className={`text-[16px] font-semibold ${draft.vat_included === "included" ? "text-emerald-700" : "text-zinc-500"}`}>부가세 포함</span>
               </label>
               <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                 <input
@@ -439,7 +439,7 @@ export const VendorDetailModal: React.FC<{
                   onChange={() => setDraft({ ...draft, vat_included: "excluded" })}
                   className="w-4 h-4 accent-amber-500 cursor-pointer"
                 />
-                <span className={`text-[14px] font-semibold ${draft.vat_included === "excluded" ? "text-amber-700" : "text-zinc-500"}`}>부가세 별도</span>
+                <span className={`text-[16px] font-semibold ${draft.vat_included === "excluded" ? "text-amber-700" : "text-zinc-500"}`}>부가세 별도</span>
               </label>
             </div>
           </div>
@@ -581,7 +581,7 @@ export const VendorDetailModal: React.FC<{
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => setShowPayModal(true)}
-                className="inline-flex items-center gap-1.5 h-8 px-4 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 h-8 px-4 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-bold shadow-sm transition cursor-pointer"
               >
                 <Plus size={13} strokeWidth={2.5} />
                 결제 등록
@@ -589,19 +589,19 @@ export const VendorDetailModal: React.FC<{
               <button
                 onClick={loadPaymentData}
                 disabled={paymentLoading}
-                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-line bg-white hover:bg-zinc-50 text-zinc-600 text-[12px] font-semibold transition cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-line bg-white hover:bg-zinc-50 text-zinc-600 text-[14px] font-semibold transition cursor-pointer disabled:opacity-50"
                 title="새로고침"
               >
                 <RefreshCw size={12} className={paymentLoading ? "animate-spin" : ""} />
                 새로고침
               </button>
               {payMsg && (
-                <span className={`inline-flex items-center gap-1 text-[12px] font-bold ${payMsg.type === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
+                <span className={`inline-flex items-center gap-1 text-[14px] font-bold ${payMsg.type === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
                   {payMsg.type === "ok" ? <Check size={13} strokeWidth={3} /> : <X size={13} strokeWidth={3} />}
                   {payMsg.text}
                 </span>
               )}
-              <span className="ml-auto text-[11px] text-zinc-400 font-mono tabular-nums">
+              <span className="ml-auto text-[13px] text-zinc-400 font-mono tabular-nums">
                 {ledgerRows.length} 원장 항목
               </span>
             </div>
@@ -611,11 +611,11 @@ export const VendorDetailModal: React.FC<{
               {paymentLoading ? (
                 <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩중..." labelSize={12} /></div>
               ) : ledgerRows.length === 0 ? (
-                <div className="py-8 text-center text-zinc-400 text-[12px]">거래 내역 없음</div>
+                <div className="py-8 text-center text-zinc-400 text-[14px]">거래 내역 없음</div>
               ) : (
-                <table className="w-full text-[12px]">
+                <table className="w-full text-[14px]">
                   <thead className="sticky top-0 z-10 bg-zinc-50 border-b border-line">
-                    <tr className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+                    <tr className="text-[13px] font-bold uppercase tracking-wider text-zinc-500">
                       <th className="text-left px-3 py-2 w-20">날짜</th>
                       <th className="text-left px-3 py-2 w-16">유형</th>
                       <th className="text-right px-3 py-2 w-24">금액</th>
@@ -631,7 +631,7 @@ export const VendorDetailModal: React.FC<{
                       const paymentRow = isPay ? payments.find(p => p.id === r.id) : null;
                       return (
                         <tr key={`${r.type}-${r.id}`} className="hover:bg-zinc-50/60 transition">
-                          <td className="px-3 py-1.5 font-mono text-[11px] text-zinc-500 whitespace-nowrap tabular-nums">
+                          <td className="px-3 py-1.5 font-mono text-[13px] text-zinc-500 whitespace-nowrap tabular-nums">
                             {String(r.date).slice(2)}
                           </td>
                           <td className="px-3 py-1.5">
@@ -642,13 +642,13 @@ export const VendorDetailModal: React.FC<{
                           }`}>
                             {isPay ? "-" : "+"}{Number(r.amount).toLocaleString()}
                           </td>
-                          <td className="px-3 py-1.5 text-[11px] text-zinc-600">
+                          <td className="px-3 py-1.5 text-[13px] text-zinc-600">
                             {r.method ? (METHOD_LABEL[r.method] ?? r.method) : "-"}
                           </td>
-                          <td className="px-3 py-1.5 text-zinc-700 break-words leading-snug text-[11px]">
+                          <td className="px-3 py-1.5 text-zinc-700 break-words leading-snug text-[13px]">
                             {r.memo ?? "-"}
                             {paymentRow?.allocations && paymentRow.allocations.length > 0 && (
-                              <span className="ml-1 text-[10px] font-bold text-emerald-600">· {paymentRow.allocations.length}건 매칭</span>
+                              <span className="ml-1 text-[12px] font-bold text-emerald-600">· {paymentRow.allocations.length}건 매칭</span>
                             )}
                           </td>
                           <td className={`text-right px-3 py-1.5 font-mono font-bold whitespace-nowrap tabular-nums ${
@@ -705,7 +705,7 @@ export const VendorDetailModal: React.FC<{
         {/* ── 푸터 · 저장/닫기 ── */}
         <div className="px-5 py-3 border-t border-line bg-zinc-50/80 flex items-center gap-2 flex-wrap shrink-0">
           {saveMsg && (
-            <span className={`inline-flex items-center gap-1 text-[12px] font-bold ${saveMsg.type === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
+            <span className={`inline-flex items-center gap-1 text-[14px] font-bold ${saveMsg.type === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
               {saveMsg.type === "ok"
                 ? <Check size={13} strokeWidth={3} />
                 : <X size={13} strokeWidth={3} />}
@@ -715,14 +715,14 @@ export const VendorDetailModal: React.FC<{
           <div className="flex-1" />
           <button
             onClick={onClose}
-            className="h-8 px-4 text-[12px] font-semibold bg-white border border-zinc-300 hover:bg-zinc-50 rounded-lg text-zinc-700 transition cursor-pointer"
+            className="h-8 px-4 text-[14px] font-semibold bg-white border border-zinc-300 hover:bg-zinc-50 rounded-lg text-zinc-700 transition cursor-pointer"
           >
             닫기
           </button>
           <button
             onClick={handleSave}
             disabled={!isDirty || saving}
-            className="inline-flex items-center gap-1.5 h-8 px-5 text-[12px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition shadow-sm cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-8 px-5 text-[14px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition shadow-sm cursor-pointer"
           >
             {saving ? <Spinner size={12} tone="white" /> : <Check size={12} strokeWidth={2.5} />}
             저장
