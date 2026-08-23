@@ -813,12 +813,12 @@
 
 ## 🚨 백엔드 보안 · 잔여 (#112)
 
-1. `/api/auth/set-password` 인증 없음 · `authorize(9)` 추가 · **최우선**
-2. Vendor 로그인 · bcrypt 전환 · 또는 사용자 정책 재확정
-3. requireAuth 재활성화 · 이전 주석 사유 확인 후 안전 복원 (2026-08-16 완료 · 재검증 필요)
-4. tsconfig.json exclude · `["dist","node_modules","coverage","uploads","logs"]`
-5. Supabase 부팅 크래시 · `throw` → try/catch null fallback
-6. 100MB JSON limit · multer multipart 전환
+1. ✅ `/api/auth/set-password` · `authorize(9)` 추가 (2026-08-23 · `9d53756f`)
+2. 🔲 Vendor 로그인 · bcrypt 전환 · 또는 사용자 정책 재확정 (사용자 결정)
+3. ✅ requireAuth 재활성화 · 서버 마운트 완료 (2026-08-16 · server.ts:171)
+4. ✅ tsconfig.json exclude · dist·node_modules·coverage·uploads·logs·.claude·test 모두 반영
+5. ✅ Supabase 부팅 크래시 · warn 격하 (2026-08-16 · src/supabase/client.ts:15)
+6. ✅ 100MB JSON limit · route-level (일반 10MB · 이미지 100MB) (2026-08-05 · server.ts:132)
 
 ---
 
