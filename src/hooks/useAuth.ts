@@ -4,12 +4,12 @@ import type { AuthSession } from "../types";
 
 const STORAGE_KEY = "megatown_auth_session";
 
-/** 8 hours in ms — idle timeout (2026-08-05 · 30분 짧아서 랜딩 강제이동 문제 · 완화) */
-const IDLE_TIMEOUT_MS = 8 * 60 * 60 * 1000;
+/** 30 minutes in ms — idle timeout (2026-08-23 · #186 · 사용자 지시 · 무동작 30분 자동 로그아웃) */
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 /** 24 hours in ms — absolute session cap regardless of activity */
 const ABSOLUTE_TIMEOUT_MS = 24 * 60 * 60 * 1000;
-/** Warn this many ms before idle expiry */
-const WARN_BEFORE_MS = 3 * 60 * 1000;
+/** Warn this many ms before idle expiry · 30분 idle 기준 · 5분 전 경고 */
+const WARN_BEFORE_MS = 5 * 60 * 1000;
 /** How often the background timer tick runs */
 const TICK_INTERVAL_MS = 30_000;
 

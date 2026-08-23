@@ -289,7 +289,7 @@
 - 🔲 대상 파일 · `src/components/ScanPage/StockRowCard.tsx`
 - 💡 프레임워크 원칙 · className 만 조정 · props/state/API 무변경 (대원칙 14)
 
-### #186 · 무동작 30분 자동 로그아웃 + 로그인 화면 이동 (신규 · 2026-08-22)
+### #186 · 무동작 30분 자동 로그아웃 + 로그인 화면 이동 (✅ 완료 · 2026-08-23)
 - 📄 대상 · 전체 앱 · 로그인 후 30분 이상 마우스·키보드·터치 무동작 시 자동 세션 종료
 - 🔲 유저 activity 감지 · `mousemove` / `keydown` / `click` / `touchstart` 이벤트 → 타이머 reset
 - 🔲 30분 (= 1800s) 카운트다운 · 만료 시 `onLogout()` 호출 + 로그인 페이지 리다이렉트
