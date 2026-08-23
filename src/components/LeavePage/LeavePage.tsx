@@ -339,9 +339,9 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               </div>
 
               {myLoading && myRequests.length > 0 && (
-                <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-amber-50 border border-amber-200 rounded-md sticky top-0 z-10">
+                <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mb-1 sticky top-0 z-10">
                   <Spinner size={11} tone="amber" label="새로 불러오는 중..." labelSize={19} />
-                </div>
+                </Card>
               )}
               {myLoading && myRequests.length === 0 ? (
                 <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩 중..." labelSize={19} /></div>
@@ -438,9 +438,9 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               </div>
 
             {allLoading && (mgrTab === "pending" ? pending : reviewed).length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-indigo-50 border border-indigo-200 rounded-md sticky top-0 z-10">
+              <Card variant="flat" bg="bg-indigo-50" borderColor="border-indigo-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mb-1 sticky top-0 z-10">
                 <Spinner size={11} tone="brand" label="새로 불러오는 중..." labelSize={18} />
-              </div>
+              </Card>
             )}
             {allLoading && (mgrTab === "pending" ? pending : reviewed).length === 0 ? (
               <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩 중..." labelSize={12} /></div>

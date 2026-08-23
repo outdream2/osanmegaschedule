@@ -14,6 +14,7 @@ import { fmtDateMD } from "../../lib/format";
 import { CARD_BASE } from "../../styles/tokens";
 import { StatusPill, type PillTone } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 import { RESIZER_CLS } from "../../hooks/useColumnResize";
 import { ListToolbar } from "./ListToolbar";
 import type { DisplayRequest, OrderRequest, InventoryCheck } from "./types";
@@ -92,7 +93,7 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
       />
 
       {displayLoading && displayReqs.length > 0 && (
-        <div className="flex items-center justify-center py-1.5 mb-1 bg-sky-50 border border-sky-200 rounded-md sticky top-0 z-10"><Spinner tone="sky" size={11} label="새로 불러오는 중..." labelSize={14} /></div>
+        <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="md" padding="none" className="flex items-center justify-center py-1.5 mb-1 sticky top-0 z-10"><Spinner tone="sky" size={11} label="새로 불러오는 중..." labelSize={14} /></Card>
       )}
       {displayLoading && displayReqs.length === 0 ? (
         <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>

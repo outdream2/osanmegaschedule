@@ -409,8 +409,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
               {/* 미등록 상품 경고 */}
               {notFoundCode && !lastScannedProduct && (
-                <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl
-                  bg-amber-50 border border-amber-200/80">
+                <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200/80" padding="sm" className="flex items-start gap-2.5">
                   <AlertCircle size={15} className="text-amber-500 shrink-0 mt-0.5" />
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-amber-800 leading-none">미등록 상품 코드</p>
@@ -419,7 +418,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       {notFoundCode}
                     </p>
                   </div>
-                </div>
+                </Card>
               )}
 
               {/* 2026-08-17 · 세련 · 마지막 스캔 카드 · 뉴트럴 body + StatusPill 헤더 */}
