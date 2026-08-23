@@ -619,10 +619,10 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
           </div>
         ) : returnPanelError ? (
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0">
-            <div className="bg-white rounded-xl border border-line p-4 text-sm text-red-700">
+            <Card padding="md" rounded="xl" className="text-sm text-red-700">
               <div className="font-bold mb-1">조회 실패</div>
               <div className="text-[15px] font-mono">{returnPanelError}</div>
-            </div>
+            </Card>
           </div>
         ) : returnPanelFull ? (
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 overflow-y-auto">
