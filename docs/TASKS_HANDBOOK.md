@@ -143,8 +143,15 @@
 - ✅ 저장 · **KV setting** (`page-visibility` · JSON · `useKvSetting`)
 - ✅ UI · **위치 유지 · 이름 변경 "메뉴 표시"** (PermissionsPage > 권한 조정)
 
-### #191 · Modal 프레임워크화 (Phase A 자율 진행 승인)
-- ✅ Phase A · **자율 진행 승인** · 저위험 5-10 파일 · 매 파일 검증
+### #191 · Modal 프레임워크화 (Phase A **3 파일 완료** · 2026-08-23)
+- ✅ **DiffTab · VendorDetailModal 래퍼** (`4dd0dcf8`) · Modal (size=3xl · zIndex=100 · bodyPadding=none)
+- ✅ **FlowTab.panels · SupplierDetailModalWrapper** (`51bd7fe9`)
+- ✅ **SupplierTab.panels · SupplierDetailModalWrapper** (`51bd7fe9`)
+- ⚠️ **남은 파일 · 대부분 특수 목적** · Phase A 클린 후보 없음:
+  - BarcodeScanner · iOS 코드 무손 (feedback_ios_untouchable)
+  - BoardPage 이미지뷰어 · frameless · Modal 스타일 override 필요
+  - ContactPopover · 위치 anchor 기반 popover · Modal 아님
+  - 반응형 fullscreen (VendorPaymentPanel · ProductTrendTab · CategoryTab 등) · 모바일 fullscreen · Modal 아님
 - ⏳ Phase B (중위험) · Phase C (고위험) · 사용자 승인 대기
 
 ### #192 · 거래처 승인 flow (SQL 준비 완료)
