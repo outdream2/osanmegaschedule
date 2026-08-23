@@ -98,3 +98,80 @@ describe("UpdateVendorSchema (partial)", () => {
     expect(r.success).toBe(false);
   });
 });
+
+// 2026-08-23 · #178 Phase B · 5 신규 필드 (xlsx 마스터)
+describe("CreateVendorSchema · #178 신규 필드 (order_method · region · invoice_method · order_status · special_notes)", () => {
+  it("모든 신규 필드 · 성공", () => {
+    const r = CreateVendorSchema.safeParse({
+      company_name: "유한양행",
+      order_method: "site:yuhan.co.kr · id:phone",
+      region: "서울 · 강남",
+      invoice_method: "이메일",
+      order_status: "정상",
+      special_notes: "월요일 발주 X · 최소주문 5개",
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("order_method · 200자 초과 · 실패", () => {
+    const r = CreateVendorSchema.safeParse({
+      company_name: "X",
+      order_method: "x".repeat(201),
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("region · 100자 초과 · 실패", () => {
+    const r = CreateVendorSchema.safeParse({
+      company_name: "X",
+      region: "x".repeat(101),
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("special_notes · 1000자 초과 · 실패", () => {
+    const r = CreateVendorSchema.safeParse({
+      company_name: "X",
+      special_notes: "x".repeat(1001),
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("신규 필드 · null · 성공", () => {
+    const r = CreateVendorSchema.safeParse({
+      company_name: "X",
+      order_method: null,
+      region: null,
+      special_notes: null,
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("신규 필드 · undefined (optional) · 성공", () => {
+    const r = CreateVendorSchema.safeParse({ company_name: "X" });
+    expect(r.success).toBe(true);
+  });
+});
+
+// 2026-08-23 · #192 Phase B · approval_status
+describe("CreateVendorSchema · #192 approval_status", () => {
+  it("approval_status: pending · 성공", () => {
+    const r = CreateVendorSchema.safeParse({ company_name: "X", approval_status: "pending" });
+    expect(r.success).toBe(true);
+  });
+
+  it("approval_status: approved · 성공", () => {
+    const r = CreateVendorSchema.safeParse({ company_name: "X", approval_status: "approved" });
+    expect(r.success).toBe(true);
+  });
+
+  it("approval_status: rejected · 성공", () => {
+    const r = CreateVendorSchema.safeParse({ company_name: "X", approval_status: "rejected" });
+    expect(r.success).toBe(true);
+  });
+
+  it("approval_status: invalid enum · 실패", () => {
+    const r = CreateVendorSchema.safeParse({ company_name: "X", approval_status: "waiting" });
+    expect(r.success).toBe(false);
+  });
+});
