@@ -122,48 +122,41 @@
 
 ---
 
-## 🔄 대기 태스크 (사용자 스펙 결정 필요 · 자율 부적합)
+## 🔄 대기 태스크 · 스펙 확정 완료 · 구현 대기 (2026-08-23 사용자 결정)
 
-### #178 · 공급사 정보 스키마 확장 (2026-08-20)
-- 📄 원본 · xlsx 57 시트 · 52 vendor
-- 🔲 Phase A-E · DB · Zod · 서버 · UI · 스크립트
-- 💡 **결정 필요 4건**:
-  - `login_credentials` 암호화 여부
-  - `note` vs `special_notes` 병합/분리
-  - `vendor_order_templates` 별도 페이지 or 조회 전용
-  - xlsx import 자동 vs 수동 트리거
+### #178 · 공급사 정보 스키마 확장 (스펙 확정 · 구현 대기)
+- ✅ 스코프 · **첫 시트만** · 시트 2~57 무시 · vendor_order_templates 신설 X
+- ✅ 로그인 규칙 · ID=담당자 핸드폰 · 비번=핸드폰+`.env VENDOR_PW_SUFFIX` (기본 "00") · DB 저장 X · 서버 파생
+- ✅ note vs special_notes · **분리** (일반 + 발주 특이사항)
+- ✅ Import · **일회성 스크립트** + 기존 vendors 연동/병합
+- ✅ UI 조회/수정 · 프레임워크 전체 활용
+- Phase A(DB) B(Zod) C(서버) D(UI) E(스크립트) · 예상 8-12시간
 
-### #181 · 매장구역도 인라인 편집 (2026-08-21)
-- 💡 **결정 필요 4건**:
-  - Option A (Inline Popover · 권장 · 저위험) / B (Editing Mode · 드래그) / C (통합)
-  - ZoneSettingsPage 유지 vs 통합
-  - 드래그 · num 재배정 or section 이동?
-  - 편집 권한 · 관리자만 or 매니저부터
+### #181 · 매장구역도 인라인 편집 (스펙 확정 · 구현 대기)
+- ✅ 편집 방식 · **팝오버 + 드래그 둘 다** (Option C)
+- ✅ ZoneSettingsPage · **완전 제거**
+- ✅ 드래그 · **num 재배정 + section 이동 둘 다**
+- ✅ 편집 권한 · **관리자만**
 
-### #188 · 메뉴 설정 · 모바일 가시성 · PC/모바일 체크박스 (2026-08-22)
-- 페이지별 [PC ☑] [모바일 ☑] · SIDE_NAV_GROUPS 순회
-- 신규 API `/api/settings/page-visibility`
-- 신규 훅 `usePageVisibility(pageKey, viewport)`
-- 라우팅 gate · 사이드바 · 공통헤더 · 뷰포트별 필터
-- 기존 `useMobilePageLevel` deprecated · 마이그레이션 스크립트
+### #188 · 메뉴 설정 · 메뉴 표시 (스펙 확정 · 구현 대기)
+- ✅ 마이그레이션 · **자동** (레벨 → 체크박스)
+- ✅ 저장 · **KV setting** (`page-visibility` · JSON · `useKvSetting`)
+- ✅ UI · **위치 유지 · 이름 변경 "메뉴 표시"** (PermissionsPage > 권한 조정)
 
-### #191 · Modal 프레임워크화 · inline modal 35+ 마이그레이션 (2026-08-22)
-- Phase A · 저위험 self-contained (ImageZoomModal · CellPickerPopup)
-- Phase B · 중위험 (각 대형 페이지 내부 modal)
-- Phase C · 고위험 (VendorDetailModal 등)
-- 각 파일 회귀 검토 필요 · 자율 부적합
+### #191 · Modal 프레임워크화 (Phase A 자율 진행 승인)
+- ✅ Phase A · **자율 진행 승인** · 저위험 5-10 파일 · 매 파일 검증
+- ⏳ Phase B (중위험) · Phase C (고위험) · 사용자 승인 대기
 
-### #192 · 거래처 로그인 · 승인 flow (2026-08-22)
-- Step 1 · 로그인 · 공급사정보 등록 자동 오픈 · 진행률 표시
-- Step 2 · 필수 필드 통과 시 · [승인 요청] 활성
-- Step 3 · 관리자 승인 → [공급자재고확인] 활성
-- DB · vendors ALTER (`approval_status` · `approval_requested_at` · `approved_at` · `approved_by`)
-- 서버 · Zod · asyncHandler · HttpError · 미들웨어
+### #192 · 거래처 승인 flow (SQL 준비 완료)
+- ✅ DB ALTER · Option A 승인 · SQL 파일 `sql/migrations/2026-08-23_vendor_approval_flow.sql` 생성 · Supabase 실행 대기
+- 🔲 승인 UI 위치 · 재로그인 필요 여부 · 서브 결정 대기 (진행 시 결정)
 
-### #197 · 상품 스캔 · 미분류 → 등록 페이지 자동 연결 (2026-08-23)
-- 💡 **결정 필요** · #179 (모달) vs #197 (페이지 이동)
-  - Option A (병행 · 설정 토글) / B (페이지만) / C (모달만)
-- Modal 방식 · **#179 완료** · 페이지 이동 방식 · 대기
+### #197 · 스캔 미분류 (스펙 확정 · 구현 대기)
+- ✅ **A · 병행** (모달 + 페이지 이동 · 사용자 설정 토글)
+
+### SplitListPanel Phase 3 잔여 (이관 승인)
+- ✅ **SupplierTab (embedded)** · v3 이관 승인 · 시각 검증 필수
+- ✅ **PurchaseHistoryTab.panels** (ByProduct/ByVendor) · v3 이관 승인
 
 ---
 
