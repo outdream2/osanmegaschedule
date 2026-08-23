@@ -2,7 +2,7 @@
 
 > **세션 재개 시 · 이 파일 최우선 확인** · 토큰 만료 대비 히스토리·현황·예정 통합 저장
 >
-> **최종 업데이트**: 2026-08-23 **밤 · #177/#179/#185/#202 완료 · +57 tests · 35+ 로컬 커밋 · 3112 total tests · CODING_PRINCIPLES + TASKS_HANDBOOK 신설**
+> **최종 업데이트**: 2026-08-23 **심야 · #177/#179/#185/#202 완료 · +63 tests · 47 로컬 커밋 (origin 대비) · 3118 total tests · CODING_PRINCIPLES + TASKS_HANDBOOK 신설 · 대원칙 3건 추가**
 
 ---
 
