@@ -1538,10 +1538,15 @@ git commit
 - DB 신규 테이블 계획 · `vendor_order_templates` (기본 주문 템플릿)
 - Phase A~E 계획만 · 구현 미착수 · 사용자 결정 대기
 
-#### #177 · 상품 등록 페이지 계획 (신규 등록 · 2026-08-20 · 스펙 확정 대기)
-- 매장 > 매입 서브탭에 "상품등록" 서브탭 추가 예정
-- `products` 테이블 INSERT · 기존 컬럼 재사용 · 파생컬럼 X
-- 스펙 (필드셋·최소권한·중복검사·스캔연동) 확정 후 구현 착수
+#### #177 · 상품정보 페이지 (✅ 완료 · 2026-08-23 · Phase A/B/C/D · `fe33f65d`·`f43afc45`·`3ee0b766`)
+- 매장 > 매입 > **"상품정보"** 서브탭 (productinfo · indigo · Info 아이콘)
+- ProductInfoPage · 마스터-디테일 · SplitListPanel + Modal + Card 프리미티브
+- PC (lg+) · 좌측 리스트 + 우측 상세 · useResizablePanel
+- 모바일 · 좌측 리스트만 · 클릭 시 상세 Modal (size=lg-narrow)
+- Phase C · POST `/api/products` · authorize(5) · CreateProductSchema · product_code UNIQUE
+- Phase D · PATCH `/api/products/:code` · UpdateProductSchema · 인라인 편집 (편집 모드 토글)
+- 권한 · admin OR (manager AND level >= 5)
+- 관련 · #179 (스캔 미등록 즉시 등록 · ProductCreateModal 재사용) · #197 (미분류 상품 자동 연결 · 대기)
 
 #### Unit test 2274 달성 (2026-08-20 밤 · 다중 커밋)
 - payroll (5 파일 · 113 tests) · contract lib · stock utils · server routes 확산
