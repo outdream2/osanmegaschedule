@@ -87,7 +87,7 @@ export const WriteModeToggle: React.FC<WriteModeToggleProps> = ({
 
     {/* ── T-R · PDF 업로드 모드 ── */}
     {writeMode === "upload" && (
-      <div className="rounded-xl border border-line bg-white p-3 flex flex-col gap-3 shadow-sm">
+      <Card variant="raw-sm" padding="sm" className="flex flex-col gap-3">
         <div className="flex items-center gap-2 pb-2 border-b border-zinc-100">
           <IconTile icon={<DownloadSimple size={13} weight="fill" />} tone="indigo" size="sm" />
           <span className="text-[14px] font-bold text-zinc-700">PDF 업로드 (Google Drive)</span>
@@ -227,7 +227,7 @@ export const WriteModeToggle: React.FC<WriteModeToggleProps> = ({
           <DownloadSimple size={13} weight="bold" className="rotate-180" />
           {uploadBusy ? "업로드 중..." : "Google Drive 업로드"}
         </button>
-      </div>
+      </Card>
     )}
   </>
 );

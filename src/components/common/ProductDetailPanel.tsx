@@ -88,7 +88,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
   }, [productCode, season]);
 
   return (
-    <div className="bg-white rounded-xl border border-line p-3 shadow-sm">
+    <Card variant="raw-sm" padding="sm" rounded="xl">
       {/* 2026-07-29 · 헤더 재정리 · 3영역으로 명확히 분리 */}
       {/* 월평균 판매량 · stock_history.sale_qty 합계 / 월수 (사용자 요청) */}
       {(() => { return null; })()}
@@ -249,7 +249,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
           </div>
         );
       })()}
-    </div>
+    </Card>
   );
 };
 
@@ -260,13 +260,13 @@ export const ProductDetailEmpty: React.FC<{ message?: string; sub?: string }> = 
   message = "리스트에서 상품을 클릭하세요",
   sub = "상세 정보 · 재고 현황 · 매입/판매가",
 }) => (
-  <div className="bg-white rounded-xl border border-line flex-1 flex flex-col items-center justify-center p-10 min-h-[400px] gap-3 shadow-sm">
+  <Card variant="raw-sm" rounded="xl" className="flex-1 flex flex-col items-center justify-center p-10 min-h-[400px] gap-3">
     <div className="w-16 h-16 rounded-2xl bg-brand-tint flex items-center justify-center">
       <Package size={30} className="text-brand-deep/70" />
     </div>
     <div className="text-[15px] font-semibold text-ink tracking-tight">{message}</div>
     {sub && <div className="text-[13px] text-ink-soft">{sub}</div>}
-  </div>
+  </Card>
 );
 
 // ── 모바일 fullscreen 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 폰트 +2 ──
