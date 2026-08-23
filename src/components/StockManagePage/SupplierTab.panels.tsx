@@ -11,6 +11,8 @@ import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { ProductPurchaseHistoryModal } from "./ProductPurchaseHistoryModal";
+// 2026-08-23 · #191 Phase A · Modal 프레임워크 이관
+import { Modal } from "../common/Modal";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { InlineLabel } from "../common/InlineLabel";
 import { PeriodSelector } from "../common/PeriodSelector";
@@ -241,13 +243,19 @@ interface SupplierDetailModalWrapperProps {
 }
 
 export const SupplierDetailModalWrapper: React.FC<SupplierDetailModalWrapperProps> = ({ vendor, onClose }) => {
-  if (!vendor) return null;
+  // 2026-08-23 · #191 Phase A · Modal 프리미티브 (v3.4)
   return (
-    <div className="fixed inset-0 z-[100] backdrop-brand flex items-center justify-center p-2 sm:p-4" onClick={onClose}>
-      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-xl shadow-brand-modal" onClick={e => e.stopPropagation()}>
-        <VendorDetailModal vendor={vendor} onClose={onClose} onSaved={onClose} />
-      </div>
-    </div>
+    <Modal
+      open={!!vendor}
+      onClose={onClose}
+      size="3xl"
+      zIndex={100}
+      bodyPadding="none"
+      showClose={false}
+      cardStyle={{ maxHeight: "90vh" }}
+    >
+      {vendor && <VendorDetailModal vendor={vendor} onClose={onClose} onSaved={onClose} />}
+    </Modal>
   );
 };
 
