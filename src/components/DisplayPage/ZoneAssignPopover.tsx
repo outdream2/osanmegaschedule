@@ -1,6 +1,7 @@
 // src/components/DisplayPage/ZoneAssignPopover.tsx
+// 2026-08-23 · #189 · 구역 편집 모드 (label · category · num) · onZoneUpdate prop
 import React, { useEffect, useRef, useState } from "react";
-import { X, Users, Package } from "lucide-react";
+import { X, Users, Package, Pencil, Check, XCircle } from "lucide-react";
 import { Badge } from "../common/Badge";
 import type { ZoneSection } from "../../constants/displayZones";
 
@@ -53,13 +54,43 @@ export interface ZoneAssignPopoverProps {
   onOpenProducts?: () => void;
   onClose: () => void;
   onStaffInfoClick: (staff: TodayStaff) => void;
+  /** 2026-08-23 · #189 · 구역 편집 (label · category · num) · 있을 때만 수정 버튼 표시 */
+  onZoneUpdate?: (updates: { label?: string; category?: string; num?: number }) => void;
 }
 
 export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
-  zone, anchor, logisticsStaff, staffColorMap, onAssign, onUnassign, onOpenDetail, onOpenProducts, onClose, onStaffInfoClick,
+  zone, anchor, logisticsStaff, staffColorMap, onAssign, onUnassign, onOpenDetail, onOpenProducts, onClose, onStaffInfoClick, onZoneUpdate,
 }) => {
   const [style, setStyle] = useState<React.CSSProperties>({});
   const popoverRef = useRef<HTMLDivElement>(null);
+  // 2026-08-23 · #189 · 편집 모드 · label · category · num 즉시 편집
+  const [editMode, setEditMode] = useState(false);
+  const [editLabel, setEditLabel] = useState(zone.label);
+  const [editCategory, setEditCategory] = useState(zone.category);
+  const [editNum, setEditNum] = useState<number>(zone.num);
+  // zone 변경 시 · draft 리셋
+  useEffect(() => {
+    setEditLabel(zone.label);
+    setEditCategory(zone.category);
+    setEditNum(zone.num);
+    setEditMode(false);
+  }, [zone.id]);
+  const handleSaveEdit = () => {
+    const updates: { label?: string; category?: string; num?: number } = {};
+    const trimLabel = editLabel.trim();
+    const trimCategory = editCategory.trim();
+    if (trimLabel && trimLabel !== zone.label) updates.label = trimLabel;
+    if (trimCategory && trimCategory !== zone.category) updates.category = trimCategory;
+    if (Number.isFinite(editNum) && editNum > 0 && editNum !== zone.num) updates.num = editNum;
+    if (Object.keys(updates).length > 0) onZoneUpdate?.(updates);
+    setEditMode(false);
+  };
+  const handleCancelEdit = () => {
+    setEditLabel(zone.label);
+    setEditCategory(zone.category);
+    setEditNum(zone.num);
+    setEditMode(false);
+  };
 
   useEffect(() => {
     if (!popoverRef.current) return;
@@ -90,20 +121,73 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
       // 2026-08-18 · shadow-brand-modal · Attio 3-layer 통일
       className="w-[240px] bg-white rounded-2xl border border-line shadow-brand-modal p-3 flex flex-col gap-2.5 animate-in fade-in zoom-in-95 duration-100"
     >
-      {/* Popover Header */}
-      <div className="flex items-start justify-between border-b border-zinc-100 pb-2">
-        <div className="min-w-0">
-          <div className="text-xs font-bold text-zinc-800 flex items-center gap-1.5">
-            <Badge size="xs" className={statusCell(zone.status)}>
-              {zone.num}번
-            </Badge>
-            <span className="truncate">{zone.label}</span>
+      {/* Popover Header · 2026-08-23 · #189 · 편집 모드 지원 (label · category · num) */}
+      <div className="flex items-start justify-between border-b border-zinc-100 pb-2 gap-1">
+        {editMode ? (
+          <div className="flex-1 min-w-0 flex flex-col gap-1">
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                min={1}
+                max={999}
+                value={editNum}
+                onChange={(e) => setEditNum(Number(e.target.value))}
+                className="w-14 h-7 px-1.5 text-[12px] font-bold text-ink text-center border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums"
+                placeholder="번호"
+                title="구역 번호"
+              />
+              <input
+                type="text"
+                value={editLabel}
+                onChange={(e) => setEditLabel(e.target.value)}
+                className="flex-1 min-w-0 h-7 px-1.5 text-[12px] font-bold text-ink border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"
+                placeholder="구역명"
+                title="구역 이름"
+              />
+            </div>
+            <input
+              type="text"
+              value={editCategory}
+              onChange={(e) => setEditCategory(e.target.value)}
+              className="h-6 px-1.5 text-[11px] text-ink-soft border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"
+              placeholder="카테고리"
+              title="카테고리"
+            />
           </div>
-          <p className="text-[10px] text-zinc-400 truncate mt-0.5">{zone.category}</p>
+        ) : (
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-bold text-zinc-800 flex items-center gap-1.5">
+              <Badge size="xs" className={statusCell(zone.status)}>
+                {zone.num}번
+              </Badge>
+              <span className="truncate">{zone.label}</span>
+            </div>
+            <p className="text-[10px] text-zinc-400 truncate mt-0.5">{zone.category}</p>
+          </div>
+        )}
+        <div className="flex items-center gap-0.5 shrink-0">
+          {editMode ? (
+            <>
+              <button onClick={handleSaveEdit} className="w-5 h-5 rounded-md hover:bg-emerald-50 flex items-center justify-center text-emerald-600 hover:text-emerald-700 cursor-pointer" title="저장">
+                <Check size={12} />
+              </button>
+              <button onClick={handleCancelEdit} className="w-5 h-5 rounded-md hover:bg-zinc-100 flex items-center justify-center text-zinc-400 hover:text-zinc-600 cursor-pointer" title="취소">
+                <XCircle size={12} />
+              </button>
+            </>
+          ) : (
+            <>
+              {onZoneUpdate && (
+                <button onClick={() => setEditMode(true)} className="w-5 h-5 rounded-md hover:bg-brand-tint flex items-center justify-center text-ink-soft hover:text-brand-deep cursor-pointer" title="구역 편집 (이름·카테고리·번호)">
+                  <Pencil size={11} />
+                </button>
+              )}
+              <button onClick={onClose} className="w-5 h-5 rounded-md hover:bg-zinc-100 flex items-center justify-center text-zinc-400 hover:text-zinc-600 cursor-pointer" title="닫기">
+                <X size={12} />
+              </button>
+            </>
+          )}
         </div>
-        <button onClick={onClose} className="w-5 h-5 rounded-md hover:bg-zinc-100 flex items-center justify-center text-zinc-400 hover:text-zinc-600 cursor-pointer">
-          <X size={12} />
-        </button>
       </div>
 
       {/* Logistics Roster */}

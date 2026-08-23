@@ -69,7 +69,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const dpCanSeeStockManage = dpUserLevel >= 9;
   const dpCanSeeStockArrivals = dpUserLevel >= 3;
 
-  const { zones: ZONE_DEFS } = useZoneDefs();
+  // 2026-08-23 · #189 · 구역 편집 (팝오버) 지원 · setZoneDefs 사용
+  const { zones: ZONE_DEFS, setZones: setZoneDefs } = useZoneDefs();
 
   const { perms: dpPerms } = usePagePermissions();
   const dpHiddenSubs = React.useMemo(() => {
@@ -721,13 +722,21 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         &copy; 2026 {dpBrand.shortName || "오산메가타운"} 매장 관리 시스템. All Rights Reserved. {dpContact.copyrightText || "(주)이룸즈(IRUMS)"}
       </footer>
 
-      {/* Zone Assignment Popover */}
+      {/* Zone Assignment Popover · 2026-08-23 · #189 · onZoneUpdate 편집 지원 */}
       {popoverAnchor && popoverZone && (
         <ZoneAssignPopover
           zone={popoverZone} anchor={popoverAnchor.rect} logisticsStaff={logisticsStaff} staffColorMap={staffColorMap}
           onAssign={handlePopoverAssign} onUnassign={handlePopoverUnassign} onOpenDetail={() => handleOpenZoneDetail(popoverZone)}
           onOpenProducts={() => { openZoneProducts({ zoneId: popoverZone.id, zoneNum: popoverZone.num, zoneLabel: popoverZone.label, category: popoverZone.category }); setPopoverAnchor(null); }}
           onClose={() => setPopoverAnchor(null)} onStaffInfoClick={(staff) => { setActiveStaffInfo(staff); setPopoverAnchor(null); }}
+          onZoneUpdate={(updates) => {
+            // 2026-08-23 · #189 · useZoneDefs 로 label · category · num 수정 · debounce 자동 저장
+            setZoneDefs((prev) => prev.map((z) => (
+              z.num === popoverZone.num
+                ? { ...z, ...(updates.label != null ? { label: updates.label } : {}), ...(updates.category != null ? { category: updates.category } : {}), ...(updates.num != null ? { num: updates.num } : {}) }
+                : z
+            )));
+          }}
         />
       )}
 
