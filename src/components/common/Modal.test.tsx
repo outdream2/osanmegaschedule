@@ -2,7 +2,7 @@
 // 2026-08-18 · Modal v2 · 확장 props + backward compat
 // 2026-08-23 · v3/v3.1/v3.2/v3.3/v3.4 확장 커버리지 · cleanup 추가 (다중 모달 격리)
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, fireEvent } from "@testing-library/react";
 import Modal from "./Modal";
 
 afterEach(() => cleanup());
@@ -97,6 +97,30 @@ describe("Modal · close · ESC · backdrop 클릭", () => {
     render(<Modal open onClose={fn}>x</Modal>);
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("backdrop 클릭 · onClose 호출 (기본)", () => {
+    const fn = vi.fn();
+    const { container } = render(<Modal open onClose={fn}>x</Modal>);
+    const backdrop = container.querySelector('[role="dialog"]') as HTMLElement;
+    fireEvent.click(backdrop);
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("closeOnBackdrop=false · backdrop 클릭 무시", () => {
+    const fn = vi.fn();
+    const { container } = render(<Modal open onClose={fn} closeOnBackdrop={false}>x</Modal>);
+    const backdrop = container.querySelector('[role="dialog"]') as HTMLElement;
+    fireEvent.click(backdrop);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("card 클릭 · onClose 호출 안 함 (backdrop 만 닫힘)", () => {
+    const fn = vi.fn();
+    const { container } = render(<Modal open onClose={fn}>x</Modal>);
+    const card = container.querySelector(".modal-card") as HTMLElement;
+    fireEvent.click(card);
+    expect(fn).not.toHaveBeenCalled();
   });
 
   it("closeOnEsc=false · ESC 무시", () => {
