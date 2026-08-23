@@ -41,7 +41,7 @@
 | `productsCache.test.ts` (addCachedProduct) | 5 | 신규·기존 병합·leading zero·빈 코드·기본값 |
 | `Modal.test.tsx` (v3+ 확장) | 10 | size (3xl · lg-narrow · xl · full) · dark backdrop · bodyPadding · zIndex · headerBgClass · headerTextClass · cardStyle |
 
-**전체**: 3055 → **3103 tests** (48 신규) · 209 files · all pass
+**전체**: 3055 → **3118 tests** (63 신규) · 209 files · all pass
 
 **프레임워크 프리미티브 커버리지 · 이번 세션 강화**:
 - Modal v3/v3.1/v3.2/v3.3/v3.4 (+10 tests · 25 total)
@@ -59,10 +59,14 @@
 
 ---
 
-## 📝 이번 세션 커밋 로그 (최신 → 과거 · 33개)
+## 📝 이번 세션 커밋 로그 (최신 → 과거 · 37개)
 
 | # | SHA | 파일 | 요약 |
 |---|-----|------|------|
+| 37 | `c2a9a4b6` | Modal.test.tsx | test: backdrop 클릭 · closeOnBackdrop · card 클릭 3 tests |
+| 36 | `1f492b8d` | Modal.test.tsx | test: align (bottom-mobile/top-mobile/center) 3 tests |
+| 35 | `349bb4ad` | CODING_PRINCIPLES.md | docs: mock 패턴 확장 · afterEach cleanup · 콜백 시그니처 확장 원칙 |
+| 34 | `35653490` | TASKS_HANDBOOK.md | 커밋 로그 33개 반영 |
 | 33 | `76b11cb3` | ProductCreateModal · ScanPage · test | **fix** #179 신규 등록 상품 빈 name 버그 · onCreated (code, product) 확장 |
 | 32 | `c3d93a7d` | SESSION_STATUS.md | 밤 세션 갱신 · 3112 tests |
 | 31 | `7c24426c` | ProductInfoPage.tsx | polish: 편집 number input min=0 + optimal_stock step=1 |
