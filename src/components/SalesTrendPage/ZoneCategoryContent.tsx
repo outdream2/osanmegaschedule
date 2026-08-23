@@ -11,6 +11,7 @@ import { getProductsMap } from "../../lib/productsCache";
 import { getZoneLabel } from "../../constants/zoneLabels";
 import { fmtWon } from "../../lib/format";
 import { api } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
@@ -21,6 +22,7 @@ type ZoneListSortKey = "amount" | "qty" | "count";
 
 // ─── 구역카테고리별 판매추이 ─────────────────────────────────────────────────
 const ZoneCategoryContent: React.FC = () => {
+  const { toast, showError } = useToast();
   const [, setZoneLabelVersion] = useState(0);
   useEffect(() => {
     const handler = () => setZoneLabelVersion(v => v + 1);
@@ -68,7 +70,7 @@ const ZoneCategoryContent: React.FC = () => {
       getProductsMap(),
     ])
       .then(([sv, p]) => { setSales(Array.isArray(sv.data?.rows) ? sv.data.rows : []); setProducts(p ?? {}); })
-      .catch(() => { setSales([]); setProducts({}); })
+      .catch((err) => { setSales([]); setProducts({}); showError(`데이터 로드 실패: ${err instanceof Error ? err.message : String(err)}`); })
       .finally(() => setLoading(false));
   };
 
@@ -303,6 +305,11 @@ const ZoneCategoryContent: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-2">
+      {toast && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
       {/* 상단 필터바 */}
       <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         <div className="flex items-center gap-2.5">

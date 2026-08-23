@@ -8,6 +8,7 @@ import { SeasonButtons } from "../common/SeasonButtons";
 import { StatusPill } from "../common/StatusPill";
 import { fmtWon } from "../../lib/format";
 import { api } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 import { CARD_BASE } from "../../styles/tokens";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
@@ -62,6 +63,7 @@ export const StockFlowPanel: React.FC<{
   listLabel?: string;
   vendorCategoryMap?: Record<string, string | null>;
 }> = ({ onProductClick, selectedCode, months: monthsProp, onMonthsChange, onOpenProductInfo, onOpenHiddenManager, defaultSort = "sale", defaultDir = "desc", listLabel = "판매리스트", vendorCategoryMap }) => {
+  const { toast, showError } = useToast();
   const [rows, setRows] = useState<StockFlowRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [sort, setSort] = useState<FlowSortKey>(defaultSort);
@@ -103,6 +105,8 @@ export const StockFlowPanel: React.FC<{
         const { data: j } = await api.get<any>(`/api/stock-manage/top-sales?${p}`);
         setRows(Array.isArray(j.rows) ? j.rows : []);
         if (!season && months === 0 && !snapshot && j.snapshot_date) setSnapshot(j.snapshot_date);
+      } catch (err) {
+        showError(`재고흐름 로드 실패: ${err instanceof Error ? err.message : String(err)}`);
       } finally { setLoading(false); }
     })();
   }, [sort, dir, limit, snapshot, months, season]);
@@ -153,6 +157,11 @@ export const StockFlowPanel: React.FC<{
 
   return (
     <div className={`${CARD_BASE} flex flex-col h-full overflow-hidden`}>
+      {toast && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
       {/* ── 헤더 · 스냅샷 날짜 + Top N ── */}
       <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-line bg-zinc-50/50">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">

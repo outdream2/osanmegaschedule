@@ -8,12 +8,14 @@ import React, { useCallback, useEffect, useState } from "react";
 import { BookOpen, Building2, Plus, Trash2, Pencil, Check, X, RefreshCw } from "lucide-react";
 import { api } from "../../lib/apiClient";
 import { Card } from "../common/Card";
+import { useToast, toastClass } from "../../hooks/useToast";
 import type { ProductSynonym, SupplierAlias, ProdEditState, SuppEditState } from "./OcrPage.types";
 
 const cellCls = "border border-line rounded px-2 py-1 text-xs outline-none focus:border-brand-deep w-full";
 const cellClsSky = "border border-line rounded px-2 py-1 text-xs outline-none focus:border-brand-deep w-full";
 
 export const SynonymsTab: React.FC = () => {
+  const { toast, showSuccess, showError } = useToast();
   const [synTab, setSynTab] = useState<"product" | "supplier">("product");
   const [prodListView, setProdListView] = useState<"prodname" | "supplier">("prodname");
   const [productSynonyms, setProductSynonyms] = useState<ProductSynonym[]>([]);
@@ -59,9 +61,11 @@ export const SynonymsTab: React.FC = () => {
         supplier_old: addProdSuppOld.trim() || null,
       });
       setAddProdOld(""); setAddProdNew(""); setAddProdCode(""); setAddProdSuppNew(""); setAddProdSuppOld("");
+      showSuccess("동의어 추가 완료");
       await fetchSynonyms();
-    } catch { /* silent · ApiError 는 서버 오류 */ }
-    finally { setSynSaving(false); }
+    } catch (err) {
+      showError(`동의어 추가 실패: ${err instanceof Error ? err.message : String(err)}`);
+    } finally { setSynSaving(false); }
   };
 
   const addSupplierAlias = async () => {
@@ -70,9 +74,11 @@ export const SynonymsTab: React.FC = () => {
     try {
       await api.post("/api/ocr-supplier-aliases", { alias: addSuppAlias.trim(), supplier_name: addSuppName.trim() });
       setAddSuppAlias(""); setAddSuppName("");
+      showSuccess("공급사 별칭 추가 완료");
       await fetchSynonyms();
-    } catch { /* silent */ }
-    finally { setSynSaving(false); }
+    } catch (err) {
+      showError(`별칭 추가 실패: ${err instanceof Error ? err.message : String(err)}`);
+    } finally { setSynSaving(false); }
   };
 
   const deleteProductSynonym = async (id: number) => {
@@ -103,10 +109,12 @@ export const SynonymsTab: React.FC = () => {
       });
       if (data?.synonym) {
         setProductSynonyms(prev => prev.map(s => s.id === editingProdId ? (data.synonym as ProductSynonym) : s));
+        showSuccess("동의어 수정 완료");
         cancelEditProd();
       }
-    } catch { /* silent */ }
-    finally { setEditSaving(false); }
+    } catch (err) {
+      showError(`동의어 수정 실패: ${err instanceof Error ? err.message : String(err)}`);
+    } finally { setEditSaving(false); }
   };
 
   const startEditSupp = (a: SupplierAlias) => { setEditingSuppId(a.id); setEditingSupp({ alias: a.alias, supplier_name: a.supplier_name }); };
@@ -121,14 +129,21 @@ export const SynonymsTab: React.FC = () => {
       });
       if (data?.alias) {
         setSupplierAliases(prev => prev.map(a => a.id === editingSuppId ? (data.alias as SupplierAlias) : a));
+        showSuccess("공급사 별칭 수정 완료");
         cancelEditSupp();
       }
-    } catch { /* silent */ }
-    finally { setEditSaving(false); }
+    } catch (err) {
+      showError(`별칭 수정 실패: ${err instanceof Error ? err.message : String(err)}`);
+    } finally { setEditSaving(false); }
   };
 
   return (
     <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 flex flex-col gap-4">
+      {toast && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
       {/* 동의어 서브 탭 */}
       <Card clip padding="none">
         <div className="flex items-center gap-1 px-4 py-2 border-b border-zinc-100/80">

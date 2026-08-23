@@ -5,6 +5,7 @@ import { Search, Building2, X } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { api } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { fmt } from "./SalesTrendPage.helpers";
@@ -36,6 +37,7 @@ const SupplierTrendTab: React.FC<{
   onTabChange?: (t: "product" | "supplier") => void;
   onProductClick?: (p: any) => void;
 }> = ({ onProductClick }) => {
+  const { toast, showError } = useToast();
   const [suppliers, setSuppliers] = useState<SupplierAggRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
@@ -111,8 +113,9 @@ const SupplierTrendTab: React.FC<{
         supplierFetchedRef.current.clear();
         setExpandedSuppliers(new Set());
         setSupplierRowsMap({});
-      } catch { /* ignore */ }
-      finally { if (!cancelled) setLoading(false); }
+      } catch (err) {
+        showError(`공급사 데이터 로드 실패: ${err instanceof Error ? err.message : String(err)}`);
+      } finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
   }, [periodMonths, season]);
@@ -140,8 +143,9 @@ const SupplierTrendTab: React.FC<{
       const rows = Array.isArray(j?.rows) ? j.rows : [];
       setSupplierRowsMap(prev => ({ ...prev, [key]: rows }));
       supplierFetchedRef.current.add(key);
-    } catch {
+    } catch (err) {
       setSupplierRowsMap(prev => ({ ...prev, [key]: [] }));
+      showError(`상품 데이터 로드 실패: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       supplierInflightRef.current.delete(key);
       setSupplierRowsLoading(prev => { const n = new Set(prev); n.delete(key); return n; });
@@ -161,6 +165,11 @@ const SupplierTrendTab: React.FC<{
 
   return (
     <div className="flex flex-col gap-3">
+      {toast && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
       <div className="bg-white rounded-xl border border-line p-4 shadow-sm">
         <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 min-w-0">

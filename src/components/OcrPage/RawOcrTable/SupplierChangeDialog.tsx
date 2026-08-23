@@ -6,6 +6,7 @@ import { Modal } from "../../common/Modal";
 import { IconTile } from "../../common/IconTile";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../../lib/apiClient";
+import { useToast, toastClass } from "../../../hooks/useToast";
 
 export type SupplierConfirmState = {
   pageNum: number;
@@ -31,6 +32,7 @@ export const SupplierChangeDialog: React.FC<SupplierChangeDialogProps> = ({
   setRawSupplierByPage, handleSynonymBulkAdd, onReparsePage,
   setReparseStatus, setReparseSupplier,
 }) => {
+  const { toast, showError } = useToast();
   const apply = async () => {
     const { pageNum, newVal, addSynonyms } = supplierConfirm;
     // 이전 OCR 인식 공급사 → 보정 공급사를 DB에 저장 (자동보정)
@@ -49,13 +51,20 @@ export const SupplierChangeDialog: React.FC<SupplierChangeDialogProps> = ({
       try {
         await onReparsePage(pageNum, newVal);
         setReparseStatus(prev => ({ ...prev, [pageNum]: 'done' }));
-      } catch {
+      } catch (err) {
         setReparseStatus(prev => ({ ...prev, [pageNum]: 'error' }));
+        showError(`재분석 실패: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
   };
 
   return (
+    <>
+      {toast && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
     <Modal
       open={true}
       onClose={() => setSupplierConfirm(null)}
@@ -107,5 +116,6 @@ export const SupplierChangeDialog: React.FC<SupplierChangeDialogProps> = ({
         </label>
       )}
     </Modal>
+    </>
   );
 };

@@ -21,6 +21,7 @@ import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { api, ApiError } from "../../lib/apiClient";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
+import { useToast, toastClass } from "../../hooks/useToast";
 
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · types + helpers 이관
 import type { ReturnReasonKey, ReturnLineItem } from "./ReturnListPanel.types";
@@ -37,6 +38,7 @@ interface ReturnListPanelProps {
 
 // ── ReturnListPanel (메인 export) ────────────────────────────────────────
 export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClick }) => {
+  const { toast, showError } = useToast();
   // DB + 하드코딩 병합 reference 값
   const { vendorCategories: dbVendorCategories } = useReferenceValues();
 
@@ -163,6 +165,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
     } catch (e: any) {
       console.warn("[반품필요] 로드 실패:", e?.message);
       setReturnList([]);
+      showError(`반품필요 목록 로드 실패: ${e?.message ?? "네트워크 오류"}`);
     } finally {
       setReturnLoading(false);
     }
@@ -195,7 +198,11 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
       try {
         const { data } = await api.get<any>(`/api/products/${encodeURIComponent(returnSelectedProduct.code)}`);
         setReturnPanelFull(data);
-      } catch (e: any) { setReturnPanelError(e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류")); }
+      } catch (e: any) {
+        const msg = e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류");
+        setReturnPanelError(msg);
+        showError(`상품 조회 실패: ${msg}`);
+      }
       finally { setReturnPanelLoading(false); }
     })();
   }, [returnSelectedProduct]);
@@ -305,6 +312,10 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
 
   // ── 렌더 ────────────────────────────────────────────────────────────────
   return (
+    <>
+    {toast && (
+      <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
+    )}
     <div className="flex flex-col gap-2">
       {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · ReturnFilterBar */}
       <ReturnFilterBar
@@ -716,6 +727,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         );
       })()}
     </div>
+    </>
   );
 };
 

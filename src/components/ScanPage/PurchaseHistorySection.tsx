@@ -7,11 +7,13 @@
 import React, { useEffect, useState } from "react";
 import { TrendingUp, ChevronRight, ChevronDown } from "lucide-react";
 import { api } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 import { Spinner } from "../common/Spinner";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
 import { fmtWonCompact } from "../../lib/format";
 
 export const PurchaseHistorySection: React.FC<{ productCode: string; productName?: string; noBorderTop?: boolean }> = ({ productCode, productName, noBorderTop }) => {
+  const { toast, showError } = useToast();
   const [rows, setRows] = useState<Array<PurchaseHistoryRow & { purchase_date: string; supplier_name: string | null; quantity: number; amount: number; total: number; unit_price: number }>>([]);
   const [loading, setLoading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -21,7 +23,7 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
     // 2026-08-21 · Framework Phase 3 · fetch → apiClient
     api.get<{ rows?: any[] }>(`/api/purchase-details?product_code=${encodeURIComponent(productCode)}&limit=200`)
       .then(({ data: j }) => setRows(Array.isArray(j?.rows) ? j.rows : []))
-      .catch(() => setRows([]))
+      .catch((err) => { setRows([]); showError(`매입이력 로드 실패: ${err instanceof Error ? err.message : String(err)}`); })
       .finally(() => setLoading(false));
   }, [productCode]);
   const fmt = (n: number) => n.toLocaleString();
@@ -61,6 +63,11 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
   })();
   return (
     <div className={noBorderTop ? "" : "mt-3 border-t border-line pt-3"}>
+      {toast && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
       {/* 2026-07-29 · 헤더 · 상품명·통계·화살표 별도 라인으로 정리 */}
       <button
         type="button"

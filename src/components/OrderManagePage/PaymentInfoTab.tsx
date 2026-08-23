@@ -35,6 +35,7 @@ import { Spinner } from "../common/Spinner";
 import { useColumnResize } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { api } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-21 · Framework Phase 4 · large-file 분리
 import type {
   VendorItem, PaymentRow, BalanceResp, MonthlyBreakdown,
@@ -59,6 +60,7 @@ import { PaymentEntryForm } from "./PaymentEntryForm";
 // ─── PaymentInfoTab ──────────────────────────────────────────────────────────
 
 export const PaymentInfoTab: React.FC = () => {
+  const { toast, showError } = useToast();
   // DB + 하드코딩 병합 reference 값
   const { vendorCategories: dbVendorCategories } = useReferenceValues();
 
@@ -234,9 +236,10 @@ export const PaymentInfoTab: React.FC = () => {
       setPurchaseByVendor(purMap);
       setPaymentByVendor(payMap);
       setLastPurchaseDateByVendor(lastDateMap);
-    } catch {
+    } catch (e: any) {
       setPurchaseByVendor(new Map());
       setPaymentByVendor(new Map());
+      showError(`매입·결제 집계 로드 실패: ${e?.message ?? "네트워크 오류"}`);
     } finally {
       setAggregatesLoading(false);
     }
@@ -296,8 +299,9 @@ export const PaymentInfoTab: React.FC = () => {
         });
       }
       setLatestPaymentByVendor(m);
-    } catch {
+    } catch (e: any) {
       setLatestPaymentByVendor(new Map());
+      showError(`최근 결제 로드 실패: ${e?.message ?? "네트워크 오류"}`);
     }
   }, []);
 
@@ -314,7 +318,10 @@ export const PaymentInfoTab: React.FC = () => {
     try {
       const { data: j } = await api.get<BalanceResp>(`/api/supplier-balance/${encodeURIComponent(supplierName)}`);
       setBalance(j);
-    } catch { setBalance(null); }
+    } catch (e: any) {
+      setBalance(null);
+      showError(`잔고 로드 실패: ${e?.message ?? "네트워크 오류"}`);
+    }
     finally { setBalanceLoading(false); }
   }, []);
 
@@ -351,7 +358,10 @@ export const PaymentInfoTab: React.FC = () => {
         };
       });
       setRecentPayments(decoded);
-    } catch { setRecentPayments([]); }
+    } catch (e: any) {
+      setRecentPayments([]);
+      showError(`최근 결제이력 로드 실패: ${e?.message ?? "네트워크 오류"}`);
+    }
     finally { setRecentLoading(false); }
   }, []);
 
@@ -421,9 +431,10 @@ export const PaymentInfoTab: React.FC = () => {
         total_purchase: totalPurchase,
         total_payment: totalPayment,
       });
-    } catch {
+    } catch (e: any) {
       setMonthlyBreakdown(null);
       setProductSummary([]);
+      showError(`월별 매입·결제 로드 실패: ${e?.message ?? "네트워크 오류"}`);
     } finally {
       setMonthlyLoading(false);
     }
@@ -435,8 +446,9 @@ export const PaymentInfoTab: React.FC = () => {
     try {
       const { data: j } = await api.get<any>(`/api/supplier-monthly-breakdown?supplier=${encodeURIComponent(supplierName)}&months=${months}`);
       setSalesStockBreakdown(j);
-    } catch {
+    } catch (e: any) {
       setSalesStockBreakdown(null);
+      showError(`판매·재고 월별 로드 실패: ${e?.message ?? "네트워크 오류"}`);
     } finally {
       setSalesStockLoading(false);
     }
@@ -523,6 +535,9 @@ export const PaymentInfoTab: React.FC = () => {
   // ═══════════════════════════════════════════════════════════════════
   return (
     <>
+    {toast && (
+      <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
+    )}
     <div className="flex flex-col gap-2 h-full min-h-0">
       {/* 2026-08-21 · 사용자 요청 · 조정 폭 확장 · minWidth 200→220 · maxWidth 400→720 (조정 500px 가능) */}
       <SplitPanel

@@ -7,6 +7,7 @@ import { SeasonButtons } from "../common/SeasonButtons";
 import { ProductPurchaseHistoryModal } from "../StockManagePage/ProductPurchaseHistoryModal";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 import { api } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { calcLoss } from "./StockFlowPanel";
@@ -25,6 +26,7 @@ const LOSS_SORT_CMP: Record<LossSortKey, Comparator<any>> = {
 
 // ─── 손실추적 탭 ─────────────────────────────────────────────────────────────
 export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> = ({ onOpenProductInfo }) => {
+  const { toast, showError } = useToast();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [lossPurchaseModal, setLossPurchaseModal] = useState<{ product_code: string; product_name: string } | null>(null);
@@ -40,7 +42,7 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
     if (season) params.set("season", season);
     api.get<{ rows?: any[] }>(`/api/stock-manage/top-sales?${params}`)
       .then(({ data: j }) => setRows(Array.isArray(j?.rows) ? j.rows : []))
-      .catch(() => setRows([]))
+      .catch((err) => { setRows([]); showError(`데이터 로드 실패: ${err instanceof Error ? err.message : String(err)}`); })
       .finally(() => setLoading(false));
   }, [season]);
 
@@ -62,6 +64,11 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
 
   return (
     <div className="bg-white rounded-xl border border-line p-4 shadow-sm flex flex-col gap-3">
+      {toast && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <AlertOctagon size={14} className="text-rose-600" />

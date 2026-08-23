@@ -19,6 +19,7 @@ import { useSortableTable, type Comparator } from "../../hooks/useSortableTable"
 import { CARD_BASE } from "../../styles/tokens";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { api, ApiError } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -514,6 +515,7 @@ interface VendorDetailTabsProps {
 }
 
 export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) => {
+  const { toast, showError } = useToast();
   const [activeTab, setActiveTab] = useState<TabKey>("balance");
 
   // 기간 필터 (내부 관리)
@@ -552,8 +554,10 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
         total_payment_supply: Number(j.total_payment_supply ?? 0),
       });
     } catch (e: any) {
-      setLedgerError(e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류"));
+      const msg = e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류");
+      setLedgerError(msg);
       setLedger(null);
+      showError(`원장 로드 실패: ${msg}`);
     } finally { setLedgerLoading(false); }
   }, [vendor, days]);
 
@@ -563,8 +567,9 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
     try {
       const { data: j } = await api.get<any>(`/api/supplier-purchase-detail?supplier=${encodeURIComponent(vendor.company_name)}&days=${days}`);
       setDetailRows(Array.isArray(j.rows) ? j.rows : []);
-    } catch {
+    } catch (e: any) {
       setDetailRows([]);
+      showError(`매입이력 로드 실패: ${e?.message ?? "네트워크 오류"}`);
     } finally { setDetailLoading(false); }
   }, [vendor, days]);
 
@@ -617,6 +622,10 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
   const isLoading = ledgerLoading || detailLoading;
 
   return (
+    <>
+    {toast && (
+      <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
+    )}
     <div className="flex flex-col gap-3 min-h-0 flex-1">
       {/* 헤더 카드 */}
       <VendorInfoHeader
@@ -761,6 +770,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
         )}
       </div>
     </div>
+    </>
   );
 };
 

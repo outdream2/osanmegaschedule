@@ -1,27 +1,17 @@
 {
   "created": "2026-08-23",
   "version": 1,
-  "totalViolations": 2,
+  "totalViolations": 1,
   "files": {
-    "src/components/ContractWriterPage/ContractLeftForm.tsx": {
-      "lines": 1320,
+    "src/components/OrderManagePage/PaymentInfoTab.tsx": {
+      "lines": 804,
       "violations": [
         {
           "ruleId": "large-file-warn",
           "count": 1
         }
       ],
-      "totalWeight": 6
-    },
-    "src/components/ContractWriterPage/useContractWriterState.ts": {
-      "lines": 1351,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 6
+      "totalWeight": 3
     }
   }
 }

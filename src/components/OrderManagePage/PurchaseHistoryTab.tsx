@@ -29,6 +29,7 @@ import { useLedgerHighlight } from "../../hooks/useLedgerHighlight";
 import { useVendorInfoModal } from "../common/features/VendorInfoModal";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { api, ApiError } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-21 · Framework Phase 4 · large-file 분리
 import type { VendorItem, SummaryResponse, DataSource, SourceDiagnostics, ViewMode, ProductSort } from "./PurchaseHistoryTab.types";
 // 2026-08-22 · Framework Phase 4 · 3섹션 별도 컴포넌트 이관
@@ -37,6 +38,7 @@ import { FilterBar, ByVendorPanel, ByProductPanel } from "./PurchaseHistoryTab.p
 // ─── PurchaseHistoryTab ───────────────────────────────────────────────────────
 
 export const PurchaseHistoryTab: React.FC = () => {
+  const { toast, showError } = useToast();
   // ═══════════════════════════════════════════════════════════════════════
   //  뷰 모드 (#191 · 공급사별 / 상품별)
   // ═══════════════════════════════════════════════════════════════════════
@@ -222,8 +224,9 @@ export const PurchaseHistoryTab: React.FC = () => {
         });
       }
       setSummaryMap(map);
-    } catch {
+    } catch (e: any) {
       setSummaryMap(new Map());
+      showError(`공급사 요약 로드 실패: ${e?.message ?? "네트워크 오류"}`);
     } finally { setSummaryLoading(false); }
   }, []);
 
@@ -284,10 +287,12 @@ export const PurchaseHistoryTab: React.FC = () => {
       setDetailRows(detRows);
       setDetailSource("purchase_details" as DataSource);
     } catch (e: any) {
-      setLedgerError(e?.message ?? "네트워크 오류");
+      const msg = e?.message ?? "네트워크 오류";
+      setLedgerError(msg);
       setLedgerRows([]);
       setDetailRows([]);
       setDetailSource(null);
+      showError(`매입원장 로드 실패: ${msg}`);
     } finally {
       setLedgerLoading(false);
       setDetailLoading(false);
@@ -453,11 +458,13 @@ export const PurchaseHistoryTab: React.FC = () => {
         }
       }
     } catch (e: any) {
-      setAllDetailsError(e?.message ?? "네트워크 오류");
+      const msg = e?.message ?? "네트워크 오류";
+      setAllDetailsError(msg);
       setAllDetails([]);
       setDetailSupplierMap(new Map());
       setProductSalesMap(new Map());
       setAllDetailsLoading(false);
+      showError(`상품별 매입 로드 실패: ${msg}`);
     }
   }, [allDetailsLoaded]);
 
@@ -712,6 +719,9 @@ export const PurchaseHistoryTab: React.FC = () => {
 
   return (
     <>
+    {toast && (
+      <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
+    )}
     <div className="flex flex-col gap-2 h-full min-h-0">
       {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · FilterBar */}
       <FilterBar
