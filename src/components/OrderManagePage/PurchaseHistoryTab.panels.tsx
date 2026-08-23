@@ -18,6 +18,8 @@ import { StatusPill } from "../common/StatusPill";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { PeriodSelector } from "../common/PeriodSelector";
 import { SupplierTab } from "../StockManagePage/SupplierTab";
+// 2026-08-23 · #198 Phase 3 · ByProductPanel · SplitListPanel v3 이관
+import { SplitListPanel } from "../common/SplitListPanel";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import VendorHeaderPanel from "./PurchaseHistoryTab/VendorHeaderPanel";
 import PurchaseSubTabs, {
@@ -393,42 +395,50 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
       mobileOpen={!!selectedProductKey}
       onMobileClose={() => setSelectedProductKey(null)}
       left={
-        <div className="w-full flex flex-col gap-2 h-full min-h-0">
-        <div className="bg-white rounded-xl border border-line shadow-sm px-3 py-2 flex flex-col gap-2">
-          <input
-            type="text"
-            value={productSearch}
-            onChange={e => setProductSearch(e.target.value)}
-            placeholder="상품명 · 코드 검색"
-            className="w-full h-7 px-2.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
-          />
-          <div className="flex items-center gap-1 pt-1 border-t border-zinc-100 flex-wrap">
-            <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">정렬</span>
-            {([
-              { k: "amount"   as const, label: "매입액",   color: "sky" as const },
-              { k: "recent"   as const, label: "최근매입", color: "sky" as const },
-              { k: "count"    as const, label: "매입건수", color: "sky" as const },
-              { k: "sale_qty" as const, label: "판매량",   color: "rose" as const },
-              { k: "sale_amt" as const, label: "판매금액", color: "rose" as const },
-              { k: "name"     as const, label: "가나다",   color: "sky" as const },
-            ]).map(o => {
-              const activeCls = o.color === "rose" ? "bg-rose-500 text-white" : "bg-sky-500 text-white";
-              return (
-                <button
-                  key={o.k}
-                  type="button"
-                  onClick={() => setProductSort(o.k)}
-                  className={`h-5 px-1.5 text-[14px] font-semibold rounded transition cursor-pointer ${
-                    productSort === o.k
-                      ? activeCls
-                      : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
-                  }`}
-                >{o.label}</button>
-              );
-            })}
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-line shadow-sm flex-1 min-h-0 max-h-[calc(100vh-200px)] flex flex-col overflow-hidden">
+        /* 2026-08-23 · #198 Phase 3 · ByProductPanel · SplitListPanel v3 이관
+           · search + sort chips (6개 · 커스텀 색상) · filters slot
+           · 그리드 header + list · children slot
+           · custom loading/error/empty · body children 내부 유지 (v3 loading prop 미사용) */
+        <SplitListPanel
+          filters={
+            <div className="flex flex-col gap-2 w-full">
+              <input
+                type="text"
+                value={productSearch}
+                onChange={e => setProductSearch(e.target.value)}
+                placeholder="상품명 · 코드 검색"
+                className="w-full h-7 px-2.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
+              />
+              <div className="flex items-center gap-1 pt-1 border-t border-zinc-100 flex-wrap">
+                <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">정렬</span>
+                {([
+                  { k: "amount"   as const, label: "매입액",   color: "sky" as const },
+                  { k: "recent"   as const, label: "최근매입", color: "sky" as const },
+                  { k: "count"    as const, label: "매입건수", color: "sky" as const },
+                  { k: "sale_qty" as const, label: "판매량",   color: "rose" as const },
+                  { k: "sale_amt" as const, label: "판매금액", color: "rose" as const },
+                  { k: "name"     as const, label: "가나다",   color: "sky" as const },
+                ]).map(o => {
+                  const activeCls = o.color === "rose" ? "bg-rose-500 text-white" : "bg-sky-500 text-white";
+                  return (
+                    <button
+                      key={o.k}
+                      type="button"
+                      onClick={() => setProductSort(o.k)}
+                      className={`h-5 px-1.5 text-[14px] font-semibold rounded transition cursor-pointer ${
+                        productSort === o.k
+                          ? activeCls
+                          : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
+                      }`}
+                    >{o.label}</button>
+                  );
+                })}
+              </div>
+            </div>
+          }
+          bodyClassName="bg-white rounded-xl border border-line shadow-sm flex-1 min-h-0 max-h-[calc(100vh-200px)] flex flex-col overflow-hidden mt-2"
+        >
+          <>
           <div className="px-3 py-1.5 border-b border-zinc-100 bg-zinc-50/60 shrink-0 grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-[15px] font-bold text-zinc-500 uppercase tracking-wider">
             <span>상품</span>
             <span className="text-right whitespace-nowrap text-amber-600">매입</span>
@@ -470,8 +480,8 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
             </div>
           )}
           </div>
-        </div>
-        </div>
+          </>
+        </SplitListPanel>
       }
       right={
         <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2">
