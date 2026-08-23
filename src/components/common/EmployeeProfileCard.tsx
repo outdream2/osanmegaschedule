@@ -11,12 +11,13 @@
 //   5. 근로계약서 뷰어 모달 (자체 관리)
 
 import React, { useEffect, useRef, useState } from "react";
-import { FileText, Edit2, Upload, X } from "lucide-react";
+import { FileText, Edit2, Upload } from "lucide-react";
 import type { Employee } from "../../types";
 import { uploadResume, uploadContract, uploadBankbook } from "../../lib/employeeApi";
 import { getEmploymentStatus, EMPLOYMENT_STATUS_LABEL } from "../../lib/employmentStatus";
 import { Card } from "./Card";
 import { StatusPill } from "./StatusPill";
+import { Modal } from "./Modal";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient · alert → useToast
 import { api } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -292,56 +293,47 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
         </div>
       )}
 
-      {/* 근로계약서 뷰어 모달 · 자체 관리 */}
+      {/* 근로계약서 뷰어 모달 · 2026-08-23 · #191 · Modal primitive 마이그레이션 */}
       {contractModalOpen && localEmployee.contract_file_url && (
-        // 2026-08-17 v2 · frosted backdrop + 3-layer shadow · Modal 통일
-        <div
-          className="fixed inset-0 z-[400] flex items-center justify-center p-4"
-          style={{ background: "rgba(10, 46, 74, 0.45)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+        <Modal
+          open
+          onClose={() => setContractModalOpen(false)}
+          size="3xl"
+          bodyPadding="none"
+          zIndex={400}
+          title={
+            <span className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+              <FileText size={15} className="text-emerald-600" /> 근로계약서 — {localEmployee.name}
+            </span>
+          }
+          headerRight={
+            <a
+              href={localEmployee.contract_file_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg transition"
+            >
+              새 탭에서 열기
+            </a>
+          }
+          cardStyle={{ height: "85vh" }}
         >
-          <div
-            className="relative w-full max-w-3xl bg-white rounded-2xl overflow-hidden flex flex-col"
-            style={{ height: "85vh", boxShadow: "0 1px 3px rgba(10,46,74,0.15), 0 8px 32px -8px rgba(10,46,74,0.28), 0 24px 64px -24px rgba(10,46,74,0.32)" }}
-          >
-            <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-100 shrink-0">
-              <span className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-                <FileText size={15} className="text-emerald-600" /> 근로계약서 — {localEmployee.name}
-              </span>
-              <div className="flex items-center gap-2">
-                <a
-                  href={localEmployee.contract_file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1.5 text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg transition"
-                >
-                  새 탭에서 열기
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setContractModalOpen(false)}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
-            <div className="flex-1 overflow-hidden bg-zinc-100">
-              {/\.(pdf)$/i.test(localEmployee.contract_file_url) ? (
-                <iframe
-                  src={localEmployee.contract_file_url}
-                  className="w-full h-full border-0"
-                  title="근로계약서"
-                />
-              ) : (
-                <img
-                  src={localEmployee.contract_file_url}
-                  alt="근로계약서"
-                  className="w-full h-full object-contain"
-                />
-              )}
-            </div>
+          <div className="flex-1 overflow-hidden bg-zinc-100 h-full">
+            {/\.(pdf)$/i.test(localEmployee.contract_file_url) ? (
+              <iframe
+                src={localEmployee.contract_file_url}
+                className="w-full h-full border-0"
+                title="근로계약서"
+              />
+            ) : (
+              <img
+                src={localEmployee.contract_file_url}
+                alt="근로계약서"
+                className="w-full h-full object-contain"
+              />
+            )}
           </div>
-        </div>
+        </Modal>
       )}
       {/* 2026-08-21 · Framework Phase 3 · useToast 표시 · alert 대체 */}
       {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
