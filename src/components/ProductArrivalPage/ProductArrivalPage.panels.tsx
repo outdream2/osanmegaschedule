@@ -10,6 +10,7 @@ import {
   Sparkles, AlertCircle, Package, RefreshCw, Trash2, PackagePlus,
 } from "lucide-react";
 import { StatusPill } from "../common/StatusPill";
+import { Badge } from "../common/Badge";
 import { Card } from "../common/Card";
 import { Spinner } from "../common/Spinner";
 import { AccentBar } from "../common/AccentBar";
@@ -445,14 +446,13 @@ export const ArrivalDetailModal: React.FC<ArrivalDetailModalProps> = ({
                           <td className="px-2 py-1.5 text-zinc-600">{it.supplier ?? "-"}</td>
                           <td className="px-2 py-1.5 text-right font-bold tabular-nums text-zinc-800">{it.qty.toLocaleString()}</td>
                           <td className="px-2 py-1.5 text-center">
-                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[14px] font-bold border ${
-                              it.status === "match" ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                                : it.status === "mismatch" ? "bg-rose-50 text-rose-700 border-rose-300"
-                                : it.status === "expiring" ? "bg-amber-50 text-amber-700 border-amber-300"
-                                : "bg-zinc-50 text-zinc-500 border-zinc-300"
-                            }`}>
+                            <Badge
+                              tone={it.status === "match" ? "emerald" : it.status === "mismatch" ? "rose" : it.status === "expiring" ? "amber" : "zinc"}
+                              size="xs"
+                              shape="square"
+                            >
                               {it.status === "match" ? "일치" : it.status === "mismatch" ? "불일치" : it.status === "expiring" ? "기한임박" : "미확인"}
-                            </span>
+                            </Badge>
                           </td>
                         </tr>
                       ))}
