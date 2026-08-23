@@ -1,6 +1,7 @@
 import React from "react";
 import { CheckCircle, BookOpen, X, BookmarkCheck, AlertTriangle, XCircle } from "lucide-react";
 import { Spinner } from "../../common/Spinner";
+import { StatusPill } from "../../common/StatusPill";
 import type { RawPage } from "./types";
 
 interface InvoiceCardHeaderProps {
@@ -35,16 +36,16 @@ export const InvoiceCardHeader: React.FC<InvoiceCardHeaderProps> = ({
       {/* ── 카드 상단 헤더 배지 ── */}
       <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] font-bold text-white bg-sky-500 px-1.5 py-0.5 rounded shrink-0">1차보정</span>
+          <StatusPill tone="sky" size="xs" className="shrink-0">1차보정</StatusPill>
           <span className="text-xs font-bold text-gray-800">거래명세서 품목</span>
-          <span className="text-[11px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded font-bold">
+          <StatusPill tone="zinc" size="xs">
             {rawRows.length - permanentlyDeletedRawRows.size - hiddenRawRows.size}행 · {structuredPages.length}페이지
             {(permanentlyDeletedRawRows.size + hiddenRawRows.size) > 0 && (
               <span className="ml-1 text-rose-500">
                 ({permanentlyDeletedRawRows.size + hiddenRawRows.size}행 제외)
               </span>
             )}
-          </span>
+          </StatusPill>
           {hiddenRawRows.size > 0 && (
             <button
               type="button"
@@ -63,9 +64,9 @@ export const InvoiceCardHeader: React.FC<InvoiceCardHeaderProps> = ({
             </span>
           )}
           {!autoSynonymLoading && autoSynonymCount > 0 && (
-            <span className="text-[11px] bg-indigo-50 border border-indigo-200 text-indigo-600 px-1.5 py-0.5 rounded font-bold flex items-center gap-1">
-              <BookOpen size={9} />{autoSynonymCount}건 동의어 보정
-            </span>
+            <StatusPill tone="indigo" size="xs" icon={<BookOpen size={9} />}>
+              {autoSynonymCount}건 동의어 보정
+            </StatusPill>
           )}
           {synonymAddStatus?.status === 'loading' && (
             <span className="text-[11px] text-sky-500 font-bold flex items-center gap-1">
@@ -73,14 +74,12 @@ export const InvoiceCardHeader: React.FC<InvoiceCardHeaderProps> = ({
             </span>
           )}
           {synonymAddStatus?.status === 'done' && (
-            <span className="text-[11px] bg-emerald-50 border border-emerald-200 text-emerald-600 px-1.5 py-0.5 rounded font-bold flex items-center gap-1">
-              <CheckCircle size={9} />{synonymAddStatus.count}건 동의어 추가 완료
-            </span>
+            <StatusPill tone="emerald" size="xs" icon={<CheckCircle size={9} />}>
+              {synonymAddStatus.count}건 동의어 추가 완료
+            </StatusPill>
           )}
           {synonymAddStatus?.status === 'error' && (
-            <span className="text-[11px] bg-rose-50 border border-rose-200 text-rose-600 px-1.5 py-0.5 rounded font-bold">
-              동의어 추가 실패
-            </span>
+            <StatusPill tone="rose" size="xs">동의어 추가 실패</StatusPill>
           )}
         </div>
       </div>

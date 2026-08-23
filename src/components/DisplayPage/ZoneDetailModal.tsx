@@ -4,14 +4,20 @@
 import React from "react";
 import { CheckCircle2, Save, Send, ScanLine, User } from "lucide-react";
 import type { ZoneStatus } from "../../utils/zoneUtils";
-import { StatusPill } from "../common/StatusPill";
+import type { DisplayZone } from "../../utils/zoneUtils";
+import type { Employee } from "./DisplayPage.types";
+import { StatusPill, type PillTone } from "../common/StatusPill";
 import { Modal } from "../common/Modal";
 import {
   DOW_ALL, DOW_LABELS,
-  STATUS_LABEL, statusCell, statusDot, statusBadge,
+  STATUS_LABEL, statusCell, statusDot,
 } from "./DisplayPage.helpers";
-import type { DisplayZone } from "../../utils/zoneUtils";
-import type { Employee } from "./DisplayPage.types";
+
+const STATUS_TONE: Record<ZoneStatus, PillTone> = {
+  normal: "emerald",
+  low: "amber",
+  empty: "rose",
+};
 
 interface ZoneDetailModalProps {
   activeZone: DisplayZone;
@@ -66,9 +72,9 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
         <div className="text-base font-bold text-zinc-900 truncate">{activeZone.label}</div>
         <div className="text-[11px] text-zinc-500">{activeZone.category}</div>
       </div>
-      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${statusBadge(draftStatus)}`}>
+      <StatusPill tone={STATUS_TONE[draftStatus]} size="xs">
         {STATUS_LABEL[draftStatus]}
-      </span>
+      </StatusPill>
     </div>
   );
 

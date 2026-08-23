@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import { Package } from "@phosphor-icons/react";
 import { api } from "../../lib/apiClient";
+import { StatusPill, type PillTone } from "../common/StatusPill";
 
 export interface StockItem {
   product_name: string;
@@ -14,29 +15,19 @@ export interface StockItem {
   supplier: string | null;
 }
 
-interface Badge {
-  label: string;
-  bg: string;
-  text: string;
-  dot: string;
-}
+interface StockBadge { label: string; tone: PillTone; }
 
 /** 재고·판매 배지 · 재고있음/재고없음 + 판매중/판매중단 */
-function getStockBadges(item: StockItem): Badge[] {
-  const badges: Badge[] = [];
+function getStockBadges(item: StockItem): StockBadge[] {
   const n = Number(item.current_stock ?? 0);
-  if (Number.isFinite(n) && n > 0) {
-    badges.push({ label: "재고있음", bg: "bg-emerald-100", text: "text-emerald-700", dot: "bg-emerald-500" });
-  } else {
-    badges.push({ label: "재고없음", bg: "bg-red-100", text: "text-red-600", dot: "bg-red-500" });
-  }
+  const stockBadge: StockBadge = Number.isFinite(n) && n > 0
+    ? { label: "재고있음", tone: "emerald" }
+    : { label: "재고없음", tone: "rose" };
   const status = item.sale_status ?? "";
-  if (/단종|판매중지|판매불가|판매\s*중단/.test(status)) {
-    badges.push({ label: "판매중단", bg: "bg-zinc-200", text: "text-zinc-600", dot: "bg-zinc-400" });
-  } else {
-    badges.push({ label: "판매중", bg: "bg-sky-100", text: "text-sky-700", dot: "bg-sky-500" });
-  }
-  return badges;
+  const saleBadge: StockBadge = /단종|판매중지|판매불가|판매\s*중단/.test(status)
+    ? { label: "판매중단", tone: "zinc" }
+    : { label: "판매중", tone: "sky" };
+  return [stockBadge, saleBadge];
 }
 
 export function StockSearch() {
@@ -129,10 +120,9 @@ export function StockSearch() {
                   </div>
                   <div className="shrink-0 flex items-center gap-1">
                     {badges.map((badge, bi) => (
-                      <div key={bi} className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${badge.bg} ${badge.text} text-[10px] font-bold`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                      <StatusPill key={bi} tone={badge.tone} size="xs" dot>
                         {badge.label}
-                      </div>
+                      </StatusPill>
                     ))}
                   </div>
                 </div>
