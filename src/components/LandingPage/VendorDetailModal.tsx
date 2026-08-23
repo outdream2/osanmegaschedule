@@ -223,7 +223,13 @@ export const VendorDetailModal: React.FC<{
     draft.email           !== (vendor.email           ?? "") ||
     draft.category        !== (vendor.category        ?? "") ||
     draft.note            !== (vendor.note            ?? "") ||
-    draft.vat_included    !== vatDraftVal(vendor)
+    draft.vat_included    !== vatDraftVal(vendor) ||
+    // 2026-08-23 · #178 Phase D · 5 신규 필드 dirty 체크
+    draft.order_method    !== (vendor.order_method    ?? "") ||
+    draft.region          !== (vendor.region          ?? "") ||
+    draft.invoice_method  !== (vendor.invoice_method  ?? "") ||
+    draft.order_status    !== (vendor.order_status    ?? "") ||
+    draft.special_notes   !== (vendor.special_notes   ?? "")
   ), [vendor, draft]);
 
   // 2026-08-10 · 자동 저장 · draft 변경 감지 · 800ms debounce · handleSave 호출 · 저장 후 2s 후 msg 사라짐
@@ -270,6 +276,12 @@ export const VendorDetailModal: React.FC<{
         team_leader_name:  draft.team_leader_name.trim()  || null,
         team_leader_phone: draft.team_leader_phone.trim() || null,
         emergency_contact: draft.emergency_contact.trim() || null,
+        // 2026-08-23 · #178 Phase D · 5 신규 필드 (마이그레이션 미실행 시 서버 fallback)
+        order_method:   draft.order_method.trim()   || null,
+        region:         draft.region.trim()         || null,
+        invoice_method: draft.invoice_method.trim() || null,
+        order_status:   draft.order_status.trim()   || null,
+        special_notes:  draft.special_notes.trim()  || null,
       });
       setSaveMsg({ type: "ok", text: "저장 완료" });
       showSuccess("저장되었습니다");
@@ -544,6 +556,52 @@ export const VendorDetailModal: React.FC<{
                   value={draft.note}
                   onChange={e => setDraft({ ...draft, note: e.target.value })}
                   className={`${inputCls} h-[72px] resize-none`}
+                />
+              </Field>
+
+              {/* 2026-08-23 · #178 Phase D · xlsx 마스터 5 신규 필드 */}
+              <Field label="주문 방식">
+                <input
+                  type="text"
+                  value={draft.order_method}
+                  onChange={e => setDraft({ ...draft, order_method: e.target.value })}
+                  placeholder="사이트 URL · 이메일 · 전화 등"
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="지역">
+                <input
+                  type="text"
+                  value={draft.region}
+                  onChange={e => setDraft({ ...draft, region: e.target.value })}
+                  placeholder="서울 · 강남 / 경기 · 오산"
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="거래명세서 방식">
+                <input
+                  type="text"
+                  value={draft.invoice_method}
+                  onChange={e => setDraft({ ...draft, invoice_method: e.target.value })}
+                  placeholder="이메일 · 팩스 · 지참"
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="주문 현황">
+                <input
+                  type="text"
+                  value={draft.order_status}
+                  onChange={e => setDraft({ ...draft, order_status: e.target.value })}
+                  placeholder="정상 · 임시중단 · 종료"
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="발주 특이사항">
+                <textarea
+                  value={draft.special_notes}
+                  onChange={e => setDraft({ ...draft, special_notes: e.target.value })}
+                  placeholder="월요일 발주 X · 최소주문 5개 · 결제 조건 등"
+                  className={`${inputCls} h-[72px] resize-none border-amber-200 focus:border-amber-500 focus:ring-amber-200`}
                 />
               </Field>
 

@@ -35,6 +35,12 @@ export const emptyDraft = (v: Vendor): EditDraft => ({
   team_leader_name:  v.team_leader_name  ?? "",
   team_leader_phone: v.team_leader_phone ?? "",
   emergency_contact: v.emergency_contact ?? "",
+  // 2026-08-23 · #178 Phase D · xlsx 마스터 시트 5 신규 필드
+  order_method:   v.order_method   ?? "",
+  region:         v.region         ?? "",
+  invoice_method: v.invoice_method ?? "",
+  order_status:   v.order_status   ?? "",
+  special_notes:  v.special_notes  ?? "",
 });
 
 export const normalizeBizNum = (s: string): string => s.replace(/[^0-9]/g, "").slice(0, 10);

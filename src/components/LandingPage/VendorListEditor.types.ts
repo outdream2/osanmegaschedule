@@ -15,6 +15,14 @@ export interface Vendor {
   team_leader_name?: string | null;
   team_leader_phone?: string | null;
   emergency_contact?: string | null;
+  // 2026-08-23 · #178 Phase D · xlsx 마스터 시트 5 신규 필드
+  order_method?: string | null;      // 주문 방식 (사이트/이메일/전화)
+  region?: string | null;            // 지역
+  invoice_method?: string | null;    // 거래명세서 방식
+  order_status?: string | null;      // 주문 현황 (정상/임시중단/종료)
+  special_notes?: string | null;     // 발주 특이사항 (경고 배너 노출)
+  // 2026-08-23 · #192 · 승인 flow
+  approval_status?: "pending" | "approved" | "rejected" | null;
   created_at?: string | null;
   latestBalance?: { balance: number; invoice_date: string | null; created_at: string } | null;
   balanceConfig?: { balance_field: string; updated_at: string } | null;
@@ -34,6 +42,12 @@ export interface EditDraft {
   team_leader_name: string;
   team_leader_phone: string;
   emergency_contact: string;
+  // 2026-08-23 · #178 Phase D · xlsx 마스터 시트 5 신규 필드
+  order_method: string;
+  region: string;
+  invoice_method: string;
+  order_status: string;
+  special_notes: string;
 }
 
 // compact 테이블 정렬 키 타입 (모듈 레벨 · IIFE SortIcon 에서 참조)

@@ -8,31 +8,33 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 649 |
-| 위반 파일 | 2 |
-| 클린 파일 | 647 (100%) |
-| 총 위반 개수 | 2 |
+| 스캔 파일 | 651 |
+| 위반 파일 | 3 |
+| 클린 파일 | 648 (100%) |
+| 총 위반 개수 | 3 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
-| `large-file-warn` | 2 | 2 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `large-file-warn` | 3 | 3 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
-| 1 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 804 | 3 | large-file-warn(1) |
-| 2 | `src/components/ScanPage/ScanPage.tsx` | 812 | 3 | large-file-warn(1) |
+| 1 | `src/components/LandingPage/VendorDetailModal.tsx` | 815 | 3 | large-file-warn(1) |
+| 2 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 806 | 3 | large-file-warn(1) |
+| 3 | `src/components/ScanPage/ScanPage.tsx` | 812 | 3 | large-file-warn(1) |
 
-## 📝 모든 위반 파일 (2개)
+## 📝 모든 위반 파일 (3개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
-| `src/components/OrderManagePage/PaymentInfoTab.tsx` | 804 | 3 |
+| `src/components/LandingPage/VendorDetailModal.tsx` | 815 | 3 |
+| `src/components/OrderManagePage/PaymentInfoTab.tsx` | 806 | 3 |
 | `src/components/ScanPage/ScanPage.tsx` | 812 | 3 |
 
 </details>
