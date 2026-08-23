@@ -67,6 +67,22 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #201 · 삼선메뉴(햄버거) · 하위 레이어 겹침 표시 오류 수정 (신규 · 2026-08-23)
+- 📄 대상 · 삼선(햄버거) 메뉴 · 사이드바 드로어 · z-index 겹침 문제
+- 🐛 증상 · 삼선메뉴 열었을 때 · 아래 페이지 요소들 (테이블·리스트·모달 등) 과 겹쳐서 **안 보이거나 뒤에 깔림**
+- 🔲 원인 조사:
+  - 관련 파일 · `src/components/layout/AppNavHeader.tsx` · `BottomNav.tsx` · 또는 사이드 드로어 컴포넌트
+  - 현재 z-index · 페이지 콘텐츠 · 모달 · popover 등과 비교
+  - Modal primitive z-50 · 팝오버 z-[100]+ · Toast z-[9999] 등 다른 레이어와 순서
+- 🔲 z-index 계층 재정리 · 삼선메뉴가 최상단에 오도록 (모달/토스트 아래 · 페이지 콘텐츠 위)
+  - 권장 z-index · **z-[45] or z-40** (Modal z-50 아래 · 페이지 콘텐츠 z-0~10 위)
+  - 또는 필요 시 z-[55] (Modal 위 · 다른 UI 아래)
+- 🔲 backdrop 있는 경우 · backdrop z-index 도 함께 조정
+- 🔲 회귀 방지 · 다른 UI (모달·토스트·popover) 순서 유지 · 매 페이지 확인
+- 💡 원인별 status 분리 (feedback_logging_principle.md) · 재현 시나리오 로그
+- 💡 관련 · 이전 세션 · SideBar z-index 이슈 있었으면 참조
+- 💡 목업 파일 톤 유지 · `docs/UI_MOCKUP_2026-08-21.html`
+
 ### #200 · 랜딩페이지 · 전체 글씨 사이즈 +2 (신규 · 2026-08-23)
 - 📄 대상 · `src/components/LandingPage/LandingPage.tsx` 및 서브 컴포넌트들
 - 🔲 모든 텍스트 · 글씨 사이즈 **+2 통일** (대원칙 · `feedback_font_plus2_default.md`)
