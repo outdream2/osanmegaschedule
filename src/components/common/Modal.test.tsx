@@ -191,6 +191,45 @@ describe("Modal · v3+ 확장 · 신규 size / align / bodyPadding / zIndex / he
     const card = container.querySelector(".modal-card") as HTMLElement;
     expect(card.style.maxHeight).toBe("70vh");
   });
+
+  // 2026-08-23 · v3.2 · align="bottom-mobile" 커버리지
+  it("align=bottom-mobile · items-end sm:items-center + rounded-t-2xl (v3.2)", () => {
+    const { container } = render(
+      <Modal open onClose={() => {}} align="bottom-mobile">x</Modal>,
+    );
+    const root = container.querySelector('[role="dialog"]') as HTMLElement;
+    expect(root.className).toContain("items-end");
+    expect(root.className).toContain("sm:items-center");
+    const card = container.querySelector(".modal-card") as HTMLElement;
+    expect(card.className).toContain("rounded-t-2xl");
+    expect(card.className).toContain("sm:rounded-2xl");
+  });
+
+  // 2026-08-23 · v3.3 · align="top-mobile" 커버리지
+  it("align=top-mobile · items-start sm:items-center + pt-4 (v3.3)", () => {
+    const { container } = render(
+      <Modal open onClose={() => {}} align="top-mobile">x</Modal>,
+    );
+    const root = container.querySelector('[role="dialog"]') as HTMLElement;
+    expect(root.className).toContain("items-start");
+    expect(root.className).toContain("sm:items-center");
+    expect(root.className).toContain("pt-4");
+    const card = container.querySelector(".modal-card") as HTMLElement;
+    expect(card.className).toContain("rounded-t-2xl");
+  });
+
+  it("align=center (기본) · .modal-backdrop 클래스 · rounded-t-2xl 없음", () => {
+    const { container } = render(
+      <Modal open onClose={() => {}}>x</Modal>,
+    );
+    const root = container.querySelector('[role="dialog"]') as HTMLElement;
+    // 기본 · align=center + brand backdrop = .modal-backdrop 클래스 (CSS 로 items-center)
+    expect(root.className).toContain("modal-backdrop");
+    expect(root.className).not.toContain("items-end");
+    expect(root.className).not.toContain("items-start");
+    const card = container.querySelector(".modal-card") as HTMLElement;
+    expect(card.className).not.toContain("rounded-t-2xl");
+  });
 });
 
 describe("Modal · footer slot", () => {
