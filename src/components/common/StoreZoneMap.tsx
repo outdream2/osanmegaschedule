@@ -15,7 +15,7 @@
 // 카테고리 페이지 전용 기능 (BEST 배지) 를 옵션으로 추가.
 // DisplayPage 편집·드래그드롭 map 은 이 컴포넌트가 아니라 별도 유지 (편집 UI 는 원본 코드 그대로).
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   STORE_TOP_WALL, STORE_AISLE_CENTER, STORE_AISLE_PAIRS, STORE_BOTTOM_WALL, STORE_VERTICAL_WING,
   CAT_A_COLORS, CAT_B_COLORS,
@@ -24,7 +24,9 @@ import {
 import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { getZoneLabel, getZoneSubLabel } from "../../constants/zoneLabels";
 import { StatusPill } from "./StatusPill";
-import { MapPin, User } from "lucide-react";
+import { MapPin, User, GripVertical } from "lucide-react";
+// 2026-08-23 · #181 Phase 2 · 드래그 재정렬 long-press 타이밍 상수
+import { TIMING } from "../../constants/timing";
 
 export interface StoreZoneMapProps {
   /** 구역별 상품 수 · key = zone id (예: "1A", "9B", "22") · 카테고리 페이지에서 사용 */
@@ -54,6 +56,14 @@ export interface StoreZoneMapProps {
   zoneMobileStaffMap?: Record<string, string>;
   /** 모바일 테이블에 표시할 구역별 pending 건수 · key=zoneId, value=건수 */
   zonePendingMap?: Record<string, number>;
+  /**
+   * 2026-08-23 · #181 Phase 2 · 편집 모드 (관리자 전용)
+   * true 이면 셀 long-press (500ms) → 드래그 활성 · 다른 셀로 drop 시 num 스왑
+   * default false · 기존 소비자 안전 (readonly)
+   */
+  editing?: boolean;
+  /** 편집 모드 · 드래그 스왑 콜백 · (fromNum → toNum) · 부모가 useZoneDefs 로 label/category 교환 */
+  onZoneReorder?: (fromNum: number, toNum: number) => void;
 }
 
 /**
@@ -88,7 +98,64 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
   mobileTable = false,
   zoneMobileStaffMap,
   zonePendingMap,
+  editing = false,
+  onZoneReorder,
 }) => {
+  // ── 2026-08-23 · #181 Phase 2 · 드래그 재정렬 · long-press (mobile) + HTML5 drag (desktop) ──
+  const [draggingNum, setDraggingNum] = useState<number | null>(null);
+  const [dropTargetNum, setDropTargetNum] = useState<number | null>(null);
+  const [armedNum, setArmedNum] = useState<number | null>(null);
+  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearPressTimer = () => {
+    if (pressTimerRef.current) { clearTimeout(pressTimerRef.current); pressTimerRef.current = null; }
+  };
+  useEffect(() => clearPressTimer, []);
+
+  const enableDrag = editing && typeof onZoneReorder === "function";
+
+  const dragHandlers = (num: number): React.HTMLAttributes<HTMLElement> & { draggable?: boolean } => {
+    if (!enableDrag) return {};
+    return {
+      draggable: armedNum === num || (draggingNum !== null),
+      onDragStart: (e) => {
+        setDraggingNum(num);
+        try { e.dataTransfer?.setData("text/plain", String(num)); } catch { /* noop */ }
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+      },
+      onDragOver: (e) => {
+        if (draggingNum === null || draggingNum === num) return;
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+        if (dropTargetNum !== num) setDropTargetNum(num);
+      },
+      onDragLeave: () => {
+        if (dropTargetNum === num) setDropTargetNum(null);
+      },
+      onDrop: (e) => {
+        e.preventDefault();
+        const from = draggingNum;
+        setDraggingNum(null); setDropTargetNum(null); setArmedNum(null);
+        if (from !== null && from !== num) onZoneReorder!(from, num);
+      },
+      onDragEnd: () => { setDraggingNum(null); setDropTargetNum(null); setArmedNum(null); },
+      // long-press (mobile) · 500ms 유지 시 draggable 활성 후 native drag 유도
+      onTouchStart: () => {
+        clearPressTimer();
+        pressTimerRef.current = setTimeout(() => { setArmedNum(num); }, TIMING.PRESS_LONG);
+      },
+      onTouchEnd: () => { clearPressTimer(); if (draggingNum === null) setArmedNum(null); },
+      onTouchCancel: () => { clearPressTimer(); setArmedNum(null); },
+    };
+  };
+
+  const cellStateClass = (num: number): string => {
+    if (!enableDrag) return "";
+    const parts: string[] = [];
+    if (draggingNum === num) parts.push("opacity-50");
+    if (dropTargetNum === num) parts.push("ring-2 ring-emerald-500 ring-offset-1");
+    if (armedNum === num && draggingNum === null) parts.push("ring-2 ring-amber-400 animate-pulse");
+    return parts.join(" ");
+  };
   // 2026-07-31 · zone-labels-changed 수신 → 강제 리렌더 (라벨 편집 반영)
   const [, setZoneLabelVersion] = useState(0);
   useEffect(() => {
@@ -137,12 +204,15 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
     const handleClick = cellClickable ? () => onZoneClick!(zoneId) : undefined;
     const Tag: any = cellClickable ? "button" : "div";
     const extra = cellClickable ? { type: "button" as const, onClick: handleClick } : {};
+    const dragProps = dragHandlers(num);
+    const dragClass = cellStateClass(num);
     return (
       <Tag
         key={num}
         {...extra}
-        className={`rounded-md overflow-hidden border border-stone-300 bg-white shadow-sm flex flex-col items-center ${wallMin} ${cellInteractive}`}
-        title={`${zd?.label ?? num} · ${cat}${count > 0 ? ` · ${count}개 상품` : ""}`}
+        {...dragProps}
+        className={`rounded-md overflow-hidden border border-stone-300 bg-white shadow-sm flex flex-col items-center ${wallMin} ${cellInteractive} ${dragClass}`}
+        title={`${zd?.label ?? num} · ${cat}${count > 0 ? ` · ${count}개 상품` : ""}${enableDrag ? " · 길게 눌러 드래그" : ""}`}
       >
         {/* 상단 · ★BEST 배지 (옵션) · 배지 없어도 line 은 유지 (레이아웃 안정) */}
         {showBestBadges && (
@@ -150,7 +220,10 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
             {rankBadge(zoneId)}
           </div>
         )}
-        <div className="w-full bg-stone-50 px-1 py-1 flex flex-col items-center gap-0.5 flex-1 justify-center">
+        <div className="w-full bg-stone-50 px-1 py-1 flex flex-col items-center gap-0.5 flex-1 justify-center relative">
+          {enableDrag && (
+            <span className="absolute top-0.5 right-0.5 text-zinc-400" aria-hidden><GripVertical size={10} /></span>
+          )}
           <div className="flex items-center justify-center">
             <span className="text-[10px] font-bold text-white bg-amber-700 rounded px-1.5 leading-none">{getZoneLabel(num)}</span>
           </div>
@@ -180,6 +253,9 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
       const handleClick = cellClickable ? () => onZoneClick!(zoneId) : undefined;
       const Tag: any = cellClickable ? "button" : "div";
       const extra = cellClickable ? { type: "button" as const, onClick: handleClick } : {};
+      // 2026-08-23 · #181 Phase 2 · pair 셀은 num 단위 드래그 (A/B 동시 이동 · 데이터가 num 에 묶여있음)
+      const dragProps = dragHandlers(num);
+      const dragClass = cellStateClass(num);
       return (
         <div className="flex flex-col items-stretch gap-0.5 flex-1 min-w-[44px]">
           {showBestBadges && (
@@ -187,8 +263,9 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
           )}
           <Tag
             {...extra}
-            className={`w-full font-bold ${colors.text} ${colors.bg} border-2 ${colors.border} rounded px-0.5 py-1 leading-tight text-center ${cellMin} flex flex-col items-center justify-center overflow-hidden ${cellInteractive}`}
-            title={`${zoneId} · ${sub}${count > 0 ? ` · ${count}개 상품` : ""}`}
+            {...dragProps}
+            className={`w-full font-bold ${colors.text} ${colors.bg} border-2 ${colors.border} rounded px-0.5 py-1 leading-tight text-center ${cellMin} flex flex-col items-center justify-center overflow-hidden ${cellInteractive} ${dragClass}`}
+            title={`${zoneId} · ${sub}${count > 0 ? ` · ${count}개 상품` : ""}${enableDrag ? " · 길게 눌러 드래그" : ""}`}
           >
             <div className="flex items-center justify-center mb-0.5">
               <span className={`text-[10px] font-bold text-white ${colors.labelBg} rounded px-1.5 leading-none`}>{getZoneLabel(zoneId)}</span>
@@ -215,6 +292,8 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
     const handleClick = cellClickable ? () => onZoneClick!("22") : undefined;
     const Tag: any = cellClickable ? "button" : "div";
     const extra = cellClickable ? { type: "button" as const, onClick: handleClick } : {};
+    const dragProps = dragHandlers(STORE_AISLE_CENTER);
+    const dragClass = cellStateClass(STORE_AISLE_CENTER);
     return (
       <div className="flex flex-col items-center gap-0.5 flex-none w-[54px] min-w-[54px]">
         {showBestBadges && (
@@ -222,8 +301,9 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         )}
         <Tag
           {...extra}
-          className={`w-full text-[10px] font-bold text-zinc-700 bg-white border border-zinc-300 rounded px-0.5 py-1 leading-tight text-center ${centerMin} flex items-center justify-center overflow-hidden ${cellInteractive}`}
-          title={`${STORE_AISLE_CENTER} · ${centerLabel}${count > 0 ? ` · ${count}개 상품` : ""}`}
+          {...dragProps}
+          className={`w-full text-[10px] font-bold text-zinc-700 bg-white border border-zinc-300 rounded px-0.5 py-1 leading-tight text-center ${centerMin} flex items-center justify-center overflow-hidden ${cellInteractive} ${dragClass}`}
+          title={`${STORE_AISLE_CENTER} · ${centerLabel}${count > 0 ? ` · ${count}개 상품` : ""}${enableDrag ? " · 길게 눌러 드래그" : ""}`}
         >
           <span className="line-clamp-6">{centerLabel}</span>
         </Tag>

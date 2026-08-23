@@ -72,6 +72,23 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   // 2026-08-23 · #189 · 구역 편집 (팝오버) 지원 · setZoneDefs 사용
   const { zones: ZONE_DEFS, setZones: setZoneDefs } = useZoneDefs();
 
+  // 2026-08-23 · #181 Phase 2 · 매장 구역도 드래그 재정렬 · 관리자 (lv>=9) 만
+  const dpZoneEditable = dpUserLevel >= 9;
+  const handleZoneReorder = React.useCallback((fromNum: number, toNum: number) => {
+    if (!dpZoneEditable || fromNum === toNum) return;
+    setZoneDefs((prev) => {
+      const a = prev.find(z => z.num === fromNum);
+      const b = prev.find(z => z.num === toNum);
+      if (!a || !b) return prev;
+      // num 스왑 · 다른 필드 유지 (label · category · subA · subB 등)
+      return prev.map(z => {
+        if (z.num === fromNum) return { ...z, num: toNum };
+        if (z.num === toNum) return { ...z, num: fromNum };
+        return z;
+      });
+    });
+  }, [dpZoneEditable, setZoneDefs]);
+
   const { perms: dpPerms } = usePagePermissions();
   const dpHiddenSubs = React.useMemo(() => {
     const set = new Set<DpSubTabKey>();
@@ -691,6 +708,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 fullMapOpen={fullMapOpen} setFullMapOpen={setFullMapOpen}
                 onZoneProductsOpen={openZoneProducts} onZoneCellClick={handleZoneCellClick}
                 renderRequestButton={renderRequestButton} ZONE_DEFS={ZONE_DEFS}
+                zoneEditing={dpZoneEditable} onZoneReorder={handleZoneReorder}
               />
 
               {/* 데스크탑 매장 배치도 */}

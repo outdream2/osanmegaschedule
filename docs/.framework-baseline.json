@@ -1,8 +1,18 @@
 {
   "created": "2026-08-23",
   "version": 1,
-  "totalViolations": 3,
+  "totalViolations": 4,
   "files": {
+    "src/components/DisplayPage/DisplayPage.tsx": {
+      "lines": 818,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
+    },
     "src/components/LandingPage/VendorDetailModal.tsx": {
       "lines": 815,
       "violations": [

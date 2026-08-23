@@ -24,11 +24,15 @@ interface DisplayMobileListProps {
   onZoneCellClick: (zone: DisplayZone, rect: DOMRect) => void;
   renderRequestButton: (num: number, id?: string) => React.ReactNode;
   ZONE_DEFS: ZoneDef[];
+  // 2026-08-23 · #181 Phase 2 · 편집 모드 (관리자 lv>=9) · 드래그 재정렬
+  zoneEditing?: boolean;
+  onZoneReorder?: (fromNum: number, toNum: number) => void;
 }
 
 export const DisplayMobileList: React.FC<DisplayMobileListProps> = ({
   zones, employees, staffColorMap, fullMapOpen, setFullMapOpen,
   onZoneProductsOpen, onZoneCellClick, renderRequestButton, ZONE_DEFS,
+  zoneEditing = false, onZoneReorder,
 }) => {
   const getPillCls = (z: DisplayZone): string => {
     if (z.num >= 1 && z.num <= 8) return z.id.endsWith("A") ? CAT_A[z.num] : CAT_B[z.num];
@@ -95,14 +99,18 @@ export const DisplayMobileList: React.FC<DisplayMobileListProps> = ({
           <div className="flex-1 overflow-auto">
             <div className="p-2 bg-zinc-100">
               <div className="p-2 bg-zinc-200 rounded-2xl border-4 border-emerald-500 shadow-inner">
-                <StoreZoneMap onZoneClick={(zoneId) => {
-                  const num = parseInt(zoneId, 10);
-                  const side = /[AB]$/.test(zoneId) ? zoneId.slice(-1) : "";
-                  const zd = ZONE_DEFS.find(z => z.num === num);
-                  const category = side === "A" ? (zd?.subA ?? zd?.category ?? "") : side === "B" ? (zd?.subB ?? zd?.category ?? "") : (zd?.category ?? "");
-                  onZoneProductsOpen({ zoneId, zoneNum: num, zoneLabel: side ? `진열대 ${num}${side}` : (num === 22 ? "진열대 22" : `벽면 ${num}`), category });
-                  setFullMapOpen(false);
-                }} />
+                <StoreZoneMap
+                  editing={zoneEditing}
+                  onZoneReorder={onZoneReorder}
+                  onZoneClick={(zoneId) => {
+                    const num = parseInt(zoneId, 10);
+                    const side = /[AB]$/.test(zoneId) ? zoneId.slice(-1) : "";
+                    const zd = ZONE_DEFS.find(z => z.num === num);
+                    const category = side === "A" ? (zd?.subA ?? zd?.category ?? "") : side === "B" ? (zd?.subB ?? zd?.category ?? "") : (zd?.category ?? "");
+                    onZoneProductsOpen({ zoneId, zoneNum: num, zoneLabel: side ? `진열대 ${num}${side}` : (num === 22 ? "진열대 22" : `벽면 ${num}`), category });
+                    setFullMapOpen(false);
+                  }}
+                />
               </div>
             </div>
           </div>
