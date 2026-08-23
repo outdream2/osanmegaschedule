@@ -135,7 +135,10 @@ describe("ProductCreateModal · submit (mock)", () => {
       product_code: "PC002",
       product_name: "테스트상품",
     }));
-    expect(onCreated).toHaveBeenCalledWith("PC002");
+    // 2026-08-23 · v2 signature · (code, product) 확장 · product 정보 포함
+    expect(onCreated).toHaveBeenCalledWith("PC002", expect.objectContaining({
+      product_name: "테스트상품",
+    }));
     expect(onClose).toHaveBeenCalled();
   });
 });

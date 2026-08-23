@@ -774,9 +774,16 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           initialCode={notFoundCode ?? ""}
           initialBarcode={notFoundCode ?? ""}
           lockCode
-          onCreated={(code) => {
-            // 로컬 캐시 즉시 삽입 · 재스캔 시 lookupProduct hit
-            addCachedProduct(code, { code, name: "", spec: "" });
+          onCreated={(code, product) => {
+            // 로컬 캐시 즉시 삽입 · 재스캔 시 lookupProduct hit · 방금 등록한 이름·규격·구역 반영 (fix bug: 빈 name)
+            addCachedProduct(code, {
+              code,
+              name: product?.product_name ?? "",
+              spec: product?.spec ?? "",
+              supplier: product?.supplier ?? null,
+              realMap: product?.real_map ?? null,
+              real_map: product?.real_map ?? null,
+            });
             setNotFoundCode(null);
             setCreateOpen(false);
             // 등록 완료 후 다시 handleScan 호출 → 리스트에 자동 추가

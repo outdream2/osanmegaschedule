@@ -16,7 +16,11 @@ import { CreateProductSchema, type CreateProductInput } from "../../shared/schem
 interface Props {
   open: boolean;
   onClose: () => void;
-  onCreated: (code: string) => void;
+  /**
+   * 등록 성공 콜백 · (code, product) 형태로 확장 (하위 호환 유지)
+   *   · product · 방금 등록한 상품 정보 · 후속 로컬 캐시 삽입 · UI 반영 등에 사용
+   */
+  onCreated: (code: string, product?: { product_name: string; supplier: string | null; spec: string | null; barcode: string | null; real_map: string | null }) => void;
   /** 2026-08-23 · #179 · 바코드 스캔 미등록 즉시 등록 · product_code 사전 채움 */
   initialCode?: string;
   /** 2026-08-23 · #179 · barcode 사전 채움 (스캔 코드가 바코드 = product_code 인 경우 함께) */
@@ -129,7 +133,14 @@ export const ProductCreateModal: React.FC<Props> = ({
       }
       const { data } = await api.post<{ ok: boolean; product_code: string }>("/api/products", parsed.data);
       showSuccess(`상품 등록 완료 · ${data.product_code}`);
-      onCreated(data.product_code);
+      // 2026-08-23 · 후속 캐시 삽입용 · product 정보도 전달 (하위 호환)
+      onCreated(data.product_code, {
+        product_name: parsed.data.product_name,
+        supplier: parsed.data.supplier ?? null,
+        spec: parsed.data.spec ?? null,
+        barcode: parsed.data.barcode ?? null,
+        real_map: parsed.data.real_map ?? null,
+      });
       setForm(EMPTY);
       onClose();
     } catch (e: unknown) {
