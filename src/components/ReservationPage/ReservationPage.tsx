@@ -34,7 +34,8 @@ interface ReservationPageProps {
   authSession?: AuthSession | null;
 }
 
-// Employee IDs 1,2,3 (대표/이사/부장) can manage blocked slots
+// 2026-08-23 · #194 · 방문예약 대상 축소 · 대표/부장/이사 → 대표/이사
+// Employee IDs 1,2 (대표/이사) can manage blocked slots
 
 interface StaffAvailability {
   employeeId: number;
@@ -80,11 +81,14 @@ const buildMonthGrid = (year: number, month: number): (Date | null)[] => {
 
 const getTargetFromNote = (noteStr: string): string => {
   if (!noteStr) return "대표";
+  // 2026-08-23 · #194 · 부장 → 이사 fallback (기존 [대상:부장] 예약 데이터 마이그레이션)
   const match = noteStr.match(/^\[대상:(대표|이사|부장)\]/);
-  return match ? match[1] : "대표";
+  if (!match) return "대표";
+  return match[1] === "부장" ? "이사" : match[1];
 };
 
-const STAFF_NAMES = ["대표", "이사", "부장"];
+// 2026-08-23 · #194 · 대표/이사만 · 부장 제거
+const STAFF_NAMES = ["대표", "이사"];
 
 export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSession }) => {
   const { toast } = useToast();
@@ -469,7 +473,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
               </div>
             </div>
 
-            {/* Column headers (대표 / 이사 / 부장) */}
+            {/* Column headers (대표 / 이사) · 2026-08-23 #194 · 부장 제거 */}
             <div className="px-3 sm:px-5 pb-2 flex items-center gap-2">
               {/* time axis spacer */}
               <div className="w-12 shrink-0" />
