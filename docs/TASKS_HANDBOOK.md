@@ -41,14 +41,17 @@
 | `productsCache.test.ts` (addCachedProduct) | 5 | 신규·기존 병합·leading zero·빈 코드·기본값 |
 | `Modal.test.tsx` (v3+ 확장) | 10 | size (3xl · lg-narrow · xl · full) · dark backdrop · bodyPadding · zIndex · headerBgClass · headerTextClass · cardStyle |
 
-**전체**: 3055 → **3074 tests** (19 신규 · Modal 10 + ScanPanels 8 + productsCache 5 diff) · 207 files · all pass
+**전체**: 3055 → **3081 tests** (26 신규 · OrderHistorySupplierModal 7 추가) · 208 files · all pass
 
 ---
 
-## 📝 이번 세션 커밋 로그 (최신 → 과거 · 19개)
+## 📝 이번 세션 커밋 로그 (최신 → 과거 · 22개)
 
 | # | SHA | 파일 | 요약 |
 |---|-----|------|------|
+| 22 | `2837596a` | OrderHistorySupplierModal.test.tsx + vitest.config | test: #182 · 7 tests · Modal+PeriodSelector 커버리지 |
+| 21 | `e597f675` | FRAMEWORK_AUDIT.md | audit baseline 갱신 · 647 files · 645 clean (100%) |
+| 20 | `5a8c1cc5` | TASKS_HANDBOOK.md | 커밋 로그 갱신 |
 | 19 | `538e9c57` | ProductInfoPage.tsx | **fix** #177 편집 후 상세 stale 방지 (reloadKey deps) |
 | 18 | `fb22409a` | ScanPage.panels.test.tsx + vitest.config | test: ScanLeftPanel #179 8 tests |
 | 17 | `6bae463e` | CODING_PRINCIPLES.md + TASKS_HANDBOOK.md | docs: 관리 파일 2가지 통합 신설 |
