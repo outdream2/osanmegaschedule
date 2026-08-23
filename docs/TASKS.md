@@ -189,20 +189,15 @@
 - 💡 관련 · #177 상품정보 페이지 (SplitPanel 마스터-디테일 · 좌측 리스트) · 이 프리미티브 사용
 - 💡 기존 프리미티브 재사용 · Card · SearchBar · StatusPill · SortableHeader · useSortableTable · useColumnResize · useResizablePanel
 
-### #197 · 상품 스캔 · 미분류 상품 → 상품등록 페이지 자동 연결 (신규 · 2026-08-23 · **스펙 확정 2026-08-23**)
+### #197 · 상품 스캔 · 미분류 상품 → 상품등록 페이지 자동 연결 (✅ 완료 · 2026-08-23 · `83409c80`)
 
-**🎯 스펙 확정 (사용자 결정 · Option A · 병행)**:
-- **#179 (완료)** · 모달 방식 · ProductCreateModal · lockCode + initialCode · **유지**
-- **#197 (신규)** · 페이지 이동 방식 추가 · 상품정보 페이지 (#177) 로 자동 이동 · 스캔 바코드 state 전달
-- **사용자 설정 토글** · 개인 preference · 어느 방식 사용할지 선택
-
-**구현**:
-- 🔲 설정 · MyPage or PermissionsPage > 개인 · "스캔 미등록 처리 방식" 토글 (localStorage or KV)
-- 🔲 ScanPage · notFoundCode 감지 · 설정 확인 → 모달 or 페이지 이동 분기
-- 🔲 페이지 이동 시 · `onNavigate("productinfo", { initialCode: code })` · 상품정보 페이지에서 자동 등록 모달 열기
-- 🔲 페이지 이동 후 · 돌아가기 버튼 (ScanPage 로) · 등록 완료 시 자동 재스캔 (선택)
-
-**권한** · 관리자 + 매니저 lv5+ (동일 · #179 · #177)
+**구현 완료**:
+- ✅ 신규 훅 · `useScanUnregisteredMode` (localStorage · 개인 preference · storage 이벤트 sync)
+- ✅ MyPage · 설정 토글 카드 (2 버튼 · aria-pressed · 스캔 아이콘)
+- ✅ ScanPage · openUnregisteredCreate 분기 · mode="page" → sessionStorage pending code + navigate
+- ✅ OrderManagePage · mount 시 pending 감지 · topTab=purchase + subTab=productinfo 자동
+- ✅ ProductInfoPage · pending code consume · createModal 자동 오픈 · initialCode+lockCode
+- ✅ 권한 · canManage (admin + manager lv5+) · 페이지 이동 후에도 게이트 유지
 
 **관련 메모리** · `.claude/memory/project_scan_unregistered.md`
 
