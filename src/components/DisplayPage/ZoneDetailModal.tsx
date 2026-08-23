@@ -8,6 +8,7 @@ import type { DisplayZone } from "../../utils/zoneUtils";
 import type { Employee } from "./DisplayPage.types";
 import { StatusPill, type PillTone } from "../common/StatusPill";
 import { Modal } from "../common/Modal";
+import { Card } from "../common/Card";
 import {
   DOW_ALL, DOW_LABELS,
   STATUS_LABEL, statusCell, statusDot,
@@ -231,14 +232,14 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
         )}
 
         {savedFlash && (
-          <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center gap-1.5">
+          <Card variant="flat" bg="bg-emerald-50" borderColor="border-emerald-200" padding="none" className="px-3 py-2 text-emerald-700 text-xs font-semibold flex items-center gap-1.5">
             <CheckCircle2 size={13} />저장되었습니다
-          </div>
+          </Card>
         )}
         {requestFlash && (
-          <div className="px-3 py-2 rounded-xl bg-violet-50 border border-violet-200 text-violet-700 text-xs font-semibold flex items-center gap-1.5">
+          <Card variant="flat" bg="bg-violet-50" borderColor="border-violet-200" padding="none" className="px-3 py-2 text-violet-700 text-xs font-semibold flex items-center gap-1.5">
             <Send size={13} />진열 요청이 전송되었습니다
-          </div>
+          </Card>
         )}
       </div>
     </Modal>

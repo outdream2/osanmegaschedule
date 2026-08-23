@@ -5,6 +5,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { X, Loader2, Layers, PieChart } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 import { getProductsMap } from "../../lib/productsCache";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
@@ -500,9 +501,9 @@ const ZoneCategoryContent: React.FC = () => {
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? categoryPanelWidth : undefined }}
         >
           {loading && grouped.length > 0 && (
-            <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-violet-50 border border-violet-200 rounded-md sticky top-0 z-10">
+            <Card variant="flat" bg="bg-violet-50" borderColor="border-violet-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mb-1 sticky top-0 z-10">
               <Spinner size={11} tone="violet" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
-            </div>
+            </Card>
           )}
           {loading && grouped.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-8">

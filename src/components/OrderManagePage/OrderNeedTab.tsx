@@ -2,6 +2,7 @@
 // 2026-08-22 · Framework Phase 4 · 발주필요 탭 분리
 import React from "react";
 import { ClipboardList, ChevronRight, ChevronDown, RotateCcw, X } from "lucide-react";
+import { Card } from "../common/Card";
 import { PageToolbar } from "../common/PageToolbar";
 import { SearchBar } from "../common/SearchBar";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
@@ -464,9 +465,9 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
         <section className="bg-white rounded-xl border border-line p-4 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
           {!lowStockCollapsed && (<>
             {productsLoading && lowStockFiltered.length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mb-1 bg-sky-50 border border-sky-200 rounded-md shrink-0">
+              <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mb-1 shrink-0">
                 <Spinner size={11} tone="sky" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
-              </div>
+              </Card>
             )}
             {productsLoading && lowStockFiltered.length === 0 ? (
               <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩 중..." labelSize={12} /></div>

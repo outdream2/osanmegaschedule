@@ -7,6 +7,7 @@
 import React from "react";
 import { Building2, Package, RefreshCw } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 import { SplitPanel } from "../common/SplitPanel";
 import { ListLoading } from "../common/ListLoading";
 import { AccentBar } from "../common/AccentBar";
@@ -298,7 +299,7 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
             <EmptyState icon={Package} title="좌측에서 공급사를 선택하세요" hint="매입이력 · 상품별 집계 · 매입 추이가 표시됩니다" />
           </div>
         ) : ledgerError ? (
-          <div className="bg-white rounded-xl border border-rose-200 p-4 text-sm text-rose-700 space-y-2">
+          <Card borderColor="border-rose-200" className="text-sm text-rose-700 space-y-2">
             <div className="font-bold flex items-center gap-1.5">원장 조회 실패</div>
             <div className="text-[14px] font-mono bg-rose-50 border border-rose-100 rounded px-2 py-1">{ledgerError}</div>
             <button
@@ -316,7 +317,7 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
             <div className="text-[15px] text-zinc-500 pt-1 border-t border-rose-100">
               원인 · 서버 API 미구성 · 네트워크 문제 · Supabase 테이블 미생성 (ocr_confirmed_items · supplier_payments) 등. 콘솔 로그 확인 필요.
             </div>
-          </div>
+          </Card>
         ) : (
           <>
             <VendorHeaderPanel
