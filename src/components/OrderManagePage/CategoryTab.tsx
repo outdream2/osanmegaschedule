@@ -232,7 +232,8 @@ const ZoneCategoryContent: React.FC = () => {
               title={`그룹 내 순위 ${rank}위`}>
               {rank}
             </span>
-            <span className={`text-[15px] font-bold ${textCls} tabular-nums shrink-0`}>{getZoneLabel(g.zone)}</span>
+            {/* 2026-08-23 · #184 · 구역 배지 강조 · 크기 up · 배경/테두리 shadow */}
+            <span className={`text-[17px] font-extrabold ${textCls} tabular-nums shrink-0 px-2 py-0.5 rounded-md bg-white/90 border border-current shadow-sm`}>{getZoneLabel(g.zone)}</span>
             {zoneCategoryLabel(g.zone) && (
               <span className={`text-[15px] font-bold ${textCls} break-words whitespace-normal leading-tight`}
                 title={zoneCategoryLabel(g.zone)}>
