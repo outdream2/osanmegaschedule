@@ -59,7 +59,15 @@
 
 ---
 
-## 📝 이번 세션 커밋 로그 (최신 → 과거 · 37개)
+## 📝 이번 세션 커밋 로그 (최신 → 과거 · 40개)
+
+| # | SHA | 파일 | 요약 |
+|---|-----|------|------|
+| 40 | `98dcbbd7` | SplitListPanel.tsx + test | feat: v2 확장 (countDisplay/footer/bodyClassName) · #198 Phase 3 지원 · 6 신규 tests |
+| 39 | `4b9abe79` | TASKS.md | docs: #198 Phase 2 완료 · Phase 3 진행중 명시 |
+| 38 | `a7304513` | SESSION_STATUS.md | 심야 세션 갱신 |
+
+## 📝 이전 커밋 (37개)
 
 | # | SHA | 파일 | 요약 |
 |---|-----|------|------|
