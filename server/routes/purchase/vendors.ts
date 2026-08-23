@@ -257,7 +257,14 @@ router.post("/api/vendors", validateBody(CreateVendorSchema), asyncHandler(async
 router.patch("/api/vendors/:id", asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
-  const { company_name, contact_name, phone, email, category, note, business_number, vat_included, team_leader_name, team_leader_phone, emergency_contact } = req.body ?? {};
+  const {
+    company_name, contact_name, phone, email, category, note, business_number,
+    vat_included, team_leader_name, team_leader_phone, emergency_contact,
+    // 2026-08-23 · #178 Phase C · 5 신규 필드 (xlsx 마스터 시트)
+    order_method, region, invoice_method, order_status, special_notes,
+    // 2026-08-23 · #192 · approval_status (승인 flow · DB migration 후 사용)
+    approval_status,
+  } = req.body ?? {};
   const updates: Record<string, any> = {};
   if (company_name !== undefined) updates.company_name = company_name.trim();
   if (contact_name !== undefined) updates.contact_name = contact_name;
@@ -265,6 +272,14 @@ router.patch("/api/vendors/:id", asyncHandler(async (req, res) => {
   if (email !== undefined) updates.email = email;
   if (category !== undefined) updates.category = category;
   if (note !== undefined) updates.note = note;
+  // 2026-08-23 · #178 · 신규 5 필드 · null 허용 (사용자가 필드 삭제 가능)
+  if (order_method !== undefined)   updates.order_method   = order_method;
+  if (region !== undefined)         updates.region         = region;
+  if (invoice_method !== undefined) updates.invoice_method = invoice_method;
+  if (order_status !== undefined)   updates.order_status   = order_status;
+  if (special_notes !== undefined)  updates.special_notes  = special_notes;
+  // 2026-08-23 · #192 · approval_status enum
+  if (approval_status !== undefined) updates.approval_status = approval_status;
   if (business_number !== undefined) {
     const digits = business_number ? String(business_number).replace(/[^0-9]/g, "") : "";
     updates.business_number = digits.length === 10 ? digits : null;
@@ -294,6 +309,19 @@ router.patch("/api/vendors/:id", asyncHandler(async (req, res) => {
   const SELECT_NO_EMAIL = "id, company_name, contact_name, phone, category, note, business_number";
   const r1 = await supabase.from("vendors").update(updates).eq("id", id).select(SELECT_FULL).single();
   if (!r1.error) return res.json(r1.data);
+  // 2026-08-23 · #178·#192 · 신규 컬럼 없음 fallback (마이그레이션 미실행)
+  //   · order_method · region · invoice_method · order_status · special_notes · approval_status
+  if (/order_method|region|invoice_method|order_status|special_notes|approval_status/i.test(r1.error.message)) {
+    const noNew = { ...updates };
+    delete noNew.order_method;
+    delete noNew.region;
+    delete noNew.invoice_method;
+    delete noNew.order_status;
+    delete noNew.special_notes;
+    delete noNew.approval_status;
+    const rN = await supabase.from("vendors").update(noNew).eq("id", id).select(SELECT_FULL).single();
+    if (!rN.error) return res.json(rN.data);
+  }
   // team_leader/emergency 컬럼 없음 fallback (마이그레이션 미실행)
   if (/team_leader|emergency_contact/i.test(r1.error.message)) {
     const noTeam = { ...updates };
