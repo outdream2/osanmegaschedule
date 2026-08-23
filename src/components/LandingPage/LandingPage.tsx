@@ -102,6 +102,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   });
   // 2026-08-21 · #171 Phase 3 · "전체 N건" 클릭 시 · 상세 breakdown 카드 토글
   const [statusDetailOpen, setStatusDetailOpen] = useState(false);
+  // 2026-08-23 · #171 잔여 · 결제요청 (admin only · 미결제·부분결제 매입건)
+  const [paymentPendingCount, setPaymentPendingCount] = useState(0);
   // 직원용: 나에게 배정된 진열 보충 요청 중 pending 개수
   const [myPendingCount, setMyPendingCount] = useState(0);
 
@@ -215,6 +217,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   useEffect(() => { reloadPendingCounts(); }, [reloadPendingCounts]);
   // 2026-08-18 · 승인 요청/승인/반려/취소 시 즉시 재로드 (leave/display/order/return/lunch/mismatch)
   useApprovalRefreshListener(reloadPendingCounts);
+
+  // 2026-08-23 · #171 잔여 · 결제요청 (admin only · 미결제·부분결제 매입건 count)
+  const reloadPaymentPending = React.useCallback(() => {
+    if (!isSuperAdminLevel9) { setPaymentPendingCount(0); return; }
+    api.get<{ count?: number }>("/api/supplier-payments/pending-count")
+      .then(({ data }) => setPaymentPendingCount(Number(data?.count ?? 0)))
+      .catch(() => setPaymentPendingCount(0));
+  }, [isSuperAdminLevel9]);
+  useEffect(() => { reloadPaymentPending(); }, [reloadPaymentPending]);
 
   // 직원 로그인 시: 나에게 배정된 진열 보충 요청 중 pending 개수 로드 (완료 시 자동 0)
   const reloadMyPending = React.useCallback(() => {
@@ -419,6 +430,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               statusDetailOpen={statusDetailOpen}
               setStatusDetailOpen={setStatusDetailOpen}
               onNavigate={onNavigate}
+              paymentPendingCount={paymentPendingCount}
+              isAdmin={isSuperAdminLevel9}
             />
           )}
 

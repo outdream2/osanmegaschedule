@@ -20,6 +20,9 @@ interface TodayStatusPanelProps {
   statusDetailOpen: boolean;
   setStatusDetailOpen: React.Dispatch<React.SetStateAction<boolean>>;
   onNavigate: (page: Exclude<AppNavPage, "landing">, auth?: AuthSession) => void;
+  // 2026-08-23 · #171 잔여 · 승인대기(모든 직원)·결제요청(admin only)
+  paymentPendingCount?: number;
+  isAdmin?: boolean;
 }
 
 export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
@@ -29,7 +32,11 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
   statusDetailOpen,
   setStatusDetailOpen,
   onNavigate,
+  paymentPendingCount = 0,
+  isAdmin = false,
 }) => {
+  // 2026-08-23 · #171 잔여 · 승인대기 = 연차 + 사직서 (관리자 승인 대상)
+  const approvalPendingTotal = leavePendingCount + requestsCounts.resignation;
   return (
     <div className="w-full mb-6">
       <div className="flex items-center gap-2.5 mb-2 flex-wrap">
@@ -41,7 +48,8 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
             + requestsCounts.display + requestsCounts.order
             + requestsCounts.mismatch + requestsCounts.lunch
             + requestsCounts.inventory + requestsCounts.return
-            + requestsCounts.resignation;
+            + requestsCounts.resignation
+            + (isAdmin ? paymentPendingCount : 0);
           return (
             <button
               type="button"
@@ -55,6 +63,26 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
             </button>
           );
         })()}
+        {/* 2026-08-23 · #171 잔여 · 승인대기 (모든 직원 노출 · 연차+사직서 합) · click → 승인대기 페이지 */}
+        <button
+          type="button"
+          onClick={() => onNavigate("business-manage", authSession)}
+          className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[15px] font-semibold text-teal-800 bg-teal-50 hover:brightness-95 border border-teal-200 cursor-pointer transition-colors"
+          title="승인대기 · 경영관리 > 승인대기로 이동"
+        >
+          승인대기 <b className="tabular-nums">{approvalPendingTotal}</b>건
+        </button>
+        {/* 2026-08-23 · #171 잔여 · 결제요청 (admin only · 미결제·부분결제 매입건) · click → 매장>매입>결제 */}
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => onNavigate("display", authSession)}
+            className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[15px] font-semibold text-violet-800 bg-violet-50 hover:brightness-95 border border-violet-200 cursor-pointer transition-colors"
+            title="결제요청 · 매장>매입 결제 페이지로 이동"
+          >
+            결제요청 <b className="tabular-nums">{paymentPendingCount}</b>건
+          </button>
+        )}
       </div>
       {/* 7항목 (연차·진열발주·불일치·점심·재고점검·반품·사직서) · 각 클릭 → 페이지 이동 */}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[19px] text-ink-soft pl-[13px]">
@@ -147,6 +175,8 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
               { label: "재고 점검", count: requestsCounts.inventory, dot: "bg-violet-500", text: "text-violet-700", nav: "stockcheck" as Exclude<AppNavPage, "landing"> },
               { label: "반품 요청", count: requestsCounts.return, dot: "bg-orange-500", text: "text-orange-700", nav: "requests" as Exclude<AppNavPage, "landing"> },
               { label: "사직서 승인", count: requestsCounts.resignation, dot: "bg-red-500", text: "text-red-700", nav: "business-manage" as Exclude<AppNavPage, "landing"> },
+              // 2026-08-23 · #171 잔여 · 결제요청 (admin only) · 미결제·부분결제 매입건 총합
+              ...(isAdmin ? [{ label: "결제요청", count: paymentPendingCount, dot: "bg-violet-500", text: "text-violet-700", nav: "display" as Exclude<AppNavPage, "landing"> }] : []),
             ].map(item => (
               <button
                 key={item.label}

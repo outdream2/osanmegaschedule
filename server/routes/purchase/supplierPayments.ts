@@ -168,6 +168,45 @@ router.get("/api/supplier-payments/latest-per-supplier", asyncHandler(async (_re
 }));
 
 // ─────────────────────────────────────────────────────────────────────
+// GET /api/supplier-payments/pending-count · 2026-08-23 · #171
+//   · 전체 공급사 · 미결제·부분결제 매입건 수 (관리자 랜딩 배지용)
+//   · ocr_confirmed_items.amount - SUM(allocations.allocated_amount) > 0
+// ─────────────────────────────────────────────────────────────────────
+router.get("/api/supplier-payments/pending-count", asyncHandler(async (_req, res) => {
+  const { data: invoices, error: invErr } = await supabase
+    .from("ocr_confirmed_items")
+    .select("id, amount");
+  if (invErr) {
+    if (/relation .* does not exist/i.test(invErr.message)) return res.json({ count: 0 });
+    throw new Error(invErr.message);
+  }
+  const invList = invoices ?? [];
+  if (invList.length === 0) return res.json({ count: 0 });
+
+  const allocSumMap = new Map<number, number>();
+  {
+    const { data: allocs, error: aErr } = await supabase
+      .from("supplier_payment_allocations")
+      .select("ocr_confirmed_item_id, allocated_amount");
+    if (aErr && !/relation .* does not exist/i.test(aErr.message)) {
+      console.warn("[supplier-payments/pending-count] allocations sum 실패:", aErr.message);
+    }
+    for (const a of allocs ?? []) {
+      const iid = a.ocr_confirmed_item_id;
+      allocSumMap.set(iid, (allocSumMap.get(iid) ?? 0) + (Number(a.allocated_amount) || 0));
+    }
+  }
+
+  let count = 0;
+  for (const i of invList as Array<{ id: number; amount: number | null }>) {
+    const amt = Number(i.amount) || 0;
+    const alloc = allocSumMap.get(i.id) ?? 0;
+    if (amt - alloc > 0.5) count++;
+  }
+  return res.json({ count });
+}));
+
+// ─────────────────────────────────────────────────────────────────────
 // POST /api/supplier-payments
 //   body: { supplier_name, payment_date, amount, method?, memo?,
 //           created_by?, created_by_id?,
