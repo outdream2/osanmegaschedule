@@ -2,12 +2,15 @@
 // 2026-08-17 · 공용 프레임워크 · 상태/카운트 배지
 //   · 통일된 pill · rounded-full · border · optional dot
 //   · 프레임워크 재사용 (여러 페이지의 배지 자체 스타일 통일)
+// 2026-08-23 · v2 · shape prop 추가 · rounded-full 외 rounded-md · sqauare 지원
+//   · 커스텀 badge (rounded-md 위주) 마이그레이션 커버리지 확대
 //
 // 사용 예:
 //   <StatusPill tone="brand" dot>12건</StatusPill>
 //   <StatusPill tone="emerald" dot>승인 완료</StatusPill>
 //   <StatusPill tone="amber">대기</StatusPill>
 //   <StatusPill tone="rose" pulse>미결</StatusPill>
+//   <StatusPill tone="emerald" shape="rounded">활성</StatusPill>  // rounded-md
 
 import type { ReactNode } from "react";
 
@@ -37,6 +40,8 @@ const TONE_MAP: Record<PillTone, PillCls> = {
 export interface StatusPillProps {
   /** 색 tone · 기본 brand */
   tone?: PillTone;
+  /** 형태 · pill (rounded-full · 기본) · rounded (rounded-md · 각진 배지) · square (rounded 없음) */
+  shape?: "pill" | "rounded" | "square";
   /** 사이즈 · xs (px-2 h-5 text-11) · sm (px-2.5 h-6 text-12) · md (px-2.5 py-0.5 text-13) · 기본 sm */
   size?: "xs" | "sm" | "md";
   /** 좌측 dot 표시 (Vercel 규칙 ≤10px · 여기선 6px) */
@@ -65,8 +70,15 @@ const SIZE_CLS: Record<NonNullable<StatusPillProps["size"]>, string> = {
  *   · tone (brand/sky/emerald/amber/rose/violet/teal/indigo/zinc)
  *   · dot + pulse · pending/urgent 시각화
  */
+const SHAPE_CLS: Record<NonNullable<StatusPillProps["shape"]>, string> = {
+  pill:    "rounded-full",
+  rounded: "rounded-md",
+  square:  "",
+};
+
 export function StatusPill({
   tone = "brand",
+  shape = "pill",
   size = "sm",
   dot = false,
   pulse = false,
@@ -78,6 +90,7 @@ export function StatusPill({
 }: StatusPillProps) {
   const t = TONE_MAP[tone];
   const sizeCls = SIZE_CLS[size];
+  const shapeCls = SHAPE_CLS[shape];
   const numericCls = tabular ? "tabular-nums" : "";
   const clickableCls = onClick ? "cursor-pointer hover:brightness-95 active:scale-[0.98] transition-all" : "";
 
@@ -85,7 +98,7 @@ export function StatusPill({
     <span
       role={onClick ? "button" : undefined}
       onClick={onClick}
-      className={`inline-flex items-center rounded-full font-semibold border whitespace-nowrap ${t.bg} ${t.text} ${t.border} ${sizeCls} ${numericCls} ${clickableCls} ${className}`}
+      className={`inline-flex items-center font-semibold border whitespace-nowrap ${shapeCls} ${t.bg} ${t.text} ${t.border} ${sizeCls} ${numericCls} ${clickableCls} ${className}`}
     >
       {dot && (
         <span
