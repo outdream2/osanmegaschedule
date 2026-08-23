@@ -7,12 +7,13 @@
 import React from "react";
 import {
   ShieldCheck, ClipboardCheck, ClipboardX, CheckCircle2, XCircle,
-  Sparkles, AlertCircle, Package, RefreshCw, Trash2, X, PackagePlus,
+  Sparkles, AlertCircle, Package, RefreshCw, Trash2, PackagePlus,
 } from "lucide-react";
 import { StatusPill } from "../common/StatusPill";
 import { Card } from "../common/Card";
 import { Spinner } from "../common/Spinner";
 import { AccentBar } from "../common/AccentBar";
+import { Modal } from "../common/Modal";
 import type { ArrivalItem } from "./helpers";
 
 // ─── 입고내역 타입 (기존 inline 정의 이관) ─────────────────────
@@ -342,21 +343,20 @@ interface ArrivalDetailModalProps {
 export const ArrivalDetailModal: React.FC<ArrivalDetailModalProps> = ({
   selectedArrivalId, arrivalDetail, arrivalDetailLoading, onClose,
 }) => {
-  if (selectedArrivalId == null) return null;
   return (
-    <div className="fixed inset-0 z-[100] backdrop-brand flex items-center justify-center p-2 sm:p-4" onClick={onClose}>
-      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-brand-modal overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-line bg-zinc-50/60 shrink-0">
-          <AccentBar h={20} className="shrink-0" />
-          <Package size={18} className="text-brand-deep" />
-          <h3 className="text-[17px] font-bold text-ink tracking-tight">입고내역 상세</h3>
-          <span className="text-[13px] font-semibold text-ink-soft tabular-nums">ID {selectedArrivalId}</span>
-          <button type="button" onClick={onClose}
-            className="ml-auto w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint text-ink-soft hover:text-brand-deep flex items-center justify-center cursor-pointer transition-colors" title="닫기" aria-label="닫기">
-            <X size={16} />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+    <Modal
+      open={selectedArrivalId != null}
+      onClose={onClose}
+      size="lg"
+      title="입고내역 상세"
+      icon={<Package size={18} />}
+      titleAccent
+      headerRight={selectedArrivalId != null ? (
+        <span className="text-[13px] font-semibold text-ink-soft tabular-nums">ID {selectedArrivalId}</span>
+      ) : undefined}
+      backdropIntensity="brand"
+    >
+      <div className="flex flex-col gap-4">
           {arrivalDetailLoading || !arrivalDetail ? (
             <div className="py-12 flex items-center justify-center"><Spinner tone="zinc" size={16} label="상세 로딩 중..." labelSize={15} /></div>
           ) : (
@@ -462,8 +462,7 @@ export const ArrivalDetailModal: React.FC<ArrivalDetailModalProps> = ({
               </div>
             </>
           )}
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 };
