@@ -2,7 +2,110 @@
 
 > **세션 재개 시 · 이 파일 최우선 확인** · 토큰 만료 대비 히스토리·현황·예정 통합 저장
 >
-> **최종 업데이트**: 2026-08-23 (세션 중반 · 사용자 태스크 17건 완료 · #177 대형 예정)
+> **최종 업데이트**: 2026-08-23 **저녁 · #177/#179/#185/#202 완료 · +43 tests · 15 로컬 커밋 대기**
+
+---
+
+## 🚨 세션 재개 시 · 최우선 컨텍스트 (2026-08-23 저녁 갱신)
+
+**진행중 태스크** (in_progress · 잘못된 마킹 유의):
+- #60 · 전체 프로젝트 페이지별 테스트+버그 작업 (사용자 지시 · 상시)
+- #65 · 사용자 태스크 · 오래된 순 순차 진행 (#186 · #188 · 등)
+
+**이번 세션 완료 태스크 (4건)**:
+- ✅ **#177 · 상품정보 페이지 신설** (매장>매입 서브탭 · 대형 · Phase A/B/C/D 완료)
+- ✅ **#179 · 바코드 스캔 미등록 상품 즉시 등록 UX** (ProductCreateModal 재사용)
+- ✅ **#185 잔여** · SupplierFilterBar → PageToolbar 통일
+- ✅ **#202 신규+완료** · 스캔페이지 UX (스크롤 제거 + 등록 준비 요약 리스트)
+
+**신규 테스트 43개 추가** (3055 tests · 206 files · all pass):
+- ProductCreateModal · 10 tests
+- ProductInfoPage · 11 tests
+- products Zod schema · 17 tests
+- productsCache · addCachedProduct · 5 tests
+
+**대기 태스크 (사용자 결정 필요 · 자율 부적합)**:
+- #178 · 공급사 스키마 확장 · DB migration + 4 결정 (암호화·필드 병합·템플릿·import)
+- #181 · 매장구역도 인라인 편집 · Option A/B/C
+- #188 · 메뉴 설정 PC/모바일 · 대형 신규 API+훅
+- #191 · Modal 프레임워크화 · 파일별 회귀 검토
+- #192 · 거래처 로그인/승인 flow · DB migration + 인증
+- #197 · 상품 스캔 미분류 · Option A/B/C (#179 modal vs 페이지 이동)
+
+**리모트 push 상태**: **절대 금지** · 사용자 재확인. 로컬만 · 총 **15+ 커밋 대기**.
+
+---
+
+## 📝 이번 세션 커밋 로그 (2026-08-23 저녁 · 최신 → 과거)
+
+| # | SHA | 파일 | 태스크 |
+|---|-----|------|--------|
+| 15 | `af75fb4e` | productsCache.test.ts | test: #179 addCachedProduct 5 tests |
+| 14 | `cb019462` | shared/schemas/products.test.ts | test: #177 Zod 17 tests |
+| 13 | `2ff51e81` | ProductInfoPage.test.tsx | test: #177 페이지 통합 11 tests |
+| 12 | `6e182c4b` | ProductCreateModal.test.tsx + vitest.config | test: #177 CreateModal 10 tests |
+| 11 | `a0d75548` | TASKS.md | docs: #185 완료 |
+| 10 | `1a64746f` | SupplierTab.panels.tsx | **#185 잔여** · SupplierFilterBar PageToolbar |
+| 9 | `f3151ee5` | TASKS.md | docs: #179 완료 |
+| 8 | `1ad6c2f0` | ScanPage + ProductCreateModal + productsCache | **#179** · 스캔 미등록 즉시 등록 |
+| 7 | `2c7ce945` | TASKS.md | docs: #202 완료 |
+| 6 | `79dafe85` | ScanPage.tsx + ScanPage.panels.tsx | **#202** · 스캔 UX 개선 |
+| 5 | `332c508f` | TASKS.md | docs: #177 완료 |
+| 4 | `3ee0b766` | products.ts (schema) + ProductInfoPage | **#177 Phase D** · 인라인 편집 |
+| 3 | `f43afc45` | products.ts (schema+route+modal+page) | **#177 Phase C** · POST + authorize(5) |
+| 2 | `fe33f65d` | OrderManagePage + ProductInfoPage 신설 | **#177 Phase A/B** · 상품정보 탭 |
+| 1 | `25f824a4` | TASKS.md | docs: #202 신규 등록 |
+
+---
+
+## 🎯 #177 상품정보 페이지 · 신규 구현 상세 (전체 이관용)
+
+**위치**: `src/components/ProductInfoPage/`
+- `ProductInfoPage.tsx` (351라인) · 마스터-디테일 페이지 · SplitListPanel + useResizablePanel + Modal
+- `ProductCreateModal.tsx` (260라인) · 상품 신규 등록 모달 · 4 Card 섹션 · 프레임워크 재사용
+
+**서버**:
+- `POST /api/products` · authorize(5) · CreateProductSchema Zod · product_code UNIQUE 검사 · 409 duplicate
+- `PATCH /api/products/:code` · 기존 유지 (ALLOWED_INLINE_EDIT · 프론트 게이트만 · ScanPage/FlowTab 회귀 방지)
+
+**스키마** (`src/shared/schemas/products.ts`):
+- `CreateProductSchema` (16필드 · product_code+product_name 필수)
+- `UpdateProductSchema` = CreateProductSchema.omit({product_code}).partial()
+
+**권한**: `canManageProducts` = admin/superadmin OR (manager AND level >= 5)
+
+**Phase C-1 식약처 OpenAPI**: 사용자 지시 제거 (2026-08-23)
+
+**OrderManagePage 통합**:
+- `PurchaseKey` 타입 확장 · `productinfo` 추가 (Info 아이콘 · indigo)
+- 탭 순서: 매입이력 · 반품필요 · 거래명세서 · 실재고입력 · 상품입고 · **상품정보** · 실재고
+
+---
+
+## 🎯 #179 미등록 상품 즉시 등록 · 상세
+
+**흐름**:
+1. ScanPage · 바코드 스캔 · notFoundCode 감지
+2. 권한자(canManageProducts) 만 · "이 코드로 상품 등록" 버튼 노출
+3. 클릭 · ProductCreateModal 오픈 · initialCode + initialBarcode + lockCode
+4. 등록 성공 · addCachedProduct (로컬 캐시 삽입) · handleScan(code) 재호출 · 리스트 자동 추가
+
+**신규**:
+- `productsCache.addCachedProduct(code, info)` · 신규 상품 로컬 캐시 즉시 삽입
+- `ProductCreateModal` props · initialCode · initialBarcode · initialName · lockCode
+
+**Audit baseline**: ScanPage 795→805 라인 (+10) · large-file-warn 1→2 반영 (`.framework-baseline.json`)
+
+---
+
+## 🎯 #202 스캔페이지 UX · 상세
+
+- StockRowCard 리스트 · `max-h-[56vh] lg:max-h-[62vh] overflow-auto` **제거** · 자연 확장
+- SaveCard · "전체 등록" 버튼 바로 위 · **등록 준비 요약 리스트** 신설
+  - 순번 · 상품명 · 위치(real_map · 보라 배지) · 수량 합계
+  - max-h-[36vh] 자체 스크롤 (긴 리스트 방지)
+
+---
 >
 > **위치**: `docs/SESSION_STATUS_2026-08-23.md`
 >
