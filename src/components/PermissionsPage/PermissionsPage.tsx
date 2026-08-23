@@ -17,6 +17,8 @@ import { StatusPill } from "../common/StatusPill";
 import { Lock, DeviceMobile } from "@phosphor-icons/react";
 import { SettingsModal } from "../SettingsModal";
 import { MobileVisibilitySection } from "../BrandingSettingsPage/BrandingSettingsPage";
+// 2026-08-23 · #252 Phase 2 · 세션 만료 시간 · 관리자 편집 카드
+import { SessionTimeoutSection } from "./SessionTimeoutSection";
 import { useSettings } from "../../hooks/useSettings";
 import type { Employee } from "../../types";
 // 2026-08-12 · #99 · 사이드바 그룹 트리 구조 · 페이지 → 그룹 매핑 재사용
@@ -614,7 +616,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         </>)}
 
         {tab === "app-settings" && (
-          <div className="w-full min-w-0 overflow-hidden">
+          <div className="w-full min-w-0 overflow-hidden flex flex-col gap-4">
             <SettingsModal
               embedded
               settings={{
@@ -632,6 +634,8 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
               sessionEmployeeId={authSession?.employeeId ?? null}
               onNavigateZoneLabels={onNavigate ? () => onNavigate("zone-labels" as AppNavPage) : undefined}
             />
+            {/* 2026-08-23 · #252 Phase 2 · 세션 만료 시간 · 관리자 편집 카드 */}
+            <SessionTimeoutSection />
           </div>
         )}
 
