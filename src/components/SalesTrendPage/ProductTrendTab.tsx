@@ -2,6 +2,7 @@
 // 2026-08-22 · Framework Phase 4 · SalesTrendPage.tsx 에서 분리
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LineChart, Package, X, Info } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { Modal } from "../common/Modal";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { SeasonButtons } from "../common/SeasonButtons";
@@ -204,7 +205,7 @@ const ProductTrendTab: React.FC<{
           </div>
         ) : loading ? (
           <div className="bg-white rounded-xl border border-line p-8 flex flex-col items-center justify-center gap-3 mx-3 mt-3">
-            <div className="w-10 h-10 border-4 border-line border-t-teal-500 rounded-full animate-spin" />
+            <Spinner size={40} tone="brand" />
             <div className="text-sm font-bold text-zinc-600">데이터 로딩중...</div>
           </div>
         ) : filteredRows.length === 0 ? (

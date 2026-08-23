@@ -7,6 +7,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { X, Package, TrendingUp, ChevronRight, ChevronDown, Building2, ClipboardList, History } from "lucide-react";
+import { Spinner } from "./Spinner";
 import { Card } from "./Card";
 import { CollapseCard } from "./CollapseCard";
 import { StatusPill } from "./StatusPill";
@@ -184,7 +185,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
       )}
       {collapsed ? null : loading ? (
         <div className="flex flex-col items-center justify-center py-10 text-ink-soft gap-2">
-          <div className="w-9 h-9 border-4 border-line border-t-brand-deep rounded-full animate-spin" />
+          <Spinner size={36} tone="brand" />
           <div className="text-[14px] font-semibold tracking-tight">로딩 중...</div>
         </div>
       ) : rows.length === 0 ? (

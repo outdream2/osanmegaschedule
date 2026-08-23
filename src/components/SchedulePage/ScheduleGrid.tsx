@@ -2,6 +2,7 @@
 // 2026-08-22 · #framework-4 · SchedulePage 분리 · 스케줄 그리드 테이블
 import React from "react";
 import { Info, Users, UserPlus, Lock, Layers } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { Employee, MonthlySummary } from "../../types";
 import { isPharmPosition as isPharm, isOtherPosition } from "../../lib/employeeCategory";
 import type { ScheduleTypeEntry } from "../../constants";
@@ -65,7 +66,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
   if (isLoading && employees.length === 0) {
     return (
       <div className="w-full py-32 flex flex-col items-center justify-center bg-zinc-50/50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563eb]"></div>
+        <Spinner size={32} tone="brand" />
         <p className="text-[#64748b] text-[11px] font-bold mt-4 tracking-wider">메가타운 스케줄 데이터 분석 중...</p>
       </div>
     );

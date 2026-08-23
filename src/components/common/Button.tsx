@@ -6,7 +6,7 @@
 //   · icon slot 좌측 · 우측 자동 · loading spinner
 import type { ReactNode, ButtonHTMLAttributes } from "react";
 import { forwardRef } from "react";
-import { Loader2 } from "lucide-react";
+import { Spinner } from "./Spinner";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
@@ -71,7 +71,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       {...rest}
     >
       {loading
-        ? <Loader2 size={size === "sm" ? 14 : 16} className="animate-spin shrink-0" />
+        ? <Spinner size={size === "sm" ? 14 : 16} className="shrink-0" />
         : icon
           ? <span className="shrink-0 inline-flex">{icon}</span>
           : null}

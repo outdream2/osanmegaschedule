@@ -4,7 +4,8 @@
 //   · TextField 대체 · URL 직접 입력도 유지 (기존 URL 도 표시)
 //   · 업로드 성공 시 · 반환 public URL 을 onChange 콜백으로 즉시 전달 → 저장은 상위 훅이 처리
 import React, { useRef, useState } from "react";
-import { Upload, Trash, ImageSquare, CircleNotch } from "@phosphor-icons/react";
+import { Upload, Trash, ImageSquare } from "@phosphor-icons/react";
+import { Spinner } from "./Spinner";
 import { supabase } from "../../supabase/client";
 
 interface Props {
@@ -74,7 +75,7 @@ export const ImageUploadField: React.FC<Props> = ({
           disabled={uploading}
           className={`${BTN_CLS} bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100 disabled:opacity-50`}
         >
-          {uploading ? <CircleNotch size={12} className="animate-spin" /> : <Upload size={12} />}
+          {uploading ? <Spinner size={12} /> : <Upload size={12} />}
           {uploading ? "업로드 중" : "파일"}
         </button>
         {value && (
