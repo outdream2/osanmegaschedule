@@ -83,6 +83,14 @@ export interface SplitListPanelProps {
    *   · 특수 케이스 · 예 "flex-1 min-h-0 overflow-y-auto p-3" · 내부 padding 추가
    */
   bodyClassName?: string;
+  // ── v3 확장 (2026-08-23) · Phase 3 · 추가 확산 지원 ──
+  /**
+   * subHeader · header 아래 · body 위 · 렌더 슬롯
+   *   · KPI 요약 (총 잔고 · 최근 결제일 등) · 부가 정보 (통계 배지 등) 배치
+   *   · shrink-0 · border-t/b 없음 · 스타일 자유
+   *   · 예: PaymentInfoTab 의 3-inline KPI (총 잔고·최근 결제일·최근 결제액)
+   */
+  subHeader?: React.ReactNode;
 }
 
 /**
@@ -114,6 +122,7 @@ export function SplitListPanel({
   countDisplay,
   footer,
   bodyClassName,
+  subHeader,
 }: SplitListPanelProps) {
   const hasSearch = onSearchChange != null;
   const hasHeader = title != null || hasSearch || filters != null || onAdd != null || headerActions != null;
@@ -190,6 +199,10 @@ export function SplitListPanel({
             </div>
           )}
         </div>
+      )}
+      {/* 2026-08-23 v3 · subHeader · header 아래 · body 위 · KPI/부가정보 */}
+      {subHeader && (
+        <div className="shrink-0">{subHeader}</div>
       )}
       {/* body · flex-1 · scroll · loading > error > empty > children 우선순위 */}
       <div className={bodyClassName ?? "flex-1 min-h-0 overflow-y-auto"}>

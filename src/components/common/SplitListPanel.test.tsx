@@ -274,3 +274,51 @@ describe("SplitListPanel · v2 · bodyClassName override", () => {
     expect(container.querySelector(".flex-1.min-h-0.overflow-y-auto")).not.toBeNull();
   });
 });
+
+// 2026-08-23 · v3 확장 · subHeader (header ↔ body 사이 KPI/부가정보 슬롯)
+describe("SplitListPanel · v3 · subHeader 슬롯", () => {
+  it("subHeader · header 아래 body 위 · 렌더", () => {
+    const { container } = render(
+      <SplitListPanel title="X" subHeader={<div data-testid="sh">총잔고 100원 · 최근결제 오늘</div>}>
+        <div />
+      </SplitListPanel>
+    );
+    expect(container.querySelector('[data-testid="sh"]')).not.toBeNull();
+    expect(container.textContent).toContain("총잔고 100원");
+  });
+
+  it("subHeader 없음 · 렌더 없음", () => {
+    const { container } = render(
+      <SplitListPanel title="X">
+        <div />
+      </SplitListPanel>
+    );
+    // subHeader div (shrink-0) 없음
+    const shDivs = container.querySelectorAll(".modal-card > .shrink-0");
+    // header 는 shrink-0 (px-3.5 py-2.5) · footer 도 shrink-0 · subHeader 만 있으면 pure shrink-0
+    // header 는 border-b 있어야 · 다른 것과 구별
+    const pureSh = Array.from(container.querySelectorAll(".shrink-0")).find(el =>
+      !el.className.includes("border-b") &&
+      !el.className.includes("border-t") &&
+      !el.className.includes("px-3.5")
+    );
+    expect(pureSh).toBeUndefined();
+    void shDivs;
+  });
+
+  it("subHeader · header + subHeader + body · 순서 유지", () => {
+    const { container } = render(
+      <SplitListPanel title="X" subHeader={<div data-testid="sh">SUB</div>} footer={<div data-testid="ft">FT</div>}>
+        <div data-testid="body">BODY</div>
+      </SplitListPanel>
+    );
+    // 순서 · header (border-b) → subHeader → body → footer (border-t)
+    const root = container.firstElementChild!;
+    const children = Array.from(root.children);
+    // 최소 4개 (header + subHeader + body + footer)
+    expect(children.length).toBe(4);
+    expect(children[1].textContent).toContain("SUB");
+    expect(children[2].textContent).toContain("BODY");
+    expect(children[3].textContent).toContain("FT");
+  });
+});
