@@ -658,7 +658,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
               </button>
               {desktopOverflowOpen && (
                 // 2026-08-18 · 드롭다운 · 3-layer shadow (Modal 통일)
-                <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-brand-modal border border-zinc-100 py-1.5 min-w-[160px] z-50 max-h-[70vh] overflow-y-auto">
+                // 2026-08-23 · #201 · z-[55] · 페이지 콘텐츠 sticky (z-30~50) 위 · 모달 (z-50 default) 과 겹침 방지
+                <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-brand-modal border border-zinc-100 py-1.5 min-w-[160px] z-[55] max-h-[70vh] overflow-y-auto">
                   {desktopOverflowTabs.map(tab => {
                     const Icon = tab.icon;
                     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
@@ -731,7 +732,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                 </button>
                 {mobileOverflowOpen && (
                   // 2026-08-18 · shadow-brand-modal 통일
-                  <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-brand-modal border border-line py-1 min-w-[160px] z-50 max-h-[70vh] overflow-y-auto">
+                  // 2026-08-23 · #201 · z-[55] · 페이지 콘텐츠 sticky (z-30~50) 위 · 겹침 방지
+                  <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-brand-modal border border-line py-1 min-w-[160px] z-[55] max-h-[70vh] overflow-y-auto">
                     {mobileOverflowTabs.map(tab => {
                       const Icon = tab.icon;
                       const c = TAB_COLOR_MAP[tab.color ?? "slate"];
