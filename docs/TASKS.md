@@ -470,43 +470,27 @@
 - 💡 **의존** · #180 (발주이력 검색 기능) 과 연계 · 같은 데이터 소스
 - 💡 프레임워크 원칙 준수 (대원칙 17·19)
 
-### #181 · 매장구역도 · 인라인 편집 + 드래그 위치 변경 (신규 · 2026-08-21 · **스펙 확정 2026-08-23**)
+### #181 · 매장구역도 · 인라인 편집 + 드래그 위치 변경 (✅ 완료 · 2026-08-23 · `20dca31c`·`037e2923`)
 
-**🎯 스펙 확정 (2026-08-23 사용자 결정)**:
-- **편집 방식** · **C · 팝오버 + 드래그 둘 다** (Option C)
-- **ZoneSettingsPage** · **완전 제거** · StoreZoneMap 인라인 편집만 · 페이지·라우팅·사이드바 gate 삭제
-- **드래그 동작** · **num 재배정 + section 이동 둘 다** · 같은 section swap · 다른 section 이동 (중복 검사)
-- **편집 권한** · **관리자만** (`role === "admin"` OR `"superadmin"`)
+**Phase 1 · ZoneSettingsPage 제거 (`20dca31c`)**:
+- ✅ `src/components/ZoneSettingsPage/` · 파일 삭제 (-131 라인)
+- ✅ App.tsx · lazy import + Page type + 라우팅 제거
+- ✅ sideNavGroups.ts · "매장 구역" 항목 삭제 · MapPin 정리
+- ✅ AppNavHeader.tsx · zone-settings 타입 alias 제거
 
-**Phase 1 · StoreZoneMap 확장 (프리미티브 관점)**:
-- 🔲 `editing` prop 추가 (default false · readonly)
-- 🔲 `onZoneUpdate` prop · 팝오버 편집 콜백 (label · category · num)
-- 🔲 `onZoneReorder` prop · 드래그 재배정 콜백 (num swap or section 이동)
-- 🔲 InlineEditPopover 신규 프리미티브 (or Modal size=sm 활용) · label + category + num input
-- 🔲 useZoneDefs · setZones · debounce 자동 저장
+**Phase 2 · 드래그 재정렬 (`037e2923`)**:
+- ✅ StoreZoneMap · `editing` · `onZoneReorder` props (backward-compat)
+- ✅ HTML5 native drag & drop · desktop 즉시 · mobile long-press 500ms
+- ✅ 시각 피드백 · armed(amber pulse) · dragging(opacity-50) · dropTarget(emerald ring)
+- ✅ GripVertical icon · 편집 모드에서만 노출
+- ✅ wallCell/pairCell/centerCell 3 렌더러 모두 num 기준 드래그 지원
+- ✅ DisplayPage handleZoneReorder · fromNum ↔ toNum 스왑 · setZoneDefs debounce 자동 저장
+- ✅ 편집 권한 · dpUserLevel >= 9 (관리자만)
 
-**Phase 2 · 드래그 구현**:
-- 🔲 드래그 라이브러리 · react-dnd or 커스텀 pointer events
-- 🔲 long-press (모바일) · 500ms · 드래그 활성
-- 🔲 같은 section · swap 방식 (num 교환)
-- 🔲 다른 section · 이동 (target section num 중복 검사 · 중복 시 다음 available num or 사용자 확인)
-- 🔲 드롭 인디케이터 · 드래그 위치 시각화
+**팝오버 편집** (#189 완료 · 2026-08-23):
+- ✅ ZoneAssignPopover · label · category · num 편집 · onZoneUpdate
 
-**Phase 3 · 권한 gate**:
-- 🔲 관리자만 편집 · `authSession.role in ["admin", "superadmin"]`
-- 🔲 매니저·직원 · 조회만 · 편집 UI 미노출
-
-**Phase 4 · ZoneSettingsPage 제거**:
-- 🔲 `src/components/ZoneSettingsPage/` · 파일 삭제 (destructive · 관리자 승인)
-- 🔲 사이드바 · `sideNavGroups.ts` · zone-settings 항목 제거
-- 🔲 라우팅 · App.tsx · zone-settings 라우팅 제거
-- 🔲 관련 테스트 · 정리
-
-**의존 · 프리미티브**:
-- Modal (팝오버) · Card · useZoneDefs · useKvSetting (debounce)
-
-**관련 메모리**:
-- `.claude/memory/project_zone_map_edit.md` · 편집 방식 · 드래그 · 권한 · 페이지 제거
+**규모** · 3 commit · +145 −158 라인 · Framework 원칙 준수
 
 ### #181-원본스펙 (기록 · 2026-08-21)
 
