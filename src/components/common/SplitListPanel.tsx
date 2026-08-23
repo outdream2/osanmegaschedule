@@ -67,6 +67,22 @@ export interface SplitListPanelProps {
   children: React.ReactNode;
   /** wrapper className */
   className?: string;
+  // ── v2 확장 (2026-08-23) · 모두 optional · Phase 3 확산 지원 ──
+  /**
+   * 커스텀 count 표시 · count prop 대체 · "3/50" (filtered/total) 같은 복합 표시
+   *   · 지정 시 · count StatusPill 대신 이 노드가 title 옆에 렌더
+   */
+  countDisplay?: React.ReactNode;
+  /**
+   * footer 슬롯 · body 아래 · shrink-0 border-t
+   *   · 하단 등록/저장/action 버튼 배치 (예: StaffListPanel 하단 "신규 등록" 이관)
+   */
+  footer?: React.ReactNode;
+  /**
+   * body className override · 기본 flex-1 min-h-0 overflow-y-auto
+   *   · 특수 케이스 · 예 "flex-1 min-h-0 overflow-y-auto p-3" · 내부 padding 추가
+   */
+  bodyClassName?: string;
 }
 
 /**
@@ -95,6 +111,9 @@ export function SplitListPanel({
   headerActions,
   children,
   className = "",
+  countDisplay,
+  footer,
+  bodyClassName,
 }: SplitListPanelProps) {
   const hasSearch = onSearchChange != null;
   const hasHeader = title != null || hasSearch || filters != null || onAdd != null || headerActions != null;
@@ -114,11 +133,14 @@ export function SplitListPanel({
                   <span className="text-[15px] font-bold text-ink tracking-tight truncate">
                     {title}
                   </span>
-                  {typeof count === "number" && (
+                  {/* 2026-08-23 v2 · countDisplay 우선 · 없으면 count StatusPill */}
+                  {countDisplay != null ? (
+                    countDisplay
+                  ) : typeof count === "number" ? (
                     <StatusPill tone="zinc" size="xs">
                       {count}
                     </StatusPill>
-                  )}
+                  ) : null}
                 </div>
               )}
               <div className="flex-1" />
@@ -170,7 +192,7 @@ export function SplitListPanel({
         </div>
       )}
       {/* body · flex-1 · scroll · loading > error > empty > children 우선순위 */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className={bodyClassName ?? "flex-1 min-h-0 overflow-y-auto"}>
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Spinner label={loadingLabel} size={20} tone="brand" />
@@ -196,6 +218,10 @@ export function SplitListPanel({
           children
         )}
       </div>
+      {/* 2026-08-23 v2 · footer 슬롯 · body 아래 · 신규 등록 등 하단 action */}
+      {footer && (
+        <div className="shrink-0 border-t border-line bg-white">{footer}</div>
+      )}
     </div>
   );
 }

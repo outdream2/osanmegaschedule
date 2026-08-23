@@ -201,3 +201,76 @@ describe("SplitListPanel · filters + headerActions slot", () => {
     expect(getByTestId("refresh")).not.toBeNull();
   });
 });
+
+// 2026-08-23 · v2 확장 · countDisplay · footer · bodyClassName
+describe("SplitListPanel · v2 · countDisplay 커스텀 표시", () => {
+  it("countDisplay · count StatusPill 대체 · 복합 표시 (예: '3/50')", () => {
+    const { container } = render(
+      <SplitListPanel title="직원" count={100} countDisplay={<span data-testid="cd">3/100</span>}>
+        <div />
+      </SplitListPanel>
+    );
+    expect(container.querySelector('[data-testid="cd"]')).not.toBeNull();
+    expect(container.textContent).toContain("3/100");
+    // count StatusPill 은 렌더 안 됨 (countDisplay 우선)
+    const zincPill = container.querySelector(".bg-zinc-100");
+    expect(zincPill).toBeNull();
+  });
+
+  it("countDisplay 없으면 · count StatusPill 표시 (기본 동작 유지)", () => {
+    const { container } = render(
+      <SplitListPanel title="X" count={5}>
+        <div />
+      </SplitListPanel>
+    );
+    expect(container.textContent).toContain("5");
+    // count StatusPill 존재
+    const zincPill = container.querySelector(".bg-zinc-100");
+    expect(zincPill).not.toBeNull();
+  });
+});
+
+describe("SplitListPanel · v2 · footer 슬롯", () => {
+  it("footer · body 아래 · shrink-0 border-t 렌더", () => {
+    const { container } = render(
+      <SplitListPanel footer={<button data-testid="fb">신규 등록</button>}>
+        <div />
+      </SplitListPanel>
+    );
+    expect(container.querySelector('[data-testid="fb"]')).not.toBeNull();
+    expect(container.textContent).toContain("신규 등록");
+  });
+
+  it("footer 없으면 · 하단 border 없음", () => {
+    const { container } = render(
+      <SplitListPanel>
+        <div />
+      </SplitListPanel>
+    );
+    // footer div 는 border-t border-line + shrink-0 이어야 · 없어야 함
+    const footerDiv = container.querySelector(".border-t.border-line.bg-white:not(.border-b)");
+    expect(footerDiv).toBeNull();
+  });
+});
+
+describe("SplitListPanel · v2 · bodyClassName override", () => {
+  it("bodyClassName 지정 · body div 클래스 대체", () => {
+    const { container } = render(
+      <SplitListPanel bodyClassName="custom-body-cls">
+        <div />
+      </SplitListPanel>
+    );
+    expect(container.querySelector(".custom-body-cls")).not.toBeNull();
+    // 기본 클래스 없음
+    expect(container.querySelector(".flex-1.min-h-0.overflow-y-auto")).toBeNull();
+  });
+
+  it("bodyClassName 미지정 · 기본 flex-1 min-h-0 overflow-y-auto", () => {
+    const { container } = render(
+      <SplitListPanel>
+        <div />
+      </SplitListPanel>
+    );
+    expect(container.querySelector(".flex-1.min-h-0.overflow-y-auto")).not.toBeNull();
+  });
+});
