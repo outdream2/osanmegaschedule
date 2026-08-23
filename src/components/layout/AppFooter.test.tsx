@@ -55,3 +55,53 @@ describe("AppFooter · flex 레이아웃", () => {
     expect(dots.length).toBe(2);
   });
 });
+
+// 2026-08-23 · #205 · 확장 props · compact · version · extraLinks · className
+describe("AppFooter · #205 확장 props", () => {
+  it("role=contentinfo · a11y semantic", () => {
+    const { container } = render(<AppFooter />);
+    expect(container.querySelector('[role="contentinfo"]')).not.toBeNull();
+  });
+
+  it("compact · 시간 숨김 · dot 개수 감소", () => {
+    const { container } = render(<AppFooter compact />);
+    expect(container.textContent).not.toContain("09:00 - 22:00");
+    // dot 1개 (시간 앞뒤 중 앞 dot 제거 · copyright 앞만 유지)
+    const dots = container.querySelectorAll(".rounded-full");
+    expect(dots.length).toBe(1);
+  });
+
+  it("version prop · 표시 (font-mono)", () => {
+    const { container } = render(<AppFooter version="v1.2.3" />);
+    expect(container.textContent).toContain("v1.2.3");
+    const versionSpan = Array.from(container.querySelectorAll("span")).find(s => s.textContent === "v1.2.3");
+    expect(versionSpan?.className).toContain("font-mono");
+  });
+
+  it("extraLinks · 렌더 · 우측 정렬", () => {
+    const { container } = render(
+      <AppFooter extraLinks={[{ label: "이용약관", href: "/terms" }, { label: "개인정보", href: "/privacy" }]} />,
+    );
+    expect(container.textContent).toContain("이용약관");
+    expect(container.textContent).toContain("개인정보");
+    const links = container.querySelectorAll("a");
+    expect(links.length).toBe(2);
+    expect(links[0].getAttribute("href")).toBe("/terms");
+  });
+
+  it("http URL · target=_blank + rel=noopener", () => {
+    const { container } = render(
+      <AppFooter extraLinks={[{ label: "외부", href: "https://example.com" }]} />,
+    );
+    const link = container.querySelector("a")!;
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toContain("noopener");
+  });
+
+  it("className · 추가 병합", () => {
+    const { container } = render(<AppFooter className="sticky bottom-0" />);
+    const root = container.firstElementChild!;
+    expect(root.className).toContain("sticky");
+    expect(root.className).toContain("bottom-0");
+  });
+});
