@@ -24,7 +24,7 @@
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
 | 1 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 804 | 3 | large-file-warn(1) |
-| 2 | `src/components/ScanPage/ScanPage.tsx` | 805 | 3 | large-file-warn(1) |
+| 2 | `src/components/ScanPage/ScanPage.tsx` | 812 | 3 | large-file-warn(1) |
 
 ## 📝 모든 위반 파일 (2개)
 
@@ -33,7 +33,7 @@
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 804 | 3 |
-| `src/components/ScanPage/ScanPage.tsx` | 805 | 3 |
+| `src/components/ScanPage/ScanPage.tsx` | 812 | 3 |
 
 </details>
 

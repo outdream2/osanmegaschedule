@@ -14,7 +14,7 @@
       "totalWeight": 3
     },
     "src/components/ScanPage/ScanPage.tsx": {
-      "lines": 805,
+      "lines": 812,
       "violations": [
         {
           "ruleId": "large-file-warn",
