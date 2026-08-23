@@ -1,10 +1,11 @@
 // src/components/ResignationWriterPage/SignatureModal.tsx
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · ResignationWriterPage 서명 모달 이관
-// 프레임워크: AccentBar
+// 2026-08-23 · #191 · inline fixed inset-0 → common/Modal primitive
+// 프레임워크: Modal · AccentBar
 import React, { useEffect, useRef, useState } from "react";
-import { Signature, Eraser, Check, X } from "@phosphor-icons/react";
+import { Signature, Eraser, Check } from "@phosphor-icons/react";
 import SignaturePad from "react-signature-canvas";
-import { AccentBar } from "../common/AccentBar";
+import { Modal } from "../common/Modal";
 import type { SignSlot } from "./types";
 import { SIGN_LABELS } from "./utils";
 
@@ -75,63 +76,16 @@ export const SignatureModal: React.FC<{
   };
 
   return (
-    // 2026-08-17 v2 · Modal 통일
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center backdrop-brand p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="bg-white rounded-2xl shadow-brand-modal w-full max-w-2xl border border-line flex flex-col">
-        {/* 헤더 */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-line">
-          <div className="flex items-center gap-2.5">
-            <AccentBar size="lg" />
-            <Signature size={17} weight="fill" className="text-brand-deep" />
-            <h3 className="text-[17px] font-bold tracking-tight text-ink">
-              {slot ? SIGN_LABELS[slot] : "서명"}
-            </h3>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg text-ink-soft hover:bg-zinc-100 flex items-center justify-center cursor-pointer transition-colors"
-            title="닫기"
-          >
-            <X size={18} weight="bold" />
-          </button>
-        </div>
-
-        {/* 캔버스 */}
-        <div className="p-5">
-          <div
-            ref={wrapperRef}
-            className="relative bg-white border-2 border-dashed border-brand-tint rounded-xl overflow-hidden"
-            style={{ height: size.h + 2 }}
-          >
-            <SignaturePad
-              ref={(el) => { padRef.current = el; }}
-              canvasProps={{
-                width: size.w,
-                height: size.h,
-                className: "block bg-white touch-none",
-                style: { width: `${size.w}px`, height: `${size.h}px` },
-              }}
-              penColor="#0A2E4A"
-              onEnd={() => { if (padRef.current) setEmpty(padRef.current.isEmpty()); }}
-              onBegin={() => setEmpty(false)}
-            />
-            {empty && (
-              <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[17px] text-zinc-300 font-bold select-none">
-                여기에 서명해 주세요
-              </span>
-            )}
-          </div>
-          <p className="text-[17px] text-ink-soft mt-2.5">
-            마우스·터치로 서명하세요. 저장 시 오른쪽 사직서에 즉시 반영됩니다.
-          </p>
-        </div>
-
-        {/* 액션 */}
-        <div className="flex items-center justify-between gap-2 px-5 py-4 border-t border-line bg-zinc-50/60 rounded-b-2xl">
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="md"
+      title={slot ? SIGN_LABELS[slot] : "서명"}
+      icon={<Signature size={17} weight="fill" />}
+      titleAccent
+      backdropIntensity="brand"
+      footer={
+        <div className="flex items-center justify-between gap-2 w-full">
           <button
             type="button"
             onClick={handleClear}
@@ -158,7 +112,37 @@ export const SignatureModal: React.FC<{
             </button>
           </div>
         </div>
+      }
+    >
+      {/* 캔버스 */}
+      <div className="p-5">
+        <div
+          ref={wrapperRef}
+          className="relative bg-white border-2 border-dashed border-brand-tint rounded-xl overflow-hidden"
+          style={{ height: size.h + 2 }}
+        >
+          <SignaturePad
+            ref={(el) => { padRef.current = el; }}
+            canvasProps={{
+              width: size.w,
+              height: size.h,
+              className: "block bg-white touch-none",
+              style: { width: `${size.w}px`, height: `${size.h}px` },
+            }}
+            penColor="#0A2E4A"
+            onEnd={() => { if (padRef.current) setEmpty(padRef.current.isEmpty()); }}
+            onBegin={() => setEmpty(false)}
+          />
+          {empty && (
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[17px] text-zinc-300 font-bold select-none">
+              여기에 서명해 주세요
+            </span>
+          )}
+        </div>
+        <p className="text-[17px] text-ink-soft mt-2.5">
+          마우스·터치로 서명하세요. 저장 시 오른쪽 사직서에 즉시 반영됩니다.
+        </p>
       </div>
-    </div>
+    </Modal>
   );
 };
