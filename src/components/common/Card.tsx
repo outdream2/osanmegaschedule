@@ -1,12 +1,16 @@
 // 2026-08-19 · 공용 프레임워크 · Card (surface + variant + padding + rounded)
 //   · 41+ 반복 패턴 통합 · bg-white border border-line rounded-xl shadow-sm overflow-hidden
 //   · Attio 세련 톤 · inset light + 2-layer shadow (Panel/PageToolbar 와 통일)
+// 2026-08-23 · v2 · borderColor prop 추가 · custom tint border (emerald/amber/rose 등)
+//   · custom border 카드 마이그레이션 커버리지 확대 (이전 시도 실패 개선)
 //
 // 사용 예:
 //   <Card>기본 카드 (shadow-sm · rounded-xl · p-4)</Card>
 //   <Card variant="md" padding="lg">더 두꺼운 shadow · 큰 padding</Card>
 //   <Card padding="none" className="overflow-hidden"><Table /></Card>
 //   <Card as="button" onClick={handler} variant="lg">클릭 가능</Card>
+//   <Card borderColor="border-emerald-200">emerald 테두리 카드</Card>
+//   <Card bg="bg-emerald-50/50">tinted 배경 카드</Card>
 
 import React from "react";
 import type { CSSProperties, ReactNode } from "react";
@@ -56,6 +60,10 @@ export interface CardProps {
   rounded?: CardRounded;
   /** true 시 · overflow-hidden 추가 (테이블·이미지 wrap 용) */
   clip?: boolean;
+  /** 배경 override · 기본 bg-white · 예: "bg-emerald-50/50" · "bg-amber-50/70" */
+  bg?: string;
+  /** 테두리 색 override · 기본 border-line · 예: "border-emerald-200" · "border-amber-300" */
+  borderColor?: string;
   /** semantic 태그 · 기본 div */
   as?: "div" | "button" | "section" | "article" | "aside";
   // 2026-08-21 · MouseEventHandler 확장 · e.stopPropagation() 등 이벤트 접근 필요 케이스 지원
@@ -87,6 +95,8 @@ export const Card: React.FC<CardProps> = ({
   padding = "md",
   rounded = "xl",
   clip = false,
+  bg,
+  borderColor,
   as = "div",
   onClick,
   className = "",
@@ -97,10 +107,13 @@ export const Card: React.FC<CardProps> = ({
   children,
   ...rest
 }) => {
+  // v2 · bg · borderColor override · 기본 bg-white · border-line
+  const bgCls = bg ?? "bg-white";
+  const borderClsColor = borderColor ?? "border-line";
   const baseCls = [
-    "bg-white",
+    bgCls,
     "border",
-    "border-line",
+    borderClsColor,
     ROUNDED_CLS[rounded],
     VARIANT_SHADOW[variant],
     PADDING_CLS[padding],
