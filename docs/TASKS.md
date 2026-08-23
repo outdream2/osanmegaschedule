@@ -128,7 +128,11 @@
 - 💡 관련 파일 · `src/components/layout/AppNavHeader.tsx` · IconButton 프리미티브 또는 인라인
 - 💡 회귀 방지 · 알림 배지·기능 flow 100% 유지
 
-### #198 · Split 왼쪽 리스트 UI 프레임워크화 · 최신 트렌드 초고해상도 부드러운 UI (신규 · 2026-08-23)
+### #198 · Split 왼쪽 리스트 UI 프레임워크화 (Phase 2 ✅ 완료 · Phase 3 진행중 · 2026-08-23)
+> ✅ Phase 2 · `src/components/common/SplitListPanel.tsx` 프리미티브 신설 · 18 tests · Card/Spinner/EmptyState/StatusPill 활용
+> ✅ #177 ProductInfoPage · SplitListPanel 적용 완료 (첫 소비자)
+> 🔲 Phase 3 · StaffManagePage/StaffListPanel · SchedulePage 좌측 · OcrPage/RawOcrTable 등 이관 (대형 · 페이지별 세밀 검토)
+> ⚠️ Phase 3 · 각 페이지 회귀 위험 · 사용자 승인 후 순차 진행 권장
 - 📄 대상 · Split 화면의 왼쪽 리스트 UI · 마스터-디테일 좌측 패널 통일
 - 🎯 최종 목표 · **공통 UI 프리미티브** 만들어서 · 이후 모든 split 왼쪽 리스트에 통일 적용
 - 🎨 스타일 원칙:
