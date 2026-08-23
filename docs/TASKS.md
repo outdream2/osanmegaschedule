@@ -255,7 +255,20 @@
 - 🔲 서버 라우트 (`/api/blocked-slots` 등) 에 부장 관련 하드코딩 없는지 확인
 - 💡 회귀 방지 · 예약 flow 100% 유지 · 컬럼 축소 시 grid 폭 자동 조정
 
-### #193 · 통계 설정 · 계절정의 + 적정재고설정 통합 (신규 · 2026-08-22)
+### #193 · 통계 설정 · 계절정의 + 적정재고설정 통합 (Phase 1 ✅ 완료 · 2026-08-23 · Phase 2 wiring 별도)
+
+**Phase 1 · UI 통합 + 훅 신설 ✅ 완료 (`885ee110`)**:
+- ✅ SeasonSettingsPage · 이름 변경 · "통계 설정" (2섹션 · 계절 정의 + 적정재고)
+- ✅ OptimalStockPeriodSection · KV `optimal_stock_period_days` 편집 UI · useKvSetting debounce
+- ✅ **useOptimalStockPeriod 훅 신설** · 읽기 전용 · 상수 export · sanitize · 9 tests
+- ✅ 소비처에서 훅 재사용 가능 · `const { days } = useOptimalStockPeriod()`
+
+**Phase 2 · 소비처 wiring (진행 대기)**:
+- 🔲 서버 · `/api/stock-manage/low-stock` · `days` 쿼리 파라미터 수신 · 캐시 키 갱신
+- 🔲 클라 · RequestsPage · OrderManagePage · CategoryTab (option) · 훅 사용 · days 전달
+- 🔲 회귀 검증 필수 · 캐시 무효화 로직 · 대량 데이터 (low-stock 캐시)
+
+### #193-원본스펙 · Phase 1 스펙 (기록)
 - 📄 대상 · 설정 페이지의 **"계절정의"** 메뉴 → **"통계설정"** 으로 이름 변경
 - 🔲 통계설정 · 탭 페이지 구조 (2탭)
   - **탭 1 · 계절정의** (기존 SeasonRangesEditor 재사용)

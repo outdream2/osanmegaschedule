@@ -23,6 +23,8 @@ import { api, ApiError } from "../../lib/apiClient";
 import { matchHangul } from "../../lib/hangulSearch";
 import type { AuthSession } from "../../types";
 import { UpdateProductSchema, type UpdateProductInput } from "../../shared/schemas/products";
+// 2026-08-23 · #197 · 스캔 페이지에서 넘어온 pending code · 자동 등록 모달
+import { consumeScanPendingProductCode } from "../../hooks/useScanUnregisteredMode";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 interface ProductRow {
@@ -328,6 +330,15 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // 2026-08-23 · #197 · 스캔 페이지에서 넘어온 pending code · 자동 등록 모달 (권한자만)
+  const [pendingCode, setPendingCode] = useState<string | null>(null);
+  useEffect(() => {
+    const code = consumeScanPendingProductCode();
+    if (code && canManage) {
+      setPendingCode(code);
+      setCreateOpen(true);
+    }
+  }, [canManage]);
 
   // 좌우 분할 · 폭 저장 · 데스크탑 감지
   const { width: leftWidth, startResize, isDesktop } = useResizablePanel({
@@ -504,12 +515,16 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
         </Modal>
       )}
 
-      {/* Phase C · 상품 등록 모달 */}
+      {/* Phase C · 상품 등록 모달 · 2026-08-23 · #197 · pending code 있으면 자동 채움+lock */}
       <ProductCreateModal
         open={createOpen}
-        onClose={() => setCreateOpen(false)}
+        onClose={() => { setCreateOpen(false); setPendingCode(null); }}
+        initialCode={pendingCode ?? ""}
+        initialBarcode={pendingCode ?? ""}
+        lockCode={!!pendingCode}
         onCreated={(code) => {
           setSelectedCode(code);
+          setPendingCode(null);
           setReloadKey((k) => k + 1);
         }}
       />

@@ -2,7 +2,9 @@
 // 2026-08-16 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useState } from "react";
 import { api } from "../../lib/apiClient";
-import { User, Phone, Briefcase, Calendar, Award, Save, Lock, MapPin, Eye, EyeOff, Check, Mail, IdCard, CreditCard } from "lucide-react";
+import { User, Phone, Briefcase, Calendar, Award, Save, Lock, MapPin, Eye, EyeOff, Check, Mail, IdCard, CreditCard, ScanBarcode } from "lucide-react";
+// 2026-08-23 · #197 · 스캔 미분류 처리 방식 · 개인 preference
+import { useScanUnregisteredMode } from "../../hooks/useScanUnregisteredMode";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
@@ -23,6 +25,8 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
   const [loading, setLoading] = useState(true);
   // 2026-08-16 · 프레임워크 useToast 사용 · manual setToast 제거
   const { toast, show: showToast, showError } = useToast(2000);
+  // 2026-08-23 · #197 · 스캔 미분류 처리 방식 (개인 preference)
+  const { mode: scanUnregisteredMode, setMode: setScanUnregisteredMode } = useScanUnregisteredMode();
 
   const loadMe = useCallback(async () => {
     if (!authSession?.employeeId) return;
@@ -243,6 +247,43 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
         </div>
 
         {/* 계절 정의 · 2026-08-12 · [설정] > 계절 정의 로 이동 · MyPage 에서 제거 */}
+
+        {/* 2026-08-23 · #197 · 스캔 미분류 상품 처리 방식 (개인 preference) */}
+        <Card variant="raw-sm" padding="md" className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <ScanBarcode size={16} className="text-brand-deep" />
+            <h3 className="text-[16px] font-bold text-ink tracking-tight">스캔 미분류 상품 · 처리 방식</h3>
+          </div>
+          <p className="text-[14px] text-ink-soft leading-relaxed">
+            바코드 스캔 · 등록되지 않은 상품 감지 시 · 처리 방식을 선택합니다.
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setScanUnregisteredMode("modal")}
+              className={`px-3 py-1.5 rounded-lg text-[14px] font-semibold border cursor-pointer transition ${
+                scanUnregisteredMode === "modal"
+                  ? "bg-brand-tint border-brand-deep text-brand-deep"
+                  : "bg-white border-line text-ink-soft hover:brightness-95"
+              }`}
+              aria-pressed={scanUnregisteredMode === "modal"}
+            >
+              모달 (즉시 등록)
+            </button>
+            <button
+              type="button"
+              onClick={() => setScanUnregisteredMode("page")}
+              className={`px-3 py-1.5 rounded-lg text-[14px] font-semibold border cursor-pointer transition ${
+                scanUnregisteredMode === "page"
+                  ? "bg-brand-tint border-brand-deep text-brand-deep"
+                  : "bg-white border-line text-ink-soft hover:brightness-95"
+              }`}
+              aria-pressed={scanUnregisteredMode === "page"}
+            >
+              페이지 이동 (상품정보로)
+            </button>
+          </div>
+        </Card>
 
         {/* 안내 */}
         <Card variant="flat" padding="sm" bg="bg-white/60" className="text-[15px] text-zinc-500 flex items-start gap-2">

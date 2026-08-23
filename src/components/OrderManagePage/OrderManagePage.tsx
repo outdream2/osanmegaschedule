@@ -89,6 +89,17 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // Level-2 서브탭 상태
   const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "critical" | "history">("need");
   const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "scan" | "productarrival" | "productinfo" | "return" | "purchase-history">("receipt");
+
+  // 2026-08-23 · #197 · 스캔 미분류 (page 모드) 진입 시 · sessionStorage pending code 감지 · productinfo 서브탭 자동 전환
+  useEffect(() => {
+    try {
+      const pending = sessionStorage.getItem("megatown_scan_pending_product_code");
+      if (pending) {
+        setTopTab("purchase");
+        setPurchaseSubTab("productinfo");
+      }
+    } catch { /* noop */ }
+  }, []);
   const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input" | "vat-prepare">("payment-input");
   const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff" | "supplier">("trending");
 

@@ -55,6 +55,8 @@ import { ScanLeftPanel, SaveCard, HistoryModal, ReviewSheet } from "./ScanPage.p
 // 2026-08-23 · #179 · 미등록 상품 즉시 등록 · ProductCreateModal 재사용
 import { ProductCreateModal } from "../ProductInfoPage/ProductCreateModal";
 import { addCachedProduct } from "../../lib/productsCache";
+// 2026-08-23 · #197 · 스캔 미분류 처리 방식 (개인 preference · modal|page 분기)
+import { useScanUnregisteredMode, setScanPendingProductCode } from "../../hooks/useScanUnregisteredMode";
 
 // ─────────────────────────────────────────────────────────────
 // Props
@@ -97,6 +99,17 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     authSession?.role === "admin" ||
     authSession?.role === "superadmin" ||
     (authSession?.role === "manager" && (authSession?.level ?? 0) >= 5);
+  // 2026-08-23 · #197 · 처리 방식 · modal(즉시) or page(상품정보 이동)
+  const { mode: scanUnregisteredMode } = useScanUnregisteredMode();
+  const openUnregisteredCreate = useCallback(() => {
+    if (scanUnregisteredMode === "page" && notFoundCode) {
+      // 상품정보 페이지 이동 · pending code 전달 · 자동 모달 오픈
+      setScanPendingProductCode(notFoundCode);
+      onNavigate?.("display");
+      return;
+    }
+    setCreateOpen(true);
+  }, [scanUnregisteredMode, notFoundCode, onNavigate]);
 
   // ── 우측 테이블
   const [rows, setRows]                         = useState<StockRow[]>([]);
@@ -625,7 +638,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               onScan={handleScan}
               onRequestDisplay={requestDisplay}
               canManageProducts={canManageProducts}
-              onOpenCreate={() => setCreateOpen(true)}
+              onOpenCreate={openUnregisteredCreate}
             />
           )}
           right={(
