@@ -203,6 +203,8 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
           type={type}
           value={val(k)}
           onChange={(e) => set(k, e.target.value)}
+          min={type === "number" ? 0 : undefined}
+          step={k === "optimal_stock" ? 1 : undefined}
           className={detailInputCls + (type === "number" ? " tabular-nums" : "")}
         />
       </dd>
