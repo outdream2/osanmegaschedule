@@ -20,6 +20,8 @@ import { SIDE_NAV_GROUPS } from "./sideNavGroups";
 // 2026-08-12 · PC 사이드바 접기 · 헤더에 토글 버튼 노출
 import { SidebarTrigger } from "../ui/sidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
+// 2026-08-23 · #188 · usePageVisibility · 공통헤더 탭 · 뷰포트별 필터
+import { usePageVisibility } from "../../hooks/usePageVisibility";
 // 2026-08-12 · 프레임워크 · logo alt 만 brand.shortName 반영 (하드코딩 fallback 유지)
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 // 2026-08-12 · #62 · 공통헤더 TABS 를 SIDE_NAV_GROUPS 로부터 파생 (단일 소스 · B 방식)
@@ -150,6 +152,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   //   · admin 예외 · ADMIN_ESSENTIAL (permissions/business-manage/account) 만 · 나머지 다 filter
   //   · 이전 버그: userLevel < 9 조건으로 · admin 은 hidden 필터 건너뜀 → 헤더에 여전히 표시 → 클릭 시 페이지 잠깐 뜸 → 리다이렉트 (flicker)
   const { perms } = usePagePermissions();
+  // 2026-08-23 · #188 · usePageVisibility · 뷰포트별 필터
+  const { isVisible: isPageVisible } = usePageVisibility();
+  const viewport = isMobileNav ? "mobile" : "pc";
   const ADMIN_ESSENTIAL_KEYS = React.useMemo(() => new Set<string>(["permissions", "business-manage", "account"]), []);
   const visibleTabs = useMemo(() => TABS.filter((t) => {
     if (t.key === "landing") return true;
@@ -172,8 +177,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         if (allHidden) return false;
       }
     }
+    // 2026-08-23 · #188 · usePageVisibility · 뷰포트별 필터 (사용자 명시 해제)
+    if (!isPageVisible(t.key as string, viewport)) return false;
     return true;
-  }), [authSession, isPrivileged, isPharmacist, isVendor, perms, userLevel, ADMIN_ESSENTIAL_KEYS]);
+  }), [authSession, isPrivileged, isPharmacist, isVendor, perms, userLevel, ADMIN_ESSENTIAL_KEYS, isPageVisible, viewport]);
 
   // 경영관리 하위 페이지 활성 여부 (연차승인·점심불참·권한관리)
   const isBizPage = BUSINESS_PAGES.has(activePage);
