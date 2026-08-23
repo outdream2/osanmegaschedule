@@ -73,7 +73,15 @@
 > `role='contentinfo'` a11y semantic 추가 · 11 tests (5→11)
 > 향후 · 페이지별 커스텀 필요 시 · props 조합 활용 (예: 로그인 페이지 compact · MyPage version 표시)
 
-### #204 · 스캔페이지 · 개별 상품 저장 버튼 + 다음 스캔 시 이전 상세 접기 (신규 · 2026-08-23)
+### #204 · 스캔페이지 · 개별 상품 저장 버튼 + 다음 스캔 시 이전 상세 접기 (✅ 완료 · 2026-08-23 · `261b80a7`)
+- ✅ StockRow · savedThisSession 필드 추가
+- ✅ ScanPage · handleSaveRow · /api/inventory-checks/bulk items=[one] 재사용
+- ✅ StockRowCard · onSaveRow prop · 확장 액션 영역 [저장] 버튼
+- ✅ autoExpanded 로직 · hasAdd && !savedThisSession · 저장 후 자동 접힘
+- ✅ patchRow · qty/zone 변경 시 savedThisSession=false (dirty 표시)
+- ✅ 다음 스캔 → isRecent 이동 → 이전 카드 자동 접힘
+
+### #204-원본스펙 (기록)
 - 📄 대상 · ScanPage · StockRowCard (스캔한 상품 카드)
 - 🎯 요구사항:
   - **저장 버튼** · 스캔한 상품 · 갯수 (창고1/2·매장1/2/3) 입력 후 · **개별 [저장] 버튼** (전체 저장 X · 단일 상품 저장)
