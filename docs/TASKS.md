@@ -1,5 +1,6 @@
 # TASKS
 
+> 2026-08-23 · #31 완료 · RawOcrTable 5268→799줄 · 9 신규 훅/상수 파일 · audit 위반 5→4 · TS clean · build ✓
 > 2026-08-22 · Framework Phase 4 대량 분리 · 6파일 -1,003 라인 · 8 신규 파일 이관 · audit 24 유지 · Phase 2 (가드레일) 완료 · 원격 push 완료
 > 2026-08-21 · Framework Phase 4 (large-file 분리) · 44→22 warn/critical · 50% 탈출 · 클린 84%→96% · 35+커밋
 > 2026-08-20 (밤 최신) · Unit test **2514 tests · 176 files** · Spinner 22곳 추가 확산 · common/features Phase A (PurchaseHistoryModal·VendorSearchModal 이동) · LandingPage dots revert (대원칙 위반 재확인) · MENU_STRUCTURE 11차 업데이트 완료
@@ -59,7 +60,8 @@
 1. `OcrPage` (1215) · `PaymentInfoTab` (1513) · 최우선
 2. `PurchaseSubTabs` (1145) · `RequestsPage` (1225) · `ScanPage` (1105) · 차순
 3. `OrderManagePage` (3089) · `LandingPage` (2319) · 대형 · 추가 분리 필요
-4. `ContractWriterPage` (2680+) · `OcrPage/RawOcrTable` (5268+) · critical · 대규모 리팩터
+4. `ContractWriterPage` (2680+) · critical · 대규모 리팩터
+   - `OcrPage/RawOcrTable` ✅ 완료 (5268→799줄 · #31 · 2026-08-23)
 
 ---
 
