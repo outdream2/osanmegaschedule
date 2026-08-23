@@ -160,7 +160,24 @@
 - 💡 관련 · #177 상품정보 페이지 (SplitPanel 마스터-디테일 · 좌측 리스트) · 이 프리미티브 사용
 - 💡 기존 프리미티브 재사용 · Card · SearchBar · StatusPill · SortableHeader · useSortableTable · useColumnResize · useResizablePanel
 
-### #197 · 상품 스캔 · 미분류 상품 → 상품등록 페이지 자동 연결 (신규 · 2026-08-23)
+### #197 · 상품 스캔 · 미분류 상품 → 상품등록 페이지 자동 연결 (신규 · 2026-08-23 · **스펙 확정 2026-08-23**)
+
+**🎯 스펙 확정 (사용자 결정 · Option A · 병행)**:
+- **#179 (완료)** · 모달 방식 · ProductCreateModal · lockCode + initialCode · **유지**
+- **#197 (신규)** · 페이지 이동 방식 추가 · 상품정보 페이지 (#177) 로 자동 이동 · 스캔 바코드 state 전달
+- **사용자 설정 토글** · 개인 preference · 어느 방식 사용할지 선택
+
+**구현**:
+- 🔲 설정 · MyPage or PermissionsPage > 개인 · "스캔 미등록 처리 방식" 토글 (localStorage or KV)
+- 🔲 ScanPage · notFoundCode 감지 · 설정 확인 → 모달 or 페이지 이동 분기
+- 🔲 페이지 이동 시 · `onNavigate("productinfo", { initialCode: code })` · 상품정보 페이지에서 자동 등록 모달 열기
+- 🔲 페이지 이동 후 · 돌아가기 버튼 (ScanPage 로) · 등록 완료 시 자동 재스캔 (선택)
+
+**권한** · 관리자 + 매니저 lv5+ (동일 · #179 · #177)
+
+**관련 메모리** · `.claude/memory/project_scan_unregistered.md`
+
+### #197-원본스펙 (기록)
 - 📄 대상 · 바코드/상품 스캔 flow · 미등록·미분류 상품 감지 시 · **상품등록 페이지로 자동 이동**
 - 🔲 스캔 결과 · `products` 테이블 조회 · 매칭 없음 (미분류) 감지
 - 🔲 감지 시 · confirm 다이얼로그 (useConfirm) · "미등록 상품입니다. 상품등록 페이지로 이동할까요?"
@@ -232,7 +249,24 @@
 - 💡 프레임워크 원칙 · useKvSetting 재사용 · Card·InputField·Tabs 프리미티브 활용
 - 💡 관련 · SeasonRangesEditor 재사용 · 이름만 변경 · 하위호환 유지 (route/import)
 
-### #192 · 거래처 로그인 · 공급사정보 등록 → 승인 → 공급자재고확인 flow (신규 · 2026-08-22)
+### #192 · 거래처 로그인 · 공급사정보 등록 → 승인 → 공급자재고확인 flow (신규 · 2026-08-22 · **스펙 결정 중 · 2026-08-23**)
+
+**🎯 스펙 결정 중** (사용자 서브 결정 대기):
+- ① DB · vendors ALTER (`approval_status` · `approval_requested_at` · `approved_at` · `approved_by`) · A(승인) · B(별도 테이블) · C(스킵) · **대기**
+- ② 승인 UI 위치 · RequestsPage 확장 vs 신규 admin 페이지 · **대기**
+- ③ 재로그인 필요 여부 · 승인 즉시 실시간 반영 vs 재로그인 · **대기**
+
+**3-Step Flow**:
+1. **Step 1** · vendor 로그인 → 공급사정보 등록 자동 오픈 · 진행률 (7/10 필드 완료)
+2. **Step 2** · 필수 필드 완성 → [승인 요청] 활성 → POST `/api/vendor-approval-requests` → 관리자 알림
+3. **Step 3** · 관리자 승인 → vendor status = "approved" → [공급자재고확인] 활성
+
+**의존 · 관련**:
+- #178 · vendors 스키마 확장 (log규칙 + 신규 컬럼) · 함께 진행 권장
+- #94 · 공급사 재고확인 페이지 (Phase 2 유보) · gate 재활성화 필요
+- 로그인 규칙 · 담당자 핸드폰 + `.env VENDOR_PW_SUFFIX` · #178 결정 재사용
+
+### #192-원본스펙 (기록)
 - 📄 대상 · 거래처(vendor) 로그인 후 진입 페이지 · 3단계 승인 flow 구현
 - 🔲 **Step 1** · 거래처 로그인 성공 시 · **공급사정보 등록 메뉴** 자동 오픈 (or 사이드바 상단 강조)
   - 로그인 직후 첫 화면 · 공급사정보 미완성 시 강제 노출
@@ -254,7 +288,27 @@
 - 💡 관련 · #94 (공급사 재고확인 페이지 A1 완료 · Phase 2 유보) · gate 재활성화 필요
 - 💡 프레임워크 원칙 · 대원칙 19 · 설계 후 구현 · vendors 스키마·인증 flow·UI gate 3-way 정합성
 
-### #191 · Modal 프레임워크화 · inline modal 35+ 마이그레이션 (신규 · 2026-08-22)
+### #191 · Modal 프레임워크화 · inline modal 35+ 마이그레이션 (신규 · 2026-08-22 · **Phase A 자율 진행 승인 2026-08-23**)
+
+**🎯 스펙 확정 (2026-08-23 사용자 결정)**:
+- **Phase A · 자율 진행 승인** · 저위험 self-contained 파일 5-10개 순차 이관 (매 파일 검증 · 문제 시 롤백)
+- Phase B (중위험) · Phase C (고위험) · 사용자 승인 후
+
+**Phase 분류**:
+- **Phase A (자율)** · ImageZoomModal · CellPickerPopup · IosInstallGuide (일부) 등 · state 얽힘 X
+- **Phase B (승인 대기)** · DayTimelineModal · ContractWriterPage 모달 등 · 페이지 내부 modal
+- **Phase C (승인 대기)** · VendorDetailModal · panel/modal 이중 모드 · 고위험
+
+**자율 진행 원칙 (Phase A)**:
+- 각 파일 · Modal props 매핑 (headerRight · titleAccent · bodyPadding 등 정밀 조정)
+- 매 파일 · TS + build + test 검증 · 회귀 없으면 커밋
+- 시각 검증 · 사용자 요청 시 각 파일 스크린샷
+
+**규모**: Phase A 예상 1-2시간 · 5-10 파일 · 각 파일 15-30분
+
+**관련 메모리** · `.claude/memory/project_modal_migration.md`
+
+### #191-원본스펙 (기록)
 - 📄 배경 · Modal 프리미티브 이미 존재 (src/components/common/Modal.tsx · v2 확장 · 2026-08-18)
 - 🔲 문제 · 35+ 파일에서 여전히 `<div className="fixed inset-0 z-[N] backdrop-brand...">` inline 패턴 사용
 - 🔲 대상 파일 예 · DayTimelineModal · CellPickerPopup · DisplayPage · ContractWriterPage · BoardPage · LandingPage · EmployeeCalendarModal · ScanPage · PurchaseSubTabs · CategoryTab · ColumnMappingModal · ConfirmedRecordsTab · ImageZoomModal · OrderManagePage · VendorListEditor · VendorStockModal · PaymentRegisterModal 등
@@ -282,7 +336,31 @@
 - 🔲 설정 페이지의 매장구역 편집과 동기화 (같은 source · useZoneDefs)
 - 💡 관련 · #181 (인라인 편집 + 드래그 위치) 과 통합 가능 · 팝업 내 편집 vs 인라인 편집 UX 결정 필요
 
-### #188 · 메뉴 설정 · 모바일 가시성 · PC/모바일 체크박스 (신규 · 2026-08-22)
+### #188 · 메뉴 설정 · 모바일 가시성 · PC/모바일 체크박스 (신규 · 2026-08-22 · **스펙 확정 2026-08-23**)
+
+**🎯 스펙 확정 (2026-08-23 사용자 결정)**:
+- ① 마이그레이션 · **자동** (기존 `useMobilePageLevel` 레벨 → 체크박스 자동 변환 · 데이터 손실 X)
+- ② 저장 · **KV setting** (`page-visibility` · JSON · `useKvSetting` debounce)
+- ③ UI · **위치 유지 · 이름 변경** (PermissionsPage > "메뉴 표시" 서브탭)
+
+**Phase 1 · 서버 마이그레이션**:
+- 🔲 첫 조회 시 · KV `page-visibility` 없으면 · 기존 mobile-page-level 읽어서 변환
+- 🔲 레벨 5+ → mobile OFF · 그 외 ON · 변환 후 저장
+- 🔲 이후 · 새 KV 만 사용
+
+**Phase 2 · 신규 훅**:
+- 🔲 `usePageVisibility(pageKey, viewport?)` 신설
+- 🔲 KV `page-visibility` (`{[pageKey]: {pc: boolean; mobile: boolean}}`) 사용
+- 🔲 사이드바 gate + 공통헤더 필터 · 이 훅 활용
+
+**Phase 3 · UI 개편**:
+- 🔲 MobileVisibilitySection · MenuVisibilitySection 으로 리팩터
+- 🔲 서브탭명 "모바일 가시성" → **"메뉴 표시"**
+- 🔲 슬라이더 → 페이지별 [PC ☑] [모바일 ☑] 체크박스 (SIDE_NAV_GROUPS 순회)
+
+**관련 메모리** · `.claude/memory/project_page_visibility.md`
+
+### #188-원본스펙 (기록)
 - 📄 대상 · PermissionsPage > 권한 조정 > **모바일 가시성** 서브탭 (MobileVisibilitySection · BrandingSettingsPage.tsx)
 - 🔲 현재 · `useMobilePageLevel` 레벨 기반 (0~10) · 단일 슬라이더
 - 🔲 개선 · **페이지별 PC 체크박스 + 모바일 체크박스** 2개씩 · 각각 노출 여부 제어
