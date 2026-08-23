@@ -66,6 +66,23 @@ describe("IconTile · 기본 렌더", () => {
     });
   });
 
+  // 2026-08-23 · 추가 tone 커버리지 (sky · amber · teal · indigo · zinc)
+  it("tone 매핑 · sky · amber · teal · indigo · zinc (전 tone 완성)", () => {
+    const cases: Array<[string, string, string]> = [
+      ["sky",    "bg-sky-100",    "text-sky-700"],
+      ["amber",  "bg-amber-100",  "text-amber-700"],
+      ["teal",   "bg-teal-100",   "text-teal-700"],
+      ["indigo", "bg-indigo-100", "text-indigo-700"],
+      ["zinc",   "bg-zinc-100",   "text-zinc-700"],
+    ];
+    cases.forEach(([tone, bg, text]) => {
+      const { container } = render(<IconTile icon={<svg />} tone={tone as any} />);
+      const span = container.querySelector("span")!;
+      expect(span.className).toContain(bg);
+      expect(span.className).toContain(text);
+    });
+  });
+
   it("inset light + subtle shadow · Attio 톤", () => {
     const { container } = render(<IconTile icon={<svg />} />);
     const span = container.querySelector("span")!;
