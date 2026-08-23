@@ -1,9 +1,11 @@
 // 2026-08-22 · Framework Phase 4 · ZoneSection.tsx large-file 분리
 // CellPickerPopup · 셀 탭 팝업 (바텀시트) · 구역/점심/휴게 배정 관리
 //   · props-driven · 부모 상태 유지 · self-contained helpers
+// 2026-08-23 · BottomSheet v2 마이그레이션 · disableHandle + zIndex={70} + footer
 
 import React from "react";
 import { Pill } from "lucide-react";
+import { BottomSheet } from "../common/BottomSheet";
 import type { WorkerEntry, ZoneRow, SlotMap, ZoneMap, BreakCount, TypeTone } from "./types";
 import { DEFAULT_TONE } from "./types";
 import { isStaffEmp, isOtherEmp } from "./utils";
@@ -123,26 +125,41 @@ export const CellPickerPopup: React.FC<CellPickerPopupProps> = ({
     }
   };
 
+  const headerBg = isZone && zone === "카운터" ? "bg-rose-50 border-rose-200" :
+    isZone ? "bg-sky-50 border-sky-200" :
+    isLunch ? "bg-yellow-50 border-yellow-200" :
+    "bg-violet-50 border-violet-200";
+  const headerText = isZone && zone === "카운터" ? "text-rose-700" :
+    isZone ? "text-sky-700" :
+    isLunch ? "text-yellow-700" : "text-violet-700";
+
+  const header = (
+    <div className={`flex items-center justify-between px-4 py-3 border-b ${headerBg}`}>
+      <span className={`font-bold text-base ${headerText}`}>{title}</span>
+      <button onClick={onClose}
+        className="text-zinc-400 hover:text-zinc-600 text-xl font-bold cursor-pointer px-1">✕</button>
+    </div>
+  );
+
+  const footer = (
+    <button onClick={onClose}
+      className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl cursor-pointer transition">
+      완료
+    </button>
+  );
+
   return (
-    <>
-      <div className="fixed inset-0 z-[60] backdrop-brand" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-2xl shadow-brand-modal flex flex-col"
-        style={{ maxHeight: "65vh" }}>
-        <div className={`flex items-center justify-between px-4 py-3 border-b ${
-          isZone && zone === "카운터" ? "bg-rose-50 border-rose-200" :
-          isZone ? "bg-sky-50 border-sky-200" :
-          isLunch ? "bg-yellow-50 border-yellow-200" :
-          "bg-violet-50 border-violet-200"
-        }`}>
-          <span className={`font-bold text-base ${
-            isZone && zone === "카운터" ? "text-rose-700" :
-            isZone ? "text-sky-700" :
-            isLunch ? "text-yellow-700" : "text-violet-700"
-          }`}>{title}</span>
-          <button onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-600 text-xl font-bold cursor-pointer px-1">✕</button>
-        </div>
-        <div className="overflow-y-auto flex-1">
+    <BottomSheet
+      open
+      onClose={onClose}
+      disableHandle
+      zIndex={70}
+      backdropClass="backdrop-brand"
+      maxHeight="65vh"
+      header={header}
+      footer={footer}
+    >
+      <div>
           {allWorkers.length === 0 && (
             <div className="text-center text-zinc-400 text-[17px] py-8">근무자 없음</div>
           )}
@@ -229,14 +246,7 @@ export const CellPickerPopup: React.FC<CellPickerPopupProps> = ({
               );
             });
           })()}
-        </div>
-        <div className="px-4 py-3 border-t border-zinc-100">
-          <button onClick={onClose}
-            className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl cursor-pointer transition">
-            완료
-          </button>
-        </div>
       </div>
-    </>
+    </BottomSheet>
   );
 };

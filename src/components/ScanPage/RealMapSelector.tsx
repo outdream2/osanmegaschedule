@@ -1,6 +1,7 @@
-import React, { useEffect } from "react";
-import { X, MapPin } from "lucide-react";
+import React from "react";
+import { MapPin } from "lucide-react";
 import { ZONE_DEFS } from "../../constants/displayZones";
+import { BottomSheet } from "../common/BottomSheet";
 
 interface RealMapSelectorProps {
   current: string | null | undefined;
@@ -45,12 +46,6 @@ function ZoneBtn({
 }
 
 export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSelect, onClose }) => {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   // Zones by section
   const topWall    = ZONE_DEFS.filter((z) => z.section === "top_wall");    // 24-35
   const aisles     = ZONE_DEFS.filter((z) => z.section === "aisle");       // 1-9
@@ -59,29 +54,25 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
   const wing       = ZONE_DEFS.filter((z) => z.section === "wing");        // 36-41
   const event      = ZONE_DEFS.filter((z) => z.section === "event");       // 42
 
-  return (
-    // 2026-08-17 v2 · Modal 통일
-    <div
-      className="fixed inset-0 z-[70] backdrop-brand flex flex-col"
-      onClick={onClose}
-    >
-      <div
-        className="bg-gray-50 flex-1 flex flex-col mt-12 rounded-t-2xl overflow-hidden shadow-brand-modal"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-line shrink-0">
-          <div className="flex items-center gap-2">
-            <MapPin size={15} className="text-teal-500" />
-            <p className="text-sm font-bold text-gray-900">매장 지도에서 구역 선택</p>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 cursor-pointer p-1">
-            <X size={18} />
-          </button>
-        </div>
+  const header = (
+    <div className="flex items-center gap-2 px-4 py-3 bg-white border-b border-line">
+      <MapPin size={15} className="text-teal-500" />
+      <p className="text-sm font-bold text-gray-900">매장 지도에서 구역 선택</p>
+    </div>
+  );
 
-        {/* Map body */}
-        <div className="overflow-y-auto flex-1 p-3 flex flex-col gap-2">
+  return (
+    // 2026-08-23 · BottomSheet v2 · fullscreen + disableHandle + zIndex={70} + header prop
+    <BottomSheet
+      open
+      onClose={onClose}
+      fullscreen
+      disableHandle
+      zIndex={70}
+      backdropClass="backdrop-brand"
+      header={header}
+    >
+      <div className="p-3 flex flex-col gap-2">
 
           {/* 미지정 */}
           <button
@@ -166,8 +157,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
               <p className="text-xs font-bold text-teal-700">현재: {current}</p>
             </div>
           )}
-        </div>
       </div>
-    </div>
+    </BottomSheet>
   );
 };
