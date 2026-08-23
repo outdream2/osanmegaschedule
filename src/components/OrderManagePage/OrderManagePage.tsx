@@ -11,13 +11,15 @@ import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTa
 import {
   Package, ShoppingCart, PackageCheck, AlertTriangle, Building2, ClipboardList,
   CheckCircle2, TrendingUp, ScanLine, PackagePlus, ArrowLeftRight, Boxes, Wallet,
-  Calculator, BarChart2, PieChart,
+  Calculator, BarChart2, PieChart, Info,
 } from "lucide-react";
 
 // React.lazy code-split · 무거운 서브탭 · 초기 번들 축소
 const OcrPage = React.lazy(() => import("../OcrPage").then(m => ({ default: m.OcrPage })));
 const ScanPage = React.lazy(() => import("../ScanPage/ScanPage").then(m => ({ default: m.ScanPage })));
 const ProductArrivalPage = React.lazy(() => import("../ProductArrivalPage/ProductArrivalPage").then(m => ({ default: m.ProductArrivalPage })));
+// 2026-08-23 · #177 · Phase A · ProductInfoPage 신설 (상품정보 서브탭)
+const ProductInfoPage = React.lazy(() => import("../ProductInfoPage/ProductInfoPage").then(m => ({ default: m.ProductInfoPage })));
 
 const SubTabFallback = () => (
   <div className="flex-1 flex items-center justify-center py-16">
@@ -86,7 +88,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   // Level-2 서브탭 상태
   const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "critical" | "history">("need");
-  const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history">("receipt");
+  const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "scan" | "productarrival" | "productinfo" | "return" | "purchase-history">("receipt");
   const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input" | "vat-prepare">("payment-input");
   const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff" | "supplier">("trending");
 
@@ -438,7 +440,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   // 서브탭 정의
   type PurchaseOrderKey = "order" | "need" | "critical" | "history";
-  type PurchaseKey = "receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history";
+  type PurchaseKey = "receipt" | "reconciliation" | "scan" | "productarrival" | "productinfo" | "return" | "purchase-history";
   type PaymentKey = "vendor" | "payment-input" | "vat-prepare";
   type StatKey = "trending" | "category" | "flow" | "diff" | "supplier";
   interface SubTabDef<K extends string> { key: K; label: string; icon: React.ElementType; color: string; }
@@ -455,6 +457,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     { key: "receipt",          label: "거래명세서", icon: PackageCheck,   color: "violet"  },
     { key: "scan",             label: "실재고입력", icon: ScanLine,       color: "teal"    },
     { key: "productarrival",   label: "상품입고",   icon: PackagePlus,    color: "blue"    },
+    { key: "productinfo",      label: "상품정보",   icon: Info,           color: "indigo"  },
     { key: "reconciliation",   label: "실재고",     icon: CheckCircle2,   color: "emerald" },
   ], []);
   const paymentDefaultTabs: SubTabDef<PaymentKey>[] = useMemo(() => [
@@ -645,6 +648,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {purchaseSubTab === "productarrival" && (
             <div className="flex-1 flex flex-col min-h-0 -mt-1"><Suspense fallback={<SubTabFallback />}>
               <ProductArrivalPage embedded onBack={ocrTabOnBack ?? (() => {})} authSession={ocrTabAuthSession ?? null} onNavigate={ocrTabOnNavigate} onLogout={ocrTabOnLogout} />
+            </Suspense></div>
+          )}
+          {purchaseSubTab === "productinfo" && (
+            <div className="flex-1 flex flex-col min-h-0 -mt-1"><Suspense fallback={<SubTabFallback />}>
+              <ProductInfoPage authSession={ocrTabAuthSession ?? null} />
             </Suspense></div>
           )}
           {purchaseSubTab === "return" && <div className="flex-1 min-h-0"><ReturnListPanel onSupplierClick={openSupplierInfo} /></div>}
