@@ -353,10 +353,19 @@
 - 🔲 KV `page-visibility` (`{[pageKey]: {pc: boolean; mobile: boolean}}`) 사용
 - 🔲 사이드바 gate + 공통헤더 필터 · 이 훅 활용
 
-**Phase 3 · UI 개편**:
-- 🔲 MobileVisibilitySection · MenuVisibilitySection 으로 리팩터
-- 🔲 서브탭명 "모바일 가시성" → **"메뉴 표시"**
-- 🔲 슬라이더 → 페이지별 [PC ☑] [모바일 ☑] 체크박스 (SIDE_NAV_GROUPS 순회)
+**Phase 3 · UI 개편** ✅ **완료 (2026-08-23 · `29ac75cd`)**:
+- ✅ MobileVisibilitySection · usePageVisibility 통합 · [PC ☑] [모바일 ☑] 체크박스
+- ✅ 서브탭명 "모바일 가시성" → **"메뉴 표시"**
+- ✅ SIDE_NAV_GROUPS 순회 · 페이지별 · 2 체크박스 · 색상 (bothOn=emerald · 하나 OFF=violet)
+- ✅ 자동 마이그레이션 · usePageVisibility 내부 · mobile_min_level 레벨 5+ → mobile OFF
+
+**Phase 4 · Gate/Sidebar 통합** ✅ **완료 (2026-08-23 · `3553f75f`)**:
+- ✅ MobileOnlyGate · usePageVisibility 우선 · mobile OFF · 차단
+- ✅ SideNav · 사이드바 items · 뷰포트별 필터 · isVisible(pageKey, viewport)
+- ✅ 빈 그룹 자동 제거 · landing 예외 (무조건 노출)
+
+**남은 작업** (선택):
+- 🔲 공통헤더 (AppNavHeader) · 뷰포트별 탭 필터 (사이드바와 동일 원칙)
 
 **관련 메모리** · `.claude/memory/project_page_visibility.md`
 
