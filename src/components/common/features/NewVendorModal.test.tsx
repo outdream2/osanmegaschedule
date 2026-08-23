@@ -9,6 +9,17 @@ vi.mock("../../../lib/apiClient", () => ({
   api: {
     post: (...args: any[]) => mockPost(...args),
   },
+  // 2026-08-23 · useApiCall (Round 1 확산) 이 ApiError instanceof 검사 · mock export 필요
+  ApiError: class MockApiError extends Error {
+    status: number;
+    data: unknown;
+    constructor(message: string, status = 500, data: unknown = null) {
+      super(message);
+      this.status = status;
+      this.data = data;
+      this.name = "ApiError";
+    }
+  },
 }));
 
 beforeEach(() => {

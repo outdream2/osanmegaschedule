@@ -46,12 +46,18 @@ describe("LoadingState · size", () => {
 });
 
 describe("LoadingState · tone", () => {
-  it("slate (기본) · text-ink-soft", () => {
+  // 2026-08-23 · Spinner primitive 마이그레이션 · SVG는 Spinner의 SPINNER_TONE 매핑 사용
+  //   · slate → "zinc" → text-zinc-400 · indigo → "brand" → text-brand-deep
+  //   · label span 은 여전히 TONE_CLS 사용 (text-ink-soft 유지)
+  it("slate (기본) · SVG text-zinc-400 · label text-ink-soft", () => {
     const { container } = render(<LoadingState />);
     const svg = container.querySelector("svg")!;
-    expect(svg.classList.contains("text-ink-soft")).toBe(true);
+    expect(svg.classList.contains("text-zinc-400")).toBe(true);
+    // label span · text-ink-soft 유지 확인
+    const label = container.querySelector(".text-ink-soft");
+    expect(label).not.toBeNull();
   });
-  it("indigo · text-brand-deep", () => {
+  it("indigo · SVG text-brand-deep", () => {
     const { container } = render(<LoadingState tone="indigo" />);
     const svg = container.querySelector("svg")!;
     expect(svg.classList.contains("text-brand-deep")).toBe(true);

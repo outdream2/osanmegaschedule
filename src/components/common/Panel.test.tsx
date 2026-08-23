@@ -16,11 +16,12 @@ describe("Panel · 기본 렌더", () => {
   });
 
   it("기본 surface · bg-white + border + rounded", () => {
+    // 2026-08-23 · Panel · Card v2 primitive 마이그레이션 · rounded-[14px] → rounded-lg
     const { container } = render(<Panel title="x">c</Panel>);
     const root = container.firstElementChild!;
     expect(root.className).toContain("bg-white");
     expect(root.className).toContain("border");
-    expect(root.className).toContain("rounded-[14px]");
+    expect(root.className).toContain("rounded-lg");
     expect(root.className).toContain("p-4");
   });
 
