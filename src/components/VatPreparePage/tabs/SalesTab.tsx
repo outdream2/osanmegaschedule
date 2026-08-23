@@ -87,15 +87,15 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
 
       {/* 에러 · 경고 */}
       {monthly.error && (
-        <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 flex items-center gap-2 text-[12px] text-rose-700">
+        <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" rounded="lg" padding="sm" className="flex items-center gap-2 text-[12px] text-rose-700">
           <AlertCircle size={14} /><span>{monthly.error}</span>
-        </div>
+        </Card>
       )}
       {monthly.warning && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2 text-[11px] text-amber-800">
+        <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" rounded="lg" padding="sm" className="flex items-start gap-2 text-[11px] text-amber-800">
           <AlertCircle size={14} className="mt-0.5 shrink-0" />
           <span>{monthly.warning}</span>
-        </div>
+        </Card>
       )}
 
       {/* 계산 방식 안내 */}
@@ -225,7 +225,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
       </Card>
 
       {/* 면세 매출 안내 */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2 text-[11px] text-amber-800">
+      <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" rounded="lg" padding="sm" className="flex items-start gap-2 text-[11px] text-amber-800">
         <AlertCircle size={13} className="mt-0.5 shrink-0 text-amber-600" />
         <div className="leading-relaxed">
           <b>면세(TAX FREE) 매출은 매출세액 산정에서 제외됩니다.</b>
@@ -234,7 +234,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
           <span className="mx-1 text-amber-500">·</span>
           입력값은 서버(<code className="text-[10px] bg-amber-100 px-1 rounded">settings.vat_taxfree_sales</code>)에 저장 · 모든 관리자에게 공유됩니다.
         </div>
-      </div>
+      </Card>
 
       {/* 요약 카드 (하단) */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">

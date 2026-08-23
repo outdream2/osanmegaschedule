@@ -409,16 +409,16 @@ export const ArrivalDetailModal: React.FC<ArrivalDetailModalProps> = ({
                 <StatusPill tone="amber" size="md" dot>유통기한 임박 {arrivalDetail.expiring_count}</StatusPill>
               </div>
               {arrivalDetail.supplier_summary && (
-                <div className="bg-sky-50 border border-sky-200 rounded-lg p-3">
+                <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="lg" padding="sm">
                   <div className="text-[15px] font-semibold text-sky-600 uppercase tracking-wider mb-1">공급사 요약</div>
                   <div className="text-[15px] font-medium text-zinc-700 break-words">{arrivalDetail.supplier_summary}</div>
-                </div>
+                </Card>
               )}
               {arrivalDetail.note && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" rounded="lg" padding="sm">
                   <div className="text-[15px] font-semibold text-amber-700 uppercase tracking-wider mb-1">메모</div>
                   <div className="text-[15px] font-medium text-zinc-700 whitespace-pre-wrap">{arrivalDetail.note}</div>
-                </div>
+                </Card>
               )}
               <div className="border border-line rounded-lg overflow-hidden">
                 <div className="px-3 py-2 bg-zinc-50 border-b border-line flex items-center gap-2">

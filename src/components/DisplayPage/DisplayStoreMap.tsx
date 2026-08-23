@@ -125,9 +125,9 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
 
         {/* 미리보기 배너 */}
         {pendingAutoAssign && (
-          <div className="bg-violet-50 border border-violet-200 rounded-lg px-2 py-1 text-[9px] text-violet-700 mb-1 flex items-center gap-1.5">
+          <Card variant="flat" bg="bg-violet-50" borderColor="border-violet-200" rounded="lg" padding="none" className="px-2 py-1 text-[9px] text-violet-700 mb-1 flex items-center gap-1.5">
             <span>임의배치 미리보기 중 — 배치를 조정한 뒤 위쪽 <b>배치확정</b> 버튼을 눌러 DB 저장 + 담당자 알림 전송</span>
-          </div>
+          </Card>
         )}
 
         {/* SECTION 1: 수평 윙 */}

@@ -19,6 +19,7 @@ import {
   Building2,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 import {
   Ban,
   Lock,
@@ -310,7 +311,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
         <div className="lg:w-[340px] shrink-0 bg-white border-b lg:border-b-0 lg:border-r border-line p-4 sm:p-5 flex flex-col gap-4">
 
           {submitted && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5">
+            <Card variant="flat" bg="bg-emerald-50" borderColor="border-emerald-200" padding="sm" className="flex items-start gap-2.5">
               <CheckCircle size={16} className="text-emerald-600 shrink-0 mt-0.5" />
               <div>
                 <p className="text-emerald-800 text-xs font-bold">예약이 접수되었습니다</p>
@@ -319,7 +320,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
               <button onClick={() => setSubmitted(false)} className="ml-auto text-emerald-500 hover:text-emerald-700 cursor-pointer">
                 <X size={14} />
               </button>
-            </div>
+            </Card>
           )}
 
           <div>
@@ -636,10 +637,10 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
             <form onSubmit={handleSubmit} className="space-y-4">
 
                 {error && (
-                  <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 text-rose-700 text-sm">
+                  <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" padding="sm" className="flex items-center gap-2 text-rose-700 text-sm">
                     <AlertCircle size={15} className="shrink-0" />
                     {error}
-                  </div>
+                  </Card>
                 )}
 
                 {/* 거래처명 */}

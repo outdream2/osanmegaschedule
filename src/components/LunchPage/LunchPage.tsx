@@ -307,7 +307,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
         </div>
 
         {error && (
-          <div className="bg-rose-50 border border-rose-200 rounded-xl px-4 py-2.5 text-rose-800 text-[14px] font-semibold">{error}</div>
+          <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" padding="sm" className="text-rose-800 text-[14px] font-semibold">{error}</Card>
         )}
 
         {/* 출근인원 현황 · 휴게시간 배정 섹션 제거 · 점심불참만 노출 */}
@@ -487,9 +487,9 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
 
         {/* ── 점심 불참 내 신청 · 2026-08-17 · 최신 트렌드 · 폰트 +3 ── */}
         {!employeeId ? (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center text-amber-800 text-[16px] font-semibold">
+          <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" padding="lg" className="text-center text-amber-800 text-[16px] font-semibold">
             로그인 후 이용할 수 있습니다.
-          </div>
+          </Card>
         ) : loading && myRequest === undefined ? (
           <Card padding="none" className="p-10 flex items-center justify-center">
             <Spinner size={24} tone="brand" />

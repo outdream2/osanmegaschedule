@@ -2,6 +2,7 @@ import React from "react";
 import { CheckCircle, AlertTriangle, Save } from "lucide-react";
 import { Spinner } from "../../common/Spinner";
 import { Badge } from "../../common/Badge";
+import { Card } from "../../common/Card";
 import { api } from "../../../lib/apiClient";
 import { XlsxExportSection } from "./XlsxExportSection";
 import type { MatchedItem, CandidateInfo } from "./types";
@@ -126,7 +127,7 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
 
   return (
     <div className="w-full max-w-[1400px] mx-auto pl-3 pr-8 box-border">
-      <div className="w-full bg-white border border-emerald-200 rounded-2xl overflow-hidden shadow-sm">
+      <Card variant="raw-sm" padding="none" rounded="2xl" borderColor="border-emerald-200" clip className="w-full">
         {/* 헤더 */}
         <div className="px-4 py-2.5 border-b border-emerald-100 bg-emerald-50 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 shrink-0 flex-wrap">
@@ -524,7 +525,7 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
             </button>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 };

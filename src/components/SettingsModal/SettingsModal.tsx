@@ -554,9 +554,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
               로그인 중인 계정의 비밀번호를 변경합니다. 변경 후에도 세션은 유지됩니다.
             </p>
             {!sessionEmployeeId ? (
-              <div className="text-xs text-rose-600 font-semibold bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+              <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" rounded="lg" padding="sm" className="text-xs text-rose-600 font-semibold">
                 로그인 세션 정보를 찾을 수 없습니다. 다시 로그인해주세요.
-              </div>
+              </Card>
             ) : (
               <div className="space-y-3">
                 <div>

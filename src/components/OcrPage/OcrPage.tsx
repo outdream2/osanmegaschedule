@@ -594,16 +594,16 @@ return (
       {pageImages.length > 0 && !loading && (
         <>
           {pingStatus && !pingStatus.ok && (
-            <div className="w-full bg-rose-50 border border-rose-200 rounded-xl px-4 py-2.5 flex items-center gap-2 text-rose-700 text-xs font-semibold">
+            <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" padding="sm" className="w-full flex items-center gap-2 text-rose-700 text-xs font-semibold">
               <AlertCircle size={14} />
               서버가 OCR을 지원하지 않습니다. <code className="font-mono bg-rose-100 px-1 rounded">npx tsx server.ts</code> 로 재시작하세요.
-            </div>
+            </Card>
           )}
           {pingStatus?.ok && !pingStatus.gemini && (
-            <div className="w-full bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 flex items-center gap-2 text-amber-700 text-xs font-semibold">
+            <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" padding="sm" className="w-full flex items-center gap-2 text-amber-700 text-xs font-semibold">
               <AlertCircle size={14} />
               GEMINI_API_KEY가 없습니다. .env에 키를 추가하세요.
-            </div>
+            </Card>
           )}
 
           {/* OCR 엔진 선택 · 2-way (AI 모델 · Gemini) */}
@@ -685,9 +685,9 @@ return (
       )}
 
       {error && (
-        <div className="w-full bg-rose-50 border border-rose-200 rounded-2xl p-4 text-rose-700 text-sm font-semibold">
+        <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" rounded="2xl" padding="md" className="w-full text-rose-700 text-sm font-semibold">
           {error}
-        </div>
+        </Card>
       )}
 
       {pages.length > 0 && <RawOcrTable pages={pages} pageImages={pageImages} rotation={rotation} onReparsePage={handleReparsePage} balanceConfig={balanceConfig} onSaveConfirmed={handleSaveConfirmed} onUserEdit={handleUserEdit} />}

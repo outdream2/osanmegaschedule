@@ -339,17 +339,17 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
             )}
 
             {uploadError && (
-              <div className="flex items-start gap-1.5 text-xs text-rose-700 font-semibold bg-rose-50 border border-rose-200 rounded-lg px-2.5 py-2">
+              <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" rounded="lg" padding="sm" className="flex items-start gap-1.5 text-xs text-rose-700 font-semibold">
                 <AlertCircle size={13} className="shrink-0 mt-0.5" />
                 {uploadError}
-              </div>
+              </Card>
             )}
 
             {uploadOkAt && Date.now() - uploadOkAt < 3000 && !uploadError && (
-              <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-2">
+              <Card variant="flat" bg="bg-emerald-50" borderColor="border-emerald-200" rounded="lg" padding="sm" className="flex items-center gap-1.5 text-xs text-emerald-700 font-bold">
                 <CheckCircle2 size={13} className="shrink-0" />
                 등록 완료
-              </div>
+              </Card>
             )}
 
             <div className="text-[11px] text-zinc-500 leading-relaxed">
@@ -499,10 +499,10 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
         </Card>
 
         {!isAdmin && (
-          <div className="flex items-start gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-700">
+          <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" rounded="lg" padding="sm" className="flex items-start gap-2 text-[11px] text-amber-700">
             <AlertCircle size={12} className="shrink-0 mt-0.5" />
             관리자(level ≥ 8) 만 하위메뉴를 추가·수정·삭제할 수 있습니다.
-          </div>
+          </Card>
         )}
       </div>
       {/* 2026-08-21 · Framework Phase 3 · toast · alert 대체 */}

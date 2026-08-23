@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { User, Phone, Briefcase, Calendar, Award, Save, Lock, MapPin, Eye, EyeOff, Check, Mail, IdCard, CreditCard } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession, Employee } from "../../types";
 import { updateEmployee } from "../../lib/employeeApi";
@@ -244,10 +245,10 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
         {/* 계절 정의 · 2026-08-12 · [설정] > 계절 정의 로 이동 · MyPage 에서 제거 */}
 
         {/* 안내 */}
-        <div className="px-3 py-2 bg-white/60 border border-line rounded-xl text-[15px] text-zinc-500 flex items-start gap-2">
+        <Card variant="flat" padding="sm" bg="bg-white/60" className="text-[15px] text-zinc-500 flex items-start gap-2">
           <Check size={12} className="mt-0.5 text-emerald-500 shrink-0" />
           <span>본인이 직접 수정할 수 있는 항목은 <b>비밀번호·주소</b>뿐입니다. 그 외 정보(이름·직급·연차 등) 는 관리자에게 문의하세요.</span>
-        </div>
+        </Card>
       </main>
 
       {toast && (

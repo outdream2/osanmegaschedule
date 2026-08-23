@@ -221,9 +221,9 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
 
         {/* Error */}
         {error && !loading && (
-          <div className="bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 text-rose-600 text-xs font-semibold">
+          <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" padding="sm" className="text-rose-600 text-xs font-semibold">
             {error}
-          </div>
+          </Card>
         )}
 
         {/* Empty */}

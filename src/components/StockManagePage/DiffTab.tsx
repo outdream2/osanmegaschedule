@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { api } from "../../lib/apiClient";
 import { Layers, Loader2 as LoaderIcon, ChevronRight, ChevronDown, ListChecks, History } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { AccentBar } from "../common/AccentBar";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
@@ -240,9 +241,9 @@ export const DiffTab: React.FC = () => {
             </div>
             <div className="flex-1 overflow-y-auto relative">
               {loading && diffList.length > 0 && (
-                <div className="flex items-center justify-center gap-1.5 text-[10px] text-violet-600 font-bold py-1.5 mb-1 bg-violet-50 border border-violet-200 rounded-md sticky top-0 z-10">
+                <Card variant="flat" bg="bg-violet-50" borderColor="border-violet-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 text-[10px] text-violet-600 font-bold py-1.5 mb-1 sticky top-0 z-10">
                   <Spinner size={11} tone="violet" /> 조건 변경 · 새로 불러오는 중...
-                </div>
+                </Card>
               )}
               {loading && diffList.length === 0 ? (
                 <LoadingState tone="slate" size="compact" label="데이터 로딩중..." />

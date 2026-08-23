@@ -124,11 +124,11 @@ export const OrderHistoryTab: React.FC = () => {
 
       {/* 마이그레이션 안내 · 폰트 +2 */}
       {notice && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-[14px] text-amber-800">
+        <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" padding="sm" className="text-[14px] text-amber-800">
           <div className="font-bold mb-0.5">📌 마이그레이션 필요</div>
           <div className="font-mono text-[13px]">{notice}</div>
           <div className="text-[13px] mt-1">Supabase SQL Editor 에서 실행 후 · 발주 완료 시 자동 저장 시작</div>
-        </div>
+        </Card>
       )}
 
       {/* 리스트 */}

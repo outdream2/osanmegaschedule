@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AlertOctagon } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { ProductPurchaseHistoryModal } from "../StockManagePage/ProductPurchaseHistoryModal";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
@@ -100,9 +101,9 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
         <span className="text-zinc-400">개</span>
       </div>
       {loading && filtered.length > 0 && (
-        <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-rose-50 border border-rose-200 rounded-md sticky top-0 z-10">
+        <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mb-1 sticky top-0 z-10">
           <Spinner size={11} tone="rose" label="조건 변경 · 새로 불러오는 중..." labelSize={10} />
-        </div>
+        </Card>
       )}
       {loading && filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 py-8">

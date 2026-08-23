@@ -83,8 +83,7 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
         </label>
 
         {notFoundCode && !lastProduct && (
-          <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl
-            bg-amber-50 border border-amber-200/80">
+          <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200/80" padding="sm" className="flex items-start gap-2.5">
             <AlertCircle size={15} className="text-amber-500 shrink-0 mt-0.5" />
             <div className="min-w-0">
               <p className="text-xs font-bold text-amber-800 leading-none">미등록 상품 코드</p>
@@ -93,7 +92,7 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
                 {notFoundCode}
               </p>
             </div>
-          </div>
+          </Card>
         )}
 
         {lastProduct && (

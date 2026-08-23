@@ -289,7 +289,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
 
         {/* ── 작성 폼 ─────────────────────────────────────────────────────── */}
         {canWrite && (
-          <div className="bg-white border border-sky-200 rounded-xl p-4 shadow-sm flex flex-col gap-3">
+          <Card borderColor="border-sky-200" className="flex flex-col gap-3">
             <input
               ref={titleRef}
               className="border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-deep"
@@ -358,7 +358,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
                 </button>
               )}
             </div>
-          </div>
+          </Card>
         )}
 
         {/* ── 정렬 툴바 ───────────────────────────────────────────────────── */}

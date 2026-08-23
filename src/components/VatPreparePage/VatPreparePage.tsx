@@ -387,14 +387,14 @@ const VatPreparePage: React.FC = () => {
 
       {/* ── 경고 · 에러 ── */}
       {error && (
-        <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 flex items-center gap-2 text-[12px] text-rose-700">
+        <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" rounded="lg" padding="sm" className="flex items-center gap-2 text-[12px] text-rose-700">
           <AlertTriangle size={14} /><span>{error}</span>
-        </div>
+        </Card>
       )}
       {warning && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2 text-[12px] text-amber-800">
+        <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" rounded="lg" padding="sm" className="flex items-center gap-2 text-[12px] text-amber-800">
           <AlertTriangle size={14} /><span>{warning}</span>
-        </div>
+        </Card>
       )}
 
       {/* ── KPI 카드 4개 (월별 탭에서 상세 계산) ── */}

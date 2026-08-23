@@ -8,6 +8,7 @@
 //   <InvoiceStatementView pages={pages} title="Gemini 파싱 결과" />
 
 import React from "react";
+import { Card } from "../common/Card";
 import type { OcrPageResult } from "./types";
 
 export interface InvoiceStatementViewProps {
@@ -73,7 +74,7 @@ const InvoicePageCard: React.FC<InvoicePageCardProps> = ({ page, theme }) => {
   const expiryCol = findCol(["유통기한", "유효기한", "소비/사용기한"]);
 
   return (
-    <div className={`bg-white border ${theme.border} rounded-lg overflow-hidden shadow-sm`}>
+    <Card variant="raw-sm" padding="none" rounded="lg" borderColor={theme.border} clip>
       <div className={`${theme.bgHeader} px-3 py-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b ${theme.border}`}>
         <span className={`text-[12px] font-bold ${theme.text}`}>page {page.page}</span>
         <span className={`text-[14px] font-bold ${theme.text}`}>{supplier}</span>
@@ -114,7 +115,7 @@ const InvoicePageCard: React.FC<InvoicePageCardProps> = ({ page, theme }) => {
           </table>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 

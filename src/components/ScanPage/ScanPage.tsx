@@ -39,6 +39,7 @@ import type { AuthSession } from "../../types";
 import { useConfirm } from "../../hooks/useConfirm";
 import { IconTile } from "../common/IconTile";
 import { AccentBar } from "../common/AccentBar";
+import { Card } from "../common/Card";
 // ── 분리된 Row 컴포넌트 ──────────────────────────────────────
 import { StockRowCard } from "./StockRowCard";
 import type { StockRow } from "./stockRowTypes";
@@ -560,8 +561,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       {/* ── A5 · Draft 복구 배너 ── */}
       {draftBanner && rows.length === 0 && (
         <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 pt-3">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl
-            bg-amber-50 border border-amber-200/80 shadow-sm">
+          <Card variant="raw-sm" bg="bg-amber-50" borderColor="border-amber-200/80" className="flex items-center gap-3 px-4 py-3">
             {/* 2026-08-18 · IconTile 확산 */}
             <IconTile icon={<RotateCcw size={13} />} tone="amber" size="sm" />
 
@@ -585,7 +585,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             >
               <X size={14} />
             </button>
-          </div>
+          </Card>
         </div>
       )}
 

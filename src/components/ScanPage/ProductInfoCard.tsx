@@ -673,10 +673,10 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               <button onClick={() => setOrderConfirm(false)} className="text-[12px] font-bold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 px-3 py-1.5 min-h-9 rounded-lg transition cursor-pointer">취소</button>
             </div>
           ) : orderStatus === "done" ? (
-            <div className="flex items-center justify-center gap-2 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-[12px] font-bold">
+            <Card variant="flat" bg="bg-emerald-50" borderColor="border-emerald-200" padding="none" className="flex items-center justify-center gap-2 py-2 text-emerald-700 text-[12px] font-bold">
               <CheckCircle2 size={14} />
               발주 요청이 등록되었습니다
-            </div>
+            </Card>
           ) : (
             <button
               onClick={handleOrderRequest}

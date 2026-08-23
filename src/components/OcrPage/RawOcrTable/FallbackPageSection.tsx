@@ -1,6 +1,7 @@
 import React from "react";
 import { Wand2 } from "lucide-react";
 import { Spinner } from "../../common/Spinner";
+import { Card } from "../../common/Card";
 import type { RawPage } from "./types";
 
 interface FallbackPageSectionProps {
@@ -19,7 +20,7 @@ export const FallbackPageSection: React.FC<FallbackPageSectionProps> = ({
       {fallbackPages.map(p => {
         const supplier = p.meta?.supplier ?? "";
         return (
-          <div key={p.page} className="w-full bg-white border border-rose-200 rounded-2xl overflow-hidden">
+          <Card key={p.page} variant="flat" padding="none" rounded="2xl" borderColor="border-rose-200" clip className="w-full">
             <div className="px-4 py-2 border-b border-rose-100 bg-rose-50 flex items-center gap-2 flex-wrap">
               <span className="text-[12px] font-bold text-rose-700">
                 페이지 {p.page} — 표 감지 실패 (원문)
@@ -49,7 +50,7 @@ export const FallbackPageSection: React.FC<FallbackPageSectionProps> = ({
             <pre className="px-4 py-3 text-[12px] text-gray-600 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
               {p.rawText ?? p.rows.filter((r: any) => Array.isArray(r)).map((r: any) => r[0]).join("\n")}
             </pre>
-          </div>
+          </Card>
         );
       })}
     </>

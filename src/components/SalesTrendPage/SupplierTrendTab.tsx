@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Search, Building2, X } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { api } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -219,9 +220,9 @@ const SupplierTrendTab: React.FC<{
           <span className="text-sky-400">▶</span> 공급사 클릭 → 판매액 내림차순 상품 리스트 펼치기 · 상품명 클릭 → 상세 모달
         </p>
         {loading && suppliers.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-sky-50 border border-sky-200 rounded-md">
+          <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mb-1">
             <Spinner size={11} tone="sky" label="조건 변경 · 새로 불러오는 중..." labelSize={10} />
-          </div>
+          </Card>
         )}
         <div className="max-h-[50vh] overflow-y-auto pr-2 relative">
           {loading && suppliers.length === 0 ? (

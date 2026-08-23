@@ -8,6 +8,7 @@ import { api } from "../../lib/apiClient";
 import { useVendors } from "../../hooks/useVendors";
 import { Building2, Loader2 as LoaderIcon, ChevronRight, ChevronDown } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
@@ -435,9 +436,9 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       {/* 테이블 영역 */}
       <div className="relative flex-1 overflow-auto">
         {loading && xlsxSuppliers.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mt-2 bg-sky-50 border border-sky-200 rounded-md">
+          <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mt-2">
             <Spinner size={12} tone="sky" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
-          </div>
+          </Card>
         )}
         {xlsxSuppliers.length === 0 ? (
           loading ? (

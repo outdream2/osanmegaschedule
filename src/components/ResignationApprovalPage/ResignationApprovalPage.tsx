@@ -162,7 +162,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
   if (!canApprove) {
     return (
       <div className="flex-1 flex items-center justify-center py-12 px-4">
-        <div className="max-w-sm bg-white border border-rose-100 rounded-2xl shadow-sm p-6 flex flex-col items-center gap-3 text-center">
+        <Card variant="raw-sm" borderColor="border-rose-100" rounded="2xl" padding="lg" className="max-w-sm flex flex-col items-center gap-3 text-center">
           <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center">
             <Warning size={24} weight="fill" />
           </div>
@@ -172,7 +172,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
               사직서 승인은 대표(level 8) 이상만 가능합니다.
             </p>
           </div>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -327,12 +327,12 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                           </div>
                         )}
                         {r.handover_notes && (
-                          <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-2.5 py-2">
+                          <Card variant="flat" bg="bg-indigo-50" borderColor="border-indigo-200" rounded="lg" padding="sm">
                             <div className="text-[10px] font-bold text-indigo-600 mb-0.5">인수인계</div>
                             <div className="text-[12px] text-indigo-900 whitespace-pre-wrap leading-snug">
                               {r.handover_notes}
                             </div>
-                          </div>
+                          </Card>
                         )}
                         {r.signature_data_url && (
                           <Card variant="flat" rounded="lg" padding="none" className="px-2.5 py-2">
@@ -345,12 +345,12 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                           </Card>
                         )}
                         {r.reject_reason && (
-                          <div className="bg-rose-50 border border-rose-200 rounded-lg px-2.5 py-2">
+                          <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" rounded="lg" padding="sm">
                             <div className="text-[10px] font-bold text-rose-600 mb-0.5">반려 사유</div>
                             <div className="text-[12px] text-rose-900 whitespace-pre-wrap leading-snug">
                               {r.reject_reason}
                             </div>
-                          </div>
+                          </Card>
                         )}
                       </div>
                     )}
