@@ -67,6 +67,43 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #199 · 로그아웃 옆 종표시 · 테두리·아이콘 여백 반으로 축소 (신규 · 2026-08-23)
+- 📄 대상 · AppNavHeader · 로그아웃 버튼 왼쪽 종(Bell) 알림 아이콘
+- 🔲 종 아이콘 · 테두리(border/padding)와 아이콘 사이 여백 · **현재의 반으로** 축소
+- 🔲 시각적 균형 조정 · 로그아웃 버튼과 종 아이콘 · 크기·간격 조화
+- 🔲 목업 파일 (`docs/UI_MOCKUP_2026-08-21.html`) 기준 · 톤 유지
+- 💡 이전 #174 (사이드메뉴 종 아이콘 compact · 2026-08-20 완료) 와 유사 · 이번은 헤더 종 아이콘
+- 💡 관련 파일 · `src/components/layout/AppNavHeader.tsx` · IconButton 프리미티브 또는 인라인
+- 💡 회귀 방지 · 알림 배지·기능 flow 100% 유지
+
+### #198 · Split 왼쪽 리스트 UI 프레임워크화 · 최신 트렌드 초고해상도 부드러운 UI (신규 · 2026-08-23)
+- 📄 대상 · Split 화면의 왼쪽 리스트 UI · 마스터-디테일 좌측 패널 통일
+- 🎯 최종 목표 · **공통 UI 프리미티브** 만들어서 · 이후 모든 split 왼쪽 리스트에 통일 적용
+- 🎨 스타일 원칙:
+  - 최신 트렌드 · Linear · Vercel · Notion · Attio 2026 톤
+  - 초고해상도 · 부드러움 · GPU 가속 · antialiasing
+  - 깔끔 · 세련 · 멋진 · 고급 · 딥네이비 accent
+  - **목업 디자인 톤 반영** · `docs/UI_MOCKUP_2026-08-21.html` 기준 · 통일성
+  - 파스텔 · 이모지 · 촌스러움 · 화려한 그라디언트 지양
+- 🔲 **Phase 1 · 리서치** · 현재 split 왼쪽 리스트 사용처 조사 (research-strategist 활용)
+  - StaffManagePage · StaffListPanel (StaffListRow)
+  - SchedulePage · 스케쥴 조회 · 좌측 리스트
+  - OcrPage/RawOcrTable · 좌측 파일 리스트 (있으면)
+  - 향후 · #177 상품정보 페이지 · 좌측 상품 리스트
+  - 기타 · Board · Requests · OrderHistory 등 검토
+- 🔲 **Phase 2 · 공통 프리미티브 설계** · `src/components/common/SplitListPanel.tsx` (또는 SplitListItem)
+  - 헤더 · SearchBar + FilterBar + "+ 신규" 버튼
+  - 리스트 · 아이템 slot (children · 각 페이지 커스텀)
+  - 선택 시 · highlight · smooth transition
+  - 정렬 · 컬럼 폭 조정 · 카테고리 색깔 (feedback_ui_principles.md)
+  - 가상 스크롤 (react-window · 대량 리스트) · 필요 시
+  - 폰트 +2 원칙 · Pretendard · antialiased
+- 🔲 **Phase 3 · 통일 적용** · 기존 리스트들 · 공통 프리미티브로 이관 · 순차
+- 🔲 **Phase 4 · 검증** · 모든 페이지 시각 통일성 확인 · 사용자 확정
+- 💡 프레임워크 원칙 · 3곳 반복 = 즉시 추출 · 공통화 원-오프 금지
+- 💡 관련 · #177 상품정보 페이지 (SplitPanel 마스터-디테일 · 좌측 리스트) · 이 프리미티브 사용
+- 💡 기존 프리미티브 재사용 · Card · SearchBar · StatusPill · SortableHeader · useSortableTable · useColumnResize · useResizablePanel
+
 ### #197 · 상품 스캔 · 미분류 상품 → 상품등록 페이지 자동 연결 (신규 · 2026-08-23)
 - 📄 대상 · 바코드/상품 스캔 flow · 미등록·미분류 상품 감지 시 · **상품등록 페이지로 자동 이동**
 - 🔲 스캔 결과 · `products` 테이블 조회 · 매칭 없음 (미분류) 감지
