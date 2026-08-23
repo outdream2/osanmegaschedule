@@ -25,6 +25,8 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-23 · #191 · Modal primitive 마이그레이션
 import { Modal } from "../common/Modal";
+// 2026-08-23 · #89 · settings.positions 순회 · 직군별 그룹 자동 노출
+import { useSettings } from "../../hooks/useSettings";
 
 
 // 2026-08-21 · Framework Phase 4 · ZoneSection 별도 파일 이관
@@ -322,17 +324,40 @@ export const DayTimelineModal: React.FC<Props> = ({
     return ordered;
   }, [orderedIds, tabWorkers]);
 
-  // 약사 / 사원 / 기타 그룹핑 — 일별 스케쥴 리스트에서 카테고리별로 분리
+  // 2026-08-23 · #89 · settings.positions 순회 · 직군별 그룹 자동 노출
+  //   · 기존 · 하드코딩 3그룹 (약사/사원/기타) · 신규 직군 추가 시 "사원" 그룹에 흡수
+  //   · 개선 · 실 employee.position 별 그룹 · settings.positions 순서 우선 · 미정의 직군은 뒤에 append
+  //   · 색상 매핑 유지 · 약사(indigo) · 기타/알바(zinc-400) · 그 외(zinc-500)
+  //   · 회귀 방지 · 모든 워커 정확히 1 그룹에 속함 (position 값으로 그룹) · 데이터 누락 X
+  const { positions: settingsPositions } = useSettings();
   const displayGroups = useMemo(() => {
-    const pharm = displayWorkers.filter(w => w.emp.position === "약사");
-    const staff = displayWorkers.filter(w => isStaffEmp(w.emp));
-    const other = displayWorkers.filter(w => isOtherEmp(w.emp));
-    return [
-      { label: "약사", items: pharm, hdrCls: "text-indigo-600" },
-      { label: "사원", items: staff, hdrCls: "text-zinc-500" },
-      { label: "기타", items: other, hdrCls: "text-zinc-400" },
-    ].filter(g => g.items.length > 0);
-  }, [displayWorkers]);
+    // 워커를 실제 emp.position 값으로 그룹핑 · 미지정은 "미지정" 라벨
+    const groupMap = new Map<string, typeof displayWorkers>();
+    for (const w of displayWorkers) {
+      const pos = String(w.emp.position ?? "").trim() || "미지정";
+      const arr = groupMap.get(pos);
+      if (arr) arr.push(w); else groupMap.set(pos, [w]);
+    }
+    // 순서 결정 · settings.positions 먼저 · 이후 미정의 직군 append
+    const orderedPositions: string[] = [];
+    for (const pos of settingsPositions ?? []) {
+      if (groupMap.has(pos) && !orderedPositions.includes(pos)) orderedPositions.push(pos);
+    }
+    for (const pos of groupMap.keys()) {
+      if (!orderedPositions.includes(pos)) orderedPositions.push(pos);
+    }
+    // 색상 매핑 (기존 톤 유지)
+    const colorFor = (pos: string): string => {
+      if (pos === "약사") return "text-indigo-600";
+      if (pos === "기타" || pos === "알바" || pos === "미지정") return "text-zinc-400";
+      return "text-zinc-500";
+    };
+    return orderedPositions.map(pos => ({
+      label: pos,
+      items: groupMap.get(pos)!,
+      hdrCls: colorFor(pos),
+    }));
+  }, [displayWorkers, settingsPositions]);
 
   const workRanges = useMemo(() => {
     const r: Record<number, { start: number; end: number } | null> = {};
