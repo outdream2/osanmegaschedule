@@ -4,8 +4,25 @@ import type { AuthSession } from "../types";
 
 const STORAGE_KEY = "megatown_auth_session";
 
-/** 30 minutes in ms — idle timeout (2026-08-23 · #186 · 사용자 지시 · 무동작 30분 자동 로그아웃) */
-const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+/** 30 minutes in ms — idle timeout · 2026-08-23 · #252 · KV `session_idle_timeout_minutes` 로 동적 조회 (fallback 30분) */
+const IDLE_TIMEOUT_DEFAULT_MS = 30 * 60 * 1000;
+const IDLE_TIMEOUT_MIN_MS = 5 * 60 * 1000;
+const IDLE_TIMEOUT_MAX_MS = 480 * 60 * 1000;
+/** useKvSetting 이 localStorage 에 캐시 · 매 tick 최신 값 조회 · 관리자 편집 즉시 반영 */
+function getEffectiveIdleTimeoutMs(): number {
+  try {
+    const raw = localStorage.getItem("kv:session_idle_timeout_minutes");
+    if (!raw) return IDLE_TIMEOUT_DEFAULT_MS;
+    const parsed = JSON.parse(raw);
+    const n = typeof parsed === "number" ? parsed : Number(parsed);
+    if (!Number.isFinite(n)) return IDLE_TIMEOUT_DEFAULT_MS;
+    const ms = Math.round(n) * 60 * 1000;
+    if (ms < IDLE_TIMEOUT_MIN_MS || ms > IDLE_TIMEOUT_MAX_MS) return IDLE_TIMEOUT_DEFAULT_MS;
+    return ms;
+  } catch {
+    return IDLE_TIMEOUT_DEFAULT_MS;
+  }
+}
 /** 24 hours in ms — absolute session cap regardless of activity */
 const ABSOLUTE_TIMEOUT_MS = 24 * 60 * 60 * 1000;
 /** Warn this many ms before idle expiry · 30분 idle 기준 · 5분 전 경고 */
@@ -57,7 +74,7 @@ function isExpired(session: AuthSession, now: number): boolean {
   }
   // Idle timeout: no activity for 8 hours
   const lastActivity = session.lastActiveAt ?? session.loginAt;
-  if (lastActivity !== undefined && now - lastActivity > IDLE_TIMEOUT_MS) {
+  if (lastActivity !== undefined && now - lastActivity > getEffectiveIdleTimeoutMs()) {
     return true;
   }
   return false;
@@ -69,8 +86,8 @@ function isWarnWindow(session: AuthSession, now: number): boolean {
   if (lastActivity === undefined) return false;
   const idleElapsed = now - lastActivity;
   return (
-    idleElapsed >= IDLE_TIMEOUT_MS - WARN_BEFORE_MS &&
-    idleElapsed < IDLE_TIMEOUT_MS
+    idleElapsed >= getEffectiveIdleTimeoutMs() - WARN_BEFORE_MS &&
+    idleElapsed < getEffectiveIdleTimeoutMs()
   );
 }
 
@@ -78,7 +95,7 @@ function isWarnWindow(session: AuthSession, now: number): boolean {
 function secondsUntilIdleExpiry(session: AuthSession, now: number): number {
   const lastActivity = session.lastActiveAt ?? session.loginAt;
   if (lastActivity === undefined) return 0;
-  return Math.round((lastActivity + IDLE_TIMEOUT_MS - now) / 1000);
+  return Math.round((lastActivity + getEffectiveIdleTimeoutMs() - now) / 1000);
 }
 
 export interface UseAuthReturn {
