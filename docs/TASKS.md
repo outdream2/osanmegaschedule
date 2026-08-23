@@ -67,6 +67,23 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #204 · 스캔페이지 · 개별 상품 저장 버튼 + 다음 스캔 시 이전 상세 접기 (신규 · 2026-08-23)
+- 📄 대상 · ScanPage · StockRowCard (스캔한 상품 카드)
+- 🎯 요구사항:
+  - **저장 버튼** · 스캔한 상품 · 갯수 (창고1/2·매장1/2/3) 입력 후 · **개별 [저장] 버튼** (전체 저장 X · 단일 상품 저장)
+  - **자동 접기** · 다음 상품이 스캔되어 리스트에 등록되면 · **이전 상품 카드 상세 자동 접기** (compact 모드)
+- 🔲 구현:
+  - StockRowCard · expanded state (props · row.key === lastAddedKey ? expanded : collapsed)
+  - 단일 저장 버튼 · POST `/api/inventory-checks` (개별 row 저장 · 기존 bulk save 별도 유지 or 통합)
+  - 스캔 시 · setLastAddedKey(newKey) · 이전 항목 자동 접힘
+  - 사용자 · 접힌 카드 · 클릭 시 다시 펼치기 (수동)
+- 🔲 UX 흐름:
+  - 스캔 · 상품 카드 자동 펼침 (수량 입력 대기)
+  - 수량 입력 · [저장] 클릭 · 저장 완료 · 카드 접기 or 저장 표시
+  - 다음 스캔 · 이전 카드 자동 접힘 · 새 카드 펼침
+- 💡 프레임워크 · CollapseCard · Card 프리미티브 활용 검토
+- 💡 대원칙 · 회귀 X · 기존 [전체 등록] flow 유지 · [저장] 추가만
+
 ### #203 · SplitPanel 왼쪽·오른쪽 높이 정렬 (✅ 완료 · 2026-08-23 · `56c83390`)
 > CSS · `.split-container` · `lg:items-stretch` 명시 (기본 stretch 확실화)
 > CSS · `.split-left` + `.split-right` · `lg:h-full` 추가 · 명시적 높이 통일
