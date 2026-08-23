@@ -8,37 +8,30 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 595 |
-| 위반 파일 | 4 |
-| 클린 파일 | 591 (99%) |
-| 총 위반 개수 | 4 |
+| 스캔 파일 | 609 |
+| 위반 파일 | 1 |
+| 클린 파일 | 608 (100%) |
+| 총 위반 개수 | 1 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
 | `large-file-critical` | 1 | 1 | high | 2000+라인 · 시급 · 서브 컴포넌트/훅 분리 필수 |
-| `large-file-warn` | 3 | 3 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
 | 1 | `src/components/ContractWriterPage/ContractWriterPage.tsx` | 5483 | 48 | large-file-critical(1) |
-| 2 | `src/components/OcrPage/RawOcrTable/RawInvoiceCard.tsx` | 1322 | 6 | large-file-warn(1) |
-| 3 | `src/components/StaffManagePage/StaffManagePage.tsx` | 1917 | 6 | large-file-warn(1) |
-| 4 | `src/components/LandingPage/UploadDataModal.tsx` | 911 | 3 | large-file-warn(1) |
 
-## 📝 모든 위반 파일 (4개)
+## 📝 모든 위반 파일 (1개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
 | `src/components/ContractWriterPage/ContractWriterPage.tsx` | 5483 | 48 |
-| `src/components/OcrPage/RawOcrTable/RawInvoiceCard.tsx` | 1322 | 6 |
-| `src/components/StaffManagePage/StaffManagePage.tsx` | 1917 | 6 |
-| `src/components/LandingPage/UploadDataModal.tsx` | 911 | 3 |
 
 </details>
 
