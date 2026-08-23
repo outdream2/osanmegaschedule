@@ -163,8 +163,9 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                   </button>
                 </div>
               </div>
-              <div className="mb-2 text-[15px] text-amber-700 bg-amber-50/60 border border-amber-200/60 rounded-md px-2 py-1 leading-snug">
-                손실 확정이 되었는지 확인하세요 <span className="text-amber-500">(ERP재고 vs 실재고 차이 · 손실추적 탭 참조)</span>
+              {/* 2026-08-23 · #183 · 안내 문구 변경 (기존 손실확정 안내 → 발주이력 안내) */}
+              <div className="mb-2 text-[15px] text-brand-deep bg-brand-tint/60 border border-brand/15 rounded-md px-2 py-1 leading-snug">
+                공급사를 클릭하면 최신 발주이력을 확인할 수 있습니다
               </div>
               <div className={`max-h-[50vh] lg:max-h-[75vh] overflow-auto relative ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 <table className="w-full text-[15px] sm:min-w-[540px] [&_tbody_td]:text-[15px] [&_thead_th]:text-[14px]">
