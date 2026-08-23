@@ -12,6 +12,7 @@ import { BulkTab } from "./BulkTab";
 import { EmployeeInfoForm, type EmployeeInfoValues } from "../common/EmployeeInfoForm";
 import { EmployeeProfileCard } from "../common/EmployeeProfileCard";
 import { AccentBar } from "../common/AccentBar";
+import { Modal } from "../common/Modal";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../lib/apiClient";
 // 2026-08-21 · Framework Phase 3 · window.confirm → useConfirm
@@ -71,12 +72,6 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   const confirm = useConfirm();
   const activeTypes = scheduleTypesProp ?? SCHEDULE_TYPES;
   const isLogistics = employee.position.includes("물류");
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
   const [localEmployee, setLocalEmployee] = useState<Employee>(employee);
   useEffect(() => { setLocalEmployee(employee); }, [employee]);
@@ -336,16 +331,18 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   };
 
   return (
-    // 2026-08-17 v2 · Modal 통일
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center backdrop-brand p-4"
-      onClick={onClose}
+    // 2026-08-23 · #191 · Modal primitive 마이그레이션 (inline fixed inset-0 → Modal)
+    <Modal
+      open
+      onClose={onClose}
+      showClose={false}
+      bodyPadding="none"
+      backdropIntensity="brand"
+      cardStyle={{ maxHeight: "95vh" }}
+      className="w-full max-w-3xl lg:max-w-4xl overflow-hidden flex flex-col"
     >
-      {/* 2026-08-17 · 사용자 지시 · PC 너무 넓음 · max-w-5xl → max-w-4xl · 최신 트렌드 · 보기 좋은 폭 */}
-      <div
-        className="bg-white rounded-2xl shadow-brand-modal w-full max-w-3xl lg:max-w-4xl overflow-hidden flex flex-col max-h-[95vh]"
-        onClick={e => e.stopPropagation()}
-      >
+      {/* 내부 wrapper · flex-col · 헤더 fixed + body 스크롤 구조 유지 */}
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         {/* Header · 2026-08-17 · 사용자 지시 · "직원정보 / 월별 스케쥴" 타이틀 · 딥네이비 톤 */}
         <div className="bg-brand-deep text-white px-5 py-3.5 flex-shrink-0 flex items-center justify-between gap-3">
           <div className="min-w-0 flex items-center gap-2">
@@ -792,6 +789,6 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
           </section>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };
