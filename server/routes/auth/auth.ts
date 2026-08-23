@@ -2,7 +2,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { supabase } from "../../../src/supabase/client";
-import { issueToken, clearToken, refreshAccessToken, JwtPayload, getSession } from "../../middleware/requireAuth";
+import { issueToken, clearToken, refreshAccessToken, JwtPayload, getSession, authorize } from "../../middleware/requireAuth";
 import { audit, auditContext } from "../../lib/auditLogger";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
@@ -77,7 +77,8 @@ router.post("/api/auth/vendor-login", validateBody(VendorLoginSchema), asyncHand
 }));
 
 // 관리자(lv 9) 만 임의 직원 비밀번호 재설정 가능
-router.post("/api/auth/set-password", validateBody(SetPasswordSchema), asyncHandler(async (req, res) => {
+// 2026-08-23 · #112-1 · authorize(9) 미들웨어 우선 · 프레임워크 표준 (in-body 게이트 이중 방어 유지)
+router.post("/api/auth/set-password", authorize(9), validateBody(SetPasswordSchema), asyncHandler(async (req, res) => {
   const session = getSession(req);
   if (!session) throw unauthorized();
   if ((session.level ?? 0) < 9) throw forbidden("관리자(lv 9) 만 사용 가능합니다");
