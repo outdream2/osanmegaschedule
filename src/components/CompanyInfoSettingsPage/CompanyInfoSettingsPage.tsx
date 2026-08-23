@@ -86,30 +86,38 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
         </StatusPill>
       ) : undefined}
     >
-      {/* 2026-08-12 · 상단 5탭 TabBar · 각 섹션 개별 표시 */}
-      <div className="mb-3 flex flex-wrap gap-0.5 border-b border-line">
+      {/* 2026-08-23 · #92 · A안 (완전 통합) · 4탭 → 4섹션 스크롤 · 상단 sticky 앵커 nav */}
+      <nav
+        className="mb-4 sticky top-0 z-10 -mx-2 px-2 py-2 bg-zinc-50/85 backdrop-blur-sm border-b border-line flex flex-wrap gap-1"
+        aria-label="회사·브랜드 · 섹션 이동"
+      >
         {TABS.map(({ key, label, Icon, color }) => {
           const active = tab === key;
           return (
-            <button
+            <a
               key={key}
-              onClick={() => changeTab(key)}
-              className={`px-3.5 py-2 -mb-px flex items-center gap-1.5 text-[14px] font-bold border-b-2 transition-colors ${
+              href={`#section-${key}`}
+              onClick={(e) => {
+                e.preventDefault();
+                changeTab(key);
+                const el = document.getElementById(`section-${key}`);
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-bold transition-colors cursor-pointer ${
                 active
-                  ? "border-indigo-500 text-zinc-800"
-                  : "border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300"
+                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                  : "text-zinc-600 hover:text-zinc-800 hover:bg-zinc-100 border border-transparent"
               }`}
-              type="button"
             >
-              <Icon size={16} weight={active ? "fill" : "regular"} className={active ? color : "text-zinc-400"} />
+              <Icon size={14} weight={active ? "fill" : "regular"} className={active ? color : "text-zinc-400"} />
               {label}
-            </button>
+            </a>
           );
         })}
-      </div>
+      </nav>
 
-      {/* ── 탭 1 · 회사정보 (사업장 · 법인) ── */}
-      {tab === "company" && (
+      {/* ── 섹션 1 · 회사정보 (사업장 · 법인) ── */}
+      <section id="section-company">
         <div className={`${CARD_BASE} p-5 flex flex-col gap-4`}>
           <div>
             <h2 className={SET_SECTION_TITLE}>
@@ -158,10 +166,10 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
             <div className="flex justify-center"><Spinner label="서버에서 최신 값을 불러오는 중..." size={14} tone="zinc" labelSize={15} /></div>
           )}
         </div>
-      )}
+      </section>
 
-      {/* ── 탭 2 · 브랜드 (앱 이름 · 로고) ── */}
-      {tab === "brand" && (
+      {/* ── 섹션 2 · 브랜드 (앱 이름 · 로고) ── */}
+      <section id="section-brand" className="mt-6">
         <div className={`${CARD_BASE} p-5 flex flex-col gap-4`}>
           <div>
             <h2 className={SET_SECTION_TITLE}>
@@ -213,13 +221,17 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
             </div>
           </div>
         </div>
-      )}
+      </section>
 
-      {/* ── 탭 3 · 연락처·카카오 ── */}
-      {tab === "contact" && <ContactSection />}
+      {/* ── 섹션 3 · 연락처·카카오 ── */}
+      <section id="section-contact" className="mt-6">
+        <ContactSection />
+      </section>
 
-      {/* ── 탭 4 · 도장 매핑 ── */}
-      {tab === "stamps"  && <StampsSection  />}
+      {/* ── 섹션 4 · 도장 매핑 ── */}
+      <section id="section-stamps" className="mt-6">
+        <StampsSection />
+      </section>
     </SettingsPageShell>
   );
 };
