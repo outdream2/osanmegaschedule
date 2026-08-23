@@ -394,7 +394,11 @@
   - 서버 API 확장 필요 여부 (현재 client-side filter 가능 · limit 초과 시 서버 filter 필요)
 - 💡 프레임워크 원칙 준수 · SearchBar·EmptyState·useSortableTable 재사용
 
-### #179 · 바코드 스캔 · 미등록 상품 즉시 등록 UX (신규 · 2026-08-21 · **권한 확정 2026-08-23**)
+### #179 · 바코드 스캔 · 미등록 상품 즉시 등록 UX (✅ 완료 · 2026-08-23 · `1ad6c2f0`)
+> ProductCreateModal 재사용 (initialCode/initialBarcode/lockCode props) · #177 프레임워크 활용
+> ScanPage · 권한자만 등록 버튼 노출 · 등록 → 로컬 캐시 삽입 → handleScan 자동 재호출
+
+### #179-원본스펙 · 바코드 스캔 미등록 상품 (기록 · 2026-08-21)
 - 🔲 BarcodeScanner · 스캔 결과 · products 테이블에 없으면 · **"상품 추가" 자동 유도**
 - 🔲 미등록 감지 시 · 상품 등록 모달 (#177 페이지의 모달 버전) 오픈
 - 🔲 모달 · `product_code` 필드 · 스캔된 바코드로 **자동 채움** · readonly 표시
