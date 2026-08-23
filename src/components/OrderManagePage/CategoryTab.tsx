@@ -19,6 +19,8 @@ import { fmtWonCompact } from "../../lib/format";
 import { EmptyState } from "../common/EmptyState";
 import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
+// 2026-08-23 · #185 · PageToolbar 프리미티브 통일 · 통계 서브탭 UI 통일
+import { PageToolbar } from "../common/PageToolbar";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../lib/apiClient";
 import { InlineLabel } from "../common/InlineLabel";
@@ -432,57 +434,55 @@ const ZoneCategoryContent: React.FC = () => {
       <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
     )}
     <div className="flex flex-col gap-2">
-      {/* 2026-08-17 · 상단 필터바 · 공용 프레임워크 톤 · 딥네이비 accent + 라벨 · 폰트 통일 */}
-      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2`}>
-        {/* 좌측 · accent bar + 아이콘 + 제목 + count */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          <AccentBar />
-          <PieChart size={16} className="text-brand-deep shrink-0" />
-          <span className="text-[17px] font-bold text-ink tracking-tight">구역현황</span>
-          <StatusPill tone="brand" size="md">{grouped.length}개 구역</StatusPill>
-          <span className="text-[13px] text-ink-soft hidden md:inline">real_map 기반 · 구역 클릭 → 상품 상세</span>
-        </div>
-        {/* 기간 필터 · 통일 톤 · segmented pill */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <InlineLabel>기간</InlineLabel>
-          <div className="inline-flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
-            <button type="button" onClick={() => { setSeason(null); setMonths(0); }}
-              className={`px-2.5 h-7 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${!season && months === 0 ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
-              10일
-            </button>
-            {[1, 2, 3, 4, 5, 6].map(m => (
-              <button key={m} type="button" onClick={() => { setSeason(null); setMonths(m as any); }}
-                className={`px-2.5 h-7 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${!season && months === m ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
-                {m}개월
+      {/* 2026-08-23 · #185 · PageToolbar 프리미티브 통일 · 통계 서브탭 통일 */}
+      <PageToolbar
+        icon={<PieChart size={16} />}
+        title="구역현황"
+        count={grouped.length}
+        countLabel="개 구역"
+        leftSlot={<span className="text-[13px] text-ink-soft hidden md:inline">real_map 기반 · 구역 클릭 → 상품 상세</span>}
+        right={
+          <div className="flex items-center gap-2 flex-wrap">
+            <InlineLabel>기간</InlineLabel>
+            <div className="inline-flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
+              <button type="button" onClick={() => { setSeason(null); setMonths(0); }}
+                className={`px-2.5 h-7 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${!season && months === 0 ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
+                10일
               </button>
-            ))}
+              {[1, 2, 3, 4, 5, 6].map(m => (
+                <button key={m} type="button" onClick={() => { setSeason(null); setMonths(m as any); }}
+                  className={`px-2.5 h-7 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${!season && months === m ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
+                  {m}개월
+                </button>
+              ))}
+            </div>
+            <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setMonths(0); }} size="sm" hideLabel />
+            {/* 새로고침 · 우측 정렬 · 딥네이비 hover */}
+            <button
+              type="button"
+              onClick={() => {
+                setLoading(true);
+                const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.MAX) });
+                if (season) params.set("season", season);
+                else if (months > 0) params.set("months", String(months));
+                // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+                Promise.all([
+                  api.get<{ rows?: any[] }>(`/api/stock-manage/top-sales?${params}`).catch(() => ({ data: { rows: [] } })),
+                  getProductsMap(),
+                ])
+                  .then(([s, p]) => { setSales(Array.isArray(s.data?.rows) ? s.data.rows : []); setProducts(p ?? {}); })
+                  .catch((e: any) => { setSales([]); setProducts({}); showError(`새로고침 실패: ${e?.message ?? "네트워크 오류"}`); })
+                  .finally(() => setLoading(false));
+              }}
+              disabled={loading}
+              className="w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-brand-tint hover:border-brand-deep text-ink-soft hover:text-brand-deep transition-colors disabled:opacity-40 cursor-pointer"
+              title="새로고침"
+            >
+              <Loader2 size={14} className={loading ? "animate-spin" : ""} />
+            </button>
           </div>
-          <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setMonths(0); }} size="sm" hideLabel />
-        </div>
-        {/* 새로고침 · 우측 정렬 · 딥네이비 hover */}
-        <button
-          type="button"
-          onClick={() => {
-            setLoading(true);
-            const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.MAX) });
-            if (season) params.set("season", season);
-            else if (months > 0) params.set("months", String(months));
-            // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-            Promise.all([
-              api.get<{ rows?: any[] }>(`/api/stock-manage/top-sales?${params}`).catch(() => ({ data: { rows: [] } })),
-              getProductsMap(),
-            ])
-              .then(([s, p]) => { setSales(Array.isArray(s.data?.rows) ? s.data.rows : []); setProducts(p ?? {}); })
-              .catch((e: any) => { setSales([]); setProducts({}); showError(`새로고침 실패: ${e?.message ?? "네트워크 오류"}`); })
-              .finally(() => setLoading(false));
-          }}
-          disabled={loading}
-          className="ml-auto w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-brand-tint hover:border-brand-deep text-ink-soft hover:text-brand-deep transition-colors disabled:opacity-40 cursor-pointer"
-          title="새로고침"
-        >
-          <Loader2 size={14} className={loading ? "animate-spin" : ""} />
-        </button>
-      </div>
+        }
+      />
 
       {/* 매장 구역도 */}
       <StoreZoneMap
