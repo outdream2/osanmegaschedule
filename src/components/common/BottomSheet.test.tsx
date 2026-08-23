@@ -152,3 +152,66 @@ describe("BottomSheet · className", () => {
     expect(sheet).not.toBeNull();
   });
 });
+
+// 2026-08-23 · v2 · header/fullscreen/disableHandle/backdropClass/zIndex/footer 커버리지
+describe("BottomSheet · v2 · header · fullscreen · disableHandle", () => {
+  it("header 커스텀 JSX · title 무시 (커스텀 대체)", () => {
+    const { container } = render(
+      <BottomSheet open onClose={() => {}} title="원래타이틀" header={<div data-testid="h">커스텀</div>}>c</BottomSheet>
+    );
+    expect(container.querySelector('[data-testid="h"]')).not.toBeNull();
+    expect(container.textContent).toContain("커스텀");
+    expect(container.textContent).not.toContain("원래타이틀");
+  });
+
+  it("fullscreen · maxHeight 100vh · max-w 제거", () => {
+    const { container } = render(
+      <BottomSheet open onClose={() => {}} fullscreen>c</BottomSheet>
+    );
+    const sheet = container.querySelector(".rounded-t-2xl") as HTMLElement;
+    expect(sheet.style.maxHeight).toBe("100vh");
+    expect(sheet.className).not.toContain("max-w-[600px]");
+  });
+
+  it("disableHandle=true · drag handle 숨김", () => {
+    const { container } = render(
+      <BottomSheet open onClose={() => {}} disableHandle>c</BottomSheet>
+    );
+    const handle = container.querySelector("span.w-10.h-1.rounded-full.bg-zinc-300");
+    expect(handle).toBeNull();
+  });
+
+  it("disableHandle=false (기본) · drag handle 노출", () => {
+    const { container } = render(
+      <BottomSheet open onClose={() => {}}>c</BottomSheet>
+    );
+    const handle = container.querySelector("span.w-10.h-1.rounded-full.bg-zinc-300");
+    expect(handle).not.toBeNull();
+  });
+});
+
+describe("BottomSheet · v2 · backdropClass · zIndex · footer", () => {
+  it("backdropClass · 커스텀 배경 (dark 등)", () => {
+    const { container } = render(
+      <BottomSheet open onClose={() => {}} backdropClass="bg-zinc-900/70">c</BottomSheet>
+    );
+    const backdrop = container.querySelector('[role="dialog"]') as HTMLElement;
+    expect(backdrop.className).toContain("bg-zinc-900/70");
+  });
+
+  it("zIndex · 인라인 style override · z-[100] 클래스 제거", () => {
+    const { container } = render(
+      <BottomSheet open onClose={() => {}} zIndex={70}>c</BottomSheet>
+    );
+    const backdrop = container.querySelector('[role="dialog"]') as HTMLElement;
+    expect(backdrop.style.zIndex).toBe("70");
+    expect(backdrop.className).not.toContain("z-[100]");
+  });
+
+  it("footer slot · 렌더", () => {
+    const { container } = render(
+      <BottomSheet open onClose={() => {}} footer={<button data-testid="fb">저장</button>}>c</BottomSheet>
+    );
+    expect(container.querySelector('[data-testid="fb"]')).not.toBeNull();
+  });
+});
