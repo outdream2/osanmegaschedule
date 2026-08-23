@@ -21,6 +21,8 @@ import { BreakTimeline } from "./BreakTimeline";
 import { api, ApiError } from "../../lib/apiClient";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-08-23 · #195 · 재확정 확인 다이얼로그
+import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-23 · #191 · Modal primitive 마이그레이션
 import { Modal } from "../common/Modal";
 
@@ -62,6 +64,8 @@ export const DayTimelineModal: React.FC<Props> = ({
   const typeTones = useMemo(() => buildTypeTones(scheduleTypeEntries), [scheduleTypeEntries]);
   // 2026-08-21 · Framework Phase 3 · alert → useToast
   const { toast: mainToast, showError: mainShowError } = useToast();
+  // 2026-08-23 · #195 · 재확정 확인 다이얼로그 (이미 확정된 상태에서 확정됨 클릭 시)
+  const confirmDialog = useConfirm();
   const [editingWork, setEditingWork] = useState<{ empId: number; value: string } | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("전체");
 
@@ -444,7 +448,17 @@ export const DayTimelineModal: React.FC<Props> = ({
 
   // 확정 저장 (날짜별 + 요일 템플릿 동시 저장)
   // saveTemplateToDow 뒤에 정의하여 의존성 순서 보장
+  // 2026-08-23 · #195 · 이미 확정된 상태에서 클릭 시 · 재확인 다이얼로그 후 재저장
   const handleConfirm = useCallback(async () => {
+    if (isConfirmed) {
+      const ok = await confirmDialog({
+        title: "재확정",
+        message: "다시 확정하시겠습니까?\n현재 배치를 다시 저장합니다.",
+        confirmLabel: "재확정",
+        cancelLabel: "취소",
+      });
+      if (!ok) return;
+    }
     setConfirming(true);
     try {
       await api.put(`/api/zone-day/${date}`, {
@@ -463,7 +477,7 @@ export const DayTimelineModal: React.FC<Props> = ({
     } finally {
       setConfirming(false);
     }
-  }, [date, dow, zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount, saveTemplateToDow, mainShowError]);
+  }, [isConfirmed, confirmDialog, date, dow, zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount, saveTemplateToDow, mainShowError]);
 
   const handleLunchShiftOffset = useCallback((delta: number) => {
     setLunchOffset(prev => {

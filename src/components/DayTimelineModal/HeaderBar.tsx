@@ -3,7 +3,6 @@
 
 import React from "react";
 import { X, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
-import { StatusPill } from "../common/StatusPill";
 
 type TabKey = "전체" | "약사" | "사원" | "기타";
 
@@ -76,12 +75,17 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
           </button>
         ))}
         {/* 확정 버튼 · 딥네이비 accent · 최신 트렌드 */}
+        {/* 2026-08-23 · #195 · 확정됨 상태도 클릭 가능 · 재확정 프로세스 (다시 확정하시겠습니까?) */}
         <div className="ml-auto flex items-center gap-2 shrink-0 pl-2">
           {isConfirmed ? (
-            <StatusPill tone="emerald" size="md" dot>
-              <CheckCircle size={14} className="inline mr-1" />
-              확정됨
-            </StatusPill>
+            <button
+              onClick={handleConfirm}
+              disabled={confirming}
+              title="다시 확정하시겠습니까? · 재저장"
+              className="flex items-center gap-1.5 text-[15px] font-semibold px-3.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer disabled:opacity-40 transition-colors shadow-sm">
+              <CheckCircle size={14} />
+              {confirming ? "저장중…" : "확정됨"}
+            </button>
           ) : (
             <button
               onClick={handleConfirm}
