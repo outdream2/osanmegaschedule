@@ -1,12 +1,13 @@
 // src/components/BoardPage/DetailModal.tsx
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · BoardPage 게시글 상세 모달 이관
-// 프레임워크: Spinner · useToast · toastClass · useConfirm · apiClient · cloudinaryUpload · AuthorBadge
+// 프레임워크: Spinner · useToast · toastClass · useConfirm · apiClient · cloudinaryUpload · AuthorBadge · Modal primitive
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ChevronLeft, Pin, MessageCircle, Trash2, Camera, Pencil, Check, X as XIcon, Send,
 } from "lucide-react";
 import { api } from "../../lib/apiClient";
 import { Spinner } from "../common/Spinner";
+import { Modal } from "../common/Modal";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { uploadImagesToCloudinary, type UploadedImage } from "../../lib/cloudinaryUpload";
@@ -20,8 +21,8 @@ export function DetailModal({
 }: {
   postId: number; authSession: AuthSession | null; employees: Employee[]; isManager: boolean; initialEdit?: boolean; onClose: () => void; onChanged: () => void;
 }) {
+  void employees;
   const confirm = useConfirm();
-  // 2026-08-21 · Framework Phase 3 · alert → useToast
   const { toast, showError } = useToast();
   const [post, setPost] = useState<BoardPost | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,7 +57,6 @@ export function DetailModal({
   const startEditPost = () => {
     if (!post) return;
     setEditDraft({ title: post.title ?? "", body: post.body ?? "", category: post.category ?? "" });
-    // 기존 이미지들을 편집 상태로 복사
     const existing: UploadedImage[] = (post.images ?? []).map(img => ({
       image_url: img.image_url,
       public_id: img.public_id ?? "",
@@ -158,8 +158,6 @@ export function DetailModal({
     await load(); onChanged();
   };
 
-  // 답변 채택 기능 제거됨
-
   const deletePost = async () => {
     if (!canEdit || !authSession) return;
     if (!await confirm({ message: "이 글을 삭제할까요?", danger: true })) return;
@@ -179,29 +177,86 @@ export function DetailModal({
     } finally { setUploadingCmt(false); }
   };
 
-  return (
-    // 2026-08-17 v2 · Modal 통일
-    <div className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white w-full sm:w-[640px] sm:rounded-xl sm:max-h-[92vh] max-h-[95vh] overflow-y-auto rounded-t-2xl shadow-brand-modal flex flex-col" onClick={e => e.stopPropagation()}>
-        {/* 헤더 */}
-        <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-line px-3 sm:px-4 py-3 flex items-center gap-2">
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-500"><ChevronLeft size={18} /></button>
-          <span className="text-[14px] font-bold text-zinc-800">이슈공유</span>
-          <span className="flex-1" />
-          {isManager && post && (
-            <button onClick={togglePin}
-              className={`p-1.5 rounded-lg ${post.pinned ? "text-orange-500 bg-orange-50" : "text-zinc-400 hover:bg-zinc-100"}`} title={post.pinned ? "고정 해제" : "고정"}>
-              <Pin size={14} />
-            </button>
-          )}
-          {canEdit && !editingPost && (
-            <button onClick={startEditPost} className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50" title="글 수정"><Pencil size={14} /></button>
-          )}
-          {canEdit && (
-            <button onClick={deletePost} className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50" title="삭제"><Trash2 size={14} /></button>
-          )}
-        </div>
+  // 헤더 좌측: ChevronLeft + 제목
+  const modalTitle = (
+    <div className="flex items-center gap-2 min-w-0">
+      <button onClick={onClose} className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-500 shrink-0"><ChevronLeft size={18} /></button>
+      <span className="text-[14px] font-bold text-zinc-800 truncate">이슈공유</span>
+    </div>
+  );
 
+  // 헤더 우측: Pin · Pencil · Trash2
+  const headerRight = (
+    <div className="flex items-center gap-0.5">
+      {isManager && post && (
+        <button onClick={togglePin}
+          className={`p-1.5 rounded-lg ${post.pinned ? "text-orange-500 bg-orange-50" : "text-zinc-400 hover:bg-zinc-100"}`} title={post.pinned ? "고정 해제" : "고정"}>
+          <Pin size={14} />
+        </button>
+      )}
+      {canEdit && !editingPost && (
+        <button onClick={startEditPost} className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50" title="글 수정"><Pencil size={14} /></button>
+      )}
+      {canEdit && (
+        <button onClick={deletePost} className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50" title="삭제"><Trash2 size={14} /></button>
+      )}
+    </div>
+  );
+
+  // 댓글 입력 footer
+  const commentFooter = authSession?.employeeId ? (
+    <div className="w-full flex flex-col gap-2">
+      {commentImages.length > 0 && (
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+          {commentImages.map((img, i) => (
+            <div key={i} className="relative w-14 h-14 rounded-md overflow-hidden border border-line shrink-0">
+              <img src={img.image_url} alt="" className="w-full h-full object-cover" />
+              <button onClick={() => setCommentImages(prev => prev.filter((_, x) => x !== i))}
+                className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-white/90 text-rose-600 flex items-center justify-center shadow">
+                <XIcon size={9} strokeWidth={3} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        <button onClick={() => cmtFileRef.current?.click()} disabled={uploadingCmt}
+          className="p-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-600 shrink-0 disabled:opacity-40" title="사진 첨부">
+          {uploadingCmt ? <Spinner size={14} /> : <Camera size={14} />}
+        </button>
+        <input ref={cmtFileRef} type="file" accept="image/*" multiple capture="environment" className="hidden"
+          onChange={(e) => { handleCmtFiles(e.target.files); e.target.value = ""; }} />
+        <input
+          type="text"
+          value={commentBody}
+          onChange={(e) => setCommentBody(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
+          placeholder="댓글 작성"
+          className="flex-1 px-3 py-2 text-[15px] border border-line rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+        />
+        <button onClick={submitComment} disabled={posting || !commentBody.trim()}
+          className="p-2 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white shrink-0 disabled:opacity-40">
+          {posting ? <Spinner size={14} /> : <Send size={14} />}
+        </button>
+      </div>
+    </div>
+  ) : undefined;
+
+  return (
+    <>
+      <Modal
+        open
+        onClose={onClose}
+        title={modalTitle}
+        showClose={false}
+        headerRight={headerRight}
+        size="md"
+        backdropIntensity="brand"
+        closeOnBackdrop
+        closeOnEsc
+        footer={commentFooter}
+        className="sm:max-w-[640px]"
+      >
         {loading || !post ? (
           <div className="flex justify-center py-20"><Spinner size={24} tone="orange" /></div>
         ) : (
@@ -320,7 +375,7 @@ export function DetailModal({
                 </div>
               )}
 
-              {/* 액션 바 · 도움됨/확인 배지 제거 · 상태 변경만 유지 */}
+              {/* 액션 바 · 상태 변경 */}
               {canEdit && (
                 <div className="flex items-center gap-1 mt-4 text-[14px] flex-wrap">
                   <span className="text-zinc-400 font-bold">상태:</span>
@@ -342,6 +397,7 @@ export function DetailModal({
             {/* 댓글 */}
             <div className="p-4 sm:p-5 flex flex-col gap-3">
               <h3 className="text-[14px] font-bold text-zinc-500 uppercase tracking-wider">
+                <MessageCircle size={12} className="inline mr-1" />
                 댓글 {post.comments?.length ?? 0}
               </h3>
               {(!post.comments || post.comments.length === 0) ? (
@@ -349,7 +405,7 @@ export function DetailModal({
               ) : (
                 <div className="flex flex-col gap-2">
                   {post.comments.map(c => {
-                    const canEdit = c.author_id === authSession?.employeeId;
+                    const canEditC = c.author_id === authSession?.employeeId;
                     const editing = editingCommentId === c.id;
                     return (
                     <div key={c.id} className="rounded-xl p-3 border bg-zinc-50 border-zinc-100">
@@ -390,7 +446,7 @@ export function DetailModal({
                               ))}
                             </div>
                           )}
-                          {canEdit && (
+                          {canEditC && (
                             <button
                               onClick={() => { setEditingCommentId(c.id); setEditingCommentBody(c.body); }}
                               className="mt-2 inline-flex items-center gap-1 text-[14px] font-bold text-brand-deep hover:text-[#0d3a5c]"
@@ -404,51 +460,11 @@ export function DetailModal({
                 </div>
               )}
             </div>
-
-            {/* 댓글 입력 */}
-            {authSession?.employeeId && (
-              <div className="sticky bottom-0 bg-white border-t border-line p-3 flex flex-col gap-2">
-                {commentImages.length > 0 && (
-                  <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
-                    {commentImages.map((img, i) => (
-                      <div key={i} className="relative w-14 h-14 rounded-md overflow-hidden border border-line shrink-0">
-                        <img src={img.image_url} alt="" className="w-full h-full object-cover" />
-                        <button onClick={() => setCommentImages(prev => prev.filter((_, x) => x !== i))}
-                          className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-white/90 text-rose-600 flex items-center justify-center shadow">
-                          <XIcon size={9} strokeWidth={3} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <button onClick={() => cmtFileRef.current?.click()} disabled={uploadingCmt}
-                    className="p-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-600 shrink-0 disabled:opacity-40" title="사진 첨부">
-                    {uploadingCmt ? <Spinner size={14} /> : <Camera size={14} />}
-                  </button>
-                  <input ref={cmtFileRef} type="file" accept="image/*" multiple capture="environment" className="hidden"
-                    onChange={(e) => { handleCmtFiles(e.target.files); e.target.value = ""; }} />
-                  <input
-                    type="text"
-                    value={commentBody}
-                    onChange={(e) => setCommentBody(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
-                    placeholder="댓글 작성"
-                    className="flex-1 px-3 py-2 text-[15px] border border-line rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
-                  />
-                  <button onClick={submitComment} disabled={posting || !commentBody.trim()}
-                    className="p-2 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white shrink-0 disabled:opacity-40">
-                    {posting ? <Spinner size={14} /> : <Send size={14} />}
-                  </button>
-                </div>
-              </div>
-            )}
           </>
         )}
 
         {/* 이미지 프리뷰 */}
         {previewImg && (
-          // 2026-08-17 v2 · 이미지 뷰어 · 강조 backdrop
           <div className="fixed inset-0 z-[60] backdrop-brand-strong flex items-center justify-center p-4" onClick={() => setPreviewImg(null)}>
             <img src={previewImg} alt="" className="max-w-full max-h-full object-contain rounded-xl" onClick={e => e.stopPropagation()} />
             <button
@@ -459,9 +475,9 @@ export function DetailModal({
             >×</button>
           </div>
         )}
-      </div>
-      {/* 2026-08-21 · Framework Phase 3 · toast · alert 대체 */}
+      </Modal>
+      {/* toast */}
       {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
-    </div>
+    </>
   );
 }
