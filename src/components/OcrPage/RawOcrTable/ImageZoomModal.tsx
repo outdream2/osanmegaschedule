@@ -1,5 +1,5 @@
 import React from "react";
-import { X } from "lucide-react";
+import { Modal } from "../../common/Modal";
 
 interface ImageZoomModalProps {
   modalImg: string;
@@ -23,44 +23,36 @@ export const ImageZoomModal: React.FC<ImageZoomModalProps> = ({
   viewportCbRef, closeModal, setZoom, setPan,
   onMouseDown, onMouseMove, onMouseUp, onDblClick,
 }) => {
+  const zoomControls = (
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg px-1 py-0.5">
+        <button onClick={() => setZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))}
+          className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-600 font-bold text-base leading-none cursor-pointer select-none">−</button>
+        <span className="text-[12px] font-bold text-gray-500 min-w-[40px] text-center tabular-nums">
+          {Math.round(zoom * 100)}%
+        </span>
+        <button onClick={() => setZoom(z => Math.min(6, +(z + 0.25).toFixed(2)))}
+          className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-600 font-bold text-base leading-none cursor-pointer select-none">+</button>
+      </div>
+      <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
+        className="text-[11px] font-bold text-gray-400 hover:text-gray-600 px-2 py-1 rounded hover:bg-gray-100 cursor-pointer">
+        초기화
+      </button>
+    </div>
+  );
+
   return (
-    <div
-      // 2026-08-17 v2 · Modal 통일 (강조 backdrop · 이미지 뷰어)
-      className="fixed inset-0 z-50 flex items-center justify-center backdrop-brand-strong p-4 outline-none"
-      onClick={closeModal}
-      tabIndex={-1}
-      autoFocus
-      ref={el => { if (el) el.focus(); }}
-      onKeyDown={e => {
-        if (e.key === "Escape" || e.key === "Esc") { e.stopPropagation(); closeModal(); }
-      }}
+    <Modal
+      open
+      onClose={closeModal}
+      title={<span className="text-xs font-bold text-gray-700 break-all">{modalLabel}</span>}
+      headerRight={zoomControls}
+      backdropIntensity="brand-strong"
+      closeOnEsc
+      size="full"
     >
-      <div className="relative w-full bg-white rounded-2xl overflow-hidden shadow-brand-modal flex flex-col"
-        style={{ maxWidth: "min(900px, 95vw)", height: "90vh" }}
-        onClick={e => e.stopPropagation()}>
-
-        <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-line shrink-0">
-          <span className="text-xs font-bold text-gray-700 break-all min-w-0 flex-1 mr-3">{modalLabel}</span>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg px-1 py-0.5">
-              <button onClick={() => setZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))}
-                className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-600 font-bold text-base leading-none cursor-pointer select-none">−</button>
-              <span className="text-[12px] font-bold text-gray-500 min-w-[40px] text-center tabular-nums">
-                {Math.round(zoom * 100)}%
-              </span>
-              <button onClick={() => setZoom(z => Math.min(6, +(z + 0.25).toFixed(2)))}
-                className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-600 font-bold text-base leading-none cursor-pointer select-none">+</button>
-            </div>
-            <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
-              className="text-[11px] font-bold text-gray-400 hover:text-gray-600 px-2 py-1 rounded hover:bg-gray-100 cursor-pointer">
-              초기화
-            </button>
-            <button onClick={closeModal} className="p-1 rounded-lg hover:bg-gray-200 cursor-pointer">
-              <X size={16} className="text-gray-500" />
-            </button>
-          </div>
-        </div>
-
+      {/* modal-body 기본 p-5 상쇄 후 flex 컨테이너로 viewport 확보 */}
+      <div className="-m-5 flex flex-col" style={{ height: "calc(90vh - 52px)" }}>
         <div ref={viewportCbRef}
           className="relative flex-1 min-h-0 overflow-hidden select-none flex items-center justify-center"
           style={{ cursor: isDragging ? "grabbing" : zoom > 1 ? "grab" : "zoom-in" }}
@@ -87,6 +79,6 @@ export const ImageZoomModal: React.FC<ImageZoomModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };
