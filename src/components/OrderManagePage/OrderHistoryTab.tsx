@@ -53,8 +53,9 @@ export const OrderHistoryTab: React.FC = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [days, setDays] = useState(90);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  // 2026-08-23 · #180 · 검색 · 공급사·상품 부분일치 (한글 초성 지원 시 SearchBar 내장)
-  const [search, setSearch] = useState("");
+  // 2026-08-23 · #180 · A안 · 공급사·상품 별도 검색창 2개 · 클라 filter (AND)
+  const [supplierSearch, setSupplierSearch] = useState("");
+  const [productSearch, setProductSearch] = useState("");
 
   const load = React.useCallback(() => {
     setLoading(true);
@@ -87,16 +88,17 @@ export const OrderHistoryTab: React.FC = () => {
     });
 
   const fmtWon = (n: number) => n.toLocaleString() + "원";
-  // 2026-08-23 · #180 · 검색어 · 공급사명 or 상품명 부분일치 필터
+  // 2026-08-23 · #180 · A안 · 공급사·상품 별도 필터 (AND 조건 · 각 검색어 입력 시 교집합)
   const filteredOrders = React.useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return orders;
+    const qS = supplierSearch.trim().toLowerCase();
+    const qP = productSearch.trim().toLowerCase();
+    if (!qS && !qP) return orders;
     return orders.filter(o => {
-      const vendorMatch = String(displayVendorName(o.supplier ?? "")).toLowerCase().includes(q);
-      const productMatch = o.items.some(it => String(it.product_name ?? "").toLowerCase().includes(q));
-      return vendorMatch || productMatch;
+      const supplierMatch = !qS || String(displayVendorName(o.supplier ?? "")).toLowerCase().includes(qS);
+      const productMatch = !qP || o.items.some(it => String(it.product_name ?? "").toLowerCase().includes(qP));
+      return supplierMatch && productMatch;
     });
-  }, [orders, search]);
+  }, [orders, supplierSearch, productSearch]);
   const totalAmount = filteredOrders.reduce((s, o) => s + (o.total_amount ?? 0), 0);
   const totalItems = filteredOrders.reduce((s, o) => s + o.items.length, 0);
 
@@ -136,12 +138,19 @@ export const OrderHistoryTab: React.FC = () => {
         }
       />
 
-      {/* 2026-08-23 · #180 · 검색바 · 공급사명·상품명 부분일치 */}
-      <SearchBar
-        value={search}
-        onChange={setSearch}
-        placeholder="공급사·상품 검색"
-      />
+      {/* 2026-08-23 · #180 · A안 · 공급사·상품 별도 검색창 2개 · AND filter */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <SearchBar
+          value={supplierSearch}
+          onChange={setSupplierSearch}
+          placeholder="공급사 검색"
+        />
+        <SearchBar
+          value={productSearch}
+          onChange={setProductSearch}
+          placeholder="상품명 검색"
+        />
+      </div>
 
       {/* 마이그레이션 안내 · 폰트 +2 */}
       {notice && (
@@ -162,7 +171,7 @@ export const OrderHistoryTab: React.FC = () => {
           <div className="p-8 text-center text-rose-600 text-[15px] font-bold">⚠ {error}</div>
         ) : filteredOrders.length === 0 ? (
           <div className="p-12 text-center text-zinc-400 text-[15px]">
-            {search.trim() ? "검색 결과 없음 · 다른 검색어로 시도하세요" : "발주 이력 없음 · 발주 완료 시 여기에 표시"}
+            {(supplierSearch.trim() || productSearch.trim()) ? "검색 결과 없음 · 다른 검색어로 시도하세요" : "발주 이력 없음 · 발주 완료 시 여기에 표시"}
           </div>
         ) : (
           <div className="divide-y divide-zinc-100">
