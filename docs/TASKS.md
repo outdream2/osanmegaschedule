@@ -849,8 +849,14 @@
 
 ## 🟡 자율진행 가능 (위험 명시)
 
-- #90 · ContractWriterPage · JOB_CATEGORIES → wageRates 파생 · 위험 高
-- #91 · SchedulePage · position 문자열 매칭 → settings · 위험 高 · 대형
+- ⏸ #90 · ContractWriterPage · JOB_CATEGORIES → wageRates 파생 · **차단됨** (2026-08-23)
+  · ContractCategory 는 strict union `"약사" | "매장" | "창고" | "기타"` · 확장 시 type system 광범위 변경
+  · 저장 계약서 데이터 마이그레이션 필수 · 대형 리팩터 · 사용자 재결정 필요
+  · 현재도 useContractLoad.ts:219-221 · JOB_CATEGORIES ∪ wageRates keys merge 로 부분 해결 상태
+- ⏸ #91 · SchedulePage · position 문자열 매칭 → settings · **보류** (2026-08-23)
+  · 필터 탭 (약사·사원·창고·매장) 은 **개념 기반** (역할 그룹) · settings.positions (직군) 와 다른 개념
+  · 자동 파생 시 · 사용자 익숙한 4탭 UX 붕괴 위험
+  · 사용자 재결정 필요 · "탭 유지 vs 직군 순회로 대체 vs 하이브리드"
 - ✅ #94 · 공급사 재고확인 페이지 · A1 완료 (2026-08-16) · Phase 2 (백엔드 시계열 API) 유보
 - DayTimelineModal 분리 · 2704 lines · 중-高
 

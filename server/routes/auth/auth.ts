@@ -10,6 +10,8 @@ import { badRequest, unauthorized, forbidden, notFound, HttpError } from "../../
 // 2026-08-16 · shared 스키마 + 응답 DTO (서버·클라 공유 · 타입 duplicate 제거)
 import { LoginSchema, VendorLoginSchema, SetPasswordSchema, ChangePasswordSchema } from "../../../src/shared/schemas/auth";
 import type { LoginResponse, VendorLoginResponse, RefreshResponse, AuthOkResponse } from "../../../src/shared/dtos/auth";
+// 2026-08-23 · #178 · vendor 비밀번호 파생 함수 · 공용 lib 재사용 (중복 제거)
+import { verifyVendorPassword } from "../../../src/lib/vendorPassword";
 
 const router = Router();
 
@@ -58,8 +60,10 @@ router.post("/api/auth/vendor-login", validateBody(VendorLoginSchema), asyncHand
     .maybeSingle();
   if (error) throw new HttpError(500, error.message);
   if (!vendor) throw unauthorized("등록된 거래처를 찾을 수 없습니다");
-  const expected = cleanPhone + "00";
-  if (cleanPassword !== expected) throw unauthorized("핸드폰번호 또는 비밀번호가 올바르지 않습니다");
+  // 2026-08-23 · #178 · verifyVendorPassword · 공용 파생 함수 (env VENDOR_PW_SUFFIX 반영)
+  if (!verifyVendorPassword(cleanPhone, cleanPassword)) {
+    throw unauthorized("핸드폰번호 또는 비밀번호가 올바르지 않습니다");
+  }
   try {
     issueToken(res, { sub: vendor.id, name: vendor.company_name, role: "vendor", level: 0 }, false);
   } catch {
