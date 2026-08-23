@@ -2,8 +2,8 @@
 // 2026-08-22 · Framework Phase 4 · SalesTrendPage.tsx 에서 분리
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LineChart, Package, X, Info } from "lucide-react";
+import { Modal } from "../common/Modal";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
-import { AccentBar } from "../common/AccentBar";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
@@ -334,50 +334,38 @@ const ProductTrendTab: React.FC<{
       </div>
 
       {/* 정보확인 모달 */}
-      {scanProductModal && (
-        <div
-          className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-4"
-          onClick={() => setScanProductModal(null)}
-        >
-          <div
-            className="bg-white rounded-xl shadow-brand-modal w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-zinc-50/60">
-              <div className="flex items-center gap-3 min-w-0">
-                <AccentBar size="xl" className="shrink-0" />
-                <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shrink-0 shadow-sm">
-                  <Package size={18} className="text-white" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[17px] font-bold text-ink tracking-tight truncate">{scanProductModal.name}</div>
-                  <div className="text-[13px] tabular-nums text-ink-soft mt-0.5">#{scanProductModal.code}</div>
-                </div>
-              </div>
-              <button
-                onClick={() => setScanProductModal(null)}
-                className="w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint text-ink-soft hover:text-brand-deep transition-colors cursor-pointer flex items-center justify-center shrink-0"
-                aria-label="닫기"
-              >
-                <X size={16} />
-              </button>
+      <Modal
+        open={!!scanProductModal}
+        onClose={() => setScanProductModal(null)}
+        size="md"
+        titleAccent
+        icon={<div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm"><Package size={18} className="text-white" /></div>}
+        title={
+          scanProductModal ? (
+            <div className="min-w-0">
+              <div className="text-[17px] font-bold text-ink tracking-tight truncate">{scanProductModal.name}</div>
+              <div className="text-[13px] tabular-nums text-ink-soft mt-0.5">#{scanProductModal.code}</div>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 bg-zinc-50">
-              <ProductInfoCard
-                product={scanProductModal}
-                context="stock-manage"
-                editable
-                onRealMapUpdate={(newValue) => {
-                  setScanProductModal(prev => prev ? { ...prev, real_map: newValue } : prev);
-                }}
-                onProductUpdate={(updates) => {
-                  setScanProductModal(prev => prev ? { ...prev, ...updates } : prev);
-                }}
-              />
-            </div>
+          ) : null
+        }
+        backdropIntensity="brand"
+      >
+        {scanProductModal && (
+          <div className="-mx-5 -my-5 p-4 bg-zinc-50">
+            <ProductInfoCard
+              product={scanProductModal}
+              context="stock-manage"
+              editable
+              onRealMapUpdate={(newValue) => {
+                setScanProductModal(prev => prev ? { ...prev, real_map: newValue } : prev);
+              }}
+              onProductUpdate={(updates) => {
+                setScanProductModal(prev => prev ? { ...prev, ...updates } : prev);
+              }}
+            />
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 };
