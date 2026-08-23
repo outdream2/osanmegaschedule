@@ -361,6 +361,26 @@
 - 🔲 프론트 · apiClient · useToast · 프레임워크 원칙 준수
 - 🔲 중복 검사 · product_code unique
 
+**Phase C-1 · 식약처 OpenAPI 상품 자동 조회 (신규 · 2026-08-23)**
+- 📄 기능 · 상품 등록 폼에서 · **제품명 or 바코드 검색** → 식약처 OpenAPI 조회 → 상세 상품정보 **자동 채움**
+- 🔑 **API 키** · `f30e81d23cbe4bf4ace2` (환경변수 이동 필수 · `.env` · `MFDS_API_KEY` · 코드 하드코딩 절대 X · git 제외)
+- 🔲 등록 폼 상단 · **검색 필드 2가지**:
+  - 제품명 검색 (한글 fuzzy) · SearchBar 프리미티브
+  - 바코드 검색 (정확 일치)
+- 🔲 검색 결과 · 리스트 표시 · 선택 시 · **필드 자동 채움** (제품명·회사명·성분·규격·유효기간 등 · API 스펙에 따름)
+- 🔲 사용자 수동 편집 가능 · 자동 채움 후에도 수정 가능
+- 🔲 서버 프록시 라우터 · GET `/api/mfds/search?query=...&type=name|barcode`
+  - 이유 · API 키 서버 보호 · CORS 회피 · 캐시 가능
+  - asyncHandler + HttpError + Zod 준수
+- 🔲 검색 실패·매칭 없음 · EmptyState + 수동 입력 fallback
+- 🔲 캐시 · 동일 검색 결과 · 서버 in-memory 또는 KV 캐시 (선택)
+- ⚠️ **작업 시작 시 사용자에게 API 상세 스펙 (엔드포인트 URL · 파라미터 · 응답 형식) 요청 필요**
+  - 식약처 여러 OpenAPI 존재 (의약품·화장품·의료기기·건강기능식품 등)
+  - 어느 API 사용할지 · 응답 필드 매핑 확정 필요
+- 💡 필드 매핑 (API 응답 → products 컬럼):
+  - 예시 · `제품명` → product_name · `업체명` → supplier · `바코드` → barcode · `제형/규격` → spec · `보관방법` → note 등 (실제 API 스펙 확인 후 확정)
+- 💡 스캐너 연동 (#179) · 스캔 바코드 자동 검색·자동 채움 통합 가능
+
 **Phase D · 상품 수정 기능 (인라인 편집)**
 - 🔲 우측 상세 (PC) / 모달 (Mobile) · **편집 모드 토글** (조회 → 편집 → 저장/취소 UX · StaffManagePage 벤치마크)
 - 🔲 편집 가능 필드 · product_name · supplier · category · unit · barcode · spec · price · optimal_stock · real_map 등 (product_code 는 read-only)
