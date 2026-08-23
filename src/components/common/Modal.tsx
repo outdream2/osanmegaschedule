@@ -12,6 +12,10 @@
 //   - bodyPadding · none 옵션 (내부 wrapper 이미 padding 있을 때)
 //   - size "lg-narrow" · max-w-lg 추가 (기존 md=max-w-2xl · lg=max-w-4xl 사이 공백 채움)
 //   - backdropIntensity "dark" · bg-zinc-950/95 (PDF 뷰어 등)
+// 2026-08-23 · v3.1 · size "3xl" · max-w-3xl (768px) 추가
+// 2026-08-23 · v3.2 · align "bottom-mobile" · 반응형 하이브리드 (mobile=bottom-sheet · desktop=center)
+//   - `items-end sm:items-center` backdrop · `rounded-t-2xl sm:rounded-2xl` card
+//   - iOS/Material 반응형 표준 · 3파일 대응 (NewVendorModal · ReservationPage · HistoryModal)
 //
 // 사용 예 (기본):
 //   <Modal open={open} onClose={() => setOpen(false)} title="상세" size="md">
@@ -82,6 +86,12 @@ export interface ModalProps {
   zIndex?: number;
   /** body padding · default=p-5 · none=p-0 (내부 wrapper 이미 padding 있을 때) */
   bodyPadding?: "default" | "none";
+  /**
+   * 정렬 · 기본 center · "bottom-mobile" 은 모바일에서 bottom-sheet · 데스크탑에서 center
+   *   - center: 항상 중앙 (기본)
+   *   - bottom-mobile: mobile items-end + rounded-t-2xl · sm+ items-center + rounded-2xl
+   */
+  align?: "center" | "bottom-mobile";
 }
 
 /**
@@ -110,6 +120,7 @@ export const Modal: React.FC<ModalProps> = ({
   // v3 · 확장
   zIndex,
   bodyPadding = "default",
+  align = "center",
 }) => {
   // ESC 키 핸들링
   useEffect(() => {
@@ -132,11 +143,19 @@ export const Modal: React.FC<ModalProps> = ({
 
   // 2026-08-18 v2 · backdrop 강도 · brand-strong 은 이미지 뷰어 등
   // 2026-08-23 v3 · dark 는 PDF 뷰어 (bg-zinc-950/95 · backdrop-blur-sm)
+  // 2026-08-23 v3.2 · align "bottom-mobile" · items-end sm:items-center + p-0 sm:p-4
+  const alignCls = align === "bottom-mobile"
+    ? "items-end sm:items-center p-0 sm:p-4"
+    : "items-center p-4";
   const backdropCls = backdropIntensity === "dark"
-    ? "fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/95 backdrop-blur-sm"
+    ? `fixed inset-0 z-50 flex ${alignCls} justify-center bg-zinc-950/95 backdrop-blur-sm`
     : backdropIntensity === "brand-strong"
-      ? "fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-brand-strong"
-      : "modal-backdrop";
+      ? `fixed inset-0 z-50 flex ${alignCls} justify-center backdrop-brand-strong`
+      : align === "bottom-mobile"
+        ? `fixed inset-0 z-50 flex ${alignCls} justify-center backdrop-brand`
+        : "modal-backdrop";
+  // 2026-08-23 v3.2 · align="bottom-mobile" 시 card 는 rounded-t-2xl (mobile) sm+ rounded-2xl (원본 유지)
+  const cardRoundedCls = align === "bottom-mobile" ? "rounded-t-2xl sm:rounded-2xl" : "";
   // 2026-08-18 v2 · 헤더 tint 옵션 · 인라인 모달들의 zinc-50/60 스타일과 일관
   const headerCls = headerTint
     ? "modal-header bg-zinc-50/60"
@@ -156,7 +175,7 @@ export const Modal: React.FC<ModalProps> = ({
       aria-modal="true"
       aria-labelledby={title != null ? "modal-title" : undefined}
     >
-      <div className={`modal-card ${sizeCls} ${className}`}>
+      <div className={`modal-card ${sizeCls} ${cardRoundedCls} ${className}`}>
         {hasHeader && (
           <div className={headerCls}>
             {titleAccent && <AccentBar size="lg" className="shrink-0" />}
