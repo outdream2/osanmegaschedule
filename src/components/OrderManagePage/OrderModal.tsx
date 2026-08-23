@@ -1,8 +1,9 @@
 // src/components/OrderManagePage/OrderModal.tsx
 // 2026-08-22 · Framework Phase 4 · 발주서 모달 분리
+// 2026-08-23 · Modal primitive 마이그레이션 (#191)
 import React from "react";
-import { Loader2, ShoppingCart, MessageSquare, Mail, Send, X } from "lucide-react";
-import { AccentBar } from "../common/AccentBar";
+import { Loader2, ShoppingCart, MessageSquare, Mail } from "lucide-react";
+import { Modal } from "../common/Modal";
 import { Card } from "../common/Card";
 
 export interface OrderModalItem {
@@ -69,37 +70,43 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   onDateChange,
   onChannelChange,
 }) => (
-  <div
-    className="fixed inset-0 z-50 backdrop-brand flex items-start justify-center p-4 overflow-y-auto"
-    onClick={() => !sendingBulk && onClose()}
-  >
-    <div
-      className="bg-white rounded-2xl shadow-brand-modal w-full max-w-4xl my-8 flex flex-col overflow-hidden"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {/* 헤더 */}
-      <div className="px-5 py-4 border-b border-line bg-zinc-50/60 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <AccentBar size="xl" className="shrink-0" />
-          <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
-            <ShoppingCart size={18} className="text-white" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-[17px] font-bold text-ink tracking-tight flex items-center gap-1.5 flex-wrap">
-              발주서 {orderModal.suppliers.length > 1 && <span className="text-[13px] font-semibold text-ink-soft">· 공급사별 {orderModal.suppliers.length}건 개별 발주</span>}
-            </div>
-            <div className="text-[13px] font-mono text-ink-soft mt-0.5 truncate">{orderModal.suppliers.length > 1 ? "일괄 발송 · 각 공급사별 고유 번호" : `#${orderModal.suppliers[0]?.order_number ?? orderModal.orderNumber}`}</div>
-          </div>
-        </div>
-        <button
-          onClick={() => !sendingBulk && onClose()}
-          disabled={sendingBulk}
-          className="w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint flex items-center justify-center text-ink-soft hover:text-brand-deep cursor-pointer disabled:opacity-40 shrink-0 transition-colors"
-        >
-          <X size={16} />
-        </button>
+  <Modal
+    open
+    onClose={() => !sendingBulk && onClose()}
+    size="lg"
+    closeOnBackdrop={!sendingBulk}
+    closeOnEsc={!sendingBulk}
+    showClose={false}
+    titleAccent
+    icon={
+      <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
+        <ShoppingCart size={18} className="text-white" />
       </div>
-
+    }
+    title={
+      <div className="min-w-0">
+        <div className="text-[17px] font-bold text-ink tracking-tight flex items-center gap-1.5 flex-wrap">
+          발주서 {orderModal.suppliers.length > 1 && <span className="text-[13px] font-semibold text-ink-soft">· 공급사별 {orderModal.suppliers.length}건 개별 발주</span>}
+        </div>
+        <div className="text-[13px] font-mono text-ink-soft mt-0.5 truncate">
+          {orderModal.suppliers.length > 1 ? "일괄 발송 · 각 공급사별 고유 번호" : `#${orderModal.suppliers[0]?.order_number ?? orderModal.orderNumber}`}
+        </div>
+      </div>
+    }
+    headerRight={
+      <button
+        onClick={() => !sendingBulk && onClose()}
+        disabled={sendingBulk}
+        className="w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint flex items-center justify-center text-ink-soft hover:text-brand-deep cursor-pointer disabled:opacity-40 shrink-0 transition-colors"
+        aria-label="닫기"
+        title="닫기 (ESC)"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    }
+    className="overflow-y-auto"
+  >
+    <div className="flex flex-col overflow-hidden">
       {/* 발주 기본 정보 */}
       <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[15px]">
         <div>
@@ -263,5 +270,5 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         </div>
       </div>
     </div>
-  </div>
+  </Modal>
 );

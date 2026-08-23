@@ -2,14 +2,14 @@
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · ReturnListPanel 에서 이관
 // 프레임워크: Card · StatusPill · Spinner · AccentBar · VendorCategoryBadge · apiClient
 import React, { useMemo, useState } from "react";
-import { Truck, MessageSquare, Mail, Trash2, X } from "lucide-react";
+import { Truck, MessageSquare, Mail, Trash2 } from "lucide-react";
 import { api, ApiError } from "../../lib/apiClient";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { Card } from "../common/Card";
+import { Modal } from "../common/Modal";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
-import { AccentBar } from "../common/AccentBar";
 import type { ReturnReasonKey, ReturnLineItem } from "./ReturnListPanel.types";
 import { buildReturnNumber, todayStr } from "./ReturnListPanel.types";
 
@@ -148,40 +148,42 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
   };
 
   return (
-    // 2026-08-17 v2 · Modal 통일
-    <div
-      className="fixed inset-0 z-50 backdrop-brand flex items-start justify-center p-4 overflow-y-auto"
-      onClick={() => !sending && onClose()}
-    >
-      <div
-        className="bg-white rounded-2xl shadow-brand-modal w-full max-w-4xl my-8 flex flex-col overflow-hidden"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* ── 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 (rose 는 반품 의미로 pill 만 유지) ── */}
-        <div className="px-5 py-4 border-b border-line bg-zinc-50/60 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <AccentBar size="xl" className="shrink-0" />
-            <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
-              <Truck size={18} className="text-white" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[17px] font-bold text-ink tracking-tight flex items-center gap-2 flex-wrap">
-                반품 요청서
-                <StatusPill tone="rose" size="sm" dot>반품 예정 · {lines.length}건</StatusPill>
-              </div>
-              <div className="text-[13px] font-mono text-ink-soft mt-0.5 truncate">#{returnNumber}</div>
-            </div>
-          </div>
-          <button
-            onClick={() => !sending && onClose()}
-            disabled={sending}
-            className="w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint text-ink-soft hover:text-brand-deep transition-colors cursor-pointer flex items-center justify-center disabled:opacity-40 shrink-0"
-            title="닫기"
-          >
-            <X size={16} />
-          </button>
+    // 2026-08-23 · Modal primitive 마이그레이션 (#191)
+    <Modal
+      open
+      onClose={() => !sending && onClose()}
+      size="lg"
+      closeOnBackdrop={!sending}
+      closeOnEsc={!sending}
+      showClose={false}
+      titleAccent
+      icon={
+        <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
+          <Truck size={18} className="text-white" />
         </div>
-
+      }
+      title={
+        <div className="min-w-0">
+          <div className="text-[17px] font-bold text-ink tracking-tight flex items-center gap-2 flex-wrap">
+            반품 요청서
+            <StatusPill tone="rose" size="sm" dot>반품 예정 · {lines.length}건</StatusPill>
+          </div>
+          <div className="text-[13px] font-mono text-ink-soft mt-0.5 truncate">#{returnNumber}</div>
+        </div>
+      }
+      headerRight={
+        <button
+          onClick={() => !sending && onClose()}
+          disabled={sending}
+          className="w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint text-ink-soft hover:text-brand-deep transition-colors cursor-pointer flex items-center justify-center disabled:opacity-40 shrink-0"
+          aria-label="닫기"
+          title="닫기 (ESC)"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      }
+    >
+      <div className="flex flex-col overflow-hidden">
         {/* ── 반품 기본 정보 (grid 4-col) ── */}
         <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[15px]">
           <div>
@@ -385,6 +387,6 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };

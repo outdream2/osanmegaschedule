@@ -39,6 +39,7 @@ import { PaymentInfoTab } from "./PaymentInfoTab";
 import { VatPreparePage } from "../VatPreparePage/VatPreparePage";
 import { CategoryTab } from "./CategoryTab";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
+import { Modal } from "../common/Modal";
 import { InventoryEditModal } from "../common/features/InventoryEditModal";
 import type { InventoryEditModalInitialValues } from "../common/features/InventoryEditModal";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
@@ -712,13 +713,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       )}
 
       {/* 공급사 정보 모달 */}
-      {supplierInfoModal && (
-        <div className="fixed inset-0 z-[100] backdrop-brand flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierInfoModal(null)}>
-          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-2xl shadow-brand-modal" onClick={e => e.stopPropagation()}>
-            <VendorDetailModal vendor={supplierInfoModal} onClose={() => setSupplierInfoModal(null)} onSaved={() => setSupplierInfoModal(null)} />
-          </div>
-        </div>
-      )}
+      <Modal
+        open={!!supplierInfoModal}
+        onClose={() => setSupplierInfoModal(null)}
+        size="xl"
+        showClose={false}
+        closeOnEsc={false}
+        className="h-[95vh] md:min-h-[85vh] md:max-h-[92vh]"
+      >
+        {supplierInfoModal && (
+          <VendorDetailModal vendor={supplierInfoModal} onClose={() => setSupplierInfoModal(null)} onSaved={() => setSupplierInfoModal(null)} panel />
+        )}
+      </Modal>
 
       {inventoryEditModal && (
         <InventoryEditModal open={true} productCode={inventoryEditModal.code} productName={inventoryEditModal.name}
