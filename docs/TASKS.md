@@ -67,15 +67,12 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
-### #252 · 세션 만료 시간 · 설정에서 변경 가능하도록 (신규 · 2026-08-23 · 사용자 지시)
-- 📄 대상 · `src/hooks/useAuth.ts` · 현재 하드코딩 `IDLE_TIMEOUT_MS = 30 * 60 * 1000` (30분)
-- 🔲 서버 KV 신설 · `session_idle_timeout_minutes` · 기본 30 · 범위 5~480 (5분~8시간)
-- 🔲 신규 훅 · `useSessionTimeoutSetting` · useKvSetting 기반 · sanitize (숫자 · 범위 검증)
-- 🔲 useAuth 리팩터 · `IDLE_TIMEOUT_MS` 를 훅에서 동적 조회 (또는 App level에서 세션에 attach)
-- 🔲 편집 UI · SettingsPage (시스템 설정) 또는 PermissionsPage · 관리자 lv9 전용
-- 🔲 SessionTimeoutWarning · 5분 전 경고 문구 · 새 timeout 반영
-- 🔲 검증 · 만료 후 즉시 로그아웃 flow 유지 (#251 · visibilitychange)
-- 💡 관련 · #186 (30분 자동 로그아웃 완료) 와 통일 · 이전에는 하드코딩
+### #252 · 세션 만료 시간 · 설정에서 변경 가능하도록 (✅ 완료 · 2026-08-23)
+- ✅ 서버 KV `session_idle_timeout_minutes` · 기본 30 · 범위 5~480
+- ✅ 신규 훅 · `useSessionTimeoutSetting` + `useSessionTimeoutSettingEditor` (8 tests)
+- ✅ useAuth · `getEffectiveIdleTimeoutMs()` · localStorage 캐시 매 tick 조회
+- ✅ 편집 UI · `SessionTimeoutSection` · PermissionsPage 앱 설정 탭
+- ✅ 만료 후 즉시 로그아웃 · #251 flow 유지
 
 ### #251 · 세션 만료 후 탭 focus 복귀 시 · 즉시 로그아웃 (✅ 완료 · 2026-08-23 · `862d9d58`)
 - ✅ visibilitychange + focus 이벤트 리스너 · 즉시 tick 실행
