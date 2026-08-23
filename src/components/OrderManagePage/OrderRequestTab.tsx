@@ -1,7 +1,9 @@
 // src/components/OrderManagePage/OrderRequestTab.tsx
 // 2026-08-22 · Framework Phase 4 · 발주요청 탭 분리
 import React from "react";
-import { Loader2, ShoppingCart, CheckSquare, Square, Send, ChevronRight, ChevronDown } from "lucide-react";
+import { Loader2, ShoppingCart, CheckSquare, Square, Send, ChevronRight, ChevronDown, History } from "lucide-react";
+// 2026-08-23 · #182 · 공급사별 발주이력 모달
+import { OrderHistorySupplierModal } from "./OrderHistorySupplierModal";
 import { Card } from "../common/Card";
 import { PageToolbar } from "../common/PageToolbar";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
@@ -87,7 +89,10 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
   toggleOne, toggleAll, allChecked,
   handleBulkOrder, onDeleteSelected, openOrderModal, loadOrderReqs,
   setOrderQtyOverride,
-}) => (
+}) => {
+  // 2026-08-23 · #182 · 공급사별 발주이력 모달
+  const [supplierHistorySupplier, setSupplierHistorySupplier] = React.useState<string | null>(null);
+  return (
   <div className="flex flex-col gap-2">
     <PageToolbar
       icon={<ShoppingCart size={18} strokeWidth={2.2} />}
@@ -287,8 +292,24 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                 <td colSpan={99} className="px-3 py-0.5">
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <VendorCategoryBadge category={getVendorCategory(currentSup)} />
-                                    <span className="text-[15px] font-semibold text-sky-900">{displayVendorName(currentSup) || currentSup}</span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); setSupplierHistorySupplier(currentSup); }}
+                                      className="text-[15px] font-semibold text-sky-900 hover:text-brand-deep hover:underline cursor-pointer transition-colors"
+                                      title="공급사 클릭 · 최신 발주이력 보기"
+                                    >
+                                      {displayVendorName(currentSup) || currentSup}
+                                    </button>
                                     <span className="text-[15px] font-medium text-sky-500 tabular-nums">{groupRows.length}건</span>
+                                    {/* 2026-08-23 · #182 · 공급사 발주이력 버튼 */}
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); setSupplierHistorySupplier(currentSup); }}
+                                      className="inline-flex items-center gap-0.5 h-5 px-1.5 rounded text-[13px] font-semibold text-brand-deep bg-brand-tint border border-brand/15 hover:brightness-95 transition cursor-pointer"
+                                      title={`${currentSup} · 최신 발주이력 보기`}
+                                    >
+                                      <History size={10}/>발주이력
+                                    </button>
                                     {(() => {
                                       const selectedInGroup = groupRows.filter(r => selectedOrder.has(r.id));
                                       const targetRows = selectedInGroup.length > 0 ? selectedInGroup : groupRows;
@@ -424,5 +445,14 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
         />
       )}
     </div>
+
+    {/* 2026-08-23 · #182 · 공급사 발주이력 모달 */}
+    {supplierHistorySupplier && (
+      <OrderHistorySupplierModal
+        supplier={supplierHistorySupplier}
+        onClose={() => setSupplierHistorySupplier(null)}
+      />
+    )}
   </div>
 );
+};
