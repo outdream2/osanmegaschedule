@@ -379,7 +379,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
     );
   }, [rows, search]);
 
-  // 상세 fetch (선택 시)
+  // 상세 fetch (선택 시 · reloadKey 변경 시에도 refetch · 편집 저장 후 stale 방지)
   useEffect(() => {
     if (!selectedCode) { setDetail(null); return; }
     let alive = true;
@@ -394,7 +394,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
       })
       .finally(() => alive && setDetailLoading(false));
     return () => { alive = false; };
-  }, [selectedCode]);
+  }, [selectedCode, reloadKey]);
 
   const handleSelect = (code: string) => {
     setSelectedCode(code);
