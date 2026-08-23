@@ -224,7 +224,7 @@ export const ProductCreateModal: React.FC<Props> = ({
               <h3 className="text-[13px] font-bold text-ink mb-2 tracking-tight">가격·재고</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <Field label="적정 재고">
-                  <input type="number" min={0} value={form.optimal_stock} onChange={(e) => set("optimal_stock", e.target.value)} className={inputCls + " tabular-nums"} placeholder="0" />
+                  <input type="number" min={0} step={1} value={form.optimal_stock} onChange={(e) => set("optimal_stock", e.target.value)} className={inputCls + " tabular-nums"} placeholder="0" />
                 </Field>
                 <Field label="판매가">
                   <input type="number" min={0} value={form.sale_price} onChange={(e) => set("sale_price", e.target.value)} className={inputCls + " tabular-nums"} placeholder="0" />
