@@ -6,6 +6,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { Lock, X, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { User, CalendarCheck } from "@phosphor-icons/react";
+import { Spinner } from "../common/Spinner";
 import logo2Img from "../../images/logo2.png";
 import type { AuthSession, AuthRole } from "../../types";
 import { Button } from "../common/Button";
@@ -259,7 +260,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
               type="submit" disabled={vendorLoading}
               className="w-full py-3.5 rounded-2xl text-white font-bold text-sm mt-1 transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
             >
-              {vendorLoading ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /><span>로그인 중...</span></> : <span>거래처로 입장하기</span>}
+              {vendorLoading ? <><Spinner size={16} tone="white" /><span>로그인 중...</span></> : <span>거래처로 입장하기</span>}
             </button>
             <p className="text-[11px] text-zinc-400 text-center leading-relaxed">비밀번호 분실 시 관리자에게 문의하세요</p>
           </form>

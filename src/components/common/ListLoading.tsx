@@ -4,7 +4,7 @@
 //   props · size · label · fullHeight (컨테이너 전체 채움 여부)
 
 import React from "react";
-import { Loader2 } from "lucide-react";
+import { Spinner, type SpinnerTone } from "./Spinner";
 
 export interface ListLoadingProps {
   /** 커스텀 라벨 · 기본 "불러오는 중..." */
@@ -27,6 +27,15 @@ const TONE_MAP: Record<NonNullable<ListLoadingProps["tone"]>, string> = {
   rose:    "text-rose-500",
 };
 
+// ListLoading tone → Spinner tone 매핑
+const SPINNER_TONE_MAP: Record<NonNullable<ListLoadingProps["tone"]>, SpinnerTone> = {
+  slate:   "zinc",
+  emerald: "brand",
+  sky:     "brand",
+  indigo:  "brand",
+  rose:    "rose",
+};
+
 /**
  * 공통 리스트 로딩 인디케이터
  * 사용 예:
@@ -42,6 +51,7 @@ export const ListLoading: React.FC<ListLoadingProps> = ({
   className = "",
 }) => {
   const toneCls = TONE_MAP[tone];
+  const spinnerTone = SPINNER_TONE_MAP[tone];
   return (
     // 2026-08-17 v2 · 폰트 +2 (12→14) · tracking-tight · 세련
     <div
@@ -51,7 +61,7 @@ export const ListLoading: React.FC<ListLoadingProps> = ({
       role="status"
       aria-live="polite"
     >
-      <Loader2 size={size} className="animate-spin" />
+      <Spinner size={size} tone={spinnerTone} />
       <span>{label}</span>
     </div>
   );

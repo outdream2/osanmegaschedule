@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { api } from "../../lib/apiClient";
 import { TIMING } from "../../constants/timing";
 import { Package, Search, X } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
@@ -207,13 +208,13 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
         {/* Loading · 배너+dim 패턴 */}
         {loading && sortedResults && sortedResults.length > 0 && (
           <div className="flex items-center justify-center gap-1.5 text-[14px] text-indigo-600 font-bold py-1.5 mb-1 bg-indigo-50 border border-indigo-200 rounded-md sticky top-0 z-10">
-            <div className="w-2.5 h-2.5 rounded-full border-2 border-indigo-200 border-t-indigo-500 animate-spin shrink-0" />
+            <Spinner size={12} tone="brand" />
             검색 중...
           </div>
         )}
         {loading && (!sortedResults || sortedResults.length === 0) && (
           <div className="flex items-center gap-2 py-4 px-1 text-zinc-400 text-xs font-medium">
-            <div className="w-3.5 h-3.5 rounded-full border-2 border-line border-t-indigo-500 animate-spin shrink-0" />
+            <Spinner size={14} tone="brand" />
             검색 중...
           </div>
         )}

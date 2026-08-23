@@ -11,7 +11,7 @@
 //   {loading && <LoadingState skeleton rows={5} />}
 
 import React from "react";
-import { Loader2 } from "lucide-react";
+import { Spinner, type SpinnerTone } from "./Spinner";
 
 export interface LoadingStateProps {
   /** 로딩 라벨 · 기본 "로딩 중..." */
@@ -34,6 +34,14 @@ const TONE_CLS: Record<NonNullable<LoadingStateProps["tone"]>, string> = {
   indigo:  "text-brand-deep",
   emerald: "text-brand-deep",
   sky:     "text-brand-deep",
+};
+
+// LoadingState tone → Spinner tone 매핑
+const SPINNER_TONE: Record<NonNullable<LoadingStateProps["tone"]>, SpinnerTone> = {
+  slate:   "zinc",
+  indigo:  "brand",
+  emerald: "brand",
+  sky:     "brand",
 };
 
 const SIZE_PAD: Record<NonNullable<LoadingStateProps["size"]>, string> = {
@@ -69,6 +77,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
 }) => {
   const toneCls = TONE_CLS[tone];
   const padCls = SIZE_PAD[size];
+  const spinnerTone = SPINNER_TONE[tone];
 
   if (skeleton) {
     return (
@@ -102,11 +111,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
       role="status"
       aria-live="polite"
     >
-      <Loader2
-        size={22}
-        className={`${toneCls} animate-spin`}
-        strokeWidth={2}
-      />
+      <Spinner size={22} tone={spinnerTone} />
       {/* 2026-08-17 v2 · 폰트 +2 (12→14) · 세련 */}
       <span className={`text-[14px] font-semibold ${toneCls} tracking-tight`}>
         {label}

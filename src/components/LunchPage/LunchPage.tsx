@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { UtensilsCrossed, Clock, RefreshCw, Users, ChevronLeft, ChevronRight, Stethoscope, UserRound, Coffee } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { AccentBar } from "../common/AccentBar";
 import { Card } from "../common/Card";
@@ -491,7 +492,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
           </div>
         ) : loading && myRequest === undefined ? (
           <Card padding="none" className="p-10 flex items-center justify-center">
-            <div className="w-6 h-6 border-2 border-brand-deep border-t-transparent rounded-full animate-spin" />
+            <Spinner size={24} tone="brand" />
           </Card>
         ) : isToday && myRequest && !myRequest.eating ? (
           <Card padding="lg" className="flex flex-col gap-3">

@@ -10,6 +10,7 @@ import { StatusPill } from "./common/StatusPill";
 import { AccentBar } from "./common/AccentBar";
 // 2026-08-21 · Framework Phase 3 · Card 프리미티브
 import { Card } from "./common/Card";
+import { Spinner } from "./common/Spinner";
 
 interface Notification {
   id: number;
@@ -232,7 +233,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
           <div className="max-h-80 overflow-y-auto divide-y divide-zinc-50">
             {loading && notifications.length === 0 ? (
               <div className="flex items-center justify-center py-10 text-zinc-400 text-xs gap-2">
-                <div className="w-3 h-3 border-2 border-zinc-300 border-t-indigo-400 rounded-full animate-spin" />
+                <Spinner size={12} tone="zinc" />
                 불러오는 중...
               </div>
             ) : notifications.length === 0 ? (
