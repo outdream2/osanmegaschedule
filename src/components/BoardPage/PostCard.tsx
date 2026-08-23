@@ -4,6 +4,7 @@
 import React from "react";
 import { Pin, MessageCircle, Pencil, Image as ImageIcon } from "lucide-react";
 import { StatusPill } from "../common/StatusPill";
+import { Badge } from "../common/Badge";
 import { fmtDateShort } from "../../lib/format";
 import type { BoardPost } from "./types";
 import { TYPE_META, STATUS_META } from "./constants";
@@ -34,7 +35,7 @@ export const PostCard: React.FC<{ post: BoardPost; onOpen: () => void; showEdit?
         {post.pinned && <Pin size={10} className="text-orange-500 shrink-0" />}
         {/* 카테고리 */}
         {post.category && (
-          <span className="shrink-0 text-[15px] font-semibold text-zinc-500 bg-zinc-100 rounded-md px-1.5 py-0.5">{post.category}</span>
+          <Badge tone="zinc" size="xs" className="shrink-0">{post.category}</Badge>
         )}
         {/* 제목 · 최대 두 줄 */}
         <span className="flex-1 min-w-0 text-[15px] font-bold text-zinc-900 line-clamp-2 break-keep leading-snug">

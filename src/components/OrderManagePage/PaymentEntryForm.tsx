@@ -7,7 +7,8 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { Plus, Check, X, CalendarDays, Calendar } from "lucide-react";
 import { Spinner } from "../common/Spinner";
-import { api, ApiError } from "../../lib/apiClient";
+import { api } from "../../lib/apiClient";
+import { useApiCall } from "../../hooks/useApiCall";
 import type {
   PaymentRow, VendorItem, BalanceResp, PayMethod,
 } from "./PaymentInfoTab.types";
@@ -39,8 +40,16 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
   const [taxInvoiceIssued, setTaxInvoiceIssued] = useState<boolean>(false);
   const [taxInvoiceNo, setTaxInvoiceNo] = useState<string>("");
   const [note, setNote] = useState<string>("");
-  const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const { call: saveCall, loading: saving } = useApiCall({
+    successMsg: "결제 등록 완료",
+    errorPrefix: "저장 실패",
+    onSuccess: () => setMsg({ type: "ok", text: "결제 등록 완료" }),
+    onError: (e: unknown) => {
+      const raw = (e as any)?.message ?? String(e);
+      setMsg({ type: "err", text: `저장 실패: ${raw}` });
+    },
+  });
 
   const paymentDateRef = useRef<HTMLInputElement | null>(null);
   const openDatePicker = useCallback(() => {
@@ -98,16 +107,15 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
     };
     const finalMemo = encodeMemo(meta, note);
 
-    setSaving(true);
-    try {
-      await api.post("/api/supplier-payments", {
-        supplier_name: selectedVendor.company_name,
-        payment_date: paymentDate,
-        amount: amountNum,
-        method,
-        memo: finalMemo || null,
-      });
-      setMsg({ type: "ok", text: "결제 등록 완료" });
+    setMsg(null);
+    const result = await saveCall(() => api.post("/api/supplier-payments", {
+      supplier_name: selectedVendor.company_name,
+      payment_date: paymentDate,
+      amount: amountNum,
+      method,
+      memo: finalMemo || null,
+    }));
+    if (result) {
       // 리셋 (일부만 · vendor 유지 · 이력 반영 후 재입력 가능)
       setAmount("");
       setReferenceNo("");
@@ -119,10 +127,6 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
       window.dispatchEvent(new CustomEvent("supplier-payment-added", {
         detail: { supplier: selectedVendor.company_name },
       }));
-    } catch (e: any) {
-      setMsg({ type: "err", text: `저장 실패: ${e instanceof ApiError ? e.message : (e?.message ?? String(e))}` });
-    } finally {
-      setSaving(false);
     }
   };
 

@@ -1,6 +1,7 @@
 // src/components/DisplayPage/ZoneAssignPopover.tsx
 import React, { useEffect, useRef, useState } from "react";
 import { X, Users, Package } from "lucide-react";
+import { Badge } from "../common/Badge";
 import type { ZoneSection } from "../../constants/displayZones";
 
 // ─── Types (shared with DisplayPage) ──────────────────────────────────────────
@@ -93,9 +94,9 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
       <div className="flex items-start justify-between border-b border-zinc-100 pb-2">
         <div className="min-w-0">
           <div className="text-xs font-bold text-zinc-800 flex items-center gap-1.5">
-            <span className={`px-1.5 py-0.5 rounded-md border text-[10px] ${statusCell(zone.status)}`}>
+            <Badge size="xs" className={statusCell(zone.status)}>
               {zone.num}번
-            </span>
+            </Badge>
             <span className="truncate">{zone.label}</span>
           </div>
           <p className="text-[10px] text-zinc-400 truncate mt-0.5">{zone.category}</p>

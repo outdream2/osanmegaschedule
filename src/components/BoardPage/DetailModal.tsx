@@ -8,6 +8,7 @@ import {
 import { api } from "../../lib/apiClient";
 import { Spinner } from "../common/Spinner";
 import { Modal } from "../common/Modal";
+import { Badge } from "../common/Badge";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { uploadImagesToCloudinary, type UploadedImage } from "../../lib/cloudinaryUpload";
@@ -270,14 +271,19 @@ export function DetailModal({
                   const Icon = meta.icon;
                   return (
                     <>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[14px] font-bold ${meta.bg} ${meta.text} ${meta.border} border`}>
-                        <Icon size={10} /> {meta.label}
-                      </span>
+                      <Badge
+                        shape="pill"
+                        size="xs"
+                        className={`${meta.bg} ${meta.text} ${meta.border}`}
+                        icon={<Icon size={10} />}
+                      >
+                        {meta.label}
+                      </Badge>
                       <span className={`inline-flex items-center gap-1 text-[14px] font-bold ${status.text}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} /> {status.label}
                       </span>
                       {post.category && (
-                        <span className="text-[14px] font-bold text-zinc-500 bg-zinc-100 rounded-full px-1.5 py-0.5">{post.category}</span>
+                        <Badge tone="zinc" shape="pill" size="xs">{post.category}</Badge>
                       )}
                     </>
                   );

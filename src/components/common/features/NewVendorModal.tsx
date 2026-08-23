@@ -14,7 +14,7 @@ import { X, Building2, Save } from "lucide-react";
 import { Spinner } from "../Spinner";
 import { IconTile } from "../IconTile";
 import { Modal } from "../Modal";
-import { useToast, toastClass } from "../../../hooks/useToast";
+import { useApiCall } from "../../../hooks/useApiCall";
 
 interface NewVendorModalProps {
   onClose: () => void;
@@ -24,7 +24,10 @@ interface NewVendorModalProps {
 const CATEGORIES = ["위탁", "선결제", "60회전", "90회전", "기타"] as const;
 
 export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
-  const { toast, showSuccess, showError } = useToast();
+  const { call: saveCall, loading: saving, error: err, reset: resetErr } = useApiCall<unknown>({
+    successMsg: "공급사가 등록되었습니다",
+    errorPrefix: "저장 실패",
+  });
   const [companyName, setCompanyName] = useState("");
   const [category, setCategory] = useState<string>("");
   const [contactName, setContactName] = useState("");
@@ -32,35 +35,25 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
   const [email, setEmail] = useState("");
   const [businessNumber, setBusinessNumber] = useState("");
   const [note, setNote] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
 
   const disabled = saving || !companyName.trim();
 
   const handleSave = async () => {
-    setErr(null);
-    if (!companyName.trim()) { setErr("회사명은 필수입니다"); return; }
-    setSaving(true);
-    try {
-      const { data: saved } = await api.post<unknown>("/api/vendors", {
-        company_name: companyName.trim(),
-        category: category || null,
-        contact_name: contactName.trim() || null,
-        phone: phone.trim() || null,
-        email: email.trim() || null,
-        business_number: businessNumber.trim() || null,
-        note: note.trim() || null,
-      });
+    resetErr();
+    if (!companyName.trim()) return;
+    const saved = await saveCall(() => api.post<unknown>("/api/vendors", {
+      company_name: companyName.trim(),
+      category: category || null,
+      contact_name: contactName.trim() || null,
+      phone: phone.trim() || null,
+      email: email.trim() || null,
+      business_number: businessNumber.trim() || null,
+      note: note.trim() || null,
+    }));
+    if (saved) {
       try { window.dispatchEvent(new CustomEvent("vendors-changed")); } catch { /* silent */ }
-      showSuccess("공급사가 등록되었습니다");
-      onSaved?.(saved as any);
+      onSaved?.((saved as any).data as any);
       onClose();
-    } catch (e: any) {
-      const msg = e?.message ?? "저장 실패";
-      setErr(msg);
-      showError(msg);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -218,9 +211,6 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
         >
           취소
         </button>
-        {toast && (
-          <div className={toastClass(toast.tone)}>{toast.message}</div>
-        )}
         <button
           type="button"
           onClick={handleSave}

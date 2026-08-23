@@ -8,6 +8,7 @@ import { contractTypeMeta, calcTenure, positionColor, performanceRatingColor } f
 import { getEmploymentStatus } from "../../lib/employmentStatus";
 import { Avatar } from "./StaffManagePage.subcomponents";
 import { StatusPill } from "../common/StatusPill";
+import { Badge } from "../common/Badge";
 
 interface StaffListRowProps {
   emp: Employee;
@@ -74,9 +75,9 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
       {/* 직책 */}
       <td className="px-1 py-2 text-center">
         {emp.position && (
-          <span className={`text-[15px] font-semibold px-1.5 py-0.5 rounded-md border leading-tight ${positionColor(emp.position)}`}>
+          <Badge className={positionColor(emp.position)} size="sm">
             {emp.position}
-          </span>
+          </Badge>
         )}
       </td>
       {/* 계약유형 · 계약직 → "계약N" (N=총 계약수) · 정/알 등은 short */}
@@ -86,19 +87,20 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
           const isContract = emp.contract_type === "fixed_term";
           if (isContract && count > 0) {
             return (
-              <span
-                className="text-[15px] font-semibold px-1.5 py-0.5 rounded-md border leading-tight bg-amber-100 text-amber-800 border-amber-300"
+              <Badge
+                tone="amber"
+                size="sm"
                 title={`계약직 · 총 ${count}회 계약 (${count === 1 ? "첫 계약" : `재계약 ${count - 1}회`})`}
               >
                 계약{count}
-              </span>
+              </Badge>
             );
           }
           if (ctMeta) {
             return (
-              <span className={`text-[15px] font-semibold px-1.5 py-0.5 rounded-md border leading-tight ${ctMeta.color}`}>
+              <Badge className={ctMeta.color} size="sm">
                 {ctMeta.short}
-              </span>
+              </Badge>
             );
           }
           return <span className="text-[15px] text-zinc-300">-</span>;
@@ -111,9 +113,9 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
       {/* 평가 */}
       <td className="px-1 py-2 text-center">
         {rating ? (
-          <span className={`text-[15px] font-bold px-1.5 py-0.5 rounded-md border leading-tight tabular-nums ${performanceRatingColor(rating)}`}>
+          <Badge className={performanceRatingColor(rating)} size="sm">
             {rating}
-          </span>
+          </Badge>
         ) : (
           <span className="text-[15px] text-zinc-300">-</span>
         )}

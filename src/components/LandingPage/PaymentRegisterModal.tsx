@@ -9,7 +9,7 @@ import { api } from "../../lib/apiClient";
 import type { OpenInvoiceRow } from "./VendorListEditor.types";
 import { fmtWon, inputCls, METHOD_OPTIONS } from "./VendorListEditor.utils";
 import { Spinner } from "../common/Spinner";
-import { useToast, toastClass } from "../../hooks/useToast";
+import { useApiCall } from "../../hooks/useApiCall";
 
 const todayYmd = (): string => {
   const d = new Date();
@@ -56,14 +56,17 @@ const PaymentRegisterModal: React.FC<{
   onClose: () => void;
   onSaved: () => void;
 }> = ({ supplierName, onClose, onSaved }) => {
-  const { toast, showSuccess, showError } = useToast();
+  const { call: saveCall, loading: saving, error: saveError, reset: resetSave } = useApiCall({
+    successMsg: "결제가 등록되었습니다",
+    errorPrefix: "저장 실패",
+    onSuccess: onSaved,
+  });
   const [paymentDate, setPaymentDate] = useState<string>(todayYmd());
   const [amount, setAmount] = useState<string>("");
   const [method, setMethod] = useState<string>("transfer");
   const [memo, setMemo] = useState<string>("");
   const [invoices, setInvoices] = useState<OpenInvoiceRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
   // invoice_id → { checked, allocated_amount(string) }
   const [allocMap, setAllocMap] = useState<Map<number, { checked: boolean; alloc: string }>>(new Map());
@@ -139,6 +142,7 @@ const PaymentRegisterModal: React.FC<{
 
   const handleSubmit = async () => {
     setErrMsg(null);
+    resetSave();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate)) {
       setErrMsg("날짜는 YYYY-MM-DD 형식이어야 합니다");
       return;
@@ -158,33 +162,22 @@ const PaymentRegisterModal: React.FC<{
         if (a > 0) allocations.push({ ocr_confirmed_item_id: id, allocated_amount: a });
       }
     }
-    setSaving(true);
-    try {
-      await api.post("/api/supplier-payments", {
-        supplier_name: supplierName,
-        payment_date: paymentDate,
-        amount: amountNum,
-        method,
-        memo: memo.trim() || null,
-        allocations,
-      });
-      showSuccess("결제가 등록되었습니다");
-      onSaved();
-    } catch (e: any) {
-      const msg = `저장 실패: ${e?.message ?? e}`;
-      setErrMsg(msg);
-      showError(msg);
-    } finally {
-      setSaving(false);
-    }
+    await saveCall(() => api.post("/api/supplier-payments", {
+      supplier_name: supplierName,
+      payment_date: paymentDate,
+      amount: amountNum,
+      method,
+      memo: memo.trim() || null,
+      allocations,
+    }));
   };
 
   const footer = (
     <div className="flex items-center gap-2 flex-wrap w-full">
-      {errMsg && (
+      {(errMsg ?? saveError) && (
         <span className="inline-flex items-center gap-1 text-[12px] font-bold text-rose-600">
           <X size={13} strokeWidth={3} />
-          {errMsg}
+          {errMsg ?? saveError}
         </span>
       )}
       <div className="flex-1" />
@@ -358,13 +351,6 @@ const PaymentRegisterModal: React.FC<{
             )}
           </div>
         </div>
-
-        {/* toast */}
-        {toast && (
-          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[10001] pointer-events-none">
-            <div className={toastClass(toast.tone)}>{toast.message}</div>
-          </div>
-        )}
 
         {/* 합계 요약 · 2026-08-17 · Vercel Dashboard 톤 · white body + status dot */}
         <div className="grid grid-cols-3 gap-2.5">

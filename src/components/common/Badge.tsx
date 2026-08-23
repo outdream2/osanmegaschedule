@@ -58,6 +58,8 @@ export interface BadgeProps {
   icon?: ReactNode;
   /** 추가 className · tone 없이 커스텀 색상 지정 시 사용 */
   className?: string;
+  /** 툴팁 title */
+  title?: string;
   /** 클릭 (선택) */
   onClick?: () => void;
   children: ReactNode;
@@ -75,6 +77,7 @@ export function Badge({
   size = "sm",
   icon,
   className = "",
+  title,
   onClick,
   children,
 }: BadgeProps) {
@@ -88,6 +91,7 @@ export function Badge({
     <span
       role={onClick ? "button" : undefined}
       onClick={onClick}
+      title={title}
       className={`inline-flex items-center font-semibold whitespace-nowrap leading-tight ${borderCls} ${shapeCls} ${sizeCls} ${toneCls} ${clickableCls} ${className}`.trim()}
     >
       {icon && <span className="inline-flex shrink-0">{icon}</span>}

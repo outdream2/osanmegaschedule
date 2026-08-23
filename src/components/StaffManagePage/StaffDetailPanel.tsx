@@ -6,6 +6,7 @@ import {
   Award, CalendarDays, Camera, Clock, Edit2, Save, Star, Trash2, User, X,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+import { Badge } from "../common/Badge";
 import { EmployeeInfoForm } from "../common/EmployeeInfoForm";
 import { Avatar, SectionCard, EmptyDetail } from "./StaffManagePage.subcomponents";
 import { StaffContractSection } from "./StaffContractSection";
@@ -171,11 +172,11 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
                   {POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
               ) : (
-                <span className={`text-[15px] font-semibold px-1.5 py-px rounded border ${positionColor(displayEmp.position)}`}>
+                <Badge className={positionColor(displayEmp.position)} size="sm">
                   {(displayEmp.position === "창고" || displayEmp.position === "매장")
                     ? `물류 · ${displayEmp.position}`
                     : (displayEmp.position || "직책 없음")}
-                </span>
+                </Badge>
               )}
               {/* 계약유형 · 자동 배지 (#219) */}
               {(() => {
@@ -185,9 +186,9 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
                   ? `계약서 자동 산출 · 시작 ${latestContract?.start_date ?? "-"} · 종료 ${latestContract?.end_date ?? "-"}`
                   : "계약유형";
                 return (
-                  <span className={`text-[15px] font-semibold px-1.5 py-px rounded border ${badge.color}`} title={tip}>
+                  <Badge className={badge.color} size="sm" title={tip}>
                     {badge.label}
-                  </span>
+                  </Badge>
                 );
               })()}
               {/* 계약유형 편집 or 수동 배지 */}
@@ -207,9 +208,9 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
                 const badgeLabel = displayEmp.contract_type === "fixed_term" && count > 0
                   ? `계약${count}` : ctMeta.short;
                 return (
-                  <span className={`text-[14px] font-semibold px-1.5 py-px rounded border ${ctMeta.color}`} title={ctMeta.label}>
+                  <Badge className={ctMeta.color} size="xs" title={ctMeta.label}>
                     {badgeLabel}
-                  </span>
+                  </Badge>
                 );
               })()}
               {/* 레벨 */}
@@ -305,12 +306,12 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
             <Star size={11} />평가
           </span>
           {rating ? (
-            <span className={`font-bold px-1.5 py-0.5 rounded-md border ${performanceRatingColor(rating)}`}>{rating}</span>
+            <Badge className={performanceRatingColor(rating)} size="sm">{rating}</Badge>
           ) : (
             <span className="text-zinc-300 italic">미평가</span>
           )}
           {isSeveranceEligible(displayEmp) && (
-            <span className="text-[15px] font-bold text-rose-500 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded-md ml-1">퇴직금대상</span>
+            <Badge tone="rose" size="sm" className="ml-1">퇴직금대상</Badge>
           )}
         </span>
       </div>

@@ -8,6 +8,7 @@ import React from "react";
 import { Box, Hash, Building2, CheckCircle2, XCircle, Clock, Trash2 } from "lucide-react";
 import type { ProductInfo } from "../../lib/productsCache";
 import { StepperInput } from "../common/StepperInput";
+import { Badge } from "../common/Badge";
 
 export type ItemStatus = "pending" | "match" | "mismatch";
 
@@ -70,16 +71,11 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
         {/* 상단 · 공급사 pill + 입고 시각 (우측) */}
         <div className="flex items-center gap-2 flex-wrap">
           {item.product?.supplier ? (
-            <span className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5
-              text-[12px] font-bold text-sky-700 bg-sky-50 border border-sky-200/70">
-              <Building2 size={10} className="text-sky-500 shrink-0" />
+            <Badge tone="sky" size="xs" icon={<Building2 size={10} className="text-sky-500" />}>
               {item.product.supplier}
-            </span>
+            </Badge>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5
-              text-[12px] font-semibold text-zinc-400 bg-zinc-100 border border-line">
-              공급사 미지정
-            </span>
+            <Badge tone="zinc" size="xs">공급사 미지정</Badge>
           )}
           <span className="ml-auto text-[12px] font-mono tabular-nums text-ink-soft">
             {arrivedAt}
@@ -193,10 +189,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
 
         {/* pending 힌트 */}
         {isPending && !item.expiring && (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700
-            bg-amber-50 border border-amber-200 rounded-md px-1.5 py-0.5 self-start">
-            수량 확인 필요
-          </span>
+          <Badge tone="amber" size="xs" className="self-start">수량 확인 필요</Badge>
         )}
       </div>
     </div>

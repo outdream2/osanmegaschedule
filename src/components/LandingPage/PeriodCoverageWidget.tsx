@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { StatusPill } from "../common/StatusPill";
+import { Badge } from "../common/Badge";
 import { useToast, toastClass } from "../../hooks/useToast";
 
 export type CoverageResp = {
@@ -39,7 +40,6 @@ export const PeriodCoverageWidget: React.FC<{
     ? "bg-indigo-100 text-indigo-800 border-indigo-300"
     : "bg-sky-100 text-sky-800 border-sky-300";
   const cellClsEmpty = "bg-rose-50 text-rose-500 border-rose-200 border-dashed";
-  const badgeCls = color === "indigo" ? "text-indigo-700 bg-indigo-50 border-indigo-200" : "text-sky-700 bg-sky-50 border-sky-200";
   if (!data && !loading) return null;
   const periods = data?.periods ?? [];
   const missingCount = (data?.missing ?? []).length;
@@ -53,9 +53,7 @@ export const PeriodCoverageWidget: React.FC<{
       <button type="button" onClick={() => setCollapsed(c => !c)}
         className={`w-full flex items-center justify-between px-3 py-2 bg-zinc-50 hover:bg-zinc-100 transition cursor-pointer`}>
         <div className="flex items-center gap-2 min-w-0">
-          <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeCls}`}>
-            {label}
-          </span>
+          <Badge tone={color} shape="pill" size="xs">{label}</Badge>
           {loading ? (
             <span className="text-[10px] text-zinc-400 font-mono">로딩...</span>
           ) : periods.length === 0 ? (
@@ -151,7 +149,7 @@ export const PeriodCoverageWidget: React.FC<{
                             <span className="font-mono font-bold text-amber-800 w-16">{ym}</span>
                             <div className="flex gap-1">
                               {slots.map(s => (
-                                <span key={s} className={`px-1.5 py-0.5 rounded border text-[9px] font-bold ${s === "초순" ? "text-sky-700 bg-sky-50 border-sky-200" : s === "중순" ? "text-indigo-700 bg-indigo-50 border-indigo-200" : "text-purple-700 bg-purple-50 border-purple-200"}`}>{s}</span>
+                                <Badge key={s} tone={s === "초순" ? "sky" : s === "중순" ? "indigo" : "violet"} size="xs">{s}</Badge>
                               ))}
                               <span className="text-zinc-400 text-[9px]">누락</span>
                             </div>

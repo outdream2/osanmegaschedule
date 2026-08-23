@@ -14,6 +14,7 @@ import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
 import { StatusPill, type PillTone } from "../common/StatusPill";
+import { Badge } from "../common/Badge";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
@@ -222,18 +223,16 @@ const LedgerContent: React.FC<{
                   {dateLabel(r.date)}
                 </td>
                 <td className="px-3 py-1.5 align-top">
-                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold leading-none ${
-                    isPurchase ? "bg-emerald-100 text-emerald-700" : "bg-sky-100 text-sky-700"
-                  }`}>
+                  <Badge tone={isPurchase ? "emerald" : "sky"} size="xs" shape="square">
                     {isPurchase ? "매입" : "결제"}
-                  </span>
+                  </Badge>
                 </td>
                 <td className="px-3 py-1.5 text-[11px] text-zinc-600 align-top break-words whitespace-normal leading-snug">
                   {r.memo ?? "-"}
                   {!isPurchase && r.tax_invoice_no && (
-                    <span className="inline-flex items-center ml-1 px-1 py-px rounded text-[9px] font-bold bg-violet-50 text-violet-700 border border-violet-200 leading-none align-middle" title={`전자세금계산서 승인번호: ${r.tax_invoice_no}`}>
+                    <Badge tone="violet" size="xs" className="ml-1 align-middle" title={`전자세금계산서 승인번호: ${r.tax_invoice_no}`}>
                       세금계산서 {r.tax_invoice_no.slice(-8)}
-                    </span>
+                    </Badge>
                   )}
                 </td>
                 <td className="px-3 py-1.5 text-[11px] text-zinc-400 align-top whitespace-nowrap">
