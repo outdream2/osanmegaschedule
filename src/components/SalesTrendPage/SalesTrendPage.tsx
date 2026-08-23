@@ -1,10 +1,10 @@
 // 2026-08-22 · Framework Phase 4 · 서브컴포넌트 6개 분리 · 2502 → 슬림
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { TrendingUp, Building2, Activity, Package, X, Eye, EyeOff } from "lucide-react";
+import { TrendingUp, Building2, Activity, Package, Eye, EyeOff } from "lucide-react";
+import { Modal } from "../common/Modal";
 import { Spinner } from "../common/Spinner";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
-import { AccentBar } from "../common/AccentBar";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { useHiddenManager } from "../../hooks/useHiddenManager";
 import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
@@ -215,109 +215,99 @@ export const SalesTrendPage: React.FC = () => {
       </div>
 
       {/* 정보확인 모달 */}
-      {scanProductModal && (
-        <div className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-1 sm:p-4" onClick={() => setScanProductModal(null)}>
-          <div className="bg-white rounded-xl shadow-brand-modal w-full max-w-2xl max-h-[98vh] sm:max-h-[92vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-zinc-50/60">
-              <div className="flex items-center gap-3 min-w-0">
-                <AccentBar size="xl" className="shrink-0" />
-                <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shrink-0 shadow-sm">
-                  <Package size={18} className="text-white" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[17px] font-bold text-ink tracking-tight truncate">{scanProductModal.name}</div>
-                  <div className="text-[13px] tabular-nums text-ink-soft mt-0.5">#{scanProductModal.code}</div>
-                </div>
-              </div>
-              <button onClick={() => setScanProductModal(null)}
-                className="w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint text-ink-soft hover:text-brand-deep transition-colors cursor-pointer flex items-center justify-center shrink-0"
-                aria-label="닫기">
-                <X size={16} />
-              </button>
+      <Modal
+        open={!!scanProductModal}
+        onClose={() => setScanProductModal(null)}
+        size="md"
+        titleAccent
+        icon={<div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm"><Package size={18} className="text-white" /></div>}
+        title={
+          scanProductModal ? (
+            <div className="min-w-0">
+              <div className="text-[17px] font-bold text-ink tracking-tight truncate">{scanProductModal.name}</div>
+              <div className="text-[13px] tabular-nums text-ink-soft mt-0.5">#{scanProductModal.code}</div>
             </div>
-            <div className="flex-1 overflow-y-auto p-2 sm:p-4 bg-zinc-50">
-              <ProductInfoCard
-                product={scanProductModal}
-                context="stock-manage"
-                editable
-                onRealMapUpdate={(v) => setScanProductModal(prev => prev ? { ...prev, real_map: v } : prev)}
-                onProductUpdate={(u) => setScanProductModal(prev => prev ? { ...prev, ...u } : prev)}
-              />
-            </div>
+          ) : null
+        }
+        backdropIntensity="brand"
+      >
+        {scanProductModal && (
+          <div className="-mx-5 -my-5 p-4 bg-zinc-50">
+            <ProductInfoCard
+              product={scanProductModal}
+              context="stock-manage"
+              editable
+              onRealMapUpdate={(v) => setScanProductModal(prev => prev ? { ...prev, real_map: v } : prev)}
+              onProductUpdate={(u) => setScanProductModal(prev => prev ? { ...prev, ...u } : prev)}
+            />
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       {/* 숨김 항목 관리 모달 */}
-      {hiddenModalOpen && (
-        <div className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-1 sm:p-4" onClick={() => setHiddenModalOpen(false)}>
-          <div className="bg-white rounded-xl shadow-brand-modal w-full max-w-2xl max-h-[98vh] sm:max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-zinc-50/60">
-              <div className="flex items-center gap-3 min-w-0">
-                <AccentBar size="xl" className="shrink-0" />
-                <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
-                  <EyeOff size={18} className="text-white" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[17px] font-bold text-ink tracking-tight">숨김 항목 관리</div>
-                  <div className="text-[13px] font-medium text-ink-soft mt-0.5">숨김 처리된 상품 · 검색·발주 리스트에서 노출되지 않음</div>
-                </div>
+      <Modal
+        open={hiddenModalOpen}
+        onClose={() => setHiddenModalOpen(false)}
+        size="md"
+        titleAccent
+        icon={<div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm"><EyeOff size={18} className="text-white" /></div>}
+        title={
+          <div className="min-w-0">
+            <div className="text-[17px] font-bold text-ink tracking-tight">숨김 항목 관리</div>
+            <div className="text-[13px] font-medium text-ink-soft mt-0.5">숨김 처리된 상품 · 검색·발주 리스트에서 노출되지 않음</div>
+          </div>
+        }
+        backdropIntensity="brand"
+      >
+        <div className="-mx-5 -my-5 flex flex-col">
+          <div className="flex items-center justify-between px-5 py-2.5 border-b border-zinc-100 bg-white">
+            <span className="text-[11px] font-bold text-zinc-500">
+              총 <span className="text-amber-700 font-bold">{hiddenList.length}</span>개 숨김
+            </span>
+            <button onClick={loadHiddenList} disabled={hiddenLoading}
+              className="text-[10px] font-bold text-zinc-500 hover:text-zinc-800 border border-line hover:border-zinc-400 rounded-lg px-2 py-1 cursor-pointer transition">
+              {hiddenLoading ? "..." : "새로고침"}
+            </button>
+          </div>
+          <div className="bg-zinc-50 min-h-[200px]">
+            {hiddenLoading ? (
+              <div className="flex items-center justify-center py-12"><Spinner size={14} tone="zinc" label="불러오는 중..." labelSize={14} /></div>
+            ) : hiddenList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-zinc-400 gap-2">
+                <EyeOff size={28} className="opacity-40" />
+                <div className="text-sm font-bold">숨김 처리된 상품이 없습니다</div>
+                <div className="text-[11px]">정보확인 창에서 "숨기기"로 항목 추가 가능</div>
               </div>
-              <button onClick={() => setHiddenModalOpen(false)}
-                className="w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint text-ink-soft hover:text-brand-deep transition-colors cursor-pointer flex items-center justify-center shrink-0"
-                aria-label="닫기">
-                <X size={16} />
-              </button>
-            </div>
-            <div className="flex items-center justify-between px-5 py-2.5 border-b border-zinc-100 bg-white">
-              <span className="text-[11px] font-bold text-zinc-500">
-                총 <span className="text-amber-700 font-bold">{hiddenList.length}</span>개 숨김
-              </span>
-              <button onClick={loadHiddenList} disabled={hiddenLoading}
-                className="text-[10px] font-bold text-zinc-500 hover:text-zinc-800 border border-line hover:border-zinc-400 rounded-lg px-2 py-1 cursor-pointer transition">
-                {hiddenLoading ? "..." : "새로고침"}
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto bg-zinc-50">
-              {hiddenLoading ? (
-                <div className="flex items-center justify-center py-12"><Spinner size={14} tone="zinc" label="불러오는 중..." labelSize={14} /></div>
-              ) : hiddenList.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-zinc-400 gap-2">
-                  <EyeOff size={28} className="opacity-40" />
-                  <div className="text-sm font-bold">숨김 처리된 상품이 없습니다</div>
-                  <div className="text-[11px]">정보확인 창에서 "숨기기"로 항목 추가 가능</div>
-                </div>
-              ) : (
-                <ul className="divide-y divide-zinc-100 bg-white">
-                  {hiddenList.map((p) => {
-                    const code = String(p.product_code ?? "");
-                    const busy = hiddenUnhideBusyCode === code;
-                    return (
-                      <li key={`st-hidden-${code}`} className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-amber-50/30 transition">
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-bold text-zinc-800 truncate" title={p.product_name}>{p.product_name}</div>
-                          <div className="text-[10px] tabular-nums text-zinc-400 truncate">
-                            #{code}
-                            {p.supplier ? ` · ${p.supplier}` : ""}
-                            {p.real_map ? ` · ${p.real_map}` : ""}
-                            {p.current_stock != null ? ` · 재고 ${p.current_stock}` : ""}
-                          </div>
+            ) : (
+              <ul className="divide-y divide-zinc-100 bg-white">
+                {hiddenList.map((p) => {
+                  const code = String(p.product_code ?? "");
+                  const busy = hiddenUnhideBusyCode === code;
+                  return (
+                    <li key={`st-hidden-${code}`} className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-amber-50/30 transition">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-bold text-zinc-800 truncate" title={p.product_name}>{p.product_name}</div>
+                        <div className="text-[10px] tabular-nums text-zinc-400 truncate">
+                          #{code}
+                          {p.supplier ? ` · ${p.supplier}` : ""}
+                          {p.real_map ? ` · ${p.real_map}` : ""}
+                          {p.current_stock != null ? ` · 재고 ${p.current_stock}` : ""}
                         </div>
-                        <button onClick={() => unhideProduct(code)} disabled={busy}
-                          className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-2.5 py-1.5 cursor-pointer transition"
-                          title="숨김 해제 · 다시 검색·발주 리스트에 표시">
-                          {busy ? <Spinner size={11} tone="emerald" /> : <Eye size={11} />}
-                          다시 표시
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
+                      </div>
+                      <button onClick={() => unhideProduct(code)} disabled={busy}
+                        className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-2.5 py-1.5 cursor-pointer transition"
+                        title="숨김 해제 · 다시 검색·발주 리스트에 표시">
+                        {busy ? <Spinner size={11} tone="emerald" /> : <Eye size={11} />}
+                        다시 표시
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 };
