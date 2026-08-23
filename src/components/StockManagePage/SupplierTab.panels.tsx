@@ -12,11 +12,11 @@ import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { ProductPurchaseHistoryModal } from "./ProductPurchaseHistoryModal";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
-import { StatusPill } from "../common/StatusPill";
-import { AccentBar } from "../common/AccentBar";
 import { InlineLabel } from "../common/InlineLabel";
 import { PeriodSelector } from "../common/PeriodSelector";
 import { SeasonButtons } from "../common/SeasonButtons";
+// 2026-08-23 · #185 · PageToolbar 통일
+import { PageToolbar } from "../common/PageToolbar";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { fmtWonCompact } from "../../lib/format";
 import type { SupplierAgg, SupDetailSortKey } from "./SupplierTab.types";
@@ -292,47 +292,50 @@ export const SupplierFilterBar: React.FC<SupplierFilterBarProps> = ({
   setSupplierMonths, setSupplierSeason, setSupListLimit, fetchData,
 }) => {
   return (
-    <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2`}>
-      <div className="flex items-center gap-2.5 shrink-0">
-        <AccentBar />
-        <Building2 size={16} className="text-brand-deep shrink-0" />
-        <span className="text-[17px] font-bold text-ink tracking-tight">공급사현황</span>
-        <StatusPill tone="brand" size="md">{displayedCount}개 사</StatusPill>
-        <span className={`${TEXT.caption} text-ink-soft hidden sm:inline`}>행 클릭 → 우측 상품 리스트 · 상품명 클릭 → 상세</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <InlineLabel size="sm">기간</InlineLabel>
-        <PeriodSelector
-          options={[
-            { value: 0, label: "10일", title: "최근 10일" },
-            { value: 1, label: "1개월", title: "최근 1개월" },
-            { value: 2, label: "2개월", title: "최근 2개월" },
-            { value: 3, label: "3개월", title: "최근 3개월" },
-            { value: 4, label: "4개월", title: "최근 4개월" },
-            { value: 5, label: "5개월", title: "최근 5개월" },
-            { value: 6, label: "6개월", title: "최근 6개월" },
-          ]}
-          value={supplierMonths}
-          onChange={(v) => { setSupplierSeason(null); setSupplierMonths(v as 0|1|2|3|4|5|6); }}
-          size="sm"
-          ariaLabel="공급사 조회기간"
-        />
-      </div>
-      <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
-      <div className="flex items-center gap-2">
-        <InlineLabel size="sm">Top N</InlineLabel>
-        <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
-          {[{ v: 100, label: "100" }, { v: 300, label: "300" }, { v: 1000, label: "1k" }, { v: 2000, label: "2k" }, { v: 999999, label: "전체" }].map(o => (
-            <button key={o.v} onClick={() => setSupListLimit(o.v)}
-              className={`text-[13px] font-semibold h-8 px-3 rounded-md transition-colors whitespace-nowrap cursor-pointer ${supListLimit === o.v ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}
-            >{o.label}</button>
-          ))}
-        </div>
-      </div>
-      <button type="button" onClick={fetchData} disabled={loading}
-        className="ml-auto w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-brand-tint hover:border-brand-deep text-ink-soft hover:text-brand-deep transition-colors disabled:opacity-40 cursor-pointer" title="새로고침">
-        <LoaderIcon size={15} className={loading ? "animate-spin" : ""} />
-      </button>
-    </div>
+    // 2026-08-23 · #185 · PageToolbar 프리미티브 통일 (CategoryTab·TrendingTab 톤 일치)
+    <PageToolbar
+      icon={<Building2 size={16} />}
+      title="공급사현황"
+      count={displayedCount}
+      countLabel="개 사"
+      leftSlot={<span className={`${TEXT.caption} text-ink-soft hidden sm:inline`}>행 클릭 → 우측 상품 리스트 · 상품명 클릭 → 상세</span>}
+      right={
+        <>
+          <div className="flex items-center gap-2">
+            <InlineLabel size="sm">기간</InlineLabel>
+            <PeriodSelector
+              options={[
+                { value: 0, label: "10일", title: "최근 10일" },
+                { value: 1, label: "1개월", title: "최근 1개월" },
+                { value: 2, label: "2개월", title: "최근 2개월" },
+                { value: 3, label: "3개월", title: "최근 3개월" },
+                { value: 4, label: "4개월", title: "최근 4개월" },
+                { value: 5, label: "5개월", title: "최근 5개월" },
+                { value: 6, label: "6개월", title: "최근 6개월" },
+              ]}
+              value={supplierMonths}
+              onChange={(v) => { setSupplierSeason(null); setSupplierMonths(v as 0|1|2|3|4|5|6); }}
+              size="sm"
+              ariaLabel="공급사 조회기간"
+            />
+          </div>
+          <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
+          <div className="flex items-center gap-2">
+            <InlineLabel size="sm">Top N</InlineLabel>
+            <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
+              {[{ v: 100, label: "100" }, { v: 300, label: "300" }, { v: 1000, label: "1k" }, { v: 2000, label: "2k" }, { v: 999999, label: "전체" }].map(o => (
+                <button key={o.v} onClick={() => setSupListLimit(o.v)}
+                  className={`text-[13px] font-semibold h-8 px-3 rounded-md transition-colors whitespace-nowrap cursor-pointer ${supListLimit === o.v ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}
+                >{o.label}</button>
+              ))}
+            </div>
+          </div>
+          <button type="button" onClick={fetchData} disabled={loading}
+            className="w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-brand-tint hover:border-brand-deep text-ink-soft hover:text-brand-deep transition-colors disabled:opacity-40 cursor-pointer" title="새로고침">
+            <LoaderIcon size={15} className={loading ? "animate-spin" : ""} />
+          </button>
+        </>
+      }
+    />
   );
 };
