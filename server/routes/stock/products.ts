@@ -4,7 +4,7 @@ import express from "express";
 import XLSX from "xlsx";
 import { supabase } from "../../../src/supabase/client";
 import { getProductMap, resetProductCache } from "../../productCache";
-import { lookupStandardCode } from "../../services/standardCodeLookup";
+// 2026-08-23 · 사용자 지시 · 식약처 표준코드 조회 기능 제거 · lookupStandardCode import + 관련 라우터 삭제
 import { COL_KEYS, xlsxToRows } from "../../utils/xlsx";
 import { sanitizeOrValue } from "../../utils/sanitize";
 import { authorize } from "../../middleware/requireAuth";
@@ -208,23 +208,9 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
   }
 }));
 
-router.get("/api/products/standard-code-lookup", asyncHandler(async (req, res) => {
-  const productName = String(req.query.productName ?? req.query.q ?? "").trim().slice(0, 120);
-  const barcode = String(req.query.barcode ?? "").trim().slice(0, 32);
-  const standardCode = String(req.query.standardCode ?? "").trim().slice(0, 32);
-  if (!productName && !barcode && !standardCode) throw badRequest("productName, barcode, standardCode 중 하나가 필요합니다");
-  const result = await lookupStandardCode({ productName, barcode, standardCode });
-  res.setHeader("Cache-Control", "no-store");
-  res.json(result);
-}));
-
-router.get("/api/products/standard-code/:standardCode", asyncHandler(async (req, res) => {
-  const standardCode = String(req.params.standardCode ?? "").trim().slice(0, 32);
-  if (!standardCode) throw badRequest("standardCode required");
-  const result = await lookupStandardCode({ standardCode });
-  res.setHeader("Cache-Control", "no-store");
-  res.json(result);
-}));
+// 2026-08-23 · 사용자 지시 · 식약처 표준코드 조회 기능 제거
+// - /api/products/standard-code-lookup · /api/products/standard-code/:standardCode 라우터 제거
+// - server/services/standardCodeLookup.ts · 미커밋 파일 · 원격 없음
 
 router.post("/api/upload-products", express.raw({ type: "application/octet-stream", limit: "100mb" }), asyncHandler(async (req, res) => {
   const { adminKey, managerId } = req.query as Record<string, string>;
