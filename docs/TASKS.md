@@ -424,7 +424,15 @@
   - `vendor_order_templates` 별도 페이지 or 조회 전용
   - xlsx import 즉시 vs 수동 트리거
 
-### #177 · 상품정보 페이지 신설 · 매장>매입 탭 확장 (신규 · 2026-08-20 · **확장 · 2026-08-21 · 스펙 확정 2026-08-23**)
+### #177 · 상품정보 페이지 신설 · 매장>매입 탭 확장 (✅ **Phase A/B/C/D 완료** · 2026-08-23 · `fe33f65d`·`f43afc45`·`3ee0b766`)
+> Phase A · 매장>매입 서브탭에 "상품정보" 신설 (Info 아이콘 · indigo) ✅
+> Phase B · SplitListPanel + useResizablePanel + Modal · 마스터-디테일 UI ✅
+> Phase C · POST /api/products · authorize(5) · CreateProductSchema · ProductCreateModal 4섹션 ✅
+> Phase D · PATCH /api/products/:code · UpdateProductSchema · 인라인 편집 (조회↔편집 토글) ✅
+> ⚠ Phase C-1 (식약처 OpenAPI) · 사용자 지시 제거 (2026-08-23)
+> ⚠ 서버 PATCH · authorize 미추가 (ScanPage/FlowTab 회귀 방지 · 프론트 게이트만)
+
+### #177-원본스펙 · 상품정보 페이지 (기록 · 2026-08-20)
 
 **최종 스펙 (2026-08-23 사용자 확정)**:
 - **구조** · 매장 > 매입 > **"상품입고"** 옆에 **"상품정보"** 페이지 신설 · **탭으로 상품입고 ↔ 상품정보 전환**
