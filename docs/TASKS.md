@@ -746,16 +746,16 @@
 - ✅ SideNav compact=true · w-9 h-9 → w-7 h-7 · rounded-md · shadow 제거
 - ✅ AppNavHeader 상단은 그대로 유지 (compact 미전달)
 
-### #171 · 랜딩페이지 · 오늘 현황 숫자 클릭 · 상세+이동 (신규 · 2026-08-20)
-- 🔲 오늘 현황 · "N건" 숫자 아래 링크 추가 · 클릭 시 상세 현황 노출
-- 🔲 상세 현황 아래 · "해당 페이지로 이동" 버튼 추가 · 클릭 시 관련 페이지로 이동
-- 🔲 대상 · 발주요청·저재고·진열불일치·재고체크·연차·점심 등 각 현황
-- 🔲 UX · 인라인 확장 (accordion) 또는 popover 중 결정
-- 🔲 접근성 · Enter/Space 키 지원 · aria-expanded
-- 🔲 **모든 직원에게 노출** · admin 만이 아닌 전체 사용자 · "요청 N건" 형식
-- 🔲 **승인대기건수 *건** · 별도 항목 · 승인 대기 중인 요청 수 표시
-- 🔲 **관리자 전용 · 결제요청 건수** · admin 만 노출 · 결제 대기 건수
-- 💡 프레임워크와 무관 · 신규 UX 기능
+### #171 · 랜딩페이지 · 오늘 현황 숫자 클릭 · 상세+이동 (✅ 완료 · 2026-08-23 · `4d55af0c`)
+- ✅ 오늘 현황 · "N건" 숫자 아래 링크 추가 · 클릭 시 상세 현황 노출 (Phase 3 · 2026-08-21)
+- ✅ 상세 현황 아래 · "해당 페이지로 이동" 버튼 추가 · 클릭 시 관련 페이지로 이동
+- ✅ 대상 · 발주요청·저재고·진열불일치·재고체크·연차·점심 등 각 현황
+- ✅ UX · 인라인 확장 (accordion)
+- ✅ 접근성 · aria-expanded
+- ✅ **모든 직원에게 노출** (isVendor 만 제외)
+- ✅ **승인대기건수** (2026-08-23 · `4d55af0c`) · 모든 직원 노출 · 연차+사직서 합 · teal 배지 · click → business-manage
+- ✅ **관리자 전용 · 결제요청 건수** (2026-08-23 · `4d55af0c`) · admin (lv9) 만 노출 · violet 배지 · click → display
+- ✅ 백엔드 신규 · GET `/api/supplier-payments/pending-count` · ocr_confirmed_items amount - allocations > 0.5 count
 
 ### #149 · UI 프레임워크화 남은 작업
 - 🔲 common/ 재분류 · `common/primitives/` vs `common/features/` (구조 리팩터 · 위험 중)
