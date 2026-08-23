@@ -59,10 +59,12 @@
 
 ---
 
-## 📝 이번 세션 커밋 로그 (최신 → 과거 · 48개)
+## 📝 이번 세션 커밋 로그 (최신 → 과거 · 50개)
 
 | # | SHA | 파일 | 요약 |
 |---|-----|------|------|
+| 50 | `e5b671d5` | PaymentInfoTab.tsx | **refactor** #198 Phase 3C · PaymentInfoTab 좌측 → SplitListPanel v3 (subHeader = KPI) |
+| 49 | `d828898f` | TASKS_HANDBOOK.md | docs: v3 반영 |
 | 48 | `779aed47` | SplitListPanel.tsx + test | **feat** v3 · subHeader 슬롯 (KPI/부가정보) · #198 Phase 3C 지원 · 3 신규 tests |
 | 47 | `92c7e27c` | TASKS_HANDBOOK.md | docs: Phase 3A+3B 반영 |
 | 46 | `65ca302b` | StaffListPanel.tsx | **refactor** #198 Phase 3B · StaffListPanel → SplitListPanel v2 wrapper (footer+countDisplay) |
