@@ -253,16 +253,26 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
             const spec = s.zoneKey ? (specParts[i - 2] ?? "") : "";
             return (
               <div key={s.key} className="flex flex-col gap-1.5">
-                <div className="grid grid-cols-[64px_1fr_auto] gap-2 items-center">
+                {/* 2026-08-23 · #187 · 모바일 · [제목] → [현재재고 크게] → [스테퍼] 세로 배치 · lg+ 기존 그리드 */}
+                <div className="flex flex-col gap-1.5 lg:grid lg:grid-cols-[64px_1fr_auto] lg:gap-2 lg:items-center">
                   {/* label + dot */}
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className={`w-1 h-6 rounded-full ${s.dot}`} />
-                    <span className={`text-[13px] font-bold ${s.text}`}>{s.full}</span>
+                    <span className={`text-[15px] lg:text-[13px] font-bold ${s.text}`}>{s.full}</span>
+                    {/* 모바일 · 현재재고 inline 표시 (제목 옆) · 크게 · text-[15px]+ */}
+                    <span className="lg:hidden ml-auto text-[15px] font-bold text-ink tabular-nums">
+                      {prev != null ? (
+                        <>현재 <span className="text-ink font-extrabold">{prev}</span></>
+                      ) : (
+                        <span className="text-zinc-300">현재 -</span>
+                      )}
+                    </span>
                   </div>
 
-                  {/* 현재값 (좌) + 스테퍼 (우) */}
-                  <div className="grid grid-cols-[auto_1fr] gap-2 items-center">
-                    <span className="text-[12px] font-semibold text-ink-soft tabular-nums shrink-0 min-w-[52px]">
+                  {/* 현재값 + 스테퍼 · PC는 grid · 모바일은 flex row (스테퍼만) */}
+                  <div className="flex items-center gap-2 lg:grid lg:grid-cols-[auto_1fr] lg:items-center">
+                    {/* PC 전용 · 인라인 현재재고 */}
+                    <span className="hidden lg:inline text-[12px] font-semibold text-ink-soft tabular-nums shrink-0 min-w-[52px]">
                       {prev != null ? `현재 ${prev}` : <span className="text-zinc-300">현재 -</span>}
                     </span>
                     <StepperInput
@@ -270,10 +280,16 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                       onChange={v => onPatch(row.key, { [s.addKey]: v } as Partial<StockRow>)}
                       placeholder="+0"
                     />
+                    {/* 모바일 · 합계 · 스테퍼 옆 */}
+                    <span className={`lg:hidden text-[15px] font-bold tabular-nums text-right min-w-[48px] tracking-tight ${
+                      hasAddVal ? "text-emerald-700" : tot > 0 ? "text-ink" : "text-zinc-300"
+                    }`}>
+                      = {tot}
+                    </span>
                   </div>
 
-                  {/* 합계 (우) */}
-                  <span className={`text-[15px] font-bold tabular-nums text-right min-w-[48px] tracking-tight ${
+                  {/* 합계 · PC 전용 (우측 컬럼) */}
+                  <span className={`hidden lg:inline text-[15px] font-bold tabular-nums text-right min-w-[48px] tracking-tight ${
                     hasAddVal ? "text-emerald-700" : tot > 0 ? "text-ink" : "text-zinc-300"
                   }`}>
                     = {tot}
