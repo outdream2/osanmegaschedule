@@ -29,6 +29,8 @@ import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { useContactInfo } from "../../hooks/useContactInfo";
 import { useStampsMap } from "../../hooks/useStampsMap";
 import { useMobilePageLevel } from "../../hooks/useMobilePageLevel";
+// 2026-08-23 · #188 · PC/모바일 체크박스 · 자동 마이그레이션 · 신규 훅
+import { usePageVisibility } from "../../hooks/usePageVisibility";
 import { SIDE_NAV_GROUPS } from "../layout/sideNavGroups";
 import { TabBar, type TabDef } from "../common/TabBar";
 import { ImageUploadField } from "../common/ImageUploadField";
@@ -465,27 +467,19 @@ export const StampsSection: React.FC = () => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════
-//   섹션 4 · 페이지별 모바일 최소 레벨 (2026-08-12 · Phase 6)
-//     · 페이지별 · 모바일에서 접근 가능한 최소 레벨 지정
-//     · 값 0 · 모두 허용 (default)
-//     · SIDE_NAV_GROUPS 순회 · 각 group.items · pageKey (item.key) 별 dropdown
-//     · 같은 pageKey 중복 시 (예: display 아래 서브탭 여러개) · 한 번만 표시
+//   섹션 4 · 메뉴 표시 · 페이지별 PC/모바일 노출 (2026-08-23 · #188 개편)
+//     · 자동 마이그레이션 · 기존 mobile_min_level (레벨 5+) → mobile OFF (첫 조회 시)
+//     · 페이지 · 뷰포트별 [PC ☑] [모바일 ☑] 2 체크박스
+//     · 기본값 · 둘 다 ON · 하위 호환
+//     · SIDE_NAV_GROUPS 순회 · 같은 pageKey 중복 제거
+//     · landing 편집 UI 제외 (차단 금지)
 // ═══════════════════════════════════════════════════════════════════════
-type MinLevelOption = { value: number; label: string };
-const MIN_LEVEL_OPTIONS: MinLevelOption[] = [
-  { value: 0, label: "0 - 모두 허용 (default)" },
-  { value: 1, label: "1 - 직원 이상" },
-  { value: 2, label: "2 - 매니저 이상" },
-  { value: 3, label: "3 - 약사 이상" },
-  { value: 8, label: "8 - 대표 이상" },
-  { value: 9, label: "9 - 최고관리자만" },
-];
 
+// deprecated · useMobilePageLevel 은 자동 마이그레이션용 · usePageVisibility 내부 참조
 export const MobileVisibilitySection: React.FC = () => {
-  const { getMinLevel, setMinLevel, loaded, saveState } = useMobilePageLevel();
+  const { isVisible, setVisible, loaded, saveState } = usePageVisibility();
 
   // SIDE_NAV_GROUPS 순회 · 그룹별로 페이지 목록 구성 · 같은 pageKey 는 그룹 내에서 중복 제거
-  //   · landing 은 · 접근 차단 금지 (MobileOnlyGate 에서도 스킵) · 편집 UI 에서도 제외
   const groups = useMemo(() => {
     return SIDE_NAV_GROUPS
       .map((g) => {
@@ -506,13 +500,11 @@ export const MobileVisibilitySection: React.FC = () => {
   return (
     <Card as="section" clip padding="none">
       <div className={SECTION_HEADER}>
-        {/* 2026-08-18 · IconTile 프레임워크 확산 */}
         <IconTile icon={<DeviceMobile size={15} weight="fill" />} tone="violet" size="md" />
-
         <div className="flex-1 min-w-0">
-          <div className="text-[15px] font-bold text-zinc-800 leading-tight">페이지별 모바일 최소 레벨</div>
+          <div className="text-[15px] font-bold text-zinc-800 leading-tight">메뉴 표시</div>
           <div className="text-[15px] text-zinc-500 mt-0.5">
-            모바일에서 접근 가능한 최소 레벨 · 기본값 0 (모두 허용) · 값 이상만 접근 · 미만 사용자는 PC 전용 안내 표시
+            페이지 · 뷰포트별 노출 · 기본 · 둘 다 표시 · 체크 해제 시 · 해당 뷰포트에서 페이지 숨김
           </div>
         </div>
         <StatusBadge state={saveState as SaveState} />
@@ -525,33 +517,42 @@ export const MobileVisibilitySection: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {g.items.map((it) => {
-                const min = getMinLevel(it.pageKey);
-                const isRestricted = min > 0;
+                const pcOn = isVisible(it.pageKey, "pc");
+                const mobileOn = isVisible(it.pageKey, "mobile");
+                const bothOn = pcOn && mobileOn;
                 return (
                   <div
                     key={`${g.id}-${it.pageKey}`}
                     className={[
                       "flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors",
-                      isRestricted
-                        ? "border-violet-200 bg-violet-50/60"
-                        : "border-emerald-200 bg-emerald-50/40",
+                      bothOn
+                        ? "border-emerald-200 bg-emerald-50/40"
+                        : "border-violet-200 bg-violet-50/60",
                     ].join(" ")}
                   >
                     <span className="text-[15px] font-bold text-zinc-800 flex-1 min-w-0 truncate">
                       {it.label}
                     </span>
-                    <select
-                      value={min}
-                      onChange={(e) => setMinLevel(it.pageKey, Number(e.target.value))}
-                      className="bg-white border border-line rounded-lg px-2 py-1 text-[14px] font-bold text-zinc-800 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint cursor-pointer"
-                      aria-label={`${it.label} 모바일 최소 레벨`}
-                    >
-                      {MIN_LEVEL_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
+                    <label className="inline-flex items-center gap-1 text-[13px] font-semibold text-zinc-600 cursor-pointer select-none" title={`${it.label} · PC 노출`}>
+                      <input
+                        type="checkbox"
+                        checked={pcOn}
+                        onChange={(e) => setVisible(it.pageKey, "pc", e.target.checked)}
+                        className="w-4 h-4 accent-brand-deep cursor-pointer"
+                        aria-label={`${it.label} PC 노출`}
+                      />
+                      PC
+                    </label>
+                    <label className="inline-flex items-center gap-1 text-[13px] font-semibold text-zinc-600 cursor-pointer select-none" title={`${it.label} · 모바일 노출`}>
+                      <input
+                        type="checkbox"
+                        checked={mobileOn}
+                        onChange={(e) => setVisible(it.pageKey, "mobile", e.target.checked)}
+                        className="w-4 h-4 accent-brand-deep cursor-pointer"
+                        aria-label={`${it.label} 모바일 노출`}
+                      />
+                      모바일
+                    </label>
                   </div>
                 );
               })}
@@ -574,7 +575,7 @@ type BrTab = "contact" | "stamps" | "mobile";
 const BR_TABS: TabDef<BrTab>[] = [
   { key: "contact", label: "연락처·카카오", icon: Phone,        color: "emerald" },
   { key: "stamps",  label: "도장 매핑",      icon: Stamp,        color: "rose"    },
-  { key: "mobile",  label: "모바일 가시성",  icon: DeviceMobile, color: "indigo"  },
+  { key: "mobile",  label: "메뉴 표시",      icon: DeviceMobile, color: "indigo"  },
 ];
 export const BrandingSectionTabs: React.FC = () => {
   const [tab, setTab] = useState<BrTab>("contact");

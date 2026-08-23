@@ -236,3 +236,12 @@ export const DEFAULT_MOBILE_VISIBILITY: MobileVisibilityMap = {
  */
 export type MobileMinLevelMap = Partial<Record<string, number>>;
 export const DEFAULT_MOBILE_MIN_LEVEL: MobileMinLevelMap = {};
+
+/** 페이지별 표시 (PC/모바일 각각) · settings "page_visibility" key · #188 (2026-08-23)
+ *  · 값 없거나 undefined 는 · 둘 다 true (기본 노출)
+ *  · false 면 · 해당 뷰포트에서 페이지 숨김
+ *  · 기존 MobileMinLevelMap (레벨 기반) 자동 마이그레이션 · usePageVisibility 훅에서 처리
+ */
+export type PageVisibilityEntry = { pc?: boolean; mobile?: boolean };
+export type PageVisibilityMap = Partial<Record<string, PageVisibilityEntry>>;
+export const DEFAULT_PAGE_VISIBILITY: PageVisibilityMap = {};
