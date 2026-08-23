@@ -1,16 +1,18 @@
 // src/components/LandingPage/UploadDataModal.tsx
-// 2026-08-22 · Framework Phase 4 · LandingPage 에서 분리
-import React, { useState, useRef, useEffect, useMemo } from "react";
+// 2026-08-23 · Framework Phase 4 · ImportLogTab + StockUploadTab 분리
+import React, { useState, useRef, useEffect } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../hooks/useToast";
-import { X, Upload, AlertCircle } from "lucide-react"; // AlertCircle unused but kept for future use
+import { X, Upload } from "lucide-react";
 import { Table, CheckCircle } from "@phosphor-icons/react";
 import type { AuthSession } from "../../types";
 import { Card } from "../common/Card";
 import { IconTile } from "../common/IconTile";
 import { StatusPill } from "../common/StatusPill";
 import { PeriodCoverageWidget } from "./PeriodCoverageWidget";
+import { ImportLogTab } from "./ImportLogTab";
+import { StockUploadTab } from "./StockUploadTab";
 
 interface UploadDataModalProps {
   open: boolean;
@@ -67,7 +69,6 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
     period_type?: "early" | "mid" | "late" | null;
     history?: number;
   }[]>([]);
-  const stockUploadInputRef = useRef<HTMLInputElement>(null);
   const [stockStartDate, setStockStartDate] = useState<string>("");
   const [stockEndDate, setStockEndDate] = useState<string>("");
 
@@ -88,52 +89,6 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
     to: string;
     search: string;
   }>({ type: "all", from: "", to: "", search: "" });
-
-  type UnifiedLogEntry =
-    | { kind: "products"; timestamp: string; count: number }
-    | {
-      kind: "stock";
-      timestamp: string;
-      count: number;
-      total?: number;
-      history?: number;
-      snapshot_date?: string;
-      start_date?: string | null;
-      period_type?: "early" | "mid" | "late" | null;
-    }
-    | {
-      kind: "purchase";
-      timestamp: string;
-      count: number;
-      startDate: string;
-      endDate: string;
-      periodStart: string | null;
-      periodType: string | null;
-    };
-
-  const allImportLogs = useMemo<UnifiedLogEntry[]>(() => {
-    const p: UnifiedLogEntry[] = importLog.map(e => ({ kind: "products", timestamp: e.timestamp, count: e.count }));
-    const s: UnifiedLogEntry[] = stockImportLog.map(e => ({
-      kind: "stock",
-      timestamp: e.timestamp,
-      count: e.count,
-      total: e.total,
-      history: e.history,
-      snapshot_date: e.snapshot_date,
-      start_date: e.start_date,
-      period_type: e.period_type,
-    }));
-    const pu: UnifiedLogEntry[] = purchaseImportBatches.map(b => ({
-      kind: "purchase",
-      timestamp: b.imported_at,
-      count: b.count,
-      startDate: b.startDate,
-      endDate: b.endDate,
-      periodStart: b.periodStart,
-      periodType: b.periodType,
-    }));
-    return [...p, ...s, ...pu].sort((a, b) => (b.timestamp ?? "").localeCompare(a.timestamp ?? ""));
-  }, [importLog, stockImportLog, purchaseImportBatches]);
 
   // ── API 헬퍼 ────────────────────────────────────────────────────────
   const fetchImportLog = async () => {
@@ -458,149 +413,21 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
 
         {/* ── 재고리스트 탭 ── */}
         {uploadTab === "stock" && (
-          <>
-            <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-              재고현황 xlsx (초순/중순/하순 스냅샷)를 <strong>stock_history</strong> 테이블에 임포트합니다.<br />
-              <span className="text-gray-400">같은 날짜+상품코드는 덮어쓰기. 매칭되는 상품 정보(공급사·규격 등)도 함께 저장.</span>
-            </p>
-            <PeriodCoverageWidget endpoint="/api/stock-manage/period-coverage" label="재고 스냅샷 커버리지" color="indigo" refreshTrigger={stockUploadResult} />
-            {stockUploadResult?.ok ? (
-              <div className="flex flex-col items-center gap-3 py-4">
-                <CheckCircle size={36} className="text-emerald-500" weight="fill" />
-                <p className="text-sm font-bold text-emerald-700">임포트 완료</p>
-                <p className="text-sm text-gray-700">
-                  <span className="font-bold text-emerald-700">{(stockUploadResult.history ?? 0).toLocaleString()}</span>
-                  <span className="text-gray-500 mx-1">/</span>
-                  <span className="font-bold">{(stockUploadResult.total ?? 0).toLocaleString()}</span>
-                  건 스냅샷 저장됨
-                </p>
-                {stockUploadResult.snapshot_date && (
-                  <p className="text-[11px] text-gray-500">스냅샷일: <span className="font-mono font-bold text-gray-700">{stockUploadResult.snapshot_date}</span></p>
-                )}
-                {(stockUploadResult.history ?? 0) < (stockUploadResult.total ?? 0) && (
-                  <p className="text-[10px] text-amber-600">일부 행 저장 실패 (서버 로그 확인 필요)</p>
-                )}
-                <button onClick={() => { setStockUploadResult(null); setStockUploadFile(null); }} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">확인</button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                <div>
-                  <div className="text-[11px] font-bold text-gray-500 mb-1.5">재고 기간 (필수)</div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-gray-500">시작재고일</span>
-                      <input type="date" value={stockStartDate} onChange={(e) => setStockStartDate(e.target.value)}
-                        className="w-full px-2 py-1.5 text-xs font-mono border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep" />
-                    </label>
-                    <label className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-gray-500">종료재고일</span>
-                      <input type="date" value={stockEndDate} onChange={(e) => setStockEndDate(e.target.value)}
-                        className="w-full px-2 py-1.5 text-xs font-mono border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep" />
-                    </label>
-                  </div>
-                  <div className="mt-2 flex items-center gap-2 flex-wrap text-[10px]">
-                    {stockPeriodType ? (
-                      <StatusPill tone={stockPeriodType === "early" ? "sky" : stockPeriodType === "mid" ? "indigo" : "violet"} size="xs">
-                        자동판정: {stockPeriodType === "early" ? "초순 (1-10일)" : stockPeriodType === "mid" ? "중순 (11-20일)" : "하순 (21-말일)"}
-                      </StatusPill>
-                    ) : (
-                      <span className="text-gray-400">종료일 입력 시 초/중/하순 자동 판정</span>
-                    )}
-                    {stockStartDate && stockEndDate && stockStartDate > stockEndDate && (
-                      <span className="text-rose-600 font-bold">⚠ 시작일이 종료일보다 뒤</span>
-                    )}
-                  </div>
-                  <p className="text-[10px] text-gray-400 mt-1">예: 6월 초순 스냅샷 → 시작재고일 2026-06-01 · 종료재고일 2026-06-10</p>
-                </div>
-                <input ref={stockUploadInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => {
-                  const file = e.target.files?.[0] ?? null;
-                  if (!file) { setStockUploadFile(null); return; }
-                  const ext = file.name.split(".").pop()?.toLowerCase();
-                  if (ext !== "xlsx" && ext !== "xls") {
-                    showError("xlsx 또는 xls 파일만 가능합니다.");
-                    e.target.value = ""; return;
-                  }
-                  setStockUploadResult(null);
-                  setStockUploadFile(file);
-                  try {
-                    const stem = file.name.replace(/\.(xlsx|xls)$/i, "");
-                    const two = (s: string) => s.padStart(2, "0");
-                    let m: RegExpMatchArray | null = stem.match(/(\d{4})[-_](\d{2})(\d{2})[-_](\d{2})(\d{2})/);
-                    if (!m) m = stem.match(/(\d{4})[-_](\d{2})[-_.](\d{2})[-_](\d{2})[-_.](\d{2})/);
-                    if (!m) {
-                      const alt = stem.match(/(\d{4})(\d{2})(\d{2})[-_](\d{4})(\d{2})(\d{2})/);
-                      if (alt) {
-                        const [, y1, m1, d1, y2, m2, d2] = alt;
-                        setStockStartDate(`${y1}-${two(m1)}-${two(d1)}`);
-                        setStockEndDate(`${y2}-${two(m2)}-${two(d2)}`);
-                        return;
-                      }
-                    }
-                    if (m) {
-                      const [, yyyy, sMM, sDD, eMM, eDD] = m;
-                      setStockStartDate(`${yyyy}-${two(sMM)}-${two(sDD)}`);
-                      setStockEndDate(`${yyyy}-${two(eMM)}-${two(eDD)}`);
-                    }
-                  } catch { /* 파싱 실패 시 무시 */ }
-                }} />
-                <button type="button" onClick={() => stockUploadInputRef.current?.click()}
-                  className="w-full py-3 border-2 border-dashed border-gray-300 hover:border-indigo-400 text-gray-500 hover:text-indigo-600 text-sm font-semibold rounded-xl transition cursor-pointer flex items-center justify-center gap-2">
-                  <Upload size={16} />
-                  {stockUploadFile ? stockUploadFile.name : "파일 선택 (.xlsx)"}
-                </button>
-                {stockUploadResult?.ok === false && (
-                  <p className="text-xs text-rose-500 font-semibold text-center">{stockUploadResult.msg}</p>
-                )}
-                <button type="button" disabled={!stockUploadFile || stockUploadLoading || !stockStartDate || !stockEndDate || !stockPeriodType || stockStartDate > stockEndDate}
-                  onClick={handleStockUpload}
-                  className="w-full py-3 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-indigo-200 disabled:cursor-not-allowed text-white font-bold rounded-xl transition cursor-pointer text-sm flex items-center justify-center gap-2">
-                  {stockUploadLoading ? <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /><span>임포트 중...</span></> : <><Upload size={14} /><span>재고 임포트</span></>}
-                </button>
-              </div>
-            )}
-            {stockImportLog.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">재고 임포트 이력</p>
-                  <button onClick={handleClearStockImportLog} className="text-[10px] text-gray-400 hover:text-rose-500 transition cursor-pointer">clear</button>
-                </div>
-                <div className="flex flex-col gap-1 max-h-[220px] overflow-y-auto">
-                  {stockImportLog.map((entry, i) => {
-                    const periodLabel = entry.period_type === "early" ? "초순" : entry.period_type === "mid" ? "중순" : entry.period_type === "late" ? "하순" : null;
-                    const shortDate = (d?: string | null): string | null => {
-                      if (!d) return null;
-                      const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(d);
-                      return m ? `${Number(m[1])}/${Number(m[2])}` : null;
-                    };
-                    const rangeLabel = entry.start_date && entry.snapshot_date
-                      ? `${shortDate(entry.start_date)} ~ ${shortDate(entry.snapshot_date)}`
-                      : entry.snapshot_date ? `~ ${shortDate(entry.snapshot_date)}` : null;
-                    const periodChipClass = entry.period_type === "early"
-                      ? "text-sky-700 bg-sky-50 border-sky-200"
-                      : entry.period_type === "mid"
-                        ? "text-indigo-700 bg-indigo-50 border-indigo-200"
-                        : "text-purple-700 bg-purple-50 border-purple-200";
-                    const stored = entry.history ?? entry.count;
-                    return (
-                      <div key={i} className="flex items-center justify-between gap-2 text-[11px] py-0.5">
-                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                          <span className="text-gray-500 font-mono shrink-0">
-                            {new Date(entry.timestamp).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                          {rangeLabel && <span className="text-emerald-700 font-mono font-bold shrink-0" title={entry.start_date && entry.snapshot_date ? `재고기간 ${entry.start_date} ~ ${entry.snapshot_date}` : `스냅샷일 ${entry.snapshot_date}`}>{rangeLabel}</span>}
-                          {periodLabel && <span className={`text-[10px] font-bold rounded-full px-1.5 py-0.5 border shrink-0 ${periodChipClass}`}>{periodLabel}</span>}
-                        </div>
-                        <span className={`font-semibold shrink-0 ${i === 0 ? "text-indigo-600" : "text-gray-400"}`}>
-                          {stored.toLocaleString()}개
-                          {entry.total && entry.total !== stored && <span className="text-gray-300"> / {entry.total.toLocaleString()}</span>}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </>
+          <StockUploadTab
+            stockUploadFile={stockUploadFile}
+            setStockUploadFile={setStockUploadFile}
+            stockUploadLoading={stockUploadLoading}
+            stockUploadResult={stockUploadResult}
+            setStockUploadResult={setStockUploadResult}
+            stockImportLog={stockImportLog}
+            stockStartDate={stockStartDate}
+            setStockStartDate={setStockStartDate}
+            stockEndDate={stockEndDate}
+            setStockEndDate={setStockEndDate}
+            stockPeriodType={stockPeriodType}
+            handleStockUpload={handleStockUpload}
+            handleClearStockImportLog={handleClearStockImportLog}
+          />
         )}
 
         {/* ── 공급사관리 탭 ── */}
@@ -783,126 +610,13 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
 
         {/* ── 임포트 목록 탭 ── */}
         {uploadTab === "log" && (
-          <>
-            <p className="text-xs text-gray-500 mb-2 leading-relaxed">
-              상품 · 재고 · 매입 · 공급사 임포트 이력을 시간순으로 통합 표시합니다.
-            </p>
-            {stockImportLog.some(e => !e.start_date) && (
-              <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 mb-3">
-                ℹ️ 시작재고일 저장 기능 이전에 임포트된 이력은 종료일만 표시됩니다. 이후 임포트부터는 <b>시작재고일 ~ 종료재고일</b> 이 함께 표시됩니다.
-              </div>
-            )}
-            <div className="flex flex-col gap-2 mb-3 p-2.5 bg-zinc-50 border border-line rounded-xl">
-              <div className="flex flex-wrap items-center gap-1">
-                {([
-                  { k: "all", label: "전체", cls: "text-zinc-700 border-zinc-300" },
-                  { k: "products", label: "상품", cls: "text-orange-700 border-orange-300" },
-                  { k: "stock", label: "재고", cls: "text-indigo-700 border-indigo-300" },
-                  { k: "purchase", label: "매입", cls: "text-sky-700 border-sky-300" },
-                  { k: "vendors", label: "공급사", cls: "text-teal-700 border-teal-300" },
-                ] as const).map(t => (
-                  <button key={t.k} type="button" onClick={() => setLogFilter(f => ({ ...f, type: t.k }))}
-                    className={`text-[10px] font-bold rounded-full px-2 py-0.5 border transition cursor-pointer ${logFilter.type === t.k ? `${t.cls} bg-white shadow-sm` : "text-zinc-400 border-line bg-white/60 hover:bg-white"}`}>
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <input type="date" value={logFilter.from} onChange={e => setLogFilter(f => ({ ...f, from: e.target.value }))}
-                  className="text-[11px] font-mono border border-line rounded-lg px-2 py-1 bg-white text-zinc-700" title="시작일" />
-                <span className="text-[10px] text-zinc-400">~</span>
-                <input type="date" value={logFilter.to} onChange={e => setLogFilter(f => ({ ...f, to: e.target.value }))}
-                  className="text-[11px] font-mono border border-line rounded-lg px-2 py-1 bg-white text-zinc-700" title="종료일" />
-                <input type="text" placeholder="검색 (기간·파일명)" value={logFilter.search} onChange={e => setLogFilter(f => ({ ...f, search: e.target.value }))}
-                  className="flex-1 min-w-[100px] text-[11px] border border-line rounded-lg px-2 py-1 bg-white text-zinc-700 placeholder:text-zinc-300" />
-                {(logFilter.type !== "all" || logFilter.from || logFilter.to || logFilter.search) && (
-                  <button type="button" onClick={() => setLogFilter({ type: "all", from: "", to: "", search: "" })}
-                    className="text-[10px] text-zinc-400 hover:text-zinc-700 font-bold cursor-pointer">초기화</button>
-                )}
-              </div>
-            </div>
-            {(() => {
-              const filtered = allImportLogs.filter(entry => {
-                if (logFilter.type !== "all" && entry.kind !== logFilter.type) return false;
-                const dayPart = (entry.timestamp || "").slice(0, 10);
-                if (logFilter.from && dayPart && dayPart < logFilter.from) return false;
-                if (logFilter.to && dayPart && dayPart > logFilter.to) return false;
-                if (logFilter.search.trim()) {
-                  const q = logFilter.search.trim().toLowerCase();
-                  const haystack: string[] = [entry.timestamp || ""];
-                  if (entry.kind === "stock") {
-                    if (entry.start_date) haystack.push(entry.start_date);
-                    if (entry.snapshot_date) haystack.push(entry.snapshot_date);
-                  } else if (entry.kind === "purchase") {
-                    haystack.push(entry.startDate, entry.endDate, entry.periodStart ?? "");
-                  }
-                  if (!haystack.join("|").toLowerCase().includes(q)) return false;
-                }
-                return true;
-              });
-              if (allImportLogs.length === 0) return <div className="flex flex-col items-center justify-center py-10 text-gray-400 gap-2"><p className="text-sm">임포트 이력이 없습니다</p></div>;
-              if (filtered.length === 0) return <div className="flex flex-col items-center justify-center py-10 text-gray-400 gap-2"><p className="text-sm">필터 조건에 맞는 이력이 없습니다</p></div>;
-              return (
-                <>
-                  <div className="text-[10px] text-zinc-400 mb-1.5 px-1"><b className="text-zinc-600">{filtered.length}</b> / {allImportLogs.length} 건</div>
-                  <div className="max-h-[400px] overflow-y-auto border border-line rounded-xl bg-white">
-                    <table className="w-full text-[11px]">
-                      <thead>
-                        <tr className="text-[10px] uppercase tracking-wider text-gray-400 border-b border-line bg-gray-50/70">
-                          <th className="text-left py-2 pl-4 pr-3 font-bold w-14">유형</th>
-                          <th className="text-left py-2 pr-3 font-bold">시작일</th>
-                          <th className="text-left py-2 pr-3 font-bold">종료일</th>
-                          <th className="text-right py-2 pr-3 font-bold">임포트 시간</th>
-                          <th className="text-right py-2 pr-4 font-bold">갯수</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {filtered.map((entry, i) => {
-                          const whenDate = new Date(entry.timestamp);
-                          const when = isNaN(whenDate.getTime()) ? entry.timestamp : whenDate.toLocaleString("ko-KR", { year: "2-digit", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
-                          if (entry.kind === "products") return (
-                            <tr key={`p-${i}`} className="hover:bg-orange-50/40 transition">
-                              <td className="py-1.5 pl-4 pr-3"><span className="text-[10px] font-bold rounded-full px-1.5 py-0.5 border text-orange-700 bg-white border-orange-300">상품</span></td>
-                              <td className="py-1.5 pr-3 text-gray-300">—</td>
-                              <td className="py-1.5 pr-3 text-gray-300">—</td>
-                              <td className="py-1.5 pr-3 text-right text-gray-500 font-mono">{when}</td>
-                              <td className="py-1.5 pr-4 text-right font-semibold text-orange-600">{entry.count.toLocaleString()}개</td>
-                            </tr>
-                          );
-                          if (entry.kind === "stock") {
-                            const stored = entry.history ?? entry.count;
-                            return (
-                              <tr key={`s-${i}`} className="hover:bg-indigo-50/40 transition">
-                                <td className="py-1.5 pl-4 pr-3"><span className="text-[10px] font-bold rounded-full px-1.5 py-0.5 border text-indigo-700 bg-white border-indigo-300">재고</span></td>
-                                <td className="py-1.5 pr-3 text-sky-700 font-mono font-bold" title={entry.start_date ?? "미입력"}>{entry.start_date ?? <span className="text-gray-300">—</span>}</td>
-                                <td className="py-1.5 pr-3 text-emerald-700 font-mono font-bold" title={entry.snapshot_date ?? "미입력"}>{entry.snapshot_date ?? <span className="text-gray-300">—</span>}</td>
-                                <td className="py-1.5 pr-3 text-right text-gray-500 font-mono">{when}</td>
-                                <td className="py-1.5 pr-4 text-right font-semibold text-indigo-600">{stored.toLocaleString()}개{entry.total && entry.total !== stored && <span className="text-gray-300"> / {entry.total.toLocaleString()}</span>}</td>
-                              </tr>
-                            );
-                          }
-                          const periodLabel = entry.periodType === "early" ? "초순" : entry.periodType === "mid" ? "중순" : entry.periodType === "late" ? "하순" : null;
-                          const startDisp = entry.periodStart ?? entry.startDate;
-                          return (
-                            <tr key={`pu-${i}`} className="hover:bg-sky-50/40 transition">
-                              <td className="py-1.5 pl-4 pr-3"><span className="text-[10px] font-bold rounded-full px-1.5 py-0.5 border text-sky-700 bg-white border-sky-300">매입</span></td>
-                              <td className="py-1.5 pr-3 text-sky-700 font-mono font-bold" title={startDisp}>{startDisp || <span className="text-gray-300">—</span>}</td>
-                              <td className="py-1.5 pr-3 text-emerald-700 font-mono font-bold" title={entry.endDate}>
-                                {entry.endDate || <span className="text-gray-300">—</span>}
-                                {periodLabel && <span className="ml-1 text-[9px] font-bold px-1 py-0.5 rounded-full border text-purple-700 bg-purple-50 border-purple-200">{periodLabel}</span>}
-                              </td>
-                              <td className="py-1.5 pr-3 text-right text-gray-500 font-mono">{when}</td>
-                              <td className="py-1.5 pr-4 text-right font-semibold text-sky-600">{entry.count.toLocaleString()}건</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              );
-            })()}
-          </>
+          <ImportLogTab
+            importLog={importLog}
+            stockImportLog={stockImportLog}
+            purchaseImportBatches={purchaseImportBatches}
+            logFilter={logFilter}
+            setLogFilter={setLogFilter}
+          />
         )}
       </Card>
     </div>
