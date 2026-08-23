@@ -715,8 +715,10 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               </div>
             ) : (
               // 2026-08-18 · #95 재설계 · 카드형 리스트 · 모바일/PC 통일
-              <div className="flex-1 overflow-auto max-h-[56vh] lg:max-h-[62vh]
-                px-3 sm:px-4 py-3 flex flex-col gap-2 bg-zinc-50/30">
+              // 2026-08-23 · #202 · 사용자 지시 · 내부 스크롤 제거 · 자연 높이로 확장
+              //   · max-h/overflow 제거 → 모든 위치정보+수량입력 카드 완전 노출
+              //   · 페이지 스크롤로 대체 · 전체 등록 버튼(SaveCard) 자연스럽게 아래 위치
+              <div className="flex-1 px-3 sm:px-4 py-3 flex flex-col gap-2 bg-zinc-50/30">
                 {filteredRows.map((row) => (
                   <StockRowCard
                     key={row.key}

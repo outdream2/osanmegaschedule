@@ -191,6 +191,34 @@ export const SaveCard: React.FC<SaveCardProps> = ({
       </div>
 
       <div className="px-5 py-4 flex flex-col gap-3">
+        {/* 2026-08-23 · #202 · 사용자 지시 · 전체 등록 버튼 바로 위 · 등록 준비 요약 리스트 */}
+        <div className="rounded-lg border border-line/70 bg-zinc-50/50 divide-y divide-zinc-100 overflow-hidden">
+          <div className="px-3 py-2 flex items-center gap-2 bg-white/60 border-b border-line/60">
+            <span className="text-[12px] font-bold text-ink tracking-tight">등록 준비 요약</span>
+            <span className="ml-auto text-[12px] text-zinc-500 tabular-nums font-medium">{rows.length}건</span>
+          </div>
+          <ul className="max-h-[36vh] overflow-auto">
+            {rows.map((r, idx) => {
+              const total = calcRowTotal(r);
+              const location = String((r.product as any).realMap ?? (r.product as any).real_map ?? "").trim();
+              return (
+                <li key={r.key} className="px-3 py-1.5 flex items-center gap-2 text-[12px] hover:bg-white/60 transition-colors">
+                  <span className="w-5 h-5 shrink-0 rounded bg-brand-tint text-brand-deep inline-flex items-center justify-center text-[11px] font-bold tabular-nums">
+                    {idx + 1}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate font-semibold text-ink">{r.product.name}</span>
+                  {location && (
+                    <span className="shrink-0 text-[11px] font-semibold text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded">
+                      {location}
+                    </span>
+                  )}
+                  <span className="shrink-0 text-[12px] font-bold text-brand-deep tabular-nums">{total}개</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
         <p className="text-[14px] text-zinc-500 leading-relaxed">
           리스트의 모든 항목을 한 번에 저장합니다.
           창고1·2 · 매장1·2·3 수량과 구역을 확인한 뒤 아래 버튼을 누르세요.
