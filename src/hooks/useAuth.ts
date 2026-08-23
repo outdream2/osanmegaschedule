@@ -220,7 +220,22 @@ export function useAuth(): UseAuthReturn {
 
     tick(); // run immediately on mount
     const id = setInterval(tick, TICK_INTERVAL_MS);
-    return () => clearInterval(id);
+    // 2026-08-23 · #251 · 탭 focus 복귀 시 즉시 tick · 브라우저 background throttling 우회
+    //   · 문제 · 탭이 background 상태 시 setInterval 이 스로틀 (Chrome 1s min) · 30분 idle 감지 지연
+    //   · 결과 · 사용자가 탭 복귀 시 · 랜딩페이지 로그인 상태로 노출 (실제는 만료) · 데이터 0
+    //   · 해결 · visibilitychange · document.visible 시 즉시 tick + 만료 시 로그인 화면 이동
+    //   · window focus 도 fallback (visibilitychange 미지원 브라우저 대비)
+    const onVisible = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    const onFocus = () => tick();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+    };
   }, []); // intentionally empty — ticker is self-contained via refs
 
   // ---- Cross-tab sync via StorageEvent ----
