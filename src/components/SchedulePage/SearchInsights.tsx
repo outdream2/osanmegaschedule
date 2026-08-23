@@ -3,6 +3,7 @@
 import React from "react";
 import { Award } from "lucide-react";
 import { Employee } from "../../types";
+import { Card } from "../common/Card";
 
 interface SearchInsightsProps {
   employees: Employee[];
@@ -48,7 +49,7 @@ export const SearchInsights: React.FC<SearchInsightsProps> = ({
           });
 
           return (
-            <div key={`search-result-${emp.id}`} className="bg-white border border-blue-100 rounded-xl p-3 shadow-sm flex flex-col justify-between hover:border-blue-300 transition">
+            <Card key={`search-result-${emp.id}`} borderColor="border-blue-100" padding="sm" className="flex flex-col justify-between hover:border-blue-300 transition">
               <div className="flex items-center justify-between border-b border-zinc-100 pb-2 mb-2">
                 <div className="flex items-center gap-2">
                   <span className="font-extrabold text-zinc-800 text-sm">{emp.name}</span>
@@ -75,7 +76,7 @@ export const SearchInsights: React.FC<SearchInsightsProps> = ({
                   {shiftBreakdown["오후반차"] > 0 && <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-100 px-2 py-0.5 rounded-lg font-extrabold">오후반차: {shiftBreakdown["오후반차"]}회</span>}
                 </div>
               </div>
-            </div>
+            </Card>
           );
         })}
         {matched.length === 0 && (

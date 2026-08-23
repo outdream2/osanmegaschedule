@@ -12,6 +12,7 @@ import { BulkTab } from "./BulkTab";
 import { EmployeeInfoForm, type EmployeeInfoValues } from "../common/EmployeeInfoForm";
 import { EmployeeProfileCard } from "../common/EmployeeProfileCard";
 import { AccentBar } from "../common/AccentBar";
+import { Card } from "../common/Card";
 import { Modal } from "../common/Modal";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../lib/apiClient";
@@ -389,7 +390,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 onEdit={onEditEmployee}
               />
               {(localEmployee.address || localEmployee.email) && (
-                <div className="bg-white border border-zinc-100 rounded-xl p-3">
+                <Card borderColor="border-zinc-100" padding="sm">
                   <EmployeeInfoForm
                     values={{
                       name: localEmployee.name || "",
@@ -408,7 +409,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     editing={false}
                     fields={["address", "email"]}
                   />
-                </div>
+                </Card>
               )}
               {employee.description && (
                 <div className="text-[12px] font-medium text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">

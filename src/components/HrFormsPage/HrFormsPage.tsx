@@ -275,7 +275,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
         {/* ── 업로드 폼 ──────────────────────────────────────────────────── */}
         {showUploadForm && isManager && (
-          <div className="bg-white border border-amber-200 rounded-2xl shadow-sm overflow-hidden">
+          <Card borderColor="border-amber-200" rounded="2xl" padding="none" clip>
             {/* 폼 헤더 */}
             <div className="flex items-center gap-2.5 px-5 py-3.5 bg-amber-50 border-b border-amber-100">
               <Upload size={16} className="text-amber-600 shrink-0" />
@@ -393,7 +393,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                 </button>
               </div>
             </form>
-          </div>
+          </Card>
         )}
 
         {/* ── 필터 바 ────────────────────────────────────────────────────── */}

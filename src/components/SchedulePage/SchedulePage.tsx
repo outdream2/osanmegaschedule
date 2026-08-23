@@ -14,6 +14,7 @@ import { useSettings } from "../../hooks/useSettings";
 import { useContactInfo } from "../../hooks/useContactInfo";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { UserPlus, CheckCircle, Lock } from "lucide-react";
+import { Card } from "../common/Card";
 import { useScheduleData } from "./useScheduleData";
 import { useDisplayZones } from "./useDisplayZones";
 import {
@@ -572,10 +573,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
         <div className="bg-white border border-line rounded-b-xl flex flex-col flex-1 shadow-sm min-w-0 overflow-hidden">
           {/* Month locked banner */}
           {isMonthLocked && (
-            <div className="mx-2 mt-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2">
+            <Card bg="bg-amber-50" borderColor="border-amber-200" variant="flat" padding="sm" className="mx-2 mt-2 flex items-center gap-2">
               <Lock size={13} className="text-amber-500 shrink-0" />
               <span className="text-xs font-bold text-amber-700">{currentMonth}월 스케줄이 확정된 상태입니다. 수정하려면 확정해제 후 진행하세요.</span>
-            </div>
+            </Card>
           )}
 
           {/* Empty month banner */}

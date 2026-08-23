@@ -62,13 +62,13 @@ export const StaffLeaveSection: React.FC<StaffLeaveSectionProps> = ({
         {/* 상단 KPI · 잔여 / 총 / 사용 + 연도 셀렉터 */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
-            <div className="flex flex-col items-center px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 min-w-[56px]">
+            <Card bg="bg-emerald-50" borderColor="border-emerald-200" variant="flat" rounded="lg" padding="none" className="flex flex-col items-center px-2.5 py-1 min-w-[56px]">
               <span className="text-[14px] font-bold text-emerald-600 uppercase tracking-wider">잔여</span>
               <span className="text-[14px] font-bold text-emerald-700 tabular-nums leading-tight">
                 {fmtDays(remainDays)}<span className="text-[14px] font-semibold ml-0.5">일</span>
               </span>
-            </div>
-            <div className="flex flex-col items-center px-2.5 py-1 rounded-lg bg-zinc-50 border border-line min-w-[56px]">
+            </Card>
+            <Card bg="bg-zinc-50" borderColor="border-line" variant="flat" rounded="lg" padding="none" className="flex flex-col items-center px-2.5 py-1 min-w-[56px]">
               <span className="text-[14px] font-bold text-zinc-500 uppercase tracking-wider">총 부여</span>
               {editing ? (
                 <input
@@ -82,13 +82,13 @@ export const StaffLeaveSection: React.FC<StaffLeaveSectionProps> = ({
                   {fmtDays(totalDays)}<span className="text-[14px] font-semibold ml-0.5">일</span>
                 </span>
               )}
-            </div>
-            <div className="flex flex-col items-center px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 min-w-[56px]">
+            </Card>
+            <Card bg="bg-amber-50" borderColor="border-amber-200" variant="flat" rounded="lg" padding="none" className="flex flex-col items-center px-2.5 py-1 min-w-[56px]">
               <span className="text-[14px] font-bold text-amber-600 uppercase tracking-wider">사용</span>
               <span className="text-[14px] font-bold text-amber-700 tabular-nums leading-tight">
                 {fmtDays(usedDays)}<span className="text-[14px] font-semibold ml-0.5">일</span>
               </span>
-            </div>
+            </Card>
           </div>
           {/* 연도 선택 */}
           <Card variant="raw-sm" rounded="lg" padding="none" className="flex items-center gap-1.5 px-1.5 py-1">
@@ -140,7 +140,7 @@ export const StaffLeaveSection: React.FC<StaffLeaveSectionProps> = ({
           ) : usedLeaves.length === 0 ? (
             <EmptyRow label={`${leaveYear}년 사용한 연차가 없습니다`} />
           ) : (
-            <div className="border border-line rounded-lg overflow-hidden bg-white">
+            <Card rounded="lg" padding="none" clip>
               <table className="w-full text-[14px]">
                 <thead className="bg-zinc-50 border-b border-line">
                   <tr className="text-zinc-500 text-[14px] uppercase tracking-wider">
@@ -187,7 +187,7 @@ export const StaffLeaveSection: React.FC<StaffLeaveSectionProps> = ({
                   })}
                 </tbody>
               </table>
-            </div>
+            </Card>
           )}
           <p className="text-[14px] text-zinc-400 mt-0.5 leading-relaxed">
             연차 승인 시 자동 반영 · 삭제 시 스케줄표(월차)에서도 제거됩니다 · 반차는 0.5일로 계산

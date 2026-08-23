@@ -3,7 +3,7 @@
 //   · Avatar · InlineField · SectionCard(+localStorage helpers) · EmptyRow · SectionLabel · EmptyDetail
 import React, { useState } from "react";
 import { Users } from "lucide-react";
-import { CARD_BASE } from "../../styles/tokens";
+import { Card } from "../common/Card";
 import type { SectionGroup } from "./types";
 import { GROUP_HEADER, GROUP_ICON } from "./types";
 import { initials } from "./helpers";
@@ -116,7 +116,7 @@ export const SectionCard: React.FC<{
   const iconCls   = GROUP_ICON[group];
   const textCls   = headerCls.split(" ").find(c => c.startsWith("text-")) ?? "";
   return (
-    <div className={`${CARD_BASE} overflow-hidden`}>
+    <Card padding="none" clip>
       <button
         onClick={() => setOpen((o) => !o)}
         className={`w-full px-3 py-2 border-b ${open ? headerCls : "bg-white border-zinc-100"} flex items-center justify-between cursor-pointer transition-colors duration-150`}
@@ -132,7 +132,7 @@ export const SectionCard: React.FC<{
         </span>
       </button>
       {open && <div className="p-3">{children}</div>}
-    </div>
+    </Card>
   );
 };
 

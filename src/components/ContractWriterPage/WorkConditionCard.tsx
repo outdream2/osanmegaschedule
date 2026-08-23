@@ -12,6 +12,7 @@ import {
 import { WAGE_HOURS, computeWageFlow, isMonthlyWageType, fmtWon } from "./wageCalc";
 import { SelectOrCustom } from "./subcomponents";
 import { IconTile } from "../common/IconTile";
+import { Card } from "../common/Card";
 import { calcWageBase } from "../../lib/wageCalc";
 import type { ContractCategory } from "../../lib/contract";
 
@@ -50,7 +51,7 @@ export const WorkConditionCard: React.FC<WorkConditionCardProps> = ({
   weeklyDays, weeklyWeekdayDays, weeklyWeekendDays, toggleDay, monthlyCalc,
   jobCategories,
 }) => (
-  <div className="rounded-xl border border-line bg-white p-3 flex flex-col gap-3 shadow-sm">
+  <Card padding="sm" className="flex flex-col gap-3">
     <div className="flex items-center gap-2 pb-2 border-b border-zinc-100">
       <button
         type="button"
@@ -337,5 +338,5 @@ export const WorkConditionCard: React.FC<WorkConditionCardProps> = ({
       />
     </div>
     </>)}
-  </div>
+  </Card>
 );

@@ -49,7 +49,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   toggleCard, isCardCollapsed,
   addrModalOpen, setAddrModalOpen,
 }) => (
-  <div className="rounded-xl border border-line bg-white p-3 flex flex-col gap-3 shadow-sm">
+  <Card padding="sm" className="flex flex-col gap-3">
     {/* 카드 헤더 (클릭 · 접기/펴기) */}
     <button
       type="button"
@@ -246,5 +246,5 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
       </div>
     </div>
     </>)}
-  </div>
+  </Card>
 );

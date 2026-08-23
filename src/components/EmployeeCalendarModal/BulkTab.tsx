@@ -5,6 +5,7 @@
 import React from "react";
 import { Lock, MessageSquare, CheckCircle } from "lucide-react";
 import { AccentBar } from "../common/AccentBar";
+import { Card } from "../common/Card";
 import type { Employee } from "../../types";
 import type { ScheduleTypeEntry } from "../../constants";
 
@@ -46,16 +47,16 @@ export const BulkTab: React.FC<BulkTabProps> = ({
     <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5 text-ink">
 
       {isLocked && (
-        <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg">
+        <Card bg="bg-amber-50" borderColor="border-amber-200" variant="flat" rounded="lg" padding="sm" className="flex items-center gap-2">
           <Lock size={14} className="text-amber-500 shrink-0" />
           <span className="text-[14px] font-semibold text-amber-800">이달 스케줄이 확정된 상태입니다. 메인에서 확정해제 후 사용하세요.</span>
-        </div>
+        </Card>
       )}
 
       {employee.description && (
-        <div className="px-3 py-2 bg-amber-50/70 border border-amber-100 rounded-lg text-[14px] text-amber-800">
+        <Card bg="bg-amber-50/70" borderColor="border-amber-100" variant="flat" rounded="lg" padding="sm" className="text-[14px] text-amber-800">
           <span className="font-bold mr-1.5">비고</span>{employee.description}
-        </div>
+        </Card>
       )}
 
       {/* Section 1 · 날짜 선택 */}
@@ -93,7 +94,7 @@ export const BulkTab: React.FC<BulkTabProps> = ({
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-1.5 p-2 bg-zinc-50/60 border border-line rounded-xl">
+        <Card bg="bg-zinc-50/60" variant="flat" padding="none" className="grid grid-cols-7 gap-1.5 p-2">
           {daysList.map((dayNum) => {
             const { dayWord, dayIndex, fullDate } = getDayDetails(dayNum);
             const isChecked = bulkSelectedDates.includes(fullDate);
@@ -122,7 +123,7 @@ export const BulkTab: React.FC<BulkTabProps> = ({
               </label>
             );
           })}
-        </div>
+        </Card>
       </section>
 
       {/* Section 2 · 근무 조건 */}

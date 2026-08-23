@@ -10,6 +10,7 @@ import {
   computeIncomeTax, isMonthlyWageType, fmtWon,
 } from "./wageCalc";
 import { IconTile } from "../common/IconTile";
+import { Card } from "../common/Card";
 import { MIN_WAGE_2026 } from "../../lib/payroll";
 import type { WithholdingRate } from "../../lib/payroll";
 import { WITHHOLDING_RATES } from "../../lib/payroll";
@@ -56,7 +57,7 @@ export const WageCard: React.FC<WageCardProps> = ({
   childrenCount, setChildrenCount,
   extraDeduction, setExtraDeduction,
 }) => (
-  <div className="rounded-xl border border-emerald-200 bg-white p-3 flex flex-col gap-3 shadow-sm">
+  <Card borderColor="border-emerald-200" padding="sm" className="flex flex-col gap-3">
     <div className="flex items-center gap-2 pb-2 border-b border-emerald-100">
       <button
         type="button"
@@ -89,7 +90,7 @@ export const WageCard: React.FC<WageCardProps> = ({
         setExtraDeduction={setExtraDeduction}
       />
     )}
-  </div>
+  </Card>
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -244,7 +245,7 @@ const WageCardBody: React.FC<WageCardBodyProps> = ({
           시급 입력 시 · 임금구성표 자동 산출
         </div>
       ) : (
-        <div className="border border-line rounded-lg bg-white overflow-hidden flex flex-col">
+        <Card variant="flat" rounded="lg" padding="none" clip className="flex flex-col">
           {/* 근무조건 산식 헤더 */}
           <div className="px-4 py-2 bg-indigo-50/40 border-b border-indigo-100 flex items-baseline flex-wrap gap-x-1.5 text-[15px]">
             {form.employeeCategory && (() => {
@@ -581,7 +582,7 @@ const WageCardBody: React.FC<WageCardBodyProps> = ({
             })()}
             <span className="tabular-nums font-bold text-emerald-800 ml-auto text-[15px] whitespace-nowrap">{fmtWon(monthlyNet)}원</span>
           </div>
-        </div>
+        </Card>
       )}
     </>
   );
