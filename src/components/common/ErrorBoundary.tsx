@@ -3,7 +3,9 @@
 //   · React.lazy 로 분할 로딩된 컴포넌트 · 배포 후 chunk hash 변경으로 404 시 · 앱 전체 멈춤
 //   · ErrorBoundary 로 감싸서 · 친절한 에러 카드 + [새로고침] 버튼 노출
 //   · ChunkLoadError 는 자동 감지 · "새 버전이 배포되었습니다" 안내
+// 2026-08-24 · #151 · Card 프리미티브 확산 · 인라인 wrapper → Card variant=brand-modal
 import React from "react";
+import { Card } from "./Card";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -49,8 +51,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
     return (
       <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-4">
-        {/* 2026-08-17 v2 · 3-layer shadow · Attio 톤 */}
-        <div className="max-w-md w-full bg-white rounded-2xl border border-line shadow-brand-modal p-6 flex flex-col gap-4">
+        {/* 2026-08-24 · Card 프리미티브 · variant=brand-modal · 3-layer shadow */}
+        <Card variant="brand-modal" padding="lg" rounded="2xl" className="max-w-md w-full flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 text-2xl">
               {isChunkError ? "🔄" : "⚠️"}
@@ -91,7 +93,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               </button>
             )}
           </div>
-        </div>
+        </Card>
       </div>
     );
   }
