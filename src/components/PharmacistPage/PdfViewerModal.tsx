@@ -14,11 +14,13 @@
 //
 // ※ OS 레벨 스크린샷 (Win+Shift+S · macOS Cmd+Shift+3/4/5) 은 브라우저 JS 로 차단 불가.
 //    Print Screen 은 clipboard 차단 정도만 가능 · alert 로 경고 표시.
+// 2026-08-23 · Modal v3 재마이그레이션 · backdropIntensity="dark" + zIndex={9999}
 
 import React, { useEffect, useMemo } from "react";
-import { X, Download, ExternalLink, FileWarning } from "lucide-react";
+import { FileWarning, Download, ExternalLink } from "lucide-react";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
+import Modal from "../common/Modal";
 
 interface PdfViewerModalProps {
   open: boolean;
@@ -49,14 +51,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     const d = new Date();
     return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── ESC 로 닫기 ────────────────────────────────
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
 
   // ── 스크린샷·복사·인쇄 방지 (best-effort) ─────
   useEffect(() => {
@@ -130,8 +124,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     };
   }, [open]);
 
-  if (!open) return null;
-
   // iframe src · PDF 뷰어 UI 최소화 옵션 (툴바 · 인쇄·다운로드 버튼 숨김 시도 · 브라우저에 따라 무시될 수 있음)
   const pdfSrc = pdf
     ? `${fileUrl}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`
@@ -139,111 +131,110 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
 
   const watermark = watermarkText || "약사 전용";
 
+  // ── 헤더 title slot (보안 서브텍스트 포함) ─────
+  const headerTitle = (
+    <div className="flex items-center gap-2 min-w-0 flex-1">
+      <FileWarning size={16} className="text-amber-400 shrink-0" />
+      <div className="min-w-0">
+        <div className="text-[13px] font-bold text-white truncate">{fileName || "PDF 뷰어"}</div>
+        <div className="text-[10px] text-zinc-400 font-semibold truncate">
+          보안 뷰어 · 복사·인쇄·저장 · 스크린샷 금지 · {watermark} · {openedAt}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div
-      className="fixed inset-0 z-[9999] flex flex-col bg-zinc-950/95 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      onContextMenu={e => { e.preventDefault(); e.stopPropagation(); }}
-    >
-      {/* ── 헤더 ─────────────────────────────── */}
-      <div className="shrink-0 h-12 px-3 sm:px-4 flex items-center gap-2 border-b border-zinc-800/60 bg-zinc-900/80">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <FileWarning size={16} className="text-amber-400 shrink-0" />
-          <div className="min-w-0">
-            <div className="text-[13px] font-bold text-white truncate">{fileName || "PDF 뷰어"}</div>
-            <div className="text-[10px] text-zinc-400 font-semibold truncate">
-              보안 뷰어 · 복사·인쇄·저장 · 스크린샷 금지 · {watermark} · {openedAt}
-            </div>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white flex items-center justify-center cursor-pointer shrink-0 transition"
-          title="닫기 (ESC)"
-          aria-label="닫기"
-        >
-          <X size={18} />
-        </button>
-      </div>
-
-      {/* ── 본문 (iframe or fallback) ────────── */}
-      <div className="flex-1 min-h-0 relative">
-        {pdf ? (
-          <iframe
-            src={pdfSrc}
-            title={fileName || "PDF 뷰어"}
-            className="w-full h-full border-0 bg-white"
-            // 워터마크 · 워터마크 등 pointer-events 없이 iframe 위에 겹치도록
-          />
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center gap-4 p-8 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-zinc-800 text-amber-400 flex items-center justify-center">
-              <FileWarning size={28} />
-            </div>
-            <div>
-              <div className="text-lg font-bold text-white">PDF 이외 파일</div>
-              <div className="text-sm text-zinc-300 font-semibold mt-1">
-                이 뷰어는 PDF 만 지원합니다.<br />
-                아래 버튼으로 새 창에서 열거나 다운로드하세요.
+    <>
+      <Modal
+        open={open}
+        onClose={onClose}
+        title={headerTitle}
+        backdropIntensity="dark"
+        zIndex={9999}
+        size="full"
+        bodyPadding="none"
+        className="!max-w-full h-[95vh] flex flex-col !bg-zinc-900 !rounded-none"
+        closeOnEsc
+        closeOnBackdrop={false}
+        headerTint={false}
+      >
+        {/* ── 본문 (iframe or fallback) ────────── */}
+        <div className="flex-1 min-h-0 relative h-full">
+          {pdf ? (
+            <iframe
+              src={pdfSrc}
+              title={fileName || "PDF 뷰어"}
+              className="w-full h-full border-0 bg-white"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-4 p-8 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-zinc-800 text-amber-400 flex items-center justify-center">
+                <FileWarning size={28} />
               </div>
-              <div className="text-[11px] text-amber-400/80 font-semibold mt-3">
-                ※ 열람 시에도 보안 규정을 준수하세요 (복사·촬영 금지)
+              <div>
+                <div className="text-lg font-bold text-white">PDF 이외 파일</div>
+                <div className="text-sm text-zinc-300 font-semibold mt-1">
+                  이 뷰어는 PDF 만 지원합니다.<br />
+                  아래 버튼으로 새 창에서 열거나 다운로드하세요.
+                </div>
+                <div className="text-[11px] text-amber-400/80 font-semibold mt-3">
+                  ※ 열람 시에도 보안 규정을 준수하세요 (복사·촬영 금지)
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <a
+                  href={fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-sm font-bold cursor-pointer transition"
+                >
+                  <ExternalLink size={14} /> 새 창에서 열기
+                </a>
+                <a
+                  href={fileUrl}
+                  download={fileName || undefined}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-bold cursor-pointer transition"
+                >
+                  <Download size={14} /> 다운로드
+                </a>
               </div>
             </div>
-            <div className="flex gap-2">
-              <a
-                href={fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-sm font-bold cursor-pointer transition"
-              >
-                <ExternalLink size={14} /> 새 창에서 열기
-              </a>
-              <a
-                href={fileUrl}
-                download={fileName || undefined}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-bold cursor-pointer transition"
-              >
-                <Download size={14} /> 다운로드
-              </a>
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* ── 워터마크 오버레이 (pointer-events:none) ─────
-              PDF 를 캡처하더라도 사용자·시각 정보가 화면에 남아 추적 가능 */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 overflow-hidden select-none"
-          style={{ userSelect: "none" }}
-        >
+          {/* ── 워터마크 오버레이 (pointer-events:none) ─────
+                PDF 를 캡처하더라도 사용자·시각 정보가 화면에 남아 추적 가능 */}
           <div
-            className="absolute inset-0 opacity-[0.11] text-white font-bold tracking-widest"
-            style={{
-              transform: "rotate(-24deg) translate(-10%, -10%)",
-              fontSize: 22,
-              lineHeight: "180px",
-              whiteSpace: "nowrap",
-              textShadow: "0 0 6px rgba(0,0,0,0.6)",
-            }}
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 overflow-hidden select-none"
+            style={{ userSelect: "none" }}
           >
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="whitespace-nowrap">
-                {`${watermark} · ${openedAt}   `.repeat(10)}
-              </div>
-            ))}
+            <div
+              className="absolute inset-0 opacity-[0.11] text-white font-bold tracking-widest"
+              style={{
+                transform: "rotate(-24deg) translate(-10%, -10%)",
+                fontSize: 22,
+                lineHeight: "180px",
+                whiteSpace: "nowrap",
+                textShadow: "0 0 6px rgba(0,0,0,0.6)",
+              }}
+            >
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="whitespace-nowrap">
+                  {`${watermark} · ${openedAt}   `.repeat(10)}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      </Modal>
       {/* 2026-08-21 · Framework Phase 3 · toast */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-[9999]">
           <div className={toastClass(toast.tone)}>{toast.message}</div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
