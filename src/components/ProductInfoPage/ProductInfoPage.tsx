@@ -12,6 +12,7 @@ import { Package, Info as InfoIcon } from "lucide-react";
 import { SplitListPanel } from "../common/SplitListPanel";
 import { Modal } from "../common/Modal";
 import { Card } from "../common/Card";
+import { ProductCreateModal } from "./ProductCreateModal";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import { EmptyState } from "../common/EmptyState";
@@ -137,6 +138,8 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // 좌우 분할 · 폭 저장 · 데스크탑 감지
   const { width: leftWidth, startResize, isDesktop } = useResizablePanel({
@@ -178,7 +181,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
       })
       .finally(() => alive && setListLoading(false));
     return () => { alive = false; };
-  }, [showError]);
+  }, [showError, reloadKey]);
 
   const filtered = useMemo(() => {
     const s = search.trim();
@@ -258,7 +261,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
             search={search}
             onSearchChange={setSearch}
             searchPlaceholder="상품명·코드·공급사 검색"
-            onAdd={canManage ? () => { showError("상품 등록 · Phase C 준비 중"); } : undefined}
+            onAdd={canManage ? () => setCreateOpen(true) : undefined}
             addLabel="상품 등록"
             addTitle="신규 상품 등록"
             loading={listLoading}
@@ -300,6 +303,16 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
           <ProductDetailView product={detail} loading={detailLoading} error={detailError} />
         </Modal>
       )}
+
+      {/* Phase C · 상품 등록 모달 */}
+      <ProductCreateModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={(code) => {
+          setSelectedCode(code);
+          setReloadKey((k) => k + 1);
+        }}
+      />
 
       {toast && (
         <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>

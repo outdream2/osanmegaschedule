@@ -11,6 +11,7 @@ import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler";
 import type { HiddenProductsResponse } from "../../../src/shared/dtos/products";
+import { CreateProductSchema } from "../../../src/shared/schemas/products";
 
 const router = Router();
 
@@ -492,6 +493,44 @@ router.patch("/api/products/:code", asyncHandler(async (req, res) => {
   }
   resetProductCache();
   res.json({ ok: true, updated: Object.keys(updates) });
+}));
+
+// 2026-08-23 · #177 Phase C · 상품 신규 등록 · 관리자 + 매니저 lv5+ 만 (authorize(5))
+//   · Zod · CreateProductSchema · product_code UNIQUE 검사 · 중복 시 409
+router.post("/api/products", authorize(5), asyncHandler(async (req, res) => {
+  const parsed = CreateProductSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    const first = parsed.error.issues[0];
+    throw badRequest(`${first?.path.join(".") ?? "input"}: ${first?.message ?? "유효성 오류"}`);
+  }
+  const input = parsed.data;
+  const code = input.product_code.trim();
+  if (!code) throw badRequest("product_code required");
+
+  // 중복 검사
+  const { data: exist, error: existErr } = await supabase
+    .from("products")
+    .select("product_code")
+    .eq("product_code", code)
+    .maybeSingle();
+  if (existErr) throw new HttpError(500, existErr.message);
+  if (exist) throw new HttpError(409, `상품코드 중복: ${code}`);
+
+  // INSERT · undefined → 컬럼 미포함 · null 명시는 그대로 저장
+  const row: Record<string, unknown> = { product_code: code };
+  for (const [k, v] of Object.entries(input)) {
+    if (k === "product_code") continue;
+    if (typeof v === "undefined") continue;
+    row[k] = v === "" ? null : v;
+  }
+  const { error: insErr } = await supabase.from("products").insert(row);
+  if (insErr) {
+    console.error("[products POST] insert error:", insErr.message);
+    throw new HttpError(500, insErr.message);
+  }
+  resetProductCache();
+  console.log(`[products POST] 신규 등록 · ${code} · ${input.product_name}`);
+  res.status(201).json({ ok: true, product_code: code });
 }));
 
 export default router;
