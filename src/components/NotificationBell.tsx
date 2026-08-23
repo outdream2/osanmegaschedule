@@ -163,6 +163,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
     <div className="relative" ref={panelRef}>
       {/* Bell button — 미확인 알림 있으면 강조 · 신규 도착 시 흔들림 */}
       {/* 2026-08-17 · 최신 트렌드 · 딥네이비 배경 대응 · 반투명 흰 · 접근성 h-9 · 폰트 +2 */}
+      {/* 2026-08-23 · #199 · 테두리와 종 사이 여백 반으로 축소 (시각적 균형) · Bell 16→22 · compact 13→18 */}
       <button
         onClick={() => { setOpen((v) => !v); if (!open) fetchNotifications(); }}
         className={`relative flex items-center justify-center rounded-md border transition-colors cursor-pointer ${
@@ -174,7 +175,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
         } ${justArrived ? "notif-bell-shake" : ""}`}
         title={hasUnread ? `미확인 알림 ${unreadCount}건` : "알림"}
       >
-        <Bell size={compact ? 13 : 16} strokeWidth={hasUnread ? 2.4 : 2.2} className={hasUnread ? "animate-pulse" : ""} />
+        <Bell size={compact ? 18 : 22} strokeWidth={hasUnread ? 2.4 : 2.2} className={hasUnread ? "animate-pulse" : ""} />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center leading-none shadow-sm ring-2 ring-white tabular-nums">
             {unreadCount > 99 ? "99+" : unreadCount}
