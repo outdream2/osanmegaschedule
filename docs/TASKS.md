@@ -67,6 +67,29 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #200 · 랜딩페이지 · 전체 글씨 사이즈 +2 (신규 · 2026-08-23)
+- 📄 대상 · `src/components/LandingPage/LandingPage.tsx` 및 서브 컴포넌트들
+- 🔲 모든 텍스트 · 글씨 사이즈 **+2 통일** (대원칙 · `feedback_font_plus2_default.md`)
+- 🔲 대상 컴포넌트:
+  - LandingPage.tsx (기본)
+  - TodayStatusPanel.tsx
+  - LoginModals.tsx
+  - UploadDataModal.tsx · StockUploadTab.tsx · ImportLogTab.tsx
+  - VendorStockModal.tsx · VendorDetailModal.tsx (LandingPage 관련)
+  - PaymentRegisterModal.tsx
+  - PeriodCoverageWidget.tsx
+  - MenuCard.tsx · StockSearch.tsx (관련)
+- 🔲 매핑 규칙 (기존 목업 대비 +2):
+  - `text-xs` (12) → `text-sm` (14)
+  - `text-sm` (14) → `text-base` (16)
+  - `text-base` (16) → `text-lg` (18)
+  - `text-[Npx]` 형태 · N+2 (예: text-[13px] → text-[15px])
+  - `text-lg` (18) → `text-xl` (20) 등
+- 🔲 회귀 방지 · UI 레이아웃 깨짐 없는지 매 컴포넌트 확인
+- 🔲 목업 파일 · `docs/UI_MOCKUP_2026-08-21.html` · 최종 톤 참조
+- 💡 대원칙 · 40대+ 가독성 · Pretendard · antialiased
+- 💡 이 태스크 이후 · 다른 페이지들도 +2 통일 여부 사용자 결정
+
 ### #199 · 로그아웃 옆 종표시 · 테두리·아이콘 여백 반으로 축소 (신규 · 2026-08-23)
 - 📄 대상 · AppNavHeader · 로그아웃 버튼 왼쪽 종(Bell) 알림 아이콘
 - 🔲 종 아이콘 · 테두리(border/padding)와 아이콘 사이 여백 · **현재의 반으로** 축소
