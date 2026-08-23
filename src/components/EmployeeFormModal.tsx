@@ -2,11 +2,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { api } from "../lib/apiClient";
 import type { NextEmployeeNumberResponse } from "../shared/dtos/employees";
-import { X, Users, Calendar, MapPin, FileText, ExternalLink, Upload, IdCard } from "lucide-react";
+import { Users, Calendar, MapPin, FileText, ExternalLink, Upload, IdCard } from "lucide-react";
 import { ZONE_DEFS, SECTION_LABEL } from "../constants/displayZones";
 // POSITIONS · RANKS · WORKPLACES → useReferenceValues 로 이관 (2026-08-06 · T-DualStorage-Connect)
 import { useReferenceValues } from "../hooks/useReferenceValues";
 import { StatusPill } from "./common/StatusPill";
+import { Modal } from "./common/Modal";
 
 interface EmployeeFormModalProps {
   empModalMode: "create" | "edit";
@@ -109,29 +110,18 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
   // DB + 하드코딩 병합 reference 값
   const { positions: dbPositions, ranks: dbRanks, workplaces: dbWorkplaces } = useReferenceValues();
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   return (
-    // 2026-08-17 v2 · Modal 통일
-    <div className="fixed inset-0 z-[60] flex items-center justify-center backdrop-brand p-4 animate-in fade-in duration-200">
-      <div className="relative w-full sm:max-w-md bg-white rounded-2xl shadow-brand-modal border border-line transform scale-100 transition animate-in zoom-in-95 duration-100 max-h-[92vh] overflow-y-auto">
-        {/* 헤더 */}
-        <div className="sticky top-0 z-10 bg-white border-b border-zinc-100 px-5 py-3.5 flex items-center justify-between rounded-t-2xl">
-          <div className="flex items-center gap-2">
-            <Users className="text-blue-600" size={18} />
-            <h3 className="text-sm font-bold text-zinc-900">
-              {empModalMode === "edit" ? "직원 정보 수정" : "새 직원 등록"}
-            </h3>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition cursor-pointer">
-            <X size={16} />
-          </button>
-        </div>
-
+    // 2026-08-23 v3 · Modal primitive · zIndex={60} (BreakModal z-50 위)
+    <Modal
+      open
+      onClose={onClose}
+      icon={<Users className="text-blue-600" size={18} />}
+      title={empModalMode === "edit" ? "직원 정보 수정" : "새 직원 등록"}
+      size="sm"
+      zIndex={60}
+      bodyPadding="none"
+      backdropIntensity="brand"
+    >
         <form onSubmit={onSubmit} className="px-5 py-4 space-y-4">
 
           {/* 2026-08-16 · #122 · 사번 · 자동 생성 + 사용자 편집 가능 */}
@@ -493,7 +483,6 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };
