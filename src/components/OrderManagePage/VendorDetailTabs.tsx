@@ -21,6 +21,7 @@ import { CARD_BASE } from "../../styles/tokens";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
+import { useVendorInfoModal } from "../common/features/VendorInfoModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -515,6 +516,8 @@ interface VendorDetailTabsProps {
 
 export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) => {
   const { toast, showError } = useToast();
+  // 2026-08-24 · 사용자 지시 · 공급사 정보 수정 · openVendorInfo · [수정] 버튼 wiring
+  const { openVendorInfo, modalElement: vendorModalElement } = useVendorInfoModal();
   const [activeTab, setActiveTab] = useState<TabKey>("balance");
 
   // 기간 필터 (내부 관리)
@@ -626,13 +629,15 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
       <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
     )}
     <div className="flex flex-col gap-3 min-h-0 flex-1">
-      {/* 헤더 카드 */}
+      {/* 헤더 카드 · 2026-08-24 · [수정] 버튼 · openVendorInfo → VendorDetailModal */}
       <VendorInfoHeader
         vendor={vendor}
         kpi={kpi}
         loading={isLoading}
         ledgerRows={ledger?.rows as LedgerRowMinimal[] | undefined}
+        onEdit={() => openVendorInfo(vendor as any)}
       />
+      {vendorModalElement}
 
       {/* 기간 필터 + 새로고침 */}
       <div className={`${CARD_BASE} px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5`}>

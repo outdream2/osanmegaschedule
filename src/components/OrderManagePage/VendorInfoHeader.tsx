@@ -54,6 +54,8 @@ interface VendorInfoHeaderProps {
   loading?: boolean;
   /** supplier-ledger rows · 월별 표 표시용 */
   ledgerRows?: LedgerRowMinimal[];
+  /** 2026-08-24 · 공급사 정보 수정 콜백 · 있으면 [수정] 버튼 표시 (사용자 지시) */
+  onEdit?: () => void;
 }
 
 // ─── Types (월별 집계) ─────────────────────────────────────────────────
@@ -122,7 +124,7 @@ function buildMonthlyAgg(rows: LedgerRowMinimal[], limit = 12): MonthlyAgg[] {
 // ─── VendorInfoHeader ─────────────────────────────────────────────────────
 
 export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
-  vendor, kpi, loading = false, ledgerRows,
+  vendor, kpi, loading = false, ledgerRows, onEdit,
 }) => {
   const copyBizNum = () => {
     if (!vendor.business_number) return;
@@ -180,6 +182,17 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
             )}
             {vendor.active === false && (
               <StatusPill tone="zinc" size="xs">비활성</StatusPill>
+            )}
+            {/* 2026-08-24 · 사용자 지시 · [수정] 버튼 · 오른쪽 정렬 · openVendorInfo 콜백 */}
+            {onEdit && (
+              <button
+                type="button"
+                onClick={onEdit}
+                title="공급사 정보 조회 및 수정"
+                className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-[13px] font-bold text-sky-800 bg-sky-50 border border-sky-200 hover:bg-sky-100 hover:border-sky-300 active:scale-[0.98] transition-all cursor-pointer"
+              >
+                수정
+              </button>
             )}
           </div>
 
