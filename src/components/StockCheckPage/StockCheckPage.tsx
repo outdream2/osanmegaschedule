@@ -237,7 +237,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
 
         {/* Results list */}
         {sortedResults && sortedResults.length > 0 && (
-          <Card padding="none" clip className={loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}>
+          <Card padding="none" clip topAccent className={loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}>
             {/* 결과 수 표시: 직원(로그인)만 · 일반 사용자는 숨김 */}
             {isLoggedIn && (
               <div className="px-4 py-2.5 bg-zinc-50 border-b border-zinc-100 flex items-center justify-between">
