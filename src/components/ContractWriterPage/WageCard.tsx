@@ -57,7 +57,7 @@ export const WageCard: React.FC<WageCardProps> = ({
   childrenCount, setChildrenCount,
   extraDeduction, setExtraDeduction,
 }) => (
-  <Card borderColor="border-emerald-200" padding="sm" className="flex flex-col gap-3">
+  <Card borderColor="border-emerald-200" padding="sm" topAccent className="flex flex-col gap-3">
     <div className="flex items-center gap-2 pb-2 border-b border-emerald-100">
       <button
         type="button"

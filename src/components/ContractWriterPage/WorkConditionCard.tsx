@@ -51,7 +51,7 @@ export const WorkConditionCard: React.FC<WorkConditionCardProps> = ({
   weeklyDays, weeklyWeekdayDays, weeklyWeekendDays, toggleDay, monthlyCalc,
   jobCategories,
 }) => (
-  <Card padding="sm" className="flex flex-col gap-3">
+  <Card padding="sm" topAccent className="flex flex-col gap-3">
     <div className="flex items-center gap-2 pb-2 border-b border-zinc-100">
       <button
         type="button"

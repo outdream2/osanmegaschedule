@@ -49,7 +49,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   toggleCard, isCardCollapsed,
   addrModalOpen, setAddrModalOpen,
 }) => (
-  <Card padding="sm" className="flex flex-col gap-3">
+  <Card padding="sm" topAccent className="flex flex-col gap-3">
     {/* 카드 헤더 (클릭 · 접기/펴기) */}
     <button
       type="button"

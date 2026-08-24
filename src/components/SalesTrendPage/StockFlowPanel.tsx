@@ -156,7 +156,9 @@ export const StockFlowPanel: React.FC<{
   }, [rows, sort, dir, query, saleMin, saleMax]);
 
   return (
-    <div className={`${CARD_BASE} flex flex-col h-full overflow-hidden`}>
+    <div className={`relative ${CARD_BASE} flex flex-col h-full overflow-hidden`}>
+      {/* 2026-08-24 · v9 · 상단 gradient accent */}
+      <span aria-hidden className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10" />
       {toast && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
           <div className={toastClass(toast.tone)}>{toast.message}</div>

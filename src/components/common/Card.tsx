@@ -60,6 +60,8 @@ export interface CardProps {
   rounded?: CardRounded;
   /** true 시 · overflow-hidden 추가 (테이블·이미지 wrap 용) */
   clip?: boolean;
+  /** 2026-08-24 · v9 · 상단 2px gradient accent (brand-deep → sky-500 → brand-deep) · true 시 clip 자동 · relative 자동 */
+  topAccent?: boolean;
   /** 배경 override · 기본 bg-white · 예: "bg-emerald-50/50" · "bg-amber-50/70" */
   bg?: string;
   /** 테두리 색 override · 기본 border-line · 예: "border-emerald-200" · "border-amber-300" */
@@ -95,6 +97,7 @@ export const Card: React.FC<CardProps> = ({
   padding = "md",
   rounded = "xl",
   clip = false,
+  topAccent = false,
   bg,
   borderColor,
   as = "div",
@@ -110,17 +113,28 @@ export const Card: React.FC<CardProps> = ({
   // v2 · bg · borderColor override · 기본 bg-white · border-line
   const bgCls = bg ?? "bg-white";
   const borderClsColor = borderColor ?? "border-line";
+  // 2026-08-24 · topAccent · clip + relative 자동
+  const effectiveClip = clip || topAccent;
   const baseCls = [
+    topAccent ? "relative" : "",
     bgCls,
     "border",
     borderClsColor,
     ROUNDED_CLS[rounded],
     VARIANT_SHADOW[variant],
     PADDING_CLS[padding],
-    clip ? "overflow-hidden" : "",
+    effectiveClip ? "overflow-hidden" : "",
     onClick ? "cursor-pointer hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_2px_4px_rgba(10,46,74,0.08),0_8px_20px_-4px_rgba(10,46,74,0.14)] hover:-translate-y-0.5 transition-all duration-200 ease-out active:translate-y-0" : "",
     className,
   ].filter(Boolean).join(" ");
+
+  // 2026-08-24 · v9 · 상단 2px gradient accent · brand-deep → sky-500 → brand-deep · opacity-90
+  const accentSpan = topAccent ? (
+    <span
+      aria-hidden
+      className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10 pointer-events-none"
+    />
+  ) : null;
 
   if (as === "button") {
     return (
@@ -132,6 +146,7 @@ export const Card: React.FC<CardProps> = ({
         style={style}
         aria-label={(rest as any)["aria-label"]}
       >
+        {accentSpan}
         {children}
       </button>
     );
@@ -146,6 +161,7 @@ export const Card: React.FC<CardProps> = ({
       role={role}
       aria-label={(rest as any)["aria-label"]}
     >
+      {accentSpan}
       {children}
     </Tag>
   );
