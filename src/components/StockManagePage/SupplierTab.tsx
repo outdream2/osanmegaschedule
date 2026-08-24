@@ -576,26 +576,26 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                 <td className="text-left px-3 py-1.5 text-zinc-800 font-bold">합계 <span className="text-zinc-500 font-bold">({displayedXlsxSuppliers.length}개 사)</span></td>
                 {isSupplierGroupCollapsed("stock") ? <td className="bg-zinc-100" /> : (
                   <>
-                    <td className="text-right px-3 py-1.5 tabular-nums font-bold text-zinc-800 bg-sky-100/60">{fmtWon(supListTotals.stock)}</td>
-                    <td className="text-right px-3 py-1.5 tabular-nums font-bold text-zinc-800 bg-sky-100/40">{supListTotals.item.toLocaleString()}</td>
+                    <td className="text-right px-3 py-1.5 tabular-nums font-bold text-ink">{fmtWon(supListTotals.stock)}</td>
+                    <td className="text-right px-3 py-1.5 tabular-nums font-bold text-ink">{supListTotals.item.toLocaleString()}</td>
                   </>
                 )}
                 {isSupplierGroupCollapsed("purchase") ? <td className="bg-zinc-100" /> : (
                   <>
-                    <td className="text-right px-3 py-1.5 tabular-nums font-bold text-amber-700 bg-amber-100/40">{supListTotals.purchase.toLocaleString()}</td>
+                    <td className="text-right px-3 py-1.5 tabular-nums font-bold text-ink">{supListTotals.purchase.toLocaleString()}</td>
                     {showExtraPurchaseColumns && (
-                      <td className="text-right px-3 py-1.5 tabular-nums font-bold text-amber-800 bg-amber-100/60">{fmtWon(supListTotals.purchaseAmt)}</td>
+                      <td className="text-right px-3 py-1.5 tabular-nums font-bold text-brand-deep">{fmtWon(supListTotals.purchaseAmt)}</td>
                     )}
                     {showCycleColumn && (
-                      <td className="text-right px-3 py-1.5 text-amber-400 bg-amber-100/40" title="합계 없음 · 개별 공급사별 값">-</td>
+                      <td className="text-right px-3 py-1.5 text-zinc-400" title="합계 없음 · 개별 공급사별 값">-</td>
                     )}
                   </>
                 )}
                 {!hideSaleColumns && (
                   isSupplierGroupCollapsed("sale") ? <td className="bg-zinc-100" /> : (
                     <>
-                      <td className="text-right px-3 py-1.5 tabular-nums font-bold text-rose-700 bg-rose-100/40">{supListTotals.saleQ.toLocaleString()}</td>
-                      <td className="text-right px-3 py-1.5 tabular-nums font-bold text-rose-700 bg-rose-100/60">{fmtWon(supListTotals.saleA)}</td>
+                      <td className="text-right px-3 py-1.5 tabular-nums font-bold text-ink">{supListTotals.saleQ.toLocaleString()}</td>
+                      <td className="text-right px-3 py-1.5 tabular-nums font-bold text-ink">{fmtWon(supListTotals.saleA)}</td>
                     </>
                   )
                 )}
@@ -608,7 +608,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                 return (
                   <tr key={key}
                     onClick={() => { toggleSupplierExpand(sup); setSupplierSelectedKey(key); }}
-                    className={`cursor-pointer transition-colors ${isSelected ? "bg-sky-50 hover:bg-sky-100/70" : "hover:bg-zinc-50/60"}`}
+                    className={`cursor-pointer transition-colors ${isSelected ? "bg-brand-tint/60 hover:bg-brand-tint" : "hover:bg-brand-tint/30"}`}
                     title="클릭 → 오른쪽 패널에 상세">
                     <td className="text-center align-middle py-1.5">
                       {isExpanded ? <ChevronDown size={13} className="text-sky-400 mx-auto" /> : <ChevronRight size={13} className="text-zinc-300 mx-auto" />}
@@ -631,23 +631,23 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                         </div>
                       </div>
                     </td>
-                    {isSupplierGroupCollapsed("stock") ? <td className="bg-sky-50/20 w-4"></td> : (
+                    {isSupplierGroupCollapsed("stock") ? <td className="bg-zinc-50/30 w-4"></td> : (
                       <>
-                        <td className="text-right px-3 py-1.5 align-middle text-[15px] font-semibold text-sky-700 tabular-nums bg-sky-50/40" title="재고자산">{fmtWon(sup.totalStockAmount)}</td>
-                        <td className="text-right px-3 py-1.5 align-middle text-[14px] font-semibold text-sky-600 tabular-nums bg-sky-50/20" title="취급 상품 종수">{sup.itemCount}</td>
+                        <td className="text-right px-3 py-1.5 align-middle text-[15px] font-semibold text-ink tabular-nums" title="재고자산">{fmtWon(sup.totalStockAmount)}</td>
+                        <td className="text-right px-3 py-1.5 align-middle text-[14px] font-semibold text-ink-soft tabular-nums" title="취급 상품 종수">{sup.itemCount}</td>
                       </>
                     )}
-                    {isSupplierGroupCollapsed("purchase") ? <td className="bg-amber-50/20 w-4"></td> : (
+                    {isSupplierGroupCollapsed("purchase") ? <td className="bg-zinc-50/30 w-4"></td> : (
                       <>
-                        <td className="text-right px-3 py-1.5 align-middle text-[15px] font-semibold text-amber-700 tabular-nums bg-amber-50/30" title="매입수량">{fmt(sup.purchaseQty)}</td>
+                        <td className="text-right px-3 py-1.5 align-middle text-[15px] font-semibold text-ink tabular-nums" title="매입수량">{fmt(sup.purchaseQty)}</td>
                         {showExtraPurchaseColumns && (
-                          <td className="text-right px-3 py-1.5 align-middle text-[15px] font-semibold text-amber-800 tabular-nums bg-amber-50/50" title="매입액 (공급가액 합계)">{fmtWon(Number(sup.purchaseAmount ?? 0))}</td>
+                          <td className="text-right px-3 py-1.5 align-middle text-[15px] font-bold text-brand-deep tabular-nums" title="매입액 (공급가액 합계)">{fmtWon(Number(sup.purchaseAmount ?? 0))}</td>
                         )}
                         {showCycleColumn && (() => {
                           const c = cycleFor(sup.supplier);
                           return (
                             <td
-                              className="text-right px-3 py-1.5 align-middle text-[15px] font-semibold text-amber-700 tabular-nums bg-amber-50/40"
+                              className="text-right px-3 py-1.5 align-middle text-[15px] font-semibold text-ink-soft tabular-nums"
                               title={c == null ? "최근 90일 매입 이력 부족" : `평균 매입주기 ${c}일 (최근 90일)`}
                             >
                               {c == null ? <span className="text-zinc-300">-</span> : `${c}일`}
@@ -657,10 +657,10 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                       </>
                     )}
                     {!hideSaleColumns && (
-                      isSupplierGroupCollapsed("sale") ? <td className="bg-rose-50/20 w-4"></td> : (
+                      isSupplierGroupCollapsed("sale") ? <td className="bg-zinc-50/30 w-4"></td> : (
                         <>
-                          <td className="text-right px-3 py-1.5 align-middle text-[15px] font-semibold text-rose-600 tabular-nums bg-rose-50/20" title="판매수량">{fmt(sup.saleQty)}</td>
-                          <td className="text-right px-3 py-1.5 align-middle text-[15px] font-semibold text-rose-700 tabular-nums bg-rose-50/30" title="판매액">{fmtWon(Number(sup.saleAmount ?? 0))}</td>
+                          <td className="text-right px-3 py-1.5 align-middle text-[15px] font-semibold text-ink tabular-nums" title="판매수량">{fmt(sup.saleQty)}</td>
+                          <td className="text-right px-3 py-1.5 align-middle text-[15px] font-semibold text-ink tabular-nums" title="판매액">{fmtWon(Number(sup.saleAmount ?? 0))}</td>
                         </>
                       )
                     )}
