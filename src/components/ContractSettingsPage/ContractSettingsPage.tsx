@@ -544,8 +544,8 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             savePaymentDayNow={savePaymentDayNow}
           />
 
-          {/* 섹션 1 · 직군별 시급 */}
-          <Card as="section" clip padding="none">
+          {/* 섹션 1 · 직군별 시급 · 2026-08-24 · v9 topAccent */}
+          <Card as="section" clip padding="none" topAccent>
             <header className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-100 bg-zinc-50/60">
               <div className="w-7 h-7 rounded-md bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
                 <CurrencyKrw size={14} weight="fill" />

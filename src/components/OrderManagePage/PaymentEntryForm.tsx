@@ -132,7 +132,7 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
   };
 
   return (
-    <Card padding="none" rounded="2xl" clip className="flex flex-col">
+    <Card padding="none" rounded="2xl" clip topAccent className="flex flex-col">
 
       {/* 폼 헤더 */}
       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-zinc-100 bg-emerald-50/60 shrink-0">
