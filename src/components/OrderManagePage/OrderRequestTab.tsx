@@ -293,12 +293,12 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                     {/* 2026-08-24 · v3 · caret · 접기/펼치기 */}
                                     <span className={`inline-flex items-center justify-center w-4 text-[11px] text-zinc-400 transition-transform ${isCollapsed ? "-rotate-90" : ""}`}>▾</span>
                                     <VendorCategoryBadge category={getVendorCategory(currentSup)} />
-                                    {/* 2026-08-24 · 최신 트렌드 리서치 · Indigo-700 · Notion/Linear/Attio 톤
-                                        · 딥네이비 브랜드와 조화 · 클릭 가능 시각화 · 우아·신뢰감 */}
+                                    {/* 2026-08-24 · 사용자 지시 · 보라 X · Sky-700 · Attio 톤
+                                        · 딥네이비 브랜드와 동일 파란 계열 · 자연스러운 조화 */}
                                     <button
                                       type="button"
                                       onClick={(e) => { e.stopPropagation(); setSupplierHistorySupplier(currentSup); }}
-                                      className="text-[15px] font-bold text-indigo-700 hover:text-indigo-900 hover:underline underline-offset-[3px] decoration-indigo-400/60 cursor-pointer transition-colors"
+                                      className="text-[15px] font-bold text-sky-800 hover:text-brand-deep hover:underline underline-offset-[3px] decoration-sky-400/60 cursor-pointer transition-colors"
                                       title="공급사 클릭 · 최신 발주이력 보기"
                                     >
                                       {displayVendorName(currentSup) || currentSup}
