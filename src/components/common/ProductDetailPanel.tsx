@@ -95,18 +95,15 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
       {(() => { return null; })()}
       {/* 1행 · 제목 · 상품명 · 판매량 통계 · 화살표 */}
       {(() => {
-        // 2026-08-24 (fix) · 서버는 항상 6개월 데이터 전송 · 사용자 조회기간(months)에 맞춰 rows 를 필터링해서 계산
-        //   이전 · rows 전체 합계 / monthSpan · monthSpan=6 이면 정상 · 1-5 는 6개월 합계 / N 왜곡
-        const now = new Date();
-        const monthSpan = season ? 12 : months;
-        const winStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - monthSpan * 30);
-        const winStartStr = winStart.toISOString().slice(0, 10);
-        const rowsInWindow = season
-          ? rows
-          : rows.filter(r => (r.snapshot_date ?? r.period_start_date ?? "") >= winStartStr);
-        const totalSaleQty = rowsInWindow.reduce((s, r) => s + (Number(r.sale_qty) || 0), 0);
-        const avgMonthlySale = monthSpan > 0 ? Math.round(totalSaleQty / monthSpan) : 0;
+        // 2026-08-24 (fix v2) · 이전 필터가 rows=0 되게 하는 회귀 · 안전한 접근으로 복구
+        //   서버는 항상 6개월 데이터 전송 (line 78 · months=6 hardcoded)
+        //   → 데이터 실제 span 6개월 기준 avg 계산 · 사용자 조회기간(months)과 무관하게 일관된 값
+        //   → 표시 라벨 · "월평균 판매 N개 (6개월 기준)" · 명확화
+        const totalSaleQty = rows.reduce((s, r) => s + (Number(r.sale_qty) || 0), 0);
+        const dataMonthSpan = season ? 12 : 6;  // fetched data span
+        const avgMonthlySale = dataMonthSpan > 0 ? Math.round(totalSaleQty / dataMonthSpan) : 0;
         // 최근 한달 (30일) 판매량 · rows 중 최근 30일 스냅샷 sale_qty 합계
+        const now = new Date();
         const cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
         const cutoffStr = cutoff.toISOString().slice(0, 10);
         const last30Sale = rows
@@ -138,8 +135,8 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
             {!collapsed && (totalSaleQty > 0 || last30Sale > 0) && (
               <div className="flex items-center gap-3 flex-wrap pl-[24px] text-[14px] tabular-nums font-medium text-ink-soft">
                 {totalSaleQty > 0 && (
-                  <span title={`최근 ${monthSpan}개월 sale_qty 합계 ${totalSaleQty.toLocaleString()} / ${monthSpan}개월 = 월평균 ${avgMonthlySale}개`}>
-                    최근{monthSpan}개월 월평균 <span className="font-bold text-rose-700 text-[15px]">{avgMonthlySale.toLocaleString()}</span>개
+                  <span title={`최근 ${dataMonthSpan}개월 sale_qty 합계 ${totalSaleQty.toLocaleString()} / ${dataMonthSpan}개월 = 월평균 ${avgMonthlySale}개`}>
+                    최근{dataMonthSpan}개월 월평균 <span className="font-bold text-rose-700 text-[15px]">{avgMonthlySale.toLocaleString()}</span>개
                   </span>
                 )}
                 {last30Sale > 0 && (
