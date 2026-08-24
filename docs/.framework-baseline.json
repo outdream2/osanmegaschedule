@@ -1,21 +1,21 @@
 {
   "created": "2026-08-24",
   "version": 1,
-  "totalViolations": 8,
+  "totalViolations": 9,
   "files": {
     "src/components/SystemSettingsPage/AutoImportSection.tsx": {
-      "lines": 427,
+      "lines": 404,
       "violations": [
         {
           "ruleId": "raw-alert",
-          "count": 2
+          "count": 3
         },
         {
           "ruleId": "raw-fetch",
           "count": 1
         }
       ],
-      "totalWeight": 9
+      "totalWeight": 12
     },
     "src/components/DisplayPage/DisplayPage.tsx": {
       "lines": 818,

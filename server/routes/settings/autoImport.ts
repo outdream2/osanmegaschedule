@@ -107,12 +107,45 @@ router.get("/api/auto-import/status", authorize(9), asyncHandler(async (_req, re
 }));
 
 /**
- * GET /api/auto-import/installer · Python 설치 파일 (zip) 다운로드
- *   · Phase C · PyInstaller .exe 빌드 후 · assets/auto-import-template.zip 준비 필요
- *   · 현재 · 501 Not Implemented · Phase C 완료 시 파일 stream 반환
+ * GET /api/auto-import/installer · 설치 파일 개별 스트림
+ *   · 7 파일 · scripts/auto_import/* · 클라이언트가 개별 다운로드
+ *   · zip 은 브라우저에서 JSZip 으로 묶거나 · 개별 저장 · Phase C
+ *   · 현재 · 파일 목록만 반환 · 클라가 /api/auto-import/installer/file?name= 로 개별 조회
  */
+import fs from "fs";
+import path from "path";
+
+const INSTALLER_DIR = path.resolve(__dirname, "../../../scripts/auto_import");
+const INSTALLER_FILES = [
+  "auto_import.py",
+  "config.ini.example",
+  "install.bat",
+  "uninstall.bat",
+  "run.bat",
+  "requirements.txt",
+  "README.md",
+];
+
 router.get("/api/auto-import/installer", authorize(9), asyncHandler(async (_req, res) => {
-  throw new HttpError(501, "installer 파일 준비 중 · Phase C (PyInstaller 빌드) 완료 후 활성");
+  const files = INSTALLER_FILES.map(name => ({
+    name,
+    size: (() => {
+      try { return fs.statSync(path.join(INSTALLER_DIR, name)).size; }
+      catch { return 0; }
+    })(),
+    url: `/api/auto-import/installer/file?name=${encodeURIComponent(name)}`,
+  }));
+  res.json({ files, dir: "megatown-auto-import", version: "1.0.0" });
+}));
+
+router.get("/api/auto-import/installer/file", authorize(9), asyncHandler(async (req, res) => {
+  const name = String(req.query.name ?? "");
+  if (!INSTALLER_FILES.includes(name)) throw new HttpError(400, "invalid file name");
+  const filePath = path.join(INSTALLER_DIR, name);
+  if (!fs.existsSync(filePath)) throw new HttpError(404, `file not found: ${name}`);
+  res.setHeader("Content-Type", "application/octet-stream");
+  res.setHeader("Content-Disposition", `attachment; filename="${name}"`);
+  fs.createReadStream(filePath).pipe(res);
 }));
 
 export default router;

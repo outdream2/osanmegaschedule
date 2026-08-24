@@ -107,25 +107,32 @@ export const AutoImportSection: React.FC = () => {
     }
   };
 
+  // 2026-08-24 · 개별 파일 다운로드 (zip 압축 대신 · 회귀 안전) · 브라우저 순차 저장
   const handleInstallerDownload = async () => {
     setInstallerError(null);
     try {
-      // Phase C 완료 전 · 501 반환 · 안내
       const r = await fetch("/api/auto-import/installer", { credentials: "include" });
-      if (r.status === 501) {
-        setInstallerError("설치 파일 준비 중 · Phase C (PyInstaller 빌드) 완료 후 활성");
-        return;
-      }
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const blob = await r.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "megatown-auto-import.zip";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const j = await r.json() as { files: Array<{ name: string; url: string; size: number }>; dir: string };
+      if (!j.files?.length) throw new Error("파일 목록 없음");
+      for (const f of j.files) {
+        await new Promise((r2) => setTimeout(r2, 350));
+        const a = document.createElement("a");
+        a.href = f.url;
+        a.download = f.name;
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      alert(
+        `${j.files.length}개 파일 다운로드 시작 · Downloads 폴더 확인\n\n` +
+        `다음 단계:\n` +
+        `1. Downloads 에서 · 새 폴더 "${j.dir}" 만들고 7 파일 이동\n` +
+        `2. install.bat 우클릭 → 관리자 권한으로 실행\n` +
+        `3. Python 자동 확인 · config.ini 관리자 credential 입력 (notepad 자동)\n` +
+        `4. 이 페이지 새로고침 → 상태 초록불 확인`,
+      );
     } catch (e) {
       setInstallerError((e as any)?.message ?? "다운로드 실패");
     }

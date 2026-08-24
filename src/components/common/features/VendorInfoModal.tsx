@@ -33,7 +33,9 @@ export const VendorInfoModal: React.FC<VendorInfoModalProps> = ({ vendor, onClos
   }, [onSaved, onClose]);
 
   return (
-    // 2026-08-23 v3 · Modal primitive · zIndex=100 · bodyPadding=none (VendorDetailModal 자체 padding)
+    // 2026-08-24 · 공급사 조회 즉시 닫힘 fix · closeOnBackdrop=false · panel 모드 강제 (중첩 backdrop 제거)
+    // 이전 · Modal + VendorDetailModal 각자 backdrop 2중 · 클릭 시 즉시 닫힘
+    // 개선 · panel 모드로 embedded · Modal 이 유일한 backdrop
     <Modal
       open
       onClose={onClose}
@@ -41,8 +43,9 @@ export const VendorInfoModal: React.FC<VendorInfoModalProps> = ({ vendor, onClos
       size="3xl"
       bodyPadding="none"
       showClose={false}
+      closeOnBackdrop={false}
     >
-      <VendorDetailModal vendor={vendor} onClose={onClose} onSaved={handleSaved} />
+      <VendorDetailModal vendor={vendor} onClose={onClose} onSaved={handleSaved} panel />
     </Modal>
   );
 };
