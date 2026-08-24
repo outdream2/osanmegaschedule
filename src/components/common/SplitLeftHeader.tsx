@@ -33,7 +33,8 @@ export interface SplitLeftHeaderProps {
 /**
  * SplitPanel 좌측 상단 공용 헤더
  *   · AccentBar (딥네이비 2px) + icon + title + 우측 액션
- *   · 폰트 +2 기본 (title text-[17px] font-bold · 40대+ 가독성)
+ *   · 폰트 +2 (2026-08-24) · title text-[19px] · subtitle text-[15px] · 40대+ 가독성
+ *   · 시인성 · 제목 line-tight + tracking-tight · 아이콘 mt-1 align
  *   · border-b border-line (구분선) · pb-3
  *   · shrink-0 · 스크롤 시 위치 고정
  *   · 접근성 · role=heading · aria-level=2
@@ -49,16 +50,16 @@ export function SplitLeftHeader({
   const borderCls = withBorder ? "pb-3 border-b border-line" : "";
   return (
     <div className={`flex items-start gap-2.5 shrink-0 ${borderCls} ${className}`}>
-      <AccentBar h={17} className="mt-0.5" />
+      <AccentBar h={19} className="mt-1" />
       {icon && (
-        <span className="text-brand-deep shrink-0 mt-0.5" aria-hidden>{icon}</span>
+        <span className="text-brand-deep shrink-0 mt-1" aria-hidden>{icon}</span>
       )}
       <div className="flex-1 min-w-0">
-        <h2 className="text-[17px] font-bold tracking-tight text-ink leading-tight" role="heading" aria-level={2}>
+        <h2 className="text-[19px] font-bold tracking-tight text-ink leading-tight" role="heading" aria-level={2}>
           {title}
         </h2>
         {subtitle && (
-          <div className="text-[13px] text-ink-soft mt-0.5 leading-tight">{subtitle}</div>
+          <div className="text-[15px] text-ink-soft mt-0.5 leading-snug">{subtitle}</div>
         )}
       </div>
       {right && (

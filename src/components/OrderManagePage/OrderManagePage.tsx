@@ -697,7 +697,16 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             statSubTab, setStatSubTab,
             { getTabProps: statSortable.getTabProps, isDragging: statSortable.isDragging },
           )}
-          {statSubTab === "trending" && <div className="flex-1 min-h-0 overflow-y-auto"><TrendingTab /></div>}
+          {statSubTab === "trending" && (
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <TrendingTab
+                onProductClick={(p) => setDetailProduct({
+                  code: String(p?.product_code ?? ""),
+                  name: String(p?.product_name ?? ""),
+                })}
+              />
+            </div>
+          )}
           {statSubTab === "category" && <div className="flex-1 min-h-0 overflow-y-auto"><CategoryTab /></div>}
           {statSubTab === "flow"     && <div className="flex-1 min-h-0"><FlowTab /></div>}
           {statSubTab === "supplier" && <div className="flex-1 min-h-0"><SupplierTab /></div>}
