@@ -419,9 +419,9 @@ const ProductDetailChartMode: React.FC<{
         <div className="relative flex border-b border-line bg-zinc-50/40 p-1.5 gap-1 overflow-x-auto">
           {([
             { key: "flow",      label: "상품흐름",  Icon: TrendingUp },
-            { key: "purchase",  label: "매입이력",  Icon: History },
             { key: "order",     label: "발주내역",  Icon: ClipboardList },
-            { key: "inventory", label: "재고관리",  Icon: Package },
+            { key: "purchase",  label: "매입이력",  Icon: History },
+            { key: "inventory", label: "재고위치",  Icon: Package },
             { key: "info",      label: "상품정보",  Icon: Info },
           ] as const).map(({ key, label, Icon }) => {
             const active = chartTab === key;
