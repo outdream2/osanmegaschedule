@@ -115,6 +115,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
     setSupListSort(prev => prev.key === k ? { key: k, dir: prev.dir === "asc" ? "desc" : "asc" } : { key: k, dir: k === "supplier" ? "asc" : "desc" });
   };
   const [supListLimit, setSupListLimit] = useState<number>(999999);
+  // 2026-08-24 · #262 · 공급사 검색 · 리스트 상단 배치
+  const [supplierSearch, setSupplierSearch] = useState<string>("");
   const [supListCategory, setSupListCategory] = useState<"전체" | "위탁" | "선결제" | "60회전" | "90회전" | "기타">("전체");
 
   // 그룹 헤더 접기 · embedded (매입이력 컨텍스트) 는 매입현황만 펼치기 · 재고/판매 접기 (사용자 요청 2026-08-04)
@@ -221,15 +223,24 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   }, [xlsxSuppliers, supListSort, cycleFor]);
 
   const displayedXlsxSuppliers = useMemo(() => {
-    const filtered = supListCategory === "전체"
+    let filtered = supListCategory === "전체"
       ? sortedXlsxSuppliers
       : sortedXlsxSuppliers.filter(sup => {
           const nm = String(sup.supplier ?? "").trim();
           const cat = vendorCategoryMap[nm] ?? null;
           return cat === supListCategory;
         });
+    // 2026-08-24 · #262 · 검색 필터 · supplier + supplier_code · 대소문자 무시
+    const q = supplierSearch.trim().toLowerCase();
+    if (q) {
+      filtered = filtered.filter(sup => {
+        const nm = String(sup.supplier ?? "").toLowerCase();
+        const code = String(sup.supplier_code ?? "").toLowerCase();
+        return nm.includes(q) || code.includes(q);
+      });
+    }
     return filtered.slice(0, supListLimit);
-  }, [sortedXlsxSuppliers, supListLimit, supListCategory, vendorCategoryMap]);
+  }, [sortedXlsxSuppliers, supListLimit, supListCategory, vendorCategoryMap, supplierSearch]);
 
   // 합계 (필터/제한된 visible rows 기준)
   const supListTotals = useMemo(() => {
@@ -393,7 +404,15 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         </span>
       }
       filters={
-        <div className="flex flex-col gap-1 w-full">
+        <div className="flex flex-col gap-1.5 w-full">
+          {/* 2026-08-24 · #262 · 검색창 · 리스트 상단 (필터·정렬보다 위) */}
+          <input
+            type="text"
+            value={supplierSearch}
+            onChange={e => setSupplierSearch(e.target.value)}
+            placeholder="공급사명 · 코드 검색"
+            className="w-full h-8 px-3 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
+          />
           {/* 분류 필터 */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider mr-0.5">분류</span>
