@@ -57,6 +57,8 @@ export { SettingsPageShell } from "./SettingsPageShell";
 export { SortableHeader } from "./SortableHeader";
 export { Spinner } from "./Spinner";
 export { SplitPanel } from "./SplitPanel";
+export { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "./TableList";
+export type { TableListWrapProps, TableThAlign } from "./TableList";
 export { SplitRightEmpty } from "./SplitRightEmpty";
 export type { SplitRightEmptyProps } from "./SplitRightEmpty";
 export { SplitRightLoading } from "./SplitRightLoading";
