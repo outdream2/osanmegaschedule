@@ -92,6 +92,15 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
 }) => {
   // 2026-08-23 · #182 · 공급사별 발주이력 모달
   const [supplierHistorySupplier, setSupplierHistorySupplier] = React.useState<string | null>(null);
+  // 2026-08-24 · v3 목업 확정 · 공급사별 그룹 접기/펼치기 · Set of supplier names collapsed
+  const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set());
+  const toggleGroupCollapse = (sup: string) => {
+    setCollapsedGroups(prev => {
+      const n = new Set(prev);
+      if (n.has(sup)) n.delete(sup); else n.add(sup);
+      return n;
+    });
+  };
   return (
   <div className="flex flex-col gap-2">
     <PageToolbar
@@ -173,37 +182,37 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
               <div className="mb-2 text-[15px] text-brand-deep bg-brand-tint/60 border border-brand/15 rounded-md px-2 py-1 leading-snug">
                 공급사를 클릭하면 최신 발주이력을 확인할 수 있습니다
               </div>
-              <div className={`max-h-[50vh] lg:max-h-[75vh] overflow-auto relative ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                <table className="w-full text-[15px] sm:min-w-[540px] [&_tbody_td]:text-[15px] [&_thead_th]:text-[14px]">
-                  <thead className="sticky top-0 bg-white z-10">
-                    {/* 2026-08-24 · 사용자 지시 · 카테고리 그룹 헤더 (상품 정보·재고 현황·발주 정보) 제거 · 서브헤더만 표시 */}
-                    <tr className="border-b border-zinc-100 text-[15px] text-zinc-400 uppercase tracking-wider">
-                      <th className="text-center px-0.5 py-1.5 w-6">
+              {/* 2026-08-24 · v3 목업 실적용 · 표 형식 · sticky thead · Attio/Linear 톤 */}
+              <div className={`max-h-[50vh] lg:max-h-[75vh] overflow-auto relative rounded-xl border border-line bg-white ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                <table className="w-full text-[15px] sm:min-w-[540px] border-collapse [&_tbody_td]:text-[15px] [&_thead_th]:text-[12px]">
+                  <thead className="sticky top-0 z-10">
+                    <tr className="text-zinc-500 uppercase tracking-wider bg-zinc-100/70 border-b border-line">
+                      <th className="text-center px-2 py-2.5 w-9">
                         <button onClick={toggleAll}
-                          className="inline-flex items-center gap-0.5 text-[14px] font-semibold text-zinc-500 hover:text-rose-600 transition cursor-pointer"
+                          className="inline-flex items-center justify-center text-[12px] font-bold text-zinc-500 hover:text-brand-deep transition cursor-pointer"
                           title={allChecked ? "전체 선택 해제" : "전체 선택"}>
-                          {allChecked ? <CheckSquare size={11} className="text-rose-500" /> : <Square size={11} />}
-                          <span>전체</span>
+                          {allChecked ? <CheckSquare size={13} className="text-brand-deep" /> : <Square size={13} />}
                         </button>
                       </th>
-                      {/* 2026-08-24 · 자율진행 · 색상 bg 제거 · 미니멀 zinc 톤 통일 · 강조는 text 만 */}
                       {isOrderGroupCollapsed("info") ? (
-                        <th className="bg-zinc-50/30 w-4"></th>
+                        <th className="w-4"></th>
                       ) : (
-                        <th onClick={() => handleOrderSort("name")} className="text-left px-0.5 py-1.5 cursor-pointer hover:bg-zinc-50 select-none text-zinc-600">상품명{orderArrow("name")}</th>
+                        <th onClick={() => handleOrderSort("name")} className="text-left px-3 py-2.5 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">상품명<span className="ml-1 text-zinc-400">{orderArrow("name") || "⇅"}</span></th>
                       )}
                       {isOrderGroupCollapsed("stock") ? (
-                        <th className="bg-zinc-50/30 w-4"></th>
+                        <th className="w-4"></th>
                       ) : (
                         <>
-                          <th onClick={() => handleOrderSort("current")} className="text-right px-0.5 py-1.5 w-14 text-zinc-600 cursor-pointer hover:bg-zinc-50 select-none"><div className="leading-tight">ERP<br/>재고{orderArrow("current")}<br/><span className="text-[14px] text-zinc-400 font-normal">(현재고)</span></div></th>
-                          <th onClick={() => handleOrderSort("optimal")} className="text-right px-0.5 py-1.5 w-12 text-zinc-600 cursor-pointer hover:bg-zinc-50 select-none">추천적정{orderArrow("optimal")}</th>
-                          <th onClick={() => handleOrderSort("short")} className="text-right px-0.5 py-1.5 w-12 text-rose-600 cursor-pointer hover:bg-zinc-50 select-none">부족{orderArrow("short")}</th>
+                          <th onClick={() => handleOrderSort("current")} className="text-right px-2 py-2.5 w-16 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">ERP<span className="ml-1 text-zinc-400">{orderArrow("current") || "⇅"}</span></th>
+                          <th onClick={() => handleOrderSort("optimal")} className="text-right px-2 py-2.5 w-16 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">추천<span className="ml-1 text-zinc-400">{orderArrow("optimal") || "⇅"}</span></th>
+                          <th onClick={() => handleOrderSort("short")} className="text-right px-2 py-2.5 w-16 cursor-pointer hover:bg-zinc-200/60 select-none font-bold text-rose-600">부족<span className="ml-1 text-rose-300">{orderArrow("short") || "⇅"}</span></th>
                         </>
                       )}
-                      <th className="text-right px-0.5 py-1.5 w-14 text-rose-600">주문<br/>수량</th>
-                      <th className="text-right px-0.5 py-1.5 w-16 text-zinc-600"><div className="leading-tight">이전<br/>사입가</div></th>
-                      <th className="text-right px-0.5 py-1.5 w-20 text-brand-deep font-bold">발주금액</th>
+                      {/* 주문수량 · accent 컬러 강조 (v3 사용자 지시) */}
+                      <th className="text-center px-2 py-2.5 w-24 font-bold text-sky-700 bg-sky-50/60 border-x border-sky-100">주문수량</th>
+                      <th className="text-right px-2 py-2.5 w-16 font-bold">단가</th>
+                      {/* 발주금액 · brand-tint 옅게 (v3 사용자 지시) */}
+                      <th className="text-right px-2 py-2.5 w-20 font-bold text-brand-deep bg-brand-tint/50 border-l border-brand/10">발주금액<span className="ml-1 text-brand/40">▼</span></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-50">
@@ -266,27 +275,33 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                         const liveOptimal = (productData as any)?.optimal_stock;
                         const displayOptimal = liveOptimal ?? r.optimal_stock;
                         const displayShort = (Number(displayOptimal ?? 0)) - (Number(displayCurrentStock ?? 0));
+                        const isCollapsed = collapsedGroups.has(currentSup);
                         return (
                           <React.Fragment key={r.id}>
                             {isNewGroup && (
-                              <tr className="bg-brand-tint/40 border-t border-brand/15 sticky top-[38px] z-[5]">
-                                <td colSpan={99} className="px-3 py-0.5">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
+                              <tr
+                                className="bg-zinc-50 hover:bg-zinc-100/70 border-t border-line sticky top-[42px] z-[5] cursor-pointer transition-colors"
+                                onClick={() => toggleGroupCollapse(currentSup)}
+                                title={isCollapsed ? "펼치기" : "접기"}
+                              >
+                                <td colSpan={99} className="px-3 py-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {/* 2026-08-24 · v3 · caret · 접기/펼치기 */}
+                                    <span className={`inline-flex items-center justify-center w-4 text-[11px] text-zinc-400 transition-transform ${isCollapsed ? "-rotate-90" : ""}`}>▾</span>
                                     <VendorCategoryBadge category={getVendorCategory(currentSup)} />
                                     <button
                                       type="button"
                                       onClick={(e) => { e.stopPropagation(); setSupplierHistorySupplier(currentSup); }}
-                                      className="text-[15px] font-semibold text-sky-900 hover:text-brand-deep hover:underline cursor-pointer transition-colors"
+                                      className="text-[15px] font-bold text-ink hover:text-brand-deep hover:underline cursor-pointer transition-colors"
                                       title="공급사 클릭 · 최신 발주이력 보기"
                                     >
                                       {displayVendorName(currentSup) || currentSup}
                                     </button>
-                                    <span className="text-[15px] font-medium text-sky-500 tabular-nums">{groupRows.length}건</span>
-                                    {/* 2026-08-23 · #182 · 공급사 발주이력 버튼 */}
+                                    <span className="text-[13px] font-semibold text-ink-soft tabular-nums">{groupRows.length}건</span>
                                     <button
                                       type="button"
                                       onClick={(e) => { e.stopPropagation(); setSupplierHistorySupplier(currentSup); }}
-                                      className="inline-flex items-center gap-0.5 h-5 px-1.5 rounded text-[13px] font-semibold text-brand-deep bg-brand-tint border border-brand/15 hover:brightness-95 transition cursor-pointer"
+                                      className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[12px] font-semibold text-ink-soft hover:text-ink hover:bg-white border border-line transition cursor-pointer"
                                       title={`${currentSup} · 최신 발주이력 보기`}
                                     >
                                       <History size={10}/>발주이력
@@ -294,23 +309,36 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                     {(() => {
                                       const selectedInGroup = groupRows.filter(r => selectedOrder.has(r.id));
                                       const targetRows = selectedInGroup.length > 0 ? selectedInGroup : groupRows;
+                                      const subtotal = targetRows.reduce((s, rr) => {
+                                        const price = prevPriceMap.get(rr.product_code) ?? 0;
+                                        const qty = orderQtyOverride.has(rr.id) ? orderQtyOverride.get(rr.id)! : Math.max(0, Number((allProductsMap[rr.product_code]?.optimal_stock ?? rr.optimal_stock) ?? 0) - Number((allProductsMap[rr.product_code]?.current_stock ?? rr.current_stock) ?? 0));
+                                        return s + qty * price;
+                                      }, 0);
                                       return (
-                                        <button
-                                          type="button"
-                                          onClick={(e) => { e.stopPropagation(); openOrderModal(targetRows); }}
-                                          disabled={sendingBulk}
-                                          className="ml-auto inline-flex items-center gap-0.5 h-5 px-1.5 rounded text-[15px] font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 hover:border-rose-300 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                                          title={`${currentSup} · ${targetRows.length}건 발주${selectedInGroup.length > 0 ? " (체크 선택)" : ""}`}
-                                        >
-                                          <Send size={10}/>발주({targetRows.length})
-                                        </button>
+                                        <>
+                                          {subtotal > 0 && (
+                                            <span className="text-[13px] font-bold text-brand-deep tabular-nums ml-auto mr-2">
+                                              {subtotal.toLocaleString()}<span className="text-[11px] font-medium text-ink-soft ml-0.5">원</span>
+                                            </span>
+                                          )}
+                                          <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); openOrderModal(targetRows); }}
+                                            disabled={sendingBulk}
+                                            className={`${subtotal > 0 ? "" : "ml-auto"} inline-flex items-center gap-1 h-6 px-2 rounded-md text-[12px] font-bold text-white bg-gradient-to-br from-rose-500 to-rose-600 hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer shadow-sm`}
+                                            title={`${currentSup} · ${targetRows.length}건 발주${selectedInGroup.length > 0 ? " (체크 선택)" : ""}`}
+                                          >
+                                            <Send size={10}/>발주({targetRows.length})
+                                          </button>
+                                        </>
                                       );
                                     })()}
                                   </div>
                                 </td>
                               </tr>
                             )}
-                            <tr className={`transition ${selectedOrder.has(r.id) ? "bg-brand-tint/50" : "hover:bg-brand-tint/25"}`}>
+                            {!isCollapsed && (
+                            <tr className={`transition-colors ${selectedOrder.has(r.id) ? "bg-sky-50/60" : "hover:bg-zinc-50/60"}`}>
                               <td className="text-center px-0.5 py-1.5 align-top" onClick={(e) => { e.stopPropagation(); toggleOne(r.id); }}>
                                 {selectedOrder.has(r.id)
                                   ? <CheckSquare size={13} className="text-rose-500 inline cursor-pointer" />
@@ -351,7 +379,8 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                 const amount = prevPrice != null ? orderQty * prevPrice : null;
                                 return (
                                   <>
-                                    <td className="text-right px-0.5 py-1.5 align-middle">
+                                    {/* 주문수량 · accent 컬러 강조 (v3) · sky-50 tint bg */}
+                                    <td className="text-center px-2 py-2 align-middle bg-sky-50/40 border-x border-sky-100/60">
                                       <input
                                         type="number" min={0}
                                         value={orderQty}
@@ -360,15 +389,17 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                           setOrderQtyOverride(prev => { const n = new Map(prev); n.set(r.id, v); return n; });
                                         }}
                                         onClick={e => e.stopPropagation()}
-                                        className="w-16 h-7 px-1 rounded border border-rose-200 bg-white text-right tabular-nums font-bold text-[15px] text-rose-700 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"
+                                        className="w-full max-w-[80px] h-7 px-1 rounded border border-sky-300 bg-white text-center tabular-nums font-bold text-[15px] text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-500"
                                       />
                                     </td>
-                                    <td className="text-right px-0.5 py-1.5 tabular-nums text-[14px] text-ink-soft align-middle whitespace-nowrap">{prevPrice != null ? prevPrice.toLocaleString() : "-"}</td>
-                                    <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[15px] text-brand-deep align-middle whitespace-nowrap">{amount != null ? amount.toLocaleString() : "-"}</td>
+                                    <td className="text-right px-2 py-2 tabular-nums text-[14px] text-ink-soft align-middle whitespace-nowrap">{prevPrice != null ? prevPrice.toLocaleString() : "-"}</td>
+                                    {/* 발주금액 · brand-tint 옅게 · 결과 강조 (v3) */}
+                                    <td className="text-right px-2 py-2 tabular-nums font-bold text-[15px] text-brand-deep align-middle whitespace-nowrap bg-brand-tint/30 border-l border-brand/10">{amount != null ? amount.toLocaleString() : "-"}</td>
                                   </>
                                 );
                               })()}
                             </tr>
+                            )}
                           </React.Fragment>
                         );
                       });
