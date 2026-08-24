@@ -148,6 +148,7 @@ export const StaffListPanel: React.FC<StaffListPanelProps> = ({
         style={isDesktop ? { width: `${listWidth}px` } : undefined}
       >
         <SplitListPanel
+          topAccent
           title={
             <span className="inline-flex items-center gap-1.5">
               <User size={13} className="text-indigo-400 shrink-0" />

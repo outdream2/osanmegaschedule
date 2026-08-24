@@ -565,6 +565,7 @@ export const PaymentInfoTab: React.FC = () => {
              · KPI 3-inline · subHeader slot
              · VendorListHeader + list · children slot */
           <SplitListPanel
+            topAccent
             /* 2026-08-24 · #262 · search 는 built-in prop 으로 이관 (원칙: SplitListPanel = 검색 상단 필수) */
             search={vendorSearch}
             onSearchChange={setVendorSearch}

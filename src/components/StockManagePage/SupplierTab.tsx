@@ -392,6 +392,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   // 2026-08-23 · #198 Phase 3 · SplitListPanel v3 이관 · 프레임워크 통일
   const renderSupplierListCard = () => (
     <SplitListPanel
+      topAccent
       title={
         <span className="inline-flex items-center gap-1.5">
           <Building2 size={14} className="text-sky-500 shrink-0" />
@@ -678,10 +679,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   if (embedded) {
     return (
       <div className="w-full h-full min-h-0 flex flex-col gap-2">
-        {/* 2026-08-24 · 사용자 요청 · 매입이력 embedded · 상단 Card 세션 제거 · SplitListPanel headerActions 로 새로고침 이관 */}
-        {/* 2026-08-24 · 사용자 요청 · 세션 상단 가로 컬러 accent (랜딩 입고알림 톤) · Vercel/Linear 시그니처 */}
-        <div className={`${CARD_BASE} relative flex-1 min-h-0 flex flex-col overflow-hidden`}>
-          <span aria-hidden className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10" />
+        {/* 2026-08-24 · 상단 gradient accent · SplitListPanel primitive topAccent prop 로 통합 이관 (자동) */}
+        <div className={`${CARD_BASE} flex-1 min-h-0 flex flex-col overflow-hidden`}>
           {renderSupplierListCard()}
         </div>
         {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 (embedded 모드) */}

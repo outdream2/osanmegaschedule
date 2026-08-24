@@ -390,6 +390,7 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
            · 그리드 header + list · children slot
            · custom loading/error/empty · body children 내부 유지 (v3 loading prop 미사용) */
         <SplitListPanel
+          topAccent
           search={productSearch}
           onSearchChange={setProductSearch}
           searchPlaceholder="상품명 · 코드 검색"

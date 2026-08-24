@@ -455,6 +455,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
           style={isDesktop ? { width: leftWidth, flexShrink: 0 } : { width: "100%" }}
         >
           <SplitListPanel
+            topAccent
             title="상품정보"
             count={filtered.length}
             search={search}

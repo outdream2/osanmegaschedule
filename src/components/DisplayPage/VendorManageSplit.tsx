@@ -102,6 +102,7 @@ export const VendorManageSplit: React.FC = () => {
     //   · CategoryChips 프리미티브로 chip 필터 통일 · 하드코딩 색상 제거
     //   · onAdd 로 신규 등록 버튼 통일 (딥네이비 · h-8)
     <SplitListPanel
+      topAccent
       title="공급사관리"
       countDisplay={
         <StatusPill tone="brand" size="md">

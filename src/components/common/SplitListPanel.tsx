@@ -106,6 +106,12 @@ export interface SplitListPanelProps {
    *   · SupplierTab 등 · "공급사별 현황 88개 사 [검색]" 인라인 요구
    */
   searchInHeader?: boolean;
+  /**
+   * 2026-08-24 · v3 · 상단 gradient accent line · 랜딩 톤 시그니처
+   *   · 3px · brand-deep → sky-500 → brand-deep
+   *   · 기본 false · true 시 · 표시
+   */
+  topAccent?: boolean;
 }
 
 /**
@@ -139,6 +145,7 @@ export function SplitListPanel({
   bodyClassName,
   subHeader,
   searchInHeader = false,
+  topAccent = false,
 }: SplitListPanelProps) {
   const hasSearch = onSearchChange != null;
   const hasHeader = title != null || hasSearch || filters != null || onAdd != null || headerActions != null;
@@ -174,7 +181,14 @@ export function SplitListPanel({
   ) : null;
 
   return (
-    <div className={`flex flex-col h-full min-h-0 ${className}`.trim()}>
+    <div className={`relative flex flex-col h-full min-h-0 ${className}`.trim()}>
+      {/* 2026-08-24 · v3 · 상단 gradient accent (opt-in) · 랜딩 톤 · Vercel/Linear 시그니처 */}
+      {topAccent && (
+        <span
+          aria-hidden
+          className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-20 rounded-t-md"
+        />
+      )}
       {hasHeader && (
         <div className="shrink-0 px-3.5 py-2.5 border-b border-line bg-white flex flex-col gap-2">
           {/* 1행 · title + count + (searchInHeader 시 검색) + headerActions + add */}
