@@ -2,21 +2,22 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>발주 리스트 · v3 · 텍스트 중심 미니멀 · 2026-08-24</title>
+<title>발주 리스트 · v3 표 형식 · Linear/Attio 2026 · 2026-08-24</title>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" />
 <style>
   :root{
-    --bg:#F7F7F9;
+    --bg:#FAFAFA;
     --surface:#FFFFFF;
-    --ink:#0A0A0F;
-    --ink-1:#3F3F46;
-    --ink-2:#71717A;
-    --ink-3:#A1A1AA;
-    --line:#EDEDF0;
-    --line-2:#F4F4F5;
+    --ink:#111827;
+    --ink-1:#374151;
+    --ink-2:#6B7280;
+    --ink-3:#9CA3AF;
+    --line:rgba(17,24,39,0.06);
+    --line-2:rgba(17,24,39,0.04);
     --brand:#0A2E4A;
     --brand-2:#1E5C8E;
     --brand-tint:#EAF1F9;
+    --accent:#2563EB;
     --danger:#B91C1C;
     --violet:#6D28D9;
     --success:#059669;
@@ -24,23 +25,21 @@
   html,body{ margin:0; padding:0; }
   body{
     font-family:'Pretendard Variable','Pretendard',-apple-system,'SF Pro Text',sans-serif;
-    background:var(--bg);
-    color:var(--ink);
+    background:var(--bg); color:var(--ink);
     -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
     font-feature-settings:"cv02","cv04","cv09","ss01";
     letter-spacing:-.01em;
     padding:16px;
-    min-height:100vh;
   }
   *{ box-sizing:border-box; }
-  .container{ max-width:960px; margin:0 auto; }
+  .container{ max-width:1080px; margin:0 auto; }
 
-  /* ═══ PAGE HEAD · 한 줄 · 텍스트 · 컴팩트 ═══ */
+  /* ═══ Page Head ═══ */
   .page-head{
     display:flex; align-items:baseline; gap:12px;
-    padding:8px 4px 12px;
+    padding:6px 4px 10px;
     border-bottom:1px solid var(--line);
-    margin-bottom:12px;
+    margin-bottom:10px;
   }
   h1{ font-size:20px; font-weight:800; letter-spacing:-.03em; margin:0; color:var(--ink); }
   .stats{ display:inline-flex; align-items:baseline; gap:8px; font-size:14px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
@@ -50,12 +49,12 @@
   .stats-total .l{ font-size:12px; color:var(--ink-3); font-weight:600; }
   .stats-total .v{ font-size:16px; color:var(--brand); font-weight:800; letter-spacing:-.02em; }
 
-  /* ═══ TOOLBAR · sticky · flat · 텍스트 ═══ */
+  /* ═══ Toolbar · sticky ═══ */
   .toolbar{
-    position:sticky; top:0; z-index:20;
+    position:sticky; top:0; z-index:30;
     display:flex; align-items:center; gap:6px;
     padding:8px 10px; margin-bottom:8px;
-    background:rgba(247,247,249,.92); backdrop-filter:blur(10px);
+    background:rgba(250,250,250,.92); backdrop-filter:blur(10px);
     -webkit-backdrop-filter:blur(10px);
     border:1px solid var(--line);
     border-radius:10px;
@@ -78,121 +77,121 @@
     cursor:pointer; transition:all .12s ease; border:1px solid transparent; background:transparent;
     color:var(--ink-1);
   }
-  .btn:hover{ background:var(--line-2); color:var(--ink); }
+  .btn:hover{ background:rgba(17,24,39,.04); color:var(--ink); }
   .btn.primary{
     background:var(--brand); color:#FFF;
     box-shadow:0 0 0 1px rgba(10,46,74,.25);
   }
   .btn.primary:hover{ background:#093040; }
 
-  /* ═══ GROUP · 카드 없이 · 라인만 ═══ */
-  .group{ margin-bottom:8px; }
-  .group-head{
-    display:flex; align-items:baseline; gap:8px;
-    padding:10px 10px 8px;
+  /* ═══════════════════════════════════════════════
+     TABLE · 표 형식 · 정렬 가지런 · Linear/Attio 톤
+  ═══════════════════════════════════════════════ */
+  .table-wrap{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+  }
+  table{
+    width:100%; border-collapse:separate; border-spacing:0;
+    font-size:15px; color:var(--ink);
+  }
+  /* Column headers · sticky */
+  thead th{
+    position:sticky; top:52px; z-index:10;   /* 툴바 아래 · 43px */
+    background:#F4F4F5;
+    color:var(--ink-2);
+    font-size:12px; font-weight:700;
+    letter-spacing:.06em; text-transform:uppercase;
+    padding:10px 12px;
     border-bottom:1px solid var(--line);
-    position:sticky; top:52px; z-index:5;
-    background:var(--bg);
+    text-align:left; white-space:nowrap;
+    user-select:none; cursor:pointer;
+    transition:background .12s;
   }
-  .cat{
-    font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
-    color:var(--ink-3); font-family:ui-monospace,'JetBrains Mono',monospace;
+  thead th:hover{ background:#EEEEF0; color:var(--ink); }
+  thead th.num{ text-align:right; }
+  thead th.center{ text-align:center; cursor:default; }
+  thead th.center:hover{ background:#F4F4F5; color:var(--ink-2); }
+  thead th .sort{ margin-left:3px; color:var(--ink-3); font-size:10px; }
+  thead th.sorted .sort{ color:var(--accent); }
+
+  /* Group header row · 공급사 · sticky (thead 아래) */
+  tr.group{
+    background:#F9FAFB;
   }
-  .cat.tone-선결제{ color:var(--danger); }
-  .cat.tone-위탁{ color:var(--violet); }
-  .cat.tone-60회전{ color:var(--success); }
-  .name{
-    font-size:16px; font-weight:700; color:var(--ink);
-    letter-spacing:-.02em; cursor:pointer;
+  tr.group td{
+    padding:8px 12px;
+    border-bottom:1px solid var(--line);
+    font-size:13px; font-weight:700;
+    color:var(--ink-1);
   }
-  .name:hover{ text-decoration:underline; text-underline-offset:3px; text-decoration-color:var(--ink-3); }
-  .count{ font-size:13px; color:var(--ink-3); font-variant-numeric:tabular-nums; }
-  .history{
+  tr.group td .cat{
+    display:inline-block; margin-right:8px;
+    font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    font-family:ui-monospace,'JetBrains Mono',monospace;
+    color:var(--ink-3);
+  }
+  tr.group td .cat.tone-선결제{ color:var(--danger); }
+  tr.group td .cat.tone-위탁{ color:var(--violet); }
+  tr.group td .cat.tone-60회전{ color:var(--success); }
+  tr.group td .name{
+    font-size:15px; font-weight:800; color:var(--ink);
+    letter-spacing:-.02em; cursor:pointer; margin-right:6px;
+  }
+  tr.group td .name:hover{ text-decoration:underline; text-underline-offset:3px; }
+  tr.group td .count{ font-size:12px; color:var(--ink-3); font-weight:600; margin-right:8px; }
+  tr.group td .history{
     font-size:12px; font-weight:600; color:var(--ink-2);
-    text-decoration:none; cursor:pointer; padding:2px 6px; border-radius:5px;
+    padding:2px 6px; border-radius:5px; cursor:pointer;
   }
-  .history:hover{ background:var(--line-2); color:var(--ink); }
-  .group-head .total{
-    margin-left:auto; display:inline-flex; align-items:baseline; gap:4px;
-    font-variant-numeric:tabular-nums;
+  tr.group td .history:hover{ background:rgba(17,24,39,.06); color:var(--ink); }
+  tr.group td .subtotal{
+    float:right; font-size:14px; font-weight:800; color:var(--ink);
+    font-variant-numeric:tabular-nums; letter-spacing:-.01em;
   }
-  .group-head .total .v{ font-size:15px; font-weight:700; color:var(--ink); letter-spacing:-.01em; }
-  .group-head .total .u{ font-size:12px; color:var(--ink-3); font-weight:500; }
+  tr.group td .subtotal .u{ font-size:12px; color:var(--ink-3); font-weight:600; margin-left:2px; }
 
-  /* Group toggle · 접기·펼치기 · caret */
-  .group{ }
-  .group-head{ cursor:pointer; }
-  .caret{ width:14px; height:14px; display:inline-flex; align-items:center; justify-content:center; color:var(--ink-3); transition:transform .15s; font-size:11px; }
-  .group.collapsed .caret{ transform:rotate(-90deg); }
-  .group.collapsed .rows{ display:none; }
-
-  /* ═══ ROW · 하위 구조 · tree indent + guide line ═══ */
-  .rows{
-    display:flex; flex-direction:column;
-    padding-left:28px;             /* 상품 들여쓰기 · 계층 시각화 */
-    position:relative;
-  }
-  .rows::before{
-    content:""; position:absolute; left:14px; top:0; bottom:8px; width:1px;
-    background:var(--line);        /* 트리 세로 가이드 라인 · Notion 톤 */
-  }
-  .row{
-    display:grid; grid-template-columns:16px 1fr auto auto;
-    gap:12px; align-items:center;
-    padding:9px 10px 9px 14px;
+  /* Data row · 상품 */
+  tbody tr.data{ background:var(--surface); transition:background .1s ease; }
+  tbody tr.data:hover{ background:#F9FAFB; }
+  tbody tr.data.selected{ background:rgba(37,99,235,.05); }
+  tbody tr.data td{
+    padding:11px 12px;
     border-bottom:1px solid var(--line-2);
-    cursor:pointer;
-    transition:background .1s ease;
-    position:relative;
+    vertical-align:middle;
+    font-size:15px; font-weight:500; color:var(--ink);
   }
-  /* 트리 가로 가이드 · 각 row 앞에 ㄴ 자 */
-  .row::after{
-    content:""; position:absolute; left:-14px; top:50%; width:12px; height:1px;
-    background:var(--line);
-  }
-  .rows .row:first-child{ border-top:0; }
-  .rows .row:last-child{ border-bottom:0; }
-  .row:hover{ background:rgba(10,46,74,.03); }
-  .row.selected{ background:rgba(10,46,74,.05); }
-  .row.selected::before{
-    content:""; position:absolute; left:-14px; top:4px; bottom:4px; width:2px;
-    background:var(--brand);
-  }
+  tbody tr.data td.check{ padding-left:14px; padding-right:0; width:36px; }
+  tbody tr.data td.num{ text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+  tbody tr.data td.center{ text-align:center; }
+  tbody tr.data td.name{ padding-left:36px; font-size:15px; font-weight:600; color:var(--ink); letter-spacing:-.02em; }
+  tbody tr.data td.short{ color:var(--danger); font-weight:700; }
+  tbody tr.data td.amount{ font-size:15px; font-weight:800; color:var(--brand); font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+  tbody tr.data td.amount.zero{ color:var(--ink-3); font-weight:500; }
 
-  .check{
-    width:14px; height:14px; border:1.5px solid var(--ink-3); border-radius:4px;
-    background:var(--surface); cursor:pointer; display:flex; align-items:center; justify-content:center;
+  .check-box{
+    width:16px; height:16px; border:1.5px solid var(--ink-3); border-radius:4px;
+    background:var(--surface); cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center;
     transition:all .1s;
   }
-  .row.selected .check{ background:var(--brand); border-color:var(--brand); }
-  .row.selected .check::after{ content:"✓"; color:#FFF; font-size:10px; font-weight:900; }
+  tr.data.selected .check-box{ background:var(--accent); border-color:var(--accent); }
+  tr.data.selected .check-box::after{ content:"✓"; color:#FFF; font-size:10px; font-weight:900; }
 
-  .item{ min-width:0; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
-  .item .pname{
-    font-size:16px; font-weight:600; color:var(--ink); letter-spacing:-.015em;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:320px;
-  }
-  .item .meta{
-    display:inline-flex; align-items:baseline; gap:10px;
-    font-size:13px; font-weight:500; color:var(--ink-2); font-variant-numeric:tabular-nums;
-  }
-  .item .meta .lbl{ color:var(--ink-3); font-weight:500; font-size:12px; margin-right:2px; }
-  .item .meta strong{ color:var(--ink); font-weight:700; }
-  .item .meta .short{ color:var(--danger); font-weight:700; }
-  .item .meta .sep{ color:var(--ink-3); }
-
-  /* qty stepper · 미니멀 · 얇은 border */
+  /* Stepper · 컴팩트 · 표 안 */
   .stepper{
     display:inline-flex; align-items:center;
     background:var(--surface); border:1px solid var(--line); border-radius:6px;
-    overflow:hidden; height:28px;
+    overflow:hidden; height:26px;
   }
   .stepper:hover{ border-color:var(--ink-2); }
   .stepper button{
-    width:24px; height:100%; border:0; background:transparent;
-    font-size:14px; color:var(--ink-2); cursor:pointer; font-weight:600;
+    width:22px; height:100%; border:0; background:transparent;
+    font-size:13px; color:var(--ink-2); cursor:pointer; font-weight:700;
   }
-  .stepper button:hover{ color:var(--ink); background:var(--line-2); }
+  .stepper button:hover{ color:var(--ink); background:rgba(17,24,39,.04); }
   .stepper input{
     width:52px; height:100%; border:0;
     border-left:1px solid var(--line); border-right:1px solid var(--line);
@@ -200,11 +199,8 @@
     font-variant-numeric:tabular-nums; outline:none; background:transparent;
   }
 
-  /* amount · 텍스트 only · min-width */
-  .amount{ display:inline-flex; flex-direction:column; align-items:flex-end; min-width:110px; font-variant-numeric:tabular-nums; }
-  .amount .unit{ font-size:12px; color:var(--ink-3); font-weight:500; letter-spacing:-.01em; }
-  .amount .total{ font-size:15px; font-weight:800; color:var(--brand); letter-spacing:-.02em; margin-top:1px; }
-  .amount .total.zero{ color:var(--ink-3); font-weight:500; }
+  /* Last row · no border */
+  tbody tr:last-child td{ border-bottom:0; }
 
   .footnote{ margin-top:24px; padding:12px 0; text-align:center; font-size:12px; color:var(--ink-3); font-weight:500; }
 </style>
@@ -213,20 +209,16 @@
 
 <div class="container">
 
-  <!-- Page head · 한 줄 -->
+  <!-- Page head -->
   <div class="page-head">
     <h1>발주 리스트</h1>
     <div class="stats">
-      <strong>12</strong> 건
-      <span class="sep">·</span>
-      <strong>4</strong> 공급사
-      <span class="sep">·</span>
+      <strong>12</strong> 건 <span class="sep">·</span>
+      <strong>4</strong> 공급사 <span class="sep">·</span>
       선택 <strong>2</strong>
     </div>
     <div class="stats-total">
-      <span class="l">합계</span>
-      <span class="v">44,570,205</span>
-      <span class="l">원</span>
+      <span class="l">합계</span><span class="v">44,570,205</span><span class="l">원</span>
     </div>
   </div>
 
@@ -239,135 +231,112 @@
     <button class="btn primary">일괄 발주 · 5</button>
   </div>
 
-  <!-- Group · 기타 · 비닐봉투 -->
-  <div class="group">
-    <div class="group-head">
-      <span class="caret">▾</span>
-      <span class="cat">기타</span>
-      <span class="name">비닐봉투</span>
-      <span class="count">1건</span>
-      <a class="history">발주이력</a>
-      <div class="total"><span class="v">20,612</span><span class="u">원</span></div>
-    </div>
-    <div class="rows">
-      <div class="row">
-        <span class="check"></span>
-        <div class="item">
-          <span class="pname">비닐봉투</span>
-          <span class="meta">
-            <span><span class="lbl">ERP</span><strong>−16,987</strong></span>
-            <span class="sep">·</span>
-            <span><span class="lbl">추천</span><strong>3,625</strong></span>
-            <span class="sep">·</span>
-            <span class="short">부족 20,612</span>
-          </span>
-        </div>
-        <div class="stepper"><button>−</button><input value="20612" /><button>+</button></div>
-        <div class="amount"><span class="unit">단가 -</span><span class="total zero">-</span></div>
-      </div>
-    </div>
+  <!-- ═══ TABLE · 표 형식 · 헤더·정렬 가지런 ═══ -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="center" style="width:36px;"></th>
+          <th style="width:36%;">상품명<span class="sort">⇅</span></th>
+          <th class="num" style="width:8%;">ERP<span class="sort">⇅</span></th>
+          <th class="num" style="width:8%;">추천<span class="sort">⇅</span></th>
+          <th class="num" style="width:10%;">부족<span class="sort">⇅</span></th>
+          <th class="center" style="width:14%;">주문수량</th>
+          <th class="num" style="width:10%;">단가</th>
+          <th class="num" style="width:14%;">발주금액<span class="sort">▼</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Group 1 · 기타 · 비닐봉투 -->
+        <tr class="group">
+          <td colspan="8">
+            <span class="cat">기타</span>
+            <span class="name">비닐봉투</span>
+            <span class="count">1건</span>
+            <span class="history">발주이력 →</span>
+            <span class="subtotal">20,612<span class="u">원</span></span>
+          </td>
+        </tr>
+        <tr class="data">
+          <td class="check"><span class="check-box"></span></td>
+          <td class="name">비닐봉투</td>
+          <td class="num">−16,987</td>
+          <td class="num">3,625</td>
+          <td class="num short">20,612</td>
+          <td class="center"><div class="stepper"><button>−</button><input value="20612" /><button>+</button></div></td>
+          <td class="num">-</td>
+          <td class="amount zero">-</td>
+        </tr>
+
+        <!-- Group 2 · 선결제 · 동아제약 -->
+        <tr class="group">
+          <td colspan="8">
+            <span class="cat tone-선결제">선결제</span>
+            <span class="name">동아제약</span>
+            <span class="count">2건</span>
+            <span class="history">발주이력 →</span>
+            <span class="subtotal">4,949,010<span class="u">원</span></span>
+          </td>
+        </tr>
+        <tr class="data selected">
+          <td class="check"><span class="check-box"></span></td>
+          <td class="name">판피린Q5입</td>
+          <td class="num">1,006</td>
+          <td class="num">2,186</td>
+          <td class="num short">1,180</td>
+          <td class="center"><div class="stepper"><button>−</button><input value="1180" /><button>+</button></div></td>
+          <td class="num">2,475</td>
+          <td class="amount">2,920,500</td>
+        </tr>
+        <tr class="data">
+          <td class="check"><span class="check-box"></span></td>
+          <td class="name">소화엔 베나치오액 5병</td>
+          <td class="num">158</td>
+          <td class="num">841</td>
+          <td class="num short">683</td>
+          <td class="center"><div class="stepper"><button>−</button><input value="683" /><button>+</button></div></td>
+          <td class="num">2,970</td>
+          <td class="amount">2,028,510</td>
+        </tr>
+
+        <!-- Group 3 · 선결제 · 박카스 -->
+        <tr class="group">
+          <td colspan="8">
+            <span class="cat tone-선결제">선결제</span>
+            <span class="name">박카스</span>
+            <span class="count">2건</span>
+            <span class="history">발주이력 →</span>
+            <span class="subtotal">23,691,195<span class="u">원</span></span>
+          </td>
+        </tr>
+        <tr class="data">
+          <td class="check"><span class="check-box"></span></td>
+          <td class="name">박카스디 10병</td>
+          <td class="num">508</td>
+          <td class="num">4,660</td>
+          <td class="num short">4,152</td>
+          <td class="center"><div class="stepper"><button>−</button><input value="4152" /><button>+</button></div></td>
+          <td class="num">5,610</td>
+          <td class="amount">23,292,720</td>
+        </tr>
+        <tr class="data">
+          <td class="check"><span class="check-box"></span></td>
+          <td class="name">박카스 젤리 1개</td>
+          <td class="num">1,507</td>
+          <td class="num">2,082</td>
+          <td class="num short">575</td>
+          <td class="center"><div class="stepper"><button>−</button><input value="575" /><button>+</button></div></td>
+          <td class="num">693</td>
+          <td class="amount">398,475</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
-  <!-- Group · 선결제 · 동아제약 -->
-  <div class="group">
-    <div class="group-head">
-      <span class="caret">▾</span>
-      <span class="cat tone-선결제">선결제</span>
-      <span class="name">동아제약</span>
-      <span class="count">2건</span>
-      <a class="history">발주이력</a>
-      <div class="total"><span class="v">4,949,010</span><span class="u">원</span></div>
-    </div>
-    <div class="rows">
-      <div class="row selected">
-        <span class="check"></span>
-        <div class="item">
-          <span class="pname">판피린Q5입</span>
-          <span class="meta">
-            <span><span class="lbl">ERP</span><strong>1,006</strong></span>
-            <span class="sep">·</span>
-            <span><span class="lbl">추천</span><strong>2,186</strong></span>
-            <span class="sep">·</span>
-            <span class="short">부족 1,180</span>
-          </span>
-        </div>
-        <div class="stepper"><button>−</button><input value="1180" /><button>+</button></div>
-        <div class="amount"><span class="unit">단가 2,475</span><span class="total">2,920,500</span></div>
-      </div>
-      <div class="row">
-        <span class="check"></span>
-        <div class="item">
-          <span class="pname">소화엔 베나치오액 5병</span>
-          <span class="meta">
-            <span><span class="lbl">ERP</span><strong>158</strong></span>
-            <span class="sep">·</span>
-            <span><span class="lbl">추천</span><strong>841</strong></span>
-            <span class="sep">·</span>
-            <span class="short">부족 683</span>
-          </span>
-        </div>
-        <div class="stepper"><button>−</button><input value="683" /><button>+</button></div>
-        <div class="amount"><span class="unit">단가 2,970</span><span class="total">2,028,510</span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Group · 선결제 · 박카스 -->
-  <div class="group">
-    <div class="group-head">
-      <span class="caret">▾</span>
-      <span class="cat tone-선결제">선결제</span>
-      <span class="name">박카스</span>
-      <span class="count">2건</span>
-      <a class="history">발주이력</a>
-      <div class="total"><span class="v">23,691,195</span><span class="u">원</span></div>
-    </div>
-    <div class="rows">
-      <div class="row">
-        <span class="check"></span>
-        <div class="item">
-          <span class="pname">박카스디 10병</span>
-          <span class="meta">
-            <span><span class="lbl">ERP</span><strong>508</strong></span>
-            <span class="sep">·</span>
-            <span><span class="lbl">추천</span><strong>4,660</strong></span>
-            <span class="sep">·</span>
-            <span class="short">부족 4,152</span>
-          </span>
-        </div>
-        <div class="stepper"><button>−</button><input value="4152" /><button>+</button></div>
-        <div class="amount"><span class="unit">단가 5,610</span><span class="total">23,292,720</span></div>
-      </div>
-      <div class="row">
-        <span class="check"></span>
-        <div class="item">
-          <span class="pname">박카스 젤리 1개</span>
-          <span class="meta">
-            <span><span class="lbl">ERP</span><strong>1,507</strong></span>
-            <span class="sep">·</span>
-            <span><span class="lbl">추천</span><strong>2,082</strong></span>
-            <span class="sep">·</span>
-            <span class="short">부족 575</span>
-          </span>
-        </div>
-        <div class="stepper"><button>−</button><input value="575" /><button>+</button></div>
-        <div class="amount"><span class="unit">단가 693</span><span class="total">398,475</span></div>
-      </div>
-    </div>
-  </div>
-
-  <p class="footnote">텍스트 중심 · Notion/Ramp 톤 · 트리 계층 구조 (공급사 > 상품) · 접기·펼치기 · 배지·배경 최소화</p>
+  <p class="footnote">
+    표 형식 · 헤더 sticky · 컬럼 정렬 가지런 · Linear/Attio 2026 · Calm Density · 3-layer bg tone
+  </p>
 </div>
 
-<script>
-  // Group collapse/expand · Notion 트리 톤
-  document.querySelectorAll('.group-head').forEach(head => {
-    head.addEventListener('click', (e) => {
-      // history 링크 · check 클릭은 collapse 안 함
-      if (e.target.closest('.history') || e.target.closest('.check') || e.target.closest('.stepper')) return;
-      head.parentElement.classList.toggle('collapsed');
-    });
-  });
-</script>
 </body>
 </html>

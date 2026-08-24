@@ -127,15 +127,23 @@
 - **부드러운 UI** · 애니메이션 · scroll · hover 부드럽게 · transition-all duration-150-200
 
 ### 🎨 리스트 UI 원칙 (2026-08-24 재강조)
+- **🔥 리스트 = 무조건 표(테이블) 형식** (사용자 지시 · 2026-08-24)
+  - `<table>` `<thead>` `<tbody>` 정식 구조
+  - 헤더 있음 · 컬럼명 명시 · 정렬 화살표 (▼▲)
+  - **정렬 가지런** · text-right (숫자) · text-left (문자) · text-center (액션)
+  - **tabular-nums** · 숫자 컬럼 정렬 필수
+  - Card 카드형 나열 지양 · 표만
 - **테이블 셀 · 색깔 bg 지양** · zinc-50/40 통일 · 강조는 **text 색만**
   - 예: 부족 · `text-rose-600` (bg 없음)
   - 예: 발주금액 · `text-brand-deep font-bold` (bg 없음)
-- **카테고리 그룹 헤더 (colspan) · 제거** · 서브헤더만 유지 · 미니멀
+- **카테고리 그룹 헤더 (colspan) · 제거** · 서브헤더 (컬럼명) 만 유지 · 미니멀
+- **그룹 · sticky 하위 헤더 row** · 공급사·카테고리 등 · 표 안에 <tr> 로 · Notion/Attio 톤
 - **선택 row** · `bg-brand-tint/50` (딥네이비 톤) · rose·sky bg 지양
 - **hover row** · `bg-brand-tint/25` 통일 · orange·sky 지양
 - **상단 gradient accent** · `bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep` · 세션 시그니처 (랜딩 톤)
-- **말머리표** · `w-1.5 h-1.5 rounded-full bg-brand-deep` · dot · 아이콘 tile 지양
-- **폰트** · title 19px semibold · body 15px · meta 17px tabular-nums
+- **폰트** · thead 13px semibold uppercase · tbody 15px medium · 숫자 17px tabular-nums bold
+- **hairline border** · `rgba(17,24,39,0.06)` · 셀 구분 · shadow 없음
+- **참고 톤** · Linear · Attio · Notion · Ramp 2026 · "Calm Density"
 
 ### 📋 SplitPanel 우측 4대 상태 (2026-08-24 · #261)
 - **SplitRightEmpty** · 좌측 미선택 시 · 아이콘+타이틀+힌트
