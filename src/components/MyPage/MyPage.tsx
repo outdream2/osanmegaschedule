@@ -249,7 +249,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
         {/* 계절 정의 · 2026-08-12 · [설정] > 계절 정의 로 이동 · MyPage 에서 제거 */}
 
         {/* 2026-08-23 · #197 · 스캔 미분류 상품 처리 방식 (개인 preference) */}
-        <Card variant="raw-sm" padding="md" className="flex flex-col gap-2">
+        <Card variant="raw-sm" padding="md" topAccent className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <ScanBarcode size={16} className="text-brand-deep" />
             <h3 className="text-[16px] font-bold text-ink tracking-tight">스캔 미분류 상품 · 처리 방식</h3>
