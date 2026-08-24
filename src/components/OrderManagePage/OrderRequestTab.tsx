@@ -186,7 +186,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                   상단 gradient accent (사용자 지시 · 랜딩 톤) · 헤더 폰트 +2 (12→14) */}
               <div className={`max-h-[50vh] lg:max-h-[75vh] overflow-auto relative rounded-xl border border-line bg-white ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 <span aria-hidden className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-20" />
-                <table className="w-full text-[15px] min-w-[720px] border-collapse [&_tbody_td]:text-[15px] [&_thead_th]:text-[14px]">
+                <table className="w-full text-[14px] sm:text-[15px] min-w-[720px] border-collapse [&_tbody_td]:text-[14px] sm:[&_tbody_td]:text-[15px] [&_thead_th]:text-[13px] sm:[&_thead_th]:text-[14px]">
                   <thead className="sticky top-0 z-10">
                     <tr className="text-zinc-500 uppercase tracking-wider bg-zinc-100/70 border-b border-line">
                       <th className="text-center px-2 py-2.5 w-9">
@@ -207,7 +207,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                       ) : (
                         <>
                           <th onClick={() => handleOrderSort("current")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">ERP<span className="ml-1 text-zinc-400">{orderArrow("current") || "⇅"}</span></th>
-                          <th onClick={() => handleOrderSort("optimal")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">추천<span className="ml-1 text-zinc-400">{orderArrow("optimal") || "⇅"}</span></th>
+                          <th onClick={() => handleOrderSort("optimal")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">적정<span className="ml-1 text-zinc-400">{orderArrow("optimal") || "⇅"}</span></th>
                           <th onClick={() => handleOrderSort("short")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold text-rose-600">부족<span className="ml-1 text-rose-300">{orderArrow("short") || "⇅"}</span></th>
                         </>
                       )}

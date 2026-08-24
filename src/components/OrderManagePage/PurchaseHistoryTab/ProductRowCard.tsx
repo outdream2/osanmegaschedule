@@ -107,8 +107,9 @@ export const ProductRowCard: React.FC<ProductRowCardProps> = React.memo(({
         <span className="text-[9px] font-semibold text-zinc-400 tabular-nums shrink-0" title={`매입 건수 · ${purchaseCount}건`}>
           {purchaseCount}건
         </span>
+        {/* 2026-08-24 · 말줄임표 X · 줄바꿈 (원칙 · 새 규칙) */}
         <span
-          className="text-[10px] text-zinc-500 flex-1 min-w-0 truncate"
+          className="text-[10px] text-zinc-500 flex-1 min-w-0 whitespace-normal break-words leading-snug"
           title={product.primary_supplier ?? "공급사 정보 없음"}
         >
           {supplierLabel}
