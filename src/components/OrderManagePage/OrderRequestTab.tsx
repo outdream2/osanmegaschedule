@@ -186,23 +186,24 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                           <span>전체</span>
                         </button>
                       </th>
+                      {/* 2026-08-24 · 자율진행 · 색상 bg 제거 · 미니멀 zinc 톤 통일 · 강조는 text 만 */}
                       {isOrderGroupCollapsed("info") ? (
-                        <th className="bg-sky-50/20 w-4"></th>
+                        <th className="bg-zinc-50/30 w-4"></th>
                       ) : (
-                        <th onClick={() => handleOrderSort("name")} className="text-left px-0.5 py-1.5 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">상품명{orderArrow("name")}</th>
+                        <th onClick={() => handleOrderSort("name")} className="text-left px-0.5 py-1.5 cursor-pointer hover:bg-zinc-50 select-none text-zinc-600">상품명{orderArrow("name")}</th>
                       )}
                       {isOrderGroupCollapsed("stock") ? (
-                        <th className="bg-amber-50/20 w-4"></th>
+                        <th className="bg-zinc-50/30 w-4"></th>
                       ) : (
                         <>
-                          <th onClick={() => handleOrderSort("current")} className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-zinc-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{orderArrow("current")}<br/><span className="text-[14px] text-zinc-400 font-normal">(현재고)</span></div></th>
-                          <th onClick={() => handleOrderSort("optimal")} className="text-right px-0.5 py-1.5 w-12 bg-amber-50/40 text-zinc-500 cursor-pointer hover:bg-amber-100 select-none">추천적정{orderArrow("optimal")}</th>
-                          <th onClick={() => handleOrderSort("short")} className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{orderArrow("short")}</th>
+                          <th onClick={() => handleOrderSort("current")} className="text-right px-0.5 py-1.5 w-14 text-zinc-600 cursor-pointer hover:bg-zinc-50 select-none"><div className="leading-tight">ERP<br/>재고{orderArrow("current")}<br/><span className="text-[14px] text-zinc-400 font-normal">(현재고)</span></div></th>
+                          <th onClick={() => handleOrderSort("optimal")} className="text-right px-0.5 py-1.5 w-12 text-zinc-600 cursor-pointer hover:bg-zinc-50 select-none">추천적정{orderArrow("optimal")}</th>
+                          <th onClick={() => handleOrderSort("short")} className="text-right px-0.5 py-1.5 w-12 text-rose-600 cursor-pointer hover:bg-zinc-50 select-none">부족{orderArrow("short")}</th>
                         </>
                       )}
-                      <th className="text-right px-0.5 py-1.5 w-14 bg-rose-50/40 text-rose-600">주문<br/>수량</th>
-                      <th className="text-right px-0.5 py-1.5 w-16 bg-rose-50/40 text-zinc-500"><div className="leading-tight">이전<br/>사입가</div></th>
-                      <th className="text-right px-0.5 py-1.5 w-20 bg-rose-50/40 text-emerald-700">발주금액</th>
+                      <th className="text-right px-0.5 py-1.5 w-14 text-rose-600">주문<br/>수량</th>
+                      <th className="text-right px-0.5 py-1.5 w-16 text-zinc-600"><div className="leading-tight">이전<br/>사입가</div></th>
+                      <th className="text-right px-0.5 py-1.5 w-20 text-brand-deep font-bold">발주금액</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-50">

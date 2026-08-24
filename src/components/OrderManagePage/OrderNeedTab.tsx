@@ -512,26 +512,26 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                   <table className="w-full text-[15px] sm:min-w-[540px] [&_tbody_td]:text-[15px]">
                     <thead className="sticky top-0 bg-white z-10">
                       {/* 2026-08-24 · 사용자 지시 · 카테고리 그룹 헤더 (상품 정보·재고 현황·발주 액션) 제거 · 서브헤더만 표시 */}
+                      {/* 2026-08-24 · 자율진행 · 색상 bg 제거 · 미니멀 zinc 톤 통일 · 강조는 text 만 */}
                       <tr className="border-b border-zinc-100 text-[15px] text-zinc-400 uppercase tracking-wider">
                         {isNeedCollapsed("info") ? (
-                          <th className="bg-sky-50/20 w-4"></th>
+                          <th className="bg-zinc-50/30 w-4"></th>
                         ) : (
                           <>
-                            <th onClick={() => handleNeedSort("supplier")} className="text-left px-1 py-1.5 w-auto whitespace-normal cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">공급사{needArrow("supplier")}</th>
-                            <th onClick={() => handleNeedSort("name")} className="text-left px-1 py-1.5 w-auto whitespace-normal cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">상품명{needArrow("name")}</th>
+                            <th onClick={() => handleNeedSort("supplier")} className="text-left px-1 py-1.5 w-auto whitespace-normal cursor-pointer hover:bg-zinc-50 select-none text-zinc-600">공급사{needArrow("supplier")}</th>
+                            <th onClick={() => handleNeedSort("name")} className="text-left px-1 py-1.5 w-auto whitespace-normal cursor-pointer hover:bg-zinc-50 select-none text-zinc-600">상품명{needArrow("name")}</th>
                           </>
                         )}
                         {isNeedCollapsed("stock") ? (
-                          <th className="bg-amber-50/20 w-4"></th>
+                          <th className="bg-zinc-50/30 w-4"></th>
                         ) : (
                           <>
-                            <th onClick={() => handleNeedSort("current")} className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-zinc-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{needArrow("current")}<br/><span className="text-[14px] text-zinc-400 font-normal">(현재고)</span></div></th>
-                            {/* 2026-08-24 · 사용자 지시 · 실재고 컬럼 삭제 (오른쪽 판매현황 패널로 대체) */}
-                            <th onClick={() => handleNeedSort("optimal")} className="text-right px-0.5 py-1.5 w-14 bg-indigo-50/40 text-indigo-600 cursor-pointer hover:bg-indigo-100 select-none"><div className="leading-tight">적정재고{needArrow("optimal")}</div></th>
-                            <th onClick={() => handleNeedSort("short")} className="text-right px-0.5 py-1.5 w-14 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{needArrow("short")}</th>
+                            <th onClick={() => handleNeedSort("current")} className="text-right px-0.5 py-1.5 w-14 text-zinc-600 cursor-pointer hover:bg-zinc-50 select-none"><div className="leading-tight">ERP<br/>재고{needArrow("current")}<br/><span className="text-[14px] text-zinc-400 font-normal">(현재고)</span></div></th>
+                            <th onClick={() => handleNeedSort("optimal")} className="text-right px-0.5 py-1.5 w-14 text-zinc-600 cursor-pointer hover:bg-zinc-50 select-none"><div className="leading-tight">적정재고{needArrow("optimal")}</div></th>
+                            <th onClick={() => handleNeedSort("short")} className="text-right px-0.5 py-1.5 w-14 text-rose-600 cursor-pointer hover:bg-zinc-50 select-none">부족{needArrow("short")}</th>
                           </>
                         )}
-                        <th className="text-center px-0.5 py-1.5 w-20 cursor-default bg-emerald-50/30 text-emerald-600">발주</th>
+                        <th className="text-center px-0.5 py-1.5 w-20 cursor-default text-brand-deep font-bold">발주</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-50">
