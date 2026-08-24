@@ -150,19 +150,29 @@
 - 💡 관련 · #255 (중복 로그인) · #256 (자동 로그인 방지)
 - 💡 규모 · 대형 · 12~18시간 (5-6개 세부 항목 순차)
 
-### #253 · 자동 임포트 시스템 · 원클릭 설치 + 스케쥴 실행 (Phase A ✅ 완료 · 2026-08-24)
+### #253 · 자동 임포트 시스템 · 원클릭 설치 + 스케쥴 실행 (Phase A ✅ E ✅ · 2026-08-24)
 
 **Phase A · 서버 endpoints ✅ 완료**:
 - ✅ `src/shared/schemas/autoImport.ts` · Zod 스키마 (Config·Heartbeat)
 - ✅ `server/routes/settings/autoImport.ts` · 5 endpoints (config get/post · heartbeat · status · installer 501)
 - ✅ authorize(9) · 관리자 lv9 전용
-- ✅ server.ts mount · 3193 tests · TS 통과
+- ✅ server.ts mount
 
-**Phase B~F · 착수 대기**:
+**Phase E · 웹 UI ✅ 완료 (병렬 진행)**:
+- ✅ `src/hooks/useAutoImportConfig.ts` · useAutoImportConfig + useAutoImportStatus + computeStatusTone
+- ✅ `src/components/SystemSettingsPage/AutoImportSection.tsx` · 종합 편집 UI
+- ✅ SystemSettingsPage · "auto-import" 신규 탭 (Robot · violet)
+- ✅ 상태 배지 · green/amber/red/gray · 60초 폴링
+- ✅ 미설치 안내 + [설치 파일 다운로드] (Phase C 후 활성)
+- ✅ 활성 토글 + 폴더 경로 4개 + 기본값 복원 + 자동 생성
+- ✅ 실행 간격 프리셋 (8종) + 사용자 정의
+- ✅ 임포트 후 처리 · 파일명 자동 정리
+- ✅ 저장 · 3193 tests · TS · vite build · audit baseline 갱신
+
+**Phase B~D · F · 착수 대기**:
 - 🔲 Phase B · Python 스크립트 (config 조회·파일 relay·rename·heartbeat)
 - 🔲 Phase C · PyInstaller `.exe` 빌드 · assets/auto-import-template.zip
 - 🔲 Phase D · install.bat/uninstall.bat/run.bat · Task Scheduler 자동 등록
-- 🔲 Phase E · 웹 UI · SystemSettingsPage 신규 "자동 임포트" 탭 (병렬 착수 가능)
 - 🔲 Phase F · README · 트러블슈팅
 
 ### #253-원본스펙 (신규 · 2026-08-24 · 사용자 지시)
