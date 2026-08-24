@@ -15,6 +15,7 @@ import { InlineLabel } from "../common/InlineLabel";
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
 import { SplitRightEmpty } from "../common/SplitRightEmpty";
+import { SplitRightError } from "../common/SplitRightError";
 import { StatusPill } from "../common/StatusPill";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { PeriodSelector } from "../common/PeriodSelector";
@@ -300,25 +301,15 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
         {!selectedVendor ? (
           <SplitRightEmpty icon={Package} title="좌측에서 공급사를 선택하세요" hint="매입이력 · 상품별 집계 · 매입 추이가 표시됩니다" />
         ) : ledgerError ? (
-          <Card borderColor="border-rose-200" className="text-sm text-rose-700 space-y-2">
-            <div className="font-bold flex items-center gap-1.5">원장 조회 실패</div>
-            <div className="text-[14px] font-mono bg-rose-50 border border-rose-100 rounded px-2 py-1">{ledgerError}</div>
-            <button
-              type="button"
-              onClick={() => {
-                setLedgerError(null);
-                if (selectedVendor) {
-                  loadVendorData(selectedVendor.company_name);
-                }
-              }}
-              className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-rose-600 text-white text-[14px] font-bold hover:bg-rose-700 transition cursor-pointer"
-            >
-              <RefreshCw size={12} /> 다시 시도
-            </button>
-            <div className="text-[15px] text-zinc-500 pt-1 border-t border-rose-100">
-              원인 · 서버 API 미구성 · 네트워크 문제 · Supabase 테이블 미생성 (ocr_confirmed_items · supplier_payments) 등. 콘솔 로그 확인 필요.
-            </div>
-          </Card>
+          <SplitRightError
+            title="원장 조회 실패"
+            message={ledgerError}
+            onRetry={() => {
+              setLedgerError(null);
+              if (selectedVendor) loadVendorData(selectedVendor.company_name);
+            }}
+            retryLabel="다시 시도"
+          />
         ) : (
           <>
             <VendorHeaderPanel
