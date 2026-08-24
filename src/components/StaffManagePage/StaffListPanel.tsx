@@ -1,5 +1,6 @@
 // src/components/StaffManagePage/StaffListPanel.tsx
 // 2026-08-23 · Framework Phase 4 · StaffManagePage 분리 · 좌측 직원 리스트 카드
+// 2026-08-24 · SplitPanel 마이그레이션 · aside/divider 외부 랩 제거 (SplitPanel 이 처리)
 import React from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, User, UserPlus } from "lucide-react";
 import { RESIZER_CLS } from "../../hooks/useColumnResize";
@@ -21,8 +22,6 @@ interface StaffListPanelProps {
   error: string | null;
   selectedId: number | null;
   contractCountByEmp: Map<number, number>;
-  isDesktop: boolean;
-  listWidth: number;
   // 정렬
   sortKey: SortKey;
   sortDir: "asc" | "desc";
@@ -40,8 +39,6 @@ interface StaffListPanelProps {
   uploadBankbookForRow: (emp: Employee, f: File) => void;
   uploadResignationFileForRow: (emp: Employee, f: File) => void;
   onWriteContract?: (emp: Employee) => void;
-  // 리사이즈 드래그
-  startResize: (e: React.MouseEvent) => void;
 }
 
 const SortIcon: React.FC<{ k: SortKey; sortKey: SortKey; sortDir: "asc" | "desc" }> = ({ k, sortKey, sortDir }) =>
@@ -54,13 +51,11 @@ const SortIcon: React.FC<{ k: SortKey; sortKey: SortKey; sortDir: "asc" | "desc"
 export const StaffListPanel: React.FC<StaffListPanelProps> = ({
   employees, filtered, loading, error,
   selectedId, contractCountByEmp,
-  isDesktop, listWidth,
   sortKey, sortDir, toggleSort,
   getWidth: sw, resizerProps: sr,
   handleSelect, showError, onCreateOpen, onRefresh,
   uploadResumeForRow, uploadBankbookForRow, uploadResignationFileForRow,
   onWriteContract,
-  startResize,
 }) => {
   const sortIcon = (k: SortKey) => <SortIcon k={k} sortKey={sortKey} sortDir={sortDir} />;
 
@@ -141,50 +136,35 @@ export const StaffListPanel: React.FC<StaffListPanelProps> = ({
     </>
   );
 
+  // 2026-08-24 · SplitPanel 프리미티브 사용 · aside/divider 는 SplitPanel 이 자동 처리
   return (
-    <>
-      <aside
-        className="split-left"
-        style={isDesktop ? { width: `${listWidth}px` } : undefined}
-      >
-        <SplitListPanel
-          topAccent
-          title={
-            <span className="inline-flex items-center gap-1.5">
-              <User size={13} className="text-indigo-400 shrink-0" />
-              <span>직원 목록</span>
-            </span>
-          }
-          countDisplay={
-            filtered.length !== employees.length ? (
-              <span className="text-[14px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-px tabular-nums">
-                {filtered.length}/{employees.length}
-              </span>
-            ) : undefined
-          }
-          footer={
-            <div className="px-3 py-2">
-              <button
-                onClick={onCreateOpen}
-                className="w-full h-7 text-[15px] font-semibold text-indigo-600 border border-dashed border-indigo-200 rounded-lg hover:bg-indigo-50 cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <UserPlus size={11} /> 신규 직원 등록
-              </button>
-            </div>
-          }
-        >
-          {body}
-        </SplitListPanel>
-      </aside>
-
-      {/* Resize handle */}
-      <div
-        onMouseDown={startResize}
-        className="split-divider group"
-        title="드래그하여 좌측 리스트 폭 조절"
-      >
-        <span className="text-[14px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
-      </div>
-    </>
+    <SplitListPanel
+      topAccent
+      title={
+        <span className="inline-flex items-center gap-1.5">
+          <User size={13} className="text-indigo-400 shrink-0" />
+          <span>직원 목록</span>
+        </span>
+      }
+      countDisplay={
+        filtered.length !== employees.length ? (
+          <span className="text-[14px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-px tabular-nums">
+            {filtered.length}/{employees.length}
+          </span>
+        ) : undefined
+      }
+      footer={
+        <div className="px-3 py-2">
+          <button
+            onClick={onCreateOpen}
+            className="w-full h-7 text-[15px] font-semibold text-indigo-600 border border-dashed border-indigo-200 rounded-lg hover:bg-indigo-50 cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
+          >
+            <UserPlus size={11} /> 신규 직원 등록
+          </button>
+        </div>
+      }
+    >
+      {body}
+    </SplitListPanel>
   );
 };

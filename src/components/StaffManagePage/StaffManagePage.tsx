@@ -6,7 +6,8 @@ import { useSortableTable } from "../../hooks/useSortableTable";
 import { useColumnResize } from "../../hooks/useColumnResize";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast, toastClass } from "../../hooks/useToast";
-import { useResizablePanel } from "../../hooks/useResizablePanel";
+// 2026-08-24 · SplitPanel 프리미티브 마이그레이션 · useResizablePanel 제거
+import { SplitPanel } from "../common/SplitPanel";
 import { useLeaveManager } from "../../hooks/useLeaveManager";
 import {
   updateEmployee,
@@ -97,11 +98,9 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
     return () => window.removeEventListener("keydown", onKey);
   }, [mobileDetail]);
 
-  // ── 좌측 리스트 폭 (resizable panel) ──
-  const { width: listWidth, startResize: startResizeList, isDesktop } = useResizablePanel({
-    storageKey: "megatown_staffManage.listWidth",
-    defaultWidth: 288, minWidth: 200, maxWidth: 640, detectDesktop: true,
-  });
+  // 2026-08-24 · SplitPanel 프리미티브 이관 · useResizablePanel 제거
+  //   · 폭 조정 · localStorage · mobile modal 자동 처리
+  //   · maxWidth 640 → 1200 확장 (사용자 지시: 넓이 조정 안 됨 fix)
 
   // ── 연차 훅 ──
   const {
@@ -363,37 +362,39 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
         onBackToSchedule={onBackToSchedule}
       />
 
-      {/* 마스터-디테일 */}
-      <div className="split-container flex-1 min-h-0">
-
-        {/* 좌측: 직원 리스트 */}
-        <StaffListPanel
-          employees={employees}
-          filtered={filtered}
-          loading={loading}
-          error={error}
-          selectedId={selectedId}
-          contractCountByEmp={contractCountByEmp}
-          isDesktop={isDesktop}
-          listWidth={listWidth}
-          sortKey={sortKey}
-          sortDir={sortDir}
-          toggleSort={toggleSort}
-          getWidth={sw as (col: string) => number}
-          resizerProps={sr as (col: any) => React.HTMLAttributes<HTMLSpanElement> & Record<string, unknown>}
-          handleSelect={handleSelect}
-          showError={showError}
-          onCreateOpen={() => setCreateOpen(true)}
-          onRefresh={loadEmployees}
-          uploadResumeForRow={uploadResumeForRow}
-          uploadBankbookForRow={uploadBankbookForRow}
-          uploadResignationFileForRow={uploadResignationFileForRow}
-          onWriteContract={onWriteContract}
-          startResize={startResizeList}
-        />
-
-        {/* 우측: 인사카드 패널 · 데스크탑에서만 표시 */}
-        <section className="hidden lg:flex lg:flex-col split-right">
+      {/* 마스터-디테일 · 2026-08-24 · SplitPanel 프리미티브 · 폭 조정 자동 · 최대 1200 확장 */}
+      <SplitPanel
+        storageKey="staffManage.listWidth"
+        defaultWidth={288}
+        minWidth={200}
+        maxWidth={1200}
+        dividerColor="indigo"
+        className="flex-1 min-h-0"
+        mobileRightAsModal={false}
+        left={
+          <StaffListPanel
+            employees={employees}
+            filtered={filtered}
+            loading={loading}
+            error={error}
+            selectedId={selectedId}
+            contractCountByEmp={contractCountByEmp}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            toggleSort={toggleSort}
+            getWidth={sw as (col: string) => number}
+            resizerProps={sr as (col: any) => React.HTMLAttributes<HTMLSpanElement> & Record<string, unknown>}
+            handleSelect={handleSelect}
+            showError={showError}
+            onCreateOpen={() => setCreateOpen(true)}
+            onRefresh={loadEmployees}
+            uploadResumeForRow={uploadResumeForRow}
+            uploadBankbookForRow={uploadBankbookForRow}
+            uploadResignationFileForRow={uploadResignationFileForRow}
+            onWriteContract={onWriteContract}
+          />
+        }
+        right={
           <StaffDetailPanel
             displayEmp={displayEmp ?? null}
             selectedEmp={selectedEmp}
@@ -427,8 +428,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
             uploadResume={apiUploadResume}
             deleteResume={apiDeleteResume}
           />
-        </section>
-      </div>
+        }
+      />
 
       {/* 모바일 상세 모달 */}
       {mobileDetail && selectedEmp && (
