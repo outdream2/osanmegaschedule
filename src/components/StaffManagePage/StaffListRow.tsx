@@ -4,7 +4,7 @@
 import React from "react";
 import { ExternalLink, Paperclip, PenSquare as NotePencilIcon } from "lucide-react";
 import type { Employee } from "./types";
-import { contractTypeMeta, calcTenure, positionColor, performanceRatingColor } from "./helpers";
+import { contractTypeMeta, positionColor } from "./helpers";
 import { getEmploymentStatus } from "../../lib/employmentStatus";
 import { Avatar } from "./StaffManagePage.subcomponents";
 import { StatusPill } from "../common/StatusPill";
@@ -30,12 +30,10 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
 }) => {
   const isSelected = emp.id === selectedId;
   const ctMeta   = contractTypeMeta(emp.contract_type);
-  const tenure   = calcTenure(emp.hire_date);
   const hasContractFile    = !!emp.contract_file_url;
   const hasResume          = !!emp.resume_url;
   const hasBankbook        = !!emp.bankbook_image_url;
   const hasResignationFile = !!emp.resignation_file_url;
-  const rating   = emp.performance_rating ? emp.performance_rating.toUpperCase() : null;
   const empStatus = getEmploymentStatus((emp as any).retire_date ?? null);
   const isRetired = empStatus !== "active";
   const openContract = (e: React.MouseEvent) => {
@@ -106,20 +104,7 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
           return <span className="text-[15px] text-zinc-300">-</span>;
         })()}
       </td>
-      {/* 근속 */}
-      <td className="px-1 py-2 text-center text-[14px] text-zinc-600 tabular-nums whitespace-nowrap">
-        {tenure}
-      </td>
-      {/* 평가 */}
-      <td className="px-1 py-2 text-center">
-        {rating ? (
-          <Badge className={performanceRatingColor(rating)} size="sm">
-            {rating}
-          </Badge>
-        ) : (
-          <span className="text-[15px] text-zinc-300">-</span>
-        )}
-      </td>
+      {/* 2026-08-24 · 사용자 지시 · 근속·평가 컬럼 제거 · 상세정보 KPI 바 에서만 표시 */}
       {/* 이력서 · 파일 있음=보기 · 없음=업로드 */}
       <td className="px-1 py-2 text-center">
         {hasResume ? (

@@ -90,13 +90,12 @@ export const StaffListPanel: React.FC<StaffListPanelProps> = ({
           {/* 2026-08-24 · v3 확산 · thead · bg zinc-100/70 · text 13/14px · Attio 톤 */}
           <thead className="sticky top-0 z-10 bg-zinc-100/70 backdrop-blur">
             <tr className="border-b border-line text-[13px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider">
+              {/* 2026-08-24 · 사용자 지시 · 근속·평가 컬럼 제거 · 상세정보 KPI 바 에서만 표시 */}
               {(
                 [
                   { key: "name",               label: "이름",    col: "name"         },
                   { key: "position",            label: "직책",    col: "position"     },
                   { key: "contract_type",       label: "계약유형", col: "contract_type"},
-                  { key: "tenure",              label: "근속",    col: "tenure"       },
-                  { key: "performance_rating",  label: "평가",    col: "rating"       },
                   { key: "resume_file",         label: "이력서",  col: "resume"       },
                   { key: "bankbook_file",       label: "통장",    col: "bankbook"     },
                   { key: "contract_file",       label: "계약서",  col: "contract"     },
