@@ -519,7 +519,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                             {isNeedCollapsed("info") ? <ChevronRight size={14} /> : <ChevronDown size={14} />}상품 정보
                           </span>
                         </th>
-                        <th colSpan={isNeedCollapsed("stock") ? 1 : 4}
+                        <th colSpan={isNeedCollapsed("stock") ? 1 : 3}
                           className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-zinc-100 cursor-pointer select-none hover:bg-amber-100 transition"
                           onClick={() => toggleNeedGroup("stock")}
                           title={isNeedCollapsed("stock") ? "재고 현황 펼치기" : "재고 현황 접기"}>
@@ -543,9 +543,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                         ) : (
                           <>
                             <th onClick={() => handleNeedSort("current")} className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-zinc-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{needArrow("current")}<br/><span className="text-[14px] text-zinc-400 font-normal">(현재고)</span></div></th>
-                            <th onClick={() => handleNeedSort("inv")} className="text-right px-0.5 py-1.5 w-20 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">
-                              <div className="leading-tight">실재고{needArrow("inv")}<br/><span className="text-[15px] text-zinc-400 font-normal">(합계)</span></div>
-                            </th>
+                            {/* 2026-08-24 · 사용자 지시 · 실재고 컬럼 삭제 (오른쪽 판매현황 패널로 대체) */}
                             <th onClick={() => handleNeedSort("optimal")} className="text-right px-0.5 py-1.5 w-14 bg-indigo-50/40 text-indigo-600 cursor-pointer hover:bg-indigo-100 select-none"><div className="leading-tight">적정재고{needArrow("optimal")}</div></th>
                             <th onClick={() => handleNeedSort("short")} className="text-right px-0.5 py-1.5 w-14 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{needArrow("short")}</th>
                           </>
@@ -581,7 +579,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                             ) : (
                               <>
                                 <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-zinc-800 bg-zinc-100">{sumCur.toLocaleString()}</td>
-                                <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-violet-700 bg-violet-100/60" title={`실재고 입력된 상품 ${invCount}건 합계`}>{invCount > 0 ? sumInv.toLocaleString() : "-"}</td>
+                                {/* 2026-08-24 · 실재고 컬럼 삭제 · sumInv 계산은 유지 (다른 곳 참조 시 대비) */}
                                 <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-indigo-700 bg-indigo-100/60">{sumOpt.toLocaleString()}</td>
                                 <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-rose-700 bg-rose-100/60">-{sumShort.toLocaleString()}</td>
                               </>
@@ -666,12 +664,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                               ) : (
                                 <>
                                   <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] text-zinc-700 bg-zinc-50/40 align-middle">{cur}</td>
-                                  <td
-                                    className={`text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] bg-violet-50/40 align-middle ${inv ? "text-violet-700" : "text-zinc-300"}`}
-                                    title={inv ? `창고1 ${inv.w1 ?? "-"} · 창고2 ${inv.w2 ?? "-"} · 매장1 ${inv.s1 ?? "-"} · 매장2 ${inv.s2 ?? "-"} · 매장3 ${inv.s3 ?? "-"} = ${inv.total}` : "실재고 미입력"}
-                                  >
-                                    {inv ? inv.total : "—"}
-                                  </td>
+                                  {/* 2026-08-24 · 사용자 지시 · 실재고 컬럼 삭제 · 오른쪽 판매현황 패널로 대체 */}
                                   <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] text-indigo-700 bg-indigo-50/40 align-middle">{opt}</td>
                                   <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-middle">
                                     <span className="tabular-nums font-bold text-[14px] text-rose-600">-{opt - cur}</span>
