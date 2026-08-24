@@ -67,6 +67,49 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #258 · 발주 리스트 · 프리미엄 UI 재설계 + 프레임워크화 (신규 · 2026-08-24 · 사용자 지시)
+
+**대상**: 발주요청 페이지 · 우측 발주 리스트 (12건 예시)
+- 공급사별 그룹 (동아제약 · 박카스 · 신신제약 등)
+- 그룹 헤더 · [발주이력] 링크 · 발주(N) count · 결제방식 (선결제/기타)
+- 상품 행 · 상품명 · 주문수량 · 이전 · 사입가 · 발주금액
+- 상단 액션 · 일괄 발주 · 전체선택 · 선택삭제 · 12건 카운트
+- 상단 안내 · "공급사를 클릭하면 최신 발주이력 확인"
+
+**설계 요구사항 (사용자 지시)**:
+- **UI 목업 파일 준수** · `docs/UI_MOCKUP_2026-08-21.html`
+- **최신 트렌드** · Linear · Vercel · Notion · Attio 2026 톤
+- **최신 기술** · React 19 · Tailwind · Pretendard · antialiased
+- **품질** · 깔끔 · 고급 · 세련 · 멋짐 · 초고해상도 · 부드러운 UI
+- **파스텔·이모지·촌스러움 금지** · 딥네이비 · 미니멀
+
+**Phase 별 구현**:
+- **Phase 1** · UI 목업 · HTML 파일 (docs/UI_MOCKUP_ORDER_LIST.html) · 사용자 확정
+- **Phase 2** · 프리미티브 신규 · `src/components/common/GroupedListPanel.tsx`
+  · props · groups · groupHeader slot · itemRow slot · actions · summary
+  · a11y · role=list · aria-label · keyboard navigation
+- **Phase 3** · 발주요청 (OrderRequestTab) 적용 · 회귀 방지
+- **Phase 4** · 다른 리스트 확산 (발주필요·발주이력·매입·재고 등) · 각 페이지 개별 검토
+- **Phase 5** · unit tests (프리미티브) + 시각 검증
+
+**UI 대원칙 적용 (필수 · 재확인)**:
+- 목업 파일 · `docs/UI_MOCKUP_2026-08-21.html` PC/모바일 톤 준수
+- 파스텔 · 이모지 · 배지 남발 · 촌스러움 · 금지
+- Linear · Vercel · Notion · Attio 2026 톤 · 딥네이비 액센트
+- Pretendard · antialiased · GPU 가속 · image-rendering
+- 폰트 +2 기본 (40대+ 가독성)
+- 헤더 자동 정렬 · 컬럼 폭 조정 · 카테고리 색깔 분류
+
+**규모** · 15~20시간 (프리미티브 8h + 3~5 소비처 각 2~3h)
+
+**관련 · 이전 프리미티브** · SplitListPanel · Card · StatusPill · CategoryChips · IconTile · Badge · Modal
+
+### #257 · 발주필요 · 실재고 컬럼 삭제 + 오른쪽 판매현황 대체 (진행중 · 2026-08-24 · 사용자 지시)
+- ✅ Phase 1 · 실재고 컬럼 삭제 (`768e91bd`) · 헤더 colSpan · 합계 · 데이터 행
+- 🔲 Phase 2 · 오른쪽 상세 · 판매현황 UI 로 대체
+  · 1M/2M/3M 판매량 요약 · SalesTrendPage · ProductTrendTab 연결
+  · 기존 ProductDetailRightPanel showChart 재활용 or 신규 SalesSummaryPanel
+
 ### #256 · 세션 만료 후 · 로그아웃 상태 강제 · 자동 재로그인 방지 (신규 · 2026-08-24 · 사용자 지시)
 - 📄 현재 · 세션 만료 시 · localStorage 정리 + reload · 하지만 서버 JWT 쿠키 유효할 경우 자동 재로그인 가능성
 - 🔲 만료 시 · `POST /api/auth/logout` 필수 호출 · JWT 쿠키 clear
