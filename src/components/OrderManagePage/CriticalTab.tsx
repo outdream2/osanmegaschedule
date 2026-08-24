@@ -3,7 +3,7 @@
 import React from "react";
 import { AlertTriangle } from "lucide-react";
 import { PageToolbar } from "../common/PageToolbar";
-import { Card } from "../common/Card";
+import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common";
 import type { ProductInfo } from "./OrderManagePage.types";
 
 interface CriticalTabProps {
@@ -38,17 +38,17 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
           <span className="text-[13px] text-ink-soft font-medium tracking-tight">ERP재고 3개 이하</span>
         }
       />
-      <Card padding="none" clip>
+      {/* 2026-08-24 · v3 리스트 UI 프레임워크 · TableListWrap · 사용자 지시 */}
+      <TableListWrap>
         <table className="w-full text-[14px] tabular-nums">
-          {/* 2026-08-24 · v3 확산 · bg zinc-100/70 · 반응형 폰트 */}
-          <thead className="bg-zinc-100/70 text-[13px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider border-b border-line">
+          <thead className={tableHeadCls()}>
             <tr>
-              <th className="text-left px-3 py-2 w-[110px]">공급사</th>
-              <th className="text-left px-3 py-2">상품명</th>
-              <th className="text-right px-3 py-2 w-[70px] bg-amber-50/40 text-amber-700">실재고</th>
-              <th className="text-right px-3 py-2 w-[70px] text-zinc-500">ERP재고</th>
-              <th className="text-right px-3 py-2 w-[70px] text-indigo-600">적정재고</th>
-              <th className="text-center px-3 py-2 w-[80px]">발주</th>
+              <th className={tableThCls("left", "w-[110px] text-sky-800")}>공급사</th>
+              <th className={tableThCls("left", "min-w-[220px]")}>상품명</th>
+              <th className={tableThCls("num", "w-[70px] bg-amber-50/40 text-amber-700")}>실재고</th>
+              <th className={tableThCls("num", "w-[70px] text-zinc-500")}>ERP재고</th>
+              <th className={tableThCls("num", "w-[70px] text-indigo-600")}>적정재고</th>
+              <th className={tableThCls("center", "w-[80px]")}>발주</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
@@ -63,12 +63,12 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
               const curNum = Number(p.current_stock ?? 0);
               return (
                 <tr key={code} className={`${curNum <= 0 ? "bg-rose-50/40 hover:bg-rose-50" : "hover:bg-zinc-50"}`}>
-                  <td className="px-3 py-1.5 text-[14px] text-zinc-700 truncate max-w-[110px]" title={supplier}>{supplier}</td>
-                  <td className="px-3 py-1.5 text-[15px] font-semibold text-zinc-800 truncate">{name}</td>
-                  <td className={`px-3 py-1.5 text-right ${inv?.total != null ? "text-amber-700" : "text-zinc-300"}`}>{inv?.total ?? "-"}</td>
-                  <td className={`px-3 py-1.5 text-right font-bold ${curNum <= 0 ? "text-rose-700" : "text-zinc-700"}`}>{p.current_stock ?? "-"}</td>
-                  <td className="px-3 py-1.5 text-right text-indigo-700 font-bold">{p.optimal_stock ?? "-"}</td>
-                  <td className="px-3 py-1.5 text-center">
+                  <td className={tableTdCls("left", "text-[14px] text-sky-800 font-semibold whitespace-normal break-words")}>{supplier}</td>
+                  <td className={tableTdCls("left", "text-[15px] font-semibold text-zinc-800 whitespace-normal break-words")}>{name}</td>
+                  <td className={tableTdCls("num", `${inv?.total != null ? "text-amber-700" : "text-zinc-300"} bg-amber-50/40`)}>{inv?.total ?? "-"}</td>
+                  <td className={tableTdCls("num", `font-bold ${curNum <= 0 ? "text-rose-700" : "text-zinc-700"}`)}>{p.current_stock ?? "-"}</td>
+                  <td className={tableTdCls("num", "text-indigo-700 font-bold")}>{p.optimal_stock ?? "-"}</td>
+                  <td className={tableTdCls("center")}>
                     <button
                       onClick={() => onRequestOrder(p)}
                       disabled={alreadyRequested}
@@ -84,7 +84,7 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
             })}
           </tbody>
         </table>
-      </Card>
+      </TableListWrap>
     </div>
   );
 };

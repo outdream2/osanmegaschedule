@@ -15,6 +15,8 @@ import { InlineLabel } from "../common/InlineLabel";
 import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
 import { StatusPill } from "../common/StatusPill";
 import { Card } from "../common/Card";
+// 2026-08-24 · v3 리스트 UI 프레임워크 · 사용자 지시
+import { tableHeadCls, tableThCls, tableTdCls } from "../common";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -161,8 +163,9 @@ export const OrderHistoryTab: React.FC = () => {
         </Card>
       )}
 
-      {/* 리스트 */}
-      <Card clip padding="none">
+      {/* 리스트 · 2026-08-24 · v3 리스트 프레임워크 · 상단 gradient accent */}
+      <Card clip padding="none" className="relative">
+        <span aria-hidden className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-20 rounded-t-md" />
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Spinner size={16} tone="zinc" label="불러오는 중..." labelSize={15} />
@@ -192,11 +195,11 @@ export const OrderHistoryTab: React.FC = () => {
                       <ChevronRight size={16} className="text-zinc-300 shrink-0" />
                     )}
                     {/* 발주번호 */}
-                    <span className="text-[14px] font-mono font-bold text-indigo-700 tabular-nums shrink-0">
+                    <span className="text-[14px] font-mono font-bold text-sky-700 tabular-nums shrink-0">
                       #{o.order_number ?? "—"}
                     </span>
-                    {/* 공급사 */}
-                    <span className="text-[15px] font-bold text-zinc-800 truncate">
+                    {/* 공급사 · 2026-08-24 · v3 · sky-800 톤 통일 · truncate 제거 */}
+                    <span className="text-[15px] font-bold text-sky-800 whitespace-normal break-words">
                       {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
                     </span>
                     {/* 상품 종·수량 · 2026-08-17 · StatusPill 통일 */}
@@ -244,27 +247,27 @@ export const OrderHistoryTab: React.FC = () => {
                           <span className="text-zinc-300">수신처·메모 정보 없음</span>
                         )}
                       </div>
-                      {/* 아이템 테이블 · 폰트 +2 · 굵기 완화 */}
-                      <table className="w-full text-[13px] tabular-nums">
-                        <thead>
-                          <tr className="bg-zinc-50 text-zinc-500 font-bold tracking-wide text-[12px] border-b border-line">
-                            <th className="text-center px-2 py-2 w-8">#</th>
-                            <th className="text-left px-3 py-2 w-28">코드</th>
-                            <th className="text-left px-3 py-2">상품명</th>
-                            <th className="text-right px-3 py-2 w-16">수량</th>
-                            <th className="text-right px-3 py-2 w-24">단가</th>
-                            <th className="text-right px-3 py-2 w-28">금액</th>
+                      {/* 아이템 테이블 · 2026-08-24 · v3 · 헬퍼 · 줄바꿈 우선 */}
+                      <table className="w-full text-[14px] tabular-nums">
+                        <thead className={tableHeadCls()}>
+                          <tr>
+                            <th className={tableThCls("center", "w-8")}>#</th>
+                            <th className={tableThCls("left", "w-28")}>코드</th>
+                            <th className={tableThCls("left", "min-w-[220px]")}>상품명</th>
+                            <th className={tableThCls("num", "w-16 bg-sky-50/60")}>수량</th>
+                            <th className={tableThCls("num", "w-24")}>단가</th>
+                            <th className={tableThCls("num", "w-28 bg-brand-tint/50")}>금액</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
                           {o.items.map((it, i) => (
-                            <tr key={it.id} className="hover:bg-indigo-50/30">
-                              <td className="text-center px-2 py-1.5 text-zinc-400">{i + 1}</td>
-                              <td className="px-3 py-1.5 font-mono text-zinc-500">{it.product_code}</td>
-                              <td className="px-3 py-1.5 text-zinc-800 font-semibold truncate max-w-[280px]">{it.product_name}</td>
-                              <td className="text-right px-3 py-1.5 font-bold text-rose-600">{it.order_qty}</td>
-                              <td className="text-right px-3 py-1.5 text-zinc-600">{it.unit_price > 0 ? fmtWon(it.unit_price) : "-"}</td>
-                              <td className="text-right px-3 py-1.5 font-bold text-emerald-700">{it.line_amount > 0 ? fmtWon(it.line_amount) : "-"}</td>
+                            <tr key={it.id} className="hover:bg-sky-50/30">
+                              <td className={tableTdCls("center", "text-zinc-400")}>{i + 1}</td>
+                              <td className={tableTdCls("left", "font-mono text-zinc-500")}>{it.product_code}</td>
+                              <td className={tableTdCls("left", "text-zinc-800 font-semibold whitespace-normal break-words")}>{it.product_name}</td>
+                              <td className={tableTdCls("num", "font-bold text-rose-600 bg-sky-50/60")}>{it.order_qty}</td>
+                              <td className={tableTdCls("num", "text-zinc-600")}>{it.unit_price > 0 ? fmtWon(it.unit_price) : "-"}</td>
+                              <td className={tableTdCls("num", "font-bold text-emerald-700 bg-brand-tint/50")}>{it.line_amount > 0 ? fmtWon(it.line_amount) : "-"}</td>
                             </tr>
                           ))}
                         </tbody>
