@@ -227,21 +227,24 @@ const ZoneCategoryContent: React.FC = () => {
             ))}
           </div>
         )}
-        {/* 구역 정보 행 */}
+        {/* 구역 정보 행 · 2026-08-24 · 사용자 지시 · 순위(1,2,3) 은 카테고리 아래쪽 배치 */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex flex-col gap-1 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              {/* 2026-08-23 · #184 · 구역 배지 강조 · 크기 up · 배경/테두리 shadow */}
+              <span className={`text-[17px] font-extrabold ${textCls} tabular-nums shrink-0 px-2 py-0.5 rounded-md bg-white/90 border border-current shadow-sm`}>{getZoneLabel(g.zone)}</span>
+              {zoneCategoryLabel(g.zone) && (
+                <span className={`text-[15px] font-bold ${textCls} break-words whitespace-normal leading-tight`}
+                  title={zoneCategoryLabel(g.zone)}>
+                  {zoneCategoryLabel(g.zone)}
+                </span>
+              )}
+            </div>
+            {/* 순위 배지 · 카테고리 아래 배치 (사용자 지시) */}
             <span className={`inline-flex items-center justify-center w-[20px] h-[20px] text-[14px] font-bold rounded-md border tabular-nums shrink-0 ${rankCls}`}
               title={`그룹 내 순위 ${rank}위`}>
               {rank}
             </span>
-            {/* 2026-08-23 · #184 · 구역 배지 강조 · 크기 up · 배경/테두리 shadow */}
-            <span className={`text-[17px] font-extrabold ${textCls} tabular-nums shrink-0 px-2 py-0.5 rounded-md bg-white/90 border border-current shadow-sm`}>{getZoneLabel(g.zone)}</span>
-            {zoneCategoryLabel(g.zone) && (
-              <span className={`text-[15px] font-bold ${textCls} break-words whitespace-normal leading-tight`}
-                title={zoneCategoryLabel(g.zone)}>
-                {zoneCategoryLabel(g.zone)}
-              </span>
-            )}
           </div>
           <span className={`text-zinc-400 text-[14px] transition-transform shrink-0 ${isSelected ? "rotate-90" : ""}`}>▶</span>
         </div>
