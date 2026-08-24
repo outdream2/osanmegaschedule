@@ -87,8 +87,9 @@ export const StaffListPanel: React.FC<StaffListPanelProps> = ({
           className={`w-full border-collapse ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}
           style={{ tableLayout: "fixed" }}
         >
-          <thead className="sticky top-0 z-10 bg-zinc-50/95 backdrop-blur">
-            <tr className="border-b border-line text-[15px] font-bold text-zinc-500 uppercase tracking-wider">
+          {/* 2026-08-24 · v3 확산 · thead · bg zinc-100/70 · text 13/14px · Attio 톤 */}
+          <thead className="sticky top-0 z-10 bg-zinc-100/70 backdrop-blur">
+            <tr className="border-b border-line text-[13px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider">
               {(
                 [
                   { key: "name",               label: "이름",    col: "name"         },
