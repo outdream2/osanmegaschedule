@@ -67,6 +67,35 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #262 · 통계 서브탭 · 검색창 리스트 위 기본 배치 (신규 · 2026-08-24 · 사용자 지시)
+- 🎯 대상 · 통계 메뉴 서브탭 · 매입관리 페이지 (trending · category · flow · supplier · diff)
+- 🎯 요구 · Split 왼쪽 리스트 위에 **검색창 기본 표시**
+  · 이미 있으면 → 리스트 위쪽으로 위치 이동
+  · 없으면 → 신설 (SplitListPanel filterExtras 슬롯 등)
+- 🔲 조사 완료 시점 · SupplierTab 만 SplitPanel 사용 · 나머지는 리스트/차트형
+- 🔲 검토 · SupplierTab · 현재 검색창 위치 · 이동 필요 여부 확인
+- 🔲 확산 · 다른 서브탭 (trending 등) · SplitPanel 아니면 스킵
+
+### #261 · SplitRight 프리미티브 · 폰트 +2 프레임워크 (2026-08-24)
+- ✅ SplitLeftHeader · 폰트 +2 (17→19px · subtitle 13→15px · AccentBar h 17→19)
+- 🔲 SplitRightHeader · SplitLeftHeader 대칭 프리미티브 신설
+- 🔲 SplitRightEmpty · "선택하세요" 공용 빈상태
+- 🔲 SplitRightLoading · Spinner + label 공용
+- 🔲 SplitRightError · 오류 카드 공용
+- 🔲 TabBar 폰트 +2 확산
+- 🔲 목업 참조 · `docs/UI_MOCKUP_2026-08-21.html` 톤 적용 (Linear·Vercel 딥네이비)
+
+### 계산 회귀 fix (완료 · 2026-08-24)
+- ✅ ProductDetailPanel · 월평균 판매 라벨 "최근6개월 월평균" 로 명확화 (커밋 `94f48021`)
+- ✅ 발주내역 탭 · lookupProduct 동기 함수 · await/.catch 오용 fix (커밋 `4bf256b7`)
+- ✅ 급상승 상품 클릭 · ProductDetailModal 오픈 wiring (커밋 `1ca5f399`)
+
+### #178 · 공급사정보 SQL + 데이터 (2026-08-24)
+- ✅ `sql/migrations/2026-08-24_vendor_order_methods.sql` · 사용자 SQL Editor 실행 완료
+- ✅ VendorInfoHeader · 5 xlsx 필드 표시 (order_method · region · invoice_method · order_status)
+- 🔲 special_notes · 경고 배너 (후속)
+- 🔲 tests 추가
+
 ### #259 · 매입이력 공급사별 · 상품 확장 기능 복원 (신규 · 2026-08-24 · 사용자 지시)
 - 📄 회귀 · 이전 (커밋 `83d5bab5`) · 매입일 그룹 + 화살표 확장 UX 존재
 - 📄 refactor (`71847e40`) · PurchaseHistoryTab 1158→787 라인 분리 시 · 상품 확장 UX 손실
