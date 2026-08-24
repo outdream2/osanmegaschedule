@@ -244,6 +244,19 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
         )}
       </div>
 
+      {/* 2026-08-24 · #178 · special_notes · 발주 특이사항 경고 배너 (있을 때만) */}
+      {vendor.special_notes && String(vendor.special_notes).trim() && (
+        <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 mt-1">
+          <AlertTriangle size={13} className="text-amber-600 shrink-0 mt-0.5" />
+          <div className="flex flex-col min-w-0">
+            <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">발주 특이사항</span>
+            <span className="text-[13px] text-amber-900 font-semibold leading-relaxed break-words whitespace-normal">
+              {vendor.special_notes}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* ── KPI 텍스트 줄 (kpis 있을 때만) ── */}
       {kpis != null && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] leading-tight border-t border-zinc-100 pt-2">
