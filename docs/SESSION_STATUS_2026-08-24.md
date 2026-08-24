@@ -22,7 +22,44 @@
 
 ---
 
-## 🔥 이번 세션 완료 (35+ commits · 로컬만)
+## 🎯 v3 리스트 UI · 확정·확산 (2026-08-24 세션 후반)
+
+### 원칙 · 리스트 = 무조건 표 형식 (사용자 지시)
+- `<table>` `<thead>` `<tbody>` 정식 · 카드 나열 지양
+- 헤더 · 컬럼명 · 정렬 화살표 (⇅) 필수
+- **말줄임표 절대 금지** · truncate·line-clamp·ellipsis X · 줄바꿈 (whitespace-normal break-words)
+- 컬럼 정렬 · text-right (숫자·tabular-nums) · text-left (문자) · text-center (액션)
+
+### v3 스펙 · Attio/Linear/Notion 2026
+- 상단 gradient accent · 3px · `from-brand-deep via-sky-500 to-brand-deep`
+- thead · sticky · bg zinc-100/70 · 13/14px uppercase (반응형) · sort arrows
+- 그룹 row (공급사) · sticky · gradient bg (brand-tint/70 → 40) · **접기·펼치기** · caret 회전
+- 공급사명 · text-sky-800 · hover brand-deep · underline (링크 hint)
+- 데이터 row · white · hover zinc-50/60 · selected sky-50/60
+- 주문수량 컬럼 · sky-50/60 tint bg · sky border input · **편집 강조**
+- 발주금액 컬럼 · brand-tint/50 tint bg · brand-deep bold · **결과 강조**
+- 부족 · text-rose-600 만 (bg X)
+- 폰트 반응형 · 좁으면 14/13 · sm+ 15/14
+
+### 실적용 완료 · 8 페이지
+| 파일 | 커밋 |
+|---|---|
+| OrderRequestTab · 발주요청 | `52e67876`·`775a5ec1`·`00ce315f`·`05567238`·`cbb58cb9`·`abb9ddd2` |
+| OrderNeedTab · 발주필요 | `b16d90a4`·`abb9ddd2` |
+| SupplierTab · 매입이력 embedded thead | `008a22d4` |
+| VendorManageSplit · 공급사관리 thead | `e6068dbf` |
+| StaffListPanel · 직원 목록 thead | `a866d3b5` |
+| PurchaseHistoryTab.panels ByProduct · topAccent | `b8b34bbd` |
+| PaymentInfoTab · topAccent | `b8b34bbd` |
+| ProductInfoPage · topAccent | `b8b34bbd` |
+
+### SplitListPanel 프리미티브 확장
+- **topAccent prop 신설** (기본 false · true 시 상단 gradient)
+- 6 소비처 자동 활성 (DRY)
+
+---
+
+## 🔥 이번 세션 완료 (85+ commits · 로컬만)
 
 ### 🎨 UI 프리미엄 재디자인 (사용자 지시)
 | 커밋 | 요약 |
