@@ -587,11 +587,12 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string; i
         const rows = Array.isArray(raw) ? (raw as OrderRequestRow[]) : [];
         // 2026-08-24 · 사용자 지시 · supplier 표시 fix · productsCache lookup 으로 enrich
         //   서버 응답에 supplier 필드 없음 · product_code 로 캐시 조회하여 보강
-        const enriched = await Promise.all(rows.map(async (r) => {
+        //   2026-08-24 (fix) · lookupProduct 는 동기 함수 · await/.catch 제거 → 무한 orders=[] 회귀 해결
+        const enriched = rows.map((r) => {
           if (r.supplier) return r;
-          const p = await lookupProduct(String(r.product_code ?? "")).catch(() => null);
+          const p = lookupProduct(String(r.product_code ?? ""));
           return { ...r, supplier: p?.supplier ?? null };
-        }));
+        });
         setOrders(enriched);
       })
       .catch(() => setOrders([]))

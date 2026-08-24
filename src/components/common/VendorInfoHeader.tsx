@@ -19,6 +19,7 @@ import React from "react";
 import {
   Building2, Phone, User2, Calendar, Package,
   TrendingUp, TrendingDown, Minus, Pencil,
+  ShoppingCart, MapPin, Receipt, CircleDot, AlertTriangle,
 } from "lucide-react";
 import { VendorCategoryBadge } from "./VendorCategoryBadge";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
@@ -39,6 +40,12 @@ export interface VendorInfoFull {
   created_at?: string | null;
   /** DB: vat_included (boolean | null) */
   vat_included?: boolean | null;
+  // 2026-08-24 · #178 · xlsx 마스터 5 신규 필드 (읽기 표시)
+  order_method?: string | null;
+  region?: string | null;
+  invoice_method?: string | null;
+  order_status?: string | null;
+  special_notes?: string | null;
 }
 
 /** 매입 KPI (VendorHeaderPanel.calcKpis 결과와 동일 구조) */
@@ -187,6 +194,40 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
               </span>
             )}
           </div>
+
+          {/* 2026-08-24 · #178 · xlsx 5 필드 · 값 있는 항목만 표시 */}
+          {(vendor.order_method || vendor.region || vendor.invoice_method || vendor.order_status) && (
+            <div className="flex items-center gap-3 flex-wrap text-[12px] text-zinc-600 mt-0.5">
+              {vendor.order_method && (
+                <span className="inline-flex items-center gap-1" title={`주문 방식: ${vendor.order_method}`}>
+                  <ShoppingCart size={11} className="text-emerald-500 shrink-0" />
+                  <span className="text-zinc-400 font-semibold">주문</span>
+                  <span className="font-semibold text-emerald-700">{vendor.order_method}</span>
+                </span>
+              )}
+              {vendor.region && (
+                <span className="inline-flex items-center gap-1" title={`지역: ${vendor.region}`}>
+                  <MapPin size={11} className="text-sky-500 shrink-0" />
+                  <span className="text-zinc-400 font-semibold">지역</span>
+                  <span className="font-semibold text-sky-700">{vendor.region}</span>
+                </span>
+              )}
+              {vendor.invoice_method && (
+                <span className="inline-flex items-center gap-1" title={`거래명세서: ${vendor.invoice_method}`}>
+                  <Receipt size={11} className="text-indigo-500 shrink-0" />
+                  <span className="text-zinc-400 font-semibold">명세서</span>
+                  <span className="font-semibold text-indigo-700">{vendor.invoice_method}</span>
+                </span>
+              )}
+              {vendor.order_status && (
+                <span className="inline-flex items-center gap-1" title={`주문 현황: ${vendor.order_status}`}>
+                  <CircleDot size={11} className="text-zinc-500 shrink-0" />
+                  <span className="text-zinc-400 font-semibold">현황</span>
+                  <span className="font-semibold text-zinc-700">{vendor.order_status}</span>
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* [조회 및 수정] 버튼 */}
