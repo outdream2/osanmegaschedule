@@ -493,52 +493,53 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                   공급사 {supListSort.key === "supplier" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-zinc-300">⇅</span>}
                   <span {...resizerProps("supplier")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                 </th>
-                {isSupplierGroupCollapsed("stock") ? <th className="bg-sky-50/20" style={{ width: 16 }}></th> : (
+                {/* 2026-08-24 · 자율진행 · 색상 bg 제거 · 미니멀 톤 통일 (zinc/brand 만) · 정렬 화살표 유지 */}
+                {isSupplierGroupCollapsed("stock") ? <th className="bg-zinc-50/40" style={{ width: 16 }}></th> : (
                   <>
-                    <th className="relative text-right px-3 py-2 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition text-sky-700" style={{ width: getWidth("stock_amt"), minWidth: getWidth("stock_amt") }} onClick={() => toggleSupListSort("totalStockAmount")} title="재고자산 정렬">
-                      재고자산 {supListSort.key === "totalStockAmount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-sky-300">⇅</span>}
+                    <th className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition text-zinc-600" style={{ width: getWidth("stock_amt"), minWidth: getWidth("stock_amt") }} onClick={() => toggleSupListSort("totalStockAmount")} title="재고자산 정렬">
+                      재고자산 {supListSort.key === "totalStockAmount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-zinc-300">⇅</span>}
                       <span {...resizerProps("stock_amt")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                     </th>
-                    <th className="relative text-right px-3 py-2 cursor-pointer select-none bg-sky-50/40 hover:bg-sky-100 transition text-sky-600" style={{ width: getWidth("item_cnt"), minWidth: getWidth("item_cnt") }} onClick={() => toggleSupListSort("itemCount")} title="상품수 정렬">
-                      상품수 {supListSort.key === "itemCount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-sky-300">⇅</span>}
+                    <th className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition text-zinc-600" style={{ width: getWidth("item_cnt"), minWidth: getWidth("item_cnt") }} onClick={() => toggleSupListSort("itemCount")} title="상품수 정렬">
+                      상품수 {supListSort.key === "itemCount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-zinc-300">⇅</span>}
                       <span {...resizerProps("item_cnt")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                     </th>
                   </>
                 )}
-                {isSupplierGroupCollapsed("purchase") ? <th className="bg-amber-50/20" style={{ width: 16 }}></th> : (
+                {isSupplierGroupCollapsed("purchase") ? <th className="bg-zinc-50/40" style={{ width: 16 }}></th> : (
                   <>
-                    <th className="relative text-right px-3 py-2 cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition text-amber-600" style={{ width: getWidth("pur_qty"), minWidth: getWidth("pur_qty") }} onClick={() => toggleSupListSort("purchaseQty")} title="매입수량 정렬">
-                      매입수량 {supListSort.key === "purchaseQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-amber-300">⇅</span>}
+                    <th className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition text-zinc-600" style={{ width: getWidth("pur_qty"), minWidth: getWidth("pur_qty") }} onClick={() => toggleSupListSort("purchaseQty")} title="매입수량 정렬">
+                      매입수량 {supListSort.key === "purchaseQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-zinc-300">⇅</span>}
                       <span {...resizerProps("pur_qty")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                     </th>
                     {showExtraPurchaseColumns && (
-                      <th className="relative text-right px-3 py-2 bg-amber-50/80 text-amber-700" style={{ width: getWidth("pur_amt"), minWidth: getWidth("pur_amt") }} title="매입액 (공급가액 합계 · stock_history.supply_amount)">
+                      <th className="relative text-right px-3 py-2 text-zinc-600" style={{ width: getWidth("pur_amt"), minWidth: getWidth("pur_amt") }} title="매입액 (공급가액 합계 · stock_history.supply_amount)">
                         매입액
                         <span {...resizerProps("pur_amt")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
                     )}
                     {showCycleColumn && (
                       <th
-                        className="relative text-right px-3 py-2 cursor-pointer select-none bg-amber-50/50 hover:bg-amber-100 transition text-amber-700"
+                        className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition text-zinc-600"
                         style={{ width: getWidth("cycle_days"), minWidth: getWidth("cycle_days") }}
                         onClick={() => toggleSupListSort("avgCycleDays")}
                         title="매입주기 정렬 (최근 90일 평균)"
                       >
-                        매입주기(일) {supListSort.key === "avgCycleDays" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-amber-300">⇅</span>}
+                        매입주기(일) {supListSort.key === "avgCycleDays" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-zinc-300">⇅</span>}
                         <span {...resizerProps("cycle_days")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                       </th>
                     )}
                   </>
                 )}
                 {!hideSaleColumns && (
-                  isSupplierGroupCollapsed("sale") ? <th className="bg-rose-50/20" style={{ width: 16 }}></th> : (
+                  isSupplierGroupCollapsed("sale") ? <th className="bg-zinc-50/40" style={{ width: 16 }}></th> : (
                     <>
-                      <th className="relative text-right px-3 py-2 cursor-pointer select-none bg-rose-50/60 hover:bg-rose-100 transition text-rose-600" style={{ width: getWidth("sale_qty"), minWidth: getWidth("sale_qty") }} onClick={() => toggleSupListSort("saleQty")} title="판매량 정렬">
-                        판매량 {supListSort.key === "saleQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-rose-300">⇅</span>}
+                      <th className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition text-zinc-600" style={{ width: getWidth("sale_qty"), minWidth: getWidth("sale_qty") }} onClick={() => toggleSupListSort("saleQty")} title="판매량 정렬">
+                        판매량 {supListSort.key === "saleQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-zinc-300">⇅</span>}
                         <span {...resizerProps("sale_qty")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                       </th>
-                      <th className="relative text-right px-3 py-2 cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition text-rose-700" style={{ width: getWidth("sale_amt"), minWidth: getWidth("sale_amt") }} onClick={() => toggleSupListSort("saleAmount")} title="판매액 정렬">
-                        판매액 {supListSort.key === "saleAmount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-rose-300">⇅</span>}
+                      <th className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition text-zinc-600" style={{ width: getWidth("sale_amt"), minWidth: getWidth("sale_amt") }} onClick={() => toggleSupListSort("saleAmount")} title="판매액 정렬">
+                        판매액 {supListSort.key === "saleAmount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-zinc-300">⇅</span>}
                         <span {...resizerProps("sale_amt")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                       </th>
                     </>
