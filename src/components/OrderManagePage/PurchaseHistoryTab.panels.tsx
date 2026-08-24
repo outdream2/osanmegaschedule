@@ -435,16 +435,12 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
           {allDetailsLoading ? (
             <ListLoading label="상품 매입이력 불러오는 중..." tone="sky" />
           ) : allDetailsError ? (
-            <div className="p-4 text-[15px] text-rose-600 space-y-1">
-              <div className="font-bold">로드 실패</div>
-              <div className="font-mono bg-rose-50 border border-rose-100 rounded px-2 py-1">{allDetailsError}</div>
-              <button
-                type="button"
-                onClick={() => loadAllDetails(true)}
-                className="mt-1 inline-flex items-center gap-1 h-6 px-2 rounded bg-rose-600 text-white text-[14px] font-bold hover:bg-rose-700 transition cursor-pointer"
-              >
-                <RefreshCw size={10} /> 다시 시도
-              </button>
+            <div className="p-3">
+              <SplitRightError
+                title="로드 실패"
+                message={allDetailsError}
+                onRetry={() => loadAllDetails(true)}
+              />
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="py-8 text-center text-[15px] text-zinc-300">
