@@ -67,6 +67,69 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #253 · 자동 임포트 시스템 · 원클릭 설치 + 스케쥴 실행 (신규 · 2026-08-24 · 사용자 지시)
+
+**🎯 스펙 확정 (2026-08-24 사용자 결정)**:
+- **폴더 경로** · `%USERPROFILE%\Downloads\megatown-importdata\` 하위 4개 서브폴더 (products·stock·vendors·purchase)
+  · 사용자 Downloads 폴더 사용 · E:/D: 드라이브 없어도 OK
+- **파일명 규칙** · 임포트 형식에 맞게 자동 변경 (표준 파일명 rename)
+- **xlsx 파싱** · 현재 서버 임포트 규칙 그대로 (파일명 기반 날짜 · 서버 로직 재사용)
+- **임포트 후** · `_processed/` 폴더 자동 이동
+- **실행 간격** · 설정 가능 프리셋 (10분 · 30분 · 1시간 · 2시간 · 4시간 · 6시간 · 12시간 · 매일) + 사용자 정의
+- **인증 · 배포** · 관리자 lv9 만 · 설치·설정·다운로드·수동실행·제거 모두
+- **배포 형식** · PyInstaller `.exe` (Python 설치 불필요)
+
+**아키텍처** · Hybrid (서버 KV config + 로컬 Python 스크립트):
+- 서버 KV `auto_import_config` · enabled · folders · interval_minutes · after_import
+- Python 매 실행마다 · GET config · POST heartbeat
+- 웹 UI · 상태 표시 (heartbeat 기반) · 초록/노랑/빨강
+
+**서버 신규 API (3)**:
+- `GET /api/auto-import/config` · Python 조회 + 웹 UI 표시 · authorize(9)
+- `POST /api/auto-import/config` · 웹 UI 저장 · authorize(9)
+- `POST /api/auto-import/heartbeat` · Python 상태 리포트 · authorize(9)
+- `GET /api/auto-import/installer` · zip 다운로드 (auto_import.exe + install.bat + config.ini) · authorize(9)
+
+**웹 UI 위치** · SystemSettingsPage · 데이터 업로드 탭 확장
+- 미설치 · [설치 파일 다운로드] · 3단계 안내
+- 설치완료 · 상태(green/amber/red) · 폴더 편집 · 간격 · [수동실행] · [로그] · [제거]
+
+**Python 스크립트 · 처리 순서**:
+1. `POST /api/auth/login` · 관리자 credential (config.ini 로컬 저장 · 파일 접근제어)
+2. `GET /api/auto-import/config` · enabled=false 면 즉시 종료
+3. 각 폴더 (products·stock·vendors·purchase) 스캔 · 최신 xlsx · hash 미중복
+4. 기존 서버 API POST (`/api/upload-{products|stock|vendors|purchase-details}`)
+5. 성공 → 표준 파일명 rename + `_processed/` 이동 (실패 → `_failed/` 이동 + .log)
+6. `POST /api/auto-import/heartbeat` · 처리 결과 리포트
+
+**폴더 구조 (설치 후)**:
+```
+%USERPROFILE%\Downloads\megatown-importdata\
+├── products\     ← 사용자 xlsx 넣기
+│   ├── _processed\  ← 임포트 완료 · rename
+│   └── _failed\     ← 실패 · .log 함께
+├── stock\
+├── vendors\
+└── purchase\
+```
+
+**install.bat 자동화**:
+- `%USERPROFILE%\Downloads\megatown-importdata\` 하위 4폴더 자동 생성
+- Task Scheduler 등록 (기본 10분 · 웹에서 변경 시 heartbeat 응답으로 재등록)
+- 즉시 1회 실행 · 정상 확인
+
+**규모** · 22~25시간 (대형)
+- 서버 4 endpoints · 4시간
+- 웹 UI 상태별 렌더 + 다운로드 · 6시간
+- Python 스크립트 · 6시간
+- PyInstaller 빌드 파이프라인 · 2시간
+- install.bat / uninstall.bat / Task Scheduler · 2시간
+- 문서 · 트러블슈팅 · 1시간
+
+**의존 · 관련**:
+- 기존 API 재사용 (`/api/upload-{products|stock|vendors|purchase-details}`)
+- 이전 결정 · #252 세션 만료 · 관리자 계정 credential 관리 방식 참고
+
 ### #252 · 세션 만료 시간 · 설정에서 변경 가능하도록 (✅ 완료 · 2026-08-23)
 - ✅ 서버 KV `session_idle_timeout_minutes` · 기본 30 · 범위 5~480
 - ✅ 신규 훅 · `useSessionTimeoutSetting` + `useSessionTimeoutSettingEditor` (8 tests)
