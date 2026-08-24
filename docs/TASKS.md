@@ -104,11 +104,13 @@
 
 **관련 · 이전 프리미티브** · SplitListPanel · Card · StatusPill · CategoryChips · IconTile · Badge · Modal
 
-### #257 · 발주필요 · 실재고 컬럼 삭제 + 오른쪽 판매현황 대체 (진행중 · 2026-08-24 · 사용자 지시)
+### #257 · 발주필요 · 실재고 컬럼 삭제 + 오른쪽 판매현황 대체 (✅ 완료 · 2026-08-24)
 - ✅ Phase 1 · 실재고 컬럼 삭제 (`768e91bd`) · 헤더 colSpan · 합계 · 데이터 행
-- 🔲 Phase 2 · 오른쪽 상세 · 판매현황 UI 로 대체
-  · 1M/2M/3M 판매량 요약 · SalesTrendPage · ProductTrendTab 연결
-  · 기존 ProductDetailRightPanel showChart 재활용 or 신규 SalesSummaryPanel
+- ✅ Phase 2 · 오른쪽 상세 판매현황 · **이미 구현됨** · ProductDetailRightPanel showChart=true
+  · 상단 · 상품명 + 공급사 + 공급사조회 버튼 (공급사 종류 표시 완비)
+  · 3탭 · 기간별 상품흐름 (월별 판매 트렌드 차트) · 매입이력 · 발주내역
+  · 재고 · 매입판매가 · 발주 · 배정구역 · 상품정보 (CollapseCard)
+  · 추가 작업 불필요 · 사용자 시각 확인 권장
 
 ### #256 · 세션 만료 후 · 로그아웃 상태 강제 · 자동 재로그인 방지 (신규 · 2026-08-24 · 사용자 지시)
 - 📄 현재 · 세션 만료 시 · localStorage 정리 + reload · 하지만 서버 JWT 쿠키 유효할 경우 자동 재로그인 가능성
