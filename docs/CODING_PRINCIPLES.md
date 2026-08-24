@@ -126,6 +126,12 @@
 - **초고해상도** · retina · image-rendering · antialiased · font-feature-settings
 - **부드러운 UI** · 애니메이션 · scroll · hover 부드럽게 · transition-all duration-150-200
 
+### 🚫 말줄임표(truncate·ellipsis) 절대 금지 · 줄바꿈 우선 (2026-08-24 사용자 지시)
+- **말줄임표 `truncate` · `text-ellipsis` · `line-clamp-*` · 절대 사용 X**
+- 긴 텍스트 · **줄바꿈으로 표시** · `whitespace-normal break-words leading-snug`
+- 이유 · 잘림 → 사용자 정보 손실 · 40대+ 가독성 저하
+- 예외 없음 · 상품명·공급사명·비고 등 모든 리스트 컬럼
+
 ### 🎨 리스트 UI 원칙 (2026-08-24 재강조)
 - **🔥 리스트 = 무조건 표(테이블) 형식** (사용자 지시 · 2026-08-24)
   - `<table>` `<thead>` `<tbody>` 정식 구조

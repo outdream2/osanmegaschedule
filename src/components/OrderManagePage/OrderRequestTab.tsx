@@ -183,10 +183,10 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                 공급사를 클릭하면 최신 발주이력을 확인할 수 있습니다
               </div>
               {/* 2026-08-24 · v3 목업 실적용 · 표 형식 · sticky thead · Attio/Linear 톤
-                  상단 gradient accent (사용자 지시 · 랜딩 톤) */}
+                  상단 gradient accent (사용자 지시 · 랜딩 톤) · 헤더 폰트 +2 (12→14) */}
               <div className={`max-h-[50vh] lg:max-h-[75vh] overflow-auto relative rounded-xl border border-line bg-white ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 <span aria-hidden className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-20" />
-                <table className="w-full text-[15px] sm:min-w-[540px] border-collapse [&_tbody_td]:text-[15px] [&_thead_th]:text-[12px]">
+                <table className="w-full text-[15px] min-w-[720px] border-collapse [&_tbody_td]:text-[15px] [&_thead_th]:text-[14px]">
                   <thead className="sticky top-0 z-10">
                     <tr className="text-zinc-500 uppercase tracking-wider bg-zinc-100/70 border-b border-line">
                       <th className="text-center px-2 py-2.5 w-9">
@@ -199,19 +199,20 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                       {isOrderGroupCollapsed("info") ? (
                         <th className="w-4"></th>
                       ) : (
-                        <th onClick={() => handleOrderSort("name")} className="text-left px-3 py-2.5 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">상품명<span className="ml-1 text-zinc-400">{orderArrow("name") || "⇅"}</span></th>
+                        // 2026-08-24 · 상품명 컬럼 넓게 · 줄임 X · 줄바꿈 · 2줄 이내 min-width 확보
+                        <th onClick={() => handleOrderSort("name")} className="text-left px-3 py-2.5 cursor-pointer hover:bg-zinc-200/60 select-none font-bold" style={{ minWidth: 260 }}>상품명<span className="ml-1 text-zinc-400">{orderArrow("name") || "⇅"}</span></th>
                       )}
                       {isOrderGroupCollapsed("stock") ? (
                         <th className="w-4"></th>
                       ) : (
                         <>
-                          <th onClick={() => handleOrderSort("current")} className="text-right px-2 py-2.5 w-16 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">ERP<span className="ml-1 text-zinc-400">{orderArrow("current") || "⇅"}</span></th>
-                          <th onClick={() => handleOrderSort("optimal")} className="text-right px-2 py-2.5 w-16 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">추천<span className="ml-1 text-zinc-400">{orderArrow("optimal") || "⇅"}</span></th>
-                          <th onClick={() => handleOrderSort("short")} className="text-right px-2 py-2.5 w-16 cursor-pointer hover:bg-zinc-200/60 select-none font-bold text-rose-600">부족<span className="ml-1 text-rose-300">{orderArrow("short") || "⇅"}</span></th>
+                          <th onClick={() => handleOrderSort("current")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">ERP<span className="ml-1 text-zinc-400">{orderArrow("current") || "⇅"}</span></th>
+                          <th onClick={() => handleOrderSort("optimal")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">추천<span className="ml-1 text-zinc-400">{orderArrow("optimal") || "⇅"}</span></th>
+                          <th onClick={() => handleOrderSort("short")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold text-rose-600">부족<span className="ml-1 text-rose-300">{orderArrow("short") || "⇅"}</span></th>
                         </>
                       )}
-                      {/* 주문수량 · accent 컬러 강조 (v3 사용자 지시) */}
-                      <th className="text-center px-2 py-2.5 w-24 font-bold text-sky-700 bg-sky-50/60 border-x border-sky-100">주문수량</th>
+                      {/* 주문수량 · accent 컬러 강조 (v3 사용자 지시) · 넓게 (120px) */}
+                      <th className="text-center px-2 py-2.5 font-bold text-sky-700 bg-sky-50/60 border-x border-sky-100" style={{ minWidth: 120 }}>주문수량</th>
                       <th className="text-right px-2 py-2.5 w-16 font-bold">단가</th>
                       {/* 발주금액 · brand-tint 옅게 (v3 사용자 지시) */}
                       <th className="text-right px-2 py-2.5 w-20 font-bold text-brand-deep bg-brand-tint/50 border-l border-brand/10">발주금액<span className="ml-1 text-brand/40">▼</span></th>
@@ -290,8 +291,8 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                     · bg-gradient-to-b · 미묘한 depth · 위쪽 살짝 진하게 (Attio/Linear 톤) */}
                                 <td colSpan={99} className="px-3 py-2 bg-gradient-to-b from-brand-tint/70 to-brand-tint/40 hover:from-brand-tint hover:to-brand-tint/60 border-b border-brand/10 transition-colors duration-200">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    {/* 2026-08-24 · v3 · caret · 접기/펼치기 */}
-                                    <span className={`inline-flex items-center justify-center w-4 text-[11px] text-zinc-400 transition-transform ${isCollapsed ? "-rotate-90" : ""}`}>▾</span>
+                                    {/* 2026-08-24 · v3 · caret · 접기/펼치기 · 크게 (사용자 지시) */}
+                                    <span className={`inline-flex items-center justify-center w-6 h-6 text-[16px] font-bold text-brand-deep transition-transform ${isCollapsed ? "-rotate-90" : ""}`}>▾</span>
                                     <VendorCategoryBadge category={getVendorCategory(currentSup)} />
                                     {/* 2026-08-24 · 사용자 지시 · 보라 X · Sky-700 · Attio 톤
                                         · 딥네이비 브랜드와 동일 파란 계열 · 자연스러운 조화 */}
@@ -353,10 +354,11 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                               {isOrderGroupCollapsed("info") ? (
                                 <td className="bg-zinc-50/20 w-4"></td>
                               ) : (
-                                <td className="px-0.5 py-1.5 align-top">
+                                // 2026-08-24 · 상품명 · 말줄임표 X · 줄바꿈 (사용자 지시 · 원칙 등록) · 2줄 이내 min-w 300px
+                                <td className="px-3 py-2 align-middle" style={{ minWidth: 260 }}>
                                   <button
                                     onClick={() => setOrderPanelProduct({ code: r.product_code, name: r.product_name })}
-                                    className="text-left text-[15px] font-medium text-zinc-800 hover:text-indigo-600 hover:underline break-words leading-snug cursor-pointer transition line-clamp-2"
+                                    className="text-left text-[15px] font-semibold text-ink hover:text-sky-800 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
                                     title={r.product_name || "상품 상세정보 조회"}
                                   >{r.product_name || "(상품명 없음)"}</button>
                                 </td>
