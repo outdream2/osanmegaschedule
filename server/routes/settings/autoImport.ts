@@ -6,10 +6,23 @@
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
-// 2026-08-24 · ESM 환경 · __dirname 미정의 fix · import.meta.url → 파일 경로 파생
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// 2026-08-24 · __dirname · ESM/CJS 양 환경 안전 파생 (2번째 fix)
+//   문제: import.meta.url 사용 시 · esbuild --format=cjs 번들에서 void 0 이 되어 크래시
+//   해결: import.meta 완전 회피 · globalThis.__dirname (CJS 번들 runtime) 또는 cwd fallback
+//   - prod (esbuild → dist/server.cjs): 번들 runtime 이 __dirname 정의됨 (CJS 표준)
+//   - dev (tsx ESM): __dirname 미정의 → cwd 기반 · scripts/auto_import 는 project root 아래
+function resolveInstallerDir(): string {
+  if (process.env.INSTALLER_DIR) return process.env.INSTALLER_DIR;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cjsDir = (globalThis as any).__dirname;
+  if (typeof cjsDir === "string" && cjsDir.length > 0) {
+    // CJS 번들 · dist/server.cjs · project root = ../
+    // → scripts/auto_import
+    return path.resolve(cjsDir, "..", "scripts", "auto_import");
+  }
+  // dev tsx ESM · project root = process.cwd()
+  return path.resolve(process.cwd(), "scripts", "auto_import");
+}
 import { supabase } from "../../../src/supabase/client";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { authorize } from "../../middleware/requireAuth";
@@ -117,9 +130,8 @@ router.get("/api/auto-import/status", authorize(9), asyncHandler(async (_req, re
  *   · 7 파일 · scripts/auto_import/* · 클라이언트가 개별 다운로드
  *   · 파일 목록만 반환 · 클라가 /api/auto-import/installer/file?name= 로 개별 조회
  */
-// __dirname resolve · scripts 폴더 (프로젝트 루트 기준)
-// tsx 실행 시 · 이 파일은 server/routes/settings/autoImport.ts · scripts/ 는 3 depth 위
-const INSTALLER_DIR = path.resolve(__dirname, "../../../scripts/auto_import");
+// 2026-08-24 · CJS 안전 경로 resolve (import.meta.url 회피)
+const INSTALLER_DIR = resolveInstallerDir();
 const INSTALLER_FILES = [
   "auto_import.py",
   "config.ini.example",
