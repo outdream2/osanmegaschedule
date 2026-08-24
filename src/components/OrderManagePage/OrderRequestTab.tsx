@@ -149,22 +149,23 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                 <span className="text-[15px] font-bold text-zinc-700">발주리스트</span>
                 <span className="text-[15px] text-zinc-400 font-normal">{orderReqsFiltered.length}건</span>
                 <div className="flex items-center gap-1.5 ml-auto shrink-0">
+                  {/* 2026-08-24 · 최신 트렌드 · Linear/Vercel 톤 · pill · gradient · shadow */}
                   <button onClick={handleBulkOrder} disabled={sendingBulk || selectedOrder.size === 0}
-                    className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[15px] font-bold text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer shrink-0 whitespace-nowrap"
+                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[15px] font-bold text-white bg-gradient-to-br from-rose-500 to-rose-600 shadow-sm hover:shadow-md hover:from-rose-600 hover:to-rose-700 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:shadow-none transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap ring-1 ring-rose-500/20"
                     title="선택한 발주요청을 공급사별로 그룹핑">
-                    {sendingBulk ? <Loader2 size={12} strokeWidth={2.5} className="animate-spin" /> : <Send size={12} strokeWidth={2.5} />}
-                    <span>{sendingBulk ? "발송 중" : `일괄 발주${selectedOrder.size > 0 ? ` (${selectedOrder.size})` : ""}`}</span>
+                    {sendingBulk ? <Loader2 size={13} strokeWidth={2.5} className="animate-spin" /> : <Send size={13} strokeWidth={2.5} />}
+                    <span>{sendingBulk ? "발송 중..." : `일괄 발주${selectedOrder.size > 0 ? ` · ${selectedOrder.size}` : ""}`}</span>
                   </button>
                   <button onClick={toggleAll}
-                    className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[14px] font-medium text-zinc-500 border border-line hover:bg-zinc-50 hover:border-zinc-300 transition-colors cursor-pointer shrink-0">
-                    {allChecked ? <CheckSquare size={12} className="text-rose-500" /> : <Square size={12} />}
+                    className="inline-flex items-center gap-1 h-9 px-3 rounded-lg text-[14px] font-semibold text-ink-soft bg-white border border-line hover:border-brand-deep/40 hover:bg-brand-tint/20 hover:text-brand-deep active:scale-[0.98] transition-all duration-150 cursor-pointer shrink-0">
+                    {allChecked ? <CheckSquare size={13} className="text-rose-500" /> : <Square size={13} />}
                     전체선택
                   </button>
                   <button onClick={onDeleteSelected}
                     disabled={selectedOrder.size === 0}
-                    className="inline-flex items-center h-7 px-2 rounded-md text-[14px] font-medium text-zinc-500 border border-line hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0"
+                    className="inline-flex items-center h-9 px-3 rounded-lg text-[14px] font-semibold text-ink-soft bg-white border border-line hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 cursor-pointer shrink-0"
                     title="선택 항목 삭제">
-                    선택삭제{selectedOrder.size > 0 ? ` (${selectedOrder.size})` : ""}
+                    선택삭제{selectedOrder.size > 0 ? ` · ${selectedOrder.size}` : ""}
                   </button>
                 </div>
               </div>

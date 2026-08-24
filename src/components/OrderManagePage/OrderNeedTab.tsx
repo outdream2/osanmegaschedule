@@ -485,6 +485,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                     </span>
                   )}
                   <div className="ml-auto flex items-center gap-1.5">
+                    {/* 2026-08-24 · 최신 트렌드 · Linear/Vercel 톤 · pill · shadow-sm hover:shadow-md · scale */}
                     <button
                       onClick={() => {
                         if (selectedLowStock.size === lowStockFiltered.length) {
@@ -493,17 +494,17 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                           setSelectedLowStock(() => new Set(lowStockFiltered.map(p => getCode(p))));
                         }
                       }}
-                      className="inline-flex items-center h-7 px-1.5 rounded text-[14px] font-medium text-zinc-500 border border-line hover:bg-zinc-50 hover:border-zinc-300 transition-colors cursor-pointer shrink-0"
+                      className="inline-flex items-center gap-1 h-9 px-3.5 rounded-lg text-[15px] font-semibold text-ink-soft bg-white border border-line hover:border-brand-deep/40 hover:bg-brand-tint/20 hover:text-brand-deep active:scale-[0.98] transition-all duration-150 cursor-pointer shrink-0"
                     >
                       전체선택
                     </button>
                     <button
                       onClick={bulkRequestOrder}
                       disabled={bulkRequesting || selectedLowStock.size === 0}
-                      className="inline-flex items-center gap-0.5 h-7 px-1.5 rounded text-[15px] font-bold text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer shrink-0 whitespace-nowrap"
+                      className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[15px] font-bold text-white bg-gradient-to-br from-rose-500 to-rose-600 shadow-sm hover:shadow-md hover:from-rose-600 hover:to-rose-700 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:shadow-none transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap ring-1 ring-rose-500/20"
                       title="선택한 상품 일괄 발주요청 리스트로 전송"
                     >
-                      <span>{bulkRequesting ? "요청 중" : `일괄 발주요청${selectedLowStock.size > 0 ? ` (${selectedLowStock.size})` : ""}`}</span>
+                      <span>{bulkRequesting ? "요청 중..." : `일괄 발주요청${selectedLowStock.size > 0 ? ` · ${selectedLowStock.size}` : ""}`}</span>
                     </button>
                   </div>
                 </div>

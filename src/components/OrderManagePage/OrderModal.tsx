@@ -258,14 +258,15 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             </div>
           );
         })()}
+        {/* 2026-08-24 · 최신 트렌드 · Linear/Vercel · gradient primary · scale-active · shadow */}
         <div className="flex items-center justify-end gap-2 flex-wrap">
           <button onClick={onClose} disabled={sendingBulk}
-            className="h-8 px-3 rounded-md text-[15px] font-semibold text-zinc-600 bg-white border border-zinc-300 hover:bg-zinc-50 cursor-pointer disabled:opacity-40">
+            className="h-9 px-4 rounded-lg text-[15px] font-semibold text-ink-soft bg-white border border-line hover:border-brand-deep/40 hover:bg-brand-tint/20 hover:text-brand-deep active:scale-[0.98] transition-all duration-150 cursor-pointer disabled:opacity-40">
             취소
           </button>
           <button onClick={onSubmit} disabled={sendingBulk}
-            className="inline-flex items-center gap-1 h-8 px-3 rounded-md text-[15px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer">
-            {sendingBulk && <Spinner size={12} tone="white" />}
+            className="inline-flex items-center gap-1.5 h-9 px-5 rounded-lg text-[15px] font-bold text-white bg-gradient-to-br from-brand-deep to-[#0d3a5c] shadow-sm hover:shadow-md hover:from-[#0d3a5c] hover:to-[#08253a] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:shadow-none transition-all duration-150 cursor-pointer ring-1 ring-brand-deep/30">
+            {sendingBulk && <Spinner size={13} tone="white" />}
             {sendingBulk ? "발송 중..." : "발주 발송"}
           </button>
         </div>
