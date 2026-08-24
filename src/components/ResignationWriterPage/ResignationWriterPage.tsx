@@ -34,6 +34,8 @@ import SignaturePad from "react-signature-canvas";
 import SplitPanel from "../common/SplitPanel";
 import { AccentBar } from "../common/AccentBar";
 import { Card } from "../common/Card";
+// 2026-08-24 · 공통 SplitPanel 좌측 헤더 프리미티브
+import { SplitLeftHeader } from "../common/SplitLeftHeader";
 import html2canvas from "html2canvas-pro"; // 2026-08-04 · Tailwind v4 oklch 지원 · drop-in 교체
 import jsPDF from "jspdf";
 
@@ -406,12 +408,11 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
           wrapRight={false}
           left={
           <Card as="section" padding="none" className="p-4 sm:p-5 flex flex-col gap-4 order-2 lg:order-1">
-            {/* 섹션 헤더 */}
-            <div className="flex items-center gap-2.5 pb-3 border-b border-line">
-              <AccentBar h={17} />
-              <ClipboardText size={15} weight="fill" className="text-brand-deep" />
-              <h2 className="text-[17px] font-bold tracking-tight text-ink">사직서 조건 입력</h2>
-            </div>
+            {/* 2026-08-24 · 공통 SplitLeftHeader 프리미티브 · SplitPanel 좌측 상단 통일 */}
+            <SplitLeftHeader
+              icon={<ClipboardText size={15} weight="fill" />}
+              title="사직서 조건 입력"
+            />
 
             {/* 근로자 정보 */}
             <div className="flex flex-col gap-2">
