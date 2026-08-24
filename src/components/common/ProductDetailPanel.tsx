@@ -6,7 +6,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
-import { X, Package, TrendingUp, ChevronRight, ChevronDown, Building2, ClipboardList, History } from "lucide-react";
+import { X, Package, TrendingUp, ChevronRight, ChevronDown, Building2, ClipboardList, History, Info } from "lucide-react";
 import { Spinner } from "./Spinner";
 import { Card } from "./Card";
 import { CollapseCard } from "./CollapseCard";
@@ -398,6 +398,7 @@ const ProductHeaderCard: React.FC<{
 
 // 2026-07-16 · 차트 모드 · 각 섹션 접기/펼치기 지원
 // 2026-07-31 · 사용자 요청 · 재편성 · 상단 헤더(상품명·공급사) → 3탭(흐름·매입·발주) → 하위 카드
+// 2026-08-24 · 사용자 지시 · CollapseCard 2개 → 탭메뉴 통합 (총 5탭 · 좌우 길이 축소)
 const ProductDetailChartMode: React.FC<{
   product: ProductInfo;
   onProductUpdate?: (u: Partial<ProductInfo>) => void;
@@ -406,54 +407,77 @@ const ProductDetailChartMode: React.FC<{
   editable: boolean;
   onSupplierInfoOpen?: (supplierName: string) => void;
 }> = ({ product, onProductUpdate, onRealMapUpdate, context, editable, onSupplierInfoOpen }) => {
+  // 2026-08-24 · 5탭 통합 · flow · purchase · order · inventory · info
+  const [chartTab, setChartTab] = useState<"flow" | "purchase" | "order" | "inventory" | "info">("flow");
   return (
     <>
       {/* 상단 헤더 카드 · 상품명 + 공급사 + 공급사조회 (2026-07-31) */}
       <ProductHeaderCard product={product} onSupplierInfoOpen={onSupplierInfoOpen} />
 
-      {/* 3탭 · 기간별상품흐름 · 매입이력 · 발주내역 */}
-      <PurchaseOrderTabs productCode={product.code} productName={product.name} />
-
-      {/* 2026-08-17 · 공용 CollapseCard 프레임워크 · contentPadding=none · ProductInfoCard 자체 padding */}
-      <CollapseCard
-        title="재고 · 매입판매가 · 발주 · 배정구역"
-        icon={<Package size={17} strokeWidth={2.2} />}
-        defaultOpen
-        contentPadding="none"
-      >
-        <ProductInfoCard
-          product={product}
-          context={context}
-          editable={editable}
-          onRealMapUpdate={onRealMapUpdate}
-          onProductUpdate={onProductUpdate}
-          sections={{
-            header: true, zoneAssignment: true, stockStatus: true, actualStockInput: true,
-            orderRequest: true, financial: true, purchaseHistory: false,
-            productMeta: false, extraInfo: false,
-          }}
-        />
-      </CollapseCard>
-
-      <CollapseCard
-        title="상품 정보 · 추가 정보"
-        icon={<Package size={17} strokeWidth={2.2} />}
-        defaultOpen
-        contentPadding="none"
-      >
-        <ProductInfoCard
-          product={product}
-          context={context}
-          editable={editable}
-          onRealMapUpdate={onRealMapUpdate}
-          onProductUpdate={onProductUpdate}
-          sections={{
-            header: false, zoneAssignment: false, stockStatus: false, actualStockInput: false,
-            orderRequest: false, financial: false, purchaseHistory: false,
-            productMeta: true, extraInfo: true,
-          }}
-        />
-      </CollapseCard>
+      {/* 5탭 통합 · 기간별상품흐름 · 매입이력 · 발주내역 · 재고관리 · 상품정보 */}
+      <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_16px_rgba(10,46,74,0.06)] overflow-hidden">
+        <div className="relative flex border-b border-line bg-zinc-50/40 p-1.5 gap-1 overflow-x-auto">
+          {([
+            { key: "flow",      label: "상품흐름",  Icon: TrendingUp },
+            { key: "purchase",  label: "매입이력",  Icon: History },
+            { key: "order",     label: "발주내역",  Icon: ClipboardList },
+            { key: "inventory", label: "재고관리",  Icon: Package },
+            { key: "info",      label: "상품정보",  Icon: Info },
+          ] as const).map(({ key, label, Icon }) => {
+            const active = chartTab === key;
+            const cls = active
+              ? "text-ink bg-white shadow-sm ring-1 ring-line"
+              : "text-ink-soft hover:text-ink hover:bg-white/70";
+            return (
+              <button key={key} type="button" onClick={() => setChartTab(key)}
+                className={`relative flex-1 min-w-[80px] min-h-[42px] py-2 px-2 text-[14px] font-semibold rounded-xl transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 tracking-tight ${cls}`}
+                title={label}>
+                <Icon size={16} className={`shrink-0 ${active ? "text-brand-deep" : ""}`} strokeWidth={active ? 2.4 : 2} />
+                <span className="truncate">{label}</span>
+                {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-brand-deep" />}
+              </button>
+            );
+          })}
+        </div>
+        <div>
+          {(chartTab === "flow" || chartTab === "purchase" || chartTab === "order") && (
+            /* 기존 PurchaseOrderTabs content 만 재사용 · 내부 탭바 숨김 (외부 5탭 이미 표시) */
+            <PurchaseOrderTabs productCode={product.code} productName={product.name} initialTab={chartTab} hideTabs />
+          )}
+          {chartTab === "inventory" && (
+            <div className="p-2">
+              <ProductInfoCard
+                product={product}
+                context={context}
+                editable={editable}
+                onRealMapUpdate={onRealMapUpdate}
+                onProductUpdate={onProductUpdate}
+                sections={{
+                  header: true, zoneAssignment: true, stockStatus: true, actualStockInput: true,
+                  orderRequest: true, financial: true, purchaseHistory: false,
+                  productMeta: false, extraInfo: false,
+                }}
+              />
+            </div>
+          )}
+          {chartTab === "info" && (
+            <div className="p-2">
+              <ProductInfoCard
+                product={product}
+                context={context}
+                editable={editable}
+                onRealMapUpdate={onRealMapUpdate}
+                onProductUpdate={onProductUpdate}
+                sections={{
+                  header: false, zoneAssignment: false, stockStatus: false, actualStockInput: false,
+                  orderRequest: false, financial: false, purchaseHistory: false,
+                  productMeta: true, extraInfo: true,
+                }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
     </>
   );
 };
@@ -548,8 +572,10 @@ interface OrderRequestRow {
   memo?: string | null;
 }
 type FlowTabKey = "flow" | "purchase" | "order";
-const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }> = ({ productCode, productName }) => {
-  const [tab, setTab] = useState<FlowTabKey>("flow");
+const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string; initialTab?: FlowTabKey; hideTabs?: boolean }> = ({ productCode, productName, initialTab, hideTabs = false }) => {
+  // 2026-08-24 · initialTab · 부모 5탭에서 활성 탭 지정 · hideTabs · 내부 탭바 숨김 (부모가 탭 이미 표시)
+  const [tab, setTab] = useState<FlowTabKey>(initialTab ?? "flow");
+  useEffect(() => { if (initialTab) setTab(initialTab); }, [initialTab]);
   const [orders, setOrders] = useState<OrderRequestRow[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   useEffect(() => {
@@ -563,9 +589,14 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
       .catch(() => setOrders([]))
       .finally(() => setOrdersLoading(false));
   }, [tab, productCode]);
+  // 2026-08-24 · hideTabs · 부모(5탭)에서 이미 탭 표시 · 내부 탭 UI 스킵 · content 만 렌더
+  const cardWrapCls = hideTabs
+    ? ""
+    : "bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_16px_rgba(10,46,74,0.06)] overflow-hidden";
   return (
     /* 2026-08-17 · Attio "carved" segmented · 단일 brand accent · 폰트 +2 */
-    <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_16px_rgba(10,46,74,0.06)] overflow-hidden">
+    <div className={cardWrapCls}>
+      {!hideTabs && (
       <div className="relative flex border-b border-line bg-zinc-50/40 p-1.5 gap-1">
         {(["flow", "purchase", "order"] as const).map(k => {
           const active = tab === k;
@@ -586,6 +617,7 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
           );
         })}
       </div>
+      )}
       {tab === "flow" ? (
         /* 탭 UI 내부 · 기존 StockFlowChart 카드 스타일이 이미 white bg + border 이므로
            중첩 border 방지 위해 padding 만 최소로 유지 · 사용자 UX 동일 */
