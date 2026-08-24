@@ -713,14 +713,14 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
           }
           right={
           <section className="order-1 lg:order-2 flex flex-col gap-3">
-            <div className="flex items-center gap-2.5 pb-1">
-              <AccentBar h={17} />
-              <SignOut size={16} weight="fill" className="text-brand-deep" />
-              <h2 className="text-[17px] font-bold tracking-tight text-ink">사직서 미리보기</h2>
-              <span className="text-[17px] text-ink-soft ml-1">
-                서명 spot 클릭 · A4 1페이지 PDF
-              </span>
-            </div>
+            {/* 2026-08-24 · SplitLeftHeader 프리미티브 · 우측도 동일 헤더 통일 */}
+            <SplitLeftHeader
+              icon={<SignOut size={16} weight="fill" />}
+              title="사직서 미리보기"
+              subtitle="서명 spot 클릭 · A4 1페이지 PDF"
+              withBorder={false}
+              className="pb-1"
+            />
 
             <div className="bg-zinc-100 border border-line rounded-xl p-3 sm:p-4">
               <ResignationPreview
