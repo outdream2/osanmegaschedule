@@ -42,7 +42,8 @@ describe("ProductCreateModal · 렌더", () => {
     expect(container.textContent).toContain("상품 신규 등록");
     expect(container.textContent).toContain("필수 정보");
     expect(container.textContent).toContain("분류·공급");
-    expect(container.textContent).toContain("가격·재고");
+    // 2026-08-24 · 적정재고 필드 제거 · 섹션명 "가격·재고" → "가격"
+    expect(container.textContent).toContain("가격");
     expect(container.textContent).toContain("기타");
     const submit = container.querySelector('button[type="submit"]');
     expect(submit).not.toBeNull();
@@ -52,15 +53,14 @@ describe("ProductCreateModal · 렌더", () => {
 });
 
 describe("ProductCreateModal · initialCode / initialBarcode / lockCode (#179)", () => {
-  it("initialCode 사전 채움 · barcode 도 자동 채움", () => {
+  it("initialCode 사전 채움 · product_code 필드", () => {
+    // 2026-08-24 · 바코드 필드 제거 · 상품코드 = 바코드 · submit 시 자동 세팅
     const { container } = render(
       <ProductCreateModal open onClose={vi.fn()} onCreated={vi.fn()}
         initialCode="8801234567890" />,
     );
     const codeInput = container.querySelector('input[placeholder*="20250823001"]') as HTMLInputElement;
     expect(codeInput?.value).toBe("8801234567890");
-    const barcodeInput = container.querySelector('input[placeholder="스캔 or 수동"]') as HTMLInputElement;
-    expect(barcodeInput?.value).toBe("8801234567890");
   });
 
   it("lockCode · product_code readonly", () => {
@@ -73,13 +73,15 @@ describe("ProductCreateModal · initialCode / initialBarcode / lockCode (#179)",
     expect(container.textContent).toContain("스캔 고정");
   });
 
-  it("initialBarcode 별도 · barcode 만 사전 채움", () => {
+  it("initialBarcode 별도 · form 초기값 세팅 (바코드 UI 제거됨)", () => {
+    // 2026-08-24 · 바코드 필드 UI 제거 · form.barcode 는 initialBarcode 로 여전히 세팅 (submit 시 사용)
     const { container } = render(
       <ProductCreateModal open onClose={vi.fn()} onCreated={vi.fn()}
         initialBarcode="4901234567891" />,
     );
-    const barcodeInput = container.querySelector('input[placeholder="스캔 or 수동"]') as HTMLInputElement;
-    expect(barcodeInput?.value).toBe("4901234567891");
+    // 바코드 input · UI 미렌더 · form state 는 여전히 유지 (submit 시 상품코드로 덮음)
+    const barcodeInput = container.querySelector('input[placeholder="스캔 or 수동"]');
+    expect(barcodeInput).toBeNull();
   });
 
   it("initialName 사전 채움", () => {
