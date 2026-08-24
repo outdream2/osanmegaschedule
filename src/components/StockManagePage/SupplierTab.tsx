@@ -605,13 +605,24 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                 const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
                 const isExpanded = supplierRowsMap[key] != null;
                 const isSelected = supplierSelectedKey === key;
+                // 2026-08-24 · 사용자 지시 · 컬러 accent · 분류별 좌측 accent bar
+                const rowCat = vendorCategoryMap[sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? ""] ?? vendorCategoryMap[sup.supplier ?? ""] ?? null;
+                const accentColorClass =
+                    rowCat === "위탁"   ? "bg-violet-500"
+                  : rowCat === "선결제" ? "bg-rose-500"
+                  : rowCat === "60회전" ? "bg-emerald-500"
+                  : rowCat === "90회전" ? "bg-teal-500"
+                  : rowCat === "기타"   ? "bg-zinc-400"
+                  : "bg-transparent";
                 return (
                   <tr key={key}
                     onClick={() => { toggleSupplierExpand(sup); setSupplierSelectedKey(key); }}
                     className={`cursor-pointer transition-colors ${isSelected ? "bg-brand-tint/60 hover:bg-brand-tint" : "hover:bg-brand-tint/30"}`}
                     title="클릭 → 오른쪽 패널에 상세">
-                    <td className="text-center align-middle py-1.5">
-                      {isExpanded ? <ChevronDown size={13} className="text-sky-400 mx-auto" /> : <ChevronRight size={13} className="text-zinc-300 mx-auto" />}
+                    <td className="relative text-center align-middle py-1.5">
+                      {/* 좌측 컬러 accent bar · 분류별 · 시각 정보 강화 */}
+                      <span aria-hidden className={`absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full ${accentColorClass}`} />
+                      {isExpanded ? <ChevronDown size={13} className="text-brand-deep mx-auto" /> : <ChevronRight size={13} className="text-zinc-300 mx-auto" />}
                     </td>
                     <td className="text-center align-middle py-1.5 text-[15px] font-semibold text-zinc-400 tabular-nums">{i + 1}</td>
                     {/* 2026-08-10 · #18 · 공급사 셀에 [분류][줄바꿈][공급사명] · 2줄 (사용자 요청) */}
