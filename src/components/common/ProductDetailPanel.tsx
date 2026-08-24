@@ -12,7 +12,7 @@ import { Card } from "./Card";
 import { CollapseCard } from "./CollapseCard";
 import { StatusPill } from "./StatusPill";
 import { ProductInfoCard, PurchaseHistorySection } from "../ScanPage/ProductInfoCard";
-import { type ProductInfo } from "../../lib/productsCache";
+import { type ProductInfo, lookupProduct } from "../../lib/productsCache";
 import { SeasonButtons } from "./SeasonButtons";
 import { AccentBar } from "./AccentBar";
 import { InlineLabel } from "./InlineLabel";
@@ -582,9 +582,17 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string; i
     if (tab !== "order" || !productCode) return;
     setOrdersLoading(true);
     api.get<any>(`/api/order-requests?product_code=${encodeURIComponent(productCode)}`)
-      .then(({ data: j }) => {
+      .then(async ({ data: j }) => {
         const raw = (j != null && typeof j === "object" && "rows" in j) ? (j as { rows: unknown }).rows : j;
-        setOrders(Array.isArray(raw) ? (raw as OrderRequestRow[]) : []);
+        const rows = Array.isArray(raw) ? (raw as OrderRequestRow[]) : [];
+        // 2026-08-24 · 사용자 지시 · supplier 표시 fix · productsCache lookup 으로 enrich
+        //   서버 응답에 supplier 필드 없음 · product_code 로 캐시 조회하여 보강
+        const enriched = await Promise.all(rows.map(async (r) => {
+          if (r.supplier) return r;
+          const p = await lookupProduct(String(r.product_code ?? "")).catch(() => null);
+          return { ...r, supplier: p?.supplier ?? null };
+        }));
+        setOrders(enriched);
       })
       .catch(() => setOrders([]))
       .finally(() => setOrdersLoading(false));
