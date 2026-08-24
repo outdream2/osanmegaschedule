@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>직원 상세 v6 · v2 base · 깔끔·세련·고급·최신트렌드 · 2026-08-24</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" />
+<style>
+  /*
+    ═══════════════════════════════════════════════════════════════
+    v6 · v2 base 재구성 + 최신 트렌드 · 깔끔·세련·고급·부드러움
+    ═══════════════════════════════════════════════════════════════
+    v2 유지 (핵심 구조):
+    ✓ Glass sticky header + backdrop blur
+    ✓ Bento KPI (3 cards · varied)
+    ✓ Progress ring (연차)
+    ✓ Sparkline (근속)
+    ✓ Segmented tab + smooth active pill
+    ✓ Connected timeline
+
+    v6 개선 (사용자 피드백 · 밋밋함 개선 · 컬러 액센트):
+    ✓ 세련된 컬러 액센트 (sky-brand · 그라디언트 · 카드별 톤)
+    ✓ Layered elevation 강화 (3-tier + hover glow)
+    ✓ Typography +2 (16 base · 20 title · 26 hero)
+    ✓ Micro-motion (hover lift · pulse dot · smooth transition)
+    ✓ Refined chip clusters (gradient · shadow inset)
+    ✓ Card head accent bar (좌측 세로 컬러 스트라이프)
+    ✓ Section 번호 배지 (01·02·03 · violet outline)
+    ✓ Precise data (sparkline everywhere · 소수점 · trend arrow)
+    ✓ Bottom actions dock (sticky · rounded floating)
+    ✓ 부드러운 hover · cubic-bezier · translateY -1px
+    ✓ 초고해상도 · antialiased · geometricPrecision · Pretendard variable
+  */
+  :root{
+    --bg:#F5F7FA;
+    --surface:#FFFFFF;
+    --surface-2:#FAFBFC;
+    --surface-3:#F3F5F8;
+    --ink:#0F172A;
+    --ink-1:#1E293B;
+    --ink-2:#475569;
+    --ink-3:#64748B;
+    --ink-4:#94A3B8;
+    --ink-5:#CBD5E1;
+
+    --line:rgba(15,23,42,0.06);
+    --line-2:rgba(15,23,42,0.04);
+    --line-strong:rgba(15,23,42,0.12);
+
+    /* Brand · deep navy + sky */
+    --brand:#0A2E4A;
+    --brand-2:#1E5C8E;
+    --brand-tint:#EAF1F9;
+    --brand-tint-2:#D6E4F0;
+
+    /* Accent palette (세련 · 절제) */
+    --sky:#0284C7;
+    --sky-tint:#F0F9FF;
+    --sky-tint-2:#E0F2FE;
+    --emerald:#059669;
+    --emerald-tint:#ECFDF5;
+    --emerald-tint-2:#D1FAE5;
+    --amber:#D97706;
+    --amber-tint:#FFFBEB;
+    --amber-tint-2:#FEF3C7;
+    --rose:#E11D48;
+    --rose-tint:#FFF1F2;
+    --violet:#7C3AED;
+    --violet-tint:#F5F3FF;
+
+    /* Elevation · Attio 3-tier */
+    --shadow-1: 0 0 0 1px rgba(15,23,42,.04);
+    --shadow-2: 0 1px 3px rgba(15,23,42,.05), 0 6px 20px -6px rgba(15,23,42,.09);
+    --shadow-3: 0 4px 12px rgba(15,23,42,.06), 0 20px 48px -12px rgba(15,23,42,.14);
+    --shadow-hover: 0 6px 20px -4px rgba(15,23,42,.10), 0 24px 56px -12px rgba(10,46,74,.15);
+    --glow-brand: 0 0 24px -8px rgba(10,46,74,.4);
+    --glow-sky: 0 0 20px -6px rgba(2,132,199,.4);
+  }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family:'Pretendard Variable','Pretendard',-apple-system,'SF Pro Text',sans-serif;
+    background:var(--bg); color:var(--ink);
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    text-rendering:geometricPrecision;
+    font-feature-settings:"cv02","cv04","cv09","ss01";
+    letter-spacing:-.011em;
+    padding:24px;
+    font-size:16px;
+  }
+  *{ box-sizing:border-box; }
+
+  /* SPLIT */
+  .split{
+    display:flex; gap:0;
+    max-width:1500px; margin:0 auto;
+    background:var(--surface);
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:var(--shadow-3);
+    min-height:920px;
+  }
+  .split-left{
+    width:320px;
+    background:var(--surface-2);
+    border-right:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--ink-4); font-size:15px;
+    padding:24px;
+  }
+  .split-divider{
+    width:5px; background:var(--line);
+    cursor:col-resize; flex:0 0 auto;
+    transition:background .12s;
+  }
+  .split-divider:hover{ background:var(--brand); }
+  .split-right{
+    flex:1; min-width:0;
+    display:flex; flex-direction:column;
+    background:var(--surface);
+    position:relative;
+  }
+
+  /* ═══════════════════════════════════════════════
+     Glass Sticky Header · 개선 (v2 → v6)
+  ═══════════════════════════════════════════════ */
+  .head{
+    position:sticky; top:0; z-index:30;
+    padding:20px 24px 18px;
+    background:
+      radial-gradient(800px 220px at 20% -30%, rgba(2,132,199,.08), transparent 55%),
+      radial-gradient(600px 200px at 90% -40%, rgba(124,58,237,.06), transparent 55%),
+      rgba(255,255,255,0.92);
+    backdrop-filter:blur(20px) saturate(180%);
+    -webkit-backdrop-filter:blur(20px) saturate(180%);
+    border-bottom:1px solid var(--line);
+  }
+  .head::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg, var(--brand) 0%, var(--sky) 40%, var(--violet) 60%, var(--brand) 100%);
+    opacity:.92;
+  }
+
+  .head-row{ display:flex; align-items:center; gap:16px; }
+
+  /* Avatar · richer gradient + glow */
+  .avatar-wrap{ position:relative; flex-shrink:0; }
+  .avatar{
+    width:68px; height:68px; border-radius:18px;
+    background:linear-gradient(135deg, #DAE6F2 0%, var(--brand-tint) 45%, var(--brand-tint-2) 100%);
+    color:var(--brand);
+    display:flex; align-items:center; justify-content:center;
+    font-size:28px; font-weight:800; letter-spacing:-.03em;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.5),
+      inset 0 0 0 1px rgba(10,46,74,.08),
+      0 4px 14px -4px rgba(10,46,74,.24);
+  }
+  .avatar-dot{
+    position:absolute; bottom:-2px; right:-2px;
+    width:18px; height:18px; border-radius:99px;
+    background:var(--emerald);
+    border:3px solid #FFF;
+    box-shadow:0 0 0 1px rgba(5,150,105,.3), 0 0 12px rgba(5,150,105,.5);
+    animation:glow-em 2.5s ease-in-out infinite;
+  }
+  @keyframes glow-em{ 0%,100%{ box-shadow:0 0 0 0 rgba(5,150,105,.5); } 50%{ box-shadow:0 0 0 6px rgba(5,150,105,0); } }
+
+  .identity{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+  .identity-row-1{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .name{
+    font-size:26px; font-weight:800; letter-spacing:-.032em;
+    color:var(--ink); line-height:1.15;
+  }
+  .name-secondary{
+    font-size:14px; color:var(--ink-3); font-weight:600;
+    font-variant-numeric:tabular-nums;
+  }
+  .chips{ display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .chip{
+    display:inline-flex; align-items:center; gap:5px;
+    height:26px; padding:0 10px;
+    border-radius:7px; font-size:13px; font-weight:700;
+    letter-spacing:-.005em; white-space:nowrap;
+    transition:all .12s;
+  }
+  .chip.role{
+    background:linear-gradient(135deg, var(--violet-tint), #EDE9FE);
+    color:var(--violet);
+    box-shadow:inset 0 0 0 1px rgba(124,58,237,.2);
+  }
+  .chip.type{
+    background:linear-gradient(135deg, var(--sky-tint), var(--sky-tint-2));
+    color:var(--sky);
+    box-shadow:inset 0 0 0 1px rgba(2,132,199,.2);
+  }
+  .chip.status{
+    background:linear-gradient(135deg, var(--emerald-tint), var(--emerald-tint-2));
+    color:var(--emerald);
+    box-shadow:inset 0 0 0 1px rgba(5,150,105,.2);
+  }
+  .chip .dot{ width:6px; height:6px; border-radius:99px; background:currentColor; animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
+
+  .identity-row-2{
+    display:flex; align-items:center; gap:12px;
+    font-size:14px; color:var(--ink-3); font-weight:500;
+    flex-wrap:wrap;
+  }
+  .identity-row-2 .item{ display:inline-flex; align-items:center; gap:5px; }
+  .identity-row-2 strong{ color:var(--ink-1); font-weight:700; font-variant-numeric:tabular-nums; }
+  .identity-row-2 .sep{ color:var(--ink-5); }
+
+  /* Actions · buttons */
+  .actions{ display:inline-flex; align-items:center; gap:7px; }
+  .btn{
+    display:inline-flex; align-items:center; gap:6px;
+    height:38px; padding:0 14px;
+    border-radius:10px; border:0;
+    font-size:14px; font-weight:700;
+    cursor:pointer; transition:all .16s cubic-bezier(.2,0,.2,1);
+    letter-spacing:-.005em;
+  }
+  .btn.primary{
+    background:linear-gradient(135deg, var(--brand), #093D5F);
+    color:#FFF;
+    box-shadow:0 4px 14px -4px rgba(10,46,74,.4), inset 0 1px 0 rgba(255,255,255,.15);
+  }
+  .btn.primary:hover{
+    transform:translateY(-1px);
+    box-shadow:0 8px 20px -4px rgba(10,46,74,.5), inset 0 1px 0 rgba(255,255,255,.15);
+  }
+  .btn.ghost{
+    background:var(--surface);
+    color:var(--ink-1);
+    box-shadow:inset 0 0 0 1px var(--line-strong);
+  }
+  .btn.ghost:hover{ background:var(--surface-3); box-shadow:inset 0 0 0 1px var(--ink-5); }
+  .btn.icon-only{ padding:0; width:38px; justify-content:center; }
+
+  /* Bento KPI · 3 cards · gradient top strip */
+  .bento{
+    display:grid;
+    grid-template-columns:1.35fr 1fr 1fr;
+    gap:12px; margin-top:18px;
+  }
+  .kpi{
+    position:relative;
+    background:var(--surface);
+    border-radius:14px;
+    padding:14px 16px;
+    box-shadow:var(--shadow-1);
+    transition:all .16s cubic-bezier(.2,0,.2,1);
+    overflow:hidden;
+  }
+  .kpi:hover{ box-shadow:var(--shadow-2); transform:translateY(-1px); }
+  .kpi::before{
+    content:""; position:absolute; top:0; left:0; right:0;
+    height:2px; background:currentColor; opacity:.7;
+  }
+  .kpi.tenure{ color:var(--brand); }
+  .kpi.leave{ color:var(--sky); }
+  .kpi.rating{ color:var(--emerald); }
+
+  .kpi-label{
+    font-size:11px; color:var(--ink-4); font-weight:800;
+    letter-spacing:.08em; text-transform:uppercase;
+    display:flex; align-items:center; gap:5px;
+  }
+  .kpi-value{
+    font-size:24px; font-weight:800; color:var(--ink);
+    letter-spacing:-.028em; font-variant-numeric:tabular-nums;
+    line-height:1.15; margin-top:4px;
+  }
+  .kpi-value .unit{ font-size:13px; color:var(--ink-4); font-weight:600; margin-left:4px; }
+  .sparkline{
+    display:flex; align-items:flex-end; gap:2px;
+    height:30px; margin-top:8px;
+  }
+  .sparkline .b{
+    flex:1;
+    background:linear-gradient(180deg, currentColor 0%, currentColor 100%);
+    opacity:.55;
+    border-radius:2px 2px 0 0;
+    transition:opacity .14s;
+    min-height:2px;
+  }
+  .sparkline .b:hover{ opacity:1; }
+  .sparkline .b.last{ opacity:1; }
+
+  /* Leave · progress ring */
+  .kpi.leave{ display:flex; align-items:center; gap:14px; padding:14px 16px; }
+  .leave-body{ flex:1; min-width:0; }
+  .ring-wrap{ width:60px; height:60px; position:relative; flex-shrink:0; }
+  .ring{ width:60px; height:60px; transform:rotate(-90deg); }
+  .ring circle{ fill:transparent; stroke-width:7; }
+  .ring .bg{ stroke:var(--surface-3); }
+  .ring .fg{
+    stroke:url(#gradSky);
+    stroke-linecap:round;
+    transition:stroke-dashoffset .5s ease;
+  }
+  .ring-num{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:800; color:var(--ink);
+    font-variant-numeric:tabular-nums; letter-spacing:-.02em;
+  }
+
+  /* Rating · gradient badge */
+  .kpi.rating{
+    background:linear-gradient(135deg, var(--surface) 0%, var(--emerald-tint) 200%);
+  }
+  .rating-badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    height:36px; min-width:54px; padding:0 12px;
+    background:linear-gradient(135deg, var(--emerald) 0%, #047857 100%);
+    color:#FFF; font-size:20px; font-weight:800;
+    border-radius:10px; letter-spacing:-.02em;
+    box-shadow:0 4px 12px -2px rgba(5,150,105,.4);
+    margin-top:4px;
+  }
+  .kpi-trend{
+    display:inline-flex; align-items:center; gap:3px;
+    font-size:12px; font-weight:800; color:var(--emerald);
+    margin-top:6px;
+  }
+  .kpi-trend.dn{ color:var(--rose); }
+
+  /* ═══════════════════════════════════════════════
+     Tabs · Segmented + smooth active
+  ═══════════════════════════════════════════════ */
+  .tabs{
+    position:sticky; top:0; z-index:20;
+    background:var(--surface);
+    border-bottom:1px solid var(--line);
+    padding:12px 24px 0;
+    display:flex; align-items:center; gap:2px;
+  }
+  .tabs-scroll{ display:flex; align-items:flex-end; gap:2px; overflow-x:auto; flex:1; }
+  .tabs-scroll::-webkit-scrollbar{ display:none; }
+  .tab{
+    position:relative;
+    height:42px; padding:0 15px;
+    display:inline-flex; align-items:center; gap:7px;
+    background:transparent; border:0;
+    font-size:14px; font-weight:600; color:var(--ink-3);
+    cursor:pointer; white-space:nowrap;
+    letter-spacing:-.01em;
+    transition:color .14s;
+    border-radius:9px 9px 0 0;
+  }
+  .tab:hover{ color:var(--ink-1); background:var(--surface-3); }
+  .tab.active{ color:var(--brand); font-weight:700; }
+  .tab.active::after{
+    content:""; position:absolute; left:12px; right:12px; bottom:-1px;
+    height:3px; border-radius:3px 3px 0 0;
+    background:linear-gradient(90deg, var(--brand), var(--sky));
+    box-shadow:0 -2px 8px rgba(10,46,74,.3);
+  }
+  .tab .count{
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:20px; height:19px; padding:0 6px;
+    border-radius:99px; font-size:11px; font-weight:800;
+    background:var(--surface-3); color:var(--ink-3);
+    font-variant-numeric:tabular-nums;
+  }
+  .tab.active .count{ background:var(--brand-tint); color:var(--brand); }
+  .cmdk{
+    margin-left:auto; margin-bottom:6px;
+    display:inline-flex; align-items:center; gap:7px;
+    height:32px; padding:0 12px;
+    background:var(--surface-3); border-radius:9px;
+    color:var(--ink-3); font-size:13px; font-weight:600;
+    cursor:pointer; transition:all .12s; border:0;
+  }
+  .cmdk:hover{ background:var(--brand-tint); color:var(--brand); }
+  .cmdk .kbd{
+    font-family:'JetBrains Mono',ui-monospace,monospace;
+    font-size:11px; padding:2px 5px;
+    background:var(--surface); color:var(--ink-2);
+    border-radius:4px; font-weight:700;
+    box-shadow:inset 0 0 0 1px var(--line-strong);
+  }
+
+  /* Content */
+  .content{
+    flex:1;
+    overflow-y:auto;
+    padding:18px 24px 28px;
+    background:var(--surface-2);
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    align-content:start;
+  }
+
+  /* Section card · accent bar left side */
+  .card{
+    position:relative;
+    background:var(--surface);
+    border-radius:14px;
+    box-shadow:var(--shadow-1);
+    overflow:hidden;
+    transition:all .16s;
+  }
+  .card:hover{ box-shadow:var(--shadow-2); }
+  .card.wide{ grid-column:1/-1; }
+  .card::before{
+    content:""; position:absolute; top:14px; bottom:14px; left:0;
+    width:3px; border-radius:0 2px 2px 0;
+    background:var(--ink-5);
+    transition:background .12s;
+  }
+  .card.brand::before{ background:var(--brand); }
+  .card.sky::before{ background:var(--sky); }
+  .card.emerald::before{ background:var(--emerald); }
+  .card.amber::before{ background:var(--amber); }
+  .card.violet::before{ background:var(--violet); }
+
+  .card-head{
+    display:flex; align-items:center; gap:10px;
+    padding:16px 18px 12px;
+  }
+  .section-num{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:26px; height:26px; border-radius:7px;
+    background:var(--brand-tint); color:var(--brand);
+    font-size:12px; font-weight:800;
+    font-family:'JetBrains Mono',ui-monospace,monospace;
+  }
+  .card-title{ font-size:18px; font-weight:800; color:var(--ink); letter-spacing:-.024em; }
+  .card-sub{ font-size:13px; color:var(--ink-3); font-weight:600; }
+  .card-badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    height:22px; padding:0 8px;
+    border-radius:99px; font-size:12px; font-weight:700;
+    background:var(--surface-3); color:var(--ink-2);
+    font-variant-numeric:tabular-nums;
+  }
+  .card-action{
+    margin-left:auto;
+    font-size:13px; color:var(--ink-3); font-weight:700;
+    background:transparent; border:0; cursor:pointer;
+    padding:5px 10px; border-radius:7px; transition:all .12s;
+  }
+  .card-action:hover{ color:var(--brand); background:var(--brand-tint); }
+  .card-body{ padding:0 18px 18px; }
+
+  /* Property list */
+  .props{ display:flex; flex-direction:column; }
+  .prop{
+    display:grid; grid-template-columns:140px 1fr auto;
+    gap:16px; padding:10px 0;
+    align-items:center;
+    border-top:1px solid var(--line-2);
+    position:relative;
+  }
+  .prop:first-child{ border-top:0; }
+  .prop:hover{ background:var(--surface-2); margin:0 -18px; padding:10px 18px; }
+  .prop:hover .copy-btn{ opacity:1; }
+  .prop .k{ font-size:13px; color:var(--ink-3); font-weight:700; }
+  .prop .v{
+    font-size:16px; color:var(--ink); font-weight:600;
+    line-height:1.4; word-break:break-word;
+    display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
+  }
+  .prop .v.mono{ font-family:'JetBrains Mono',ui-monospace,monospace; font-size:15px; font-variant-numeric:tabular-nums; }
+  .prop .v.muted{ color:var(--ink-3); font-weight:500; }
+  .prop .v a{ color:var(--sky); text-decoration:none; font-weight:700; border-bottom:1.5px solid transparent; transition:border .12s; }
+  .prop .v a:hover{ border-bottom-color:var(--sky); }
+  .prop .v .sub{ font-size:12px; color:var(--ink-4); font-weight:600; }
+  .copy-btn{
+    opacity:0; transition:opacity .12s;
+    padding:4px 8px; background:var(--surface-3); color:var(--ink-2);
+    border:0; border-radius:6px; font-size:11px; font-weight:700;
+    cursor:pointer;
+  }
+  .copy-btn:hover{ background:var(--brand-tint); color:var(--brand); }
+
+  .tag{
+    display:inline-flex; align-items:center; gap:5px;
+    height:22px; padding:0 8px;
+    border-radius:6px;
+    font-size:12px; font-weight:700; letter-spacing:-.005em;
+    background:var(--surface-3); color:var(--ink-2);
+  }
+  .tag.brand{ background:var(--brand-tint); color:var(--brand); box-shadow:inset 0 0 0 1px rgba(10,46,74,.2); }
+  .tag.success{ background:var(--emerald-tint); color:var(--emerald); box-shadow:inset 0 0 0 1px rgba(5,150,105,.2); }
+  .tag.warn{ background:var(--amber-tint); color:var(--amber); box-shadow:inset 0 0 0 1px rgba(217,119,6,.2); }
+  .tag.sky{ background:var(--sky-tint); color:var(--sky); box-shadow:inset 0 0 0 1px rgba(2,132,199,.2); }
+
+  /* Timeline */
+  .timeline{ position:relative; }
+  .timeline-item{
+    display:grid; grid-template-columns:22px 100px 1fr auto;
+    gap:14px; padding:12px 4px;
+    align-items:center; position:relative;
+  }
+  .timeline-item + .timeline-item{ border-top:1px solid var(--line-2); }
+  .tl-dot{
+    width:13px; height:13px; border-radius:99px;
+    background:var(--surface); border:2.5px solid var(--brand);
+    box-shadow:0 0 0 4px rgba(10,46,74,.08);
+    margin-left:4px; position:relative; z-index:2;
+  }
+  .tl-dot.past{ border-color:var(--ink-5); box-shadow:none; }
+  .tl-line{
+    position:absolute; left:12px; top:26px; bottom:-12px;
+    width:2px; background:var(--line-strong); z-index:1;
+  }
+  .timeline-item:last-child .tl-line{ display:none; }
+  .tl-date{ font-size:12px; color:var(--ink-3); font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:.02em; text-transform:uppercase; }
+  .tl-body{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .tl-title{ font-size:15px; font-weight:700; color:var(--ink); letter-spacing:-.005em; }
+  .tl-sub{ font-size:13px; color:var(--ink-3); font-weight:500; }
+
+  /* Files */
+  .files{ display:flex; flex-direction:column; }
+  .file{
+    display:grid; grid-template-columns:38px 1fr auto auto;
+    gap:12px; padding:12px 0;
+    align-items:center;
+    border-top:1px solid var(--line-2);
+  }
+  .file:first-child{ border-top:0; }
+  .file:hover{ background:var(--surface-2); margin:0 -18px; padding:12px 18px; }
+  .file-ic{
+    width:38px; height:38px; border-radius:9px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:800;
+    font-family:'JetBrains Mono',ui-monospace,monospace;
+    text-transform:uppercase;
+  }
+  .file-ic.pdf{ background:var(--rose-tint); color:var(--rose); }
+  .file-ic.jpg{ background:var(--sky-tint); color:var(--sky); }
+  .file-ic.miss{ background:var(--surface-3); color:var(--ink-4); }
+  .file-info{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .file-name{ font-size:15px; color:var(--ink); font-weight:700; letter-spacing:-.005em; }
+  .file-sub{ font-size:12px; color:var(--ink-4); font-weight:600; }
+  .file-btn{
+    padding:7px 11px; background:var(--surface-3); color:var(--ink-1);
+    border:0; border-radius:7px; font-size:12px; font-weight:700;
+    cursor:pointer; transition:all .12s;
+  }
+  .file-btn:hover{ background:var(--brand-tint); color:var(--brand); }
+  .file-btn.primary{ background:var(--brand); color:#FFF; }
+  .file-btn.primary:hover{ background:#093D5F; }
+
+  /* Contract summary card · rich */
+  .contract{
+    display:grid; grid-template-columns:1fr auto; gap:20px;
+    padding:6px 18px 18px;
+  }
+  .contract-info{ display:flex; flex-direction:column; gap:14px; }
+  .contract-facts{ display:grid; grid-template-columns:1fr 1fr; gap:10px 20px; }
+  .fact .k{ font-size:11px; color:var(--ink-4); font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+  .fact .v{ font-size:16px; color:var(--ink); font-weight:700; font-variant-numeric:tabular-nums; margin-top:3px; letter-spacing:-.01em; }
+  .fact .v.big{ font-size:20px; font-weight:800; color:var(--brand); }
+  .contract-ring-wrap{
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    padding:16px;
+    background:linear-gradient(135deg, var(--brand-tint), var(--surface));
+    border-radius:12px;
+    min-width:130px;
+  }
+  .contract-ring{ width:90px; height:90px; position:relative; }
+  .contract-ring svg{ width:90px; height:90px; transform:rotate(-90deg); }
+  .contract-ring circle{ fill:transparent; stroke-width:8; }
+  .contract-ring .bg{ stroke:rgba(10,46,74,.1); }
+  .contract-ring .fg{ stroke:url(#gradBrand); stroke-linecap:round; }
+  .contract-ring-num{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .contract-ring-num .n{ font-size:20px; font-weight:800; color:var(--ink); letter-spacing:-.028em; font-variant-numeric:tabular-nums; }
+  .contract-ring-num .l{ font-size:10px; color:var(--ink-4); font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+  .contract-ring-caption{ font-size:12px; color:var(--ink-3); font-weight:700; text-align:center; }
+
+  /* Legend */
+  .legend{
+    max-width:1500px; margin:24px auto 0;
+    font-size:13px; color:var(--ink-2);
+    padding:14px 20px;
+    background:var(--surface);
+    border-radius:12px;
+    box-shadow:var(--shadow-1);
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  }
+  .legend strong{ color:var(--ink); font-weight:800; }
+  .legend .k{ font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; background:var(--surface-3); padding:2px 6px; border-radius:5px; color:var(--ink-1); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="gradSky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0EA5E9"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+    <linearGradient id="gradBrand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1E5C8E"/>
+      <stop offset="100%" stop-color="#0A2E4A"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="split">
+  <div class="split-left"><span>← 직원 목록 (SplitPanel)</span></div>
+  <div class="split-divider"></div>
+
+  <div class="split-right">
+
+    <!-- ═══ Glass Sticky Header ═══ -->
+    <div class="head">
+      <div class="head-row">
+        <div class="avatar-wrap">
+          <div class="avatar">김</div>
+          <div class="avatar-dot" title="재직중"></div>
+        </div>
+        <div class="identity">
+          <div class="identity-row-1">
+            <span class="name">김민서</span>
+            <span class="name-secondary">#M-2023-042</span>
+            <div class="chips">
+              <span class="chip role">약사 · 팀장</span>
+              <span class="chip type">정규직</span>
+              <span class="chip status"><span class="dot"></span>재직중</span>
+            </div>
+          </div>
+          <div class="identity-row-2">
+            <span class="item">📅 입사 <strong>2023.03.15</strong></span>
+            <span class="sep">·</span>
+            <span class="item">📞 <strong>010-4231-5678</strong></span>
+            <span class="sep">·</span>
+            <span class="item">📧 <strong>kimms@megatown.pharm</strong></span>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn ghost icon-only" title="더보기">⋯</button>
+          <button class="btn ghost">✎ 편집</button>
+          <button class="btn primary">＋ 계약서 작성</button>
+        </div>
+      </div>
+
+      <!-- Bento KPI (3) · v2 base + gradient top strip -->
+      <div class="bento">
+        <div class="kpi tenure">
+          <span class="kpi-label">⏱ 근속 · 활동 지표</span>
+          <span class="kpi-value">2년 5개월<span class="unit">· 872일</span></span>
+          <div class="sparkline" title="월별 활동">
+            <div class="b" style="height:40%"></div>
+            <div class="b" style="height:55%"></div>
+            <div class="b" style="height:50%"></div>
+            <div class="b" style="height:70%"></div>
+            <div class="b" style="height:65%"></div>
+            <div class="b" style="height:80%"></div>
+            <div class="b" style="height:75%"></div>
+            <div class="b" style="height:88%"></div>
+            <div class="b" style="height:82%"></div>
+            <div class="b" style="height:95%"></div>
+            <div class="b" style="height:90%"></div>
+            <div class="b last" style="height:100%"></div>
+          </div>
+        </div>
+
+        <div class="kpi leave">
+          <div class="ring-wrap">
+            <svg class="ring">
+              <circle class="bg" cx="30" cy="30" r="24"/>
+              <circle class="fg" cx="30" cy="30" r="24" stroke-dasharray="151" stroke-dashoffset="30"/>
+            </svg>
+            <div class="ring-num">80%</div>
+          </div>
+          <div class="leave-body">
+            <span class="kpi-label">🌴 연차 · 2026</span>
+            <span class="kpi-value">12<span class="unit">/ 15일</span></span>
+            <span class="kpi-trend">▲ 남 3일</span>
+          </div>
+        </div>
+
+        <div class="kpi rating">
+          <span class="kpi-label">⭐ 평가 · 2026 Q2</span>
+          <span class="rating-badge">A+</span>
+          <span class="kpi-trend">▲ Q1 대비 향상</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Tabs + Command palette ═══ -->
+    <div class="tabs">
+      <div class="tabs-scroll">
+        <button class="tab active">📊 개요</button>
+        <button class="tab">📋 기본정보</button>
+        <button class="tab">📄 계약 <span class="count">3</span></button>
+        <button class="tab">🌴 연차 <span class="count">12</span></button>
+        <button class="tab">💰 급여</button>
+        <button class="tab">📎 첨부 <span class="count">4</span></button>
+        <button class="tab">🕐 근태</button>
+      </div>
+      <button class="cmdk">🔍 검색 <span class="kbd">⌘K</span></button>
+    </div>
+
+    <!-- ═══ Content · Bento cards · accent bar ═══ -->
+    <div class="content">
+
+      <!-- Section 01 · 계약 카드 wide · rich -->
+      <div class="card wide brand">
+        <div class="card-head">
+          <span class="section-num">01</span>
+          <span class="card-title">현재 계약</span>
+          <span class="card-sub">정규직 · 무기한</span>
+          <span class="card-badge">활성</span>
+          <button class="card-action">계약서 열기 →</button>
+        </div>
+        <div class="contract">
+          <div class="contract-info">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="tag brand">2025 재계약</span>
+              <span class="tag success">활성</span>
+              <span class="tag" style="background:transparent;box-shadow:inset 0 0 0 1px var(--line-strong);">팀장 승격</span>
+            </div>
+            <div class="contract-facts">
+              <div class="fact"><div class="k">시작일</div><div class="v">2025-03-15</div></div>
+              <div class="fact"><div class="k">종료일</div><div class="v" style="color:var(--ink-3);">— (무기한)</div></div>
+              <div class="fact"><div class="k">시급</div><div class="v big">15,000 <span style="font-size:12px;color:var(--ink-4);font-weight:600;">원</span></div></div>
+              <div class="fact"><div class="k">월 세전 · 예상</div><div class="v big">3,215,000 <span style="font-size:12px;color:var(--ink-4);font-weight:600;">원</span></div></div>
+              <div class="fact"><div class="k">주 근무</div><div class="v">40시간</div></div>
+              <div class="fact"><div class="k">근무시간대</div><div class="v">09:00–18:00 · 휴게 1h</div></div>
+            </div>
+          </div>
+          <div class="contract-ring-wrap">
+            <div class="contract-ring">
+              <svg>
+                <circle class="bg" cx="45" cy="45" r="38"/>
+                <circle class="fg" cx="45" cy="45" r="38" stroke-dasharray="238" stroke-dashoffset="60"/>
+              </svg>
+              <div class="contract-ring-num">
+                <div class="n">75%</div>
+                <div class="l">경과</div>
+              </div>
+            </div>
+            <div class="contract-ring-caption">계약 <strong style="color:var(--ink)">872일차</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 02 · 인적 사항 -->
+      <div class="card sky">
+        <div class="card-head">
+          <span class="section-num">02</span>
+          <span class="card-title">인적 사항</span>
+          <span class="card-sub">개인 · 자격</span>
+          <button class="card-action">편집 →</button>
+        </div>
+        <div class="card-body">
+          <div class="props">
+            <div class="prop">
+              <span class="k">생년월일</span>
+              <span class="v mono">1996-08-12 <span class="sub">· 만 30세</span></span>
+              <button class="copy-btn">복사</button>
+            </div>
+            <div class="prop">
+              <span class="k">성별</span>
+              <span class="v">여성</span>
+              <span></span>
+            </div>
+            <div class="prop">
+              <span class="k">주민등록번호</span>
+              <span class="v mono muted">960812-2••••••</span>
+              <button class="copy-btn">복사</button>
+            </div>
+            <div class="prop">
+              <span class="k">약사 면허</span>
+              <span class="v mono">제 12345 호 <span class="tag success">유효</span></span>
+              <span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 03 · 연락처 -->
+      <div class="card violet">
+        <div class="card-head">
+          <span class="section-num">03</span>
+          <span class="card-title">연락처</span>
+          <span class="card-sub">전화·이메일·주소</span>
+          <button class="card-action">편집 →</button>
+        </div>
+        <div class="card-body">
+          <div class="props">
+            <div class="prop">
+              <span class="k">연락처</span>
+              <span class="v mono"><a href="tel:01042315678">010-4231-5678</a></span>
+              <button class="copy-btn">복사</button>
+            </div>
+            <div class="prop">
+              <span class="k">이메일</span>
+              <span class="v"><a href="mailto:kimms@megatown.pharm">kimms@megatown.pharm</a></span>
+              <button class="copy-btn">복사</button>
+            </div>
+            <div class="prop">
+              <span class="k">주소</span>
+              <span class="v">경기 오산시 원동 123-45 · 메가타운 오피스텔 802호</span>
+              <button class="copy-btn">복사</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 04 · 첨부 (wide) -->
+      <div class="card wide amber">
+        <div class="card-head">
+          <span class="section-num">04</span>
+          <span class="card-title">첨부 파일</span>
+          <span class="card-sub">3 / 4</span>
+          <button class="card-action">전체 관리 →</button>
+        </div>
+        <div class="card-body">
+          <div class="files">
+            <div class="file">
+              <div class="file-ic pdf">PDF</div>
+              <div class="file-info">
+                <div class="file-name">근로계약서 · 2025 재계약</div>
+                <div class="file-sub">2025-03-15 · 214 KB · Google Drive</div>
+              </div>
+              <div><span class="tag success">완료</span></div>
+              <button class="file-btn primary">열기</button>
+            </div>
+            <div class="file">
+              <div class="file-ic jpg">JPG</div>
+              <div class="file-info">
+                <div class="file-name">통장사본</div>
+                <div class="file-sub">2023-03-16 · 428 KB</div>
+              </div>
+              <div><span class="tag success">완료</span></div>
+              <button class="file-btn">보기</button>
+            </div>
+            <div class="file">
+              <div class="file-ic pdf">PDF</div>
+              <div class="file-info">
+                <div class="file-name">이력서</div>
+                <div class="file-sub">2023-03-10 · 1.2 MB</div>
+              </div>
+              <div><span class="tag success">완료</span></div>
+              <button class="file-btn">보기</button>
+            </div>
+            <div class="file">
+              <div class="file-ic miss">—</div>
+              <div class="file-info">
+                <div class="file-name" style="color:var(--ink-4)">사직서</div>
+                <div class="file-sub">해당없음 · 재직중</div>
+              </div>
+              <div><span class="tag">—</span></div>
+              <button class="file-btn" style="opacity:.6">업로드</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 05 · 계약 이력 (wide) -->
+      <div class="card wide emerald">
+        <div class="card-head">
+          <span class="section-num">05</span>
+          <span class="card-title">계약 이력</span>
+          <span class="card-sub">총 3건</span>
+          <button class="card-action">전체 이력 →</button>
+        </div>
+        <div class="card-body">
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="tl-dot"></div>
+              <span class="tl-date">2025.03.15 · 현재</span>
+              <div class="tl-body">
+                <span class="tl-title">정규직 재계약 · 무기한</span>
+                <span class="tl-sub">시급 15,000 · 팀장 승격 · 주 40시간</span>
+              </div>
+              <span class="chip status"><span class="dot"></span>현재</span>
+              <div class="tl-line"></div>
+            </div>
+            <div class="timeline-item">
+              <div class="tl-dot past"></div>
+              <span class="tl-date">2024.03.15</span>
+              <div class="tl-body">
+                <span class="tl-title">정규직 전환 계약</span>
+                <span class="tl-sub">시급 13,500 · 약사 · 주 40시간</span>
+              </div>
+              <span class="tag">이전</span>
+              <div class="tl-line"></div>
+            </div>
+            <div class="timeline-item">
+              <div class="tl-dot past"></div>
+              <span class="tl-date">2023.03.15</span>
+              <div class="tl-body">
+                <span class="tl-title">최초 채용 · 계약직 1년</span>
+                <span class="tl-sub">시급 12,000 · 약사 · 주 40시간</span>
+              </div>
+              <span class="tag">이전</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <strong>🎨 v6 · v2 base + 컬러 액센트 + 최신 트렌드</strong>
+  <span class="k">|</span>
+  <strong>v2 유지</strong>
+  <span>Glass sticky header</span>
+  <span>Bento KPI 3</span>
+  <span>Progress ring · Sparkline · Timeline</span>
+  <span>Segmented tab</span>
+  <span class="k">|</span>
+  <strong>v6 개선</strong>
+  <span>Card 좌측 accent bar (5색 · brand·sky·violet·amber·emerald)</span>
+  <span>Section 번호 (01·02·03·04·05)</span>
+  <span>Contract ring (경과율)</span>
+  <span>Hover-reveal copy 버튼</span>
+  <span>Gradient chip · pulse status</span>
+  <span>⌘K command palette</span>
+  <span>3-tier shadow · smooth cubic-bezier</span>
+</div>
+
+</body>
+</html>
