@@ -6,6 +6,10 @@
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+// 2026-08-24 · ESM 환경 · __dirname 미정의 fix · import.meta.url → 파일 경로 파생
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { supabase } from "../../../src/supabase/client";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { authorize } from "../../middleware/requireAuth";

@@ -30,6 +30,7 @@ import { useSortableTable, type Comparator } from "../../hooks/useSortableTable"
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
+import { SplitRightEmpty } from "../common/SplitRightEmpty";
 import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { IconTile } from "../common/IconTile";
@@ -731,9 +732,7 @@ export const PaymentInfoTab: React.FC = () => {
              기존 overflow-y-auto lg:overflow-hidden → nested scroll 로 모달 스크롤 안 됨 */
           <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2 lg:overflow-hidden">
           {!selectedVendor ? (
-            <div className={`${CARD_BASE} flex-1 min-h-[400px]`}>
-              <EmptyState icon={Wallet} title="결제 등록 · 공급사를 선택하세요" hint="좌측 공급사 리스트에서 대상 선택 후 결제 정보를 입력합니다" />
-            </div>
+            <SplitRightEmpty icon={Wallet} title="결제 등록 · 공급사를 선택하세요" hint="좌측 공급사 리스트에서 대상 선택 후 결제 정보를 입력합니다" />
           ) : (
             <>
               {/* ── 공급사 요약 카드 (T-COMMON-VendorInfo · VendorInfoHeader 위임) ── */}
