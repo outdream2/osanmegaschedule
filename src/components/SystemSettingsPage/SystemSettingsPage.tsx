@@ -17,6 +17,8 @@ import {
 } from "../../lib/settingsTypography";
 import { CARD_BASE } from "../../styles/tokens";
 import { Spinner } from "../common/Spinner";
+// 2026-08-24 · #253 Phase E · 자동 임포트 섹션
+import { AutoImportSection } from "./AutoImportSection";
 
 interface Props {
   onBack: () => void;
@@ -26,16 +28,19 @@ interface Props {
 }
 
 // ─── 카테고리별 키 그룹 ─────────────────────────────────────────────────────
-type Cat = "db-auth" | "ai-ocr" | "sms" | "cdn" | "webpush" | "ocr-tenant" | "upload";
+// 2026-08-24 · #253 · "auto-import" 탭 신규 추가 (자동 임포트 · Phase E)
+type Cat = "db-auth" | "ai-ocr" | "sms" | "cdn" | "webpush" | "ocr-tenant" | "upload" | "auto-import";
 
 const CAT_TABS: TabDef<Cat>[] = [
-  { key: "db-auth",    label: "DB · 인증",       icon: Database,       color: "slate" },
-  { key: "ai-ocr",     label: "AI · OCR",       icon: Robot,           color: "violet" },
-  { key: "sms",        label: "알림톡 · SMS",    icon: ChatCircleDots,  color: "amber" },
-  { key: "cdn",        label: "이미지 CDN",      icon: ImageSquare,     color: "cyan" },
-  { key: "webpush",    label: "Web Push",       icon: Bell,             color: "emerald" },
-  { key: "ocr-tenant", label: "OCR 수신처",      icon: Buildings,       color: "indigo" },
-  { key: "upload",     label: "데이터 업로드",    icon: UploadSimple,    color: "red" },
+  { key: "db-auth",     label: "DB · 인증",       icon: Database,       color: "slate" },
+  { key: "ai-ocr",      label: "AI · OCR",       icon: Robot,           color: "violet" },
+  { key: "sms",         label: "알림톡 · SMS",    icon: ChatCircleDots,  color: "amber" },
+  { key: "cdn",         label: "이미지 CDN",      icon: ImageSquare,     color: "cyan" },
+  { key: "webpush",     label: "Web Push",       icon: Bell,             color: "emerald" },
+  { key: "ocr-tenant",  label: "OCR 수신처",      icon: Buildings,       color: "indigo" },
+  { key: "upload",      label: "데이터 업로드",    icon: UploadSimple,    color: "red" },
+  // 2026-08-24 · #253 Phase E · 자동 임포트 (관리자 lv9)
+  { key: "auto-import", label: "자동 임포트",     icon: Robot,           color: "violet" },
 ];
 
 const CAT_KEYS: Record<Cat, string[]> = {
@@ -47,6 +52,7 @@ const CAT_KEYS: Record<Cat, string[]> = {
   "ocr-tenant": ["OCR_RECIPIENT_COMPANY", "OCR_RECIPIENT_NAMES", "OCR_RECIPIENT_ADDRESS",
                  "OCR_EXCLUDED_LOGISTICS", "OCR_EXCLUDED_SUPPLIERS", "OCR_EXCLUDED_BUSINESS_NUMBERS"],
   "upload":     [],
+  "auto-import": [],  // 2026-08-24 · #253 · KV 기반 · env keys 없음
 };
 
 const KEY_LABELS: Record<string, { label: string; desc?: string; multiline?: boolean }> = {
@@ -156,8 +162,8 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
 
         <TabBar<Cat> level={2} tabs={CAT_TABS} activeKey={cat} onSelect={setCat} />
 
-        {/* ── 카테고리별 편집 폼 ── */}
-        {cat !== "upload" && (
+        {/* ── 카테고리별 편집 폼 · KV 기반 탭 (upload · auto-import) 제외 ── */}
+        {cat !== "upload" && cat !== "auto-import" && (
           <section className={CARD_BASE + " p-5 flex flex-col gap-4"}>
             {CAT_KEYS[cat].map(k => {
               const meta = KEY_LABELS[k] ?? { label: k };
@@ -214,6 +220,9 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
             </p>
           </section>
         )}
+
+        {/* ── 자동 임포트 탭 · #253 Phase E · 2026-08-24 ── */}
+        {cat === "auto-import" && <AutoImportSection />}
 
         {/* ── 저장 액션바 · 공통 SET_ACTION_BAR ── */}
         <div className={`${SET_ACTION_BAR} justify-between`}>

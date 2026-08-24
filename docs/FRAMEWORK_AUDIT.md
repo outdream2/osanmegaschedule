@@ -8,16 +8,16 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 658 |
-| 위반 파일 | 5 |
-| 클린 파일 | 653 (99%) |
-| 총 위반 개수 | 5 |
+| 스캔 파일 | 661 |
+| 위반 파일 | 6 |
+| 클린 파일 | 655 (99%) |
+| 총 위반 개수 | 6 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
-| `raw-fetch` | 1 | 1 | high | apiClient (api.get/post/put) |
+| `raw-fetch` | 2 | 2 | high | apiClient (api.get/post/put) |
 | `large-file-warn` | 4 | 4 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
@@ -28,9 +28,10 @@
 | 2 | `src/components/LandingPage/VendorDetailModal.tsx` | 815 | 3 | large-file-warn(1) |
 | 3 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 806 | 3 | large-file-warn(1) |
 | 4 | `src/components/ScanPage/ScanPage.tsx` | 872 | 3 | large-file-warn(1) |
-| 5 | `src/hooks/useAuth.ts` | 291 | 3 | raw-fetch(1) |
+| 5 | `src/components/SystemSettingsPage/AutoImportSection.tsx` | 345 | 3 | raw-fetch(1) |
+| 6 | `src/hooks/useAuth.ts` | 291 | 3 | raw-fetch(1) |
 
-## 📝 모든 위반 파일 (5개)
+## 📝 모든 위반 파일 (6개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -40,6 +41,7 @@
 | `src/components/LandingPage/VendorDetailModal.tsx` | 815 | 3 |
 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 806 | 3 |
 | `src/components/ScanPage/ScanPage.tsx` | 872 | 3 |
+| `src/components/SystemSettingsPage/AutoImportSection.tsx` | 345 | 3 |
 | `src/hooks/useAuth.ts` | 291 | 3 |
 
 </details>
