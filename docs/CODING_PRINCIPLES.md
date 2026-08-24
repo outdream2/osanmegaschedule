@@ -126,6 +126,14 @@
 - **초고해상도** · retina · image-rendering · antialiased · font-feature-settings
 - **부드러운 UI** · 애니메이션 · scroll · hover 부드럽게 · transition-all duration-150-200
 
+### 🔥 v3 리스트 UI 프레임워크 · TableListWrap 필수 (2026-08-24 · #263)
+- **모든 새 리스트/표** · `TableListWrap` + `tableHeadCls()` + `tableThCls()` + `tableTdCls()` 사용
+- 원-오프 코드 X · 프레임워크 재사용 필수
+- 목업 참조 · `docs/UI_MOCKUP_ORDER_LIST_V3_2026-08-24.html`
+- 위치 · `src/components/common/TableList.tsx`
+- 자동 · 상단 gradient accent · sticky thead · bg zinc-100/70 · uppercase 반응형
+- 컬럼 정렬 · num (숫자 · 우측 tabular-nums) · center (액션) · left (기본 · 문자)
+
 ### 🚫 말줄임표(truncate·ellipsis) 절대 금지 · 줄바꿈 우선 (2026-08-24 사용자 지시)
 - **말줄임표 `truncate` · `text-ellipsis` · `line-clamp-*` · 절대 사용 X**
 - 긴 텍스트 · **줄바꿈으로 표시** · `whitespace-normal break-words leading-snug`
