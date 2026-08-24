@@ -218,9 +218,20 @@ export function useAuth(): UseAuthReturn {
         sessionRef.current = null;
         setSessionState(null);
         setShowTimeoutWarning(false);
-        // 세션 만료 플래그 저장 (LandingPage 에서 안내 표시)
+        // 2026-08-24 · #256 · 세션 만료 시 · 서버 JWT 쿠키 clear + refresh token 무효화
+        //   · 문제 · 이전 · localStorage 만 clear · 서버 쿠키 유효 · 자동 재로그인 가능성
+        //   · 해결 · POST /api/auth/logout · fire-and-forget · reload 시 완전 로그아웃 상태
         try { sessionStorage.setItem("megatown_session_expired", "1"); } catch { /* noop */ }
-        window.location.replace("/?expired=1");
+        // 자동 재로그인 방지 flag · LandingPage 가 이 flag 감지 시 로그인 모달 자동 오픈 X
+        try { sessionStorage.setItem("megatown_forced_logout", "1"); } catch { /* noop */ }
+        // 서버 쿠키 정리 · 실패해도 reload 진행 (best effort)
+        try {
+          fetch("/api/auth/logout", { method: "POST", credentials: "include" })
+            .catch(() => { /* silent */ })
+            .finally(() => { window.location.replace("/?expired=1"); });
+        } catch {
+          window.location.replace("/?expired=1");
+        }
         return;
       }
 

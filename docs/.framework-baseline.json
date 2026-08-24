@@ -1,7 +1,7 @@
 {
-  "created": "2026-08-23",
+  "created": "2026-08-24",
   "version": 1,
-  "totalViolations": 4,
+  "totalViolations": 5,
   "files": {
     "src/components/DisplayPage/DisplayPage.tsx": {
       "lines": 818,
@@ -34,10 +34,20 @@
       "totalWeight": 3
     },
     "src/components/ScanPage/ScanPage.tsx": {
-      "lines": 812,
+      "lines": 872,
       "violations": [
         {
           "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
+    },
+    "src/hooks/useAuth.ts": {
+      "lines": 291,
+      "violations": [
+        {
+          "ruleId": "raw-fetch",
           "count": 1
         }
       ],
