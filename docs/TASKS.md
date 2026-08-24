@@ -67,6 +67,36 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #256 · 세션 만료 후 · 로그아웃 상태 강제 · 자동 재로그인 방지 (신규 · 2026-08-24 · 사용자 지시)
+- 📄 현재 · 세션 만료 시 · localStorage 정리 + reload · 하지만 서버 JWT 쿠키 유효할 경우 자동 재로그인 가능성
+- 🔲 만료 시 · `POST /api/auth/logout` 필수 호출 · JWT 쿠키 clear
+- 🔲 refresh token 도 무효화 · 자동 refresh 차단
+- 🔲 로그인화면 · "세션 만료 · 다시 로그인 필요" 배너 명시
+- 🔲 sessionStorage · "megatown_forced_logout" · 자동 로그인 방지 flag (사용자 명시 로그인 시 clear)
+- 💡 관련 · #251 (visibilitychange fix) · #252 (KV timeout)
+
+### #255 · 중복 로그인 방지 (신규 · 2026-08-24 · 사용자 지시)
+- 📄 문제 · 같은 계정 · 여러 브라우저 · 여러 기기 · 동시 로그인 가능
+- 🔲 서버 · 활성 세션 관리 테이블 (session_id · employee_id · issued_at · last_seen · device · ip)
+- 🔲 로그인 시 · 기존 활성 세션 감지 · 사용자에게 선택 (기존 세션 강제 로그아웃 · 취소)
+- 🔲 다른 기기 로그인 감지 시 · 기존 클라이언트 · WebSocket or 폴링 · "다른 기기 로그인 · 로그아웃됨" 알림
+- 🔲 관리자 · 활성 세션 목록 조회 · 강제 로그아웃 (superadmin)
+- 💡 최신 기술 · Redis 세션 스토어 or Supabase user_sessions 테이블
+- 💡 관련 · #254 (세션 보안 강화)
+
+### #254 · 세션 보안 강화 · 최신 기술 반영 (신규 · 2026-08-24 · 사용자 지시)
+- 📄 현재 · JWT (access 1h · refresh 7d) · httpOnly cookie · 30분 idle timeout
+- 🔲 **httpOnly + Secure + SameSite=Strict** cookie 강화 · CSRF 방어
+- 🔲 **Refresh token rotation** · 매 refresh 시 · 신규 refresh token 발급 · 이전 무효화
+- 🔲 **JWT jti** · 토큰 blacklist (로그아웃 · 강제 만료 · 즉시 무효화)
+- 🔲 **Device fingerprint** · 로그인 시 · User-Agent + IP · 이상 감지 (다른 기기 접속 알림)
+- 🔲 **Audit log 강화** · 로그인·로그아웃·refresh·강제만료 · 실패 시도 · IP 기록
+- 🔲 **Rate limiting** · 로그인 API · 5회 실패 시 · 5분 IP 차단
+- 🔲 **PBKDF2 → bcrypt 확정** (이미 대부분 · vendor 만 SHA256 · #112-2 참조)
+- 🔲 **2FA (선택)** · 관리자 계정 · TOTP (Google Authenticator) 지원
+- 💡 관련 · #255 (중복 로그인) · #256 (자동 로그인 방지)
+- 💡 규모 · 대형 · 12~18시간 (5-6개 세부 항목 순차)
+
 ### #253 · 자동 임포트 시스템 · 원클릭 설치 + 스케쥴 실행 (신규 · 2026-08-24 · 사용자 지시)
 
 **🎯 스펙 확정 (2026-08-24 사용자 결정)**:
