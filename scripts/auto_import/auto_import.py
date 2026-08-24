@@ -326,15 +326,43 @@ def main() -> int:
     errors: list = []
 
     # 2026-08-24 · 사용자 지시 · 카테고리별 개별 interval · last_check_at 기반 스킵 판정
+    #   · interval=1440 (매일) · daily_times[category] "HH:MM" · 오늘 해당 시각 이후 · 아직 미실행 시 처리
     last_checks = imported.get("__last_check__", {})
     intervals = server_cfg.get("intervals", {}) or {}
-    now_ts = datetime.now().timestamp()
+    daily_times = server_cfg.get("daily_times", {}) or {}
+    now = datetime.now()
+    now_ts = now.timestamp()
+    today_date = now.date()
 
     for category in ("products", "stock", "purchase"):
-        # 카테고리별 interval 체크 · 지난 실행 이후 interval 미경과 시 skip
         interval_min = intervals.get(category)
         last_iso = last_checks.get(category)
-        if interval_min and last_iso:
+
+        # 매일 (1440) · 특정 시각 도달 후 · 오늘 미실행 시 처리
+        if interval_min == 1440:
+            time_str = daily_times.get(category, "06:00")
+            try:
+                hh, mm = time_str.split(":")
+                scheduled = now.replace(hour=int(hh), minute=int(mm), second=0, microsecond=0)
+                if now < scheduled:
+                    log.info(f"[{category}] skip · 매일 {time_str} · 아직 도달 X (현재 {now.strftime('%H:%M')})")
+                    processed[category] = 0
+                    continue
+                # 오늘 이미 실행됐는지 확인
+                if last_iso:
+                    try:
+                        last_dt = datetime.fromisoformat(last_iso)
+                        if last_dt.date() == today_date and last_dt >= scheduled:
+                            log.info(f"[{category}] skip · 오늘 {last_dt.strftime('%H:%M')} 이미 실행")
+                            processed[category] = 0
+                            continue
+                    except Exception:
+                        pass
+            except Exception:
+                log.warning(f"[{category}] daily_times 파싱 실패 · {time_str}")
+
+        # 일반 interval 체크
+        elif interval_min and last_iso:
             try:
                 last_ts = datetime.fromisoformat(last_iso).timestamp()
                 elapsed_min = (now_ts - last_ts) / 60
@@ -343,11 +371,10 @@ def main() -> int:
                     processed[category] = 0
                     continue
             except Exception:
-                pass  # 파싱 실패 시 · 처리 진행
+                pass
 
         count, err = process_category(session, base_url, server_cfg, category, imported, manager_id)
         processed[category] = count
-        # last_check 갱신 (skip 안 한 경우만 · 성공/실패 무관)
         last_checks[category] = datetime.now().isoformat()
         if err:
             errors.append({"category": category, "error": err})

@@ -80,6 +80,9 @@ export const AutoImportSection: React.FC = () => {
   const updateInterval = (key: keyof AutoImportConfig["intervals"], v: number) => {
     setConfig({ ...config, intervals: { ...config.intervals, [key]: v } });
   };
+  const updateDailyTime = (key: keyof AutoImportConfig["daily_times"], v: string) => {
+    setConfig({ ...config, daily_times: { ...config.daily_times, [key]: v } });
+  };
 
   const applyDefaultFolders = () => {
     setConfig({
@@ -283,6 +286,19 @@ export const AutoImportSection: React.FC = () => {
                   className="w-16 h-7 px-1.5 text-[13px] font-semibold text-ink text-right border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"
                 />
                 <span className="text-[12px] text-ink-soft">분</span>
+                {/* 매일(1440) 선택 시 · 실행 시각 · HH:MM 입력 · 2026-08-24 사용자 지시 */}
+                {config.intervals[key] === 1440 && (
+                  <>
+                    <span className="text-[12px] text-ink-soft ml-2">· 매일 실행 시각 ·</span>
+                    <input
+                      type="time"
+                      value={config.daily_times[key]}
+                      onChange={(e) => updateDailyTime(key, e.target.value)}
+                      disabled={!loaded}
+                      className="h-7 px-2 text-[13px] font-semibold text-ink border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"
+                    />
+                  </>
+                )}
               </div>
             </div>
           ))}
@@ -299,53 +315,7 @@ export const AutoImportSection: React.FC = () => {
         </label>
       </div>
 
-      {/* Base 실행 간격 (Task Scheduler) · 각 카테고리 개별 간격 이하 권장 */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <Timer size={18} className="text-brand-deep shrink-0" />
-          <h4 className="text-[15px] font-bold text-ink">Task Scheduler 실행 간격 (5~1440분)</h4>
-        </div>
-        <p className="text-[13px] text-ink-soft leading-relaxed">
-          Windows Task Scheduler 가 Python 을 실행하는 간격 · <b>가장 짧은 카테고리 간격 이하</b> 권장.
-          <br />각 실행에서 · Python 이 카테고리별 마지막 실행 시각과 개별 간격을 비교하여 · 스킵/처리 판정.
-        </p>
-        <div className="flex flex-wrap gap-1.5 items-center">
-          {INTERVAL_PRESETS.slice(0, 5).map(({ value, label }) => {
-            const active = config.base_interval_minutes === value;
-            return (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setConfig({ ...config, base_interval_minutes: value })}
-                disabled={!loaded}
-                className={`h-8 px-3 rounded-lg text-[14px] font-semibold cursor-pointer transition ${
-                  active
-                    ? "bg-brand-deep text-white shadow-sm"
-                    : "bg-white text-ink-soft hover:text-ink border border-line hover:border-brand-deep"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-          <div className="inline-flex items-center gap-1 ml-2">
-            <span className="text-[13px] text-ink-soft">사용자정의</span>
-            <input
-              type="number"
-              min={5}
-              max={1440}
-              value={config.base_interval_minutes}
-              onChange={(e) => {
-                const n = Math.max(5, Math.min(1440, Math.round(Number(e.target.value) || 10)));
-                setConfig({ ...config, base_interval_minutes: n });
-              }}
-              disabled={!loaded}
-              className="w-20 h-8 px-2 text-[14px] font-semibold text-ink text-right border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"
-            />
-            <span className="text-[13px] text-ink-soft">분</span>
-          </div>
-        </div>
-      </div>
+      {/* 2026-08-24 · Task Scheduler 실행 간격은 install.bat 이 자동 설정 · UI 노출 X (혼란 방지) */}
 
       {/* 임포트 후 처리 */}
       <div className="flex flex-col gap-2">

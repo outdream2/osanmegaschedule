@@ -22,6 +22,16 @@ export const AutoImportIntervalsSchema = z.object({
 });
 export type AutoImportIntervals = z.infer<typeof AutoImportIntervalsSchema>;
 
+/** 매일 (1440분) 선택 시 · 실행 시각 · HH:MM (24h) · Python 이 특정 시각 도달 시 처리 · 그 외 skip */
+export const AutoImportDailyTimeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "HH:MM 형식 필요").default("06:00");
+
+export const AutoImportDailyTimesSchema = z.object({
+  products: AutoImportDailyTimeSchema.default("06:00"),
+  stock:    AutoImportDailyTimeSchema.default("06:30"),
+  purchase: AutoImportDailyTimeSchema.default("07:00"),
+});
+export type AutoImportDailyTimes = z.infer<typeof AutoImportDailyTimesSchema>;
+
 /** 임포트 후 처리 · keep(유지) · move_to_processed(_processed 이동) · delete(삭제) */
 export const AutoImportAfterSchema = z.enum(["keep", "move_to_processed", "delete"]);
 export type AutoImportAfter = z.infer<typeof AutoImportAfterSchema>;
@@ -33,6 +43,8 @@ export const AutoImportConfigSchema = z.object({
   folder_auto_create: z.boolean().default(true),
   /** 카테고리별 실행 간격 · Task Scheduler 는 base_interval_minutes 로 실행 · Python 이 카테고리별 스킵 판정 */
   intervals:          AutoImportIntervalsSchema.default({ products: 60, stock: 30, purchase: 240 }),
+  /** 매일 (1440분) 선택 시 · 실행 시각 (HH:MM) · Python 이 해당 시각 이후 처리 */
+  daily_times:        AutoImportDailyTimesSchema.default({ products: "06:00", stock: "06:30", purchase: "07:00" }),
   /** Task Scheduler base 실행 간격 · 최소 값 이하 권장 (5~60) · 자동 재등록 대상 */
   base_interval_minutes: z.number().int().min(5).max(1440).default(10),
   after_import:       AutoImportAfterSchema.default("move_to_processed"),
@@ -46,6 +58,7 @@ export const DEFAULT_AUTO_IMPORT_CONFIG: AutoImportConfig = {
   folders: { products: "", stock: "", purchase: "" },
   folder_auto_create: true,
   intervals: { products: 60, stock: 30, purchase: 240 },
+  daily_times: { products: "06:00", stock: "06:30", purchase: "07:00" },
   base_interval_minutes: 10,
   after_import: "move_to_processed",
   auto_rename: true,
