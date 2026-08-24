@@ -18,10 +18,10 @@ import {
 import type { AutoImportConfig, AutoImportAfter } from "../../shared/schemas/autoImport";
 
 const DEFAULT_FOLDER_BASE = "%USERPROFILE%\\Downloads\\megatown-importdata";
+// 2026-08-24 · 사용자 지시 · 공급사 제외 · 3 카테고리 (상품·재고·매입)
 const CATEGORIES: Array<{ key: keyof AutoImportConfig["folders"]; label: string; color: string }> = [
   { key: "products", label: "상품",   color: "text-brand-deep" },
   { key: "stock",    label: "재고",   color: "text-emerald-600" },
-  { key: "vendors",  label: "공급사", color: "text-sky-600" },
   { key: "purchase", label: "매입",   color: "text-violet-600" },
 ];
 
@@ -36,6 +36,30 @@ const INTERVAL_PRESETS: Array<{ value: number; label: string }> = [
   { value: 1440, label: "매일" },
 ];
 
+// 2026-08-24 · 사용자 지시 · 폴더 찾기 · showDirectoryPicker (Chrome/Edge)
+//   · 브라우저 보안상 절대경로 획득 불가 · 폴더명만 반환 · 사용자에게 경로 힌트 제공
+async function pickFolderHint(): Promise<string | null> {
+  const w = window as any;
+  if (typeof w.showDirectoryPicker !== "function") {
+    alert("Chrome 또는 Edge 브라우저 에서만 지원됩니다.\n다른 브라우저는 · 파일탐색기에서 폴더 경로 복사 후 붙여넣기 하세요.");
+    return null;
+  }
+  try {
+    const handle = await w.showDirectoryPicker();
+    const name = handle?.name ?? "";
+    if (!name) return null;
+    alert(
+      `선택된 폴더: ${name}\n\n` +
+      `※ 브라우저 보안상 절대경로는 자동 입력할 수 없습니다.\n` +
+      `Windows 파일탐색기 · 해당 폴더 우클릭 → "경로 복사" → 여기에 붙여넣기 하세요.\n` +
+      `또는 · %USERPROFILE%\\Downloads\\megatown-importdata\\${name} · 형식으로 입력.`
+    );
+    return name;
+  } catch {
+    return null;  // 사용자 취소
+  }
+}
+
 const AFTER_OPTIONS: Array<{ value: AutoImportAfter; label: string; hint: string }> = [
   { value: "keep",               label: "유지",   hint: "원본 파일 그대로 · hash 로 중복 방지" },
   { value: "move_to_processed",  label: "이동",   hint: "_processed/ 로 자동 이동 (권장 · audit trail)" },
@@ -47,11 +71,14 @@ export const AutoImportSection: React.FC = () => {
   const { status, reload: reloadStatus } = useAutoImportStatus();
   const [installerError, setInstallerError] = useState<string | null>(null);
 
-  const tone = computeStatusTone(status, config.interval_minutes);
+  const tone = computeStatusTone(status, config.base_interval_minutes);
   const isInstalled = tone !== "gray";
 
   const updateFolder = (key: keyof AutoImportConfig["folders"], v: string) => {
     setConfig({ ...config, folders: { ...config.folders, [key]: v } });
+  };
+  const updateInterval = (key: keyof AutoImportConfig["intervals"], v: number) => {
+    setConfig({ ...config, intervals: { ...config.intervals, [key]: v } });
   };
 
   const applyDefaultFolders = () => {
@@ -60,10 +87,21 @@ export const AutoImportSection: React.FC = () => {
       folders: {
         products: `${DEFAULT_FOLDER_BASE}\\products`,
         stock:    `${DEFAULT_FOLDER_BASE}\\stock`,
-        vendors:  `${DEFAULT_FOLDER_BASE}\\vendors`,
         purchase: `${DEFAULT_FOLDER_BASE}\\purchase`,
       },
     });
+  };
+
+  const handlePickFolder = async (key: keyof AutoImportConfig["folders"]) => {
+    const hint = await pickFolderHint();
+    if (hint) {
+      // 사용자에게 힌트 제공 · 실제 절대경로 입력은 여전히 사용자 몫
+      // 폴더명 부분만 반영 · 기존 base 유지
+      const cur = config.folders[key];
+      if (!cur || !cur.includes(hint)) {
+        updateFolder(key, `${DEFAULT_FOLDER_BASE}\\${hint}`);
+      }
+    }
   };
 
   const handleInstallerDownload = async () => {
@@ -180,11 +218,11 @@ export const AutoImportSection: React.FC = () => {
         </span>
       </div>
 
-      {/* 폴더 경로 편집 · 4개 카테고리 */}
+      {/* 카테고리별 폴더 + 실행 간격 · 3 카테고리 (상품·재고·매입) */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <Folder size={18} className="text-brand-deep shrink-0" />
-          <h4 className="text-[15px] font-bold text-ink">폴더 경로 (Windows · 환경변수 지원)</h4>
+          <h4 className="text-[15px] font-bold text-ink">카테고리별 폴더 + 실행 간격</h4>
           <button
             type="button"
             onClick={applyDefaultFolders}
@@ -194,18 +232,58 @@ export const AutoImportSection: React.FC = () => {
             기본값 복원
           </button>
         </div>
-        <div className="grid grid-cols-1 gap-2">
+        <div className="flex flex-col gap-2">
           {CATEGORIES.map(({ key, label, color }) => (
-            <div key={key} className="flex items-center gap-2">
-              <span className={`w-14 text-[14px] font-bold ${color} shrink-0`}>{label}</span>
-              <input
-                type="text"
-                value={config.folders[key]}
-                onChange={(e) => updateFolder(key, e.target.value)}
-                disabled={!loaded}
-                placeholder={`${DEFAULT_FOLDER_BASE}\\${key}`}
-                className="flex-1 h-9 px-2.5 text-[14px] text-ink border border-line rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 font-mono"
-              />
+            <div key={key} className="rounded-lg border border-line bg-zinc-50/40 p-2.5 flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className={`w-12 text-[14px] font-bold ${color} shrink-0`}>{label}</span>
+                <input
+                  type="text"
+                  value={config.folders[key]}
+                  onChange={(e) => updateFolder(key, e.target.value)}
+                  disabled={!loaded}
+                  placeholder={`${DEFAULT_FOLDER_BASE}\\${key}`}
+                  className="flex-1 h-9 px-2.5 text-[14px] text-ink border border-line rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 font-mono min-w-0"
+                />
+                <button
+                  type="button"
+                  onClick={() => { void handlePickFolder(key); }}
+                  disabled={!loaded}
+                  className="inline-flex items-center gap-1 h-9 px-2.5 rounded-lg text-[13px] font-semibold text-ink-soft hover:text-brand-deep bg-white border border-line hover:border-brand-deep cursor-pointer transition shrink-0"
+                  title="폴더 찾기 (Chrome/Edge)"
+                >
+                  <Folder size={13} />
+                  찾기
+                </button>
+              </div>
+              <div className="flex items-center gap-1.5 pl-14 flex-wrap">
+                <Timer size={12} className="text-ink-soft shrink-0" />
+                <span className="text-[12px] text-ink-soft font-semibold">간격 ·</span>
+                <select
+                  value={config.intervals[key]}
+                  onChange={(e) => updateInterval(key, Number(e.target.value))}
+                  disabled={!loaded}
+                  className="h-7 px-2 text-[13px] font-semibold text-ink border border-line rounded-md bg-white cursor-pointer disabled:opacity-40"
+                >
+                  {INTERVAL_PRESETS.map(({ value, label: lbl }) => (
+                    <option key={value} value={value}>{lbl}</option>
+                  ))}
+                </select>
+                <span className="text-[12px] text-ink-soft">or</span>
+                <input
+                  type="number"
+                  min={5}
+                  max={1440}
+                  value={config.intervals[key]}
+                  onChange={(e) => {
+                    const n = Math.max(5, Math.min(1440, Math.round(Number(e.target.value) || 60)));
+                    updateInterval(key, n);
+                  }}
+                  disabled={!loaded}
+                  className="w-16 h-7 px-1.5 text-[13px] font-semibold text-ink text-right border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"
+                />
+                <span className="text-[12px] text-ink-soft">분</span>
+              </div>
             </div>
           ))}
         </div>
@@ -221,20 +299,24 @@ export const AutoImportSection: React.FC = () => {
         </label>
       </div>
 
-      {/* 실행 간격 · 프리셋 + 사용자 정의 */}
+      {/* Base 실행 간격 (Task Scheduler) · 각 카테고리 개별 간격 이하 권장 */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <Timer size={18} className="text-brand-deep shrink-0" />
-          <h4 className="text-[15px] font-bold text-ink">실행 간격 (5~1440분)</h4>
+          <h4 className="text-[15px] font-bold text-ink">Task Scheduler 실행 간격 (5~1440분)</h4>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {INTERVAL_PRESETS.map(({ value, label }) => {
-            const active = config.interval_minutes === value;
+        <p className="text-[13px] text-ink-soft leading-relaxed">
+          Windows Task Scheduler 가 Python 을 실행하는 간격 · <b>가장 짧은 카테고리 간격 이하</b> 권장.
+          <br />각 실행에서 · Python 이 카테고리별 마지막 실행 시각과 개별 간격을 비교하여 · 스킵/처리 판정.
+        </p>
+        <div className="flex flex-wrap gap-1.5 items-center">
+          {INTERVAL_PRESETS.slice(0, 5).map(({ value, label }) => {
+            const active = config.base_interval_minutes === value;
             return (
               <button
                 key={value}
                 type="button"
-                onClick={() => setConfig({ ...config, interval_minutes: value })}
+                onClick={() => setConfig({ ...config, base_interval_minutes: value })}
                 disabled={!loaded}
                 className={`h-8 px-3 rounded-lg text-[14px] font-semibold cursor-pointer transition ${
                   active
@@ -252,10 +334,10 @@ export const AutoImportSection: React.FC = () => {
               type="number"
               min={5}
               max={1440}
-              value={config.interval_minutes}
+              value={config.base_interval_minutes}
               onChange={(e) => {
                 const n = Math.max(5, Math.min(1440, Math.round(Number(e.target.value) || 10)));
-                setConfig({ ...config, interval_minutes: n });
+                setConfig({ ...config, base_interval_minutes: n });
               }}
               disabled={!loaded}
               className="w-20 h-8 px-2 text-[14px] font-semibold text-ink text-right border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"

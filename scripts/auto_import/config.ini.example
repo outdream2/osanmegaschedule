@@ -1,0 +1,18 @@
+; scripts/auto_import/config.ini.example
+; 2026-08-24 · #253 · 자동 임포트 · 로컬 설정 템플릿
+;
+; 사용 방법:
+;   1. 이 파일을 config.ini 로 복사
+;   2. server 섹션에 실제 값 입력 (URL · 관리자 핸드폰 · 비밀번호)
+;   3. 자동 임포트 폴더 경로 · 실행 간격 · 처리 방식은 웹 UI 에서 관리
+;      (시스템 설정 → 자동 임포트 탭 · 관리자 lv9 전용)
+;
+; 보안 안내:
+;   - admin_password 평문 저장 · 파일 접근 제어 필수 (Windows ACL · Users 그룹 read 제거 권장)
+;   - 배포 시 · config.ini 는 .gitignore 로 커밋 제외
+
+[server]
+url = https://osanmega.onrender.com
+admin_phone = 01012345678
+admin_password = your-admin-password-here
+manager_id = 1
