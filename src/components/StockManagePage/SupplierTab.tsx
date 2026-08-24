@@ -408,7 +408,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       searchPlaceholder="공급사명 · 코드 검색"
       filters={
         <div className="flex flex-col gap-1.5 w-full">
-          {/* 분류 필터 */}
+          {/* 2026-08-24 · 매입이력 embedded 모드 · 분류 필터 숨김 (사용자 지시) · 정렬만 유지 */}
+          {!embedded && (
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider mr-0.5">분류</span>
             {([
@@ -425,6 +426,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
               </button>
             ))}
           </div>
+          )}
           {/* 정렬 행 */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider mr-0.5">정렬</span>
