@@ -78,7 +78,9 @@ describe("PeriodSelector · size", () => {
     );
     const btn = container.querySelector("button")!;
     expect(btn.className).toContain("h-7");
-    expect(btn.className).toContain("text-[12px]");
+    // 2026-08-24 · 사용자 지시 · 글씨 +2 (12→14) · 여백 반으로 (px-2→px-1)
+    expect(btn.className).toContain("text-[14px]");
+    expect(btn.className).toContain("px-1");
   });
 
   it("md · h-8", () => {
@@ -87,7 +89,9 @@ describe("PeriodSelector · size", () => {
     );
     const btn = container.querySelector("button")!;
     expect(btn.className).toContain("h-8");
-    expect(btn.className).toContain("text-[14px]");
+    // 2026-08-24 · 사용자 지시 · 글씨 +2 (14→16) · 여백 반으로 (px-3→px-1.5)
+    expect(btn.className).toContain("text-[16px]");
+    expect(btn.className).toContain("px-1.5");
   });
 });
 

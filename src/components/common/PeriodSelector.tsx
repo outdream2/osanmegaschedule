@@ -40,10 +40,10 @@ const ACCENT_CLS: Record<NonNullable<PeriodSelectorProps<never>["accent"]>, stri
   violet:  ACTIVE_CLS,
 };
 
-// 폰트 +2 · 접근성 (h-7 이상)
+// 2026-08-24 · 사용자 지시 · 글씨 +2 · 여백 반으로 축소 (프리미티브 일괄 반영 · 모든 소비처 자동 반영)
 const SIZE_CLS = {
-  sm: { wrap: "p-1",   btn: "h-7 px-2 text-[12px]" },
-  md: { wrap: "p-1",   btn: "h-8 px-3 text-[14px]" },
+  sm: { wrap: "p-0.5", btn: "h-7 px-1   text-[14px]" },
+  md: { wrap: "p-0.5", btn: "h-8 px-1.5 text-[16px]" },
 };
 
 export function PeriodSelector<T extends number | string>({

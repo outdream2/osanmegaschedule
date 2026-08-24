@@ -21,10 +21,11 @@ export interface InlineLabelProps {
   className?: string;
 }
 
+// 2026-08-24 · 사용자 지시 · 조회기간 라벨 등 · 글씨 +2 (프리미티브 일괄)
 const TEXT_CLS: Record<InlineLabelSize, string> = {
-  sm: "text-[14px]",
-  md: "text-[15px]",
-  lg: "text-[16px]",
+  sm: "text-[16px]",
+  md: "text-[17px]",
+  lg: "text-[18px]",
 };
 
 const BAR_SIZE: Record<InlineLabelSize, AccentBarSize> = {

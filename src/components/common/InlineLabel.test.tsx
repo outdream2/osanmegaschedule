@@ -12,7 +12,7 @@ describe("InlineLabel · 기본 렌더", () => {
     expect(container.querySelectorAll("span").length).toBeGreaterThanOrEqual(3);
   });
 
-  it("기본 · md size · text-[15px] · gap-2", () => {
+  it("기본 · md size · text-[17px] · gap-2", () => {
     const { container } = render(<InlineLabel>x</InlineLabel>);
     const outer = container.querySelector("span")!;
     expect(outer.className).toContain("gap-2");
@@ -20,38 +20,38 @@ describe("InlineLabel · 기본 렌더", () => {
     expect(outer.className).toContain("inline-flex");
     // 마지막 span (label text)
     const label = container.querySelectorAll("span")[2];
-    expect(label.className).toContain("text-[15px]");
+    expect(label.className).toContain("text-[17px]");
     expect(label.className).toContain("font-bold");
     expect(label.className).toContain("text-ink");
   });
 });
 
 describe("InlineLabel · size 매핑", () => {
-  it("sm · text-[14px] + gap-1.5 + bar sm(h-14)", () => {
+  it("sm · text-[16px] + gap-1.5 + bar sm(h-14)", () => {
     const { container } = render(<InlineLabel size="sm">x</InlineLabel>);
     const outer = container.querySelector("span")!;
     expect(outer.className).toContain("gap-1.5");
     const label = container.querySelectorAll("span")[2];
-    expect(label.className).toContain("text-[14px]");
+    expect(label.className).toContain("text-[16px]");
     // AccentBar 두번째 span
     const bar = container.querySelectorAll("span")[1];
     expect(bar.className).toContain("h-[14px]");
   });
 
-  it("md · text-[15px] + bar md(h-16)", () => {
+  it("md · text-[17px] + bar md(h-16)", () => {
     const { container } = render(<InlineLabel size="md">x</InlineLabel>);
     const bar = container.querySelectorAll("span")[1];
     expect(bar.className).toContain("h-[16px]");
     const label = container.querySelectorAll("span")[2];
-    expect(label.className).toContain("text-[15px]");
+    expect(label.className).toContain("text-[17px]");
   });
 
-  it("lg · text-[16px] + bar lg(h-18)", () => {
+  it("lg · text-[18px] + bar lg(h-18)", () => {
     const { container } = render(<InlineLabel size="lg">x</InlineLabel>);
     const bar = container.querySelectorAll("span")[1];
     expect(bar.className).toContain("h-[18px]");
     const label = container.querySelectorAll("span")[2];
-    expect(label.className).toContain("text-[16px]");
+    expect(label.className).toContain("text-[18px]");
   });
 });
 
