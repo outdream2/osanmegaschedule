@@ -53,7 +53,6 @@ import { Spinner } from "../common/Spinner";
 import { SectionLabel } from "../common/SectionLabel";
 import { Hero } from "../common/Hero";
 import { Card } from "../common/Card";
-import { ListPanel, ListRow } from "../common/ListRow";
 
 interface LandingPageProps {
   authSession: AuthSession | null;
@@ -718,18 +717,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             ) : !arrivalsLoading && stockArrivals.length === 0 ? (
               <Card variant="flat" padding="none" className="text-center text-[16px] text-ink-soft py-8">데이터 없음</Card>
             ) : (
-              /* 2026-08-24 · #263 · ListPanel/ListRow 프리미티브 적용 · 목업 톤 */
-              <ListPanel loading={arrivalsLoading}>
+              <Card clip padding="none" className={`divide-y divide-line/70 ${arrivalsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {stockArrivals.slice(0, 5).map(a => (
-                  <ListRow
-                    key={a.id}
-                    icon={<Package size={15} weight="fill" />}
-                    iconTone="brand"
-                    title={a.title}
-                    meta={new Date(a.created_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                  />
+                  <div key={a.id} className="flex items-center gap-3 px-4 py-3 hover:bg-brand-tint/40 transition-colors">
+                    <div className="w-8 h-8 rounded-lg bg-brand-tint flex items-center justify-center shrink-0">
+                      <Package size={15} className="text-brand-deep" weight="fill" />
+                    </div>
+                    <span className="flex-1 text-[17px] font-semibold text-ink truncate">{a.title}</span>
+                    <span className="text-[15px] text-ink-soft shrink-0 whitespace-nowrap tabular-nums">
+                      {new Date(a.created_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
                 ))}
-              </ListPanel>
+              </Card>
             )}
           </div>
           )}

@@ -71,6 +71,8 @@ export interface ListRowProps {
   dense?: boolean;
 }
 
+// 2026-08-24 · 사용자 승인 · 랜딩페이지 입고알림 스타일 기준 (더 단정 · 정갈)
+//   w-8 h-8 · rounded-lg · font-semibold · brand-tint hover (동일)
 const ICON_TONE_MAP: Record<Required<ListRowProps>["iconTone"], { bg: string; ink: string }> = {
   brand:   { bg: "bg-brand-tint",  ink: "text-brand-deep" },
   emerald: { bg: "bg-emerald-50",  ink: "text-emerald-700" },
@@ -82,13 +84,13 @@ const ICON_TONE_MAP: Record<Required<ListRowProps>["iconTone"], { bg: string; in
 };
 
 /**
- * ListRow · 리스트 한 줄 · 목업 톤 · 최신 트렌드
- *   · 아이콘 tile · brand-tint 배경 · deep navy ink (기본)
- *   · 제목 · 폰트 17px 볼드 · truncate
+ * ListRow · 리스트 한 줄 · 랜딩페이지 입고알림 톤 기준 (사용자 승인)
+ *   · 아이콘 tile · w-8 h-8 · rounded-lg · brand-tint (기본) · icon size 15
+ *   · 제목 · 폰트 17px · semibold · truncate
  *   · 서브타이틀 · 폰트 14px · line-tight · optional
  *   · 우측 meta · 시간·수량 · 폰트 15px · tabular-nums
  *   · 호버 · brand-tint/40 · 부드러운 transition
- *   · active · brand-tint 배경 · 좌측 3px accent
+ *   · active · brand-tint/60 배경 · 좌측 accent bar
  */
 export function ListRow({
   icon, iconTone = "brand", title, subtitle, meta, actions,
@@ -105,12 +107,12 @@ export function ListRow({
   const rowContent = (
     <>
       {icon && (
-        <div className={`w-9 h-9 rounded-xl ${tone.bg} flex items-center justify-center shrink-0`}>
+        <div className={`w-8 h-8 rounded-lg ${tone.bg} flex items-center justify-center shrink-0`}>
           <span className={`${tone.ink} inline-flex`} aria-hidden>{icon}</span>
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <div className="text-[17px] font-bold text-ink tracking-tight truncate leading-tight">
+        <div className="text-[17px] font-semibold text-ink truncate leading-tight">
           {title}
         </div>
         {subtitle && (
