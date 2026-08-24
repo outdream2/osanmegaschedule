@@ -107,6 +107,27 @@ export class ScheduleController {
         return;
       }
 
+      // 2026-08-24 · 사용자 지시 · 신규 등록 시 핸드폰(로그인 ID) 중복 검사
+      //   · phone 은 로그인 ID · 중복 시 · 로그인 flow 붕괴
+      const cleanPhone = phone ? String(phone).replace(/[^0-9]/g, "") : "";
+      if (cleanPhone) {
+        const { supabase } = await import("../../src/supabase/client");
+        const { data: existing } = await supabase
+          .from("employees")
+          .select("id, name")
+          .eq("phone", cleanPhone)
+          .maybeSingle();
+        if (existing) {
+          res.status(409).json({
+            error: `이미 등록된 핸드폰번호입니다 · ${existing.name} (id=${existing.id})`,
+            code: "PHONE_DUPLICATE",
+            existingId: existing.id,
+            existingName: existing.name,
+          });
+          return;
+        }
+      }
+
       const result = await scheduleService.createEmployee({
         name,
         position,
