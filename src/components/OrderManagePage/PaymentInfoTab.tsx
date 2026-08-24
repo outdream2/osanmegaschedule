@@ -138,6 +138,8 @@ export const PaymentInfoTab: React.FC = () => {
   const [balance, setBalance] = useState<BalanceResp | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
 
+  // 2026-08-24 · 사용자 지시 · 우측 결제 등록·최근결제 탭 상태 (기본 entry)
+  const [paymentRightTab, setPaymentRightTab] = useState<"entry" | "recent">("entry");
   // 최근 결제 이력
   const [recentPayments, setRecentPayments] = useState<PaymentRow[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
@@ -751,27 +753,55 @@ export const PaymentInfoTab: React.FC = () => {
                 />
               </div>
 
-              {/* 결제 입력 + 최근 결제 내역 · 좌우 분할 · 반응형 stack (2026-08-04 · xl 이상만 2열) */}
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 items-start">
-
-              {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 (PaymentEntryForm)
-                  · key={selectedVendor.id} 로 vendor 변경 시 자동 remount → 폼 상태 리셋 */}
-              <PaymentEntryForm
-                key={selectedVendor.id}
-                selectedVendor={selectedVendor}
-                balance={balance}
-                vatIncluded={vatIncluded}
-                onSubmitted={handlePaymentSubmitted}
-              />
-
-              {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 (RecentPaymentsSection) */}
-              <RecentPaymentsSection
-                recentPayments={recentPayments}
-                recentLoading={recentLoading}
-                supplierName={selectedVendor?.company_name ?? null}
-                onReload={loadRecentPayments}
-              />
-              </div>{/* 결제입력+최근결제내역 grid wrapper close */}
+              {/* 2026-08-24 · 사용자 지시 · 결제등록 · 최근결제내역 · 탭 처리 (나란히 X) */}
+              <div className="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
+                {/* Tab strip · Linear/Vercel 톤 · 딥네이비 accent */}
+                <div className="flex border-b border-line bg-zinc-50/40 p-1.5 gap-1">
+                  {([
+                    { k: "entry" as const, label: "결제 등록" },
+                    { k: "recent" as const, label: "최근 결제 내역", count: recentPayments.length },
+                  ]).map(t => {
+                    const active = paymentRightTab === t.k;
+                    return (
+                      <button
+                        key={t.k}
+                        type="button"
+                        onClick={() => setPaymentRightTab(t.k)}
+                        className={`relative flex-1 min-h-[42px] py-2 px-3 text-[15px] font-semibold rounded-xl transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 tracking-tight ${
+                          active
+                            ? "text-ink bg-white shadow-sm ring-1 ring-line"
+                            : "text-ink-soft hover:text-ink hover:bg-white/70"
+                        }`}
+                      >
+                        <span>{t.label}</span>
+                        {typeof t.count === "number" && t.count > 0 && (
+                          <span className={`text-[13px] tabular-nums font-bold ${active ? "text-brand-deep" : "text-ink-soft"}`}>
+                            · {t.count}
+                          </span>
+                        )}
+                        {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-brand-deep" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Tab body */}
+                {paymentRightTab === "entry" ? (
+                  <PaymentEntryForm
+                    key={selectedVendor.id}
+                    selectedVendor={selectedVendor}
+                    balance={balance}
+                    vatIncluded={vatIncluded}
+                    onSubmitted={handlePaymentSubmitted}
+                  />
+                ) : (
+                  <RecentPaymentsSection
+                    recentPayments={recentPayments}
+                    recentLoading={recentLoading}
+                    supplierName={selectedVendor?.company_name ?? null}
+                    onReload={loadRecentPayments}
+                  />
+                )}
+              </div>
 
               {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 (ProductSummarySection) */}
               <ProductSummarySection
