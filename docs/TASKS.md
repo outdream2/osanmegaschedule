@@ -65,6 +65,61 @@
 
 ---
 
+## 🎯 최상위 통합 · #LIST-UI-2026 · 리스트 UI 전면 공통 디자인 (2026-08-24 · 사용자 지시)
+
+> **모든 리스트 UI 를 하나의 공통 디자인으로 통합** · 파스텔 지양 · 최신 트렌드 · 깔끔·세련·고급·멋짐·초고해상도·부드러움
+
+### 🎨 공통 디자인 스펙 (확정)
+- **파스텔 bg 절대 X** · sky/amber/rose/indigo 50/100 shade 데이터 셀 배경 금지
+- **강조 · text 색만** · 부족 rose-600 · 발주금액 brand-deep bold · 정상 text-ink
+- **선택 row** · `bg-brand-tint/50` · 딥네이비 톤
+- **hover row** · `bg-brand-tint/25` 통일
+- **상단 gradient accent** · 세션 시그니처 (`from-brand-deep via-sky-500 to-brand-deep`)
+- **말머리표** · `w-1.5 h-1.5 rounded-full bg-brand-deep` · dot
+- **폰트** · title 19px semibold · body 15px · meta 17px tabular-nums
+- **카테고리 그룹 헤더 (colspan) · 제거** · 서브헤더만 · 미니멀
+- **참고** · `docs/UI_MOCKUP_2026-08-21.html` · `docs/UI_MOCKUP_ORDER_LIST_V3_2026-08-24.html`
+- **톤** · Ramp · Brex · Cursor · Linear · Vercel · Notion · Attio 2026
+
+### 📋 통합된 하위 항목 (이전 태스크 흡수)
+- ✅ **#262 · SplitListPanel 검색창 상단 필수** (완료 · `f54c927a` 등)
+- ✅ **#264 Round 1 · 발주 액션 버튼 최신 트렌드** (완료 · `cdb6d00c`)
+- ✅ **#265 · 매입이력 embedded 카테고리 필터 숨김** (완료 · `d584e0e9` 등)
+- ✅ **#266 · PaymentInfoTab 결제등록·최근결제 탭 처리** (완료 · `8baaff80`)
+- ✅ **매입이력·발주필요·발주요청 · 카테고리 그룹 헤더 제거** (완료 · `f61bb407`)
+- ✅ **매입이력·발주 · 서브헤더+body 색상 bg 제거 · zinc 통일** (완료 · `f2ec7e85`·`120e330c`·`78e040ce`·`7512219d`·`5420a188`)
+- ✅ **매입이력 embedded · 세션 상단 가로 gradient accent** (완료 · `fc3869a1`)
+- ✅ **랜딩 입고알림 · 상단 gradient + 말머리표 + 모달** (완료 · `898e75de`)
+- ✅ **반품 오른쪽 · 탭메뉴 불일치 fix** (완료 · `4111690e`)
+- ✅ **ListPanel/ListRow 프리미티브 신설** (완료 · `599926a8`·`405507fb`)
+- ✅ **SplitRightEmpty/Loading/Error 프리미티브 신설** (완료 · `f3d53c5e`·이후)
+
+### 🔲 다음 진행 (승인·지시 대기)
+1. **OrderRequestTab · v3 목업 실적용** · 카드형 리스트 (사용자 승인 필요)
+2. **OrderNeedTab · v3 톤 적용** · 발주필요 리스트
+3. **FlowTab · 통계 상품흐름** · 컬러 bg 40+ 개 정리 (대량)
+4. **LossHistoryTab · 손실 이력** · 테이블 톤 정리
+5. **DiffTab · 실재고 차이** · 톤 정리
+6. **ByProductPanel · 매입이력 상품별** · 톤 정리
+7. **SplitRight 프리미티브 확산** · Empty/Loading/Error 각 페이지 이관
+8. **VendorManageSplit · 공급사관리** · 확산
+9. **ProductInfoPage** · 확산
+10. **StaffManagePage · StaffListPanel** · 확산 (특수 · 상단 toolbar 유지)
+
+### 📚 신규 프리미티브 (지원 라이브러리)
+- `ListPanel` + `ListRow` · 랜딩 톤 · 45+ 예상 소비처
+- `SplitRightEmpty` · 좌측 미선택
+- `SplitRightLoading` · Spinner + label
+- `SplitRightError` · 오류 카드 + 재시도
+- `SplitLeftHeader` · 폰트 +2
+
+### 🎬 접근 방식
+- Phase 1 ✅ 프리미티브 신설 (완료)
+- Phase 2 ⏸ **v3 목업 승인 후** OrderRequestTab 실적용 (사용자 결정 대기)
+- Phase 3 · 차례로 다른 리스트 확산 · 매 페이지 사용자 승인 or 자율 (사용자 지시 따름)
+
+---
+
 ## 🔥 활성 (진행중 / 대기 · 2026-08-24 세션 후반 정리)
 
 ### 🚨 열린 이슈 (긴급 · 다음 세션 최우선)

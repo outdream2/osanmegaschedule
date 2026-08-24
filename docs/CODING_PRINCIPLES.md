@@ -110,18 +110,38 @@
 
 ## 🎨 UI 대원칙
 
-### ⭐ 재강화 · UI 프리미엄 (2026-08-24 사용자 지시)
+### ⭐ 재강화 · UI 프리미엄 (2026-08-24 사용자 지시 · 3차 강조)
 - **UI 작업 전 · 항상 UI 대원칙 숙지** · 이 섹션 + memory `feedback_ui_premium_reinforce.md`
-- **UI 프레임워크 프리미티브 · 적극 활용 (필수)** · Card · Modal · GroupedListPanel · SplitListPanel · Badge · StatusPill · IconTile · AccentBar · InlineLabel · PeriodSelector · CategoryChips 등 43+
-- **최신 기술** · React 19 · Tailwind · Pretendard · GPU 가속
-- **최신 인기 디자인** · Linear · Vercel · Notion · Attio 2026 톤
-- **깔끔** · 여백·정렬·통일 · 파스텔 X · 이모지 X · 촌스러움 X
-- **고급** · 딥네이비 accent · 3-layer shadow · frosted backdrop
-- **세련** · 마이크로 인터랙션 · smooth 150ms
-- **멋지게** · 시각적 계층 · 대비 · 강조
-- **초고해상도** · retina · image-rendering
-- **부드러운 UI** · 애니메이션 · scroll · hover 부드럽게
-- 필터식 탭메뉴 · **글씨 +2 기본** (40대+ 가독성)
+- **UI 프레임워크 프리미티브 · 적극 활용 (필수)** · Card · Modal · GroupedListPanel · SplitListPanel · ListRow · SplitRightEmpty/Loading/Error · Badge · StatusPill · IconTile · AccentBar · InlineLabel · PeriodSelector · CategoryChips 등 45+
+- **최신 기술** · React 19 · Tailwind 4 · Pretendard · GPU 가속 · frosted glass (backdrop-blur)
+- **최신 인기 디자인** · Linear · Vercel · Notion · Attio · Ramp · Brex · Cursor 2026 톤
+- **파스텔·이모지·촌스러움 · 절대 금지** (반복 강조)
+  - ❌ 파스텔 bg-sky-50/40 · bg-amber-50/40 · bg-rose-50/40 등 · 데이터 셀 배경
+  - ❌ 이모지 (📦·💰·⭐ 등) · 프로덕션 UI 사용 금지
+  - ❌ 다색 배지 남발 · 색깔 뱃지 여러개 나열
+- **깔끔** · 여백·정렬·통일 · monochrome base + 단일 accent
+- **고급** · 딥네이비 accent · 3-layer shadow · frosted backdrop · monospace 숫자
+- **세련** · 마이크로 인터랙션 · smooth 150ms · active:scale-[0.98]
+- **멋지게** · 시각적 계층 · 대비 (text-ink vs text-ink-soft) · 강조 (text-brand-deep bold)
+- **초고해상도** · retina · image-rendering · antialiased · font-feature-settings
+- **부드러운 UI** · 애니메이션 · scroll · hover 부드럽게 · transition-all duration-150-200
+
+### 🎨 리스트 UI 원칙 (2026-08-24 재강조)
+- **테이블 셀 · 색깔 bg 지양** · zinc-50/40 통일 · 강조는 **text 색만**
+  - 예: 부족 · `text-rose-600` (bg 없음)
+  - 예: 발주금액 · `text-brand-deep font-bold` (bg 없음)
+- **카테고리 그룹 헤더 (colspan) · 제거** · 서브헤더만 유지 · 미니멀
+- **선택 row** · `bg-brand-tint/50` (딥네이비 톤) · rose·sky bg 지양
+- **hover row** · `bg-brand-tint/25` 통일 · orange·sky 지양
+- **상단 gradient accent** · `bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep` · 세션 시그니처 (랜딩 톤)
+- **말머리표** · `w-1.5 h-1.5 rounded-full bg-brand-deep` · dot · 아이콘 tile 지양
+- **폰트** · title 19px semibold · body 15px · meta 17px tabular-nums
+
+### 📋 SplitPanel 우측 4대 상태 (2026-08-24 · #261)
+- **SplitRightEmpty** · 좌측 미선택 시 · 아이콘+타이틀+힌트
+- **SplitRightLoading** · 데이터 fetch 중 · Spinner+label
+- **SplitRightError** · API 실패 · 오류 카드+재시도 버튼
+- **SplitRightHeader** (후속) · SplitLeftHeader 대칭
 
 ### 🎨 UI 목업 파일 기준 (2026-08-23 재강조)
 - 모든 UI 작업 · `docs/UI_MOCKUP_2026-08-21.html` 목업 기준
