@@ -284,10 +284,10 @@ export const ConfirmedRecordsTab: React.FC = () => {
           <div className={`overflow-x-auto ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             {/* 2026-07-28 · 사용자 요청 · 명세서 그룹핑 (date + supplier) · 상세보기 · 이미지보기 */}
             <table className="w-full text-xs border-collapse">
+              {/* 2026-08-24 · v3 확산 · thead · bg zinc-100/70 · Attio 톤 · rose 제거 */}
               <thead>
-                <tr className="bg-rose-50 border-b border-rose-100">
-                  <th className="px-2 py-2 w-8 text-center">
-                    {/* 2026-07-28 · 전체 선택 · 사용자 요청 · 선택삭제 */}
+                <tr className="bg-zinc-100/70 border-b border-line text-[13px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider">
+                  <th className="px-2 py-2.5 w-8 text-center">
                     {(() => {
                       const allIds = items.map(x => x.id);
                       const allSelected = allIds.length > 0 && allIds.every(id => selectedIds.has(id));
@@ -295,18 +295,18 @@ export const ConfirmedRecordsTab: React.FC = () => {
                         <input type="checkbox"
                           checked={allSelected}
                           onChange={() => toggleSelectAll(allIds, allSelected)}
-                          className="w-3.5 h-3.5 accent-rose-500 cursor-pointer"
+                          className="w-3.5 h-3.5 accent-brand-deep cursor-pointer"
                           title={allSelected ? "전체 해제" : "전체 선택"}
                         />
                       );
                     })()}
                   </th>
-                  <th className="px-3 py-2 text-left font-bold text-rose-900 whitespace-nowrap w-28">거래일</th>
-                  <th className="px-3 py-2 text-left font-bold text-rose-900">공급사</th>
-                  <th className="px-3 py-2 text-right font-bold text-rose-900 whitespace-nowrap">건수</th>
-                  <th className="px-3 py-2 text-right font-bold text-rose-900 whitespace-nowrap">합계</th>
-                  <th className="px-3 py-2 text-center font-bold text-rose-900 whitespace-nowrap">이미지</th>
-                  <th className="px-3 py-2 text-center font-bold text-rose-900 whitespace-nowrap">상세</th>
+                  <th className="px-3 py-2.5 text-left whitespace-nowrap w-28">거래일</th>
+                  <th className="px-3 py-2.5 text-left">공급사</th>
+                  <th className="px-3 py-2.5 text-right whitespace-nowrap">건수</th>
+                  <th className="px-3 py-2.5 text-right whitespace-nowrap">합계</th>
+                  <th className="px-3 py-2.5 text-center whitespace-nowrap">이미지</th>
+                  <th className="px-3 py-2.5 text-center whitespace-nowrap">상세</th>
                 </tr>
               </thead>
               <tbody>
