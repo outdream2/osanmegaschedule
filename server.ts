@@ -24,6 +24,8 @@ import schedulesRouter   from "./server/routes/schedule/schedules";
 import staffRouter       from "./server/routes/staff/staff";
 import settingsRouter    from "./server/routes/settings/settings";
 import systemConfigRouter from "./server/routes/settings/systemConfig";
+// 2026-08-24 · #253 · 자동 임포트 설정 endpoints (authorize(9) 내부)
+import autoImportRouter  from "./server/routes/settings/autoImport";
 import productsRouter    from "./server/routes/stock/products";
 import requestsRouter    from "./server/routes/display/requests";
 import mismatchesRouter  from "./server/routes/display/mismatches";
@@ -156,6 +158,8 @@ async function startServer() {
   // 혼합 (GET public + POST 내부 authorize) · 랜딩/브랜드 로딩 필수
   app.use(settingsRouter);        // GET /api/permissions·settings (브랜드·연락처) · POST 는 내부 authorize(9)
   app.use(systemConfigRouter);    // GET /api/system-config · 내부 authorize(9)
+  // 2026-08-24 · #253 · 자동 임포트 · GET/POST config · POST heartbeat · authorize(9) 내부
+  app.use(autoImportRouter);
   app.use(referenceValuesRouter); // GET /api/reference-values · 포지션/직급/근무지 (로그인 전에도 사용)
   // 2026-08-18 · #131 fix · 입고알림 목록 · 랜딩 로그인 화면에서도 표시 (비로그인 유저 대상)
   //   · GET /api/stock-arrivals · 알림 목록 (민감 데이터 아님 · 공개 안전)
