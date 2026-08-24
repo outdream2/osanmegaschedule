@@ -465,7 +465,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                                 <div className="flex flex-col leading-tight">
                                   <button
                                     type="button"
-                                    className="text-[14px] font-semibold text-sky-700 hover:underline text-left break-words whitespace-normal cursor-pointer"
+                                    className="text-[14px] font-semibold text-zinc-900 hover:underline text-left break-words whitespace-normal cursor-pointer"
                                     onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("info"); }}
                                     title="상품정보 보기"
                                   >{x.product_name}</button>
