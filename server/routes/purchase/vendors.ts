@@ -228,6 +228,17 @@ router.post("/api/vendors", validateBody(CreateVendorSchema), asyncHandler(async
     const { data: dup } = await supabase.from("vendors").select("id, company_name").eq("business_number", validBizNum).maybeSingle();
     if (dup) throw new HttpError(409, `사업자번호 중복 · 이미 등록된 공급사: ${dup.company_name} (#${dup.id})`);
   }
+  // 2026-08-24 · 사용자 지시 · 공급사명 중복 검증 (trim 후 exact match)
+  const trimmedName = String(company_name ?? "").trim();
+  if (trimmedName) {
+    const { data: nameDup } = await supabase.from("vendors").select("id, company_name").eq("company_name", trimmedName).maybeSingle();
+    if (nameDup) throw new HttpError(409, `공급사명 중복 · 이미 등록됨: ${nameDup.company_name} (#${nameDup.id})`);
+  }
+  // 2026-08-24 · 사용자 지시 · 담당자 핸드폰 중복 검증 (vendor 로그인 ID · unique 필수)
+  if (cleanPhone) {
+    const { data: phoneDup } = await supabase.from("vendors").select("id, company_name").eq("phone", cleanPhone).maybeSingle();
+    if (phoneDup) throw new HttpError(409, `담당자 핸드폰 중복 · 로그인 ID 로 사용됨: ${phoneDup.company_name} (#${phoneDup.id})`);
+  }
   const baseRow = {
     company_name: company_name.trim(),
     contact_name: contact_name ?? null,
