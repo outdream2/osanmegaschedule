@@ -162,8 +162,9 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
       </div>
 
       {/* 2026-08-21 · #171 Phase 3 · 상세 리스트 (전체 N건 클릭 시 토글) · 7항목 breakdown table */}
+      {/* 2026-08-24 · v9 · topAccent */}
       {statusDetailOpen && (
-        <Card variant="raw-sm" padding="none" className="mt-3 px-4 py-3">
+        <Card variant="raw-sm" padding="none" topAccent className="mt-3 px-4 py-3">
           <div className="text-[15px] font-bold text-ink-soft mb-2 tracking-tight">요청 상세 · 카테고리별 대기 건수</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[16px]">
             {[
