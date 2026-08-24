@@ -65,55 +65,109 @@
 
 ---
 
-## 🔥 활성 (진행중 / 대기 · 2026-08-24 세션 정리)
+## 🔥 활성 (진행중 / 대기 · 2026-08-24 세션 후반 정리)
 
-### 🎯 대형 · #263 · List UI Framework · 목업 기준 재설계 (신규 · 2026-08-24 · 사용자 지시 · 진행중)
-- **요구** · 깔끔·세련·멋짐·고급·초고해상도·최신 트렌드로 리스트 UI 신설
-- **범위 (사용자 지시 누적)**:
-  - ① Split 왼쪽 리스트들의 UI 를 목업디자인 기준으로 재작업
-  - ② 랜딩페이지 입고리스트를 목업리스트로 적용
-  - ③ 프레임워크화 (재사용 가능한 primitive)
-- **참조** · `docs/UI_MOCKUP_2026-08-21.html` · Linear · Vercel · Notion · Attio 2026
-- 🔲 Phase 1 · MockupListRow / MockupListItem 프리미티브 신설 · common/*
-- 🔲 Phase 2 · 랜딩페이지 입고리스트 적용
-- 🔲 Phase 3 · Split 왼쪽 리스트 확산 · SupplierTab · ByProductPanel · VendorManageSplit · ProductInfoPage · PaymentInfoTab
-- 🔲 Phase 4 · unit tests · 시각 검증
+### 🚨 열린 이슈 (긴급 · 다음 세션 최우선)
 
-### #262 · SplitListPanel · 검색창 상단 필수 · 대원칙 등록 (✅ 완료 · 2026-08-24)
-- ✅ SupplierTab · 검색창 추가 (SplitListPanel search prop)
-- ✅ ByProductPanel · custom → built-in search 이관
-- ✅ PaymentInfoTab · 동일 이관
-- ✅ 대원칙 등록 · `docs/CODING_PRINCIPLES.md` · memory `feedback_splitlist_search_required.md`
-- ✅ 커밋 · `5e68a4b6` · `9a065899` · `f54c927a`
+#### 1. 상품등록 404 (사용자 제보 · 미해결)
+- 증상 · 상품 등록 버튼 클릭 → 404
+- 파일 · `src/components/ProductInfoPage/ProductCreateModal.tsx` · `41bbfca4` 이후
+- 원인 후보 · A) 개발 서버 재시작 필요 · B) Vite proxy · C) 브라우저 캐시 · D) Render 프록시
+- 다음 · 서버 재시작 · Network 탭 URL 확인 · 실 원인 파악
 
-### #264 · 발주 액션 버튼 · 최신 트렌드 UI (신규 · 2026-08-24 · 사용자 지시)
-- ✅ Round 1 · 3 버튼 (커밋 `cdb6d00c`)
+#### 2. 매입이력 공급사별 · 검색 안 됨 ("테스트" vendor)
+- 원인 · 서버 `/api/stock-manage/supplier-purchases` · 매입 이력 있는 vendor만 반환
+- 옵션 A (권장) · 클라이언트 · useVendors union · "매입 이력 없음" 표시
+- 사용자 결정 대기
+
+#### 3. 발주 리스트 리디자인 목업 · 사용자 승인 대기
+- 목업 v1 · `docs/UI_MOCKUP_ORDER_LIST_2026-08-24.html`
+- 목업 v2 · `docs/UI_MOCKUP_ORDER_REQUEST_LIST_2026-08-24.html` (Linear/Attio)
+- 목업 v3 · `docs/UI_MOCKUP_ORDER_LIST_V3_2026-08-24.html` (Ramp/Brex/Cursor · 프리미엄)
+- 승인 후 · OrderRequestTab 실적용
+
+#### 4. 타이핑 글씨 깨짐 (사용자 제보 · 위치 확인 필요)
+- 앱? IDE? 터미널? 위치 알려주면 즉시 fix
+- 터미널 · CP949 → UTF-8 (`chcp 65001` · git config `i18n.logOutputEncoding utf-8`)
+- 앱 (Korean IME) · onCompositionStart/End 처리 필요할 수도
+
+---
+
+### ✅ 이번 세션 완료 (2026-08-24 · 40+ 커밋 · 로컬만)
+
+#### 반품 오른쪽 탭메뉴 불일치 fix (완료 · `4111690e`)
+- ReturnListPanel · 외부 3탭 (상품정보/매입이력/판매정보) 제거 · 셋 모두 같은 컴포넌트 렌더 문제
+- ProductDetailRightPanel 내부 자체 5탭 (기간별상품흐름·매입이력·발주내역·재고관리·상품정보) 로 통일
+
+#### #178 공급사정보 SQL + 데이터 (완료)
+- ✅ `sql/migrations/2026-08-24_vendor_order_methods.sql` · 실행 완료
+- ✅ VendorInfoHeader · 5 xlsx 필드 (order_method·region·invoice_method·order_status) 표시
+- 🔲 special_notes · 경고 배너 · 다음 세션
+- 🔲 tests 추가
+
+#### #262 · SplitListPanel · 검색창 상단 필수 · 대원칙 등록 (완료)
+- ✅ SupplierTab·ByProductPanel·PaymentInfoTab · custom → built-in search 이관
+- ✅ `docs/CODING_PRINCIPLES.md` · 대원칙 등록
+- ✅ memory `feedback_splitlist_search_required.md` 신설
+
+#### #263 · List UI Framework · ListRow 프리미티브 신설 (진행)
+- ✅ `src/components/common/ListRow.tsx` · ListPanel + ListRow · 13 tests
+- ✅ 랜딩 입고알림 톤 기준 (사용자 승인)
+- ✅ v2 확장 · topAccent · bullet · description · pill · subtitle · onClick modal
+- ⏸ Phase 3 (Split 왼쪽 확산) · 각 페이지 사용자 승인 후 진행 (design 민감)
+
+#### #264 · 발주 액션 버튼 · 최신 트렌드 (Round 1 완료)
+- ✅ Round 1 · 3 버튼 (`cdb6d00c`) · gradient·shadow·ring·scale
   · OrderNeedTab 일괄 발주요청 · OrderRequestTab 일괄 발주 · OrderModal 발주 발송
-  · Linear/Vercel gradient · shadow · ring · scale · rounded-lg · font +2
-- 🔲 Round 2 · 나머지 15-25 버튼 자동 스캔·일괄 (사용자 확인 후 착수)
+- 🔲 Round 2 · 나머지 15-25 버튼 자동 스캔·일괄 (사용자 확인 후)
 
-### #265 · 매입이력 embedded · 카테고리 필터 숨김 (✅ 완료 · 2026-08-24)
-- ✅ SupplierTab · embedded=true 시 분류 chip 감춤 (커밋 `d584e0e9`)
-- ✅ 정렬 chip 은 유지 · 통계 화면은 기존대로
+#### #265 · 매입이력 embedded 시각 정리 (완료)
+- ✅ 분류 필터 chip 숨김 (`d584e0e9`)
+- ✅ Top N 필터 세션 제거 · 검색 헤더 인라인 (`d2b28305`)
+- ✅ 카테고리 그룹 헤더 tr 전체 제거 (`f61bb407`)
+- ✅ 서브헤더+body 색상 bg 제거 · zinc 통일 (`f2ec7e85`·`120e330c`·`78e040ce`·`7512219d`·`5420a188`)
+- ✅ 세로 accent 제거 (사용자: "별로") · 세션 상단 가로 gradient accent (`fc3869a1`)
 
-### #261 · SplitRight 프리미티브 · 폰트 +2 프레임워크 (2026-08-24)
-- ✅ SplitLeftHeader · 폰트 +2 (17→19px · subtitle 13→15px · AccentBar h 17→19)
-- 🔲 SplitRightHeader · SplitLeftHeader 대칭 프리미티브 신설
+#### #266 · 결제입력 우측 탭 처리 (완료 · 신규 · 사용자 지시)
+- ✅ PaymentInfoTab · 결제등록·최근결제 · 나란히 grid → 탭 (`8baaff80`)
+
+#### #267 · ProductCreateModal · 중복·불필요 필드 정리 (완료 · 사용자 지시)
+- ✅ 바코드 필드 제거 · 상품코드 = 바코드 · submit 자동 세팅
+- ✅ 적정재고 필드 제거 · 설정에서 자동 계산
+- ✅ 공급사 · text → autocomplete (useVendors)
+- ✅ 실제배정구역 · text → autocomplete (useZoneDefs)
+- 커밋 `41bbfca4` · 상품등록 404 이슈 해결 대기
+
+#### 계산 회귀 fix (완료)
+- ✅ ProductDetailPanel · 월평균 판매 "최근6개월 월평균" (`94f48021`)
+- ✅ 발주내역 탭 · lookupProduct 동기 함수 · await/.catch 오용 (`4bf256b7`)
+- ✅ 급상승 상품 클릭 · ProductDetailModal 오픈 wiring (`1ca5f399`)
+
+---
+
+### 🔲 대기 (남은 태스크)
+
+#### #261 · SplitRight 프리미티브 · 폰트 +2 프레임워크
+- ✅ SplitLeftHeader · 폰트 +2 (17→19px)
+- 🔲 SplitRightHeader · SplitLeftHeader 대칭 · 신설
 - 🔲 SplitRightEmpty · "선택하세요" 공용 빈상태
 - 🔲 SplitRightLoading · Spinner + label 공용
 - 🔲 SplitRightError · 오류 카드 공용
 - 🔲 TabBar 폰트 +2 확산
 
-### 계산 회귀 fix (완료 · 2026-08-24)
-- ✅ ProductDetailPanel · 월평균 판매 라벨 "최근6개월 월평균" (커밋 `94f48021`)
-- ✅ 발주내역 탭 · lookupProduct 동기 함수 · await/.catch 오용 (커밋 `4bf256b7`)
-- ✅ 급상승 상품 클릭 · ProductDetailModal 오픈 wiring (커밋 `1ca5f399`)
+#### #253 · 자동 임포트 (Phase B~F 대기)
+- ✅ Phase A · 서버 endpoints 완료
+- ✅ Phase E · 웹 UI 완료
+- 🔲 Phase B · Python 스크립트
+- 🔲 Phase C · PyInstaller .exe
+- 🔲 Phase D · install.bat / Task Scheduler
+- 🔲 Phase F · README
 
-### #178 · 공급사정보 SQL + 데이터 (2026-08-24)
-- ✅ `sql/migrations/2026-08-24_vendor_order_methods.sql` · 실행 완료
-- ✅ VendorInfoHeader · 5 xlsx 필드 표시
-- 🔲 special_notes · 경고 배너
-- 🔲 tests 추가
+#### 그 외 대기
+- 🔲 적정재고 flow 조사 · `/api/products/refill-optimal-stock` DB flow 보고
+- 🔲 급상승 · 최근 30일 데이터 없음 안내 배너 결정
+- 🔲 #259 · 매입이력 공급사별 상품 확장 (arrow) 기능 복원
+- 🔲 FlowTab · LossHistoryTab · DiffTab · 컬러 bg 정리 (대량 · 승인 후)
 
 ### 조사·확인 대기 (사용자 답변 필요)
 - 🔲 급상승리스트 · 최근 30일 데이터 없을 시 · "데이터 없음" 배너 추가할지 결정
