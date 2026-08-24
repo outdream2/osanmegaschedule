@@ -605,23 +605,13 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                 const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
                 const isExpanded = supplierRowsMap[key] != null;
                 const isSelected = supplierSelectedKey === key;
-                // 2026-08-24 · 사용자 지시 · 컬러 accent · 분류별 좌측 accent bar
-                const rowCat = vendorCategoryMap[sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? ""] ?? vendorCategoryMap[sup.supplier ?? ""] ?? null;
-                const accentColorClass =
-                    rowCat === "위탁"   ? "bg-violet-500"
-                  : rowCat === "선결제" ? "bg-rose-500"
-                  : rowCat === "60회전" ? "bg-emerald-500"
-                  : rowCat === "90회전" ? "bg-teal-500"
-                  : rowCat === "기타"   ? "bg-zinc-400"
-                  : "bg-transparent";
                 return (
                   <tr key={key}
                     onClick={() => { toggleSupplierExpand(sup); setSupplierSelectedKey(key); }}
                     className={`cursor-pointer transition-colors ${isSelected ? "bg-brand-tint/60 hover:bg-brand-tint" : "hover:bg-brand-tint/30"}`}
                     title="클릭 → 오른쪽 패널에 상세">
-                    <td className="relative text-center align-middle py-1.5">
-                      {/* 좌측 컬러 accent bar · 분류별 · 시각 정보 강화 */}
-                      <span aria-hidden className={`absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full ${accentColorClass}`} />
+                    <td className="text-center align-middle py-1.5">
+                      {/* 2026-08-24 · 좌측 컬러 accent bar 제거 (사용자: 별로) · 카테고리 배지는 supplier 셀에 유지 */}
                       {isExpanded ? <ChevronDown size={13} className="text-brand-deep mx-auto" /> : <ChevronRight size={13} className="text-zinc-300 mx-auto" />}
                     </td>
                     <td className="text-center align-middle py-1.5 text-[15px] font-semibold text-zinc-400 tabular-nums">{i + 1}</td>
@@ -689,7 +679,9 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
     return (
       <div className="w-full h-full min-h-0 flex flex-col gap-2">
         {/* 2026-08-24 · 사용자 요청 · 매입이력 embedded · 상단 Card 세션 제거 · SplitListPanel headerActions 로 새로고침 이관 */}
-        <div className={`${CARD_BASE} flex-1 min-h-0 flex flex-col`}>
+        {/* 2026-08-24 · 사용자 요청 · 세션 상단 가로 컬러 accent (랜딩 입고알림 톤) · Vercel/Linear 시그니처 */}
+        <div className={`${CARD_BASE} relative flex-1 min-h-0 flex flex-col overflow-hidden`}>
+          <span aria-hidden className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10" />
           {renderSupplierListCard()}
         </div>
         {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 (embedded 모드) */}
