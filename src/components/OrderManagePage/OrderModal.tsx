@@ -6,6 +6,8 @@ import { ShoppingCart, MessageSquare, Mail } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { Modal } from "../common/Modal";
 import { Card } from "../common/Card";
+// 2026-08-24 · v3 리스트 UI 프레임워크
+import { tableHeadCls, tableThCls } from "../common";
 
 export interface OrderModalItem {
   order_request_id: string;
@@ -128,16 +130,19 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
       {/* 발주 아이템 테이블 */}
       <div className="flex-1 overflow-y-auto max-h-[45vh] px-6 py-4 bg-zinc-50/30">
-        <Card clip padding="none">
+        <Card clip padding="none" className="relative">
+          {/* 2026-08-24 · v3 · 상단 gradient accent */}
+          <span aria-hidden className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-30 rounded-t-md" />
           <table className="w-full text-[17px]">
-            <thead>
-              <tr className="bg-zinc-100 text-zinc-500 font-bold uppercase tracking-wide text-[15px] border-b border-line sticky top-0 z-10">
-                <th className="text-center p-2 w-8">#</th>
-                <th className="text-left p-2 w-56">상품</th>
-                <th className="text-right p-2 w-20">발주수량</th>
-                <th className="text-right p-2 w-24"><div className="leading-tight">이전<br/>사입가</div></th>
-                <th className="text-right p-2 w-28">금액</th>
-                <th className="text-left p-2">비고 (메모)</th>
+            {/* 2026-08-24 · v3 · tableHeadCls 헬퍼 */}
+            <thead className={tableHeadCls()}>
+              <tr>
+                <th className={tableThCls("center", "w-8")}>#</th>
+                <th className={tableThCls("left", "w-56")}>상품</th>
+                <th className={tableThCls("num", "w-20 bg-sky-50/60")}>발주수량</th>
+                <th className={tableThCls("num", "w-24")}><div className="leading-tight">이전<br/>사입가</div></th>
+                <th className={tableThCls("num", "w-28 bg-brand-tint/50")}>금액</th>
+                <th className={tableThCls("left")}>비고 (메모)</th>
               </tr>
             </thead>
             <tbody>
