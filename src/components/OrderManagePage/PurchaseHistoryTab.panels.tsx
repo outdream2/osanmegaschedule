@@ -14,6 +14,7 @@ import { AccentBar } from "../common/AccentBar";
 import { InlineLabel } from "../common/InlineLabel";
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
+import { SplitRightEmpty } from "../common/SplitRightEmpty";
 import { StatusPill } from "../common/StatusPill";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { PeriodSelector } from "../common/PeriodSelector";
@@ -297,9 +298,7 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
       right={
         <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2">
         {!selectedVendor ? (
-          <div className={`${CARD_BASE} flex-1 min-h-[400px]`}>
-            <EmptyState icon={Package} title="좌측에서 공급사를 선택하세요" hint="매입이력 · 상품별 집계 · 매입 추이가 표시됩니다" />
-          </div>
+          <SplitRightEmpty icon={Package} title="좌측에서 공급사를 선택하세요" hint="매입이력 · 상품별 집계 · 매입 추이가 표시됩니다" />
         ) : ledgerError ? (
           <Card borderColor="border-rose-200" className="text-sm text-rose-700 space-y-2">
             <div className="font-bold flex items-center gap-1.5">원장 조회 실패</div>

@@ -57,6 +57,8 @@ export { SettingsPageShell } from "./SettingsPageShell";
 export { SortableHeader } from "./SortableHeader";
 export { Spinner } from "./Spinner";
 export { SplitPanel } from "./SplitPanel";
+export { SplitRightEmpty } from "./SplitRightEmpty";
+export type { SplitRightEmptyProps } from "./SplitRightEmpty";
 export { StatusPill } from "./StatusPill";
 export type { StatusPillProps } from "./StatusPill";
 export { StepperInput } from "./StepperInput";
