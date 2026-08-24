@@ -809,10 +809,25 @@ router.post("/api/inventory-checks", asyncHandler(async (req, res) => {
     return null;
   };
   // 신규 컬럼 미존재 DB 하위 호환 · 실패 시 신규 필드 stripping 후 재시도
+  // 2026-08-24 · legacy store_stock_2 도 일부 DB 누락 대응 · 에러 메시지 컬럼 이름 자동 추출 후 제거
   let result = await applyPayload();
-  if (result?.error && /column .* does not exist|no column named|schema cache/i.test(result.error)) {
-    for (const k of ["warehouse1_stock","warehouse2_stock","store3_stock","store1_zone","store2_zone","store3_zone"]) {
-      delete (payload as any)[k];
+  const MAX_STRIP_RETRIES = 6;
+  for (let attempt = 0; attempt < MAX_STRIP_RETRIES && result?.error && /column .* does not exist|no column named|schema cache/i.test(result.error); attempt++) {
+    // 1) 신규 컬럼 일괄 제거 (첫 시도만)
+    if (attempt === 0) {
+      for (const k of ["warehouse1_stock","warehouse2_stock","store3_stock","store1_zone","store2_zone","store3_zone"]) {
+        delete (payload as any)[k];
+      }
+    }
+    // 2) 에러 메시지에서 특정 컬럼명 추출 · 해당 필드만 제거 (legacy 포함)
+    const m = /(?:column|of)\s+'?([a-zA-Z0-9_]+)'?/g.exec(result.error);
+    const colName = m?.[1];
+    if (colName && colName in payload) {
+      console.warn(`[inventory-checks] legacy 컬럼 미존재 · strip 후 재시도: ${colName}`);
+      delete (payload as any)[colName];
+    } else if (attempt > 0) {
+      // 추가로 벗길 컬럼 없음 · 무한 루프 방지
+      break;
     }
     result = await applyPayload();
   }
