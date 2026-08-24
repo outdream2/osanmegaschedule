@@ -54,7 +54,7 @@ export function FilterSortGroup<T extends string>({
             key={opt.key}
             type="button"
             onClick={() => onSelect(opt.key)}
-            className={`px-2.5 sm:px-3 py-1 text-[15px] sm:text-[16px] font-semibold rounded-md cursor-pointer transition-all duration-200 ease-out flex items-center gap-1.5 min-h-[32px] sm:min-h-[34px] ${
+            className={`px-2.5 sm:px-3 py-1 text-[17px] sm:text-[18px] font-semibold rounded-md cursor-pointer transition-all duration-200 ease-out flex items-center gap-1.5 min-h-[34px] sm:min-h-[36px] ${
               isActive
                 ? "bg-brand-deep text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_2px_rgba(10,46,74,0.15),0_2px_6px_-2px_rgba(10,46,74,0.30)]"
                 : "text-ink hover:text-brand-deep hover:bg-white"
@@ -62,7 +62,7 @@ export function FilterSortGroup<T extends string>({
           >
             <span>{opt.label}</span>
             {opt.count !== undefined && (
-              <span className={`text-[14px] font-normal tabular-nums ${isActive ? "text-white/80" : "text-ink-soft"}`}>
+              <span className={`text-[16px] font-normal tabular-nums ${isActive ? "text-white/80" : "text-ink-soft"}`}>
                 ({opt.count})
               </span>
             )}

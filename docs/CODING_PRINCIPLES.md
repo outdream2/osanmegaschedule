@@ -110,6 +110,19 @@
 
 ## 🎨 UI 대원칙
 
+### ⭐ 재강화 · UI 프리미엄 (2026-08-24 사용자 지시)
+- **UI 작업 전 · 항상 UI 대원칙 숙지** · 이 섹션 + memory `feedback_ui_premium_reinforce.md`
+- **UI 프레임워크 프리미티브 · 적극 활용 (필수)** · Card · Modal · GroupedListPanel · SplitListPanel · Badge · StatusPill · IconTile · AccentBar · InlineLabel · PeriodSelector · CategoryChips 등 43+
+- **최신 기술** · React 19 · Tailwind · Pretendard · GPU 가속
+- **최신 인기 디자인** · Linear · Vercel · Notion · Attio 2026 톤
+- **깔끔** · 여백·정렬·통일 · 파스텔 X · 이모지 X · 촌스러움 X
+- **고급** · 딥네이비 accent · 3-layer shadow · frosted backdrop
+- **세련** · 마이크로 인터랙션 · smooth 150ms
+- **멋지게** · 시각적 계층 · 대비 · 강조
+- **초고해상도** · retina · image-rendering
+- **부드러운 UI** · 애니메이션 · scroll · hover 부드럽게
+- 필터식 탭메뉴 · **글씨 +2 기본** (40대+ 가독성)
+
 ### 🎨 UI 목업 파일 기준 (2026-08-23 재강조)
 - 모든 UI 작업 · `docs/UI_MOCKUP_2026-08-21.html` 목업 기준
 - PC · Mobile · 색상 · 타이포 · 간격 · 목업 톤 통일

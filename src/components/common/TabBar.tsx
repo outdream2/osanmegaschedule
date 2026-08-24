@@ -262,7 +262,7 @@ export function TabBar<K extends string = string>({
                   onTouchEnd={dnd?.onTouchEnd}
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
-                    "group inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[14px] sm:text-[15px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight border",
+                    "group inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[16px] sm:text-[17px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight border",
                     // Filter Chip · 활성 = Pine Green 청록톤 (#01796F · Hermès Pine Green · 딥네이비 페어링)
                     active
                       ? "bg-[#01796F] text-white border-[#014A44] font-bold shadow-[0_1px_2px_rgba(1,121,111,0.25)]"
