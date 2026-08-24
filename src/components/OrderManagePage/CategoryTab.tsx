@@ -364,8 +364,9 @@ const ZoneCategoryContent: React.FC = () => {
         <div className={`${CARD_BASE} overflow-hidden flex-1`}>
           <div className="overflow-auto max-h-[55vh]">
             <table className="w-full text-xs sm:min-w-[540px]" style={{ tableLayout: "fixed" }}>
-              <thead className="sticky top-0 bg-zinc-50 border-b-2 border-line z-10 shadow-sm">
-                <tr className="text-[15px] text-zinc-500 uppercase tracking-wider">
+              {/* 2026-08-24 · v3 확산 · thead · bg zinc-100/70 · Attio 톤 · 반응형 폰트 */}
+              <thead className="sticky top-0 bg-zinc-100/70 border-b border-line z-10">
+                <tr className="text-[13px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider">
                   <th className="relative text-left px-1 py-1.5" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
                     #
                     <span {...resizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />

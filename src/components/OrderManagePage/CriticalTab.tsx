@@ -40,7 +40,8 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
       />
       <Card padding="none" clip>
         <table className="w-full text-[14px] tabular-nums">
-          <thead className="bg-zinc-50/80 text-[15px] font-bold text-zinc-500 uppercase tracking-wider border-b border-line">
+          {/* 2026-08-24 · v3 확산 · bg zinc-100/70 · 반응형 폰트 */}
+          <thead className="bg-zinc-100/70 text-[13px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider border-b border-line">
             <tr>
               <th className="text-left px-3 py-2 w-[110px]">공급사</th>
               <th className="text-left px-3 py-2">상품명</th>
