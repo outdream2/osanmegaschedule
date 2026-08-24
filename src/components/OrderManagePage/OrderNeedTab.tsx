@@ -508,30 +508,31 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                     </button>
                   </div>
                 </div>
-                <div className={`max-h-[50vh] overflow-auto relative ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                  <table className="w-full text-[15px] sm:min-w-[540px] [&_tbody_td]:text-[15px]">
-                    <thead className="sticky top-0 bg-white z-10">
-                      {/* 2026-08-24 · 사용자 지시 · 카테고리 그룹 헤더 (상품 정보·재고 현황·발주 액션) 제거 · 서브헤더만 표시 */}
-                      {/* 2026-08-24 · 자율진행 · 색상 bg 제거 · 미니멀 zinc 톤 통일 · 강조는 text 만 */}
-                      <tr className="border-b border-zinc-100 text-[15px] text-zinc-400 uppercase tracking-wider">
+                {/* 2026-08-24 · v3 목업 확산 · 표 형식 · 상단 gradient accent · Attio/Linear 톤 */}
+                <div className={`max-h-[50vh] overflow-auto relative rounded-xl border border-line bg-white ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                  <span aria-hidden className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-20" />
+                  <table className="w-full text-[15px] min-w-[720px] border-collapse [&_tbody_td]:text-[15px] [&_thead_th]:text-[14px]">
+                    <thead className="sticky top-0 z-10">
+                      <tr className="text-zinc-500 uppercase tracking-wider bg-zinc-100/70 border-b border-line">
                         {isNeedCollapsed("info") ? (
-                          <th className="bg-zinc-50/30 w-4"></th>
+                          <th className="w-4"></th>
                         ) : (
                           <>
-                            <th onClick={() => handleNeedSort("supplier")} className="text-left px-1 py-1.5 w-auto whitespace-normal cursor-pointer hover:bg-zinc-50 select-none text-zinc-600">공급사{needArrow("supplier")}</th>
-                            <th onClick={() => handleNeedSort("name")} className="text-left px-1 py-1.5 w-auto whitespace-normal cursor-pointer hover:bg-zinc-50 select-none text-zinc-600">상품명{needArrow("name")}</th>
+                            <th onClick={() => handleNeedSort("supplier")} className="text-left px-3 py-2.5 cursor-pointer hover:bg-zinc-200/60 select-none font-bold" style={{ minWidth: 130 }}>공급사<span className="ml-1 text-zinc-400">{needArrow("supplier") || "⇅"}</span></th>
+                            <th onClick={() => handleNeedSort("name")} className="text-left px-3 py-2.5 cursor-pointer hover:bg-zinc-200/60 select-none font-bold" style={{ minWidth: 240 }}>상품명<span className="ml-1 text-zinc-400">{needArrow("name") || "⇅"}</span></th>
                           </>
                         )}
                         {isNeedCollapsed("stock") ? (
-                          <th className="bg-zinc-50/30 w-4"></th>
+                          <th className="w-4"></th>
                         ) : (
                           <>
-                            <th onClick={() => handleNeedSort("current")} className="text-right px-0.5 py-1.5 w-14 text-zinc-600 cursor-pointer hover:bg-zinc-50 select-none"><div className="leading-tight">ERP<br/>재고{needArrow("current")}<br/><span className="text-[14px] text-zinc-400 font-normal">(현재고)</span></div></th>
-                            <th onClick={() => handleNeedSort("optimal")} className="text-right px-0.5 py-1.5 w-14 text-zinc-600 cursor-pointer hover:bg-zinc-50 select-none"><div className="leading-tight">적정재고{needArrow("optimal")}</div></th>
-                            <th onClick={() => handleNeedSort("short")} className="text-right px-0.5 py-1.5 w-14 text-rose-600 cursor-pointer hover:bg-zinc-50 select-none">부족{needArrow("short")}</th>
+                            <th onClick={() => handleNeedSort("current")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">ERP<span className="ml-1 text-zinc-400">{needArrow("current") || "⇅"}</span></th>
+                            <th onClick={() => handleNeedSort("optimal")} className="text-right px-2 py-2.5 w-16 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">추천<span className="ml-1 text-zinc-400">{needArrow("optimal") || "⇅"}</span></th>
+                            <th onClick={() => handleNeedSort("short")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold text-rose-600">부족<span className="ml-1 text-rose-300">{needArrow("short") || "⇅"}</span></th>
                           </>
                         )}
-                        <th className="text-center px-0.5 py-1.5 w-20 cursor-default text-brand-deep font-bold">발주</th>
+                        {/* 발주 컬럼 · brand-tint 옅게 · 결과 강조 (v3 스펙) */}
+                        <th className="text-center px-2 py-2.5 cursor-default font-bold text-brand-deep bg-brand-tint/50 border-l border-brand/10" style={{ minWidth: 120 }}>발주</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-50">
