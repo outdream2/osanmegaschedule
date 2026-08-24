@@ -5,13 +5,15 @@
 //
 // props · open · onClose · onCreated(code) · authSession(권한 표시용)
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { Package, Save, X } from "lucide-react";
 import { Modal } from "../common/Modal";
 import { Card } from "../common/Card";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { CreateProductSchema, type CreateProductInput } from "../../shared/schemas/products";
+import { useVendors } from "../../hooks/useVendors";
+import { useZoneDefs } from "../../hooks/useZoneDefs";
 
 interface Props {
   open: boolean;
@@ -83,6 +85,50 @@ export const ProductCreateModal: React.FC<Props> = ({
   const [form, setForm] = useState<Form>(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 2026-08-24 · 사용자 지시 · 공급사 검색 autocomplete
+  const { vendors } = useVendors();
+  const [supplierOpen, setSupplierOpen] = useState(false);
+  const supplierWrapRef = useRef<HTMLDivElement | null>(null);
+  const supplierSuggestions = useMemo(() => {
+    const q = form.supplier.trim().toLowerCase();
+    if (!q) return vendors.slice(0, 8);
+    return vendors
+      .filter(v => (v.company_name ?? "").toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [form.supplier, vendors]);
+  // outside click · close dropdown
+  useEffect(() => {
+    if (!supplierOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (supplierWrapRef.current && !supplierWrapRef.current.contains(e.target as Node)) {
+        setSupplierOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [supplierOpen]);
+  // 2026-08-24 · 사용자 지시 · 실제배정구역 검색 autocomplete
+  const { zones } = useZoneDefs();
+  const [zoneOpen, setZoneOpen] = useState(false);
+  const zoneWrapRef = useRef<HTMLDivElement | null>(null);
+  const zoneSuggestions = useMemo(() => {
+    const q = form.real_map.trim().toLowerCase();
+    const all = zones.map(z => ({ label: `${z.num}. ${z.label}`, value: String(z.num), category: z.category }));
+    if (!q) return all.slice(0, 12);
+    return all
+      .filter(z => z.label.toLowerCase().includes(q) || z.value.includes(q) || z.category.toLowerCase().includes(q))
+      .slice(0, 12);
+  }, [form.real_map, zones]);
+  useEffect(() => {
+    if (!zoneOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (zoneWrapRef.current && !zoneWrapRef.current.contains(e.target as Node)) {
+        setZoneOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [zoneOpen]);
 
   // 2026-08-23 · #179 · open + initialCode 변경 시 · 사전 채움 (한 번만)
   React.useEffect(() => {
@@ -115,7 +161,8 @@ export const ProductCreateModal: React.FC<Props> = ({
         category: form.category.trim() || null,
         unit: form.unit.trim() || null,
         spec: form.spec.trim() || null,
-        barcode: form.barcode.trim() || null,
+        // 2026-08-24 · 사용자 지시 · 상품코드 = 바코드 · 자동 동일값 세팅
+        barcode: form.product_code.trim() || null,
         real_map: form.real_map.trim() || null,
         optimal_stock: parseNum(form.optimal_stock),
         sale_price: parseNum(form.sale_price),
@@ -210,9 +257,36 @@ export const ProductCreateModal: React.FC<Props> = ({
             <Card variant="flat" padding="md" rounded="lg" className="bg-white">
               <h3 className="text-[13px] font-bold text-ink mb-2 tracking-tight">분류·공급</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Field label="공급사">
-                  <input type="text" value={form.supplier} onChange={(e) => set("supplier", e.target.value)} className={inputCls} placeholder="예: 코스트팜" maxLength={100} />
-                </Field>
+                {/* 2026-08-24 · 사용자 지시 · 공급사 검색 autocomplete · 입력 시 리스트 · 클릭 선택 */}
+                <div ref={supplierWrapRef} className="relative min-w-0">
+                  <Field label="공급사">
+                    <input
+                      type="text"
+                      value={form.supplier}
+                      onChange={(e) => { set("supplier", e.target.value); setSupplierOpen(true); }}
+                      onFocus={() => setSupplierOpen(true)}
+                      className={inputCls}
+                      placeholder="검색 · 클릭하여 선택"
+                      maxLength={100}
+                      autoComplete="off"
+                    />
+                  </Field>
+                  {supplierOpen && supplierSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-white border border-line rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                      {supplierSuggestions.map(v => (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => { set("supplier", v.company_name ?? ""); setSupplierOpen(false); }}
+                          className="w-full text-left px-3 py-2 text-[13px] font-medium text-ink hover:bg-brand-tint/30 focus:outline-none focus:bg-brand-tint/40 flex items-center gap-2 transition-colors"
+                        >
+                          <span className="truncate">{v.company_name}</span>
+                          {v.category && <span className="ml-auto text-[11px] text-ink-soft shrink-0">{v.category}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <Field label="카테고리">
                   <input type="text" value={form.category} onChange={(e) => set("category", e.target.value)} className={inputCls} placeholder="예: 감기약" maxLength={100} />
                 </Field>
@@ -222,21 +296,44 @@ export const ProductCreateModal: React.FC<Props> = ({
                 <Field label="규격">
                   <input type="text" value={form.spec} onChange={(e) => set("spec", e.target.value)} className={inputCls} placeholder="예: 10정" maxLength={100} />
                 </Field>
-                <Field label="바코드">
-                  <input type="text" value={form.barcode} onChange={(e) => set("barcode", e.target.value)} className={inputCls} placeholder="스캔 or 수동" maxLength={50} />
-                </Field>
-                <Field label="실제배정구역">
-                  <input type="text" value={form.real_map} onChange={(e) => set("real_map", e.target.value)} className={inputCls} placeholder="예: 12번" maxLength={100} />
-                </Field>
+                {/* 2026-08-24 · 사용자 지시 · 상품코드 = 바코드 · 별도 바코드 필드 제거 (submit 시 자동 세팅) */}
+                {/* 2026-08-24 · 사용자 지시 · 실제배정구역 검색 autocomplete · 구역 리스트 · 클릭 선택 */}
+                <div ref={zoneWrapRef} className="relative min-w-0">
+                  <Field label="실제배정구역">
+                    <input
+                      type="text"
+                      value={form.real_map}
+                      onChange={(e) => { set("real_map", e.target.value); setZoneOpen(true); }}
+                      onFocus={() => setZoneOpen(true)}
+                      className={inputCls}
+                      placeholder="구역 번호·이름 검색"
+                      maxLength={100}
+                      autoComplete="off"
+                    />
+                  </Field>
+                  {zoneOpen && zoneSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-white border border-line rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                      {zoneSuggestions.map(z => (
+                        <button
+                          key={z.value}
+                          type="button"
+                          onClick={() => { set("real_map", z.value); setZoneOpen(false); }}
+                          className="w-full text-left px-3 py-2 text-[13px] font-medium text-ink hover:bg-brand-tint/30 focus:outline-none focus:bg-brand-tint/40 flex items-center gap-2 transition-colors"
+                        >
+                          <span className="truncate">{z.label}</span>
+                          <span className="ml-auto text-[11px] text-ink-soft shrink-0">{z.category}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </Card>
 
             <Card variant="flat" padding="md" rounded="lg" className="bg-white">
-              <h3 className="text-[13px] font-bold text-ink mb-2 tracking-tight">가격·재고</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <Field label="적정 재고">
-                  <input type="number" min={0} step={1} value={form.optimal_stock} onChange={(e) => set("optimal_stock", e.target.value)} className={inputCls + " tabular-nums"} placeholder="0" />
-                </Field>
+              <h3 className="text-[13px] font-bold text-ink mb-2 tracking-tight">가격</h3>
+              {/* 2026-08-24 · 사용자 지시 · 적정 재고 · 설정에서 자동 계산 · 신규 등록 폼 제외 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <Field label="판매가">
                   <input type="number" min={0} value={form.sale_price} onChange={(e) => set("sale_price", e.target.value)} className={inputCls + " tabular-nums"} placeholder="0" />
                 </Field>
