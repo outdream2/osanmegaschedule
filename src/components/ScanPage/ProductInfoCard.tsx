@@ -384,7 +384,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 
   return (
     <>
-      <Card padding="none" className="p-3.5">
+      <Card padding="none" topAccent className="p-3.5">
         {/* 상품명 */}
         {S.header && (<>
           {/* 상품명 + 숨기기 버튼 · 좁은 화면에서 버튼이 아래로 내려가도록 flex-wrap */}

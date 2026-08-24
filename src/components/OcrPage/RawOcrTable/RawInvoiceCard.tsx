@@ -105,7 +105,7 @@ export const RawInvoiceCard: React.FC<RawInvoiceCardProps> = ({
   void ocrQtyIdx; void ocrPriIdx; void _discountIdxEarly; void pageDateOverride;
 
   return (
-    <Card variant="raw-sm" rounded="2xl" padding="none" clip className="w-full">
+    <Card variant="raw-sm" rounded="2xl" padding="none" clip topAccent className="w-full">
       <InvoiceCardHeader
         rawRows={rawRows}
         permanentlyDeletedRawRows={permanentlyDeletedRawRows}

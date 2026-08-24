@@ -606,8 +606,8 @@ return (
             </Card>
           )}
 
-          {/* OCR 엔진 선택 · 2-way (AI 모델 · Gemini) */}
-          <Card padding="sm" className="w-full flex flex-col gap-1.5">
+          {/* OCR 엔진 선택 · 2-way (AI 모델 · Gemini) · 2026-08-24 · v9 topAccent */}
+          <Card padding="sm" topAccent className="w-full flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5 text-[15px] font-bold text-zinc-600">
               <span>OCR 엔진</span>
               <span className="text-[14px] font-mono text-zinc-400">
