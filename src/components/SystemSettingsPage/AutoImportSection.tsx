@@ -107,30 +107,28 @@ export const AutoImportSection: React.FC = () => {
     }
   };
 
-  // 2026-08-24 · 개별 파일 다운로드 (zip 압축 대신 · 회귀 안전) · 브라우저 순차 저장
+  // 2026-08-24 · 원클릭 설치 · 단일 .bat 파일 다운로드 · 사용자는 더블클릭 만
   const handleInstallerDownload = async () => {
     setInstallerError(null);
     try {
-      const r = await fetch("/api/auto-import/installer", { credentials: "include" });
+      const r = await fetch("/api/auto-import/one-click-installer", { credentials: "include" });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const j = await r.json() as { files: Array<{ name: string; url: string; size: number }>; dir: string };
-      if (!j.files?.length) throw new Error("파일 목록 없음");
-      for (const f of j.files) {
-        await new Promise((r2) => setTimeout(r2, 350));
-        const a = document.createElement("a");
-        a.href = f.url;
-        a.download = f.name;
-        a.style.display = "none";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "megatown-auto-import-installer.bat";
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
       alert(
-        `${j.files.length}개 파일 다운로드 시작 · Downloads 폴더 확인\n\n` +
-        `다음 단계:\n` +
-        `1. Downloads 에서 · 새 폴더 "${j.dir}" 만들고 7 파일 이동\n` +
-        `2. install.bat 우클릭 → 관리자 권한으로 실행\n` +
-        `3. Python 자동 확인 · config.ini 관리자 credential 입력 (notepad 자동)\n` +
+        `설치 파일 다운로드 완료 · Downloads 폴더 확인\n\n` +
+        `다음 · 단 한번:\n` +
+        `1. Downloads · megatown-auto-import-installer.bat · 더블클릭\n` +
+        `2. Python 확인 → 자동 설치 (Python 없으면 안내 → 설치)\n` +
+        `3. 6단계 자동 완료 · Task Scheduler 등록 · 첫 실행\n` +
         `4. 이 페이지 새로고침 → 상태 초록불 확인`,
       );
     } catch (e) {
@@ -171,10 +169,11 @@ export const AutoImportSection: React.FC = () => {
             <Warning size={18} className="text-amber-600 shrink-0" />
             <div className="text-[15px] font-bold text-amber-900">스크립트 미설치 · 3단계 설치 안내</div>
           </div>
+          {/* 2026-08-24 · 원클릭 설치 · 단일 .bat · 사용자 · 더블클릭 → 자동 */}
           <ol className="text-[14px] text-ink-soft leading-relaxed list-decimal pl-5 space-y-1">
-            <li>[설치 파일 다운로드] 클릭 · <b>7 파일 순차 자동 다운로드</b> (Downloads 폴더)</li>
-            <li>Downloads · 새 폴더 <code className="bg-white px-1.5 py-0.5 rounded text-[12px] border border-line">megatown-auto-import</code> 만들고 · 7 파일 이동</li>
-            <li><code className="bg-white px-1.5 py-0.5 rounded text-[12px] border border-line">install.bat</code> 우클릭 · <b>관리자 권한으로 실행</b> → 자동 (Python 확인·폴더 생성·Task Scheduler 등록·즉시 실행)</li>
+            <li>[설치 파일 다운로드] 클릭 · <code className="bg-white px-1.5 py-0.5 rounded text-[12px] border border-line">megatown-auto-import-installer.bat</code> 다운로드</li>
+            <li>Downloads · <b>더블클릭 실행</b> · 6단계 자동 설치 (Python 확인 · 폴더 생성 · 스크립트 다운로드 · pip install · Task Scheduler 등록 · BASE_URL 설정)</li>
+            <li>완료 · 이 페이지 새로고침 → 상태 초록불 확인</li>
           </ol>
           <div className="flex items-center gap-2 flex-wrap">
             <button
