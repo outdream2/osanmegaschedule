@@ -731,13 +731,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           phone={contactPopover.phone} email={contactPopover.email} onClose={() => setContactPopover(null)} />
       )}
 
-      {/* 공급사 정보 모달 */}
+      {/* 공급사 정보 모달 · 2026-08-24 · 즉시 닫힘 버그 fix · closeOnBackdrop=false */}
       <Modal
         open={!!supplierInfoModal}
         onClose={() => setSupplierInfoModal(null)}
         size="xl"
         showClose={false}
         closeOnEsc={false}
+        closeOnBackdrop={false}
+        bodyPadding="none"
         className="h-[95vh] md:min-h-[85vh] md:max-h-[92vh]"
       >
         {supplierInfoModal && (

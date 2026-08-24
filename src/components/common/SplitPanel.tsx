@@ -94,7 +94,8 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
   storageKey,
   defaultWidth = 288,
   minWidth = 200,
-  maxWidth = 640,
+  // 2026-08-24 · 사용자 지시 · 최대 너비 확장 (640→1200) · 사이드바 앞 여백 · 넓은 화면 UX
+  maxWidth = 1200,
   dividerColor = "indigo",
   left,
   right,
