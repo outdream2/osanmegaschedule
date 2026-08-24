@@ -135,13 +135,12 @@ export const VendorManageSplit: React.FC = () => {
         />
       )}
       <table className="w-full text-left border-collapse">
-          <thead className="sticky top-0 z-10 bg-zinc-50 border-b border-line">
-            <tr>
-              {/* 2026-08-10 · #20 · 분류 컬럼 제거 · 공급사 셀에 [분류][줄바꿈][공급사명] 통합 (사용자 요청) */}
-              {/* 2026-08-10 · 사용자 요청 · 폰트 +1 · 공급사 이름 wrap · 왼쪽 한눈에 · whitespace-normal */}
-              <th className="text-left px-2 sm:px-3 py-2 text-[13px] sm:text-[14px] font-bold min-w-[120px]"><SortTh label="공급사" sk="company_name" /></th>
-              <th className="text-left px-2 sm:px-3 py-2 text-[13px] sm:text-[14px] font-bold w-20 sm:w-24"><SortTh label="담당자" sk="contact_name" /></th>
-              <th className="text-left px-2 sm:px-3 py-2 text-[13px] sm:text-[14px] font-bold w-28 sm:w-36"><SortTh label="전화" sk="phone" /></th>
+          {/* 2026-08-24 · v3 확산 · thead · uppercase 14px · bg zinc-100/70 · Attio 톤 */}
+          <thead className="sticky top-0 z-10 bg-zinc-100/70 border-b border-line">
+            <tr className="text-zinc-500 uppercase tracking-wider">
+              <th className="text-left px-2 sm:px-3 py-2.5 text-[13px] sm:text-[14px] font-bold min-w-[120px]"><SortTh label="공급사" sk="company_name" /></th>
+              <th className="text-left px-2 sm:px-3 py-2.5 text-[13px] sm:text-[14px] font-bold w-20 sm:w-24"><SortTh label="담당자" sk="contact_name" /></th>
+              <th className="text-left px-2 sm:px-3 py-2.5 text-[13px] sm:text-[14px] font-bold w-28 sm:w-36"><SortTh label="전화" sk="phone" /></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
