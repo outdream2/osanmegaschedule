@@ -282,11 +282,13 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                           <React.Fragment key={r.id}>
                             {isNewGroup && (
                               <tr
-                                className="bg-zinc-50 hover:bg-zinc-100/70 border-t border-line sticky top-[42px] z-[5] cursor-pointer transition-colors"
+                                className="border-t border-brand/10 sticky top-[42px] z-[5] cursor-pointer transition-colors"
                                 onClick={() => toggleGroupCollapse(currentSup)}
                                 title={isCollapsed ? "펼치기" : "접기"}
                               >
-                                <td colSpan={99} className="px-3 py-2">
+                                {/* 2026-08-24 · 최신 트렌드 · 세로 accent 제거 · 부드러운 gradient · 상단 hairline
+                                    · bg-gradient-to-b · 미묘한 depth · 위쪽 살짝 진하게 (Attio/Linear 톤) */}
+                                <td colSpan={99} className="px-3 py-2 bg-gradient-to-b from-brand-tint/70 to-brand-tint/40 hover:from-brand-tint hover:to-brand-tint/60 border-b border-brand/10 transition-colors duration-200">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     {/* 2026-08-24 · v3 · caret · 접기/펼치기 */}
                                     <span className={`inline-flex items-center justify-center w-4 text-[11px] text-zinc-400 transition-transform ${isCollapsed ? "-rotate-90" : ""}`}>▾</span>
@@ -294,7 +296,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                     <button
                                       type="button"
                                       onClick={(e) => { e.stopPropagation(); setSupplierHistorySupplier(currentSup); }}
-                                      className="text-[15px] font-bold text-ink hover:text-brand-deep hover:underline cursor-pointer transition-colors"
+                                      className="text-[15px] font-bold text-emerald-700 hover:text-emerald-900 hover:underline cursor-pointer transition-colors"
                                       title="공급사 클릭 · 최신 발주이력 보기"
                                     >
                                       {displayVendorName(currentSup) || currentSup}
