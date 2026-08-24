@@ -75,7 +75,19 @@
 - 🔲 최상위 그룹 자동 확장 · highlightId 스크롤
 - 💡 관련 파일 · `src/components/OrderManagePage/PurchaseHistoryTab.panels.tsx` · ByVendorPanel
 
-### #258 · 발주 리스트 · 프리미엄 UI 재설계 + 프레임워크화 (신규 · 2026-08-24 · 사용자 지시)
+### #260 · SplitLeftHeader 프리미티브 신설 (신규 · 2026-08-24 · 사용자 지시)
+- ✅ Phase 1 · `src/components/common/SplitLeftHeader.tsx` 신설 (7 tests)
+  · AccentBar + icon + title + right + subtitle · withBorder 옵션
+  · 폰트 +2 (text-[17px]) · role=heading aria-level=2
+- ✅ Phase 2 · ResignationWriterPage 좌·우 헤더 적용
+- 🔲 Phase 3 · ContractWriterPage · PharmacistPage · 기타 확산 (선택)
+
+### #258 · 발주 리스트 · 프리미엄 UI 재설계 + 프레임워크화 (Phase 1 ✅ · Phase 2 지연)
+- ✅ Phase 1 · GroupedListPanel 프리미티브 신설 · 6 tests (`[grouped]`)
+- ⏸ Phase 2 · OrderRequestTab 적용 · **지연** · 대형 table 구조 · 카드 기반 GroupedListPanel 로 변환 시 컬럼 정렬 손실 · 별도 세션 (사용자 승인 후)
+- 향후 · GroupedListPanel 은 다른 그룹형 리스트 (발주이력·매입 등)에 확산
+
+### #258-원본스펙 (신규 · 2026-08-24 · 사용자 지시)
 
 **대상**: 발주요청 페이지 · 우측 발주 리스트 (12건 예시)
 - 공급사별 그룹 (동아제약 · 박카스 · 신신제약 등)
