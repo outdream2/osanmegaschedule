@@ -259,29 +259,9 @@ export const DiffTab: React.FC = () => {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs sm:min-w-[280px]" style={{ tableLayout: "fixed" }}>
+                    {/* 2026-08-24 · v3 확산 · 카테고리 그룹 헤더 제거 · 서브헤더만 · Attio 톤 */}
                     <thead className="sticky top-0 z-10">
-                      {/* 카테고리 그룹 헤더 (1단) · 2026-08-06 · 상품·공급사·ERP·실재고·손실·가격 */}
-                      <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-line">
-                        <th colSpan={3} className="bg-zinc-50 text-zinc-400 text-left px-2 py-1.5">기본정보</th>
-                        <th className="bg-zinc-100/60 text-zinc-500 text-right px-2 py-1.5 cursor-pointer select-none hover:bg-zinc-200/60 transition"
-                          onClick={() => toggleDiffGroup("erp")}
-                          title={isDiffGroupCollapsed("erp") ? "ERP재고 펼치기" : "ERP재고 접기"}>
-                          <span className="inline-flex items-center gap-1 justify-end">
-                            {isDiffGroupCollapsed("erp") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}ERP재고
-                          </span>
-                        </th>
-                        <th className="bg-violet-50 text-violet-600 text-right px-2 py-1.5 cursor-pointer select-none hover:bg-violet-100 transition"
-                          onClick={() => toggleDiffGroup("actual")}
-                          title={isDiffGroupCollapsed("actual") ? "실재고 펼치기" : "실재고 접기"}>
-                          <span className="inline-flex items-center gap-1 justify-end">
-                            {isDiffGroupCollapsed("actual") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}실재고
-                          </span>
-                        </th>
-                        <th className="bg-rose-100 text-rose-700 text-right px-2 py-1.5">손실</th>
-                        <th colSpan={2} className="bg-amber-50 text-amber-700 text-right px-2 py-1.5">가격</th>
-                      </tr>
-                      {/* 컬럼 헤더 (2단) · 리사이즈 지원 */}
-                      <tr className="border-b border-zinc-100 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider bg-white">
+                      <tr className="border-b border-line text-[13px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider bg-zinc-100/70">
                         <th className="relative text-left px-2 py-1.5" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
                           #
                           <span {...resizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
