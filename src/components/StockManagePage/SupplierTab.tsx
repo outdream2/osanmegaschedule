@@ -479,38 +479,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         ) : (
           <table className={`w-full text-[15px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ borderCollapse: "separate", borderSpacing: 0 }}>
             <thead className="sticky top-0 z-10">
-              {/* 2026-08-24 · 매입이력 embedded · 그룹 헤더 (기본정보·재고현황·매입현황·판매현황) 제거 · 서브헤더만 표시 */}
-              {!embedded && (
-              <tr className="text-[14px] font-semibold uppercase tracking-wider border-b border-line">
-                <th colSpan={3} className="bg-zinc-50 text-zinc-400 text-left px-3 py-1.5">기본정보</th>
-                <th colSpan={isSupplierGroupCollapsed("stock") ? 1 : 2}
-                  className="bg-sky-50 text-sky-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-sky-100 transition"
-                  onClick={() => toggleSupplierGroup("stock")}
-                  title={isSupplierGroupCollapsed("stock") ? "재고현황 펼치기" : "재고현황 접기"}>
-                  <span className="inline-flex items-center gap-1">
-                    {isSupplierGroupCollapsed("stock") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}재고현황
-                  </span>
-                </th>
-                <th colSpan={isSupplierGroupCollapsed("purchase") ? 1 : (1 + (showExtraPurchaseColumns ? 1 : 0) + (showCycleColumn ? 1 : 0))}
-                  className="bg-amber-50 text-amber-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-amber-100 transition"
-                  onClick={() => toggleSupplierGroup("purchase")}
-                  title={isSupplierGroupCollapsed("purchase") ? "매입현황 펼치기" : "매입현황 접기"}>
-                  <span className="inline-flex items-center gap-1">
-                    {isSupplierGroupCollapsed("purchase") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}매입현황
-                  </span>
-                </th>
-                {!hideSaleColumns && (
-                  <th colSpan={isSupplierGroupCollapsed("sale") ? 1 : 2}
-                    className="bg-rose-50 text-rose-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-rose-100 transition"
-                    onClick={() => toggleSupplierGroup("sale")}
-                    title={isSupplierGroupCollapsed("sale") ? "판매현황 펼치기" : "판매현황 접기"}>
-                    <span className="inline-flex items-center gap-1">
-                      {isSupplierGroupCollapsed("sale") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}판매현황
-                    </span>
-                  </th>
-                )}
-              </tr>
-              )}
+              {/* 2026-08-24 · 사용자 지시 · 카테고리 그룹 헤더 (기본정보·재고현황·매입현황·판매현황) 전체 제거 · 서브헤더만 표시 */}
               {/* 서브 헤더 · 리사이즈 지원 */}
               <tr className="text-[15px] font-semibold text-zinc-500 border-b border-line bg-white">
                 <th className="relative text-center py-2" style={{ width: getWidth("toggle"), minWidth: getWidth("toggle") }}>

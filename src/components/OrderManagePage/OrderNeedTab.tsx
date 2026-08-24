@@ -511,25 +511,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                 <div className={`max-h-[50vh] overflow-auto relative ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                   <table className="w-full text-[15px] sm:min-w-[540px] [&_tbody_td]:text-[15px]">
                     <thead className="sticky top-0 bg-white z-10">
-                      <tr className="border-b border-line text-[14px] font-bold uppercase tracking-wider">
-                        <th colSpan={isNeedCollapsed("info") ? 1 : 2}
-                          className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-zinc-100 cursor-pointer select-none hover:bg-sky-100 transition"
-                          onClick={() => toggleNeedGroup("info")}
-                          title={isNeedCollapsed("info") ? "상품 정보 펼치기" : "상품 정보 접기"}>
-                          <span className="inline-flex items-center gap-1">
-                            {isNeedCollapsed("info") ? <ChevronRight size={14} /> : <ChevronDown size={14} />}상품 정보
-                          </span>
-                        </th>
-                        <th colSpan={isNeedCollapsed("stock") ? 1 : 3}
-                          className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-zinc-100 cursor-pointer select-none hover:bg-amber-100 transition"
-                          onClick={() => toggleNeedGroup("stock")}
-                          title={isNeedCollapsed("stock") ? "재고 현황 펼치기" : "재고 현황 접기"}>
-                          <span className="inline-flex items-center gap-1">
-                            {isNeedCollapsed("stock") ? <ChevronRight size={14} /> : <ChevronDown size={14} />}재고 현황
-                          </span>
-                        </th>
-                        <th className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-zinc-100">발주 액션</th>
-                      </tr>
+                      {/* 2026-08-24 · 사용자 지시 · 카테고리 그룹 헤더 (상품 정보·재고 현황·발주 액션) 제거 · 서브헤더만 표시 */}
                       <tr className="border-b border-zinc-100 text-[15px] text-zinc-400 uppercase tracking-wider">
                         {isNeedCollapsed("info") ? (
                           <th className="bg-sky-50/20 w-4"></th>

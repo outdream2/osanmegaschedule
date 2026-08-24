@@ -176,28 +176,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
               <div className={`max-h-[50vh] lg:max-h-[75vh] overflow-auto relative ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 <table className="w-full text-[15px] sm:min-w-[540px] [&_tbody_td]:text-[15px] [&_thead_th]:text-[14px]">
                   <thead className="sticky top-0 bg-white z-10">
-                    <tr className="border-b border-line text-[14px] font-bold uppercase tracking-wider">
-                      <th className="bg-zinc-50 w-6"></th>
-                      <th colSpan={1}
-                        className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-zinc-100 cursor-pointer select-none hover:bg-sky-100 transition"
-                        onClick={() => toggleOrderGroup("info")}
-                        title={isOrderGroupCollapsed("info") ? "상품 정보 펼치기" : "상품 정보 접기"}>
-                        <span className="inline-flex items-center gap-1">
-                          {isOrderGroupCollapsed("info") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}상품 정보
-                        </span>
-                      </th>
-                      <th colSpan={isOrderGroupCollapsed("stock") ? 1 : 3}
-                        className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-zinc-100 cursor-pointer select-none hover:bg-amber-100 transition"
-                        onClick={() => toggleOrderGroup("stock")}
-                        title={isOrderGroupCollapsed("stock") ? "재고 현황 펼치기" : "재고 현황 접기"}>
-                        <span className="inline-flex items-center gap-1">
-                          {isOrderGroupCollapsed("stock") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}재고 현황
-                        </span>
-                      </th>
-                      <th colSpan={3} className="text-center py-1.5 bg-rose-50 text-rose-700 border-l border-zinc-100">
-                        <span className="inline-flex items-center gap-1">발주 정보</span>
-                      </th>
-                    </tr>
+                    {/* 2026-08-24 · 사용자 지시 · 카테고리 그룹 헤더 (상품 정보·재고 현황·발주 정보) 제거 · 서브헤더만 표시 */}
                     <tr className="border-b border-zinc-100 text-[15px] text-zinc-400 uppercase tracking-wider">
                       <th className="text-center px-0.5 py-1.5 w-6">
                         <button onClick={toggleAll}
