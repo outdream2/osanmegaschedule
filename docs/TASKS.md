@@ -83,6 +83,12 @@
   · heartbeat 응답에 `applied_interval` 포함 · 웹 UI · "다음 예정 · X시 Y분" 실시간 표시
 - **인증 · 배포** · 관리자 lv9 만 · 설치·설정·다운로드·수동실행·제거 모두
 - **배포 형식** · PyInstaller `.exe` (Python 설치 불필요)
+- **인증 방식 확정** (2026-08-24) · 웹 로그인 세션 기반
+  · 다운로드 시 · 서버 authorize(9) 검증 통과 → refresh token 발급 → config.ini embed → zip
+  · Python · refresh token 으로 매 실행마다 access token 갱신 (POST /api/auth/refresh)
+  · 관리자 lv9 아니면 · 다운로드 자체 403 (자연스러운 게이트)
+- **xlsx 파싱 확정** (2026-08-24) · 현재 서버 임포트 방식 그대로 재사용 · Python 은 파일 relay + rename 만
+- **웹 UI 위치 확정** (2026-08-24) · SystemSettingsPage 신규 탭 "자동 임포트" 추가
 
 **아키텍처** · Hybrid (서버 KV config + 로컬 Python 스크립트):
 - 서버 KV `auto_import_config` · enabled · folders · interval_minutes · after_import
