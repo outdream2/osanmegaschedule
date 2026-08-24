@@ -172,9 +172,9 @@ export const AutoImportSection: React.FC = () => {
             <div className="text-[15px] font-bold text-amber-900">스크립트 미설치 · 3단계 설치 안내</div>
           </div>
           <ol className="text-[14px] text-ink-soft leading-relaxed list-decimal pl-5 space-y-1">
-            <li>[설치 파일 다운로드] 클릭 · <b>megatown-auto-import.zip</b> 저장 (관리자 PC)</li>
-            <li>압축 해제 · <code className="bg-white px-1.5 py-0.5 rounded text-[12px] border border-line">install.bat</code> 우클릭 · <b>관리자 권한으로 실행</b></li>
-            <li>자동 · 폴더 4개 생성 (Downloads 하위) · Task Scheduler 등록 · 즉시 1회 실행</li>
+            <li>[설치 파일 다운로드] 클릭 · <b>7 파일 순차 자동 다운로드</b> (Downloads 폴더)</li>
+            <li>Downloads · 새 폴더 <code className="bg-white px-1.5 py-0.5 rounded text-[12px] border border-line">megatown-auto-import</code> 만들고 · 7 파일 이동</li>
+            <li><code className="bg-white px-1.5 py-0.5 rounded text-[12px] border border-line">install.bat</code> 우클릭 · <b>관리자 권한으로 실행</b> → 자동 (Python 확인·폴더 생성·Task Scheduler 등록·즉시 실행)</li>
           </ol>
           <div className="flex items-center gap-2 flex-wrap">
             <button
