@@ -65,16 +65,36 @@
 
 ---
 
-## 🔥 활성 (진행중 / 대기)
+## 🔥 활성 (진행중 / 대기 · 2026-08-24 세션 정리)
 
-### #262 · 통계 서브탭 · 검색창 리스트 위 기본 배치 (신규 · 2026-08-24 · 사용자 지시)
-- 🎯 대상 · 통계 메뉴 서브탭 · 매입관리 페이지 (trending · category · flow · supplier · diff)
-- 🎯 요구 · Split 왼쪽 리스트 위에 **검색창 기본 표시**
-  · 이미 있으면 → 리스트 위쪽으로 위치 이동
-  · 없으면 → 신설 (SplitListPanel filterExtras 슬롯 등)
-- 🔲 조사 완료 시점 · SupplierTab 만 SplitPanel 사용 · 나머지는 리스트/차트형
-- 🔲 검토 · SupplierTab · 현재 검색창 위치 · 이동 필요 여부 확인
-- 🔲 확산 · 다른 서브탭 (trending 등) · SplitPanel 아니면 스킵
+### 🎯 대형 · #263 · List UI Framework · 목업 기준 재설계 (신규 · 2026-08-24 · 사용자 지시 · 진행중)
+- **요구** · 깔끔·세련·멋짐·고급·초고해상도·최신 트렌드로 리스트 UI 신설
+- **범위 (사용자 지시 누적)**:
+  - ① Split 왼쪽 리스트들의 UI 를 목업디자인 기준으로 재작업
+  - ② 랜딩페이지 입고리스트를 목업리스트로 적용
+  - ③ 프레임워크화 (재사용 가능한 primitive)
+- **참조** · `docs/UI_MOCKUP_2026-08-21.html` · Linear · Vercel · Notion · Attio 2026
+- 🔲 Phase 1 · MockupListRow / MockupListItem 프리미티브 신설 · common/*
+- 🔲 Phase 2 · 랜딩페이지 입고리스트 적용
+- 🔲 Phase 3 · Split 왼쪽 리스트 확산 · SupplierTab · ByProductPanel · VendorManageSplit · ProductInfoPage · PaymentInfoTab
+- 🔲 Phase 4 · unit tests · 시각 검증
+
+### #262 · SplitListPanel · 검색창 상단 필수 · 대원칙 등록 (✅ 완료 · 2026-08-24)
+- ✅ SupplierTab · 검색창 추가 (SplitListPanel search prop)
+- ✅ ByProductPanel · custom → built-in search 이관
+- ✅ PaymentInfoTab · 동일 이관
+- ✅ 대원칙 등록 · `docs/CODING_PRINCIPLES.md` · memory `feedback_splitlist_search_required.md`
+- ✅ 커밋 · `5e68a4b6` · `9a065899` · `f54c927a`
+
+### #264 · 발주 액션 버튼 · 최신 트렌드 UI (신규 · 2026-08-24 · 사용자 지시)
+- ✅ Round 1 · 3 버튼 (커밋 `cdb6d00c`)
+  · OrderNeedTab 일괄 발주요청 · OrderRequestTab 일괄 발주 · OrderModal 발주 발송
+  · Linear/Vercel gradient · shadow · ring · scale · rounded-lg · font +2
+- 🔲 Round 2 · 나머지 15-25 버튼 자동 스캔·일괄 (사용자 확인 후 착수)
+
+### #265 · 매입이력 embedded · 카테고리 필터 숨김 (✅ 완료 · 2026-08-24)
+- ✅ SupplierTab · embedded=true 시 분류 chip 감춤 (커밋 `d584e0e9`)
+- ✅ 정렬 chip 은 유지 · 통계 화면은 기존대로
 
 ### #261 · SplitRight 프리미티브 · 폰트 +2 프레임워크 (2026-08-24)
 - ✅ SplitLeftHeader · 폰트 +2 (17→19px · subtitle 13→15px · AccentBar h 17→19)
@@ -83,18 +103,21 @@
 - 🔲 SplitRightLoading · Spinner + label 공용
 - 🔲 SplitRightError · 오류 카드 공용
 - 🔲 TabBar 폰트 +2 확산
-- 🔲 목업 참조 · `docs/UI_MOCKUP_2026-08-21.html` 톤 적용 (Linear·Vercel 딥네이비)
 
 ### 계산 회귀 fix (완료 · 2026-08-24)
-- ✅ ProductDetailPanel · 월평균 판매 라벨 "최근6개월 월평균" 로 명확화 (커밋 `94f48021`)
-- ✅ 발주내역 탭 · lookupProduct 동기 함수 · await/.catch 오용 fix (커밋 `4bf256b7`)
+- ✅ ProductDetailPanel · 월평균 판매 라벨 "최근6개월 월평균" (커밋 `94f48021`)
+- ✅ 발주내역 탭 · lookupProduct 동기 함수 · await/.catch 오용 (커밋 `4bf256b7`)
 - ✅ 급상승 상품 클릭 · ProductDetailModal 오픈 wiring (커밋 `1ca5f399`)
 
 ### #178 · 공급사정보 SQL + 데이터 (2026-08-24)
-- ✅ `sql/migrations/2026-08-24_vendor_order_methods.sql` · 사용자 SQL Editor 실행 완료
-- ✅ VendorInfoHeader · 5 xlsx 필드 표시 (order_method · region · invoice_method · order_status)
-- 🔲 special_notes · 경고 배너 (후속)
+- ✅ `sql/migrations/2026-08-24_vendor_order_methods.sql` · 실행 완료
+- ✅ VendorInfoHeader · 5 xlsx 필드 표시
+- 🔲 special_notes · 경고 배너
 - 🔲 tests 추가
+
+### 조사·확인 대기 (사용자 답변 필요)
+- 🔲 급상승리스트 · 최근 30일 데이터 없을 시 · "데이터 없음" 배너 추가할지 결정
+- 🔲 적정재고 컬럼값 · 설정값이 잘 들어가는지 조사·보고 (요청됨 · 착수 대기)
 
 ### #259 · 매입이력 공급사별 · 상품 확장 기능 복원 (신규 · 2026-08-24 · 사용자 지시)
 - 📄 회귀 · 이전 (커밋 `83d5bab5`) · 매입일 그룹 + 화살표 확장 UX 존재
