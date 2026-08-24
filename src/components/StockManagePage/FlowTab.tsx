@@ -514,33 +514,7 @@ export const FlowTab: React.FC = () => {
                             </td>
                           </tr>
                         )}
-                        {/* 그룹 헤더 */}
-                        <tr className="border-b border-line text-[14px] font-bold tracking-wider">
-                          <th colSpan={2} className="bg-zinc-50" />
-                          {(() => {
-                            const GROUP_COLOR: Record<FlowGroup, { bg: string; text: string; hover: string }> = {
-                              stock: { bg: "bg-sky-50", text: "text-sky-700", hover: "hover:bg-sky-100" },
-                              purchase: { bg: "bg-amber-50", text: "text-amber-700", hover: "hover:bg-amber-100" },
-                              sales: { bg: "bg-rose-50", text: "text-rose-700", hover: "hover:bg-rose-100" },
-                            };
-                            const groupHeader = (g: FlowGroup, label: string, span: number) => {
-                              const collapsed = isFlowGroupCollapsed(g);
-                              const c = GROUP_COLOR[g];
-                              return (
-                                <th key={g} colSpan={collapsed ? 1 : span}
-                                  className={`text-center py-2 border-l border-r border-zinc-100 cursor-pointer select-none transition uppercase ${c.bg} ${c.text} ${c.hover}`}
-                                  onClick={() => toggleFlowGroup(g)}
-                                  title={collapsed ? `${label} 펼치기` : `${label} 접기`}>
-                                  <span className="inline-flex items-center gap-1 font-bold text-[15px] whitespace-nowrap">
-                                    {collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-                                    {label}
-                                  </span>
-                                </th>
-                              );
-                            };
-                            return (<>{groupHeader("stock", "재고현황", 4)}{groupHeader("purchase", "매입현황", 3)}{groupHeader("sales", "판매현황", 5)}</>);
-                          })()}
-                        </tr>
+                        {/* 2026-08-24 · 사용자 지시 · 카테고리 그룹 헤더 (재고현황·매입현황·판매현황) 제거 · 서브헤더만 표시 */}
                         {/* 서브헤더 */}
                         <tr className="border-b border-zinc-100 text-[15px] font-bold text-zinc-500 uppercase tracking-wider bg-white">
                           {(() => {
