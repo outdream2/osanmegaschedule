@@ -180,23 +180,40 @@
   tr.data.selected .check-box{ background:var(--accent); border-color:var(--accent); }
   tr.data.selected .check-box::after{ content:"✓"; color:#FFF; font-size:10px; font-weight:900; }
 
-  /* Stepper · 컴팩트 · 표 안 */
+  /* 주문수량 컬럼 · accent 컬러 tint · 사용자 지시 (2026-08-24) */
+  thead th.qty-col{
+    background:linear-gradient(180deg, rgba(37,99,235,.08), rgba(37,99,235,.05));
+    color:var(--accent);
+    border-bottom-color:rgba(37,99,235,.2);
+  }
+  thead th.qty-col:hover{ background:linear-gradient(180deg, rgba(37,99,235,.12), rgba(37,99,235,.08)); }
+  tbody tr.data td.qty-col{
+    background:rgba(37,99,235,.03);
+  }
+  tbody tr.data:hover td.qty-col{ background:rgba(37,99,235,.06); }
+  tbody tr.data.selected td.qty-col{ background:rgba(37,99,235,.09); }
+
+  /* Stepper · 주문수량 · accent 톤 · 활성 강조 */
   .stepper{
     display:inline-flex; align-items:center;
-    background:var(--surface); border:1px solid var(--line); border-radius:6px;
-    overflow:hidden; height:26px;
+    background:var(--surface); border:1.5px solid rgba(37,99,235,.25); border-radius:7px;
+    overflow:hidden; height:28px;
+    box-shadow:0 0 0 3px rgba(37,99,235,.06);
+    transition:all .12s;
   }
-  .stepper:hover{ border-color:var(--ink-2); }
+  .stepper:hover{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+  .stepper:focus-within{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(37,99,235,.15); }
   .stepper button{
-    width:22px; height:100%; border:0; background:transparent;
-    font-size:13px; color:var(--ink-2); cursor:pointer; font-weight:700;
+    width:24px; height:100%; border:0; background:transparent;
+    font-size:14px; color:var(--accent); cursor:pointer; font-weight:800;
   }
-  .stepper button:hover{ color:var(--ink); background:rgba(17,24,39,.04); }
+  .stepper button:hover{ color:#1D4ED8; background:rgba(37,99,235,.08); }
   .stepper input{
-    width:52px; height:100%; border:0;
-    border-left:1px solid var(--line); border-right:1px solid var(--line);
-    text-align:center; font-size:14px; font-weight:700; color:var(--ink);
+    width:56px; height:100%; border:0;
+    border-left:1px solid rgba(37,99,235,.15); border-right:1px solid rgba(37,99,235,.15);
+    text-align:center; font-size:15px; font-weight:800; color:var(--accent);
     font-variant-numeric:tabular-nums; outline:none; background:transparent;
+    letter-spacing:-.01em;
   }
 
   /* Last row · no border */
@@ -241,7 +258,7 @@
           <th class="num" style="width:8%;">ERP<span class="sort">⇅</span></th>
           <th class="num" style="width:8%;">추천<span class="sort">⇅</span></th>
           <th class="num" style="width:10%;">부족<span class="sort">⇅</span></th>
-          <th class="center" style="width:14%;">주문수량</th>
+          <th class="center qty-col" style="width:14%;">주문수량</th>
           <th class="num" style="width:10%;">단가</th>
           <th class="num" style="width:14%;">발주금액<span class="sort">▼</span></th>
         </tr>
@@ -263,7 +280,7 @@
           <td class="num">−16,987</td>
           <td class="num">3,625</td>
           <td class="num short">20,612</td>
-          <td class="center"><div class="stepper"><button>−</button><input value="20612" /><button>+</button></div></td>
+          <td class="center qty-col"><div class="stepper"><button>−</button><input value="20612" /><button>+</button></div></td>
           <td class="num">-</td>
           <td class="amount zero">-</td>
         </tr>
@@ -284,7 +301,7 @@
           <td class="num">1,006</td>
           <td class="num">2,186</td>
           <td class="num short">1,180</td>
-          <td class="center"><div class="stepper"><button>−</button><input value="1180" /><button>+</button></div></td>
+          <td class="center qty-col"><div class="stepper"><button>−</button><input value="1180" /><button>+</button></div></td>
           <td class="num">2,475</td>
           <td class="amount">2,920,500</td>
         </tr>
@@ -294,7 +311,7 @@
           <td class="num">158</td>
           <td class="num">841</td>
           <td class="num short">683</td>
-          <td class="center"><div class="stepper"><button>−</button><input value="683" /><button>+</button></div></td>
+          <td class="center qty-col"><div class="stepper"><button>−</button><input value="683" /><button>+</button></div></td>
           <td class="num">2,970</td>
           <td class="amount">2,028,510</td>
         </tr>
@@ -315,7 +332,7 @@
           <td class="num">508</td>
           <td class="num">4,660</td>
           <td class="num short">4,152</td>
-          <td class="center"><div class="stepper"><button>−</button><input value="4152" /><button>+</button></div></td>
+          <td class="center qty-col"><div class="stepper"><button>−</button><input value="4152" /><button>+</button></div></td>
           <td class="num">5,610</td>
           <td class="amount">23,292,720</td>
         </tr>
@@ -325,7 +342,7 @@
           <td class="num">1,507</td>
           <td class="num">2,082</td>
           <td class="num short">575</td>
-          <td class="center"><div class="stepper"><button>−</button><input value="575" /><button>+</button></div></td>
+          <td class="center qty-col"><div class="stepper"><button>−</button><input value="575" /><button>+</button></div></td>
           <td class="num">693</td>
           <td class="amount">398,475</td>
         </tr>
