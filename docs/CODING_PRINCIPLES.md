@@ -48,7 +48,7 @@
 | `PageToolbar` | icon + title + count + search + right slot (필터·액션) | 페이지 최상단 툴바 |
 | `AccentBar` | 좌측 accent 3px bar | 제목 앞 accent |
 | `SplitPanel` | 좌우 리사이저 (useResizablePanel 내장) | 마스터-디테일 |
-| `SplitListPanel` | 마스터 좌측 리스트 (toolbar + list + loading/empty/error) | 좌측 리스트 |
+| `SplitListPanel` | 마스터 좌측 리스트 (toolbar + list + loading/empty/error) · **🔥 search prop 필수** | 좌측 리스트 |
 | `CollapseCard` | 접기/펴기 카드 | 접기 UI |
 | `KpiCard` | KPI 지표 카드 | 통계 지표 |
 | `CategoryChips` | 카테고리 chip 선택 | 필터 |
@@ -137,6 +137,13 @@
 ### UI 변경 시 · 기능 절대 유지
 - className 만 조정 · props · state · handler · API 시그니처 절대 변경 X
 - 참고 · `.claude/memory/feedback_ui_only_no_func_change.md` · `feedback_framework_untouchable.md`
+
+### 🔍 SplitListPanel · 검색창 상단 필수 (2026-08-24 · #262 · 사용자 지시)
+- `SplitListPanel` 를 쓰는 **모든 곳** · 반드시 `search` + `onSearchChange` prop 세팅
+- 검색창 · 리스트 위쪽에 항상 표시 (프리미티브가 자동 · 상단 헤더 2행)
+- `filters` 슬롯 안에 커스텀 `<input>` 넣기 **금지** · built-in props 사용
+- placeholder · 도메인 명확화 (예: "공급사명 · 코드 검색")
+- 참고 · `.claude/memory/feedback_splitlist_search_required.md` · `src/components/common/SplitListPanel.tsx` 파일 상단 대원칙
 
 ---
 
