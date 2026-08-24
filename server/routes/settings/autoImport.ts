@@ -4,6 +4,8 @@
 //   · Python 스크립트는 매 실행마다 config 조회 · heartbeat 리포트
 //   · installer zip 다운로드 endpoint 는 Phase C (PyInstaller 빌드 후)
 import { Router } from "express";
+import fs from "fs";
+import path from "path";
 import { supabase } from "../../../src/supabase/client";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { authorize } from "../../middleware/requireAuth";
@@ -109,12 +111,10 @@ router.get("/api/auto-import/status", authorize(9), asyncHandler(async (_req, re
 /**
  * GET /api/auto-import/installer · 설치 파일 개별 스트림
  *   · 7 파일 · scripts/auto_import/* · 클라이언트가 개별 다운로드
- *   · zip 은 브라우저에서 JSZip 으로 묶거나 · 개별 저장 · Phase C
- *   · 현재 · 파일 목록만 반환 · 클라가 /api/auto-import/installer/file?name= 로 개별 조회
+ *   · 파일 목록만 반환 · 클라가 /api/auto-import/installer/file?name= 로 개별 조회
  */
-import fs from "fs";
-import path from "path";
-
+// __dirname resolve · scripts 폴더 (프로젝트 루트 기준)
+// tsx 실행 시 · 이 파일은 server/routes/settings/autoImport.ts · scripts/ 는 3 depth 위
 const INSTALLER_DIR = path.resolve(__dirname, "../../../scripts/auto_import");
 const INSTALLER_FILES = [
   "auto_import.py",
