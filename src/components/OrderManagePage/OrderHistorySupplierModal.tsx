@@ -13,6 +13,8 @@ import { PeriodSelector } from "../common/PeriodSelector";
 import { InlineLabel } from "../common/InlineLabel";
 import { EmptyState } from "../common/EmptyState";
 import { Card } from "../common/Card";
+// 2026-08-24 · v3 리스트 UI 프레임워크 · 헬퍼
+import { tableHeadCls, tableThCls, tableTdCls } from "../common";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-23 · #178 Phase F · 공급사 special_notes 경고 배너
@@ -207,22 +209,23 @@ export const OrderHistorySupplierModal: React.FC<Props> = ({ supplier, onClose }
                     </button>
                     {isOpen && (
                       <div className="px-3 pb-3">
-                        <table className="w-full text-[13px]">
-                          <thead>
-                            <tr className="text-[12px] text-zinc-500 border-b border-line">
-                              <th className="text-left py-1.5 font-semibold">상품</th>
-                              <th className="text-right py-1.5 font-semibold w-20">수량</th>
-                              <th className="text-right py-1.5 font-semibold w-24">단가</th>
-                              <th className="text-right py-1.5 font-semibold w-24">금액</th>
+                        {/* 2026-08-24 · v3 · 헬퍼 · 줄바꿈 우선 */}
+                        <table className="w-full text-[14px]">
+                          <thead className={tableHeadCls()}>
+                            <tr>
+                              <th className={tableThCls("left", "min-w-[200px]")}>상품</th>
+                              <th className={tableThCls("num", "w-20 bg-sky-50/60")}>수량</th>
+                              <th className={tableThCls("num", "w-24")}>단가</th>
+                              <th className={tableThCls("num", "w-24 bg-brand-tint/50")}>금액</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-zinc-50">
                             {o.items.map((it, i) => (
-                              <tr key={`${key}-${it.product_code}-${i}`} className="hover:bg-white/60">
-                                <td className="py-1.5 text-ink">{it.product_name}</td>
-                                <td className="py-1.5 text-right tabular-nums text-ink">{it.order_qty}</td>
-                                <td className="py-1.5 text-right tabular-nums text-ink-soft">{fmtWon(it.unit_price)}</td>
-                                <td className="py-1.5 text-right tabular-nums font-semibold text-brand-deep">{fmtWon(it.line_amount)}</td>
+                              <tr key={`${key}-${it.product_code}-${i}`} className="hover:bg-sky-50/30">
+                                <td className={tableTdCls("left", "text-ink whitespace-normal break-words")}>{it.product_name}</td>
+                                <td className={tableTdCls("num", "text-ink font-bold bg-sky-50/60")}>{it.order_qty}</td>
+                                <td className={tableTdCls("num", "text-ink-soft")}>{fmtWon(it.unit_price)}</td>
+                                <td className={tableTdCls("num", "font-bold text-brand-deep bg-brand-tint/50")}>{fmtWon(it.line_amount)}</td>
                               </tr>
                             ))}
                           </tbody>
