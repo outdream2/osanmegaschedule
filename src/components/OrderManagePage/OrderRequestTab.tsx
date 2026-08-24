@@ -269,7 +269,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                         return (
                           <React.Fragment key={r.id}>
                             {isNewGroup && (
-                              <tr className="bg-sky-50/40 border-t border-sky-200 sticky top-[38px] z-[5]">
+                              <tr className="bg-brand-tint/40 border-t border-brand/15 sticky top-[38px] z-[5]">
                                 <td colSpan={99} className="px-3 py-0.5">
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <VendorCategoryBadge category={getVendorCategory(currentSup)} />
@@ -310,14 +310,14 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                 </td>
                               </tr>
                             )}
-                            <tr className={`transition ${selectedOrder.has(r.id) ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
+                            <tr className={`transition ${selectedOrder.has(r.id) ? "bg-brand-tint/50" : "hover:bg-brand-tint/25"}`}>
                               <td className="text-center px-0.5 py-1.5 align-top" onClick={(e) => { e.stopPropagation(); toggleOne(r.id); }}>
                                 {selectedOrder.has(r.id)
                                   ? <CheckSquare size={13} className="text-rose-500 inline cursor-pointer" />
                                   : <Square size={13} className="text-zinc-300 hover:text-rose-500 inline cursor-pointer" />}
                               </td>
                               {isOrderGroupCollapsed("info") ? (
-                                <td className="bg-sky-50/10 w-4"></td>
+                                <td className="bg-zinc-50/20 w-4"></td>
                               ) : (
                                 <td className="px-0.5 py-1.5 align-top">
                                   <button
@@ -328,7 +328,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                 </td>
                               )}
                               {isOrderGroupCollapsed("stock") ? (
-                                <td className="bg-amber-50/10 w-4"></td>
+                                <td className="bg-zinc-50/20 w-4"></td>
                               ) : (
                                 <>
                                   <td
@@ -339,7 +339,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                     {stockChanged && <span className="text-[14px] font-normal text-zinc-400 ml-1">({r.current_stock})</span>}
                                   </td>
                                   <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] text-zinc-700 bg-zinc-50/40 align-middle whitespace-nowrap">{displayOptimal ?? "-"}</td>
-                                  <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-middle whitespace-nowrap">
+                                  <td className="text-right px-0.5 py-1.5 align-middle whitespace-nowrap">
                                     <span className="tabular-nums font-bold text-[14px] text-rose-600">{displayShort > 0 ? `-${displayShort}` : "0"}</span>
                                   </td>
                                 </>
@@ -351,7 +351,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                 const amount = prevPrice != null ? orderQty * prevPrice : null;
                                 return (
                                   <>
-                                    <td className="text-right px-0.5 py-1.5 bg-rose-50/30 align-middle">
+                                    <td className="text-right px-0.5 py-1.5 align-middle">
                                       <input
                                         type="number" min={0}
                                         value={orderQty}
@@ -363,8 +363,8 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                         className="w-16 h-7 px-1 rounded border border-rose-200 bg-white text-right tabular-nums font-bold text-[15px] text-rose-700 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"
                                       />
                                     </td>
-                                    <td className="text-right px-0.5 py-1.5 tabular-nums text-[14px] text-zinc-500 bg-rose-50/20 align-middle whitespace-nowrap">{prevPrice != null ? prevPrice.toLocaleString() : "-"}</td>
-                                    <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[15px] text-emerald-700 bg-rose-50/20 align-middle whitespace-nowrap">{amount != null ? amount.toLocaleString() : "-"}</td>
+                                    <td className="text-right px-0.5 py-1.5 tabular-nums text-[14px] text-ink-soft align-middle whitespace-nowrap">{prevPrice != null ? prevPrice.toLocaleString() : "-"}</td>
+                                    <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[15px] text-brand-deep align-middle whitespace-nowrap">{amount != null ? amount.toLocaleString() : "-"}</td>
                                   </>
                                 );
                               })()}

@@ -563,8 +563,8 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                               <>
                                 <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-zinc-800 bg-zinc-100">{sumCur.toLocaleString()}</td>
                                 {/* 2026-08-24 · 실재고 컬럼 삭제 · sumInv 계산은 유지 (다른 곳 참조 시 대비) */}
-                                <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-indigo-700 bg-indigo-100/60">{sumOpt.toLocaleString()}</td>
-                                <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-rose-700 bg-rose-100/60">-{sumShort.toLocaleString()}</td>
+                                <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-ink bg-zinc-100">{sumOpt.toLocaleString()}</td>
+                                <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-rose-700 bg-zinc-100">-{sumShort.toLocaleString()}</td>
                               </>
                             )}
                             <td className="bg-zinc-100" />
@@ -602,9 +602,9 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                         const isChecked = selectedLowStock.has(code);
                         return (
                           <React.Fragment key={code}>
-                            <tr className={`transition ${isChecked ? "bg-rose-50/40" : "hover:bg-orange-50/30"}`}>
+                            <tr className={`transition ${isChecked ? "bg-brand-tint/50" : "hover:bg-brand-tint/25"}`}>
                               {isNeedCollapsed("info") ? (
-                                <td className="bg-sky-50/10 w-4"></td>
+                                <td className="bg-zinc-50/20 w-4"></td>
                               ) : (
                                 <>
                                   <td className="px-0.5 py-1.5 text-[14px] font-semibold align-middle">
@@ -643,13 +643,13 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                                 </>
                               )}
                               {isNeedCollapsed("stock") ? (
-                                <td className="bg-amber-50/10 w-4"></td>
+                                <td className="bg-zinc-50/20 w-4"></td>
                               ) : (
                                 <>
                                   <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] text-zinc-700 bg-zinc-50/40 align-middle">{cur}</td>
                                   {/* 2026-08-24 · 사용자 지시 · 실재고 컬럼 삭제 · 오른쪽 판매현황 패널로 대체 */}
-                                  <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] text-indigo-700 bg-indigo-50/40 align-middle">{opt}</td>
-                                  <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-middle">
+                                  <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] text-ink align-middle">{opt}</td>
+                                  <td className="text-right px-0.5 py-1.5 align-middle">
                                     <span className="tabular-nums font-bold text-[14px] text-rose-600">-{opt - cur}</span>
                                   </td>
                                 </>
