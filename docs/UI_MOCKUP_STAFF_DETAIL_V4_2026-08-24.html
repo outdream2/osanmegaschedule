@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>직원 상세 v4 · Editorial · Notion · Attio · 2026-08-24</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" />
+<style>
+  /*
+    ═══════════════════════════════════════════════════════════════
+    v4 · 완전히 다른 접근
+    ═══════════════════════════════════════════════════════════════
+    v3 (컬러풀·차트 4종·gradient 리치) 와 정반대 방향
+    → Editorial · Notion Database · Attio Person Profile 하이브리드
+
+    핵심:
+    ✓ Typography-first (이름 큰 볼드 · variable weight 활용)
+    ✓ 데이터 = 속성 리스트 (Notion property view)
+    ✓ 신중한 컬러 (warm neutral + 하나의 브랜드 액센트)
+    ✓ 절제된 차트 (근태 sparkline · 연차 progress bar 정도)
+    ✓ Sidebar layout (좌측 프로필 · 우측 컨텐츠 세로 스크롤)
+    ✓ 이모지 최소 (semantic 아이콘 라인)
+    ✓ 폰트 +2 유지 (base 16px · title 22px · display 32px)
+    ✓ Warm off-white · 부드러운 그림자 · hover subtle
+  */
+  :root{
+    --bg:#F8F7F4;                /* warm off-white */
+    --surface:#FFFFFF;
+    --surface-2:#FBFAF7;
+    --surface-3:#F2F0EA;
+    --ink:#111827;
+    --ink-1:#1F2937;
+    --ink-2:#4B5563;
+    --ink-3:#6B7280;
+    --ink-4:#9CA3AF;
+    --ink-5:#D1D5DB;
+    --line:rgba(17,24,39,0.06);
+    --line-2:rgba(17,24,39,0.04);
+    --line-strong:rgba(17,24,39,0.12);
+
+    /* one brand accent · warm navy */
+    --brand:#1B2A41;
+    --brand-2:#2E4E6C;
+    --brand-tint:#EEF1F5;
+
+    /* subtle status colors (desaturated) */
+    --success:#4F7A5E;
+    --success-tint:#EDF3EE;
+    --warn:#8A6B3A;
+    --warn-tint:#F5EFE3;
+    --danger:#8B3A3A;
+    --danger-tint:#F5E9E9;
+
+    --shadow-1: 0 0 0 1px rgba(17,24,39,.04);
+    --shadow-2: 0 1px 2px rgba(17,24,39,.04);
+    --shadow-3: 0 8px 32px -12px rgba(17,24,39,.08), 0 2px 8px -4px rgba(17,24,39,.04);
+  }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family:'Pretendard Variable','Pretendard','SF Pro Text','Helvetica Neue',sans-serif;
+    background:var(--bg); color:var(--ink);
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    text-rendering:geometricPrecision;
+    font-feature-settings:"cv02","cv04","cv09","ss01";
+    letter-spacing:-.011em;
+    padding:32px;
+    font-size:16px;
+  }
+  *{ box-sizing:border-box; }
+
+  /* ═══ SPLIT ═══ */
+  .split{
+    display:flex; gap:0;
+    max-width:1560px; margin:0 auto;
+    background:var(--surface);
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:var(--shadow-3);
+    min-height:920px;
+  }
+  .split-left{
+    width:340px;
+    background:var(--surface-2);
+    border-right:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--ink-4); font-size:16px;
+    padding:24px;
+  }
+  .split-divider{
+    width:5px; background:var(--line);
+    cursor:col-resize; flex:0 0 auto;
+    transition:background .12s;
+  }
+  .split-divider:hover{ background:var(--brand); }
+  .split-right{
+    flex:1; display:flex; min-width:0;
+    background:var(--surface);
+  }
+
+  /* ═══════════════════════════════════════════════
+     LEFT COLUMN (내부) · Profile hero · sticky
+     RIGHT COLUMN · Property list · scroll
+  ═══════════════════════════════════════════════ */
+  .detail{
+    display:grid; grid-template-columns:340px 1fr; gap:0;
+    flex:1; min-height:0;
+  }
+
+  /* ─── Profile hero (내부 왼쪽) ─── */
+  .hero{
+    position:sticky; top:0; align-self:start;
+    background:var(--surface-2);
+    padding:36px 28px;
+    border-right:1px solid var(--line);
+    min-height:100%;
+    display:flex; flex-direction:column; gap:24px;
+  }
+
+  /* Photo · large square */
+  .photo{
+    width:100%; aspect-ratio:1/1; border-radius:14px;
+    background:
+      radial-gradient(60% 80% at 40% 30%, #E0E5EE, transparent 60%),
+      linear-gradient(160deg, var(--brand-tint) 0%, #DCE3EC 100%);
+    color:var(--brand);
+    display:flex; align-items:center; justify-content:center;
+    font-size:88px; font-weight:800; letter-spacing:-.05em;
+    box-shadow:inset 0 0 0 1px rgba(27,42,65,.08);
+    position:relative;
+    overflow:hidden;
+  }
+  .photo::after{
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(180deg, transparent 60%, rgba(255,255,255,.15));
+  }
+  .photo .status-badge{
+    position:absolute; bottom:12px; left:12px;
+    display:inline-flex; align-items:center; gap:5px;
+    padding:5px 10px; background:rgba(255,255,255,.95);
+    backdrop-filter:blur(8px);
+    border-radius:99px; font-size:12px; font-weight:700;
+    color:var(--success);
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+    z-index:2;
+  }
+  .photo .status-badge::before{
+    content:""; width:6px; height:6px; border-radius:99px;
+    background:var(--success); animation:pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
+
+  /* Name display · editorial */
+  .display{ display:flex; flex-direction:column; gap:6px; }
+  .name-primary{
+    font-size:34px; font-weight:800; letter-spacing:-.036em;
+    color:var(--ink); line-height:1.05;
+  }
+  .name-secondary{
+    font-size:14px; color:var(--ink-3); font-weight:600;
+    font-variant-numeric:tabular-nums; letter-spacing:.01em;
+  }
+  .role-line{
+    font-size:15px; color:var(--ink-1); font-weight:600;
+    margin-top:6px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .role-line .sep{ color:var(--ink-5); }
+
+  /* Quick stats · vertical list */
+  .quick-stats{
+    display:flex; flex-direction:column; gap:0;
+    border-top:1px solid var(--line);
+    padding-top:20px;
+  }
+  .qs-row{
+    display:flex; align-items:baseline; gap:12px;
+    padding:9px 0;
+  }
+  .qs-row + .qs-row{ border-top:1px solid var(--line-2); }
+  .qs-label{
+    font-size:13px; color:var(--ink-3); font-weight:600;
+    letter-spacing:-.005em; min-width:64px;
+  }
+  .qs-value{
+    font-size:15px; color:var(--ink); font-weight:700;
+    font-variant-numeric:tabular-nums; letter-spacing:-.005em;
+    flex:1; text-align:right;
+  }
+  .qs-value .sub{ font-size:12px; color:var(--ink-4); font-weight:600; margin-left:4px; }
+
+  /* Actions */
+  .hero-actions{
+    display:flex; flex-direction:column; gap:8px;
+    margin-top:auto; padding-top:20px;
+    border-top:1px solid var(--line);
+  }
+  .act-btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    height:40px; padding:0 14px;
+    border-radius:10px; border:0;
+    font-size:14px; font-weight:700; letter-spacing:-.005em;
+    cursor:pointer; transition:all .14s;
+  }
+  .act-btn.primary{ background:var(--brand); color:#FFF; }
+  .act-btn.primary:hover{ background:#0F1D30; }
+  .act-btn.ghost{ background:var(--surface); color:var(--ink-1); box-shadow:inset 0 0 0 1px var(--line-strong); }
+  .act-btn.ghost:hover{ background:var(--surface-3); box-shadow:inset 0 0 0 1px var(--ink-5); }
+  .act-btn-row{ display:flex; gap:8px; }
+  .act-btn-row .act-btn{ flex:1; }
+
+  /* ─── Content column ─── */
+  .content{
+    padding:32px 40px 40px;
+    overflow-y:auto;
+    display:flex; flex-direction:column; gap:0;
+    min-width:0;
+  }
+
+  /* Segmented tabs · slim */
+  .seg{
+    display:inline-flex; padding:4px; margin:0 0 24px;
+    background:var(--surface-3); border-radius:12px;
+    align-self:flex-start;
+    gap:2px;
+  }
+  .seg button{
+    display:inline-flex; align-items:center; gap:6px;
+    height:34px; padding:0 14px;
+    background:transparent; border:0; border-radius:8px;
+    font-size:14px; font-weight:700; color:var(--ink-2);
+    cursor:pointer; transition:all .14s;
+    letter-spacing:-.005em;
+  }
+  .seg button:hover{ color:var(--ink); }
+  .seg button.active{ background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(17,24,39,.08), 0 0 0 1px rgba(17,24,39,.04); }
+  .seg .n{
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:20px; padding:0 6px; height:18px;
+    background:var(--ink-5); color:var(--ink-1);
+    border-radius:99px; font-size:11px; font-weight:800;
+    font-variant-numeric:tabular-nums;
+  }
+  .seg .active .n{ background:var(--brand); color:#FFF; }
+
+  /* ═══ Section (Notion database view) ═══ */
+  .section{ margin-bottom:36px; }
+  .section-head{
+    display:flex; align-items:baseline; gap:10px;
+    margin-bottom:12px;
+  }
+  .section-head h2{
+    font-size:22px; font-weight:800; letter-spacing:-.028em;
+    color:var(--ink); margin:0;
+  }
+  .section-head .count{
+    font-size:14px; color:var(--ink-3); font-weight:600;
+    font-variant-numeric:tabular-nums;
+  }
+  .section-head .action{
+    margin-left:auto;
+    font-size:13px; color:var(--ink-3); font-weight:700;
+    background:transparent; border:0; cursor:pointer;
+    padding:5px 10px; border-radius:6px;
+    transition:all .12s;
+  }
+  .section-head .action:hover{ color:var(--brand); background:var(--brand-tint); }
+
+  /* ═══ Property list (Notion-like) ═══ */
+  .props{ display:flex; flex-direction:column; }
+  .prop{
+    display:grid; grid-template-columns:160px 1fr;
+    gap:16px; padding:10px 0;
+    align-items:baseline;
+  }
+  .prop + .prop{ border-top:1px solid var(--line-2); }
+  .prop .k{
+    font-size:14px; color:var(--ink-3); font-weight:600;
+    letter-spacing:-.005em;
+    display:flex; align-items:center; gap:8px;
+  }
+  .prop .k .ic{
+    width:16px; height:16px; opacity:.6; flex-shrink:0;
+  }
+  .prop .v{
+    font-size:16px; color:var(--ink); font-weight:600;
+    line-height:1.45;
+    display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
+  }
+  .prop .v.mono{ font-family:'JetBrains Mono',ui-monospace,monospace; font-size:15px; font-variant-numeric:tabular-nums; letter-spacing:-.005em; }
+  .prop .v.muted{ color:var(--ink-3); font-weight:500; }
+  .prop .v a{ color:var(--brand-2); text-decoration:none; font-weight:700; border-bottom:1px solid transparent; transition:border .12s; }
+  .prop .v a:hover{ border-bottom-color:var(--brand-2); }
+  .prop .v .sub{ font-size:13px; color:var(--ink-4); font-weight:600; }
+
+  .tag{
+    display:inline-flex; align-items:center; gap:5px;
+    height:24px; padding:0 9px;
+    border-radius:6px;
+    font-size:13px; font-weight:700; letter-spacing:-.005em;
+    background:var(--surface-3); color:var(--ink-1);
+    box-shadow:inset 0 0 0 1px var(--line-strong);
+  }
+  .tag.success{ background:var(--success-tint); color:var(--success); box-shadow:inset 0 0 0 1px rgba(79,122,94,.2); }
+  .tag.warn{ background:var(--warn-tint); color:var(--warn); box-shadow:inset 0 0 0 1px rgba(138,107,58,.2); }
+  .tag.danger{ background:var(--danger-tint); color:var(--danger); box-shadow:inset 0 0 0 1px rgba(139,58,58,.2); }
+  .tag.brand{ background:var(--brand-tint); color:var(--brand); box-shadow:inset 0 0 0 1px rgba(27,42,65,.2); }
+
+  /* Attendance sparkline (only chart) */
+  .attend-inline{
+    display:flex; align-items:baseline; gap:12px;
+    padding:12px 0;
+  }
+  .attend-inline .val{
+    font-size:20px; font-weight:800; color:var(--ink);
+    font-variant-numeric:tabular-nums; letter-spacing:-.02em;
+    min-width:70px;
+  }
+  .attend-inline .val .unit{ font-size:12px; color:var(--ink-4); font-weight:700; margin-left:3px; }
+  .attend-inline .spark{
+    flex:1; height:36px;
+    display:flex; align-items:flex-end; gap:2px;
+  }
+  .attend-inline .spark .b{
+    flex:1; background:var(--brand); opacity:.35;
+    border-radius:2px 2px 0 0; transition:opacity .12s;
+    min-height:2px;
+  }
+  .attend-inline .spark .b:hover{ opacity:1; }
+  .attend-inline .spark .b.today{ background:var(--brand); opacity:1; }
+
+  /* Leave progress · linear */
+  .leave-bar{
+    padding:14px 0 4px;
+  }
+  .leave-bar .row{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom:6px;
+  }
+  .leave-bar .row .l{ font-size:14px; color:var(--ink-3); font-weight:600; }
+  .leave-bar .row .r{ font-size:16px; color:var(--ink); font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+  .leave-bar .bar{
+    height:8px; border-radius:99px;
+    background:var(--surface-3);
+    overflow:hidden; position:relative;
+  }
+  .leave-bar .bar-inner{
+    height:100%; border-radius:99px;
+    background:linear-gradient(90deg, var(--brand), var(--brand-2));
+    transition:width .6s cubic-bezier(.2,0,.2,1);
+  }
+  .leave-bar .marks{
+    display:flex; justify-content:space-between;
+    margin-top:6px; font-size:12px; color:var(--ink-4);
+    font-weight:600; font-variant-numeric:tabular-nums;
+  }
+
+  /* Files (documents) list */
+  .files{ display:flex; flex-direction:column; }
+  .file-row{
+    display:grid; grid-template-columns:36px 1fr auto auto;
+    gap:14px; padding:12px 0;
+    align-items:center;
+  }
+  .file-row + .file-row{ border-top:1px solid var(--line-2); }
+  .file-ic{
+    width:36px; height:36px; border-radius:8px;
+    background:var(--surface-3); color:var(--ink-2);
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:800; font-family:'JetBrains Mono',ui-monospace,monospace;
+    text-transform:uppercase;
+  }
+  .file-info{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .file-name{ font-size:15px; color:var(--ink); font-weight:700; letter-spacing:-.005em; }
+  .file-sub{ font-size:12px; color:var(--ink-3); font-weight:600; }
+  .file-status{ font-size:12px; color:var(--ink-3); font-weight:700; font-variant-numeric:tabular-nums; }
+  .file-action{
+    padding:6px 10px; background:var(--surface-3); color:var(--ink-1);
+    border:0; border-radius:6px; font-size:12px; font-weight:700;
+    cursor:pointer; transition:all .12s;
+  }
+  .file-action:hover{ background:var(--brand-tint); color:var(--brand); }
+  .file-action.primary{ background:var(--brand); color:#FFF; }
+  .file-action.primary:hover{ background:#0F1D30; }
+  .file-action.muted{ color:var(--ink-4); background:transparent; box-shadow:inset 0 0 0 1px var(--line-strong); }
+
+  /* Career timeline · vertical spine */
+  .career{ position:relative; padding-left:24px; }
+  .career::before{
+    content:""; position:absolute; left:6px; top:8px; bottom:8px;
+    width:2px; background:var(--line-strong);
+  }
+  .career-item{
+    position:relative; padding:8px 0 20px;
+  }
+  .career-item::before{
+    content:""; position:absolute; left:-24px; top:14px;
+    width:14px; height:14px; border-radius:99px;
+    background:var(--surface); border:2px solid var(--ink-5);
+  }
+  .career-item.current::before{
+    border-color:var(--brand); box-shadow:0 0 0 4px rgba(27,42,65,.08);
+  }
+  .career-date{
+    font-size:12px; color:var(--ink-3); font-weight:700;
+    font-variant-numeric:tabular-nums; letter-spacing:.02em;
+    text-transform:uppercase;
+  }
+  .career-title{
+    font-size:17px; color:var(--ink); font-weight:700;
+    margin-top:3px; letter-spacing:-.01em;
+  }
+  .career-sub{
+    font-size:14px; color:var(--ink-3); font-weight:500;
+    margin-top:2px;
+  }
+  .career-tags{
+    display:inline-flex; gap:6px; margin-top:8px;
+  }
+
+  /* Legend */
+  .legend{
+    max-width:1560px; margin:24px auto 0;
+    font-size:13px; color:var(--ink-2);
+    padding:14px 20px;
+    background:var(--surface);
+    border-radius:12px;
+    box-shadow:var(--shadow-1);
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  }
+  .legend strong{ color:var(--ink); font-weight:800; letter-spacing:-.01em; }
+  .legend .k{ font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; background:var(--surface-3); padding:2px 6px; border-radius:5px; color:var(--ink-1); }
+</style>
+</head>
+<body>
+
+<div class="split">
+  <div class="split-left"><span>← 직원 목록 (SplitPanel)</span></div>
+  <div class="split-divider"></div>
+
+  <div class="split-right">
+    <div class="detail">
+
+      <!-- ═══ HERO · Left column · Sticky ═══ -->
+      <aside class="hero">
+        <div class="photo">
+          김
+          <span class="status-badge">재직중</span>
+        </div>
+
+        <div class="display">
+          <div class="name-primary">김민서</div>
+          <div class="name-secondary">M-2023-042 · 만 30세 · 여성</div>
+          <div class="role-line">
+            <span>약사 · 팀장</span>
+            <span class="sep">·</span>
+            <span>정규직</span>
+          </div>
+        </div>
+
+        <div class="quick-stats">
+          <div class="qs-row">
+            <span class="qs-label">근속</span>
+            <span class="qs-value">2년 5개월<span class="sub">872일</span></span>
+          </div>
+          <div class="qs-row">
+            <span class="qs-label">입사일</span>
+            <span class="qs-value">2023.03.15</span>
+          </div>
+          <div class="qs-row">
+            <span class="qs-label">평가</span>
+            <span class="qs-value">A+</span>
+          </div>
+          <div class="qs-row">
+            <span class="qs-label">연차</span>
+            <span class="qs-value">12<span class="sub">/ 15일</span></span>
+          </div>
+          <div class="qs-row">
+            <span class="qs-label">근태</span>
+            <span class="qs-value">96%<span class="sub">이번달</span></span>
+          </div>
+        </div>
+
+        <div class="hero-actions">
+          <button class="act-btn primary">＋ 계약서 작성</button>
+          <div class="act-btn-row">
+            <button class="act-btn ghost">✎ 편집</button>
+            <button class="act-btn ghost">⋯ 더보기</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ═══ CONTENT · Right column · Scroll ═══ -->
+      <div class="content">
+
+        <!-- Segmented -->
+        <div class="seg">
+          <button class="active">개요</button>
+          <button>계약 <span class="n">3</span></button>
+          <button>연차 <span class="n">12</span></button>
+          <button>급여</button>
+          <button>첨부 <span class="n">4</span></button>
+          <button>근태</button>
+        </div>
+
+        <!-- ─── Section 1 · 인적 사항 ─── -->
+        <div class="section">
+          <div class="section-head">
+            <h2>인적 사항</h2>
+            <span class="count">개인 · 연락처</span>
+            <button class="action">편집 →</button>
+          </div>
+          <div class="props">
+            <div class="prop">
+              <span class="k">이름</span>
+              <span class="v">김민서</span>
+            </div>
+            <div class="prop">
+              <span class="k">생년월일</span>
+              <span class="v mono">1996-08-12 <span class="sub">· 만 30세</span></span>
+            </div>
+            <div class="prop">
+              <span class="k">성별</span>
+              <span class="v">여성</span>
+            </div>
+            <div class="prop">
+              <span class="k">주민등록번호</span>
+              <span class="v mono muted">960812-2••••••</span>
+            </div>
+            <div class="prop">
+              <span class="k">연락처</span>
+              <span class="v mono"><a href="tel:01042315678">010-4231-5678</a></span>
+            </div>
+            <div class="prop">
+              <span class="k">이메일</span>
+              <span class="v"><a href="mailto:kimms@megatown.pharm">kimms@megatown.pharm</a></span>
+            </div>
+            <div class="prop">
+              <span class="k">주소</span>
+              <span class="v">경기도 오산시 원동 123-45<br>메가타운 오피스텔 802호</span>
+            </div>
+            <div class="prop">
+              <span class="k">약사 면허</span>
+              <span class="v mono">제 12345 호 <span class="tag success">유효</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── Section 2 · 현재 계약 ─── -->
+        <div class="section">
+          <div class="section-head">
+            <h2>현재 계약</h2>
+            <span class="count">활성 · 최근 근로계약</span>
+            <button class="action">계약서 열기 →</button>
+          </div>
+          <div class="props">
+            <div class="prop">
+              <span class="k">계약 유형</span>
+              <span class="v"><span class="tag brand">정규직</span> 무기한</span>
+            </div>
+            <div class="prop">
+              <span class="k">직책</span>
+              <span class="v">약사 · 팀장</span>
+            </div>
+            <div class="prop">
+              <span class="k">계약 시작</span>
+              <span class="v mono">2025-03-15</span>
+            </div>
+            <div class="prop">
+              <span class="k">계약 종료</span>
+              <span class="v mono muted">— (무기한)</span>
+            </div>
+            <div class="prop">
+              <span class="k">시급</span>
+              <span class="v mono">15,000 <span class="sub">원</span></span>
+            </div>
+            <div class="prop">
+              <span class="k">월 세전 (예상)</span>
+              <span class="v mono">3,215,000 <span class="sub">원 · 주 40시간</span></span>
+            </div>
+            <div class="prop">
+              <span class="k">주 근무시간</span>
+              <span class="v mono">40 <span class="sub">시간</span></span>
+            </div>
+            <div class="prop">
+              <span class="k">근무 시간대</span>
+              <span class="v mono">09:00 – 18:00 <span class="sub">· 휴게 1h</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── Section 3 · 연차 사용 ─── -->
+        <div class="section">
+          <div class="section-head">
+            <h2>연차 사용</h2>
+            <span class="count">2026 기준</span>
+            <button class="action">기록 →</button>
+          </div>
+          <div class="leave-bar">
+            <div class="row">
+              <span class="l">사용률</span>
+              <span class="r">80% · 12/15일</span>
+            </div>
+            <div class="bar">
+              <div class="bar-inner" style="width:80%"></div>
+            </div>
+            <div class="marks">
+              <span>0</span><span>5</span><span>10</span><span>15</span>
+            </div>
+          </div>
+          <div class="props" style="margin-top:12px;">
+            <div class="prop">
+              <span class="k">종일 휴가</span>
+              <span class="v mono">4일</span>
+            </div>
+            <div class="prop">
+              <span class="k">반차</span>
+              <span class="v mono">6회 <span class="sub">· 3일 환산</span></span>
+            </div>
+            <div class="prop">
+              <span class="k">병가</span>
+              <span class="v mono">2일 <span class="tag warn">진단서 첨부</span></span>
+            </div>
+            <div class="prop">
+              <span class="k">잔여</span>
+              <span class="v mono">3일 <span class="sub">· 2026-12-31 까지</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── Section 4 · 최근 근태 ─── -->
+        <div class="section">
+          <div class="section-head">
+            <h2>최근 근태</h2>
+            <span class="count">최근 30일</span>
+            <button class="action">전체보기 →</button>
+          </div>
+          <div class="props">
+            <div class="prop">
+              <span class="k">출근율</span>
+              <span class="v mono">96% <span class="tag success">우수</span></span>
+            </div>
+            <div class="prop">
+              <span class="k">평균 근무시간</span>
+              <span class="v mono">8.2 <span class="sub">시간 / 일</span></span>
+            </div>
+            <div class="prop">
+              <span class="k">지각</span>
+              <span class="v mono">0회</span>
+            </div>
+            <div class="prop">
+              <span class="k">결근</span>
+              <span class="v mono">0회</span>
+            </div>
+          </div>
+          <div class="attend-inline">
+            <span class="val">8.6h <span class="unit">평균</span></span>
+            <div class="spark" title="일별 근무시간 · 최근 30일">
+              <div class="b" style="height:65%"></div>
+              <div class="b" style="height:70%"></div>
+              <div class="b" style="height:60%"></div>
+              <div class="b" style="height:75%"></div>
+              <div class="b" style="height:68%"></div>
+              <div class="b" style="height:72%"></div>
+              <div class="b" style="height:80%"></div>
+              <div class="b" style="height:78%"></div>
+              <div class="b" style="height:65%"></div>
+              <div class="b" style="height:82%"></div>
+              <div class="b" style="height:75%"></div>
+              <div class="b" style="height:88%"></div>
+              <div class="b" style="height:80%"></div>
+              <div class="b" style="height:70%"></div>
+              <div class="b" style="height:85%"></div>
+              <div class="b" style="height:82%"></div>
+              <div class="b" style="height:78%"></div>
+              <div class="b" style="height:90%"></div>
+              <div class="b" style="height:85%"></div>
+              <div class="b" style="height:75%"></div>
+              <div class="b" style="height:88%"></div>
+              <div class="b" style="height:80%"></div>
+              <div class="b" style="height:92%"></div>
+              <div class="b" style="height:85%"></div>
+              <div class="b" style="height:78%"></div>
+              <div class="b" style="height:82%"></div>
+              <div class="b" style="height:90%"></div>
+              <div class="b" style="height:85%"></div>
+              <div class="b today" style="height:95%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── Section 5 · 첨부 파일 ─── -->
+        <div class="section">
+          <div class="section-head">
+            <h2>첨부 파일</h2>
+            <span class="count">3 / 4</span>
+            <button class="action">전체 관리 →</button>
+          </div>
+          <div class="files">
+            <div class="file-row">
+              <div class="file-ic">PDF</div>
+              <div class="file-info">
+                <div class="file-name">근로계약서 · 2025 재계약</div>
+                <div class="file-sub">2025-03-15 등록 · 214 KB · Google Drive</div>
+              </div>
+              <div class="file-status"><span class="tag success">완료</span></div>
+              <button class="file-action primary">열기</button>
+            </div>
+            <div class="file-row">
+              <div class="file-ic">JPG</div>
+              <div class="file-info">
+                <div class="file-name">통장사본</div>
+                <div class="file-sub">2023-03-16 등록 · 428 KB</div>
+              </div>
+              <div class="file-status"><span class="tag success">완료</span></div>
+              <button class="file-action">보기</button>
+            </div>
+            <div class="file-row">
+              <div class="file-ic">PDF</div>
+              <div class="file-info">
+                <div class="file-name">이력서</div>
+                <div class="file-sub">2023-03-10 등록 · 1.2 MB</div>
+              </div>
+              <div class="file-status"><span class="tag success">완료</span></div>
+              <button class="file-action">보기</button>
+            </div>
+            <div class="file-row">
+              <div class="file-ic" style="opacity:.4">—</div>
+              <div class="file-info">
+                <div class="file-name" style="color:var(--ink-4)">사직서</div>
+                <div class="file-sub">해당없음 · 재직중</div>
+              </div>
+              <div class="file-status"><span class="tag" style="background:transparent;box-shadow:inset 0 0 0 1px var(--line-strong);color:var(--ink-4)">—</span></div>
+              <button class="file-action muted">업로드</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── Section 6 · 계약 이력 · Career timeline ─── -->
+        <div class="section">
+          <div class="section-head">
+            <h2>계약 이력</h2>
+            <span class="count">총 3건</span>
+            <button class="action">전체 이력 →</button>
+          </div>
+          <div class="career">
+            <div class="career-item current">
+              <div class="career-date">2025 · 03 · 15 · 현재</div>
+              <div class="career-title">정규직 재계약 · 무기한</div>
+              <div class="career-sub">시급 15,000원 · 팀장 승격 · 주 40시간</div>
+              <div class="career-tags">
+                <span class="tag brand">정규직</span>
+                <span class="tag success">활성</span>
+              </div>
+            </div>
+            <div class="career-item">
+              <div class="career-date">2024 · 03 · 15 – 2025 · 03 · 14</div>
+              <div class="career-title">정규직 전환 계약</div>
+              <div class="career-sub">시급 13,500원 · 약사 · 주 40시간</div>
+              <div class="career-tags">
+                <span class="tag">이전</span>
+              </div>
+            </div>
+            <div class="career-item">
+              <div class="career-date">2023 · 03 · 15 – 2024 · 03 · 14</div>
+              <div class="career-title">최초 채용 · 계약직 1년</div>
+              <div class="career-sub">시급 12,000원 · 약사 · 주 40시간</div>
+              <div class="career-tags">
+                <span class="tag">이전</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <strong>🎨 v4 · Editorial · Notion · Attio 하이브리드</strong>
+  <span class="k">|</span>
+  <strong>레이아웃</strong>
+  <span>좌 hero (photo·이름·quick stats·actions · sticky)</span>
+  <span>우 content (segmented tabs + property list · scroll)</span>
+  <span class="k">|</span>
+  <strong>톤</strong>
+  <span>warm off-white · one accent (navy)</span>
+  <span>Notion database property view</span>
+  <span>절제된 차트 (연차 bar · 근태 sparkline · 계약 spine)</span>
+  <span class="k">|</span>
+  <strong>차이점 vs v3</strong>
+  <span>차트 4개 → 3개 절제</span>
+  <span>gradient 리치 → warm neutral</span>
+  <span>이모지 헤더 → 텍스트 헤더</span>
+  <span>기본 폰트 +2 유지 (16px)</span>
+</div>
+
+</body>
+</html>
