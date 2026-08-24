@@ -458,16 +458,9 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
         ) : (
           <div className="overflow-auto max-h-[70vh]">
             <table className="w-full text-[14px]" style={{ tableLayout: "fixed" }}>
+              {/* 2026-08-24 · v3 확산 · 그룹 헤더 제거 · 서브헤더만 · bg zinc-100/70 · Attio 톤 */}
               <thead className="sticky top-0 z-10">
-                {/* 컬럼 그룹 헤더 */}
-                <tr className="text-[14px] font-semibold uppercase tracking-wider border-b border-line">
-                  <th colSpan={2} className="bg-zinc-50 text-zinc-400 text-left px-3 py-1.5">기본정보</th>
-                  <th colSpan={2} className="bg-indigo-50 text-indigo-600 text-center px-3 py-1.5">판매량 비교</th>
-                  <th colSpan={2} className="bg-indigo-100 text-indigo-700 text-center px-3 py-1.5">성장 지표</th>
-                  <th colSpan={2} className="bg-zinc-50 text-zinc-400 text-center px-3 py-1.5">재고현황</th>
-                </tr>
-                {/* 서브헤더 · 리사이즈 지원 */}
-                <tr className="border-b border-zinc-100 text-[15px] font-semibold text-zinc-500 uppercase tracking-wider bg-white">
+                <tr className="border-b border-line text-[13px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider bg-zinc-100/70">
                   <th className="relative text-center px-2 py-1.5" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
                     #
                     <span {...resizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
