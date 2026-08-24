@@ -150,7 +150,22 @@
 - 💡 관련 · #255 (중복 로그인) · #256 (자동 로그인 방지)
 - 💡 규모 · 대형 · 12~18시간 (5-6개 세부 항목 순차)
 
-### #253 · 자동 임포트 시스템 · 원클릭 설치 + 스케쥴 실행 (신규 · 2026-08-24 · 사용자 지시)
+### #253 · 자동 임포트 시스템 · 원클릭 설치 + 스케쥴 실행 (Phase A ✅ 완료 · 2026-08-24)
+
+**Phase A · 서버 endpoints ✅ 완료**:
+- ✅ `src/shared/schemas/autoImport.ts` · Zod 스키마 (Config·Heartbeat)
+- ✅ `server/routes/settings/autoImport.ts` · 5 endpoints (config get/post · heartbeat · status · installer 501)
+- ✅ authorize(9) · 관리자 lv9 전용
+- ✅ server.ts mount · 3193 tests · TS 통과
+
+**Phase B~F · 착수 대기**:
+- 🔲 Phase B · Python 스크립트 (config 조회·파일 relay·rename·heartbeat)
+- 🔲 Phase C · PyInstaller `.exe` 빌드 · assets/auto-import-template.zip
+- 🔲 Phase D · install.bat/uninstall.bat/run.bat · Task Scheduler 자동 등록
+- 🔲 Phase E · 웹 UI · SystemSettingsPage 신규 "자동 임포트" 탭 (병렬 착수 가능)
+- 🔲 Phase F · README · 트러블슈팅
+
+### #253-원본스펙 (신규 · 2026-08-24 · 사용자 지시)
 
 **🎯 스펙 확정 (2026-08-24 사용자 결정)**:
 - **폴더 경로 기본값** · `%USERPROFILE%\Downloads\megatown-importdata\` 하위 4개 서브폴더 (products·stock·vendors·purchase)
