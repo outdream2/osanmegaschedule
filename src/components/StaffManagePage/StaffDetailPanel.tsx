@@ -112,8 +112,10 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
 
   return (
     <>
-      {/* ── 프로필 헤더 배너 ── */}
-      <div className="bg-indigo-50/90 border-b border-indigo-100/80 px-4 py-2.5 shrink-0">
+      {/* ── 프로필 헤더 · v9 · 상단 gradient accent · glass style ── */}
+      <div className="relative bg-white border-b border-line px-5 py-3 shrink-0">
+        {/* 2026-08-24 · v9 · 상단 gradient accent */}
+        <span aria-hidden className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10" />
         <div className="flex items-center gap-3">
           {/* 사진 */}
           {(displayEmp.photo_url || editing) && (
@@ -260,60 +262,65 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
         </div>
       </div>
 
-      {/* ── 근속·연차·평가 KPI 바 ── */}
-      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5 px-4 py-2.5 border-b border-line bg-white shrink-0 text-[15px]">
-        {/* 근속 */}
-        <span className="inline-flex items-baseline gap-1.5">
-          <span className="inline-flex items-center gap-1 text-[14px] text-zinc-400 font-semibold">
-            <Clock size={11} className="text-indigo-400" />근속
+      {/* ── 근속·연차·평가 · v9 · 3 mini stats (color dot + gradient sparkline/progress) ── */}
+      <div className="grid grid-cols-3 gap-4 px-5 py-3 border-b border-line bg-white shrink-0">
+        {/* 근속 · brand dot + tenure text (sparkline 자리 유지 - 문자로 근속기간 표시) */}
+        <div className="flex flex-col gap-1">
+          <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-zinc-400 font-bold">
+            <span className="w-1.5 h-1.5 rounded-sm bg-brand-deep" />
+            <Clock size={10} className="text-brand-deep" />근속
           </span>
-          <span className="font-bold text-zinc-800 tabular-nums">
-            {tenure === "-" ? <span className="text-zinc-300 italic font-normal">미등록</span> : tenure}
+          <span className="text-[16px] font-bold text-brand-deep tabular-nums leading-tight">
+            {tenure === "-" ? <span className="text-zinc-300 italic font-normal text-[14px]">미등록</span> : tenure}
+            {displayEmp.hire_date && (
+              <span className="text-[12px] text-zinc-400 font-semibold ml-1">· {displayEmp.hire_date}</span>
+            )}
           </span>
-          {displayEmp.hire_date && (
-            <span className="text-[15px] text-zinc-400 tabular-nums">({displayEmp.hire_date})</span>
-          )}
-        </span>
-        <span className="text-zinc-200">·</span>
-        {/* 연차 잔여 */}
-        <span className="inline-flex items-baseline gap-1.5">
-          <span className="inline-flex items-center gap-1 text-[14px] text-emerald-500 font-semibold">
-            <CalendarDays size={11} />연차 잔여
+        </div>
+        {/* 연차 · sky dot + progress bar */}
+        <div className="flex flex-col gap-1">
+          <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-zinc-400 font-bold">
+            <span className="w-1.5 h-1.5 rounded-sm bg-sky-500" />
+            <CalendarDays size={10} className="text-sky-500" />연차
           </span>
-          <span className="font-bold text-emerald-700 tabular-nums">
-            {fmtD(remainDays)}<span className="text-[15px] font-semibold ml-0.5">일</span>
-          </span>
-          {editing ? (
-            <span className="inline-flex items-baseline gap-1 text-[15px] text-zinc-400">
-              <span>/ 총</span>
+          <span className="text-[16px] font-bold text-sky-700 tabular-nums leading-tight">
+            {fmtD(remainDays)}<span className="text-[12px] font-semibold text-zinc-400 ml-0.5">/ {fmtD(totalDays)}일</span>
+            {editing && (
               <input
                 type="number" min={0} max={30} step={1}
                 value={draft?.annual_leave_days ?? ""}
                 onChange={(e) => setField("annual_leave_days", e.target.value === "" ? null : Number(e.target.value))}
                 placeholder="15"
-                className="w-12 h-6 px-1 rounded border border-indigo-300 bg-indigo-50/40 text-[14px] font-bold text-zinc-700 text-right tabular-nums focus:outline-none focus:border-brand-deep"
+                className="w-12 h-5 px-1 ml-2 rounded border border-sky-300 bg-sky-50/40 text-[12px] font-bold text-sky-700 text-right tabular-nums focus:outline-none focus:border-sky-500"
+                aria-label="총 연차 편집"
               />
-              <span>· 사용 {fmtD(usedDays)}</span>
-            </span>
-          ) : (
-            <span className="text-[15px] text-zinc-400 tabular-nums">/ 총 {fmtD(totalDays)}일 · 사용 {fmtD(usedDays)}</span>
-          )}
-        </span>
-        <span className="text-zinc-200">·</span>
-        {/* 인사평가 */}
-        <span className="inline-flex items-baseline gap-1.5">
-          <span className="inline-flex items-center gap-1 text-[14px] text-amber-500 font-semibold">
-            <Star size={11} />평가
+            )}
           </span>
-          {rating ? (
-            <Badge className={performanceRatingColor(rating)} size="sm">{rating}</Badge>
-          ) : (
-            <span className="text-zinc-300 italic">미평가</span>
-          )}
-          {isSeveranceEligible(displayEmp) && (
-            <Badge tone="rose" size="sm" className="ml-1">퇴직금대상</Badge>
-          )}
-        </span>
+          {/* thin progress bar · gradient */}
+          <div className="h-1 bg-zinc-100 rounded-full overflow-hidden mt-1">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-500 shadow-[0_0_8px_rgba(2,132,199,.4)] transition-all"
+              style={{ width: totalDays > 0 ? `${Math.min(100, (usedDays / totalDays) * 100)}%` : "0%" }}
+            />
+          </div>
+        </div>
+        {/* 평가 · emerald dot + rating badge */}
+        <div className="flex flex-col gap-1">
+          <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-zinc-400 font-bold">
+            <span className="w-1.5 h-1.5 rounded-sm bg-emerald-500" />
+            <Star size={10} className="text-emerald-500" />평가
+          </span>
+          <span className="inline-flex items-center gap-1.5 leading-tight flex-wrap">
+            {rating ? (
+              <Badge className={performanceRatingColor(rating)} size="sm">{rating}</Badge>
+            ) : (
+              <span className="text-zinc-300 italic text-[14px]">미평가</span>
+            )}
+            {isSeveranceEligible(displayEmp) && (
+              <Badge tone="rose" size="sm">퇴직금대상</Badge>
+            )}
+          </span>
+        </div>
       </div>
 
       {/* ── 인사카드 섹션들 · 세로 스크롤 ── */}
