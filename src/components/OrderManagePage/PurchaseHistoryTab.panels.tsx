@@ -400,16 +400,12 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
            · 그리드 header + list · children slot
            · custom loading/error/empty · body children 내부 유지 (v3 loading prop 미사용) */
         <SplitListPanel
+          search={productSearch}
+          onSearchChange={setProductSearch}
+          searchPlaceholder="상품명 · 코드 검색"
           filters={
             <div className="flex flex-col gap-2 w-full">
-              <input
-                type="text"
-                value={productSearch}
-                onChange={e => setProductSearch(e.target.value)}
-                placeholder="상품명 · 코드 검색"
-                className="w-full h-7 px-2.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
-              />
-              <div className="flex items-center gap-1 pt-1 border-t border-zinc-100 flex-wrap">
+              <div className="flex items-center gap-1 flex-wrap">
                 <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">정렬</span>
                 {([
                   { k: "amount"   as const, label: "매입액",   color: "sky" as const },

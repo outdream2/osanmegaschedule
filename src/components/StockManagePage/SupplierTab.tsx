@@ -403,16 +403,11 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
           {displayedXlsxSuppliers.length}{supListLimit < xlsxSuppliers.length ? `/${xlsxSuppliers.length}` : ""}개 사
         </span>
       }
+      search={supplierSearch}
+      onSearchChange={setSupplierSearch}
+      searchPlaceholder="공급사명 · 코드 검색"
       filters={
         <div className="flex flex-col gap-1.5 w-full">
-          {/* 2026-08-24 · #262 · 검색창 · 리스트 상단 (필터·정렬보다 위) */}
-          <input
-            type="text"
-            value={supplierSearch}
-            onChange={e => setSupplierSearch(e.target.value)}
-            placeholder="공급사명 · 코드 검색"
-            className="w-full h-8 px-3 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
-          />
           {/* 분류 필터 */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider mr-0.5">분류</span>

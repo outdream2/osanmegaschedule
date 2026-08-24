@@ -562,16 +562,12 @@ export const PaymentInfoTab: React.FC = () => {
              · KPI 3-inline · subHeader slot
              · VendorListHeader + list · children slot */
           <SplitListPanel
-            /* 좁은 좌측 패널 (280px 기본) · search 는 filters slot 안에 stack · SplitListPanel 원래 horizontal 우회 */
+            /* 2026-08-24 · #262 · search 는 built-in prop 으로 이관 (원칙: SplitListPanel = 검색 상단 필수) */
+            search={vendorSearch}
+            onSearchChange={setVendorSearch}
+            searchPlaceholder="공급사명 검색"
             filters={
               <div className="flex flex-col gap-2 w-full">
-                <input
-                  type="text"
-                  value={vendorSearch}
-                  onChange={e => setVendorSearch(e.target.value)}
-                  placeholder="공급사명 검색"
-                  className="w-full h-8 px-2.5 text-[15px] border border-line rounded-lg outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
-                />
                 <CategoryChips
                   value={vendorCategoryFilter}
                   onChange={(v) => setVendorCategoryFilter(String(v))}

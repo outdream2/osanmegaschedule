@@ -5,6 +5,14 @@
 //   · 목업 UI_MOCKUP_2026-08-21.html 톤 통일
 //   · 재사용 대상 · StaffManagePage · ProductInfoPage (#177) · 향후 기타 마스터-디테일
 //
+// ═══════════════════════════════════════════════════════════════════
+// 🔥 대원칙 (2026-08-24 · #262 · 사용자 지시)
+//   SplitListPanel 사용 시 · **`search`/`onSearchChange` prop 필수 (검색창 상단 기본)**
+//   · 리스트 위에 검색창이 항상 있어야 함 · UI 일관성 · 사용자 접근성
+//   · filters 슬롯 안에 custom input 넣기 X · 반드시 built-in props 사용
+//   · 예외 없음 · 신규 SplitListPanel 채택 시 search prop 세팅 필수
+// ═══════════════════════════════════════════════════════════════════
+//
 // 사용:
 //   <SplitListPanel
 //     title="직원"
