@@ -53,6 +53,7 @@ import { Spinner } from "../common/Spinner";
 import { SectionLabel } from "../common/SectionLabel";
 import { Hero } from "../common/Hero";
 import { Card } from "../common/Card";
+import { Modal } from "../common/Modal";
 
 interface LandingPageProps {
   authSession: AuthSession | null;
@@ -127,6 +128,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   // Stock arrivals
   const [stockArrivals, setStockArrivals] = useState<Array<{ id: number; title: string; body?: string | null; created_at: string }>>([]);
   const [arrivalsLoading, setArrivalsLoading] = useState(true);
+  // 2026-08-24 · 사용자 요청 · 클릭 시 상세 모달 (title + body + created_at)
+  const [arrivalDetail, setArrivalDetail] = useState<{ id: number; title: string; body?: string | null; created_at: string } | null>(null);
   const [pushSubscribed, setPushSubscribed] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
   const [showCreateArrival, setShowCreateArrival] = useState(false);
@@ -717,18 +720,51 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             ) : !arrivalsLoading && stockArrivals.length === 0 ? (
               <Card variant="flat" padding="none" className="text-center text-[16px] text-ink-soft py-8">데이터 없음</Card>
             ) : (
-              <Card clip padding="none" className={`divide-y divide-line/70 ${arrivalsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                {stockArrivals.slice(0, 5).map(a => (
-                  <div key={a.id} className="flex items-center gap-3 px-4 py-3 hover:bg-brand-tint/40 transition-colors">
-                    <div className="w-8 h-8 rounded-lg bg-brand-tint flex items-center justify-center shrink-0">
-                      <Package size={15} className="text-brand-deep" weight="fill" />
-                    </div>
-                    <span className="flex-1 text-[17px] font-semibold text-ink truncate">{a.title}</span>
-                    <span className="text-[15px] text-ink-soft shrink-0 whitespace-nowrap tabular-nums">
-                      {new Date(a.created_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-                ))}
+              /* 2026-08-24 · 최신 트렌드 · UI 대원칙 · Linear/Vercel/Attio 2026
+                 · 맨위 gradient accent line (top strip) · 시그니처
+                 · 폰트 +2 (title 19 · body 15 옅게 · meta 17)
+                 · 제목 옆 body 표시 · group hover · NEW 배지 · relative time */
+              <Card clip padding="none" className={`relative divide-y divide-line/70 ${arrivalsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                {/* 맨위 gradient accent line · Vercel/Linear 시그니처 */}
+                <span className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90" aria-hidden />
+                {stockArrivals.slice(0, 5).map(a => {
+                  const createdMs = new Date(a.created_at).getTime();
+                  const diffMin = Math.floor((Date.now() - createdMs) / 60000);
+                  const isNew = diffMin < 60;
+                  const timeLabel = diffMin < 1 ? "방금"
+                    : diffMin < 60 ? `${diffMin}분 전`
+                    : diffMin < 60 * 24 ? `${Math.floor(diffMin / 60)}시간 전`
+                    : new Date(a.created_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => setArrivalDetail(a)}
+                      className="group relative w-full text-left flex items-center gap-2.5 px-4 py-3.5 hover:bg-brand-tint/30 focus:outline-none focus-visible:bg-brand-tint/40 transition-all duration-200 cursor-pointer"
+                    >
+                      {/* 좌측 accent bar · hover 시 등장 */}
+                      <span className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-r-full bg-brand-deep opacity-0 group-hover:opacity-100 transition-opacity duration-200" aria-hidden />
+                      {/* 말머리표 · 작은 dot · brand-deep · 아이콘 대체 */}
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand-deep shrink-0" aria-hidden />
+                      {/* 제목 + body(옅게) + NEW 배지 */}
+                      <div className="flex-1 min-w-0 flex items-baseline gap-2 min-w-0">
+                        <span className="text-[19px] font-semibold text-ink truncate tracking-tight group-hover:text-brand-deep transition-colors duration-200 shrink-0 max-w-[60%]">{a.title}</span>
+                        {a.body && (
+                          <span className="text-[15px] font-normal text-ink-soft/70 truncate min-w-0" title={a.body}>· {a.body}</span>
+                        )}
+                        {isNew && (
+                          <span className="shrink-0 inline-flex items-center h-[22px] px-2 rounded-md text-[12px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 ring-1 ring-emerald-500/25">
+                            NEW
+                          </span>
+                        )}
+                      </div>
+                      {/* 시간 · relative · 폰트 17 · title 로 정확 시간 */}
+                      <span className="text-[17px] font-medium text-ink-soft shrink-0 whitespace-nowrap tabular-nums group-hover:text-brand-deep/70 transition-colors duration-200" title={new Date(a.created_at).toLocaleString("ko-KR")}>
+                        {timeLabel}
+                      </span>
+                    </button>
+                  );
+                })}
               </Card>
             )}
           </div>
@@ -736,6 +772,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
         </div>
       </div>
+
+      {/* 2026-08-24 · 사용자 요청 · 입고 알림 상세 모달 · Modal 프리미티브 */}
+      <Modal
+        open={!!arrivalDetail}
+        onClose={() => setArrivalDetail(null)}
+        size="md"
+        titleAccent
+        icon={<Package size={18} className="text-white" weight="fill" />}
+        title={
+          arrivalDetail ? (
+            <div className="min-w-0">
+              <div className="text-[19px] font-bold text-ink tracking-tight truncate">{arrivalDetail.title}</div>
+              <div className="text-[13px] text-ink-soft mt-0.5 tabular-nums">
+                {new Date(arrivalDetail.created_at).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+              </div>
+            </div>
+          ) : undefined
+        }
+      >
+        <div className="px-5 py-5 bg-white">
+          {arrivalDetail?.body ? (
+            <div className="text-[17px] text-ink leading-relaxed whitespace-pre-wrap break-words">{arrivalDetail.body}</div>
+          ) : (
+            <div className="text-[15px] text-ink-soft italic">추가 내용 없음</div>
+          )}
+        </div>
+      </Modal>
 
       {/* ── 데이터 업로드 통합 모달 (UploadDataModal.tsx · 2026-08-22 분리) ── */}
       <UploadDataModal

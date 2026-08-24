@@ -8,10 +8,10 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 665 |
-| 위반 파일 | 7 |
-| 클린 파일 | 658 (99%) |
-| 총 위반 개수 | 10 |
+| 스캔 파일 | 667 |
+| 위반 파일 | 8 |
+| 클린 파일 | 659 (99%) |
+| 총 위반 개수 | 11 |
 
 ## 🚨 규칙별 위반 현황
 
@@ -19,7 +19,7 @@
 |---|---:|---:|---|---|
 | `raw-fetch` | 2 | 2 | high | apiClient (api.get/post/put) |
 | `raw-alert` | 3 | 1 | high | useToast (showError·showSuccess) |
-| `large-file-warn` | 5 | 5 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `large-file-warn` | 6 | 6 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
@@ -27,13 +27,14 @@
 |---:|---|---:|---:|---|
 | 1 | `src/components/SystemSettingsPage/AutoImportSection.tsx` | 404 | 12 | raw-alert(3) · raw-fetch(1) |
 | 2 | `src/components/DisplayPage/DisplayPage.tsx` | 818 | 3 | large-file-warn(1) |
-| 3 | `src/components/LandingPage/VendorDetailModal.tsx` | 815 | 3 | large-file-warn(1) |
-| 4 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 806 | 3 | large-file-warn(1) |
-| 5 | `src/components/ScanPage/ScanPage.tsx` | 872 | 3 | large-file-warn(1) |
-| 6 | `src/components/StockManagePage/SupplierTab.tsx` | 805 | 3 | large-file-warn(1) |
-| 7 | `src/hooks/useAuth.ts` | 291 | 3 | raw-fetch(1) |
+| 3 | `src/components/LandingPage/LandingPage.tsx` | 854 | 3 | large-file-warn(1) |
+| 4 | `src/components/LandingPage/VendorDetailModal.tsx` | 815 | 3 | large-file-warn(1) |
+| 5 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 802 | 3 | large-file-warn(1) |
+| 6 | `src/components/ScanPage/ScanPage.tsx` | 872 | 3 | large-file-warn(1) |
+| 7 | `src/components/StockManagePage/SupplierTab.tsx` | 802 | 3 | large-file-warn(1) |
+| 8 | `src/hooks/useAuth.ts` | 291 | 3 | raw-fetch(1) |
 
-## 📝 모든 위반 파일 (7개)
+## 📝 모든 위반 파일 (8개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -41,10 +42,11 @@
 |---|---:|---:|
 | `src/components/SystemSettingsPage/AutoImportSection.tsx` | 404 | 12 |
 | `src/components/DisplayPage/DisplayPage.tsx` | 818 | 3 |
+| `src/components/LandingPage/LandingPage.tsx` | 854 | 3 |
 | `src/components/LandingPage/VendorDetailModal.tsx` | 815 | 3 |
-| `src/components/OrderManagePage/PaymentInfoTab.tsx` | 806 | 3 |
+| `src/components/OrderManagePage/PaymentInfoTab.tsx` | 802 | 3 |
 | `src/components/ScanPage/ScanPage.tsx` | 872 | 3 |
-| `src/components/StockManagePage/SupplierTab.tsx` | 805 | 3 |
+| `src/components/StockManagePage/SupplierTab.tsx` | 802 | 3 |
 | `src/hooks/useAuth.ts` | 291 | 3 |
 
 </details>

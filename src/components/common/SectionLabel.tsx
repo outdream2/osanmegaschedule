@@ -26,10 +26,10 @@ export function SectionLabel({ children, tone = "teal", right, className = "" }:
   const t = TONE_MAP[tone];
   return (
     <div className={`flex items-center gap-2.5 my-1 mb-3.5 ${className}`}>
-      {/* 2026-08-17 · 최신 트렌드 · 좌측 accent bar (2×14) · 웰컴카드 톤 · brand color */}
-      <span className={`w-[3px] h-[16px] rounded-full ${t.dot}`} />
-      {/* +2 폰트 · uppercase 지양 · tracking tight · 최신 SaaS (Linear/Vercel) */}
-      <span className={`text-[16px] font-bold tracking-tight ${t.text}`}>{children}</span>
+      {/* 2026-08-17 · 최신 트렌드 · 좌측 accent bar · 웰컴카드 톤 · brand color */}
+      <span className={`w-[3px] h-[18px] rounded-full ${t.dot}`} />
+      {/* 2026-08-24 · 폰트 +2 재적용 · 16→18 · 40대+ 가독성 · Linear/Vercel */}
+      <span className={`text-[18px] font-bold tracking-tight ${t.text}`}>{children}</span>
       {right && <div className="ml-auto">{right}</div>}
     </div>
   );
