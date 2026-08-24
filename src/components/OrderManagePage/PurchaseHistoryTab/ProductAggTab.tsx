@@ -120,8 +120,9 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
   return (
     <div className="overflow-auto flex-1 min-h-0">
       <table className="w-full text-xs min-w-[600px]" style={{ tableLayout: "fixed" }}>
-        <thead className="sticky top-0 bg-white z-10 border-b border-zinc-100">
-          <tr className="text-[11px] text-zinc-400 uppercase tracking-wider">
+        {/* 2026-08-24 · v3 확산 · bg zinc-100/70 · font-bold */}
+        <thead className="sticky top-0 bg-zinc-100/70 z-10 border-b border-line">
+          <tr className="text-[12px] sm:text-[13px] font-bold text-zinc-500 uppercase tracking-wider">
             <th className="relative text-left px-2 py-2 text-zinc-300" style={{ width: aw("num"), minWidth: aw("num") }}>
               #
               <span {...ar("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />

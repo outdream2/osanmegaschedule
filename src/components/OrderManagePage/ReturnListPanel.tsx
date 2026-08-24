@@ -355,51 +355,9 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
             ) : (
               <div className={`overflow-auto flex-1 min-h-0 ${returnLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
-                  <thead className="sticky top-0 bg-white z-10">
-                    {/* 그룹 컬러 헤더 · 2026-08-03 · 재고 그룹 (현재고·실재고·재고금액) · 판매 그룹 (1/2/3달) */}
-                    <tr className="border-b border-line text-[14px] font-bold uppercase tracking-wider">
-                      <th className="bg-zinc-50 w-7" />
-                      {/* 상품정보 (sky) */}
-                      <th colSpan={isReturnGroupCollapsed("info") ? 1 : 2}
-                        className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-zinc-100 cursor-pointer select-none hover:bg-sky-100 transition"
-                        onClick={() => toggleReturnGroup("info")}
-                        title={isReturnGroupCollapsed("info") ? "상품정보 펼치기" : "상품정보 접기"}>
-                        <span className="inline-flex items-center gap-1">
-                          {isReturnGroupCollapsed("info") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}상품정보
-                        </span>
-                      </th>
-                      {/* 재고 (amber) · 재고금액 (2026-08-06 · 현재고·실재고 제거) */}
-                      <th colSpan={1}
-                        className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-zinc-100 cursor-pointer select-none hover:bg-amber-100 transition"
-                        onClick={() => toggleReturnGroup("stock")}
-                        title={isReturnGroupCollapsed("stock") ? "재고금액 펼치기" : "재고금액 접기"}>
-                        <span className="inline-flex items-center gap-1">
-                          {isReturnGroupCollapsed("stock") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}재고
-                        </span>
-                      </th>
-                      {/* 매입 (emerald) */}
-                      <th colSpan={1}
-                        className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-r border-zinc-100 cursor-pointer select-none hover:bg-emerald-100 transition"
-                        onClick={() => toggleReturnGroup("purchase")}
-                        title={isReturnGroupCollapsed("purchase") ? "매입 펼치기" : "매입 접기"}>
-                        <span className="inline-flex items-center gap-1">
-                          {isReturnGroupCollapsed("purchase") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}매입
-                        </span>
-                      </th>
-                      {/* 판매 (rose) · 1/2/3 달 판매량 · 통합 컬럼 (2026-08-06) */}
-                      <th colSpan={1}
-                        className="text-center py-1.5 bg-rose-50 text-rose-700 border-l border-r border-zinc-100 cursor-pointer select-none hover:bg-rose-100 transition"
-                        onClick={() => toggleReturnGroup("sales")}
-                        title={isReturnGroupCollapsed("sales") ? "판매 펼치기" : "판매 접기"}>
-                        <span className="inline-flex items-center gap-1">
-                          {isReturnGroupCollapsed("sales") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}판매
-                        </span>
-                      </th>
-                      {/* 액션 (slate) */}
-                      <th className="text-center py-1.5 bg-zinc-100 text-zinc-600 border-l border-zinc-100">액션</th>
-                    </tr>
-                    {/* 서브 헤더 */}
-                    <tr className="border-b border-zinc-100 text-[15px] text-zinc-400 uppercase tracking-wider">
+                  {/* 2026-08-24 · v3 확산 · 카테고리 그룹 헤더 제거 · 서브헤더만 · Attio 톤 */}
+                  <thead className="sticky top-0 bg-zinc-100/70 z-10 border-b border-line">
+                    <tr className="text-[13px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider">
                       <th className="relative text-center px-0.5 py-1.5 bg-zinc-50/60"
                         style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
                         #

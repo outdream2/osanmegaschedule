@@ -125,8 +125,9 @@ export const LedgerTab: React.FC<{
   return (
     <div className="overflow-auto flex-1 min-h-0 bg-white">
       <table className="w-full text-[12px] min-w-[420px]" style={{ borderCollapse: "separate", borderSpacing: 0, tableLayout: "fixed" }}>
-        <thead className="sticky top-0 bg-zinc-50 border-b border-line z-10">
-          <tr className="text-[11px] text-zinc-500 uppercase tracking-wider">
+        {/* 2026-08-24 · v3 확산 · bg zinc-100/70 · 반응형 폰트 · font-bold */}
+        <thead className="sticky top-0 bg-zinc-100/70 border-b border-line z-10">
+          <tr className="text-[12px] sm:text-[13px] font-bold text-zinc-500 uppercase tracking-wider">
             <th className="relative text-center py-2" style={{ width: lw("expand"), minWidth: lw("expand") }}>
               <span {...lr("expand")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
             </th>
