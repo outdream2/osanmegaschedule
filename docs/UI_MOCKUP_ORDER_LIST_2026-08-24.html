@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>발주 리스트 · 랜딩 스타일 · 목업 · 2026-08-24</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" />
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{
+    --bg:#F7F8FA; --surface:#FFFFFF; --ink:#0F172A; --ink-soft:#52606D; --line:#E5E9EF;
+    --brand:#1E5C8E; --brand-deep:#0A2E4A; --brand-tint:#E7F0F9;
+    --emerald:#0F7A57; --emerald-tint:#E4F3EC;
+    --rose:#B4413C; --rose-tint:#FBE7E5;
+    --amber:#B45309; --amber-tint:#FDEEE0;
+    --sky:#2563EB;
+  }
+  body{ font-family:'Pretendard Variable','Pretendard',-apple-system,sans-serif; background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; margin:0; padding:24px; }
+  /* 랜딩 입고알림 스타일 재활용 · Card clip + divide-y */
+  .list-card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:0 1px 2px rgba(15,23,42,.04), 0 8px 24px -12px rgba(15,23,42,.08); position:relative; }
+  /* 상단 gradient accent · Vercel/Linear 시그니처 */
+  .list-card::before{ content:""; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, var(--brand-deep), var(--sky), var(--brand-deep)); opacity:.9; }
+  .list-divider > * + * { border-top:1px solid rgba(229,233,239,.7); }
+  /* 발주 행 · 랜딩 알림 톤 · 폰트 +2+2 */
+  .order-row{
+    width:100%; text-align:left; background:transparent; border:0; padding:14px 16px;
+    display:flex; align-items:center; gap:10px;
+    cursor:pointer; position:relative; transition:all .2s ease;
+  }
+  .order-row:hover{ background:rgba(231,240,249,.3); }
+  .order-row:focus{ outline:none; background:rgba(231,240,249,.4); }
+  /* 좌측 hover accent bar */
+  .order-row::before{ content:""; position:absolute; left:0; top:10px; bottom:10px; width:3px; border-radius:0 3px 3px 0; background:var(--brand-deep); opacity:0; transition:opacity .2s ease; }
+  .order-row:hover::before{ opacity:1; }
+  /* 말머리표 · 작은 dot · brand-deep */
+  .bullet{ width:6px; height:6px; border-radius:999px; background:var(--brand-deep); flex-shrink:0; }
+  .bullet.rose{ background:var(--rose); }
+  .bullet.amber{ background:var(--amber); }
+  .bullet.emerald{ background:var(--emerald); }
+  /* 제목 group · flex-1 */
+  .row-body{ flex:1; min-width:0; display:flex; align-items:baseline; gap:8px; }
+  .row-title{ font-size:19px; font-weight:600; letter-spacing:-0.2px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:38%; flex-shrink:0; transition:color .2s; }
+  .order-row:hover .row-title{ color:var(--brand-deep); }
+  .row-desc{ font-size:15px; font-weight:400; color:rgba(82,96,109,.7); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  /* NEW / 상태 배지 · 최신 트렌드 · 남발 X */
+  .pill{ display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:6px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+  .pill-emerald{ color:var(--emerald); background:var(--emerald-tint); box-shadow:inset 0 0 0 1px rgba(15,122,87,.25); }
+  .pill-rose{ color:var(--rose); background:var(--rose-tint); box-shadow:inset 0 0 0 1px rgba(180,65,60,.25); }
+  .pill-amber{ color:var(--amber); background:var(--amber-tint); box-shadow:inset 0 0 0 1px rgba(180,83,9,.25); }
+  /* 우측 meta · 수량 · 금액 · 시간 */
+  .row-meta{ display:inline-flex; align-items:center; gap:10px; flex-shrink:0; font-variant-numeric:tabular-nums; }
+  .row-meta .qty{ font-size:17px; font-weight:600; color:var(--ink); }
+  .row-meta .amt{ font-size:17px; font-weight:700; color:var(--brand-deep); }
+  .row-meta .time{ font-size:17px; font-weight:500; color:var(--ink-soft); }
+  .order-row:hover .row-meta .time{ color:rgba(10,46,74,.7); }
+  /* Section title */
+  h2{ font-size:19px; font-weight:800; margin:0 0 12px; letter-spacing:-.3px; }
+  h2 .cnt{ font-size:15px; font-weight:600; color:var(--ink-soft); margin-left:6px; }
+  /* Toolbar · 상단 */
+  .toolbar{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .toolbar .btn-primary{ display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 16px; border-radius:10px; font-size:15px; font-weight:700; color:#fff; background:linear-gradient(135deg, var(--rose), #942f28); box-shadow:0 1px 2px rgba(0,0,0,.06), inset 0 0 0 1px rgba(180,65,60,.2); cursor:pointer; transition:all .15s; border:0; }
+  .toolbar .btn-primary:hover{ box-shadow:0 4px 12px -2px rgba(180,65,60,.35); transform:translateY(-1px); }
+  .toolbar .btn-secondary{ display:inline-flex; align-items:center; gap:4px; height:36px; padding:0 12px; border-radius:10px; font-size:14px; font-weight:600; color:var(--ink-soft); background:#fff; border:1px solid var(--line); cursor:pointer; transition:all .15s; }
+  .toolbar .btn-secondary:hover{ border-color:rgba(10,46,74,.4); background:rgba(231,240,249,.2); color:var(--brand-deep); }
+  .toolbar .spacer{ flex:1; }
+</style>
+</head>
+<body>
+
+<div style="max-width:720px; margin:0 auto;">
+  <h2>발주 리스트 <span class="cnt">12건 · 4개 공급사</span></h2>
+
+  <!-- 상단 액션 · 최신 트렌드 (이미 적용됨) -->
+  <div class="toolbar">
+    <button class="btn-primary">📦 일괄 발주 · 5</button>
+    <button class="btn-secondary">전체선택</button>
+    <button class="btn-secondary">선택삭제 · 2</button>
+    <span class="spacer"></span>
+    <button class="btn-secondary">↻ 새로고침</button>
+  </div>
+
+  <!-- 리스트 카드 · 상단 gradient · divide-y · 말머리표 -->
+  <div class="list-card">
+    <div class="list-divider">
+
+      <button class="order-row">
+        <span class="bullet"></span>
+        <div class="row-body">
+          <span class="row-title">타이레놀정 500mg</span>
+          <span class="row-desc">· 동아제약 · 재고 12개 · 부족 8</span>
+          <span class="pill pill-emerald">NEW</span>
+        </div>
+        <span class="row-meta">
+          <span class="qty">20개</span>
+          <span class="amt">36,000원</span>
+        </span>
+      </button>
+
+      <button class="order-row">
+        <span class="bullet rose"></span>
+        <div class="row-body">
+          <span class="row-title">박카스디 100ml</span>
+          <span class="row-desc">· 동아제약 · 재고 0 · 긴급</span>
+          <span class="pill pill-rose">긴급</span>
+        </div>
+        <span class="row-meta">
+          <span class="qty">50개</span>
+          <span class="amt">45,000원</span>
+        </span>
+      </button>
+
+      <button class="order-row">
+        <span class="bullet"></span>
+        <div class="row-body">
+          <span class="row-title">활명수큐 액</span>
+          <span class="row-desc">· 동화약품 · 재고 5개</span>
+        </div>
+        <span class="row-meta">
+          <span class="qty">30개</span>
+          <span class="amt">27,000원</span>
+        </span>
+      </button>
+
+      <button class="order-row">
+        <span class="bullet amber"></span>
+        <div class="row-body">
+          <span class="row-title">아로나민골드</span>
+          <span class="row-desc">· 일동제약 · 재고 3개 · 임시중단 가능</span>
+          <span class="pill pill-amber">대기</span>
+        </div>
+        <span class="row-meta">
+          <span class="qty">10개</span>
+          <span class="amt">158,000원</span>
+        </span>
+      </button>
+
+      <button class="order-row">
+        <span class="bullet"></span>
+        <div class="row-body">
+          <span class="row-title">아세트아미노펜 500mg (제네릭)</span>
+          <span class="row-desc">· 신신제약 · 재고 15개</span>
+        </div>
+        <span class="row-meta">
+          <span class="qty">40개</span>
+          <span class="amt">18,400원</span>
+        </span>
+      </button>
+
+    </div>
+  </div>
+
+  <p style="margin:24px 0 8px; font-size:14px; color:var(--ink-soft);">
+    ✨ <b>디자인 요소</b>: 상단 gradient accent · 말머리표 · 제목+설명 옆 나열 · 옅은 부가정보 · 배지(NEW/긴급/대기) · 우측 수량/금액 · hover 좌측 accent bar
+  </p>
+  <p style="font-size:14px; color:var(--ink-soft); margin:0 0 16px;">
+    ✨ <b>랜딩 입고알림 톤</b>: divide-y · brand-tint hover · 폰트 +2 (19/17) · Pretendard · Linear/Vercel 2026
+  </p>
+</div>
+
+</body>
+</html>
