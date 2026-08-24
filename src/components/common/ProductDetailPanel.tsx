@@ -354,8 +354,8 @@ const ProductHeaderCard: React.FC<{
   return (
     /* 2026-08-17 · Linear/Vercel/Attio 규칙 · 히어로 카드 · Top hairline gradient (딱 1군데) + 뉴트럴 base */
     <div className="relative bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_20px_rgba(10,46,74,0.08)] overflow-hidden">
-      {/* 상단 1px hairline gradient · 브랜드 accent → transparent · ONE 위치만 */}
-      <div className="h-[2px] w-full bg-gradient-to-r from-brand-deep via-[#1E5A8F] to-transparent" />
+      {/* 2026-08-24 · v9 · 상단 2px gradient (brand-deep → sky-500 → brand-deep) · opacity 90 */}
+      <div className="h-[2px] w-full bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90" />
 
       <div className="relative px-4 py-4">
         {/* 상품명 행 · brand-deep icon chip + 상품명 크게 */}

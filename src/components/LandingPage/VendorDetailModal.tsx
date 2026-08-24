@@ -313,8 +313,10 @@ export const VendorDetailModal: React.FC<{
         className={innerCls}
         onClick={panel ? undefined : (e => e.stopPropagation())}
       >
-        {/* ── 헤더 · 2026-08-10 · 아이콘 제거 · 텍스트 위주 · 폰트 +2 */}
-        <div className="flex items-start justify-between px-6 py-4 border-b border-line bg-sky-50 shrink-0 gap-3">
+        {/* ── 헤더 · v9 · 상단 gradient accent · glass style (2026-08-24) */}
+        <div className="relative flex items-start justify-between px-6 py-4 border-b border-line bg-white shrink-0 gap-3">
+          {/* v9 · 상단 2px gradient */}
+          <span aria-hidden className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10" />
           {/* 2026-08-10 · 사용자 요청 · 분류 위 · 공급사명 아래 · 옆에 사업자·담당·전화 (PC 한줄 · 모바일 2줄) */}
           <div className="min-w-0 flex-1">
             {/* 분류 · 위쪽 별도 라인 */}

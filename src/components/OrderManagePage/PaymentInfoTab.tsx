@@ -737,7 +737,9 @@ export const PaymentInfoTab: React.FC = () => {
           ) : (
             <>
               {/* ── 공급사 요약 카드 (T-COMMON-VendorInfo · VendorInfoHeader 위임) ── */}
-              <div className="bg-white rounded-2xl border border-line shadow-sm p-4 flex flex-col gap-2.5">
+              {/* 2026-08-24 · v9 · 상단 gradient accent (brand-deep → sky-500 → brand-deep) */}
+              <div className="relative bg-white rounded-2xl border border-line shadow-sm p-4 flex flex-col gap-2.5 overflow-hidden">
+                <span aria-hidden className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10 rounded-t-2xl" />
                 <VendorInfoHeader
                   vendor={selectedVendor}
                   onEdit={() => openVendorInfo(selectedVendor as any)}
