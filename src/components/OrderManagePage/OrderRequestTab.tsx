@@ -182,8 +182,10 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
               <div className="mb-2 text-[15px] text-brand-deep bg-brand-tint/60 border border-brand/15 rounded-md px-2 py-1 leading-snug">
                 공급사를 클릭하면 최신 발주이력을 확인할 수 있습니다
               </div>
-              {/* 2026-08-24 · v3 목업 실적용 · 표 형식 · sticky thead · Attio/Linear 톤 */}
+              {/* 2026-08-24 · v3 목업 실적용 · 표 형식 · sticky thead · Attio/Linear 톤
+                  상단 gradient accent (사용자 지시 · 랜딩 톤) */}
               <div className={`max-h-[50vh] lg:max-h-[75vh] overflow-auto relative rounded-xl border border-line bg-white ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                <span aria-hidden className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-20" />
                 <table className="w-full text-[15px] sm:min-w-[540px] border-collapse [&_tbody_td]:text-[15px] [&_thead_th]:text-[12px]">
                   <thead className="sticky top-0 z-10">
                     <tr className="text-zinc-500 uppercase tracking-wider bg-zinc-100/70 border-b border-line">
