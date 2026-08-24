@@ -625,82 +625,26 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
             </Card>
           </div>
         ) : returnPanelFull ? (
+          /* 2026-08-24 · 사용자 지시 · 외부 3탭 (상품정보/매입이력/판매정보) 제거 ·
+             모두 같은 ProductDetailRightPanel 렌더 · 실제 라우팅 안 됨 · 탭메뉴와 내용 안 맞음
+             ProductDetailRightPanel 내부 자체 5탭 (기간별상품흐름·매입이력·발주내역·재고관리·상품정보) 사용 */
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 overflow-y-auto">
-            <Card padding="none" clip className="shrink-0">
-              <div className="flex border-b border-line bg-zinc-50/50">
-                {([
-                  { k: "info" as const,     label: "상품정보",   color: "text-sky-700 border-sky-500"     },
-                  { k: "purchase" as const, label: "매입이력",   color: "text-emerald-700 border-emerald-500" },
-                  { k: "sales" as const,    label: "판매정보",   color: "text-rose-700 border-rose-500"   },
-                ] as const).map(({ k, label, color }) => (
-                  <button key={k} type="button"
-                    onClick={() => setReturnDetailTab(k)}
-                    className={`flex-1 min-h-[40px] py-2 px-3 text-[15px] font-bold border-b-2 transition cursor-pointer ${returnDetailTab === k ? color : "text-zinc-400 border-transparent hover:text-zinc-600"}`}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <div className="px-3 py-1.5 flex items-center gap-2 border-b border-zinc-100">
-                <span className="text-[15px] font-bold text-zinc-500 truncate">{returnSelectedProduct?.name}</span>
-                <button type="button" onClick={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
-                  className="ml-auto text-[14px] text-zinc-400 hover:text-zinc-600 cursor-pointer shrink-0">닫기</button>
-              </div>
-            </Card>
-
-            {returnDetailTab === "info" && (
-              <ProductDetailRightPanel
-                selected={({
-                  code: (returnPanelFull as any).product_code ?? (returnPanelFull as any).code ?? (returnSelectedProduct?.code ?? ""),
-                  name: (returnPanelFull as any).product_name ?? (returnPanelFull as any).name ?? (returnSelectedProduct?.name ?? ""),
-                  spec: (returnPanelFull as any).spec ?? "",
-                  ...returnPanelFull,
-                  realMap: (returnPanelFull as any).realMap ?? (returnPanelFull as any).real_map ?? null,
-                } as ProductInfoType)}
-                onClose={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
-                onProductUpdate={(u) => setReturnPanelFull(prev => prev ? { ...prev, ...u } : prev)}
-                onRealMapUpdate={(v) => setReturnPanelFull(prev => prev ? { ...prev, real_map: v, realMap: v } : prev)}
-                showChart={false}
-                context="order-manage"
-                editable={true}
-                emptySub="상세 정보가 표시됩니다"
-              />
-            )}
-            {returnDetailTab === "purchase" && (
-              <ProductDetailRightPanel
-                selected={({
-                  code: (returnPanelFull as any).product_code ?? (returnPanelFull as any).code ?? (returnSelectedProduct?.code ?? ""),
-                  name: (returnPanelFull as any).product_name ?? (returnPanelFull as any).name ?? (returnSelectedProduct?.name ?? ""),
-                  spec: (returnPanelFull as any).spec ?? "",
-                  ...returnPanelFull,
-                  realMap: (returnPanelFull as any).realMap ?? (returnPanelFull as any).real_map ?? null,
-                } as ProductInfoType)}
-                onClose={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
-                onProductUpdate={(u) => setReturnPanelFull(prev => prev ? { ...prev, ...u } : prev)}
-                onRealMapUpdate={(v) => setReturnPanelFull(prev => prev ? { ...prev, real_map: v, realMap: v } : prev)}
-                showChart={true}
-                context="order-manage"
-                editable={false}
-                emptySub="매입이력이 표시됩니다"
-              />
-            )}
-            {returnDetailTab === "sales" && (
-              <ProductDetailRightPanel
-                selected={({
-                  code: (returnPanelFull as any).product_code ?? (returnPanelFull as any).code ?? (returnSelectedProduct?.code ?? ""),
-                  name: (returnPanelFull as any).product_name ?? (returnPanelFull as any).name ?? (returnSelectedProduct?.name ?? ""),
-                  spec: (returnPanelFull as any).spec ?? "",
-                  ...returnPanelFull,
-                  realMap: (returnPanelFull as any).realMap ?? (returnPanelFull as any).real_map ?? null,
-                } as ProductInfoType)}
-                onClose={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
-                onProductUpdate={(u) => setReturnPanelFull(prev => prev ? { ...prev, ...u } : prev)}
-                onRealMapUpdate={(v) => setReturnPanelFull(prev => prev ? { ...prev, real_map: v, realMap: v } : prev)}
-                showChart={true}
-                context="order-manage"
-                editable={false}
-                emptySub="판매정보가 표시됩니다"
-              />
-            )}
+            <ProductDetailRightPanel
+              selected={({
+                code: (returnPanelFull as any).product_code ?? (returnPanelFull as any).code ?? (returnSelectedProduct?.code ?? ""),
+                name: (returnPanelFull as any).product_name ?? (returnPanelFull as any).name ?? (returnSelectedProduct?.name ?? ""),
+                spec: (returnPanelFull as any).spec ?? "",
+                ...returnPanelFull,
+                realMap: (returnPanelFull as any).realMap ?? (returnPanelFull as any).real_map ?? null,
+              } as ProductInfoType)}
+              onClose={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
+              onProductUpdate={(u) => setReturnPanelFull(prev => prev ? { ...prev, ...u } : prev)}
+              onRealMapUpdate={(v) => setReturnPanelFull(prev => prev ? { ...prev, real_map: v, realMap: v } : prev)}
+              showChart
+              context="order-manage"
+              editable={true}
+              emptySub="상세 정보가 표시됩니다"
+            />
           </div>
         ) : (
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0">
