@@ -216,7 +216,9 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
   return (
     <>
       <div className="p-4 space-y-3">
-        <Card variant="flat" padding="md" rounded="lg" className="bg-white">
+        {/* 2026-08-24 · v9 · 상단 gradient accent (brand-deep → sky-500 → brand-deep) */}
+        <Card variant="flat" padding="md" rounded="lg" className="relative bg-white overflow-hidden">
+          <span aria-hidden className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10 rounded-t-lg" />
           <div className="flex items-center gap-2 mb-3 pb-2 border-b border-line">
             <InfoIcon size={16} className="text-brand-deep" />
             <h3 className="text-[15px] font-bold text-ink tracking-tight">기본 정보</h3>
