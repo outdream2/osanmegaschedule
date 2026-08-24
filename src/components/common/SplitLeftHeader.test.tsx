@@ -9,7 +9,7 @@ describe("SplitLeftHeader · 기본 렌더", () => {
     const { container, getByRole } = render(<SplitLeftHeader title="사직서 조건 입력" />);
     expect(container.textContent).toContain("사직서 조건 입력");
     const h = getByRole("heading", { level: 2 });
-    expect(h.className).toContain("text-[17px]");
+    expect(h.className).toContain("text-[19px]");
     expect(h.className).toContain("font-bold");
   });
 

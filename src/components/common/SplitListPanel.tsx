@@ -181,7 +181,7 @@ export function SplitListPanel({
           {(title != null || onAdd != null || headerActions != null || (searchInHeader && hasSearch)) && (
             <div className="flex items-center gap-2 min-w-0">
               {title != null && (
-                <div className="flex items-center gap-1.5 min-w-0 shrink-0">
+                <div className={`flex items-center gap-1.5 min-w-0 ${searchInHeader ? "shrink-0" : ""}`.trim()}>
                   <span className="text-[15px] font-bold text-ink tracking-tight truncate">
                     {title}
                   </span>
