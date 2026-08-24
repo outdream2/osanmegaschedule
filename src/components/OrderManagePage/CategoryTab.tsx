@@ -212,7 +212,28 @@ const ZoneCategoryContent: React.FC = () => {
         onClick={() => setSelectedZone(prev => prev === g.zone ? null : g.zone)}
         className={`w-full flex flex-col gap-1.5 p-2.5 rounded-xl border cursor-pointer text-left transition ${selectedBorder}`}
       >
-        {/* 베스트 아이템 한 행 */}
+        {/* 2026-08-24 · 사용자 지시 · 순위·카테고리·1~3위상품 모두 구역라벨 아래 배치 */}
+        {/* 1) 구역 라벨 · 최상단 */}
+        <div className="flex items-center justify-between gap-2">
+          <span className={`text-[17px] font-extrabold ${textCls} tabular-nums shrink-0 px-2 py-0.5 rounded-md bg-white/90 border border-current shadow-sm`}>
+            {getZoneLabel(g.zone)}
+          </span>
+          <span className={`text-zinc-400 text-[14px] transition-transform shrink-0 ${isSelected ? "rotate-90" : ""}`}>▶</span>
+        </div>
+        {/* 2) 순위 배지 + 카테고리 라벨 · 구역 아래 */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`inline-flex items-center justify-center w-[20px] h-[20px] text-[14px] font-bold rounded-md border tabular-nums shrink-0 ${rankCls}`}
+            title={`그룹 내 순위 ${rank}위`}>
+            {rank}
+          </span>
+          {zoneCategoryLabel(g.zone) && (
+            <span className={`text-[15px] font-bold ${textCls} break-words whitespace-normal leading-tight`}
+              title={zoneCategoryLabel(g.zone)}>
+              {zoneCategoryLabel(g.zone)}
+            </span>
+          )}
+        </div>
+        {/* 3) 1~3위 판매 상품 배지 · 카테고리 아래 */}
         {bestItems.length > 0 && (
           <div className="flex items-center gap-1 flex-wrap">
             {bestItems.map((it, i) => (
@@ -227,27 +248,6 @@ const ZoneCategoryContent: React.FC = () => {
             ))}
           </div>
         )}
-        {/* 구역 정보 행 · 2026-08-24 · 사용자 지시 · 순위(1,2,3) 은 카테고리 아래쪽 배치 */}
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex flex-col gap-1 min-w-0">
-            <div className="flex items-center gap-2 min-w-0">
-              {/* 2026-08-23 · #184 · 구역 배지 강조 · 크기 up · 배경/테두리 shadow */}
-              <span className={`text-[17px] font-extrabold ${textCls} tabular-nums shrink-0 px-2 py-0.5 rounded-md bg-white/90 border border-current shadow-sm`}>{getZoneLabel(g.zone)}</span>
-              {zoneCategoryLabel(g.zone) && (
-                <span className={`text-[15px] font-bold ${textCls} break-words whitespace-normal leading-tight`}
-                  title={zoneCategoryLabel(g.zone)}>
-                  {zoneCategoryLabel(g.zone)}
-                </span>
-              )}
-            </div>
-            {/* 순위 배지 · 카테고리 아래 배치 (사용자 지시) */}
-            <span className={`inline-flex items-center justify-center w-[20px] h-[20px] text-[14px] font-bold rounded-md border tabular-nums shrink-0 ${rankCls}`}
-              title={`그룹 내 순위 ${rank}위`}>
-              {rank}
-            </span>
-          </div>
-          <span className={`text-zinc-400 text-[14px] transition-transform shrink-0 ${isSelected ? "rotate-90" : ""}`}>▶</span>
-        </div>
         <div className="flex items-center justify-between gap-2 flex-wrap text-[15px] tabular-nums">
           <div className="flex items-center gap-1.5 text-zinc-500 font-semibold">
             <span>상품 <span className="font-bold text-zinc-700">{g.items.length}</span>종</span>
