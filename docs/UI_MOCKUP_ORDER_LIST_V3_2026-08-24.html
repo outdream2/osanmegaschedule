@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>발주 리스트 · v3 프리미엄 · Ramp/Brex/Cursor 톤 · 2026-08-24</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" />
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{
+    /* Ramp/Brex 톤 · 순백 배경 · 매우 어두운 ink · 미묘한 gray */
+    --bg:#FBFBFC;                /* 순백 · 살짝 회색 */
+    --surface:#FFFFFF;
+    --ink:#09090B;               /* 거의 검정 · Cursor 톤 */
+    --ink-1:#3F3F46;             /* dark gray */
+    --ink-2:#71717A;             /* mid gray */
+    --ink-3:#A1A1AA;             /* light gray */
+    --line:#EDEDF0;              /* 매우 옅은 라인 */
+    --line-2:#F4F4F5;            /* hair line */
+    /* Accent · 단 하나 · brand deep */
+    --brand:#18181B;             /* charcoal · Ramp 톤 (검정 accent) */
+    --brand-soft:#27272A;
+    --accent:#3B82F6;            /* subtle blue accent */
+    --success:#10B981;
+    --warn:#F59E0B;
+    --danger:#EF4444;
+    /* Shadow · 매우 부드러움 */
+    --shadow-1:0 0 0 1px rgba(9,9,11,.03), 0 1px 2px rgba(9,9,11,.04);
+    --shadow-2:0 0 0 1px rgba(9,9,11,.04), 0 2px 4px rgba(9,9,11,.06), 0 6px 16px -4px rgba(9,9,11,.08);
+    --shadow-3:0 0 0 1px rgba(9,9,11,.05), 0 4px 8px rgba(9,9,11,.08), 0 16px 32px -8px rgba(9,9,11,.14);
+  }
+  body{
+    font-family:'Pretendard Variable','Pretendard',-apple-system,'SF Pro Text',sans-serif;
+    background:var(--bg); color:var(--ink);
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    font-feature-settings:"cv02","cv04","cv09","ss01";
+    margin:0; padding:32px 24px;
+    letter-spacing:-.01em;
+  }
+  *{ box-sizing:border-box; }
+
+  /* ══════════════════════════════════════════════
+     HEADER · Notion + Ramp 스타일 · 큰 여백
+  ══════════════════════════════════════════════ */
+  .container{ max-width:900px; margin:0 auto; }
+
+  .page-head{ margin-bottom:28px; }
+  .page-head .breadcrumb{ font-size:12px; color:var(--ink-3); font-weight:500; letter-spacing:.02em; margin-bottom:6px; }
+  .page-head h1{ font-size:28px; font-weight:800; letter-spacing:-.03em; margin:0 0 4px; color:var(--ink); }
+  .page-head .stats{ font-size:14px; color:var(--ink-2); font-weight:500; }
+  .page-head .stats strong{ color:var(--ink); font-weight:700; font-variant-numeric:tabular-nums; }
+
+  /* Toolbar · sticky · flat */
+  .toolbar{
+    position:sticky; top:12px; z-index:20;
+    display:flex; align-items:center; gap:8px;
+    padding:10px 12px; margin-bottom:20px;
+    background:rgba(255,255,255,.85); backdrop-filter:blur(12px);
+    border:1px solid var(--line); border-radius:14px;
+    box-shadow:var(--shadow-1);
+  }
+  .toolbar .search{ flex:1; height:34px; padding:0 12px 0 34px; border:0; background:transparent; font-size:14px; color:var(--ink); font-weight:500; outline:none; position:relative; }
+  .toolbar .search-wrap{ flex:1; position:relative; }
+  .toolbar .search-wrap::before{ content:"⌕"; position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--ink-3); font-size:16px; pointer-events:none; }
+  .toolbar .btn{ display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 12px; border-radius:9px; font-size:13px; font-weight:600; letter-spacing:-.01em; cursor:pointer; transition:all .12s ease; border:1px solid transparent; }
+  .toolbar .btn-ghost{ color:var(--ink-1); background:transparent; }
+  .toolbar .btn-ghost:hover{ background:var(--line-2); color:var(--ink); }
+  .toolbar .btn-primary{
+    color:#FFF; background:var(--brand);
+    box-shadow:0 0 0 1px rgba(9,9,11,.4), 0 2px 4px rgba(9,9,11,.15), inset 0 1px 0 rgba(255,255,255,.12);
+  }
+  .toolbar .btn-primary:hover{ background:var(--brand-soft); }
+  .toolbar .btn-primary .kbd{ font-size:11px; padding:1px 5px; border-radius:4px; background:rgba(255,255,255,.15); font-weight:700; font-family:ui-monospace,'JetBrains Mono',monospace; }
+
+  /* ══════════════════════════════════════════════
+     GROUP · 카드 없이 · Ramp/Notion 톤 · flat + line
+  ══════════════════════════════════════════════ */
+  .group{ margin-bottom:24px; }
+  .group-head{
+    display:flex; align-items:center; gap:10px;
+    padding:14px 12px 10px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:0;
+  }
+  .group-head .kind-dot{
+    width:6px; height:6px; border-radius:99px; flex-shrink:0;
+  }
+  .dot-선결제{ background:var(--danger); box-shadow:0 0 0 4px rgba(239,68,68,.12); }
+  .dot-위탁{ background:#8B5CF6; box-shadow:0 0 0 4px rgba(139,92,246,.12); }
+  .dot-60회전{ background:var(--success); box-shadow:0 0 0 4px rgba(16,185,129,.12); }
+  .dot-기타{ background:var(--ink-3); box-shadow:0 0 0 4px rgba(161,161,170,.12); }
+
+  .group-head .kind{ font-size:11px; color:var(--ink-2); font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-family:ui-monospace,'JetBrains Mono',monospace; }
+  .group-head .name{ font-size:15px; color:var(--ink); font-weight:700; letter-spacing:-.02em; cursor:pointer; }
+  .group-head .name:hover{ text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; }
+  .group-head .count{ font-size:12px; color:var(--ink-3); font-variant-numeric:tabular-nums; font-weight:500; }
+
+  .group-head .history{ font-size:12px; color:var(--ink-2); font-weight:600; text-decoration:none; padding:4px 8px; border-radius:6px; border:1px solid var(--line); cursor:pointer; transition:all .12s; display:inline-flex; align-items:center; gap:4px; }
+  .group-head .history:hover{ background:var(--ink); color:#FFF; border-color:var(--ink); }
+  .group-head .history .arrow{ font-size:10px; opacity:.6; transition:transform .12s; }
+  .group-head .history:hover .arrow{ transform:translateX(1px); opacity:1; }
+
+  .group-head .total{ margin-left:auto; text-align:right; }
+  .group-head .total .lbl{ font-size:10px; color:var(--ink-3); font-weight:600; letter-spacing:.06em; text-transform:uppercase; display:block; margin-bottom:1px; }
+  .group-head .total .val{ font-size:20px; font-weight:800; color:var(--ink); letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
+  .group-head .total .val .won{ font-size:12px; color:var(--ink-3); font-weight:600; margin-left:2px; }
+
+  /* ══════════════════════════════════════════════
+     ROW · minimalist · large numbers · Ramp 톤
+  ══════════════════════════════════════════════ */
+  .rows{ display:flex; flex-direction:column; }
+  .row{
+    display:grid; grid-template-columns:20px 1fr auto auto;
+    gap:16px; align-items:center;
+    padding:16px 12px;
+    border-bottom:1px solid var(--line-2);
+    transition:all .1s;
+    cursor:pointer;
+  }
+  .row:hover{ background:rgba(24,24,27,.02); }
+  .row.selected{ background:rgba(59,130,246,.04); border-left:2px solid var(--accent); padding-left:10px; }
+
+  .row .check{
+    width:16px; height:16px; border:1.5px solid var(--ink-3); border-radius:5px;
+    display:flex; align-items:center; justify-content:center;
+    transition:all .12s; background:#FFF;
+  }
+  .row.selected .check{ background:var(--accent); border-color:var(--accent); }
+  .row.selected .check::after{ content:"✓"; color:#FFF; font-size:11px; font-weight:900; }
+
+  .row .item{ min-width:0; }
+  .row .item .name{
+    font-size:15px; font-weight:600; color:var(--ink);
+    letter-spacing:-.015em; line-height:1.4;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    margin-bottom:3px;
+  }
+  .row .item .meta{
+    display:flex; align-items:center; gap:10px;
+    font-size:12px; font-weight:500; color:var(--ink-2);
+    font-variant-numeric:tabular-nums;
+  }
+  .row .item .meta .sep{ color:var(--ink-3); }
+  .row .item .meta .short-tag{
+    display:inline-flex; align-items:center; gap:3px;
+    padding:2px 6px; border-radius:4px;
+    background:rgba(239,68,68,.08); color:var(--danger);
+    font-size:11px; font-weight:700; letter-spacing:-.01em;
+  }
+  .row .item .meta .short-tag::before{ content:"↓"; font-weight:900; }
+
+  /* qty stepper · minimal · segmented */
+  .stepper{
+    display:inline-flex; align-items:center;
+    background:#FFF; border:1px solid var(--line); border-radius:8px;
+    overflow:hidden; height:32px;
+    box-shadow:var(--shadow-1);
+  }
+  .stepper button{
+    width:28px; height:100%; border:0; background:transparent;
+    font-size:14px; color:var(--ink-2); cursor:pointer; font-weight:700;
+    transition:all .12s;
+  }
+  .stepper button:hover{ background:var(--line-2); color:var(--ink); }
+  .stepper input{
+    width:52px; height:100%; border:0;
+    border-left:1px solid var(--line); border-right:1px solid var(--line);
+    text-align:center; font-size:13px; font-weight:700; color:var(--ink);
+    font-variant-numeric:tabular-nums; outline:none;
+    background:#FAFAFB;
+  }
+
+  /* amount · 오른쪽 · 큰 숫자 · Ramp 톤 */
+  .amount{
+    text-align:right; min-width:110px;
+    display:flex; flex-direction:column; align-items:flex-end;
+  }
+  .amount .unit{
+    font-size:11px; color:var(--ink-3); font-weight:500;
+    font-variant-numeric:tabular-nums;
+  }
+  .amount .total{
+    font-size:16px; font-weight:800; color:var(--ink);
+    letter-spacing:-.02em; font-variant-numeric:tabular-nums;
+    margin-top:2px;
+    font-family:ui-monospace,'JetBrains Mono',-apple-system,sans-serif;
+  }
+  .amount .total.zero{ color:var(--ink-3); }
+
+  /* Empty hint · 최상단 · 옅게 */
+  .hint{
+    display:flex; align-items:center; gap:8px;
+    padding:10px 14px; margin-bottom:20px;
+    background:transparent; border:1px dashed var(--line);
+    border-radius:12px;
+    font-size:13px; color:var(--ink-2); font-weight:500;
+  }
+  .hint .icon{ color:var(--ink-3); }
+
+  /* Footer note */
+  .footnote{ margin-top:40px; padding:16px 0; border-top:1px solid var(--line); font-size:12px; color:var(--ink-3); text-align:center; font-weight:500; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Page Head · Notion 톤 -->
+  <div class="page-head">
+    <div class="breadcrumb">매입 · 발주</div>
+    <h1>발주 리스트</h1>
+    <div class="stats"><strong>12건</strong> 대기 · <strong>4</strong>개 공급사 · 총 <strong>44.5M</strong>원</div>
+  </div>
+
+  <!-- Toolbar · sticky glassmorphism -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <input class="search" placeholder="상품명·공급사 검색..." />
+    </div>
+    <button class="btn btn-ghost">↻</button>
+    <button class="btn btn-ghost">전체 선택</button>
+    <button class="btn btn-ghost" style="color:var(--danger);">삭제 · 2</button>
+    <button class="btn btn-primary">
+      발송 <span class="kbd">⌘⏎</span>
+    </button>
+  </div>
+
+  <div class="hint">
+    <span class="icon">◐</span>
+    공급사를 클릭하면 최신 발주이력 확인 · 대량 발송은 우측 [발송] 버튼
+  </div>
+
+  <!-- ══════════════════════════════ -->
+  <!-- Group · 기타 · 비닐봉투         -->
+  <!-- ══════════════════════════════ -->
+  <div class="group">
+    <div class="group-head">
+      <span class="kind-dot dot-기타"></span>
+      <span class="kind">기타</span>
+      <span class="name">비닐봉투</span>
+      <span class="count">1건</span>
+      <a class="history">발주이력 <span class="arrow">→</span></a>
+      <div class="total">
+        <span class="lbl">Total</span>
+        <span class="val">20,612<span class="won">원</span></span>
+      </div>
+    </div>
+    <div class="rows">
+      <div class="row">
+        <span class="check"></span>
+        <div class="item">
+          <div class="name">비닐봉투</div>
+          <div class="meta">
+            <span class="short-tag">20,612</span>
+            <span>ERP <strong>−16,987</strong></span>
+            <span class="sep">·</span>
+            <span>추천 <strong>3,625</strong></span>
+          </div>
+        </div>
+        <div class="stepper">
+          <button>−</button>
+          <input value="20612" />
+          <button>+</button>
+        </div>
+        <div class="amount">
+          <span class="unit">단가 -</span>
+          <span class="total zero">-</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ -->
+  <!-- Group · 선결제 · 동아제약        -->
+  <!-- ══════════════════════════════ -->
+  <div class="group">
+    <div class="group-head">
+      <span class="kind-dot dot-선결제"></span>
+      <span class="kind">선결제</span>
+      <span class="name">동아제약</span>
+      <span class="count">2건</span>
+      <a class="history">발주이력 <span class="arrow">→</span></a>
+      <div class="total">
+        <span class="lbl">Total</span>
+        <span class="val">4,949,010<span class="won">원</span></span>
+      </div>
+    </div>
+    <div class="rows">
+      <div class="row selected">
+        <span class="check"></span>
+        <div class="item">
+          <div class="name">판피린Q5입</div>
+          <div class="meta">
+            <span class="short-tag">1,180</span>
+            <span>ERP <strong>1,006</strong></span>
+            <span class="sep">·</span>
+            <span>추천 <strong>2,186</strong></span>
+          </div>
+        </div>
+        <div class="stepper">
+          <button>−</button>
+          <input value="1180" />
+          <button>+</button>
+        </div>
+        <div class="amount">
+          <span class="unit">단가 2,475</span>
+          <span class="total">2,920,500</span>
+        </div>
+      </div>
+      <div class="row">
+        <span class="check"></span>
+        <div class="item">
+          <div class="name">소화엔 베나치오액 5병</div>
+          <div class="meta">
+            <span class="short-tag">683</span>
+            <span>ERP <strong>158</strong></span>
+            <span class="sep">·</span>
+            <span>추천 <strong>841</strong></span>
+          </div>
+        </div>
+        <div class="stepper">
+          <button>−</button>
+          <input value="683" />
+          <button>+</button>
+        </div>
+        <div class="amount">
+          <span class="unit">단가 2,970</span>
+          <span class="total">2,028,510</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ -->
+  <!-- Group · 선결제 · 박카스          -->
+  <!-- ══════════════════════════════ -->
+  <div class="group">
+    <div class="group-head">
+      <span class="kind-dot dot-선결제"></span>
+      <span class="kind">선결제</span>
+      <span class="name">박카스</span>
+      <span class="count">2건</span>
+      <a class="history">발주이력 <span class="arrow">→</span></a>
+      <div class="total">
+        <span class="lbl">Total</span>
+        <span class="val">23,691,195<span class="won">원</span></span>
+      </div>
+    </div>
+    <div class="rows">
+      <div class="row">
+        <span class="check"></span>
+        <div class="item">
+          <div class="name">박카스디 10병</div>
+          <div class="meta">
+            <span class="short-tag">4,152</span>
+            <span>ERP <strong>508</strong></span>
+            <span class="sep">·</span>
+            <span>추천 <strong>4,660</strong></span>
+          </div>
+        </div>
+        <div class="stepper">
+          <button>−</button>
+          <input value="4152" />
+          <button>+</button>
+        </div>
+        <div class="amount">
+          <span class="unit">단가 5,610</span>
+          <span class="total">23,292,720</span>
+        </div>
+      </div>
+      <div class="row">
+        <span class="check"></span>
+        <div class="item">
+          <div class="name">박카스 젤리 1개</div>
+          <div class="meta">
+            <span class="short-tag">575</span>
+            <span>ERP <strong>1,507</strong></span>
+            <span class="sep">·</span>
+            <span>추천 <strong>2,082</strong></span>
+          </div>
+        </div>
+        <div class="stepper">
+          <button>−</button>
+          <input value="575" />
+          <button>+</button>
+        </div>
+        <div class="amount">
+          <span class="unit">단가 693</span>
+          <span class="total">398,475</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    v3 · Ramp/Brex/Cursor/Notion 2026 톤 · monochrome + accent · ultra-minimal
+  </div>
+
+</div>
+
+</body>
+</html>
