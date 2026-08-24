@@ -99,6 +99,13 @@ export interface SplitListPanelProps {
    *   · 예: PaymentInfoTab 의 3-inline KPI (총 잔고·최근 결제일·최근 결제액)
    */
   subHeader?: React.ReactNode;
+  /**
+   * 2026-08-24 · #262 · 검색창을 헤더 1행 (title/count 옆) 인라인 배치 (사용자 지시)
+   *   · 기본 false · 2행 (기존)
+   *   · true · row1 · title + count + search + actions + add · row2 · filters 만
+   *   · SupplierTab 등 · "공급사별 현황 88개 사 [검색]" 인라인 요구
+   */
+  searchInHeader?: boolean;
 }
 
 /**
@@ -131,6 +138,7 @@ export function SplitListPanel({
   footer,
   bodyClassName,
   subHeader,
+  searchInHeader = false,
 }: SplitListPanelProps) {
   const hasSearch = onSearchChange != null;
   const hasHeader = title != null || hasSearch || filters != null || onAdd != null || headerActions != null;
@@ -138,15 +146,42 @@ export function SplitListPanel({
 
   const clearSearch = useCallback(() => onSearchChange?.(""), [onSearchChange]);
 
+  // 2026-08-24 · 검색창 UI 재사용 · row1 인라인 · row2 fallback 공용
+  const searchInput = hasSearch ? (
+    <div className="relative flex-1 min-w-0">
+      <SearchIcon
+        size={13}
+        className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+      />
+      <input
+        type="text"
+        value={search ?? ""}
+        onChange={(e) => onSearchChange!(e.target.value)}
+        placeholder={searchPlaceholder}
+        className="w-full h-8 pl-7 pr-7 rounded-lg border border-line bg-zinc-50/60 text-[13px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep focus:bg-white transition-colors"
+      />
+      {search && (
+        <button
+          type="button"
+          onClick={clearSearch}
+          aria-label="검색어 지우기"
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full text-zinc-400 hover:text-ink hover:bg-zinc-100 flex items-center justify-center cursor-pointer transition-colors"
+        >
+          <X size={11} />
+        </button>
+      )}
+    </div>
+  ) : null;
+
   return (
     <div className={`flex flex-col h-full min-h-0 ${className}`.trim()}>
       {hasHeader && (
         <div className="shrink-0 px-3.5 py-2.5 border-b border-line bg-white flex flex-col gap-2">
-          {/* 1행 · title + count + headerActions + add */}
-          {(title != null || onAdd != null || headerActions != null) && (
+          {/* 1행 · title + count + (searchInHeader 시 검색) + headerActions + add */}
+          {(title != null || onAdd != null || headerActions != null || (searchInHeader && hasSearch)) && (
             <div className="flex items-center gap-2 min-w-0">
               {title != null && (
-                <div className="flex items-center gap-1.5 min-w-0">
+                <div className="flex items-center gap-1.5 min-w-0 shrink-0">
                   <span className="text-[15px] font-bold text-ink tracking-tight truncate">
                     {title}
                   </span>
@@ -160,7 +195,14 @@ export function SplitListPanel({
                   ) : null}
                 </div>
               )}
-              <div className="flex-1" />
+              {/* 2026-08-24 · searchInHeader · row1 인라인 검색창 (title/count 옆) */}
+              {searchInHeader && hasSearch ? (
+                <div className="flex-1 min-w-0 flex items-center gap-2">
+                  {searchInput}
+                </div>
+              ) : (
+                <div className="flex-1" />
+              )}
               {headerActions && <div className="shrink-0 flex items-center gap-1">{headerActions}</div>}
               {onAdd && (
                 <button
@@ -175,34 +217,10 @@ export function SplitListPanel({
               )}
             </div>
           )}
-          {/* 2행 · search + filters */}
-          {(hasSearch || filters) && (
+          {/* 2행 · (searchInHeader 아닐 때) search + filters · (searchInHeader 일 때) filters 만 */}
+          {((!searchInHeader && hasSearch) || filters) && (
             <div className="flex items-center gap-2 min-w-0">
-              {hasSearch && (
-                <div className="relative flex-1 min-w-0">
-                  <SearchIcon
-                    size={13}
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
-                  />
-                  <input
-                    type="text"
-                    value={search ?? ""}
-                    onChange={(e) => onSearchChange!(e.target.value)}
-                    placeholder={searchPlaceholder}
-                    className="w-full h-8 pl-7 pr-7 rounded-lg border border-line bg-zinc-50/60 text-[13px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep focus:bg-white transition-colors"
-                  />
-                  {search && (
-                    <button
-                      type="button"
-                      onClick={clearSearch}
-                      aria-label="검색어 지우기"
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full text-zinc-400 hover:text-ink hover:bg-zinc-100 flex items-center justify-center cursor-pointer transition-colors"
-                    >
-                      <X size={11} />
-                    </button>
-                  )}
-                </div>
-              )}
+              {!searchInHeader && searchInput}
               {filters && <div className="shrink-0">{filters}</div>}
             </div>
           )}

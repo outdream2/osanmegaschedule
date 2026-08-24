@@ -406,6 +406,13 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       search={supplierSearch}
       onSearchChange={setSupplierSearch}
       searchPlaceholder="공급사명 · 코드 검색"
+      searchInHeader={embedded}
+      headerActions={embedded ? (
+        <button type="button" onClick={fetchData} disabled={loading}
+          className="w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer" title="새로고침">
+          <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
+        </button>
+      ) : undefined}
       filters={
         <div className="flex flex-col gap-1.5 w-full">
           {/* 2026-08-24 · 매입이력 embedded 모드 · 분류 필터 숨김 (사용자 지시) · 정렬만 유지 */}
@@ -472,7 +479,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         ) : (
           <table className={`w-full text-[15px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ borderCollapse: "separate", borderSpacing: 0 }}>
             <thead className="sticky top-0 z-10">
-              {/* 그룹 헤더 */}
+              {/* 2026-08-24 · 매입이력 embedded · 그룹 헤더 (기본정보·재고현황·매입현황·판매현황) 제거 · 서브헤더만 표시 */}
+              {!embedded && (
               <tr className="text-[14px] font-semibold uppercase tracking-wider border-b border-line">
                 <th colSpan={3} className="bg-zinc-50 text-zinc-400 text-left px-3 py-1.5">기본정보</th>
                 <th colSpan={isSupplierGroupCollapsed("stock") ? 1 : 2}
@@ -502,6 +510,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                   </th>
                 )}
               </tr>
+              )}
               {/* 서브 헤더 · 리사이즈 지원 */}
               <tr className="text-[15px] font-semibold text-zinc-500 border-b border-line bg-white">
                 <th className="relative text-center py-2" style={{ width: getWidth("toggle"), minWidth: getWidth("toggle") }}>
@@ -698,24 +707,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   if (embedded) {
     return (
       <div className="w-full h-full min-h-0 flex flex-col gap-2">
-        {/* 2026-08-10 · 사용자 요청 · 매입이력 embedded 컨텍스트 · 기간 제거 (상단 툴바에서 별도 제공) · Top N + 새로고침만 */}
-        <div className={`${CARD_BASE} px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 shrink-0`}>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[14px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">Top N</span>
-            <div className="inline-flex bg-zinc-50 border border-line rounded-md p-0.5">
-              {[{ v: 100, label: "100" }, { v: 300, label: "300" }, { v: 1000, label: "1k" }, { v: 2000, label: "2k" }, { v: 999999, label: "전체" }].map(o => (
-                <button key={o.v} onClick={() => setSupListLimit(o.v)}
-                  className={`text-[14px] font-semibold h-5 px-1.5 rounded transition whitespace-nowrap cursor-pointer ${supListLimit === o.v ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
-                >{o.label}</button>
-              ))}
-            </div>
-          </div>
-          <button type="button" onClick={fetchData} disabled={loading}
-            className="ml-auto w-6 h-6 flex items-center justify-center rounded-md border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer" title="새로고침">
-            <LoaderIcon size={12} className={loading ? "animate-spin" : ""} />
-          </button>
-        </div>
-        {/* 좌측 리스트 카드 */}
+        {/* 2026-08-24 · 사용자 요청 · 매입이력 embedded · 상단 Card 세션 제거 · SplitListPanel headerActions 로 새로고침 이관 */}
         <div className={`${CARD_BASE} flex-1 min-h-0 flex flex-col`}>
           {renderSupplierListCard()}
         </div>
