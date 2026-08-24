@@ -481,8 +481,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
           <table className={`w-full text-[15px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ borderCollapse: "separate", borderSpacing: 0 }}>
             <thead className="sticky top-0 z-10">
               {/* 2026-08-24 · 사용자 지시 · 카테고리 그룹 헤더 (기본정보·재고현황·매입현황·판매현황) 전체 제거 · 서브헤더만 표시 */}
-              {/* 서브 헤더 · 리사이즈 지원 */}
-              <tr className="text-[15px] font-semibold text-zinc-500 border-b border-line bg-white">
+              {/* 2026-08-24 · v3 확산 · 헤더 · uppercase 14px · bg zinc-100/70 · 정렬 화살표 · Attio 톤 */}
+              <tr className="text-[13px] sm:text-[14px] font-bold text-zinc-500 border-b border-line bg-zinc-100/70 uppercase tracking-wider">
                 <th className="relative text-center py-2" style={{ width: getWidth("toggle"), minWidth: getWidth("toggle") }}>
                   <span {...resizerProps("toggle")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                 </th>
