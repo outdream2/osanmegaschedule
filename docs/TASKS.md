@@ -70,8 +70,11 @@
 ### #253 · 자동 임포트 시스템 · 원클릭 설치 + 스케쥴 실행 (신규 · 2026-08-24 · 사용자 지시)
 
 **🎯 스펙 확정 (2026-08-24 사용자 결정)**:
-- **폴더 경로** · `%USERPROFILE%\Downloads\megatown-importdata\` 하위 4개 서브폴더 (products·stock·vendors·purchase)
-  · 사용자 Downloads 폴더 사용 · E:/D: 드라이브 없어도 OK
+- **폴더 경로 기본값** · `%USERPROFILE%\Downloads\megatown-importdata\` 하위 4개 서브폴더 (products·stock·vendors·purchase)
+  · 사용자 Downloads 폴더 사용 · E:/D: 드라이브 없어도 OK · install.bat 이 자동 생성
+- **폴더 경로 편집** · 웹 UI · 4개 개별 텍스트 입력 · 환경변수 지원 (%USERPROFILE% 등)
+  · 개별 초기화 · 전체 초기화 · 자동 생성 옵션 (☑ 체크 시 · Python 이 없는 폴더 자동 생성)
+  · 저장 → 서버 KV → Python 다음 실행 부터 즉시 반영
 - **파일명 규칙** · 임포트 형식에 맞게 자동 변경 (표준 파일명 rename)
 - **xlsx 파싱** · 현재 서버 임포트 규칙 그대로 (파일명 기반 날짜 · 서버 로직 재사용)
 - **임포트 후** · `_processed/` 폴더 자동 이동
