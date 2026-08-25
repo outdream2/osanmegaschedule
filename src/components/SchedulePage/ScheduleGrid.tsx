@@ -220,8 +220,8 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                     (canOpenBreak ? "클릭하여 점심/휴게 시간 설정" : undefined)
                   }
                 >
-                  {isHireDay   && <span className="absolute top-0 right-0 z-30 text-[8px] font-bold px-1 py-px rounded-bl bg-emerald-500 text-white leading-none shadow-sm pointer-events-none">입사</span>}
-                  {isRetireDay && <span className="absolute top-0 right-0 z-30 text-[8px] font-bold px-1 py-px rounded-bl bg-rose-500 text-white leading-none shadow-sm pointer-events-none">퇴사</span>}
+                  {isHireDay   && <span className="absolute top-0 right-0 z-30 text-[10px] font-bold px-1.5 py-0.5 rounded-bl bg-emerald-500 text-white leading-none shadow-sm pointer-events-none">입사</span>}
+                  {isRetireDay && <span className="absolute top-0 right-0 z-30 text-[10px] font-bold px-1.5 py-0.5 rounded-bl bg-rose-500 text-white leading-none shadow-sm pointer-events-none">퇴사</span>}
                   {outOfEmployment ? (
                     <div className="w-full h-full min-h-[24px] flex items-center justify-center text-[10px] text-zinc-400 font-medium select-none">
                       <span className="opacity-40">─</span>

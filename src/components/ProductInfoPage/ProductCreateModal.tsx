@@ -6,6 +6,7 @@
 // props · open · onClose · onCreated(code) · authSession(권한 표시용)
 
 import React, { useMemo, useState, useRef, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { Package, Save, X } from "lucide-react";
 import { Modal } from "../common/Modal";
 import { Card } from "../common/Card";
@@ -14,6 +15,38 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import { CreateProductSchema, type CreateProductInput } from "../../shared/schemas/products";
 import { useVendors } from "../../hooks/useVendors";
 import { useZoneDefs } from "../../hooks/useZoneDefs";
+
+// 2026-08-26 · P0 fix · 모달 body overflow-hidden 안 · autocomplete dropdown clip fix
+//   · createPortal 로 body 에 렌더 · getBoundingClientRect 기준 fixed positioning
+interface PortalDropdownProps {
+  anchorRef: React.RefObject<HTMLElement | null>;
+  open: boolean;
+  children: React.ReactNode;
+}
+const PortalDropdown: React.FC<PortalDropdownProps> = ({ anchorRef, open, children }) => {
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  useEffect(() => {
+    if (!open || !anchorRef.current) { setPos(null); return; }
+    const update = () => {
+      const r = anchorRef.current?.getBoundingClientRect();
+      if (r) setPos({ top: r.bottom + 4, left: r.left, width: r.width });
+    };
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [open, anchorRef]);
+  if (!open || !pos) return null;
+  return ReactDOM.createPortal(
+    <div style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}>
+      {children}
+    </div>,
+    document.body,
+  );
+};
 
 interface Props {
   open: boolean;
@@ -265,8 +298,8 @@ export const ProductCreateModal: React.FC<Props> = ({
                       autoComplete="off"
                     />
                   </Field>
-                  {supplierOpen && supplierSuggestions.length > 0 && (
-                    <Card padding="none" rounded="lg" className="absolute left-0 right-0 top-full mt-1 z-20 shadow-lg max-h-56 overflow-y-auto">
+                  <PortalDropdown anchorRef={supplierWrapRef} open={supplierOpen && supplierSuggestions.length > 0}>
+                    <Card padding="none" rounded="lg" className="shadow-xl max-h-56 overflow-y-auto">
                       {supplierSuggestions.map(v => (
                         <button
                           key={v.id}
@@ -279,7 +312,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                         </button>
                       ))}
                     </Card>
-                  )}
+                  </PortalDropdown>
                 </div>
                 <Field label="카테고리">
                   <input type="text" value={form.category} onChange={(e) => set("category", e.target.value)} className={inputCls} placeholder="예: 감기약" maxLength={100} />
@@ -305,8 +338,8 @@ export const ProductCreateModal: React.FC<Props> = ({
                       autoComplete="off"
                     />
                   </Field>
-                  {zoneOpen && zoneSuggestions.length > 0 && (
-                    <Card padding="none" rounded="lg" className="absolute left-0 right-0 top-full mt-1 z-20 shadow-lg max-h-56 overflow-y-auto">
+                  <PortalDropdown anchorRef={zoneWrapRef} open={zoneOpen && zoneSuggestions.length > 0}>
+                    <Card padding="none" rounded="lg" className="shadow-xl max-h-56 overflow-y-auto">
                       {zoneSuggestions.map(z => (
                         <button
                           key={z.value}
@@ -319,7 +352,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                         </button>
                       ))}
                     </Card>
-                  )}
+                  </PortalDropdown>
                 </div>
               </div>
             </Card>

@@ -411,9 +411,10 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
          md:w-full md:mx-auto
          md:px-1 lg:px-1.5 xl:px-2 2xl:px-3;
 }
+/* 2026-08-26 · P1 fix · overflow-hidden 제거 → overflow-y-auto (dropdown clip 방지 · max-h 로 스크롤 유지) */
 .split-left {
   @apply w-full shrink-0 flex flex-col bg-white rounded-xl border border-slate-200
-         shadow-sm overflow-hidden max-h-[55vh] md:max-h-none md:h-full min-w-0;
+         shadow-sm overflow-y-auto max-h-[55vh] md:max-h-none md:h-full min-w-0;
 }
 .split-divider {
   @apply hidden md:flex items-center justify-center w-1.5 hover:w-2

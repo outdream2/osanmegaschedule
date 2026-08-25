@@ -95,6 +95,8 @@ export const PaymentInputPage: React.FC = () => {
   const [category, setCategory] = useState<string>("전체");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [rightTab, setRightTab] = useState<RightTab>("orders");
+  // 2026-08-26 · P0 fix · 모바일 우측 상세 모달 열림/닫힘 별도 state (기존 rightTab != null 은 항상 true)
+  const [mobileDetailOpen, setMobileDetailOpen] = useState<boolean>(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const [orderHistory, setOrderHistory] = useState<OrderHistoryItem[]>([]);
@@ -150,6 +152,11 @@ export const PaymentInputPage: React.FC = () => {
       loadSupplierData(String(selected.company_name));
     }
   }, [selected?.company_name, loadSupplierData]);
+
+  // 2026-08-26 · P0 fix · vendor 선택 해제 시 · 모바일 상세 모달 자동 닫기
+  useEffect(() => {
+    if (!selected) setMobileDetailOpen(false);
+  }, [selected]);
 
   // 2026-08-25 · 사용자 지시 · [확인] 버튼 제거 · 리스트 선택 즉시 조회
   // Enter 키 · 첫 매치 즉시 선택 (implicit confirm)
@@ -524,8 +531,8 @@ export const PaymentInputPage: React.FC = () => {
             wrapRight={false}
             mobileRightAsModal
             mobileModalTitle={selected.company_name ?? "발주·판매내역"}
-            mobileOpen={rightTab != null}
-            onMobileClose={() => setRightTab("orders")}
+            mobileOpen={mobileDetailOpen}
+            onMobileClose={() => setMobileDetailOpen(false)}
             className="flex-1 min-h-0"
           />
         ) : (

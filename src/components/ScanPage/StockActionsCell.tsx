@@ -29,7 +29,7 @@ export const StockActionsCell: React.FC<StockActionsCellProps> = React.memo(({
       {/* 이력 */}
       <button
         onClick={() => onHistory(row.code, row.product.name)}
-        className="relative w-7 h-7 flex items-center justify-center rounded-lg
+        className="relative w-9 h-9 flex items-center justify-center rounded-lg
           text-zinc-300 hover:text-teal-600 hover:bg-teal-50
           transition-all duration-150 cursor-pointer"
         title="실재고 저장 이력"
@@ -47,7 +47,7 @@ export const StockActionsCell: React.FC<StockActionsCellProps> = React.memo(({
       {/* 삭제 */}
       <button
         onClick={() => onRemove(row.key)}
-        className="w-7 h-7 flex items-center justify-center rounded-lg
+        className="w-9 h-9 flex items-center justify-center rounded-lg
           text-zinc-300 hover:text-rose-500 hover:bg-rose-50
           transition-all duration-150 cursor-pointer"
         title="삭제"
@@ -59,7 +59,7 @@ export const StockActionsCell: React.FC<StockActionsCellProps> = React.memo(({
       <button
         onClick={() => onRequestDisplay(row)}
         disabled={requestingKey === row.key}
-        className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+        className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
           storeEmpty
             ? "text-red-600 bg-red-50 hover:text-red-700 hover:bg-red-100 animate-pulse"
             : "text-red-500 hover:text-red-700 hover:bg-red-50"

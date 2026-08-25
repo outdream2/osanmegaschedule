@@ -179,11 +179,11 @@ export const Modal: React.FC<ModalProps> = ({
       ? "items-start sm:items-center p-0 sm:p-4 pt-4 sm:pt-0"
       : "items-center p-4";
   const backdropCls = backdropIntensity === "dark"
-    ? `fixed inset-0 z-50 flex ${alignCls} justify-center bg-zinc-950/95 backdrop-blur-sm`
+    ? `fixed inset-0 z-[60] flex ${alignCls} justify-center bg-zinc-950/95 backdrop-blur-sm`
     : backdropIntensity === "brand-strong"
-      ? `fixed inset-0 z-50 flex ${alignCls} justify-center backdrop-brand-strong`
+      ? `fixed inset-0 z-[60] flex ${alignCls} justify-center backdrop-brand-strong`
       : (align === "bottom-mobile" || align === "top-mobile")
-        ? `fixed inset-0 z-50 flex ${alignCls} justify-center backdrop-brand`
+        ? `fixed inset-0 z-[60] flex ${alignCls} justify-center backdrop-brand`
         : "modal-backdrop";
   // 2026-08-23 v3.2/v3.3 · align="bottom-mobile"|"top-mobile" 시 card 는 rounded-t-2xl (mobile) sm+ rounded-2xl
   const cardRoundedCls = (align === "bottom-mobile" || align === "top-mobile") ? "rounded-t-2xl sm:rounded-2xl" : "";

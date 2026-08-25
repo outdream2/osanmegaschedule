@@ -495,11 +495,12 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     const zone = getZoneById(zoneId) ?? zones.find(z => z.num === num && !z.id.match(/[AB]$/));
     if (!zone) return null;
     const hasStaff = !!zone.assignedStaffId;
+    // 2026-08-26 · P1 fix · 터치영역 h-6 → h-8 · 폰트 9→11 · 40대+/모바일 가독성
     return (
       <button type="button" onClick={() => hasStaff && handleQuickRequest(zone)} disabled={!hasStaff}
         title={hasStaff ? `${zone.num}번 ${zone.label} 진열 보충 요청` : "담당자 미배정 — 진열요청 불가"}
-        className={`w-full h-6 rounded text-[9px] font-bold flex items-center justify-center gap-0.5 transition-all border ${hasStaff ? "bg-rose-500 hover:bg-rose-600 active:scale-95 text-white border-rose-600 cursor-pointer shadow-sm" : "bg-zinc-100 text-zinc-300 border-line cursor-not-allowed"}`}>
-        <Bell size={8} />{hasStaff ? "진열요청" : "미배정"}
+        className={`w-full h-8 rounded text-[11px] font-bold flex items-center justify-center gap-1 transition-all border ${hasStaff ? "bg-rose-500 hover:bg-rose-600 active:scale-95 text-white border-rose-600 cursor-pointer shadow-sm" : "bg-zinc-100 text-zinc-300 border-line cursor-not-allowed"}`}>
+        <Bell size={10} />{hasStaff ? "진열요청" : "미배정"}
       </button>
     );
   };
