@@ -8,11 +8,7 @@ import { useVendors } from "../../hooks/useVendors";
 import { Spinner } from "../common/Spinner";
 import { matchHangul } from "../../lib/hangulSearch";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
-import {
-  Package, ShoppingCart, PackageCheck, AlertTriangle, Building2, ClipboardList,
-  CheckCircle2, TrendingUp, ScanLine, PackagePlus, ArrowLeftRight, Boxes, Wallet,
-  Calculator, BarChart2, PieChart, Info, HandCoins,
-} from "lucide-react";
+import { ShoppingCart, PackageCheck, BarChart2, PieChart } from "lucide-react";
 
 // React.lazy code-split · 무거운 서브탭 · 초기 번들 축소
 const OcrPage = React.lazy(() => import("../OcrPage").then(m => ({ default: m.OcrPage })));
@@ -41,6 +37,11 @@ import { ReturnListPanel } from "./ReturnListPanel";
 // 2026-08-25 · 사용자 지시 · 반품확정 페이지 · 반품 서브탭 이너 탭 (반품필요/반품확정)
 import { ReturnConfirmedPanel } from "./ReturnConfirmedPanel";
 import { PurchaseHistoryTab } from "./PurchaseHistoryTab";
+// 2026-08-25 · Framework Phase 4 · 서브탭 정의 이관
+import {
+  PURCHASE_ORDER_DEFAULT_TABS, PURCHASE_DEFAULT_TABS, PAYMENT_DEFAULT_TABS, STAT_DEFAULT_TABS,
+  type PurchaseOrderKey, type PurchaseKey, type PaymentKey, type StatKey,
+} from "./OrderManagePage.tabs";
 // 2026-08-25 · 사용자 지시 · 결제 · 차용입력 페이지 (공급사↔약국 상품 차용)
 import { BorrowingPage } from "./BorrowingPage";
 // 2026-08-25 · #111 · 결제입력 페이지 재구성 (신규 · Option B · 회귀 X)
@@ -483,48 +484,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lowStock, allProductsMap, needConditionApply, deferredNeedSearch, needCategoryFilter, vendorCategoryMap]);
 
-  // 서브탭 정의
-  type PurchaseOrderKey = "order" | "need" | "critical" | "history";
-  type PurchaseKey = "receipt" | "reconciliation" | "scan" | "productarrival" | "productinfo" | "return" | "purchase-history";
-  type PaymentKey = "vendor" | "payment-input" | "borrowing" | "vat-prepare";
-  type StatKey = "trending" | "category" | "flow" | "diff" | "supplier";
-  interface SubTabDef<K extends string> { key: K; label: string; icon: React.ElementType; color: string; }
-
-  const purchaseOrderDefaultTabs: SubTabDef<PurchaseOrderKey>[] = useMemo(() => [
-    { key: "order",    label: "발주요청", icon: ShoppingCart,  color: "sky"    },
-    { key: "need",     label: "발주필요", icon: ClipboardList, color: "rose"   },
-    { key: "critical", label: "품절임박", icon: AlertTriangle, color: "amber"  },
-    { key: "history",  label: "발주이력", icon: Package,       color: "indigo" },
-  ], []);
-  const purchaseDefaultTabs: SubTabDef<PurchaseKey>[] = useMemo(() => [
-    { key: "purchase-history", label: "매입이력",   icon: Building2,      color: "sky"     },
-    { key: "return",           label: "반품필요",   icon: ArrowLeftRight, color: "rose"    },
-    { key: "receipt",          label: "거래명세서", icon: PackageCheck,   color: "violet"  },
-    { key: "scan",             label: "실재고입력", icon: ScanLine,       color: "teal"    },
-    { key: "productarrival",   label: "상품입고",   icon: PackagePlus,    color: "blue"    },
-    { key: "productinfo",      label: "상품정보",   icon: Info,           color: "indigo"  },
-    // 2026-08-25 · 사용자 지시 · 실재고 → 유통기한 임박 (rename + 콘텐츠 교체)
-    { key: "reconciliation",   label: "유통기한 임박", icon: AlertTriangle,  color: "amber"   },
-  ], []);
-  const paymentDefaultTabs: SubTabDef<PaymentKey>[] = useMemo(() => [
-    { key: "payment-input", label: "결제입력",        icon: Wallet,        color: "amber"  },
-    { key: "vendor",        label: "공급사별결제내역", icon: Building2,     color: "teal"   },
-    // 2026-08-25 · 사용자 지시 · 차용입력 (공급사↔약국 상품 차용 기록)
-    { key: "borrowing",     label: "차용입력",        icon: HandCoins,     color: "indigo" },
-    { key: "vat-prepare",   label: "부가세 준비",      icon: Calculator,    color: "rose"   },
-  ], []);
-  const statDefaultTabs: SubTabDef<StatKey>[] = useMemo(() => [
-    { key: "trending", label: "급상승",       icon: TrendingUp,    color: "indigo"  },
-    { key: "category", label: "구역현황",     icon: PieChart,      color: "amber"   },
-    { key: "flow",     label: "상품현황",     icon: Boxes,         color: "sky"     },
-    { key: "supplier", label: "공급사별현황", icon: Building2,     color: "emerald" },
-    { key: "diff",     label: "손실추적",     icon: AlertTriangle, color: "rose"    },
-  ], []);
-
-  const purchaseOrderSortable = useSortableTabs("tabOrder.purchase-order", purchaseOrderDefaultTabs, isAdmin);
-  const purchaseSortable      = useSortableTabs("tabOrder.purchase",       purchaseDefaultTabs,      isAdmin);
-  const paymentSortable       = useSortableTabs("tabOrder.payment",        paymentDefaultTabs,       isAdmin);
-  const statSortable          = useSortableTabs("tabOrder.statistics",     statDefaultTabs,          isAdmin);
+  // 2026-08-25 · Framework Phase 4 · 서브탭 정의 · OrderManagePage.tabs.ts 로 이관
+  const purchaseOrderSortable = useSortableTabs("tabOrder.purchase-order", PURCHASE_ORDER_DEFAULT_TABS, isAdmin);
+  const purchaseSortable      = useSortableTabs("tabOrder.purchase",       PURCHASE_DEFAULT_TABS,      isAdmin);
+  const paymentSortable       = useSortableTabs("tabOrder.payment",        PAYMENT_DEFAULT_TABS,       isAdmin);
+  const statSortable          = useSortableTabs("tabOrder.statistics",     STAT_DEFAULT_TABS,          isAdmin);
 
   const [returnNeedCount, setReturnNeedCount] = useState<number>(0);
   useEffect(() => {
