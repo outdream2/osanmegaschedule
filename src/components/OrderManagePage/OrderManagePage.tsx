@@ -44,6 +44,8 @@ import { PurchaseHistoryTab } from "./PurchaseHistoryTab";
 import { PaymentInfoTab } from "./PaymentInfoTab";
 // 2026-08-25 · 사용자 지시 · 결제 · 차용입력 페이지 (공급사↔약국 상품 차용)
 import { BorrowingPage } from "./BorrowingPage";
+// 2026-08-25 · #111 · 결제입력 페이지 재구성 (신규 · Option B · 회귀 X · 기존 PaymentInfoTab 은 vendor 탭 유지)
+import { PaymentInputPage } from "./PaymentInputPage";
 import { VatPreparePage } from "../VatPreparePage/VatPreparePage";
 import { CategoryTab } from "./CategoryTab";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
@@ -755,7 +757,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               vendorReloadKey={vendorReloadKey} vendorPreselectId={vendorPreselectId}
               vendorSelected={vendorSelected} onEditRequest={handleVendorEditRequest} onSelectVendor={setVendorSelected} />
           )}
-          {paymentSubTab === "payment-input" && <div className="flex-1 min-h-0"><PaymentInfoTab /></div>}
+          {/* 2026-08-25 · #111 · 결제입력 · 신규 PaymentInputPage · 상단 검색+필터 · 하단 좌/우 (설명 화면 → 확인 후 데이터) */}
+          {paymentSubTab === "payment-input" && <div className="flex-1 min-h-0"><PaymentInputPage /></div>}
           {/* 2026-08-25 · 사용자 지시 · 차용입력 · 공급사↔약국 상품 차용 기록 */}
           {paymentSubTab === "borrowing" && <div className="flex-1 min-h-0"><BorrowingPage authSession={ocrTabAuthSession ?? null} /></div>}
           {paymentSubTab === "vat-prepare" && <div className="flex-1 min-h-0"><VatPreparePage /></div>}
