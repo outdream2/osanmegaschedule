@@ -761,6 +761,9 @@ router.post("/api/inventory-checks", asyncHandler(async (req, res) => {
   const hasZone1      = Object.prototype.hasOwnProperty.call(b, "store1_zone");
   const hasZone2      = Object.prototype.hasOwnProperty.call(b, "store2_zone");
   const hasZone3      = Object.prototype.hasOwnProperty.call(b, "store3_zone");
+  // 2026-08-25 · 사용자 지시 · 유통기한 임박 모달 · 입력날짜 + 유통기한 날짜 저장
+  const hasExpiryInput = Object.prototype.hasOwnProperty.call(b, "expiry_input_date");
+  const hasExpiryDate  = Object.prototype.hasOwnProperty.call(b, "expiry_date");
   const num = (v: any): number | null => (v != null && v !== "" ? Number(v) : null);
   const str = (v: any): string | null => {
     if (v == null) return null;
@@ -791,6 +794,9 @@ router.post("/api/inventory-checks", asyncHandler(async (req, res) => {
   if (hasZone1)      payload.store1_zone      = str(b.store1_zone);
   if (hasZone2)      payload.store2_zone      = str(b.store2_zone);
   if (hasZone3)      payload.store3_zone      = str(b.store3_zone);
+  // 2026-08-25 · 유통기한 임박 날짜 · YYYY-MM-DD 문자열 그대로 저장 (DATE 컬럼)
+  if (hasExpiryInput) payload.expiry_input_date = str(b.expiry_input_date);
+  if (hasExpiryDate)  payload.expiry_date       = str(b.expiry_date);
 
   const { data: existingList } = await supabase.from("inventory_checks").select("id, warehouse_stock, store_stock, store_stock_2").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
   const existing = existingList?.[0] ?? null;

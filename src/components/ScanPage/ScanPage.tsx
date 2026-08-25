@@ -55,6 +55,8 @@ import {
 import { ScanLeftPanel, SaveCard, HistoryModal, ReviewSheet } from "./ScanPage.panels";
 // 2026-08-23 · #179 · 미등록 상품 즉시 등록 · ProductCreateModal 재사용
 import { ProductCreateModal } from "../ProductInfoPage/ProductCreateModal";
+// 2026-08-25 · 유통기한 임박 모달 (입력날짜 + 유통기한) · inventory_checks 저장
+import { ExpiryDateModal } from "./ExpiryDateModal";
 import { addCachedProduct } from "../../lib/productsCache";
 // 2026-08-23 · #197 · 스캔 미분류 처리 방식 (개인 preference · modal|page 분기)
 import { useScanUnregisteredMode, setScanPendingProductCode } from "../../hooks/useScanUnregisteredMode";
@@ -96,6 +98,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
   // 2026-08-23 · #179 · 미등록 상품 즉시 등록 · Modal + 권한 게이트
   const [createOpen, setCreateOpen]             = useState(false);
+  // 2026-08-25 · 유통기한 임박 모달 · 대상 row
+  const [expiryModalRow, setExpiryModalRow]     = useState<StockRow | null>(null);
   const canManageProducts =
     authSession?.role === "admin" ||
     authSession?.role === "superadmin" ||
@@ -767,14 +771,14 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                       <button
                         type="button"
                         disabled={disabled}
-                        onClick={() => { if (targetRow) toggleExpiry(targetRow); }}
+                        onClick={() => { if (targetRow) setExpiryModalRow(targetRow); }}
                         className={[
                           "inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] font-bold shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed",
                           expiryOn
                             ? "bg-amber-600 hover:bg-amber-700 text-white ring-2 ring-amber-300"
                             : "bg-white border border-line text-ink-soft hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700",
                         ].join(" ")}
-                        title={disabled ? "먼저 상품을 스캔하세요" : (expiryOn ? "유통기한 임박 해제" : "유통기한 임박 표시 (오늘 날짜 저장)")}
+                        title={disabled ? "먼저 상품을 스캔하세요" : (expiryOn ? "유통기한 정보 수정 · 해제" : "유통기한 임박 · 입력날짜+만료일 저장")}
                       >
                         <AlertCircle size={13} strokeWidth={2.5} />
                         유통기한임박{expiryOn ? " ✓" : ""}
@@ -886,6 +890,21 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         saveStatus={saveStatus}
         onClose={() => setReviewOpen(false)}
         onConfirm={() => { setReviewOpen(false); handleBulkSave(); }}
+      />
+
+      {/* 2026-08-25 · 사용자 지시 · 유통기한 임박 모달 · 입력날짜+만료일 · inventory_checks 저장 */}
+      <ExpiryDateModal
+        open={!!expiryModalRow}
+        onClose={() => setExpiryModalRow(null)}
+        row={expiryModalRow}
+        onSaved={(rowKey, nextExpiry) => {
+          setRows(prev => prev.map(r => (
+            r.key === rowKey
+              ? { ...r, product: { ...r.product, expiry_date: nextExpiry } as typeof r.product }
+              : r
+          )));
+        }}
+        onToast={showToast}
       />
     </div>
   );
