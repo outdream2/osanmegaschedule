@@ -165,7 +165,7 @@ export function SplitListPanel({
         value={search ?? ""}
         onChange={(e) => onSearchChange!(e.target.value)}
         placeholder={searchPlaceholder}
-        className="w-full h-8 pl-7 pr-7 rounded-lg border border-line bg-zinc-50/60 text-[13px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep focus:bg-white transition-colors"
+        className="w-full h-9 pl-7 pr-7 rounded-lg border border-line bg-zinc-50/60 text-[15px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep focus:bg-white transition-colors"
       />
       {search && (
         <button
@@ -196,7 +196,7 @@ export function SplitListPanel({
             <div className="flex items-center gap-2 min-w-0">
               {title != null && (
                 <div className={`flex items-center gap-1.5 min-w-0 ${searchInHeader ? "shrink-0" : ""}`.trim()}>
-                  <span className="text-[15px] font-bold text-ink tracking-tight truncate">
+                  <span className="text-[17px] font-bold text-ink tracking-tight truncate">
                     {title}
                   </span>
                   {/* 2026-08-23 v2 · countDisplay 우선 · 없으면 count StatusPill */}
@@ -223,7 +223,7 @@ export function SplitListPanel({
                   type="button"
                   onClick={onAdd}
                   title={addTitle ?? addLabel}
-                  className="shrink-0 inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-brand-deep text-white text-[13px] font-bold hover:bg-[#0d3a5c] active:scale-[0.98] transition-all shadow-sm cursor-pointer"
+                  className="shrink-0 inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-brand-deep text-white text-[15px] font-bold hover:bg-[#0d3a5c] active:scale-[0.98] transition-all shadow-sm cursor-pointer"
                 >
                   <Plus size={13} className="stroke-[3]" />
                   <span>{addLabel}</span>
@@ -258,7 +258,7 @@ export function SplitListPanel({
               rounded="lg"
               bg="bg-rose-50"
               borderColor="border-rose-200"
-              className="text-[13px] text-rose-700 font-medium"
+              className="text-[15px] text-rose-700 font-medium"
             >
               {error}
             </Card>

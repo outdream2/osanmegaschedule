@@ -234,7 +234,7 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
         <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-line bg-zinc-50/60 shrink-0">
           <AccentBar className="shrink-0" />
           {mobileModalTitle != null && (
-            <div className="flex-1 min-w-0 text-[16px] font-bold text-ink break-words whitespace-normal leading-tight tracking-tight">
+            <div className="flex-1 min-w-0 text-[18px] font-bold text-ink break-words whitespace-normal leading-tight tracking-tight">
               {mobileModalTitle}
             </div>
           )}
