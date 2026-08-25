@@ -67,6 +67,8 @@ export { SplitRightError } from "./SplitRightError";
 export type { SplitRightErrorProps } from "./SplitRightError";
 export { SplitRightHeader } from "./SplitRightHeader";
 export type { SplitRightHeaderProps } from "./SplitRightHeader";
+export { SplitRightTabs } from "./SplitRightTabs";
+export type { SplitRightTabsProps, SplitRightTabDef } from "./SplitRightTabs";
 export { StatusPill } from "./StatusPill";
 export type { StatusPillProps } from "./StatusPill";
 export { StepperInput } from "./StepperInput";
