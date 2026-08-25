@@ -5,7 +5,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { type ZoneStatus, type DowMap, type DisplayZone } from "../../utils/zoneUtils";
-import { getZoneLabel, getZoneSubLabel } from "../../constants/zoneLabels";
 import { type ProductInfo } from "../../lib/productsCache";
 import {
   Bell, CheckCircle2, ChevronLeft, ChevronRight,
@@ -43,9 +42,11 @@ import {
   saveZonesToDB,
   MULTI_ASSIGN_ZONE_NUMS,
 } from "./DisplayPage.helpers";
-// 2026-08-25 · Framework Phase 4 · 4 modals wrapper
+// 2026-08-25 · Framework Phase 4 · 4 modals wrapper + WallZoneCard + subtab 초기화 hook
 import { DisplayModals } from "./DisplayModals";
 import { type ZoneProductsModalState } from "./ZoneProductsModal";
+import { WallZoneCard } from "./WallZoneCard";
+import { useDpInitialSubTab } from "./useDpInitialSubTab";
 import { DisplayStoreMap } from "./DisplayStoreMap";
 import { DisplaySearchBar } from "./DisplaySearchBar";
 import { DisplayMobileList } from "./DisplayMobileList";
@@ -105,13 +106,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const SIDEBAR_ENABLED = useSidebarEnabled();
   const [dpSubTab, setDpSubTab] = useState<DpSubTabKey>(dpCanSeeStockManage ? "purchase-order" : "store");
 
-  useEffect(() => {
-    if (dpHiddenSubs.has(dpSubTab)) {
-      const priority: DpSubTabKey[] = ["purchase-order", "purchase", "payment", "statistics", "store", "stock-arrivals", "vendor-manage"];
-      const next = priority.find(k => !dpHiddenSubs.has(k));
-      if (next) setDpSubTab(next);
-    }
-  }, [dpSubTab, dpHiddenSubs]);
+  // 2026-08-25 · Framework Phase 4 · 서브탭 초기화 · useDpInitialSubTab 이관
+  useDpInitialSubTab(dpSubTab, setDpSubTab, dpHiddenSubs);
 
   const [mapCollapsed, setMapCollapsed] = useState(true);
   // 2026-08-25 · 사용자 지시 · 매장구역 subtab 안 · 매장구역도 vs 배치구역 불일치 탭
@@ -122,35 +118,6 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     } catch { /* SSR */ }
     return "map";
   });
-
-  // sessionStorage / localStorage 서브탭 진입 처리
-  useEffect(() => {
-    try {
-      const req = sessionStorage.getItem("dpInitialSubTab") as DpSubTabKey | null;
-      if (req) {
-        sessionStorage.removeItem("dpInitialSubTab");
-        if (DP_SUBTAB_DEFAULTS.some(t => t.key === req)) { setDpSubTab(req); return; }
-      }
-      const sbReq = localStorage.getItem("sidebar.subtab.display") as DpSubTabKey | null;
-      if (sbReq) {
-        localStorage.removeItem("sidebar.subtab.display");
-        if (DP_SUBTAB_DEFAULTS.some(t => t.key === sbReq)) setDpSubTab(sbReq);
-      }
-    } catch { /* silent */ }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // 사이드바 V2 CustomEvent 서브탭 이동
-  useEffect(() => {
-    const onSubTab = (e: Event) => {
-      const detail = (e as CustomEvent<{ page: string; subTab: string }>).detail;
-      if (detail?.page !== "display") return;
-      const sub = detail.subTab as DpSubTabKey;
-      if (DP_SUBTAB_DEFAULTS.some(t => t.key === sub)) setDpSubTab(sub);
-    };
-    window.addEventListener("sidebar:subtab", onSubTab);
-    return () => window.removeEventListener("sidebar:subtab", onSubTab);
-  }, []);
 
   const dpTabSortable = useSortableTabs<CommonTabDef<DpSubTabKey>>("tabOrder.displayPage", DP_SUBTAB_DEFAULTS, dpUserLevel >= 8);
 
@@ -564,33 +531,11 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const renderZoneCellById = (id: string, classes = "", wrapperClass = "", hideRequest = false) => { const z = getZoneById(id); return z ? renderZoneFromRaw(z, classes, wrapperClass, hideRequest) : null; };
   const renderZoneCell = (num: number, classes = "", wrapperClass = "", hideRequest = false) => { const z = zones.find(z => z.num === num && !z.id.match(/[AB]$/)); return z ? renderZoneFromRaw(z, classes, wrapperClass, hideRequest) : null; };
 
-  const renderWallZoneCard = (num: number, position: "top" | "bottom") => {
-    const zd = ZONE_DEFS.find(z => z.num === num);
-    const openProducts = () => openZoneProducts({ zoneId: String(num), zoneNum: num, zoneLabel: `벽면 ${num}`, category: zd?.category ?? "" });
-    return (
-      <div key={`wall-${num}`} className="flex flex-col gap-0.5">
-        {position === "top" && renderRequestButton(num)}
-        <div className="rounded-lg overflow-hidden border-2 border-stone-300 bg-white shadow-sm hover:border-amber-400 transition">
-          <button type="button" onClick={openProducts} title={`${num}번 · ${zd?.category ?? ""} → 진열상품 조회`} className="w-full h-[64px] bg-stone-50 hover:bg-amber-50 px-1 py-1 flex flex-col items-center gap-0.5 border-b border-stone-200 cursor-pointer transition">
-            <span className="text-[10px] font-bold text-white bg-amber-700 rounded px-1 py-0.5 leading-none shrink-0">{getZoneLabel(num)}</span>
-            {(() => {
-              const cat = getZoneSubLabel(num) || (zd?.category ?? "");
-              const parts = cat.split(/[·,\/]/).map(s => s.trim()).filter(Boolean);
-              if (parts.length >= 2) return (
-                <div className="w-full flex-1 flex flex-col justify-center gap-0.5 min-h-0">
-                  <span className="text-[10px] font-bold text-stone-800 leading-tight text-center line-clamp-1">{parts[0]}</span>
-                  <span className="text-[10px] font-bold text-stone-800 leading-tight text-center line-clamp-1">{parts.slice(1).join(" · ")}</span>
-                </div>
-              );
-              return <span className="w-full flex-1 flex items-center justify-center text-[10px] font-bold text-stone-800 line-clamp-2 text-center leading-tight">{cat}</span>;
-            })()}
-          </button>
-          {renderZoneCell(num, "w-full h-10 text-[9px] p-0.5 justify-center border-0 rounded-none", "", true)}
-        </div>
-        {position === "bottom" && renderRequestButton(num)}
-      </div>
-    );
-  };
+  // 2026-08-25 · Framework Phase 4 · 벽면 존 카드 · WallZoneCard 이관
+  const renderWallZoneCard = (num: number, position: "top" | "bottom") => (
+    <WallZoneCard num={num} position={position} zoneDefs={ZONE_DEFS}
+      openZoneProducts={openZoneProducts} renderRequestButton={renderRequestButton} renderZoneCell={renderZoneCell} />
+  );
 
   const popoverZone = useMemo(() => (popoverAnchor ? zones.find((z) => z.id === popoverAnchor.zoneId) ?? null : null), [popoverAnchor, zones]);
 
