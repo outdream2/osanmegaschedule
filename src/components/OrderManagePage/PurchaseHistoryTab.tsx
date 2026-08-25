@@ -41,9 +41,9 @@ export const PurchaseHistoryTab: React.FC = () => {
   const { toast, showError } = useToast();
   // ═══════════════════════════════════════════════════════════════════════
   //  뷰 모드 (#191 · 공급사별 / 상품별)
-  // 2026-08-25 · 사용자 지시 · 상품별 집계 · 매입이력 앞으로 이동 + 기본 탭
+  // 2026-08-25 · 사용자 지시 · 공급사별 을 앞으로 · 기본 탭으로 재변경
   // ═══════════════════════════════════════════════════════════════════════
-  const [viewMode, setViewMode] = useState<ViewMode>("by-product");
+  const [viewMode, setViewMode] = useState<ViewMode>("by-vendor");
 
   // ─── 공급사 상세 모달 (T-COMMON-VendorInfoModal · 2026-08-06) ─────────────
   const { openVendorInfo, modalElement: vendorModalElement } = useVendorInfoModal();
