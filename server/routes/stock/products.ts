@@ -407,11 +407,11 @@ router.patch("/api/products/:code/realmap", asyncHandler(async (req, res) => {
 }));
 
 // 상품 인라인 편집 · 허용 컬럼만 수정 (부적절 컬럼 차단)
+// 2026-08-25 · products 테이블에 없는 컬럼 · cost_price 제거
 const ALLOWED_INLINE_EDIT = new Set([
   "optimal_stock",
   "sale_price",
   "purchase_price",
-  "cost_price",
   "supplier",
   "spec",
   "real_map",
@@ -490,7 +490,7 @@ router.patch("/api/products/:code", asyncHandler(async (req, res) => {
   for (const [k, v] of Object.entries(body)) {
     if (!ALLOWED_INLINE_EDIT.has(k)) continue;
     // 숫자 필드는 파싱, 빈 문자열은 null
-    if (["optimal_stock", "sale_price", "purchase_price", "cost_price"].includes(k)) {
+    if (["optimal_stock", "sale_price", "purchase_price"].includes(k)) {
       updates[k] = v === "" || v == null ? null : Number(v);
     } else if (k === "hidden") {
       // boolean 정규화: true/false/"true"/"false"/1/0
@@ -504,13 +504,33 @@ router.patch("/api/products/:code", asyncHandler(async (req, res) => {
   if (Object.prototype.hasOwnProperty.call(updates, "optimal_stock")) {
     updates.optimal_stock_backup = updates.optimal_stock;
   }
-  const { error } = await supabase.from("products").update(updates).eq("product_code", code);
-  if (error) {
-    console.error("[products PATCH] error:", error.message);
-    throw new HttpError(500, error.message);
+  // 2026-08-25 · 사용자 지시 · DB 컬럼 미존재 시 · strip 후 재시도 · POST 와 동일 패턴
+  const doUpdate = async (payload: Record<string, any>) =>
+    supabase.from("products").update(payload).eq("product_code", code);
+  const patchStripped: string[] = [];
+  let updErr: { message: string } | null = null;
+  {
+    const { error } = await doUpdate(updates);
+    updErr = error ?? null;
+  }
+  const MAX_STRIP_RETRIES = 8;
+  for (let attempt = 0; attempt < MAX_STRIP_RETRIES && updErr && /Could not find the '([^']+)' column|column "?([^" ]+)"? does not exist|no column named ([^ ]+)|schema cache/i.test(updErr.message); attempt++) {
+    const m = updErr.message.match(/Could not find the '([^']+)' column|column "?([^" ]+)"? does not exist|no column named ([^ ]+)/i);
+    const colName = m ? (m[1] ?? m[2] ?? m[3] ?? "").trim() : null;
+    if (!colName || !(colName in updates)) break;
+    delete updates[colName];
+    patchStripped.push(colName);
+    console.warn(`[products PATCH] DB 컬럼 미존재 · strip 후 재시도: ${colName}`);
+    if (Object.keys(updates).length === 0) { updErr = null; break; }
+    const { error } = await doUpdate(updates);
+    updErr = error ?? null;
+  }
+  if (updErr) {
+    console.error("[products PATCH] error:", updErr.message);
+    throw new HttpError(500, updErr.message);
   }
   resetProductCache();
-  res.json({ ok: true, updated: Object.keys(updates) });
+  res.json({ ok: true, updated: Object.keys(updates), stripped: patchStripped });
 }));
 
 // 2026-08-23 · #177 Phase C · 상품 신규 등록 · 관리자 + 매니저 lv5+ 만 (authorize(5))
@@ -541,14 +561,39 @@ router.post("/api/products", authorize(5), asyncHandler(async (req, res) => {
     if (typeof v === "undefined") continue;
     row[k] = v === "" ? null : v;
   }
-  const { error: insErr } = await supabase.from("products").insert(row);
+
+  // 2026-08-25 · 사용자 지시 · DB 에 없는 컬럼 자동 strip 후 재시도 (inventory_checks POST 와 동일 패턴)
+  //   · Zod 스키마 필드 중 · products 테이블 컬럼 미존재 시 · 에러 메시지 파싱 → 컬럼 제거 → 재시도
+  //   · 최대 8회 재시도 · 컬럼 오류 아니면 즉시 중단
+  const doInsert = async (payload: Record<string, unknown>) => supabase.from("products").insert(payload);
+  const MAX_STRIP_RETRIES = 8;
+  const stripped: string[] = [];
+  let insErr: { message: string } | null = null;
+  {
+    const { error } = await doInsert(row);
+    insErr = error ?? null;
+  }
+  for (let attempt = 0; attempt < MAX_STRIP_RETRIES && insErr && /Could not find the '([^']+)' column|column "?([^" ]+)"? does not exist|no column named ([^ ]+)|schema cache/i.test(insErr.message); attempt++) {
+    const m = insErr.message.match(/Could not find the '([^']+)' column|column "?([^" ]+)"? does not exist|no column named ([^ ]+)/i);
+    const colName = m ? (m[1] ?? m[2] ?? m[3] ?? "").trim() : null;
+    if (!colName || !(colName in row)) break;
+    delete row[colName];
+    stripped.push(colName);
+    console.warn(`[products POST] DB 컬럼 미존재 · strip 후 재시도: ${colName}`);
+    const { error } = await doInsert(row);
+    insErr = error ?? null;
+  }
   if (insErr) {
     console.error("[products POST] insert error:", insErr.message);
     throw new HttpError(500, insErr.message);
   }
+  if (stripped.length > 0) {
+    console.log(`[products POST] 신규 등록 (strip: ${stripped.join(", ")}) · ${code} · ${input.product_name}`);
+  } else {
+    console.log(`[products POST] 신규 등록 · ${code} · ${input.product_name}`);
+  }
   resetProductCache();
-  console.log(`[products POST] 신규 등록 · ${code} · ${input.product_name}`);
-  res.status(201).json({ ok: true, product_code: code });
+  res.status(201).json({ ok: true, product_code: code, stripped });
 }));
 
 export default router;
