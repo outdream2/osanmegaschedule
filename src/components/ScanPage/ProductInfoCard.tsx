@@ -497,10 +497,12 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           const zoneS1 = storeZones[0] ?? "";
           const zoneS2 = storeZones[1] ?? "";
           const zoneS3 = storeZones[2] ?? "";
+          // 2026-08-25 · 재고위치 톤 통일 · 상단 v9 gradient accent · 폰트 +2 (사용자 지시)
           return (
-            <div className={`rounded-xl border px-3 py-2 mb-2.5 ${isLow ? "bg-red-50 border-red-200" : "bg-zinc-50 border-line"}`}>
+            <div className={`relative overflow-hidden rounded-xl border px-3 py-2.5 mb-2.5 ${isLow ? "bg-red-50 border-red-200" : "bg-zinc-50 border-line"}`}>
+              <span aria-hidden className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${isLow ? "from-rose-500 via-red-500 to-rose-500" : "from-brand-deep via-sky-500 to-brand-deep"} opacity-90 z-10 pointer-events-none`} />
               {/* 2026-07-16 · 헤더 · 재고현황 라벨(클릭 시 접기/펼치기) + 재고세기 버튼 + 부족 표시 */}
-              <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+              <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                 <button
                   type="button"
                   onClick={() => setStockSectionCollapsed(c => !c)}
@@ -508,32 +510,32 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                   title={stockSectionCollapsed ? "펼치기" : "접기"}
                 >
                   {stockSectionCollapsed
-                    ? <ChevronRight size={13} className="text-zinc-400 shrink-0" />
-                    : <ChevronDown size={13} className="text-zinc-500 shrink-0" />}
-                  <Package size={11} className={`shrink-0 ${isLow ? "text-red-500" : "text-zinc-500"}`} />
-                  <p className={`text-[13px] font-bold ${isLow ? "text-red-600" : "text-zinc-800"}`}>재고현황</p>
+                    ? <ChevronRight size={15} className="text-zinc-400 shrink-0" />
+                    : <ChevronDown size={15} className="text-zinc-500 shrink-0" />}
+                  <Package size={13} className={`shrink-0 ${isLow ? "text-red-500" : "text-brand-deep"}`} />
+                  <p className={`text-[15px] font-bold ${isLow ? "text-red-600" : "text-zinc-800"}`}>재고현황</p>
                   {isLow && (
-                    <span className="text-[11px] font-semibold text-red-500 flex items-center gap-0.5 shrink-0">
-                      <AlertTriangle size={10} /> 부족
+                    <span className="text-[13px] font-bold text-red-500 flex items-center gap-0.5 shrink-0">
+                      <AlertTriangle size={12} /> 부족
                     </span>
                   )}
                   {stockSectionCollapsed && (
-                    <span className="text-[11px] tabular-nums font-semibold text-zinc-500 ml-1 truncate">현재고 {cur ?? "-"} · 적정 {opt ?? "-"}</span>
+                    <span className="text-[13px] tabular-nums font-semibold text-zinc-500 ml-1 truncate">현재고 {cur ?? "-"} · 적정 {opt ?? "-"}</span>
                   )}
                 </button>
                 {/* 2026-08-05 · 재고세기(YOLO) 기능 제거 · [재고 세기] 버튼 삭제 */}
               </div>
 
               {/* 2026-08-03 · 상단 2열 · 현재고 · 추천적정재고 · 접힌 상태에서는 숨김 */}
-              {!stockSectionCollapsed && <div className="grid grid-cols-2 gap-1.5">
-                {/* 현재고 */}
-                <div className="text-center bg-white rounded-lg border border-line py-1.5 px-1">
-                  <p className="text-[12px] font-semibold text-zinc-500 mb-0.5">현재고</p>
-                  <p className={`text-[12px] font-bold leading-none ${isLow ? "text-red-500" : "text-zinc-800"}`}>{cur ?? "-"}</p>
+              {!stockSectionCollapsed && <div className="grid grid-cols-2 gap-2">
+                {/* 현재고 · 폰트 +2 */}
+                <div className="text-center bg-white rounded-lg border border-line py-2 px-1">
+                  <p className="text-[13px] font-semibold text-zinc-500 mb-1">현재고</p>
+                  <p className={`text-[18px] font-bold leading-none tabular-nums ${isLow ? "text-red-600" : "text-zinc-800"}`}>{cur ?? "-"}</p>
                 </div>
-                {/* 적정재고 (인라인 편집) */}
-                <div className="text-center bg-white rounded-lg border border-amber-200 py-1.5 px-1">
-                  <p className="text-[12px] font-semibold text-amber-600 mb-0.5">추천적정재고</p>
+                {/* 적정재고 (인라인 편집) · 폰트 +2 */}
+                <div className="text-center bg-white rounded-lg border border-amber-200 py-2 px-1">
+                  <p className="text-[13px] font-semibold text-amber-600 mb-1">추천적정재고</p>
                   {editingKey === "optimal_stock" ? (
                     <div className="flex items-center gap-0.5 justify-center">
                       <input
@@ -556,7 +558,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                     <button
                       onClick={() => inlineEditEnabled && startEdit("optimal_stock", opt)}
                       disabled={!inlineEditEnabled}
-                      className={`text-[12px] font-bold leading-none text-amber-700 ${inlineEditEnabled ? "hover:bg-amber-100 rounded px-1 -mx-1 cursor-pointer transition" : "cursor-default"}`}
+                      className={`text-[18px] font-bold leading-none tabular-nums text-amber-700 ${inlineEditEnabled ? "hover:bg-amber-100 rounded px-1 -mx-1 cursor-pointer transition" : "cursor-default"}`}
                       title={inlineEditEnabled ? "클릭 → 편집" : undefined}
                     >{opt ?? "-"}</button>
                   )}
