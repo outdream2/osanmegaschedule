@@ -6,6 +6,7 @@ import { AccentBar } from "../common/AccentBar";
 import { Card } from "../common/Card";
 // 2026-08-25 · 사용자 지시 · 페이지 숨김 시 오늘의 현황에서도 관련 건수 숨김
 import { usePageVisibility } from "../../hooks/usePageVisibility";
+import { useIsMobile } from "../../hooks/use-mobile";
 
 interface TodayStatusPanelProps {
   authSession: AuthSession;
@@ -40,9 +41,12 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
   // 2026-08-23 · #171 잔여 · 승인대기 = 연차 + 사직서 (관리자 승인 대상)
   const approvalPendingTotal = leavePendingCount + requestsCounts.resignation;
   // 2026-08-25 · 사용자 지시 · 페이지 숨김 시 · 오늘의 현황 · 관련 건수 미노출
-  //   · 점심 신청 (승인요청 그룹 · approval-request) · PC/모바일 둘 다 숨김이면 lunch 통계 비표시
+  //   · 점심 신청 (승인요청 그룹 · approval-request) · 현재 뷰포트 (PC / 모바일) 숨김이면 lunch 통계 비표시
+  //   · SideNav 는 현재 뷰포트 기준 filter · 여기도 동일하게 현재 뷰포트만 체크
   const { isVisible } = usePageVisibility();
-  const lunchMenuVisible = isVisible("approval-request", "pc") || isVisible("approval-request", "mobile");
+  const isMobile = useIsMobile();
+  const currentViewport = isMobile ? "mobile" : "pc";
+  const lunchMenuVisible = isVisible("approval-request", currentViewport);
   return (
     <div className="w-full mb-6">
       <div className="flex items-center gap-2.5 mb-2 flex-wrap">
