@@ -123,8 +123,22 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         )}
       </div>
 
-      {/* 뷰 모드 토글 · 최신 트렌드 · segmented pill · 딥네이비 통일 */}
+      {/* 뷰 모드 토글 · 최신 트렌드 · segmented pill · 딥네이비 통일
+          2026-08-25 · 사용자 지시 · 상품별 (집계) 을 · 공급사별 (매입이력) 앞으로 · 기본 탭 */}
       <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
+        <button
+          type="button"
+          onClick={() => setViewMode("by-product")}
+          className={`px-3 h-8 text-[14px] font-semibold rounded-md transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
+            viewMode === "by-product"
+              ? "bg-brand-deep text-white shadow-sm"
+              : "text-ink hover:text-brand-deep hover:bg-white"
+          }`}
+          title="상품 단위로 매입이력 조회 (최근 1년) · 기본 탭"
+        >
+          <Package size={13} />
+          상품별
+        </button>
         <button
           type="button"
           onClick={() => setViewMode("by-vendor")}
@@ -137,19 +151,6 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         >
           <Building2 size={13} />
           공급사별
-        </button>
-        <button
-          type="button"
-          onClick={() => setViewMode("by-product")}
-          className={`px-3 h-8 text-[14px] font-semibold rounded-md transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
-            viewMode === "by-product"
-              ? "bg-brand-deep text-white shadow-sm"
-              : "text-ink hover:text-brand-deep hover:bg-white"
-          }`}
-          title="상품 단위로 매입이력 조회 (최근 1년)"
-        >
-          <Package size={13} />
-          상품별
         </button>
       </div>
 

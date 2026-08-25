@@ -612,8 +612,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                     className={`cursor-pointer transition-colors ${isSelected ? "bg-brand-tint/60 hover:bg-brand-tint" : "hover:bg-brand-tint/30"}`}
                     title="클릭 → 오른쪽 패널에 상세">
                     <td className="text-center align-middle py-1.5">
-                      {/* 2026-08-24 · 좌측 컬러 accent bar 제거 (사용자: 별로) · 카테고리 배지는 supplier 셀에 유지 */}
-                      {isExpanded ? <ChevronDown size={13} className="text-brand-deep mx-auto" /> : <ChevronRight size={13} className="text-zinc-300 mx-auto" />}
+                      {/* 2026-08-25 · 사용자 지시 · Option A · 오해되는 Down chevron 제거 · 항상 Right (클릭 시 우측 상세) */}
+                      <ChevronRight size={13} className={`mx-auto ${isSelected ? "text-brand-deep" : "text-zinc-300"}`} />
                     </td>
                     <td className="text-center align-middle py-1.5 text-[15px] font-semibold text-zinc-400 tabular-nums">{i + 1}</td>
                     {/* 2026-08-10 · #18 · 공급사 셀에 [분류][줄바꿈][공급사명] · 2줄 (사용자 요청) */}
