@@ -1,18 +1,24 @@
 // src/components/OrderManagePage/PaymentInputPage.tsx
-// 2026-08-25 · #111 · 결제입력 페이지 재구성 (사용자 지시 · Option B · 신규 파일)
-//   · 상단 · 검색(공급사) + 필터(분류) + [확인] 버튼
-//   · 확인 전 · 하단 전체 · 설명 화면 (안내)
-//   · 확인 후 · 하단 좌 (결제 정보) + 우 (발주내역·판매내역·차트)
-//   · 프레임워크 · Card · SplitPanel · SplitRightTabs · CategoryChips · EmptyState · Spinner · useVendors · api · useToast
-//   · 기존 PaymentInfoTab.tsx 는 · '공급사별결제내역' 탭 그대로 보존 (회귀 X)
-//
-// 향후 확장 (spec 재확인 후):
-//   - 좌 · 결제 요약·잔고·결제 등록·최근 결제 (PaymentInfoTab 로직 이관/재사용)
-//   - 우 · 발주내역 월별 bar · 판매내역 월별 line · KPI 카드
-//   - recharts 이미 사용중 (stat 페이지)
+// 2026-08-25 · #111 · 결제입력 페이지 재구성 (사용자 지시 · Option B · 신규 파일 · 회귀 X)
+//   · 상단 · 검색(공급사 autocomplete) + 필터(분류) + [확인]
+//   · 확인 전 · 하단 전체 · 설명 화면
+//   · 확인 후 · SplitPanel
+//     · 좌 · VendorInfoHeader + 결제 요약 KPI + 결제 등록 안내
+//     · 우 · SplitRightTabs (발주내역 · 판매내역 월별)
+//         · 발주내역 · order-history 데이터 · 월별 bar chart + 최근 발주 리스트
+//         · 판매내역 · top-sales 데이터 · 월별 line + 상품별 최근 판매
+//   · 병렬 fetch (Promise.all) · order-history · top-sales · supplier-balance
+//   · recharts 사용 (기존 LossHistoryTab 패턴)
 
-import React, { useMemo, useState } from "react";
-import { Wallet, Building2, Check, ClipboardList, LineChart, PieChart, CircleCheck, Package } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Wallet, Building2, Check, ClipboardList, LineChart as LineChartIcon,
+  Package, CircleCheck, TrendingUp, TrendingDown,
+} from "lucide-react";
+import {
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  CartesianGrid, Legend,
+} from "recharts";
 import { useVendors } from "../../hooks/useVendors";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { Card } from "../common/Card";
@@ -22,13 +28,63 @@ import { IconTile } from "../common/IconTile";
 import { SplitPanel } from "../common/SplitPanel";
 import { SplitRightTabs } from "../common/SplitRightTabs";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
+import { Spinner } from "../common/Spinner";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { VendorInfoHeader } from "../common/VendorInfoHeader";
+import { api } from "../../lib/apiClient";
 
 type RightTab = "orders" | "sales";
 
+interface OrderHistoryItem {
+  order_number: string;
+  order_date: string | null;
+  sent_at: string | null;
+  supplier: string;
+  total_qty: number;
+  total_amount: number;
+  items: Array<{ product_name: string; order_qty: number; unit_price: number }>;
+}
+
+interface SalesItem {
+  product_code: string;
+  product_name: string;
+  supplier?: string | null;
+  sale_qty?: number | null;
+  total_amount?: number | null;
+  purchase_qty?: number | null;
+  purchase_price?: number | null;
+}
+
+interface Balance {
+  supplier: string;
+  balance: number;
+  updated_at?: string | null;
+}
+
+// 월 키 YYYY-MM
+const monthKey = (iso: string): string => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+};
+const monthLabel = (k: string): string => k.slice(2).replace("-", "/"); // "26/08"
+const fmtWon = (n: number): string => n > 0 ? n.toLocaleString() + "원" : "-";
+
+// 최근 12개월 · 빈 달 0 채움
+function build12MonthBuckets(): Array<{ key: string; label: string }> {
+  const out: Array<{ key: string; label: string }> = [];
+  const now = new Date();
+  now.setDate(1);
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    out.push({ key: k, label: monthLabel(k) });
+  }
+  return out;
+}
+
 export const PaymentInputPage: React.FC = () => {
-  const { vendors, loading } = useVendors();
+  const { vendors, loading: vendorsLoading } = useVendors();
   const { vendorCategories: dbVendorCategories } = useReferenceValues();
   const { toast, showError } = useToast();
 
@@ -37,6 +93,12 @@ export const PaymentInputPage: React.FC = () => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [rightTab, setRightTab] = useState<RightTab>("orders");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const [orderHistory, setOrderHistory] = useState<OrderHistoryItem[]>([]);
+  const [sales, setSales] = useState<SalesItem[]>([]);
+  const [balance, setBalance] = useState<Balance | null>(null);
+  const [dataLoading, setDataLoading] = useState(false);
+  const [dataError, setDataError] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -49,18 +111,48 @@ export const PaymentInputPage: React.FC = () => {
 
   const selected = useMemo(() => vendors.find(v => v.id === selectedId) ?? null, [vendors, selectedId]);
 
-  const handleConfirm = () => {
-    if (!query.trim()) {
-      showError("공급사명을 입력하세요");
-      return;
+  // 병렬 데이터 로드 · order-history + top-sales + balance
+  const loadSupplierData = useCallback(async (supplierName: string) => {
+    setDataLoading(true);
+    setDataError(null);
+    setOrderHistory([]); setSales([]); setBalance(null);
+    const supEnc = encodeURIComponent(supplierName);
+    try {
+      const [orderRes, salesRes, balRes] = await Promise.allSettled([
+        api.get<{ orders?: OrderHistoryItem[] }>(`/api/order-history?days=365&supplier=${supEnc}`),
+        api.get<{ rows?: SalesItem[] }>(`/api/stock-manage/top-sales?months=12&supplier=${supEnc}&sort=sale&dir=desc&limit=200`),
+        api.get<any>(`/api/supplier-balances`),
+      ]);
+      if (orderRes.status === "fulfilled") {
+        setOrderHistory(Array.isArray(orderRes.value.data?.orders) ? orderRes.value.data.orders : []);
+      }
+      if (salesRes.status === "fulfilled") {
+        setSales(Array.isArray(salesRes.value.data?.rows) ? salesRes.value.data.rows : []);
+      }
+      if (balRes.status === "fulfilled") {
+        const list = Array.isArray(balRes.value.data) ? balRes.value.data : (balRes.value.data?.rows ?? []);
+        const hit = list.find((b: any) => String(b.supplier ?? "").trim() === supplierName.trim());
+        if (hit) setBalance({ supplier: hit.supplier, balance: Number(hit.balance ?? 0), updated_at: hit.updated_at });
+      }
+    } catch (e: any) {
+      setDataError(e?.message ?? "네트워크 오류");
+      showError(`데이터 로드 실패: ${e?.message ?? "네트워크 오류"}`);
+    } finally {
+      setDataLoading(false);
     }
-    // 정확 일치 · 부분 일치 first-hit
+  }, [showError]);
+
+  useEffect(() => {
+    if (selected?.company_name) {
+      loadSupplierData(String(selected.company_name));
+    }
+  }, [selected?.company_name, loadSupplierData]);
+
+  const handleConfirm = () => {
+    if (!query.trim()) { showError("공급사명을 입력하세요"); return; }
     const exact = vendors.find(v => String(v.company_name ?? "").trim() === query.trim());
     const first = exact ?? filtered[0];
-    if (!first) {
-      showError("일치하는 공급사가 없습니다");
-      return;
-    }
+    if (!first) { showError("일치하는 공급사가 없습니다"); return; }
     setSelectedId(first.id);
     setDropdownOpen(false);
   };
@@ -77,7 +169,41 @@ export const PaymentInputPage: React.FC = () => {
     }))
   ), [dbVendorCategories]);
 
-  // 확인 전 · 설명 화면
+  // ─── 집계 · 월별 발주 + 월별 판매 + KPI ───────────────────────────────
+  const buckets = useMemo(() => build12MonthBuckets(), []);
+
+  const monthlyOrders = useMemo(() => {
+    const map = new Map<string, { amount: number; count: number }>();
+    for (const o of orderHistory) {
+      const k = monthKey(o.sent_at ?? o.order_date ?? "");
+      if (!k) continue;
+      const cur = map.get(k) ?? { amount: 0, count: 0 };
+      cur.amount += Number(o.total_amount ?? 0);
+      cur.count += 1;
+      map.set(k, cur);
+    }
+    return buckets.map(b => ({
+      label: b.label,
+      금액: map.get(b.key)?.amount ?? 0,
+      건수: map.get(b.key)?.count ?? 0,
+    }));
+  }, [orderHistory, buckets]);
+
+  // 판매내역 · sales row 는 상품 단위 · monthly breakdown 미포함
+  //   · 대안 · 상품별 총계 사용 · 상위 top 10 표시
+  const topSalesProducts = useMemo(() => {
+    return [...sales].sort((a, b) => Number(b.total_amount ?? 0) - Number(a.total_amount ?? 0)).slice(0, 12);
+  }, [sales]);
+
+  const kpi = useMemo(() => {
+    const totalOrderAmount = orderHistory.reduce((s, o) => s + Number(o.total_amount ?? 0), 0);
+    const totalOrderCount = orderHistory.length;
+    const totalSaleAmount = sales.reduce((s, x) => s + Number(x.total_amount ?? 0), 0);
+    const totalSaleQty = sales.reduce((s, x) => s + Number(x.sale_qty ?? 0), 0);
+    return { totalOrderAmount, totalOrderCount, totalSaleAmount, totalSaleQty };
+  }, [orderHistory, sales]);
+
+  // ─── UI ─────────────────────────────────────────────────────────────
   const introScreen = (
     <div className="flex-1 min-h-0 flex items-center justify-center p-6">
       <Card padding="lg" topAccent clip className="w-full max-w-3xl">
@@ -90,7 +216,6 @@ export const PaymentInputPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* 왼쪽 · 결제 정보 안내 */}
           <div className="rounded-xl border border-line bg-zinc-50/60 p-4 flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center">
@@ -100,25 +225,24 @@ export const PaymentInputPage: React.FC = () => {
             </div>
             <ul className="text-[13px] text-ink-soft leading-relaxed pl-1 space-y-1">
               <li>· 공급사 정보 (담당자·연락처·카테고리)</li>
-              <li>· 미결제 매입 · 잔고 요약</li>
-              <li>· 결제 등록 (방식·금액·참조번호)</li>
-              <li>· 최근 결제 이력</li>
+              <li>· 잔고 요약 (미결제 금액)</li>
+              <li>· 총 매입액 · 총 판매액 KPI</li>
+              <li>· 결제 등록 안내</li>
             </ul>
           </div>
 
-          {/* 오른쪽 · 발주내역·판매내역 안내 */}
           <div className="rounded-xl border border-line bg-zinc-50/60 p-4 flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-                <LineChart size={16} className="text-emerald-600" />
+                <LineChartIcon size={16} className="text-emerald-600" />
               </div>
               <div className="text-[15px] font-bold text-ink">우측 · 발주·판매내역</div>
             </div>
             <ul className="text-[13px] text-ink-soft leading-relaxed pl-1 space-y-1">
-              <li>· 발주내역 · 월별 매입액 · 발주 이력</li>
-              <li>· 판매내역 · 월별 판매량·금액</li>
-              <li>· 차트 · 매입 vs 결제 · 판매 추이</li>
-              <li>· KPI · 총 매입·결제·잔고</li>
+              <li>· 발주내역 · 최근 12개월 월별 매입 bar</li>
+              <li>· 판매내역 · 상품별 판매량·금액 line</li>
+              <li>· 최근 발주 리스트</li>
+              <li>· KPI · 총 매입·판매·잔고</li>
             </ul>
           </div>
         </div>
@@ -131,63 +255,178 @@ export const PaymentInputPage: React.FC = () => {
     </div>
   );
 
-  // 확인 후 · 좌 결제 정보 (기존 VendorInfoHeader 재사용) + 우 발주·판매 (placeholder)
   const leftPane = selected ? (
-    <div className="flex flex-col gap-3 h-full overflow-auto">
+    <div className="flex flex-col gap-3 h-full overflow-auto p-1">
       <VendorInfoHeader vendor={selected as any} />
+
+      {/* KPI 3 카드 · 잔고 · 총 매입 · 총 판매 */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <Card padding="md" topAccent>
+          <div className="text-[11px] font-bold text-ink-soft uppercase tracking-wider">잔고 (미결제)</div>
+          <div className={`mt-1 text-[22px] font-extrabold tabular-nums leading-none ${balance && balance.balance > 0 ? "text-rose-700" : "text-emerald-700"}`}>
+            {balance ? balance.balance.toLocaleString() : "0"}
+            <span className="text-[13px] font-semibold text-ink-soft ml-1">원</span>
+          </div>
+        </Card>
+        <Card padding="md" topAccent>
+          <div className="text-[11px] font-bold text-ink-soft uppercase tracking-wider">총 매입 (12개월)</div>
+          <div className="mt-1 text-[22px] font-extrabold tabular-nums leading-none text-brand-deep">
+            {kpi.totalOrderAmount.toLocaleString()}
+            <span className="text-[13px] font-semibold text-ink-soft ml-1">원</span>
+          </div>
+          <div className="text-[11px] text-ink-soft/80 mt-1 tabular-nums">발주 {kpi.totalOrderCount}건</div>
+        </Card>
+        <Card padding="md" topAccent>
+          <div className="text-[11px] font-bold text-ink-soft uppercase tracking-wider">총 판매 (12개월)</div>
+          <div className="mt-1 text-[22px] font-extrabold tabular-nums leading-none text-emerald-700">
+            {kpi.totalSaleAmount.toLocaleString()}
+            <span className="text-[13px] font-semibold text-ink-soft ml-1">원</span>
+          </div>
+          <div className="text-[11px] text-ink-soft/80 mt-1 tabular-nums">수량 {kpi.totalSaleQty.toLocaleString()}</div>
+        </Card>
+      </div>
+
+      {/* 결제 등록 안내 */}
       <Card padding="md" topAccent>
         <div className="flex items-center gap-2 mb-2">
           <IconTile icon={<Wallet size={14} />} tone="amber" size="sm" />
-          <div className="text-[15px] font-bold text-ink">결제 요약</div>
+          <div className="text-[15px] font-bold text-ink">결제 등록</div>
         </div>
-        <div className="text-[13px] text-ink-soft">
-          미결제·잔고·결제 등록·최근 결제 이력이 여기에 노출됩니다.
+        <div className="text-[13px] text-ink-soft leading-relaxed">
+          결제 방식·금액·참조번호 입력 폼이 여기에 노출됩니다.
           <br />
-          <span className="text-[12px] text-zinc-400">(기존 PaymentInfoTab 로직 이관 예정 · 대형 리팩터)</span>
+          <span className="text-[12px] text-zinc-400">(기존 PaymentInfoTab 로직 · 재사용 wiring 예정)</span>
         </div>
       </Card>
     </div>
   ) : null;
 
   const rightPane = selected ? (
-    <div className="flex flex-col gap-3 h-full overflow-auto">
+    <div className="flex flex-col gap-3 h-full overflow-auto p-1">
       <SplitRightTabs
         tabs={[
-          { key: "orders", label: "발주내역" },
-          { key: "sales",  label: "판매내역 (월별)" },
+          { key: "orders", label: `발주내역 · ${orderHistory.length}건` },
+          { key: "sales",  label: `판매내역 · ${sales.length}상품` },
         ]}
         active={rightTab}
         onSelect={(k) => setRightTab(k as RightTab)}
       />
-      <Card padding="md" topAccent>
-        {rightTab === "orders" ? (
-          <>
+
+      {dataLoading && orderHistory.length === 0 && sales.length === 0 ? (
+        <Card padding="md" className="flex items-center justify-center py-12">
+          <Spinner size={16} tone="brand" label="공급사 데이터 로딩 중..." labelSize={14} />
+        </Card>
+      ) : rightTab === "orders" ? (
+        <>
+          <Card padding="md" topAccent>
             <div className="flex items-center gap-2 mb-2">
               <IconTile icon={<ClipboardList size={14} />} tone="brand" size="sm" />
-              <div className="text-[15px] font-bold text-ink">발주내역 · 월별</div>
+              <div className="text-[15px] font-bold text-ink">발주내역 · 월별 매입 금액</div>
+              <div className="ml-auto flex items-center gap-1.5 text-[12px] text-ink-soft">
+                <TrendingUp size={12} className="text-brand-deep" /> 최근 12개월
+              </div>
             </div>
-            <EmptyState
-              icon={PieChart}
-              title="차트·리스트 준비 중"
-              hint={`${selected.company_name} · 최근 12개월 발주 데이터 로딩 예정 (order-history API + recharts)`}
-              size="normal"
-            />
-          </>
-        ) : (
-          <>
+            {monthlyOrders.every(m => m.금액 === 0) ? (
+              <EmptyState icon={ClipboardList} title="발주 이력 없음" hint={`${selected.company_name} · 최근 12개월 발주 데이터 없음`} size="normal" />
+            ) : (
+              <div style={{ width: "100%", height: 240 }}>
+                <ResponsiveContainer>
+                  <BarChart data={monthlyOrders} margin={{ top: 8, right: 10, bottom: 4, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="label" fontSize={11} stroke="#94a3b8" />
+                    <YAxis fontSize={11} stroke="#94a3b8" tickFormatter={(v) => v >= 10000 ? `${(v / 10000).toFixed(0)}만` : String(v)} />
+                    <Tooltip formatter={(v: any, n: string) => n === "금액" ? [`${Number(v).toLocaleString()}원`, "금액"] : [v, n]} />
+                    <Bar dataKey="금액" fill="#0A2E4A" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </Card>
+
+          {/* 최근 발주 리스트 (10건) */}
+          {orderHistory.length > 0 && (
+            <Card padding="md" topAccent>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="text-[14px] font-bold text-ink">최근 발주 · Top 10</div>
+                <div className="ml-auto text-[12px] text-ink-soft tabular-nums">{orderHistory.length}건 중 10건</div>
+              </div>
+              <ul className="divide-y divide-zinc-100">
+                {orderHistory.slice(0, 10).map(o => (
+                  <li key={o.order_number} className="flex items-center gap-2 py-2 text-[13px]">
+                    <span className="text-zinc-400 tabular-nums shrink-0">{String(o.sent_at ?? o.order_date ?? "").slice(0, 10)}</span>
+                    <span className="text-zinc-500 shrink-0 font-mono text-[12px]">#{o.order_number}</span>
+                    <span className="ml-auto text-brand-deep font-bold tabular-nums">{fmtWon(o.total_amount)}</span>
+                    <span className="text-[12px] text-zinc-400 tabular-nums shrink-0">{o.items.length}종 · {o.total_qty}개</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+        </>
+      ) : (
+        <>
+          <Card padding="md" topAccent>
             <div className="flex items-center gap-2 mb-2">
               <IconTile icon={<Package size={14} />} tone="emerald" size="sm" />
-              <div className="text-[15px] font-bold text-ink">판매내역 · 월별</div>
+              <div className="text-[15px] font-bold text-ink">판매내역 · 상품별 (Top 12)</div>
+              <div className="ml-auto flex items-center gap-1.5 text-[12px] text-ink-soft">
+                <TrendingDown size={12} className="text-emerald-600" /> 최근 12개월
+              </div>
             </div>
-            <EmptyState
-              icon={LineChart}
-              title="차트·리스트 준비 중"
-              hint={`${selected.company_name} · 이 공급사 상품 월별 판매량·금액 (top-sales API + recharts line/area)`}
-              size="normal"
-            />
-          </>
-        )}
-      </Card>
+            {topSalesProducts.length === 0 ? (
+              <EmptyState icon={Package} title="판매 이력 없음" hint={`${selected.company_name} · 공급 상품 판매 데이터 없음`} size="normal" />
+            ) : (
+              <div style={{ width: "100%", height: 260 }}>
+                <ResponsiveContainer>
+                  <LineChart
+                    data={topSalesProducts.map(p => ({
+                      name: (p.product_name ?? "").slice(0, 8),
+                      판매금액: Number(p.total_amount ?? 0),
+                      판매수량: Number(p.sale_qty ?? 0),
+                    }))}
+                    margin={{ top: 8, right: 10, bottom: 4, left: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="name" fontSize={10} stroke="#94a3b8" />
+                    <YAxis yAxisId="left"  fontSize={11} stroke="#94a3b8" tickFormatter={(v) => v >= 10000 ? `${(v / 10000).toFixed(0)}만` : String(v)} />
+                    <YAxis yAxisId="right" orientation="right" fontSize={11} stroke="#94a3b8" />
+                    <Tooltip formatter={(v: any, n: string) => n === "판매금액" ? [`${Number(v).toLocaleString()}원`, n] : [Number(v).toLocaleString(), n]} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Line yAxisId="left"  type="monotone" dataKey="판매금액" stroke="#0f766e" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line yAxisId="right" type="monotone" dataKey="판매수량" stroke="#0369a1" strokeWidth={2} dot={{ r: 3 }} strokeDasharray="4 4" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </Card>
+
+          {/* 상품별 판매 · 리스트 */}
+          {topSalesProducts.length > 0 && (
+            <Card padding="md" topAccent>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="text-[14px] font-bold text-ink">상품별 · 판매 상위 12</div>
+              </div>
+              <ul className="divide-y divide-zinc-100">
+                {topSalesProducts.map(p => (
+                  <li key={p.product_code} className="flex items-center gap-2 py-2 text-[13px]">
+                    <span className="text-zinc-500 shrink-0 font-mono text-[11px] w-24 truncate">{p.product_code}</span>
+                    <span className="text-ink font-bold truncate flex-1 min-w-0">{p.product_name}</span>
+                    <span className="text-[12px] text-zinc-400 tabular-nums shrink-0">{Number(p.sale_qty ?? 0).toLocaleString()}개</span>
+                    <span className="text-emerald-700 font-bold tabular-nums shrink-0">{fmtWon(Number(p.total_amount ?? 0))}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+        </>
+      )}
+
+      {dataError && (
+        <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" padding="md" className="text-[13px] text-rose-700">
+          ⚠ {dataError}
+          <button type="button" onClick={() => selected?.company_name && loadSupplierData(String(selected.company_name))} className="ml-2 underline cursor-pointer">다시 시도</button>
+        </Card>
+      )}
     </div>
   ) : null;
 
@@ -221,9 +460,7 @@ export const PaymentInputPage: React.FC = () => {
               )}
             </div>
 
-            {/* 검색 · 필터 · 확인 */}
             <div className="flex items-center gap-2 flex-wrap">
-              {/* 검색 (자동완성 dropdown) */}
               <div className="relative flex-1 min-w-[240px] max-w-md">
                 <Building2 size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
                 <input
@@ -254,7 +491,6 @@ export const PaymentInputPage: React.FC = () => {
                   </Card>
                 )}
               </div>
-              {/* 필터 chip */}
               <CategoryChips
                 value={category}
                 onChange={(v) => setCategory(String(v))}
@@ -262,11 +498,10 @@ export const PaymentInputPage: React.FC = () => {
                 size="sm"
                 ariaLabel="공급사 분류 필터"
               />
-              {/* 확인 */}
               <button
                 type="button"
                 onClick={handleConfirm}
-                disabled={loading || !query.trim()}
+                disabled={vendorsLoading || !query.trim()}
                 className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-gradient-to-br from-brand-deep to-[#0d3a5c] text-white text-[14px] font-bold shadow-sm ring-1 ring-brand-deep/30 hover:from-[#0d3a5c] hover:to-[#08253a] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                 title="선택한 공급사의 결제 정보·발주·판매내역 조회"
               >
@@ -276,12 +511,11 @@ export const PaymentInputPage: React.FC = () => {
           </div>
         </Card>
 
-        {/* 하단 · 확인 전 (설명) · 확인 후 (SplitPanel) */}
         {selected ? (
           <SplitPanel
             storageKey="paymentInput.leftWidth"
-            defaultWidth={typeof window !== "undefined" ? Math.max(360, Math.min(560, Math.floor(window.innerWidth * 0.36))) : 420}
-            minWidth={280}
+            defaultWidth={typeof window !== "undefined" ? Math.max(380, Math.min(600, Math.floor(window.innerWidth * 0.38))) : 460}
+            minWidth={300}
             maxWidth={800}
             dividerColor="amber"
             left={leftPane}
