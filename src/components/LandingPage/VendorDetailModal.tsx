@@ -23,60 +23,11 @@ import {
 import { PaymentRegisterModal } from "./PaymentRegisterModal";
 // 2026-08-22 · helpers 별도 파일 이관
 import { METHOD_OPTIONS, Field, SectionTitle, StatCard } from "./VendorDetailModal.helpers";
-
-// ─── 타입 (기존 VendorListEditor.tsx inline 정의 이관) ─────────
-interface PurchaseRow {
-  id: number;
-  purchase_date: string;
-  product_code: string;
-  product_name: string;
-  quantity: number;
-  unit_price: number;
-  amount: number;
-  total: number;
-}
-interface VendorSummary {
-  totalAmount: number;
-  totalQty: number;
-  uniqueProducts: number;
-  latestDate: string | null;
-  earliestDate: string | null;
-  count: number;
-}
-interface SupplierBalanceInfo {
-  supplier: string;
-  total_purchase: number;
-  total_payment: number;
-  balance: number;
-  purchase_count: number;
-  payment_count: number;
-}
-interface PaymentAllocation {
-  id: number;
-  payment_id: number;
-  ocr_confirmed_item_id: number | null;
-  allocated_amount: number;
-}
-interface PaymentRow {
-  id: number;
-  supplier_name: string;
-  payment_date: string;
-  amount: number;
-  method: string;
-  memo: string | null;
-  created_at: string;
-  allocations?: PaymentAllocation[];
-}
-interface LedgerRow {
-  type: "purchase" | "payment";
-  id: number;
-  date: string;
-  amount: number;
-  method: string | null;
-  memo: string | null;
-  running_balance: number;
-}
-type DetailTab = "info" | "payment" | "purchase";
+// 2026-08-25 · Framework Phase 4 · large-file 분리 · inline 타입 7개 이관
+import type {
+  PurchaseRow, VendorSummary, SupplierBalanceInfo,
+  PaymentAllocation, PaymentRow, LedgerRow, DetailTab,
+} from "./VendorDetailModal.types";
 
 export const VendorDetailModal: React.FC<{
   vendor: Vendor;
