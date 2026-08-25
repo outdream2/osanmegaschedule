@@ -26,6 +26,7 @@ import {
   ScanLine, Package,
   RotateCcw, Warehouse, Store,
   MapPin, ArrowUpDown, ArrowUp, ArrowDown, X,
+  Megaphone, AlertCircle,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { BarcodeScanner } from "../BarcodeScanner";
@@ -744,60 +745,44 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
                   <span className="text-[15px] font-bold text-ink tracking-tight">스캔한 상품 · 실재고 입력</span>
                 </div>
-              </div>
-              {/* 2026-08-25 · 사용자 지시 · 4버튼 (전체·미입력·입력됨·이상값) → 2버튼 (진열요청·유통기한임박) 대체
-                    · 각 버튼 · 라벨 + 갯수 · 클릭 시 필터 적용
-                    · 진열요청: 매장재고=0 & 창고재고>0 · violet
-                    · 유통기한임박: expiry_date 있음 (기준일 없음 · 표시만) · amber */}
-              {rows.length > 0 && (
-                <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="실재고 입력 필터">
-                  {([
-                    { key: "display", label: "진열요청",   count: scanStats.display, dot: "bg-violet-500", activeBg: "bg-violet-600", activeText: "text-white" },
-                    { key: "expiry",  label: "유통기한임박", count: scanStats.expiry,  dot: "bg-amber-500",  activeBg: "bg-amber-600",  activeText: "text-white" },
-                  ] as const).map(o => {
-                    const active = scanFilter === o.key;
-                    return (
+                {/* 2026-08-25 · 사용자 지시 · 헤더 옆 진열요청 · 유통기한임박 액션 버튼 (마지막 스캔 상품 대상)
+                      · 아래 2버튼 필터 제거 · 액션으로 대체 */}
+                {(() => {
+                  const targetRow = lastCode ? rows.find(r => r.code === lastCode) : null;
+                  const disabled = !targetRow;
+                  const expiryOn = !!targetRow && hasExpiry(targetRow);
+                  return (
+                    <div className="flex items-center gap-1.5 shrink-0" aria-label="마지막 스캔 상품 액션">
                       <button
-                        key={o.key}
                         type="button"
-                        role="tab"
-                        aria-selected={active}
-                        onClick={() => setScanFilter(active ? "all" : o.key)}
-                        className={[
-                          "flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border-2 transition-all duration-150 cursor-pointer text-left min-h-[56px]",
-                          active
-                            ? `${o.activeBg} border-transparent shadow-[0_2px_10px_-2px_rgba(10,46,74,0.30),inset_0_1px_0_rgba(255,255,255,0.15)] scale-[1.01]`
-                            : "bg-white border-line hover:border-brand-deep/40 hover:bg-zinc-50",
-                        ].join(" ")}
-                        title={active ? `클릭 시 필터 해제 · 전체 보기` : `${o.label} 필터 · ${o.count}건`}
+                        disabled={disabled || requestingKey === (targetRow?.key ?? "")}
+                        onClick={() => { if (targetRow) requestDisplay(targetRow); }}
+                        className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] font-bold shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed
+                          bg-violet-500 hover:bg-violet-600 active:bg-violet-700 text-white"
+                        title={disabled ? "먼저 상품을 스캔하세요" : `${targetRow?.product.name} · 진열요청 전송`}
                       >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span
-                            className={`w-2 h-2 rounded-full shrink-0 ${active ? "bg-white/90" : o.dot} ${active || o.count > 0 ? "" : "opacity-40"}`}
-                          />
-                          <span className={`text-[15px] font-semibold tracking-tight truncate ${active ? o.activeText : "text-ink-soft"}`}>
-                            {o.label}
-                          </span>
-                          {o.key === "expiry" && o.count > 0 && !active && (
-                            <span className="text-[12px] font-bold text-amber-700 shrink-0">주의</span>
-                          )}
-                        </div>
-                        <span
-                          className={`text-[22px] font-bold tabular-nums leading-none tracking-tight ${
-                            active
-                              ? o.activeText
-                              : o.count > 0
-                                ? (o.key === "expiry" ? "text-amber-700" : "text-violet-700")
-                                : "text-zinc-300"
-                          }`}
-                        >
-                          {o.count}
-                        </span>
+                        <Megaphone size={13} strokeWidth={2.5} />
+                        진열요청
                       </button>
-                    );
-                  })}
-                </div>
-              )}
+                      <button
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => { if (targetRow) toggleExpiry(targetRow); }}
+                        className={[
+                          "inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] font-bold shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed",
+                          expiryOn
+                            ? "bg-amber-600 hover:bg-amber-700 text-white ring-2 ring-amber-300"
+                            : "bg-white border border-line text-ink-soft hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700",
+                        ].join(" ")}
+                        title={disabled ? "먼저 상품을 스캔하세요" : (expiryOn ? "유통기한 임박 해제" : "유통기한 임박 표시 (오늘 날짜 저장)")}
+                      >
+                        <AlertCircle size={13} strokeWidth={2.5} />
+                        유통기한임박{expiryOn ? " ✓" : ""}
+                      </button>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
 
             {rows.length === 0 ? (

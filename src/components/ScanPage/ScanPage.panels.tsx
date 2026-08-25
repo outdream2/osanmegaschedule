@@ -145,24 +145,9 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
                 )}
               </div>
             </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                const target = rows.find(r => r.code === lastCode);
-                if (target) onRequestDisplay(target);
-              }}
-              disabled={!lastCode || requestingKey === (rows.find(r => r.code === lastCode)?.key ?? "")}
-              className="w-full inline-flex items-center justify-center gap-2 min-h-[44px] py-2.5
-                bg-violet-500 hover:bg-violet-600 active:bg-violet-700
-                text-white text-[15px] sm:text-[14px] font-bold shadow-inner
-                disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer
-                border-t border-violet-400"
-              title="이 상품 진열요청 · 구역 담당자·관리자 알림 · 요청 목록에 표시"
-            >
-              <Megaphone size={15} strokeWidth={2.5} />
-              진열요청 전송
-            </button>
+            {/* 2026-08-25 · 사용자 지시 · 최근 스캔 · 진열요청 버튼 제거
+                · 아래 진열요청 필터 + 각 row [🔊 진열요청] 액션 (StockActionsCell) 으로 대체
+                · 참고: rows / requestingKey / onRequestDisplay props 는 향후 참조 대비 유지 */}
           </div>
         )}
       </div>
