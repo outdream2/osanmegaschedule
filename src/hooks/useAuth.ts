@@ -66,13 +66,15 @@ function clearAllMegatownKeys(): void {
 }
 
 function isExpired(session: AuthSession, now: number): boolean {
-  // rememberMe sessions never expire automatically — only explicit logout clears them
-  if (session.rememberMe) return false;
-  // Absolute timeout: hard cap from login time
+  // 2026-08-25 · 사용자 지시 · 최신 트렌드 · 아이디 저장과 세션 만료 분리
+  //   · 자동 로그인 (rememberMe) 은 · 이제 · 로그인 필드에 아이디만 pre-fill 하는 UX 로 축소
+  //   · 세션 만료는 · 항상 · idle + absolute 로 적용 (rememberMe 우회 제거)
+  //   · legacy · 기존 세션의 rememberMe 필드는 · 여기서 무시 (backward compat 존재만 유지)
+  // Absolute timeout: 로그인 후 최대 유지 시간 (24h)
   if (session.loginAt !== undefined && now - session.loginAt > ABSOLUTE_TIMEOUT_MS) {
     return true;
   }
-  // Idle timeout: no activity for 8 hours
+  // Idle timeout: 마지막 활동 이후 · 기본 30분 (KV 설정으로 조정 가능)
   const lastActivity = session.lastActiveAt ?? session.loginAt;
   if (lastActivity !== undefined && now - lastActivity > getEffectiveIdleTimeoutMs()) {
     return true;
@@ -81,7 +83,7 @@ function isExpired(session: AuthSession, now: number): boolean {
 }
 
 function isWarnWindow(session: AuthSession, now: number): boolean {
-  if (session.rememberMe) return false;
+  // 2026-08-25 · 사용자 지시 · rememberMe 우회 제거 (아이디 저장과 세션 분리)
   const lastActivity = session.lastActiveAt ?? session.loginAt;
   if (lastActivity === undefined) return false;
   const idleElapsed = now - lastActivity;

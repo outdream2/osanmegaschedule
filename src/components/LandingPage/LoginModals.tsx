@@ -39,6 +39,10 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
   const [empError, setEmpError] = useState<string | null>(null);
   const [empLoading, setEmpLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // 2026-08-25 · 사용자 지시 · 최신 트렌드 · 아이디 저장과 세션 만료 완전 분리
+  //   이제 rememberMe = "아이디 저장" (로그인 필드 pre-fill) 만 담당
+  //   세션 만료는 · useAuth.isExpired 가 rememberMe 상관없이 항상 idle/absolute 적용
+  //   기본 · true (아이디 편의 · 안전에 영향 X)
   const [rememberMe, setRememberMe] = useState(true);
   const empNumberRef = useRef<HTMLInputElement>(null);
 
@@ -330,7 +334,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-4 h-4 rounded border-2 border-zinc-300 text-indigo-600 accent-indigo-600 cursor-pointer"
               />
-              <span className="text-sm text-zinc-500 group-hover:text-zinc-700 transition">자동 로그인</span>
+              <span className="text-sm text-zinc-500 group-hover:text-zinc-700 transition">아이디 저장</span>
             </label>
             {empError && (
               <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
