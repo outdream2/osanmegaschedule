@@ -1,18 +1,8 @@
 {
   "created": "2026-08-25",
   "version": 1,
-  "totalViolations": 11,
+  "totalViolations": 8,
   "files": {
-    "src/components/ProductInfoPage/ProductCreateModal.tsx": {
-      "lines": 403,
-      "violations": [
-        {
-          "ruleId": "raw-card-wrapper",
-          "count": 2
-        }
-      ],
-      "totalWeight": 4
-    },
     "src/components/DisplayPage/DisplayPage.tsx": {
       "lines": 893,
       "violations": [
@@ -78,16 +68,6 @@
       "violations": [
         {
           "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/hooks/useAuth.ts": {
-      "lines": 293,
-      "violations": [
-        {
-          "ruleId": "raw-fetch",
           "count": 1
         }
       ],

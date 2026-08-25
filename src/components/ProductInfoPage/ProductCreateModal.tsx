@@ -266,7 +266,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                     />
                   </Field>
                   {supplierOpen && supplierSuggestions.length > 0 && (
-                    <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-white border border-line rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                    <Card padding="none" rounded="lg" className="absolute left-0 right-0 top-full mt-1 z-20 shadow-lg max-h-56 overflow-y-auto">
                       {supplierSuggestions.map(v => (
                         <button
                           key={v.id}
@@ -278,7 +278,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                           {v.category && <span className="ml-auto text-[11px] text-ink-soft shrink-0">{v.category}</span>}
                         </button>
                       ))}
-                    </div>
+                    </Card>
                   )}
                 </div>
                 <Field label="카테고리">
@@ -306,7 +306,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                     />
                   </Field>
                   {zoneOpen && zoneSuggestions.length > 0 && (
-                    <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-white border border-line rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                    <Card padding="none" rounded="lg" className="absolute left-0 right-0 top-full mt-1 z-20 shadow-lg max-h-56 overflow-y-auto">
                       {zoneSuggestions.map(z => (
                         <button
                           key={z.value}
@@ -318,7 +318,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                           <span className="ml-auto text-[11px] text-ink-soft shrink-0">{z.category}</span>
                         </button>
                       ))}
-                    </div>
+                    </Card>
                   )}
                 </div>
               </div>

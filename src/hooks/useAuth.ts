@@ -1,6 +1,8 @@
 // src/hooks/useAuth.ts
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { AuthSession } from "../types";
+// 2026-08-25 · 프레임워크 · raw fetch 제거 · apiClient 사용
+import { api } from "../lib/apiClient";
 
 const STORAGE_KEY = "megatown_auth_session";
 
@@ -227,13 +229,10 @@ export function useAuth(): UseAuthReturn {
         // 자동 재로그인 방지 flag · LandingPage 가 이 flag 감지 시 로그인 모달 자동 오픈 X
         try { sessionStorage.setItem("megatown_forced_logout", "1"); } catch { /* noop */ }
         // 서버 쿠키 정리 · 실패해도 reload 진행 (best effort)
-        try {
-          fetch("/api/auth/logout", { method: "POST", credentials: "include" })
-            .catch(() => { /* silent */ })
-            .finally(() => { window.location.replace("/?expired=1"); });
-        } catch {
-          window.location.replace("/?expired=1");
-        }
+        // 2026-08-25 · 프레임워크 · api.post (skipRefresh · 401 무한루프 방지)
+        api.post("/api/auth/logout", null, { skipRefresh: true } as any)
+          .catch(() => { /* silent */ })
+          .finally(() => { window.location.replace("/?expired=1"); });
         return;
       }
 
