@@ -131,15 +131,26 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
     }
   }, [fullKey, listWidth]);
 
-  // 데스크탑 여부 (lg breakpoint)
+  // 2026-08-25 · #263 · 반응형 개편 (사용자 지시 "반응형 엉망")
+  //   · 데스크탑 기준 lg (1024) → md (768) · 태블릿부터 좌우 배치
+  //   · CSS split-container md:flex-row 와 동기
+  //   · 창 크기 변경 시 · listWidth 도 함께 clamp (windowWidth * 0.7 max)
   const [isDesktop, setIsDesktop] = useState<boolean>(
-    () => typeof window !== "undefined" && window.innerWidth >= 1024,
+    () => typeof window !== "undefined" && window.innerWidth >= 768,
   );
   useEffect(() => {
-    const onResize = () => setIsDesktop(window.innerWidth >= 1024);
+    const onResize = () => {
+      const w = window.innerWidth;
+      setIsDesktop(w >= 768);
+      // 창 축소 시 · listWidth 가 창 너비 대비 과도하면 자동 clamp (우측 최소 320px 확보)
+      setListWidth(prev => {
+        const cap = Math.max(minWidth, Math.min(maxWidth, w - 320));
+        return prev > cap ? cap : prev;
+      });
+    };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, []);
+  }, [minWidth, maxWidth]);
 
   // 모바일 모달 내부 state (외부 제어 없을 때)
   const [mobileOpenInternal, setMobileOpenInternal] = useState(false);
@@ -190,13 +201,14 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
 
   const dividerHoverCls = DIVIDER_HOVER[dividerColor];
 
-  // wrapLeft=false · leftClassName 이 max-h 를 포함하면 기본 max-h-[42vh] 를 적용하지 않음
+  // wrapLeft=false · leftClassName 이 max-h 를 포함하면 기본 max-h-[55vh] 를 적용하지 않음
+  // 2026-08-25 · #263 · 42vh → 55vh 완화 · md 부터 좌우 배치 (기존 lg → md 로 완화)
   const hasCustomMaxH = leftClassName.includes("max-h-");
   const leftCls = wrapLeft
     ? "split-left"
     : [
-        "w-full shrink-0 flex flex-col min-h-0",
-        hasCustomMaxH ? "" : "max-h-[42vh] lg:max-h-none",
+        "w-full shrink-0 flex flex-col min-h-0 min-w-0",
+        hasCustomMaxH ? "" : "max-h-[55vh] md:max-h-none",
         leftClassName,
       ].filter(Boolean).join(" ");
   const rightCls = wrapRight ? "split-right" : "flex-1 flex flex-col min-w-0 min-h-0";

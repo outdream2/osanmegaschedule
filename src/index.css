@@ -396,25 +396,30 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
 /*   예 · StaffManagePage · 좌측 리스트 + 우측 상세 */
 /*   2026-08-14 · #110 · PC (lg+) 에서 뷰포트 80% 폭 · 중앙 정렬 · 초광폭 모니터 여백 확보 */
 /*   2026-08-23 · #203 · lg:items-stretch · 좌우 높이 정렬 (아래 부분 맞춤) · 명시적 stretch */
+/*   2026-08-25 · #263 · 반응형 대개편 (사용자 지시 "반응형 엉망")
+ *      - 태블릿 (md ~ lg) 존 · 좌우 배치 시작 (기존 lg 만 대응 → md 부터)
+ *      - 모바일 max-h-[42vh] · 55vh 완화 (좁을수록 스크롤 헬)
+ *      - 초광폭 · max-w-[80vw] → 96vw (한 모니터에 정보 더 담기)
+ *      - 좌측 · min-w-0 로 flex clamp 허용 (너무 넓은 listWidth 방지)
+ */
 .split-container {
-  @apply flex flex-col lg:flex-row lg:items-stretch flex-1 gap-3 min-h-0
-         lg:w-full lg:max-w-[80vw] lg:mx-auto;
+  @apply flex flex-col md:flex-row md:items-stretch flex-1 gap-3 min-h-0
+         md:w-full md:max-w-[96vw] md:mx-auto;
 }
-/*   2026-08-23 · #203 · lg:h-full · 우측 stretch 와 동일 높이 강제 (max-h-none 만으론 부족한 케이스) */
 .split-left {
   @apply w-full shrink-0 flex flex-col bg-white rounded-xl border border-slate-200
-         shadow-sm overflow-hidden max-h-[42vh] lg:max-h-none lg:h-full;
+         shadow-sm overflow-hidden max-h-[55vh] md:max-h-none md:h-full min-w-0;
 }
 .split-divider {
-  @apply hidden lg:flex items-center justify-center w-1.5 hover:w-2
+  @apply hidden md:flex items-center justify-center w-1.5 hover:w-2
          bg-slate-200 hover:bg-indigo-400 rounded-full cursor-col-resize
          transition-all shrink-0 relative;
 }
 /* 2026-08-17 v2 · split-right · Attio inset light */
-/*   2026-08-23 · #203 · lg:h-full · 좌측과 명시적 높이 통일 */
+/*   2026-08-23 · #203 · md:h-full · 좌측과 명시적 높이 통일 (md 기준) */
 .split-right {
   @apply flex-1 flex flex-col min-w-0 min-h-0 bg-white rounded-xl
-         border border-line overflow-hidden lg:h-full;
+         border border-line overflow-hidden md:h-full;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.60),
     0 1px 2px rgba(10, 46, 74, 0.05),

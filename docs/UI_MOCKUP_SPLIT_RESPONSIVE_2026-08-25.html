@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Split 반응형 테스트 · 2026-08-25</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" />
+<style>
+  :root{
+    --brand:#0A2E4A;
+    --sky:#0284C7;
+    --line:rgba(15,23,42,0.06);
+    --line-strong:rgba(15,23,42,0.12);
+    --bg:#F5F7FA;
+    --surface:#FFFFFF;
+    --surface-2:#FAFBFC;
+    --ink:#0F172A;
+    --ink-2:#475569;
+    --ink-3:#64748B;
+    --ink-4:#94A3B8;
+    --brand-tint:#EAF1F9;
+  }
+  html,body{ margin:0; padding:0; height:100%; }
+  body{
+    font-family:'Pretendard Variable','Pretendard',sans-serif;
+    background:var(--bg); color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    font-size:15px;
+  }
+  *{ box-sizing:border-box; }
+
+  /* Viewport size indicator */
+  .vp-badge{
+    position:fixed; top:12px; right:12px; z-index:1000;
+    padding:6px 12px; background:var(--brand); color:#FFF;
+    border-radius:8px; font-size:12px; font-weight:700;
+    font-family:'JetBrains Mono',ui-monospace,monospace;
+    box-shadow:0 4px 12px rgba(10,46,74,.3);
+  }
+  .vp-badge::after{ content:" · MOBILE"; }
+  @media (min-width: 640px){ .vp-badge::after{ content:" · SM"; } }
+  @media (min-width: 768px){ .vp-badge::after{ content:" · MD (좌우 시작)"; } }
+  @media (min-width: 1024px){ .vp-badge::after{ content:" · LG"; } }
+  @media (min-width: 1280px){ .vp-badge::after{ content:" · XL"; } }
+  @media (min-width: 1536px){ .vp-badge::after{ content:" · 2XL"; } }
+
+  /* ═══════════════════════════════════════════════
+     SPLIT · 반응형 · 개선판 (md부터 좌우 배치)
+  ═══════════════════════════════════════════════ */
+  .app{
+    padding:16px;
+    height:100vh;
+    display:flex; flex-direction:column;
+    gap:12px;
+  }
+  .toolbar{
+    padding:10px 14px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:10px;
+    display:flex; align-items:center; gap:10px;
+    flex-shrink:0;
+  }
+  .toolbar h1{ font-size:16px; font-weight:800; margin:0; letter-spacing:-.02em; }
+  .toolbar .info{ margin-left:auto; font-size:12px; color:var(--ink-3); font-family:monospace; }
+
+  .split{
+    flex:1;
+    display:flex; flex-direction:column;
+    gap:12px; min-height:0;
+    /* Desktop · md 부터 좌우 배치 · 96vw max */
+    max-width:96vw; margin:0 auto; width:100%;
+  }
+  @media (min-width: 768px){
+    .split{ flex-direction:row; align-items:stretch; }
+  }
+  .split-left{
+    flex-shrink:0;
+    display:flex; flex-direction:column;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+    min-height:0; min-width:0;
+    max-height:55vh;
+    width:100%;
+  }
+  @media (min-width: 768px){
+    .split-left{
+      max-height:none;
+      height:100%;
+      width:var(--left-w, 320px);
+    }
+  }
+  .split-divider{
+    display:none; flex-shrink:0;
+    width:5px;
+    background:var(--line-strong);
+    border-radius:99px;
+    cursor:col-resize;
+    transition:background .12s;
+  }
+  .split-divider:hover{ background:var(--brand); }
+  @media (min-width: 768px){ .split-divider{ display:block; } }
+  .split-right{
+    flex:1;
+    display:flex; flex-direction:column;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+    min-width:0; min-height:0;
+  }
+  @media (min-width: 768px){ .split-right{ height:100%; } }
+
+  /* Panel head + gradient accent */
+  .panel-head{
+    position:relative;
+    padding:12px 16px;
+    border-bottom:1px solid var(--line);
+    flex-shrink:0;
+    display:flex; align-items:center; gap:10px;
+    background:var(--surface);
+  }
+  .panel-head::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, var(--brand), var(--sky), var(--brand));
+    opacity:.9;
+  }
+  .panel-head .h{ font-size:15px; font-weight:800; letter-spacing:-.02em; }
+  .panel-head .sub{ font-size:12px; color:var(--ink-3); font-weight:600; margin-left:auto; }
+
+  /* Panel body · scroll */
+  .panel-body{
+    flex:1; min-height:0;
+    overflow-y:auto;
+    padding:12px 16px;
+  }
+
+  /* Left list · 예시 rows */
+  .row{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 6px;
+    border-bottom:1px solid var(--line);
+    cursor:pointer;
+    font-size:14px;
+  }
+  .row:hover{ background:var(--surface-2); }
+  .row.active{ background:var(--brand-tint); }
+  .row .num{ font-family:monospace; color:var(--ink-4); font-size:12px; min-width:24px; }
+  .row .name{ flex:1; font-weight:600; }
+  .row .badge{ font-size:11px; padding:1px 6px; border-radius:4px; background:#F1F5F9; color:var(--ink-2); font-weight:700; }
+
+  /* Right detail card */
+  .r-card{
+    background:var(--surface-2);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:10px;
+  }
+  .r-card .k{ font-size:11px; color:var(--ink-4); font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+  .r-card .v{ font-size:15px; color:var(--ink); font-weight:700; margin-top:2px; }
+  .field-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:10px 14px; }
+  @media (max-width: 480px){ .field-grid{ grid-template-columns:1fr; } }
+
+  /* Test controls */
+  .test-controls{
+    padding:12px 16px;
+    background:#FFFBEB; border:1px solid #FDE68A;
+    border-radius:10px; font-size:12px;
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  .test-controls strong{ color:#B45309; }
+  .test-controls button{
+    padding:5px 10px; border:0; background:#B45309; color:#FFF;
+    border-radius:6px; cursor:pointer; font-weight:700;
+  }
+  .test-controls button:hover{ background:#92400E; }
+
+  /* Breakpoint reference table */
+  .bp-ref{
+    background:var(--surface);
+    padding:10px 14px;
+    border-radius:8px; border:1px solid var(--line);
+    font-size:11px; color:var(--ink-3); font-family:monospace;
+  }
+  .bp-ref b{ color:var(--brand); }
+</style>
+</head>
+<body>
+
+<div class="vp-badge" id="vp"></div>
+
+<div class="app">
+
+  <div class="toolbar">
+    <h1>📱 Split 반응형 테스트</h1>
+    <div class="info" id="info">calc...</div>
+  </div>
+
+  <div class="test-controls">
+    <strong>테스트</strong>
+    <span>왼쪽 폭 조정 →</span>
+    <button onclick="setW(240)">240px</button>
+    <button onclick="setW(320)">320px</button>
+    <button onclick="setW(480)">480px</button>
+    <button onclick="setW(640)">640px</button>
+    <button onclick="setW(800)">800px</button>
+    <button onclick="setW(1000)">1000px</button>
+    <span style="margin-left:auto;color:var(--ink-3)">창 축소 시 · 자동 clamp (우측 최소 320px 확보)</span>
+  </div>
+
+  <div class="bp-ref">
+    Tailwind BP · <b>sm 640</b> · <b>md 768</b> (여기부터 좌우) · <b>lg 1024</b> · <b>xl 1280</b> · <b>2xl 1536</b>
+    &nbsp;·&nbsp; 모바일 (&lt;768) · 세로 스택 · 좌측 max-h 55vh · 우측 flex-grow
+  </div>
+
+  <div class="split" id="split" style="--left-w: 320px;">
+
+    <!-- LEFT -->
+    <div class="split-left">
+      <div class="panel-head">
+        <div class="h">직원 목록</div>
+        <div class="sub" id="leftMeta"></div>
+      </div>
+      <div class="panel-body">
+        <div class="row active"><span class="num">01</span><span class="name">김민서</span><span class="badge">약사</span></div>
+        <div class="row"><span class="num">02</span><span class="name">이지훈</span><span class="badge">약사</span></div>
+        <div class="row"><span class="num">03</span><span class="name">박서연</span><span class="badge">캐셔</span></div>
+        <div class="row"><span class="num">04</span><span class="name">최유진</span><span class="badge">매장</span></div>
+        <div class="row"><span class="num">05</span><span class="name">정민호</span><span class="badge">약사</span></div>
+        <div class="row"><span class="num">06</span><span class="name">한소영</span><span class="badge">창고</span></div>
+        <div class="row"><span class="num">07</span><span class="name">강도현</span><span class="badge">약사</span></div>
+        <div class="row"><span class="num">08</span><span class="name">임세라</span><span class="badge">캐셔</span></div>
+        <div class="row"><span class="num">09</span><span class="name">윤재원</span><span class="badge">매장</span></div>
+        <div class="row"><span class="num">10</span><span class="name">배유리</span><span class="badge">약사</span></div>
+        <div class="row"><span class="num">11</span><span class="name">신동혁</span><span class="badge">창고</span></div>
+        <div class="row"><span class="num">12</span><span class="name">황미나</span><span class="badge">약사</span></div>
+      </div>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="split-divider" onmousedown="startDrag(event)"></div>
+
+    <!-- RIGHT -->
+    <div class="split-right">
+      <div class="panel-head">
+        <div class="h">김민서 · 상세정보</div>
+        <div class="sub" id="rightMeta"></div>
+      </div>
+      <div class="panel-body">
+        <div class="r-card">
+          <div class="field-grid">
+            <div><div class="k">이름</div><div class="v">김민서</div></div>
+            <div><div class="k">직책</div><div class="v">약사 · 팀장</div></div>
+            <div><div class="k">사번</div><div class="v">M-2023-042</div></div>
+            <div><div class="k">입사일</div><div class="v">2023.03.15</div></div>
+            <div><div class="k">전화</div><div class="v">010-4231-5678</div></div>
+            <div><div class="k">이메일</div><div class="v" style="font-size:13px">kimms@megatown.pharm</div></div>
+          </div>
+        </div>
+        <div class="r-card">
+          <div class="k">현재 계약</div>
+          <div class="v">정규직 · 무기한 · 시급 15,000원</div>
+        </div>
+        <div class="r-card">
+          <div class="k">근속 · 연차 · 평가</div>
+          <div class="v">2년 5개월 · 12/15일 · A+</div>
+        </div>
+        <div class="r-card">
+          <div class="k">첨부 파일</div>
+          <div class="v">근로계약서 · 통장사본 · 이력서 (3/4)</div>
+        </div>
+        <div class="r-card">
+          <div class="k">계약 이력</div>
+          <div class="v">2025.03.15 재계약 → 2024.03.15 정규직 전환 → 2023.03.15 최초 채용</div>
+        </div>
+        <div class="r-card">
+          <div class="k">최근 근태</div>
+          <div class="v">96% · 8.2h/일 · 지각 0회 · 결근 0회 (30일)</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const $ = (s) => document.querySelector(s);
+  const split = $("#split");
+  const vpBadge = $("#vp");
+  const info = $("#info");
+  const leftMeta = $("#leftMeta");
+  const rightMeta = $("#rightMeta");
+
+  function currentLeftW(){
+    const raw = getComputedStyle(split).getPropertyValue("--left-w");
+    return parseInt(raw, 10) || 320;
+  }
+  function currentWinW(){ return window.innerWidth; }
+
+  function update(){
+    const w = currentWinW();
+    const lw = currentLeftW();
+    vpBadge.textContent = `${w}px`;
+    const isDesktop = w >= 768;
+    info.textContent = `viewport ${w}px · left ${isDesktop ? lw + "px" : "100%"} · right ${isDesktop ? "flex-grow" : "100%"}`;
+    leftMeta.textContent = `${isDesktop ? lw + "px" : "full"}`;
+    rightMeta.textContent = `${isDesktop ? "flex-grow" : "full"}`;
+    // clamp · 우측 최소 320 확보
+    if (isDesktop){
+      const cap = w - 320;
+      if (lw > cap){
+        split.style.setProperty("--left-w", cap + "px");
+      }
+    }
+  }
+  window.addEventListener("resize", update);
+  update();
+
+  function setW(px){
+    split.style.setProperty("--left-w", px + "px");
+    update();
+  }
+
+  // Drag divider
+  function startDrag(e){
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = currentLeftW();
+    const onMove = (ev) => {
+      const dx = ev.clientX - startX;
+      const cap = Math.max(200, Math.min(currentWinW() - 320, 1200));
+      const next = Math.max(200, Math.min(cap, startW + dx));
+      split.style.setProperty("--left-w", next + "px");
+      update();
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }
+</script>
+
+</body>
+</html>
