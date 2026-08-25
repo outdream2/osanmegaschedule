@@ -22,6 +22,8 @@ import { StatusPill } from "../common/StatusPill";
 import { StepperInput as CommonStepperInput } from "../common/StepperInput";
 import { StockActionsCell } from "./StockActionsCell";
 import { Clock as ClockIcon } from "lucide-react";
+// 2026-08-25 · 사용자 지시 · 매장구역 Tier 3 · Selector 통합 · 데이터 정합성 100%
+import { RealMapSelector } from "./RealMapSelector";
 
 // ─── 5-slot 정의 (창고2 · 매장3) ─────────────────────────────────
 interface SlotDef {
@@ -50,12 +52,15 @@ const WARN_THRESHOLD = 100;
 const StepperInput = CommonStepperInput;
 
 // ─── 구역 편집 · 매장 전용 · 2026 트렌드 (Linear/Notion inline chip · pin icon + autosave 표시)
+// 2026-08-25 · 사용자 지시 · Tier 3 · Selector 통합 (자유입력 제거 · 데이터 정합성 100%)
+//   · ZONE_DEFS 기반 RealMapSelector 모달 · 오타·존재 안 하는 구역 원천 차단
 const ZoneInline: React.FC<{
   value: string | null;
   onChange: (v: string | null) => void;
   erpSpec?: string;
 }> = ({ value, onChange, erpSpec }) => {
   const filled = value != null && value.trim().length > 0;
+  const [selectorOpen, setSelectorOpen] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -63,7 +68,7 @@ const ZoneInline: React.FC<{
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
   }, []);
 
-  const handleChange = (raw: string) => {
+  const handleSelect = (raw: string) => {
     const next = raw.trim() === "" ? null : raw;
     onChange(next);
     setSavedFlash(true);
@@ -73,31 +78,22 @@ const ZoneInline: React.FC<{
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      {/* pin icon + input pill */}
-      <div className={[
-        "inline-flex items-center gap-1.5 h-9 rounded-full pl-3 pr-1 border-2 transition-all duration-150",
-        filled
-          ? "bg-brand-tint border-brand-deep/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.60)]"
-          : "bg-white border-dashed border-zinc-300 hover:border-brand-deep/50",
-        "focus-within:border-brand-deep focus-within:shadow-[0_0_0_3px_rgba(10,46,74,0.12)] focus-within:bg-white",
-      ].join(" ")}>
+      {/* 선택 버튼 · 클릭 시 모달 오픈 · 값 있으면 채워진 pill · 없으면 dashed placeholder */}
+      <button
+        type="button"
+        onClick={() => setSelectorOpen(true)}
+        className={[
+          "inline-flex items-center gap-1.5 h-9 rounded-full px-3 border-2 transition-all duration-150 cursor-pointer",
+          "text-[14px] font-bold tabular-nums tracking-tight",
+          filled
+            ? "bg-brand-tint border-brand-deep/30 text-brand-deep shadow-[inset_0_1px_0_rgba(255,255,255,0.60)] hover:border-brand-deep/60"
+            : "bg-white border-dashed border-zinc-300 text-zinc-500 hover:border-brand-deep/50 hover:bg-zinc-50",
+        ].join(" ")}
+        title={filled ? `매장구역: ${value} · 클릭 시 변경` : "클릭 · 매장구역 선택"}
+      >
         <MapPin size={13} fill={filled ? "currentColor" : "none"} className={filled ? "text-brand-deep" : "text-zinc-400"} />
-        <input
-          type="text"
-          value={value ?? ""}
-          onChange={e => handleChange(e.target.value)}
-          placeholder="매장구역 지정"
-          className={[
-            "min-w-0 flex-1 h-full bg-transparent outline-none border-0",
-            "text-[14px] font-bold tabular-nums tracking-tight",
-            filled ? "text-brand-deep" : "text-ink",
-            "placeholder:text-zinc-400 placeholder:font-semibold",
-            "px-1",
-          ].join(" ")}
-          style={{ width: filled ? `${Math.max(String(value).length, 6) * 9 + 12}px` : "112px" }}
-          title="매장구역 · 입력 시 자동 저장"
-        />
-      </div>
+        <span>{filled ? value : "매장구역 선택"}</span>
+      </button>
 
       {/* autosave flash · Notion-style · brief "저장됨" */}
       {savedFlash && (
@@ -112,6 +108,15 @@ const ZoneInline: React.FC<{
         <span className="inline-flex items-center gap-0.5 text-[15px] text-ink-soft tabular-nums font-medium" title={`ERP 지정 위치 · ${erpSpec}`}>
           <span className="text-zinc-300">·</span> ERP {erpSpec}
         </span>
+      )}
+
+      {/* RealMapSelector · ZONE_DEFS 기반 · 자유입력 X · 데이터 정합성 100% */}
+      {selectorOpen && (
+        <RealMapSelector
+          current={value}
+          onSelect={handleSelect}
+          onClose={() => setSelectorOpen(false)}
+        />
       )}
     </div>
   );
