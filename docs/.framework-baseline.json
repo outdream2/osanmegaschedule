@@ -1,7 +1,7 @@
 {
   "created": "2026-08-25",
   "version": 1,
-  "totalViolations": 15,
+  "totalViolations": 16,
   "files": {
     "src/components/SystemSettingsPage/AutoImportSection.tsx": {
       "lines": 403,
@@ -18,7 +18,7 @@
       "totalWeight": 12
     },
     "src/components/ProductInfoPage/ProductCreateModal.tsx": {
-      "lines": 410,
+      "lines": 403,
       "violations": [
         {
           "ruleId": "raw-card-wrapper",
@@ -28,7 +28,7 @@
       "totalWeight": 4
     },
     "src/components/DisplayPage/DisplayPage.tsx": {
-      "lines": 856,
+      "lines": 893,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -87,6 +87,16 @@
       ],
       "totalWeight": 3
     },
+    "src/components/OrderManagePage/ReturnRequestModal.tsx": {
+      "lines": 465,
+      "violations": [
+        {
+          "ruleId": "raw-alert",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
+    },
     "src/components/ScanPage/ProductInfoCard.tsx": {
       "lines": 813,
       "violations": [
@@ -98,7 +108,7 @@
       "totalWeight": 3
     },
     "src/components/ScanPage/ScanPage.tsx": {
-      "lines": 912,
+      "lines": 919,
       "violations": [
         {
           "ruleId": "large-file-warn",

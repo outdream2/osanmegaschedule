@@ -1,8 +1,9 @@
 // src/components/OrderManagePage/ReturnRequestModal.tsx
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · ReturnListPanel 에서 이관
 // 프레임워크: Card · StatusPill · Spinner · AccentBar · VendorCategoryBadge · apiClient
-import React, { useMemo, useState } from "react";
-import { Truck, MessageSquare, Mail, Trash2 } from "lucide-react";
+// 2026-08-25 · 사용자 지시 · 반품요청서 PDF 저장 (A4 텍스트 리포트 · 목업 톤)
+import React, { useMemo, useRef, useState } from "react";
+import { Truck, MessageSquare, Mail, Trash2, FileDown } from "lucide-react";
 import { api, ApiError } from "../../lib/apiClient";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
@@ -12,6 +13,9 @@ import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import type { ReturnReasonKey, ReturnLineItem } from "./ReturnListPanel.types";
 import { buildReturnNumber, todayStr } from "./ReturnListPanel.types";
+import { ReturnPdfPreview } from "./ReturnPdfPreview";
+import html2canvas from "html2canvas-pro";
+import jsPDF from "jspdf";
 
 interface ReturnRequestModalProps {
   item: any;                            // 트리거된 단일 상품 (기본)
@@ -147,7 +151,50 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
     }
   };
 
+  // 2026-08-25 · 사용자 지시 · A4 텍스트 리포트 PDF 저장
+  const pdfPreviewRef = useRef<HTMLDivElement | null>(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const handleSavePdf = async () => {
+    const node = pdfPreviewRef.current;
+    if (!node) return;
+    setGeneratingPdf(true);
+    try {
+      const canvas = await html2canvas(node, {
+        scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false,
+        windowWidth: node.scrollWidth,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = pdf.internal.pageSize.getHeight();
+      const imgW = pdfW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      if (imgH <= pdfH) {
+        pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH, undefined, "FAST");
+      } else {
+        let yOffset = 0;
+        let remaining = imgH;
+        while (remaining > 0) {
+          pdf.addImage(imgData, "PNG", 0, -yOffset, imgW, imgH, undefined, "FAST");
+          remaining -= pdfH;
+          yOffset += pdfH;
+          if (remaining > 0) pdf.addPage();
+        }
+      }
+      const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      const safeSup = (supplierName || "반품요청서").replace(/[\\/:*?"<>|]/g, "_");
+      pdf.save(`반품요청서_${ymd}_${safeSup}.pdf`);
+    } catch (e: any) {
+      console.error("[ReturnRequestModal] PDF 저장 실패:", e?.message ?? e);
+      alert(`PDF 저장 실패: ${e?.message ?? "알 수 없는 오류"}`);
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
   return (
+    <>
+    {/* 2026-08-25 · Modal + 오프스크린 PDF 프리뷰 fragment wrapper */}
     // 2026-08-23 · Modal primitive 마이그레이션 (#191)
     <Modal
       open
@@ -366,12 +413,22 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => !sending && onClose()}
-              disabled={sending}
+              onClick={() => !sending && !generatingPdf && onClose()}
+              disabled={sending || generatingPdf}
               className="text-[14px] font-bold text-zinc-600 bg-white border border-zinc-300 hover:bg-zinc-50 rounded-lg px-4 py-2 cursor-pointer disabled:opacity-40"
             >취소</button>
+            {/* 2026-08-25 · 사용자 지시 · 반품요청서 A4 텍스트 리포트 PDF 저장 */}
             <button
-              onClick={send} disabled={sending || sent}
+              onClick={handleSavePdf}
+              disabled={sending || sent || generatingPdf || lines.length === 0}
+              className="text-[14px] font-bold rounded-lg px-4 py-2 cursor-pointer shadow-sm flex items-center gap-1.5 disabled:opacity-40 text-white bg-slate-700 hover:bg-slate-800 ring-1 ring-slate-700/30"
+              title="반품요청서 PDF 저장 (A4 텍스트 리포트)"
+            >
+              {generatingPdf ? <Spinner size={13} tone="white" /> : <FileDown size={13} strokeWidth={2.5} />}
+              {generatingPdf ? "PDF 생성 중..." : "PDF 저장"}
+            </button>
+            <button
+              onClick={send} disabled={sending || sent || generatingPdf}
               className={`text-[14px] font-bold rounded-lg px-5 py-2 cursor-pointer shadow-md flex items-center gap-2 disabled:opacity-60 border ${
                 sent
                   ? "bg-emerald-50 text-emerald-700 border-emerald-300"
@@ -388,5 +445,20 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
         </div>
       </div>
     </Modal>
+    {/* 2026-08-25 · 오프스크린 PDF 프리뷰 · html2canvas 캡처 대상 */}
+    <ReturnPdfPreview
+      ref={pdfPreviewRef}
+      returnNumber={returnNumber}
+      requestDate={requestDate}
+      expectedDate={expectedDate}
+      reason={reason}
+      supplierName={supplierName}
+      supplierContact={supplierInfo?.contact_name ?? null}
+      supplierPhone={supplierInfo?.phone ?? null}
+      supplierEmail={supplierInfo?.email ?? null}
+      lines={lines}
+      memo={memo}
+    />
+    </>
   );
 };
