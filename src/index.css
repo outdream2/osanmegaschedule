@@ -402,9 +402,14 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
  *      - 초광폭 · max-w-[80vw] → 96vw (한 모니터에 정보 더 담기)
  *      - 좌측 · min-w-0 로 flex clamp 허용 (너무 넓은 listWidth 방지)
  */
+/* 2026-08-25 · 사용자 지시 · PC 반응형 · 뷰포트 폭 비례 확장 + 여백 최소화
+ *   · max-w 제거 → 뷰포트에 비례해서 자연스럽게 넓어짐
+ *   · 좌우 padding · md 12 · lg 16 · xl 20 · 2xl 24 (풀화면에서 여백 최소)
+ *   · Attio/Linear · 초광폭 모니터 · split 넓게 활용 */
 .split-container {
   @apply flex flex-col md:flex-row md:items-stretch flex-1 gap-3 min-h-0
-         md:w-full md:max-w-[96vw] md:mx-auto;
+         md:w-full md:mx-auto
+         md:px-3 lg:px-4 xl:px-5 2xl:px-6;
 }
 .split-left {
   @apply w-full shrink-0 flex flex-col bg-white rounded-xl border border-slate-200
