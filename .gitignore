@@ -28,6 +28,10 @@ logs/
 
 # 실데이터 xlsx가 소스 트리에 유입되는 것 방지 (엑셀 파일은 uploads/ 로만)
 src/*.xlsx
+src/sample/*.xlsx
+
+# 2026-08-25 · .omx (로컬 metrics/logs · 프로덕션 무관)
+.omx/
 
 # 게시판 업로드 이미지
 uploads/board/
