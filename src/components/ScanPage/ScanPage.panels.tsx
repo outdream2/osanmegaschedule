@@ -34,7 +34,7 @@ interface ScanLeftPanelProps {
   requestingKey: string | null;
   rows: StockRow[];
   onOpenScanner: () => void;
-  onScan: (code: string) => void;
+  onScan: (code: string, preloadedProduct?: ProductInfo | null) => void;
   onRequestDisplay: (row: StockRow) => void;
   /** 2026-08-23 · #179 · 미등록 상품 즉시 등록 · 권한자만 노출 */
   canManageProducts?: boolean;
@@ -70,10 +70,12 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
           }
         </button>
 
+        {/* 2026-08-25 · 사용자 지시 · 검색 선택 시 · product 객체도 함께 전달 (fallback preload)
+              · 원인 · products-map 캐시 stale 시 · lookupProduct null → 미등록 오탐지 */}
         <ProductSearchInput
           accent="teal"
           placeholder="상품명·코드 검색"
-          onSelect={(code) => onScan(code)}
+          onSelect={(code, p) => onScan(code, p)}
         />
 
         <label className="flex items-center gap-2 text-[15px] text-zinc-600 font-semibold cursor-pointer select-none">

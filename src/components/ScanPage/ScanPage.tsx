@@ -338,7 +338,11 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   }, [showToast]);
 
   // ── 스캔 핸들러
-  const handleScan = useCallback(async (result: string) => {
+  // 2026-08-25 · 사용자 지시 · preloadedProduct 인자 추가
+  //   · products-map 캐시 stale 로 · 최근 등록 상품이 lookup 실패하는 문제
+  //   · 검색 결과 · OCR fallback 등에서 이미 확보한 product 를 전달하면 · lookup 스킵
+  //   · lookup 실패해도 · fallback API 조회 (GET /api/products/:code) 시도 후 미등록 판정
+  const handleScan = useCallback(async (result: string, preloadedProduct?: ProductInfo | null) => {
     setScannerOpen(false);
     setNotFoundCode(null);
     if (!isProductsLoaded()) {
@@ -346,7 +350,24 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       await getProductsMap();
       setMapLoading(false);
     }
-    const found = lookupProduct(result);
+    let found: ProductInfo | null = preloadedProduct ?? lookupProduct(result);
+    // fallback · API 실시간 조회 (캐시 stale · 신규 등록 대응)
+    if (!found) {
+      try {
+        const { data } = await api.get<any>(`/api/products/${encodeURIComponent(result)}`);
+        if (data && (data.product_code || data.code)) {
+          found = {
+            code: String(data.product_code ?? data.code ?? result),
+            name: String(data.product_name ?? data.name ?? ""),
+            spec: String(data.spec ?? ""),
+            supplier: data.supplier ?? null,
+            realMap: data.real_map ?? null,
+            real_map: data.real_map ?? null,
+            ...data,
+          } as ProductInfo;
+        }
+      } catch { /* 404 → 정말 미등록 · 아래에서 처리 */ }
+    }
     if (!found) {
       setNotFoundCode(result);
       setLastProduct(null);
@@ -354,6 +375,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       showToast("등록되지 않은 상품");
       return;
     }
+    // 신규 확보한 정보는 · 이후 lookup 을 위해 로컬 캐시에도 삽입
+    if (!lookupProduct(result)) addCachedProduct(result, found);
     setLastProduct(found);
     setLastCode(result);
 
