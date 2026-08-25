@@ -120,8 +120,10 @@ describe("useAuth · extendSession", () => {
   });
 });
 
-describe("useAuth · rememberMe (만료 없음)", () => {
-  it("rememberMe=true · 매우 오래된 세션도 유효", () => {
+describe("useAuth · 세션 만료 · 항상 적용 (2026-08-25 사용자 지시 · rememberMe 우회 제거)", () => {
+  it("rememberMe=true 여도 · 100일 지난 세션은 만료 (absolute 24h 초과)", () => {
+    // 2026-08-25 · 이전 · rememberMe true 시 · 무기한 유지
+    // 변경 · '아이디 저장'과 '세션 만료' 분리 · rememberMe 무시 · 항상 만료 적용
     const veryOld = Date.now() - 100 * 24 * 60 * 60 * 1000; // 100일 전
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       ...validSession,
@@ -130,7 +132,20 @@ describe("useAuth · rememberMe (만료 없음)", () => {
       lastActiveAt: veryOld,
     }));
     const { result } = renderHook(() => useAuth());
-    expect(result.current.session).not.toBeNull();
+    // absolute timeout (24h) 초과 → 만료 · null
+    expect(result.current.session).toBeNull();
+  });
+
+  it("rememberMe=false · 30분 idle 지난 세션도 만료", () => {
+    const idle = Date.now() - 60 * 60 * 1000; // 1시간 전
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      ...validSession,
+      rememberMe: false,
+      loginAt: idle,
+      lastActiveAt: idle,
+    }));
+    const { result } = renderHook(() => useAuth());
+    expect(result.current.session).toBeNull();
   });
 });
 
