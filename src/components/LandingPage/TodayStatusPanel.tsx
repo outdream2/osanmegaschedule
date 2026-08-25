@@ -126,9 +126,16 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
         </button>
         <button
           type="button"
-          onClick={() => onNavigate("requests", authSession)}
+          onClick={() => {
+            // 2026-08-25 · 사용자 지시 · 배치구역 불일치 → 매장구역 subtab 안 mismatch 탭으로 이동
+            try {
+              sessionStorage.setItem("dpInitialSubTab", "store");
+              sessionStorage.setItem("dpStoreInnerTab", "mismatch");
+            } catch { /* silent */ }
+            onNavigate("display", authSession);
+          }}
           className="inline-flex items-center gap-1.5 hover:text-rose-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
-          title="배치구역 불일치 · 요청 목록으로 이동"
+          title="배치구역 불일치 · 매장구역 안 탭으로 이동"
         >
           <span className={`w-2 h-2 rounded-full ${requestsCounts.mismatch > 0 ? "bg-rose-500" : "bg-zinc-300"}`} />
           배치구역 불일치 <b className={`font-bold tabular-nums ${requestsCounts.mismatch > 0 ? "text-rose-700" : "text-ink"}`}>{requestsCounts.mismatch}</b>건
@@ -184,7 +191,9 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
               { label: "연차 승인", count: leavePendingCount, dot: "bg-amber-500", text: "text-amber-700", nav: "leave" as Exclude<AppNavPage, "landing"> },
               { label: "진열 요청", count: requestsCounts.display, dot: "bg-sky-500", text: "text-sky-700", nav: "requests" as Exclude<AppNavPage, "landing"> },
               { label: "발주 요청", count: requestsCounts.order, dot: "bg-teal-500", text: "text-teal-700", nav: "display" as Exclude<AppNavPage, "landing"> },
-              { label: "배치구역 불일치", count: requestsCounts.mismatch, dot: "bg-rose-500", text: "text-rose-700", nav: "requests" as Exclude<AppNavPage, "landing"> },
+              { label: "배치구역 불일치", count: requestsCounts.mismatch, dot: "bg-rose-500", text: "text-rose-700", nav: "display" as Exclude<AppNavPage, "landing">, beforeNav: () => {
+                try { sessionStorage.setItem("dpInitialSubTab", "store"); sessionStorage.setItem("dpStoreInnerTab", "mismatch"); } catch { /* silent */ }
+              } },
               // 2026-08-25 · 점심 메뉴 숨김 시 · 통계도 숨김 (breakdown)
               ...(lunchMenuVisible ? [{ label: "점심 신청", count: requestsCounts.lunch, dot: "bg-emerald-500", text: "text-emerald-700", nav: "lunch" as Exclude<AppNavPage, "landing"> }] : []),
               { label: "재고 점검", count: requestsCounts.inventory, dot: "bg-violet-500", text: "text-violet-700", nav: "stockcheck" as Exclude<AppNavPage, "landing"> },
@@ -196,7 +205,7 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
               <button
                 key={item.label}
                 type="button"
-                onClick={() => onNavigate(item.nav, authSession)}
+                onClick={() => { (item as any).beforeNav?.(); onNavigate(item.nav, authSession); }}
                 className="flex items-center gap-2 py-1 hover:bg-zinc-50 rounded-md px-1.5 cursor-pointer transition-colors text-left"
               >
                 <span className={`w-2 h-2 rounded-full ${item.count > 0 ? item.dot : "bg-zinc-300"} shrink-0`} />

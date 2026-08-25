@@ -53,6 +53,9 @@ import { DisplayMobileList } from "./DisplayMobileList";
 import { DisplayProductPanel } from "./DisplayProductPanel";
 import { VendorManageSplit } from "./VendorManageSplit";
 import { useDisplayData } from "./useDisplayData";
+// 2026-08-25 · 사용자 지시 · 매장구역 안 배치구역 불일치 탭
+import { ZoneMismatchTab } from "./ZoneMismatchTab";
+import { SplitRightTabs } from "../common/SplitRightTabs";
 
 // 기존 DOW_* export 하위 호환 유지 (외부 import 대응)
 export { DOW_ALL, DOW_LABELS, isDowActive };
@@ -112,6 +115,14 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   }, [dpSubTab, dpHiddenSubs]);
 
   const [mapCollapsed, setMapCollapsed] = useState(true);
+  // 2026-08-25 · 사용자 지시 · 매장구역 subtab 안 · 매장구역도 vs 배치구역 불일치 탭
+  const [storeInnerTab, setStoreInnerTab] = useState<"map" | "mismatch">(() => {
+    try {
+      const raw = sessionStorage.getItem("dpStoreInnerTab");
+      if (raw === "mismatch") { sessionStorage.removeItem("dpStoreInnerTab"); return "mismatch"; }
+    } catch { /* SSR */ }
+    return "map";
+  });
 
   // sessionStorage / localStorage 서브탭 진입 처리
   useEffect(() => {
@@ -638,6 +649,21 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         </main>
       ) : (
         <main className="max-w-[1360px] w-full mx-auto p-4 flex flex-col gap-4 flex-1">
+          {/* 2026-08-25 · 사용자 지시 · 매장구역 안 · 매장구역도/배치구역불일치 탭 (위쪽 별도 탭메뉴) */}
+          <div className="bg-white rounded-xl border border-line overflow-hidden">
+            <SplitRightTabs
+              tabs={[
+                { key: "map",      label: "매장구역도" },
+                { key: "mismatch", label: "배치구역 불일치" },
+              ]}
+              active={storeInnerTab}
+              onSelect={(k) => setStoreInnerTab(k as typeof storeInnerTab)}
+              bg="bg-zinc-50/40"
+            />
+          </div>
+          {storeInnerTab === "mismatch" ? (
+            <ZoneMismatchTab />
+          ) : (<>
           <DisplayProductPanel
             productSearchResults={productSearchResults} productMatchZoneId={productMatchZoneId}
             zones={zones} productsMap={productsMap}
@@ -744,6 +770,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               </div>
             </div>
           </section>
+          </>)}
         </main>
       )}
 
