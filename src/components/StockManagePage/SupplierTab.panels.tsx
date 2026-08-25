@@ -137,7 +137,16 @@ export const SupplierDetailPanel: React.FC<SupplierDetailPanelProps> = ({
             const isLoading = supplierRowsLoading.has(key);
             if (isLoading) return <div className="flex items-center gap-2 py-4"><Spinner size={12} tone="zinc" label="상품 로드 중..." labelSize={15} /></div>;
             if (!rows) return <div className="text-[15px] text-zinc-400 py-4">공급사를 클릭하면 상품 리스트가 로드됩니다</div>;
-            if (rows.length === 0) return <div className="text-[15px] text-zinc-400 py-4">상품 데이터 없음</div>;
+            // 2026-08-25 · 열린이슈 #2 fix · useVendors union · 매입 이력 없는 공급사 명확한 안내
+            if (rows.length === 0) {
+              const noHistory = supplierSelectedObj.purchaseQty === 0 && supplierSelectedObj.itemCount === 0;
+              return (
+                <div className="text-[15px] text-zinc-400 py-6 flex flex-col items-center gap-1">
+                  <span>{noHistory ? "매입 이력이 없는 공급사입니다" : "상품 데이터 없음"}</span>
+                  {noHistory && <span className="text-[13px] text-zinc-300">공급사 정보만 등록된 상태 · 매입 발생 시 자동 표시</span>}
+                </div>
+              );
+            }
             const supDetailArrow = (k: SupDetailSortKey) => supDetailSort.key === k ? (supDetailSort.dir === "desc" ? " ▼" : " ▲") : " ⇅";
             const sortedDetail = sortSupDetailRows(rows);
             const fmtPurchaseDate = (d: string | null | undefined): string => {
