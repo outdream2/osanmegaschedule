@@ -41,6 +41,9 @@ interface OrderNeedTabProps {
   // 검색·필터 상태
   lowStockSearch: string;
   setLowStockSearch: (v: string) => void;
+  // 2026-08-25 · 사용자 지시 · 검색 시 · 조건 (재고 부족) 적용 on/off
+  needConditionApply: boolean;
+  setNeedConditionApply: (v: boolean) => void;
   needCategoryFilter: NeedCategoryFilter;
   setNeedCategoryFilter: (v: string) => void;
   needSortKey: NeedSortKey;
@@ -100,7 +103,7 @@ interface OrderNeedTabProps {
 export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
   lowStockFiltered, productsLoading, invStockMap, requestedCodes, requestingOrder,
   selectedLowStock, bulkRequesting, needExtraMap, dbVendorCategories,
-  lowStockSearch, setLowStockSearch, needCategoryFilter, setNeedCategoryFilter,
+  lowStockSearch, setLowStockSearch, needConditionApply, setNeedConditionApply, needCategoryFilter, setNeedCategoryFilter,
   needSortKey, needSortDir, handleNeedSort, needArrow,
   isNeedCollapsed, toggleNeedGroup, lowStockCollapsed,
   needSalesMonthEnabled, setNeedSalesMonthEnabled, needSalesQuarterEnabled, setNeedSalesQuarterEnabled,
@@ -134,18 +137,41 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
     {/* 통합 조건 카드 */}
     <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
 
-      {/* Row 1: 검색 + 초기화 */}
+      {/* Row 1: 검색 + 조건적용 토글 + 초기화 */}
       <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line">
         <SearchBar
           value={lowStockSearch}
           onChange={setLowStockSearch}
-          placeholder="상품·코드·공급사 검색 (한글 초성 · 예: ㅇㅅㅌ)"
+          placeholder={needConditionApply
+            ? "재고 부족 조건 안에서 검색 · 상품·코드·공급사"
+            : "전체 상품에서 검색 · 조건 무시"}
           resultCount={lowStockFiltered.length}
           resultUnit="건"
           historyKey="megatown_orderNeed_search_history"
           accent="rose"
           widthClass="w-64 sm:w-80"
         />
+        {/* 2026-08-25 · 사용자 지시 · 조건적용 on/off · OFF 시 · 전체 상품 검색 · ON 시 · 조건 통과 상품만 */}
+        <label
+          className={`inline-flex items-center gap-2 h-7 px-2.5 rounded-md border cursor-pointer select-none transition ${
+            needConditionApply
+              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+              : "bg-amber-50 border-amber-300 text-amber-800"
+          }`}
+          title={needConditionApply
+            ? "현재 · 재고 부족 조건 안에서만 검색 · 클릭 시 전체 상품 검색으로 전환"
+            : "현재 · 전체 상품 검색 (조건 무시) · 클릭 시 조건 안 검색으로 복귀"}
+        >
+          <input
+            type="checkbox"
+            checked={needConditionApply}
+            onChange={(e) => setNeedConditionApply(e.target.checked)}
+            className="w-3.5 h-3.5 accent-emerald-600 cursor-pointer"
+          />
+          <span className="text-[13px] font-bold tracking-tight">
+            조건적용 · {needConditionApply ? "ON" : "OFF"}
+          </span>
+        </label>
         {lowStockSearch.trim() && (
           <button
             type="button"

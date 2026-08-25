@@ -176,6 +176,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   const [requestingOrder, setRequestingOrder] = useState<Set<string>>(new Set());
   const [lowStockSearch, setLowStockSearch] = useState("");
+  // 2026-08-25 · 사용자 지시 · 발주필요 · 검색 시 조건 적용 on/off (기본 ON = 재고 부족만)
+  const [needConditionApply, setNeedConditionApply] = useState<boolean>(true);
   const [lowStockCollapsed, setLowStockCollapsed] = useState(false);
 
   const vendorMap = useMemo(() => {
@@ -440,23 +442,33 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   });
 
   const deferredNeedSearch = useDeferredValue(lowStockSearch);
-  const lowStockFiltered = useMemo(() => lowStock.filter(p => {
+  // 2026-08-25 · 사용자 지시 · 검색 시 · 조건적용 on/off 토글
+  //   · ON (기본) · lowStock (재고 부족 조건 통과 상품) 안에서만 검색
+  //   · OFF · products 전체에서 검색 (조건 무시 · 모든 상품 검색 가능)
+  //   · 검색어 없을 때는 · 항상 lowStock (조건 통과 상품만) 노출
+  const lowStockFiltered = useMemo(() => {
     const q = deferredNeedSearch.trim();
-    if (q) {
-      const name = getName(p), code = getCode(p), sup = p.supplier ?? "";
-      if (!(matchHangul(name, q) || matchHangul(code, q) || matchHangul(sup, q))) return false;
-    }
-    if (needCategoryFilter !== "all") {
+    const applyCategory = (p: ProductInfo): boolean => {
+      if (needCategoryFilter === "all") return true;
       const supplierName = String(p.supplier ?? "").trim();
       const cat = supplierName ? getVendorCategory(supplierName) : null;
       if (needCategoryFilter === "기타") {
         const validCats = ["위탁", "선결제", "60회전", "90회전", "기타"];
-        if (cat && validCats.includes(cat) && cat !== "기타") return false;
-      } else { if (cat !== needCategoryFilter) return false; }
-    }
-    return true;
+        return !(cat && validCats.includes(cat) && cat !== "기타");
+      }
+      return cat === needCategoryFilter;
+    };
+    // 검색어 있고 · 조건적용 OFF → products 전체에서 검색
+    const base = (q && !needConditionApply) ? products : lowStock;
+    return base.filter(p => {
+      if (q) {
+        const name = getName(p), code = getCode(p), sup = p.supplier ?? "";
+        if (!(matchHangul(name, q) || matchHangul(code, q) || matchHangul(sup, q))) return false;
+      }
+      return applyCategory(p);
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [lowStock, deferredNeedSearch, needCategoryFilter, vendorCategoryMap]);
+  }, [lowStock, products, needConditionApply, deferredNeedSearch, needCategoryFilter, vendorCategoryMap]);
 
   // 서브탭 정의
   type PurchaseOrderKey = "order" | "need" | "critical" | "history";
@@ -583,6 +595,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               invStockMap={invStockMap} requestedCodes={requestedCodes} requestingOrder={requestingOrder}
               selectedLowStock={selectedLowStock} bulkRequesting={bulkRequesting} needExtraMap={needExtraMap}
               dbVendorCategories={dbVendorCategories} lowStockSearch={lowStockSearch}
+              needConditionApply={needConditionApply} setNeedConditionApply={setNeedConditionApply}
               setLowStockSearch={setLowStockSearch} needCategoryFilter={needCategoryFilter}
               setNeedCategoryFilter={setNeedCategoryFilter} needSortKey={needSortKey} needSortDir={needSortDir}
               handleNeedSort={handleNeedSort} needArrow={needArrow} isNeedCollapsed={isNeedCollapsed}
