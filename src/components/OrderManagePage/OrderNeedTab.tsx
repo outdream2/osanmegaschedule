@@ -13,6 +13,8 @@ import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { LoadingState } from "../common/LoadingState";
 import { CARD_BASE } from "../../styles/tokens";
 import { stripVendorAnnotation } from "../../utils/vendorNameNormalize";
+// 2026-08-25 · 사용자 지시 A · OFF 조건 + 리스트 클릭 시 · 발주필요 추가 confirm
+import { useConfirm } from "../../hooks/useConfirm";
 import type { ProductInfo, OrderNeedShortageBasis, OrderNeedDefaultSortKey, OrderNeedFilterConfig } from "./OrderManagePage.types";
 import { ORDER_NEED_CONFIG_KEY, DEFAULT_ORDER_NEED_CONFIG } from "./OrderManagePage.utils";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
@@ -122,7 +124,31 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
   getCode, getName,
   toggleLowStockOne, clearLowStockSelection, setSelectedLowStock, bulkRequestOrder,
   handleRequestOrder,
-}) => (
+}) => {
+  // 2026-08-25 · 사용자 지시 A · OFF + 리스트 클릭 → confirm → handleRequestOrder
+  //   · lowStock 조건 미통과 상품 (cur >= opt) 클릭 시만 confirm (진짜 발주필요는 그대로 상세 열기)
+  const confirm = useConfirm();
+  const handleRowClick = React.useCallback(async (p: ProductInfo) => {
+    const cur = Number(p.current_stock ?? NaN);
+    const opt = Number(p.optimal_stock ?? NaN);
+    const code = getCode(p);
+    const name = getName(p);
+    const inLowStock = Number.isFinite(cur) && Number.isFinite(opt) && cur < opt;
+    if (!inLowStock && !needConditionApply && !requestedCodes.has(code)) {
+      // OFF 검색 결과 (재고 부족 조건 아님) · confirm 후 발주필요 추가
+      const ok = await confirm({
+        title: "발주필요 리스트에 추가",
+        message: `[${name}]\n현재고 ${Number.isFinite(cur) ? cur : "-"} · 적정재고 ${Number.isFinite(opt) ? opt : "-"}\n\n이 상품을 발주필요 리스트에 추가할까요?`,
+        confirmLabel: "추가",
+      });
+      if (!ok) return;
+      await handleRequestOrder(p);
+      return;
+    }
+    // 기본 · 우측 상세 패널 오픈
+    setNeedPanelProduct({ code, name });
+  }, [confirm, getCode, getName, handleRequestOrder, needConditionApply, requestedCodes, setNeedPanelProduct]);
+  return (
   <div className="flex flex-col gap-2">
     {/* 상단 툴바 */}
     <PageToolbar
@@ -661,10 +687,11 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                                     </div>
                                   </td>
                                   <td className="px-0.5 py-1.5 align-middle">
+                                    {/* 2026-08-25 · A · OFF+검색 결과 (lowStock 조건 미통과) 클릭 시 · 발주필요 추가 confirm */}
                                     <button
-                                      onClick={() => setNeedPanelProduct({ code, name })}
+                                      onClick={() => handleRowClick(p)}
                                       className="text-left text-[15px] font-medium text-zinc-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
-                                      title="상품 상세정보 조회"
+                                      title="상품 상세정보 조회 · OFF 조건 상품 · 클릭 시 발주필요 추가 confirm"
                                     >{name || "(상품명 없음)"}</button>
                                   </td>
                                 </>
@@ -753,4 +780,5 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
       )}
     </div>
   </div>
-);
+  );
+};
