@@ -41,10 +41,11 @@ import { ReturnListPanel } from "./ReturnListPanel";
 // 2026-08-25 · 사용자 지시 · 반품확정 페이지 · 반품 서브탭 이너 탭 (반품필요/반품확정)
 import { ReturnConfirmedPanel } from "./ReturnConfirmedPanel";
 import { PurchaseHistoryTab } from "./PurchaseHistoryTab";
-import { PaymentInfoTab } from "./PaymentInfoTab";
 // 2026-08-25 · 사용자 지시 · 결제 · 차용입력 페이지 (공급사↔약국 상품 차용)
 import { BorrowingPage } from "./BorrowingPage";
-// 2026-08-25 · #111 · 결제입력 페이지 재구성 (신규 · Option B · 회귀 X · 기존 PaymentInfoTab 은 vendor 탭 유지)
+// 2026-08-25 · #111 · 결제입력 페이지 재구성 (신규 · Option B · 회귀 X)
+//   · vendor 탭 · VendorPaymentPanel (→ VendorDetailTabs) 사용
+//   · payment-input 탭 · PaymentInputPage 사용
 import { PaymentInputPage } from "./PaymentInputPage";
 import { VatPreparePage } from "../VatPreparePage/VatPreparePage";
 import { CategoryTab } from "./CategoryTab";
