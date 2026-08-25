@@ -16,6 +16,8 @@ import { type ProductInfo, lookupProduct } from "../../lib/productsCache";
 import { SeasonButtons } from "./SeasonButtons";
 import { AccentBar } from "./AccentBar";
 import { InlineLabel } from "./InlineLabel";
+// 2026-08-25 · 우측 탭 프리미티브 · 폰트 +2 · v9 시그니처
+import { SplitRightTabs } from "./SplitRightTabs";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import {
   MultiLineChart,
@@ -418,31 +420,21 @@ const ProductDetailChartMode: React.FC<{
       {/* 상단 헤더 카드 · 상품명 + 공급사 + 공급사조회 (2026-07-31) */}
       <ProductHeaderCard product={product} onSupplierInfoOpen={onSupplierInfoOpen} />
 
-      {/* 5탭 통합 · 기간별상품흐름 · 매입이력 · 발주내역 · 재고관리 · 상품정보 */}
+      {/* 5탭 통합 · 기간별상품흐름 · 매입이력 · 발주내역 · 재고위치 · 상품정보 */}
+      {/* 2026-08-25 · 사용자 지시 · SplitRightTabs 프리미티브 이관 · 폰트 +2 · v9 시그니처 */}
       <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_16px_rgba(10,46,74,0.06)] overflow-hidden">
-        <div className="relative flex border-b border-line bg-zinc-50/40 p-1.5 gap-1 overflow-x-auto">
-          {([
-            { key: "flow",      label: "상품흐름",  Icon: TrendingUp },
-            { key: "order",     label: "발주내역",  Icon: ClipboardList },
-            { key: "purchase",  label: "매입이력",  Icon: History },
-            { key: "inventory", label: "재고위치",  Icon: Package },
-            { key: "info",      label: "상품정보",  Icon: Info },
-          ] as const).map(({ key, label, Icon }) => {
-            const active = chartTab === key;
-            const cls = active
-              ? "text-ink bg-white shadow-sm ring-1 ring-line"
-              : "text-ink-soft hover:text-ink hover:bg-white/70";
-            return (
-              <button key={key} type="button" onClick={() => setChartTab(key)}
-                className={`relative flex-1 min-w-[80px] min-h-[42px] py-2 px-2 text-[14px] font-semibold rounded-xl transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 tracking-tight ${cls}`}
-                title={label}>
-                <Icon size={16} className={`shrink-0 ${active ? "text-brand-deep" : ""}`} strokeWidth={active ? 2.4 : 2} />
-                <span className="truncate">{label}</span>
-                {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-brand-deep" />}
-              </button>
-            );
-          })}
-        </div>
+        <SplitRightTabs
+          tabs={[
+            { key: "flow",      label: "상품흐름",  icon: TrendingUp },
+            { key: "order",     label: "발주내역",  icon: ClipboardList },
+            { key: "purchase",  label: "매입이력",  icon: History },
+            { key: "inventory", label: "재고위치",  icon: Package },
+            { key: "info",      label: "상품정보",  icon: Info },
+          ]}
+          active={chartTab}
+          onSelect={(k) => setChartTab(k as typeof chartTab)}
+          bg="bg-zinc-50/40"
+        />
         <div>
           {(chartTab === "flow" || chartTab === "purchase" || chartTab === "order") && (
             /* 기존 PurchaseOrderTabs content 만 재사용 · 내부 탭바 숨김 (외부 5탭 이미 표시) */
@@ -609,27 +601,18 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string; i
   return (
     /* 2026-08-17 · Attio "carved" segmented · 단일 brand accent · 폰트 +2 */
     <div className={cardWrapCls}>
+      {/* 2026-08-25 · SplitRightTabs 프리미티브 이관 · 폰트 +2 · v9 시그니처 */}
       {!hideTabs && (
-      <div className="relative flex border-b border-line bg-zinc-50/40 p-1.5 gap-1">
-        {(["flow", "purchase", "order"] as const).map(k => {
-          const active = tab === k;
-          const label = k === "flow" ? "기간별 상품흐름" : k === "purchase" ? "매입이력" : "발주내역";
-          const Icon = k === "flow" ? TrendingUp : k === "purchase" ? History : ClipboardList;
-          const cls = active
-            ? "text-ink bg-white shadow-sm ring-1 ring-line"
-            : "text-ink-soft hover:text-ink hover:bg-white/70";
-          return (
-            <button key={k} type="button" onClick={() => setTab(k)}
-              className={`relative flex-1 min-h-[42px] py-2 px-2 text-[14px] font-semibold rounded-xl transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 tracking-tight ${cls}`}
-              title={label}>
-              <Icon size={16} className={`shrink-0 ${active ? "text-brand-deep" : ""}`} strokeWidth={active ? 2.4 : 2} />
-              <span className="truncate">{label}</span>
-              {/* 활성 · 하단 2px accent · Linear 규칙 */}
-              {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-brand-deep" />}
-            </button>
-          );
-        })}
-      </div>
+      <SplitRightTabs
+        tabs={[
+          { key: "flow",     label: "기간별 상품흐름", icon: TrendingUp },
+          { key: "purchase", label: "매입이력",        icon: History },
+          { key: "order",    label: "발주내역",        icon: ClipboardList },
+        ]}
+        active={tab}
+        onSelect={(k) => setTab(k as typeof tab)}
+        bg="bg-zinc-50/40"
+      />
       )}
       {tab === "flow" ? (
         /* 탭 UI 내부 · 기존 StockFlowChart 카드 스타일이 이미 white bg + border 이므로

@@ -31,6 +31,8 @@ import { useSortableTable, type Comparator } from "../../hooks/useSortableTable"
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
 import { SplitRightEmpty } from "../common/SplitRightEmpty";
+// 2026-08-25 · 우측 탭 프리미티브 · 폰트 +2 · v9 시그니처
+import { SplitRightTabs } from "../common/SplitRightTabs";
 import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { IconTile } from "../common/IconTile";
@@ -756,36 +758,17 @@ export const PaymentInfoTab: React.FC = () => {
               </div>
 
               {/* 2026-08-24 · 사용자 지시 · 결제등록 · 최근결제내역 · 탭 처리 (나란히 X) */}
+              {/* 2026-08-25 · SplitRightTabs 프리미티브 이관 · 폰트 +2 · v9 시그니처 */}
               <div className="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
-                {/* Tab strip · Linear/Vercel 톤 · 딥네이비 accent */}
-                <div className="flex border-b border-line bg-zinc-50/40 p-1.5 gap-1">
-                  {([
-                    { k: "entry" as const, label: "결제 등록" },
-                    { k: "recent" as const, label: "최근 결제 내역", count: recentPayments.length },
-                  ]).map(t => {
-                    const active = paymentRightTab === t.k;
-                    return (
-                      <button
-                        key={t.k}
-                        type="button"
-                        onClick={() => setPaymentRightTab(t.k)}
-                        className={`relative flex-1 min-h-[42px] py-2 px-3 text-[15px] font-semibold rounded-xl transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 tracking-tight ${
-                          active
-                            ? "text-ink bg-white shadow-sm ring-1 ring-line"
-                            : "text-ink-soft hover:text-ink hover:bg-white/70"
-                        }`}
-                      >
-                        <span>{t.label}</span>
-                        {typeof t.count === "number" && t.count > 0 && (
-                          <span className={`text-[13px] tabular-nums font-bold ${active ? "text-brand-deep" : "text-ink-soft"}`}>
-                            · {t.count}
-                          </span>
-                        )}
-                        {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-brand-deep" />}
-                      </button>
-                    );
-                  })}
-                </div>
+                <SplitRightTabs
+                  tabs={[
+                    { key: "entry", label: "결제 등록" },
+                    { key: "recent", label: "최근 결제 내역", count: recentPayments.length },
+                  ]}
+                  active={paymentRightTab}
+                  onSelect={(k) => setPaymentRightTab(k as typeof paymentRightTab)}
+                  bg="bg-zinc-50/40"
+                />
                 {/* Tab body */}
                 {paymentRightTab === "entry" ? (
                   <PaymentEntryForm
