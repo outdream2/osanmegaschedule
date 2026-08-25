@@ -39,7 +39,7 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
   saveCompanyInfoNow, savePaymentDayNow,
 }) => {
   return (
-    <Card as="section" clip padding="none">
+    <Card as="section" clip padding="none" topAccent>
       <button
         type="button"
         onClick={() => setCompanyInfoOpen(o => !o)}
