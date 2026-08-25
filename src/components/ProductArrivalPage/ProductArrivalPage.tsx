@@ -135,7 +135,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
   const showToast = (msg: string) => _showToast(msg);
 
-  const handleScan = async (result: string) => {
+  // 2026-08-25 · 사용자 지시 · ScanPage 와 동일 패턴 · preloadedProduct 인자 · 정규화 · API fallback
+  const handleScan = async (result: string, preloadedProduct?: any | null) => {
     setScannerOpen(false);
     setNotFoundCode(null);
     if (!isProductsLoaded()) {
@@ -143,7 +144,23 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       await getProductsMap();
       setMapLoading(false);
     }
-    const found = lookupProduct(result);
+    const normalize = (p: any) => ({
+      code: String(p.code ?? p.product_code ?? result),
+      name: String(p.name ?? p.product_name ?? ""),
+      spec: String(p.spec ?? ""),
+      supplier: p.supplier ?? null,
+      realMap: p.realMap ?? p.real_map ?? null,
+      real_map: p.real_map ?? p.realMap ?? null,
+      ...p,
+    });
+    let found = preloadedProduct ? normalize(preloadedProduct) : lookupProduct(result);
+    if (!found) {
+      // fallback · API 실시간 조회 (캐시 stale · 신규 등록 대응)
+      try {
+        const { data } = await import("../../lib/apiClient").then(m => m.api.get<any>(`/api/products/${encodeURIComponent(result)}`));
+        if (data && (data.product_code || data.code)) found = normalize(data);
+      } catch { /* 404 → 미등록 */ }
+    }
     if (!found) {
       setNotFoundCode(result);
       setLastScannedProduct(null);
@@ -401,10 +418,11 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               </button>
 
               {/* 2026-08-09 · 상품 검색 · 바코드 스캔 버튼 아래 (사용자 요청) */}
+              {/* 2026-08-25 · 사용자 지시 · onSelect 에 product 객체도 함께 전달 · 상품명 정규화 */}
               <ProductSearchInput
                 accent="sky"
                 placeholder="상품명·코드 검색"
-                onSelect={(code) => handleScan(code)}
+                onSelect={(code, p) => handleScan(code, p)}
               />
 
               {/* 미등록 상품 경고 */}
