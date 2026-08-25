@@ -162,10 +162,10 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   };
 
   // 2026-08-18 · 실재고입력 개선안 #1 · 필터 pill + 실시간 통계
-  //   · empty  : 이번 세션 추가 입력 0 (=미입력)
-  //   · diff   : 추가 입력 있음 (변경 예정)
-  //   · warn   : 어떤 한 슬롯 add >= 100 (이상값 · 오탈자 방지)
-  type ScanFilter = "all" | "empty" | "diff" | "warn";
+  // 2026-08-25 · 사용자 지시 · 4버튼 (전체·미입력·입력됨·이상값) → 2버튼 (진열요청·유통기한임박) 대체
+  //   · display  : 매장 재고 0 · 창고에는 있음 → 진열요청 필요
+  //   · expiry   : product.expiry_date 있음 → 유통기한 주의 (기준일 없음)
+  type ScanFilter = "all" | "display" | "expiry";
   const [scanFilter, setScanFilter] = useState<ScanFilter>("all");
 
   const WARN_THRESHOLD = 100;
@@ -180,27 +180,40 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     );
   }, []);
 
+  // 2026-08-25 · 진열요청 필요 · 매장 재고 total 0 && 창고 재고 total > 0
+  const needsDisplayRequest = useCallback((r: StockRow): boolean => {
+    const num = (v: number | null | undefined | "") => (v != null && v !== "" ? Number(v) : 0);
+    const wh = num(r.prevWarehouse1Qty) + num(r.warehouse1AddQty)
+             + num(r.prevWarehouse2Qty) + num(r.warehouse2AddQty);
+    const store = num(r.prevStore1Qty) + num(r.store1AddQty)
+                + num(r.prevStore2Qty) + num(r.store2AddQty)
+                + num(r.prevStore3Qty) + num(r.store3AddQty);
+    return store === 0 && wh > 0;
+  }, []);
+
+  // 2026-08-25 · 유통기한 주의 · product.expiry_date 있음 (기준일 없음 · 표시만)
+  const hasExpiry = useCallback((r: StockRow): boolean => {
+    const exp = (r.product as { expiry_date?: string | null }).expiry_date;
+    return !!(exp && String(exp).trim());
+  }, []);
+
   const scanStats = React.useMemo(() => {
-    let empty = 0, diff = 0, warn = 0;
+    let display = 0, expiry = 0;
     for (const r of rows) {
-      const added = calcTotalAdded(r);
-      if (added === 0) empty += 1;
-      else diff += 1;
-      if (isWarnRow(r)) warn += 1;
+      if (needsDisplayRequest(r)) display += 1;
+      if (hasExpiry(r)) expiry += 1;
     }
-    return { total: rows.length, empty, diff, warn };
-  }, [rows, isWarnRow]);
+    return { total: rows.length, display, expiry };
+  }, [rows, needsDisplayRequest, hasExpiry]);
 
   const filteredRows = React.useMemo(() => {
     if (scanFilter === "all") return sortedRows;
     return sortedRows.filter(r => {
-      const added = calcTotalAdded(r);
-      if (scanFilter === "empty") return added === 0;
-      if (scanFilter === "diff")  return added !== 0;
-      if (scanFilter === "warn")  return isWarnRow(r);
+      if (scanFilter === "display") return needsDisplayRequest(r);
+      if (scanFilter === "expiry")  return hasExpiry(r);
       return true;
     });
-  }, [sortedRows, scanFilter, isWarnRow]);
+  }, [sortedRows, scanFilter, needsDisplayRequest, hasExpiry]);
 
   useEffect(() => { loadZBar(); }, []);
   useEffect(() => {
@@ -710,32 +723,31 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                   <span className="text-[15px] font-bold text-ink tracking-tight">스캔한 상품 · 실재고 입력</span>
                 </div>
               </div>
-              {/* 2026-08-18 · 개선안 #1 v2 · 큰 KPI 필터 카드 (2×2 · 모바일 우선 · PC 동일 레이아웃) */}
+              {/* 2026-08-25 · 사용자 지시 · 4버튼 (전체·미입력·입력됨·이상값) → 2버튼 (진열요청·유통기한임박) 대체
+                    · 각 버튼 · 라벨 + 갯수 · 클릭 시 필터 적용
+                    · 진열요청: 매장재고=0 & 창고재고>0 · violet
+                    · 유통기한임박: expiry_date 있음 (기준일 없음 · 표시만) · amber */}
               {rows.length > 0 && (
                 <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="실재고 입력 필터">
                   {([
-                    { key: "all",   label: "전체",   count: scanStats.total, dot: "bg-brand-deep",   activeBg: "bg-brand-deep",  activeText: "text-white", activeSub: "text-white/70" },
-                    { key: "empty", label: "미입력", count: scanStats.empty, dot: "bg-zinc-400",     activeBg: "bg-zinc-800",    activeText: "text-white", activeSub: "text-white/70" },
-                    { key: "diff",  label: "입력됨", count: scanStats.diff,  dot: "bg-emerald-500",  activeBg: "bg-emerald-600", activeText: "text-white", activeSub: "text-white/70" },
-                    { key: "warn",  label: "이상값", count: scanStats.warn,  dot: "bg-amber-500",    activeBg: "bg-amber-600",   activeText: "text-white", activeSub: "text-white/70" },
+                    { key: "display", label: "진열요청",   count: scanStats.display, dot: "bg-violet-500", activeBg: "bg-violet-600", activeText: "text-white" },
+                    { key: "expiry",  label: "유통기한임박", count: scanStats.expiry,  dot: "bg-amber-500",  activeBg: "bg-amber-600",  activeText: "text-white" },
                   ] as const).map(o => {
                     const active = scanFilter === o.key;
-                    const isWarn = o.key === "warn" && o.count > 0;
                     return (
                       <button
                         key={o.key}
                         type="button"
                         role="tab"
                         aria-selected={active}
-                        onClick={() => setScanFilter(o.key)}
+                        onClick={() => setScanFilter(active ? "all" : o.key)}
                         className={[
                           "flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border-2 transition-all duration-150 cursor-pointer text-left min-h-[56px]",
                           active
                             ? `${o.activeBg} border-transparent shadow-[0_2px_10px_-2px_rgba(10,46,74,0.30),inset_0_1px_0_rgba(255,255,255,0.15)] scale-[1.01]`
-                            : isWarn
-                              ? "bg-amber-50/60 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
-                              : "bg-white border-line hover:border-brand-deep/40 hover:bg-zinc-50",
+                            : "bg-white border-line hover:border-brand-deep/40 hover:bg-zinc-50",
                         ].join(" ")}
+                        title={active ? `클릭 시 필터 해제 · 전체 보기` : `${o.label} 필터 · ${o.count}건`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span
@@ -744,16 +756,17 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                           <span className={`text-[15px] font-semibold tracking-tight truncate ${active ? o.activeText : "text-ink-soft"}`}>
                             {o.label}
                           </span>
+                          {o.key === "expiry" && o.count > 0 && !active && (
+                            <span className="text-[12px] font-bold text-amber-700 shrink-0">주의</span>
+                          )}
                         </div>
                         <span
                           className={`text-[22px] font-bold tabular-nums leading-none tracking-tight ${
                             active
                               ? o.activeText
-                              : isWarn
-                                ? "text-amber-700"
-                                : o.count > 0
-                                  ? "text-ink"
-                                  : "text-zinc-300"
+                              : o.count > 0
+                                ? (o.key === "expiry" ? "text-amber-700" : "text-violet-700")
+                                : "text-zinc-300"
                           }`}
                         >
                           {o.count}
