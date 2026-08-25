@@ -6,7 +6,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  RefreshCw, Filter, X, Package2, ReceiptText,
+  RefreshCw, Filter, X, Package2, ReceiptText, Wallet, TrendingUp, TrendingDown, Minus,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { VendorInfoHeader, type VendorBasic, type VendorKpi, type LedgerRowMinimal } from "./VendorInfoHeader";
@@ -15,6 +15,9 @@ import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
 import { StatusPill, type PillTone } from "../common/StatusPill";
 import { Badge } from "../common/Badge";
+import { SplitRightTabs } from "../common/SplitRightTabs";
+import { EmptyState } from "../common/EmptyState";
+import { IconTile } from "../common/IconTile";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
@@ -115,11 +118,6 @@ function calcAvgCycle(rows: PurchaseDetailRow[]): number | null {
 
 type TabKey = "balance" | "history";
 
-const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-  { key: "balance", label: "결제내역", icon: <ReceiptText size={12} /> },
-  { key: "history", label: "매입이력", icon: <Package2 size={12} /> },
-];
-
 // ─── Ledger tab content ────────────────────────────────────────────────────
 
 const LEDGER_CMP: Record<LedgerSortKey, Comparator<LedgerRow>> = {
@@ -134,30 +132,37 @@ const LedgerContent: React.FC<{
   loading: boolean;
   error: string | null;
 }> = ({ ledger, loading, error }) => {
-  const rawRows = useMemo(() => ledger?.rows ?? [], [ledger]);
+  // 2026-08-25 · 사용자 지시 · 결제내역 탭 · 결제 rows 만 표시 (매입은 매입이력 탭)
+  const rawRows = useMemo(
+    () => (ledger?.rows ?? []).filter(r => r.type === "payment"),
+    [ledger],
+  );
   const { sorted: rows, sortKey, sortDir, toggleSort } = useSortableTable<LedgerRow, LedgerSortKey>(rawRows, "date", LEDGER_CMP, "desc");
   const arrow = (k: LedgerSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
-  const { getWidth: lw, resizerProps: lr } = useColumnResize("vendorLedger", {
-    num:     { default: 24,  min: 20, max: 48  },
-    date:    { default: 96,  min: 60, max: 160 },
-    type:    { default: 56,  min: 40, max: 80  },
-    memo:    { default: 180, min: 80, max: 360 },
-    method:  { default: 56,  min: 40, max: 100 },
-    amount:  { default: 96,  min: 60, max: 160 },
-    balance: { default: 96,  min: 60, max: 160 },
+  const { getWidth: lw, resizerProps: lr } = useColumnResize("vendorLedgerV2", {
+    num:     { default: 28,  min: 20, max: 48  },
+    date:    { default: 108, min: 72, max: 160 },
+    memo:    { default: 200, min: 96, max: 380 },
+    method:  { default: 72,  min: 48, max: 120 },
+    amount:  { default: 112, min: 72, max: 180 },
+    balance: { default: 112, min: 72, max: 180 },
   });
 
   if (loading) return (
     <div className="flex-1 flex items-center justify-center py-16">
-      <Spinner size={18} tone="zinc" label="원장 로딩 중..." labelSize={12} />
+      <Spinner size={20} tone="brand" label="결제 내역 로딩 중..." labelSize={14} />
     </div>
   );
   if (error) return (
-    <div className="flex-1 flex items-center justify-center py-12 text-rose-600 text-[11px]">{error}</div>
+    <div className="flex-1 flex items-center justify-center py-12 text-rose-600 text-[14px] font-semibold">{error}</div>
   );
   if (!ledger || rows.length === 0) return (
-    <div className="flex-1 flex items-center justify-center py-16 text-zinc-400 text-[11px]">
-      해당 기간 원장 내역 없음
+    <div className="flex-1 min-h-[220px] flex items-center justify-center">
+      <EmptyState
+        icon={Wallet}
+        title="결제 내역 없음"
+        hint="해당 기간 등록된 결제가 없습니다"
+      />
     </div>
   );
 
@@ -166,88 +171,80 @@ const LedgerContent: React.FC<{
 
   return (
     <div className="flex-1 min-h-0 overflow-auto">
-      <table className="w-full text-xs min-w-[520px]" style={{ tableLayout: "fixed" }}>
-        <thead className="sticky top-0 bg-white z-10 border-b border-zinc-100">
-          <tr className="text-[10px] text-zinc-400 uppercase tracking-wider">
-            <th className="relative text-left px-3 py-2 text-zinc-300" style={{ width: lw("num"), minWidth: lw("num") }}>
+      <table className="w-full text-[13px] min-w-[560px]" style={{ tableLayout: "fixed" }}>
+        <thead className="sticky top-0 bg-white z-10 border-b border-line">
+          <tr className="text-[12px] text-zinc-500 uppercase tracking-wider font-semibold">
+            <th className="relative text-left px-3 py-2.5 text-zinc-300" style={{ width: lw("num"), minWidth: lw("num") }}>
               #
               <span {...lr("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
             </th>
             <th onClick={() => toggleSort("date")}
-              className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition"
+              className="relative text-left px-3 py-2.5 cursor-pointer select-none hover:bg-brand-tint/40 transition"
               style={{ width: lw("date"), minWidth: lw("date") }}>
               날짜{arrow("date")}
               <span {...lr("date")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
-            <th onClick={() => toggleSort("type")}
-              className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition"
-              style={{ width: lw("type"), minWidth: lw("type") }}>
-              구분{arrow("type")}
-              <span {...lr("type")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-            </th>
-            <th className="relative text-left px-3 py-2" style={{ width: lw("memo"), minWidth: lw("memo") }}>
+            <th className="relative text-left px-3 py-2.5" style={{ width: lw("memo"), minWidth: lw("memo") }}>
               메모
               <span {...lr("memo")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
             </th>
-            <th className="relative text-left px-3 py-2" style={{ width: lw("method"), minWidth: lw("method") }}>
+            <th className="relative text-left px-3 py-2.5" style={{ width: lw("method"), minWidth: lw("method") }}>
               방법
               <span {...lr("method")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
             </th>
             <th onClick={() => toggleSort("amount")}
-              className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition"
+              className="relative text-right px-3 py-2.5 cursor-pointer select-none hover:bg-brand-tint/40 transition"
               style={{ width: lw("amount"), minWidth: lw("amount") }}>
-              금액{arrow("amount")}
+              결제금액{arrow("amount")}
               <span {...lr("amount")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             {showVatCol && (
-              <th className="text-right px-3 py-2 text-zinc-400 w-20" title="부가세 (row 저장값 또는 vendor.vat_included 기반 계산)">
+              <th className="text-right px-3 py-2.5 text-zinc-500 w-24 font-semibold" title="부가세 (row 저장값 또는 vendor.vat_included 기반 계산)">
                 VAT
               </th>
             )}
             <th onClick={() => toggleSort("running_balance")}
-              className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition"
+              className="relative text-right px-3 py-2.5 cursor-pointer select-none hover:bg-brand-tint/40 transition"
               style={{ width: lw("balance"), minWidth: lw("balance") }}>
-              잔고{arrow("running_balance")}
+              결제 후 잔고{arrow("running_balance")}
               <span {...lr("balance")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-zinc-50">
+        <tbody className="divide-y divide-zinc-100">
           {rows.map((r, i) => {
-            const isPurchase = r.type === "purchase";
             const vat = r.vat_amount ?? 0;
             return (
               <tr key={`led-${r.id}-${i}`}
-                className={`transition-all duration-100 ${isPurchase ? "hover:bg-emerald-50/30" : "hover:bg-sky-50/30"}`}>
-                <td className="px-3 py-1.5 text-zinc-300 text-[10px] tabular-nums align-top">{i + 1}</td>
-                <td className="px-3 py-1.5 tabular-nums text-[11px] text-zinc-500 align-top whitespace-nowrap">
+                className="transition-colors duration-150 hover:bg-sky-50/50 group">
+                <td className="px-3 py-2 text-zinc-300 text-[12px] tabular-nums align-top font-semibold">{i + 1}</td>
+                <td className="px-3 py-2 tabular-nums text-[13px] font-semibold text-zinc-700 align-top whitespace-nowrap">
                   {dateLabel(r.date)}
                 </td>
-                <td className="px-3 py-1.5 align-top">
-                  <Badge tone={isPurchase ? "emerald" : "sky"} size="xs" shape="square">
-                    {isPurchase ? "매입" : "결제"}
-                  </Badge>
-                </td>
-                <td className="px-3 py-1.5 text-[11px] text-zinc-600 align-top break-words whitespace-normal leading-snug">
-                  {r.memo ?? "-"}
-                  {!isPurchase && r.tax_invoice_no && (
-                    <Badge tone="violet" size="xs" className="ml-1 align-middle" title={`전자세금계산서 승인번호: ${r.tax_invoice_no}`}>
-                      세금계산서 {r.tax_invoice_no.slice(-8)}
-                    </Badge>
+                <td className="px-3 py-2 text-[13px] text-zinc-700 align-top break-words whitespace-normal leading-snug">
+                  {r.memo ?? <span className="text-zinc-300">-</span>}
+                  {r.tax_invoice_no && (
+                    <span title={`전자세금계산서 승인번호: ${r.tax_invoice_no}`} className="inline-block ml-1.5 align-middle">
+                      <StatusPill tone="violet" size="xs">
+                        세금계산서 {r.tax_invoice_no.slice(-8)}
+                      </StatusPill>
+                    </span>
                   )}
                 </td>
-                <td className="px-3 py-1.5 text-[11px] text-zinc-400 align-top whitespace-nowrap">
-                  {isPurchase ? "-" : methodLabel(r.method)}
+                <td className="px-3 py-2 align-top whitespace-nowrap">
+                  <StatusPill tone="sky" size="xs" shape="square">
+                    {methodLabel(r.method)}
+                  </StatusPill>
                 </td>
-                <td className={`px-3 py-1.5 text-right tabular-nums text-[12px] font-semibold align-top ${isPurchase ? "text-emerald-700" : "text-sky-700"}`}>
-                  {isPurchase ? "+" : "-"}{fmt(r.amount)}
+                <td className="px-3 py-2 text-right tabular-nums text-[14px] font-bold align-top text-sky-700">
+                  {fmt(r.amount)}
                 </td>
                 {showVatCol && (
-                  <td className="px-3 py-1.5 text-right tabular-nums text-[11px] text-zinc-500 align-top">
+                  <td className="px-3 py-2 text-right tabular-nums text-[12px] text-zinc-500 align-top font-semibold">
                     {vat > 0 ? fmt(vat) : <span className="text-zinc-300">-</span>}
                   </td>
                 )}
-                <td className={`px-3 py-1.5 text-right tabular-nums text-[12px] font-bold align-top ${
+                <td className={`px-3 py-2 text-right tabular-nums text-[13px] font-bold align-top ${
                   r.running_balance > 0 ? "text-amber-700" : r.running_balance < 0 ? "text-rose-700" : "text-zinc-400"
                 }`}>
                   {fmt(r.running_balance)}
@@ -256,18 +253,20 @@ const LedgerContent: React.FC<{
             );
           })}
         </tbody>
-        <tfoot className="sticky bottom-0 bg-zinc-50 border-t-2 border-line">
+        <tfoot className="sticky bottom-0 bg-gradient-to-b from-brand-tint/40 to-brand-tint/20 border-t-2 border-brand-deep/30">
           <tr>
-            <td colSpan={5} className="px-3 py-2 text-right text-[11px] font-bold text-zinc-500">기간 합계</td>
-            <td className="px-3 py-2 text-right text-[11px] font-semibold text-zinc-500 tabular-nums" title={`매입 ${fmt(ledger.total_purchase)} / 결제 ${fmt(ledger.total_payment)}`}>
-              {fmt(ledger.total_purchase - ledger.total_payment)}
+            <td colSpan={4} className="px-3 py-2.5 text-right text-[12px] font-bold text-zinc-600 uppercase tracking-wider">
+              기간 결제 합계
+            </td>
+            <td className="px-3 py-2.5 text-right text-[14px] font-extrabold text-sky-800 tabular-nums" title={`기간 내 결제 총액`}>
+              {fmt(ledger.total_payment)}
             </td>
             {showVatCol && (
-              <td className="px-3 py-2 text-right text-[11px] font-bold text-zinc-500 tabular-nums" title={`매입VAT ${fmt(ledger.total_purchase_vat)} · 결제VAT ${fmt(ledger.total_payment_vat)}`}>
-                {fmt(ledger.total_purchase_vat)}
+              <td className="px-3 py-2.5 text-right text-[12px] font-bold text-zinc-600 tabular-nums" title={`결제 VAT`}>
+                {fmt(ledger.total_payment_vat)}
               </td>
             )}
-            <td className={`px-3 py-2 text-right tabular-nums text-[13px] font-bold ${
+            <td className={`px-3 py-2.5 text-right tabular-nums text-[14px] font-extrabold ${
               ledger.current_balance > 0 ? "text-amber-700" : ledger.current_balance < 0 ? "text-rose-700" : "text-zinc-400"
             }`}>
               {fmt(ledger.current_balance)}
@@ -671,30 +670,27 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
         </button>
       </div>
 
-      {/* 탭 바 */}
-      <div className={`${CARD_BASE} flex p-1 gap-1`}>
-        {TABS.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[12px] font-bold transition cursor-pointer ${
-              activeTab === tab.key
-                ? "bg-sky-500 text-white shadow-sm"
-                : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
+      {/* 2026-08-25 · SplitRightTabs 프리미티브 이관 · v9 브랜드 시그니처 · 폰트 +2 */}
+      <div className={`${CARD_BASE} overflow-hidden`}>
+        <SplitRightTabs
+          tabs={[
+            { key: "balance", label: "결제내역", icon: ReceiptText as any, count: ledger?.rows.filter(r => r.type === "payment").length ?? undefined },
+            { key: "history", label: "매입이력", icon: Package2 as any, count: detailRows.length || undefined },
+          ]}
+          active={activeTab}
+          onSelect={(k) => setActiveTab(k as TabKey)}
+          bg="bg-white"
+        />
       </div>
 
       {/* 탭 컨텐츠 */}
       <div className="flex-1 min-h-0 flex flex-col">
         {activeTab === "balance" && (
-          <div className={`${CARD_BASE} flex-1 min-h-0 flex flex-col overflow-hidden`}>
+          <div className={`relative ${CARD_BASE} flex-1 min-h-0 flex flex-col overflow-hidden`}>
+            {/* v9 · gradient topAccent (brand-deep → sky-500) */}
+            <span aria-hidden className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10" />
             {/* 탭 내 KPI 3개 · 매입금액 · 결제금액 · 남은잔고 (미결제) */}
-            {/* 2026-08-03 · #193 · VAT 소계 subtitle 추가 (vat_included 설정 시 · 부가세 신고 준비용) */}
+            {/* 2026-08-25 · v9 · IconTile + 폰트 +2 · Delta trend · Vercel/Attio 톤 */}
             {ledger && !ledgerLoading && (() => {
               const vatMode = ledger.vat_included;
               const vatModeText =
@@ -705,34 +701,47 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
                 vatMode === true  ? "emerald" :
                 vatMode === false ? "amber" :
                                     "zinc";
+              const payRatio = ledger.total_purchase > 0
+                ? Math.round((ledger.total_payment / ledger.total_purchase) * 100)
+                : null;
               const items = [
                 {
                   label: "매입 금액",
                   value: ledger.total_purchase,
                   tone: "emerald" as const,
+                  icon: <Package2 size={14} strokeWidth={2.4} />,
                   subtitle: "구입 총액",
                   vatBadge: vatMode != null ? `VAT ${ledger.total_purchase_vat.toLocaleString()}원 · 공급가액 ${ledger.total_purchase_supply.toLocaleString()}원` : null,
+                  trend: null as null | { icon: React.ReactNode; text: string; cls: string },
                 },
                 {
                   label: "결제 금액",
                   value: ledger.total_payment,
                   tone: "sky" as const,
-                  subtitle: "지불 총액",
+                  icon: <Wallet size={14} strokeWidth={2.4} />,
+                  subtitle: payRatio != null ? `매입 대비 ${payRatio}%` : "지불 총액",
                   vatBadge: vatMode === true && ledger.total_payment_vat > 0 ? `VAT ${ledger.total_payment_vat.toLocaleString()}원 · 공급가액 ${ledger.total_payment_supply.toLocaleString()}원` : null,
+                  trend: null,
                 },
                 {
                   label: "남은 잔고 (미결제)",
                   value: ledger.current_balance,
                   tone: ledger.current_balance > 0 ? "amber" as const : "emerald" as const,
-                  subtitle: ledger.current_balance > 0 ? "지불 필요" : "완납",
+                  icon: ledger.current_balance > 0
+                    ? <TrendingUp size={14} strokeWidth={2.4} />
+                    : ledger.current_balance < 0
+                      ? <TrendingDown size={14} strokeWidth={2.4} />
+                      : <Minus size={14} strokeWidth={2.4} />,
+                  subtitle: ledger.current_balance > 0 ? "지불 필요" : ledger.current_balance < 0 ? "초과 결제" : "완납",
                   vatBadge: null,
+                  trend: null,
                 },
               ];
               return (
                 <div className="flex flex-col">
                   {/* VAT 모드 배지 (전체 우상단) */}
-                  <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">기간 합계</span>
+                  <div className="flex items-center justify-between px-4 pt-3 pb-2">
+                    <span className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">기간 합계</span>
                     <span
                       title={
                         vatMode === true  ? "거래명세서 총액에 VAT 포함 · amount÷11 로 세액 산정" :
@@ -740,23 +749,26 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
                                             "공급사 관리에서 VAT 처리 방식을 설정하면 세액이 계산됩니다"
                       }
                     >
-                      <StatusPill tone={vatModeTone} size="xs" dot={vatMode !== null}>{vatModeText}</StatusPill>
+                      <StatusPill tone={vatModeTone} size="sm" dot={vatMode !== null}>{vatModeText}</StatusPill>
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-0 border-b border-zinc-100 bg-zinc-50/40">
+                  <div className="grid grid-cols-3 gap-0 border-b border-line bg-gradient-to-b from-zinc-50/60 to-white">
                     {items.map((item, i) => (
-                      <div key={i} className={`px-4 py-3 ${i < 2 ? "border-r border-zinc-100" : ""} flex flex-col gap-0.5`}>
-                        <span className="text-[11px] font-bold text-zinc-500">{item.label}</span>
-                        <span className={`text-[15px] font-bold tabular-nums leading-tight ${
+                      <div key={i} className={`px-4 py-3.5 ${i < 2 ? "border-r border-line" : ""} flex flex-col gap-1.5`}>
+                        <div className="flex items-center gap-2">
+                          <IconTile icon={item.icon} tone={item.tone} size="sm" />
+                          <span className="text-[13px] font-bold text-zinc-600 tracking-tight">{item.label}</span>
+                        </div>
+                        <span className={`text-[22px] font-extrabold tabular-nums leading-tight tracking-tight ${
                           item.tone === "emerald" ? "text-emerald-700" :
                           item.tone === "sky" ? "text-sky-700" :
                           "text-amber-700"
                         }`}>
-                          {item.value.toLocaleString()}원
+                          {item.value.toLocaleString()}<span className="text-[13px] font-bold ml-0.5 text-zinc-400">원</span>
                         </span>
-                        <span className="text-[10px] text-zinc-400 font-medium">{item.subtitle}</span>
+                        <span className="text-[12px] text-zinc-500 font-semibold">{item.subtitle}</span>
                         {item.vatBadge && (
-                          <span className="text-[10px] text-zinc-500 font-semibold tabular-nums mt-0.5 leading-tight">
+                          <span className="text-[11px] text-zinc-500 font-semibold tabular-nums mt-0.5 leading-tight bg-zinc-50 px-2 py-1 rounded-md border border-line">
                             {item.vatBadge}
                           </span>
                         )}

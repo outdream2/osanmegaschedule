@@ -1,8 +1,8 @@
 // src/components/OrderManagePage/PaymentInputPage.tsx
 // 2026-08-25 · #111 · 결제입력 페이지 재구성 (사용자 지시 · Option B · 신규 파일 · 회귀 X)
-//   · 상단 · 검색(공급사 autocomplete) + 필터(분류) + [확인]
-//   · 확인 전 · 하단 전체 · 설명 화면
-//   · 확인 후 · SplitPanel
+//   · 상단 · 검색(공급사 autocomplete) + 필터(분류)
+//   · 미선택 시 · 하단 전체 · 안내 화면
+//   · 리스트 선택 즉시 · SplitPanel (2026-08-25 · [확인] 버튼 제거 · 즉시 조회 UX)
 //     · 좌 · VendorInfoHeader + 결제 요약 KPI + 결제 등록 안내
 //     · 우 · SplitRightTabs (발주내역 · 판매내역 월별)
 //         · 발주내역 · order-history 데이터 · 월별 bar chart + 최근 발주 리스트
@@ -12,7 +12,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Wallet, Building2, Check, ClipboardList, LineChart as LineChartIcon,
+  Wallet, Building2, ClipboardList, LineChart as LineChartIcon,
   Package, CircleCheck, TrendingUp, TrendingDown,
 } from "lucide-react";
 import {
@@ -148,12 +148,15 @@ export const PaymentInputPage: React.FC = () => {
     }
   }, [selected?.company_name, loadSupplierData]);
 
-  const handleConfirm = () => {
-    if (!query.trim()) { showError("공급사명을 입력하세요"); return; }
+  // 2026-08-25 · 사용자 지시 · [확인] 버튼 제거 · 리스트 선택 즉시 조회
+  // Enter 키 · 첫 매치 즉시 선택 (implicit confirm)
+  const selectFirstMatch = () => {
+    if (!query.trim()) return;
     const exact = vendors.find(v => String(v.company_name ?? "").trim() === query.trim());
     const first = exact ?? filtered[0];
     if (!first) { showError("일치하는 공급사가 없습니다"); return; }
     setSelectedId(first.id);
+    setQuery(String(first.company_name ?? ""));
     setDropdownOpen(false);
   };
 
@@ -211,7 +214,7 @@ export const PaymentInputPage: React.FC = () => {
           <IconTile icon={<Wallet size={16} />} tone="amber" size="md" />
           <div>
             <div className="text-[17px] font-bold text-ink tracking-tight">결제입력</div>
-            <div className="text-[13px] text-ink-soft">공급사 검색 후 [확인] 을 누르면 아래 정보가 표시됩니다</div>
+            <div className="text-[13px] text-ink-soft">공급사를 검색하고 리스트에서 선택하면 즉시 조회됩니다</div>
           </div>
         </div>
 
@@ -249,7 +252,7 @@ export const PaymentInputPage: React.FC = () => {
 
         <div className="mt-4 flex items-center gap-2 text-[12px] text-ink-soft/70">
           <CircleCheck size={13} className="text-emerald-500" />
-          <span>공급사 검색 후 · 상단 [확인] 버튼을 클릭하세요</span>
+          <span>상단 검색창에 공급사명 입력 → 리스트 클릭 시 즉시 조회</span>
         </div>
       </Card>
     </div>
@@ -443,7 +446,7 @@ export const PaymentInputPage: React.FC = () => {
               <IconTile icon={<Wallet size={15} />} tone="amber" size="md" />
               <div className="min-w-0">
                 <div className="text-[16px] font-bold text-ink leading-tight tracking-tight">결제입력</div>
-                <div className="text-[12px] text-ink-soft leading-tight mt-0.5">공급사 검색 → 확인 → 결제 정보 · 발주·판매내역 조회</div>
+                <div className="text-[12px] text-ink-soft leading-tight mt-0.5">공급사 검색 → 리스트 선택 즉시 · 결제 정보 · 발주·판매내역 조회</div>
               </div>
               {selected && (
                 <StatusPill tone="emerald" size="sm" dot>선택 · {selected.company_name}</StatusPill>
@@ -469,10 +472,10 @@ export const PaymentInputPage: React.FC = () => {
                   onChange={(e) => { setQuery(e.target.value); setDropdownOpen(true); }}
                   onFocus={() => setDropdownOpen(true)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") { e.preventDefault(); handleConfirm(); }
+                    if (e.key === "Enter") { e.preventDefault(); selectFirstMatch(); }
                     if (e.key === "Escape") setDropdownOpen(false);
                   }}
-                  placeholder="공급사명 검색 · Enter 로 [확인]"
+                  placeholder="공급사명 검색 · 리스트 클릭 즉시 조회 (Enter · 첫 매치)"
                   className="w-full h-9 pl-8 pr-3 rounded-lg border border-line bg-white text-[14px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
                 />
                 {dropdownOpen && query.trim() && filtered.length > 0 && (
@@ -498,15 +501,6 @@ export const PaymentInputPage: React.FC = () => {
                 size="sm"
                 ariaLabel="공급사 분류 필터"
               />
-              <button
-                type="button"
-                onClick={handleConfirm}
-                disabled={vendorsLoading || !query.trim()}
-                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-gradient-to-br from-brand-deep to-[#0d3a5c] text-white text-[14px] font-bold shadow-sm ring-1 ring-brand-deep/30 hover:from-[#0d3a5c] hover:to-[#08253a] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
-                title="선택한 공급사의 결제 정보·발주·판매내역 조회"
-              >
-                <Check size={14} strokeWidth={2.5} /> 확인
-              </button>
             </div>
           </div>
         </Card>
