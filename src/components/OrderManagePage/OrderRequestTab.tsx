@@ -11,6 +11,8 @@ import { Spinner } from "../common/Spinner";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { LoadingState } from "../common/LoadingState";
+// 2026-08-25 · #107/#79 · 발주요청 프리미엄 UI · StepperInput (사용자 승인 v3 목업)
+import { StepperInput } from "../common/StepperInput";
 import { CARD_BASE } from "../../styles/tokens";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import type { OrderRequest } from "./OrderManagePage.types";
@@ -387,18 +389,19 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                 const amount = prevPrice != null ? orderQty * prevPrice : null;
                                 return (
                                   <>
-                                    {/* 주문수량 · accent 컬러 강조 (v3) · sky-50 tint bg */}
+                                    {/* 2026-08-25 · #107/#79 · v3 목업 · StepperInput (−  input  +) · accent tint */}
                                     <td className="text-center px-2 py-2 align-middle bg-sky-50/40 border-x border-sky-100/60">
-                                      <input
-                                        type="number" min={0}
-                                        value={orderQty}
-                                        onChange={e => {
-                                          const v = e.target.value === "" ? 0 : Math.max(0, Number(e.target.value) || 0);
-                                          setOrderQtyOverride(prev => { const n = new Map(prev); n.set(r.id, v); return n; });
-                                        }}
-                                        onClick={e => e.stopPropagation()}
-                                        className="w-full max-w-[80px] h-7 px-1 rounded border border-sky-300 bg-white text-center tabular-nums font-bold text-[15px] text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-500"
-                                      />
+                                      <div onClick={e => e.stopPropagation()} className="inline-flex">
+                                        <StepperInput
+                                          value={orderQty}
+                                          onChange={(v) => {
+                                            const n = v === "" ? 0 : Math.max(0, Number(v) || 0);
+                                            setOrderQtyOverride(prev => { const m = new Map(prev); m.set(r.id, n); return m; });
+                                          }}
+                                          min={0}
+                                          size="sm"
+                                        />
+                                      </div>
                                     </td>
                                     <td className="text-right px-2 py-2 tabular-nums text-[14px] text-ink-soft align-middle whitespace-nowrap">{prevPrice != null ? prevPrice.toLocaleString() : "-"}</td>
                                     {/* 발주금액 · brand-tint 옅게 · 결과 강조 (v3) */}
