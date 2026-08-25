@@ -422,6 +422,9 @@ const ALLOWED_INLINE_EDIT = new Set([
   "memo",
   "note",
   "hidden",
+  // 2026-08-25 · 배치구역 불일치 · 상품명 인라인 편집 허용
+  "product_name",
+  "category",
 ]);
 // 2026-07-28 · 사용자 요청 "적정재고 = 최근 30일 판매량"
 //   stock_history · snapshot_date >= today-30d · sale_qty 합산 → products.optimal_stock 일괄 업데이트

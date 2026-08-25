@@ -2,9 +2,11 @@
 // 2026-08-25 · 사용자 지시 · 매장구역 안 배치구역 불일치 탭 (RequestsPage 에서 이관)
 //   · /api/zone-mismatches · GET · DELETE
 //   · 상품별 · 전산 spec_zone vs 실제 real_zone · 불일치 목록
+// 2026-08-25 v2 · 사용자 지시 · 표형식 · TableListWrap 프리미티브 적용
+// 2026-08-25 v3 · 사용자 지시 · 인라인 편집 (상품명 · 전산구역 · 실제구역) + 폰트 +3
 
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, RefreshCw, Trash2 } from "lucide-react";
+import { AlertTriangle, RefreshCw, Trash2, Check, Pencil, X as XIcon } from "lucide-react";
 import { api, ApiError } from "../../lib/apiClient";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
@@ -22,6 +24,8 @@ interface ZoneMismatch {
   registered_at: string;
 }
 
+type EditField = "product_name" | "spec_zone" | "real_zone";
+
 function fmtDate(s: string): string {
   if (!s) return "-";
   const d = new Date(s);
@@ -32,10 +36,20 @@ function fmtDate(s: string): string {
   return `${y}-${m}-${day}`;
 }
 
+// products PATCH 필드 매핑 · zone-mismatch 컬럼명 → products 컬럼명
+const fieldToProductsColumn = (f: EditField): string => (
+  f === "spec_zone" ? "spec"
+  : f === "real_zone" ? "real_map"
+  : "product_name"
+);
+
 export const ZoneMismatchTab: React.FC = () => {
   const [rows, setRows] = useState<ZoneMismatch[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{ id: string; field: EditField } | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [savingKey, setSavingKey] = useState<string | null>(null);
   const { toast, showError, showSuccess } = useToast();
   const confirm = useConfirm();
 
@@ -83,42 +97,131 @@ export const ZoneMismatchTab: React.FC = () => {
     }
   };
 
+  const startEdit = (row: ZoneMismatch, field: EditField) => {
+    setEditing({ id: row.id, field });
+    const cur = field === "product_name" ? row.product_name
+              : field === "spec_zone"    ? row.spec_zone
+              :                            row.real_zone;
+    setEditValue(cur === "미지정" ? "" : String(cur ?? ""));
+  };
+  const cancelEdit = () => { setEditing(null); setEditValue(""); };
+
+  const commitEdit = async () => {
+    if (!editing) return;
+    const row = rows.find(r => r.id === editing.id);
+    if (!row) { cancelEdit(); return; }
+    const value = editValue.trim();
+    setSavingKey(`${editing.id}:${editing.field}`);
+    try {
+      const col = fieldToProductsColumn(editing.field);
+      await api.patch(`/api/products/${encodeURIComponent(row.product_code)}`, { [col]: value === "" ? null : value });
+      setRows(prev => prev.map(r => (
+        r.id === row.id
+          ? { ...r,
+              product_name: editing.field === "product_name" ? value : r.product_name,
+              spec_zone:    editing.field === "spec_zone"    ? (value || "미지정") : r.spec_zone,
+              real_zone:    editing.field === "real_zone"    ? value : r.real_zone,
+            }
+          : r
+      )));
+      showSuccess("저장되었습니다");
+      cancelEdit();
+    } catch (e: any) {
+      showError(`저장 실패: ${e?.message ?? "네트워크 오류"}`);
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
   const sorted = useMemo(() => {
     return [...rows].sort((a, b) => (b.registered_at ?? "").localeCompare(a.registered_at ?? ""));
   }, [rows]);
+
+  const inputCls = "w-full h-8 px-2 rounded-md border border-brand-deep bg-white text-[17px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint";
+
+  const renderEditable = (row: ZoneMismatch, field: EditField, display: React.ReactNode, extraCls = ""): React.ReactNode => {
+    const isEditing = editing?.id === row.id && editing?.field === field;
+    if (isEditing) {
+      return (
+        <div className="flex items-center gap-1">
+          <input
+            autoFocus
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter")  { e.preventDefault(); commitEdit(); }
+              if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
+            }}
+            className={inputCls}
+            disabled={savingKey === `${row.id}:${field}`}
+          />
+          <button
+            type="button"
+            onClick={commitEdit}
+            disabled={savingKey === `${row.id}:${field}`}
+            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-md bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer disabled:opacity-40"
+            title="저장 (Enter)"
+          >
+            {savingKey === `${row.id}:${field}` ? <Spinner size={12} tone="white" /> : <Check size={13} />}
+          </button>
+          <button
+            type="button"
+            onClick={cancelEdit}
+            disabled={savingKey === `${row.id}:${field}`}
+            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-md bg-white border border-line hover:bg-zinc-50 text-zinc-500 cursor-pointer disabled:opacity-40"
+            title="취소 (Esc)"
+          >
+            <XIcon size={13} />
+          </button>
+        </div>
+      );
+    }
+    return (
+      <button
+        type="button"
+        onClick={() => startEdit(row, field)}
+        className={`group inline-flex items-center gap-1.5 text-left hover:bg-brand-tint/40 rounded-md px-1.5 py-0.5 cursor-pointer transition ${extraCls}`}
+        title="클릭하여 편집"
+      >
+        <span>{display}</span>
+        <Pencil size={11} className="text-zinc-300 group-hover:text-brand-deep transition opacity-0 group-hover:opacity-100" />
+      </button>
+    );
+  };
 
   return (
     <>
       {toast && (
         <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
       )}
+      {/* 2026-08-25 · 사용자 지시 · 폰트 +3 · 전체 텍스트 사이즈 상향 */}
       <div className="flex flex-col gap-3">
         {/* 헤더 툴바 */}
         <div className="flex items-center gap-2 flex-wrap px-1">
-          <AlertTriangle size={18} className="text-rose-500 shrink-0" />
-          <span className="text-[17px] font-bold text-ink tracking-tight">배치구역 불일치</span>
-          <span className="text-[15px] tabular-nums font-semibold text-ink-soft">
-            {loading ? <Spinner size={12} tone="rose" className="inline" /> : `${rows.length}건`}
+          <AlertTriangle size={21} className="text-rose-500 shrink-0" />
+          <span className="text-[20px] font-bold text-ink tracking-tight">배치구역 불일치</span>
+          <span className="text-[18px] tabular-nums font-semibold text-ink-soft">
+            {loading ? <Spinner size={13} tone="rose" className="inline" /> : `${rows.length}건`}
           </span>
           <div className="ml-auto flex items-center gap-1.5">
             <button
               type="button"
               onClick={load}
               disabled={loading}
-              className="inline-flex items-center gap-1 h-8 px-3 rounded-lg bg-white border border-line text-[13px] font-bold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep hover:text-brand-deep transition cursor-pointer disabled:opacity-40"
+              className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-white border border-line text-[16px] font-bold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep hover:text-brand-deep transition cursor-pointer disabled:opacity-40"
               title="새로고침"
             >
-              <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> 새로고침
+              <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> 새로고침
             </button>
             {rows.length > 0 && (
               <button
                 type="button"
                 onClick={deleteAll}
                 disabled={loading}
-                className="inline-flex items-center gap-1 h-8 px-3 rounded-lg bg-rose-500 text-white text-[13px] font-bold hover:bg-rose-600 shadow-sm transition cursor-pointer disabled:opacity-40"
+                className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-rose-500 text-white text-[16px] font-bold hover:bg-rose-600 shadow-sm transition cursor-pointer disabled:opacity-40"
                 title="전체 삭제"
               >
-                <Trash2 size={12} /> 전체 삭제
+                <Trash2 size={13} /> 전체 삭제
               </button>
             )}
           </div>
@@ -127,10 +230,10 @@ export const ZoneMismatchTab: React.FC = () => {
         {/* 리스트 */}
         {loading && rows.length === 0 ? (
           <Card padding="none" className="flex items-center justify-center py-12">
-            <Spinner size={16} tone="rose" label="배치구역 불일치 로딩 중..." labelSize={14} />
+            <Spinner size={16} tone="rose" label="배치구역 불일치 로딩 중..." labelSize={17} />
           </Card>
         ) : error ? (
-          <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" padding="md" className="text-[14px] text-rose-700 font-semibold">
+          <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" padding="md" className="text-[17px] text-rose-700 font-semibold">
             ⚠ {error}
             <button onClick={load} className="ml-2 underline cursor-pointer">다시 시도</button>
           </Card>
@@ -146,7 +249,7 @@ export const ZoneMismatchTab: React.FC = () => {
         ) : (
           <TableListWrap>
             <table className="w-full border-collapse">
-              <thead className={tableHeadCls()}>
+              <thead className={tableHeadCls("text-[16px]")}>
                 <tr>
                   <th className={tableThCls("left")} style={{ width: "34%" }}>상품명</th>
                   <th className={tableThCls("left")} style={{ width: "18%" }}>상품코드</th>
@@ -158,20 +261,30 @@ export const ZoneMismatchTab: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {sorted.map(m => (
-                  <tr key={m.id} className="hover:bg-zinc-50/60 transition text-[14px]">
-                    <td className={tableTdCls("left", "font-bold text-zinc-800 break-keep")}>{m.product_name}</td>
-                    <td className={tableTdCls("left", "font-mono text-[13px] text-zinc-500")}>{m.product_code}</td>
-                    <td className={tableTdCls("center", "font-semibold text-zinc-700")}>{m.spec_zone || <span className="text-zinc-400">미지정</span>}</td>
-                    <td className={tableTdCls("center", "font-bold text-rose-600")}>{m.real_zone}</td>
-                    <td className={tableTdCls("center", "text-[13px] text-zinc-500 tabular-nums")}>{fmtDate(m.registered_at)}</td>
+                  <tr key={m.id} className="hover:bg-zinc-50/60 transition text-[17px]">
+                    <td className={tableTdCls("left", "font-bold text-zinc-800 break-keep")}>
+                      {renderEditable(m, "product_name", m.product_name)}
+                    </td>
+                    <td className={tableTdCls("left", "font-mono text-[15px] text-zinc-500")}>{m.product_code}</td>
+                    <td className={tableTdCls("center", "font-semibold text-zinc-700")}>
+                      {renderEditable(m, "spec_zone",
+                        m.spec_zone === "미지정"
+                          ? <span className="text-zinc-400">미지정</span>
+                          : m.spec_zone
+                      )}
+                    </td>
+                    <td className={tableTdCls("center", "font-bold text-rose-600")}>
+                      {renderEditable(m, "real_zone", m.real_zone)}
+                    </td>
+                    <td className={tableTdCls("center", "text-[15px] text-zinc-500 tabular-nums")}>{fmtDate(m.registered_at)}</td>
                     <td className={tableTdCls("center")}>
                       <button
                         type="button"
                         onClick={() => deleteOne(m.id)}
-                        className="inline-flex w-7 h-7 items-center justify-center rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition cursor-pointer"
+                        className="inline-flex w-8 h-8 items-center justify-center rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition cursor-pointer"
                         title="삭제"
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={15} />
                       </button>
                     </td>
                   </tr>
