@@ -48,8 +48,7 @@ interface ProductDetail extends ProductRow {
   last_purchase_date?: string | null;
   sale_price?: number | null;
   purchase_price?: number | null;
-  // 2026-08-25 · products 테이블에 없는 컬럼 · cost_price 제거
-  note?: string | null;
+  // 2026-08-25 · products 테이블에 없는 컬럼 · cost_price · note 제거
 }
 
 interface Props {
@@ -69,7 +68,7 @@ function canManageProducts(session: AuthSession | null): boolean {
 type EditableKey =
   | "product_name" | "supplier" | "category" | "unit" | "spec" | "barcode"
   | "real_map" | "optimal_stock" | "sale_price" | "purchase_price"
-  | "brand" | "manufacturer" | "note";
+  | "brand" | "manufacturer";
 
 const NUMBER_KEYS = new Set<EditableKey>(["optimal_stock", "sale_price", "purchase_price"]);
 

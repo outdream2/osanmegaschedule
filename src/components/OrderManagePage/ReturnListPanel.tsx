@@ -226,10 +226,16 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
   });
 
   // ── 필터+정렬 완료 rows · 헤더 전체선택과 body map 이 공유 ──────────────
+  // 2026-08-25 · 사용자 지시 · 검색어 · 공급사·상품·상품코드 통합 매칭 (OR)
   const filteredSortedRows = useMemo(() => {
     const q = returnSupplierSearch.trim().toLowerCase();
     return [...returnList].filter(x => {
-      if (q && !String(x.supplier ?? "").toLowerCase().includes(q)) return false;
+      if (q) {
+        const supplier = String(x.supplier ?? "").toLowerCase();
+        const name     = String(x.product_name ?? "").toLowerCase();
+        const code     = String(x.product_code ?? "").toLowerCase();
+        if (!supplier.includes(q) && !name.includes(q) && !code.includes(q)) return false;
+      }
       if (returnCategoryFilter !== "전체") {
         const cat = vendorCategoryMap[String(x.supplier ?? "").trim()] ?? null;
         if (cat !== returnCategoryFilter) return false;

@@ -47,7 +47,6 @@ type Form = {
   purchase_price: string;
   brand: string;
   manufacturer: string;
-  note: string;
 };
 
 const EMPTY: Form = {
@@ -64,7 +63,6 @@ const EMPTY: Form = {
   purchase_price: "",
   brand: "",
   manufacturer: "",
-  note: "",
 };
 
 // 문자열 → 숫자 (빈 문자열 → null)
@@ -167,7 +165,6 @@ export const ProductCreateModal: React.FC<Props> = ({
         purchase_price: parseNum(form.purchase_price),
         brand: form.brand.trim() || null,
         manufacturer: form.manufacturer.trim() || null,
-        note: form.note.trim() || null,
       };
       // 클라이언트 사전 검증 (Zod)
       const parsed = CreateProductSchema.safeParse(payload);
@@ -350,11 +347,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                 <Field label="제조사">
                   <input type="text" value={form.manufacturer} onChange={(e) => set("manufacturer", e.target.value)} className={inputCls} maxLength={100} />
                 </Field>
-                <div className="md:col-span-2">
-                  <Field label="비고">
-                    <textarea value={form.note} onChange={(e) => set("note", e.target.value)} className={inputCls + " min-h-[70px] py-2 resize-y"} maxLength={500} placeholder="특이사항" />
-                  </Field>
-                </div>
+                {/* 2026-08-25 · products 테이블에 없는 컬럼 · note 필드 제거 */}
               </div>
             </Card>
           </div>

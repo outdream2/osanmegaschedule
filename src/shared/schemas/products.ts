@@ -17,7 +17,8 @@ export const CreateProductSchema = z.object({
   // 2026-08-25 · 사용자 지시 · products 테이블에 존재하는 컬럼만 등록 · cost_price 컬럼 없음 → 제거
   brand: z.string().max(100).nullable().optional(),
   manufacturer: z.string().max(100).nullable().optional(),
-  note: z.string().max(500).nullable().optional(),
+  // 2026-08-25 · 사용자 지시 · products 테이블에 존재하는 컬럼만 등록 · note 컬럼 없음 → 제거
+  // memo 는 유지 (기존 데이터 사용중) · 실패 시 서버 strip-retry 로 대응
   memo: z.string().max(500).nullable().optional(),
 });
 export type CreateProductInput = z.infer<typeof CreateProductSchema>;

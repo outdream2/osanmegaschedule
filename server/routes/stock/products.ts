@@ -420,7 +420,7 @@ const ALLOWED_INLINE_EDIT = new Set([
   "barcode",
   "expiry_date",
   "memo",
-  "note",
+  // 2026-08-25 · products 테이블에 없는 컬럼 · note 제거 (스키마 캐시 에러)
   "hidden",
   // 2026-08-25 · 배치구역 불일치 · 상품명 인라인 편집 허용
   "product_name",
