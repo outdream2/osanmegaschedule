@@ -448,10 +448,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   });
 
   const deferredNeedSearch = useDeferredValue(lowStockSearch);
-  // 2026-08-25 · 사용자 지시 · 검색 시 · 조건적용 on/off 토글
-  //   · ON (기본) · lowStock (재고 부족 조건 통과 상품) 안에서만 검색
-  //   · OFF · products 전체에서 검색 (조건 무시 · 모든 상품 검색 가능)
-  //   · 검색어 없을 때는 · 항상 lowStock (조건 통과 상품만) 노출
+  // 2026-08-25 · 사용자 지시 · 조건적용 on/off 토글 (검색 여부 무관)
+  //   · ON (기본) · 재고 부족 조건 통과 상품만 (기본 발주필요 리스트)
+  //   · OFF · 전체 products 노출 (검색어 있으면 필터링 · 없으면 전체 리스트)
+  //   · 사용자 요청 · "조건 off하면 전체 상품이 올라와야지" · 검색어 없어도 전체 노출
   const lowStockFiltered = useMemo(() => {
     const q = deferredNeedSearch.trim();
     const applyCategory = (p: ProductInfo): boolean => {
@@ -464,8 +464,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       }
       return cat === needCategoryFilter;
     };
-    // 검색어 있고 · 조건적용 OFF → products 전체에서 검색
-    const base = (q && !needConditionApply) ? products : lowStock;
+    // 조건적용 OFF → 전체 상품 · 검색어 여부 무관
+    const base = needConditionApply ? lowStock : products;
     return base.filter(p => {
       if (q) {
         const name = getName(p), code = getCode(p), sup = p.supplier ?? "";
