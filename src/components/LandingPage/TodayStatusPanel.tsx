@@ -54,10 +54,11 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
         <div className="text-ink font-bold tracking-tight text-[18px]">오늘의 현황</div>
         {/* 전체 요청 N건 요약 · 클릭 → 상세 리스트 토글 · 2026-08-21 · #171 Phase 3 */}
         {(() => {
+          // 2026-08-25 · 사용자 지시 · 오늘의 현황 · 재고 점검 항목 제거 · totalCount 도 제외
           const totalCount = leavePendingCount
             + requestsCounts.display + requestsCounts.order
             + requestsCounts.mismatch + (lunchMenuVisible ? requestsCounts.lunch : 0)
-            + requestsCounts.inventory + requestsCounts.return
+            + requestsCounts.return
             + requestsCounts.resignation
             + (isAdmin ? paymentPendingCount : 0);
           return (
@@ -152,15 +153,7 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
             점심 신청 <b className={`font-bold tabular-nums ${requestsCounts.lunch > 0 ? "text-emerald-700" : "text-ink"}`}>{requestsCounts.lunch}</b>건
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => onNavigate("stockcheck", authSession)}
-          className="inline-flex items-center gap-1.5 hover:text-violet-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
-          title="재고 점검 페이지로 이동"
-        >
-          <span className={`w-2 h-2 rounded-full ${requestsCounts.inventory > 0 ? "bg-violet-500" : "bg-zinc-300"}`} />
-          재고 점검 <b className={`font-bold tabular-nums ${requestsCounts.inventory > 0 ? "text-violet-700" : "text-ink"}`}>{requestsCounts.inventory}</b>건
-        </button>
+        {/* 2026-08-25 · 사용자 지시 · 오늘의 현황 · 재고 점검 항목 제거 */}
         <button
           type="button"
           onClick={() => onNavigate("requests", authSession)}
@@ -196,7 +189,7 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
               } },
               // 2026-08-25 · 점심 메뉴 숨김 시 · 통계도 숨김 (breakdown)
               ...(lunchMenuVisible ? [{ label: "점심 신청", count: requestsCounts.lunch, dot: "bg-emerald-500", text: "text-emerald-700", nav: "lunch" as Exclude<AppNavPage, "landing"> }] : []),
-              { label: "재고 점검", count: requestsCounts.inventory, dot: "bg-violet-500", text: "text-violet-700", nav: "stockcheck" as Exclude<AppNavPage, "landing"> },
+              // 2026-08-25 · 사용자 지시 · 재고 점검 항목 제거 (breakdown 도 함께 숨김)
               { label: "반품 요청", count: requestsCounts.return, dot: "bg-orange-500", text: "text-orange-700", nav: "requests" as Exclude<AppNavPage, "landing"> },
               { label: "사직서 승인", count: requestsCounts.resignation, dot: "bg-red-500", text: "text-red-700", nav: "business-manage" as Exclude<AppNavPage, "landing"> },
               // 2026-08-23 · #171 잔여 · 결제요청 (admin only) · 미결제·부분결제 매입건 총합
