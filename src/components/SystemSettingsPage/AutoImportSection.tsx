@@ -10,6 +10,9 @@ import { Robot, FloppyDisk, ArrowsClockwise, Folder, Timer, Download, Play, Warn
 import { Card } from "../common/Card";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
+// 2026-08-25 · 프레임워크 · useToast (raw alert 제거) + apiClient (raw fetch 제거)
+import { useToast, toastClass } from "../../hooks/useToast";
+import { api, ApiError } from "../../lib/apiClient";
 import {
   useAutoImportConfig,
   useAutoImportStatus,
@@ -38,22 +41,18 @@ const INTERVAL_PRESETS: Array<{ value: number; label: string }> = [
 
 // 2026-08-24 · 사용자 지시 · 폴더 찾기 · showDirectoryPicker (Chrome/Edge)
 //   · 브라우저 보안상 절대경로 획득 불가 · 폴더명만 반환 · 사용자에게 경로 힌트 제공
-async function pickFolderHint(): Promise<string | null> {
+//   · 2026-08-25 · 프레임워크 · alert → onNotify 콜백 (호출측 useToast 사용)
+async function pickFolderHint(onNotify?: (msg: string, tone?: "success" | "err") => void): Promise<string | null> {
   const w = window as any;
   if (typeof w.showDirectoryPicker !== "function") {
-    alert("Chrome 또는 Edge 브라우저 에서만 지원됩니다.\n다른 브라우저는 · 파일탐색기에서 폴더 경로 복사 후 붙여넣기 하세요.");
+    onNotify?.("Chrome 또는 Edge 만 지원 · 파일탐색기에서 경로 복사 후 붙여넣기", "err");
     return null;
   }
   try {
     const handle = await w.showDirectoryPicker();
     const name = handle?.name ?? "";
     if (!name) return null;
-    alert(
-      `선택된 폴더: ${name}\n\n` +
-      `※ 브라우저 보안상 절대경로는 자동 입력할 수 없습니다.\n` +
-      `Windows 파일탐색기 · 해당 폴더 우클릭 → "경로 복사" → 여기에 붙여넣기 하세요.\n` +
-      `또는 · %USERPROFILE%\\Downloads\\megatown-importdata\\${name} · 형식으로 입력.`
-    );
+    onNotify?.(`폴더 [${name}] 선택 · 파일탐색기 → 경로 복사 → 붙여넣기 (또는 %USERPROFILE%\\Downloads\\megatown-importdata\\${name})`, "success");
     return name;
   } catch {
     return null;  // 사용자 취소
@@ -70,6 +69,10 @@ export const AutoImportSection: React.FC = () => {
   const { config, loaded, saveState, saveError, setConfig, save, reload } = useAutoImportConfig();
   const { status, reload: reloadStatus } = useAutoImportStatus();
   const [installerError, setInstallerError] = useState<string | null>(null);
+  const { toast, showError, showSuccess } = useToast(4500);
+  const notify = React.useCallback((msg: string, tone?: "success" | "err") => {
+    if (tone === "err") showError(msg); else showSuccess(msg);
+  }, [showError, showSuccess]);
 
   const tone = computeStatusTone(status, config.base_interval_minutes);
   const isInstalled = tone !== "gray";
@@ -96,7 +99,7 @@ export const AutoImportSection: React.FC = () => {
   };
 
   const handlePickFolder = async (key: keyof AutoImportConfig["folders"]) => {
-    const hint = await pickFolderHint();
+    const hint = await pickFolderHint(notify);
     if (hint) {
       // 사용자에게 힌트 제공 · 실제 절대경로 입력은 여전히 사용자 몫
       // 폴더명 부분만 반영 · 기존 base 유지
@@ -108,12 +111,11 @@ export const AutoImportSection: React.FC = () => {
   };
 
   // 2026-08-24 · 원클릭 설치 · 단일 .bat 파일 다운로드 · 사용자는 더블클릭 만
+  // 2026-08-25 · 프레임워크 · api.get<blob> + useToast · 안내는 하단 카드로 상시 노출
   const handleInstallerDownload = async () => {
     setInstallerError(null);
     try {
-      const r = await fetch("/api/auto-import/one-click-installer", { credentials: "include" });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const blob = await r.blob();
+      const { data: blob } = await api.get<Blob>("/api/auto-import/one-click-installer", { responseType: "blob" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -123,20 +125,19 @@ export const AutoImportSection: React.FC = () => {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      alert(
-        `설치 파일 다운로드 완료 · Downloads 폴더 확인\n\n` +
-        `다음 · 단 한번:\n` +
-        `1. Downloads · megatown-auto-import-installer.bat · 더블클릭\n` +
-        `2. Python 확인 → 자동 설치 (Python 없으면 안내 → 설치)\n` +
-        `3. 6단계 자동 완료 · Task Scheduler 등록 · 첫 실행\n` +
-        `4. 이 페이지 새로고침 → 상태 초록불 확인`,
-      );
+      showSuccess("설치 파일 다운로드 완료 · Downloads 확인 · 아래 6단계 안내 따라 실행");
     } catch (e) {
-      setInstallerError((e as any)?.message ?? "다운로드 실패");
+      const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "다운로드 실패";
+      setInstallerError(msg);
+      showError(`설치 파일 다운로드 실패: ${msg}`);
     }
   };
 
   return (
+    <>
+    {toast && (
+      <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
+    )}
     <Card padding="lg" rounded="2xl" className="flex flex-col gap-4">
       {/* 헤더 · 상태 배지 */}
       <div className="flex items-center gap-2 flex-wrap">
@@ -396,6 +397,7 @@ export const AutoImportSection: React.FC = () => {
         저장 후 · Python 다음 실행 시 즉시 반영 · interval 변경 시 · Task Scheduler 자동 재등록
       </div>
     </Card>
+    </>
   );
 };
 

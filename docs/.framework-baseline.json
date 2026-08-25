@@ -1,22 +1,8 @@
 {
   "created": "2026-08-25",
   "version": 1,
-  "totalViolations": 15,
+  "totalViolations": 11,
   "files": {
-    "src/components/SystemSettingsPage/AutoImportSection.tsx": {
-      "lines": 403,
-      "violations": [
-        {
-          "ruleId": "raw-alert",
-          "count": 3
-        },
-        {
-          "ruleId": "raw-fetch",
-          "count": 1
-        }
-      ],
-      "totalWeight": 12
-    },
     "src/components/ProductInfoPage/ProductCreateModal.tsx": {
       "lines": 403,
       "violations": [
