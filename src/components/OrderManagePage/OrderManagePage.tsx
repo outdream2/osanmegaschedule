@@ -11,7 +11,7 @@ import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTa
 import {
   Package, ShoppingCart, PackageCheck, AlertTriangle, Building2, ClipboardList,
   CheckCircle2, TrendingUp, ScanLine, PackagePlus, ArrowLeftRight, Boxes, Wallet,
-  Calculator, BarChart2, PieChart, Info,
+  Calculator, BarChart2, PieChart, Info, HandCoins,
 } from "lucide-react";
 
 // React.lazy code-split · 무거운 서브탭 · 초기 번들 축소
@@ -42,6 +42,8 @@ import { ReturnListPanel } from "./ReturnListPanel";
 import { ReturnConfirmedPanel } from "./ReturnConfirmedPanel";
 import { PurchaseHistoryTab } from "./PurchaseHistoryTab";
 import { PaymentInfoTab } from "./PaymentInfoTab";
+// 2026-08-25 · 사용자 지시 · 결제 · 차용입력 페이지 (공급사↔약국 상품 차용)
+import { BorrowingPage } from "./BorrowingPage";
 import { VatPreparePage } from "../VatPreparePage/VatPreparePage";
 import { CategoryTab } from "./CategoryTab";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
@@ -111,7 +113,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       }
     } catch { /* noop */ }
   }, []);
-  const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input" | "vat-prepare">("payment-input");
+  const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input" | "borrowing" | "vat-prepare">("payment-input");
   const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff" | "supplier">("trending");
 
   const isAdmin = (ocrTabAuthSession?.level ?? 0) >= 8;
@@ -477,7 +479,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // 서브탭 정의
   type PurchaseOrderKey = "order" | "need" | "critical" | "history";
   type PurchaseKey = "receipt" | "reconciliation" | "scan" | "productarrival" | "productinfo" | "return" | "purchase-history";
-  type PaymentKey = "vendor" | "payment-input" | "vat-prepare";
+  type PaymentKey = "vendor" | "payment-input" | "borrowing" | "vat-prepare";
   type StatKey = "trending" | "category" | "flow" | "diff" | "supplier";
   interface SubTabDef<K extends string> { key: K; label: string; icon: React.ElementType; color: string; }
 
@@ -498,9 +500,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     { key: "reconciliation",   label: "유통기한 임박", icon: AlertTriangle,  color: "amber"   },
   ], []);
   const paymentDefaultTabs: SubTabDef<PaymentKey>[] = useMemo(() => [
-    { key: "payment-input", label: "결제입력",        icon: Wallet,     color: "amber" },
-    { key: "vendor",        label: "공급사별결제내역", icon: Building2,  color: "teal"  },
-    { key: "vat-prepare",   label: "부가세 준비",      icon: Calculator, color: "rose"  },
+    { key: "payment-input", label: "결제입력",        icon: Wallet,        color: "amber"  },
+    { key: "vendor",        label: "공급사별결제내역", icon: Building2,     color: "teal"   },
+    // 2026-08-25 · 사용자 지시 · 차용입력 (공급사↔약국 상품 차용 기록)
+    { key: "borrowing",     label: "차용입력",        icon: HandCoins,     color: "indigo" },
+    { key: "vat-prepare",   label: "부가세 준비",      icon: Calculator,    color: "rose"   },
   ], []);
   const statDefaultTabs: SubTabDef<StatKey>[] = useMemo(() => [
     { key: "trending", label: "급상승",       icon: TrendingUp,    color: "indigo"  },
@@ -748,6 +752,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               vendorSelected={vendorSelected} onEditRequest={handleVendorEditRequest} onSelectVendor={setVendorSelected} />
           )}
           {paymentSubTab === "payment-input" && <div className="flex-1 min-h-0"><PaymentInfoTab /></div>}
+          {/* 2026-08-25 · 사용자 지시 · 차용입력 · 공급사↔약국 상품 차용 기록 */}
+          {paymentSubTab === "borrowing" && <div className="flex-1 min-h-0"><BorrowingPage authSession={ocrTabAuthSession ?? null} /></div>}
           {paymentSubTab === "vat-prepare" && <div className="flex-1 min-h-0"><VatPreparePage /></div>}
         </div>
       )}
