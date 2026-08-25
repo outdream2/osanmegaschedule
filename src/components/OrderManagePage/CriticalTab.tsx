@@ -1,8 +1,8 @@
 // src/components/OrderManagePage/CriticalTab.tsx
 // 2026-08-22 · Framework Phase 4 · 품절임박 탭 분리
-// 2026-08-25 · 사용자 지시 · 공급사 분류 필터 추가 (dropdown · 건수 병기)
+// 2026-08-25 · 사용자 지시 · 공급사 분류 (vendor category) 필터 · 위탁/선결제/60회전 등
 import React, { useMemo, useState } from "react";
-import { AlertTriangle, Building2, X } from "lucide-react";
+import { AlertTriangle, Tags, X } from "lucide-react";
 import { PageToolbar } from "../common/PageToolbar";
 import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common";
 import type { ProductInfo } from "./OrderManagePage.types";
@@ -13,16 +13,16 @@ interface CriticalTabProps {
   orderReqCodes: Set<string>;
   getCode: (p: ProductInfo) => string;
   onRequestOrder: (p: ProductInfo) => Promise<void>;
+  // 2026-08-25 · 공급사 분류 필터 (위탁/선결제/60회전/90회전/기타)
+  getVendorCategory: (name: string) => string | null;
+  dbVendorCategories: string[];
 }
 
 export const CriticalTab: React.FC<CriticalTabProps> = ({
-  products,
-  invStockMap,
-  orderReqCodes,
-  getCode,
-  onRequestOrder,
+  products, invStockMap, orderReqCodes, getCode, onRequestOrder,
+  getVendorCategory, dbVendorCategories,
 }) => {
-  const [supplierFilter, setSupplierFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   const critical = useMemo(() => products
     .filter(p => {
@@ -31,20 +31,35 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
     })
     .sort((a, b) => Number(a.current_stock ?? 0) - Number(b.current_stock ?? 0)), [products]);
 
-  // 공급사별 카운트 (품절임박 상품 기준)
-  const supplierCounts = useMemo(() => {
+  // 분류별 건수 · 위탁/선결제/60회전/90회전/기타/미지정
+  const categoryCounts = useMemo(() => {
     const map = new Map<string, number>();
     for (const p of critical) {
-      const s = String(p.supplier ?? "-");
-      map.set(s, (map.get(s) ?? 0) + 1);
+      const supName = String(p.supplier ?? "").trim();
+      const cat = supName ? (getVendorCategory(supName) ?? "미지정") : "미지정";
+      map.set(cat, (map.get(cat) ?? 0) + 1);
     }
-    return [...map.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ko"));
-  }, [critical]);
+    // dbVendorCategories 순서 우선 · 그 외 뒤에
+    const preferred = [...dbVendorCategories, "기타", "미지정"];
+    const seen = new Set<string>();
+    const ordered: [string, number][] = [];
+    for (const c of preferred) {
+      if (map.has(c) && !seen.has(c)) { ordered.push([c, map.get(c)!]); seen.add(c); }
+    }
+    for (const [k, v] of map) {
+      if (!seen.has(k)) { ordered.push([k, v]); seen.add(k); }
+    }
+    return ordered;
+  }, [critical, getVendorCategory, dbVendorCategories]);
 
   const filtered = useMemo(() => {
-    if (supplierFilter === "all") return critical;
-    return critical.filter(p => String(p.supplier ?? "-") === supplierFilter);
-  }, [critical, supplierFilter]);
+    if (categoryFilter === "all") return critical;
+    return critical.filter(p => {
+      const supName = String(p.supplier ?? "").trim();
+      const cat = supName ? (getVendorCategory(supName) ?? "미지정") : "미지정";
+      return cat === categoryFilter;
+    });
+  }, [critical, categoryFilter, getVendorCategory]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -56,25 +71,25 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[13px] text-ink-soft font-medium tracking-tight">ERP재고 3개 이하</span>
             <div className="relative inline-flex items-center">
-              <Building2 size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+              <Tags size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
               <select
-                value={supplierFilter}
-                onChange={(e) => setSupplierFilter(e.target.value)}
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
                 className="h-8 pl-8 pr-8 rounded-lg bg-white border border-line text-[13px] font-semibold text-ink hover:border-brand-deep/60 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors cursor-pointer"
-                title="공급사 필터"
+                title="공급사 분류 필터"
               >
-                <option value="all">전체 공급사 ({critical.length})</option>
-                {supplierCounts.map(([s, n]) => (
-                  <option key={s} value={s}>{s} ({n})</option>
+                <option value="all">전체 분류 ({critical.length})</option>
+                {categoryCounts.map(([cat, n]) => (
+                  <option key={cat} value={cat}>{cat} ({n})</option>
                 ))}
               </select>
             </div>
-            {supplierFilter !== "all" && (
+            {categoryFilter !== "all" && (
               <button
                 type="button"
-                onClick={() => setSupplierFilter("all")}
+                onClick={() => setCategoryFilter("all")}
                 className="inline-flex items-center gap-1 h-8 px-2 rounded-md bg-zinc-100 text-[12px] font-semibold text-zinc-600 hover:bg-zinc-200 cursor-pointer transition"
-                title="공급사 필터 해제"
+                title="분류 필터 해제"
               >
                 <X size={11} /> 필터 해제
               </button>
@@ -98,7 +113,7 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
           <tbody className="divide-y divide-zinc-100">
             {filtered.length === 0 ? (
               <tr><td colSpan={6} className="text-center text-[14px] text-zinc-400 py-8">
-                {supplierFilter === "all" ? "품절임박 상품 없음 (ERP재고 3개 이하)" : `${supplierFilter} · 품절임박 상품 없음`}
+                {categoryFilter === "all" ? "품절임박 상품 없음 (ERP재고 3개 이하)" : `${categoryFilter} · 품절임박 상품 없음`}
               </td></tr>
             ) : filtered.map(p => {
               const code = getCode(p);

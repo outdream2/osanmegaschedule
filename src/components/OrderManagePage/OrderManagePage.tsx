@@ -628,7 +628,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             />
           )}
           {purchaseOrderSubTab === "critical" && (
-            <CriticalTab products={products} invStockMap={invStockMap} orderReqCodes={requestedCodes} getCode={getCode} onRequestOrder={handleRequestOrder} />
+            <CriticalTab
+              products={products} invStockMap={invStockMap} orderReqCodes={requestedCodes}
+              getCode={getCode} onRequestOrder={handleRequestOrder}
+              getVendorCategory={getVendorCategory} dbVendorCategories={dbVendorCategories}
+            />
           )}
           {purchaseOrderSubTab === "history" && <OrderHistoryTab />}
         </div>
