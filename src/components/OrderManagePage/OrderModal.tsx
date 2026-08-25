@@ -1,13 +1,18 @@
 // src/components/OrderManagePage/OrderModal.tsx
 // 2026-08-22 · Framework Phase 4 · 발주서 모달 분리
 // 2026-08-23 · Modal primitive 마이그레이션 (#191)
-import React from "react";
-import { ShoppingCart, MessageSquare, Mail } from "lucide-react";
+// 2026-08-25 · 사용자 지시 · 발주서 PDF 저장 (A4 텍스트 리포트)
+import React, { useRef, useState } from "react";
+import { ShoppingCart, MessageSquare, Mail, FileDown } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { Modal } from "../common/Modal";
 import { Card } from "../common/Card";
 // 2026-08-24 · v3 리스트 UI 프레임워크
 import { tableHeadCls, tableThCls } from "../common";
+// 2026-08-25 · 발주서 PDF · 오프스크린 A4 프리뷰 + html2canvas + jsPDF
+import { OrderPdfPreview } from "./OrderPdfPreview";
+import html2canvas from "html2canvas-pro";
+import jsPDF from "jspdf";
 
 export interface OrderModalItem {
   order_request_id: string;
@@ -72,7 +77,57 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   onUpdateModalItem,
   onDateChange,
   onChannelChange,
-}) => (
+}) => {
+  // 2026-08-25 · 사용자 지시 · 발주서 PDF 저장 (A4 텍스트 리포트)
+  //   · 오프스크린 프리뷰 → html2canvas → jsPDF 다중 페이지
+  //   · 공급사별 페이지 분할 (기본) · 페이지 넘침 시 자동 분할
+  const pdfPreviewRef = useRef<HTMLDivElement | null>(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+
+  const handleSavePdf = async () => {
+    const node = pdfPreviewRef.current;
+    if (!node) return;
+    setGeneratingPdf(true);
+    try {
+      const canvas = await html2canvas(node, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+        windowWidth: node.scrollWidth,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = pdf.internal.pageSize.getHeight();
+      const imgW = pdfW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      if (imgH <= pdfH) {
+        pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH, undefined, "FAST");
+      } else {
+        let yOffset = 0;
+        let remaining = imgH;
+        while (remaining > 0) {
+          pdf.addImage(imgData, "PNG", 0, -yOffset, imgW, imgH, undefined, "FAST");
+          remaining -= pdfH;
+          yOffset += pdfH;
+          if (remaining > 0) pdf.addPage();
+        }
+      }
+      const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      const firstSup = (orderModal.suppliers[0]?.supplier ?? "발주서").replace(/[\\/:*?"<>|]/g, "_");
+      const suffix = orderModal.suppliers.length > 1 ? `_외${orderModal.suppliers.length - 1}건` : "";
+      pdf.save(`발주서_${ymd}_${firstSup}${suffix}.pdf`);
+    } catch (e: any) {
+      console.error("[OrderModal] PDF 저장 실패:", e?.message ?? e);
+      alert(`PDF 저장 실패: ${e?.message ?? "알 수 없는 오류"}`);
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
+  return (
+  <>
   <Modal
     open
     onClose={() => !sendingBulk && onClose()}
@@ -265,11 +320,21 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         })()}
         {/* 2026-08-24 · 최신 트렌드 · Linear/Vercel · gradient primary · scale-active · shadow */}
         <div className="flex items-center justify-end gap-2 flex-wrap">
-          <button onClick={onClose} disabled={sendingBulk}
+          <button onClick={onClose} disabled={sendingBulk || generatingPdf}
             className="h-9 px-4 rounded-lg text-[15px] font-semibold text-ink-soft bg-white border border-line hover:border-brand-deep/40 hover:bg-brand-tint/20 hover:text-brand-deep active:scale-[0.98] transition-all duration-150 cursor-pointer disabled:opacity-40">
             취소
           </button>
-          <button onClick={onSubmit} disabled={sendingBulk}
+          {/* 2026-08-25 · 사용자 지시 · A4 텍스트 리포트 PDF 저장 */}
+          <button
+            onClick={handleSavePdf}
+            disabled={sendingBulk || generatingPdf || orderModal.suppliers.length === 0}
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[15px] font-bold text-white bg-slate-700 hover:bg-slate-800 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 cursor-pointer shadow-sm ring-1 ring-slate-700/30"
+            title="발주서 PDF 저장 (A4 텍스트 리포트)"
+          >
+            {generatingPdf ? <Spinner size={13} tone="white" /> : <FileDown size={14} strokeWidth={2.5} />}
+            {generatingPdf ? "PDF 생성 중..." : "PDF 저장"}
+          </button>
+          <button onClick={onSubmit} disabled={sendingBulk || generatingPdf}
             className="inline-flex items-center gap-1.5 h-9 px-5 rounded-lg text-[15px] font-bold text-white bg-gradient-to-br from-brand-deep to-[#0d3a5c] shadow-sm hover:shadow-md hover:from-[#0d3a5c] hover:to-[#08253a] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:shadow-none transition-all duration-150 cursor-pointer ring-1 ring-brand-deep/30">
             {sendingBulk && <Spinner size={13} tone="white" />}
             {sendingBulk ? "발송 중..." : "발주 발송"}
@@ -278,4 +343,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       </div>
     </div>
   </Modal>
-);
+  {/* 2026-08-25 · 오프스크린 PDF 프리뷰 · html2canvas 캡처 대상 */}
+  <OrderPdfPreview ref={pdfPreviewRef} orderModal={orderModal} />
+  </>
+  );
+};
