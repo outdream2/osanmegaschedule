@@ -324,6 +324,23 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
         };
         return (
           <div className="border-t border-line/60 px-4 py-3 flex flex-col gap-2.5">
+            {/* 2026-08-26 · 사용자 지시 · 현재고 요약 · 5-slot 옆으로 한줄 표시 */}
+            <div className="flex items-center gap-3 flex-wrap px-1 py-1.5 bg-zinc-50/60 rounded-md border border-line/60">
+              <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">현재고</span>
+              {SLOTS.map(s => {
+                const prev = row[s.prevKey] as number | null | undefined;
+                const hasPrev = prev != null && Number(prev) > 0;
+                return (
+                  <span key={`cur-${s.key}`} className="inline-flex items-baseline gap-1 text-[13px]">
+                    <span className={`w-1.5 h-1.5 rounded-full ${s.dot} ${hasPrev ? "" : "opacity-40"} inline-block`} />
+                    <span className={`font-semibold ${hasPrev ? s.text : "text-zinc-400"}`}>{s.full}</span>
+                    <span className={`tabular-nums font-bold ${hasPrev ? "text-ink" : "text-zinc-300"}`}>
+                      {prev != null ? prev : "-"}
+                    </span>
+                  </span>
+                );
+              })}
+            </div>
             {/* Row 1 · 창고 (2-col · cyan 톤 공유) */}
             <div className="grid grid-cols-2 gap-2">
               {warehouses.map((s, i) => renderSlot(s, i, false))}
