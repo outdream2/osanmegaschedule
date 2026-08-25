@@ -30,7 +30,9 @@ const SubTabFallback = () => (
 import type { Vendor } from "../LandingPage/VendorListEditor";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { OrderHistoryTab } from "./OrderHistoryTab";
-import { StockReconciliationTab } from "../StockManagePage/StockReconciliationTab";
+// 2026-08-25 · 사용자 지시 · 매입 · 실재고 서브탭 → 유통기한 임박 서브탭 (rename + 목록)
+//   · 이전 StockReconciliationTab import 는 제거 (파일은 다른 페이지에서 참조 가능 · 보존)
+import { ExpiryImminentTab } from "./ExpiryImminentTab";
 import { TrendingTab } from "./TrendingTab";
 import { FlowTab } from "../StockManagePage/FlowTab";
 import { DiffTab } from "../StockManagePage/DiffTab";
@@ -476,7 +478,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     { key: "scan",             label: "실재고입력", icon: ScanLine,       color: "teal"    },
     { key: "productarrival",   label: "상품입고",   icon: PackagePlus,    color: "blue"    },
     { key: "productinfo",      label: "상품정보",   icon: Info,           color: "indigo"  },
-    { key: "reconciliation",   label: "실재고",     icon: CheckCircle2,   color: "emerald" },
+    // 2026-08-25 · 사용자 지시 · 실재고 → 유통기한 임박 (rename + 콘텐츠 교체)
+    { key: "reconciliation",   label: "유통기한 임박", icon: AlertTriangle,  color: "amber"   },
   ], []);
   const paymentDefaultTabs: SubTabDef<PaymentKey>[] = useMemo(() => [
     { key: "payment-input", label: "결제입력",        icon: Wallet,     color: "amber" },
@@ -657,7 +660,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               <OcrPage embedded authSession={ocrTabAuthSession ?? null} onBack={ocrTabOnBack ?? (() => {})} onNavigate={ocrTabOnNavigate} onLogout={ocrTabOnLogout} />
             </Suspense></div>
           )}
-          {purchaseSubTab === "reconciliation" && <div className="flex-1 flex flex-col min-h-0"><StockReconciliationTab /></div>}
+          {/* 2026-08-25 · 사용자 지시 · reconciliation 키 유지 (URL/사이드바 호환) · 콘텐츠는 유통기한 임박 리스트 */}
+          {purchaseSubTab === "reconciliation" && <div className="flex-1 flex flex-col min-h-0"><ExpiryImminentTab /></div>}
           {purchaseSubTab === "scan" && (
             <div className="flex-1 flex flex-col min-h-0 -mt-1"><Suspense fallback={<SubTabFallback />}>
               <ScanPage embedded onBack={ocrTabOnBack ?? (() => {})} authSession={ocrTabAuthSession ?? null} onNavigate={ocrTabOnNavigate} onLogout={ocrTabOnLogout} />

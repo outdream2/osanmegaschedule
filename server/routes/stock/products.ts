@@ -297,6 +297,24 @@ router.get("/api/products/realmap-check", asyncHandler(async (_req, res) => {
   res.json({ ok: true, sample: data?.[0]?.real_map ?? null });
 }));
 
+// 2026-08-25 · 사용자 지시 · 유통기한 임박 상품 리스트 · products.expiry_date IS NOT NULL
+//   · 매입 서브탭 (구 "실재고" → "유통기한 임박") · 화면 리스트 소스
+//   · /:code 라우트보다 먼저 등록해야 매칭됨
+router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
+  const { data, error } = await supabase
+    .from("products")
+    .select("product_code, product_name, spec, supplier, real_map, current_stock, expiry_date")
+    .not("expiry_date", "is", null)
+    .order("expiry_date", { ascending: true })
+    .limit(500);
+  if (error) {
+    console.error("[expiry-imminent GET] error:", error.message);
+    throw new HttpError(500, error.message);
+  }
+  res.setHeader("Cache-Control", "no-store");
+  res.json(Array.isArray(data) ? data : []);
+}));
+
 // 숨김 처리된 상품 리스트 (숨김 관리 UI 용) — /:code 라우트보다 먼저 등록해야 매칭됨
 router.get("/api/products/hidden", asyncHandler(async (_req, res) => {
   const { data, error } = await supabase
