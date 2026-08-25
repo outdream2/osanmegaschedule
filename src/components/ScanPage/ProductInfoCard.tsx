@@ -565,34 +565,46 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                 </div>
               </div>}
 
-              {/* 2026-08-03 · 하단 5열 · 창고1 · 창고2 · 매장1 · 매장2 · 매장3
-                    - 좁은 화면(360px 미만) · 5열이 wrap 될 수 있도록 grid-cols-2 fallback
-                    - 창고: cyan 계열 (창고1 · 창고2 진하게)
-                    - 매장1/2/3: violet 계열 */}
+              {/* 2026-08-25 · 사용자 지시 "창고 나란히 · 매장 나란히"
+                    - 창고 행: 창고1 · 창고2 (항상 2-col 나란히 · 좁은 폭에도 유지)
+                    - 매장 행: 매장1 · 매장2 · 매장3 (구역 개수 따라 1/2/3-col 나란히)
+                    - 창고: cyan 계열 · 매장: violet 계열 */}
               {S.actualStockInput && !stockSectionCollapsed && (
-                <div className="grid grid-cols-2 min-[360px]:grid-cols-3 min-[520px]:grid-cols-5 gap-1.5 mt-1.5">
-                  {/* 2026-08-22 · Framework Phase 4 · StockSlotCard 프리미티브 재사용 */}
-                  <StockSlotCard kind="warehouse" label="창고1" value={warehouse1Stock}
-                    onChange={v => { setWarehouse1Stock(v); setW1Status("idle"); }}
-                    status={w1Status} onSubmit={handleW1Submit} toneKey="wh1" />
-                  <StockSlotCard kind="warehouse" label="창고2" value={warehouse2Stock}
-                    onChange={v => { setWarehouse2Stock(v); setW2Status("idle"); }}
-                    status={w2Status} onSubmit={handleW2Submit} toneKey="wh2" />
-                  {(storeZones.length === 0 || storeZones.length >= 1) && (
-                    <StockSlotCard kind="store" label="매장1" zone={zoneS1} value={store1Stock}
-                      onChange={v => { setStore1Stock(v); setS1Status("idle"); }}
-                      status={s1Status} onSubmit={handleS1Submit} toneKey="s1" />
-                  )}
-                  {storeZones.length >= 2 && (
-                    <StockSlotCard kind="store" label="매장2" zone={zoneS2} value={store2Stock}
-                      onChange={v => { setStore2Stock(v); setS2Status("idle"); }}
-                      status={s2Status} onSubmit={handleS2Submit} toneKey="s2" />
-                  )}
-                  {storeZones.length >= 3 && (
-                    <StockSlotCard kind="store" label="매장3" zone={zoneS3} value={store3Stock}
-                      onChange={v => { setStore3Stock(v); setS3Status("idle"); }}
-                      status={s3Status} onSubmit={handleS3Submit} toneKey="s3" />
-                  )}
+                /* 2026-08-25 · 사용자 지시 · 창고 그룹 vs 매장 그룹 · 그룹간 gap-3 · 그룹내 gap-1.5 */
+                <div className="flex flex-col gap-3 mt-1.5">
+                  {/* 창고 나란히 · 항상 2-col · cyan 통일 */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <StockSlotCard kind="warehouse" label="창고1" value={warehouse1Stock}
+                      onChange={v => { setWarehouse1Stock(v); setW1Status("idle"); }}
+                      status={w1Status} onSubmit={handleW1Submit} toneKey="wh1" />
+                    <StockSlotCard kind="warehouse" label="창고2" value={warehouse2Stock}
+                      onChange={v => { setWarehouse2Stock(v); setW2Status("idle"); }}
+                      status={w2Status} onSubmit={handleW2Submit} toneKey="wh2" />
+                  </div>
+                  {/* 매장 나란히 · 구역 개수 따라 1/2/3-col */}
+                  {(() => {
+                    const storeCount = storeZones.length <= 1 ? 1 : storeZones.length >= 3 ? 3 : 2;
+                    const gridCls = storeCount === 3 ? "grid-cols-3" : storeCount === 2 ? "grid-cols-2" : "grid-cols-1";
+                    return (
+                      <div className={`grid ${gridCls} gap-1.5`}>
+                        {(storeZones.length === 0 || storeZones.length >= 1) && (
+                          <StockSlotCard kind="store" label="매장1" zone={zoneS1} value={store1Stock}
+                            onChange={v => { setStore1Stock(v); setS1Status("idle"); }}
+                            status={s1Status} onSubmit={handleS1Submit} toneKey="s1" />
+                        )}
+                        {storeZones.length >= 2 && (
+                          <StockSlotCard kind="store" label="매장2" zone={zoneS2} value={store2Stock}
+                            onChange={v => { setStore2Stock(v); setS2Status("idle"); }}
+                            status={s2Status} onSubmit={handleS2Submit} toneKey="s2" />
+                        )}
+                        {storeZones.length >= 3 && (
+                          <StockSlotCard kind="store" label="매장3" zone={zoneS3} value={store3Stock}
+                            onChange={v => { setStore3Stock(v); setS3Status("idle"); }}
+                            status={s3Status} onSubmit={handleS3Submit} toneKey="s3" />
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 

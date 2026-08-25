@@ -21,52 +21,31 @@ interface StockSlotCardProps {
   toneKey: "wh1" | "wh2" | "s1" | "s2" | "s3";
 }
 
-// 2026-08-25 · pastel fill 도입 · sample/product_storage.png 참고
-//   · card: 부드러운 배경 (cyan-50 · violet-50 · purple-50)
-//   · input: 반투명 흰색 · 뚜렷한 border
-//   · btn: 파스텔 pill (진한 배경 X · 부드러운 톤)
-const TONE: Record<StockSlotCardProps["toneKey"], {
-  card: string; // 카드 배경+border
-  label: string; // 헤더 텍스트 색
-  input: string; // input bg/border
-  btn: string; // 저장 버튼 · 파스텔 pill
-  zoneText: string; // 매장 zone 라벨 색
-}> = {
-  wh1: {
-    card:  "bg-cyan-50 border-cyan-200",
-    label: "text-cyan-700",
-    input: "bg-white border-cyan-200 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200",
-    btn:   "bg-cyan-100 hover:bg-cyan-200 text-cyan-800 border border-cyan-200",
-    zoneText: "text-cyan-800",
-  },
-  wh2: {
-    card:  "bg-cyan-100/60 border-cyan-300",
-    label: "text-cyan-800",
-    input: "bg-white border-cyan-300 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-200",
-    btn:   "bg-cyan-200 hover:bg-cyan-300 text-cyan-900 border border-cyan-300",
-    zoneText: "text-cyan-900",
-  },
-  s1: {
-    card:  "bg-violet-50 border-violet-200",
-    label: "text-violet-700",
-    input: "bg-white border-violet-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200",
-    btn:   "bg-violet-100 hover:bg-violet-200 text-violet-800 border border-violet-200",
-    zoneText: "text-violet-800",
-  },
-  s2: {
-    card:  "bg-violet-100/60 border-violet-300",
-    label: "text-violet-800",
-    input: "bg-white border-violet-300 focus:border-violet-600 focus:ring-2 focus:ring-violet-200",
-    btn:   "bg-violet-200 hover:bg-violet-300 text-violet-900 border border-violet-300",
-    zoneText: "text-violet-900",
-  },
-  s3: {
-    card:  "bg-purple-100/60 border-purple-300",
-    label: "text-purple-800",
-    input: "bg-white border-purple-300 focus:border-purple-600 focus:ring-2 focus:ring-purple-200",
-    btn:   "bg-purple-200 hover:bg-purple-300 text-purple-900 border border-purple-300",
-    zoneText: "text-purple-900",
-  },
+// 2026-08-25 · pastel fill · sample/product_storage.png
+// 2026-08-25 · 사용자 지시 · 창고끼리·매장끼리 색깔 통일 (그룹 시각 구분)
+//   · 창고 (wh1·wh2) · cyan 통일 · 그룹 A
+//   · 매장 (s1·s2·s3) · violet 통일 · 그룹 B
+//   · 그룹 간 · cyan vs violet 로 명확 구분 · 그룹 내 · 같은 톤
+const WAREHOUSE_TONE = {
+  card:  "bg-cyan-50 border-cyan-200",
+  label: "text-cyan-700",
+  input: "bg-white border-cyan-200 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200",
+  btn:   "bg-cyan-100 hover:bg-cyan-200 text-cyan-800 border border-cyan-200",
+  zoneText: "text-cyan-800",
+};
+const STORE_TONE = {
+  card:  "bg-violet-50 border-violet-200",
+  label: "text-violet-700",
+  input: "bg-white border-violet-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200",
+  btn:   "bg-violet-100 hover:bg-violet-200 text-violet-800 border border-violet-200",
+  zoneText: "text-violet-800",
+};
+const TONE: Record<StockSlotCardProps["toneKey"], typeof WAREHOUSE_TONE> = {
+  wh1: WAREHOUSE_TONE,
+  wh2: WAREHOUSE_TONE,
+  s1:  STORE_TONE,
+  s2:  STORE_TONE,
+  s3:  STORE_TONE,
 };
 
 export const StockSlotCard: React.FC<StockSlotCardProps> = ({
