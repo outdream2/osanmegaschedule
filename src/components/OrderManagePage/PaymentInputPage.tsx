@@ -32,6 +32,9 @@ import { Spinner } from "../common/Spinner";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { VendorInfoHeader } from "../common/VendorInfoHeader";
 import { api } from "../../lib/apiClient";
+// 2026-08-25 · #111 · PaymentEntryForm wiring · 결제 등록 폼 실사용
+import { PaymentEntryForm } from "./PaymentEntryForm";
+import type { VendorItem, BalanceResp } from "./PaymentInfoTab.types";
 
 type RightTab = "orders" | "sales";
 
@@ -289,17 +292,27 @@ export const PaymentInputPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* 결제 등록 안내 */}
-      <Card padding="md" topAccent>
-        <div className="flex items-center gap-2 mb-2">
+      {/* 2026-08-25 · #111 · 결제 등록 폼 · PaymentEntryForm 재사용 */}
+      <Card padding="none" topAccent clip>
+        <div className="flex items-center gap-2 px-4 pt-3 pb-2 border-b border-line bg-zinc-50/40">
           <IconTile icon={<Wallet size={14} />} tone="amber" size="sm" />
           <div className="text-[15px] font-bold text-ink">결제 등록</div>
+          <span className="ml-auto text-[12px] text-ink-soft">{selected?.company_name}</span>
         </div>
-        <div className="text-[13px] text-ink-soft leading-relaxed">
-          결제 방식·금액·참조번호 입력 폼이 여기에 노출됩니다.
-          <br />
-          <span className="text-[12px] text-zinc-400">(기존 PaymentInfoTab 로직 · 재사용 wiring 예정)</span>
-        </div>
+        <PaymentEntryForm
+          key={selected!.id}
+          selectedVendor={selected as unknown as VendorItem}
+          balance={balance ? ({
+            supplier: balance.supplier,
+            total_purchase: 0,
+            total_payment: 0,
+            balance: balance.balance,
+            purchase_count: 0,
+            payment_count: 0,
+          } as BalanceResp) : null}
+          vatIncluded={Boolean((selected as any)?.vat_included)}
+          onSubmitted={(supplierName) => { loadSupplierData(supplierName); }}
+        />
       </Card>
     </div>
   ) : null;
