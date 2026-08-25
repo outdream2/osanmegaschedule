@@ -608,16 +608,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       }
                     }} />
                 )}
-                {(isVendor || isSuperAdminLevel9) && (
-                  <MenuCard color="amber" icon={Package} title="공급사 재고확인" description="상품별 재고 현황 조회"
-                    onClick={() => {
-                      if (isVendor && vendorSelf) { setShowVendorStock(true); return; }
-                      if (isSuperAdminLevel9) {
-                        try { localStorage.setItem("sidebar.subtab.display", "vendor-manage"); } catch { /* silent */ }
-                        onNavigate("display", authSession!);
-                      }
-                    }} />
-                )}
+                {/* 2026-08-26 · #192 · 거래처 승인 gate · approval_status="approved" 만 활성 */}
+                {(isVendor || isSuperAdminLevel9) && (() => {
+                  const vendorApproved = isVendor && vendorSelf && (vendorSelf as any).approval_status === "approved";
+                  const approvalStatus = isVendor ? ((vendorSelf as any)?.approval_status ?? "pending") : "approved";
+                  const disabled = isVendor && !vendorApproved;
+                  const label =
+                    approvalStatus === "approved" ? "상품별 재고 현황 조회"
+                    : approvalStatus === "pending"  ? "🔒 관리자 승인 대기 중 · 승인 후 사용 가능"
+                    : approvalStatus === "rejected" ? "🚫 승인 거절 · 관리자 문의"
+                    : "🔒 공급사 정보 등록 후 · 승인 요청 필요";
+                  return (
+                    <MenuCard
+                      color={disabled ? "gray" as any : "amber"}
+                      icon={Package}
+                      title="공급사 재고확인"
+                      description={label}
+                      onClick={() => {
+                        if (disabled) return;
+                        if (isVendor && vendorSelf) { setShowVendorStock(true); return; }
+                        if (isSuperAdminLevel9) {
+                          try { localStorage.setItem("sidebar.subtab.display", "vendor-manage"); } catch { /* silent */ }
+                          onNavigate("display", authSession!);
+                        }
+                      }}
+                    />
+                  );
+                })()}
               </div>
             </div>
           )}
