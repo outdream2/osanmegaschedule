@@ -346,7 +346,15 @@ export const SideNav: React.FC<SideNavProps> = ({
     .filter(g => !(isMobile && g.hideOnMobile))
     .map(g => ({
       ...g,
-      items: g.items.filter(it => it.key === "landing" || isVisible(it.key as string, viewport)),
+      // 2026-08-25 · 사용자 지시 · 서브탭별 개별 노출 지원 · 그룹키 hidden 또는 composite key hidden 이면 숨김
+      items: g.items.filter(it => {
+        if (it.key === "landing") return true;
+        // 그룹 자체가 hidden 이면 숨김
+        if (!isVisible(it.key as string, viewport)) return false;
+        // subTab 이 있으면 · composite key 도 체크 · false 이면 숨김
+        if (it.subTab && !isVisible(`${it.key}:${it.subTab}`, viewport)) return false;
+        return true;
+      }),
     }))
     .filter(g => g.items.length > 0);
   const { width, startResize } = useSidebarWidth();

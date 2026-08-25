@@ -479,7 +479,10 @@ export const StampsSection: React.FC = () => {
 export const MobileVisibilitySection: React.FC = () => {
   const { isVisible, setVisible, loaded, saveState } = usePageVisibility();
 
-  // SIDE_NAV_GROUPS 순회 · 그룹별로 페이지 목록 구성 · 같은 pageKey 는 그룹 내에서 중복 제거
+  // 2026-08-25 · 사용자 지시 · 서브탭 별로 개별 노출 토글 지원 (승인요청 · 점심불참 등)
+  //   · 같은 page key 여도 · subTab 다르면 · 각각 checkbox 노출
+  //   · dedupe 는 · (key + subTab) 조합 기준
+  //   · 페이지 자체 (subTab 없음) 는 · key 만으로 저장 · 하위 호환
   const groups = useMemo(() => {
     return SIDE_NAV_GROUPS
       .map((g) => {
@@ -487,11 +490,15 @@ export const MobileVisibilitySection: React.FC = () => {
         const items = g.items
           .filter((it) => it.key !== "landing")
           .filter((it) => {
-            if (seen.has(it.key)) return false;
-            seen.add(it.key);
+            const compo = it.subTab ? `${it.key}:${it.subTab}` : (it.key as string);
+            if (seen.has(compo)) return false;
+            seen.add(compo);
             return true;
           })
-          .map((it) => ({ pageKey: it.key as string, label: it.label }));
+          .map((it) => ({
+            pageKey: it.subTab ? `${it.key}:${it.subTab}` : (it.key as string),
+            label: it.label,
+          }));
         return { id: g.id, label: g.label, items };
       })
       .filter((g) => g.items.length > 0);
