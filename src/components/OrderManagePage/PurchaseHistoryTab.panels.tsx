@@ -470,7 +470,9 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
         <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2">
         {!selectedProduct ? (
           <div className="flex flex-col gap-2 flex-1 min-h-0 overflow-auto">
-            <div className="bg-white rounded-xl border border-line shadow-sm px-4 py-2.5 flex items-center gap-2 shrink-0">
+            {/* 2026-08-25 · v9 · 상단 gradient accent */}
+            <div className="relative bg-white rounded-xl border border-line shadow-sm px-4 py-2.5 flex items-center gap-2 shrink-0 overflow-hidden">
+              <span aria-hidden className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10 pointer-events-none rounded-t-xl" />
               <Package size={14} className="text-sky-500 shrink-0" />
               <span className="text-[15px] font-bold text-zinc-800">상품별 매입 분석</span>
               <span className="text-[15px] text-zinc-400 font-semibold ml-1">
