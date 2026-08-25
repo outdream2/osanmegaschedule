@@ -18,7 +18,8 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
   const today = new Date().toISOString().split("T")[0];
   // 2026-08-21 · #171 Phase 2 · return · resignation 추가 (BC · 신규 필드만)
   //   · relation 미존재 시 · count 0 (fallback · 안전)
-  const [display, order, productsWithRealMap, legacy, leave, lunch, inventory, ret, resignation] = await Promise.all([
+  // 2026-08-25 · #192 · vendor 승인 대기 (approval_status=pending)
+  const [display, order, productsWithRealMap, legacy, leave, lunch, inventory, ret, resignation, vendor] = await Promise.all([
     supabase.from("display_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("order_requests").select("id", { count: "exact", head: true }),
     supabase.from("products").select("product_code, spec, real_map").eq("hidden", false).not("real_map", "is", null).neq("real_map", ""),
@@ -28,6 +29,7 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
     supabase.from("inventory_checks").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("return_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("resignations").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("vendors").select("id", { count: "exact", head: true }).eq("approval_status", "pending"),
   ]);
   const computedCodes = new Set(
     (productsWithRealMap.data ?? [])
@@ -40,6 +42,7 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
   const inventoryCount = inventory.count ?? 0;
   const returnCount = ret.error ? 0 : (ret.count ?? 0);
   const resignationCount = resignation.error ? 0 : (resignation.count ?? 0);
+  const vendorCount = vendor.error ? 0 : (vendor.count ?? 0);
   res.json({
     display:     display.count ?? 0,
     order:       order.count   ?? 0,
@@ -49,8 +52,9 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
     inventory:   inventoryCount,
     return:      returnCount,
     resignation: resignationCount,
+    vendor:      vendorCount,
     total: (display.count ?? 0) + (order.count ?? 0) + mismatchCount
-         + (leave.count ?? 0) + inventoryCount + returnCount + resignationCount,
+         + (leave.count ?? 0) + inventoryCount + returnCount + resignationCount + vendorCount,
   });
 }));
 

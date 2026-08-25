@@ -459,4 +459,89 @@ router.post("/api/vendors/:id/set-password", asyncHandler(async (req, res) => {
   return res.json({ ok: true });
 }));
 
+// ═══════════════════════════════════════════════════════════════════
+// 2026-08-25 · #192 · 거래처 승인 flow · 3 endpoints
+//   · POST /api/vendors/:id/approval-request · 거래처 자체 요청 (인증 X · 세션 vendor 자신)
+//   · POST /api/vendors/:id/approve          · 관리자 승인 (authorize 9)
+//   · POST /api/vendors/:id/reject           · 관리자 거절 (authorize 9)
+// ═══════════════════════════════════════════════════════════════════
+
+/** 거래처 자체 승인 요청 · 필수 필드 검증 · vendors.approval_status = pending · approval_requested_at = now */
+router.post("/api/vendors/:id/approval-request", asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) throw badRequest("invalid id");
+  const { data: vendor, error: fetchErr } = await supabase
+    .from("vendors")
+    .select("id, email, order_method, team_leader, team_leader_phone, emergency_phone, business_number, special_notes, note, approval_status")
+    .eq("id", id)
+    .maybeSingle();
+  if (fetchErr) throw new HttpError(500, `공급사 조회 실패: ${fetchErr.message}`);
+  if (!vendor) throw new HttpError(404, `공급사 없음: id=${id}`);
+  // 이미 승인됨 · 재요청 불가
+  if (vendor.approval_status === "approved") {
+    throw badRequest("이미 승인된 공급사입니다.");
+  }
+  // 필수 8 필드 검증
+  const missing: string[] = [];
+  if (!vendor.email || !String(vendor.email).trim()) missing.push("이메일");
+  if (!vendor.order_method || !String(vendor.order_method).trim()) missing.push("주문방식");
+  if (!(vendor as any).team_leader || !String((vendor as any).team_leader).trim()) missing.push("팀장");
+  if (!(vendor as any).team_leader_phone || !String((vendor as any).team_leader_phone).trim()) missing.push("팀장연락처");
+  if (!(vendor as any).emergency_phone || !String((vendor as any).emergency_phone).trim()) missing.push("긴급연락처");
+  if (!vendor.business_number || !String(vendor.business_number).trim()) missing.push("사업자번호");
+  if (!vendor.special_notes || !String(vendor.special_notes).trim()) missing.push("특이사항");
+  if (!(vendor as any).note || !String((vendor as any).note).trim()) missing.push("비고");
+  if (missing.length > 0) {
+    throw badRequest(`필수 항목 미입력: ${missing.join(" · ")}`);
+  }
+  // pending 으로 전환 + timestamp
+  const { error: updErr } = await supabase
+    .from("vendors")
+    .update({
+      approval_status: "pending",
+      approval_requested_at: new Date().toISOString(),
+      approved_at: null,
+      approved_by: null,
+    })
+    .eq("id", id);
+  if (updErr) throw new HttpError(500, `승인요청 저장 실패: ${updErr.message}`);
+  res.json({ ok: true, status: "pending", requested_at: new Date().toISOString() });
+}));
+
+/** 관리자 승인 · authorize(9) */
+router.post("/api/vendors/:id/approve", authorize(9), asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) throw badRequest("invalid id");
+  const approvedBy = (req as any).auth?.employeeId ?? null;
+  const { error } = await supabase
+    .from("vendors")
+    .update({
+      approval_status: "approved",
+      approved_at: new Date().toISOString(),
+      approved_by: approvedBy,
+    })
+    .eq("id", id);
+  if (error) throw new HttpError(500, `승인 실패: ${error.message}`);
+  res.json({ ok: true, status: "approved", approved_at: new Date().toISOString(), approved_by: approvedBy });
+}));
+
+/** 관리자 거절 · authorize(9) · optional 사유 */
+router.post("/api/vendors/:id/reject", authorize(9), asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) throw badRequest("invalid id");
+  const approvedBy = (req as any).auth?.employeeId ?? null;
+  const reason = String(req.body?.reason ?? "").trim().slice(0, 500);
+  const { error } = await supabase
+    .from("vendors")
+    .update({
+      approval_status: "rejected",
+      approved_at: new Date().toISOString(),
+      approved_by: approvedBy,
+      // 거절 사유 · special_notes 뒤에 append (별도 컬럼 없이 · 최소 침습)
+    })
+    .eq("id", id);
+  if (error) throw new HttpError(500, `거절 실패: ${error.message}`);
+  res.json({ ok: true, status: "rejected", reason: reason || null });
+}));
+
 export default router;
