@@ -38,6 +38,8 @@ import { FlowTab } from "../StockManagePage/FlowTab";
 import { DiffTab } from "../StockManagePage/DiffTab";
 import { SupplierTab } from "../StockManagePage/SupplierTab";
 import { ReturnListPanel } from "./ReturnListPanel";
+// 2026-08-25 · 사용자 지시 · 반품확정 페이지 · 반품 서브탭 이너 탭 (반품필요/반품확정)
+import { ReturnConfirmedPanel } from "./ReturnConfirmedPanel";
 import { PurchaseHistoryTab } from "./PurchaseHistoryTab";
 import { PaymentInfoTab } from "./PaymentInfoTab";
 import { VatPreparePage } from "../VatPreparePage/VatPreparePage";
@@ -178,6 +180,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [lowStockSearch, setLowStockSearch] = useState("");
   // 2026-08-25 · 사용자 지시 · 발주필요 · 검색 시 조건 적용 on/off (기본 ON = 재고 부족만)
   const [needConditionApply, setNeedConditionApply] = useState<boolean>(true);
+  // 2026-08-25 · 사용자 지시 · 반품 서브탭 · 이너 탭 (반품필요/반품확정)
+  const [returnInnerTab, setReturnInnerTab] = useState<"need" | "confirmed">("need");
   const [lowStockCollapsed, setLowStockCollapsed] = useState(false);
 
   const vendorMap = useMemo(() => {
@@ -694,7 +698,38 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               <ProductInfoPage authSession={ocrTabAuthSession ?? null} />
             </Suspense></div>
           )}
-          {purchaseSubTab === "return" && <div className="flex-1 min-h-0"><ReturnListPanel onSupplierClick={openSupplierInfo} /></div>}
+          {/* 2026-08-25 · 사용자 지시 · 반품 서브탭 · 반품필요 + 반품확정 이너 탭 */}
+          {purchaseSubTab === "return" && (
+            <div className="flex-1 min-h-0 flex flex-col">
+              <div className="flex items-center gap-1 border-b border-line px-2">
+                {(["need", "confirmed"] as const).map(k => {
+                  const active = returnInnerTab === k;
+                  const label = k === "need" ? "반품필요" : "반품확정";
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setReturnInnerTab(k)}
+                      className={[
+                        "relative h-10 px-4 text-[15px] font-bold tracking-tight transition cursor-pointer",
+                        active ? "text-brand-deep" : "text-ink-soft hover:text-brand-deep",
+                      ].join(" ")}
+                    >
+                      {label}
+                      {active && (
+                        <span aria-hidden className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex-1 min-h-0">
+                {returnInnerTab === "need"
+                  ? <ReturnListPanel onSupplierClick={openSupplierInfo} />
+                  : <ReturnConfirmedPanel />}
+              </div>
+            </div>
+          )}
           {purchaseSubTab === "purchase-history" && <div className="flex-1 min-h-0"><PurchaseHistoryTab /></div>}
         </div>
       )}
