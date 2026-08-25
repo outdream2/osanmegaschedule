@@ -706,43 +706,65 @@
 - 💡 프레임워크 원칙 · useKvSetting 재사용 · Card·InputField·Tabs 프리미티브 활용
 - 💡 관련 · SeasonRangesEditor 재사용 · 이름만 변경 · 하위호환 유지 (route/import)
 
-### #192 · 거래처 로그인 · 공급사정보 등록 → 승인 → 공급자재고확인 flow (신규 · 2026-08-22 · **스펙 결정 중 · 2026-08-23**)
+### #192 · 거래처 로그인 · 공급사정보 등록 → 승인 → 공급자재고확인 flow (신규 · 2026-08-22 · **스펙 갱신 · 2026-08-25**)
 
-**🎯 스펙 결정 중** (사용자 서브 결정 대기):
+**🎯 서브 결정 대기 (3건 · 기존 유지)**:
 - ① DB · vendors ALTER (`approval_status` · `approval_requested_at` · `approved_at` · `approved_by`) · A(승인) · B(별도 테이블) · C(스킵) · **대기**
 - ② 승인 UI 위치 · RequestsPage 확장 vs 신규 admin 페이지 · **대기**
 - ③ 재로그인 필요 여부 · 승인 즉시 실시간 반영 vs 재로그인 · **대기**
 
-**3-Step Flow**:
-1. **Step 1** · vendor 로그인 → 공급사정보 등록 자동 오픈 · 진행률 (7/10 필드 완료)
-2. **Step 2** · 필수 필드 완성 → [승인 요청] 활성 → POST `/api/vendor-approval-requests` → 관리자 알림
-3. **Step 3** · 관리자 승인 → vendor status = "approved" → [공급자재고확인] 활성
+**필수 필드 (8개 · 2026-08-25 재정의)**:
+| 필드 | vendors 컬럼 | 비고 |
+|------|-------------|------|
+| 이메일 | `email` | 기존 컬럼 활용 |
+| 주문방식 | `order_method` | 신규 · 전화/팩스/메일/EDI 등 |
+| 팀장 | `team_leader` | 신규 · 담당 팀장 이름 |
+| 팀장연락처 | `team_leader_phone` | 신규 |
+| 긴급연락처 | `emergency_phone` | 신규 |
+| 사업자번호 | `business_number` | 기존 컬럼 활용 |
+| 특이사항 | `special_notes` | 기존 컬럼 활용 (#178 연계) |
+| 비고 | `note` | 기존 컬럼 활용 (#178 연계) |
 
-**의존 · 관련**:
-- #178 · vendors 스키마 확장 (log규칙 + 신규 컬럼) · 함께 진행 권장
-- #94 · 공급사 재고확인 페이지 (Phase 2 유보) · gate 재활성화 필요
-- 로그인 규칙 · 담당자 핸드폰 + `.env VENDOR_PW_SUFFIX` · #178 결정 재사용
+- DB · vendors 테이블 신규 컬럼 추가 필요 · `order_method` · `team_leader` · `team_leader_phone` · `emergency_phone`
+- #178 연계 · `special_notes` vs `note` 분리 원칙 그대로 유지
 
-### #192-원본스펙 (기록)
-- 📄 대상 · 거래처(vendor) 로그인 후 진입 페이지 · 3단계 승인 flow 구현
-- 🔲 **Step 1** · 거래처 로그인 성공 시 · **공급사정보 등록 메뉴** 자동 오픈 (or 사이드바 상단 강조)
-  - 로그인 직후 첫 화면 · 공급사정보 미완성 시 강제 노출
-  - 미완성 항목 진행률 표시 (예: 7/10 필드 완료)
-- 🔲 **Step 2** · 정보 다 채우면 · **[승인 요청] 버튼 활성화**
-  - 필수 필드 검증 (회사명·사업자번호·담당자·연락처·주소·계좌·이메일 등)
-  - 모든 필수 필드 통과 시 · 회색 disabled → 활성 CTA 전환
-  - 클릭 시 · `/api/vendor-approval-requests` POST · 관리자 알림
-  - 승인 대기 상태 · "관리자 승인 대기 중" 배너
-- 🔲 **Step 3** · 관리자가 승인 → **[공급자재고확인] 버튼 활성화**
-  - 관리자 UI · 승인 대기 목록 (RequestsPage 확장 or 신규 탭)
-  - 승인 시 · vendors.approval_status = "approved" · vendor 세션 UI 갱신
-  - 승인 후 vendor 재로그인 or 실시간 갱신 → 공급자재고확인 메뉴 노출·활성
-- 🔲 DB · vendors ALTER · `approval_status` (pending·approved·rejected) · `approval_requested_at` · `approved_at` · `approved_by`
+**3-Step Flow (2026-08-25 갱신)**:
+1. **Step 1** · vendor 로그인 → 공급사정보 등록 자동 오픈 · 진행률 (N/8 필드 완료)
+   - 로그인 직후 첫 화면 · 공급사정보 미완성 시 강제 노출
+   - 편집 화면 상단 UI 힌트 문구: **"필수 항목을 채우고 [승인 요청]을 눌러주세요"**
+2. **Step 2** · 필수 8개 필드 모두 완성 → [승인 요청] 활성
+   - 검증 필드: 이메일·주문방식·팀장·팀장연락처·긴급연락처·사업자번호·특이사항·비고
+   - 모든 필수 필드 통과 시 · 회색 disabled → 활성 CTA 전환
+   - 클릭 시 · POST `/api/vendor-approval-requests` · 관리자 알림 발송
+   - 승인 대기 상태 · "관리자 승인 대기 중" 배너 표시
+3. **Step 3** · 관리자 승인 → [공급자재고확인] 버튼 활성화
+   - 승인 완료 vendor 만 버튼 활성 (미승인 · disabled)
+   - 클릭 시 · **해당 vendor 소유 상품만** 리스트업 (전체 재고 X · 해당 공급사 상품 필터)
+   - 필터 기준 · `products.vendor_id = vendor.id` (or `supplier_code` 매핑)
+   - 승인 시 · `vendors.approval_status = "approved"` · vendor 세션 UI 갱신
+
+**TodayStatusPanel 연동 (신규 · 2026-08-25)**:
+- 오늘의 현황 패널 · **거래처승인요청 건수** 표시 항목 추가
+- 표시 조건 · `approval_status = "pending"` 건수 · 관리자만 조회
+- API · GET `/api/vendor-approval-requests?status=pending&count=true`
+
+**RequestsPage 연동 (신규 · 2026-08-25)**:
+- 요청 알림 페이지 · **거래처승인** 탭/항목 추가
+- pending count 뱃지 표시
+- 승인/거절 UI · 각 요청 행 inline (승인 · 녹색 버튼 / 거절 · 회색 버튼 + 거절 사유 입력)
+- 승인 시 · `vendors.approval_status = "approved"` + `approved_at` + `approved_by` 기록
+- 거절 시 · `vendors.approval_status = "rejected"` + 거절 사유 저장
+
+**기술 스펙**:
+- 🔲 DB · vendors ALTER · `approval_status` (pending·approved·rejected) · `approval_requested_at` · `approved_at` · `approved_by` · `order_method` · `team_leader` · `team_leader_phone` · `emergency_phone`
 - 🔲 서버 · Zod schemas · asyncHandler · HttpError (feedback_logging_principle)
 - 🔲 프레임워크 · Card·Modal·StatusPill·Button·useToast·useConfirm 재사용
 - 🔲 이력 로그 · 승인/거절/재신청 audit trail (선택)
-- 💡 관련 · #178 (공급사 정보 스키마 확장 · xlsx 원본 반영) 과 연계 · vendors 컬럼 스키마 검토 필요
-- 💡 관련 · #94 (공급사 재고확인 페이지 A1 완료 · Phase 2 유보) · gate 재활성화 필요
+
+**의존 · 관련**:
+- #178 · vendors 스키마 확장 (log규칙 + 신규 컬럼 · `note`/`special_notes` 분리) · 함께 진행 권장
+- #94 · 공급사 재고확인 페이지 (Phase 2 유보) · gate 재활성화 필요
+- 로그인 규칙 · 담당자 핸드폰 + `.env VENDOR_PW_SUFFIX` · #178 결정 재사용
 - 💡 프레임워크 원칙 · 대원칙 19 · 설계 후 구현 · vendors 스키마·인증 flow·UI gate 3-way 정합성
 
 ### #191 · Modal 프레임워크화 · inline modal 35+ 마이그레이션 (신규 · 2026-08-22 · **Phase A 자율 진행 승인 2026-08-23**)
