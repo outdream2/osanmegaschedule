@@ -1,7 +1,8 @@
 // src/components/OrderManagePage/CriticalTab.tsx
 // 2026-08-22 · Framework Phase 4 · 품절임박 탭 분리
-import React from "react";
-import { AlertTriangle } from "lucide-react";
+// 2026-08-25 · 사용자 지시 · 공급사 분류 필터 추가 (dropdown · 건수 병기)
+import React, { useMemo, useState } from "react";
+import { AlertTriangle, Building2, X } from "lucide-react";
 import { PageToolbar } from "../common/PageToolbar";
 import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common";
 import type { ProductInfo } from "./OrderManagePage.types";
@@ -21,21 +22,64 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
   getCode,
   onRequestOrder,
 }) => {
-  const critical = products
+  const [supplierFilter, setSupplierFilter] = useState<string>("all");
+
+  const critical = useMemo(() => products
     .filter(p => {
       const cur = Number(p.current_stock ?? NaN);
       return Number.isFinite(cur) && cur <= 3;
     })
-    .sort((a, b) => Number(a.current_stock ?? 0) - Number(b.current_stock ?? 0));
+    .sort((a, b) => Number(a.current_stock ?? 0) - Number(b.current_stock ?? 0)), [products]);
+
+  // 공급사별 카운트 (품절임박 상품 기준)
+  const supplierCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of critical) {
+      const s = String(p.supplier ?? "-");
+      map.set(s, (map.get(s) ?? 0) + 1);
+    }
+    return [...map.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ko"));
+  }, [critical]);
+
+  const filtered = useMemo(() => {
+    if (supplierFilter === "all") return critical;
+    return critical.filter(p => String(p.supplier ?? "-") === supplierFilter);
+  }, [critical, supplierFilter]);
 
   return (
     <div className="flex flex-col gap-2">
       <PageToolbar
         icon={<AlertTriangle size={18} strokeWidth={2.2} />}
         title="품절임박"
-        count={critical.length}
+        count={filtered.length}
         leftSlot={
-          <span className="text-[13px] text-ink-soft font-medium tracking-tight">ERP재고 3개 이하</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[13px] text-ink-soft font-medium tracking-tight">ERP재고 3개 이하</span>
+            <div className="relative inline-flex items-center">
+              <Building2 size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+              <select
+                value={supplierFilter}
+                onChange={(e) => setSupplierFilter(e.target.value)}
+                className="h-8 pl-8 pr-8 rounded-lg bg-white border border-line text-[13px] font-semibold text-ink hover:border-brand-deep/60 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors cursor-pointer"
+                title="공급사 필터"
+              >
+                <option value="all">전체 공급사 ({critical.length})</option>
+                {supplierCounts.map(([s, n]) => (
+                  <option key={s} value={s}>{s} ({n})</option>
+                ))}
+              </select>
+            </div>
+            {supplierFilter !== "all" && (
+              <button
+                type="button"
+                onClick={() => setSupplierFilter("all")}
+                className="inline-flex items-center gap-1 h-8 px-2 rounded-md bg-zinc-100 text-[12px] font-semibold text-zinc-600 hover:bg-zinc-200 cursor-pointer transition"
+                title="공급사 필터 해제"
+              >
+                <X size={11} /> 필터 해제
+              </button>
+            )}
+          </div>
         }
       />
       {/* 2026-08-24 · v3 리스트 UI 프레임워크 · TableListWrap · 사용자 지시 */}
@@ -52,9 +96,11 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
-            {critical.length === 0 ? (
-              <tr><td colSpan={6} className="text-center text-[14px] text-zinc-400 py-8">품절임박 상품 없음 (ERP재고 3개 이하)</td></tr>
-            ) : critical.map(p => {
+            {filtered.length === 0 ? (
+              <tr><td colSpan={6} className="text-center text-[14px] text-zinc-400 py-8">
+                {supplierFilter === "all" ? "품절임박 상품 없음 (ERP재고 3개 이하)" : `${supplierFilter} · 품절임박 상품 없음`}
+              </td></tr>
+            ) : filtered.map(p => {
               const code = getCode(p);
               const inv = invStockMap.get(code);
               const name = String(p.product_name ?? "-");
