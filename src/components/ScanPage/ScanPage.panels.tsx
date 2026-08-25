@@ -178,7 +178,8 @@ export const SaveCard: React.FC<SaveCardProps> = ({
         ? "border-emerald-300/80 shadow-[0_0_0_4px_rgba(16,185,129,0.08),0_4px_16px_rgba(0,0,0,0.08)]"
         : "border-line/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
     }`}>
-      <div className={`px-5 py-3.5 border-b border-zinc-100/80 flex items-center justify-between gap-2 ${
+      {/* 2026-08-25 · 사용자 지시 · 합계 · product_storage.png 톤 (창고 cyan · 매장 violet 파스텔) 적용 */}
+      <div className={`px-5 py-3.5 border-b border-zinc-100/80 flex items-center justify-between gap-2 flex-wrap ${
         saveStatus === "done" ? "bg-emerald-50/60" : "bg-zinc-50/40"
       }`}>
         <div className="flex items-center gap-2.5">
@@ -189,9 +190,37 @@ export const SaveCard: React.FC<SaveCardProps> = ({
           </div>
           <span className="text-[16px] font-bold text-zinc-800">전체 등록</span>
         </div>
-        <span className="text-[15px] font-bold text-zinc-400 tabular-nums">
-          {rows.length}건 · 총 {rows.reduce((acc, r) => acc + calcRowTotal(r), 0)}개
-        </span>
+        {(() => {
+          const num = (v: number | null | undefined | "") => (v != null && v !== "" ? Number(v) : 0);
+          const warehouseTotal = rows.reduce((acc, r) =>
+            acc + num(r.prevWarehouse1Qty) + num(r.warehouse1AddQty)
+                + num(r.prevWarehouse2Qty) + num(r.warehouse2AddQty), 0);
+          const storeTotal = rows.reduce((acc, r) =>
+            acc + num(r.prevStore1Qty) + num(r.store1AddQty)
+                + num(r.prevStore2Qty) + num(r.store2AddQty)
+                + num(r.prevStore3Qty) + num(r.store3AddQty), 0);
+          const grandTotal = warehouseTotal + storeTotal;
+          return (
+            <div className="flex items-center gap-1.5 tabular-nums text-[14px] font-bold">
+              <span className="inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-zinc-50 border border-zinc-200 text-zinc-700">
+                <span className="text-[12px] font-semibold text-zinc-500">건수</span>
+                <span>{rows.length}</span>
+              </span>
+              <span className="inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-800" title="창고1 + 창고2 합계">
+                <span className="text-[12px] font-semibold text-cyan-600">창고</span>
+                <span>{warehouseTotal}</span>
+              </span>
+              <span className="inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-violet-50 border border-violet-200 text-violet-800" title="매장1 + 매장2 + 매장3 합계">
+                <span className="text-[12px] font-semibold text-violet-600">매장</span>
+                <span>{storeTotal}</span>
+              </span>
+              <span className="inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-brand-tint border border-brand-deep/20 text-brand-deep" title="창고 + 매장 총합">
+                <span className="text-[12px] font-semibold text-brand-deep/70">총합</span>
+                <span>{grandTotal}</span>
+              </span>
+            </div>
+          );
+        })()}
       </div>
 
       <div className="px-5 py-4 flex flex-col gap-3">
