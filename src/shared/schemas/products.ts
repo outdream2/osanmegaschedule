@@ -14,7 +14,7 @@ export const CreateProductSchema = z.object({
   optimal_stock: z.number().int().min(0).max(999999).nullable().optional(),
   sale_price: z.number().min(0).max(999999999).nullable().optional(),
   purchase_price: z.number().min(0).max(999999999).nullable().optional(),
-  cost_price: z.number().min(0).max(999999999).nullable().optional(),
+  // 2026-08-25 · 사용자 지시 · products 테이블에 존재하는 컬럼만 등록 · cost_price 컬럼 없음 → 제거
   brand: z.string().max(100).nullable().optional(),
   manufacturer: z.string().max(100).nullable().optional(),
   note: z.string().max(500).nullable().optional(),

@@ -18,7 +18,8 @@ import { PurchaseHistorySection } from "./PurchaseHistorySection";
 import { StockSlotCard } from "./StockSlotCard";
 
 // 인라인 편집 가능 필드 종류
-type InlineEditableKey = "optimal_stock" | "sale_price" | "purchase_price" | "cost_price" | "brand" | "manufacturer" | "barcode" | "expiry_date" | "memo";
+// 2026-08-25 · products 테이블에 없는 컬럼 · cost_price 제거
+type InlineEditableKey = "optimal_stock" | "sale_price" | "purchase_price" | "brand" | "manufacturer" | "barcode" | "expiry_date" | "memo";
 
 // 섹션 표시 여부 (context별로 다르게)
 interface ProductInfoSections {
@@ -102,7 +103,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
     try {
       await api.patch(`/api/products/${encodeURIComponent(product.code)}`, { [editingKey]: editingValue });
       // 부모 state 동기화
-      const num = ["optimal_stock", "sale_price", "purchase_price", "cost_price"].includes(editingKey);
+      const num = ["optimal_stock", "sale_price", "purchase_price"].includes(editingKey);
       onProductUpdate?.({ [editingKey]: num ? (editingValue === "" ? null : Number(editingValue)) : editingValue } as Partial<ProductInfo>);
       setEditingKey(null);
       setEditingValue("");

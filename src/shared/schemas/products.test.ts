@@ -43,7 +43,6 @@ describe("CreateProductSchema · optional 필드", () => {
       optimal_stock: 30,
       sale_price: 5000,
       purchase_price: 3500,
-      cost_price: 3000,
       brand: "타이레놀",
       manufacturer: "존슨앤존슨",
       note: "감기약",

@@ -48,7 +48,7 @@ interface ProductDetail extends ProductRow {
   last_purchase_date?: string | null;
   sale_price?: number | null;
   purchase_price?: number | null;
-  cost_price?: number | null;
+  // 2026-08-25 · products 테이블에 없는 컬럼 · cost_price 제거
   note?: string | null;
 }
 
@@ -68,10 +68,10 @@ function canManageProducts(session: AuthSession | null): boolean {
 // product_code 는 편집 금지 · barcode 는 UNIQUE 검사 없음 (Phase 후속)
 type EditableKey =
   | "product_name" | "supplier" | "category" | "unit" | "spec" | "barcode"
-  | "real_map" | "optimal_stock" | "sale_price" | "purchase_price" | "cost_price"
+  | "real_map" | "optimal_stock" | "sale_price" | "purchase_price"
   | "brand" | "manufacturer" | "note";
 
-const NUMBER_KEYS = new Set<EditableKey>(["optimal_stock", "sale_price", "purchase_price", "cost_price"]);
+const NUMBER_KEYS = new Set<EditableKey>(["optimal_stock", "sale_price", "purchase_price"]);
 
 const detailInputCls =
   "w-full h-8 px-2 rounded-md border border-line bg-white text-[13px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors";
@@ -277,7 +277,6 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                 {editRow("optimal_stock", "추천 적정재고", "number")}
                 {editRow("sale_price", "판매가", "number")}
                 {editRow("purchase_price", "매입가", "number")}
-                {editRow("cost_price", "원가", "number")}
                 {editRow("brand", "브랜드")}
                 {editRow("manufacturer", "제조사")}
               </>
@@ -297,7 +296,6 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                 {displayRow("optimal_stock", "추천 적정재고")}
                 {displayRow("sale_price", "판매가")}
                 {displayRow("purchase_price", "매입가")}
-                {displayRow("cost_price", "원가")}
                 {displayRow("brand", "브랜드")}
                 {displayRow("manufacturer", "제조사")}
                 <dt className="text-zinc-500 font-medium">최근 매입일</dt>

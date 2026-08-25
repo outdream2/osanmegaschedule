@@ -45,7 +45,6 @@ type Form = {
   optimal_stock: string;
   sale_price: string;
   purchase_price: string;
-  cost_price: string;
   brand: string;
   manufacturer: string;
   note: string;
@@ -63,7 +62,6 @@ const EMPTY: Form = {
   optimal_stock: "",
   sale_price: "",
   purchase_price: "",
-  cost_price: "",
   brand: "",
   manufacturer: "",
   note: "",
@@ -167,7 +165,6 @@ export const ProductCreateModal: React.FC<Props> = ({
         optimal_stock: parseNum(form.optimal_stock),
         sale_price: parseNum(form.sale_price),
         purchase_price: parseNum(form.purchase_price),
-        cost_price: parseNum(form.cost_price),
         brand: form.brand.trim() || null,
         manufacturer: form.manufacturer.trim() || null,
         note: form.note.trim() || null,
@@ -333,15 +330,13 @@ export const ProductCreateModal: React.FC<Props> = ({
             <Card variant="flat" padding="md" rounded="lg" className="bg-white">
               <h3 className="text-[13px] font-bold text-ink mb-2 tracking-tight">가격</h3>
               {/* 2026-08-24 · 사용자 지시 · 적정 재고 · 설정에서 자동 계산 · 신규 등록 폼 제외 */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* 2026-08-25 · 사용자 지시 · products 테이블에 있는 컬럼만 등록 · 원가(cost_price) 필드 제거 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Field label="판매가">
                   <input type="number" min={0} value={form.sale_price} onChange={(e) => set("sale_price", e.target.value)} className={inputCls + " tabular-nums"} placeholder="0" />
                 </Field>
                 <Field label="매입가">
                   <input type="number" min={0} value={form.purchase_price} onChange={(e) => set("purchase_price", e.target.value)} className={inputCls + " tabular-nums"} placeholder="0" />
-                </Field>
-                <Field label="원가">
-                  <input type="number" min={0} value={form.cost_price} onChange={(e) => set("cost_price", e.target.value)} className={inputCls + " tabular-nums"} placeholder="0" />
                 </Field>
               </div>
             </Card>
