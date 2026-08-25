@@ -116,40 +116,53 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
           </Card>
         )}
 
-        {lastProduct && (
+        {/* 2026-08-26 · 사용자 지시 · 최근 스캔 · 하나 → 다수 리스트 · 최근 것 맨 위
+              · rows 는 이미 [newRow, ...prev] 로 최신순 정렬됨 · 그대로 렌더
+              · 참고 props · lastProduct/lastCode/requestingKey/onRequestDisplay · 하위 호환 유지 */}
+        {rows.length > 0 && (
           <div className="flex flex-col rounded-2xl overflow-hidden bg-white border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_16px_rgba(10,46,74,0.08)]">
             <div className="flex items-center gap-2 px-3.5 py-2.5 bg-zinc-50/60 border-b border-line">
               <StatusPill tone="emerald" size="sm" dot>최근 스캔</StatusPill>
-              {lastCode && (
-                <span className="ml-auto text-[15px] font-mono tabular-nums text-ink-soft truncate max-w-[160px]">
-                  {lastCode}
-                </span>
+              <span className="ml-auto text-[13px] text-ink-soft tabular-nums">{rows.length}건 · 최신순</span>
+            </div>
+            <div className="divide-y divide-line max-h-[360px] overflow-y-auto">
+              {rows.slice(0, 20).map((r, idx) => {
+                const isLatest = idx === 0;
+                return (
+                  <div
+                    key={r.key}
+                    className={`px-3.5 py-2 flex flex-col gap-0.5 hover:bg-zinc-50/70 transition-colors ${isLatest ? "bg-emerald-50/40" : ""}`}
+                  >
+                    <div className="flex items-baseline gap-2 min-w-0">
+                      {isLatest && <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 rounded px-1 py-0.5 leading-none">NEW</span>}
+                      <p className="text-[14px] sm:text-[15px] font-bold text-zinc-900 break-words whitespace-normal leading-snug flex-1 min-w-0">
+                        {r.product.name || "-"}
+                      </p>
+                      <span className="shrink-0 text-[12px] font-mono tabular-nums text-ink-soft/70">{r.code}</span>
+                    </div>
+                    <div className="flex items-baseline gap-2 flex-wrap text-[12px]">
+                      {(r.product as any).spec && (
+                        <span className="inline-flex items-baseline gap-1">
+                          <span className="text-zinc-400 font-semibold">구역</span>
+                          <span className="text-violet-700 font-bold">{(r.product as any).spec}</span>
+                        </span>
+                      )}
+                      {(r.product as any).supplier && (
+                        <span className="inline-flex items-baseline gap-1 min-w-0">
+                          <span className="text-zinc-400 font-semibold">공급사</span>
+                          <span className="text-sky-700 font-bold truncate max-w-[140px]">{(r.product as any).supplier}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {rows.length > 20 && (
+                <div className="px-3.5 py-1.5 text-center text-[12px] text-zinc-400 bg-zinc-50/40">
+                  전체 {rows.length}건 중 최근 20건 표시
+                </div>
               )}
             </div>
-
-            <div className="px-3.5 py-3 flex flex-col gap-1.5">
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <p className="text-[15px] sm:text-[16px] font-bold text-zinc-900
-                  break-words whitespace-normal leading-snug">
-                  {lastProduct.name}
-                </p>
-                {(lastProduct as any).spec && (
-                  <span className="inline-flex items-baseline gap-1 text-[14px]">
-                    <span className="text-zinc-400 font-semibold">구역</span>
-                    <span className="text-violet-700 font-bold">{(lastProduct as any).spec}</span>
-                  </span>
-                )}
-                {(lastProduct as any).supplier && (
-                  <span className="inline-flex items-baseline gap-1 text-[14px] min-w-0">
-                    <span className="text-zinc-400 font-semibold">공급사</span>
-                    <span className="text-sky-700 font-bold truncate">{(lastProduct as any).supplier}</span>
-                  </span>
-                )}
-              </div>
-            </div>
-            {/* 2026-08-25 · 사용자 지시 · 최근 스캔 · 진열요청 버튼 제거
-                · 아래 진열요청 필터 + 각 row [🔊 진열요청] 액션 (StockActionsCell) 으로 대체
-                · 참고: rows / requestingKey / onRequestDisplay props 는 향후 참조 대비 유지 */}
           </div>
         )}
       </div>
