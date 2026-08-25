@@ -169,6 +169,14 @@ export class ScheduleService {
       const { data: dup } = await supabase.from("employees").select("id").eq("employee_number", employeeNumber).maybeSingle();
       if (dup) throw new Error(`사번 "${employeeNumber}" 은(는) 이미 사용 중입니다`);
     }
+    // 2026-08-25 · 사용자 지시 · 직원 핸드폰 중복 검증 (숫자만 clean · 재직/퇴직 무관 unique)
+    if (data.phone) {
+      const cleanPhone = String(data.phone).replace(/[^0-9]/g, "");
+      if (cleanPhone) {
+        const { data: phoneDup } = await supabase.from("employees").select("id, name, employee_number").eq("phone", cleanPhone).maybeSingle();
+        if (phoneDup) throw new Error(`핸드폰 중복 · 이미 등록된 직원: ${(phoneDup as { name: string }).name} (사번 ${(phoneDup as { employee_number: string }).employee_number ?? "-"})`);
+      }
+    }
     const base = { ...data, employee_number: employeeNumber, workplace: data.workplace ?? "매장", employmentType: data.employmentType ?? "정직원", level: data.level ?? 1 };
     let { data: result, error } = await supabase.from("employees").insert(base).select().single();
     if (error && /column .*retireDate.* does not exist/i.test(error.message)) {
