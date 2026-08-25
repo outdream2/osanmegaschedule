@@ -1,7 +1,14 @@
+// src/components/ScanPage/RealMapSelector.tsx
+// 2026-08-26 · 사용자 지시 · 실재고입력 · 매장구역 선택
+//   · 매장진열-매장구역도 (StoreZoneMap) 그대로 재사용
+//   · 이전 자체 렌더 (grid section) 제거 · 통일된 시각 (Attio 톤)
+//   · useZoneDefs 훅 · 매장구역도 편집 반영 (설정 → 즉시 반영)
+
 import React from "react";
 import { MapPin } from "lucide-react";
-import { useZoneDefs, type ZoneDef } from "../../hooks/useZoneDefs";
 import { BottomSheet } from "../common/BottomSheet";
+import { StoreZoneMap } from "../common/StoreZoneMap";
+import { useZoneDefs } from "../../hooks/useZoneDefs";
 
 interface RealMapSelectorProps {
   current: string | null | undefined;
@@ -9,64 +16,34 @@ interface RealMapSelectorProps {
   onClose: () => void;
 }
 
-function ZoneBtn({
-  num,
-  zones,
-  current,
-  onSelect,
-  onClose,
-}: {
-  key?: number | string;
-  num: number;
-  zones: ZoneDef[];
-  current: string | null | undefined;
-  onSelect: (v: string) => void;
-  onClose: () => void;
-}) {
-  const z = zones.find((d) => d.num === num);
-  if (!z) return null;
-  const label = `${z.num}번 ${z.label}`;
-  const selected = current === label;
-  return (
-    <button
-      onClick={() => { onSelect(label); onClose(); }}
-      title={z.category}
-      className={`flex flex-col items-center justify-center rounded-lg border transition cursor-pointer leading-tight w-full aspect-square
-        ${selected
-          ? "bg-teal-500 border-teal-600 text-white shadow-md"
-          : "bg-white border-gray-300 text-gray-700 hover:border-teal-400 hover:bg-teal-50"
-        }`}
-    >
-      <span className={`text-[15px] font-bold ${selected ? "text-white" : "text-gray-800"}`}>
-        {z.num}
-      </span>
-      <span className={`text-[12px] font-semibold text-center leading-none mt-0.5 ${selected ? "text-teal-100" : "text-gray-400"}`}>
-        {z.label.replace("진열대 ", "").replace("벽면 ", "")}
-      </span>
-    </button>
-  );
-}
-
 export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSelect, onClose }) => {
-  // 2026-08-25 · 사용자 버그 fix · 매장구역도 편집 반영 · useZoneDefs 훅 사용 (hardcoded ZONE_DEFS X)
   const { zones } = useZoneDefs();
-  // Zones by section
-  const topWall    = zones.filter((z) => z.section === "top_wall");    // 24-35
-  const aisles     = zones.filter((z) => z.section === "aisle");       // 1-9
-  const bottomWall = zones.filter((z) => z.section === "bottom_wall"); // 10-21
-  const leftWall   = zones.filter((z) => z.section === "left_wall");   // 22-23
-  const wing       = zones.filter((z) => z.section === "wing");        // 36-41
-  const event      = zones.filter((z) => z.section === "event");       // 42
 
   const header = (
     <div className="flex items-center gap-2 px-4 py-3 bg-white border-b border-line">
       <MapPin size={15} className="text-teal-500" />
-      <p className="text-[16px] font-bold text-gray-900">매장 지도에서 구역 선택</p>
+      <p className="text-[16px] font-bold text-gray-900">매장 구역도에서 선택</p>
+      {current && (
+        <span className="ml-auto text-[13px] font-semibold text-teal-700 bg-teal-50 border border-teal-200 rounded-md px-2 py-0.5">
+          현재 · {current}
+        </span>
+      )}
     </div>
   );
 
+  // 매장구역도 셀 클릭 → num 추출 (예: "5A" → 5, "22" → 22) → "N번 label" 형식으로 emit
+  const handleZoneClick = (zoneId: string) => {
+    const numMatch = zoneId.match(/^(\d+)/);
+    if (!numMatch) return;
+    const num = Number(numMatch[1]);
+    const z = zones.find((x) => x.num === num);
+    if (!z) return;
+    const label = `${z.num}번 ${z.label}`;
+    onSelect(label);
+    onClose();
+  };
+
   return (
-    // 2026-08-23 · BottomSheet v2 · fullscreen + disableHandle + zIndex={70} + header prop
     <BottomSheet
       open
       onClose={onClose}
@@ -76,92 +53,28 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
       backdropClass="backdrop-brand"
       header={header}
     >
-      <div className="p-3 flex flex-col gap-2">
+      <div className="p-3 flex flex-col gap-3">
+        {/* 미지정 */}
+        <button
+          type="button"
+          onClick={() => { onSelect(""); onClose(); }}
+          className={`w-full py-2.5 rounded-xl border text-[15px] font-bold transition cursor-pointer ${
+            !current
+              ? "bg-zinc-100 border-zinc-400 text-zinc-800"
+              : "bg-white border-line text-zinc-500 hover:bg-zinc-50 hover:border-zinc-300"
+          }`}
+        >
+          미지정 (없음)
+        </button>
 
-          {/* 미지정 */}
-          <button
-            onClick={() => { onSelect(""); onClose(); }}
-            className={`w-full py-2 rounded-xl border text-[16px] font-bold transition cursor-pointer ${
-              !current
-                ? "bg-gray-200 border-gray-400 text-gray-800"
-                : "bg-white border-line text-gray-400 hover:bg-gray-100"
-            }`}
-          >
-            미지정 (없음)
-          </button>
-
-          {/* ─── ㄱ자 매장 평면도 ─── */}
-          <div className="bg-white border-2 border-blue-200 rounded-2xl p-3 flex flex-col gap-2 shadow-sm">
-            <p className="text-[9px] font-bold text-blue-500 uppercase tracking-widest">ㄱ자 매장 레이아웃</p>
-
-            {/* 상단 벽면 (24-35) — 긴 가로줄 */}
-            <div>
-              <p className="text-[9px] text-gray-400 font-bold mb-1">상단 벽면 (24–35)</p>
-              <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${topWall.length}, minmax(0, 1fr))` }}>
-                {topWall.map((z) => (
-                  <ZoneBtn key={z.num} num={z.num} zones={zones} current={current} onSelect={onSelect} onClose={onClose} />
-                ))}
-              </div>
-            </div>
-
-            {/* 중앙 진열대 (1-9) */}
-            <div>
-              <p className="text-[9px] text-gray-400 font-bold mb-1">중앙 진열대 (1–9)</p>
-              <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${aisles.length}, minmax(0, 1fr))` }}>
-                {aisles.map((z) => (
-                  <ZoneBtn key={z.num} num={z.num} zones={zones} current={current} onSelect={onSelect} onClose={onClose} />
-                ))}
-              </div>
-            </div>
-
-            {/* 하단 벽면 (10-21) + 좌측 벽면 (22-23) */}
-            <div>
-              <p className="text-[9px] text-gray-400 font-bold mb-1">하단 벽면 (10–21) + 좌측 (22–23)</p>
-              <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${bottomWall.length + leftWall.length}, minmax(0, 1fr))` }}>
-                {[...bottomWall, ...leftWall].map((z) => (
-                  <ZoneBtn key={z.num} num={z.num} zones={zones} current={current} onSelect={onSelect} onClose={onClose} />
-                ))}
-              </div>
-            </div>
-
-            {/* 구분선 */}
-            <div className="border-t border-dashed border-line" />
-
-            {/* 우측 윙 (36-41) + 이벤트존 (42) */}
-            <div>
-              <p className="text-[9px] text-gray-400 font-bold mb-1">우측 윙 / 이벤트존</p>
-              <div className="flex flex-wrap gap-1">
-                {[...wing, ...event].map((z) => {
-                  const label = `${z.num}번 ${z.label}`;
-                  const selected = current === label;
-                  return (
-                    <button
-                      key={z.num}
-                      onClick={() => { onSelect(label); onClose(); }}
-                      title={z.category}
-                      className={`flex flex-col items-center justify-center rounded-lg border px-3 py-2 transition cursor-pointer
-                        ${selected
-                          ? "bg-teal-500 border-teal-600 text-white shadow-md"
-                          : "bg-white border-gray-300 text-gray-700 hover:border-teal-400 hover:bg-teal-50"
-                        }`}
-                    >
-                      <span className={`text-[15px] font-bold ${selected ? "text-white" : "text-gray-800"}`}>{z.num}</span>
-                      <span className={`text-[9px] font-semibold ${selected ? "text-teal-100" : "text-gray-500"}`}>{z.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* 현재 선택 표시 */}
-          {current && (
-            <div className="px-3 py-2 bg-teal-50 border border-teal-200 rounded-xl flex items-center gap-2">
-              <MapPin size={12} className="text-teal-500 shrink-0" />
-              <p className="text-[14px] font-bold text-teal-700">현재: {current}</p>
-            </div>
-          )}
+        {/* 2026-08-26 · 사용자 지시 · 매장진열-매장구역도 그대로 · StoreZoneMap 프리미티브 재사용 */}
+        <StoreZoneMap
+          compact
+          onZoneClick={handleZoneClick}
+        />
       </div>
     </BottomSheet>
   );
 };
+
+export default RealMapSelector;

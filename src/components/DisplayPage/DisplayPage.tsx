@@ -56,6 +56,8 @@ import { useDisplayData } from "./useDisplayData";
 // 2026-08-25 · 사용자 지시 · 매장구역 안 배치구역 불일치 탭
 import { ZoneMismatchTab } from "./ZoneMismatchTab";
 import { SplitRightTabs } from "../common/SplitRightTabs";
+// 2026-08-26 · 창고1 · 창고2 구역도 · storage.webp 기반
+import { WarehouseZoneMap } from "../common/WarehouseZoneMap";
 
 // 기존 DOW_* export 하위 호환 유지 (외부 import 대응)
 export { DOW_ALL, DOW_LABELS, isDowActive };
@@ -111,7 +113,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
   const [mapCollapsed, setMapCollapsed] = useState(true);
   // 2026-08-25 · 사용자 지시 · 매장구역 subtab 안 · 매장구역도 vs 배치구역 불일치 탭
-  const [storeInnerTab, setStoreInnerTab] = useState<"map" | "mismatch">(() => {
+  // 2026-08-26 · 창고1 · 창고2 구역도 탭 추가 (storage.webp 기반)
+  const [storeInnerTab, setStoreInnerTab] = useState<"map" | "mismatch" | "warehouse1" | "warehouse2">(() => {
     try {
       const raw = sessionStorage.getItem("dpStoreInnerTab");
       if (raw === "mismatch") { sessionStorage.removeItem("dpStoreInnerTab"); return "mismatch"; }
@@ -593,12 +596,14 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         </main>
       ) : (
         <main className="max-w-[1360px] w-full mx-auto p-4 flex flex-col gap-4 flex-1">
-          {/* 2026-08-25 · 사용자 지시 · 매장구역 안 · 매장구역도/배치구역불일치 탭 (위쪽 별도 탭메뉴) */}
+          {/* 2026-08-25 · 매장구역도/배치불일치 · 2026-08-26 · 창고1/창고2 추가 */}
           <div className="bg-white rounded-xl border border-line overflow-hidden">
             <SplitRightTabs
               tabs={[
-                { key: "map",      label: "매장구역도" },
-                { key: "mismatch", label: "배치구역 불일치" },
+                { key: "map",        label: "매장구역도" },
+                { key: "warehouse1", label: "창고1" },
+                { key: "warehouse2", label: "창고2" },
+                { key: "mismatch",   label: "배치구역 불일치" },
               ]}
               active={storeInnerTab}
               onSelect={(k) => setStoreInnerTab(k as typeof storeInnerTab)}
@@ -607,6 +612,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           </div>
           {storeInnerTab === "mismatch" ? (
             <ZoneMismatchTab />
+          ) : storeInnerTab === "warehouse1" ? (
+            <WarehouseZoneMap filter="1" />
+          ) : storeInnerTab === "warehouse2" ? (
+            <WarehouseZoneMap filter="2" />
           ) : (<>
           <DisplayProductPanel
             productSearchResults={productSearchResults} productMatchZoneId={productMatchZoneId}
