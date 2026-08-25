@@ -38,12 +38,14 @@ interface SlotDef {
   softBg: string;     // "bg-orange-50/50"
 }
 
+// 2026-08-25 · 사용자 지시 · 톤 통일 · 창고 (창1·창2) 같은 cyan · 매장 (매1·매2·매3) 같은 violet
+//   · product_storage.png 톤 · WAREHOUSE_TONE / STORE_TONE 통일
 const SLOTS: readonly SlotDef[] = [
-  { key: "w1", label: "창1", full: "창고1", addKey: "warehouse1AddQty", prevKey: "prevWarehouse1Qty",                          dot: "bg-orange-500",  text: "text-orange-700",  softBg: "bg-orange-50/60"  },
-  { key: "w2", label: "창2", full: "창고2", addKey: "warehouse2AddQty", prevKey: "prevWarehouse2Qty",                          dot: "bg-amber-500",   text: "text-amber-700",   softBg: "bg-amber-50/60"   },
-  { key: "s1", label: "매1", full: "매장1", addKey: "store1AddQty",     prevKey: "prevStore1Qty",     zoneKey: "store1Zone", dot: "bg-emerald-500", text: "text-emerald-700", softBg: "bg-emerald-50/60" },
-  { key: "s2", label: "매2", full: "매장2", addKey: "store2AddQty",     prevKey: "prevStore2Qty",     zoneKey: "store2Zone", dot: "bg-sky-500",     text: "text-sky-700",     softBg: "bg-sky-50/60"     },
-  { key: "s3", label: "매3", full: "매장3", addKey: "store3AddQty",     prevKey: "prevStore3Qty",     zoneKey: "store3Zone", dot: "bg-violet-500",  text: "text-violet-700",  softBg: "bg-violet-50/60"  },
+  { key: "w1", label: "창1", full: "창고1", addKey: "warehouse1AddQty", prevKey: "prevWarehouse1Qty",                          dot: "bg-cyan-500",   text: "text-cyan-700",   softBg: "bg-cyan-50/60"   },
+  { key: "w2", label: "창2", full: "창고2", addKey: "warehouse2AddQty", prevKey: "prevWarehouse2Qty",                          dot: "bg-cyan-500",   text: "text-cyan-700",   softBg: "bg-cyan-50/60"   },
+  { key: "s1", label: "매1", full: "매장1", addKey: "store1AddQty",     prevKey: "prevStore1Qty",     zoneKey: "store1Zone", dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-violet-50/60" },
+  { key: "s2", label: "매2", full: "매장2", addKey: "store2AddQty",     prevKey: "prevStore2Qty",     zoneKey: "store2Zone", dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-violet-50/60" },
+  { key: "s3", label: "매3", full: "매장3", addKey: "store3AddQty",     prevKey: "prevStore3Qty",     zoneKey: "store3Zone", dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-violet-50/60" },
 ] as const;
 
 const WARN_THRESHOLD = 100;
@@ -274,73 +276,62 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
         </div>
       </button>
 
-      {/* ─── 확장 · 5-slot editor + 액션 */}
-      {expanded && (
-        <div className="border-t border-line/60 px-4 py-3 flex flex-col gap-2.5">
-          {SLOTS.map((s, i) => {
-            const prev = row[s.prevKey] as number | null | undefined;
-            const add  = row[s.addKey]  as number | "";
-            const tot  = calcSlotTotal(prev, add);
-            const hasAddVal = add !== "" && Number(add) !== 0;
-            const spec = s.zoneKey ? (specParts[i - 2] ?? "") : "";
-            return (
-              <div key={s.key} className="flex flex-col gap-1.5">
-                {/* 2026-08-23 · #187 · 모바일 · [제목] → [현재재고 크게] → [스테퍼] 세로 배치 · lg+ 기존 그리드 */}
-                <div className="flex flex-col gap-1.5 lg:grid lg:grid-cols-[64px_1fr_auto] lg:gap-2 lg:items-center">
-                  {/* label + dot */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className={`w-1 h-6 rounded-full ${s.dot}`} />
-                    <span className={`text-[15px] lg:text-[15px] font-bold ${s.text}`}>{s.full}</span>
-                    {/* 모바일 · 현재재고 inline 표시 (제목 옆) · 크게 · text-[15px]+ */}
-                    <span className="lg:hidden ml-auto text-[15px] font-bold text-ink tabular-nums">
-                      {prev != null ? (
-                        <>현재 <span className="text-ink font-extrabold">{prev}</span></>
-                      ) : (
-                        <span className="text-zinc-300">현재 -</span>
-                      )}
-                    </span>
-                  </div>
-
-                  {/* 현재값 + 스테퍼 · PC는 grid · 모바일은 flex row (스테퍼만) */}
-                  <div className="flex items-center gap-2 lg:grid lg:grid-cols-[auto_1fr] lg:items-center">
-                    {/* PC 전용 · 인라인 현재재고 */}
-                    <span className="hidden lg:inline text-[14px] font-semibold text-ink-soft tabular-nums shrink-0 min-w-[52px]">
-                      {prev != null ? `현재 ${prev}` : <span className="text-zinc-300">현재 -</span>}
-                    </span>
-                    <StepperInput
-                      value={add}
-                      onChange={v => onPatch(row.key, { [s.addKey]: v } as Partial<StockRow>)}
-                      placeholder="+0"
-                    />
-                    {/* 모바일 · 합계 · 스테퍼 옆 */}
-                    <span className={`lg:hidden text-[15px] font-bold tabular-nums text-right min-w-[48px] tracking-tight ${
-                      hasAddVal ? "text-emerald-700" : tot > 0 ? "text-ink" : "text-zinc-300"
-                    }`}>
-                      = {tot}
-                    </span>
-                  </div>
-
-                  {/* 합계 · PC 전용 (우측 컬럼) */}
-                  <span className={`hidden lg:inline text-[15px] font-bold tabular-nums text-right min-w-[48px] tracking-tight ${
-                    hasAddVal ? "text-emerald-700" : tot > 0 ? "text-ink" : "text-zinc-300"
-                  }`}>
-                    = {tot}
-                  </span>
-                </div>
-
-                {/* 매장구역 · 별도 행 · 2026 트렌드 · 입력 시 자동 저장 flash */}
-                {s.zoneKey && (
-                  <div className="pl-[72px]">
-                    <ZoneInline
-                      value={row[s.zoneKey] as string | null}
-                      onChange={v => onPatch(row.key, { [s.zoneKey!]: v } as Partial<StockRow>)}
-                      erpSpec={spec || undefined}
-                    />
-                  </div>
-                )}
+      {/* ─── 확장 · 5-slot editor + 액션
+            2026-08-25 · 사용자 지시 · 창고 2개 위 · 매장 3개 아래 · grid 배치
+            · 창고 · 2-col grid (cyan 톤 공유)
+            · 매장 · 3-col grid (violet 톤 공유)
+            · 컴팩트 셀 · label + prev + stepper + zone (매장만) 세로 스택
+       */}
+      {expanded && (() => {
+        const warehouses = SLOTS.filter(s => !s.zoneKey);
+        const stores = SLOTS.filter(s => !!s.zoneKey);
+        const renderSlot = (s: typeof SLOTS[number], i: number, isStore: boolean) => {
+          const prev = row[s.prevKey] as number | null | undefined;
+          const add  = row[s.addKey]  as number | "";
+          const tot  = calcSlotTotal(prev, add);
+          const hasAddVal = add !== "" && Number(add) !== 0;
+          const spec = s.zoneKey ? (specParts[i] ?? "") : "";
+          return (
+            <div key={s.key} className={`rounded-lg border ${s.softBg} border-zinc-200/70 p-2 flex flex-col gap-1.5`}>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className={`w-1 h-5 rounded-full ${s.dot} shrink-0`} />
+                <span className={`text-[14px] font-bold ${s.text} truncate`}>{s.full}</span>
+                <span className="ml-auto text-[13px] font-semibold text-ink-soft tabular-nums shrink-0">
+                  {prev != null ? <>현재 <b className="text-ink font-extrabold tabular-nums">{prev}</b></> : <span className="text-zinc-300">현재 -</span>}
+                </span>
               </div>
-            );
-          })}
+              <div className="flex items-center gap-1.5">
+                <StepperInput
+                  value={add}
+                  onChange={v => onPatch(row.key, { [s.addKey]: v } as Partial<StockRow>)}
+                  placeholder="+0"
+                />
+                <span className={`text-[14px] font-bold tabular-nums text-right min-w-[38px] tracking-tight ${
+                  hasAddVal ? "text-emerald-700" : tot > 0 ? "text-ink" : "text-zinc-300"
+                }`}>
+                  = {tot}
+                </span>
+              </div>
+              {isStore && s.zoneKey && (
+                <ZoneInline
+                  value={row[s.zoneKey] as string | null}
+                  onChange={v => onPatch(row.key, { [s.zoneKey!]: v } as Partial<StockRow>)}
+                  erpSpec={spec || undefined}
+                />
+              )}
+            </div>
+          );
+        };
+        return (
+          <div className="border-t border-line/60 px-4 py-3 flex flex-col gap-2.5">
+            {/* Row 1 · 창고 (2-col · cyan 톤 공유) */}
+            <div className="grid grid-cols-2 gap-2">
+              {warehouses.map((s, i) => renderSlot(s, i, false))}
+            </div>
+            {/* Row 2 · 매장 (3-col · violet 톤 공유) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {stores.map((s, i) => renderSlot(s, i, true))}
+            </div>
 
           {/* 액션 · 2026-08-23 · #204 · 개별 [저장] 버튼 + 기존 StockActionsCell */}
           <div className="mt-1 pt-2 border-t border-line/50 flex items-center justify-between gap-2 flex-wrap">
@@ -393,7 +384,8 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 });
