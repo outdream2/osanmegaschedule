@@ -440,8 +440,8 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
           />
         </FilterBar>
 
-        {/* ── 리스트 ─────────────────────────────────────────────────────── */}
-        <Card clip padding="none">
+        {/* ── 리스트 · 2026-08-25 · v9 topAccent ─────────────────────── */}
+        <Card clip padding="none" topAccent>
           {/* 에러 배너 */}
           {loadError && (
             <div className="flex items-center gap-2 p-3.5 text-sm text-rose-700 font-semibold bg-rose-50 border-b border-rose-200">

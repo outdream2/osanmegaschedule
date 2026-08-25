@@ -40,7 +40,7 @@ export const SubMenuListPanel: React.FC<SubMenuListPanelProps> = ({
   tabLabel, category, items, loading, error, isAdmin, onOpenViewer, onOpenSettings,
 }) => {
   return (
-    <Card padding="none" clip className="flex flex-col">
+    <Card padding="none" clip topAccent className="flex flex-col">
       <div className="px-4 py-3 border-b border-zinc-100 bg-sky-50/60 flex items-center gap-2">
         <div className="min-w-0 flex-1">
           <div className="text-[14px] font-bold text-sky-600 uppercase tracking-wider">{tabLabel}</div>
