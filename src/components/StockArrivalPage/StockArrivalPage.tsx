@@ -286,20 +286,33 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
       )}
 
       <div className="max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-3">
+        {/* 2026-08-25 · 사용자 지시 · 입고알림 페이지 v9 목업 개선 · 헤더 툴바 · IconTile + 폰트 +2 */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center shrink-0">
+            <Bell size={16} className="text-sky-600" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-[17px] font-bold text-ink leading-tight tracking-tight">입고알림</div>
+            <div className="text-[13px] text-ink-soft leading-tight mt-0.5">
+              전 직원에게 즉시 · 예약 발송 · 총 {arrivals.length}건
+            </div>
+          </div>
+        </div>
 
         {/* ── 작성 폼 ─────────────────────────────────────────────────────── */}
+        {/* 2026-08-25 · v9 · topAccent + 상단 아이콘 · 폰트 +2 */}
         {canWrite && (
-          <Card borderColor="border-sky-200" className="flex flex-col gap-3">
+          <Card padding="md" topAccent clip className="flex flex-col gap-3">
             <input
               ref={titleRef}
-              className="border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-deep"
+              className="border border-line rounded-lg px-3 py-2.5 text-[15px] outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
               placeholder="제목 (필수)"
               maxLength={80}
               value={newTitle}
               onChange={e => setNewTitle(e.target.value)}
             />
             <textarea
-              className="border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-deep resize-none"
+              className="border border-line rounded-lg px-3 py-2.5 text-[15px] outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint resize-none transition"
               placeholder="내용 (선택)"
               maxLength={200}
               rows={2}
@@ -363,8 +376,8 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
 
         {/* ── 정렬 툴바 ───────────────────────────────────────────────────── */}
         {arrivals.length > 0 && (
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[14px] text-zinc-400 font-bold shrink-0">정렬:</span>
+          <div className="flex items-center gap-1.5 flex-wrap px-1">
+            <span className="text-[15px] text-ink-soft font-bold shrink-0">정렬:</span>
             <button onClick={() => handleSort("created_at")} className={sortBtnCls("created_at")} title="등록일 정렬">등록일{arrow("created_at")}</button>
             <button onClick={() => handleSort("scheduled_at")} className={sortBtnCls("scheduled_at")} title="예약발송일 정렬">예약일{arrow("scheduled_at")}</button>
             <button onClick={() => handleSort("title")} className={sortBtnCls("title")} title="제목 정렬">제목{arrow("title")}</button>
@@ -373,7 +386,8 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
         )}
 
         {/* ── 리스트 ──────────────────────────────────────────────────────── */}
-        <Card clip padding="none">
+        {/* 2026-08-25 · v9 · topAccent · 리스트 프리미티브 톤 */}
+        <Card clip padding="none" topAccent>
           {loading && arrivals.length > 0 && (
             <div className="flex items-center justify-center gap-1.5 py-1.5 bg-emerald-50 border-b border-emerald-100 sticky top-0 z-10">
               <Spinner size={11} tone="emerald" label="새로 불러오는 중..." labelSize={14} />
@@ -424,29 +438,32 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
                   </div>
                 ) : (
                   /* ── 일반 행 ── */
-                  <div className="flex items-start gap-2 px-2 py-1.5 hover:bg-zinc-50/60 transition-all duration-150">
+                  /* 2026-08-25 · v9 · 폰트 +2 · 좌측 IconTile · 상태 pill 톤 정리 */
+                  <div className="flex items-start gap-2.5 px-3 py-2.5 hover:bg-zinc-50/60 transition-all duration-150">
                     {/* 내용 */}
-                    <Package size={13} className="text-sky-400 shrink-0 mt-0.5" />
+                    <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center shrink-0 border border-sky-100">
+                      <Package size={15} className="text-sky-500" />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[14px] font-semibold text-zinc-800 truncate">{a.title}</span>
+                        <span className="text-[16px] font-bold text-ink truncate">{a.title}</span>
                         {pending && (
-                          <span className="inline-flex items-center gap-0.5 text-[14px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1 py-0.5 shrink-0">
-                            <Clock size={9} /> 예약
+                          <span className="inline-flex items-center gap-1 text-[13px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-1.5 py-0.5 shrink-0">
+                            <Clock size={10} /> 예약
                           </span>
                         )}
                         {!a.scheduled_at && !a.broadcast_sent && (
-                          <span className="text-[14px] text-zinc-300 font-semibold shrink-0">미발송</span>
+                          <span className="inline-flex items-center text-[13px] text-zinc-400 font-semibold bg-zinc-50 border border-zinc-200 rounded-md px-1.5 py-0.5 shrink-0">미발송</span>
                         )}
                         {a.broadcast_sent && (
-                          <span className="text-[14px] text-emerald-600 font-semibold shrink-0">발송됨</span>
+                          <span className="inline-flex items-center text-[13px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 rounded-md px-1.5 py-0.5 shrink-0">발송됨</span>
                         )}
                       </div>
-                      {a.body && <p className="text-[15px] text-zinc-400 truncate leading-snug">{a.body}</p>}
-                      <p className="text-[14px] text-zinc-400 mt-0.5">
+                      {a.body && <p className="text-[15px] text-ink-soft truncate leading-snug mt-0.5">{a.body}</p>}
+                      <p className="text-[13px] text-zinc-400 mt-1 tabular-nums">
                         {fmtDT(a.created_at)}
                         {pending && a.scheduled_at && (
-                          <span className="ml-1.5 text-amber-500">→ {fmtDT(a.scheduled_at)}</span>
+                          <span className="ml-1.5 text-amber-600 font-semibold">→ {fmtDT(a.scheduled_at)}</span>
                         )}
                       </p>
                     </div>
