@@ -15,6 +15,7 @@ import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { ProductPurchaseHistoryModal } from "./ProductPurchaseHistoryModal";
 import { LoadingState } from "../common/LoadingState";
 import { EmptyState } from "../common/EmptyState";
+import { StatusPill } from "../common/StatusPill";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { fmtWonCompact } from "../../lib/format";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
@@ -96,7 +97,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
 
   // 공급사 목록
   const [xlsxSuppliers, setXlsxSuppliers] = useState<SupplierAgg[]>([]);
-  const { vendorCategoryMap, findVendorByName } = useVendors();
+  const { vendors, vendorCategoryMap, findVendorByName } = useVendors();
   const [supplierBalanceMap, setSupplierBalanceMap] = useState<Record<string, { balance: number; invoice_date: string | null }>>({});
   // 공급사별 매입주기 (일) · showCycleColumn=true 일 때만 fetch
   //   · key · 정규화 (VAT 미포함 제거 · trim · lower) 공급사명
@@ -223,9 +224,30 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   }, [xlsxSuppliers, supListSort, cycleFor]);
 
   const displayedXlsxSuppliers = useMemo(() => {
+    // 2026-08-25 · 열린 이슈 #2 fix · useVendors 와 union · 매입 이력 없는 공급사도 검색·표시
+    //   · supplier-purchases API 는 매입 이력 있는 vendor 만 반환 → "테스트" 등 신규 vendor 미표시 버그
+    //   · Option A · 클라이언트 union · 매입 이력 없는 vendor 는 metrics 0 · row 우측에 "매입 이력 없음" pill
+    const purchasedNames = new Set(
+      sortedXlsxSuppliers.map(s => String(s.supplier ?? "").trim().toLowerCase()).filter(Boolean),
+    );
+    const extra: SupplierAgg[] = vendors
+      .filter(v => {
+        const nm = String(v.company_name ?? "").trim();
+        if (!nm) return false;
+        return !purchasedNames.has(nm.toLowerCase());
+      })
+      .map(v => ({
+        supplier: String(v.company_name ?? ""),
+        supplier_code: null,
+        purchaseQty: 0, purchaseAmount: 0,
+        saleQty: 0, saleAmount: 0,
+        itemCount: 0, totalStockAmount: 0,
+      }));
+    const merged: SupplierAgg[] = extra.length > 0 ? [...sortedXlsxSuppliers, ...extra] : sortedXlsxSuppliers;
+
     let filtered = supListCategory === "전체"
-      ? sortedXlsxSuppliers
-      : sortedXlsxSuppliers.filter(sup => {
+      ? merged
+      : merged.filter(sup => {
           const nm = String(sup.supplier ?? "").trim();
           const cat = vendorCategoryMap[nm] ?? null;
           return cat === supListCategory;
@@ -240,7 +262,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       });
     }
     return filtered.slice(0, supListLimit);
-  }, [sortedXlsxSuppliers, supListLimit, supListCategory, vendorCategoryMap, supplierSearch]);
+  }, [sortedXlsxSuppliers, supListLimit, supListCategory, vendorCategoryMap, supplierSearch, vendors]);
 
   // 합계 (필터/제한된 visible rows 기준)
   const supListTotals = useMemo(() => {
@@ -471,11 +493,16 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
             <Spinner size={12} tone="sky" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
           </Card>
         )}
-        {xlsxSuppliers.length === 0 ? (
+        {displayedXlsxSuppliers.length === 0 ? (
           loading ? (
             <LoadingState tone="sky" size="compact" label="데이터 로딩중..." />
           ) : (
-            <EmptyState icon={Building2} title="데이터 없음" size="compact" />
+            <EmptyState
+              icon={Building2}
+              title={supplierSearch.trim() ? "일치하는 공급사 없음" : "데이터 없음"}
+              hint={supplierSearch.trim() ? `"${supplierSearch.trim()}" 검색어에 해당하는 공급사가 없습니다` : undefined}
+              size="compact"
+            />
           )
         ) : (
           <table className={`w-full text-[15px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ borderCollapse: "separate", borderSpacing: 0 }}>
@@ -630,6 +657,10 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                           </span>
                           {sup.supplier_code && <span className="text-[14px] tabular-nums text-zinc-400 shrink-0 font-mono bg-zinc-100 rounded px-1" title="공급사코드">#{sup.supplier_code}</span>}
                           {sup.code_conflict && <span className="text-[15px] font-semibold text-amber-500 shrink-0" title="같은 이름에 여러 공급사코드가 존재">⚠</span>}
+                          {/* 2026-08-25 · 열린 이슈 #2 fix · useVendors union · 매입 이력 없는 공급사 (테스트 vendor 등) 표시 */}
+                          {(sup.purchaseQty === 0 && sup.purchaseAmount === 0 && sup.itemCount === 0 && sup.totalStockAmount === 0) && (
+                            <StatusPill tone="zinc" size="xs">매입 이력 없음</StatusPill>
+                          )}
                         </div>
                       </div>
                     </td>
