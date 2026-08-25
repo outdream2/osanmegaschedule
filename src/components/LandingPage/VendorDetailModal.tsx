@@ -4,7 +4,7 @@
 //   · 관련 helpers: METHOD_OPTIONS · Field · SectionTitle · StatCard
 
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { api } from "../../lib/apiClient";
+import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast, toastClass } from "../../hooks/useToast";
 import {
@@ -41,6 +41,11 @@ export const VendorDetailModal: React.FC<{
   const [draft, setDraft] = useState<EditDraft>(emptyDraft(vendor));
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  // 2026-08-26 · #192 · 승인 요청 상태
+  const [approvalRequesting, setApprovalRequesting] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState<"pending" | "approved" | "rejected" | undefined>(
+    (vendor as any)?.approval_status,
+  );
   // 2026-08-10 · 사용자 요청 · 자동 저장 · draft 변경 800ms 후 자동 PATCH · '저장됨' toast (2s)
   const isFirstRenderRef = useRef(true);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -248,6 +253,46 @@ export const VendorDetailModal: React.FC<{
     }
   };
 
+  // 2026-08-26 · #192 · 승인 요청 · 필수 8필드 검증 (draft 기준) + POST endpoint
+  const missingRequired = (() => {
+    const missing: string[] = [];
+    if (!draft.email.trim()) missing.push("이메일");
+    if (!draft.order_method.trim()) missing.push("주문방식");
+    if (!draft.team_leader_name.trim()) missing.push("팀장");
+    if (!draft.team_leader_phone.trim()) missing.push("팀장연락처");
+    if (!draft.emergency_contact.trim()) missing.push("긴급연락처");
+    if (!draft.business_number.trim()) missing.push("사업자번호");
+    if (!draft.special_notes.trim()) missing.push("특이사항");
+    if (!draft.note.trim()) missing.push("비고");
+    return missing;
+  })();
+  const canRequestApproval = panel && approvalStatus !== "approved" && missingRequired.length === 0;
+
+  const handleApprovalRequest = async () => {
+    if (missingRequired.length > 0) {
+      setSaveMsg({ type: "err", text: `필수 항목 미입력: ${missingRequired.join(" · ")}` });
+      return;
+    }
+    setApprovalRequesting(true);
+    setSaveMsg(null);
+    try {
+      // 저장 먼저 (dirty 상태면) · 승인 요청은 저장 후 진행
+      if (isDirty) {
+        await handleSave();
+      }
+      await api.post(`/api/vendors/${vendor.id}/approval-request`, {});
+      setApprovalStatus("pending");
+      setSaveMsg({ type: "ok", text: "관리자 승인 요청 완료 · 승인 완료 시 알림" });
+      showSuccess("승인 요청 완료 · 관리자 확인 대기");
+    } catch (e: any) {
+      const msg = e instanceof ApiError ? e.message : (e?.message ?? "승인 요청 실패");
+      setSaveMsg({ type: "err", text: msg });
+      showError(`승인 요청 실패 · ${msg}`);
+    } finally {
+      setApprovalRequesting(false);
+    }
+  };
+
   // ── 래퍼: panel 모드는 인라인 · 기본은 backdrop 모달 ──
   // 2026-08-17 v2 · Modal 통일 (panel 모드 아닌 경우 backdrop-brand)
   const backdropCls = panel
@@ -320,19 +365,52 @@ export const VendorDetailModal: React.FC<{
         {/* ── 본문 ── */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5">
 
-          {/* 2026-08-25 · #192 · 거래처 panel 모드 · 필수항목 안내 + 승인요청 유도 */}
-          {panel && (
-            <div className="mb-4 rounded-xl border-2 border-brand-deep/20 bg-gradient-to-br from-brand-tint/40 to-sky-50/40 px-4 py-3 flex items-start gap-3">
-              <span className="w-8 h-8 rounded-lg bg-brand-deep text-white flex items-center justify-center shrink-0 font-bold text-[16px]">i</span>
-              <div className="flex-1 min-w-0">
-                <div className="text-[15px] font-bold text-brand-deep leading-tight">필수 항목을 채우고 <span className="underline decoration-2 underline-offset-2">[승인 요청]</span> 을 눌러주세요</div>
-                <div className="text-[13px] text-ink-soft mt-1 leading-relaxed">
-                  <span className="font-semibold text-ink-soft">필수 8개:</span> 이메일 · 주문방식 · 팀장 · 팀장연락처 · 긴급연락처 · 사업자번호 · 특이사항 · 비고
+          {/* 2026-08-25 · #192 · 거래처 panel 모드 · 필수항목 안내 + 승인 상태 배너 */}
+          {panel && (() => {
+            const approved = approvalStatus === "approved";
+            const pending  = approvalStatus === "pending";
+            const rejected = approvalStatus === "rejected";
+            return (
+              <div className={`mb-4 rounded-xl border-2 px-4 py-3 flex items-start gap-3 ${
+                approved  ? "border-emerald-300 bg-gradient-to-br from-emerald-50/60 to-white"
+                : pending  ? "border-amber-300   bg-gradient-to-br from-amber-50/60 to-white"
+                : rejected ? "border-rose-300    bg-gradient-to-br from-rose-50/60 to-white"
+                :            "border-brand-deep/20 bg-gradient-to-br from-brand-tint/40 to-sky-50/40"
+              }`}>
+                <span className={`w-8 h-8 rounded-lg text-white flex items-center justify-center shrink-0 font-bold text-[16px] ${
+                  approved ? "bg-emerald-600" : pending ? "bg-amber-600" : rejected ? "bg-rose-600" : "bg-brand-deep"
+                }`}>
+                  {approved ? "✓" : pending ? "⏳" : rejected ? "✗" : "i"}
+                </span>
+                <div className="flex-1 min-w-0">
+                  {approved ? (
+                    <>
+                      <div className="text-[15px] font-bold text-emerald-700 leading-tight">승인 완료 · 공급사 재고확인 사용 가능</div>
+                      <div className="text-[13px] text-ink-soft mt-1">랜딩 페이지 · [공급사 재고확인] 메뉴 활성화됨</div>
+                    </>
+                  ) : pending ? (
+                    <>
+                      <div className="text-[15px] font-bold text-amber-700 leading-tight">관리자 승인 대기 중</div>
+                      <div className="text-[13px] text-ink-soft mt-1">관리자 승인 완료 시 · [공급사 재고확인] 메뉴가 활성화됩니다</div>
+                    </>
+                  ) : rejected ? (
+                    <>
+                      <div className="text-[15px] font-bold text-rose-700 leading-tight">승인 거절됨 · 관리자에게 문의 후 재요청 가능</div>
+                      <div className="text-[13px] text-ink-soft mt-1">필수 항목을 다시 확인하고 [승인 요청]을 눌러주세요</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-[15px] font-bold text-brand-deep leading-tight">필수 항목을 채우고 <span className="underline decoration-2 underline-offset-2">[승인 요청]</span> 을 눌러주세요</div>
+                      <div className="text-[13px] text-ink-soft mt-1 leading-relaxed">
+                        <span className="font-semibold text-ink-soft">필수 8개:</span> 이메일 · 주문방식 · 팀장 · 팀장연락처 · 긴급연락처 · 사업자번호 · 특이사항 · 비고
+                      </div>
+                      <div className="text-[12px] text-zinc-500 mt-1">관리자 승인 완료 시 · [공급사 재고확인] 메뉴가 활성화됩니다</div>
+                    </>
+                  )}
                 </div>
-                <div className="text-[12px] text-zinc-500 mt-1">관리자 승인 완료 시 · [공급사 재고확인] 메뉴가 활성화됩니다</div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ─── 정보 (탭 제거 · 한 장) ─── */}
           {(() => { void activeTab; return null; })()}
@@ -752,6 +830,25 @@ export const VendorDetailModal: React.FC<{
             {saving ? <Spinner size={12} tone="white" /> : <Check size={12} strokeWidth={2.5} />}
             저장
           </button>
+          {/* 2026-08-26 · #192 · panel 모드 · [승인 요청] 버튼 · 필수 8 만족 시 활성 */}
+          {panel && approvalStatus !== "approved" && (
+            <button
+              onClick={handleApprovalRequest}
+              disabled={!canRequestApproval || approvalRequesting || saving}
+              className={`inline-flex items-center gap-1.5 h-8 px-5 text-[14px] font-bold rounded-lg transition shadow-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                canRequestApproval
+                  ? "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white ring-2 ring-emerald-300/40"
+                  : "bg-zinc-300 text-zinc-500"
+              }`}
+              title={missingRequired.length > 0 ? `필수 항목 미입력: ${missingRequired.join(" · ")}` : "관리자에게 승인 요청 발송"}
+            >
+              {approvalRequesting ? <Spinner size={12} tone="white" /> : <Check size={12} strokeWidth={2.5} />}
+              {approvalStatus === "pending" ? "재요청" : "승인 요청"}
+              {missingRequired.length > 0 && (
+                <span className="ml-1 text-[11px] font-semibold tabular-nums opacity-80">({8 - missingRequired.length}/8)</span>
+              )}
+            </button>
+          )}
         </div>
 
         {/* 결제 등록 모달 (2026-07-31) */}

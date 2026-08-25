@@ -8,29 +8,31 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 701 |
-| 위반 파일 | 1 |
+| 스캔 파일 | 702 |
+| 위반 파일 | 2 |
 | 클린 파일 | 700 (100%) |
-| 총 위반 개수 | 1 |
+| 총 위반 개수 | 2 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
-| `large-file-warn` | 1 | 1 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `large-file-warn` | 2 | 2 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
-| 1 | `src/components/StockManagePage/SupplierTab.tsx` | 853 | 3 | large-file-warn(1) |
+| 1 | `src/components/LandingPage/VendorDetailModal.tsx` | 879 | 3 | large-file-warn(1) |
+| 2 | `src/components/StockManagePage/SupplierTab.tsx` | 853 | 3 | large-file-warn(1) |
 
-## 📝 모든 위반 파일 (1개)
+## 📝 모든 위반 파일 (2개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
+| `src/components/LandingPage/VendorDetailModal.tsx` | 879 | 3 |
 | `src/components/StockManagePage/SupplierTab.tsx` | 853 | 3 |
 
 </details>
