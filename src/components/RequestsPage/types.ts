@@ -39,4 +39,5 @@ export interface InventoryCheck {
   checked_at: string;
 }
 
-export type Tab = "display" | "order" | "mismatch" | "lunch" | "inventory" | "leave";
+// 2026-08-25 · #192 · vendor 승인 탭 추가
+export type Tab = "display" | "order" | "mismatch" | "lunch" | "inventory" | "leave" | "vendor";

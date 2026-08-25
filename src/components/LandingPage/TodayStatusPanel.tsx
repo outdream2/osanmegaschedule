@@ -59,12 +59,12 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
         {/* 전체 요청 N건 요약 · 클릭 → 상세 리스트 토글 · 2026-08-21 · #171 Phase 3 */}
         {(() => {
           // 2026-08-25 · 사용자 지시 · 오늘의 현황 · 재고 점검 항목 제거 · totalCount 도 제외
+          // 2026-08-25 · 사용자 지시 · 결제요청 항목 제거 (paymentPendingCount 도 total 제외)
           const totalCount = leavePendingCount
             + requestsCounts.display + requestsCounts.order
             + requestsCounts.mismatch + (lunchMenuVisible ? requestsCounts.lunch : 0)
             + requestsCounts.return
-            + requestsCounts.resignation
-            + (isAdmin ? paymentPendingCount : 0);
+            + requestsCounts.resignation;
           return (
             <button
               type="button"
@@ -87,17 +87,7 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
         >
           승인대기 <b className="tabular-nums">{approvalPendingTotal}</b>건
         </button>
-        {/* 2026-08-23 · #171 잔여 · 결제요청 (admin only · 미결제·부분결제 매입건) · click → 매장>매입>결제 */}
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={() => onNavigate("display", authSession)}
-            className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[15px] font-semibold text-violet-800 bg-violet-50 hover:brightness-95 border border-violet-200 cursor-pointer transition-colors"
-            title="결제요청 · 매장>매입 결제 페이지로 이동"
-          >
-            결제요청 <b className="tabular-nums">{paymentPendingCount}</b>건
-          </button>
-        )}
+        {/* 2026-08-25 · 사용자 지시 · 결제요청 배지 제거 · 오해 소지 (미결제 매입건 count · 결제요청 아닌 미납건) */}
       </div>
       {/* 7항목 (연차·진열발주·불일치·점심·재고점검·반품·사직서) · 각 클릭 → 페이지 이동 */}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[19px] text-ink-soft pl-[13px]">
@@ -196,8 +186,7 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
               // 2026-08-25 · 사용자 지시 · 재고 점검 항목 제거 (breakdown 도 함께 숨김)
               { label: "반품 요청", count: requestsCounts.return, dot: "bg-orange-500", text: "text-orange-700", nav: "requests" as Exclude<AppNavPage, "landing"> },
               { label: "사직서 승인", count: requestsCounts.resignation, dot: "bg-red-500", text: "text-red-700", nav: "business-manage" as Exclude<AppNavPage, "landing"> },
-              // 2026-08-23 · #171 잔여 · 결제요청 (admin only) · 미결제·부분결제 매입건 총합
-              ...(isAdmin ? [{ label: "결제요청", count: paymentPendingCount, dot: "bg-violet-500", text: "text-violet-700", nav: "display" as Exclude<AppNavPage, "landing"> }] : []),
+              // 2026-08-25 · 사용자 지시 · 결제요청 항목 제거 (미결제 매입건 · 오해 소지)
             ].map(item => (
               <button
                 key={item.label}
