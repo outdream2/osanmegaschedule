@@ -74,6 +74,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   ocrTabOnLogout,
   initialTopTab,
   hideTopTabs = false,
+  initialPurchaseSubTab,
 }) => {
   const { vendorCategories: dbVendorCategories } = useReferenceValues();
   const confirm = useConfirm();
@@ -88,7 +89,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   // Level-2 서브탭 상태
   const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "critical" | "history">("need");
-  const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "scan" | "productarrival" | "productinfo" | "return" | "purchase-history">("receipt");
+  const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "scan" | "productarrival" | "productinfo" | "return" | "purchase-history">(initialPurchaseSubTab ?? "receipt");
+  // 2026-08-25 · DisplayPage 반품 메뉴 진입 시 · 매입 서브탭 강제 (return)
+  useEffect(() => {
+    if (initialPurchaseSubTab && initialPurchaseSubTab !== purchaseSubTab) setPurchaseSubTab(initialPurchaseSubTab);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPurchaseSubTab]);
 
   // 2026-08-23 · #197 · 스캔 미분류 (page 모드) 진입 시 · sessionStorage pending code 감지 · productinfo 서브탭 자동 전환
   useEffect(() => {

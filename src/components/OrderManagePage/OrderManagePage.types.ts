@@ -57,6 +57,8 @@ export interface OrderManagePageProps {
   initialTopTab?: "purchase-order" | "purchase" | "payment" | "statistics";
   /** true 이면 Level-1 탭 UI 렌더 skip (DisplayPage 서브탭 모드) */
   hideTopTabs?: boolean;
+  /** 2026-08-25 · 반품 메뉴 진입 시 · Level-2 매입 서브탭 지정 (예: "return") */
+  initialPurchaseSubTab?: "receipt" | "reconciliation" | "scan" | "productarrival" | "productinfo" | "return" | "purchase-history";
 }
 
 // ─── 발주필요 탭 · 필터/정렬 설정 ─────────────────────────────────────────
