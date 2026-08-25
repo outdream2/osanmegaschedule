@@ -57,6 +57,8 @@ import { ScanLeftPanel, SaveCard, HistoryModal, ReviewSheet } from "./ScanPage.p
 import { ProductCreateModal } from "../ProductInfoPage/ProductCreateModal";
 // 2026-08-25 · 유통기한 임박 모달 (입력날짜 + 유통기한) · inventory_checks 저장
 import { ExpiryDateModal } from "./ExpiryDateModal";
+// 2026-08-25 · 프레임워크 · 상품 정규화 + API fallback 공통 유틸
+import { resolveProduct } from "../../lib/normalizeProduct";
 import { addCachedProduct } from "../../lib/productsCache";
 // 2026-08-23 · #197 · 스캔 미분류 처리 방식 (개인 preference · modal|page 분기)
 import { useScanUnregisteredMode, setScanPendingProductCode } from "../../hooks/useScanUnregisteredMode";
@@ -350,36 +352,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       await getProductsMap();
       setMapLoading(false);
     }
-    // 2026-08-25 · 사용자 지시 · preloadedProduct 정규화
-    //   · ProductSearchInput 은 raw DB row (product_name/product_code) 전달
-    //   · ProductInfo shape (name/code) 로 정규화 · 상품명이 코드로 보이는 버그 fix
-    const normalize = (p: any): ProductInfo => ({
-      code: String(p.code ?? p.product_code ?? result),
-      name: String(p.name ?? p.product_name ?? ""),
-      spec: String(p.spec ?? ""),
-      supplier: p.supplier ?? null,
-      realMap: p.realMap ?? p.real_map ?? null,
-      real_map: p.real_map ?? p.realMap ?? null,
-      ...p,
-    });
-    let found: ProductInfo | null = preloadedProduct ? normalize(preloadedProduct) : lookupProduct(result);
-    // fallback · API 실시간 조회 (캐시 stale · 신규 등록 대응)
-    if (!found) {
-      try {
-        const { data } = await api.get<any>(`/api/products/${encodeURIComponent(result)}`);
-        if (data && (data.product_code || data.code)) {
-          found = {
-            code: String(data.product_code ?? data.code ?? result),
-            name: String(data.product_name ?? data.name ?? ""),
-            spec: String(data.spec ?? ""),
-            supplier: data.supplier ?? null,
-            realMap: data.real_map ?? null,
-            real_map: data.real_map ?? null,
-            ...data,
-          } as ProductInfo;
-        }
-      } catch { /* 404 → 정말 미등록 · 아래에서 처리 */ }
-    }
+    // 2026-08-25 · 프레임워크화 · resolveProduct 공통 helper (preload → cache → API fallback)
+    const found = await resolveProduct(result, preloadedProduct);
     if (!found) {
       setNotFoundCode(result);
       setLastProduct(null);
@@ -387,8 +361,6 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       showToast("등록되지 않은 상품");
       return;
     }
-    // 신규 확보한 정보는 · 이후 lookup 을 위해 로컬 캐시에도 삽입
-    if (!lookupProduct(result)) addCachedProduct(result, found);
     setLastProduct(found);
     setLastCode(result);
 

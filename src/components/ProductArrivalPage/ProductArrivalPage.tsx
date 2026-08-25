@@ -25,6 +25,8 @@ import {
   getProductsMap, lookupProduct, isProductsLoaded,
   type ProductInfo,
 } from "../../lib/productsCache";
+// 2026-08-25 · 프레임워크 · 상품 정규화 + API fallback 공통 유틸
+import { resolveProduct } from "../../lib/normalizeProduct";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
@@ -135,7 +137,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
   const showToast = (msg: string) => _showToast(msg);
 
-  // 2026-08-25 · 사용자 지시 · ScanPage 와 동일 패턴 · preloadedProduct 인자 · 정규화 · API fallback
+  // 2026-08-25 · 프레임워크화 · resolveProduct 공통 helper 사용 (ScanPage 동일 패턴)
   const handleScan = async (result: string, preloadedProduct?: any | null) => {
     setScannerOpen(false);
     setNotFoundCode(null);
@@ -144,23 +146,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       await getProductsMap();
       setMapLoading(false);
     }
-    const normalize = (p: any) => ({
-      code: String(p.code ?? p.product_code ?? result),
-      name: String(p.name ?? p.product_name ?? ""),
-      spec: String(p.spec ?? ""),
-      supplier: p.supplier ?? null,
-      realMap: p.realMap ?? p.real_map ?? null,
-      real_map: p.real_map ?? p.realMap ?? null,
-      ...p,
-    });
-    let found = preloadedProduct ? normalize(preloadedProduct) : lookupProduct(result);
-    if (!found) {
-      // fallback · API 실시간 조회 (캐시 stale · 신규 등록 대응)
-      try {
-        const { data } = await import("../../lib/apiClient").then(m => m.api.get<any>(`/api/products/${encodeURIComponent(result)}`));
-        if (data && (data.product_code || data.code)) found = normalize(data);
-      } catch { /* 404 → 미등록 */ }
-    }
+    const found = await resolveProduct(result, preloadedProduct);
     if (!found) {
       setNotFoundCode(result);
       setLastScannedProduct(null);
