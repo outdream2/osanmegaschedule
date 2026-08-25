@@ -130,6 +130,14 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
       }
       footer={footerNode}
     >
+      {/* 2026-08-26 · #192 · 상단 코멘트 · 승인 완료 후 이 페이지 접근 가능 안내 */}
+      <div className="mb-3 rounded-lg border border-emerald-300/60 bg-gradient-to-br from-emerald-50/60 to-white px-3.5 py-2.5 flex items-center gap-2.5">
+        <span className="w-6 h-6 rounded-md bg-emerald-600 text-white flex items-center justify-center shrink-0 font-bold text-[13px]">✓</span>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-bold text-emerald-700 leading-tight">승인받으면 공급사 재고확인이 가능합니다</div>
+          <div className="text-[12px] text-ink-soft mt-0.5">본 페이지 · 해당 공급사 상품 재고만 표시됩니다</div>
+        </div>
+      </div>
       {/* 2026-08-16 · #94 · 필터 툴바 · 계절 + 기간 + 검색 */}
       <div className="flex flex-col gap-2 pb-3 mb-3 border-b border-zinc-100">
         {/* 계절 필터 */}
