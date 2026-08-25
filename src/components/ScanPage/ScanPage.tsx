@@ -439,6 +439,28 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     setRows(prev => prev.filter(r => r.key !== key));
   }, []);
 
+  // 2026-08-25 · 사용자 지시 · 유통기한임박 클릭 시 · product.expiry_date 필드 업데이트 (토글)
+  //   · 비어있으면 · 오늘 날짜 저장 (마킹)
+  //   · 값 있으면 · null 저장 (해제)
+  //   · PATCH /api/products/[code] · 로컬 rows 상태도 동기화
+  const toggleExpiry = useCallback(async (row: StockRow) => {
+    const cur = (row.product as { expiry_date?: string | null }).expiry_date;
+    const isSet = !!(cur && String(cur).trim());
+    const next = isSet ? null : new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    try {
+      await api.patch(`/api/products/${encodeURIComponent(row.code)}`, { expiry_date: next });
+      // 로컬 상태 동기화 · row.product 즉시 갱신
+      setRows(prev => prev.map(r => (
+        r.key === row.key
+          ? { ...r, product: { ...r.product, expiry_date: next } as typeof r.product }
+          : r
+      )));
+      showToast(next ? `[${row.product.name}] 유통기한 임박 표시 (${next})` : `[${row.product.name}] 유통기한 임박 해제`, 2500);
+    } catch (e: any) {
+      showToast(`유통기한 저장 실패: ${e?.message ?? "네트워크 오류"}`, 3500);
+    }
+  }, [showToast]);
+
   const resetAll = async () => {
     if (rows.length === 0) return;
     if (!await confirm({ message: `등록된 ${rows.length}개 항목을 모두 초기화할까요?`, danger: true })) return;
@@ -814,6 +836,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                     onHistory={openHistory}
                     onRequestDisplay={requestDisplay}
                     onSaveRow={handleSaveRow}
+                    onToggleExpiry={toggleExpiry}
                   />
                 ))}
               </div>

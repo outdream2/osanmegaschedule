@@ -21,6 +21,7 @@ import { calcRowTotal, calcSlotTotal, calcTotalAdded } from "./stockRowTypes";
 import { StatusPill } from "../common/StatusPill";
 import { StepperInput as CommonStepperInput } from "../common/StepperInput";
 import { StockActionsCell } from "./StockActionsCell";
+import { Clock as ClockIcon } from "lucide-react";
 
 // ─── 5-slot 정의 (창고2 · 매장3) ─────────────────────────────────
 interface SlotDef {
@@ -130,12 +131,16 @@ interface StockRowCardProps {
   onRequestDisplay: (row: StockRow) => void;
   // 2026-08-23 · #204 · 개별 저장 (bulk endpoint · items=[one])
   onSaveRow?: (key: string) => Promise<void> | void;
+  // 2026-08-25 · 유통기한 임박 토글 · product.expiry_date 업데이트
+  onToggleExpiry?: (row: StockRow) => Promise<void> | void;
 }
 
 export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
   row, isRecent, requestingKey, onPatch, onRemove, onHistory, onRequestDisplay,
-  onSaveRow,
+  onSaveRow, onToggleExpiry,
 }) => {
+  // 2026-08-25 · 유통기한 임박 · product.expiry_date 있으면 빨간 강조
+  const hasExpiryFlag = !!((row.product as { expiry_date?: string | null }).expiry_date && String((row.product as { expiry_date?: string | null }).expiry_date).trim());
   const rowTotal = calcRowTotal(row);
   const totalAdded = calcTotalAdded(row);
   const hasAdd = totalAdded !== 0;
@@ -171,11 +176,14 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
         "group relative bg-white rounded-2xl border transition-all duration-200",
         "shadow-[0_1px_2px_rgba(10,46,74,0.04),0_1px_3px_rgba(10,46,74,0.03)]",
         "hover:shadow-[0_2px_6px_rgba(10,46,74,0.06),0_4px_12px_-2px_rgba(10,46,74,0.04)]",
-        isRecent
-          ? "border-brand-deep/40 shadow-[0_0_0_3px_rgba(10,46,74,0.06),0_1px_3px_rgba(10,46,74,0.05)]"
-          : isWarn
-            ? "border-amber-200"
-            : "border-line/70",
+        // 2026-08-25 · 유통기한임박 표시 (사용자 지시 · 빨갛게)
+        hasExpiryFlag
+          ? "border-red-300 bg-red-50/40 shadow-[0_0_0_2px_rgba(239,68,68,0.10)]"
+          : isRecent
+            ? "border-brand-deep/40 shadow-[0_0_0_3px_rgba(10,46,74,0.06),0_1px_3px_rgba(10,46,74,0.05)]"
+            : isWarn
+              ? "border-amber-200"
+              : "border-line/70",
       ].join(" ")}
     >
       {/* ─── 헤더 (상품명 + 코드 + 우측 합계) · 탭하면 접힘 토글 */}
@@ -195,6 +203,10 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
             )}
             {isWarn && (
               <StatusPill tone="amber" size="xs">이상값</StatusPill>
+            )}
+            {/* 2026-08-25 · 유통기한 임박 배지 */}
+            {hasExpiryFlag && (
+              <StatusPill tone="rose" size="xs">유통기한 임박</StatusPill>
             )}
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -348,13 +360,32 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                 {saving ? "저장 중..." : savedThisSession ? "✓ 저장됨" : "저장"}
               </button>
             ) : <span />}
-            <StockActionsCell
-              row={row}
-              requestingKey={requestingKey}
-              onHistory={onHistory}
-              onRequestDisplay={onRequestDisplay}
-              onRemove={onRemove}
-            />
+            <div className="flex items-center gap-1">
+              {/* 2026-08-25 · 유통기한 임박 토글 · 클릭 시 · product.expiry_date 오늘 날짜 저장 (재클릭 시 해제) */}
+              {onToggleExpiry && (
+                <button
+                  type="button"
+                  onClick={() => onToggleExpiry(row)}
+                  className={[
+                    "inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[13px] font-bold cursor-pointer transition",
+                    hasExpiryFlag
+                      ? "bg-red-500 text-white hover:bg-red-600 shadow-sm"
+                      : "bg-white text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-400",
+                  ].join(" ")}
+                  title={hasExpiryFlag ? "유통기한 임박 해제 (DB 저장)" : "유통기한 임박 표시 (오늘 날짜 DB 저장)"}
+                >
+                  <ClockIcon size={12} />
+                  {hasExpiryFlag ? "임박 해제" : "유통기한 임박"}
+                </button>
+              )}
+              <StockActionsCell
+                row={row}
+                requestingKey={requestingKey}
+                onHistory={onHistory}
+                onRequestDisplay={onRequestDisplay}
+                onRemove={onRemove}
+              />
+            </div>
           </div>
         </div>
       )}
