@@ -8,16 +8,15 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 688 |
-| 위반 파일 | 8 |
-| 클린 파일 | 680 (99%) |
-| 총 위반 개수 | 8 |
+| 스캔 파일 | 691 |
+| 위반 파일 | 7 |
+| 클린 파일 | 684 (99%) |
+| 총 위반 개수 | 7 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
-| `raw-card-wrapper` | 1 | 1 | medium | Card 프리미티브 (padding·variant·clip) |
 | `large-file-warn` | 7 | 7 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
@@ -27,13 +26,12 @@
 | 1 | `src/components/DisplayPage/DisplayPage.tsx` | 893 | 3 | large-file-warn(1) |
 | 2 | `src/components/LandingPage/LandingPage.tsx` | 854 | 3 | large-file-warn(1) |
 | 3 | `src/components/LandingPage/VendorDetailModal.tsx` | 817 | 3 | large-file-warn(1) |
-| 4 | `src/components/OrderManagePage/OrderManagePage.tsx` | 847 | 3 | large-file-warn(1) |
+| 4 | `src/components/OrderManagePage/OrderManagePage.tsx` | 850 | 3 | large-file-warn(1) |
 | 5 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 817 | 3 | large-file-warn(1) |
 | 6 | `src/components/ScanPage/ProductInfoCard.tsx` | 813 | 3 | large-file-warn(1) |
 | 7 | `src/components/ScanPage/ScanPage.tsx` | 926 | 3 | large-file-warn(1) |
-| 8 | `src/components/DisplayPage/ZoneProductsModal.tsx` | 302 | 2 | raw-card-wrapper(1) |
 
-## 📝 모든 위반 파일 (8개)
+## 📝 모든 위반 파일 (7개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -42,11 +40,10 @@
 | `src/components/DisplayPage/DisplayPage.tsx` | 893 | 3 |
 | `src/components/LandingPage/LandingPage.tsx` | 854 | 3 |
 | `src/components/LandingPage/VendorDetailModal.tsx` | 817 | 3 |
-| `src/components/OrderManagePage/OrderManagePage.tsx` | 847 | 3 |
+| `src/components/OrderManagePage/OrderManagePage.tsx` | 850 | 3 |
 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 817 | 3 |
 | `src/components/ScanPage/ProductInfoCard.tsx` | 813 | 3 |
 | `src/components/ScanPage/ScanPage.tsx` | 926 | 3 |
-| `src/components/DisplayPage/ZoneProductsModal.tsx` | 302 | 2 |
 
 </details>
 

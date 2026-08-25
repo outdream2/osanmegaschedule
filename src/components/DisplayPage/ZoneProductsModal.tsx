@@ -4,6 +4,7 @@
 import React from "react";
 import { StatusPill } from "../common/StatusPill";
 import { Modal } from "../common/Modal";
+import { Card } from "../common/Card";
 import type { ProductInfo } from "../../lib/productsCache";
 
 export interface ZoneProductsModalState {
@@ -171,18 +172,18 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
       <div className="-mx-5 px-5 py-3 bg-zinc-50/60 border-b border-line flex items-center gap-2 flex-wrap mb-3">
         <input type="text" value={search} onChange={e => onSetSearch(e.target.value)} placeholder="상품명 검색"
           className="flex-1 min-w-[160px] h-9 text-[14px] border border-line rounded-lg px-3 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition placeholder:text-zinc-400" />
-        <div className="inline-flex bg-white border border-line rounded-lg p-0.5">
+        <Card padding="none" rounded="lg" className="inline-flex p-0.5">
           <button onClick={() => onSetFilter("all")}      className={`h-8 px-3 text-[13px] font-bold rounded-md cursor-pointer transition ${filter === "all" ? "bg-brand-deep text-white shadow-sm" : "text-ink-soft hover:text-brand-deep"}`}>전체</button>
           <button onClick={() => onSetFilter("mismatch")} className={`h-8 px-3 text-[13px] font-bold rounded-md cursor-pointer transition ${filter === "mismatch" ? "bg-rose-500 text-white shadow-sm" : "text-rose-500 hover:bg-rose-50"}`}>불일치</button>
-        </div>
+        </Card>
         <span className="text-[13px] font-bold text-ink-soft ml-auto tabular-nums">{filtered.length}<span className="text-zinc-400 font-medium">/{matched.length}건</span></span>
       </div>
       {/* List */}
       <div className="overflow-y-auto overflow-x-hidden bg-zinc-50 -mx-5 px-2 sm:px-4 pb-2">
         {filtered.length === 0 ? (
-          <div className="text-center text-xs text-zinc-400 py-10 bg-white rounded-xl border border-line">해당 조건의 상품 없음</div>
+          <Card padding="lg" rounded="xl" className="text-center text-[13px] font-medium text-zinc-400">해당 조건의 상품 없음</Card>
         ) : (
-          <div className="bg-white rounded-xl border border-line overflow-hidden">
+          <Card padding="none" rounded="xl" className="overflow-hidden">
             <table className="w-full text-[11px] table-fixed">
               <colgroup>
                 <col />
@@ -293,7 +294,7 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
                 })}
               </tbody>
             </table>
-          </div>
+          </Card>
         )}
       </div>
     </Modal>
