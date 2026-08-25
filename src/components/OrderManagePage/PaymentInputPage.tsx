@@ -445,8 +445,8 @@ export const PaymentInputPage: React.FC = () => {
         <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
       )}
       <div className="flex flex-col gap-3 h-full min-h-0">
-        {/* 상단 · 검색 + 필터 + 확인 */}
-        <Card padding="md" topAccent clip>
+        {/* 상단 · 검색 + 필터 · 2026-08-26 · clip 제거 (dropdown 잘림 fix) · z-40 dropdown */}
+        <Card padding="md" topAccent className="relative z-30">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2 flex-wrap">
               <IconTile icon={<Wallet size={15} />} tone="amber" size="md" />
@@ -485,7 +485,7 @@ export const PaymentInputPage: React.FC = () => {
                   className="w-full h-9 pl-8 pr-3 rounded-lg border border-line bg-white text-[14px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
                 />
                 {dropdownOpen && query.trim() && filtered.length > 0 && (
-                  <Card padding="none" rounded="lg" className="absolute left-0 right-0 top-full mt-1 z-20 shadow-lg max-h-56 overflow-y-auto">
+                  <Card padding="none" rounded="lg" className="absolute left-0 right-0 top-full mt-1 z-50 shadow-xl max-h-56 overflow-y-auto">
                     {filtered.map(v => (
                       <button
                         key={v.id}
