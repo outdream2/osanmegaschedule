@@ -75,6 +75,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   initialTopTab,
   hideTopTabs = false,
   initialPurchaseSubTab,
+  hideSubTabs = false,
 }) => {
   const { vendorCategories: dbVendorCategories } = useReferenceValues();
   const confirm = useConfirm();
@@ -522,7 +523,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     activeTab: K,
     setTab: (k: K) => void,
     sortable?: { getTabProps: (key: K) => TabHandlerProps; isDragging: boolean },
-  ) => (
+  ) => hideSubTabs ? null : (
     <TabBar<K>
       level={3}
       tabs={tabs.map((t): CommonTabDef<K> => ({

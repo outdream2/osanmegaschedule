@@ -59,6 +59,8 @@ export interface OrderManagePageProps {
   hideTopTabs?: boolean;
   /** 2026-08-25 · 반품 메뉴 진입 시 · Level-2 매입 서브탭 지정 (예: "return") */
   initialPurchaseSubTab?: "receipt" | "reconciliation" | "scan" | "productarrival" | "productinfo" | "return" | "purchase-history";
+  /** 2026-08-25 · true 이면 Level-2 서브탭 UI 렌더 skip (단일 페이지 모드 · 예: DisplayPage 반품 메뉴) */
+  hideSubTabs?: boolean;
 }
 
 // ─── 발주필요 탭 · 필터/정렬 설정 ─────────────────────────────────────────

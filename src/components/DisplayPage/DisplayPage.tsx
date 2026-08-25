@@ -628,11 +628,12 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           />
         </main>
       ) : dpSubTab === "return" && dpCanSeeStockManage ? (
-        /* 2026-08-25 · 사용자 지시 · 반품 신규 메뉴 · 매입탭 · 반품필요 서브탭으로 라우팅 */
+        /* 2026-08-25 · 사용자 지시 · 반품 메뉴 · 반품필요 페이지만 · 매입 서브탭 UI 숨김 */
         <main className="flex-1 flex flex-col min-h-0">
           <OrderManagePage
             ocrTabAuthSession={authSession} ocrTabOnBack={onBack} ocrTabOnNavigate={onNavigate as any}
-            ocrTabOnLogout={onLogout} initialTopTab="purchase" initialPurchaseSubTab="return" hideTopTabs
+            ocrTabOnLogout={onLogout} initialTopTab="purchase" initialPurchaseSubTab="return"
+            hideTopTabs hideSubTabs
           />
         </main>
       ) : (
