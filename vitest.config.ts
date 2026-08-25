@@ -1,6 +1,14 @@
 import { defineConfig } from "vitest/config";
+import path from "node:path";
 
 export default defineConfig({
+  // 2026-08-25 · shadcn/ui 파일 (src/components/ui/*) 이 @/... 경로 alias 사용
+  //   vite.config.ts 는 alias 있으나 · vitest 는 별도 config · 여기서 alias 동기
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
   test: {
     include: [
       "server/**/*.test.ts",
