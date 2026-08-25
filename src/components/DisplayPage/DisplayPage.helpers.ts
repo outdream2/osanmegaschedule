@@ -2,6 +2,7 @@
 // 2026-08-22 · Framework Phase 4 · DisplayPage 대형 파일 분리 · constants + helpers 이관
 import {
   Bell, ClipboardList, Package, Store, BarChart2, Wallet, Building2,
+  RotateCcw,
 } from "lucide-react";
 import { ZONES_STORAGE_KEY, ZONE_DEFS } from "../../constants/displayZones";
 import {
@@ -13,11 +14,14 @@ import { type TabDef as CommonTabDef } from "../common/TabBar";
 import type { DpSubTabKey, DisplayRequest } from "./DisplayPage.types";
 
 // ─── DisplayPage 서브탭 (level 2) 정의 · 상수 · 컴포넌트 외부 배치 (참조 안정성 · 훅 재등록 방지)
+// 2026-08-25 · 사용자 지시 · "통계" → "판매" 라벨 변경 · 반품 메뉴 추가 (반품필요 이관 대상)
 export const DP_SUBTAB_DEFAULTS: CommonTabDef<DpSubTabKey>[] = [
   { key: "purchase-order", label: "발주",       icon: ClipboardList, color: "sky"    },
   { key: "purchase",       label: "매입",       icon: Package,       color: "amber"  },
   { key: "payment",        label: "결제",       icon: Wallet,        color: "teal"   },
-  { key: "statistics",     label: "통계",       icon: BarChart2,     color: "indigo" },
+  { key: "statistics",     label: "판매",       icon: BarChart2,     color: "indigo" },
+  // 2026-08-25 · 사용자 지시 · 신규 반품 메뉴 · 반품필요/반품확정 통합 예정
+  { key: "return",         label: "반품",       icon: RotateCcw,     color: "rose"   },
   { key: "stock-arrivals", label: "입고알림",   icon: Bell,          color: "orange" },
   // "display-request" 서브탭 제거 · RequestsPage 진열요청 탭으로 통합 (2026-08-05)
   { key: "store",          label: "매장구역도", icon: Store,         color: "violet" },

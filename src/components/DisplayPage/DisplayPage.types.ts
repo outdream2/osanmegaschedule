@@ -9,6 +9,7 @@ export type DpSubTabKey =
   | "purchase"
   | "payment"
   | "statistics"
+  | "return"          // 2026-08-25 · 사용자 지시 · 반품 (신규)
   | "stock-arrivals"
   | "store"
   | "vendor-manage";

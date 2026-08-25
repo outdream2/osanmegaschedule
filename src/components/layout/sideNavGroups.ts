@@ -11,6 +11,8 @@ import {
   Briefcase, Chat, Lock,
   UserCircle, UsersThree, CheckSquare, PencilLine,
   Palette, Gear,
+  // 2026-08-25 · 반품 메뉴 신규 (사용자 지시)
+  ArrowsLeftRight as ArrowLeftRight,
   type Icon,
 } from "@phosphor-icons/react";
 import type { AppNavPage } from "./AppNavHeader";
@@ -101,7 +103,9 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "display", label: "발주", icon: Truck, color: "red", subTab: "purchase-order", minLevel: 9 },
       { key: "display", label: "매입", icon: Package, color: "red", subTab: "purchase", minLevel: 9 },
       { key: "display", label: "결제", icon: CurrencyKrw, color: "red", subTab: "payment", minLevel: 9 },
-      { key: "display", label: "통계", icon: ChartBar, color: "red", subTab: "statistics", minLevel: 9 },
+      { key: "display", label: "판매", icon: ChartBar, color: "red", subTab: "statistics", minLevel: 9 },
+      // 2026-08-25 · 사용자 지시 · 반품 메뉴 신규 · 반품필요 페이지 이동
+      { key: "display", label: "반품", icon: ArrowLeftRight, color: "red", subTab: "return", minLevel: 9 },
       // 입고알림 · dpCanSeeStockArrivals (level ≥ 3)
       { key: "display", label: "입고알림", icon: Bell, color: "red", subTab: "stock-arrivals", minLevel: 3 },
       { key: "display", label: "매장진열", icon: Storefront, color: "red", subTab: "store", managerOnly: true },

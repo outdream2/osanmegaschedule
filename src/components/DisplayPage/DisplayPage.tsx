@@ -589,6 +589,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     "purchase": dpCanSeeStockManage && !dpHiddenSubs.has("purchase"),
     "payment": dpCanSeeStockManage && !dpHiddenSubs.has("payment"),
     "statistics": dpCanSeeStockManage && !dpHiddenSubs.has("statistics"),
+    // 2026-08-25 · 반품 신규 · dpCanSeeStockManage 조건 사용 (통계와 동일 레벨)
+    "return": dpCanSeeStockManage && !dpHiddenSubs.has("return"),
     "stock-arrivals": dpCanSeeStockArrivals && !dpHiddenSubs.has("stock-arrivals"),
     "store": !dpHiddenSubs.has("store"),
     "vendor-manage": dpCanSeeStockManage && !dpHiddenSubs.has("vendor-manage"),
