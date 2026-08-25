@@ -450,11 +450,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const deferredNeedSearch = useDeferredValue(lowStockSearch);
   // 2026-08-25 · 사용자 지시 · 조건적용 on/off 토글 · 검색 시에만 적용
   //   · ON (기본) · 항상 lowStock (재고 부족 통과) 안에서만
-  //   · OFF + 검색어 있음 · products 전체에서 검색 (조건 무시 · 모든 상품 검색 가능)
-  //   · OFF + 검색어 없음 · lowStock 그대로 (리스트 너무 많이 뜨는 것 방지 · 사용자 지시)
+  //   · OFF + 검색어 있음 · allProductsMap 전체 상품 (products 는 low-stock API 결과 · 전체 아님)
+  //   · OFF + 검색어 없음 · lowStock 그대로 (리스트 폭주 방지)
+  //   · 버그 fix (2026-08-25) · 이전 · products 사용 → low-stock API 만 반환 → 전체 검색 불가
+  //     → allProductsMap (전체 products 맵) 을 검색 소스로 사용
   const lowStockFiltered = useMemo(() => {
     const q = deferredNeedSearch.trim();
-    const applyCategory = (p: ProductInfo): boolean => {
+    const applyCategory = (p: any): boolean => {
       if (needCategoryFilter === "all") return true;
       const supplierName = String(p.supplier ?? "").trim();
       const cat = supplierName ? getVendorCategory(supplierName) : null;
@@ -464,18 +466,19 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       }
       return cat === needCategoryFilter;
     };
-    // 검색어 있고 · 조건적용 OFF → products 전체에서 검색
+    // 검색어 있고 · 조건적용 OFF → allProductsMap 전체 상품
     // 그 외 (ON · 또는 검색어 없음) → lowStock (기본 발주필요 리스트)
-    const base = (q && !needConditionApply) ? products : lowStock;
+    const useAll = q && !needConditionApply;
+    const base: ProductInfo[] = useAll ? Object.values(allProductsMap) as ProductInfo[] : lowStock;
     return base.filter(p => {
       if (q) {
-        const name = getName(p), code = getCode(p), sup = p.supplier ?? "";
+        const name = getName(p), code = getCode(p), sup = String((p as any).supplier ?? "");
         if (!(matchHangul(name, q) || matchHangul(code, q) || matchHangul(sup, q))) return false;
       }
       return applyCategory(p);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lowStock, products, needConditionApply, deferredNeedSearch, needCategoryFilter, vendorCategoryMap]);
+  }, [lowStock, allProductsMap, needConditionApply, deferredNeedSearch, needCategoryFilter, vendorCategoryMap]);
 
   // 서브탭 정의
   type PurchaseOrderKey = "order" | "need" | "critical" | "history";
