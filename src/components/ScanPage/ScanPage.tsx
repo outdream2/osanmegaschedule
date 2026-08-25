@@ -53,6 +53,8 @@ import {
 } from "./helpers";
 // 2026-08-22 · Framework Phase 4 · 4개 UI 섹션 이관 (ScanLeftPanel/SaveCard/HistoryModal/ReviewSheet)
 import { ScanLeftPanel, SaveCard, HistoryModal, ReviewSheet } from "./ScanPage.panels";
+// 2026-08-25 · Framework Phase 4 · 순수 필터 함수 이관 (isWarnRow · 데드코드 · export 유지 · 미사용)
+import { needsDisplayRequest, hasExpiry } from "./ScanPage.filters";
 // 2026-08-23 · #179 · 미등록 상품 즉시 등록 · ProductCreateModal 재사용
 import { ProductCreateModal } from "../ProductInfoPage/ProductCreateModal";
 // 2026-08-25 · 유통기한 임박 모달 (입력날짜 + 유통기한) · inventory_checks 저장
@@ -175,34 +177,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   type ScanFilter = "all" | "display" | "expiry";
   const [scanFilter, setScanFilter] = useState<ScanFilter>("all");
 
-  const WARN_THRESHOLD = 100;
-  const isWarnRow = useCallback((r: StockRow): boolean => {
-    const a = (v: number | "") => v !== "" ? Number(v) : 0;
-    return (
-      a(r.warehouse1AddQty) >= WARN_THRESHOLD ||
-      a(r.warehouse2AddQty) >= WARN_THRESHOLD ||
-      a(r.store1AddQty)     >= WARN_THRESHOLD ||
-      a(r.store2AddQty)     >= WARN_THRESHOLD ||
-      a(r.store3AddQty)     >= WARN_THRESHOLD
-    );
-  }, []);
-
-  // 2026-08-25 · 진열요청 필요 · 매장 재고 total 0 && 창고 재고 total > 0
-  const needsDisplayRequest = useCallback((r: StockRow): boolean => {
-    const num = (v: number | null | undefined | "") => (v != null && v !== "" ? Number(v) : 0);
-    const wh = num(r.prevWarehouse1Qty) + num(r.warehouse1AddQty)
-             + num(r.prevWarehouse2Qty) + num(r.warehouse2AddQty);
-    const store = num(r.prevStore1Qty) + num(r.store1AddQty)
-                + num(r.prevStore2Qty) + num(r.store2AddQty)
-                + num(r.prevStore3Qty) + num(r.store3AddQty);
-    return store === 0 && wh > 0;
-  }, []);
-
-  // 2026-08-25 · 유통기한 주의 · product.expiry_date 있음 (기준일 없음 · 표시만)
-  const hasExpiry = useCallback((r: StockRow): boolean => {
-    const exp = (r.product as { expiry_date?: string | null }).expiry_date;
-    return !!(exp && String(exp).trim());
-  }, []);
+  // 2026-08-25 · Framework Phase 4 · 순수 필터 함수 · ScanPage.filters.ts 이관 (WARN_THRESHOLD=100 도 이관)
 
   const scanStats = React.useMemo(() => {
     let display = 0, expiry = 0;
@@ -211,7 +186,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       if (hasExpiry(r)) expiry += 1;
     }
     return { total: rows.length, display, expiry };
-  }, [rows, needsDisplayRequest, hasExpiry]);
+  }, [rows]);
 
   const filteredRows = React.useMemo(() => {
     if (scanFilter === "all") return sortedRows;
@@ -220,7 +195,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       if (scanFilter === "expiry")  return hasExpiry(r);
       return true;
     });
-  }, [sortedRows, scanFilter, needsDisplayRequest, hasExpiry]);
+  }, [sortedRows, scanFilter]);
 
   useEffect(() => { loadZBar(); }, []);
   useEffect(() => {
