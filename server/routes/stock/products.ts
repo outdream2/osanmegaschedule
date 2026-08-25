@@ -40,20 +40,47 @@ router.get("/api/products-map", asyncHandler(async (_req, res) => {
 // 2026-08-03 · Priority 3 · get_inventory_latest RPC 호출 · 단일 DISTINCT ON 쿼리로 교체
 //   fallback: RPC 미생성(does not exist) 시 → 기존 1000건 페이지루프 방식으로 graceful 처리
 router.get("/api/inventory-latest", asyncHandler(async (_req, res) => {
-  type InvRow = { warehouse_stock: number | null; store_stock: number | null; checked_at: string | null };
+  // 2026-08-26 · 사용자 버그 fix · 5-slot 완전 지원
+  //   · warehouse1_stock (신규) + warehouse_stock (레거시) · 창고1
+  //   · warehouse2_stock (신규) · 창고2
+  //   · store_stock (레거시 · 매장1) + store_stock_2 (신규 · 매장2) + store3_stock (신규 · 매장3)
+  //   · 지역/구역 컬럼 (store1_zone·store2_zone·store3_zone) 도 포함
+  type InvRow = {
+    warehouse_stock: number | null;  // 하위호환 · = warehouse1_stock 값
+    warehouse1_stock: number | null;
+    warehouse2_stock: number | null;
+    store_stock: number | null;      // = 매장1
+    store_stock_2: number | null;    // = 매장2
+    store3_stock: number | null;
+    store1_zone: string | null;
+    store2_zone: string | null;
+    store3_zone: string | null;
+    checked_at: string | null;
+  };
   const buildMap = (rows: any[]): Record<string, InvRow> => {
     const map: Record<string, InvRow> = {};
     for (const r of rows) {
       const code = String(r.product_code ?? "").trim();
       if (!code || map[code]) continue;
+      const w1 = r.warehouse1_stock != null ? Number(r.warehouse1_stock)
+                : r.warehouse_stock  != null ? Number(r.warehouse_stock)  : null;
       map[code] = {
-        warehouse_stock: r.warehouse_stock != null ? Number(r.warehouse_stock) : null,
-        store_stock:     r.store_stock     != null ? Number(r.store_stock)     : null,
-        checked_at:      r.checked_at ?? null,
+        warehouse_stock:  w1,  // 하위 호환 alias
+        warehouse1_stock: w1,
+        warehouse2_stock: r.warehouse2_stock != null ? Number(r.warehouse2_stock) : null,
+        store_stock:      r.store_stock      != null ? Number(r.store_stock)      : null,
+        store_stock_2:    r.store_stock_2    != null ? Number(r.store_stock_2)    : null,
+        store3_stock:     r.store3_stock     != null ? Number(r.store3_stock)     : null,
+        store1_zone:      r.store1_zone ?? null,
+        store2_zone:      r.store2_zone ?? null,
+        store3_zone:      r.store3_zone ?? null,
+        checked_at:       r.checked_at ?? null,
       };
     }
     return map;
   };
+
+  const SELECT_COLS = "product_code, warehouse_stock, warehouse1_stock, warehouse2_stock, store_stock, store_stock_2, store3_stock, store1_zone, store2_zone, store3_zone, checked_at";
 
   // 1차 시도: RPC (단일 DISTINCT ON 쿼리 · 빠름)
   const { data: rpcData, error: rpcErr } = await supabase.rpc("get_inventory_latest");
@@ -76,11 +103,25 @@ router.get("/api/inventory-latest", asyncHandler(async (_req, res) => {
   while (true) {
     const { data, error } = await supabase
       .from("inventory_checks")
-      .select("product_code, warehouse_stock, store_stock, checked_at")
+      .select(SELECT_COLS)
       .order("checked_at", { ascending: false })
       .range(from, from + PAGE - 1);
     if (error) {
       if (/relation|does not exist/i.test(error.message)) break;
+      // 신규 컬럼 미존재 (마이그레이션 안 된 DB) · fallback · 레거시 컬럼만
+      if (/column .* does not exist/i.test(error.message)) {
+        console.warn("[inventory-latest] 신규 컬럼 없음 · 레거시 fallback · warehouse_stock · store_stock 만");
+        const { data: lg } = await supabase
+          .from("inventory_checks")
+          .select("product_code, warehouse_stock, store_stock, checked_at")
+          .order("checked_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (!lg || lg.length === 0) break;
+        allRows.push(...lg);
+        if (lg.length < PAGE) break;
+        from += PAGE;
+        continue;
+      }
       throw new HttpError(500, error.message);
     }
     if (!data || data.length === 0) break;

@@ -132,12 +132,30 @@ export function useDisplayData(selectedDate: string, selectedYM: string): UseDis
       for (const [code, info] of Object.entries(serverMap as Record<string, ProductInfo>)) {
         merged[code] = { ...(staticMap[code] ?? {} as ProductInfo), ...info };
       }
-      const inv = invMap as Record<string, { warehouse_stock: number | null; store_stock: number | null; checked_at: string | null }>;
+      // 2026-08-26 · 사용자 버그 fix · 5-slot 완전 지원 · 창고2·매장2·매장3 + zones 전파
+      const inv = invMap as Record<string, {
+        warehouse_stock: number | null; warehouse1_stock: number | null; warehouse2_stock: number | null;
+        store_stock: number | null; store_stock_2: number | null; store3_stock: number | null;
+        store1_zone: string | null; store2_zone: string | null; store3_zone: string | null;
+        checked_at: string | null;
+      }>;
       for (const [code, iv] of Object.entries(inv)) {
         const stripped = code.replace(/^0+/, "");
         for (const k of [code, stripped].filter(Boolean)) {
           if (merged[k]) {
-            merged[k] = { ...merged[k], warehouse_stock: iv.warehouse_stock, store_stock: iv.store_stock, inv_checked_at: iv.checked_at } as ProductInfo;
+            merged[k] = {
+              ...merged[k],
+              warehouse_stock:  iv.warehouse_stock,
+              warehouse1_stock: iv.warehouse1_stock,
+              warehouse2_stock: iv.warehouse2_stock,
+              store_stock:      iv.store_stock,
+              store_stock_2:    iv.store_stock_2,
+              store3_stock:     iv.store3_stock,
+              store1_zone:      iv.store1_zone,
+              store2_zone:      iv.store2_zone,
+              store3_zone:      iv.store3_zone,
+              inv_checked_at:   iv.checked_at,
+            } as ProductInfo;
           }
         }
       }
