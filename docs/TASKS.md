@@ -161,10 +161,23 @@
 16. ✅ **배치구역 불일치 리스트 · 표형식** (`aaeb6358`) · TableListWrap 프리미티브 적용
 
 **신규 요청 (2026-08-25 오후 · 오래된 순 큐)**
-17. 🟡 **유통기한 임박 모달** · 클릭 시 · 입력날짜 (today) + 유통기한 날짜 · inventory_checks 저장 · migration 필요 (expiry_date · expiry_input_date DATE)
-18. 🟡 **매입 · 실재고 서브탭 → 유통기한 임박** · rename · 유통기한 임박 상품 리스트업 (신규 뷰)
+17. ✅ **유통기한 임박 모달** (`06b09a5d`) · 입력날짜 + 유통기한 · inventory_checks 저장 · migration `20260825_inventory_checks_add_expiry_columns.sql`
+18. ✅ **매입 · 실재고 서브탭 → 유통기한 임박** (`4070dec2`) · ExpiryImminentTab + API `/api/products/expiry-imminent`
 19. 🟡 **매장구역도 페이지 · UI 대원칙+목업 재적용** · 헤더·검색·구역설정·라벨 클릭 상품 조회 · 미완 개선
 20. 🟡 **발주서 PDF 저장** · A4 · 텍스트 리포트 형식 · 깔끔한 레이아웃 (jsPDF 텍스트 기반)
+21. ✅ **오늘의 현황 · 재고 점검 제거** (`f8f964e5`) · 버튼·breakdown·totalCount 3곳
+22. ✅ **서브탭 개별 노출 지원** (`33b9ac4f`) · 점심불참 단독 숨김 지원 · BrandingSettings composite key + SideNav 필터 + TodayStatusPanel 체크
+23. 🟡 **발주요청 리스트 · 오른쪽 상품명 앞 아이콘 개선** (트렌드 검색 · 정확 위치 확인 필요)
+24. 🟡 **발주필요 검색창** · 조건 무시 · 조건적용 on/off 토글 · 검색 시 (재고 부족) 조건 무관하게 검색되게
+25. ✅ **품절임박 · 공급사 필터** (`f76f9bdb`) · dropdown + 건수 병기 + 해제 버튼
+26. 🟡 **발주이력 · 공급사 필터** (진행중)
+27. ✅ **Split 윈도우 프레임워크 폰트 +2** (`18fafbdd`) · SplitListPanel title/search/add/error · SplitPanel modal title
+28. ✅ **product 등록 · cost_price 제거 + DB 컬럼 auto-strip 재시도** (`2938957a` · `44a187aa`) · note 컬럼 등 누락 자동 대응
+29. 🟡 **배치구역 불일치 · 인라인 편집 + 폰트 +3** (신규)
+30. 🟡 **자동 임포트 Phase B/C/D** · 사용자 재요청 · 다운로드 → 실행 시 자동 동작 · installer.bat 실제 파일 필요
+    - Phase B · Python 감시 스크립트
+    - Phase C · PyInstaller .exe
+    - Phase D · install.bat · 6단계 자동 (Python·pip·Task Scheduler·BASE_URL)
 
 ### 🚨 열린 이슈 (긴급 · 다음 세션 최우선)
 
