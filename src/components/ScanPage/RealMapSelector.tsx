@@ -1,6 +1,6 @@
 import React from "react";
 import { MapPin } from "lucide-react";
-import { ZONE_DEFS } from "../../constants/displayZones";
+import { useZoneDefs, type ZoneDef } from "../../hooks/useZoneDefs";
 import { BottomSheet } from "../common/BottomSheet";
 
 interface RealMapSelectorProps {
@@ -11,17 +11,19 @@ interface RealMapSelectorProps {
 
 function ZoneBtn({
   num,
+  zones,
   current,
   onSelect,
   onClose,
 }: {
   key?: number | string;
   num: number;
+  zones: ZoneDef[];
   current: string | null | undefined;
   onSelect: (v: string) => void;
   onClose: () => void;
 }) {
-  const z = ZONE_DEFS.find((d) => d.num === num);
+  const z = zones.find((d) => d.num === num);
   if (!z) return null;
   const label = `${z.num}번 ${z.label}`;
   const selected = current === label;
@@ -46,13 +48,15 @@ function ZoneBtn({
 }
 
 export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSelect, onClose }) => {
+  // 2026-08-25 · 사용자 버그 fix · 매장구역도 편집 반영 · useZoneDefs 훅 사용 (hardcoded ZONE_DEFS X)
+  const { zones } = useZoneDefs();
   // Zones by section
-  const topWall    = ZONE_DEFS.filter((z) => z.section === "top_wall");    // 24-35
-  const aisles     = ZONE_DEFS.filter((z) => z.section === "aisle");       // 1-9
-  const bottomWall = ZONE_DEFS.filter((z) => z.section === "bottom_wall"); // 10-21
-  const leftWall   = ZONE_DEFS.filter((z) => z.section === "left_wall");   // 22-23
-  const wing       = ZONE_DEFS.filter((z) => z.section === "wing");        // 36-41
-  const event      = ZONE_DEFS.filter((z) => z.section === "event");       // 42
+  const topWall    = zones.filter((z) => z.section === "top_wall");    // 24-35
+  const aisles     = zones.filter((z) => z.section === "aisle");       // 1-9
+  const bottomWall = zones.filter((z) => z.section === "bottom_wall"); // 10-21
+  const leftWall   = zones.filter((z) => z.section === "left_wall");   // 22-23
+  const wing       = zones.filter((z) => z.section === "wing");        // 36-41
+  const event      = zones.filter((z) => z.section === "event");       // 42
 
   const header = (
     <div className="flex items-center gap-2 px-4 py-3 bg-white border-b border-line">
@@ -95,7 +99,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
               <p className="text-[9px] text-gray-400 font-bold mb-1">상단 벽면 (24–35)</p>
               <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${topWall.length}, minmax(0, 1fr))` }}>
                 {topWall.map((z) => (
-                  <ZoneBtn key={z.num} num={z.num} current={current} onSelect={onSelect} onClose={onClose} />
+                  <ZoneBtn key={z.num} num={z.num} zones={zones} current={current} onSelect={onSelect} onClose={onClose} />
                 ))}
               </div>
             </div>
@@ -105,7 +109,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
               <p className="text-[9px] text-gray-400 font-bold mb-1">중앙 진열대 (1–9)</p>
               <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${aisles.length}, minmax(0, 1fr))` }}>
                 {aisles.map((z) => (
-                  <ZoneBtn key={z.num} num={z.num} current={current} onSelect={onSelect} onClose={onClose} />
+                  <ZoneBtn key={z.num} num={z.num} zones={zones} current={current} onSelect={onSelect} onClose={onClose} />
                 ))}
               </div>
             </div>
@@ -115,7 +119,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
               <p className="text-[9px] text-gray-400 font-bold mb-1">하단 벽면 (10–21) + 좌측 (22–23)</p>
               <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${bottomWall.length + leftWall.length}, minmax(0, 1fr))` }}>
                 {[...bottomWall, ...leftWall].map((z) => (
-                  <ZoneBtn key={z.num} num={z.num} current={current} onSelect={onSelect} onClose={onClose} />
+                  <ZoneBtn key={z.num} num={z.num} zones={zones} current={current} onSelect={onSelect} onClose={onClose} />
                 ))}
               </div>
             </div>
