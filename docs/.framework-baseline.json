@@ -1,10 +1,10 @@
 {
   "created": "2026-08-25",
   "version": 1,
-  "totalViolations": 8,
+  "totalViolations": 1,
   "files": {
-    "src/components/DisplayPage/DisplayPage.tsx": {
-      "lines": 893,
+    "src/components/StockManagePage/SupplierTab.tsx": {
+      "lines": 853,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -12,76 +12,6 @@
         }
       ],
       "totalWeight": 3
-    },
-    "src/components/LandingPage/LandingPage.tsx": {
-      "lines": 854,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/LandingPage/VendorDetailModal.tsx": {
-      "lines": 817,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/OrderManagePage/OrderManagePage.tsx": {
-      "lines": 847,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/OrderManagePage/PaymentInfoTab.tsx": {
-      "lines": 817,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/ScanPage/ProductInfoCard.tsx": {
-      "lines": 813,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/ScanPage/ScanPage.tsx": {
-      "lines": 926,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/DisplayPage/ZoneProductsModal.tsx": {
-      "lines": 302,
-      "violations": [
-        {
-          "ruleId": "raw-card-wrapper",
-          "count": 1
-        }
-      ],
-      "totalWeight": 2
     }
   }
 }

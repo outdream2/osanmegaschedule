@@ -27,6 +27,8 @@ import type { SupplierAgg, SupListSortKey, SupDetailSortKey, SupplierGroup } fro
 import { fmt } from "./SupplierTab.types";
 // 2026-08-22 · Framework Phase 4 · 3섹션 별도 컴포넌트 이관
 import { SupplierDetailPanel, SupplierDetailModalWrapper, ProductPurchaseHistoryModalWrapper, SupplierFilterBar } from "./SupplierTab.panels";
+// 2026-08-25 · #82 A안 · 인라인 확장 sub-list
+import { SupplierInlineExpansion } from "./SupplierInlineExpansion";
 // 2026-08-23 · #198 Phase 3 · SplitListPanel v3 이관 · 프레임워크 통일
 import { SplitListPanel } from "../common/SplitListPanel";
 
@@ -184,6 +186,35 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   const [supplierRowsLoading, setSupplierRowsLoading] = useState<Set<string>>(new Set());
   const supplierFetchedRef = useRef<Set<string>>(new Set());
   const supplierInflightRef = useRef<Set<string>>(new Set());
+  // 2026-08-25 · #82 (#259) 복원 · 인라인 ▶ 확장 · 우측 SplitPanel 과 독립적으로 sub-list 표시
+  const [inlineExpanded, setInlineExpanded] = useState<Set<string>>(new Set());
+  const toggleInlineExpand = useCallback((key: string, sup: SupplierAgg) => {
+    setInlineExpanded(prev => {
+      const n = new Set(prev);
+      if (n.has(key)) { n.delete(key); return n; }
+      n.add(key);
+      // 아직 fetch 안 됐으면 · rows 로드 (기존 로직 재활용)
+      if (!supplierFetchedRef.current.has(key) && !supplierInflightRef.current.has(key)) {
+        supplierInflightRef.current.add(key);
+        setSupplierRowsLoading(l => { const s = new Set(l); s.add(key); return s; });
+        const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.LARGE) });
+        if (sup.supplier_code) params.set("supplier_code", sup.supplier_code);
+        else if (sup.supplier) params.set("supplier", sup.supplier);
+        api.get<any>(`/api/stock-manage/top-sales?${params}`)
+          .then(({ data }) => {
+            const rows = data?.rows ?? [];
+            setSupplierRowsMap(prev2 => ({ ...prev2, [key]: Array.isArray(rows) ? rows : [] }));
+            supplierFetchedRef.current.add(key);
+          })
+          .catch(() => { setSupplierRowsMap(prev2 => ({ ...prev2, [key]: [] })); })
+          .finally(() => {
+            supplierInflightRef.current.delete(key);
+            setSupplierRowsLoading(l => { const s = new Set(l); s.delete(key); return s; });
+          });
+      }
+      return n;
+    });
+  }, []);
 
   // 공급사 정보 모달 (VendorDetailModal)
   const [supplierDetailModal, setSupplierDetailModal] = useState<any | null>(null);
@@ -635,14 +666,35 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                 const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
                 const isExpanded = supplierRowsMap[key] != null;
                 const isSelected = supplierSelectedKey === key;
+                // 2026-08-25 · #82 A안 · 인라인 ▶ 확장 · 우측 SplitPanel 과 독립
+                const isInline = inlineExpanded.has(key);
+                const inlineRows = supplierRowsMap[key];
+                const inlineLoading = supplierRowsLoading.has(key);
+                void isExpanded;
                 return (
-                  <tr key={key}
+                  <React.Fragment key={key}>
+                  <tr
                     onClick={() => { toggleSupplierExpand(sup); setSupplierSelectedKey(key); }}
                     className={`cursor-pointer transition-colors ${isSelected ? "bg-brand-tint/60 hover:bg-brand-tint" : "hover:bg-brand-tint/30"}`}
                     title="클릭 → 오른쪽 패널에 상세">
                     <td className="text-center align-middle py-1.5">
-                      {/* 2026-08-25 · 사용자 지시 · Option A · 오해되는 Down chevron 제거 · 항상 Right (클릭 시 우측 상세) */}
-                      <ChevronRight size={13} className={`mx-auto ${isSelected ? "text-brand-deep" : "text-zinc-300"}`} />
+                      {/* 2026-08-25 · #82 A안 · 인라인 확장 chevron · 클릭 시 sub-list 토글 (row select 는 분리) */}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); toggleInlineExpand(key, sup); }}
+                        title={isInline ? "상품 목록 접기" : "상품 목록 인라인 펼치기"}
+                        className={`inline-flex items-center justify-center w-6 h-6 rounded-md transition-all cursor-pointer ${
+                          isInline
+                            ? "bg-brand-tint text-brand-deep"
+                            : "text-zinc-400 hover:bg-brand-tint/40 hover:text-brand-deep"
+                        }`}
+                      >
+                        <ChevronRight
+                          size={13}
+                          strokeWidth={2.4}
+                          className={`transition-transform duration-200 ${isInline ? "rotate-90" : ""}`}
+                        />
+                      </button>
                     </td>
                     <td className="text-center align-middle py-1.5 text-[15px] font-semibold text-zinc-400 tabular-nums">{i + 1}</td>
                     {/* 2026-08-10 · #18 · 공급사 셀에 [분류][줄바꿈][공급사명] · 2줄 (사용자 요청) */}
@@ -700,6 +752,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                       )
                     )}
                   </tr>
+                  {isInline && <SupplierInlineExpansion loading={inlineLoading} rows={inlineRows} />}
+                  </React.Fragment>
                 );
               })}
             </tbody>
