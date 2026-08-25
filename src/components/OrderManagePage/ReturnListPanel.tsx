@@ -5,7 +5,7 @@
 // 2026-08-03 · 반품 요청서 모달 · 발주서 스타일로 재설계 (#188)
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useVendors } from "../../hooks/useVendors";
-import { Package, Truck, ChevronRight, ChevronDown } from "lucide-react";
+import { Package, Truck, ChevronRight, ChevronDown, CheckCircle2 } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
@@ -216,6 +216,41 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
   const [returnRequestItem, setReturnRequestItem] = useState<any | null>(null);
   // 일괄 반품 · 선택 상품 배열 (있으면 모달 items props 로 전달)
   const [returnRequestItems, setReturnRequestItems] = useState<any[] | null>(null);
+  // 2026-08-25 · 사용자 지시 · 반품확정 (모달 없이 즉시 status='done' 저장) · row 스피너
+  const [confirmingCode, setConfirmingCode] = useState<string | null>(null);
+  const confirmReturn = React.useCallback(async (row: any) => {
+    setConfirmingCode(String(row.product_code));
+    try {
+      // 1) return_requests 생성 (status='done' 저장 · reason 기본 재고 과다 or 저조 판매)
+      const reason = row.purchase_cycle != null && Number(row.purchase_cycle) >= 90 ? "저조 판매" : "재고 과다";
+      const createRes = await api.post<{ ok: boolean; row: { id: number } }>("/api/return-requests", {
+        product_code: row.product_code,
+        product_name: row.product_name,
+        supplier: row.supplier ?? null,
+        qty: Number(row.current_stock ?? 0),
+        current_stock: Number(row.current_stock ?? 0),
+        purchase_price: Number(row.purchase_price ?? 0),
+        reason,
+      });
+      // 2) PATCH status='done' (POST 는 항상 pending 으로 생성 → 즉시 done 승격)
+      const id = createRes?.data?.row?.id;
+      if (id) {
+        await api.patch(`/api/return-requests/${id}`, { status: "done" });
+      }
+      // 3) 로컬 반품필요 리스트에서 제거 (반품확정 페이지에서 노출)
+      setReturnList(prev => prev.filter(x => x.product_code !== row.product_code));
+      setReturnSelected(prev => {
+        if (!prev.has(row.product_code)) return prev;
+        const n = new Set(prev); n.delete(row.product_code); return n;
+      });
+      dispatchApprovalChange("return");
+    } catch (e: any) {
+      console.error("[반품확정] 실패:", e?.message ?? e);
+      alert(`반품확정 실패: ${e?.message ?? "네트워크 오류"}`);
+    } finally {
+      setConfirmingCode(null);
+    }
+  }, []);
 
   // ── 일괄 반품 · 체크박스 선택 (세션 state · localStorage 없음) ───────────
   const [returnSelected, setReturnSelected] = useState<Set<string>>(new Set());
@@ -549,14 +584,29 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                             </td>
                           )}
                           <td className="text-center px-1 py-1.5 align-top bg-zinc-50/30">
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); setReturnRequestItem({ ...x, vendorCategory: x.supplier ? (vendorCategoryMap[x.supplier.trim()] ?? null) : null }); }}
-                              className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[15px] font-semibold text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 transition-colors cursor-pointer active:scale-95 whitespace-nowrap"
-                              title="반품요청"
-                            >
-                              <Truck size={11} strokeWidth={2} />반품
-                            </button>
+                            {/* 2026-08-25 · 사용자 지시 · 반품 (요청) + 반품확정 (즉시 done) · 2버튼 */}
+                            <div className="inline-flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setReturnRequestItem({ ...x, vendorCategory: x.supplier ? (vendorCategoryMap[x.supplier.trim()] ?? null) : null }); }}
+                                className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[14px] font-semibold text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 transition-colors cursor-pointer active:scale-95 whitespace-nowrap"
+                                title="반품요청 (모달 열기)"
+                              >
+                                <Truck size={11} strokeWidth={2} />반품
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); confirmReturn(x); }}
+                                disabled={confirmingCode === x.product_code}
+                                className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[14px] font-semibold text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700 transition-colors cursor-pointer active:scale-95 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                                title="바로 반품확정 (모달 없이 · done 상태 저장)"
+                              >
+                                {confirmingCode === x.product_code
+                                  ? <Spinner size={11} tone="white" />
+                                  : <CheckCircle2 size={11} strokeWidth={2} />}
+                                확정
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -624,6 +674,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
       </div>
 
       {/* 반품 요청서 모달 · 2026-08-03 · 발주서 스타일 재설계 */}
+      {/* 2026-08-25 · 사용자 지시 · 다중 선택 시 · items 배열도 함께 전달 · 모달에서 전체 라인 렌더 */}
       {returnRequestItem && (() => {
         const supKey = String(returnRequestItem.supplier ?? "").trim();
         const vendor = supKey ? vendorMap[supKey] : undefined;
@@ -633,8 +684,9 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         return (
           <ReturnRequestModal
             item={returnRequestItem}
+            items={returnRequestItems ?? undefined}
             supplierInfo={supplierInfo}
-            onClose={() => setReturnRequestItem(null)}
+            onClose={() => { setReturnRequestItem(null); setReturnRequestItems(null); }}
           />
         );
       })()}

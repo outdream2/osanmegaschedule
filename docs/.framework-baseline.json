@@ -1,7 +1,7 @@
 {
   "created": "2026-08-25",
   "version": 1,
-  "totalViolations": 16,
+  "totalViolations": 17,
   "files": {
     "src/components/SystemSettingsPage/AutoImportSection.tsx": {
       "lines": 403,
@@ -82,6 +82,16 @@
       "violations": [
         {
           "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
+    },
+    "src/components/OrderManagePage/ReturnListPanel.tsx": {
+      "lines": 699,
+      "violations": [
+        {
+          "ruleId": "raw-alert",
           "count": 1
         }
       ],
