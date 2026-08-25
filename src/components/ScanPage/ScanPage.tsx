@@ -342,7 +342,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   //   · products-map 캐시 stale 로 · 최근 등록 상품이 lookup 실패하는 문제
   //   · 검색 결과 · OCR fallback 등에서 이미 확보한 product 를 전달하면 · lookup 스킵
   //   · lookup 실패해도 · fallback API 조회 (GET /api/products/:code) 시도 후 미등록 판정
-  const handleScan = useCallback(async (result: string, preloadedProduct?: ProductInfo | null) => {
+  const handleScan = useCallback(async (result: string, preloadedProduct?: ProductInfo | any | null) => {
     setScannerOpen(false);
     setNotFoundCode(null);
     if (!isProductsLoaded()) {
@@ -350,7 +350,19 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       await getProductsMap();
       setMapLoading(false);
     }
-    let found: ProductInfo | null = preloadedProduct ?? lookupProduct(result);
+    // 2026-08-25 · 사용자 지시 · preloadedProduct 정규화
+    //   · ProductSearchInput 은 raw DB row (product_name/product_code) 전달
+    //   · ProductInfo shape (name/code) 로 정규화 · 상품명이 코드로 보이는 버그 fix
+    const normalize = (p: any): ProductInfo => ({
+      code: String(p.code ?? p.product_code ?? result),
+      name: String(p.name ?? p.product_name ?? ""),
+      spec: String(p.spec ?? ""),
+      supplier: p.supplier ?? null,
+      realMap: p.realMap ?? p.real_map ?? null,
+      real_map: p.real_map ?? p.realMap ?? null,
+      ...p,
+    });
+    let found: ProductInfo | null = preloadedProduct ? normalize(preloadedProduct) : lookupProduct(result);
     // fallback · API 실시간 조회 (캐시 stale · 신규 등록 대응)
     if (!found) {
       try {
