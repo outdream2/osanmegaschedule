@@ -200,3 +200,56 @@ describe("Card · v2 · bg + borderColor", () => {
     expect(cls).toContain("border-amber-200/80");
   });
 });
+
+// 2026-08-25 · v9 · topAccent prop (상단 gradient accent · brand-deep → sky-500 → brand-deep)
+describe("Card · topAccent (v9)", () => {
+  it("topAccent=false (기본) · gradient span 없음 · relative 없음", () => {
+    const { container } = render(<Card>x</Card>);
+    const root = container.firstElementChild!;
+    expect(root.className).not.toContain("relative");
+    expect(root.querySelector("span[aria-hidden]")).toBeNull();
+  });
+
+  it("topAccent=true · gradient span 렌더 · relative 자동", () => {
+    const { container } = render(<Card topAccent>x</Card>);
+    const root = container.firstElementChild!;
+    expect(root.className).toContain("relative");
+    const span = root.querySelector("span[aria-hidden]");
+    expect(span).not.toBeNull();
+    expect(span!.className).toContain("bg-gradient-to-r");
+    expect(span!.className).toContain("from-brand-deep");
+    expect(span!.className).toContain("via-sky-500");
+    expect(span!.className).toContain("to-brand-deep");
+    expect(span!.className).toContain("opacity-90");
+  });
+
+  it("topAccent=true · overflow-hidden 자동 (clip 없어도)", () => {
+    const { container } = render(<Card topAccent>x</Card>);
+    expect(container.firstElementChild!.className).toContain("overflow-hidden");
+  });
+
+  it("topAccent=true + clip=true · overflow-hidden 유지 (중복 없음)", () => {
+    const { container } = render(<Card topAccent clip>x</Card>);
+    expect(container.firstElementChild!.className).toContain("overflow-hidden");
+  });
+
+  it("topAccent · pointer-events-none · 클릭 pass-through", () => {
+    const { container } = render(<Card topAccent>x</Card>);
+    const span = container.firstElementChild!.querySelector("span[aria-hidden]");
+    expect(span!.className).toContain("pointer-events-none");
+  });
+
+  it("topAccent · as=button · gradient span 여전 렌더", () => {
+    const { container } = render(<Card topAccent as="button" onClick={() => {}}>x</Card>);
+    const root = container.firstElementChild!;
+    expect(root.tagName).toBe("BUTTON");
+    expect(root.querySelector("span[aria-hidden]")).not.toBeNull();
+  });
+
+  it("topAccent · as=section · 태그 유지 + span 렌더", () => {
+    const { container } = render(<Card topAccent as="section">x</Card>);
+    const root = container.firstElementChild!;
+    expect(root.tagName).toBe("SECTION");
+    expect(root.querySelector("span[aria-hidden]")).not.toBeNull();
+  });
+});
