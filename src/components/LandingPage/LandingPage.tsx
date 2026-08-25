@@ -46,6 +46,8 @@ import { VendorStockModal } from "./VendorStockModal";
 import { useVendors } from "../../hooks/useVendors";
 import { MenuCard } from "./MenuCard";
 import { StockSearch } from "./StockSearch";
+// 2026-08-25 · Framework Phase 4 · 입고알림 · self-contained 이관
+import { StockArrivalList } from "./StockArrivalList";
 // 2026-08-17 · 공용 Button (최신 트렌드 · Linear/Vercel 톤 · primary/secondary/ghost/danger)
 import { Button } from "../common/Button";
 import { Spinner } from "../common/Spinner";
@@ -125,14 +127,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   // 데이터 업로드 통합 모달 (UploadDataModal.tsx 로 분리 · 2026-08-22)
   const [uploadOpen, setUploadOpen] = useState(false);
 
-  // Stock arrivals
-  const [stockArrivals, setStockArrivals] = useState<Array<{ id: number; title: string; body?: string | null; created_at: string }>>([]);
-  const [arrivalsLoading, setArrivalsLoading] = useState(true);
-  // 2026-08-24 · 사용자 요청 · 클릭 시 상세 모달 (title + body + created_at)
-  const [arrivalDetail, setArrivalDetail] = useState<{ id: number; title: string; body?: string | null; created_at: string } | null>(null);
-  const [pushSubscribed, setPushSubscribed] = useState(false);
-  const [pushLoading, setPushLoading] = useState(false);
-  const [showCreateArrival, setShowCreateArrival] = useState(false);
+  // 2026-08-25 · Framework Phase 4 · 입고알림 · StockArrivalList 로 이관
   // 2026-08-09 · 거래처 담당자 · 본인 공급사 조회·수정 모달 여부
   const [showVendorSelf, setShowVendorSelf] = useState(false);
   // 2026-08-10 · #23 · 공급사 재고확인 모달
@@ -147,10 +142,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     const nm = String(authSession.employeeName ?? "").trim();
     return nm ? (list.find(v => v.company_name === nm) ?? null) : null;
   }, [_rawVendorsSelf, authSession]);
-  const [newArrivalTitle, setNewArrivalTitle] = useState("");
-  const [newArrivalBody, setNewArrivalBody] = useState("");
-  const [createLoading, setCreateLoading] = useState(false);
-
   const [unauthorizedToast, setUnauthorizedToast] = useState(false);
 
   // ── 인라인 재고검색 (비로그인용) ──────────────────────────────────────
@@ -163,17 +154,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   // 로그인 모달 (LoginModals.tsx 로 분리 · 2026-08-22)
   const [vendorLoginOpen, setVendorLoginOpen] = useState(false);
 
-  useEffect(() => {
-    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-    api.get<Array<{ id: number; title: string; body?: string | null; created_at: string }>>("/api/stock-arrivals")
-      .then(({ data }) => {
-        const list = Array.isArray(data) ? data : [];
-        setStockArrivals([...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
-      })
-      .catch(() => { })
-      .finally(() => setArrivalsLoading(false));
-    setPushSubscribed(localStorage.getItem("anon_push_subscribed") === "1");
-  }, []);
+  // 2026-08-25 · Framework Phase 4 · 입고알림 · StockArrivalList 로 이관
 
   // If already logged in, go directly; otherwise open login modal
   const handleMenuClick = (page: "schedule" | "display") => {
@@ -246,60 +227,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   useEffect(() => { reloadMyPending(); }, [reloadMyPending]);
   useApprovalRefreshListener(reloadMyPending);
 
-  const handleAnonSubscribe = async () => {
-    if (!("Notification" in window) || !("serviceWorker" in navigator)) {
-      showError("이 브라우저는 알림을 지원하지 않습니다.");
-      return;
-    }
-    if (!import.meta.env.VITE_VAPID_PUBLIC_KEY) {
-      showError("서버 설정 오류: VAPID 공개키가 없습니다. 관리자에게 문의하세요.");
-      return;
-    }
-    setPushLoading(true);
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        showError("알림 권한이 거부되었습니다. 브라우저 설정에서 알림을 허용해 주세요.");
-        return;
-      }
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC_KEY,
-      });
-      await api.post("/api/anon-push-subscribe", { subscription: sub.toJSON() });
-      localStorage.setItem("anon_push_subscribed", "1");
-      setPushSubscribed(true);
-    } catch (err: unknown) {
-      console.error("Push subscribe error:", err);
-      const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? String(err);
-      showError("알림 구독 실패: " + msg);
-    } finally {
-      setPushLoading(false);
-    }
-  };
-
-  const handleCreateArrival = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newArrivalTitle.trim() || !authSession) return;
-    setCreateLoading(true);
-    try {
-      const { data: arrival } = await api.post<any>("/api/stock-arrivals", {
-        title: newArrivalTitle.trim(),
-        body: newArrivalBody.trim() || undefined,
-        employeeId: authSession.employeeId,
-      });
-      setStockArrivals(prev => [arrival, ...prev]);
-      setNewArrivalTitle("");
-      setNewArrivalBody("");
-      setShowCreateArrival(false);
-    } catch (err: unknown) {
-      const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? "오류";
-      showError("입고 알림 작성 실패: " + msg);
-    } finally {
-      setCreateLoading(false);
-    }
-  };
+  // 2026-08-25 · Framework Phase 4 · handleAnonSubscribe · StockArrivalList 로 이관
+  // 2026-08-25 · dead code · handleCreateArrival 삭제 (showCreateArrival JSX 미사용)
 
   const handleNavNavigate = (page: AppNavPage) => {
     if (page === "landing") return;
@@ -693,112 +622,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             </div>
           )}
 
-          {/* ── 입고 알림 · 2026-08-10 · #22 · 거래처 로그인 시 숨김 ── */}
-          {!isVendor && (
-          <div className="w-full mb-6 mt-2">
-            {/* 2026-08-17 · SectionLabel + right slot (알림 받기 / 구독 중) · 최신 트렌드 · 딥네이비 톤 */}
-            <SectionLabel tone="sky" right={
-              !pushSubscribed ? (
-                <button
-                  onClick={handleAnonSubscribe}
-                  disabled={pushLoading}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[16px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition-colors disabled:opacity-40 cursor-pointer"
-                >
-                  <Bell size={13} fill="currentColor" />알림 받기
-                </button>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 text-[16px] text-brand-deep font-semibold bg-brand-tint border border-brand/15 rounded-full px-3 py-1.5">
-                  <Bell size={13} fill="currentColor" /> 구독 중
-                </span>
-              )
-            }>입고 알림</SectionLabel>
-            {arrivalsLoading && stockArrivals.length > 0 && (
-              <div className="flex items-center justify-center py-1.5 mb-1 bg-brand-tint border border-brand/15 rounded-lg sticky top-0 z-10"><Spinner tone="brand" size={13} label="새로 불러오는 중..." labelSize={13} /></div>
-            )}
-            {arrivalsLoading && stockArrivals.length === 0 ? (
-              <div className="flex items-center justify-center py-10"><Spinner tone="zinc" size={16} label="로딩 중..." labelSize={14} /></div>
-            ) : !arrivalsLoading && stockArrivals.length === 0 ? (
-              <Card variant="flat" padding="none" className="text-center text-[16px] text-ink-soft py-8">데이터 없음</Card>
-            ) : (
-              /* 2026-08-24 · 최신 트렌드 · UI 대원칙 · Linear/Vercel/Attio 2026
-                 · 맨위 gradient accent line (top strip) · 시그니처
-                 · 폰트 +2 (title 19 · body 15 옅게 · meta 17)
-                 · 제목 옆 body 표시 · group hover · NEW 배지 · relative time */
-              <Card clip padding="none" className={`relative divide-y divide-line/70 ${arrivalsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                {/* 맨위 gradient accent line · Vercel/Linear 시그니처 */}
-                <span className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90" aria-hidden />
-                {stockArrivals.slice(0, 5).map(a => {
-                  const createdMs = new Date(a.created_at).getTime();
-                  const diffMin = Math.floor((Date.now() - createdMs) / 60000);
-                  const isNew = diffMin < 60;
-                  const timeLabel = diffMin < 1 ? "방금"
-                    : diffMin < 60 ? `${diffMin}분 전`
-                    : diffMin < 60 * 24 ? `${Math.floor(diffMin / 60)}시간 전`
-                    : new Date(a.created_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
-                  return (
-                    <button
-                      key={a.id}
-                      type="button"
-                      onClick={() => setArrivalDetail(a)}
-                      className="group relative w-full text-left flex items-center gap-2.5 px-4 py-3.5 hover:bg-brand-tint/30 focus:outline-none focus-visible:bg-brand-tint/40 transition-all duration-200 cursor-pointer"
-                    >
-                      {/* 좌측 accent bar · hover 시 등장 */}
-                      <span className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-r-full bg-brand-deep opacity-0 group-hover:opacity-100 transition-opacity duration-200" aria-hidden />
-                      {/* 말머리표 · 작은 dot · brand-deep · 아이콘 대체 */}
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-deep shrink-0" aria-hidden />
-                      {/* 제목 + body(옅게) + NEW 배지 */}
-                      <div className="flex-1 min-w-0 flex items-baseline gap-2 min-w-0">
-                        <span className="text-[19px] font-semibold text-ink truncate tracking-tight group-hover:text-brand-deep transition-colors duration-200 shrink-0 max-w-[60%]">{a.title}</span>
-                        {a.body && (
-                          <span className="text-[15px] font-normal text-ink-soft/70 truncate min-w-0" title={a.body}>· {a.body}</span>
-                        )}
-                        {isNew && (
-                          <span className="shrink-0 inline-flex items-center h-[22px] px-2 rounded-md text-[12px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 ring-1 ring-emerald-500/25">
-                            NEW
-                          </span>
-                        )}
-                      </div>
-                      {/* 시간 · relative · 폰트 17 · title 로 정확 시간 */}
-                      <span className="text-[17px] font-medium text-ink-soft shrink-0 whitespace-nowrap tabular-nums group-hover:text-brand-deep/70 transition-colors duration-200" title={new Date(a.created_at).toLocaleString("ko-KR")}>
-                        {timeLabel}
-                      </span>
-                    </button>
-                  );
-                })}
-              </Card>
-            )}
-          </div>
-          )}
+          {/* ── 입고 알림 · 2026-08-25 · Framework Phase 4 · StockArrivalList 로 이관 ── */}
+          <StockArrivalList isVendor={isVendor} />
 
         </div>
       </div>
-
-      {/* 2026-08-24 · 사용자 요청 · 입고 알림 상세 모달 · Modal 프리미티브 */}
-      <Modal
-        open={!!arrivalDetail}
-        onClose={() => setArrivalDetail(null)}
-        size="md"
-        titleAccent
-        icon={<Package size={18} className="text-white" weight="fill" />}
-        title={
-          arrivalDetail ? (
-            <div className="min-w-0">
-              <div className="text-[19px] font-bold text-ink tracking-tight truncate">{arrivalDetail.title}</div>
-              <div className="text-[13px] text-ink-soft mt-0.5 tabular-nums">
-                {new Date(arrivalDetail.created_at).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-              </div>
-            </div>
-          ) : undefined
-        }
-      >
-        <div className="px-5 py-5 bg-white">
-          {arrivalDetail?.body ? (
-            <div className="text-[17px] text-ink leading-relaxed whitespace-pre-wrap break-words">{arrivalDetail.body}</div>
-          ) : (
-            <div className="text-[15px] text-ink-soft italic">추가 내용 없음</div>
-          )}
-        </div>
-      </Modal>
 
       {/* ── 데이터 업로드 통합 모달 (UploadDataModal.tsx · 2026-08-22 분리) ── */}
       <UploadDataModal
