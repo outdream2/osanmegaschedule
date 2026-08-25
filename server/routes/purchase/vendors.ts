@@ -303,6 +303,25 @@ router.patch("/api/vendors/:id", asyncHandler(async (req, res) => {
       if (dup) throw new HttpError(409, `사업자번호 중복 · 이미 등록된 공급사: ${dup.company_name} (#${dup.id})`);
     }
   }
+  // 2026-08-25 · 사용자 지시 · 담당자 핸드폰 = 로그인 ID · 수정 시에도 중복 검증 (자기 자신 제외)
+  if (updates.phone) {
+    const { data: phoneDup } = await supabase.from("vendors").select("id, company_name")
+      .eq("phone", updates.phone)
+      .neq("id", id)
+      .maybeSingle();
+    if (phoneDup) throw new HttpError(409, `담당자 핸드폰 중복 · 로그인 ID 로 사용됨: ${phoneDup.company_name} (#${phoneDup.id})`);
+  }
+  // 공급사명 변경 시에도 중복 검증 (자기 자신 제외 · 2026-08-25)
+  if (updates.company_name) {
+    const trimmed = String(updates.company_name).trim();
+    if (trimmed) {
+      const { data: nameDup } = await supabase.from("vendors").select("id, company_name")
+        .eq("company_name", trimmed)
+        .neq("id", id)
+        .maybeSingle();
+      if (nameDup) throw new HttpError(409, `공급사명 중복 · 이미 등록됨: ${nameDup.company_name} (#${nameDup.id})`);
+    }
+  }
   // 2026-08-03 · #193 · vat_included 저장 (true/false/null 허용)
   if (vat_included !== undefined) {
     updates.vat_included = vat_included === true ? true : vat_included === false ? false : null;
