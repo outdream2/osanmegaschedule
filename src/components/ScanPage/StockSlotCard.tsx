@@ -1,5 +1,6 @@
 // 2026-08-22 · Framework Phase 4 · ProductInfoCard 5-slot 반복 → 재사용 컴포넌트
 // 창고1/2·매장1/2/3 · 값 입력 + 저장 버튼 + 상태 (idle/loading/done/error) · 톤별 컬러 세트
+// 2026-08-25 · 사용자 지시 · sample/product_storage.png 참고 · pastel bg + 폰트 up + 여유 padding
 
 import React from "react";
 import { Warehouse, Store, CheckCircle2, ClipboardCheck } from "lucide-react";
@@ -20,41 +21,51 @@ interface StockSlotCardProps {
   toneKey: "wh1" | "wh2" | "s1" | "s2" | "s3";
 }
 
+// 2026-08-25 · pastel fill 도입 · sample/product_storage.png 참고
+//   · card: 부드러운 배경 (cyan-50 · violet-50 · purple-50)
+//   · input: 반투명 흰색 · 뚜렷한 border
+//   · btn: 파스텔 pill (진한 배경 X · 부드러운 톤)
 const TONE: Record<StockSlotCardProps["toneKey"], {
-  card: string; // 카드 outer border
+  card: string; // 카드 배경+border
   label: string; // 헤더 텍스트 색
   input: string; // input bg/border
-  btn: string; // 저장 버튼 색
+  btn: string; // 저장 버튼 · 파스텔 pill
+  zoneText: string; // 매장 zone 라벨 색
 }> = {
   wh1: {
-    card:  "border-cyan-200",
-    label: "text-cyan-600",
-    input: "bg-cyan-50/50 border-cyan-200 focus:border-cyan-400",
-    btn:   "bg-cyan-500 hover:bg-cyan-600",
+    card:  "bg-cyan-50 border-cyan-200",
+    label: "text-cyan-700",
+    input: "bg-white border-cyan-200 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200",
+    btn:   "bg-cyan-100 hover:bg-cyan-200 text-cyan-800 border border-cyan-200",
+    zoneText: "text-cyan-800",
   },
   wh2: {
-    card:  "border-cyan-300",
-    label: "text-cyan-700",
-    input: "bg-cyan-100/40 border-cyan-300 focus:border-cyan-500",
-    btn:   "bg-cyan-600 hover:bg-cyan-700",
+    card:  "bg-cyan-100/60 border-cyan-300",
+    label: "text-cyan-800",
+    input: "bg-white border-cyan-300 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-200",
+    btn:   "bg-cyan-200 hover:bg-cyan-300 text-cyan-900 border border-cyan-300",
+    zoneText: "text-cyan-900",
   },
   s1: {
-    card:  "border-violet-200",
-    label: "text-violet-600",
-    input: "bg-violet-50/50 border-violet-200 focus:border-brand-deep",
-    btn:   "bg-violet-500 hover:bg-violet-600",
+    card:  "bg-violet-50 border-violet-200",
+    label: "text-violet-700",
+    input: "bg-white border-violet-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200",
+    btn:   "bg-violet-100 hover:bg-violet-200 text-violet-800 border border-violet-200",
+    zoneText: "text-violet-800",
   },
   s2: {
-    card:  "border-violet-300",
-    label: "text-violet-700",
-    input: "bg-violet-100/40 border-violet-300 focus:border-brand-deep",
-    btn:   "bg-violet-600 hover:bg-violet-700",
+    card:  "bg-violet-100/60 border-violet-300",
+    label: "text-violet-800",
+    input: "bg-white border-violet-300 focus:border-violet-600 focus:ring-2 focus:ring-violet-200",
+    btn:   "bg-violet-200 hover:bg-violet-300 text-violet-900 border border-violet-300",
+    zoneText: "text-violet-900",
   },
   s3: {
-    card:  "border-purple-300",
-    label: "text-purple-700",
-    input: "bg-purple-100/40 border-purple-300 focus:border-purple-500",
-    btn:   "bg-purple-600 hover:bg-purple-700",
+    card:  "bg-purple-100/60 border-purple-300",
+    label: "text-purple-800",
+    input: "bg-white border-purple-300 focus:border-purple-600 focus:ring-2 focus:ring-purple-200",
+    btn:   "bg-purple-200 hover:bg-purple-300 text-purple-900 border border-purple-300",
+    zoneText: "text-purple-900",
   },
 };
 
@@ -64,27 +75,30 @@ export const StockSlotCard: React.FC<StockSlotCardProps> = ({
   const t = TONE[toneKey];
   const Icon = kind === "warehouse" ? Warehouse : Store;
   return (
-    <div className={`bg-white rounded-lg border py-1 px-1 text-center ${t.card}`}>
-      <p className={`text-[12px] font-semibold mb-0.5 flex items-center justify-center gap-0.5 flex-wrap ${t.label}`}>
-        <Icon size={10} />{label}
-        {zone && <span className={`text-[10px] font-semibold leading-tight ${toneKey === "s3" ? "text-purple-800" : "text-violet-800"}`}>{zone}</span>}
+    <div className={`rounded-xl border py-2 px-2 text-center flex flex-col gap-1.5 ${t.card}`}>
+      <p className={`text-[13px] font-bold flex items-center justify-center gap-1 flex-wrap leading-tight ${t.label}`}>
+        <Icon size={12} strokeWidth={2.2} />
+        <span>{label}</span>
+        {zone && <span className={`text-[12px] font-bold leading-tight ${t.zoneText}`}>{zone}</span>}
       </p>
       <input
         type="number" min="0"
         value={value}
         onChange={e => onChange(e.target.value === "" ? "" : Number(e.target.value))}
-        className={`w-full text-sm font-bold text-center border rounded px-1 py-0 outline-none transition ${t.input}`}
+        className={`w-full text-[15px] font-bold text-center border rounded-md px-1 py-1 outline-none transition tabular-nums ${t.input}`}
         placeholder="—"
       />
       {status === "done" ? (
-        <div className="mt-0.5 text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-0.5"><CheckCircle2 size={10} /> 저장됨</div>
+        <div className="text-[12px] font-bold text-emerald-700 flex items-center justify-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 py-1">
+          <CheckCircle2 size={12} /> 저장됨
+        </div>
       ) : (
         <button
           onClick={onSubmit}
           disabled={status === "loading" || value === ""}
-          className={`mt-0.5 w-full text-[11px] font-bold rounded transition cursor-pointer disabled:opacity-40 text-white py-0.5 flex items-center justify-center gap-0.5 ${t.btn}`}
+          className={`w-full text-[13px] font-bold rounded-md transition cursor-pointer disabled:opacity-40 py-1 flex items-center justify-center gap-1 ${t.btn}`}
         >
-          {status === "loading" ? <Spinner size={9} /> : <ClipboardCheck size={9} />}
+          {status === "loading" ? <Spinner size={11} /> : <ClipboardCheck size={12} />}
           {status === "loading" ? "저장중" : status === "error" ? "재시도" : "저장"}
         </button>
       )}
