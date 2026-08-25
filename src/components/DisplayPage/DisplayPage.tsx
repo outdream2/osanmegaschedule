@@ -16,7 +16,6 @@ import { StatusPill } from "../common/StatusPill";
 import { IconTile } from "../common/IconTile";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { ZoneCell } from "./ZoneCell";
-import { ZoneAssignPopover } from "./ZoneAssignPopover";
 import { ZoneGroupPanel, type ZoneGroup } from "./ZoneGroupPanel";
 import { AppNavHeader } from "../layout/AppNavHeader";
 import { useSidebarEnabled } from "../../hooks/useSidebar";
@@ -44,10 +43,9 @@ import {
   saveZonesToDB,
   MULTI_ASSIGN_ZONE_NUMS,
 } from "./DisplayPage.helpers";
-import { ZoneDetailModal } from "./ZoneDetailModal";
-import { StaffInfoModal } from "./StaffInfoModal";
-import { ZoneProductsModal, type ZoneProductsModalState } from "./ZoneProductsModal";
-import { ProductInfoModal } from "./ProductInfoModal";
+// 2026-08-25 · Framework Phase 4 · 4 modals wrapper
+import { DisplayModals } from "./DisplayModals";
+import { type ZoneProductsModalState } from "./ZoneProductsModal";
 import { DisplayStoreMap } from "./DisplayStoreMap";
 import { DisplaySearchBar } from "./DisplaySearchBar";
 import { DisplayMobileList } from "./DisplayMobileList";
@@ -815,73 +813,25 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         &copy; 2026 {dpBrand.shortName || "오산메가타운"} 매장 관리 시스템. All Rights Reserved. {dpContact.copyrightText || "(주)이룸즈(IRUMS)"}
       </footer>
 
-      {/* Zone Assignment Popover · 2026-08-23 · #189 · onZoneUpdate 편집 지원 */}
-      {popoverAnchor && popoverZone && (
-        <ZoneAssignPopover
-          zone={popoverZone} anchor={popoverAnchor.rect} logisticsStaff={logisticsStaff} staffColorMap={staffColorMap}
-          onAssign={handlePopoverAssign} onUnassign={handlePopoverUnassign} onOpenDetail={() => handleOpenZoneDetail(popoverZone)}
-          onOpenProducts={() => { openZoneProducts({ zoneId: popoverZone.id, zoneNum: popoverZone.num, zoneLabel: popoverZone.label, category: popoverZone.category }); setPopoverAnchor(null); }}
-          onClose={() => setPopoverAnchor(null)} onStaffInfoClick={(staff) => { setActiveStaffInfo(staff); setPopoverAnchor(null); }}
-          onZoneUpdate={(updates) => {
-            // 2026-08-23 · #189 · useZoneDefs 로 label · category · num 수정 · debounce 자동 저장
-            setZoneDefs((prev) => prev.map((z) => (
-              z.num === popoverZone.num
-                ? { ...z, ...(updates.label != null ? { label: updates.label } : {}), ...(updates.category != null ? { category: updates.category } : {}), ...(updates.num != null ? { num: updates.num } : {}) }
-                : z
-            )));
-          }}
-        />
-      )}
-
-      {/* Zone Detail Modal */}
-      {activeZone && (
-        <ZoneDetailModal
-          activeZone={activeZone} draftCategory={draftCategory} draftProducts={draftProducts} draftStaffId={draftStaffId}
-          draftStatus={draftStatus} requestNote={requestNote} savedFlash={savedFlash} requestFlash={requestFlash}
-          employees={employees} staffColorMap={staffColorMap} canRequest={canRequest}
-          onClose={() => setActiveZoneId(null)} onSetDraftStaffId={setDraftStaffId} onSetDraftProducts={setDraftProducts}
-          onSetDraftStatus={setDraftStatus} onSetRequestNote={setRequestNote} onSave={handleSave}
-          onSendRequest={handleSendRequest} onScanProducts={() => setScannerMode("products")} toggleZoneDow={toggleZoneDow}
-        />
-      )}
-
-      {/* Employee Info Modal */}
-      {activeStaffInfo && (
-        <StaffInfoModal
-          activeStaffInfo={activeStaffInfo} zones={zones} employees={employees} staffColorMap={staffColorMap}
-          onClose={() => setActiveStaffInfo(null)}
-          onZoneToggle={(zoneId, empId, empName, isAssigned) => {
-            setZones(prev => prev.map(zone => zone.id !== zoneId ? zone : (isAssigned ? { ...zone, assignedStaffId: null, assignedStaffName: "" } : { ...zone, assignedStaffId: empId, assignedStaffName: empName })));
-          }}
-          onClearAllZones={(empId) => { setZones(prev => prev.map(z => z.assignedStaffId === empId ? { ...z, assignedStaffId: null, assignedStaffName: "" } : z)); }}
-        />
-      )}
-
-      {/* Zone Products Modal */}
-      {zoneProductsModal && (
-        <ZoneProductsModal
-          modal={zoneProductsModal} productsMap={productsMap} filter={zoneProductsFilter}
-          search={zoneProductsSearch} sort={zoneProductsSort}
-          onClose={() => setZoneProductsModal(null)} onSetFilter={setZoneProductsFilter}
-          onSetSearch={setZoneProductsSearch} onSetSort={setZoneProductsSort}
-          onProductClick={(p) => { setProductInfoModal(p); setZoneProductsModal(null); }}
-        />
-      )}
-
-      {/* Product Info Modal */}
-      {productInfoModal && (
-        <ProductInfoModal
-          product={productInfoModal} onClose={() => setProductInfoModal(null)}
-          onRealMapUpdate={(newValue) => {
-            setProductInfoModal(prev => prev ? { ...prev, real_map: newValue } : prev);
-            setProductsMap(prev => { const code = String(productInfoModal.code ?? "").trim(); if (!code || !prev[code]) return prev; return { ...prev, [code]: { ...prev[code], real_map: newValue } }; });
-          }}
-          onProductUpdate={(updates) => {
-            setProductInfoModal(prev => prev ? { ...prev, ...updates } : prev);
-            setProductsMap(prev => { const code = String(productInfoModal.code ?? "").trim(); if (!code || !prev[code]) return prev; return { ...prev, [code]: { ...prev[code], ...updates } }; });
-          }}
-        />
-      )}
+      {/* 2026-08-25 · Framework Phase 4 · 4 modals wrapper · DisplayModals 로 이관 */}
+      <DisplayModals
+        popoverAnchor={popoverAnchor} popoverZone={popoverZone} logisticsStaff={logisticsStaff} staffColorMap={staffColorMap}
+        handlePopoverAssign={handlePopoverAssign} handlePopoverUnassign={handlePopoverUnassign}
+        handleOpenZoneDetail={handleOpenZoneDetail} openZoneProducts={openZoneProducts}
+        setPopoverAnchor={setPopoverAnchor} setActiveStaffInfo={setActiveStaffInfo} setZoneDefs={setZoneDefs}
+        activeZone={activeZone} draftCategory={draftCategory} draftProducts={draftProducts} draftStaffId={draftStaffId}
+        draftStatus={draftStatus} requestNote={requestNote} savedFlash={savedFlash} requestFlash={requestFlash}
+        employees={employees} canRequest={canRequest}
+        setActiveZoneId={setActiveZoneId} setDraftStaffId={setDraftStaffId} setDraftProducts={setDraftProducts}
+        setDraftStatus={setDraftStatus} setRequestNote={setRequestNote}
+        handleSave={handleSave} handleSendRequest={handleSendRequest} setScannerMode={setScannerMode} toggleZoneDow={toggleZoneDow}
+        activeStaffInfo={activeStaffInfo} zones={zones} setZones={setZones}
+        zoneProductsModal={zoneProductsModal} productsMap={productsMap}
+        zoneProductsFilter={zoneProductsFilter} zoneProductsSearch={zoneProductsSearch} zoneProductsSort={zoneProductsSort}
+        setZoneProductsModal={setZoneProductsModal} setZoneProductsFilter={setZoneProductsFilter}
+        setZoneProductsSearch={setZoneProductsSearch} setZoneProductsSort={setZoneProductsSort}
+        productInfoModal={productInfoModal} setProductInfoModal={setProductInfoModal} setProductsMap={setProductsMap}
+      />
 
       {/* Toast */}
       {toast && <div className="fixed bottom-6 right-6 z-[9999]"><div className={toastClass(toast.tone)}>{toast.message}</div></div>}
