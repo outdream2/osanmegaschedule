@@ -242,7 +242,9 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         purchaseQty: 0, purchaseAmount: 0,
         saleQty: 0, saleAmount: 0,
         itemCount: 0, totalStockAmount: 0,
-      }));
+      }))
+      // 매입 이력 없는 vendor · 항상 이름 오름차순 · 사용자 예측 가능성
+      .sort((a, b) => a.supplier.localeCompare(b.supplier, "ko"));
     const merged: SupplierAgg[] = extra.length > 0 ? [...sortedXlsxSuppliers, ...extra] : sortedXlsxSuppliers;
 
     let filtered = supListCategory === "전체"
