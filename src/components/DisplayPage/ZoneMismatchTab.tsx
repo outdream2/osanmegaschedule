@@ -9,6 +9,7 @@ import { api, ApiError } from "../../lib/apiClient";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
 import { Spinner } from "../common/Spinner";
+import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/TableList";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 
@@ -143,38 +144,41 @@ export const ZoneMismatchTab: React.FC = () => {
             />
           </Card>
         ) : (
-          <Card padding="none" topAccent clip>
-            <div className="divide-y divide-zinc-100">
-              {sorted.map(m => (
-                <div key={m.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-50/60 transition">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[15px] font-bold text-zinc-800 break-keep">{m.product_name}</span>
-                      <span className="text-zinc-300 text-[14px]">·</span>
-                      <span className="text-[13px] font-mono font-semibold text-zinc-400">{m.product_code}</span>
-                      <span className="text-zinc-300 text-[14px] mx-1">·</span>
-                      <span className="text-[14px] text-zinc-500" title="전산배치구역">
-                        전산 <span className="font-bold text-zinc-700">{m.spec_zone || "미지정"}</span>
-                      </span>
-                      <span className="text-zinc-300 text-[15px] mx-0.5">→</span>
-                      <span className="text-[14px] font-bold text-rose-600" title="실제배치구역">
-                        실제 {m.real_zone}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-[13px] text-zinc-400 shrink-0 tabular-nums font-medium">{fmtDate(m.registered_at)}</span>
-                  <button
-                    type="button"
-                    onClick={() => deleteOne(m.id)}
-                    className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition cursor-pointer"
-                    title="삭제"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <TableListWrap>
+            <table className="w-full border-collapse">
+              <thead className={tableHeadCls()}>
+                <tr>
+                  <th className={tableThCls("left")} style={{ width: "34%" }}>상품명</th>
+                  <th className={tableThCls("left")} style={{ width: "18%" }}>상품코드</th>
+                  <th className={tableThCls("center")} style={{ width: "14%" }}>전산 구역</th>
+                  <th className={tableThCls("center")} style={{ width: "14%" }}>실제 구역</th>
+                  <th className={tableThCls("center")} style={{ width: "12%" }}>등록일</th>
+                  <th className={tableThCls("center")} style={{ width: "8%" }}>삭제</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {sorted.map(m => (
+                  <tr key={m.id} className="hover:bg-zinc-50/60 transition text-[14px]">
+                    <td className={tableTdCls("left", "font-bold text-zinc-800 break-keep")}>{m.product_name}</td>
+                    <td className={tableTdCls("left", "font-mono text-[13px] text-zinc-500")}>{m.product_code}</td>
+                    <td className={tableTdCls("center", "font-semibold text-zinc-700")}>{m.spec_zone || <span className="text-zinc-400">미지정</span>}</td>
+                    <td className={tableTdCls("center", "font-bold text-rose-600")}>{m.real_zone}</td>
+                    <td className={tableTdCls("center", "text-[13px] text-zinc-500 tabular-nums")}>{fmtDate(m.registered_at)}</td>
+                    <td className={tableTdCls("center")}>
+                      <button
+                        type="button"
+                        onClick={() => deleteOne(m.id)}
+                        className="inline-flex w-7 h-7 items-center justify-center rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition cursor-pointer"
+                        title="삭제"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableListWrap>
         )}
       </div>
     </>
