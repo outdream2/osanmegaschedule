@@ -24,7 +24,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
       <MapPin size={15} className="text-teal-500" />
       <p className="text-[16px] font-bold text-gray-900">매장 구역도에서 선택</p>
       {current && (
-        <span className="ml-auto text-[13px] font-semibold text-teal-700 bg-teal-50 border border-teal-200 rounded-md px-2 py-0.5">
+        <span className="ml-auto text-[15px] font-semibold text-teal-700 bg-teal-50 border border-teal-200 rounded-md px-2 py-0.5">
           현재 · {current}
         </span>
       )}

@@ -55,7 +55,7 @@ export const StockSlotCard: React.FC<StockSlotCardProps> = ({
   const Icon = kind === "warehouse" ? Warehouse : Store;
   return (
     <div className={`rounded-xl border py-2 px-2 text-center flex flex-col gap-1.5 ${t.card}`}>
-      <p className={`text-[13px] font-bold flex items-center justify-center gap-1 flex-wrap leading-tight ${t.label}`}>
+      <p className={`text-[15px] font-bold flex items-center justify-center gap-1 flex-wrap leading-tight ${t.label}`}>
         <Icon size={12} strokeWidth={2.2} />
         <span>{label}</span>
         {zone && <span className={`text-[14px] font-bold leading-tight ${t.zoneText}`}>{zone}</span>}
@@ -75,7 +75,7 @@ export const StockSlotCard: React.FC<StockSlotCardProps> = ({
         <button
           onClick={onSubmit}
           disabled={status === "loading" || value === ""}
-          className={`w-full text-[13px] font-bold rounded-md transition cursor-pointer disabled:opacity-40 py-1 flex items-center justify-center gap-1 ${t.btn}`}
+          className={`w-full text-[15px] font-bold rounded-md transition cursor-pointer disabled:opacity-40 py-1 flex items-center justify-center gap-1 ${t.btn}`}
         >
           {status === "loading" ? <Spinner size={11} /> : <ClipboardCheck size={12} />}
           {status === "loading" ? "저장중" : status === "error" ? "재시도" : "저장"}

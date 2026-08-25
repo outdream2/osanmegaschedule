@@ -123,7 +123,7 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
           <div className="flex flex-col rounded-2xl overflow-hidden bg-white border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_16px_rgba(10,46,74,0.08)]">
             <div className="flex items-center gap-2 px-3.5 py-2.5 bg-zinc-50/60 border-b border-line">
               <StatusPill tone="emerald" size="sm" dot>최근 스캔</StatusPill>
-              <span className="ml-auto text-[13px] text-ink-soft tabular-nums">{rows.length}건 · 최신순</span>
+              <span className="ml-auto text-[15px] text-ink-soft tabular-nums">{rows.length}건 · 최신순</span>
             </div>
             <div className="divide-y divide-line max-h-[360px] overflow-y-auto">
               {rows.slice(0, 20).map((r, idx) => {
@@ -134,13 +134,13 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
                     className={`px-3.5 py-2 flex flex-col gap-0.5 hover:bg-zinc-50/70 transition-colors ${isLatest ? "bg-emerald-50/40" : ""}`}
                   >
                     <div className="flex items-baseline gap-2 min-w-0">
-                      {isLatest && <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 rounded px-1 py-0.5 leading-none">NEW</span>}
+                      {isLatest && <span className="shrink-0 text-[14px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 rounded px-1 py-0.5 leading-none">NEW</span>}
                       <p className="text-[14px] sm:text-[15px] font-bold text-zinc-900 break-words whitespace-normal leading-snug flex-1 min-w-0">
                         {r.product.name || "-"}
                       </p>
-                      <span className="shrink-0 text-[12px] font-mono tabular-nums text-ink-soft/70">{r.code}</span>
+                      <span className="shrink-0 text-[14px] font-mono tabular-nums text-ink-soft/70">{r.code}</span>
                     </div>
-                    <div className="flex items-baseline gap-2 flex-wrap text-[12px]">
+                    <div className="flex items-baseline gap-2 flex-wrap text-[14px]">
                       {(r.product as any).spec && (
                         <span className="inline-flex items-baseline gap-1">
                           <span className="text-zinc-400 font-semibold">구역</span>
@@ -158,7 +158,7 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
                 );
               })}
               {rows.length > 20 && (
-                <div className="px-3.5 py-1.5 text-center text-[12px] text-zinc-400 bg-zinc-50/40">
+                <div className="px-3.5 py-1.5 text-center text-[14px] text-zinc-400 bg-zinc-50/40">
                   전체 {rows.length}건 중 최근 20건 표시
                 </div>
               )}
@@ -218,19 +218,19 @@ export const SaveCard: React.FC<SaveCardProps> = ({
           return (
             <div className="flex items-center gap-1.5 tabular-nums text-[14px] font-bold">
               <span className="inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-zinc-50 border border-zinc-200 text-zinc-700">
-                <span className="text-[12px] font-semibold text-zinc-500">건수</span>
+                <span className="text-[14px] font-semibold text-zinc-500">건수</span>
                 <span>{rows.length}</span>
               </span>
               <span className="inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-800" title="창고1 + 창고2 합계">
-                <span className="text-[12px] font-semibold text-cyan-600">창고</span>
+                <span className="text-[14px] font-semibold text-cyan-600">창고</span>
                 <span>{warehouseTotal}</span>
               </span>
               <span className="inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-violet-50 border border-violet-200 text-violet-800" title="매장1 + 매장2 + 매장3 합계">
-                <span className="text-[12px] font-semibold text-violet-600">매장</span>
+                <span className="text-[14px] font-semibold text-violet-600">매장</span>
                 <span>{storeTotal}</span>
               </span>
               <span className="inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-brand-tint border border-brand-deep/20 text-brand-deep" title="창고 + 매장 총합">
-                <span className="text-[12px] font-semibold text-brand-deep/70">총합</span>
+                <span className="text-[14px] font-semibold text-brand-deep/70">총합</span>
                 <span>{grandTotal}</span>
               </span>
             </div>

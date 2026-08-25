@@ -49,7 +49,7 @@ export const ScanRightPanel: React.FC<ScanRightPanelProps> = ({
               type="button"
               disabled={disabled || requestingKey === (targetRow?.key ?? "")}
               onClick={() => { if (targetRow) requestDisplay(targetRow); }}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] font-bold shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-violet-500 hover:bg-violet-600 active:bg-violet-700 text-white"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[15px] font-bold shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-violet-500 hover:bg-violet-600 active:bg-violet-700 text-white"
               title={disabled ? "먼저 상품을 스캔하세요" : `${targetRow?.product.name} · 진열요청 전송`}
             >
               <Megaphone size={13} strokeWidth={2.5} />
@@ -60,7 +60,7 @@ export const ScanRightPanel: React.FC<ScanRightPanelProps> = ({
               disabled={disabled}
               onClick={() => { if (targetRow) setExpiryModalRow(targetRow); }}
               className={[
-                "inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] font-bold shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed",
+                "inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[15px] font-bold shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed",
                 expiryOn
                   ? "bg-amber-600 hover:bg-amber-700 text-white ring-2 ring-amber-300"
                   : "bg-white border border-line text-ink-soft hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700",

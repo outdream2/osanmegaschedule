@@ -292,12 +292,16 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
           const hasAddVal = add !== "" && Number(add) !== 0;
           const spec = s.zoneKey ? (specParts[i] ?? "") : "";
           return (
-            <div key={s.key} className={`rounded-lg border ${s.softBg} border-zinc-200/70 p-2 flex flex-col gap-1.5`}>
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className={`w-1 h-5 rounded-full ${s.dot} shrink-0`} />
-                <span className={`text-[14px] font-bold ${s.text} truncate`}>{s.full}</span>
-                <span className="ml-auto text-[13px] font-semibold text-ink-soft tabular-nums shrink-0">
-                  {prev != null ? <>현재 <b className="text-ink font-extrabold tabular-nums">{prev}</b></> : <span className="text-zinc-300">현재 -</span>}
+            <div key={s.key} className={`rounded-lg border ${s.softBg} border-zinc-200/70 p-2.5 flex flex-col gap-2`}>
+              {/* 2026-08-26 · 사용자 지시 · 현재 갯수 · 창고/매장 제목 바로 옆 · 잘 보이게 · 폰트 +2 */}
+              <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
+                <span className={`w-1.5 h-6 rounded-full ${s.dot} shrink-0 self-center`} />
+                <span className={`text-[16px] font-bold ${s.text} truncate`}>{s.full}</span>
+                <span className={`inline-flex items-baseline gap-1 shrink-0 px-2 py-0.5 rounded-md ${prev != null && prev > 0 ? "bg-white/80 border border-zinc-200" : ""}`}>
+                  <span className="text-[15px] font-semibold text-ink-soft">현재</span>
+                  {prev != null
+                    ? <b className={`text-[18px] font-extrabold tabular-nums ${prev > 0 ? s.text : "text-zinc-300"}`}>{prev}</b>
+                    : <span className="text-[16px] text-zinc-300">-</span>}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -326,12 +330,12 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
           <div className="border-t border-line/60 px-4 py-3 flex flex-col gap-2.5">
             {/* 2026-08-26 · 사용자 지시 · 현재고 요약 · 5-slot 옆으로 한줄 표시 */}
             <div className="flex items-center gap-3 flex-wrap px-1 py-1.5 bg-zinc-50/60 rounded-md border border-line/60">
-              <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">현재고</span>
+              <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider">현재고</span>
               {SLOTS.map(s => {
                 const prev = row[s.prevKey] as number | null | undefined;
                 const hasPrev = prev != null && Number(prev) > 0;
                 return (
-                  <span key={`cur-${s.key}`} className="inline-flex items-baseline gap-1 text-[13px]">
+                  <span key={`cur-${s.key}`} className="inline-flex items-baseline gap-1 text-[15px]">
                     <span className={`w-1.5 h-1.5 rounded-full ${s.dot} ${hasPrev ? "" : "opacity-40"} inline-block`} />
                     <span className={`font-semibold ${hasPrev ? s.text : "text-zinc-400"}`}>{s.full}</span>
                     <span className={`tabular-nums font-bold ${hasPrev ? "text-ink" : "text-zinc-300"}`}>
@@ -380,7 +384,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                   type="button"
                   onClick={() => onToggleExpiry(row)}
                   className={[
-                    "inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[13px] font-bold cursor-pointer transition",
+                    "inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[15px] font-bold cursor-pointer transition",
                     hasExpiryFlag
                       ? "bg-red-500 text-white hover:bg-red-600 shadow-sm"
                       : "bg-white text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-400",
