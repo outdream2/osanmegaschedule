@@ -191,9 +191,10 @@ export function SplitListPanel({
       )}
       {hasHeader && (
         <div className="shrink-0 px-3.5 py-2.5 border-b border-line bg-white flex flex-col gap-2">
-          {/* 1행 · title + count + (searchInHeader 시 검색) + headerActions + add */}
+          {/* 1행 · title + count + (searchInHeader 시 검색) + headerActions + add
+              2026-08-25 · 사용자 지시 · 반응형 · 좁은 폭 겹침 fix · flex-wrap + 검색 min-w-[160px] */}
           {(title != null || onAdd != null || headerActions != null || (searchInHeader && hasSearch)) && (
-            <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
               {title != null && (
                 <div className={`flex items-center gap-1.5 min-w-0 ${searchInHeader ? "shrink-0" : ""}`.trim()}>
                   <span className="text-[17px] font-bold text-ink tracking-tight truncate">
@@ -209,21 +210,21 @@ export function SplitListPanel({
                   ) : null}
                 </div>
               )}
-              {/* 2026-08-24 · searchInHeader · row1 인라인 검색창 (title/count 옆) */}
+              {/* 2026-08-24 · searchInHeader · row1 인라인 검색창 (title/count 옆) · 반응형 · basis-[220px] + flex-1 · 겹침 방지 */}
               {searchInHeader && hasSearch ? (
-                <div className="flex-1 min-w-0 flex items-center gap-2">
+                <div className="flex-1 basis-[220px] min-w-[160px] flex items-center gap-2 order-3 sm:order-none w-full sm:w-auto">
                   {searchInput}
                 </div>
               ) : (
-                <div className="flex-1" />
+                <div className="flex-1 hidden sm:block" />
               )}
-              {headerActions && <div className="shrink-0 flex items-center gap-1">{headerActions}</div>}
+              {headerActions && <div className="shrink-0 flex items-center gap-1 order-2 ml-auto sm:ml-0">{headerActions}</div>}
               {onAdd && (
                 <button
                   type="button"
                   onClick={onAdd}
                   title={addTitle ?? addLabel}
-                  className="shrink-0 inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-brand-deep text-white text-[15px] font-bold hover:bg-[#0d3a5c] active:scale-[0.98] transition-all shadow-sm cursor-pointer"
+                  className="shrink-0 inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-brand-deep text-white text-[15px] font-bold hover:bg-[#0d3a5c] active:scale-[0.98] transition-all shadow-sm cursor-pointer order-2 sm:order-none"
                 >
                   <Plus size={13} className="stroke-[3]" />
                   <span>{addLabel}</span>
@@ -231,11 +232,16 @@ export function SplitListPanel({
               )}
             </div>
           )}
-          {/* 2행 · (searchInHeader 아닐 때) search + filters · (searchInHeader 일 때) filters 만 */}
+          {/* 2행 · (searchInHeader 아닐 때) search + filters · (searchInHeader 일 때) filters 만
+              반응형 · flex-wrap · 검색 min-w-[160px] · filters 는 wrap 시 별도 줄 */}
           {((!searchInHeader && hasSearch) || filters) && (
-            <div className="flex items-center gap-2 min-w-0">
-              {!searchInHeader && searchInput}
-              {filters && <div className="shrink-0">{filters}</div>}
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              {!searchInHeader && (
+                <div className="flex-1 min-w-[160px] basis-[200px]">
+                  {searchInput}
+                </div>
+              )}
+              {filters && <div className="shrink-0 min-w-0 max-w-full overflow-x-auto">{filters}</div>}
             </div>
           )}
         </div>
