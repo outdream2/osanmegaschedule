@@ -19,6 +19,9 @@ import { CARD_BASE } from "../../styles/tokens";
 import { Spinner } from "../common/Spinner";
 // 2026-08-24 · #253 Phase E · 자동 임포트 섹션
 import { AutoImportSection } from "./AutoImportSection";
+// 2026-08-25 · 사용자 지시 · 세션 만료 시간 · 시스템 설정에 추가
+import { SessionTimeoutSection } from "../PermissionsPage/SessionTimeoutSection";
+import { Timer } from "@phosphor-icons/react";
 
 interface Props {
   onBack: () => void;
@@ -29,7 +32,7 @@ interface Props {
 
 // ─── 카테고리별 키 그룹 ─────────────────────────────────────────────────────
 // 2026-08-24 · #253 · "auto-import" 탭 신규 추가 (자동 임포트 · Phase E)
-type Cat = "db-auth" | "ai-ocr" | "sms" | "cdn" | "webpush" | "ocr-tenant" | "upload" | "auto-import";
+type Cat = "db-auth" | "ai-ocr" | "sms" | "cdn" | "webpush" | "ocr-tenant" | "upload" | "auto-import" | "session";
 
 const CAT_TABS: TabDef<Cat>[] = [
   { key: "db-auth",     label: "DB · 인증",       icon: Database,       color: "slate" },
@@ -41,6 +44,8 @@ const CAT_TABS: TabDef<Cat>[] = [
   { key: "upload",      label: "데이터 업로드",    icon: UploadSimple,    color: "red" },
   // 2026-08-24 · #253 Phase E · 자동 임포트 (관리자 lv9)
   { key: "auto-import", label: "자동 임포트",     icon: Robot,           color: "violet" },
+  // 2026-08-25 · 사용자 지시 · 세션 만료 시간 (전역 · 관리자 lv9)
+  { key: "session",     label: "세션 설정",       icon: Timer,           color: "sky" },
 ];
 
 const CAT_KEYS: Record<Cat, string[]> = {
@@ -53,6 +58,7 @@ const CAT_KEYS: Record<Cat, string[]> = {
                  "OCR_EXCLUDED_LOGISTICS", "OCR_EXCLUDED_SUPPLIERS", "OCR_EXCLUDED_BUSINESS_NUMBERS"],
   "upload":     [],
   "auto-import": [],  // 2026-08-24 · #253 · KV 기반 · env keys 없음
+  "session":     [],  // 2026-08-25 · KV 기반 · env keys 없음
 };
 
 const KEY_LABELS: Record<string, { label: string; desc?: string; multiline?: boolean }> = {
@@ -224,7 +230,11 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
         {/* ── 자동 임포트 탭 · #253 Phase E · 2026-08-24 ── */}
         {cat === "auto-import" && <AutoImportSection />}
 
-        {/* ── 저장 액션바 · 공통 SET_ACTION_BAR ── */}
+        {/* ── 세션 설정 탭 · 2026-08-25 · 사용자 지시 ── */}
+        {cat === "session" && <SessionTimeoutSection />}
+
+        {/* ── 저장 액션바 · 공통 SET_ACTION_BAR (KV 기반 탭은 자체 저장 · 액션바 숨김) ── */}
+        {cat !== "auto-import" && cat !== "session" && cat !== "upload" && (
         <div className={`${SET_ACTION_BAR} justify-between`}>
           <button onClick={load} className={SET_BTN_SECONDARY}>
             <ArrowsClockwise size={14} /> 다시 불러오기
@@ -234,6 +244,7 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
             {saving ? "저장 중..." : dirty ? `저장 (${Object.keys(draft).length}개)` : "변경 없음"}
           </button>
         </div>
+        )}
     </SettingsPageShell>
   );
 };
