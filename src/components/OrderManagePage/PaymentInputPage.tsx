@@ -292,28 +292,21 @@ export const PaymentInputPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* 2026-08-25 · #111 · 결제 등록 폼 · PaymentEntryForm 재사용 */}
-      <Card padding="none" topAccent clip>
-        <div className="flex items-center gap-2 px-4 pt-3 pb-2 border-b border-line bg-zinc-50/40">
-          <IconTile icon={<Wallet size={14} />} tone="amber" size="sm" />
-          <div className="text-[15px] font-bold text-ink">결제 등록</div>
-          <span className="ml-auto text-[12px] text-ink-soft">{selected?.company_name}</span>
-        </div>
-        <PaymentEntryForm
-          key={selected!.id}
-          selectedVendor={selected as unknown as VendorItem}
-          balance={balance ? ({
-            supplier: balance.supplier,
-            total_purchase: 0,
-            total_payment: 0,
-            balance: balance.balance,
-            purchase_count: 0,
-            payment_count: 0,
-          } as BalanceResp) : null}
-          vatIncluded={Boolean((selected as any)?.vat_included)}
-          onSubmitted={(supplierName) => { loadSupplierData(supplierName); }}
-        />
-      </Card>
+      {/* 2026-08-25 · #111 · 결제 등록 폼 · PaymentEntryForm 재사용 (자체 Card + 헤더 포함) */}
+      <PaymentEntryForm
+        key={selected!.id}
+        selectedVendor={selected as unknown as VendorItem}
+        balance={balance ? ({
+          supplier: balance.supplier,
+          total_purchase: 0,
+          total_payment: 0,
+          balance: balance.balance,
+          purchase_count: 0,
+          payment_count: 0,
+        } as BalanceResp) : null}
+        vatIncluded={Boolean((selected as any)?.vat_included)}
+        onSubmitted={(supplierName) => { loadSupplierData(supplierName); }}
+      />
     </div>
   ) : null;
 
