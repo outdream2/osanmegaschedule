@@ -1,10 +1,20 @@
 {
   "created": "2026-08-25",
   "version": 1,
-  "totalViolations": 2,
+  "totalViolations": 3,
   "files": {
     "src/components/LandingPage/VendorDetailModal.tsx": {
       "lines": 879,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
+    },
+    "src/components/RequestsPage/RequestsPage.tsx": {
+      "lines": 806,
       "violations": [
         {
           "ruleId": "large-file-warn",

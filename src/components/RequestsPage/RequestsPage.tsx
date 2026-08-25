@@ -23,6 +23,8 @@ import { Card } from "../common/Card";
 import { Modal } from "../common/Modal";
 // 2026-08-12 · 연차승인 탭 · LeavePage mode="approval" 로 임베드 (관리자용 승인 UI)
 import { LeavePage } from "../LeavePage/LeavePage";
+// 2026-08-26 · #192 · 거래처승인 탭
+import { VendorApprovalPanel } from "./VendorApprovalPanel";
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · types + ListToolbar
 import type { DisplayRequest, OrderRequest, ZoneMismatch, LunchRequest, InventoryCheck, Tab } from "./types";
 import { ListToolbar } from "./ListToolbar";
@@ -111,7 +113,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const [requestingInvOrder, setRequestingInvOrder] = useState<Set<string>>(new Set());
 
   // 빠른 탭 갯수 (pending-counts 엔드포인트)
-  const [tabCounts, setTabCounts] = useState<{display:number; order:number; mismatch:number; lunch:number; inventory:number} | null>(null);
+  const [tabCounts, setTabCounts] = useState<{display:number; order:number; mismatch:number; lunch:number; inventory:number; vendor?:number} | null>(null);
 
   // 2026-08-12 · 연차승인 탭 · pending 건수 별도 폴링 (leave-requests/pending-count)
   const [leavePendingCount, setLeavePendingCount] = useState<number>(0);
@@ -486,6 +488,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       ["inventory", "실재고차이", inventoryTabCount, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
       ["lunch",     "점심불참",   lunchTabCount,     "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
       ["leave",     "연차승인",   leavePendingCount, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
+      // 2026-08-26 · #192 · 거래처승인 신규 탭 · pending-counts.vendor
+      ["vendor",    "거래처승인", tabCounts?.vendor ?? 0, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-emerald-100 text-emerald-700", "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
     ] as [Tab, string, number, string, string, string, string][]) : []),
   ];
 
@@ -712,6 +716,13 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               onNavigate={onNavigate}
               onLogout={onLogout}
             />
+          </div>
+        )}
+
+        {/* 2026-08-26 · #192 · 거래처승인 신규 탭 · 연차승인 UX 복제 · vendor pending 리스트 */}
+        {tab === "vendor" && isManager && (
+          <div className="flex flex-col gap-2">
+            <VendorApprovalPanel />
           </div>
         )}
 
