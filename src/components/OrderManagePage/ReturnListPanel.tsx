@@ -246,11 +246,11 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
       dispatchApprovalChange("return");
     } catch (e: any) {
       console.error("[반품확정] 실패:", e?.message ?? e);
-      alert(`반품확정 실패: ${e?.message ?? "네트워크 오류"}`);
+      showError(`반품확정 실패: ${e?.message ?? "네트워크 오류"}`);
     } finally {
       setConfirmingCode(null);
     }
-  }, []);
+  }, [showError]);
 
   // ── 일괄 반품 · 체크박스 선택 (세션 state · localStorage 없음) ───────────
   const [returnSelected, setReturnSelected] = useState<Set<string>>(new Set());

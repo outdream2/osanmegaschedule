@@ -16,6 +16,8 @@ import { buildReturnNumber, todayStr } from "./ReturnListPanel.types";
 import { ReturnPdfPreview } from "./ReturnPdfPreview";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
+// 2026-08-25 · 프레임워크 · useToast (raw alert 제거)
+import { useToast, toastClass } from "../../hooks/useToast";
 
 interface ReturnRequestModalProps {
   item: any;                            // 트리거된 단일 상품 (기본)
@@ -154,6 +156,7 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
   // 2026-08-25 · 사용자 지시 · A4 텍스트 리포트 PDF 저장
   const pdfPreviewRef = useRef<HTMLDivElement | null>(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const { toast, showError } = useToast();
   const handleSavePdf = async () => {
     const node = pdfPreviewRef.current;
     if (!node) return;
@@ -186,7 +189,7 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
       pdf.save(`반품요청서_${ymd}_${safeSup}.pdf`);
     } catch (e: any) {
       console.error("[ReturnRequestModal] PDF 저장 실패:", e?.message ?? e);
-      alert(`PDF 저장 실패: ${e?.message ?? "알 수 없는 오류"}`);
+      showError(`PDF 저장 실패: ${e?.message ?? "알 수 없는 오류"}`);
     } finally {
       setGeneratingPdf(false);
     }
@@ -195,7 +198,9 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
   return (
     <>
     {/* 2026-08-25 · Modal + 오프스크린 PDF 프리뷰 fragment wrapper */}
-    // 2026-08-23 · Modal primitive 마이그레이션 (#191)
+    {toast && (
+      <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
+    )}
     <Modal
       open
       onClose={() => !sending && onClose()}

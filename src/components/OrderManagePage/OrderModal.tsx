@@ -13,6 +13,8 @@ import { tableHeadCls, tableThCls } from "../common";
 import { OrderPdfPreview } from "./OrderPdfPreview";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
+// 2026-08-25 · 프레임워크 · useToast (raw alert 제거)
+import { useToast, toastClass } from "../../hooks/useToast";
 
 export interface OrderModalItem {
   order_request_id: string;
@@ -83,6 +85,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   //   · 공급사별 페이지 분할 (기본) · 페이지 넘침 시 자동 분할
   const pdfPreviewRef = useRef<HTMLDivElement | null>(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const { toast, showError } = useToast();
 
   const handleSavePdf = async () => {
     const node = pdfPreviewRef.current;
@@ -120,7 +123,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       pdf.save(`발주서_${ymd}_${firstSup}${suffix}.pdf`);
     } catch (e: any) {
       console.error("[OrderModal] PDF 저장 실패:", e?.message ?? e);
-      alert(`PDF 저장 실패: ${e?.message ?? "알 수 없는 오류"}`);
+      showError(`PDF 저장 실패: ${e?.message ?? "알 수 없는 오류"}`);
     } finally {
       setGeneratingPdf(false);
     }
@@ -128,6 +131,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
   return (
   <>
+  {toast && (
+    <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
+  )}
   <Modal
     open
     onClose={() => !sendingBulk && onClose()}

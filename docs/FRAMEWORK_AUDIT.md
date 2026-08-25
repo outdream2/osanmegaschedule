@@ -8,17 +8,17 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 686 |
-| 위반 파일 | 14 |
-| 클린 파일 | 672 (98%) |
-| 총 위반 개수 | 18 |
+| 스캔 파일 | 687 |
+| 위반 파일 | 11 |
+| 클린 파일 | 676 (98%) |
+| 총 위반 개수 | 15 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
 | `raw-fetch` | 2 | 2 | high | apiClient (api.get/post/put) |
-| `raw-alert` | 6 | 4 | high | useToast (showError·showSuccess) |
+| `raw-alert` | 3 | 1 | high | useToast (showError·showSuccess) |
 | `raw-card-wrapper` | 3 | 2 | medium | Card 프리미티브 (padding·variant·clip) |
 | `large-file-warn` | 7 | 7 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
@@ -31,17 +31,14 @@
 | 3 | `src/components/DisplayPage/DisplayPage.tsx` | 893 | 3 | large-file-warn(1) |
 | 4 | `src/components/LandingPage/LandingPage.tsx` | 854 | 3 | large-file-warn(1) |
 | 5 | `src/components/LandingPage/VendorDetailModal.tsx` | 817 | 3 | large-file-warn(1) |
-| 6 | `src/components/OrderManagePage/OrderManagePage.tsx` | 843 | 3 | large-file-warn(1) |
-| 7 | `src/components/OrderManagePage/OrderModal.tsx` | 351 | 3 | raw-alert(1) |
-| 8 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 817 | 3 | large-file-warn(1) |
-| 9 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 699 | 3 | raw-alert(1) |
-| 10 | `src/components/OrderManagePage/ReturnRequestModal.tsx` | 465 | 3 | raw-alert(1) |
-| 11 | `src/components/ScanPage/ProductInfoCard.tsx` | 813 | 3 | large-file-warn(1) |
-| 12 | `src/components/ScanPage/ScanPage.tsx` | 942 | 3 | large-file-warn(1) |
-| 13 | `src/hooks/useAuth.ts` | 291 | 3 | raw-fetch(1) |
-| 14 | `src/components/DisplayPage/ZoneProductsModal.tsx` | 302 | 2 | raw-card-wrapper(1) |
+| 6 | `src/components/OrderManagePage/OrderManagePage.tsx` | 847 | 3 | large-file-warn(1) |
+| 7 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 817 | 3 | large-file-warn(1) |
+| 8 | `src/components/ScanPage/ProductInfoCard.tsx` | 813 | 3 | large-file-warn(1) |
+| 9 | `src/components/ScanPage/ScanPage.tsx` | 926 | 3 | large-file-warn(1) |
+| 10 | `src/hooks/useAuth.ts` | 293 | 3 | raw-fetch(1) |
+| 11 | `src/components/DisplayPage/ZoneProductsModal.tsx` | 302 | 2 | raw-card-wrapper(1) |
 
-## 📝 모든 위반 파일 (14개)
+## 📝 모든 위반 파일 (11개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -52,14 +49,11 @@
 | `src/components/DisplayPage/DisplayPage.tsx` | 893 | 3 |
 | `src/components/LandingPage/LandingPage.tsx` | 854 | 3 |
 | `src/components/LandingPage/VendorDetailModal.tsx` | 817 | 3 |
-| `src/components/OrderManagePage/OrderManagePage.tsx` | 843 | 3 |
-| `src/components/OrderManagePage/OrderModal.tsx` | 351 | 3 |
+| `src/components/OrderManagePage/OrderManagePage.tsx` | 847 | 3 |
 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 817 | 3 |
-| `src/components/OrderManagePage/ReturnListPanel.tsx` | 699 | 3 |
-| `src/components/OrderManagePage/ReturnRequestModal.tsx` | 465 | 3 |
 | `src/components/ScanPage/ProductInfoCard.tsx` | 813 | 3 |
-| `src/components/ScanPage/ScanPage.tsx` | 942 | 3 |
-| `src/hooks/useAuth.ts` | 291 | 3 |
+| `src/components/ScanPage/ScanPage.tsx` | 926 | 3 |
+| `src/hooks/useAuth.ts` | 293 | 3 |
 | `src/components/DisplayPage/ZoneProductsModal.tsx` | 302 | 2 |
 
 </details>
