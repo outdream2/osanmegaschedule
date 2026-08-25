@@ -4,7 +4,7 @@
 // 2026-08-12 · UI 리디자인 · 폰트 +2 · 굵기 완화 · 발주일·희망입고일 · 헤더 · 상품수 옆
 
 import React, { useEffect, useState } from "react";
-import { Package, ChevronDown, ChevronRight, Mail, Phone, User, Calendar, CalendarCheck } from "lucide-react";
+import { Package, ChevronDown, ChevronRight, Mail, Phone, User, Calendar, CalendarCheck, Building2 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { PageToolbar } from "../common/PageToolbar";
@@ -58,6 +58,8 @@ export const OrderHistoryTab: React.FC = () => {
   // 2026-08-23 · #180 · A안 · 공급사·상품 별도 검색창 2개 · 클라 filter (AND)
   const [supplierSearch, setSupplierSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
+  // 2026-08-25 · 사용자 지시 · 공급사 분류 필터 (dropdown · 정확 매칭 · 건수 병기)
+  const [supplierFilter, setSupplierFilter] = useState<string>("all");
 
   const load = React.useCallback(() => {
     setLoading(true);
@@ -91,15 +93,38 @@ export const OrderHistoryTab: React.FC = () => {
 
   const fmtWon = (n: number) => n.toLocaleString() + "원";
   // 2026-08-23 · #180 · A안 · 공급사·상품 별도 필터 (AND 조건 · 각 검색어 입력 시 교집합)
+  // 2026-08-25 · 사용자 지시 · 공급사 dropdown 필터 · 정확 매칭 (검색과 AND)
   const filteredOrders = React.useMemo(() => {
     const qS = supplierSearch.trim().toLowerCase();
     const qP = productSearch.trim().toLowerCase();
-    if (!qS && !qP) return orders;
+    if (!qS && !qP && supplierFilter === "all") return orders;
     return orders.filter(o => {
-      const supplierMatch = !qS || String(displayVendorName(o.supplier ?? "")).toLowerCase().includes(qS);
+      const supplierName = String(displayVendorName(o.supplier ?? ""));
+      const supplierMatch = !qS || supplierName.toLowerCase().includes(qS);
       const productMatch = !qP || o.items.some(it => String(it.product_name ?? "").toLowerCase().includes(qP));
-      return supplierMatch && productMatch;
+      const supplierFilterMatch = supplierFilter === "all" || supplierName === supplierFilter;
+      return supplierMatch && productMatch && supplierFilterMatch;
     });
+  }, [orders, supplierSearch, productSearch, supplierFilter]);
+
+  // 2026-08-25 · 공급사별 건수 계산 (기간·상품 검색 반영 · 공급사 필터 자체는 제외)
+  const supplierCounts = React.useMemo(() => {
+    const qS = supplierSearch.trim().toLowerCase();
+    const qP = productSearch.trim().toLowerCase();
+    const base = (qS || qP)
+      ? orders.filter(o => {
+          const s = String(displayVendorName(o.supplier ?? ""));
+          const supplierMatch = !qS || s.toLowerCase().includes(qS);
+          const productMatch = !qP || o.items.some(it => String(it.product_name ?? "").toLowerCase().includes(qP));
+          return supplierMatch && productMatch;
+        })
+      : orders;
+    const map = new Map<string, number>();
+    for (const o of base) {
+      const s = String(displayVendorName(o.supplier ?? "")) || "(공급사 미지정)";
+      map.set(s, (map.get(s) ?? 0) + 1);
+    }
+    return [...map.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ko"));
   }, [orders, supplierSearch, productSearch]);
   const totalAmount = filteredOrders.reduce((s, o) => s + (o.total_amount ?? 0), 0);
   const totalItems = filteredOrders.reduce((s, o) => s + o.items.length, 0);
@@ -141,7 +166,22 @@ export const OrderHistoryTab: React.FC = () => {
       />
 
       {/* 2026-08-23 · #180 · A안 · 공급사·상품 별도 검색창 2개 · AND filter */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {/* 2026-08-25 · 사용자 지시 · 공급사 분류 필터 (dropdown · 건수 병기) 추가 · 3열 grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="relative inline-flex items-center">
+          <Building2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+          <select
+            value={supplierFilter}
+            onChange={(e) => setSupplierFilter(e.target.value)}
+            className="w-full h-9 pl-9 pr-8 rounded-lg bg-white border border-line text-[14px] font-semibold text-ink hover:border-brand-deep/60 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors cursor-pointer"
+            title="공급사 필터"
+          >
+            <option value="all">전체 공급사</option>
+            {supplierCounts.map(([s, n]) => (
+              <option key={s} value={s}>{s} ({n})</option>
+            ))}
+          </select>
+        </div>
         <SearchBar
           value={supplierSearch}
           onChange={setSupplierSearch}
