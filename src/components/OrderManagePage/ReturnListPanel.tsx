@@ -364,9 +364,18 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                   {/* 2026-08-24 · v3 확산 · 카테고리 그룹 헤더 제거 · 서브헤더만 · Attio 톤 */}
                   <thead className="sticky top-0 bg-zinc-100/70 z-10 border-b border-line">
                     <tr className="text-[13px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider">
+                      {/* 2026-08-25 · 사용자 지시 · # 컬럼 → 체크박스 (전체 선택) */}
                       <th className="relative text-center px-0.5 py-1.5 bg-zinc-50/60"
                         style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
-                        #
+                        <input
+                          type="checkbox"
+                          checked={allChecked}
+                          ref={el => { if (el) el.indeterminate = someChecked; }}
+                          onChange={toggleAllReturn}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-3.5 h-3.5 accent-rose-500 cursor-pointer"
+                          title={allChecked ? "전체 선택 해제" : "화면 표시 항목 전체 선택"}
+                        />
                         <span {...colResizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
                       {isReturnGroupCollapsed("info") ? (
@@ -430,39 +439,34 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-50">
-                    {[...returnList].filter(x => {
-                      const q = returnSupplierSearch.trim().toLowerCase();
-                      if (q && !String(x.supplier ?? "").toLowerCase().includes(q)) return false;
-                      if (returnCategoryFilter !== "전체") {
-                        const cat = vendorCategoryMap[String(x.supplier ?? "").trim()] ?? null;
-                        if (cat !== returnCategoryFilter) return false;
-                      }
-                      return true;
-                    }).sort((a, b) => {
-                      const dir = returnSortDir === "asc" ? 1 : -1;
-                      switch (returnSortKey) {
-                        case "product_name":    return dir * String(a.product_name).localeCompare(String(b.product_name), "ko");
-                        case "supplier":        return dir * String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko");
-                        case "current_stock":   return dir * (a.current_stock - b.current_stock);
-                        case "actual_stock":    return dir * ((a.actual_stock ?? -1) - (b.actual_stock ?? -1));
-                        case "purchase_cycle":  return dir * ((a.purchase_cycle ?? 0) - (b.purchase_cycle ?? 0));
-                        case "sale_qty_month":  return dir * ((a.sale_qty_month ?? 0) - (b.sale_qty_month ?? 0));
-                        case "sale_qty_60d":    return dir * ((a.sale_qty_60d ?? 0) - (b.sale_qty_60d ?? 0));
-                        case "sale_qty_90d":    return dir * ((a.sale_qty_90d ?? 0) - (b.sale_qty_90d ?? 0));
-                        case "last_purchase_date": return dir * String(a.last_purchase_date ?? "").localeCompare(String(b.last_purchase_date ?? ""));
-                        case "last_purchase_qty":  return dir * ((a.last_purchase_qty ?? 0) - (b.last_purchase_qty ?? 0));
-                        case "stock_value":     return dir * ((a.current_stock * a.purchase_price) - (b.current_stock * b.purchase_price));
-                        default:                return 0;
-                      }
-                    }).map((x, i) => {
+                    {/* 2026-08-25 · 사용자 지시 · 인라인 filter+sort 제거 · useMemo filteredSortedRows 사용 · 공급사/상품 통합 검색 지원 */}
+                    {filteredSortedRows.map((x, i) => {
                       const isSelected = returnSelectedProduct?.code === x.product_code;
+                      const isChecked = returnSelected.has(x.product_code);
+                      const toggleOne = () => setReturnSelected(prev => {
+                        const n = new Set(prev);
+                        if (n.has(x.product_code)) n.delete(x.product_code);
+                        else n.add(x.product_code);
+                        return n;
+                      });
                       return (
                         <tr
                           key={x.product_code}
-                          className={`transition cursor-pointer ${isSelected ? "bg-rose-50/60 ring-1 ring-inset ring-rose-200" : "hover:bg-orange-50/30"}`}
+                          className={`transition cursor-pointer ${isSelected ? "bg-rose-50/60 ring-1 ring-inset ring-rose-200" : isChecked ? "bg-rose-50/30" : "hover:bg-orange-50/30"}`}
                           onClick={() => { setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("info"); }}
                         >
-                          <td className="px-0.5 py-1.5 text-center text-zinc-400 tabular-nums text-[15px] bg-zinc-50/60 align-top">{i + 1}</td>
+                          {/* 2026-08-25 · 사용자 지시 · # → 체크박스 · 반품요청 대상 선택 */}
+                          <td className="px-0.5 py-1.5 text-center bg-zinc-50/60 align-top">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={toggleOne}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-3.5 h-3.5 accent-rose-500 cursor-pointer"
+                              title={`${x.product_name} · 반품요청 대상 ${isChecked ? "해제" : "선택"}`}
+                            />
+                            <div className="text-[11px] text-zinc-300 tabular-nums mt-0.5">{i + 1}</div>
+                          </td>
                           {isReturnGroupCollapsed("info") ? (
                             <td className="bg-sky-50/10 w-4"></td>
                           ) : (
