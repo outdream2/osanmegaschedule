@@ -320,6 +320,20 @@ export const VendorDetailModal: React.FC<{
         {/* ── 본문 ── */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5">
 
+          {/* 2026-08-25 · #192 · 거래처 panel 모드 · 필수항목 안내 + 승인요청 유도 */}
+          {panel && (
+            <div className="mb-4 rounded-xl border-2 border-brand-deep/20 bg-gradient-to-br from-brand-tint/40 to-sky-50/40 px-4 py-3 flex items-start gap-3">
+              <span className="w-8 h-8 rounded-lg bg-brand-deep text-white flex items-center justify-center shrink-0 font-bold text-[16px]">i</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-[15px] font-bold text-brand-deep leading-tight">필수 항목을 채우고 <span className="underline decoration-2 underline-offset-2">[승인 요청]</span> 을 눌러주세요</div>
+                <div className="text-[13px] text-ink-soft mt-1 leading-relaxed">
+                  <span className="font-semibold text-ink-soft">필수 8개:</span> 이메일 · 주문방식 · 팀장 · 팀장연락처 · 긴급연락처 · 사업자번호 · 특이사항 · 비고
+                </div>
+                <div className="text-[12px] text-zinc-500 mt-1">관리자 승인 완료 시 · [공급사 재고확인] 메뉴가 활성화됩니다</div>
+              </div>
+            </div>
+          )}
+
           {/* ─── 정보 (탭 제거 · 한 장) ─── */}
           {(() => { void activeTab; return null; })()}
           {(true) && (
