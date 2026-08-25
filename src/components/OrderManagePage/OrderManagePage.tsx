@@ -3,7 +3,7 @@
 // 발주관리 페이지 — 발주/매입/결제/통계 4탭
 import React, { Suspense, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useConfirm } from "../../hooks/useConfirm";
-import { useToast, toastClass } from "../../hooks/useToast";
+import { useToast } from "../../hooks/useToast";
 import { useVendors } from "../../hooks/useVendors";
 import { Spinner } from "../common/Spinner";
 import { matchHangul } from "../../lib/hangulSearch";
@@ -24,7 +24,6 @@ const SubTabFallback = () => (
 );
 
 import type { Vendor } from "../LandingPage/VendorListEditor";
-import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { OrderHistoryTab } from "./OrderHistoryTab";
 // 2026-08-25 · 사용자 지시 · 매입 · 실재고 서브탭 → 유통기한 임박 서브탭 (rename + 목록)
 //   · 이전 StockReconciliationTab import 는 제거 (파일은 다른 페이지에서 참조 가능 · 보존)
@@ -51,8 +50,6 @@ import { PaymentInputPage } from "./PaymentInputPage";
 import { VatPreparePage } from "../VatPreparePage/VatPreparePage";
 import { CategoryTab } from "./CategoryTab";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
-import { Modal } from "../common/Modal";
-import { InventoryEditModal } from "../common/features/InventoryEditModal";
 import type { InventoryEditModalInitialValues } from "../common/features/InventoryEditModal";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
@@ -72,10 +69,9 @@ import { useOrderManageData } from "./useOrderManageData";
 import { CriticalTab } from "./CriticalTab";
 import { OrderNeedTab } from "./OrderNeedTab";
 import { OrderRequestTab } from "./OrderRequestTab";
-import { OrderModal } from "./OrderModal";
-import { ProductDetailModal } from "./ProductDetailModal";
-import { ContactPopover } from "./ContactPopover";
 import { VendorPaymentPanel } from "./VendorPaymentPanel";
+// 2026-08-25 · Framework Phase 4 · 모달 래퍼 이관
+import { OrderManageModals } from "./OrderManagePage.modals";
 
 const OrderManagePage: React.FC<OrderManagePageProps> = ({
   ocrTabAuthSession,
@@ -755,58 +751,19 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         </div>
       )}
 
-      {/* 발주서 모달 */}
-      {orderModal && (
-        <OrderModal
-          orderModal={orderModal} sendingBulk={sendingBulk}
-          notifyLogisticsLeader={notifyLogisticsLeader} setNotifyLogisticsLeader={setNotifyLogisticsLeader}
-          onClose={() => !sendingBulk && setOrderModal(null)} onSubmit={submitOrderModal}
-          onUpdateModalItem={updateModalItem}
-          onDateChange={(field, value) => setOrderModal(p => p && ({ ...p, [field]: value }))}
-          onChannelChange={(ch, value) => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, [ch]: value } }))}
-        />
-      )}
-
-      {/* 상품 상세정보 모달 */}
-      <ProductDetailModal
+      {/* 2026-08-25 · Framework Phase 4 · 모달 래퍼 · OrderManageModals 이관 */}
+      <OrderManageModals
+        orderModal={orderModal} sendingBulk={sendingBulk}
+        notifyLogisticsLeader={notifyLogisticsLeader} setNotifyLogisticsLeader={setNotifyLogisticsLeader}
+        setOrderModal={setOrderModal} submitOrderModal={submitOrderModal} updateModalItem={updateModalItem}
         detailProduct={detailProduct} detailFull={detailFull} detailLoading={detailLoading} detailError={detailError}
-        onClose={() => { setDetailProduct(null); reloadAllProductsMap(); loadInvMap(); loadOrderReqs(); }}
-        onRealMapUpdate={(v) => setDetailFull(prev => prev ? { ...prev, real_map: v, realMap: v } : prev)}
-        onProductUpdate={(updates) => setDetailFull(prev => prev ? { ...prev, ...updates } : prev)}
+        setDetailProduct={setDetailProduct} setDetailFull={setDetailFull}
+        reloadAllProductsMap={reloadAllProductsMap} loadInvMap={loadInvMap} loadOrderReqs={loadOrderReqs}
+        contactPopover={contactPopover} setContactPopover={setContactPopover}
+        supplierInfoModal={supplierInfoModal} setSupplierInfoModal={setSupplierInfoModal}
+        inventoryEditModal={inventoryEditModal} setInventoryEditModal={setInventoryEditModal}
+        toast={toast}
       />
-
-      {/* 담당자 팝오버 */}
-      {contactPopover && (
-        <ContactPopover anchor={contactPopover.anchor} name={contactPopover.name}
-          phone={contactPopover.phone} email={contactPopover.email} onClose={() => setContactPopover(null)} />
-      )}
-
-      {/* 공급사 정보 모달 · 2026-08-24 · 즉시 닫힘 버그 fix · closeOnBackdrop=false */}
-      <Modal
-        open={!!supplierInfoModal}
-        onClose={() => setSupplierInfoModal(null)}
-        size="xl"
-        showClose={false}
-        closeOnEsc={false}
-        closeOnBackdrop={false}
-        bodyPadding="none"
-        className="h-[95vh] md:min-h-[85vh] md:max-h-[92vh]"
-      >
-        {supplierInfoModal && (
-          <VendorDetailModal vendor={supplierInfoModal} onClose={() => setSupplierInfoModal(null)} onSaved={() => setSupplierInfoModal(null)} panel />
-        )}
-      </Modal>
-
-      {inventoryEditModal && (
-        <InventoryEditModal open={true} productCode={inventoryEditModal.code} productName={inventoryEditModal.name}
-          initialValues={inventoryEditModal.initialValues} onSaved={() => { loadInvMap(); }} onClose={() => setInventoryEditModal(null)} />
-      )}
-
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[9999]">
-          <div className={toastClass(toast.tone)}>{toast.message}</div>
-        </div>
-      )}
     </main>
   );
 };
