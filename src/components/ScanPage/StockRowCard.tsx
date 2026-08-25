@@ -100,7 +100,7 @@ const ZoneInline: React.FC<{
 
       {/* autosave flash · Notion-style · brief "저장됨" */}
       {savedFlash && (
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 animate-in fade-in duration-200">
+        <span className="inline-flex items-center gap-1 text-[15px] font-semibold text-emerald-700 animate-in fade-in duration-200">
           <Check size={11} strokeWidth={3} />
           저장됨
         </span>
@@ -108,7 +108,7 @@ const ZoneInline: React.FC<{
 
       {/* ERP 지정 위치 (있으면 · helper text) */}
       {erpSpec && !savedFlash && (
-        <span className="inline-flex items-center gap-0.5 text-[11px] text-ink-soft tabular-nums font-medium" title={`ERP 지정 위치 · ${erpSpec}`}>
+        <span className="inline-flex items-center gap-0.5 text-[15px] text-ink-soft tabular-nums font-medium" title={`ERP 지정 위치 · ${erpSpec}`}>
           <span className="text-zinc-300">·</span> ERP {erpSpec}
         </span>
       )}
@@ -199,13 +199,13 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
             {(row.product as any).spec && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold
+              <span className="inline-flex items-center gap-1 text-[15px] font-semibold
                 text-zinc-500 bg-zinc-100/70 rounded px-1.5 py-0.5">
                 <Box size={9} className="text-zinc-400" />
                 {(row.product as any).spec}
               </span>
             )}
-            <span className="inline-flex items-center gap-1 text-[11px] font-mono
+            <span className="inline-flex items-center gap-1 text-[15px] font-mono
               text-zinc-400 bg-zinc-100/60 rounded px-1.5 py-0.5">
               <Hash size={9} className="text-zinc-300" />
               {row.code}
@@ -230,10 +230,10 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                     }`}
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${s.dot} ${hasVal ? "" : "opacity-40"}`} />
-                    <span className={`text-[11px] font-semibold ${hasVal ? s.text : "text-zinc-400"}`}>
+                    <span className={`text-[15px] font-semibold ${hasVal ? s.text : "text-zinc-400"}`}>
                       {s.label}
                     </span>
-                    <span className={`text-[12px] font-bold tabular-nums ${hasVal ? "text-ink" : "text-zinc-300"}`}>
+                    <span className={`text-[14px] font-bold tabular-nums ${hasVal ? "text-ink" : "text-zinc-300"}`}>
                       {tot > 0 ? tot : "-"}
                     </span>
                   </span>
@@ -245,7 +245,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
 
         {/* 우측 · 총 합계 · 큰 숫자 */}
         <div className="shrink-0 flex flex-col items-end gap-0.5">
-          <span className="text-[11px] font-semibold text-ink-soft uppercase tracking-wider">합계</span>
+          <span className="text-[15px] font-semibold text-ink-soft uppercase tracking-wider">합계</span>
           <span className={`text-[28px] font-bold tabular-nums leading-none tracking-tight ${
             rowTotal > 0 ? "text-brand-deep" : "text-zinc-300"
           }`}>
@@ -273,7 +273,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                   {/* label + dot */}
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className={`w-1 h-6 rounded-full ${s.dot}`} />
-                    <span className={`text-[15px] lg:text-[13px] font-bold ${s.text}`}>{s.full}</span>
+                    <span className={`text-[15px] lg:text-[15px] font-bold ${s.text}`}>{s.full}</span>
                     {/* 모바일 · 현재재고 inline 표시 (제목 옆) · 크게 · text-[15px]+ */}
                     <span className="lg:hidden ml-auto text-[15px] font-bold text-ink tabular-nums">
                       {prev != null ? (
@@ -287,7 +287,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                   {/* 현재값 + 스테퍼 · PC는 grid · 모바일은 flex row (스테퍼만) */}
                   <div className="flex items-center gap-2 lg:grid lg:grid-cols-[auto_1fr] lg:items-center">
                     {/* PC 전용 · 인라인 현재재고 */}
-                    <span className="hidden lg:inline text-[12px] font-semibold text-ink-soft tabular-nums shrink-0 min-w-[52px]">
+                    <span className="hidden lg:inline text-[14px] font-semibold text-ink-soft tabular-nums shrink-0 min-w-[52px]">
                       {prev != null ? `현재 ${prev}` : <span className="text-zinc-300">현재 -</span>}
                     </span>
                     <StepperInput

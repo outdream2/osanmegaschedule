@@ -79,7 +79,7 @@ export const StockSlotCard: React.FC<StockSlotCardProps> = ({
       <p className={`text-[13px] font-bold flex items-center justify-center gap-1 flex-wrap leading-tight ${t.label}`}>
         <Icon size={12} strokeWidth={2.2} />
         <span>{label}</span>
-        {zone && <span className={`text-[12px] font-bold leading-tight ${t.zoneText}`}>{zone}</span>}
+        {zone && <span className={`text-[14px] font-bold leading-tight ${t.zoneText}`}>{zone}</span>}
       </p>
       <input
         type="number" min="0"
@@ -89,7 +89,7 @@ export const StockSlotCard: React.FC<StockSlotCardProps> = ({
         placeholder="—"
       />
       {status === "done" ? (
-        <div className="text-[12px] font-bold text-emerald-700 flex items-center justify-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 py-1">
+        <div className="text-[14px] font-bold text-emerald-700 flex items-center justify-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 py-1">
           <CheckCircle2 size={12} /> 저장됨
         </div>
       ) : (

@@ -77,9 +77,9 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
         {/* 1행 · 아이콘 · "매입 이력" 라벨 · 화살표 */}
         <div className="flex items-center gap-1.5">
           <TrendingUp size={13} className="text-emerald-600 shrink-0" />
-          <span className="text-[13px] font-bold text-zinc-800">매입 이력</span>
+          <span className="text-[15px] font-bold text-zinc-800">매입 이력</span>
           {productName && (
-            <span className="text-[11px] font-semibold text-zinc-400 break-keep whitespace-normal leading-tight min-w-0 flex-1 line-clamp-1">
+            <span className="text-[15px] font-semibold text-zinc-400 break-keep whitespace-normal leading-tight min-w-0 flex-1 line-clamp-1">
               {productName}
             </span>
           )}
@@ -89,11 +89,11 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
         </div>
         {/* 2행 · 통계 (건수 · 총량 · 총액 · 평균 · 주기) */}
         {loading ? (
-          <span className="text-[11px] text-zinc-400"><Spinner size={10} tone="zinc" className="mr-1" />로딩...</span>
+          <span className="text-[15px] text-zinc-400"><Spinner size={10} tone="zinc" className="mr-1" />로딩...</span>
         ) : rows.length === 0 ? (
-          <span className="text-[11px] text-zinc-400 italic">이력 없음</span>
+          <span className="text-[15px] text-zinc-400 italic">이력 없음</span>
         ) : (
-          <div className="text-[11px] tabular-nums text-zinc-600 flex items-center gap-1.5 flex-wrap">
+          <div className="text-[15px] tabular-nums text-zinc-600 flex items-center gap-1.5 flex-wrap">
             <span className="font-bold">{rows.length}건</span>
             <span className="text-zinc-300">·</span>
             <span>총 <span className="font-bold text-zinc-800">{fmt(totalQty)}</span>개</span>
@@ -112,7 +112,7 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
       </button>
       {/* 2026-07-29 · 제목 아래 공급사 (반복이라 컬럼에서 제거하고 여기로) + 월평균 주문 수량 · 이모지·배지 지양 */}
       {!collapsed && (supplierSummary || avgMonthlyQty != null) && (
-        <div className="-mx-2 px-2 pb-1.5 flex items-center gap-2 flex-wrap text-[10px]">
+        <div className="-mx-2 px-2 pb-1.5 flex items-center gap-2 flex-wrap text-[12px]">
           {supplierSummary && (
             <span className="text-zinc-500 font-semibold">공급사 <span className="font-bold text-sky-700">{supplierSummary}</span></span>
           )}

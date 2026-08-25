@@ -54,7 +54,7 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
         <ScanLine size={18} className="text-brand-deep shrink-0" />
         <div className="min-w-0">
           <p className="text-[16px] font-bold text-ink leading-tight tracking-tight">바코드 스캔</p>
-          <p className="text-[13px] text-ink-soft leading-tight mt-0.5">스캔 시 우측 리스트에 자동 등록</p>
+          <p className="text-[15px] text-ink-soft leading-tight mt-0.5">스캔 시 우측 리스트에 자동 등록</p>
         </div>
       </div>
 
@@ -91,7 +91,7 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
             <div className="flex items-start gap-2.5">
               <AlertCircle size={15} className="text-amber-500 shrink-0 mt-0.5" />
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-amber-800 leading-none">미등록 상품 코드</p>
+                <p className="text-[14px] font-bold text-amber-800 leading-none">미등록 상품 코드</p>
                 <p className="text-[15px] font-mono tabular-nums text-amber-700 break-all mt-1.5
                   bg-amber-100/60 px-2 py-1 rounded-md">
                   {notFoundCode}
@@ -105,7 +105,7 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
                 onClick={() => onOpenCreate(notFoundCode)}
                 className="w-full inline-flex items-center justify-center gap-1.5 min-h-[40px] rounded-md
                   bg-amber-600 hover:bg-amber-700 active:bg-amber-800
-                  text-white text-[13px] font-bold shadow-sm transition-colors cursor-pointer"
+                  text-white text-[15px] font-bold shadow-sm transition-colors cursor-pointer"
                 title="스캔한 바코드로 상품 신규 등록"
               >
                 + 이 코드로 상품 등록
@@ -119,7 +119,7 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
             <div className="flex items-center gap-2 px-3.5 py-2.5 bg-zinc-50/60 border-b border-line">
               <StatusPill tone="emerald" size="sm" dot>최근 스캔</StatusPill>
               {lastCode && (
-                <span className="ml-auto text-[13px] font-mono tabular-nums text-ink-soft truncate max-w-[160px]">
+                <span className="ml-auto text-[15px] font-mono tabular-nums text-ink-soft truncate max-w-[160px]">
                   {lastCode}
                 </span>
               )}
@@ -202,7 +202,7 @@ export const SaveCard: React.FC<SaveCardProps> = ({
           }`}>
             <SaveAll size={14} className={saveStatus === "done" ? "text-emerald-600" : "text-zinc-400"} />
           </div>
-          <span className="text-sm font-bold text-zinc-800">전체 등록</span>
+          <span className="text-[16px] font-bold text-zinc-800">전체 등록</span>
         </div>
         <span className="text-[15px] font-bold text-zinc-400 tabular-nums">
           {rows.length}건 · 총 {rows.reduce((acc, r) => acc + calcRowTotal(r), 0)}개
@@ -213,25 +213,25 @@ export const SaveCard: React.FC<SaveCardProps> = ({
         {/* 2026-08-23 · #202 · 사용자 지시 · 전체 등록 버튼 바로 위 · 등록 준비 요약 리스트 */}
         <div className="rounded-lg border border-line/70 bg-zinc-50/50 divide-y divide-zinc-100 overflow-hidden">
           <div className="px-3 py-2 flex items-center gap-2 bg-white/60 border-b border-line/60">
-            <span className="text-[12px] font-bold text-ink tracking-tight">등록 준비 요약</span>
-            <span className="ml-auto text-[12px] text-zinc-500 tabular-nums font-medium">{rows.length}건</span>
+            <span className="text-[14px] font-bold text-ink tracking-tight">등록 준비 요약</span>
+            <span className="ml-auto text-[14px] text-zinc-500 tabular-nums font-medium">{rows.length}건</span>
           </div>
           <ul className="max-h-[36vh] overflow-auto">
             {rows.map((r, idx) => {
               const total = calcRowTotal(r);
               const location = String((r.product as any).realMap ?? (r.product as any).real_map ?? "").trim();
               return (
-                <li key={r.key} className="px-3 py-1.5 flex items-center gap-2 text-[12px] hover:bg-white/60 transition-colors">
-                  <span className="w-5 h-5 shrink-0 rounded bg-brand-tint text-brand-deep inline-flex items-center justify-center text-[11px] font-bold tabular-nums">
+                <li key={r.key} className="px-3 py-1.5 flex items-center gap-2 text-[14px] hover:bg-white/60 transition-colors">
+                  <span className="w-5 h-5 shrink-0 rounded bg-brand-tint text-brand-deep inline-flex items-center justify-center text-[15px] font-bold tabular-nums">
                     {idx + 1}
                   </span>
                   <span className="min-w-0 flex-1 truncate font-semibold text-ink">{r.product.name}</span>
                   {location && (
-                    <span className="shrink-0 text-[11px] font-semibold text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded">
+                    <span className="shrink-0 text-[15px] font-semibold text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded">
                       {location}
                     </span>
                   )}
-                  <span className="shrink-0 text-[12px] font-bold text-brand-deep tabular-nums">{total}개</span>
+                  <span className="shrink-0 text-[14px] font-bold text-brand-deep tabular-nums">{total}개</span>
                 </li>
               );
             })}
@@ -327,7 +327,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
           <div className="px-5 py-3.5 border-b border-zinc-100 bg-zinc-50/60 flex items-center justify-between gap-2 shrink-0">
             <div className="min-w-0">
               <div className="text-[14px] font-bold text-teal-600 uppercase tracking-widest">실재고 저장 이력</div>
-              <div className="text-sm font-bold text-zinc-800 truncate">{historyModal.name}</div>
+              <div className="text-[16px] font-bold text-zinc-800 truncate">{historyModal.name}</div>
               <div className="text-[14px] text-zinc-400 font-mono">{historyModal.code}</div>
             </div>
             <button
@@ -340,11 +340,11 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
           </div>
           <div className="flex-1 overflow-auto min-h-0">
             {historyLoading ? (
-              <div className="flex items-center justify-center py-12 text-zinc-400 text-xs font-semibold">
+              <div className="flex items-center justify-center py-12 text-zinc-400 text-[14px] font-semibold">
                 <Spinner size={16} className="mr-2" /> 이력 조회 중...
               </div>
             ) : historyRows.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-zinc-400 text-xs font-semibold">
+              <div className="flex flex-col items-center justify-center py-12 text-zinc-400 text-[14px] font-semibold">
                 <History size={22} className="mb-2 text-zinc-300" />
                 저장 이력이 없습니다.
               </div>
@@ -454,7 +454,7 @@ export const ReviewSheet: React.FC<ReviewSheetProps> = ({
           return (
             <li key={r.key} className="px-1 py-3 flex items-center gap-3 hover:bg-zinc-50/50 transition-colors rounded-lg">
               <span className="w-7 h-7 shrink-0 rounded-lg bg-brand-tint text-brand-deep
-                inline-flex items-center justify-center text-[12px] font-bold tabular-nums
+                inline-flex items-center justify-center text-[14px] font-bold tabular-nums
                 shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.05)]">
                 {idx + 1}
               </span>
@@ -463,7 +463,7 @@ export const ReviewSheet: React.FC<ReviewSheetProps> = ({
                 <div className="text-[15px] font-bold text-ink tracking-tight truncate">
                   {r.product.name}
                 </div>
-                <div className="text-[12px] text-ink-soft font-mono tabular-nums truncate mt-0.5">
+                <div className="text-[14px] text-ink-soft font-mono tabular-nums truncate mt-0.5">
                   #{r.code}
                 </div>
               </div>
@@ -472,7 +472,7 @@ export const ReviewSheet: React.FC<ReviewSheetProps> = ({
                 {added > 0 ? (
                   <StatusPill tone="emerald" size="sm">+{added}</StatusPill>
                 ) : (
-                  <span className="text-[12px] font-semibold text-zinc-300">변화 없음</span>
+                  <span className="text-[14px] font-semibold text-zinc-300">변화 없음</span>
                 )}
                 <span className={`text-[18px] font-bold tabular-nums tracking-tight ${
                   total > 0 ? "text-brand-deep" : "text-zinc-300"

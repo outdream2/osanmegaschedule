@@ -35,10 +35,10 @@ function ZoneBtn({
           : "bg-white border-gray-300 text-gray-700 hover:border-teal-400 hover:bg-teal-50"
         }`}
     >
-      <span className={`text-[11px] font-bold ${selected ? "text-white" : "text-gray-800"}`}>
+      <span className={`text-[15px] font-bold ${selected ? "text-white" : "text-gray-800"}`}>
         {z.num}
       </span>
-      <span className={`text-[10px] font-semibold text-center leading-none mt-0.5 ${selected ? "text-teal-100" : "text-gray-400"}`}>
+      <span className={`text-[12px] font-semibold text-center leading-none mt-0.5 ${selected ? "text-teal-100" : "text-gray-400"}`}>
         {z.label.replace("진열대 ", "").replace("벽면 ", "")}
       </span>
     </button>
@@ -57,7 +57,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
   const header = (
     <div className="flex items-center gap-2 px-4 py-3 bg-white border-b border-line">
       <MapPin size={15} className="text-teal-500" />
-      <p className="text-sm font-bold text-gray-900">매장 지도에서 구역 선택</p>
+      <p className="text-[16px] font-bold text-gray-900">매장 지도에서 구역 선택</p>
     </div>
   );
 
@@ -77,7 +77,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
           {/* 미지정 */}
           <button
             onClick={() => { onSelect(""); onClose(); }}
-            className={`w-full py-2 rounded-xl border text-sm font-bold transition cursor-pointer ${
+            className={`w-full py-2 rounded-xl border text-[16px] font-bold transition cursor-pointer ${
               !current
                 ? "bg-gray-200 border-gray-400 text-gray-800"
                 : "bg-white border-line text-gray-400 hover:bg-gray-100"
@@ -141,7 +141,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
                           : "bg-white border-gray-300 text-gray-700 hover:border-teal-400 hover:bg-teal-50"
                         }`}
                     >
-                      <span className={`text-[11px] font-bold ${selected ? "text-white" : "text-gray-800"}`}>{z.num}</span>
+                      <span className={`text-[15px] font-bold ${selected ? "text-white" : "text-gray-800"}`}>{z.num}</span>
                       <span className={`text-[9px] font-semibold ${selected ? "text-teal-100" : "text-gray-500"}`}>{z.label}</span>
                     </button>
                   );
@@ -154,7 +154,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
           {current && (
             <div className="px-3 py-2 bg-teal-50 border border-teal-200 rounded-xl flex items-center gap-2">
               <MapPin size={12} className="text-teal-500 shrink-0" />
-              <p className="text-xs font-bold text-teal-700">현재: {current}</p>
+              <p className="text-[14px] font-bold text-teal-700">현재: {current}</p>
             </div>
           )}
       </div>
