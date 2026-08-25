@@ -244,11 +244,18 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   }, []);
 
   // ── A5 · rows 변경 시 debounce 800ms 후 localStorage 저장
+  // 2026-08-25 · 사용자 지시 · 복구 프롬프트 버그 fix
+  //   · 이전 · 마운트 시 rows=[] 상태의 debounce 가 800ms 후 발화 → localStorage.removeItem
+  //     → 사용자가 [복구] 클릭 전에 draft 가 wipe 되어 · restoreDraft 가 빈 데이터로 실패
+  //   · fix · draftBanner 상태 (미결정) 일 때는 · localStorage 를 건드리지 않음
+  //          · 사용자가 [복구] 또는 [무시] 눌러서 결정한 후에만 auto-save/auto-remove 동작
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     draftTimerRef.current = setTimeout(() => {
       try {
+        // 배너 표시 중 (= 사용자 미결정) · draft 건드리지 않음
+        if (draftBanner) return;
         if (rows.length > 0) {
           localStorage.setItem(DRAFT_KEY, JSON.stringify(rows));
         } else {
@@ -257,7 +264,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       } catch { /* storage quota 등 무시 */ }
     }, 800);
     return () => { if (draftTimerRef.current) clearTimeout(draftTimerRef.current); };
-  }, [rows]);
+  }, [rows, draftBanner]);
 
   const showToast = useCallback((msg: string, ms = 2200) => _showRawToast(msg, ms), [_showRawToast]);
 
