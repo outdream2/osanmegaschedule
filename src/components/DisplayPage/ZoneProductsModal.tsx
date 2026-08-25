@@ -142,12 +142,14 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
   const sortIcon = (key: SortKey) =>
     sort.key !== key ? "↕" : sort.dir === "asc" ? "▲" : "▼";
 
+  // 2026-08-25 · 사용자 지시 · 매장구역도 · 카테고리 라벨 클릭 시 열리는 모달 · UI 대원칙 재적용
+  //   · 상단 accent · 폰트 +2 (10/11 → 13/14) · 필터 chip 프리미티브 톤 · 검색 input focus ring
   const modalTitle = (
     <div className="flex-1 min-w-0">
-      <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">구역별 상품 리스트</div>
-      <div className="text-lg font-bold text-zinc-800 mt-0.5">{zoneLabel}</div>
+      <div className="text-[12px] font-bold text-emerald-600 uppercase tracking-wider">구역별 상품 리스트</div>
+      <div className="text-[19px] font-bold text-ink mt-0.5 tracking-tight">{zoneLabel}</div>
       {category && (
-        <div className="text-[11px] text-zinc-500 mt-0.5 line-clamp-2">{category}</div>
+        <div className="text-[13px] text-ink-soft mt-0.5 line-clamp-2">{category}</div>
       )}
     </div>
   );
@@ -158,21 +160,22 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
       onClose={onClose}
       size="lg"
       title={modalTitle}
+      titleAccent
       headerTint={false}
       className="w-full max-w-3xl max-h-[95vh] sm:max-h-[90vh]"
       footer={
-        <button onClick={onClose} className="text-[11px] font-bold text-zinc-600 bg-white border border-zinc-300 px-4 py-1.5 rounded hover:bg-zinc-100 cursor-pointer">닫기</button>
+        <button onClick={onClose} className="text-[14px] font-bold text-ink-soft bg-white border border-line px-4 py-2 rounded-lg hover:bg-zinc-50 cursor-pointer">닫기</button>
       }
     >
-      {/* Filters */}
-      <div className="-mx-5 px-4 py-2 bg-zinc-50 border-b border-line flex items-center gap-2 flex-wrap mb-3">
+      {/* Filters · 폰트 +2 · rounded-lg 프레임워크 톤 */}
+      <div className="-mx-5 px-5 py-3 bg-zinc-50/60 border-b border-line flex items-center gap-2 flex-wrap mb-3">
         <input type="text" value={search} onChange={e => onSetSearch(e.target.value)} placeholder="상품명 검색"
-          className="flex-1 min-w-[120px] text-[11px] border border-zinc-300 rounded px-2 py-1 focus:outline-none focus:border-brand-deep" />
-        <div className="inline-flex bg-white border border-zinc-300 rounded p-0.5">
-          <button onClick={() => onSetFilter("all")} className={`px-2 py-0.5 text-[10px] font-bold rounded cursor-pointer transition ${filter === "all" ? "bg-brand-deep text-white" : "text-zinc-500"}`}>전체</button>
-          <button onClick={() => onSetFilter("mismatch")} className={`px-2 py-0.5 text-[10px] font-bold rounded cursor-pointer transition ${filter === "mismatch" ? "bg-rose-500 text-white" : "text-rose-500"}`}>불일치</button>
+          className="flex-1 min-w-[160px] h-9 text-[14px] border border-line rounded-lg px-3 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition placeholder:text-zinc-400" />
+        <div className="inline-flex bg-white border border-line rounded-lg p-0.5">
+          <button onClick={() => onSetFilter("all")}      className={`h-8 px-3 text-[13px] font-bold rounded-md cursor-pointer transition ${filter === "all" ? "bg-brand-deep text-white shadow-sm" : "text-ink-soft hover:text-brand-deep"}`}>전체</button>
+          <button onClick={() => onSetFilter("mismatch")} className={`h-8 px-3 text-[13px] font-bold rounded-md cursor-pointer transition ${filter === "mismatch" ? "bg-rose-500 text-white shadow-sm" : "text-rose-500 hover:bg-rose-50"}`}>불일치</button>
         </div>
-        <span className="text-[10px] font-bold text-zinc-500 ml-auto">{filtered.length}/{matched.length}건</span>
+        <span className="text-[13px] font-bold text-ink-soft ml-auto tabular-nums">{filtered.length}<span className="text-zinc-400 font-medium">/{matched.length}건</span></span>
       </div>
       {/* List */}
       <div className="overflow-y-auto overflow-x-hidden bg-zinc-50 -mx-5 px-2 sm:px-4 pb-2">
@@ -269,19 +272,19 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
                           </div>
                         )}
                       </td>
-                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[11px] ${!Number.isFinite(stockNum) ? "text-zinc-300" : stockNum <= 0 ? "text-red-600" : "text-amber-700"}`}>{Number.isFinite(stockNum) ? stockNum : "-"}</td>
-                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[11px] bg-cyan-50/50 ${wh != null ? "text-cyan-700" : "text-zinc-300"}`}>{fmt(wh)}</td>
-                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[11px] bg-violet-50/50 ${st != null ? "text-violet-700" : "text-zinc-300"}`}>{fmt(st)}</td>
-                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[11px] ${realTotalVal == null ? "text-zinc-300" : mismatch ? "text-rose-600" : "text-emerald-700"}`} title={mismatch ? `실재고 ${realTotalVal} ≠ ERP ${stockNum} · 불일치` : "실재고 합계"}>{realTotalVal == null ? "-" : realTotalVal}</td>
+                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[13px] ${!Number.isFinite(stockNum) ? "text-zinc-300" : stockNum <= 0 ? "text-red-600" : "text-amber-700"}`}>{Number.isFinite(stockNum) ? stockNum : "-"}</td>
+                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[13px] bg-cyan-50/50 ${wh != null ? "text-cyan-700" : "text-zinc-300"}`}>{fmt(wh)}</td>
+                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[13px] bg-violet-50/50 ${st != null ? "text-violet-700" : "text-zinc-300"}`}>{fmt(st)}</td>
+                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[13px] ${realTotalVal == null ? "text-zinc-300" : mismatch ? "text-rose-600" : "text-emerald-700"}`} title={mismatch ? `실재고 ${realTotalVal} ≠ ERP ${stockNum} · 불일치` : "실재고 합계"}>{realTotalVal == null ? "-" : realTotalVal}</td>
                       {(() => {
                         const closingRaw = (p as any).closing_stock;
                         const closingNum = closingRaw != null && closingRaw !== "" ? Number(closingRaw) : NaN;
                         const loss = (Number.isFinite(closingNum) && Number.isFinite(stockNum)) ? (closingNum - stockNum) : null;
                         return (
-                          <td className={`text-right px-1 py-1.5 font-mono font-bold text-[11px] ${loss == null ? "text-zinc-300" : loss > 0 ? "text-rose-600" : loss < 0 ? "text-sky-600" : "text-zinc-500"}`} title={loss == null ? "마감재고 없음" : `마감재고 ${closingNum} - 현재고 ${stockNum} = ${loss}`}>{loss == null ? "-" : loss}</td>
+                          <td className={`text-right px-1 py-1.5 font-mono font-bold text-[13px] ${loss == null ? "text-zinc-300" : loss > 0 ? "text-rose-600" : loss < 0 ? "text-sky-600" : "text-zinc-500"}`} title={loss == null ? "마감재고 없음" : `마감재고 ${closingNum} - 현재고 ${stockNum} = ${loss}`}>{loss == null ? "-" : loss}</td>
                         );
                       })()}
-                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[11px] ${Number.isFinite(optNum) ? "text-zinc-600" : "text-zinc-300"}`}>{Number.isFinite(optNum) ? optNum : "-"}</td>
+                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[13px] ${Number.isFinite(optNum) ? "text-zinc-600" : "text-zinc-300"}`}>{Number.isFinite(optNum) ? optNum : "-"}</td>
                       <td className="text-center px-1 py-1.5">
                         <StatusPill tone={statusTone} size="xs" dot={statusTone !== "zinc"} pulse={statusPulse}>{statusLabel}</StatusPill>
                       </td>
