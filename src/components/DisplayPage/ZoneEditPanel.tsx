@@ -262,8 +262,9 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
               <table className="w-full text-[13px] table-fixed">
                 <thead>
                   <tr className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">
-                    <th className="text-left px-2 py-1.5" style={{ width: "45%" }}>구역</th>
-                    <th className="text-left px-2 py-1.5" style={{ width: "55%" }}>상세 설명 (매장구역도 hover)</th>
+                    <th className="text-left px-2 py-1.5" style={{ width: "12%" }}>구역</th>
+                    <th className="text-left px-2 py-1.5" style={{ width: "36%" }}>카테고리</th>
+                    <th className="text-left px-2 py-1.5" style={{ width: "52%" }}>상세카테고리 (매장구역도 hover)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
@@ -272,22 +273,21 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
                     const tone = codeToneCls(fr.sub);
                     return (
                       <tr key={`${z.section}-${fr.code}`} className={`hover:bg-white/60 transition ${tone.row} align-top`}>
-                        {/* 왼쪽 · 구역 = 코드 뱃지 + 카테고리 텍스트 (편집) */}
+                        {/* 구역 · 코드 뱃지 (fixed · 위치 파생) */}
                         <td className="px-2 py-2">
-                          <div className="flex items-start gap-2 min-w-0">
-                            <span className={`shrink-0 inline-flex items-center justify-center min-w-[38px] h-7 px-2 rounded-md border font-extrabold tabular-nums text-[14px] ${tone.badge}`}>
-                              {fr.code}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              {renderEdit(z, fr.catField, fr.catValue || <span className="text-zinc-300 italic">(비어있음 · 클릭하여 입력)</span>, false)}
-                            </div>
-                          </div>
+                          <span className={`inline-flex items-center justify-center min-w-[42px] h-8 px-2.5 rounded-md border font-extrabold tabular-nums text-[15px] ${tone.badge}`}>
+                            {fr.code}
+                          </span>
                         </td>
-                        {/* 오른쪽 · 상세설명 (편집 · multiline) */}
+                        {/* 카테고리 · 편집 (single line) */}
+                        <td className="px-2 py-2">
+                          {renderEdit(z, fr.catField, fr.catValue || <span className="text-zinc-300 italic">(비어있음 · 클릭하여 입력)</span>, false)}
+                        </td>
+                        {/* 상세카테고리 · 편집 (multiline) */}
                         <td className="px-2 py-2">
                           {renderEdit(z, fr.descField, fr.descValue
                             ? <span className="text-[13px] text-ink-soft leading-relaxed whitespace-pre-wrap">{fr.descValue}</span>
-                            : <span className="text-zinc-300 italic">(설명 없음 · 클릭하여 입력)</span>, true)}
+                            : <span className="text-zinc-300 italic">(비어있음 · 클릭하여 입력)</span>, true)}
                         </td>
                       </tr>
                     );

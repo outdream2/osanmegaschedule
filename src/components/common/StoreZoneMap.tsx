@@ -169,10 +169,11 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
 
   const [collapsed, setCollapsed] = useState(collapsible ? defaultCollapsed : false);
 
-  // compact 모드 · 셀 min-height 조정
-  const wallMin = compact ? "min-h-[72px]" : "min-h-[92px]";
-  const cellMin = compact ? "min-h-[60px]" : "min-h-[76px]";
-  const centerMin = compact ? "min-h-[110px]" : "min-h-[140px]";
+  // 2026-08-26 · 사용자 지시 · 글씨 크기에 맞춰 자동 확장 · 표처럼 grid 정렬
+  //   · min-height 만 유지 · 내용에 따라 자동 성장 (line-clamp 제거로 텍스트 절대 안 잘림)
+  const wallMin = compact ? "min-h-[88px]" : "min-h-[112px]";
+  const cellMin = compact ? "min-h-[74px]" : "min-h-[92px]";
+  const centerMin = compact ? "min-h-[130px]" : "min-h-[160px]";
 
   // BEST 배지 (Top 10 만) · showBestBadges=true 이고 rank<=10 있을 때만
   const rankBadge = (zoneId: string) => {
@@ -220,14 +221,15 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
             {rankBadge(zoneId)}
           </div>
         )}
-        <div className="w-full bg-stone-50 px-1 py-1 flex flex-col items-center gap-0.5 flex-1 justify-center relative">
+        <div className="w-full bg-stone-50 px-1.5 py-1.5 flex flex-col items-center gap-1 flex-1 justify-center relative">
           {enableDrag && (
             <span className="absolute top-0.5 right-0.5 text-zinc-400" aria-hidden><GripVertical size={10} /></span>
           )}
           <div className="flex items-center justify-center">
-            <span className="text-[10px] font-bold text-white bg-amber-700 rounded px-1.5 leading-none">{getZoneLabel(num)}</span>
+            <span className="text-[11px] font-bold text-white bg-amber-700 rounded px-1.5 py-0.5 leading-none">{getZoneLabel(num)}</span>
           </div>
-          <span className="text-[10px] font-bold text-stone-800 leading-tight text-center line-clamp-2 break-all">{cat}</span>
+          {/* 2026-08-26 · 사용자 지시 · line-clamp 제거 · 글씨 크기에 맞춰 셀 자동 성장 · break-keep 로 단어 안 짤림 */}
+          <span className="text-[11px] font-bold text-stone-800 leading-snug text-center break-keep whitespace-normal">{cat}</span>
         </div>
       </Tag>
     );
@@ -243,11 +245,15 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
     const countB = zoneItemCounts?.[`${num}B`] ?? 0;
     const countA = zoneItemCounts?.[`${num}A`] ?? 0;
 
+    // 2026-08-26 · 사용자 지시 · 서브별 상세카테고리 (descriptionA/B) tooltip
+    const descA = zd?.descriptionA;
+    const descB = zd?.descriptionB;
     const renderSide = (
       side: "A" | "B",
       colors: typeof ca,
       sub: string,
       count: number,
+      subDesc: string | undefined,
     ) => {
       const zoneId = `${num}${side}`;
       const handleClick = cellClickable ? () => onZoneClick!(zoneId) : undefined;
@@ -257,29 +263,30 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
       const dragProps = dragHandlers(num);
       const dragClass = cellStateClass(num);
       return (
-        <div className="flex flex-col items-stretch gap-0.5 flex-1 min-w-[44px]">
+        <div className="flex flex-col items-stretch gap-0.5 flex-1 min-w-[52px]">
           {showBestBadges && (
             <div className="min-h-[18px] flex items-center justify-center">{rankBadge(zoneId)}</div>
           )}
           <Tag
             {...extra}
             {...dragProps}
-            className={`w-full font-bold ${colors.text} ${colors.bg} border-2 ${colors.border} rounded px-0.5 py-1 leading-tight text-center ${cellMin} flex flex-col items-center justify-center overflow-hidden ${cellInteractive} ${dragClass}`}
-            title={`${zoneId} · ${sub}${count > 0 ? ` · ${count}개 상품` : ""}${enableDrag ? " · 길게 눌러 드래그" : ""}`}
+            className={`w-full font-bold ${colors.text} ${colors.bg} border-2 ${colors.border} rounded px-1 py-1.5 leading-tight text-center ${cellMin} flex flex-col items-center justify-center gap-1 ${cellInteractive} ${dragClass}`}
+            title={`${zoneId} · ${sub}${count > 0 ? ` · ${count}개 상품` : ""}${subDesc ? `\n\n[상세]\n${subDesc}` : ""}${enableDrag ? "\n\n(길게 눌러 드래그)" : ""}`}
           >
-            <div className="flex items-center justify-center mb-0.5">
-              <span className={`text-[10px] font-bold text-white ${colors.labelBg} rounded px-1.5 leading-none`}>{getZoneLabel(zoneId)}</span>
+            <div className="flex items-center justify-center">
+              <span className={`text-[11px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{getZoneLabel(zoneId)}</span>
             </div>
-            <span className="line-clamp-3 text-[10px] break-all">{sub}</span>
+            {/* 2026-08-26 · line-clamp 제거 · break-keep · 자동 확장 */}
+            <span className="text-[11px] leading-snug break-keep whitespace-normal">{sub}</span>
           </Tag>
         </div>
       );
     };
 
     return (
-      <div key={`pair-${num}`} className="flex flex-row items-stretch gap-0.5 flex-1 min-w-[92px]">
-        {renderSide("B", cb, subB, countB)}
-        {renderSide("A", ca, subA, countA)}
+      <div key={`pair-${num}`} className="flex flex-row items-stretch gap-0.5 flex-1 min-w-[108px]">
+        {renderSide("B", cb, subB, countB, descB)}
+        {renderSide("A", ca, subA, countA, descA)}
       </div>
     );
   };
@@ -302,10 +309,10 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         <Tag
           {...extra}
           {...dragProps}
-          className={`w-full text-[10px] font-bold text-zinc-700 bg-white border border-zinc-300 rounded px-0.5 py-1 leading-tight text-center ${centerMin} flex items-center justify-center overflow-hidden ${cellInteractive} ${dragClass}`}
-          title={`${STORE_AISLE_CENTER} · ${centerLabel}${count > 0 ? ` · ${count}개 상품` : ""}${enableDrag ? " · 길게 눌러 드래그" : ""}`}
+          className={`w-full text-[11px] font-bold text-zinc-700 bg-white border border-zinc-300 rounded px-1 py-1.5 leading-snug text-center ${centerMin} flex items-center justify-center ${cellInteractive} ${dragClass}`}
+          title={`${STORE_AISLE_CENTER} · ${centerLabel}${count > 0 ? ` · ${count}개 상품` : ""}${zd?.description ? `\n\n[상세]\n${zd.description}` : ""}${enableDrag ? "\n\n(길게 눌러 드래그)" : ""}`}
         >
-          <span className="line-clamp-6">{centerLabel}</span>
+          <span className="break-keep whitespace-normal">{centerLabel}</span>
         </Tag>
         <div className="w-full flex items-center justify-center gap-0.5 flex-wrap mt-0.5">
           <span className="text-[10px] font-bold text-white bg-zinc-600 rounded px-1 leading-none py-0.5">{getZoneLabel(STORE_AISLE_CENTER)}</span>
@@ -418,10 +425,10 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         </div>
       </div>
 
-      {/* 하단 · 동측 wing · 수평 8셀 · 2026-08-05 · 상하 여백 추가 (겹침 방지) */}
-      <div className="border-t border-violet-200 pt-3 mt-1.5">
-        <div className="text-[10px] font-bold text-violet-600 uppercase tracking-wider mb-1 px-0.5">동측 wing (35→42) · 이벤트 · 카운터 · 조제실</div>
-        <div className="grid gap-0.5 pb-1" style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))" }}>
+      {/* 하단 · 동측 wing · 수평 8셀 · 2026-08-26 · 상하 여백 강화 (겹침 방지 · 사용자 지시) */}
+      <div className="border-t-2 border-violet-200 pt-5 mt-4 pb-3">
+        <div className="text-[11px] font-bold text-violet-600 uppercase tracking-wider mb-2 px-0.5">동측 wing (35→42) · 이벤트 · 카운터 · 조제실</div>
+        <div className="grid gap-1 pb-2" style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))" }}>
           {STORE_VERTICAL_WING.map(n => wallCell(n))}
         </div>
       </div>
