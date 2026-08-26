@@ -623,9 +623,43 @@ router.post("/api/products/refill-optimal-stock", asyncHandler(async (req, res) 
     }
   }
   resetProductCache();
+  const upsertMs = Date.now() - tUpsert;
+
+  // 2026-08-26 · A안 · 사용자 지시 · order_requests 동기화 (스냅샷도 재계산 값으로)
+  //   · 발주필요 리스트 등에서 즉시 반영되도록
+  //   · 청크 500 · onConflict: id · optimal_stock 필드만 업데이트
+  const tOrder = Date.now();
+  let orderUpdated = 0;
+  const { data: orderRows, error: orderErr } = await supabase
+    .from("order_requests")
+    .select("id, product_code");
+  if (!orderErr && orderRows) {
+    const orderPayload = orderRows
+      .map(r => {
+        const q = salesMap.get(String(r.product_code ?? "").trim());
+        if (q == null) return null;
+        return { id: r.id, optimal_stock: Math.round(q) };
+      })
+      .filter((x): x is { id: number; optimal_stock: number } => x !== null);
+    const OCHUNK = 500;
+    for (let i = 0; i < orderPayload.length; i += OCHUNK) {
+      const chunk = orderPayload.slice(i, i + OCHUNK);
+      const { error: uErr } = await supabase.from("order_requests")
+        .upsert(chunk, { onConflict: "id" });
+      if (uErr) {
+        console.error("[refill-optimal-stock] order_requests upsert error:", uErr.message);
+      } else {
+        orderUpdated += chunk.length;
+      }
+    }
+  } else if (orderErr) {
+    console.warn("[refill-optimal-stock] order_requests 조회 실패:", orderErr.message);
+  }
+  const orderMs = Date.now() - tOrder;
+
   const elapsedMs = Date.now() - t0;
-  console.log(`[refill-optimal-stock] days=${days} · updated=${updated} · failed=${failed} · upsert=${Date.now() - tUpsert}ms · total=${elapsedMs}ms`);
-  return res.json({ ok: true, updated, failed, days, from: sinceStr, elapsedMs });
+  console.log(`[refill-optimal-stock] days=${days} · products=${updated}건 (upsert ${upsertMs}ms) · order_requests=${orderUpdated}건 (${orderMs}ms) · total=${elapsedMs}ms`);
+  return res.json({ ok: true, updated, failed, orderUpdated, days, from: sinceStr, elapsedMs });
 }));
 
 router.patch("/api/products/:code", asyncHandler(async (req, res) => {
