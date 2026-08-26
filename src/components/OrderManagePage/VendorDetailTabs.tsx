@@ -22,6 +22,8 @@ import { useSortableTable, type Comparator } from "../../hooks/useSortableTable"
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
+// 2026-08-26 · 사용자 버그 fix · memo 에 [meta]{...}[/meta] 원본 노출 문제 · decodeMemo 사용
+import { decodeMemo } from "./PaymentInfoTab.utils";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useVendorInfoModal } from "../common/features/VendorInfoModal";
@@ -222,14 +224,37 @@ const LedgerContent: React.FC<{
                   {dateLabel(r.date)}
                 </td>
                 <td className="px-3 py-2 text-[13px] text-zinc-700 align-top break-words whitespace-normal leading-snug">
-                  {r.memo ?? <span className="text-zinc-300">-</span>}
-                  {r.tax_invoice_no && (
-                    <span title={`전자세금계산서 승인번호: ${r.tax_invoice_no}`} className="inline-block ml-1.5 align-middle">
-                      <StatusPill tone="violet" size="xs">
-                        세금계산서 {r.tax_invoice_no.slice(-8)}
-                      </StatusPill>
-                    </span>
-                  )}
+                  {(() => {
+                    // 2026-08-26 · 사용자 버그 fix · [meta]{...}[/meta] 태그 · decodeMemo 로 note 만 노출
+                    const { note, meta } = decodeMemo(r.memo);
+                    return (
+                      <>
+                        {note ? note : <span className="text-zinc-300">-</span>}
+                        {meta?.card_issuer && (
+                          <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-50 border border-line text-[12px] font-semibold text-zinc-500 align-middle">
+                            {meta.card_issuer}
+                          </span>
+                        )}
+                        {meta?.bank_name && (
+                          <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-50 border border-line text-[12px] font-semibold text-zinc-500 align-middle">
+                            {meta.bank_name}
+                          </span>
+                        )}
+                        {meta?.tax_invoice_issued && (
+                          <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded bg-teal-50 border border-teal-200 text-[12px] font-bold text-teal-700 align-middle">
+                            세금계산서
+                          </span>
+                        )}
+                        {r.tax_invoice_no && (
+                          <span title={`전자세금계산서 승인번호: ${r.tax_invoice_no}`} className="inline-block ml-1.5 align-middle">
+                            <StatusPill tone="violet" size="xs">
+                              세금계산서 {r.tax_invoice_no.slice(-8)}
+                            </StatusPill>
+                          </span>
+                        )}
+                      </>
+                    );
+                  })()}
                 </td>
                 <td className="px-3 py-2 align-top whitespace-nowrap">
                   <StatusPill tone="sky" size="xs" shape="square">
