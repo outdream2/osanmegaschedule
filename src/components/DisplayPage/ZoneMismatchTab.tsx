@@ -135,16 +135,20 @@ export const ZoneMismatchTab: React.FC = () => {
     }
   };
 
+  // 2026-08-26 · 사용자 지시 · 전산구역·실제위치 둘 다 있는 것만 표시 (하나라도 없으면 미배정 페이지로)
   const sorted = useMemo(() => {
+    const isValidZone = (v: string | null | undefined) =>
+      !!v && String(v).trim() !== "" && String(v).trim() !== "미지정";
+    const bothPresent = rows.filter(r => isValidZone(r.spec_zone) && isValidZone(r.real_zone));
     const q = search.trim().toLowerCase();
     const filtered = q
-      ? rows.filter(r =>
+      ? bothPresent.filter(r =>
           String(r.product_name ?? "").toLowerCase().includes(q) ||
           String(r.product_code ?? "").toLowerCase().includes(q) ||
           String(r.spec_zone ?? "").toLowerCase().includes(q) ||
           String(r.real_zone ?? "").toLowerCase().includes(q)
         )
-      : rows;
+      : bothPresent;
     return [...filtered].sort((a, b) => (b.registered_at ?? "").localeCompare(a.registered_at ?? ""));
   }, [rows, search]);
 

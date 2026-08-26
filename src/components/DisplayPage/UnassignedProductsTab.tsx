@@ -20,6 +20,8 @@ interface UnassignedProduct {
   spec: string | null;
   real_map: string | null;
   current_stock: number | null;
+  /** 2026-08-26 · 사용자 지시 · 미배정 사유 · "spec" (전산구역 없음) · "real_map" (실제위치 없음) · "both" */
+  missing?: "spec" | "real_map" | "both";
 }
 
 export const UnassignedProductsTab: React.FC = () => {
@@ -37,10 +39,19 @@ export const UnassignedProductsTab: React.FC = () => {
     setError(null);
     // /api/products-search?q=&limit=... · 서버에서 real_map IS NULL 상품 조회 필요
     //   · 임시 · 대용량 조회 (limit=500) 후 · 클라이언트에서 real_map 미지정 필터
+    // 2026-08-26 · 사용자 지시 · spec (전산구역) OR real_map (실제위치) 미배정 상품
     api.get<{ items?: UnassignedProduct[] } | UnassignedProduct[]>("/api/products-search?q=&limit=1000")
       .then(({ data }) => {
         const list: UnassignedProduct[] = Array.isArray(data) ? (data as UnassignedProduct[]) : ((data as any)?.items ?? []);
-        const unassigned = list.filter(p => !p.real_map || String(p.real_map).trim() === "");
+        const isEmpty = (v: string | null) => !v || String(v).trim() === "" || String(v).trim() === "미지정";
+        const unassigned = list
+          .filter(p => isEmpty(p.spec) || isEmpty(p.real_map))
+          .map(p => {
+            const noSpec = isEmpty(p.spec);
+            const noMap  = isEmpty(p.real_map);
+            const missing: "spec" | "real_map" | "both" = noSpec && noMap ? "both" : noSpec ? "spec" : "real_map";
+            return { ...p, missing };
+          });
         setRows(unassigned);
       })
       .catch((e: unknown) => {
@@ -147,9 +158,10 @@ export const UnassignedProductsTab: React.FC = () => {
               <thead className={tableHeadCls("text-[14px]")}>
                 <tr>
                   <th className={tableThCls("left")} style={{ minWidth: 320 }}>상품명</th>
-                  <th className={tableThCls("left")} style={{ width: "18%" }}>공급사</th>
-                  <th className={tableThCls("left")} style={{ width: "14%" }}>상품코드</th>
+                  <th className={tableThCls("left")} style={{ width: "16%" }}>공급사</th>
+                  <th className={tableThCls("left")} style={{ width: "12%" }}>상품코드</th>
                   <th className={tableThCls("center")} style={{ width: 90 }}>현재고</th>
+                  <th className={tableThCls("center")} style={{ width: 120 }}>미배정 사유</th>
                   <th className={tableThCls("center")} style={{ minWidth: 280 }}>배치구역 지정</th>
                 </tr>
               </thead>
@@ -160,6 +172,15 @@ export const UnassignedProductsTab: React.FC = () => {
                     <td className={tableTdCls("left", "text-zinc-700")}>{p.supplier ?? "-"}</td>
                     <td className={tableTdCls("left", "font-mono text-[13px] text-zinc-500")}>{p.product_code}</td>
                     <td className={tableTdCls("center", "font-bold text-zinc-700 tabular-nums")}>{p.current_stock ?? "-"}</td>
+                    <td className={tableTdCls("center")}>
+                      {p.missing === "both" ? (
+                        <span className="inline-flex items-center h-6 px-2 rounded-md text-[12px] font-bold bg-rose-100 text-rose-700 border border-rose-200">둘 다 없음</span>
+                      ) : p.missing === "spec" ? (
+                        <span className="inline-flex items-center h-6 px-2 rounded-md text-[12px] font-bold bg-amber-100 text-amber-700 border border-amber-200">전산 없음</span>
+                      ) : (
+                        <span className="inline-flex items-center h-6 px-2 rounded-md text-[12px] font-bold bg-sky-100 text-sky-700 border border-sky-200">실제 없음</span>
+                      )}
+                    </td>
                     <td className={tableTdCls("center")}>
                       {editingId === p.product_code ? (
                         <div className="flex items-center gap-1 justify-center">
