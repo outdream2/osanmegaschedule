@@ -46,6 +46,10 @@ interface Row {
   s1: number | null;
   s2: number | null;
   s3: number | null;
+  // 2026-08-26 · 사용자 지시 · real_map "/" 분리 · 매장1/2/3 zone 라벨
+  s1zone: string | null;
+  s2zone: string | null;
+  s3zone: string | null;
   total: number;
   diff: number;                        // 2026-08-26 · ERP - 실재고합계 (음수면 실재고 많음)
 }
@@ -119,6 +123,8 @@ export const RealStockTablePage: React.FC = () => {
     const total = (w1 ?? 0) + (w2 ?? 0) + (s1 ?? 0) + (s2 ?? 0) + (s3 ?? 0);
     const erp = p.current_stock;
     const diff = (erp ?? 0) - total;
+    // 2026-08-26 · 사용자 지시 · real_map "1/12" · 매장1=1 · 매장2=12
+    const parts = String(p.real_map ?? "").split("/").map(s => s.trim()).filter(Boolean);
     return {
       product_code: p.product_code,
       product_name: p.product_name,
@@ -127,7 +133,11 @@ export const RealStockTablePage: React.FC = () => {
       spec: p.spec,
       real_map: p.real_map,
       erp,
-      w1, w2, s1, s2, s3, total, diff,
+      w1, w2, s1, s2, s3,
+      s1zone: parts[0] ?? null,
+      s2zone: parts[1] ?? null,
+      s3zone: parts[2] ?? null,
+      total, diff,
     };
   }), [products, inv]);
 
@@ -339,9 +349,19 @@ export const RealStockTablePage: React.FC = () => {
                           <td className={tableTdCls("num", `tabular-nums font-bold ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-50/20`)}>
                             {r.erp ?? "-"}
                           </td>
-                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.s1, "violet")} bg-violet-50/20`)}>{r.s1 ?? "-"}</td>
-                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.s2, "violet")} bg-violet-50/20`)}>{r.s2 ?? "-"}</td>
-                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.s3, "violet")} bg-violet-50/20`)}>{r.s3 ?? "-"}</td>
+                          {/* 2026-08-26 · 사용자 지시 · 매장 · zone (real_map split) + qty · zone 없으면 - */}
+                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.s1, "violet")} bg-violet-50/20`)}>
+                            {r.s1zone && <div className="text-[11px] text-violet-600 font-bold leading-tight">{r.s1zone}</div>}
+                            <div>{r.s1 ?? "-"}</div>
+                          </td>
+                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.s2, "violet")} bg-violet-50/20`)}>
+                            {r.s2zone && <div className="text-[11px] text-violet-600 font-bold leading-tight">{r.s2zone}</div>}
+                            <div>{r.s2 ?? "-"}</div>
+                          </td>
+                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.s3, "violet")} bg-violet-50/20`)}>
+                            {r.s3zone && <div className="text-[11px] text-violet-600 font-bold leading-tight">{r.s3zone}</div>}
+                            <div>{r.s3 ?? "-"}</div>
+                          </td>
                           <td className={tableTdCls("num", `tabular-nums ${numCls(r.w1, "cyan")} bg-cyan-50/20`)}>{r.w1 ?? "-"}</td>
                           <td className={tableTdCls("num", `tabular-nums ${numCls(r.w2, "cyan")} bg-cyan-50/20`)}>{r.w2 ?? "-"}</td>
                           <td className={tableTdCls("num", `tabular-nums font-bold ${r.total > 0 ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/10`)}>
