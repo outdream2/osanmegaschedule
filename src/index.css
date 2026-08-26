@@ -281,6 +281,18 @@ html, body {
 [data-scope="hr-forms"] [class*="text-\\[18px\\]"] { font-size: 30px !important; }
 [data-scope="hr-forms"] [class*="text-\\[20px\\]"] { font-size: 32px !important; }
 
+/* 2026-08-26 · 사용자 지시 · 실재고 테이블 · 폰트 +2 */
+[data-scope="real-stock-table"] [class*="text-\\[10px\\]"] { font-size: 24px !important; }
+[data-scope="real-stock-table"] [class*="text-\\[11px\\]"] { font-size: 24px !important; }
+[data-scope="real-stock-table"] [class*="text-\\[12px\\]"] { font-size: 25px !important; }
+[data-scope="real-stock-table"] [class*="text-\\[13px\\]"] { font-size: 25px !important; }
+[data-scope="real-stock-table"] [class*="text-\\[14px\\]"] { font-size: 26px !important; }
+[data-scope="real-stock-table"] [class*="text-\\[15px\\]"] { font-size: 27px !important; }
+[data-scope="real-stock-table"] [class*="text-\\[16px\\]"] { font-size: 28px !important; }
+[data-scope="real-stock-table"] [class*="text-\\[17px\\]"] { font-size: 29px !important; }
+[data-scope="real-stock-table"] [class*="text-\\[18px\\]"] { font-size: 30px !important; }
+[data-scope="real-stock-table"] [class*="text-\\[20px\\]"] { font-size: 32px !important; }
+
 /* 2026-08-10 · 사용자 요청 · 전역 버튼 위아래 여백 축소 (다른 SaaS · Linear·Notion 참고 · 컴팩트)
  * button 요소만 · py-1.5 (0.375rem) 이하는 유지 · py-2 (0.5rem) 이상만 축소
  * height 지정 (h-*) 은 우선순위 유지 · padding 만 override */

@@ -20,6 +20,18 @@ interface Props {
   canEdit?: boolean;
 }
 
+// 2026-08-26 · 사용자 지시 · 번호 → 구역 · aisle 1-8 (subA/subB 있음) · "{num}A / {num}B"
+//   · 계산대 40 (subC 있음) · "40A / 40B / 40C"
+//   · 나머지 · 단순 num (예: 벽면 9-34)
+function formatZoneCode(z: ZoneDef): React.ReactNode {
+  const hasA = !!z.subA;
+  const hasB = !!z.subB;
+  const hasC = !!(z as any).subC;
+  if (hasA && hasB && hasC) return <span>{z.num}A · {z.num}B · {z.num}C</span>;
+  if (hasA && hasB)         return <span>{z.num}A · {z.num}B</span>;
+  return <span>{z.num}</span>;
+}
+
 export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
   const { zones, setZones, loading, saveNow, saveState } = useZoneDefs();
   const { toast, showSuccess, showError } = useToast();
@@ -166,7 +178,7 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">
-                  <th className="text-left px-2 py-1.5 w-14">번호</th>
+                  <th className="text-left px-2 py-1.5 w-20">구역</th>
                   <th className="text-left px-2 py-1.5" style={{ minWidth: 140 }}>라벨</th>
                   <th className="text-left px-2 py-1.5" style={{ minWidth: 220 }}>카테고리</th>
                   <th className="text-left px-2 py-1.5" style={{ minWidth: 160 }}>서브 A</th>
@@ -177,7 +189,8 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
               <tbody className="divide-y divide-zinc-100">
                 {grouped[sec].map(z => (
                   <tr key={z.num} className="hover:bg-zinc-50/60 transition">
-                    <td className="px-2 py-1.5 font-bold text-brand-deep tabular-nums text-[15px]">{z.num}</td>
+                    {/* 2026-08-26 · 사용자 지시 · 번호 대신 구역 (zonecategory.png) · aisle 1-8 은 A/B 두 줄 · 나머지는 xx */}
+                    <td className="px-2 py-1.5 font-extrabold text-brand-deep tabular-nums text-[15px] whitespace-nowrap">{formatZoneCode(z)}</td>
                     <td className="px-2 py-1.5">{renderEdit(z, "label", z.label || <span className="text-zinc-300">(비어있음)</span>)}</td>
                     <td className="px-2 py-1.5 break-keep whitespace-normal">{renderEdit(z, "category", z.category || <span className="text-zinc-300">(비어있음)</span>)}</td>
                     <td className="px-2 py-1.5 break-keep whitespace-normal">{renderEdit(z, "subA", z.subA ?? <span className="text-zinc-300 italic">-</span>)}</td>

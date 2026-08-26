@@ -5,8 +5,9 @@
 //   · 목업 톤 (Linear/Notion) · 프리미티브 (Card·TableListWrap·Spinner·EmptyState)
 //   · /api/inventory-latest (최신 실재고) + /api/products-search (상품 리스트) 조합
 
-import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { PackageCheck, Search, RefreshCw, ChevronRight, ChevronDown } from "lucide-react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { PackageCheck, Search, RefreshCw, Check, X } from "lucide-react";
+import { Modal } from "../common/Modal";
 import { api, ApiError } from "../../lib/apiClient";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
@@ -23,6 +24,7 @@ interface Product {
   real_map: string | null;
   category_code: string | null;
   current_stock: number | null; // 2026-08-26 · ERP 재고 (products.current_stock)
+  sale_status: string | null;   // 2026-08-26 · 판매중 필터용
 }
 
 interface InvRow {
@@ -46,15 +48,22 @@ interface Row {
   s1: number | null;
   s2: number | null;
   s3: number | null;
-  // 2026-08-26 · 사용자 지시 · real_map "/" 분리 · 매장1/2/3 zone 라벨
+  // 2026-08-26 · 사용자 지시 · real_map "/" 분리 · 매장1/2/3 zone 라벨 · 창고1/2 zone 도
   s1zone: string | null;
   s2zone: string | null;
   s3zone: string | null;
+  w1zone: string | null;
+  w2zone: string | null;
+  sale_status: string | null;
   total: number;
   diff: number;                        // 2026-08-26 · ERP - 실재고합계 (음수면 실재고 많음)
 }
 
 type SortKey = "product_name" | "supplier" | "category_code" | "spec" | "erp" | "w1" | "w2" | "s1" | "s2" | "s3" | "total" | "diff";
+
+const SLOT_LABEL: Record<"w1" | "w2" | "s1" | "s2" | "s3", string> = {
+  w1: "창고1", w2: "창고2", s1: "매장1", s2: "매장2", s3: "매장3",
+};
 
 const CMP: Record<SortKey, Comparator<Row>> = {
   product_name:  (a, b) => (a.product_name ?? "").localeCompare(b.product_name ?? "", "ko"),
@@ -77,7 +86,9 @@ export const RealStockTablePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const { toast, showError } = useToast();
+  // 2026-08-26 · 사용자 지시 · "판매중 상품만" 로컬 체크박스
+  const [saleOnly, setSaleOnly] = useState(false);
+  const { toast, showError, showSuccess } = useToast();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -98,6 +109,7 @@ export const RealStockTablePage: React.FC = () => {
         real_map: p?.real_map ?? null,
         category_code: p?.category_code ?? null,
         current_stock: p?.current_stock != null ? Number(p.current_stock) : null,
+        sale_status: p?.sale_status ?? null,
       }));
       list.sort((a, b) => a.product_name.localeCompare(b.product_name, "ko"));
       setProducts(list);
@@ -123,7 +135,7 @@ export const RealStockTablePage: React.FC = () => {
     const total = (w1 ?? 0) + (w2 ?? 0) + (s1 ?? 0) + (s2 ?? 0) + (s3 ?? 0);
     const erp = p.current_stock;
     const diff = (erp ?? 0) - total;
-    // 2026-08-26 · 사용자 지시 · real_map "1/12" · 매장1=1 · 매장2=12
+    // 2026-08-26 · 사용자 지시 · real_map "1/12" · 매장1=1 · 매장2=12 · 창고도 parts[3]/[4]
     const parts = String(p.real_map ?? "").split("/").map(s => s.trim()).filter(Boolean);
     return {
       product_code: p.product_code,
@@ -137,54 +149,103 @@ export const RealStockTablePage: React.FC = () => {
       s1zone: parts[0] ?? null,
       s2zone: parts[1] ?? null,
       s3zone: parts[2] ?? null,
+      w1zone: parts[3] ?? null,
+      w2zone: parts[4] ?? null,
+      sale_status: p.sale_status,
       total, diff,
     };
   }), [products, inv]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(r =>
+    let list = rows;
+    if (saleOnly) list = list.filter(r => String(r.sale_status ?? "").trim() === "판매중");
+    if (!q) return list;
+    return list.filter(r =>
       String(r.product_name ?? "").toLowerCase().includes(q) ||
       String(r.supplier ?? "").toLowerCase().includes(q) ||
       String(r.product_code ?? "").toLowerCase().includes(q) ||
       String(r.spec ?? "").toLowerCase().includes(q)
     );
-  }, [rows, search]);
+  }, [rows, search, saleOnly]);
 
   const { sorted, sortKey, sortDir, toggleSort } = useSortableTable<Row, SortKey>(filtered, "product_name", CMP, "asc");
 
-  // 2026-08-26 · 사용자 지시 · 공급사별 그룹핑 (기존 구역별 → 변경)
-  //   · supplier 기준 · 미지정 = "(공급사 미지정)"
-  //   · 화살표 클릭 시 · 상세 상품 rows 표시
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const toggleGroup = (key: string) => setExpandedGroups(prev => {
-    const n = new Set(prev);
-    if (n.has(key)) n.delete(key); else n.add(key);
-    return n;
-  });
-  const grouped = useMemo(() => {
-    const m = new Map<string, Row[]>();
-    for (const r of sorted) {
-      const key = String(r.supplier ?? "").trim() || "(공급사 미지정)";
-      if (!m.has(key)) m.set(key, []);
-      m.get(key)!.push(r);
-    }
-    // 공급사 key 정렬 · 미지정은 맨 뒤
-    return [...m.entries()].sort(([a], [b]) => {
-      if (a === "(공급사 미지정)") return 1;
-      if (b === "(공급사 미지정)") return -1;
-      return a.localeCompare(b, "ko");
-    });
-  }, [sorted]);
-  const groupSummary = (rows: Row[]) => {
-    const erp = rows.reduce((s, r) => s + (r.erp ?? 0), 0);
-    const total = rows.reduce((s, r) => s + r.total, 0);
-    const diff = erp - total;
-    return { count: rows.length, erp, total, diff };
+  // 2026-08-26 · 사용자 지시 · 상품 클릭 · 상세 모달
+  const [detailRow, setDetailRow] = useState<Row | null>(null);
+
+  // 2026-08-26 · 사용자 지시 · 창고1/2·매장1/2/3 인라인 수량 수정 · Enter 저장
+  type SlotKey = "w1" | "w2" | "s1" | "s2" | "s3";
+  const [editing, setEditing] = useState<{ code: string; slot: SlotKey } | null>(null);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+
+  const beginEdit = (r: Row, slot: SlotKey) => {
+    if (savingRef.current) return;
+    setEditing({ code: r.product_code, slot });
+    const cur = slot === "w1" ? r.w1 : slot === "w2" ? r.w2 : slot === "s1" ? r.s1 : slot === "s2" ? r.s2 : r.s3;
+    setDraft(cur == null ? "" : String(cur));
   };
-  const expandAll = () => setExpandedGroups(new Set(grouped.map(([k]) => k)));
-  const collapseAll = () => setExpandedGroups(new Set());
+  const cancelEdit = () => { setEditing(null); setDraft(""); };
+  const commitEdit = async () => {
+    if (!editing || savingRef.current) return;
+    const raw = draft.trim();
+    const parsed = raw === "" ? 0 : Number(raw);
+    if (!Number.isFinite(parsed) || parsed < 0) { showError("숫자만 입력 가능합니다"); return; }
+    const row = rows.find(r => r.product_code === editing.code);
+    if (!row) { cancelEdit(); return; }
+    const slot = editing.slot;
+    const oldVal =
+      slot === "w1" ? row.w1 : slot === "w2" ? row.w2 :
+      slot === "s1" ? row.s1 : slot === "s2" ? row.s2 : row.s3;
+    if ((oldVal ?? 0) === parsed) { cancelEdit(); return; }
+    savingRef.current = true;
+    setSaving(true);
+    // 모든 5-slot 필드 보존 · 해당 slot 만 교체
+    const next = {
+      w1: slot === "w1" ? parsed : (row.w1 ?? 0),
+      w2: slot === "w2" ? parsed : (row.w2 ?? 0),
+      s1: slot === "s1" ? parsed : (row.s1 ?? 0),
+      s2: slot === "s2" ? parsed : (row.s2 ?? 0),
+      s3: slot === "s3" ? parsed : (row.s3 ?? 0),
+    };
+    try {
+      await api.post("/api/inventory-checks", {
+        product_code:     row.product_code,
+        product_name:     row.product_name,
+        checked_by:       "",
+        warehouse1_stock: next.w1,
+        warehouse2_stock: next.w2,
+        store_stock:      next.s1,
+        store_stock_2:    next.s2,
+        store3_stock:     next.s3,
+        store1_zone:      row.s1zone,
+        store2_zone:      row.s2zone,
+        store3_zone:      row.s3zone,
+        warehouse_stock:  next.w1,
+      });
+      setInv(prev => ({
+        ...prev,
+        [row.product_code]: {
+          warehouse1_stock: next.w1,
+          warehouse2_stock: next.w2,
+          store_stock:      next.s1,
+          store_stock_2:    next.s2,
+          store3_stock:     next.s3,
+        },
+      }));
+      showSuccess(`${row.product_name} · ${SLOT_LABEL[slot]} = ${parsed} 저장`);
+      window.dispatchEvent(new CustomEvent("inventory-checks-updated"));
+      cancelEdit();
+    } catch (e: unknown) {
+      const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "저장 실패";
+      showError(`저장 실패: ${msg}`);
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
 
   const sortIndicator = (k: SortKey) => sortKey === k ? (sortDir === "asc" ? " ▲" : " ▼") : "";
   const thSortable = (k: SortKey, align: "left" | "center" | "num", label: string, minW?: number, extra = "") => (
@@ -198,17 +259,104 @@ export const RealStockTablePage: React.FC = () => {
     </th>
   );
 
-  const numCls = (v: number | null, tone: "cyan" | "violet") =>
-    v == null
-      ? "text-zinc-300"
-      : v > 0
-        ? tone === "cyan" ? "text-cyan-700 font-bold" : "text-violet-700 font-bold"
-        : "text-zinc-400";
+  // 수량/구역 · 같은톤 다른 shade · 매장(violet) · 창고(cyan)
+  const renderQtyZone = (r: Row, slot: SlotKey) => {
+    const qty = slot === "w1" ? r.w1 : slot === "w2" ? r.w2 : slot === "s1" ? r.s1 : slot === "s2" ? r.s2 : r.s3;
+    const zone = slot === "w1" ? r.w1zone : slot === "w2" ? r.w2zone : slot === "s1" ? r.s1zone : slot === "s2" ? r.s2zone : r.s3zone;
+    const tone: "cyan" | "violet" = (slot === "w1" || slot === "w2") ? "cyan" : "violet";
+    const isEditing = editing?.code === r.product_code && editing?.slot === slot;
+    if (isEditing) {
+      return (
+        <div className="inline-flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="number"
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
+              if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
+            }}
+            onBlur={() => { if (!saving) commitEdit(); }}
+            className={`w-14 h-7 px-1.5 rounded border text-[14px] text-right tabular-nums font-bold outline-none focus:ring-2 ${tone === "violet" ? "border-violet-500 focus:ring-violet-200 text-violet-800" : "border-cyan-500 focus:ring-cyan-200 text-cyan-800"} bg-white`}
+            disabled={saving}
+          />
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={commitEdit} disabled={saving} className={`shrink-0 w-6 h-6 flex items-center justify-center rounded ${tone === "violet" ? "bg-violet-600 hover:bg-violet-700" : "bg-cyan-600 hover:bg-cyan-700"} text-white cursor-pointer disabled:opacity-40`} title="저장 (Enter)">
+            {saving ? <Spinner size={10} tone="white" /> : <Check size={11} />}
+          </button>
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={cancelEdit} disabled={saving} className="shrink-0 w-6 h-6 flex items-center justify-center rounded bg-white border border-line hover:bg-zinc-50 text-zinc-500 cursor-pointer disabled:opacity-40" title="취소 (Esc)">
+            <X size={11} />
+          </button>
+        </div>
+      );
+    }
+    const qtyCls =
+      qty == null || qty <= 0
+        ? "text-zinc-300"
+        : tone === "cyan" ? "text-cyan-800" : "text-violet-800";
+    const zoneCls = tone === "cyan" ? "text-cyan-500" : "text-violet-500";
+    return (
+      <button
+        type="button"
+        onClick={() => beginEdit(r, slot)}
+        className="inline-flex items-baseline gap-1 hover:bg-white rounded px-1.5 py-0.5 -mx-1 transition cursor-pointer max-w-full"
+        title={`${SLOT_LABEL[slot]} 수량 클릭하여 편집`}
+      >
+        <span className={`font-bold tabular-nums text-[15px] ${qtyCls}`}>{qty ?? "-"}</span>
+        {zone && <span className={`text-[12px] font-semibold ${zoneCls} tabular-nums`}>({zone})</span>}
+      </button>
+    );
+  };
 
   return (
-    <>
+    <div data-scope="real-stock-table">
       {toast && (
         <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
+      )}
+      {/* 2026-08-26 · 사용자 지시 · 상품 클릭 · 상세 모달 */}
+      {detailRow && (
+        <Modal
+          open={!!detailRow}
+          onClose={() => setDetailRow(null)}
+          title={detailRow.product_name}
+          size="md"
+          titleAccent
+        >
+          <div className="flex flex-col gap-3 text-[15px]">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="상품코드" value={<span className="font-mono text-[13px] tabular-nums">{detailRow.product_code}</span>} />
+              <Field label="공급사"  value={detailRow.supplier ?? "-"} />
+              <Field label="전산구역" value={detailRow.spec ?? "미지정"} />
+              <Field label="실제구역" value={detailRow.real_map ?? "미지정"} />
+              <Field label="ERP재고"  value={<b className="text-amber-700 tabular-nums text-[17px]">{detailRow.erp ?? "-"}</b>} />
+              <Field label="실재고합계" value={<b className="text-brand-deep tabular-nums text-[17px]">{detailRow.total > 0 ? detailRow.total : "-"}</b>} />
+            </div>
+            <div className="border-t border-line pt-3">
+              <div className="text-[13px] font-bold text-ink-soft uppercase tracking-wider mb-2">위치별 실재고</div>
+              <div className="grid grid-cols-5 gap-2">
+                {[
+                  { label: "매장1", qty: detailRow.s1, zone: detailRow.s1zone, tone: "violet" },
+                  { label: "매장2", qty: detailRow.s2, zone: detailRow.s2zone, tone: "violet" },
+                  { label: "매장3", qty: detailRow.s3, zone: detailRow.s3zone, tone: "violet" },
+                  { label: "창고1", qty: detailRow.w1, zone: null, tone: "cyan" },
+                  { label: "창고2", qty: detailRow.w2, zone: null, tone: "cyan" },
+                ].map((s) => (
+                  <div key={s.label} className={`rounded-lg border p-2 text-center ${s.tone === "violet" ? "bg-violet-50/40 border-violet-200" : "bg-cyan-50/40 border-cyan-200"}`}>
+                    <div className={`text-[12px] font-bold ${s.tone === "violet" ? "text-violet-700" : "text-cyan-700"}`}>{s.label}</div>
+                    {s.zone && <div className="text-[11px] font-bold text-zinc-500 mt-0.5">{s.zone}</div>}
+                    <div className={`text-[18px] font-extrabold tabular-nums mt-0.5 ${s.qty != null && s.qty > 0 ? (s.tone === "violet" ? "text-violet-800" : "text-cyan-800") : "text-zinc-300"}`}>{s.qty ?? "-"}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="border-t border-line pt-3 flex items-center justify-between">
+              <span className="text-[14px] font-bold text-ink-soft">차이 (ERP − 실재고합계)</span>
+              <span className={`text-[20px] font-extrabold tabular-nums ${detailRow.diff > 0 ? "text-rose-600" : detailRow.diff < 0 ? "text-emerald-600" : "text-zinc-400"}`}>
+                {detailRow.diff !== 0 ? (detailRow.diff > 0 ? `+${detailRow.diff}` : String(detailRow.diff)) : "0"}
+              </span>
+            </div>
+          </div>
+        </Modal>
       )}
       <div className="flex flex-col gap-3">
         {/* 헤더 · 검색 · 새로고침 */}
@@ -220,7 +368,7 @@ export const RealStockTablePage: React.FC = () => {
               <div className="text-[13px] text-ink-soft mt-0.5">상품별 · 전산구역 · 창고1/2 · 매장1/2/3 실재고 현황</div>
             </div>
             <span className="text-[15px] tabular-nums font-semibold text-ink-soft">
-              {loading ? <Spinner size={13} tone="brand" className="inline" /> : `${grouped.length}공급사 · ${filtered.length}${search ? `/${rows.length}` : ""}건`}
+              {loading ? <Spinner size={13} tone="brand" className="inline" /> : `${filtered.length}${search ? `/${rows.length}` : ""}건`}
             </span>
             <div className="ml-auto flex items-center gap-2">
               <div className="relative">
@@ -233,24 +381,16 @@ export const RealStockTablePage: React.FC = () => {
                   className="w-72 h-9 pl-8 pr-3 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
                 />
               </div>
-              <button
-                type="button"
-                onClick={expandAll}
-                disabled={loading || grouped.length === 0}
-                className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-white border border-line text-[13px] font-bold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep hover:text-brand-deep transition cursor-pointer disabled:opacity-40"
-                title="모든 구역 펼치기"
-              >
-                <ChevronDown size={13} /> 모두 펼치기
-              </button>
-              <button
-                type="button"
-                onClick={collapseAll}
-                disabled={loading || expandedGroups.size === 0}
-                className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-white border border-line text-[13px] font-bold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep hover:text-brand-deep transition cursor-pointer disabled:opacity-40"
-                title="모든 구역 접기"
-              >
-                <ChevronRight size={13} /> 모두 접기
-              </button>
+              {/* 2026-08-26 · 사용자 지시 · 판매중 상품만 로컬 체크박스 */}
+              <label className="inline-flex items-center gap-1.5 h-9 px-2.5 rounded-lg bg-white border border-line text-[14px] font-semibold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep transition cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={saleOnly}
+                  onChange={(e) => setSaleOnly(e.target.checked)}
+                  className="w-4 h-4 accent-brand-deep cursor-pointer"
+                />
+                판매중만
+              </label>
               <button
                 type="button"
                 onClick={load}
@@ -287,101 +427,68 @@ export const RealStockTablePage: React.FC = () => {
             <table className="w-full border-collapse">
               <thead className={tableHeadCls("text-[14px]")}>
                 <tr>
-                  <th className={tableThCls("center")} style={{ width: 40 }}></th>
-                  <th className={tableThCls("left")} style={{ minWidth: 220 }}>공급사 · 상품코드</th>
-                  <th className={tableThCls("left")} style={{ width: 140 }}>공급사</th>
-                  <th className={tableThCls("left")} style={{ minWidth: 240 }}>상품명</th>
-                  <th className={`${tableThCls("center")} bg-brand-tint/40`} style={{ width: 100 }}>전산구역</th>
-                  <th className={`${tableThCls("num")} bg-amber-50/60`} style={{ width: 90 }}>ERP재고</th>
-                  {/* 2026-08-26 · 사용자 지시 · 매장 먼저 · 창고 나중 */}
-                  <th className={`${tableThCls("num")} bg-violet-50/60`} style={{ width: 70 }}>매장1</th>
-                  <th className={`${tableThCls("num")} bg-violet-50/60`} style={{ width: 70 }}>매장2</th>
-                  <th className={`${tableThCls("num")} bg-violet-50/60`} style={{ width: 70 }}>매장3</th>
-                  <th className={`${tableThCls("num")} bg-cyan-50/60`} style={{ width: 70 }}>창고1</th>
-                  <th className={`${tableThCls("num")} bg-cyan-50/60`} style={{ width: 70 }}>창고2</th>
-                  <th className={`${tableThCls("num")} bg-brand-tint/30`} style={{ width: 90 }}>실재고합계</th>
-                  <th className={`${tableThCls("num")} bg-rose-50/40`} style={{ width: 80 }}>차이</th>
+                  {/* 2026-08-26 · 사용자 지시 · 상품코드 제거 · 모든 헤더 자동정렬 */}
+                  {thSortable("supplier",      "left",  "공급사",   140)}
+                  {thSortable("product_name",  "left",  "상품명",   300)}
+                  {thSortable("spec",          "center","전산구역", 100, "bg-brand-tint/40")}
+                  {thSortable("erp",          "num", "ERP재고",  90,  "bg-amber-50/60")}
+                  {thSortable("s1",           "num", "매장1",    70,  "bg-violet-50/60")}
+                  {thSortable("s2",           "num", "매장2",    70,  "bg-violet-50/60")}
+                  {thSortable("s3",           "num", "매장3",    70,  "bg-violet-50/60")}
+                  {thSortable("w1",           "num", "창고1",    70,  "bg-cyan-50/60")}
+                  {thSortable("w2",           "num", "창고2",    70,  "bg-cyan-50/60")}
+                  {thSortable("total",        "num", "실재고합계", 95,  "bg-brand-tint/30")}
+                  {thSortable("diff",         "num", "차이",     80,  "bg-rose-50/40")}
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {grouped.map(([groupKey, groupRows]) => {
-                  const sum = groupSummary(groupRows);
-                  const expanded = expandedGroups.has(groupKey);
-                  return (
-                    <React.Fragment key={groupKey}>
-                      {/* 공급사 그룹 행 · 클릭 시 확장 · 요약 표시 */}
-                      <tr
-                        onClick={() => toggleGroup(groupKey)}
-                        className={`cursor-pointer transition text-[15px] font-bold ${expanded ? "bg-brand-tint/20" : "bg-zinc-50/50 hover:bg-zinc-100/60"}`}
-                        title={expanded ? "접기" : "펼치기"}
+                {sorted.map(r => (
+                  <tr key={r.product_code} className="hover:bg-zinc-50/60 transition text-[15px]">
+                    <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ?? "-"}</td>
+                    <td className={tableTdCls("left")}>
+                      <button
+                        type="button"
+                        onClick={() => setDetailRow(r)}
+                        className="text-left font-bold text-zinc-800 break-keep whitespace-normal hover:text-brand-deep hover:underline cursor-pointer"
+                        title="상세 정보"
                       >
-                        <td className={tableTdCls("center")}>
-                          {expanded ? <ChevronDown size={16} className="text-brand-deep inline" /> : <ChevronRight size={16} className="text-zinc-500 inline" />}
-                        </td>
-                        <td className={tableTdCls("left", "font-extrabold text-brand-deep")}>
-                          <span className="inline-flex items-center gap-2">
-                            <span className="text-[16px]">{groupKey}</span>
-                            <span className="text-[13px] text-zinc-500 font-semibold">{sum.count}개 상품</span>
-                          </span>
-                        </td>
-                        <td className={tableTdCls("left")} colSpan={3}></td>
-                        <td className={tableTdCls("num", "tabular-nums font-bold text-amber-700 bg-amber-50/30")}>
-                          {sum.erp > 0 ? sum.erp : "-"}
-                        </td>
-                        <td className={tableTdCls("num")} colSpan={5}></td>
-                        <td className={tableTdCls("num", "tabular-nums font-extrabold text-brand-deep bg-brand-tint/20")}>
-                          {sum.total > 0 ? sum.total : "-"}
-                        </td>
-                        <td className={tableTdCls("num", `tabular-nums font-bold ${sum.diff > 0 ? "text-rose-600" : sum.diff < 0 ? "text-emerald-600" : "text-zinc-300"} bg-rose-50/20`)}>
-                          {sum.diff !== 0 ? (sum.diff > 0 ? `+${sum.diff}` : String(sum.diff)) : "0"}
-                        </td>
-                      </tr>
-                      {/* 확장 시 · 상세 상품 rows */}
-                      {expanded && groupRows.map(r => (
-                        <tr key={`${groupKey}-${r.product_code}`} className="hover:bg-zinc-50/60 transition text-[14px]">
-                          <td className={tableTdCls("center")}></td>
-                          <td className={tableTdCls("left", "font-mono text-[13px] text-zinc-500 tabular-nums pl-8")}>{r.product_code}</td>
-                          <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ?? "-"}</td>
-                          <td className={tableTdCls("left", "font-semibold text-zinc-800 break-keep whitespace-normal")}>{r.product_name}</td>
-                          <td className={tableTdCls("center", `font-semibold ${r.spec ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/10`)}>
-                            {r.spec ?? "미지정"}
-                          </td>
-                          <td className={tableTdCls("num", `tabular-nums font-bold ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-50/20`)}>
-                            {r.erp ?? "-"}
-                          </td>
-                          {/* 2026-08-26 · 사용자 지시 · 매장 · zone (real_map split) + qty · zone 없으면 - */}
-                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.s1, "violet")} bg-violet-50/20`)}>
-                            {r.s1zone && <div className="text-[11px] text-violet-600 font-bold leading-tight">{r.s1zone}</div>}
-                            <div>{r.s1 ?? "-"}</div>
-                          </td>
-                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.s2, "violet")} bg-violet-50/20`)}>
-                            {r.s2zone && <div className="text-[11px] text-violet-600 font-bold leading-tight">{r.s2zone}</div>}
-                            <div>{r.s2 ?? "-"}</div>
-                          </td>
-                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.s3, "violet")} bg-violet-50/20`)}>
-                            {r.s3zone && <div className="text-[11px] text-violet-600 font-bold leading-tight">{r.s3zone}</div>}
-                            <div>{r.s3 ?? "-"}</div>
-                          </td>
-                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.w1, "cyan")} bg-cyan-50/20`)}>{r.w1 ?? "-"}</td>
-                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.w2, "cyan")} bg-cyan-50/20`)}>{r.w2 ?? "-"}</td>
-                          <td className={tableTdCls("num", `tabular-nums font-bold ${r.total > 0 ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/10`)}>
-                            {r.total > 0 ? r.total : "-"}
-                          </td>
-                          <td className={tableTdCls("num", `tabular-nums font-bold ${r.diff > 0 ? "text-rose-600" : r.diff < 0 ? "text-emerald-600" : "text-zinc-300"} bg-rose-50/10`)}>
-                            {r.diff !== 0 ? (r.diff > 0 ? `+${r.diff}` : String(r.diff)) : "0"}
-                          </td>
-                        </tr>
-                      ))}
-                    </React.Fragment>
-                  );
-                })}
+                        {r.product_name}
+                      </button>
+                    </td>
+                    <td className={tableTdCls("center", `font-semibold ${r.spec ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>
+                      {r.spec ?? "미지정"}
+                    </td>
+                    <td className={tableTdCls("num", `tabular-nums font-bold ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-50/30`)}>
+                      {r.erp ?? "-"}
+                    </td>
+                    <td className={tableTdCls("num", "bg-violet-50/30")}>{renderQtyZone(r, "s1")}</td>
+                    <td className={tableTdCls("num", "bg-violet-50/30")}>{renderQtyZone(r, "s2")}</td>
+                    <td className={tableTdCls("num", "bg-violet-50/30")}>{renderQtyZone(r, "s3")}</td>
+                    <td className={tableTdCls("num", "bg-cyan-50/30")}>{renderQtyZone(r, "w1")}</td>
+                    <td className={tableTdCls("num", "bg-cyan-50/30")}>{renderQtyZone(r, "w2")}</td>
+                    <td className={tableTdCls("num", `tabular-nums font-extrabold ${r.total > 0 ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>
+                      {r.total > 0 ? r.total : "-"}
+                    </td>
+                    <td className={tableTdCls("num", `tabular-nums font-bold ${r.diff > 0 ? "text-rose-600" : r.diff < 0 ? "text-emerald-600" : "text-zinc-300"} bg-rose-50/20`)}>
+                      {r.diff !== 0 ? (r.diff > 0 ? `+${r.diff}` : String(r.diff)) : "0"}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </TableListWrap>
         )}
       </div>
-    </>
+    </div>
   );
 };
+
+// 상세 모달 · Field 헬퍼 · 라벨/값 정렬
+const Field: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
+  <div className="flex flex-col gap-0.5 min-w-0">
+    <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">{label}</span>
+    <span className="text-[15px] text-ink break-keep">{value}</span>
+  </div>
+);
 
 export default RealStockTablePage;
