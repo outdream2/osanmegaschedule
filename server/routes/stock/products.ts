@@ -279,26 +279,37 @@ router.post("/api/upload-products", express.raw({ type: "application/octet-strea
   }
   const rows = xlsxToRows(buf);
   if (rows.length === 0) throw badRequest("엑셀에 데이터가 없습니다");
+  const t0 = Date.now();
   console.log(`[upload] parsed ${rows.length} rows`);
   // 2026-08-26 · 사용자 버그 fix · ON CONFLICT DO UPDATE cannot affect row twice
   //   · xlsx 안 · 같은 product_code 중복 시 · Postgres upsert 실패
   //   · 해결 · 마지막 값 우선 · Map 으로 dedupe (마지막 등장 값 유지)
+  //   · normalizeCode · 공백/전각/보이지 않는 문자 방어 (​ ZWSP · ﻿ BOM ·   NBSP)
+  const normalizeCode = (v: unknown): string => String(v ?? "")
+    .replace(/[​﻿ ]/g, "")
+    .trim();
   const dedupMap = new Map<string, Record<string, any>>();
   let dupCount = 0;
+  let emptyCount = 0;
   for (const r of rows) {
-    const code = String((r as any).product_code ?? "").trim();
-    if (!code) continue;
+    const code = normalizeCode((r as any).product_code);
+    if (!code) { emptyCount++; continue; }
+    (r as any).product_code = code; // 정규화된 값으로 통일 (chunk 내 dedup 보장)
     if (dedupMap.has(code)) dupCount++;
     dedupMap.set(code, r);
   }
   const dedupedRows = Array.from(dedupMap.values());
-  if (dupCount > 0) console.log(`[upload] dedup · ${rows.length} → ${dedupedRows.length} (중복 ${dupCount} 제거 · 마지막 값 유지)`);
-  const CHUNK_SIZE = 500;
+  if (dupCount > 0 || emptyCount > 0) {
+    console.log(`[upload] dedup · ${rows.length} → ${dedupedRows.length} (중복 ${dupCount} · 빈코드 ${emptyCount} 제외 · 마지막 값 유지)`);
+  }
+  // 2026-08-26 · 성능 개선 · chunk 500→1000 · PARALLEL 3→5 · Postgres 1KB row 기준 여유
+  const CHUNK_SIZE = 1000;
   const chunks: Record<string, any>[][] = [];
   for (let i = 0; i < dedupedRows.length; i += CHUNK_SIZE) chunks.push(dedupedRows.slice(i, i + CHUNK_SIZE));
-  const PARALLEL = 3;
+  const PARALLEL = 5;
   for (let i = 0; i < chunks.length; i += PARALLEL) {
     const batch = chunks.slice(i, i + PARALLEL);
+    const tChunk = Date.now();
     const results = await Promise.all(
       batch.map(chunk => supabase.from("products").upsert(chunk, { onConflict: "product_code" }))
     );
@@ -308,9 +319,9 @@ router.post("/api/upload-products", express.raw({ type: "application/octet-strea
         throw new HttpError(500, `업서트 실패: ${upsertErr.message}`);
       }
     }
-    console.log(`[upload] upserted chunks ${i + 1}~${Math.min(i + PARALLEL, chunks.length)} / ${chunks.length}`);
+    console.log(`[upload] upserted chunks ${i + 1}~${Math.min(i + PARALLEL, chunks.length)} / ${chunks.length} · ${Date.now() - tChunk}ms`);
   }
-  console.log("[upload] upsert done");
+  console.log(`[upload] upsert done · 총 ${Date.now() - t0}ms · rows=${dedupedRows.length}`);
   // 임포트 완료 후 optimal_stock_backup → optimal_stock 복원 (ERP wipe 방어)
   let restoredCount = 0;
   try {
