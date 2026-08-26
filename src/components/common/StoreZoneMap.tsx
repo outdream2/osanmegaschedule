@@ -169,11 +169,11 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
 
   const [collapsed, setCollapsed] = useState(collapsible ? defaultCollapsed : false);
 
-  // 2026-08-26 · 사용자 지시 · 글씨 크기에 맞춰 자동 확장 · 표처럼 grid 정렬
-  //   · min-height 만 유지 · 내용에 따라 자동 성장 (line-clamp 제거로 텍스트 절대 안 잘림)
-  const wallMin = compact ? "min-h-[88px]" : "min-h-[112px]";
-  const cellMin = compact ? "min-h-[74px]" : "min-h-[92px]";
-  const centerMin = compact ? "min-h-[130px]" : "min-h-[160px]";
+  // 2026-08-26 · 사용자 지시 · 글씨 완전 표시 · 셀 높이 대폭 확장 · 카테고리 텍스트 안 잘림
+  //   · auto-rows-fr 로 grid 내 모든 셀 높이 통일 (제일 긴 셀 기준)
+  const wallMin = compact ? "min-h-[128px]" : "min-h-[168px]";
+  const cellMin = compact ? "min-h-[112px]" : "min-h-[148px]";
+  const centerMin = compact ? "min-h-[180px]" : "min-h-[240px]";
 
   // BEST 배지 (Top 10 만) · showBestBadges=true 이고 rank<=10 있을 때만
   const rankBadge = (zoneId: string) => {
@@ -196,6 +196,22 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
     ? "cursor-pointer hover:brightness-95 transition"
     : "";
 
+  // 2026-08-26 · 사용자 지시 · hover 시 상세카테고리 (description) 커스텀 팝업
+  //   · 네이티브 title tooltip 은 지연 · 못생김 · 커스텀 오버레이로 즉시 표시
+  //   · group-hover · z-50 · pointer-events-none · 다른 셀 위 렌더
+  const HoverDetail: React.FC<{ title: string; desc: string; align?: "center" | "left" | "right" }> = ({ title, desc, align = "center" }) => {
+    const alignCls = align === "left" ? "left-0" : align === "right" ? "right-0" : "left-1/2 -translate-x-1/2";
+    return (
+      <div
+        className={`absolute top-full mt-1 ${alignCls} z-50 min-w-[240px] max-w-[360px] p-2.5 bg-white border-2 border-brand-deep rounded-lg shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 whitespace-normal break-keep`}
+        role="tooltip"
+      >
+        <div className="text-[11px] font-bold text-brand-deep uppercase tracking-wider mb-1 pb-1 border-b border-line">{title}</div>
+        <div className="text-[12px] text-ink leading-relaxed whitespace-pre-wrap">{desc}</div>
+      </div>
+    );
+  };
+
   // 벽면·수직윙 셀 · aspect ratio 1:1.6 · 라벨 + 카테고리
   const wallCell = (num: number) => {
     const zd = ZONE_DEFS.find(z => z.num === num);
@@ -212,8 +228,8 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         key={num}
         {...extra}
         {...dragProps}
-        className={`rounded-md overflow-hidden border border-stone-300 bg-white shadow-sm flex flex-col items-center ${wallMin} ${cellInteractive} ${dragClass}`}
-        title={`${zd?.label ?? num} · ${cat}${count > 0 ? ` · ${count}개 상품` : ""}${zd?.description ? `\n\n[상세]\n${zd.description}` : ""}${enableDrag ? "\n\n(길게 눌러 드래그)" : ""}`}
+        className={`relative group rounded-md overflow-visible border border-stone-300 bg-white shadow-sm flex flex-col items-center ${wallMin} ${cellInteractive} ${dragClass}`}
+        title={`${zd?.label ?? num} · ${cat}${enableDrag ? " · 길게 눌러 드래그" : ""}`}
       >
         {/* 상단 · ★BEST 배지 (옵션) · 배지 없어도 line 은 유지 (레이아웃 안정) */}
         {showBestBadges && (
@@ -221,7 +237,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
             {rankBadge(zoneId)}
           </div>
         )}
-        <div className="w-full bg-stone-50 px-1.5 py-1.5 flex flex-col items-center gap-1 flex-1 justify-center relative">
+        <div className="w-full bg-stone-50 px-1.5 py-1.5 flex flex-col items-center gap-1 flex-1 justify-center relative rounded-md overflow-hidden">
           {enableDrag && (
             <span className="absolute top-0.5 right-0.5 text-zinc-400" aria-hidden><GripVertical size={10} /></span>
           )}
@@ -229,8 +245,10 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
             <span className="text-[11px] font-bold text-white bg-amber-700 rounded px-1.5 py-0.5 leading-none">{getZoneLabel(num)}</span>
           </div>
           {/* 2026-08-26 · 사용자 지시 · line-clamp 제거 · 글씨 크기에 맞춰 셀 자동 성장 · break-keep 로 단어 안 짤림 */}
-          <span className="text-[11px] font-bold text-stone-800 leading-snug text-center break-keep whitespace-normal">{cat}</span>
+          <span className="text-[13px] font-bold text-stone-800 leading-snug text-center break-keep whitespace-normal">{cat}</span>
         </div>
+        {/* 2026-08-26 · 사용자 지시 · hover · 상세카테고리 커스텀 팝업 */}
+        {zd?.description && <HoverDetail title={`${zoneId} · 상세카테고리${count > 0 ? ` · ${count}개 상품` : ""}`} desc={zd.description} />}
       </Tag>
     );
   };
@@ -263,7 +281,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
       const dragProps = dragHandlers(num);
       const dragClass = cellStateClass(num);
       return (
-        <div className="flex flex-col items-stretch gap-0.5 flex-1 min-w-[52px]">
+        <div className="flex flex-col items-stretch gap-0.5 flex-1 min-w-[52px] relative group">
           {showBestBadges && (
             <div className="min-h-[18px] flex items-center justify-center">{rankBadge(zoneId)}</div>
           )}
@@ -271,14 +289,16 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
             {...extra}
             {...dragProps}
             className={`w-full font-bold ${colors.text} ${colors.bg} border-2 ${colors.border} rounded px-1 py-1.5 leading-tight text-center ${cellMin} flex flex-col items-center justify-center gap-1 ${cellInteractive} ${dragClass}`}
-            title={`${zoneId} · ${sub}${count > 0 ? ` · ${count}개 상품` : ""}${subDesc ? `\n\n[상세]\n${subDesc}` : ""}${enableDrag ? "\n\n(길게 눌러 드래그)" : ""}`}
+            title={`${zoneId} · ${sub}${enableDrag ? " · 길게 눌러 드래그" : ""}`}
           >
             <div className="flex items-center justify-center">
               <span className={`text-[11px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{getZoneLabel(zoneId)}</span>
             </div>
             {/* 2026-08-26 · line-clamp 제거 · break-keep · 자동 확장 */}
-            <span className="text-[11px] leading-snug break-keep whitespace-normal">{sub}</span>
+            <span className="text-[13px] leading-snug break-keep whitespace-normal">{sub}</span>
           </Tag>
+          {/* 2026-08-26 · 사용자 지시 · hover · 서브별 상세카테고리 커스텀 팝업 */}
+          {subDesc && <HoverDetail title={`${zoneId} · 상세카테고리${count > 0 ? ` · ${count}개 상품` : ""}`} desc={subDesc} align={side === "B" ? "left" : "right"} />}
         </div>
       );
     };
@@ -404,7 +424,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         {/* 상단 벽면 */}
         <div>
           <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-0.5 px-0.5">상단 벽면 (21→9)</div>
-          <div className="grid gap-0.5" style={{ gridTemplateColumns: "repeat(13, minmax(0, 1fr))" }}>
+          <div className="grid gap-0.5 items-stretch auto-rows-fr" style={{ gridTemplateColumns: "repeat(13, minmax(0, 1fr))" }}>
             {STORE_TOP_WALL.map(n => wallCell(n))}
           </div>
         </div>
@@ -419,7 +439,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         {/* 하단 벽면 */}
         <div>
           <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-0.5 px-0.5">하단 벽면 (23→34)</div>
-          <div className="grid gap-0.5" style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}>
+          <div className="grid gap-0.5 items-stretch auto-rows-fr" style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}>
             {STORE_BOTTOM_WALL.map(n => wallCell(n))}
           </div>
         </div>
@@ -428,7 +448,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
       {/* 하단 · 동측 wing · 수평 8셀 · 2026-08-26 · 상하 여백 강화 (겹침 방지 · 사용자 지시) */}
       <div className="border-t-2 border-violet-200 pt-5 mt-4 pb-3">
         <div className="text-[11px] font-bold text-violet-600 uppercase tracking-wider mb-2 px-0.5">동측 wing (35→42) · 이벤트 · 카운터 · 조제실</div>
-        <div className="grid gap-1 pb-2" style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))" }}>
+        <div className="grid gap-1 pb-2 items-stretch auto-rows-fr" style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))" }}>
           {STORE_VERTICAL_WING.map(n => wallCell(n))}
         </div>
       </div>
