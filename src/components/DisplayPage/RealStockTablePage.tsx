@@ -99,6 +99,8 @@ export const RealStockTablePage: React.FC = () => {
   // 2026-08-26 · 사용자 지시 · 전역 useSaleActiveOnly 훅 · 모든 소비자와 동기화 (기본값 true)
   const { saleActiveOnly: saleOnly, setSaleActiveOnly: setSaleOnly } = useSaleActiveOnly();
   const { toast, showError, showSuccess } = useToast();
+  // 2026-08-27 · 사용자 지시 · Group by 구역 뷰 토글 (옵션 3)
+  const [groupByZone, setGroupByZone] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -432,6 +434,16 @@ export const RealStockTablePage: React.FC = () => {
                 />
                 판매중만
               </label>
+              {/* 2026-08-27 · 사용자 지시 · Group by 구역 뷰 토글 */}
+              <label className="inline-flex items-center gap-1.5 h-9 px-2.5 rounded-lg bg-white border border-line text-[14px] font-semibold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep transition cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={groupByZone}
+                  onChange={(e) => setGroupByZone(e.target.checked)}
+                  className="w-4 h-4 accent-brand-deep cursor-pointer"
+                />
+                구역별 그룹
+              </label>
               <button
                 type="button"
                 onClick={load}
@@ -484,7 +496,69 @@ export const RealStockTablePage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {sorted.map(r => (
+                {/* 2026-08-27 · 사용자 지시 · Group by 구역 · spec (전산구역) 기준 그룹핑 */}
+                {(() => {
+                  if (!groupByZone) return null;
+                  const groups = new Map<string, Row[]>();
+                  for (const r of sorted) {
+                    const key = String(r.spec ?? "").trim() || "(미지정)";
+                    if (!groups.has(key)) groups.set(key, []);
+                    groups.get(key)!.push(r);
+                  }
+                  const sortedKeys = [...groups.keys()].sort((a, b) => {
+                    if (a === "(미지정)") return 1;
+                    if (b === "(미지정)") return -1;
+                    return a.localeCompare(b, "ko", { numeric: true });
+                  });
+                  return sortedKeys.flatMap(k => {
+                    const rows = groups.get(k)!;
+                    const totalErp = rows.reduce((s, r) => s + (r.erp ?? 0), 0);
+                    const totalReal = rows.reduce((s, r) => s + r.total, 0);
+                    return [
+                      <tr key={`group-${k}`} className="bg-gradient-to-r from-brand-tint/60 to-brand-tint/20 border-t-2 border-brand-deep/30 sticky top-0 z-10">
+                        <td colSpan={10} className="px-3 py-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="w-1 h-4 rounded-full bg-brand-deep" />
+                            <span className="text-[15px] font-extrabold text-brand-deep tabular-nums">{k}</span>
+                            <span className="text-[12px] font-bold text-brand-deep/70 tabular-nums">· {rows.length}건</span>
+                            <span className="ml-auto flex items-center gap-3 text-[12px] font-bold tabular-nums">
+                              <span className="text-amber-700">ERP 합계 {totalErp}</span>
+                              <span className="text-brand-deep">실재고 합계 {totalReal}</span>
+                              <span className={totalErp - totalReal > 0 ? "text-rose-600" : totalErp - totalReal < 0 ? "text-emerald-600" : "text-zinc-400"}>
+                                차이 {totalErp - totalReal > 0 ? `+${totalErp - totalReal}` : totalErp - totalReal}
+                              </span>
+                            </span>
+                          </div>
+                        </td>
+                      </tr>,
+                      ...rows.map(r => (
+                        <tr key={r.product_code} className="hover:bg-zinc-50/60 transition text-[15px]">
+                          <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ?? "-"}</td>
+                          <td className={tableTdCls("left")}>
+                            <button type="button" onClick={() => setDetailRow(r)} className="text-left font-bold text-zinc-800 break-keep whitespace-normal hover:text-brand-deep hover:underline cursor-pointer" title="상세 정보">
+                              {r.product_name}
+                            </button>
+                          </td>
+                          <td className={tableTdCls("num", "bg-amber-50/30")}>
+                            <span className="inline-flex items-baseline gap-0.5">
+                              {r.spec && <span className="text-[13px] font-semibold text-amber-500 tabular-nums">{r.spec}</span>}
+                              {r.spec && <span className="text-[13px] text-zinc-300 font-normal">/</span>}
+                              <span className={`font-bold tabular-nums text-[15px] ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"}`}>{r.erp ?? "-"}</span>
+                            </span>
+                          </td>
+                          <td className={tableTdCls("num", "bg-violet-50/30")}>{renderQtyZone(r, "s1")}</td>
+                          <td className={tableTdCls("num", "bg-violet-50/30")}>{renderQtyZone(r, "s2")}</td>
+                          <td className={tableTdCls("num", "bg-violet-50/30")}>{renderQtyZone(r, "s3")}</td>
+                          <td className={tableTdCls("num", "bg-cyan-50/30")}>{renderQtyZone(r, "w1")}</td>
+                          <td className={tableTdCls("num", "bg-cyan-50/30")}>{renderQtyZone(r, "w2")}</td>
+                          <td className={tableTdCls("num", `tabular-nums font-extrabold ${r.total > 0 ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>{r.total > 0 ? r.total : "-"}</td>
+                          <td className={tableTdCls("num", `tabular-nums font-bold ${r.diff > 0 ? "text-rose-600" : r.diff < 0 ? "text-emerald-600" : "text-zinc-300"} bg-rose-50/20`)}>{r.diff !== 0 ? (r.diff > 0 ? `+${r.diff}` : String(r.diff)) : "0"}</td>
+                        </tr>
+                      )),
+                    ];
+                  });
+                })()}
+                {!groupByZone && sorted.map(r => (
                   <tr key={r.product_code} className="hover:bg-zinc-50/60 transition text-[15px]">
                     <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ?? "-"}</td>
                     <td className={tableTdCls("left")}>
