@@ -459,6 +459,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
             search={search}
             onSearchChange={setSearch}
             searchPlaceholder="상품명·코드·공급사 검색"
+            recentSearchScope="productInfo"
             onAdd={canManage ? () => setCreateOpen(true) : undefined}
             addLabel="상품 등록"
             addTitle="신규 상품 등록"

@@ -29,12 +29,14 @@
 //     <table>...</table>
 //   </SplitListPanel>
 
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { Search as SearchIcon, Plus, X } from "lucide-react";
 import { Card } from "./Card";
 import { Spinner } from "./Spinner";
 import { EmptyState } from "./EmptyState";
 import { StatusPill } from "./StatusPill";
+// 2026-08-26 · 사용자 지시 · 모든 검색창 최근 3개 · localStorage 저장
+import { useRecentSearches } from "../../hooks/useRecentSearches";
 
 export interface SplitListPanelProps {
   /** 패널 제목 (예: "직원" · "상품") */
@@ -107,6 +109,13 @@ export interface SplitListPanelProps {
    */
   searchInHeader?: boolean;
   /**
+   * 2026-08-26 · 사용자 지시 · 최근 검색어 3개 (localStorage) 자동 활성화
+   *   · scope 문자열 (예: "productInfo", "vendorList") · localStorage key 격리
+   *   · 지정 시 · 검색창 focus 하면 최근 검색어 dropdown · 클릭 시 setSearch
+   *   · Enter 시 · push (중복 제거 · 최상단 이동)
+   */
+  recentSearchScope?: string;
+  /**
    * 2026-08-24 · v3 · 상단 gradient accent line · 랜딩 톤 시그니처
    *   · 3px · brand-deep → sky-500 → brand-deep
    *   · 기본 false · true 시 · 표시
@@ -146,6 +155,7 @@ export function SplitListPanel({
   subHeader,
   searchInHeader = false,
   topAccent = false,
+  recentSearchScope,
 }: SplitListPanelProps) {
   const hasSearch = onSearchChange != null;
   const hasHeader = title != null || hasSearch || filters != null || onAdd != null || headerActions != null;
@@ -153,9 +163,27 @@ export function SplitListPanel({
 
   const clearSearch = useCallback(() => onSearchChange?.(""), [onSearchChange]);
 
+  // 2026-08-26 · 사용자 지시 · 최근 검색어 · scope 지정 시 활성
+  const { recents, push: pushRecent, remove: removeRecent } = useRecentSearches(recentSearchScope ?? "__disabled__");
+  const [recentsOpen, setRecentsOpen] = useState(false);
+  const recentsWrapRef = useRef<HTMLDivElement>(null);
+  // 외부 클릭 시 dropdown 닫기
+  useEffect(() => {
+    if (!recentsOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (recentsWrapRef.current && !recentsWrapRef.current.contains(e.target as Node)) {
+        setRecentsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [recentsOpen]);
+
   // 2026-08-24 · 검색창 UI 재사용 · row1 인라인 · row2 fallback 공용
+  // 2026-08-26 · 최근 검색어 dropdown · recentSearchScope 있으면 활성
+  const showRecentsDropdown = !!recentSearchScope && recentsOpen && recents.length > 0 && !(search ?? "").trim();
   const searchInput = hasSearch ? (
-    <div className="relative flex-1 min-w-0">
+    <div ref={recentsWrapRef} className="relative flex-1 min-w-0">
       <SearchIcon
         size={13}
         className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
@@ -164,6 +192,15 @@ export function SplitListPanel({
         type="text"
         value={search ?? ""}
         onChange={(e) => onSearchChange!(e.target.value)}
+        onFocus={() => setRecentsOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            const v = (search ?? "").trim();
+            if (v && recentSearchScope) pushRecent(v);
+            setRecentsOpen(false);
+          }
+          if (e.key === "Escape") setRecentsOpen(false);
+        }}
         placeholder={searchPlaceholder}
         className="w-full h-9 pl-7 pr-7 rounded-lg border border-line bg-zinc-50/60 text-[15px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep focus:bg-white transition-colors"
       />
@@ -176,6 +213,31 @@ export function SplitListPanel({
         >
           <X size={11} />
         </button>
+      )}
+      {/* 최근 검색어 dropdown · 최대 3개 · 클릭 시 setSearch · X 로 개별 삭제 */}
+      {showRecentsDropdown && (
+        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-line rounded-lg shadow-lg z-30 divide-y divide-zinc-100 overflow-hidden">
+          <div className="px-3 py-1.5 text-[11px] font-bold text-zinc-400 uppercase tracking-wider bg-zinc-50/60">최근 검색</div>
+          {recents.map((q) => (
+            <div key={q} className="group flex items-center hover:bg-sky-50/60 transition">
+              <button
+                type="button"
+                onClick={() => { onSearchChange!(q); setRecentsOpen(false); }}
+                className="flex-1 text-left px-3 py-2 text-[14px] font-medium text-ink truncate cursor-pointer"
+              >
+                {q}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); removeRecent(q); }}
+                aria-label="이 검색어 삭제"
+                className="mr-1.5 w-6 h-6 rounded-full text-zinc-300 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer"
+              >
+                <X size={10} />
+              </button>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   ) : null;
