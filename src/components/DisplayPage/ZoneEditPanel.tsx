@@ -13,8 +13,11 @@ import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import { EmptyState } from "../common/EmptyState";
 import { SplitPanel } from "../common/SplitPanel";
-import StoreZoneMap from "../common/StoreZoneMap";
+import { StoreZoneMap } from "../common/StoreZoneMap";
+import { PanZoomImage } from "../common/PanZoomImage";
 import { useZoneDefs, type ZoneDef } from "../../hooks/useZoneDefs";
+// 2026-08-26 · 사용자 지시 · 원본 매장구역도 이미지 (pan/zoom viewer)
+import zoneCategoryImg from "../../sample/zonecategory.png";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 import { ZONE_DEFS as DEFAULT_ZONES } from "../../constants/displayZones";
@@ -209,16 +212,38 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
     );
   };
 
-  // ── 좌측 · 전체 매장 구역도 (읽기 전용 · compact) ────────────────
+  // ── 좌측 · 상단 = 원본 zonecategory.png (pan/zoom) · 하단 = 공통 StoreZoneMap ────
+  //   · zonecategory · 원본 참조 이미지 · 마우스 hover · wheel 줌 · 드래그 이동 · 더블클릭 초기화
+  //   · StoreZoneMap · 공통 프레임워크 모듈 · zone_defs (KV) 실시간 반영 · 편집 즉시 갱신
   const leftPanel = (
-    <div className="flex flex-col gap-2 p-2 min-h-full">
-      <div className="flex items-center gap-2 px-1">
-        <span className="w-1.5 h-4 rounded-full bg-brand-deep" />
-        <span className="text-[15px] font-bold text-ink">전체 매장 구역도</span>
-        <span className="text-[12px] text-zinc-400 ml-auto">참조용 · 편집은 우측 탭에서</span>
+    <div className="flex flex-col gap-3 p-2 min-h-full">
+      {/* 원본 zonecategory 참조 이미지 · pan/zoom */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center gap-2 px-1">
+          <span className="w-1.5 h-4 rounded-full bg-rose-500" />
+          <span className="text-[15px] font-bold text-ink">원본 구역 카테고리 (zonecategory)</span>
+          <span className="text-[12px] text-zinc-400 ml-auto">스크롤 · 줌 · 드래그 · 이동</span>
+        </div>
+        <PanZoomImage
+          src={zoneCategoryImg}
+          alt="zonecategory · 매장 원본 구역 카테고리 참조"
+          className="min-h-[280px] max-h-[420px]"
+          initialScale={1}
+          minScale={0.5}
+          maxScale={8}
+        />
       </div>
-      <div className="flex-1 overflow-auto">
-        <StoreZoneMap compact />
+
+      {/* 공통 프레임워크 · 전체 매장 구역도 (실시간 편집 반영) */}
+      <div className="flex flex-col gap-1.5 flex-1">
+        <div className="flex items-center gap-2 px-1">
+          <span className="w-1.5 h-4 rounded-full bg-brand-deep" />
+          <span className="text-[15px] font-bold text-ink">전체 매장 구역도</span>
+          <span className="text-[12px] text-zinc-400 ml-auto">공통 모듈 · 편집 즉시 반영</span>
+        </div>
+        <div className="flex-1 overflow-auto">
+          <StoreZoneMap compact />
+        </div>
       </div>
     </div>
   );
