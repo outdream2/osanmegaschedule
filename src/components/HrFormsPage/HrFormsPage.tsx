@@ -236,9 +236,9 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
               <FileText size={20} />
             </div>
             <div>
-              <h1 className="text-[18px] sm:text-[20px] font-bold text-ink tracking-tight leading-tight">각종 양식</h1>
-              <p className="text-[13px] text-ink-soft font-medium mt-0.5">
-                근로계약서 · 사직서 · 서약서 · 기타 양식 다운로드 및 관리
+              <h1 className="text-[20px] sm:text-[24px] font-extrabold text-ink tracking-tight leading-tight">각종 양식</h1>
+              <p className="text-[15px] text-ink-soft font-medium mt-1">
+                근로계약서 · 사직서 · 서약서 · 위임장 · 급여 · 기타 인사 양식 · 업로드 · 다운로드 · 삭제
               </p>
             </div>
           </div>
