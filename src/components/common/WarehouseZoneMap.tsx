@@ -14,13 +14,14 @@ interface WarehouseZoneMapProps {
   filter?: "both" | "1" | "2";
 }
 
+// 2026-08-26 · 사용자 지시 · 창고1 실제 구역 · 24·25·26·27·7B·8A
 const WAREHOUSE_1_ZONES = [
-  { num: 24, label: "설소품" },
-  { num: 25, label: "파스류" },
-  { num: 26, label: "발크림" },
-  { num: 27, label: "화장품" },
-  { num: 7,  label: "7B" },
-  { num: 6,  label: "6A" },
+  { code: "24", label: "24" },
+  { code: "25", label: "25" },
+  { code: "26", label: "26" },
+  { code: "27", label: "27" },
+  { code: "7B", label: "7B" },
+  { code: "8A", label: "8A" },
 ];
 
 const WAREHOUSE_2_INNER = [
@@ -111,7 +112,7 @@ export const WarehouseZoneMap: React.FC<WarehouseZoneMapProps> = ({ filter = "bo
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
             {WAREHOUSE_1_ZONES.map((z, i) => (
-              <ZoneBox key={i} num={String(z.num)} label={z.label} tone="orange" />
+              <ZoneBox key={i} num={z.code} label={z.label} tone="orange" />
             ))}
           </div>
         </Card>
