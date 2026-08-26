@@ -39,28 +39,33 @@ const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
 
   if (level < 9 || !employeeId) {
     return (
-      <SettingsPageShell {...commonShellProps}>
-        <div className={`${CARD_BASE} p-5 text-center text-sm text-zinc-500`}>
-          관리자(lv 9) 전용 페이지입니다.
-        </div>
-      </SettingsPageShell>
+      // 2026-08-26 · data-scope 로 페이지 전체 감싸기 (헤더+콘텐츠 모두 +3)
+      <div data-scope="stats-settings">
+        <SettingsPageShell {...commonShellProps}>
+          <div className={`${CARD_BASE} p-5 text-center text-sm text-zinc-500`}>
+            관리자(lv 9) 전용 페이지입니다.
+          </div>
+        </SettingsPageShell>
+      </div>
     );
   }
 
   return (
-    <SettingsPageShell {...commonShellProps}>
-      {/* 2026-08-26 · 사용자 지시 · 통계설정 · 폰트 +3 · data-scope 로 격리 */}
-      <div data-scope="stats-settings" className="flex flex-col gap-4">
-        {/* 섹션 1 · 계절 정의 */}
-        <div className={`${CARD_BASE} p-5`}>
-          <SeasonRangesEditor employeeId={employeeId} onToast={noop} />
+    // 2026-08-26 · 사용자 지시 · 통계설정 · 폰트 +3 · Shell 전체 감쌈 (헤더 포함)
+    <div data-scope="stats-settings">
+      <SettingsPageShell {...commonShellProps}>
+        <div className="flex flex-col gap-4">
+          {/* 섹션 1 · 계절 정의 */}
+          <div className={`${CARD_BASE} p-5`}>
+            <SeasonRangesEditor employeeId={employeeId} onToast={noop} />
+          </div>
+          {/* 섹션 2 · 적정재고 설정 (2026-08-23 · #193 신규) */}
+          <OptimalStockPeriodSection />
+          {/* 섹션 3 · 판매중 상품만 표시 (2026-08-26 · #118 신규) */}
+          <SaleActiveOnlySection />
         </div>
-        {/* 섹션 2 · 적정재고 설정 (2026-08-23 · #193 신규) */}
-        <OptimalStockPeriodSection />
-        {/* 섹션 3 · 판매중 상품만 표시 (2026-08-26 · #118 신규) */}
-        <SaleActiveOnlySection />
-      </div>
-    </SettingsPageShell>
+      </SettingsPageShell>
+    </div>
   );
 };
 
