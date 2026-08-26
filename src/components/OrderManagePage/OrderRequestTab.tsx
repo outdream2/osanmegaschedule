@@ -201,8 +201,8 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                       {isOrderGroupCollapsed("info") ? (
                         <th className="w-4"></th>
                       ) : (
-                        // 2026-08-24 · 상품명 컬럼 넓게 · 줄임 X · 줄바꿈 · 2줄 이내 min-width 확보
-                        <th onClick={() => handleOrderSort("name")} className="text-left px-3 py-2.5 cursor-pointer hover:bg-zinc-200/60 select-none font-bold" style={{ minWidth: 260 }}>상품명<span className="ml-1 text-zinc-400">{orderArrow("name") || "⇅"}</span></th>
+                        // 2026-08-26 · 사용자 지시 · 말줄임 금지 · 상품명 우선 넓게 (min 320)
+                        <th onClick={() => handleOrderSort("name")} className="text-left px-3 py-2.5 cursor-pointer hover:bg-zinc-200/60 select-none font-bold" style={{ minWidth: 320 }}>상품명<span className="ml-1 text-zinc-400">{orderArrow("name") || "⇅"}</span></th>
                       )}
                       {isOrderGroupCollapsed("stock") ? (
                         <th className="w-4"></th>
@@ -213,8 +213,8 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                           <th onClick={() => handleOrderSort("short")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold text-rose-600">부족<span className="ml-1 text-rose-300">{orderArrow("short") || "⇅"}</span></th>
                         </>
                       )}
-                      {/* 주문수량 · accent 컬러 강조 (v3 사용자 지시) · 넓게 (120px) */}
-                      <th className="text-center px-2 py-2.5 font-bold text-sky-700 bg-sky-50/60 border-x border-sky-100" style={{ minWidth: 120 }}>주문수량</th>
+                      {/* 주문수량 · 2026-08-26 사용자 지시 · 좁게 (85px) · 상품명에 공간 양보 */}
+                      <th className="text-center px-2 py-2.5 font-bold text-sky-700 bg-sky-50/60 border-x border-sky-100" style={{ width: 85, minWidth: 85 }}>주문수량</th>
                       <th className="text-right px-2 py-2.5 w-16 font-bold">단가</th>
                       {/* 발주금액 · brand-tint 옅게 (v3 사용자 지시) */}
                       <th className="text-right px-2 py-2.5 w-20 font-bold text-brand-deep bg-brand-tint/50 border-l border-brand/10">발주금액<span className="ml-1 text-brand/40">▼</span></th>
