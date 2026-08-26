@@ -6,7 +6,7 @@
 //   · 입력 중 clamp 제거 · onBlur/Enter 에서만 확정 · 자유 타이핑 허용
 
 import React, { useState, useEffect } from "react";
-import { Package } from "@phosphor-icons/react";
+import { Package, ArrowsClockwise } from "@phosphor-icons/react";
 import { Card } from "../common/Card";
 import { useKvSetting } from "../../hooks/useKvSetting";
 // 2026-08-23 · #193 · 상수 단일 소스 · useOptimalStockPeriod 훅과 통일
@@ -15,6 +15,11 @@ import {
   OPTIMAL_STOCK_MIN_DAYS as MIN_DAYS,
   OPTIMAL_STOCK_MAX_DAYS as MAX_DAYS,
 } from "../../hooks/useOptimalStockPeriod";
+// 2026-08-26 · 사용자 지시 · 적정재고값 실제 컬럼 반영 (재계산 API 호출)
+import { api, ApiError } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
+import { useConfirm } from "../../hooks/useConfirm";
+import { Spinner } from "../common/Spinner";
 
 /** sanitize · 숫자 검증 + 범위 clamp */
 function sanitize(raw: unknown): number | null {
@@ -37,6 +42,39 @@ export const OptimalStockPeriodSection: React.FC = () => {
   useEffect(() => {
     if (loaded) setInputValue(String(days));
   }, [loaded, days]);
+
+  // 2026-08-26 · 사용자 지시 · 재계산 · 실제 products.optimal_stock 컬럼 업데이트
+  const { toast, showSuccess, showError } = useToast();
+  const confirm = useConfirm();
+  const [recalcing, setRecalcing] = useState(false);
+  const [lastResult, setLastResult] = useState<{ updated: number; failed?: number; note?: string } | null>(null);
+  const runRecalc = async () => {
+    const n = Number(inputValue) || days;
+    const ok = await confirm({
+      title: "적정재고 재계산",
+      message: `현재 저장된 ${n}일 기준으로 모든 상품의 적정재고를 재계산합니다.\n\n계산법 · 최근 ${n}일 판매량 합계 = 적정재고\n대상 · stock_history 가 있는 모든 상품\n\n진행할까요?`,
+    });
+    if (!ok) return;
+    setRecalcing(true);
+    setLastResult(null);
+    try {
+      const { data } = await api.post<{ ok: boolean; updated: number; failed?: number; note?: string }>(
+        "/api/products/refill-optimal-stock",
+        { days: n }
+      );
+      setLastResult({ updated: data?.updated ?? 0, failed: data?.failed, note: data?.note });
+      if (data?.updated) {
+        showSuccess(`재계산 완료 · ${data.updated}건 업데이트${data.failed ? ` · ${data.failed}건 실패` : ""}`);
+      } else {
+        showError(data?.note ?? "재계산 결과 · 업데이트 0건");
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "네트워크 오류";
+      showError(`재계산 실패 · ${msg}`);
+    } finally {
+      setRecalcing(false);
+    }
+  };
 
   const commit = () => {
     const n = Number(inputValue);
@@ -109,6 +147,41 @@ export const OptimalStockPeriodSection: React.FC = () => {
         <br />
         💡 길게 설정 시 (60~90일) · 안전 재고 · 재고 부담 · 자본 부담
       </div>
+
+      {/* 2026-08-26 · 사용자 지시 · 재계산 버튼 · 실제 products.optimal_stock 컬럼 업데이트
+          기준 일수만 저장하면 · 실제 값은 자동으로 안 바뀜 · 이 버튼으로 명시적 재계산 필요 */}
+      <div className="flex items-start gap-3 p-3 bg-amber-50/50 border border-amber-200 rounded-lg">
+        <span className="text-[16px] shrink-0 mt-0.5">⚠</span>
+        <div className="flex-1 min-w-0">
+          <div className="text-[14px] font-bold text-amber-800 leading-tight">기준 일수 변경 후 · [재계산 실행] 필수</div>
+          <div className="text-[12.5px] text-amber-700 mt-1 leading-relaxed">
+            기준 일수 저장은 즉시 · 하지만 실제 <b>products.optimal_stock</b> 값은 자동으로 안 바뀝니다.
+            <br />
+            변경 사항을 모든 상품에 적용하려면 · 아래 [재계산 실행] 을 눌러주세요.
+          </div>
+          {lastResult && (
+            <div className="text-[12.5px] font-semibold text-amber-800 mt-2">
+              마지막 결과 · <span className="text-emerald-700">{lastResult.updated}건 업데이트</span>
+              {lastResult.failed ? <span className="ml-2 text-rose-600">({lastResult.failed}건 실패)</span> : null}
+              {lastResult.note ? <span className="ml-2 text-zinc-500">· {lastResult.note}</span> : null}
+            </div>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={runRecalc}
+          disabled={recalcing || !loaded}
+          className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[14px] font-bold shadow-sm ring-2 ring-amber-300/40 transition cursor-pointer disabled:opacity-40 shrink-0"
+          title={`현재 ${inputValue}일 기준으로 재계산`}
+        >
+          {recalcing ? <Spinner size={13} tone="white" /> : <ArrowsClockwise size={15} weight="bold" />}
+          {recalcing ? "재계산 중..." : "재계산 실행"}
+        </button>
+      </div>
+
+      {toast && (
+        <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
+      )}
     </Card>
   );
 };
