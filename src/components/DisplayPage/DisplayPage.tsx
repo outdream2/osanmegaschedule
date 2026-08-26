@@ -56,6 +56,8 @@ import { useDisplayData } from "./useDisplayData";
 // 2026-08-25 · 사용자 지시 · 매장구역 안 배치구역 불일치 탭
 // 2026-08-26 · 사용자 지시 · 미지정 인너탭 통합 · MismatchPage wrapper 사용
 import { MismatchPage } from "./MismatchPage";
+// 2026-08-26 · 사용자 지시 · 실재고 테이블 페이지 · 창고2 옆 신규 탭
+import { RealStockTablePage } from "./RealStockTablePage";
 import { SplitRightTabs } from "../common/SplitRightTabs";
 // 2026-08-26 · 창고1 · 창고2 구역도 · storage.webp 기반
 import { WarehouseZoneMap } from "../common/WarehouseZoneMap";
@@ -115,7 +117,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const [mapCollapsed, setMapCollapsed] = useState(true);
   // 2026-08-25 · 사용자 지시 · 매장구역 subtab 안 · 매장구역도 vs 배치구역 불일치 탭
   // 2026-08-26 · 창고1 · 창고2 구역도 탭 추가 (storage.webp 기반)
-  const [storeInnerTab, setStoreInnerTab] = useState<"map" | "mismatch" | "warehouse1" | "warehouse2">(() => {
+  const [storeInnerTab, setStoreInnerTab] = useState<"map" | "mismatch" | "warehouse1" | "warehouse2" | "stockTable">(() => {
     try {
       const raw = sessionStorage.getItem("dpStoreInnerTab");
       if (raw === "mismatch") { sessionStorage.removeItem("dpStoreInnerTab"); return "mismatch"; }
@@ -605,6 +607,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 { key: "map",        label: "매장구역도" },
                 { key: "warehouse1", label: "창고1" },
                 { key: "warehouse2", label: "창고2" },
+                { key: "stockTable", label: "실재고 테이블" },
                 { key: "mismatch",   label: "배치구역 불일치" },
               ]}
               active={storeInnerTab}
@@ -615,6 +618,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           </div>
           {storeInnerTab === "mismatch" ? (
             <MismatchPage />
+          ) : storeInnerTab === "stockTable" ? (
+            <RealStockTablePage />
           ) : storeInnerTab === "warehouse1" ? (
             <WarehouseZoneMap filter="1" />
           ) : storeInnerTab === "warehouse2" ? (
