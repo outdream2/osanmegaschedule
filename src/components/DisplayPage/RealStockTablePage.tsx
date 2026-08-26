@@ -227,10 +227,10 @@ export const RealStockTablePage: React.FC = () => {
             <table className="w-full border-collapse">
               <thead className={tableHeadCls("text-[14px]")}>
                 <tr>
+                  {/* 2026-08-26 · 사용자 지시 · 상품코드 → 공급사 → 상품명 · 분류코드 제거 */}
+                  <th className={tableThCls("left")} style={{ width: 130 }}>상품코드</th>
                   {thSortable("supplier",      "left",  "공급사",   140)}
-                  {thSortable("category_code", "left",  "분류코드", 110)}
                   {thSortable("product_name",  "left",  "상품명",   300)}
-                  <th className={tableThCls("left")} style={{ width: 120 }}>상품코드</th>
                   {thSortable("spec",          "center","전산구역", 100, "bg-brand-tint/40")}
                   {thSortable("erp",          "num", "ERP재고",  90,  "bg-amber-50/60")}
                   {thSortable("w1",           "num", "창고1",    80,  "bg-cyan-50/60")}
@@ -245,10 +245,9 @@ export const RealStockTablePage: React.FC = () => {
               <tbody className="divide-y divide-zinc-100">
                 {sorted.map(r => (
                   <tr key={r.product_code} className="hover:bg-zinc-50/60 transition text-[15px]">
+                    <td className={tableTdCls("left", "font-mono text-[13px] text-zinc-500 tabular-nums")}>{r.product_code}</td>
                     <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ?? "-"}</td>
-                    <td className={tableTdCls("left", "font-mono text-[13px] text-zinc-500 tabular-nums")}>{r.category_code ?? "-"}</td>
                     <td className={tableTdCls("left", "font-bold text-zinc-800 break-keep whitespace-normal")}>{r.product_name}</td>
-                    <td className={tableTdCls("left", "font-mono text-[13px] text-zinc-500")}>{r.product_code}</td>
                     <td className={tableTdCls("center", `font-semibold ${r.spec ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>
                       {r.spec ?? "미지정"}
                     </td>
