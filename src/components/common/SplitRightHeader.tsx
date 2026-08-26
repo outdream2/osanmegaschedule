@@ -72,11 +72,11 @@ export function SplitRightHeader({
           <span className="text-brand-deep shrink-0 inline-flex items-center" aria-hidden>{icon}</span>
         )}
         <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-          <h2 className="text-[19px] font-bold tracking-tight text-ink leading-tight break-words" role="heading" aria-level={2}>
+          <h2 className="text-[21px] font-bold tracking-tight text-ink leading-tight break-words" role="heading" aria-level={2}>
             {title}
           </h2>
           {subtitle && (
-            <div className="text-[15px] text-ink-soft leading-snug break-words">{subtitle}</div>
+            <div className="text-[17px] text-ink-soft leading-snug break-words">{subtitle}</div>
           )}
         </div>
         {right && (

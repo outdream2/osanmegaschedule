@@ -55,11 +55,11 @@ export function SplitLeftHeader({
         <span className="text-brand-deep shrink-0 mt-1" aria-hidden>{icon}</span>
       )}
       <div className="flex-1 min-w-0">
-        <h2 className="text-[19px] font-bold tracking-tight text-ink leading-tight" role="heading" aria-level={2}>
+        <h2 className="text-[21px] font-bold tracking-tight text-ink leading-tight" role="heading" aria-level={2}>
           {title}
         </h2>
         {subtitle && (
-          <div className="text-[15px] text-ink-soft mt-0.5 leading-snug">{subtitle}</div>
+          <div className="text-[17px] text-ink-soft mt-0.5 leading-snug">{subtitle}</div>
         )}
       </div>
       {right && (
