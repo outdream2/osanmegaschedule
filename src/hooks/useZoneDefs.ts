@@ -25,6 +25,11 @@ function sanitize(raw: unknown): ZoneDef[] | null {
         validSections.includes(zone.section as ZoneSection)
       );
     })
+    // 2026-08-26 · description 필드 통과 · optional string
+    .map((z) => ({
+      ...z,
+      description: typeof (z as any).description === "string" ? (z as any).description : undefined,
+    }))
     .sort((a, b) => a.num - b.num);
   return cleaned.length > 0 ? cleaned : null;
 }

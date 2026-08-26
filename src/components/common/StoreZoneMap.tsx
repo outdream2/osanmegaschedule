@@ -212,7 +212,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         {...extra}
         {...dragProps}
         className={`rounded-md overflow-hidden border border-stone-300 bg-white shadow-sm flex flex-col items-center ${wallMin} ${cellInteractive} ${dragClass}`}
-        title={`${zd?.label ?? num} · ${cat}${count > 0 ? ` · ${count}개 상품` : ""}${enableDrag ? " · 길게 눌러 드래그" : ""}`}
+        title={`${zd?.label ?? num} · ${cat}${count > 0 ? ` · ${count}개 상품` : ""}${zd?.description ? `\n\n[상세]\n${zd.description}` : ""}${enableDrag ? "\n\n(길게 눌러 드래그)" : ""}`}
       >
         {/* 상단 · ★BEST 배지 (옵션) · 배지 없어도 line 은 유지 (레이아웃 안정) */}
         {showBestBadges && (

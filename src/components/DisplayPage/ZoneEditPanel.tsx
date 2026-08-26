@@ -24,19 +24,20 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
   const { zones, setZones, loading, saveNow, saveState } = useZoneDefs();
   const { toast, showSuccess, showError } = useToast();
   const confirm = useConfirm();
-  const [editing, setEditing] = useState<{ num: number; field: "label" | "category" | "subA" | "subB" } | null>(null);
+  const [editing, setEditing] = useState<{ num: number; field: "label" | "category" | "subA" | "subB" | "description" } | null>(null);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { setEditing(null); setDraft(""); }, [zones.length]);
 
-  const startEdit = (zone: ZoneDef, field: "label" | "category" | "subA" | "subB") => {
+  const startEdit = (zone: ZoneDef, field: "label" | "category" | "subA" | "subB" | "description") => {
     if (!canEdit) return;
     setEditing({ num: zone.num, field });
-    const cur = field === "label"    ? zone.label
-              : field === "category" ? zone.category
-              : field === "subA"     ? (zone.subA ?? "")
-              :                        (zone.subB ?? "");
+    const cur = field === "label"       ? zone.label
+              : field === "category"    ? zone.category
+              : field === "subA"        ? (zone.subA ?? "")
+              : field === "subB"        ? (zone.subB ?? "")
+              :                           (zone.description ?? "");
     setDraft(cur);
   };
   const cancelEdit = () => { setEditing(null); setDraft(""); };
@@ -44,7 +45,7 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
     if (!editing) return;
     const cleaned = draft.trim();
     setSaving(true);
-    setZones((prev: ZoneDef[]) => prev.map(z => z.num === editing.num ? { ...z, [editing.field]: cleaned || (editing.field === "subA" || editing.field === "subB" ? undefined : "") } : z));
+    setZones((prev: ZoneDef[]) => prev.map(z => z.num === editing.num ? { ...z, [editing.field]: cleaned || (editing.field === "subA" || editing.field === "subB" || editing.field === "description" ? undefined : "") } : z));
     setTimeout(async () => {
       const ok = await saveNow();
       setSaving(false);
@@ -76,7 +77,7 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
 
   const inputCls = "flex-1 min-w-0 h-8 px-2 rounded-md border border-brand-deep bg-white text-[14px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint";
 
-  const renderEdit = (zone: ZoneDef, field: "label" | "category" | "subA" | "subB", display: React.ReactNode) => {
+  const renderEdit = (zone: ZoneDef, field: "label" | "category" | "subA" | "subB" | "description", display: React.ReactNode) => {
     const isEditing = editing?.num === zone.num && editing?.field === field;
     if (isEditing) {
       return (
@@ -167,9 +168,10 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
                 <tr className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">
                   <th className="text-left px-2 py-1.5 w-14">번호</th>
                   <th className="text-left px-2 py-1.5" style={{ minWidth: 140 }}>라벨</th>
-                  <th className="text-left px-2 py-1.5" style={{ minWidth: 260 }}>카테고리</th>
-                  <th className="text-left px-2 py-1.5" style={{ minWidth: 180 }}>서브 A</th>
-                  <th className="text-left px-2 py-1.5" style={{ minWidth: 180 }}>서브 B</th>
+                  <th className="text-left px-2 py-1.5" style={{ minWidth: 220 }}>카테고리</th>
+                  <th className="text-left px-2 py-1.5" style={{ minWidth: 160 }}>서브 A</th>
+                  <th className="text-left px-2 py-1.5" style={{ minWidth: 160 }}>서브 B</th>
+                  <th className="text-left px-2 py-1.5" style={{ minWidth: 260 }}>상세 설명 (매장구역도 hover)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -180,6 +182,7 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
                     <td className="px-2 py-1.5 break-keep whitespace-normal">{renderEdit(z, "category", z.category || <span className="text-zinc-300">(비어있음)</span>)}</td>
                     <td className="px-2 py-1.5 break-keep whitespace-normal">{renderEdit(z, "subA", z.subA ?? <span className="text-zinc-300 italic">-</span>)}</td>
                     <td className="px-2 py-1.5 break-keep whitespace-normal">{renderEdit(z, "subB", z.subB ?? <span className="text-zinc-300 italic">-</span>)}</td>
+                    <td className="px-2 py-1.5 break-keep whitespace-normal">{renderEdit(z, "description", z.description ?? <span className="text-zinc-300 italic">-</span>)}</td>
                   </tr>
                 ))}
               </tbody>

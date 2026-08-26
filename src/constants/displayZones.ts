@@ -21,6 +21,8 @@ export interface ZoneDef {
   subA?: string;
   /** 3분할 서브존 (계산대 40 등) — subA/subB/subC 모두 있으면 3-way split */
   subC?: string;
+  /** 2026-08-26 · 사용자 지시 · 상세 설명 (긴 텍스트) · 매장구역도 셀 hover/click 표시 */
+  description?: string;
 }
 
 export const ZONE_DEFS: ZoneDef[] = [
