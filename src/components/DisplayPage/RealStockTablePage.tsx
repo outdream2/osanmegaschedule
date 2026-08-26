@@ -60,11 +60,15 @@ interface Row {
   diff: number;                        // 2026-08-26 · ERP - 실재고합계 (음수면 실재고 많음)
 }
 
-type SortKey = "product_name" | "supplier" | "category_code" | "spec" | "erp" | "w1" | "w2" | "s1" | "s2" | "s3" | "total" | "diff";
+// 2026-08-27 · 사용자 지시 · Attio 2026 톤 · dual-chip 정렬 (수량 · 구역) · 위치별 zone 정렬 추가
+type SortKey = "product_name" | "supplier" | "category_code" | "spec" | "erp" | "w1" | "w2" | "s1" | "s2" | "s3" | "total" | "diff"
+             | "s1zone" | "s2zone" | "s3zone" | "w1zone" | "w2zone";
 
 const SLOT_LABEL: Record<"w1" | "w2" | "s1" | "s2" | "s3", string> = {
   w1: "창고1", w2: "창고2", s1: "매장1", s2: "매장2", s3: "매장3",
 };
+
+const zoneCmp = (a: string | null, b: string | null) => (a ?? "").localeCompare(b ?? "", "ko", { numeric: true });
 
 const CMP: Record<SortKey, Comparator<Row>> = {
   product_name:  (a, b) => (a.product_name ?? "").localeCompare(b.product_name ?? "", "ko"),
@@ -77,6 +81,11 @@ const CMP: Record<SortKey, Comparator<Row>> = {
   s1:            (a, b) => (a.s1 ?? 0) - (b.s1 ?? 0),
   s2:            (a, b) => (a.s2 ?? 0) - (b.s2 ?? 0),
   s3:            (a, b) => (a.s3 ?? 0) - (b.s3 ?? 0),
+  s1zone:        (a, b) => zoneCmp(a.s1zone, b.s1zone),
+  s2zone:        (a, b) => zoneCmp(a.s2zone, b.s2zone),
+  s3zone:        (a, b) => zoneCmp(a.s3zone, b.s3zone),
+  w1zone:        (a, b) => zoneCmp(a.w1zone, b.w1zone),
+  w2zone:        (a, b) => zoneCmp(a.w2zone, b.w2zone),
   total:         (a, b) => a.total - b.total,
   diff:          (a, b) => a.diff - b.diff,
 };
@@ -261,6 +270,35 @@ export const RealStockTablePage: React.FC = () => {
     </th>
   );
 
+  // 2026-08-27 · 사용자 지시 · Attio 2026 dual-chip 정렬 헤더 · [수량] [구역] chip 2개 · 클릭 시 활성 + 방향
+  const thDualChip = (labelText: string, qtyKey: SortKey, zoneKey: SortKey, minW?: number, extra = "") => {
+    const chipCls = (k: SortKey) => {
+      const active = sortKey === k;
+      const dir = active ? (sortDir === "asc" ? "▲" : "▼") : "";
+      return {
+        base: `inline-flex items-center gap-0.5 px-1.5 h-5 rounded text-[11px] font-bold transition cursor-pointer select-none ${active ? "bg-brand-deep text-white shadow-sm" : "bg-white text-zinc-500 border border-line hover:border-brand-deep hover:text-brand-deep"}`,
+        dir,
+      };
+    };
+    const qtyC = chipCls(qtyKey);
+    const zoneC = chipCls(zoneKey);
+    return (
+      <th className={`${tableThCls("center")} select-none ${extra}`} style={minW ? { minWidth: minW } : undefined}>
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-[12px] font-bold text-ink">{labelText}</span>
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={(e) => { e.stopPropagation(); toggleSort(qtyKey); }} className={qtyC.base} title="수량 정렬">
+              수량 <span className="text-[9px]">{qtyC.dir || "⇅"}</span>
+            </button>
+            <button type="button" onClick={(e) => { e.stopPropagation(); toggleSort(zoneKey); }} className={zoneC.base} title="구역 정렬">
+              구역 <span className="text-[9px]">{zoneC.dir || "⇅"}</span>
+            </button>
+          </div>
+        </div>
+      </th>
+    );
+  };
+
   // 수량/구역 · 같은톤 다른 shade · 매장(violet) · 창고(cyan)
   const renderQtyZone = (r: Row, slot: SlotKey) => {
     const qty = slot === "w1" ? r.w1 : slot === "w2" ? r.w2 : slot === "s1" ? r.s1 : slot === "s2" ? r.s2 : r.s3;
@@ -430,15 +468,15 @@ export const RealStockTablePage: React.FC = () => {
               <thead className={tableHeadCls("text-[14px]")}>
                 <tr>
                   {/* 2026-08-26 · 사용자 지시 · 상품코드 제거 · 모든 헤더 자동정렬 */}
+                  {/* 2026-08-27 · 사용자 지시 · 전산구역+ERP 합침 · 위치별 dual-chip (수량+구역) 정렬 */}
                   {thSortable("supplier",      "left",  "공급사",   140)}
                   {thSortable("product_name",  "left",  "상품명",   300)}
-                  {thSortable("spec",          "center","전산구역", 100, "bg-brand-tint/40")}
-                  {thSortable("erp",          "num", "ERP재고",  90,  "bg-amber-50/60")}
-                  {thSortable("s1",           "num", "매장1",    70,  "bg-violet-50/60")}
-                  {thSortable("s2",           "num", "매장2",    70,  "bg-violet-50/60")}
-                  {thSortable("s3",           "num", "매장3",    70,  "bg-violet-50/60")}
-                  {thSortable("w1",           "num", "창고1",    70,  "bg-cyan-50/60")}
-                  {thSortable("w2",           "num", "창고2",    70,  "bg-cyan-50/60")}
+                  {thDualChip("전산·ERP",  "erp", "spec",   110, "bg-amber-50/60")}
+                  {thDualChip("매장1",      "s1",  "s1zone", 100, "bg-violet-50/60")}
+                  {thDualChip("매장2",      "s2",  "s2zone", 100, "bg-violet-50/60")}
+                  {thDualChip("매장3",      "s3",  "s3zone", 100, "bg-violet-50/60")}
+                  {thDualChip("창고1",      "w1",  "w1zone", 100, "bg-cyan-50/60")}
+                  {thDualChip("창고2",      "w2",  "w2zone", 100, "bg-cyan-50/60")}
                   {thSortable("total",        "num", "실재고합계", 95,  "bg-brand-tint/30")}
                   {thSortable("diff",         "num", "차이",     80,  "bg-rose-50/40")}
                 </tr>
@@ -457,11 +495,12 @@ export const RealStockTablePage: React.FC = () => {
                         {r.product_name}
                       </button>
                     </td>
-                    <td className={tableTdCls("center", `font-semibold ${r.spec ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>
-                      {r.spec ?? "미지정"}
-                    </td>
-                    <td className={tableTdCls("num", `tabular-nums font-bold ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-50/30`)}>
-                      {r.erp ?? "-"}
+                    {/* 전산·ERP 합침 셀 · 수량 (구역) */}
+                    <td className={tableTdCls("num", "bg-amber-50/30")}>
+                      <span className="inline-flex items-baseline gap-1">
+                        <span className={`font-bold tabular-nums text-[15px] ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"}`}>{r.erp ?? "-"}</span>
+                        {r.spec && <span className="text-[12px] font-semibold text-amber-500">({r.spec})</span>}
+                      </span>
                     </td>
                     <td className={tableTdCls("num", "bg-violet-50/30")}>{renderQtyZone(r, "s1")}</td>
                     <td className={tableTdCls("num", "bg-violet-50/30")}>{renderQtyZone(r, "s2")}</td>
