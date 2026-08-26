@@ -40,9 +40,10 @@ interface FlatRow {
 }
 
 function expandZoneToRows(z: ZoneDef): FlatRow[] {
-  const hasA = !!z.subA;
-  const hasB = !!z.subB;
-  const hasC = !!z.subC;
+  // 2026-08-26 · 사용자 지시 · 카테고리 비워도 행 유지 · undefined 만 "없음" · 빈 문자열은 "있으나 비어있음"
+  const hasA = z.subA !== undefined;
+  const hasB = z.subB !== undefined;
+  const hasC = z.subC !== undefined;
   if (hasA && hasB && hasC) {
     return [
       { zone: z, code: `${z.num}A`, sub: "A", catField: "subA", descField: "descriptionA", catValue: z.subA, descValue: z.descriptionA },
@@ -130,8 +131,10 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
   const commitEdit = async () => {
     if (!editing || savingRef.current) return;
     const cleaned = draft.trim();
-    const isOptional = editing.field !== "category";
-    const nextValue: string | undefined = cleaned || (isOptional ? undefined : "");
+    // 2026-08-26 · 사용자 지시 · 카테고리/서브 비워도 행 유지 · 빈 문자열 저장
+    //   description 계열만 undefined 로 저장 (구조 영향 없음)
+    const isDescField = editing.field.startsWith("description");
+    const nextValue: string | undefined = cleaned || (isDescField ? undefined : "");
     savingRef.current = true;
     setSaving(true);
     setZones((prev: ZoneDef[]) => prev.map(z => z.num === editing.num ? { ...z, [editing.field]: nextValue } : z));
