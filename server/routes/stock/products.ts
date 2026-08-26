@@ -35,12 +35,29 @@ router.get("/api/stock-check", asyncHandler(async (req, res) => {
   res.json(data ?? []);
 }));
 
-router.get("/api/products-map", asyncHandler(async (_req, res) => {
+router.get("/api/products-map", asyncHandler(async (req, res) => {
   // 2026-08-26 · 사용자 지시 · 전역 판매중 설정 반영 · getPublicProductMap 사용
+  // 2026-08-27 · 사용자 지시 · 로딩 속도 개선 · ?fields=slim 요청 시 필수 필드만 반환 (~50% 응답 감소)
   const map = await getPublicProductMap();
-  // 판매중 설정 상황 반영 · 즉시 갱신 필요 · cache-control no-cache
+  const isSlim = String(req.query.fields ?? "") === "slim";
+  const payload = isSlim
+    ? Object.fromEntries(Object.entries(map).map(([code, p]: [string, any]) => [code, {
+        code,
+        product_name: p.product_name ?? p.name ?? "",
+        supplier: p.supplier ?? null,
+        spec: p.spec ?? null,
+        category: p.category ?? null,
+        category_code: p.category_code ?? null,
+        real_map: p.real_map ?? p.realMap ?? null,
+        current_stock: p.current_stock ?? null,
+        sale_status: p.sale_status ?? null,
+        barcode: p.barcode ?? null,
+        optimal_stock: p.optimal_stock ?? null,
+        unit: p.unit ?? null,
+      }]))
+    : map;
   res.setHeader("Cache-Control", "no-cache");
-  res.json(map);
+  res.json(payload);
 }));
 
 // GET /api/inventory-latest — 상품코드별 최신 실재고 (warehouse_stock/store_stock/checked_at)
