@@ -47,24 +47,40 @@ export const OptimalStockPeriodSection: React.FC = () => {
   const { toast, showSuccess, showError } = useToast();
   const confirm = useConfirm();
   const [recalcing, setRecalcing] = useState(false);
-  const [lastResult, setLastResult] = useState<{ updated: number; failed?: number; note?: string } | null>(null);
+  // 2026-08-26 · 사용자 지시 · 두 모드 · today (기존) · fromDate (특정 날짜부터 오늘까지)
+  const [mode, setMode] = useState<"today" | "fromDate">("today");
+  const [fromDate, setFromDate] = useState<string>(() => {
+    // 기본값 · 30일 전
+    const d = new Date(); d.setDate(d.getDate() - 30);
+    return d.toISOString().slice(0, 10);
+  });
+  const [lastResult, setLastResult] = useState<{ updated: number; failed?: number; note?: string; productsWithSales?: number; productsZeroed?: number; from?: string } | null>(null);
   const runRecalc = async () => {
     const n = Number(inputValue) || days;
+    const modeLabel = mode === "today" ? `최근 ${n}일` : `${fromDate} 부터 오늘까지`;
     const ok = await confirm({
       title: "적정재고 재계산",
-      message: `현재 저장된 ${n}일 기준으로 모든 상품의 적정재고를 재계산합니다.\n\n계산법 · 최근 ${n}일 판매량 합계 = 적정재고\n대상 · stock_history 가 있는 모든 상품\n\n진행할까요?`,
+      message: `${modeLabel} 판매량 합계 = 적정재고\n\n대상 · 전체 상품 (판매 0 이면 optimal_stock = 0)\n주의 · 서버 재시작 필요할 수 있음\n\n진행할까요?`,
     });
     if (!ok) return;
     setRecalcing(true);
     setLastResult(null);
     try {
-      const { data } = await api.post<{ ok: boolean; updated: number; failed?: number; note?: string }>(
+      const payload: any = mode === "fromDate" ? { fromDate } : { days: n };
+      const { data } = await api.post<{ ok: boolean; updated: number; failed?: number; note?: string; productsWithSales?: number; productsZeroed?: number; from?: string }>(
         "/api/products/refill-optimal-stock",
-        { days: n }
+        payload
       );
-      setLastResult({ updated: data?.updated ?? 0, failed: data?.failed, note: data?.note });
+      setLastResult({
+        updated: data?.updated ?? 0,
+        failed: data?.failed,
+        note: data?.note,
+        productsWithSales: data?.productsWithSales,
+        productsZeroed: data?.productsZeroed,
+        from: data?.from,
+      });
       if (data?.updated) {
-        showSuccess(`재계산 완료 · ${data.updated}건 업데이트${data.failed ? ` · ${data.failed}건 실패` : ""}`);
+        showSuccess(`재계산 완료 · ${data.updated}건 (판매 있음 ${data.productsWithSales ?? "?"} · 0 처리 ${data.productsZeroed ?? "?"})`);
       } else {
         showError(data?.note ?? "재계산 결과 · 업데이트 0건");
       }
@@ -117,28 +133,60 @@ export const OptimalStockPeriodSection: React.FC = () => {
         발주필요·저재고 판정 · 진열 표시 · 자동 발주 계산 등 · 모든 소비처에 적용됩니다.
       </p>
 
-      <div className="flex items-center gap-3">
-        <label htmlFor="optimal-stock-days" className="text-[14px] font-semibold text-ink">
-          기준 일수
-        </label>
-        <input
-          id="optimal-stock-days"
-          type="number"
-          min={MIN_DAYS}
-          max={MAX_DAYS}
-          step={1}
-          value={loaded ? inputValue : String(DEFAULT_DAYS)}
-          onChange={handleChange}
-          onBlur={commit}
-          onKeyDown={handleKeyDown}
-          disabled={!loaded}
-          className="w-24 h-9 px-2.5 text-[15px] font-semibold text-ink text-right border border-line rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"
-        />
-        <span className="text-[14px] text-ink-soft">일</span>
-        <span className="text-[12px] text-zinc-400 ml-2">
-          (범위 · {MIN_DAYS} ~ {MAX_DAYS}일 · 기본 {DEFAULT_DAYS}일)
-        </span>
+      {/* 2026-08-26 · 사용자 지시 · 계산 모드 선택 · 오늘부터 N일 or 특정 날짜부터 오늘까지 */}
+      <div className="flex flex-col gap-2">
+        <div className="text-[14px] font-semibold text-ink">계산 방식</div>
+        <div className="flex items-center gap-4 flex-wrap">
+          <label className="inline-flex items-center gap-2 cursor-pointer">
+            <input type="radio" checked={mode === "today"} onChange={() => setMode("today")} className="w-4 h-4 accent-brand-deep cursor-pointer" />
+            <span className="text-[14px] font-semibold text-ink">오늘부터 · 최근 N일</span>
+          </label>
+          <label className="inline-flex items-center gap-2 cursor-pointer">
+            <input type="radio" checked={mode === "fromDate"} onChange={() => setMode("fromDate")} className="w-4 h-4 accent-brand-deep cursor-pointer" />
+            <span className="text-[14px] font-semibold text-ink">특정 날짜부터 · 오늘까지</span>
+          </label>
+        </div>
       </div>
+
+      {mode === "today" ? (
+        <div className="flex items-center gap-3">
+          <label htmlFor="optimal-stock-days" className="text-[14px] font-semibold text-ink">
+            기준 일수
+          </label>
+          <input
+            id="optimal-stock-days"
+            type="number"
+            min={MIN_DAYS}
+            max={MAX_DAYS}
+            step={1}
+            value={loaded ? inputValue : String(DEFAULT_DAYS)}
+            onChange={handleChange}
+            onBlur={commit}
+            onKeyDown={handleKeyDown}
+            disabled={!loaded}
+            className="w-24 h-9 px-2.5 text-[15px] font-semibold text-ink text-right border border-line rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"
+          />
+          <span className="text-[14px] text-ink-soft">일</span>
+          <span className="text-[12px] text-zinc-400 ml-2">
+            (범위 · {MIN_DAYS} ~ {MAX_DAYS}일 · 기본 {DEFAULT_DAYS}일)
+          </span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3">
+          <label htmlFor="optimal-stock-fromdate" className="text-[14px] font-semibold text-ink">
+            시작 날짜
+          </label>
+          <input
+            id="optimal-stock-fromdate"
+            type="date"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            max={new Date().toISOString().slice(0, 10)}
+            className="h-9 px-2.5 text-[15px] font-semibold text-ink border border-line rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums"
+          />
+          <span className="text-[13px] text-zinc-500">→ 오늘까지 판매량 합산</span>
+        </div>
+      )}
 
       <div className="text-[13px] text-ink-soft bg-zinc-50/60 border border-line rounded-lg px-3 py-2 leading-relaxed">
         💡 예시 · 30일 · 최근 30일 판매량 = 30개 → 적정재고 30개
@@ -160,9 +208,18 @@ export const OptimalStockPeriodSection: React.FC = () => {
             변경 사항을 모든 상품에 적용하려면 · 아래 [재계산 실행] 을 눌러주세요.
           </div>
           {lastResult && (
-            <div className="text-[12.5px] font-semibold text-amber-800 mt-2">
+            <div className="text-[12.5px] font-semibold text-amber-800 mt-2 leading-relaxed">
               마지막 결과 · <span className="text-emerald-700">{lastResult.updated}건 업데이트</span>
               {lastResult.failed ? <span className="ml-2 text-rose-600">({lastResult.failed}건 실패)</span> : null}
+              {lastResult.productsWithSales != null && (
+                <span className="ml-2 text-zinc-600">· 판매 {lastResult.productsWithSales}종</span>
+              )}
+              {lastResult.productsZeroed != null && lastResult.productsZeroed > 0 && (
+                <span className="ml-2 text-zinc-500">· 0 처리 {lastResult.productsZeroed}종</span>
+              )}
+              {lastResult.from && (
+                <span className="ml-2 text-zinc-500">· 기준 {lastResult.from}~</span>
+              )}
               {lastResult.note ? <span className="ml-2 text-zinc-500">· {lastResult.note}</span> : null}
             </div>
           )}
