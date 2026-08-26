@@ -3,10 +3,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { api } from "../../lib/apiClient";
 import { dispatchApprovalChange, useApprovalRefreshListener } from "../../lib/approvalEvents";
 import { TIMING } from "../../constants/timing";
-import {
-  RefreshCw, ShoppingCart, Square, CheckSquare,
-  Utensils, UtensilsCrossed,
-} from "lucide-react";
+import { ShoppingCart, Square, CheckSquare } from "lucide-react";
 import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
 import { fmtDateMD } from "../../lib/format";
 import type { AuthSession } from "../../types";
@@ -15,7 +12,6 @@ import { useColumnResize } from "../../hooks/useColumnResize";
 import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
-import { CARD_BASE } from "../../styles/tokens";
 import { StatusPill } from "../common/StatusPill";
 import { IconTile } from "../common/IconTile";
 import { Spinner } from "../common/Spinner";
@@ -25,11 +21,13 @@ import { Modal } from "../common/Modal";
 import { LeavePage } from "../LeavePage/LeavePage";
 // 2026-08-26 · #192 · 거래처승인 탭
 import { VendorApprovalPanel } from "./VendorApprovalPanel";
-// 2026-08-21 · Framework Phase 4 · large-file 분리 · types + ListToolbar
+// 2026-08-21 · Framework Phase 4 · large-file 분리 · types
 import type { DisplayRequest, OrderRequest, ZoneMismatch, LunchRequest, InventoryCheck, Tab } from "./types";
-import { ListToolbar } from "./ListToolbar";
 // 2026-08-22 · Framework Phase 4 · 3탭 별도 컴포넌트 이관 (Display/Order/Inventory)
-import { DisplayRequestTab, OrderRequestTab, InventoryCheckTab, RequestCheckbox } from "./RequestsPage.tabs";
+import { DisplayRequestTab, OrderRequestTab, InventoryCheckTab } from "./RequestsPage.tabs";
+// 2026-08-26 · Framework Phase 4 · large-file 분리 · 구역불일치·점심불참 패널
+import { MismatchPanel } from "./MismatchPanel";
+import { LunchPanel } from "./LunchPanel";
 
 interface RequestsPageProps {
   onBack: () => void;
@@ -478,9 +476,6 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const inventoryTabCount = inventoryLoading ? (tabCounts?.inventory ?? 0) : inventoryChecks.length;
   const lunchTabCount     = lunchLoading     ? (tabCounts?.lunch     ?? 0) : lunchRequests.filter(r => !r.eating).length;
 
-  const eatCount = lunchRequests.filter(r => r.eating).length;
-  const noEatCount = lunchRequests.filter(r => !r.eating).length;
-
   // 2026-08-10 · 사용자 요청 · 구역불일치 탭 제거 · 관리자 전용 탭: 실재고차이 · 점심불참
   const TABS: [Tab, string, number, string, string, string, string][] = [
     ["display",   isManager ? "진열요청" : "내가 받은 요청",   displayTabCount,   "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
@@ -583,55 +578,19 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
           />
         )}
 
-        {/* ── 구역불일치 ── */}
+        {/* ── 구역불일치 · 2026-08-26 MismatchPanel 이관 ── */}
         {tab === "mismatch" && (
-          <div className="flex flex-col gap-2">
-            <ListToolbar
-              total={mismatches.length} selected={selectedMismatch.size}
-              allChecked={selectedMismatch.size === mismatches.length && mismatches.length > 0}
-              onToggleAll={() => toggleAll(mismatches, selectedMismatch, setSelectedMismatch)}
-              onDeleteSelected={() => deleteMismatch([...selectedMismatch])}
-              onDeleteAll={async () => { if (await confirm({ message: `구역불일치 전체 ${mismatches.length}건을 삭제할까요?`, danger: true })) deleteMismatch(mismatches.map(r => r.id)); }}
-              onRefresh={loadMismatches} loading={mismatchLoading} accentColor="text-orange-600"
-            />
-            {mismatchLoading && mismatches.length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-orange-50 border border-orange-200 rounded-md sticky top-0 z-10">
-                <Spinner size={11} tone="orange" label="새로 불러오는 중..." labelSize={14} />
-              </div>
-            )}
-            {mismatchLoading && mismatches.length === 0 ? (
-              <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>
-            ) : mismatchError ? (
-
-              <div className="flex flex-col items-center justify-center py-10 gap-2">
-                <p className="text-sm font-bold text-red-500">불러오기 오류</p>
-                <p className="text-xs text-red-400 text-center px-4">{mismatchError}</p>
-                <button onClick={loadMismatches} className="mt-2 text-xs text-orange-600 underline cursor-pointer">다시 시도</button>
-              </div>
-            ) : !mismatchLoading && mismatches.length === 0 ? (
-              <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
-            ) : (
-              <div className={`${CARD_BASE} divide-y divide-zinc-50 ${mismatchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                {mismatches.map(m => (
-                  <div key={m.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition-all duration-150 ${selectedMismatch.has(m.id) ? "bg-rose-50/50" : "hover:bg-zinc-50/60"}`}>
-                    <RequestCheckbox checked={selectedMismatch.has(m.id)} onChange={() => toggleOne(selectedMismatch, m.id, setSelectedMismatch)} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[14px] font-bold text-zinc-800 break-keep">{m.product_name}</span>
-                        <span className="text-gray-300 text-[14px]">·</span>
-                        <span className="text-[14px] font-semibold text-zinc-400">{m.product_code}</span>
-                        <span className="text-gray-300 text-[14px]">·</span>
-                        <span className="text-[15px] text-zinc-500" title="전산배치구역">전산 <span className="font-bold text-zinc-700">{m.spec_zone || "미지정"}</span></span>
-                        <span className="text-gray-300 text-[14px]">→</span>
-                        <span className="text-[15px] font-bold text-red-600" title="실제배치구역">실제 {m.real_zone}</span>
-                      </div>
-                    </div>
-                    <span className="text-[14px] text-gray-400 shrink-0">{fmtDate(m.registered_at)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <MismatchPanel
+            mismatches={mismatches}
+            mismatchLoading={mismatchLoading}
+            mismatchError={mismatchError}
+            selectedMismatch={selectedMismatch}
+            onToggleAll={() => toggleAll(mismatches, selectedMismatch, setSelectedMismatch)}
+            onToggleOne={(id) => toggleOne(selectedMismatch, id, setSelectedMismatch)}
+            onDeleteSelected={() => deleteMismatch([...selectedMismatch])}
+            onDeleteAll={async () => { if (await confirm({ message: `구역불일치 전체 ${mismatches.length}건을 삭제할까요?`, danger: true })) deleteMismatch(mismatches.map(r => r.id)); }}
+            onRefresh={loadMismatches}
+          />
         )}
 
         {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · InventoryCheckTab */}
@@ -655,54 +614,13 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
           />
         )}
 
-        {/* ── 점심불참 ── */}
+        {/* ── 점심불참 · 2026-08-26 LunchPanel 이관 ── */}
         {tab === "lunch" && (
-          <div className="flex flex-col gap-3">
-            {/* 요약 뱃지 */}
-            <Card padding="none" className="flex items-center justify-between px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Utensils size={14} className="text-emerald-500" />
-                <span className="text-xs font-bold text-gray-700">오늘의 점심 불참 현황</span>
-                <span className="text-[14px] text-gray-400">({lunchRequests.length}명 응답)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
-                <div className="flex items-center gap-1 text-[15px] font-bold">
-                  <StatusPill tone="emerald" size="md">🍱 {eatCount}명</StatusPill>
-                  <StatusPill tone="zinc" size="md" icon={<UtensilsCrossed size={9} />}>{noEatCount}명</StatusPill>
-                </div>
-                <button onClick={loadLunch} className="p-1.5 text-gray-400 hover:text-gray-600 transition cursor-pointer">
-                  <RefreshCw size={12} className={lunchLoading ? "animate-spin" : ""} />
-                </button>
-              </div>
-            </Card>
-
-            {lunchLoading && lunchRequests.length > 0 && (
-              <div className="flex items-center justify-center py-1.5 mb-1 bg-zinc-100 border border-line rounded-md sticky top-0 z-10"><Spinner tone="zinc" size={11} label="새로 불러오는 중..." labelSize={14} /></div>
-            )}
-            {lunchLoading && lunchRequests.length === 0 ? (
-              <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>
-            ) : !lunchLoading && lunchRequests.length === 0 ? (
-              <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
-            ) : (
-              <div className={`${CARD_BASE} divide-y divide-zinc-50 ${lunchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
-                {lunchRequests.map(r => (
-                  <div key={r.id} className="flex items-center gap-3 px-0.5 py-1.5 hover:bg-zinc-50/60 transition-all duration-150">
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${r.eating ? "bg-emerald-500" : "bg-gray-300"}`} />
-                    <span className="text-sm font-semibold text-gray-800 flex-1">{r.employee_name}</span>
-                    {r.memo && <span className="text-[14px] text-gray-400 flex-1 min-w-0 break-keep">{r.memo}</span>}
-                    <StatusPill tone={r.eating ? "emerald" : "zinc"} size="md">
-                      {r.eating ? "🍱 식사" : "불참"}
-                    </StatusPill>
-                    <span className="text-[14px] text-gray-300 shrink-0">
-                      {new Date(r.updated_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <LunchPanel
+            lunchRequests={lunchRequests}
+            lunchLoading={lunchLoading}
+            onRefresh={loadLunch}
+          />
         )}
 
         {/* ── 연차승인 (2026-08-12 · 관리자용 승인 목록 · LeavePage embedded mode="approval") ── */}
