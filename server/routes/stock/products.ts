@@ -357,6 +357,44 @@ router.delete("/api/product-import-log", authorize(9), asyncHandler(async (_req,
   res.json({ ok: true });
 }));
 
+// 2026-08-26 · 사용자 지시 · 전산구역(spec) 값으로 실제구역(real_map) 일괄 통일
+//   · spec 있는 모든 상품 · real_map = spec 으로 업데이트
+//   · 관리자 lv9 전용 · 대용량 · 청크 배치
+router.post("/api/products/sync-real-map-to-spec", authorize(9), asyncHandler(async (_req, res) => {
+  const t0 = Date.now();
+  // 1. spec 이 있고 real_map 과 다른 상품 조회
+  const { data: rows, error: qErr } = await supabase
+    .from("products")
+    .select("product_code, spec, real_map")
+    .not("spec", "is", null)
+    .neq("spec", "");
+  if (qErr) throw new HttpError(500, qErr.message);
+  const targets = (rows ?? []).filter(r => {
+    const spec = String(r.spec ?? "").trim();
+    const real = String(r.real_map ?? "").trim();
+    return spec !== "" && spec !== real;
+  });
+  console.log(`[sync-real-map] 조회 ${rows?.length ?? 0}건 · 업데이트 대상 ${targets.length}건`);
+
+  // 2. 청크 500씩 · 각 상품 real_map = spec 로 upsert
+  let updated = 0;
+  const CHUNK = 500;
+  for (let i = 0; i < targets.length; i += CHUNK) {
+    const chunk = targets.slice(i, i + CHUNK);
+    const payload = chunk.map(r => ({ product_code: r.product_code, real_map: String(r.spec).trim() }));
+    const { error: uErr } = await supabase.from("products").upsert(payload, { onConflict: "product_code" });
+    if (uErr) {
+      console.error("[sync-real-map] upsert 오류:", uErr.message);
+      throw new HttpError(500, uErr.message);
+    }
+    updated += chunk.length;
+    console.log(`[sync-real-map] chunk ${i / CHUNK + 1} · ${updated}/${targets.length}`);
+  }
+  resetProductCache();
+  console.log(`[sync-real-map] 완료 · ${updated}건 · ${Date.now() - t0}ms`);
+  res.json({ ok: true, checked: rows?.length ?? 0, updated, elapsedMs: Date.now() - t0 });
+}));
+
 router.get("/api/products/realmap-check", asyncHandler(async (_req, res) => {
   const { data, error } = await supabase.from("products").select("real_map").limit(1);
   if (error) {
