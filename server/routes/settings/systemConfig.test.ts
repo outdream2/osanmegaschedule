@@ -39,9 +39,9 @@ describe("SUPPORTED_KEYS · 편집 화이트리스트", () => {
   });
 
   it("Web Push 3종 포함", () => {
-    expect(SUPPORTED_KEYS).toContain("WEB_PUSH_VAPID_PUBLIC");
-    expect(SUPPORTED_KEYS).toContain("WEB_PUSH_VAPID_PRIVATE");
-    expect(SUPPORTED_KEYS).toContain("WEB_PUSH_SUBJECT");
+    expect(SUPPORTED_KEYS).toContain("VAPID_PUBLIC_KEY");
+    expect(SUPPORTED_KEYS).toContain("VAPID_PRIVATE_KEY");
+    expect(SUPPORTED_KEYS).toContain("VAPID_SUBJECT");
   });
 
   it("OCR 수신처 프레임워크 키 포함", () => {

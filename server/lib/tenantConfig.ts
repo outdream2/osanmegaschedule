@@ -24,6 +24,14 @@ export interface TenantConfig {
  *  · 파일이 없으면 조용히 스킵 (기존 .env / 시스템 env 유지)
  *  · 파일이 있으면 · 파일 값이 우선 (사용자 편집이 최신)
  */
+// 2026-08-26 · BC alias · UI 옛 이름 → 런타임 표준 이름 자동 매핑
+//   · 사용자가 이미 저장한 값이 새 이름으로도 read 되도록
+const KEY_ALIAS: Record<string, string> = {
+  WEB_PUSH_VAPID_PUBLIC: "VAPID_PUBLIC_KEY",
+  WEB_PUSH_VAPID_PRIVATE: "VAPID_PRIVATE_KEY",
+  WEB_PUSH_SUBJECT: "VAPID_SUBJECT",
+};
+
 export function loadTenantConfig(): TenantConfig {
   try {
     if (!fs.existsSync(CONFIG_PATH)) return {};
@@ -31,14 +39,21 @@ export function loadTenantConfig(): TenantConfig {
     if (!raw.trim()) return {};
     const cfg = JSON.parse(raw) as TenantConfig;
     let applied = 0;
+    let aliased = 0;
     for (const [k, v] of Object.entries(cfg)) {
       if (typeof v === "string" && v.trim()) {
         process.env[k] = v;
         applied++;
+        // BC · 옛 키를 새 키로 미러링 (사용자 재저장 없이 동작)
+        const newKey = KEY_ALIAS[k];
+        if (newKey && !process.env[newKey]) {
+          process.env[newKey] = v;
+          aliased++;
+        }
       }
     }
     if (applied > 0) {
-      console.log(`[tenantConfig] loaded · ${applied} keys · applied to process.env`);
+      console.log(`[tenantConfig] loaded · ${applied} keys · applied to process.env${aliased > 0 ? ` · aliased ${aliased} legacy` : ""}`);
     }
     return cfg;
   } catch (e) {
