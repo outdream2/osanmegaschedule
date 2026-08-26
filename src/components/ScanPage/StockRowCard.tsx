@@ -24,6 +24,8 @@ import { StockActionsCell } from "./StockActionsCell";
 import { Clock as ClockIcon } from "lucide-react";
 // 2026-08-25 · 사용자 지시 · 매장구역 Tier 3 · Selector 통합 · 데이터 정합성 100%
 import { RealMapSelector } from "./RealMapSelector";
+// 2026-08-26 · 사용자 지시 · zone → 창고 매핑 · 해당 상품 소속 창고만 표시
+import { resolveWarehouseVisibility } from "../../lib/warehouseZoneMap";
 
 // ─── 5-slot 정의 (창고2 · 매장3) ─────────────────────────────────
 interface SlotDef {
@@ -177,6 +179,20 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
   // product.spec 파싱 (매장별 ERP 위치)
   const specParts = String((row.product as any).spec ?? "").split("/").map(s => s.trim());
 
+  // 2026-08-26 · 사용자 지시 · 해당 상품 소속 창고만 표시 · real_map / display_location 기반
+  const productZone = String(
+    (row.product as any).real_map
+    ?? (row.product as any).realMap
+    ?? (row.product as any).display_location
+    ?? ""
+  );
+  const { showW1, showW2 } = useMemo(() => resolveWarehouseVisibility(productZone), [productZone]);
+  const visibleSlots = useMemo(() => SLOTS.filter(s => {
+    if (s.key === "w1") return showW1;
+    if (s.key === "w2") return showW2;
+    return true; // 매장은 항상 표시
+  }), [showW1, showW2]);
+
   return (
     <div
       className={[
@@ -234,7 +250,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
           {/* chip strip · 접힘 시만 · 5-way 한눈 요약 */}
           {!expanded && (
             <div className="flex items-center gap-2 flex-wrap mt-1">
-              {SLOTS.map(s => {
+              {visibleSlots.map(s => {
                 const prev = row[s.prevKey] as number | null | undefined;
                 const add  = row[s.addKey]  as number | "";
                 const tot  = calcSlotTotal(prev, add);
@@ -283,7 +299,8 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
             · 컴팩트 셀 · label + prev + stepper + zone (매장만) 세로 스택
        */}
       {expanded && (() => {
-        const warehouses = SLOTS.filter(s => !s.zoneKey);
+        // 2026-08-26 · 창고는 visibleSlots (해당 상품 소속만) · 매장은 항상 3개
+        const warehouses = visibleSlots.filter(s => !s.zoneKey);
         const stores = SLOTS.filter(s => !!s.zoneKey);
         const renderSlot = (s: typeof SLOTS[number], i: number, isStore: boolean) => {
           const prev = row[s.prevKey] as number | null | undefined;
@@ -331,7 +348,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
             {/* 2026-08-26 · 사용자 지시 · 현재고 요약 · 5-slot 옆으로 한줄 표시 */}
             <div className="flex items-center gap-3 flex-wrap px-1 py-1.5 bg-zinc-50/60 rounded-md border border-line/60">
               <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider">현재고</span>
-              {SLOTS.map(s => {
+              {visibleSlots.map(s => {
                 const prev = row[s.prevKey] as number | null | undefined;
                 const hasPrev = prev != null && Number(prev) > 0;
                 return (

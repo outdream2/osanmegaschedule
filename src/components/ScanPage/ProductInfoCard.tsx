@@ -16,6 +16,8 @@ import { fmtWonCompact } from "../../lib/format";
 import { PurchaseHistorySection } from "./PurchaseHistorySection";
 // 2026-08-22 · Framework Phase 4 · 5-slot 반복 → StockSlotCard 프리미티브
 import { StockSlotCard } from "./StockSlotCard";
+// 2026-08-26 · 사용자 지시 · zone → 창고 매핑 · 해당 상품 소속 창고만 표시
+import { resolveWarehouseVisibility } from "../../lib/warehouseZoneMap";
 
 // 인라인 편집 가능 필드 종류
 // 2026-08-25 · products 테이블에 없는 컬럼 · cost_price 제거
@@ -270,6 +272,9 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
   const realMap: string | null = product.realMap ?? null;
   const specZone = product.spec || "미지정";
   const hasMismatch = !!realMap && realMap !== specZone;
+  // 2026-08-26 · 사용자 지시 · 해당 상품 소속 창고만 표시 (real_map 또는 display_location 기반)
+  const productZoneSrc = String(realMap ?? (product as any).real_map ?? (product as any).display_location ?? "");
+  const { showW1, showW2 } = resolveWarehouseVisibility(productZoneSrc);
 
   const cur = product.current_stock != null ? Number(product.current_stock) : null;
   const opt = product.optimal_stock != null ? Number(product.optimal_stock) : null;
@@ -532,15 +537,21 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               {S.actualStockInput && !stockSectionCollapsed && (
                 /* 2026-08-25 · 사용자 지시 · 창고 그룹 vs 매장 그룹 · 그룹간 gap-3 · 그룹내 gap-1.5 */
                 <div className="flex flex-col gap-3 mt-1.5">
-                  {/* 창고 나란히 · 항상 2-col · cyan 통일 */}
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <StockSlotCard kind="warehouse" label="창고1" value={warehouse1Stock}
-                      onChange={v => { setWarehouse1Stock(v); setW1Status("idle"); }}
-                      status={w1Status} onSubmit={handleW1Submit} toneKey="wh1" />
-                    <StockSlotCard kind="warehouse" label="창고2" value={warehouse2Stock}
-                      onChange={v => { setWarehouse2Stock(v); setW2Status("idle"); }}
-                      status={w2Status} onSubmit={handleW2Submit} toneKey="wh2" />
-                  </div>
+                  {/* 창고 나란히 · 해당 상품 소속 창고만 표시 (2026-08-26 사용자 지시) */}
+                  {(showW1 || showW2) && (
+                    <div className={`grid gap-1.5 ${showW1 && showW2 ? "grid-cols-2" : "grid-cols-1"}`}>
+                      {showW1 && (
+                        <StockSlotCard kind="warehouse" label="창고1" value={warehouse1Stock}
+                          onChange={v => { setWarehouse1Stock(v); setW1Status("idle"); }}
+                          status={w1Status} onSubmit={handleW1Submit} toneKey="wh1" />
+                      )}
+                      {showW2 && (
+                        <StockSlotCard kind="warehouse" label="창고2" value={warehouse2Stock}
+                          onChange={v => { setWarehouse2Stock(v); setW2Status("idle"); }}
+                          status={w2Status} onSubmit={handleW2Submit} toneKey="wh2" />
+                      )}
+                    </div>
+                  )}
                   {/* 매장 나란히 · 구역 개수 따라 1/2/3-col */}
                   {(() => {
                     const storeCount = storeZones.length <= 1 ? 1 : storeZones.length >= 3 ? 3 : 2;
