@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>설정 페이지 프리미티브 · SettingsPageShell v2 · 2026-08-26</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F8FA;
+    --surface: #ffffff;
+    --ink: #0F172A;
+    --ink-soft: #52606D;
+    --line: #E5E9EF;
+    --brand: #1E5C8E;
+    --brand-deep: #0A2E4A;
+    --brand-tint: #E7F0F9;
+    --brand-soft: #3E7CB1;
+    --amber: #f59e0b;
+    --rose: #e11d48;
+    --emerald: #10b981;
+    --shadow-lift: 0 4px 12px -2px rgba(10,46,74,0.08), 0 8px 20px -8px rgba(10,46,74,0.12);
+  }
+  * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-feature-settings: "ss01","cv01","liga"; }
+  body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--ink); }
+
+  /* Header · gradient accent bar */
+  .settings-header {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+  }
+  .settings-header::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--brand-deep) 0%, var(--brand) 50%, var(--brand-soft) 100%);
+  }
+
+  /* Breadcrumb */
+  .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-soft); font-weight: 500; }
+  .breadcrumb .sep { color: #cbd5e1; }
+  .breadcrumb .now { color: var(--ink); font-weight: 700; }
+
+  /* Section card */
+  .section-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .section-card__head {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #FAFBFC, #F5F7FA);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-card__body { padding: 18px; }
+
+  /* Field */
+  .field-label { font-size: 13px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .field-input {
+    width: 100%; height: 40px; padding: 0 12px;
+    border: 1px solid var(--line); border-radius: 10px;
+    font-size: 14px; font-weight: 500; color: var(--ink);
+    background: #FAFBFC;
+    transition: all 0.15s;
+  }
+  .field-input:focus { outline: none; border-color: var(--brand); background: #fff; box-shadow: 0 0 0 3px var(--brand-tint); }
+  .field-desc { font-size: 12px; color: var(--ink-soft); margin-top: 5px; }
+
+  /* Toggle */
+  .toggle {
+    position: relative; display: inline-block; width: 44px; height: 24px;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background-color: #d1d5db; transition: 0.2s; border-radius: 24px;
+  }
+  .toggle-slider::before {
+    position: absolute; content: ""; height: 20px; width: 20px;
+    left: 2px; top: 2px; background-color: white; transition: 0.2s;
+    border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  }
+  .toggle input:checked + .toggle-slider { background-color: var(--brand-deep); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+  /* Action bar · sticky bottom */
+  .action-bar {
+    position: sticky; bottom: 0;
+    background: linear-gradient(180deg, transparent, rgba(255,255,255,0.95) 30%, #fff);
+    backdrop-filter: blur(6px);
+    padding: 12px 0;
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid var(--line);
+    margin-top: 8px;
+  }
+
+  /* Side nav */
+  .side-tab {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; color: var(--ink-soft);
+    cursor: pointer; transition: all 0.15s;
+    position: relative;
+  }
+  .side-tab:hover { background: var(--brand-tint); color: var(--brand-deep); }
+  .side-tab.active {
+    background: var(--brand-tint);
+    color: var(--brand-deep);
+    font-weight: 700;
+  }
+  .side-tab.active::before {
+    content: ""; position: absolute;
+    left: 0; top: 20%; bottom: 20%; width: 3px;
+    background: var(--brand-deep); border-radius: 2px;
+  }
+
+  .badge-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; padding: 0 5px;
+    border-radius: 6px; font-size: 10px; font-weight: 700;
+    background: var(--brand-deep); color: white;
+    tabular-nums: 1;
+  }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    height: 20px; padding: 0 8px;
+    border-radius: 6px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.02em;
+  }
+
+  .btn-primary {
+    height: 38px; padding: 0 16px;
+    background: var(--brand-deep); color: white;
+    border-radius: 10px; font-size: 13px; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 6px;
+    box-shadow: 0 2px 6px -1px rgba(10,46,74,0.25);
+    transition: all 0.15s;
+  }
+  .btn-primary:hover { background: #0d3a5c; transform: translateY(-1px); box-shadow: 0 4px 10px -2px rgba(10,46,74,0.35); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-secondary {
+    height: 38px; padding: 0 14px;
+    background: white; color: var(--ink-soft);
+    border: 1px solid var(--line); border-radius: 10px;
+    font-size: 13px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-secondary:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-tint); }
+
+  .icon-tile {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--brand-deep), var(--brand));
+    color: white;
+    box-shadow: 0 2px 8px -1px rgba(10,46,74,0.25);
+  }
+</style>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-[1440px] mx-auto p-6">
+    <!-- Breadcrumb -->
+    <div class="breadcrumb mb-3">
+      <span>🏠 홈</span>
+      <span class="sep">›</span>
+      <span>설정</span>
+      <span class="sep">›</span>
+      <span class="now">시스템 설정</span>
+    </div>
+
+    <!-- Header · 프리미엄 헤더 -->
+    <div class="settings-header p-5 mb-4">
+      <div class="flex items-start gap-4">
+        <div class="icon-tile shrink-0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-[22px] font-extrabold text-[color:var(--ink)] tracking-tight leading-tight">시스템 설정</h1>
+          <p class="text-[13px] text-[color:var(--ink-soft)] mt-1 leading-relaxed">DB · 인증 · AI/OCR · 알림톡·SMS · 이미지 CDN · Web Push · 데이터 임포트 · 세션 등 서버 env 편집. 저장 후 서버 재시작 시 반영. <b class="text-[color:var(--brand-deep)]">관리자 (lv 9) 전용</b>.</p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="status-pill bg-emerald-50 text-emerald-700 ring-1 ring-emerald-500/20">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 저장됨
+          </span>
+          <button class="btn-secondary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><path d="M21 3v9h-9"/></svg>
+            새로고침
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Layout · 좌 side nav + 우 content -->
+    <div class="grid grid-cols-[240px_1fr] gap-4">
+      <!-- 좌측 · 8개 설정 페이지 side nav -->
+      <aside class="section-card p-2 h-fit sticky top-4">
+        <div class="text-[11px] font-bold text-[color:var(--ink-soft)] uppercase tracking-wider px-3 py-2 mb-1">설정 페이지</div>
+        <nav class="flex flex-col gap-0.5">
+          <a class="side-tab active">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            시스템 설정
+          </a>
+          <a class="side-tab">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            메뉴 설정 (권한)
+          </a>
+          <a class="side-tab">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>
+            회사 · 브랜드
+          </a>
+          <a class="side-tab">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M2 12h20"/></svg>
+            계절 · 통계
+            <span class="ml-auto badge-count">2</span>
+          </a>
+          <a class="side-tab">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            근로계약서 설정
+          </a>
+          <a class="side-tab">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            약사 메뉴
+          </a>
+          <a class="side-tab">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20"/><path d="M8 5v14"/><path d="M16 5v14"/></svg>
+            구역 라벨
+          </a>
+          <a class="side-tab">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            회사 정보
+          </a>
+        </nav>
+      </aside>
+
+      <!-- 우측 · 콘텐츠 -->
+      <main class="space-y-4">
+        <!-- 카테고리 탭 · pill 스타일 -->
+        <div class="section-card p-1 inline-flex items-center gap-0.5">
+          <button class="h-8 px-3 rounded-md bg-[color:var(--brand-deep)] text-white text-[13px] font-bold">DB · 인증</button>
+          <button class="h-8 px-3 rounded-md text-[color:var(--ink-soft)] hover:bg-gray-100 text-[13px] font-semibold">AI · OCR</button>
+          <button class="h-8 px-3 rounded-md text-[color:var(--ink-soft)] hover:bg-gray-100 text-[13px] font-semibold">알림톡</button>
+          <button class="h-8 px-3 rounded-md text-[color:var(--ink-soft)] hover:bg-gray-100 text-[13px] font-semibold">이미지 CDN</button>
+          <button class="h-8 px-3 rounded-md text-[color:var(--ink-soft)] hover:bg-gray-100 text-[13px] font-semibold">Web Push</button>
+          <button class="h-8 px-3 rounded-md text-[color:var(--ink-soft)] hover:bg-gray-100 text-[13px] font-semibold">데이터 임포트</button>
+          <button class="h-8 px-3 rounded-md text-[color:var(--ink-soft)] hover:bg-gray-100 text-[13px] font-semibold">세션</button>
+        </div>
+
+        <!-- 안내 배너 · 경고 -->
+        <div class="rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 flex items-start gap-2.5">
+          <div class="w-6 h-6 rounded-lg bg-amber-500 flex items-center justify-center shrink-0 shadow-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          </div>
+          <div class="flex-1 text-[13px]">
+            <div class="font-bold text-amber-900 mb-0.5">저장 후 서버 재시작 필요</div>
+            <div class="text-amber-800">편집한 값은 <code class="px-1.5 py-0.5 bg-amber-100 rounded font-mono text-[12px] font-bold text-rose-700">server/tenant.config.json</code> 에 저장되고, 다음 서버 부팅 시 <code class="px-1.5 py-0.5 bg-amber-100 rounded font-mono text-[12px] font-bold text-rose-700">process.env</code> 를 덮어씁니다.</div>
+          </div>
+        </div>
+
+        <!-- Section 1 · DB · 인증 -->
+        <div class="section-card">
+          <div class="section-card__head">
+            <div class="w-8 h-8 rounded-lg bg-[color:var(--brand-tint)] flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand-deep)" stroke-width="2.5"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="text-[15px] font-bold text-[color:var(--ink)] tracking-tight">데이터베이스 · 인증</h3>
+              <p class="text-[12px] text-[color:var(--ink-soft)] mt-0.5">Supabase 연결 · JWT 시크릿 · 3개 필드</p>
+            </div>
+          </div>
+          <div class="section-card__body space-y-4">
+            <div>
+              <div class="field-label">
+                Supabase URL
+                <span class="text-[11px] font-mono text-gray-400">SUPABASE_URL</span>
+                <span class="ml-auto text-[11px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded">파일 저장됨</span>
+              </div>
+              <input type="text" class="field-input" placeholder="https://xxxxxxx.supabase.co" value="https://zrtmnzoqbqsigqupcsla.supabase.co"/>
+              <p class="field-desc">예: https://xxxxxxx.supabase.co</p>
+            </div>
+            <div>
+              <div class="field-label">
+                Supabase Anon/Service Key
+                <span class="text-[11px] font-mono text-gray-400">SUPABASE_KEY</span>
+                <span class="ml-auto text-[11px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded">파일 저장됨</span>
+              </div>
+              <input type="text" class="field-input" placeholder="현재값: sb_se... (마스킹) · 새 값 입력 시 덮어씀"/>
+              <p class="field-desc">민감정보 · 저장 시 마스킹</p>
+            </div>
+            <div>
+              <div class="field-label">
+                JWT 시크릿
+                <span class="text-[11px] font-mono text-gray-400">JWT_SECRET</span>
+                <span class="ml-auto text-[11px] font-bold text-zinc-500 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">env 기본값</span>
+              </div>
+              <input type="text" class="field-input" placeholder="설정되지 않음 · 값 입력"/>
+              <p class="field-desc">로그인 세션 서명 키 · 최소 32자 랜덤 권장</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2 · Toggle 예시 -->
+        <div class="section-card">
+          <div class="section-card__head">
+            <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><path d="M12 2v4"/><path d="M12 18v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="m16.24 16.24 2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="m16.24 7.76 2.83-2.83"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="text-[15px] font-bold text-[color:var(--ink)] tracking-tight">토글 · 스위치 예시</h3>
+              <p class="text-[12px] text-[color:var(--ink-soft)] mt-0.5">전역 판매중 필터 · 자동 임포트 활성화 등</p>
+            </div>
+          </div>
+          <div class="section-card__body">
+            <div class="flex items-center justify-between py-2">
+              <div>
+                <div class="text-[14px] font-bold text-[color:var(--ink)]">판매중 상품만 노출</div>
+                <div class="text-[12px] text-[color:var(--ink-soft)] mt-0.5">전역 · sale_status="판매중" 만 리스트에 표시</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="border-t border-[color:var(--line)] my-2"></div>
+            <div class="flex items-center justify-between py-2">
+              <div>
+                <div class="text-[14px] font-bold text-[color:var(--ink)]">자동 임포트 활성</div>
+                <div class="text-[12px] text-[color:var(--ink-soft)] mt-0.5">10분 간격 · Downloads 폴더 자동 감지 · 업로드</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Bar · sticky -->
+        <div class="action-bar">
+          <button class="btn-secondary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><path d="M21 3v9h-9"/></svg>
+            다시 불러오기
+          </button>
+          <div class="flex items-center gap-2">
+            <span class="text-[13px] text-[color:var(--ink-soft)] font-semibold">
+              <span class="text-[color:var(--brand-deep)] font-bold">2개</span> 변경사항
+            </span>
+            <button class="btn-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              저장 (2개)
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- 디자인 규칙 노트 -->
+    <div class="text-[11px] text-gray-400 mt-6 pt-3 border-t border-gray-200 space-y-1">
+      <div>· <b>기본 톤 준수</b> · docs/UI_MOCKUP_2026-08-21.html · brand-deep #0A2E4A · brand-tint #E7F0F9 · Pretendard</div>
+      <div>· <b>헤더</b> · 3px gradient accent bar · icon-tile · title 22px extrabold · description 13px · status pill · 새로고침 버튼</div>
+      <div>· <b>Breadcrumb</b> · 홈 > 설정 > 현재 · 12px · ink-soft/ink 계층</div>
+      <div>· <b>좌측 side nav</b> · 8개 설정 페이지 · active 3px left bar + brand-tint · sticky · badge-count 지원</div>
+      <div>· <b>카테고리 탭</b> · pill style · 활성 brand-deep bg · 비활성 hover:bg-gray</div>
+      <div>· <b>Section card</b> · 헤더 (아이콘 tile + title + 서브) · 본문 · linear-gradient 헤더 배경</div>
+      <div>· <b>Field</b> · label + code + source badge (파일저장됨/env기본값) · input h-40 · gray-50 bg · focus brand ring</div>
+      <div>· <b>Toggle</b> · custom switch · brand-deep on · 부드러운 transition</div>
+      <div>· <b>Action bar</b> · sticky bottom · backdrop-blur · dirty count 표시 · primary/secondary</div>
+      <div>· <b>Icon tile</b> · linear gradient brand · box-shadow · 콘텐츠 아이덴티티 강조</div>
+      <div>· <b>안내 배너</b> · gradient amber/orange · warning icon · monospace code 강조</div>
+      <div>· 폰트 · Pretendard · font-feature-settings ss01/cv01/liga · antialiased · 40대+ 가독성</div>
+    </div>
+  </div>
+</body>
+</html>

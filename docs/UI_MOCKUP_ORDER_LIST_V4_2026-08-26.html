@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>발주 리스트 · v4 프리미엄 · 2026-08-26</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand-deep: #0A2E4A;
+    --brand-tint: #E6F0F8;
+    --brand: #1E5C8E;
+    --ink: #1a1a1a;
+    --ink-soft: #666;
+    --line: #e5e7eb;
+    --amber-urgent: #f59e0b;
+    --rose-critical: #e11d48;
+    --emerald-ok: #10b981;
+  }
+  * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-feature-settings: "ss01","cv01","liga"; }
+  body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; background: #f7f8fa; color: var(--ink); }
+  .card-panel { background: white; border: 1px solid var(--line); border-radius: 12px; }
+  .btn-primary { background: var(--brand-deep); color: white; }
+  .btn-primary:hover { background: #0d3a5c; }
+  .row-hover:hover { background: linear-gradient(90deg, rgba(30,92,142,0.02), rgba(30,92,142,0.04)); }
+  .row-selected { background: rgba(230,240,248,0.6); box-shadow: inset 3px 0 0 var(--brand-deep); }
+  .row-critical { background: linear-gradient(90deg, rgba(225,29,72,0.03), transparent 60%); }
+  .stepper-input { width: 68px; text-align: center; }
+  .glow-brand { box-shadow: 0 0 0 3px rgba(30,92,142,0.15); }
+  .anim-fade-slide { animation: fadeSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .diag-stripe { background-image: repeating-linear-gradient(-45deg, transparent, transparent 6px, rgba(30,92,142,0.04) 6px, rgba(30,92,142,0.04) 12px); }
+  .supplier-header { background: linear-gradient(180deg, #f9fafb, #f3f4f6); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .status-pill { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; }
+  .qty-cell { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .qty-current { color: #6b7280; }
+  .qty-optimal { color: var(--brand); }
+  .qty-short { color: var(--rose-critical); font-weight: 700; }
+  .qty-order { color: var(--brand-deep); font-weight: 800; font-size: 15px; }
+</style>
+</head>
+<body class="min-h-screen p-6">
+  <div class="max-w-[1440px] mx-auto space-y-4">
+    <!-- 헤더 -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#0A2E4A] to-[#1E5C8E] text-white shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        </div>
+        <div>
+          <h1 class="text-[22px] font-extrabold tracking-tight leading-tight">발주 리스트</h1>
+          <div class="text-[13px] text-[color:var(--ink-soft)] font-medium">공급사별 · 부족 재고 자동 감지 · 일괄 발주 처리</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-[13px] text-[color:var(--ink-soft)] font-semibold tabular-nums">총 <b class="text-[color:var(--ink)]">42</b>건 · 부족 <b class="text-[color:var(--rose-critical)]">17</b>건</span>
+        <button class="h-9 px-3 rounded-lg border border-[color:var(--line)] bg-white text-[13px] font-bold text-[color:var(--ink-soft)] hover:border-[color:var(--brand-deep)] hover:text-[color:var(--brand-deep)] transition">
+          🔄 새로고침
+        </button>
+      </div>
+    </div>
+
+    <!-- 툴바 (검색 + 필터 + 일괄 액션) -->
+    <div class="card-panel p-3 flex items-center gap-3 flex-wrap">
+      <div class="relative flex-1 min-w-[240px] max-w-[400px]">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" placeholder="상품명 · 공급사 · 담당자 검색" class="w-full h-10 pl-9 pr-3 rounded-lg border border-[color:var(--line)] bg-gray-50 focus:bg-white focus:border-[color:var(--brand-deep)] focus:ring-2 focus:ring-[color:var(--brand-tint)] outline-none text-[14px] transition-all"/>
+      </div>
+      <!-- 카테고리 필터 · 세그먼트 -->
+      <div class="inline-flex items-center gap-1 p-1 rounded-lg bg-gray-100">
+        <button class="h-8 px-3 rounded-md bg-white text-[13px] font-bold text-[color:var(--brand-deep)] shadow-sm">전체 <span class="text-[11px] text-gray-400 ml-1 tabular-nums">42</span></button>
+        <button class="h-8 px-3 rounded-md text-[13px] font-semibold text-gray-500 hover:text-gray-700">코스트팜 <span class="text-[11px] ml-1 tabular-nums">14</span></button>
+        <button class="h-8 px-3 rounded-md text-[13px] font-semibold text-gray-500 hover:text-gray-700">지오영 <span class="text-[11px] ml-1 tabular-nums">9</span></button>
+        <button class="h-8 px-3 rounded-md text-[13px] font-semibold text-gray-500 hover:text-gray-700">기타 <span class="text-[11px] ml-1 tabular-nums">19</span></button>
+      </div>
+      <div class="ml-auto flex items-center gap-2">
+        <span class="text-[13px] text-[color:var(--ink-soft)] font-semibold"><b class="text-[color:var(--brand-deep)]">3</b>건 선택</span>
+        <button class="h-9 px-3 rounded-lg border border-[color:var(--line)] bg-white text-[13px] font-bold text-gray-500 hover:text-rose-600 hover:border-rose-300 transition">
+          삭제
+        </button>
+        <button class="h-9 px-4 rounded-lg btn-primary text-[13px] font-bold transition inline-flex items-center gap-1.5 shadow-sm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+          발주 요청 (3)
+        </button>
+      </div>
+    </div>
+
+    <!-- 메인 · 좌 리스트 + 우 상세 -->
+    <div class="grid grid-cols-[1fr_360px] gap-4">
+      <!-- 리스트 카드 -->
+      <div class="card-panel overflow-hidden">
+        <!-- 컬럼 헤더 -->
+        <div class="grid grid-cols-[36px_1fr_120px_90px_90px_90px_100px_140px_100px] items-center gap-2 px-4 py-2.5 bg-gray-50 border-b border-[color:var(--line)] text-[12px] font-bold text-gray-500 uppercase tracking-wider">
+          <div><input type="checkbox" class="w-4 h-4 rounded accent-[color:var(--brand-deep)]"/></div>
+          <div>상품명</div>
+          <div>공급사 담당</div>
+          <div class="text-right">전산 재고</div>
+          <div class="text-right">실재고</div>
+          <div class="text-right">적정</div>
+          <div class="text-right">부족</div>
+          <div class="text-center">발주 수량</div>
+          <div class="text-center">상태</div>
+        </div>
+
+        <!-- 공급사 그룹: 코스트팜 -->
+        <div class="supplier-header grid grid-cols-[36px_1fr_120px_90px_90px_90px_100px_140px_100px] items-center gap-2 px-4 py-2.5 cursor-pointer hover:bg-gray-100 transition">
+          <div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-gray-500"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-1 h-4 rounded-full bg-[color:var(--brand-deep)]"></span>
+            <span class="text-[15px] font-extrabold text-[color:var(--ink)] tracking-tight">코스트팜</span>
+            <span class="inline-flex items-center h-5 px-1.5 rounded text-[11px] font-bold bg-[color:var(--brand-tint)] text-[color:var(--brand-deep)] border border-[color:var(--brand-deep)]/20 tabular-nums">14건</span>
+            <span class="text-[12px] text-gray-500 font-medium">· 김담당 · 010-1234-5678</span>
+          </div>
+          <div class="text-[12px] text-gray-500 col-span-6 text-right pr-2">
+            <span class="text-rose-600 font-bold">부족 8건</span> · 발주 대상 <b class="text-[color:var(--brand-deep)]">14건</b>
+            <button class="ml-3 text-[11px] font-bold text-[color:var(--brand-deep)] hover:underline">공급사 이력 →</button>
+          </div>
+        </div>
+
+        <!-- Row 1 · 부족 심각 (rose) -->
+        <div class="row-hover row-critical grid grid-cols-[36px_1fr_120px_90px_90px_90px_100px_140px_100px] items-center gap-2 px-4 py-3 border-b border-gray-100">
+          <div><input type="checkbox" checked class="w-4 h-4 rounded accent-[color:var(--brand-deep)]"/></div>
+          <div class="min-w-0">
+            <div class="text-[14px] font-bold text-[color:var(--ink)] truncate">타이레놀 500mg 정</div>
+            <div class="text-[11px] text-gray-500 mt-0.5 tabular-nums">8801234567890 · 1번 진열대 1A</div>
+          </div>
+          <div class="text-[12px] text-gray-600 truncate">김담당</div>
+          <div class="qty-cell qty-current text-right">2</div>
+          <div class="qty-cell qty-current text-right">0</div>
+          <div class="qty-cell qty-optimal text-right">30</div>
+          <div class="qty-cell qty-short text-right">28</div>
+          <div class="flex items-center justify-center gap-0.5">
+            <button class="w-6 h-6 rounded border border-gray-300 hover:border-[color:var(--brand-deep)] text-gray-500 hover:text-[color:var(--brand-deep)] font-bold">−</button>
+            <input type="number" value="28" class="stepper-input h-6 rounded border border-gray-300 text-[13px] font-bold text-[color:var(--brand-deep)] tabular-nums"/>
+            <button class="w-6 h-6 rounded border border-gray-300 hover:border-[color:var(--brand-deep)] text-gray-500 hover:text-[color:var(--brand-deep)] font-bold">+</button>
+          </div>
+          <div class="text-center">
+            <span class="status-pill bg-rose-50 text-rose-700 ring-1 ring-rose-500/20">
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> 긴급
+            </span>
+          </div>
+        </div>
+
+        <!-- Row 2 · 부족 (amber) -->
+        <div class="row-hover grid grid-cols-[36px_1fr_120px_90px_90px_90px_100px_140px_100px] items-center gap-2 px-4 py-3 border-b border-gray-100">
+          <div><input type="checkbox" checked class="w-4 h-4 rounded accent-[color:var(--brand-deep)]"/></div>
+          <div class="min-w-0">
+            <div class="text-[14px] font-bold text-[color:var(--ink)] truncate">판콜에이 내복액 30ml</div>
+            <div class="text-[11px] text-gray-500 mt-0.5 tabular-nums">8801234567891 · 1번 진열대 1B</div>
+          </div>
+          <div class="text-[12px] text-gray-600 truncate">김담당</div>
+          <div class="qty-cell qty-current text-right">5</div>
+          <div class="qty-cell qty-current text-right">3</div>
+          <div class="qty-cell qty-optimal text-right">20</div>
+          <div class="qty-cell text-amber-600 font-bold text-right">17</div>
+          <div class="flex items-center justify-center gap-0.5">
+            <button class="w-6 h-6 rounded border border-gray-300 hover:border-[color:var(--brand-deep)] text-gray-500 hover:text-[color:var(--brand-deep)] font-bold">−</button>
+            <input type="number" value="17" class="stepper-input h-6 rounded border border-gray-300 text-[13px] font-bold text-[color:var(--brand-deep)] tabular-nums"/>
+            <button class="w-6 h-6 rounded border border-gray-300 hover:border-[color:var(--brand-deep)] text-gray-500 hover:text-[color:var(--brand-deep)] font-bold">+</button>
+          </div>
+          <div class="text-center">
+            <span class="status-pill bg-amber-50 text-amber-700 ring-1 ring-amber-500/20">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> 부족
+            </span>
+          </div>
+        </div>
+
+        <!-- Row 3 · 정상 · 발주 대기 -->
+        <div class="row-hover grid grid-cols-[36px_1fr_120px_90px_90px_90px_100px_140px_100px] items-center gap-2 px-4 py-3 border-b border-gray-100">
+          <div><input type="checkbox" checked class="w-4 h-4 rounded accent-[color:var(--brand-deep)]"/></div>
+          <div class="min-w-0">
+            <div class="text-[14px] font-bold text-[color:var(--ink)] truncate">게보린 정</div>
+            <div class="text-[11px] text-gray-500 mt-0.5 tabular-nums">8801234567892 · 4번 진열대 4A</div>
+          </div>
+          <div class="text-[12px] text-gray-600 truncate">김담당</div>
+          <div class="qty-cell qty-current text-right">12</div>
+          <div class="qty-cell qty-current text-right">10</div>
+          <div class="qty-cell qty-optimal text-right">25</div>
+          <div class="qty-cell text-gray-400 font-bold text-right">15</div>
+          <div class="flex items-center justify-center gap-0.5">
+            <button class="w-6 h-6 rounded border border-gray-300 hover:border-[color:var(--brand-deep)] text-gray-500 hover:text-[color:var(--brand-deep)] font-bold">−</button>
+            <input type="number" value="15" class="stepper-input h-6 rounded border border-gray-300 text-[13px] font-bold text-[color:var(--brand-deep)] tabular-nums"/>
+            <button class="w-6 h-6 rounded border border-gray-300 hover:border-[color:var(--brand-deep)] text-gray-500 hover:text-[color:var(--brand-deep)] font-bold">+</button>
+          </div>
+          <div class="text-center">
+            <span class="status-pill bg-emerald-50 text-emerald-700 ring-1 ring-emerald-500/20">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 정상
+            </span>
+          </div>
+        </div>
+
+        <!-- 공급사 그룹: 지오영 -->
+        <div class="supplier-header grid grid-cols-[36px_1fr_120px_90px_90px_90px_100px_140px_100px] items-center gap-2 px-4 py-2.5 cursor-pointer hover:bg-gray-100 transition">
+          <div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-gray-500"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-1 h-4 rounded-full bg-emerald-500"></span>
+            <span class="text-[15px] font-extrabold text-[color:var(--ink)] tracking-tight">지오영</span>
+            <span class="inline-flex items-center h-5 px-1.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-500/20 tabular-nums">9건</span>
+            <span class="text-[12px] text-gray-500 font-medium">· 이과장 · 010-9876-5432</span>
+          </div>
+          <div class="text-[12px] text-gray-500 col-span-6 text-right pr-2">
+            <span class="text-amber-600 font-bold">부족 3건</span> · 발주 대상 <b class="text-emerald-700">9건</b>
+            <button class="ml-3 text-[11px] font-bold text-emerald-700 hover:underline">공급사 이력 →</button>
+          </div>
+        </div>
+
+        <!-- Row 4 -->
+        <div class="row-hover grid grid-cols-[36px_1fr_120px_90px_90px_90px_100px_140px_100px] items-center gap-2 px-4 py-3 border-b border-gray-100">
+          <div><input type="checkbox" class="w-4 h-4 rounded accent-[color:var(--brand-deep)]"/></div>
+          <div class="min-w-0">
+            <div class="text-[14px] font-bold text-[color:var(--ink)] truncate">아스피린 100mg</div>
+            <div class="text-[11px] text-gray-500 mt-0.5 tabular-nums">8809876543210 · 5번 진열대 5B</div>
+          </div>
+          <div class="text-[12px] text-gray-600 truncate">이과장</div>
+          <div class="qty-cell qty-current text-right">8</div>
+          <div class="qty-cell qty-current text-right">7</div>
+          <div class="qty-cell qty-optimal text-right">40</div>
+          <div class="qty-cell text-amber-600 font-bold text-right">33</div>
+          <div class="flex items-center justify-center gap-0.5">
+            <button class="w-6 h-6 rounded border border-gray-300 hover:border-[color:var(--brand-deep)] text-gray-500 hover:text-[color:var(--brand-deep)] font-bold">−</button>
+            <input type="number" value="33" class="stepper-input h-6 rounded border border-gray-300 text-[13px] font-bold text-[color:var(--brand-deep)] tabular-nums"/>
+            <button class="w-6 h-6 rounded border border-gray-300 hover:border-[color:var(--brand-deep)] text-gray-500 hover:text-[color:var(--brand-deep)] font-bold">+</button>
+          </div>
+          <div class="text-center">
+            <span class="status-pill bg-amber-50 text-amber-700 ring-1 ring-amber-500/20">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> 부족
+            </span>
+          </div>
+        </div>
+
+        <!-- ... more rows omitted for mockup ... -->
+
+        <!-- 하단 요약 바 -->
+        <div class="px-4 py-2.5 bg-gradient-to-r from-gray-50 to-white border-t border-[color:var(--line)] flex items-center justify-between">
+          <div class="text-[12px] text-gray-500 font-semibold">
+            표시 <b class="text-[color:var(--ink)] tabular-nums">4</b>/42건 · 페이지 <b class="tabular-nums">1</b>/11
+          </div>
+          <div class="flex items-center gap-1">
+            <button class="w-8 h-8 rounded-md border border-gray-300 hover:border-[color:var(--brand-deep)] text-gray-500 hover:text-[color:var(--brand-deep)]">‹</button>
+            <button class="w-8 h-8 rounded-md bg-[color:var(--brand-deep)] text-white font-bold text-[12px]">1</button>
+            <button class="w-8 h-8 rounded-md hover:bg-gray-100 text-gray-600 font-semibold text-[12px]">2</button>
+            <button class="w-8 h-8 rounded-md hover:bg-gray-100 text-gray-600 font-semibold text-[12px]">3</button>
+            <button class="w-8 h-8 rounded-md border border-gray-300 hover:border-[color:var(--brand-deep)] text-gray-500 hover:text-[color:var(--brand-deep)]">›</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 오른쪽 상세 패널 -->
+      <div class="card-panel p-4 space-y-4 h-fit sticky top-4">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0 flex-1">
+            <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">발주 상세</div>
+            <div class="text-[17px] font-extrabold text-[color:var(--ink)] tracking-tight truncate">타이레놀 500mg 정</div>
+            <div class="text-[12px] text-gray-500 mt-0.5 tabular-nums">8801234567890</div>
+          </div>
+          <span class="status-pill bg-rose-50 text-rose-700 ring-1 ring-rose-500/20 shrink-0">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> 긴급
+          </span>
+        </div>
+
+        <!-- 재고 요약 · 스탯 카드 -->
+        <div class="grid grid-cols-4 gap-2">
+          <div class="p-2.5 rounded-lg bg-gray-50 border border-gray-100 text-center">
+            <div class="text-[10px] font-bold text-gray-400 uppercase mb-1">전산</div>
+            <div class="text-[18px] font-extrabold text-gray-700 tabular-nums">2</div>
+          </div>
+          <div class="p-2.5 rounded-lg bg-rose-50 border border-rose-100 text-center">
+            <div class="text-[10px] font-bold text-rose-500 uppercase mb-1">실재고</div>
+            <div class="text-[18px] font-extrabold text-rose-700 tabular-nums">0</div>
+          </div>
+          <div class="p-2.5 rounded-lg bg-[color:var(--brand-tint)] border border-[color:var(--brand-deep)]/10 text-center">
+            <div class="text-[10px] font-bold text-[color:var(--brand-deep)] uppercase mb-1">적정</div>
+            <div class="text-[18px] font-extrabold text-[color:var(--brand-deep)] tabular-nums">30</div>
+          </div>
+          <div class="p-2.5 rounded-lg bg-amber-50 border border-amber-100 text-center">
+            <div class="text-[10px] font-bold text-amber-600 uppercase mb-1">부족</div>
+            <div class="text-[18px] font-extrabold text-amber-700 tabular-nums">28</div>
+          </div>
+        </div>
+
+        <!-- 위치 · 카테고리 -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-[13px]">
+            <span class="text-gray-500 font-semibold">진열 위치</span>
+            <span class="font-bold text-[color:var(--ink)]">1번 진열대 1A</span>
+          </div>
+          <div class="flex items-center justify-between text-[13px]">
+            <span class="text-gray-500 font-semibold">카테고리</span>
+            <span class="font-bold text-[color:var(--ink)]">해열진통제</span>
+          </div>
+          <div class="flex items-center justify-between text-[13px]">
+            <span class="text-gray-500 font-semibold">최근 매입가</span>
+            <span class="font-bold text-[color:var(--ink)] tabular-nums">₩ 850</span>
+          </div>
+          <div class="flex items-center justify-between text-[13px]">
+            <span class="text-gray-500 font-semibold">최근 판매일</span>
+            <span class="font-bold text-[color:var(--ink)]">2일 전</span>
+          </div>
+        </div>
+
+        <!-- 30일 판매 트렌드 (mini chart placeholder) -->
+        <div class="pt-2 border-t border-[color:var(--line)]">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">30일 판매 트렌드</div>
+            <span class="text-[11px] font-bold text-emerald-600">↗ +12%</span>
+          </div>
+          <div class="h-16 flex items-end gap-1">
+            <div class="flex-1 bg-gradient-to-t from-[color:var(--brand-deep)] to-[color:var(--brand)] rounded-t opacity-40" style="height:30%"></div>
+            <div class="flex-1 bg-gradient-to-t from-[color:var(--brand-deep)] to-[color:var(--brand)] rounded-t opacity-50" style="height:45%"></div>
+            <div class="flex-1 bg-gradient-to-t from-[color:var(--brand-deep)] to-[color:var(--brand)] rounded-t opacity-60" style="height:38%"></div>
+            <div class="flex-1 bg-gradient-to-t from-[color:var(--brand-deep)] to-[color:var(--brand)] rounded-t opacity-70" style="height:60%"></div>
+            <div class="flex-1 bg-gradient-to-t from-[color:var(--brand-deep)] to-[color:var(--brand)] rounded-t opacity-80" style="height:75%"></div>
+            <div class="flex-1 bg-gradient-to-t from-[color:var(--brand-deep)] to-[color:var(--brand)] rounded-t" style="height:90%"></div>
+            <div class="flex-1 bg-gradient-to-t from-[color:var(--brand-deep)] to-[color:var(--brand)] rounded-t" style="height:100%"></div>
+          </div>
+          <div class="flex items-center justify-between mt-1 text-[10px] text-gray-400 tabular-nums">
+            <span>7/28</span><span>오늘</span>
+          </div>
+        </div>
+
+        <!-- 액션 -->
+        <div class="flex gap-2 pt-2 border-t border-[color:var(--line)]">
+          <button class="flex-1 h-9 rounded-lg btn-primary text-[13px] font-bold inline-flex items-center justify-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            개별 발주
+          </button>
+          <button class="h-9 px-3 rounded-lg border border-[color:var(--line)] bg-white text-[13px] font-bold text-gray-500 hover:text-[color:var(--brand-deep)] hover:border-[color:var(--brand-deep)]">
+            상품 편집
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 디자인 규칙 노트 -->
+    <div class="text-[11px] text-gray-400 mt-2 pt-2 border-t border-gray-200 space-y-1">
+      <div>· <b>Linear/Attio/Notion 2026 톤</b> · minimal · dense-table · sharp typography · muted palette + accent color</div>
+      <div>· <b>공급사별 그룹핑</b> · gradient bar · badge + contact · collapsible</div>
+      <div>· <b>상태 pill</b> · 긴급 (rose · pulse) · 부족 (amber) · 정상 (emerald) · 시각 우선순위</div>
+      <div>· <b>StepperInput</b> · ± 버튼 · tabular-nums · 인라인 수량 조정</div>
+      <div>· <b>우측 상세 패널</b> · sticky · 4-stat card grid · mini bar chart · 개별 발주 · 편집 액션</div>
+      <div>· <b>부족 심각 row</b> · 좌측 rose gradient stripe · 애니메이션 dot · 시각 강조</div>
+      <div>· <b>선택 row</b> · 3px brand-deep left border · 배경 tint</div>
+      <div>· <b>페이지네이션</b> · 하단 컴팩트 · 밝은 회색 배경</div>
+      <div>· 폰트 · Pretendard · font-feature-settings: ss01/cv01/liga · antialiased</div>
+      <div>· 색 · brand-deep (#0A2E4A) 기반 · brand-tint · rose (긴급) · amber (부족) · emerald (정상)</div>
+    </div>
+  </div>
+</body>
+</html>
