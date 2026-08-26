@@ -317,6 +317,9 @@ export const FlowTab: React.FC = () => {
     const minN = salesQtyMin.trim() === "" ? null : parseInt(salesQtyMin, 10);
     const maxN = salesQtyMax.trim() === "" ? null : parseInt(salesQtyMax, 10);
     // 2026-08-22 · flowSearch UI 없음 · dead code path 제거 (기존 flowSearch 상태도 삭제)
+    // 2026-08-26 · 사용자 지시 · 검색어 (infoSearchQuery) 로 왼쪽 리스트도 필터링
+    //   · 상품명·코드·공급사 통합 검색 · 대소문자 무시
+    const searchQ = infoSearchQuery.trim().toLowerCase();
     const filtered = stockFlow.filter(p => {
       const qty = p.sale_qty;
       if (minN != null && Number.isFinite(minN) && qty < minN) return false;
@@ -324,6 +327,12 @@ export const FlowTab: React.FC = () => {
       if (flowCategoryFilter !== "전체") {
         const sup = String(p.supplier ?? "").trim();
         if (vendorCategoryMap[sup] !== flowCategoryFilter) return false;
+      }
+      if (searchQ) {
+        const name = String(p.product_name ?? "").toLowerCase();
+        const code = String(p.product_code ?? "").toLowerCase();
+        const sup  = String(p.supplier ?? "").toLowerCase();
+        if (!name.includes(searchQ) && !code.includes(searchQ) && !sup.includes(searchQ)) return false;
       }
       return true;
     });
@@ -370,7 +379,7 @@ export const FlowTab: React.FC = () => {
       });
     }
     return filtered;
-  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowMonths, flowCategoryFilter, vendorCategoryMap]);
+  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowMonths, flowCategoryFilter, vendorCategoryMap, infoSearchQuery]);
 
   // 3-way tab 카운트
   const getRealMap = useCallback((p: any) => (p as any).real_map ?? productRealMapById[String(p.product_code)] ?? null, [productRealMapById]);

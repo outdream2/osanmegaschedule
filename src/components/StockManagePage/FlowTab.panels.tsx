@@ -112,44 +112,49 @@ export const FlowFilterBar: React.FC<FlowFilterBarProps> = ({
         </div>
       </div>
 
-      {/* 정보확인 검색 */}
-      <div className="relative">
-        <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+      {/* 2026-08-26 · 사용자 지시 · 상품 검색 · 왼쪽 리스트 필터 + 선택 시 오른쪽 상세 로드
+          · 정보확인 버튼 제거 · 드롭다운 선택 즉시 loadFlowSelectedProduct */}
+      <div className="relative flex-1 min-w-[220px] sm:min-w-[280px] sm:max-w-[380px] basis-full sm:basis-auto">
+        <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
         <input
           value={infoSearchQuery}
           onChange={(e) => setInfoSearchQuery(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") runInfoSearch(); }}
-          placeholder="전체 DB 검색 (정보확인)"
-          className="w-48 h-7 pl-7 pr-2 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white transition"
+          placeholder="상품명·코드·공급사 검색"
+          className="w-full h-9 pl-8 pr-8 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white transition"
         />
+        {infoSearchQuery && (
+          <button
+            type="button"
+            onClick={() => { setInfoSearchQuery(""); setInfoSearchResults([]); setInfoSelected(null); }}
+            aria-label="검색어 지우기"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full text-zinc-400 hover:text-ink hover:bg-zinc-100 flex items-center justify-center cursor-pointer transition-colors text-[13px]"
+          >
+            ✕
+          </button>
+        )}
         {infoSearchResults.length > 0 && (
           <div className="absolute left-0 top-full mt-1 max-h-64 overflow-y-auto border border-line bg-white rounded-lg shadow-lg z-30 divide-y divide-zinc-100 min-w-full sm:min-w-[500px]">
             {infoSearchResults.map((p, i) => (
               <button key={`info-sr-${(p as any).product_code}-${i}`}
-                onClick={() => { setInfoSelected(p); setInfoSearchQuery((p as any).product_name); setInfoSearchResults([]); }}
-                className="w-full text-left px-2.5 py-1 hover:bg-sky-50 transition flex items-center justify-between gap-2">
+                onClick={() => {
+                  // 왼쪽 리스트에 반영 (infoSearchQuery = 상품명) + 오른쪽 상세 자동 로드
+                  setInfoSelected(p);
+                  setInfoSearchQuery((p as any).product_name);
+                  setInfoSearchResults([]);
+                  loadFlowSelectedProduct(p);
+                }}
+                className="w-full text-left px-2.5 py-1.5 hover:bg-sky-50 transition flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <div className="text-[15px] font-semibold text-zinc-800 whitespace-nowrap">{(p as any).product_name}</div>
-                  <div className="text-[15px] tabular-nums text-zinc-400 whitespace-nowrap">#{(p as any).product_code} · {(p as any).supplier ?? "-"}</div>
+                  <div className="text-[14px] tabular-nums text-zinc-400 whitespace-nowrap">#{(p as any).product_code} · {(p as any).supplier ?? "-"}</div>
                 </div>
-                <span className="text-[15px] text-zinc-400 shrink-0">재고 {(p as any).current_stock ?? "-"}</span>
+                <span className="text-[14px] text-zinc-400 shrink-0">재고 {(p as any).current_stock ?? "-"}</span>
               </button>
             ))}
           </div>
         )}
       </div>
-
-      {/* 정보확인 버튼 */}
-      <button
-        onClick={() => {
-          const target = infoSelected ?? infoSearchResults[0] ?? null;
-          if (target) { loadFlowSelectedProduct(target); setInfoSearchResults([]); }
-        }}
-        disabled={!infoSelected && !infoSearchQuery.trim() && infoSearchResults.length === 0}
-        className="flex items-center gap-1.5 text-[15px] font-semibold text-white bg-zinc-700 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed rounded-md px-3 h-7 cursor-pointer transition shrink-0"
-        title="검색 후 클릭 → 오른쪽 상세 패널에 상품 정보 표시">
-        <Info size={12} /> 정보확인
-      </button>
 
       {/* 판매출고계 범위 필터 */}
       <div className="flex items-center gap-1.5">
