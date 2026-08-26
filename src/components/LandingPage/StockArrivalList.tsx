@@ -88,12 +88,12 @@ export const StockArrivalList: React.FC<StockArrivalListProps> = ({ isVendor }) 
             <button
               onClick={handleAnonSubscribe}
               disabled={pushLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[16px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition-colors disabled:opacity-40 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[14px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition-colors disabled:opacity-40 cursor-pointer"
             >
               <Bell size={13} fill="currentColor" />알림 받기
             </button>
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-[16px] text-brand-deep font-semibold bg-brand-tint border border-brand/15 rounded-full px-3 py-1.5">
+            <span className="inline-flex items-center gap-1.5 text-[14px] text-brand-deep font-semibold bg-brand-tint border border-brand/15 rounded-full px-3 py-1.5">
               <Bell size={13} fill="currentColor" /> 구독 중
             </span>
           )
@@ -104,7 +104,7 @@ export const StockArrivalList: React.FC<StockArrivalListProps> = ({ isVendor }) 
         {arrivalsLoading && stockArrivals.length === 0 ? (
           <div className="flex items-center justify-center py-10"><Spinner tone="zinc" size={16} label="로딩 중..." labelSize={14} /></div>
         ) : !arrivalsLoading && stockArrivals.length === 0 ? (
-          <Card variant="flat" padding="none" className="text-center text-[16px] text-ink-soft py-8">데이터 없음</Card>
+          <Card variant="flat" padding="none" className="text-center text-[14px] text-ink-soft py-8">데이터 없음</Card>
         ) : (
           /* 2026-08-24 · 최신 트렌드 · UI 대원칙 · Linear/Vercel/Attio 2026 */
           <Card clip padding="none" className={`relative divide-y divide-line/70 ${arrivalsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
@@ -127,17 +127,17 @@ export const StockArrivalList: React.FC<StockArrivalListProps> = ({ isVendor }) 
                   <span className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-r-full bg-brand-deep opacity-0 group-hover:opacity-100 transition-opacity duration-200" aria-hidden />
                   <span className="w-1.5 h-1.5 rounded-full bg-brand-deep shrink-0" aria-hidden />
                   <div className="flex-1 min-w-0 flex items-baseline gap-2 min-w-0">
-                    <span className="text-[19px] font-semibold text-ink truncate tracking-tight group-hover:text-brand-deep transition-colors duration-200 shrink-0 max-w-[60%]">{a.title}</span>
+                    <span className="text-[18px] font-semibold text-ink truncate tracking-tight group-hover:text-brand-deep transition-colors duration-200 shrink-0 max-w-[60%]">{a.title}</span>
                     {a.body && (
-                      <span className="text-[15px] font-normal text-ink-soft/70 truncate min-w-0" title={a.body}>· {a.body}</span>
+                      <span className="text-[14px] font-normal text-ink-soft/70 truncate min-w-0" title={a.body}>· {a.body}</span>
                     )}
                     {isNew && (
-                      <span className="shrink-0 inline-flex items-center h-[22px] px-2 rounded-md text-[12px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 ring-1 ring-emerald-500/25">
+                      <span className="shrink-0 inline-flex items-center h-[22px] px-2 rounded-md text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 ring-1 ring-emerald-500/25">
                         NEW
                       </span>
                     )}
                   </div>
-                  <span className="text-[17px] font-medium text-ink-soft shrink-0 whitespace-nowrap tabular-nums group-hover:text-brand-deep/70 transition-colors duration-200" title={new Date(a.created_at).toLocaleString("ko-KR")}>
+                  <span className="text-[14px] font-medium text-ink-soft shrink-0 whitespace-nowrap tabular-nums group-hover:text-brand-deep/70 transition-colors duration-200" title={new Date(a.created_at).toLocaleString("ko-KR")}>
                     {timeLabel}
                   </span>
                 </button>
@@ -157,8 +157,8 @@ export const StockArrivalList: React.FC<StockArrivalListProps> = ({ isVendor }) 
         title={
           arrivalDetail ? (
             <div className="min-w-0">
-              <div className="text-[19px] font-bold text-ink tracking-tight truncate">{arrivalDetail.title}</div>
-              <div className="text-[13px] text-ink-soft mt-0.5 tabular-nums">
+              <div className="text-[18px] font-bold text-ink tracking-tight truncate">{arrivalDetail.title}</div>
+              <div className="text-[11px] text-ink-soft mt-0.5 tabular-nums">
                 {new Date(arrivalDetail.created_at).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
               </div>
             </div>
@@ -167,9 +167,9 @@ export const StockArrivalList: React.FC<StockArrivalListProps> = ({ isVendor }) 
       >
         <div className="px-5 py-5 bg-white">
           {arrivalDetail?.body ? (
-            <div className="text-[17px] text-ink leading-relaxed whitespace-pre-wrap break-words">{arrivalDetail.body}</div>
+            <div className="text-[14px] text-ink leading-relaxed whitespace-pre-wrap break-words">{arrivalDetail.body}</div>
           ) : (
-            <div className="text-[15px] text-ink-soft italic">추가 내용 없음</div>
+            <div className="text-[14px] text-ink-soft italic">추가 내용 없음</div>
           )}
         </div>
       </Modal>

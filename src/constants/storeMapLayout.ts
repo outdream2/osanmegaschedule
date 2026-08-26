@@ -21,8 +21,8 @@ export const STORE_AISLE_PAIRS: number[] = [8, 7, 6, 5, 4, 3, 2, 1];
 /** 하단 벽면 · 좌→우 · 23번부터 34번까지 (12개) */
 export const STORE_BOTTOM_WALL: number[] = [23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34];
 
-/** 우측 수직윙 · 위→아래 · 35번부터 42번까지 (8개) */
-export const STORE_VERTICAL_WING: number[] = [35, 36, 37, 38, 39, 40, 41, 42];
+// 2026-08-26 · 사용자 지시 · 카운터테마존 확장 · 43-46 (물약 포함) 추가 · 총 12셀
+export const STORE_VERTICAL_WING: number[] = [35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46];
 
 /**
  * 중앙 진열대 A (진한 톤) 색상 팔레트

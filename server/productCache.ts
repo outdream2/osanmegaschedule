@@ -173,6 +173,38 @@ export async function getProductMap(): Promise<Record<string, ProductInfo>> {
   return productMapPromise;
 }
 
+// 2026-08-26 · 사용자 지시 · 전역 판매중 설정 반영 · 모든 소비자 (products-map · stock-check · products.json 등) 자동 필터
+//   · app_settings.stats.sale_active_only === true 이면 · sale_status !== "판매중" 상품 제거
+//   · 설정 OFF (false/null) 이면 · 전체 반환 (기존 동작)
+//   · 설정 값은 5초 캐시 · DB 부하 완화
+let saleActiveOnlyCache: { value: boolean; ts: number } | null = null;
+const SALE_ACTIVE_TTL_MS = 5000;
+async function readSaleActiveOnly(): Promise<boolean> {
+  const now = Date.now();
+  if (saleActiveOnlyCache && (now - saleActiveOnlyCache.ts) < SALE_ACTIVE_TTL_MS) return saleActiveOnlyCache.value;
+  try {
+    const { data } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();
+    const v = data?.value === true;
+    saleActiveOnlyCache = { value: v, ts: now };
+    return v;
+  } catch {
+    return false;
+  }
+}
+export function invalidateSaleActiveOnlyCache(): void { saleActiveOnlyCache = null; }
+
+/** 판매중 설정 반영된 상품 map · 모든 공개 endpoint 에서 사용 */
+export async function getPublicProductMap(): Promise<Record<string, ProductInfo>> {
+  const map = await getProductMap();
+  const saleActive = await readSaleActiveOnly();
+  if (!saleActive) return map;
+  const filtered: Record<string, ProductInfo> = {};
+  for (const [k, info] of Object.entries(map)) {
+    if (String((info as any).sale_status ?? "").trim() === "판매중") filtered[k] = info;
+  }
+  return filtered;
+}
+
 // OCR 이 추출한 원본 이름 ↔ DB canonical 매핑 저장
 //   다음 스캔 시 즉시 매칭 (fuzzy 매칭 안 거치고 alias 로 바로 해결)
 export async function learnSupplierAlias(rawName: string, canonicalName: string): Promise<{ action: "created" | "updated" | "skipped"; reason?: string }> {

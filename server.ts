@@ -18,7 +18,7 @@ import rateLimit from "express-rate-limit";
 import webpush from "web-push";
 import { createServer as createViteServer } from "vite";
 import { supabase } from "./src/supabase/client";
-import { getProductMap } from "./server/productCache";
+import { getPublicProductMap } from "./server/productCache";
 
 import schedulesRouter   from "./server/routes/schedule/schedules";
 import staffRouter       from "./server/routes/staff/staff";
@@ -169,6 +169,30 @@ async function startServer() {
   //   · POST 는 내부 level >= 3 자체 검증 · 인증 없이도 안전
   app.use(stockArrivalsRouter);
 
+  // 2026-08-26 · 사용자 리포트 · 로그인 화면 재고확인 안 됨 fix
+  //   · /api/stock-check 는 productsRouter 안에서 "공개" 로 선언되어 있으나 · productsRouter 가 requireAuth 뒤 마운트되어 401
+  //   · 공개 인라인 라우트로 · requireAuth 이전에 등록 · 최소 침습
+  // 2026-08-26 · 사용자 지시 · 전역 판매중 설정 반영 · stats.sale_active_only=true 면 sale_status="판매중" 만
+  app.get("/api/stock-check", async (req, res) => {
+    try {
+      const raw = String(req.query.q ?? "").trim().slice(0, 60);
+      if (raw.length < 1) { res.json([]); return; }
+      const { data: setting } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();
+      const saleActive = setting?.value === true;
+      let query = supabase
+        .from("products")
+        .select("product_name, spec, current_stock, sale_status, category, real_map, display_location, supplier")
+        .eq("hidden", false)
+        .ilike("product_name", `%${raw}%`);
+      if (saleActive) query = query.eq("sale_status", "판매중");
+      const { data, error } = await query.limit(25);
+      if (error) { res.status(500).json({ error: error.message }); return; }
+      res.json(data ?? []);
+    } catch (e: any) {
+      res.status(500).json({ error: e?.message ?? "unknown" });
+    }
+  });
+
   // ── 2026-08-16 · #112-G · requireAuth 재활성화 · 아래 모든 /api/* 는 로그인 필수 ──
   //   · SPA 정적 자원 (/, /assets/*, /sw.js) · 미들웨어 내부 skip (path !startsWith("/api/"))
   //   · /products.json · /api 접두 없음 · 자동 통과
@@ -232,9 +256,10 @@ async function startServer() {
   // app.use(inventorySalesRouter);
 
   // /products.json — 항상 DB에서 동적으로 제공 (브라우저 캐시 없음, 서버 메모리 캐시만 사용)
+  // 2026-08-26 · 사용자 지시 · 전역 판매중 설정 반영 · getPublicProductMap
   app.get("/products.json", async (_req, res) => {
     try {
-      const map = await getProductMap();
+      const map = await getPublicProductMap();
       res.setHeader("Cache-Control", "no-cache");
       res.json(map);
     } catch (err: any) {

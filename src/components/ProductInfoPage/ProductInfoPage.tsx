@@ -25,6 +25,8 @@ import type { AuthSession } from "../../types";
 import { UpdateProductSchema, type UpdateProductInput } from "../../shared/schemas/products";
 // 2026-08-23 · #197 · 스캔 페이지에서 넘어온 pending code · 자동 등록 모달
 import { consumeScanPendingProductCode } from "../../hooks/useScanUnregisteredMode";
+// 2026-08-26 · 사용자 지시 · 상품테이블 판매중 필터 반영 (전역 설정 · useSaleActiveOnly)
+import { useSaleActiveOnly } from "../../hooks/useSaleActiveOnly";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 interface ProductRow {
@@ -38,6 +40,7 @@ interface ProductRow {
   real_map?: string | null;
   barcode?: string | null;
   spec?: string | null;
+  sale_status?: string | null; // 2026-08-26 · 사용자 지시 · 판매중 필터용
 }
 
 interface ProductDetail extends ProductRow {
@@ -366,6 +369,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
           real_map: p.real_map ?? null,
           barcode: p.barcode ?? null,
           spec: p.spec ?? null,
+          sale_status: (p as any).sale_status ?? null,
         }));
         arr.sort((a, b) => a.product_name.localeCompare(b.product_name, "ko"));
         setRows(arr);
@@ -380,15 +384,19 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
     return () => { alive = false; };
   }, [showError, reloadKey]);
 
+  // 2026-08-26 · 사용자 지시 · 상품테이블 · 판매중만 필터 반영 (전역 설정)
+  const { saleActiveOnly } = useSaleActiveOnly();
   const filtered = useMemo(() => {
+    let list = rows;
+    if (saleActiveOnly) list = list.filter(r => String(r.sale_status ?? "").trim() === "판매중");
     const s = search.trim();
-    if (!s) return rows;
-    return rows.filter(r =>
+    if (!s) return list;
+    return list.filter(r =>
       matchHangul(r.product_name, s) ||
       r.product_code.toLowerCase().includes(s.toLowerCase()) ||
       (r.supplier ?? "").toLowerCase().includes(s.toLowerCase()),
     );
-  }, [rows, search]);
+  }, [rows, search, saleActiveOnly]);
 
   // 상세 fetch (선택 시 · reloadKey 변경 시에도 refetch · 편집 저장 후 stale 방지)
   useEffect(() => {

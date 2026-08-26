@@ -10,7 +10,8 @@ const KEY = "stats.sale_active_only";
 export function useSaleActiveOnly() {
   const { value, setValue, loaded } = useKvSetting<boolean>({
     key: KEY,
-    defaultValue: false,
+    // 2026-08-26 · 사용자 지시 · 기본값 true · 모든 소비자 (RealStockTable · UnassignedProductsTab 등) 판매중만
+    defaultValue: true,
     sanitize: (raw) => typeof raw === "boolean" ? raw : null,
   });
   return { saleActiveOnly: value, setSaleActiveOnly: setValue, loaded };

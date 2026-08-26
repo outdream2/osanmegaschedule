@@ -3,7 +3,7 @@ import { Router } from "express";
 import express from "express";
 import XLSX from "xlsx";
 import { supabase } from "../../../src/supabase/client";
-import { getProductMap, resetProductCache } from "../../productCache";
+import { getProductMap, getPublicProductMap, resetProductCache } from "../../productCache";
 // 2026-08-23 · 사용자 지시 · 식약처 표준코드 조회 기능 제거 · lookupStandardCode import + 관련 라우터 삭제
 import { COL_KEYS, xlsxToRows } from "../../utils/xlsx";
 import { sanitizeOrValue } from "../../utils/sanitize";
@@ -18,22 +18,28 @@ import { refillOptimalStock } from "../../lib/optimalStock";
 const router = Router();
 
 // 공개 재고확인 API — 로그인 불필요
+// 2026-08-26 · 사용자 지시 · 전역 판매중 설정 반영 · sale_status="판매중" 만 반환
 router.get("/api/stock-check", asyncHandler(async (req, res) => {
   const raw = String(req.query.q ?? "").trim().slice(0, 60);
   if (raw.length < 1) return res.json([]);
-  const { data, error } = await supabase
+  const { data: setting } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();
+  const saleActive = setting?.value === true;
+  let query = supabase
     .from("products")
     .select("product_name, spec, current_stock, sale_status, category, real_map, display_location, supplier")
     .eq("hidden", false)
-    .ilike("product_name", `%${raw}%`)
-    .limit(25);
+    .ilike("product_name", `%${raw}%`);
+  if (saleActive) query = query.eq("sale_status", "판매중");
+  const { data, error } = await query.limit(25);
   if (error) throw new HttpError(500, error.message);
   res.json(data ?? []);
 }));
 
 router.get("/api/products-map", asyncHandler(async (_req, res) => {
-  const map = await getProductMap();
-  res.setHeader("Cache-Control", "public, max-age=300");
+  // 2026-08-26 · 사용자 지시 · 전역 판매중 설정 반영 · getPublicProductMap 사용
+  const map = await getPublicProductMap();
+  // 판매중 설정 상황 반영 · 즉시 갱신 필요 · cache-control no-cache
+  res.setHeader("Cache-Control", "no-cache");
   res.json(map);
 }));
 

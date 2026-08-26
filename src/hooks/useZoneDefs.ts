@@ -10,6 +10,17 @@ import { useKvSetting } from "./useKvSetting";
 export type { ZoneDef, ZoneSection };
 export { SECTION_LABEL };
 
+// 2026-08-26 · 사용자 지시 · 기본 서브 존재 zone 매핑 (num → hasA/B/C)
+//   · 이전 저장에서 undefined 로 지워진 subA/subB/subC 복원용
+//   · DEFAULT ZONE_DEFS 로 부터 자동 계산
+const DEFAULT_SUB_PRESENCE: Map<number, { hasA: boolean; hasB: boolean; hasC: boolean }> = (() => {
+  const m = new Map<number, { hasA: boolean; hasB: boolean; hasC: boolean }>();
+  for (const z of ZONE_DEFS) {
+    m.set(z.num, { hasA: !!z.subA, hasB: !!z.subB, hasC: !!z.subC });
+  }
+  return m;
+})();
+
 function sanitize(raw: unknown): ZoneDef[] | null {
   if (!Array.isArray(raw)) return null;
   const validSections: ZoneSection[] = ["top_wall", "aisle", "left_wall", "bottom_wall", "wing", "event"];
@@ -25,14 +36,29 @@ function sanitize(raw: unknown): ZoneDef[] | null {
         validSections.includes(zone.section as ZoneSection)
       );
     })
-    // 2026-08-26 · description + 서브존별 descriptionA/B/C 필드 통과 · optional string
-    .map((z) => ({
-      ...z,
-      description:  typeof (z as any).description  === "string" ? (z as any).description  : undefined,
-      descriptionA: typeof (z as any).descriptionA === "string" ? (z as any).descriptionA : undefined,
-      descriptionB: typeof (z as any).descriptionB === "string" ? (z as any).descriptionB : undefined,
-      descriptionC: typeof (z as any).descriptionC === "string" ? (z as any).descriptionC : undefined,
-    }))
+    // 2026-08-26 · description + 서브존별 descriptionA/B/C · optional string
+    // 2026-08-26 · 서브존 구조 · DEFAULT 기준 엄격 준수
+    //   · DEFAULT 에 서브 있는 zone (aisle 1-8) · 저장값 없으면 "" 로 복원 · 있으면 유지
+    //   · DEFAULT 에 서브 없는 zone (num=40 계산대 등) · 저장값 있어도 strip · 단일 구역 유지
+    //   · DEFAULT 에 없는 unknown num · 저장값 그대로 통과
+    .map((z) => {
+      const anyZ = z as any;
+      const defaults = DEFAULT_SUB_PRESENCE.get(z.num);
+      const useDefault = defaults !== undefined;
+      const hasSubA = useDefault ? defaults!.hasA : typeof anyZ.subA === "string";
+      const hasSubB = useDefault ? defaults!.hasB : typeof anyZ.subB === "string";
+      const hasSubC = useDefault ? defaults!.hasC : typeof anyZ.subC === "string";
+      return {
+        ...z,
+        subA: hasSubA ? (typeof anyZ.subA === "string" ? anyZ.subA : "") : undefined,
+        subB: hasSubB ? (typeof anyZ.subB === "string" ? anyZ.subB : "") : undefined,
+        subC: hasSubC ? (typeof anyZ.subC === "string" ? anyZ.subC : "") : undefined,
+        description:  typeof anyZ.description  === "string" ? anyZ.description  : undefined,
+        descriptionA: hasSubA ? (typeof anyZ.descriptionA === "string" ? anyZ.descriptionA : undefined) : undefined,
+        descriptionB: hasSubB ? (typeof anyZ.descriptionB === "string" ? anyZ.descriptionB : undefined) : undefined,
+        descriptionC: hasSubC ? (typeof anyZ.descriptionC === "string" ? anyZ.descriptionC : undefined) : undefined,
+      } as ZoneDef;
+    })
     .sort((a, b) => a.num - b.num);
   return cleaned.length > 0 ? cleaned : null;
 }

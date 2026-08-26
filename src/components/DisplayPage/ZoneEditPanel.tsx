@@ -39,22 +39,32 @@ interface FlatRow {
   descValue?: string;
 }
 
+// 2026-08-26 · 사용자 지시 · 구역 구조는 절대 사라지지 않음
+//   · DEFAULT_ZONES 기준으로 서브 존재 여부 결정 · 편집값 (subA/B/C) 은 텍스트만 담당
+//   · 서브 카테고리 비워도 · 지워도 · 행은 항상 표시
+const DEFAULT_SUB_STRUCTURE: Map<number, { hasA: boolean; hasB: boolean; hasC: boolean }> = (() => {
+  const m = new Map<number, { hasA: boolean; hasB: boolean; hasC: boolean }>();
+  for (const z of DEFAULT_ZONES) {
+    m.set(z.num, { hasA: !!z.subA, hasB: !!z.subB, hasC: !!z.subC });
+  }
+  return m;
+})();
+
 function expandZoneToRows(z: ZoneDef): FlatRow[] {
-  // 2026-08-26 · 사용자 지시 · 카테고리 비워도 행 유지 · undefined 만 "없음" · 빈 문자열은 "있으나 비어있음"
-  const hasA = z.subA !== undefined;
-  const hasB = z.subB !== undefined;
-  const hasC = z.subC !== undefined;
+  // 구조는 DEFAULT_ZONES 기준 · 편집값이 undefined/빈문자열이어도 행은 유지
+  const structure = DEFAULT_SUB_STRUCTURE.get(z.num) ?? { hasA: !!z.subA, hasB: !!z.subB, hasC: !!z.subC };
+  const { hasA, hasB, hasC } = structure;
   if (hasA && hasB && hasC) {
     return [
-      { zone: z, code: `${z.num}A`, sub: "A", catField: "subA", descField: "descriptionA", catValue: z.subA, descValue: z.descriptionA },
-      { zone: z, code: `${z.num}B`, sub: "B", catField: "subB", descField: "descriptionB", catValue: z.subB, descValue: z.descriptionB },
-      { zone: z, code: `${z.num}C`, sub: "C", catField: "subC", descField: "descriptionC", catValue: z.subC, descValue: z.descriptionC },
+      { zone: z, code: `${z.num}A`, sub: "A", catField: "subA", descField: "descriptionA", catValue: z.subA ?? "", descValue: z.descriptionA },
+      { zone: z, code: `${z.num}B`, sub: "B", catField: "subB", descField: "descriptionB", catValue: z.subB ?? "", descValue: z.descriptionB },
+      { zone: z, code: `${z.num}C`, sub: "C", catField: "subC", descField: "descriptionC", catValue: z.subC ?? "", descValue: z.descriptionC },
     ];
   }
   if (hasA && hasB) {
     return [
-      { zone: z, code: `${z.num}A`, sub: "A", catField: "subA", descField: "descriptionA", catValue: z.subA, descValue: z.descriptionA },
-      { zone: z, code: `${z.num}B`, sub: "B", catField: "subB", descField: "descriptionB", catValue: z.subB, descValue: z.descriptionB },
+      { zone: z, code: `${z.num}A`, sub: "A", catField: "subA", descField: "descriptionA", catValue: z.subA ?? "", descValue: z.descriptionA },
+      { zone: z, code: `${z.num}B`, sub: "B", catField: "subB", descField: "descriptionB", catValue: z.subB ?? "", descValue: z.descriptionB },
     ];
   }
   return [
@@ -69,33 +79,33 @@ const codeToneCls = (sub: SubKey): { badge: string; row: string } => {
   return { badge: "bg-brand-tint/60 text-brand-deep border-brand-deep/30",             row: "" };
 };
 
-type MajorZone = "central-otc" | "consult" | "beauty-food" | "other";
+type MajorZone = "central-otc" | "consult" | "beauty-food" | "counter";
 
 const MAJOR_ZONE_LABEL: Record<MajorZone, string> = {
   "central-otc": "중앙상비약존",
   "consult":     "상담존",
   "beauty-food": "뷰티식품존",
-  "other":       "기타 · 시설",
+  "counter":     "카운터테마존",
 };
 const MAJOR_ZONE_RANGE: Record<MajorZone, string> = {
   "central-otc": "1A – 8B",
   "consult":     "9 – 27",
   "beauty-food": "28 – 40",
-  "other":       "41 – 42",
+  "counter":     "41 – 46",
 };
-const MAJOR_ZONE_ORDER: MajorZone[] = ["central-otc", "consult", "beauty-food", "other"];
+const MAJOR_ZONE_ORDER: MajorZone[] = ["central-otc", "consult", "beauty-food", "counter"];
 const MAJOR_ZONE_TONE: Record<MajorZone, { bar: string; badge: string; tab: string; tabActive: string }> = {
   "central-otc": { bar: "bg-brand-deep",  badge: "bg-brand-tint text-brand-deep border-brand-deep/40", tab: "hover:text-brand-deep hover:bg-brand-tint/30", tabActive: "text-brand-deep bg-brand-tint/60 border-brand-deep" },
   "consult":     { bar: "bg-emerald-500", badge: "bg-emerald-100 text-emerald-700 border-emerald-300", tab: "hover:text-emerald-700 hover:bg-emerald-50", tabActive: "text-emerald-700 bg-emerald-100 border-emerald-500" },
   "beauty-food": { bar: "bg-rose-500",    badge: "bg-rose-100 text-rose-700 border-rose-300",           tab: "hover:text-rose-700 hover:bg-rose-50", tabActive: "text-rose-700 bg-rose-100 border-rose-500" },
-  "other":       { bar: "bg-zinc-400",    badge: "bg-zinc-100 text-zinc-600 border-zinc-300",           tab: "hover:text-zinc-700 hover:bg-zinc-50", tabActive: "text-zinc-700 bg-zinc-100 border-zinc-500" },
+  "counter":     { bar: "bg-amber-500",   badge: "bg-amber-100 text-amber-700 border-amber-300",       tab: "hover:text-amber-700 hover:bg-amber-50", tabActive: "text-amber-700 bg-amber-100 border-amber-500" },
 };
 
 function classifyZone(num: number): MajorZone {
   if (num >= 1 && num <= 8)   return "central-otc";
   if (num >= 9 && num <= 27)  return "consult";
-  if (num >= 28 && num <= 40) return "beauty-food";
-  return "other";
+  if (num >= 28 && num <= 40) return "beauty-food"; // 40 (계산대) 포함
+  return "counter"; // 카운터테마존 · 41 – 46 (총 6개 · 43=물약)
 }
 
 export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
@@ -165,8 +175,8 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
     }, 50);
   };
 
-  // 3 대분류 존 (num 기준) 그룹핑
-  const grouped: Record<MajorZone, ZoneDef[]> = { "central-otc": [], "consult": [], "beauty-food": [], "other": [] };
+  // 4 대분류 존 (num 기준) 그룹핑 · 중앙상비약 · 상담 · 뷰티식품 · 카운터
+  const grouped: Record<MajorZone, ZoneDef[]> = { "central-otc": [], "consult": [], "beauty-food": [], "counter": [] };
   for (const z of zones) grouped[classifyZone(z.num)].push(z);
   for (const k of MAJOR_ZONE_ORDER) grouped[k].sort((a, b) => a.num - b.num);
 

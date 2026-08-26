@@ -128,15 +128,15 @@ export const ZONE_DEFS: ZoneDef[] = [
   { num: 37, label: "기능성화장품", category: "기능성화장품·미용",   section: "wing" },
   { num: 38, label: "조제실",      category: "조제실 (약사 전용)",  section: "wing" },
   { num: 39, label: "화장실",      category: "(시설)",             section: "wing" },
-  {
-    num: 40, label: "계산대", category: "계산대 (POS) · 3구역",
-    subA: "카운터 1",
-    subB: "카운터 2",
-    subC: "카운터 3",
-    section: "wing",
-  },
+  // 2026-08-26 · 사용자 지시 · 계산대 40 · A/B/C 분할 없음 · 단일 구역
+  { num: 40, label: "계산대", category: "계산대 (POS)", section: "wing" },
   { num: 41, label: "정수기",      category: "(시설)",             section: "wing" },
   { num: 42, label: "이벤트존",    category: "이벤트·프로모션 상품", section: "event" },
+  // 2026-08-26 · 사용자 지시 · 카운터테마존 · 41-46 총 6개 · 43-46 신규 · 43=물약
+  { num: 43, label: "물약", category: "물약", section: "wing" },
+  { num: 44, label: "카운터테마 44", category: "", section: "wing" },
+  { num: 45, label: "카운터테마 45", category: "", section: "wing" },
+  { num: 46, label: "카운터테마 46", category: "", section: "wing" },
 ];
 
 /**

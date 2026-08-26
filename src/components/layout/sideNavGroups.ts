@@ -247,7 +247,9 @@ export function canAccessItem(
   perms?: import("../../types").PagePermissions | null,
   employmentStatus?: import("../../lib/employmentStatus").EmploymentStatus | null,
 ): boolean {
-  if (item.key === "landing") return true;
+  // 2026-08-26 · 사용자 지시 · "landing" 은 홈 페이지 (subTab 없음) 만 무세션 허용
+  //   · 서브탭 (예: vendor-stock 공급사 재고확인) 은 로그인 필수 · 사이드바에서 무세션 시 숨김
+  if (item.key === "landing" && !item.subTab) return true;
   if (!session) return false;
   const level = deriveUserLevel(session);
   const isPharmacist = level >= 3;
@@ -299,7 +301,11 @@ export function filterGroupsForSession(
   perms?: import("../../types").PagePermissions | null,
   employmentStatus?: import("../../lib/employmentStatus").EmploymentStatus | null,
 ): SideNavGroup[] {
+  const isVendor = session?.role === "vendor";
   return SIDE_NAV_GROUPS
+    // 2026-08-26 · 사용자 지시 · vendor 그룹은 거래처 로그인 (role=vendor) 시에만 노출
+    //   · 관리자·직원은 매장>공급사 페이지 접근 · 사이드바 중복 제거
+    .filter(g => g.id !== "vendor" || isVendor)
     .map(g => ({ ...g, items: g.items.filter(it => canAccessItem(it, session, perms, employmentStatus)) }))
     .filter(g => g.items.length > 0);
 }

@@ -493,10 +493,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {/* ── 비로그인: 인라인 재고검색 + 로그인 버튼 (보조) ── */}
           {!isLoggedIn && (
             <div className="w-full mb-7 flex flex-col gap-3">
-              {/* 브랜드 헤더 · 2026-08-13 · PC 공통헤더 (AppNavHeader) 와 · 글씨·색깔 완전 통일
-                    · OSAN = red-500 · MEGATOWN = gray-900 · font-bold · tracking-tight · 2줄 배치 */}
-              <div className="w-full flex flex-col items-center pt-2 pb-1">
-                <div className="flex flex-col gap-0.5 font-bold tracking-tight leading-none select-none items-center">
+              {/* 브랜드 헤더 · 2026-08-26 · 사용자 지시 · 원본 OSAN 붉은색 + 최신 트렌드 재해석
+                    · Linear/Vercel/Attio 톤 · 초고해상도 · 부드러운 antialiased 렌더
+                    · OSAN = red-500 (extrabold, 큰 사이즈) · MEGATOWN = slate-800 (semibold, 살짝 작게)
+                    · tracking-tight (뭉침) · leading-none · subpixel-antialiased · font-feature-settings 정렬 */}
+              {/* 2026-08-26 · 사용자 지시 · OSAN 붉은색 원본 (2026-07-03 이전) 그대로 · 대원칙 · 임의 변경 금지 */}
+              <div className="w-full text-center pt-2 pb-1">
+                <span className="font-black tracking-tight leading-none">
                   {(() => {
                     const en = lpBrand.brandNameEn || "OSAN MEGATOWN";
                     const accent = lpBrand.brandAccentWord || "MEGATOWN";
@@ -505,14 +508,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     const after  = idx >= 0 ? en.slice(idx + accent.length).trim() : "";
                     return (
                       <>
-                        {before && <span className="text-red-500 text-xl leading-none">{before}</span>}
-                        {idx >= 0 && <span className="text-gray-900 text-base leading-none">{accent}</span>}
-                        {after && <span className="text-red-500 text-xl leading-none">{after}</span>}
+                        {before && <span className="text-red-500 text-2xl">{before}</span>}
+                        {idx >= 0 && <span className="text-slate-800 text-lg"> {accent}</span>}
+                        {after && <span className="text-red-500 text-2xl"> {after}</span>}
                       </>
                     );
                   })()}
-                </div>
-                <div className="text-zinc-400 text-[13px] sm:text-sm mt-1 font-semibold tracking-wide whitespace-pre-line leading-tight">{lpBrand.shortName || "오산\n메가타운약국"}</div>
+                </span>
+                <div className="text-slate-400 text-[13px] sm:text-sm mt-1 font-semibold tracking-wide">{lpBrand.shortName || "오산 메가타운 약국"}</div>
               </div>
               {/* 2026-08-17 · 사용자 지시 · 공사중 배너 · 최신 트렌드 · 노랑 → 딥네이비 modern (Linear/Vercel 톤) */}
               {underConstruction ? (

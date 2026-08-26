@@ -15,6 +15,7 @@ import { Spinner } from "../common/Spinner";
 import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/TableList";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 import { useToast, toastClass } from "../../hooks/useToast";
+import { useSaleActiveOnly } from "../../hooks/useSaleActiveOnly";
 
 interface Product {
   product_code: string;
@@ -86,8 +87,8 @@ export const RealStockTablePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  // 2026-08-26 · 사용자 지시 · "판매중 상품만" 로컬 체크박스
-  const [saleOnly, setSaleOnly] = useState(false);
+  // 2026-08-26 · 사용자 지시 · 전역 useSaleActiveOnly 훅 · 모든 소비자와 동기화 (기본값 true)
+  const { saleActiveOnly: saleOnly, setSaleActiveOnly: setSaleOnly } = useSaleActiveOnly();
   const { toast, showError, showSuccess } = useToast();
 
   const load = useCallback(async () => {
@@ -159,6 +160,7 @@ export const RealStockTablePage: React.FC = () => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let list = rows;
+    // 2026-08-26 · 사용자 지시 · 오직 sale_status = "판매중" · null/빈칸 제외
     if (saleOnly) list = list.filter(r => String(r.sale_status ?? "").trim() === "판매중");
     if (!q) return list;
     return list.filter(r =>

@@ -22,7 +22,7 @@ import {
 } from "../../constants/storeMapLayout";
 // 2026-08-17 · 프레임워크 · useZoneDefs 훅 사용 · 설정 편집 시 자동 반영
 import { useZoneDefs } from "../../hooks/useZoneDefs";
-import { getZoneLabel, getZoneSubLabel } from "../../constants/zoneLabels";
+import { getZoneSubLabel } from "../../constants/zoneLabels";
 import { StatusPill } from "./StatusPill";
 import { MapPin, User, GripVertical } from "lucide-react";
 // 2026-08-23 · #181 Phase 2 · 드래그 재정렬 long-press 타이밍 상수
@@ -242,7 +242,8 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
             <span className="absolute top-0.5 right-0.5 text-zinc-400" aria-hidden><GripVertical size={10} /></span>
           )}
           <div className="flex items-center justify-center">
-            <span className="text-[11px] font-bold text-white bg-amber-700 rounded px-1.5 py-0.5 leading-none">{getZoneLabel(num)}</span>
+            {/* 2026-08-26 · 사용자 지시 · 원본 num 직접 표시 · getZoneLabel 매핑 우회 (서버 1-16 순차 라벨 무시) */}
+            <span className="text-[11px] font-bold text-white bg-amber-700 rounded px-1.5 py-0.5 leading-none">{num}</span>
           </div>
           {/* 2026-08-26 · 사용자 지시 · line-clamp 제거 · 글씨 크기에 맞춰 셀 자동 성장 · break-keep 로 단어 안 짤림 */}
           <span className="text-[13px] font-bold text-stone-800 leading-snug text-center break-keep whitespace-normal">{cat}</span>
@@ -292,7 +293,8 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
             title={`${zoneId} · ${sub}${enableDrag ? " · 길게 눌러 드래그" : ""}`}
           >
             <div className="flex items-center justify-center">
-              <span className={`text-[11px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{getZoneLabel(zoneId)}</span>
+              {/* 2026-08-26 · 사용자 지시 · zoneId ("1A"/"1B") 그대로 표시 · getZoneLabel 매핑 우회 */}
+              <span className={`text-[11px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{zoneId}</span>
             </div>
             {/* 2026-08-26 · line-clamp 제거 · break-keep · 자동 확장 */}
             <span className="text-[13px] leading-snug break-keep whitespace-normal">{sub}</span>
@@ -335,7 +337,8 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
           <span className="break-keep whitespace-normal">{centerLabel}</span>
         </Tag>
         <div className="w-full flex items-center justify-center gap-0.5 flex-wrap mt-0.5">
-          <span className="text-[10px] font-bold text-white bg-zinc-600 rounded px-1 leading-none py-0.5">{getZoneLabel(STORE_AISLE_CENTER)}</span>
+          {/* 2026-08-26 · 사용자 지시 · 원본 num 직접 표시 */}
+          <span className="text-[10px] font-bold text-white bg-zinc-600 rounded px-1 leading-none py-0.5">{STORE_AISLE_CENTER}</span>
           {count > 0 && (
             <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 rounded px-1 leading-none tabular-nums">{count}</span>
           )}
@@ -369,7 +372,8 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
           {allZoneIds.map(zoneId => {
             const numPart = parseInt(zoneId, 10);
             const zd = ZONE_DEFS.find(z => z.num === numPart);
-            const label = getZoneLabel(zoneId);
+            // 2026-08-26 · 사용자 지시 · zoneId 그대로 · getZoneLabel 매핑 우회
+            const label = zoneId;
             const sub   = getZoneSubLabel(zoneId) || (zd?.category ?? "");
             const staff = zoneMobileStaffMap?.[zoneId] ?? "";
             const pending = zonePendingMap?.[zoneId] ?? 0;

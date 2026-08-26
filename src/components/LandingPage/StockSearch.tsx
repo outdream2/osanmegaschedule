@@ -87,7 +87,7 @@ export function StockSearch() {
             value={query}
             onChange={e => handleSearch(e.target.value)}
             placeholder="예: 타이레놀, 판콜에이…"
-            className="w-full rounded-xl pl-10 pr-9 py-2.5 text-zinc-900 text-base font-semibold placeholder:text-zinc-300 placeholder:font-normal focus:outline-none border-2 border-line bg-zinc-50 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition-all"
+            className="w-full rounded-xl pl-10 pr-9 py-2.5 text-zinc-900 text-sm font-semibold placeholder:text-zinc-300 placeholder:font-normal focus:outline-none border-2 border-line bg-zinc-50 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition-all"
           />
           {query && (
             <button type="button"
