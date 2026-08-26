@@ -37,12 +37,14 @@ describe("ZONE_DEFS", () => {
     }
   });
 
-  it("40번 계산대 · 3-way split (subA/B/C)", () => {
+  // 2026-08-26 · 사용자 지시 · 계산대 40 · A/B/C 분할 제거 · 단일 구역
+  it("40번 계산대 · 단일 구역 (subA/B/C 없음)", () => {
     const zone40 = ZONE_DEFS.find(z => z.num === 40);
     expect(zone40).toBeDefined();
-    expect(zone40!.subA).toBe("카운터 1");
-    expect(zone40!.subB).toBe("카운터 2");
-    expect(zone40!.subC).toBe("카운터 3");
+    expect(zone40!.subA).toBeUndefined();
+    expect(zone40!.subB).toBeUndefined();
+    expect(zone40!.subC).toBeUndefined();
+    expect(zone40!.label).toBe("계산대");
   });
 
   it("section · aisle/bottom_wall/top_wall/wing/event 만", () => {

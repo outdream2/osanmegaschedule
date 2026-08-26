@@ -134,9 +134,9 @@ export const ZONE_DEFS: ZoneDef[] = [
   { num: 42, label: "이벤트존",    category: "이벤트·프로모션 상품", section: "event" },
   // 2026-08-26 · 사용자 지시 · 카운터테마존 · 41-46 총 6개 · 43-46 신규 · 43=물약
   { num: 43, label: "물약", category: "물약", section: "wing" },
-  { num: 44, label: "카운터테마 44", category: "", section: "wing" },
-  { num: 45, label: "카운터테마 45", category: "", section: "wing" },
-  { num: 46, label: "카운터테마 46", category: "", section: "wing" },
+  { num: 44, label: "카운터테마 44", category: "카운터테마", section: "wing" },
+  { num: 45, label: "카운터테마 45", category: "카운터테마", section: "wing" },
+  { num: 46, label: "카운터테마 46", category: "카운터테마", section: "wing" },
 ];
 
 /**

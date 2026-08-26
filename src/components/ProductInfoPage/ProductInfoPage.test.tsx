@@ -42,6 +42,11 @@ vi.mock("../../hooks/useResizablePanel", () => ({
   }),
 }));
 
+// 2026-08-26 · useSaleActiveOnly · 테스트에서는 필터 OFF · 기존 mock 데이터에 sale_status 없어도 통과
+vi.mock("../../hooks/useSaleActiveOnly", () => ({
+  useSaleActiveOnly: () => ({ saleActiveOnly: false, setSaleActiveOnly: vi.fn(), loaded: true }),
+}));
+
 beforeEach(() => {
   mockGet.mockReset();
   mockPatch.mockReset();

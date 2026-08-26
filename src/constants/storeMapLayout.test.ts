@@ -50,9 +50,10 @@ describe("STORE_BOTTOM_WALL · 하단 벽면 (12셀)", () => {
   });
 });
 
-describe("STORE_VERTICAL_WING · 수직윙 (8셀)", () => {
-  it("8개 · 35→42", () => {
-    expect(STORE_VERTICAL_WING).toEqual([35, 36, 37, 38, 39, 40, 41, 42]);
+describe("STORE_VERTICAL_WING · 수직윙 (12셀)", () => {
+  // 2026-08-26 · 사용자 지시 · 카운터테마존 확장 · 43-46 추가 · 총 12셀
+  it("12개 · 35→46", () => {
+    expect(STORE_VERTICAL_WING).toEqual([35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46]);
   });
 });
 
@@ -106,13 +107,14 @@ describe("CAT_A_COLORS · CAT_B_COLORS 색상 동일 계열", () => {
 });
 
 describe("총 셀 수 검증", () => {
-  it("상단 13 + 중앙 22 (1) + 진열대 pair 8 * 2 (16) + 하단 12 + 수직윙 8 = 50", () => {
+  // 2026-08-26 · 카운터테마존 확장 · 수직윙 8 → 12 (43-46 추가) · 총 50 → 54
+  it("상단 13 + 중앙 22 (1) + 진열대 pair 8 * 2 (16) + 하단 12 + 수직윙 12 = 54", () => {
     const total =
       STORE_TOP_WALL.length +
       1 + // STORE_AISLE_CENTER 22
       STORE_AISLE_PAIRS.length * 2 + // A + B
       STORE_BOTTOM_WALL.length +
       STORE_VERTICAL_WING.length;
-    expect(total).toBe(50);
+    expect(total).toBe(54);
   });
 });

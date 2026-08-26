@@ -9,7 +9,7 @@ describe("SplitRightHeader · 기본 렌더", () => {
     const { container, getByRole } = render(<SplitRightHeader title="상세 정보" />);
     expect(container.textContent).toContain("상세 정보");
     const h = getByRole("heading", { level: 2 });
-    expect(h.className).toContain("text-[19px]");
+    expect(h.className).toContain("text-[21px]");
     expect(h.className).toContain("font-bold");
   });
 

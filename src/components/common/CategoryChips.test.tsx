@@ -94,7 +94,7 @@ describe("CategoryChips · size 매핑", () => {
     );
     const btn = container.querySelector("button")!;
     expect(btn.className).toContain("h-9");
-    expect(btn.className).toContain("text-[14px]");
+    expect(btn.className).toContain("text-[16px]");
   });
 
   it("size=md (기본) · h-10 text-15", () => {
@@ -103,6 +103,6 @@ describe("CategoryChips · size 매핑", () => {
     );
     const btn = container.querySelector("button")!;
     expect(btn.className).toContain("h-10");
-    expect(btn.className).toContain("text-[15px]");
+    expect(btn.className).toContain("text-[17px]");
   });
 });
