@@ -321,26 +321,34 @@ router.post("/api/upload-products", express.raw({ type: "application/octet-strea
     }
     console.log(`[upload] upserted chunks ${i + 1}~${Math.min(i + PARALLEL, chunks.length)} / ${chunks.length} · ${Date.now() - tChunk}ms`);
   }
-  console.log(`[upload] upsert done · 총 ${Date.now() - t0}ms · rows=${dedupedRows.length}`);
+  const upsertMs = Date.now() - t0;
+  console.log(`[upload] upsert done · 총 ${upsertMs}ms · rows=${dedupedRows.length}`);
+  // 2026-08-26 · 성능 조사 · post-upload 단계별 시간 측정
   // 임포트 완료 후 optimal_stock_backup → optimal_stock 복원 (ERP wipe 방어)
   let restoredCount = 0;
+  const tRestore = Date.now();
   try {
     const { data: restoreData, error: restoreErr } = await supabase.rpc("restore_optimal_stock_from_backup");
     if (restoreErr) {
       console.warn("[upload] restore_optimal_stock RPC failed:", restoreErr.message);
     } else {
       restoredCount = Number(restoreData ?? 0) || 0;
-      console.log(`[upload] restored optimal_stock for ${restoredCount} products from backup`);
+      console.log(`[upload] restore RPC · ${restoredCount}건 · ${Date.now() - tRestore}ms`);
     }
   } catch (e: any) {
     console.warn("[upload] restore_optimal_stock exception:", e.message);
   }
+  const tCache = Date.now();
   resetProductCache();
+  const tLog = Date.now();
+  console.log(`[upload] resetProductCache · ${tLog - tCache}ms`);
   const { data: logData } = await supabase.from("app_settings").select("value").eq("key", "product_import_log").maybeSingle();
   const prevLogs: unknown[] = Array.isArray(logData?.value) ? logData.value : [];
   const newEntry = { timestamp: new Date().toISOString(), count: rows.length, restored: restoredCount };
   const logs = [newEntry, ...prevLogs].slice(0, 20);
   await supabase.from("app_settings").upsert({ key: "product_import_log", value: logs, updated_at: new Date().toISOString() }, { onConflict: "key" });
+  console.log(`[upload] app_settings log · ${Date.now() - tLog}ms`);
+  console.log(`[upload] ==== 전체 소요 ${Date.now() - t0}ms (upsert ${upsertMs}ms + post ${Date.now() - t0 - upsertMs}ms) ====`);
   res.json({ ok: true, count: rows.length, restored: restoredCount, timestamp: newEntry.timestamp });
 }));
 
