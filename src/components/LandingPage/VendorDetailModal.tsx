@@ -2,32 +2,34 @@
 // VendorDetailModal · 공급사 상세 편집 모달 (탭: 정보/결제/매입이력)
 //   · 자동 저장 · 매입이력 · 결제 등록 · 삭제 · 총재고 계산
 //   · 관련 helpers: METHOD_OPTIONS · Field · SectionTitle · StatCard
+// 2026-08-26 · large-file 분리 · VendorDetailApprovalBanner/PaymentPanel/PurchasePanel 이관
 
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast, toastClass } from "../../hooks/useToast";
 import {
-  Check, X, Building2, Package, RefreshCw, ChevronRight,
-  Wallet, Plus, Trash2, CircleDollarSign, TrendingUp,
+  Check, X, Building2, ChevronRight,
 } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
-import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
-import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import type { Vendor, EditDraft } from "./VendorListEditor.types";
 import {
-  vatDraftVal, emptyDraft, fmtWon, inputCls, METHOD_LABEL,
+  vatDraftVal, emptyDraft, fmtWon, inputCls,
   normalizeBizNum, formatBizNum,
 } from "./VendorListEditor.utils";
 import { PaymentRegisterModal } from "./PaymentRegisterModal";
 // 2026-08-22 · helpers 별도 파일 이관
-import { METHOD_OPTIONS, Field, SectionTitle, StatCard } from "./VendorDetailModal.helpers";
+import { Field, SectionTitle } from "./VendorDetailModal.helpers";
 // 2026-08-25 · Framework Phase 4 · large-file 분리 · inline 타입 7개 이관
 import type {
   PurchaseRow, VendorSummary, SupplierBalanceInfo,
-  PaymentAllocation, PaymentRow, LedgerRow, DetailTab,
+  PaymentRow, LedgerRow, DetailTab, ApprovalStatus,
 } from "./VendorDetailModal.types";
+// 2026-08-26 · large-file 분리 · 서브패널 이관
+import { VendorDetailApprovalBanner } from "./VendorDetailApprovalBanner";
+import { VendorDetailPaymentPanel } from "./VendorDetailPaymentPanel";
+import { VendorDetailPurchasePanel } from "./VendorDetailPurchasePanel";
 
 export const VendorDetailModal: React.FC<{
   vendor: Vendor;
@@ -43,7 +45,7 @@ export const VendorDetailModal: React.FC<{
   const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   // 2026-08-26 · #192 · 승인 요청 상태
   const [approvalRequesting, setApprovalRequesting] = useState(false);
-  const [approvalStatus, setApprovalStatus] = useState<"pending" | "approved" | "rejected" | undefined>(
+  const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus | undefined>(
     (vendor as any)?.approval_status,
   );
   // 2026-08-10 · 사용자 요청 · 자동 저장 · draft 변경 800ms 후 자동 PATCH · '저장됨' toast (2s)
@@ -366,51 +368,12 @@ export const VendorDetailModal: React.FC<{
         <div className="flex-1 overflow-y-auto p-4 sm:p-5">
 
           {/* 2026-08-25 · #192 · 거래처 panel 모드 · 필수항목 안내 + 승인 상태 배너 */}
-          {panel && (() => {
-            const approved = approvalStatus === "approved";
-            const pending  = approvalStatus === "pending";
-            const rejected = approvalStatus === "rejected";
-            return (
-              <div className={`mb-4 rounded-xl border-2 px-4 py-3 flex items-start gap-3 ${
-                approved  ? "border-emerald-300 bg-gradient-to-br from-emerald-50/60 to-white"
-                : pending  ? "border-amber-300   bg-gradient-to-br from-amber-50/60 to-white"
-                : rejected ? "border-rose-300    bg-gradient-to-br from-rose-50/60 to-white"
-                :            "border-brand-deep/20 bg-gradient-to-br from-brand-tint/40 to-sky-50/40"
-              }`}>
-                <span className={`w-8 h-8 rounded-lg text-white flex items-center justify-center shrink-0 font-bold text-[16px] ${
-                  approved ? "bg-emerald-600" : pending ? "bg-amber-600" : rejected ? "bg-rose-600" : "bg-brand-deep"
-                }`}>
-                  {approved ? "✓" : pending ? "⏳" : rejected ? "✗" : "i"}
-                </span>
-                <div className="flex-1 min-w-0">
-                  {approved ? (
-                    <>
-                      <div className="text-[15px] font-bold text-emerald-700 leading-tight">승인 완료 · 공급사 재고확인 사용 가능</div>
-                      <div className="text-[13px] text-ink-soft mt-1">랜딩 페이지 · [공급사 재고확인] 메뉴 활성화됨</div>
-                    </>
-                  ) : pending ? (
-                    <>
-                      <div className="text-[15px] font-bold text-amber-700 leading-tight">관리자 승인 대기 중</div>
-                      <div className="text-[13px] text-ink-soft mt-1">관리자 승인 완료 시 · [공급사 재고확인] 메뉴가 활성화됩니다</div>
-                    </>
-                  ) : rejected ? (
-                    <>
-                      <div className="text-[15px] font-bold text-rose-700 leading-tight">승인 거절됨 · 관리자에게 문의 후 재요청 가능</div>
-                      <div className="text-[13px] text-ink-soft mt-1">필수 항목을 다시 확인하고 [승인 요청]을 눌러주세요</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-[15px] font-bold text-brand-deep leading-tight">필수 항목을 채우고 <span className="underline decoration-2 underline-offset-2">[승인 요청]</span> 을 눌러주세요</div>
-                      <div className="text-[13px] text-ink-soft mt-1 leading-relaxed">
-                        <span className="font-semibold text-ink-soft">필수 8개:</span> 이메일 · 주문방식 · 팀장 · 팀장연락처 · 긴급연락처 · 사업자번호 · 특이사항 · 비고
-                      </div>
-                      <div className="text-[12px] text-zinc-500 mt-1">관리자 승인 완료 시 · [공급사 재고확인] 메뉴가 활성화됩니다</div>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
+          {panel && (
+            <VendorDetailApprovalBanner
+              approvalStatus={approvalStatus}
+              missingCount={missingRequired.length}
+            />
+          )}
 
           {/* ─── 정보 (탭 제거 · 한 장) ─── */}
           {(() => { void activeTab; return null; })()}
@@ -660,147 +623,24 @@ export const VendorDetailModal: React.FC<{
 
           {/* ─── 결제·잔고 탭 ─── */}
           {activeTab === "payment" && (
-          <div className="space-y-4">
-            {/* KPI 3카드 */}
-            <div className="grid grid-cols-3 gap-2.5">
-              <StatCard
-                icon={<TrendingUp size={12} />} color="indigo" label="총 매입"
-                value={balanceInfo ? fmtWon(balanceInfo.total_purchase) : "-"}
-                sub={balanceInfo ? `${balanceInfo.purchase_count.toLocaleString()}건` : undefined}
-              />
-              <StatCard
-                icon={<Wallet size={12} />} color="emerald" label="총 결제"
-                value={balanceInfo ? fmtWon(balanceInfo.total_payment) : "-"}
-                sub={balanceInfo ? `${balanceInfo.payment_count.toLocaleString()}건` : undefined}
-              />
-              <StatCard
-                icon={<CircleDollarSign size={12} />} color="rose" label="현재 잔액"
-                value={balanceInfo ? fmtWon(balanceInfo.balance) : "-"}
-                sub={balanceInfo && balanceInfo.balance > 0 ? "미결제" : balanceInfo && balanceInfo.balance < 0 ? "선지급" : undefined}
-              />
-            </div>
-
-            {/* 결제 등록 버튼 + 상태 메시지 */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={() => setShowPayModal(true)}
-                className="inline-flex items-center gap-1.5 h-8 px-4 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-bold shadow-sm transition cursor-pointer"
-              >
-                <Plus size={13} strokeWidth={2.5} />
-                결제 등록
-              </button>
-              <button
-                onClick={loadPaymentData}
-                disabled={paymentLoading}
-                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-line bg-white hover:bg-zinc-50 text-zinc-600 text-[14px] font-semibold transition cursor-pointer disabled:opacity-50"
-                title="새로고침"
-              >
-                <RefreshCw size={12} className={paymentLoading ? "animate-spin" : ""} />
-                새로고침
-              </button>
-              {payMsg && (
-                <span className={`inline-flex items-center gap-1 text-[14px] font-bold ${payMsg.type === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
-                  {payMsg.type === "ok" ? <Check size={13} strokeWidth={3} /> : <X size={13} strokeWidth={3} />}
-                  {payMsg.text}
-                </span>
-              )}
-              <span className="ml-auto text-[13px] text-zinc-400 font-mono tabular-nums">
-                {ledgerRows.length} 원장 항목
-              </span>
-            </div>
-
-            {/* 원장 테이블 · 시간순 desc */}
-            <div className="rounded-lg border border-line overflow-auto max-h-[420px] bg-white">
-              {paymentLoading ? (
-                <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩중..." labelSize={12} /></div>
-              ) : ledgerRows.length === 0 ? (
-                <div className="py-8 text-center text-zinc-400 text-[14px]">거래 내역 없음</div>
-              ) : (
-                <table className="w-full text-[14px]">
-                  <thead className="sticky top-0 z-10 bg-zinc-50 border-b border-line">
-                    <tr className="text-[13px] font-bold uppercase tracking-wider text-zinc-500">
-                      <th className="text-left px-3 py-2 w-20">날짜</th>
-                      <th className="text-left px-3 py-2 w-16">유형</th>
-                      <th className="text-right px-3 py-2 w-24">금액</th>
-                      <th className="text-left px-3 py-2 w-16">방법</th>
-                      <th className="text-left px-3 py-2">메모 / 상품</th>
-                      <th className="text-right px-3 py-2 w-24">잔액</th>
-                      <th className="text-center px-2 py-2 w-10"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-50">
-                    {ledgerRows.slice().reverse().map((r) => {
-                      const isPay = r.type === "payment";
-                      const paymentRow = isPay ? payments.find(p => p.id === r.id) : null;
-                      return (
-                        <tr key={`${r.type}-${r.id}`} className="hover:bg-zinc-50/60 transition">
-                          <td className="px-3 py-1.5 font-mono text-[13px] text-zinc-500 whitespace-nowrap tabular-nums">
-                            {String(r.date).slice(2)}
-                          </td>
-                          <td className="px-3 py-1.5">
-                            <StatusPill tone={isPay ? "emerald" : "indigo"} size="xs">{isPay ? "결제" : "매입"}</StatusPill>
-                          </td>
-                          <td className={`text-right px-3 py-1.5 font-mono font-bold whitespace-nowrap tabular-nums ${
-                            isPay ? "text-emerald-700" : "text-indigo-700"
-                          }`}>
-                            {isPay ? "-" : "+"}{Number(r.amount).toLocaleString()}
-                          </td>
-                          <td className="px-3 py-1.5 text-[13px] text-zinc-600">
-                            {r.method ? (METHOD_LABEL[r.method] ?? r.method) : "-"}
-                          </td>
-                          <td className="px-3 py-1.5 text-zinc-700 break-words leading-snug text-[13px]">
-                            {r.memo ?? "-"}
-                            {paymentRow?.allocations && paymentRow.allocations.length > 0 && (
-                              <span className="ml-1 text-[12px] font-bold text-emerald-600">· {paymentRow.allocations.length}건 매칭</span>
-                            )}
-                          </td>
-                          <td className={`text-right px-3 py-1.5 font-mono font-bold whitespace-nowrap tabular-nums ${
-                            r.running_balance > 0 ? "text-rose-700" : r.running_balance < 0 ? "text-emerald-700" : "text-zinc-500"
-                          }`}>
-                            {Number(r.running_balance).toLocaleString()}
-                          </td>
-                          <td className="px-2 py-1.5 text-center">
-                            {isPay && (
-                              <button
-                                onClick={() => handleDeletePayment(r.id)}
-                                className="w-6 h-6 rounded hover:bg-rose-50 text-rose-500 hover:text-rose-700 inline-flex items-center justify-center transition"
-                                title="결제 삭제"
-                              >
-                                <Trash2 size={12} />
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
+            <VendorDetailPaymentPanel
+              balanceInfo={balanceInfo}
+              payments={payments}
+              paymentLoading={paymentLoading}
+              ledgerRows={ledgerRows}
+              payMsg={payMsg}
+              onRegister={() => setShowPayModal(true)}
+              onRefresh={loadPaymentData}
+              onDeletePayment={handleDeletePayment}
+            />
           )}
 
           {/* ─── 매입이력 탭 · 2026-08-04 공통 PurchaseHistoryList 사용 ─── */}
           {activeTab === "purchase" && (
-          <div className="space-y-3">
-            <SectionTitle
-              icon={<Package size={13} />}
-              title="최근 매입 이력"
-              color="amber"
-              hint={purchLoading ? "로딩..." : `${purchases.length}건`}
+            <VendorDetailPurchasePanel
+              purchases={purchases}
+              purchLoading={purchLoading}
             />
-            <div className="rounded-lg border border-line overflow-hidden bg-white flex flex-col" style={{ maxHeight: 520 }}>
-              <PurchaseHistoryList
-                rows={purchases as unknown as PurchaseHistoryRow[]}
-                loading={purchLoading}
-                showSupplier={false}
-                showProduct
-                showRowNumber
-                showFooterSum
-                emptyText="매입 이력 없음"
-              />
-            </div>
-          </div>
           )}
 
         </div>

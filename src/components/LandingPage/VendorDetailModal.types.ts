@@ -61,3 +61,5 @@ export interface LedgerRow {
 }
 
 export type DetailTab = "info" | "payment" | "purchase";
+
+export type ApprovalStatus = "pending" | "approved" | "rejected";
