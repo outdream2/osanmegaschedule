@@ -348,7 +348,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
     stock_value:  { default: 100, min: 60, max: 180 },
     purchase_cycle:{ default: 120, min: 80, max: 220 },
     sales_qty:    { default: 140, min: 90, max: 240 },
-    action:       { default: 64,  min: 52, max: 100 },
+    action:       { default: 130, min: 110, max: 180 },
   });
 
   // ── 렌더 ────────────────────────────────────────────────────────────────

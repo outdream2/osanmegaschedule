@@ -182,8 +182,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [lowStockSearch, setLowStockSearch] = useState("");
   // 2026-08-25 · 사용자 지시 · 발주필요 · 검색 시 조건 적용 on/off (기본 ON = 재고 부족만)
   const [needConditionApply, setNeedConditionApply] = useState<boolean>(true);
-  // 2026-08-25 · 사용자 지시 · 반품 서브탭 · 이너 탭 (반품필요/반품확정)
-  const [returnInnerTab, setReturnInnerTab] = useState<"need" | "confirmed">("need");
+  // 2026-08-25 · 사용자 지시 · 반품 서브탭 · 이너 탭 (반품확정/반품필요)
+  // 2026-08-26 · 사용자 지시 · 순서 바꾸고 반품확정 기본
+  const [returnInnerTab, setReturnInnerTab] = useState<"need" | "confirmed">("confirmed");
   const [lowStockCollapsed, setLowStockCollapsed] = useState(false);
 
   const vendorMap = useMemo(() => {
@@ -673,7 +674,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {purchaseSubTab === "return" && (
             <div className="flex-1 min-h-0 flex flex-col">
               <div className="flex items-center gap-1 border-b border-line px-2">
-                {(["need", "confirmed"] as const).map(k => {
+                {(["confirmed", "need"] as const).map(k => {
                   const active = returnInnerTab === k;
                   const label = k === "need" ? "반품필요" : "반품확정";
                   return (
