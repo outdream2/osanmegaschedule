@@ -12,6 +12,8 @@ import { EmptyState } from "../common/EmptyState";
 import { Spinner } from "../common/Spinner";
 import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/TableList";
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-08-26 · #133 · 판매중 필터 전역 설정 반영
+import { useSaleActiveOnly } from "../../hooks/useSaleActiveOnly";
 
 interface UnassignedProduct {
   product_code: string;
@@ -20,6 +22,7 @@ interface UnassignedProduct {
   spec: string | null;
   real_map: string | null;
   current_stock: number | null;
+  sale_status: string | null; // 2026-08-26 · 판매중 필터용
   /** 2026-08-26 · 사용자 지시 · 미배정 사유 · "spec" (전산구역 없음) · "real_map" (실제위치 없음) · "both" */
   missing?: "spec" | "real_map" | "both";
 }
@@ -33,6 +36,8 @@ export const UnassignedProductsTab: React.FC = () => {
   const [editValue, setEditValue] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const { toast, showError, showSuccess } = useToast();
+  // 2026-08-26 · #133 · 통계설정 · 판매중 필터 (전역) · true 면 sale_status='판매중' 만 노출
+  const { saleActiveOnly } = useSaleActiveOnly();
 
   const load = useCallback(() => {
     setLoading(true);
@@ -46,6 +51,8 @@ export const UnassignedProductsTab: React.FC = () => {
         const isEmpty = (v: string | null) => !v || String(v).trim() === "" || String(v).trim() === "미지정";
         const unassigned = list
           .filter(p => isEmpty(p.spec) || isEmpty(p.real_map))
+          // 2026-08-26 · #133 · 판매중만 보기 설정 ON · sale_status='판매중' 만
+          .filter(p => !saleActiveOnly || String(p.sale_status ?? "").trim() === "판매중")
           .map(p => {
             const noSpec = isEmpty(p.spec);
             const noMap  = isEmpty(p.real_map);
@@ -60,7 +67,7 @@ export const UnassignedProductsTab: React.FC = () => {
         showError(`미지정 상품 조회 실패: ${msg}`);
       })
       .finally(() => setLoading(false));
-  }, [showError]);
+  }, [showError, saleActiveOnly]);
 
   useEffect(() => { load(); }, [load]);
 
