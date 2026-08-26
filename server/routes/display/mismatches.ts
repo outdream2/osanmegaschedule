@@ -13,7 +13,7 @@ const router = Router();
 router.get("/api/zone-mismatches", asyncHandler(async (_req, res) => {
   const { data: productRows, error: prodErr } = await supabase
     .from("products")
-    .select("product_code, product_name, spec, real_map, last_modified_at")
+    .select("product_code, product_name, spec, real_map, category_code, last_modified_at")
     .eq("hidden", false)
     .not("real_map", "is", null)
     .neq("real_map", "");
@@ -37,6 +37,7 @@ router.get("/api/zone-mismatches", asyncHandler(async (_req, res) => {
       id: p.product_code,
       product_code: p.product_code,
       product_name: p.product_name ?? "",
+      category_code: (p as any).category_code ?? null,
       spec_zone: (p.spec ?? "").trim() || "미지정",
       real_zone: (p.real_map ?? "").trim(),
       registered_at: p.last_modified_at ?? new Date().toISOString(),

@@ -21,6 +21,7 @@ interface Product {
   supplier: string | null;
   spec: string | null;
   real_map: string | null;
+  category_code: string | null;
 }
 
 interface InvRow {
@@ -35,6 +36,7 @@ interface Row {
   product_code: string;
   product_name: string;
   supplier: string | null;
+  category_code: string | null;        // 2026-08-26 · 분류코드
   spec: string | null;                 // 전산구역
   real_map: string | null;
   w1: number | null;
@@ -45,18 +47,19 @@ interface Row {
   total: number;
 }
 
-type SortKey = "product_name" | "supplier" | "spec" | "w1" | "w2" | "s1" | "s2" | "s3" | "total";
+type SortKey = "product_name" | "supplier" | "category_code" | "spec" | "w1" | "w2" | "s1" | "s2" | "s3" | "total";
 
 const CMP: Record<SortKey, Comparator<Row>> = {
-  product_name: (a, b) => (a.product_name ?? "").localeCompare(b.product_name ?? "", "ko"),
-  supplier:     (a, b) => (a.supplier ?? "").localeCompare(b.supplier ?? "", "ko"),
-  spec:         (a, b) => (a.spec ?? "").localeCompare(b.spec ?? "", "ko"),
-  w1:           (a, b) => (a.w1 ?? 0) - (b.w1 ?? 0),
-  w2:           (a, b) => (a.w2 ?? 0) - (b.w2 ?? 0),
-  s1:           (a, b) => (a.s1 ?? 0) - (b.s1 ?? 0),
-  s2:           (a, b) => (a.s2 ?? 0) - (b.s2 ?? 0),
-  s3:           (a, b) => (a.s3 ?? 0) - (b.s3 ?? 0),
-  total:        (a, b) => a.total - b.total,
+  product_name:  (a, b) => (a.product_name ?? "").localeCompare(b.product_name ?? "", "ko"),
+  supplier:      (a, b) => (a.supplier ?? "").localeCompare(b.supplier ?? "", "ko"),
+  category_code: (a, b) => (a.category_code ?? "").localeCompare(b.category_code ?? "", "ko"),
+  spec:          (a, b) => (a.spec ?? "").localeCompare(b.spec ?? "", "ko"),
+  w1:            (a, b) => (a.w1 ?? 0) - (b.w1 ?? 0),
+  w2:            (a, b) => (a.w2 ?? 0) - (b.w2 ?? 0),
+  s1:            (a, b) => (a.s1 ?? 0) - (b.s1 ?? 0),
+  s2:            (a, b) => (a.s2 ?? 0) - (b.s2 ?? 0),
+  s3:            (a, b) => (a.s3 ?? 0) - (b.s3 ?? 0),
+  total:         (a, b) => a.total - b.total,
 };
 
 export const RealStockTablePage: React.FC = () => {
@@ -101,6 +104,7 @@ export const RealStockTablePage: React.FC = () => {
       product_code: p.product_code,
       product_name: p.product_name,
       supplier: p.supplier,
+      category_code: p.category_code,
       spec: p.spec,
       real_map: p.real_map,
       w1, w2, s1, s2, s3, total,
@@ -203,10 +207,11 @@ export const RealStockTablePage: React.FC = () => {
             <table className="w-full border-collapse">
               <thead className={tableHeadCls("text-[14px]")}>
                 <tr>
-                  {thSortable("product_name", "left",  "상품명",   320)}
-                  {thSortable("supplier",     "left",  "공급사",   140)}
+                  {thSortable("supplier",      "left",  "공급사",   140)}
+                  {thSortable("category_code", "left",  "분류코드", 110)}
+                  {thSortable("product_name",  "left",  "상품명",   300)}
                   <th className={tableThCls("left")} style={{ width: 120 }}>상품코드</th>
-                  {thSortable("spec",         "center","전산구역", 100, "bg-brand-tint/40")}
+                  {thSortable("spec",          "center","전산구역", 100, "bg-brand-tint/40")}
                   {thSortable("w1",           "num", "창고1",    80,  "bg-cyan-50/60")}
                   {thSortable("w2",           "num", "창고2",    80,  "bg-cyan-50/60")}
                   {thSortable("s1",           "num", "매장1",    80,  "bg-violet-50/60")}
@@ -218,8 +223,9 @@ export const RealStockTablePage: React.FC = () => {
               <tbody className="divide-y divide-zinc-100">
                 {sorted.map(r => (
                   <tr key={r.product_code} className="hover:bg-zinc-50/60 transition text-[15px]">
-                    <td className={tableTdCls("left", "font-bold text-zinc-800 break-keep whitespace-normal")}>{r.product_name}</td>
                     <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ?? "-"}</td>
+                    <td className={tableTdCls("left", "font-mono text-[13px] text-zinc-500 tabular-nums")}>{r.category_code ?? "-"}</td>
+                    <td className={tableTdCls("left", "font-bold text-zinc-800 break-keep whitespace-normal")}>{r.product_name}</td>
                     <td className={tableTdCls("left", "font-mono text-[13px] text-zinc-500")}>{r.product_code}</td>
                     <td className={tableTdCls("center", `font-semibold ${r.spec ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>
                       {r.spec ?? "미지정"}

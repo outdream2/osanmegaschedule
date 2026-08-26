@@ -19,6 +19,7 @@ interface ZoneMismatch {
   id: string;
   product_code: string;
   product_name: string;
+  category_code?: string | null; // 2026-08-26 · 사용자 지시 · 분류코드
   spec_zone: string;
   real_zone: string;
   registered_at: string;
@@ -277,17 +278,21 @@ export const ZoneMismatchTab: React.FC = () => {
             <table className="w-full border-collapse">
               <thead className={tableHeadCls("text-[16px]")}>
                 <tr>
-                  <th className={tableThCls("left")} style={{ width: "34%" }}>상품명</th>
-                  <th className={tableThCls("left")} style={{ width: "18%" }}>상품코드</th>
-                  <th className={tableThCls("center")} style={{ width: "14%" }}>전산 구역</th>
-                  <th className={tableThCls("center")} style={{ width: "14%" }}>실제 구역</th>
-                  <th className={tableThCls("center")} style={{ width: "12%" }}>등록일</th>
-                  <th className={tableThCls("center")} style={{ width: "8%" }}>삭제</th>
+                  <th className={tableThCls("left")} style={{ width: "13%" }}>분류코드</th>
+                  <th className={tableThCls("left")} style={{ width: "27%" }}>상품명</th>
+                  <th className={tableThCls("left")} style={{ width: "16%" }}>상품코드</th>
+                  <th className={tableThCls("center")} style={{ width: "13%" }}>전산 구역</th>
+                  <th className={tableThCls("center")} style={{ width: "13%" }}>실제 구역</th>
+                  <th className={tableThCls("center")} style={{ width: "11%" }}>등록일</th>
+                  <th className={tableThCls("center")} style={{ width: "7%" }}>삭제</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {sorted.map(m => (
                   <tr key={m.id} className="hover:bg-zinc-50/60 transition text-[17px]">
+                    <td className={tableTdCls("left", "font-mono text-[14px] text-zinc-500 tabular-nums")}>
+                      {m.category_code ?? "-"}
+                    </td>
                     <td className={tableTdCls("left", "font-bold text-zinc-800 break-keep")}>
                       {renderEditable(m, "product_name", m.product_name)}
                     </td>

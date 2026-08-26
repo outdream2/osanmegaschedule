@@ -153,7 +153,7 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
       ...(padded !== q ? [`product_code.eq.${padded}`] : []),
     ].join(",");
 
-    const cols = "product_code,product_name,spec,supplier,purchase_price,sale_price,profit_rate,expiry_date,real_map,current_stock,sale_status,hidden";
+    const cols = "product_code,product_name,spec,supplier,category_code,category,purchase_price,sale_price,profit_rate,expiry_date,real_map,current_stock,sale_status,hidden";
 
     // 1차: search_keywords + hidden 필터 포함 시도
     let query = supabase.from("products").select(cols).or(buildOr(true));
