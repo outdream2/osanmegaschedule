@@ -619,25 +619,28 @@ export const BrandingSettingsPage: React.FC<BrandingSettingsPageProps> = ({
     );
   }
   // 2026-08-12 · 공통 SettingsPageShell 사용 · [설정] 하위 페이지 UI 통일
+  // 2026-08-26 · 사용자 지시 · 폰트 +2 · data-scope 로 격리
   return (
-    <SettingsPageShell
-      activePage={"branding" as AppNavPage}
-      authSession={authSession}
-      onBack={onBack}
-      onNavigate={onNavigate}
-      onLogout={onLogout}
-      icon={Gear}
-      iconColor="text-indigo-500"
-      title="앱 브랜딩"
-      description="연락처·카카오·도장 매핑·페이지별 모바일 최소 레벨. (브랜드 정보 · 로고/파비콘은 [회사정보] 페이지로 이동됨.) 관리자(lv 9) 전용."
-      rightSlot={
-        <span className="hidden sm:inline-flex items-center gap-1 text-[15px] text-zinc-500 font-semibold">
-          <FloppyDisk size={11} weight="fill" /> 변경 즉시 저장
-        </span>
-      }
-    >
-      <BrandingSectionTabs />
-    </SettingsPageShell>
+    <div data-scope="branding-settings">
+      <SettingsPageShell
+        activePage={"branding" as AppNavPage}
+        authSession={authSession}
+        onBack={onBack}
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+        icon={Gear}
+        iconColor="text-indigo-500"
+        title="앱 브랜딩"
+        description="연락처·카카오·도장 매핑·페이지별 모바일 최소 레벨. (브랜드 정보 · 로고/파비콘은 [회사정보] 페이지로 이동됨.) 관리자(lv 9) 전용."
+        rightSlot={
+          <span className="hidden sm:inline-flex items-center gap-1 text-[15px] text-zinc-500 font-semibold">
+            <FloppyDisk size={11} weight="fill" /> 변경 즉시 저장
+          </span>
+        }
+      >
+        <BrandingSectionTabs />
+      </SettingsPageShell>
+    </div>
   );
 };
 

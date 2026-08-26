@@ -449,23 +449,26 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     );
   }
 
+  // 2026-08-26 · 사용자 지시 · 페이지별 설정 아래 내용 폰트 +2 · data-scope 격리
   return (
-    <SettingsPageShell
-      activePage={"permissions" as AppNavPage}
-      authSession={authSession}
-      onBack={onBack}
-      onNavigate={onNavigate}
-      onLogout={onLogout}
-      icon={Lock}
-      iconColor="text-violet-600"
-      title="메뉴 설정"
-      description="페이지별 최소 권한 · 직원별 레벨 · 근무 유형·직군·공사중 등 앱 전체 설정을 관리합니다. 관리자(lv 9) 전용."
-      titleClassName="text-base font-bold text-zinc-800 leading-tight"
-      descriptionClassName="text-[11px] text-zinc-500 mt-0.5 leading-relaxed"
-      maxWidth="max-w-4xl"
-    >
-      {renderPermissionsBody()}
-    </SettingsPageShell>
+    <div data-scope="permissions">
+      <SettingsPageShell
+        activePage={"permissions" as AppNavPage}
+        authSession={authSession}
+        onBack={onBack}
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+        icon={Lock}
+        iconColor="text-violet-600"
+        title="메뉴 설정"
+        description="페이지별 최소 권한 · 직원별 레벨 · 근무 유형·직군·공사중 등 앱 전체 설정을 관리합니다. 관리자(lv 9) 전용."
+        titleClassName="text-base font-bold text-zinc-800 leading-tight"
+        descriptionClassName="text-[11px] text-zinc-500 mt-0.5 leading-relaxed"
+        maxWidth="max-w-4xl"
+      >
+        {renderPermissionsBody()}
+      </SettingsPageShell>
+    </div>
   );
 
   function renderPermissionsBody() {

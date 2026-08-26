@@ -259,8 +259,9 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
   return (
     <>
       <div className={`split-container ${className}`} style={style}>
-        {/* 좌측: 리스트 · 폭 조정 */}
+        {/* 좌측: 리스트 · 폭 조정 · 2026-08-26 · 사용자 지시 · 프레임워크 폰트 +2 (data-scope) */}
         <aside
+          data-scope="split-left"
           className={leftCls}
           style={isDesktop ? { width: `${listWidth}px` } : undefined}
         >
@@ -276,9 +277,9 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
           <span className="text-[10px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
-        {/* 우측: 상세 · 데스크탑만 표시 (모바일은 모달로) */}
+        {/* 우측: 상세 · 데스크탑만 표시 (모바일은 모달로) · 2026-08-26 프레임워크 폰트 +2 */}
         {(!mobileRightAsModal || isDesktop) && (
-          <section className={rightCls}>
+          <section data-scope="split-right" className={rightCls}>
             {right}
           </section>
         )}
