@@ -27,6 +27,10 @@ interface DisplayModalsProps {
   setPopoverAnchor: (v: PopoverAnchor | null) => void;
   setActiveStaffInfo: React.Dispatch<React.SetStateAction<TodayStaff | null>>;
   setZoneDefs: React.Dispatch<React.SetStateAction<any[]>>;
+  saveZoneDefsNow?: () => Promise<boolean>;
+  showSuccess?: (msg: string) => void;
+  showError?: (msg: string) => void;
+  canEditZone?: boolean;
 
   // Zone Detail
   activeZone: DisplayZone | null;
@@ -80,13 +84,28 @@ export const DisplayModals: React.FC<DisplayModalsProps> = (p) => (
         onAssign={p.handlePopoverAssign} onUnassign={p.handlePopoverUnassign} onOpenDetail={() => p.handleOpenZoneDetail(p.popoverZone!)}
         onOpenProducts={() => { p.openZoneProducts({ zoneId: p.popoverZone!.id, zoneNum: p.popoverZone!.num, zoneLabel: p.popoverZone!.label, category: p.popoverZone!.category }); p.setPopoverAnchor(null); }}
         onClose={() => p.setPopoverAnchor(null)} onStaffInfoClick={(staff) => { p.setActiveStaffInfo(staff); p.setPopoverAnchor(null); }}
-        onZoneUpdate={(updates) => {
+        onZoneUpdate={p.canEditZone === false ? undefined : (updates) => {
           const pz = p.popoverZone!;
           p.setZoneDefs((prev) => prev.map((z: any) => (
             z.num === pz.num
               ? { ...z, ...(updates.label != null ? { label: updates.label } : {}), ...(updates.category != null ? { category: updates.category } : {}), ...(updates.num != null ? { num: updates.num } : {}) }
               : z
           )));
+          // 2026-08-26 · #129 · 사용자 저장 안됨 신고 fix · saveNow 즉시 서버 저장 + 토스트 피드백
+          setTimeout(async () => {
+            try {
+              if (p.saveZoneDefsNow) {
+                const ok = await p.saveZoneDefsNow();
+                if (ok) {
+                  p.showSuccess?.(`구역 ${pz.num}번 저장 완료 · DB 반영`);
+                } else {
+                  p.showError?.("구역 저장 실패 · 서버 응답 오류 (관리자 lv≥9 필요)");
+                }
+              }
+            } catch (e: any) {
+              p.showError?.(`구역 저장 실패 · ${e?.message ?? "네트워크"}`);
+            }
+          }, 50);
         }}
       />
     )}

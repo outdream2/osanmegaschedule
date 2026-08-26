@@ -78,7 +78,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const dpCanSeeStockArrivals = dpUserLevel >= 3;
 
   // 2026-08-23 · #189 · 구역 편집 (팝오버) 지원 · setZoneDefs 사용
-  const { zones: ZONE_DEFS, setZones: setZoneDefs } = useZoneDefs();
+  // 2026-08-26 · #129 · saveNow 로 즉시 저장 + 토스트 피드백 (사용자 · 저장 안됨 신고)
+  const { zones: ZONE_DEFS, setZones: setZoneDefs, saveNow: saveZoneDefsNow } = useZoneDefs();
 
   // 2026-08-23 · #181 Phase 2 · 매장 구역도 드래그 재정렬 · 관리자 (lv>=9) 만
   const dpZoneEditable = dpUserLevel >= 9;
@@ -781,6 +782,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         handlePopoverAssign={handlePopoverAssign} handlePopoverUnassign={handlePopoverUnassign}
         handleOpenZoneDetail={handleOpenZoneDetail} openZoneProducts={openZoneProducts}
         setPopoverAnchor={setPopoverAnchor} setActiveStaffInfo={setActiveStaffInfo} setZoneDefs={setZoneDefs}
+        saveZoneDefsNow={saveZoneDefsNow} showSuccess={showSuccess} showError={showError}
+        canEditZone={dpZoneEditable}
         activeZone={activeZone} draftCategory={draftCategory} draftProducts={draftProducts} draftStaffId={draftStaffId}
         draftStatus={draftStatus} requestNote={requestNote} savedFlash={savedFlash} requestFlash={requestFlash}
         employees={employees} canRequest={canRequest}
