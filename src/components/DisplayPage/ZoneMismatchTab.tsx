@@ -6,7 +6,7 @@
 // 2026-08-25 v3 · 사용자 지시 · 인라인 편집 (상품명 · 전산구역 · 실제구역) + 폰트 +3
 
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, RefreshCw, Trash2, Check, Pencil, X as XIcon } from "lucide-react";
+import { AlertTriangle, RefreshCw, Trash2, Check, Pencil, X as XIcon, Search } from "lucide-react";
 import { api, ApiError } from "../../lib/apiClient";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
@@ -50,6 +50,8 @@ export const ZoneMismatchTab: React.FC = () => {
   const [editing, setEditing] = useState<{ id: string; field: EditField } | null>(null);
   const [editValue, setEditValue] = useState("");
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  // 2026-08-26 · #124 · 사용자 지시 · 검색 기능
+  const [search, setSearch] = useState("");
   const { toast, showError, showSuccess } = useToast();
   const confirm = useConfirm();
 
@@ -134,8 +136,17 @@ export const ZoneMismatchTab: React.FC = () => {
   };
 
   const sorted = useMemo(() => {
-    return [...rows].sort((a, b) => (b.registered_at ?? "").localeCompare(a.registered_at ?? ""));
-  }, [rows]);
+    const q = search.trim().toLowerCase();
+    const filtered = q
+      ? rows.filter(r =>
+          String(r.product_name ?? "").toLowerCase().includes(q) ||
+          String(r.product_code ?? "").toLowerCase().includes(q) ||
+          String(r.spec_zone ?? "").toLowerCase().includes(q) ||
+          String(r.real_zone ?? "").toLowerCase().includes(q)
+        )
+      : rows;
+    return [...filtered].sort((a, b) => (b.registered_at ?? "").localeCompare(a.registered_at ?? ""));
+  }, [rows, search]);
 
   const inputCls = "w-full h-8 px-2 rounded-md border border-brand-deep bg-white text-[17px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint";
 
@@ -201,9 +212,20 @@ export const ZoneMismatchTab: React.FC = () => {
           <AlertTriangle size={21} className="text-rose-500 shrink-0" />
           <span className="text-[20px] font-bold text-ink tracking-tight">배치구역 불일치</span>
           <span className="text-[18px] tabular-nums font-semibold text-ink-soft">
-            {loading ? <Spinner size={13} tone="rose" className="inline" /> : `${rows.length}건`}
+            {loading ? <Spinner size={13} tone="rose" className="inline" /> : `${sorted.length}${search ? `/${rows.length}` : ""}건`}
           </span>
           <div className="ml-auto flex items-center gap-1.5">
+            {/* 2026-08-26 · #124 · 검색 · 상품명·코드·구역 통합 */}
+            <div className="relative">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="상품명·코드·구역 검색"
+                className="w-64 h-9 pl-8 pr-3 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
+              />
+            </div>
             <button
               type="button"
               onClick={load}

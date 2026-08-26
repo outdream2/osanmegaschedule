@@ -55,6 +55,8 @@ import { VendorManageSplit } from "./VendorManageSplit";
 import { useDisplayData } from "./useDisplayData";
 // 2026-08-25 · 사용자 지시 · 매장구역 안 배치구역 불일치 탭
 import { ZoneMismatchTab } from "./ZoneMismatchTab";
+// 2026-08-26 · #125 · 미지정 상품 별도 탭
+import { UnassignedProductsTab } from "./UnassignedProductsTab";
 import { SplitRightTabs } from "../common/SplitRightTabs";
 // 2026-08-26 · 창고1 · 창고2 구역도 · storage.webp 기반
 import { WarehouseZoneMap } from "../common/WarehouseZoneMap";
@@ -114,10 +116,11 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const [mapCollapsed, setMapCollapsed] = useState(true);
   // 2026-08-25 · 사용자 지시 · 매장구역 subtab 안 · 매장구역도 vs 배치구역 불일치 탭
   // 2026-08-26 · 창고1 · 창고2 구역도 탭 추가 (storage.webp 기반)
-  const [storeInnerTab, setStoreInnerTab] = useState<"map" | "mismatch" | "warehouse1" | "warehouse2">(() => {
+  const [storeInnerTab, setStoreInnerTab] = useState<"map" | "mismatch" | "unassigned" | "warehouse1" | "warehouse2">(() => {
     try {
       const raw = sessionStorage.getItem("dpStoreInnerTab");
       if (raw === "mismatch") { sessionStorage.removeItem("dpStoreInnerTab"); return "mismatch"; }
+      if (raw === "unassigned") { sessionStorage.removeItem("dpStoreInnerTab"); return "unassigned"; }
     } catch { /* SSR */ }
     return "map";
   });
@@ -605,6 +608,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 { key: "warehouse1", label: "창고1" },
                 { key: "warehouse2", label: "창고2" },
                 { key: "mismatch",   label: "배치구역 불일치" },
+                { key: "unassigned", label: "미지정 상품" },
               ]}
               active={storeInnerTab}
               onSelect={(k) => setStoreInnerTab(k as typeof storeInnerTab)}
@@ -613,6 +617,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           </div>
           {storeInnerTab === "mismatch" ? (
             <ZoneMismatchTab />
+          ) : storeInnerTab === "unassigned" ? (
+            <UnassignedProductsTab />
           ) : storeInnerTab === "warehouse1" ? (
             <WarehouseZoneMap filter="1" />
           ) : storeInnerTab === "warehouse2" ? (
