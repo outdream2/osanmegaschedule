@@ -182,7 +182,11 @@ export const RealStockTablePage: React.FC = () => {
     );
   }, [rows, search, saleOnly]);
 
-  const { sorted, sortKey, sortDir, toggleSort } = useSortableTable<Row, SortKey>(filtered, "product_name", CMP, "asc");
+  const { sorted, sortKey, sortDir, toggleSort, setSort } = useSortableTable<Row, SortKey>(filtered, "product_name", CMP, "asc");
+  // 2026-08-27 · 사용자 지시 · 구역별 그룹 활성 시 · 자동으로 구역(spec) 정렬로 전환
+  useEffect(() => {
+    if (groupByZone) setSort("spec", "asc");
+  }, [groupByZone, setSort]);
 
   // 2026-08-26 · 사용자 지시 · 상품 클릭 · 상세 모달
   const [detailRow, setDetailRow] = useState<Row | null>(null);
