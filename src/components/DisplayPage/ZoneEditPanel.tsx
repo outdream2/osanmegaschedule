@@ -262,7 +262,7 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
           <div className="flex-1 min-w-0">
             <div className="text-[17px] font-bold text-ink tracking-tight">매장구역도 편집</div>
             <div className="text-[13px] text-ink-soft mt-0.5">
-              탭으로 존 선택 · 구역별 카테고리 인라인 편집 · Enter 즉시 저장 (DB 반영)
+              탭으로 존 선택 · 구역별 카테고리·상세카테고리 인라인 편집 · Enter 즉시 저장 (DB 반영)
               {!canEdit && <span className="ml-2 text-rose-500 font-bold">· 관리자 (lv 9) 전용</span>}
             </div>
           </div>
@@ -327,8 +327,9 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
               <table className="w-full text-[13px] table-fixed">
                 <thead>
                   <tr className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">
-                    <th className="text-left px-2 py-1.5" style={{ width: 80 }}>구역</th>
-                    <th className="text-left px-2 py-1.5">카테고리</th>
+                    <th className="text-left px-2 py-1.5" style={{ width: 76 }}>구역</th>
+                    <th className="text-left px-2 py-1.5" style={{ width: "38%" }}>카테고리</th>
+                    <th className="text-left px-2 py-1.5">상세카테고리 (매장구역도 hover)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
@@ -344,6 +345,11 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
                         </td>
                         <td className="px-2 py-2">
                           {renderEdit(z, fr.catField, fr.catValue || <span className="text-zinc-300 italic">(비어있음 · 클릭하여 입력)</span>, false)}
+                        </td>
+                        <td className="px-2 py-2">
+                          {renderEdit(z, fr.descField, fr.descValue
+                            ? <span className="text-[13px] text-ink-soft leading-relaxed whitespace-pre-wrap">{fr.descValue}</span>
+                            : <span className="text-zinc-300 italic">(비어있음 · 클릭하여 입력)</span>, true)}
                         </td>
                       </tr>
                     );
