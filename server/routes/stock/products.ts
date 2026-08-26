@@ -12,6 +12,8 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler";
 import type { HiddenProductsResponse } from "../../../src/shared/dtos/products";
 import { CreateProductSchema } from "../../../src/shared/schemas/products";
+// 2026-08-26 · 사용자 지시 · 적정재고 공통 프레임워크 · server/lib/optimalStock.ts
+import { refillOptimalStock } from "../../lib/optimalStock";
 
 const router = Router();
 
@@ -541,125 +543,37 @@ const ALLOWED_INLINE_EDIT = new Set([
 //   stock_history · snapshot_date >= today-30d · sale_qty 합산 → products.optimal_stock 일괄 업데이트
 //   body · { days?: number }  기본 30
 router.post("/api/products/refill-optimal-stock", asyncHandler(async (req, res) => {
-  const t0 = Date.now();
-  const days = Math.max(1, Math.min(365, Number((req.body ?? {}).days ?? 30) || 30));
-  const now = new Date();
-  const since = new Date(now.getFullYear(), now.getMonth(), now.getDate() - days);
-  const sinceStr = since.toISOString().slice(0, 10);
-
-  // 2026-08-26 · 성능 개선 · stock_history 판매량 집계
-  //   · 기존 · 순차 페이지 1000 (180K row = 180 순차 호출 · ~30초)
-  //   · 개선 · 5-병렬 페이지 프리페치 (첫 호출 count 로 총 페이지 계산)
-  const salesMap = new Map<string, number>();
-  const PAGE = 1000;
-  const tSales = Date.now();
-  // 1차 · 첫 페이지 + count (exact count 로 페이지 총량 계산)
-  const first = await supabase
-    .from("stock_history")
-    .select("product_code, sale_qty", { count: "exact" })
-    .gte("snapshot_date", sinceStr)
-    .range(0, PAGE - 1);
-  if (first.error) {
-    if (/relation|does not exist/i.test(first.error.message)) {
-      throw new HttpError(503, "stock_history 테이블 없음");
+  // 2026-08-26 · 사용자 지시 · 공통 프레임워크 사용 (server/lib/optimalStock.ts)
+  //   · 판매 0 상품도 0 으로 명시 설정 (A안 · 기본값)
+  //   · fromDate 지정 · 그 날짜부터 오늘까지 판매량 집계 (미지정 시 · 오늘 - days)
+  //   · order_requests 자동 동기화 (스냅샷 컬럼도 최신 값)
+  const body = req.body ?? {};
+  try {
+    const result = await refillOptimalStock({
+      days: Number(body.days ?? 30),
+      fromDate: String(body.fromDate ?? "").trim() || undefined,
+      zeroIfNoSales: body.zeroIfNoSales !== false, // 기본 true
+      syncOrderRequests: body.syncOrderRequests !== false, // 기본 true
+    });
+    resetProductCache();
+    console.log(`[refill-optimal-stock] since=${result.since} · history=${result.totalHistoryRows} · sales=${result.productsWithSales} · zeroed=${result.productsZeroed} · updated=${result.productsUpdated} · orderReqs=${result.orderRequestsUpdated} · total=${result.elapsedMs}ms (sale ${result.saleMs}ms + product ${result.productMs}ms + order ${result.orderMs}ms)`);
+    return res.json({
+      ok: true,
+      updated: result.productsUpdated,
+      failed: result.productsFailed,
+      orderUpdated: result.orderRequestsUpdated,
+      productsZeroed: result.productsZeroed,
+      productsWithSales: result.productsWithSales,
+      totalProducts: result.totalProducts,
+      from: result.since,
+      elapsedMs: result.elapsedMs,
+    });
+  } catch (e: any) {
+    if (/stock_history/i.test(e?.message ?? "")) {
+      throw new HttpError(503, e.message);
     }
-    throw new HttpError(500, first.error.message);
+    throw new HttpError(500, e?.message ?? "재계산 실패");
   }
-  const totalRows = first.count ?? 0;
-  for (const r of (first.data ?? [])) {
-    const code = String(r.product_code ?? "").trim();
-    if (!code) continue;
-    const q = Number(r.sale_qty ?? 0) || 0;
-    if (q > 0) salesMap.set(code, (salesMap.get(code) ?? 0) + q);
-  }
-  // 2차~ · 나머지 페이지 · 5-병렬
-  if (totalRows > PAGE) {
-    const totalPages = Math.ceil(totalRows / PAGE);
-    const PARALLEL = 5;
-    for (let p = 1; p < totalPages; p += PARALLEL) {
-      const batch = Array.from({ length: Math.min(PARALLEL, totalPages - p) }, (_, i) => p + i);
-      const results = await Promise.all(batch.map(pi =>
-        supabase.from("stock_history")
-          .select("product_code, sale_qty")
-          .gte("snapshot_date", sinceStr)
-          .range(pi * PAGE, pi * PAGE + PAGE - 1)
-      ));
-      for (const r of results) {
-        if (r.error) throw new HttpError(500, r.error.message);
-        for (const row of (r.data ?? [])) {
-          const code = String(row.product_code ?? "").trim();
-          if (!code) continue;
-          const q = Number(row.sale_qty ?? 0) || 0;
-          if (q > 0) salesMap.set(code, (salesMap.get(code) ?? 0) + q);
-        }
-      }
-    }
-  }
-  console.log(`[refill-optimal-stock] sales · ${totalRows} rows · ${salesMap.size} products · ${Date.now() - tSales}ms`);
-
-  if (salesMap.size === 0) {
-    return res.json({ ok: true, updated: 0, note: `${days}일 판매 이력 없음`, elapsedMs: Date.now() - t0 });
-  }
-
-  // 2026-08-26 · 성능 개선 · 개별 update (300 라운드) → 청크 upsert (12 라운드)
-  //   · onConflict: product_code · optimal_stock + optimal_stock_backup 만 업데이트
-  const tUpsert = Date.now();
-  const payload = [...salesMap.entries()].map(([code, qty]) => ({
-    product_code: code,
-    optimal_stock: Math.round(qty),
-    optimal_stock_backup: Math.round(qty),
-  }));
-  let updated = 0, failed = 0;
-  const CHUNK = 500;
-  for (let i = 0; i < payload.length; i += CHUNK) {
-    const chunk = payload.slice(i, i + CHUNK);
-    const { error } = await supabase.from("products")
-      .upsert(chunk, { onConflict: "product_code" });
-    if (error) {
-      console.error("[refill-optimal-stock] upsert error:", error.message);
-      failed += chunk.length;
-    } else {
-      updated += chunk.length;
-    }
-  }
-  resetProductCache();
-  const upsertMs = Date.now() - tUpsert;
-
-  // 2026-08-26 · A안 · 사용자 지시 · order_requests 동기화 (스냅샷도 재계산 값으로)
-  //   · 발주필요 리스트 등에서 즉시 반영되도록
-  //   · 청크 500 · onConflict: id · optimal_stock 필드만 업데이트
-  const tOrder = Date.now();
-  let orderUpdated = 0;
-  const { data: orderRows, error: orderErr } = await supabase
-    .from("order_requests")
-    .select("id, product_code");
-  if (!orderErr && orderRows) {
-    const orderPayload = orderRows
-      .map(r => {
-        const q = salesMap.get(String(r.product_code ?? "").trim());
-        if (q == null) return null;
-        return { id: r.id, optimal_stock: Math.round(q) };
-      })
-      .filter((x): x is { id: number; optimal_stock: number } => x !== null);
-    const OCHUNK = 500;
-    for (let i = 0; i < orderPayload.length; i += OCHUNK) {
-      const chunk = orderPayload.slice(i, i + OCHUNK);
-      const { error: uErr } = await supabase.from("order_requests")
-        .upsert(chunk, { onConflict: "id" });
-      if (uErr) {
-        console.error("[refill-optimal-stock] order_requests upsert error:", uErr.message);
-      } else {
-        orderUpdated += chunk.length;
-      }
-    }
-  } else if (orderErr) {
-    console.warn("[refill-optimal-stock] order_requests 조회 실패:", orderErr.message);
-  }
-  const orderMs = Date.now() - tOrder;
-
-  const elapsedMs = Date.now() - t0;
-  console.log(`[refill-optimal-stock] days=${days} · products=${updated}건 (upsert ${upsertMs}ms) · order_requests=${orderUpdated}건 (${orderMs}ms) · total=${elapsedMs}ms`);
-  return res.json({ ok: true, updated, failed, orderUpdated, days, from: sinceStr, elapsedMs });
 }));
 
 router.patch("/api/products/:code", asyncHandler(async (req, res) => {
