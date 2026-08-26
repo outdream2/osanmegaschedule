@@ -6,7 +6,7 @@
 //   · /api/inventory-latest (최신 실재고) + /api/products-search (상품 리스트) 조합
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { PackageCheck, Search, RefreshCw } from "lucide-react";
+import { PackageCheck, Search, RefreshCw, ChevronRight, ChevronDown } from "lucide-react";
 import { api, ApiError } from "../../lib/apiClient";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
@@ -144,6 +144,38 @@ export const RealStockTablePage: React.FC = () => {
 
   const { sorted, sortKey, sortDir, toggleSort } = useSortableTable<Row, SortKey>(filtered, "product_name", CMP, "asc");
 
+  // 2026-08-26 · 사용자 지시 · 구역별 그룹핑 · 초기 로딩 부담 축소
+  //   · real_map 기준 · 미지정 = "(미지정)"
+  //   · 화살표 클릭 시 · 상세 상품 rows 표시
+  const [expandedZones, setExpandedZones] = useState<Set<string>>(new Set());
+  const toggleZone = (key: string) => setExpandedZones(prev => {
+    const n = new Set(prev);
+    if (n.has(key)) n.delete(key); else n.add(key);
+    return n;
+  });
+  const grouped = useMemo(() => {
+    const m = new Map<string, Row[]>();
+    for (const r of sorted) {
+      const key = String(r.real_map ?? "").trim() || "(미지정)";
+      if (!m.has(key)) m.set(key, []);
+      m.get(key)!.push(r);
+    }
+    // 구역 key 정렬 · 미지정은 맨 뒤
+    return [...m.entries()].sort(([a], [b]) => {
+      if (a === "(미지정)") return 1;
+      if (b === "(미지정)") return -1;
+      return a.localeCompare(b, "ko", { numeric: true });
+    });
+  }, [sorted]);
+  const zoneSummary = (rows: Row[]) => {
+    const erp = rows.reduce((s, r) => s + (r.erp ?? 0), 0);
+    const total = rows.reduce((s, r) => s + r.total, 0);
+    const diff = erp - total;
+    return { count: rows.length, erp, total, diff };
+  };
+  const expandAll = () => setExpandedZones(new Set(grouped.map(([k]) => k)));
+  const collapseAll = () => setExpandedZones(new Set());
+
   const sortIndicator = (k: SortKey) => sortKey === k ? (sortDir === "asc" ? " ▲" : " ▼") : "";
   const thSortable = (k: SortKey, align: "left" | "center" | "num", label: string, minW?: number, extra = "") => (
     <th
@@ -178,7 +210,7 @@ export const RealStockTablePage: React.FC = () => {
               <div className="text-[13px] text-ink-soft mt-0.5">상품별 · 전산구역 · 창고1/2 · 매장1/2/3 실재고 현황</div>
             </div>
             <span className="text-[15px] tabular-nums font-semibold text-ink-soft">
-              {loading ? <Spinner size={13} tone="brand" className="inline" /> : `${filtered.length}${search ? `/${rows.length}` : ""}건`}
+              {loading ? <Spinner size={13} tone="brand" className="inline" /> : `${grouped.length}구역 · ${filtered.length}${search ? `/${rows.length}` : ""}건`}
             </span>
             <div className="ml-auto flex items-center gap-2">
               <div className="relative">
@@ -191,6 +223,24 @@ export const RealStockTablePage: React.FC = () => {
                   className="w-72 h-9 pl-8 pr-3 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
                 />
               </div>
+              <button
+                type="button"
+                onClick={expandAll}
+                disabled={loading || grouped.length === 0}
+                className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-white border border-line text-[13px] font-bold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep hover:text-brand-deep transition cursor-pointer disabled:opacity-40"
+                title="모든 구역 펼치기"
+              >
+                <ChevronDown size={13} /> 모두 펼치기
+              </button>
+              <button
+                type="button"
+                onClick={collapseAll}
+                disabled={loading || expandedZones.size === 0}
+                className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-white border border-line text-[13px] font-bold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep hover:text-brand-deep transition cursor-pointer disabled:opacity-40"
+                title="모든 구역 접기"
+              >
+                <ChevronRight size={13} /> 모두 접기
+              </button>
               <button
                 type="button"
                 onClick={load}
@@ -227,46 +277,83 @@ export const RealStockTablePage: React.FC = () => {
             <table className="w-full border-collapse">
               <thead className={tableHeadCls("text-[14px]")}>
                 <tr>
-                  {/* 2026-08-26 · 사용자 지시 · 상품코드 → 공급사 → 상품명 · 분류코드 제거 */}
-                  <th className={tableThCls("left")} style={{ width: 130 }}>상품코드</th>
-                  {thSortable("supplier",      "left",  "공급사",   140)}
-                  {thSortable("product_name",  "left",  "상품명",   300)}
-                  {thSortable("spec",          "center","전산구역", 100, "bg-brand-tint/40")}
-                  {thSortable("erp",          "num", "ERP재고",  90,  "bg-amber-50/60")}
-                  {thSortable("w1",           "num", "창고1",    80,  "bg-cyan-50/60")}
-                  {thSortable("w2",           "num", "창고2",    80,  "bg-cyan-50/60")}
-                  {thSortable("s1",           "num", "매장1",    80,  "bg-violet-50/60")}
-                  {thSortable("s2",           "num", "매장2",    80,  "bg-violet-50/60")}
-                  {thSortable("s3",           "num", "매장3",    80,  "bg-violet-50/60")}
-                  {thSortable("total",        "num", "실재고합계", 95,  "bg-brand-tint/30")}
-                  {thSortable("diff",         "num", "차이",     80,  "bg-rose-50/40")}
+                  <th className={tableThCls("center")} style={{ width: 40 }}></th>
+                  <th className={tableThCls("left")} style={{ minWidth: 220 }}>구역 · 상품코드</th>
+                  <th className={tableThCls("left")} style={{ width: 140 }}>공급사</th>
+                  <th className={tableThCls("left")} style={{ minWidth: 240 }}>상품명</th>
+                  <th className={`${tableThCls("center")} bg-brand-tint/40`} style={{ width: 100 }}>전산구역</th>
+                  <th className={`${tableThCls("num")} bg-amber-50/60`} style={{ width: 90 }}>ERP재고</th>
+                  <th className={`${tableThCls("num")} bg-cyan-50/60`} style={{ width: 70 }}>창고1</th>
+                  <th className={`${tableThCls("num")} bg-cyan-50/60`} style={{ width: 70 }}>창고2</th>
+                  <th className={`${tableThCls("num")} bg-violet-50/60`} style={{ width: 70 }}>매장1</th>
+                  <th className={`${tableThCls("num")} bg-violet-50/60`} style={{ width: 70 }}>매장2</th>
+                  <th className={`${tableThCls("num")} bg-violet-50/60`} style={{ width: 70 }}>매장3</th>
+                  <th className={`${tableThCls("num")} bg-brand-tint/30`} style={{ width: 90 }}>실재고합계</th>
+                  <th className={`${tableThCls("num")} bg-rose-50/40`} style={{ width: 80 }}>차이</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {sorted.map(r => (
-                  <tr key={r.product_code} className="hover:bg-zinc-50/60 transition text-[15px]">
-                    <td className={tableTdCls("left", "font-mono text-[13px] text-zinc-500 tabular-nums")}>{r.product_code}</td>
-                    <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ?? "-"}</td>
-                    <td className={tableTdCls("left", "font-bold text-zinc-800 break-keep whitespace-normal")}>{r.product_name}</td>
-                    <td className={tableTdCls("center", `font-semibold ${r.spec ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>
-                      {r.spec ?? "미지정"}
-                    </td>
-                    <td className={tableTdCls("num", `tabular-nums font-bold ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-50/30`)}>
-                      {r.erp ?? "-"}
-                    </td>
-                    <td className={tableTdCls("num", `tabular-nums ${numCls(r.w1, "cyan")} bg-cyan-50/30`)}>{r.w1 ?? "-"}</td>
-                    <td className={tableTdCls("num", `tabular-nums ${numCls(r.w2, "cyan")} bg-cyan-50/30`)}>{r.w2 ?? "-"}</td>
-                    <td className={tableTdCls("num", `tabular-nums ${numCls(r.s1, "violet")} bg-violet-50/30`)}>{r.s1 ?? "-"}</td>
-                    <td className={tableTdCls("num", `tabular-nums ${numCls(r.s2, "violet")} bg-violet-50/30`)}>{r.s2 ?? "-"}</td>
-                    <td className={tableTdCls("num", `tabular-nums ${numCls(r.s3, "violet")} bg-violet-50/30`)}>{r.s3 ?? "-"}</td>
-                    <td className={tableTdCls("num", `tabular-nums font-extrabold ${r.total > 0 ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>
-                      {r.total > 0 ? r.total : "-"}
-                    </td>
-                    <td className={tableTdCls("num", `tabular-nums font-bold ${r.diff > 0 ? "text-rose-600" : r.diff < 0 ? "text-emerald-600" : "text-zinc-300"} bg-rose-50/20`)}>
-                      {r.diff !== 0 ? (r.diff > 0 ? `+${r.diff}` : String(r.diff)) : "0"}
-                    </td>
-                  </tr>
-                ))}
+                {grouped.map(([zoneKey, zoneRows]) => {
+                  const sum = zoneSummary(zoneRows);
+                  const expanded = expandedZones.has(zoneKey);
+                  return (
+                    <React.Fragment key={zoneKey}>
+                      {/* 그룹 행 · 클릭 시 확장 · 요약 표시 */}
+                      <tr
+                        onClick={() => toggleZone(zoneKey)}
+                        className={`cursor-pointer transition text-[15px] font-bold ${expanded ? "bg-brand-tint/20" : "bg-zinc-50/50 hover:bg-zinc-100/60"}`}
+                        title={expanded ? "접기" : "펼치기"}
+                      >
+                        <td className={tableTdCls("center")}>
+                          {expanded ? <ChevronDown size={16} className="text-brand-deep inline" /> : <ChevronRight size={16} className="text-zinc-500 inline" />}
+                        </td>
+                        <td className={tableTdCls("left", "font-extrabold text-brand-deep")}>
+                          <span className="inline-flex items-center gap-2">
+                            <span className="text-[16px]">{zoneKey}</span>
+                            <span className="text-[13px] text-zinc-500 font-semibold">{sum.count}개 상품</span>
+                          </span>
+                        </td>
+                        <td className={tableTdCls("left")} colSpan={3}></td>
+                        <td className={tableTdCls("num", "tabular-nums font-bold text-amber-700 bg-amber-50/30")}>
+                          {sum.erp > 0 ? sum.erp : "-"}
+                        </td>
+                        <td className={tableTdCls("num")} colSpan={5}></td>
+                        <td className={tableTdCls("num", "tabular-nums font-extrabold text-brand-deep bg-brand-tint/20")}>
+                          {sum.total > 0 ? sum.total : "-"}
+                        </td>
+                        <td className={tableTdCls("num", `tabular-nums font-bold ${sum.diff > 0 ? "text-rose-600" : sum.diff < 0 ? "text-emerald-600" : "text-zinc-300"} bg-rose-50/20`)}>
+                          {sum.diff !== 0 ? (sum.diff > 0 ? `+${sum.diff}` : String(sum.diff)) : "0"}
+                        </td>
+                      </tr>
+                      {/* 확장 시 · 상세 상품 rows */}
+                      {expanded && zoneRows.map(r => (
+                        <tr key={`${zoneKey}-${r.product_code}`} className="hover:bg-zinc-50/60 transition text-[14px]">
+                          <td className={tableTdCls("center")}></td>
+                          <td className={tableTdCls("left", "font-mono text-[13px] text-zinc-500 tabular-nums pl-8")}>{r.product_code}</td>
+                          <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ?? "-"}</td>
+                          <td className={tableTdCls("left", "font-semibold text-zinc-800 break-keep whitespace-normal")}>{r.product_name}</td>
+                          <td className={tableTdCls("center", `font-semibold ${r.spec ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/10`)}>
+                            {r.spec ?? "미지정"}
+                          </td>
+                          <td className={tableTdCls("num", `tabular-nums font-bold ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-50/20`)}>
+                            {r.erp ?? "-"}
+                          </td>
+                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.w1, "cyan")} bg-cyan-50/20`)}>{r.w1 ?? "-"}</td>
+                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.w2, "cyan")} bg-cyan-50/20`)}>{r.w2 ?? "-"}</td>
+                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.s1, "violet")} bg-violet-50/20`)}>{r.s1 ?? "-"}</td>
+                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.s2, "violet")} bg-violet-50/20`)}>{r.s2 ?? "-"}</td>
+                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.s3, "violet")} bg-violet-50/20`)}>{r.s3 ?? "-"}</td>
+                          <td className={tableTdCls("num", `tabular-nums font-bold ${r.total > 0 ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/10`)}>
+                            {r.total > 0 ? r.total : "-"}
+                          </td>
+                          <td className={tableTdCls("num", `tabular-nums font-bold ${r.diff > 0 ? "text-rose-600" : r.diff < 0 ? "text-emerald-600" : "text-zinc-300"} bg-rose-50/10`)}>
+                            {r.diff !== 0 ? (r.diff > 0 ? `+${r.diff}` : String(r.diff)) : "0"}
+                          </td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </TableListWrap>
