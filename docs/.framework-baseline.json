@@ -1,37 +1,17 @@
 {
-  "created": "2026-08-25",
+  "created": "2026-08-26",
   "version": 1,
-  "totalViolations": 3,
+  "totalViolations": 1,
   "files": {
-    "src/components/LandingPage/VendorDetailModal.tsx": {
-      "lines": 879,
+    "src/components/OrderManagePage/ReturnListPanel.tsx": {
+      "lines": 729,
       "violations": [
         {
-          "ruleId": "large-file-warn",
+          "ruleId": "raw-confirm",
           "count": 1
         }
       ],
-      "totalWeight": 3
-    },
-    "src/components/RequestsPage/RequestsPage.tsx": {
-      "lines": 806,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/StockManagePage/SupplierTab.tsx": {
-      "lines": 853,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
+      "totalWeight": 2
     }
   }
 }

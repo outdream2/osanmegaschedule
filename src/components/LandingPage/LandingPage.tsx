@@ -257,7 +257,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-50">
+    // 2026-08-26 · 사용자 지시 · 랜딩페이지 · 전역 폰트 +2 스케일 제외 · data-scope 로 격리
+    <div data-scope="landing" className="min-h-screen flex flex-col bg-zinc-50">
 
       {/* 세션 만료 안내 배너 (30분 무활동 자동 로그아웃 · 8초 후 자동 닫힘) */}
       {sessionExpiredNotice && (

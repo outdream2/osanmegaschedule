@@ -185,18 +185,31 @@ html, body {
  * 2026-08-09 · 옵션 3 추가 · 작은 폰트 (9~11px) 만 추가 +1 · 탭 아래 컨텐츠 가독성 개선
  * 2026-08-10 · 사용자 요청 · 제목 제외한 내용 (8~13px) +1 상향 · 제목 (14~16px) 유지
  * 2026-08-10 · 사용자 요청 · content 전체 +2 추가 상향 (실재고 입력 등 안보여)
- * 2026-08-10 · 사용자 요청 · split 세션 통일 · 다시 +2 (전체 스케일 균일 상향) */
-[class*="text-\\[8px\\]"]  { font-size: 19px !important; }  /* was 17 · +2 */
-[class*="text-\\[9px\\]"]  { font-size: 21px !important; }  /* was 19 · +2 */
-[class*="text-\\[10px\\]"] { font-size: 22px !important; }  /* was 20 · +2 */
-/* 2026-08-16 · UI audit P0 · 11px≠12px, 13px≠14px 단차 복원 (기존 압착 상태 해소) */
-[class*="text-\\[11px\\]"] { font-size: 22px !important; }  /* T-3 caption · 22px */
-[class*="text-\\[12px\\]"] { font-size: 23px !important; }  /* T-3 alt · 23px */
-[class*="text-\\[13px\\]"] { font-size: 23px !important; }  /* T-4 body · 23px */
-[class*="text-\\[14px\\]"] { font-size: 24px !important; }  /* T-5 tab · 24px */
-[class*="text-\\[15px\\]"] { font-size: 25px !important; }  /* was 23 · +2 */
-[class*="text-\\[16px\\]"] { font-size: 26px !important; }  /* was 24 · +2 (제목) */
-[class*="text-\\[17px\\]"] { font-size: 27px !important; }  /* was 25 · +2 (제목) */
+ * 2026-08-10 · 사용자 요청 · split 세션 통일 · 다시 +2 (전체 스케일 균일 상향)
+ * 2026-08-26 · 사용자 지시 · 전체 프로젝트 +2 (랜딩페이지 [data-scope=landing] 제외)
+ *   · 메뉴 안으로 들어가는 모든 페이지에만 적용 */
+[class*="text-\\[8px\\]"]  { font-size: 21px !important; }  /* was 19 · +2 */
+[class*="text-\\[9px\\]"]  { font-size: 23px !important; }  /* was 21 · +2 */
+[class*="text-\\[10px\\]"] { font-size: 24px !important; }  /* was 22 · +2 */
+[class*="text-\\[11px\\]"] { font-size: 24px !important; }  /* was 22 · +2 */
+[class*="text-\\[12px\\]"] { font-size: 25px !important; }  /* was 23 · +2 */
+[class*="text-\\[13px\\]"] { font-size: 25px !important; }  /* was 23 · +2 */
+[class*="text-\\[14px\\]"] { font-size: 26px !important; }  /* was 24 · +2 */
+[class*="text-\\[15px\\]"] { font-size: 27px !important; }  /* was 25 · +2 */
+[class*="text-\\[16px\\]"] { font-size: 28px !important; }  /* was 26 · +2 (제목) */
+[class*="text-\\[17px\\]"] { font-size: 29px !important; }  /* was 27 · +2 (제목) */
+
+/* 랜딩페이지 예외 · 이전 스케일 유지 · 사용자 명시 제외 */
+[data-scope="landing"] [class*="text-\\[8px\\]"]  { font-size: 19px !important; }
+[data-scope="landing"] [class*="text-\\[9px\\]"]  { font-size: 21px !important; }
+[data-scope="landing"] [class*="text-\\[10px\\]"] { font-size: 22px !important; }
+[data-scope="landing"] [class*="text-\\[11px\\]"] { font-size: 22px !important; }
+[data-scope="landing"] [class*="text-\\[12px\\]"] { font-size: 23px !important; }
+[data-scope="landing"] [class*="text-\\[13px\\]"] { font-size: 23px !important; }
+[data-scope="landing"] [class*="text-\\[14px\\]"] { font-size: 24px !important; }
+[data-scope="landing"] [class*="text-\\[15px\\]"] { font-size: 25px !important; }
+[data-scope="landing"] [class*="text-\\[16px\\]"] { font-size: 26px !important; }
+[data-scope="landing"] [class*="text-\\[17px\\]"] { font-size: 27px !important; }
 
 /* 2026-08-10 · 사용자 요청 · 전역 버튼 위아래 여백 축소 (다른 SaaS · Linear·Notion 참고 · 컴팩트)
  * button 요소만 · py-1.5 (0.375rem) 이하는 유지 · py-2 (0.5rem) 이상만 축소

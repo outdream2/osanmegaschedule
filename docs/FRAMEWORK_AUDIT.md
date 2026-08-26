@@ -9,26 +9,29 @@
 | 지표 | 값 |
 |---|---:|
 | 스캔 파일 | 709 |
-| 위반 파일 | 0 |
-| 클린 파일 | 709 (100%) |
-| 총 위반 개수 | 0 |
+| 위반 파일 | 1 |
+| 클린 파일 | 708 (100%) |
+| 총 위반 개수 | 1 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
+| `raw-confirm` | 1 | 1 | medium | useConfirm (ConfirmDialog 프리미티브) |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
+| 1 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 729 | 2 | raw-confirm(1) |
 
-## 📝 모든 위반 파일 (0개)
+## 📝 모든 위반 파일 (1개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
+| `src/components/OrderManagePage/ReturnListPanel.tsx` | 729 | 2 |
 
 </details>
 

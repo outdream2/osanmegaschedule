@@ -38,7 +38,7 @@ interface ReturnListPanelProps {
 
 // ── ReturnListPanel (메인 export) ────────────────────────────────────────
 export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClick }) => {
-  const { toast, showError } = useToast();
+  const { toast, showError, showSuccess } = useToast();
   // DB + 하드코딩 병합 reference 값
   const { vendorCategories: dbVendorCategories } = useReferenceValues();
 
@@ -339,6 +339,34 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
     setReturnRequestItem(selectedItems[0]);
   };
 
+  // 2026-08-26 · 사용자 지시 · 일괄 확정 · 선택된 상품 모두 즉시 done 처리
+  const [bulkConfirming, setBulkConfirming] = useState(false);
+  const bulkConfirmReturn = React.useCallback(async () => {
+    if (returnSelected.size === 0 || bulkConfirming) return;
+    const selectedItems = returnList.filter(x => returnSelected.has(x.product_code));
+    if (selectedItems.length === 0) return;
+    const ok = window.confirm(`${selectedItems.length}개 상품을 반품확정 처리합니다. 진행하시겠습니까?`);
+    if (!ok) return;
+    setBulkConfirming(true);
+    let successCount = 0;
+    let failCount = 0;
+    for (const row of selectedItems) {
+      try {
+        await confirmReturn(row);
+        successCount++;
+      } catch (e: any) {
+        console.error("[일괄확정] 실패:", row.product_code, e?.message);
+        failCount++;
+      }
+    }
+    setBulkConfirming(false);
+    if (failCount === 0) {
+      showSuccess(`${successCount}개 반품확정 완료`);
+    } else {
+      showError(`${successCount}개 성공 · ${failCount}개 실패`);
+    }
+  }, [returnSelected, returnList, confirmReturn, bulkConfirming, showSuccess, showError]);
+
   // ── 컬럼 리사이저 (메인 반품필요 리스트 테이블) ─────────────────────────
   // 2026-08-06 · v3 · 현재고·실재고 제거 · 판매 3컬럼 통합 · localStorage 캐시 무효화
   const { getWidth, resizerProps: colResizerProps } = useColumnResize("returnList_v4", {
@@ -375,6 +403,8 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         setReturnSalesQuarterMax={setReturnSalesQuarterMax}
         returnSelectedSize={returnSelected.size}
         onOpenBulkReturnModal={openBulkReturnModal}
+        onBulkConfirm={bulkConfirmReturn}
+        bulkConfirming={bulkConfirming}
       />
 
       {/* ── 좌우 split 레이아웃 · 2026-08-17 · items-stretch · 좌우 높이 매칭 ── */}

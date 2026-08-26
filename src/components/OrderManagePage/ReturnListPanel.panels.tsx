@@ -3,7 +3,7 @@
 //   · props-driven pure display
 
 import React from "react";
-import { PackageCheck, Search, Truck } from "lucide-react";
+import { PackageCheck, Search, Truck, CheckCircle2 } from "lucide-react";
 import { CARD_BASE } from "../../styles/tokens";
 import { StatusPill } from "../common/StatusPill";
 
@@ -28,6 +28,8 @@ interface ReturnFilterBarProps {
   setReturnSalesQuarterMax: (v: number) => void;
   returnSelectedSize: number;
   onOpenBulkReturnModal: () => void;
+  onBulkConfirm: () => void;
+  bulkConfirming: boolean;
 }
 
 export const ReturnFilterBar: React.FC<ReturnFilterBarProps> = ({
@@ -38,6 +40,7 @@ export const ReturnFilterBar: React.FC<ReturnFilterBarProps> = ({
   returnSalesMax, setReturnSalesMax,
   returnSalesQuarterMax, setReturnSalesQuarterMax,
   returnSelectedSize, onOpenBulkReturnModal,
+  onBulkConfirm, bulkConfirming,
 }) => {
   // 2026-08-25 · 사용자 지시 · 검색어 · 공급사·상품·상품코드 통합 매칭
   const q = returnSupplierSearch.trim().toLowerCase();
@@ -121,20 +124,37 @@ export const ReturnFilterBar: React.FC<ReturnFilterBarProps> = ({
           className="w-52 h-7 pl-7 pr-2 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
         />
       </div>
-      <button
-        type="button"
-        onClick={onOpenBulkReturnModal}
-        disabled={returnSelectedSize === 0}
-        className={`ml-auto inline-flex items-center gap-1.5 h-7 px-3 rounded-md text-[15px] font-bold transition cursor-pointer border ${
-          returnSelectedSize > 0
-            ? "text-white bg-rose-500 hover:bg-rose-600 border-rose-700 shadow-sm active:scale-95"
-            : "text-zinc-400 bg-zinc-50 border-line cursor-not-allowed"
-        }`}
-        title={returnSelectedSize > 0 ? `선택된 ${returnSelectedSize}개 상품 일괄 반품 신청` : "체크박스로 상품을 선택하세요"}
-      >
-        <Truck size={12} strokeWidth={2.5} />
-        일괄 반품 ({returnSelectedSize})
-      </button>
+      <div className="ml-auto inline-flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onOpenBulkReturnModal}
+          disabled={returnSelectedSize === 0}
+          className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[15px] font-bold transition cursor-pointer border ${
+            returnSelectedSize > 0
+              ? "text-white bg-rose-500 hover:bg-rose-600 border-rose-700 shadow-sm active:scale-95"
+              : "text-zinc-400 bg-zinc-50 border-line cursor-not-allowed"
+          }`}
+          title={returnSelectedSize > 0 ? `선택된 ${returnSelectedSize}개 상품 일괄 반품 신청` : "체크박스로 상품을 선택하세요"}
+        >
+          <Truck size={13} strokeWidth={2.5} />
+          일괄 반품 ({returnSelectedSize})
+        </button>
+        {/* 2026-08-26 · 사용자 지시 · 일괄 확정 버튼 · 선택된 상품 모두 즉시 done 처리 */}
+        <button
+          type="button"
+          onClick={onBulkConfirm}
+          disabled={returnSelectedSize === 0 || bulkConfirming}
+          className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[15px] font-bold transition cursor-pointer border ${
+            returnSelectedSize > 0 && !bulkConfirming
+              ? "text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-800 shadow-sm ring-2 ring-emerald-300/40 active:scale-95"
+              : "text-zinc-400 bg-zinc-50 border-line cursor-not-allowed"
+          }`}
+          title={returnSelectedSize > 0 ? `선택된 ${returnSelectedSize}개 상품 일괄 반품확정 (즉시 done)` : "체크박스로 상품을 선택하세요"}
+        >
+          <CheckCircle2 size={13} strokeWidth={2.5} />
+          {bulkConfirming ? "확정 중..." : `일괄 확정 (${returnSelectedSize})`}
+        </button>
+      </div>
     </div>
   );
 };
