@@ -12,6 +12,8 @@ import { SettingsPageShell } from "../common/SettingsPageShell";
 import { CARD_BASE } from "../../styles/tokens";
 import { ChartBar } from "@phosphor-icons/react";
 import { OptimalStockPeriodSection } from "./OptimalStockPeriodSection";
+// 2026-08-26 · #118 · 판매중 상품만 필터 전역 설정 (신규 섹션)
+import { SaleActiveOnlySection } from "./SaleActiveOnlySection";
 
 interface Props {
   onBack: () => void;
@@ -54,6 +56,8 @@ const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
         </div>
         {/* 섹션 2 · 적정재고 설정 (2026-08-23 · #193 신규) */}
         <OptimalStockPeriodSection />
+        {/* 섹션 3 · 판매중 상품만 표시 (2026-08-26 · #118 신규) */}
+        <SaleActiveOnlySection />
       </div>
     </SettingsPageShell>
   );
