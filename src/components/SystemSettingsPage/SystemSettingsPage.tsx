@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import {
   Gear, FloppyDisk, Warning, Info, ArrowsClockwise, Database, Robot,
-  ChatCircleDots, ImageSquare, Bell, Buildings, UploadSimple,
+  ChatCircleDots, ImageSquare, Bell, UploadSimple,
 } from "@phosphor-icons/react";
 import type { AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
@@ -32,7 +32,8 @@ interface Props {
 
 // ─── 카테고리별 키 그룹 ─────────────────────────────────────────────────────
 // 2026-08-24 · #253 · "auto-import" 탭 신규 추가 (자동 임포트 · Phase E)
-type Cat = "db-auth" | "ai-ocr" | "sms" | "cdn" | "webpush" | "ocr-tenant" | "upload" | "auto-import" | "session";
+// 2026-08-26 · 사용자 지시 · "ocr-tenant" 카테고리 제거 (env 는 서버에서 계속 사용)
+type Cat = "db-auth" | "ai-ocr" | "sms" | "cdn" | "webpush" | "upload" | "auto-import" | "session";
 
 const CAT_TABS: TabDef<Cat>[] = [
   { key: "db-auth",     label: "DB · 인증",       icon: Database,       color: "slate" },
@@ -40,7 +41,6 @@ const CAT_TABS: TabDef<Cat>[] = [
   { key: "sms",         label: "알림톡 · SMS",    icon: ChatCircleDots,  color: "amber" },
   { key: "cdn",         label: "이미지 CDN",      icon: ImageSquare,     color: "cyan" },
   { key: "webpush",     label: "Web Push",       icon: Bell,             color: "emerald" },
-  { key: "ocr-tenant",  label: "OCR 수신처",      icon: Buildings,       color: "indigo" },
   { key: "upload",      label: "데이터 업로드",    icon: UploadSimple,    color: "red" },
   // 2026-08-24 · #253 Phase E · 자동 임포트 (관리자 lv9)
   { key: "auto-import", label: "자동 임포트",     icon: Robot,           color: "violet" },
@@ -54,8 +54,6 @@ const CAT_KEYS: Record<Cat, string[]> = {
   "sms":        ["SOLAPI_API_KEY", "SOLAPI_API_SECRET", "SOLAPI_SENDER", "KAKAO_TOKEN", "KAKAO_PFID"],
   "cdn":        ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"],
   "webpush":    ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"],
-  "ocr-tenant": ["OCR_RECIPIENT_COMPANY", "OCR_RECIPIENT_NAMES", "OCR_RECIPIENT_ADDRESS",
-                 "OCR_EXCLUDED_LOGISTICS", "OCR_EXCLUDED_SUPPLIERS", "OCR_EXCLUDED_BUSINESS_NUMBERS"],
   "upload":     [],
   "auto-import": [],  // 2026-08-24 · #253 · KV 기반 · env keys 없음
   "session":     [],  // 2026-08-25 · KV 기반 · env keys 없음
