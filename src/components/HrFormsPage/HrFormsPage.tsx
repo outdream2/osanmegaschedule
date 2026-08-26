@@ -214,7 +214,8 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
   // ── 렌더 ─────────────────────────────────────────────────────────────────
   return (
-    <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-zinc-50 flex flex-col"}>
+    // 2026-08-26 · 사용자 지시 · 각종양식 · 프레임워크 폰트 +2 + 프리미엄 톤 · data-scope 격리
+    <div data-scope="hr-forms" className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-zinc-50 flex flex-col"}>
       {!embedded && (
         <AppNavHeader
           activePage={"hr-forms" as AppNavPage}
