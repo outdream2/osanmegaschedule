@@ -74,11 +74,22 @@ export const RealStockTablePage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
+      // 2026-08-26 · 사용자 버그 fix · products-search 는 q="" 시 [] 반환 → 데이터 안 나옴
+      //   · /api/products-map 사용 · 전체 상품 map · 배열로 변환
       const [pRes, iRes] = await Promise.all([
-        api.get<{ items?: Product[] } | Product[]>("/api/products-search?q=&limit=2000"),
+        api.get<Record<string, any>>("/api/products-map"),
         api.get<Record<string, InvRow>>("/api/inventory-latest"),
       ]);
-      const list: Product[] = Array.isArray(pRes.data) ? pRes.data : (pRes.data?.items ?? []);
+      const map = pRes.data ?? {};
+      const list: Product[] = Object.entries(map).map(([code, p]) => ({
+        product_code: code,
+        product_name: String(p?.product_name ?? p?.name ?? ""),
+        supplier: p?.supplier ?? null,
+        spec: p?.spec ?? null,
+        real_map: p?.real_map ?? null,
+        category_code: p?.category_code ?? null,
+      }));
+      list.sort((a, b) => a.product_name.localeCompare(b.product_name, "ko"));
       setProducts(list);
       setInv(iRes.data ?? {});
     } catch (e: unknown) {
