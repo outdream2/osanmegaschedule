@@ -211,20 +211,23 @@ html, body {
 [data-scope="landing"] [class*="text-\\[16px\\]"] { font-size: 26px !important; }
 [data-scope="landing"] [class*="text-\\[17px\\]"] { font-size: 27px !important; }
 
-/* 2026-08-26 · 사용자 지시 · 통계설정 페이지 · 전역 스케일에서 +3 추가 (총 +5) */
-[data-scope="stats-settings"] [class*="text-\\[8px\\]"]  { font-size: 24px !important; }
-[data-scope="stats-settings"] [class*="text-\\[9px\\]"]  { font-size: 26px !important; }
-[data-scope="stats-settings"] [class*="text-\\[10px\\]"] { font-size: 27px !important; }
-[data-scope="stats-settings"] [class*="text-\\[11px\\]"] { font-size: 27px !important; }
-[data-scope="stats-settings"] [class*="text-\\[12px\\]"] { font-size: 28px !important; }
-[data-scope="stats-settings"] [class*="text-\\[13px\\]"] { font-size: 28px !important; }
-[data-scope="stats-settings"] [class*="text-\\[14px\\]"] { font-size: 29px !important; }
-[data-scope="stats-settings"] [class*="text-\\[15px\\]"] { font-size: 30px !important; }
-[data-scope="stats-settings"] [class*="text-\\[16px\\]"] { font-size: 31px !important; }
-[data-scope="stats-settings"] [class*="text-\\[17px\\]"] { font-size: 32px !important; }
-[data-scope="stats-settings"] [class*="text-\\[18px\\]"] { font-size: 33px !important; }
-[data-scope="stats-settings"] [class*="text-\\[19px\\]"] { font-size: 34px !important; }
-[data-scope="stats-settings"] [class*="text-\\[20px\\]"] { font-size: 35px !important; }
+/* 2026-08-26 · 사용자 지시 · 통계설정 페이지 · 전역 스케일에서 +5 추가 (총 +7 · 재요청)
+ *   · 8~22px 매핑 · 모두 +2 (기존 대비) · 40대+ 가독성 극대화 */
+[data-scope="stats-settings"] [class*="text-\\[8px\\]"]  { font-size: 26px !important; }
+[data-scope="stats-settings"] [class*="text-\\[9px\\]"]  { font-size: 28px !important; }
+[data-scope="stats-settings"] [class*="text-\\[10px\\]"] { font-size: 29px !important; }
+[data-scope="stats-settings"] [class*="text-\\[11px\\]"] { font-size: 29px !important; }
+[data-scope="stats-settings"] [class*="text-\\[12px\\]"] { font-size: 30px !important; }
+[data-scope="stats-settings"] [class*="text-\\[13px\\]"] { font-size: 30px !important; }
+[data-scope="stats-settings"] [class*="text-\\[14px\\]"] { font-size: 31px !important; }
+[data-scope="stats-settings"] [class*="text-\\[15px\\]"] { font-size: 32px !important; }
+[data-scope="stats-settings"] [class*="text-\\[16px\\]"] { font-size: 33px !important; }
+[data-scope="stats-settings"] [class*="text-\\[17px\\]"] { font-size: 34px !important; }
+[data-scope="stats-settings"] [class*="text-\\[18px\\]"] { font-size: 35px !important; }
+[data-scope="stats-settings"] [class*="text-\\[19px\\]"] { font-size: 36px !important; }
+[data-scope="stats-settings"] [class*="text-\\[20px\\]"] { font-size: 37px !important; }
+[data-scope="stats-settings"] [class*="text-\\[21px\\]"] { font-size: 38px !important; }
+[data-scope="stats-settings"] [class*="text-\\[22px\\]"] { font-size: 39px !important; }
 
 /* 2026-08-10 · 사용자 요청 · 전역 버튼 위아래 여백 축소 (다른 SaaS · Linear·Notion 참고 · 컴팩트)
  * button 요소만 · py-1.5 (0.375rem) 이하는 유지 · py-2 (0.5rem) 이상만 축소
