@@ -1,10 +1,10 @@
 // src/components/DisplayPage/ZoneEditPanel.tsx
 // 2026-08-26 · 사용자 지시 · 매장진열 · "매장구역도 편집" 신규 탭
-//   · useZoneDefs (KV) · label · category · num · subA · subB 편집
-//   · 관리자 (lv 9) 전용 · 저장 시 saveNow · 토스트 피드백
-//   · 프리미엄 톤 · Card · Table · TextInput
+//   · 2컬럼 (구역 · 상세설명) · 둘다 인라인 편집 · Enter/blur 자동 저장
+//   · 서브존 별도 행 · 1A · 1B · 2A · 2B ... 8A · 8B · 9 · 10 · ... · 40A/B/C · 41 · 42
+//   · useZoneDefs (KV) · 관리자 (lv 9) 전용
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Save, RotateCcw, Pencil, Check, X } from "lucide-react";
 import { Card } from "../common/Card";
 import { IconTile } from "../common/IconTile";
@@ -20,46 +20,90 @@ interface Props {
   canEdit?: boolean;
 }
 
-// 2026-08-26 · 사용자 지시 · 번호 → 구역 · aisle 1-8 (subA/subB 있음) · "{num}A / {num}B"
-//   · 계산대 40 (subC 있음) · "40A / 40B / 40C"
-//   · 나머지 · 단순 num (예: 벽면 9-34)
-function formatZoneCode(z: ZoneDef): React.ReactNode {
+type EditField = "category" | "subA" | "subB" | "subC" | "description" | "descriptionA" | "descriptionB" | "descriptionC";
+type SubKey = "A" | "B" | "C" | null;
+
+interface FlatRow {
+  zone: ZoneDef;
+  code: string;
+  sub: SubKey;
+  catField: "category" | "subA" | "subB" | "subC";
+  descField: "description" | "descriptionA" | "descriptionB" | "descriptionC";
+  catValue?: string;
+  descValue?: string;
+}
+
+// zone 을 서브존별 행으로 확장 · aisle 1-8 · 계산대 40 · 나머지 단일 행
+function expandZoneToRows(z: ZoneDef): FlatRow[] {
   const hasA = !!z.subA;
   const hasB = !!z.subB;
-  const hasC = !!(z as any).subC;
-  if (hasA && hasB && hasC) return <span>{z.num}A · {z.num}B · {z.num}C</span>;
-  if (hasA && hasB)         return <span>{z.num}A · {z.num}B</span>;
-  return <span>{z.num}</span>;
+  const hasC = !!z.subC;
+  if (hasA && hasB && hasC) {
+    return [
+      { zone: z, code: `${z.num}A`, sub: "A", catField: "subA", descField: "descriptionA", catValue: z.subA, descValue: z.descriptionA },
+      { zone: z, code: `${z.num}B`, sub: "B", catField: "subB", descField: "descriptionB", catValue: z.subB, descValue: z.descriptionB },
+      { zone: z, code: `${z.num}C`, sub: "C", catField: "subC", descField: "descriptionC", catValue: z.subC, descValue: z.descriptionC },
+    ];
+  }
+  if (hasA && hasB) {
+    return [
+      { zone: z, code: `${z.num}A`, sub: "A", catField: "subA", descField: "descriptionA", catValue: z.subA, descValue: z.descriptionA },
+      { zone: z, code: `${z.num}B`, sub: "B", catField: "subB", descField: "descriptionB", catValue: z.subB, descValue: z.descriptionB },
+    ];
+  }
+  return [
+    { zone: z, code: String(z.num), sub: null, catField: "category", descField: "description", catValue: z.category, descValue: z.description },
+  ];
 }
+
+const codeToneCls = (sub: SubKey): { badge: string; row: string } => {
+  if (sub === "A") return { badge: "bg-violet-100 text-violet-800 border-violet-300", row: "bg-violet-50/25" };
+  if (sub === "B") return { badge: "bg-sky-100 text-sky-800 border-sky-300",           row: "bg-sky-50/25" };
+  if (sub === "C") return { badge: "bg-amber-100 text-amber-800 border-amber-300",     row: "bg-amber-50/25" };
+  return { badge: "bg-brand-tint/60 text-brand-deep border-brand-deep/30",             row: "" };
+};
 
 export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
   const { zones, setZones, loading, saveNow, saveState } = useZoneDefs();
   const { toast, showSuccess, showError } = useToast();
   const confirm = useConfirm();
-  const [editing, setEditing] = useState<{ num: number; field: "label" | "category" | "subA" | "subB" | "description" } | null>(null);
+  const [editing, setEditing] = useState<{ num: number; field: EditField } | null>(null);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
 
   useEffect(() => { setEditing(null); setDraft(""); }, [zones.length]);
 
-  const startEdit = (zone: ZoneDef, field: "label" | "category" | "subA" | "subB" | "description") => {
+  const startEdit = (zone: ZoneDef, field: EditField) => {
     if (!canEdit) return;
     setEditing({ num: zone.num, field });
-    const cur = field === "label"       ? zone.label
-              : field === "category"    ? zone.category
-              : field === "subA"        ? (zone.subA ?? "")
-              : field === "subB"        ? (zone.subB ?? "")
-              :                           (zone.description ?? "");
+    const cur = ((): string => {
+      switch (field) {
+        case "category":      return zone.category;
+        case "subA":          return zone.subA ?? "";
+        case "subB":          return zone.subB ?? "";
+        case "subC":          return zone.subC ?? "";
+        case "description":   return zone.description  ?? "";
+        case "descriptionA":  return zone.descriptionA ?? "";
+        case "descriptionB":  return zone.descriptionB ?? "";
+        case "descriptionC":  return zone.descriptionC ?? "";
+      }
+    })();
     setDraft(cur);
   };
   const cancelEdit = () => { setEditing(null); setDraft(""); };
   const commitEdit = async () => {
-    if (!editing) return;
+    if (!editing || savingRef.current) return;
     const cleaned = draft.trim();
+    // optional 필드 · 빈 값 → undefined · required (category) 는 빈 문자열
+    const isOptional = editing.field !== "category";
+    const nextValue: string | undefined = cleaned || (isOptional ? undefined : "");
+    savingRef.current = true;
     setSaving(true);
-    setZones((prev: ZoneDef[]) => prev.map(z => z.num === editing.num ? { ...z, [editing.field]: cleaned || (editing.field === "subA" || editing.field === "subB" || editing.field === "description" ? undefined : "") } : z));
+    setZones((prev: ZoneDef[]) => prev.map(z => z.num === editing.num ? { ...z, [editing.field]: nextValue } : z));
     setTimeout(async () => {
       const ok = await saveNow();
+      savingRef.current = false;
       setSaving(false);
       if (ok) { showSuccess(`구역 ${editing.num}번 저장 완료`); cancelEdit(); }
       else showError("구역 저장 실패 · 관리자 lv≥9 필요");
@@ -87,29 +131,33 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
   const grouped: Record<ZoneSection, ZoneDef[]> = { top_wall: [], aisle: [], left_wall: [], bottom_wall: [], wing: [], event: [] };
   for (const z of zones) grouped[z.section].push(z);
 
-  const inputCls = "flex-1 min-w-0 h-8 px-2 rounded-md border border-brand-deep bg-white text-[14px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint";
+  const inputCls = "flex-1 min-w-0 h-9 px-2.5 rounded-md border border-brand-deep bg-white text-[14px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint";
+  const textareaCls = "flex-1 min-w-0 min-h-[36px] max-h-[160px] px-2.5 py-1.5 rounded-md border border-brand-deep bg-white text-[13px] text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint resize-y";
 
-  const renderEdit = (zone: ZoneDef, field: "label" | "category" | "subA" | "subB" | "description", display: React.ReactNode) => {
+  const renderEdit = (zone: ZoneDef, field: EditField, display: React.ReactNode, multiline = false) => {
     const isEditing = editing?.num === zone.num && editing?.field === field;
     if (isEditing) {
+      const Input = multiline ? "textarea" : "input";
       return (
-        <div className="flex items-center gap-1">
-          <input
+        <div className="flex items-start gap-1">
+          <Input
             autoFocus
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => setDraft((e.target as HTMLInputElement | HTMLTextAreaElement).value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
+              if (!multiline && e.key === "Enter") { e.preventDefault(); commitEdit(); }
               if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
+              if (multiline && (e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); commitEdit(); }
             }}
-            className={inputCls}
+            onBlur={() => { if (!savingRef.current) commitEdit(); }}
+            className={multiline ? textareaCls : inputCls}
             disabled={saving}
           />
-          <button type="button" onClick={commitEdit} disabled={saving} className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer disabled:opacity-40" title="저장 (Enter)">
-            {saving ? <Spinner size={11} tone="white" /> : <Check size={12} />}
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={commitEdit} disabled={saving} className="shrink-0 w-8 h-9 flex items-center justify-center rounded-md bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer disabled:opacity-40" title={multiline ? "저장 (Ctrl+Enter)" : "저장 (Enter)"}>
+            {saving ? <Spinner size={11} tone="white" /> : <Check size={13} />}
           </button>
-          <button type="button" onClick={cancelEdit} disabled={saving} className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md bg-white border border-line hover:bg-zinc-50 text-zinc-500 cursor-pointer disabled:opacity-40" title="취소 (Esc)">
-            <X size={12} />
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={cancelEdit} disabled={saving} className="shrink-0 w-8 h-9 flex items-center justify-center rounded-md bg-white border border-line hover:bg-zinc-50 text-zinc-500 cursor-pointer disabled:opacity-40" title="취소 (Esc)">
+            <X size={13} />
           </button>
         </div>
       );
@@ -119,11 +167,11 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
       <button
         type="button"
         onClick={() => startEdit(zone, field)}
-        className="group inline-flex items-center gap-1.5 text-left text-[14px] font-semibold text-ink hover:bg-brand-tint/40 rounded-md px-1.5 py-0.5 cursor-pointer transition w-full max-w-full"
+        className="group inline-flex items-start gap-1.5 text-left text-[14px] font-semibold text-ink hover:bg-brand-tint/40 rounded-md px-1.5 py-1 cursor-pointer transition w-full max-w-full break-keep whitespace-normal"
         title="클릭하여 편집"
       >
-        <span className="truncate">{display}</span>
-        <Pencil size={11} className="text-zinc-300 group-hover:text-brand-deep transition opacity-0 group-hover:opacity-100 shrink-0" />
+        <span className="flex-1 min-w-0">{display}</span>
+        <Pencil size={12} className="text-zinc-300 group-hover:text-brand-deep transition opacity-0 group-hover:opacity-100 shrink-0 mt-0.5" />
       </button>
     );
   };
@@ -138,7 +186,7 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
           <div className="flex-1 min-w-0">
             <div className="text-[17px] font-bold text-ink tracking-tight">매장구역도 편집</div>
             <div className="text-[13px] text-ink-soft mt-0.5">
-              구역 라벨·카테고리·서브존 (A/B) 편집 · 저장 즉시 반영
+              구역명 · 상세설명 직접 편집 · 서브존 (1A/1B ...) 별도 행 · Enter 즉시 저장
               {!canEdit && <span className="ml-2 text-rose-500 font-bold">· 관리자 (lv 9) 전용</span>}
             </div>
           </div>
@@ -168,40 +216,53 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
           <EmptyState icon={Save} title="구역 정의 없음" hint="[기본값 복원] 클릭" size="normal" />
         </Card>
       ) : (
-        (Object.keys(grouped) as ZoneSection[]).filter(sec => grouped[sec].length > 0).map(sec => (
-          <Card key={sec} padding="md">
-            <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-line">
-              <span className="w-1.5 h-4 rounded-full bg-brand-deep" />
-              <span className="text-[15px] font-bold text-ink">{SECTION_LABEL[sec]}</span>
-              <span className="text-[12px] text-zinc-400 ml-auto">{grouped[sec].length}구역</span>
-            </div>
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">
-                  <th className="text-left px-2 py-1.5 w-20">구역</th>
-                  <th className="text-left px-2 py-1.5" style={{ minWidth: 140 }}>라벨</th>
-                  <th className="text-left px-2 py-1.5" style={{ minWidth: 220 }}>카테고리</th>
-                  <th className="text-left px-2 py-1.5" style={{ minWidth: 160 }}>서브 A</th>
-                  <th className="text-left px-2 py-1.5" style={{ minWidth: 160 }}>서브 B</th>
-                  <th className="text-left px-2 py-1.5" style={{ minWidth: 260 }}>상세 설명 (매장구역도 hover)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {grouped[sec].map(z => (
-                  <tr key={z.num} className="hover:bg-zinc-50/60 transition">
-                    {/* 2026-08-26 · 사용자 지시 · 번호 대신 구역 (zonecategory.png) · aisle 1-8 은 A/B 두 줄 · 나머지는 xx */}
-                    <td className="px-2 py-1.5 font-extrabold text-brand-deep tabular-nums text-[15px] whitespace-nowrap">{formatZoneCode(z)}</td>
-                    <td className="px-2 py-1.5">{renderEdit(z, "label", z.label || <span className="text-zinc-300">(비어있음)</span>)}</td>
-                    <td className="px-2 py-1.5 break-keep whitespace-normal">{renderEdit(z, "category", z.category || <span className="text-zinc-300">(비어있음)</span>)}</td>
-                    <td className="px-2 py-1.5 break-keep whitespace-normal">{renderEdit(z, "subA", z.subA ?? <span className="text-zinc-300 italic">-</span>)}</td>
-                    <td className="px-2 py-1.5 break-keep whitespace-normal">{renderEdit(z, "subB", z.subB ?? <span className="text-zinc-300 italic">-</span>)}</td>
-                    <td className="px-2 py-1.5 break-keep whitespace-normal">{renderEdit(z, "description", z.description ?? <span className="text-zinc-300 italic">-</span>)}</td>
+        (Object.keys(grouped) as ZoneSection[]).filter(sec => grouped[sec].length > 0).map(sec => {
+          const flatRows = grouped[sec].flatMap(expandZoneToRows);
+          return (
+            <Card key={sec} padding="md">
+              <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-line">
+                <span className="w-1.5 h-4 rounded-full bg-brand-deep" />
+                <span className="text-[15px] font-bold text-ink">{SECTION_LABEL[sec]}</span>
+                <span className="text-[12px] text-zinc-400 ml-auto">{grouped[sec].length}구역 · {flatRows.length}행</span>
+              </div>
+              <table className="w-full text-[13px] table-fixed">
+                <thead>
+                  <tr className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">
+                    <th className="text-left px-2 py-1.5" style={{ width: "45%" }}>구역</th>
+                    <th className="text-left px-2 py-1.5" style={{ width: "55%" }}>상세 설명 (매장구역도 hover)</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-        ))
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {flatRows.map((fr) => {
+                    const z = fr.zone;
+                    const tone = codeToneCls(fr.sub);
+                    return (
+                      <tr key={fr.code} className={`hover:bg-zinc-50/60 transition ${tone.row} align-top`}>
+                        {/* 왼쪽 · 구역 = 코드 뱃지 + 카테고리 텍스트 (편집) */}
+                        <td className="px-2 py-2">
+                          <div className="flex items-start gap-2 min-w-0">
+                            <span className={`shrink-0 inline-flex items-center justify-center min-w-[38px] h-7 px-2 rounded-md border font-extrabold tabular-nums text-[14px] ${tone.badge}`}>
+                              {fr.code}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              {renderEdit(z, fr.catField, fr.catValue || <span className="text-zinc-300 italic">(비어있음 · 클릭하여 입력)</span>, false)}
+                            </div>
+                          </div>
+                        </td>
+                        {/* 오른쪽 · 상세설명 (편집 · multiline) */}
+                        <td className="px-2 py-2">
+                          {renderEdit(z, fr.descField, fr.descValue
+                            ? <span className="text-[13px] text-ink-soft leading-relaxed whitespace-pre-wrap">{fr.descValue}</span>
+                            : <span className="text-zinc-300 italic">(설명 없음 · 클릭하여 입력)</span>, true)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </Card>
+          );
+        })
       )}
     </div>
   );

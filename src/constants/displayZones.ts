@@ -21,8 +21,12 @@ export interface ZoneDef {
   subA?: string;
   /** 3분할 서브존 (계산대 40 등) — subA/subB/subC 모두 있으면 3-way split */
   subC?: string;
-  /** 2026-08-26 · 사용자 지시 · 상세 설명 (긴 텍스트) · 매장구역도 셀 hover/click 표시 */
+  /** 2026-08-26 · 사용자 지시 · 상세 설명 (긴 텍스트) · 매장구역도 셀 hover/click 표시 · 서브 없는 zone 공용 */
   description?: string;
+  /** 2026-08-26 · 사용자 지시 · 서브존별 상세 설명 · aisle 1A/1B · 계산대 40A/B/C */
+  descriptionA?: string;
+  descriptionB?: string;
+  descriptionC?: string;
 }
 
 export const ZONE_DEFS: ZoneDef[] = [

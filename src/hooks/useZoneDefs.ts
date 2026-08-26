@@ -25,10 +25,13 @@ function sanitize(raw: unknown): ZoneDef[] | null {
         validSections.includes(zone.section as ZoneSection)
       );
     })
-    // 2026-08-26 · description 필드 통과 · optional string
+    // 2026-08-26 · description + 서브존별 descriptionA/B/C 필드 통과 · optional string
     .map((z) => ({
       ...z,
-      description: typeof (z as any).description === "string" ? (z as any).description : undefined,
+      description:  typeof (z as any).description  === "string" ? (z as any).description  : undefined,
+      descriptionA: typeof (z as any).descriptionA === "string" ? (z as any).descriptionA : undefined,
+      descriptionB: typeof (z as any).descriptionB === "string" ? (z as any).descriptionB : undefined,
+      descriptionC: typeof (z as any).descriptionC === "string" ? (z as any).descriptionC : undefined,
     }))
     .sort((a, b) => a.num - b.num);
   return cleaned.length > 0 ? cleaned : null;
