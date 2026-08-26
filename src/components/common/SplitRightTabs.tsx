@@ -47,6 +47,8 @@ export interface SplitRightTabsProps<K extends string = string> {
   className?: string;
   /** border-b 하단 구분선 · 기본 true */
   withBorder?: boolean;
+  /** 2026-08-26 · 사용자 지시 · 탭 글씨 크기 · sm=15px · md=17px (기본) · lg=19px (+3) */
+  size?: "sm" | "md" | "lg";
 }
 
 /**
@@ -65,10 +67,15 @@ export function SplitRightTabs<K extends string = string>({
   bg = "bg-white",
   className = "",
   withBorder = true,
+  size = "md",
 }: SplitRightTabsProps<K>) {
   const visible = tabs.filter(t => t.visible !== false);
   const stickyCls = sticky ? "sticky top-0 z-20" : "";
   const borderCls = withBorder ? "border-b border-line" : "";
+  const sizeCls = size === "lg" ? "text-[18px] sm:text-[19px]"
+                : size === "sm" ? "text-[13px] sm:text-[14px]"
+                :                 "text-[15px] sm:text-[16px]";
+  const btnH   = size === "lg" ? "h-12 px-4" : "h-10 px-3";
   return (
     <div
       role="tablist"
@@ -86,9 +93,11 @@ export function SplitRightTabs<K extends string = string>({
             onClick={() => onSelect(t.key)}
             title={t.label}
             className={[
-              "relative inline-flex items-center gap-1.5 h-10 px-3 rounded-t-lg",
-              // 폰트 +2 · 15/16 (기존 13/14)
-              "text-[15px] sm:text-[16px] font-semibold tracking-tight whitespace-nowrap",
+              "relative inline-flex items-center gap-1.5 rounded-t-lg",
+              btnH,
+              // 폰트 · size prop 기준 (기본 md · lg 는 +3)
+              sizeCls,
+              "font-semibold tracking-tight whitespace-nowrap",
               "transition-colors duration-150 cursor-pointer",
               isActive
                 ? "text-brand-deep font-bold"

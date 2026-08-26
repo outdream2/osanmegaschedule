@@ -610,6 +610,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               active={storeInnerTab}
               onSelect={(k) => setStoreInnerTab(k as typeof storeInnerTab)}
               bg="bg-zinc-50/40"
+              size="lg"
             />
           </div>
           {storeInnerTab === "mismatch" ? (
