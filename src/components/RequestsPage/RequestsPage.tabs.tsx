@@ -93,7 +93,8 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
       />
 
       {displayLoading && displayReqs.length > 0 && (
-        <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="md" padding="none" className="flex items-center justify-center py-1.5 mb-1 sticky top-0 z-10"><Spinner tone="sky" size={11} label="새로 불러오는 중..." labelSize={14} /></Card>
+        /* 2026-08-26 · 사용자 버그 fix (#128) · sticky top-0 → 상단 헤더·탭바 위로 올라가 레이아웃 겹침 · sticky 제거 · 일반 flow */
+        <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="md" padding="none" className="flex items-center justify-center py-1.5 mb-1"><Spinner tone="sky" size={11} label="새로 불러오는 중..." labelSize={14} /></Card>
       )}
       {displayLoading && displayReqs.length === 0 ? (
         <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>
@@ -306,7 +307,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
           </div>
         )}
         {orderLoading && orderReqs.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-red-50 border border-red-200 rounded-md sticky top-0 z-10">
+          <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-red-50 border border-red-200 rounded-md">
             <Spinner size={11} tone="red" label="새로 불러오는 중..." labelSize={14} />
           </div>
         )}
@@ -357,7 +358,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
           </div>
         )}
         {productsLoading && lowStock.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-red-50 border border-red-200 rounded-md sticky top-0 z-10">
+          <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-red-50 border border-red-200 rounded-md">
             <Spinner size={11} tone="red" label="새로 불러오는 중..." labelSize={14} />
           </div>
         )}
@@ -475,7 +476,7 @@ export const InventoryCheckTab: React.FC<InventoryCheckTabProps> = ({
         onRefresh={onRefresh} loading={inventoryLoading} accentColor="text-purple-600"
       />
       {inventoryLoading && inventoryChecks.length > 0 && (
-        <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-purple-50 border border-purple-200 rounded-md sticky top-0 z-10">
+        <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-purple-50 border border-purple-200 rounded-md">
           <Spinner size={11} tone="violet" label="새로 불러오는 중..." labelSize={14} />
         </div>
       )}
