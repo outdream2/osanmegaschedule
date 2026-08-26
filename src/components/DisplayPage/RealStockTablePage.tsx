@@ -339,11 +339,12 @@ export const RealStockTablePage: React.FC = () => {
       <button
         type="button"
         onClick={() => beginEdit(r, slot)}
-        className="inline-flex items-baseline gap-1 hover:bg-white rounded px-1.5 py-0.5 -mx-1 transition cursor-pointer max-w-full"
-        title={`${SLOT_LABEL[slot]} 수량 클릭하여 편집`}
+        className="inline-flex items-baseline gap-0.5 hover:bg-white rounded px-1.5 py-0.5 -mx-1 transition cursor-pointer max-w-full"
+        title={`${SLOT_LABEL[slot]} · 구역/수량 · 클릭하여 편집`}
       >
+        {zone && <span className={`text-[13px] font-semibold ${zoneCls} tabular-nums`}>{zone}</span>}
+        {zone && <span className="text-[13px] text-zinc-300 font-normal">/</span>}
         <span className={`font-bold tabular-nums text-[15px] ${qtyCls}`}>{qty ?? "-"}</span>
-        {zone && <span className={`text-[12px] font-semibold ${zoneCls} tabular-nums`}>({zone})</span>}
       </button>
     );
   };
@@ -471,12 +472,13 @@ export const RealStockTablePage: React.FC = () => {
                   {/* 2026-08-27 · 사용자 지시 · 전산구역+ERP 합침 · 위치별 dual-chip (수량+구역) 정렬 */}
                   {thSortable("supplier",      "left",  "공급사",   140)}
                   {thSortable("product_name",  "left",  "상품명",   300)}
-                  {thDualChip("전산·ERP",  "erp", "spec",   110, "bg-amber-50/60")}
-                  {thDualChip("매장1",      "s1",  "s1zone", 100, "bg-violet-50/60")}
-                  {thDualChip("매장2",      "s2",  "s2zone", 100, "bg-violet-50/60")}
-                  {thDualChip("매장3",      "s3",  "s3zone", 100, "bg-violet-50/60")}
-                  {thDualChip("창고1",      "w1",  "w1zone", 100, "bg-cyan-50/60")}
-                  {thDualChip("창고2",      "w2",  "w2zone", 100, "bg-cyan-50/60")}
+                  {/* 2026-08-27 · 사용자 지시 · 셀 = 구역/수량 · dual chip 순서도 [구역][수량] */}
+                  {thDualChip("전산·ERP",  "spec",   "erp", 110, "bg-amber-50/60")}
+                  {thDualChip("매장1",      "s1zone", "s1",  100, "bg-violet-50/60")}
+                  {thDualChip("매장2",      "s2zone", "s2",  100, "bg-violet-50/60")}
+                  {thDualChip("매장3",      "s3zone", "s3",  100, "bg-violet-50/60")}
+                  {thDualChip("창고1",      "w1zone", "w1",  100, "bg-cyan-50/60")}
+                  {thDualChip("창고2",      "w2zone", "w2",  100, "bg-cyan-50/60")}
                   {thSortable("total",        "num", "실재고합계", 95,  "bg-brand-tint/30")}
                   {thSortable("diff",         "num", "차이",     80,  "bg-rose-50/40")}
                 </tr>
@@ -495,11 +497,12 @@ export const RealStockTablePage: React.FC = () => {
                         {r.product_name}
                       </button>
                     </td>
-                    {/* 전산·ERP 합침 셀 · 수량 (구역) */}
+                    {/* 전산·ERP 합침 셀 · 구역/수량 */}
                     <td className={tableTdCls("num", "bg-amber-50/30")}>
-                      <span className="inline-flex items-baseline gap-1">
+                      <span className="inline-flex items-baseline gap-0.5">
+                        {r.spec && <span className="text-[13px] font-semibold text-amber-500 tabular-nums">{r.spec}</span>}
+                        {r.spec && <span className="text-[13px] text-zinc-300 font-normal">/</span>}
                         <span className={`font-bold tabular-nums text-[15px] ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"}`}>{r.erp ?? "-"}</span>
-                        {r.spec && <span className="text-[12px] font-semibold text-amber-500">({r.spec})</span>}
                       </span>
                     </td>
                     <td className={tableTdCls("num", "bg-violet-50/30")}>{renderQtyZone(r, "s1")}</td>
