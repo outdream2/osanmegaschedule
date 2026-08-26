@@ -43,7 +43,7 @@ export const LunchPanel: React.FC<LunchPanelProps> = ({
       </Card>
 
       {lunchLoading && lunchRequests.length > 0 && (
-        <div className="flex items-center justify-center py-1.5 mb-1 bg-zinc-100 border border-line rounded-md sticky top-0 z-10">
+        <div className="flex items-center justify-center py-1.5 mb-1 bg-zinc-100 border border-line rounded-md">
           <Spinner tone="zinc" size={11} label="새로 불러오는 중..." labelSize={14} />
         </div>
       )}

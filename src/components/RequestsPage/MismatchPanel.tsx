@@ -41,7 +41,7 @@ export const MismatchPanel: React.FC<MismatchPanelProps> = ({
       onRefresh={onRefresh} loading={mismatchLoading} accentColor="text-orange-600"
     />
     {mismatchLoading && mismatches.length > 0 && (
-      <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-orange-50 border border-orange-200 rounded-md sticky top-0 z-10">
+      <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-orange-50 border border-orange-200 rounded-md">
         <Spinner size={11} tone="orange" label="새로 불러오는 중..." labelSize={14} />
       </div>
     )}
