@@ -283,11 +283,12 @@ export const RealStockTablePage: React.FC = () => {
                   <th className={tableThCls("left")} style={{ minWidth: 240 }}>상품명</th>
                   <th className={`${tableThCls("center")} bg-brand-tint/40`} style={{ width: 100 }}>전산구역</th>
                   <th className={`${tableThCls("num")} bg-amber-50/60`} style={{ width: 90 }}>ERP재고</th>
-                  <th className={`${tableThCls("num")} bg-cyan-50/60`} style={{ width: 70 }}>창고1</th>
-                  <th className={`${tableThCls("num")} bg-cyan-50/60`} style={{ width: 70 }}>창고2</th>
+                  {/* 2026-08-26 · 사용자 지시 · 매장 먼저 · 창고 나중 */}
                   <th className={`${tableThCls("num")} bg-violet-50/60`} style={{ width: 70 }}>매장1</th>
                   <th className={`${tableThCls("num")} bg-violet-50/60`} style={{ width: 70 }}>매장2</th>
                   <th className={`${tableThCls("num")} bg-violet-50/60`} style={{ width: 70 }}>매장3</th>
+                  <th className={`${tableThCls("num")} bg-cyan-50/60`} style={{ width: 70 }}>창고1</th>
+                  <th className={`${tableThCls("num")} bg-cyan-50/60`} style={{ width: 70 }}>창고2</th>
                   <th className={`${tableThCls("num")} bg-brand-tint/30`} style={{ width: 90 }}>실재고합계</th>
                   <th className={`${tableThCls("num")} bg-rose-50/40`} style={{ width: 80 }}>차이</th>
                 </tr>
@@ -338,11 +339,11 @@ export const RealStockTablePage: React.FC = () => {
                           <td className={tableTdCls("num", `tabular-nums font-bold ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-50/20`)}>
                             {r.erp ?? "-"}
                           </td>
-                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.w1, "cyan")} bg-cyan-50/20`)}>{r.w1 ?? "-"}</td>
-                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.w2, "cyan")} bg-cyan-50/20`)}>{r.w2 ?? "-"}</td>
                           <td className={tableTdCls("num", `tabular-nums ${numCls(r.s1, "violet")} bg-violet-50/20`)}>{r.s1 ?? "-"}</td>
                           <td className={tableTdCls("num", `tabular-nums ${numCls(r.s2, "violet")} bg-violet-50/20`)}>{r.s2 ?? "-"}</td>
                           <td className={tableTdCls("num", `tabular-nums ${numCls(r.s3, "violet")} bg-violet-50/20`)}>{r.s3 ?? "-"}</td>
+                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.w1, "cyan")} bg-cyan-50/20`)}>{r.w1 ?? "-"}</td>
+                          <td className={tableTdCls("num", `tabular-nums ${numCls(r.w2, "cyan")} bg-cyan-50/20`)}>{r.w2 ?? "-"}</td>
                           <td className={tableTdCls("num", `tabular-nums font-bold ${r.total > 0 ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/10`)}>
                             {r.total > 0 ? r.total : "-"}
                           </td>
