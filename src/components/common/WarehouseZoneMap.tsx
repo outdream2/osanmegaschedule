@@ -17,53 +17,96 @@ interface WarehouseZoneMapProps {
   filter?: "both" | "1" | "2";
 }
 
-// 2026-08-26 · 사용자 지시 · 창고1 실제 구역 · 24·25·26·27·7B·8A
+// 2026-08-26 · 사용자 지시 · 창고1/창고2 실제 구역 · storage*_description.png 반영
+//   · 창고1 · 24·25·26·27 (파스류) + 7B (한방제제) + 8A (경옥고/공진단 등)
 const WAREHOUSE_1_ZONES = [
-  { code: "24", label: "24" },
-  { code: "25", label: "25" },
-  { code: "26", label: "26" },
-  { code: "27", label: "27" },
-  { code: "7B", label: "7B" },
-  { code: "8A", label: "8A" },
+  { code: "24", label: "파스",              hint: "제일·녹십자·한독" },
+  { code: "25", label: "파스",              hint: "신신·지오영" },
+  { code: "26", label: "뿌리는/바르는 파스", hint: "지오영" },
+  { code: "27", label: "파스",              hint: "일동·조아" },
+  { code: "7B", label: "한방제제모음",       hint: "경방·한풍·원광·한국신약·한솔" },
+  { code: "8A", label: "경옥고/공진단/태반/우황청심원/안정액/수면유도제", hint: "광동·유수·인풍·원광·동화·한국신약·일양·경남·녹십자" },
 ];
 
+// 창고2 · 왼쪽측면 (창고2 + 위탁 혼합 · 28~40)
 const WAREHOUSE_2_INNER = [
-  { num: 28, label: "샴푸/린스" },
-  { num: 29, label: "바디워시" },
-  { num: 30, label: "치약/구강" },
-  { num: 31, label: "여성용품" },
-  { num: 32, label: "종합영양제" },
-  { num: 33, label: "비타민" },
-  { num: 34, label: "홍삼/건강식품" },
-  { num: 35, label: "성인/노인" },
-  { num: 36, label: "다이어트" },
-  { num: 37, label: "밴드/드레싱" },
-  { num: 38, label: "안약/눈" },
-  { num: 39, label: "일반의약품" },
-  { num: 40, label: "감기약" },
+  { num: "28",  tag: "창고2", label: "의료기기/혈당/혈압/체온계" },
+  { num: "28*", tag: "위탁",  label: "보호대/스포츠테이핑 (관절/모기물림)" },
+  { num: "29",  tag: "창고2", label: "반창고/거즈/붕대" },
+  { num: "29*", tag: "창고2", label: "응급/구급/소독약/살충제" },
+  { num: "30",  tag: "창고2", label: "화상/습윤밴드" },
+  { num: "30*", tag: "창고2", label: "화상/습윤밴드" },
+  { num: "31",  tag: "창고2", label: "염색약/제모기/립케어/생지시트" },
+  { num: "34",  tag: "위탁",  label: "반려동물 용품/의약품/영양제/간식/사료" },
+  { num: "35",  tag: "위탁",  label: "반려동물 용품/의약품/영양제/간식/사료" },
+  { num: "35*", tag: "위탁",  label: "반려동물 용품/의약품/영양제/간식/사료" },
+  { num: "36",  tag: "위탁",  label: "동물의약품" },
+  { num: "36*", tag: "창고2", label: "기타건강식품" },
+  { num: "37",  tag: "창고2", label: "기타건강식품" },
+  { num: "37*", tag: "창고2", label: "기타건강식품" },
+  { num: "38",  tag: "창고2", label: "기타건강식품" },
+  { num: "38*", tag: "창고2", label: "기타건강식품" },
+  { num: "39",  tag: "창고2", label: "브랜드관 (뉴케어)" },
+  { num: "39*", tag: "창고2", label: "해외식품관" },
+  { num: "40",  tag: "창고2", label: "이벤트존" },
+  { num: "40*", tag: "창고1/2", label: "드림크냉장고" },
 ];
 
+// 창고2 · 화장품 섹션 (32·33)
+const WAREHOUSE_2_COSMETICS = [
+  { num: "32",  label: "기미/미백/잡티 · 여드름/트러블 케어" },
+  { num: "33",  label: "기초케어 · 클린징케어" },
+  { num: "33*", label: "마스크팩/집중팩 · 여행용 화장품 · 약통/커터/복약" },
+  { num: "32*", label: "진정/민감케어 · 탄력/주름 · 모공피부 케어" },
+];
+
+// 창고2 · 중앙 (1A~8B) · 약국 진열대 · 감기약/소화제/연고/피부 등
 const WAREHOUSE_2_CENTER = [
-  "1A", "1B", "2A", "2B", "3A", "3B", "4A", "4B", "5A", "5B", "6A", "6B", "7A",
+  { code: "1A", label: "1·2차 감기약 · 코감기 · 인후염" },
+  { code: "1B", label: "1·2차 감기약 · 코감기 · 스레알레약 · 씨감기약" },
+  { code: "2A", label: "한방 감기약 · 종합감기약 · 시럽" },
+  { code: "2B", label: "혼합 감기약 · 시럽" },
+  { code: "3A", label: "소화제 · 상비약 · 위장약" },
+  { code: "3B", label: "소화제/위장약 · 항산제" },
+  { code: "4A", label: "지사·정장약 · 속쓰림약" },
+  { code: "4B", label: "해열진통 · 소염제" },
+  { code: "5A", label: "칫솔/치약/구강용품 · 눈 관련" },
+  { code: "5B", label: "연고 (외피/피부)" },
+  { code: "6A", label: "연고 (설퍼/피부·양평)" },
+  { code: "6B", label: "피부관련 (여름/두피/누기·양기)" },
+  { code: "7A", label: "정형/양장 · PMS/생리통 · 근육통" },
 ];
 
+// 창고2 · 오른쪽측면 (10~23 · 건강기능)
 const WAREHOUSE_2_RIGHT = [
-  { num: 8,  label: "구강청결" },
-  { num: 9,  label: "치약" },
-  { num: 10, label: "구강용품" },
-  { num: 11, label: "칫솔" },
-  { num: 12, label: "가글" },
-  { num: 13, label: "구강스프레이" },
-  { num: 14, label: "건강기능" },
-  { num: 15, label: "비타민B" },
-  { num: 16, label: "비타민C" },
-  { num: 17, label: "종합비타민" },
-  { num: 18, label: "오메가3" },
-  { num: 19, label: "칼슘" },
-  { num: 20, label: "루테인" },
-  { num: 21, label: "프로바이오틱스" },
-  { num: 22, label: "홍삼" },
-  { num: 23, label: "건강식품" },
+  { num: "10",  label: "피로회복" },
+  { num: "10*", label: "피로회복" },
+  { num: "11",  label: "피로회복" },
+  { num: "11*", label: "피로회복" },
+  { num: "12",  label: "어린이 영양" },
+  { num: "12*", label: "피로회복" },
+  { num: "13",  label: "철분/엽산" },
+  { num: "13*", label: "임산영양" },
+  { num: "14",  label: "유산균" },
+  { num: "14*", label: "냉장 유산균 (180센티)" },
+  { num: "15",  label: "혈행건강" },
+  { num: "15*", label: "위건강" },
+  { num: "16",  label: "오메가3·6·7" },
+  { num: "16*", label: "뇌기능 개선" },
+  { num: "17",  label: "잇몸건강" },
+  { num: "17*", label: "눈건강" },
+  { num: "18",  label: "항산화" },
+  { num: "18*", label: "면역조절제" },
+  { num: "19",  label: "비타민C" },
+  { num: "19*", label: "항산화" },
+  { num: "20",  label: "여성라이프케어 (생리기간)" },
+  { num: "20*", label: "콜라겐" },
+  { num: "21",  label: "운동전후/체중관리/수제보충" },
+  { num: "21*", label: "남성 라이프케어 (활력/근력)" },
+  { num: "22",  label: "피로회복" },
+  { num: "22*", label: "마그네슘/수면" },
+  { num: "23",  label: "혈관건강" },
+  { num: "23*", label: "관절건강" },
 ];
 
 export const WarehouseZoneMap: React.FC<WarehouseZoneMapProps> = ({ filter = "both" }) => {
@@ -166,9 +209,9 @@ export const WarehouseZoneMap: React.FC<WarehouseZoneMapProps> = ({ filter = "bo
                 <span className="text-[13px] font-bold text-teal-700 uppercase tracking-wider">중앙</span>
                 <span className="text-[11px] text-ink-soft ml-auto">{WAREHOUSE_2_CENTER.length}섹션</span>
               </div>
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 gap-1.5">
-                {WAREHOUSE_2_CENTER.map((code, i) => (
-                  <ZoneBox key={i} num={code} label="" tone="teal" size="sm" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-1.5">
+                {WAREHOUSE_2_CENTER.map((z, i) => (
+                  <ZoneBox key={i} num={z.code} label={z.label} tone="teal" size="sm" />
                 ))}
               </div>
             </div>
@@ -182,9 +225,23 @@ export const WarehouseZoneMap: React.FC<WarehouseZoneMapProps> = ({ filter = "bo
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-1.5">
                 {WAREHOUSE_2_RIGHT.map((z, i) => (
-                  <ZoneBox key={i} num={String(z.num)} label={z.label} tone="teal" size="sm" />
+                  <ZoneBox key={i} num={z.num} label={z.label} tone="teal" size="sm" />
                 ))}
               </div>
+            </div>
+          </div>
+
+          {/* 화장품 섹션 (32·33) */}
+          <div className="mt-4 pt-3 border-t border-teal-100">
+            <div className="flex items-center gap-1.5 mb-2 px-1">
+              <Package size={12} className="text-pink-600" />
+              <span className="text-[13px] font-bold text-pink-700 uppercase tracking-wider">화장품</span>
+              <span className="text-[11px] text-ink-soft ml-auto">{WAREHOUSE_2_COSMETICS.length}구역</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+              {WAREHOUSE_2_COSMETICS.map((z, i) => (
+                <ZoneBox key={i} num={z.num} label={z.label} tone="teal" size="sm" />
+              ))}
             </div>
           </div>
         </Card>
