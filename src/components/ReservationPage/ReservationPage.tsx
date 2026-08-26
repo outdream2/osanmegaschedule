@@ -39,16 +39,16 @@ interface ReservationPageProps {
 
 interface StaffAvailability {
   employeeId: number;
-  name: string;
+  name: string;              // "대표" / "이사"
+  displayName?: string;      // 실제 직원 이름 (강남성 · 강남규)
   scheduleType: string | null;
   isOff: boolean;
 }
 
+// 2026-08-26 · 사용자 지시 · 1시간 텀 (기존 30분 → 1시간)
 const TIME_SLOTS = [
-  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-  "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
-  "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00",
+  "09:00", "10:00", "11:00", "12:00", "13:00", "14:00",
+  "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00",
 ];
 
 const PURPOSES = ["결제", "신약 상담", "발주 확인", "제품 상담", "재고 점검", "기타"];
@@ -477,17 +477,22 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
             <div className="px-3 sm:px-5 pb-2 flex items-center gap-2">
               {/* time axis spacer */}
               <div className="w-12 shrink-0" />
-              <div className="flex-1 grid grid-cols-3 gap-1.5">
+              <div className="flex-1 grid grid-cols-2 gap-1.5">
                 {staffAvailability.map(staff => (
                   <div
                     key={staff.employeeId}
-                    className={`flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-bold border ${
+                    className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold border ${
                       staff.isOff
                         ? "bg-gray-100 border-line text-gray-400"
                         : "bg-indigo-50 border-indigo-200 text-indigo-700"
                     }`}
                   >
                     <span>{staff.name}</span>
+                    {staff.displayName && (
+                      <span className={`text-[13px] font-semibold ${staff.isOff ? "text-gray-400" : "text-indigo-500"}`}>
+                        · {staff.displayName}
+                      </span>
+                    )}
                     {staff.isOff && (
                       <span className="text-[14px] font-bold text-gray-400 bg-gray-200 px-1 rounded">
                         {staff.scheduleType ?? "휴무"}
@@ -518,7 +523,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                     </div>
 
                     {/* 3 columns */}
-                    <div className="flex-1 grid grid-cols-3 gap-1.5">
+                    <div className="flex-1 grid grid-cols-2 gap-1.5">
                       {staffAvailability.map(staff => {
                         if (staff.isOff) {
                           return (
