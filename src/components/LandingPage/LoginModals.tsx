@@ -162,6 +162,9 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
 
   // ── 헤더 gradient (딥네이비 · 원본과 동일) ──────────────────────────────
   const HEADER_GRADIENT = "bg-[linear-gradient(120deg,#0A2E4A_0%,#1E5C8E_62%,#3E7CB1_100%)]";
+  // 2026-08-26 · 사용자 지시 · 거래처 모달 · 직원 모달과 색깔톤 분리
+  //   · 거래처 = emerald/teal 계열 (파트너 · 외부) · 직원 = indigo/sky (내부)
+  const VENDOR_HEADER_GRADIENT = "bg-[linear-gradient(120deg,#065F46_0%,#0F766E_55%,#0891B2_100%)]";
 
   // ── 거래처 모달 헤더 JSX ──────────────────────────────────────────────
   const vendorModalHeader = (
@@ -214,7 +217,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
         title={vendorModalHeader}
         size="sm"
         showClose={false}
-        headerBgClass={HEADER_GRADIENT}
+        headerBgClass={VENDOR_HEADER_GRADIENT}
         headerTextClass="text-white"
         bodyPadding="none"
       >
@@ -262,7 +265,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
             )}
             <button
               type="submit" disabled={vendorLoading}
-              className="w-full py-3.5 rounded-2xl text-white font-bold text-base mt-1 transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
+              className="w-full py-3.5 rounded-2xl text-white font-bold text-base mt-1 transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-700 hover:via-teal-700 hover:to-cyan-700"
             >
               {vendorLoading ? <><Spinner size={16} tone="white" /><span>로그인 중...</span></> : <span>거래처로 입장하기</span>}
             </button>
