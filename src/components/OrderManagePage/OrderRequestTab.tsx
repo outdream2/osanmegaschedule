@@ -6,6 +6,8 @@ import { Loader2, ShoppingCart, CheckSquare, Square, Send, ChevronRight, Chevron
 import { OrderHistorySupplierModal } from "./OrderHistorySupplierModal";
 import { Card } from "../common/Card";
 import { PageToolbar } from "../common/PageToolbar";
+// 2026-08-26 · 사용자 지시 · 적정재고 컬럼 리스트 상단 · 기준 일수 코멘트
+import { OptimalStockNoteBanner } from "../common/OptimalStockNoteBanner";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { Spinner } from "../common/Spinner";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
@@ -130,6 +132,9 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
         />
       }
     />
+
+    {/* 2026-08-26 · 사용자 지시 · 적정재고 기준 일수 코멘트 */}
+    <OptimalStockNoteBanner compact className="self-start" />
 
     <div className="flex flex-col lg:flex-row gap-2 items-stretch lg:min-h-[720px]">
       {/* 좌측: 발주요청 리스트 */}

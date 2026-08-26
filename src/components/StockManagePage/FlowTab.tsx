@@ -34,6 +34,8 @@ import { fmt, GLOBAL_FLOW_CACHE, FLOW_CACHE_TTL } from "./FlowTab.types";
 import { FlowRow } from "./FlowRow";
 // 2026-08-22 · Framework Phase 4 · 3섹션 별도 컴포넌트 이관
 import { FlowFilterBar, HiddenManagerModal, SupplierDetailModalWrapper } from "./FlowTab.panels";
+// 2026-08-26 · 사용자 지시 · 적정재고 기준 일수 코멘트
+import { OptimalStockNoteBanner } from "../common/OptimalStockNoteBanner";
 
 const fmtWon = fmtWonCompact;
 
@@ -411,6 +413,9 @@ export const FlowTab: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-2">
+
+      {/* 2026-08-26 · 사용자 지시 · 적정재고 기준 일수 코멘트 */}
+      <OptimalStockNoteBanner compact className="self-start" />
 
       {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · FlowFilterBar */}
       <FlowFilterBar
