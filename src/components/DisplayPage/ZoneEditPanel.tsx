@@ -11,7 +11,7 @@ import { IconTile } from "../common/IconTile";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import { EmptyState } from "../common/EmptyState";
-import { useZoneDefs, SECTION_LABEL, type ZoneDef, type ZoneSection } from "../../hooks/useZoneDefs";
+import { useZoneDefs, type ZoneDef } from "../../hooks/useZoneDefs";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 import { ZONE_DEFS as DEFAULT_ZONES } from "../../constants/displayZones";
@@ -62,6 +62,36 @@ const codeToneCls = (sub: SubKey): { badge: string; row: string } => {
   if (sub === "C") return { badge: "bg-amber-100 text-amber-800 border-amber-300",     row: "bg-amber-50/25" };
   return { badge: "bg-brand-tint/60 text-brand-deep border-brand-deep/30",             row: "" };
 };
+
+// 2026-08-26 · 사용자 지시 · 3 대분류 존 · num 기준 그룹핑
+type MajorZone = "central-otc" | "consult" | "beauty-food" | "other";
+
+const MAJOR_ZONE_LABEL: Record<MajorZone, string> = {
+  "central-otc": "중앙상비약존",
+  "consult":     "상담존",
+  "beauty-food": "뷰티식품존",
+  "other":       "기타 · 시설",
+};
+const MAJOR_ZONE_RANGE: Record<MajorZone, string> = {
+  "central-otc": "1A – 8B",
+  "consult":     "9 – 27",
+  "beauty-food": "28 – 40",
+  "other":       "41 – 42",
+};
+const MAJOR_ZONE_ORDER: MajorZone[] = ["central-otc", "consult", "beauty-food", "other"];
+const MAJOR_ZONE_TONE: Record<MajorZone, { bar: string; bg: string; badge: string }> = {
+  "central-otc": { bar: "bg-brand-deep",     bg: "from-brand-tint/40",   badge: "bg-brand-tint text-brand-deep border-brand-deep/40" },
+  "consult":     { bar: "bg-emerald-500",    bg: "from-emerald-50",      badge: "bg-emerald-100 text-emerald-700 border-emerald-300" },
+  "beauty-food": { bar: "bg-rose-500",       bg: "from-rose-50",         badge: "bg-rose-100 text-rose-700 border-rose-300" },
+  "other":       { bar: "bg-zinc-400",       bg: "from-zinc-50",         badge: "bg-zinc-100 text-zinc-600 border-zinc-300" },
+};
+
+function classifyZone(num: number): MajorZone {
+  if (num >= 1 && num <= 8)   return "central-otc";
+  if (num >= 9 && num <= 27)  return "consult";
+  if (num >= 28 && num <= 40) return "beauty-food";
+  return "other";
+}
 
 export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
   const { zones, setZones, loading, saveNow, saveState } = useZoneDefs();
@@ -128,8 +158,10 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
     }, 50);
   };
 
-  const grouped: Record<ZoneSection, ZoneDef[]> = { top_wall: [], aisle: [], left_wall: [], bottom_wall: [], wing: [], event: [] };
-  for (const z of zones) grouped[z.section].push(z);
+  // 2026-08-26 · 사용자 지시 · section 대신 3 대분류 존 (num 기준) 로 그룹핑
+  const grouped: Record<MajorZone, ZoneDef[]> = { "central-otc": [], "consult": [], "beauty-food": [], "other": [] };
+  for (const z of zones) grouped[classifyZone(z.num)].push(z);
+  for (const k of MAJOR_ZONE_ORDER) grouped[k].sort((a, b) => a.num - b.num);
 
   const inputCls = "flex-1 min-w-0 h-9 px-2.5 rounded-md border border-brand-deep bg-white text-[14px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint";
   const textareaCls = "flex-1 min-w-0 min-h-[36px] max-h-[160px] px-2.5 py-1.5 rounded-md border border-brand-deep bg-white text-[13px] text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint resize-y";
@@ -216,14 +248,16 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
           <EmptyState icon={Save} title="구역 정의 없음" hint="[기본값 복원] 클릭" size="normal" />
         </Card>
       ) : (
-        (Object.keys(grouped) as ZoneSection[]).filter(sec => grouped[sec].length > 0).map(sec => {
-          const flatRows = grouped[sec].flatMap(expandZoneToRows);
+        MAJOR_ZONE_ORDER.filter(mz => grouped[mz].length > 0).map(mz => {
+          const flatRows = grouped[mz].flatMap(expandZoneToRows);
+          const mzTone = MAJOR_ZONE_TONE[mz];
           return (
-            <Card key={sec} padding="md">
-              <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-line">
-                <span className="w-1.5 h-4 rounded-full bg-brand-deep" />
-                <span className="text-[15px] font-bold text-ink">{SECTION_LABEL[sec]}</span>
-                <span className="text-[12px] text-zinc-400 ml-auto">{grouped[sec].length}구역 · {flatRows.length}행</span>
+            <Card key={mz} padding="md" className={`bg-gradient-to-b ${mzTone.bg} to-transparent`}>
+              <div className="flex items-center gap-2.5 mb-3 pb-2 border-b border-line">
+                <span className={`w-2 h-6 rounded-full ${mzTone.bar}`} />
+                <span className="text-[17px] font-extrabold text-ink tracking-tight">{MAJOR_ZONE_LABEL[mz]}</span>
+                <span className={`inline-flex items-center h-6 px-2 rounded-md border text-[12px] font-bold tabular-nums ${mzTone.badge}`}>{MAJOR_ZONE_RANGE[mz]}</span>
+                <span className="text-[12px] text-zinc-400 ml-auto tabular-nums">{grouped[mz].length}구역 · {flatRows.length}행</span>
               </div>
               <table className="w-full text-[13px] table-fixed">
                 <thead>
@@ -237,7 +271,7 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
                     const z = fr.zone;
                     const tone = codeToneCls(fr.sub);
                     return (
-                      <tr key={fr.code} className={`hover:bg-zinc-50/60 transition ${tone.row} align-top`}>
+                      <tr key={`${z.section}-${fr.code}`} className={`hover:bg-white/60 transition ${tone.row} align-top`}>
                         {/* 왼쪽 · 구역 = 코드 뱃지 + 카테고리 텍스트 (편집) */}
                         <td className="px-2 py-2">
                           <div className="flex items-start gap-2 min-w-0">
