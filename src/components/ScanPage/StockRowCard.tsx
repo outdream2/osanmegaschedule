@@ -187,11 +187,34 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
     ?? ""
   );
   const { showW1, showW2 } = useMemo(() => resolveWarehouseVisibility(productZone), [productZone]);
+
+  // 2026-08-26 · 사용자 지시 · 매장 · 해당 구역만 (기존 값·zone 있는 개수 기준) · [+ 매장 추가] 버튼 (최대 3)
+  //   · 기본 · 실제 zone 또는 실재고 값이 있는 store 개수 (최소 1)
+  //   · 사용자가 [+ 매장 추가] 클릭 시 · 세션 state 증가 (최대 3)
+  const initialStoreCount = useMemo(() => {
+    const hasS1 = !!(row.store1Zone && String(row.store1Zone).trim()) || (row.prevStore1Qty != null && Number(row.prevStore1Qty) > 0);
+    const hasS2 = !!(row.store2Zone && String(row.store2Zone).trim()) || (row.prevStore2Qty != null && Number(row.prevStore2Qty) > 0);
+    const hasS3 = !!(row.store3Zone && String(row.store3Zone).trim()) || (row.prevStore3Qty != null && Number(row.prevStore3Qty) > 0);
+    if (hasS3) return 3;
+    if (hasS2) return 2;
+    return hasS1 ? 1 : 1; // 최소 1
+  }, [row.store1Zone, row.store2Zone, row.store3Zone, row.prevStore1Qty, row.prevStore2Qty, row.prevStore3Qty]);
+  const [storeCount, setStoreCount] = useState<number>(initialStoreCount);
+  // 값이 변경되면 count 재조정 (기존 값이 있으면 최소 그 개수 유지)
+  useEffect(() => {
+    setStoreCount(prev => Math.max(prev, initialStoreCount));
+  }, [initialStoreCount]);
+  const visibleStoreCount = Math.min(3, Math.max(1, storeCount));
+  const canAddStore = visibleStoreCount < 3;
+
   const visibleSlots = useMemo(() => SLOTS.filter(s => {
     if (s.key === "w1") return showW1;
     if (s.key === "w2") return showW2;
-    return true; // 매장은 항상 표시
-  }), [showW1, showW2]);
+    if (s.key === "s1") return visibleStoreCount >= 1;
+    if (s.key === "s2") return visibleStoreCount >= 2;
+    if (s.key === "s3") return visibleStoreCount >= 3;
+    return true;
+  }), [showW1, showW2, visibleStoreCount]);
 
   return (
     <div
@@ -299,9 +322,9 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
             · 컴팩트 셀 · label + prev + stepper + zone (매장만) 세로 스택
        */}
       {expanded && (() => {
-        // 2026-08-26 · 창고는 visibleSlots (해당 상품 소속만) · 매장은 항상 3개
+        // 2026-08-26 · 창고 · 매장 모두 visibleSlots 사용 (해당 상품 · 필요한 것만)
         const warehouses = visibleSlots.filter(s => !s.zoneKey);
-        const stores = SLOTS.filter(s => !!s.zoneKey);
+        const stores = visibleSlots.filter(s => !!s.zoneKey);
         const renderSlot = (s: typeof SLOTS[number], i: number, isStore: boolean) => {
           const prev = row[s.prevKey] as number | null | undefined;
           const add  = row[s.addKey]  as number | "";
@@ -362,14 +385,26 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                 );
               })}
             </div>
-            {/* Row 1 · 창고 (2-col · cyan 톤 공유) */}
-            <div className="grid grid-cols-2 gap-2">
-              {warehouses.map((s, i) => renderSlot(s, i, false))}
-            </div>
-            {/* Row 2 · 매장 (3-col · violet 톤 공유) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {/* Row 1 · 창고 · 해당 상품 소속만 (1-2 col 자동) · cyan 톤 */}
+            {warehouses.length > 0 && (
+              <div className={`grid gap-2 ${warehouses.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
+                {warehouses.map((s, i) => renderSlot(s, i, false))}
+              </div>
+            )}
+            {/* Row 2 · 매장 · 사용 중인 개수만큼 · violet 톤 · [+ 매장 추가] 버튼 (최대 3) */}
+            <div className={`grid gap-2 ${stores.length === 3 ? "sm:grid-cols-3" : stores.length === 2 ? "sm:grid-cols-2" : "grid-cols-1"}`}>
               {stores.map((s, i) => renderSlot(s, i, true))}
             </div>
+            {canAddStore && (
+              <button
+                type="button"
+                onClick={() => setStoreCount(c => Math.min(3, c + 1))}
+                className="inline-flex items-center gap-1.5 self-start h-8 px-3 rounded-lg text-[14px] font-bold text-violet-700 bg-violet-50 border border-violet-200 hover:bg-violet-100 hover:border-violet-300 transition cursor-pointer active:scale-95"
+                title={`매장${visibleStoreCount + 1} 추가`}
+              >
+                + 매장 추가 ({visibleStoreCount}/3)
+              </button>
+            )}
 
           {/* 액션 · 2026-08-23 · #204 · 개별 [저장] 버튼 + 기존 StockActionsCell */}
           <div className="mt-1 pt-2 border-t border-line/50 flex items-center justify-between gap-2 flex-wrap">
