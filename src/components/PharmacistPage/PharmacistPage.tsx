@@ -294,8 +294,8 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
             <FirstAid size={20} className="text-white" weight="fill" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-[18px] sm:text-[19px] font-bold text-ink tracking-tight leading-tight">약사 전용</h1>
-            <p className="text-[14px] text-ink-soft mt-0.5 truncate">교육자료 · 복약지도 · 동영상 강의 · 각종 문서</p>
+            <h1 className="text-[20px] sm:text-[24px] font-extrabold text-ink tracking-tight leading-tight">약사 전용</h1>
+            <p className="text-[15px] text-ink-soft mt-1 truncate">복약 · 처방 · 상담 · 학술 자료 관리 · <b className="text-emerald-700">약사 전용 (lv 3+)</b> · PDF 인라인 · 워터마크 보안</p>
           </div>
           <div className="flex-1" />
           <div className="hidden sm:flex items-center gap-1.5 text-[13px] font-semibold">
