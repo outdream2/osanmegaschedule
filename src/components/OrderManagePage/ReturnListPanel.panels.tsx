@@ -102,7 +102,7 @@ export const ReturnFilterBar: React.FC<ReturnFilterBarProps> = ({
       <div className="flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
         {(["전체", ...dbVendorCategories] as string[]).map(cat => (
           <button key={cat} onClick={() => setReturnCategoryFilter(cat)}
-            className={`h-7 px-2.5 text-[15px] font-semibold rounded transition cursor-pointer ${
+            className={`h-8 px-3 text-[17px] font-semibold rounded transition cursor-pointer ${
               returnCategoryFilter === cat
                 ? cat === "전체"   ? "bg-zinc-700 text-white shadow-sm"
                 : cat === "위탁"   ? "bg-violet-500 text-white shadow-sm"
