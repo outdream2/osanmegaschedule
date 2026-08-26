@@ -22,6 +22,8 @@ import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { api, ApiError } from "../../lib/apiClient";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-08-26 · 프레임워크 · useConfirm 프리미티브 · window.confirm 대체
+import { useConfirm } from "../../hooks/useConfirm";
 
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · types + helpers 이관
 import type { ReturnReasonKey, ReturnLineItem } from "./ReturnListPanel.types";
@@ -39,6 +41,7 @@ interface ReturnListPanelProps {
 // ── ReturnListPanel (메인 export) ────────────────────────────────────────
 export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClick }) => {
   const { toast, showError, showSuccess } = useToast();
+  const confirm = useConfirm();
   // DB + 하드코딩 병합 reference 값
   const { vendorCategories: dbVendorCategories } = useReferenceValues();
 
@@ -345,7 +348,10 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
     if (returnSelected.size === 0 || bulkConfirming) return;
     const selectedItems = returnList.filter(x => returnSelected.has(x.product_code));
     if (selectedItems.length === 0) return;
-    const ok = window.confirm(`${selectedItems.length}개 상품을 반품확정 처리합니다. 진행하시겠습니까?`);
+    const ok = await confirm({
+      title: "반품확정 일괄 처리",
+      message: `${selectedItems.length}개 상품을 반품확정 처리합니다.\n진행하시겠습니까?`,
+    });
     if (!ok) return;
     setBulkConfirming(true);
     let successCount = 0;
@@ -365,7 +371,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
     } else {
       showError(`${successCount}개 성공 · ${failCount}개 실패`);
     }
-  }, [returnSelected, returnList, confirmReturn, bulkConfirming, showSuccess, showError]);
+  }, [returnSelected, returnList, confirmReturn, bulkConfirming, showSuccess, showError, confirm]);
 
   // ── 컬럼 리사이저 (메인 반품필요 리스트 테이블) ─────────────────────────
   // 2026-08-06 · v3 · 현재고·실재고 제거 · 판매 3컬럼 통합 · localStorage 캐시 무효화
