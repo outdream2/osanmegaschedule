@@ -6,6 +6,9 @@
 import React, { useState } from "react";
 import { Warehouse, Package, ZoomIn, ZoomOut } from "lucide-react";
 import warehouseImg from "../../images/warehouse_layout.webp";
+// 2026-08-26 · 사용자 지시 · 창고1/창고2 각각 실사진 이미지
+import storage1Img from "../../images/storage1.png";
+import storage2Img from "../../images/storage2.png";
 import { Card } from "./Card";
 import { IconTile } from "./IconTile";
 
@@ -110,6 +113,13 @@ export const WarehouseZoneMap: React.FC<WarehouseZoneMapProps> = ({ filter = "bo
             <span className="text-[15px] font-bold text-orange-700 tracking-tight">창고 1</span>
             <span className="text-[12px] text-ink-soft ml-auto">6 구역</span>
           </div>
+          {/* 2026-08-26 · 사용자 지시 · 창고1 실사진 */}
+          <img
+            src={storage1Img}
+            alt="창고 1 실사진"
+            className="w-full max-w-[720px] mx-auto rounded-lg border border-orange-200 mb-3"
+            loading="lazy"
+          />
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
             {WAREHOUSE_1_ZONES.map((z, i) => (
               <ZoneBox key={i} num={z.code} label={z.label} tone="orange" />
@@ -126,6 +136,13 @@ export const WarehouseZoneMap: React.FC<WarehouseZoneMapProps> = ({ filter = "bo
             <span className="text-[15px] font-bold text-teal-700 tracking-tight">창고 2</span>
             <span className="text-[12px] text-ink-soft ml-auto">안쪽 · 중앙 · 오른쪽 3섹션 · 총 42 구역</span>
           </div>
+          {/* 2026-08-26 · 사용자 지시 · 창고2 실사진 */}
+          <img
+            src={storage2Img}
+            alt="창고 2 실사진"
+            className="w-full max-w-[720px] mx-auto rounded-lg border border-teal-200 mb-3"
+            loading="lazy"
+          />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
             {/* 안쪽 */}
