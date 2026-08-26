@@ -144,11 +144,11 @@ export const RealStockTablePage: React.FC = () => {
 
   const { sorted, sortKey, sortDir, toggleSort } = useSortableTable<Row, SortKey>(filtered, "product_name", CMP, "asc");
 
-  // 2026-08-26 · 사용자 지시 · 구역별 그룹핑 · 초기 로딩 부담 축소
-  //   · real_map 기준 · 미지정 = "(미지정)"
+  // 2026-08-26 · 사용자 지시 · 공급사별 그룹핑 (기존 구역별 → 변경)
+  //   · supplier 기준 · 미지정 = "(공급사 미지정)"
   //   · 화살표 클릭 시 · 상세 상품 rows 표시
-  const [expandedZones, setExpandedZones] = useState<Set<string>>(new Set());
-  const toggleZone = (key: string) => setExpandedZones(prev => {
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const toggleGroup = (key: string) => setExpandedGroups(prev => {
     const n = new Set(prev);
     if (n.has(key)) n.delete(key); else n.add(key);
     return n;
@@ -156,25 +156,25 @@ export const RealStockTablePage: React.FC = () => {
   const grouped = useMemo(() => {
     const m = new Map<string, Row[]>();
     for (const r of sorted) {
-      const key = String(r.real_map ?? "").trim() || "(미지정)";
+      const key = String(r.supplier ?? "").trim() || "(공급사 미지정)";
       if (!m.has(key)) m.set(key, []);
       m.get(key)!.push(r);
     }
-    // 구역 key 정렬 · 미지정은 맨 뒤
+    // 공급사 key 정렬 · 미지정은 맨 뒤
     return [...m.entries()].sort(([a], [b]) => {
-      if (a === "(미지정)") return 1;
-      if (b === "(미지정)") return -1;
-      return a.localeCompare(b, "ko", { numeric: true });
+      if (a === "(공급사 미지정)") return 1;
+      if (b === "(공급사 미지정)") return -1;
+      return a.localeCompare(b, "ko");
     });
   }, [sorted]);
-  const zoneSummary = (rows: Row[]) => {
+  const groupSummary = (rows: Row[]) => {
     const erp = rows.reduce((s, r) => s + (r.erp ?? 0), 0);
     const total = rows.reduce((s, r) => s + r.total, 0);
     const diff = erp - total;
     return { count: rows.length, erp, total, diff };
   };
-  const expandAll = () => setExpandedZones(new Set(grouped.map(([k]) => k)));
-  const collapseAll = () => setExpandedZones(new Set());
+  const expandAll = () => setExpandedGroups(new Set(grouped.map(([k]) => k)));
+  const collapseAll = () => setExpandedGroups(new Set());
 
   const sortIndicator = (k: SortKey) => sortKey === k ? (sortDir === "asc" ? " ▲" : " ▼") : "";
   const thSortable = (k: SortKey, align: "left" | "center" | "num", label: string, minW?: number, extra = "") => (
@@ -210,7 +210,7 @@ export const RealStockTablePage: React.FC = () => {
               <div className="text-[13px] text-ink-soft mt-0.5">상품별 · 전산구역 · 창고1/2 · 매장1/2/3 실재고 현황</div>
             </div>
             <span className="text-[15px] tabular-nums font-semibold text-ink-soft">
-              {loading ? <Spinner size={13} tone="brand" className="inline" /> : `${grouped.length}구역 · ${filtered.length}${search ? `/${rows.length}` : ""}건`}
+              {loading ? <Spinner size={13} tone="brand" className="inline" /> : `${grouped.length}공급사 · ${filtered.length}${search ? `/${rows.length}` : ""}건`}
             </span>
             <div className="ml-auto flex items-center gap-2">
               <div className="relative">
@@ -235,7 +235,7 @@ export const RealStockTablePage: React.FC = () => {
               <button
                 type="button"
                 onClick={collapseAll}
-                disabled={loading || expandedZones.size === 0}
+                disabled={loading || expandedGroups.size === 0}
                 className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-white border border-line text-[13px] font-bold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep hover:text-brand-deep transition cursor-pointer disabled:opacity-40"
                 title="모든 구역 접기"
               >
@@ -278,7 +278,7 @@ export const RealStockTablePage: React.FC = () => {
               <thead className={tableHeadCls("text-[14px]")}>
                 <tr>
                   <th className={tableThCls("center")} style={{ width: 40 }}></th>
-                  <th className={tableThCls("left")} style={{ minWidth: 220 }}>구역 · 상품코드</th>
+                  <th className={tableThCls("left")} style={{ minWidth: 220 }}>공급사 · 상품코드</th>
                   <th className={tableThCls("left")} style={{ width: 140 }}>공급사</th>
                   <th className={tableThCls("left")} style={{ minWidth: 240 }}>상품명</th>
                   <th className={`${tableThCls("center")} bg-brand-tint/40`} style={{ width: 100 }}>전산구역</th>
@@ -294,14 +294,14 @@ export const RealStockTablePage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {grouped.map(([zoneKey, zoneRows]) => {
-                  const sum = zoneSummary(zoneRows);
-                  const expanded = expandedZones.has(zoneKey);
+                {grouped.map(([groupKey, groupRows]) => {
+                  const sum = groupSummary(groupRows);
+                  const expanded = expandedGroups.has(groupKey);
                   return (
-                    <React.Fragment key={zoneKey}>
-                      {/* 그룹 행 · 클릭 시 확장 · 요약 표시 */}
+                    <React.Fragment key={groupKey}>
+                      {/* 공급사 그룹 행 · 클릭 시 확장 · 요약 표시 */}
                       <tr
-                        onClick={() => toggleZone(zoneKey)}
+                        onClick={() => toggleGroup(groupKey)}
                         className={`cursor-pointer transition text-[15px] font-bold ${expanded ? "bg-brand-tint/20" : "bg-zinc-50/50 hover:bg-zinc-100/60"}`}
                         title={expanded ? "접기" : "펼치기"}
                       >
@@ -310,7 +310,7 @@ export const RealStockTablePage: React.FC = () => {
                         </td>
                         <td className={tableTdCls("left", "font-extrabold text-brand-deep")}>
                           <span className="inline-flex items-center gap-2">
-                            <span className="text-[16px]">{zoneKey}</span>
+                            <span className="text-[16px]">{groupKey}</span>
                             <span className="text-[13px] text-zinc-500 font-semibold">{sum.count}개 상품</span>
                           </span>
                         </td>
@@ -327,8 +327,8 @@ export const RealStockTablePage: React.FC = () => {
                         </td>
                       </tr>
                       {/* 확장 시 · 상세 상품 rows */}
-                      {expanded && zoneRows.map(r => (
-                        <tr key={`${zoneKey}-${r.product_code}`} className="hover:bg-zinc-50/60 transition text-[14px]">
+                      {expanded && groupRows.map(r => (
+                        <tr key={`${groupKey}-${r.product_code}`} className="hover:bg-zinc-50/60 transition text-[14px]">
                           <td className={tableTdCls("center")}></td>
                           <td className={tableTdCls("left", "font-mono text-[13px] text-zinc-500 tabular-nums pl-8")}>{r.product_code}</td>
                           <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ?? "-"}</td>
