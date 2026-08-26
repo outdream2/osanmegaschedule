@@ -1,93 +1,92 @@
 @echo off
 REM scripts/auto_import/install.bat
-REM 2026-08-24 · #253 · 자동 임포트 · 원클릭 설치
-REM   - 관리자 권한 우클릭 실행 (Windows Task Scheduler 등록에 필요)
-REM   - 폴더 자동 생성 (사용자 Downloads 하위)
-REM   - Task Scheduler 등록 (10분 주기)
-REM   - 즉시 1회 실행 · heartbeat 확인
+REM 2026-08-24 · #253 · Auto Import · One-Click Install
+REM 2026-08-26 · Fix · ASCII only (Korean text broke on some CMD encodings)
+REM   - Run as Administrator (needed for Task Scheduler)
+REM   - Creates folders under user Downloads
+REM   - Registers Task Scheduler (10 min interval)
+REM   - Runs once immediately
 
-setlocal
-chcp 65001 > nul
+setlocal enableextensions
 
 echo ================================
-echo 메가타운 자동 임포트 · 설치
+echo Megatown Auto Import - Install
 echo ================================
 echo.
 
-REM 1. Python 확인
+REM 1. Python check
 where python >nul 2>nul
 if errorlevel 1 (
-  echo [X] Python 이 설치되지 않았습니다.
-  echo     python.org 에서 Python 3.8+ 설치 후 재실행.
+  echo [X] Python not installed.
+  echo     Please install Python 3.8+ from python.org and re-run.
   pause
   exit /b 1
 )
-echo [OK] Python 감지
+echo [OK] Python detected
 python --version
 echo.
 
-REM 2. requirements 설치
-echo [.] requests 라이브러리 설치 중...
+REM 2. requirements install
+if not exist "%~dp0logs" mkdir "%~dp0logs"
+echo [.] Installing requests library...
 python -m pip install -r "%~dp0requirements.txt" > "%~dp0logs\pip.log" 2>&1
 if errorlevel 1 (
-  echo [X] pip install 실패 · logs\pip.log 확인
+  echo [X] pip install failed. Check logs\pip.log
   pause
   exit /b 1
 )
-echo [OK] requests 설치 완료
+echo [OK] requests installed
 echo.
 
-REM 3. 임포트 폴더 자동 생성 (Downloads 하위)
+REM 3. Import folders (under Downloads)
 set BASE=%USERPROFILE%\Downloads\megatown-importdata
 if not exist "%BASE%" mkdir "%BASE%"
 if not exist "%BASE%\products" mkdir "%BASE%\products"
 if not exist "%BASE%\stock"    mkdir "%BASE%\stock"
 if not exist "%BASE%\purchase" mkdir "%BASE%\purchase"
-echo [OK] 임포트 폴더 생성:
+echo [OK] Import folders created:
 echo      %BASE%\products
 echo      %BASE%\stock
 echo      %BASE%\purchase
 echo.
 
-REM 4. config.ini 확인
+REM 4. config.ini check
 if not exist "%~dp0config.ini" (
-  echo [!] config.ini 없음 · config.ini.example 를 복사하여 수동 편집 필요
-  echo     %~dp0config.ini.example
+  echo [!] config.ini not found. Copying from example...
   copy "%~dp0config.ini.example" "%~dp0config.ini" > nul
-  echo [OK] config.ini 생성 · 관리자 credential 입력 필요 (notepad 열림)
+  echo [OK] config.ini created. Please edit admin credentials (notepad opens).
   notepad "%~dp0config.ini"
 ) else (
-  echo [OK] config.ini 존재
+  echo [OK] config.ini exists
 )
 echo.
 
-REM 5. Task Scheduler 등록 · 10분 주기 · 관리자 권한 필요
+REM 5. Task Scheduler register (10 min interval, needs admin)
 schtasks /Query /TN "MegatownAutoImport" > nul 2>&1
 if not errorlevel 1 (
-  echo [!] 기존 Task 삭제
+  echo [!] Removing existing Task
   schtasks /Delete /TN "MegatownAutoImport" /F > nul
 )
 schtasks /Create /TN "MegatownAutoImport" /TR "\"%~dp0run.bat\"" /SC MINUTE /MO 10 /RL HIGHEST /F > nul
 if errorlevel 1 (
-  echo [X] Task Scheduler 등록 실패 · 관리자 권한 실행 필요
+  echo [X] Task Scheduler registration failed. Run as Administrator.
   pause
   exit /b 1
 )
-echo [OK] Task Scheduler 등록 (10분 주기)
+echo [OK] Task Scheduler registered (10 min interval)
 echo.
 
-REM 6. 즉시 1회 실행
-if not exist "%~dp0logs" mkdir "%~dp0logs"
-echo [.] 초기 실행 중...
+REM 6. Run once now
+echo [.] Initial run...
 call "%~dp0run.bat"
 echo.
 
 echo ================================
-echo 설치 완료
+echo Install complete
 echo ================================
-echo 1. 웹앱 · 시스템 설정 · 자동 임포트 탭 · 상태 초록불 확인
-echo 2. %BASE% 하위 폴더 · xlsx 파일 넣기
-echo 3. 10분 이내 자동 임포트
+echo 1. Web app - System Settings - Auto Import tab - check green status
+echo 2. Drop xlsx files into subfolders of %BASE%
+echo 3. Auto imported within 10 minutes
 echo ================================
 pause
 endlocal
