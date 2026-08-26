@@ -49,7 +49,8 @@ const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
 
   return (
     <SettingsPageShell {...commonShellProps}>
-      <div className="flex flex-col gap-4">
+      {/* 2026-08-26 · 사용자 지시 · 통계설정 · 폰트 +3 · data-scope 로 격리 */}
+      <div data-scope="stats-settings" className="flex flex-col gap-4">
         {/* 섹션 1 · 계절 정의 */}
         <div className={`${CARD_BASE} p-5`}>
           <SeasonRangesEditor employeeId={employeeId} onToast={noop} />
