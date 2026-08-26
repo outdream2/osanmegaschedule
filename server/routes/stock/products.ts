@@ -280,9 +280,22 @@ router.post("/api/upload-products", express.raw({ type: "application/octet-strea
   const rows = xlsxToRows(buf);
   if (rows.length === 0) throw badRequest("엑셀에 데이터가 없습니다");
   console.log(`[upload] parsed ${rows.length} rows`);
+  // 2026-08-26 · 사용자 버그 fix · ON CONFLICT DO UPDATE cannot affect row twice
+  //   · xlsx 안 · 같은 product_code 중복 시 · Postgres upsert 실패
+  //   · 해결 · 마지막 값 우선 · Map 으로 dedupe (마지막 등장 값 유지)
+  const dedupMap = new Map<string, Record<string, any>>();
+  let dupCount = 0;
+  for (const r of rows) {
+    const code = String((r as any).product_code ?? "").trim();
+    if (!code) continue;
+    if (dedupMap.has(code)) dupCount++;
+    dedupMap.set(code, r);
+  }
+  const dedupedRows = Array.from(dedupMap.values());
+  if (dupCount > 0) console.log(`[upload] dedup · ${rows.length} → ${dedupedRows.length} (중복 ${dupCount} 제거 · 마지막 값 유지)`);
   const CHUNK_SIZE = 500;
   const chunks: Record<string, any>[][] = [];
-  for (let i = 0; i < rows.length; i += CHUNK_SIZE) chunks.push(rows.slice(i, i + CHUNK_SIZE));
+  for (let i = 0; i < dedupedRows.length; i += CHUNK_SIZE) chunks.push(dedupedRows.slice(i, i + CHUNK_SIZE));
   const PARALLEL = 3;
   for (let i = 0; i < chunks.length; i += PARALLEL) {
     const batch = chunks.slice(i, i + PARALLEL);
