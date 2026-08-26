@@ -6,7 +6,7 @@
 
 import React from "react";
 import {
-  Search, Boxes, Info, EyeOff, Loader2 as LoaderIcon,
+  Search, Boxes, EyeOff, Loader2 as LoaderIcon,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { StatusPill } from "../common/StatusPill";
@@ -16,6 +16,9 @@ import { SeasonButtons } from "../common/SeasonButtons";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { Modal } from "../common/Modal";
+// 2026-08-26 · 사용자 지시 · 발주필요와 동일 · PageToolbar + CategoryChips 패턴
+import { PageToolbar } from "../common/PageToolbar";
+import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 // 2026-08-22 · Framework Phase 4 · props 유연성 위해 any 사용
 // ProductInfo / ProductSearchResult / HiddenProduct 다양한 형태 모두 지원 (구조적으로 유사)
 type AnyProduct = any;
@@ -57,22 +60,75 @@ interface FlowFilterBarProps {
 export const FlowFilterBar: React.FC<FlowFilterBarProps> = ({
   filteredFlowCount, flowMonths, flowSeason, flowSnapshot, flowDateRange,
   flowLimit, flowCategoryFilter,
-  infoSearchQuery, infoSearchResults, infoSelected,
+  infoSearchQuery, infoSearchResults, infoSelected: _infoSelected,
   salesQtyMin, salesQtyMax, loading,
   setFlowSeason, setPendingFlowMonths, setFlowMonths, setFlowLimit,
-  setInfoSearchQuery, setInfoSearchResults, setInfoSelected, runInfoSearch,
+  setInfoSearchQuery, setInfoSearchResults, setInfoSelected, runInfoSearch: _runInfoSearch,
   loadFlowSelectedProduct, setSalesQtyMin, setSalesQtyMax,
   onOpenHiddenManagerModal, setFlowCategoryFilter, onFetchStockFlow,
 }) => {
+  // 2026-08-26 · 사용자 지시 · 발주필요 리스트와 동일한 상단 배치 · PageToolbar + CategoryChips
   return (
-    <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2`}>
-      <div className="flex items-center gap-2.5">
-        <AccentBar />
-        <Boxes size={16} className="text-brand-deep shrink-0" />
-        <span className="text-[17px] font-bold text-ink tracking-tight">상품현황리스트</span>
-        <StatusPill tone="sky" size="md">{filteredFlowCount}건</StatusPill>
-      </div>
+    <div className="flex flex-col gap-2">
+      {/* 상단 · PageToolbar (icon + title + count + search + category filter) */}
+      <PageToolbar
+        icon={<Boxes size={18} strokeWidth={2.2} />}
+        title="상품현황리스트"
+        count={filteredFlowCount}
+        search={{
+          value: infoSearchQuery,
+          onChange: (v) => {
+            setInfoSearchQuery(v);
+            if (!v.trim()) { setInfoSearchResults([]); setInfoSelected(null); }
+          },
+          placeholder: "상품명·코드·공급사 검색",
+        }}
+        right={
+          <CategoryChips
+            value={flowCategoryFilter}
+            onChange={(v) => setFlowCategoryFilter(String(v) as FlowFilterBarProps["flowCategoryFilter"])}
+            size="sm"
+            ariaLabel="상품현황 공급사 카테고리"
+            options={(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => ({
+              value: cat,
+              label: cat,
+              tone: (cat === "전체" ? "zinc"
+                   : cat === "위탁" ? "violet"
+                   : cat === "선결제" ? "rose"
+                   : cat === "60회전" ? "emerald"
+                   : cat === "90회전" ? "teal"
+                   : "zinc") as ChipTone,
+            }))}
+          />
+        }
+      />
 
+      {/* 검색 결과 dropdown · PageToolbar 아래 · 선택 시 왼쪽 리스트 자동 필터 + 우측 상세 로드 */}
+      {infoSearchResults.length > 0 && (
+        <div className="relative">
+          <div className="absolute left-0 right-0 top-0 max-h-64 overflow-y-auto border border-line bg-white rounded-lg shadow-lg z-30 divide-y divide-zinc-100">
+            {infoSearchResults.map((p, i) => (
+              <button key={`info-sr-${(p as any).product_code}-${i}`}
+                onClick={() => {
+                  setInfoSelected(p);
+                  setInfoSearchQuery((p as any).product_name);
+                  setInfoSearchResults([]);
+                  loadFlowSelectedProduct(p);
+                }}
+                className="w-full text-left px-3 py-2 hover:bg-sky-50 transition flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-[15px] font-semibold text-zinc-800 whitespace-nowrap">{(p as any).product_name}</div>
+                  <div className="text-[13px] tabular-nums text-zinc-400 whitespace-nowrap">#{(p as any).product_code} · {(p as any).supplier ?? "-"}</div>
+                </div>
+                <span className="text-[13px] text-zinc-400 shrink-0">재고 {(p as any).current_stock ?? "-"}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 하단 · 필터바 (기간·TopN·판매출고계·숨김관리·새로고침) */}
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2`}>
       {/* 조회기간 */}
       <div className="flex items-center gap-1.5 flex-wrap">
         <span className="text-[15px] font-bold text-ink tracking-tight shrink-0">기간</span>
@@ -112,50 +168,6 @@ export const FlowFilterBar: React.FC<FlowFilterBarProps> = ({
         </div>
       </div>
 
-      {/* 2026-08-26 · 사용자 지시 · 상품 검색 · 왼쪽 리스트 필터 + 선택 시 오른쪽 상세 로드
-          · 정보확인 버튼 제거 · 드롭다운 선택 즉시 loadFlowSelectedProduct */}
-      <div className="relative flex-1 min-w-[220px] sm:min-w-[280px] sm:max-w-[380px] basis-full sm:basis-auto">
-        <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-        <input
-          value={infoSearchQuery}
-          onChange={(e) => setInfoSearchQuery(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") runInfoSearch(); }}
-          placeholder="상품명·코드·공급사 검색"
-          className="w-full h-9 pl-8 pr-8 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white transition"
-        />
-        {infoSearchQuery && (
-          <button
-            type="button"
-            onClick={() => { setInfoSearchQuery(""); setInfoSearchResults([]); setInfoSelected(null); }}
-            aria-label="검색어 지우기"
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full text-zinc-400 hover:text-ink hover:bg-zinc-100 flex items-center justify-center cursor-pointer transition-colors text-[13px]"
-          >
-            ✕
-          </button>
-        )}
-        {infoSearchResults.length > 0 && (
-          <div className="absolute left-0 top-full mt-1 max-h-64 overflow-y-auto border border-line bg-white rounded-lg shadow-lg z-30 divide-y divide-zinc-100 min-w-full sm:min-w-[500px]">
-            {infoSearchResults.map((p, i) => (
-              <button key={`info-sr-${(p as any).product_code}-${i}`}
-                onClick={() => {
-                  // 왼쪽 리스트에 반영 (infoSearchQuery = 상품명) + 오른쪽 상세 자동 로드
-                  setInfoSelected(p);
-                  setInfoSearchQuery((p as any).product_name);
-                  setInfoSearchResults([]);
-                  loadFlowSelectedProduct(p);
-                }}
-                className="w-full text-left px-2.5 py-1.5 hover:bg-sky-50 transition flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="text-[15px] font-semibold text-zinc-800 whitespace-nowrap">{(p as any).product_name}</div>
-                  <div className="text-[14px] tabular-nums text-zinc-400 whitespace-nowrap">#{(p as any).product_code} · {(p as any).supplier ?? "-"}</div>
-                </div>
-                <span className="text-[14px] text-zinc-400 shrink-0">재고 {(p as any).current_stock ?? "-"}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* 판매출고계 범위 필터 */}
       <div className="flex items-center gap-1.5">
         <span className="text-[15px] font-bold text-ink tracking-tight shrink-0">판매출고계</span>
@@ -178,29 +190,13 @@ export const FlowFilterBar: React.FC<FlowFilterBarProps> = ({
         <EyeOff size={12} /> 숨김관리
       </button>
 
-      {/* 분류 세그먼트 필터 */}
-      <div className="flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
-        {(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => (
-          <button key={cat} onClick={() => setFlowCategoryFilter(cat)}
-            className={`h-7 px-2.5 text-[15px] font-semibold rounded transition cursor-pointer ${
-              flowCategoryFilter === cat
-                ? cat === "전체"   ? "bg-zinc-700 text-white shadow-sm"
-                : cat === "위탁"   ? "bg-violet-500 text-white shadow-sm"
-                : cat === "선결제" ? "bg-rose-500 text-white shadow-sm"
-                : cat === "60회전" ? "bg-emerald-500 text-white shadow-sm"
-                : cat === "90회전" ? "bg-teal-500 text-white shadow-sm"
-                : "bg-zinc-500 text-white shadow-sm"
-                : "text-zinc-500 hover:text-zinc-700"
-            }`}>{cat}</button>
-        ))}
-      </div>
-
-      {/* 새로고침 */}
+      {/* 새로고침 · 분류 세그먼트는 상단 PageToolbar 로 이관 */}
       <button onClick={onFetchStockFlow} disabled={loading}
         className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
         title="새로고침">
         <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
       </button>
+      </div>
     </div>
   );
 };
