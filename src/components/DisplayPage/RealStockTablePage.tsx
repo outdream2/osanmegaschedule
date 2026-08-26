@@ -22,6 +22,7 @@ interface Product {
   spec: string | null;
   real_map: string | null;
   category_code: string | null;
+  current_stock: number | null; // 2026-08-26 · ERP 재고 (products.current_stock)
 }
 
 interface InvRow {
@@ -39,27 +40,31 @@ interface Row {
   category_code: string | null;        // 2026-08-26 · 분류코드
   spec: string | null;                 // 전산구역
   real_map: string | null;
+  erp: number | null;                  // 2026-08-26 · ERP 재고 (products.current_stock)
   w1: number | null;
   w2: number | null;
   s1: number | null;
   s2: number | null;
   s3: number | null;
   total: number;
+  diff: number;                        // 2026-08-26 · ERP - 실재고합계 (음수면 실재고 많음)
 }
 
-type SortKey = "product_name" | "supplier" | "category_code" | "spec" | "w1" | "w2" | "s1" | "s2" | "s3" | "total";
+type SortKey = "product_name" | "supplier" | "category_code" | "spec" | "erp" | "w1" | "w2" | "s1" | "s2" | "s3" | "total" | "diff";
 
 const CMP: Record<SortKey, Comparator<Row>> = {
   product_name:  (a, b) => (a.product_name ?? "").localeCompare(b.product_name ?? "", "ko"),
   supplier:      (a, b) => (a.supplier ?? "").localeCompare(b.supplier ?? "", "ko"),
   category_code: (a, b) => (a.category_code ?? "").localeCompare(b.category_code ?? "", "ko"),
   spec:          (a, b) => (a.spec ?? "").localeCompare(b.spec ?? "", "ko"),
+  erp:           (a, b) => (a.erp ?? 0) - (b.erp ?? 0),
   w1:            (a, b) => (a.w1 ?? 0) - (b.w1 ?? 0),
   w2:            (a, b) => (a.w2 ?? 0) - (b.w2 ?? 0),
   s1:            (a, b) => (a.s1 ?? 0) - (b.s1 ?? 0),
   s2:            (a, b) => (a.s2 ?? 0) - (b.s2 ?? 0),
   s3:            (a, b) => (a.s3 ?? 0) - (b.s3 ?? 0),
   total:         (a, b) => a.total - b.total,
+  diff:          (a, b) => a.diff - b.diff,
 };
 
 export const RealStockTablePage: React.FC = () => {
@@ -88,6 +93,7 @@ export const RealStockTablePage: React.FC = () => {
         spec: p?.spec ?? null,
         real_map: p?.real_map ?? null,
         category_code: p?.category_code ?? null,
+        current_stock: p?.current_stock != null ? Number(p.current_stock) : null,
       }));
       list.sort((a, b) => a.product_name.localeCompare(b.product_name, "ko"));
       setProducts(list);
@@ -111,6 +117,8 @@ export const RealStockTablePage: React.FC = () => {
     const s2 = i?.store_stock_2 ?? null;
     const s3 = i?.store3_stock ?? null;
     const total = (w1 ?? 0) + (w2 ?? 0) + (s1 ?? 0) + (s2 ?? 0) + (s3 ?? 0);
+    const erp = p.current_stock;
+    const diff = (erp ?? 0) - total;
     return {
       product_code: p.product_code,
       product_name: p.product_name,
@@ -118,7 +126,8 @@ export const RealStockTablePage: React.FC = () => {
       category_code: p.category_code,
       spec: p.spec,
       real_map: p.real_map,
-      w1, w2, s1, s2, s3, total,
+      erp,
+      w1, w2, s1, s2, s3, total, diff,
     };
   }), [products, inv]);
 
@@ -223,12 +232,14 @@ export const RealStockTablePage: React.FC = () => {
                   {thSortable("product_name",  "left",  "상품명",   300)}
                   <th className={tableThCls("left")} style={{ width: 120 }}>상품코드</th>
                   {thSortable("spec",          "center","전산구역", 100, "bg-brand-tint/40")}
+                  {thSortable("erp",          "num", "ERP재고",  90,  "bg-amber-50/60")}
                   {thSortable("w1",           "num", "창고1",    80,  "bg-cyan-50/60")}
                   {thSortable("w2",           "num", "창고2",    80,  "bg-cyan-50/60")}
                   {thSortable("s1",           "num", "매장1",    80,  "bg-violet-50/60")}
                   {thSortable("s2",           "num", "매장2",    80,  "bg-violet-50/60")}
                   {thSortable("s3",           "num", "매장3",    80,  "bg-violet-50/60")}
-                  {thSortable("total",        "num", "합계",     90,  "bg-brand-tint/30")}
+                  {thSortable("total",        "num", "실재고합계", 95,  "bg-brand-tint/30")}
+                  {thSortable("diff",         "num", "차이",     80,  "bg-rose-50/40")}
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -241,6 +252,9 @@ export const RealStockTablePage: React.FC = () => {
                     <td className={tableTdCls("center", `font-semibold ${r.spec ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>
                       {r.spec ?? "미지정"}
                     </td>
+                    <td className={tableTdCls("num", `tabular-nums font-bold ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-50/30`)}>
+                      {r.erp ?? "-"}
+                    </td>
                     <td className={tableTdCls("num", `tabular-nums ${numCls(r.w1, "cyan")} bg-cyan-50/30`)}>{r.w1 ?? "-"}</td>
                     <td className={tableTdCls("num", `tabular-nums ${numCls(r.w2, "cyan")} bg-cyan-50/30`)}>{r.w2 ?? "-"}</td>
                     <td className={tableTdCls("num", `tabular-nums ${numCls(r.s1, "violet")} bg-violet-50/30`)}>{r.s1 ?? "-"}</td>
@@ -248,6 +262,9 @@ export const RealStockTablePage: React.FC = () => {
                     <td className={tableTdCls("num", `tabular-nums ${numCls(r.s3, "violet")} bg-violet-50/30`)}>{r.s3 ?? "-"}</td>
                     <td className={tableTdCls("num", `tabular-nums font-extrabold ${r.total > 0 ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>
                       {r.total > 0 ? r.total : "-"}
+                    </td>
+                    <td className={tableTdCls("num", `tabular-nums font-bold ${r.diff > 0 ? "text-rose-600" : r.diff < 0 ? "text-emerald-600" : "text-zinc-300"} bg-rose-50/20`)}>
+                      {r.diff !== 0 ? (r.diff > 0 ? `+${r.diff}` : String(r.diff)) : "0"}
                     </td>
                   </tr>
                 ))}
