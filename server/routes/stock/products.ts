@@ -552,11 +552,12 @@ router.post("/api/products/refill-optimal-stock", asyncHandler(async (req, res) 
     const result = await refillOptimalStock({
       days: Number(body.days ?? 30),
       fromDate: String(body.fromDate ?? "").trim() || undefined,
+      toDate: String(body.toDate ?? "").trim() || undefined,
       zeroIfNoSales: body.zeroIfNoSales !== false, // 기본 true
       syncOrderRequests: body.syncOrderRequests !== false, // 기본 true
     });
     resetProductCache();
-    console.log(`[refill-optimal-stock] since=${result.since} · history=${result.totalHistoryRows} · sales=${result.productsWithSales} · zeroed=${result.productsZeroed} · updated=${result.productsUpdated} · orderReqs=${result.orderRequestsUpdated} · total=${result.elapsedMs}ms (sale ${result.saleMs}ms + product ${result.productMs}ms + order ${result.orderMs}ms)`);
+    console.log(`[refill-optimal-stock] since=${result.since} until=${result.until} · history=${result.totalHistoryRows} · sales=${result.productsWithSales} · zeroed=${result.productsZeroed} · updated=${result.productsUpdated} · orderReqs=${result.orderRequestsUpdated} · total=${result.elapsedMs}ms (sale ${result.saleMs}ms + product ${result.productMs}ms + order ${result.orderMs}ms)`);
     return res.json({
       ok: true,
       updated: result.productsUpdated,
@@ -566,6 +567,7 @@ router.post("/api/products/refill-optimal-stock", asyncHandler(async (req, res) 
       productsWithSales: result.productsWithSales,
       totalProducts: result.totalProducts,
       from: result.since,
+      to: result.until,
       elapsedMs: result.elapsedMs,
     });
   } catch (e: any) {

@@ -10,8 +10,10 @@ import { supabase } from "../../src/supabase/client";
 export interface RefillOptions {
   /** 기간 (일) · fromDate 없을 때 기본 · 1~365 */
   days?: number;
-  /** 시작 날짜 (YYYY-MM-DD) · 있으면 이 날짜 ~ 오늘 판매량 집계 · 없으면 오늘-days ~ 오늘 */
+  /** 시작 날짜 (YYYY-MM-DD) · 있으면 이 날짜 ~ toDate (or 오늘) 판매량 집계 */
   fromDate?: string;
+  /** 끝 날짜 (YYYY-MM-DD) · 없으면 오늘 · 사용자 지시 · 특정 날짜부터 특정 날짜까지 지원 */
+  toDate?: string;
   /** 판매 0 상품 · optimal_stock = 0 으로 설정 · 기본 true (사용자 지시 A안) */
   zeroIfNoSales?: boolean;
   /** order_requests 동기화 · 기본 true */
@@ -21,6 +23,7 @@ export interface RefillOptions {
 export interface RefillResult {
   ok: boolean;
   since: string;
+  until: string;
   totalHistoryRows: number;
   totalProducts: number;
   productsWithSales: number;
@@ -35,25 +38,37 @@ export interface RefillResult {
 }
 
 const isValidDate = (s: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(s);
-
-/** 시작 날짜 계산 · fromDate 우선 · 없으면 오늘-days */
-export function computeSinceDate(opts: Pick<RefillOptions, "days" | "fromDate">): string {
-  if (opts.fromDate && isValidDate(opts.fromDate)) return opts.fromDate;
-  const days = Math.max(1, Math.min(365, Number(opts.days ?? 30) || 30));
+const todayStr = (): string => {
   const now = new Date();
-  const since = new Date(now.getFullYear(), now.getMonth(), now.getDate() - days);
-  return since.toISOString().slice(0, 10);
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+};
+
+/** 시작 · 끝 날짜 계산 · fromDate 우선 · toDate 없으면 오늘 */
+export function computeDateRange(opts: Pick<RefillOptions, "days" | "fromDate" | "toDate">): { since: string; until: string } {
+  const until = opts.toDate && isValidDate(opts.toDate) ? opts.toDate : todayStr();
+  if (opts.fromDate && isValidDate(opts.fromDate)) return { since: opts.fromDate, until };
+  const days = Math.max(1, Math.min(365, Number(opts.days ?? 30) || 30));
+  const untilD = new Date(until + "T00:00:00");
+  const since = new Date(untilD.getFullYear(), untilD.getMonth(), untilD.getDate() - days);
+  const y = since.getFullYear();
+  const m = String(since.getMonth() + 1).padStart(2, "0");
+  const d = String(since.getDate()).padStart(2, "0");
+  return { since: `${y}-${m}-${d}`, until };
 }
 
-/** stock_history · sinceStr 이후 · 5-병렬 페이지 조회 · product_code 별 판매량 합산 */
-export async function fetchSalesMap(sinceStr: string): Promise<{ map: Map<string, number>; totalRows: number }> {
+/** stock_history · [since, until] 범위 · 5-병렬 페이지 조회 · product_code 별 판매량 합산 */
+export async function fetchSalesMap(sinceStr: string, untilStr?: string): Promise<{ map: Map<string, number>; totalRows: number }> {
   const salesMap = new Map<string, number>();
   const PAGE = 1000;
-  const first = await supabase
-    .from("stock_history")
-    .select("product_code, sale_qty", { count: "exact" })
-    .gte("snapshot_date", sinceStr)
-    .range(0, PAGE - 1);
+  const buildQuery = (offset: number) => {
+    let q = supabase
+      .from("stock_history")
+      .select("product_code, sale_qty", offset === 0 ? { count: "exact" } : undefined)
+      .gte("snapshot_date", sinceStr);
+    if (untilStr) q = q.lte("snapshot_date", untilStr);
+    return q.range(offset, offset + PAGE - 1);
+  };
+  const first = await buildQuery(0);
   if (first.error) {
     if (/relation|does not exist/i.test(first.error.message)) {
       throw new Error("stock_history 테이블 없음");
@@ -75,12 +90,7 @@ export async function fetchSalesMap(sinceStr: string): Promise<{ map: Map<string
     const PARALLEL = 5;
     for (let p = 1; p < totalPages; p += PARALLEL) {
       const batch = Array.from({ length: Math.min(PARALLEL, totalPages - p) }, (_, i) => p + i);
-      const results = await Promise.all(batch.map(pi =>
-        supabase.from("stock_history")
-          .select("product_code, sale_qty")
-          .gte("snapshot_date", sinceStr)
-          .range(pi * PAGE, pi * PAGE + PAGE - 1)
-      ));
+      const results = await Promise.all(batch.map(pi => buildQuery(pi * PAGE)));
       for (const r of results) {
         if (r.error) throw new Error(r.error.message);
         consume(r.data ?? []);
@@ -172,12 +182,12 @@ export async function syncOrderRequestsOptimalStock(codeToOptimal: Map<string, n
 /** 재계산 통합 실행 (옵션 기반) */
 export async function refillOptimalStock(opts: RefillOptions = {}): Promise<RefillResult> {
   const t0 = Date.now();
-  const sinceStr = computeSinceDate(opts);
+  const { since: sinceStr, until: untilStr } = computeDateRange(opts);
   const zeroIfNoSales = opts.zeroIfNoSales !== false;
   const syncOrders = opts.syncOrderRequests !== false;
 
   const tSales = Date.now();
-  const { map: salesMap, totalRows: totalHistoryRows } = await fetchSalesMap(sinceStr);
+  const { map: salesMap, totalRows: totalHistoryRows } = await fetchSalesMap(sinceStr, untilStr);
   const saleMs = Date.now() - tSales;
 
   // 판매0 → 0 처리: 전체 상품 코드 조회 · 없는 코드는 0
@@ -216,6 +226,7 @@ export async function refillOptimalStock(opts: RefillOptions = {}): Promise<Refi
   return {
     ok: true,
     since: sinceStr,
+    until: untilStr,
     totalHistoryRows,
     totalProducts,
     productsWithSales: salesMap.size,

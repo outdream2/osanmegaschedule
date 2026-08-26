@@ -47,27 +47,31 @@ export const OptimalStockPeriodSection: React.FC = () => {
   const { toast, showSuccess, showError } = useToast();
   const confirm = useConfirm();
   const [recalcing, setRecalcing] = useState(false);
-  // 2026-08-26 · 사용자 지시 · 두 모드 · today (기존) · fromDate (특정 날짜부터 오늘까지)
-  const [mode, setMode] = useState<"today" | "fromDate">("today");
+  // 2026-08-26 · 사용자 지시 · 두 모드 · today (기존) · range (특정 날짜부터 특정 날짜까지)
+  const [mode, setMode] = useState<"today" | "range">("today");
   const [fromDate, setFromDate] = useState<string>(() => {
-    // 기본값 · 30일 전
     const d = new Date(); d.setDate(d.getDate() - 30);
     return d.toISOString().slice(0, 10);
   });
-  const [lastResult, setLastResult] = useState<{ updated: number; failed?: number; note?: string; productsWithSales?: number; productsZeroed?: number; from?: string } | null>(null);
+  const [toDate, setToDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [lastResult, setLastResult] = useState<{ updated: number; failed?: number; note?: string; productsWithSales?: number; productsZeroed?: number; from?: string; to?: string } | null>(null);
   const runRecalc = async () => {
     const n = Number(inputValue) || days;
-    const modeLabel = mode === "today" ? `최근 ${n}일` : `${fromDate} 부터 오늘까지`;
+    const modeLabel = mode === "today" ? `최근 ${n}일` : `${fromDate} ~ ${toDate}`;
     const ok = await confirm({
       title: "적정재고 재계산",
       message: `${modeLabel} 판매량 합계 = 적정재고\n\n대상 · 전체 상품 (판매 0 이면 optimal_stock = 0)\n주의 · 서버 재시작 필요할 수 있음\n\n진행할까요?`,
     });
     if (!ok) return;
+    if (mode === "range" && fromDate > toDate) {
+      showError("시작 날짜가 끝 날짜보다 늦습니다");
+      return;
+    }
     setRecalcing(true);
     setLastResult(null);
     try {
-      const payload: any = mode === "fromDate" ? { fromDate } : { days: n };
-      const { data } = await api.post<{ ok: boolean; updated: number; failed?: number; note?: string; productsWithSales?: number; productsZeroed?: number; from?: string }>(
+      const payload: any = mode === "range" ? { fromDate, toDate } : { days: n };
+      const { data } = await api.post<{ ok: boolean; updated: number; failed?: number; note?: string; productsWithSales?: number; productsZeroed?: number; from?: string; to?: string }>(
         "/api/products/refill-optimal-stock",
         payload
       );
@@ -78,6 +82,7 @@ export const OptimalStockPeriodSection: React.FC = () => {
         productsWithSales: data?.productsWithSales,
         productsZeroed: data?.productsZeroed,
         from: data?.from,
+        to: data?.to,
       });
       if (data?.updated) {
         showSuccess(`재계산 완료 · ${data.updated}건 (판매 있음 ${data.productsWithSales ?? "?"} · 0 처리 ${data.productsZeroed ?? "?"})`);
@@ -142,8 +147,8 @@ export const OptimalStockPeriodSection: React.FC = () => {
             <span className="text-[14px] font-semibold text-ink">오늘부터 · 최근 N일</span>
           </label>
           <label className="inline-flex items-center gap-2 cursor-pointer">
-            <input type="radio" checked={mode === "fromDate"} onChange={() => setMode("fromDate")} className="w-4 h-4 accent-brand-deep cursor-pointer" />
-            <span className="text-[14px] font-semibold text-ink">특정 날짜부터 · 오늘까지</span>
+            <input type="radio" checked={mode === "range"} onChange={() => setMode("range")} className="w-4 h-4 accent-brand-deep cursor-pointer" />
+            <span className="text-[14px] font-semibold text-ink">특정 기간 (시작 ~ 끝)</span>
           </label>
         </div>
       </div>
@@ -172,19 +177,32 @@ export const OptimalStockPeriodSection: React.FC = () => {
           </span>
         </div>
       ) : (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <label htmlFor="optimal-stock-fromdate" className="text-[14px] font-semibold text-ink">
-            시작 날짜
+            시작
           </label>
           <input
             id="optimal-stock-fromdate"
             type="date"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
+            max={toDate}
+            className="h-9 px-2.5 text-[15px] font-semibold text-ink border border-line rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums"
+          />
+          <span className="text-[15px] text-zinc-400">~</span>
+          <label htmlFor="optimal-stock-todate" className="text-[14px] font-semibold text-ink">
+            끝
+          </label>
+          <input
+            id="optimal-stock-todate"
+            type="date"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+            min={fromDate}
             max={new Date().toISOString().slice(0, 10)}
             className="h-9 px-2.5 text-[15px] font-semibold text-ink border border-line rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums"
           />
-          <span className="text-[13px] text-zinc-500">→ 오늘까지 판매량 합산</span>
+          <span className="text-[13px] text-zinc-500">기간 내 판매량 합산</span>
         </div>
       )}
 
@@ -218,7 +236,7 @@ export const OptimalStockPeriodSection: React.FC = () => {
                 <span className="ml-2 text-zinc-500">· 0 처리 {lastResult.productsZeroed}종</span>
               )}
               {lastResult.from && (
-                <span className="ml-2 text-zinc-500">· 기준 {lastResult.from}~</span>
+                <span className="ml-2 text-zinc-500">· 기준 {lastResult.from} ~ {lastResult.to ?? "오늘"}</span>
               )}
               {lastResult.note ? <span className="ml-2 text-zinc-500">· {lastResult.note}</span> : null}
             </div>
