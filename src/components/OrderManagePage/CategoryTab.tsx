@@ -10,8 +10,7 @@ import { getProductsMap } from "../../lib/productsCache";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { StoreZoneMap } from "../common/StoreZoneMap";
-import { getZoneLabel } from "../../constants/zoneLabels";
-import { ZONE_DEFS } from "../../constants/displayZones";
+import { ZONE_DEFS, formatZoneDisplayCode, formatZoneCategoryCombined } from "../../constants/displayZones";
 import { type ClassFilter } from "../../utils/productClassify";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
@@ -29,23 +28,11 @@ import { API_LIMITS } from "../../constants/apiLimits";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { useToast, toastClass } from "../../hooks/useToast";
 
-// ─── 구역 코드 → 카테고리 설명 매핑 ──────────────────────────────────────────
-const ZONE_CATEGORY_MAP: Record<string, string> = (() => {
-  const map: Record<string, string> = {};
-  for (const z of ZONE_DEFS) {
-    const nStr = String(z.num);
-    if (z.subA && z.subB) {
-      map[`${nStr}A`] = z.subA;
-      map[`${nStr}B`] = z.subB;
-    }
-    map[nStr] = z.category;
-  }
-  return map;
-})();
-
+// ─── 구역 코드 → 카테고리 설명 매핑 (2026-08-26 · 프레임워크 공통 헬퍼) ─────
+//   aisle 1-8 · 40 결합 카테고리 지원 · formatZoneCategoryCombined 사용
 const zoneCategoryLabel = (zone: string): string => {
   if (!zone || zone === "미배치") return "미배치 상품";
-  return ZONE_CATEGORY_MAP[zone.toUpperCase()] ?? ZONE_CATEGORY_MAP[zone.replace(/[AB]$/, "")] ?? "";
+  return formatZoneCategoryCombined(zone, ZONE_DEFS);
 };
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
@@ -225,7 +212,7 @@ const ZoneCategoryContent: React.FC = () => {
         {/* 2) 구역 + 카테고리 · 나란히 */}
         <div className="flex items-center gap-2 flex-wrap min-w-0">
           <span className={`text-[17px] font-extrabold ${textCls} tabular-nums shrink-0 px-2 py-0.5 rounded-md bg-white/90 border border-current shadow-sm`}>
-            {getZoneLabel(g.zone)}
+            {formatZoneDisplayCode(g.zone)}
           </span>
           {zoneCategoryLabel(g.zone) && (
             <span className={`text-[15px] font-bold ${textCls} break-words whitespace-normal leading-tight`}
@@ -344,7 +331,7 @@ const ZoneCategoryContent: React.FC = () => {
         <div className="bg-violet-50/60 border border-violet-200 rounded-xl p-3 shadow-sm">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 min-w-0">
-              <span className={`text-[15px] font-bold ${textCls} tabular-nums`}>{getZoneLabel(g.zone)}</span>
+              <span className={`text-[15px] font-bold ${textCls} tabular-nums`}>{formatZoneDisplayCode(g.zone)}</span>
               {zoneCategoryLabel(g.zone) && (
                 <span className={`text-sm font-semibold ${textCls}`}>{zoneCategoryLabel(g.zone)}</span>
               )}
@@ -587,7 +574,7 @@ const ZoneCategoryContent: React.FC = () => {
                 </button>
                 <div className="flex-1 min-w-0">
                   <div className="text-[15px] font-bold text-zinc-800 truncate leading-tight">
-                    구역 {getZoneLabel(selectedZone)}{zoneCategoryLabel(selectedZone) ? ` · ${zoneCategoryLabel(selectedZone)}` : ""}
+                    구역 {formatZoneDisplayCode(selectedZone)}{zoneCategoryLabel(selectedZone) ? ` · ${zoneCategoryLabel(selectedZone)}` : ""}
                   </div>
                   <div className="text-[14px] tabular-nums text-zinc-500 truncate">
                     {grouped.find(g => g.zone === selectedZone)?.items.length ?? 0}개 상품

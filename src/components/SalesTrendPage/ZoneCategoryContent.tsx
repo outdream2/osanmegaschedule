@@ -9,7 +9,7 @@ import { StoreZoneMap } from "../common/StoreZoneMap";
 import { StatusPill } from "../common/StatusPill";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { getProductsMap } from "../../lib/productsCache";
-import { getZoneLabel } from "../../constants/zoneLabels";
+import { formatZoneDisplayCode } from "../../constants/displayZones";
 import { fmtWon } from "../../lib/format";
 import { api } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -145,7 +145,7 @@ const ZoneCategoryContent: React.FC = () => {
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
             <span className={`inline-flex items-center justify-center w-[20px] h-[20px] text-[12px] font-bold rounded-md border tabular-nums shrink-0 ${rankCls}`}>{rank}</span>
-            <span className={`text-[13px] font-bold ${textCls} tabular-nums shrink-0`}>{getZoneLabel(g.zone)}</span>
+            <span className={`text-[13px] font-bold ${textCls} tabular-nums shrink-0`}>{formatZoneDisplayCode(g.zone)}</span>
             {zoneCategoryLabel(g.zone) && (
               <span className={`text-[11px] font-bold ${textCls} break-words whitespace-normal leading-tight`}>{zoneCategoryLabel(g.zone)}</span>
             )}
@@ -233,7 +233,7 @@ const ZoneCategoryContent: React.FC = () => {
         <div className="bg-violet-50/60 border border-violet-200 rounded-xl p-3 shadow-sm">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 min-w-0">
-              <span className={`text-[15px] font-bold ${textCls} tabular-nums`}>{getZoneLabel(g.zone)}</span>
+              <span className={`text-[15px] font-bold ${textCls} tabular-nums`}>{formatZoneDisplayCode(g.zone)}</span>
               {zoneCategoryLabel(g.zone) && (
                 <span className={`text-sm font-semibold ${textCls}`}>{zoneCategoryLabel(g.zone)}</span>
               )}
@@ -417,7 +417,7 @@ const ZoneCategoryContent: React.FC = () => {
                 </button>
                 <div className="flex-1 min-w-0">
                   <div className={`${TEXT.body} text-zinc-800 break-keep whitespace-normal leading-tight`}>
-                    구역 {getZoneLabel(selectedZone)}{zoneCategoryLabel(selectedZone) ? ` · ${zoneCategoryLabel(selectedZone)}` : ""}
+                    구역 {formatZoneDisplayCode(selectedZone)}{zoneCategoryLabel(selectedZone) ? ` · ${zoneCategoryLabel(selectedZone)}` : ""}
                   </div>
                   <div className="text-[10px] tabular-nums text-zinc-500 break-keep whitespace-normal">
                     {grouped.find(g => g.zone === selectedZone)?.items.length ?? 0}개 상품

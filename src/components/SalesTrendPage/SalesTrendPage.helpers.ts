@@ -1,6 +1,6 @@
 // src/components/SalesTrendPage/SalesTrendPage.helpers.ts
 // 2026-08-22 · Framework Phase 4 · SalesTrendPage 대형 파일 분리 · types + helpers 이관
-import { ZONE_DEFS } from "../../constants/displayZones";
+import { ZONE_DEFS, formatZoneCategoryCombined } from "../../constants/displayZones";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 export type PeriodRow = {
@@ -52,6 +52,9 @@ export const ZONE_CATEGORY_MAP: Record<string, string> = (() => {
 
 export const zoneCategoryLabel = (zone: string): string => {
   if (!zone || zone === "미배치") return "미배치 상품";
+  // 2026-08-26 · 프레임워크 공통 헬퍼 · aisle 1-8 · 40 결합 카테고리 지원
+  const combined = formatZoneCategoryCombined(zone, ZONE_DEFS);
+  if (combined) return combined;
   return ZONE_CATEGORY_MAP[zone.toUpperCase()] ?? ZONE_CATEGORY_MAP[zone.replace(/[AB]$/, "")] ?? "";
 };
 

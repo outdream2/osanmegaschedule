@@ -169,6 +169,77 @@ export function parseRealMapValue(v: string | null | undefined): { num: number; 
 // v4: 계산대 40 3-way 분할 (40A/40B/40C 추가) — 옛 v3 캐시 자동 폐기
 export const ZONES_STORAGE_KEY = "megatown_display_zones_v4";
 
+// ─── 프레임워크 공통 · zone 표시 헬퍼 (2026-08-26 · 사용자 지시) ─────────────
+//   · aisle 1-8 · 바 numeric spec ("1", "2" ...) → "1A · 1B" 형식으로 표시
+//   · 계산대 40 → "40A · 40B · 40C" 형식
+//   · 다른 zone 은 원본 그대로
+//   · CategoryTab · ZoneCategoryContent · 모든 zone 리스트에 재사용
+
+/** 카테고리 존재 여부로 subA/subB/subC 판별 */
+function findZoneByNum(zones: ZoneDef[] | undefined, num: number): ZoneDef | undefined {
+  const list = zones && zones.length > 0 ? zones : ZONE_DEFS;
+  return list.find(z => z.num === num);
+}
+
+/**
+ * zone 코드 (spec/real_map 기반) → 매장구역도 표시 코드로 변환.
+ *   "1"   → "1A · 1B"   (aisle · subA/subB 존재 시)
+ *   "40"  → "40A · 40B · 40C" (aisle 계산대)
+ *   "1A"  → "1A"        (이미 서브존 지정 · 그대로)
+ *   "9"   → "9"         (서브존 없는 벽면 · 그대로)
+ *   "미배치" → "미배치"
+ */
+export function formatZoneDisplayCode(zone: string, zones?: ZoneDef[]): string {
+  if (!zone || zone === "미배치") return zone || "";
+  const upper = zone.toUpperCase();
+  // 이미 A/B/C 서브 지정 · 그대로
+  if (/[ABC]$/.test(upper)) return upper;
+  const n = parseInt(zone, 10);
+  if (!Number.isFinite(n) || String(n) !== zone.trim()) return zone;
+  const zd = findZoneByNum(zones, n);
+  if (!zd) return zone;
+  const hasA = !!zd.subA;
+  const hasB = !!zd.subB;
+  const hasC = !!zd.subC;
+  if (hasA && hasB && hasC) return `${n}A · ${n}B · ${n}C`;
+  if (hasA && hasB)         return `${n}A · ${n}B`;
+  return zone;
+}
+
+/**
+ * zone 코드 → 카테고리 텍스트 (통합 표시).
+ *   "1A"  → subA 텍스트
+ *   "1B"  → subB 텍스트
+ *   "1"   → subA + " · " + subB 결합 (서브 있으면) · 없으면 category
+ *   "9"   → category
+ */
+export function formatZoneCategoryCombined(zone: string, zones?: ZoneDef[]): string {
+  if (!zone || zone === "미배치") return "";
+  const upper = zone.toUpperCase();
+  const subMatch = /^(\d+)([ABC])$/.exec(upper);
+  if (subMatch) {
+    const n = parseInt(subMatch[1], 10);
+    const side = subMatch[2] as "A" | "B" | "C";
+    const zd = findZoneByNum(zones, n);
+    if (!zd) return "";
+    if (side === "A") return zd.subA ?? zd.category;
+    if (side === "B") return zd.subB ?? zd.category;
+    if (side === "C") return zd.subC ?? zd.category;
+  }
+  const n = parseInt(zone, 10);
+  if (Number.isFinite(n) && String(n) === zone.trim()) {
+    const zd = findZoneByNum(zones, n);
+    if (!zd) return "";
+    const parts: string[] = [];
+    if (zd.subA) parts.push(zd.subA);
+    if (zd.subB) parts.push(zd.subB);
+    if (zd.subC) parts.push(zd.subC);
+    if (parts.length > 0) return parts.join(" · ");
+    return zd.category;
+  }
+  return "";
+}
+
 export const SECTION_LABEL: Record<ZoneSection, string> = {
   top_wall: "상단 벽면",
   aisle: "중앙 진열대",
