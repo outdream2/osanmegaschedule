@@ -16,26 +16,32 @@ import { notificationsService } from "../../services/notificationsService";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
+// 2026-08-27 · 감사 지적 #4 · Zod 입력 검증 프레임워크 표준
+import { validateBody } from "../../middleware/zodValidate";
+import {
+  ReturnRequestCreateSchema,
+  ReturnRequestUpdateSchema,
+  ReturnRequestBulkSendSchema,
+  canTransitionStatus,
+} from "../../../src/shared/schemas/returnRequests";
 
 const router = Router();
 
 // POST /api/return-requests
 // body: { product_code, product_name, supplier, qty, current_stock, purchase_price, reason?, requested_by?, requested_by_id? }
-router.post("/api/return-requests", authorize(5), asyncHandler(async (req, res) => {
-  const b = req.body ?? {};
-  const product_code = String(b.product_code ?? "").trim();
-  if (!product_code) throw badRequest("product_code 필수");
+router.post("/api/return-requests", authorize(5), validateBody(ReturnRequestCreateSchema), asyncHandler(async (req, res) => {
+  const b = req.body;  // Zod 로 검증됨 · 안전
   const row = {
-    product_code,
-    product_name: String(b.product_name ?? "").trim() || null,
-    supplier: String(b.supplier ?? "").trim() || null,
-    qty: Number(b.qty ?? 0) || 0,
-    current_stock: Number(b.current_stock ?? 0) || 0,
-    purchase_price: Number(b.purchase_price ?? 0) || 0,
-    reason: String(b.reason ?? b.note ?? "").trim() || null,  // 클라이언트 payload 는 "note" 필드 사용 · fallback 호환
-    requested_by: String(b.requested_by ?? "").trim() || null,
-    requested_by_id: Number(b.requested_by_id ?? 0) || null,
-    status: "pending",   // pending | sent | done | cancelled
+    product_code: b.product_code.trim(),
+    product_name: (b.product_name ?? "").trim() || null,
+    supplier:     (b.supplier ?? "").trim() || null,
+    qty:          b.qty,
+    current_stock:  b.current_stock ?? 0,
+    purchase_price: b.purchase_price ?? 0,
+    reason:       (b.reason ?? b.note ?? "").trim() || null,
+    requested_by: (b.requested_by ?? "").trim() || null,
+    requested_by_id: b.requested_by_id ?? null,
+    status: "pending" as const,
   };
   const { data, error } = await supabase
     .from("return_requests")
@@ -110,15 +116,22 @@ router.get("/api/return-requests/by-supplier", asyncHandler(async (req, res) => 
 
 // PATCH /api/return-requests/:id
 // body: { qty?, reason?, status?  }
-router.patch("/api/return-requests/:id", authorize(5), asyncHandler(async (req, res) => {
+router.patch("/api/return-requests/:id", authorize(5), validateBody(ReturnRequestUpdateSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!Number.isFinite(id)) throw badRequest("invalid id");
-  const b = req.body ?? {};
+  const b = req.body;  // Zod 검증됨
   const patch: any = {};
-  if (b.qty != null) patch.qty = Number(b.qty) || 0;
-  if (b.reason != null) patch.reason = String(b.reason).trim() || null;
-  if (b.status != null) patch.status = String(b.status).trim();
-  if (Object.keys(patch).length === 0) throw badRequest("수정 필드 없음");
+  if (b.qty !== undefined) patch.qty = b.qty;
+  if (b.reason !== undefined) patch.reason = b.reason ? String(b.reason).trim() : null;
+  // 2026-08-27 · 감사 #4 2차 · 상태 전이 규칙 검증
+  if (b.status !== undefined) {
+    const { data: cur, error: fErr } = await supabase.from("return_requests").select("status").eq("id", id).single();
+    if (fErr) throw new HttpError(500, fErr.message);
+    if (cur?.status && !canTransitionStatus(cur.status as any, b.status)) {
+      throw badRequest(`상태 전이 금지: ${cur.status} → ${b.status}`);
+    }
+    patch.status = b.status;
+  }
   const { data, error } = await supabase
     .from("return_requests")
     .update(patch)
@@ -141,9 +154,8 @@ router.delete("/api/return-requests/:id", authorize(5), asyncHandler(async (req,
 // POST /api/return-requests/bulk-send
 // body: { ids: number[], channels: { email: boolean, sms: boolean }, sender_note?: string }
 // 공급사별로 그룹핑 · 각 공급사 담당자에게 반품요청 발송 · 발송된 요청은 status=sent 로 업데이트
-router.post("/api/return-requests/bulk-send", authorize(5), asyncHandler(async (req, res) => {
-  const ids: number[] = Array.isArray(req.body?.ids) ? req.body.ids.map((n: any) => Number(n)).filter(Number.isFinite) : [];
-  if (ids.length === 0) throw badRequest("ids 필수");
+router.post("/api/return-requests/bulk-send", authorize(5), validateBody(ReturnRequestBulkSendSchema), asyncHandler(async (req, res) => {
+  const ids: number[] = req.body.ids;  // Zod 검증됨 (min 1 · max 500)
   // 대상 조회
   const { data: rows, error } = await supabase
     .from("return_requests")

@@ -221,39 +221,48 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
   const [returnRequestItems, setReturnRequestItems] = useState<any[] | null>(null);
   // 2026-08-25 · 사용자 지시 · 반품확정 (모달 없이 즉시 status='done' 저장) · row 스피너
   const [confirmingCode, setConfirmingCode] = useState<string | null>(null);
-  const confirmReturn = React.useCallback(async (row: any) => {
+  // 2026-08-27 · 감사 #1 · confirmReturn · silent 에러 처리 대신 · 실패 시 throw
+  //   · 단일 호출 (row 액션) · try/catch 로 감싸 showError + rethrow
+  //   · bulkConfirmReturn · Promise.allSettled · 성공/실패 정확 집계
+  const confirmReturnRaw = React.useCallback(async (row: any): Promise<void> => {
+    // 1) return_requests 생성 (POST 는 항상 pending)
+    const reason = row.purchase_cycle != null && Number(row.purchase_cycle) >= 90 ? "저조 판매" : "재고 과다";
+    const createRes = await api.post<{ ok: boolean; row: { id: number } }>("/api/return-requests", {
+      product_code: row.product_code,
+      product_name: row.product_name,
+      supplier: row.supplier ?? null,
+      qty: Number(row.current_stock ?? 0),
+      current_stock: Number(row.current_stock ?? 0),
+      purchase_price: Number(row.purchase_price ?? 0),
+      reason,
+    });
+    const id = createRes?.data?.row?.id;
+    if (!id) throw new Error("생성 응답에 id 없음");
+    // 2) PATCH status='done' · 실패 시 상위로 throw (호출자가 성공/실패 판정)
+    await api.patch(`/api/return-requests/${id}`, { status: "done" });
+    // 3) 로컬 반품필요 리스트에서 제거
+    setReturnList(prev => prev.filter(x => x.product_code !== row.product_code));
+    setReturnSelected(prev => {
+      if (!prev.has(row.product_code)) return prev;
+      const n = new Set(prev); n.delete(row.product_code); return n;
+    });
+    dispatchApprovalChange("return");
+  }, []);
+
+  // 단일 · row 액션 · UI 스피너 + 오류 토스트 (외부 caller 는 결과 판단 필요 없음)
+  const confirmReturn = React.useCallback(async (row: any): Promise<boolean> => {
     setConfirmingCode(String(row.product_code));
     try {
-      // 1) return_requests 생성 (status='done' 저장 · reason 기본 재고 과다 or 저조 판매)
-      const reason = row.purchase_cycle != null && Number(row.purchase_cycle) >= 90 ? "저조 판매" : "재고 과다";
-      const createRes = await api.post<{ ok: boolean; row: { id: number } }>("/api/return-requests", {
-        product_code: row.product_code,
-        product_name: row.product_name,
-        supplier: row.supplier ?? null,
-        qty: Number(row.current_stock ?? 0),
-        current_stock: Number(row.current_stock ?? 0),
-        purchase_price: Number(row.purchase_price ?? 0),
-        reason,
-      });
-      // 2) PATCH status='done' (POST 는 항상 pending 으로 생성 → 즉시 done 승격)
-      const id = createRes?.data?.row?.id;
-      if (id) {
-        await api.patch(`/api/return-requests/${id}`, { status: "done" });
-      }
-      // 3) 로컬 반품필요 리스트에서 제거 (반품확정 페이지에서 노출)
-      setReturnList(prev => prev.filter(x => x.product_code !== row.product_code));
-      setReturnSelected(prev => {
-        if (!prev.has(row.product_code)) return prev;
-        const n = new Set(prev); n.delete(row.product_code); return n;
-      });
-      dispatchApprovalChange("return");
+      await confirmReturnRaw(row);
+      return true;
     } catch (e: any) {
       console.error("[반품확정] 실패:", e?.message ?? e);
       showError(`반품확정 실패: ${e?.message ?? "네트워크 오류"}`);
+      return false;
     } finally {
       setConfirmingCode(null);
     }
-  }, [showError]);
+  }, [showError, confirmReturnRaw]);
 
   // ── 일괄 반품 · 체크박스 선택 (세션 state · localStorage 없음) ───────────
   const [returnSelected, setReturnSelected] = useState<Set<string>>(new Set());
@@ -344,6 +353,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
 
   // 2026-08-26 · 사용자 지시 · 일괄 확정 · 선택된 상품 모두 즉시 done 처리
   const [bulkConfirming, setBulkConfirming] = useState(false);
+  // 2026-08-27 · 감사 #1 · Promise.allSettled · 정확한 성공/실패 집계
   const bulkConfirmReturn = React.useCallback(async () => {
     if (returnSelected.size === 0 || bulkConfirming) return;
     const selectedItems = returnList.filter(x => returnSelected.has(x.product_code));
@@ -354,24 +364,21 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
     });
     if (!ok) return;
     setBulkConfirming(true);
-    let successCount = 0;
-    let failCount = 0;
-    for (const row of selectedItems) {
-      try {
-        await confirmReturn(row);
-        successCount++;
-      } catch (e: any) {
-        console.error("[일괄확정] 실패:", row.product_code, e?.message);
-        failCount++;
-      }
-    }
+    const results = await Promise.allSettled(selectedItems.map(row => confirmReturnRaw(row)));
     setBulkConfirming(false);
-    if (failCount === 0) {
+    const successCount = results.filter(r => r.status === "fulfilled").length;
+    const failures = results
+      .map((r, i) => ({ r, item: selectedItems[i] }))
+      .filter(x => x.r.status === "rejected") as { r: PromiseRejectedResult; item: any }[];
+    if (failures.length === 0) {
       showSuccess(`${successCount}개 반품확정 완료`);
     } else {
-      showError(`${successCount}개 성공 · ${failCount}개 실패`);
+      // 실패 상세 로그 + 사용자 알림 (성공/실패 정확 집계)
+      failures.forEach(f => console.error("[일괄확정] 실패:", f.item.product_code, f.r.reason?.message ?? f.r.reason));
+      const sampleErr = failures[0]?.r.reason?.message ?? "네트워크 오류";
+      showError(`성공 ${successCount}건 · 실패 ${failures.length}건 (예: ${sampleErr})`);
     }
-  }, [returnSelected, returnList, confirmReturn, bulkConfirming, showSuccess, showError, confirm]);
+  }, [returnSelected, returnList, confirmReturnRaw, bulkConfirming, showSuccess, showError, confirm]);
 
   // ── 컬럼 리사이저 (메인 반품필요 리스트 테이블) ─────────────────────────
   // 2026-08-06 · v3 · 현재고·실재고 제거 · 판매 3컬럼 통합 · localStorage 캐시 무효화
