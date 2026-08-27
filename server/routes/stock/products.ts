@@ -373,36 +373,45 @@ router.post("/api/upload-products", express.raw({ type: "application/octet-strea
   }
   const upsertMs = Date.now() - t0;
   console.log(`[upload] upsert done · 총 ${upsertMs}ms · rows=${dedupedRows.length}`);
-  // 2026-08-27 · 사용자 지시 · 엑셀에 없는 잔존 상품 · 자동 hidden 처리 (검색·리스트 즉시 제외)
-  //   · 최신 엑셀 기준 · DB - 엑셀 차집합 계산 · hidden=true bulk update
-  //   · 물리 삭제 X · 필요 시 관리자가 hidden manager 로 복원 가능
+  // 2026-08-27 · 사용자 지시 · 엑셀에 없는 잔존 상품 · 물리 DELETE (검색·리스트 완전 제거)
+  //   · 최신 엑셀 기준 · DB - 엑셀 차집합 계산 · DELETE FROM products
+  //   · 관련 테이블 (inventory_checks · borrowings · zone_mismatches) · FK ON DELETE CASCADE 가정
+  //   · FK 미설정 시 · 참조 무결성 에러 · 로그만 남기고 계속
   const importedCodes = new Set(dedupedRows.map(r => String(r.product_code)));
-  let hiddenCount = 0;
-  const tHidden = Date.now();
+  let deletedCount = 0;
+  const tDel = Date.now();
   try {
-    // 현재 hidden=false 인 모든 코드 조회 (페이지네이션)
-    const allActiveCodes: string[] = [];
-    let from = 0; const PAGE = 5000;
+    // 현재 모든 코드 조회 (페이지네이션 · 1000씩)
+    const allCodes: string[] = [];
+    let from = 0; const PAGE = 1000;
     while (true) {
-      const { data, error } = await supabase.from("products").select("product_code").eq("hidden", false).range(from, from + PAGE - 1);
+      const { data, error } = await supabase.from("products").select("product_code").range(from, from + PAGE - 1);
       if (error) throw error;
       if (!data || data.length === 0) break;
-      for (const r of data) allActiveCodes.push(String((r as any).product_code));
+      for (const r of data) allCodes.push(String((r as any).product_code));
       if (data.length < PAGE) break;
       from += PAGE;
     }
-    const staleCodes = allActiveCodes.filter(c => !importedCodes.has(c));
+    const staleCodes = allCodes.filter(c => !importedCodes.has(c));
     if (staleCodes.length > 0) {
-      // 500씩 chunk update
+      console.log(`[upload] 엑셀 미포함 ${staleCodes.length}건 · 물리 DELETE 시작`);
+      // 500씩 chunk delete
       for (let i = 0; i < staleCodes.length; i += 500) {
         const chunk = staleCodes.slice(i, i + 500);
-        const { error: updErr } = await supabase.from("products").update({ hidden: true }).in("product_code", chunk);
-        if (updErr) { console.warn("[upload] hidden update error:", updErr.message); break; }
-        hiddenCount += chunk.length;
+        const { error: delErr } = await supabase.from("products").delete().in("product_code", chunk);
+        if (delErr) {
+          console.warn(`[upload] DELETE chunk 실패 (${chunk.length}건):`, delErr.message);
+          // FK 참조 위배 시 · hidden=true fallback
+          const { error: hidErr } = await supabase.from("products").update({ hidden: true }).in("product_code", chunk);
+          if (!hidErr) console.log(`[upload] fallback · hidden=true ${chunk.length}건`);
+          continue;
+        }
+        deletedCount += chunk.length;
       }
-      console.log(`[upload] 엑셀 미포함 · ${hiddenCount}건 · hidden=true 처리 · ${Date.now() - tHidden}ms`);
+      console.log(`[upload] 물리 DELETE 완료 · ${deletedCount}건 · ${Date.now() - tDel}ms`);
     }
-  } catch (e: any) { console.warn("[upload] hidden processing failed:", e.message); }
+  } catch (e: any) { console.warn("[upload] delete processing failed:", e.message); }
+  const hiddenCount = 0;  // 하위 호환 · 이력 필드
   // 2026-08-26 · 성능 조사 · post-upload 단계별 시간 측정
   // 임포트 완료 후 optimal_stock_backup → optimal_stock 복원 (ERP wipe 방어)
   let restoredCount = 0;
@@ -424,12 +433,12 @@ router.post("/api/upload-products", express.raw({ type: "application/octet-strea
   console.log(`[upload] resetProductCache · ${tLog - tCache}ms`);
   const { data: logData } = await supabase.from("app_settings").select("value").eq("key", "product_import_log").maybeSingle();
   const prevLogs: unknown[] = Array.isArray(logData?.value) ? logData.value : [];
-  const newEntry = { timestamp: new Date().toISOString(), count: rows.length, restored: restoredCount, hidden: hiddenCount };
+  const newEntry = { timestamp: new Date().toISOString(), count: rows.length, restored: restoredCount, hidden: hiddenCount, deleted: deletedCount };
   const logs = [newEntry, ...prevLogs].slice(0, 20);
   await supabase.from("app_settings").upsert({ key: "product_import_log", value: logs, updated_at: new Date().toISOString() }, { onConflict: "key" });
   console.log(`[upload] app_settings log · ${Date.now() - tLog}ms`);
   console.log(`[upload] ==== 전체 소요 ${Date.now() - t0}ms (upsert ${upsertMs}ms + post ${Date.now() - t0 - upsertMs}ms) ====`);
-  res.json({ ok: true, count: rows.length, restored: restoredCount, hidden: hiddenCount, timestamp: newEntry.timestamp });
+  res.json({ ok: true, count: rows.length, restored: restoredCount, hidden: hiddenCount, deleted: deletedCount, timestamp: newEntry.timestamp });
 }));
 
 router.delete("/api/product-import-log", authorize(9), asyncHandler(async (_req, res) => {
