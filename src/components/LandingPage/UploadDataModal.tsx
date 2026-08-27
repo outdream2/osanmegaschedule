@@ -14,6 +14,8 @@ import { StatusPill } from "../common/StatusPill";
 import { PeriodCoverageWidget } from "./PeriodCoverageWidget";
 import { ImportLogTab } from "./ImportLogTab";
 import { StockUploadTab } from "./StockUploadTab";
+// 2026-08-27 · 사용자 지시 · 임포트 성공 시 · 클라 캐시 즉시 무효화 · 다른 페이지 자동 반영
+import { reloadProductsCache } from "../../lib/productsCache";
 
 interface UploadDataModalProps {
   open: boolean;
@@ -140,6 +142,11 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
       });
       setUploadResult({ ok: true, count: data?.count ?? 0 });
       await fetchImportLog();
+      // 2026-08-27 · 사용자 지시 · 임포트 성공 후 · 클라 productsCache 즉시 재로드 · 상품명 등 즉시 반영
+      try {
+        await reloadProductsCache();
+        window.dispatchEvent(new CustomEvent("products-imported", { detail: { count: data?.count ?? 0 } }));
+      } catch { /* 캐시 실패 무시 · 다음 페이지 진입 시 자동 재fetch */ }
     } catch (err: unknown) {
       const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? "업로드 실패";
       setUploadResult({ ok: false, msg });

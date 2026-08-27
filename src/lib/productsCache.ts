@@ -38,6 +38,18 @@ export function updateCachedProduct(code: string, updates: Record<string, any>):
   if (stripped && stripped !== q && _map[stripped]) _map[stripped] = { ..._map[stripped], ...updates };
 }
 
+// 2026-08-27 · 사용자 지시 · 상품 임포트 후 상품명 등 · 즉시 갱신 · 캐시 무효화 + prefetch
+//   · 임포트 성공 시 · 이 함수 호출 · products.json 새 fetch · UI 자동 반영
+export function resetProductsCache(): void {
+  _map = null;
+  _promise = null;
+}
+export async function reloadProductsCache(): Promise<Record<string, ProductInfo>> {
+  resetProductsCache();
+  prefetchProducts();
+  return _promise ?? Promise.resolve({});
+}
+
 // 2026-08-23 · #179 · 미등록 상품 등록 후 · 로컬 캐시 즉시 삽입 · 재스캔 즉시 lookupProduct hit
 export function addCachedProduct(code: string, info: Partial<ProductInfo>): void {
   if (!_map) _map = {};

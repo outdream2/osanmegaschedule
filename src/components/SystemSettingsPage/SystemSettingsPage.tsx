@@ -94,6 +94,8 @@ interface FieldState {
 }
 
 const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout }) => {
+  // 2026-08-27 · 사용자 지시 · 데이터 업로드 · 랜딩페이지처럼 카드+버튼 → 모달 오픈 (중복 배치 · 랜딩과 병존)
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [cat, setCat] = useState<Cat>("db-auth");
   const [server, setServer] = useState<Record<string, FieldState>>({});
   const [draft, setDraft] = useState<Record<string, string>>({});
@@ -212,15 +214,32 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
           </section>
         )}
 
-        {/* 2026-08-27 · 사용자 지시 · 데이터 업로드 탭 · UploadDataModal 렌더 · 다른 탭 이동 시 close */}
+        {/* 2026-08-27 · 사용자 지시 · 데이터 업로드 탭 · 랜딩페이지처럼 카드+버튼 (중복 배치) */}
         {cat === "upload" && (
-          <UploadDataModal
-            open={true}
-            onClose={() => setCat("db-auth")}
-            authSession={authSession}
-            isManagerOrAdmin={(authSession?.level ?? 0) >= 8}
-          />
+          <section className={CARD_BASE + " p-6 flex flex-col gap-4"}>
+            <h2 className={SET_SECTION_TITLE}>
+              <UploadSimple size={18} className="text-orange-500" />
+              데이터 업로드
+            </h2>
+            <p className="text-[14px] text-zinc-500 flex items-start gap-1.5">
+              <Info size={14} className="mt-0.5 shrink-0" />
+              상품목록 · 재고리스트 · 공급사관리 · 매입상세 xlsx 를 업로드하여 DB 에 임포트합니다. 랜딩페이지 [데이터 업로드] 카드와 동일 기능입니다.
+            </p>
+            <button
+              type="button"
+              onClick={() => setUploadModalOpen(true)}
+              className="self-start inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-gradient-to-br from-brand-deep to-[#0d3a5c] hover:from-[#0d3a5c] hover:to-[#08253a] text-white text-[15px] font-bold shadow-sm ring-1 ring-brand-deep/30 transition cursor-pointer"
+            >
+              <UploadSimple size={16} weight="fill" />데이터 업로드 열기
+            </button>
+          </section>
         )}
+        <UploadDataModal
+          open={uploadModalOpen}
+          onClose={() => setUploadModalOpen(false)}
+          authSession={authSession}
+          isManagerOrAdmin={(authSession?.level ?? 0) >= 8}
+        />
 
         {/* ── 자동 임포트 탭 · #253 Phase E · 2026-08-24 ── */}
         {cat === "auto-import" && <AutoImportSection />}
