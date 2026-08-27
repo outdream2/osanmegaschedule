@@ -689,9 +689,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 />
               </div>
 
-              <div className="hidden sm:block mt-3">
-                <DisplayRequestPanel filteredReqs={filteredReqs} requests={requests} reqFilter={reqFilter} setReqFilter={setReqFilter} setRequests={setRequests} formatRel={formatRel} />
-              </div>
+              {/* 2026-08-27 · 사용자 지시 · 진열요청목록 중복 제거 · "진열요청목록" 서브탭에서만 렌더 */}
             </div>
           </section>
           </>)}
