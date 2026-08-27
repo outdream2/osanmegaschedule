@@ -372,7 +372,7 @@ export const RealStockTablePage: React.FC = () => {
     }
     const cls = tone === "cyan" ? "bg-cyan-100 text-cyan-800" : "bg-violet-100 text-violet-800";
     return (
-      <span className={`inline-flex items-center justify-center min-w-[44px] h-[30px] px-2 rounded-md ${cls} font-extrabold text-[19px] tabular-nums tracking-tight`}>
+      <span className={`inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md ${cls} font-extrabold text-[17px] tabular-nums tracking-tight`}>
         {zone}
       </span>
     );
