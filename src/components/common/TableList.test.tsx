@@ -44,13 +44,12 @@ describe("TableListWrap · wrapper", () => {
   });
 });
 
-describe("tableHeadCls · 헬퍼", () => {
-  it("기본 · v3 표준 클래스 반환", () => {
+describe("tableHeadCls · 헬퍼 (2026-08-27 · sticky/bg 는 tableThCls 로 이관)", () => {
+  it("기본 · shared 스타일 · font/color/uppercase", () => {
     const cls = tableHeadCls();
-    expect(cls).toContain("sticky");
-    expect(cls).toContain("bg-zinc-100/70");
     expect(cls).toContain("uppercase");
     expect(cls).toContain("font-bold");
+    expect(cls).toContain("tracking-wider");
   });
   it("extra · 추가 클래스 병합", () => {
     const cls = tableHeadCls("my-extra");
@@ -58,9 +57,13 @@ describe("tableHeadCls · 헬퍼", () => {
   });
 });
 
-describe("tableThCls · 정렬 방향", () => {
-  it("기본 left · text-left", () => {
-    expect(tableThCls()).toContain("text-left");
+describe("tableThCls · 정렬 방향 + sticky (2026-08-27)", () => {
+  it("기본 left · text-left · sticky · bg", () => {
+    const cls = tableThCls();
+    expect(cls).toContain("text-left");
+    expect(cls).toContain("sticky");
+    expect(cls).toContain("top-0");
+    expect(cls).toContain("bg-zinc-50");
   });
   it("num · text-right", () => {
     expect(tableThCls("num")).toContain("text-right");
