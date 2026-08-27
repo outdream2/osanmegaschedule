@@ -6,7 +6,7 @@
 //   · /api/inventory-latest (최신 실재고) + /api/products-search (상품 리스트) 조합
 
 import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { PackageCheck, Search, RefreshCw, Check, X, ChevronRight, ChevronDown } from "lucide-react";
+import { PackageCheck, Search, RefreshCw, Check, X, ChevronRight, ChevronDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Modal } from "../common/Modal";
 import { api, ApiError } from "../../lib/apiClient";
 import { Card } from "../common/Card";
@@ -610,6 +610,23 @@ export const RealStockTablePage: React.FC = () => {
                               title="이 구역만 전체보기 (다른 구역 접기)"
                             >
                               전체보기
+                            </button>
+                            {/* 2026-08-27 · 사용자 지시 · 그룹 내부 정렬 방향 · 화살표 위아래만 · 현재 sortKey 기준 toggle */}
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setSort(sortKey, sortDir === "asc" ? "desc" : "asc"); }}
+                              className={`inline-flex items-center gap-0.5 h-6 px-1.5 rounded-md border cursor-pointer transition ${sortDir === "asc" ? "bg-brand-tint border-brand-deep/30 text-brand-deep" : "bg-white/70 border-line text-ink-soft hover:border-brand-deep/30"}`}
+                              title={`오름차순 정렬 (현재: ${sortDir === "asc" ? "활성" : "비활성"})`}
+                            >
+                              <ArrowUp size={12} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setSort(sortKey, sortDir === "desc" ? "asc" : "desc"); }}
+                              className={`inline-flex items-center gap-0.5 h-6 px-1.5 rounded-md border cursor-pointer transition ${sortDir === "desc" ? "bg-brand-tint border-brand-deep/30 text-brand-deep" : "bg-white/70 border-line text-ink-soft hover:border-brand-deep/30"}`}
+                              title={`내림차순 정렬 (현재: ${sortDir === "desc" ? "활성" : "비활성"})`}
+                            >
+                              <ArrowDown size={12} />
                             </button>
                             <span className="ml-auto flex items-center gap-3 text-[12px] font-bold tabular-nums">
                               <span className="text-amber-700">ERP 합계 {totalErp}</span>
