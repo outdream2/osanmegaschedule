@@ -19,6 +19,8 @@ import { CARD_BASE } from "../../styles/tokens";
 import { Spinner } from "../common/Spinner";
 // 2026-08-24 · #253 Phase E · 자동 임포트 섹션
 import { AutoImportSection } from "./AutoImportSection";
+// 2026-08-27 · 사용자 지시 · 데이터 업로드 탭 · 랜딩페이지 UploadDataModal 이관
+import { UploadDataModal } from "../LandingPage/UploadDataModal";
 // 2026-08-25 · 사용자 지시 · 세션 만료 시간 · 시스템 설정에 추가
 import { SessionTimeoutSection } from "../PermissionsPage/SessionTimeoutSection";
 import { Timer } from "@phosphor-icons/react";
@@ -210,19 +212,14 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
           </section>
         )}
 
-        {/* ── 데이터 업로드 탭 · 공통 SECTION_TITLE ── */}
+        {/* 2026-08-27 · 사용자 지시 · 데이터 업로드 탭 · UploadDataModal 렌더 · 다른 탭 이동 시 close */}
         {cat === "upload" && (
-          <section className={CARD_BASE + " p-5 flex flex-col gap-3"}>
-            <h2 className={SET_SECTION_TITLE}>
-              <UploadSimple size={18} className="text-orange-500" />
-              데이터 업로드
-            </h2>
-            <p className="text-sm text-zinc-500 flex items-start gap-1.5">
-              <Info size={14} className="mt-0.5 shrink-0" />
-              상품목록 · 재고리스트 xlsx 업로드. 이 탭은 이후 커밋에서 · 랜딩 데이터업로드 모달을 이 자리로 이관 예정입니다.
-              현재는 랜딩페이지 [데이터 업로드] 카드를 사용하세요.
-            </p>
-          </section>
+          <UploadDataModal
+            open={true}
+            onClose={() => setCat("db-auth")}
+            authSession={authSession}
+            isManagerOrAdmin={(authSession?.level ?? 0) >= 8}
+          />
         )}
 
         {/* ── 자동 임포트 탭 · #253 Phase E · 2026-08-24 ── */}
