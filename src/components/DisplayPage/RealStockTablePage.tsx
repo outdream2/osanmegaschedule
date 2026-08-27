@@ -141,6 +141,19 @@ export const RealStockTablePage: React.FC = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  // 2026-08-27 · 사용자 지시 · 프로젝트 전역 inventory_checks DB 연동
+  //   · 다른 페이지 (ScanPage/InventoryEditModal/ExpiryDateModal 등) 편집 시 · 실시간 refresh
+  //   · 자기 자신 dispatch 는 skip (detail.source === "real-stock") · 무한 루프 방지
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ source?: string }>).detail;
+      if (detail?.source === "real-stock") return;
+      load();
+    };
+    window.addEventListener("inventory-checks-updated", handler);
+    return () => window.removeEventListener("inventory-checks-updated", handler);
+  }, [load]);
+
   const rows: Row[] = useMemo(() => products.map(p => {
     const i = inv[p.product_code];
     const w1 = i?.warehouse1_stock ?? null;
@@ -259,7 +272,8 @@ export const RealStockTablePage: React.FC = () => {
         },
       }));
       showSuccess(`${row.product_name} · ${SLOT_LABEL[slot]} = ${parsed} 저장`);
-      window.dispatchEvent(new CustomEvent("inventory-checks-updated"));
+      // 2026-08-27 · source="real-stock" · self-dispatch skip 위한 태그
+      window.dispatchEvent(new CustomEvent("inventory-checks-updated", { detail: { source: "real-stock", productCode: row.product_code } }));
       cancelEdit();
     } catch (e: unknown) {
       const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "저장 실패";
