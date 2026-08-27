@@ -320,8 +320,9 @@ export const RealStockTablePage: React.FC = () => {
   };
 
   const sortIndicator = (k: SortKey) => sortKey === k ? (sortDir === "asc" ? " ▲" : " ▼") : "";
-  const thSortable = (k: SortKey, align: "left" | "center" | "num", label: string, minW?: number, extra = "") => (
+  const thSortable = (k: SortKey, align: "left" | "center" | "num", label: string, minW?: number, extra = "", rowSpan?: number) => (
     <th
+      rowSpan={rowSpan}
       className={`${tableThCls(align)} cursor-pointer hover:bg-zinc-100/70 select-none transition ${extra}`}
       onClick={() => toggleSort(k)}
       style={minW ? { minWidth: minW } : undefined}
@@ -588,25 +589,31 @@ export const RealStockTablePage: React.FC = () => {
           <TableListWrap>
             <table className="w-full border-collapse">
               <thead className={tableHeadCls("text-[16px]")}>
+                {/* 2026-08-27 · 사용자 지시 · 매장1/2/3·창고1/2 상위 통합 헤더 · 아래 구역/수량 서브 헤더 · 공통 부분 rowSpan=2 */}
                 <tr>
-                  {/* 2026-08-27 · 사용자 지시 · 구역·수량 컬럼 분리 · dual chip 폐기 · 색깔톤 shade 구분 */}
-                  {thSortable("supplier",     "left", "공급사",   140)}
-                  {thSortable("product_name", "left", "상품명",   300)}
-                  {/* 2026-08-27 · 사용자 지시 · 매장/창고 헤더 · 2줄 (예: 매장1 / 구역) · whitespace-pre-line */}
-                  {thSortable("location",     "center", "진열위치\n(구역)", 90,  "bg-amber-50/40 whitespace-pre-line leading-tight")}
-                  {thSortable("erp",          "num",    "ERP\n수량",       80,  "bg-amber-100/50 whitespace-pre-line leading-tight")}
-                  {showStore && thSortable("s1zone",  "center", "매장1\n구역",    74, "bg-violet-50/40 whitespace-pre-line leading-tight")}
-                  {showStore && thSortable("s1",      "num",    "매장1\n수량",    74, "bg-violet-100/50 whitespace-pre-line leading-tight")}
-                  {showStore && thSortable("s2zone",  "center", "매장2\n구역",    74, "bg-violet-50/40 whitespace-pre-line leading-tight")}
-                  {showStore && thSortable("s2",      "num",    "매장2\n수량",    74, "bg-violet-100/50 whitespace-pre-line leading-tight")}
-                  {showStore && thSortable("s3zone",  "center", "매장3\n구역",    74, "bg-violet-50/40 whitespace-pre-line leading-tight")}
-                  {showStore && thSortable("s3",      "num",    "매장3\n수량",    74, "bg-violet-100/50 whitespace-pre-line leading-tight")}
-                  {showWarehouse && thSortable("w1zone", "center", "창고1\n구역", 74, "bg-cyan-50/40 whitespace-pre-line leading-tight")}
-                  {showWarehouse && thSortable("w1",     "num",    "창고1\n수량", 74, "bg-cyan-100/50 whitespace-pre-line leading-tight")}
-                  {showWarehouse && thSortable("w2zone", "center", "창고2\n구역", 74, "bg-cyan-50/40 whitespace-pre-line leading-tight")}
-                  {showWarehouse && thSortable("w2",     "num",    "창고2\n수량", 74, "bg-cyan-100/50 whitespace-pre-line leading-tight")}
-                  {thSortable("total",        "num", "실재고 합계", 95,  "bg-brand-tint/30")}
-                  {thSortable("diff",         "num", "차이",         80,  "bg-rose-50/40")}
+                  {thSortable("supplier",     "left",   "공급사", 140, "", 2)}
+                  {thSortable("product_name", "left",   "상품명", 300, "", 2)}
+                  {thSortable("location",     "center", "진열위치\n(구역)", 90, "bg-amber-50/40 whitespace-pre-line leading-tight", 2)}
+                  {thSortable("erp",          "num",    "ERP\n수량",       80, "bg-amber-100/50 whitespace-pre-line leading-tight", 2)}
+                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-violet-100/60 text-violet-800 font-extrabold`}>매장1</th>}
+                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-violet-100/60 text-violet-800 font-extrabold`}>매장2</th>}
+                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-violet-100/60 text-violet-800 font-extrabold`}>매장3</th>}
+                  {showWarehouse && <th colSpan={2} className={`${tableThCls("center")} bg-cyan-100/60 text-cyan-800 font-extrabold`}>창고1</th>}
+                  {showWarehouse && <th colSpan={2} className={`${tableThCls("center")} bg-cyan-100/60 text-cyan-800 font-extrabold`}>창고2</th>}
+                  {thSortable("total", "num", "실재고 합계", 95, "bg-brand-tint/30", 2)}
+                  {thSortable("diff",  "num", "차이",         80, "bg-rose-50/40",    2)}
+                </tr>
+                <tr>
+                  {showStore && thSortable("s1zone", "center", "구역", 60, "bg-violet-50/40")}
+                  {showStore && thSortable("s1",     "num",    "수량", 60, "bg-violet-100/50")}
+                  {showStore && thSortable("s2zone", "center", "구역", 60, "bg-violet-50/40")}
+                  {showStore && thSortable("s2",     "num",    "수량", 60, "bg-violet-100/50")}
+                  {showStore && thSortable("s3zone", "center", "구역", 60, "bg-violet-50/40")}
+                  {showStore && thSortable("s3",     "num",    "수량", 60, "bg-violet-100/50")}
+                  {showWarehouse && thSortable("w1zone", "center", "구역", 60, "bg-cyan-50/40")}
+                  {showWarehouse && thSortable("w1",     "num",    "수량", 60, "bg-cyan-100/50")}
+                  {showWarehouse && thSortable("w2zone", "center", "구역", 60, "bg-cyan-50/40")}
+                  {showWarehouse && thSortable("w2",     "num",    "수량", 60, "bg-cyan-100/50")}
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
