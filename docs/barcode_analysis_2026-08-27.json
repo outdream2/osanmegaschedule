@@ -493,10 +493,22 @@
       "supplier": "바로팜 비알피랩스"
     },
     {
+      "code": "8809250010041",
+      "name": "[DrLab]피에이치 밸런싱 토너 1000ml",
+      "brand": null,
+      "supplier": "케이팜"
+    },
+    {
       "code": "8809802374904",
       "name": "[뉴트리가든] 혈당·혈행·혈압 코큐텐블러드Q",
       "brand": null,
       "supplier": "메가타운"
+    },
+    {
+      "code": "8809250010058",
+      "name": "[DrLab]하이드라-15 수딩 앰플 500ml",
+      "brand": null,
+      "supplier": "케이팜"
     },
     {
       "code": "8809708791195",
@@ -2725,6 +2737,12 @@
       "supplier": "메가타운"
     },
     {
+      "code": "8809250010010",
+      "name": "[DrLab]마일드 피에이치 페이셜 클렌저 1000ml",
+      "brand": null,
+      "supplier": "대지인팜"
+    },
+    {
       "code": "8809661531210",
       "name": "황금발크림 100G",
       "brand": null,
@@ -3643,6 +3661,18 @@
       "supplier": "메가타운"
     },
     {
+      "code": "8809250010034",
+      "name": "[DrLab]피에이치 밸런싱 앰플 500ml",
+      "brand": null,
+      "supplier": "케이팜"
+    },
+    {
+      "code": "8809250010027",
+      "name": "[DrLab]블루 캄 수딩 겔 밤 1000ml",
+      "brand": null,
+      "supplier": "케이팜"
+    },
+    {
       "code": "8809279238846",
       "name": "-테코자임 숨그린 가글",
       "brand": null,
@@ -3737,6 +3767,12 @@
       "name": "프로디펜 첩부제 10매 4개입 (곽)",
       "brand": null,
       "supplier": "동아제약"
+    },
+    {
+      "code": "8800993322309",
+      "name": "-슈미트 자동전자 혈압계 (SMT-2205)",
+      "brand": null,
+      "supplier": "광동제약"
     },
     {
       "code": "8809771992796",
@@ -17539,6 +17575,12 @@
       "supplier": "조아제약(vat미포함)"
     },
     {
+      "code": "8809250010065",
+      "name": "[DrLab]하이드라-15 수딩 토너 1000ml",
+      "brand": null,
+      "supplier": "케이팜"
+    },
+    {
       "code": "8809931365705",
       "name": "산리오캐릭터즈 립케어 포차코 수딩(무향) 4.5g",
       "brand": null,
@@ -22949,6 +22991,12 @@
       "name": "판콜에스내복액30ml 30병",
       "brand": null,
       "supplier": "(주)종근당"
+    },
+    {
+      "code": "8801097160019",
+      "name": "(서주)비타500젤리",
+      "brand": null,
+      "supplier": "매일유업"
     },
     {
       "code": "8809449340140",
@@ -28675,6 +28723,12 @@
       "supplier": "대지인팜"
     },
     {
+      "code": "8809476251099",
+      "name": "[A0932]동의삼 꿀배도라지홍삼 진액스틱(30포)",
+      "brand": null,
+      "supplier": "지오영"
+    },
+    {
       "code": "8806999953530",
       "name": "휴온스 메리트C산 3000MG 플러스",
       "brand": null,
@@ -28709,6 +28763,12 @@
       "name": "물린디 미니액",
       "brand": null,
       "supplier": "신신제약(vat미포함)"
+    },
+    {
+      "code": "8809476251105",
+      "name": "[A1099]동의삼 프리미엄흑염소진액본(20포)",
+      "brand": null,
+      "supplier": "지오영"
     },
     {
       "code": "8806422021256",
@@ -28859,6 +28919,12 @@
       "name": "스카덤 클리어겔 20G",
       "brand": null,
       "supplier": "삼일제약"
+    },
+    {
+      "code": "8809531020011",
+      "name": "[A1093]네이처생활건강 리포좀수용성강황커큐민골드",
+      "brand": null,
+      "supplier": "더팜(에프앤디넷)"
     },
     {
       "code": "8809800023835",
@@ -34357,6 +34423,13 @@
       "country": "북미 (UPC/US·CA)"
     },
     {
+      "code": "8810283782751",
+      "name": "하트웜솔루션 츄어블 M (12~22kg) 8츄어블",
+      "brand": null,
+      "supplier": "동아제약(주)",
+      "country": "기타 (881)"
+    },
+    {
       "code": "2880658503034",
       "name": "콜록 연질캡슐 12C",
       "brand": null,
@@ -34532,92 +34605,7 @@
       "country": "기타 (890)"
     }
   ],
-  "invalid13": [
-    {
-      "code": "8809250010040",
-      "name": "[DrLab]피에이치 밸런싱 토너 1000ml",
-      "brand": null,
-      "supplier": "케이팜",
-      "country": "🇰🇷 대한민국"
-    },
-    {
-      "code": "8809250010057",
-      "name": "[DrLab]하이드라-15 수딩 앰플 500ml",
-      "brand": null,
-      "supplier": "케이팜",
-      "country": "🇰🇷 대한민국"
-    },
-    {
-      "code": "8809250010019",
-      "name": "[DrLab]마일드 피에이치 페이셜 클렌저 1000ml",
-      "brand": null,
-      "supplier": "대지인팜",
-      "country": "🇰🇷 대한민국"
-    },
-    {
-      "code": "8809250010033",
-      "name": "[DrLab]피에이치 밸런싱 앰플 500ml",
-      "brand": null,
-      "supplier": "케이팜",
-      "country": "🇰🇷 대한민국"
-    },
-    {
-      "code": "8809250010026",
-      "name": "[DrLab]블루 캄 수딩 겔 밤 1000ml",
-      "brand": null,
-      "supplier": "케이팜",
-      "country": "🇰🇷 대한민국"
-    },
-    {
-      "code": "8800993322304",
-      "name": "-슈미트 자동전자 혈압계 (SMT-2205)",
-      "brand": null,
-      "supplier": "광동제약",
-      "country": "🇰🇷 대한민국"
-    },
-    {
-      "code": "8809250010064",
-      "name": "[DrLab]하이드라-15 수딩 토너 1000ml",
-      "brand": null,
-      "supplier": "케이팜",
-      "country": "🇰🇷 대한민국"
-    },
-    {
-      "code": "8801097160017",
-      "name": "(서주)비타500젤리",
-      "brand": null,
-      "supplier": "매일유업",
-      "country": "🇰🇷 대한민국"
-    },
-    {
-      "code": "8809476251098",
-      "name": "[A0932]동의삼 꿀배도라지홍삼 진액스틱(30포)",
-      "brand": null,
-      "supplier": "지오영",
-      "country": "🇰🇷 대한민국"
-    },
-    {
-      "code": "8809476251104",
-      "name": "[A1099]동의삼 프리미엄흑염소진액본(20포)",
-      "brand": null,
-      "supplier": "지오영",
-      "country": "🇰🇷 대한민국"
-    },
-    {
-      "code": "8810283782757",
-      "name": "하트웜솔루션 츄어블 M (12~22kg) 8츄어블",
-      "brand": null,
-      "supplier": "동아제약(주)",
-      "country": "기타 (881)"
-    },
-    {
-      "code": "8809531020018",
-      "name": "[A1093]네이처생활건강 리포좀수용성강황커큐민골드",
-      "brand": null,
-      "supplier": "더팜(에프앤디넷)",
-      "country": "🇰🇷 대한민국"
-    }
-  ],
+  "invalid13": [],
   "auto_fixable": [],
   "needs_search": [
     {

@@ -1,0 +1,86 @@
+{
+  "generated_at": "2026-08-27T15:19:31.010Z",
+  "phase": "C",
+  "total": 12,
+  "trusted_count": 0,
+  "suspicious_count": 0,
+  "notFound_count": 12,
+  "errors_count": 0,
+  "trusted": [],
+  "suspicious": [],
+  "notFound": [
+    {
+      "code": "8809250010040",
+      "name": "[DrLab]피에이치 밸런싱 토너 1000ml",
+      "phase": "search",
+      "reason": "총 0건"
+    },
+    {
+      "code": "8809250010057",
+      "name": "[DrLab]하이드라-15 수딩 앰플 500ml",
+      "phase": "search",
+      "reason": "총 0건"
+    },
+    {
+      "code": "8809250010019",
+      "name": "[DrLab]마일드 피에이치 페이셜 클렌저 1000ml",
+      "phase": "search",
+      "reason": "총 0건"
+    },
+    {
+      "code": "8809250010033",
+      "name": "[DrLab]피에이치 밸런싱 앰플 500ml",
+      "phase": "search",
+      "reason": "총 0건"
+    },
+    {
+      "code": "8809250010026",
+      "name": "[DrLab]블루 캄 수딩 겔 밤 1000ml",
+      "phase": "search",
+      "reason": "총 0건"
+    },
+    {
+      "code": "8800993322304",
+      "name": "-슈미트 자동전자 혈압계 (SMT-2205)",
+      "phase": "search",
+      "reason": "총 0건"
+    },
+    {
+      "code": "8809250010064",
+      "name": "[DrLab]하이드라-15 수딩 토너 1000ml",
+      "phase": "search",
+      "reason": "총 0건"
+    },
+    {
+      "code": "8801097160017",
+      "name": "(서주)비타500젤리",
+      "phase": "search",
+      "reason": "총 0건"
+    },
+    {
+      "code": "8809476251098",
+      "name": "[A0932]동의삼 꿀배도라지홍삼 진액스틱(30포)",
+      "phase": "search",
+      "reason": "총 0건"
+    },
+    {
+      "code": "8809476251104",
+      "name": "[A1099]동의삼 프리미엄흑염소진액본(20포)",
+      "phase": "search",
+      "reason": "총 0건"
+    },
+    {
+      "code": "8810283782757",
+      "name": "하트웜솔루션 츄어블 M (12~22kg) 8츄어블",
+      "phase": "search",
+      "reason": "총 0건"
+    },
+    {
+      "code": "8809531020018",
+      "name": "[A1093]네이처생활건강 리포좀수용성강황커큐민골드",
+      "phase": "search",
+      "reason": "총 0건"
+    }
+  ],
+  "errors": []
+}
