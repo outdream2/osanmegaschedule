@@ -364,7 +364,7 @@ export const RealStockTablePage: React.FC = () => {
     const zone = slot === "w1" ? r.w1zone : slot === "w2" ? r.w2zone : slot === "s1" ? r.s1zone : slot === "s2" ? r.s2zone : r.s3zone;
     const tone: "cyan" | "violet" = (slot === "w1" || slot === "w2") ? "cyan" : "violet";
     if (!zone) {
-      return <span className="inline-flex items-center justify-center min-w-[44px] h-[30px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[14px]">—</span>;
+      return <span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[13px]">—</span>;
     }
     const cls = tone === "cyan" ? "bg-cyan-100 text-cyan-800" : "bg-violet-100 text-violet-800";
     return (
@@ -373,6 +373,15 @@ export const RealStockTablePage: React.FC = () => {
       </span>
     );
   };
+  // 2026-08-27 · 사용자 지시 · 구역-수량 하나 셀 통합 · [배지] - [숫자]
+  const renderZoneQtyCell = (r: Row, slot: SlotKey) => (
+    <div className="inline-flex items-center gap-1.5">
+      {renderZoneCell(r, slot)}
+      <span className="text-zinc-400 text-[13px] font-medium">-</span>
+      {renderQtyCell(r, slot)}
+    </div>
+  );
+
   const renderQtyCell = (r: Row, slot: SlotKey) => {
     const qty = slot === "w1" ? r.w1 : slot === "w2" ? r.w2 : slot === "s1" ? r.s1 : slot === "s2" ? r.s2 : r.s3;
     const tone: "cyan" | "violet" = (slot === "w1" || slot === "w2") ? "cyan" : "violet";
@@ -565,16 +574,11 @@ export const RealStockTablePage: React.FC = () => {
                   {/* 2026-08-27 · 사용자 지시 · 매장/창고 헤더 · 2줄 (예: 매장1 / 구역) · whitespace-pre-line */}
                   {thSortable("location",     "center", "진열위치\n(구역)", 90,  "bg-amber-50/40 whitespace-pre-line leading-tight")}
                   {thSortable("erp",          "num",    "ERP\n수량",       80,  "bg-amber-100/50 whitespace-pre-line leading-tight")}
-                  {thSortable("s1zone",       "center", "매장1\n구역",     92,  "bg-violet-50/40 whitespace-pre-line leading-tight")}
-                  {thSortable("s1",           "num",    "매장1\n수량",     92,  "bg-violet-100/50 whitespace-pre-line leading-tight")}
-                  {thSortable("s2zone",       "center", "매장2\n구역",     92,  "bg-violet-50/40 whitespace-pre-line leading-tight")}
-                  {thSortable("s2",           "num",    "매장2\n수량",     92,  "bg-violet-100/50 whitespace-pre-line leading-tight")}
-                  {thSortable("s3zone",       "center", "매장3\n구역",     92,  "bg-violet-50/40 whitespace-pre-line leading-tight")}
-                  {thSortable("s3",           "num",    "매장3\n수량",     92,  "bg-violet-100/50 whitespace-pre-line leading-tight")}
-                  {thSortable("w1zone",       "center", "창고1\n구역",     92,  "bg-cyan-50/40 whitespace-pre-line leading-tight")}
-                  {thSortable("w1",           "num",    "창고1\n수량",     92,  "bg-cyan-100/50 whitespace-pre-line leading-tight")}
-                  {thSortable("w2zone",       "center", "창고2\n구역",     92,  "bg-cyan-50/40 whitespace-pre-line leading-tight")}
-                  {thSortable("w2",           "num",    "창고2\n수량",     92,  "bg-cyan-100/50 whitespace-pre-line leading-tight")}
+                  {thSortable("s1",           "center", "매장1\n구역-수량",  105, "bg-violet-100/50 whitespace-pre-line leading-tight")}
+                  {thSortable("s2",           "center", "매장2\n구역-수량",  105, "bg-violet-100/50 whitespace-pre-line leading-tight")}
+                  {thSortable("s3",           "center", "매장3\n구역-수량",  105, "bg-violet-100/50 whitespace-pre-line leading-tight")}
+                  {thSortable("w1",           "center", "창고1\n구역-수량",  105, "bg-cyan-100/50 whitespace-pre-line leading-tight")}
+                  {thSortable("w2",           "center", "창고2\n구역-수량",  105, "bg-cyan-100/50 whitespace-pre-line leading-tight")}
                   {thSortable("total",        "num", "실재고 합계", 95,  "bg-brand-tint/30")}
                   {thSortable("diff",         "num", "차이",         80,  "bg-rose-50/40")}
                 </tr>
@@ -600,7 +604,7 @@ export const RealStockTablePage: React.FC = () => {
                     const totalReal = rows.reduce((s, r) => s + r.total, 0);
                     return [
                       <tr key={`group-${k}`} className="bg-brand-tint border-t-2 border-b border-brand-deep/40 sticky top-[42px] z-20 shadow-sm hover:bg-brand-tint/80 cursor-pointer transition" onClick={() => toggleGroup(k)}>
-                        <td colSpan={16} className="px-3 py-2.5 bg-brand-tint">
+                        <td colSpan={11} className="px-3 py-2.5 bg-brand-tint">
                           <div className="flex items-center gap-2 flex-wrap">
                             {collapsedGroups.has(k) ? <ChevronRight size={16} className="text-brand-deep shrink-0" /> : <ChevronDown size={16} className="text-brand-deep shrink-0" />}
                             <span className="w-1 h-4 rounded-full bg-brand-deep" />
@@ -654,18 +658,13 @@ export const RealStockTablePage: React.FC = () => {
                               {r.product_name}
                             </button>
                           </td>
-                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.location ? (<span className="inline-flex items-center justify-center min-w-[44px] h-[30px] px-2 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[19px] tabular-nums tracking-tight">{r.location}</span>) : (<span className="inline-flex items-center justify-center min-w-[44px] h-[30px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[14px]">—</span>)}</td>
-                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.erp != null && r.erp > 0 ? (<span className="inline-flex items-center justify-center min-w-[44px] h-[30px] px-2 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[19px] tabular-nums tracking-tight">{r.erp}</span>) : (<span className="inline-flex items-center justify-center min-w-[44px] h-[30px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[14px]">—</span>)}</td>
-                          <td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s1")}</td>
-                          <td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s1")}</td>
-                          <td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s2")}</td>
-                          <td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s2")}</td>
-                          <td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s3")}</td>
-                          <td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s3")}</td>
-                          <td className={tableTdCls("center", "bg-cyan-50/30")}>{renderZoneCell(r, "w1")}</td>
-                          <td className={tableTdCls("num", "bg-cyan-100/40")}>{renderQtyCell(r, "w1")}</td>
-                          <td className={tableTdCls("center", "bg-cyan-50/30")}>{renderZoneCell(r, "w2")}</td>
-                          <td className={tableTdCls("num", "bg-cyan-100/40")}>{renderQtyCell(r, "w2")}</td>
+                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.location ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[17px] tabular-nums tracking-tight">{r.location}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[13px]">—</span>)}</td>
+                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.erp != null && r.erp > 0 ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[17px] tabular-nums tracking-tight">{r.erp}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[13px]">—</span>)}</td>
+                          <td className={tableTdCls("center", "bg-violet-100/40")}>{renderZoneQtyCell(r, "s1")}</td>
+                          <td className={tableTdCls("center", "bg-violet-100/40")}>{renderZoneQtyCell(r, "s2")}</td>
+                          <td className={tableTdCls("center", "bg-violet-100/40")}>{renderZoneQtyCell(r, "s3")}</td>
+                          <td className={tableTdCls("center", "bg-cyan-100/40")}>{renderZoneQtyCell(r, "w1")}</td>
+                          <td className={tableTdCls("center", "bg-cyan-100/40")}>{renderZoneQtyCell(r, "w2")}</td>
                           <td className={tableTdCls("num", `tabular-nums font-extrabold ${r.total > 0 ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>{r.total > 0 ? r.total : "-"}</td>
                           <td className={tableTdCls("num", `tabular-nums font-bold ${r.diff > 0 ? "text-rose-600" : r.diff < 0 ? "text-emerald-600" : "text-zinc-300"} bg-rose-50/20`)}>{r.diff !== 0 ? (r.diff > 0 ? `+${r.diff}` : String(r.diff)) : "0"}</td>
                         </tr>
@@ -689,16 +688,11 @@ export const RealStockTablePage: React.FC = () => {
                     {/* 2026-08-27 · 컬럼 분리 · 진열위치·ERP 각각 · 매장/창고 구역·수량 분리 · 색깔톤 shade */}
                     <td className={tableTdCls("center", "bg-amber-50/30")}><span className={`text-[16px] font-semibold ${r.location ? "text-amber-500" : "text-zinc-300"} tabular-nums`}>{r.location ?? "-"}</span></td>
                     <td className={tableTdCls("num", `tabular-nums font-extrabold text-[19px] ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-100/40`)}>{r.erp ?? "-"}</td>
-                    <td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s1")}</td>
-                    <td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s1")}</td>
-                    <td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s2")}</td>
-                    <td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s2")}</td>
-                    <td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s3")}</td>
-                    <td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s3")}</td>
-                    <td className={tableTdCls("center", "bg-cyan-50/30")}>{renderZoneCell(r, "w1")}</td>
-                    <td className={tableTdCls("num", "bg-cyan-100/40")}>{renderQtyCell(r, "w1")}</td>
-                    <td className={tableTdCls("center", "bg-cyan-50/30")}>{renderZoneCell(r, "w2")}</td>
-                    <td className={tableTdCls("num", "bg-cyan-100/40")}>{renderQtyCell(r, "w2")}</td>
+                    <td className={tableTdCls("center", "bg-violet-100/40")}>{renderZoneQtyCell(r, "s1")}</td>
+                    <td className={tableTdCls("center", "bg-violet-100/40")}>{renderZoneQtyCell(r, "s2")}</td>
+                    <td className={tableTdCls("center", "bg-violet-100/40")}>{renderZoneQtyCell(r, "s3")}</td>
+                    <td className={tableTdCls("center", "bg-cyan-100/40")}>{renderZoneQtyCell(r, "w1")}</td>
+                    <td className={tableTdCls("center", "bg-cyan-100/40")}>{renderZoneQtyCell(r, "w2")}</td>
                     <td className={tableTdCls("num", `tabular-nums font-extrabold ${r.total > 0 ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>
                       {r.total > 0 ? r.total : "-"}
                     </td>
