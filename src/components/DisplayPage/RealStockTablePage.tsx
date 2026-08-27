@@ -655,7 +655,7 @@ export const RealStockTablePage: React.FC = () => {
                             </button>
                           </td>
                           <td className={tableTdCls("center", "bg-amber-50/30")}>{r.location ? (<span className="inline-flex items-center justify-center min-w-[44px] h-[30px] px-2 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[19px] tabular-nums tracking-tight">{r.location}</span>) : (<span className="inline-flex items-center justify-center min-w-[44px] h-[30px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[14px]">—</span>)}</td>
-                          <td className={tableTdCls("num", `tabular-nums font-extrabold text-[19px] ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-100/40`)}>{r.erp ?? "-"}</td>
+                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.erp != null && r.erp > 0 ? (<span className="inline-flex items-center justify-center min-w-[44px] h-[30px] px-2 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[19px] tabular-nums tracking-tight">{r.erp}</span>) : (<span className="inline-flex items-center justify-center min-w-[44px] h-[30px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[14px]">—</span>)}</td>
                           <td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s1")}</td>
                           <td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s1")}</td>
                           <td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s2")}</td>
