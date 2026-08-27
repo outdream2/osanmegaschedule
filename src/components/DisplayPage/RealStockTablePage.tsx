@@ -356,18 +356,18 @@ export const RealStockTablePage: React.FC = () => {
     );
   };
 
-  // 2026-08-27 · 사용자 지시 · 구역은 사각 배지 · 수량과 시각 구분 명확
-  //   · 매장 · violet 배지 · 창고 · cyan 배지
-  //   · 배지 · border + bg tint · 폰트 bold · rounded-md
+  // 2026-08-27 · 사용자 지시 · 최신 트렌드 (Linear/Attio 2026) · pill 형태 구역 배지
+  //   · rounded-full · monospace 폰트 · 배경 tint 강 · 수량 (숫자만) 과 완전 대비
+  //   · 매장 (violet) · 창고 (cyan) · 진열위치 (amber)
   const renderZoneCell = (r: Row, slot: SlotKey) => {
     const zone = slot === "w1" ? r.w1zone : slot === "w2" ? r.w2zone : slot === "s1" ? r.s1zone : slot === "s2" ? r.s2zone : r.s3zone;
     const tone: "cyan" | "violet" = (slot === "w1" || slot === "w2") ? "cyan" : "violet";
     if (!zone) return <span className="text-[15px] text-zinc-300">-</span>;
     const cls = tone === "cyan"
-      ? "border-cyan-300 bg-cyan-50 text-cyan-800"
-      : "border-violet-300 bg-violet-50 text-violet-800";
+      ? "bg-cyan-100 text-cyan-800 ring-1 ring-cyan-300/60"
+      : "bg-violet-100 text-violet-800 ring-1 ring-violet-300/60";
     return (
-      <span className={`inline-flex items-center justify-center min-w-[36px] px-2 py-0.5 rounded-md border-2 ${cls} font-bold text-[14px] tabular-nums shadow-sm`}>
+      <span className={`inline-flex items-center justify-center min-w-[42px] px-2.5 py-0.5 rounded-full ${cls} font-mono font-bold text-[13px] tracking-tight`}>
         {zone}
       </span>
     );
@@ -653,7 +653,7 @@ export const RealStockTablePage: React.FC = () => {
                               {r.product_name}
                             </button>
                           </td>
-                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.location ? (<span className="inline-flex items-center justify-center min-w-[36px] px-2 py-0.5 rounded-md border-2 border-amber-300 bg-amber-50 text-amber-800 font-bold text-[14px] tabular-nums shadow-sm">{r.location}</span>) : (<span className="text-[15px] text-zinc-300">-</span>)}</td>
+                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.location ? (<span className="inline-flex items-center justify-center min-w-[42px] px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 ring-1 ring-amber-300/60 font-mono font-bold text-[13px] tracking-tight">{r.location}</span>) : (<span className="text-[15px] text-zinc-300">-</span>)}</td>
                           <td className={tableTdCls("num", `tabular-nums font-extrabold text-[19px] ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-100/40`)}>{r.erp ?? "-"}</td>
                           <td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s1")}</td>
                           <td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s1")}</td>
