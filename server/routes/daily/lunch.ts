@@ -1,7 +1,7 @@
 // 2026-08-16 · asyncHandler + HttpError + validateBody + shared 스키마/DTO
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
-import { getSession } from "../../middleware/requireAuth";
+import { getSession, authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, forbidden, unauthorized, HttpError } from "../../middleware/errorHandler";
@@ -41,7 +41,7 @@ router.get("/api/lunch-requests", asyncHandler(async (req, res) => {
   res.json(body);
 }));
 
-router.put("/api/lunch-requests", validateBody(UpsertLunchRequestSchema), asyncHandler(async (req, res) => {
+router.put("/api/lunch-requests", authorize(1), validateBody(UpsertLunchRequestSchema), asyncHandler(async (req, res) => {
   const { employee_id, employee_name, date, eating, memo } = req.body;
   const { error } = await supabase.from("lunch_requests").upsert(
     { employee_id, employee_name, date, eating, memo: memo || null, updated_at: new Date().toISOString() },
@@ -52,7 +52,7 @@ router.put("/api/lunch-requests", validateBody(UpsertLunchRequestSchema), asyncH
 }));
 
 // 본인 or 관리자만 lunch 삭제
-router.delete("/api/lunch-requests", asyncHandler(async (req, res) => {
+router.delete("/api/lunch-requests", authorize(1), asyncHandler(async (req, res) => {
   const session = getSession(req);
   if (!session) throw unauthorized();
   const { employee_id, date } = req.query;

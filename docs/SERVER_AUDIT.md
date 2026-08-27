@@ -1,9 +1,9 @@
 # 서버 프레임워크 감사 (Phase 1)
 
-- 생성 · 2026-08-27 07:43:16
+- 생성 · 2026-08-27 07:44:37
 - 스캔 파일 · 39개
 - 총 라우트 · 241개
-- 위반 · 167건 (high 76)
+- 위반 · 164건 (high 73)
 
 ## 규칙
 - **no-authorize** (high) · POST/PATCH/DELETE/PUT · authorize() 미적용
@@ -34,13 +34,6 @@
 - 🟡 L136 · **no-validate-body** · POST /api/pharmacist-menu-items · validateBody() 미적용 · Zod 검증 없음
 - 🔴 L262 · **no-authorize** · PATCH /api/pharmacist-menu-items/:id · authorize() 미적용 · 권한 우회 가능
 - 🟡 L262 · **no-validate-body** · PATCH /api/pharmacist-menu-items/:id · validateBody() 미적용 · Zod 검증 없음
-
-### server/routes/daily/lunch.ts (2건)
-- 🔴 L44 · **no-authorize** · PUT /api/lunch-requests · authorize() 미적용 · 권한 우회 가능
-- 🔴 L55 · **no-authorize** · DELETE /api/lunch-requests · authorize() 미적용 · 권한 우회 가능
-
-### server/routes/daily/reservations.ts (1건)
-- 🔴 L24 · **no-authorize** · POST /api/reservations · authorize() 미적용 · 권한 우회 가능
 
 ### server/routes/display/mismatches.ts (3건)
 - 🔴 L66 · **no-authorize** · POST /api/zone-mismatches · authorize() 미적용 · 권한 우회 가능
@@ -255,14 +248,14 @@
 - ⚠ 3 · server/routes/display/mismatches.ts · 4 라우트
 - ⚠ 3 · server/routes/staff/employeeContracts.ts · 4 라우트
 - ⚠ 3 · server/routes/stock/stockManage.ts · 19 라우트
-- ⚠ 2 · server/routes/daily/lunch.ts · 4 라우트
 - ⚠ 2 · server/routes/purchase/invoiceImages.ts · 2 라우트
 - ⚠ 2 · server/routes/purchase/ocrConfirmed.ts · 3 라우트
 - ⚠ 2 · server/routes/purchase/supplierBalanceConfig.ts · 3 라우트
 - ⚠ 2 · server/routes/staff/resignations.ts · 5 라우트
 - ⚠ 2 · server/routes/stock/lossTracking.ts · 3 라우트
 - ⚠ 1 · server/routes/board/clientErrors.ts · 1 라우트
-- ⚠ 1 · server/routes/daily/reservations.ts · 2 라우트
 - ⚠ 1 · server/routes/settings/systemConfig.ts · 2 라우트
 - ⚠ 1 · server/routes/staff/hrForms.ts · 3 라우트
 - ⚠ 1 · server/routes/stock/productArrivals.ts · 5 라우트
+- ✅ · server/routes/daily/leave.ts · 7 라우트
+- ✅ · server/routes/daily/lunch.ts · 4 라우트

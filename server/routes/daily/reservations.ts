@@ -3,6 +3,7 @@ import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { notificationsService } from "../../services/notificationsService";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { authorize } from "../../middleware/requireAuth";
 import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
 import { CreateReservationSchema } from "../../../src/shared/schemas/reservation";
@@ -21,7 +22,7 @@ router.get("/api/reservations", asyncHandler(async (req, res) => {
   res.json(body);
 }));
 
-router.post("/api/reservations", validateBody(CreateReservationSchema), asyncHandler(async (req, res) => {
+router.post("/api/reservations", authorize(5), validateBody(CreateReservationSchema), asyncHandler(async (req, res) => {
   const { date, time, company, contactName, phone, purpose, note, vendorId } = req.body;
   const getTarget = (n: string) => {
     const match = (n || "").match(/^\[대상:(대표|이사|부장)\]/);
