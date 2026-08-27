@@ -9,21 +9,11 @@ export const WAREHOUSE_1_CODES = new Set<string>([
   "24", "25", "26", "27", "7B", "8A",
 ]);
 
-// 창고2 · 왼쪽측면 (28·29·30·31·34·35·36·37·38·39·40)
-//   + 중앙 (1A~7A · 감기약/소화제/연고/피부)
-//   + 오른쪽 (10~23 · 건강기능)
-//   + 화장품 (32·33)
+// 2026-08-27 · 사용자 지시 · 창고2 실제 창고 zone 만 (매장 진열대 코드 제외)
+//   · 왼쪽측면 (28·29·30·31·34·35·36·37·38·39·40) + 화장품 (32·33)
+//   · 진열대 (1A~7A · 10~23) 은 매장 진열 · 창고2 아님
 export const WAREHOUSE_2_CODES = new Set<string>([
-  // 왼쪽측면
-  "28", "29", "30", "31", "34", "35", "36", "37", "38", "39", "40",
-  // 중앙 진열대
-  "1A", "1B", "2A", "2B", "3A", "3B", "4A", "4B",
-  "5A", "5B", "6A", "6B", "7A",
-  // 오른쪽 건강기능
-  "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
-  "20", "21", "22", "23",
-  // 화장품
-  "32", "33",
+  "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40",
 ]);
 
 // 두 창고 공용 (예: 40 드림크냉장고)
@@ -75,4 +65,38 @@ export function resolveWarehouseVisibility(realMap: string | null | undefined): 
   // 아무것도 매칭 안됐고 unknown 있으면 · 안전 · 둘 다 표시
   if (!showW1 && !showW2 && unknown) return { showW1: true, showW2: true };
   return { showW1, showW2 };
+}
+
+// 2026-08-27 · 사용자 지시 · zone 코드를 slot 에 지능 배정
+//   · 창고1 코드 (예: 8A) → w1zone · 창고2 코드 (예: 32) → w2zone
+//   · 나머지 (매장 진열구역) → s1/s2/s3 순차
+//   · A제품 real_map = "1/2/8A" · s1=1 · s2=2 · w1=8A · w2=null · s3=null
+export type SlotZones = {
+  s1zone: string | null;
+  s2zone: string | null;
+  s3zone: string | null;
+  w1zone: string | null;
+  w2zone: string | null;
+};
+// 2026-08-27 · 사용자 지시 재정리 · 두 소스 조합
+//   · 매장 (s1/s2/s3zone) · spec/real_map "/" 파스 순차 배정
+//   · 창고 (w1/w2zone) · category_code 룩업 · WAREHOUSE_1/2_CODES 매칭
+export function assignZonesToSlots(
+  input: string | null | undefined,
+  categoryCode?: string | null,
+): SlotZones {
+  const stores = String(input ?? "")
+    .split(/[\/,·]/)
+    .map(s => s.trim())
+    .filter(Boolean);
+  const cat = String(categoryCode ?? "").trim().toUpperCase().replace(/\s+/g, "");
+  const catW1 = cat && WAREHOUSE_1_CODES.has(cat) ? cat : null;
+  const catW2 = cat && WAREHOUSE_2_CODES.has(cat) ? cat : null;
+  return {
+    s1zone: stores[0] ?? null,
+    s2zone: stores[1] ?? null,
+    s3zone: stores[2] ?? null,
+    w1zone: catW1,
+    w2zone: catW2,
+  };
 }

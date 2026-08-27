@@ -179,16 +179,19 @@ export async function getProductMap(): Promise<Record<string, ProductInfo>> {
 //   · 설정 값은 5초 캐시 · DB 부하 완화
 let saleActiveOnlyCache: { value: boolean; ts: number } | null = null;
 const SALE_ACTIVE_TTL_MS = 5000;
+// 2026-08-27 · 사용자 지시 · DB 원천차단 · 판매중 필터 default true
+//   · setting 없거나 null → 판매중만 반환 (안전 default)
+//   · 명시적 false 만 · 전체 반환 (관리자 · 데이터임포트 등)
 async function readSaleActiveOnly(): Promise<boolean> {
   const now = Date.now();
   if (saleActiveOnlyCache && (now - saleActiveOnlyCache.ts) < SALE_ACTIVE_TTL_MS) return saleActiveOnlyCache.value;
   try {
     const { data } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();
-    const v = data?.value === true;
+    const v = data?.value === false ? false : true;  // default true · 명시적 false 만 전체
     saleActiveOnlyCache = { value: v, ts: now };
     return v;
   } catch {
-    return false;
+    return true;  // catch 시에도 안전 default true
   }
 }
 export function invalidateSaleActiveOnlyCache(): void { saleActiveOnlyCache = null; }

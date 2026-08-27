@@ -16,6 +16,8 @@ import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/T
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useSaleActiveOnly } from "../../hooks/useSaleActiveOnly";
+// 2026-08-27 · 사용자 지시 · 카테고리 → 창고 slot 지능 배정 (8A=창고1 · 32=창고2)
+import { assignZonesToSlots } from "../../lib/warehouseZoneMap";
 
 interface Product {
   product_code: string;
@@ -147,11 +149,11 @@ export const RealStockTablePage: React.FC = () => {
     const total = (w1 ?? 0) + (w2 ?? 0) + (s1 ?? 0) + (s2 ?? 0) + (s3 ?? 0);
     const erp = p.current_stock;
     const diff = (erp ?? 0) - total;
-    // 2026-08-26 · 사용자 지시 · real_map "1/12" · 매장1=1 · 매장2=12 · 창고도 parts[3]/[4]
-    // 2026-08-27 · 사용자 지시 · spec (전산구역) 에 "/" 있으면 · 매장1/2/3 구역으로 분리 · spec 우선 · real_map fallback
-    const specParts = String(p.spec ?? "").split("/").map(s => s.trim()).filter(Boolean);
-    const realParts = String(p.real_map ?? "").split("/").map(s => s.trim()).filter(Boolean);
-    const parts = specParts.length > 1 ? specParts : realParts;
+    // 2026-08-27 · 사용자 지시 · 매장 zone (spec 파스) + 창고 zone (category_code 룩업)
+    //   · spec/real_map "1/2/3" → s1=1·s2=2·s3=3 (순차)
+    //   · category_code=8A → 창고1 zone=8A · category_code=32 → 창고2 zone=32
+    const source = String(p.spec ?? "").trim() || String(p.real_map ?? "").trim();
+    const slots = assignZonesToSlots(source, p.category_code);
     return {
       product_code: p.product_code,
       product_name: p.product_name,
@@ -161,11 +163,11 @@ export const RealStockTablePage: React.FC = () => {
       real_map: p.real_map,
       erp,
       w1, w2, s1, s2, s3,
-      s1zone: parts[0] ?? null,
-      s2zone: parts[1] ?? null,
-      s3zone: parts[2] ?? null,
-      w1zone: parts[3] ?? null,
-      w2zone: parts[4] ?? null,
+      s1zone: slots.s1zone,
+      s2zone: slots.s2zone,
+      s3zone: slots.s3zone,
+      w1zone: slots.w1zone,
+      w2zone: slots.w2zone,
       sale_status: p.sale_status,
       total, diff,
     };
@@ -388,8 +390,8 @@ export const RealStockTablePage: React.FC = () => {
                   { label: "매장1", qty: detailRow.s1, zone: detailRow.s1zone, tone: "violet" },
                   { label: "매장2", qty: detailRow.s2, zone: detailRow.s2zone, tone: "violet" },
                   { label: "매장3", qty: detailRow.s3, zone: detailRow.s3zone, tone: "violet" },
-                  { label: "창고1", qty: detailRow.w1, zone: null, tone: "cyan" },
-                  { label: "창고2", qty: detailRow.w2, zone: null, tone: "cyan" },
+                  { label: "창고1", qty: detailRow.w1, zone: detailRow.w1zone, tone: "cyan" },
+                  { label: "창고2", qty: detailRow.w2, zone: detailRow.w2zone, tone: "cyan" },
                 ].map((s) => (
                   <div key={s.label} className={`rounded-lg border p-2 text-center ${s.tone === "violet" ? "bg-violet-50/40 border-violet-200" : "bg-cyan-50/40 border-cyan-200"}`}>
                     <div className={`text-[12px] font-bold ${s.tone === "violet" ? "text-violet-700" : "text-cyan-700"}`}>{s.label}</div>

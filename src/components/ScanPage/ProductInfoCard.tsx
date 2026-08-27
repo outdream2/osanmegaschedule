@@ -17,7 +17,7 @@ import { PurchaseHistorySection } from "./PurchaseHistorySection";
 // 2026-08-22 · Framework Phase 4 · 5-slot 반복 → StockSlotCard 프리미티브
 import { StockSlotCard } from "./StockSlotCard";
 // 2026-08-26 · 사용자 지시 · zone → 창고 매핑 · 해당 상품 소속 창고만 표시
-import { resolveWarehouseVisibility } from "../../lib/warehouseZoneMap";
+import { resolveWarehouseVisibility, assignZonesToSlots } from "../../lib/warehouseZoneMap";
 
 // 인라인 편집 가능 필드 종류
 // 2026-08-25 · products 테이블에 없는 컬럼 · cost_price 제거
@@ -453,15 +453,18 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
             Number(warehouse1Stock || 0) + Number(warehouse2Stock || 0) +
             Number(store1Stock || 0) + Number(store2Stock || 0) + Number(store3Stock || 0);
           const diff = hasInput && cur != null ? totalActual - cur : null;
-          // #224 · real_map 슬래시(/) 분할 · 매장1/2/3 진열위치 라벨
-          //   예: "8A/냉" → 매장1="8A" · 매장2="냉"
-          const storeZones = String(product.real_map ?? "")
-            .split(/[/,]/)
-            .map(s => s.trim())
-            .filter(Boolean);
-          const zoneS1 = storeZones[0] ?? "";
-          const zoneS2 = storeZones[1] ?? "";
-          const zoneS3 = storeZones[2] ?? "";
+          // 2026-08-27 · 사용자 지시 · 매장 zone (real_map 파스) + 창고 zone (category_code 룩업)
+          //   · real_map "1/2/3" → 매장1=1·매장2=2·매장3=3
+          //   · category_code=8A → 창고1 zone=8A · category_code=32 → 창고2 zone=32
+          const catCode = (product as any).category_code ?? null;
+          const slotZones = assignZonesToSlots(String(product.real_map ?? ""), catCode);
+          const zoneS1 = slotZones.s1zone ?? "";
+          const zoneS2 = slotZones.s2zone ?? "";
+          const zoneS3 = slotZones.s3zone ?? "";
+          const zoneW1 = slotZones.w1zone ?? "";
+          const zoneW2 = slotZones.w2zone ?? "";
+          // 매장 slot 개수 파생 (창고 코드는 제외)
+          const storeZones = [slotZones.s1zone, slotZones.s2zone, slotZones.s3zone].filter(Boolean) as string[];
           // 2026-08-25 · 재고위치 톤 통일 · 상단 v9 gradient accent · 폰트 +2 (사용자 지시)
           return (
             <div className={`relative overflow-hidden rounded-xl border px-3 py-2.5 mb-2.5 ${isLow ? "bg-red-50 border-red-200" : "bg-zinc-50 border-line"}`}>
@@ -541,12 +544,12 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                   {(showW1 || showW2) && (
                     <div className={`grid gap-1.5 ${showW1 && showW2 ? "grid-cols-2" : "grid-cols-1"}`}>
                       {showW1 && (
-                        <StockSlotCard kind="warehouse" label="창고1" value={warehouse1Stock}
+                        <StockSlotCard kind="warehouse" label="창고1" zone={zoneW1} value={warehouse1Stock}
                           onChange={v => { setWarehouse1Stock(v); setW1Status("idle"); }}
                           status={w1Status} onSubmit={handleW1Submit} toneKey="wh1" />
                       )}
                       {showW2 && (
-                        <StockSlotCard kind="warehouse" label="창고2" value={warehouse2Stock}
+                        <StockSlotCard kind="warehouse" label="창고2" zone={zoneW2} value={warehouse2Stock}
                           onChange={v => { setWarehouse2Stock(v); setW2Status("idle"); }}
                           status={w2Status} onSubmit={handleW2Submit} toneKey="wh2" />
                       )}

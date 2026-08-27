@@ -74,8 +74,11 @@ export function TableListWrap({
  *     </tr>
  *   </thead>
  */
+// 2026-08-27 · 사용자 지시 · 헤더 틀고정 강화 (프레임워크 반영)
+//   · border-collapse 이슈 회피 · thead 만 sticky 시 배경 사라짐 → th 개별 sticky
+//   · tableThCls 에서 개별 th 에 sticky/bg 적용 · 여기는 shared style 만
 export function tableHeadCls(extra = ""): string {
-  return `sticky top-0 z-10 bg-zinc-100/70 border-b border-line text-[13px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider ${extra}`.trim();
+  return `text-[13px] sm:text-[14px] font-bold text-zinc-600 uppercase tracking-wider ${extra}`.trim();
 }
 
 /**
@@ -85,12 +88,15 @@ export function tableHeadCls(extra = ""): string {
  *   · "center" · 액션·체크
  */
 export type TableThAlign = "left" | "num" | "center";
+// 2026-08-27 · 사용자 지시 · 개별 th sticky · border-collapse 이슈 회피
+//   · bg-zinc-50 · 스크롤 시 body row 안 비침 · border-b-2 · 시각 구분
+//   · z-30 · Modal·툴팁·편집 인풋(z-10~20)과 충돌 없이 상단 유지
 export function tableThCls(align: TableThAlign = "left", extra = ""): string {
   const alignCls =
       align === "num"    ? "text-right"
     : align === "center" ? "text-center"
                          : "text-left";
-  return `${alignCls} px-2 py-2.5 select-none ${extra}`.trim();
+  return `${alignCls} sticky top-0 z-30 bg-zinc-50 border-b-2 border-line shadow-[0_1px_2px_rgba(0,0,0,0.04)] px-2 py-2.5 select-none ${extra}`.trim();
 }
 
 /**
