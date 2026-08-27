@@ -459,7 +459,7 @@ export const RealStockTablePage: React.FC = () => {
                 />
                 판매중만
               </label>
-              {/* 2026-08-27 · 사용자 지시 · Group by 구역 뷰 토글 */}
+              {/* 2026-08-27 · 사용자 지시 · Group by 구역 뷰 토글 · 진열위치(location) 기준 그룹핑 */}
               <label className="inline-flex items-center gap-1.5 h-9 px-2.5 rounded-lg bg-white border border-line text-[16px] font-semibold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep transition cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -544,8 +544,8 @@ export const RealStockTablePage: React.FC = () => {
                     const totalErp = rows.reduce((s, r) => s + (r.erp ?? 0), 0);
                     const totalReal = rows.reduce((s, r) => s + r.total, 0);
                     return [
-                      <tr key={`group-${k}`} className="bg-gradient-to-r from-brand-tint/60 to-brand-tint/20 border-t-2 border-brand-deep/30 sticky top-0 z-10">
-                        <td colSpan={16} className="px-3 py-2">
+                      <tr key={`group-${k}`} className="bg-brand-tint border-t-2 border-b border-brand-deep/40 sticky top-[42px] z-20 shadow-sm">
+                        <td colSpan={16} className="px-3 py-2.5 bg-brand-tint">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="w-1 h-4 rounded-full bg-brand-deep" />
                             <span className="text-[15px] font-extrabold text-brand-deep tabular-nums">{k}</span>
