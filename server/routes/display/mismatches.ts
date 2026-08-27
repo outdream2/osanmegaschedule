@@ -11,9 +11,13 @@ const router = Router();
 // 현재: res.json(array) · 직접 배열 반환 · 프론트 소비 패턴과 breaking 없이 유지
 // 미래 v2: { rows: array, count: number } 로 전환 예정 (프론트 마이그레이션 후)
 router.get("/api/zone-mismatches", asyncHandler(async (_req, res) => {
+  // 2026-08-27 · 사용자 지시 · 실제위치 (real_map) 입력 안 되면 · 비교 대상에서 제외
+  //   · location (진열위치 · 전산구역) 도 없으면 비교 무의미 · 제외
+  //   · 이전 · spec (원본 규격 · EA·Z 등) 과 비교 · 대다수 무의미 mismatch · 1000건 폭발
+  //   · 신 · location (display_location ?? spec) 파생 · 둘 다 값 있을 때만 비교
   const { data: productRows, error: prodErr } = await supabase
     .from("products")
-    .select("product_code, product_name, spec, real_map, category_code, last_modified_at")
+    .select("product_code, product_name, spec, display_location, location, real_map, category_code, last_modified_at")
     .eq("hidden", false)
     .not("real_map", "is", null)
     .neq("real_map", "");
@@ -22,26 +26,29 @@ router.get("/api/zone-mismatches", asyncHandler(async (_req, res) => {
     console.error("[zone-mismatches] products 쿼리 오류:", prodErr.message);
     throw new HttpError(500, prodErr.message);
   }
-  console.log(`[zone-mismatches] real_map 있는 상품 ${productRows?.length ?? 0}건`);
-  if (productRows?.length) {
-    console.log("[zone-mismatches] sample:", JSON.stringify(productRows[0]));
-  }
+  console.log(`[zone-mismatches] real_map 있는 상품 ${productRows?.length ?? 0}건 스캔 시작`);
 
   const computed = (productRows ?? [])
     .filter(p => {
-      const specZone = (p.spec ?? "").trim();
+      const locZone = String((p as any).location ?? (p as any).display_location ?? "").trim();
       const real = (p.real_map ?? "").trim();
-      return real && specZone !== real;
+      // 실제위치 없거나 · 진열위치 (location) 없으면 · 비교 대상 아님
+      if (!real || !locZone) return false;
+      return locZone !== real;
     })
-    .map(p => ({
-      id: p.product_code,
-      product_code: p.product_code,
-      product_name: p.product_name ?? "",
-      category_code: (p as any).category_code ?? null,
-      spec_zone: (p.spec ?? "").trim() || "미지정",
-      real_zone: (p.real_map ?? "").trim(),
-      registered_at: p.last_modified_at ?? new Date().toISOString(),
-    }));
+    .map(p => {
+      const locZone = String((p as any).location ?? (p as any).display_location ?? "").trim();
+      return {
+        id: p.product_code,
+        product_code: p.product_code,
+        product_name: p.product_name ?? "",
+        category_code: (p as any).category_code ?? null,
+        spec_zone: locZone || "미지정",
+        real_zone: (p.real_map ?? "").trim(),
+        registered_at: p.last_modified_at ?? new Date().toISOString(),
+      };
+    });
+  console.log(`[zone-mismatches] 실제 불일치 ${computed.length}건 (실제위치·진열위치 둘 다 있는 상품만)`);
 
   const { data: legacy } = await supabase
     .from("zone_mismatches")
