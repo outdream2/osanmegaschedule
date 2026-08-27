@@ -148,7 +148,7 @@ router.get("/api/resignations/pending-count", asyncHandler(async (_req, res) => 
 }));
 
 // ─── POST · 제출 ──────────────────────────────────────────────────────────
-router.post("/api/resignations", validateBody(CreateResignationSchema), asyncHandler(async (req, res) => {
+router.post("/api/resignations", authorize(1), validateBody(CreateResignationSchema), asyncHandler(async (req, res) => {
   const {
     employee_id,
     employee_name,
@@ -225,7 +225,7 @@ router.post("/api/resignations", validateBody(CreateResignationSchema), asyncHan
 }));
 
 // ─── PATCH · 승인/반려 ────────────────────────────────────────────────────
-router.patch("/api/resignations/:id", validateBody(ReviewResignationSchema), asyncHandler(async (req, res) => {
+router.patch("/api/resignations/:id", authorize(5), validateBody(ReviewResignationSchema), asyncHandler(async (req, res) => {
   const { status, reject_reason, approved_by, approved_by_id } = req.body;
 
   const update: Record<string, unknown> = {

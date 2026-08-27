@@ -1,9 +1,9 @@
 # 서버 프레임워크 감사 (Phase 1)
 
-- 생성 · 2026-08-27 07:50:42
+- 생성 · 2026-08-27 07:52:06
 - 스캔 파일 · 39개
 - 총 라우트 · 241개
-- 위반 · 150건 (high 59)
+- 위반 · 148건 (high 57)
 
 ## 규칙
 - **no-authorize** (high) · POST/PATCH/DELETE/PUT · authorize() 미적용
@@ -183,10 +183,6 @@
 ### server/routes/staff/hrForms.ts (1건)
 - 🔴 L125 · **no-authorize** · POST /api/hr-forms · authorize() 미적용 · 권한 우회 가능
 
-### server/routes/staff/resignations.ts (2건)
-- 🔴 L151 · **no-authorize** · POST /api/resignations · authorize() 미적용 · 권한 우회 가능
-- 🔴 L228 · **no-authorize** · PATCH /api/resignations/:id · authorize() 미적용 · 권한 우회 가능
-
 ### server/routes/stock/lossTracking.ts (2건)
 - 🔴 L200 · **no-authorize** · POST /api/loss-tracking/snapshot · authorize() 미적용 · 권한 우회 가능
 - 🟡 L200 · **no-validate-body** · POST /api/loss-tracking/snapshot · validateBody() 미적용 · Zod 검증 없음
@@ -235,7 +231,6 @@
 - ⚠ 2 · server/routes/purchase/invoiceImages.ts · 2 라우트
 - ⚠ 2 · server/routes/purchase/ocrConfirmed.ts · 3 라우트
 - ⚠ 2 · server/routes/purchase/supplierBalanceConfig.ts · 3 라우트
-- ⚠ 2 · server/routes/staff/resignations.ts · 5 라우트
 - ⚠ 2 · server/routes/stock/lossTracking.ts · 3 라우트
 - ⚠ 1 · server/routes/board/clientErrors.ts · 1 라우트
 - ⚠ 1 · server/routes/display/mismatches.ts · 4 라우트
@@ -245,3 +240,4 @@
 - ⚠ 1 · server/routes/stock/stockManage.ts · 19 라우트
 - ✅ · server/routes/daily/leave.ts · 7 라우트
 - ✅ · server/routes/daily/lunch.ts · 4 라우트
+- ✅ · server/routes/daily/reservations.ts · 2 라우트
