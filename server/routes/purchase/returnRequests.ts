@@ -21,7 +21,7 @@ const router = Router();
 
 // POST /api/return-requests
 // body: { product_code, product_name, supplier, qty, current_stock, purchase_price, reason?, requested_by?, requested_by_id? }
-router.post("/api/return-requests", asyncHandler(async (req, res) => {
+router.post("/api/return-requests", authorize(5), asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const product_code = String(b.product_code ?? "").trim();
   if (!product_code) throw badRequest("product_code 필수");
@@ -110,7 +110,7 @@ router.get("/api/return-requests/by-supplier", asyncHandler(async (req, res) => 
 
 // PATCH /api/return-requests/:id
 // body: { qty?, reason?, status?  }
-router.patch("/api/return-requests/:id", asyncHandler(async (req, res) => {
+router.patch("/api/return-requests/:id", authorize(5), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!Number.isFinite(id)) throw badRequest("invalid id");
   const b = req.body ?? {};
@@ -130,7 +130,7 @@ router.patch("/api/return-requests/:id", asyncHandler(async (req, res) => {
 }));
 
 // DELETE /api/return-requests/:id
-router.delete("/api/return-requests/:id", authorize(2), asyncHandler(async (req, res) => {
+router.delete("/api/return-requests/:id", authorize(5), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!Number.isFinite(id)) throw badRequest("invalid id");
   const { error } = await supabase.from("return_requests").delete().eq("id", id);
@@ -141,7 +141,7 @@ router.delete("/api/return-requests/:id", authorize(2), asyncHandler(async (req,
 // POST /api/return-requests/bulk-send
 // body: { ids: number[], channels: { email: boolean, sms: boolean }, sender_note?: string }
 // 공급사별로 그룹핑 · 각 공급사 담당자에게 반품요청 발송 · 발송된 요청은 status=sent 로 업데이트
-router.post("/api/return-requests/bulk-send", asyncHandler(async (req, res) => {
+router.post("/api/return-requests/bulk-send", authorize(5), asyncHandler(async (req, res) => {
   const ids: number[] = Array.isArray(req.body?.ids) ? req.body.ids.map((n: any) => Number(n)).filter(Number.isFinite) : [];
   if (ids.length === 0) throw badRequest("ids 필수");
   // 대상 조회
