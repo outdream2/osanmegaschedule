@@ -6,6 +6,7 @@ import { scheduleService } from "../../services/scheduleService";
 import { notificationsService } from "../../services/notificationsService";
 import { checkOwnershipOrAdmin } from "../../lib/ownershipCheck";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { authorize } from "../../middleware/requireAuth";
 import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
 import { CreateLeaveRequestSchema, ReviewLeaveRequestSchema } from "../../../src/shared/schemas/leave";
@@ -76,7 +77,7 @@ router.get("/api/leave-requests/pending-count", asyncHandler(async (_req, res) =
   res.json({ count: count ?? 0 });
 }));
 
-router.post("/api/leave-requests", validateBody(CreateLeaveRequestSchema), asyncHandler(async (req, res) => {
+router.post("/api/leave-requests", authorize(1), validateBody(CreateLeaveRequestSchema), asyncHandler(async (req, res) => {
   const { employee_id, employee_name, leave_type, start_date, end_date, reason } = req.body;
   const { data, error } = await supabase.from("leave_requests").insert([{
     employee_id: Number(employee_id),
@@ -98,7 +99,7 @@ router.post("/api/leave-requests", validateBody(CreateLeaveRequestSchema), async
   res.status(201).json(data);
 }));
 
-router.put("/api/leave-requests/:id", validateBody(ReviewLeaveRequestSchema), asyncHandler(async (req, res) => {
+router.put("/api/leave-requests/:id", authorize(5), validateBody(ReviewLeaveRequestSchema), asyncHandler(async (req, res) => {
   const { status, reviewer_note } = req.body;
   const { data, error } = await supabase
     .from("leave_requests")
@@ -174,7 +175,7 @@ router.put("/api/leave-requests/:id", validateBody(ReviewLeaveRequestSchema), as
 }));
 
 // #112-E1 Phase 2 · 본인 or 관리자만 삭제
-router.delete("/api/leave-requests/:id", asyncHandler(async (req, res) => {
+router.delete("/api/leave-requests/:id", authorize(5), asyncHandler(async (req, res) => {
   const check = await checkOwnershipOrAdmin(req, { table: "leave_requests", id: req.params.id });
   if (check.ok !== true) throw new HttpError(check.status, check.error);
   if (!check.isAdmin && check.row?.status !== "pending") throw badRequest("승인/거절된 요청은 삭제할 수 없습니다");

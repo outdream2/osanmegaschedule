@@ -1,9 +1,9 @@
 # 서버 프레임워크 감사 (Phase 1)
 
-- 생성 · 2026-08-27 07:39:19
+- 생성 · 2026-08-27 07:43:16
 - 스캔 파일 · 39개
 - 총 라우트 · 241개
-- 위반 · 175건 (high 84)
+- 위반 · 167건 (high 76)
 
 ## 규칙
 - **no-authorize** (high) · POST/PATCH/DELETE/PUT · authorize() 미적용
@@ -22,28 +22,18 @@
 ### server/routes/board/clientErrors.ts (1건)
 - 🔴 L23 · **no-authorize** · POST /api/client-errors · authorize() 미적용 · 권한 우회 가능
 
-### server/routes/board/notifications.ts (10건)
-- 🔴 L11 · **no-authorize** · POST /api/push-subscribe · authorize() 미적용 · 권한 우회 가능
-- 🟡 L11 · **no-validate-body** · POST /api/push-subscribe · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L19 · **no-authorize** · POST /api/push-send · authorize() 미적용 · 권한 우회 가능
-- 🟡 L19 · **no-validate-body** · POST /api/push-send · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L55 · **no-authorize** · PATCH /api/notifications/:id/read · authorize() 미적용 · 권한 우회 가능
-- 🟡 L55 · **no-validate-body** · PATCH /api/notifications/:id/read · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L62 · **no-authorize** · POST /api/notifications/read-all · authorize() 미적용 · 권한 우회 가능
-- 🟡 L62 · **no-validate-body** · POST /api/notifications/read-all · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L69 · **no-authorize** · POST /api/notifications · authorize() 미적용 · 권한 우회 가능
-- 🟡 L69 · **no-validate-body** · POST /api/notifications · validateBody() 미적용 · Zod 검증 없음
+### server/routes/board/notifications.ts (5건)
+- 🟡 L12 · **no-validate-body** · POST /api/push-subscribe · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L20 · **no-validate-body** · POST /api/push-send · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L56 · **no-validate-body** · PATCH /api/notifications/:id/read · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L63 · **no-validate-body** · POST /api/notifications/read-all · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L70 · **no-validate-body** · POST /api/notifications · validateBody() 미적용 · Zod 검증 없음
 
 ### server/routes/board/pharmacistMenuItems.ts (4건)
 - 🔴 L136 · **no-authorize** · POST /api/pharmacist-menu-items · authorize() 미적용 · 권한 우회 가능
 - 🟡 L136 · **no-validate-body** · POST /api/pharmacist-menu-items · validateBody() 미적용 · Zod 검증 없음
 - 🔴 L262 · **no-authorize** · PATCH /api/pharmacist-menu-items/:id · authorize() 미적용 · 권한 우회 가능
 - 🟡 L262 · **no-validate-body** · PATCH /api/pharmacist-menu-items/:id · validateBody() 미적용 · Zod 검증 없음
-
-### server/routes/daily/leave.ts (3건)
-- 🔴 L79 · **no-authorize** · POST /api/leave-requests · authorize() 미적용 · 권한 우회 가능
-- 🔴 L101 · **no-authorize** · PUT /api/leave-requests/:id · authorize() 미적용 · 권한 우회 가능
-- 🔴 L177 · **no-authorize** · DELETE /api/leave-requests/:id · authorize() 미적용 · 권한 우회 가능
 
 ### server/routes/daily/lunch.ts (2건)
 - 🔴 L44 · **no-authorize** · PUT /api/lunch-requests · authorize() 미적용 · 권한 우회 가능
@@ -251,18 +241,17 @@
 - ⚠ 20 · server/routes/schedule/schedules.ts · 14 라우트
 - ⚠ 18 · server/routes/display/requests.ts · 17 라우트
 - ⚠ 12 · server/routes/purchase/vendors.ts · 10 라우트
-- ⚠ 10 · server/routes/board/notifications.ts · 6 라우트
 - ⚠ 9 · server/routes/stock/products.ts · 15 라우트
 - ⚠ 8 · server/routes/settings/settings.ts · 12 라우트
 - ⚠ 8 · server/routes/stock/stockArrivals.ts · 7 라우트
 - ⚠ 6 · server/routes/board/board.ts · 12 라우트
 - ⚠ 6 · server/routes/display/zoneAssignments.ts · 5 라우트
+- ⚠ 5 · server/routes/board/notifications.ts · 6 라우트
 - ⚠ 4 · server/routes/board/pharmacistMenuItems.ts · 4 라우트
 - ⚠ 4 · server/routes/display/zoneLabels.ts · 4 라우트
 - ⚠ 4 · server/routes/payment/borrowings.ts · 4 라우트
 - ⚠ 4 · server/routes/purchase/supplierPayments.ts · 12 라우트
 - ⚠ 4 · server/routes/staff/contractClauses.ts · 3 라우트
-- ⚠ 3 · server/routes/daily/leave.ts · 7 라우트
 - ⚠ 3 · server/routes/display/mismatches.ts · 4 라우트
 - ⚠ 3 · server/routes/staff/employeeContracts.ts · 4 라우트
 - ⚠ 3 · server/routes/stock/stockManage.ts · 19 라우트
