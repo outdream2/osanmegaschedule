@@ -133,7 +133,7 @@ router.get("/api/pharmacist-menu-items", asyncHandler(async (req, res) => {
  *   uploaded_by_id?: number,
  * }
  */
-router.post("/api/pharmacist-menu-items", asyncHandler(async (req, res) => {
+router.post("/api/pharmacist-menu-items", authorize(5), asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const editorLevel = Number(b.editor_level ?? 0);
   if (editorLevel < ADMIN_LEVEL) throw forbidden("관리자 권한 필요 (level ≥ 8)");
@@ -259,7 +259,7 @@ router.post("/api/pharmacist-menu-items", asyncHandler(async (req, res) => {
  * Body: { editor_level, title?, sort_order?, category_key?, tab_key? }
  *   · 파일 교체는 지원하지 않음 (삭제 후 재등록)
  */
-router.patch("/api/pharmacist-menu-items/:id", asyncHandler(async (req, res) => {
+router.patch("/api/pharmacist-menu-items/:id", authorize(5), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) throw badRequest("invalid id");
 

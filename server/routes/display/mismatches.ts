@@ -63,7 +63,7 @@ router.get("/api/zone-mismatches", asyncHandler(async (_req, res) => {
   res.json([...computed, ...legacyRows]);
 }));
 
-router.post("/api/zone-mismatches", asyncHandler(async (req, res) => {
+router.post("/api/zone-mismatches", authorize(1), asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const { error } = await supabase.from("zone_mismatches").upsert([{
     product_code: String(b.product_code ?? ""),
@@ -75,7 +75,7 @@ router.post("/api/zone-mismatches", asyncHandler(async (req, res) => {
   res.json({ ok: true });
 }));
 
-router.delete("/api/zone-mismatches/by-code/:code", asyncHandler(async (req, res) => {
+router.delete("/api/zone-mismatches/by-code/:code", authorize(1), asyncHandler(async (req, res) => {
   const code = decodeURIComponent(req.params.code ?? "").trim();
   if (!code) throw badRequest("code required");
   const { error } = await supabase.from("zone_mismatches").delete().eq("product_code", code);

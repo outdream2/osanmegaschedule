@@ -1,9 +1,9 @@
 # 서버 프레임워크 감사 (Phase 1)
 
-- 생성 · 2026-08-27 07:44:37
+- 생성 · 2026-08-27 07:45:58
 - 스캔 파일 · 39개
 - 총 라우트 · 241개
-- 위반 · 164건 (high 73)
+- 위반 · 160건 (high 69)
 
 ## 규칙
 - **no-authorize** (high) · POST/PATCH/DELETE/PUT · authorize() 미적용
@@ -29,16 +29,12 @@
 - 🟡 L63 · **no-validate-body** · POST /api/notifications/read-all · validateBody() 미적용 · Zod 검증 없음
 - 🟡 L70 · **no-validate-body** · POST /api/notifications · validateBody() 미적용 · Zod 검증 없음
 
-### server/routes/board/pharmacistMenuItems.ts (4건)
-- 🔴 L136 · **no-authorize** · POST /api/pharmacist-menu-items · authorize() 미적용 · 권한 우회 가능
+### server/routes/board/pharmacistMenuItems.ts (2건)
 - 🟡 L136 · **no-validate-body** · POST /api/pharmacist-menu-items · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L262 · **no-authorize** · PATCH /api/pharmacist-menu-items/:id · authorize() 미적용 · 권한 우회 가능
 - 🟡 L262 · **no-validate-body** · PATCH /api/pharmacist-menu-items/:id · validateBody() 미적용 · Zod 검증 없음
 
-### server/routes/display/mismatches.ts (3건)
-- 🔴 L66 · **no-authorize** · POST /api/zone-mismatches · authorize() 미적용 · 권한 우회 가능
+### server/routes/display/mismatches.ts (1건)
 - 🟡 L66 · **no-validate-body** · POST /api/zone-mismatches · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L78 · **no-authorize** · DELETE /api/zone-mismatches/by-code/:code · authorize() 미적용 · 권한 우회 가능
 
 ### server/routes/display/requests.ts (18건)
 - 🔴 L118 · **no-authorize** · POST /api/display-requests · authorize() 미적용 · 권한 우회 가능
@@ -240,20 +236,20 @@
 - ⚠ 6 · server/routes/board/board.ts · 12 라우트
 - ⚠ 6 · server/routes/display/zoneAssignments.ts · 5 라우트
 - ⚠ 5 · server/routes/board/notifications.ts · 6 라우트
-- ⚠ 4 · server/routes/board/pharmacistMenuItems.ts · 4 라우트
 - ⚠ 4 · server/routes/display/zoneLabels.ts · 4 라우트
 - ⚠ 4 · server/routes/payment/borrowings.ts · 4 라우트
 - ⚠ 4 · server/routes/purchase/supplierPayments.ts · 12 라우트
 - ⚠ 4 · server/routes/staff/contractClauses.ts · 3 라우트
-- ⚠ 3 · server/routes/display/mismatches.ts · 4 라우트
 - ⚠ 3 · server/routes/staff/employeeContracts.ts · 4 라우트
 - ⚠ 3 · server/routes/stock/stockManage.ts · 19 라우트
+- ⚠ 2 · server/routes/board/pharmacistMenuItems.ts · 4 라우트
 - ⚠ 2 · server/routes/purchase/invoiceImages.ts · 2 라우트
 - ⚠ 2 · server/routes/purchase/ocrConfirmed.ts · 3 라우트
 - ⚠ 2 · server/routes/purchase/supplierBalanceConfig.ts · 3 라우트
 - ⚠ 2 · server/routes/staff/resignations.ts · 5 라우트
 - ⚠ 2 · server/routes/stock/lossTracking.ts · 3 라우트
 - ⚠ 1 · server/routes/board/clientErrors.ts · 1 라우트
+- ⚠ 1 · server/routes/display/mismatches.ts · 4 라우트
 - ⚠ 1 · server/routes/settings/systemConfig.ts · 2 라우트
 - ⚠ 1 · server/routes/staff/hrForms.ts · 3 라우트
 - ⚠ 1 · server/routes/stock/productArrivals.ts · 5 라우트
