@@ -450,46 +450,41 @@ export const RealStockTablePage: React.FC = () => {
         </Modal>
       )}
       <div className="flex flex-col gap-3">
-        {/* 헤더 · 검색 · 새로고침 */}
+        {/* 2026-08-27 · UI 목업 반영 · 프리미티브 톤 (Linear/Attio/Vercel 2026) · 가로 구조 통일 */}
         <Card padding="md" topAccent>
           <div className="flex items-center gap-3 flex-wrap">
-            <PackageCheck size={20} className="text-emerald-600 shrink-0" />
-            <div className="min-w-0">
-              <div className="text-[18px] font-bold text-ink tracking-tight leading-tight">실재고 테이블</div>
-              <div className="text-[15px] text-ink-soft mt-0.5">상품별 · 전산구역 · 창고1/2 · 매장1/2/3 실재고 현황</div>
+            {/* 아이콘 타일 · v9 gradient */}
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-50 to-white border border-emerald-200/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.05)] flex items-center justify-center shrink-0">
+              <PackageCheck size={20} className="text-emerald-600" strokeWidth={2.2} />
             </div>
-            <span className="text-[15px] tabular-nums font-semibold text-ink-soft">
-              {loading ? <Spinner size={13} tone="brand" className="inline" /> : `${filtered.length}${search ? `/${rows.length}` : ""}건`}
-            </span>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <h2 className="text-[20px] font-extrabold text-ink tracking-tight leading-tight">실재고 테이블</h2>
+                <span className="text-[14px] tabular-nums font-bold text-brand-deep bg-brand-tint px-2 py-0.5 rounded-md">
+                  {loading ? <Spinner size={11} tone="brand" className="inline" /> : `${filtered.length.toLocaleString()}${search ? `/${rows.length.toLocaleString()}` : ""}건`}
+                </span>
+              </div>
+              <div className="text-[14px] text-ink-soft mt-0.5 leading-tight">상품별 · 진열위치 · ERP · 매장1/2/3 · 창고1/2 · 실재고 편집 저장</div>
+            </div>
+            <div className="ml-auto flex items-center gap-2 flex-wrap">
+              {/* 검색 · Search 아이콘 · 명확 */}
               <div className="relative">
-                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="상품명·공급사·코드·전산구역 검색"
-                  className="w-72 h-9 pl-8 pr-3 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
+                  placeholder="상품명 · 공급사 · 코드 · 진열위치 검색"
+                  className="w-80 h-10 pl-9 pr-3 text-[15px] font-medium border border-line rounded-lg outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white transition"
                 />
               </div>
-              {/* 2026-08-26 · 사용자 지시 · 판매중 상품만 로컬 체크박스 */}
-              <label className="inline-flex items-center gap-1.5 h-9 px-2.5 rounded-lg bg-white border border-line text-[16px] font-semibold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep transition cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={saleOnly}
-                  onChange={(e) => setSaleOnly(e.target.checked)}
-                  className="w-4 h-4 accent-brand-deep cursor-pointer"
-                />
+              {/* Toggle chips · 통일 톤 */}
+              <label className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border text-[14px] font-bold transition cursor-pointer select-none ${saleOnly ? "bg-brand-deep border-brand-deep text-white shadow-sm" : "bg-white border-line text-ink-soft hover:border-brand-deep hover:text-brand-deep"}`}>
+                <input type="checkbox" checked={saleOnly} onChange={(e) => setSaleOnly(e.target.checked)} className="w-4 h-4 accent-brand-deep cursor-pointer" />
                 판매중만
               </label>
-              {/* 2026-08-27 · 사용자 지시 · Group by 구역 뷰 토글 · 진열위치(location) 기준 그룹핑 */}
-              <label className="inline-flex items-center gap-1.5 h-9 px-2.5 rounded-lg bg-white border border-line text-[16px] font-semibold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep transition cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={groupByZone}
-                  onChange={(e) => setGroupByZone(e.target.checked)}
-                  className="w-4 h-4 accent-brand-deep cursor-pointer"
-                />
+              <label className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border text-[14px] font-bold transition cursor-pointer select-none ${groupByZone ? "bg-brand-deep border-brand-deep text-white shadow-sm" : "bg-white border-line text-ink-soft hover:border-brand-deep hover:text-brand-deep"}`}>
+                <input type="checkbox" checked={groupByZone} onChange={(e) => setGroupByZone(e.target.checked)} className="w-4 h-4 accent-brand-deep cursor-pointer" />
                 구역별 그룹
               </label>
               {/* 2026-08-27 · 사용자 지시 · 구역별 그룹 · 접기/펼치기 컨트롤 · groupByZone 활성 시만 표시 */}
