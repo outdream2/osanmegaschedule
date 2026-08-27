@@ -626,7 +626,11 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           ) : storeInnerTab === "stockTable" ? (
             <RealStockTablePage />
           ) : storeInnerTab === "zoneEdit" ? (
-            <ZoneEditPanel canEdit={dpZoneEditable} />
+            <div className="flex flex-col gap-3">
+              {/* 2026-08-27 · 사용자 지시 · 구역설정(ZoneGroupPanel) 을 매장구역도 편집 탭으로 이동 */}
+              <ZoneGroupPanel groups={zoneGroups} activeGroupId={activeGroupId} employees={employees} onGroupsChange={setZoneGroups} onActiveGroupChange={setActiveGroupId} />
+              <ZoneEditPanel canEdit={dpZoneEditable} />
+            </div>
           ) : storeInnerTab === "warehouse1" ? (
             <WarehouseZoneMap filter="1" />
           ) : storeInnerTab === "warehouse2" ? (
@@ -656,95 +660,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 </div>
               )}
 
-              {/* 날짜 네비게이션 */}
-              {/* 2026-08-25 · 사용자 지시 · 매장 배치도 헤더 · UI 대원칙+목업 재적용
-                    · Row 1 · 왼쪽 · 아이콘 타일 + 타이틀 + 부제 (날짜) · 오른쪽 · 액션 그룹 (스캔 · 구역설정 · 매주적용)
-                    · Row 2 · 왼쪽 · 날짜 네비게이션 · 오른쪽 · 검색바 (flex-1) · 저장 상태
-                    · Row 3 · 힌트 문구 · 카테고리 라벨 하이라이트
-                    · 여백·톤 · Linear/Attio/Vercel · zinc 계열 통일 · 폰트 +2 */}
-              <div className="mb-4 pb-3 border-b border-line/80">
-                {/* Row 1 · 제목 + 액션 */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <IconTile icon={<Store size={16} />} tone="violet" size="md" />
-                    <div className="min-w-0">
-                      <div className="text-[17px] font-bold text-ink leading-tight tracking-tight">매장 배치도</div>
-                      <div className="text-[13px] text-ink-soft leading-tight mt-0.5">
-                        구역별 담당 직원 · 카테고리 · 진열 상태
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-wrap justify-start sm:justify-end shrink-0">
-                    <span className={saveStatus === "error" ? "cursor-help" : ""} title={saveStatus === "error" ? `DB 저장 실패: ${lastSaveError ?? "알 수 없는 오류"}` : "매장맵 자동저장 상태"}>
-                      <StatusPill tone={saveStatus === "saving" ? "sky" : saveStatus === "saved" ? "emerald" : saveStatus === "error" ? "rose" : "zinc"} size="sm" dot pulse={saveStatus === "saving"}>
-                        {saveStatus === "saving" && <><Spinner size={11} className="inline mr-0.5" />저장중</>}
-                        {saveStatus === "saved" && "저장됨"}{saveStatus === "error" && "저장 실패"}{saveStatus === "idle" && "대기"}
-                      </StatusPill>
-                    </span>
-                    <button
-                      onClick={() => { setZoneConfigOpen((v) => !v); setActiveGroupId(null); }}
-                      className={`inline-flex items-center gap-1.5 h-9 px-3 text-[14px] font-bold rounded-lg transition cursor-pointer shrink-0 ${zoneConfigOpen ? "bg-brand-deep text-white shadow-sm ring-1 ring-brand-deep/30" : "bg-white border border-line text-ink-soft hover:border-brand-deep/40 hover:bg-brand-tint/20 hover:text-brand-deep"}`}
-                      title="구역 그룹 편집"
-                    >
-                      <Layers size={14} />구역 설정
-                    </button>
-                    <button
-                      onClick={handleApplyToWeekday}
-                      title={`현재 배정을 매주 ${dayNames[selectedDateObj.getDay()]}에 적용 · DB 저장`}
-                      className="inline-flex items-center gap-1.5 h-9 px-3 bg-gradient-to-br from-brand-deep to-[#0d3a5c] hover:from-[#0d3a5c] hover:to-[#08253a] text-white text-[14px] font-bold rounded-lg shadow-sm ring-1 ring-brand-deep/30 transition cursor-pointer shrink-0"
-                    >
-                      <Save size={14} />매주 {dayNames[selectedDateObj.getDay()]}에 적용
-                    </button>
-                  </div>
-                </div>
-
-                {/* Row 2 · 날짜 네비게이션 + 검색바 */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button onClick={() => navigateDate(-1)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white text-ink-soft hover:border-brand-deep/40 hover:bg-brand-tint/20 hover:text-brand-deep transition cursor-pointer" title="이전 날짜"><ChevronLeft size={17} /></button>
-                    <div className="min-w-[152px] text-center">
-                      <div className="text-[19px] font-bold text-ink leading-tight tracking-tight tabular-nums">
-                        {selectedDateObj.getMonth() + 1}월 {selectedDateObj.getDate()}일
-                      </div>
-                      <div className="flex items-center justify-center gap-1.5 mt-0.5">
-                        <span className="text-[13px] font-semibold text-ink-soft">{dayNames[selectedDateObj.getDay()]}요일</span>
-                        {isToday ? (
-                          <StatusPill tone="indigo" size="xs">오늘</StatusPill>
-                        ) : (
-                          <button onClick={() => setSelectedDate(todayStr)} className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-500 hover:bg-indigo-100 hover:text-indigo-600 transition cursor-pointer">오늘로</button>
-                        )}
-                      </div>
-                    </div>
-                    <button onClick={() => navigateDate(1)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white text-ink-soft hover:border-brand-deep/40 hover:bg-brand-tint/20 hover:text-brand-deep transition cursor-pointer" title="다음 날짜"><ChevronRight size={17} /></button>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                    <div className="flex-1 min-w-0">
-                      <DisplaySearchBar
-                        searchQuery={searchQuery}
-                        productSearchResults={productSearchResults}
-                        productsMap={productsMap}
-                        onSearchChange={setSearchQuery}
-                        onClear={() => { setSearchQuery(""); setProductMatchZoneId(null); }}
-                        onProductResultClick={handleProductResultClick}
-                        onProductInfoClick={(p) => setProductInfoModal(p)}
-                        onScanClick={() => setScannerMode("search")}
-                      />
-                    </div>
-                    <button onClick={() => setScannerMode("search")} title="바코드 스캔으로 검색" className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-emerald-50 hover:border-emerald-400 text-ink-soft hover:text-emerald-600 transition cursor-pointer shadow-sm"><ScanLine size={15} /></button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 3 · 힌트 · 폰트 +2 · 톤 정리 */}
-              <p className="text-[13px] text-ink-soft/80 mb-4 leading-snug">
-                매주 <span className="font-bold text-ink-soft">{dayNames[selectedDateObj.getDay()]}</span>에 적용 시 현재 배정이 해당 요일에 반영됩니다.
-                <span className="mx-1.5 text-zinc-300">·</span>
-                <span className="text-emerald-700 font-semibold">카테고리 라벨</span>을 누르면 해당 구역의 진열상품이 조회됩니다.
-              </p>
-
-              {zoneConfigOpen && (
-                <ZoneGroupPanel groups={zoneGroups} activeGroupId={activeGroupId} employees={employees} onGroupsChange={setZoneGroups} onActiveGroupChange={setActiveGroupId} />
-              )}
+              {/* 2026-08-27 · 사용자 지시 · 매장 배치도 상단 헤더 전체 제거 (제목·부제·저장상태·구역설정·매주적용·날짜네비·검색바·스캔·힌트)
+                    · 구역설정(ZoneGroupPanel) 은 "매장구역도 편집" 서브탭으로 이관
+                    · 검색은 실재고테이블에서 사용 (중복 회피) · state/handler 는 하위 UI 재사용 위해 유지 */}
 
               <DisplayMobileList
                 zones={zones} employees={employees} staffColorMap={staffColorMap}
