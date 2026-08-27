@@ -23,7 +23,8 @@ interface Product {
   product_code: string;
   product_name: string;
   supplier: string | null;
-  spec: string | null;
+  // 2026-08-27 · 사용자 지시 · spec + display_location → location 통합
+  location: string | null;      // 진열위치 (매장/창고 zone code 문자열 · "/" 구분)
   real_map: string | null;
   category_code: string | null;
   current_stock: number | null; // 2026-08-26 · ERP 재고 (products.current_stock)
@@ -43,7 +44,8 @@ interface Row {
   product_name: string;
   supplier: string | null;
   category_code: string | null;        // 2026-08-26 · 분류코드
-  spec: string | null;                 // 전산구역
+  // 2026-08-27 · 사용자 지시 · location 컬럼 통합
+  location: string | null;             // 진열위치 (매장/창고 zone code 문자열)
   real_map: string | null;
   erp: number | null;                  // 2026-08-26 · ERP 재고 (products.current_stock)
   w1: number | null;
@@ -63,7 +65,7 @@ interface Row {
 }
 
 // 2026-08-27 · 사용자 지시 · Attio 2026 톤 · dual-chip 정렬 (수량 · 구역) · 위치별 zone 정렬 추가
-type SortKey = "product_name" | "supplier" | "category_code" | "spec" | "erp" | "w1" | "w2" | "s1" | "s2" | "s3" | "total" | "diff"
+type SortKey = "product_name" | "supplier" | "category_code" | "location" | "erp" | "w1" | "w2" | "s1" | "s2" | "s3" | "total" | "diff"
              | "s1zone" | "s2zone" | "s3zone" | "w1zone" | "w2zone";
 
 const SLOT_LABEL: Record<"w1" | "w2" | "s1" | "s2" | "s3", string> = {
@@ -76,7 +78,7 @@ const CMP: Record<SortKey, Comparator<Row>> = {
   product_name:  (a, b) => (a.product_name ?? "").localeCompare(b.product_name ?? "", "ko"),
   supplier:      (a, b) => (a.supplier ?? "").localeCompare(b.supplier ?? "", "ko"),
   category_code: (a, b) => (a.category_code ?? "").localeCompare(b.category_code ?? "", "ko"),
-  spec:          (a, b) => (a.spec ?? "").localeCompare(b.spec ?? "", "ko"),
+  location:      (a, b) => (a.location ?? "").localeCompare(b.location ?? "", "ko", { numeric: true }),
   erp:           (a, b) => (a.erp ?? 0) - (b.erp ?? 0),
   w1:            (a, b) => (a.w1 ?? 0) - (b.w1 ?? 0),
   w2:            (a, b) => (a.w2 ?? 0) - (b.w2 ?? 0),
@@ -119,7 +121,7 @@ export const RealStockTablePage: React.FC = () => {
         product_code: code,
         product_name: String(p?.product_name ?? p?.name ?? ""),
         supplier: p?.supplier ?? null,
-        spec: p?.spec ?? null,
+        location: String(p?.location ?? p?.display_location ?? p?.spec ?? "").trim() || null,
         real_map: p?.real_map ?? null,
         category_code: p?.category_code ?? null,
         current_stock: p?.current_stock != null ? Number(p.current_stock) : null,
@@ -149,17 +151,16 @@ export const RealStockTablePage: React.FC = () => {
     const total = (w1 ?? 0) + (w2 ?? 0) + (s1 ?? 0) + (s2 ?? 0) + (s3 ?? 0);
     const erp = p.current_stock;
     const diff = (erp ?? 0) - total;
-    // 2026-08-27 · 사용자 지시 · 전산 ERP 구역 (spec) → 매장 zone 그대로 적용 · 일치 보장
-    //   · spec "1/2/3" → 매장1=1·매장2=2·매장3=3 (전산 컬럼과 완전 일치)
-    //   · category_code=8A → 창고1 zone=8A · category_code=32 → 창고2 zone=32
-    //   · real_map fallback 제거 · 매장/전산 불일치 방지
-    const slots = assignZonesToSlots(String(p.spec ?? "").trim(), p.category_code);
+    // 2026-08-27 · 사용자 지시 · location (진열위치) → zone slot 지능 배정
+    //   · location "1/2/3" → 매장1=1·매장2=2·매장3=3 · location "8A" → 창고1
+    //   · category_code fallback · 진열위치에서 창고 못 찾고 category가 창고 코드면 사용
+    const slots = assignZonesToSlots(p.location, p.category_code);
     return {
       product_code: p.product_code,
       product_name: p.product_name,
       supplier: p.supplier,
       category_code: p.category_code,
-      spec: p.spec,
+      location: p.location,
       real_map: p.real_map,
       erp,
       w1, w2, s1, s2, s3,
@@ -183,14 +184,14 @@ export const RealStockTablePage: React.FC = () => {
       String(r.product_name ?? "").toLowerCase().includes(q) ||
       String(r.supplier ?? "").toLowerCase().includes(q) ||
       String(r.product_code ?? "").toLowerCase().includes(q) ||
-      String(r.spec ?? "").toLowerCase().includes(q)
+      String(r.location ?? "").toLowerCase().includes(q)
     );
   }, [rows, search, saleOnly]);
 
   const { sorted, sortKey, sortDir, toggleSort, setSort } = useSortableTable<Row, SortKey>(filtered, "product_name", CMP, "asc");
-  // 2026-08-27 · 사용자 지시 · 구역별 그룹 활성 시 · 자동으로 구역(spec) 정렬로 전환
+  // 2026-08-27 · 사용자 지시 · 구역별 그룹 활성 시 · 자동으로 진열위치(location) 정렬로 전환
   useEffect(() => {
-    if (groupByZone) setSort("spec", "asc");
+    if (groupByZone) setSort("location", "asc");
   }, [groupByZone, setSort]);
 
   // 2026-08-26 · 사용자 지시 · 상품 클릭 · 상세 모달
@@ -378,7 +379,7 @@ export const RealStockTablePage: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <Field label="상품코드" value={<span className="font-mono text-[15px] tabular-nums">{detailRow.product_code}</span>} />
               <Field label="공급사"  value={detailRow.supplier ?? "-"} />
-              <Field label="전산구역" value={detailRow.spec ?? "미지정"} />
+              <Field label="진열위치" value={detailRow.location ?? "미지정"} />
               <Field label="실제구역" value={detailRow.real_map ?? "미지정"} />
               <Field label="ERP재고"  value={<b className="text-amber-700 tabular-nums text-[17px]">{detailRow.erp ?? "-"}</b>} />
               <Field label="실재고합계" value={<b className="text-brand-deep tabular-nums text-[17px]">{detailRow.total > 0 ? detailRow.total : "-"}</b>} />
@@ -494,7 +495,7 @@ export const RealStockTablePage: React.FC = () => {
                   {thSortable("supplier",      "left",  "공급사",   140)}
                   {thSortable("product_name",  "left",  "상품명",   300)}
                   {/* 2026-08-27 · 사용자 지시 · 셀 = 구역/수량 · dual chip 순서도 [구역][수량] */}
-                  {thDualChip("전산·ERP",  "spec",   "erp", 110, "bg-amber-50/60")}
+                  {thDualChip("진열위치·ERP",  "location", "erp", 110, "bg-amber-50/60")}
                   {thDualChip("매장1",      "s1zone", "s1",  100, "bg-violet-50/60")}
                   {thDualChip("매장2",      "s2zone", "s2",  100, "bg-violet-50/60")}
                   {thDualChip("매장3",      "s3zone", "s3",  100, "bg-violet-50/60")}
@@ -505,12 +506,12 @@ export const RealStockTablePage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {/* 2026-08-27 · 사용자 지시 · Group by 구역 · spec (전산구역) 기준 그룹핑 */}
+                {/* 2026-08-27 · 사용자 지시 · Group by 구역 · location (진열위치) 기준 그룹핑 */}
                 {(() => {
                   if (!groupByZone) return null;
                   const groups = new Map<string, Row[]>();
                   for (const r of sorted) {
-                    const key = String(r.spec ?? "").trim() || "(미지정)";
+                    const key = String(r.location ?? "").trim() || "(미지정)";
                     if (!groups.has(key)) groups.set(key, []);
                     groups.get(key)!.push(r);
                   }
@@ -550,8 +551,8 @@ export const RealStockTablePage: React.FC = () => {
                           </td>
                           <td className={tableTdCls("num", "bg-amber-50/30")}>
                             <span className="inline-flex items-baseline gap-0.5">
-                              {r.spec && <span className="text-[15px] font-semibold text-amber-500 tabular-nums">{r.spec}</span>}
-                              {r.spec && <span className="text-[15px] text-zinc-300 font-normal">/</span>}
+                              {r.location && <span className="text-[15px] font-semibold text-amber-500 tabular-nums">{r.location}</span>}
+                              {r.location && <span className="text-[15px] text-zinc-300 font-normal">/</span>}
                               <span className={`font-bold tabular-nums text-[15px] ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"}`}>{r.erp ?? "-"}</span>
                             </span>
                           </td>
@@ -583,8 +584,8 @@ export const RealStockTablePage: React.FC = () => {
                     {/* 전산·ERP 합침 셀 · 구역/수량 */}
                     <td className={tableTdCls("num", "bg-amber-50/30")}>
                       <span className="inline-flex items-baseline gap-0.5">
-                        {r.spec && <span className="text-[15px] font-semibold text-amber-500 tabular-nums">{r.spec}</span>}
-                        {r.spec && <span className="text-[15px] text-zinc-300 font-normal">/</span>}
+                        {r.location && <span className="text-[15px] font-semibold text-amber-500 tabular-nums">{r.location}</span>}
+                        {r.location && <span className="text-[15px] text-zinc-300 font-normal">/</span>}
                         <span className={`font-bold tabular-nums text-[15px] ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"}`}>{r.erp ?? "-"}</span>
                       </span>
                     </td>

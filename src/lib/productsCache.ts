@@ -1,4 +1,6 @@
-export interface ProductInfo { code: string; name: string; spec: string; [key: string]: any; }
+// 2026-08-27 · 사용자 지시 · spec + display_location → location 컬럼 통합
+//   · location = 진열위치 · spec은 하위호환 (원본 규격 · 사용 안 함)
+export interface ProductInfo { code: string; name: string; spec: string; location?: string | null; [key: string]: any; }
 
 let _map: Record<string, ProductInfo> | null = null;
 let _promise: Promise<Record<string, ProductInfo>> | null = null;

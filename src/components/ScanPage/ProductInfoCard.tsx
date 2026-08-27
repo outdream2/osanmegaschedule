@@ -245,13 +245,14 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
     try {
       await api.patch(`/api/products/${encodeURIComponent(product.code)}/realmap`, { realMap: zoneLabel || null });
       onRealMapUpdate(zoneLabel);
-      const specZone = product.spec || "미지정";
-      const isMismatch = !!zoneLabel && zoneLabel !== specZone;
+      // 2026-08-27 · location 통합 · 진열위치 = location ?? spec (하위호환)
+      const locationZone = (product as any).location || product.spec || "미지정";
+      const isMismatch = !!zoneLabel && zoneLabel !== locationZone;
       if (isMismatch) {
         api.post("/api/zone-mismatches", {
           product_code: product.code,
           product_name: product.name,
-          spec_zone: specZone,
+          spec_zone: locationZone,
           real_zone: zoneLabel,
         }).then(() => dispatchApprovalChange("mismatch")).catch(() => {});
       } else {
@@ -270,10 +271,11 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
   };
 
   const realMap: string | null = product.realMap ?? null;
-  const specZone = product.spec || "미지정";
-  const hasMismatch = !!realMap && realMap !== specZone;
-  // 2026-08-26 · 사용자 지시 · 해당 상품 소속 창고만 표시 (real_map 또는 display_location 기반)
-  const productZoneSrc = String(realMap ?? (product as any).real_map ?? (product as any).display_location ?? "");
+  // 2026-08-27 · location 통합 · 진열위치 우선 · spec 하위호환
+  const locationZone = (product as any).location || product.spec || "미지정";
+  const hasMismatch = !!realMap && realMap !== locationZone;
+  // 2026-08-26 · 사용자 지시 · 해당 상품 소속 창고만 표시 (real_map 또는 location 기반)
+  const productZoneSrc = String(realMap ?? (product as any).location ?? (product as any).real_map ?? "");
   const { showW1, showW2 } = resolveWarehouseVisibility(productZoneSrc);
 
   const cur = product.current_stock != null ? Number(product.current_stock) : null;
@@ -386,7 +388,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           {/* 전산배치구역 */}
           <div className="min-w-0 flex-1">
             <p className="text-[14px] font-semibold text-zinc-400 leading-none mb-1 uppercase tracking-wide">전산</p>
-            <p className="text-[13px] font-bold text-zinc-700 leading-snug break-keep whitespace-normal">{specZone}</p>
+            <p className="text-[13px] font-bold text-zinc-700 leading-snug break-keep whitespace-normal">{locationZone}</p>
           </div>
 
           {/* 화살표 */}

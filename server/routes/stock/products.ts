@@ -45,7 +45,9 @@ router.get("/api/products-map", asyncHandler(async (req, res) => {
         code,
         product_name: p.product_name ?? p.name ?? "",
         supplier: p.supplier ?? null,
-        spec: p.spec ?? null,
+        // 2026-08-27 · 사용자 지시 · location 컬럼 통합 (spec+display_location → location)
+        location: p.location ?? p.display_location ?? p.spec ?? null,
+        spec: p.spec ?? null,  // 하위호환 · 점진 제거 예정
         category: p.category ?? null,
         category_code: p.category_code ?? null,
         real_map: p.real_map ?? p.realMap ?? null,
@@ -320,10 +322,14 @@ router.post("/api/upload-products", express.raw({ type: "application/octet-strea
     const code = normalizeCode((r as any).product_code);
     if (!code) { emptyCount++; continue; }
     (r as any).product_code = code; // 정규화된 값으로 통일 (chunk 내 dedup 보장)
-    // 2026-08-27 · 사용자 지시 · 엑셀 진열위치(G열/display_location) → spec(ERP구역) 매핑
-    //   · UI에서 spec=전산구역·매장 zone 소스로 사용 · 원본 규격은 진열위치 없을 때만 유지
+    // 2026-08-27 · 사용자 지시 · location 컬럼 통합
+    //   · 엑셀 진열위치(G열/display_location) 는 DB display_location 컬럼에 저장 (하위호환)
+    //   · API 반환 시 location 필드로 파생 · 클라이언트는 location 만 사용
+    //   · spec 은 원본 규격 (엑셀 "규격" 헤더) · 진열위치와 분리 · 이전 spec 오염 방어
     const disp = (r as any).display_location;
-    if (disp != null && String(disp).trim() !== "") (r as any).spec = String(disp).trim();
+    if (disp != null && String(disp).trim() !== "") {
+      (r as any).display_location = String(disp).trim();
+    }
     if (dedupMap.has(code)) dupCount++;
     dedupMap.set(code, r);
   }

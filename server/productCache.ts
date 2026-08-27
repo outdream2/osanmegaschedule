@@ -159,7 +159,11 @@ export async function getProductMap(): Promise<Record<string, ProductInfo>> {
       for (const row of data) {
         const code = String(row.product_code ?? "").trim();
         if (!code) continue;
-        const info: ProductInfo = { code, name: row.product_name ?? "", spec: row.spec ?? "", ...row, realMap: row.real_map ?? null };
+        // 2026-08-27 · 사용자 지시 · location 컬럼 통합
+        //   · location = display_location ?? spec (양쪽 값 유지 · 코드/UI 는 location 만 사용)
+        //   · 신규 진열위치는 display_location 에 저장 (upload handler) · location 은 파생 필드
+        const locationVal = String(row.display_location ?? row.spec ?? "").trim() || null;
+        const info: ProductInfo = { code, name: row.product_name ?? "", spec: row.spec ?? "", ...row, realMap: row.real_map ?? null, location: locationVal };
         map[code] = info;
         const stripped = code.replace(/^0+/, "");
         if (stripped && stripped !== code && !map[stripped]) map[stripped] = info;
