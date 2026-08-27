@@ -296,14 +296,30 @@ router.post("/api/upload-products", express.raw({ type: "application/octet-strea
   }
   if (!authorized) throw forbidden("관리자만 가능합니다");
   const buf = req.body as Buffer;
+  // 2026-08-27 · 사용자 지시 · 상세 로그 · "형식이 다른 파일" 원인 파악
+  const magic4 = `${buf[0]?.toString(16).padStart(2, "0")}${buf[1]?.toString(16).padStart(2, "0")}${buf[2]?.toString(16).padStart(2, "0")}${buf[3]?.toString(16).padStart(2, "0")}`;
   const isXlsx = buf[0] === 0x50 && buf[1] === 0x4B && buf[2] === 0x03 && buf[3] === 0x04;
   const isXls  = buf[0] === 0xD0 && buf[1] === 0xCF && buf[2] === 0x11 && buf[3] === 0xE0;
-  if (!isXlsx && !isXls) throw badRequest("형식이 다른 파일입니다. 상품리스트를 업로드해주세요.");
-  const wbCheck = XLSX.read(buf, { sheetRows: 1 });
-  const wsCheck = wbCheck.Sheets[wbCheck.SheetNames[0]];
-  const headerRow = XLSX.utils.sheet_to_json<any[]>(wsCheck, { header: 1 })[0] ?? [];
+  console.log(`[upload] 파일 접수 · size=${buf.length}b · magic=0x${magic4} · isXlsx=${isXlsx} · isXls=${isXls}`);
+  if (!isXlsx && !isXls) {
+    console.warn(`[upload] ❌ 매직 바이트 실패 · 실제=0x${magic4} · 기대 xlsx=0x504b0304 (PK..) · xls=0xd0cf11e0`);
+    throw badRequest(`형식이 다른 파일입니다. xlsx/xls 여부 확인 필요 (파일 시그니처: 0x${magic4}, size: ${buf.length}b). 상품리스트 xlsx 파일인지 확인하세요.`);
+  }
+  let wbCheck, wsCheck, headerRow: any[] = [];
+  try {
+    wbCheck = XLSX.read(buf, { sheetRows: 1 });
+    wsCheck = wbCheck.Sheets[wbCheck.SheetNames[0]];
+    headerRow = XLSX.utils.sheet_to_json<any[]>(wsCheck, { header: 1 })[0] ?? [];
+  } catch (parseErr: any) {
+    console.error(`[upload] ❌ xlsx 파싱 실패:`, parseErr?.message);
+    throw badRequest(`엑셀 파싱 실패: ${parseErr?.message ?? "알 수 없는 오류"}`);
+  }
+  console.log(`[upload] 시트 · 총 ${wbCheck.SheetNames.length}개 (${wbCheck.SheetNames.join(", ")}) · 첫 시트 헤더 컬럼수=${headerRow.length}`);
+  console.log(`[upload] 헤더 앞 10개:`, headerRow.slice(0, 10).map(v => JSON.stringify(v)).join(" · "));
   if (headerRow.length < COL_KEYS.length) {
-    throw badRequest("형식이 다른 파일입니다. 상품리스트를 업로드해주세요.");
+    console.warn(`[upload] ❌ 컬럼 부족 · 실제=${headerRow.length} · 기대 최소=${COL_KEYS.length}`);
+    console.warn(`[upload] 기대 컬럼 (COL_KEYS):`, COL_KEYS.slice(0, 15).join(", "), "...");
+    throw badRequest(`형식이 다른 파일입니다. 컬럼 수 부족 (실제 ${headerRow.length}개 · 기대 ${COL_KEYS.length}개). 표준 상품리스트 xlsx 를 다시 확인해주세요.`);
   }
   const rows = xlsxToRows(buf);
   if (rows.length === 0) throw badRequest("엑셀에 데이터가 없습니다");
