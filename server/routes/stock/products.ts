@@ -161,6 +161,25 @@ router.get("/api/inventory-latest", asyncHandler(async (_req, res) => {
   return res.json(buildMap(allRows));
 }));
 
+// 2026-08-28 · 사용자 지시 · 스캔 미등록 등록 모달 · 분류(category) 기반 참조 상품 리스트
+// GET /api/products-by-category?category=xxx  or  ?code=xxx  · 최대 100건
+// 응답: product_code · product_name · category · category_code · supplier · brand · manufacturer · spec · unit · sale_price · purchase_price · real_map
+router.get("/api/products-by-category", asyncHandler(async (req, res) => {
+  const category = String(req.query.category ?? "").trim();
+  const code = String(req.query.code ?? "").trim();
+  if (!category && !code) return res.json([]);
+  const cols = "product_code,product_name,category,category_code,supplier,brand,manufacturer,spec,unit,sale_price,purchase_price,real_map";
+  let q = supabase.from("products").select(cols).eq("hidden", false);
+  if (code) q = q.eq("category_code", code);
+  else q = q.ilike("category", `%${category}%`);
+  const { data, error } = await q.order("product_name", { ascending: true }).limit(100);
+  if (error) {
+    console.error("[products-by-category] error:", error.message);
+    throw new HttpError(500, error.message);
+  }
+  return res.json(data ?? []);
+}));
+
 router.get("/api/products-search", asyncHandler(async (req, res) => {
   const rawQ     = String(req.query.q        ?? "").trim();
   const supplier = String(req.query.supplier ?? "").trim();

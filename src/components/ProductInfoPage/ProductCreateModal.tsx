@@ -15,6 +15,8 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import { CreateProductSchema, type CreateProductInput } from "../../shared/schemas/products";
 import { useVendors } from "../../hooks/useVendors";
 import { useZoneDefs } from "../../hooks/useZoneDefs";
+// 2026-08-28 · 사용자 지시 · 분류코드 참조 상품 리스트 (스크롤 · 클릭 시 자동 채움)
+import { Spinner } from "../common/Spinner";
 
 // 2026-08-26 · P0 fix · 모달 body overflow-hidden 안 · autocomplete dropdown clip fix
 //   · createPortal 로 body 에 렌더 · getBoundingClientRect 기준 fixed positioning
@@ -158,6 +160,54 @@ export const ProductCreateModal: React.FC<Props> = ({
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, [zoneOpen]);
+
+  // 2026-08-28 · 사용자 지시 · 분류코드 참조 상품 리스트 · category 입력 시 debounce fetch
+  type RefProduct = {
+    product_code: string;
+    product_name: string;
+    category: string | null;
+    category_code: string | null;
+    supplier: string | null;
+    brand: string | null;
+    manufacturer: string | null;
+    spec: string | null;
+    unit: string | null;
+    sale_price: number | null;
+    purchase_price: number | null;
+    real_map: string | null;
+  };
+  const [refList, setRefList] = useState<RefProduct[]>([]);
+  const [refLoading, setRefLoading] = useState(false);
+  useEffect(() => {
+    const q = form.category.trim();
+    if (!q || q.length < 2) { setRefList([]); return; }
+    const t = setTimeout(async () => {
+      setRefLoading(true);
+      try {
+        const { data } = await api.get<RefProduct[]>(`/api/products-by-category?category=${encodeURIComponent(q)}`);
+        setRefList(Array.isArray(data) ? data : []);
+      } catch { setRefList([]); }
+      finally { setRefLoading(false); }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [form.category]);
+
+  // 참조 상품 클릭 · 기존 입력값 유지 + 빈 필드만 자동 채움
+  const applyRefProduct = (r: RefProduct) => {
+    setForm(prev => ({
+      ...prev,
+      supplier: prev.supplier || r.supplier || "",
+      category: prev.category || r.category || "",
+      unit: prev.unit || r.unit || "",
+      spec: prev.spec || r.spec || "",
+      real_map: prev.real_map || r.real_map || "",
+      brand: prev.brand || r.brand || "",
+      manufacturer: prev.manufacturer || r.manufacturer || "",
+      sale_price: prev.sale_price || (r.sale_price != null ? String(r.sale_price) : ""),
+      purchase_price: prev.purchase_price || (r.purchase_price != null ? String(r.purchase_price) : ""),
+    }));
+    showSuccess(`참조 · ${r.product_name}`);
+  };
 
   // 2026-08-23 · #179 · open + initialCode 변경 시 · 사전 채움 (한 번만)
   React.useEffect(() => {
@@ -314,8 +364,15 @@ export const ProductCreateModal: React.FC<Props> = ({
                     </Card>
                   </PortalDropdown>
                 </div>
-                <Field label="카테고리">
-                  <input type="text" value={form.category} onChange={(e) => set("category", e.target.value)} className={inputCls} placeholder="예: 감기약" maxLength={100} />
+                <Field label="분류코드 (카테고리)">
+                  <input
+                    type="text"
+                    value={form.category}
+                    onChange={(e) => set("category", e.target.value)}
+                    className={inputCls}
+                    placeholder="예: 감기약 · 코스트팜 > 약국"
+                    maxLength={100}
+                  />
                 </Field>
                 <Field label="단위">
                   <input type="text" value={form.unit} onChange={(e) => set("unit", e.target.value)} className={inputCls} placeholder="예: 개·박스·정" maxLength={30} />
@@ -356,6 +413,45 @@ export const ProductCreateModal: React.FC<Props> = ({
                 </div>
               </div>
             </Card>
+
+            {/* 2026-08-28 · 사용자 지시 · 분류코드 참조 상품 리스트 · 카드 클릭 → 빈 필드 자동 채움 */}
+            {form.category.trim().length >= 2 && (
+              <Card variant="flat" padding="md" rounded="lg" className="bg-brand-tint/20 border-brand-deep/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-[13px] font-bold text-ink tracking-tight flex-1">
+                    분류코드 · 참조 상품 <span className="text-ink-soft font-medium">({refList.length}건)</span>
+                  </h3>
+                  {refLoading && <Spinner size={12} tone="brand" />}
+                </div>
+                {refList.length === 0 && !refLoading && (
+                  <div className="text-[12px] text-ink-soft italic">해당 분류코드에 등록된 상품 없음</div>
+                )}
+                {refList.length > 0 && (
+                  <div className="max-h-56 overflow-y-auto flex flex-col gap-1 pr-1">
+                    {refList.map(r => (
+                      <button
+                        key={r.product_code}
+                        type="button"
+                        onClick={() => applyRefProduct(r)}
+                        className="text-left px-2.5 py-1.5 rounded-md bg-white hover:bg-brand-tint/40 border border-line hover:border-brand-deep/40 text-[12px] transition cursor-pointer"
+                        title="클릭 시 · 빈 필드 자동 채움"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-ink flex-1 truncate">{r.product_name}</span>
+                          <span className="text-[11px] text-ink-soft tabular-nums shrink-0">{r.product_code}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-[11px] text-ink-soft">
+                          {r.supplier && <span className="truncate">📦 {r.supplier}</span>}
+                          {r.brand && <span className="truncate">· {r.brand}</span>}
+                          {r.spec && <span className="truncate">· {r.spec}</span>}
+                          {r.sale_price != null && <span className="ml-auto shrink-0 font-bold tabular-nums text-brand-deep">₩{r.sale_price.toLocaleString()}</span>}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )}
 
             <Card variant="flat" padding="md" rounded="lg" className="bg-white">
               <h3 className="text-[13px] font-bold text-ink mb-2 tracking-tight">가격</h3>
