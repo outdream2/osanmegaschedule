@@ -159,10 +159,10 @@ export async function getProductMap(): Promise<Record<string, ProductInfo>> {
       for (const row of data) {
         const code = String(row.product_code ?? "").trim();
         if (!code) continue;
-        // 2026-08-27 · 사용자 지시 (옵션 A) · products.location 물리 컬럼 통합
-        //   · row.location 우선 (DB 컬럼 생성 후) · fallback display_location ?? spec
-        //   · SQL 마이그레이션 · sql/2026-08-27-location-column-migration.sql (Supabase Dashboard 실행)
-        const locationVal = String(row.location ?? row.display_location ?? row.spec ?? "").trim() || null;
+        // 2026-08-27 · 사용자 지시 재확인 · 엑셀 진열위치 (display_location) 기준만
+        //   · spec 은 원본 "규격" (EA · Z 등) · 진열위치 아님 · fallback 제거
+        //   · row.location 우선 (SQL 마이그레이션 후) · fallback display_location · spec 절대 사용 X
+        const locationVal = String(row.location ?? row.display_location ?? "").trim() || null;
         const info: ProductInfo = { code, name: row.product_name ?? "", spec: row.spec ?? "", ...row, realMap: row.real_map ?? null, location: locationVal };
         map[code] = info;
         const stripped = code.replace(/^0+/, "");

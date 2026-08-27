@@ -245,8 +245,8 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
     try {
       await api.patch(`/api/products/${encodeURIComponent(product.code)}/realmap`, { realMap: zoneLabel || null });
       onRealMapUpdate(zoneLabel);
-      // 2026-08-27 · location 통합 · 진열위치 = location ?? spec (하위호환)
-      const locationZone = (product as any).location || product.spec || "미지정";
+      // 2026-08-27 · 사용자 지시 · 엑셀 진열위치(location) 기준만 · spec(규격) 사용 X
+      const locationZone = (product as any).location || (product as any).display_location || "미지정";
       const isMismatch = !!zoneLabel && zoneLabel !== locationZone;
       if (isMismatch) {
         api.post("/api/zone-mismatches", {
@@ -271,8 +271,8 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
   };
 
   const realMap: string | null = product.realMap ?? null;
-  // 2026-08-27 · location 통합 · 진열위치 우선 · spec 하위호환
-  const locationZone = (product as any).location || product.spec || "미지정";
+  // 2026-08-27 · 사용자 지시 · 엑셀 진열위치(location) 기준만 · spec(규격) 사용 X
+  const locationZone = (product as any).location || (product as any).display_location || "미지정";
   const hasMismatch = !!realMap && realMap !== locationZone;
   // 2026-08-26 · 사용자 지시 · 해당 상품 소속 창고만 표시 (real_map 또는 location 기반)
   const productZoneSrc = String(realMap ?? (product as any).location ?? (product as any).real_map ?? "");

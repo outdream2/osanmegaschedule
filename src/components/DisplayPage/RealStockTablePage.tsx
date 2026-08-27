@@ -133,7 +133,8 @@ export const RealStockTablePage: React.FC = () => {
         product_code: code,
         product_name: String(p?.product_name ?? p?.name ?? ""),
         supplier: p?.supplier ?? null,
-        location: String(p?.location ?? p?.display_location ?? p?.spec ?? "").trim() || null,
+        // 2026-08-27 · 사용자 지시 · 엑셀 진열위치 (display_location) 기준만 · spec 은 규격 · 사용 X
+        location: String(p?.location ?? p?.display_location ?? "").trim() || null,
         real_map: p?.real_map ?? null,
         category_code: p?.category_code ?? null,
         current_stock: p?.current_stock != null ? Number(p.current_stock) : null,

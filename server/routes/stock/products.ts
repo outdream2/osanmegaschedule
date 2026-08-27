@@ -45,9 +45,10 @@ router.get("/api/products-map", asyncHandler(async (req, res) => {
         code,
         product_name: p.product_name ?? p.name ?? "",
         supplier: p.supplier ?? null,
-        // 2026-08-27 · 사용자 지시 · location 컬럼 통합 (spec+display_location → location)
-        location: p.location ?? p.display_location ?? p.spec ?? null,
-        spec: p.spec ?? null,  // 하위호환 · 점진 제거 예정
+        // 2026-08-27 · 사용자 지시 · 엑셀 진열위치 (display_location) 기준만
+        //   · spec 은 원본 "규격" · fallback 사용 X · 오염 방지
+        location: p.location ?? p.display_location ?? null,
+        spec: p.spec ?? null,  // 하위호환 · 점진 제거 예정 · 진열위치 아님
         category: p.category ?? null,
         category_code: p.category_code ?? null,
         real_map: p.real_map ?? p.realMap ?? null,
