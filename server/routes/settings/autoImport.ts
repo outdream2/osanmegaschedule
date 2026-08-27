@@ -28,6 +28,8 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { authorize } from "../../middleware/requireAuth";
 import { HttpError, badRequest } from "../../middleware/errorHandler";
 import { validateBody } from "../../middleware/zodValidate";
+// 2026-08-27 · 사용자 지시 · 자동임포트 후 이력 남기고 관리자 알림
+import { notificationsService } from "../../services/notificationsService";
 import {
   AutoImportConfigSchema,
   AutoImportHeartbeatSchema,
@@ -107,6 +109,50 @@ router.post(
         { onConflict: "key" },
       );
     if (error) throw new HttpError(500, `자동 임포트 상태 저장 실패: ${error.message}`);
+    // 2026-08-27 · 사용자 지시 · 자동임포트 이력 + 관리자 알림
+    //   · product_import_log KV에 source="auto" 항목 append (최근 20개 유지 · 수동과 통합)
+    //   · notifyAllAdmins · in-app 알림 (관리자 lv9+ 자동 broadcast)
+    try {
+      const processed = beat.processed ?? {};
+      const errors = beat.errors ?? [];
+      const totalCount = Object.values(processed).reduce((sum: number, v: any) => sum + (Number(v) || 0), 0);
+      const isSuccess = beat.status === "success" && errors.length === 0;
+      // 이력 append
+      const { data: logData } = await supabase.from("app_settings").select("value").eq("key", "product_import_log").maybeSingle();
+      const prevLogs: unknown[] = Array.isArray(logData?.value) ? logData.value : [];
+      const entry = {
+        timestamp: status.updated_at,
+        source:    "auto" as const,
+        status:    beat.status,
+        processed,
+        count:     totalCount,
+        errors:    errors.slice(0, 5),
+        host:      beat.host ?? null,
+      };
+      const logs = [entry, ...prevLogs].slice(0, 20);
+      await supabase.from("app_settings").upsert(
+        { key: "product_import_log", value: logs, updated_at: new Date().toISOString() },
+        { onConflict: "key" },
+      );
+      // 관리자 알림 · 성공/실패 각각
+      const summary = Object.entries(processed).map(([k, v]) => `${k} ${v}건`).join(" · ") || "처리 없음";
+      if (isSuccess) {
+        await notificationsService.notifyAllAdmins({
+          title: `자동임포트 완료 · ${totalCount}건`,
+          body:  `${summary}${beat.host ? ` · ${beat.host}` : ""}`,
+          type:  "success",
+        });
+      } else if (errors.length > 0) {
+        await notificationsService.notifyAllAdmins({
+          title: `자동임포트 실패 · ${errors.length}건 오류`,
+          body:  `${errors.slice(0, 2).join(" / ")}${beat.host ? ` · ${beat.host}` : ""}`,
+          type:  "alert",
+        });
+      }
+    } catch (notifyErr: any) {
+      // 알림·이력 실패는 heartbeat 흐름 안 막음
+      console.warn("[auto-import heartbeat] notify/log failed:", notifyErr?.message ?? notifyErr);
+    }
     // Python 이 사용할 정보 · 다음 config 반영 필요 여부
     res.json({ ok: true, received_at: status.updated_at });
   }),
