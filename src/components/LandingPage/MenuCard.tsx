@@ -6,6 +6,8 @@
 //   · brand palette: teal(#0E6B5C) · amber(#E88A3D) · coral(#D9584F) · sky(#3E7CB1)
 //   · surface: white · border #E3E9E7 · shadow soft · radius 14
 import type { ReactNode, ElementType } from "react";
+// 2026-08-27 · 사용자 지시 · 메뉴 설정 · pageKey 기반 visibility gate
+import { usePageVisibility } from "../../hooks/usePageVisibility";
 
 export type MenuCardColor =
   | "teal" | "amber" | "coral" | "sky"
@@ -70,10 +72,20 @@ interface MenuCardProps {
   descClass?: string;
   /** 하단 stat chips · 옵션 (진열·발주 카운터 등) */
   statChips?: MenuCardStatChip[];
+  /** 2026-08-27 · 메뉴 설정 gate · pageKey (SIDE_NAV_GROUPS 의 key or subTab) · 없으면 항상 표시 */
+  pageKey?: string;
+  /** viewport · 명시 안 하면 · 현재 window 폭 기준 자동 */
+  viewport?: "pc" | "mobile";
 }
 
-export function MenuCard({ color, icon: Icon, title, description, onClick, orderClass, badge, descClass, statChips }: MenuCardProps) {
+export function MenuCard({ color, icon: Icon, title, description, onClick, orderClass, badge, descClass, statChips, pageKey, viewport }: MenuCardProps) {
   const c = COLOR_MAP[color];
+  // 2026-08-27 · pageKey 있으면 · usePageVisibility 로 체크 · false 면 안 렌더
+  const { isVisible, loaded } = usePageVisibility();
+  if (pageKey && loaded) {
+    const vp: "pc" | "mobile" = viewport ?? (typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches ? "pc" : "mobile");
+    if (!isVisible(pageKey, vp)) return null;
+  }
   // 2026-08-17 · 사용자 지시 · 반응형 랜딩 메뉴 폰트 +2 (기존 15 → 17) · 2026-08-23 · #200 +2 (17 → 19)
   const descSize = descClass ?? "text-[19px] leading-[1.5]";
   return (

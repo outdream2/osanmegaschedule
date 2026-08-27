@@ -451,17 +451,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   orderClass="order-4"
                   onClick={() => onNavigate("productarrival", authSession!)} />
 
-                {/* 연차 신청 — indigo · 사이드바 [승인요청]>[연차신청] 로 연결 (subTab=leave) */}
+                {/* 연차 신청 — indigo · 사이드바 [승인요청]>[연차신청] 로 연결 (subTab=leave) · 2026-08-27 · 메뉴 설정 gate */}
                 <MenuCard color="sky" icon={CalendarDots} title="연차 신청" description="휴가·연차 신청 및 내역 조회"
-                  orderClass="order-5"
+                  orderClass="order-5" pageKey="approval-request"
                   onClick={() => {
                     try { localStorage.setItem("sidebar.subtab.approval-request", "leave"); } catch { /* silent */ }
                     onNavigate("approval-request", authSession!);
                   }} />
 
-                {/* 점심 불참 — indigo · ForkKnife */}
+                {/* 점심 불참 — indigo · ForkKnife · 2026-08-27 · 메뉴 설정 gate */}
                 <MenuCard color="amber" icon={ForkKnife} title="점심 불참" description="오늘의 점심 불참 신청"
-                  orderClass="order-6"
+                  orderClass="order-6" pageKey="lunch"
                   onClick={() => onNavigate("lunch", authSession!)} />
 
                 {/* 내 요청목록 · rose · MenuCard 통일 (2026-08-17 · #130 · 무지개 gradient 정리) */}
