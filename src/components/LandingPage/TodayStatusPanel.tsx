@@ -46,11 +46,10 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
   const { isVisible } = usePageVisibility();
   const isMobile = useIsMobile();
   const currentViewport = isMobile ? "mobile" : "pc";
-  // 2026-08-25 · 사용자 지시 · 점심 서브탭 단독 노출 토글 지원 · composite key + 그룹 fallback
-  //   · 사이드바 필터와 동일 · approval-request 그룹 OFF · 또는 approval-request:lunch OFF 시 · 랜딩에서도 미노출
-  const lunchMenuVisible =
-    isVisible("approval-request", currentViewport)
-    && isVisible("approval-request:lunch", currentViewport);
+  // 2026-08-25 · 사용자 지시 · 점심 서브탭 단독 노출 토글 지원
+  // 2026-08-27 · Fix · PermissionsPage 저장 key 는 "lunch" (composite "approval-request:lunch" 아님)
+  //   · 메뉴설정 · [점심 불참] 언체크 시 · 랜딩·오늘의 현황 즉시 반영
+  const lunchMenuVisible = isVisible("lunch", currentViewport);
   return (
     <div className="w-full mb-6">
       <div className="flex items-center gap-2.5 mb-2 flex-wrap">
