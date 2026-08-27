@@ -70,9 +70,17 @@ export function usePageVisibility() {
     migratedRef.current = true;
   }, [loaded, legacyLoaded, value, legacyLevel, setValue]);
 
-  /** 특정 페이지 · 특정 뷰포트에서 노출 여부 · 값 없으면 true (기본) */
+  /** 특정 페이지 · 특정 뷰포트에서 노출 여부 · 값 없으면 true (기본)
+   *  2026-08-27 · 사용자 지시 · composite key ("group:sub") fallback · leaf key 조회
+   *    · 예: "approval-request:lunch" 저장 없으면 · "lunch" 조회 · 개별 페이지 설정 자동 상속
+   *    · PermissionsPage 는 leaf key 만 편집 · SideNav 는 composite 조회 · 불일치 방지
+   */
   const isVisible = useCallback((pageKey: string, viewport: Viewport): boolean => {
-    const entry = value[pageKey];
+    let entry = value[pageKey];
+    if (!entry && pageKey.includes(":")) {
+      const leaf = pageKey.split(":").pop() ?? "";
+      if (leaf) entry = value[leaf];
+    }
     if (!entry) return true;
     return viewport === "pc" ? (entry.pc !== false) : (entry.mobile !== false);
   }, [value]);
