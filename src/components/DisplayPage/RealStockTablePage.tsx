@@ -356,14 +356,21 @@ export const RealStockTablePage: React.FC = () => {
     );
   };
 
-  // 2026-08-27 · 사용자 지시 · 구역·수량 컬럼 분리 · 색깔톤 shade 로 구분 (dual chip 폐기)
-  //   · 매장 · 구역=연한 violet-500 · 수량=진한 violet-800
-  //   · 창고 · 구역=연한 cyan-500 · 수량=진한 cyan-800
+  // 2026-08-27 · 사용자 지시 · 구역은 사각 배지 · 수량과 시각 구분 명확
+  //   · 매장 · violet 배지 · 창고 · cyan 배지
+  //   · 배지 · border + bg tint · 폰트 bold · rounded-md
   const renderZoneCell = (r: Row, slot: SlotKey) => {
     const zone = slot === "w1" ? r.w1zone : slot === "w2" ? r.w2zone : slot === "s1" ? r.s1zone : slot === "s2" ? r.s2zone : r.s3zone;
     const tone: "cyan" | "violet" = (slot === "w1" || slot === "w2") ? "cyan" : "violet";
-    const cls = tone === "cyan" ? "text-cyan-500" : "text-violet-500";
-    return <span className={`text-[16px] font-semibold ${zone ? cls : "text-zinc-300"} tabular-nums`}>{zone ?? "-"}</span>;
+    if (!zone) return <span className="text-[15px] text-zinc-300">-</span>;
+    const cls = tone === "cyan"
+      ? "border-cyan-300 bg-cyan-50 text-cyan-800"
+      : "border-violet-300 bg-violet-50 text-violet-800";
+    return (
+      <span className={`inline-flex items-center justify-center min-w-[36px] px-2 py-0.5 rounded-md border-2 ${cls} font-bold text-[14px] tabular-nums shadow-sm`}>
+        {zone}
+      </span>
+    );
   };
   const renderQtyCell = (r: Row, slot: SlotKey) => {
     const qty = slot === "w1" ? r.w1 : slot === "w2" ? r.w2 : slot === "s1" ? r.s1 : slot === "s2" ? r.s2 : r.s3;
@@ -646,7 +653,7 @@ export const RealStockTablePage: React.FC = () => {
                               {r.product_name}
                             </button>
                           </td>
-                          <td className={tableTdCls("center", "bg-amber-50/30")}><span className={`text-[16px] font-semibold ${r.location ? "text-amber-500" : "text-zinc-300"} tabular-nums`}>{r.location ?? "-"}</span></td>
+                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.location ? (<span className="inline-flex items-center justify-center min-w-[36px] px-2 py-0.5 rounded-md border-2 border-amber-300 bg-amber-50 text-amber-800 font-bold text-[14px] tabular-nums shadow-sm">{r.location}</span>) : (<span className="text-[15px] text-zinc-300">-</span>)}</td>
                           <td className={tableTdCls("num", `tabular-nums font-extrabold text-[19px] ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-100/40`)}>{r.erp ?? "-"}</td>
                           <td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s1")}</td>
                           <td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s1")}</td>
