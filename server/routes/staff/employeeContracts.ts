@@ -24,6 +24,7 @@ import multer from "multer";
 import { supabase } from "../../../src/supabase/client";
 import { uploadToDrive } from "../../services/googleDriveService";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { authorize } from "../../middleware/requireAuth";
 import { validateBody } from "../../middleware/zodValidate";
 import { HttpError, badRequest } from "../../middleware/errorHandler";
 import { CreateEmployeeContractSchema } from "../../../src/shared/schemas/employeeContracts";
@@ -228,7 +229,7 @@ router.get("/api/employee-contracts", asyncHandler(async (req, res) => {
 }));
 
 // ─── POST · 승인 · PDF 업로드 ──────────────────────────────────────────────
-router.post("/api/employee-contracts", validateBody(CreateEmployeeContractSchema), asyncHandler(async (req, res) => {
+router.post("/api/employee-contracts", authorize(9), validateBody(CreateEmployeeContractSchema), asyncHandler(async (req, res) => {
   const b = req.body;
   const employeeId    = b.employee_id ? Number(b.employee_id) || null : null;
   const employeeName  = b.employee_name.trim();
@@ -372,7 +373,7 @@ const driveUpload = multer({
     cb(null, ok);
   },
 });
-router.post("/api/employee-contracts/upload", driveUpload.single("contract"), asyncHandler(async (req, res) => {
+router.post("/api/employee-contracts/upload", authorize(9), driveUpload.single("contract"), asyncHandler(async (req, res) => {
   if (!req.file) throw badRequest("PDF 파일이 없습니다");
 
   const b = req.body ?? {};

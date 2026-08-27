@@ -29,6 +29,7 @@
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { authorize } from "../../middleware/requireAuth";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
 
 const router = Router();
@@ -107,7 +108,7 @@ router.get("/api/contract-clauses", asyncHandler(async (_req, res) => {
 //   body: { content: string[], updated_by?: number }
 // ─────────────────────────────────────────────────────────────────────────────
 
-router.put("/api/contract-clauses/:key", asyncHandler(async (req, res) => {
+router.put("/api/contract-clauses/:key", authorize(9), asyncHandler(async (req, res) => {
   const key = String(req.params.key ?? "");
   if (!CLAUSE_KEY_SET.has(key)) throw badRequest(`유효하지 않은 clause_key: ${key}`);
   const { content, updated_by } = req.body ?? {};
@@ -133,7 +134,7 @@ router.put("/api/contract-clauses/:key", asyncHandler(async (req, res) => {
 //   body: { clauses: { [key]: string[] }, updated_by?: number }
 // ─────────────────────────────────────────────────────────────────────────────
 
-router.put("/api/contract-clauses", asyncHandler(async (req, res) => {
+router.put("/api/contract-clauses", authorize(9), asyncHandler(async (req, res) => {
   const { clauses, updated_by } = req.body ?? {};
   if (!clauses || typeof clauses !== "object" || Array.isArray(clauses)) {
     throw badRequest("clauses 는 { [key]: string[] } 객체여야 합니다");
