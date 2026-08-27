@@ -218,6 +218,16 @@ export const RealStockTablePage: React.FC = () => {
   useEffect(() => {
     if (groupByZone) setSort("location", "asc");
   }, [groupByZone, setSort]);
+  // 2026-08-27 · 사용자 지시 · 구역별 그룹 기본은 모두 접힌 채로
+  //   · groupByZone 활성 시 · 현재 sorted 의 모든 location key 를 collapsed 로 초기화
+  //   · 비활성화 시 · 상태 리셋 (다음 활성화 시 재초기화)
+  useEffect(() => {
+    if (!groupByZone) { setCollapsedGroups(new Set()); return; }
+    const keys = new Set<string>();
+    for (const r of sorted) keys.add(String(r.location ?? "").trim() || "(미지정)");
+    setCollapsedGroups(keys);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupByZone]);
 
   // 2026-08-26 · 사용자 지시 · 상품 클릭 · 상세 모달
   const [detailRow, setDetailRow] = useState<Row | null>(null);
