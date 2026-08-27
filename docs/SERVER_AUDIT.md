@@ -1,9 +1,9 @@
 # 서버 프레임워크 감사 (Phase 1)
 
-- 생성 · 2026-08-27 07:49:42
+- 생성 · 2026-08-27 07:50:42
 - 스캔 파일 · 39개
 - 총 라우트 · 241개
-- 위반 · 153건 (high 62)
+- 위반 · 150건 (high 59)
 
 ## 규칙
 - **no-authorize** (high) · POST/PATCH/DELETE/PUT · authorize() 미적용
@@ -205,12 +205,9 @@
 - 🟡 L652 · **no-validate-body** · PATCH /api/products/:code · validateBody() 미적용 · Zod 검증 없음
 - 🟡 L705 · **no-validate-body** · POST /api/products · validateBody() 미적용 · Zod 검증 없음
 
-### server/routes/stock/stockArrivals.ts (8건)
-- 🔴 L93 · **no-authorize** · POST /api/stock-arrivals · authorize() 미적용 · 권한 우회 가능
+### server/routes/stock/stockArrivals.ts (5건)
 - 🟡 L93 · **no-validate-body** · POST /api/stock-arrivals · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L130 · **no-authorize** · POST /api/stock-arrivals/:id/broadcast · authorize() 미적용 · 권한 우회 가능
 - 🟡 L130 · **no-validate-body** · POST /api/stock-arrivals/:id/broadcast · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L154 · **no-authorize** · PATCH /api/stock-arrivals/:id · authorize() 미적용 · 권한 우회 가능
 - 🟡 L154 · **no-validate-body** · PATCH /api/stock-arrivals/:id · validateBody() 미적용 · Zod 검증 없음
 - 🔴 L190 · **no-authorize** · POST /api/anon-push-subscribe · authorize() 미적용 · 권한 우회 가능
 - 🟡 L190 · **no-validate-body** · POST /api/anon-push-subscribe · validateBody() 미적용 · Zod 검증 없음
@@ -225,9 +222,9 @@
 - ⚠ 12 · server/routes/purchase/vendors.ts · 10 라우트
 - ⚠ 9 · server/routes/stock/products.ts · 15 라우트
 - ⚠ 8 · server/routes/settings/settings.ts · 12 라우트
-- ⚠ 8 · server/routes/stock/stockArrivals.ts · 7 라우트
 - ⚠ 6 · server/routes/board/board.ts · 12 라우트
 - ⚠ 5 · server/routes/board/notifications.ts · 6 라우트
+- ⚠ 5 · server/routes/stock/stockArrivals.ts · 7 라우트
 - ⚠ 4 · server/routes/display/zoneLabels.ts · 4 라우트
 - ⚠ 4 · server/routes/purchase/supplierPayments.ts · 12 라우트
 - ⚠ 4 · server/routes/staff/contractClauses.ts · 3 라우트

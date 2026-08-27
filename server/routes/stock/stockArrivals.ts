@@ -90,7 +90,7 @@ router.get("/api/stock-arrivals", asyncHandler(async (_req, res) => {
   res.json(data ?? []);
 }));
 
-router.post("/api/stock-arrivals", asyncHandler(async (req, res) => {
+router.post("/api/stock-arrivals", authorize(3), asyncHandler(async (req, res) => {
   const { title, body, employeeId, send_now, scheduled_at } = req.body ?? {};
   if (!title || !employeeId) throw badRequest("title and employeeId required");
   const { data: emp, error: empErr } = await supabase
@@ -127,7 +127,7 @@ router.post("/api/stock-arrivals", asyncHandler(async (req, res) => {
   res.status(201).json(arrival);
 }));
 
-router.post("/api/stock-arrivals/:id/broadcast", asyncHandler(async (req, res) => {
+router.post("/api/stock-arrivals/:id/broadcast", authorize(5), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const { employeeId } = req.body ?? {};
   if (!id) throw badRequest("id required");
@@ -151,7 +151,7 @@ router.post("/api/stock-arrivals/:id/broadcast", asyncHandler(async (req, res) =
   res.json(updated);
 }));
 
-router.patch("/api/stock-arrivals/:id", asyncHandler(async (req, res) => {
+router.patch("/api/stock-arrivals/:id", authorize(3), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const { title, body, employeeId, scheduled_at } = req.body ?? {};
   if (!id) throw badRequest("id required");
