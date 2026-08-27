@@ -374,12 +374,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               <SectionLabel tone="teal">관리자 도구 바로가기</SectionLabel>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5">
 
-                {/* 매장관리 · teal · 목업 톤 기본 사이즈 */}
+                {/* 매장관리 · teal · 목업 톤 기본 사이즈 · 2026-08-27 · 메뉴 설정 gate */}
                 <MenuCard color="teal" icon={SquaresFour} title="매장관리" description="매장 · 발주 · 매입 · 결제 · 통계 · 입고알림"
+                  pageKey="display"
                   onClick={() => onNavigate("display", authSession!)} />
 
-                {/* 경영관리 — violet · MenuCard · pending 배지 */}
+                {/* 경영관리 — violet · MenuCard · pending 배지 · 2026-08-27 · 메뉴 설정 gate */}
                 <MenuCard color="sky" icon={Briefcase} title="경영관리" description="직원관리 · 연차승인 · 점심불참 · 권한"
+                  pageKey="business-manage"
                   onClick={() => onNavigate("business-manage", authSession!)}
                   badge={leavePendingCount > 0 ? (
                     <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[13px] font-bold tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
@@ -387,8 +389,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     </div>
                   ) : undefined} />
 
-                {/* 요청목록 조회 · 2026-08-17 · 최신 트렌드 · 단일 mono 배지 (4개 파스텔 dot → 총 건수) */}
+                {/* 요청목록 조회 · 2026-08-17 · 최신 트렌드 · 단일 mono 배지 (4개 파스텔 dot → 총 건수) · 2026-08-27 · 메뉴 설정 gate */}
                 <MenuCard color="coral" icon={List} title="요청목록 조회" description="진열·발주요청 및 배치구역 불일치 확인"
+                  pageKey="requests"
                   onClick={() => onNavigate("requests", authSession!)}
                   badge={(() => {
                     const total = requestsCounts.display + requestsCounts.order + requestsCounts.mismatch + requestsCounts.lunch;
@@ -400,9 +403,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     );
                   })()} />
 
-                {/* 데이터 업로드 (통합) — orange (level 9 전용) — 상품목록 · 재고리스트 서브탭 */}
+                {/* 데이터 업로드 (통합) — orange (level 9 전용) · 2026-08-27 · 메뉴 설정 gate */}
                 {isSuperAdminLevel9 && (
                   <MenuCard color="amber" icon={Table} title="데이터 업로드" description="상품목록 · 재고리스트 xlsx 업로드"
+                    pageKey="upload"
                     onClick={() => setUploadOpen(true)} />
                 )}
 
@@ -410,9 +414,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
                 {/* 연차 승인 카드 · 경영관리 팝오버로 이동 · 2026-08-03 */}
 
-                {/* 설정 — zinc (level 9 전용) · 권한 조정 + 환경 설정 통합 · 원본 inline style 문법오류 fix */}
+                {/* 설정 — zinc (level 9 전용) · 2026-08-27 · 메뉴 설정 gate */}
                 {isSuperAdminLevel9 && (
                   <MenuCard color="zinc" icon={ShieldCheck} title="설정" description="권한 · 근무 유형 · 시급 등 앱 전체 설정"
+                    pageKey="permissions"
                     onClick={() => onNavigate("permissions", authSession!)} />
                 )}
 
@@ -429,26 +434,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               <SectionLabel tone="sky">직원용 바로가기</SectionLabel>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5">
 
-                {/* 약사 전용 — sky · level ≥ 3 만 노출 */}
+                {/* 약사 전용 — sky · level ≥ 3 만 노출 · 2026-08-27 · 메뉴 설정 gate */}
                 {(authSession?.level ?? 0) >= 3 && (
                   <MenuCard color="teal" icon={FirstAid} title="약사 전용" description="교육자료 · 복약지도 · 참고 문서"
-                    orderClass="order-1"
+                    orderClass="order-1" pageKey="pharmacist"
                     onClick={() => onNavigate("pharmacist", authSession!)} />
                 )}
 
-                {/* 스케줄표 조회 — amber */}
+                {/* 스케줄표 조회 — amber · 2026-08-27 · 메뉴 설정 gate */}
                 <MenuCard color="amber" icon={Calendar} title="스케줄표 조회" description="직원 월간 근무 스케줄 확인 및 관리"
-                  orderClass="order-2"
+                  orderClass="order-2" pageKey="schedule"
                   onClick={() => onNavigate("schedule", authSession!)} />
 
-                {/* 실재고 확인 — red · Scan */}
+                {/* 실재고 확인 — red · Scan · 2026-08-27 · 메뉴 설정 gate */}
                 <MenuCard color="amber" icon={Scan} title="실재고 확인" description="바코드 스캔 · 실재고·진열보충 요청"
-                  orderClass="order-3"
+                  orderClass="order-3" pageKey="scan"
                   onClick={() => onNavigate("scan", authSession!)} />
 
-                {/* 상품입고 — red · Package */}
+                {/* 상품입고 — red · Package · 2026-08-27 · 메뉴 설정 gate */}
                 <MenuCard color="coral" icon={Package} title="상품입고" description="바코드 스캔으로 입고 상품 등록"
-                  orderClass="order-4"
+                  orderClass="order-4" pageKey="productarrival"
                   onClick={() => onNavigate("productarrival", authSession!)} />
 
                 {/* 연차 신청 — indigo · 사이드바 [승인요청]>[연차신청] 로 연결 (subTab=leave) · 2026-08-27 · 메뉴 설정 gate */}
@@ -481,9 +486,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     ) : undefined} />
                 )}
 
-                {/* 이슈공유 게시판 (전체 직원) — amber */}
+                {/* 이슈공유 게시판 (전체 직원) — amber · 2026-08-27 · 메뉴 설정 gate */}
                 <MenuCard color="amber" icon={ChatCircle} title="이슈공유" description="질문·이슈·메모 · 사진 첨부 · 담당자 지정"
-                  orderClass="order-4"
+                  orderClass="order-4" pageKey="board"
                   onClick={() => onNavigate("board" as any, authSession!)} />
 
               </div>
