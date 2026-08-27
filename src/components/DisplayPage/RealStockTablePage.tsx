@@ -565,16 +565,16 @@ export const RealStockTablePage: React.FC = () => {
                   {/* 2026-08-27 · 사용자 지시 · 매장/창고 헤더 · 2줄 (예: 매장1 / 구역) · whitespace-pre-line */}
                   {thSortable("location",     "center", "진열위치\n(구역)", 90,  "bg-amber-50/40 whitespace-pre-line leading-tight")}
                   {thSortable("erp",          "num",    "ERP\n수량",       80,  "bg-amber-100/50 whitespace-pre-line leading-tight")}
-                  {thSortable("s1zone",       "center", "매장1\n구역",     78,  "bg-violet-50/40 whitespace-pre-line leading-tight")}
-                  {thSortable("s1",           "num",    "매장1\n수량",     78,  "bg-violet-100/50 whitespace-pre-line leading-tight")}
-                  {thSortable("s2zone",       "center", "매장2\n구역",     78,  "bg-violet-50/40 whitespace-pre-line leading-tight")}
-                  {thSortable("s2",           "num",    "매장2\n수량",     78,  "bg-violet-100/50 whitespace-pre-line leading-tight")}
-                  {thSortable("s3zone",       "center", "매장3\n구역",     78,  "bg-violet-50/40 whitespace-pre-line leading-tight")}
-                  {thSortable("s3",           "num",    "매장3\n수량",     78,  "bg-violet-100/50 whitespace-pre-line leading-tight")}
-                  {thSortable("w1zone",       "center", "창고1\n구역",     78,  "bg-cyan-50/40 whitespace-pre-line leading-tight")}
-                  {thSortable("w1",           "num",    "창고1\n수량",     78,  "bg-cyan-100/50 whitespace-pre-line leading-tight")}
-                  {thSortable("w2zone",       "center", "창고2\n구역",     78,  "bg-cyan-50/40 whitespace-pre-line leading-tight")}
-                  {thSortable("w2",           "num",    "창고2\n수량",     78,  "bg-cyan-100/50 whitespace-pre-line leading-tight")}
+                  {thSortable("s1zone",       "center", "매장1\n구역",     92,  "bg-violet-50/40 whitespace-pre-line leading-tight")}
+                  {thSortable("s1",           "num",    "매장1\n수량",     92,  "bg-violet-100/50 whitespace-pre-line leading-tight")}
+                  {thSortable("s2zone",       "center", "매장2\n구역",     92,  "bg-violet-50/40 whitespace-pre-line leading-tight")}
+                  {thSortable("s2",           "num",    "매장2\n수량",     92,  "bg-violet-100/50 whitespace-pre-line leading-tight")}
+                  {thSortable("s3zone",       "center", "매장3\n구역",     92,  "bg-violet-50/40 whitespace-pre-line leading-tight")}
+                  {thSortable("s3",           "num",    "매장3\n수량",     92,  "bg-violet-100/50 whitespace-pre-line leading-tight")}
+                  {thSortable("w1zone",       "center", "창고1\n구역",     92,  "bg-cyan-50/40 whitespace-pre-line leading-tight")}
+                  {thSortable("w1",           "num",    "창고1\n수량",     92,  "bg-cyan-100/50 whitespace-pre-line leading-tight")}
+                  {thSortable("w2zone",       "center", "창고2\n구역",     92,  "bg-cyan-50/40 whitespace-pre-line leading-tight")}
+                  {thSortable("w2",           "num",    "창고2\n수량",     92,  "bg-cyan-100/50 whitespace-pre-line leading-tight")}
                   {thSortable("total",        "num", "실재고 합계", 95,  "bg-brand-tint/30")}
                   {thSortable("diff",         "num", "차이",         80,  "bg-rose-50/40")}
                 </tr>
