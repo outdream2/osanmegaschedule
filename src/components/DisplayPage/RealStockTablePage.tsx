@@ -356,21 +356,19 @@ export const RealStockTablePage: React.FC = () => {
     );
   };
 
-  // 2026-08-27 · 사용자 지시 · 최신 트렌드 (Vercel 2026 · Ramp · Retool) · dark solid pill
-  //   · 진한 배경 + 흰 텍스트 · 수량 (숫자만 · 강한 색) 과 시각적으로 완전히 다른 층
-  //   · 매장 (violet-600) · 창고 (cyan-600) · 진열위치 (amber-500) · gradient + shadow
-  //   · 데이터 없음 · zinc dashed border · 명확 구분
+  // 2026-08-27 · 사용자 지시 · 숫자 크기 · 수량과 동일 (text-[19px] font-extrabold) · bg tint 로만 구분
+  //   · UI 원칙 · Linear/Attio 2026 · flat · muted bg · 강한 text
+  //   · 매장 (violet-100 bg · violet-800 text) · 창고 (cyan) · 진열위치 (amber)
+  //   · 데이터 없음 · zinc-300 dashed · 명확 구분
   const renderZoneCell = (r: Row, slot: SlotKey) => {
     const zone = slot === "w1" ? r.w1zone : slot === "w2" ? r.w2zone : slot === "s1" ? r.s1zone : slot === "s2" ? r.s2zone : r.s3zone;
     const tone: "cyan" | "violet" = (slot === "w1" || slot === "w2") ? "cyan" : "violet";
     if (!zone) {
-      return <span className="inline-flex items-center justify-center min-w-[36px] h-[22px] px-2 rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[12px]">—</span>;
+      return <span className="inline-flex items-center justify-center min-w-[44px] h-[30px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[14px]">—</span>;
     }
-    const cls = tone === "cyan"
-      ? "bg-gradient-to-b from-cyan-600 to-cyan-700 text-white shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_1px_2px_rgba(6,88,102,0.25)]"
-      : "bg-gradient-to-b from-violet-600 to-violet-700 text-white shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_1px_2px_rgba(88,28,135,0.25)]";
+    const cls = tone === "cyan" ? "bg-cyan-100 text-cyan-800" : "bg-violet-100 text-violet-800";
     return (
-      <span className={`inline-flex items-center justify-center min-w-[36px] h-[22px] px-2 rounded-md ${cls} font-bold text-[13px] tabular-nums tracking-tight`}>
+      <span className={`inline-flex items-center justify-center min-w-[44px] h-[30px] px-2 rounded-md ${cls} font-extrabold text-[19px] tabular-nums tracking-tight`}>
         {zone}
       </span>
     );
@@ -656,7 +654,7 @@ export const RealStockTablePage: React.FC = () => {
                               {r.product_name}
                             </button>
                           </td>
-                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.location ? (<span className="inline-flex items-center justify-center min-w-[36px] h-[22px] px-2 rounded-md bg-gradient-to-b from-amber-500 to-amber-600 text-white shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_1px_2px_rgba(154,52,18,0.25)] font-bold text-[13px] tabular-nums tracking-tight">{r.location}</span>) : (<span className="inline-flex items-center justify-center min-w-[36px] h-[22px] px-2 rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[12px]">—</span>)}</td>
+                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.location ? (<span className="inline-flex items-center justify-center min-w-[44px] h-[30px] px-2 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[19px] tabular-nums tracking-tight">{r.location}</span>) : (<span className="inline-flex items-center justify-center min-w-[44px] h-[30px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[14px]">—</span>)}</td>
                           <td className={tableTdCls("num", `tabular-nums font-extrabold text-[19px] ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-100/40`)}>{r.erp ?? "-"}</td>
                           <td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s1")}</td>
                           <td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s1")}</td>
