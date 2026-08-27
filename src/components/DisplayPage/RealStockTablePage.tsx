@@ -148,7 +148,10 @@ export const RealStockTablePage: React.FC = () => {
     const erp = p.current_stock;
     const diff = (erp ?? 0) - total;
     // 2026-08-26 · 사용자 지시 · real_map "1/12" · 매장1=1 · 매장2=12 · 창고도 parts[3]/[4]
-    const parts = String(p.real_map ?? "").split("/").map(s => s.trim()).filter(Boolean);
+    // 2026-08-27 · 사용자 지시 · spec (전산구역) 에 "/" 있으면 · 매장1/2/3 구역으로 분리 · spec 우선 · real_map fallback
+    const specParts = String(p.spec ?? "").split("/").map(s => s.trim()).filter(Boolean);
+    const realParts = String(p.real_map ?? "").split("/").map(s => s.trim()).filter(Boolean);
+    const parts = specParts.length > 1 ? specParts : realParts;
     return {
       product_code: p.product_code,
       product_name: p.product_name,
