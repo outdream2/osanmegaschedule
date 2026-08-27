@@ -156,9 +156,27 @@ function buildHeaderIndex(headerRow: any[]): Record<string, number> {
   return idx;
 }
 
+// 2026-08-27 · 사용자 지시 · 여러 시트 중 · 상품리스트에 가장 적합한 시트 자동 선택
+//   · 첫 시트가 "메가타운" 요약 (4 컬럼) 일 때 · 두 번째 "통합" 시트 (52 컬럼) 선택
+//   · 우선순위 · (1) 컬럼수 ≥ COL_KEYS.length 인 첫 시트 · (2) 컬럼수 최대 시트 · (3) 첫 시트 fallback
+export function pickBestSheet(wb: XLSX.WorkBook): { name: string; ws: XLSX.WorkSheet; cols: number } {
+  let best: { name: string; ws: XLSX.WorkSheet; cols: number } | null = null;
+  for (const name of wb.SheetNames) {
+    const ws = wb.Sheets[name];
+    if (!ws) continue;
+    const firstRow = (XLSX.utils.sheet_to_json<any[]>(ws, { header: 1 })[0] ?? []) as any[];
+    const cols = firstRow.length;
+    if (cols >= COL_KEYS.length) return { name, ws, cols };
+    if (!best || cols > best.cols) best = { name, ws, cols };
+  }
+  const fallback = wb.SheetNames[0] ?? "";
+  return best ?? { name: fallback, ws: wb.Sheets[fallback] ?? {}, cols: 0 };
+}
+
 export function xlsxToRows(buf: Buffer): Record<string, any>[] {
   const wb = XLSX.read(buf, { type: "buffer", cellDates: true });
-  const ws = wb.Sheets[wb.SheetNames[0]];
+  const picked = pickBestSheet(wb);
+  const ws = picked.ws;
   const rows = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, raw: true }) as any[][];
   if (rows.length === 0) return [];
 
