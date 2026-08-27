@@ -78,21 +78,29 @@ export type SlotZones = {
   w1zone: string | null;
   w2zone: string | null;
 };
-// 2026-08-27 · 사용자 지시 재정리
-//   · ERP 위치 (location · 진열위치) → 매장 slot 만 배정 (창고 코드 감지 X)
-//   · 창고 zone (w1/w2zone) → 창고 카테고리 매핑 · category_code 룩업 fallback
-//   · 예: location "1/2/3" → 매장1=1·매장2=2·매장3=3 · 창고=null
-//   · 예: category_code "8A" (드물) → 창고1=8A (매핑 있으면 표시)
+// 2026-08-27 · 사용자 지시 · ERP 진열위치 코드 자체가 창고1/2 코드면 · 창고 구역에 배정
+//   · 예: location "27" (창고1 파스 zone) → w1zone = "27" · 창고1 구역에 표시
+//   · 예: location "1/8A" → s1zone="1" (매장1) · w1zone="8A" (창고1)
+//   · 예: location "1/2/3" → s1=1·s2=2·s3=3 (모두 매장 · 창고 없음)
+//   · category_code fallback · location 이 창고 아니고 · category_code 가 창고 코드면 사용
 export function assignZonesToSlots(
   input: string | null | undefined,
   categoryCode?: string | null,
 ): SlotZones {
-  const stores = String(input ?? "").split(/[\/,·]/).map(s => s.trim()).filter(Boolean);
+  const codes = String(input ?? "").split(/[\/,·]/).map(s => s.trim()).filter(Boolean);
+  const stores: string[] = [];
   let w1: string | null = null; let w2: string | null = null;
-  if (categoryCode) {
+  for (const raw of codes) {
+    const c = raw.toUpperCase().replace(/\s+/g, "");
+    if (!w1 && WAREHOUSE_1_CODES.has(c)) { w1 = raw; continue; }
+    if (!w2 && WAREHOUSE_2_CODES.has(c)) { w2 = raw; continue; }
+    stores.push(raw);
+  }
+  // fallback · category_code 가 창고 코드면 사용
+  if ((!w1 || !w2) && categoryCode) {
     const cat = String(categoryCode).trim().toUpperCase().replace(/\s+/g, "");
-    if (WAREHOUSE_1_CODES.has(cat)) w1 = cat;
-    else if (WAREHOUSE_2_CODES.has(cat)) w2 = cat;
+    if (!w1 && WAREHOUSE_1_CODES.has(cat)) w1 = cat;
+    else if (!w2 && WAREHOUSE_2_CODES.has(cat)) w2 = cat;
   }
   return {
     s1zone: stores[0] ?? null,
