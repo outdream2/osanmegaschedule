@@ -44,7 +44,7 @@ router.get("/api/borrowings", asyncHandler(async (req, res) => {
 
 // POST /api/borrowings
 // body: { direction · supplier · product_code · product_name · qty · unit_price? · due_date? · note? · signature_url? · created_by? · created_by_id? }
-router.post("/api/borrowings", asyncHandler(async (req, res) => {
+router.post("/api/borrowings", authorize(5), asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const direction = String(b.direction ?? "lend").trim();
   if (direction !== "lend" && direction !== "borrow") throw badRequest("direction must be lend or borrow");
@@ -71,7 +71,7 @@ router.post("/api/borrowings", asyncHandler(async (req, res) => {
 
 // PATCH /api/borrowings/:id
 // body: { status? · qty? · unit_price? · due_date? · note? · signature_url? }
-router.patch("/api/borrowings/:id", asyncHandler(async (req, res) => {
+router.patch("/api/borrowings/:id", authorize(5), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!Number.isFinite(id)) throw badRequest("invalid id");
   const b = req.body ?? {};
