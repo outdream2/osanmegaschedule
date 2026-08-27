@@ -28,7 +28,7 @@ const BOARD_BUCKET = process.env.SUPABASE_BOARD_BUCKET || "board-images";
 // 이미지 업로드
 // - 클라이언트에서 base64 (data:image/...;base64,...) 로 전송
 // - 우선 Supabase Storage 시도 · 실패 시 로컬 파일시스템 fallback
-router.post("/api/board/upload-image", asyncHandler(async (req, res) => {
+router.post("/api/board/upload-image", authorize(1), asyncHandler(async (req, res) => {
   const { data_url, filename } = req.body ?? {};
   if (!data_url || typeof data_url !== "string" || !data_url.startsWith("data:image/")) {
     throw badRequest("data_url (data:image/... base64) 필수");
@@ -221,7 +221,7 @@ router.get("/api/board/posts/:id", asyncHandler(async (req, res) => {
 }));
 
 // ── 게시글 생성
-router.post("/api/board/posts", validateBody(CreatePostSchema), asyncHandler(async (req, res) => {
+router.post("/api/board/posts", authorize(1), validateBody(CreatePostSchema), asyncHandler(async (req, res) => {
   const b = req.body;
 
   const authorId = Number(b.author_id);
@@ -275,7 +275,7 @@ router.post("/api/board/posts", validateBody(CreatePostSchema), asyncHandler(asy
 }));
 
 // ── 게시글 수정 (작성자·관리자만 · 클라에서 권한 판단, 서버는 author_id 매칭 검사)
-router.patch("/api/board/posts/:id", asyncHandler(async (req, res) => {
+router.patch("/api/board/posts/:id", authorize(1), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) throw badRequest("invalid id");
   const b = req.body ?? {};
@@ -359,7 +359,7 @@ router.delete("/api/board/posts/:id", authorize(9), asyncHandler(async (req, res
 }));
 
 // ── 댓글 작성
-router.post("/api/board/posts/:id/comments", validateBody(CreateCommentSchema), asyncHandler(async (req, res) => {
+router.post("/api/board/posts/:id/comments", authorize(1), validateBody(CreateCommentSchema), asyncHandler(async (req, res) => {
   const postId = Number(req.params.id);
   const b = req.body;
   if (!Number.isFinite(postId)) throw badRequest("invalid post id");
@@ -415,7 +415,7 @@ router.post("/api/board/posts/:id/comments", validateBody(CreateCommentSchema), 
 }));
 
 // ── 댓글 수정 (작성자만)
-router.patch("/api/board/comments/:id", asyncHandler(async (req, res) => {
+router.patch("/api/board/comments/:id", authorize(1), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const b = req.body ?? {};
   const editorId = Number(b.editor_id ?? 0);
@@ -445,7 +445,7 @@ router.delete("/api/board/comments/:id", authorize(2), asyncHandler(async (req, 
 }));
 
 // ── 답변 채택 · 원글 작성자만
-router.post("/api/board/comments/:id/accept", asyncHandler(async (req, res) => {
+router.post("/api/board/comments/:id/accept", authorize(1), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const editorId = Number(req.body?.editor_id ?? 0);
   const { data: cmt } = await supabase.from("board_post_comments").select("post_id, author_id").eq("id", id).maybeSingle();
@@ -461,7 +461,7 @@ router.post("/api/board/comments/:id/accept", asyncHandler(async (req, res) => {
 }));
 
 // ── 반응 (👍 helpful / 👀 seen) 토글
-router.post("/api/board/posts/:id/react", asyncHandler(async (req, res) => {
+router.post("/api/board/posts/:id/react", authorize(1), asyncHandler(async (req, res) => {
   const postId = Number(req.params.id);
   const empId = Number(req.body?.employee_id ?? 0);
   const reaction = String(req.body?.reaction ?? "helpful");
@@ -482,7 +482,7 @@ router.post("/api/board/posts/:id/react", asyncHandler(async (req, res) => {
 
 // ── Cloudinary 서명 발급 (클라이언트에서 직접 업로드용)
 // 환경변수: CLOUDINARY_CLOUD_NAME · CLOUDINARY_API_KEY · CLOUDINARY_API_SECRET
-router.post("/api/board/cloudinary-signature", asyncHandler(async (_req, res) => {
+router.post("/api/board/cloudinary-signature", authorize(1), asyncHandler(async (_req, res) => {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   const apiKey = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;

@@ -1,9 +1,9 @@
 # 서버 프레임워크 감사 (Phase 1)
 
-- 생성 · 2026-08-27 07:08:58
+- 생성 · 2026-08-27 07:39:19
 - 스캔 파일 · 39개
 - 총 라우트 · 241개
-- 위반 · 183건 (high 92)
+- 위반 · 175건 (high 84)
 
 ## 규칙
 - **no-authorize** (high) · POST/PATCH/DELETE/PUT · authorize() 미적용
@@ -11,20 +11,12 @@
 - **no-async-handler** (medium) · asyncHandler() 미적용
 
 ## 위반 상세
-### server/routes/board/board.ts (14건)
-- 🔴 L31 · **no-authorize** · POST /api/board/upload-image · authorize() 미적용 · 권한 우회 가능
+### server/routes/board/board.ts (6건)
 - 🟡 L31 · **no-validate-body** · POST /api/board/upload-image · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L224 · **no-authorize** · POST /api/board/posts · authorize() 미적용 · 권한 우회 가능
-- 🔴 L278 · **no-authorize** · PATCH /api/board/posts/:id · authorize() 미적용 · 권한 우회 가능
 - 🟡 L278 · **no-validate-body** · PATCH /api/board/posts/:id · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L362 · **no-authorize** · POST /api/board/posts/:id/comments · authorize() 미적용 · 권한 우회 가능
-- 🔴 L418 · **no-authorize** · PATCH /api/board/comments/:id · authorize() 미적용 · 권한 우회 가능
 - 🟡 L418 · **no-validate-body** · PATCH /api/board/comments/:id · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L448 · **no-authorize** · POST /api/board/comments/:id/accept · authorize() 미적용 · 권한 우회 가능
 - 🟡 L448 · **no-validate-body** · POST /api/board/comments/:id/accept · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L464 · **no-authorize** · POST /api/board/posts/:id/react · authorize() 미적용 · 권한 우회 가능
 - 🟡 L464 · **no-validate-body** · POST /api/board/posts/:id/react · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L485 · **no-authorize** · POST /api/board/cloudinary-signature · authorize() 미적용 · 권한 우회 가능
 - 🟡 L485 · **no-validate-body** · POST /api/board/cloudinary-signature · validateBody() 미적용 · Zod 검증 없음
 
 ### server/routes/board/clientErrors.ts (1건)
@@ -258,12 +250,12 @@
 - ⚠ 29 · server/routes/ocr/ocr.ts · 25 라우트
 - ⚠ 20 · server/routes/schedule/schedules.ts · 14 라우트
 - ⚠ 18 · server/routes/display/requests.ts · 17 라우트
-- ⚠ 14 · server/routes/board/board.ts · 12 라우트
 - ⚠ 12 · server/routes/purchase/vendors.ts · 10 라우트
 - ⚠ 10 · server/routes/board/notifications.ts · 6 라우트
 - ⚠ 9 · server/routes/stock/products.ts · 15 라우트
 - ⚠ 8 · server/routes/settings/settings.ts · 12 라우트
 - ⚠ 8 · server/routes/stock/stockArrivals.ts · 7 라우트
+- ⚠ 6 · server/routes/board/board.ts · 12 라우트
 - ⚠ 6 · server/routes/display/zoneAssignments.ts · 5 라우트
 - ⚠ 4 · server/routes/board/pharmacistMenuItems.ts · 4 라우트
 - ⚠ 4 · server/routes/display/zoneLabels.ts · 4 라우트
