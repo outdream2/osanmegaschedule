@@ -44,7 +44,7 @@ router.get("/api/zone-labels", asyncHandler(async (_req, res) => {
 // PUT /api/zone-labels
 // body: { mappings: [{ zone_id, number, sub_label? }] }
 // 전체 일괄 upsert · 사용자 편집 저장 시 호출
-router.put("/api/zone-labels", asyncHandler(async (req, res) => {
+router.put("/api/zone-labels", authorize(9), asyncHandler(async (req, res) => {
   const mappings = Array.isArray(req.body?.mappings) ? req.body.mappings : [];
   if (mappings.length === 0) throw badRequest("mappings 배열 필요");
   const rows = mappings.map((m: any) => ({
@@ -68,7 +68,7 @@ router.put("/api/zone-labels", asyncHandler(async (req, res) => {
 // POST /api/zone-labels
 // body: { zone_id, number, sub_label? }
 // 단일 upsert
-router.post("/api/zone-labels", asyncHandler(async (req, res) => {
+router.post("/api/zone-labels", authorize(9), asyncHandler(async (req, res) => {
   const zone_id = String(req.body?.zone_id ?? "").trim();
   const number = Number(req.body?.number ?? 0);
   if (!zone_id || number <= 0) throw badRequest("zone_id / number 필수");
