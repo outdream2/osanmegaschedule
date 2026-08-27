@@ -105,6 +105,10 @@ export const RealStockTablePage: React.FC = () => {
   const { toast, showError, showSuccess } = useToast();
   // 2026-08-27 · 사용자 지시 · Group by 구역 뷰 토글 (옵션 3)
   const [groupByZone, setGroupByZone] = useState(false);
+  // 2026-08-27 · 사용자 지시 · 매장만 · 창고만 · 전체 필터 토글
+  const [locFilter, setLocFilter] = useState<"all" | "store" | "warehouse">("all");
+  const showStore = locFilter !== "warehouse";
+  const showWarehouse = locFilter !== "store";
   // 2026-08-27 · 사용자 지시 · 각 그룹 접기/펼치기 · Set 저장 (collapsed 그룹만 저장)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const toggleGroup = useCallback((key: string) => {
@@ -512,6 +516,23 @@ export const RealStockTablePage: React.FC = () => {
                 <input type="checkbox" checked={groupByZone} onChange={(e) => setGroupByZone(e.target.checked)} className="w-4 h-4 accent-brand-deep cursor-pointer" />
                 구역별 그룹
               </label>
+              {/* 2026-08-27 · 사용자 지시 · 매장만 · 창고만 · 전체 토글 필터 */}
+              <div className="inline-flex items-center bg-white border border-line rounded-lg overflow-hidden">
+                {([
+                  { k: "all", label: "전체", tone: "" },
+                  { k: "store", label: "매장만", tone: "violet" },
+                  { k: "warehouse", label: "창고만", tone: "cyan" },
+                ] as const).map((o) => {
+                  const active = locFilter === o.k;
+                  const activeCls = o.tone === "violet" ? "bg-violet-600 text-white" : o.tone === "cyan" ? "bg-cyan-600 text-white" : "bg-brand-deep text-white";
+                  return (
+                    <button key={o.k} type="button" onClick={() => setLocFilter(o.k)}
+                      className={`h-10 px-3 text-[14px] font-bold transition cursor-pointer ${active ? activeCls + " shadow-sm" : "text-ink-soft hover:bg-zinc-50 hover:text-brand-deep"}`}
+                      title={`${o.label} 컬럼만 표시`}
+                    >{o.label}</button>
+                  );
+                })}
+              </div>
               {/* 2026-08-27 · 사용자 지시 · 구역별 그룹 · 접기/펼치기 컨트롤 · groupByZone 활성 시만 표시 */}
               {groupByZone && (
                 <button
@@ -574,11 +595,16 @@ export const RealStockTablePage: React.FC = () => {
                   {/* 2026-08-27 · 사용자 지시 · 매장/창고 헤더 · 2줄 (예: 매장1 / 구역) · whitespace-pre-line */}
                   {thSortable("location",     "center", "진열위치\n(구역)", 90,  "bg-amber-50/40 whitespace-pre-line leading-tight")}
                   {thSortable("erp",          "num",    "ERP\n수량",       80,  "bg-amber-100/50 whitespace-pre-line leading-tight")}
-                  {thSortable("s1",           "center", "매장1\n구역-수량",  105, "bg-violet-100/50 whitespace-pre-line leading-tight")}
-                  {thSortable("s2",           "center", "매장2\n구역-수량",  105, "bg-violet-100/50 whitespace-pre-line leading-tight")}
-                  {thSortable("s3",           "center", "매장3\n구역-수량",  105, "bg-violet-100/50 whitespace-pre-line leading-tight")}
-                  {thSortable("w1",           "center", "창고1\n구역-수량",  105, "bg-cyan-100/50 whitespace-pre-line leading-tight")}
-                  {thSortable("w2",           "center", "창고2\n구역-수량",  105, "bg-cyan-100/50 whitespace-pre-line leading-tight")}
+                  {showStore && thSortable("s1zone",  "center", "매장1\n구역",    74, "bg-violet-50/40 whitespace-pre-line leading-tight")}
+                  {showStore && thSortable("s1",      "num",    "매장1\n수량",    74, "bg-violet-100/50 whitespace-pre-line leading-tight")}
+                  {showStore && thSortable("s2zone",  "center", "매장2\n구역",    74, "bg-violet-50/40 whitespace-pre-line leading-tight")}
+                  {showStore && thSortable("s2",      "num",    "매장2\n수량",    74, "bg-violet-100/50 whitespace-pre-line leading-tight")}
+                  {showStore && thSortable("s3zone",  "center", "매장3\n구역",    74, "bg-violet-50/40 whitespace-pre-line leading-tight")}
+                  {showStore && thSortable("s3",      "num",    "매장3\n수량",    74, "bg-violet-100/50 whitespace-pre-line leading-tight")}
+                  {showWarehouse && thSortable("w1zone", "center", "창고1\n구역", 74, "bg-cyan-50/40 whitespace-pre-line leading-tight")}
+                  {showWarehouse && thSortable("w1",     "num",    "창고1\n수량", 74, "bg-cyan-100/50 whitespace-pre-line leading-tight")}
+                  {showWarehouse && thSortable("w2zone", "center", "창고2\n구역", 74, "bg-cyan-50/40 whitespace-pre-line leading-tight")}
+                  {showWarehouse && thSortable("w2",     "num",    "창고2\n수량", 74, "bg-cyan-100/50 whitespace-pre-line leading-tight")}
                   {thSortable("total",        "num", "실재고 합계", 95,  "bg-brand-tint/30")}
                   {thSortable("diff",         "num", "차이",         80,  "bg-rose-50/40")}
                 </tr>
@@ -660,11 +686,11 @@ export const RealStockTablePage: React.FC = () => {
                           </td>
                           <td className={tableTdCls("center", "bg-amber-50/30")}>{r.location ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[17px] tabular-nums tracking-tight">{r.location}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[13px]">—</span>)}</td>
                           <td className={tableTdCls("center", "bg-amber-50/30")}>{r.erp != null && r.erp > 0 ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[17px] tabular-nums tracking-tight">{r.erp}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[13px]">—</span>)}</td>
-                          <td className={tableTdCls("center", "bg-violet-100/40")}>{renderZoneQtyCell(r, "s1")}</td>
-                          <td className={tableTdCls("center", "bg-violet-100/40")}>{renderZoneQtyCell(r, "s2")}</td>
-                          <td className={tableTdCls("center", "bg-violet-100/40")}>{renderZoneQtyCell(r, "s3")}</td>
-                          <td className={tableTdCls("center", "bg-cyan-100/40")}>{renderZoneQtyCell(r, "w1")}</td>
-                          <td className={tableTdCls("center", "bg-cyan-100/40")}>{renderZoneQtyCell(r, "w2")}</td>
+                          {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s1")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s1")}</td></>}
+                          {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s2")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s2")}</td></>}
+                          {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s3")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s3")}</td></>}
+                          {showWarehouse && <><td className={tableTdCls("center", "bg-cyan-50/30")}>{renderZoneCell(r, "w1")}</td><td className={tableTdCls("num", "bg-cyan-100/40")}>{renderQtyCell(r, "w1")}</td></>}
+                          {showWarehouse && <><td className={tableTdCls("center", "bg-cyan-50/30")}>{renderZoneCell(r, "w2")}</td><td className={tableTdCls("num", "bg-cyan-100/40")}>{renderQtyCell(r, "w2")}</td></>}
                           <td className={tableTdCls("num", `tabular-nums font-extrabold ${r.total > 0 ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>{r.total > 0 ? r.total : "-"}</td>
                           <td className={tableTdCls("num", `tabular-nums font-bold ${r.diff > 0 ? "text-rose-600" : r.diff < 0 ? "text-emerald-600" : "text-zinc-300"} bg-rose-50/20`)}>{r.diff !== 0 ? (r.diff > 0 ? `+${r.diff}` : String(r.diff)) : "0"}</td>
                         </tr>
@@ -688,11 +714,11 @@ export const RealStockTablePage: React.FC = () => {
                     {/* 2026-08-27 · 컬럼 분리 · 진열위치·ERP 각각 · 매장/창고 구역·수량 분리 · 색깔톤 shade */}
                     <td className={tableTdCls("center", "bg-amber-50/30")}><span className={`text-[16px] font-semibold ${r.location ? "text-amber-500" : "text-zinc-300"} tabular-nums`}>{r.location ?? "-"}</span></td>
                     <td className={tableTdCls("num", `tabular-nums font-extrabold text-[19px] ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-100/40`)}>{r.erp ?? "-"}</td>
-                    <td className={tableTdCls("center", "bg-violet-100/40")}>{renderZoneQtyCell(r, "s1")}</td>
-                    <td className={tableTdCls("center", "bg-violet-100/40")}>{renderZoneQtyCell(r, "s2")}</td>
-                    <td className={tableTdCls("center", "bg-violet-100/40")}>{renderZoneQtyCell(r, "s3")}</td>
-                    <td className={tableTdCls("center", "bg-cyan-100/40")}>{renderZoneQtyCell(r, "w1")}</td>
-                    <td className={tableTdCls("center", "bg-cyan-100/40")}>{renderZoneQtyCell(r, "w2")}</td>
+                    {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s1")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s1")}</td></>}
+                    {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s2")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s2")}</td></>}
+                    {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s3")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s3")}</td></>}
+                    {showWarehouse && <><td className={tableTdCls("center", "bg-cyan-50/30")}>{renderZoneCell(r, "w1")}</td><td className={tableTdCls("num", "bg-cyan-100/40")}>{renderQtyCell(r, "w1")}</td></>}
+                    {showWarehouse && <><td className={tableTdCls("center", "bg-cyan-50/30")}>{renderZoneCell(r, "w2")}</td><td className={tableTdCls("num", "bg-cyan-100/40")}>{renderQtyCell(r, "w2")}</td></>}
                     <td className={tableTdCls("num", `tabular-nums font-extrabold ${r.total > 0 ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>
                       {r.total > 0 ? r.total : "-"}
                     </td>
