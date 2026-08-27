@@ -1,9 +1,9 @@
 # 서버 프레임워크 감사 (Phase 1)
 
-- 생성 · 2026-08-27 07:52:06
+- 생성 · 2026-08-27 07:53:51
 - 스캔 파일 · 39개
 - 총 라우트 · 241개
-- 위반 · 148건 (high 57)
+- 위반 · 146건 (high 55)
 
 ## 규칙
 - **no-authorize** (high) · POST/PATCH/DELETE/PUT · authorize() 미적용
@@ -114,10 +114,8 @@
 - 🔴 L50 · **no-authorize** · PUT /api/supplier-balance-configs · authorize() 미적용 · 권한 우회 가능
 - 🟡 L50 · **no-validate-body** · PUT /api/supplier-balance-configs · validateBody() 미적용 · Zod 검증 없음
 
-### server/routes/purchase/supplierPayments.ts (4건)
-- 🔴 L216 · **no-authorize** · POST /api/supplier-payments · authorize() 미적용 · 권한 우회 가능
+### server/routes/purchase/supplierPayments.ts (2건)
 - 🟡 L216 · **no-validate-body** · POST /api/supplier-payments · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L322 · **no-authorize** · PATCH /api/supplier-payments/:id · authorize() 미적용 · 권한 우회 가능
 - 🟡 L322 · **no-validate-body** · PATCH /api/supplier-payments/:id · validateBody() 미적용 · Zod 검증 없음
 
 ### server/routes/purchase/vendors.ts (12건)
@@ -222,7 +220,6 @@
 - ⚠ 5 · server/routes/board/notifications.ts · 6 라우트
 - ⚠ 5 · server/routes/stock/stockArrivals.ts · 7 라우트
 - ⚠ 4 · server/routes/display/zoneLabels.ts · 4 라우트
-- ⚠ 4 · server/routes/purchase/supplierPayments.ts · 12 라우트
 - ⚠ 4 · server/routes/staff/contractClauses.ts · 3 라우트
 - ⚠ 3 · server/routes/display/zoneAssignments.ts · 5 라우트
 - ⚠ 3 · server/routes/staff/employeeContracts.ts · 4 라우트
@@ -231,6 +228,7 @@
 - ⚠ 2 · server/routes/purchase/invoiceImages.ts · 2 라우트
 - ⚠ 2 · server/routes/purchase/ocrConfirmed.ts · 3 라우트
 - ⚠ 2 · server/routes/purchase/supplierBalanceConfig.ts · 3 라우트
+- ⚠ 2 · server/routes/purchase/supplierPayments.ts · 12 라우트
 - ⚠ 2 · server/routes/stock/lossTracking.ts · 3 라우트
 - ⚠ 1 · server/routes/board/clientErrors.ts · 1 라우트
 - ⚠ 1 · server/routes/display/mismatches.ts · 4 라우트

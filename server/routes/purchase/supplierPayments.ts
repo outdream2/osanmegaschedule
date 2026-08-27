@@ -213,7 +213,7 @@ router.get("/api/supplier-payments/pending-count", asyncHandler(async (_req, res
 //           allocations?: [{ocr_confirmed_item_id, allocated_amount}] }
 //   · 원자성: allocations insert 실패 시 payment 롤백 (best-effort)
 // ─────────────────────────────────────────────────────────────────────
-router.post("/api/supplier-payments", asyncHandler(async (req, res) => {
+router.post("/api/supplier-payments", authorize(5), asyncHandler(async (req, res) => {
   const {
     supplier_name,
     payment_date,
@@ -319,7 +319,7 @@ router.post("/api/supplier-payments", asyncHandler(async (req, res) => {
 // PATCH /api/supplier-payments/:id
 //   · memo · method 만 수정 (금액·날짜 변경은 삭제→재등록 유도)
 // ─────────────────────────────────────────────────────────────────────
-router.patch("/api/supplier-payments/:id", asyncHandler(async (req, res) => {
+router.patch("/api/supplier-payments/:id", authorize(5), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!Number.isFinite(id) || id <= 0) throw badRequest("invalid id");
   const { method, memo } = req.body ?? {};
