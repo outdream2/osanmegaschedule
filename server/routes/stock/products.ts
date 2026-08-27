@@ -320,6 +320,10 @@ router.post("/api/upload-products", express.raw({ type: "application/octet-strea
     const code = normalizeCode((r as any).product_code);
     if (!code) { emptyCount++; continue; }
     (r as any).product_code = code; // 정규화된 값으로 통일 (chunk 내 dedup 보장)
+    // 2026-08-27 · 사용자 지시 · 엑셀 진열위치(G열/display_location) → spec(ERP구역) 매핑
+    //   · UI에서 spec=전산구역·매장 zone 소스로 사용 · 원본 규격은 진열위치 없을 때만 유지
+    const disp = (r as any).display_location;
+    if (disp != null && String(disp).trim() !== "") (r as any).spec = String(disp).trim();
     if (dedupMap.has(code)) dupCount++;
     dedupMap.set(code, r);
   }
