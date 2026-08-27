@@ -164,7 +164,8 @@ export function pickBestSheet(wb: XLSX.WorkBook): { name: string; ws: XLSX.WorkS
   for (const name of wb.SheetNames) {
     const ws = wb.Sheets[name];
     if (!ws) continue;
-    const firstRow = (XLSX.utils.sheet_to_json<any[]>(ws, { header: 1 })[0] ?? []) as any[];
+    // 2026-08-27 · blankrows:false · 빈 행 확장 시 첫 헤더 감지 폭발 방지
+    const firstRow = (XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, blankrows: false })[0] ?? []) as any[];
     const cols = firstRow.length;
     if (cols >= COL_KEYS.length) return { name, ws, cols };
     if (!best || cols > best.cols) best = { name, ws, cols };
@@ -177,7 +178,10 @@ export function xlsxToRows(buf: Buffer): Record<string, any>[] {
   const wb = XLSX.read(buf, { type: "buffer", cellDates: true });
   const picked = pickBestSheet(wb);
   const ws = picked.ws;
-  const rows = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, raw: true }) as any[][];
+  // 2026-08-27 · 사용자 지시 · Excel 파일 안 · 실제 데이터 뒤 1M 빈 행 확장 방지
+  //   · blankrows: false · 빈 행 skip · 파싱 메모리 폭발 방지
+  //   · 안전 · 실제 데이터 행만 남음
+  const rows = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, raw: true, blankrows: false }) as any[][];
   if (rows.length === 0) return [];
 
   // 첫 행을 헤더로 사용 · 이름 기반으로 컬럼 인덱스 구성
