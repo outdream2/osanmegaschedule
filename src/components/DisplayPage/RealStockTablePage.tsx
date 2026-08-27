@@ -508,20 +508,20 @@ export const RealStockTablePage: React.FC = () => {
                   {/* 2026-08-27 · 사용자 지시 · 구역·수량 컬럼 분리 · dual chip 폐기 · 색깔톤 shade 구분 */}
                   {thSortable("supplier",     "left", "공급사",   140)}
                   {thSortable("product_name", "left", "상품명",   300)}
-                  {thSortable("location",     "center", "진열위치", 80,  "bg-amber-50/40")}
-                  {thSortable("erp",          "num", "ERP",       70,  "bg-amber-100/50")}
+                  {thSortable("location",     "center", "진열위치 (구역)", 90,  "bg-amber-50/40")}
+                  {thSortable("erp",          "num", "ERP 수량",       80,  "bg-amber-100/50")}
                   {thSortable("s1zone",       "center", "매장1 구역", 80, "bg-violet-50/40")}
-                  {thSortable("s1",           "num", "매장1 수량", 70, "bg-violet-100/50")}
+                  {thSortable("s1",           "num", "매장1 수량", 80, "bg-violet-100/50")}
                   {thSortable("s2zone",       "center", "매장2 구역", 80, "bg-violet-50/40")}
-                  {thSortable("s2",           "num", "매장2 수량", 70, "bg-violet-100/50")}
+                  {thSortable("s2",           "num", "매장2 수량", 80, "bg-violet-100/50")}
                   {thSortable("s3zone",       "center", "매장3 구역", 80, "bg-violet-50/40")}
-                  {thSortable("s3",           "num", "매장3 수량", 70, "bg-violet-100/50")}
+                  {thSortable("s3",           "num", "매장3 수량", 80, "bg-violet-100/50")}
                   {thSortable("w1zone",       "center", "창고1 구역", 80, "bg-cyan-50/40")}
-                  {thSortable("w1",           "num", "창고1 수량", 70, "bg-cyan-100/50")}
+                  {thSortable("w1",           "num", "창고1 수량", 80, "bg-cyan-100/50")}
                   {thSortable("w2zone",       "center", "창고2 구역", 80, "bg-cyan-50/40")}
-                  {thSortable("w2",           "num", "창고2 수량", 70, "bg-cyan-100/50")}
-                  {thSortable("total",        "num", "실재고합계", 95,  "bg-brand-tint/30")}
-                  {thSortable("diff",         "num", "차이",       80,  "bg-rose-50/40")}
+                  {thSortable("w2",           "num", "창고2 수량", 80, "bg-cyan-100/50")}
+                  {thSortable("total",        "num", "실재고 합계", 95,  "bg-brand-tint/30")}
+                  {thSortable("diff",         "num", "차이",         80,  "bg-rose-50/40")}
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
