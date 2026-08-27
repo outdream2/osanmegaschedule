@@ -322,13 +322,15 @@ router.post("/api/upload-products", express.raw({ type: "application/octet-strea
     const code = normalizeCode((r as any).product_code);
     if (!code) { emptyCount++; continue; }
     (r as any).product_code = code; // 정규화된 값으로 통일 (chunk 내 dedup 보장)
-    // 2026-08-27 · 사용자 지시 · location 컬럼 통합
-    //   · 엑셀 진열위치(G열/display_location) 는 DB display_location 컬럼에 저장 (하위호환)
-    //   · API 반환 시 location 필드로 파생 · 클라이언트는 location 만 사용
-    //   · spec 은 원본 규격 (엑셀 "규격" 헤더) · 진열위치와 분리 · 이전 spec 오염 방어
+    // 2026-08-27 · 사용자 지시 (옵션 A) · products.location 물리 컬럼 통합
+    //   · 엑셀 진열위치(G열) → 정규화 후 · location + display_location 양쪽 저장
+    //   · SQL 마이그레이션 실행 후 (sql/2026-08-27-location-column-migration.sql) · location 컬럼 자동 채워짐
+    //   · 컬럼 미존재 시 upsert 에러 방어 · try/catch 로 재시도 (아래 upsert 로직)
     const disp = (r as any).display_location;
     if (disp != null && String(disp).trim() !== "") {
-      (r as any).display_location = String(disp).trim();
+      const trimmed = String(disp).trim();
+      (r as any).display_location = trimmed;
+      (r as any).location = trimmed;  // DB 컬럼 생성 후 자동 저장 · 없으면 upsert 시 필터 (아래 try/catch)
     }
     if (dedupMap.has(code)) dupCount++;
     dedupMap.set(code, r);
@@ -338,16 +340,28 @@ router.post("/api/upload-products", express.raw({ type: "application/octet-strea
     console.log(`[upload] dedup · ${rows.length} → ${dedupedRows.length} (중복 ${dupCount} · 빈코드 ${emptyCount} 제외 · 마지막 값 유지)`);
   }
   // 2026-08-26 · 성능 개선 · chunk 500→1000 · PARALLEL 3→5 · Postgres 1KB row 기준 여유
+  // 2026-08-27 · location 컬럼 없을 시 방어 · 첫 chunk 실패 시 location 필드 제거 후 재시도
   const CHUNK_SIZE = 1000;
   const chunks: Record<string, any>[][] = [];
   for (let i = 0; i < dedupedRows.length; i += CHUNK_SIZE) chunks.push(dedupedRows.slice(i, i + CHUNK_SIZE));
+  let stripLocationField = false;
+  const upsertOne = async (chunk: Record<string, any>[]) => {
+    const payload = stripLocationField ? chunk.map(({ location, ...rest }) => rest) : chunk;
+    const r = await supabase.from("products").upsert(payload, { onConflict: "product_code" });
+    if (r.error && /column.*location.*(does not exist|schema cache)/i.test(r.error.message) && !stripLocationField) {
+      // 첫 감지 · location 컬럼 없음 · 이후 모든 chunk 에서 필터
+      console.warn("[upload] location 컬럼 없음 · SQL 마이그레이션 필요 · 이 임포트는 location 제외 진행");
+      stripLocationField = true;
+      const retryPayload = chunk.map(({ location, ...rest }) => rest);
+      return supabase.from("products").upsert(retryPayload, { onConflict: "product_code" });
+    }
+    return r;
+  };
   const PARALLEL = 5;
   for (let i = 0; i < chunks.length; i += PARALLEL) {
     const batch = chunks.slice(i, i + PARALLEL);
     const tChunk = Date.now();
-    const results = await Promise.all(
-      batch.map(chunk => supabase.from("products").upsert(chunk, { onConflict: "product_code" }))
-    );
+    const results = await Promise.all(batch.map(upsertOne));
     for (const { error: upsertErr } of results) {
       if (upsertErr) {
         console.error("[upload] upsert error:", upsertErr);
