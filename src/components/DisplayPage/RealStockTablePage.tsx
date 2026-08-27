@@ -583,6 +583,19 @@ export const RealStockTablePage: React.FC = () => {
                             <span className="w-1 h-4 rounded-full bg-brand-deep" />
                             <span className="text-[15px] font-extrabold text-brand-deep tabular-nums">{k}</span>
                             <span className="text-[12px] font-bold text-brand-deep/70 tabular-nums">· {rows.length}건</span>
+                            {/* 2026-08-27 · 사용자 지시 · 구역별 전체보기 · 이 그룹만 열고 나머지 접기 */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const others = sortedKeys.filter(x => x !== k);
+                                setCollapsedGroups(new Set(others));
+                              }}
+                              className="ml-1 inline-flex items-center gap-1 h-6 px-2 rounded-md bg-white/70 border border-brand-deep/30 text-[11px] font-bold text-brand-deep hover:bg-white cursor-pointer transition"
+                              title="이 구역만 전체보기 (다른 구역 접기)"
+                            >
+                              전체보기
+                            </button>
                             <span className="ml-auto flex items-center gap-3 text-[12px] font-bold tabular-nums">
                               <span className="text-amber-700">ERP 합계 {totalErp}</span>
                               <span className="text-brand-deep">실재고 합계 {totalReal}</span>
