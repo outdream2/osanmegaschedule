@@ -7,6 +7,7 @@ import { resolveSeasonMonths } from "../settings/settings";
 import { fetchAllWithRange } from "../../utils/supabaseFetchAll";
 import { queryPurchaseDetails } from "../../utils/purchaseDetailsQuery";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { authorize } from "../../middleware/requireAuth";
 import { HttpError } from "../../middleware/errorHandler";
 
 const router = Router();
@@ -1649,7 +1650,7 @@ router.get("/api/stock-manage/product-history", asyncHandler(async (req, res) =>
 // POST /api/upload-stock
 // 재고 리스트 xlsx 업로드 (product_code + current_stock 만 upsert)
 // 매칭 안 되는 product_code는 건드리지 않음 (안전 병합)
-router.post("/api/upload-stock", express.raw({ type: "application/octet-stream", limit: "50mb" }), asyncHandler(async (req, res) => {
+router.post("/api/upload-stock", authorize(9), express.raw({ type: "application/octet-stream", limit: "50mb" }), asyncHandler(async (req, res) => {
   const { managerId } = req.query as Record<string, string>;
   if (!req.body || !Buffer.isBuffer(req.body) || req.body.length === 0) {
     return res.status(400).json({ error: "파일이 없습니다" });
@@ -1963,7 +1964,7 @@ router.get("/api/stock-import-log", asyncHandler(async (_req, res) => {
 }));
 
 // DELETE /api/stock-import-log
-router.delete("/api/stock-import-log", asyncHandler(async (_req, res) => {
+router.delete("/api/stock-import-log", authorize(9), asyncHandler(async (_req, res) => {
   await supabase.from("app_settings").upsert({ key: "stock_import_log", value: [], updated_at: new Date().toISOString() }, { onConflict: "key" });
   res.json({ ok: true });
 }));

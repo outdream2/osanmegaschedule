@@ -4,6 +4,7 @@ import webpush from "web-push";
 import { supabase } from "../../../src/supabase/client";
 import { notificationsService } from "../../services/notificationsService";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { authorize } from "../../middleware/requireAuth";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
 
 const router = Router();
@@ -181,7 +182,7 @@ router.get("/api/zone-assignments/:dow", asyncHandler(async (req, res) => {
 }));
 
 // PUT /api/zone-assignments/:dow  →  upsert template for that day-of-week
-router.put("/api/zone-assignments/:dow", asyncHandler(async (req, res) => {
+router.put("/api/zone-assignments/:dow", authorize(5), asyncHandler(async (req, res) => {
   const dow = parseInt(req.params.dow, 10);
   if (isNaN(dow) || dow < 0 || dow > 6) throw badRequest("dow는 0~6이어야 합니다");
 
@@ -272,7 +273,7 @@ router.get("/api/zone-day/:date", asyncHandler(async (req, res) => {
 }));
 
 // PUT /api/zone-day/:date  →  날짜별 배정 저장 (upsert)
-router.put("/api/zone-day/:date", asyncHandler(async (req, res) => {
+router.put("/api/zone-day/:date", authorize(5), asyncHandler(async (req, res) => {
   const { date } = req.params;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw badRequest("date는 YYYY-MM-DD 형식이어야 합니다");
 
@@ -350,7 +351,7 @@ router.put("/api/zone-day/:date", asyncHandler(async (req, res) => {
 
 // POST /api/zone-day/copy-month  →  전월의 일별 배정을 이번 달로 복사
 // body: { targetYear, targetMonth, overwrite: boolean }
-router.post("/api/zone-day/copy-month", asyncHandler(async (req, res) => {
+router.post("/api/zone-day/copy-month", authorize(5), asyncHandler(async (req, res) => {
   const { targetYear, targetMonth, overwrite } = req.body ?? {};
   const y = parseInt(targetYear, 10);
   const m = parseInt(targetMonth, 10);

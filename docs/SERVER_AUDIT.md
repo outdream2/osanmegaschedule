@@ -1,9 +1,9 @@
 # 서버 프레임워크 감사 (Phase 1)
 
-- 생성 · 2026-08-27 07:45:58
+- 생성 · 2026-08-27 07:48:56
 - 스캔 파일 · 39개
 - 총 라우트 · 241개
-- 위반 · 160건 (high 69)
+- 위반 · 155건 (high 64)
 
 ## 규칙
 - **no-authorize** (high) · POST/PATCH/DELETE/PUT · authorize() 미적용
@@ -56,13 +56,10 @@
 - 🔴 L955 · **no-authorize** · PATCH /api/inventory-checks/:id · authorize() 미적용 · 권한 우회 가능
 - 🟡 L955 · **no-validate-body** · PATCH /api/inventory-checks/:id · validateBody() 미적용 · Zod 검증 없음
 
-### server/routes/display/zoneAssignments.ts (6건)
-- 🔴 L184 · **no-authorize** · PUT /api/zone-assignments/:dow · authorize() 미적용 · 권한 우회 가능
-- 🟡 L184 · **no-validate-body** · PUT /api/zone-assignments/:dow · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L275 · **no-authorize** · PUT /api/zone-day/:date · authorize() 미적용 · 권한 우회 가능
-- 🟡 L275 · **no-validate-body** · PUT /api/zone-day/:date · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L353 · **no-authorize** · POST /api/zone-day/copy-month · authorize() 미적용 · 권한 우회 가능
-- 🟡 L353 · **no-validate-body** · POST /api/zone-day/copy-month · validateBody() 미적용 · Zod 검증 없음
+### server/routes/display/zoneAssignments.ts (3건)
+- 🟡 L185 · **no-validate-body** · PUT /api/zone-assignments/:dow · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L276 · **no-validate-body** · PUT /api/zone-day/:date · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L354 · **no-validate-body** · POST /api/zone-day/copy-month · validateBody() 미적용 · Zod 검증 없음
 
 ### server/routes/display/zoneLabels.ts (4건)
 - 🔴 L47 · **no-authorize** · PUT /api/zone-labels · authorize() 미적용 · 권한 우회 가능
@@ -220,10 +217,8 @@
 - 🔴 L190 · **no-authorize** · POST /api/anon-push-subscribe · authorize() 미적용 · 권한 우회 가능
 - 🟡 L190 · **no-validate-body** · POST /api/anon-push-subscribe · validateBody() 미적용 · Zod 검증 없음
 
-### server/routes/stock/stockManage.ts (3건)
-- 🔴 L1652 · **no-authorize** · POST /api/upload-stock · authorize() 미적용 · 권한 우회 가능
-- 🟡 L1652 · **no-validate-body** · POST /api/upload-stock · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L1966 · **no-authorize** · DELETE /api/stock-import-log · authorize() 미적용 · 권한 우회 가능
+### server/routes/stock/stockManage.ts (1건)
+- 🟡 L1653 · **no-validate-body** · POST /api/upload-stock · validateBody() 미적용 · Zod 검증 없음
 
 ## 라우트별 준수 현황
 - ⚠ 29 · server/routes/ocr/ocr.ts · 25 라우트
@@ -234,14 +229,13 @@
 - ⚠ 8 · server/routes/settings/settings.ts · 12 라우트
 - ⚠ 8 · server/routes/stock/stockArrivals.ts · 7 라우트
 - ⚠ 6 · server/routes/board/board.ts · 12 라우트
-- ⚠ 6 · server/routes/display/zoneAssignments.ts · 5 라우트
 - ⚠ 5 · server/routes/board/notifications.ts · 6 라우트
 - ⚠ 4 · server/routes/display/zoneLabels.ts · 4 라우트
 - ⚠ 4 · server/routes/payment/borrowings.ts · 4 라우트
 - ⚠ 4 · server/routes/purchase/supplierPayments.ts · 12 라우트
 - ⚠ 4 · server/routes/staff/contractClauses.ts · 3 라우트
+- ⚠ 3 · server/routes/display/zoneAssignments.ts · 5 라우트
 - ⚠ 3 · server/routes/staff/employeeContracts.ts · 4 라우트
-- ⚠ 3 · server/routes/stock/stockManage.ts · 19 라우트
 - ⚠ 2 · server/routes/board/pharmacistMenuItems.ts · 4 라우트
 - ⚠ 2 · server/routes/purchase/invoiceImages.ts · 2 라우트
 - ⚠ 2 · server/routes/purchase/ocrConfirmed.ts · 3 라우트
@@ -253,5 +247,6 @@
 - ⚠ 1 · server/routes/settings/systemConfig.ts · 2 라우트
 - ⚠ 1 · server/routes/staff/hrForms.ts · 3 라우트
 - ⚠ 1 · server/routes/stock/productArrivals.ts · 5 라우트
+- ⚠ 1 · server/routes/stock/stockManage.ts · 19 라우트
 - ✅ · server/routes/daily/leave.ts · 7 라우트
 - ✅ · server/routes/daily/lunch.ts · 4 라우트
