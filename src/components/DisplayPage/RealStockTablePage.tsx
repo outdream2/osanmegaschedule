@@ -6,7 +6,7 @@
 //   · /api/inventory-latest (최신 실재고) + /api/products-search (상품 리스트) 조합
 
 import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { PackageCheck, Search, RefreshCw, Check, X } from "lucide-react";
+import { PackageCheck, Search, RefreshCw, Check, X, ChevronRight, ChevronDown } from "lucide-react";
 import { Modal } from "../common/Modal";
 import { api, ApiError } from "../../lib/apiClient";
 import { Card } from "../common/Card";
@@ -105,6 +105,18 @@ export const RealStockTablePage: React.FC = () => {
   const { toast, showError, showSuccess } = useToast();
   // 2026-08-27 · 사용자 지시 · Group by 구역 뷰 토글 (옵션 3)
   const [groupByZone, setGroupByZone] = useState(false);
+  // 2026-08-27 · 사용자 지시 · 각 그룹 접기/펼치기 · Set 저장 (collapsed 그룹만 저장)
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const toggleGroup = useCallback((key: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }, []);
+  const allExpanded = collapsedGroups.size === 0;
+  const collapseAll = useCallback((keys: string[]) => setCollapsedGroups(new Set(keys)), []);
+  const expandAll = useCallback(() => setCollapsedGroups(new Set()), []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -469,6 +481,26 @@ export const RealStockTablePage: React.FC = () => {
                 />
                 구역별 그룹
               </label>
+              {/* 2026-08-27 · 사용자 지시 · 구역별 그룹 · 접기/펼치기 컨트롤 · groupByZone 활성 시만 표시 */}
+              {groupByZone && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (allExpanded) {
+                      const keys = new Set<string>();
+                      for (const r of sorted) keys.add(String(r.location ?? "").trim() || "(미지정)");
+                      collapseAll([...keys]);
+                    } else {
+                      expandAll();
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-white border border-line text-[15px] font-bold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep hover:text-brand-deep transition cursor-pointer"
+                  title={allExpanded ? "모두 접기" : "모두 펼치기"}
+                >
+                  {allExpanded ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                  {allExpanded ? "모두 접기" : "모두 펼치기"}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={load}
@@ -544,9 +576,10 @@ export const RealStockTablePage: React.FC = () => {
                     const totalErp = rows.reduce((s, r) => s + (r.erp ?? 0), 0);
                     const totalReal = rows.reduce((s, r) => s + r.total, 0);
                     return [
-                      <tr key={`group-${k}`} className="bg-brand-tint border-t-2 border-b border-brand-deep/40 sticky top-[42px] z-20 shadow-sm">
+                      <tr key={`group-${k}`} className="bg-brand-tint border-t-2 border-b border-brand-deep/40 sticky top-[42px] z-20 shadow-sm hover:bg-brand-tint/80 cursor-pointer transition" onClick={() => toggleGroup(k)}>
                         <td colSpan={16} className="px-3 py-2.5 bg-brand-tint">
                           <div className="flex items-center gap-2 flex-wrap">
+                            {collapsedGroups.has(k) ? <ChevronRight size={16} className="text-brand-deep shrink-0" /> : <ChevronDown size={16} className="text-brand-deep shrink-0" />}
                             <span className="w-1 h-4 rounded-full bg-brand-deep" />
                             <span className="text-[15px] font-extrabold text-brand-deep tabular-nums">{k}</span>
                             <span className="text-[12px] font-bold text-brand-deep/70 tabular-nums">· {rows.length}건</span>
@@ -560,7 +593,7 @@ export const RealStockTablePage: React.FC = () => {
                           </div>
                         </td>
                       </tr>,
-                      ...rows.map(r => (
+                      ...(collapsedGroups.has(k) ? [] : rows.map(r => (
                         <tr key={r.product_code} className="hover:bg-zinc-50/60 transition text-[15px]">
                           <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ?? "-"}</td>
                           <td className={tableTdCls("left")}>
@@ -583,7 +616,7 @@ export const RealStockTablePage: React.FC = () => {
                           <td className={tableTdCls("num", `tabular-nums font-extrabold ${r.total > 0 ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>{r.total > 0 ? r.total : "-"}</td>
                           <td className={tableTdCls("num", `tabular-nums font-bold ${r.diff > 0 ? "text-rose-600" : r.diff < 0 ? "text-emerald-600" : "text-zinc-300"} bg-rose-50/20`)}>{r.diff !== 0 ? (r.diff > 0 ? `+${r.diff}` : String(r.diff)) : "0"}</td>
                         </tr>
-                      )),
+                      ))),
                     ];
                   });
                 })()}
