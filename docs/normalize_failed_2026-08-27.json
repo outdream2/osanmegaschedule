@@ -1,0 +1,1157 @@
+[
+  {
+    "origCode": "108806435065186",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806435079213",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435024916",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806445007831",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806017000222",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806703048521",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108800543009216",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806453000732",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806644000312",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806481049611",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108800742000519",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108800742000229",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806447022283",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806516014416",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806530067726",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806538050713",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806581063036",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806538052816",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806616054015",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435002242",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806435080516",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108800742000649",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806707003762",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435015716",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108800742000625",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806538053011",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806417058724",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806417061410",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806439038117",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806419002619",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538049724",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435011213",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806417063117",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806741012553",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806418072323",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538050164",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806422013749",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806422024813",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806574005128",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538052014",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806481048713",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538063317",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806453010939",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806574015523",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806445025439",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806417063728",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806435062116",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435036322",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806417053415",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806628001236",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806417062240",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806418069910",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806419000479",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806419066833",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806433023126",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806744015131",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806574002646",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806439033914",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806417064725",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806418057535",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806439004754",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806574015318",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806445012323",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538050522",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806417011514",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806265018215",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806417046448",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806265021512",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806265003112",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806417056515",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806417057819",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806417058212",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806417058311",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806417051114",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806417052616",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806417022015",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538050157",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806417060215",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806417058731",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806419031640",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806418072828",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806418062652",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806417063810",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0106970280851064",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806419031671",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806419031688",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806435080813",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806435069023",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806435073914",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806417058717",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806481049710",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435028815",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806422022062",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806445034912",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806446030111",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806481049314",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806616053919",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435079411",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806445034714",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108800742000816",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806741013635",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806741020237",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806703050913",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806939034510",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806439041919",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538050423",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435013217",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806453030715",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806418072835",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806562053612",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108800742000618",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806427040115",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806427039522",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806616054114",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806422038919",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806419066826",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806423054420",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806427039713",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806422045528",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806447022238",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435009036",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806717066924",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806481049512",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806534049124",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435010032",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806436066021",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538059419",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538065120",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806481040014",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108800742000212",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538010977",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435010520",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806436066120",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806481048812",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806470006816",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806417063919",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806481049819",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806478049419",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538064611",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806942000120",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435037435",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806481013568",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108809306547941",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806427039720",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806433094218",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806445006018",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806427069826",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806427072215",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806427054716",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806427076718",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806516014454",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806429042117",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806427064111",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806427065514",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806429062719",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806422014227",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806704024524",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806516002376",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806741011945",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806433016241",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806435011411",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806435022714",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538063539",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806418072811",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806435074812",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806435075512",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806427065316",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806942060124",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806581056519",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806485005033",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538065113",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806433087616",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435000712",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806427076725",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806417050919",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435031747",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435024565",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806417051022",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806481047419",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806780003611",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806481013247",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806418051915",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806478049129",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806427077111",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806481043114",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806483002331",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806495001018",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806419031633",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806497024015",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806496054310",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806481027619",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806496061622",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806433001216",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806481044517",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806538013510",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "108806538020112",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806427077517",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806433098827",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435024541",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435024534",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806436004511",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806439004860",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806422045818",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806439021218",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806481037717",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538050324",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538052021",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538052038",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806427039515",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108800516000417",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435067210",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806435070913",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806581057431",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806453060323",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806703049627",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806481047310",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806481052611",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806433065522",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806496054211",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806495081829",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538059310",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806417051510",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806581086110",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806417047919",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806433065515",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806433052317",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806433052324",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806432033522",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538030517",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806538064420",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  },
+  {
+    "origCode": "0108806574015226",
+    "step": "rename",
+    "err": "duplicate key value violates unique constraint \"products_pkey\""
+  }
+]
