@@ -154,6 +154,14 @@ export const RealStockTablePage: React.FC = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  // 2026-08-27 · 사용자 지시 · 판매중 토글 시 · products-map 재로드 (서버 setting 기반)
+  //   · setting KV 변경 (useSaleActiveOnly) · debounce 저장 · 500ms 후 refetch
+  useEffect(() => {
+    const t = setTimeout(() => { load(); }, 550);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saleOnly]);
+
   // 2026-08-27 · 사용자 지시 · 프로젝트 전역 inventory_checks DB 연동
   //   · 다른 페이지 (ScanPage/InventoryEditModal/ExpiryDateModal 등) 편집 시 · 실시간 refresh
   //   · 자기 자신 dispatch 는 skip (detail.source === "real-stock") · 무한 루프 방지
