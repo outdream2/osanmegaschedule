@@ -20,6 +20,7 @@
     "audit:check": "node scripts/audit-framework.cjs --check-new --quiet",
     "audit:strict": "node scripts/audit-framework.cjs --check",
     "audit:update": "node scripts/audit-framework.cjs --update-baseline",
+    "audit:server": "node scripts/audit-server.cjs",
     "import:vendors": "node scripts/import-vendors.mjs",
     "import:vendors:dry": "node scripts/import-vendors.mjs --dry-run",
     "prepare": "husky"
