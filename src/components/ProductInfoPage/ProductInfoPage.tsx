@@ -25,8 +25,8 @@ import type { AuthSession } from "../../types";
 import { UpdateProductSchema, type UpdateProductInput } from "../../shared/schemas/products";
 // 2026-08-23 · #197 · 스캔 페이지에서 넘어온 pending code · 자동 등록 모달
 import { consumeScanPendingProductCode } from "../../hooks/useScanUnregisteredMode";
-// 2026-08-26 · 사용자 지시 · 상품테이블 판매중 필터 반영 (전역 설정 · useSaleActiveOnly)
-import { useSaleActiveOnly } from "../../hooks/useSaleActiveOnly";
+// 2026-08-28 · 감사 P1-3 · 이중 필터 제거 · 서버 (getPublicProductMap) 이 이미 판매중 필터
+// import { useSaleActiveOnly } from "../../hooks/useSaleActiveOnly";  // deprecated · 이중 필터 원인
 // 2026-08-28 · 사용자 지시 · 13컬럼 통일 · ProductBasicInfoPanel 상단 삽입
 import { ProductBasicInfoPanel } from "../common/ProductBasicInfoPanel";
 
@@ -435,11 +435,9 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
     return () => { alive = false; };
   }, [showError, reloadKey]);
 
-  // 2026-08-26 · 사용자 지시 · 상품테이블 · 판매중만 필터 반영 (전역 설정)
-  const { saleActiveOnly } = useSaleActiveOnly();
+  // 2026-08-28 · 감사 P1-3 · 이중 필터 제거 · 서버 getPublicProductMap 이 이미 판매중 필터 (신규 상품 null 상태 누락 방지)
   const filtered = useMemo(() => {
-    let list = rows;
-    if (saleActiveOnly) list = list.filter(r => String(r.sale_status ?? "").trim() === "판매중");
+    const list = rows;
     const s = search.trim();
     if (!s) return list;
     return list.filter(r =>
@@ -447,7 +445,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
       r.product_code.toLowerCase().includes(s.toLowerCase()) ||
       (r.supplier ?? "").toLowerCase().includes(s.toLowerCase()),
     );
-  }, [rows, search, saleActiveOnly]);
+  }, [rows, search]);
 
   // 상세 fetch (선택 시 · reloadKey 변경 시에도 refetch · 편집 저장 후 stale 방지)
   useEffect(() => {
