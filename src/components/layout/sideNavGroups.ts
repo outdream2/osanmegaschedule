@@ -99,19 +99,17 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     topTab: { key: "display" },
     managerOnly: true,
     items: [
-      // DisplayPage 서브탭 · dpCanSeeStockManage (level ≥ 9) 조건과 동일하게 minLevel 지정
-      { key: "display", label: "발주", icon: Truck, color: "red", subTab: "purchase-order", minLevel: 9 },
+      // 2026-08-29 · 사용자 지시 · 매장 하위 순서 조정 · 상품·매입·판매·발주·결제·반품·매장진열·입고알림
+      // 상품 · ProductInfoPage 라우팅 · 신규 Page key "product-info" 필요 (하위 실재고입력·상품입고·상품정보 후속)
+      { key: "display", label: "상품", icon: Package, color: "red", subTab: "product", managerOnly: true },
       { key: "display", label: "매입", icon: Package, color: "red", subTab: "purchase", minLevel: 9 },
-      { key: "display", label: "결제", icon: CurrencyKrw, color: "red", subTab: "payment", minLevel: 9 },
       { key: "display", label: "판매", icon: ChartBar, color: "red", subTab: "statistics", minLevel: 9 },
-      // 2026-08-25 · 사용자 지시 · 반품 메뉴 신규 · 반품필요 페이지 이동
+      { key: "display", label: "발주", icon: Truck, color: "red", subTab: "purchase-order", minLevel: 9 },
+      { key: "display", label: "결제", icon: CurrencyKrw, color: "red", subTab: "payment", minLevel: 9 },
       { key: "display", label: "반품", icon: ArrowLeftRight, color: "red", subTab: "return", minLevel: 9 },
+      { key: "display", label: "매장진열", icon: Storefront, color: "red", subTab: "store", managerOnly: true },
       // 입고알림 · dpCanSeeStockArrivals (level ≥ 3)
       { key: "display", label: "입고알림", icon: Bell, color: "red", subTab: "stock-arrivals", minLevel: 3 },
-      { key: "display", label: "매장진열", icon: Storefront, color: "red", subTab: "store", managerOnly: true },
-      // 2026-08-12 · 공급사 · 사이드바 항목 삭제 (사용자 지시)
-      // 2026-08-12 · 상품스캔·상품도착·재고관리 · 사이드바 항목 삭제 (사용자 지시 · 매장>매입 서브탭 참고)
-      // 2026-08-12 · 거래명세서 OCR · 매장>매입 서브탭에 이미 있음 · 사이드바 중복 제거
     ],
   },
   {
