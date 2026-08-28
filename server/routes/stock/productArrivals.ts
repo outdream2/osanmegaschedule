@@ -71,9 +71,18 @@ router.post("/api/product-arrivals", validateBody(CreateProductArrivalSchema), a
     status:       String(it.status ?? "pending"),
     expiring:     it.expiring === true,
   }));
-  const { error: iErr } = await supabase.from("product_arrival_items").insert(itemRows);
+  let { error: iErr } = await supabase.from("product_arrival_items").insert(itemRows);
+  // 2026-08-29 · expiring 컬럼 미존재 시 · 컬럼 제외 후 재시도 (스키마 마이그 안 된 환경 방어)
+  if (iErr && /expiring/i.test(iErr.message) && /(column|schema cache|not found)/i.test(iErr.message)) {
+    const itemRowsNoExpiring = itemRows.map((r) => {
+      const rest: Record<string, unknown> = { ...r };
+      delete rest.expiring;
+      return rest;
+    });
+    const retry = await supabase.from("product_arrival_items").insert(itemRowsNoExpiring);
+    iErr = retry.error;
+  }
   if (iErr) {
-    // 롤백 · 헤더 삭제 시도
     await supabase.from("product_arrivals").delete().eq("id", arrivalId);
     throw new HttpError(500, iErr.message);
   }

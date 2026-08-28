@@ -6,7 +6,7 @@
 
 import React from "react";
 import {
-  ShieldCheck, ClipboardCheck, ClipboardX, CheckCircle2, XCircle,
+  ShieldCheck, ClipboardX,
   Sparkles, AlertCircle, Package, RefreshCw, Trash2, PackagePlus,
 } from "lucide-react";
 import { StatusPill } from "../common/StatusPill";
@@ -53,18 +53,26 @@ interface FinalDecisionCardProps {
   onSave: () => void;
 }
 
+// 2026-08-29 · 사용자 지시 · UX 슬림 (중복 프로세스 제거)
+//   · [전체 품목일치] [품목 불일치 있음] 큰 두 버튼 · 제거 (자동 도출)
+//   · 최종 판정 · pill 로 컴팩트 표시
+//   · [등록] 버튼 · 항상 표시 (일치 선택 바로 아래) · disabled: !allDecided
+//   · 메모 · has_mismatch 시 자동 노출
 export const FinalDecisionCard: React.FC<FinalDecisionCardProps> = ({
   items, allDecided, pendingCount, finalDecision, mismatchMemo,
   saveStatus, saveError, savedId,
-  setFinalDecision, setMismatchMemo, onSave,
+  setFinalDecision: _setFinalDecision, // 자동 도출로 미사용 · 상위에서 useEffect 로 관리
+  setMismatchMemo, onSave,
 }) => {
+  void _setFinalDecision;
+  const disabledSave = !allDecided || saveStatus === "saving" || saveStatus === "done";
   return (
     <div className={`bg-white rounded-2xl border-2 transition-colors duration-150 overflow-hidden ${
       allDecided
         ? "border-sky-300/80 shadow-[0_0_0_4px_rgba(14,165,233,0.08),0_4px_16px_rgba(0,0,0,0.08)]"
-        : "border-line/80 shadow-[0_2px_8px_rgba(0,0,0,0.05)] opacity-90"
+        : "border-line/80 shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
     }`}>
-      <div className={`px-5 py-4 border-b border-zinc-100/80 flex items-center justify-between gap-2 ${
+      <div className={`px-5 py-3.5 border-b border-zinc-100/80 flex items-center justify-between gap-2 ${
         allDecided ? "bg-sky-50/60" : "bg-zinc-50/40"
       }`}>
         <div className="flex items-center gap-2.5">
@@ -73,69 +81,24 @@ export const FinalDecisionCard: React.FC<FinalDecisionCardProps> = ({
           }`}>
             <ShieldCheck size={14} className={allDecided ? "text-sky-600" : "text-zinc-400"} />
           </div>
-          <span className="text-sm font-bold text-zinc-800">최종 확인 · 거래명세표 대조</span>
+          <span className="text-sm font-bold text-zinc-800">최종 판정 · 등록</span>
         </div>
+        {allDecided && finalDecision === "all_match" && (
+          <StatusPill tone="emerald" size="md" dot>완전 일치</StatusPill>
+        )}
+        {allDecided && finalDecision === "has_mismatch" && (
+          <StatusPill tone="rose" size="md" dot>불일치 있음</StatusPill>
+        )}
         {!allDecided && items.length > 0 && (
           <StatusPill tone="amber" size="md" dot pulse>{pendingCount}건 상태 미결정</StatusPill>
         )}
       </div>
 
-      <div className="px-5 py-4 flex flex-col gap-4">
-        <p className="text-[14px] text-zinc-500 leading-relaxed">
-          모든 항목의 상태를 지정한 뒤, 거래명세표와 실제 입고 물품의
-          최종 일치 여부를 선택하세요.
-        </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button
-            onClick={() => setFinalDecision("all_match")}
-            disabled={!allDecided}
-            className={[
-              "relative inline-flex items-center justify-center gap-2.5",
-              "min-h-[56px] py-3.5 rounded-xl font-bold text-[14px] sm:text-[15px]",
-              "border-2 transition-colors duration-150 cursor-pointer",
-              "disabled:cursor-not-allowed active:scale-[0.98] overflow-hidden",
-              finalDecision === "all_match"
-                ? "bg-emerald-500 text-white border-emerald-500 shadow-md"
-                : allDecided
-                  ? "bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50 hover:border-emerald-400 shadow-sm hover:shadow-md"
-                  : "bg-zinc-50 text-zinc-300 border-line shadow-none",
-            ].join(" ")}
-          >
-            {finalDecision === "all_match" && (
-              <span className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
-            )}
-            <ClipboardCheck size={17} />
-            전체 품목일치
-          </button>
-
-          <button
-            onClick={() => setFinalDecision("has_mismatch")}
-            disabled={!allDecided}
-            className={[
-              "relative inline-flex items-center justify-center gap-2.5",
-              "min-h-[56px] py-3.5 rounded-xl font-bold text-[14px] sm:text-[15px]",
-              "border-2 transition-colors duration-150 cursor-pointer",
-              "disabled:cursor-not-allowed active:scale-[0.98] overflow-hidden",
-              finalDecision === "has_mismatch"
-                ? "bg-rose-500 text-white border-rose-500 shadow-md"
-                : allDecided
-                  ? "bg-white text-rose-700 border-rose-300 hover:bg-rose-50 hover:border-rose-400 shadow-sm hover:shadow-md"
-                  : "bg-zinc-50 text-zinc-300 border-line shadow-none",
-            ].join(" ")}
-          >
-            {finalDecision === "has_mismatch" && (
-              <span className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
-            )}
-            <ClipboardX size={17} />
-            품목 불일치 있음
-          </button>
-        </div>
-
+      <div className="px-5 py-4 flex flex-col gap-3">
         {finalDecision === "has_mismatch" && (
-          <div className="flex flex-col gap-2">
-            <label className="flex items-center gap-1.5 text-[14px] font-bold text-rose-700">
-              <ClipboardX size={13} />
+          <div className="flex flex-col gap-1.5">
+            <label className="flex items-center gap-1.5 text-[13px] font-bold text-rose-700">
+              <ClipboardX size={12} />
               품목이상 상세 메모
             </label>
             <textarea
@@ -153,63 +116,48 @@ export const FinalDecisionCard: React.FC<FinalDecisionCardProps> = ({
           </div>
         )}
 
-        {finalDecision && (
-          <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-[14px] sm:text-[15px] font-bold border-2 ${
-            finalDecision === "all_match"
-              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-              : "bg-rose-50 text-rose-700 border-rose-200"
-          }`}>
-            {finalDecision === "all_match"
-              ? <CheckCircle2 size={16} />
-              : <XCircle size={16} />
-            }
-            최종 판정: {finalDecision === "all_match"
-              ? "거래명세표와 실제 입고 완전 일치"
-              : "거래명세표와 실제 입고 불일치 존재"}
-          </div>
+        <button
+          onClick={onSave}
+          disabled={disabledSave}
+          className={[
+            "relative w-full min-h-[52px] py-3 rounded-xl",
+            "font-bold text-[15px] text-white",
+            "transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed",
+            "active:scale-[0.99] overflow-hidden",
+            !allDecided
+              ? "bg-zinc-300"
+              : saveStatus === "done"
+                ? "bg-emerald-500 shadow-md"
+                : saveStatus === "error"
+                  ? "bg-rose-500 hover:bg-rose-600 shadow-md"
+                  : saveStatus === "saving"
+                    ? "bg-zinc-400"
+                    : "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-md hover:shadow-lg",
+          ].join(" ")}
+        >
+          <span className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
+          <span className="relative flex items-center justify-center gap-2.5">
+            {saveStatus === "saving" && <Spinner size={16} />}
+            {saveStatus === "done"    && <Sparkles size={16} />}
+            {saveStatus === "error"   && <AlertCircle size={16} />}
+            {(saveStatus === "idle" && allDecided) && <PackagePlus size={16} />}
+            {!allDecided             ? `${pendingCount}건 상태 지정 필요` :
+             saveStatus === "saving" ? "등록 중..." :
+             saveStatus === "done"   ? `등록 완료 (ID: ${savedId ?? "-"})` :
+             saveStatus === "error"  ? "다시 등록" :
+             finalDecision === "all_match" ? "전체 일치 · 등록" :
+             finalDecision === "has_mismatch" ? "불일치 포함 · 등록" :
+             "등록"}
+          </span>
+        </button>
+
+        {saveError && (
+          <p className="text-[13px] text-rose-600 font-semibold px-1">{saveError}</p>
         )}
-
-        {finalDecision && (
-          <div className="flex flex-col gap-2">
-            <button
-              onClick={onSave}
-              disabled={saveStatus === "saving" || saveStatus === "done"}
-              className={[
-                "relative w-full min-h-[56px] py-3.5 rounded-xl",
-                "font-bold text-[14px] sm:text-[15px] text-white",
-                "transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed",
-                "active:scale-[0.99] overflow-hidden",
-                saveStatus === "done"
-                  ? "bg-emerald-500 shadow-md"
-                  : saveStatus === "error"
-                    ? "bg-rose-500 hover:bg-rose-600 shadow-md"
-                    : saveStatus === "saving"
-                      ? "bg-zinc-400"
-                      : "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-md hover:shadow-lg",
-              ].join(" ")}
-            >
-              <span className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
-              <span className="relative flex items-center justify-center gap-2.5">
-                {saveStatus === "saving" && <Spinner size={17} />}
-                {saveStatus === "done"    && <Sparkles size={17} />}
-                {saveStatus === "error"   && <AlertCircle size={17} />}
-                {saveStatus === "idle"    && <PackagePlus size={17} />}
-                {saveStatus === "saving" ? "등록 중..." :
-                 saveStatus === "done"   ? `등록 완료 (ID: ${savedId ?? "-"})` :
-                 saveStatus === "error"  ? "다시 등록" :
-                 "전체 등록"}
-              </span>
-            </button>
-
-            {saveError && (
-              <p className="text-[14px] text-rose-600 font-semibold px-1">{saveError}</p>
-            )}
-            {saveStatus === "done" && (
-              <p className="text-[14px] text-zinc-400 font-medium px-1 leading-relaxed">
-                저장 완료. 발주/사입관리 · 입고매칭 탭에서 발주 대비 확인 가능.
-              </p>
-            )}
-          </div>
+        {saveStatus === "done" && (
+          <p className="text-[12px] text-zinc-400 font-medium px-1 leading-relaxed">
+            저장 완료. 발주/사입관리 · 입고매칭 탭에서 발주 대비 확인 가능.
+          </p>
         )}
       </div>
     </div>

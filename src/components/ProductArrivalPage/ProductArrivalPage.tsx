@@ -239,6 +239,15 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   }, [items]);
 
   const allDecided = counts.total > 0 && counts.pending === 0;
+  // 2026-08-29 · 사용자 지시 · finalDecision 자동 도출 (수동 버튼 제거 · UX 슬림)
+  useEffect(() => {
+    if (!allDecided) {
+      if (finalDecision !== null) setFinalDecision(null);
+      return;
+    }
+    const next = counts.mismatch > 0 ? "has_mismatch" : "all_match";
+    if (finalDecision !== next) setFinalDecision(next);
+  }, [allDecided, counts.mismatch, finalDecision]);
 
   // ─────────────────────────────────────────────────────────────
   // Render

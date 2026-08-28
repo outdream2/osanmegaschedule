@@ -10,7 +10,8 @@
 //   · 병렬 fetch (Promise.all) · order-history · top-sales · supplier-balance
 //   · recharts 사용 (기존 LossHistoryTab 패턴)
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import ReactDOM from "react-dom";
 import {
   Wallet, Building2, ClipboardList, LineChart as LineChartIcon,
   Package, CircleCheck, TrendingUp, TrendingDown,
@@ -477,36 +478,15 @@ export const PaymentInputPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="relative flex-1 min-w-[240px] max-w-md">
-                <Building2 size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => { setQuery(e.target.value); setDropdownOpen(true); }}
-                  onFocus={() => setDropdownOpen(true)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") { e.preventDefault(); selectFirstMatch(); }
-                    if (e.key === "Escape") setDropdownOpen(false);
-                  }}
-                  placeholder="공급사명 검색 · 리스트 클릭 즉시 조회 (Enter · 첫 매치)"
-                  className="w-full h-9 pl-8 pr-3 rounded-lg border border-line bg-white text-[14px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
-                />
-                {dropdownOpen && query.trim() && filtered.length > 0 && (
-                  <Card padding="none" rounded="lg" className="absolute left-0 right-0 top-full mt-1 z-50 shadow-xl max-h-56 overflow-y-auto">
-                    {filtered.map(v => (
-                      <button
-                        key={v.id}
-                        type="button"
-                        onClick={() => { setSelectedId(v.id); setQuery(String(v.company_name ?? "")); setDropdownOpen(false); }}
-                        className="w-full text-left px-3 py-2 text-[13px] font-medium text-ink hover:bg-brand-tint/30 flex items-center gap-2 transition-colors border-b border-line/50 last:border-b-0"
-                      >
-                        <span className="truncate flex-1">{v.company_name}</span>
-                        {v.category && <span className="ml-auto text-[11px] text-ink-soft shrink-0">{v.category}</span>}
-                      </button>
-                    ))}
-                  </Card>
-                )}
-              </div>
+              <SupplierSearchInput
+                query={query}
+                setQuery={setQuery}
+                dropdownOpen={dropdownOpen}
+                setDropdownOpen={setDropdownOpen}
+                filtered={filtered}
+                onSelect={(v) => { setSelectedId(v.id); setQuery(String(v.company_name ?? "")); setDropdownOpen(false); }}
+                selectFirstMatch={selectFirstMatch}
+              />
               <CategoryChips
                 value={category}
                 onChange={(v) => setCategory(String(v))}
@@ -544,3 +524,114 @@ export const PaymentInputPage: React.FC = () => {
 };
 
 export default PaymentInputPage;
+
+// -----------------------------------------------------------------------------
+// 공급사 검색 · Portal 드롭다운
+//   · 부모 overflow / sticky / 반응형 wrap 영향 X
+//   · 화면 하단 공간 부족 시 · 위로 flip
+// -----------------------------------------------------------------------------
+interface SupplierSearchInputProps {
+  query: string;
+  setQuery: (v: string) => void;
+  dropdownOpen: boolean;
+  setDropdownOpen: (v: boolean) => void;
+  filtered: VendorItem[];
+  onSelect: (v: VendorItem) => void;
+  selectFirstMatch: () => void;
+}
+
+const SupplierSearchInput: React.FC<SupplierSearchInputProps> = ({
+  query, setQuery, dropdownOpen, setDropdownOpen, filtered, onSelect, selectFirstMatch,
+}) => {
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; width: number; flip: boolean } | null>(null);
+
+  const open = dropdownOpen && !!query.trim() && filtered.length > 0;
+
+  useEffect(() => {
+    if (!open) { setPos(null); return; }
+    const el = wrapRef.current;
+    if (!el) return;
+    const update = () => {
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const spaceBelow = vh - r.bottom;
+      const spaceAbove = r.top;
+      const maxListH = 224; // max-h-56
+      const flip = spaceBelow < maxListH + 8 && spaceAbove > spaceBelow;
+      setPos({
+        top: flip ? Math.max(8, r.top - maxListH - 6) : r.bottom + 4,
+        left: r.left,
+        width: r.width,
+        flip,
+      });
+    };
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (wrapRef.current?.contains(t)) return;
+      const dd = document.getElementById("supplier-search-portal-dd");
+      if (dd?.contains(t)) return;
+      setDropdownOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open, setDropdownOpen]);
+
+  return (
+    <div ref={wrapRef} className="relative flex-1 min-w-[220px] max-w-md">
+      <Building2 size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+      <input
+        ref={inputRef}
+        type="text"
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); setDropdownOpen(true); }}
+        onFocus={() => setDropdownOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); selectFirstMatch(); }
+          if (e.key === "Escape") setDropdownOpen(false);
+        }}
+        placeholder="공급사명 검색 · 리스트 클릭 즉시 조회 (Enter · 첫 매치)"
+        className="w-full h-10 pl-8 pr-3 rounded-lg border border-line bg-white text-[14px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+      />
+      {open && pos && ReactDOM.createPortal(
+        <div
+          id="supplier-search-portal-dd"
+          style={{
+            position: "fixed",
+            top: pos.top,
+            left: pos.left,
+            width: pos.width,
+            zIndex: 9999,
+          }}
+        >
+          <Card padding="none" rounded="lg" className="shadow-2xl max-h-56 overflow-y-auto ring-1 ring-black/5">
+            {filtered.map(v => (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => onSelect(v)}
+                className="w-full text-left px-3 py-2 text-[13px] font-medium text-ink hover:bg-brand-tint/30 flex items-center gap-2 transition-colors border-b border-line/50 last:border-b-0"
+              >
+                <span className="truncate flex-1">{v.company_name}</span>
+                {v.category && <span className="ml-auto text-[11px] text-ink-soft shrink-0">{v.category}</span>}
+              </button>
+            ))}
+          </Card>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+};

@@ -105,8 +105,8 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
 
         {/* 액션 영역 · 수량 stepper + 3-state pill + 삭제 */}
         <div className="flex items-center gap-2 flex-wrap pt-1">
-          {/* 수량 Stepper · 2026-08-18 · 공용 StepperInput 프레임워크 */}
-          <div className="w-[132px]">
+          {/* 수량 Stepper · 2026-08-29 · 폭 확장 (132→176) · input 숫자 잘 보이게 · 사용자 지시 */}
+          <div className="w-[176px]">
             <StepperInput
               value={item.qty}
               onChange={(v) => onSetQty(item.key, v === "" ? 0 : v)}
