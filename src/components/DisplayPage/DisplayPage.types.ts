@@ -5,6 +5,7 @@ import type { AppNavPage } from "../layout/AppNavHeader";
 
 // ─── DisplayPage 서브탭 key ─────────────────────────────────────────────
 export type DpSubTabKey =
+  | "product"         // 2026-08-29 · 사용자 지시 · 매입에서 이동 · 3개 이너 탭 (실재고입력·상품입고·상품정보)
   | "purchase-order"
   | "purchase"
   | "payment"

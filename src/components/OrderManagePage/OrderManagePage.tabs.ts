@@ -10,7 +10,8 @@ import {
 } from "lucide-react";
 
 export type PurchaseOrderKey = "order" | "need" | "critical" | "history";
-export type PurchaseKey = "receipt" | "reconciliation" | "scan" | "productarrival" | "productinfo" | "return" | "purchase-history";
+// 2026-08-29 · #193 Phase B · scan · productarrival · productinfo · return 4개 · 매장>상품/반품 서브탭으로 완전 이관 (사용자 지시)
+export type PurchaseKey = "receipt" | "reconciliation" | "purchase-history";
 export type PaymentKey = "vendor" | "payment-input" | "borrowing" | "vat-prepare";
 export type StatKey = "trending" | "category" | "flow" | "diff" | "supplier";
 
@@ -30,12 +31,9 @@ export const PURCHASE_ORDER_DEFAULT_TABS: SubTabDef<PurchaseOrderKey>[] = [
 
 export const PURCHASE_DEFAULT_TABS: SubTabDef<PurchaseKey>[] = [
   { key: "purchase-history", label: "매입이력",     icon: Building2,      color: "sky"     },
-  { key: "return",           label: "반품필요",     icon: ArrowLeftRight, color: "rose"    },
   { key: "receipt",          label: "거래명세서",   icon: PackageCheck,   color: "violet"  },
-  { key: "scan",             label: "실재고입력",   icon: ScanLine,       color: "teal"    },
-  { key: "productarrival",   label: "상품입고",     icon: PackagePlus,    color: "blue"    },
-  { key: "productinfo",      label: "상품정보",     icon: Info,           color: "indigo"  },
-  // 2026-08-25 · 사용자 지시 · 실재고 → 유통기한 임박 (rename + 콘텐츠 교체)
+  // 2026-08-29 · #193 Phase B · return (반품필요) · scan (실재고입력) · productarrival (상품입고) · productinfo (상품정보)
+  //   · 4개 매장>상품/반품 서브탭으로 완전 이관 · 매입에서 제거 (사용자 지시 · 다중 재강조)
   { key: "reconciliation",   label: "유통기한 임박", icon: AlertTriangle,  color: "amber"   },
 ];
 

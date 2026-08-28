@@ -22,6 +22,13 @@ import { useIsMobile } from "../../hooks/use-mobile";
 import { DisplayRequestPanel } from "./DisplayRequestPanel";
 import { StockArrivalPage } from "../StockArrivalPage/StockArrivalPage";
 import OrderManagePage from "../OrderManagePage/OrderManagePage";
+// 2026-08-29 · #193 · 사용자 지시 · 상품 서브탭 · 3개 이너 탭 (실재고입력·상품입고·상품정보) 매입에서 이관
+const ScanPageLazy = React.lazy(() => import("../ScanPage/ScanPage").then(m => ({ default: m.ScanPage })));
+const ProductArrivalPageLazy = React.lazy(() => import("../ProductArrivalPage/ProductArrivalPage").then(m => ({ default: m.ProductArrivalPage })));
+const ProductInfoPageLazy = React.lazy(() => import("../ProductInfoPage/ProductInfoPage").then(m => ({ default: m.ProductInfoPage })));
+// 2026-08-29 · #193 · 반품 서브탭 · 매입 우회 · 반품필요 + 반품확정 직접 렌더 (이너 탭)
+const ReturnListPanelLazy = React.lazy(() => import("../OrderManagePage/ReturnListPanel").then(m => ({ default: m.ReturnListPanel })));
+const ReturnConfirmedPanelLazy = React.lazy(() => import("../OrderManagePage/ReturnConfirmedPanel").then(m => ({ default: m.ReturnConfirmedPanel })));
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -103,7 +110,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const { perms: dpPerms } = usePagePermissions();
   const dpHiddenSubs = React.useMemo(() => {
     const set = new Set<DpSubTabKey>();
-    const subs: DpSubTabKey[] = ["purchase-order", "purchase", "payment", "statistics", "stock-arrivals", "store", "vendor-manage"];
+    const subs: DpSubTabKey[] = ["product", "purchase-order", "purchase", "payment", "statistics", "return", "stock-arrivals", "store", "vendor-manage"];
     for (const s of subs) {
       const perm = (dpPerms as any)[`display:${s}`];
       if (perm?.hidden === true) set.add(s);
@@ -113,6 +120,28 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const isDpMobile = useIsMobile();
   const SIDEBAR_ENABLED = useSidebarEnabled();
   const [dpSubTab, setDpSubTab] = useState<DpSubTabKey>(dpCanSeeStockManage ? "purchase-order" : "store");
+  // 2026-08-29 · #193 · 상품 서브탭 안 · 3개 이너 탭 (실재고입력·상품입고·상품정보)
+  const [productInnerTab, setProductInnerTab] = useState<"scan" | "arrival" | "info">(() => {
+    try {
+      const raw = localStorage.getItem("dp.productInnerTab");
+      if (raw === "arrival" || raw === "info" || raw === "scan") return raw;
+    } catch { /* noop */ }
+    return "scan";
+  });
+  useEffect(() => {
+    try { localStorage.setItem("dp.productInnerTab", productInnerTab); } catch { /* noop */ }
+  }, [productInnerTab]);
+  // 2026-08-29 · #193 · 반품 서브탭 안 · 2개 이너 탭 (반품필요·반품확정)
+  const [returnInnerTabDp, setReturnInnerTabDp] = useState<"need" | "confirmed">(() => {
+    try {
+      const raw = localStorage.getItem("dp.returnInnerTab");
+      if (raw === "confirmed" || raw === "need") return raw;
+    } catch { /* noop */ }
+    return "need";
+  });
+  useEffect(() => {
+    try { localStorage.setItem("dp.returnInnerTab", returnInnerTabDp); } catch { /* noop */ }
+  }, [returnInnerTabDp]);
 
   // 2026-08-25 · Framework Phase 4 · 서브탭 초기화 · useDpInitialSubTab 이관
   useDpInitialSubTab(dpSubTab, setDpSubTab, dpHiddenSubs);
@@ -550,6 +579,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const popoverZone = useMemo(() => (popoverAnchor ? zones.find((z) => z.id === popoverAnchor.zoneId) ?? null : null), [popoverAnchor, zones]);
 
   const dpVisibilityMap: Record<DpSubTabKey, boolean> = {
+    // 2026-08-29 · #193 · 상품 서브탭 · 매입에서 이관 · dpCanSeeStockManage 동일 gate
+    "product": dpCanSeeStockManage && !dpHiddenSubs.has("product"),
     "purchase-order": dpCanSeeStockManage && !dpHiddenSubs.has("purchase-order"),
     "purchase": dpCanSeeStockManage && !dpHiddenSubs.has("purchase"),
     "payment": dpCanSeeStockManage && !dpHiddenSubs.has("payment"),
@@ -593,13 +624,47 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           />
         </main>
       ) : dpSubTab === "return" && dpCanSeeStockManage ? (
-        /* 2026-08-25 · 사용자 지시 · 반품 메뉴 · 반품필요 페이지만 · 매입 서브탭 UI 숨김 */
+        /* 2026-08-29 · #193 · 사용자 지시 · 반품 서브탭 · 매입 우회 · 직접 이너 탭 (반품필요·반품확정) */
         <main className="flex-1 flex flex-col min-h-0">
-          <OrderManagePage
-            ocrTabAuthSession={authSession} ocrTabOnBack={onBack} ocrTabOnNavigate={onNavigate as any}
-            ocrTabOnLogout={onLogout} initialTopTab="purchase" initialPurchaseSubTab="return"
-            hideTopTabs hideSubTabs
-          />
+          <div className="bg-white border-b border-line px-3">
+            <TabBar<"need" | "confirmed">
+              level={3}
+              activeKey={returnInnerTabDp}
+              onSelect={setReturnInnerTabDp}
+              tabs={[
+                { key: "need",      label: "반품필요", visible: true },
+                { key: "confirmed", label: "반품확정", visible: true },
+              ]}
+            />
+          </div>
+          <div className="flex-1 min-h-0">
+            <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
+              {returnInnerTabDp === "need" ? <ReturnListPanelLazy /> : <ReturnConfirmedPanelLazy />}
+            </React.Suspense>
+          </div>
+        </main>
+      ) : dpSubTab === "product" && dpCanSeeStockManage ? (
+        /* 2026-08-29 · #193 · 사용자 지시 · 상품 서브탭 · 3개 이너 탭 (실재고입력·상품입고·상품정보) · 매입에서 이관 */
+        <main className="flex-1 flex flex-col min-h-0">
+          <div className="bg-white border-b border-line px-3">
+            <TabBar<"scan" | "arrival" | "info">
+              level={3}
+              activeKey={productInnerTab}
+              onSelect={setProductInnerTab}
+              tabs={[
+                { key: "scan",    label: "실재고입력", visible: true },
+                { key: "arrival", label: "상품입고",   visible: true },
+                { key: "info",    label: "상품정보",   visible: true },
+              ]}
+            />
+          </div>
+          <div className="flex-1 min-h-0 flex flex-col">
+            <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
+              {productInnerTab === "scan"    && <ScanPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />}
+              {productInnerTab === "arrival" && <ProductArrivalPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />}
+              {productInnerTab === "info"    && <ProductInfoPageLazy authSession={authSession ?? null} />}
+            </React.Suspense>
+          </div>
         </main>
       ) : (
         <main className="max-w-[1360px] w-full mx-auto p-4 flex flex-col gap-4 flex-1">

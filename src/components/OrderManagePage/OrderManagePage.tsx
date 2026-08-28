@@ -96,22 +96,33 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   // Level-2 서브탭 상태
   const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "critical" | "history">("need");
-  const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "scan" | "productarrival" | "productinfo" | "return" | "purchase-history">(initialPurchaseSubTab ?? "receipt");
-  // 2026-08-25 · DisplayPage 반품 메뉴 진입 시 · 매입 서브탭 강제 (return)
+  // 2026-08-29 · #193 Phase B · scan/productarrival/productinfo/return · 매장>상품·반품 서브탭으로 완전 이관 · 매입 union 축소
+  const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "purchase-history">(() => {
+    const s = initialPurchaseSubTab as string | undefined;
+    if (s === "scan" || s === "productarrival" || s === "productinfo" || s === "return") return "receipt";
+    return (s as "receipt" | "reconciliation" | "purchase-history" | undefined) ?? "receipt";
+  });
   useEffect(() => {
-    if (initialPurchaseSubTab && initialPurchaseSubTab !== purchaseSubTab) setPurchaseSubTab(initialPurchaseSubTab);
+    if (!initialPurchaseSubTab) return;
+    const s = initialPurchaseSubTab as string;
+    if (s === "scan" || s === "productarrival" || s === "productinfo" || s === "return") return; // 매장>상품·반품 · 별도 렌더
+    if (initialPurchaseSubTab !== purchaseSubTab) setPurchaseSubTab(initialPurchaseSubTab as typeof purchaseSubTab);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPurchaseSubTab]);
 
-  // 2026-08-23 · #197 · 스캔 미분류 (page 모드) 진입 시 · sessionStorage pending code 감지 · productinfo 서브탭 자동 전환
+  // 2026-08-29 · #193 Phase B · pending 코드 · productinfo 서브탭 자동 전환 로직 · 별도 페이지 라우팅으로 우회 (매장>상품>상품정보 이너)
+  //   · 지금은 topTab 이동 없음 · 사용자가 매장>상품 진입 후 · localStorage 로 이너 탭 지정 필요 (후속 처리)
   useEffect(() => {
     try {
       const pending = sessionStorage.getItem("megatown_scan_pending_product_code");
       if (pending) {
-        setTopTab("purchase");
-        setPurchaseSubTab("productinfo");
+        // DisplayPage 로 이동 · 상품 서브탭 · info 이너 탭 활성화
+        try { localStorage.setItem("sidebar.subtab.display", "product"); } catch { /* noop */ }
+        try { localStorage.setItem("dp.productInnerTab", "info"); } catch { /* noop */ }
+        ocrTabOnNavigate?.("display");
       }
     } catch { /* noop */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input" | "borrowing" | "vat-prepare">("payment-input");
   const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff" | "supplier">("trending");
@@ -644,7 +655,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {topTab === "purchase" && (
         <div className="flex flex-col gap-3">
           {renderSubTabs<PurchaseKey>(
-            purchaseSortable.tabs.map(t => ({ k: t.key, label: t.label, icon: t.icon, color: t.color, badge: t.key === "return" ? returnNeedCount : undefined })),
+            purchaseSortable.tabs.map(t => ({ k: t.key, label: t.label, icon: t.icon, color: t.color })),
             purchaseSubTab, setPurchaseSubTab,
             { getTabProps: purchaseSortable.getTabProps, isDragging: purchaseSortable.isDragging },
           )}
@@ -655,53 +666,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           )}
           {/* 2026-08-25 · 사용자 지시 · reconciliation 키 유지 (URL/사이드바 호환) · 콘텐츠는 유통기한 임박 리스트 */}
           {purchaseSubTab === "reconciliation" && <div className="flex-1 flex flex-col min-h-0"><ExpiryImminentTab /></div>}
-          {purchaseSubTab === "scan" && (
-            <div className="flex-1 flex flex-col min-h-0 -mt-1"><Suspense fallback={<SubTabFallback />}>
-              <ScanPage embedded onBack={ocrTabOnBack ?? (() => {})} authSession={ocrTabAuthSession ?? null} onNavigate={ocrTabOnNavigate} onLogout={ocrTabOnLogout} />
-            </Suspense></div>
-          )}
-          {purchaseSubTab === "productarrival" && (
-            <div className="flex-1 flex flex-col min-h-0 -mt-1"><Suspense fallback={<SubTabFallback />}>
-              <ProductArrivalPage embedded onBack={ocrTabOnBack ?? (() => {})} authSession={ocrTabAuthSession ?? null} onNavigate={ocrTabOnNavigate} onLogout={ocrTabOnLogout} />
-            </Suspense></div>
-          )}
-          {purchaseSubTab === "productinfo" && (
-            <div className="flex-1 flex flex-col min-h-0 -mt-1"><Suspense fallback={<SubTabFallback />}>
-              <ProductInfoPage authSession={ocrTabAuthSession ?? null} />
-            </Suspense></div>
-          )}
-          {/* 2026-08-25 · 사용자 지시 · 반품 서브탭 · 반품필요 + 반품확정 이너 탭 */}
-          {purchaseSubTab === "return" && (
-            <div className="flex-1 min-h-0 flex flex-col">
-              <div className="flex items-center gap-1 border-b border-line px-2">
-                {(["confirmed", "need"] as const).map(k => {
-                  const active = returnInnerTab === k;
-                  const label = k === "need" ? "반품필요" : "반품확정";
-                  return (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => setReturnInnerTab(k)}
-                      className={[
-                        "relative h-10 px-4 text-[15px] font-bold tracking-tight transition cursor-pointer",
-                        active ? "text-brand-deep" : "text-ink-soft hover:text-brand-deep",
-                      ].join(" ")}
-                    >
-                      {label}
-                      {active && (
-                        <span aria-hidden className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="flex-1 min-h-0">
-                {returnInnerTab === "need"
-                  ? <ReturnListPanel onSupplierClick={openSupplierInfo} />
-                  : <ReturnConfirmedPanel />}
-              </div>
-            </div>
-          )}
+          {/* 2026-08-29 · #193 Phase B · scan · productarrival · productinfo · return 4개 서브탭 렌더 제거
+              · 매장>상품 (3개 이너) 및 매장>반품 (2개 이너) 로 완전 이관 (사용자 지시) */}
           {purchaseSubTab === "purchase-history" && <div className="flex-1 min-h-0"><PurchaseHistoryTab /></div>}
         </div>
       )}
