@@ -14,6 +14,8 @@ import type { AuthSession } from "../../types";
 import type { AppNavPage } from "./AppNavHeader";
 // 2026-08-23 · #191 확장 · BottomSheet primitive · 인라인 fixed inset-0 제거
 import { BottomSheet } from "../common/BottomSheet";
+// 2026-08-28 · 사용자 지시 · 모바일 페이지 가시성 · gate 적용 (SideNav 와 동일 · viewport="mobile")
+import { usePageVisibility } from "../../hooks/usePageVisibility";
 
 interface Props {
   activePage: AppNavPage;
@@ -41,6 +43,9 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
   const level = authSession?.level ?? 0;
   const isManager = level >= 2;
   const isSuperAdmin = level >= 9;
+  // 2026-08-28 · 사용자 지시 · 모바일 gate · 메뉴설정에서 mobile=false 인 페이지 · 하단탭·더보기 모두 숨김
+  const { isVisible, loaded: visLoaded } = usePageVisibility();
+  const mobileVisible = (pageKey: string) => !visLoaded || isVisible(pageKey, "mobile");
 
   const handleTap = (key: TabDef["key"]) => {
     if (key === "more") { setSheetOpen(true); return; }
@@ -62,7 +67,7 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
       <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-line shadow-[0_-4px_20px_rgba(15,23,42,0.06)]"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="grid grid-cols-5 gap-0.5 px-1 pt-1">
-          {TABS.map(t => {
+          {TABS.filter(t => t.key === "more" || mobileVisible(t.key)).map(t => {
             const Icon = t.icon;
             const active = isActive(t.key);
             return (
@@ -92,24 +97,28 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
         className="sm:hidden"
       >
         <div className="p-3 grid grid-cols-3 gap-2">
-          {isManager && (
+          {isManager && mobileVisible("display") && (
             <SheetTile icon={LayoutGrid} label="매장관리" color="sky" onClick={() => { setSheetOpen(false); onNavigate("display"); }} />
           )}
-          {isManager && (
+          {isManager && mobileVisible("scan") && (
             <SheetTile icon={Package} label="상품관리" color="violet" onClick={() => { setSheetOpen(false); onNavigate("scan"); }} />
           )}
-          {isManager && (
+          {isManager && mobileVisible("ocr") && (
             <SheetTile icon={FileText} label="거래명세서" color="amber" onClick={() => { setSheetOpen(false); onNavigate("ocr"); }} />
           )}
-          {isManager && (
+          {isManager && mobileVisible("stockarrivals") && (
             <SheetTile icon={Bell} label="입고알림" color="emerald" onClick={() => { setSheetOpen(false); onNavigate("stockarrivals"); }} />
           )}
-          {isManager && (
+          {isManager && mobileVisible("leave") && (
             <SheetTile icon={CalendarDays} label="연차승인" color="rose" onClick={() => { setSheetOpen(false); onNavigate("leave"); }} />
           )}
-          <SheetTile icon={UtensilsCrossed} label="점심불참" color="red" onClick={() => { setSheetOpen(false); onNavigate("lunch"); }} />
-          <SheetTile icon={ScanLine} label="상품스캔" color="violet" onClick={() => { setSheetOpen(false); onNavigate("scan"); }} />
-          {isSuperAdmin && (
+          {mobileVisible("lunch") && (
+            <SheetTile icon={UtensilsCrossed} label="점심불참" color="red" onClick={() => { setSheetOpen(false); onNavigate("lunch"); }} />
+          )}
+          {mobileVisible("scan") && (
+            <SheetTile icon={ScanLine} label="상품스캔" color="violet" onClick={() => { setSheetOpen(false); onNavigate("scan"); }} />
+          )}
+          {isSuperAdmin && mobileVisible("permissions") && (
             <SheetTile icon={Lock} label="권한관리" color="slate" onClick={() => { setSheetOpen(false); onNavigate("permissions"); }} />
           )}
           {onLogout && (
