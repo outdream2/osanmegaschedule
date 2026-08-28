@@ -3,15 +3,14 @@
 //   §6 계약·서류 + §6-1 계약 이력
 import React from "react";
 import {
-  Briefcase, Calendar, Clock, ExternalLink, FileText, Paperclip, Star, Trash2,
-  PenSquare as NotePencilIcon,
+  Briefcase, Calendar, ExternalLink, FileText, Paperclip, Star, Trash2,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { StatusPill } from "../common/StatusPill";
 import { SectionCard, InlineField } from "./StaffManagePage.subcomponents";
 import type { Employee, EditDraft } from "./types";
 import { CONTRACT_TYPES, PERFORMANCE_RATINGS } from "./types";
-import { contractTypeMeta, autoContractBadge, calcTenure, performanceRatingColor } from "./helpers";
+import { contractTypeMeta, performanceRatingColor } from "./helpers";
 
 interface LatestContract {
   id?: number;
@@ -58,7 +57,7 @@ interface StaffContractSectionProps {
 
 export const StaffContractSection: React.FC<StaffContractSectionProps> = ({
   displayEmp, editing, draft, selectedEmp,
-  latestContract, latestContractLoading,
+  latestContract,
   contractHistory, contractHistoryLoading, contractHistoryError,
   contractCountByEmp,
   setField, showError, showSuccess, confirm,
@@ -68,12 +67,12 @@ export const StaffContractSection: React.FC<StaffContractSectionProps> = ({
     {/* §6 계약 · 서류 */}
     <SectionCard title="계약 · 서류" icon={<FileText size={11} />} group="work" defaultOpen>
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-        {/* 계약유형 */}
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[15px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none">
-            <Briefcase size={9} /> 계약유형
-          </span>
-          {editing ? (
+        {/* 계약유형 (편집 시만) */}
+        {editing && (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[15px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none">
+              <Briefcase size={9} /> 계약유형
+            </span>
             <select
               value={draft?.contract_type ?? ""}
               onChange={(e) => setField("contract_type", e.target.value || null)}
@@ -84,48 +83,8 @@ export const StaffContractSection: React.FC<StaffContractSectionProps> = ({
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
-          ) : (() => {
-            const badge = autoContractBadge(latestContract, displayEmp.contract_type);
-            const manualMeta = contractTypeMeta(displayEmp.contract_type);
-            const showAutoOnly = badge?.source === "auto";
-            return (
-              <div className="flex flex-wrap items-center gap-1 min-h-[20px]">
-                {badge ? (
-                  <span
-                    className={`text-[15px] font-semibold px-2 py-0.5 rounded-md border ${badge.color}`}
-                    title={showAutoOnly
-                      ? `계약서 자동 산출 · ${latestContract?.start_date ?? "-"} ~ ${latestContract?.end_date ?? "-"}`
-                      : "계약유형"}
-                  >
-                    {badge.label}
-                    {showAutoOnly && <span className="ml-1 text-[15px] font-bold opacity-70">AUTO</span>}
-                  </span>
-                ) : (
-                  <span className="text-[15px] font-semibold text-zinc-300 italic">(없음)</span>
-                )}
-                {showAutoOnly && manualMeta && (
-                  <span className={`text-[14px] font-semibold px-1.5 py-0.5 rounded border ${manualMeta.color} opacity-70`} title="수동 지정 계약유형">
-                    {manualMeta.short}
-                  </span>
-                )}
-                {latestContractLoading && <Spinner size={13} tone="zinc" label="불러오는 중..." labelSize={14} />}
-              </div>
-            );
-          })()}
-        </div>
-
-        {/* 근속기간 */}
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[15px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none">
-            <Clock size={9} /> 근속기간
-          </span>
-          <span className={`text-[15px] font-semibold leading-snug min-h-[20px] ${displayEmp.hire_date ? "text-zinc-700" : "text-zinc-300 italic"}`}>
-            {displayEmp.hire_date ? calcTenure(displayEmp.hire_date) : "(입사일 미등록)"}
-            {displayEmp.hire_date && (
-              <span className="text-[14px] font-normal text-zinc-400 ml-1">· {displayEmp.hire_date}</span>
-            )}
-          </span>
-        </div>
+          </div>
+        )}
 
         <InlineField
           label="계약 시작일" value={editing ? (draft?.contract_start ?? "") : (displayEmp.contract_start ?? "")}
@@ -170,28 +129,6 @@ export const StaffContractSection: React.FC<StaffContractSectionProps> = ({
             </span>
           ) : (
             <span className="text-[15px] font-semibold text-zinc-300 italic leading-snug min-h-[20px]">(미평가)</span>
-          )}
-        </div>
-
-        {/* 인사 코멘트 */}
-        <div className="col-span-2 flex flex-col gap-0.5">
-          <span className="text-[15px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none">
-            <NotePencilIcon size={9} /> 인사 코멘트
-          </span>
-          {editing ? (
-            <textarea
-              value={String(draft?.memo ?? "")}
-              onChange={(e) => setField("memo", e.target.value)}
-              placeholder="근무 특이사항 · 평가 코멘트 · 알러지 등 (선택)"
-              rows={2}
-              className="border border-indigo-300 rounded-md px-2 py-1 text-[14px] bg-indigo-50/40 focus:outline-none focus:border-brand-deep resize-none"
-            />
-          ) : displayEmp.memo ? (
-            <p className="text-[14px] text-zinc-700 whitespace-pre-wrap leading-relaxed bg-zinc-50/70 border border-line rounded-md px-2 py-1 min-h-[24px]">
-              {displayEmp.memo}
-            </p>
-          ) : (
-            <span className="text-[15px] font-semibold text-zinc-300 italic leading-snug min-h-[20px]">(코멘트 없음)</span>
           )}
         </div>
 

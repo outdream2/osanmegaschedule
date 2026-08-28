@@ -312,12 +312,20 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
           </span>
           <span className="inline-flex items-center gap-1.5 leading-tight flex-wrap">
             {rating ? (
-              <Badge className={performanceRatingColor(rating)} size="sm">{rating}</Badge>
+              <Badge
+                className={performanceRatingColor(rating)}
+                size="sm"
+                title={isSeveranceEligible(displayEmp) ? "퇴직금 지급 대상 (근속 1년 이상)" : undefined}
+              >
+                {rating}
+              </Badge>
             ) : (
-              <span className="text-zinc-300 italic text-[14px]">미평가</span>
-            )}
-            {isSeveranceEligible(displayEmp) && (
-              <Badge tone="rose" size="sm">퇴직금대상</Badge>
+              <span
+                className="text-zinc-300 italic text-[14px]"
+                title={isSeveranceEligible(displayEmp) ? "퇴직금 지급 대상 (근속 1년 이상)" : undefined}
+              >
+                미평가
+              </span>
             )}
           </span>
         </div>
