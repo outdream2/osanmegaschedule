@@ -22,7 +22,10 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
   const [display, order, productsWithRealMap, legacy, leave, lunch, inventory, ret, resignation, vendor] = await Promise.all([
     supabase.from("display_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("order_requests").select("id", { count: "exact", head: true }),
-    supabase.from("products").select("product_code, spec, real_map").eq("hidden", false).not("real_map", "is", null).neq("real_map", ""),
+    // 2026-08-28 · 사용자 지시 · 배치구역 불일치 1000건 폭발 원인
+    //   · 기존: spec (규격 · "EA"·"Z") vs real_map (진열구역) · 거의 모든 상품 mismatch
+    //   · 수정: location (진열위치) vs real_map · display_location 도 fallback · 둘 다 있을 때만
+    supabase.from("products").select("product_code, location, display_location, real_map").eq("hidden", false).not("real_map", "is", null).neq("real_map", ""),
     supabase.from("zone_mismatches").select("product_code"),
     supabase.from("leave_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("lunch_requests").select("id", { count: "exact", head: true }).eq("date", today).eq("eating", false),
@@ -33,7 +36,13 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
   ]);
   const computedCodes = new Set(
     (productsWithRealMap.data ?? [])
-      .filter(p => (p.real_map ?? "").trim() !== (p.spec ?? "").trim())
+      .filter(p => {
+        const locZone = String((p as any).location ?? (p as any).display_location ?? "").trim();
+        const real = String(p.real_map ?? "").trim();
+        // 2026-08-28 · fix · location + real_map 둘 다 있을 때만 비교 (spec 무관)
+        if (!real || !locZone) return false;
+        return locZone !== real;
+      })
       .map(p => p.product_code)
   );
   const legacyCodes = (legacy.data ?? []).filter(r => !computedCodes.has(r.product_code));
