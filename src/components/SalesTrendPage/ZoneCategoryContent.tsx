@@ -89,7 +89,8 @@ const ZoneCategoryContent: React.FC = () => {
     for (const r of sales) {
       const code = String(r.product_code ?? "");
       const p = products[code] ?? {};
-      const zone = String((p as any).spec ?? "").trim();
+      // 2026-08-29 · 사용자 지시 · 진열위치 (location) 기반 · real_map 아님 · 오래된 spec fallback 유지 (하위호환)
+      const zone = String((p as any).location ?? (p as any).display_location ?? (p as any).spec ?? "").trim();
       const key = parsePrimaryZone(zone);
       const cur = map.get(key) ?? { zone: key, saleQty: 0, totalAmount: 0, items: [] };
       const saleQty = Number(r.sale_qty ?? 0) || 0;
@@ -318,7 +319,7 @@ const ZoneCategoryContent: React.FC = () => {
           <PieChart size={16} className="text-brand-deep shrink-0" />
           <span className="text-[16px] font-bold text-ink tracking-tight">카테고리별현황</span>
           <StatusPill tone="amber" size="sm">{grouped.length}개 구역</StatusPill>
-          <span className="text-[12px] text-ink-soft hidden sm:inline">real_map 기반 · 구역 클릭 → 상품 상세</span>
+          <span className="text-[12px] text-ink-soft hidden sm:inline">진열위치 기반 · 구역 클릭 → 상품 상세</span>
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">기간</span>
