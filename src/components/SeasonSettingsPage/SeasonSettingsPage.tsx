@@ -59,10 +59,27 @@ const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
           <div className={`${CARD_BASE} p-5`}>
             <SeasonRangesEditor employeeId={employeeId} onToast={noop} />
           </div>
-          {/* 섹션 2 · 적정재고 설정 (2026-08-23 · #193 신규) */}
-          <OptimalStockPeriodSection />
-          {/* 섹션 3 · 판매중 상품만 표시 (2026-08-26 · #118 신규) */}
-          <SaleActiveOnlySection />
+          {/* 2026-08-29 · 사용자 지시 · 재고·판매 필터 (적정재고 + 판매중만) 한 카드 통합 */}
+          <section
+            className="bg-white rounded-2xl border border-line overflow-hidden"
+            style={{ boxShadow: "0 1px 2px rgba(10,46,74,0.04), 0 4px 12px -4px rgba(10,46,74,0.06)" }}
+          >
+            <div className="h-1 bg-gradient-to-r from-brand-deep via-emerald-500 to-teal-500" />
+            <div className="p-5">
+              <h3 className="text-[19px] font-extrabold text-ink tracking-tight leading-tight mb-1">재고·판매 필터</h3>
+              <p className="text-[14px] text-ink-soft leading-relaxed mb-4">
+                적정재고 산정 기간 · 판매중 상품 필터 · 통합 관리
+              </p>
+              <div className="flex flex-col gap-4">
+                <div className="rounded-xl border border-line overflow-hidden">
+                  <OptimalStockPeriodSection />
+                </div>
+                <div className="rounded-xl border border-line overflow-hidden">
+                  <SaleActiveOnlySection />
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </SettingsPageShell>
     </div>
