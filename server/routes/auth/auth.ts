@@ -53,12 +53,17 @@ router.post("/api/auth/vendor-login", validateBody(VendorLoginSchema), asyncHand
   const cleanPassword = String(password).replace(/[^0-9]/g, "");
   if (!cleanPhone) throw badRequest("핸드폰번호를 입력해주세요");
   if (!cleanPassword) throw badRequest("비밀번호를 입력해주세요");
-  const { data: vendor, error } = await supabase
+  // 2026-08-29 · 사용자 지시 · 담당자 핸드폰 로그인 · manager_phone 우선 매칭
+  //   · vendors 테이블 · phone (대표) + manager_phone (담당자) 두 컬럼
+  //   · project_vendor_login_rule.md · ID=담당자 핸드폰 · manager_phone 이 진짜 로그인 아이디
+  //   · 하위호환 · 기존 phone 도 매칭 (단일 컬럼 시대 · 이전 vendor 데이터)
+  const { data: vendors, error } = await supabase
     .from("vendors")
-    .select("id, company_name, contact_name")
-    .eq("phone", cleanPhone)
-    .maybeSingle();
+    .select("id, company_name, contact_name, phone, manager_phone")
+    .or(`manager_phone.eq.${cleanPhone},phone.eq.${cleanPhone}`)
+    .limit(1);
   if (error) throw new HttpError(500, error.message);
+  const vendor = vendors?.[0] ?? null;
   if (!vendor) throw unauthorized("등록된 거래처를 찾을 수 없습니다");
   // 2026-08-23 · #178 · verifyVendorPassword · 공용 파생 함수 (env VENDOR_PW_SUFFIX 반영)
   if (!verifyVendorPassword(cleanPhone, cleanPassword)) {
