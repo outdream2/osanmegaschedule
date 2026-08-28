@@ -220,6 +220,16 @@ export function xlsxToRows(buf: Buffer): Record<string, any>[] {
     if (rawStock !== undefined && rawStock !== null && String(rawStock).trim() !== "" && obj.current_stock == null) {
       obj.stock_note = String(rawStock).trim();
     }
+    // 2026-08-28 · 사용자 지시 · 기존 규격(spec) 컬럼에 진열위치 값이 들어있으면 · location 로 매핑
+    //   · 엑셀 원본 · 규격 컬럼 자리를 · 진열위치 데이터로 대치
+    //   · display_location 헤더 없어도 · spec 값을 · display_location + location 에 저장 (fallback)
+    if (!obj.display_location && obj.spec) {
+      obj.display_location = obj.spec;
+    }
+    // location 컬럼도 함께 세팅 (server products.ts 재이관 로직과 정합)
+    if (!obj.location && obj.display_location) {
+      obj.location = obj.display_location;
+    }
     result.push(obj);
   }
   return result;
