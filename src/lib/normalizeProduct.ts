@@ -24,14 +24,20 @@ import { addCachedProduct, lookupProduct, type ProductInfo } from "./productsCac
  * · 나머지 필드는 spread 로 유지 (spec/supplier/realMap 등 · 이미 정규화된 필드는 덮어씀)
  */
 export function normalizeProductRow(raw: any, fallbackCode: string): ProductInfo {
+  // 2026-08-28 · 사용자 지시 · 진열위치 통합 · spec 필드에 location 우선 반영
+  //   · 엑셀 진열위치 → DB location · 기존 UI (r.spec) 그대로 · location 값 자동 표시
+  //   · location 없으면 · display_location · 그것도 없으면 · 원본 spec fallback
+  const locStr = String(raw?.location ?? raw?.display_location ?? raw?.spec ?? "");
   return {
     code: String(raw?.code ?? raw?.product_code ?? fallbackCode ?? ""),
     name: String(raw?.name ?? raw?.product_name ?? ""),
-    spec: String(raw?.spec ?? ""),
+    spec: locStr,
     supplier: raw?.supplier ?? null,
     realMap: raw?.realMap ?? raw?.real_map ?? null,
     real_map: raw?.real_map ?? raw?.realMap ?? null,
     ...(raw ?? {}),
+    // 마지막 override · spec 을 location 로 통합
+    location: raw?.location ?? raw?.display_location ?? raw?.spec ?? null,
   } as ProductInfo;
 }
 

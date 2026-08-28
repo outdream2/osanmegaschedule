@@ -1,6 +1,6 @@
 # Framework Audit Report (자동 생성)
 
-> 생성 · 2026-08-27 · `scripts/audit-framework.cjs` · 매 세션 재실행
+> 생성 · 2026-08-28 · `scripts/audit-framework.cjs` · 매 세션 재실행
 >
 > **로드맵 · `docs/FRAMEWORK_ROADMAP.md` Phase 1 (인벤토리)**
 
@@ -8,33 +8,37 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 722 |
-| 위반 파일 | 2 |
-| 클린 파일 | 720 (100%) |
-| 총 위반 개수 | 2 |
+| 스캔 파일 | 726 |
+| 위반 파일 | 4 |
+| 클린 파일 | 722 (99%) |
+| 총 위반 개수 | 4 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
-| `raw-card-wrapper` | 1 | 1 | medium | Card 프리미티브 (padding·variant·clip) |
-| `large-file-warn` | 1 | 1 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `raw-card-wrapper` | 2 | 2 | medium | Card 프리미티브 (padding·variant·clip) |
+| `large-file-warn` | 2 | 2 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
 | 1 | `src/components/OrderManagePage/VendorDetailTabs.tsx` | 819 | 3 | large-file-warn(1) |
-| 2 | `src/components/DisplayPage/RealStockTablePage.tsx` | 748 | 2 | raw-card-wrapper(1) |
+| 2 | `src/components/ScanPage/ProductInfoCard.tsx` | 833 | 3 | large-file-warn(1) |
+| 3 | `src/components/common/SaleStatusFilter.tsx` | 63 | 2 | raw-card-wrapper(1) |
+| 4 | `src/components/DisplayPage/RealStockTablePage.tsx` | 777 | 2 | raw-card-wrapper(1) |
 
-## 📝 모든 위반 파일 (2개)
+## 📝 모든 위반 파일 (4개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
 | `src/components/OrderManagePage/VendorDetailTabs.tsx` | 819 | 3 |
-| `src/components/DisplayPage/RealStockTablePage.tsx` | 748 | 2 |
+| `src/components/ScanPage/ProductInfoCard.tsx` | 833 | 3 |
+| `src/components/common/SaleStatusFilter.tsx` | 63 | 2 |
+| `src/components/DisplayPage/RealStockTablePage.tsx` | 777 | 2 |
 
 </details>
 
