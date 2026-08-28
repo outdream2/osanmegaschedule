@@ -28,6 +28,8 @@ import type {
 } from "./VendorDetailModal.types";
 // 2026-08-26 · large-file 분리 · 서브패널 이관
 import { VendorDetailApprovalBanner } from "./VendorDetailApprovalBanner";
+// 2026-08-29 · 사용자 지시 · 승인요청 코멘트·버튼 · 거래처 로그인일 때만
+import { useAuth } from "../../hooks/useAuth";
 import { VendorDetailPaymentPanel } from "./VendorDetailPaymentPanel";
 import { VendorDetailPurchasePanel } from "./VendorDetailPurchasePanel";
 
@@ -39,6 +41,9 @@ export const VendorDetailModal: React.FC<{
 }> = ({ vendor, onClose, onSaved, panel }) => {
   const confirm = useConfirm();
   const { toast, showSuccess, showError } = useToast();
+  // 2026-08-29 · 사용자 지시 · 승인요청 코멘트·버튼 · 거래처 로그인일 때만 노출
+  const { session } = useAuth();
+  const isVendorLogin = session?.role === "vendor";
 
   const [draft, setDraft] = useState<EditDraft>(emptyDraft(vendor));
   const [saving, setSaving] = useState(false);
@@ -367,8 +372,8 @@ export const VendorDetailModal: React.FC<{
         {/* ── 본문 ── */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5">
 
-          {/* 2026-08-25 · #192 · 거래처 panel 모드 · 필수항목 안내 + 승인 상태 배너 */}
-          {panel && (
+          {/* 2026-08-29 · 사용자 지시 · 거래처 로그인일 때만 · 관리자에게는 숨김 */}
+          {panel && isVendorLogin && (
             <VendorDetailApprovalBanner
               approvalStatus={approvalStatus}
               missingCount={missingRequired.length}
@@ -670,8 +675,8 @@ export const VendorDetailModal: React.FC<{
             {saving ? <Spinner size={12} tone="white" /> : <Check size={12} strokeWidth={2.5} />}
             저장
           </button>
-          {/* 2026-08-26 · #192 · panel 모드 · [승인 요청] 버튼 · 필수 8 만족 시 활성 */}
-          {panel && approvalStatus !== "approved" && (
+          {/* 2026-08-29 · 사용자 지시 · [승인 요청] 버튼 · 거래처 로그인일 때만 */}
+          {panel && isVendorLogin && approvalStatus !== "approved" && (
             <button
               onClick={handleApprovalRequest}
               disabled={!canRequestApproval || approvalRequesting || saving}
