@@ -1,10 +1,20 @@
 {
   "created": "2026-08-28",
   "version": 1,
-  "totalViolations": 3,
+  "totalViolations": 4,
   "files": {
     "src/components/OrderManagePage/VendorDetailTabs.tsx": {
       "lines": 819,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
+    },
+    "src/components/ScanPage/ProductInfoCard.tsx": {
+      "lines": 833,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -24,7 +34,7 @@
       "totalWeight": 2
     },
     "src/components/DisplayPage/RealStockTablePage.tsx": {
-      "lines": 774,
+      "lines": 777,
       "violations": [
         {
           "ruleId": "raw-card-wrapper",

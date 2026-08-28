@@ -18,6 +18,8 @@ import { PurchaseHistorySection } from "./PurchaseHistorySection";
 import { StockSlotCard } from "./StockSlotCard";
 // 2026-08-26 · 사용자 지시 · zone → 창고 매핑 · 해당 상품 소속 창고만 표시
 import { resolveWarehouseVisibility, assignZonesToSlots } from "../../lib/warehouseZoneMap";
+// 2026-08-28 · 사용자 지시 · 13컬럼 통일 · ProductBasicInfoPanel 상단 (context !== stock-manage · ProductInfoModal 는 별도 위에 있음)
+import { ProductBasicInfoPanel } from "../common/ProductBasicInfoPanel";
 
 // 인라인 편집 가능 필드 종류
 // 2026-08-25 · products 테이블에 없는 컬럼 · cost_price 제거
@@ -349,8 +351,51 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
     );
   };
 
+  // 2026-08-28 · 사용자 지시 · 13컬럼 통일 · scan · order-manage 컨텍스트에서만 상단에 삽입 (stock-manage 는 ProductInfoModal 에서 별도 렌더)
+  const showBasicPanel = context !== "stock-manage";
+  const handleBasicLocationChange = async (newLocation: string | null) => {
+    await api.patch(`/api/products/${encodeURIComponent(product.code)}`, {
+      location: newLocation,
+      display_location: newLocation,
+    });
+    onProductUpdate?.({ location: newLocation, display_location: newLocation } as unknown as Partial<ProductInfo>);
+    onRealMapUpdate(String(newLocation ?? ""));
+  };
+  const handleBasicSaleStatusChange = async (newStatus: string) => {
+    await api.patch(`/api/products/${encodeURIComponent(product.code)}`, { sale_status: newStatus });
+    onProductUpdate?.({ sale_status: newStatus } as unknown as Partial<ProductInfo>);
+  };
+
   return (
     <>
+      {showBasicPanel && (
+        <div className="mb-3">
+          <ProductBasicInfoPanel
+            product={{
+              product_code: product.code,
+              category_code: (product as any).category_code,
+              category: (product as any).category,
+              product_name: product.name,
+              supplier: product.supplier ?? null,
+              location: (product as any).location ?? (product as any).display_location,
+              display_location: (product as any).display_location,
+              sale_status: (product as any).sale_status,
+              current_stock: (product as any).current_stock,
+              warehouse_stock: (product as any).warehouse_stock,
+              store_stock: (product as any).store_stock,
+              purchase_price: (product as any).purchase_price,
+              sale_price: (product as any).sale_price,
+              profit_rate: (product as any).profit_rate,
+              optimal_stock: (product as any).optimal_stock,
+              last_purchase_date: (product as any).last_purchase_date,
+            }}
+            editable={inlineEditEnabled}
+            onLocationChange={handleBasicLocationChange}
+            onSaleStatusChange={handleBasicSaleStatusChange}
+            compact
+          />
+        </div>
+      )}
       <Card padding="none" topAccent className="p-3.5">
         {/* 상품명 */}
         {S.header && (<>
