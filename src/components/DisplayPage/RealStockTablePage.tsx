@@ -377,7 +377,7 @@ export const RealStockTablePage: React.FC = () => {
     }
     const cls = tone === "cyan" ? "bg-cyan-100 text-cyan-800" : "bg-violet-100 text-violet-800";
     return (
-      <span className={`inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md ${cls} font-extrabold text-[17px] tabular-nums tracking-tight`}>
+      <span className={`inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md ${cls} font-extrabold text-[16px] tabular-nums tracking-tight`}>
         {zone}
       </span>
     );
@@ -428,7 +428,7 @@ export const RealStockTablePage: React.FC = () => {
         className="hover:bg-white rounded px-1.5 py-0.5 -mx-1 transition cursor-pointer"
         title={`${SLOT_LABEL[slot]} · 수량 편집`}
       >
-        <span className={`font-extrabold tabular-nums text-[19px] ${qtyCls}`}>{qty ?? "-"}</span>
+        <span className={`font-extrabold tabular-nums text-[18px] ${qtyCls}`}>{qty ?? "-"}</span>
       </button>
     );
   };
@@ -607,7 +607,7 @@ export const RealStockTablePage: React.FC = () => {
                 {/* 2026-08-27 · 사용자 지시 · 매장1/2/3·창고1/2 상위 통합 헤더 · 아래 구역/수량 서브 헤더 · 공통 부분 rowSpan=2 */}
                 <tr>
                   {thSortable("supplier",     "left",   "공급사", 140, "", 2)}
-                  {thSortable("product_name", "left",   "상품명", 300, "", 2)}
+                  {thSortable("product_name", "left",   "상품명", 240, "", 2)}
                   {thSortable("location",     "center", "진열위치\n(구역)", 90, "bg-amber-50/40 whitespace-pre-line leading-tight", 2)}
                   {thSortable("erp",          "num",    "ERP\n수량",       80, "bg-amber-100/50 whitespace-pre-line leading-tight", 2)}
                   {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-violet-100/80 text-violet-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>매장1</th>}
@@ -707,8 +707,8 @@ export const RealStockTablePage: React.FC = () => {
                               {r.product_name}
                             </button>
                           </td>
-                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.location ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[17px] tabular-nums tracking-tight">{r.location}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[13px]">—</span>)}</td>
-                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.erp != null && r.erp > 0 ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[17px] tabular-nums tracking-tight">{r.erp}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[13px]">—</span>)}</td>
+                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.location ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[16px] tabular-nums tracking-tight">{r.location}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[13px]">—</span>)}</td>
+                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.erp != null && r.erp > 0 ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[16px] tabular-nums tracking-tight">{r.erp}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[13px]">—</span>)}</td>
                           {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s1")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s1")}</td></>}
                           {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s2")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s2")}</td></>}
                           {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s3")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s3")}</td></>}
@@ -736,7 +736,7 @@ export const RealStockTablePage: React.FC = () => {
                     </td>
                     {/* 2026-08-27 · 컬럼 분리 · 진열위치·ERP 각각 · 매장/창고 구역·수량 분리 · 색깔톤 shade */}
                     <td className={tableTdCls("center", "bg-amber-50/30")}><span className={`text-[16px] font-semibold ${r.location ? "text-amber-500" : "text-zinc-300"} tabular-nums`}>{r.location ?? "-"}</span></td>
-                    <td className={tableTdCls("num", `tabular-nums font-extrabold text-[19px] ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-100/40`)}>{r.erp ?? "-"}</td>
+                    <td className={tableTdCls("num", `tabular-nums font-extrabold text-[18px] ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-100/40`)}>{r.erp ?? "-"}</td>
                     {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s1")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s1")}</td></>}
                     {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s2")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s2")}</td></>}
                     {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s3")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s3")}</td></>}
