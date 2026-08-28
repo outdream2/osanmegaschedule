@@ -320,17 +320,21 @@ export const RealStockTablePage: React.FC = () => {
   };
 
   const sortIndicator = (k: SortKey) => sortKey === k ? (sortDir === "asc" ? " ▲" : " ▼") : "";
-  const thSortable = (k: SortKey, align: "left" | "center" | "num", label: string, minW?: number, extra = "", rowSpan?: number) => (
-    <th
-      rowSpan={rowSpan}
-      className={`${tableThCls(align)} cursor-pointer hover:bg-zinc-100/70 select-none transition ${extra}`}
-      onClick={() => toggleSort(k)}
-      style={minW ? { minWidth: minW } : undefined}
-      title={`${label} 정렬`}
-    >
-      {label}<span className="ml-1 text-zinc-400 text-[11px]">{sortIndicator(k) || "⇅"}</span>
-    </th>
-  );
+  // 2026-08-28 · 사용자 지시 · 헤더 2행 · rowSpan=2 는 top-0 · 두 번째 tr(구역/수량)은 top=42px 로 · 스크롤 시 안 사라지게
+  const thSortable = (k: SortKey, align: "left" | "center" | "num", label: string, minW?: number, extra = "", rowSpan?: number, subRow?: boolean) => {
+    const style: React.CSSProperties = { ...(minW ? { minWidth: minW } : {}), ...(subRow ? { top: 42 } : {}) };
+    return (
+      <th
+        rowSpan={rowSpan}
+        className={`${tableThCls(align)} cursor-pointer hover:bg-zinc-100/70 select-none transition ${extra}`}
+        onClick={() => toggleSort(k)}
+        style={Object.keys(style).length ? style : undefined}
+        title={`${label} 정렬`}
+      >
+        {label}<span className="ml-1 text-zinc-400 text-[11px]">{sortIndicator(k) || "⇅"}</span>
+      </th>
+    );
+  };
 
   // 2026-08-27 · 사용자 지시 · Attio 2026 dual-chip 정렬 헤더 · [수량] [구역] chip 2개 · 클릭 시 활성 + 방향
   const thDualChip = (labelText: string, qtyKey: SortKey, zoneKey: SortKey, minW?: number, extra = "") => {
@@ -595,25 +599,25 @@ export const RealStockTablePage: React.FC = () => {
                   {thSortable("product_name", "left",   "상품명", 300, "", 2)}
                   {thSortable("location",     "center", "진열위치\n(구역)", 90, "bg-amber-50/40 whitespace-pre-line leading-tight", 2)}
                   {thSortable("erp",          "num",    "ERP\n수량",       80, "bg-amber-100/50 whitespace-pre-line leading-tight", 2)}
-                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-violet-100/60 text-violet-800 font-extrabold`}>매장1</th>}
-                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-violet-100/60 text-violet-800 font-extrabold`}>매장2</th>}
-                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-violet-100/60 text-violet-800 font-extrabold`}>매장3</th>}
-                  {showWarehouse && <th colSpan={2} className={`${tableThCls("center")} bg-cyan-100/60 text-cyan-800 font-extrabold`}>창고1</th>}
-                  {showWarehouse && <th colSpan={2} className={`${tableThCls("center")} bg-cyan-100/60 text-cyan-800 font-extrabold`}>창고2</th>}
+                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-violet-100/80 text-violet-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>매장1</th>}
+                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-violet-100/80 text-violet-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>매장2</th>}
+                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-violet-100/80 text-violet-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>매장3</th>}
+                  {showWarehouse && <th colSpan={2} className={`${tableThCls("center")} bg-cyan-100/80 text-cyan-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>창고1</th>}
+                  {showWarehouse && <th colSpan={2} className={`${tableThCls("center")} bg-cyan-100/80 text-cyan-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>창고2</th>}
                   {thSortable("total", "num", "실재고 합계", 95, "bg-brand-tint/30", 2)}
                   {thSortable("diff",  "num", "차이",         80, "bg-rose-50/40",    2)}
                 </tr>
                 <tr>
-                  {showStore && thSortable("s1zone", "center", "구역", 60, "bg-violet-50/40")}
-                  {showStore && thSortable("s1",     "num",    "수량", 60, "bg-violet-100/50")}
-                  {showStore && thSortable("s2zone", "center", "구역", 60, "bg-violet-50/40")}
-                  {showStore && thSortable("s2",     "num",    "수량", 60, "bg-violet-100/50")}
-                  {showStore && thSortable("s3zone", "center", "구역", 60, "bg-violet-50/40")}
-                  {showStore && thSortable("s3",     "num",    "수량", 60, "bg-violet-100/50")}
-                  {showWarehouse && thSortable("w1zone", "center", "구역", 60, "bg-cyan-50/40")}
-                  {showWarehouse && thSortable("w1",     "num",    "수량", 60, "bg-cyan-100/50")}
-                  {showWarehouse && thSortable("w2zone", "center", "구역", 60, "bg-cyan-50/40")}
-                  {showWarehouse && thSortable("w2",     "num",    "수량", 60, "bg-cyan-100/50")}
+                  {showStore && thSortable("s1zone", "center", "구역", 60, "bg-violet-50/40", undefined, true)}
+                  {showStore && thSortable("s1",     "num",    "수량", 60, "bg-violet-100/50", undefined, true)}
+                  {showStore && thSortable("s2zone", "center", "구역", 60, "bg-violet-50/40", undefined, true)}
+                  {showStore && thSortable("s2",     "num",    "수량", 60, "bg-violet-100/50", undefined, true)}
+                  {showStore && thSortable("s3zone", "center", "구역", 60, "bg-violet-50/40", undefined, true)}
+                  {showStore && thSortable("s3",     "num",    "수량", 60, "bg-violet-100/50", undefined, true)}
+                  {showWarehouse && thSortable("w1zone", "center", "구역", 60, "bg-cyan-50/40", undefined, true)}
+                  {showWarehouse && thSortable("w1",     "num",    "수량", 60, "bg-cyan-100/50", undefined, true)}
+                  {showWarehouse && thSortable("w2zone", "center", "구역", 60, "bg-cyan-50/40", undefined, true)}
+                  {showWarehouse && thSortable("w2",     "num",    "수량", 60, "bg-cyan-100/50", undefined, true)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -636,7 +640,7 @@ export const RealStockTablePage: React.FC = () => {
                     const totalErp = rows.reduce((s, r) => s + (r.erp ?? 0), 0);
                     const totalReal = rows.reduce((s, r) => s + r.total, 0);
                     return [
-                      <tr key={`group-${k}`} className="bg-brand-tint border-t-2 border-b border-brand-deep/40 sticky top-[42px] z-20 shadow-sm hover:bg-brand-tint/80 cursor-pointer transition" onClick={() => toggleGroup(k)}>
+                      <tr key={`group-${k}`} className="bg-brand-tint border-t-2 border-b border-brand-deep/40 sticky top-[84px] z-20 shadow-sm hover:bg-brand-tint/80 cursor-pointer transition" onClick={() => toggleGroup(k)}>
                         <td colSpan={11} className="px-3 py-2.5 bg-brand-tint">
                           <div className="flex items-center gap-2 flex-wrap">
                             {collapsedGroups.has(k) ? <ChevronRight size={16} className="text-brand-deep shrink-0" /> : <ChevronDown size={16} className="text-brand-deep shrink-0" />}
