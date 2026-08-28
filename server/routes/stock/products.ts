@@ -23,7 +23,8 @@ router.get("/api/stock-check", asyncHandler(async (req, res) => {
   const raw = String(req.query.q ?? "").trim().slice(0, 60);
   if (raw.length < 1) return res.json([]);
   const { data: setting } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();
-  const saleActive = setting?.value === true;
+  // 2026-08-28 · 감사 P1-1 · getPublicProductMap 과 판정 통일 · value === false 명시 시만 전체
+  const saleActive = setting?.value !== false;
   let query = supabase
     .from("products")
     .select("product_name, spec, current_stock, sale_status, category, real_map, display_location, supplier")
@@ -184,6 +185,12 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
   const rawQ     = String(req.query.q        ?? "").trim();
   const supplier = String(req.query.supplier ?? "").trim();
   const includeHidden = req.query.include_hidden === "1" || req.query.include_hidden === "true";
+  // 2026-08-28 · 감사 P1-2 · 판매중 필터 · 기본 판매중만 (설정 stats.sale_active_only 반영)
+  //   · include_inactive=1 · 명시 시 · 전체 (판매중지 포함) 반환
+  //   · 설정 값 판정 · getPublicProductMap 과 동일 규칙 · value === false 시 전체
+  const includeInactive = req.query.include_inactive === "1" || req.query.include_inactive === "true";
+  const { data: saleSetting } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();
+  const saleActiveOnly = !includeInactive && (saleSetting?.value !== false);
   if (rawQ.length < 1) return res.json([]);
   // PostgREST or() 특수문자 방어 (쉼표·괄호 등)
   const q = sanitizeOrValue(rawQ);
@@ -205,6 +212,7 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
     // 1차: search_keywords + hidden 필터 포함 시도
     let query = supabase.from("products").select(cols).or(buildOr(true));
     if (!includeHidden) query = query.eq("hidden", false);
+    if (saleActiveOnly) query = query.eq("sale_status", "판매중");
     if (supplier.length >= 2) query = query.ilike("supplier", `%${supplier}%`);
     let { data, error } = await query.limit(40);
 
