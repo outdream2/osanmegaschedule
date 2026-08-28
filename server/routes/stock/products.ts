@@ -376,6 +376,27 @@ router.post("/api/upload-products", express.raw({ type: "application/octet-strea
   if (dupCount > 0 || emptyCount > 0) {
     console.log(`[upload] dedup · ${rows.length} → ${dedupedRows.length} (중복 ${dupCount} · 빈코드 ${emptyCount} 제외 · 마지막 값 유지)`);
   }
+
+  // 2026-08-28 · 사용자 지시 (Phase A) · dead 컬럼 30개 필터 (UI 미참조 · DB 저장 skip · 성능·용량 절약)
+  //   · xlsx 는 계속 파싱 (pickBestSheet · COL_KEYS 임계값 유지) · upsert 만 필터
+  //   · scripts/audit-product-columns.mjs 기준 · 2-4파일 참조 필드 중 · UI/로직 실사용 없는 것
+  const DEAD_COLS = new Set([
+    "col_i", "product_type", "app_registered", "image_registered", "preset_registered", "preset_group",
+    "promotion_name", "promotion_priority", "promotion_purchase_price", "promotion_sale_price",
+    "promotion_profit_rate", "promotion_discount_rate",
+    "delivery_price", "delivery_profit_rate", "delivery_margin_rate",
+    "management_group", "unit_type", "supplier_type",
+    "stock_amount", "point_rate", "sales_commission",
+    "total_volume", "unit_volume", "connection_type",
+    "individual_code", "individual_quantity", "operator", "last_modified_at",
+  ]);
+  let strippedCount = 0;
+  for (const r of dedupedRows) {
+    for (const k of DEAD_COLS) {
+      if (k in r) { delete (r as any)[k]; strippedCount++; }
+    }
+  }
+  if (strippedCount > 0) console.log(`[upload] dead 컬럼 필터 · ${DEAD_COLS.size}개 정의 · 실 제거 필드 ${strippedCount}건`);
   // 2026-08-26 · 성능 개선 · chunk 500→1000 · PARALLEL 3→5 · Postgres 1KB row 기준 여유
   // 2026-08-27 · location 컬럼 없을 시 방어 · 첫 chunk 실패 시 location 필드 제거 후 재시도
   const CHUNK_SIZE = 1000;
