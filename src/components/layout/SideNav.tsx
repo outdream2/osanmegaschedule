@@ -22,6 +22,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
   SidebarTrigger,
+  SidebarRail,
 } from "../ui/sidebar";
 import type { AppNavPage } from "./AppNavHeader";
 import type { AuthSession } from "../../types";
@@ -517,6 +518,8 @@ export const SideNav: React.FC<SideNavProps> = ({
         aria-label="사이드바 폭 조절"
         aria-hidden="true"
       />
+      {/* 2026-08-28 · A안 · SidebarRail · 접힘 상태에서 · 사이드바 우측 경계선 클릭으로 펼치기 (shadcn 표준) */}
+      <SidebarRail className="hidden md:block group-data-[collapsible=icon]:block group-data-[collapsible=offcanvas]:hidden" />
     </Sidebar>
   );
 };

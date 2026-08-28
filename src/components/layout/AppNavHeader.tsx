@@ -18,7 +18,6 @@ import { useSidebarEnabled } from "../../hooks/useSidebar";
 import { usePagePermissions } from "../../hooks/usePagePermissions";
 import { SIDE_NAV_GROUPS } from "./sideNavGroups";
 // 2026-08-12 · PC 사이드바 접기 · 헤더에 토글 버튼 노출
-import { SidebarTrigger } from "../ui/sidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
 // 2026-08-23 · #188 · usePageVisibility · 공통헤더 탭 · 뷰포트별 필터
 import { usePageVisibility } from "../../hooks/usePageVisibility";
@@ -517,17 +516,13 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   };
 
   // 2026-08-11 · 사이드바 V2 · 데스크탑에서는 헤더 최소화
-  // 2026-08-12 · 사이드바 접기 토글 (SidebarTrigger) · 사이드바 내부 (약국이름 옆) 로 이동
-  //   · 사이드바 접힌 상태(icon)에서만 · 여기서 펼치기 트리거 노출 (사이드바에는 숨김 처리됨)
+  // 2026-08-28 · A안 · SidebarTrigger 완전 제거 · 접기/펼치기 컨트롤 사이드바로 완전 이관
+  //   · 접힘 상태 · SideNav SidebarRail (우측 경계선 클릭) or Cmd/Ctrl+B 로 펼치기
+  //   · 헤더는 · 전역 요소 (알림 · 프로필) 만 유지
   if (SIDEBAR_ENABLED && !isMobileNav) {
     return (
-      <div className="flex items-center justify-between px-3 py-1 shrink-0 bg-white/60 backdrop-blur-sm border-b border-line/50">
-        {/* 접힘 상태 · 펼치기 트리거 · 사이드바 안 트리거는 숨겨지므로 · 대체 트리거 */}
-        <SidebarTrigger
-          className="h-7 w-7 rounded-md text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 transition cursor-pointer group-has-[[data-state=expanded]]/sidebar-wrapper:hidden"
-          aria-label="사이드바 펼치기"
-        />
-        <div className="flex items-center gap-2 ml-auto">{rightSlot}</div>
+      <div className="flex items-center justify-end px-3 py-1 shrink-0 bg-white/60 backdrop-blur-sm border-b border-line/50">
+        <div className="flex items-center gap-2">{rightSlot}</div>
       </div>
     );
   }
