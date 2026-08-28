@@ -603,13 +603,13 @@ export const RealStockTablePage: React.FC = () => {
             </div>
           <TableListWrap>
             <table className="w-full border-collapse">
-              <thead className={tableHeadCls("text-[16px]")}>
-                {/* 2026-08-27 · 사용자 지시 · 매장1/2/3·창고1/2 상위 통합 헤더 · 아래 구역/수량 서브 헤더 · 공통 부분 rowSpan=2 */}
+              <thead className={tableHeadCls("text-[18px]")}>
+                {/* 2026-08-28 · 사용자 지시 · 진열위치·ERP 도 매장/창고와 동일 구조 · 상단(이름)+하단(서브) · 헤더 +2 (18px) */}
                 <tr>
                   {thSortable("supplier",     "left",   "공급사", 140, "", 2)}
                   {thSortable("product_name", "left",   "상품명", 240, "", 2)}
-                  {thSortable("location",     "center", "진열위치\n(구역)", 90, "bg-amber-50/40 whitespace-pre-line leading-tight", 2)}
-                  {thSortable("erp",          "num",    "ERP\n수량",       80, "bg-amber-100/50 whitespace-pre-line leading-tight", 2)}
+                  <th colSpan={1} className={`${tableThCls("center")} bg-amber-100/80 text-amber-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>진열위치</th>
+                  <th colSpan={1} className={`${tableThCls("center")} bg-amber-100/80 text-amber-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>ERP</th>
                   {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-violet-100/80 text-violet-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>매장1</th>}
                   {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-violet-100/80 text-violet-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>매장2</th>}
                   {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-violet-100/80 text-violet-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>매장3</th>}
@@ -619,6 +619,8 @@ export const RealStockTablePage: React.FC = () => {
                   {thSortable("diff",  "num", "차이",         80, "bg-rose-50/40",    2)}
                 </tr>
                 <tr>
+                  {thSortable("location", "center", "구역", 60, "bg-amber-50/40", undefined, true)}
+                  {thSortable("erp",      "num",    "수량", 60, "bg-amber-100/50", undefined, true)}
                   {showStore && thSortable("s1zone", "center", "구역", 60, "bg-violet-50/40", undefined, true)}
                   {showStore && thSortable("s1",     "num",    "수량", 60, "bg-violet-100/50", undefined, true)}
                   {showStore && thSortable("s2zone", "center", "구역", 60, "bg-violet-50/40", undefined, true)}
@@ -700,7 +702,7 @@ export const RealStockTablePage: React.FC = () => {
                         </td>
                       </tr>,
                       ...(collapsedGroups.has(k) ? [] : rows.map(r => (
-                        <tr key={r.product_code} className="hover:bg-zinc-50/60 transition text-[15px]">
+                        <tr key={r.product_code} className="hover:bg-zinc-50/60 transition text-[15px] whitespace-nowrap">
                           <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ?? "-"}</td>
                           <td className={tableTdCls("left")}>
                             <button type="button" onClick={() => setDetailRow(r)} className="text-left font-bold text-zinc-800 break-keep whitespace-normal hover:text-brand-deep hover:underline cursor-pointer" title="상세 정보">
@@ -722,7 +724,7 @@ export const RealStockTablePage: React.FC = () => {
                   });
                 })()}
                 {!groupByZone && sorted.map(r => (
-                  <tr key={r.product_code} className="hover:bg-zinc-50/60 transition text-[15px]">
+                  <tr key={r.product_code} className="hover:bg-zinc-50/60 transition text-[15px] whitespace-nowrap">
                     <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ?? "-"}</td>
                     <td className={tableTdCls("left")}>
                       <button
