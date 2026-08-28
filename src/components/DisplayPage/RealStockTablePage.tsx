@@ -521,23 +521,7 @@ export const RealStockTablePage: React.FC = () => {
                 <input type="checkbox" checked={groupByZone} onChange={(e) => setGroupByZone(e.target.checked)} className="w-4 h-4 accent-brand-deep cursor-pointer" />
                 구역별 그룹
               </label>
-              {/* 2026-08-27 · 사용자 지시 · 매장만 · 창고만 · 전체 토글 필터 */}
-              <div className="inline-flex items-center bg-white border border-line rounded-lg overflow-hidden">
-                {([
-                  { k: "all", label: "전체", tone: "" },
-                  { k: "store", label: "매장만", tone: "violet" },
-                  { k: "warehouse", label: "창고만", tone: "cyan" },
-                ] as const).map((o) => {
-                  const active = locFilter === o.k;
-                  const activeCls = o.tone === "violet" ? "bg-violet-600 text-white" : o.tone === "cyan" ? "bg-cyan-600 text-white" : "bg-brand-deep text-white";
-                  return (
-                    <button key={o.k} type="button" onClick={() => setLocFilter(o.k)}
-                      className={`h-10 px-3 text-[14px] font-bold transition cursor-pointer ${active ? activeCls + " shadow-sm" : "text-ink-soft hover:bg-zinc-50 hover:text-brand-deep"}`}
-                      title={`${o.label} 컬럼만 표시`}
-                    >{o.label}</button>
-                  );
-                })}
-              </div>
+              {/* 2026-08-28 · 사용자 지시 · 전체/매장만/창고만 필터 · 리스트 상단으로 이동 (아래) */}
               {/* 2026-08-27 · 사용자 지시 · 구역별 그룹 · 접기/펼치기 컨트롤 · groupByZone 활성 시만 표시 */}
               {groupByZone && (
                 <button
@@ -590,6 +574,33 @@ export const RealStockTablePage: React.FC = () => {
             />
           </Card>
         ) : (
+          <>
+            {/* 2026-08-28 · 사용자 지시 · 매장/창고 필터 · 리스트 상단으로 이동 (툴바에서 분리) · sticky */}
+            <div className="flex items-center gap-2 px-1 mb-2 flex-wrap">
+              <span className="text-[12px] font-bold text-ink-soft mr-1">보기:</span>
+              <div className="inline-flex items-center bg-white border border-line rounded-lg overflow-hidden shadow-sm">
+                {([
+                  { k: "all", label: "전체", tone: "" },
+                  { k: "store", label: "매장만", tone: "violet" },
+                  { k: "warehouse", label: "창고만", tone: "cyan" },
+                ] as const).map((o) => {
+                  const active = locFilter === o.k;
+                  const activeCls = o.tone === "violet" ? "bg-violet-600 text-white" : o.tone === "cyan" ? "bg-cyan-600 text-white" : "bg-brand-deep text-white";
+                  return (
+                    <button
+                      key={o.k}
+                      type="button"
+                      onClick={() => setLocFilter(o.k)}
+                      className={`h-8 px-3 text-[13px] font-bold transition cursor-pointer ${active ? activeCls + " shadow-sm" : "text-ink-soft hover:bg-zinc-50 hover:text-brand-deep"}`}
+                      title={`${o.label} 컬럼만 표시`}
+                    >{o.label}</button>
+                  );
+                })}
+              </div>
+              <span className="text-[12px] text-ink-soft ml-auto tabular-nums">
+                {sorted.length}건
+              </span>
+            </div>
           <TableListWrap>
             <table className="w-full border-collapse">
               <thead className={tableHeadCls("text-[16px]")}>
@@ -641,7 +652,8 @@ export const RealStockTablePage: React.FC = () => {
                     const totalReal = rows.reduce((s, r) => s + r.total, 0);
                     return [
                       <tr key={`group-${k}`} className="bg-brand-tint border-t-2 border-b border-brand-deep/40 sticky top-[84px] z-20 shadow-sm hover:bg-brand-tint/80 cursor-pointer transition" onClick={() => toggleGroup(k)}>
-                        <td colSpan={11} className="px-3 py-2.5 bg-brand-tint">
+                        {/* 2026-08-28 · colSpan · 필터에 따라 동적 계산 · 4 fixed + store(6) + warehouse(4) + total/diff(2) */}
+                        <td colSpan={4 + (showStore ? 6 : 0) + (showWarehouse ? 4 : 0) + 2} className="px-3 py-2.5 bg-brand-tint">
                           <div className="flex items-center gap-2 flex-wrap">
                             {collapsedGroups.has(k) ? <ChevronRight size={16} className="text-brand-deep shrink-0" /> : <ChevronDown size={16} className="text-brand-deep shrink-0" />}
                             <span className="w-1 h-4 rounded-full bg-brand-deep" />
@@ -741,6 +753,7 @@ export const RealStockTablePage: React.FC = () => {
               </tbody>
             </table>
           </TableListWrap>
+          </>
         )}
       </div>
     </div>
