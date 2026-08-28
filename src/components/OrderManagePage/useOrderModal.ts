@@ -31,6 +31,8 @@ export function useOrderModal({
   const [bulkChannels] = useState<{ email: boolean; sms: boolean; kakao: boolean }>({ email: false, sms: false, kakao: true });
   const [orderModal, setOrderModal] = useState<OrderModalState | null>(null);
   const [notifyLogisticsLeader, setNotifyLogisticsLeader] = useState(true);
+  // 2026-08-29 · 사용자 지시 · 발주 발송 시 · 로컬 PDF 자동 저장 · 기본 true
+  const [autoPdfOnSend, setAutoPdfOnSend] = useState(true);
 
   const openOrderModal = (rows: OrderRequest[]) => {
     if (rows.length === 0) return;
