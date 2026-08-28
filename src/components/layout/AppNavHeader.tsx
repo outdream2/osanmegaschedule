@@ -35,6 +35,7 @@ export type AppNavPage =
   | "reservation"          // 예약 페이지 · 랜딩 카드에서 접근 · 헤더 탭 노출 없음
   | "scan"                 // 헤더 탭에서는 제거되었으나 라우팅용 union 유지 · 랜딩 카드·매입 서브탭·설정 등에서 접근
   | "productarrival"       // 헤더 탭에서는 제거되었으나 라우팅용 union 유지 · 랜딩 카드·매입 서브탭 등에서 접근
+  | "product-info"         // 2026-08-29 · #193 · 사용자 지시 · 상품정보 · 매장>상품 하위 별도 페이지 라우팅
   | "ocr"                  // 헤더 탭에서는 제거되었으나 라우팅용 union 유지 · 매입 사입 서브탭에서 접근
   | "lunch"
   | "permissions"

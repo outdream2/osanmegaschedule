@@ -10,6 +10,8 @@ import { ReservationPage } from "./components/ReservationPage";
 import { DisplayPage } from "./components/DisplayPage";
 import { ScanPage } from "./components/ScanPage/ScanPage";
 import { ProductArrivalPage } from "./components/ProductArrivalPage/ProductArrivalPage";
+// 2026-08-29 · #193 · 사용자 지시 · 상품정보 페이지 · 매입 서브탭 → 매장>상품 하위 별도 라우팅
+const ProductInfoPage = React.lazy(() => import("./components/ProductInfoPage/ProductInfoPage").then(m => ({ default: m.ProductInfoPage })));
 import { OcrPage } from "./components/OcrPage";
 import { RequestsPage } from "./components/RequestsPage/RequestsPage";
 import { LeavePage } from "./components/LeavePage/LeavePage";
@@ -62,7 +64,7 @@ const SeasonSettingsPage = React.lazy(() => import("./components/SeasonSettingsP
 const SystemSettingsPage = React.lazy(() => import("./components/SystemSettingsPage/SystemSettingsPage"));
 // 2026-08-23 · #181 · ZoneSettingsPage 제거 · StoreZoneMap 인라인 편집만 유지
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding" | "company-info" | "season-settings" | "system-settings";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "product-info" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding" | "company-info" | "season-settings" | "system-settings";
 
 export default function App() {
   // 2026-08-16 · 사이드바 활성 · 서버 KV 설정 (env 아님)
@@ -89,7 +91,7 @@ export default function App() {
   //   나머지 페이지: 상품 데이터 안 씀 → prefetch 스킵으로 초기 로딩 부하 감소
   useEffect(() => {
     if (!authSession) return;
-    const needsProducts: Page[] = ["scan", "productarrival", "display", "stockcheck", "stockarrivals"];
+    const needsProducts: Page[] = ["scan", "productarrival", "product-info", "display", "stockcheck", "stockarrivals"];
     if (needsProducts.includes(page)) prefetchProducts();
   }, [authSession, page]);
 
@@ -278,6 +280,13 @@ export default function App() {
         onNavigate={navigateInner}
         onLogout={handleLogout}
       />
+    );
+  } else if (page === "product-info") {
+    // 2026-08-29 · #193 · 사용자 지시 · 상품정보 · 매장>상품 하위 별도 페이지 라우팅
+    pageContent = (
+      <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center text-ink-soft">로딩 중...</div>}>
+        <ProductInfoPage authSession={authSession} />
+      </React.Suspense>
     );
   } else if (page === "ocr") {
     pageContent = (

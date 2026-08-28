@@ -13,6 +13,9 @@ import {
   Palette, Gear,
   // 2026-08-25 · 반품 메뉴 신규 (사용자 지시)
   ArrowsLeftRight as ArrowLeftRight,
+  // 2026-08-29 · #193 · 매장>상품 하위 3개 (실재고입력·상품입고·상품정보) · 사용자 지시
+  //   · Phosphor 는 PackagePlus 없음 · Package 재사용 · Barcode 로 실재고입력 (스캔 의미) 도 가능
+  Scan, ClipboardText,
   type Icon,
 } from "@phosphor-icons/react";
 import type { AppNavPage } from "./AppNavHeader";
@@ -99,9 +102,13 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     topTab: { key: "display" },
     managerOnly: true,
     items: [
-      // 2026-08-29 · 사용자 지시 · 매장 하위 순서 조정 · 상품·매입·판매·발주·결제·반품·매장진열·입고알림
-      // 상품 · ProductInfoPage 라우팅 · 신규 Page key "product-info" 필요 (하위 실재고입력·상품입고·상품정보 후속)
-      { key: "display", label: "상품", icon: Package, color: "red", subTab: "product", managerOnly: true },
+      // 2026-08-29 · #193 · 사용자 지시 · 매입에 있던 실재고입력·상품입고·상품정보 3개 · 상품(매장 하위)로 이동
+      //   · scan (실재고입력) · productarrival (상품입고) 은 이미 별도 페이지 · App.tsx routing 존재
+      //   · product-info (상품정보) 는 · OrderManagePage 서브탭 → 신규 별도 페이지 라우팅 필요
+      { key: "scan",           label: "실재고입력", icon: Scan,          color: "red", managerOnly: true },
+      { key: "productarrival", label: "상품입고",   icon: Package,       color: "red", managerOnly: true },
+      { key: "product-info",   label: "상품정보",   icon: ClipboardText, color: "red", managerOnly: true },
+      // 2026-08-29 · 사용자 지시 · 매장 하위 순서 · 상품(3개)·매입·판매·발주·결제·반품·매장진열·입고알림
       { key: "display", label: "매입", icon: Package, color: "red", subTab: "purchase", minLevel: 9 },
       { key: "display", label: "판매", icon: ChartBar, color: "red", subTab: "statistics", minLevel: 9 },
       { key: "display", label: "발주", icon: Truck, color: "red", subTab: "purchase-order", minLevel: 9 },
