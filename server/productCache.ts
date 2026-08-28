@@ -9,6 +9,12 @@ export interface ProductInfo {
 }
 
 let productMapCache: Record<string, ProductInfo> | null = null;
+// 2026-08-28 · 사용자 지시 · 상품 검색은 모두 product 테이블 최신 조회 필수
+//   · in-memory cache · TTL 30초 · stale 방지 (편집 즉시 반영)
+//   · 이전 · resetProductCache 호출 안 되는 케이스 (스크립트·직접 DB 편집) · 반영 안 됨 이슈
+//   · 응답 부하 · 매번 새 fetch (6000+ 상품 · ~1-2초) · 사용자 관점 정확성 우선
+let productMapCacheAt = 0;
+const PRODUCT_MAP_TTL_MS = 30000; // 30초
 let productMapPromise: Promise<Record<string, ProductInfo>> | null = null;
 let synonymMapCache: Map<string, string> | null = null;
 let synonymMapPromise: Promise<Map<string, string>> | null = null;
@@ -23,6 +29,7 @@ let productToSuppliersPromise: Promise<Map<string, { supplier: string; count: nu
 export function resetProductCache(): void {
   productMapCache = null;
   productMapPromise = null;
+  productMapCacheAt = 0;
 }
 
 export function resetSynonymCache(): void {
@@ -146,7 +153,10 @@ export async function learnVendorBusinessNumber(supplierName: string, bizNum: st
 }
 
 export async function getProductMap(): Promise<Record<string, ProductInfo>> {
-  if (productMapCache) return productMapCache;
+  // 2026-08-28 · TTL 30초 · 초과 시 · 캐시 무효화 · 재조회
+  const now = Date.now();
+  if (productMapCache && (now - productMapCacheAt) < PRODUCT_MAP_TTL_MS) return productMapCache;
+  if (productMapCache) { productMapCache = null; productMapCacheAt = 0; }
   if (productMapPromise) return productMapPromise;
   productMapPromise = (async () => {
     const PAGE = 1000;
@@ -172,6 +182,7 @@ export async function getProductMap(): Promise<Record<string, ProductInfo>> {
       from += PAGE;
     }
     productMapCache = map;
+    productMapCacheAt = Date.now();
     return map;
   })();
   return productMapPromise;
