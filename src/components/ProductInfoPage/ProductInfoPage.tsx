@@ -94,6 +94,8 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Record<EditableKey, string>>({} as Record<EditableKey, string>);
   const [saving, setSaving] = useState(false);
+  // 2026-08-29 · 사용자 지시 · 상세 편집 카드 → 모달 · 필요할 때만 노출
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
 
   // product 변경 시 · 편집 종료 (다른 상품 선택 시 draft 리셋)
   useEffect(() => {
@@ -269,7 +271,30 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
           onLocationChange={handleLocationChange}
           onSaleStatusChange={handleSaleStatusChange}
         />
-        {/* 2026-08-24 · v9 · 상단 gradient accent (Card topAccent prop 사용 · 2026-08-25 리팩터) */}
+        {/* 2026-08-29 · 사용자 지시 · 상세 편집 · 모달로 이동 · [상세 편집] 버튼으로 오픈 */}
+        {canEdit && (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => { setDetailModalOpen(true); if (!editing) startEdit(); }}
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-line bg-white text-[14px] font-bold text-brand-deep hover:bg-brand-tint hover:border-brand-deep transition cursor-pointer shadow-sm"
+              title="상세 편집 (전체 필드)"
+            >
+              <Pencil size={14} strokeWidth={2.4} />
+              상세 편집
+            </button>
+          </div>
+        )}
+      </div>
+      {/* 2026-08-29 · 사용자 지시 · 상세 편집 · 모달 · [상세 편집] 버튼 클릭 시 오픈 */}
+      <Modal
+        open={detailModalOpen}
+        onClose={() => { if (!saving) { setDetailModalOpen(false); if (editing) setEditing(false); } }}
+        title={`상세 편집 · ${product.product_name || product.product_code}`}
+        size="lg-narrow"
+        bodyPadding="none"
+      >
+        <div className="p-4">
         <Card variant="flat" padding="md" rounded="lg" topAccent className="bg-white">
           <div className="flex items-center gap-2 mb-3 pb-2 border-b border-line">
             <InfoIcon size={16} className="text-brand-deep" />
@@ -357,7 +382,8 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             )}
           </dl>
         </Card>
-      </div>
+        </div>
+      </Modal>
       {toast && (
         <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
       )}

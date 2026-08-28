@@ -347,7 +347,7 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
         level={2}
         tabs={DETAIL_TABS}
         activeKey={activeTab}
-        onSelect={setActiveTab}
+        onSelect={(k) => setActiveTab(k as DetailTab)}
         maxWidth="100%"
         className="shrink-0"
       />
