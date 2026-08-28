@@ -211,13 +211,22 @@ async function readSaleActiveOnly(): Promise<boolean> {
 }
 export function invalidateSaleActiveOnlyCache(): void { saleActiveOnlyCache = null; }
 
-/** 판매중 설정 반영된 상품 map · 모든 공개 endpoint 에서 사용 */
+/** 판매중 설정 반영된 상품 map · 모든 공개 endpoint 에서 사용
+ * 2026-08-29 · 사용자 지시 · 랜딩 재고확인 · 상품현황 리스트 불일치 원인 fix
+ *   · 이전 · hidden 필터 없음 · 숨김 상품 · 상품현황에 포함 · stock-check 는 hidden 제외 → 두 API 결과 다름
+ *   · 신규 · hidden=false 필터 통일 (stock-check 와 동일)
+ */
 export async function getPublicProductMap(): Promise<Record<string, ProductInfo>> {
   const map = await getProductMap();
   const saleActive = await readSaleActiveOnly();
-  if (!saleActive) return map;
-  const filtered: Record<string, ProductInfo> = {};
+  // 2026-08-29 · hidden 필터 통일 · 숨김 상품 제외
+  const notHidden: Record<string, ProductInfo> = {};
   for (const [k, info] of Object.entries(map)) {
+    if ((info as any).hidden !== true) notHidden[k] = info;
+  }
+  if (!saleActive) return notHidden;
+  const filtered: Record<string, ProductInfo> = {};
+  for (const [k, info] of Object.entries(notHidden)) {
     if (String((info as any).sale_status ?? "").trim() === "판매중") filtered[k] = info;
   }
   return filtered;
