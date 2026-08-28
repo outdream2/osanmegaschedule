@@ -1488,12 +1488,15 @@ router.get("/api/stock-manage/low-stock", asyncHandler(async (_req, res) => {
     const PAGE = 1000;
     let from = 0;
     while (true) {
-      const { data, error } = await supabase
+      // 2026-08-28 · 감사 P2-4 · sale_status 필터 · 판매중지 상품 · 부족재고 알림에서 제외
+      const { data: saleSetting } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();
+      const saleActive = saleSetting?.value !== false;
+      let q = supabase
         .from("products")
-        // 2026-08-06 · 손실추적 확장 · purchase_price·sale_price 추가 (DiffTab 컬럼)
-        .select("product_name, product_code, spec, current_stock, optimal_stock, supplier, real_map, purchase_price, sale_price")
-        .eq("hidden", false)
-        .range(from, from + PAGE - 1);
+        .select("product_name, product_code, spec, current_stock, optimal_stock, supplier, real_map, purchase_price, sale_price, sale_status")
+        .eq("hidden", false);
+      if (saleActive) q = q.eq("sale_status", "판매중");
+      const { data, error } = await q.range(from, from + PAGE - 1);
       if (error) throw new Error(error.message);
       if (!data || data.length === 0) break;
       all.push(...data);

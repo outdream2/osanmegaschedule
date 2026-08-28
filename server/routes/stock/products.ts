@@ -114,7 +114,8 @@ router.get("/api/inventory-latest", asyncHandler(async (_req, res) => {
   // 1차 시도: RPC (단일 DISTINCT ON 쿼리 · 빠름)
   const { data: rpcData, error: rpcErr } = await supabase.rpc("get_inventory_latest");
   if (!rpcErr) {
-    res.setHeader("Cache-Control", "public, max-age=60");
+    // 2026-08-28 · 감사 P2-3 · Cache-Control · 실재고 저장 직후 stale 방지 · public → private+max-age=15
+    res.setHeader("Cache-Control", "private, max-age=15");
     return res.json(buildMap(rpcData ?? []));
   }
 
