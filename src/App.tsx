@@ -39,6 +39,8 @@ import { SideNav } from "./components/layout/SideNav";
 import { useIsMobile } from "./hooks/use-mobile";
 // 2026-08-12 · Phase 6 · 페이지별 모바일 최소 레벨 게이트 (PC 전용 안내)
 import { MobileOnlyGate } from "./components/common/MobileOnlyGate";
+// 2026-08-29 · 사용자 크리티컬 · 메뉴설정 pc/mobile 언체크 · 라우팅 수준 gate
+import { usePageVisibility } from "./hooks/usePageVisibility";
 
 // 관리자 전용 · 구역 라벨 편집 UI · lazy 로드 (초기 번들 축소)
 const ZoneLabelsEditor = React.lazy(() => import("./components/ZoneLabelsEditor/ZoneLabelsEditor"));
@@ -90,6 +92,21 @@ export default function App() {
     const needsProducts: Page[] = ["scan", "productarrival", "display", "stockcheck", "stockarrivals"];
     if (needsProducts.includes(page)) prefetchProducts();
   }, [authSession, page]);
+
+  // 2026-08-29 · 사용자 크리티컬 · 메뉴설정 pc/mobile 언체크 시 · 라우팅 수준 gate
+  //   · 사이드바·상단탭·하단탭·MenuCard 이미 gate 되지만 · URL/직접 setPage 로 접근 가능
+  //   · isVisible(page, viewport) 검증 후 · false 면 랜딩 리다이렉트
+  const isMobileViewport = useIsMobile();
+  const { isVisible: isPageVisibleV, loaded: pageVisLoaded } = usePageVisibility();
+  useEffect(() => {
+    if (!pageVisLoaded) return;
+    if (page === "landing") return;  // 랜딩은 항상 접근 허용
+    const viewport: "pc" | "mobile" = isMobileViewport ? "mobile" : "pc";
+    if (!isPageVisibleV(page, viewport)) {
+      console.log(`[app-nav] page='${page}' viewport='${viewport}' hidden by menu setting · redirect to landing`);
+      setPage("landing");
+    }
+  }, [page, isMobileViewport, isPageVisibleV, pageVisLoaded]);
 
   // 2026-07-31 · 구역 라벨 매핑 · 로그인 즉시 서버 로드 (파일 fallback 이후 override)
   useEffect(() => {
