@@ -1,12 +1,14 @@
 // src/components/StaffManagePage/StaffDetailPanel.tsx
-// 2026-08-23 · Framework Phase 4 · StaffManagePage 분리 · 우측 상세 패널
-//   프로필 헤더 + KPI 바 + §1 인적사항 + §6 계약·서류 + §7-2 연차 + §7 근로조건 + 각 섹션
-import React, { useRef } from "react";
+// 2026-08-29 · Phase 2 · Tab 재조립 · SectionCard 스크롤 → Tabs 5개 (Overview/Personal/Job & Wage/Documents/Time Off)
+//   헤더·KPI바 유지 · 편집 상태 탭 전환 시 draft state 보존 · 기능·API·훅 시그니처 변경 없음
+import React, { useRef, useState } from "react";
 import {
-  Award, CalendarDays, Camera, Clock, Edit2, Save, Star, Trash2, User, X,
+  Award, CalendarDays, Camera, Clock, Edit2, ExternalLink,
+  FileText, Paperclip, Save, Star, Trash2, User, X,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { Badge } from "../common/Badge";
+import { TabBar } from "../common/TabBar";
 import { EmployeeInfoForm } from "../common/EmployeeInfoForm";
 import { Avatar, SectionCard, EmptyDetail } from "./StaffManagePage.subcomponents";
 import { StaffContractSection } from "./StaffContractSection";
@@ -87,6 +89,16 @@ interface StaffDetailPanelProps {
   deleteResume: (empId: number) => Promise<void>;
 }
 
+type DetailTab = "overview" | "personal" | "job" | "documents" | "timeoff";
+
+const DETAIL_TABS = [
+  { key: "overview"   as const, label: "Overview",    color: "indigo"  as const },
+  { key: "personal"   as const, label: "Personal",    color: "sky"     as const },
+  { key: "job"        as const, label: "Job & Wage",  color: "amber"   as const },
+  { key: "documents"  as const, label: "Documents",   color: "teal"    as const },
+  { key: "timeoff"    as const, label: "Time Off",    color: "emerald" as const },
+];
+
 export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
   displayEmp, selectedEmp, editing, draft, saving,
   latestContract, latestContractLoading,
@@ -99,6 +111,7 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
   uploadResume, deleteResume,
 }) => {
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState<DetailTab>("overview");
 
   if (!displayEmp) return <EmptyDetail />;
 
@@ -114,7 +127,6 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
     <>
       {/* ── 프로필 헤더 · v9 · 상단 gradient accent · glass style ── */}
       <div className="relative bg-white border-b border-line px-5 py-3 shrink-0">
-        {/* 2026-08-24 · v9 · 상단 gradient accent */}
         <span aria-hidden className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10" />
         <div className="flex items-center gap-3">
           {/* 사진 */}
@@ -262,9 +274,9 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
         </div>
       </div>
 
-      {/* ── 근속·연차·평가 · v9 · 3 mini stats (color dot + gradient sparkline/progress) ── */}
+      {/* ── 근속·연차·평가 · v9 · 3 mini stats ── */}
       <div className="grid grid-cols-3 gap-4 px-5 py-3 border-b border-line bg-white shrink-0">
-        {/* 근속 · brand dot + tenure text (sparkline 자리 유지 - 문자로 근속기간 표시) */}
+        {/* 근속 */}
         <div className="flex flex-col gap-1">
           <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-zinc-400 font-bold">
             <span className="w-1.5 h-1.5 rounded-sm bg-brand-deep" />
@@ -277,7 +289,7 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
             )}
           </span>
         </div>
-        {/* 연차 · sky dot + progress bar */}
+        {/* 연차 */}
         <div className="flex flex-col gap-1">
           <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-zinc-400 font-bold">
             <span className="w-1.5 h-1.5 rounded-sm bg-sky-500" />
@@ -296,7 +308,6 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
               />
             )}
           </span>
-          {/* thin progress bar · gradient */}
           <div className="h-1 bg-zinc-100 rounded-full overflow-hidden mt-1">
             <div
               className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-500 shadow-[0_0_8px_rgba(2,132,199,.4)] transition-all"
@@ -304,7 +315,7 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
             />
           </div>
         </div>
-        {/* 평가 · emerald dot + rating badge */}
+        {/* 평가 */}
         <div className="flex flex-col gap-1">
           <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-zinc-400 font-bold">
             <span className="w-1.5 h-1.5 rounded-sm bg-emerald-500" />
@@ -331,79 +342,197 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
         </div>
       </div>
 
-      {/* ── 인사카드 섹션들 · 세로 스크롤 ── */}
+      {/* ── 탭 바 · L2 Attio segmented pill ── */}
+      <TabBar
+        level={2}
+        tabs={DETAIL_TABS}
+        activeKey={activeTab}
+        onSelect={setActiveTab}
+        maxWidth="100%"
+        className="shrink-0"
+      />
+
+      {/* ── 탭 콘텐츠 · 세로 스크롤 ── */}
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 space-y-2 bg-zinc-50/30">
-        {/* §1 인적사항 */}
-        <SectionCard title="인적사항" icon={<User size={11} />} group="personal" defaultOpen>
-          <EmployeeInfoForm
-            layout="grid"
+
+        {/* Overview 탭 · 근로조건 요약 + 연차 + 문서 링크 */}
+        {activeTab === "overview" && (
+          <>
+            {/* 근로조건 요약 카드 */}
+            <SectionCard title="근로조건 요약" icon={<CalendarDays size={11} />} group="work" defaultOpen>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[14px] font-semibold text-zinc-400 leading-none">주 소정근로시간</span>
+                  <span className="text-[15px] font-semibold text-zinc-700 leading-snug">
+                    {displayEmp.working_hours_per_week != null
+                      ? `${displayEmp.working_hours_per_week}시간`
+                      : <span className="text-zinc-300 italic">미등록</span>}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[14px] font-semibold text-zinc-400 leading-none">임금</span>
+                  <span className="text-[15px] font-semibold text-zinc-700 leading-snug">
+                    {displayEmp.wage_calc_type && displayEmp.wage_amount
+                      ? `${({ hourly: "시급", daily: "일급", monthly: "월급", annual: "연봉" } as Record<string, string>)[displayEmp.wage_calc_type] ?? displayEmp.wage_calc_type} ${Number(displayEmp.wage_amount).toLocaleString()}원`
+                      : <span className="text-zinc-300 italic">미등록</span>}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[14px] font-semibold text-zinc-400 leading-none">계약기간</span>
+                  <span className="text-[15px] font-semibold text-zinc-700 leading-snug">
+                    {latestContract?.start_date
+                      ? `${latestContract.start_date} ~ ${latestContract.end_date ?? "무기한"}`
+                      : displayEmp.contract_start
+                        ? `${displayEmp.contract_start} ~ ${displayEmp.contract_end ?? "무기한"}`
+                        : <span className="text-zinc-300 italic">미등록</span>}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[14px] font-semibold text-zinc-400 leading-none">유급 주휴일</span>
+                  <span className="text-[15px] font-semibold text-zinc-700 leading-snug">
+                    {displayEmp.weekly_holiday || <span className="text-zinc-300 italic">미등록</span>}
+                  </span>
+                </div>
+              </div>
+            </SectionCard>
+
+            {/* 연차 progress 요약 */}
+            <SectionCard title="연차 현황" icon={<CalendarDays size={11} />} group="work" defaultOpen>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-[22px] font-bold text-sky-700 tabular-nums">{fmtD(remainDays)}</span>
+                  <span className="text-[14px] text-zinc-400 font-semibold">일 잔여</span>
+                </div>
+                <div className="text-[14px] text-zinc-400">/ 총 {fmtD(totalDays)}일 · 사용 {fmtD(usedDays)}일</div>
+              </div>
+              <div className="h-2 bg-zinc-100 rounded-full overflow-hidden mt-2">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-500 transition-all"
+                  style={{ width: totalDays > 0 ? `${Math.min(100, (usedDays / totalDays) * 100)}%` : "0%" }}
+                />
+              </div>
+              <p className="text-[13px] text-zinc-400 mt-1.5">
+                상세 이력은 <button type="button" onClick={() => setActiveTab("timeoff")} className="text-sky-600 underline cursor-pointer">Time Off 탭</button>에서 확인하세요
+              </p>
+            </SectionCard>
+
+            {/* 문서 링크 */}
+            <SectionCard title="첨부 서류" icon={<FileText size={11} />} group="work" defaultOpen>
+              <div className="flex flex-wrap gap-2">
+                {latestContract?.pdf_url && (
+                  <button
+                    type="button"
+                    onClick={() => window.open(latestContract.pdf_url!, "_blank", "noopener,noreferrer")}
+                    className="inline-flex items-center gap-1.5 h-8 px-3 text-[15px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] rounded-md shadow-sm cursor-pointer transition-colors"
+                  >
+                    <FileText size={11} /> 근로계약서
+                  </button>
+                )}
+                {displayEmp.resume_url && (
+                  <button
+                    type="button"
+                    onClick={() => window.open(displayEmp.resume_url as string, "_blank", "noopener,noreferrer")}
+                    className="inline-flex items-center gap-1.5 h-8 px-3 text-[15px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 rounded-md cursor-pointer transition-colors"
+                  >
+                    <Paperclip size={11} /> 이력서
+                  </button>
+                )}
+                {displayEmp.contract_file_url && (
+                  <button
+                    type="button"
+                    onClick={() => window.open(displayEmp.contract_file_url as string, "_blank", "noopener,noreferrer")}
+                    className="inline-flex items-center gap-1.5 h-8 px-3 text-[15px] font-semibold text-teal-700 bg-teal-50 border border-teal-200 hover:bg-teal-100 rounded-md cursor-pointer transition-colors"
+                  >
+                    <ExternalLink size={11} /> 계약서 URL
+                  </button>
+                )}
+                {!latestContract?.pdf_url && !displayEmp.resume_url && !displayEmp.contract_file_url && (
+                  <span className="text-[15px] text-zinc-300 italic">등록된 서류 없음 · Documents 탭에서 업로드</span>
+                )}
+              </div>
+            </SectionCard>
+          </>
+        )}
+
+        {/* Personal 탭 · §1 인적사항 */}
+        {activeTab === "personal" && (
+          <SectionCard title="인적사항" icon={<User size={11} />} group="personal" defaultOpen>
+            <EmployeeInfoForm
+              layout="grid"
+              editing={editing}
+              fields={["phone", "email", "birthDate", "gender", "address"]}
+              values={{
+                phone:     editing ? (draft?.phone     ?? "") : (displayEmp.phone     ?? ""),
+                email:     editing ? (draft?.email     ?? "") : (displayEmp.email     ?? ""),
+                birthDate: editing ? (draft?.birth_date ?? "") : (displayEmp.birth_date ?? ""),
+                gender:    editing ? (draft?.gender    ?? "") : (displayEmp.gender    ?? ""),
+                address:   editing ? (draft?.address   ?? "") : (displayEmp.address   ?? ""),
+              }}
+              onChange={(v) => {
+                if (v.phone     !== undefined) setField("phone",      v.phone);
+                if (v.email     !== undefined) setField("email",      v.email);
+                if (v.birthDate !== undefined) setField("birth_date", v.birthDate);
+                if (v.gender    !== undefined) setField("gender",     v.gender);
+                if (v.address   !== undefined) setField("address",    v.address);
+              }}
+              onAddressSearch={editing ? () => setAddrModalOpen(true) : undefined}
+            />
+          </SectionCard>
+        )}
+
+        {/* Job & Wage 탭 · §7 근로조건·임금 + §9 4대보험 + §10 약국자격 + §11 메모 */}
+        {activeTab === "job" && (
+          <StaffConditionsSection
+            displayEmp={displayEmp}
             editing={editing}
-            fields={["phone", "email", "birthDate", "gender", "address"]}
-            values={{
-              phone:     editing ? (draft?.phone     ?? "") : (displayEmp.phone     ?? ""),
-              email:     editing ? (draft?.email     ?? "") : (displayEmp.email     ?? ""),
-              birthDate: editing ? (draft?.birth_date ?? "") : (displayEmp.birth_date ?? ""),
-              gender:    editing ? (draft?.gender    ?? "") : (displayEmp.gender    ?? ""),
-              address:   editing ? (draft?.address   ?? "") : (displayEmp.address   ?? ""),
-            }}
-            onChange={(v) => {
-              if (v.phone     !== undefined) setField("phone",      v.phone);
-              if (v.email     !== undefined) setField("email",      v.email);
-              if (v.birthDate !== undefined) setField("birth_date", v.birthDate);
-              if (v.gender    !== undefined) setField("gender",     v.gender);
-              if (v.address   !== undefined) setField("address",    v.address);
-            }}
-            onAddressSearch={editing ? () => setAddrModalOpen(true) : undefined}
+            draft={draft}
+            latestContract={latestContract}
+            latestContractLoading={latestContractLoading}
+            setField={setField}
           />
-        </SectionCard>
+        )}
 
-        {/* §6 계약·서류 + §6-1 계약이력 */}
-        <StaffContractSection
-          displayEmp={displayEmp}
-          editing={editing}
-          draft={draft}
-          selectedEmp={selectedEmp}
-          latestContract={latestContract}
-          latestContractLoading={latestContractLoading}
-          contractHistory={contractHistory}
-          contractHistoryLoading={contractHistoryLoading}
-          contractHistoryError={contractHistoryError}
-          contractCountByEmp={contractCountByEmp}
-          setField={setField}
-          showError={showError}
-          showSuccess={showSuccess}
-          confirm={confirm}
-          uploadResume={uploadResume}
-          deleteResume={deleteResume}
-        />
+        {/* Documents 탭 · §6 계약·서류 + §6-1 계약이력 */}
+        {activeTab === "documents" && (
+          <StaffContractSection
+            displayEmp={displayEmp}
+            editing={editing}
+            draft={draft}
+            selectedEmp={selectedEmp}
+            latestContract={latestContract}
+            latestContractLoading={latestContractLoading}
+            contractHistory={contractHistory}
+            contractHistoryLoading={contractHistoryLoading}
+            contractHistoryError={contractHistoryError}
+            contractCountByEmp={contractCountByEmp}
+            setField={setField}
+            showError={showError}
+            showSuccess={showSuccess}
+            confirm={confirm}
+            uploadResume={uploadResume}
+            deleteResume={deleteResume}
+          />
+        )}
 
-        {/* §7 근로조건·임금 + §9 4대보험 + §10 약국자격 + §11 메모 */}
-        <StaffConditionsSection
-          displayEmp={displayEmp}
-          editing={editing}
-          draft={draft}
-          latestContract={latestContract}
-          latestContractLoading={latestContractLoading}
-          setField={setField}
-        />
-
-        {/* §7-2 연차·유급휴가 */}
-        <StaffLeaveSection
-          displayEmp={displayEmp}
-          editing={editing}
-          draft={draft}
-          selectedEmp={selectedEmp}
-          leaveYear={leaveYear}
-          currentYearNow={currentYearNow}
-          usedLeaves={usedLeaves}
-          leaveLoading={leaveLoading}
-          leaveError={leaveError}
-          deletingLeaveDate={deletingLeaveDate}
-          setLeaveYear={setLeaveYear}
-          loadUsedLeaves={loadUsedLeaves}
-          deleteUsedLeave={deleteUsedLeave}
-          setField={setField}
-        />
+        {/* Time Off 탭 · §7-2 연차·유급휴가 */}
+        {activeTab === "timeoff" && (
+          <StaffLeaveSection
+            displayEmp={displayEmp}
+            editing={editing}
+            draft={draft}
+            selectedEmp={selectedEmp}
+            leaveYear={leaveYear}
+            currentYearNow={currentYearNow}
+            usedLeaves={usedLeaves}
+            leaveLoading={leaveLoading}
+            leaveError={leaveError}
+            deletingLeaveDate={deletingLeaveDate}
+            setLeaveYear={setLeaveYear}
+            loadUsedLeaves={loadUsedLeaves}
+            deleteUsedLeave={deleteUsedLeave}
+            setField={setField}
+          />
+        )}
 
         <div className="h-2" />
       </div>
