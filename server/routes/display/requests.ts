@@ -115,7 +115,7 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
 //   · product_code 전달 시 · products 에서 real_map/spec/category/product_name 자동 조회
 //   · zone_id·zone_label 자동 채움 (real_map 기반)
 //   · 하위 호환 · 기존 zone_id 기반 요청 (zone-only) 그대로 지원
-router.post("/api/display-requests", asyncHandler(async (req, res) => {
+router.post("/api/display-requests", authorize(1), asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const productCode = String(b.product_code ?? "").trim();
   const assignedStaffIdRaw = b.assigned_staff_id;
@@ -255,7 +255,7 @@ router.post("/api/display-requests", asyncHandler(async (req, res) => {
 // 2026-08-05 · Phase 1 · 창고담당 pending ↔ prepared 토글
 //   · pending → prepared (준비 완료)
 //   · prepared → pending (되돌리기 · 토글)
-router.patch("/api/display-requests/:id/prepare", asyncHandler(async (req, res) => {
+router.patch("/api/display-requests/:id/prepare", authorize(3), asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const preparedById = b.prepared_by ? Number(b.prepared_by) : null;
   const preparedByName = String(b.prepared_by_name ?? "");
@@ -320,7 +320,7 @@ router.patch("/api/display-requests/:id/prepare", asyncHandler(async (req, res) 
 // 2026-08-05 · Phase 1 · 진열담당 prepared/pending ↔ done 토글
 //   · pending or prepared → done (진열 완료)
 //   · done → prepared (되돌리기 · 토글 · 완료자 정보 제거)
-router.patch("/api/display-requests/:id/complete", asyncHandler(async (req, res) => {
+router.patch("/api/display-requests/:id/complete", authorize(3), asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const completedById = b.completed_by ? Number(b.completed_by) : null;
   const completedByName = String(b.completed_by_name ?? "");
@@ -380,7 +380,7 @@ router.patch("/api/display-requests/:id/complete", asyncHandler(async (req, res)
 }));
 
 // 하위 호환 · 기존 클라이언트 (status 만 업데이트) 지원 · pending/prepared/done 모두 허용
-router.patch("/api/display-requests/:id", asyncHandler(async (req, res) => {
+router.patch("/api/display-requests/:id", authorize(3), asyncHandler(async (req, res) => {
   const { status, zone_label, assigned_staff_name } = req.body ?? {};
   if (!["pending", "prepared", "done"].includes(status)) throw badRequest("invalid status");
   const { error } = await supabase.from("display_requests").update({ status }).eq("id", req.params.id);
@@ -423,7 +423,7 @@ router.get("/api/order-requests", asyncHandler(async (req, res) => {
   res.json(data ?? []);
 }));
 
-router.post("/api/order-requests", asyncHandler(async (req, res) => {
+router.post("/api/order-requests", authorize(1), asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const code = String(b.product_code ?? "");
   const now = new Date().toISOString();
@@ -528,7 +528,7 @@ router.delete("/api/order-requests/:id", authorize(2), asyncHandler(async (req, 
 // 공급사별로 그룹핑된 발주 항목을 받아 이메일/문자 발송 시도.
 // 실제 SMTP·SMS gateway 설정이 없으면 로그만 남기고 "미구성" 상태 반환.
 // order_dispatches 테이블에 발송 기록 저장 (없으면 로그로 대체)
-router.post("/api/order-requests/bulk-send", asyncHandler(async (req, res) => {
+router.post("/api/order-requests/bulk-send", authorize(3), asyncHandler(async (req, res) => {
   const {
     order_number,
     order_date,
@@ -747,7 +747,7 @@ router.get("/api/inventory-checks", asyncHandler(async (req, res) => {
   res.json(data ?? []);
 }));
 
-router.post("/api/inventory-checks", asyncHandler(async (req, res) => {
+router.post("/api/inventory-checks", authorize(1), asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const code = String(b.product_code ?? "");
   const now = new Date().toISOString();
@@ -865,7 +865,7 @@ router.post("/api/inventory-checks", asyncHandler(async (req, res) => {
 //   - warehouse_stock (레거시 · 단일 창고) → warehouse1_stock 미지정 시 fallback
 //   - 구 클라이언트: warehouse_stock / store_stock / store_stock_2 만 보내는 경우 그대로 저장
 //   - 신규 컬럼 미존재 DB · 신규 필드 stripping 후 재시도 (자동 다운그레이드)
-router.post("/api/inventory-checks/bulk", asyncHandler(async (req, res) => {
+router.post("/api/inventory-checks/bulk", authorize(1), asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const items: any[] = Array.isArray(b.items) ? b.items : [];
   if (items.length === 0) throw badRequest("items 필수");
@@ -952,7 +952,7 @@ router.post("/api/inventory-checks/bulk", asyncHandler(async (req, res) => {
   res.json({ ok: true, saved, failed, total: items.length, downgraded });
 }));
 
-router.patch("/api/inventory-checks/:id", asyncHandler(async (req, res) => {
+router.patch("/api/inventory-checks/:id", authorize(1), asyncHandler(async (req, res) => {
   const { status } = req.body ?? {};
   if (!["pending", "done"].includes(status)) throw badRequest("invalid status");
   const { error } = await supabase.from("inventory_checks").update({ status }).eq("id", req.params.id);
