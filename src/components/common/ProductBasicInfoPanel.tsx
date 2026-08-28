@@ -18,7 +18,7 @@
 import React, { useState } from "react";
 import { Card } from "./Card";
 import { StatusPill } from "./StatusPill";
-import { Package, Store, Warehouse, MapPin, Coins } from "lucide-react";
+import { Package, Store, Warehouse, MapPin, Coins, Pencil, Check } from "lucide-react";
 
 export interface ProductBasic {
   product_code: string;
@@ -90,12 +90,15 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
   compact = false,
   className = "",
 }) => {
+  // 2026-08-28 · 사용자 지시 · [수정] 버튼 · 편집 모드 진입 · 진열위치·판매상태 함께 편집
+  const [editMode, setEditMode] = useState(false);
   const [editingLoc, setEditingLoc] = useState(false);
   const [locDraft, setLocDraft] = useState(String(product.location ?? product.display_location ?? ""));
   const [savingLoc, setSavingLoc] = useState(false);
   const [savingStatus, setSavingStatus] = useState(false);
 
   const location = product.location ?? product.display_location ?? null;
+  const inEditMode = editable && editMode;
 
   const labelCls = compact ? "text-[11px] font-bold text-ink-soft uppercase tracking-wider" : "text-[12px] font-bold text-ink-soft uppercase tracking-wider";
   const valueCls = compact ? "text-[14px] font-bold text-ink" : "text-[15px] font-bold text-ink";
@@ -128,7 +131,33 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
   );
 
   return (
-    <Card padding={compact ? "sm" : "md"} rounded="lg" className={`bg-white ${className}`}>
+    <Card padding={compact ? "sm" : "md"} rounded="lg" className={`bg-white ${className} relative`}>
+      {/* 2026-08-28 · 사용자 지시 · [수정] 버튼 · 편집 모드 진입 · 우측 상단 (진열위치·판매상태) */}
+      {editable && (
+        <div className="absolute top-2 right-2 z-10">
+          {inEditMode ? (
+            <button
+              type="button"
+              onClick={() => setEditMode(false)}
+              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[12px] font-bold shadow-sm transition cursor-pointer"
+              title="편집 완료"
+            >
+              <Check size={12} strokeWidth={2.5} />
+              완료
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditMode(true)}
+              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-white hover:bg-brand-tint border border-line hover:border-brand-deep text-brand-deep text-[12px] font-bold shadow-sm transition cursor-pointer"
+              title="진열위치·판매상태 편집"
+            >
+              <Pencil size={12} strokeWidth={2.5} />
+              수정
+            </button>
+          )}
+        </div>
+      )}
       <div className={compact ? "grid grid-cols-2 sm:grid-cols-3 gap-2.5" : "grid grid-cols-2 md:grid-cols-4 gap-3"}>
         {/* Row 1 · 기본 (분류·상품명·공급사) */}
         <Field label="분류코드">
@@ -152,7 +181,7 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
 
         {/* Row 2 · 진열위치 (편집) · 판매상태 (편집) · 현재고 · 창고재고 · 매장재고 */}
         <Field label="진열위치" icon={<MapPin size={11} />}>
-          {editable && editingLoc ? (
+          {inEditMode && editingLoc ? (
             <form onSubmit={(e) => { e.preventDefault(); void submitLocation(); }} className="flex items-center gap-1">
               <input
                 type="text"
@@ -169,22 +198,22 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
           ) : (
             <button
               type="button"
-              disabled={!editable}
-              onClick={() => { setLocDraft(String(location ?? "")); setEditingLoc(true); }}
-              className={`${valueCls} tabular-nums ${editable ? "hover:bg-amber-50 hover:text-amber-800 rounded px-1 -mx-1 cursor-pointer transition" : "cursor-default"}`}
-              title={editable ? "클릭하여 편집" : undefined}
+              disabled={!inEditMode}
+              onClick={() => { if (inEditMode) { setLocDraft(String(location ?? "")); setEditingLoc(true); } }}
+              className={`${valueCls} tabular-nums ${inEditMode ? "hover:bg-amber-50 hover:text-amber-800 rounded px-1 -mx-1 cursor-pointer transition border border-dashed border-amber-300" : "cursor-default"}`}
+              title={inEditMode ? "클릭하여 편집" : undefined}
             >
               {location || <span className="text-zinc-300">-</span>}
             </button>
           )}
         </Field>
         <Field label="판매상태">
-          {editable && onSaleStatusChange ? (
+          {inEditMode && onSaleStatusChange ? (
             <select
               value={String(product.sale_status ?? "")}
               onChange={(e) => void handleStatusChange(e.target.value)}
               disabled={savingStatus}
-              className="h-7 px-2 rounded border border-line text-[13px] font-bold bg-white outline-none focus:ring-2 focus:ring-brand-tint cursor-pointer"
+              className="h-7 px-2 rounded border border-amber-300 border-dashed text-[13px] font-bold bg-white outline-none focus:ring-2 focus:ring-brand-tint cursor-pointer"
             >
               <option value="">-</option>
               {SALE_STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
