@@ -170,7 +170,11 @@ router.get("/api/products-by-category", asyncHandler(async (req, res) => {
   const code = String(req.query.code ?? "").trim();
   if (!category && !code) return res.json([]);
   const cols = "product_code,product_name,category,category_code,supplier,brand,manufacturer,spec,unit,sale_price,purchase_price,real_map";
+  // 2026-08-28 · 감사 P2-1 · sale_status 필터 통일 · 판매중만 (설정 반영)
+  const { data: saleSetting } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();
+  const saleActive = saleSetting?.value !== false;
   let q = supabase.from("products").select(cols).eq("hidden", false);
+  if (saleActive) q = q.eq("sale_status", "판매중");
   if (code) q = q.eq("category_code", code);
   else q = q.ilike("category", `%${category}%`);
   const { data, error } = await q.order("product_name", { ascending: true }).limit(100);
@@ -533,9 +537,11 @@ router.get("/api/products/realmap-check", asyncHandler(async (_req, res) => {
 //   · 매입 서브탭 (구 "실재고" → "유통기한 임박") · 화면 리스트 소스
 //   · /:code 라우트보다 먼저 등록해야 매칭됨
 router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
+  // 2026-08-28 · 감사 P2-2 · hidden 필터 추가 · 판매중지+숨김 상품 제외
   const { data, error } = await supabase
     .from("products")
     .select("product_code, product_name, spec, supplier, real_map, current_stock, expiry_date")
+    .eq("hidden", false)
     .not("expiry_date", "is", null)
     .order("expiry_date", { ascending: true })
     .limit(500);
