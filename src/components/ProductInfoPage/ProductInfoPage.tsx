@@ -27,6 +27,8 @@ import { UpdateProductSchema, type UpdateProductInput } from "../../shared/schem
 import { consumeScanPendingProductCode } from "../../hooks/useScanUnregisteredMode";
 // 2026-08-26 · 사용자 지시 · 상품테이블 판매중 필터 반영 (전역 설정 · useSaleActiveOnly)
 import { useSaleActiveOnly } from "../../hooks/useSaleActiveOnly";
+// 2026-08-28 · 사용자 지시 · 13컬럼 통일 · ProductBasicInfoPanel 상단 삽입
+import { ProductBasicInfoPanel } from "../common/ProductBasicInfoPanel";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 interface ProductRow {
@@ -123,6 +125,31 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
     );
   }
 
+  // 2026-08-28 · 사용자 지시 · 13컬럼 통일 상단 · 진열위치·판매상태 인라인 편집
+  const handleLocationChange = async (newLocation: string | null) => {
+    try {
+      await api.patch(`/api/products/${encodeURIComponent(product.product_code)}`, {
+        location: newLocation,
+        display_location: newLocation,
+      });
+      showSuccess(`진열위치 · ${newLocation ?? "-"} 저장`);
+      onSaved();
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : (e as Error)?.message ?? "저장 실패";
+      showError(`[진열위치] ${msg}`);
+    }
+  };
+  const handleSaleStatusChange = async (newStatus: string) => {
+    try {
+      await api.patch(`/api/products/${encodeURIComponent(product.product_code)}`, { sale_status: newStatus });
+      showSuccess(`판매상태 · ${newStatus} 저장`);
+      onSaved();
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : (e as Error)?.message ?? "저장 실패";
+      showError(`[판매상태] ${msg}`);
+    }
+  };
+
   const val = (k: EditableKey): string => {
     if (k in draft) return draft[k];
     const p = product as unknown as Record<string, unknown>;
@@ -218,11 +245,35 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
   return (
     <>
       <div className="p-4 space-y-3">
+        {/* 2026-08-28 · 사용자 지시 · 13컬럼 통일 · ProductBasicInfoPanel 상단 · 진열위치·판매상태 인라인 편집 */}
+        <ProductBasicInfoPanel
+          product={{
+            product_code: product.product_code,
+            category_code: (product as any).category_code,
+            category: (product as any).category,
+            product_name: product.product_name,
+            supplier: product.supplier,
+            location: (product as any).location ?? (product as any).display_location,
+            display_location: (product as any).display_location,
+            sale_status: (product as any).sale_status,
+            current_stock: (product as any).current_stock,
+            warehouse_stock: (product as any).warehouse_stock,
+            store_stock: (product as any).store_stock,
+            purchase_price: (product as any).purchase_price,
+            sale_price: (product as any).sale_price,
+            profit_rate: (product as any).profit_rate,
+            optimal_stock: (product as any).optimal_stock,
+            last_purchase_date: (product as any).last_purchase_date,
+          }}
+          editable={canEdit}
+          onLocationChange={handleLocationChange}
+          onSaleStatusChange={handleSaleStatusChange}
+        />
         {/* 2026-08-24 · v9 · 상단 gradient accent (Card topAccent prop 사용 · 2026-08-25 리팩터) */}
         <Card variant="flat" padding="md" rounded="lg" topAccent className="bg-white">
           <div className="flex items-center gap-2 mb-3 pb-2 border-b border-line">
             <InfoIcon size={16} className="text-brand-deep" />
-            <h3 className="text-[15px] font-bold text-ink tracking-tight">기본 정보</h3>
+            <h3 className="text-[15px] font-bold text-ink tracking-tight">상세 편집 (전체 필드)</h3>
             <div className="flex-1" />
             {editing ? (
               <>
