@@ -65,7 +65,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
     <td
       className={`
         relative
-        border-r border-zinc-100 bg-white sticky left-0 z-50
+        border-r border-zinc-100 bg-white sticky left-0 z-20
         group-hover:bg-zinc-50
         shadow-[1px_0_0_0_#e2e8f0]
         min-w-[90px] w-[90px]
