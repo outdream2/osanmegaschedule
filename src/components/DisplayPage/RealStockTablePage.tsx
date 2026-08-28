@@ -16,6 +16,9 @@ import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/T
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useSaleActiveOnly } from "../../hooks/useSaleActiveOnly";
+// 2026-08-28 · 사용자 지시 · 판매중 필터 프레임워크 (D안)
+import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
+import { SaleStatusFilter } from "../common/SaleStatusFilter";
 // 2026-08-27 · 사용자 지시 · 카테고리 → 창고 slot 지능 배정 (8A=창고1 · 32=창고2)
 import { assignZonesToSlots } from "../../lib/warehouseZoneMap";
 
@@ -100,8 +103,11 @@ export const RealStockTablePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  // 2026-08-26 · 사용자 지시 · 전역 useSaleActiveOnly 훅 · 모든 소비자와 동기화 (기본값 true)
-  const { saleActiveOnly: saleOnly, setSaleActiveOnly: setSaleOnly } = useSaleActiveOnly();
+  // 2026-08-28 · 사용자 지시 · 판매중 필터 프레임워크 (D안) · 3-state · localStorage 지속
+  //   · 기존 useSaleActiveOnly (전역 KV) → useSaleStatusFilter (페이지 로컬)
+  //   · 판매중/판매중지/전체 · Segmented Control · SaleStatusFilter 프리미티브
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "realStock.saleFilter" });
+  const saleOnly = saleFilter === "active";  // 기존 API 하위 호환 (재로드 트리거)
   const { toast, showError, showSuccess } = useToast();
   // 2026-08-27 · 사용자 지시 · Group by 구역 뷰 토글 (옵션 3)
   const [groupByZone, setGroupByZone] = useState(false);
@@ -215,8 +221,8 @@ export const RealStockTablePage: React.FC = () => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let list = rows;
-    // 2026-08-26 · 사용자 지시 · 오직 sale_status = "판매중" · null/빈칸 제외
-    if (saleOnly) list = list.filter(r => String(r.sale_status ?? "").trim() === "판매중");
+    // 2026-08-28 · 사용자 지시 · SaleStatusFilter · 3-state matches()
+    list = list.filter(r => saleMatches(r.sale_status));
     if (!q) return list;
     return list.filter(r =>
       String(r.product_name ?? "").toLowerCase().includes(q) ||
@@ -224,7 +230,7 @@ export const RealStockTablePage: React.FC = () => {
       String(r.product_code ?? "").toLowerCase().includes(q) ||
       String(r.location ?? "").toLowerCase().includes(q)
     );
-  }, [rows, search, saleOnly]);
+  }, [rows, search, saleMatches]);
 
   const { sorted, sortKey, sortDir, toggleSort, setSort } = useSortableTable<Row, SortKey>(filtered, "product_name", CMP, "asc");
   // 2026-08-27 · 사용자 지시 · 구역별 그룹 활성 시 · 자동으로 진열위치(location) 정렬로 전환
@@ -512,11 +518,8 @@ export const RealStockTablePage: React.FC = () => {
                   className="w-80 h-10 pl-9 pr-3 text-[15px] font-medium border border-line rounded-lg outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white transition"
                 />
               </div>
-              {/* Toggle chips · 통일 톤 */}
-              <label className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border text-[14px] font-bold transition cursor-pointer select-none ${saleOnly ? "bg-brand-deep border-brand-deep text-white shadow-sm" : "bg-white border-line text-ink-soft hover:border-brand-deep hover:text-brand-deep"}`}>
-                <input type="checkbox" checked={saleOnly} onChange={(e) => setSaleOnly(e.target.checked)} className="w-4 h-4 accent-brand-deep cursor-pointer" />
-                판매중만
-              </label>
+              {/* 2026-08-28 · 사용자 지시 · SaleStatusFilter 프리미티브 · 3-state (전체/판매중/판매중지) */}
+              <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="md" />
               <label className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border text-[14px] font-bold transition cursor-pointer select-none ${groupByZone ? "bg-brand-deep border-brand-deep text-white shadow-sm" : "bg-white border-line text-ink-soft hover:border-brand-deep hover:text-brand-deep"}`}>
                 <input type="checkbox" checked={groupByZone} onChange={(e) => setGroupByZone(e.target.checked)} className="w-4 h-4 accent-brand-deep cursor-pointer" />
                 구역별 그룹
