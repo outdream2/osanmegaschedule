@@ -9,6 +9,8 @@ import {
   RefreshCw, Filter, X, Package2, ReceiptText, Wallet, TrendingUp, TrendingDown, Minus,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+// 2026-08-29 · #165 A · SearchBar 프리미티브
+import { SearchBar } from "../common/SearchBar";
 import { VendorInfoHeader, type VendorBasic, type VendorKpi, type LedgerRowMinimal } from "./VendorInfoHeader";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
@@ -404,13 +406,14 @@ const HistoryContent: React.FC<{
             </button>
           ))}
         </div>
-        {/* 검색 */}
-        <input
-          type="text"
+        {/* 2026-08-29 · #165 A · SearchBar 프리미티브 */}
+        <SearchBar
           value={productSearch}
-          onChange={e => setProductSearch(e.target.value)}
+          onChange={setProductSearch}
           placeholder="상품명·코드 검색"
-          className="h-7 px-2.5 text-[11px] border border-line rounded-lg outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition w-40"
+          historyKey="megatown_vendorDetail_search"
+          accent="indigo"
+          widthClass="w-40"
         />
         {/* 건수 */}
         <span className="text-[10px] text-zinc-400 tabular-nums">
