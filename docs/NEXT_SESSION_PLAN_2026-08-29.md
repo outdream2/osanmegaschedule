@@ -37,38 +37,39 @@
 
 ## 🎯 다음 세션 · 우선순위 (안전순)
 
-### ✅ 완료 (2026-08-29 후속 세션)
+### ✅ 완료 (2026-08-29 후속 세션 · 7 커밋)
 - **#182 Phase A Step 1** · `2caeb4b1` · shared DTO 9 필드 추가
-- **#182 Phase A Step 2·3** · 삼각화 유지 결정 (API DTO/App 도메인/편집 draft 각각 목적 다름 · 통합 시 회귀 위험)
-- **#178** · `84a98d48` · 팀장 유일성 (position별 · B안)
-- **#177 Phase 1** · `6ab3af8e` · SettingsModal 직군 탭 노출 + TASKS 정리
-- **#154 Phase 1** · `a3c1bb0a` · SaleStatusFilter · Unassigned + ZoneMismatch (server sale_status join)
+- **#182 Phase A Step 2·3** · 삼각화 유지 결정 (API DTO/App 도메인/편집 draft 각각 목적 다름)
+- **#178** · `84a98d48` · 팀장 유일성 (position별 · B안) · TS ✓
+- **#177 Phase 1** · `6ab3af8e` · SettingsModal 직군 탭 노출 + TASKS v2 정리 · TS ✓
+- **#154 Phase 1** · `a3c1bb0a` · SaleStatusFilter · Unassigned + ZoneMismatch (server sale_status join) · TS + vitest 9/9 ✓
+- **#186 A안** · `f8dbb3a9` · ProductDetailHero · Attio Sticky Hero · TS + vitest 21/21 ✓
+- **#122 Phase 4** · `b3d1093e` · GradientAccent 프리미티브 신설 · TS + vitest 27/27 ✓
+- **#122 Phase 1** · `ef2454fe` · SectionCard 프리미티브 신설 · TS + vitest 6/6 ✓
 
-### 1순위 · #186 A안 · ProductDetailHero (4-6h · 낮은 위험)
-- 사용자 명시 승인 · Attio Hero + Section
-- 기존 API/훅 무영향 · UI 만 변경
-
-### 2순위 · #122 Phase 1·4 · 시스템설정 UI (2.5h · 낮음)
+### 1순위 · #122 Phase 2·3·5·6 · SectionCard 확산 (4h · 낮음)
+- 프리미티브 완료 후 · 실제 시스템설정 페이지 적용
 - `docs/UI_MOCKUP_SETTINGS_SHELL_V2_2026-08-26.html` 참조
-- 타이포 · Accent color
 
-### 3순위 · #154 Phase 2 · ProductSearchInput 확산 (4h · 중저)
+### 2순위 · #154 Phase 2 · ProductSearchInput 확산 (4h · 중저)
 - FlowTab · LandingPage::StockSearch
 
-### 4순위 · #165 Phase 1 · 상품 검색 전수 조사 (4h · 낮음)
+### 3순위 · #165 Phase 1 · 상품 검색 전수 조사 (4h · 낮음)
 
 ### 대기 (사용자 확인 필요)
 - #79/#107/#258 · 발주 리스트 프리미엄 UI (v3 목업 승인 대기)
 - #130 · 차용등록 재설계 (양방향 화살표)
 - #148 · 매장구역도 UI 개선
+- #174 · 바코드 SSO
 - #176 · 발주 카톡 옵션
+- #177 P2 · SettingsModal · 직급(rank) 편집 UI · 프리셋 결정 필요
 - #77/#253 · 자동 임포트 (대형 · 별도 세션)
 
 ---
 
 ## 🔴 사용자 대기 · 미실행
 
-- **Remote push** · 37+ 커밋 (a0640613 이후) · 명시 지시 시만 · `git push origin main`
+- **Remote push** · 44+ 커밋 (a0640613 이후 · 후속 세션 7 커밋 추가) · 명시 지시 시만 · `git push origin main`
 - **터미널 한글 깨짐** · CC 재시작 필요 (Node 프로세스 CP949 고정 · 현 세션에선 못 고침)
   - 새 터미널 · `cd D:\antigravity_projects\megatown-staff-scheduler` · `claude` 재실행
 

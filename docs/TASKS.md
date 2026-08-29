@@ -16,24 +16,35 @@
 
 ---
 
-## 🎯 활성 PENDING · 정리 v2 (2026-08-29)
+## 🎯 활성 PENDING · 정리 v3 (2026-08-29 · 후속 세션 마감)
 
-> 완료 태스크 삭제 후 · 오늘 세션 · **pending 만** 우선순위 순 재정렬
-> #178 팀장 유일성 · 완료 (`84a98d48`) · #182 Phase A Step 1 · 완료 (`2caeb4b1`)
+> **이번 후속 세션 · 7 로컬 커밋 · 모두 테스트 통과**
+> 완료 태스크 삭제 · pending 만 우선순위 순 재정렬
+
+### ✅ 이번 세션 완료 (7 커밋 · Remote push 대기)
+| 커밋 | 태스크 | 테스트 |
+|-----|-----|-----|
+| `84a98d48` | #178 팀장 유일성 (B안 · position별) | TS ✓ |
+| `6ab3af8e` | #177 P1 · SettingsModal 직군 탭 노출 | TS ✓ |
+| `a3c1bb0a` | #154 P1 · SaleStatusFilter · Unassigned + ZoneMismatch | TS + vitest 9/9 ✓ |
+| `b06c5e60` | NEXT_SESSION_PLAN 갱신 | — |
+| `f8dbb3a9` | #186 A안 · ProductDetailHero · Attio Sticky Hero | TS + vitest 21/21 ✓ |
+| `b3d1093e` | #122 P4 · GradientAccent 프리미티브 | TS + vitest 27/27 ✓ |
+| `ef2454fe` | #122 P1 · SectionCard 프리미티브 | TS + vitest 6/6 ✓ |
+| **+ 이전 세션 · 37+ 커밋 · 총 Remote push 대기 44+** |
 
 ### 🔴 크리티컬 · 최우선 (회귀 위험)
 | # | 태스크 | 진행 상황 | 예상 |
 |---|-----|--------|-----|
-| **#182** | 근로계약서 연동 · DTO 일치화 Phase A | Step 1 ✅ · Step 2·3 대기 (src/types.ts · StaffManagePage/types.ts) | 2h |
+| **#182** | 근로계약서 연동 · DTO 일치화 | Step 1 완료 `2caeb4b1` · Step 2·3 · **삼각화 유지 결정** (API DTO / App 도메인 / 편집 draft · 각각 목적 다름 · 통합 시 회귀 위험) · 사실상 완결 | — |
 | **#185** | 직원↔스케쥴·계약서 연동 정리 | Phase B~E 대기 · #182 완료 후 | 8h |
 
 ### 🟢 낮은 위험 · 자율 진행 가능
 | # | 태스크 | 진행 상황 | 예상 |
 |---|-----|--------|-----|
-| **#177** | 직군·직급 편집 UI · SettingsModal | 진행중 · positions 로직 존재 · 탭 노출만 | 1h |
-| **#154** | 판매중 필터 확산 · UnassignedProductsTab·ZoneMismatchTab | Phase 1 대기 | 2h |
-| **#122** | 시스템설정 목업 · Phase 1·4 | 낮음 · Phase 5 사용자 확인 후 | 2.5h |
-| **#186** | 상품상세 · A안 · ProductDetailHero | 사용자 승인 · Attio Hero | 4-6h |
+| **#122 P2·3·5·6** | 시스템설정 목업 · SectionCard 확산 (실제 페이지 적용) | P4·P1 프리미티브 완료 · 확산 대기 | 4h |
+| **#165 P1** | 상품 검색 전수 조사 · 페이지별 필터·검색 UX 통일 | 조사 필요 | 4h |
+| **#154 P2** | ProductSearchInput 확산 · FlowTab · LandingPage::StockSearch | 프리미티브 확산 | 4h |
 
 ### 🟡 중형 · 사용자 확인 필요
 | # | 태스크 | 대기 사유 |
@@ -41,9 +52,9 @@
 | **#79/#107/#258** | 발주 리스트 프리미엄 UI | 목업 v3 승인 대기 |
 | **#130** | 차용등록 재설계 · 양방향 화살표 | 목업 승인 대기 |
 | **#148** | 매장구역도 UI 개선 | 목업 대기 |
-| **#165** | 상품 검색 전수 조사 | Phase 2 (4h) 대기 |
 | **#174** | 바코드 SSO · 다른 브라우저 열기 | 열린이슈 |
 | **#176** | 발주 카톡 전송 옵션 | 사용자 확인 |
+| **#177 P2** | 직급(rank) 편집 UI · SettingsModal 에 rank 탭 추가 | 사용자 확인 필요 (직급 프리셋 없음 · 자유 텍스트 or 프리셋 결정) |
 
 ### 🟠 대형 · 별도 세션
 | # | 태스크 |
