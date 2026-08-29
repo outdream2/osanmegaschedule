@@ -175,13 +175,19 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
         />
       )}
 
-      {/* Row 1: 구역 번호 (1-8: A/B 로 구분 필요 · 9+: 카테고리와 중복이므로 번호 숨김) + 상태 dot */}
+      {/* Row 1: 구역 번호 (1-8: A/B 로 구분 필요 · 9+: 카테고리와 중복이므로 번호 숨김) + 상태 dot
+       *  2026-08-29 · #151 · 서브라벨 (A/B) 강조 · text-[11px]→[13px] · A/B 대비 배지
+       */}
       <div className="flex items-center justify-between px-1 pt-0.5 shrink-0">
         {zone.num <= 8 ? (
-          <span className="text-[11px] font-bold leading-none">
-            {zone.num}
-            {zone.id.endsWith("A") && <span>A</span>}
-            {zone.id.endsWith("B") && <span>B</span>}
+          <span className="text-[13px] font-extrabold leading-none flex items-center gap-0.5">
+            <span>{zone.num}</span>
+            {zone.id.endsWith("A") && (
+              <span className="px-1 py-px rounded bg-white/25 text-[11px] font-black tracking-tight">A</span>
+            )}
+            {zone.id.endsWith("B") && (
+              <span className="px-1 py-px rounded bg-black/15 text-[11px] font-black tracking-tight">B</span>
+            )}
           </span>
         ) : (
           <span className="w-1 h-1 shrink-0" aria-hidden="true" />
