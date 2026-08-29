@@ -10,6 +10,8 @@ import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { PageToolbar } from "../common/PageToolbar";
 // 2026-08-23 · #180 · 공급사·상품 검색 SearchBar
 import { SearchBar } from "../common/SearchBar";
+// 2026-08-29 · 상품명 검색 · 통일 로직
+import { matchesProductQuery } from "../../lib/productMatch";
 import { AccentBar } from "../common/AccentBar";
 import { InlineLabel } from "../common/InlineLabel";
 import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
@@ -114,7 +116,8 @@ export const OrderHistoryTab: React.FC = () => {
     return orders.filter(o => {
       const supplierName = String(displayVendorName(o.supplier ?? ""));
       const supplierMatch = !qS || supplierName.toLowerCase().includes(qS);
-      const productMatch = !qP || o.items.some(it => String(it.product_name ?? "").toLowerCase().includes(qP));
+      // 2026-08-29 · 통일 로직 · matchesProductQuery (초성 + 부분 + 코드 + 바코드)
+      const productMatch = !productSearch.trim() || o.items.some(it => matchesProductQuery(it, productSearch));
       const categoryMatch = categoryFilter === "all" || orderCategory(o) === categoryFilter;
       return supplierMatch && productMatch && categoryMatch;
     });
@@ -128,7 +131,8 @@ export const OrderHistoryTab: React.FC = () => {
       ? orders.filter(o => {
           const s = String(displayVendorName(o.supplier ?? ""));
           const supplierMatch = !qS || s.toLowerCase().includes(qS);
-          const productMatch = !qP || o.items.some(it => String(it.product_name ?? "").toLowerCase().includes(qP));
+          // 2026-08-29 · 통일 로직 · matchesProductQuery (초성 + 부분 + 코드 + 바코드)
+      const productMatch = !productSearch.trim() || o.items.some(it => matchesProductQuery(it, productSearch));
           return supplierMatch && productMatch;
         })
       : orders;
