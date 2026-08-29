@@ -24,9 +24,18 @@ export interface ProductWithInventory {
   real_map: string | null;
   current_stock: number | null;
   optimal_stock: number | null;
+  purchase_price: number | null;      // 2026-08-29 · #168 Phase 2 확장
+  sale_price: number | null;
+  profit_rate: number | null;
+  expiry_date: string | null;
+  brand: string | null;
+  manufacturer: string | null;
+  unit: string | null;
+  search_keywords: string | null;
   sale_status: string | null;
   hidden: boolean;
 
+  // 재고 (inventory_checks 최신)
   inv_warehouse1_stock: number | null;
   inv_warehouse2_stock: number | null;
   inv_store_stock: number | null;
@@ -37,12 +46,20 @@ export interface ProductWithInventory {
   inv_store3_zone: string | null;
   inv_checked_at: string | null;
   inv_total: number | null;
+
+  // 2026-08-29 · #168 Phase 2 · 매입 이력 (purchase_details 최근)
+  last_purchase_date: string | null;
+  last_snapshot_qty: number | null;
 }
 
 export interface QueryOptions {
   saleActiveOnly?: boolean;
   includeHidden?: boolean;
   limit?: number;
+  /** 2026-08-29 · #168 Phase 2 · 부족재고 필터 (current_stock < optimal_stock) */
+  filterLowStockOnly?: boolean;
+  /** 2026-08-29 · #168 Phase 2 · purchase_details 최근 매입 병합 */
+  includePurchaseHistory?: boolean;
 }
 
 async function readSaleActiveOnly(): Promise<boolean> {
@@ -110,6 +127,31 @@ async function fetchLatestInventory(codes?: string[]): Promise<Map<string, {
  *   · sale_active_only + hidden 필터 자동 반영
  *   · #170 표준 준수 · 원본 테이블 우선 · JOIN 서버측
  */
+// 2026-08-29 · #168 Phase 2 · purchase_details 최근 매입 병합 (옵션)
+//   · 각 product_code 별 · 최신 purchase_date 1건 (last_purchase_date · last_snapshot_qty)
+async function fetchLatestPurchase(codes: string[]): Promise<Map<string, { last_purchase_date: string | null; last_snapshot_qty: number | null }>> {
+  const map = new Map<string, { last_purchase_date: string | null; last_snapshot_qty: number | null }>();
+  if (codes.length === 0) return map;
+  const CHUNK = 200;
+  for (let i = 0; i < codes.length; i += CHUNK) {
+    const slice = codes.slice(i, i + CHUNK);
+    const { data } = await supabase
+      .from("purchase_details")
+      .select("product_code, purchase_date, quantity")
+      .in("product_code", slice)
+      .order("purchase_date", { ascending: false });
+    for (const r of data ?? []) {
+      const code = String(r.product_code ?? "").trim();
+      if (!code || map.has(code)) continue;
+      map.set(code, {
+        last_purchase_date: r.purchase_date ?? null,
+        last_snapshot_qty: r.quantity != null ? Number(r.quantity) : null,
+      });
+    }
+  }
+  return map;
+}
+
 export async function queryProductsWithInventory(
   codes?: string[],
   opts: QueryOptions = {}
@@ -117,10 +159,14 @@ export async function queryProductsWithInventory(
   const includeHidden = opts.includeHidden === true;
   const saleActive = opts.saleActiveOnly ?? await readSaleActiveOnly();
   const limit = Math.min(opts.limit ?? 1000, 10000);
+  const filterLowStockOnly = opts.filterLowStockOnly === true;
+  const includePurchaseHistory = opts.includePurchaseHistory === true;
 
+  // 2026-08-29 · #168 Phase 2 · 확장 컬럼 · purchase_price · sale_price · profit_rate · expiry_date · brand · manufacturer · unit · search_keywords
+  //   · 각 endpoint 소비 필드 · 모두 포함 · 응답 형식 매핑 용이
   let productQuery = supabase
     .from("products")
-    .select("product_code, product_name, supplier, category, category_code, spec, location, display_location, real_map, current_stock, optimal_stock, sale_status, hidden");
+    .select("product_code, product_name, supplier, category, category_code, spec, location, display_location, real_map, current_stock, optimal_stock, purchase_price, sale_price, profit_rate, expiry_date, brand, manufacturer, unit, search_keywords, sale_status, hidden");
   if (!includeHidden) productQuery = productQuery.eq("hidden", false);
   if (saleActive) productQuery = productQuery.eq("sale_status", "판매중");
   if (codes && codes.length > 0) productQuery = productQuery.in("product_code", codes);
@@ -129,12 +175,23 @@ export async function queryProductsWithInventory(
   const { data: products, error: pErr } = await productQuery;
   if (pErr) throw new Error(`products 조회 실패: ${pErr.message}`);
 
-  const productCodes = (products ?? []).map(p => String(p.product_code ?? ""));
-  const inventoryMap = await fetchLatestInventory(productCodes);
+  // 부족재고 필터 (opts.filterLowStockOnly)
+  const filtered = filterLowStockOnly
+    ? (products ?? []).filter(p => {
+        const cur = p.current_stock != null ? Number(p.current_stock) : null;
+        const opt = p.optimal_stock != null ? Number(p.optimal_stock) : null;
+        return cur != null && opt != null && cur < opt;
+      })
+    : (products ?? []);
 
-  return (products ?? []).map(p => {
+  const productCodes = filtered.map(p => String(p.product_code ?? ""));
+  const inventoryMap = await fetchLatestInventory(productCodes);
+  const purchaseMap = includePurchaseHistory ? await fetchLatestPurchase(productCodes) : new Map();
+
+  return filtered.map(p => {
     const code = String(p.product_code ?? "");
     const inv = inventoryMap.get(code);
+    const pur = purchaseMap.get(code);
     return {
       product_code: code,
       product_name: p.product_name ?? null,
@@ -147,6 +204,14 @@ export async function queryProductsWithInventory(
       real_map: p.real_map ?? null,
       current_stock: p.current_stock != null ? Number(p.current_stock) : null,
       optimal_stock: p.optimal_stock != null ? Number(p.optimal_stock) : null,
+      purchase_price: p.purchase_price != null ? Number(p.purchase_price) : null,
+      sale_price: p.sale_price != null ? Number(p.sale_price) : null,
+      profit_rate: p.profit_rate != null ? Number(p.profit_rate) : null,
+      expiry_date: p.expiry_date ?? null,
+      brand: p.brand ?? null,
+      manufacturer: p.manufacturer ?? null,
+      unit: p.unit ?? null,
+      search_keywords: p.search_keywords ?? null,
       sale_status: p.sale_status ?? null,
       hidden: p.hidden === true,
       inv_warehouse1_stock: inv?.inv_warehouse1_stock ?? null,
@@ -159,6 +224,8 @@ export async function queryProductsWithInventory(
       inv_store3_zone: inv?.inv_store3_zone ?? null,
       inv_checked_at: inv?.inv_checked_at ?? null,
       inv_total: inv?.inv_total ?? null,
+      last_purchase_date: pur?.last_purchase_date ?? null,
+      last_snapshot_qty: pur?.last_snapshot_qty ?? null,
     };
   });
 }
