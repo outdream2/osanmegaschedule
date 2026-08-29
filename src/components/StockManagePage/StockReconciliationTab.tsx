@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 // 2026-08-29 · #165 A · SearchBar 프리미티브
 import { SearchBar } from "../common/SearchBar";
+// 2026-08-29 · 상품명 검색 · 통일 로직
+import { matchesProductQuery } from "../../lib/productMatch";
 import type { AuthSession } from "../../types";
 import { useSortableTable } from "../../hooks/useSortableTable";
 import { EmptyState } from "../common/EmptyState";
@@ -198,14 +200,10 @@ export const StockReconciliationTab: React.FC<{
   }, [rows]);
 
   const filteredRows = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    // 2026-08-29 · 통일 로직 · matchesProductQuery + supplierFilter
     return rows.filter(r => {
       if (supplierFilter && (r.supplier ?? "") !== supplierFilter) return false;
-      if (q) {
-        const hay = `${r.product_name} ${r.product_code} ${r.supplier ?? ""}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
+      return matchesProductQuery(r as any, query);
     });
   }, [rows, query, supplierFilter]);
 

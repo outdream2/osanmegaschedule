@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { TrendingUp, X, Info, EyeOff, CheckSquare, Square } from "lucide-react";
 // 2026-08-29 · #165 A · SearchBar 프리미티브
 import { SearchBar } from "../common/SearchBar";
+// 2026-08-29 · 상품명 검색 · 통일 로직
+import { matchesProductQuery } from "../../lib/productMatch";
 import { Spinner } from "../common/Spinner";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { SeasonButtons } from "../common/SeasonButtons";
@@ -124,12 +126,8 @@ export const StockFlowPanel: React.FC<{
     const min = saleMin.trim() === "" ? null : Number(saleMin);
     const max = saleMax.trim() === "" ? null : Number(saleMax);
     let filtered = rows.filter(p => {
-      if (q) {
-        const hit = String(p.product_name ?? "").toLowerCase().includes(q)
-          || String(p.product_code ?? "").includes(q)
-          || String(p.supplier ?? "").toLowerCase().includes(q);
-        if (!hit) return false;
-      }
+      // 2026-08-29 · 통일 로직 · matchesProductQuery (초성 · 부분 · 코드 · 바코드)
+      if (q && !matchesProductQuery(p as any, query)) return false;
       const qty = Number(p.sale_qty ?? 0);
       if (min != null && Number.isFinite(min) && qty < min) return false;
       if (max != null && Number.isFinite(max) && qty > max) return false;

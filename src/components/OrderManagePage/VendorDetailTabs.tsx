@@ -11,6 +11,8 @@ import {
 import { Spinner } from "../common/Spinner";
 // 2026-08-29 · #165 A · SearchBar 프리미티브
 import { SearchBar } from "../common/SearchBar";
+// 2026-08-29 · 상품명 검색 · 통일 로직
+import { matchesProductQuery } from "../../lib/productMatch";
 import { VendorInfoHeader, type VendorBasic, type VendorKpi, type LedgerRowMinimal } from "./VendorInfoHeader";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
@@ -353,24 +355,19 @@ const HistoryContent: React.FC<{
         });
       }
     }
-    const q = productSearch.trim().toLowerCase();
-    const list = Array.from(byCode.values()).filter(s =>
-      !q || s.product_name.toLowerCase().includes(q) || s.product_code.toLowerCase().includes(q)
-    );
+    // 2026-08-29 · 통일 로직 · matchesProductQuery (초성 · 부분 · 코드)
+    const list = Array.from(byCode.values()).filter(s => matchesProductQuery(s as any, productSearch));
     list.sort((a, b) => b.total_amount - a.total_amount);
     return list;
   }, [detailRows, productSearch]);
 
   // 전체 raw 행 (필터링만 · 정렬은 PurchaseHistoryList 가 담당)
   const allRows = useMemo(() => {
-    const q = productSearch.trim().toLowerCase();
     let base = detailRows;
     if (selectedCode) base = base.filter(r => r.product_code === selectedCode);
-    if (q && !selectedCode) {
-      base = base.filter(r =>
-        (r.product_name ?? "").toLowerCase().includes(q) ||
-        (r.product_code ?? "").toLowerCase().includes(q)
-      );
+    else if (productSearch.trim()) {
+      // 2026-08-29 · 통일 로직 · matchesProductQuery
+      base = base.filter(r => matchesProductQuery(r as any, productSearch));
     }
     return base;
   }, [detailRows, productSearch, selectedCode]);

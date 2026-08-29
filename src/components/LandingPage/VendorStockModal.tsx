@@ -11,6 +11,8 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Package } from "lucide-react";
 // 2026-08-29 · #165 A · SearchBar 프리미티브
 import { SearchBar } from "../common/SearchBar";
+// 2026-08-29 · 상품명 검색 · 통일 로직 (필드 매핑: name→product_name · code→product_code)
+import { matchesProductQuery } from "../../lib/productMatch";
 import { Spinner } from "../common/Spinner";
 import { Modal } from "../common/Modal";
 import { TEXT } from "../../styles/tokens";
@@ -91,11 +93,13 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
     return () => { alive = false; };
   }, [open, vendorName, showError]);
 
-  // 검색 필터
+  // 2026-08-29 · 통일 로직 · matchesProductQuery (name→product_name · code→product_code 매핑)
   const searched = useMemo(() => {
     if (!search) return products;
-    const q = search.toLowerCase();
-    return products.filter((p) => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
+    return products.filter((p) => matchesProductQuery(
+      { product_name: p.name, product_code: p.code },
+      search,
+    ));
   }, [products, search]);
 
   // 2026-08-16 · #94 · 헤더 자동정렬
