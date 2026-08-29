@@ -44,6 +44,12 @@ interface BorrowingRow {
   status: Status;
   settled_at: string | null;
   created_by: string | null;
+  // 2026-08-29 · #130 A안 Phase 1 · 반환 감사 필드 (서버 마이그레이션 20260829)
+  return_signature_url?: string | null;
+  returned_by?: string | null;
+  returned_by_id?: number | null;
+  returned_at?: string | null;
+  return_note?: string | null;
 }
 
 const fmtDate = (s: string | null): string => (s ? String(s).slice(0, 10) : "-");
@@ -233,6 +239,101 @@ const BorrowingForm: React.FC<{
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
+// 2026-08-29 · #130 A안 Phase 1c · 반환 모달 · 서명 필수 · PATCH …/return
+// ═══════════════════════════════════════════════════════════════════════════
+
+const ReturnModal: React.FC<{
+  row: BorrowingRow;
+  onClose: () => void;
+  onDone: (row: BorrowingRow) => void;
+}> = ({ row, onClose, onDone }) => {
+  const [signature, setSignature] = useState("");
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+  const { showError, showSuccess } = useToast();
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signature.trim()) { showError("반환 서명이 필요합니다"); return; }
+    setSaving(true);
+    try {
+      const { data } = await api.patch<{ ok: boolean; row: BorrowingRow }>(
+        `/api/borrowings/${row.id}/return`,
+        { return_signature_url: signature, return_note: note.trim() || null }
+      );
+      onDone(data.row);
+      showSuccess(`반환 처리 완료 · ${row.product_name ?? `#${row.id}`}`);
+      onClose();
+    } catch (e: unknown) {
+      const msg = e instanceof ApiError ? e.message : (e as { message?: string })?.message ?? "네트워크 오류";
+      showError(`반환 실패: ${msg}`);
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal
+      className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 p-4"
+      onClick={onClose}
+    >
+      <form
+        onSubmit={submit}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-2xl shadow-2xl p-5 max-w-lg w-full flex flex-col gap-4"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={18} className="text-emerald-600" />
+            <span className="text-[16px] font-bold text-ink">반환 처리 · 서명 필수</span>
+          </div>
+          <button type="button" onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 cursor-pointer"><X size={16} /></button>
+        </div>
+
+        <div className="text-[13px] text-ink-soft bg-zinc-50 border border-line rounded-lg p-3 leading-relaxed">
+          <div><b className="text-brand-deep">{row.direction === "lend" ? "대여" : "차용"}</b> · {row.supplier ?? "-"}</div>
+          <div className="mt-1"><b>{row.product_name ?? "-"}</b> · {(row.qty ?? 0).toLocaleString()} 개
+            {row.unit_price != null && <> · @ {row.unit_price.toLocaleString()}원</>}</div>
+        </div>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-[12px] font-bold text-ink-soft">반환 서명 <span className="text-rose-600">*</span></span>
+          <SignaturePad value={signature} onChange={setSignature} height={140} />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-[12px] font-bold text-ink-soft">반환 비고 (선택)</span>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+            className="w-full px-2.5 py-2 rounded-lg border border-line bg-white text-[14px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition resize-y"
+            placeholder="예: 파손 없음 · 정상 반환"
+          />
+        </label>
+
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            className="h-9 px-4 rounded-lg text-[14px] font-semibold text-ink-soft bg-white border border-line hover:bg-zinc-50 disabled:opacity-40 cursor-pointer"
+          >취소</button>
+          <button
+            type="submit"
+            disabled={saving || !signature.trim()}
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[14px] font-bold text-white bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-sm ring-1 ring-emerald-600/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {saving ? <Spinner size={13} tone="white" /> : <CheckCircle2 size={13} />}
+            {saving ? "저장 중..." : "반환 처리"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
 // 리스트
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -250,7 +351,9 @@ const BorrowingList: React.FC<{
   q: string;
   setQ: (v: string) => void;
   onPreviewSignature: (url: string) => void;
-}> = ({ rows, loading, error, onReload, onPatch, onDelete, days, setDays, status, setStatus, q, setQ, onPreviewSignature }) => {
+  // 2026-08-29 · #130 Phase 1c · 반환 모달 오픈 콜백
+  onReturn: (row: BorrowingRow) => void;
+}> = ({ rows, loading, error, onReload, onPatch, onDelete, days, setDays, status, setStatus, q, setQ, onPreviewSignature, onReturn }) => {
   const filtered = useMemo(() => {
     // 2026-08-29 · 통일 로직 · matchesProductQuery
     return rows.filter(r => matchesProductQuery(r, q));
@@ -377,14 +480,27 @@ const BorrowingList: React.FC<{
                     </td>
                     <td className={tableTdCls("left", "text-[13px] text-zinc-500")}>{r.note ?? <span className="text-zinc-300">-</span>}</td>
                     <td className={tableTdCls("center")}>
-                      {r.signature_url ? (
-                        <button
-                          type="button"
-                          onClick={() => onPreviewSignature(r.signature_url!)}
-                          className="text-[12px] font-bold text-brand-deep underline underline-offset-2 hover:text-brand-deep/80 cursor-pointer"
-                          title="서명 미리보기"
-                        >보기</button>
-                      ) : <span className="text-zinc-300 text-[12px]">-</span>}
+                      <div className="inline-flex items-center gap-1">
+                        {r.signature_url ? (
+                          <button
+                            type="button"
+                            onClick={() => onPreviewSignature(r.signature_url!)}
+                            className="text-[12px] font-bold text-brand-deep underline underline-offset-2 hover:text-brand-deep/80 cursor-pointer"
+                            title="등록 서명 미리보기"
+                          >등록</button>
+                        ) : <span className="text-zinc-300 text-[12px]">-</span>}
+                        {r.return_signature_url && (
+                          <>
+                            <span className="text-zinc-300 text-[10px]">|</span>
+                            <button
+                              type="button"
+                              onClick={() => onPreviewSignature(r.return_signature_url!)}
+                              className="text-[12px] font-bold text-emerald-700 underline underline-offset-2 hover:text-emerald-800 cursor-pointer"
+                              title={`반환 서명 · ${r.returned_by ?? "-"} · ${fmtDate(r.returned_at ?? null)}`}
+                            >반환</button>
+                          </>
+                        )}
+                      </div>
                     </td>
                     <td className={tableTdCls("center")}>
                       <div className="inline-flex items-center gap-0.5">
@@ -392,10 +508,10 @@ const BorrowingList: React.FC<{
                           <>
                             <button
                               type="button"
-                              onClick={() => onPatch(r.id, { status: "settled" })}
+                              onClick={() => onReturn(r)}
                               className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[12px] font-bold cursor-pointer"
-                              title="정산 완료 처리"
-                            ><CheckCircle2 size={11} /> 정산</button>
+                              title="반환 처리 · 서명 필수"
+                            ><CheckCircle2 size={11} /> 반환</button>
                             <button
                               type="button"
                               onClick={() => onPatch(r.id, { status: "cancelled" })}
@@ -442,6 +558,8 @@ export const BorrowingPage: React.FC<BorrowingPageProps> = ({ authSession }) => 
   const [status, setStatus] = useState<Status | "all">("all");
   const [q, setQ] = useState("");
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
+  // 2026-08-29 · #130 Phase 1c · 반환 모달 대상 row
+  const [returnRow, setReturnRow] = useState<BorrowingRow | null>(null);
   const { toast, showError, showSuccess } = useToast();
   const confirm = useConfirm();
   const { vendors } = useVendors();
@@ -512,8 +630,17 @@ export const BorrowingPage: React.FC<BorrowingPageProps> = ({ authSession }) => 
           q={q}
           setQ={setQ}
           onPreviewSignature={(url) => setSignaturePreview(url)}
+          onReturn={(row) => setReturnRow(row)}
         />
       </div>
+      {/* 2026-08-29 · #130 Phase 1c · 반환 모달 · 서명 필수 */}
+      {returnRow && (
+        <ReturnModal
+          row={returnRow}
+          onClose={() => setReturnRow(null)}
+          onDone={(row) => setRows(prev => prev.map(r => (r.id === row.id ? { ...r, ...row } : r)))}
+        />
+      )}
       {/* 서명 미리보기 · 라이트박스 */}
       {signaturePreview && (
         <div
