@@ -6,7 +6,9 @@
 //   · 서명 · 캔버스 (touch/mouse) → dataURL 저장
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, HandCoins, Pencil, RefreshCw, Search, Trash2, X, Save } from "lucide-react";
+import { CheckCircle2, HandCoins, Pencil, RefreshCw, Trash2, X, Save } from "lucide-react";
+// 2026-08-29 · #165 A · SearchBar 프리미티브
+import { SearchBar } from "../common/SearchBar";
 import { api, ApiError } from "../../lib/apiClient";
 import type { AuthSession } from "../../types";
 import { Card } from "../common/Card";
@@ -392,16 +394,15 @@ const BorrowingList: React.FC<{
             onChange={(v) => setDays(Number(v) || 180)}
             size="sm"
           />
-          <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-            <input
-              type="text"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="공급사·상품·코드 검색"
-              className="h-9 pl-8 pr-3 w-56 rounded-lg bg-white border border-line text-[14px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-deep/20"
-            />
-          </div>
+          {/* 2026-08-29 · #165 A · SearchBar 프리미티브 · 결과 카운트·최근 검색 */}
+          <SearchBar
+            value={q}
+            onChange={setQ}
+            placeholder="공급사·상품·코드 검색"
+            resultCount={filtered.length}
+            historyKey="megatown_borrowing_search"
+            accent="indigo"
+          />
           <button
             type="button"
             onClick={onReload}
