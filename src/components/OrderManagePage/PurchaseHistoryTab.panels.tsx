@@ -6,6 +6,7 @@
 
 import React from "react";
 import { Building2, Package, RefreshCw } from "lucide-react";
+import { SegmentedControl } from "../common/SegmentedControl";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import { SplitPanel } from "../common/SplitPanel";
@@ -123,36 +124,19 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         )}
       </div>
 
-      {/* 뷰 모드 토글 · 최신 트렌드 · segmented pill · 딥네이비 통일
+      {/* 뷰 모드 토글 · 2026-08-29 · SegmentedControl pills variant 이관
           2026-08-25 · 사용자 지시 · 공급사별 을 앞으로 · 기본 탭으로 (재변경) */}
-      <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
-        <button
-          type="button"
-          onClick={() => setViewMode("by-vendor")}
-          className={`px-3 h-8 text-[14px] font-semibold rounded-md transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
-            viewMode === "by-vendor"
-              ? "bg-brand-deep text-white shadow-sm"
-              : "text-ink hover:text-brand-deep hover:bg-white"
-          }`}
-          title="공급사 단위로 매입이력 조회 · 기본 탭"
-        >
-          <Building2 size={13} />
-          공급사별
-        </button>
-        <button
-          type="button"
-          onClick={() => setViewMode("by-product")}
-          className={`px-3 h-8 text-[14px] font-semibold rounded-md transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
-            viewMode === "by-product"
-              ? "bg-brand-deep text-white shadow-sm"
-              : "text-ink hover:text-brand-deep hover:bg-white"
-          }`}
-          title="상품 단위로 매입이력 조회 (최근 1년)"
-        >
-          <Package size={13} />
-          상품별
-        </button>
-      </div>
+      <SegmentedControl<ViewMode>
+        value={viewMode}
+        onChange={setViewMode}
+        ariaLabel="매입이력 뷰 모드"
+        variant="pills"
+        size="sm"
+        options={[
+          { value: "by-vendor",  label: <><Building2 size={13} />공급사별</>, title: "공급사 단위로 매입이력 조회 · 기본 탭" },
+          { value: "by-product", label: <><Package size={13} />상품별</>,    title: "상품 단위로 매입이력 조회 (최근 1년)" },
+        ]}
+      />
 
       {/* 2026-08-17 · 기간 UI 프레임워크 통일 · PeriodSelector 공통 · 딥네이비 */}
       <div className="flex flex-wrap items-center gap-2">
