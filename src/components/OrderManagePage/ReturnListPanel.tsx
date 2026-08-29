@@ -7,7 +7,10 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useVendors } from "../../hooks/useVendors";
 import { Package, Truck, ChevronRight, ChevronDown, CheckCircle2 } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
-import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
+import { lookupProduct, type ProductInfo as ProductInfoType } from "../../lib/productsCache";
+// 2026-08-29 · #154 · 판매중 필터 프레임워크 확산
+import { SaleStatusFilter } from "../common/SaleStatusFilter";
+import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 // T-CSS Phase 2 · 2026-08-06
@@ -63,6 +66,8 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
     current_stock: number;
     actual_stock: number | null;     // 실재고 · inventory_checks 최신값 합계 · 2026-08-03 추가
     purchase_price: number;
+    // 2026-08-29 · #154 · 판매중 필터 (productsCache lookup)
+    sale_status?: string | null;
   };
   const [returnList, setReturnList] = useState<ReturnItem[]>([]);
   const [returnLoading, setReturnLoading] = useState(false);
@@ -73,6 +78,8 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
   // 2026-07-31 · 사용자 요청 · 공급사 검색 필터 (부분일치 · 대소문자 무시)
   const [returnSupplierSearch, setReturnSupplierSearch] = useState<string>("");
   const [returnCategoryFilter, setReturnCategoryFilter] = useState<string>("전체");
+  // 2026-08-29 · #154 · 판매중 필터 · 판매중지 반품 후보 자동 제외 (default active)
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "returnList.saleFilter" });
 
   type ReturnSortKey = "product_name" | "supplier" | "current_stock" | "actual_stock" | "purchase_cycle" | "sale_qty_month" | "sale_qty_60d" | "sale_qty_90d" | "last_purchase_date" | "last_purchase_qty" | "stock_value";
   const [returnSortKey, setReturnSortKey] = useState<ReturnSortKey>("purchase_cycle");
@@ -156,6 +163,8 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
           current_stock: Number(r.current_stock ?? r.closing_stock ?? 0),
           actual_stock: actual,
           purchase_price: Number(r.purchase_price ?? 0),
+          // 2026-08-29 · #154 · productsCache 에서 sale_status 조회 (top-sales API 미반환)
+          sale_status: lookupProduct(code)?.sale_status ?? null,
         };
       });
       const filtered = items.filter(x => {
@@ -284,6 +293,8 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         const cat = vendorCategoryMap[String(x.supplier ?? "").trim()] ?? null;
         if (cat !== returnCategoryFilter) return false;
       }
+      // 2026-08-29 · #154 · 판매중 필터 · 판매중지 반품 후보 자동 제외
+      if (!saleMatches(x.sale_status)) return false;
       return true;
     }).sort((a, b) => {
       const dir = returnSortDir === "asc" ? 1 : -1;
@@ -302,7 +313,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         default:                   return 0;
       }
     });
-  }, [returnList, returnSupplierSearch, returnCategoryFilter, vendorCategoryMap, returnSortKey, returnSortDir]);
+  }, [returnList, returnSupplierSearch, returnCategoryFilter, vendorCategoryMap, returnSortKey, returnSortDir, saleMatches]);
 
   // 전체 선택 · 필터 후 rows 기준
   const visibleCodes = useMemo(() => filteredSortedRows.map(x => x.product_code), [filteredSortedRows]);
@@ -396,6 +407,10 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
       <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
     )}
     <div className="flex flex-col gap-2">
+      {/* 2026-08-29 · #154 · 판매중 필터 · 툴바 상단 배치 · default active */}
+      <div className="flex items-center justify-end px-1">
+        <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
+      </div>
       {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · ReturnFilterBar */}
       <ReturnFilterBar
         returnList={returnList}
