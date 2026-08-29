@@ -562,7 +562,7 @@ const ZoneCategoryContent: React.FC = () => {
         >
           {/* 모바일 fullscreen 헤더 */}
           {selectedZone && (
-            <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-line shadow-md -mx-3 px-3 py-2 mb-1">
+            <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-line shadow-md -mx-3 px-3 py-2 mb-1">
               <div className="flex items-center gap-2">
                 <button
                   type="button"

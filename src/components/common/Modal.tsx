@@ -195,7 +195,8 @@ export const Modal: React.FC<ModalProps> = ({
       ? "modal-header bg-zinc-50/60"
       : "modal-header";
   // v3.4 · headerTextClass · 헤더 title·icon 텍스트 색 override
-  const headerTitleCls = `flex-1 min-w-0 text-[16px] font-bold tracking-tight truncate ${headerTextClass ?? "text-ink"}`;
+  // 2026-08-29 · UI 감사 U0 · truncate 제거 (대원칙 · 말줄임 금지) · 긴 제목 줄바꿈 허용
+  const headerTitleCls = `flex-1 min-w-0 text-[16px] font-bold tracking-tight break-words whitespace-normal leading-tight ${headerTextClass ?? "text-ink"}`;
   const headerIconCls = `shrink-0 inline-flex ${headerTextClass ?? "text-brand-deep"}`;
 
   const hasHeader = title != null || icon != null || headerRight != null || showClose;

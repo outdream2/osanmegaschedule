@@ -102,7 +102,8 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
        *  · 이전 · 둘 다 · env(safe-area-inset-bottom) · 이중 계산 · 모바일 관성 스크롤 · 튀기 원인
        *  · fix · placeholder h-20 만 · nav 는 paddingBottom 단독 (이중 아님)
        */}
-      <div className="sm:hidden h-20" aria-hidden="true" />
+      {/* 2026-08-29 · UI 감사 U0-4 · iOS safe-area 반영 · placeholder 높이 · nav h-20 + safe-area */}
+      <div className="sm:hidden" aria-hidden="true" style={{ height: "calc(5rem + env(safe-area-inset-bottom, 0px))" }} />
 
       <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-line shadow-[0_-4px_20px_rgba(15,23,42,0.06)]"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>

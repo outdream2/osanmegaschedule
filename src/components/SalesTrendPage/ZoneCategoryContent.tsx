@@ -410,7 +410,7 @@ const ZoneCategoryContent: React.FC = () => {
           style={{ willChange: selectedZone ? "transform, opacity" : "auto" }}
         >
           {selectedZone && (
-            <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-line shadow-md -mx-3 px-3 py-2 mb-1">
+            <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-line shadow-md -mx-3 px-3 py-2 mb-1">
               <div className="flex items-center gap-2">
                 <button type="button" onClick={() => setSelectedZone(null)}
                   className="w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-600 cursor-pointer shrink-0" title="닫기">

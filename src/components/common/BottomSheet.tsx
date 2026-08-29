@@ -168,7 +168,8 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
           <div className="flex items-center gap-2.5 px-5 py-3 border-b border-line shrink-0">
             <AccentBar size="lg" />
             {title && (
-              <div className="flex-1 min-w-0 text-[16px] font-bold text-ink tracking-tight truncate">
+              /* 2026-08-29 · UI 감사 U0 · truncate 제거 · 대원칙 · 말줄임 금지 */
+              <div className="flex-1 min-w-0 text-[16px] font-bold text-ink tracking-tight break-words whitespace-normal leading-tight">
                 {title}
               </div>
             )}

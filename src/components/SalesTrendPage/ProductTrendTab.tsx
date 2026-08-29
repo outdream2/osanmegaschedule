@@ -168,7 +168,7 @@ const ProductTrendTab: React.FC<{
       >
         {/* 모바일 fullscreen 헤더 */}
         {selected && (
-          <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-line shadow-md">
+          <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-line shadow-md">
             <div className="flex items-center gap-2 px-3 py-2">
               <button
                 type="button"
