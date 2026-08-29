@@ -47,7 +47,7 @@ interface FinalDecisionCardProps {
   mismatchMemo: string;
   saveStatus: "idle" | "saving" | "done" | "error";
   saveError: string | null;
-  savedId: number | null;
+  savedId: string | number | null;
   setFinalDecision: (v: "all_match" | "has_mismatch") => void;
   setMismatchMemo: (v: string) => void;
   onSave: () => void;
@@ -174,9 +174,9 @@ interface ArrivalHistoryTabProps {
   arrivalDays: 7 | 30 | 90;
   setArrivalDays: (v: 7 | 30 | 90) => void;
   loadArrivals: () => void;
-  selectedArrivalId: number | null;
-  setSelectedArrivalId: (v: number | null) => void;
-  deleteArrival: (id: number) => void;
+  selectedArrivalId: string | number | null;
+  setSelectedArrivalId: (v: string | number | null) => void;
+  deleteArrival: (id: string | number) => void;
 }
 
 export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
@@ -283,7 +283,8 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface ArrivalDetailModalProps {
-  selectedArrivalId: number | null;
+  // 2026-08-29 · #198 Phase 3 · id · string (groupId) or 레거시 number
+  selectedArrivalId: string | number | null;
   arrivalDetail: ArrivalHistoryDetail | null;
   arrivalDetailLoading: boolean;
   onClose: () => void;

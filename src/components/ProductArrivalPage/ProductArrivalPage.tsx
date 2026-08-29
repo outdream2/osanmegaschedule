@@ -83,7 +83,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   const [mismatchMemo, setMismatchMemo]         = useState<string>("");
   const [saveStatus, setSaveStatus]             = useState<"idle" | "saving" | "done" | "error">("idle");
   const [saveError, setSaveError]               = useState<string | null>(null);
-  const [savedId, setSavedId]                   = useState<number | null>(null);
+  // 2026-08-29 · #198 Phase 3 · savedId · string (groupId `YYYYMMDD_verifiedBy`) or 레거시 number 호환
+  const [savedId, setSavedId]                   = useState<string | number | null>(null);
   // 2026-08-16 · useToast 프레임워크 · setTimeout 자동 관리
   const { toast: _toastObj, show: _showToast, showError } = useToast(2200);
   const toast = _toastObj?.message ?? null;
@@ -95,7 +96,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   const [arrivals, setArrivals] = useState<ArrivalHistoryRow[]>([]);
   const [arrivalsLoading, setArrivalsLoading] = useState(false);
   const [arrivalDays, setArrivalDays] = useState<7 | 30 | 90>(30);
-  const [selectedArrivalId, setSelectedArrivalId] = useState<number | null>(null);
+  // 2026-08-29 · #198 Phase 3 · selectedArrivalId · string (groupId) or 레거시 number 호환
+  const [selectedArrivalId, setSelectedArrivalId] = useState<string | number | null>(null);
   const [arrivalDetail, setArrivalDetail] = useState<ArrivalHistoryDetail | null>(null);
   const [arrivalDetailLoading, setArrivalDetailLoading] = useState(false);
   const loadArrivals = useCallback(async () => {
@@ -115,7 +117,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       .catch(() => setArrivalDetail(null))
       .finally(() => setArrivalDetailLoading(false));
   }, [selectedArrivalId]);
-  const deleteArrival = async (id: number) => {
+  const deleteArrival = async (id: string | number) => {
     if (!await confirm({ message: "이 입고내역을 삭제하시겠습니까? (관련 아이템 모두 삭제)", danger: true })) return;
     try {
       await api.del(`/api/product-arrivals/${id}`);
