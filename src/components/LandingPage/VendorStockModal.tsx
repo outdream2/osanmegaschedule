@@ -8,7 +8,9 @@
 // 2026-08-16 · 프레임워크 적용 · apiClient + useToast
 // 2026-08-23 · #191 · Modal primitive 마이그레이션
 import React, { useEffect, useState, useMemo } from "react";
-import { Package, Search } from "lucide-react";
+import { Package } from "lucide-react";
+// 2026-08-29 · #165 A · SearchBar 프리미티브
+import { SearchBar } from "../common/SearchBar";
 import { Spinner } from "../common/Spinner";
 import { Modal } from "../common/Modal";
 import { TEXT } from "../../styles/tokens";
@@ -153,14 +155,16 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
           <span className="text-zinc-400 text-[15px]">~</span>
           <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
             className="text-[15px] px-2 py-1 border border-line rounded-md focus:outline-none focus:border-brand-deep" />
-          <div className="relative flex-1 min-w-[180px]">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-            <input
-              type="text"
+          {/* 2026-08-29 · #165 A · SearchBar 프리미티브 */}
+          <div className="flex-1 min-w-[180px]">
+            <SearchBar
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={setSearch}
               placeholder="상품명·코드 검색"
-              className="w-full pl-8 pr-3 py-1.5 text-[15px] border border-line rounded-md focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+              resultCount={sorted.length}
+              historyKey="megatown_vendorStock_search"
+              accent="sky"
+              widthClass="w-full"
             />
           </div>
         </div>

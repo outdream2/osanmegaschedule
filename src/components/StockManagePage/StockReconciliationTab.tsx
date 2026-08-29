@@ -12,7 +12,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
   RefreshCw,
-  Search,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -21,6 +20,8 @@ import {
   Package,
   Filter,
 } from "lucide-react";
+// 2026-08-29 · #165 A · SearchBar 프리미티브
+import { SearchBar } from "../common/SearchBar";
 import type { AuthSession } from "../../types";
 import { useSortableTable } from "../../hooks/useSortableTable";
 import { EmptyState } from "../common/EmptyState";
@@ -270,15 +271,16 @@ export const StockReconciliationTab: React.FC<{
 
       {/* ── 필터바 ── */}
       <div className={`${CARD_BASE} p-2 flex flex-wrap items-center gap-2`}>
-        <div className="relative flex-1 min-w-[200px]">
-          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-          <input
-            type="text"
+        {/* 2026-08-29 · #165 A · SearchBar 프리미티브 */}
+        <div className="flex-1 min-w-[200px]">
+          <SearchBar
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={setQuery}
             placeholder="상품명 · 상품코드 · 공급사 검색"
-            className="w-full h-8 pl-7 pr-2 text-[14px] bg-zinc-50 border border-line rounded-lg
-              focus:outline-none focus:border-brand-deep focus:bg-white transition"
+            resultCount={filteredRows.length}
+            historyKey="megatown_stockReconcile_search"
+            accent="sky"
+            widthClass="w-full"
           />
         </div>
         <div className="relative">

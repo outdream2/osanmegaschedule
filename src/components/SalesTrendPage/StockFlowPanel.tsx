@@ -1,7 +1,9 @@
 // src/components/SalesTrendPage/StockFlowPanel.tsx
 // 2026-08-22 · Framework Phase 4 · SalesTrendPage.tsx 에서 분리
 import React, { useEffect, useMemo, useState } from "react";
-import { Search, TrendingUp, X, Info, EyeOff, CheckSquare, Square } from "lucide-react";
+import { TrendingUp, X, Info, EyeOff, CheckSquare, Square } from "lucide-react";
+// 2026-08-29 · #165 A · SearchBar 프리미티브
+import { SearchBar } from "../common/SearchBar";
 import { Spinner } from "../common/Spinner";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { SeasonButtons } from "../common/SeasonButtons";
@@ -255,20 +257,17 @@ export const StockFlowPanel: React.FC<{
       {/* 검색 + 필터 */}
       <div className="px-3 py-2 border-b border-zinc-100 flex flex-col gap-1.5">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <div className="relative flex-1 min-w-[140px]">
-            <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400" />
-            <input
+          {/* 2026-08-29 · #165 A · SearchBar 프리미티브 (X 초기화 · 최근 검색 · 결과 카운트 자동) */}
+          <div className="flex-1 min-w-[140px]">
+            <SearchBar
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={setQuery}
               placeholder={limit >= 50000 ? "전체 상품 검색" : "TOP 리스트 내 검색"}
-              className="w-full pl-7 pr-8 py-1.5 text-xs border border-line rounded-lg focus:outline-none focus:border-brand-deep bg-white"
+              resultCount={displayRows.length}
+              historyKey="megatown_stockFlow_search"
+              accent="indigo"
+              widthClass="w-full"
             />
-            {query && (
-              <button onClick={() => setQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-300 hover:text-zinc-600">
-                <X size={12} />
-              </button>
-            )}
           </div>
           {onOpenProductInfo && (
             <button

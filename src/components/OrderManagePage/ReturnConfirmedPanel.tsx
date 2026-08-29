@@ -5,7 +5,9 @@
 //   · 각 row · [해제] 버튼 · status='done' → 'pending' 복구 (실수 대응)
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, RefreshCw, RotateCcw, Search, Trash2 } from "lucide-react";
+import { CheckCircle2, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
+// 2026-08-29 · #165 A · SearchBar 프리미티브
+import { SearchBar } from "../common/SearchBar";
 import { api, ApiError } from "../../lib/apiClient";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
@@ -128,16 +130,15 @@ export const ReturnConfirmedPanel: React.FC = () => {
               onChange={(v) => setDays(Number(v) || 90)}
               size="sm"
             />
-            <div className="relative">
-              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-              <input
-                type="text"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="공급사·상품·코드 검색"
-                className="h-9 pl-8 pr-3 w-56 rounded-lg bg-white border border-line text-[14px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-deep/20"
-              />
-            </div>
+            {/* 2026-08-29 · #165 A · SearchBar 프리미티브 */}
+            <SearchBar
+              value={q}
+              onChange={setQ}
+              placeholder="공급사·상품·코드 검색"
+              resultCount={filtered.length}
+              historyKey="megatown_returnConfirmed_search"
+              accent="emerald"
+            />
             <button
               type="button"
               onClick={load}

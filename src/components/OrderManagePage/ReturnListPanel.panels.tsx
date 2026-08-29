@@ -3,9 +3,11 @@
 //   · props-driven pure display
 
 import React from "react";
-import { PackageCheck, Search, Truck, CheckCircle2 } from "lucide-react";
+import { PackageCheck, Truck, CheckCircle2 } from "lucide-react";
 import { CARD_BASE } from "../../styles/tokens";
 import { StatusPill } from "../common/StatusPill";
+// 2026-08-29 · #165 A · SearchBar 프리미티브
+import { SearchBar } from "../common/SearchBar";
 
 interface ReturnItem {
   supplier?: string | null;
@@ -114,16 +116,15 @@ export const ReturnFilterBar: React.FC<ReturnFilterBarProps> = ({
             }`}>{cat}</button>
         ))}
       </div>
-      <div className="relative">
-        <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-        <input
-          type="text"
-          value={returnSupplierSearch}
-          onChange={e => setReturnSupplierSearch(e.target.value)}
-          placeholder="공급사·상품·코드 검색"
-          className="w-52 h-7 pl-7 pr-2 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
-        />
-      </div>
+      {/* 2026-08-29 · #165 A · SearchBar 프리미티브 */}
+      <SearchBar
+        value={returnSupplierSearch}
+        onChange={setReturnSupplierSearch}
+        placeholder="공급사·상품·코드 검색"
+        historyKey="megatown_returnList_search"
+        accent="rose"
+        widthClass="w-52"
+      />
       <div className="ml-auto inline-flex items-center gap-2">
         <button
           type="button"
