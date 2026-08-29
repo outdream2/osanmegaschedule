@@ -113,9 +113,18 @@ const TAB_COLOR_MAP: Record<string, { activeBg: string; activeText: string; inac
 };
 
 // 경영관리 탭이 활성인 페이지들 (통합 페이지 + 서브 페이지들 · 헤더 활성 표시용)
-// business-manage 는 통합 페이지 · permissions/hr-forms 는 랜딩페이지에서 직접 이동 시 활성 표시
-// 2026-08-12 · leave / lunch 는 승인요청 통합 페이지 (approval-request) 로 이관 · BUSINESS_PAGES 에서 제외
-const BUSINESS_PAGES = new Set<AppNavPage>(["business-manage", "permissions", "hr-forms"]);
+// 2026-08-29 · #196 Phase 4 · SIDE_NAV_GROUPS business 그룹 items 로부터 자동 파생 (하드코드 제거)
+//   · business-manage · permissions · hr-forms 등 · 사이드바 그룹 변경 시 자동 반영
+const BUSINESS_PAGES: Set<AppNavPage> = new Set(
+  (() => {
+    const businessGroup = SIDE_NAV_GROUPS.find(g => g.id === "business");
+    const settingsGroup = SIDE_NAV_GROUPS.find(g => g.id === "settings");
+    const keys: string[] = [];
+    if (businessGroup) keys.push(...businessGroup.items.map(i => String(i.key)));
+    if (settingsGroup) keys.push(...settingsGroup.items.map(i => String(i.key)));
+    return keys as AppNavPage[];
+  })()
+);
 
 export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   activePage,

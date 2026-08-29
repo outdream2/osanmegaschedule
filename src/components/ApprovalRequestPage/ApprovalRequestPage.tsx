@@ -6,7 +6,9 @@
 //   · sidebar:subtab CustomEvent · page="approval-request" 수신 시 setSubTab
 //   · 초기 서브탭 · localStorage("sidebar.subtab.approval-request") · 없으면 "leave"
 import React, { Suspense, useEffect, useMemo, useState } from "react";
-import { CalendarDots, Coffee, PencilLine } from "@phosphor-icons/react";
+import { PencilLine } from "@phosphor-icons/react";
+// 2026-08-29 · #196 Phase 3 · 사이드바 · 서브탭 자동 파생
+import { getPageSubTabs } from "../layout/sideNavGroups";
 import { Spinner } from "../common/Spinner";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { useSidebarEnabled } from "../../hooks/useSidebar";
@@ -35,11 +37,15 @@ type ArSubTab = "leave" | "lunch" | "document-writer";
 
 const STORAGE_KEY = "sidebar.subtab.approval-request";
 
-const TABS: TabDef<ArSubTab>[] = [
-  { key: "leave",           label: "연차신청",   icon: CalendarDots, color: "sky"    },
-  { key: "lunch",           label: "점심불참",   icon: Coffee,       color: "amber"  },
-  { key: "document-writer", label: "사직서 작성", icon: PencilLine,   color: "violet" },
-];
+// 2026-08-29 · #196 Phase 3 · TABS · sideNavGroups.getPageSubTabs 자동 파생 (하드코드 제거)
+//   · SIDE_NAV_GROUPS approvals 그룹 · items · subTab (leave · lunch · document-writer) 자동 반영
+//   · 사이드바 편집 시 · 이 페이지 서브탭 자동 동기 · 단일 소스 원칙
+const TABS: TabDef<ArSubTab>[] = getPageSubTabs("approval-request").map(it => ({
+  key: (it.subTab as ArSubTab),
+  label: it.label,
+  icon: it.icon as any,
+  color: it.color,
+}));
 
 function readInitialSubTab(): ArSubTab {
   // 2026-08-12 · StrictMode 이중 마운트 대비 · 읽기만 · 삭제는 mount 완료 후 useEffect 에서
