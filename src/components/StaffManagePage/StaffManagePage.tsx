@@ -121,6 +121,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
   // ── 계약 count (리스트 배지용) ──
   const [contractCountByEmp, setContractCountByEmp] = useState<Map<number, number>>(() => new Map());
 
+  // 2026-08-29 · P2 fix · 감사 결과 · 매 latestContract 변화마다 전체 재fetch 방지
+  //   · deps [latestContract] → [] · 마운트 1회 · 새 계약 저장 시 loadLatestContract 에서 map 증분
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -137,7 +139,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
       } catch { /* silent */ }
     })();
     return () => { alive = false; };
-  }, [latestContract]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── 데이터 로드 ──
   const loadEmployees = useCallback(async () => {

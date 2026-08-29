@@ -15,7 +15,7 @@ import { Spinner } from "../common/Spinner";
 import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/TableList";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 import { useToast, toastClass } from "../../hooks/useToast";
-import { useSaleActiveOnly } from "../../hooks/useSaleActiveOnly";
+// 2026-08-29 · A0-2 · dead import 제거 · useSaleStatusFilter (D안) 로 이관 완료
 // 2026-08-28 · 사용자 지시 · 판매중 필터 프레임워크 (D안)
 import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { SaleStatusFilter } from "../common/SaleStatusFilter";

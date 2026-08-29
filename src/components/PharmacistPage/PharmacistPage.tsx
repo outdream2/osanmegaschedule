@@ -443,7 +443,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                 </div>
 
                 {/* 트리 본문 */}
-                <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 280px)", minHeight: 200 }}>
+                <div className="overflow-y-auto" style={{ maxHeight: "calc(100dvh - 280px)", minHeight: 200 }}>
                   {categories.map(c => {
                     const isExpanded = expandedCats.has(c.key);
                     const isCatActive = selectedCat === c.key;

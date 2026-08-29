@@ -248,7 +248,7 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
       dividerColor="emerald"
       wrapLeft={false}
       wrapRight={false}
-      leftClassName="max-h-[calc(100vh-100px)] lg:max-h-none"
+      leftClassName="max-h-[calc(100dvh-100px)] lg:max-h-none"
       className="flex-1 min-h-0 gap-2 lg:gap-0"
       mobileRightAsModal={true}
       mobileModalTitle={selectedVendor?.company_name ?? "공급사 상세"}
@@ -424,7 +424,7 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
               </div>
             </div>
           }
-          bodyClassName="bg-white rounded-xl border border-line shadow-sm flex-1 min-h-0 max-h-[calc(100vh-200px)] flex flex-col overflow-hidden mt-2"
+          bodyClassName="bg-white rounded-xl border border-line shadow-sm flex-1 min-h-0 max-h-[calc(100dvh-200px)] flex flex-col overflow-hidden mt-2"
         >
           <>
           <div className="px-3 py-1.5 border-b border-zinc-100 bg-zinc-50/60 shrink-0 grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-[15px] font-bold text-zinc-500 uppercase tracking-wider">

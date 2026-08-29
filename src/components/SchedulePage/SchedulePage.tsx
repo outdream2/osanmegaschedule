@@ -618,7 +618,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
           {/* Schedule table */}
           <div
             ref={scrollTableRef}
-            className={`relative overflow-x-auto w-full ${employees.length > 10 ? "max-h-[70vh] overflow-y-auto" : ""} ${employees.length > 15 ? "md:max-h-[calc(100vh-260px)] md:overflow-y-auto" : "md:max-h-none md:overflow-y-visible"}`}
+            className={`relative overflow-x-auto w-full ${employees.length > 10 ? "max-h-[70dvh] overflow-y-auto" : ""} ${employees.length > 15 ? "md:max-h-[calc(100dvh-260px)] md:overflow-y-auto" : "md:max-h-none md:overflow-y-visible"}`}
           >
             <ScheduleGrid
               employees={employees}
