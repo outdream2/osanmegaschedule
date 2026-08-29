@@ -6,7 +6,9 @@
 // 2026-08-25 v3 · 사용자 지시 · 인라인 편집 (상품명 · 전산구역 · 실제구역) + 폰트 +3
 
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, RefreshCw, Trash2, Check, Pencil, X as XIcon, Search, ChevronDown, ChevronRight } from "lucide-react";
+import { AlertTriangle, RefreshCw, Trash2, Check, Pencil, X as XIcon, ChevronDown, ChevronRight } from "lucide-react";
+// 2026-08-29 · #165 Phase A · SearchBar 프리미티브
+import { SearchBar } from "../common/SearchBar";
 import { api, ApiError } from "../../lib/apiClient";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
@@ -292,17 +294,15 @@ export const ZoneMismatchTab: React.FC = () => {
           <div className="ml-auto flex items-center gap-1.5">
             {/* 2026-08-29 · #154 Phase 1 · 판매중 3-way 필터 */}
             <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} />
-            {/* 2026-08-26 · #124 · 검색 · 상품명·코드·구역 통합 */}
-            <div className="relative">
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="상품명·코드·구역 검색"
-                className="w-64 h-9 pl-8 pr-3 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
-              />
-            </div>
+            {/* 2026-08-29 · #165 Phase A · SearchBar 프리미티브 · 결과 카운트·최근 검색 */}
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              placeholder="상품명·코드·구역 검색"
+              resultCount={sorted.length}
+              historyKey="megatown_zonemismatch_search"
+              accent="rose"
+            />
             <button
               type="button"
               onClick={load}
