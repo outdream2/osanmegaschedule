@@ -21,7 +21,7 @@
 > **이번 후속 세션 · 7 로컬 커밋 · 모두 테스트 통과**
 > 완료 태스크 삭제 · pending 만 우선순위 순 재정렬
 
-### ✅ 이번 세션 완료 (29+ 커밋 · Remote push 대기)
+### ✅ 이번 세션 완료 (41 커밋 · Remote push 반영 완료)
 | 커밋 | 태스크 | 테스트 |
 |-----|-----|-----|
 | `84a98d48` | #178 팀장 유일성 (B안 · position별) | TS ✓ |
@@ -50,7 +50,16 @@
 | `7d6a5dcb` | **#122 P6** · ActionBar 프리미티브 신설 | vitest 5/5 ✓ |
 | `5ece1b94` | **#79 v4** · 발주 리스트 · row-critical/row-short gradient | TS ✓ |
 | `f0e1a84b` | #165 A · VendorDetailTabs · SearchBar | TS ✓ |
-| **+ 이전 세션 · 37+ 커밋 · 총 Remote push 대기 66+** |
+| `c387e534` | #185 조사 · 직원 연동 매트릭스 (15 컴포넌트·60+ 쿼리) | doc |
+| `3ff53945` | **#185 Phase A** · 재로그인 필요 안내 toast (position/level/phone) | TS ✓ |
+| `de3ecb47` | #185 Phase C · CASCADE 정책 조사 · 안전 판정 | doc |
+| `dcd3bd10` | **#182 P B 확장** · 직원 리스트 · 계약 만료 임박 배지 (D-30·오늘·경과) | TS ✓ |
+| `08f60273` | **#185 Phase B** · SettingsModal rank rename · JWT 재로그인 안내 | TS ✓ |
+| `907d9f58` | NEXT_SESSION_PLAN 갱신 | — |
+| `072e6c43` | **세션 핸드오프** + #130 차용등록 리서치 완료 | doc |
+| `4d1d01cb` | **ProductDetailHero 테스트 · 10 vitest** | TS + vitest 10/10 ✓ |
+| `77ac9e7d` | #122 P2 · SeasonSettingsPage · 접근 제한 SectionCard | TS ✓ |
+| **+ 이전 세션 · 37+ 커밋 · 총 Remote push 완료 · working tree clean** |
 
 ### 🔴 크리티컬 · 최우선 (회귀 위험)
 | # | 태스크 | 진행 상황 | 예상 |
