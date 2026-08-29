@@ -96,8 +96,13 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
 
   return (
     <>
-      {/* Bottom safe-area padding for pages · fixed 나 sticky 요소에 가리지 않도록 하단 여백 확보 */}
-      <div className="sm:hidden h-20" style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }} aria-hidden="true" />
+      {/* 2026-08-29 · #171 P1 fix · safe-area 이중 적용 제거
+       *  · placeholder 에만 · marginBottom (env) 유지 → 페이지 하단 여백 확보 (nav 가리지 않음)
+       *  · nav 는 · paddingBottom 만 (env) 유지 → iOS 홈바 위로 · 아이콘 위치 정확
+       *  · 이전 · 둘 다 · env(safe-area-inset-bottom) · 이중 계산 · 모바일 관성 스크롤 · 튀기 원인
+       *  · fix · placeholder h-20 만 · nav 는 paddingBottom 단독 (이중 아님)
+       */}
+      <div className="sm:hidden h-20" aria-hidden="true" />
 
       <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-line shadow-[0_-4px_20px_rgba(15,23,42,0.06)]"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
