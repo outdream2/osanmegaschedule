@@ -15,6 +15,9 @@ import { StatusPill } from "../common/StatusPill";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo } from "./OrderManagePage.types";
 import type { ProductInfo as CacheProductInfo } from "../../lib/productsCache";
+// 2026-08-29 · #154 · 판매중 필터 · 판매중지 품절임박 제외 (default active)
+import { SaleStatusFilter } from "../common/SaleStatusFilter";
+import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 
 interface CriticalTabProps {
   products: ProductInfo[];
@@ -42,13 +45,16 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [selected, setSelected] = useState<ProductInfo | null>(null);
   const [requesting, setRequesting] = useState<string | null>(null);
+  // 2026-08-29 · #154 · 판매중 필터 (default active) · 판매중지 품절임박 자동 제외
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "critical.saleFilter" });
 
   const critical = useMemo(() => products
     .filter(p => {
       const cur = Number(p.current_stock ?? NaN);
-      return Number.isFinite(cur) && cur <= 3;
+      if (!(Number.isFinite(cur) && cur <= 3)) return false;
+      return saleMatches(p.sale_status);
     })
-    .sort((a, b) => Number(a.current_stock ?? 0) - Number(b.current_stock ?? 0)), [products]);
+    .sort((a, b) => Number(a.current_stock ?? 0) - Number(b.current_stock ?? 0)), [products, saleMatches]);
 
   const categoryCounts = useMemo(() => {
     const map = new Map<string, number>();
@@ -101,13 +107,17 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
       title="품절임박"
       countDisplay={<StatusPill tone="amber" size="md">{filtered.length}건</StatusPill>}
       filters={
-        <CategoryChips
-          value={categoryFilter}
-          onChange={(v) => setCategoryFilter(String(v))}
-          options={chipOptions as any}
-          size="sm"
-          ariaLabel="공급사 분류 필터"
-        />
+        <div className="flex items-center gap-2 flex-wrap">
+          <CategoryChips
+            value={categoryFilter}
+            onChange={(v) => setCategoryFilter(String(v))}
+            options={chipOptions as any}
+            size="sm"
+            ariaLabel="공급사 분류 필터"
+          />
+          {/* 2026-08-29 · #154 · 판매중 필터 */}
+          <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
+        </div>
       }
       bodyClassName="flex-1 min-h-0 overflow-auto"
     >
