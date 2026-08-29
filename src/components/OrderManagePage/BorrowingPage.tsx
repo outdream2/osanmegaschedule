@@ -5,12 +5,14 @@
 //   · 정산 완료 · 취소 · 재열림 · 삭제 액션
 //   · 서명 · 캔버스 (touch/mouse) → dataURL 저장
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, HandCoins, Pencil, RefreshCw, Trash2, X, Save } from "lucide-react";
 // 2026-08-29 · #165 A · SearchBar 프리미티브
 import { SearchBar } from "../common/SearchBar";
 // 2026-08-29 · 상품명 검색 · 통일 로직
 import { matchesProductQuery } from "../../lib/productMatch";
+// 2026-08-29 · #130 A안 Phase 1 · SignaturePad 프리미티브 (인라인 → common)
+import { SignaturePad } from "../common/SignaturePad";
 import { api, ApiError } from "../../lib/apiClient";
 import type { AuthSession } from "../../types";
 import { Card } from "../common/Card";
@@ -57,111 +59,8 @@ interface BorrowingPageProps {
   authSession?: AuthSession | null;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// 서명 캔버스
-// ═══════════════════════════════════════════════════════════════════════════
-
-const SignaturePad: React.FC<{ value: string; onChange: (dataUrl: string) => void }> = ({ value, onChange }) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const drawingRef = useRef(false);
-  const lastRef = useRef<{ x: number; y: number } | null>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    if (value) {
-      const img = new Image();
-      img.onload = () => ctx.drawImage(img, 0, 0);
-      img.src = value;
-    }
-  }, [value]);
-
-  const getPos = (e: React.MouseEvent | React.TouchEvent): { x: number; y: number } => {
-    const canvas = canvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    let clientX = 0, clientY = 0;
-    if ("touches" in e) {
-      clientX = e.touches[0]?.clientX ?? 0;
-      clientY = e.touches[0]?.clientY ?? 0;
-    } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
-    }
-    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
-  };
-
-  const start = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    drawingRef.current = true;
-    lastRef.current = getPos(e);
-  };
-  const move = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!drawingRef.current) return;
-    e.preventDefault();
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!ctx || !lastRef.current) return;
-    const pos = getPos(e);
-    ctx.strokeStyle = "#0f172a";
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(lastRef.current.x, lastRef.current.y);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-    lastRef.current = pos;
-  };
-  const end = () => {
-    if (!drawingRef.current) return;
-    drawingRef.current = false;
-    lastRef.current = null;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    onChange(canvas.toDataURL("image/png"));
-  };
-  const clear = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!ctx || !canvas) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    onChange("");
-  };
-
-  return (
-    <div className="flex flex-col gap-1.5">
-      <canvas
-        ref={canvasRef}
-        width={520}
-        height={160}
-        className="border border-line rounded-lg bg-white w-full h-40 touch-none cursor-crosshair"
-        onMouseDown={start}
-        onMouseMove={move}
-        onMouseUp={end}
-        onMouseLeave={end}
-        onTouchStart={start}
-        onTouchMove={move}
-        onTouchEnd={end}
-      />
-      <div className="flex items-center justify-between text-[12px]">
-        <span className="text-zinc-400">마우스/터치로 서명 · 저장 시 이미지로 함께 기록</span>
-        <button
-          type="button"
-          onClick={clear}
-          className="text-[12px] font-bold text-zinc-500 hover:text-rose-600 underline underline-offset-4 cursor-pointer"
-        >지우기</button>
-      </div>
-    </div>
-  );
-};
+// 2026-08-29 · #130 A안 Phase 1 · SignaturePad · common 프리미티브 이관
+// (구 인라인 컴포넌트 → src/components/common/SignaturePad.tsx)
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 등록 폼
