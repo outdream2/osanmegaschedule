@@ -60,6 +60,10 @@ export interface QueryOptions {
   filterLowStockOnly?: boolean;
   /** 2026-08-29 · #168 Phase 2 · purchase_details 최근 매입 병합 */
   includePurchaseHistory?: boolean;
+  /** 2026-08-29 · #168 Phase 2 Step 1 · inventory_checks 존재 · products 없는 code 도 반환 (임시 실재고 방어)
+   *   · products JOIN 없이 · inventory 만으로 · 반환 (product 필드 · null · inv_ 필드 · 채움)
+   *   · inventory-latest endpoint · 기존 동작 유지 (products 마스터 없이 · 재고 조사 임시 저장 상품 표시) */
+  includeInventoryOnlyRows?: boolean;
 }
 
 async function readSaleActiveOnly(): Promise<boolean> {
@@ -185,11 +189,24 @@ export async function queryProductsWithInventory(
     : (products ?? []);
 
   const productCodes = filtered.map(p => String(p.product_code ?? ""));
-  const inventoryMap = await fetchLatestInventory(productCodes);
+  // 2026-08-29 · #168 Phase 2 Step 1 · includeInventoryOnlyRows=true · 전체 inventory · 없어도 반환
+  const inventoryMap = opts.includeInventoryOnlyRows
+    ? await fetchLatestInventory(undefined) // 전체 inventory (products 없어도 · 반환)
+    : await fetchLatestInventory(productCodes);
   const purchaseMap = includePurchaseHistory ? await fetchLatestPurchase(productCodes) : new Map();
 
-  return filtered.map(p => {
-    const code = String(p.product_code ?? "");
+  const productMap = new Map(filtered.map(p => [String(p.product_code ?? ""), p]));
+  // 2026-08-29 · #168 Phase 2 Step 1 · products 없는 inventory · 임시 실재고 방어
+  //   · includeInventoryOnlyRows=true · inventory 전체 순회 · products 없어도 · 결과에 포함
+  const codeSet = new Set<string>(filtered.map(p => String(p.product_code ?? "")));
+  if (opts.includeInventoryOnlyRows) {
+    for (const code of inventoryMap.keys()) {
+      codeSet.add(code);
+    }
+  }
+
+  const buildRow = (code: string): ProductWithInventory => {
+    const p: any = productMap.get(code) ?? {};
     const inv = inventoryMap.get(code);
     const pur = purchaseMap.get(code);
     return {
@@ -227,5 +244,7 @@ export async function queryProductsWithInventory(
       last_purchase_date: pur?.last_purchase_date ?? null,
       last_snapshot_qty: pur?.last_snapshot_qty ?? null,
     };
-  });
+  };
+
+  return Array.from(codeSet).map(buildRow);
 }
