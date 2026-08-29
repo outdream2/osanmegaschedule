@@ -21,7 +21,7 @@
 > **이번 후속 세션 · 7 로컬 커밋 · 모두 테스트 통과**
 > 완료 태스크 삭제 · pending 만 우선순위 순 재정렬
 
-### ✅ 이번 세션 완료 (41 커밋 · Remote push 반영 완료)
+### ✅ 이번 세션 완료 (48 커밋 · Remote push 반영 완료)
 | 커밋 | 태스크 | 테스트 |
 |-----|-----|-----|
 | `84a98d48` | #178 팀장 유일성 (B안 · position별) | TS ✓ |
@@ -59,6 +59,13 @@
 | `072e6c43` | **세션 핸드오프** + #130 차용등록 리서치 완료 | doc |
 | `4d1d01cb` | **ProductDetailHero 테스트 · 10 vitest** | TS + vitest 10/10 ✓ |
 | `77ac9e7d` | #122 P2 · SeasonSettingsPage · 접근 제한 SectionCard | TS ✓ |
+| `98702941` | TASKS 41 커밋 정리 | — |
+| **`a6775a0b`** | 🎯 **상품 검색 통일** · matchesProductQuery 유틸 신설 + 3 페이지 (Phase 1) | vitest 13/13 ✓ |
+| `a6b53faa` | 상품 검색 통일 Phase 2 · Borrowing + ReturnConfirmed | TS ✓ |
+| `849a051e` | 상품 검색 통일 · OrderHistoryTab (items 배열) | TS ✓ |
+| `bccb926b` | 상품 검색 통일 Phase 3 · 4 페이지 (StockReconcile·VendorStock·StockFlow·VendorDetail) | TS ✓ |
+| `22bc0409` | 상품 검색 통일 · ReturnListPanel | TS ✓ |
+| `4626c408` | 🎯 **상품 검색 통일 100% 완료** · Phase 4 · 3 페이지 (RealStock·OrderManage·PurchaseHistory) · 총 **14 페이지** | TS ✓ |
 | **+ 이전 세션 · 37+ 커밋 · 총 Remote push 완료 · working tree clean** |
 
 ### 🔴 크리티컬 · 최우선 (회귀 위험)
