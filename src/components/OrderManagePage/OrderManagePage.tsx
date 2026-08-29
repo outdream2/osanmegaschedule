@@ -7,6 +7,8 @@ import { useToast } from "../../hooks/useToast";
 import { useVendors } from "../../hooks/useVendors";
 import { Spinner } from "../common/Spinner";
 import { matchHangul } from "../../lib/hangulSearch";
+// 2026-08-29 · 상품명 검색 · 통일 로직
+import { matchesProductQuery } from "../../lib/productMatch";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
 import { ShoppingCart, PackageCheck, BarChart2, PieChart } from "lucide-react";
 
@@ -444,10 +446,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   };
 
   const orderReqsFiltered = orderReqs.filter(r => {
-    if (orderSearch.trim()) {
-      const q = orderSearch.trim().toLowerCase();
-      if (!(r.product_name?.toLowerCase().includes(q) || r.product_code?.toLowerCase().includes(q) || r.supplier?.toLowerCase().includes(q))) return false;
-    }
+    // 2026-08-29 · 통일 로직 · matchesProductQuery
+    if (orderSearch.trim() && !matchesProductQuery(r, orderSearch)) return false;
     if (orderCategoryFilter !== "all") {
       const supplierName = String(r.supplier ?? "").trim();
       const cat = supplierName ? getVendorCategory(supplierName) : null;

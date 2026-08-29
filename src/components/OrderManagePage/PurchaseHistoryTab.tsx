@@ -12,6 +12,8 @@
 
 import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useVendors } from "../../hooks/useVendors";
+// 2026-08-29 · 상품명 검색 · 통일 로직
+import { matchesProductQuery } from "../../lib/productMatch";
 // 2026-08-22 · Framework Phase 4 · UI imports 정리 (panels 로 이관)
 // T-CSS Phase 2 · 2026-08-06
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
@@ -639,13 +641,8 @@ export const PurchaseHistoryTab: React.FC = () => {
 
   // 상품 필터링 + 정렬
   const filteredProducts = useMemo<ProductSummary[]>(() => {
-    const q = productSearch.trim().toLowerCase();
-    const list = productList.filter(p => {
-      if (!q) return true;
-      if (p.product_name.toLowerCase().includes(q)) return true;
-      if (p.product_code && p.product_code.toLowerCase().includes(q)) return true;
-      return false;
-    });
+    // 2026-08-29 · 통일 로직 · matchesProductQuery
+    const list = productList.filter(p => matchesProductQuery(p, productSearch));
     return list.sort((a, b) => {
       switch (productSort) {
         case "amount": {
