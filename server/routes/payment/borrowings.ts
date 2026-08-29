@@ -9,11 +9,13 @@ import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
-import { badRequest, HttpError } from "../../middleware/errorHandler";
+import { badRequest, HttpError, unauthorized } from "../../middleware/errorHandler";
+import { getSession } from "../../middleware/requireAuth";
 
 const router = Router();
 
-const SELECT_COLS = "id, created_at, direction, supplier, product_code, product_name, qty, unit_price, due_date, note, signature_url, status, settled_at, created_by, created_by_id";
+// 2026-08-29 · #130 A안 Phase 1b · return_* 필드 추가 (마이그레이션 20260829)
+const SELECT_COLS = "id, created_at, direction, supplier, product_code, product_name, qty, unit_price, due_date, note, signature_url, status, settled_at, created_by, created_by_id, return_signature_url, returned_by, returned_by_id, returned_at, return_note";
 
 // GET /api/borrowings?status=open&supplier=X&direction=lend&days=90&limit=200
 router.get("/api/borrowings", asyncHandler(async (req, res) => {
