@@ -3,17 +3,19 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import {
-  Gear, FloppyDisk, Warning, Info, ArrowsClockwise, Database, Robot,
+  Gear, FloppyDisk, Warning, ArrowsClockwise, Database, Robot,
   ChatCircleDots, ImageSquare, Bell, UploadSimple,
 } from "@phosphor-icons/react";
 import type { AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { TabBar, type TabDef } from "../common/TabBar";
 import { SettingsPageShell } from "../common/SettingsPageShell";
+// 2026-08-29 · #122 P2 · SectionCard 프리미티브
+import { SectionCard } from "../common/SectionCard";
 import {
-  SET_SECTION_TITLE, SET_INPUT, SET_TEXTAREA, SET_LABEL,
+  SET_INPUT, SET_TEXTAREA, SET_LABEL,
   SET_ACTION_BAR, SET_BTN_PRIMARY, SET_BTN_SECONDARY,
-  SET_NOTICE_AMBER, SET_NOTICE_ROSE, SET_NOTICE_EMERALD,
+  SET_NOTICE_ROSE, SET_NOTICE_EMERALD,
 } from "../../lib/settingsTypography";
 import { CARD_BASE } from "../../styles/tokens";
 import { Spinner } from "../common/Spinner";
@@ -214,25 +216,21 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
           </section>
         )}
 
-        {/* 2026-08-27 · 사용자 지시 · 데이터 업로드 탭 · 랜딩페이지처럼 카드+버튼 (중복 배치) */}
+        {/* 2026-08-29 · #122 P2 · 데이터 업로드 탭 · SectionCard 프리미티브 적용 */}
         {cat === "upload" && (
-          <section className={CARD_BASE + " p-6 flex flex-col gap-4"}>
-            <h2 className={SET_SECTION_TITLE}>
-              <UploadSimple size={18} className="text-orange-500" />
-              데이터 업로드
-            </h2>
-            <p className="text-[14px] text-zinc-500 flex items-start gap-1.5">
-              <Info size={14} className="mt-0.5 shrink-0" />
-              상품목록 · 재고리스트 · 공급사관리 · 매입상세 xlsx 를 업로드하여 DB 에 임포트합니다. 랜딩페이지 [데이터 업로드] 카드와 동일 기능입니다.
-            </p>
+          <SectionCard
+            title="데이터 업로드"
+            icon={<UploadSimple size={18} />}
+            description="상품목록 · 재고리스트 · 공급사관리 · 매입상세 xlsx 를 업로드하여 DB 에 임포트합니다. 랜딩페이지 [데이터 업로드] 카드와 동일 기능입니다."
+          >
             <button
               type="button"
               onClick={() => setUploadModalOpen(true)}
-              className="self-start inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-gradient-to-br from-brand-deep to-[#0d3a5c] hover:from-[#0d3a5c] hover:to-[#08253a] text-white text-[15px] font-bold shadow-sm ring-1 ring-brand-deep/30 transition cursor-pointer"
+              className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-gradient-to-br from-brand-deep to-[#0d3a5c] hover:from-[#0d3a5c] hover:to-[#08253a] text-white text-[15px] font-bold shadow-sm ring-1 ring-brand-deep/30 transition cursor-pointer"
             >
               <UploadSimple size={16} weight="fill" />데이터 업로드 열기
             </button>
-          </section>
+          </SectionCard>
         )}
         <UploadDataModal
           open={uploadModalOpen}
