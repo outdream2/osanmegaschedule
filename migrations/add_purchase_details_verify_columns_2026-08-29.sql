@@ -29,6 +29,7 @@ CREATE INDEX IF NOT EXISTS idx_purchase_verified_at ON purchase_details(verified
 -- Step 3 · 기존 product_arrival_items 데이터 마이그레이션 (1회성)
 --   · 상품입고 검수 이력 · purchase_details 로 UPSERT
 --   · 중복 방지 · onConflict (purchase_date + supplier_code + product_code + quantity + amount)
+--   · status 필드에 'expiring' 케이스 포함 (2026-08-29 · expiring boolean 컬럼 미신설 · 파생 컬럼 원칙)
 --   · match/mismatch/expiring → verify_status 매핑
 -- ────────────────────────────────────────────────────────────────
 INSERT INTO purchase_details
@@ -42,12 +43,12 @@ SELECT
   pai.qty,
   pa.checked_by,
   CASE
-    WHEN pai.status = 'match' AND COALESCE(pai.expiring, false) = false THEN 'verified'
+    WHEN pai.status = 'match' THEN 'verified'
     WHEN pai.status = 'mismatch' THEN 'mismatch_noted'
-    WHEN pai.expiring = true THEN 'verified'  -- 기한임박 · verified 로 · verified_expiring=true 로 구분
+    WHEN pai.status = 'expiring' THEN 'verified'  -- 기한임박 · verified 로 · verified_expiring=true 구분
     ELSE 'pending'
   END,
-  COALESCE(pai.expiring, false),
+  (pai.status = 'expiring'),  -- 기한임박 여부 · status='expiring' 이면 true
   pa.arrival_date,
   NOW()
 FROM product_arrival_items pai
