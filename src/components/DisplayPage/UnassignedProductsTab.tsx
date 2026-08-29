@@ -5,7 +5,9 @@
 //   · 인라인 편집 · real_map 지정 → 즉시 반영 (편집 후 목록에서 제외)
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { PackageX, RefreshCw, Search, Pencil, Check, X as XIcon } from "lucide-react";
+import { PackageX, RefreshCw, Pencil, Check, X as XIcon } from "lucide-react";
+// 2026-08-29 · #165 Phase A · SearchBar 프리미티브 통일
+import { SearchBar } from "../common/SearchBar";
 import { api, ApiError } from "../../lib/apiClient";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
@@ -123,16 +125,15 @@ export const UnassignedProductsTab: React.FC = () => {
           <div className="ml-auto flex items-center gap-2">
             {/* 2026-08-29 · #154 Phase 1 · 판매중 3-way 필터 */}
             <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} />
-            <div className="relative">
-              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="상품명·공급사·코드 검색"
-                className="w-64 h-9 pl-8 pr-3 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
-              />
-            </div>
+            {/* 2026-08-29 · #165 Phase A · SearchBar 프리미티브 · 결과 카운트·최근 검색 */}
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              placeholder="상품명·공급사·코드 검색"
+              resultCount={filtered.length}
+              historyKey="megatown_unassigned_search"
+              accent="amber"
+            />
             <button
               type="button"
               onClick={load}
