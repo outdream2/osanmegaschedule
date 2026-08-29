@@ -70,13 +70,18 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
           <span className={isSelected ? "text-indigo-800" : ""}>{emp.name}</span>
         </div>
       </td>
-      {/* 직책 */}
+      {/* 직책 · 직급 (2026-08-29 · #177 · rank 병기) */}
       <td className="px-1 py-2 text-center">
-        {emp.position && (
-          <Badge className={positionColor(emp.position)} size="sm">
-            {emp.position}
-          </Badge>
-        )}
+        <div className="flex flex-col items-center gap-0.5">
+          {emp.position && (
+            <Badge className={positionColor(emp.position)} size="sm">
+              {emp.position}
+            </Badge>
+          )}
+          {emp.rank && (
+            <Badge tone="zinc" size="sm" title="직급">{emp.rank}</Badge>
+          )}
+        </div>
       </td>
       {/* 계약유형 · 계약직 → "계약N" (N=총 계약수) · 정/알 등은 short */}
       {/* 2026-08-29 · #182 Phase B 확장 · contract_end D-30 이내 · 만료 임박 배지 아래 */}

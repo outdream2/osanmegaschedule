@@ -16,6 +16,8 @@ import { StaffLeaveSection } from "./StaffLeaveSection";
 import { StaffConditionsSection } from "./StaffConditionsSection";
 import type { Employee, EditDraft } from "./types";
 import { CONTRACT_TYPES, POSITIONS } from "./types";
+// 2026-08-29 · #177 · 직급(rank) 편집 · settings.ranks 소스
+import { useSettings } from "../../hooks/useSettings";
 import {
   autoContractBadge, contractTypeMeta, calcTenure,
   isSeveranceEligible, performanceRatingColor, positionColor,
@@ -112,6 +114,9 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
 }) => {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>("overview");
+  // 2026-08-29 · #177 · settings.ranks 소스
+  const { settings } = useSettings();
+  const ranks = settings.ranks ?? [];
 
   if (!displayEmp) return <EmptyDetail />;
 
@@ -192,6 +197,20 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
                     : (displayEmp.position || "직책 없음")}
                 </Badge>
               )}
+              {/* 2026-08-29 · #177 · 직급(rank) 편집/표시 · settings.ranks 소스 */}
+              {editing ? (
+                <select
+                  value={draft?.rank ?? ""}
+                  onChange={(e) => setField("rank", e.target.value)}
+                  className="text-[15px] border border-zinc-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-brand-deep"
+                  title="직급 (시스템설정 · 직급 탭에서 편집)"
+                >
+                  <option value="">직급 없음</option>
+                  {ranks.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              ) : displayEmp.rank ? (
+                <Badge tone="zinc" size="sm" title="직급">{displayEmp.rank}</Badge>
+              ) : null}
               {/* 계약유형 · 자동 배지 (#219) */}
               {(() => {
                 const badge = autoContractBadge(latestContract, displayEmp.contract_type);

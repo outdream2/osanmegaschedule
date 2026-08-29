@@ -28,6 +28,8 @@ export interface Employee {
   id: number;
   name: string;
   position?: string | null;
+  /** 2026-08-29 · #177 · 직급 · 대표·부장·팀장·과장·대리·사원 등 · 시스템설정 · 직급 탭에서 목록 편집 */
+  rank?: string | null;
   phone?: string | null;
   email?: string | null;
   level?: number | null;
@@ -133,7 +135,7 @@ export interface Employee {
 
 export type EditDraft = Pick<
   Employee,
-  | "name" | "position" | "phone" | "email" | "level" | "role"
+  | "name" | "position" | "rank" | "phone" | "email" | "level" | "role"
   | "hire_date" | "memo" | "contract_file_url" | "resume_url" | "photo_url"
   | "birth_date" | "gender" | "address" | "schedule_type" | "work_area"
   | "salary" | "contract_start" | "contract_end"
