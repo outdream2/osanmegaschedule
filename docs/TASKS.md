@@ -21,20 +21,28 @@
 > **이번 후속 세션 · 7 로컬 커밋 · 모두 테스트 통과**
 > 완료 태스크 삭제 · pending 만 우선순위 순 재정렬
 
-### ✅ 이번 세션 완료 (11 커밋 · Remote push 대기)
+### ✅ 이번 세션 완료 (20+ 커밋 · Remote push 대기)
 | 커밋 | 태스크 | 테스트 |
 |-----|-----|-----|
 | `84a98d48` | #178 팀장 유일성 (B안 · position별) | TS ✓ |
 | `6ab3af8e` | #177 P1 · SettingsModal 직군 탭 노출 | TS ✓ |
 | `a3c1bb0a` | #154 P1 · SaleStatusFilter · Unassigned + ZoneMismatch | TS + vitest 9/9 ✓ |
-| `b06c5e60` | NEXT_SESSION_PLAN 갱신 | — |
 | `f8dbb3a9` | #186 A안 · ProductDetailHero · Attio Sticky Hero | TS + vitest 21/21 ✓ |
 | `b3d1093e` | #122 P4 · GradientAccent 프리미티브 | TS + vitest 27/27 ✓ |
 | `ef2454fe` | #122 P1 · SectionCard 프리미티브 | TS + vitest 6/6 ✓ |
-| `6683d56e` | TASKS·PLAN 정리 v3 | — |
 | `7a77f7e2` | #122 P2 · CompanyInfoSettingsPage · SectionCard 적용 (-13라인) | TS ✓ |
 | `1726ec0f` | #122 P3 · SystemSettingsPage · upload 섹션 · SectionCard | TS ✓ |
-| **+ 이전 세션 · 37+ 커밋 · 총 Remote push 대기 47+** |
+| `c4ff4618` | #165 P1 · 상품 검색 전수 조사 doc (19페이지 매트릭스) | — |
+| `e3b7ade6` | #165 Phase A · UnassignedProductsTab · SearchBar 프리미티브 | TS ✓ |
+| `67a12bc1` | #165 Phase A · ZoneMismatchTab · SearchBar | TS ✓ |
+| `e7ea8f14` | #176 재확인 · 이미 완료 (useState(true) 기본 체크) | — |
+| `449ca91d` | #148 · 매장구역도 · 2026 트렌드 조사 리포트 | — |
+| `0517141b` | #148 · 셀 높이 통일 · min-h 240px · BEST 유지 | TS ✓ |
+| `50b03e48` | #148 · 종료 (min-h 통일 + 카테고리/서브라벨 표시) | — |
+| `5ee3be43` | #77 후순위 · #79 부터 진행 · 재정렬 | — |
+| `fa5b3dae` | **#177 P2** · SettingsModal · 직급(rank) 탭 · 자유텍스트 + 자동 rename | TS ✓ |
+| `6040a079` | **#174** · 바코드 카메라 실패 · 다른 브라우저 열기 (SSO 로그인 유지) | TS ✓ |
+| **+ 이전 세션 · 37+ 커밋 · 총 Remote push 대기 55+** |
 
 ### 🔴 크리티컬 · 최우선 (회귀 위험)
 | # | 태스크 | 진행 상황 | 예상 |
