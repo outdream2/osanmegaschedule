@@ -493,9 +493,10 @@ router.get("/api/products/realmap-check", asyncHandler(async (_req, res) => {
 //   · /:code 라우트보다 먼저 등록해야 매칭됨
 router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
   // 2026-08-28 · 감사 P2-2 · hidden 필터 추가 · 판매중지+숨김 상품 제외
+  // 2026-08-29 · #154 P2 · sale_status join · 클라이언트 3-way 필터
   const { data, error } = await supabase
     .from("products")
-    .select("product_code, product_name, spec, supplier, real_map, current_stock, expiry_date")
+    .select("product_code, product_name, spec, supplier, real_map, current_stock, expiry_date, sale_status")
     .eq("hidden", false)
     .not("expiry_date", "is", null)
     .order("expiry_date", { ascending: true })

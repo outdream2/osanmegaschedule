@@ -5,13 +5,17 @@
 //   · 표형식 · TableListWrap 프리미티브 · 목업 톤
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, RefreshCw, Package, Search } from "lucide-react";
+import { AlertTriangle, RefreshCw, Package } from "lucide-react";
 import { api, ApiError } from "../../lib/apiClient";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
 import { Spinner } from "../common/Spinner";
 import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/TableList";
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-08-29 · #154 P2 + #165 A · SaleStatusFilter · SearchBar 프리미티브
+import { SaleStatusFilter } from "../common/SaleStatusFilter";
+import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
+import { SearchBar } from "../common/SearchBar";
 
 interface ExpiryProduct {
   product_code: string;
@@ -21,6 +25,7 @@ interface ExpiryProduct {
   real_map: string | null;
   current_stock: number | null;
   expiry_date: string | null;
+  sale_status?: string | null; // 2026-08-29 · #154 P2 · 3-way 필터용
 }
 
 const fmtDate = (s: string | null): string => {
@@ -52,6 +57,8 @@ export const ExpiryImminentTab: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const { toast, showError } = useToast();
+  // 2026-08-29 · #154 P2 · 판매중 3-way 필터 (전체/판매중/판매중지)
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "expiryImminent.saleFilter" });
 
   const load = useCallback(() => {
     setLoading(true);
@@ -72,14 +79,16 @@ export const ExpiryImminentTab: React.FC = () => {
 
   const filtered = useMemo(() => {
     const kw = q.trim().toLowerCase();
-    if (!kw) return rows;
-    return rows.filter(r =>
+    // 2026-08-29 · #154 P2 · saleMatches 먼저 적용 · 검색어와 AND
+    const saleFiltered = rows.filter(r => saleMatches(r.sale_status));
+    if (!kw) return saleFiltered;
+    return saleFiltered.filter(r =>
       r.product_name.toLowerCase().includes(kw)
       || r.product_code.toLowerCase().includes(kw)
       || (r.supplier ?? "").toLowerCase().includes(kw)
       || (r.real_map ?? "").toLowerCase().includes(kw)
     );
-  }, [rows, q]);
+  }, [rows, q, saleMatches]);
 
   return (
     <>
@@ -95,16 +104,17 @@ export const ExpiryImminentTab: React.FC = () => {
             {loading ? <Spinner size={12} tone="amber" className="inline" /> : `${rows.length}건`}
           </span>
           <div className="ml-auto flex items-center gap-1.5">
-            <div className="relative">
-              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-              <input
-                type="text"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="상품·공급사·구역 검색"
-                className="h-8 pl-8 pr-3 w-56 rounded-lg bg-white border border-line text-[13px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-deep/20"
-              />
-            </div>
+            {/* 2026-08-29 · #154 P2 · 판매중 3-way 필터 */}
+            <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} />
+            {/* 2026-08-29 · #165 A · SearchBar 프리미티브 · 결과 카운트·최근 검색 */}
+            <SearchBar
+              value={q}
+              onChange={setQ}
+              placeholder="상품·공급사·구역 검색"
+              resultCount={filtered.length}
+              historyKey="megatown_expiryImminent_search"
+              accent="amber"
+            />
             <button
               type="button"
               onClick={load}
