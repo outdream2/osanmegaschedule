@@ -268,7 +268,8 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
 // - /api/products/standard-code-lookup · /api/products/standard-code/:standardCode 라우터 제거
 // - server/services/standardCodeLookup.ts · 미커밋 파일 · 원격 없음
 
-router.post("/api/upload-products", express.raw({ type: "application/octet-stream", limit: "100mb" }), asyncHandler(async (req, res) => {
+// 2026-08-29 · 보안 S0 N7 fix · authorize(9) · 카탈로그 전면 변조 방지 · 내부 adminKey/managerId 검증도 유지 (심층 방어)
+router.post("/api/upload-products", authorize(9), express.raw({ type: "application/octet-stream", limit: "100mb" }), asyncHandler(async (req, res) => {
   const { adminKey, managerId } = req.query as Record<string, string>;
   if (!req.body || !Buffer.isBuffer(req.body) || req.body.length === 0) {
     throw badRequest("파일이 없습니다");
@@ -587,7 +588,8 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
   });
 }));
 
-router.patch("/api/products/:code/realmap", asyncHandler(async (req, res) => {
+// 2026-08-29 · 보안 S1 N8 fix · authorize(1) · 진열위치 편집 · 로그인 직원 필수
+router.patch("/api/products/:code/realmap", authorize(1), asyncHandler(async (req, res) => {
   const code = (req.params.code ?? "").trim();
   const { realMap } = req.body ?? {};
   if (!code) throw badRequest("code required");
@@ -628,7 +630,8 @@ const ALLOWED_INLINE_EDIT = new Set([
 // 2026-07-28 · 사용자 요청 "적정재고 = 최근 30일 판매량"
 //   stock_history · snapshot_date >= today-30d · sale_qty 합산 → products.optimal_stock 일괄 업데이트
 //   body · { days?: number }  기본 30
-router.post("/api/products/refill-optimal-stock", asyncHandler(async (req, res) => {
+// 2026-08-29 · 보안 S1 N8 fix · authorize(9) · 전체 상품 optimal_stock 대량 갱신 · 관리자 전용
+router.post("/api/products/refill-optimal-stock", authorize(9), asyncHandler(async (req, res) => {
   // 2026-08-26 · 사용자 지시 · 공통 프레임워크 사용 (server/lib/optimalStock.ts)
   //   · 판매 0 상품도 0 으로 명시 설정 (A안 · 기본값)
   //   · fromDate 지정 · 그 날짜부터 오늘까지 판매량 집계 (미지정 시 · 오늘 - days)
@@ -664,7 +667,8 @@ router.post("/api/products/refill-optimal-stock", asyncHandler(async (req, res) 
   }
 }));
 
-router.patch("/api/products/:code", asyncHandler(async (req, res) => {
+// 2026-08-29 · 보안 S1 N8 fix · authorize(1) · 상품 인라인 편집 (판매상태·위치·가격 등) · 로그인 필수
+router.patch("/api/products/:code", authorize(1), asyncHandler(async (req, res) => {
   const code = (req.params.code ?? "").trim();
   if (!code) throw badRequest("code required");
   const body = req.body ?? {};

@@ -265,7 +265,8 @@ router.post("/api/vendors", validateBody(CreateVendorSchema), asyncHandler(async
 }));
 
 // 거래처 수정 (관리자)
-router.patch("/api/vendors/:id", asyncHandler(async (req, res) => {
+// 2026-08-29 · 보안 S0 N1 fix · authorize(5) · approval_status/company_name 등 임의 수정 방지
+router.patch("/api/vendors/:id", authorize(5), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
   const {
@@ -399,7 +400,8 @@ router.delete("/api/vendors/:id", authorize(9), asyncHandler(async (req, res) =>
 
 // 공급사현황 엑셀 벌크 임포트 · 회사명(company_name) 중복 시 담당자/연락처 정보 업데이트
 // body: { rows: Array<{ company_name, contact_name, phone, email, category, note }> }
-router.post("/api/vendors/bulk-import", asyncHandler(async (req, res) => {
+// 2026-08-29 · 보안 S0 N2 fix · authorize(9) · vendor 대량 변조 방지
+router.post("/api/vendors/bulk-import", authorize(9), asyncHandler(async (req, res) => {
   const rows: any[] = Array.isArray(req.body?.rows) ? req.body.rows : [];
   if (rows.length === 0) throw badRequest("rows 배열이 비어있습니다.");
   const normalize = (r: any) => ({
@@ -448,7 +450,8 @@ router.post("/api/vendors/bulk-import", asyncHandler(async (req, res) => {
 }));
 
 // 거래처 비밀번호 설정 (관리자)
-router.post("/api/vendors/:id/set-password", asyncHandler(async (req, res) => {
+// 2026-08-29 · 보안 S0 N3 fix · authorize(9) · 임의 vendor 비밀번호 hash 교체 방지 · 계정 탈취 방어
+router.post("/api/vendors/:id/set-password", authorize(9), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
   const { password } = req.body ?? {};

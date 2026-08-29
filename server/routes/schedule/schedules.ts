@@ -6,7 +6,7 @@ import path from "path";
 import fs from "fs";
 import multer from "multer";
 import { uploadToDrive, deleteFromDrive, extractDriveFileId, isDriveReady } from "../../services/googleDriveService";
-import { authorize } from "../../middleware/requireAuth";
+import { authorize, getSession } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
@@ -16,10 +16,12 @@ import { UpsertScheduleSchema, BatchScheduleSchema, CopyScheduleSchema } from ".
 const router = Router();
 
 router.get("/api/schedules", (req, res) => scheduleController.getSchedules(req, res));
-router.put("/api/schedules", validateBody(UpsertScheduleSchema), (req, res) => scheduleController.updateSchedule(req, res));
-router.post("/api/schedules/batch", validateBody(BatchScheduleSchema), (req, res) => scheduleController.batchUpdateSchedules(req, res));
-router.post("/api/schedules/copy", validateBody(CopyScheduleSchema), (req, res) => scheduleController.copySchedules(req, res));
-router.post("/api/employees", (req, res) => scheduleController.createEmployee(req, res));
+// 2026-08-29 · 보안 S0 N4 fix · 스케줄 write · 매니저(lv5)+ 만
+router.put("/api/schedules", authorize(5), validateBody(UpsertScheduleSchema), (req, res) => scheduleController.updateSchedule(req, res));
+router.post("/api/schedules/batch", authorize(5), validateBody(BatchScheduleSchema), (req, res) => scheduleController.batchUpdateSchedules(req, res));
+router.post("/api/schedules/copy", authorize(5), validateBody(CopyScheduleSchema), (req, res) => scheduleController.copySchedules(req, res));
+// 2026-08-29 · 보안 S0 · 직원 신규 등록 · 관리자(lv9) 전용
+router.post("/api/employees", authorize(9), (req, res) => scheduleController.createEmployee(req, res));
 // #122 · 신규 사번 자동 생성 · MAX + 1 · 3자리 zero-pad
 router.get("/api/employees/next-number", asyncHandler(async (_req, res) => {
   const { scheduleService } = await import("../../services/scheduleService");
@@ -27,7 +29,9 @@ router.get("/api/employees/next-number", asyncHandler(async (_req, res) => {
   const body: NextEmployeeNumberResponse = { nextNumber: next };
   res.status(200).json(body);
 }));
-router.put("/api/employees/:id", (req, res) => scheduleController.updateEmployee(req, res));
+// 2026-08-29 · 보안 S0 N5 fix · 직원 정보 수정 · 관리자(lv9) 전용 · 권한 상승 방지 필수
+//   · 이전 · authorize 없음 → lv1 이 다른 직원 level 필드 수정 가능 (privilege escalation)
+router.put("/api/employees/:id", authorize(9), (req, res) => scheduleController.updateEmployee(req, res));
 router.delete("/api/employees/:id", authorize(9), (req, res) => scheduleController.deleteEmployee(req, res));
 
 // 2026-08-20 · #175 · 단건 조회 · 본인 or 관리자(level ≥ 9) 만 허용
@@ -69,9 +73,14 @@ const contractUpload = multer({
   },
 });
 
-router.post("/api/employees/:id/contract", contractUpload.single("contract"), asyncHandler(async (req, res) => {
+// 2026-08-29 · 보안 S0 N6 fix · 계약서 업로드 · 본인 or 관리자(lv9) 만 · IDOR 방지
+router.post("/api/employees/:id/contract", authorize(1), contractUpload.single("contract"), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!req.file) throw badRequest("파일이 없습니다");
+  const session = getSession(req);
+  if (session && Number(session.sub) !== id && (session.level ?? 0) < 9) {
+    throw new HttpError(403, "본인 또는 관리자만 업로드 가능", "FORBIDDEN");
+  }
   const fileUrl = `/uploads/contracts/${req.file.filename}`;
   const { error } = await supabase.from("employees").update({ contract_file_url: fileUrl }).eq("id", id);
   if (error) {
@@ -93,9 +102,14 @@ const resumeUpload = multer({
     cb(null, ok);
   },
 });
-router.post("/api/employees/:id/resume", resumeUpload.single("resume"), asyncHandler(async (req, res) => {
+// 2026-08-29 · 보안 S0 N6 fix · 이력서 업로드 · 본인 or 관리자(lv9) 만 · IDOR 방지
+router.post("/api/employees/:id/resume", authorize(1), resumeUpload.single("resume"), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!req.file) throw badRequest("파일이 없습니다");
+  const session = getSession(req);
+  if (session && Number(session.sub) !== id && (session.level ?? 0) < 9) {
+    throw new HttpError(403, "본인 또는 관리자만 업로드 가능", "FORBIDDEN");
+  }
   // 직원명 조회 (파일명 규칙)
   const { data: emp } = await supabase.from("employees").select("name, resume_url").eq("id", id).maybeSingle();
   if (!emp) throw notFound("직원을 찾을 수 없습니다");
@@ -147,9 +161,14 @@ const resignationFileUpload = multer({
   },
 });
 
-router.post("/api/employees/:id/resignation-file", resignationFileUpload.single("file"), asyncHandler(async (req, res) => {
+// 2026-08-29 · 보안 S0 N6 fix · 사직서 파일 업로드 · 본인 or 관리자(lv9) 만 · IDOR 방지
+router.post("/api/employees/:id/resignation-file", authorize(1), resignationFileUpload.single("file"), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!req.file) throw badRequest("파일이 없습니다");
+  const session = getSession(req);
+  if (session && Number(session.sub) !== id && (session.level ?? 0) < 9) {
+    throw new HttpError(403, "본인 또는 관리자만 업로드 가능", "FORBIDDEN");
+  }
 
   // 직원 존재 확인 + 퇴사자 여부 검증 (선택적 · retire_date 없어도 업로드 허용)
   const { data: emp } = await supabase

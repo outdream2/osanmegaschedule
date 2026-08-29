@@ -264,7 +264,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
 
   const startEdit = (emp: Employee) => {
     setDraft({
-      name: emp.name ?? "", position: emp.position ?? "", phone: emp.phone ?? "",
+      // 2026-08-29 · #177 회귀 fix · rank 초기값 · 없으면 저장 시 undefined 로 기존값 지워짐
+      name: emp.name ?? "", position: emp.position ?? "", rank: emp.rank ?? "", phone: emp.phone ?? "",
       email: emp.email ?? "", level: emp.level ?? null, role: emp.role ?? "",
       hire_date: emp.hire_date ?? "", memo: emp.memo ?? "",
       contract_file_url: emp.contract_file_url ?? "", resume_url: (emp as any).resume_url ?? "",

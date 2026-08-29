@@ -18,7 +18,8 @@ const router = Router();
 const SELECT_COLS = "id, created_at, direction, supplier, product_code, product_name, qty, unit_price, due_date, note, signature_url, status, settled_at, created_by, created_by_id, return_signature_url, returned_by, returned_by_id, returned_at, return_note";
 
 // GET /api/borrowings?status=open&supplier=X&direction=lend&days=90&limit=200
-router.get("/api/borrowings", asyncHandler(async (req, res) => {
+// 2026-08-29 · 보안 감사 P2 fix · authorize(1) · 서명 dataURL 등 민감정보 노출 방지
+router.get("/api/borrowings", authorize(1), asyncHandler(async (req, res) => {
   const status    = String(req.query.status ?? "").trim();
   const supplier  = String(req.query.supplier ?? "").trim();
   const direction = String(req.query.direction ?? "").trim();
