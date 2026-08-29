@@ -292,7 +292,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
     const using = employees.filter(e => ((e as any).rank ?? "") === original);
     const next = ranks.map((r, i) => i === editingRankIdx ? trimmed : r);
     if (using.length > 0) {
-      const ok = window.confirm(`직급 "${original}" → "${trimmed}"\n재직 직원 ${using.length}명 · 자동으로 함께 변경됩니다. 진행?`);
+      // 2026-08-29 · #185 Phase B · confirm 문구에 재로그인 안내 포함 (framework · alert 금지)
+      const ok = window.confirm(
+        `직급 "${original}" → "${trimmed}"\n` +
+        `재직 직원 ${using.length}명 · 자동으로 함께 변경됩니다.\n\n` +
+        `⚠ JWT 세션 rank 는 다음 로그인 시 반영\n(현재 로그인 중인 해당 직원 · 로그아웃·재로그인 필요)\n\n` +
+        `진행?`
+      );
       if (!ok) { cancelEditRank(); return; }
       setRankRenaming(true);
       try {
