@@ -6,7 +6,7 @@
 //   · 서명 · 캔버스 (touch/mouse) → dataURL 저장
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, HandCoins, Pencil, RefreshCw, Trash2, X, Save } from "lucide-react";
+import { CheckCircle2, HandCoins, Pencil, RefreshCw, Trash2, X, Save, ArrowRight, ArrowLeft } from "lucide-react";
 // 2026-08-29 · #165 A · SearchBar 프리미티브
 import { SearchBar } from "../common/SearchBar";
 // 2026-08-29 · 상품명 검색 · 통일 로직
@@ -459,8 +459,11 @@ const BorrowingList: React.FC<{
                 return (
                   <tr key={r.id} className="hover:bg-zinc-50/60 transition text-[14px]">
                     <td className={tableTdCls("center", "text-zinc-500 tabular-nums")}>{fmtDate(r.created_at)}</td>
+                    {/* 2026-08-29 · #130 Phase 2 · 양방향 화살표 시각 · 공급사↔약국 방향 명확화 */}
                     <td className={tableTdCls("center")}>
-                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[12px] font-bold ${r.direction === "lend" ? "bg-sky-50 text-sky-700 border border-sky-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[12px] font-bold ${r.direction === "lend" ? "bg-sky-50 text-sky-700 border border-sky-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}
+                        title={r.direction === "lend" ? "공급사 → 약국 (대여)" : "약국 → 공급사 (차용)"}>
+                        {r.direction === "lend" ? <ArrowRight size={11} strokeWidth={2.5} /> : <ArrowLeft size={11} strokeWidth={2.5} />}
                         {r.direction === "lend" ? "대여" : "차용"}
                       </span>
                     </td>
