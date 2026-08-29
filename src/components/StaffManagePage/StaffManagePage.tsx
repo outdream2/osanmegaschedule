@@ -287,6 +287,20 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
     setSaving(true);
     try {
       await updateEmployee(selectedEmp as any, draft as any);
+      // 2026-08-29 · #185 Phase A · P0 회귀 방지 · 세션 재발급 필요 변경 감지
+      //   · position · level · phone · role 변경 시 · 본인 편집이면 재로그인 안내
+      //   · JWT payload · role/level/phone 변경 · 다음 요청 401 방지
+      const changedFields: string[] = [];
+      const beforeAny = selectedEmp as any;
+      const afterAny = draft as any;
+      if (afterAny.position != null && String(beforeAny.position ?? "") !== String(afterAny.position ?? "")) changedFields.push("직군(position)");
+      if (afterAny.level != null && Number(beforeAny.level ?? 0) !== Number(afterAny.level ?? 0)) changedFields.push("권한(level)");
+      if (afterAny.phone != null && String(beforeAny.phone ?? "") !== String(afterAny.phone ?? "")) changedFields.push("핸드폰(phone)");
+      if (changedFields.length > 0) {
+        showSuccess(`저장 완료 · ${changedFields.join(" · ")} 변경 · 해당 직원 · 재로그인 시 반영`);
+      } else {
+        showSuccess("저장 완료");
+      }
       setEditing(false); setDraft(null);
       setEmployees((prev) => prev.map((e) => e.id === selectedEmp.id ? { ...e, ...draft } : e));
     } catch (err: unknown) {
