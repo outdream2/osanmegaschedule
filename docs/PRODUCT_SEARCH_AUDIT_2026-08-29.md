@@ -75,3 +75,34 @@
 2. Phase B 확장 · 사용자 확인 후 페이지별 진행
 3. Phase C · ProductFilterInput 신설 여부 · 사용자 결정
 4. Phase D · 초성 검색 · 전 페이지 통일 여부 · 사용자 결정
+
+---
+
+## ✅ 완료 (2026-08-29 · 사용자 지시 "상품명 검색은 모두 같은 로직")
+
+### matchesProductQuery 유틸 신설 (`src/lib/productMatch.ts`)
+- **초성 매칭** · `ㅌㅇㄹㄴ` → 타이레놀 (product_name · supplier)
+- **부분 일치** · 대소문자 무시
+- **코드 · 바코드** · 대소문자 무시 부분일치
+- **null 안전** · OR 조건
+- **vitest 13/13 pass**
+
+### 확산 100% 완료 (14 페이지)
+1. UnassignedProductsTab · matchesProductQuery
+2. ZoneMismatchTab · matchesProductQuery + spec_zone/real_zone
+3. ExpiryImminentTab · saleMatches AND matchesProductQuery + real_map
+4. BorrowingPage · matchesProductQuery
+5. ReturnConfirmedPanel · matchesProductQuery
+6. OrderHistoryTab · items 배열 · matchesProductQuery
+7. StockReconciliationTab · matchesProductQuery + supplierFilter
+8. VendorStockModal · 필드 매핑 (name→product_name · code→product_code)
+9. StockFlowPanel · matchesProductQuery
+10. VendorDetailTabs (2곳) · productStats + allRows
+11. ReturnListPanel · matchesProductQuery + categoryFilter
+12. RealStockTablePage · matchesProductQuery + location
+13. OrderManagePage · orderReqsFiltered · matchesProductQuery
+14. PurchaseHistoryTab · filteredProducts · matchesProductQuery
+
+### 남은 · 0건
+- `product_name.*includes` grep · **0건**
+- 모든 상품 리스트 · 동일 매칭 · 일관 UX 확보
