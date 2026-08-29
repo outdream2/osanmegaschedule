@@ -1,10 +1,16 @@
-// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
-// server/routes/productArrivals.ts
-// 상품입고 저장·조회 · 2026-07-29 (사용자 요청)
-//   - POST /api/product-arrivals · 상품입고 저장 (헤더 + 아이템 리스트)
-//   - GET  /api/product-arrivals · 최근 입고 리스트
-//   - GET  /api/product-arrivals/:id · 상세 (헤더 + 아이템)
-//   - DELETE /api/product-arrivals/:id · 삭제
+// 2026-08-29 · #198 Phase 2 · product_arrivals + product_arrival_items → purchase_details 완전 통합
+//   · 사용자 크리티컬 원칙: "테이블 자꾸 만들지 마" · "매입 테이블에 합쳐"
+//   · 원본 두 테이블은 _archive_ prefix 로 rename됨 (2주 관찰 후 DROP)
+//   · 이 라우터는 · purchase_details 를 · 검수 컬럼 (verify_status · verified_by 등) 으로 활용
+//   · UI 응답 형식 (arrival_date · match_count · items 등) · 유지 (그룹핑 재구성) · 회귀 방지
+//   · 그룹 id · verified_at date + verified_by 조합 (예: "20260829_홍길동")
+//
+// Endpoints (UI 호환):
+//   - POST   /api/product-arrivals · 상품입고 검수 저장 (purchase_details UPSERT)
+//   - GET    /api/product-arrivals · 최근 검수 리스트 (그룹별 헤더)
+//   - GET    /api/product-arrivals/compare/orders · 발주 vs 입고 비교
+//   - GET    /api/product-arrivals/:id · 그룹 상세
+//   - DELETE /api/product-arrivals/:id · soft unlink (verify_status/verified_by = null)
 
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
@@ -16,107 +22,227 @@ import { CreateProductArrivalSchema } from "../../../src/shared/schemas/productA
 
 const router = Router();
 
-// POST /api/product-arrivals
-// body: { checked_by, checked_by_id?, final_decision, items: [{product_code, product_name, supplier, qty, status}] }
+// ─────────────────────────────────────────────────────────────────
+// 그룹 id 유틸 · verified_at date (YYYYMMDD) + "_" + verified_by
+// ─────────────────────────────────────────────────────────────────
+function makeGroupId(verifiedAt: string, verifiedBy: string): string {
+  const d = new Date(verifiedAt);
+  const yyyymmdd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+  return `${yyyymmdd}_${verifiedBy}`;
+}
+
+function parseGroupId(id: string): { dateStr: string; verifiedBy: string } | null {
+  const m = /^(\d{8})_(.+)$/.exec(String(id));
+  if (!m) return null;
+  const [, ymd, verifiedBy] = m;
+  const dateStr = `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
+  return { dateStr, verifiedBy };
+}
+
+// ─────────────────────────────────────────────────────────────────
+// POST /api/product-arrivals · 상품입고 검수 저장
+//   · items → purchase_details UPSERT
+//   · 이미 매입에 있으면 (같은 date+code+supplier+qty+amount) · verify_status 만 UPDATE
+//   · 없으면 · INSERT (신규 매입 · 수동 검수)
+// ─────────────────────────────────────────────────────────────────
 router.post("/api/product-arrivals", validateBody(CreateProductArrivalSchema), asyncHandler(async (req, res) => {
   const body = req.body;
   const items = body.items;
 
   const checked_by = body.checked_by || "익명";
-  const checked_by_id = body.checked_by_id ? Number(body.checked_by_id) || null : null;
-  const final_decision = body.final_decision || null;
-  const note = body.note || null;
+  const _final_decision = body.final_decision || null;
+  const _note = body.note || null;
+  void _final_decision; void _note;
 
-  // 카운트 계산
+  const now = new Date();
+  const todayISO = now.toISOString();
+  const todayDate = todayISO.split("T")[0]; // YYYY-MM-DD
+
+  // 카운트 (응답 UI 용)
   let match = 0, mismatch = 0, expiring = 0, totalQty = 0;
   const supplierSet = new Set<string>();
   for (const it of items) {
     const st = String(it.status ?? "pending");
     if (st === "match") match++;
     else if (st === "mismatch") mismatch++;
-    // 2026-07-29 · 사용자 요청 · expiring 은 boolean 필드로 분리 (status 와 독립)
     if (it.expiring === true) expiring++;
     totalQty += Number(it.qty ?? 0) || 0;
     if (it.supplier) supplierSet.add(String(it.supplier));
   }
   const supplierSummary = [...supplierSet].join(", ").slice(0, 500);
 
-  // 헤더 insert
-  const { data: header, error: hErr } = await supabase
-    .from("product_arrivals")
-    .insert([{
-      arrival_date: new Date().toISOString(),
-      checked_by, checked_by_id,
+  // status → verify_status 매핑
+  const toVerifyStatus = (status: string, isExpiring: boolean): string => {
+    if (status === "mismatch") return "mismatch_noted";
+    if (status === "match" || (status === "pending" && isExpiring)) return "verified";
+    return "pending";
+  };
+
+  // 각 item · purchase_details 조회 후 · UPSERT
+  let insertedCount = 0;
+  let updatedCount = 0;
+  for (const it of items) {
+    const productCode = String(it.product_code ?? "").trim();
+    if (!productCode) continue;
+    const supplierName = String(it.supplier ?? "").trim() || null;
+    const qty = Number(it.qty ?? 0) || 0;
+    const isExpiring = it.expiring === true;
+    const verifyStatus = toVerifyStatus(String(it.status ?? "pending"), isExpiring);
+
+    // 오늘 자 · 이미 매입 원본 있는지 확인 (OCR/엑셀 임포트 등)
+    const { data: existing } = await supabase
+      .from("purchase_details")
+      .select("id")
+      .eq("purchase_date", todayDate)
+      .eq("product_code", productCode)
+      .is("verify_status", null) // 아직 미검수 · OCR 원본만
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      // 기존 매입 있음 → verify_* 만 UPDATE
+      const { error: uErr } = await supabase
+        .from("purchase_details")
+        .update({
+          verify_status: verifyStatus,
+          verified_by: checked_by,
+          verified_at: now.toISOString(),
+          verified_expiring: isExpiring,
+        })
+        .eq("id", existing[0].id);
+      if (uErr) throw new HttpError(500, `verify update 실패: ${uErr.message}`);
+      updatedCount++;
+    } else {
+      // 신규 매입 · INSERT
+      const { error: iErr } = await supabase
+        .from("purchase_details")
+        .insert({
+          purchase_date: todayDate,
+          supplier_name: supplierName,
+          product_code: productCode,
+          product_name: String(it.product_name ?? "").trim() || null,
+          quantity: qty,
+          unit_price: 0,
+          amount: 0,
+          verified_by: checked_by,
+          verify_status: verifyStatus,
+          verified_at: now.toISOString(),
+          verified_expiring: isExpiring,
+          imported_at: now.toISOString(),
+        });
+      if (iErr) throw new HttpError(500, `verify insert 실패: ${iErr.message}`);
+      insertedCount++;
+    }
+  }
+
+  const groupId = makeGroupId(todayISO, checked_by);
+  res.json({
+    ok: true,
+    id: groupId,
+    header: {
+      id: groupId,
+      arrival_date: todayISO,
+      checked_by,
       total_items: items.length,
       total_qty: totalQty,
       match_count: match,
       mismatch_count: mismatch,
       expiring_count: expiring,
-      final_decision,
       supplier_summary: supplierSummary,
-      note,
-    }])
-    .select("id, arrival_date, checked_by, checked_by_id, total_items, total_qty, match_count, mismatch_count, expiring_count, final_decision, supplier_summary, note, created_at")
-    .single();
-  if (hErr) throw new HttpError(500, hErr.message);
-
-  // 아이템 bulk insert
-  const arrivalId = (header as any).id;
-  const itemRows = items.map(it => ({
-    arrival_id: arrivalId,
-    product_code: String(it.product_code ?? "").trim() || null,
-    product_name: String(it.product_name ?? "").trim() || null,
-    supplier:     String(it.supplier ?? "").trim() || null,
-    qty:          Number(it.qty ?? 0) || 0,
-    status:       String(it.status ?? "pending"),
-    expiring:     it.expiring === true,
-  }));
-  let { error: iErr } = await supabase.from("product_arrival_items").insert(itemRows);
-  // 2026-08-29 · expiring 컬럼 미존재 시 · 컬럼 제외 후 재시도 (스키마 마이그 안 된 환경 방어)
-  if (iErr && /expiring/i.test(iErr.message) && /(column|schema cache|not found)/i.test(iErr.message)) {
-    const itemRowsNoExpiring = itemRows.map((r) => {
-      const rest: Record<string, unknown> = { ...r };
-      delete rest.expiring;
-      return rest;
-    });
-    const retry = await supabase.from("product_arrival_items").insert(itemRowsNoExpiring);
-    iErr = retry.error;
-  }
-  if (iErr) {
-    await supabase.from("product_arrivals").delete().eq("id", arrivalId);
-    throw new HttpError(500, iErr.message);
-  }
-
-  res.json({ ok: true, id: arrivalId, header, item_count: itemRows.length });
+    },
+    inserted: insertedCount,
+    updated: updatedCount,
+    item_count: items.length,
+  });
 }));
 
+// ─────────────────────────────────────────────────────────────────
 // GET /api/product-arrivals?limit=50&days=30
+//   · purchase_details WHERE verify_status IS NOT NULL · 최근 days
+//   · verified_at date + verified_by 로 그룹핑 · 헤더 형식 재구성 (UI 호환)
+// ─────────────────────────────────────────────────────────────────
 router.get("/api/product-arrivals", asyncHandler(async (req, res) => {
   const limit = Math.max(1, Math.min(500, parseInt(String(req.query.limit ?? "50"), 10) || 50));
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "30"), 10) || 30));
   const since = new Date(); since.setDate(since.getDate() - days);
+
   const { data, error } = await supabase
-    .from("product_arrivals")
-    .select("id, arrival_date, checked_by, checked_by_id, total_items, total_qty, match_count, mismatch_count, expiring_count, final_decision, supplier_summary, note, created_at")
-    .gte("arrival_date", since.toISOString())
-    .order("arrival_date", { ascending: false })
-    .limit(limit);
-  if (error) {
-    if (/relation .* does not exist/i.test(error.message)) return res.json({ rows: [], warning: "product_arrivals 테이블 없음" });
-    throw new HttpError(500, error.message);
+    .from("purchase_details")
+    .select("id, purchase_date, supplier_name, product_code, product_name, quantity, verified_by, verify_status, verified_expiring, verified_at")
+    .not("verify_status", "is", null)
+    .gte("verified_at", since.toISOString())
+    .order("verified_at", { ascending: false })
+    .limit(5000); // 그룹핑 위해 넉넉히
+  if (error) throw new HttpError(500, error.message);
+
+  const rows = data ?? [];
+  // 그룹핑 · groupId 별로 헤더 집계
+  const groups = new Map<string, {
+    id: string;
+    arrival_date: string;
+    checked_by: string;
+    checked_by_id: number | null;
+    total_items: number;
+    total_qty: number;
+    match_count: number;
+    mismatch_count: number;
+    expiring_count: number;
+    final_decision: string | null;
+    supplier_summary: string;
+    note: string | null;
+    created_at: string;
+    _suppliers: Set<string>;
+  }>();
+
+  for (const r of rows) {
+    if (!r.verified_at || !r.verified_by) continue;
+    const gid = makeGroupId(r.verified_at, String(r.verified_by));
+    const g = groups.get(gid) ?? {
+      id: gid,
+      arrival_date: r.verified_at,
+      checked_by: String(r.verified_by),
+      checked_by_id: null,
+      total_items: 0,
+      total_qty: 0,
+      match_count: 0,
+      mismatch_count: 0,
+      expiring_count: 0,
+      final_decision: null,
+      supplier_summary: "",
+      note: null,
+      created_at: r.verified_at,
+      _suppliers: new Set<string>(),
+    };
+    g.total_items++;
+    g.total_qty += Number(r.quantity ?? 0) || 0;
+    if (r.verify_status === "verified" && !r.verified_expiring) g.match_count++;
+    if (r.verify_status === "mismatch_noted") g.mismatch_count++;
+    if (r.verified_expiring === true) g.expiring_count++;
+    if (r.supplier_name) g._suppliers.add(String(r.supplier_name));
+    groups.set(gid, g);
   }
-  res.json({ rows: data ?? [] });
+
+  const headers = Array.from(groups.values())
+    .map(g => ({
+      ...g,
+      supplier_summary: Array.from(g._suppliers).join(", ").slice(0, 500),
+      final_decision: g.mismatch_count > 0 ? "has_mismatch" : (g.total_items > 0 ? "all_match" : null),
+      _suppliers: undefined,
+    }))
+    .sort((a, b) => (a.arrival_date > b.arrival_date ? -1 : 1))
+    .slice(0, limit);
+
+  res.json({ rows: headers });
 }));
 
+// ─────────────────────────────────────────────────────────────────
 // GET /api/product-arrivals/compare/orders?days=7
-// ⚠️ 반드시 /:id 보다 먼저 등록 — Express 는 등록 순서대로 평가하므로 compare 가 뒤에 있으면 /:id 에 가로채임
-// 최근 N일 발주 vs 입고 비교 (order_requests · product_arrival_items 조인)
+//   · 최근 발주 (order_requests) vs 검수 이력 (purchase_details verify_status IS NOT NULL)
+// ─────────────────────────────────────────────────────────────────
 router.get("/api/product-arrivals/compare/orders", asyncHandler(async (req, res) => {
   const days = Math.max(1, Math.min(90, parseInt(String(req.query.days ?? "7"), 10) || 7));
   const since = new Date(); since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString();
 
-  // 최근 발주 (order_requests)
   const { data: orders, error: oErr } = await supabase
     .from("order_requests")
     .select("id, product_code, product_name, current_stock, optimal_stock, note, requested_at")
@@ -125,33 +251,33 @@ router.get("/api/product-arrivals/compare/orders", asyncHandler(async (req, res)
     .limit(1000);
   if (oErr && !/relation .* does not exist/i.test(oErr.message)) throw new HttpError(500, oErr.message);
 
-  // 최근 입고 아이템 (product_arrival_items · arrival_date 필터)
-  const { data: arrivals } = await supabase
-    .from("product_arrivals")
-    .select("id, arrival_date, checked_by, supplier_summary, final_decision")
-    .gte("arrival_date", sinceStr)
-    .order("arrival_date", { ascending: false })
-    .limit(500);
-  const arrivalIds = (arrivals ?? []).map((a: any) => a.id);
-  let items: any[] = [];
-  if (arrivalIds.length > 0) {
-    const { data: itemsData } = await supabase
-      .from("product_arrival_items")
-      .select("id, arrival_id, product_code, product_name, supplier, qty, status, created_at")
-      .in("arrival_id", arrivalIds);
-    items = itemsData ?? [];
-  }
-  // 상품코드별 · 총 입고량 계산
+  const { data: verifyItems } = await supabase
+    .from("purchase_details")
+    .select("id, purchase_date, product_code, product_name, supplier_name, quantity, verify_status, verified_by, verified_at")
+    .not("verify_status", "is", null)
+    .gte("verified_at", sinceStr)
+    .limit(2000);
+
+  const items = verifyItems ?? [];
   const arrivalByCode = new Map<string, { qty: number; arrivals: any[] }>();
   for (const it of items) {
     const code = String(it.product_code ?? "").trim();
     if (!code) continue;
     const cur = arrivalByCode.get(code) ?? { qty: 0, arrivals: [] };
-    cur.qty += Number(it.qty ?? 0) || 0;
-    cur.arrivals.push(it);
+    cur.qty += Number(it.quantity ?? 0) || 0;
+    cur.arrivals.push({
+      id: it.id,
+      arrival_id: makeGroupId(it.verified_at ?? "", String(it.verified_by ?? "")),
+      product_code: it.product_code,
+      product_name: it.product_name,
+      supplier: it.supplier_name,
+      qty: it.quantity,
+      status: it.verify_status === "mismatch_noted" ? "mismatch" : "match",
+      created_at: it.verified_at,
+    });
     arrivalByCode.set(code, cur);
   }
-  // 발주별 · 입고 매칭
+
   const compareRows = (orders ?? []).map((o: any) => {
     const code = String(o.product_code ?? "").trim();
     const arrival = code ? arrivalByCode.get(code) : null;
@@ -173,40 +299,101 @@ router.get("/api/product-arrivals/compare/orders", asyncHandler(async (req, res)
       arrival_items: arrival?.arrivals ?? [],
     };
   });
+
   res.json({
     days,
     order_count: (orders ?? []).length,
-    arrival_count: (arrivals ?? []).length,
+    arrival_count: items.length,
     rows: compareRows,
   });
 }));
 
-// GET /api/product-arrivals/:id
-// ⚠️ /:id 는 반드시 /compare/orders 보다 뒤에 등록
+// ─────────────────────────────────────────────────────────────────
+// GET /api/product-arrivals/:id · 그룹 상세
+//   · id · groupId (YYYYMMDD_verifiedBy)
+// ─────────────────────────────────────────────────────────────────
 router.get("/api/product-arrivals/:id", asyncHandler(async (req, res) => {
-  const id = Number(req.params.id);
-  if (!Number.isFinite(id)) throw badRequest("잘못된 id");
-  const { data: header, error: hErr } = await supabase
-    .from("product_arrivals")
-    .select("id, arrival_date, checked_by, checked_by_id, total_items, total_qty, match_count, mismatch_count, expiring_count, final_decision, supplier_summary, note, created_at")
-    .eq("id", id)
-    .maybeSingle();
-  if (hErr) throw new HttpError(500, hErr.message);
-  if (!header) throw notFound("not found");
-  const { data: items, error: iErr } = await supabase
-    .from("product_arrival_items")
-    .select("id, arrival_id, product_code, product_name, supplier, qty, status, created_at")
-    .eq("arrival_id", id)
-    .order("id", { ascending: true });
-  if (iErr) throw new HttpError(500, iErr.message);
-  res.json({ header, items: items ?? [] });
+  const parsed = parseGroupId(String(req.params.id));
+  if (!parsed) throw badRequest("잘못된 group id");
+  const { dateStr, verifiedBy } = parsed;
+  const dayStart = new Date(`${dateStr}T00:00:00`);
+  const dayEnd = new Date(`${dateStr}T23:59:59.999`);
+
+  const { data: rows, error } = await supabase
+    .from("purchase_details")
+    .select("id, purchase_date, supplier_name, product_code, product_name, quantity, verify_status, verified_by, verified_at, verified_expiring")
+    .not("verify_status", "is", null)
+    .eq("verified_by", verifiedBy)
+    .gte("verified_at", dayStart.toISOString())
+    .lte("verified_at", dayEnd.toISOString())
+    .order("verified_at", { ascending: true });
+  if (error) throw new HttpError(500, error.message);
+  if (!rows || rows.length === 0) throw notFound("not found");
+
+  let match = 0, mismatch = 0, expiring = 0, totalQty = 0;
+  const supplierSet = new Set<string>();
+  const items = rows.map((r: any) => {
+    totalQty += Number(r.quantity ?? 0) || 0;
+    if (r.verify_status === "verified" && !r.verified_expiring) match++;
+    if (r.verify_status === "mismatch_noted") mismatch++;
+    if (r.verified_expiring === true) expiring++;
+    if (r.supplier_name) supplierSet.add(String(r.supplier_name));
+    return {
+      id: r.id,
+      arrival_id: req.params.id,
+      product_code: r.product_code,
+      product_name: r.product_name,
+      supplier: r.supplier_name,
+      qty: r.quantity,
+      status: r.verify_status === "mismatch_noted" ? "mismatch" : "match",
+      expiring: r.verified_expiring === true,
+      created_at: r.verified_at,
+    };
+  });
+
+  const first = rows[0];
+  const header = {
+    id: req.params.id,
+    arrival_date: first.verified_at,
+    checked_by: first.verified_by,
+    checked_by_id: null,
+    total_items: rows.length,
+    total_qty: totalQty,
+    match_count: match,
+    mismatch_count: mismatch,
+    expiring_count: expiring,
+    final_decision: mismatch > 0 ? "has_mismatch" : "all_match",
+    supplier_summary: Array.from(supplierSet).join(", ").slice(0, 500),
+    note: null,
+    created_at: first.verified_at,
+  };
+
+  res.json({ header, items });
 }));
 
-// DELETE /api/product-arrivals/:id
+// ─────────────────────────────────────────────────────────────────
+// DELETE /api/product-arrivals/:id · soft unlink (verify_* = null)
+//   · 매입 원본 행은 유지 · verified_by · verify_status 만 null 로 · 검수 이력만 제거
+// ─────────────────────────────────────────────────────────────────
 router.delete("/api/product-arrivals/:id", authorize(2), asyncHandler(async (req, res) => {
-  const id = Number(req.params.id);
-  if (!Number.isFinite(id)) throw badRequest("잘못된 id");
-  const { error } = await supabase.from("product_arrivals").delete().eq("id", id);
+  const parsed = parseGroupId(String(req.params.id));
+  if (!parsed) throw badRequest("잘못된 group id");
+  const { dateStr, verifiedBy } = parsed;
+  const dayStart = new Date(`${dateStr}T00:00:00`);
+  const dayEnd = new Date(`${dateStr}T23:59:59.999`);
+
+  const { error } = await supabase
+    .from("purchase_details")
+    .update({
+      verify_status: null,
+      verified_by: null,
+      verified_at: null,
+      verified_expiring: false,
+      verify_note: null,
+    })
+    .eq("verified_by", verifiedBy)
+    .gte("verified_at", dayStart.toISOString())
+    .lte("verified_at", dayEnd.toISOString());
   if (error) throw new HttpError(500, error.message);
   res.json({ ok: true });
 }));
