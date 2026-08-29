@@ -177,6 +177,10 @@ export class ScheduleService {
         if (phoneDup) throw new Error(`핸드폰 중복 · 이미 등록된 직원: ${(phoneDup as { name: string }).name} (사번 ${(phoneDup as { employee_number: string }).employee_number ?? "-"})`);
       }
     }
+    // 2026-08-29 · #178 · 팀장 유일성 검증 · position 에 "팀장" 포함 시 · 같은 position 중복 X
+    //   · B안 · position별 팀장 (물류팀장 · 약사팀장 · 진열팀장 등 · 각각 1명)
+    //   · 재직 중 (retireDate NULL) 직원만 검증
+    await this.validateTeamLeaderUniqueness(data.position, null);
     const base = { ...data, employee_number: employeeNumber, workplace: data.workplace ?? "매장", employmentType: data.employmentType ?? "정직원", level: data.level ?? 1 };
     let { data: result, error } = await supabase.from("employees").insert(base).select().single();
     if (error && /column .*retireDate.* does not exist/i.test(error.message)) {
@@ -186,6 +190,33 @@ export class ScheduleService {
     }
     if (error) throw new Error(error.message);
     return result;
+  }
+
+  /**
+   * 2026-08-29 · #178 · 팀장 유일성 검증
+   *   · position 에 "팀장" 포함 시 · 같은 position 을 가진 다른 재직 직원 있는지 확인
+   *   · B안 · 각 position 별 팀장 유일 (물류팀장 · 약사팀장 · 진열팀장 등)
+   *   · excludeId · updateEmployee 에서 자기 자신 제외 · createEmployee 는 null
+   */
+  async validateTeamLeaderUniqueness(position: string | null | undefined, excludeId: number | null): Promise<void> {
+    const pos = String(position ?? "").trim();
+    if (!pos || !pos.includes("팀장")) return;
+    let q = supabase
+      .from("employees")
+      .select("id, name, employee_number")
+      .eq("position", pos)
+      .is("retireDate", null);
+    if (excludeId != null) q = q.neq("id", excludeId);
+    const { data: existing, error } = await q.limit(1);
+    if (error) {
+      // 컬럼 미존재 · 무시 (스키마 마이그 안 된 환경 방어)
+      if (/column|does not exist/i.test(error.message)) return;
+      throw new Error(error.message);
+    }
+    if (existing && existing.length > 0) {
+      const e = existing[0] as { name?: string; employee_number?: string };
+      throw new Error(`${pos} 유일성 위반 · 이미 재직 중인 ${pos}: ${e.name ?? "-"} (사번 ${e.employee_number ?? "-"}) · 기존 직원 직군 변경 후 재시도`);
+    }
   }
 
   /** 2026-08-16 · #122 · 다음 사번 · MAX(정수 사번) + 1 · zero-pad 3자리 */
@@ -258,6 +289,12 @@ export class ScheduleService {
     bankbook_image_url?: string | null;
     employee_number?: string | null;
   }) {
+    // 2026-08-29 · #178 · 팀장 유일성 검증 · 재직 중 (retireDate=null) 로 변경 시만
+    //   · position "팀장" 포함 시 · 자기 자신 제외 · 같은 position 재직자 있는지 확인
+    //   · 퇴직 처리 (retireDate 지정) 는 skip · 팀장 → 퇴직 정상 시나리오
+    if (data.retireDate == null) {
+      await this.validateTeamLeaderUniqueness(data.position, id);
+    }
     // 핵심 필드 + 존재하는 선택 필드로 페이로드 구성
     const payload: Record<string, any> = {
       name: data.name,
