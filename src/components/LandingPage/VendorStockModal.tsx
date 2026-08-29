@@ -224,7 +224,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
                 <tr key={p.code} className="hover:bg-sky-50/40">
                   <td className="text-center px-2 py-1.5 text-zinc-400 tabular-nums">{i + 1}</td>
                   <td className="px-3 py-1.5 font-mono text-[13px] text-zinc-500 tabular-nums">{p.code}</td>
-                  <td className="px-3 py-1.5 font-semibold text-zinc-800 truncate max-w-[280px]">{p.name}</td>
+                  <td className="px-3 py-1.5 font-semibold text-zinc-800 break-words whitespace-normal leading-tight" style={{ minWidth: 200 }}>{p.name}</td>
                   <td className="text-right px-3 py-1.5 font-mono font-bold text-sky-700 tabular-nums">
                     {p.current_stock ?? "-"}
                   </td>

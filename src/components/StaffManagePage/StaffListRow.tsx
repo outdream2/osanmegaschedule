@@ -63,11 +63,11 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
         isSelected ? "bg-indigo-50/80" : "hover:bg-zinc-50/70"
       }`}
     >
-      {/* 이름 */}
-      <td className="px-2 py-2 text-[15px] font-bold text-zinc-800 truncate max-w-[120px]">
+      {/* 이름 · 2026-08-29 · UI 감사 U0-3 · truncate 금지 원칙 · 이름 잘림 방지 */}
+      <td className="px-2 py-2 text-[15px] font-bold text-zinc-800">
         <div className="flex items-center gap-1">
           {emp.photo_url && <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />}
-          <span className={isSelected ? "text-indigo-800" : ""}>{emp.name}</span>
+          <span className={`break-words whitespace-normal ${isSelected ? "text-indigo-800" : ""}`}>{emp.name}</span>
         </div>
       </td>
       {/* 직책 · 직급 (2026-08-29 · #177 · rank 병기) */}

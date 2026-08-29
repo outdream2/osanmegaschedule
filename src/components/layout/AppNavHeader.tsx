@@ -671,11 +671,11 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                 <span className="text-[14px]">{desktopOverflowTabs.length}</span>
               </button>
               {desktopOverflowOpen && (
-                // 2026-08-29 · header 안 dropdown · z-[55] · Modal(z-60)·BottomSheet(z-100) 밑
-                //   · header 자체 z-40 + 페이지 sticky/thead(<z-30) 위 · header stacking context 안 최상위
-                //   · isolate 제거 · 부모 header context 그대로 사용 · Modal 가림 방지
+                // 2026-08-29 · header 안 dropdown · z-[45] · 페이지 sticky/thead(<z-30) 위
+                //   · ProductDetailPanel fullscreen(z-50)·Modal(z-60)·BottomSheet(z-100) 밑 유지
+                //   · header 자체 z-40 stacking context 안 최상위 · 자연 stacking
                 <div
-                  className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1.5 min-w-[160px] z-[55] max-h-[70vh] overflow-y-auto"
+                  className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1.5 min-w-[160px] z-[45] max-h-[70vh] overflow-y-auto"
                 >
                   {desktopOverflowTabs.map(tab => {
                     const Icon = tab.icon;
@@ -748,10 +748,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                   <span className="text-[9px]">더보기</span>
                 </button>
                 {mobileOverflowOpen && (
-                  // 2026-08-29 · mobile dropdown · z-[55] · Modal(z-60)·BottomSheet(z-100) 밑
-                  //   · header 안 · z-40 stacking context 안 최상위 · Modal 가림 방지
+                  // 2026-08-29 · mobile dropdown · z-[45] · ProductDetail fullscreen(z-50)·Modal(z-60)·BottomSheet(z-100) 밑
+                  //   · header 안 · z-40 stacking context 안 최상위 · 자연 stacking
                   <div
-                    className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1 min-w-[160px] z-[55] max-h-[70vh] overflow-y-auto"
+                    className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1 min-w-[160px] z-[45] max-h-[70vh] overflow-y-auto"
                   >
                     {mobileOverflowTabs.map(tab => {
                       const Icon = tab.icon;
