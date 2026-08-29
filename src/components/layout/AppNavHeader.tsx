@@ -544,9 +544,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     //   · top hairline · white/6 (subtle inner light · glass 효과 시작점)
     //   · bottom hairline · mint accent (기존 유지)
     <header
-      // 2026-08-29 · 사용자 리포트 · header 에 z-40 + isolation · 페이지 내부 sticky/thead(<z-30) 위 stacking
-      //   · dropdown 은 header 안 z-[9998] · 페이지 modal(z-[9999]) 보다 아래 유지 (modal 이 header 위 자연)
-      className="relative z-40 isolate border-b border-white/[0.08] shrink-0 shadow-[0_1px_3px_rgba(10,46,74,0.15),0_4px_20px_-4px_rgba(10,46,74,0.20),0_12px_40px_-16px_rgba(10,46,74,0.25)]"
+      // 2026-08-29 · header 에 z-40 (isolate 제거 · Modal z-[60] · BottomSheet z-[100] 가림 회귀 방지)
+      //   · 페이지 sticky/thead(<z-30) 위 stacking 은 z-40 만으로 충분
+      //   · dropdown 은 z-[55] · Modal(z-60) · BottomSheet(z-100) 보다 낮게 · 자연 stacking 유지
+      className="relative z-40 border-b border-white/[0.08] shrink-0 shadow-[0_1px_3px_rgba(10,46,74,0.15),0_4px_20px_-4px_rgba(10,46,74,0.20),0_12px_40px_-16px_rgba(10,46,74,0.25)]"
       style={{ background: "linear-gradient(180deg, #0A2E4A 0%, #0D3350 50%, #0F3855 100%)" }}
     >
       {/* 2026-08-17 v3 · aurora radial glow · 좌상+우상+중앙하 (3-point · 브랜드 signature 강화) */}
@@ -670,12 +671,11 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                 <span className="text-[14px]">{desktopOverflowTabs.length}</span>
               </button>
               {desktopOverflowOpen && (
-                // 2026-08-29 · 사용자 리포트 · 배경 허옇음 + 다른 페이지 sticky/modal 가림 fix
-                //   · z-[9998] · body-level modal(z-[9997]) 위 · 페이지 sticky(<z-100) 위
-                //   · bg-white + ring · shadow-2xl · isolation 로 stacking context 격리
+                // 2026-08-29 · header 안 dropdown · z-[55] · Modal(z-60)·BottomSheet(z-100) 밑
+                //   · header 자체 z-40 + 페이지 sticky/thead(<z-30) 위 · header stacking context 안 최상위
+                //   · isolate 제거 · 부모 header context 그대로 사용 · Modal 가림 방지
                 <div
-                  className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1.5 min-w-[160px] z-[9998] max-h-[70vh] overflow-y-auto"
-                  style={{ isolation: "isolate" }}
+                  className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1.5 min-w-[160px] z-[55] max-h-[70vh] overflow-y-auto"
                 >
                   {desktopOverflowTabs.map(tab => {
                     const Icon = tab.icon;
@@ -748,12 +748,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                   <span className="text-[9px]">더보기</span>
                 </button>
                 {mobileOverflowOpen && (
-                  // 2026-08-29 · 사용자 리포트 · 배경 허옇음 + 다른 페이지 sticky/modal 가림 fix
-                  //   · z-[9998] · body-level modal(z-[9997]) 위 · 페이지 sticky(<z-100) 위
-                  //   · bg-white + ring · shadow-2xl · isolation 로 stacking context 격리
+                  // 2026-08-29 · mobile dropdown · z-[55] · Modal(z-60)·BottomSheet(z-100) 밑
+                  //   · header 안 · z-40 stacking context 안 최상위 · Modal 가림 방지
                   <div
-                    className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1 min-w-[160px] z-[9998] max-h-[70vh] overflow-y-auto"
-                    style={{ isolation: "isolate" }}
+                    className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1 min-w-[160px] z-[55] max-h-[70vh] overflow-y-auto"
                   >
                     {mobileOverflowTabs.map(tab => {
                       const Icon = tab.icon;
