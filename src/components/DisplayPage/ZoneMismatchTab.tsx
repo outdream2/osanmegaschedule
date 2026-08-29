@@ -14,6 +14,9 @@ import { Spinner } from "../common/Spinner";
 import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/TableList";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-08-29 · #154 Phase 1 · 판매중 3-way 필터
+import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
+import { SaleStatusFilter } from "../common/SaleStatusFilter";
 
 interface ZoneMismatch {
   id: string;
@@ -22,6 +25,7 @@ interface ZoneMismatch {
   category_code?: string | null; // 2026-08-26 · 사용자 지시 · 분류코드
   spec_zone: string;
   real_zone: string;
+  sale_status?: string | null; // 2026-08-29 · #154 Phase 1 · 3-way 필터용
   registered_at: string;
 }
 
@@ -58,6 +62,8 @@ export const ZoneMismatchTab: React.FC = () => {
   const [collapsedZones, setCollapsedZones] = useState<Set<string>>(new Set());
   const { toast, showError, showSuccess } = useToast();
   const confirm = useConfirm();
+  // 2026-08-29 · #154 Phase 1 · 3-way 판매중 필터 (전체/판매중/판매중지)
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "zoneMismatch.saleFilter" });
 
   const toggleSelected = (id: string) => setSelectedIds(prev => {
     const n = new Set(prev);
@@ -172,17 +178,19 @@ export const ZoneMismatchTab: React.FC = () => {
     const isValidZone = (v: string | null | undefined) =>
       !!v && String(v).trim() !== "" && String(v).trim() !== "미지정";
     const bothPresent = rows.filter(r => isValidZone(r.spec_zone) && isValidZone(r.real_zone));
+    // 2026-08-29 · #154 Phase 1 · 3-way 판매중 필터 적용 (sale_status null 이면 "all" 만 통과)
+    const saleFiltered = bothPresent.filter(r => saleMatches(r.sale_status));
     const q = search.trim().toLowerCase();
     const filtered = q
-      ? bothPresent.filter(r =>
+      ? saleFiltered.filter(r =>
           String(r.product_name ?? "").toLowerCase().includes(q) ||
           String(r.product_code ?? "").toLowerCase().includes(q) ||
           String(r.spec_zone ?? "").toLowerCase().includes(q) ||
           String(r.real_zone ?? "").toLowerCase().includes(q)
         )
-      : bothPresent;
+      : saleFiltered;
     return [...filtered].sort((a, b) => (b.registered_at ?? "").localeCompare(a.registered_at ?? ""));
-  }, [rows, search]);
+  }, [rows, search, saleMatches]);
 
   // 2026-08-29 · #189 · 구역별 정렬·그룹핑 (real_zone 기준 · 정합성 우선)
   //   · Map 은 insertion order 유지 · 정렬된 zone key 순으로 삽입
@@ -282,6 +290,8 @@ export const ZoneMismatchTab: React.FC = () => {
             {loading ? <Spinner size={13} tone="rose" className="inline" /> : `${sorted.length}${search ? `/${rows.length}` : ""}건`}
           </span>
           <div className="ml-auto flex items-center gap-1.5">
+            {/* 2026-08-29 · #154 Phase 1 · 판매중 3-way 필터 */}
+            <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} />
             {/* 2026-08-26 · #124 · 검색 · 상품명·코드·구역 통합 */}
             <div className="relative">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />

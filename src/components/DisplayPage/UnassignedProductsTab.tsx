@@ -12,8 +12,10 @@ import { EmptyState } from "../common/EmptyState";
 import { Spinner } from "../common/Spinner";
 import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/TableList";
 import { useToast, toastClass } from "../../hooks/useToast";
-// 2026-08-26 · #133 · 판매중 필터 전역 설정 반영
-import { useSaleActiveOnly } from "../../hooks/useSaleActiveOnly";
+// 2026-08-29 · #154 Phase 1 · 판매중 필터 프리미티브 · 3-way (전체/판매중/판매중지)
+//   · 기존 useSaleActiveOnly (전역 KV · 2-state) → useSaleStatusFilter (페이지 로컬 · 3-state)
+import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
+import { SaleStatusFilter } from "../common/SaleStatusFilter";
 
 interface UnassignedProduct {
   product_code: string;
@@ -36,8 +38,8 @@ export const UnassignedProductsTab: React.FC = () => {
   const [editValue, setEditValue] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const { toast, showError, showSuccess } = useToast();
-  // 2026-08-26 · #133 · 통계설정 · 판매중 필터 (전역) · true 면 sale_status='판매중' 만 노출
-  const { saleActiveOnly } = useSaleActiveOnly();
+  // 2026-08-29 · #154 Phase 1 · 3-way 판매중 필터 · 페이지 로컬 · localStorage 지속
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "unassigned.saleFilter" });
 
   const load = useCallback(() => {
     setLoading(true);
@@ -51,8 +53,8 @@ export const UnassignedProductsTab: React.FC = () => {
         const isEmpty = (v: string | null) => !v || String(v).trim() === "" || String(v).trim() === "미지정";
         const unassigned = list
           .filter(p => isEmpty(p.spec) || isEmpty(p.real_map))
-          // 2026-08-26 · #133 · 판매중만 보기 설정 ON · sale_status='판매중' 만
-          .filter(p => !saleActiveOnly || String(p.sale_status ?? "").trim() === "판매중")
+          // 2026-08-29 · #154 Phase 1 · 3-way filter · saleMatches (전체/판매중/판매중지)
+          .filter(p => saleMatches(p.sale_status))
           .map(p => {
             const noSpec = isEmpty(p.spec);
             const noMap  = isEmpty(p.real_map);
@@ -67,7 +69,7 @@ export const UnassignedProductsTab: React.FC = () => {
         showError(`미지정 상품 조회 실패: ${msg}`);
       })
       .finally(() => setLoading(false));
-  }, [showError, saleActiveOnly]);
+  }, [showError, saleMatches]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -119,6 +121,8 @@ export const UnassignedProductsTab: React.FC = () => {
             {loading ? <Spinner size={12} tone="amber" className="inline" /> : `${filtered.length}${search ? `/${rows.length}` : ""}건`}
           </span>
           <div className="ml-auto flex items-center gap-2">
+            {/* 2026-08-29 · #154 Phase 1 · 판매중 3-way 필터 */}
+            <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} />
             <div className="relative">
               <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
               <input

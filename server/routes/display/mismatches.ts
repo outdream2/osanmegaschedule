@@ -15,9 +15,10 @@ router.get("/api/zone-mismatches", asyncHandler(async (_req, res) => {
   //   · location (진열위치 · 전산구역) 도 없으면 비교 무의미 · 제외
   //   · 이전 · spec (원본 규격 · EA·Z 등) 과 비교 · 대다수 무의미 mismatch · 1000건 폭발
   //   · 신 · location (display_location ?? spec) 파생 · 둘 다 값 있을 때만 비교
+  // 2026-08-29 · #154 Phase 1 · sale_status join · 프론트 3-way 필터
   const { data: productRows, error: prodErr } = await supabase
     .from("products")
-    .select("product_code, product_name, spec, display_location, location, real_map, category_code, last_modified_at")
+    .select("product_code, product_name, spec, display_location, location, real_map, category_code, sale_status, last_modified_at")
     .eq("hidden", false)
     .not("real_map", "is", null)
     .neq("real_map", "");
@@ -45,6 +46,7 @@ router.get("/api/zone-mismatches", asyncHandler(async (_req, res) => {
         category_code: (p as any).category_code ?? null,
         spec_zone: locZone || "미지정",
         real_zone: (p.real_map ?? "").trim(),
+        sale_status: (p as any).sale_status ?? null,
         registered_at: p.last_modified_at ?? new Date().toISOString(),
       };
     });
@@ -64,6 +66,7 @@ router.get("/api/zone-mismatches", asyncHandler(async (_req, res) => {
       product_name: r.product_name ?? "",
       spec_zone: r.spec_zone ?? "미지정",
       real_zone: r.real_zone ?? "",
+      sale_status: null, // 2026-08-29 · legacy 는 판매상태 없음 · null 로 통일
       registered_at: r.created_at ?? new Date().toISOString(),
     }));
 
