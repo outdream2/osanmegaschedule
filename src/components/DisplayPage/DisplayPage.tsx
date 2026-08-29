@@ -579,8 +579,11 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const popoverZone = useMemo(() => (popoverAnchor ? zones.find((z) => z.id === popoverAnchor.zoneId) ?? null : null), [popoverAnchor, zones]);
 
   const dpVisibilityMap: Record<DpSubTabKey, boolean> = {
-    // 2026-08-29 · #193 · 상품 서브탭 · 매입에서 이관 · dpCanSeeStockManage 동일 gate
-    "product": dpCanSeeStockManage && !dpHiddenSubs.has("product"),
+    // 2026-08-29 · #193 · 상품 서브탭 · 매입에서 이관
+    // 2026-08-29 · #201 BUG-1 A안 · manager 이상 (level >= 2) 허용 · 사이드바 managerOnly 와 일치
+    //   · 이전: dpCanSeeStockManage (level>=9) · 사이드바와 불일치 · level 2~8 클릭 시 탭 안 보임
+    //   · 신규: dpUserLevel >= 2 · 사이드바 managerOnly=true 와 정확 매칭
+    "product": dpUserLevel >= 2 && !dpHiddenSubs.has("product"),
     "purchase-order": dpCanSeeStockManage && !dpHiddenSubs.has("purchase-order"),
     "purchase": dpCanSeeStockManage && !dpHiddenSubs.has("purchase"),
     "payment": dpCanSeeStockManage && !dpHiddenSubs.has("payment"),
@@ -643,7 +646,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             </React.Suspense>
           </div>
         </main>
-      ) : dpSubTab === "product" && dpCanSeeStockManage ? (
+      ) : dpSubTab === "product" && dpUserLevel >= 2 ? (
         /* 2026-08-29 · #193 · 사용자 지시 · 상품 서브탭 · 3개 이너 탭 (실재고입력·상품입고·상품정보) · 매입에서 이관 */
         <main className="flex-1 flex flex-col min-h-0">
           <div className="bg-white border-b border-line px-3">
