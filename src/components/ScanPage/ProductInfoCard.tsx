@@ -419,6 +419,16 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               {isHidden ? "숨김 해제" : "숨기기"}
             </button>
           </div>
+          {/* 2026-08-29 · 사용자 지시 · 바코드 스캔 시 · 판매중지 상품 · 즉시 표시 (rose 배지) */}
+          {(() => {
+            const saleStatus = String((product as any).sale_status ?? "").trim();
+            const isSuspended = saleStatus !== "" && saleStatus !== "판매중";
+            return isSuspended ? (
+              <span className="mb-1.5 inline-flex">
+                <StatusPill tone="rose" size="xs" dot>⚠ 판매중지 · {saleStatus}</StatusPill>
+              </span>
+            ) : null;
+          })()}
           {isHidden && (
             <span className="mb-1.5 inline-flex">
               <StatusPill tone="amber" size="xs" dot>숨김 처리됨</StatusPill>
