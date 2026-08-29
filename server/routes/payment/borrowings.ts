@@ -96,6 +96,33 @@ router.patch("/api/borrowings/:id", authorize(5), asyncHandler(async (req, res) 
   res.json({ ok: true, row: data });
 }));
 
+// 2026-08-29 · #130 A안 Phase 1b · PATCH /api/borrowings/:id/return · 반환 처리 + 서명 필수
+// body: { return_signature_url · return_note? }
+// · returned_by · returned_by_id · returned_at 서버 자동 세팅
+// · status = 'settled' · settled_at 도 함께 세팅 (기존 PATCH 동일 규칙)
+router.patch("/api/borrowings/:id/return", authorize(5), asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id)) throw badRequest("invalid id");
+  const session = getSession(req);
+  if (!session) throw unauthorized("로그인 필요");
+  const b = req.body ?? {};
+  const signature = String(b.return_signature_url ?? "").trim();
+  if (!signature) throw badRequest("반환 서명 필수 · return_signature_url");
+  const now = new Date().toISOString();
+  const patch: Record<string, unknown> = {
+    return_signature_url: signature,
+    returned_by:    session.name,
+    returned_by_id: session.sub,
+    returned_at:    now,
+    return_note:    String(b.return_note ?? "").trim() || null,
+    status:         "settled",
+    settled_at:     now,
+  };
+  const { data, error } = await supabase.from("borrowings").update(patch).eq("id", id).select(SELECT_COLS).single();
+  if (error) throw new HttpError(500, error.message);
+  res.json({ ok: true, row: data });
+}));
+
 // DELETE /api/borrowings/:id · 매니저 lv5+
 router.delete("/api/borrowings/:id", authorize(5), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id, 10);
