@@ -1483,90 +1483,44 @@ router.get("/api/stock-manage/low-stock", asyncHandler(async (_req, res) => {
     res.setHeader("X-Cache", "HIT");
     return res.json(lowStockCache.data);
   }
-  {
-    const all: any[] = [];
-    const PAGE = 1000;
-    let from = 0;
-    // 2026-08-28 · 감사 P2-4 · sale_status 필터 · 판매중지 상품 · 부족재고 알림에서 제외
-    // 2026-08-29 · fix · 루프 밖으로 이동 (매 페이지마다 불필요한 DB 조회 제거)
-    const { data: saleSetting } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();
-    const saleActive = saleSetting?.value !== false;
-    while (true) {
-      let q = supabase
-        .from("products")
-        .select("product_name, product_code, spec, current_stock, optimal_stock, supplier, real_map, purchase_price, sale_price, sale_status")
-        .eq("hidden", false);
-      if (saleActive) q = q.eq("sale_status", "판매중");
-      const { data, error } = await q.range(from, from + PAGE - 1);
-      if (error) throw new Error(error.message);
-      if (!data || data.length === 0) break;
-      all.push(...data);
-      if (data.length < PAGE) break;
-      from += PAGE;
-    }
+  // 2026-08-29 · #168 Phase 2 Step 2 · queryProductsWithInventory 유틸 소비 · 회귀 방지 각별
+  //   · 응답 형식 100% 유지 (warehouse_stock · store_stock · inv_checked_at · 기존 필드명 매핑)
+  //   · 필터 · filterLowStockOnly: true (current < optimal)
+  //   · 정렬 · 부족량 desc (유지)
+  //   · sale_active_only + hidden 필터 · 유틸 자동 처리
+  const { queryProductsWithInventory } = await import("../../utils/productInventoryQuery");
+  const rows = await queryProductsWithInventory(undefined, {
+    filterLowStockOnly: true,
+    limit: 10000,
+  });
 
-    // inventory_checks 최근값 병합 (product_code별 최신 warehouse_stock, store_stock)
-    const invMap = new Map<string, { warehouse_stock: number | null; store_stock: number | null; checked_at: string | null }>();
-    try {
-      let ivFrom = 0;
-      while (true) {
-        const { data: ivPage, error: ivErr } = await supabase
-          .from("inventory_checks")
-          .select("product_code, warehouse_stock, store_stock, checked_at")
-          .order("checked_at", { ascending: false })
-          .range(ivFrom, ivFrom + PAGE - 1);
-        if (ivErr) {
-          if (/relation|does not exist/i.test(ivErr.message)) break;
-          throw new Error(ivErr.message);
-        }
-        if (!ivPage || ivPage.length === 0) break;
-        for (const r of ivPage) {
-          const code = String(r.product_code ?? "").trim();
-          if (!code || invMap.has(code)) continue; // 최근값(정렬 첫)만 유지
-          invMap.set(code, {
-            warehouse_stock: r.warehouse_stock != null ? Number(r.warehouse_stock) : null,
-            store_stock:     r.store_stock     != null ? Number(r.store_stock)     : null,
-            checked_at:      r.checked_at ?? null,
-          });
-        }
-        if (ivPage.length < PAGE) break;
-        ivFrom += PAGE;
-      }
-    } catch (e: any) {
-      console.warn("[low-stock] inventory_checks fetch 실패:", e?.message);
-    }
+  // 부족량 desc 정렬
+  const sorted = rows.sort((a, b) => {
+    const shortA = (a.optimal_stock ?? 0) - (a.current_stock ?? 0);
+    const shortB = (b.optimal_stock ?? 0) - (b.current_stock ?? 0);
+    return shortB - shortA;
+  });
 
-    const filtered = all
-      .map(p => ({
-        ...p,
-        _cur: Number(p.current_stock ?? 0) || 0,
-        _opt: Number(p.optimal_stock ?? 0) || 0,
-      }))
-      .filter(p => {
-        if (p.current_stock == null || p.current_stock === "") return false;
-        return p._opt > 0 && p._cur < p._opt;
-      })
-      .sort((a, b) => (b._opt - b._cur) - (a._opt - a._cur))
-      .map(({ _cur: _c, _opt: _o, ...rest }: any) => {
-        const inv = invMap.get(String(rest.product_code ?? ""));
-        // 타입 정규화 (2026-07-15): 숫자 필드 Number 화 · UI parseNumber 부담 감소
-        //   products 테이블의 xlsx import 특성상 string 으로 저장된 경우 대응
-        return {
-          ...rest,
-          current_stock:   rest.current_stock   != null && rest.current_stock   !== "" ? Number(rest.current_stock)   : null,
-          optimal_stock:   rest.optimal_stock   != null && rest.optimal_stock   !== "" ? Number(rest.optimal_stock)   : null,
-          purchase_price:  rest.purchase_price  != null && rest.purchase_price  !== "" ? Number(rest.purchase_price)  : null,
-          sale_price:      rest.sale_price      != null && rest.sale_price      !== "" ? Number(rest.sale_price)      : null,
-          warehouse_stock: inv?.warehouse_stock ?? null,
-          store_stock:     inv?.store_stock     ?? null,
-          inv_checked_at:  inv?.checked_at ?? null,
-        };
-      });
-    // 2026-08-05 · T-PERF-1a · 캐시 저장 후 응답
-    lowStockCache = { data: filtered, expiresAt: Date.now() + LOW_STOCK_TTL };
-    res.setHeader("X-Cache", "MISS");
-    res.json(filtered);
-  }
+  // 응답 형식 유지 · warehouse_stock · store_stock · inv_checked_at (기존 필드명)
+  const filtered = sorted.map(r => ({
+    product_code: r.product_code,
+    product_name: r.product_name,
+    spec: r.spec,
+    current_stock: r.current_stock,
+    optimal_stock: r.optimal_stock,
+    supplier: r.supplier,
+    real_map: r.real_map,
+    purchase_price: r.purchase_price,
+    sale_price: r.sale_price,
+    sale_status: r.sale_status,
+    warehouse_stock: r.inv_warehouse1_stock,   // 기존 필드명 · 레거시 alias
+    store_stock:     r.inv_store_stock,        // 기존 필드명 · 매장1
+    inv_checked_at:  r.inv_checked_at,
+  }));
+
+  lowStockCache = { data: filtered, expiresAt: Date.now() + LOW_STOCK_TTL };
+  res.setHeader("X-Cache", "MISS");
+  res.json(filtered);
 }));
 
 // GET /api/stock-manage/raw?snapshot_date=YYYY-MM-DD&limit=5000
