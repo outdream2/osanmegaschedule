@@ -107,11 +107,22 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   }, [open, onClose]);
 
   // body scroll lock
+  // 2026-08-29 · #171 P2 fix · 원복 시 exit animation 완료 후 (250ms 대기)
+  //   · iOS Safari · 즉시 원복 시 · momentum scroll 상태 초기화 · 스크롤 튀기
+  //   · overscroll-behavior: none 병용 · rubber-band effect 차단
   useEffect(() => {
     if (!open) return;
-    const original = document.body.style.overflow;
+    const originalOverflow = document.body.style.overflow;
+    const originalOverscroll = document.body.style.overscrollBehavior;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = original; };
+    document.body.style.overscrollBehavior = "none";
+    return () => {
+      // exit animation (250ms · line 128 duration-250) 완료 후 · 원복 · 스크롤 튀기 방지
+      setTimeout(() => {
+        document.body.style.overflow = originalOverflow;
+        document.body.style.overscrollBehavior = originalOverscroll;
+      }, 260);
+    };
   }, [open]);
 
   const handleBackdrop = useCallback((e: React.MouseEvent) => {
