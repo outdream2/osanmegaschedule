@@ -294,6 +294,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
       const beforeAny = selectedEmp as any;
       const afterAny = draft as any;
       if (afterAny.position != null && String(beforeAny.position ?? "") !== String(afterAny.position ?? "")) changedFields.push("직군(position)");
+      if (afterAny.rank != null && String(beforeAny.rank ?? "") !== String(afterAny.rank ?? "")) changedFields.push("직급(rank)");
       if (afterAny.level != null && Number(beforeAny.level ?? 0) !== Number(afterAny.level ?? 0)) changedFields.push("권한(level)");
       if (afterAny.phone != null && String(beforeAny.phone ?? "") !== String(afterAny.phone ?? "")) changedFields.push("핸드폰(phone)");
       if (changedFields.length > 0) {
