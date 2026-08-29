@@ -11,6 +11,7 @@
 //   />
 import React from "react";
 import { Package } from "lucide-react";
+import { GradientAccent } from "./GradientAccent";
 
 export interface ProductDetailHeroInfo {
   product_code: string;
@@ -45,9 +46,9 @@ export const ProductDetailHero: React.FC<ProductDetailHeroProps> = ({
   const tone = saleStatusTone(product.sale_status);
   const stickyCls = sticky ? "sticky top-0 z-20" : "";
   return (
-    <div className={`${stickyCls} bg-white/95 backdrop-blur-md border-b border-line ${className}`}>
-      {/* accent gradient · 목업 시그니처 */}
-      <div className="h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90" />
+    <div className={`${stickyCls} relative bg-white/95 backdrop-blur-md border-b border-line ${className}`}>
+      {/* accent gradient · 목업 시그니처 · GradientAccent 프리미티브 */}
+      <GradientAccent />
       <div className="px-5 py-4">
         <div className="flex items-start gap-4">
           {/* 좌측 · 아이콘 + 상품명·메타 */}
