@@ -37,6 +37,8 @@ import { ImageUploadField } from "../common/ImageUploadField";
 import { IconTile } from "../common/IconTile";
 import { Card } from "../common/Card";
 import { Spinner } from "../common/Spinner";
+// 2026-08-29 · #122 · GradientAccent 프리미티브 확산
+import { GradientAccent } from "../common/GradientAccent";
 
 // ─── 공통 카드 스타일 (ContractSettingsPage 톤과 통일) ───────────────────────
 // 2026-08-20 · Card 프리미티브 확산 · <Card as="section" clip padding="none">
@@ -638,6 +640,8 @@ export const BrandingSettingsPage: React.FC<BrandingSettingsPageProps> = ({
           </span>
         }
       >
+        {/* 2026-08-29 · #122 · 최상단 GradientAccent (size=thin) */}
+        <GradientAccent size="thin" absolute={false} />
         <BrandingSectionTabs />
       </SettingsPageShell>
     </div>

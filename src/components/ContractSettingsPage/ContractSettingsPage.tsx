@@ -34,6 +34,9 @@ import {
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { IconTile } from "../common/IconTile";
 import { Card } from "../common/Card";
+// 2026-08-29 · #122 · GradientAccent + SectionCard 프리미티브 확산
+import { GradientAccent } from "../common/GradientAccent";
+import { SectionCard } from "../common/SectionCard";
 import type { AuthSession } from "../../types";
 import { useSettings, defaultWageForPosition, type WageRate } from "../../hooks/useSettings";
 import { useKvSetting } from "../../hooks/useKvSetting";
@@ -439,6 +442,9 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
 
       <main className="flex-1 max-w-[1100px] mx-auto w-full px-3 sm:px-5 py-4 flex flex-col gap-3">
 
+        {/* 2026-08-29 · #122 · 최상단 GradientAccent (size=thin) */}
+        <GradientAccent size="thin" absolute={false} />
+
         {/* ── 상단 sticky · 전체 저장 배너 ──────────────────────────────── */}
         <div className="sticky top-0 z-20 -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-white/95 backdrop-blur-sm border-b border-line shadow-sm flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -635,29 +641,26 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
           </Card>
         </div>
 
-        {/* ── 각 호 CMS 섹션 헤더 ───────────────────────────────────────── */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            {/* 2026-08-18 · IconTile 확산 */}
-            <IconTile icon={<ListChecks size={14} weight="fill" />} tone="zinc" size="md" />
-
-            <div>
-              <h2 className="text-[13px] font-bold text-zinc-800 leading-none">각 호 내용 편집</h2>
-              <p className="text-[11px] text-zinc-500 font-semibold mt-0.5">근로계약서에 삽입되는 조항 · 그룹 클릭해서 펼치기</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={toggleAllOpen}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-line bg-white text-zinc-500 hover:bg-zinc-50 text-[11px] font-bold transition-colors cursor-pointer shrink-0"
-          >
-            {allOpen ? <CaretDown size={11} weight="bold" /> : <CaretRight size={11} weight="bold" />}
-            {allOpen ? "전체 접기" : "전체 펼치기"}
-          </button>
-        </div>
+        {/* ── 각 호 CMS 섹션 헤더 · 2026-08-29 · #122 · SectionCard 프리미티브 */}
+        <SectionCard
+          title="각 호 내용 편집"
+          icon={<ListChecks size={16} weight="fill" />}
+          description="근로계약서에 삽입되는 조항 · 그룹 클릭해서 펼치기"
+          actions={
+            <button
+              type="button"
+              onClick={toggleAllOpen}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-line bg-white text-zinc-500 hover:bg-zinc-50 text-[11px] font-bold transition-colors cursor-pointer shrink-0"
+            >
+              {allOpen ? <CaretDown size={11} weight="bold" /> : <CaretRight size={11} weight="bold" />}
+              {allOpen ? "전체 접기" : "전체 펼치기"}
+            </button>
+          }
+          bodyPadding="none"
+        >
 
         {/* 각 호 그룹 · 1컬럼 세로 나열 (내용이 길어 2컬럼 가독성 저하) */}
-        <div className="grid grid-cols-1 gap-3">
+        <div className="p-[18px] grid grid-cols-1 gap-3">
           {CLAUSE_GROUP_META.map(grp => {
             const Icon = grp.icon;
             const list = clauses[grp.key];
@@ -766,6 +769,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             );
           })}
         </div>
+        </SectionCard>
 
       </main>
     </div>

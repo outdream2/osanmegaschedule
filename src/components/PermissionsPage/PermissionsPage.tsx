@@ -17,6 +17,9 @@ import { StatusPill } from "../common/StatusPill";
 import { Lock, DeviceMobile } from "@phosphor-icons/react";
 import { SettingsModal } from "../SettingsModal";
 import { MobileVisibilitySection } from "../BrandingSettingsPage/BrandingSettingsPage";
+// 2026-08-29 · #122 · GradientAccent + SectionCard 프리미티브 확산
+import { GradientAccent } from "../common/GradientAccent";
+import { SectionCard } from "../common/SectionCard";
 // 2026-08-23 · #252 Phase 2 · 세션 만료 시간 · 관리자 편집 카드
 import { SessionTimeoutSection } from "./SessionTimeoutSection";
 import { useSettings } from "../../hooks/useSettings";
@@ -466,6 +469,8 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         descriptionClassName="text-[11px] text-zinc-500 mt-0.5 leading-relaxed"
         maxWidth="max-w-4xl"
       >
+        {/* 2026-08-29 · #122 · 최상단 GradientAccent (size=thin) */}
+        <GradientAccent size="thin" absolute={false} />
         {renderPermissionsBody()}
       </SettingsPageShell>
     </div>
@@ -513,24 +518,28 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         </div>
 
         {tab === "permissions" && (<>
-        {/* 2026-08-16 · 사이드바 사용 토글 · 서버 KV · env 사용 X */}
-        <div className="mb-3 px-4 py-3 rounded-xl border border-brand/15 bg-brand-tint/60 flex items-center gap-3">
-          <input
-            type="checkbox"
-            id="sidebar-enabled-toggle"
-            checked={sidebarEnabled}
-            onChange={toggleSidebarEnabled}
-            disabled={sidebarSaving}
-            className="w-5 h-5 accent-[#1E5C8E] cursor-pointer"
-          />
-          <label htmlFor="sidebar-enabled-toggle" className="flex-1 cursor-pointer">
-            <div className="text-[14px] font-bold text-zinc-800">사이드바 사용</div>
-            <div className="text-[11px] font-semibold text-zinc-500">
-              활성 시 · PC 화면에 사이드바 표시 (모바일은 항상 공통헤더 유지) · 비활성 시 · 기존 PC 공통헤더로 전환 · 서버 저장 · 즉시 반영
-            </div>
-          </label>
-          {sidebarSaving && <Spinner size={16} tone="brand" />}
-        </div>
+        {/* 2026-08-29 · #122 · 사이드바 사용 토글 · SectionCard 프리미티브 */}
+        <SectionCard
+          title="사이드바 사용"
+          icon={<Eye size={16} />}
+          description="PC 화면에 사이드바 표시 여부 · 비활성 시 기존 PC 공통헤더로 전환 · 서버 저장 · 즉시 반영"
+          className="mb-3"
+          actions={sidebarSaving ? <Spinner size={14} tone="brand" /> : undefined}
+        >
+          <div className="flex items-center gap-3 px-[18px] py-3">
+            <input
+              type="checkbox"
+              id="sidebar-enabled-toggle"
+              checked={sidebarEnabled}
+              onChange={toggleSidebarEnabled}
+              disabled={sidebarSaving}
+              className="w-5 h-5 accent-[#1E5C8E] cursor-pointer"
+            />
+            <label htmlFor="sidebar-enabled-toggle" className="flex-1 cursor-pointer text-[15px] font-semibold text-zinc-700">
+              {sidebarEnabled ? "사이드바 활성" : "사이드바 비활성 (공통헤더 사용)"}
+            </label>
+          </div>
+        </SectionCard>
         {loadError && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm flex items-center gap-2">
             <AlertCircle size={14} /> {loadError}
