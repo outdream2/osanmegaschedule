@@ -21,7 +21,7 @@
 > **이번 후속 세션 · 7 로컬 커밋 · 모두 테스트 통과**
 > 완료 태스크 삭제 · pending 만 우선순위 순 재정렬
 
-### ✅ 이번 세션 완료 (7 커밋 · Remote push 대기)
+### ✅ 이번 세션 완료 (11 커밋 · Remote push 대기)
 | 커밋 | 태스크 | 테스트 |
 |-----|-----|-----|
 | `84a98d48` | #178 팀장 유일성 (B안 · position별) | TS ✓ |
@@ -31,7 +31,10 @@
 | `f8dbb3a9` | #186 A안 · ProductDetailHero · Attio Sticky Hero | TS + vitest 21/21 ✓ |
 | `b3d1093e` | #122 P4 · GradientAccent 프리미티브 | TS + vitest 27/27 ✓ |
 | `ef2454fe` | #122 P1 · SectionCard 프리미티브 | TS + vitest 6/6 ✓ |
-| **+ 이전 세션 · 37+ 커밋 · 총 Remote push 대기 44+** |
+| `6683d56e` | TASKS·PLAN 정리 v3 | — |
+| `7a77f7e2` | #122 P2 · CompanyInfoSettingsPage · SectionCard 적용 (-13라인) | TS ✓ |
+| `1726ec0f` | #122 P3 · SystemSettingsPage · upload 섹션 · SectionCard | TS ✓ |
+| **+ 이전 세션 · 37+ 커밋 · 총 Remote push 대기 47+** |
 
 ### 🔴 크리티컬 · 최우선 (회귀 위험)
 | # | 태스크 | 진행 상황 | 예상 |
