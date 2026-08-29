@@ -14,6 +14,7 @@
 //   · SplitPanel 우측 컨텐츠 상단 · 일관된 v9 헤더 톤
 
 import React from "react";
+import { GradientAccent } from "./GradientAccent";
 
 export interface SplitRightHeaderProps {
   /** 아이콘 · lucide/phosphor 등 · title 앞 · brand-deep 톤 */
@@ -60,13 +61,8 @@ export function SplitRightHeader({
   const stickyCls = sticky ? "sticky top-0 z-30" : "";
   return (
     <div className={`relative shrink-0 ${stickyCls} ${bg} ${borderCls} px-5 py-3 ${className}`.trim()}>
-      {/* v9 · 상단 2px gradient accent */}
-      {topAccent && (
-        <span
-          aria-hidden
-          className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10 pointer-events-none"
-        />
-      )}
+      {/* 2026-08-29 · P0 · GradientAccent 프리미티브 교체 */}
+      {topAccent && <GradientAccent size="thin" />}
       <div className="flex items-center gap-3">
         {icon && (
           <span className="text-brand-deep shrink-0 inline-flex items-center" aria-hidden>{icon}</span>

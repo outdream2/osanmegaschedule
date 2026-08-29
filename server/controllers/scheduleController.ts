@@ -242,7 +242,7 @@ export class ScheduleController {
         weekly_holiday: normalizeStr(weekly_holiday),
         wage_calc_type: normalizeStr(wage_calc_type),
         wage_amount: normalizeNum(wage_amount),
-        wage_pay_day: normalizeNum(wage_pay_day),
+        wage_pay_day: normalizeStr(wage_pay_day),
         wage_pay_method: normalizeStr(wage_pay_method),
         bank_name: normalizeStr(bank_name),
         bank_account_no: normalizeStr(bank_account_no),

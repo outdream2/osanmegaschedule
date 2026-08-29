@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 731 |
+| 스캔 파일 | 737 |
 | 위반 파일 | 6 |
-| 클린 파일 | 725 (99%) |
+| 클린 파일 | 731 (99%) |
 | 총 위반 개수 | 8 |
 
 ## 🚨 규칙별 위반 현황
@@ -26,12 +26,12 @@
 
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
-| 1 | `src/components/SettingsModal/SettingsModal.tsx` | 911 | 7 | raw-confirm(2) · large-file-warn(1) |
+| 1 | `src/components/SettingsModal/SettingsModal.tsx` | 917 | 7 | raw-confirm(2) · large-file-warn(1) |
 | 2 | `src/components/BarcodeScanner/BarcodeScanner.tsx` | 593 | 3 | raw-alert(1) |
 | 3 | `src/components/OrderManagePage/VendorDetailTabs.tsx` | 819 | 3 | large-file-warn(1) |
 | 4 | `src/components/ScanPage/ProductInfoCard.tsx` | 843 | 3 | large-file-warn(1) |
 | 5 | `src/components/common/SaleStatusFilter.tsx` | 63 | 2 | raw-card-wrapper(1) |
-| 6 | `src/components/DisplayPage/RealStockTablePage.tsx` | 777 | 2 | raw-card-wrapper(1) |
+| 6 | `src/components/DisplayPage/RealStockTablePage.tsx` | 776 | 2 | raw-card-wrapper(1) |
 
 ## 📝 모든 위반 파일 (6개)
 
@@ -39,12 +39,12 @@
 
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
-| `src/components/SettingsModal/SettingsModal.tsx` | 911 | 7 |
+| `src/components/SettingsModal/SettingsModal.tsx` | 917 | 7 |
 | `src/components/BarcodeScanner/BarcodeScanner.tsx` | 593 | 3 |
 | `src/components/OrderManagePage/VendorDetailTabs.tsx` | 819 | 3 |
 | `src/components/ScanPage/ProductInfoCard.tsx` | 843 | 3 |
 | `src/components/common/SaleStatusFilter.tsx` | 63 | 2 |
-| `src/components/DisplayPage/RealStockTablePage.tsx` | 777 | 2 |
+| `src/components/DisplayPage/RealStockTablePage.tsx` | 776 | 2 |
 
 </details>
 

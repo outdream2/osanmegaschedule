@@ -270,7 +270,7 @@ export class ScheduleService {
     weekly_holiday?: string | null;
     wage_calc_type?: string | null;
     wage_amount?: number | null;
-    wage_pay_day?: number | null;
+    wage_pay_day?: string | null;
     wage_pay_method?: string | null;
     bank_name?: string | null;
     bank_account_no?: string | null;

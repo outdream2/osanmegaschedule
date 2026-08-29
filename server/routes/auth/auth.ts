@@ -194,10 +194,16 @@ router.get("/api/auth/me", asyncHandler(async (req, res) => {
 }));
 
 // 로그인한 직원 본인이 비밀번호 변경
-router.post("/api/auth/change-password", validateBody(ChangePasswordSchema), asyncHandler(async (req, res) => {
+// 2026-08-29 · S1 · IDOR 방지 · authorize(1) + sub===employeeId 검증 (관리자 lv9 는 예외)
+router.post("/api/auth/change-password", authorize(1), validateBody(ChangePasswordSchema), asyncHandler(async (req, res) => {
   const { employeeId, currentPassword, newPassword } = req.body;
   const idNum = typeof employeeId === "string" ? parseInt(employeeId) : employeeId;
   if (!idNum || isNaN(idNum)) throw badRequest("유효한 직원 ID가 필요합니다");
+  // 본인만 변경 가능 · 관리자(lv 9) 는 별도 SetPasswordSchema 경로 사용
+  const session = getSession(req);
+  if (session && Number(session.sub) !== idNum && (session.level ?? 0) < 9) {
+    throw forbidden("본인 계정만 변경 가능");
+  }
   if (currentPassword === newPassword) throw badRequest("새 비밀번호가 현재 비밀번호와 동일합니다");
   const { data: emp, error } = await supabase
     .from("employees")
