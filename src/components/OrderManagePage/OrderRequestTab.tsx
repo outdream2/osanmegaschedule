@@ -15,6 +15,9 @@ import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { LoadingState } from "../common/LoadingState";
 // 2026-08-25 · #107/#79 · 발주요청 프리미엄 UI · StepperInput (사용자 승인 v3 목업)
 import { StepperInput } from "../common/StepperInput";
+// 2026-08-29 · #154 · 판매중 필터 프레임워크 확산 · 판매중지 상품 자동 제외
+import { SaleStatusFilter } from "../common/SaleStatusFilter";
+import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { CARD_BASE } from "../../styles/tokens";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import type { OrderRequest } from "./OrderManagePage.types";
@@ -98,6 +101,17 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
   const [supplierHistorySupplier, setSupplierHistorySupplier] = React.useState<string | null>(null);
   // 2026-08-24 · v3 목업 확정 · 공급사별 그룹 접기/펼치기 · Set of supplier names collapsed
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set());
+  // 2026-08-29 · #154 · 판매중 필터 · products join (allProductsMap) 에서 sale_status 조회
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "orderRequest.saleFilter" });
+  // 판매중 필터 적용 파생 리스트 · orderReqsFiltered 는 부모 필터 유지
+  const displayedReqs = React.useMemo(() => {
+    if (saleFilter === "all") return orderReqsFiltered;
+    return orderReqsFiltered.filter(r => {
+      const cv = [r.product_code, r.product_code.replace(/^0+/, ""), r.product_code.padStart(8, "0")];
+      const p = cv.map(c => allProductsMap[c]).find(Boolean) as any;
+      return saleMatches(p?.sale_status);
+    });
+  }, [orderReqsFiltered, saleFilter, saleMatches, allProductsMap]);
   const toggleGroupCollapse = (sup: string) => {
     setCollapsedGroups(prev => {
       const n = new Set(prev);
@@ -163,7 +177,9 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <span className="inline-block w-1 h-4 rounded-full bg-rose-400 shrink-0"></span>
                 <span className="text-[15px] font-bold text-zinc-700">발주리스트</span>
-                <span className="text-[15px] text-zinc-400 font-normal">{orderReqsFiltered.length}건</span>
+                <span className="text-[15px] text-zinc-400 font-normal">{displayedReqs.length}건</span>
+                {/* 2026-08-29 · #154 · 판매중 필터 · products join (allProductsMap.sale_status) */}
+                <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
                 <div className="flex items-center gap-1.5 ml-auto shrink-0">
                   {/* 2026-08-24 · 최신 트렌드 · Linear/Vercel 톤 · pill · gradient · shadow */}
                   <button onClick={handleBulkOrder} disabled={sendingBulk || selectedOrder.size === 0}
@@ -232,7 +248,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                         const p = cv.map(c => allProductsMap[c]).find(Boolean) as any;
                         return ((p?.supplier || r.supplier || "").trim()) || "(공급사 미지정)";
                       };
-                      const sorted = [...orderReqsFiltered].sort((a, b) => {
+                      const sorted = [...displayedReqs].sort((a, b) => {
                         const supA = resolveSup(a);
                         const supB = resolveSup(b);
                         const supCmp = supA.localeCompare(supB, "ko");
@@ -436,7 +452,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                         );
                       });
                     })()}
-                    {orderReqsFiltered.length === 0 && (
+                    {displayedReqs.length === 0 && (
                       <tr><td colSpan={12} className="text-center text-[15px] text-zinc-300 py-6">검색 결과 없음</td></tr>
                     )}
                   </tbody>
