@@ -24,6 +24,9 @@ import {
 import { SearchBar } from "../common/SearchBar";
 // 2026-08-29 · 상품명 검색 · 통일 로직
 import { matchesProductQuery } from "../../lib/productMatch";
+// 2026-08-29 · #154 · 판매중 필터 프레임워크 확산
+import { SaleStatusFilter } from "../common/SaleStatusFilter";
+import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import type { AuthSession } from "../../types";
 import { useSortableTable } from "../../hooks/useSortableTable";
 import { EmptyState } from "../common/EmptyState";
@@ -62,6 +65,8 @@ interface DiffRow {
   actual_qty: number;   // 실재고 합계 (창고1·2 + 매장1·2·3)
   diff: number;         // actual - erp
   checked_at: string | null;
+  // 2026-08-29 · #154 · 판매중 필터 (products-map join)
+  sale_status?: string | null;
 }
 
 type SortKey = "diff" | "name" | "supplier" | "erp" | "actual" | "checked_at";
@@ -131,6 +136,8 @@ export const StockReconciliationTab: React.FC<{
   const [query, setQuery] = useState("");
   const [supplierFilter, setSupplierFilter] = useState<string>("");
   const [refreshedAt, setRefreshedAt] = useState<Date | null>(null);
+  // 2026-08-29 · #154 · 판매중 필터 · 판매중지 상품 재고 차이 자동 제외 (default active)
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "stockReconcile.saleFilter" });
 
   // ── Data load ─────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
@@ -175,6 +182,7 @@ export const StockReconciliationTab: React.FC<{
           actual_qty,
           diff: actual_qty - erp_qty,
           checked_at: row.checked_at ?? null,
+          sale_status: prod.sale_status ?? null,
         });
       });
       setRows(diffs);
@@ -200,12 +208,13 @@ export const StockReconciliationTab: React.FC<{
   }, [rows]);
 
   const filteredRows = useMemo(() => {
-    // 2026-08-29 · 통일 로직 · matchesProductQuery + supplierFilter
+    // 2026-08-29 · 통일 로직 · matchesProductQuery + supplierFilter + saleMatches
     return rows.filter(r => {
       if (supplierFilter && (r.supplier ?? "") !== supplierFilter) return false;
+      if (!saleMatches(r.sale_status)) return false;
       return matchesProductQuery(r as any, query);
     });
-  }, [rows, query, supplierFilter]);
+  }, [rows, query, supplierFilter, saleMatches]);
 
   // 공용 정렬 훅 (T30-followup · 22파일 중복 통합의 두번째 채택자)
   const sortComparators = useMemo<Record<SortKey, (a: DiffRow, b: DiffRow) => number>>(() => ({
@@ -295,6 +304,8 @@ export const StockReconciliationTab: React.FC<{
             ))}
           </select>
         </div>
+        {/* 2026-08-29 · #154 · 판매중 필터 · 판매중지 재고차이 자동 제외 */}
+        <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
         {(query || supplierFilter) && (
           <button
             onClick={() => { setQuery(""); setSupplierFilter(""); }}
