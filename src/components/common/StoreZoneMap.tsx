@@ -171,8 +171,10 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
 
   // 2026-08-26 · 사용자 지시 · 글씨 완전 표시 · 셀 높이 대폭 확장 · 카테고리 텍스트 안 잘림
   //   · auto-rows-fr 로 grid 내 모든 셀 높이 통일 (제일 긴 셀 기준)
-  const wallMin = compact ? "min-h-[128px]" : "min-h-[168px]";
-  const cellMin = compact ? "min-h-[112px]" : "min-h-[148px]";
+  // 2026-08-29 · 사용자 지시 · 모든 셀 높이 통일 · 가장 큰 셀 (centerMin) 기준
+  //   · 카테고리 텍스트 100% 표시 · 셀별 높이 편차 제거 · 시각적 통일
+  const wallMin   = compact ? "min-h-[180px]" : "min-h-[240px]";
+  const cellMin   = compact ? "min-h-[180px]" : "min-h-[240px]";
   const centerMin = compact ? "min-h-[180px]" : "min-h-[240px]";
 
   // BEST 배지 (Top 10 만) · showBestBadges=true 이고 rank<=10 있을 때만
