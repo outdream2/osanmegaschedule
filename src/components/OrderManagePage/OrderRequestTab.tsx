@@ -351,8 +351,23 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                 </td>
                               </tr>
                             )}
-                            {!isCollapsed && (
-                            <tr className={`transition-colors ${selectedOrder.has(r.id) ? "bg-sky-50/60" : "hover:bg-zinc-50/60"}`}>
+                            {!isCollapsed && (() => {
+                              // 2026-08-29 · #79 v4 · row-critical · 부족 재고 gradient 강조
+                              const currentStock = Number((allProductsMap[r.product_code]?.current_stock ?? r.current_stock) ?? 0);
+                              const optimalStock = Number((allProductsMap[r.product_code]?.optimal_stock ?? r.optimal_stock) ?? 0);
+                              const shortageQty = Math.max(0, optimalStock - currentStock);
+                              const isCritical = shortageQty > 0 && currentStock === 0; // 재고 0 · 최우선
+                              const isShort = shortageQty > 0 && !isCritical;            // 부족
+                              const isSelected = selectedOrder.has(r.id);
+                              const rowCls = isSelected
+                                ? "bg-sky-50/60"
+                                : isCritical
+                                  ? "bg-gradient-to-r from-rose-50/60 via-transparent to-transparent hover:from-rose-50"
+                                  : isShort
+                                    ? "bg-gradient-to-r from-amber-50/40 via-transparent to-transparent hover:from-amber-50/70"
+                                    : "hover:bg-zinc-50/60";
+                              return (
+                            <tr className={`transition-colors ${rowCls}`}>
                               <td className="text-center px-0.5 py-1.5 align-top" onClick={(e) => { e.stopPropagation(); toggleOne(r.id); }}>
                                 {selectedOrder.has(r.id)
                                   ? <CheckSquare size={13} className="text-rose-500 inline cursor-pointer" />
@@ -415,7 +430,8 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                 );
                               })()}
                             </tr>
-                            )}
+                              );
+                            })()}
                           </React.Fragment>
                         );
                       });
