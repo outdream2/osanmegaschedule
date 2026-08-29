@@ -79,30 +79,57 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
         )}
       </td>
       {/* 계약유형 · 계약직 → "계약N" (N=총 계약수) · 정/알 등은 short */}
+      {/* 2026-08-29 · #182 Phase B 확장 · contract_end D-30 이내 · 만료 임박 배지 아래 */}
       <td className="px-1 py-2 text-center">
-        {(() => {
-          const count = contractCountByEmp.get(emp.id) ?? 0;
-          const isContract = emp.contract_type === "fixed_term";
-          if (isContract && count > 0) {
-            return (
-              <Badge
-                tone="amber"
-                size="sm"
-                title={`계약직 · 총 ${count}회 계약 (${count === 1 ? "첫 계약" : `재계약 ${count - 1}회`})`}
-              >
-                계약{count}
-              </Badge>
-            );
-          }
-          if (ctMeta) {
-            return (
-              <Badge className={ctMeta.color} size="sm">
-                {ctMeta.short}
-              </Badge>
-            );
-          }
-          return <span className="text-[15px] text-zinc-300">-</span>;
-        })()}
+        <div className="flex flex-col items-center gap-0.5">
+          {(() => {
+            const count = contractCountByEmp.get(emp.id) ?? 0;
+            const isContract = emp.contract_type === "fixed_term";
+            if (isContract && count > 0) {
+              return (
+                <Badge
+                  tone="amber"
+                  size="sm"
+                  title={`계약직 · 총 ${count}회 계약 (${count === 1 ? "첫 계약" : `재계약 ${count - 1}회`})`}
+                >
+                  계약{count}
+                </Badge>
+              );
+            }
+            if (ctMeta) {
+              return (
+                <Badge className={ctMeta.color} size="sm">
+                  {ctMeta.short}
+                </Badge>
+              );
+            }
+            return <span className="text-[15px] text-zinc-300">-</span>;
+          })()}
+          {/* 만료 임박 배지 · contract_end 있고 · D-30 이내 · 재직자만 */}
+          {!isRetired && emp.contract_end && (() => {
+            try {
+              const d = new Date(String(emp.contract_end).slice(0, 10) + "T00:00:00");
+              const now = new Date(); now.setHours(0, 0, 0, 0);
+              const days = Math.round((d.getTime() - now.getTime()) / 86400_000);
+              if (days < 0) return (
+                <span className="inline-flex items-center h-4 px-1 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300" title={`계약 만료 ${Math.abs(days)}일 경과`}>
+                  ⚠ 만료
+                </span>
+              );
+              if (days === 0) return (
+                <span className="inline-flex items-center h-4 px-1 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300">
+                  ⚠ 오늘
+                </span>
+              );
+              if (days <= 30) return (
+                <span className="inline-flex items-center h-4 px-1 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300" title={`계약 ${days}일 후 만료`}>
+                  D-{days}
+                </span>
+              );
+              return null;
+            } catch { return null; }
+          })()}
+        </div>
       </td>
       {/* 2026-08-24 · 사용자 지시 · 근속·평가 컬럼 제거 · 상세정보 KPI 바 에서만 표시 */}
       {/* 이력서 · 파일 있음=보기 · 없음=업로드 */}
