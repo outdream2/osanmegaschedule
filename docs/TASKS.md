@@ -21,7 +21,7 @@
 > **이번 후속 세션 · 7 로컬 커밋 · 모두 테스트 통과**
 > 완료 태스크 삭제 · pending 만 우선순위 순 재정렬
 
-### ✅ 이번 세션 완료 (20+ 커밋 · Remote push 대기)
+### ✅ 이번 세션 완료 (29+ 커밋 · Remote push 대기)
 | 커밋 | 태스크 | 테스트 |
 |-----|-----|-----|
 | `84a98d48` | #178 팀장 유일성 (B안 · position별) | TS ✓ |
@@ -42,7 +42,15 @@
 | `5ee3be43` | #77 후순위 · #79 부터 진행 · 재정렬 | — |
 | `fa5b3dae` | **#177 P2** · SettingsModal · 직급(rank) 탭 · 자유텍스트 + 자동 rename | TS ✓ |
 | `6040a079` | **#174** · 바코드 카메라 실패 · 다른 브라우저 열기 (SSO 로그인 유지) | TS ✓ |
-| **+ 이전 세션 · 37+ 커밋 · 총 Remote push 대기 55+** |
+| `7da7a795` | #154 P2 + #165 A · ExpiryImminentTab · SaleStatusFilter + SearchBar (server sale_status join) | vitest 26/26 ✓ |
+| `693f250a` | #165 A · BorrowingPage · SearchBar | TS ✓ |
+| `5eec7bd5` | #165 A · SearchBar 확산 5 페이지 (Return·StockReconcile·StockFlow·VendorStock) | TS ✓ |
+| `5ee222b2` | **#182 Phase B** · 근로계약서 · 만료 임박 배지 (D-30 · 만료 · 경과) | TS ✓ |
+| `d3b5ba8c` | **#186 후속** · SectionCard · 메타 정보 섹션 (Attio Section Stack) | vitest 21/21 ✓ |
+| `7d6a5dcb` | **#122 P6** · ActionBar 프리미티브 신설 | vitest 5/5 ✓ |
+| `5ece1b94` | **#79 v4** · 발주 리스트 · row-critical/row-short gradient | TS ✓ |
+| `f0e1a84b` | #165 A · VendorDetailTabs · SearchBar | TS ✓ |
+| **+ 이전 세션 · 37+ 커밋 · 총 Remote push 대기 66+** |
 
 ### 🔴 크리티컬 · 최우선 (회귀 위험)
 | # | 태스크 | 진행 상황 | 예상 |
