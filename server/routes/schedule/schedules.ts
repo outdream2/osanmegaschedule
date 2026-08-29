@@ -34,6 +34,19 @@ router.get("/api/employees/next-number", asyncHandler(async (_req, res) => {
 router.put("/api/employees/:id", authorize(9), (req, res) => scheduleController.updateEmployee(req, res));
 router.delete("/api/employees/:id", authorize(9), (req, res) => scheduleController.deleteEmployee(req, res));
 
+// 2026-08-29 · 엔드포인트 통일 · 직원 리스트 · GET /api/employees
+//   · BoardPage @멘션 · 향후 useEmployees 훅 · 재직 직원 목록 통일 소스
+//   · 재직자 필터 (retireDate 없거나 미래) · lv1+ 접근 가능
+//   · 대원칙 · 같은 기능=같은 endpoint (2026-08-29)
+router.get("/api/employees", authorize(1), asyncHandler(async (_req, res) => {
+  const { data, error } = await supabase
+    .from("employees")
+    .select("id, name, position, rank, phone, level, workplace, hireDate, retireDate, employmentType")
+    .order("name", { ascending: true });
+  if (error) throw new HttpError(500, error.message);
+  res.json(Array.isArray(data) ? data : []);
+}));
+
 // 2026-08-20 · #175 · 단건 조회 · 본인 or 관리자(level ≥ 9) 만 허용
 //   · ApprovalRequestPage / useEmploymentStatus · retire_date 파생 · 사직서 gate
 //   · payload · Employee DTO subset · retireDate 필수
