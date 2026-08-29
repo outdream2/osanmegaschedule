@@ -27,6 +27,8 @@ export interface ProductInfo {
   current_stock?: number | null;
   optimal_stock?: number | null;
   supplier?: string | null;
+  /** 2026-08-29 · #154 · 판매중 필터 · 서버 /api/stock-manage/low-stock 이미 반환 */
+  sale_status?: string | null;
 }
 
 export interface GoodsReceipt {

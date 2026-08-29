@@ -15,6 +15,9 @@ import { CARD_BASE } from "../../styles/tokens";
 import { stripVendorAnnotation } from "../../utils/vendorNameNormalize";
 // 2026-08-25 · 사용자 지시 A · OFF 조건 + 리스트 클릭 시 · 발주필요 추가 confirm
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-08-29 · #154 · 판매중 필터 프레임워크 확산 · 서버 sale_status 응답 이미 존재
+import { SaleStatusFilter } from "../common/SaleStatusFilter";
+import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import type { ProductInfo, OrderNeedShortageBasis, OrderNeedDefaultSortKey, OrderNeedFilterConfig } from "./OrderManagePage.types";
 import { ORDER_NEED_CONFIG_KEY, DEFAULT_ORDER_NEED_CONFIG } from "./OrderManagePage.utils";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
@@ -128,6 +131,13 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
   // 2026-08-25 · 사용자 지시 A · OFF + 리스트 클릭 → confirm → handleRequestOrder
   //   · lowStock 조건 미통과 상품 (cur >= opt) 클릭 시만 confirm (진짜 발주필요는 그대로 상세 열기)
   const confirm = useConfirm();
+  // 2026-08-29 · #154 · 판매중 필터 · 판매중지 상품 · 발주필요에서 자동 제외 (default active)
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "orderNeed.saleFilter" });
+  // 판매중 필터 반영 파생 리스트 · 원본 lowStockFiltered 는 부모 필터 유지
+  const displayed = React.useMemo(
+    () => lowStockFiltered.filter(p => saleMatches(p.sale_status)),
+    [lowStockFiltered, saleMatches]
+  );
   const handleRowClick = React.useCallback(async (p: ProductInfo) => {
     const cur = Number(p.current_stock ?? NaN);
     const opt = Number(p.optimal_stock ?? NaN);
@@ -154,7 +164,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
     <PageToolbar
       icon={<ClipboardList size={18} strokeWidth={2.2} />}
       title="발주 필요"
-      count={lowStockFiltered.length}
+      count={displayed.length}
       leftSlot={
         <span className="text-[13px] text-ink-soft font-medium tracking-tight">현재고 &lt; 적정재고</span>
       }
@@ -171,12 +181,14 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
           placeholder={needConditionApply
             ? "재고 부족 조건 안에서 검색 · 상품·코드·공급사"
             : "전체 상품에서 검색 · 조건 무시"}
-          resultCount={lowStockFiltered.length}
+          resultCount={displayed.length}
           resultUnit="건"
           historyKey="megatown_orderNeed_search_history"
           accent="rose"
           widthClass="w-64 sm:w-80"
         />
+        {/* 2026-08-29 · #154 · 판매중 필터 · segmented (전체/판매중/판매중지) · storageKey 페이지 로컬 */}
+        <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
         {/* 2026-08-25 · 사용자 지시 · 조건적용 on/off · OFF 시 · 전체 상품 검색 · ON 시 · 조건 통과 상품만 */}
         <label
           className={`inline-flex items-center gap-2 h-7 px-2.5 rounded-md border cursor-pointer select-none transition ${
@@ -516,21 +528,21 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
       >
         <section className="bg-white rounded-xl border border-line p-4 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
           {!lowStockCollapsed && (<>
-            {productsLoading && lowStockFiltered.length > 0 && (
+            {productsLoading && displayed.length > 0 && (
               <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mb-1 shrink-0">
                 <Spinner size={11} tone="sky" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
               </Card>
             )}
-            {productsLoading && lowStockFiltered.length === 0 ? (
+            {productsLoading && displayed.length === 0 ? (
               <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩 중..." labelSize={12} /></div>
-            ) : lowStockFiltered.length === 0 ? (
+            ) : displayed.length === 0 ? (
               <div className="text-center text-[15px] text-zinc-300 py-6">발주 필요 상품 없음</div>
             ) : (
               <>
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <span className="inline-block w-1 h-3.5 rounded-full bg-rose-500 shrink-0"></span>
                   <span className="text-[15px] font-bold text-rose-600">발주필요 리스트</span>
-                  <span className="text-[15px] text-zinc-400 font-normal">{lowStockFiltered.length}건</span>
+                  <span className="text-[15px] text-zinc-400 font-normal">{displayed.length}건</span>
                   {selectedLowStock.size > 0 && (
                     <span className="inline-flex items-center gap-1 text-[15px] font-bold text-white bg-rose-500 rounded-full px-2 py-0.5 tabular-nums">
                       선택 {selectedLowStock.size}
@@ -540,10 +552,10 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                     {/* 2026-08-24 · 최신 트렌드 · Linear/Vercel 톤 · pill · shadow-sm hover:shadow-md · scale */}
                     <button
                       onClick={() => {
-                        if (selectedLowStock.size === lowStockFiltered.length) {
+                        if (selectedLowStock.size === displayed.length) {
                           clearLowStockSelection();
                         } else {
-                          setSelectedLowStock(() => new Set(lowStockFiltered.map(p => getCode(p))));
+                          setSelectedLowStock(() => new Set(displayed.map(p => getCode(p))));
                         }
                       }}
                       className="inline-flex items-center gap-1 h-9 px-3.5 rounded-lg text-[15px] font-semibold text-ink-soft bg-white border border-line hover:border-brand-deep/40 hover:bg-brand-tint/20 hover:text-brand-deep active:scale-[0.98] transition-all duration-150 cursor-pointer shrink-0"
@@ -591,7 +603,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                       {/* 합계 요약 행 */}
                       {(() => {
                         let sumCur = 0, sumInv = 0, sumOpt = 0, sumShort = 0, invCount = 0;
-                        for (const p of lowStockFiltered) {
+                        for (const p of displayed) {
                           const c = Number(p.current_stock ?? 0);
                           const o = Number(p.optimal_stock ?? 0);
                           sumCur += c; sumOpt += o;
@@ -607,7 +619,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                             ) : (
                               <>
                                 <td className="text-left px-1 py-1.5 text-zinc-500 font-bold">Σ</td>
-                                <td className="text-left px-1 py-1.5 text-zinc-800 font-bold">합계 <span className="text-zinc-500 font-bold">({lowStockFiltered.length}건)</span></td>
+                                <td className="text-left px-1 py-1.5 text-zinc-800 font-bold">합계 <span className="text-zinc-500 font-bold">({displayed.length}건)</span></td>
                               </>
                             )}
                             {isNeedCollapsed("stock") ? (
@@ -624,7 +636,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                           </tr>
                         );
                       })()}
-                      {[...lowStockFiltered].sort((a, b) => {
+                      {[...displayed].sort((a, b) => {
                         const dir = needSortDir === "asc" ? 1 : -1;
                         const aCode = getCode(a), bCode = getCode(b);
                         const aInv = invStockMap.get(aCode); const bInv = invStockMap.get(bCode);
@@ -726,7 +738,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                           </React.Fragment>
                         );
                       })}
-                      {lowStockFiltered.length === 0 && (
+                      {displayed.length === 0 && (
                         <tr><td colSpan={13} className="text-center text-[15px] text-zinc-300 py-6">검색 결과 없음</td></tr>
                       )}
                     </tbody>
