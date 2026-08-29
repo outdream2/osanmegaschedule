@@ -11,7 +11,7 @@
 >  - 다른 참조 문서 만들지 말고 이 파일 하나에 통합 (사용자 명시 요구 · 2026-08-06)
 
 **프로젝트**: megatown-staff-scheduler
-**최종 업데이트**: 2026-08-22 (14차 · Framework Phase 4 대량 분리 · 6파일 -1,003라인 · 8 신규 파일 이관 · Phase 2 완료 반영)
+**최종 업데이트**: 2026-08-29 (15차 · 매장 서브탭 재편 #193 · 사이드바 자동 파생 #196 · purchase_details 통합 #198 · 미사용 파생 테이블 제거 #200 · DB 정합성 fix #197 · UI fix 다수)
 **생성**: 2026-08-05 (초판) · **확장**: 2026-08-06 (공통 자산 통합 · 백엔드/DB/RPC 심화)
 **출처**: 코드 실측 (LandingPage · 각 페이지 컴포넌트 · TAB 정의 · src/styles · src/components/common · src/hooks · migrations · server/routes)
 **용도**: 새 페이지·기능 추가 시 · 새 세션 진입 시 · 다른 에이전트 위임 시 · **먼저 참고**해야 할 단일 소스
@@ -92,16 +92,20 @@
 | # | 서브탭 | 컴포넌트 | 주 기능 |
 |---|--------|---------|--------|
 | 1 | **발주** | `OrderManagePage.tsx` (initialTopTab="purchase-order") | 발주 요청 목록 · 발주 필요 상품 · 발주 승인 |
-| 2 | **매입** | `OrderManagePage.tsx` (initialTopTab="purchase") | **매입이력 · 상품별 집계 · 매입 추이** (3서브탭) |
+| 2 | **매입** | `OrderManagePage.tsx` (initialTopTab="purchase") | **매입이력 · 상품별 집계 · 매입 추이** (3서브탭) · 🔄 실재고입력·상품입고·상품정보·반품 4개 서브탭 → **매장>상품/반품**으로 완전 이관 (2026-08-29 #193) |
 | 3 | **결제** | `OrderManagePage.tsx` (initialTopTab="payment") | 공급사 결제 정보 · 잔고 · 납부 |
 | 4 | **통계** | `OrderManagePage.tsx` (initialTopTab="statistics") | 카테고리별 판매 · 상품 매출 분석 (CategoryTab) |
 | 5 | **입고알림** | `StockArrivalPage.tsx` (embedded) | 입고 예정 상품 · 알림 관리 |
 | 6 | **매장구역도** | `StoreZoneMap.tsx` · 구역 카드 | 매장 구역 시각화 · 카테고리 배치 확인 |
 
-**매입 서브탭 (내부 3탭 · `PurchaseSubTabs.tsx`)**:
+**매입 서브탭 (내부 3탭 · `PurchaseSubTabs.tsx`) · 2026-08-29 기준 3개만 남음**:
 - **매입이력** (ledger) · 선택 기간 매입 원장 (rows) · 정렬·필터 · **컬럼 리사이저** (2026-08-06 · `6a3dcd2`)
 - **상품별 집계** (product) · groupBy 상품명 · 총매입액·수량 랭킹
 - **매입 추이** (trend) · **3-metric 탭 + 원형 차트 재구성** (2026-08-06 · `7d88c03`)
+- ~~실재고입력~~ → 🔄 매장>상품>실재고입력으로 이관 (2026-08-29 #193)
+- ~~상품입고~~ → 🔄 매장>상품>상품입고로 이관 (2026-08-29 #193)
+- ~~상품정보~~ → 🔄 매장>상품>상품정보로 이관 (2026-08-29 #193)
+- ~~반품~~ → 🔄 매장>반품으로 독립 이관 (2026-08-29 #193)
 
 **매입이력 뷰 전환 (`PurchaseHistoryTab.tsx`)**:
 - **공급사별** (by-vendor) · 좌측 공급사 리스트 · 우측 원장·집계·추이
@@ -193,9 +197,29 @@
 
 ---
 
-## 6. 스케줄 · 스캔 · 실재고확인
+## 6. 스케줄 · 스캔 · 실재고확인 · 매장 서브탭
 
 이들은 서브탭이 없거나 · 단일 UI · 기능별 섹션으로 구성.
+
+### 🆕 매장 (DisplayPage) 서브탭 재편 (2026-08-29 · #193)
+
+> **이전**: 매입 서브탭 안에 실재고입력·상품입고·상품정보·반품 포함
+> **이후**: 매장 안에 "상품" 서브탭 + "반품" 서브탭 독립 분리
+
+**매장>상품 서브탭** (신규 · 2026-08-29 · #193 · Boxes 아이콘 · red 톤):
+
+| 이너 탭 | key | 컴포넌트 | 주 기능 |
+|--------|-----|---------|--------|
+| **실재고입력** | scan | `ScanPage` (embed) | 바코드 스캔 · 실재고 입력 |
+| **상품입고** | productarrival | `ProductArrivalPage` (embed) | 바코드 스캔 · 입고 등록 |
+| **상품정보** | productinfo | `ProductInfoPage` (embed) | 상품 CRUD · 마스터 조회 |
+
+**매장>반품 서브탭** (신규 · 2026-08-29 · #193 · 독립 렌더 · OrderManagePage 우회):
+
+| 이너 탭 | key | 컴포넌트 | 주 기능 |
+|--------|-----|---------|--------|
+| **반품필요** | return-needed | `ReturnListPanel` | 반품 요청 목록 · 체크박스 bulk |
+| **반품확정** | return-confirmed | `ReturnConfirmedPanel` | 확정 반품 리스트 |
 
 ### 실재고확인 (ScanPage)
 - 좌: 바코드 스캐너 + 마지막 스캔 상품
@@ -246,21 +270,24 @@
 
 ## 8. 페이지 · 하위 탭 요약 · 색상 코드
 
-### 서브탭 총계
+### 서브탭 총계 (2026-08-29 기준)
 
 | 메인 메뉴 | 서브탭 수 | 내부 서브탭 |
 |---------|---------|----------|
-| 재고관리 (DisplayPage) | 6 | 매입 → 3서브탭 |
+| 재고관리 (DisplayPage) | 6 | 매입 → 3서브탭 (실재고입력·상품입고·상품정보·반품 4개 → 매장으로 이관) |
+| 🔄 매장 (DisplayPage) | 6+ | 🆕 상품(3이너탭) · 🆕 반품(2이너탭) · 매장구역도 · 공급사관리 등 |
 | 경영관리 (BusinessManagePage) | 5 | 승인대기 2 · 서류작성 3 |
 | 요청메뉴 (RequestsPage) | 최대 5 | - |
 | 약사전용 (PharmacistPage) | 4 | 각 탭 · 좌측 카테고리 트리 |
 | 매입관리 세부 (OrderManagePage) | 4 (top) | 매입 → 서브 3 · byVendor/byProduct 뷰 |
 
-**총 서브탭 수** (내부 포함): 약 30+ 서브탭
+**총 서브탭 수** (내부 포함): 약 35+ 서브탭
 
 ### 색상 코드 (탭별 아이덴티티)
 
-- **재고관리**: violet (스캔) · sky (발주) · amber (매입) · teal (결제) · indigo (통계) · orange (입고알림) · violet (매장구역도)
+- **재고관리**: sky (발주) · amber (매입) · teal (결제) · indigo (통계) · orange (입고알림) · violet (매장구역도)
+- **매장>상품** (2026-08-29 신규): red 톤 · Boxes 아이콘 · 이너탭 violet(실재고입력)·sky(상품입고)·indigo(상품정보)
+- **매장>반품** (2026-08-29 신규): rose 톤 · 독립 렌더
 - **경영관리**: emerald (직원관리) · teal (승인대기) · orange (점심불참) · amber (각종양식) · indigo (서류작성)
 - **약사전용**: sky (교육자료) · emerald (복약지도) · violet (동영상) · amber (문서)
 - **요청메뉴**: rose · amber · indigo (탭별)
@@ -498,6 +525,21 @@ import { TEXT, BUTTON_PRIMARY, CARD_BASE } from "@/styles/tokens";
 | `useProductInfoSearch` | 상품 정보 검색 유틸 |
 | `useHiddenManager` | 숨김 관리자 모달 관련 (특정 관리 기능 잠금해제) |
 
+### 🆕 11-4-B. 사이드바 자동 파생 아키텍처 (2026-08-29 · #196)
+
+**단일 소스**: `src/constants/sideNavGroups.ts` · `SIDE_NAV_GROUPS` 배열 하나로 전 네비게이션 파생
+
+| 함수 | 반환 | 사용처 |
+|-----|-----|-------|
+| `getPageSubTabs(pageKey)` | 해당 페이지의 서브탭 배열 | ApprovalRequestPage TABS 자동 파생 |
+| `collectAllPageKeys()` | 전 페이지 key Set | 라우팅 유효성 체크 |
+
+**BottomNav** (`src/components/AppFooter/BottomNav.tsx`): 완전 동적 파생 · TABS 배열 하드코드 제거 · isActive 배열 자동 계산 · SheetTile 조건문 자동화 (커밋 `766f1fb3`)
+
+**AppNavHeader** (`src/components/AppNavHeader.tsx`): BUSINESS_PAGES 하드코드 → SIDE_NAV_GROUPS 동적 파생 (커밋 `5940ffac`)
+
+**ApprovalRequestPage**: `getPageSubTabs("approval-request")` 자동 파생 (커밋 `5940ffac`)
+
 ### 11-5. 훅 사용 원칙
 
 1. **훅 이름 = 파일명**: `useVendors.ts` → `useVendors()`
@@ -723,6 +765,15 @@ server/routes/
 **신규 엔드포인트** (2026-08-20 · #175):
 - `GET /api/employees/:id` · 직원 단일 조회 · self-only (본인) or lv9 · asyncHandler·HttpError 준수 (`d2cc2a6`)
 
+**라우터 변경** (2026-08-29 · #198 · `f3221bd1`):
+- `server/routes/productArrivals.ts` · 완전 리팩터 · purchase_details 기반 · **groupId (YYYYMMDD_verifiedBy) 기반 그룹 관리**
+- `POST /api/product-arrivals` · groupId 파생 · purchase_details.verify_status/verified_by/verify_note/verified_at 저장
+- 신규 컬럼: `verified_by` · `verify_status` · `verify_note` · `verified_at` · `verified_expiring`
+
+**DB 정합성 fix** (2026-08-29 · #197 · `795940a9`):
+- **C-2 fix** · `server/productCache.ts` · TTL 만료 후 stale promise 재사용 방지 (TTL 체크 후 새 fetch 시작)
+- **C-5 fix** · `settings` KV 편집 후 · `saleActiveOnlyCache` + `resetProductCache()` 두 캐시 동시 무효화
+
 ### 16-2. 응답 형식 표준
 
 | 성공 | 형식 |
@@ -939,13 +990,13 @@ npm run test        # (필요 시) 테스트
 |-------|-----|---------|---------|
 | `products` | 상품 마스터 (ERP xlsx 임포트) | product_code (PK), product_name, supplier, spec, **real_map** (실제배정구역 · JS: `realMap`), sale_price, purchase_price, current_stock, optimal_stock, min_order, hidden | Scan · Display · Stock · Order · OCR |
 | `stock_history` | 재고 스냅샷 (일별 · 초/중/하순) | product_code, snapshot_date, opening_stock, purchase_qty, sale_qty, disposal_qty, closing_stock, total_amount, product_name, supplier_name, spec | StockManagePage · SalesTrend · get_stock_flow RPC |
-| `purchase_details` | ERP 매입 세부 (거래명세서 확정) | product_code, purchase_date, quantity, amount, total, supplier | PurchaseHistory · Order · get_stock_flow RPC |
+| `purchase_details` | ERP 매입 세부 (거래명세서 확정) · **🔄 2026-08-29 #198 통합 확장** | product_code, purchase_date, quantity, amount, total, supplier · 🆕 verified_by · verify_status · verify_note · verified_at · verified_expiring | PurchaseHistory · Order · get_stock_flow RPC · **ProductArrivalPage (통합)** |
 | `inventory_checks` | 실재고 스캔 | product_code, warehouse_stock, warehouse_stock_2, store_stock, store_stock_2, store_stock_3, checked_at, checked_by | Scan · Requests(실재고차이) |
-| `product_arrivals` | 상품입고 헤더 | arrival_date, checked_by, checked_by_id, total_items, total_qty, match_count, mismatch_count, expiring_count, final_decision (all_match/has_mismatch), supplier_summary, note | ProductArrivalPage |
-| `product_arrival_items` | 상품입고 아이템 | arrival_id (FK CASCADE), product_code, product_name, supplier, qty, status (pending/match/mismatch/expiring) | ProductArrivalPage |
+| `_archive_product_arrivals` | 🗑️ 상품입고 헤더 · 아카이브 (2026-08-29 #198) · 2주 관찰 후 DROP | arrival_date, checked_by, checked_by_id, total_items, total_qty, match_count, mismatch_count, expiring_count, final_decision, supplier_summary, note | 구 ProductArrivalPage (이관됨) |
+| `_archive_product_arrival_items` | 🗑️ 상품입고 아이템 · 아카이브 (2026-08-29 #198) · 2주 관찰 후 DROP | arrival_id (FK CASCADE), product_code, product_name, supplier, qty, status (pending/match/mismatch/expiring) | 구 ProductArrivalPage (이관됨) |
 | `return_requests` | 반품 요청 | product_code, product_name, supplier, qty, current_stock, purchase_price, reason, requested_by, requested_by_id, status (pending/sent/done/cancelled) | Order · ReturnListPanel |
-| `stock_reconciliation` | 재고 정산 세션 | id, period_start, period_end, status, created_by | StockReconciliationTab |
-| `stock_reconciliation_items` | 재고 정산 아이템 | reconciliation_id, product_code, adjustment_qty, reason, confirmed | StockReconciliationTab |
+| ~~`stock_reconciliation`~~ | 🗑️ 재고 정산 세션 · **미사용 파생 테이블 · #200 제거 대기** (SQL 파일 생성 · 사용자 실행 대기) | id, period_start, period_end, status, created_by | — |
+| ~~`stock_reconciliation_items`~~ | 🗑️ 재고 정산 아이템 · **미사용 파생 테이블 · #200 제거 대기** | reconciliation_id, product_code, adjustment_qty, reason, confirmed | — |
 
 **중요 컬럼명 매핑** (project_product_columns 규칙 준수):
 - 실제배정구역: DB `real_map` ↔ JS `realMap` (product.real_map)
@@ -965,7 +1016,7 @@ npm run test        # (필요 시) 테스트
 | `vendors` | 공급사 마스터 | id, company_name, biz_num, phone, contact_name, category (위탁/선결제/회전/기타), password_hash (로그인용) |
 | `supplier_balances` | 잔고 스냅샷 (OCR 확정 시) | id, supplier, amount, snapshot_type, saved_at |
 | `supplier_payments` | 결제 원장 (2026-07-31) | supplier_name, payment_date, amount, method (transfer/cash/card/check/offset/etc), memo, created_by, created_by_id |
-| `supplier_payment_allocations` | 결제→매입건 배분 M:N | payment_id, ocr_confirmed_item_id, allocated_amount |
+| ~~`supplier_payment_allocations`~~ | 🗑️ 결제→매입건 배분 M:N · **미사용 파생 테이블 · #200 제거 대기** (Tier A · SQL 파일 생성) | payment_id, ocr_confirmed_item_id, allocated_amount |
 | `supplier_balance_configs` | 공급사별 잔고 설정 | name (PK), opening_balance, opening_date, note |
 | `ocr_confirmed_items` | OCR 확정 매입 아이템 | supplier, product_name, quantity, amount, purchase_date, saved_at |
 
@@ -1211,8 +1262,8 @@ megatown-staff-scheduler/
 
 | 대상 | 위치 | TTL | 무효화 |
 |-----|-----|----|------|
-| 상품 맵 | `server/productCache.ts` | 10분 | 상품 편집 시 flush |
-| 저재고 | `/api/stock-manage/low-stock` | 2분 | products-hidden-changed 이벤트 |
+| 상품 맵 | `server/productCache.ts` | 10분 | 상품 편집 시 flush · **🔄 C-2 fix (2026-08-29 #197)**: TTL 만료 후 stale promise 재사용 방지 |
+| 저재고 | `/api/stock-manage/low-stock` | 2분 | products-hidden-changed 이벤트 · **🔄 C-5 fix (2026-08-29 #197)**: KV 편집 후 saleActiveOnlyCache + resetProductCache 동시 무효화 |
 | 공급사 (프론트) | `useVendors` 훅 | 5분 | vendors-changed 이벤트 |
 | 상품 (프론트) | `src/lib/productsCache.ts` | 세션 | 페이지 진입 시 prefetch |
 | 세션 (JWT) | httpOnly 쿠키 | 24h/30d | logout · 만료 |
@@ -1370,6 +1421,60 @@ npm run test        # vitest (필요 시)
 ---
 
 ## CHANGELOG · 변경 이력
+
+### 2026-08-29 (15차 · 매장 서브탭 재편 · 사이드바 자동 파생 · purchase_details 통합 · DB 정합성 fix · 22 로컬 커밋)
+
+**요약**: 큰 구조적 변경 4건 + DB 정합성 크리티컬 fix 2건 + UI fix 다수. 총 22 로컬 커밋.
+
+#### #193 · 매장 서브탭 재편 (`3101e6ab`)
+
+- **매장>상품 서브탭 신설** (Boxes 아이콘 · red 톤):
+  - 이너 탭 3개: 실재고입력 (ScanPage embed) · 상품입고 (ProductArrivalPage embed) · 상품정보 (ProductInfoPage embed)
+- **매장>반품 서브탭 독립** · OrderManagePage 완전 우회:
+  - 이너 탭 2개: 반품필요 (ReturnListPanel) · 반품확정 (ReturnConfirmedPanel)
+- **매입 서브탭 4개 제거**: ~~실재고입력~~ · ~~상품입고~~ · ~~상품정보~~ · ~~반품~~ → 매장으로 이관
+- 남은 매입 서브탭: 매입이력 · 상품별 집계 · 매입 추이 (3개만)
+- 관련 fix: #201 BUG-1 · 매장>상품 · manager 이상(level>=2) 접근 허용 (`d6b6a25c`) · BUG-2 POST /api/product-arrivals authorize(3) 추가 (`e30e659f`)
+
+#### #196 · 사이드바→반응형 헤더/BottomNav 자동 파생 (`545d5faf` · `766f1fb3` · `5940ffac`)
+
+- `SIDE_NAV_GROUPS` · 단일 소스 · 신규 함수 2개 export:
+  - `getPageSubTabs(pageKey)` · 페이지별 서브탭 자동 반환
+  - `collectAllPageKeys()` · 전 페이지 key Set
+- BottomNav: 완전 동적화 · TABS 배열·isActive 배열·SheetTile 조건문 하드코드 완전 제거
+- ApprovalRequestPage TABS · `getPageSubTabs("approval-request")` 자동 파생
+- AppNavHeader BUSINESS_PAGES · SIDE_NAV_GROUPS 동적 파생
+
+#### #198 · product_arrival_items → purchase_details 완전 통합 (`1fb35e40` · `f3221bd1` · `debbe91c`)
+
+- **원본 테이블 통합 원칙 준수**: product_arrivals + product_arrival_items → purchase_details
+- **신규 컬럼** (purchase_details 확장): `verified_by` · `verify_status` · `verify_note` · `verified_at` · `verified_expiring`
+- **groupId 기반 그룹 관리**: YYYYMMDD_verifiedBy 형식
+- **아카이브**: `_archive_product_arrivals` · `_archive_product_arrival_items` (2주 관찰 후 DROP)
+- 서버 라우터 `productArrivals.ts` 완전 리팩터
+- UI: ProductArrivalPage · id type → string 지원 (groupId)
+- 마이그레이션 SQL: `1d691012` · 사용자 실행 대기
+
+#### #200 · 미사용 파생 테이블 제거 (`1d691012`)
+
+- SQL 파일 생성 (사용자 실행 대기) · Tier A 3개:
+  - `stock_reconciliation_sessions` + `stock_reconciliation_items`
+  - `order_dispatches`
+  - `supplier_payment_allocations`
+
+#### #197 · DB 정합성 크리티컬 fix (`795940a9`)
+
+- **C-2 fix** · `server/productCache.ts` · TTL 만료 후 stale promise 재사용 방지
+- **C-5 fix** · settings KV 편집 후 · `saleActiveOnlyCache` + `resetProductCache()` 동시 무효화
+
+#### 기타 UI fix
+
+- **#189** · 배치구역 불일치 · 체크박스 bulk + 구역별 그룹 + 기본 펼침 (`23c13608`)
+- **#162** · 랜딩 재고확인 · current_stock 숫자 표시 (`a7118db7`)
+- **#171 P1** · BottomNav safe-area 이중 적용 제거 (스크롤 튀기 fix) (`47133b2f`)
+- **#171 P2** · BottomSheet · body overflow 원복 250ms 지연 (`c3f727f9`)
+
+---
 
 ### 2026-08-22 (14차 · Framework Phase 4 대량 분리 · -1,003 라인 · 8 신규 파일 · Phase 2 완료)
 
