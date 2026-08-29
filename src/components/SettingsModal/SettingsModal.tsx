@@ -1,15 +1,20 @@
 // src/components/SettingsModal.tsx
 // 2026-08-17 · apiClient 마이그레이션
 // #191 · Modal primitive 마이그레이션 (inline wrapper → Modal)
-import React, { useState, useEffect, useRef } from "react";
+// 2026-08-29 · 탭 서브컴포넌트 분리 (tabs/*.tsx) · shell 유지
+import React, { useState, useEffect } from "react";
 import { api, ApiError } from "../../lib/apiClient";
-import { X, Plus, Trash2, GripVertical, Check, MapPin, ShieldCheck, ChevronRight } from "lucide-react";
+import { ShieldCheck, ChevronRight } from "lucide-react";
 import { AppSettings, WageRate, ScheduleTypeEntry, defaultWageForPosition } from "../../hooks/useSettings";
-import { COLOR_PRESETS, findPresetByBg } from "../../constants";
-// 2026-08-21 · Framework Phase 3 · Card 프리미티브
-import { Card } from "../common/Card";
+import { COLOR_PRESETS } from "../../constants";
 // #191 · Modal primitive
 import { Modal } from "../common/Modal";
+// 2026-08-29 · 탭 서브컴포넌트
+import { PositionsTab } from "./tabs/PositionsTab";
+import { RanksTab } from "./tabs/RanksTab";
+import { WorkplacesTab } from "./tabs/WorkplacesTab";
+import { ScheduleTypesTab } from "./tabs/ScheduleTypesTab";
+import { AccountTab } from "./tabs/AccountTab";
 
 interface SettingsModalProps {
   settings: AppSettings;
@@ -42,93 +47,12 @@ const TABS: { id: TabId; label: string }[] = [
 
 type ScheduleHourTab = "hours" | "pharmHours" | "logisticsHours" | "partTimeHours";
 
-const HOUR_TABS: { id: ScheduleHourTab; label: string }[] = [
-  { id: "hours",          label: "기본(기타)" },
-  { id: "pharmHours",     label: "약사" },
-  { id: "logisticsHours", label: "물류" },
-  { id: "partTimeHours",  label: "알바" },
-];
-
-// ─── ColorPicker ──────────────────────────────────────────────────────────────
-interface ColorPickerProps {
-  value: string;
-  onChange: (hex: string) => void;
-}
-
-const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
-
-  const currentPreset = findPresetByBg(value);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-6 h-6 rounded-md border border-zinc-300 shadow-sm hover:ring-2 hover:ring-zinc-300 transition cursor-pointer"
-        style={{ backgroundColor: value }}
-        title={currentPreset ? `색상: ${currentPreset.label}` : "색상 선택"}
-        aria-label="색상 선택"
-      />
-      {open && (
-        <Card
-          variant="raw-xl"
-          rounded="lg"
-          padding="none"
-          className="absolute z-20 bottom-full right-0 mb-1 p-2 w-[196px] animate-in fade-in zoom-in-95 duration-100"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="grid grid-cols-6 gap-1.5 mb-2">
-            {COLOR_PRESETS.map((p) => {
-              const selected = p.bg.toLowerCase() === value.toLowerCase();
-              return (
-                <button
-                  key={p.label}
-                  type="button"
-                  onClick={() => { onChange(p.bg); setOpen(false); }}
-                  className={`relative w-7 h-7 rounded-md border cursor-pointer transition hover:scale-110 ${
-                    selected ? "border-zinc-800 ring-2 ring-zinc-400" : "border-line"
-                  }`}
-                  style={{ backgroundColor: p.bg }}
-                  title={p.label}
-                  aria-label={p.label}
-                  aria-pressed={selected}
-                >
-                  {selected && (
-                    <Check size={12} className="absolute inset-0 m-auto text-zinc-800" strokeWidth={3} />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex items-center gap-1.5 pt-1.5 border-t border-zinc-100">
-            <span className="text-[10px] font-bold text-zinc-500">직접</span>
-            <input
-              type="color"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              className="w-6 h-6 rounded cursor-pointer border border-line p-0.5 bg-white"
-              title="직접 색상 선택"
-            />
-            <span className="text-[10px] font-mono text-zinc-400 uppercase">{value}</span>
-          </div>
-        </Card>
-      )}
-    </div>
-  );
-};
-
-export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate, onApplyShiftHours, onClose, employees, editMode, onEnableEditMode, sessionEmployeeId, embedded = false, onNavigateZoneLabels, onNavigatePermissions }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({
+  settings, onUpdate, onApplyShiftHours, onClose,
+  employees, editMode, onEnableEditMode,
+  sessionEmployeeId, embedded = false,
+  onNavigateZoneLabels, onNavigatePermissions,
+}) => {
   const [activeTab, setActiveTab] = useState<TabId>("positions");
 
   // ─── 비밀번호 변경 상태 ─────────────────────────────────────
@@ -217,8 +141,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
   const addPosition = () => {
     const trimmed = newPosition.trim();
     if (!trimmed || positions.includes(trimmed)) return;
-    const next = [...positions, trimmed];
-    savePositions(next);
+    savePositions([...positions, trimmed]);
     setNewPosition("");
   };
 
@@ -343,8 +266,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
   };
 
   const updateScheduleTypeEntry = (idx: number, field: keyof ScheduleTypeEntry, value: string) => {
-    const next = scheduleTypes.map((e, i) => i === idx ? { ...e, [field]: value } : e);
-    saveScheduleTypes(next);
+    saveScheduleTypes(scheduleTypes.map((e, i) => i === idx ? { ...e, [field]: value } : e));
   };
 
   // ── wages ─────────────────────────────────────────────────────────────────
@@ -361,14 +283,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
 
   const updatePositionWage = (position: string, field: keyof WageRate, value: number) => {
     const prev = wageRates[position] ?? { weekday: 0, weekend: 0 };
-    const next = { ...wageRates, [position]: { ...prev, [field]: value } };
-    saveWageRates(next);
+    saveWageRates({ ...wageRates, [position]: { ...prev, [field]: value } });
   };
 
   const updateEmployeeOverride = (empId: number, field: keyof WageRate, value: number) => {
     const prev = employeeWageOverrides[empId] ?? { weekday: 0, weekend: 0 };
-    const next = { ...employeeWageOverrides, [empId]: { ...prev, [field]: value } };
-    saveEmployeeOverrides(next);
+    saveEmployeeOverrides({ ...employeeWageOverrides, [empId]: { ...prev, [field]: value } });
   };
 
   const addEmployeeOverride = () => {
@@ -398,6 +318,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
 
   const employeesWithOverride = employees.filter((e) => employeeWageOverrides[e.id]);
   const employeesWithoutOverride = employees.filter((e) => !employeeWageOverrides[e.id]);
+
+  // ── scheduleTypes apply handler (passed to ScheduleTypesTab) ─────────────
+  const handleApplyClick = () => {
+    if (editMode === false) {
+      setShowEditConfirm(true);
+    } else {
+      setApplying(true);
+      onApplyShiftHours().finally(() => setApplying(false));
+    }
+  };
 
   // ── render ────────────────────────────────────────────────────────────────
 
@@ -446,395 +376,78 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
 
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto overflow-x-auto min-w-0 px-6 py-5 space-y-4">
-
-        {/* ─── Positions Tab ─────────────────────────────────────────── */}
-        {/* 2026-08-29 · #177 Phase 1 · 직군 편집 · 드래그 재정렬 · 팀장 유일성 안내 */}
         {activeTab === "positions" && (
-          <div className="space-y-4">
-            <p className="text-xs text-zinc-500 font-semibold">
-              직원 직군(직책) 목록을 관리합니다. 드래그로 순서 조정 · Enter 로 추가.
-              <br />
-              <span className="text-brand-deep font-semibold">
-                💡 "팀장" 이 포함된 직군(예: 물류팀장·약사팀장)은 재직자 1명만 허용됩니다 (#178).
-              </span>
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {positions.map((pos, idx) => {
-                const isTeamLead = pos.includes("팀장");
-                const isDragTarget = dragOverIndex === idx && dragIndex !== null && dragIndex !== idx;
-                return (
-                  <div
-                    key={pos}
-                    draggable
-                    onDragStart={() => handlePositionDragStart(idx)}
-                    onDragOver={(e) => handlePositionDragOver(e, idx)}
-                    onDrop={() => handlePositionDrop(idx)}
-                    onDragEnd={handlePositionDragEnd}
-                    className={`flex items-center gap-2 bg-white border rounded-lg px-3 py-2 transition cursor-move ${
-                      isDragTarget ? "border-brand-deep ring-2 ring-brand-tint" : "border-line hover:border-zinc-300"
-                    }`}
-                  >
-                    <GripVertical size={13} className="text-zinc-300" />
-                    <span className={`flex-1 text-xs font-semibold ${isTeamLead ? "text-brand-deep" : "text-zinc-800"}`}>
-                      {pos}
-                      {isTeamLead && <span className="ml-1 text-[10px] font-normal text-brand-deep/70">· 유일</span>}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removePosition(idx)}
-                      className="text-zinc-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
-                      title="삭제"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex gap-2 pt-1">
-              <input
-                type="text"
-                value={newPosition}
-                onChange={(e) => setNewPosition(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPosition(); } }}
-                placeholder="새 직군 입력 (예: 물류팀장 · 약사 · 캐셔)"
-                className="flex-1 text-xs rounded-lg border border-line focus:border-[#2563eb] p-2 bg-white focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={addPosition}
-                className="px-3 py-2 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
-              >
-                <Plus size={13} />
-                추가
-              </button>
-            </div>
-          </div>
+          <PositionsTab
+            positions={positions}
+            newPosition={newPosition}
+            setNewPosition={setNewPosition}
+            addPosition={addPosition}
+            removePosition={removePosition}
+            dragIndex={dragIndex}
+            dragOverIndex={dragOverIndex}
+            handlePositionDragStart={handlePositionDragStart}
+            handlePositionDragOver={handlePositionDragOver}
+            handlePositionDrop={handlePositionDrop}
+            handlePositionDragEnd={handlePositionDragEnd}
+          />
         )}
 
-        {/* ─── Ranks Tab · #177 P2 · 자유 텍스트 · 편집 시 자동 rename ─────── */}
         {activeTab === "ranks" && (
-          <div className="space-y-4">
-            <p className="text-xs text-zinc-500 font-semibold">
-              직급 목록 (자유 텍스트) · Enter 로 추가 · 클릭으로 편집 · 편집 시 재직 직원 자동 rename.
-              <br />
-              <span className="text-brand-deep font-semibold">
-                💡 삭제 시 · 재직 중인 직원 직급 자동 비워짐 (확인 프롬프트).
-              </span>
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {ranks.map((r, idx) => {
-                const isEditing = editingRankIdx === idx;
-                return (
-                  <div key={r} className="flex items-center gap-2 bg-white border border-line hover:border-zinc-300 rounded-lg px-3 py-2 transition">
-                    {isEditing ? (
-                      <>
-                        <input
-                          autoFocus
-                          type="text"
-                          value={editingRankValue}
-                          onChange={(e) => setEditingRankValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") { e.preventDefault(); commitEditRank(); }
-                            if (e.key === "Escape") { e.preventDefault(); cancelEditRank(); }
-                          }}
-                          className="flex-1 text-xs font-semibold text-zinc-800 border border-brand-deep rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-tint"
-                          disabled={rankRenaming}
-                        />
-                        <button type="button" onClick={commitEditRank} disabled={rankRenaming}
-                          className="text-emerald-600 hover:text-emerald-800 transition cursor-pointer p-0.5"
-                          title="저장 (Enter)">
-                          <Check size={14} strokeWidth={3} />
-                        </button>
-                        <button type="button" onClick={cancelEditRank} disabled={rankRenaming}
-                          className="text-zinc-400 hover:text-zinc-600 transition cursor-pointer p-0.5"
-                          title="취소 (Esc)">
-                          <X size={14} />
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button type="button" onClick={() => startEditRank(idx)}
-                          className="flex-1 text-left text-xs font-semibold text-zinc-800 hover:text-brand-deep cursor-pointer"
-                          title="클릭 편집">
-                          {r}
-                        </button>
-                        <button type="button" onClick={() => removeRank(idx)}
-                          className="text-zinc-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
-                          title="삭제">
-                          <Trash2 size={13} />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex gap-2 pt-1">
-              <input
-                type="text"
-                value={newRank}
-                onChange={(e) => setNewRank(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addRank(); } }}
-                placeholder="새 직급 입력 (예: 사원 · 대리 · 과장 · 부장)"
-                className="flex-1 text-xs rounded-lg border border-line focus:border-[#2563eb] p-2 bg-white focus:outline-none"
-              />
-              <button type="button" onClick={addRank}
-                className="px-3 py-2 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg flex items-center gap-1 transition cursor-pointer">
-                <Plus size={13} />
-                추가
-              </button>
-            </div>
-            {rankRenaming && (
-              <div className="text-[12px] text-brand-deep font-semibold flex items-center gap-1.5">
-                <span className="w-3 h-3 border-2 border-brand-deep border-t-transparent rounded-full animate-spin" />
-                재직 직원 자동 rename 중...
-              </div>
-            )}
-          </div>
+          <RanksTab
+            ranks={ranks}
+            newRank={newRank}
+            setNewRank={setNewRank}
+            addRank={addRank}
+            removeRank={removeRank}
+            editingRankIdx={editingRankIdx}
+            editingRankValue={editingRankValue}
+            setEditingRankValue={setEditingRankValue}
+            rankRenaming={rankRenaming}
+            startEditRank={startEditRank}
+            cancelEditRank={cancelEditRank}
+            commitEditRank={commitEditRank}
+          />
         )}
 
-        {/* ─── Workplaces Tab ────────────────────────────────────────── */}
         {activeTab === "workplaces" && (
-          <div className="space-y-4">
-            <p className="text-xs text-zinc-500 font-semibold">
-              직원의 근무지(부서) 목록을 관리합니다. 기본값: 매장, 창고
-            </p>
-            {/* 2026-08-16 · 사용자 지시 · 근무지 종류 · 매장·창고 나란히 (grid 2열) */}
-            <div className="grid grid-cols-2 gap-2">
-              {workplaces.map((wp, idx) => (
-                <div
-                  key={wp}
-                  className="flex items-center gap-2 bg-white border border-line hover:border-zinc-300 rounded-lg px-3 py-2 transition"
-                >
-                  <span className="flex-1 text-xs font-semibold text-zinc-800">{wp}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeWorkplace(idx)}
-                    className="text-zinc-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
-                    title="삭제"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2 pt-1">
-              <input
-                type="text"
-                value={newWorkplace}
-                onChange={(e) => setNewWorkplace(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addWorkplace(); } }}
-                placeholder="새 근무지 입력 (Enter)"
-                className="flex-1 text-xs rounded-lg border border-line focus:border-[#2563eb] p-2 bg-white focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={addWorkplace}
-                className="px-3 py-2 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
-              >
-                <Plus size={13} />
-                추가
-              </button>
-            </div>
-          </div>
+          <WorkplacesTab
+            workplaces={workplaces}
+            newWorkplace={newWorkplace}
+            setNewWorkplace={setNewWorkplace}
+            addWorkplace={addWorkplace}
+            removeWorkplace={removeWorkplace}
+          />
         )}
 
-        {/* ─── Schedule Types Tab ────────────────────────────────────── */}
         {activeTab === "scheduleTypes" && (
-          <div className="space-y-4">
-            <p className="text-xs text-zinc-500 font-semibold">
-              근무 유형과 직원 유형별 기본 근무시간을 관리합니다. 비워두면 상위(기본) 시간이 사용됩니다.
-            </p>
-
-            {/* Hour type sub-tabs */}
-            <div className="flex flex-wrap gap-1">
-              {HOUR_TABS.map(t => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setScheduleHourTab(t.id)}
-                  className={`flex-1 min-w-[72px] py-1.5 px-2 text-[11px] font-bold rounded-lg border transition cursor-pointer whitespace-nowrap ${
-                    scheduleHourTab === t.id
-                      ? "bg-brand-deep border-[#2563eb] text-white"
-                      : "bg-white border-line text-zinc-500 hover:bg-zinc-50"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)_28px] gap-2 px-3 py-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wide">
-                <span>유형명</span>
-                <span>색</span>
-                <span>{HOUR_TABS.find(t => t.id === scheduleHourTab)?.label} 시간</span>
-                <span></span>
-              </div>
-              {scheduleTypes.map((st, idx) => (
-                <div
-                  key={idx}
-                  className="flex flex-col sm:grid sm:grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)_28px] gap-2 items-start sm:items-center bg-white border border-line hover:border-zinc-300 rounded-lg px-3 py-2 transition"
-                >
-                  <div className="flex items-center gap-2 w-full min-w-0">
-                    <span
-                      className="flex-1 min-w-0 text-xs font-semibold text-zinc-800 truncate px-1.5 py-0.5 rounded"
-                      style={{ backgroundColor: st.color ?? "#e2e8f0" }}
-                    >
-                      {st.type}
-                    </span>
-                    <div className="shrink-0 sm:hidden">
-                      <ColorPicker
-                        value={st.color ?? "#e2e8f0"}
-                        onChange={(hex) => updateScheduleTypeEntry(idx, "color", hex)}
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeScheduleType(idx)}
-                      className="sm:hidden text-zinc-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded shrink-0"
-                      title="삭제"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                  <div className="hidden sm:block shrink-0">
-                    <ColorPicker
-                      value={st.color ?? "#e2e8f0"}
-                      onChange={(hex) => updateScheduleTypeEntry(idx, "color", hex)}
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    value={st[scheduleHourTab]}
-                    onChange={(e) => updateScheduleTypeEntry(idx, scheduleHourTab, e.target.value)}
-                    placeholder={scheduleHourTab === "hours" ? "예: 10:00-18:00" : "비워두면 기본값"}
-                    className="w-full text-xs rounded border border-line focus:border-[#2563eb] p-1.5 font-mono bg-white focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeScheduleType(idx)}
-                    className="hidden sm:block text-zinc-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
-                    title="삭제"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2 pt-1">
-              <input
-                type="text"
-                value={newScheduleType}
-                onChange={(e) => setNewScheduleType(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addScheduleType(); } }}
-                placeholder="새 근무 유형 입력 (Enter)"
-                className="flex-1 text-xs rounded-lg border border-line focus:border-[#2563eb] p-2 bg-white focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={addScheduleType}
-                className="px-3 py-2 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
-              >
-                <Plus size={13} />
-                추가
-              </button>
-            </div>
-            <div className="flex justify-end pt-2">
-              <button
-                type="button"
-                disabled={applying}
-                onClick={() => {
-                  if (editMode === false) {
-                    setShowEditConfirm(true);
-                  } else {
-                    setApplying(true);
-                    onApplyShiftHours().finally(() => setApplying(false));
-                  }
-                }}
-                className="px-4 py-2 text-xs font-bold bg-brand-deep hover:bg-brand-deep disabled:bg-indigo-300 text-white rounded-lg transition cursor-pointer flex items-center gap-1.5 shadow-sm"
-              >
-                {applying ? (
-                  <>
-                    <span className="animate-spin inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full" />
-                    적용 중...
-                  </>
-                ) : "📋 현재 스케줄에 전체적용"}
-              </button>
-            </div>
-          </div>
+          <ScheduleTypesTab
+            scheduleTypes={scheduleTypes}
+            newScheduleType={newScheduleType}
+            setNewScheduleType={setNewScheduleType}
+            addScheduleType={addScheduleType}
+            removeScheduleType={removeScheduleType}
+            updateScheduleTypeEntry={updateScheduleTypeEntry}
+            scheduleHourTab={scheduleHourTab}
+            setScheduleHourTab={setScheduleHourTab}
+            applying={applying}
+            editMode={editMode}
+            onApplyClick={handleApplyClick}
+          />
         )}
 
-
-        {/* ─── Account Tab (비밀번호 변경) ─────────────────────── */}
         {activeTab === "account" && (
-          <div className="space-y-4 max-w-md">
-            <p className="text-xs text-zinc-500 font-semibold leading-relaxed">
-              로그인 중인 계정의 비밀번호를 변경합니다. 변경 후에도 세션은 유지됩니다.
-            </p>
-            {!sessionEmployeeId ? (
-              <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" rounded="lg" padding="sm" className="text-xs text-rose-600 font-semibold">
-                로그인 세션 정보를 찾을 수 없습니다. 다시 로그인해주세요.
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">현재 비밀번호</label>
-                  <input
-                    type="password"
-                    value={pwCurrent}
-                    onChange={(e) => setPwCurrent(e.target.value)}
-                    autoComplete="current-password"
-                    className="w-full px-3 py-2 text-sm border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
-                    placeholder="현재 비밀번호"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">새 비밀번호 (4자 이상)</label>
-                  <input
-                    type="password"
-                    value={pwNew}
-                    onChange={(e) => setPwNew(e.target.value)}
-                    autoComplete="new-password"
-                    className="w-full px-3 py-2 text-sm border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
-                    placeholder="새 비밀번호"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-zinc-600 mb-1">새 비밀번호 확인</label>
-                  <input
-                    type="password"
-                    value={pwConfirm}
-                    onChange={(e) => setPwConfirm(e.target.value)}
-                    autoComplete="new-password"
-                    className="w-full px-3 py-2 text-sm border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
-                    placeholder="새 비밀번호 확인"
-                    onKeyDown={(e) => { if (e.key === "Enter" && !pwSubmitting) submitPasswordChange(); }}
-                  />
-                </div>
-                {pwMsg && (
-                  <div className={`text-xs font-semibold rounded-lg px-3 py-2 ${
-                    pwMsg.type === "ok"
-                      ? "bg-emerald-50 border border-emerald-200 text-emerald-700"
-                      : "bg-rose-50 border border-rose-200 text-rose-600"
-                  }`}>
-                    {pwMsg.text}
-                  </div>
-                )}
-                <div className="pt-1">
-                  <button
-                    type="button"
-                    onClick={submitPasswordChange}
-                    disabled={pwSubmitting}
-                    className="px-4 py-2 text-xs font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition cursor-pointer"
-                  >
-                    {pwSubmitting ? "변경 중..." : "비밀번호 변경"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <AccountTab
+            sessionEmployeeId={sessionEmployeeId}
+            pwCurrent={pwCurrent}
+            pwNew={pwNew}
+            pwConfirm={pwConfirm}
+            pwSubmitting={pwSubmitting}
+            pwMsg={pwMsg}
+            setPwCurrent={setPwCurrent}
+            setPwNew={setPwNew}
+            setPwConfirm={setPwConfirm}
+            submitPasswordChange={submitPasswordChange}
+          />
         )}
       </div>
     </>
