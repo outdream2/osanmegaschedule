@@ -30,7 +30,7 @@
 | 2 | `src/components/BarcodeScanner/BarcodeScanner.tsx` | 593 | 3 | raw-alert(1) |
 | 3 | `src/components/OrderManagePage/VendorDetailTabs.tsx` | 819 | 3 | large-file-warn(1) |
 | 4 | `src/components/ScanPage/ProductInfoCard.tsx` | 843 | 3 | large-file-warn(1) |
-| 5 | `src/components/common/SaleStatusFilter.tsx` | 63 | 2 | raw-card-wrapper(1) |
+| 5 | `src/components/common/SaleStatusFilter.tsx` | 65 | 2 | raw-card-wrapper(1) |
 | 6 | `src/components/DisplayPage/RealStockTablePage.tsx` | 776 | 2 | raw-card-wrapper(1) |
 
 ## 📝 모든 위반 파일 (6개)
@@ -43,7 +43,7 @@
 | `src/components/BarcodeScanner/BarcodeScanner.tsx` | 593 | 3 |
 | `src/components/OrderManagePage/VendorDetailTabs.tsx` | 819 | 3 |
 | `src/components/ScanPage/ProductInfoCard.tsx` | 843 | 3 |
-| `src/components/common/SaleStatusFilter.tsx` | 63 | 2 |
+| `src/components/common/SaleStatusFilter.tsx` | 65 | 2 |
 | `src/components/DisplayPage/RealStockTablePage.tsx` | 776 | 2 |
 
 </details>
