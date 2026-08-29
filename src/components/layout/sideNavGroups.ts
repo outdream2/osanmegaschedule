@@ -223,6 +223,37 @@ export function subTabStorageKey(pageKey: AppNavPage): string {
   return `sidebar.subtab.${pageKey}`;
 }
 
+/**
+ * 2026-08-29 · #196 Phase 1 · 페이지별 서브탭 자동 파생 · 단일 소스 원칙
+ *   · pageKey 에 매핑되는 그룹 안 · items 중 · key===pageKey && subTab 있는 것 반환
+ *   · 각 페이지 컴포넌트 (ApprovalRequestPage · BusinessManagePage 등) 하드코드 대체
+ *   · 사이드바 편집 시 · 각 페이지 서브탭 자동 동기
+ *
+ * @param pageKey · 페이지 union · "approval-request" · "business-manage" 등
+ * @returns 해당 페이지의 서브탭 SideNavItem 배열 · 없으면 빈 배열
+ */
+export function getPageSubTabs(pageKey: AppNavPage): SideNavItem[] {
+  const group = SIDE_NAV_GROUPS.find(g =>
+    (g.topTab?.key ?? g.items[0]?.key) === pageKey ||
+    g.items.some(i => i.key === pageKey && i.subTab)
+  );
+  if (!group) return [];
+  return group.items.filter(i => i.key === pageKey && i.subTab);
+}
+
+/**
+ * 2026-08-29 · #196 Phase 1 · 전체 페이지 key 수집 · BottomNav isActive 판정용
+ *   · SIDE_NAV_GROUPS 모든 items 의 key 를 · 중복 제거하여 반환
+ *   · BottomNav 등 · "이 페이지가 우리 그룹 안 어떤 서브인가?" 판정 시 사용
+ */
+export function collectAllPageKeys(): Set<string> {
+  const set = new Set<string>();
+  for (const g of SIDE_NAV_GROUPS) {
+    for (const it of g.items) set.add(String(it.key));
+  }
+  return set;
+}
+
 /** authSession → 숫자 레벨 파생 (0-9) · session.level 우선, 없으면 role 로 fallback */
 export function deriveUserLevel(session: AuthSession | null): number {
   if (!session) return 0;
