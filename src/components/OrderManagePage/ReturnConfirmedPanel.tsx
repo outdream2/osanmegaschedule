@@ -8,6 +8,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
 // 2026-08-29 · #165 A · SearchBar 프리미티브
 import { SearchBar } from "../common/SearchBar";
+// 2026-08-29 · 상품명 검색 · 통일 로직
+import { matchesProductQuery } from "../../lib/productMatch";
 import { api, ApiError } from "../../lib/apiClient";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
@@ -67,13 +69,8 @@ export const ReturnConfirmedPanel: React.FC = () => {
   useEffect(() => { load(); }, [load]);
 
   const filtered = useMemo(() => {
-    const kw = q.trim().toLowerCase();
-    if (!kw) return rows;
-    return rows.filter(r =>
-      (r.product_name ?? "").toLowerCase().includes(kw)
-      || (r.product_code ?? "").toLowerCase().includes(kw)
-      || (r.supplier ?? "").toLowerCase().includes(kw)
-    );
+    // 2026-08-29 · 통일 로직 · matchesProductQuery
+    return rows.filter(r => matchesProductQuery(r, q));
   }, [rows, q]);
 
   const totals = useMemo(() => {

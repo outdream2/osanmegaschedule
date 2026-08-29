@@ -9,6 +9,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { CheckCircle2, HandCoins, Pencil, RefreshCw, Trash2, X, Save } from "lucide-react";
 // 2026-08-29 · #165 A · SearchBar 프리미티브
 import { SearchBar } from "../common/SearchBar";
+// 2026-08-29 · 상품명 검색 · 통일 로직
+import { matchesProductQuery } from "../../lib/productMatch";
 import { api, ApiError } from "../../lib/apiClient";
 import type { AuthSession } from "../../types";
 import { Card } from "../common/Card";
@@ -351,13 +353,8 @@ const BorrowingList: React.FC<{
   onPreviewSignature: (url: string) => void;
 }> = ({ rows, loading, error, onReload, onPatch, onDelete, days, setDays, status, setStatus, q, setQ, onPreviewSignature }) => {
   const filtered = useMemo(() => {
-    const kw = q.trim().toLowerCase();
-    if (!kw) return rows;
-    return rows.filter(r =>
-      (r.supplier ?? "").toLowerCase().includes(kw)
-      || (r.product_name ?? "").toLowerCase().includes(kw)
-      || (r.product_code ?? "").toLowerCase().includes(kw)
-    );
+    // 2026-08-29 · 통일 로직 · matchesProductQuery
+    return rows.filter(r => matchesProductQuery(r, q));
   }, [rows, q]);
 
   return (
