@@ -18,6 +18,8 @@ import { useToast, toastClass } from "../../hooks/useToast";
 //   · 기존 useSaleActiveOnly (전역 KV · 2-state) → useSaleStatusFilter (페이지 로컬 · 3-state)
 import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
+// 2026-08-29 · 사용자 지시 · 상품명 검색 · 프로젝트 전체 · 동일 로직 통일
+import { matchesProductQuery } from "../../lib/productMatch";
 
 interface UnassignedProduct {
   product_code: string;
@@ -76,13 +78,8 @@ export const UnassignedProductsTab: React.FC = () => {
   useEffect(() => { load(); }, [load]);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(r =>
-      String(r.product_name ?? "").toLowerCase().includes(q) ||
-      String(r.supplier ?? "").toLowerCase().includes(q) ||
-      String(r.product_code ?? "").toLowerCase().includes(q)
-    );
+    // 2026-08-29 · 통일 로직 · matchesProductQuery (초성·부분·코드·바코드)
+    return rows.filter(r => matchesProductQuery(r, search));
   }, [rows, search]);
 
   const startEdit = (row: UnassignedProduct) => {

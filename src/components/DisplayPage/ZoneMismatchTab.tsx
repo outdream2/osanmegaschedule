@@ -9,6 +9,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, RefreshCw, Trash2, Check, Pencil, X as XIcon, ChevronDown, ChevronRight } from "lucide-react";
 // 2026-08-29 · #165 Phase A · SearchBar 프리미티브
 import { SearchBar } from "../common/SearchBar";
+// 2026-08-29 · 사용자 지시 · 상품명 검색 · 통일 로직
+import { matchesProductQuery } from "../../lib/productMatch";
 import { api, ApiError } from "../../lib/apiClient";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
@@ -182,11 +184,11 @@ export const ZoneMismatchTab: React.FC = () => {
     const bothPresent = rows.filter(r => isValidZone(r.spec_zone) && isValidZone(r.real_zone));
     // 2026-08-29 · #154 Phase 1 · 3-way 판매중 필터 적용 (sale_status null 이면 "all" 만 통과)
     const saleFiltered = bothPresent.filter(r => saleMatches(r.sale_status));
+    // 2026-08-29 · 통일 로직 · matchesProductQuery + 구역 필드 (spec_zone·real_zone) 추가 매칭
     const q = search.trim().toLowerCase();
     const filtered = q
       ? saleFiltered.filter(r =>
-          String(r.product_name ?? "").toLowerCase().includes(q) ||
-          String(r.product_code ?? "").toLowerCase().includes(q) ||
+          matchesProductQuery(r, search) ||
           String(r.spec_zone ?? "").toLowerCase().includes(q) ||
           String(r.real_zone ?? "").toLowerCase().includes(q)
         )

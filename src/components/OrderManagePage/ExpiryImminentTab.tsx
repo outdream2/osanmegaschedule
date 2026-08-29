@@ -16,6 +16,8 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
 import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { SearchBar } from "../common/SearchBar";
+// 2026-08-29 · 사용자 지시 · 상품명 검색 · 통일 로직
+import { matchesProductQuery } from "../../lib/productMatch";
 
 interface ExpiryProduct {
   product_code: string;
@@ -78,15 +80,13 @@ export const ExpiryImminentTab: React.FC = () => {
   useEffect(() => { load(); }, [load]);
 
   const filtered = useMemo(() => {
-    const kw = q.trim().toLowerCase();
-    // 2026-08-29 · #154 P2 · saleMatches 먼저 적용 · 검색어와 AND
+    // 2026-08-29 · saleMatches AND matchesProductQuery (통일 로직) + real_map 추가 매칭
     const saleFiltered = rows.filter(r => saleMatches(r.sale_status));
+    const kw = q.trim().toLowerCase();
     if (!kw) return saleFiltered;
     return saleFiltered.filter(r =>
-      r.product_name.toLowerCase().includes(kw)
-      || r.product_code.toLowerCase().includes(kw)
-      || (r.supplier ?? "").toLowerCase().includes(kw)
-      || (r.real_map ?? "").toLowerCase().includes(kw)
+      matchesProductQuery(r, q) ||
+      String(r.real_map ?? "").toLowerCase().includes(kw)
     );
   }, [rows, q, saleMatches]);
 
