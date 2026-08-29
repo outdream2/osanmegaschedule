@@ -10,6 +10,8 @@ import { PackageCheck, Search, RefreshCw, Check, X, ChevronRight, ChevronDown, A
 import { Modal } from "../common/Modal";
 import { api, ApiError } from "../../lib/apiClient";
 import { Card } from "../common/Card";
+// 2026-08-29 · framework audit · SegmentedControl 프리미티브
+import { SegmentedControl } from "../common/SegmentedControl";
 import { EmptyState } from "../common/EmptyState";
 import { Spinner } from "../common/Spinner";
 import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/TableList";
@@ -577,28 +579,19 @@ export const RealStockTablePage: React.FC = () => {
           </Card>
         ) : (
           <>
-            {/* 2026-08-28 · 사용자 지시 · 매장/창고 필터 · 리스트 상단으로 이동 (툴바에서 분리) · sticky */}
+            {/* 2026-08-29 · framework audit · SegmentedControl 프리미티브 사용 · raw-card-wrapper 해소 */}
             <div className="flex items-center gap-2 px-1 mb-2 flex-wrap">
               <span className="text-[12px] font-bold text-ink-soft mr-1">보기:</span>
-              <div className="inline-flex items-center bg-white border border-line rounded-lg overflow-hidden shadow-sm">
-                {([
-                  { k: "all", label: "전체", tone: "" },
-                  { k: "store", label: "매장만", tone: "violet" },
-                  { k: "warehouse", label: "창고만", tone: "cyan" },
-                ] as const).map((o) => {
-                  const active = locFilter === o.k;
-                  const activeCls = o.tone === "violet" ? "bg-violet-600 text-white" : o.tone === "cyan" ? "bg-cyan-600 text-white" : "bg-brand-deep text-white";
-                  return (
-                    <button
-                      key={o.k}
-                      type="button"
-                      onClick={() => setLocFilter(o.k)}
-                      className={`h-8 px-3 text-[13px] font-bold transition cursor-pointer ${active ? activeCls + " shadow-sm" : "text-ink-soft hover:bg-zinc-50 hover:text-brand-deep"}`}
-                      title={`${o.label} 컬럼만 표시`}
-                    >{o.label}</button>
-                  );
-                })}
-              </div>
+              <SegmentedControl
+                value={locFilter}
+                onChange={(v) => setLocFilter(v as typeof locFilter)}
+                ariaLabel="위치 필터"
+                options={[
+                  { value: "all",       label: "전체",   tone: "brand",  title: "전체 컬럼 표시" },
+                  { value: "store",     label: "매장만", tone: "violet", title: "매장만 표시" },
+                  { value: "warehouse", label: "창고만", tone: "sky",    title: "창고만 표시" },
+                ]}
+              />
               <span className="text-[12px] text-ink-soft ml-auto tabular-nums">
                 {sorted.length}건
               </span>

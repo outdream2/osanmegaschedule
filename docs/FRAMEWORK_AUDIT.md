@@ -8,35 +8,30 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 753 |
-| 위반 파일 | 3 |
-| 클린 파일 | 750 (100%) |
-| 총 위반 개수 | 3 |
+| 스캔 파일 | 754 |
+| 위반 파일 | 1 |
+| 클린 파일 | 753 (100%) |
+| 총 위반 개수 | 1 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
 | `raw-alert` | 1 | 1 | high | useToast (showError·showSuccess) |
-| `raw-card-wrapper` | 2 | 2 | medium | Card 프리미티브 (padding·variant·clip) |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
 | 1 | `src/components/BarcodeScanner/BarcodeScanner.tsx` | 593 | 3 | raw-alert(1) |
-| 2 | `src/components/common/SaleStatusFilter.tsx` | 65 | 2 | raw-card-wrapper(1) |
-| 3 | `src/components/DisplayPage/RealStockTablePage.tsx` | 776 | 2 | raw-card-wrapper(1) |
 
-## 📝 모든 위반 파일 (3개)
+## 📝 모든 위반 파일 (1개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
 | `src/components/BarcodeScanner/BarcodeScanner.tsx` | 593 | 3 |
-| `src/components/common/SaleStatusFilter.tsx` | 65 | 2 |
-| `src/components/DisplayPage/RealStockTablePage.tsx` | 776 | 2 |
 
 </details>
 

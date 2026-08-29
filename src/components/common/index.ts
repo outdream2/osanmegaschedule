@@ -60,6 +60,8 @@ export { SearchFilterChips } from "./SearchFilterChips";
 export { SeasonButtons } from "./SeasonButtons";
 export { SectionCard } from "./SectionCard";
 export { SectionLabel } from "./SectionLabel";
+export { SegmentedControl } from "./SegmentedControl";
+export type { SegmentedTone, SegmentedSize, SegmentedOption, SegmentedControlProps } from "./SegmentedControl";
 export { SessionTimeoutWarning } from "./SessionTimeoutWarning";
 export { SettingsPageShell } from "./SettingsPageShell";
 export { SignaturePad } from "./SignaturePad";
