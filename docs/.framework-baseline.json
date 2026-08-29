@@ -1,8 +1,22 @@
 {
-  "created": "2026-08-28",
+  "created": "2026-08-29",
   "version": 1,
-  "totalViolations": 4,
+  "totalViolations": 7,
   "files": {
+    "src/components/SettingsModal/SettingsModal.tsx": {
+      "lines": 911,
+      "violations": [
+        {
+          "ruleId": "raw-confirm",
+          "count": 2
+        },
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 7
+    },
     "src/components/OrderManagePage/VendorDetailTabs.tsx": {
       "lines": 819,
       "violations": [
@@ -14,7 +28,7 @@
       "totalWeight": 3
     },
     "src/components/ScanPage/ProductInfoCard.tsx": {
-      "lines": 833,
+      "lines": 843,
       "violations": [
         {
           "ruleId": "large-file-warn",

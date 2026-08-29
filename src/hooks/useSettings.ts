@@ -20,6 +20,8 @@ export interface WageRate {
 
 export interface AppSettings {
   positions: string[];
+  /** 2026-08-29 · #177 P2 · 직급(rank) 목록 · 자유 텍스트 · 대표·부장·과장·사원 등 · 편집 시 재직 직원 자동 rename · optional (DB migration 없이 자동 default) */
+  ranks?: string[];
   employmentTypes: string[];
   workplaces: string[];
   scheduleTypes: ScheduleTypeEntry[];
@@ -45,6 +47,8 @@ export function defaultWageForPosition(position: string): WageRate {
 
 const DEFAULT_SETTINGS: AppSettings = {
   positions: ["약사", "캐셔", "물류", "대표", "임원"],
+  // 2026-08-29 · #177 P2 · 직급 · 자유 텍스트 · 기본값 (사용자 자유롭게 편집 가능)
+  ranks: ["대표", "부장", "팀장", "과장", "대리", "사원"],
   employmentTypes: ["정직원", "계약직", "알바"],
   workplaces: ["매장", "창고"],
   scheduleTypes: DEFAULT_SCHEDULE_TYPES,
@@ -123,6 +127,9 @@ function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
   return {
     positions: Array.isArray(parsed.positions) && parsed.positions.length > 0
       ? parsed.positions : DEFAULT_SETTINGS.positions,
+    // 2026-08-29 · #177 P2 · ranks · DB 없어도 default 폴백
+    ranks: Array.isArray((parsed as any).ranks) && (parsed as any).ranks.length > 0
+      ? (parsed as any).ranks as string[] : DEFAULT_SETTINGS.ranks,
     employmentTypes: Array.isArray(parsed.employmentTypes) && parsed.employmentTypes.length > 0
       ? parsed.employmentTypes : DEFAULT_SETTINGS.employmentTypes,
     workplaces: Array.isArray(parsed.workplaces) && parsed.workplaces.length > 0
@@ -231,6 +238,7 @@ export function useSettings() {
 
   return {
     positions: settings.positions,
+    ranks: settings.ranks,
     employmentTypes: settings.employmentTypes,
     workplaces: settings.workplaces,
     scheduleTypes: settings.scheduleTypes,
