@@ -45,7 +45,8 @@ function parseGroupId(id: string): { dateStr: string; verifiedBy: string } | nul
 //   · 이미 매입에 있으면 (같은 date+code+supplier+qty+amount) · verify_status 만 UPDATE
 //   · 없으면 · INSERT (신규 매입 · 수동 검수)
 // ─────────────────────────────────────────────────────────────────
-router.post("/api/product-arrivals", validateBody(CreateProductArrivalSchema), asyncHandler(async (req, res) => {
+// 2026-08-29 · #201 BUG-2 · POST authorize(3) 추가 · 상품입고 검수 · 매입 원본 오염 방지
+router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArrivalSchema), asyncHandler(async (req, res) => {
   const body = req.body;
   const items = body.items;
 
