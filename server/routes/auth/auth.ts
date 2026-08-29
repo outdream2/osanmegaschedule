@@ -105,6 +105,50 @@ router.post("/api/auth/set-password", authorize(9), validateBody(SetPasswordSche
   res.status(200).json({ ok: true });
 }));
 
+// 2026-08-29 · #174 · SSO · 다른 브라우저로 로그인 상태 이전
+//   · POST /api/auth/sso-token · 인증된 세션 · 5분 만료 SSO 토큰 (typ='sso') · JSON 반환
+//   · 사용 · window.open(url + '?sso={token}') · 새 브라우저에서 sso-consume 로 정식 쿠키 발급
+router.post("/api/auth/sso-token", authorize(1), asyncHandler(async (req, res) => {
+  const session = getSession(req);
+  if (!session) throw unauthorized("로그인 필요");
+  const JWT_SECRET = process.env.JWT_SECRET || "";
+  if (!JWT_SECRET) throw new HttpError(500, "JWT_SECRET 미설정");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const jwt = require("jsonwebtoken");
+  const ssoToken = jwt.sign(
+    { sub: session.sub, name: session.name, role: session.role, level: session.level, typ: "sso" },
+    JWT_SECRET,
+    { algorithm: "HS256", expiresIn: "5m" },
+  );
+  audit("SSO_TOKEN_ISSUE", { ...auditContext(req), userId: session.sub, name: session.name });
+  res.status(200).json({ token: ssoToken, expiresIn: 300 });
+}));
+
+// SSO 토큰 소비 · 새 브라우저에서 · 검증 후 정식 쿠키 발급
+router.post("/api/auth/sso-consume", asyncHandler(async (req, res) => {
+  const token = String(req.body?.token ?? "").trim();
+  if (!token) throw badRequest("SSO 토큰 필요");
+  const JWT_SECRET = process.env.JWT_SECRET || "";
+  if (!JWT_SECRET) throw new HttpError(500, "JWT_SECRET 미설정");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const jwt = require("jsonwebtoken");
+  let decoded: JwtPayload;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] }) as JwtPayload;
+  } catch {
+    throw unauthorized("SSO 토큰 만료 또는 무효");
+  }
+  if (decoded.typ !== "sso") throw unauthorized("SSO 토큰 타입 오류");
+  try {
+    issueToken(res, { sub: decoded.sub, name: decoded.name, role: decoded.role, level: decoded.level }, false);
+  } catch {
+    throw new HttpError(500, "인증 시스템 설정 오류");
+  }
+  audit("SSO_CONSUME", { ...auditContext(req), userId: decoded.sub, name: decoded.name });
+  const body: LoginResponse = { id: decoded.sub, name: decoded.name, role: decoded.role, level: decoded.level, rank: null };
+  res.status(200).json(body);
+}));
+
 // Refresh · access 만료 시 · refresh 로 새 access 재발급
 router.post("/api/auth/refresh", asyncHandler(async (req, res) => {
   const payload = refreshAccessToken(req, res);

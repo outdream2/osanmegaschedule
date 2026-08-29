@@ -84,6 +84,39 @@ export default function App() {
     extendSession,
   } = useAuth();
 
+  // 2026-08-29 · #174 · SSO · 새 브라우저에서 ?sso={token} 감지 시 · 정식 쿠키 발급 · 자동 로그인
+  //   · sso-consume 성공 시 · authSession 세팅 · URL 쿼리 정리
+  //   · 실패 시 · 조용히 무시 (일반 랜딩 화면)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ssoToken = params.get("sso");
+    if (!ssoToken) return;
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    (async () => {
+      try {
+        const { api } = await import("./lib/apiClient");
+        const { data } = await api.post<{ id: number; name: string; role: any; level: number }>("/api/auth/sso-consume", { token: ssoToken });
+        setAuthSession({
+          employeeId: data.id,
+          employeeName: data.name,
+          role: data.role,
+          level: data.level,
+          loginAt: Date.now(),
+          lastActiveAt: Date.now(),
+        });
+        console.log("[SSO] · 로그인 성공 · %s", data.name);
+      } catch (e: any) {
+        console.warn("[SSO] · consume 실패:", e?.message ?? e);
+      } finally {
+        // URL 쿼리 정리 · 다른 사람이 URL 복사 시 재사용 방지
+        const url = new URL(window.location.href);
+        url.searchParams.delete("sso");
+        window.history.replaceState({}, "", url.toString());
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // 상품 캐시 prefetch · 로그인 즉시 아니라 상품 관련 페이지 진입 시로 지연 (2026-07-15 · B)
   //   상품 관련 페이지: scan/display/stockcheck/stockarrivals · 상품 데이터 필요
   //   나머지 페이지: 상품 데이터 안 씀 → prefetch 스킵으로 초기 로딩 부하 감소

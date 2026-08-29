@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useZxing } from "react-zxing";
-import { X, ScanLine, Zap, ImageIcon, Info, ChevronDown, ChevronUp } from "lucide-react";
+import { X, ScanLine, Zap, ImageIcon, Info, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+// 2026-08-29 · #174 · SSO 다른 브라우저 열기
+import { api } from "../../lib/apiClient";
 
 const isAndroid = /android/i.test(navigator.userAgent);
 const isDesktop = !/android|iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -387,6 +389,48 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* 2026-08-29 · #174 · 카메라 실패 시 · 다른 브라우저 열기 (SSO · 로그인 유지) */}
+          {!state.frozenFrame && camError && (
+            <div className="absolute inset-x-4 top-16 z-30 flex flex-col items-stretch gap-3">
+              <div className="rounded-xl bg-rose-500/95 text-white p-4 shadow-2xl ring-1 ring-rose-400 backdrop-blur-md">
+                <div className="flex items-start gap-3">
+                  <div className="shrink-0 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                    <X size={22} strokeWidth={2.5} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[15px] font-bold leading-tight mb-1">카메라를 열 수 없습니다</div>
+                    <div className="text-[12px] text-white/85 leading-snug break-words">
+                      {camError}
+                      {ios && !isSafariMain && <><br />iOS 홈화면 웹앱은 카메라 제한.</>}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      const { data } = await api.post<{ token: string }>("/api/auth/sso-token", {});
+                      const url = new URL(window.location.href);
+                      url.searchParams.set("sso", data.token);
+                      // 새 브라우저 · 새 창 · 사용자가 원하는 브라우저에서 열도록 target='_blank'
+                      window.open(url.toString(), "_blank", "noopener,noreferrer");
+                    } catch (err: any) {
+                      alert(`SSO 토큰 발급 실패: ${err?.message ?? "네트워크 오류"}\n\n수동으로 URL 을 다른 브라우저에서 열어주세요:\n${window.location.href}`);
+                    }
+                  }}
+                  className="mt-3 w-full inline-flex items-center justify-center gap-2 h-11 rounded-lg bg-white text-rose-700 text-[14px] font-bold hover:bg-rose-50 active:scale-[0.98] transition cursor-pointer shadow-md"
+                >
+                  <ExternalLink size={16} strokeWidth={2.5} />
+                  다른 브라우저로 열기 (로그인 유지)
+                </button>
+                <div className="mt-2 text-[11px] text-white/75 text-center leading-relaxed">
+                  새 탭이 열리면 · 원하는 브라우저에 URL 복사·붙여넣기 하세요 (5분 내 유효)
+                </div>
+              </div>
             </div>
           )}
 

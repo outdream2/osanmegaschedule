@@ -72,7 +72,7 @@ export interface JwtPayload {
   level: number;
   rememberMe?: boolean;
   /** 2026-08-16 · S10 · "refresh" 이면 refresh token · 그 외 access */
-  typ?: "access" | "refresh";
+  typ?: "access" | "refresh" | "sso";
 }
 
 // ─────────────────────────────────────────────────
