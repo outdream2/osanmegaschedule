@@ -174,8 +174,8 @@ describe("ProductInfoPage · 상품 리스트 로드 · 선택 · 상세", () =>
     const btn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("타이레놀")) as HTMLButtonElement;
     fireEvent.click(btn);
     await waitFor(() => {
-      // 상세 패널의 "상품코드" 라벨
-      expect(container.textContent).toContain("상품코드");
+      // 2026-08-29 · #186 A안 · Hero · "코드 PC001" · Basic Panel · "타이레놀"
+      expect(container.textContent).toContain("코드");
       expect(container.textContent).toContain("PC001");
     });
   });
@@ -193,26 +193,28 @@ describe("ProductInfoPage · 편집 모드 (canEdit)", () => {
     });
   });
 
-  it("권한자 (admin) · 상품 선택 후 · [편집] 버튼 노출", async () => {
+  it("권한자 (admin) · 상품 선택 후 · [상세 편집] 버튼 노출", async () => {
     const auth: AuthSession = { role: "admin", level: 8 };
     const { container } = render(<ProductInfoPage authSession={auth} />);
     await waitFor(() => expect(container.textContent).toContain("타이레놀"));
     const btn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("타이레놀")) as HTMLButtonElement;
     fireEvent.click(btn);
     await waitFor(() => {
-      const editBtn = Array.from(container.querySelectorAll("button")).find(b => b.textContent === "편집");
+      // 2026-08-29 · #186 A안 · Hero 액션 슬롯 · [상세 편집] 버튼
+      const editBtn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("상세 편집"));
       expect(editBtn).toBeTruthy();
     });
   });
 
-  it("비권한자 (employee lv1) · [편집] 버튼 없음", async () => {
+  it("비권한자 (employee lv1) · [상세 편집] 버튼 없음", async () => {
     const auth: AuthSession = { role: "employee", level: 1 };
     const { container } = render(<ProductInfoPage authSession={auth} />);
     await waitFor(() => expect(container.textContent).toContain("타이레놀"));
     const btn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("타이레놀")) as HTMLButtonElement;
     fireEvent.click(btn);
-    await waitFor(() => expect(container.textContent).toContain("상품코드"));
-    const editBtn = Array.from(container.querySelectorAll("button")).find(b => b.textContent === "편집");
+    // 2026-08-29 · #186 A안 · Hero · "코드 PC001" 표시로 상세 로드 확인
+    await waitFor(() => expect(container.textContent).toContain("PC001"));
+    const editBtn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("상세 편집"));
     expect(editBtn).toBeFalsy();
   });
 });

@@ -29,6 +29,8 @@ import { consumeScanPendingProductCode } from "../../hooks/useScanUnregisteredMo
 // import { useSaleActiveOnly } from "../../hooks/useSaleActiveOnly";  // deprecated · 이중 필터 원인
 // 2026-08-28 · 사용자 지시 · 13컬럼 통일 · ProductBasicInfoPanel 상단 삽입
 import { ProductBasicInfoPanel } from "../common/ProductBasicInfoPanel";
+// 2026-08-29 · #186 A안 · Attio Sticky Hero · 상단 고정 상품명·배지·액션
+import { ProductDetailHero } from "../common/ProductDetailHero";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 interface ProductRow {
@@ -246,8 +248,31 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
 
   return (
     <>
+      {/* 2026-08-29 · #186 A안 · Attio Sticky Hero · 상단 고정 · 상품명·배지·상세편집 액션 */}
+      <ProductDetailHero
+        product={{
+          product_code: product.product_code,
+          product_name: product.product_name,
+          category: (product as any).category,
+          category_code: (product as any).category_code,
+          supplier: product.supplier,
+          sale_status: (product as any).sale_status,
+          barcode: (product as any).barcode,
+        }}
+        actions={canEdit && (
+          <button
+            type="button"
+            onClick={() => { setDetailModalOpen(true); if (!editing) startEdit(); }}
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-line bg-white text-[14px] font-bold text-brand-deep hover:bg-brand-tint hover:border-brand-deep transition cursor-pointer shadow-sm"
+            title="상세 편집 (전체 필드)"
+          >
+            <Pencil size={14} strokeWidth={2.4} />
+            상세 편집
+          </button>
+        )}
+      />
       <div className="p-4 space-y-3">
-        {/* 2026-08-28 · 사용자 지시 · 13컬럼 통일 · ProductBasicInfoPanel 상단 · 진열위치·판매상태 인라인 편집 */}
+        {/* 2026-08-28 · 사용자 지시 · 13컬럼 통일 · ProductBasicInfoPanel · 진열위치·판매상태 인라인 편집 */}
         <ProductBasicInfoPanel
           product={{
             product_code: product.product_code,
@@ -271,20 +296,6 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
           onLocationChange={handleLocationChange}
           onSaleStatusChange={handleSaleStatusChange}
         />
-        {/* 2026-08-29 · 사용자 지시 · 상세 편집 · 모달로 이동 · [상세 편집] 버튼으로 오픈 */}
-        {canEdit && (
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => { setDetailModalOpen(true); if (!editing) startEdit(); }}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-line bg-white text-[14px] font-bold text-brand-deep hover:bg-brand-tint hover:border-brand-deep transition cursor-pointer shadow-sm"
-              title="상세 편집 (전체 필드)"
-            >
-              <Pencil size={14} strokeWidth={2.4} />
-              상세 편집
-            </button>
-          </div>
-        )}
       </div>
       {/* 2026-08-29 · 사용자 지시 · 상세 편집 · 모달 · [상세 편집] 버튼 클릭 시 오픈 */}
       <Modal
