@@ -171,7 +171,8 @@ export const VendorManageSplit: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2 text-[14px] pl-0.5">
                   <div className="flex items-baseline gap-1 min-w-0">
                     <span className="text-zinc-400 shrink-0">담당</span>
-                    <span className="font-semibold text-zinc-700 truncate">
+                    {/* 2026-08-29 · UI 감사 U1 · truncate 제거 · 담당자 이름 잘림 방지 */}
+                    <span className="font-semibold text-zinc-700 break-words whitespace-normal">
                       {String(v.contact_name ?? "") || <span className="text-zinc-300">-</span>}
                     </span>
                   </div>
@@ -181,7 +182,7 @@ export const VendorManageSplit: React.FC = () => {
                       <a
                         href={`tel:${phoneStr.replace(/[^0-9+]/g, "")}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="font-semibold tabular-nums text-brand-deep truncate hover:underline"
+                        className="font-semibold tabular-nums text-brand-deep break-all hover:underline"
                         title="전화 걸기"
                       >{phoneStr}</a>
                     ) : (

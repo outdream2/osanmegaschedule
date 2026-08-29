@@ -44,7 +44,7 @@ export const SectionTitle: React.FC<{
     <div className="flex items-center gap-2 pb-1.5 border-b border-zinc-100">
       <span className={`w-1 h-4 rounded-full ${c.bar} shrink-0`} />
       <span className={`text-[17px] font-bold ${c.text}`}>{title}</span>
-      {hint && <span className="ml-auto text-[14px] text-zinc-400 font-mono tabular-nums">{hint}</span>}
+      {hint && <span className="ml-auto text-[14px] text-zinc-400 tabular-nums">{hint}</span>}
     </div>
   );
 };
@@ -73,8 +73,9 @@ export const StatCard: React.FC<{
           <span className={c.iconColor}>{icon}</span><span>{label}</span>
         </span>
       </div>
-      <div className={`text-[17px] font-extrabold ${c.text} font-mono tabular-nums truncate leading-tight`} title={value}>{value}</div>
-      {sub && <div className="text-[13px] font-medium text-ink-soft mt-0.5 truncate" title={sub}>{sub}</div>}
+      {/* 2026-08-29 · UI 감사 U1/U2 · font-mono → tabular-nums · truncate 제거 (KPI 잘림 방지) */}
+      <div className={`text-[17px] font-extrabold ${c.text} tabular-nums break-words whitespace-normal leading-tight`} title={value}>{value}</div>
+      {sub && <div className="text-[13px] font-medium text-ink-soft mt-0.5 break-words whitespace-normal" title={sub}>{sub}</div>}
     </div>
   );
 };

@@ -306,7 +306,8 @@ const ReadRow: React.FC<{ icon: React.ReactNode; label: string; value: string; m
     <div className="flex items-center gap-1.5 text-[15px] font-bold text-zinc-500 uppercase tracking-wider">
       <span className="text-zinc-400">{icon}</span> {label}
     </div>
-    <div className={`text-[15px] font-bold text-zinc-800 truncate ${mono ? "font-mono" : ""}`}>{value || "-"}</div>
+    {/* 2026-08-29 · UI 감사 U1/U2 · truncate 제거 + font-mono → tabular-nums (Pretendard 통일) */}
+    <div className={`text-[15px] font-bold text-zinc-800 break-words whitespace-normal ${mono ? "tabular-nums" : ""}`}>{value || "-"}</div>
   </div>
 );
 

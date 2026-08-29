@@ -398,8 +398,9 @@ export const ProductSummarySection: React.FC<ProductSummarySectionProps> = ({
             <tbody className="divide-y divide-zinc-100">
               {sortedProductSummary.slice(0, 100).map((p) => (
                 <tr key={p.product_code || p.product_name} className="hover:bg-emerald-50/40">
-                  <td className="px-2 py-1.5 font-semibold text-zinc-700 truncate max-w-[220px]" title={p.product_name}>{p.product_name}</td>
-                  <td className="px-2 py-1.5 text-zinc-400 font-mono text-[15px]">{p.product_code || "-"}</td>
+                  {/* 2026-08-29 · UI 감사 U1 · truncate 제거 · 상품명 잘림 방지 (대원칙) */}
+                  <td className="px-2 py-1.5 font-semibold text-zinc-700 break-words whitespace-normal leading-tight" style={{ minWidth: 180 }} title={p.product_name}>{p.product_name}</td>
+                  <td className="px-2 py-1.5 text-zinc-400 tabular-nums text-[15px]">{p.product_code || "-"}</td>
                   <td className="px-2 py-1.5 text-right font-bold text-zinc-700">{p.totalQty.toLocaleString()}</td>
                   <td className="px-2 py-1.5 text-right font-bold text-emerald-700">{fmtWonShort(p.totalAmount)}</td>
                   <td className="px-2 py-1.5 text-center text-zinc-500">{p.invoiceCount}</td>

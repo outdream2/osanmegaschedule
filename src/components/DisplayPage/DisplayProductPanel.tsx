@@ -44,8 +44,9 @@ export const DisplayProductPanel: React.FC<DisplayProductPanelProps> = ({
               return (
                 <div key={p.code} className={`px-3 py-2 flex items-start justify-between gap-2 ${isMatch ? "bg-emerald-50 border-l-2 border-emerald-400" : ""}`}>
                   <button type="button" onClick={() => onProductResultClick(p.realMap)} className="flex-1 min-w-0 text-left hover:opacity-75 transition cursor-pointer">
-                    <div className="text-[13px] font-semibold text-zinc-800 truncate">{p.name}</div>
-                    {p.spec && <div className="text-[11px] text-zinc-400 truncate mt-0.5">{p.spec}</div>}
+                    {/* 2026-08-29 · UI 감사 U1 · truncate 제거 · 상품명·규격 잘림 방지 (대원칙) */}
+                    <div className="text-[13px] font-semibold text-zinc-800 break-words whitespace-normal leading-tight">{p.name}</div>
+                    {p.spec && <div className="text-[11px] text-zinc-400 break-words whitespace-normal leading-tight mt-0.5">{p.spec}</div>}
                   </button>
                   <div className="flex items-center gap-1.5 shrink-0">
                     {p.realMap && <button type="button" onClick={() => onProductResultClick(p.realMap)} className="flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 whitespace-nowrap hover:text-emerald-900 transition cursor-pointer"><MapPin size={9} />{p.realMap}</button>}

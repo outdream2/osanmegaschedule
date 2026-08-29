@@ -152,7 +152,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         <div className="text-[17px] font-bold text-ink tracking-tight flex items-center gap-1.5 flex-wrap">
           발주서 {orderModal.suppliers.length > 1 && <span className="text-[13px] font-semibold text-ink-soft">· 공급사별 {orderModal.suppliers.length}건 개별 발주</span>}
         </div>
-        <div className="text-[13px] font-mono text-ink-soft mt-0.5 truncate">
+        {/* 2026-08-29 · UI 감사 U1/U2 · font-mono → tabular-nums · truncate 제거 */}
+        <div className="text-[13px] tabular-nums text-ink-soft mt-0.5 break-words whitespace-normal">
           {orderModal.suppliers.length > 1 ? "일괄 발송 · 각 공급사별 고유 번호" : `#${orderModal.suppliers[0]?.order_number ?? orderModal.orderNumber}`}
         </div>
       </div>
