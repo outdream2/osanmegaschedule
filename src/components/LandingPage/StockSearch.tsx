@@ -17,11 +17,12 @@ export interface StockItem {
 
 interface StockBadge { label: string; tone: PillTone; }
 
-/** 재고·판매 배지 · 재고있음/재고없음 + 판매중/판매중단 */
+/** 재고·판매 배지 · 재고있음(숫자)/재고없음 + 판매중/판매중단
+ *  2026-08-29 · #162 · 사용자 지시 · 재고 개수 · 실제 숫자 표시 (예: "재고 12") */
 function getStockBadges(item: StockItem): StockBadge[] {
   const n = Number(item.current_stock ?? 0);
   const stockBadge: StockBadge = Number.isFinite(n) && n > 0
-    ? { label: "재고있음", tone: "emerald" }
+    ? { label: `재고 ${n}`, tone: "emerald" }
     : { label: "재고없음", tone: "rose" };
   const status = item.sale_status ?? "";
   const saleBadge: StockBadge = /단종|판매중지|판매불가|판매\s*중단/.test(status)
