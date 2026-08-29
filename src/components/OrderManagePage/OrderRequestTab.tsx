@@ -310,9 +310,9 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                 onClick={() => toggleGroupCollapse(currentSup)}
                                 title={isCollapsed ? "펼치기" : "접기"}
                               >
-                                {/* 2026-08-24 · 최신 트렌드 · 세로 accent 제거 · 부드러운 gradient · 상단 hairline
-                                    · bg-gradient-to-b · 미묘한 depth · 위쪽 살짝 진하게 (Attio/Linear 톤) */}
-                                <td colSpan={99} className="px-3 py-2 bg-gradient-to-b from-brand-tint/70 to-brand-tint/40 hover:from-brand-tint hover:to-brand-tint/60 border-b border-brand/10 transition-colors duration-200">
+                                {/* 2026-08-29 · #210 Phase 2 · 카드형 강화 · border-l-4 brand accent · shadow-inner · 상단 hairline
+                                    · v3 gradient 유지 · 표 구조 유지 · UX 회귀 X */}
+                                <td colSpan={99} className="px-3 py-2 bg-gradient-to-b from-brand-tint/70 to-brand-tint/40 hover:from-brand-tint hover:to-brand-tint/60 border-b border-brand/10 border-l-4 border-l-brand-deep/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] transition-colors duration-200">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     {/* 2026-08-24 · v3 · caret · 접기/펼치기 · 크게 (사용자 지시) */}
                                     <span className={`inline-flex items-center justify-center w-6 h-6 text-[16px] font-bold text-brand-deep transition-transform ${isCollapsed ? "-rotate-90" : ""}`}>▾</span>
