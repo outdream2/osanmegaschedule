@@ -4,6 +4,8 @@
 // 2026-08-29 · 탭 서브컴포넌트 분리 (tabs/*.tsx) · shell 유지
 import React, { useState, useEffect } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+// 2026-08-29 · framework audit fix · window.confirm → useConfirm
+import { useConfirm } from "../../hooks/useConfirm";
 import { ShieldCheck, ChevronRight } from "lucide-react";
 import { AppSettings, WageRate, ScheduleTypeEntry, defaultWageForPosition } from "../../hooks/useSettings";
 import { COLOR_PRESETS } from "../../constants";
@@ -100,6 +102,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [editingRankIdx, setEditingRankIdx] = useState<number | null>(null);
   const [editingRankValue, setEditingRankValue] = useState("");
   const [rankRenaming, setRankRenaming] = useState(false);
+  // 2026-08-29 · framework audit · window.confirm → useConfirm
+  const confirm = useConfirm();
 
   const [workplaces, setWorkplaces] = useState<string[]>([...settings.workplaces]);
   const [newWorkplace, setNewWorkplace] = useState("");
@@ -186,11 +190,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     saveRanks([...ranks, trimmed]);
     setNewRank("");
   };
-  const removeRank = (idx: number) => {
+  const removeRank = async (idx: number) => {
     const removing = ranks[idx];
     const using = employees.filter(e => ((e as any).rank ?? "") === removing);
     if (using.length > 0) {
-      const ok = window.confirm(`직급 "${removing}" 사용중 · 재직 직원 ${using.length}명\n삭제 시 해당 직원의 직급이 비워집니다. 진행?`);
+      // 2026-08-29 · framework audit · useConfirm 교체
+      const ok = await confirm({
+        message: `직급 "${removing}" 사용중 · 재직 직원 ${using.length}명\n삭제 시 해당 직원의 직급이 비워집니다. 진행?`,
+        danger: true,
+      });
       if (!ok) return;
       setRankRenaming(true);
       Promise.all(using.map(emp => api.patch(`/api/employees/${emp.id}`, { rank: null }).catch(() => null)))
@@ -215,13 +223,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const using = employees.filter(e => ((e as any).rank ?? "") === original);
     const next = ranks.map((r, i) => i === editingRankIdx ? trimmed : r);
     if (using.length > 0) {
-      // 2026-08-29 · #185 Phase B · confirm 문구에 재로그인 안내 포함 (framework · alert 금지)
-      const ok = window.confirm(
-        `직급 "${original}" → "${trimmed}"\n` +
-        `재직 직원 ${using.length}명 · 자동으로 함께 변경됩니다.\n\n` +
-        `⚠ JWT 세션 rank 는 다음 로그인 시 반영\n(현재 로그인 중인 해당 직원 · 로그아웃·재로그인 필요)\n\n` +
-        `진행?`
-      );
+      // 2026-08-29 · #185 Phase B · framework audit · useConfirm 교체
+      const ok = await confirm({
+        message:
+          `직급 "${original}" → "${trimmed}"\n` +
+          `재직 직원 ${using.length}명 · 자동으로 함께 변경됩니다.\n\n` +
+          `⚠ JWT 세션 rank 는 다음 로그인 시 반영\n(현재 로그인 중인 해당 직원 · 로그아웃·재로그인 필요)\n\n` +
+          `진행?`,
+      });
       if (!ok) { cancelEditRank(); return; }
       setRankRenaming(true);
       try {
