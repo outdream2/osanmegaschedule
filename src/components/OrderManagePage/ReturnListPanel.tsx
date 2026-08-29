@@ -24,6 +24,8 @@ import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-26 · 프레임워크 · useConfirm 프리미티브 · window.confirm 대체
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-08-29 · 상품명 검색 · 통일 로직
+import { matchesProductQuery } from "../../lib/productMatch";
 
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · types + helpers 이관
 import type { ReturnReasonKey, ReturnLineItem } from "./ReturnListPanel.types";
@@ -275,14 +277,9 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
   // ── 필터+정렬 완료 rows · 헤더 전체선택과 body map 이 공유 ──────────────
   // 2026-08-25 · 사용자 지시 · 검색어 · 공급사·상품·상품코드 통합 매칭 (OR)
   const filteredSortedRows = useMemo(() => {
-    const q = returnSupplierSearch.trim().toLowerCase();
     return [...returnList].filter(x => {
-      if (q) {
-        const supplier = String(x.supplier ?? "").toLowerCase();
-        const name     = String(x.product_name ?? "").toLowerCase();
-        const code     = String(x.product_code ?? "").toLowerCase();
-        if (!supplier.includes(q) && !name.includes(q) && !code.includes(q)) return false;
-      }
+      // 2026-08-29 · 통일 로직 · matchesProductQuery
+      if (!matchesProductQuery(x as any, returnSupplierSearch)) return false;
       if (returnCategoryFilter !== "전체") {
         const cat = vendorCategoryMap[String(x.supplier ?? "").trim()] ?? null;
         if (cat !== returnCategoryFilter) return false;
