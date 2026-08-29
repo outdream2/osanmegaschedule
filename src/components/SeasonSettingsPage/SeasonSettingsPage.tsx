@@ -10,7 +10,9 @@ import type { AuthSession } from "../../types";
 import { SeasonRangesEditor } from "../MyPage/SeasonRangesEditor";
 import { SettingsPageShell } from "../common/SettingsPageShell";
 import { CARD_BASE } from "../../styles/tokens";
-import { ChartBar } from "@phosphor-icons/react";
+// 2026-08-29 · #122 P2 · SectionCard 프리미티브 (관리자 아닌 경우 · 안내만)
+import { SectionCard } from "../common/SectionCard";
+import { ChartBar, Lock } from "@phosphor-icons/react";
 import { OptimalStockPeriodSection } from "./OptimalStockPeriodSection";
 // 2026-08-26 · #118 · 판매중 상품만 필터 전역 설정 (신규 섹션)
 import { SaleActiveOnlySection } from "./SaleActiveOnlySection";
@@ -42,9 +44,17 @@ const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
       // 2026-08-26 · data-scope 로 페이지 전체 감싸기 (헤더+콘텐츠 모두 +3)
       <div data-scope="stats-settings">
         <SettingsPageShell {...commonShellProps}>
-          <div className={`${CARD_BASE} p-5 text-center text-sm text-zinc-500`}>
-            관리자(lv 9) 전용 페이지입니다.
-          </div>
+          {/* 2026-08-29 · #122 P2 · 접근 제한 안내 · SectionCard (danger tone) */}
+          <SectionCard
+            title="접근 권한 필요"
+            icon={<Lock size={18} />}
+            tone="danger"
+            description="이 페이지는 관리자(lv 9) 전용입니다."
+          >
+            <div className="text-[14px] text-zinc-500 text-center py-4">
+              관리자 계정으로 로그인 후 · 다시 시도해주세요.
+            </div>
+          </SectionCard>
         </SettingsPageShell>
       </div>
     );
