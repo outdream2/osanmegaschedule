@@ -1,9 +1,9 @@
 # 서버 프레임워크 감사 (Phase 1)
 
-- 생성 · 2026-08-28 02:15:23
+- 생성 · 2026-08-28 22:26:07
 - 스캔 파일 · 39개
 - 총 라우트 · 242개
-- 위반 · 140건 (high 49)
+- 위반 · 131건 (high 40)
 
 ## 규칙
 - **no-authorize** (high) · POST/PATCH/DELETE/PUT · authorize() 미적용
@@ -36,25 +36,16 @@
 ### server/routes/display/mismatches.ts (1건)
 - 🟡 L73 · **no-validate-body** · POST /api/zone-mismatches · validateBody() 미적용 · Zod 검증 없음
 
-### server/routes/display/requests.ts (18건)
-- 🔴 L118 · **no-authorize** · POST /api/display-requests · authorize() 미적용 · 권한 우회 가능
-- 🟡 L118 · **no-validate-body** · POST /api/display-requests · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L258 · **no-authorize** · PATCH /api/display-requests/:id/prepare · authorize() 미적용 · 권한 우회 가능
-- 🟡 L258 · **no-validate-body** · PATCH /api/display-requests/:id/prepare · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L323 · **no-authorize** · PATCH /api/display-requests/:id/complete · authorize() 미적용 · 권한 우회 가능
-- 🟡 L323 · **no-validate-body** · PATCH /api/display-requests/:id/complete · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L383 · **no-authorize** · PATCH /api/display-requests/:id · authorize() 미적용 · 권한 우회 가능
-- 🟡 L383 · **no-validate-body** · PATCH /api/display-requests/:id · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L426 · **no-authorize** · POST /api/order-requests · authorize() 미적용 · 권한 우회 가능
-- 🟡 L426 · **no-validate-body** · POST /api/order-requests · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L531 · **no-authorize** · POST /api/order-requests/bulk-send · authorize() 미적용 · 권한 우회 가능
-- 🟡 L531 · **no-validate-body** · POST /api/order-requests/bulk-send · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L750 · **no-authorize** · POST /api/inventory-checks · authorize() 미적용 · 권한 우회 가능
-- 🟡 L750 · **no-validate-body** · POST /api/inventory-checks · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L868 · **no-authorize** · POST /api/inventory-checks/bulk · authorize() 미적용 · 권한 우회 가능
-- 🟡 L868 · **no-validate-body** · POST /api/inventory-checks/bulk · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L955 · **no-authorize** · PATCH /api/inventory-checks/:id · authorize() 미적용 · 권한 우회 가능
-- 🟡 L955 · **no-validate-body** · PATCH /api/inventory-checks/:id · validateBody() 미적용 · Zod 검증 없음
+### server/routes/display/requests.ts (9건)
+- 🟡 L127 · **no-validate-body** · POST /api/display-requests · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L267 · **no-validate-body** · PATCH /api/display-requests/:id/prepare · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L332 · **no-validate-body** · PATCH /api/display-requests/:id/complete · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L392 · **no-validate-body** · PATCH /api/display-requests/:id · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L435 · **no-validate-body** · POST /api/order-requests · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L540 · **no-validate-body** · POST /api/order-requests/bulk-send · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L759 · **no-validate-body** · POST /api/inventory-checks · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L877 · **no-validate-body** · POST /api/inventory-checks/bulk · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L964 · **no-validate-body** · PATCH /api/inventory-checks/:id · validateBody() 미적용 · Zod 검증 없음
 
 ### server/routes/display/zoneAssignments.ts (3건)
 - 🟡 L185 · **no-validate-body** · PUT /api/zone-assignments/:dow · validateBody() 미적용 · Zod 검증 없음
@@ -183,15 +174,15 @@
 - 🔴 L21 · **no-authorize** · POST /api/product-arrivals · authorize() 미적용 · 권한 우회 가능
 
 ### server/routes/stock/products.ts (9건)
-- 🔴 L304 · **no-authorize** · POST /api/upload-products · authorize() 미적용 · 권한 우회 가능
-- 🟡 L304 · **no-validate-body** · POST /api/upload-products · validateBody() 미적용 · Zod 검증 없음
-- 🟡 L455 · **no-validate-body** · POST /api/products/sync-real-map-to-spec · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L599 · **no-authorize** · PATCH /api/products/:code/realmap · authorize() 미적용 · 권한 우회 가능
-- 🟡 L599 · **no-validate-body** · PATCH /api/products/:code/realmap · validateBody() 미적용 · Zod 검증 없음
-- 🔴 L635 · **no-authorize** · POST /api/products/refill-optimal-stock · authorize() 미적용 · 권한 우회 가능
-- 🟡 L635 · **no-validate-body** · POST /api/products/refill-optimal-stock · validateBody() 미적용 · Zod 검증 없음
-- 🟡 L671 · **no-validate-body** · PATCH /api/products/:code · validateBody() 미적용 · Zod 검증 없음
-- 🟡 L724 · **no-validate-body** · POST /api/products · validateBody() 미적용 · Zod 검증 없음
+- 🔴 L317 · **no-authorize** · POST /api/upload-products · authorize() 미적용 · 권한 우회 가능
+- 🟡 L317 · **no-validate-body** · POST /api/upload-products · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L489 · **no-validate-body** · POST /api/products/sync-real-map-to-spec · validateBody() 미적용 · Zod 검증 없음
+- 🔴 L635 · **no-authorize** · PATCH /api/products/:code/realmap · authorize() 미적용 · 권한 우회 가능
+- 🟡 L635 · **no-validate-body** · PATCH /api/products/:code/realmap · validateBody() 미적용 · Zod 검증 없음
+- 🔴 L676 · **no-authorize** · POST /api/products/refill-optimal-stock · authorize() 미적용 · 권한 우회 가능
+- 🟡 L676 · **no-validate-body** · POST /api/products/refill-optimal-stock · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L712 · **no-validate-body** · PATCH /api/products/:code · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L765 · **no-validate-body** · POST /api/products · validateBody() 미적용 · Zod 검증 없음
 
 ### server/routes/stock/stockArrivals.ts (5건)
 - 🟡 L93 · **no-validate-body** · POST /api/stock-arrivals · validateBody() 미적용 · Zod 검증 없음
@@ -201,13 +192,13 @@
 - 🟡 L190 · **no-validate-body** · POST /api/anon-push-subscribe · validateBody() 미적용 · Zod 검증 없음
 
 ### server/routes/stock/stockManage.ts (1건)
-- 🟡 L1653 · **no-validate-body** · POST /api/upload-stock · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L1656 · **no-validate-body** · POST /api/upload-stock · validateBody() 미적용 · Zod 검증 없음
 
 ## 라우트별 준수 현황
 - ⚠ 29 · server/routes/ocr/ocr.ts · 25 라우트
 - ⚠ 20 · server/routes/schedule/schedules.ts · 14 라우트
-- ⚠ 18 · server/routes/display/requests.ts · 17 라우트
 - ⚠ 12 · server/routes/purchase/vendors.ts · 10 라우트
+- ⚠ 9 · server/routes/display/requests.ts · 17 라우트
 - ⚠ 9 · server/routes/stock/products.ts · 16 라우트
 - ⚠ 8 · server/routes/settings/settings.ts · 12 라우트
 - ⚠ 6 · server/routes/board/board.ts · 12 라우트

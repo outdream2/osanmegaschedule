@@ -1,6 +1,6 @@
 # Framework Audit Report (자동 생성)
 
-> 생성 · 2026-08-28 · `scripts/audit-framework.cjs` · 매 세션 재실행
+> 생성 · 2026-08-29 · `scripts/audit-framework.cjs` · 매 세션 재실행
 >
 > **로드맵 · `docs/FRAMEWORK_ROADMAP.md` Phase 1 (인벤토리)**
 
