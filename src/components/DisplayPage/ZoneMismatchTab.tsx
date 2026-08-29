@@ -6,7 +6,7 @@
 // 2026-08-25 v3 · 사용자 지시 · 인라인 편집 (상품명 · 전산구역 · 실제구역) + 폰트 +3
 
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, RefreshCw, Trash2, Check, Pencil, X as XIcon, Search } from "lucide-react";
+import { AlertTriangle, RefreshCw, Trash2, Check, Pencil, X as XIcon, Search, ChevronDown, ChevronRight } from "lucide-react";
 import { api, ApiError } from "../../lib/apiClient";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
@@ -53,8 +53,22 @@ export const ZoneMismatchTab: React.FC = () => {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   // 2026-08-26 · #124 · 사용자 지시 · 검색 기능
   const [search, setSearch] = useState("");
+  // 2026-08-29 · #189 · 체크박스 bulk 선택 · 그룹 접기/펼치기 (기본 펼침)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [collapsedZones, setCollapsedZones] = useState<Set<string>>(new Set());
   const { toast, showError, showSuccess } = useToast();
   const confirm = useConfirm();
+
+  const toggleSelected = (id: string) => setSelectedIds(prev => {
+    const n = new Set(prev);
+    if (n.has(id)) n.delete(id); else n.add(id);
+    return n;
+  });
+  const toggleZone = (zone: string) => setCollapsedZones(prev => {
+    const n = new Set(prev);
+    if (n.has(zone)) n.delete(zone); else n.add(zone);
+    return n;
+  });
 
   const load = React.useCallback(() => {
     setLoading(true);
@@ -93,9 +107,26 @@ export const ZoneMismatchTab: React.FC = () => {
     try {
       await Promise.all(rows.map(r => api.del(`/api/zone-mismatches/${r.id}`)));
       setRows([]);
+      setSelectedIds(new Set());
       showSuccess(`${rows.length}건 삭제되었습니다`);
     } catch (e: any) {
       showError(`일괄 삭제 실패: ${e?.message ?? "네트워크 오류"}`);
+      load();
+    }
+  };
+
+  // 2026-08-29 · #189 · 선택 삭제 (bulk)
+  const deleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!await confirm({ message: `선택된 ${selectedIds.size}건 삭제할까요?`, danger: true })) return;
+    const targetIds = Array.from(selectedIds);
+    try {
+      await Promise.all(targetIds.map(id => api.del(`/api/zone-mismatches/${id}`)));
+      setRows(prev => prev.filter(r => !selectedIds.has(r.id)));
+      setSelectedIds(new Set());
+      showSuccess(`${targetIds.length}건 삭제되었습니다`);
+    } catch (e: any) {
+      showError(`선택 삭제 실패: ${e?.message ?? "네트워크 오류"}`);
       load();
     }
   };
@@ -152,6 +183,37 @@ export const ZoneMismatchTab: React.FC = () => {
       : bothPresent;
     return [...filtered].sort((a, b) => (b.registered_at ?? "").localeCompare(a.registered_at ?? ""));
   }, [rows, search]);
+
+  // 2026-08-29 · #189 · 구역별 정렬·그룹핑 (real_zone 기준 · 정합성 우선)
+  //   · Map 은 insertion order 유지 · 정렬된 zone key 순으로 삽입
+  const groups = useMemo(() => {
+    const g = new Map<string, ZoneMismatch[]>();
+    const sortedByZone = [...sorted].sort((a, b) =>
+      String(a.real_zone ?? "").localeCompare(String(b.real_zone ?? ""), "ko", { numeric: true })
+    );
+    for (const r of sortedByZone) {
+      const zone = String(r.real_zone ?? "미지정");
+      if (!g.has(zone)) g.set(zone, []);
+      g.get(zone)!.push(r);
+    }
+    return g;
+  }, [sorted]);
+
+  // 그룹별 · 전체 선택 판정 · 클릭 시 · 그 그룹 rows 만 · 선택/해제 토글
+  const isZoneAllSelected = (zoneRows: ZoneMismatch[]) =>
+    zoneRows.length > 0 && zoneRows.every(r => selectedIds.has(r.id));
+  const toggleZoneAll = (zoneRows: ZoneMismatch[]) => setSelectedIds(prev => {
+    const n = new Set(prev);
+    const allSel = zoneRows.every(r => n.has(r.id));
+    if (allSel) zoneRows.forEach(r => n.delete(r.id));
+    else zoneRows.forEach(r => n.add(r.id));
+    return n;
+  });
+  const isAllSelected = sorted.length > 0 && sorted.every(r => selectedIds.has(r.id));
+  const toggleAll = () => setSelectedIds(prev => {
+    if (sorted.every(r => prev.has(r.id))) return new Set();
+    return new Set(sorted.map(r => r.id));
+  });
 
   const inputCls = "w-full h-8 px-2 rounded-md border border-brand-deep bg-white text-[17px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint";
 
@@ -240,6 +302,18 @@ export const ZoneMismatchTab: React.FC = () => {
             >
               <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> 새로고침
             </button>
+            {/* 2026-08-29 · #189 · 선택 삭제 · 선택된 것만 · 개수 뱃지 */}
+            {selectedIds.size > 0 && (
+              <button
+                type="button"
+                onClick={deleteSelected}
+                disabled={loading}
+                className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-amber-500 text-white text-[16px] font-bold hover:bg-amber-600 shadow-sm transition cursor-pointer disabled:opacity-40"
+                title="선택 삭제"
+              >
+                <Trash2 size={13} /> 선택 삭제 <span className="ml-1 px-1.5 py-0.5 rounded-md bg-white/25 text-[13px] tabular-nums">{selectedIds.size}</span>
+              </button>
+            )}
             {rows.length > 0 && (
               <button
                 type="button"
@@ -274,55 +348,110 @@ export const ZoneMismatchTab: React.FC = () => {
             />
           </Card>
         ) : (
-          <TableListWrap>
-            <table className="w-full border-collapse">
-              <thead className={tableHeadCls("text-[16px]")}>
-                <tr>
-                  <th className={tableThCls("left")} style={{ width: "13%" }}>분류코드</th>
-                  <th className={tableThCls("left")} style={{ width: "27%" }}>상품명</th>
-                  <th className={tableThCls("left")} style={{ width: "16%" }}>상품코드</th>
-                  <th className={tableThCls("center")} style={{ width: "13%" }}>전산 구역</th>
-                  <th className={tableThCls("center")} style={{ width: "13%" }}>실제 구역</th>
-                  <th className={tableThCls("center")} style={{ width: "11%" }}>등록일</th>
-                  <th className={tableThCls("center")} style={{ width: "7%" }}>삭제</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {sorted.map(m => (
-                  <tr key={m.id} className="hover:bg-zinc-50/60 transition text-[17px]">
-                    <td className={tableTdCls("left", "font-mono text-[14px] text-zinc-500 tabular-nums")}>
-                      {m.category_code ?? "-"}
-                    </td>
-                    <td className={tableTdCls("left", "font-bold text-zinc-800 break-keep")}>
-                      {renderEditable(m, "product_name", m.product_name)}
-                    </td>
-                    <td className={tableTdCls("left", "font-mono text-[15px] text-zinc-500")}>{m.product_code}</td>
-                    <td className={tableTdCls("center", "font-semibold text-zinc-700")}>
-                      {renderEditable(m, "spec_zone",
-                        m.spec_zone === "미지정"
-                          ? <span className="text-zinc-400">미지정</span>
-                          : m.spec_zone
-                      )}
-                    </td>
-                    <td className={tableTdCls("center", "font-bold text-rose-600")}>
-                      {renderEditable(m, "real_zone", m.real_zone)}
-                    </td>
-                    <td className={tableTdCls("center", "text-[15px] text-zinc-500 tabular-nums")}>{fmtDate(m.registered_at)}</td>
-                    <td className={tableTdCls("center")}>
-                      <button
-                        type="button"
-                        onClick={() => deleteOne(m.id)}
-                        className="inline-flex w-8 h-8 items-center justify-center rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition cursor-pointer"
-                        title="삭제"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableListWrap>
+          <div className="flex flex-col gap-3">
+            {/* 2026-08-29 · #189 · 전체 선택 헤더 (구역별 그룹 위) */}
+            <div className="flex items-center gap-2 px-3 py-2 bg-zinc-50/60 border border-line rounded-lg">
+              <input
+                type="checkbox"
+                checked={isAllSelected}
+                onChange={toggleAll}
+                className="w-4 h-4 accent-brand-deep cursor-pointer"
+                aria-label="전체 선택"
+              />
+              <span className="text-[15px] font-semibold text-ink-soft">전체 {sorted.length}건</span>
+              {selectedIds.size > 0 && (
+                <span className="ml-auto text-[14px] font-bold text-amber-700">
+                  {selectedIds.size}건 선택됨
+                </span>
+              )}
+            </div>
+
+            {/* 2026-08-29 · #189 · 구역별 그룹 · 기본 펼침 · 접기 지원 */}
+            {Array.from(groups.entries()).map(([zone, zoneRows]) => {
+              const collapsed = collapsedZones.has(zone);
+              const zoneSelAll = isZoneAllSelected(zoneRows);
+              return (
+                <TableListWrap key={zone}>
+                  {/* 그룹 헤더 · 접기·전체선택·구역 라벨·건수 */}
+                  <div className="flex items-center gap-2 px-3 py-2 bg-rose-50/40 border-b border-rose-200/60">
+                    <button
+                      type="button"
+                      onClick={() => toggleZone(zone)}
+                      className="w-6 h-6 flex items-center justify-center rounded hover:bg-rose-100/60 text-rose-500 cursor-pointer"
+                      aria-label={collapsed ? "펼치기" : "접기"}
+                    >
+                      {collapsed ? <ChevronRight size={15} /> : <ChevronDown size={15} />}
+                    </button>
+                    <input
+                      type="checkbox"
+                      checked={zoneSelAll}
+                      onChange={() => toggleZoneAll(zoneRows)}
+                      className="w-4 h-4 accent-rose-500 cursor-pointer"
+                      aria-label={`${zone} 전체 선택`}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <span className="text-[17px] font-bold text-rose-700">📍 {zone}</span>
+                    <span className="text-[15px] font-semibold text-rose-500 tabular-nums">{zoneRows.length}건</span>
+                  </div>
+                  {!collapsed && (
+                    <table className="w-full border-collapse">
+                      <thead className={tableHeadCls("text-[15px]")}>
+                        <tr>
+                          <th className={tableThCls("center")} style={{ width: "5%" }}></th>
+                          <th className={tableThCls("left")} style={{ width: "12%" }}>분류코드</th>
+                          <th className={tableThCls("left")} style={{ width: "28%" }}>상품명</th>
+                          <th className={tableThCls("left")} style={{ width: "16%" }}>상품코드</th>
+                          <th className={tableThCls("center")} style={{ width: "13%" }}>전산 구역</th>
+                          <th className={tableThCls("center")} style={{ width: "11%" }}>등록일</th>
+                          <th className={tableThCls("center")} style={{ width: "7%" }}>삭제</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-100">
+                        {zoneRows.map(m => (
+                          <tr key={m.id} className={`hover:bg-zinc-50/60 transition text-[17px] ${selectedIds.has(m.id) ? "bg-amber-50/40" : ""}`}>
+                            <td className={tableTdCls("center")}>
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.has(m.id)}
+                                onChange={() => toggleSelected(m.id)}
+                                className="w-4 h-4 accent-brand-deep cursor-pointer"
+                                aria-label="선택"
+                              />
+                            </td>
+                            <td className={tableTdCls("left", "font-mono text-[14px] text-zinc-500 tabular-nums")}>
+                              {m.category_code ?? "-"}
+                            </td>
+                            <td className={tableTdCls("left", "font-bold text-zinc-800 break-keep")}>
+                              {renderEditable(m, "product_name", m.product_name)}
+                            </td>
+                            <td className={tableTdCls("left", "font-mono text-[15px] text-zinc-500")}>{m.product_code}</td>
+                            <td className={tableTdCls("center", "font-semibold text-zinc-700")}>
+                              {renderEditable(m, "spec_zone",
+                                m.spec_zone === "미지정"
+                                  ? <span className="text-zinc-400">미지정</span>
+                                  : m.spec_zone
+                              )}
+                            </td>
+                            <td className={tableTdCls("center", "text-[15px] text-zinc-500 tabular-nums")}>{fmtDate(m.registered_at)}</td>
+                            <td className={tableTdCls("center")}>
+                              <button
+                                type="button"
+                                onClick={() => deleteOne(m.id)}
+                                className="inline-flex w-8 h-8 items-center justify-center rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition cursor-pointer"
+                                title="삭제"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </TableListWrap>
+              );
+            })}
+          </div>
         )}
       </div>
     </>
