@@ -37,32 +37,40 @@
 
 ## 🎯 다음 세션 · 우선순위 (안전순)
 
-### 1순위 · #182 Phase A · DTO 일치화 🔴
-- **최우선** · 다른 태스크 · 편집 회귀 위험
-- fresh 컨텍스트 · 정밀 진행 · 2-3h
+### ✅ 완료 (2026-08-29 후속 세션)
+- **#182 Phase A Step 1** · `2caeb4b1` · shared DTO 9 필드 추가
+- **#182 Phase A Step 2·3** · 삼각화 유지 결정 (API DTO/App 도메인/편집 draft 각각 목적 다름 · 통합 시 회귀 위험)
+- **#178** · `84a98d48` · 팀장 유일성 (position별 · B안)
+- **#177 Phase 1** · `6ab3af8e` · SettingsModal 직군 탭 노출 + TASKS 정리
+- **#154 Phase 1** · `a3c1bb0a` · SaleStatusFilter · Unassigned + ZoneMismatch (server sale_status join)
 
-### 2순위 · #178 서버 검증 (30m · 짧고 안전)
-- POST/PUT `/api/employees` · position "팀장" 유일성
-- position별 (물류팀장 · 약사팀장 · 진열팀장 등)
-
-### 3순위 · #186 A안 · ProductDetailHero (4-6h · 낮은 위험)
+### 1순위 · #186 A안 · ProductDetailHero (4-6h · 낮은 위험)
 - 사용자 명시 승인 · Attio Hero + Section
 - 기존 API/훅 무영향 · UI 만 변경
 
-### 4순위 · #177 Phase 1 · SettingsModal 탭 신설 (1-2h · 낮음)
-- Phase A DTO 완료 후 · 안전
-
-### 5순위 · #154 Phase 1 · SaleStatusFilter 확산 (2h · 극저)
-- UnassignedProductsTab · ZoneMismatchTab
-
-### 6순위 · #122 Phase 1·4 · 시스템설정 UI (2.5h · 낮음)
+### 2순위 · #122 Phase 1·4 · 시스템설정 UI (2.5h · 낮음)
+- `docs/UI_MOCKUP_SETTINGS_SHELL_V2_2026-08-26.html` 참조
 - 타이포 · Accent color
+
+### 3순위 · #154 Phase 2 · ProductSearchInput 확산 (4h · 중저)
+- FlowTab · LandingPage::StockSearch
+
+### 4순위 · #165 Phase 1 · 상품 검색 전수 조사 (4h · 낮음)
+
+### 대기 (사용자 확인 필요)
+- #79/#107/#258 · 발주 리스트 프리미엄 UI (v3 목업 승인 대기)
+- #130 · 차용등록 재설계 (양방향 화살표)
+- #148 · 매장구역도 UI 개선
+- #176 · 발주 카톡 옵션
+- #77/#253 · 자동 임포트 (대형 · 별도 세션)
 
 ---
 
 ## 🔴 사용자 대기 · 미실행
 
-- **Remote push** · 34 커밋 · 명시 지시 시 · `git push origin main`
+- **Remote push** · 37+ 커밋 (a0640613 이후) · 명시 지시 시만 · `git push origin main`
+- **터미널 한글 깨짐** · CC 재시작 필요 (Node 프로세스 CP949 고정 · 현 세션에선 못 고침)
+  - 새 터미널 · `cd D:\antigravity_projects\megatown-staff-scheduler` · `claude` 재실행
 
 ---
 
