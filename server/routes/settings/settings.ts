@@ -6,6 +6,8 @@ import { supabase } from "../../../src/supabase/client";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
+// 2026-08-29 · #197 C-5 fix · 설정 (KV) 편집 후 · 관련 서버 캐시 즉시 무효화
+import { invalidateSaleActiveOnlyCache, resetProductCache } from "../../productCache";
 
 const router = Router();
 
@@ -106,6 +108,13 @@ router.post("/api/settings", authorize(9), asyncHandler(async (req, res) => {
   const { error } = await supabase.from("app_settings")
     .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
   if (error) throw new HttpError(500, error.message);
+  // 2026-08-29 · #197 C-5 fix · 캐시 무효화 · 편집 즉시 반영
+  //   · stats.sale_active_only · 판매중 필터 KV · saleActiveOnlyCache (5초 TTL) 즉시 무효화
+  //   · productCache 도 함께 리셋 · 판매중 필터 결과 즉시 갱신
+  if (String(key) === "stats.sale_active_only") {
+    invalidateSaleActiveOnlyCache();
+    resetProductCache();
+  }
   res.json({ ok: true });
 }));
 

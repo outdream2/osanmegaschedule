@@ -154,11 +154,13 @@ export async function learnVendorBusinessNumber(supplierName: string, bizNum: st
 
 export async function getProductMap(): Promise<Record<string, ProductInfo>> {
   // 2026-08-28 · TTL 30초 · 초과 시 · 캐시 무효화 · 재조회
+  // 2026-08-29 · #197 C-2 fix · TTL 만료 후 · 완료된 promise 재사용 stale 방지
+  //   · productMapPromise 도 함께 null · 그러나 · 진행중 fetch 는 dedup 유지 (finally 로 리셋)
   const now = Date.now();
   if (productMapCache && (now - productMapCacheAt) < PRODUCT_MAP_TTL_MS) return productMapCache;
-  if (productMapCache) { productMapCache = null; productMapCacheAt = 0; }
+  if (productMapCache) { productMapCache = null; productMapCacheAt = 0; productMapPromise = null; }
   if (productMapPromise) return productMapPromise;
-  productMapPromise = (async () => {
+  const p = (async () => {
     const PAGE = 1000;
     const map: Record<string, ProductInfo> = {};
     let from = 0;
@@ -185,7 +187,10 @@ export async function getProductMap(): Promise<Record<string, ProductInfo>> {
     productMapCacheAt = Date.now();
     return map;
   })();
-  return productMapPromise;
+  productMapPromise = p;
+  // 2026-08-29 · #197 C-2 · promise 완료 시점에 · 참조 해제 (dedup 유지 + stale 방지)
+  p.finally(() => { if (productMapPromise === p) productMapPromise = null; });
+  return p;
 }
 
 // 2026-08-26 · 사용자 지시 · 전역 판매중 설정 반영 · 모든 소비자 (products-map · stock-check · products.json 등) 자동 필터
