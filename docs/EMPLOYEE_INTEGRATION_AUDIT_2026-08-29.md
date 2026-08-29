@@ -123,6 +123,22 @@
 
 ---
 
+## 🔗 employees FK · CASCADE 정책 (Phase C · 2026-08-29 조사)
+
+| 테이블 | FK | ON DELETE | 비고 |
+|---|---|:-:|---|
+| **notifications** | employee_id → employees(id) | **CASCADE** ✅ | 직원 삭제 시 알림 자동 삭제 |
+| **employee_contracts** | employee_id INT NOT NULL | ⚠️ FK 없음 | 앱 레벨 정합성만 · 소프트 삭제 (retireDate) 위주라 안전 |
+| **leave_requests** | employee_id INT NOT NULL | ⚠️ FK 없음 | 앱 레벨만 · 이력 보존 목적 |
+| **resignation_requests** | employee_id INT NOT NULL | ⚠️ FK 없음 | 앱 레벨만 · 사직 이력 보존 |
+| **schedules** | (JSON in employees 컬럼) | N/A | 직원 소프트 삭제 시 함께 유지 |
+
+**정책 결론**:
+- 앱은 **hard delete 지양** · retireDate 세팅 (소프트 삭제) 위주 · FK CASCADE 미설정 안전
+- notifications 만 CASCADE (알림은 이력 보존 불필요)
+- employee_contracts · leave_requests · resignation_requests · **이력 보존 목적** · FK 없어도 정상
+- ⚠️ 만약 향후 hard delete 가 필요하면 · employee_contracts 등 · FK + CASCADE 추가 검토
+
 ## ✅ 완료된 연동 (이번 세션)
 - #178 · 팀장 유일성 검증 · position별 (`84a98d48`)
 - #177 P1 · position 편집 UI · 자동 rename (기존 PermissionsPage 로직 재사용)
