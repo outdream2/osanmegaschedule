@@ -31,6 +31,9 @@ import { consumeScanPendingProductCode } from "../../hooks/useScanUnregisteredMo
 import { ProductBasicInfoPanel } from "../common/ProductBasicInfoPanel";
 // 2026-08-29 · #186 A안 · Attio Sticky Hero · 상단 고정 상품명·배지·액션
 import { ProductDetailHero } from "../common/ProductDetailHero";
+// 2026-08-29 · #186 후속 · SectionCard 프리미티브 · 메타 정보 섹션
+import { SectionCard } from "../common/SectionCard";
+import { Tag, Building2, Calendar } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 interface ProductRow {
@@ -296,6 +299,40 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
           onLocationChange={handleLocationChange}
           onSaleStatusChange={handleSaleStatusChange}
         />
+        {/* 2026-08-29 · #186 후속 · 메타 정보 Section 카드 · Attio Section Stack */}
+        {((product as any).brand || (product as any).manufacturer || (product as any).last_modified_at) && (
+          <SectionCard
+            title="메타 정보"
+            icon={<Tag size={16} />}
+            description="브랜드 · 제조사 · 최근 수정"
+          >
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-[14px]">
+              {(product as any).brand && (
+                <div className="flex items-center gap-2">
+                  <Tag size={12} className="text-brand-deep/60 shrink-0" />
+                  <dt className="text-zinc-500 font-medium min-w-[60px]">브랜드</dt>
+                  <dd className="text-ink font-semibold">{(product as any).brand}</dd>
+                </div>
+              )}
+              {(product as any).manufacturer && (
+                <div className="flex items-center gap-2">
+                  <Building2 size={12} className="text-brand-deep/60 shrink-0" />
+                  <dt className="text-zinc-500 font-medium min-w-[60px]">제조사</dt>
+                  <dd className="text-ink font-semibold">{(product as any).manufacturer}</dd>
+                </div>
+              )}
+              {(product as any).last_modified_at && (
+                <div className="flex items-center gap-2">
+                  <Calendar size={12} className="text-brand-deep/60 shrink-0" />
+                  <dt className="text-zinc-500 font-medium min-w-[60px]">최근 수정</dt>
+                  <dd className="text-ink-soft tabular-nums text-[13px]">
+                    {String((product as any).last_modified_at).slice(0, 10)}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </SectionCard>
+        )}
       </div>
       {/* 2026-08-29 · 사용자 지시 · 상세 편집 · 모달 · [상세 편집] 버튼 클릭 시 오픈 */}
       <Modal
