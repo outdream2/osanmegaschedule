@@ -21,6 +21,9 @@ import { useSortableTable, type Comparator } from "../../hooks/useSortableTable"
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-08-29 · #154 · 판매중 필터 프레임워크 확산
+import { SaleStatusFilter } from "../common/SaleStatusFilter";
+import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 
 interface VendorProduct {
   code: string;
@@ -29,6 +32,8 @@ interface VendorProduct {
   current_stock?: number | null;
   optimal_stock?: number | null;
   min_stock?: number | null;
+  // 2026-08-29 · #154 · 판매중 필터 (products-search 응답 이미 포함)
+  sale_status?: string | null;
 }
 
 interface Props {
@@ -60,6 +65,8 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
 
   // 2026-08-16 · 프레임워크 · useToast · 에러 UX 통일
   const { toast, showError } = useToast(4000);
+  // 2026-08-29 · #154 · 판매중 필터 (default active)
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "vendorStock.saleFilter" });
 
   useEffect(() => {
     if (!open || !vendorName) return;
@@ -78,6 +85,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
               current_stock: it.current_stock ?? null,
               optimal_stock: it.optimal_stock ?? null,
               min_stock: it.min_stock ?? null,
+              sale_status: it.sale_status ?? null,
             }))
           : [];
         setProducts(items);
@@ -93,14 +101,17 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
     return () => { alive = false; };
   }, [open, vendorName, showError]);
 
-  // 2026-08-29 · 통일 로직 · matchesProductQuery (name→product_name · code→product_code 매핑)
+  // 2026-08-29 · 통일 로직 · matchesProductQuery + 판매중 필터 (#154)
   const searched = useMemo(() => {
-    if (!search) return products;
-    return products.filter((p) => matchesProductQuery(
-      { product_name: p.name, product_code: p.code },
-      search,
-    ));
-  }, [products, search]);
+    return products.filter((p) => {
+      if (!saleMatches(p.sale_status)) return false;
+      if (!search) return true;
+      return matchesProductQuery(
+        { product_name: p.name, product_code: p.code },
+        search,
+      );
+    });
+  }, [products, search, saleMatches]);
 
   // 2026-08-16 · #94 · 헤더 자동정렬
   const { sorted, sortKey, sortDir, toggleSort } = useSortableTable<VendorProduct, SortKey>(searched, "name", COMPARATORS, "asc");
@@ -171,6 +182,8 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
               widthClass="w-full"
             />
           </div>
+          {/* 2026-08-29 · #154 · 판매중 필터 */}
+          <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
         </div>
         {/* 요약 */}
         <div className={`${TEXT.caption} text-zinc-500 pt-0.5`}>
