@@ -25,7 +25,7 @@
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
 | 1 | `src/components/OrderManagePage/VendorDetailTabs.tsx` | 819 | 3 | large-file-warn(1) |
-| 2 | `src/components/ScanPage/ProductInfoCard.tsx` | 833 | 3 | large-file-warn(1) |
+| 2 | `src/components/ScanPage/ProductInfoCard.tsx` | 843 | 3 | large-file-warn(1) |
 | 3 | `src/components/common/SaleStatusFilter.tsx` | 63 | 2 | raw-card-wrapper(1) |
 | 4 | `src/components/DisplayPage/RealStockTablePage.tsx` | 777 | 2 | raw-card-wrapper(1) |
 
@@ -36,7 +36,7 @@
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
 | `src/components/OrderManagePage/VendorDetailTabs.tsx` | 819 | 3 |
-| `src/components/ScanPage/ProductInfoCard.tsx` | 833 | 3 |
+| `src/components/ScanPage/ProductInfoCard.tsx` | 843 | 3 |
 | `src/components/common/SaleStatusFilter.tsx` | 63 | 2 |
 | `src/components/DisplayPage/RealStockTablePage.tsx` | 777 | 2 |
 

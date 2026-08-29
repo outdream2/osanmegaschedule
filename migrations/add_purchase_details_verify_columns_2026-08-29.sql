@@ -17,7 +17,7 @@ ALTER TABLE purchase_details
   ADD COLUMN IF NOT EXISTS verified_expiring BOOLEAN DEFAULT FALSE;  -- 유통기한 임박 여부
 
 -- ────────────────────────────────────────────────────────────────
--- Step 2 · 인덱스 · 검수 필터 조회 성능
+-- Step 2 · 인덱스 · 검수 필터 조회로 성능
 -- ────────────────────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_purchase_verify_status ON purchase_details(verify_status)
   WHERE verify_status IS NOT NULL;
