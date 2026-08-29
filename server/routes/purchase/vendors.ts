@@ -470,7 +470,8 @@ router.post("/api/vendors/:id/set-password", authorize(9), asyncHandler(async (r
 // ═══════════════════════════════════════════════════════════════════
 
 /** 거래처 자체 승인 요청 · 필수 필드 검증 · vendors.approval_status = pending · approval_requested_at = now */
-router.post("/api/vendors/:id/approval-request", asyncHandler(async (req, res) => {
+// 2026-08-29 · 보안 P1 N16 fix · authorize(1) · 인증 없는 위조 방지 (거래처 세션 포함)
+router.post("/api/vendors/:id/approval-request", authorize(1), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
   const { data: vendor, error: fetchErr } = await supabase

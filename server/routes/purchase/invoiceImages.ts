@@ -62,7 +62,8 @@ function normalizeDataUri(input: string): { dataUri: string; approxBytes: number
 // POST /api/invoice-images/upload
 // body: { data_url: string, filename?: string, page?: number }
 // resp: { url: string, public_id: string, width?: number, height?: number, bytes?: number, format?: string }
-router.post("/api/invoice-images/upload", asyncHandler(async (req, res) => {
+// 2026-08-29 · 보안 P1 N10 fix · authorize(2) · Cloudinary 업로드 남용 방지 (비용)
+router.post("/api/invoice-images/upload", authorize(2), asyncHandler(async (req, res) => {
   if (!ensureConfigured()) {
     throw new HttpError(503, "Cloudinary 설정이 없습니다 (env).");
   }

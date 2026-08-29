@@ -20,6 +20,7 @@ import { supabase } from "../../../src/supabase/client";
 import { fetchAllWithRange } from "../../utils/supabaseFetchAll";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError } from "../../middleware/errorHandler";
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -197,7 +198,8 @@ export function scheduleSnapshotBackground(): void {
 
 // ── POST /api/loss-tracking/snapshot · 오늘 날짜 upsert ──────────────────────
 
-router.post("/api/loss-tracking/snapshot", asyncHandler(async (_req, res) => {
+// 2026-08-29 · 보안 P1 N13 fix · authorize(9) · 일별 손실 스냅샷 임의 덮어쓰기 방지
+router.post("/api/loss-tracking/snapshot", authorize(9), asyncHandler(async (_req, res) => {
   const result = await runTodaySnapshot();
   return res.json(result);
 }));

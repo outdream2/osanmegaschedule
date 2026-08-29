@@ -69,7 +69,8 @@ const toNumOrNull = (v: unknown): number | null => {
 };
 
 // POST /api/ocr-confirmed-items  →  batch insert
-router.post("/api/ocr-confirmed-items", asyncHandler(async (req, res) => {
+// 2026-08-29 · 보안 P1 N9 fix · authorize(2) · OCR 확정 매입 임의 삽입 방지
+router.post("/api/ocr-confirmed-items", authorize(2), asyncHandler(async (req, res) => {
   const body = req.body ?? {};
   const rawItems: ConfirmedItemInput[] = Array.isArray(body.items) ? body.items : [];
   const defaultSavedAt: string | undefined = typeof body.saved_at === "string" ? body.saved_at : undefined;

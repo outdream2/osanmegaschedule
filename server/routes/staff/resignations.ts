@@ -27,7 +27,7 @@ import { Router } from "express";
 import webpush from "web-push";
 import { supabase } from "../../../src/supabase/client";
 import { notificationsService } from "../../services/notificationsService";
-import { authorize } from "../../middleware/requireAuth";
+import { authorize, getSession } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
@@ -162,6 +162,12 @@ router.post("/api/resignations", authorize(1), validateBody(CreateResignationSch
     pdf_url,
   } = req.body;
 
+  // 2026-08-29 · 보안 P1 N14 fix · IDOR 방어 · 본인 or 관리자(lv9) 만 자신 명의 사직서 제출 가능
+  const session = getSession(req);
+  if (session && Number(session.sub) !== Number(employee_id) && (session.level ?? 0) < 9) {
+    throw new HttpError(403, "본인 또는 관리자만 사직서 제출 가능", "FORBIDDEN");
+  }
+
   // ── 서명 이미지 · Storage 업로드 (실패해도 제출 계속) ──────────────────
   let signature_url: string | null = null;
   if (signature_data_url) {
@@ -226,14 +232,16 @@ router.post("/api/resignations", authorize(1), validateBody(CreateResignationSch
 
 // ─── PATCH · 승인/반려 ────────────────────────────────────────────────────
 router.patch("/api/resignations/:id", authorize(5), validateBody(ReviewResignationSchema), asyncHandler(async (req, res) => {
-  const { status, reject_reason, approved_by, approved_by_id } = req.body;
+  const { status, reject_reason } = req.body;
 
+  // 2026-08-29 · 보안 P1 N15 fix · approved_by/id · 세션에서 서버 파생 · 클라이언트 위조 방지
+  const session = getSession(req);
   const update: Record<string, unknown> = {
     status,
     approved_at: new Date().toISOString(),
+    approved_by: session?.name ?? null,
+    approved_by_id: session?.sub ?? null,
   };
-  if (approved_by)    update.approved_by = String(approved_by);
-  if (approved_by_id) update.approved_by_id = Number(approved_by_id);
   if (status === "rejected" && reject_reason) update.reject_reason = String(reject_reason);
 
   const { data, error } = await supabase

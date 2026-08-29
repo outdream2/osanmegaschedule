@@ -47,7 +47,8 @@ router.get("/api/supplier-balance-configs", asyncHandler(async (_req, res) => {
 }));
 
 // PUT /api/supplier-balance-configs  →  upsert { supplier_name, balance_field, column_layout? }
-router.put("/api/supplier-balance-configs", asyncHandler(async (req, res) => {
+// 2026-08-29 · 보안 P1 N12 fix · authorize(5) · 잔고 config 임의 변경 방지
+router.put("/api/supplier-balance-configs", authorize(5), asyncHandler(async (req, res) => {
   const { supplier_name, balance_field, column_layout } = req.body ?? {};
   if (!supplier_name) throw badRequest("supplier_name 필수");
 
