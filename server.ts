@@ -54,6 +54,8 @@ import supplierPaymentsRouter from "./server/routes/purchase/supplierPayments";
 import borrowingsRouter from "./server/routes/payment/borrowings";
 // 2026-08-09 · SolAPI 카카오 알림톡 · credentials 미설정 시 status 만 응답 · 향후 확장 (사용자 승인 후)
 import { handleSolApiStatus } from "./server/lib/notification/solapiClient";
+// 2026-08-29 · #176/#214 · 발주요청 · 물류팀장 카톡 전송 API (뼈대) · KAKAO_API_KEY 미설정 시 gracefully 미구성 응답
+import kakaoSendRouter from "./server/routes/notification/kakaoSend";
 import ocrConfirmedRouter from "./server/routes/purchase/ocrConfirmed";
 import { ocrDeletedRowsRouter } from "./server/routes/purchase/ocrDeletedRows";
 import boardRouter from "./server/routes/board/board";
@@ -217,6 +219,11 @@ async function startServer() {
 
   // 2026-08-09 · SolAPI 알림톡 상태 조회 · UI 배너용 (설정 필요 안내)
   app.get("/api/notification/solapi-status", handleSolApiStatus);
+
+  // 2026-08-29 · #176/#214 · 카카오 알림톡 전송 API (뼈대 · KAKAO_API_KEY 미설정 시 미구성 응답)
+  //   POST /api/notifications/kakao-send · authorize(3)
+  //   GET  /api/notifications/kakao-send/status · authorize(3)
+  app.use(kakaoSendRouter);
 
   // HR 서류 (근로계약서·사직서 등)
   app.use(hrFormsRouter);
