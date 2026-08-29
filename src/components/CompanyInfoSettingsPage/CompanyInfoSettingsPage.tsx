@@ -16,14 +16,12 @@ import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { ImageUploadField } from "../common/ImageUploadField";
 import { SettingsPageShell } from "../common/SettingsPageShell";
 import { StatusPill } from "../common/StatusPill";
+// 2026-08-29 · #122 P2 · SectionCard 프리미티브 · 목업 UI_MOCKUP_SETTINGS_SHELL_V2 반영
+import { SectionCard } from "../common/SectionCard";
 // 2026-08-12 · 연락처·도장 개별 섹션 (개별 export · 4탭 배치용)
 // 2026-08-20 · 모바일 가시성 · 메뉴 설정(PermissionsPage) 으로 이관
 import { ContactSection, StampsSection } from "../BrandingSettingsPage/BrandingSettingsPage";
-import {
-  SET_SECTION_TITLE, SET_SECTION_DESC,
-  SET_LABEL, SET_INPUT, SET_BADGE,
-} from "../../lib/settingsTypography";
-import { CARD_BASE } from "../../styles/tokens";
+import { SET_LABEL, SET_INPUT } from "../../lib/settingsTypography";
 import { Spinner } from "../common/Spinner";
 
 interface Props {
@@ -116,19 +114,13 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
         })}
       </nav>
 
-      {/* ── 섹션 1 · 회사정보 (사업장 · 법인) ── */}
+      {/* ── 섹션 1 · 회사정보 (사업장 · 법인) · 2026-08-29 #122 P2 · SectionCard ── */}
       <section id="section-company">
-        <div className={`${CARD_BASE} p-5 flex flex-col gap-4`}>
-          <div>
-            <h2 className={SET_SECTION_TITLE}>
-              <Buildings size={18} className="text-indigo-500" />
-              사업장 · 법인 정보
-            </h2>
-            <p className={SET_SECTION_DESC}>
-              근로계약서·사직서·PDF·각종 서식에 표시되는 사업장 정보 (약국명·대표·사업자·주소·전화).
-            </p>
-          </div>
-
+        <SectionCard
+          title="사업장 · 법인 정보"
+          icon={<Buildings size={18} />}
+          description="근로계약서·사직서·PDF·각종 서식에 표시되는 사업장 정보 (약국명·대표·사업자·주소·전화)."
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
               <label className={LABEL_CLS}><Buildings size={12} />약국(사업장) 이름</label>
@@ -163,23 +155,18 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
           </div>
 
           {!loaded && (
-            <div className="flex justify-center"><Spinner label="서버에서 최신 값을 불러오는 중..." size={14} tone="zinc" labelSize={15} /></div>
+            <div className="mt-3 flex justify-center"><Spinner label="서버에서 최신 값을 불러오는 중..." size={14} tone="zinc" labelSize={15} /></div>
           )}
-        </div>
+        </SectionCard>
       </section>
 
-      {/* ── 섹션 2 · 브랜드 (앱 이름 · 로고) ── */}
+      {/* ── 섹션 2 · 브랜드 (앱 이름 · 로고) · 2026-08-29 #122 P2 · SectionCard ── */}
       <section id="section-brand" className="mt-6">
-        <div className={`${CARD_BASE} p-5 flex flex-col gap-4`}>
-          <div>
-            <h2 className={SET_SECTION_TITLE}>
-              <Palette size={18} className="text-violet-500" />
-              브랜드 정보 (앱 이름 · 로고)
-            </h2>
-            <p className={SET_SECTION_DESC}>
-              사이드바·랜딩·브라우저 탭에 표시되는 앱 브랜딩. 로고·파비콘은 파일 업로드 지원.
-            </p>
-          </div>
+        <SectionCard
+          title="브랜드 정보 (앱 이름 · 로고)"
+          icon={<Palette size={18} />}
+          description="사이드바·랜딩·브라우저 탭에 표시되는 앱 브랜딩. 로고·파비콘은 파일 업로드 지원."
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={LABEL_CLS}><TextT size={12} />앱 이름 (사이드바)</label>
@@ -220,7 +207,7 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
               />
             </div>
           </div>
-        </div>
+        </SectionCard>
       </section>
 
       {/* ── 섹션 3 · 연락처·카카오 ── */}
