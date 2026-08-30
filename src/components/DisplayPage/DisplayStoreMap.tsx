@@ -14,6 +14,8 @@ import type { TodayStaff } from "./DisplayPage.types";
 
 interface DisplayStoreMapProps {
   ZONE_DEFS: any[];
+  /** 2026-08-30 · 사용자 지시 · zone_defs 원본 rows · 셀 라벨 (zone) 조회용 · cellId 매칭 */
+  zonesRaw?: Array<{ id: number; cellId: number; zone: string; category: string; detailedCategory?: string }>;
   zones: DisplayZone[];
   todayStaff: TodayStaff[];
   staffColorMap: Map<number, number>;
@@ -35,6 +37,7 @@ interface DisplayStoreMapProps {
 
 export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
   ZONE_DEFS,
+  zonesRaw = [],
   zones,
   todayStaff,
   staffColorMap,
@@ -151,7 +154,6 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
 
             {/* 상단 벽면 */}
             <div className="w-full">
-              <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">상단 벽면 (21→9)</div>
               <div className="grid grid-cols-4 md:grid-cols-[repeat(13,minmax(0,1fr))] gap-1 bg-zinc-100 p-1 rounded">
                 {STORE_TOP_WALL.map((num) => renderWallZoneCard(num, "top"))}
               </div>
@@ -197,18 +199,29 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
                   const zd = ZONE_DEFS.find((z: any) => z.num === num);
                   const subB = getZoneSubLabel(`${num}B`) || (zd?.subB ?? "");
                   const subA = getZoneSubLabel(`${num}A`) || (zd?.subA ?? "");
+                  // 2026-08-30 · 사용자 지시 · 구역 라벨 · zone_defs.zone (DB · cellId 매칭)
+                  //   · zd.__rowIdA · __rowIdB · compat 훅에서 노출
+                  //   · zonesRaw 에서 id 로 찾아서 · raw.zone 사용
+                  const rawB = zonesRaw.find(r => r.id === (zd as any)?.__rowIdB);
+                  const rawA = zonesRaw.find(r => r.id === (zd as any)?.__rowIdA);
+                  const zoneLabelB = rawB?.zone ?? `진열대 ${num}B`;
+                  const zoneLabelA = rawA?.zone ?? `진열대 ${num}A`;
                   return (
                     <div key={`pair-${num}`} className="flex flex-row gap-0.5 items-stretch basis-[calc(50%-6px)] sm:basis-[calc(25%-6px)] lg:basis-0 lg:flex-[2_2_0%] lg:min-w-[60px]">
                       {/* B side · 좌 · 통합 셀 (카테고리 + 담당자) */}
                       <button
                         type="button"
-                        onClick={() => onZoneProductsOpen({ zoneId: `${num}B`, zoneNum: num, zoneLabel: `진열대 ${num}B`, category: subB })}
-                        title={`${num}B · ${subB} · 클릭 · 상품 조회`}
+                        onClick={() => onZoneProductsOpen({ zoneId: `${num}B`, zoneNum: num, zoneLabel: zoneLabelB, category: subB })}
+                        title={`${zoneLabelB} · ${subB} · 클릭 · 상품 조회`}
                         className={`flex-1 min-w-0 text-[13px] font-bold ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-1 leading-tight text-center flex flex-col items-center gap-1 overflow-hidden cursor-pointer hover:brightness-95 transition`}
                       >
-                        <span className={`text-[13px] font-bold text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none`}>{getZoneLabel(`${num}B`)}</span>
+                        {/* 셀번호 · zone_defs.cellId 기반 */}
+                        {rawB?.cellId != null && (
+                          <span className="text-[10px] font-bold text-white/95 bg-black/25 rounded px-1 py-px leading-none tabular-nums" title={`셀번호 ${rawB.cellId}`}>#{rawB.cellId}</span>
+                        )}
+                        <span className={`text-[13px] font-bold text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none`}>{zoneLabelB}</span>
                         <span className="text-[13px] break-keep whitespace-normal">{subB}</span>
-                        {/* 담당자 셀 · 셀 내부 · hideRequest=true */}
+                        {/* 담당자 셀 · 구역 이름 없이 · 담당자만 (renderZoneCellById 내부는 별도) */}
                         <div className="w-full mt-auto pt-1">
                           {renderZoneCellById(`${num}B`, "w-full min-h-[60px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[12px]", "", true)}
                         </div>
@@ -216,11 +229,14 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
                       {/* A side · 우 · 통합 셀 */}
                       <button
                         type="button"
-                        onClick={() => onZoneProductsOpen({ zoneId: `${num}A`, zoneNum: num, zoneLabel: `진열대 ${num}A`, category: subA })}
-                        title={`${num}A · ${subA} · 클릭 · 상품 조회`}
+                        onClick={() => onZoneProductsOpen({ zoneId: `${num}A`, zoneNum: num, zoneLabel: zoneLabelA, category: subA })}
+                        title={`${zoneLabelA} · ${subA} · 클릭 · 상품 조회`}
                         className={`flex-1 min-w-0 text-[13px] font-bold ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-1 leading-tight text-center flex flex-col items-center gap-1 overflow-hidden cursor-pointer hover:brightness-95 transition`}
                       >
-                        <span className={`text-[13px] font-bold text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none`}>{getZoneLabel(`${num}A`)}</span>
+                        {rawA?.cellId != null && (
+                          <span className="text-[10px] font-bold text-white/95 bg-black/25 rounded px-1 py-px leading-none tabular-nums" title={`셀번호 ${rawA.cellId}`}>#{rawA.cellId}</span>
+                        )}
+                        <span className={`text-[13px] font-bold text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none`}>{zoneLabelA}</span>
                         <span className="text-[13px] break-keep whitespace-normal">{subA}</span>
                         <div className="w-full mt-auto pt-1">
                           {renderZoneCellById(`${num}A`, "w-full min-h-[60px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[12px]", "", true)}
@@ -234,7 +250,6 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
 
             {/* 하단 벽면 */}
             <div className="w-full">
-              <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">하단 벽면 (23→34)</div>
               <div className="grid grid-cols-4 md:grid-cols-12 gap-1 bg-zinc-100 p-1 rounded">
                 {STORE_BOTTOM_WALL.map((num) => renderWallZoneCard(num, "bottom"))}
               </div>
