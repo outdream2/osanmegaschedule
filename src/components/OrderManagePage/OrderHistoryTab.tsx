@@ -12,6 +12,8 @@ import { PageToolbar } from "../common/PageToolbar";
 import { SearchBar } from "../common/SearchBar";
 // 2026-08-29 · 상품명 검색 · 통일 로직
 import { matchesProductQuery } from "../../lib/productMatch";
+// 2026-08-30 · 사용자 지시 · 공급사명 검색 프로젝트 전체 endpoint 통합 · matchesSupplierQuery 프리미티브
+import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { AccentBar } from "../common/AccentBar";
 import { InlineLabel } from "../common/InlineLabel";
 import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
@@ -114,8 +116,8 @@ export const OrderHistoryTab: React.FC = () => {
     const qP = productSearch.trim().toLowerCase();
     if (!qS && !qP && categoryFilter === "all") return orders;
     return orders.filter(o => {
-      const supplierName = String(displayVendorName(o.supplier ?? ""));
-      const supplierMatch = !qS || supplierName.toLowerCase().includes(qS);
+      // 2026-08-30 · 공급사 검색 통일 · matchesSupplierQuery (초성·정제명·부분일치)
+      const supplierMatch = matchesSupplierQuery({ supplier: o.supplier ?? undefined }, supplierSearch);
       // 2026-08-29 · 통일 로직 · matchesProductQuery (초성 + 부분 + 코드 + 바코드)
       const productMatch = !productSearch.trim() || o.items.some(it => matchesProductQuery(it, productSearch));
       const categoryMatch = categoryFilter === "all" || orderCategory(o) === categoryFilter;

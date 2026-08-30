@@ -11,6 +11,8 @@ import { CheckCircle2, HandCoins, Pencil, RefreshCw, Trash2, X, Save, ArrowRight
 import { SearchBar } from "../common/SearchBar";
 // 2026-08-29 · 상품명 검색 · 통일 로직
 import { matchesProductQuery } from "../../lib/productMatch";
+// 2026-08-30 · 사용자 지시 · 공급사명 검색 프로젝트 전체 통합
+import { matchesSupplierQuery } from "../../lib/supplierMatch";
 // 2026-08-29 · #130 A안 Phase 1 · SignaturePad 프리미티브 (인라인 → common)
 import { SignaturePad } from "../common/SignaturePad";
 import { api, ApiError } from "../../lib/apiClient";
@@ -355,8 +357,11 @@ const BorrowingList: React.FC<{
   onReturn: (row: BorrowingRow) => void;
 }> = ({ rows, loading, error, onReload, onPatch, onDelete, days, setDays, status, setStatus, q, setQ, onPreviewSignature, onReturn }) => {
   const filtered = useMemo(() => {
-    // 2026-08-29 · 통일 로직 · matchesProductQuery
-    return rows.filter(r => matchesProductQuery(r, q));
+    // 2026-08-29 · 통일 로직 · matchesProductQuery (상품·코드·바코드) + matchesSupplierQuery (공급사)
+    // 2026-08-30 · 공급사 검색 통일 · OR 매칭 (상품 or 공급사)
+    return rows.filter(r =>
+      matchesProductQuery(r, q) || matchesSupplierQuery({ supplier: r.supplier ?? undefined }, q)
+    );
   }, [rows, q]);
 
   return (
