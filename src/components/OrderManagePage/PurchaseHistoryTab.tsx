@@ -262,7 +262,7 @@ export const PurchaseHistoryTab: React.FC = () => {
       const { data: j } = await api.get<any>(`/api/purchase-details?${params}`);
       const rowsFromApi: any[] = Array.isArray(j.rows) ? j.rows : [];
       // 2026-08-30 · 사용자 지시 · 정제명 매칭 · (주)녹십자 vs 녹십자 · vat 부가정보 무시
-      const { displayVendorName: dv } = await import("../../../utils/vendorNameNormalize");
+      const { displayVendorName: dv } = await import("../../utils/vendorNameNormalize");
       const norm = dv(supplier);
       const filtered = rowsFromApi.filter(r => {
         const rn = String(r.supplier_name ?? r.supplier ?? "");
