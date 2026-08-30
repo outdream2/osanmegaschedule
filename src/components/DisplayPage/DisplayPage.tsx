@@ -146,7 +146,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   // 2026-08-25 · Framework Phase 4 · 서브탭 초기화 · useDpInitialSubTab 이관
   useDpInitialSubTab(dpSubTab, setDpSubTab, dpHiddenSubs);
 
-  const [mapCollapsed, setMapCollapsed] = useState(true);
+  // 2026-08-30 · 사용자 지시 · 접기/펼치기 제거 · 그냥 보이게 (mapCollapsed prop 유지 안 함)
   // 2026-08-25 · 사용자 지시 · 매장구역 subtab 안 · 매장구역도 vs 배치구역 불일치 탭
   // 2026-08-26 · 창고1 · 창고2 구역도 탭 추가 (storage.webp 기반)
   const [storeInnerTab, setStoreInnerTab] = useState<"map" | "displayRequest" | "mismatch" | "warehouse1" | "warehouse2" | "stockTable" | "zoneEdit">(() => {
@@ -740,13 +740,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 zoneEditing={dpZoneEditable} onZoneReorder={handleZoneReorder}
               />
 
-              {/* 데스크탑 매장 배치도 */}
-              <div className="hidden sm:flex items-center gap-2 mb-2">
-                <button type="button" onClick={() => setMapCollapsed(v => !v)} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm transition cursor-pointer">
-                  {mapCollapsed ? "매장 구역도 펼치기" : "매장 구역도 접기"}
-                </button>
-              </div>
-              <div className={`hidden ${mapCollapsed ? "" : "sm:block"}`}>
+              {/* 2026-08-30 · 사용자 지시 · 접기/펼치기 버튼 제거 · 항상 표시 */}
+              <div className="hidden sm:block">
                 <DisplayStoreMap
                   ZONE_DEFS={ZONE_DEFS} zones={zones} todayStaff={todayStaff} staffColorMap={staffColorMap}
                   pendingAutoAssign={pendingAutoAssign} dragStaff={dragStaff} dragStaffRef={dragStaffRef}

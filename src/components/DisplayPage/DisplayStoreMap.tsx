@@ -139,15 +139,15 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
         <div className="flex flex-col md:flex-row md:justify-between md:items-stretch gap-3 w-full shrink-0">
           <div className="flex-1 bg-white border-2 border-emerald-600 rounded-xl p-2 md:p-3 flex flex-col shadow-sm relative min-w-0">
 
-            {/* 미니 위치 다이어그램 */}
-            <Card variant="raw-sm" rounded="lg" padding="none" className="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1">
+            {/* 2026-08-30 · 사용자 지시 · 배지 겹침 fix · absolute 제거 · inline flex 헤더 배치 · 여백 확보 */}
+            <div className="flex items-center gap-1.5 mb-2">
               <svg width="36" height="28" viewBox="0 0 42 34" className="shrink-0" aria-label="수평윙 위치">
                 <rect x="1" y="1" width="30" height="20" rx="1.5" fill="#10b981" stroke="#047857" strokeWidth="1" />
                 <rect x="31" y="1" width="10" height="32" rx="1.5" fill="none" stroke="#cbd5e1" strokeWidth="1.2" />
                 <circle cx="16" cy="11" r="2" fill="#fbbf24" />
               </svg>
               <span className="text-[13px] font-bold text-zinc-600 leading-none">수평 윙</span>
-            </Card>
+            </div>
 
             {/* 상단 벽면 */}
             <div className="w-full">
