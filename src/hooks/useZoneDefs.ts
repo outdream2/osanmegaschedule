@@ -66,6 +66,10 @@ export function useZoneDefs(): {
   loading: boolean;
   saveState: "idle" | "saving" | "saved" | "error";
   saveNow: () => Promise<boolean>;
+  /** 2026-08-30 · 사용자 지시 · 신규 zone 추가 · DB POST · 성공 시 zones 갱신 */
+  addZone: (zone: ZoneDef) => Promise<boolean>;
+  /** 2026-08-30 · 사용자 지시 · zone 삭제 · DB DELETE · 성공 시 zones 갱신 */
+  deleteZone: (num: number) => Promise<boolean>;
 } {
   // KV 폴백 · 정식 테이블 미존재 시 사용 (하위호환)
   const {
@@ -138,10 +142,47 @@ export function useZoneDefs(): {
     }
   }, [dbMissing, dbZones, kvSaveNow]);
 
+  // 신규 zone 추가 · DB POST · 응답으로 즉시 갱신
+  const addZone = useCallback(async (zone: ZoneDef): Promise<boolean> => {
+    if (dbMissing) {
+      // KV 폴백 모드 · 로컬 추가 후 저장
+      setKvValue(prev => [...prev.filter(z => z.num !== zone.num), zone].sort((a, b) => a.num - b.num));
+      const ok = await kvSaveNow();
+      return ok;
+    }
+    try {
+      const { data } = await api.post<{ ok: boolean; zone: ZoneDef }>("/api/zone-defs", zone);
+      if (data?.zone) {
+        setDbZones(prev => [...(prev ?? []).filter(z => z.num !== data.zone.num), data.zone].sort((a, b) => a.num - b.num));
+      }
+      return true;
+    } catch (e) {
+      console.error("[useZoneDefs] addZone 실패:", e);
+      return false;
+    }
+  }, [dbMissing, setKvValue, kvSaveNow]);
+
+  // zone 삭제 · DB DELETE · 성공 시 로컬 제거
+  const deleteZone = useCallback(async (num: number): Promise<boolean> => {
+    if (dbMissing) {
+      setKvValue(prev => prev.filter(z => z.num !== num));
+      const ok = await kvSaveNow();
+      return ok;
+    }
+    try {
+      await api.del(`/api/zone-defs/${num}`);
+      setDbZones(prev => (prev ?? []).filter(z => z.num !== num));
+      return true;
+    } catch (e) {
+      console.error("[useZoneDefs] deleteZone 실패:", e);
+      return false;
+    }
+  }, [dbMissing, setKvValue, kvSaveNow]);
+
   const loading = dbMissing ? !kvLoaded : !dbLoaded;
   const effectiveSaveState = dbMissing ? kvSaveState : saveState;
 
-  return { zones, setZones, loading, saveState: effectiveSaveState, saveNow };
+  return { zones, setZones, loading, saveState: effectiveSaveState, saveNow, addZone, deleteZone };
 }
 
 /** 특정 zone num 조회 */

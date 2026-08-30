@@ -108,6 +108,30 @@ router.put("/api/zone-defs", authorize(9), asyncHandler(async (req, res) => {
   res.json({ ok: true, zones: result, updated: result.length });
 }));
 
+// POST /api/zone-defs · 신규 zone 추가 · 관리자 lv9
+//   · body · { num, label, category, section, subA?, subB?, subC?, description?, ... }
+//   · 이미 존재하면 409
+router.post("/api/zone-defs", authorize(9), asyncHandler(async (req, res) => {
+  const row = dtoToRow(req.body ?? {});
+  if (!Number.isFinite(row.num) || row.num <= 0) throw badRequest("num 필요 (양의 정수)");
+  if (!row.label || !row.category || !row.section) throw badRequest("label · category · section 필수");
+  // 중복 체크
+  const { data: exists } = await supabase.from("zone_defs").select("num").eq("num", row.num).maybeSingle();
+  if (exists) throw new HttpError(409, `zone ${row.num} 이미 존재합니다`);
+  const { data, error } = await supabase.from("zone_defs").insert([row]).select("*").single();
+  if (error) throw new HttpError(500, error.message);
+  res.status(201).json({ ok: true, zone: rowToDto(data as ZoneDefRow) });
+}));
+
+// DELETE /api/zone-defs/:num · 삭제 · 관리자 lv9
+router.delete("/api/zone-defs/:num", authorize(9), asyncHandler(async (req, res) => {
+  const num = Number(req.params.num);
+  if (!Number.isFinite(num) || num <= 0) throw badRequest("잘못된 zone 번호");
+  const { error } = await supabase.from("zone_defs").delete().eq("num", num);
+  if (error) throw new HttpError(500, error.message);
+  res.json({ ok: true, deleted: num });
+}));
+
 // PATCH /api/zone-defs/:num · 단건 편집 · 관리자 lv9
 router.patch("/api/zone-defs/:num", authorize(9), asyncHandler(async (req, res) => {
   const num = Number(req.params.num);
