@@ -41,6 +41,8 @@ interface FlatRow {
   /** 2026-08-30 · 담당자 편집 · 필드 및 rowId 매핑 · updateZoneRaw 직접 호출 */
   rowId?: number;
   assignee: string[];
+  /** 2026-08-30 · 사용자 지시 · 구역 badge 는 DB location 컬럼 값 */
+  location?: string;
 }
 
 // 2026-08-26 · 사용자 지시 · 구역 구조는 절대 사라지지 않음
@@ -61,19 +63,19 @@ function expandZoneToRows(z: ZoneDef): FlatRow[] {
   const zz = z as ZoneDefWithRowIds;
   if (hasA && hasB && hasC) {
     return [
-      { zone: z, code: `${z.num}A`, sub: "A", catField: "subA", descField: "descriptionA", catValue: z.subA ?? "", descValue: z.descriptionA, rowId: zz.__rowIdA, assignee: zz.__assigneeA ?? [] },
-      { zone: z, code: `${z.num}B`, sub: "B", catField: "subB", descField: "descriptionB", catValue: z.subB ?? "", descValue: z.descriptionB, rowId: zz.__rowIdB, assignee: zz.__assigneeB ?? [] },
-      { zone: z, code: `${z.num}C`, sub: "C", catField: "subC", descField: "descriptionC", catValue: z.subC ?? "", descValue: z.descriptionC, rowId: zz.__rowIdC, assignee: zz.__assigneeC ?? [] },
+      { zone: z, code: zz.__locationA ?? `${z.num}A`, sub: "A", catField: "subA", descField: "descriptionA", catValue: z.subA ?? "", descValue: z.descriptionA, rowId: zz.__rowIdA, assignee: zz.__assigneeA ?? [], location: zz.__locationA },
+      { zone: z, code: zz.__locationB ?? `${z.num}B`, sub: "B", catField: "subB", descField: "descriptionB", catValue: z.subB ?? "", descValue: z.descriptionB, rowId: zz.__rowIdB, assignee: zz.__assigneeB ?? [], location: zz.__locationB },
+      { zone: z, code: zz.__locationC ?? `${z.num}C`, sub: "C", catField: "subC", descField: "descriptionC", catValue: z.subC ?? "", descValue: z.descriptionC, rowId: zz.__rowIdC, assignee: zz.__assigneeC ?? [], location: zz.__locationC },
     ];
   }
   if (hasA && hasB) {
     return [
-      { zone: z, code: `${z.num}A`, sub: "A", catField: "subA", descField: "descriptionA", catValue: z.subA ?? "", descValue: z.descriptionA, rowId: zz.__rowIdA, assignee: zz.__assigneeA ?? [] },
-      { zone: z, code: `${z.num}B`, sub: "B", catField: "subB", descField: "descriptionB", catValue: z.subB ?? "", descValue: z.descriptionB, rowId: zz.__rowIdB, assignee: zz.__assigneeB ?? [] },
+      { zone: z, code: zz.__locationA ?? `${z.num}A`, sub: "A", catField: "subA", descField: "descriptionA", catValue: z.subA ?? "", descValue: z.descriptionA, rowId: zz.__rowIdA, assignee: zz.__assigneeA ?? [], location: zz.__locationA },
+      { zone: z, code: zz.__locationB ?? `${z.num}B`, sub: "B", catField: "subB", descField: "descriptionB", catValue: z.subB ?? "", descValue: z.descriptionB, rowId: zz.__rowIdB, assignee: zz.__assigneeB ?? [], location: zz.__locationB },
     ];
   }
   return [
-    { zone: z, code: String(z.num), sub: null, catField: "category", descField: "description", catValue: z.category, descValue: z.description, rowId: zz.__rowId, assignee: zz.__assignee ?? [] },
+    { zone: z, code: zz.__location ?? String(z.num), sub: null, catField: "category", descField: "description", catValue: z.category, descValue: z.description, rowId: zz.__rowId, assignee: zz.__assignee ?? [], location: zz.__location },
   ];
 }
 
@@ -329,9 +331,22 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
     }, 50);
   };
 
-  // 4 대분류 존 (num 기준) 그룹핑 · 중앙상비약 · 상담 · 뷰티식품 · 카운터
+  // 2026-08-30 · DB zone 컬럼 (대분류 존 명) 우선 · 없으면 num 기준 fallback
+  //   · 중앙상비약존 → central-otc · 상담존 → consult · 뷰티식품존 → beauty-food · 카운터테마존 → counter
+  const majorZoneNameToKey: Record<string, MajorZone> = {
+    "중앙상비약존": "central-otc",
+    "상담존":       "consult",
+    "뷰티식품존":   "beauty-food",
+    "카운터테마존": "counter",
+  };
+  const classifyByDb = (z: ZoneDef): MajorZone => {
+    const zz = z as ZoneDefWithRowIds;
+    const dbZone = zz.__majorZone ?? zz.__majorZoneA ?? zz.__majorZoneB ?? zz.__majorZoneC;
+    if (dbZone && majorZoneNameToKey[dbZone]) return majorZoneNameToKey[dbZone];
+    return classifyZone(z.num);
+  };
   const grouped: Record<MajorZone, ZoneDef[]> = { "central-otc": [], "consult": [], "beauty-food": [], "counter": [] };
-  for (const z of zones) grouped[classifyZone(z.num)].push(z);
+  for (const z of zones) grouped[classifyByDb(z)].push(z);
   for (const k of MAJOR_ZONE_ORDER) grouped[k].sort((a, b) => a.num - b.num);
 
   const inputCls = "flex-1 min-w-0 h-9 px-2.5 rounded-md border border-brand-deep bg-white text-[14px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint";

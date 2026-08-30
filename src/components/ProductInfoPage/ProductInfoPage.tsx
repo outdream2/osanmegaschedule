@@ -86,7 +86,7 @@ type EditableKey =
 const NUMBER_KEYS = new Set<EditableKey>(["optimal_stock", "sale_price", "purchase_price"]);
 
 const detailInputCls =
-  "w-full h-8 px-2 rounded-md border border-line bg-white text-[13px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors";
+  "w-full h-8 px-2 rounded-md border border-line bg-white text-[16px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors";
 
 // ─── Detail panel · 재사용 (PC 우측 / 모바일 modal 내부 동일) ─────────────
 interface DetailProps {
@@ -121,7 +121,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
   if (error) {
     return (
       <div className="p-4">
-        <Card variant="flat" padding="md" rounded="lg" bg="bg-rose-50" borderColor="border-rose-200" className="text-[13px] text-rose-700 font-medium">
+        <Card variant="flat" padding="md" rounded="lg" bg="bg-rose-50" borderColor="border-rose-200" className="text-[16px] text-rose-700 font-medium">
           {error}
         </Card>
       </div>
@@ -269,7 +269,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
           <button
             type="button"
             onClick={() => { setDetailModalOpen(true); if (!editing) startEdit(); }}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-line bg-white text-[14px] font-bold text-brand-deep hover:bg-brand-tint hover:border-brand-deep transition cursor-pointer shadow-sm"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-line bg-white text-[17px] font-bold text-brand-deep hover:bg-brand-tint hover:border-brand-deep transition cursor-pointer shadow-sm"
             title="상세 편집 (전체 필드)"
           >
             <Pencil size={14} strokeWidth={2.4} />
@@ -309,7 +309,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             icon={<Tag size={16} />}
             description="브랜드 · 제조사 · 최근 수정"
           >
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-[14px]">
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-[17px]">
               {(product as any).brand && (
                 <div className="flex items-center gap-2">
                   <Tag size={12} className="text-brand-deep/60 shrink-0" />
@@ -328,7 +328,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                 <div className="flex items-center gap-2">
                   <Calendar size={12} className="text-brand-deep/60 shrink-0" />
                   <dt className="text-zinc-500 font-medium min-w-[60px]">최근 수정</dt>
-                  <dd className="text-ink-soft tabular-nums text-[13px]">
+                  <dd className="text-ink-soft tabular-nums text-[16px]">
                     {String((product as any).last_modified_at).slice(0, 10)}
                   </dd>
                 </div>
@@ -349,7 +349,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
         <Card variant="flat" padding="md" rounded="lg" topAccent className="bg-white">
           <div className="flex items-center gap-2 mb-3 pb-2 border-b border-line">
             <InfoIcon size={16} className="text-brand-deep" />
-            <h3 className="text-[15px] font-bold text-ink tracking-tight">상세 편집 (전체 필드)</h3>
+            <h3 className="text-[18px] font-bold text-ink tracking-tight">상세 편집 (전체 필드)</h3>
             <div className="flex-1" />
             {editing ? (
               <>
@@ -358,7 +358,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                   type="button"
                   onClick={save}
                   disabled={saving}
-                  className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-brand-deep text-white text-[12px] font-bold hover:bg-[#0d3a5c] disabled:opacity-50 cursor-pointer"
+                  className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-brand-deep text-white text-[18px] font-bold hover:bg-[#0d3a5c] disabled:opacity-50 cursor-pointer"
                 >
                   <Save size={12} />{saving ? "저장중" : "저장"}
                 </button>
@@ -366,7 +366,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                   type="button"
                   onClick={cancelEdit}
                   disabled={saving}
-                  className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-line text-[12px] font-semibold text-zinc-600 hover:bg-zinc-50 cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-line text-[18px] font-semibold text-zinc-600 hover:bg-zinc-50 cursor-pointer disabled:opacity-50"
                 >
                   <X size={12} />취소
                 </button>
@@ -379,7 +379,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                     type="button"
                     onClick={startEdit}
                     title="상품 편집"
-                    className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line text-[12px] font-semibold text-brand-deep hover:bg-brand-tint hover:border-brand-deep cursor-pointer transition-colors"
+                    className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line text-[18px] font-semibold text-brand-deep hover:bg-brand-tint hover:border-brand-deep cursor-pointer transition-colors"
                   >
                     <Pencil size={12} />편집
                   </button>
@@ -387,12 +387,12 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
               </>
             )}
           </div>
-          <dl className="grid grid-cols-[110px_1fr] gap-y-2 gap-x-3 text-[13px]">
+          <dl className="grid grid-cols-[110px_1fr] gap-y-2 gap-x-3 text-[16px]">
             {/* 상품코드 · 편집 불가 (read-only) */}
             <dt className="text-zinc-500 font-medium">상품코드</dt>
             <dd className="tabular-nums font-semibold text-ink">
               {product.product_code}
-              <span className="ml-1.5 text-[10px] text-zinc-400 font-normal">(변경 불가)</span>
+              <span className="ml-1.5 text-[16px] text-zinc-400 font-normal">(변경 불가)</span>
             </dd>
             {editing ? (
               <>
@@ -565,10 +565,10 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
               }`}
             >
               <div className="min-w-0 flex-1">
-                <div className={`text-[13px] font-bold truncate ${active ? "text-brand-deep" : "text-ink"}`}>
+                <div className={`text-[16px] font-bold truncate ${active ? "text-brand-deep" : "text-ink"}`}>
                   {r.product_name || <span className="text-zinc-400">(이름없음)</span>}
                 </div>
-                <div className="text-[11px] text-zinc-500 truncate tabular-nums">
+                <div className="text-[17px] text-zinc-500 truncate tabular-nums">
                   {r.product_code}
                   {r.supplier && <span className="ml-1.5">· {r.supplier}</span>}
                 </div>

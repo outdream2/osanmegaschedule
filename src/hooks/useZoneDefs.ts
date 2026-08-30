@@ -71,7 +71,7 @@ export function classifyMajorZone(loc: string | null | undefined): "중앙상비
   return "(미분류)";
 }
 
-/** 확장 · ZoneDef 에 DB row id + 담당자 매핑 (편집 시 사용) */
+/** 확장 · ZoneDef 에 DB row id + 담당자 + location 매핑 (편집 시 사용) */
 export interface ZoneDefWithRowIds extends ZoneDef {
   __rowId?: number;
   __rowIdA?: number;
@@ -81,6 +81,16 @@ export interface ZoneDefWithRowIds extends ZoneDef {
   __assigneeA?: string[];
   __assigneeB?: string[];
   __assigneeC?: string[];
+  /** 2026-08-30 · DB 원본 location 값 · 구역 코드 표시용 */
+  __location?: string;
+  __locationA?: string;
+  __locationB?: string;
+  __locationC?: string;
+  /** 2026-08-30 · DB zone 컬럼 · 대분류 존 (중앙상비약존/상담존/뷰티식품존/카운터테마존) */
+  __majorZone?: string;
+  __majorZoneA?: string;
+  __majorZoneB?: string;
+  __majorZoneC?: string;
 }
 
 // 벽면 라벨 · 미니 매핑 (wing 셀 · 라벨 → num 복원)
@@ -172,6 +182,14 @@ function transformToLegacy(raws: ZoneDefRaw[]): ZoneDefWithRowIds[] {
       __assigneeA: g.A?.assignee ?? [],
       __assigneeB: g.B?.assignee ?? [],
       __assigneeC: g.C?.assignee ?? [],
+      __location: g.base?.location,
+      __locationA: g.A?.location,
+      __locationB: g.B?.location,
+      __locationC: g.C?.location,
+      __majorZone: g.base?.zone,
+      __majorZoneA: g.A?.zone,
+      __majorZoneB: g.B?.zone,
+      __majorZoneC: g.C?.zone,
     };
     result.push(zone);
   }
