@@ -212,12 +212,12 @@ export const notificationsService = {
     activeOnly?: boolean;
   }): Promise<{ inApp: number; push: number }> {
     try {
-      let query = supabase.from("employees").select("id, retire_date");
+      let query = supabase.from("employees").select('id, "retireDate"');
       const { data, error } = await query;
       if (error) { console.warn("[notifyAllEmployees] fetch failed:", error.message); return { inApp: 0, push: 0 }; }
       const activeOnly = params.activeOnly !== false;
       const ids = (data ?? [])
-        .filter((e: any) => !activeOnly || !e.retire_date)
+        .filter((e: any) => !activeOnly || !e.retireDate)
         .map((e: any) => e.id as number)
         .filter((n) => typeof n === "number");
       if (ids.length === 0) return { inApp: 0, push: 0 };

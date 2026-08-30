@@ -259,7 +259,7 @@ router.patch("/api/resignations/:id", authorize(5), validateBody(ReviewResignati
   if (status === "approved" && data.employee_id && data.last_work_date) {
     await supabase
       .from("employees")
-      .update({ retire_date: data.last_work_date })
+      .update({ "retireDate": data.last_work_date })
       .eq("id", data.employee_id)
       .then(() => null, () => null);
   }

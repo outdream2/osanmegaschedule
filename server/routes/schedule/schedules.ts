@@ -186,7 +186,7 @@ router.post("/api/employees/:id/resignation-file", authorize(1), resignationFile
   // 직원 존재 확인 + 퇴사자 여부 검증 (선택적 · retire_date 없어도 업로드 허용)
   const { data: emp } = await supabase
     .from("employees")
-    .select("name, retire_date, resignation_file_url")
+    .select('name, "retireDate", resignation_file_url')
     .eq("id", id)
     .maybeSingle();
   if (!emp) throw notFound("직원을 찾을 수 없습니다");

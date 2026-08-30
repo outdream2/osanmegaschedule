@@ -31,7 +31,7 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
     supabase.from("lunch_requests").select("id", { count: "exact", head: true }).eq("date", today).eq("eating", false),
     supabase.from("inventory_checks").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("return_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("resignations").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("resignation_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("vendors").select("id", { count: "exact", head: true }).eq("approval_status", "pending"),
   ]);
   const computedCodes = new Set(
