@@ -115,14 +115,14 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
     return <div className="flex-1 flex items-center justify-center py-12"><Spinner label="불러오는 중..." size={13} tone="zinc" labelSize={11} /></div>;
   }
   if (aggregated.length === 0) {
-    return <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[11px]">해당 기간 매입 상품 없음</div>;
+    return <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[17px]">해당 기간 매입 상품 없음</div>;
   }
   return (
     <div className="overflow-auto flex-1 min-h-0">
       <table className="w-full text-xs min-w-[600px]" style={{ tableLayout: "fixed" }}>
         {/* 2026-08-24 · v3 확산 · bg zinc-100/70 · font-bold */}
         <thead className="sticky top-0 bg-zinc-100/70 z-10 border-b border-line">
-          <tr className="text-[12px] sm:text-[13px] font-bold text-zinc-500 uppercase tracking-wider">
+          <tr className="text-[15px] sm:text-[16px] font-bold text-zinc-500 uppercase tracking-wider">
             <th className="relative text-left px-2 py-2 text-zinc-300" style={{ width: aw("num"), minWidth: aw("num") }}>
               #
               <span {...ar("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
@@ -174,43 +174,43 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
         <tbody className="divide-y divide-zinc-50">
           {sorted.map((a, i) => (
             <tr key={`pa-${a.key}-${i}`} className="hover:bg-zinc-50/60 transition-all duration-100">
-              <td className="px-2 py-1.5 text-zinc-300 text-[11px] tabular-nums align-top">{i + 1}</td>
+              <td className="px-2 py-1.5 text-zinc-300 text-[17px] tabular-nums align-top">{i + 1}</td>
               <td className="px-2 py-1.5 align-top">
-                <div className="text-[12px] font-semibold text-zinc-700 break-words whitespace-normal leading-snug">
+                <div className="text-[15px] font-semibold text-zinc-700 break-words whitespace-normal leading-snug">
                   {a.product_name}
                 </div>
                 {a.product_code && (
-                  <div className="text-[10px] text-zinc-400 font-mono tabular-nums">{a.product_code}</div>
+                  <div className="text-[16px] text-zinc-400 font-mono tabular-nums">{a.product_code}</div>
                 )}
               </td>
-              <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-zinc-600 align-top">
+              <td className="px-2 py-1.5 text-right tabular-nums text-[15px] text-zinc-600 align-top">
                 {fmt(a.total_qty)}
               </td>
-              <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-zinc-600 align-top">
+              <td className="px-2 py-1.5 text-right tabular-nums text-[15px] text-zinc-600 align-top">
                 {a.avg_unit_price > 0 ? fmt(Math.round(a.avg_unit_price)) : "-"}
               </td>
               {/* 평균 매입주기 (2026-08-06) · 일수 · 2회 미만이면 '-' */}
-              <td className={`px-2 py-1.5 text-right tabular-nums text-[12px] align-top ${a.avg_interval == null ? "text-zinc-300" : "text-zinc-600"}`}
+              <td className={`px-2 py-1.5 text-right tabular-nums text-[15px] align-top ${a.avg_interval == null ? "text-zinc-300" : "text-zinc-600"}`}
                   title={a.avg_interval == null ? "매입 2회 미만" : `평균 ${a.avg_interval}일`}>
                 {a.avg_interval == null ? "—" : `${a.avg_interval}일`}
               </td>
               {/* 최근매입일 (2026-08-06) · 2026 (10px 회색) 줄바꿈 7/20 형식 */}
-              <td className="px-2 py-1.5 tabular-nums text-[11px] text-zinc-500 align-top whitespace-nowrap">
+              <td className="px-2 py-1.5 tabular-nums text-[17px] text-zinc-500 align-top whitespace-nowrap">
                 {(() => {
                   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(a.last_date);
                   if (m) return (
                     <span className="inline-flex flex-col leading-tight items-start">
-                      <span className="text-[9px] text-zinc-400">{m[1]}</span>
+                      <span className="text-[15px] text-zinc-400">{m[1]}</span>
                       <span>{String(parseInt(m[2], 10))}/{String(parseInt(m[3], 10))}</span>
                     </span>
                   );
                   return dateLabel(a.last_date);
                 })()}
               </td>
-              <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-zinc-600 align-top">
+              <td className="px-2 py-1.5 text-right tabular-nums text-[15px] text-zinc-600 align-top">
                 {fmt(a.purchase_count)}
               </td>
-              <td className="px-2 py-1.5 text-right tabular-nums text-[12px] font-semibold text-emerald-700 align-top">
+              <td className="px-2 py-1.5 text-right tabular-nums text-[15px] font-semibold text-emerald-700 align-top">
                 {fmt(a.total_amount)}
               </td>
             </tr>
@@ -218,8 +218,8 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
         </tbody>
         <tfoot className="sticky bottom-0 bg-white border-t-2 border-line">
           <tr>
-            <td colSpan={7} className="px-2 py-2 text-right text-[11px] font-bold text-zinc-500">합계</td>
-            <td className="px-2 py-2 text-right tabular-nums text-[13px] font-bold text-emerald-700">{fmtWon(totalAmount)}</td>
+            <td colSpan={7} className="px-2 py-2 text-right text-[17px] font-bold text-zinc-500">합계</td>
+            <td className="px-2 py-2 text-right tabular-nums text-[16px] font-bold text-emerald-700">{fmtWon(totalAmount)}</td>
           </tr>
         </tfoot>
       </table>

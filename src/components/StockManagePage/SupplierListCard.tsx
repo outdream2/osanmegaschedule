@@ -103,7 +103,7 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
         </span>
       }
       countDisplay={
-        <span className="text-[15px] font-semibold tabular-nums text-zinc-400 bg-zinc-50 border border-line rounded px-1.5 py-0.5">
+        <span className="text-[17px] font-semibold tabular-nums text-zinc-400 bg-zinc-50 border border-line rounded px-1.5 py-0.5">
           {displayedXlsxSuppliers.length}{supListLimit < xlsxSuppliers.length ? `/${xlsxSuppliers.length}` : ""}개 사
         </span>
       }
@@ -121,7 +121,7 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
         <div className="flex flex-col gap-1.5 w-full">
           {!embedded && (
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider mr-0.5">분류</span>
+            <span className="text-[16px] font-semibold text-zinc-400 uppercase tracking-wider mr-0.5">분류</span>
             {([
               { k: "전체" as const, activeCls: "bg-zinc-700 text-white shadow-sm" },
               { k: "위탁" as const, activeCls: "bg-violet-500 text-white shadow-sm" },
@@ -131,14 +131,14 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
               { k: "기타" as const, activeCls: "bg-zinc-500 text-white shadow-sm" },
             ]).map(o => (
               <button key={o.k} onClick={() => onCategoryChange(o.k)}
-                className={`h-7 px-2.5 rounded-md text-[15px] font-semibold transition cursor-pointer ${supListCategory === o.k ? o.activeCls : "text-zinc-500 bg-zinc-50 hover:bg-zinc-100 border border-line"}`}>
+                className={`h-7 px-2.5 rounded-md text-[17px] font-semibold transition cursor-pointer ${supListCategory === o.k ? o.activeCls : "text-zinc-500 bg-zinc-50 hover:bg-zinc-100 border border-line"}`}>
                 {o.k}
               </button>
             ))}
           </div>
           )}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider mr-0.5">정렬</span>
+            <span className="text-[16px] font-semibold text-zinc-400 uppercase tracking-wider mr-0.5">정렬</span>
             {([
               { k: "totalStockAmount" as SupListSortKey, label: "재고자산", color: "amber", hideWhenNoSale: false, showOnlyWithCycle: false },
               { k: "saleQty" as SupListSortKey, label: "판매량", color: "emerald", hideWhenNoSale: true, showOnlyWithCycle: false },
@@ -156,7 +156,7 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
               };
               return (
                 <button key={o.k} onClick={() => onSortToggle(o.k)}
-                  className={`h-7 px-2.5 rounded-md text-[15px] font-semibold transition cursor-pointer ${active ? activeMap[o.color] : "text-zinc-500 bg-zinc-50 hover:bg-zinc-100 border border-line"}`}>
+                  className={`h-7 px-2.5 rounded-md text-[17px] font-semibold transition cursor-pointer ${active ? activeMap[o.color] : "text-zinc-500 bg-zinc-50 hover:bg-zinc-100 border border-line"}`}>
                   {o.label}{arrow}
                 </button>
               );
@@ -183,9 +183,9 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
           />
         )
       ) : (
-        <table className={`w-full text-[15px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ borderCollapse: "separate", borderSpacing: 0 }}>
+        <table className={`w-full text-[17px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ borderCollapse: "separate", borderSpacing: 0 }}>
           <thead className="sticky top-0 z-10">
-            <tr className="text-[13px] sm:text-[14px] font-bold text-zinc-500 border-b border-line bg-zinc-100/70 uppercase tracking-wider">
+            <tr className="text-[17px] sm:text-[16px] font-bold text-zinc-500 border-b border-line bg-zinc-100/70 uppercase tracking-wider">
               <th className="relative text-center py-2" style={{ width: getWidth("toggle"), minWidth: getWidth("toggle") }}>
                 <span {...resizerProps("toggle")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
               </th>
@@ -253,7 +253,7 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
           <tbody className="divide-y divide-zinc-100">
             {/* 합계 요약 행 */}
             {totalsCollapsed ? (
-              <tr className="bg-zinc-50 border-b border-line text-[15px]">
+              <tr className="bg-zinc-50 border-b border-line text-[17px]">
                 <td colSpan={99} className="px-3 py-1 text-center">
                   <button
                     type="button"
@@ -261,17 +261,17 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                     className="inline-flex items-center gap-1 text-zinc-500 hover:text-zinc-700 font-semibold cursor-pointer"
                     title="합계 펼치기"
                   >
-                    <span className="text-[15px]">▾</span> Σ 합계 펼치기 ({displayedXlsxSuppliers.length}개 사)
+                    <span className="text-[17px]">▾</span> Σ 합계 펼치기 ({displayedXlsxSuppliers.length}개 사)
                   </button>
                 </td>
               </tr>
             ) : (
-              <tr className="bg-zinc-100 border-b-2 border-zinc-300 font-bold text-zinc-800 text-[14px]">
+              <tr className="bg-zinc-100 border-b-2 border-zinc-300 font-bold text-zinc-800 text-[16px]">
                 <td className="text-center py-1.5">
                   <button
                     type="button"
                     onClick={() => onTotalsToggle(true)}
-                    className="text-zinc-500 hover:text-zinc-700 cursor-pointer text-[14px]"
+                    className="text-zinc-500 hover:text-zinc-700 cursor-pointer text-[16px]"
                     title="합계 접기"
                   >▴ Σ</button>
                 </td>
@@ -334,7 +334,7 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                         />
                       </button>
                     </td>
-                    <td className="text-center align-middle py-1.5 text-[15px] font-semibold text-zinc-400 tabular-nums">{i + 1}</td>
+                    <td className="text-center align-middle py-1.5 text-[17px] font-semibold text-zinc-400 tabular-nums">{i + 1}</td>
                     <td className="text-left px-3 py-1.5 align-top">
                       <div className="flex flex-col leading-tight gap-0.5">
                         {(() => {
@@ -343,11 +343,11 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                           return <VendorCategoryBadge category={cat} />;
                         })()}
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className={`text-[15px] font-semibold break-words whitespace-normal leading-tight ${isSelected ? "text-sky-800" : "text-zinc-700"}`}>
+                          <span className={`text-[17px] font-semibold break-words whitespace-normal leading-tight ${isSelected ? "text-sky-800" : "text-zinc-700"}`}>
                             {sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}
                           </span>
-                          {sup.supplier_code && <span className="text-[14px] tabular-nums text-zinc-400 shrink-0 font-mono bg-zinc-100 rounded px-1" title="공급사코드">#{sup.supplier_code}</span>}
-                          {sup.code_conflict && <span className="text-[15px] font-semibold text-amber-500 shrink-0" title="같은 이름에 여러 공급사코드가 존재">⚠</span>}
+                          {sup.supplier_code && <span className="text-[16px] tabular-nums text-zinc-400 shrink-0 font-mono bg-zinc-100 rounded px-1" title="공급사코드">#{sup.supplier_code}</span>}
+                          {sup.code_conflict && <span className="text-[17px] font-semibold text-amber-500 shrink-0" title="같은 이름에 여러 공급사코드가 존재">⚠</span>}
                           {(sup.purchaseQty === 0 && sup.purchaseAmount === 0 && sup.itemCount === 0 && sup.totalStockAmount === 0) && (
                             <StatusPill tone="zinc" size="xs">매입 이력 없음</StatusPill>
                           )}
@@ -356,21 +356,21 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                     </td>
                     {isGroupCollapsed("stock") ? <td className="bg-zinc-50/30 w-4"></td> : (
                       <>
-                        <td className="text-right px-3 py-1.5 align-middle text-[15px] font-semibold text-ink tabular-nums" title="재고자산">{fmtWon(sup.totalStockAmount)}</td>
-                        <td className="text-right px-3 py-1.5 align-middle text-[14px] font-semibold text-ink-soft tabular-nums" title="취급 상품 종수">{sup.itemCount}</td>
+                        <td className="text-right px-3 py-1.5 align-middle text-[17px] font-semibold text-ink tabular-nums" title="재고자산">{fmtWon(sup.totalStockAmount)}</td>
+                        <td className="text-right px-3 py-1.5 align-middle text-[16px] font-semibold text-ink-soft tabular-nums" title="취급 상품 종수">{sup.itemCount}</td>
                       </>
                     )}
                     {isGroupCollapsed("purchase") ? <td className="bg-zinc-50/30 w-4"></td> : (
                       <>
-                        <td className="text-right px-3 py-1.5 align-middle text-[15px] font-semibold text-ink tabular-nums" title="매입수량">{fmt(sup.purchaseQty)}</td>
+                        <td className="text-right px-3 py-1.5 align-middle text-[17px] font-semibold text-ink tabular-nums" title="매입수량">{fmt(sup.purchaseQty)}</td>
                         {showExtraPurchaseColumns && (
-                          <td className="text-right px-3 py-1.5 align-middle text-[15px] font-bold text-brand-deep tabular-nums" title="매입액 (공급가액 합계)">{fmtWon(Number(sup.purchaseAmount ?? 0))}</td>
+                          <td className="text-right px-3 py-1.5 align-middle text-[17px] font-bold text-brand-deep tabular-nums" title="매입액 (공급가액 합계)">{fmtWon(Number(sup.purchaseAmount ?? 0))}</td>
                         )}
                         {showCycleColumn && (() => {
                           const c = cycleFor(sup.supplier);
                           return (
                             <td
-                              className="text-right px-3 py-1.5 align-middle text-[15px] font-semibold text-ink-soft tabular-nums"
+                              className="text-right px-3 py-1.5 align-middle text-[17px] font-semibold text-ink-soft tabular-nums"
                               title={c == null ? "최근 90일 매입 이력 부족" : `평균 매입주기 ${c}일 (최근 90일)`}
                             >
                               {c == null ? <span className="text-zinc-300">-</span> : `${c}일`}
@@ -382,8 +382,8 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                     {!hideSaleColumns && (
                       isGroupCollapsed("sale") ? <td className="bg-zinc-50/30 w-4"></td> : (
                         <>
-                          <td className="text-right px-3 py-1.5 align-middle text-[15px] font-semibold text-ink tabular-nums" title="판매수량">{fmt(sup.saleQty)}</td>
-                          <td className="text-right px-3 py-1.5 align-middle text-[15px] font-semibold text-ink tabular-nums" title="판매액">{fmtWon(Number(sup.saleAmount ?? 0))}</td>
+                          <td className="text-right px-3 py-1.5 align-middle text-[17px] font-semibold text-ink tabular-nums" title="판매수량">{fmt(sup.saleQty)}</td>
+                          <td className="text-right px-3 py-1.5 align-middle text-[17px] font-semibold text-ink tabular-nums" title="판매액">{fmtWon(Number(sup.saleAmount ?? 0))}</td>
                         </>
                       )
                     )}

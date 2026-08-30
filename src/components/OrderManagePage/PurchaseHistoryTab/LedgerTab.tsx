@@ -119,15 +119,15 @@ export const LedgerTab: React.FC<{
     );
   }
   if (groups.length === 0) {
-    return <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[12px]">해당 기간 매입 이력 없음</div>;
+    return <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[15px]">해당 기간 매입 이력 없음</div>;
   }
 
   return (
     <div className="overflow-auto flex-1 min-h-0 bg-white">
-      <table className="w-full text-[12px] min-w-[420px]" style={{ borderCollapse: "separate", borderSpacing: 0, tableLayout: "fixed" }}>
+      <table className="w-full text-[15px] min-w-[420px]" style={{ borderCollapse: "separate", borderSpacing: 0, tableLayout: "fixed" }}>
         {/* 2026-08-24 · v3 확산 · bg zinc-100/70 · 반응형 폰트 · font-bold */}
         <thead className="sticky top-0 bg-zinc-100/70 border-b border-line z-10">
-          <tr className="text-[12px] sm:text-[13px] font-bold text-zinc-500 uppercase tracking-wider">
+          <tr className="text-[15px] sm:text-[16px] font-bold text-zinc-500 uppercase tracking-wider">
             <th className="relative text-center py-2" style={{ width: lw("expand"), minWidth: lw("expand") }}>
               <span {...lr("expand")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
             </th>
@@ -167,27 +167,27 @@ export const LedgerTab: React.FC<{
                       ? <ChevronDown size={13} className="text-emerald-500 mx-auto" />
                       : <ChevronRight size={13} className="text-zinc-400 mx-auto" />}
                   </td>
-                  <td className="px-3 py-2 font-mono text-[12px] font-semibold text-zinc-700 whitespace-nowrap">
+                  <td className="px-3 py-2 font-mono text-[15px] font-semibold text-zinc-700 whitespace-nowrap">
                     {/* 2026-08-06 · T-TEST-매입이력-날짜포맷 · 2026 줄바꿈 7/20 */}
                     {(() => {
                       const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(g.date);
                       if (m) return (
                         <span className="inline-flex flex-col leading-tight items-start">
-                          <span className="text-[10px] text-zinc-400">{m[1]}</span>
+                          <span className="text-[16px] text-zinc-400">{m[1]}</span>
                           <span>{String(parseInt(m[2], 10))}/{String(parseInt(m[3], 10))}</span>
                         </span>
                       );
                       return g.date;
                     })()}
-                    {containsHighlight && <span className="ml-1 text-[10px] text-amber-600 font-bold">◀</span>}
+                    {containsHighlight && <span className="ml-1 text-[16px] text-amber-600 font-bold">◀</span>}
                   </td>
                   <td className="px-3 py-2 text-zinc-700 break-words whitespace-normal leading-snug">
                     <span className="font-semibold">{g.repName}</span>
                     {g.itemCount > 1 && (
-                      <span className="ml-1 text-[11px] text-zinc-500 font-semibold">외 {g.itemCount - 1}건</span>
+                      <span className="ml-1 text-[17px] text-zinc-500 font-semibold">외 {g.itemCount - 1}건</span>
                     )}
                   </td>
-                  <td className="text-right px-3 py-2 tabular-nums font-mono text-[11px] text-zinc-600 whitespace-nowrap">
+                  <td className="text-right px-3 py-2 tabular-nums font-mono text-[17px] text-zinc-600 whitespace-nowrap">
                     {fmt(g.itemCount)}
                   </td>
                   <td className="text-right px-3 py-2 tabular-nums font-mono font-bold text-emerald-700 whitespace-nowrap">
@@ -199,9 +199,9 @@ export const LedgerTab: React.FC<{
                     <td></td>
                     <td colSpan={4} className="px-3 py-2">
                       <div className="overflow-x-auto rounded border border-line bg-white">
-                        <table className="w-full text-[11px]">
+                        <table className="w-full text-[17px]">
                           <thead className="bg-zinc-50 border-b border-line">
-                            <tr className="text-[10px] text-zinc-500 uppercase tracking-wider">
+                            <tr className="text-[16px] text-zinc-500 uppercase tracking-wider">
                               <th className="text-left px-2 py-1.5 w-7 text-zinc-300">#</th>
                               <th className="text-left px-2 py-1.5">상품명</th>
                               <th className="text-right px-2 py-1.5 w-16">수량</th>
@@ -220,11 +220,11 @@ export const LedgerTab: React.FC<{
                                 >
                                   <td className="px-2 py-1 text-zinc-300 tabular-nums align-top">{i + 1}</td>
                                   <td className="px-2 py-1 align-top">
-                                    <div className="text-[12px] font-semibold text-zinc-700 break-words whitespace-normal leading-snug">
+                                    <div className="text-[15px] font-semibold text-zinc-700 break-words whitespace-normal leading-snug">
                                       {it.product_name ?? "-"}
                                     </div>
                                     {it.product_code && (
-                                      <div className="text-[10px] font-mono text-zinc-400 tabular-nums">{it.product_code}</div>
+                                      <div className="text-[16px] font-mono text-zinc-400 tabular-nums">{it.product_code}</div>
                                     )}
                                   </td>
                                   <td className="text-right px-2 py-1 font-mono font-bold text-zinc-800 tabular-nums align-top">
@@ -261,13 +261,13 @@ export const LedgerTab: React.FC<{
                 {sumCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
               </button>
             </td>
-            <td colSpan={2} className="px-3 py-2 text-right text-[11px] font-bold text-zinc-500">
+            <td colSpan={2} className="px-3 py-2 text-right text-[17px] font-bold text-zinc-500">
               합계 <span className="text-zinc-400 font-bold">({groups.length}일)</span>
             </td>
-            <td className={`px-3 py-2 text-right tabular-nums font-mono text-[12px] font-bold text-zinc-700 ${sumCollapsed ? "opacity-30" : ""}`}>
+            <td className={`px-3 py-2 text-right tabular-nums font-mono text-[15px] font-bold text-zinc-700 ${sumCollapsed ? "opacity-30" : ""}`}>
               {sumCollapsed ? "···" : fmt(totalItems)}
             </td>
-            <td className={`px-3 py-2 text-right tabular-nums font-mono text-[13px] font-bold text-emerald-700 ${sumCollapsed ? "opacity-30" : ""}`}>
+            <td className={`px-3 py-2 text-right tabular-nums font-mono text-[16px] font-bold text-emerald-700 ${sumCollapsed ? "opacity-30" : ""}`}>
               {sumCollapsed ? "···" : fmtWon(totalAmount)}
             </td>
           </tr>

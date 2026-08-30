@@ -29,7 +29,7 @@ export const ChartTooltip: React.FC<{
   const { name, value } = payload[0];
   const pct = total > 0 ? ((value / total) * 100).toFixed(1) : "0.0";
   return (
-    <Card variant="raw-md" rounded="lg" padding="none" className="px-3 py-2 text-[11px] min-w-[120px]">
+    <Card variant="raw-md" rounded="lg" padding="none" className="px-3 py-2 text-[17px] min-w-[120px]">
       <div className="font-semibold text-zinc-700 mb-1 break-words whitespace-normal leading-snug">{name}</div>
       <div className="tabular-nums text-emerald-700 font-bold">{value.toLocaleString()}{unit}</div>
       <div className="tabular-nums text-zinc-500 mt-0.5">{pct}%</div>
@@ -44,7 +44,7 @@ export const ChartLegendList: React.FC<{
 }> = ({ items, total }) => (
   <div className="flex flex-col gap-1 min-w-0">
     {items.map((it, i) => (
-      <div key={i} className="flex items-center gap-1.5 min-w-0 text-[11px]">
+      <div key={i} className="flex items-center gap-1.5 min-w-0 text-[17px]">
         <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: it.color }} />
         <span className="flex-1 min-w-0 text-zinc-700 font-semibold break-words whitespace-normal leading-snug">{it.name}</span>
         <span className="tabular-nums text-zinc-500 shrink-0">
