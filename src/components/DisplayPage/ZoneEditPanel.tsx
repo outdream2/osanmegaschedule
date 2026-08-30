@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Save, RotateCcw, Pencil, Check, X } from "lucide-react";
+import { api } from "../../lib/apiClient";
 import { Card } from "../common/Card";
 import { IconTile } from "../common/IconTile";
 import { StatusPill } from "../common/StatusPill";
@@ -112,65 +113,131 @@ function classifyZone(num: number): MajorZone {
   return "counter"; // 카운터테마존 · 41 – 46 (총 6개 · 43=물약)
 }
 
-// 2026-08-30 · 담당자 인라인 편집기 · 콤마 구분 이름 · 저장 즉시 배지 표시
-//   · 값 없으면 "(담당자 없음 · 클릭하여 입력)" · 값 있으면 배지 리스트
-//   · Enter 저장 · Esc 취소 · blur 저장
+// 2026-08-30 · 담당자 편집기 · 직원명 자동완성 드롭다운 · 배지 다중 선택
+//   · 사용자 지시 · 직원 이름 검색 → 아래 드롭다운 → 선택 → 배지 추가
+//   · 각 add/remove 즉시 저장 (사용자 원칙 · "바뀔 때마다 저장")
+//   · 직원 리스트 · GET /api/employees · 인스턴스 최초 1회 캐시
+type EmpItem = { id: number; name: string };
+let _empCache: EmpItem[] | null = null;
+let _empPromise: Promise<EmpItem[]> | null = null;
+async function fetchEmployeesCached(): Promise<EmpItem[]> {
+  if (_empCache) return _empCache;
+  if (_empPromise) return _empPromise;
+  _empPromise = (async () => {
+    try {
+      const { data } = await api.get<EmpItem[]>("/api/employees");
+      _empCache = Array.isArray(data) ? data.map(e => ({ id: e.id, name: e.name })) : [];
+      return _empCache;
+    } catch { return []; }
+  })();
+  return _empPromise;
+}
+
 const AssigneeEditor: React.FC<{
   rowId?: number;
   value: string[];
   canEdit: boolean;
   onSave: (rowId: number, patch: { assignee: string[] }) => Promise<boolean>;
 }> = ({ rowId, value, canEdit, onSave }) => {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState("");
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [emps, setEmps] = useState<EmpItem[]>(_empCache ?? []);
   const [saving, setSaving] = useState(false);
-  const savingRef = useRef(false);
-  const commit = async () => {
-    if (savingRef.current || !rowId) { setEditing(false); return; }
-    const next = draft.split(",").map(s => s.trim()).filter(Boolean);
-    // 변경 없으면 저장 스킵
-    if (JSON.stringify(next) === JSON.stringify(value)) { setEditing(false); return; }
-    savingRef.current = true;
+  const inputRef = useRef<HTMLInputElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    fetchEmployeesCached().then(list => setEmps(list));
+  }, [open]);
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) { setOpen(false); setQuery(""); }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  const addName = async (name: string) => {
+    if (!rowId || !name || value.includes(name) || saving) return;
     setSaving(true);
-    await onSave(rowId, { assignee: next });
-    savingRef.current = false;
+    await onSave(rowId, { assignee: [...value, name] });
     setSaving(false);
-    setEditing(false);
+    setQuery("");
+    inputRef.current?.focus();
   };
-  if (editing) {
+  const removeName = async (name: string) => {
+    if (!rowId || saving) return;
+    setSaving(true);
+    await onSave(rowId, { assignee: value.filter(n => n !== name) });
+    setSaving(false);
+  };
+
+  const filtered = query.trim()
+    ? emps.filter(e => e.name.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 8)
+    : emps.slice(0, 8);
+
+  if (!canEdit && value.length === 0) return <span className="text-[12px] text-zinc-300">-</span>;
+  if (!canEdit) {
     return (
-      <input
-        autoFocus
-        value={draft}
-        onChange={e => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={e => {
-          if (e.key === "Enter") { e.preventDefault(); commit(); }
-          if (e.key === "Escape") { e.preventDefault(); setEditing(false); }
-        }}
-        disabled={saving}
-        placeholder="이름1, 이름2"
-        className="w-full h-9 px-2.5 rounded-md border border-brand-deep bg-white text-[13px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint"
-      />
+      <div className="flex flex-wrap gap-1">
+        {value.map((n, i) => (
+          <span key={i} className="inline-flex items-center h-6 px-2 rounded-full bg-brand-tint text-brand-deep text-[12px] font-bold border border-brand-deep/30">{n}</span>
+        ))}
+      </div>
     );
   }
-  if (!canEdit && value.length === 0) return <span className="text-[12px] text-zinc-300">-</span>;
+
   return (
-    <button
-      type="button"
-      onClick={() => { if (!canEdit) return; setDraft(value.join(", ")); setEditing(true); }}
-      className={`flex flex-wrap gap-1 items-center text-left w-full min-h-[32px] rounded-md px-1.5 py-1 transition ${canEdit ? "hover:bg-brand-tint/40 cursor-pointer" : "cursor-default"}`}
-      title={canEdit ? "클릭하여 담당자 편집 (콤마 구분)" : ""}
-    >
-      {value.length === 0
-        ? <span className="text-[12px] text-zinc-300 italic">(담당자 없음{canEdit ? " · 클릭" : ""})</span>
-        : value.map((name, i) => (
-          <span key={i} className="inline-flex items-center h-6 px-2 rounded-full bg-brand-tint text-brand-deep text-[12px] font-bold border border-brand-deep/30">
-            {name}
+    <div ref={wrapRef} className="relative">
+      <div className={`flex flex-wrap gap-1 items-center min-h-[32px] rounded-md border ${open ? "border-brand-deep ring-2 ring-brand-tint" : "border-transparent hover:border-line"} px-1.5 py-1 transition`}>
+        {value.map((n, i) => (
+          <span key={i} className="inline-flex items-center gap-1 h-6 pl-2 pr-1 rounded-full bg-brand-tint text-brand-deep text-[12px] font-bold border border-brand-deep/30">
+            {n}
+            <button type="button" onClick={() => removeName(n)} disabled={saving} className="ml-0.5 w-4 h-4 flex items-center justify-center rounded-full hover:bg-brand-deep hover:text-white transition cursor-pointer disabled:opacity-40" title="담당자 제거">
+              <X size={10} strokeWidth={2.5} />
+            </button>
           </span>
-        ))
-      }
-    </button>
+        ))}
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={e => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={e => {
+            if (e.key === "Enter" && filtered.length > 0) { e.preventDefault(); addName(filtered[0].name); }
+            if (e.key === "Escape") { e.preventDefault(); setOpen(false); setQuery(""); }
+            if (e.key === "Backspace" && !query && value.length > 0) { e.preventDefault(); removeName(value[value.length - 1]); }
+          }}
+          placeholder={value.length === 0 ? "직원명 검색·선택" : ""}
+          className="flex-1 min-w-[80px] h-6 px-1 bg-transparent text-[13px] text-ink focus:outline-none placeholder:text-zinc-300 placeholder:italic"
+          disabled={saving}
+        />
+      </div>
+      {open && (
+        <div className="absolute left-0 right-0 top-full mt-1 z-30 max-h-52 overflow-auto bg-white rounded-lg border border-line shadow-lg">
+          {filtered.length === 0 ? (
+            <div className="px-3 py-2 text-[12px] text-zinc-400 italic">일치하는 직원 없음</div>
+          ) : filtered.map(e => {
+            const already = value.includes(e.name);
+            return (
+              <button
+                key={e.id}
+                type="button"
+                onMouseDown={ev => { ev.preventDefault(); if (!already) addName(e.name); }}
+                disabled={already || saving}
+                className={`w-full text-left px-3 py-1.5 text-[13px] font-semibold transition cursor-pointer ${already ? "bg-zinc-50 text-zinc-300 cursor-not-allowed" : "text-ink hover:bg-brand-tint/50"}`}
+              >
+                {e.name}{already ? " · 이미 선택됨" : ""}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 };
 
