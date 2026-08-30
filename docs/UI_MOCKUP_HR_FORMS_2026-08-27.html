@@ -25,7 +25,7 @@
   .cat-item {
     display: flex; align-items: center; gap: 10px;
     padding: 10px 12px; border-radius: 10px; cursor: pointer;
-    font-size: 15px; font-weight: 600; color: var(--ink-soft);
+    font-size: 23px; font-weight: 600; color: var(--ink-soft);
     position: relative; transition: all 0.15s;
   }
   .cat-item:hover { background: var(--brand-tint); color: var(--brand-deep); }
@@ -34,10 +34,10 @@
     content: ""; position: absolute; left: 0; top: 20%; bottom: 20%; width: 3px;
     background: var(--brand-deep); border-radius: 2px;
   }
-  .cat-badge { margin-left: auto; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 6px; background: var(--brand-deep); color: white; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; tabular-nums: 1; }
-  .btn-primary { height: 40px; padding: 0 16px; background: var(--brand-deep); color: white; border-radius: 10px; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px -1px rgba(10,46,74,0.25); }
+  .cat-badge { margin-left: auto; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 6px; background: var(--brand-deep); color: white; font-size: 30px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; tabular-nums: 1; }
+  .btn-primary { height: 40px; padding: 0 16px; background: var(--brand-deep); color: white; border-radius: 10px; font-size: 30px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px -1px rgba(10,46,74,0.25); }
   .btn-primary:hover { background: #0d3a5c; }
-  .btn-secondary { height: 40px; padding: 0 14px; background: white; color: var(--ink-soft); border: 1px solid var(--line); border-radius: 10px; font-size: 14px; font-weight: 600; }
+  .btn-secondary { height: 40px; padding: 0 14px; background: white; color: var(--ink-soft); border: 1px solid var(--line); border-radius: 10px; font-size: 30px; font-weight: 600; }
   .btn-secondary:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-tint); }
   .row-hover:hover { background: var(--brand-tint); }
   .form-tile {
@@ -45,7 +45,7 @@
     background: linear-gradient(135deg, #E0F2FE, #BAE6FD);
     display: flex; align-items: center; justify-content: center; color: var(--brand);
   }
-  .status-pill { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 12px; font-weight: 700; }
+  .status-pill { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 30px; font-weight: 700; }
   .divider-col { width: 1px; background: linear-gradient(180deg, transparent, var(--line), transparent); cursor: col-resize; }
   .divider-col:hover { background: var(--brand-deep); width: 3px; }
   @media (max-width: 900px) {
@@ -65,8 +65,8 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       </div>
       <div class="flex-1 min-w-0">
-        <h1 class="text-[24px] font-extrabold tracking-tight leading-tight">각종 양식</h1>
-        <p class="text-[15px] text-[color:var(--ink-soft)] mt-1">근로계약서 · 사직서 · 서약서 · 위임장 · 급여 · 기타 인사 양식 관리 · 업로드 · 다운로드 · 삭제</p>
+        <h1 class="text-[26px] font-extrabold tracking-tight leading-tight">각종 양식</h1>
+        <p class="text-[21px] text-[color:var(--ink-soft)] mt-1">근로계약서 · 사직서 · 서약서 · 위임장 · 급여 · 기타 인사 양식 관리 · 업로드 · 다운로드 · 삭제</p>
       </div>
       <div class="flex items-center gap-2 shrink-0">
         <span class="status-pill bg-emerald-50 text-emerald-700 ring-1 ring-emerald-500/20">
@@ -85,8 +85,8 @@
 
     <!-- 모바일 · 분류 select -->
     <div class="mobile-only card p-3">
-      <label class="text-[13px] font-bold text-[color:var(--ink-soft)] block mb-1">양식 분류</label>
-      <select class="w-full h-11 px-3 rounded-lg border border-[color:var(--line)] text-[15px] font-bold bg-[color:var(--brand-tint)] text-[color:var(--brand-deep)]">
+      <label class="text-[21px] font-bold text-[color:var(--ink-soft)] block mb-1">양식 분류</label>
+      <select class="w-full h-11 px-3 rounded-lg border border-[color:var(--line)] text-[21px] font-bold bg-[color:var(--brand-tint)] text-[color:var(--brand-deep)]">
         <option>📋 전체 (42건)</option>
         <option>📄 근로계약서 (12건)</option>
         <option>✍ 사직서 (5건)</option>
@@ -102,44 +102,44 @@
       <!-- 좌측 · 분류 리스트 -->
       <aside class="desktop-only card p-3 h-fit sticky top-4">
         <div class="flex items-center justify-between mb-2 px-1">
-          <div class="text-[13px] font-bold text-[color:var(--ink-soft)] uppercase tracking-wider">분류</div>
+          <div class="text-[21px] font-bold text-[color:var(--ink-soft)] uppercase tracking-wider">분류</div>
           <button class="w-7 h-7 rounded-lg bg-[color:var(--brand-tint)] text-[color:var(--brand-deep)] hover:bg-[color:var(--brand-deep)] hover:text-white transition flex items-center justify-center" title="분류 추가">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
           </button>
         </div>
         <nav class="flex flex-col gap-1">
           <div class="cat-item active">
-            <span class="text-[18px]">📋</span>
+            <span class="text-[26px]">📋</span>
             <span>전체</span>
             <span class="cat-badge">42</span>
           </div>
           <div class="cat-item">
-            <span class="text-[18px]">📄</span>
+            <span class="text-[26px]">📄</span>
             <span>근로계약서</span>
             <span class="cat-badge">12</span>
           </div>
           <div class="cat-item">
-            <span class="text-[18px]">✍</span>
+            <span class="text-[26px]">✍</span>
             <span>사직서</span>
             <span class="cat-badge">5</span>
           </div>
           <div class="cat-item">
-            <span class="text-[18px]">🤝</span>
+            <span class="text-[26px]">🤝</span>
             <span>서약서</span>
             <span class="cat-badge">8</span>
           </div>
           <div class="cat-item">
-            <span class="text-[18px]">📝</span>
+            <span class="text-[26px]">📝</span>
             <span>위임장</span>
             <span class="cat-badge">4</span>
           </div>
           <div class="cat-item">
-            <span class="text-[18px]">💰</span>
+            <span class="text-[26px]">💰</span>
             <span>급여</span>
             <span class="cat-badge">7</span>
           </div>
           <div class="cat-item">
-            <span class="text-[18px]">📎</span>
+            <span class="text-[26px]">📎</span>
             <span>기타</span>
             <span class="cat-badge" style="background:var(--ink-soft)">6</span>
           </div>
@@ -152,17 +152,17 @@
         <div class="p-3 border-b border-[color:var(--line)] flex items-center gap-3 flex-wrap">
           <div class="relative flex-1 min-w-[220px] max-w-[400px]">
             <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input type="text" placeholder="양식명 · 파일명 · 업로더 검색" class="w-full h-10 pl-9 pr-3 rounded-lg border border-[color:var(--line)] bg-gray-50 focus:bg-white focus:border-[color:var(--brand-deep)] focus:ring-2 focus:ring-[color:var(--brand-tint)] outline-none text-[14px]"/>
+            <input type="text" placeholder="양식명 · 파일명 · 업로더 검색" class="w-full h-10 pl-9 pr-3 rounded-lg border border-[color:var(--line)] bg-gray-50 focus:bg-white focus:border-[color:var(--brand-deep)] focus:ring-2 focus:ring-[color:var(--brand-tint)] outline-none text-[26px]"/>
           </div>
-          <div class="ml-auto text-[13px] text-[color:var(--ink-soft)] font-semibold">
+          <div class="ml-auto text-[21px] text-[color:var(--ink-soft)] font-semibold">
             표시 <b class="text-[color:var(--brand-deep)] tabular-nums">42</b>건
           </div>
         </div>
 
         <!-- 컬럼 헤더 -->
-        <div class="grid grid-cols-[40px_1fr_120px_1fr_90px_100px_110px_100px] items-center gap-2 px-4 py-2.5 bg-gray-50 border-b border-[color:var(--line)] text-[12px] font-bold text-gray-500 uppercase tracking-wider">
+        <div class="grid grid-cols-[40px_1fr_120px_1fr_90px_100px_110px_100px] items-center gap-2 px-4 py-2.5 bg-gray-50 border-b border-[color:var(--line)] text-[26px] font-bold text-gray-500 uppercase tracking-wider">
           <div></div>
-          <div>양식명 <span class="text-[10px] text-gray-400">↓</span></div>
+          <div>양식명 <span class="text-[26px] text-gray-400">↓</span></div>
           <div>분류</div>
           <div>파일명</div>
           <div class="text-right">크기</div>
@@ -176,14 +176,14 @@
           <div class="form-tile">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           </div>
-          <div class="text-[15px] font-bold text-[color:var(--ink)] truncate">근로계약서 표준양식 v3</div>
+          <div class="text-[21px] font-bold text-[color:var(--ink)] truncate">근로계약서 표준양식 v3</div>
           <div>
-            <span class="inline-flex items-center h-6 px-2 rounded-md text-[12px] font-bold bg-[color:var(--brand-tint)] text-[color:var(--brand-deep)] border border-[color:var(--brand-deep)]/20">근로계약서</span>
+            <span class="inline-flex items-center h-6 px-2 rounded-md text-[26px] font-bold bg-[color:var(--brand-tint)] text-[color:var(--brand-deep)] border border-[color:var(--brand-deep)]/20">근로계약서</span>
           </div>
-          <div class="text-[13px] text-[color:var(--ink-soft)] truncate font-mono">contract_template_v3.pdf</div>
-          <div class="text-[13px] font-bold text-right tabular-nums">2.4 MB</div>
-          <div class="text-[13px] text-[color:var(--ink-soft)]">김대표</div>
-          <div class="text-[12px] text-[color:var(--ink-soft)] tabular-nums">2026-08-20</div>
+          <div class="text-[21px] text-[color:var(--ink-soft)] truncate font-mono">contract_template_v3.pdf</div>
+          <div class="text-[21px] font-bold text-right tabular-nums">2.4 MB</div>
+          <div class="text-[21px] text-[color:var(--ink-soft)]">김대표</div>
+          <div class="text-[26px] text-[color:var(--ink-soft)] tabular-nums">2026-08-20</div>
           <div class="flex items-center justify-center gap-1">
             <button class="w-8 h-8 rounded-md hover:bg-[color:var(--brand-tint)] text-[color:var(--brand-deep)]" title="다운로드">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mx-auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -198,14 +198,14 @@
           <div class="form-tile" style="background:linear-gradient(135deg, #FEE2E2, #FECACA); color:#DC2626;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           </div>
-          <div class="text-[15px] font-bold text-[color:var(--ink)] truncate">사직서 (기본형)</div>
+          <div class="text-[21px] font-bold text-[color:var(--ink)] truncate">사직서 (기본형)</div>
           <div>
-            <span class="inline-flex items-center h-6 px-2 rounded-md text-[12px] font-bold bg-rose-50 text-rose-700 border border-rose-500/20">사직서</span>
+            <span class="inline-flex items-center h-6 px-2 rounded-md text-[26px] font-bold bg-rose-50 text-rose-700 border border-rose-500/20">사직서</span>
           </div>
-          <div class="text-[13px] text-[color:var(--ink-soft)] truncate font-mono">resignation_basic.pdf</div>
-          <div class="text-[13px] font-bold text-right tabular-nums">180 KB</div>
-          <div class="text-[13px] text-[color:var(--ink-soft)]">김대표</div>
-          <div class="text-[12px] text-[color:var(--ink-soft)] tabular-nums">2026-08-15</div>
+          <div class="text-[21px] text-[color:var(--ink-soft)] truncate font-mono">resignation_basic.pdf</div>
+          <div class="text-[21px] font-bold text-right tabular-nums">180 KB</div>
+          <div class="text-[21px] text-[color:var(--ink-soft)]">김대표</div>
+          <div class="text-[26px] text-[color:var(--ink-soft)] tabular-nums">2026-08-15</div>
           <div class="flex items-center justify-center gap-1">
             <button class="w-8 h-8 rounded-md hover:bg-[color:var(--brand-tint)] text-[color:var(--brand-deep)]" title="다운로드">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mx-auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>
@@ -220,14 +220,14 @@
           <div class="form-tile" style="background:linear-gradient(135deg, #DCFCE7, #BBF7D0); color:#059669;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           </div>
-          <div class="text-[15px] font-bold text-[color:var(--ink)] truncate">비밀유지 서약서</div>
+          <div class="text-[21px] font-bold text-[color:var(--ink)] truncate">비밀유지 서약서</div>
           <div>
-            <span class="inline-flex items-center h-6 px-2 rounded-md text-[12px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-500/20">서약서</span>
+            <span class="inline-flex items-center h-6 px-2 rounded-md text-[26px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-500/20">서약서</span>
           </div>
-          <div class="text-[13px] text-[color:var(--ink-soft)] truncate font-mono">nda_pharmacy.pdf</div>
-          <div class="text-[13px] font-bold text-right tabular-nums">340 KB</div>
-          <div class="text-[13px] text-[color:var(--ink-soft)]">인사팀</div>
-          <div class="text-[12px] text-[color:var(--ink-soft)] tabular-nums">2026-08-10</div>
+          <div class="text-[21px] text-[color:var(--ink-soft)] truncate font-mono">nda_pharmacy.pdf</div>
+          <div class="text-[21px] font-bold text-right tabular-nums">340 KB</div>
+          <div class="text-[21px] text-[color:var(--ink-soft)]">인사팀</div>
+          <div class="text-[26px] text-[color:var(--ink-soft)] tabular-nums">2026-08-10</div>
           <div class="flex items-center justify-center gap-1">
             <button class="w-8 h-8 rounded-md hover:bg-[color:var(--brand-tint)] text-[color:var(--brand-deep)]" title="다운로드">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mx-auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
@@ -240,12 +240,12 @@
 
         <!-- 페이지네이션 -->
         <div class="px-4 py-2.5 bg-gradient-to-r from-gray-50 to-white flex items-center justify-between border-t border-[color:var(--line)]">
-          <div class="text-[12px] text-gray-500 font-semibold">표시 <b class="text-[color:var(--ink)] tabular-nums">3</b>/42건 · 페이지 <b class="tabular-nums">1</b>/14</div>
+          <div class="text-[26px] text-gray-500 font-semibold">표시 <b class="text-[color:var(--ink)] tabular-nums">3</b>/42건 · 페이지 <b class="tabular-nums">1</b>/14</div>
           <div class="flex items-center gap-1">
             <button class="w-8 h-8 rounded-md border border-gray-300 hover:border-[color:var(--brand-deep)] text-gray-500 hover:text-[color:var(--brand-deep)]">‹</button>
-            <button class="w-8 h-8 rounded-md bg-[color:var(--brand-deep)] text-white font-bold text-[12px]">1</button>
-            <button class="w-8 h-8 rounded-md hover:bg-gray-100 text-gray-600 font-semibold text-[12px]">2</button>
-            <button class="w-8 h-8 rounded-md hover:bg-gray-100 text-gray-600 font-semibold text-[12px]">3</button>
+            <button class="w-8 h-8 rounded-md bg-[color:var(--brand-deep)] text-white font-bold text-[26px]">1</button>
+            <button class="w-8 h-8 rounded-md hover:bg-gray-100 text-gray-600 font-semibold text-[26px]">2</button>
+            <button class="w-8 h-8 rounded-md hover:bg-gray-100 text-gray-600 font-semibold text-[26px]">3</button>
             <button class="w-8 h-8 rounded-md border border-gray-300 hover:border-[color:var(--brand-deep)] text-gray-500 hover:text-[color:var(--brand-deep)]">›</button>
           </div>
         </div>
@@ -253,7 +253,7 @@
     </div>
 
     <!-- 디자인 노트 -->
-    <div class="text-[12px] text-gray-400 mt-4 pt-3 border-t border-gray-200 space-y-1">
+    <div class="text-[26px] text-gray-400 mt-4 pt-3 border-t border-gray-200 space-y-1">
       <div>· <b>기존 톤 준수</b> · docs/UI_MOCKUP_2026-08-21.html · brand-deep · Pretendard · 3px accent bar</div>
       <div>· <b>SplitPanel</b> · 좌 분류 리스트 (240px · sticky) · 우 양식 테이블 · 반응형 시 상단 select</div>
       <div>· <b>분류 리스트</b> · pill style · active 3px left bar · [+] 추가 · 카운트 badge · 색상별 분류</div>

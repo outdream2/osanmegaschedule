@@ -41,13 +41,13 @@
     border-bottom:1px solid var(--line);
     margin-bottom:10px;
   }
-  h1{ font-size:20px; font-weight:800; letter-spacing:-.03em; margin:0; color:var(--ink); }
-  .stats{ display:inline-flex; align-items:baseline; gap:8px; font-size:14px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
+  h1{ font-size:30px; font-weight:800; letter-spacing:-.03em; margin:0; color:var(--ink); }
+  .stats{ display:inline-flex; align-items:baseline; gap:8px; font-size:30px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
   .stats strong{ color:var(--ink); font-weight:700; }
   .stats .sep{ color:var(--ink-3); }
   .stats-total{ margin-left:auto; display:inline-flex; align-items:baseline; gap:6px; font-variant-numeric:tabular-nums; }
-  .stats-total .l{ font-size:12px; color:var(--ink-3); font-weight:600; }
-  .stats-total .v{ font-size:16px; color:var(--brand); font-weight:800; letter-spacing:-.02em; }
+  .stats-total .l{ font-size:30px; color:var(--ink-3); font-weight:600; }
+  .stats-total .v{ font-size:30px; color:var(--brand); font-weight:800; letter-spacing:-.02em; }
 
   /* ═══ Toolbar · sticky ═══ */
   .toolbar{
@@ -68,12 +68,12 @@
   .search{
     width:100%; height:30px; padding:0 10px 0 30px;
     background:transparent; border:0; outline:none;
-    font-size:14px; font-weight:500; color:var(--ink);
+    font-size:30px; font-weight:500; color:var(--ink);
   }
   .search::placeholder{ color:var(--ink-3); }
   .btn{
     display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 12px;
-    border-radius:7px; font-size:14px; font-weight:600;
+    border-radius:7px; font-size:30px; font-weight:600;
     cursor:pointer; transition:all .12s ease; border:1px solid transparent; background:transparent;
     color:var(--ink-1);
   }
@@ -95,14 +95,14 @@
   }
   table{
     width:100%; border-collapse:separate; border-spacing:0;
-    font-size:15px; color:var(--ink);
+    font-size:23px; color:var(--ink);
   }
   /* Column headers · sticky */
   thead th{
     position:sticky; top:52px; z-index:10;   /* 툴바 아래 · 43px */
     background:#F4F4F5;
     color:var(--ink-2);
-    font-size:12px; font-weight:700;
+    font-size:30px; font-weight:700;
     letter-spacing:.06em; text-transform:uppercase;
     padding:10px 12px;
     border-bottom:1px solid var(--line);
@@ -114,7 +114,7 @@
   thead th.num{ text-align:right; }
   thead th.center{ text-align:center; cursor:default; }
   thead th.center:hover{ background:#F4F4F5; color:var(--ink-2); }
-  thead th .sort{ margin-left:3px; color:var(--ink-3); font-size:10px; }
+  thead th .sort{ margin-left:3px; color:var(--ink-3); font-size:23px; }
   thead th.sorted .sort{ color:var(--accent); }
 
   /* Group header row · 공급사 · sticky (thead 아래) · 클릭 → 접기/펼치기 */
@@ -127,19 +127,19 @@
   tr.group td{
     padding:8px 12px;
     border-bottom:1px solid var(--line);
-    font-size:13px; font-weight:700;
+    font-size:23px; font-weight:700;
     color:var(--ink-1);
     user-select:none;
   }
   tr.group td .caret{
     display:inline-block; width:12px; margin-right:6px;
-    color:var(--ink-3); font-size:10px;
+    color:var(--ink-3); font-size:23px;
     transition:transform .15s cubic-bezier(0.4, 0, 0.2, 1);
   }
   tr.group.collapsed td .caret{ transform:rotate(-90deg); }
   tr.group td .cat{
     display:inline-block; margin-right:8px;
-    font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    font-size:23px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
     font-family:ui-monospace,'JetBrains Mono',monospace;
     color:var(--ink-3);
   }
@@ -147,21 +147,21 @@
   tr.group td .cat.tone-위탁{ color:var(--violet); }
   tr.group td .cat.tone-60회전{ color:var(--success); }
   tr.group td .name{
-    font-size:15px; font-weight:800; color:var(--ink);
+    font-size:23px; font-weight:800; color:var(--ink);
     letter-spacing:-.02em; cursor:pointer; margin-right:6px;
   }
   tr.group td .name:hover{ text-decoration:underline; text-underline-offset:3px; }
-  tr.group td .count{ font-size:12px; color:var(--ink-3); font-weight:600; margin-right:8px; }
+  tr.group td .count{ font-size:30px; color:var(--ink-3); font-weight:600; margin-right:8px; }
   tr.group td .history{
-    font-size:12px; font-weight:600; color:var(--ink-2);
+    font-size:30px; font-weight:600; color:var(--ink-2);
     padding:2px 6px; border-radius:5px; cursor:pointer;
   }
   tr.group td .history:hover{ background:rgba(17,24,39,.06); color:var(--ink); }
   tr.group td .subtotal{
-    float:right; font-size:14px; font-weight:800; color:var(--ink);
+    float:right; font-size:30px; font-weight:800; color:var(--ink);
     font-variant-numeric:tabular-nums; letter-spacing:-.01em;
   }
-  tr.group td .subtotal .u{ font-size:12px; color:var(--ink-3); font-weight:600; margin-left:2px; }
+  tr.group td .subtotal .u{ font-size:30px; color:var(--ink-3); font-weight:600; margin-left:2px; }
 
   /* Data row · 상품 */
   tbody tr.data{ background:var(--surface); transition:background .1s ease; }
@@ -171,14 +171,14 @@
     padding:11px 12px;
     border-bottom:1px solid var(--line-2);
     vertical-align:middle;
-    font-size:15px; font-weight:500; color:var(--ink);
+    font-size:23px; font-weight:500; color:var(--ink);
   }
   tbody tr.data td.check{ padding-left:14px; padding-right:0; width:36px; }
   tbody tr.data td.num{ text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
   tbody tr.data td.center{ text-align:center; }
-  tbody tr.data td.name{ padding-left:36px; font-size:15px; font-weight:600; color:var(--ink); letter-spacing:-.02em; }
+  tbody tr.data td.name{ padding-left:36px; font-size:23px; font-weight:600; color:var(--ink); letter-spacing:-.02em; }
   tbody tr.data td.short{ color:var(--danger); font-weight:700; }
-  tbody tr.data td.amount{ font-size:15px; font-weight:800; color:var(--brand); font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+  tbody tr.data td.amount{ font-size:23px; font-weight:800; color:var(--brand); font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
   tbody tr.data td.amount.zero{ color:var(--ink-3); font-weight:500; }
 
   .check-box{
@@ -188,7 +188,7 @@
     transition:all .1s;
   }
   tr.data.selected .check-box{ background:var(--accent); border-color:var(--accent); }
-  tr.data.selected .check-box::after{ content:"✓"; color:#FFF; font-size:10px; font-weight:900; }
+  tr.data.selected .check-box::after{ content:"✓"; color:#FFF; font-size:23px; font-weight:900; }
 
   /* 주문수량 컬럼 · accent 파랑 · 편집 강조 (사용자 지시 · 2026-08-24) */
   thead th.qty-col{
@@ -228,13 +228,13 @@
   .stepper:focus-within{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(37,99,235,.15); }
   .stepper button{
     width:24px; height:100%; border:0; background:transparent;
-    font-size:14px; color:var(--accent); cursor:pointer; font-weight:800;
+    font-size:30px; color:var(--accent); cursor:pointer; font-weight:800;
   }
   .stepper button:hover{ color:#1D4ED8; background:rgba(37,99,235,.08); }
   .stepper input{
     width:56px; height:100%; border:0;
     border-left:1px solid rgba(37,99,235,.15); border-right:1px solid rgba(37,99,235,.15);
-    text-align:center; font-size:15px; font-weight:800; color:var(--accent);
+    text-align:center; font-size:23px; font-weight:800; color:var(--accent);
     font-variant-numeric:tabular-nums; outline:none; background:transparent;
     letter-spacing:-.01em;
   }
@@ -242,7 +242,7 @@
   /* Last row · no border */
   tbody tr:last-child td{ border-bottom:0; }
 
-  .footnote{ margin-top:24px; padding:12px 0; text-align:center; font-size:12px; color:var(--ink-3); font-weight:500; }
+  .footnote{ margin-top:24px; padding:12px 0; text-align:center; font-size:30px; color:var(--ink-3); font-weight:500; }
 </style>
 </head>
 <body>

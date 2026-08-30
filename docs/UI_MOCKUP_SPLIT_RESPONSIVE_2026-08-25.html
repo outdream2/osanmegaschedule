@@ -25,7 +25,7 @@
     font-family:'Pretendard Variable','Pretendard',sans-serif;
     background:var(--bg); color:var(--ink);
     -webkit-font-smoothing:antialiased;
-    font-size:15px;
+    font-size:23px;
   }
   *{ box-sizing:border-box; }
 
@@ -33,7 +33,7 @@
   .vp-badge{
     position:fixed; top:12px; right:12px; z-index:1000;
     padding:6px 12px; background:var(--brand); color:#FFF;
-    border-radius:8px; font-size:12px; font-weight:700;
+    border-radius:8px; font-size:30px; font-weight:700;
     font-family:'JetBrains Mono',ui-monospace,monospace;
     box-shadow:0 4px 12px rgba(10,46,74,.3);
   }
@@ -61,8 +61,8 @@
     display:flex; align-items:center; gap:10px;
     flex-shrink:0;
   }
-  .toolbar h1{ font-size:16px; font-weight:800; margin:0; letter-spacing:-.02em; }
-  .toolbar .info{ margin-left:auto; font-size:12px; color:var(--ink-3); font-family:monospace; }
+  .toolbar h1{ font-size:30px; font-weight:800; margin:0; letter-spacing:-.02em; }
+  .toolbar .info{ margin-left:auto; font-size:30px; color:var(--ink-3); font-family:monospace; }
 
   .split{
     flex:1;
@@ -127,8 +127,8 @@
     background:linear-gradient(90deg, var(--brand), var(--sky), var(--brand));
     opacity:.9;
   }
-  .panel-head .h{ font-size:15px; font-weight:800; letter-spacing:-.02em; }
-  .panel-head .sub{ font-size:12px; color:var(--ink-3); font-weight:600; margin-left:auto; }
+  .panel-head .h{ font-size:23px; font-weight:800; letter-spacing:-.02em; }
+  .panel-head .sub{ font-size:30px; color:var(--ink-3); font-weight:600; margin-left:auto; }
 
   /* Panel body · scroll */
   .panel-body{
@@ -143,13 +143,13 @@
     padding:10px 6px;
     border-bottom:1px solid var(--line);
     cursor:pointer;
-    font-size:14px;
+    font-size:30px;
   }
   .row:hover{ background:var(--surface-2); }
   .row.active{ background:var(--brand-tint); }
-  .row .num{ font-family:monospace; color:var(--ink-4); font-size:12px; min-width:24px; }
+  .row .num{ font-family:monospace; color:var(--ink-4); font-size:30px; min-width:24px; }
   .row .name{ flex:1; font-weight:600; }
-  .row .badge{ font-size:11px; padding:1px 6px; border-radius:4px; background:#F1F5F9; color:var(--ink-2); font-weight:700; }
+  .row .badge{ font-size:23px; padding:1px 6px; border-radius:4px; background:#F1F5F9; color:var(--ink-2); font-weight:700; }
 
   /* Right detail card */
   .r-card{
@@ -158,8 +158,8 @@
     padding:12px 14px;
     margin-bottom:10px;
   }
-  .r-card .k{ font-size:11px; color:var(--ink-4); font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
-  .r-card .v{ font-size:15px; color:var(--ink); font-weight:700; margin-top:2px; }
+  .r-card .k{ font-size:23px; color:var(--ink-4); font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+  .r-card .v{ font-size:23px; color:var(--ink); font-weight:700; margin-top:2px; }
   .field-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:10px 14px; }
   @media (max-width: 480px){ .field-grid{ grid-template-columns:1fr; } }
 
@@ -167,7 +167,7 @@
   .test-controls{
     padding:12px 16px;
     background:#FFFBEB; border:1px solid #FDE68A;
-    border-radius:10px; font-size:12px;
+    border-radius:10px; font-size:30px;
     display:flex; align-items:center; gap:10px; flex-wrap:wrap;
   }
   .test-controls strong{ color:#B45309; }
@@ -182,7 +182,7 @@
     background:var(--surface);
     padding:10px 14px;
     border-radius:8px; border:1px solid var(--line);
-    font-size:11px; color:var(--ink-3); font-family:monospace;
+    font-size:23px; color:var(--ink-3); font-family:monospace;
   }
   .bp-ref b{ color:var(--brand); }
 </style>
@@ -256,7 +256,7 @@
             <div><div class="k">사번</div><div class="v">M-2023-042</div></div>
             <div><div class="k">입사일</div><div class="v">2023.03.15</div></div>
             <div><div class="k">전화</div><div class="v">010-4231-5678</div></div>
-            <div><div class="k">이메일</div><div class="v" style="font-size:13px">kimms@megatown.pharm</div></div>
+            <div><div class="k">이메일</div><div class="v" style="font-size:23px">kimms@megatown.pharm</div></div>
           </div>
         </div>
         <div class="r-card">

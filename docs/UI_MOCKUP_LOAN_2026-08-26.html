@@ -60,20 +60,20 @@
   .signature-box {
     height: 100px; border: 2px dashed #cbd5e1; border-radius: 8px;
     background: #FAFBFC; display: flex; align-items: center; justify-content: center;
-    color: #94a3b8; font-size: 12px; cursor: pointer; transition: all 0.15s;
+    color: #94a3b8; font-size: 30px; cursor: pointer; transition: all 0.15s;
     position: relative; overflow: hidden;
   }
   .signature-box:hover { border-color: var(--brand); background: white; color: var(--brand); }
   .signature-box.signed {
     border-style: solid; border-color: var(--emerald); background: white;
   }
-  .status-pill { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+  .status-pill { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 23px; font-weight: 700; }
   .status-active { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
   .status-partial { background: #DBEAFE; color: #1E40AF; border: 1px solid #93C5FD; }
   .status-returned { background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
-  .segment-btn { padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--ink-soft); cursor: pointer; transition: all 0.15s; }
+  .segment-btn { padding: 8px 14px; border-radius: 8px; font-size: 23px; font-weight: 600; color: var(--ink-soft); cursor: pointer; transition: all 0.15s; }
   .segment-btn.active { background: white; color: var(--brand-deep); font-weight: 700; box-shadow: 0 2px 4px -1px rgba(0,0,0,0.1); }
-  .field-input { width: 100%; height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; font-weight: 500; color: var(--ink); background: white; }
+  .field-input { width: 100%; height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 30px; font-weight: 500; color: var(--ink); background: white; }
   .field-input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint); }
   .repay-row { display: grid; grid-template-columns: 90px 1fr 100px 100px 80px; gap: 8px; padding: 8px 12px; align-items: center; border-radius: 6px; }
   .repay-row:hover { background: #F5F7FA; }
@@ -91,8 +91,8 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 7 7 17"/><path d="M7 7h10v10"/></svg>
       </div>
       <div class="flex-1">
-        <h1 class="text-[24px] font-extrabold tracking-tight">차용 관리</h1>
-        <p class="text-[15px] text-[color:var(--ink-soft)]">공급사↔약국 · 상품·금액 차용 · 양방향 서명 · 갚은 히스토리 추적</p>
+        <h1 class="text-[26px] font-extrabold tracking-tight">차용 관리</h1>
+        <p class="text-[21px] text-[color:var(--ink-soft)]">공급사↔약국 · 상품·금액 차용 · 양방향 서명 · 갚은 히스토리 추적</p>
       </div>
     </div>
 
@@ -116,7 +116,7 @@
     <section class="card p-6 space-y-6" id="tab-input">
       <div class="flex items-center gap-2 pb-3 border-b border-[color:var(--line)]">
         <span class="w-1.5 h-5 rounded-full bg-[color:var(--brand-deep)]"></span>
-        <h2 class="text-[19px] font-bold">신규 차용 등록</h2>
+        <h2 class="text-[21px] font-bold">신규 차용 등록</h2>
       </div>
 
       <!-- 양쪽 역할 카드 · 빌려주는 사람 → 가져가는 사람 · 단방향 화살표 -->
@@ -125,12 +125,12 @@
         <div class="party-card party-supplier" id="lender-card">
           <div class="flex items-center gap-2 mb-3">
             <div class="flex-1">
-              <div class="text-[12px] font-bold uppercase tracking-[0.1em] text-[color:var(--ink-soft)]">▶ 빌려주는 사람 (LENDER)</div>
+              <div class="text-[26px] font-bold uppercase tracking-[0.1em] text-[color:var(--ink-soft)]">▶ 빌려주는 사람 (LENDER)</div>
               <div class="flex items-center gap-2 mt-1">
                 <div class="w-8 h-8 rounded-lg text-white flex items-center justify-center shadow-sm" id="lender-icon-bg" style="background:#7C3AED">
                   <svg id="lender-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>
                 </div>
-                <div class="text-[17px] font-extrabold text-[#7C3AED]" id="lender-title">공급사</div>
+                <div class="text-[21px] font-extrabold text-[#7C3AED]" id="lender-title">공급사</div>
               </div>
             </div>
           </div>
@@ -140,56 +140,56 @@
             <input type="text" class="field-input pl-9 font-bold" placeholder="공급사 검색 · 이름·담당자·전화" value="코스트팜"/>
             <div class="absolute top-full left-0 right-0 mt-1 rounded-lg border border-[color:var(--line)] bg-white shadow-lg z-10 max-h-40 overflow-auto">
               <div class="px-3 py-2 hover:bg-[color:var(--brand-tint)] cursor-pointer border-b border-[color:var(--line)]">
-                <div class="text-[14px] font-bold text-[color:var(--ink)]">코스트팜</div>
-                <div class="text-[12px] text-[color:var(--ink-soft)]">김담당 · 010-1234-5678</div>
+                <div class="text-[26px] font-bold text-[color:var(--ink)]">코스트팜</div>
+                <div class="text-[26px] text-[color:var(--ink-soft)]">김담당 · 010-1234-5678</div>
               </div>
               <div class="px-3 py-2 hover:bg-[color:var(--brand-tint)] cursor-pointer border-b border-[color:var(--line)]">
-                <div class="text-[14px] font-bold text-[color:var(--ink)]">코스트팜 물류</div>
-                <div class="text-[12px] text-[color:var(--ink-soft)]">박기사 · 010-2345-6789</div>
+                <div class="text-[26px] font-bold text-[color:var(--ink)]">코스트팜 물류</div>
+                <div class="text-[26px] text-[color:var(--ink-soft)]">박기사 · 010-2345-6789</div>
               </div>
             </div>
           </div>
           <!-- 빌려주는 내역 · 상품 · 수량 · 날짜 -->
           <div class="mb-3 p-3 rounded-lg bg-white/80 border border-[#7C3AED]/25">
-            <div class="text-[13px] font-bold text-[#7C3AED] uppercase mb-2 flex items-center gap-1.5">
+            <div class="text-[21px] font-bold text-[#7C3AED] uppercase mb-2 flex items-center gap-1.5">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.91 8.84 8.56 21.17a4.24 4.24 0 0 1-3-1.23 4.24 4.24 0 0 1-1.24-3l12.34-12.34"/><path d="M14 4.5 20 10.5"/></svg>
               빌려주는 내역
             </div>
             <div class="space-y-1.5">
               <div class="flex items-start justify-between gap-2">
-                <span class="text-[13px] font-semibold text-[color:var(--ink-soft)] shrink-0">상품명</span>
-                <span class="text-[15px] font-bold text-[color:var(--ink)] text-right">비타민D 1000IU</span>
+                <span class="text-[21px] font-semibold text-[color:var(--ink-soft)] shrink-0">상품명</span>
+                <span class="text-[21px] font-bold text-[color:var(--ink)] text-right">비타민D 1000IU</span>
               </div>
               <div class="flex items-center justify-between gap-2">
-                <span class="text-[13px] font-semibold text-[color:var(--ink-soft)]">수량</span>
-                <span class="text-[16px] font-extrabold text-[#7C3AED] tabular-nums">20개</span>
+                <span class="text-[21px] font-semibold text-[color:var(--ink-soft)]">수량</span>
+                <span class="text-[26px] font-extrabold text-[#7C3AED] tabular-nums">20개</span>
               </div>
               <div class="flex items-center justify-between gap-2">
-                <span class="text-[13px] font-semibold text-[color:var(--ink-soft)]">날짜</span>
-                <span class="text-[14px] font-bold text-[color:var(--ink)] tabular-nums">2026-08-26</span>
+                <span class="text-[21px] font-semibold text-[color:var(--ink-soft)]">날짜</span>
+                <span class="text-[26px] font-bold text-[color:var(--ink)] tabular-nums">2026-08-26</span>
               </div>
             </div>
           </div>
-          <div class="text-[13px] font-bold text-[#7C3AED] uppercase mb-1.5">서명</div>
+          <div class="text-[21px] font-bold text-[#7C3AED] uppercase mb-1.5">서명</div>
           <div class="signature-box">
             <span>✍ 클릭하여 서명 · 또는 등록된 도장</span>
           </div>
           <div class="flex gap-1 mt-1.5">
-            <button class="flex-1 h-7 rounded text-[13px] font-bold text-[#7C3AED] bg-white border border-[#7C3AED]/30 hover:bg-[#7C3AED]/5">✏️ 그리기</button>
-            <button class="flex-1 h-7 rounded text-[13px] font-bold text-[#7C3AED] bg-white border border-[#7C3AED]/30 hover:bg-[#7C3AED]/5">🎨 도장</button>
+            <button class="flex-1 h-7 rounded text-[21px] font-bold text-[#7C3AED] bg-white border border-[#7C3AED]/30 hover:bg-[#7C3AED]/5">✏️ 그리기</button>
+            <button class="flex-1 h-7 rounded text-[21px] font-bold text-[#7C3AED] bg-white border border-[#7C3AED]/30 hover:bg-[#7C3AED]/5">🎨 도장</button>
           </div>
         </div>
 
         <!-- 중앙 · 단방향 화살표 (LENDER → BORROWER) + 아래 자리바꿈 버튼 -->
         <div class="arrow-cell flex-col gap-3">
-          <div class="text-[12px] font-bold text-[color:var(--ink-soft)] uppercase tracking-[0.1em] text-center whitespace-nowrap">빌려줌</div>
+          <div class="text-[26px] font-bold text-[color:var(--ink-soft)] uppercase tracking-[0.1em] text-center whitespace-nowrap">빌려줌</div>
           <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[color:var(--brand-deep)] to-[color:var(--brand)] text-white flex items-center justify-center shadow-[0_4px_12px_-2px_rgba(10,46,74,0.35)]">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
               <path d="M5 12h14"/>
               <path d="m12 5 7 7-7 7"/>
             </svg>
           </div>
-          <button class="w-full h-8 rounded-lg border border-[color:var(--brand-deep)] bg-white text-[13px] font-bold text-[color:var(--brand-deep)] hover:bg-[color:var(--brand-tint)] transition inline-flex items-center justify-center gap-1" title="공급사↔약국 자리바꿈">
+          <button class="w-full h-8 rounded-lg border border-[color:var(--brand-deep)] bg-white text-[21px] font-bold text-[color:var(--brand-deep)] hover:bg-[color:var(--brand-tint)] transition inline-flex items-center justify-center gap-1" title="공급사↔약국 자리바꿈">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16 3 12l4-4"/><path d="M3 12h14"/><path d="m17 8 4 4-4 4"/><path d="M21 12H7"/></svg>
             자리바꿈
           </button>
@@ -199,12 +199,12 @@
         <div class="party-card party-pharmacy" id="borrower-card">
           <div class="flex items-center gap-2 mb-3">
             <div class="flex-1">
-              <div class="text-[12px] font-bold uppercase tracking-[0.1em] text-[color:var(--ink-soft)]">◀ 가져가는 사람 (BORROWER)</div>
+              <div class="text-[26px] font-bold uppercase tracking-[0.1em] text-[color:var(--ink-soft)]">◀ 가져가는 사람 (BORROWER)</div>
               <div class="flex items-center gap-2 mt-1">
                 <div class="w-8 h-8 rounded-lg text-white flex items-center justify-center shadow-sm" id="borrower-icon-bg" style="background:#059669">
                   <svg id="borrower-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 21V7l4-4 4 4v14"/><path d="M8 21h8"/></svg>
                 </div>
-                <div class="text-[17px] font-extrabold text-[#059669]" id="borrower-title">약국</div>
+                <div class="text-[21px] font-extrabold text-[#059669]" id="borrower-title">약국</div>
               </div>
             </div>
           </div>
@@ -213,32 +213,32 @@
           </div>
           <!-- 빌려받는 상품 상세 · 상품명 · 수량 · 날짜 -->
           <div class="mb-3 p-3 rounded-lg bg-white/80 border border-[#059669]/25">
-            <div class="text-[13px] font-bold text-[#059669] uppercase mb-2 flex items-center gap-1.5">
+            <div class="text-[21px] font-bold text-[#059669] uppercase mb-2 flex items-center gap-1.5">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
               빌려받는 내역
             </div>
             <div class="space-y-1.5">
               <div class="flex items-start justify-between gap-2">
-                <span class="text-[13px] font-semibold text-[color:var(--ink-soft)] shrink-0">상품명</span>
-                <span class="text-[15px] font-bold text-[color:var(--ink)] text-right">비타민D 1000IU</span>
+                <span class="text-[21px] font-semibold text-[color:var(--ink-soft)] shrink-0">상품명</span>
+                <span class="text-[21px] font-bold text-[color:var(--ink)] text-right">비타민D 1000IU</span>
               </div>
               <div class="flex items-center justify-between gap-2">
-                <span class="text-[13px] font-semibold text-[color:var(--ink-soft)]">수량</span>
-                <span class="text-[16px] font-extrabold text-[#059669] tabular-nums">20개</span>
+                <span class="text-[21px] font-semibold text-[color:var(--ink-soft)]">수량</span>
+                <span class="text-[26px] font-extrabold text-[#059669] tabular-nums">20개</span>
               </div>
               <div class="flex items-center justify-between gap-2">
-                <span class="text-[13px] font-semibold text-[color:var(--ink-soft)]">날짜</span>
-                <span class="text-[14px] font-bold text-[color:var(--ink)] tabular-nums">2026-08-26</span>
+                <span class="text-[21px] font-semibold text-[color:var(--ink-soft)]">날짜</span>
+                <span class="text-[26px] font-bold text-[color:var(--ink)] tabular-nums">2026-08-26</span>
               </div>
             </div>
           </div>
-          <div class="text-[13px] font-bold text-[#059669] uppercase mb-1.5">서명</div>
+          <div class="text-[21px] font-bold text-[#059669] uppercase mb-1.5">서명</div>
           <div class="signature-box signed">
             <span class="text-[#059669] font-bold">✓ 서명 완료 (김대표)</span>
           </div>
           <div class="flex gap-1 mt-1.5">
-            <button class="flex-1 h-7 rounded text-[13px] font-bold text-[#059669] bg-white border border-[#059669]/30 hover:bg-[#059669]/5">✏️ 다시</button>
-            <button class="flex-1 h-7 rounded text-[13px] font-bold text-[#059669] bg-white border border-[#059669]/30 hover:bg-[#059669]/5">🎨 도장</button>
+            <button class="flex-1 h-7 rounded text-[21px] font-bold text-[#059669] bg-white border border-[#059669]/30 hover:bg-[#059669]/5">✏️ 다시</button>
+            <button class="flex-1 h-7 rounded text-[21px] font-bold text-[#059669] bg-white border border-[#059669]/30 hover:bg-[#059669]/5">🎨 도장</button>
           </div>
         </div>
       </div>
@@ -273,76 +273,76 @@
 
       <!-- 현재 방향 요약 -->
       <div class="flex items-center justify-center gap-2 mt-3 p-2 rounded-lg bg-[color:var(--brand-tint)]/50 border border-[color:var(--brand-deep)]/10">
-        <span class="text-[15px] font-bold text-[#7C3AED]">코스트팜</span>
+        <span class="text-[21px] font-bold text-[#7C3AED]">코스트팜</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0A2E4A" stroke-width="3"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-        <span class="text-[15px] font-bold text-[#059669]">약국</span>
-        <span class="text-[14px] text-[color:var(--ink-soft)] ml-1">이 빌려줌 (공급사→약국)</span>
+        <span class="text-[21px] font-bold text-[#059669]">약국</span>
+        <span class="text-[26px] text-[color:var(--ink-soft)] ml-1">이 빌려줌 (공급사→약국)</span>
       </div>
 
       <!-- 차용 내역 (상품/금액) -->
       <div class="border-t border-[color:var(--line)] pt-5 space-y-4">
         <div class="flex items-center gap-2">
           <span class="w-1 h-4 rounded-full bg-[color:var(--brand-deep)]"></span>
-          <h3 class="text-[16px] font-bold text-[color:var(--ink)]">차용 내역</h3>
+          <h3 class="text-[26px] font-bold text-[color:var(--ink)]">차용 내역</h3>
         </div>
 
         <!-- 차용 유형 · 세그먼트 (최신 트렌드 · Linear/Attio 스타일) -->
         <div>
-          <label class="text-[14px] font-bold text-[color:var(--ink-soft)] block mb-2">차용 유형</label>
+          <label class="text-[26px] font-bold text-[color:var(--ink-soft)] block mb-2">차용 유형</label>
           <div class="inline-flex items-center gap-1 p-1 rounded-lg bg-gray-100">
-            <button class="h-9 px-3.5 rounded-md bg-white text-[15px] font-bold text-[color:var(--brand-deep)] shadow-sm inline-flex items-center gap-1.5">
+            <button class="h-9 px-3.5 rounded-md bg-white text-[21px] font-bold text-[color:var(--brand-deep)] shadow-sm inline-flex items-center gap-1.5">
               <span class="w-2 h-2 rounded-full bg-[color:var(--brand-deep)]"></span>
               일반 차용
             </button>
-            <button class="h-9 px-3.5 rounded-md text-[15px] font-semibold text-[color:var(--ink-soft)] hover:bg-white hover:text-[color:var(--ink)] inline-flex items-center gap-1.5" title="원래 상품이 없어 다른 상품으로 대체 차용">
+            <button class="h-9 px-3.5 rounded-md text-[21px] font-semibold text-[color:var(--ink-soft)] hover:bg-white hover:text-[color:var(--ink)] inline-flex items-center gap-1.5" title="원래 상품이 없어 다른 상품으로 대체 차용">
               <span class="w-2 h-2 rounded-full bg-amber-500"></span>
               대용 차용
             </button>
-            <button class="h-9 px-3.5 rounded-md text-[15px] font-semibold text-[color:var(--ink-soft)] hover:bg-white hover:text-[color:var(--ink)] inline-flex items-center gap-1.5" title="짧은 기간 임시 대여">
+            <button class="h-9 px-3.5 rounded-md text-[21px] font-semibold text-[color:var(--ink-soft)] hover:bg-white hover:text-[color:var(--ink)] inline-flex items-center gap-1.5" title="짧은 기간 임시 대여">
               <span class="w-2 h-2 rounded-full bg-sky-500"></span>
               임시 대여
             </button>
-            <button class="h-9 px-3.5 rounded-md text-[15px] font-semibold text-[color:var(--ink-soft)] hover:bg-white hover:text-[color:var(--ink)] inline-flex items-center gap-1.5" title="현금 차용 (상품 없음)">
+            <button class="h-9 px-3.5 rounded-md text-[21px] font-semibold text-[color:var(--ink-soft)] hover:bg-white hover:text-[color:var(--ink)] inline-flex items-center gap-1.5" title="현금 차용 (상품 없음)">
               <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
               현금 차용
             </button>
           </div>
-          <p class="text-[13px] text-[color:var(--ink-soft)] mt-1.5">
+          <p class="text-[21px] text-[color:var(--ink-soft)] mt-1.5">
             <b class="text-amber-600">대용 차용</b> · 원 상품이 재고 없어 유사 대체품으로 임시 대체 · 원 상품 반환 시 자동 정산
           </p>
         </div>
         <div class="grid grid-cols-[1fr_100px_100px_140px] gap-2 items-end">
           <div>
-            <label class="text-[14px] font-bold text-[color:var(--ink-soft)] block mb-1">상품 (선택)</label>
+            <label class="text-[26px] font-bold text-[color:var(--ink-soft)] block mb-1">상품 (선택)</label>
             <input type="text" class="field-input" placeholder="상품명 검색 · 예: 타이레놀 500mg" value="비타민D 1000IU"/>
           </div>
           <div>
-            <label class="text-[14px] font-bold text-[color:var(--ink-soft)] block mb-1">수량</label>
+            <label class="text-[26px] font-bold text-[color:var(--ink-soft)] block mb-1">수량</label>
             <input type="number" class="field-input tabular-nums font-bold text-center" value="20"/>
           </div>
           <div>
-            <label class="text-[14px] font-bold text-[color:var(--ink-soft)] block mb-1">금액 (원)</label>
+            <label class="text-[26px] font-bold text-[color:var(--ink-soft)] block mb-1">금액 (원)</label>
             <input type="number" class="field-input tabular-nums font-bold text-right" placeholder="0" value="180000"/>
           </div>
           <div>
-            <label class="text-[14px] font-bold text-[color:var(--ink-soft)] block mb-1">차용일</label>
+            <label class="text-[26px] font-bold text-[color:var(--ink-soft)] block mb-1">차용일</label>
             <input type="date" class="field-input tabular-nums" value="2026-08-26"/>
           </div>
         </div>
         <div>
-          <label class="text-[14px] font-bold text-[color:var(--ink-soft)] block mb-1">메모</label>
+          <label class="text-[26px] font-bold text-[color:var(--ink-soft)] block mb-1">메모</label>
           <textarea class="field-input h-[60px] py-2 resize-none" placeholder="추가 메모 (선택)">임시 공급 · 다음 주 반환 예정</textarea>
         </div>
       </div>
 
       <!-- 액션 -->
       <div class="flex items-center justify-between pt-4 border-t border-[color:var(--line)]">
-        <div class="text-[15px] text-[color:var(--ink-soft)] font-semibold">
+        <div class="text-[21px] text-[color:var(--ink-soft)] font-semibold">
           <span class="text-emerald-600 font-bold">✓ 양쪽 서명 완료 시</span> 등록 가능
         </div>
         <div class="flex gap-2">
-          <button class="h-10 px-4 rounded-lg border border-[color:var(--line)] text-[15px] font-bold text-[color:var(--ink-soft)] hover:bg-gray-50">취소</button>
-          <button class="h-10 px-6 rounded-lg bg-[color:var(--brand-deep)] text-white text-[15px] font-bold hover:bg-[#0d3a5c] shadow-sm">
+          <button class="h-10 px-4 rounded-lg border border-[color:var(--line)] text-[21px] font-bold text-[color:var(--ink-soft)] hover:bg-gray-50">취소</button>
+          <button class="h-10 px-6 rounded-lg bg-[color:var(--brand-deep)] text-white text-[21px] font-bold hover:bg-[#0d3a5c] shadow-sm">
             📝 차용 등록
           </button>
         </div>
@@ -356,13 +356,13 @@
       <div class="flex items-center justify-between pb-3 border-b border-[color:var(--line)]">
         <div class="flex items-center gap-2">
           <span class="w-1.5 h-5 rounded-full bg-[color:var(--brand-deep)]"></span>
-          <h2 class="text-[19px] font-bold">차용 이력 · 공급사별</h2>
+          <h2 class="text-[21px] font-bold">차용 이력 · 공급사별</h2>
         </div>
         <div class="flex items-center gap-2">
           <div class="card p-1 inline-flex gap-0.5">
-            <button class="segment-btn active text-[14px] py-1.5 px-2.5">전체 (14)</button>
-            <button class="segment-btn text-[14px] py-1.5 px-2.5">진행중 (8)</button>
-            <button class="segment-btn text-[14px] py-1.5 px-2.5">완료 (6)</button>
+            <button class="segment-btn active text-[26px] py-1.5 px-2.5">전체 (14)</button>
+            <button class="segment-btn text-[26px] py-1.5 px-2.5">진행중 (8)</button>
+            <button class="segment-btn text-[26px] py-1.5 px-2.5">완료 (6)</button>
           </div>
           <input type="text" class="field-input h-9 w-[180px]" placeholder="🔍 상품·공급사 검색"/>
         </div>
@@ -373,9 +373,9 @@
         <div class="px-4 py-3 bg-gradient-to-r from-[#F5F0FF] to-[#FAF7FF] flex items-center gap-2 cursor-pointer hover:brightness-95">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-[#7C3AED]"><path d="m6 9 6 6 6-6"/></svg>
           <div class="w-1 h-4 rounded-full bg-[#7C3AED]"></div>
-          <span class="text-[17px] font-extrabold text-[color:var(--ink)] tracking-tight">코스트팜</span>
-          <span class="text-[14px] text-[color:var(--ink-soft)] font-medium">· 김담당 · 010-1234-5678</span>
-          <span class="ml-auto flex items-center gap-3 text-[14px] font-bold tabular-nums">
+          <span class="text-[21px] font-extrabold text-[color:var(--ink)] tracking-tight">코스트팜</span>
+          <span class="text-[26px] text-[color:var(--ink-soft)] font-medium">· 김담당 · 010-1234-5678</span>
+          <span class="ml-auto flex items-center gap-3 text-[26px] font-bold tabular-nums">
             <span class="text-amber-600">진행중 3건</span>
             <span class="text-emerald-600">완료 2건</span>
             <span class="text-[color:var(--brand-deep)]">총 5건</span>
@@ -385,31 +385,31 @@
         <!-- 차용 건 1 · 진행중 (partial) -->
         <div class="border-t border-[color:var(--line)] hover:bg-gray-50/50">
           <div class="grid grid-cols-[100px_2fr_100px_100px_120px_100px_100px] items-center gap-3 px-4 py-3">
-            <div class="text-[13px] font-bold text-[color:var(--ink-soft)] uppercase">2026-08-20</div>
+            <div class="text-[21px] font-bold text-[color:var(--ink-soft)] uppercase">2026-08-20</div>
             <div class="min-w-0">
-              <div class="text-[16px] font-bold text-[color:var(--ink)] flex items-center gap-2">
+              <div class="text-[26px] font-bold text-[color:var(--ink)] flex items-center gap-2">
                 <span>비타민D 1000IU</span>
-                <span class="inline-flex items-center gap-1 h-5 px-1.5 rounded text-[12px] font-bold bg-amber-100 text-amber-800 border border-amber-300" title="원 상품 대신 유사 대체품">
+                <span class="inline-flex items-center gap-1 h-5 px-1.5 rounded text-[26px] font-bold bg-amber-100 text-amber-800 border border-amber-300" title="원 상품 대신 유사 대체품">
                   <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                   대용 차용
                 </span>
               </div>
               <!-- 누가 누구에게 차용했는지 · 명확한 direction 표시 -->
               <div class="inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-md bg-[#F5F0FF] border border-[#C4B0F5]/40">
-                <span class="text-[13px] font-bold text-[#7C3AED]">코스트팜</span>
+                <span class="text-[21px] font-bold text-[#7C3AED]">코스트팜</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0A2E4A" stroke-width="3"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                <span class="text-[13px] font-bold text-[#059669]">약국</span>
-                <span class="text-[12px] text-[color:var(--ink-soft)] ml-1">이 빌려줌</span>
+                <span class="text-[21px] font-bold text-[#059669]">약국</span>
+                <span class="text-[26px] text-[color:var(--ink-soft)] ml-1">이 빌려줌</span>
               </div>
-              <div class="text-[13px] text-[color:var(--ink-soft)] mt-1">임시 공급 · 다음 주 반환 예정</div>
+              <div class="text-[21px] text-[color:var(--ink-soft)] mt-1">임시 공급 · 다음 주 반환 예정</div>
             </div>
             <div class="text-right">
-              <div class="text-[15px] font-bold tabular-nums">20개</div>
-              <div class="text-[12px] text-[color:var(--ink-soft)]">잔여 12개</div>
+              <div class="text-[21px] font-bold tabular-nums">20개</div>
+              <div class="text-[26px] text-[color:var(--ink-soft)]">잔여 12개</div>
             </div>
             <div class="text-right">
-              <div class="text-[15px] font-bold tabular-nums">₩180,000</div>
-              <div class="text-[12px] text-[color:var(--ink-soft)]">잔여 ₩108,000</div>
+              <div class="text-[21px] font-bold tabular-nums">₩180,000</div>
+              <div class="text-[26px] text-[color:var(--ink-soft)]">잔여 ₩108,000</div>
             </div>
             <div>
               <span class="status-pill status-partial">
@@ -420,10 +420,10 @@
               </div>
             </div>
             <div class="flex items-center gap-1">
-              <button class="text-[13px] font-bold text-[color:var(--brand-deep)] hover:underline">이력 ▼</button>
+              <button class="text-[21px] font-bold text-[color:var(--brand-deep)] hover:underline">이력 ▼</button>
             </div>
             <div>
-              <button class="h-8 px-3 rounded-md bg-emerald-600 text-white text-[14px] font-bold hover:bg-emerald-700">
+              <button class="h-8 px-3 rounded-md bg-emerald-600 text-white text-[26px] font-bold hover:bg-emerald-700">
                 갚음 등록
               </button>
             </div>
@@ -432,22 +432,22 @@
           <!-- 갚은 히스토리 (펼침) -->
           <div class="px-4 pb-3 bg-gray-50/50">
             <div class="ml-4 pl-4 border-l-2 border-blue-300 space-y-1">
-              <div class="text-[13px] font-bold text-[color:var(--ink-soft)] uppercase mb-1 mt-2">갚은 이력 (2건)</div>
+              <div class="text-[21px] font-bold text-[color:var(--ink-soft)] uppercase mb-1 mt-2">갚은 이력 (2건)</div>
               <div class="repay-row bg-white border border-[color:var(--line)]">
-                <div class="text-[13px] font-mono text-[color:var(--ink-soft)]">08-24</div>
-                <div class="text-[14px]">1차 반환 · 오전 배송편</div>
-                <div class="text-[14px] font-bold text-right tabular-nums">5개</div>
-                <div class="text-[14px] font-bold text-right tabular-nums">₩45,000</div>
-                <div class="text-[13px] text-emerald-600 font-bold">✓ 서명</div>
+                <div class="text-[21px] font-mono text-[color:var(--ink-soft)]">08-24</div>
+                <div class="text-[26px]">1차 반환 · 오전 배송편</div>
+                <div class="text-[26px] font-bold text-right tabular-nums">5개</div>
+                <div class="text-[26px] font-bold text-right tabular-nums">₩45,000</div>
+                <div class="text-[21px] text-emerald-600 font-bold">✓ 서명</div>
               </div>
               <div class="repay-row bg-white border border-[color:var(--line)]">
-                <div class="text-[13px] font-mono text-[color:var(--ink-soft)]">08-25</div>
-                <div class="text-[14px]">2차 반환</div>
-                <div class="text-[14px] font-bold text-right tabular-nums">3개</div>
-                <div class="text-[14px] font-bold text-right tabular-nums">₩27,000</div>
-                <div class="text-[13px] text-emerald-600 font-bold">✓ 서명</div>
+                <div class="text-[21px] font-mono text-[color:var(--ink-soft)]">08-25</div>
+                <div class="text-[26px]">2차 반환</div>
+                <div class="text-[26px] font-bold text-right tabular-nums">3개</div>
+                <div class="text-[26px] font-bold text-right tabular-nums">₩27,000</div>
+                <div class="text-[21px] text-emerald-600 font-bold">✓ 서명</div>
               </div>
-              <button class="w-full text-center py-2 text-[13px] font-bold text-blue-600 hover:bg-blue-50 rounded">
+              <button class="w-full text-center py-2 text-[21px] font-bold text-blue-600 hover:bg-blue-50 rounded">
                 + 갚음 추가
               </button>
             </div>
@@ -457,25 +457,25 @@
         <!-- 차용 건 2 · 완료 -->
         <div class="border-t border-[color:var(--line)] hover:bg-gray-50/50">
           <div class="grid grid-cols-[100px_2fr_100px_100px_120px_100px_100px] items-center gap-3 px-4 py-3">
-            <div class="text-[13px] font-bold text-[color:var(--ink-soft)] uppercase">2026-08-15</div>
+            <div class="text-[21px] font-bold text-[color:var(--ink-soft)] uppercase">2026-08-15</div>
             <div class="min-w-0">
-              <div class="text-[16px] font-bold text-[color:var(--ink)]">게보린 정</div>
+              <div class="text-[26px] font-bold text-[color:var(--ink)]">게보린 정</div>
               <div class="inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-md bg-[#ECFDF5] border border-[#86EFAC]/40">
-                <span class="text-[13px] font-bold text-[#059669]">약국</span>
+                <span class="text-[21px] font-bold text-[#059669]">약국</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0A2E4A" stroke-width="3"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                <span class="text-[13px] font-bold text-[#7C3AED]">코스트팜</span>
-                <span class="text-[12px] text-[color:var(--ink-soft)] ml-1">이 빌려줌</span>
+                <span class="text-[21px] font-bold text-[#7C3AED]">코스트팜</span>
+                <span class="text-[26px] text-[color:var(--ink-soft)] ml-1">이 빌려줌</span>
               </div>
-              <div class="text-[13px] text-[color:var(--ink-soft)] mt-1">과공급 반환</div>
+              <div class="text-[21px] text-[color:var(--ink-soft)] mt-1">과공급 반환</div>
             </div>
-            <div class="text-right"><div class="text-[15px] font-bold tabular-nums">10개</div></div>
-            <div class="text-right"><div class="text-[15px] font-bold tabular-nums">₩85,000</div></div>
+            <div class="text-right"><div class="text-[21px] font-bold tabular-nums">10개</div></div>
+            <div class="text-right"><div class="text-[21px] font-bold tabular-nums">₩85,000</div></div>
             <div>
               <span class="status-pill status-returned">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 완료
               </span>
             </div>
-            <div><button class="text-[13px] font-bold text-[color:var(--brand-deep)] hover:underline">이력 ▼</button></div>
+            <div><button class="text-[21px] font-bold text-[color:var(--brand-deep)] hover:underline">이력 ▼</button></div>
             <div></div>
           </div>
         </div>
@@ -483,26 +483,26 @@
         <!-- 차용 건 3 · 진행중 (active · 아직 안 갚음) -->
         <div class="border-t border-[color:var(--line)] hover:bg-gray-50/50">
           <div class="grid grid-cols-[100px_2fr_100px_100px_120px_100px_100px] items-center gap-3 px-4 py-3">
-            <div class="text-[13px] font-bold text-[color:var(--ink-soft)] uppercase">2026-08-26</div>
+            <div class="text-[21px] font-bold text-[color:var(--ink-soft)] uppercase">2026-08-26</div>
             <div class="min-w-0">
-              <div class="text-[16px] font-bold text-[color:var(--ink)]">판콜에이 내복액</div>
+              <div class="text-[26px] font-bold text-[color:var(--ink)]">판콜에이 내복액</div>
               <div class="inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-md bg-[#F5F0FF] border border-[#C4B0F5]/40">
-                <span class="text-[13px] font-bold text-[#7C3AED]">코스트팜</span>
+                <span class="text-[21px] font-bold text-[#7C3AED]">코스트팜</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0A2E4A" stroke-width="3"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                <span class="text-[13px] font-bold text-[#059669]">약국</span>
-                <span class="text-[12px] text-[color:var(--ink-soft)] ml-1">이 빌려줌</span>
+                <span class="text-[21px] font-bold text-[#059669]">약국</span>
+                <span class="text-[26px] text-[color:var(--ink-soft)] ml-1">이 빌려줌</span>
               </div>
-              <div class="text-[13px] text-[color:var(--ink-soft)] mt-1">긴급 재고 부족</div>
+              <div class="text-[21px] text-[color:var(--ink-soft)] mt-1">긴급 재고 부족</div>
             </div>
-            <div class="text-right"><div class="text-[15px] font-bold tabular-nums">30ml × 30</div></div>
-            <div class="text-right"><div class="text-[15px] font-bold tabular-nums">₩120,000</div></div>
+            <div class="text-right"><div class="text-[21px] font-bold tabular-nums">30ml × 30</div></div>
+            <div class="text-right"><div class="text-[21px] font-bold tabular-nums">₩120,000</div></div>
             <div>
               <span class="status-pill status-active">
                 <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> 미갚음
               </span>
             </div>
-            <div><button class="text-[13px] font-bold text-[color:var(--brand-deep)] hover:underline">이력 ▼</button></div>
-            <div><button class="h-8 px-3 rounded-md bg-emerald-600 text-white text-[14px] font-bold hover:bg-emerald-700">갚음 등록</button></div>
+            <div><button class="text-[21px] font-bold text-[color:var(--brand-deep)] hover:underline">이력 ▼</button></div>
+            <div><button class="h-8 px-3 rounded-md bg-emerald-600 text-white text-[26px] font-bold hover:bg-emerald-700">갚음 등록</button></div>
           </div>
         </div>
       </div>
@@ -512,23 +512,23 @@
         <div class="px-4 py-3 bg-gradient-to-r from-[#F5F0FF] to-[#FAF7FF] flex items-center gap-2 cursor-pointer hover:brightness-95">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-[#7C3AED]"><path d="m6 9 6 6 6-6"/></svg>
           <div class="w-1 h-4 rounded-full bg-[#7C3AED]"></div>
-          <span class="text-[17px] font-extrabold text-[color:var(--ink)] tracking-tight">지오영</span>
-          <span class="text-[14px] text-[color:var(--ink-soft)] font-medium">· 이과장 · 010-9876-5432</span>
-          <span class="ml-auto flex items-center gap-3 text-[14px] font-bold tabular-nums">
+          <span class="text-[21px] font-extrabold text-[color:var(--ink)] tracking-tight">지오영</span>
+          <span class="text-[26px] text-[color:var(--ink-soft)] font-medium">· 이과장 · 010-9876-5432</span>
+          <span class="ml-auto flex items-center gap-3 text-[26px] font-bold tabular-nums">
             <span class="text-amber-600">진행중 5건</span>
             <span class="text-emerald-600">완료 4건</span>
             <span class="text-[color:var(--brand-deep)]">총 9건</span>
           </span>
         </div>
         <!-- rows... 생략 -->
-        <div class="border-t border-[color:var(--line)] px-4 py-3 text-center text-[14px] text-gray-400">
+        <div class="border-t border-[color:var(--line)] px-4 py-3 text-center text-[26px] text-gray-400">
           ... 9건 (펼치기)
         </div>
       </div>
     </section>
 
     <!-- 디자인 규칙 -->
-    <div class="text-[13px] text-gray-400 mt-4 pt-3 border-t border-gray-200 space-y-1">
+    <div class="text-[21px] text-gray-400 mt-4 pt-3 border-t border-gray-200 space-y-1">
       <div>· 상단 세그먼트 탭 · 차용입력 / 차용이력</div>
       <div>· <b>차용입력</b> · 좌우 party 카드 (공급사 violet · 약국 emerald) · 중앙 방향 화살표 (회전 애니메이션 pulse · 클릭 시 방향 전환) · 반응형 시 수직 스택</div>
       <div>· 서명 · Canvas 그리기 + 도장 이미지 선택 · 서명 완료 시 emerald border · 체크마크</div>

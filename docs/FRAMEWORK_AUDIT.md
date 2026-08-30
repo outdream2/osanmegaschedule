@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 756 |
+| 스캔 파일 | 757 |
 | 위반 파일 | 2 |
-| 클린 파일 | 754 (100%) |
+| 클린 파일 | 755 (100%) |
 | 총 위반 개수 | 2 |
 
 ## 🚨 규칙별 위반 현황
@@ -25,7 +25,7 @@
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
 | 1 | `src/components/BarcodeScanner/BarcodeScanner.tsx` | 593 | 3 | raw-alert(1) |
-| 2 | `src/components/OrderManagePage/OrderNeedTab.tsx` | 825 | 3 | large-file-warn(1) |
+| 2 | `src/components/OrderManagePage/OrderNeedTab.tsx` | 824 | 3 | large-file-warn(1) |
 
 ## 📝 모든 위반 파일 (2개)
 
@@ -34,7 +34,7 @@
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
 | `src/components/BarcodeScanner/BarcodeScanner.tsx` | 593 | 3 |
-| `src/components/OrderManagePage/OrderNeedTab.tsx` | 825 | 3 |
+| `src/components/OrderManagePage/OrderNeedTab.tsx` | 824 | 3 |
 
 </details>
 

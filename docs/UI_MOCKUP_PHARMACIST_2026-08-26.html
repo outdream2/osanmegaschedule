@@ -29,7 +29,7 @@
     display: flex; align-items: center; gap: 10px;
     padding: 12px 14px; border-radius: 10px; cursor: pointer;
     transition: all 0.15s; position: relative;
-    font-size: 15px; font-weight: 600; color: var(--ink-soft);
+    font-size: 23px; font-weight: 600; color: var(--ink-soft);
   }
   .cat-item:hover { background: var(--brand-tint); color: var(--brand-deep); }
   .cat-item.active { background: var(--brand-tint); color: var(--brand-deep); font-weight: 700; }
@@ -40,7 +40,7 @@
   .cat-badge {
     margin-left: auto; display: inline-flex; align-items: center; justify-content: center;
     min-width: 22px; height: 22px; padding: 0 6px;
-    border-radius: 6px; font-size: 12px; font-weight: 700;
+    border-radius: 6px; font-size: 30px; font-weight: 700;
     background: var(--brand-deep); color: white; tabular-nums: 1;
   }
   .item-row {
@@ -59,7 +59,7 @@
   .btn-primary {
     height: 40px; padding: 0 16px;
     background: var(--brand-deep); color: white;
-    border-radius: 10px; font-size: 14px; font-weight: 700;
+    border-radius: 10px; font-size: 30px; font-weight: 700;
     display: inline-flex; align-items: center; gap: 6px;
     box-shadow: 0 2px 6px -1px rgba(10,46,74,0.25);
   }
@@ -67,10 +67,10 @@
   .btn-secondary {
     height: 40px; padding: 0 14px;
     background: white; color: var(--ink-soft); border: 1px solid var(--line); border-radius: 10px;
-    font-size: 14px; font-weight: 600;
+    font-size: 30px; font-weight: 600;
   }
   .btn-secondary:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-tint); }
-  .status-pill { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 12px; font-weight: 700; }
+  .status-pill { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 30px; font-weight: 700; }
 
   /* PDF viewer */
   .pdf-viewer {
@@ -115,8 +115,8 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 21V7l4-4 4 4v14"/><path d="M8 21h8"/><path d="M12 11h.01"/><path d="M12 15h.01"/></svg>
       </div>
       <div class="flex-1 min-w-0">
-        <h1 class="text-[24px] font-extrabold tracking-tight leading-tight">약사 전용</h1>
-        <p class="text-[15px] text-[color:var(--ink-soft)] mt-1">복약 · 처방 · 상담 · 학술 자료 관리 · <b class="text-[color:var(--pharmacy)]">약사 전용 (lv 3+)</b> · PDF 인라인 · 워터마크 보안</p>
+        <h1 class="text-[26px] font-extrabold tracking-tight leading-tight">약사 전용</h1>
+        <p class="text-[21px] text-[color:var(--ink-soft)] mt-1">복약 · 처방 · 상담 · 학술 자료 관리 · <b class="text-[color:var(--pharmacy)]">약사 전용 (lv 3+)</b> · PDF 인라인 · 워터마크 보안</p>
       </div>
       <div class="flex items-center gap-2 shrink-0">
         <span class="status-pill bg-emerald-50 text-emerald-700 ring-1 ring-emerald-500/20">
@@ -131,8 +131,8 @@
 
     <!-- 모바일 · 카테고리 select (PC 에서 숨김) -->
     <div class="mobile-only card p-3">
-      <label class="text-[13px] font-bold text-[color:var(--ink-soft)] block mb-1">카테고리 선택</label>
-      <select class="w-full h-11 px-3 rounded-lg border border-[color:var(--line)] text-[15px] font-bold bg-[color:var(--brand-tint)] text-[color:var(--brand-deep)]">
+      <label class="text-[21px] font-bold text-[color:var(--ink-soft)] block mb-1">카테고리 선택</label>
+      <select class="w-full h-11 px-3 rounded-lg border border-[color:var(--line)] text-[21px] font-bold bg-[color:var(--brand-tint)] text-[color:var(--brand-deep)]">
         <option>📋 복약 지도 (8건)</option>
         <option>💊 처방 사례 (5건)</option>
         <option>🩺 상담 매뉴얼 (4건)</option>
@@ -146,34 +146,34 @@
       <!-- 좌측 · 카테고리 리스트 -->
       <aside class="desktop-only card p-3 h-fit sticky top-4">
         <div class="flex items-center justify-between mb-2 px-1">
-          <div class="text-[13px] font-bold text-[color:var(--ink-soft)] uppercase tracking-wider">카테고리</div>
+          <div class="text-[21px] font-bold text-[color:var(--ink-soft)] uppercase tracking-wider">카테고리</div>
           <button class="w-7 h-7 rounded-lg bg-[color:var(--brand-tint)] text-[color:var(--brand-deep)] hover:bg-[color:var(--brand-deep)] hover:text-white transition flex items-center justify-center" title="새 카테고리 추가">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
           </button>
         </div>
         <nav class="flex flex-col gap-1">
           <div class="cat-item active">
-            <span class="text-[18px]">📋</span>
+            <span class="text-[26px]">📋</span>
             <span>복약 지도</span>
             <span class="cat-badge">8</span>
           </div>
           <div class="cat-item">
-            <span class="text-[18px]">💊</span>
+            <span class="text-[26px]">💊</span>
             <span>처방 사례</span>
             <span class="cat-badge">5</span>
           </div>
           <div class="cat-item">
-            <span class="text-[18px]">🩺</span>
+            <span class="text-[26px]">🩺</span>
             <span>상담 매뉴얼</span>
             <span class="cat-badge">4</span>
           </div>
           <div class="cat-item">
-            <span class="text-[18px]">📚</span>
+            <span class="text-[26px]">📚</span>
             <span>학술 자료</span>
             <span class="cat-badge">7</span>
           </div>
           <div class="cat-item">
-            <span class="text-[18px]">📝</span>
+            <span class="text-[26px]">📝</span>
             <span>사용자 추가</span>
             <span class="cat-badge" style="background:var(--ink-soft)">0</span>
           </div>
@@ -185,7 +185,7 @@
         <div class="flex items-center justify-between mb-3 pb-3 border-b border-[color:var(--line)]">
           <div class="flex items-center gap-2">
             <span class="w-1.5 h-5 rounded-full bg-[color:var(--brand-deep)]"></span>
-            <h2 class="text-[19px] font-bold">복약 지도 · 8건</h2>
+            <h2 class="text-[21px] font-bold">복약 지도 · 8건</h2>
           </div>
           <button class="btn-primary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
@@ -199,8 +199,8 @@
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             </div>
             <div class="min-w-0">
-              <div class="text-[15px] font-bold text-[color:var(--ink)] truncate">타이레놀 500mg · 복약 지도 v3.pdf</div>
-              <div class="text-[13px] text-[color:var(--ink-soft)] mt-0.5 flex items-center gap-2">
+              <div class="text-[21px] font-bold text-[color:var(--ink)] truncate">타이레놀 500mg · 복약 지도 v3.pdf</div>
+              <div class="text-[21px] text-[color:var(--ink-soft)] mt-0.5 flex items-center gap-2">
                 <span class="tabular-nums">2.4 MB</span>
                 <span class="text-gray-300">·</span>
                 <span>수정 · 2026-08-20</span>
@@ -224,8 +224,8 @@
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             </div>
             <div class="min-w-0">
-              <div class="text-[15px] font-bold text-[color:var(--ink)] truncate">항생제 처방 가이드 · 2026 가이드라인.pdf</div>
-              <div class="text-[13px] text-[color:var(--ink-soft)] mt-0.5">
+              <div class="text-[21px] font-bold text-[color:var(--ink)] truncate">항생제 처방 가이드 · 2026 가이드라인.pdf</div>
+              <div class="text-[21px] text-[color:var(--ink-soft)] mt-0.5">
                 <span class="tabular-nums">5.1 MB</span> · 수정 · 2026-08-15
               </div>
             </div>
@@ -244,8 +244,8 @@
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             </div>
             <div class="min-w-0">
-              <div class="text-[15px] font-bold text-[color:var(--ink)] truncate">고혈압 환자 상담 · 요약본.pdf</div>
-              <div class="text-[13px] text-[color:var(--ink-soft)] mt-0.5">
+              <div class="text-[21px] font-bold text-[color:var(--ink)] truncate">고혈압 환자 상담 · 요약본.pdf</div>
+              <div class="text-[21px] text-[color:var(--ink-soft)] mt-0.5">
                 <span class="tabular-nums">1.8 MB</span> · 수정 · 2026-08-10
               </div>
             </div>
@@ -265,18 +265,18 @@
       <section class="pdf-viewer h-fit">
         <div class="pdf-toolbar">
           <div class="flex items-center gap-2">
-            <span class="text-[13px] font-bold text-[color:var(--ink-soft)]">1 / 24</span>
+            <span class="text-[21px] font-bold text-[color:var(--ink-soft)]">1 / 24</span>
             <div class="flex items-center gap-0.5">
               <button class="w-7 h-7 rounded hover:bg-gray-100 text-[color:var(--ink-soft)]">‹</button>
               <button class="w-7 h-7 rounded hover:bg-gray-100 text-[color:var(--ink-soft)]">›</button>
             </div>
           </div>
-          <div class="text-[14px] font-bold text-[color:var(--ink)] truncate flex-1 text-center">타이레놀 500mg · 복약 지도 v3</div>
+          <div class="text-[26px] font-bold text-[color:var(--ink)] truncate flex-1 text-center">타이레놀 500mg · 복약 지도 v3</div>
           <div class="flex items-center gap-1">
             <button class="w-8 h-8 rounded-md hover:bg-[color:var(--brand-tint)] text-[color:var(--brand-deep)]" title="축소">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mx-auto"><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
-            <span class="text-[12px] font-bold text-[color:var(--ink-soft)] px-1">100%</span>
+            <span class="text-[26px] font-bold text-[color:var(--ink-soft)] px-1">100%</span>
             <button class="w-8 h-8 rounded-md hover:bg-[color:var(--brand-tint)] text-[color:var(--brand-deep)]" title="확대">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mx-auto"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
@@ -287,12 +287,12 @@
         </div>
         <div class="relative overflow-auto max-h-[600px]">
           <div class="pdf-mock">
-            <h3 class="text-[20px] font-bold mb-2 text-[color:var(--ink)]">타이레놀 500mg 복약 지도</h3>
-            <p class="text-[13px] text-[color:var(--ink-soft)] mb-4">최종 개정 · 2026-08-20 v3</p>
+            <h3 class="text-[26px] font-bold mb-2 text-[color:var(--ink)]">타이레놀 500mg 복약 지도</h3>
+            <p class="text-[21px] text-[color:var(--ink-soft)] mb-4">최종 개정 · 2026-08-20 v3</p>
             <hr class="border-gray-200 mb-4"/>
-            <p class="text-[14px] leading-relaxed mb-3"><b>1. 성분 및 특성</b><br/>아세트아미노펜 500mg · 해열진통제 (비마약성) · 위장장애 최소화</p>
-            <p class="text-[14px] leading-relaxed mb-3"><b>2. 복용 방법</b><br/>성인 · 1회 1-2정 · 1일 3-4회 · 4-6시간 간격 · 1일 최대 4g</p>
-            <p class="text-[14px] leading-relaxed"><b>3. 주의사항</b><br/>· 간질환자 · 알코올 상습 복용자 주의<br/>· 임산부 · 수유부 · 의사 상담 후 복용</p>
+            <p class="text-[26px] leading-relaxed mb-3"><b>1. 성분 및 특성</b><br/>아세트아미노펜 500mg · 해열진통제 (비마약성) · 위장장애 최소화</p>
+            <p class="text-[26px] leading-relaxed mb-3"><b>2. 복용 방법</b><br/>성인 · 1회 1-2정 · 1일 3-4회 · 4-6시간 간격 · 1일 최대 4g</p>
+            <p class="text-[26px] leading-relaxed"><b>3. 주의사항</b><br/>· 간질환자 · 알코올 상습 복용자 주의<br/>· 임산부 · 수유부 · 의사 상담 후 복용</p>
             <div class="pdf-watermark">OSAN MEGATOWN · KIM · 2026-08-26 14:32</div>
           </div>
         </div>
@@ -300,7 +300,7 @@
     </div>
 
     <!-- 디자인 규칙 -->
-    <div class="text-[12px] text-gray-400 mt-4 pt-3 border-t border-gray-200 space-y-1">
+    <div class="text-[26px] text-gray-400 mt-4 pt-3 border-t border-gray-200 space-y-1">
       <div>· <b>기존 톤 준수</b> · docs/UI_MOCKUP_2026-08-21.html · brand-deep · Pretendard · 3px accent bar</div>
       <div>· <b>3-column 레이아웃</b> · 좌 카테고리 (260px) · 중앙 자료 리스트 · 우 PDF 뷰어 · 반응형 시 수직</div>
       <div>· <b>모바일</b> · 카테고리 select (상단) · 자료 리스트 (중앙) · PDF 뷰어 (하단 · full-width)</div>
