@@ -18,7 +18,7 @@ router.get("/api/zone-mismatches", asyncHandler(async (_req, res) => {
   // 2026-08-29 · #154 Phase 1 · sale_status join · 프론트 3-way 필터
   const { data: productRows, error: prodErr } = await supabase
     .from("products")
-    .select("product_code, product_name, spec, display_location, location, real_map, category_code, sale_status, last_modified_at")
+    .select("product_code, product_name, supplier, spec, display_location, location, real_map, category_code, sale_status, last_modified_at")
     .eq("hidden", false)
     .not("real_map", "is", null)
     .neq("real_map", "");
@@ -43,6 +43,7 @@ router.get("/api/zone-mismatches", asyncHandler(async (_req, res) => {
         id: p.product_code,
         product_code: p.product_code,
         product_name: p.product_name ?? "",
+        supplier: (p as any).supplier ?? null,
         category_code: (p as any).category_code ?? null,
         spec_zone: locZone || "미지정",
         real_zone: (p.real_map ?? "").trim(),
@@ -64,6 +65,7 @@ router.get("/api/zone-mismatches", asyncHandler(async (_req, res) => {
       id: r.product_code,
       product_code: r.product_code,
       product_name: r.product_name ?? "",
+      supplier: null, // 2026-08-30 · legacy · products join 없음 · null
       spec_zone: r.spec_zone ?? "미지정",
       real_zone: r.real_zone ?? "",
       sale_status: null, // 2026-08-29 · legacy 는 판매상태 없음 · null 로 통일

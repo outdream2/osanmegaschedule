@@ -26,7 +26,8 @@ interface ZoneMismatch {
   id: string;
   product_code: string;
   product_name: string;
-  category_code?: string | null; // 2026-08-26 · 사용자 지시 · 분류코드
+  supplier?: string | null; // 2026-08-30 · 사용자 지시 · 공급사 컬럼 추가
+  category_code?: string | null; // 2026-08-26 · 사용자 지시 · 분류코드 (사용 안 함 · 2026-08-30)
   spec_zone: string;
   real_zone: string;
   sale_status?: string | null; // 2026-08-29 · #154 Phase 1 · 3-way 필터용
@@ -406,15 +407,17 @@ export const ZoneMismatchTab: React.FC = () => {
                     <span className="text-[15px] font-semibold text-rose-500 tabular-nums">{zoneRows.length}건</span>
                   </div>
                   {!collapsed && (
+                    /* 2026-08-30 · 사용자 지시 · 컬럼 재구성 · 분류코드·등록일 제거 · 공급사·실제구역 추가
+                        순서: [☐] 상품코드 | 상품 | 공급사 | 전산구역 | 실제구역 | 삭제 */
                     <table className="w-full border-collapse">
                       <thead className={tableHeadCls("text-[15px]")}>
                         <tr>
                           <th className={tableThCls("center")} style={{ width: "5%" }}></th>
-                          <th className={tableThCls("left")} style={{ width: "12%" }}>분류코드</th>
-                          <th className={tableThCls("left")} style={{ width: "28%" }}>상품명</th>
-                          <th className={tableThCls("left")} style={{ width: "16%" }}>상품코드</th>
-                          <th className={tableThCls("center")} style={{ width: "13%" }}>전산 구역</th>
-                          <th className={tableThCls("center")} style={{ width: "11%" }}>등록일</th>
+                          <th className={tableThCls("left")} style={{ width: "14%" }}>상품코드</th>
+                          <th className={tableThCls("left")} style={{ width: "30%" }}>상품</th>
+                          <th className={tableThCls("left")} style={{ width: "18%" }}>공급사</th>
+                          <th className={tableThCls("center")} style={{ width: "13%" }}>전산구역</th>
+                          <th className={tableThCls("center")} style={{ width: "13%" }}>실제구역</th>
                           <th className={tableThCls("center")} style={{ width: "7%" }}>삭제</th>
                         </tr>
                       </thead>
@@ -430,13 +433,13 @@ export const ZoneMismatchTab: React.FC = () => {
                                 aria-label="선택"
                               />
                             </td>
-                            <td className={tableTdCls("left", "font-mono text-[14px] text-zinc-500 tabular-nums")}>
-                              {m.category_code ?? "-"}
-                            </td>
+                            <td className={tableTdCls("left", "font-mono text-[15px] text-zinc-500")}>{m.product_code}</td>
                             <td className={tableTdCls("left", "font-bold text-zinc-800 break-keep")}>
                               {renderEditable(m, "product_name", m.product_name)}
                             </td>
-                            <td className={tableTdCls("left", "font-mono text-[15px] text-zinc-500")}>{m.product_code}</td>
+                            <td className={tableTdCls("left", "text-[15px] text-zinc-600")}>
+                              {m.supplier ?? <span className="text-zinc-300">—</span>}
+                            </td>
                             <td className={tableTdCls("center", "font-semibold text-zinc-700")}>
                               {renderEditable(m, "spec_zone",
                                 m.spec_zone === "미지정"
@@ -444,7 +447,13 @@ export const ZoneMismatchTab: React.FC = () => {
                                   : m.spec_zone
                               )}
                             </td>
-                            <td className={tableTdCls("center", "text-[15px] text-zinc-500 tabular-nums")}>{fmtDate(m.registered_at)}</td>
+                            <td className={tableTdCls("center", "font-bold text-rose-700")}>
+                              {renderEditable(m, "real_zone",
+                                m.real_zone
+                                  ? m.real_zone
+                                  : <span className="text-zinc-300">—</span>
+                              )}
+                            </td>
                             <td className={tableTdCls("center")}>
                               <button
                                 type="button"

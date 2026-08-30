@@ -46,31 +46,7 @@ let lowStockCache: { data: any; expiresAt: number } | null = null;
 const LOW_STOCK_TTL = 2 * 60 * 1000; // 2분
 export function clearLowStockCache() { lowStockCache = null; }
 
-// GET /api/stock-manage/suppliers?days=7|30|90
-// 공급사별 매입 총액 · 수량 · 상품수
-// 2026-08-09 · 소스 · purchase_details (ERP) · queryPurchaseDetails 헬퍼 사용
-//   OCR fallback 없음 · supplier_name NULL 은 vendors/products 로 fallback 해결
-router.get("/api/stock-manage/suppliers", asyncHandler(async (req, res) => {
-  const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "7"), 10) || 7));
-  const sinceYmd = daysAgoISO(days).slice(0, 10);
-  const cacheKey = `suppliers::${days}`;
-  const cached = ocrAggCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) return res.json(cached.data);
-  const rows = await queryPurchaseDetails({ sinceYmd });
-  const map = new Map<string, { supplier: string; purchaseAmount: number; purchaseQty: number; items: Set<string> }>();
-  for (const r of rows) {
-    const cur = map.get(r.supplier) ?? { supplier: r.supplier, purchaseAmount: 0, purchaseQty: 0, items: new Set<string>() };
-    cur.purchaseAmount += r.amount;
-    cur.purchaseQty   += r.quantity;
-    if (r.product_name) cur.items.add(r.product_name);
-    map.set(r.supplier, cur);
-  }
-  const result = [...map.values()]
-    .map(x => ({ supplier: x.supplier, purchaseAmount: x.purchaseAmount, purchaseQty: x.purchaseQty, itemCount: x.items.size }))
-    .sort((a, b) => b.purchaseAmount - a.purchaseAmount);
-  ocrAggCache.set(cacheKey, { data: result, expiresAt: Date.now() + OCR_AGG_TTL });
-  res.json(result);
-}));
+// 2026-08-30 · #ENDPOINT-AUDIT TOP3 · GET /api/stock-manage/suppliers 제거 (소비처 0)
 
 // GET /api/stock-manage/top-products?days=7|30|90&limit=100
 // 매입 금액 상위 상품
@@ -1555,23 +1531,7 @@ router.get("/api/stock-manage/raw", asyncHandler(async (req, res) => {
   res.json({ dates, rows: data ?? [] });
 }));
 
-// GET /api/stock-manage/product-info?code=<product_code>
-// 지정 상품의 products 정보 + 스냅샷별 stock_history + 최근 inventory_check 실재고 병합
-router.get("/api/stock-manage/product-info", asyncHandler(async (req, res) => {
-  const code = String(req.query.code ?? "").trim();
-  if (!code) return res.status(400).json({ error: "code 필요" });
-  const [prodRes, histRes, invRes] = await Promise.all([
-    supabase.from("products").select("*").eq("product_code", code).maybeSingle(),
-    supabase.from("stock_history").select("*").eq("product_code", code).order("snapshot_date", { ascending: false }).limit(200),
-    supabase.from("inventory_checks").select("*").eq("product_code", code).order("checked_at", { ascending: false }).limit(50),
-  ]);
-  if (prodRes.error && !/does not exist/i.test(prodRes.error.message)) throw new HttpError(500, prodRes.error.message);
-  res.json({
-    product: prodRes.data ?? null,
-    stock_history: histRes.error ? [] : (histRes.data ?? []),
-    inventory_checks: invRes.error ? [] : (invRes.data ?? []),
-  });
-}));
+// 2026-08-30 · #ENDPOINT-AUDIT TOP3 · GET /api/stock-manage/product-info 제거 (소비처 0)
 
 // GET /api/stock-manage/product-history?product_name=X&days=7
 // 상품별 매입 이력 (차트 데이터)
