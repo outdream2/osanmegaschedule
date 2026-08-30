@@ -1,8 +1,8 @@
--- 2026-08-30 · zone_defs · 사용자 5개 컬럼 확정
--- 순서: 구역 · 카테고리 · 상세카테고리 · 셀아이디 · 담당자
+-- 2026-08-30 · zone_defs 재생성 · 4개 컬럼 (구역·카테고리·상세카테고리·셀아이디)
+-- 이관 로직 · to_jsonb 로 백업 컬럼 안전 접근 (컬럼 없어도 NULL)
 -- 실행 · Supabase SQL Editor
 
--- Step 1 · 기존 zone_defs 백업 (안전) · 이관 후 DROP
+-- Step 1 · 기존 zone_defs 백업
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'zone_defs') THEN
@@ -14,28 +14,28 @@ BEGIN
   END IF;
 END $$;
 
--- Step 2 · 새 zone_defs · 4개 컬럼 (+ id PK · updated_at)
+-- Step 2 · 새 zone_defs · 4개 컬럼
 CREATE TABLE zone_defs (
   id                  SERIAL PRIMARY KEY,
-  zone                TEXT NOT NULL,                     -- 구역 (예: "진열대 1A", "벽면 22")
-  category            TEXT NOT NULL,                     -- 카테고리
-  detailed_category   TEXT,                              -- 상세카테고리 (매장구역도 hover)
-  cell_id             INT UNIQUE NOT NULL,               -- 셀아이디 · 매장구역도 셀 넘버 (1-54)
+  zone                TEXT NOT NULL,
+  category            TEXT NOT NULL,
+  detailed_category   TEXT,
+  cell_id             INT UNIQUE NOT NULL,
   updated_at          TIMESTAMPTZ DEFAULT NOW()
-  -- 담당자 · zone_assignments 테이블 (스케쥴 요일·시간별 배정) 그대로 사용 · 여기 안 저장
 );
 
 COMMENT ON TABLE  zone_defs                   IS '매장구역도·매장구역편집 단일 소스 (2026-08-30)';
 COMMENT ON COLUMN zone_defs.zone              IS '구역 (예: 진열대 1A)';
-COMMENT ON COLUMN zone_defs.category          IS '카테고리 (매장구역도 셀에 표시)';
-COMMENT ON COLUMN zone_defs.detailed_category IS '상세카테고리 (hover 팝업)';
-COMMENT ON COLUMN zone_defs.cell_id           IS '매장구역도 셀 위치 · 1-54 순차 넘버링';
+COMMENT ON COLUMN zone_defs.category          IS '카테고리';
+COMMENT ON COLUMN zone_defs.detailed_category IS '상세카테고리 (hover)';
+COMMENT ON COLUMN zone_defs.cell_id           IS '매장구역도 셀 위치 · 1-54';
 
--- Step 3 · 백업에서 이관 (백업 있을 때만)
+-- Step 3 · 백업에서 이관 · to_jsonb 로 컬럼 안전 접근 (없어도 NULL)
 DO $$
 DECLARE
   r RECORD;
   next_cell INT := 0;
+  jb JSONB;
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'zone_defs_v1_backup') THEN
     RETURN;
@@ -43,46 +43,69 @@ BEGIN
 
   -- 상단 벽면 (21→9)
   FOR r IN SELECT * FROM zone_defs_v1_backup WHERE num BETWEEN 9 AND 21 ORDER BY num DESC LOOP
+    jb := to_jsonb(r);
     next_cell := next_cell + 1;
     INSERT INTO zone_defs (cell_id, zone, category, detailed_category)
-    VALUES (next_cell, COALESCE(r.label, '벽면 ' || r.num), COALESCE(r.category, ''), r.description);
+    VALUES (next_cell,
+            COALESCE(jb->>'label', '벽면 ' || (jb->>'num')),
+            COALESCE(jb->>'category', ''),
+            jb->>'description');
   END LOOP;
 
   -- 중앙 진열대 22
   FOR r IN SELECT * FROM zone_defs_v1_backup WHERE num = 22 LOOP
+    jb := to_jsonb(r);
     next_cell := next_cell + 1;
     INSERT INTO zone_defs (cell_id, zone, category, detailed_category)
-    VALUES (next_cell, COALESCE(r.label, '진열대 22'), COALESCE(r.category, ''), r.description);
+    VALUES (next_cell,
+            COALESCE(jb->>'label', '진열대 22'),
+            COALESCE(jb->>'category', ''),
+            jb->>'description');
   END LOOP;
 
   -- 중앙 진열대 8B/8A → 1B/1A
   FOR r IN SELECT * FROM zone_defs_v1_backup WHERE num BETWEEN 1 AND 8 ORDER BY num DESC LOOP
+    jb := to_jsonb(r);
+    -- B side
     next_cell := next_cell + 1;
     INSERT INTO zone_defs (cell_id, zone, category, detailed_category)
-    VALUES (next_cell, '진열대 ' || r.num || 'B',
-            COALESCE(r.sub_b, r.category, ''), COALESCE(r.description_b, r.description));
+    VALUES (next_cell,
+            '진열대 ' || (jb->>'num') || 'B',
+            COALESCE(jb->>'sub_b', jb->>'category', ''),
+            COALESCE(jb->>'description_b', jb->>'description'));
+    -- A side
     next_cell := next_cell + 1;
     INSERT INTO zone_defs (cell_id, zone, category, detailed_category)
-    VALUES (next_cell, '진열대 ' || r.num || 'A',
-            COALESCE(r.sub_a, r.category, ''), COALESCE(r.description_a, r.description));
+    VALUES (next_cell,
+            '진열대 ' || (jb->>'num') || 'A',
+            COALESCE(jb->>'sub_a', jb->>'category', ''),
+            COALESCE(jb->>'description_a', jb->>'description'));
   END LOOP;
 
   -- 하단 벽면 (23→34)
   FOR r IN SELECT * FROM zone_defs_v1_backup WHERE num BETWEEN 23 AND 34 ORDER BY num ASC LOOP
+    jb := to_jsonb(r);
     next_cell := next_cell + 1;
     INSERT INTO zone_defs (cell_id, zone, category, detailed_category)
-    VALUES (next_cell, COALESCE(r.label, '벽면 ' || r.num), COALESCE(r.category, ''), r.description);
+    VALUES (next_cell,
+            COALESCE(jb->>'label', '벽면 ' || (jb->>'num')),
+            COALESCE(jb->>'category', ''),
+            jb->>'description');
   END LOOP;
 
   -- 수직 윙 (35→46)
   FOR r IN SELECT * FROM zone_defs_v1_backup WHERE num BETWEEN 35 AND 46 ORDER BY num ASC LOOP
+    jb := to_jsonb(r);
     next_cell := next_cell + 1;
     INSERT INTO zone_defs (cell_id, zone, category, detailed_category)
-    VALUES (next_cell, COALESCE(r.label, ''), COALESCE(r.category, ''), r.description);
+    VALUES (next_cell,
+            COALESCE(jb->>'label', ''),
+            COALESCE(jb->>'category', ''),
+            jb->>'description');
   END LOOP;
 END $$;
 
--- Step 4 · 빠진 셀 · seed 로 보충 (54개 완성 · 2026-07-07 값)
+-- Step 4 · 빠진 셀 seed 로 보충 (54개 완성)
 INSERT INTO zone_defs (cell_id, zone, category)
 SELECT s.cell_id, s.zone, s.category
 FROM (VALUES
@@ -143,13 +166,11 @@ FROM (VALUES
 ) AS s(cell_id, zone, category)
 WHERE NOT EXISTS (SELECT 1 FROM zone_defs z WHERE z.cell_id = s.cell_id);
 
--- Step 5 · 이관 후 백업 DROP (사용자 지시)
+-- Step 5 · 이관 후 백업 DROP
 DROP TABLE IF EXISTS zone_defs_v1_backup;
 
 -- 확인
-SELECT cell_id, zone, category,
-       LEFT(COALESCE(detailed_category, ''), 30) AS detail
-FROM zone_defs
-ORDER BY cell_id;
+SELECT cell_id, zone, category, LEFT(COALESCE(detailed_category, ''), 30) AS detail
+FROM zone_defs ORDER BY cell_id;
 
-SELECT COUNT(*) AS total FROM zone_defs;  -- 54 예상
+SELECT COUNT(*) AS total FROM zone_defs;
