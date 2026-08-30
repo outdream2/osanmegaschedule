@@ -16,20 +16,22 @@ const router = Router();
 
 interface ZoneDefRow {
   id: number;
-  zone: string;
-  category: string;
+  location: string | null;
+  zone: string | null;
+  category: string | null;
   detailed_category: string | null;
   cell_id: number;
   updated_at: string;
 }
 
-/** DB row → 프론트 DTO (snake_case 유지) · 최소 변환 */
+/** DB row → 프론트 DTO (snake_case → camelCase) */
 function rowToDto(r: ZoneDefRow) {
   return {
     id: r.id,
     cellId: r.cell_id,
-    zone: r.zone,
-    category: r.category,
+    location: r.location ?? undefined,
+    zone: r.zone ?? undefined,
+    category: r.category ?? undefined,
     detailedCategory: r.detailed_category ?? undefined,
   };
 }
@@ -37,8 +39,9 @@ function rowToDto(r: ZoneDefRow) {
 /** 프론트 DTO → DB row · POST/PUT/PATCH body 정규화 */
 function bodyToRow(b: any) {
   return {
-    zone: String(b.zone ?? "").trim(),
-    category: String(b.category ?? "").trim(),
+    location: b.location != null && b.location !== "" ? String(b.location).trim() : null,
+    zone: b.zone != null && b.zone !== "" ? String(b.zone).trim() : null,
+    category: b.category != null && b.category !== "" ? String(b.category).trim() : null,
     detailed_category: b.detailedCategory != null && b.detailedCategory !== ""
       ? String(b.detailedCategory)
       : null,
@@ -51,7 +54,7 @@ function bodyToRow(b: any) {
 router.get("/api/zone-defs", asyncHandler(async (_req, res) => {
   const { data, error } = await supabase
     .from("zone_defs")
-    .select("id, zone, category, detailed_category, cell_id, updated_at")
+    .select("id, location, zone, category, detailed_category, cell_id, updated_at")
     .order("cell_id", { ascending: true });
   if (error) {
     console.error("[zone-defs GET]", error.message);
@@ -68,15 +71,16 @@ router.patch("/api/zone-defs/:id", authorize(9), asyncHandler(async (req, res) =
   if (!Number.isFinite(id) || id <= 0) throw badRequest("잘못된 id");
   const patch: Record<string, any> = { updated_at: new Date().toISOString() };
   const b = req.body ?? {};
-  if (b.zone             !== undefined) patch.zone             = String(b.zone).trim();
-  if (b.category         !== undefined) patch.category         = String(b.category).trim();
+  if (b.location         !== undefined) patch.location         = b.location == null || b.location === "" ? null : String(b.location).trim();
+  if (b.zone             !== undefined) patch.zone             = b.zone == null || b.zone === "" ? null : String(b.zone).trim();
+  if (b.category         !== undefined) patch.category         = b.category == null || b.category === "" ? null : String(b.category).trim();
   if (b.detailedCategory !== undefined) patch.detailed_category = b.detailedCategory == null || b.detailedCategory === "" ? null : String(b.detailedCategory);
   if (b.cellId           !== undefined) patch.cell_id          = Number(b.cellId);
   const { data, error } = await supabase
     .from("zone_defs")
     .update(patch)
     .eq("id", id)
-    .select("id, zone, category, detailed_category, cell_id, updated_at")
+    .select("id, location, zone, category, detailed_category, cell_id, updated_at")
     .maybeSingle();
   if (error) {
     console.error("[zone-defs PATCH]", error.message);
@@ -92,12 +96,12 @@ router.put("/api/zone-defs", authorize(9), asyncHandler(async (req, res) => {
   if (zones.length === 0) throw badRequest("zones 배열 필요");
   const rows = zones
     .map(bodyToRow)
-    .filter((r: any) => Number.isFinite(r.cell_id) && r.cell_id > 0 && r.zone && r.category);
+    .filter((r: any) => Number.isFinite(r.cell_id) && r.cell_id > 0);
   if (rows.length === 0) throw badRequest("유효한 zone 없음");
   const { data, error } = await supabase
     .from("zone_defs")
     .upsert(rows, { onConflict: "cell_id" })
-    .select("id, zone, category, detailed_category, cell_id, updated_at");
+    .select("id, location, zone, category, detailed_category, cell_id, updated_at");
   if (error) {
     console.error("[zone-defs PUT]", error.message);
     throw new HttpError(500, error.message);
@@ -110,13 +114,12 @@ router.put("/api/zone-defs", authorize(9), asyncHandler(async (req, res) => {
 router.post("/api/zone-defs", authorize(9), asyncHandler(async (req, res) => {
   const row = bodyToRow(req.body ?? {});
   if (!Number.isFinite(row.cell_id) || row.cell_id <= 0) throw badRequest("cellId 필요 (양의 정수)");
-  if (!row.zone || !row.category) throw badRequest("zone · category 필수");
   const { data: exists } = await supabase.from("zone_defs").select("id").eq("cell_id", row.cell_id).maybeSingle();
   if (exists) throw new HttpError(409, `cell_id ${row.cell_id} 이미 존재합니다`);
   const { data, error } = await supabase
     .from("zone_defs")
     .insert([row])
-    .select("id, zone, category, detailed_category, cell_id, updated_at")
+    .select("id, location, zone, category, detailed_category, cell_id, updated_at")
     .single();
   if (error) {
     console.error("[zone-defs POST]", error.message);
