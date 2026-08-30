@@ -15,7 +15,7 @@ import { notificationsService } from "../../services/notificationsService";
 // 2026-08-16 · #112-E1
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
-import { badRequest } from "../../middleware/errorHandler";
+import { badRequest, HttpError } from "../../middleware/errorHandler";
 
 const router = Router();
 
@@ -103,7 +103,7 @@ router.get("/api/supplier-payments", asyncHandler(async (req, res) => {
     if (/relation .* does not exist/i.test(error.message)) {
       return res.json({ rows: [], warning: "supplier_payments 테이블 없음 (docs SQL 실행 필요)" });
     }
-    throw new Error(error.message);
+    throw new HttpError(500, error.message);
   }
 
   const paymentIds = (payments ?? []).map(p => p.id);
@@ -148,7 +148,7 @@ router.get("/api/supplier-payments/latest-per-supplier", asyncHandler(async (_re
     if (/relation .* does not exist/i.test(error.message)) {
       return res.json({ rows: [], warning: "supplier_payments 테이블 없음" });
     }
-    throw new Error(error.message);
+    throw new HttpError(500, error.message);
   }
   // 이미 desc 정렬 · 각 supplier 첫 row 가 최근
   const map = new Map<string, { latest_payment_date: string; latest_payment_amount: number }>();
@@ -178,7 +178,7 @@ router.get("/api/supplier-payments/pending-count", asyncHandler(async (_req, res
     .select("id, amount");
   if (invErr) {
     if (/relation .* does not exist/i.test(invErr.message)) return res.json({ count: 0 });
-    throw new Error(invErr.message);
+    throw new HttpError(500, invErr.message);
   }
   const invList = invoices ?? [];
   if (invList.length === 0) return res.json({ count: 0 });
@@ -280,8 +280,8 @@ router.post("/api/supplier-payments", authorize(5), asyncHandler(async (req, res
     .select("id, supplier_name, payment_date, amount, method, memo, created_by, created_by_id, created_at")
     .single();
 
-  if (payErr) throw new Error(`payment insert 실패: ${payErr.message}`);
-  if (!payRow?.id) throw new Error("payment id 획득 실패");
+  if (payErr) throw new HttpError(500, `payment insert 실패: ${payErr.message}`);
+  if (!payRow?.id) throw new HttpError(500, "payment id 획득 실패");
 
   // 2. allocations insert (있으면)
   let allocatedRows: any[] = [];
@@ -299,7 +299,7 @@ router.post("/api/supplier-payments", authorize(5), asyncHandler(async (req, res
     if (allocErr) {
       // 롤백: payment 삭제 (CASCADE 로 이미 insert 된 alloc 도 삭제됨)
       await supabase.from("supplier_payments").delete().eq("id", payRow.id);
-      throw new Error(`allocations insert 실패 (payment 롤백): ${allocErr.message}`);
+      throw new HttpError(500, `allocations insert 실패 (payment 롤백): ${allocErr.message}`);
     }
     allocatedRows = allocRows ?? [];
   }
@@ -340,7 +340,7 @@ router.patch("/api/supplier-payments/:id", authorize(5), asyncHandler(async (req
     .eq("id", id)
     .select("id, supplier_name, payment_date, amount, method, memo, created_at")
     .single();
-  if (error) throw new Error(error.message);
+  if (error) throw new HttpError(500, error.message);
   return res.json(data);
 }));
 
@@ -352,7 +352,7 @@ router.delete("/api/supplier-payments/:id", authorize(9), asyncHandler(async (re
   const id = parseInt(req.params.id, 10);
   if (!Number.isFinite(id) || id <= 0) throw badRequest("invalid id");
   const { error } = await supabase.from("supplier_payments").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) throw new HttpError(500, error.message);
   return res.json({ ok: true });
 }));
 
@@ -385,7 +385,7 @@ router.get("/api/supplier-balance/:supplier", asyncHandler(async (req, res) => {
       .from("supplier_payments")
       .select("id, amount")
       .eq("supplier_name", supplier);
-    if (error && !/relation .* does not exist/i.test(error.message)) throw new Error(error.message);
+    if (error && !/relation .* does not exist/i.test(error.message)) throw new HttpError(500, error.message);
     for (const r of data ?? []) {
       totalPayment += Number(r.amount) || 0;
       paymentCount++;
@@ -457,8 +457,8 @@ router.get("/api/supplier-ledger", asyncHandler(async (req, res) => {
         .eq("supplier_name", supplier)
         .gte("payment_date", cutoffYmd);
       if (!r2.error) data = (r2.data ?? []).map((x: any) => ({ ...x, vat_amount: 0, tax_invoice_no: null }));
-      else if (!/relation .* does not exist/i.test(r2.error.message)) throw new Error(r2.error.message);
-    } else if (!/relation .* does not exist/i.test(r1.error.message)) throw new Error(r1.error.message);
+      else if (!/relation .* does not exist/i.test(r2.error.message)) throw new HttpError(500, r2.error.message);
+    } else if (!/relation .* does not exist/i.test(r1.error.message)) throw new HttpError(500, r1.error.message);
 
     for (const r of data ?? []) {
       payments.push({
@@ -558,7 +558,7 @@ router.get("/api/supplier-open-invoices", asyncHandler(async (req, res) => {
     .limit(500);
   if (invErr) {
     if (/relation .* does not exist/i.test(invErr.message)) return res.json({ rows: [] });
-    throw new Error(invErr.message);
+    throw new HttpError(500, invErr.message);
   }
   const invList = invoices ?? [];
   if (invList.length === 0) return res.json({ rows: [] });
@@ -718,7 +718,7 @@ router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
         if (error) {
           if (/relation .* does not exist/i.test(error.message)) { pdRelationMissing = true; break; }
           if (/column .* does not exist/i.test(error.message)) break;
-          throw new Error(error.message);
+          throw new HttpError(500, error.message);
         }
         if (!data || data.length === 0) break;
         for (const r of data) {
