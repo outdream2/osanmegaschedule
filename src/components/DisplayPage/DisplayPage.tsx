@@ -121,12 +121,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const SIDEBAR_ENABLED = useSidebarEnabled();
   const [dpSubTab, setDpSubTab] = useState<DpSubTabKey>(dpCanSeeStockManage ? "purchase-order" : "store");
   // 2026-08-29 · #193 · 상품 서브탭 안 · 3개 이너 탭 (실재고입력·상품입고·상품정보)
-  const [productInnerTab, setProductInnerTab] = useState<"scan" | "arrival" | "info">(() => {
+  // 2026-08-30 · 사용자 지시 · 순서 변경 · 상품정보 · 실재고입력 · 상품입고
+  const [productInnerTab, setProductInnerTab] = useState<"info" | "scan" | "arrival">(() => {
     try {
       const raw = localStorage.getItem("dp.productInnerTab");
       if (raw === "arrival" || raw === "info" || raw === "scan") return raw;
     } catch { /* noop */ }
-    return "scan";
+    return "info"; // 2026-08-30 · 사용자 지시 · 기본 · 상품정보
   });
   useEffect(() => {
     try { localStorage.setItem("dp.productInnerTab", productInnerTab); } catch { /* noop */ }
@@ -650,14 +651,14 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         /* 2026-08-29 · #193 · 사용자 지시 · 상품 서브탭 · 3개 이너 탭 (실재고입력·상품입고·상품정보) · 매입에서 이관 */
         <main className="flex-1 flex flex-col min-h-0">
           <div className="bg-white border-b border-line px-3">
-            <TabBar<"scan" | "arrival" | "info">
+            <TabBar<"info" | "scan" | "arrival">
               level={3}
               activeKey={productInnerTab}
               onSelect={setProductInnerTab}
               tabs={[
+                { key: "info",    label: "상품정보",   visible: true },
                 { key: "scan",    label: "실재고입력", visible: true },
                 { key: "arrival", label: "상품입고",   visible: true },
-                { key: "info",    label: "상품정보",   visible: true },
               ]}
             />
           </div>
