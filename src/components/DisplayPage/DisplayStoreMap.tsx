@@ -14,8 +14,9 @@ import type { TodayStaff } from "./DisplayPage.types";
 
 interface DisplayStoreMapProps {
   ZONE_DEFS: any[];
-  /** 2026-08-30 · 사용자 지시 · zone_defs 원본 rows · 셀 라벨 (zone) 조회용 · cellId 매칭 */
-  zonesRaw?: Array<{ id: number; cellId: number; zone: string; category: string; detailedCategory?: string }>;
+  /** 2026-08-30 · 사용자 지시 · zone_defs 원본 rows · 셀 라벨 (zone) 조회용 · cellId 매칭
+   *  · zone/category/location 은 optional (DB NOT NULL 제거 · 나중에 편집) */
+  zonesRaw?: Array<{ id: number; cellId: number; location?: string; zone?: string; category?: string; detailedCategory?: string }>;
   zones: DisplayZone[];
   todayStaff: TodayStaff[];
   staffColorMap: Map<number, number>;

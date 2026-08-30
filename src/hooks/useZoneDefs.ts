@@ -12,13 +12,61 @@ import { SECTION_LABEL, type ZoneDef, type ZoneSection } from "../constants/disp
 export type { ZoneDef, ZoneSection };
 export { SECTION_LABEL };
 
-/** DB 새 스키마 row · 응답 형태 (rowToDto 결과) */
+/** DB 새 스키마 row · 응답 형태 (rowToDto 결과)
+ *  2026-08-30 · 사용자 지시 · location 추가 (products.location 매칭 · short 코드)
+ *  · zone · category · optional (DB NOT NULL 제거) · UI 에서 4대 존 자동 분류 or 사용자 편집
+ */
 export interface ZoneDefRaw {
   id: number;
   cellId: number;
-  zone: string;
-  category: string;
+  location?: string;
+  zone?: string;
+  category?: string;
   detailedCategory?: string;
+}
+
+/** 2026-08-30 · location (예: "1A", "22", "35") 에서 num/side/section 파생 */
+export function parseLocation(loc: string | null | undefined): { num: number; side: "A" | "B" | "C" | null; section: ZoneSection } | null {
+  const s = String(loc ?? "").trim().toUpperCase();
+  if (!s) return null;
+  // 1A · 1B · 8A · 8B
+  const mPair = /^([1-8])([ABC])$/.exec(s);
+  if (mPair) {
+    return { num: Number(mPair[1]), side: mPair[2] as "A" | "B" | "C", section: "aisle" };
+  }
+  // 22 · 진열대 22 단독
+  if (s === "22") return { num: 22, side: null, section: "aisle" };
+  // 숫자만 · 벽면 or wing
+  const mNum = /^(\d+)$/.exec(s);
+  if (mNum) {
+    const num = Number(mNum[1]);
+    let section: ZoneSection = "top_wall";
+    if (num >= 23 && num <= 34) section = "bottom_wall";
+    else if (num >= 35 && num <= 46) section = "wing";
+    return { num, side: null, section };
+  }
+  return null;
+}
+
+/** 2026-08-30 · location 에서 4대 존 (major zone) 자동 분류
+ *  중앙상비약존: 1A~8B · 22
+ *  상담존: 9~21 · 23~27
+ *  뷰티식품존: 28~40
+ *  카운터테마존: 41~46
+ */
+export function classifyMajorZone(loc: string | null | undefined): "중앙상비약존" | "상담존" | "뷰티식품존" | "카운터테마존" | "(미분류)" {
+  const s = String(loc ?? "").trim().toUpperCase();
+  if (!s) return "(미분류)";
+  if (/^([1-8])[AB]$/.test(s) || s === "22") return "중앙상비약존";
+  const mNum = /^(\d+)$/.exec(s);
+  if (mNum) {
+    const num = Number(mNum[1]);
+    if (num >= 9 && num <= 21) return "상담존";
+    if (num >= 23 && num <= 27) return "상담존";
+    if (num >= 28 && num <= 40) return "뷰티식품존";
+    if (num >= 41 && num <= 46) return "카운터테마존";
+  }
+  return "(미분류)";
 }
 
 /** 확장 · ZoneDef 에 DB row id 매핑 (편집 시 사용) */
@@ -72,7 +120,9 @@ function parseZone(zoneLabel: string): { num: number; side: "A" | "B" | "C" | nu
   return null;
 }
 
-/** raw DB 배열 → 하위호환 ZoneDef[] (num·label·subA/B 병합) */
+/** raw DB 배열 → 하위호환 ZoneDef[] (num·label·subA/B 병합)
+ *  2026-08-30 · 사용자 지시 · location 우선 파싱 · zone (label) 폴백
+ */
 function transformToLegacy(raws: ZoneDefRaw[]): ZoneDefWithRowIds[] {
   const grouped = new Map<number, {
     section: ZoneSection;
@@ -82,7 +132,8 @@ function transformToLegacy(raws: ZoneDefRaw[]): ZoneDefWithRowIds[] {
     C?: ZoneDefRaw;
   }>();
   for (const r of raws) {
-    const p = parseZone(r.zone);
+    // location 우선 · 없으면 zone 라벨 폴백
+    const p = parseLocation(r.location) ?? parseZone(r.zone ?? "");
     if (!p) continue;
     if (!grouped.has(p.num)) grouped.set(p.num, { section: p.section });
     const g = grouped.get(p.num)!;
@@ -97,8 +148,8 @@ function transformToLegacy(raws: ZoneDefRaw[]): ZoneDefWithRowIds[] {
     if (!primary) continue;
     const zone: ZoneDefWithRowIds = {
       num,
-      label: g.base?.zone ?? (g.A ? g.A.zone.replace(/\s*A$/, "") : g.B ? g.B.zone.replace(/\s*B$/, "") : primary.zone),
-      category: g.base?.category ?? primary.category,
+      label: g.base?.zone ?? (g.A?.zone ? g.A.zone.replace(/\s*A$/, "") : g.B?.zone ? g.B.zone.replace(/\s*B$/, "") : (primary.zone ?? primary.location ?? String(num))),
+      category: g.base?.category ?? primary.category ?? "",
       section: g.section,
       subA: g.A?.category,
       subB: g.B?.category,

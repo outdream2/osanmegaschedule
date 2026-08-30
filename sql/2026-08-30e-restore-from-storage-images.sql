@@ -1,4 +1,4 @@
--- 2026-08-30 · 사용자 지시 · storage1_description · storage2_description 이미지 참조 · 복원
+아 -- 2026-08-30 · 사용자 지시 · storage1_description · storage2_description 이미지 참조 · 복원
 -- src/sample/storage1_description.png · storage2_description1.png · storage2_description2.png
 -- zone_defs.detailed_category 재입력
 
