@@ -1,8 +1,10 @@
 // server/routes/display/zoneDefs.ts
-// 2026-08-30 · 사용자 지시 · zone_defs KV → 정식 DB 테이블 이관
-//   · 이전 · settings.zone_defs (KV blob) · 원본 테이블 우선 대원칙 위배
-//   · 이후 · zone_defs 정식 테이블 · CRUD API · 프레임워크화 · API화
-//   · 마이그레이션 · sql/2026-08-30-zone-defs-table-migration.sql
+// 2026-08-30 · zone_defs 정식 DB 테이블 · 4개 컬럼 · 매장구역도·매장구역편집 단일 소스
+//   · 컬럼 · zone (구역) · category (카테고리) · detailed_category (상세) · cell_id (셀 위치)
+//   · id (SERIAL PK) · updated_at
+//   · 이전 · num · label · sub_a/b/c · description · description_a/b/c 스키마 폐기
+//   · 이관 SQL · sql/2026-08-30b-zone-defs-cell-num.sql
+//   · 대원칙 · KV 폴백 제거 · DB 단일 소스 · 문제 즉시 발견
 
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
@@ -12,94 +14,90 @@ import { badRequest, HttpError } from "../../middleware/errorHandler";
 
 const router = Router();
 
-// 2026-08-30 · 테이블 미존재 warning 한번만 · 로그 스팸 방지
-let _tableMissingWarned = false;
-
 interface ZoneDefRow {
-  num: number;
-  label: string;
+  id: number;
+  zone: string;
   category: string;
-  section: string;
-  sub_a: string | null;
-  sub_b: string | null;
-  sub_c: string | null;
-  description: string | null;
-  description_a: string | null;
-  description_b: string | null;
-  description_c: string | null;
+  detailed_category: string | null;
+  cell_id: number;
   updated_at: string;
 }
 
-/** DB row → 프론트 ZoneDef · 필드 매핑 (snake → camel) */
+/** DB row → 프론트 DTO (snake_case 유지) · 최소 변환 */
 function rowToDto(r: ZoneDefRow) {
   return {
-    num: r.num,
-    label: r.label,
+    id: r.id,
+    cellId: r.cell_id,
+    zone: r.zone,
     category: r.category,
-    section: r.section,
-    subA: r.sub_a ?? undefined,
-    subB: r.sub_b ?? undefined,
-    subC: r.sub_c ?? undefined,
-    description: r.description ?? undefined,
-    descriptionA: r.description_a ?? undefined,
-    descriptionB: r.description_b ?? undefined,
-    descriptionC: r.description_c ?? undefined,
+    detailedCategory: r.detailed_category ?? undefined,
   };
 }
 
-/** 프론트 ZoneDef → DB row (upsert) */
-function dtoToRow(z: any) {
+/** 프론트 DTO → DB row · POST/PUT/PATCH body 정규화 */
+function bodyToRow(b: any) {
   return {
-    num: Number(z.num),
-    label: String(z.label ?? ""),
-    category: String(z.category ?? ""),
-    section: String(z.section ?? "aisle"),
-    sub_a: z.subA != null ? String(z.subA) : null,
-    sub_b: z.subB != null ? String(z.subB) : null,
-    sub_c: z.subC != null ? String(z.subC) : null,
-    description:   z.description   != null ? String(z.description)   : null,
-    description_a: z.descriptionA  != null ? String(z.descriptionA)  : null,
-    description_b: z.descriptionB  != null ? String(z.descriptionB)  : null,
-    description_c: z.descriptionC  != null ? String(z.descriptionC)  : null,
+    zone: String(b.zone ?? "").trim(),
+    category: String(b.category ?? "").trim(),
+    detailed_category: b.detailedCategory != null && b.detailedCategory !== ""
+      ? String(b.detailedCategory)
+      : null,
+    cell_id: Number(b.cellId),
     updated_at: new Date().toISOString(),
   };
 }
 
-// GET /api/zone-defs
+// GET /api/zone-defs · 전체 조회 · cell_id 순
 router.get("/api/zone-defs", asyncHandler(async (_req, res) => {
   const { data, error } = await supabase
     .from("zone_defs")
-    .select("*")
-    .order("num", { ascending: true });
+    .select("id, zone, category, detailed_category, cell_id, updated_at")
+    .order("cell_id", { ascending: true });
   if (error) {
-    const msg = error.message ?? "";
-    // 테이블 미존재 · 마이그레이션 미실행 · 빈 배열 · 프론트는 KV 폴백
-    if (/does not exist|could not find|schema cache/i.test(msg)) {
-      if (!_tableMissingWarned) {
-        console.warn("[zone-defs GET] zone_defs 테이블 미존재 · sql/2026-08-30-zone-defs-table-migration.sql 실행 필요");
-        _tableMissingWarned = true;
-      }
-      return res.json({ zones: [], _missing: true });
-    }
-    console.error("[zone-defs GET]", msg);
-    throw new HttpError(500, msg);
+    console.error("[zone-defs GET]", error.message);
+    throw new HttpError(500, error.message);
   }
   const zones = (data as ZoneDefRow[] | null ?? []).map(rowToDto);
   res.json({ zones, count: zones.length });
 }));
 
-// PUT /api/zone-defs · 전체 일괄 upsert · 관리자 lv9
+// PATCH /api/zone-defs/:id · 단건 편집 · 관리자 lv9
+//   · body · { zone?, category?, detailedCategory?, cellId? }
+router.patch("/api/zone-defs/:id", authorize(9), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) throw badRequest("잘못된 id");
+  const patch: Record<string, any> = { updated_at: new Date().toISOString() };
+  const b = req.body ?? {};
+  if (b.zone             !== undefined) patch.zone             = String(b.zone).trim();
+  if (b.category         !== undefined) patch.category         = String(b.category).trim();
+  if (b.detailedCategory !== undefined) patch.detailed_category = b.detailedCategory == null || b.detailedCategory === "" ? null : String(b.detailedCategory);
+  if (b.cellId           !== undefined) patch.cell_id          = Number(b.cellId);
+  const { data, error } = await supabase
+    .from("zone_defs")
+    .update(patch)
+    .eq("id", id)
+    .select("id, zone, category, detailed_category, cell_id, updated_at")
+    .maybeSingle();
+  if (error) {
+    console.error("[zone-defs PATCH]", error.message);
+    throw new HttpError(500, error.message);
+  }
+  if (!data) throw new HttpError(404, `zone_defs id=${id} not found`);
+  res.json({ ok: true, zone: rowToDto(data as ZoneDefRow) });
+}));
+
+// PUT /api/zone-defs · 전체 일괄 upsert (cell_id 기준) · 관리자 lv9
 router.put("/api/zone-defs", authorize(9), asyncHandler(async (req, res) => {
   const zones = Array.isArray(req.body?.zones) ? req.body.zones : [];
   if (zones.length === 0) throw badRequest("zones 배열 필요");
   const rows = zones
-    .map(dtoToRow)
-    .filter((r: any) => Number.isFinite(r.num) && r.num > 0 && r.label && r.category);
+    .map(bodyToRow)
+    .filter((r: any) => Number.isFinite(r.cell_id) && r.cell_id > 0 && r.zone && r.category);
   if (rows.length === 0) throw badRequest("유효한 zone 없음");
   const { data, error } = await supabase
     .from("zone_defs")
-    .upsert(rows, { onConflict: "num" })
-    .select("*");
+    .upsert(rows, { onConflict: "cell_id" })
+    .select("id, zone, category, detailed_category, cell_id, updated_at");
   if (error) {
     console.error("[zone-defs PUT]", error.message);
     throw new HttpError(500, error.message);
@@ -108,55 +106,35 @@ router.put("/api/zone-defs", authorize(9), asyncHandler(async (req, res) => {
   res.json({ ok: true, zones: result, updated: result.length });
 }));
 
-// POST /api/zone-defs · 신규 zone 추가 · 관리자 lv9
-//   · body · { num, label, category, section, subA?, subB?, subC?, description?, ... }
-//   · 이미 존재하면 409
+// POST /api/zone-defs · 신규 zone 추가 · cell_id 중복 시 409 · 관리자 lv9
 router.post("/api/zone-defs", authorize(9), asyncHandler(async (req, res) => {
-  const row = dtoToRow(req.body ?? {});
-  if (!Number.isFinite(row.num) || row.num <= 0) throw badRequest("num 필요 (양의 정수)");
-  if (!row.label || !row.category || !row.section) throw badRequest("label · category · section 필수");
-  // 중복 체크
-  const { data: exists } = await supabase.from("zone_defs").select("num").eq("num", row.num).maybeSingle();
-  if (exists) throw new HttpError(409, `zone ${row.num} 이미 존재합니다`);
-  const { data, error } = await supabase.from("zone_defs").insert([row]).select("*").single();
-  if (error) throw new HttpError(500, error.message);
+  const row = bodyToRow(req.body ?? {});
+  if (!Number.isFinite(row.cell_id) || row.cell_id <= 0) throw badRequest("cellId 필요 (양의 정수)");
+  if (!row.zone || !row.category) throw badRequest("zone · category 필수");
+  const { data: exists } = await supabase.from("zone_defs").select("id").eq("cell_id", row.cell_id).maybeSingle();
+  if (exists) throw new HttpError(409, `cell_id ${row.cell_id} 이미 존재합니다`);
+  const { data, error } = await supabase
+    .from("zone_defs")
+    .insert([row])
+    .select("id, zone, category, detailed_category, cell_id, updated_at")
+    .single();
+  if (error) {
+    console.error("[zone-defs POST]", error.message);
+    throw new HttpError(500, error.message);
+  }
   res.status(201).json({ ok: true, zone: rowToDto(data as ZoneDefRow) });
 }));
 
-// DELETE /api/zone-defs/:num · 삭제 · 관리자 lv9
-router.delete("/api/zone-defs/:num", authorize(9), asyncHandler(async (req, res) => {
-  const num = Number(req.params.num);
-  if (!Number.isFinite(num) || num <= 0) throw badRequest("잘못된 zone 번호");
-  const { error } = await supabase.from("zone_defs").delete().eq("num", num);
-  if (error) throw new HttpError(500, error.message);
-  res.json({ ok: true, deleted: num });
-}));
-
-// PATCH /api/zone-defs/:num · 단건 편집 · 관리자 lv9
-router.patch("/api/zone-defs/:num", authorize(9), asyncHandler(async (req, res) => {
-  const num = Number(req.params.num);
-  if (!Number.isFinite(num) || num <= 0) throw badRequest("잘못된 zone 번호");
-  const patch: Record<string, any> = { updated_at: new Date().toISOString() };
-  const b = req.body ?? {};
-  if (b.label       !== undefined) patch.label       = String(b.label);
-  if (b.category    !== undefined) patch.category    = String(b.category);
-  if (b.section     !== undefined) patch.section     = String(b.section);
-  if (b.subA        !== undefined) patch.sub_a       = b.subA == null ? null : String(b.subA);
-  if (b.subB        !== undefined) patch.sub_b       = b.subB == null ? null : String(b.subB);
-  if (b.subC        !== undefined) patch.sub_c       = b.subC == null ? null : String(b.subC);
-  if (b.description !== undefined) patch.description = b.description == null ? null : String(b.description);
-  if (b.descriptionA!== undefined) patch.description_a = b.descriptionA == null ? null : String(b.descriptionA);
-  if (b.descriptionB!== undefined) patch.description_b = b.descriptionB == null ? null : String(b.descriptionB);
-  if (b.descriptionC!== undefined) patch.description_c = b.descriptionC == null ? null : String(b.descriptionC);
-  const { data, error } = await supabase
-    .from("zone_defs")
-    .update(patch)
-    .eq("num", num)
-    .select("*")
-    .maybeSingle();
-  if (error) throw new HttpError(500, error.message);
-  if (!data) throw new HttpError(404, `zone ${num} not found`);
-  res.json({ ok: true, zone: rowToDto(data as ZoneDefRow) });
+// DELETE /api/zone-defs/:id · 삭제 · 관리자 lv9
+router.delete("/api/zone-defs/:id", authorize(9), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) throw badRequest("잘못된 id");
+  const { error } = await supabase.from("zone_defs").delete().eq("id", id);
+  if (error) {
+    console.error("[zone-defs DELETE]", error.message);
+    throw new HttpError(500, error.message);
+  }
+  res.json({ ok: true, deleted: id });
 }));
 
 export default router;
