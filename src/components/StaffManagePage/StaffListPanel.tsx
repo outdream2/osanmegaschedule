@@ -89,7 +89,7 @@ export const StaffListPanel: React.FC<StaffListPanelProps> = ({
               {(
                 [
                   { key: "name",               label: "이름",    col: "name"         },
-                  { key: "position",            label: "직책",    col: "position"     },
+                  { key: "position",            label: "직군",    col: "position"     },
                   { key: "contract_type",       label: "계약유형", col: "contract_type"},
                   { key: "resume_file",         label: "이력서",  col: "resume"       },
                   { key: "bankbook_file",       label: "통장",    col: "bankbook"     },

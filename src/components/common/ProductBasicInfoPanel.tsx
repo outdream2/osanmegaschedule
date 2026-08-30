@@ -47,6 +47,8 @@ export interface ProductBasicInfoPanelProps {
   onLocationChange?: (newLocation: string | null) => Promise<void> | void;
   /** 판매상태 저장 · Promise */
   onSaleStatusChange?: (newStatus: string) => Promise<void> | void;
+  /** 2026-08-30 · 사용자 지시 · 공급사 클릭 → 공급사정보 모달 */
+  onSupplierClick?: (supplierName: string) => void;
   /** 적정재고 우측 표시할 참조 일수 (예: 30 → "적정재고 (30일)") */
   optimalDays?: number;
   /** 컴팩트 · 카드 padding·라벨 크기 축소 (모바일·모달 안) */
@@ -86,6 +88,7 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
   editable = false,
   onLocationChange,
   onSaleStatusChange,
+  onSupplierClick,
   optimalDays = 30,
   compact = false,
   className = "",
@@ -174,9 +177,20 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
           </span>
         </Field>
         <Field label="공급사">
-          <span className={valueCls + " truncate block"} title={product.supplier ?? undefined}>
-            {product.supplier || "-"}
-          </span>
+          {product.supplier && onSupplierClick ? (
+            <button
+              type="button"
+              onClick={() => onSupplierClick(product.supplier!)}
+              className={valueCls + " truncate block text-sky-700 hover:text-sky-900 hover:underline cursor-pointer text-left w-full"}
+              title="공급사 정보 조회"
+            >
+              {product.supplier}
+            </button>
+          ) : (
+            <span className={valueCls + " truncate block"} title={product.supplier ?? undefined}>
+              {product.supplier || "-"}
+            </span>
+          )}
         </Field>
 
         {/* Row 2 · 진열위치 (편집) · 판매상태 (편집) · 현재고 · 창고재고 · 매장재고 */}

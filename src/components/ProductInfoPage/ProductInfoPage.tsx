@@ -37,6 +37,8 @@ import { ProductDetailHero } from "../common/ProductDetailHero";
 // 2026-08-29 · #186 후속 · SectionCard 프리미티브 · 메타 정보 섹션
 import { SectionCard } from "../common/SectionCard";
 import { Tag, Building2, Calendar } from "lucide-react";
+// 2026-08-30 · 사용자 지시 · 공급사 클릭 → 공급사정보 모달 · 프레임워크 재사용
+import { useVendorInfoModal } from "../common/features/VendorInfoModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 interface ProductRow {
@@ -102,8 +104,8 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Record<EditableKey, string>>({} as Record<EditableKey, string>);
   const [saving, setSaving] = useState(false);
-  // 2026-08-29 · 사용자 지시 · 상세 편집 카드 → 모달 · 필요할 때만 노출
-  // 2026-08-30 · 사용자 지시 · 모달 제거 · 인라인 카드로 이관 · state 유지 (미사용)
+  // 2026-08-30 · 사용자 지시 · 공급사 클릭 → 공급사정보 모달 · 프레임워크 useVendorInfoModal
+  const vendorModal = useVendorInfoModal();
 
   // product 변경 시 · 편집 종료 (다른 상품 선택 시 draft 리셋)
   useEffect(() => {
@@ -291,7 +293,10 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
           editable={canEdit}
           onLocationChange={handleLocationChange}
           onSaleStatusChange={handleSaleStatusChange}
+          /* 2026-08-30 · 사용자 지시 · 공급사 클릭 → 공급사정보 모달 */
+          onSupplierClick={(name) => vendorModal.openVendorInfo(name)}
         />
+        {vendorModal.modalElement}
         {/* 2026-08-29 · #186 후속 · 메타 정보 Section 카드 · Attio Section Stack */}
         {((product as any).brand || (product as any).manufacturer || (product as any).last_modified_at) && (
           <SectionCard

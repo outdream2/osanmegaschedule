@@ -1,5 +1,5 @@
 // 2026-08-22 · Framework Phase 4 · StaffManagePage 좌측 리스트 아이템 이관
-// 원라인 표 형식 · 이름·직책·계약유형·근속·평가·이력서·통장사본·근로계약서·사직서·상태
+// 원라인 표 형식 · 이름·직군·계약유형·근속·평가·이력서·통장사본·근로계약서·사직서·상태
 
 import React from "react";
 import { ExternalLink, Paperclip, PenSquare as NotePencilIcon } from "lucide-react";
@@ -70,7 +70,7 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
           <span className={`break-words whitespace-normal ${isSelected ? "text-indigo-800" : ""}`}>{emp.name}</span>
         </div>
       </td>
-      {/* 직책 · 직급 (2026-08-29 · #177 · rank 병기) */}
+      {/* 직군 · 직급 (2026-08-29 · #177 · rank 병기) */}
       <td className="px-1 py-2 text-center">
         <div className="flex flex-col items-center gap-0.5">
           {emp.position && (

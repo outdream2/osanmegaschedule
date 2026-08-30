@@ -42,7 +42,7 @@ export const StaffMobileDetail: React.FC<StaffMobileDetailProps> = ({
           <div className="min-w-0 flex-1">
             <span className="text-sm font-bold text-zinc-800">{selectedEmp.name}</span>
             <span className={`ml-2 text-[15px] font-semibold px-1.5 py-px rounded-md border ${positionColor(selectedEmp.position)}`}>
-              {selectedEmp.position || "직책 없음"}
+              {selectedEmp.position || "직군 없음"}
             </span>
           </div>
           <button

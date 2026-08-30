@@ -4,7 +4,7 @@
 import type { Employee } from "./types";
 import { AVATAR_COLORS, CONTRACT_TYPES } from "./types";
 
-// ─── 헬퍼: 직책 컬러 ────────────────────────────────────────────────────────
+// ─── 헬퍼: 직군 컬러 ────────────────────────────────────────────────────────
 export function positionColor(pos: string | null | undefined) {
   if (!pos) return "bg-zinc-100 text-zinc-500 border-line";
   if (pos.includes("약사"))              return "bg-violet-100 text-violet-700 border-violet-200";

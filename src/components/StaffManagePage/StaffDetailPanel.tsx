@@ -180,21 +180,21 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
               <span className="text-[14px] text-zinc-300">#{displayEmp.id}</span>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
-              {/* 직책 */}
+              {/* 직군 */}
               {editing ? (
                 <select
                   value={draft?.position ?? ""}
                   onChange={(e) => setField("position", e.target.value)}
                   className="text-[15px] border border-zinc-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-brand-deep"
                 >
-                  <option value="">직책 없음</option>
+                  <option value="">직군 없음</option>
                   {POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
               ) : (
                 <Badge className={positionColor(displayEmp.position)} size="sm">
                   {(displayEmp.position === "창고" || displayEmp.position === "매장")
                     ? `물류 · ${displayEmp.position}`
-                    : (displayEmp.position || "직책 없음")}
+                    : (displayEmp.position || "직군 없음")}
                 </Badge>
               )}
               {/* 2026-08-29 · #177 · 직급(rank) 편집/표시 · settings.ranks 소스 */}

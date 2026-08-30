@@ -57,7 +57,7 @@ export const StaffToolbar: React.FC<StaffToolbarProps> = ({
         type="text"
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
-        placeholder="이름 · 직책 · 연락처"
+        placeholder="이름 · 직군 · 연락처"
         className="pl-8 pr-3 h-8 text-[14px] border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint bg-zinc-50 placeholder:text-zinc-400 w-full sm:w-48"
       />
     </div>
@@ -80,9 +80,9 @@ export const StaffToolbar: React.FC<StaffToolbarProps> = ({
       </div>
     </div>
 
-    {/* 직책 필터 */}
+    {/* 직군 필터 */}
     <div className="flex items-center gap-2 flex-wrap">
-      <InlineLabel>직책</InlineLabel>
+      <InlineLabel>직군</InlineLabel>
       <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 flex-wrap gap-0.5">
         <button
           onClick={() => onFilterPositionChange("")}

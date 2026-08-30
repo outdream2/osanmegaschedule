@@ -69,7 +69,7 @@ export const CreateModal: React.FC<{
           </div>
         ))}
         <div>
-          <label className="text-[14px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">직책</label>
+          <label className="text-[14px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">직군</label>
           <select
             value={String(draft.position ?? "")}
             onChange={(e) => set("position", e.target.value)}
