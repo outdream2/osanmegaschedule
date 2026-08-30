@@ -158,7 +158,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
       >
         <section className="bg-white rounded-xl border border-line p-4 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
           {orderError && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-[15px] text-red-600 font-bold">
+            <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-[17px] text-red-600 font-bold">
               ⚠ {orderError}
               <button onClick={loadOrderReqs} className="ml-auto text-red-500 underline cursor-pointer">재시도</button>
             </div>
@@ -171,50 +171,50 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
           {orderLoading && orderReqs.length === 0 ? (
             <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩 중..." labelSize={12} /></div>
           ) : orderReqs.length === 0 && !orderError ? (
-            <div className="text-center text-[15px] text-zinc-300 py-6">발주 요청 내역 없음</div>
+            <div className="text-center text-[17px] text-zinc-300 py-6">발주 요청 내역 없음</div>
           ) : (
             <>
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <span className="inline-block w-1 h-4 rounded-full bg-rose-400 shrink-0"></span>
-                <span className="text-[15px] font-bold text-zinc-700">발주리스트</span>
-                <span className="text-[15px] text-zinc-400 font-normal">{displayedReqs.length}건</span>
+                <span className="text-[17px] font-bold text-zinc-700">발주리스트</span>
+                <span className="text-[17px] text-zinc-400 font-normal">{displayedReqs.length}건</span>
                 {/* 2026-08-29 · #154 · 판매중 필터 · products join (allProductsMap.sale_status) */}
                 <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
                 <div className="flex items-center gap-1.5 ml-auto shrink-0">
                   {/* 2026-08-24 · 최신 트렌드 · Linear/Vercel 톤 · pill · gradient · shadow */}
                   <button onClick={handleBulkOrder} disabled={sendingBulk || selectedOrder.size === 0}
-                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[15px] font-bold text-white bg-gradient-to-br from-rose-500 to-rose-600 shadow-sm hover:shadow-md hover:from-rose-600 hover:to-rose-700 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:shadow-none transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap ring-1 ring-rose-500/20"
+                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[17px] font-bold text-white bg-gradient-to-br from-rose-500 to-rose-600 shadow-sm hover:shadow-md hover:from-rose-600 hover:to-rose-700 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:shadow-none transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap ring-1 ring-rose-500/20"
                     title="선택한 발주요청을 공급사별로 그룹핑">
                     {sendingBulk ? <Loader2 size={13} strokeWidth={2.5} className="animate-spin" /> : <Send size={13} strokeWidth={2.5} />}
                     <span>{sendingBulk ? "발송 중..." : `일괄 발주${selectedOrder.size > 0 ? ` · ${selectedOrder.size}` : ""}`}</span>
                   </button>
                   <button onClick={toggleAll}
-                    className="inline-flex items-center gap-1 h-9 px-3 rounded-lg text-[14px] font-semibold text-ink-soft bg-white border border-line hover:border-brand-deep/40 hover:bg-brand-tint/20 hover:text-brand-deep active:scale-[0.98] transition-all duration-150 cursor-pointer shrink-0">
+                    className="inline-flex items-center gap-1 h-9 px-3 rounded-lg text-[16px] font-semibold text-ink-soft bg-white border border-line hover:border-brand-deep/40 hover:bg-brand-tint/20 hover:text-brand-deep active:scale-[0.98] transition-all duration-150 cursor-pointer shrink-0">
                     {allChecked ? <CheckSquare size={13} className="text-rose-500" /> : <Square size={13} />}
                     전체선택
                   </button>
                   <button onClick={onDeleteSelected}
                     disabled={selectedOrder.size === 0}
-                    className="inline-flex items-center h-9 px-3 rounded-lg text-[14px] font-semibold text-ink-soft bg-white border border-line hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 cursor-pointer shrink-0"
+                    className="inline-flex items-center h-9 px-3 rounded-lg text-[16px] font-semibold text-ink-soft bg-white border border-line hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 cursor-pointer shrink-0"
                     title="선택 항목 삭제">
                     선택삭제{selectedOrder.size > 0 ? ` · ${selectedOrder.size}` : ""}
                   </button>
                 </div>
               </div>
               {/* 2026-08-23 · #183 · 안내 문구 변경 (기존 손실확정 안내 → 발주이력 안내) */}
-              <div className="mb-2 text-[15px] text-brand-deep bg-brand-tint/60 border border-brand/15 rounded-md px-2 py-1 leading-snug">
+              <div className="mb-2 text-[17px] text-brand-deep bg-brand-tint/60 border border-brand/15 rounded-md px-2 py-1 leading-snug">
                 공급사를 클릭하면 최신 발주이력을 확인할 수 있습니다
               </div>
               {/* 2026-08-24 · v3 목업 실적용 · 표 형식 · sticky thead · Attio/Linear 톤
                   상단 gradient accent (사용자 지시 · 랜딩 톤) · 헤더 폰트 +2 (12→14) */}
               <div className={`max-h-[50vh] lg:max-h-[75vh] overflow-auto relative rounded-xl border border-line bg-white ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 <span aria-hidden className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-20" />
-                <table className="w-full text-[14px] sm:text-[15px] min-w-[720px] border-collapse [&_tbody_td]:text-[14px] sm:[&_tbody_td]:text-[15px] [&_thead_th]:text-[13px] sm:[&_thead_th]:text-[14px]">
+                <table className="w-full text-[16px] sm:text-[17px] min-w-[720px] border-collapse [&_tbody_td]:text-[16px] sm:[&_tbody_td]:text-[17px] [&_thead_th]:text-[17px] sm:[&_thead_th]:text-[16px]">
                   <thead className="sticky top-0 z-10">
                     <tr className="text-zinc-500 uppercase tracking-wider bg-zinc-100/70 border-b border-line">
                       <th className="text-center px-2 py-2.5 w-9">
                         <button onClick={toggleAll}
-                          className="inline-flex items-center justify-center text-[12px] font-bold text-zinc-500 hover:text-brand-deep transition cursor-pointer"
+                          className="inline-flex items-center justify-center text-[16px] font-bold text-zinc-500 hover:text-brand-deep transition cursor-pointer"
                           title={allChecked ? "전체 선택 해제" : "전체 선택"}>
                           {allChecked ? <CheckSquare size={13} className="text-brand-deep" /> : <Square size={13} />}
                         </button>
@@ -322,16 +322,16 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                     <button
                                       type="button"
                                       onClick={(e) => { e.stopPropagation(); setSupplierHistorySupplier(currentSup); }}
-                                      className="text-[15px] font-bold text-sky-800 hover:text-brand-deep hover:underline underline-offset-[3px] decoration-sky-400/60 cursor-pointer transition-colors"
+                                      className="text-[17px] font-bold text-sky-800 hover:text-brand-deep hover:underline underline-offset-[3px] decoration-sky-400/60 cursor-pointer transition-colors"
                                       title="공급사 클릭 · 최신 발주이력 보기"
                                     >
                                       {displayVendorName(currentSup) || currentSup}
                                     </button>
-                                    <span className="text-[13px] font-semibold text-ink-soft tabular-nums">{groupRows.length}건</span>
+                                    <span className="text-[17px] font-semibold text-ink-soft tabular-nums">{groupRows.length}건</span>
                                     <button
                                       type="button"
                                       onClick={(e) => { e.stopPropagation(); setSupplierHistorySupplier(currentSup); }}
-                                      className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[12px] font-semibold text-ink-soft hover:text-ink hover:bg-white border border-line transition cursor-pointer"
+                                      className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[16px] font-semibold text-ink-soft hover:text-ink hover:bg-white border border-line transition cursor-pointer"
                                       title={`${currentSup} · 최신 발주이력 보기`}
                                     >
                                       <History size={10}/>발주이력
@@ -347,15 +347,15 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                       return (
                                         <>
                                           {subtotal > 0 && (
-                                            <span className="text-[13px] font-bold text-brand-deep tabular-nums ml-auto mr-2">
-                                              {subtotal.toLocaleString()}<span className="text-[11px] font-medium text-ink-soft ml-0.5">원</span>
+                                            <span className="text-[17px] font-bold text-brand-deep tabular-nums ml-auto mr-2">
+                                              {subtotal.toLocaleString()}<span className="text-[17px] font-medium text-ink-soft ml-0.5">원</span>
                                             </span>
                                           )}
                                           <button
                                             type="button"
                                             onClick={(e) => { e.stopPropagation(); openOrderModal(targetRows); }}
                                             disabled={sendingBulk}
-                                            className={`${subtotal > 0 ? "" : "ml-auto"} inline-flex items-center gap-1 h-6 px-2 rounded-md text-[12px] font-bold text-white bg-gradient-to-br from-rose-500 to-rose-600 hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer shadow-sm`}
+                                            className={`${subtotal > 0 ? "" : "ml-auto"} inline-flex items-center gap-1 h-6 px-2 rounded-md text-[16px] font-bold text-white bg-gradient-to-br from-rose-500 to-rose-600 hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer shadow-sm`}
                                             title={`${currentSup} · ${targetRows.length}건 발주${selectedInGroup.length > 0 ? " (체크 선택)" : ""}`}
                                           >
                                             <Send size={10}/>발주({targetRows.length})
@@ -396,7 +396,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                 <td className="px-3 py-2 align-middle" style={{ minWidth: 260 }}>
                                   <button
                                     onClick={() => setOrderPanelProduct({ code: r.product_code, name: r.product_name })}
-                                    className="text-left text-[15px] font-semibold text-ink hover:text-sky-800 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
+                                    className="text-left text-[17px] font-semibold text-ink hover:text-sky-800 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
                                     title={r.product_name || "상품 상세정보 조회"}
                                   >{r.product_name || "(상품명 없음)"}</button>
                                 </td>
@@ -406,15 +406,15 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                               ) : (
                                 <>
                                   <td
-                                    className={`text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] bg-zinc-50/40 align-middle whitespace-nowrap ${stockChanged ? "text-orange-600" : "text-zinc-700"}`}
+                                    className={`text-right px-0.5 py-1.5 tabular-nums font-bold text-[16px] bg-zinc-50/40 align-middle whitespace-nowrap ${stockChanged ? "text-orange-600" : "text-zinc-700"}`}
                                     title={stockChanged ? `요청 당시 ${r.current_stock ?? "-"} → 현재 ${displayCurrentStock ?? "-"} (변동)` : "현재 ERP 재고 (실시간)"}
                                   >
                                     {displayCurrentStock ?? "-"}
-                                    {stockChanged && <span className="text-[14px] font-normal text-zinc-400 ml-1">({r.current_stock})</span>}
+                                    {stockChanged && <span className="text-[16px] font-normal text-zinc-400 ml-1">({r.current_stock})</span>}
                                   </td>
-                                  <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] text-zinc-700 bg-zinc-50/40 align-middle whitespace-nowrap">{displayOptimal ?? "-"}</td>
+                                  <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[16px] text-zinc-700 bg-zinc-50/40 align-middle whitespace-nowrap">{displayOptimal ?? "-"}</td>
                                   <td className="text-right px-0.5 py-1.5 align-middle whitespace-nowrap">
-                                    <span className="tabular-nums font-bold text-[14px] text-rose-600">{displayShort > 0 ? `-${displayShort}` : "0"}</span>
+                                    <span className="tabular-nums font-bold text-[16px] text-rose-600">{displayShort > 0 ? `-${displayShort}` : "0"}</span>
                                   </td>
                                 </>
                               )}
@@ -439,9 +439,9 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                         />
                                       </div>
                                     </td>
-                                    <td className="text-right px-2 py-2 tabular-nums text-[14px] text-ink-soft align-middle whitespace-nowrap">{prevPrice != null ? prevPrice.toLocaleString() : "-"}</td>
+                                    <td className="text-right px-2 py-2 tabular-nums text-[16px] text-ink-soft align-middle whitespace-nowrap">{prevPrice != null ? prevPrice.toLocaleString() : "-"}</td>
                                     {/* 발주금액 · brand-tint 옅게 · 결과 강조 (v3) */}
-                                    <td className="text-right px-2 py-2 tabular-nums font-bold text-[15px] text-brand-deep align-middle whitespace-nowrap bg-brand-tint/30 border-l border-brand/10">{amount != null ? amount.toLocaleString() : "-"}</td>
+                                    <td className="text-right px-2 py-2 tabular-nums font-bold text-[17px] text-brand-deep align-middle whitespace-nowrap bg-brand-tint/30 border-l border-brand/10">{amount != null ? amount.toLocaleString() : "-"}</td>
                                   </>
                                 );
                               })()}
@@ -453,7 +453,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                       });
                     })()}
                     {displayedReqs.length === 0 && (
-                      <tr><td colSpan={12} className="text-center text-[15px] text-zinc-300 py-6">검색 결과 없음</td></tr>
+                      <tr><td colSpan={12} className="text-center text-[17px] text-zinc-300 py-6">검색 결과 없음</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -467,7 +467,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
       <div onMouseDown={onOrderResizeStart}
         className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-sky-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
         title="드래그하여 폭 조절">
-        <span className="text-[15px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+        <span className="text-[17px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
       </div>
 
       {/* 우측: 상품 상세 */}
@@ -481,7 +481,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
         <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
           <Card padding="md" rounded="xl" className="text-sm text-red-700">
             <div className="font-bold mb-1">조회 실패</div>
-            <div className="text-[15px] font-mono">{orderPanelError}</div>
+            <div className="text-[17px] font-mono">{orderPanelError}</div>
           </Card>
         </div>
       ) : (
