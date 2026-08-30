@@ -106,27 +106,9 @@ router.get("/api/supplier-payments", asyncHandler(async (req, res) => {
     throw new HttpError(500, error.message);
   }
 
-  const paymentIds = (payments ?? []).map(p => p.id);
-  let allocMap = new Map<number, any[]>();
-  if (paymentIds.length > 0) {
-    const { data: allocs, error: aErr } = await supabase
-      .from("supplier_payment_allocations")
-      .select("id, payment_id, ocr_confirmed_item_id, allocated_amount, created_at")
-      .in("payment_id", paymentIds);
-    if (aErr && !/relation .* does not exist/i.test(aErr.message)) {
-      console.warn("[supplier-payments] allocations fetch 실패:", aErr.message);
-    }
-    for (const a of allocs ?? []) {
-      const arr = allocMap.get(a.payment_id) ?? [];
-      arr.push(a);
-      allocMap.set(a.payment_id, arr);
-    }
-  }
-
-  const rows = (payments ?? []).map(p => ({
-    ...p,
-    allocations: allocMap.get(p.id) ?? [],
-  }));
+  // 2026-08-30 · 사용자 결정 · allocations 기능 제거 (결제만 등록)
+  //   · supplier_payment_allocations 테이블 참조 삭제 · 항상 빈 배열 반환 (프론트 호환)
+  const rows = (payments ?? []).map(p => ({ ...p, allocations: [] as any[] }));
   return res.json({ rows });
 }));
 
@@ -183,25 +165,32 @@ router.get("/api/supplier-payments/pending-count", asyncHandler(async (_req, res
   const invList = invoices ?? [];
   if (invList.length === 0) return res.json({ count: 0 });
 
-  const allocSumMap = new Map<number, number>();
-  {
-    const { data: allocs, error: aErr } = await supabase
-      .from("supplier_payment_allocations")
-      .select("ocr_confirmed_item_id, allocated_amount");
-    if (aErr && !/relation .* does not exist/i.test(aErr.message)) {
-      console.warn("[supplier-payments/pending-count] allocations sum 실패:", aErr.message);
-    }
-    for (const a of allocs ?? []) {
-      const iid = a.ocr_confirmed_item_id;
-      allocSumMap.set(iid, (allocSumMap.get(iid) ?? 0) + (Number(a.allocated_amount) || 0));
-    }
+  // 2026-08-30 · 사용자 결정 · allocations 제거 · 미결제 = 매입액 - 결제액 (공급사별 대략 계산)
+  //   · 정확한 매입 vs 결제 매칭 없음 · 단순 미결제 개수 반환
+  //   · 공급사별 SUM 매입 vs SUM 결제 · 차액 > 0 인 공급사 매입건 수 근사
+  const { data: payments } = await supabase
+    .from("supplier_payments")
+    .select("supplier_name, amount");
+  const paidBySupplier = new Map<string, number>();
+  for (const p of payments ?? []) {
+    const nm = String((p as any).supplier_name ?? "").trim();
+    if (!nm) continue;
+    paidBySupplier.set(nm, (paidBySupplier.get(nm) ?? 0) + (Number((p as any).amount) || 0));
   }
-
+  // 매입 정보 · supplier_name 별 SUM · ocr_confirmed_items 에 supplier 있는지 확인 후
+  const { data: invoicesWithSupplier } = await supabase
+    .from("ocr_confirmed_items")
+    .select("supplier_name, amount");
+  const invBySupplier = new Map<string, number>();
+  for (const i of invoicesWithSupplier ?? []) {
+    const nm = String((i as any).supplier_name ?? "").trim();
+    if (!nm) continue;
+    invBySupplier.set(nm, (invBySupplier.get(nm) ?? 0) + (Number((i as any).amount) || 0));
+  }
   let count = 0;
-  for (const i of invList as Array<{ id: number; amount: number | null }>) {
-    const amt = Number(i.amount) || 0;
-    const alloc = allocSumMap.get(i.id) ?? 0;
-    if (amt - alloc > 0.5) count++;
+  for (const [nm, invSum] of invBySupplier) {
+    const paidSum = paidBySupplier.get(nm) ?? 0;
+    if (invSum - paidSum > 0.5) count++;
   }
   return res.json({ count });
 }));
@@ -283,26 +272,10 @@ router.post("/api/supplier-payments", authorize(5), asyncHandler(async (req, res
   if (payErr) throw new HttpError(500, `payment insert 실패: ${payErr.message}`);
   if (!payRow?.id) throw new HttpError(500, "payment id 획득 실패");
 
-  // 2. allocations insert (있으면)
-  let allocatedRows: any[] = [];
-  if (allocList.length > 0) {
-    const allocPayload = allocList.map(a => ({
-      payment_id: payRow.id,
-      ocr_confirmed_item_id: a.ocr_confirmed_item_id,
-      allocated_amount: a.allocated_amount,
-    }));
-    const { data: allocRows, error: allocErr } = await supabase
-      .from("supplier_payment_allocations")
-      .insert(allocPayload)
-      .select("id, payment_id, ocr_confirmed_item_id, allocated_amount, created_at");
-
-    if (allocErr) {
-      // 롤백: payment 삭제 (CASCADE 로 이미 insert 된 alloc 도 삭제됨)
-      await supabase.from("supplier_payments").delete().eq("id", payRow.id);
-      throw new HttpError(500, `allocations insert 실패 (payment 롤백): ${allocErr.message}`);
-    }
-    allocatedRows = allocRows ?? [];
-  }
+  // 2026-08-30 · 사용자 결정 · allocations 제거 · 결제만 등록 · 매입 매칭 안 함
+  //   · 이전 · allocations INSERT · 매입건별 얼마씩 배분 저장
+  //   · 이후 · 결제 자체만 저장 · 매입 매칭 · 프론트에서 표시 안 함
+  const allocatedRows: any[] = [];
 
   // 2026-08-13 · #107 · 관리자 broadcast · 결제 등록 알림 (인앱 + push)
   notificationsService.notifyAllAdmins({
@@ -563,36 +536,19 @@ router.get("/api/supplier-open-invoices", asyncHandler(async (req, res) => {
   const invList = invoices ?? [];
   if (invList.length === 0) return res.json({ rows: [] });
 
-  // 각 invoice 에 배분된 금액 합
-  const invIds = invList.map(i => i.id);
-  const allocSumMap = new Map<number, number>();
-  {
-    const { data: allocs, error: aErr } = await supabase
-      .from("supplier_payment_allocations")
-      .select("ocr_confirmed_item_id, allocated_amount")
-      .in("ocr_confirmed_item_id", invIds);
-    if (aErr && !/relation .* does not exist/i.test(aErr.message)) {
-      console.warn("[supplier-open-invoices] allocations sum 실패:", aErr.message);
-    }
-    for (const a of allocs ?? []) {
-      const iid = a.ocr_confirmed_item_id;
-      allocSumMap.set(iid, (allocSumMap.get(iid) ?? 0) + (Number(a.allocated_amount) || 0));
-    }
-  }
-
+  // 2026-08-30 · 사용자 결정 · allocations 제거 · 매입 매칭 안 함
+  //   · allocated · remaining · status · 모두 default 값 (프론트 호환 유지)
   const rows = invList.map((i: any) => {
     const amount = Number(i.amount) || 0;
-    const allocated = allocSumMap.get(i.id) ?? 0;
-    const remaining = Math.max(0, amount - allocated);
     const date = (i.invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(i.invoice_date)) ? i.invoice_date : i.saved_at;
     return {
       id: i.id,
       date,
       product_name: i.product_name,
       amount,
-      allocated,
-      remaining,
-      status: remaining <= 0.5 ? "paid" : allocated > 0 ? "partial" : "open",
+      allocated: 0,
+      remaining: amount,
+      status: "open" as const,
     };
   });
 
