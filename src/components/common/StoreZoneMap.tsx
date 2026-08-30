@@ -321,28 +321,30 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
       // 2026-08-23 · #181 Phase 2 · pair 셀은 num 단위 드래그 (A/B 동시 이동 · 데이터가 num 에 묶여있음)
       const dragProps = dragHandlers(num);
       const dragClass = cellStateClass(num);
+      // 2026-08-30 · 사용자 지시 · 중앙 진열대 · 구역(zone) + 카테고리(category) 한번에 표시
+      //   구역 · zonesRaw 에서 조회 (예: "진열대 1A")
+      //   카테고리 · sub (subA/subB · 이미 category 값)
+      const cid = cellIdByNumSide(num, side);
+      const raw = cid != null ? zonesRaw.find(r => r.cellId === cid) : null;
+      const zoneLabel = raw?.zone ?? zoneId;
       const sideContent = (
         <Tag
           {...extra}
           {...dragProps}
           className={`relative w-full font-bold ${colors.text} ${colors.bg} border-2 ${colors.border} rounded px-1 py-1.5 leading-tight text-center ${cellMin} flex flex-col items-center justify-center gap-1 ${usePicker ? "cursor-pointer hover:ring-2 hover:ring-brand-tint transition" : cellInteractive} ${dragClass}`}
-          title={`${zoneId} · ${sub}${usePicker ? " · 클릭하여 편집" : enableDrag ? " · 길게 눌러 드래그" : ""}`}
+          title={`${zoneLabel} · ${sub}${usePicker ? " · 클릭하여 편집" : enableDrag ? " · 길게 눌러 드래그" : ""}`}
         >
-          {/* 2026-08-30 · 사용자 지시 · 셀번호 (cell_id) 좌측 상단 */}
-          {(() => {
-            const cid = cellIdByNumSide(num, side);
-            if (cid == null) return null;
-            return (
-              <span className="absolute top-0.5 left-0.5 text-[10px] font-bold text-white/95 bg-black/25 rounded px-1 py-px leading-none tabular-nums" title={`셀번호 ${cid}`}>
-                #{cid}
-              </span>
-            );
-          })()}
+          {/* 2026-08-30 · 셀번호 (cell_id) 좌측 상단 */}
+          {cid != null && (
+            <span className="absolute top-0.5 left-0.5 text-[10px] font-bold text-white/95 bg-black/25 rounded px-1 py-px leading-none tabular-nums" title={`셀번호 ${cid}`}>
+              #{cid}
+            </span>
+          )}
+          {/* 2026-08-30 · 사용자 지시 · zoneId 배지 위 · 카테고리 아래 */}
           <div className="flex items-center justify-center">
-            {/* 2026-08-26 · 사용자 지시 · zoneId ("1A"/"1B") 그대로 표시 · getZoneLabel 매핑 우회 */}
             <span className={`text-[11px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{zoneId}</span>
           </div>
-          {/* 2026-08-26 · line-clamp 제거 · break-keep · 자동 확장 */}
+          {/* 카테고리 · 1A 아래 · line-clamp 제거 · break-keep · 자동 확장 */}
           <span className="text-[13px] leading-snug break-keep whitespace-normal">{sub}</span>
         </Tag>
       );
