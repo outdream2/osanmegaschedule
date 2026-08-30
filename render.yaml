@@ -17,6 +17,12 @@ services:
         sync: false
       - key: SUPABASE_KEY
         sync: false
+      # 2026-08-30 · 사용자 지시 · 프론트 · Supabase Storage 업로드 (ImageUploadField)
+      # · SUPABASE_URL 과 동일 값 · anon 키 (public 안전)
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
       # 2026-08-18 · JWT_SECRET · 미설정 시 SUPABASE_KEY 로 자동 파생 (HMAC-SHA256)
       # · requireAuth.ts:deriveJwtSecret() · Render Dashboard 설정 불필요
       # · 명시적 rotate 원하면 · 아래 주석 해제하고 Dashboard 에서 값 지정
