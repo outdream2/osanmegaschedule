@@ -1,13 +1,19 @@
 // src/hooks/useZoneDefs.ts
-// 2026-08-30 · zone_defs 정식 DB 테이블 단일 소스
-//   · 4개 컬럼 (id · cellId · zone · category · detailedCategory)
-//   · KV 폴백 완전 제거 · DB 실패 시 · 명시적 에러 반환
-//   · 매장구역도 · 매장구역편집 공용 훅
+// 2026-08-30 · zone_defs 정식 DB 테이블 단일 소스 · KV 폴백 제거
+//   · DB 스키마 v3 (2026-08-30b): id, zone, category, detailed_category, cell_id
+//   · 하위호환 · 기존 소비처가 사용하던 ZoneDef (num, label, subA/B, description...) 형태로 변환 제공
+//   · 신규 소비처는 zonesRaw (new shape · id, cellId, zone, category, detailedCategory) 사용
+//   · 편집 · updateZoneByRowId (신규 · PATCH by id) + setZones/saveNow (하위호환 · legacy bulk)
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { api, ApiError } from "../lib/apiClient";
+import { SECTION_LABEL, type ZoneDef, type ZoneSection } from "../constants/displayZones";
 
-export interface ZoneDef {
+export type { ZoneDef, ZoneSection };
+export { SECTION_LABEL };
+
+/** DB 새 스키마 row · 응답 형태 (rowToDto 결과) */
+export interface ZoneDefRaw {
   id: number;
   cellId: number;
   zone: string;
@@ -15,45 +21,122 @@ export interface ZoneDef {
   detailedCategory?: string;
 }
 
-/** DB 응답 sanitize · 잘못된 row 필터 */
-function sanitize(raw: unknown): ZoneDef[] {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .filter((z): z is ZoneDef => {
-      if (!z || typeof z !== "object") return false;
-      const zz = z as Partial<ZoneDef>;
-      return (
-        typeof zz.id === "number" &&
-        typeof zz.cellId === "number" &&
-        typeof zz.zone === "string" &&
-        typeof zz.category === "string"
-      );
-    })
-    .sort((a, b) => a.cellId - b.cellId);
+/** 확장 · ZoneDef 에 DB row id 매핑 (편집 시 사용) */
+interface ZoneDefWithRowIds extends ZoneDef {
+  __rowId?: number;
+  __rowIdA?: number;
+  __rowIdB?: number;
+  __rowIdC?: number;
 }
 
-export interface UseZoneDefsResult {
-  zones: ZoneDef[];
-  loading: boolean;
-  /** DB 조회 실패 시 · 사용자에게 표시할 에러 메시지 · null 이면 정상 */
-  error: string | null;
-  reload: () => void;
-  saveState: "idle" | "saving" | "saved" | "error";
-  /** 단건 업데이트 · id 지정 · PATCH */
-  updateZone: (id: number, patch: Partial<Omit<ZoneDef, "id">>) => Promise<boolean>;
-  /** 신규 zone 추가 · cell_id 유일 · POST */
-  addZone: (zone: Omit<ZoneDef, "id">) => Promise<boolean>;
-  /** zone 삭제 · id · DELETE */
-  deleteZone: (id: number) => Promise<boolean>;
+// 벽면 라벨 · 미니 매핑 (wing 셀 · 라벨 → num 복원)
+const WING_LABEL_TO_NUM: Record<string, number> = {
+  "프로모션": 36,
+  "기능성화장품": 37,
+  "조제실": 38,
+  "화장실": 39,
+  "계산대": 40,
+  "정수기": 41,
+  "이벤트존": 42,
+};
+
+/** 새 스키마 zone 라벨 파싱 · 하위 num/side 복원 */
+function parseZone(zoneLabel: string): { num: number; side: "A" | "B" | "C" | null; section: ZoneSection } | null {
+  const s = String(zoneLabel ?? "").trim();
+  if (!s) return null;
+  // 진열대 1A · 진열대 1B · 진열대 22
+  const mAisle = /^진열대\s+(\d+)([ABC]?)$/.exec(s);
+  if (mAisle) {
+    const num = Number(mAisle[1]);
+    const side = (mAisle[2] || null) as "A" | "B" | "C" | null;
+    return { num, side, section: "aisle" };
+  }
+  // 벽면 9 · 벽면 21 · 벽면 23 · 벽면 34 · 벽면 35
+  const mWall = /^벽면\s+(\d+)$/.exec(s);
+  if (mWall) {
+    const num = Number(mWall[1]);
+    const section: ZoneSection = num >= 23 && num <= 34 ? "bottom_wall" : "top_wall";
+    return { num, side: null, section };
+  }
+  // wing 라벨 · 프로모션·기능성화장품·조제실 등 (36-42)
+  if (WING_LABEL_TO_NUM[s] != null) {
+    const num = WING_LABEL_TO_NUM[s];
+    return { num, side: null, section: num === 42 ? "event" : "wing" };
+  }
+  // 카운터테마 43·44·45·46
+  const mCounter = /^카운터테마\s+(\d+)$/.exec(s);
+  if (mCounter) {
+    const num = Number(mCounter[1]);
+    return { num, side: null, section: "wing" };
+  }
+  return null;
+}
+
+/** raw DB 배열 → 하위호환 ZoneDef[] (num·label·subA/B 병합) */
+function transformToLegacy(raws: ZoneDefRaw[]): ZoneDefWithRowIds[] {
+  const grouped = new Map<number, {
+    section: ZoneSection;
+    base?: ZoneDefRaw;
+    A?: ZoneDefRaw;
+    B?: ZoneDefRaw;
+    C?: ZoneDefRaw;
+  }>();
+  for (const r of raws) {
+    const p = parseZone(r.zone);
+    if (!p) continue;
+    if (!grouped.has(p.num)) grouped.set(p.num, { section: p.section });
+    const g = grouped.get(p.num)!;
+    if (p.side === "A") g.A = r;
+    else if (p.side === "B") g.B = r;
+    else if (p.side === "C") g.C = r;
+    else g.base = r;
+  }
+  const result: ZoneDefWithRowIds[] = [];
+  for (const [num, g] of grouped) {
+    const primary = g.base ?? g.A ?? g.B ?? g.C;
+    if (!primary) continue;
+    const zone: ZoneDefWithRowIds = {
+      num,
+      label: g.base?.zone ?? (g.A ? g.A.zone.replace(/\s*A$/, "") : g.B ? g.B.zone.replace(/\s*B$/, "") : primary.zone),
+      category: g.base?.category ?? primary.category,
+      section: g.section,
+      subA: g.A?.category,
+      subB: g.B?.category,
+      subC: g.C?.category,
+      description: g.base?.detailedCategory,
+      descriptionA: g.A?.detailedCategory,
+      descriptionB: g.B?.detailedCategory,
+      descriptionC: g.C?.detailedCategory,
+      __rowId: g.base?.id,
+      __rowIdA: g.A?.id,
+      __rowIdB: g.B?.id,
+      __rowIdC: g.C?.id,
+    };
+    result.push(zone);
+  }
+  return result.sort((a, b) => a.num - b.num);
 }
 
 /**
- * 매장구역도·매장구역편집 · zone_defs 훅
- *   · DB 단일 소스 · KV 폴백 없음
- *   · 실패 시 · error 상태로 명시적 노출 · UI 에러 배너 렌더 필요
+ * useZoneDefs · 매장구역도·매장구역편집 공용
+ *   · DB 단일 소스 · KV 폴백 없음 · 실패 시 error 상태
+ *   · zones · 하위호환 ZoneDef[] (num·label·subA/B) · 기존 소비처 유지
+ *   · zonesRaw · 새 스키마 ZoneDefRaw[] (id·cellId·zone) · 신규 소비처용
+ *   · setZones/saveNow · 하위호환 API · 내부에서 rowId 기반 PATCH/POST 호출
  */
-export function useZoneDefs(): UseZoneDefsResult {
-  const [zones, setZones] = useState<ZoneDef[]>([]);
+export function useZoneDefs(): {
+  zones: ZoneDefWithRowIds[];
+  zonesRaw: ZoneDefRaw[];
+  loading: boolean;
+  error: string | null;
+  saveState: "idle" | "saving" | "saved" | "error";
+  reload: () => void;
+  setZones: (next: ZoneDef[] | ((prev: ZoneDef[]) => ZoneDef[])) => void;
+  saveNow: () => Promise<boolean>;
+  updateZoneRaw: (rawId: number, patch: Partial<Omit<ZoneDefRaw, "id">>) => Promise<boolean>;
+} {
+  const [zonesRaw, setZonesRaw] = useState<ZoneDefRaw[]>([]);
+  const [dirtyZones, setDirtyZones] = useState<ZoneDefWithRowIds[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -65,19 +148,19 @@ export function useZoneDefs(): UseZoneDefsResult {
     setError(null);
     (async () => {
       try {
-        const { data } = await api.get<{ zones: ZoneDef[]; count?: number }>("/api/zone-defs");
+        const { data } = await api.get<{ zones: ZoneDefRaw[]; count?: number }>("/api/zone-defs");
         if (cancelled) return;
-        const clean = sanitize(data?.zones);
-        setZones(clean);
+        const clean = Array.isArray(data?.zones) ? data.zones.filter(z => z && typeof z.id === "number" && typeof z.cellId === "number") : [];
+        setZonesRaw(clean);
         if (clean.length === 0) {
-          setError("zone_defs 테이블에 데이터가 없습니다. sql/2026-08-30b-zone-defs-cell-num.sql 실행 확인 필요.");
+          setError("zone_defs 테이블에 데이터가 없습니다.");
         }
       } catch (e) {
         if (cancelled) return;
         const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "네트워크 오류";
-        console.error("[useZoneDefs] /api/zone-defs 조회 실패:", msg);
-        setError(`매장구역 정보 조회 실패: ${msg}`);
-        setZones([]);
+        console.error("[useZoneDefs] /api/zone-defs 실패:", msg);
+        setError(`매장구역 조회 실패: ${msg}`);
+        setZonesRaw([]);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -85,67 +168,103 @@ export function useZoneDefs(): UseZoneDefsResult {
     return () => { cancelled = true; };
   }, [reloadTick]);
 
-  const reload = useCallback(() => setReloadTick(t => t + 1), []);
+  // 하위호환 zones · dirty 편집 중이면 dirty · 아니면 raw 에서 변환
+  const zones = useMemo<ZoneDefWithRowIds[]>(() => {
+    if (dirtyZones) return dirtyZones;
+    return transformToLegacy(zonesRaw);
+  }, [zonesRaw, dirtyZones]);
 
-  const updateZone = useCallback(async (id: number, patch: Partial<Omit<ZoneDef, "id">>): Promise<boolean> => {
+  const setZones = useCallback((next: ZoneDef[] | ((prev: ZoneDef[]) => ZoneDef[])) => {
+    setDirtyZones(prev => {
+      const base = prev ?? transformToLegacy(zonesRaw);
+      const val = typeof next === "function" ? (next as any)(base) : next;
+      return val as ZoneDefWithRowIds[];
+    });
+  }, [zonesRaw]);
+
+  const reload = useCallback(() => {
+    setDirtyZones(null);
+    setReloadTick(t => t + 1);
+  }, []);
+
+  // 하위호환 saveNow · dirty zones 를 raw 로 역변환 후 · 각 row 별 PATCH
+  const saveNow = useCallback(async (): Promise<boolean> => {
+    if (!dirtyZones) return true;
     setSaveState("saving");
     try {
-      const { data } = await api.patch<{ ok: boolean; zone: ZoneDef }>(`/api/zone-defs/${id}`, patch);
+      const patches: Array<{ id: number; body: Partial<Omit<ZoneDefRaw, "id">> }> = [];
+      for (const z of dirtyZones) {
+        const zz = z as ZoneDefWithRowIds;
+        // base row (subA/B 없거나 · aisle 22 · wall · wing)
+        if (zz.__rowId) {
+          patches.push({
+            id: zz.__rowId,
+            body: {
+              zone: zz.label,
+              category: zz.category,
+              detailedCategory: zz.description,
+            },
+          });
+        }
+        // A / B / C 서브 row
+        if (zz.__rowIdA) patches.push({ id: zz.__rowIdA, body: { category: zz.subA ?? "", detailedCategory: zz.descriptionA } });
+        if (zz.__rowIdB) patches.push({ id: zz.__rowIdB, body: { category: zz.subB ?? "", detailedCategory: zz.descriptionB } });
+        if (zz.__rowIdC) patches.push({ id: zz.__rowIdC, body: { category: zz.subC ?? "", detailedCategory: zz.descriptionC } });
+      }
+      // 병렬 PATCH
+      const results = await Promise.allSettled(
+        patches.map(p => api.patch<{ ok: boolean; zone: ZoneDefRaw }>(`/api/zone-defs/${p.id}`, p.body))
+      );
+      const failed = results.filter(r => r.status === "rejected").length;
+      if (failed > 0) throw new Error(`${failed}개 저장 실패`);
+      // 갱신된 zonesRaw · reload 로 리페치
+      setDirtyZones(null);
+      setReloadTick(t => t + 1);
+      setSaveState("saved");
+      setTimeout(() => setSaveState("idle"), 1500);
+      return true;
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : String(e);
+      console.error("[useZoneDefs] saveNow 실패:", msg);
+      setSaveState("error");
+      setError(`저장 실패: ${msg}`);
+      return false;
+    }
+  }, [dirtyZones]);
+
+  const updateZoneRaw = useCallback(async (rawId: number, patch: Partial<Omit<ZoneDefRaw, "id">>): Promise<boolean> => {
+    setSaveState("saving");
+    try {
+      const { data } = await api.patch<{ ok: boolean; zone: ZoneDefRaw }>(`/api/zone-defs/${rawId}`, patch);
       if (data?.zone) {
-        setZones(prev => prev.map(z => z.id === id ? data.zone : z).sort((a, b) => a.cellId - b.cellId));
+        setZonesRaw(prev => prev.map(z => z.id === rawId ? data.zone : z));
+        setDirtyZones(null); // 저장 후 · dirty 해제
       }
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 1500);
       return true;
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : String(e);
-      console.error("[useZoneDefs] updateZone 실패:", msg);
+      console.error("[useZoneDefs] updateZoneRaw 실패:", msg);
       setSaveState("error");
       setError(`저장 실패: ${msg}`);
       return false;
     }
   }, []);
 
-  const addZone = useCallback(async (zone: Omit<ZoneDef, "id">): Promise<boolean> => {
-    setSaveState("saving");
-    try {
-      const { data } = await api.post<{ ok: boolean; zone: ZoneDef }>("/api/zone-defs", zone);
-      if (data?.zone) {
-        setZones(prev => [...prev, data.zone].sort((a, b) => a.cellId - b.cellId));
-      }
-      setSaveState("saved");
-      setTimeout(() => setSaveState("idle"), 1500);
-      return true;
-    } catch (e) {
-      const msg = e instanceof ApiError ? e.message : String(e);
-      console.error("[useZoneDefs] addZone 실패:", msg);
-      setSaveState("error");
-      setError(`추가 실패: ${msg}`);
-      return false;
-    }
-  }, []);
-
-  const deleteZone = useCallback(async (id: number): Promise<boolean> => {
-    setSaveState("saving");
-    try {
-      await api.del(`/api/zone-defs/${id}`);
-      setZones(prev => prev.filter(z => z.id !== id));
-      setSaveState("saved");
-      setTimeout(() => setSaveState("idle"), 1500);
-      return true;
-    } catch (e) {
-      const msg = e instanceof ApiError ? e.message : String(e);
-      console.error("[useZoneDefs] deleteZone 실패:", msg);
-      setSaveState("error");
-      setError(`삭제 실패: ${msg}`);
-      return false;
-    }
-  }, []);
-
-  return { zones, loading, error, reload, saveState, updateZone, addZone, deleteZone };
+  return { zones, zonesRaw, loading, error, saveState, reload, setZones, saveNow, updateZoneRaw };
 }
 
-/** 특정 cellId zone 조회 */
-export function findZoneByCellId(zones: ZoneDef[], cellId: number): ZoneDef | undefined {
-  return zones.find(z => z.cellId === cellId);
+/** 특정 zone num 조회 · 하위호환 */
+export function findZone(zones: ZoneDef[], num: number): ZoneDef | undefined {
+  return zones.find(z => z.num === num);
+}
+
+/** section 기준 그룹핑 · 하위호환 */
+export function groupZonesBySection(zones: ZoneDef[]): Record<ZoneSection, ZoneDef[]> {
+  const map: Record<ZoneSection, ZoneDef[]> = {
+    top_wall: [], aisle: [], left_wall: [], bottom_wall: [], wing: [], event: [],
+  };
+  for (const z of zones) map[z.section].push(z);
+  return map;
 }

@@ -173,7 +173,16 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
   }, []);
 
   // 2026-08-17 · 프레임워크 · 공통 zone defs 훅 · 설정 편집 시 자동 반영
-  const { zones: ZONE_DEFS } = useZoneDefs();
+  const { zones: ZONE_DEFS, zonesRaw } = useZoneDefs();
+  // 2026-08-30 · num → cellId 매핑 (하위호환 zones 의 __rowId · A · B 로부터)
+  //   picker 는 cellId 필요 · num · side → raw row cellId 조회
+  const cellIdByNumSide = (num: number, side: "A" | "B" | null): number | null => {
+    const zd = ZONE_DEFS.find(z => z.num === num) as any;
+    if (!zd) return null;
+    const rowId = side === "A" ? zd.__rowIdA : side === "B" ? zd.__rowIdB : zd.__rowId;
+    if (!rowId) return null;
+    return zonesRaw.find(r => r.id === rowId)?.cellId ?? null;
+  };
 
   const [collapsed, setCollapsed] = useState(collapsible ? defaultCollapsed : false);
 
@@ -265,8 +274,10 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
       </Tag>
     );
     if (usePicker) {
+      const cid = cellIdByNumSide(num, null);
+      if (cid == null) return cellContent;
       return (
-        <ZoneCellPicker key={num} zoneNum={num} subKey={null} canEdit={cellPickerCanEdit} trigger={cellContent} />
+        <ZoneCellPicker key={num} cellId={cid} canEdit={cellPickerCanEdit} trigger={cellContent} />
       );
     }
     return cellContent;
@@ -321,7 +332,12 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
             <div className="min-h-[18px] flex items-center justify-center">{rankBadge(zoneId)}</div>
           )}
           {usePicker
-            ? <ZoneCellPicker zoneNum={num} subKey={side} canEdit={cellPickerCanEdit} trigger={sideContent} align={side === "B" ? "start" : "end"} />
+            ? (() => {
+                const cid = cellIdByNumSide(num, side);
+                return cid != null
+                  ? <ZoneCellPicker cellId={cid} canEdit={cellPickerCanEdit} trigger={sideContent} align={side === "B" ? "start" : "end"} />
+                  : sideContent;
+              })()
             : sideContent
           }
           {/* 2026-08-26 · 사용자 지시 · hover · 서브별 상세카테고리 커스텀 팝업 · picker 모드에선 안 표시 */}
