@@ -20,8 +20,8 @@ export interface StepperInputProps {
   min?: number;
   /** 최대값 · 기본 없음 */
   max?: number;
-  /** 사이즈 · md(h-10 · 기본) · lg(h-11) · sm(h-9) */
-  size?: "sm" | "md" | "lg";
+  /** 사이즈 · md(h-10 · 기본) · lg(h-11) · sm(h-9) · xs(h-7 · 컴팩트 테이블) */
+  size?: "xs" | "sm" | "md" | "lg";
   /** placeholder · 기본 "0" */
   placeholder?: string;
   /** disabled */
@@ -35,18 +35,21 @@ export interface StepperInputProps {
 }
 
 const SIZE_H_CLS: Record<NonNullable<StepperInputProps["size"]>, string> = {
+  xs: "h-7",
   sm: "h-9",
   md: "h-10",
   lg: "h-11",
 };
 
 const SIZE_BTN_W: Record<NonNullable<StepperInputProps["size"]>, string> = {
+  xs: "w-6",
   sm: "w-8",
   md: "w-9",
   lg: "w-10",
 };
 
 const SIZE_INPUT_TEXT: Record<NonNullable<StepperInputProps["size"]>, string> = {
+  xs: "text-[13px]",
   sm: "text-[15px]",
   md: "text-[16px]",
   lg: "text-[17px]",
