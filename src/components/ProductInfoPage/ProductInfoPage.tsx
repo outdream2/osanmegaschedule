@@ -10,6 +10,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Package, Info as InfoIcon, Pencil, Save, X } from "lucide-react";
 import { SplitListPanel } from "../common/SplitListPanel";
+// 2026-08-30 · 사용자 지시 · 판매중/판매중지 필터 · 프레임워크 SaleStatusFilter 재사용
+import { SaleStatusFilter } from "../common/SaleStatusFilter";
+import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { Modal } from "../common/Modal";
 import { Card } from "../common/Card";
 import { ProductCreateModal } from "./ProductCreateModal";
@@ -510,17 +513,21 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
     return () => { alive = false; };
   }, [showError, reloadKey]);
 
-  // 2026-08-28 · 감사 P1-3 · 이중 필터 제거 · 서버 getPublicProductMap 이 이미 판매중 필터 (신규 상품 null 상태 누락 방지)
+  // 2026-08-30 · 사용자 지시 · 판매중/판매중지 3-way 필터 (관리 페이지 · include_inactive=1 로 다 조회)
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "productInfo.saleFilter" });
   const filtered = useMemo(() => {
     const list = rows;
+    // 1. 판매상태 필터
+    const bySale = list.filter(r => saleMatches((r as any).sale_status));
+    // 2. 검색 필터
     const s = search.trim();
-    if (!s) return list;
-    return list.filter(r =>
+    if (!s) return bySale;
+    return bySale.filter(r =>
       matchHangul(r.product_name, s) ||
       r.product_code.toLowerCase().includes(s.toLowerCase()) ||
       (r.supplier ?? "").toLowerCase().includes(s.toLowerCase()),
     );
-  }, [rows, search]);
+  }, [rows, search, saleMatches]);
 
   // 상세 fetch (선택 시 · reloadKey 변경 시에도 refetch · 편집 저장 후 stale 방지)
   useEffect(() => {
@@ -593,6 +600,8 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
             onSearchChange={setSearch}
             searchPlaceholder="상품명·코드·공급사 검색"
             recentSearchScope="productInfo"
+            /* 2026-08-30 · 사용자 지시 · 판매중/판매중지 3-way 필터 · 프리미티브 재사용 */
+            filters={<SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />}
             onAdd={canManage ? () => setCreateOpen(true) : undefined}
             addLabel="상품 등록"
             addTitle="신규 상품 등록"
