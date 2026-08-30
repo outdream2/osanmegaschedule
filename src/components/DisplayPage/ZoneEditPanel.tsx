@@ -255,7 +255,8 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
           <span className="text-[12px] text-zinc-400 ml-auto">공통 모듈 · 편집 즉시 반영</span>
         </div>
         <div className="flex-1 overflow-auto">
-          <StoreZoneMap compact />
+          {/* 2026-08-30 · 사용자 지시 · 셀 클릭 → picker popover · zone_defs 직접 편집 */}
+          <StoreZoneMap compact enableCellPicker cellPickerCanEdit={canEdit} />
         </div>
       </div>
     </div>

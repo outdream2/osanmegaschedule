@@ -25,6 +25,8 @@ import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { getZoneSubLabel } from "../../constants/zoneLabels";
 import { StatusPill } from "./StatusPill";
 import { MapPin, User, GripVertical } from "lucide-react";
+// 2026-08-30 · 사용자 지시 · 셀 클릭 popover picker · zone_defs 편집
+import { ZoneCellPicker } from "./ZoneCellPicker";
 // 2026-08-23 · #181 Phase 2 · 드래그 재정렬 long-press 타이밍 상수
 import { TIMING } from "../../constants/timing";
 
@@ -37,6 +39,10 @@ export interface StoreZoneMapProps {
   showBestBadges?: boolean;
   /** 셀 클릭 시 콜백 · DisplayPage 는 상품 조회 모달 오픈 · SalesTrendPage 는 미사용 · 옵션 */
   onZoneClick?: (zoneId: string) => void;
+  /** 2026-08-30 · 사용자 지시 · 셀 클릭 시 ZoneCellPicker popover 오픈 · zone_defs 카테고리·상세 편집 · true 면 onZoneClick 무시하고 popover 우선 */
+  enableCellPicker?: boolean;
+  /** 편집 권한 (lv≥9) · enableCellPicker=true 일 때만 유효 · 없으면 조회만 */
+  cellPickerCanEdit?: boolean;
   /** 컴팩트 모드 · default false · true 면 셀 크기·폰트 축소 (DisplayPage fullscreen 모달 등) */
   compact?: boolean;
   /** 접기/펴기 지원 · default false · true 면 헤더 클릭으로 토글 */
@@ -91,6 +97,8 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
   zoneRankMap,
   showBestBadges = false,
   onZoneClick,
+  enableCellPicker = false,
+  cellPickerCanEdit = false,
   compact = false,
   collapsible = false,
   defaultCollapsed = true,
@@ -221,17 +229,19 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
     const count = zoneItemCounts?.[String(num)] ?? 0;
     const zoneId = String(num);
     const handleClick = cellClickable ? () => onZoneClick!(zoneId) : undefined;
-    const Tag: any = cellClickable ? "button" : "div";
-    const extra = cellClickable ? { type: "button" as const, onClick: handleClick } : {};
+    // 2026-08-30 · picker 모드 · onZoneClick 무시 · popover 우선
+    const usePicker = enableCellPicker;
+    const Tag: any = (cellClickable && !usePicker) ? "button" : "div";
+    const extra = (cellClickable && !usePicker) ? { type: "button" as const, onClick: handleClick } : {};
     const dragProps = dragHandlers(num);
     const dragClass = cellStateClass(num);
-    return (
+    const cellContent = (
       <Tag
         key={num}
         {...extra}
         {...dragProps}
-        className={`relative group rounded-md overflow-visible border border-stone-300 bg-white shadow-sm flex flex-col items-center ${wallMin} ${cellInteractive} ${dragClass}`}
-        title={`${zd?.label ?? num} · ${cat}${enableDrag ? " · 길게 눌러 드래그" : ""}`}
+        className={`relative group rounded-md overflow-visible border border-stone-300 bg-white shadow-sm flex flex-col items-center ${wallMin} ${usePicker ? "cursor-pointer hover:ring-2 hover:ring-brand-tint hover:border-brand-deep/40 transition" : cellInteractive} ${dragClass}`}
+        title={`${zd?.label ?? num} · ${cat}${usePicker ? " · 클릭하여 편집" : enableDrag ? " · 길게 눌러 드래그" : ""}`}
       >
         {/* 상단 · ★BEST 배지 (옵션) · 배지 없어도 line 은 유지 (레이아웃 안정) */}
         {showBestBadges && (
@@ -250,10 +260,16 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
           {/* 2026-08-26 · 사용자 지시 · line-clamp 제거 · 글씨 크기에 맞춰 셀 자동 성장 · break-keep 로 단어 안 짤림 */}
           <span className="text-[13px] font-bold text-stone-800 leading-snug text-center break-keep whitespace-normal">{cat}</span>
         </div>
-        {/* 2026-08-26 · 사용자 지시 · hover · 상세카테고리 커스텀 팝업 */}
-        {zd?.description && <HoverDetail title={`${zoneId} · 상세카테고리${count > 0 ? ` · ${count}개 상품` : ""}`} desc={zd.description} />}
+        {/* 2026-08-26 · 사용자 지시 · hover · 상세카테고리 커스텀 팝업 · picker 모드에선 안 표시 (popover 와 충돌 방지) */}
+        {!usePicker && zd?.description && <HoverDetail title={`${zoneId} · 상세카테고리${count > 0 ? ` · ${count}개 상품` : ""}`} desc={zd.description} />}
       </Tag>
     );
+    if (usePicker) {
+      return (
+        <ZoneCellPicker key={num} zoneNum={num} subKey={null} canEdit={cellPickerCanEdit} trigger={cellContent} />
+      );
+    }
+    return cellContent;
   };
 
   // 중앙 진열대 B|A pair 셀 · B (좌) | A (우) 가로 배치
@@ -277,32 +293,39 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
       subDesc: string | undefined,
     ) => {
       const zoneId = `${num}${side}`;
+      const usePicker = enableCellPicker;
       const handleClick = cellClickable ? () => onZoneClick!(zoneId) : undefined;
-      const Tag: any = cellClickable ? "button" : "div";
-      const extra = cellClickable ? { type: "button" as const, onClick: handleClick } : {};
+      const Tag: any = (cellClickable && !usePicker) ? "button" : "div";
+      const extra = (cellClickable && !usePicker) ? { type: "button" as const, onClick: handleClick } : {};
       // 2026-08-23 · #181 Phase 2 · pair 셀은 num 단위 드래그 (A/B 동시 이동 · 데이터가 num 에 묶여있음)
       const dragProps = dragHandlers(num);
       const dragClass = cellStateClass(num);
+      const sideContent = (
+        <Tag
+          {...extra}
+          {...dragProps}
+          className={`w-full font-bold ${colors.text} ${colors.bg} border-2 ${colors.border} rounded px-1 py-1.5 leading-tight text-center ${cellMin} flex flex-col items-center justify-center gap-1 ${usePicker ? "cursor-pointer hover:ring-2 hover:ring-brand-tint transition" : cellInteractive} ${dragClass}`}
+          title={`${zoneId} · ${sub}${usePicker ? " · 클릭하여 편집" : enableDrag ? " · 길게 눌러 드래그" : ""}`}
+        >
+          <div className="flex items-center justify-center">
+            {/* 2026-08-26 · 사용자 지시 · zoneId ("1A"/"1B") 그대로 표시 · getZoneLabel 매핑 우회 */}
+            <span className={`text-[11px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{zoneId}</span>
+          </div>
+          {/* 2026-08-26 · line-clamp 제거 · break-keep · 자동 확장 */}
+          <span className="text-[13px] leading-snug break-keep whitespace-normal">{sub}</span>
+        </Tag>
+      );
       return (
         <div className="flex flex-col items-stretch gap-0.5 flex-1 min-w-[52px] relative group">
           {showBestBadges && (
             <div className="min-h-[18px] flex items-center justify-center">{rankBadge(zoneId)}</div>
           )}
-          <Tag
-            {...extra}
-            {...dragProps}
-            className={`w-full font-bold ${colors.text} ${colors.bg} border-2 ${colors.border} rounded px-1 py-1.5 leading-tight text-center ${cellMin} flex flex-col items-center justify-center gap-1 ${cellInteractive} ${dragClass}`}
-            title={`${zoneId} · ${sub}${enableDrag ? " · 길게 눌러 드래그" : ""}`}
-          >
-            <div className="flex items-center justify-center">
-              {/* 2026-08-26 · 사용자 지시 · zoneId ("1A"/"1B") 그대로 표시 · getZoneLabel 매핑 우회 */}
-              <span className={`text-[11px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{zoneId}</span>
-            </div>
-            {/* 2026-08-26 · line-clamp 제거 · break-keep · 자동 확장 */}
-            <span className="text-[13px] leading-snug break-keep whitespace-normal">{sub}</span>
-          </Tag>
-          {/* 2026-08-26 · 사용자 지시 · hover · 서브별 상세카테고리 커스텀 팝업 */}
-          {subDesc && <HoverDetail title={`${zoneId} · 상세카테고리${count > 0 ? ` · ${count}개 상품` : ""}`} desc={subDesc} align={side === "B" ? "left" : "right"} />}
+          {usePicker
+            ? <ZoneCellPicker zoneNum={num} subKey={side} canEdit={cellPickerCanEdit} trigger={sideContent} align={side === "B" ? "start" : "end"} />
+            : sideContent
+          }
+          {/* 2026-08-26 · 사용자 지시 · hover · 서브별 상세카테고리 커스텀 팝업 · picker 모드에선 안 표시 */}
+          {!usePicker && subDesc && <HoverDetail title={`${zoneId} · 상세카테고리${count > 0 ? ` · ${count}개 상품` : ""}`} desc={subDesc} align={side === "B" ? "left" : "right"} />}
         </div>
       );
     };
