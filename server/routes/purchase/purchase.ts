@@ -633,7 +633,12 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
   }
 
   // 공급사 필터 (조인 후 처리 · products.supplier 보강값도 인식)
-  if (supplier) rows = rows.filter((r: any) => String(r.supplier_name ?? "").trim() === supplier);
+  // 2026-08-30 · 사용자 지시 · 정제명 매칭 · (주)녹십자 vs 녹십자 · vat 부가정보 무시
+  if (supplier) {
+    const { displayVendorName: dv } = await import("../../../src/utils/vendorNameNormalize");
+    const norm = dv(supplier);
+    rows = rows.filter((r: any) => dv(String(r.supplier_name ?? "")) === norm);
+  }
 
   res.json({
     rows,

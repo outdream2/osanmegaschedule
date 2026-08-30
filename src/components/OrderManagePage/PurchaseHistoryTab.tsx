@@ -261,10 +261,12 @@ export const PurchaseHistoryTab: React.FC = () => {
       const params = new URLSearchParams({ supplier, from: fromStr, limit: String(API_LIMITS.LARGE), no_cycle: "1" });
       const { data: j } = await api.get<any>(`/api/purchase-details?${params}`);
       const rowsFromApi: any[] = Array.isArray(j.rows) ? j.rows : [];
-      // supplier 매칭 · raw supplier_name 또는 products 조인 supplier_name 모두
+      // 2026-08-30 · 사용자 지시 · 정제명 매칭 · (주)녹십자 vs 녹십자 · vat 부가정보 무시
+      const { displayVendorName: dv } = await import("../../../utils/vendorNameNormalize");
+      const norm = dv(supplier);
       const filtered = rowsFromApi.filter(r => {
-        const rn = String(r.supplier_name ?? r.supplier ?? "").trim();
-        return rn === supplier;
+        const rn = String(r.supplier_name ?? r.supplier ?? "");
+        return dv(rn) === norm;
       });
       // ledgerRows
       const purchaseRows: PurchaseLedgerRow[] = filtered.map((r: any) => ({
