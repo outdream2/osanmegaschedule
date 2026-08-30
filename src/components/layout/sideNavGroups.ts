@@ -89,6 +89,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "approval-request", label: "연차신청", icon: CalendarDots, color: "indigo", subTab: "leave"           },
       { key: "approval-request", label: "점심불참", icon: Coffee,       color: "indigo", subTab: "lunch"           },
       { key: "approval-request", label: "서류작성", icon: PencilLine,   color: "indigo", subTab: "document-writer" },
+      // 2026-08-31 · 사용자 지시 · 경영의 요청목록 · 승인요청 아래로 이동
+      { key: "requests",        label: "요청목록", icon: Chat,         color: "indigo", managerOnly: true         },
     ],
   },
   {
@@ -124,7 +126,7 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "business-manage", label: "직원관리",       icon: UsersThree, color: "violet", subTab: "staff-manage",              managerOnly: true },
       { key: "business-manage", label: "근로계약서 작성", icon: PencilLine, color: "violet", subTab: "document-writer:contract", managerOnly: true },
       { key: "business-manage", label: "각종양식",       icon: FileText,   color: "violet", subTab: "hr-forms",                  managerOnly: true },
-      { key: "requests",        label: "요청목록",       icon: Chat,       color: "violet", managerOnly: true },
+      // 2026-08-31 · 사용자 지시 · 요청목록 · 승인요청 그룹으로 이동됨 (중복 제거)
     ],
   },
   {
