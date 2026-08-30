@@ -157,12 +157,14 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
               </div>
             </div>
 
-            {/* 중앙 진열대 */}
+            {/* 중앙 진열대 · 2026-08-30 · 사용자 지시 · 반응형
+                · lg+ (≥1024px) · 8 pair 한 줄 (22 옆에)
+                · md (768-1023) · 4 pair per row · 2 rows (5-8 위 · 1-4 아래)
+                · sm (<768) · 2 pair per row · 4 rows */}
             <div className="my-3 w-full">
-              <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1">중앙 진열대 (22 · 8B|8A → 1B|1A · 16구역)</div>
-              <div className="flex flex-wrap md:flex-nowrap items-stretch justify-start md:pr-3 px-1.5 bg-zinc-50 border border-line py-2 rounded-lg gap-1.5">
-                {/* 진열대 22 */}
-                <div className="flex flex-col items-center gap-0.5 basis-full md:basis-auto md:flex-none md:w-[40px] md:min-w-[40px] md:mr-1">
+              <div className="flex flex-wrap lg:flex-nowrap items-stretch justify-start lg:pr-3 px-1.5 bg-zinc-50 border border-line py-2 rounded-lg gap-1.5">
+                {/* 진열대 22 · lg+ 는 첫 컬럼 · md 이하 · 상단 전체 폭 */}
+                <div className="flex flex-col items-center gap-0.5 basis-full lg:basis-auto lg:flex-none lg:w-[40px] lg:min-w-[40px] lg:mr-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -185,7 +187,10 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
                   {renderZoneCell(22, "w-full h-[80px] flex flex-col justify-between items-center py-1 px-0.5 text-[12px]")}
                   <div className="w-full h-[56px]" />
                 </div>
-                {/* 진열대 8→1 각각 B|A pair */}
+                {/* 진열대 8→1 각각 B|A pair · 2026-08-30 · 사용자 지시
+                    · 카테고리+구역+담당자 · 하나의 셀 안 통합 (매장구역편집도와 동일)
+                    · 요청 버튼 제거
+                    · 색상은 CAT_A/B_COLORS 유지 */}
                 {STORE_AISLE_PAIRS.map((num) => {
                   const ca = CAT_A_COLORS[num];
                   const cb = CAT_B_COLORS[num];
@@ -193,32 +198,33 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
                   const subB = getZoneSubLabel(`${num}B`) || (zd?.subB ?? "");
                   const subA = getZoneSubLabel(`${num}A`) || (zd?.subA ?? "");
                   return (
-                    <div key={`pair-${num}`} className="flex flex-col items-stretch gap-0.5 basis-[calc(50%-6px)] md:basis-0 md:flex-[2_2_0%] md:min-w-[60px]">
+                    <div key={`pair-${num}`} className="flex flex-row gap-0.5 items-stretch basis-[calc(50%-6px)] sm:basis-[calc(25%-6px)] lg:basis-0 lg:flex-[2_2_0%] lg:min-w-[60px]">
+                      {/* B side · 좌 · 통합 셀 (카테고리 + 담당자) */}
                       <button
                         type="button"
                         onClick={() => onZoneProductsOpen({ zoneId: `${num}B`, zoneNum: num, zoneLabel: `진열대 ${num}B`, category: subB })}
-                        title={`${num}B 카테고리 → 상품 조회`}
-                        className={`w-full text-[13px] font-bold ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:brightness-95 transition`}>
-                        <span className={`text-[13px] font-bold text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{getZoneLabel(`${num}B`)}</span>
-                        <span className="line-clamp-3 text-[13px]">{subB}</span>
+                        title={`${num}B · ${subB} · 클릭 · 상품 조회`}
+                        className={`flex-1 min-w-0 text-[13px] font-bold ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-1 leading-tight text-center flex flex-col items-center gap-1 overflow-hidden cursor-pointer hover:brightness-95 transition`}
+                      >
+                        <span className={`text-[13px] font-bold text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none`}>{getZoneLabel(`${num}B`)}</span>
+                        <span className="text-[13px] break-keep whitespace-normal">{subB}</span>
+                        {/* 담당자 셀 · 셀 내부 · hideRequest=true */}
+                        <div className="w-full mt-auto pt-1">
+                          {renderZoneCellById(`${num}B`, "w-full min-h-[60px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[12px]", "", true)}
+                        </div>
                       </button>
-                      <div className="flex gap-0.5 items-stretch">
-                        <div className="flex-1 flex flex-col gap-0.5">
-                          {renderZoneCellById(`${num}B`, "w-full h-[80px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[12px]", "", true)}
-                          {renderRequestButton(num, `${num}B`)}
-                        </div>
-                        <div className="flex-1 flex flex-col gap-0.5">
-                          {renderZoneCellById(`${num}A`, "w-full h-[80px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[12px]", "", true)}
-                          {renderRequestButton(num, `${num}A`)}
-                        </div>
-                      </div>
+                      {/* A side · 우 · 통합 셀 */}
                       <button
                         type="button"
                         onClick={() => onZoneProductsOpen({ zoneId: `${num}A`, zoneNum: num, zoneLabel: `진열대 ${num}A`, category: subA })}
-                        title={`${num}A 카테고리 → 상품 조회`}
-                        className={`w-full text-[13px] font-bold ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:brightness-95 transition`}>
-                        <span className={`text-[13px] font-bold text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{getZoneLabel(`${num}A`)}</span>
-                        <span className="line-clamp-3 text-[13px]">{subA}</span>
+                        title={`${num}A · ${subA} · 클릭 · 상품 조회`}
+                        className={`flex-1 min-w-0 text-[13px] font-bold ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-1 leading-tight text-center flex flex-col items-center gap-1 overflow-hidden cursor-pointer hover:brightness-95 transition`}
+                      >
+                        <span className={`text-[13px] font-bold text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none`}>{getZoneLabel(`${num}A`)}</span>
+                        <span className="text-[13px] break-keep whitespace-normal">{subA}</span>
+                        <div className="w-full mt-auto pt-1">
+                          {renderZoneCellById(`${num}A`, "w-full min-h-[60px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[12px]", "", true)}
+                        </div>
                       </button>
                     </div>
                   );
