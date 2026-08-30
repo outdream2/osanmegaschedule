@@ -248,6 +248,8 @@ export const ProductCreateModal: React.FC<Props> = ({
         purchase_price: parseNum(form.purchase_price),
         brand: form.brand.trim() || null,
         manufacturer: form.manufacturer.trim() || null,
+        // 2026-08-30 · 사용자 지시 · 상품 등록 시 · 판매중 자동 설정 (조회 필터 통과)
+        sale_status: "판매중",
       };
       // 클라이언트 사전 검증 (Zod)
       const parsed = CreateProductSchema.safeParse(payload);

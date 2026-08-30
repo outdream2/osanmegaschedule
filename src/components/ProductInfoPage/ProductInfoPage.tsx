@@ -480,7 +480,8 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
     let alive = true;
     setListLoading(true);
     setListError(null);
-    api.get<Record<string, Partial<ProductRow> & { product_name?: string }>>("/api/products-map")
+    // 2026-08-30 · 사용자 지시 · 관리 페이지 · 판매중지·숨김 상품도 모두 표시
+    api.get<Record<string, Partial<ProductRow> & { product_name?: string }>>("/api/products-map?include_inactive=1&include_hidden=1")
       .then(({ data }) => {
         if (!alive) return;
         const arr: ProductRow[] = Object.entries(data ?? {}).map(([code, p]) => ({

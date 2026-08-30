@@ -39,7 +39,14 @@ router.get("/api/stock-check", asyncHandler(async (req, res) => {
 router.get("/api/products-map", asyncHandler(async (req, res) => {
   // 2026-08-26 · 사용자 지시 · 전역 판매중 설정 반영 · getPublicProductMap 사용
   // 2026-08-27 · 사용자 지시 · 로딩 속도 개선 · ?fields=slim 요청 시 필수 필드만 반환 (~50% 응답 감소)
-  const map = await getPublicProductMap();
+  // 2026-08-30 · 사용자 지시 · 관리 페이지 (ProductInfoPage) · 판매중지·숨김 포함 조회
+  //   · ?include_inactive=1 · 판매중지도 포함
+  //   · ?include_hidden=1 · 숨김도 포함
+  const includeInactive = req.query.include_inactive === "1" || req.query.include_inactive === "true";
+  const includeHidden = req.query.include_hidden === "1" || req.query.include_hidden === "true";
+  const map = (includeInactive || includeHidden)
+    ? await getProductMap()  // 필터 없는 원본 (모든 상품)
+    : await getPublicProductMap();
   const isSlim = String(req.query.fields ?? "") === "slim";
   const payload = isSlim
     ? Object.fromEntries(Object.entries(map).map(([code, p]: [string, any]) => [code, {
