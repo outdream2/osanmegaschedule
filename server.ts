@@ -47,6 +47,8 @@ import stockArrivalsRouter from "./server/routes/stock/stockArrivals";
 import productArrivalsRouter from "./server/routes/stock/productArrivals";
 import returnRequestsRouter from "./server/routes/purchase/returnRequests";
 import zoneLabelsRouter from "./server/routes/display/zoneLabels";
+// 2026-08-30 · 사용자 지시 · zone_defs KV → 정식 DB 테이블 이관
+import zoneDefsRouter from "./server/routes/display/zoneDefs";
 import zoneAssignmentsRouter from "./server/routes/display/zoneAssignments";
 import supplierBalanceConfigRouter from "./server/routes/purchase/supplierBalanceConfig";
 import supplierPaymentsRouter from "./server/routes/purchase/supplierPayments";
@@ -246,6 +248,7 @@ async function startServer() {
   app.use(productArrivalsRouter);
   app.use(returnRequestsRouter);
   app.use(zoneLabelsRouter);
+  app.use(zoneDefsRouter);
   app.use(zoneAssignmentsRouter);
 
   // 기타 (로그인 사용자 대상)
