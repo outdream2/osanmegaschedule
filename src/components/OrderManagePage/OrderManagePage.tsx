@@ -478,9 +478,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       }
       return cat === needCategoryFilter;
     };
-    // 검색어 있고 · 조건적용 OFF → allProductsMap 전체 상품
-    // 그 외 (ON · 또는 검색어 없음) → lowStock (기본 발주필요 리스트)
-    const useAll = q && !needConditionApply;
+    // 2026-08-30 · 사용자 지시 · 검색어 있으면 · 항상 전체 상품 검색
+    //   · 공급사·상품명·코드 검색 시 · 재고 부족 아닌 상품도 결과에 나옴
+    //   · 클릭 시 · confirm "발주필요 리스트에 추가할까요?" → 예 · 추가
+    //   · 이전 · needConditionApply=ON (기본) 이면 재고 부족만 검색 · 사용자 혼란
+    const useAll = !!q;
     const base: ProductInfo[] = useAll ? Object.values(allProductsMap) as ProductInfo[] : lowStock;
     return base.filter(p => {
       if (q) {

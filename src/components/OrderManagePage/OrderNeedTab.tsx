@@ -144,8 +144,9 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
     const code = getCode(p);
     const name = getName(p);
     const inLowStock = Number.isFinite(cur) && Number.isFinite(opt) && cur < opt;
-    if (!inLowStock && !needConditionApply && !requestedCodes.has(code)) {
-      // OFF 검색 결과 (재고 부족 조건 아님) · confirm 후 발주필요 추가
+    // 2026-08-30 · 사용자 지시 · 재고 부족 아닌 상품 클릭 시 · confirm 후 발주필요 추가
+    //   · 검색 결과에서 · 공급사·상품명으로 찾아 · 클릭 · 예 · 발주필요 리스트 편입
+    if (!inLowStock && !requestedCodes.has(code)) {
       const ok = await confirm({
         title: "발주필요 리스트에 추가",
         message: `[${name}]\n현재고 ${Number.isFinite(cur) ? cur : "-"} · 적정재고 ${Number.isFinite(opt) ? opt : "-"}\n\n이 상품을 발주필요 리스트에 추가할까요?`,
@@ -155,9 +156,9 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
       await handleRequestOrder(p);
       return;
     }
-    // 기본 · 우측 상세 패널 오픈
+    // 기본 · 우측 상세 패널 오픈 (재고 부족 상품 or 이미 요청됨)
     setNeedPanelProduct({ code, name });
-  }, [confirm, getCode, getName, handleRequestOrder, needConditionApply, requestedCodes, setNeedPanelProduct]);
+  }, [confirm, getCode, getName, handleRequestOrder, requestedCodes, setNeedPanelProduct]);
   return (
   <div className="flex flex-col gap-2">
     {/* 상단 툴바 */}
