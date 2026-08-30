@@ -6,9 +6,11 @@
 
 import React, { useMemo, useState } from "react";
 import { Popover as PopoverPrimitive } from "radix-ui";
-import { Check, MapPin, Layers, Tag as TagIcon, X } from "lucide-react";
+import { Check, MapPin, Layers, Tag as TagIcon, X, Users } from "lucide-react";
 import { useZoneDefs, type ZoneDefRaw } from "../../hooks/useZoneDefs";
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-08-30 · 사용자 지시 · 매장구역도에서 담당자 직접 배정 가능 · AssigneeEditor 프리미티브
+import { AssigneeEditor } from "./AssigneeEditor";
 
 interface Props {
   /** 대상 zone_defs.cellId · 편집 대상 셀 */
@@ -30,6 +32,7 @@ export const ZoneCellPicker: React.FC<Props> = ({ cellId, canEdit = false, trigg
   const currentZone = zone?.zone ?? "";
   const currentCat = zone?.category ?? "";
   const currentDetail = zone?.detailedCategory ?? "";
+  const currentAssignee = zone?.assignee ?? [];
 
   // 카테고리 프리셋 · zone_defs 전체 category 중복 제거
   const categoryOptions = useMemo(() => {
@@ -168,6 +171,18 @@ export const ZoneCellPicker: React.FC<Props> = ({ cellId, canEdit = false, trigg
                     ))}
                   </div>
                 )}
+              </section>
+
+              {/* 2026-08-30 · 사용자 지시 · 담당자 · 매장구역도에서 직접 배정 · AssigneeEditor 프리미티브 */}
+              <section>
+                <div className="text-[11px] font-bold text-ink-soft uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                  <Users size={11} /> 담당자
+                </div>
+                <AssigneeEditor
+                  value={currentAssignee}
+                  canEdit={canEdit && !!zone}
+                  onSave={async (next) => { if (zone) await updateZoneRaw(zone.id, { assignee: next }); }}
+                />
               </section>
             </div>
 
