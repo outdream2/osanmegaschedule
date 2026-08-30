@@ -219,6 +219,14 @@ export function useZoneDefs(): {
     return () => { cancelled = true; };
   }, [reloadTick]);
 
+  // 2026-08-30 · 사용자 지시 · 저장 즉시 좌측 매장구역도 반영
+  //   · 다른 useZoneDefs 인스턴스가 편집 성공 시 broadcast → 이 인스턴스 refetch
+  useEffect(() => {
+    const onUpdate = () => setReloadTick(t => t + 1);
+    window.addEventListener("zone-defs-updated", onUpdate);
+    return () => window.removeEventListener("zone-defs-updated", onUpdate);
+  }, []);
+
   // 하위호환 zones · dirty 편집 중이면 dirty · 아니면 raw 에서 변환
   const zones = useMemo<ZoneDefWithRowIds[]>(() => {
     if (dirtyZones) return dirtyZones;
@@ -271,6 +279,8 @@ export function useZoneDefs(): {
       // 갱신된 zonesRaw · reload 로 리페치
       setDirtyZones(null);
       setReloadTick(t => t + 1);
+      // 2026-08-30 · 다른 useZoneDefs 인스턴스 (좌측 매장구역도) 실시간 반영
+      try { window.dispatchEvent(new CustomEvent("zone-defs-updated")); } catch {}
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 1500);
       return true;
@@ -290,6 +300,8 @@ export function useZoneDefs(): {
       if (data?.zone) {
         setZonesRaw(prev => prev.map(z => z.id === rawId ? data.zone : z));
         setDirtyZones(null); // 저장 후 · dirty 해제
+        // 2026-08-30 · 다른 useZoneDefs 인스턴스 (좌측 매장구역도) 실시간 반영
+        try { window.dispatchEvent(new CustomEvent("zone-defs-updated", { detail: { id: rawId } })); } catch {}
       }
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 1500);

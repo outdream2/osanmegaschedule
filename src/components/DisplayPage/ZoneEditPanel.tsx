@@ -15,7 +15,7 @@ import { EmptyState } from "../common/EmptyState";
 import { SplitPanel } from "../common/SplitPanel";
 import { StoreZoneMap } from "../common/StoreZoneMap";
 import { PanZoomImage } from "../common/PanZoomImage";
-import { useZoneDefs, type ZoneDef } from "../../hooks/useZoneDefs";
+import { useZoneDefs, type ZoneDef, type ZoneDefRaw } from "../../hooks/useZoneDefs";
 // 2026-08-26 · 사용자 지시 · 원본 매장구역도 이미지 (pan/zoom viewer)
 import zoneCategoryImg from "../../sample/zonecategory.png";
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -109,7 +109,7 @@ function classifyZone(num: number): MajorZone {
 }
 
 export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
-  const { zones, setZones, loading, saveNow, saveState } = useZoneDefs();
+  const { zones, setZones, loading, saveNow, saveState, updateZoneRaw } = useZoneDefs();
   const { toast, showSuccess, showError } = useToast();
   const confirm = useConfirm();
   const [editing, setEditing] = useState<{ num: number; field: EditField } | null>(null);
@@ -138,24 +138,45 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
     setDraft(cur);
   };
   const cancelEdit = () => { setEditing(null); setDraft(""); };
+  // 2026-08-30 · 사용자 버그 리포트 · "저장됨" 표시되나 카테고리 비어있음
+  //   원인: setTimeout(saveNow) stale closure · dirtyZones=null 캡처 · 즉시 return true
+  //   수정: updateZoneRaw(rowId, patch) 직접 호출 · 편집 필드 → 정확한 DB row 매핑
   const commitEdit = async () => {
     if (!editing || savingRef.current) return;
     const cleaned = draft.trim();
-    // 2026-08-26 · 사용자 지시 · 카테고리/서브 비워도 행 유지 · 빈 문자열 저장
-    //   description 계열만 undefined 로 저장 (구조 영향 없음)
     const isDescField = editing.field.startsWith("description");
     const nextValue: string | undefined = cleaned || (isDescField ? undefined : "");
+    const zone = zones.find(z => z.num === editing.num) as (ZoneDef & { __rowId?: number; __rowIdA?: number; __rowIdB?: number; __rowIdC?: number }) | undefined;
+    if (!zone) { showError(`구역 ${editing.num} 찾기 실패`); return; }
+    // 편집 필드 → row id + DB 컬럼 매핑
+    let rowId: number | undefined;
+    let patch: Partial<Omit<ZoneDefRaw, "id">> = {};
+    switch (editing.field) {
+      case "category":     rowId = zone.__rowId;  patch = { category: nextValue ?? "" }; break;
+      case "subA":         rowId = zone.__rowIdA; patch = { category: nextValue ?? "" }; break;
+      case "subB":         rowId = zone.__rowIdB; patch = { category: nextValue ?? "" }; break;
+      case "subC":         rowId = zone.__rowIdC; patch = { category: nextValue ?? "" }; break;
+      case "description":  rowId = zone.__rowId;  patch = { detailedCategory: nextValue }; break;
+      case "descriptionA": rowId = zone.__rowIdA; patch = { detailedCategory: nextValue }; break;
+      case "descriptionB": rowId = zone.__rowIdB; patch = { detailedCategory: nextValue }; break;
+      case "descriptionC": rowId = zone.__rowIdC; patch = { detailedCategory: nextValue }; break;
+    }
+    if (!rowId) {
+      showError(`구역 ${editing.num}번 · DB row 없음 · 관리자에게 문의 (zone_defs 신규 row 필요)`);
+      return;
+    }
     savingRef.current = true;
     setSaving(true);
+    // 로컬 즉시 반영 (optimistic)
     setZones((prev: ZoneDef[]) => prev.map(z => z.num === editing.num ? { ...z, [editing.field]: nextValue } : z));
-    setTimeout(async () => {
-      const ok = await saveNow();
-      savingRef.current = false;
-      setSaving(false);
-      if (ok) { showSuccess(`구역 ${editing.num}번 저장 완료`); cancelEdit(); }
-      else showError("구역 저장 실패 · 관리자 lv≥9 필요");
-    }, 50);
+    const ok = await updateZoneRaw(rowId, patch);
+    savingRef.current = false;
+    setSaving(false);
+    if (ok) { showSuccess(`구역 ${editing.num}번 저장 완료`); cancelEdit(); }
+    else showError("구역 저장 실패 · 관리자 lv≥9 필요");
   };
+  // 미사용 · 하위호환 saveNow 유지 (기본값 복원용)
+  void saveNow;
 
   const resetToDefault = async () => {
     if (!canEdit) return;
