@@ -14,15 +14,15 @@ BEGIN
   END IF;
 END $$;
 
--- Step 2 · 새 zone_defs · 5개 컬럼 (+ id PK · updated_at)
+-- Step 2 · 새 zone_defs · 4개 컬럼 (+ id PK · updated_at)
 CREATE TABLE zone_defs (
   id                  SERIAL PRIMARY KEY,
   zone                TEXT NOT NULL,                     -- 구역 (예: "진열대 1A", "벽면 22")
   category            TEXT NOT NULL,                     -- 카테고리
   detailed_category   TEXT,                              -- 상세카테고리 (매장구역도 hover)
   cell_id             INT UNIQUE NOT NULL,               -- 셀아이디 · 매장구역도 셀 넘버 (1-54)
-  assigned_staff_ids  INT[] DEFAULT ARRAY[]::INT[],     -- 담당자 (employees.id 배열)
   updated_at          TIMESTAMPTZ DEFAULT NOW()
+  -- 담당자 · zone_assignments 테이블 (스케쥴 요일·시간별 배정) 그대로 사용 · 여기 안 저장
 );
 
 COMMENT ON TABLE  zone_defs                   IS '매장구역도·매장구역편집 단일 소스 (2026-08-30)';
@@ -30,7 +30,6 @@ COMMENT ON COLUMN zone_defs.zone              IS '구역 (예: 진열대 1A)';
 COMMENT ON COLUMN zone_defs.category          IS '카테고리 (매장구역도 셀에 표시)';
 COMMENT ON COLUMN zone_defs.detailed_category IS '상세카테고리 (hover 팝업)';
 COMMENT ON COLUMN zone_defs.cell_id           IS '매장구역도 셀 위치 · 1-54 순차 넘버링';
-COMMENT ON COLUMN zone_defs.assigned_staff_ids IS '담당자 employees.id 배열';
 
 -- Step 3 · 백업에서 이관 (백업 있을 때만)
 DO $$
@@ -149,8 +148,7 @@ DROP TABLE IF EXISTS zone_defs_v1_backup;
 
 -- 확인
 SELECT cell_id, zone, category,
-       LEFT(COALESCE(detailed_category, ''), 30) AS detail,
-       assigned_staff_ids
+       LEFT(COALESCE(detailed_category, ''), 30) AS detail
 FROM zone_defs
 ORDER BY cell_id;
 
