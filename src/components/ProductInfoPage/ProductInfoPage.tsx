@@ -103,7 +103,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
   const [draft, setDraft] = useState<Record<EditableKey, string>>({} as Record<EditableKey, string>);
   const [saving, setSaving] = useState(false);
   // 2026-08-29 · 사용자 지시 · 상세 편집 카드 → 모달 · 필요할 때만 노출
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  // 2026-08-30 · 사용자 지시 · 모달 제거 · 인라인 카드로 이관 · state 유지 (미사용)
 
   // product 변경 시 · 편집 종료 (다른 상품 선택 시 draft 리셋)
   useEffect(() => {
@@ -254,7 +254,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
 
   return (
     <>
-      {/* 2026-08-29 · #186 A안 · Attio Sticky Hero · 상단 고정 · 상품명·배지·상세편집 액션 */}
+      {/* 2026-08-29 · #186 A안 · Attio Sticky Hero · 상단 고정 · 상품명·배지 · [수정] 버튼 인라인 카드로 이동 */}
       <ProductDetailHero
         product={{
           product_code: product.product_code,
@@ -265,17 +265,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
           sale_status: (product as any).sale_status,
           barcode: (product as any).barcode,
         }}
-        actions={canEdit && (
-          <button
-            type="button"
-            onClick={() => { setDetailModalOpen(true); if (!editing) startEdit(); }}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-line bg-white text-[17px] font-bold text-brand-deep hover:bg-brand-tint hover:border-brand-deep transition cursor-pointer shadow-sm"
-            title="상세 편집 (전체 필드)"
-          >
-            <Pencil size={14} strokeWidth={2.4} />
-            상세 편집
-          </button>
-        )}
+        actions={null}
       />
       <div className="p-4 space-y-3">
         {/* 2026-08-28 · 사용자 지시 · 13컬럼 통일 · ProductBasicInfoPanel · 진열위치·판매상태 인라인 편집 */}
@@ -337,19 +327,13 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
           </SectionCard>
         )}
       </div>
-      {/* 2026-08-29 · 사용자 지시 · 상세 편집 · 모달 · [상세 편집] 버튼 클릭 시 오픈 */}
-      <Modal
-        open={detailModalOpen}
-        onClose={() => { if (!saving) { setDetailModalOpen(false); if (editing) setEditing(false); } }}
-        title={`상세 편집 · ${product.product_name || product.product_code}`}
-        size="lg-narrow"
-        bodyPadding="none"
-      >
-        <div className="p-4">
+      {/* 2026-08-30 · 사용자 지시 · 상세정보 · 인라인 노출 · 모달 제거 · 편집 여기로 통합 */}
+      <div className="px-4 pb-4">
         <Card variant="flat" padding="md" rounded="lg" topAccent className="bg-white">
           <div className="flex items-center gap-2 mb-3 pb-2 border-b border-line">
             <InfoIcon size={16} className="text-brand-deep" />
-            <h3 className="text-[18px] font-bold text-ink tracking-tight">상세 편집 (전체 필드)</h3>
+            <h3 className="text-[18px] font-bold text-ink tracking-tight">상세정보</h3>
+            <span className="text-[14px] text-ink-soft">단위 · 규격 · 바코드 · 브랜드 · 제조사 · 메모</span>
             <div className="flex-1" />
             {editing ? (
               <>
@@ -358,83 +342,68 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                   type="button"
                   onClick={save}
                   disabled={saving}
-                  className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-brand-deep text-white text-[18px] font-bold hover:bg-[#0d3a5c] disabled:opacity-50 cursor-pointer"
+                  className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-brand-deep text-white text-[15px] font-bold hover:bg-[#0d3a5c] disabled:opacity-50 cursor-pointer shadow-sm"
                 >
-                  <Save size={12} />{saving ? "저장중" : "저장"}
+                  <Save size={13} />{saving ? "저장중" : "저장"}
                 </button>
                 <button
                   type="button"
                   onClick={cancelEdit}
                   disabled={saving}
-                  className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-line text-[18px] font-semibold text-zinc-600 hover:bg-zinc-50 cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-line text-[15px] font-semibold text-zinc-600 hover:bg-zinc-50 cursor-pointer disabled:opacity-50"
                 >
-                  <X size={12} />취소
+                  <X size={13} />취소
                 </button>
               </>
             ) : (
-              <>
-                <StatusPill tone="brand" size="xs">조회</StatusPill>
-                {canEdit && (
-                  <button
-                    type="button"
-                    onClick={startEdit}
-                    title="상품 편집"
-                    className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line text-[18px] font-semibold text-brand-deep hover:bg-brand-tint hover:border-brand-deep cursor-pointer transition-colors"
-                  >
-                    <Pencil size={12} />편집
-                  </button>
-                )}
-              </>
+              canEdit && (
+                <button
+                  type="button"
+                  onClick={startEdit}
+                  title="상품 편집"
+                  className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-line text-[15px] font-semibold text-brand-deep hover:bg-brand-tint hover:border-brand-deep cursor-pointer transition-colors shadow-sm"
+                >
+                  <Pencil size={13} />수정
+                </button>
+              )
             )}
           </div>
+          {/* 2026-08-30 · 사용자 지시 · 중요·필수 = ProductBasicInfoPanel (위 카드) · 여기는 상세정보 · 중요 X 필드
+             · 편집 시 상단 필수 필드 (진열위치·판매상태·상품명·공급사·카테고리·가격·적정재고) 도 여기서 함께 편집
+             · 표시 전용은 단위·규격·바코드·브랜드·제조사·메모 */}
           <dl className="grid grid-cols-[110px_1fr] gap-y-2 gap-x-3 text-[16px]">
-            {/* 상품코드 · 편집 불가 (read-only) */}
             <dt className="text-zinc-500 font-medium">상품코드</dt>
             <dd className="tabular-nums font-semibold text-ink">
               {product.product_code}
-              <span className="ml-1.5 text-[16px] text-zinc-400 font-normal">(변경 불가)</span>
+              <span className="ml-1.5 text-[14px] text-zinc-400 font-normal">(변경 불가)</span>
             </dd>
             {editing ? (
               <>
                 {editRow("product_name", "상품명")}
                 {editRow("supplier", "공급사")}
                 {editRow("category", "카테고리")}
+                {editRow("sale_price", "판매가", "number")}
+                {editRow("purchase_price", "매입가", "number")}
+                {editRow("optimal_stock", "적정재고", "number")}
+                {editRow("real_map", "실제배정구역")}
                 {editRow("unit", "단위")}
                 {editRow("spec", "규격")}
                 {editRow("barcode", "바코드")}
-                {editRow("real_map", "실제배정구역")}
-                {editRow("optimal_stock", "추천 적정재고", "number")}
-                {editRow("sale_price", "판매가", "number")}
-                {editRow("purchase_price", "매입가", "number")}
                 {editRow("brand", "브랜드")}
                 {editRow("manufacturer", "제조사")}
               </>
             ) : (
               <>
-                {displayRow("product_name", "상품명")}
-                {displayRow("supplier", "공급사")}
-                {displayRow("category", "카테고리")}
                 {displayRow("unit", "단위")}
                 {displayRow("spec", "규격")}
                 {displayRow("barcode", "바코드")}
-                {displayRow("real_map", "실제배정구역")}
-                <dt className="text-zinc-500 font-medium">창고 재고</dt>
-                <dd className="text-ink tabular-nums">{product.warehouse_stock ?? <span className="text-zinc-400">—</span>}</dd>
-                <dt className="text-zinc-500 font-medium">매장 재고</dt>
-                <dd className="text-ink tabular-nums">{product.store_stock ?? <span className="text-zinc-400">—</span>}</dd>
-                {displayRow("optimal_stock", "추천 적정재고")}
-                {displayRow("sale_price", "판매가")}
-                {displayRow("purchase_price", "매입가")}
                 {displayRow("brand", "브랜드")}
                 {displayRow("manufacturer", "제조사")}
-                <dt className="text-zinc-500 font-medium">최근 매입일</dt>
-                <dd className="text-ink">{product.last_purchase_date ?? <span className="text-zinc-400">—</span>}</dd>
               </>
             )}
           </dl>
         </Card>
-        </div>
-      </Modal>
+      </div>
       {toast && (
         <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
       )}
