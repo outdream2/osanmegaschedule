@@ -52,6 +52,7 @@ export function GradientAccent({
   const posCls = absolute ? "absolute top-0 left-0 right-0 z-10 pointer-events-none" : "w-full";
   return (
     <span
+      aria-hidden="true"
       className={`${posCls} ${SIZE_CLS[size]} bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep ${TONE_CLS[tone]} ${className}`.trim()}
     />
   );
