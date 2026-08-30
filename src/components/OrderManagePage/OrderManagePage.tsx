@@ -614,6 +614,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               toggleLowStockOne={toggleLowStockOne} clearLowStockSelection={clearLowStockSelection}
               setSelectedLowStock={setSelectedLowStock} bulkRequestOrder={bulkRequestOrder}
               handleRequestOrder={handleRequestOrder}
+              orderQtyOverride={orderQtyOverride}
+              setOrderQtyOverride={setOrderQtyOverride}
             />
           )}
           {purchaseOrderSubTab === "critical" && (

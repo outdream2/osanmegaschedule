@@ -1,22 +1,8 @@
 {
-  "created": "2026-08-29",
+  "created": "2026-08-30",
   "version": 1,
-  "totalViolations": 8,
+  "totalViolations": 2,
   "files": {
-    "src/components/SettingsModal/SettingsModal.tsx": {
-      "lines": 911,
-      "violations": [
-        {
-          "ruleId": "raw-confirm",
-          "count": 2
-        },
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 7
-    },
     "src/components/BarcodeScanner/BarcodeScanner.tsx": {
       "lines": 593,
       "violations": [
@@ -27,8 +13,8 @@
       ],
       "totalWeight": 3
     },
-    "src/components/OrderManagePage/VendorDetailTabs.tsx": {
-      "lines": 819,
+    "src/components/OrderManagePage/OrderNeedTab.tsx": {
+      "lines": 825,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -36,36 +22,6 @@
         }
       ],
       "totalWeight": 3
-    },
-    "src/components/ScanPage/ProductInfoCard.tsx": {
-      "lines": 843,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/common/SaleStatusFilter.tsx": {
-      "lines": 63,
-      "violations": [
-        {
-          "ruleId": "raw-card-wrapper",
-          "count": 1
-        }
-      ],
-      "totalWeight": 2
-    },
-    "src/components/DisplayPage/RealStockTablePage.tsx": {
-      "lines": 777,
-      "violations": [
-        {
-          "ruleId": "raw-card-wrapper",
-          "count": 1
-        }
-      ],
-      "totalWeight": 2
     }
   }
 }
