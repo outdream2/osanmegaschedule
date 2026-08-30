@@ -15,7 +15,7 @@ import { EmptyState } from "../common/EmptyState";
 import { SplitPanel } from "../common/SplitPanel";
 import { StoreZoneMap } from "../common/StoreZoneMap";
 import { PanZoomImage } from "../common/PanZoomImage";
-import { useZoneDefs, type ZoneDef, type ZoneDefRaw } from "../../hooks/useZoneDefs";
+import { useZoneDefs, type ZoneDef, type ZoneDefRaw, type ZoneDefWithRowIds } from "../../hooks/useZoneDefs";
 // 2026-08-26 · 사용자 지시 · 원본 매장구역도 이미지 (pan/zoom viewer)
 import zoneCategoryImg from "../../sample/zonecategory.png";
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -37,6 +37,9 @@ interface FlatRow {
   descField: "description" | "descriptionA" | "descriptionB" | "descriptionC";
   catValue?: string;
   descValue?: string;
+  /** 2026-08-30 · 담당자 편집 · 필드 및 rowId 매핑 · updateZoneRaw 직접 호출 */
+  rowId?: number;
+  assignee: string[];
 }
 
 // 2026-08-26 · 사용자 지시 · 구역 구조는 절대 사라지지 않음
@@ -54,21 +57,22 @@ function expandZoneToRows(z: ZoneDef): FlatRow[] {
   // 구조는 DEFAULT_ZONES 기준 · 편집값이 undefined/빈문자열이어도 행은 유지
   const structure = DEFAULT_SUB_STRUCTURE.get(z.num) ?? { hasA: !!z.subA, hasB: !!z.subB, hasC: !!z.subC };
   const { hasA, hasB, hasC } = structure;
+  const zz = z as ZoneDefWithRowIds;
   if (hasA && hasB && hasC) {
     return [
-      { zone: z, code: `${z.num}A`, sub: "A", catField: "subA", descField: "descriptionA", catValue: z.subA ?? "", descValue: z.descriptionA },
-      { zone: z, code: `${z.num}B`, sub: "B", catField: "subB", descField: "descriptionB", catValue: z.subB ?? "", descValue: z.descriptionB },
-      { zone: z, code: `${z.num}C`, sub: "C", catField: "subC", descField: "descriptionC", catValue: z.subC ?? "", descValue: z.descriptionC },
+      { zone: z, code: `${z.num}A`, sub: "A", catField: "subA", descField: "descriptionA", catValue: z.subA ?? "", descValue: z.descriptionA, rowId: zz.__rowIdA, assignee: zz.__assigneeA ?? [] },
+      { zone: z, code: `${z.num}B`, sub: "B", catField: "subB", descField: "descriptionB", catValue: z.subB ?? "", descValue: z.descriptionB, rowId: zz.__rowIdB, assignee: zz.__assigneeB ?? [] },
+      { zone: z, code: `${z.num}C`, sub: "C", catField: "subC", descField: "descriptionC", catValue: z.subC ?? "", descValue: z.descriptionC, rowId: zz.__rowIdC, assignee: zz.__assigneeC ?? [] },
     ];
   }
   if (hasA && hasB) {
     return [
-      { zone: z, code: `${z.num}A`, sub: "A", catField: "subA", descField: "descriptionA", catValue: z.subA ?? "", descValue: z.descriptionA },
-      { zone: z, code: `${z.num}B`, sub: "B", catField: "subB", descField: "descriptionB", catValue: z.subB ?? "", descValue: z.descriptionB },
+      { zone: z, code: `${z.num}A`, sub: "A", catField: "subA", descField: "descriptionA", catValue: z.subA ?? "", descValue: z.descriptionA, rowId: zz.__rowIdA, assignee: zz.__assigneeA ?? [] },
+      { zone: z, code: `${z.num}B`, sub: "B", catField: "subB", descField: "descriptionB", catValue: z.subB ?? "", descValue: z.descriptionB, rowId: zz.__rowIdB, assignee: zz.__assigneeB ?? [] },
     ];
   }
   return [
-    { zone: z, code: String(z.num), sub: null, catField: "category", descField: "description", catValue: z.category, descValue: z.description },
+    { zone: z, code: String(z.num), sub: null, catField: "category", descField: "description", catValue: z.category, descValue: z.description, rowId: zz.__rowId, assignee: zz.__assignee ?? [] },
   ];
 }
 
@@ -107,6 +111,68 @@ function classifyZone(num: number): MajorZone {
   if (num >= 28 && num <= 40) return "beauty-food"; // 40 (계산대) 포함
   return "counter"; // 카운터테마존 · 41 – 46 (총 6개 · 43=물약)
 }
+
+// 2026-08-30 · 담당자 인라인 편집기 · 콤마 구분 이름 · 저장 즉시 배지 표시
+//   · 값 없으면 "(담당자 없음 · 클릭하여 입력)" · 값 있으면 배지 리스트
+//   · Enter 저장 · Esc 취소 · blur 저장
+const AssigneeEditor: React.FC<{
+  rowId?: number;
+  value: string[];
+  canEdit: boolean;
+  onSave: (rowId: number, patch: { assignee: string[] }) => Promise<boolean>;
+}> = ({ rowId, value, canEdit, onSave }) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const commit = async () => {
+    if (savingRef.current || !rowId) { setEditing(false); return; }
+    const next = draft.split(",").map(s => s.trim()).filter(Boolean);
+    // 변경 없으면 저장 스킵
+    if (JSON.stringify(next) === JSON.stringify(value)) { setEditing(false); return; }
+    savingRef.current = true;
+    setSaving(true);
+    await onSave(rowId, { assignee: next });
+    savingRef.current = false;
+    setSaving(false);
+    setEditing(false);
+  };
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => {
+          if (e.key === "Enter") { e.preventDefault(); commit(); }
+          if (e.key === "Escape") { e.preventDefault(); setEditing(false); }
+        }}
+        disabled={saving}
+        placeholder="이름1, 이름2"
+        className="w-full h-9 px-2.5 rounded-md border border-brand-deep bg-white text-[13px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint"
+      />
+    );
+  }
+  if (!canEdit && value.length === 0) return <span className="text-[12px] text-zinc-300">-</span>;
+  return (
+    <button
+      type="button"
+      onClick={() => { if (!canEdit) return; setDraft(value.join(", ")); setEditing(true); }}
+      className={`flex flex-wrap gap-1 items-center text-left w-full min-h-[32px] rounded-md px-1.5 py-1 transition ${canEdit ? "hover:bg-brand-tint/40 cursor-pointer" : "cursor-default"}`}
+      title={canEdit ? "클릭하여 담당자 편집 (콤마 구분)" : ""}
+    >
+      {value.length === 0
+        ? <span className="text-[12px] text-zinc-300 italic">(담당자 없음{canEdit ? " · 클릭" : ""})</span>
+        : value.map((name, i) => (
+          <span key={i} className="inline-flex items-center h-6 px-2 rounded-full bg-brand-tint text-brand-deep text-[12px] font-bold border border-brand-deep/30">
+            {name}
+          </span>
+        ))
+      }
+    </button>
+  );
+};
 
 export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
   const { zones, setZones, loading, saveNow, saveState, updateZoneRaw } = useZoneDefs();
@@ -363,8 +429,9 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
                 <thead>
                   <tr className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">
                     <th className="text-left px-2 py-1.5" style={{ width: 76 }}>구역</th>
-                    <th className="text-left px-2 py-1.5" style={{ width: "38%" }}>카테고리</th>
-                    <th className="text-left px-2 py-1.5">상세카테고리 (매장구역도 hover)</th>
+                    <th className="text-left px-2 py-1.5" style={{ width: "32%" }}>카테고리</th>
+                    <th className="text-left px-2 py-1.5">상세카테고리</th>
+                    <th className="text-left px-2 py-1.5" style={{ width: 180 }}>담당자</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
@@ -385,6 +452,9 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
                           {renderEdit(z, fr.descField, fr.descValue
                             ? <span className="text-[13px] text-ink-soft leading-relaxed whitespace-pre-wrap">{fr.descValue}</span>
                             : <span className="text-zinc-300 italic">(비어있음 · 클릭하여 입력)</span>, true)}
+                        </td>
+                        <td className="px-2 py-2">
+                          <AssigneeEditor rowId={fr.rowId} value={fr.assignee} canEdit={canEdit} onSave={updateZoneRaw} />
                         </td>
                       </tr>
                     );

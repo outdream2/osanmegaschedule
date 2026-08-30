@@ -20,6 +20,7 @@ interface ZoneDefRow {
   zone: string | null;
   category: string | null;
   detailed_category: string | null;
+  assignee: string[] | null;
   cell_id: number;
   updated_at: string;
 }
@@ -33,6 +34,7 @@ function rowToDto(r: ZoneDefRow) {
     zone: r.zone ?? undefined,
     category: r.category ?? undefined,
     detailedCategory: r.detailed_category ?? undefined,
+    assignee: Array.isArray(r.assignee) ? r.assignee : [],
   };
 }
 
@@ -45,6 +47,9 @@ function bodyToRow(b: any) {
     detailed_category: b.detailedCategory != null && b.detailedCategory !== ""
       ? String(b.detailedCategory)
       : null,
+    assignee: Array.isArray(b.assignee)
+      ? b.assignee.map((s: any) => String(s).trim()).filter(Boolean)
+      : [],
     cell_id: Number(b.cellId),
     updated_at: new Date().toISOString(),
   };
@@ -54,7 +59,7 @@ function bodyToRow(b: any) {
 router.get("/api/zone-defs", asyncHandler(async (_req, res) => {
   const { data, error } = await supabase
     .from("zone_defs")
-    .select("id, location, zone, category, detailed_category, cell_id, updated_at")
+    .select("id, location, zone, category, detailed_category, assignee, cell_id, updated_at")
     .order("cell_id", { ascending: true });
   if (error) {
     console.error("[zone-defs GET]", error.message);
@@ -75,12 +80,15 @@ router.patch("/api/zone-defs/:id", authorize(9), asyncHandler(async (req, res) =
   if (b.zone             !== undefined) patch.zone             = b.zone == null || b.zone === "" ? null : String(b.zone).trim();
   if (b.category         !== undefined) patch.category         = b.category == null || b.category === "" ? null : String(b.category).trim();
   if (b.detailedCategory !== undefined) patch.detailed_category = b.detailedCategory == null || b.detailedCategory === "" ? null : String(b.detailedCategory);
+  if (b.assignee         !== undefined) patch.assignee         = Array.isArray(b.assignee)
+    ? b.assignee.map((s: any) => String(s).trim()).filter(Boolean)
+    : [];
   if (b.cellId           !== undefined) patch.cell_id          = Number(b.cellId);
   const { data, error } = await supabase
     .from("zone_defs")
     .update(patch)
     .eq("id", id)
-    .select("id, location, zone, category, detailed_category, cell_id, updated_at")
+    .select("id, location, zone, category, detailed_category, assignee, cell_id, updated_at")
     .maybeSingle();
   if (error) {
     console.error("[zone-defs PATCH]", error.message);
@@ -101,7 +109,7 @@ router.put("/api/zone-defs", authorize(9), asyncHandler(async (req, res) => {
   const { data, error } = await supabase
     .from("zone_defs")
     .upsert(rows, { onConflict: "cell_id" })
-    .select("id, location, zone, category, detailed_category, cell_id, updated_at");
+    .select("id, location, zone, category, detailed_category, assignee, cell_id, updated_at");
   if (error) {
     console.error("[zone-defs PUT]", error.message);
     throw new HttpError(500, error.message);
@@ -119,7 +127,7 @@ router.post("/api/zone-defs", authorize(9), asyncHandler(async (req, res) => {
   const { data, error } = await supabase
     .from("zone_defs")
     .insert([row])
-    .select("id, location, zone, category, detailed_category, cell_id, updated_at")
+    .select("id, location, zone, category, detailed_category, assignee, cell_id, updated_at")
     .single();
   if (error) {
     console.error("[zone-defs POST]", error.message);

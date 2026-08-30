@@ -5,7 +5,7 @@
 //   · 신규 소비처는 zonesRaw (new shape · id, cellId, zone, category, detailedCategory) 사용
 //   · 편집 · updateZoneByRowId (신규 · PATCH by id) + setZones/saveNow (하위호환 · legacy bulk)
 
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { api, ApiError } from "../lib/apiClient";
 import { SECTION_LABEL, type ZoneDef, type ZoneSection } from "../constants/displayZones";
 
@@ -23,6 +23,8 @@ export interface ZoneDefRaw {
   zone?: string;
   category?: string;
   detailedCategory?: string;
+  /** 2026-08-30 · 담당자 배지 · JSONB 배열 · AssigneePicker */
+  assignee?: string[];
 }
 
 /** 2026-08-30 · location (예: "1A", "22", "35") 에서 num/side/section 파생 */
@@ -69,12 +71,16 @@ export function classifyMajorZone(loc: string | null | undefined): "중앙상비
   return "(미분류)";
 }
 
-/** 확장 · ZoneDef 에 DB row id 매핑 (편집 시 사용) */
-interface ZoneDefWithRowIds extends ZoneDef {
+/** 확장 · ZoneDef 에 DB row id + 담당자 매핑 (편집 시 사용) */
+export interface ZoneDefWithRowIds extends ZoneDef {
   __rowId?: number;
   __rowIdA?: number;
   __rowIdB?: number;
   __rowIdC?: number;
+  __assignee?: string[];
+  __assigneeA?: string[];
+  __assigneeB?: string[];
+  __assigneeC?: string[];
 }
 
 // 벽면 라벨 · 미니 매핑 (wing 셀 · 라벨 → num 복원)
@@ -162,6 +168,10 @@ function transformToLegacy(raws: ZoneDefRaw[]): ZoneDefWithRowIds[] {
       __rowIdA: g.A?.id,
       __rowIdB: g.B?.id,
       __rowIdC: g.C?.id,
+      __assignee: g.base?.assignee ?? [],
+      __assigneeA: g.A?.assignee ?? [],
+      __assigneeB: g.B?.assignee ?? [],
+      __assigneeC: g.C?.assignee ?? [],
     };
     result.push(zone);
   }
@@ -192,10 +202,15 @@ export function useZoneDefs(): {
   const [error, setError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [reloadTick, setReloadTick] = useState(0);
+  // 2026-08-30 · 각 훅 인스턴스 고유 ID · CustomEvent detail.source 로 자기 자신 refetch 스킵
+  const instanceIdRef = useRef<string>(Math.random().toString(36).slice(2, 9));
+  // 2026-08-30 · 이후 refetch (초기 로드 아님) 은 silent · loading 스피너 표시 안 함
+  const isInitialLoadRef = useRef(true);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    // 초기 로드만 loading=true · 이후 refetch 는 silent (사용자 지시 · 로딩 스피너 방해)
+    if (isInitialLoadRef.current) setLoading(true);
     setError(null);
     (async () => {
       try {
@@ -213,7 +228,10 @@ export function useZoneDefs(): {
         setError(`매장구역 조회 실패: ${msg}`);
         setZonesRaw([]);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          isInitialLoadRef.current = false;
+        }
       }
     })();
     return () => { cancelled = true; };
@@ -221,10 +239,15 @@ export function useZoneDefs(): {
 
   // 2026-08-30 · 사용자 지시 · 저장 즉시 좌측 매장구역도 반영
   //   · 다른 useZoneDefs 인스턴스가 편집 성공 시 broadcast → 이 인스턴스 refetch
+  //   · 자기 자신은 이미 setZonesRaw 로 로컬 갱신 · source 로 스킵
   useEffect(() => {
-    const onUpdate = () => setReloadTick(t => t + 1);
-    window.addEventListener("zone-defs-updated", onUpdate);
-    return () => window.removeEventListener("zone-defs-updated", onUpdate);
+    const onUpdate = (e: Event) => {
+      const src = (e as CustomEvent).detail?.source;
+      if (src === instanceIdRef.current) return; // 자기 자신 스킵
+      setReloadTick(t => t + 1);
+    };
+    window.addEventListener("zone-defs-updated", onUpdate as EventListener);
+    return () => window.removeEventListener("zone-defs-updated", onUpdate as EventListener);
   }, []);
 
   // 하위호환 zones · dirty 편집 중이면 dirty · 아니면 raw 에서 변환
@@ -279,8 +302,8 @@ export function useZoneDefs(): {
       // 갱신된 zonesRaw · reload 로 리페치
       setDirtyZones(null);
       setReloadTick(t => t + 1);
-      // 2026-08-30 · 다른 useZoneDefs 인스턴스 (좌측 매장구역도) 실시간 반영
-      try { window.dispatchEvent(new CustomEvent("zone-defs-updated")); } catch {}
+      // 2026-08-30 · 다른 useZoneDefs 인스턴스 (좌측 매장구역도) 실시간 반영 · 자기 자신 제외
+      try { window.dispatchEvent(new CustomEvent("zone-defs-updated", { detail: { source: instanceIdRef.current } })); } catch {}
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 1500);
       return true;
@@ -300,8 +323,8 @@ export function useZoneDefs(): {
       if (data?.zone) {
         setZonesRaw(prev => prev.map(z => z.id === rawId ? data.zone : z));
         setDirtyZones(null); // 저장 후 · dirty 해제
-        // 2026-08-30 · 다른 useZoneDefs 인스턴스 (좌측 매장구역도) 실시간 반영
-        try { window.dispatchEvent(new CustomEvent("zone-defs-updated", { detail: { id: rawId } })); } catch {}
+        // 2026-08-30 · 다른 useZoneDefs 인스턴스 (좌측 매장구역도) 실시간 반영 · 자기 자신 제외
+        try { window.dispatchEvent(new CustomEvent("zone-defs-updated", { detail: { id: rawId, source: instanceIdRef.current } })); } catch {}
       }
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 1500);
