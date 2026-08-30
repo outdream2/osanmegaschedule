@@ -215,10 +215,7 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
                         title={`${zoneLabelB} · ${subB} · 클릭 · 상품 조회`}
                         className={`flex-1 min-w-0 text-[13px] font-bold ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-1 leading-tight text-center flex flex-col items-center gap-1 overflow-hidden cursor-pointer hover:brightness-95 transition`}
                       >
-                        {/* 셀번호 · zone_defs.cellId 기반 */}
-                        {rawB?.cellId != null && (
-                          <span className="text-[10px] font-bold text-white/95 bg-black/25 rounded px-1 py-px leading-none tabular-nums" title={`셀번호 ${rawB.cellId}`}>#{rawB.cellId}</span>
-                        )}
+                        {/* 2026-08-30 · 사용자 지시 · 중앙진열대 셀번호 표시 안 함 */}
                         <span className={`text-[13px] font-bold text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none`}>{zoneLabelB}</span>
                         <span className="text-[13px] break-keep whitespace-normal">{subB}</span>
                         {/* 담당자 셀 · 구역 이름 없이 · 담당자만 (renderZoneCellById 내부는 별도) */}
@@ -233,9 +230,7 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
                         title={`${zoneLabelA} · ${subA} · 클릭 · 상품 조회`}
                         className={`flex-1 min-w-0 text-[13px] font-bold ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-1 leading-tight text-center flex flex-col items-center gap-1 overflow-hidden cursor-pointer hover:brightness-95 transition`}
                       >
-                        {rawA?.cellId != null && (
-                          <span className="text-[10px] font-bold text-white/95 bg-black/25 rounded px-1 py-px leading-none tabular-nums" title={`셀번호 ${rawA.cellId}`}>#{rawA.cellId}</span>
-                        )}
+                        {/* 2026-08-30 · 사용자 지시 · 중앙진열대 셀번호 표시 안 함 */}
                         <span className={`text-[13px] font-bold text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none`}>{zoneLabelA}</span>
                         <span className="text-[13px] break-keep whitespace-normal">{subA}</span>
                         <div className="w-full mt-auto pt-1">

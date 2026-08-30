@@ -334,12 +334,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
           className={`relative w-full font-bold ${colors.text} ${colors.bg} border-2 ${colors.border} rounded px-1 py-1.5 leading-tight text-center ${cellMin} flex flex-col items-center justify-center gap-1 ${usePicker ? "cursor-pointer hover:ring-2 hover:ring-brand-tint transition" : cellInteractive} ${dragClass}`}
           title={`${zoneLabel} · ${sub}${usePicker ? " · 클릭하여 편집" : enableDrag ? " · 길게 눌러 드래그" : ""}`}
         >
-          {/* 2026-08-30 · 셀번호 (cell_id) 좌측 상단 */}
-          {cid != null && (
-            <span className="absolute top-0.5 left-0.5 text-[10px] font-bold text-white/95 bg-black/25 rounded px-1 py-px leading-none tabular-nums" title={`셀번호 ${cid}`}>
-              #{cid}
-            </span>
-          )}
+          {/* 2026-08-30 · 사용자 지시 · 중앙진열대 셀번호 표시 안 함 */}
           {/* 2026-08-30 · 사용자 지시 · zoneId 배지 위 · 카테고리 아래 */}
           <div className="flex items-center justify-center">
             <span className={`text-[11px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{zoneId}</span>
