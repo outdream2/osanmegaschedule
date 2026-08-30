@@ -142,6 +142,33 @@ export const ZoneMismatchTab: React.FC = () => {
     }
   };
 
+  // 2026-08-30 · 사용자 지시 · 조정완료 (bulk) · 선택 상품의 real_map 을 spec_zone 으로 일괄 정렬
+  //   · 물리적으로 전산 지정 위치로 이동 완료된 상품 · 일괄 처리
+  //   · real_map = spec_zone 이 되면 mismatch 해소 · 다음 새로고침 시 리스트에서 제외
+  const adjustSelected = async () => {
+    if (selectedIds.size === 0) return;
+    const targets = rows.filter(r =>
+      selectedIds.has(r.id) &&
+      r.spec_zone && r.spec_zone !== "미지정"
+    );
+    if (targets.length === 0) {
+      showError("전산구역이 지정된 상품이 없습니다");
+      return;
+    }
+    if (!await confirm({ message: `선택된 ${targets.length}건의 실제구역을 전산구역으로 조정할까요?` })) return;
+    try {
+      await Promise.all(targets.map(r =>
+        api.patch(`/api/products/${encodeURIComponent(r.product_code)}`, { real_map: r.spec_zone })
+      ));
+      setRows(prev => prev.filter(r => !targets.some(t => t.id === r.id)));
+      setSelectedIds(new Set());
+      showSuccess(`${targets.length}건 조정 완료 (전산구역과 일치)`);
+    } catch (e: any) {
+      showError(`조정 실패: ${e?.message ?? "네트워크 오류"}`);
+      load();
+    }
+  };
+
   const startEdit = (row: ZoneMismatch, field: EditField) => {
     setEditing({ id: row.id, field });
     const cur = field === "product_name" ? row.product_name
@@ -315,27 +342,16 @@ export const ZoneMismatchTab: React.FC = () => {
             >
               <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> 새로고침
             </button>
-            {/* 2026-08-29 · #189 · 선택 삭제 · 선택된 것만 · 개수 뱃지 */}
+            {/* 2026-08-30 · 사용자 지시 · 삭제 말고 · 조정완료 만 · bulk 는 실제구역=전산구역 정렬 */}
             {selectedIds.size > 0 && (
               <button
                 type="button"
-                onClick={deleteSelected}
+                onClick={adjustSelected}
                 disabled={loading}
-                className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-amber-500 text-white text-[16px] font-bold hover:bg-amber-600 shadow-sm transition cursor-pointer disabled:opacity-40"
-                title="선택 삭제"
+                className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-emerald-600 text-white text-[16px] font-bold hover:bg-emerald-700 shadow-sm transition cursor-pointer disabled:opacity-40"
+                title="선택 상품의 실제구역을 전산구역으로 조정"
               >
-                <Trash2 size={13} /> 선택 삭제 <span className="ml-1 px-1.5 py-0.5 rounded-md bg-white/25 text-[13px] tabular-nums">{selectedIds.size}</span>
-              </button>
-            )}
-            {rows.length > 0 && (
-              <button
-                type="button"
-                onClick={deleteAll}
-                disabled={loading}
-                className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-rose-500 text-white text-[16px] font-bold hover:bg-rose-600 shadow-sm transition cursor-pointer disabled:opacity-40"
-                title="전체 삭제"
-              >
-                <Trash2 size={13} /> 전체 삭제
+                <Check size={13} /> 조정완료 <span className="ml-1 px-1.5 py-0.5 rounded-md bg-white/25 text-[13px] tabular-nums">{selectedIds.size}</span>
               </button>
             )}
           </div>
