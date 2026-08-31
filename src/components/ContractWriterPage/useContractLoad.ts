@@ -95,7 +95,7 @@ export function useContractLoad({ form, setForm }: UseContractLoadProps) {
       setForm(prev => {
         const { cat, custom } = mapCategory(typeof p.position === "string" ? p.position : "");
         const nextAnnual =
-          p.annualLeaveDays != null && p.annualLeaveDays !== ""
+          p.annualLeaveDays != null
             ? String(p.annualLeaveDays)
             : prev.annualLeaveDays;
         const isDefaultWage = (
