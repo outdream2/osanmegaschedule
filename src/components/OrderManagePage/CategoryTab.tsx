@@ -432,7 +432,7 @@ const ZoneCategoryContent: React.FC = () => {
         title="구역현황"
         count={grouped.length}
         countLabel="개 구역"
-        leftSlot={<span className="text-[13px] text-ink-soft hidden md:inline">real_map 기반 · 구역 클릭 → 상품 상세</span>}
+        leftSlot={<span className="text-[13px] text-ink-soft hidden md:inline">진열위치 기반 · 구역 클릭 → 상품 상세</span>}
         right={
           <div className="flex items-center gap-2 flex-wrap">
             <InlineLabel>기간</InlineLabel>

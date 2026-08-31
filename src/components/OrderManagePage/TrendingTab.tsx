@@ -7,6 +7,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { TrendingUp, AlertTriangle, Loader2 as LoaderIcon, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { getProductsMap } from "../../lib/productsCache";
+// 2026-08-31 · #13 · location 우선 · real_map fallback
+import { resolveProductLocation } from "../../lib/productLocation";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 // T-CSS Phase 2 · 2026-08-06
@@ -282,14 +284,14 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
     } catch { return "stationery"; }
   });
   useEffect(() => { try { localStorage.setItem("megatown_trending_classfilter", classFilter); } catch { /**/ } }, [classFilter]);
-  // 상품 real_map 매핑 (products.json 캐시)
+  // 2026-08-31 · #13 · location 우선 · real_map fallback · resolveProductLocation
   const [productRealMapById, setProductRealMapById] = useState<Record<string, string | null>>({});
   useEffect(() => {
     let alive = true;
     getProductsMap().then(map => {
       if (!alive) return;
       const m: Record<string, string | null> = {};
-      for (const [k, v] of Object.entries(map)) m[k] = (v as any)?.real_map ?? null;
+      for (const [k, v] of Object.entries(map)) m[k] = resolveProductLocation(v);
       setProductRealMapById(m);
     }).catch(() => { /* 캐시 없으면 필터 미분류 처리 */ });
     return () => { alive = false; };
