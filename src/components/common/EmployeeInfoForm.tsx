@@ -29,6 +29,7 @@ export type EmployeeInfoField =
   | "name"
   | "phone"
   | "address"
+  | "addressDetail"
   | "birthDate"
   | "gender"
   | "email"
@@ -43,6 +44,8 @@ export interface EmployeeInfoValues {
   name?: string;
   phone?: string;
   address?: string;
+  /** 2026-08-31 · 사용자 지시 · 상세주소 (동·호수 등) · address 아래 별도 입력 */
+  addressDetail?: string;
   /** 생년월일 · 주민번호 · ISO or "YYMMDD-NNNNNNN" 형식 양쪽 허용 */
   birthDate?: string;
   gender?: string;
@@ -96,7 +99,7 @@ export interface EmployeeInfoFormProps {
 // ─── 기본값 ──────────────────────────────────────────────────────────────────
 
 const ALL_FIELDS: EmployeeInfoField[] = [
-  "name", "phone", "address", "birthDate", "gender",
+  "name", "phone", "address", "addressDetail", "birthDate", "gender",
   "email", "rank", "position", "workplace", "hireDate",
   "employeeNumber",
 ];
@@ -460,6 +463,15 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
           })
         )
       )}
+
+      {/* 2026-08-31 · 사용자 지시 · 상세주소 (동·호수·건물명 등) · 주소 아래 별도 입력 */}
+      {show("addressDetail") && simpleInput({
+        fieldKey: "addressDetail",
+        label: "상세주소",
+        icon: <MapPin size={9} />,
+        placeholder: "동·호수·건물명 (선택)",
+        colSpan: true,
+      })}
 
       {/* 2026-08-10 · #25 · position 필드 · 이름 아래 직군 드롭박스로 위로 이동됨 · 여기 중복 렌더 제거 */}
 

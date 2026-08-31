@@ -64,22 +64,20 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
       }`}
     >
       {/* 이름 · 2026-08-29 · UI 감사 U0-3 · truncate 금지 원칙 · 이름 잘림 방지 */}
-      <td className="px-2 py-2 text-[15px] font-bold text-zinc-800">
+      <td className="px-2 py-2 text-[17px] font-bold text-zinc-800">
         <div className="flex items-center gap-1">
           {emp.photo_url && <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />}
           <span className={`break-words whitespace-normal ${isSelected ? "text-indigo-800" : ""}`}>{emp.name}</span>
         </div>
       </td>
-      {/* 직군 · 직급 (2026-08-29 · #177 · rank 병기) */}
-      <td className="px-1 py-2 text-center">
-        <div className="flex flex-col items-center gap-0.5">
+      {/* 2026-08-31 · 사용자 지시 · 직군 배지 제거 · 텍스트 수평 · 왼쪽 정렬 · 폰트 +2 */}
+      <td className="px-2 py-2 text-left">
+        <div className="flex items-center gap-1.5 text-[17px]">
           {emp.position && (
-            <Badge className={positionColor(emp.position)} size="sm">
-              {emp.position}
-            </Badge>
+            <span className="font-bold text-ink">{emp.position}</span>
           )}
           {emp.rank && (
-            <Badge tone="zinc" size="sm" title="직급">{emp.rank}</Badge>
+            <span className="text-ink-soft" title="직급">· {emp.rank}</span>
           )}
         </div>
       </td>
@@ -108,7 +106,7 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
                 </Badge>
               );
             }
-            return <span className="text-[15px] text-zinc-300">-</span>;
+            return <span className="text-[17px] text-zinc-300">-</span>;
           })()}
           {/* 만료 임박 배지 · contract_end 있고 · D-30 이내 · 재직자만 */}
           {!isRetired && emp.contract_end && (() => {
@@ -143,7 +141,7 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
           <button
             type="button"
             onClick={openResume}
-            className="inline-flex items-center gap-0.5 text-[15px] font-semibold text-emerald-600 hover:text-emerald-800 hover:underline cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center gap-0.5 text-[17px] font-semibold text-emerald-600 hover:text-emerald-800 hover:underline cursor-pointer whitespace-nowrap"
             title={`이력서 · Google Drive · 새 창으로 보기\n${emp.resume_url ?? ""}`}
           >
             <ExternalLink size={10} />보기
@@ -151,7 +149,7 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
         ) : (
           <label
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-0.5 text-[15px] font-semibold text-zinc-500 hover:text-emerald-700 hover:bg-emerald-50 border border-line hover:border-emerald-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
+            className="inline-flex items-center gap-0.5 text-[17px] font-semibold text-zinc-500 hover:text-emerald-700 hover:bg-emerald-50 border border-line hover:border-emerald-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
             title="이력서 업로드 · Google Drive (PDF·DOC·이미지 · 10MB)"
           >
             <Paperclip size={10} />업로드
@@ -174,7 +172,7 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
           <button
             type="button"
             onClick={openBankbook}
-            className="inline-flex items-center gap-0.5 text-[15px] font-semibold text-sky-600 hover:text-sky-800 hover:underline cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center gap-0.5 text-[17px] font-semibold text-sky-600 hover:text-sky-800 hover:underline cursor-pointer whitespace-nowrap"
             title="통장사본 · 새 창으로 보기"
           >
             <ExternalLink size={10} />보기
@@ -182,7 +180,7 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
         ) : (
           <label
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-0.5 text-[15px] font-semibold text-zinc-500 hover:text-sky-700 hover:bg-sky-50 border border-line hover:border-sky-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
+            className="inline-flex items-center gap-0.5 text-[17px] font-semibold text-zinc-500 hover:text-sky-700 hover:bg-sky-50 border border-line hover:border-sky-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
             title="통장사본 업로드 · 이미지 (jpg/png · 5MB)"
           >
             <Paperclip size={10} />업로드
@@ -205,7 +203,7 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
           <button
             type="button"
             onClick={openContract}
-            className="inline-flex items-center gap-0.5 text-[15px] font-semibold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center gap-0.5 text-[17px] font-semibold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer whitespace-nowrap"
             title="근로계약서 새 창으로 보기"
           >
             <Paperclip size={10} />보기
@@ -234,7 +232,7 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
                 window.dispatchEvent(new CustomEvent("staff-write-contract", { detail: { employeeId: emp.id } }));
               }
             }}
-            className="inline-flex items-center gap-0.5 text-[15px] font-bold text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
+            className="inline-flex items-center gap-0.5 text-[17px] font-bold text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
             title="근로계약서 작성 · 기본정보 자동 채움"
           >
             <NotePencilIcon size={10} />작성
@@ -248,7 +246,7 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
             <button
               type="button"
               onClick={openResignationFile}
-              className="inline-flex items-center gap-0.5 text-[15px] font-semibold text-rose-600 hover:text-rose-800 hover:underline cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-0.5 text-[17px] font-semibold text-rose-600 hover:text-rose-800 hover:underline cursor-pointer whitespace-nowrap"
               title={`사직서 · 새 창으로 보기\n${emp.resignation_file_url ?? ""}`}
             >
               <ExternalLink size={10} />보기
@@ -256,7 +254,7 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
           ) : (
             <label
               onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-0.5 text-[15px] font-semibold text-zinc-500 hover:text-rose-700 hover:bg-rose-50 border border-line hover:border-rose-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
+              className="inline-flex items-center gap-0.5 text-[17px] font-semibold text-zinc-500 hover:text-rose-700 hover:bg-rose-50 border border-line hover:border-rose-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
               title="사직서 업로드 · PDF 또는 이미지 · 20MB"
             >
               <Paperclip size={10} />업로드
@@ -273,22 +271,10 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
             </label>
           )
         ) : (
-          <span className="text-[15px] text-zinc-200">-</span>
+          <span className="text-[17px] text-zinc-200">-</span>
         )}
       </td>
-      {/* 상태 배지 · 재직/퇴사예정/퇴사 */}
-      <td className="px-1 py-2 text-center" title={
-        empStatus === "pending_resignation" ? `퇴사예정일 ${(emp as any).retire_date}`
-        : empStatus === "retired" ? `퇴사일 ${(emp as any).retire_date}`
-        : undefined
-      }>
-        {empStatus === "pending_resignation" && (
-          <StatusPill tone="amber" size="xs" dot>퇴사예정</StatusPill>
-        )}
-        {empStatus === "retired" && (
-          <StatusPill tone="rose" size="xs" dot>퇴사</StatusPill>
-        )}
-      </td>
+      {/* 2026-08-31 · 사용자 지시 · 상태 컬럼 제거 (필터로 대체) */}
     </tr>
   );
 };

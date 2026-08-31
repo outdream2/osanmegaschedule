@@ -39,6 +39,8 @@ interface StaffListPanelProps {
   uploadBankbookForRow: (emp: Employee, f: File) => void;
   uploadResignationFileForRow: (emp: Employee, f: File) => void;
   onWriteContract?: (emp: Employee) => void;
+  // 2026-08-31 · 사용자 지시 · 사직서 컬럼 · 재직 필터 시 숨김
+  filterStatus?: "active" | "pending_resignation" | "retired" | "all";
 }
 
 const SortIcon: React.FC<{ k: SortKey; sortKey: SortKey; sortDir: "asc" | "desc" }> = ({ k, sortKey, sortDir }) =>
@@ -55,9 +57,11 @@ export const StaffListPanel: React.FC<StaffListPanelProps> = ({
   getWidth: sw, resizerProps: sr,
   handleSelect, showError, onCreateOpen, onRefresh,
   uploadResumeForRow, uploadBankbookForRow, uploadResignationFileForRow,
-  onWriteContract,
+  onWriteContract, filterStatus = "all",
 }) => {
   const sortIcon = (k: SortKey) => <SortIcon k={k} sortKey={sortKey} sortDir={sortDir} />;
+  // 2026-08-31 · 사용자 지시 · 사직서 컬럼 · 퇴사예정·퇴사 필터일 때만 표시
+  const showResignationCol = filterStatus === "pending_resignation" || filterStatus === "retired" || filterStatus === "all";
 
   // 2026-08-23 · #198 Phase 3B · SplitListPanel v2 이관
   //   · 좌측 aside(split-left)+width style · SplitListPanel wrapper 로 대체
@@ -84,7 +88,7 @@ export const StaffListPanel: React.FC<StaffListPanelProps> = ({
         >
           {/* 2026-08-24 · v3 확산 · thead · bg zinc-100/70 · text 13/14px · Attio 톤 */}
           <thead className="sticky top-0 z-10 bg-zinc-100/70 backdrop-blur">
-            <tr className="border-b border-line text-[13px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider">
+            <tr className="border-b border-line text-[15px] sm:text-[16px] font-bold text-zinc-500 uppercase tracking-wider">
               {/* 2026-08-24 · 사용자 지시 · 근속·평가 컬럼 제거 · 상세정보 KPI 바 에서만 표시 */}
               {(
                 [
@@ -94,8 +98,9 @@ export const StaffListPanel: React.FC<StaffListPanelProps> = ({
                   { key: "resume_file",         label: "이력서",  col: "resume"       },
                   { key: "bankbook_file",       label: "통장",    col: "bankbook"     },
                   { key: "contract_file",       label: "계약서",  col: "contract"     },
-                  { key: "resignation_file",    label: "사직서",  col: "resignation"  },
-                  { key: "status",              label: "상태",    col: "status"       },
+                  // 2026-08-31 · 사직서 · 재직 필터 시 숨김 (퇴사예정·퇴사·전체 만 표시)
+                  ...(showResignationCol ? [{ key: "resignation_file" as SortKey, label: "사직서", col: "resignation" }] : []),
+                  // 2026-08-31 · 사용자 지시 · 상태 컬럼 제거 (필터 자체로 대체 · 무의미)
                 ] as { key: SortKey; label: string; col: string }[]
               ).map(({ key, label, col }) => (
                 <th
