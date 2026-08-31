@@ -108,7 +108,7 @@ router.post("/api/ocr-confirmed-items", authorize(2), asyncHandler(async (req, r
 
   if (error) {
     if (/relation|does not exist/i.test(error.message)) {
-      return res.status(503).json({ error: `${TABLE} 테이블이 없습니다.\n${CREATE_SQL}` });
+      throw new HttpError(503, `${TABLE} 테이블이 없습니다.\n${CREATE_SQL}`, "TABLE_MISSING");
     }
     throw new HttpError(500, error.message);
   }
