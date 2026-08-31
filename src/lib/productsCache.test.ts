@@ -53,13 +53,14 @@ describe("productsCache · prefetch/getProductsMap", () => {
     expect(map["8801234"].name).toBe("타이레놀 500mg");
   });
 
-  it("prefetch 두번 호출 · 두번째는 무시", async () => {
+  it("getProductsMap 두번 호출 · 두번째는 캐시 반환 · fetch 재호출 없음", async () => {
     mockFetch.mockResolvedValue(okResponse(sampleMap));
-    const { prefetchProducts, getProductsMap } = await import("./productsCache");
-    prefetchProducts();
+    const { getProductsMap } = await import("./productsCache");
+    // 첫 번째 호출 · fetch 발생 · resolve
     await getProductsMap();
-    prefetchProducts();
-    // 두번째 호출은 이미 로드됨 · fetch 재호출 안 함
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    // 두 번째 호출 · 캐시(_map) 유효 · fetch 재호출 없음
+    await getProductsMap();
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
