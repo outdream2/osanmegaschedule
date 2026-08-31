@@ -54,9 +54,10 @@ export function useDisplayData(selectedDate: string, selectedYM: string): UseDis
     (async () => {
       setStaffLoading(true);
       try {
-        const [y, m] = selectedYM.split("-").map(Number);
-        const { data } = await api.get<any>(`/api/schedules?year=${y}&month=${m}`);
-        const empList: Employee[] = Array.isArray(data?.employees) ? data.employees : [];
+        // 2026-08-31 · endpoint 통일 · /api/employees · birth_date·address 포함 · #52
+        void selectedYM;
+        const { data } = await api.get<any>(`/api/employees`);
+        const empList: Employee[] = Array.isArray(data) ? data : (Array.isArray(data?.employees) ? data.employees : []);
         if (cancelled) return;
         setEmployees(empList);
         setStaffError(null);

@@ -48,11 +48,10 @@ export function useContractLoad({ form, setForm }: UseContractLoadProps) {
       setEmpLoading(true);
       setEmpError(null);
       try {
-        const now = new Date();
-        const y = now.getFullYear(), m = now.getMonth() + 1;
-        const { data } = await api.get<any>(`/api/schedules?year=${y}&month=${m}`);
+        // 2026-08-31 · endpoint 통일 · /api/employees · birth_date 포함 · #52
+        const { data } = await api.get<any>(`/api/employees`);
         if (cancelled) return;
-        const list = Array.isArray(data?.employees) ? data.employees : [];
+        const list = Array.isArray(data) ? data : (Array.isArray(data?.employees) ? data.employees : []);
         setEmployees(list);
       } catch (err: any) {
         if (!cancelled) setEmpError(err instanceof ApiError ? err.message : (err?.message ?? "직원 목록 불러오기 실패"));

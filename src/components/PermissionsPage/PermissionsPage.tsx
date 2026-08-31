@@ -209,10 +209,10 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   };
   const [employees, setEmployees] = useState<Employee[]>([]);
   useEffect(() => {
-    const now = new Date();
-    api.get<any>(`/api/schedules?year=${now.getFullYear()}&month=${now.getMonth() + 1}`)
+    // 2026-08-31 · endpoint 통일 · /api/employees · #52
+    api.get<any>(`/api/employees`)
       .then(r => {
-        const list = Array.isArray(r.data?.employees) ? r.data.employees : Array.isArray(r.data) ? r.data : [];
+        const list = Array.isArray(r.data) ? r.data : (Array.isArray(r.data?.employees) ? r.data.employees : []);
         setEmployees(list);
       })
       .catch(() => setEmployees([]));

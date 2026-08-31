@@ -149,8 +149,10 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
     try {
       const now = new Date();
       const y = now.getFullYear(), m = now.getMonth() + 1;
-      const { data } = await api.get<any>(`/api/schedules?year=${y}&month=${m}`);
-      const list: Employee[] = Array.isArray(data?.employees) ? data.employees : [];
+      // 2026-08-31 · endpoint 통일 · /api/employees · birth_date·address 포함 · #52
+      void y; void m;
+      const { data } = await api.get<any>(`/api/employees`);
+      const list: Employee[] = Array.isArray(data) ? data : (Array.isArray(data?.employees) ? data.employees : []);
       setEmployees(list);
       if (selectedId != null && !list.find((e) => e.id === selectedId)) setSelectedId(null);
     } catch (err: unknown) {

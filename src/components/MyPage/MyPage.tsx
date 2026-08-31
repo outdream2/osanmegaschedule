@@ -32,11 +32,16 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
     if (!authSession?.employeeId) return;
     setLoading(true);
     try {
-      const now = new Date();
-      const { data } = await api.get<any>(`/api/schedules?year=${now.getFullYear()}&month=${now.getMonth() + 1}`);
-      const list: Employee[] = Array.isArray(data?.employees) ? data.employees : Array.isArray(data) ? data : [];
-      const found = list.find(e => e.id === authSession.employeeId) ?? null;
-      setMe(found);
+      // 2026-08-31 · endpoint 통일 · /api/employees/:id · 본인 정보 직접 조회 · #52
+      const { data } = await api.get<Employee>(`/api/employees/${authSession.employeeId}`);
+      setMe(data ?? null);
+    } catch {
+      // fallback · 전체 목록 · id 매칭
+      try {
+        const { data: list } = await api.get<any>(`/api/employees`);
+        const arr: Employee[] = Array.isArray(list) ? list : (Array.isArray(list?.employees) ? list.employees : []);
+        setMe(arr.find(e => e.id === authSession.employeeId) ?? null);
+      } catch { /* silent */ }
     } finally {
       setLoading(false);
     }
