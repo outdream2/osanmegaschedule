@@ -15,7 +15,7 @@
 //   · StockActionsCell 재사용 (기존 3버튼 그대로)
 
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { Box, Hash, ChevronDown, ChevronUp, MapPin, Check } from "lucide-react";
+import { Box, Hash, ChevronDown, ChevronUp, MapPin, Check, X } from "lucide-react";
 import type { StockRow } from "./stockRowTypes";
 import { calcRowTotal, calcSlotTotal, calcTotalAdded } from "./stockRowTypes";
 import { StatusPill } from "../common/StatusPill";
@@ -331,8 +331,27 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
           const tot  = calcSlotTotal(prev, add);
           const hasAddVal = add !== "" && Number(add) !== 0;
           const spec = s.zoneKey ? (specParts[i] ?? "") : "";
+          // 2026-08-31 · #18 · 매장 슬롯 clear · 잘못 추가된 슬롯 정리
+          const canClearSlot = isStore && (hasAddVal || (s.zoneKey && !!row[s.zoneKey as keyof StockRow]));
+          const clearSlot = () => {
+            const patch: Partial<StockRow> = { [s.addKey]: "" as any };
+            if (s.zoneKey) (patch as any)[s.zoneKey] = null;
+            onPatch(row.key, patch);
+          };
           return (
-            <div key={s.key} className={`rounded-lg border ${s.softBg} border-zinc-200/70 p-2.5 flex flex-col gap-2`}>
+            <div key={s.key} className={`relative rounded-lg border ${s.softBg} border-zinc-200/70 p-2.5 flex flex-col gap-2`}>
+              {/* 2026-08-31 · #18 · 매장 슬롯 clear × 버튼 · 잘못 추가 정리 · 값·구역 모두 있으면 표시 */}
+              {canClearSlot && (
+                <button
+                  type="button"
+                  onClick={clearSlot}
+                  className="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-white/90 border border-zinc-300 hover:bg-rose-500 hover:border-rose-600 hover:text-white text-zinc-500 transition cursor-pointer shadow-sm"
+                  title="이 매장 입력 값 · 구역 초기화 (잘못 추가한 경우)"
+                  aria-label="슬롯 초기화"
+                >
+                  <X size={11} strokeWidth={2.5} />
+                </button>
+              )}
               {/* 2026-08-26 · 사용자 지시 · 현재 갯수 · 창고/매장 제목 바로 옆 · 잘 보이게 · 폰트 +2 */}
               <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
                 <span className={`w-1.5 h-6 rounded-full ${s.dot} shrink-0 self-center`} />
