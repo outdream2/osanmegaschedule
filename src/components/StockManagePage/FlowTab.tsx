@@ -125,6 +125,10 @@ export const FlowTab: React.FC = () => {
   const [loading, setLoading] = useState(false);
   // 2026-08-22 · dead code 제거 (availableSnapshots · snapshotPeriods · read 안 됨)
   const [flowPeriodType, setFlowPeriodType] = useState<string | null>(null);
+  // 2026-08-31 · #30 root cause · stock_history 최신 스냅샷이 오래됐을 때 (예 · 34일 전) 기본 1개월 조회에 데이터 없음
+  //   · 자동 확장 · 요청 기간 rows==0 · 서버 snapshot_date 참고해서 안내
+  //   · #69 (ZoneCategoryContent) 와 동일 패턴 · 안내 배너 노출
+  const [flowAutoExpanded, setFlowAutoExpanded] = useState<{ requested: number; effective: number; latestSnapshot: string | null } | null>(null);
 
   // 우측 패널 — 선택 상품
   const [flowSelectedProduct, setFlowSelectedProduct] = useState<ProductInfo | null>(null);
@@ -231,10 +235,15 @@ export const FlowTab: React.FC = () => {
     setLoading(true);
     try {
       const serverSort = (["sale", "purchase", "amount", "closing"] as SortKey[]).includes(flowSort) ? flowSort : "sale";
-      const params = new URLSearchParams({ sort: serverSort, dir: flowDir, limit: String(flowLimit) });
-      if (flowSeason) params.set("season", flowSeason);
-      else if (flowMonths > 0) params.set("months", String(flowMonths));
-      else if (flowSnapshot) params.set("snapshot_date", flowSnapshot);
+      // 2026-08-31 · #30 · buildParams · 자동 확장 시 months 만 바꿔서 재호출
+      const buildParams = (m: number) => {
+        const p = new URLSearchParams({ sort: serverSort, dir: flowDir, limit: String(flowLimit) });
+        if (flowSeason) p.set("season", flowSeason);
+        else if (m > 0) p.set("months", String(m));
+        else if (flowSnapshot) p.set("snapshot_date", flowSnapshot);
+        return p;
+      };
+      const params = buildParams(flowMonths);
       const cacheKey = params.toString();
 
       // 캐시 hit → 즉시 표시
@@ -245,16 +254,42 @@ export const FlowTab: React.FC = () => {
         setFlowPeriodType(d.period_type ?? null);
       }
 
-      // 1단계: skip_purchase=1 (빠른 응답)
-      const basicParams = new URLSearchParams(params);
-      basicParams.set("skip_purchase", "1");
-      const { data } = await api.get<any>(`/api/stock-manage/top-sales?${basicParams}`);
+      // 1단계 basic fetch · skip_purchase=1 · 자동 확장 지원
+      // 2026-08-31 · #30 root cause · stock_history 스냅샷 stale (예 · 34일 전) → 기본 months=1 = 0 rows
+      //   · rows==0 && season 없음 && months>0 && months<12 → 2/3/6/12 자동 확장 · 첫 성공 결과 사용
+      const fetchBasic = async (m: number) => {
+        const bp = buildParams(m);
+        bp.set("skip_purchase", "1");
+        return api.get<any>(`/api/stock-manage/top-sales?${bp}`);
+      };
+      let { data } = await fetchBasic(flowMonths);
+      let effectiveMonths: number = flowMonths;
+      let effectiveCacheKey = cacheKey;
+      const initialRowsCount = Array.isArray(data?.rows) ? data.rows.length : 0;
+      if (initialRowsCount === 0 && !flowSeason && flowMonths > 0 && flowMonths < 12) {
+        for (const nextM of [2, 3, 6, 12].filter(x => x > flowMonths)) {
+          try {
+            const resp = await fetchBasic(nextM);
+            if (Array.isArray(resp.data?.rows) && resp.data.rows.length > 0) {
+              data = resp.data;
+              effectiveMonths = nextM;
+              effectiveCacheKey = buildParams(nextM).toString();
+              break;
+            }
+          } catch { /* 다음 시도 */ }
+        }
+      }
       if (data) {
         setStockFlow(Array.isArray(data.rows) ? data.rows : []);
         setFlowPeriodType(data.period_type ?? null);
         if (flowMonths === 0 && !flowSnapshotAutoSet.current && data.snapshot_date) {
           flowSnapshotAutoSet.current = true;
           if (!flowSnapshot) setFlowSnapshot(data.snapshot_date);
+        }
+        if (effectiveMonths !== flowMonths) {
+          setFlowAutoExpanded({ requested: flowMonths, effective: effectiveMonths, latestSnapshot: data.snapshot_date ?? null });
+        } else {
+          setFlowAutoExpanded(null);
         }
         setLoading(false);
 
@@ -281,11 +316,11 @@ export const FlowTab: React.FC = () => {
               return info ? { ...r, ...info } : r;
             });
             const fullData = { ...data, rows: enrichedRows };
-            GLOBAL_FLOW_CACHE.set(cacheKey, { data: fullData, ts: Date.now() });
+            GLOBAL_FLOW_CACHE.set(effectiveCacheKey, { data: fullData, ts: Date.now() });
             setStockFlow(enrichedRows);
           } catch { /* ignore — basic 데이터는 이미 표시됨 */ }
         } else {
-          GLOBAL_FLOW_CACHE.set(cacheKey, { data, ts: Date.now() });
+          GLOBAL_FLOW_CACHE.set(effectiveCacheKey, { data, ts: Date.now() });
         }
       }
     } catch { setLoading(false); }
@@ -419,6 +454,17 @@ export const FlowTab: React.FC = () => {
       {/* 2026-08-26 · 사용자 지시 · 적정재고 기준 일수 코멘트 */}
       <OptimalStockNoteBanner compact className="self-start" />
 
+      {/* 2026-08-31 · #30 · 자동 확장 안내 배너 · 요청 기간에 데이터 없음 · 확장한 결과 표시 중 */}
+      {flowAutoExpanded && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-[13px] self-start">
+          <span className="font-bold">데이터 안내</span>
+          <span className="text-amber-700">
+            최근 {flowAutoExpanded.requested}개월 재고 스냅샷이 없어 <b>{flowAutoExpanded.effective}개월</b>로 자동 확장했습니다
+            {flowAutoExpanded.latestSnapshot ? ` · 최신 스냅샷 ${flowAutoExpanded.latestSnapshot}` : ""}
+          </span>
+        </div>
+      )}
+
       {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · FlowFilterBar */}
       <FlowFilterBar
         filteredFlowCount={filteredFlow.length}
@@ -504,7 +550,9 @@ export const FlowTab: React.FC = () => {
                     <EmptyState
                       icon={Boxes}
                       title={stockFlow.length === 0 ? "재고 데이터 없음" : "해당 상품 없음"}
-                      hint={stockFlow.length === 0 ? "재고현황 xlsx 업로드 필요" : "선택한 판매수량 범위에 해당하는 상품 없음"}
+                      hint={stockFlow.length === 0
+                        ? "최근 12개월 재고 스냅샷 (stock_history) 이 없습니다. 재고관리 화면에서 새 스냅샷을 임포트해 주세요."
+                        : "선택한 판매수량 범위 · 검색어 · 분류 필터에 해당하는 상품 없음"}
                       size="compact"
                     />
                   )

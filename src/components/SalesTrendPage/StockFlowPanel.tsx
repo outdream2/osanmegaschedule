@@ -1,12 +1,15 @@
 // src/components/SalesTrendPage/StockFlowPanel.tsx
 // 2026-08-22 · Framework Phase 4 · SalesTrendPage.tsx 에서 분리
 import React, { useEffect, useMemo, useState } from "react";
-import { TrendingUp, X, Info, EyeOff, CheckSquare, Square } from "lucide-react";
+import { TrendingUp, X, Info, EyeOff, CheckSquare, Square, Boxes } from "lucide-react";
 // 2026-08-29 · #165 A · SearchBar 프리미티브
 import { SearchBar } from "../common/SearchBar";
 // 2026-08-29 · 상품명 검색 · 통일 로직
 import { matchesProductQuery } from "../../lib/productMatch";
 import { Spinner } from "../common/Spinner";
+// 2026-08-31 · #30 · 프레임워크 프리미티브 이관 · LoadingState + EmptyState
+import { LoadingState } from "../common/LoadingState";
+import { EmptyState } from "../common/EmptyState";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { StatusPill } from "../common/StatusPill";
@@ -85,6 +88,8 @@ export const StockFlowPanel: React.FC<{
   const [saleListCollapsed, setSaleListCollapsed] = useState(false);
   const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
   const [bulkHiding, setBulkHiding] = useState(false);
+  // 2026-08-31 · #30 root cause · stock_history 스냅샷 stale 시 자동 확장 · 안내 배너
+  const [autoExpanded, setAutoExpanded] = useState<{ requested: number; effective: number; latestSnapshot: string | null } | null>(null);
 
   const toggleSelectCode = (code: string) => setSelectedCodes(prev => {
     const next = new Set(prev);
@@ -102,14 +107,40 @@ export const StockFlowPanel: React.FC<{
     (async () => {
       try {
         const serverSort = (["sale", "purchase", "amount", "closing"] as FlowSortKey[]).includes(sort) ? sort : "sale";
-        const p = new URLSearchParams({ sort: serverSort, dir, limit: String(limit) });
-        if (season) p.set("season", season);
-        else if (months > 0) p.set("months", String(months));
-        else if (snapshot) p.set("snapshot_date", snapshot);
-        const { data: j } = await api.get<any>(`/api/stock-manage/top-sales?${p}`);
+        const buildParams = (m: number) => {
+          const p = new URLSearchParams({ sort: serverSort, dir, limit: String(limit) });
+          if (season) p.set("season", season);
+          else if (m > 0) p.set("months", String(m));
+          else if (snapshot) p.set("snapshot_date", snapshot);
+          return p;
+        };
+        // 2026-08-31 · #30 root cause · stock_history 최신 스냅샷 stale (예 · 34일 전) 시 · months=1 → 0 rows
+        //   · rows==0 && season 없음 && months>0 && months<12 · 2/3/6/12 자동 확장 · 첫 성공 결과 사용
+        const fetchOnce = (m: number) => api.get<any>(`/api/stock-manage/top-sales?${buildParams(m)}`);
+        let { data: j } = await fetchOnce(months);
+        let effectiveMonths: number = months;
+        const initialCount = Array.isArray(j?.rows) ? j.rows.length : 0;
+        if (initialCount === 0 && !season && months > 0 && months < 12) {
+          for (const nextM of [2, 3, 6, 12].filter(x => x > months)) {
+            try {
+              const resp = await fetchOnce(nextM);
+              if (Array.isArray(resp.data?.rows) && resp.data.rows.length > 0) {
+                j = resp.data;
+                effectiveMonths = nextM;
+                break;
+              }
+            } catch { /* 다음 시도 */ }
+          }
+        }
         setRows(Array.isArray(j.rows) ? j.rows : []);
         if (!season && months === 0 && !snapshot && j.snapshot_date) setSnapshot(j.snapshot_date);
+        if (effectiveMonths !== months) {
+          setAutoExpanded({ requested: months, effective: effectiveMonths, latestSnapshot: j.snapshot_date ?? null });
+        } else {
+          setAutoExpanded(null);
+        }
       } catch (err) {
+        setAutoExpanded(null);
         showError(`재고흐름 로드 실패: ${err instanceof Error ? err.message : String(err)}`);
       } finally { setLoading(false); }
     })();
@@ -322,17 +353,33 @@ export const StockFlowPanel: React.FC<{
         <span className="text-[11px] font-bold text-zinc-600">{listLabel}</span>
         <span className="text-[10px] tabular-nums text-zinc-400">({displayRows.length}건)</span>
       </div>
+      {/* 2026-08-31 · #30 · 자동 확장 안내 배너 */}
+      {autoExpanded && (
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-amber-200 bg-amber-50 text-amber-800 text-[12px]">
+          <span className="font-bold">데이터 안내</span>
+          <span className="text-amber-700">
+            최근 {autoExpanded.requested}개월 판매 스냅샷이 없어 <b>{autoExpanded.effective}개월</b>로 자동 확장했습니다
+            {autoExpanded.latestSnapshot ? ` · 최신 스냅샷 ${autoExpanded.latestSnapshot}` : ""}
+          </span>
+        </div>
+      )}
       <div className={`flex-1 overflow-auto relative max-h-[50vh] ${saleListCollapsed ? "hidden" : ""}`}>
-        {loading && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px] pointer-events-none">
-            <div className="w-10 h-10 border-4 border-line border-t-orange-500 rounded-full animate-spin" />
-            <div className="mt-3 text-xs font-bold text-zinc-600">데이터 로딩중...</div>
+        {loading && displayRows.length > 0 && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-[1px] pointer-events-none">
+            <LoadingState tone="slate" size="compact" label="데이터 로딩중..." />
           </div>
         )}
-        {displayRows.length === 0 && !loading ? (
-          <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
-        ) : displayRows.length === 0 && loading ? (
-          <div className="text-center text-[11px] text-zinc-300 py-6">&nbsp;</div>
+        {displayRows.length === 0 && loading ? (
+          <LoadingState tone="slate" size="compact" label="데이터 로딩중..." />
+        ) : displayRows.length === 0 && !loading ? (
+          <EmptyState
+            icon={Boxes}
+            title={rows.length === 0 ? "판매 데이터 없음" : "해당 상품 없음"}
+            hint={rows.length === 0
+              ? "최근 12개월 재고 스냅샷 (stock_history) 이 없습니다. 재고관리 화면에서 새 스냅샷을 임포트해 주세요."
+              : "검색어 · 판매수량 범위에 해당하는 상품 없음"}
+            size="compact"
+          />
         ) : (
           <table className={`w-full text-xs ${loading ? "opacity-40 transition-opacity" : ""}`}>
             <thead className="sticky top-0 bg-zinc-50 border-b-2 border-line z-10 shadow-sm">
