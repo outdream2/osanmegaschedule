@@ -351,6 +351,10 @@ router.put("/api/zone-day/:date", authorize(5), asyncHandler(async (req, res) =>
 
 // POST /api/zone-day/copy-month  →  전월의 일별 배정을 이번 달로 복사
 // body: { targetYear, targetMonth, overwrite: boolean }
+// 2026-08-31 · 사용자 지시 · 요일 기준 복사 (schedules 와 통일)
+//   · 이전: day-of-month 복사 (8/15 → 9/15, 요일 무시)
+//   · 신규: weekday 매칭 (전월 첫 등장 non-empty · 각 요일에 적용)
+//   · 예 · 8월 첫 월요일 데이터 → 9월 모든 월요일에 복사
 router.post("/api/zone-day/copy-month", authorize(5), asyncHandler(async (req, res) => {
   const { targetYear, targetMonth, overwrite } = req.body ?? {};
   const y = parseInt(targetYear, 10);
@@ -383,29 +387,50 @@ router.post("/api/zone-day/copy-month", authorize(5), asyncHandler(async (req, r
     throw new HttpError(409, "이번 달에 이미 일별 근무설정 데이터가 있습니다.", "CONFLICT");
   }
 
-  // day-of-month 기준으로 복사 (일이 없으면 skip)
-  const daysInPrev = new Date(prevY, prevM, 0).getDate();
-  const daysInCur  = new Date(y, m, 0).getDate();
-  const payloads: any[] = [];
+  // ── 요일별 템플릿 구축 (0=일요일 ~ 6=토요일) ──────────────────────────
+  //   · 각 요일에 대해 · 가장 "많은 내용" 을 담은 row 선택
+  //   · 내용량 = zone_slots + lunch_slots + rest_slots key 개수 합
+  //   · 동점 시 날짜 빠른 것 우선 (첫 등장)
+  const dowTemplate = new Map<number, any>();
+  const dowScore    = new Map<number, number>();
   for (const row of prevRows) {
-    const day = parseInt((row.date as string).slice(-2), 10);
-    if (day < 1 || day > daysInCur) continue; // 이번 달에 없는 날짜(31일 등) skip
+    const dow = new Date((row.date as string) + "T00:00:00").getDay();
+    const zs = Object.keys(row.zone_slots  ?? {}).length;
+    const ls = Object.keys(row.lunch_slots ?? {}).length;
+    const rs = Object.keys(row.rest_slots  ?? {}).length;
+    const score = zs + ls + rs;
+    if (score === 0) continue;
+    const prev = dowScore.get(dow) ?? -1;
+    if (score > prev) {
+      dowScore.set(dow, score);
+      dowTemplate.set(dow, row);
+    }
+  }
+  if (dowTemplate.size === 0) return res.json({ ok: true, count: 0 });
+
+  // ── 이번 달 각 날짜 · 요일 매칭 시 템플릿 적용 ──────────────────────
+  const daysInCur = new Date(y, m, 0).getDate();
+  const payloads: any[] = [];
+  for (let day = 1; day <= daysInCur; day++) {
+    const dateStr = `${curPrefix}${String(day).padStart(2, "0")}`;
+    const dow = new Date(dateStr + "T00:00:00").getDay();
+    const tmpl = dowTemplate.get(dow);
+    if (!tmpl) continue;
     payloads.push({
-      date: `${curPrefix}${String(day).padStart(2, "0")}`,
-      zone_slots:     row.zone_slots ?? {},
-      lunch_slots:    row.lunch_slots ?? {},
-      rest_slots:     row.rest_slots ?? {},
-      lunch_offset:   (row as any).lunch_offset ?? 0,
-      rest_offset:    (row as any).rest_offset ?? 0,
-      lunch_interval: (row as any).lunch_interval ?? 30,
-      rest_interval:  (row as any).rest_interval ?? 30,
-      lunch_count:    (row as any).lunch_count ?? 1,
-      rest_count:     (row as any).rest_count ?? 1,
+      date: dateStr,
+      zone_slots:     tmpl.zone_slots  ?? {},
+      lunch_slots:    tmpl.lunch_slots ?? {},
+      rest_slots:     tmpl.rest_slots  ?? {},
+      lunch_offset:   tmpl.lunch_offset   ?? 0,
+      rest_offset:    tmpl.rest_offset    ?? 0,
+      lunch_interval: tmpl.lunch_interval ?? 30,
+      rest_interval:  tmpl.rest_interval  ?? 30,
+      lunch_count:    tmpl.lunch_count    ?? 1,
+      rest_count:     tmpl.rest_count     ?? 1,
       is_confirmed:   false,
       updated_at:     new Date().toISOString(),
     });
   }
-  void daysInPrev;
   if (payloads.length === 0) return res.json({ ok: true, count: 0 });
 
   const { error: upErr } = await supabase.from(DAY_TABLE).upsert(payloads, { onConflict: "date" });

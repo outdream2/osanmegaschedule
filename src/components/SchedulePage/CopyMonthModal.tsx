@@ -59,7 +59,7 @@ export const CopyMonthModal: React.FC<CopyMonthModalProps> = ({
             onChange={e => setCopyDayAssignments(e.target.checked)} />
           <div className="flex-1">
             <div className="text-sm font-bold text-zinc-700">일별 근무설정</div>
-            <div className="text-[11px] text-zinc-500 mt-0.5">일자별 구역/점심/휴게 배정 (같은 일자 기준으로 복사)</div>
+            <div className="text-[11px] text-zinc-500 mt-0.5">일자별 구역/점심/휴게 배정 (요일 기준 복사 · 전월 각 요일의 대표 배치 → 이번달 같은 요일)</div>
           </div>
         </label>
       </div>
