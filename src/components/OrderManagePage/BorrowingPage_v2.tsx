@@ -1,10 +1,10 @@
 // src/components/OrderManagePage/BorrowingPage_v2.tsx
-// 2026-08-31 · #9 차용등록 재설계 Phase B · 3-column shell + BorrowingCard 리스트 이관
+// 2026-08-31 · #9 차용등록 재설계 Phase C · 중앙 BorrowingEditPanel 연결
 //
 //   · 병행 개발 · 원본 BorrowingPage.tsx 보존 (Phase E 에서 교체)
 //   · CSS Grid 3-column · [320px _ 1fr _ 380px] · lg 이상 · 그 아래는 세로 스택
 //   · 좌측 · SplitListPanel (검색 상단 built-in · 상태·기간 필터 · BorrowingCard 리스트)
-//   · 중앙 · EmptyState · 신규 등록 폼 placeholder (Phase C)
+//   · 중앙 · BorrowingEditPanel (신규/편집 통합 · Phase C)
 //   · 우측 · EmptyState · 상세 뷰 placeholder (Phase D)
 //   · listBorrowings API · borrowingsApi.ts 재사용 (framework 준수)
 //
@@ -21,7 +21,7 @@
 //     · PartySelectModal / BorrowingEditPanel 등은 Phase C·D 에서 별도 구현
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { HandCoins, FilePlus2, Inbox, RefreshCw } from "lucide-react";
+import { HandCoins, Inbox, RefreshCw } from "lucide-react";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
 import { Spinner } from "../common/Spinner";
@@ -32,6 +32,7 @@ import { BorrowingCard, type BorrowingCardData } from "../common/borrowing/Borro
 import { StatusPill } from "../common/StatusPill";
 import { InlineLabel } from "../common/InlineLabel";
 import { GradientAccent } from "../common/GradientAccent";
+import { BorrowingEditPanel, type EditMode } from "./BorrowingEditPanel";
 import {
   listBorrowings,
   type BorrowingRow,
@@ -96,10 +97,9 @@ interface BorrowingPageV2Props {
   authSession?: AuthSession | null;
 }
 
-// 중앙 편집 모드 · Phase C 에서 실제 폼 렌더
-type EditMode = null | { kind: "new" } | { kind: "edit"; id: number };
+// 중앙 편집 모드 · Phase C · EditMode 타입은 BorrowingEditPanel 에서 재수출
 
-export const BorrowingPageV2: React.FC<BorrowingPageV2Props> = ({ authSession: _authSession }) => {
+export const BorrowingPageV2: React.FC<BorrowingPageV2Props> = ({ authSession }) => {
   // ── 데이터 로드 ─────────────────────────────────────────────
   const [rows, setRows] = useState<BorrowingRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -210,7 +210,7 @@ export const BorrowingPageV2: React.FC<BorrowingPageV2Props> = ({ authSession: _
         return (
           <div
             key={r.id}
-            onClick={() => { setSelectedId(r.id); setEditMode(null); }}
+            onClick={() => { setSelectedId(r.id); setEditMode({ kind: "edit", id: r.id }); }}
             className={`cursor-pointer rounded-xl transition-all ${
               isSelected
                 ? "ring-2 ring-brand-deep ring-offset-1"
@@ -225,34 +225,36 @@ export const BorrowingPageV2: React.FC<BorrowingPageV2Props> = ({ authSession: _
   );
 
   // ═══════════════════════════════════════════════════════
-  // 중앙 · 신규 등록·편집 폼 자리 (Phase C 에서 구현)
+  // 중앙 · 신규 등록·편집 폼 (Phase C · BorrowingEditPanel)
+  //   · onSaved · 서버 재조회 + 편집 대상 재선택 · 리스트 즉시 반영
+  //   · onClose · placeholder 로 복귀 (mode=null)
   // ═══════════════════════════════════════════════════════
+  const handleSaved = useCallback((saved: BorrowingRow) => {
+    // 리스트에 존재하면 in-place 업데이트 · 신규면 prepend (서버 재조회로 정확한 상태 재확인)
+    setRows((prev) => {
+      const idx = prev.findIndex((r) => r.id === saved.id);
+      if (idx >= 0) {
+        const next = prev.slice();
+        next[idx] = saved;
+        return next;
+      }
+      return [saved, ...prev];
+    });
+    // 편집 모드 유지 · 방금 저장한 항목 선택
+    setSelectedId(saved.id);
+    setEditMode({ kind: "edit", id: saved.id });
+    // 백그라운드 재조회 (필터 반영)
+    load();
+  }, [load]);
+
   const centerPanel = (
-    <Card padding="none" rounded="xl" topAccent clip className="h-full min-h-[520px] flex flex-col">
-      <div className="shrink-0 px-4 py-3 border-b border-line bg-white flex items-center gap-2">
-        <HandCoins size={17} className="text-brand-deep" />
-        <span className="text-[17px] font-bold text-ink tracking-tight">
-          {editMode?.kind === "new"
-            ? "신규 차용 계약 · 등록"
-            : editMode?.kind === "edit"
-              ? `계약 편집 · #${editMode.id}`
-              : "계약 편집 영역"}
-        </span>
-        <div className="ml-auto">
-          <StatusPill tone="zinc" size="xs">Phase C 예정</StatusPill>
-        </div>
-      </div>
-      <div className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center p-6">
-        <EmptyState
-          icon={FilePlus2}
-          title={editMode?.kind === "new" ? "신규 등록 폼 · Phase C 에서 구현" : "폼 영역 · Phase C 에서 구현"}
-          hint={editMode?.kind === "new"
-            ? "좌측 상단 [신규 등록] 클릭 시 · 3-column Lender/Arrow/Borrower 폼이 여기에 렌더됩니다"
-            : "좌측 리스트에서 항목을 선택하거나 · [신규 등록] 을 눌러 폼을 여세요"}
-          size="large"
-        />
-      </div>
-    </Card>
+    <BorrowingEditPanel
+      mode={editMode}
+      row={editMode?.kind === "edit" ? rows.find((r) => r.id === editMode.id) ?? null : null}
+      onSaved={handleSaved}
+      onClose={() => setEditMode(null)}
+      authSession={authSession ?? null}
+    />
   );
 
   // ═══════════════════════════════════════════════════════
@@ -327,7 +329,7 @@ export const BorrowingPageV2: React.FC<BorrowingPageV2Props> = ({ authSession: _
                   차용 관리 · Redesign
                 </h1>
                 <p className="text-[14px] text-ink-soft mt-0.5 break-keep">
-                  양방향 화살표 · 이중 서명·도장 · Timeline 감사 이력 (#9 Phase B)
+                  양방향 화살표 · 이중 서명·도장 · Timeline 감사 이력 (#9 Phase C)
                 </p>
               </div>
             </div>
@@ -374,7 +376,7 @@ export const BorrowingPageV2: React.FC<BorrowingPageV2Props> = ({ authSession: _
             </SplitListPanel>
           </Card>
 
-          {/* ── 중앙 · 신규 등록·편집 폼 (Phase C 예정) ─────── */}
+          {/* ── 중앙 · 신규 등록·편집 폼 (Phase C · BorrowingEditPanel) ── */}
           <div className="min-w-0 lg:h-[calc(100vh-220px)]">
             {centerPanel}
           </div>
