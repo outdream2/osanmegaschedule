@@ -216,23 +216,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     return vendorMap.get(s) ?? vendorMap.get(s.replace(/\s+/g, "")) ?? vendorMap.get(s.toLowerCase());
   }, [vendorMap]);
 
-  // 담당자 팝오버 / 상품 상세 모달
+  // 담당자 팝오버
   const [contactPopover, setContactPopover] = useState<null | { anchor: DOMRect; name: string; phone: string | null; email: string | null }>(null);
-  const [detailProduct, setDetailProduct] = useState<{ code: string; name: string } | null>(null);
-  const [detailFull, setDetailFull] = useState<Record<string, any> | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [detailError, setDetailError] = useState<string | null>(null);
-  useEffect(() => {
-    if (!detailProduct) { setDetailFull(null); setDetailError(null); return; }
-    setDetailLoading(true); setDetailError(null);
-    (async () => {
-      try {
-        const { data } = await api.get<any>(`/api/products/${encodeURIComponent(detailProduct.code)}`);
-        setDetailFull(data);
-      } catch (err: any) { setDetailError(err instanceof ApiError ? err.message : (err?.message ?? "네트워크 오류")); }
-      finally { setDetailLoading(false); }
-    })();
-  }, [detailProduct]);
 
   // 패널 상태
   const { width: orderPanelWidth, startResize: onOrderResizeStart } = useResizablePanel({ storageKey: "megatown_ordermanage_order_w", defaultWidth: 640, minWidth: 320, maxWidth: 1000 });
@@ -707,12 +692,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           )}
           {statSubTab === "trending" && (
             <div className="flex-1 min-h-0 overflow-y-auto">
-              <TrendingTab
-                onProductClick={(p) => setDetailProduct({
-                  code: String(p?.product_code ?? ""),
-                  name: String(p?.product_name ?? ""),
-                })}
-              />
+              <TrendingTab />
             </div>
           )}
           {statSubTab === "category" && <div className="flex-1 min-h-0 overflow-y-auto"><CategoryTab /></div>}
@@ -727,12 +707,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         orderModal={orderModal} sendingBulk={sendingBulk}
         notifyLogisticsLeader={notifyLogisticsLeader} setNotifyLogisticsLeader={setNotifyLogisticsLeader}
         setOrderModal={setOrderModal} submitOrderModal={submitOrderModal} updateModalItem={updateModalItem}
-        detailProduct={detailProduct} detailFull={detailFull} detailLoading={detailLoading} detailError={detailError}
-        setDetailProduct={setDetailProduct} setDetailFull={setDetailFull}
-        reloadAllProductsMap={reloadAllProductsMap} loadInvMap={loadInvMap} loadOrderReqs={loadOrderReqs}
         contactPopover={contactPopover} setContactPopover={setContactPopover}
         supplierInfoModal={supplierInfoModal} setSupplierInfoModal={setSupplierInfoModal}
         inventoryEditModal={inventoryEditModal} setInventoryEditModal={setInventoryEditModal}
+        loadInvMap={loadInvMap}
         toast={toast}
       />
     </main>

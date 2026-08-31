@@ -1,6 +1,7 @@
 // src/components/OrderManagePage/OrderManagePage.modals.tsx
 // 2026-08-25 · Framework Phase 4 · large-file 분리 · OrderManagePage.tsx 모달 래퍼 이관
-//   · OrderModal · ProductDetailModal · ContactPopover · VendorDetailModal(supplier info) · InventoryEditModal · toast
+// 2026-08-31 · #32 · ProductDetailModal 제거 · TrendingTab 에 useProductDetailModal 내장
+//   · OrderModal · ContactPopover · VendorDetailModal(supplier info) · InventoryEditModal · toast
 //   · self-contained render · props 로 state/setter 전달
 
 import React from "react";
@@ -9,7 +10,6 @@ import { Modal } from "../common/Modal";
 import { toastClass } from "../../hooks/useToast";
 import { InventoryEditModal, type InventoryEditModalInitialValues } from "../common/features/InventoryEditModal";
 import { OrderModal } from "./OrderModal";
-import { ProductDetailModal } from "./ProductDetailModal";
 import { ContactPopover } from "./ContactPopover";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 
@@ -22,16 +22,6 @@ interface OrderManageModalsProps {
   setOrderModal: React.Dispatch<React.SetStateAction<any>>;
   submitOrderModal: () => void | Promise<void>;
   updateModalItem: (supIdx: number, itemIdx: number, patch: any) => void;
-  // ProductDetailModal
-  detailProduct: { code: string; name: string } | null;
-  detailFull: any;
-  detailLoading: boolean;
-  detailError: string | null;
-  setDetailProduct: React.Dispatch<React.SetStateAction<{ code: string; name: string } | null>>;
-  setDetailFull: React.Dispatch<React.SetStateAction<any>>;
-  reloadAllProductsMap: () => void | Promise<void>;
-  loadInvMap: () => void | Promise<void>;
-  loadOrderReqs: () => void | Promise<void>;
   // Contact popover
   contactPopover: null | { anchor: DOMRect; name: string; phone: string | null; email: string | null };
   setContactPopover: (v: null | { anchor: DOMRect; name: string; phone: string | null; email: string | null }) => void;
@@ -41,6 +31,7 @@ interface OrderManageModalsProps {
   // Inventory edit modal
   inventoryEditModal: { code: string; name: string; initialValues: InventoryEditModalInitialValues } | null;
   setInventoryEditModal: (v: { code: string; name: string; initialValues: InventoryEditModalInitialValues } | null) => void;
+  loadInvMap: () => void | Promise<void>;
   // Toast
   toast: { message: string; tone?: any } | null;
 }
@@ -58,14 +49,6 @@ export const OrderManageModals: React.FC<OrderManageModalsProps> = (p) => (
         onChannelChange={(ch, value) => p.setOrderModal((prev: any) => prev && ({ ...prev, channels: { ...prev.channels, [ch]: value } }))}
       />
     )}
-
-    {/* 상품 상세정보 모달 */}
-    <ProductDetailModal
-      detailProduct={p.detailProduct} detailFull={p.detailFull} detailLoading={p.detailLoading} detailError={p.detailError}
-      onClose={() => { p.setDetailProduct(null); p.reloadAllProductsMap(); p.loadInvMap(); p.loadOrderReqs(); }}
-      onRealMapUpdate={(v) => p.setDetailFull((prev: any) => prev ? { ...prev, real_map: v, realMap: v } : prev)}
-      onProductUpdate={(updates) => p.setDetailFull((prev: any) => prev ? { ...prev, ...updates } : prev)}
-    />
 
     {/* 담당자 팝오버 */}
     {p.contactPopover && (

@@ -6,6 +6,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { TrendingUp, AlertTriangle, Loader2 as LoaderIcon, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+import { useProductDetailModal, type ProductRef } from "../common/features/ProductDetailModal";
 import { getProductsMap } from "../../lib/productsCache";
 // 2026-08-31 · #13 · location 우선 · real_map fallback
 import { resolveProductLocation } from "../../lib/productLocation";
@@ -153,7 +154,7 @@ const SortIcon: React.FC<{ k: string; sortKey: string; sortDir: "asc" | "desc" }
 // ─── PeriodBucketCard ────────────────────────────────────────────────────────
 const PeriodBucketCard: React.FC<{
   bucket: PeriodBucket;
-  onProductClick?: (p: any) => void;
+  onProductClick?: (p: ProductRef) => void;
 }> = ({ bucket, onProductClick }) => {
   const fmt = (n: number) => n.toLocaleString();
   return (
@@ -196,7 +197,7 @@ const PeriodBucketCard: React.FC<{
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <button
                     type="button"
-                    onClick={() => onProductClick?.({ product_code: r.product_code, product_name: r.product_name, supplier: r.supplier })}
+                    onClick={() => onProductClick?.({ code: r.product_code, name: r.product_name })}
                     className="text-[14px] font-semibold text-zinc-700 hover:text-indigo-700 hover:underline text-left break-words cursor-pointer transition"
                   >
                     {r.product_name}
@@ -239,7 +240,7 @@ const PeriodTrendingSection: React.FC<{
   title: string;
   icon: React.ReactNode;
   buckets: PeriodBucket[];
-  onProductClick?: (p: any) => void;
+  onProductClick?: (p: ProductRef) => void;
 }> = ({ title, icon, buckets, onProductClick }) => {
   return (
     <div className="flex flex-col gap-3">
@@ -260,7 +261,8 @@ const PeriodTrendingSection: React.FC<{
 };
 
 // ─── TrendingTab (main export) ───────────────────────────────────────────────
-export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProductClick }) => {
+export const TrendingTab: React.FC = () => {
+  const { openProduct, modalElement } = useProductDetailModal();
   const { toast, showError } = useToast();
   const { getWidth, resizerProps } = useColumnResize("trendingTab", {
     num:     { default: 36,  min: 28, max: 60  },
@@ -537,7 +539,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
                   <tr key={r.product_code} className={`hover:bg-indigo-50/20 transition ${r.newly_trending ? "bg-indigo-50/10" : ""}`}>
                     <td className="text-center px-2 py-2 text-[15px] font-medium text-zinc-400 tabular-nums align-top">{i + 1}</td>
                     <td className="text-left px-2 py-2 align-top">
-                      <button onClick={() => onProductClick?.({ product_code: r.product_code, product_name: r.product_name, supplier: r.supplier })}
+                      <button onClick={() => openProduct({ code: r.product_code, name: r.product_name })}
                         className="text-left text-[14px] font-semibold text-zinc-700 hover:text-indigo-700 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition">
                         {r.product_name}
                       </button>
@@ -573,6 +575,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
         )}
       </div>
     </div>
+    {modalElement}
     </>
   );
 };

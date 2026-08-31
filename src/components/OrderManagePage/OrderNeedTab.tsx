@@ -601,8 +601,8 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                             <th onClick={() => handleNeedSort("short")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold text-rose-600">부족<span className="ml-1 text-rose-300">{needArrow("short") || "⇅"}</span></th>
                           </>
                         )}
-                        {/* 2026-08-30 · 사용자 지시 · 발주수량 · 컴팩트 · 최신 트렌드 */}
-                        <th className="text-center px-1.5 py-2.5 cursor-default font-bold text-amber-700 bg-amber-50/50 border-l border-amber-100" style={{ minWidth: 78 }}>수량</th>
+                        {/* 2026-08-31 · 사용자 지시 · 주문수량 · 헤더 세로 잘림 fix · 폭 확장 · whitespace-nowrap */}
+                        <th className="text-center px-2 py-2.5 cursor-default font-bold text-amber-700 bg-amber-50/50 border-l border-amber-100 whitespace-nowrap" style={{ minWidth: 112, width: 112 }}>수량</th>
                         {/* 발주 컬럼 · brand-tint 옅게 · 결과 강조 (v3 스펙) */}
                         <th className="text-center px-2 py-2.5 cursor-default font-bold text-brand-deep bg-brand-tint/50 border-l border-brand/10" style={{ minWidth: 120 }}>발주</th>
                       </tr>
@@ -729,23 +729,25 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                                   </td>
                                 </>
                               )}
-                              {/* 2026-08-30 · 사용자 지시 · 수량 컴팩트 (xs · h-7) · 최신 트렌드 · 여백 최소화 */}
-                              <td className="text-center px-1 py-1 align-middle whitespace-nowrap bg-amber-50/20">
-                                <StepperInput
-                                  value={orderQtyOverride?.get(code) ?? Math.max(1, opt - cur)}
-                                  onChange={(v) => {
-                                    if (!setOrderQtyOverride) return;
-                                    const n = typeof v === "number" ? v : Math.max(1, opt - cur);
-                                    setOrderQtyOverride(prev => {
-                                      const next = new Map(prev);
-                                      next.set(code, n);
-                                      return next;
-                                    });
-                                  }}
-                                  min={1}
-                                  size="xs"
-                                  className="max-w-[76px]"
-                                />
+                              {/* 2026-08-31 · 사용자 지시 · 주문수량 입력창 확장 · 헤더 잘림 fix · size sm · 폭 통일 */}
+                              <td className="text-center px-1.5 py-1 align-middle whitespace-nowrap bg-amber-50/20">
+                                <div className="flex items-center justify-center">
+                                  <StepperInput
+                                    value={orderQtyOverride?.get(code) ?? Math.max(1, opt - cur)}
+                                    onChange={(v) => {
+                                      if (!setOrderQtyOverride) return;
+                                      const n = typeof v === "number" ? v : Math.max(1, opt - cur);
+                                      setOrderQtyOverride(prev => {
+                                        const next = new Map(prev);
+                                        next.set(code, n);
+                                        return next;
+                                      });
+                                    }}
+                                    min={1}
+                                    size="sm"
+                                    className="w-[104px]"
+                                  />
+                                </div>
                               </td>
                               <td className="text-center px-1 py-1.5 align-middle whitespace-nowrap">
                                 <button
