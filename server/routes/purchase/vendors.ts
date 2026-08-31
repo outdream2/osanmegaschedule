@@ -16,7 +16,7 @@ const router = Router();
 
 // 공급사관리 엑셀 업로드 · LandingPage 데이터 업로드 모달에서 사용
 // binary 로 전송된 xlsx 파일을 서버에서 파싱 후 vendors 테이블에 upsert (company_name 기준)
-router.post("/api/upload-vendors", express.raw({ type: "application/octet-stream", limit: "20mb" }), asyncHandler(async (req, res) => {
+router.post("/api/upload-vendors", authorize(9), express.raw({ type: "application/octet-stream", limit: "20mb" }), asyncHandler(async (req, res) => {
   const { adminKey, managerId } = req.query as Record<string, string>;
   if (!req.body || !Buffer.isBuffer(req.body) || req.body.length === 0) {
     throw badRequest("파일이 없습니다");
@@ -218,7 +218,7 @@ router.get("/api/vendors", asyncHandler(async (req, res) => {
 }));
 
 // 거래처 등록 (관리자)
-router.post("/api/vendors", validateBody(CreateVendorSchema), asyncHandler(async (req, res) => {
+router.post("/api/vendors", authorize(5), validateBody(CreateVendorSchema), asyncHandler(async (req, res) => {
   const { company_name, contact_name, phone, email, category, note, business_number } = req.body;
   const cleanPhone = phone ? String(phone).replace(/[^0-9]/g, "") : null;
   const cleanBizNum = business_number ? String(business_number).replace(/[^0-9]/g, "") : null;

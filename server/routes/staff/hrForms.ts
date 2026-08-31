@@ -122,7 +122,7 @@ router.get("/api/hr-forms", asyncHandler(async (req, res) => {
  * }
  * Response: { id, file_url, ... } (hr_forms row)
  */
-router.post("/api/hr-forms", validateBody(CreateHrFormSchema), asyncHandler(async (req, res) => {
+router.post("/api/hr-forms", authorize(5), validateBody(CreateHrFormSchema), asyncHandler(async (req, res) => {
   const b = req.body;
   const title = b.title.trim();
   const category = b.category;
