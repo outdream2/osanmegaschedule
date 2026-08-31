@@ -84,15 +84,16 @@ export const ExpiryImminentTab: React.FC = () => {
   useEffect(() => { load(); }, [load]);
 
   const filtered = useMemo(() => {
-    // 2026-08-29 · saleMatches AND (matchesProductQuery OR matchesSupplierQuery) + real_map 매칭
+    // 2026-08-29 · saleMatches AND (matchesProductQuery OR matchesSupplierQuery) + location 매칭
     // 2026-08-31 · #11 · 공급사 검색 통합 · matchesSupplierQuery 프리미티브
+    // 2026-08-31 · #13 · location 우선 · real_map fallback (resolveProductLocation)
     const saleFiltered = rows.filter(r => saleMatches(r.sale_status));
     const kw = q.trim().toLowerCase();
     if (!kw) return saleFiltered;
     return saleFiltered.filter(r =>
       matchesProductQuery(r, q) ||
       matchesSupplierQuery({ supplier: r.supplier ?? undefined }, q) ||
-      String(r.real_map ?? "").toLowerCase().includes(kw)
+      String(resolveProductLocation(r) ?? "").toLowerCase().includes(kw)
     );
   }, [rows, q, saleMatches]);
 

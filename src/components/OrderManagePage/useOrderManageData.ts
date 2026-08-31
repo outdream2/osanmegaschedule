@@ -147,17 +147,18 @@ export function useOrderManageData(getCode: (p: ProductInfo) => string) {
     }
   }
 
-  // zoneMap 파생 (real_map, spec)
+  // zoneMap 파생 (location 우선 · real_map fallback, spec)
+  // 2026-08-31 · #13 · location 이관 · 표시용 위치는 location > real_map 순
   const zoneMap = new Map<string, { real_map: string | null; spec: string | null }>();
   for (const [code, p] of Object.entries(allProductsMap)) {
-    const realMap = (p as any).real_map ?? (p as any).realMap ?? null;
+    const realMap = (p as any).location ?? (p as any).real_map ?? (p as any).realMap ?? null;
     const spec    = (p as any).spec ?? null;
     if (realMap || spec) zoneMap.set(code, { real_map: realMap, spec });
   }
   for (const p of products) {
     const code = getCode(p);
     if (!code || zoneMap.has(code)) continue;
-    const realMap = (p as any).real_map ?? null; const spec = (p as any).spec ?? null;
+    const realMap = (p as any).location ?? (p as any).real_map ?? null; const spec = (p as any).spec ?? null;
     if (realMap || spec) zoneMap.set(code, { real_map: realMap, spec });
   }
 
