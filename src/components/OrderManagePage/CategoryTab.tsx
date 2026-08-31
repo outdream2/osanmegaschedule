@@ -7,6 +7,7 @@ import { X, Loader2, Layers, PieChart } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import { getProductsMap } from "../../lib/productsCache";
+import { resolveProductLocation } from "../../lib/productLocation";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { StoreZoneMap } from "../common/StoreZoneMap";
@@ -106,7 +107,9 @@ const ZoneCategoryContent: React.FC = () => {
     for (const r of sales) {
       const code = String(r.product_code ?? "");
       const p = products[code] ?? {};
-      const zone = String((p as any).spec ?? "").trim();
+      // 2026-08-31 · #69 fix · resolveProductLocation 사용 · location 우선 · real_map fallback
+      //   · 이전 · spec 만 · location/real_map 만 있는 상품은 "미배치" 로 빠짐 → 판매 데이터 안 보임
+      const zone = (resolveProductLocation(p) ?? String((p as any).spec ?? "").trim());
       const key = parsePrimaryZone(zone);
       const cur = map.get(key) ?? { zone: key, saleQty: 0, totalAmount: 0, items: [] };
       const saleQty = Number(r.sale_qty ?? 0) || 0;

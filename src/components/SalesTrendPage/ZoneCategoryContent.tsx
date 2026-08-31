@@ -9,6 +9,7 @@ import { StoreZoneMap } from "../common/StoreZoneMap";
 import { StatusPill } from "../common/StatusPill";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { getProductsMap } from "../../lib/productsCache";
+import { resolveProductLocation } from "../../lib/productLocation";
 import { formatZoneDisplayCode } from "../../constants/displayZones";
 import { fmtWon } from "../../lib/format";
 import { api } from "../../lib/apiClient";
@@ -67,7 +68,12 @@ const ZoneCategoryContent: React.FC = () => {
     if (s) params.set("season", s);
     else if (m > 0) params.set("months", String(m));
     Promise.all([
-      api.get<{ rows?: any[] }>(`/api/stock-manage/top-sales?${params}`).catch(() => ({ data: { rows: [] } })),
+      // 2026-08-31 · #69 · silent catch 개선 · 로그 + toast · 원인 파악
+      api.get<{ rows?: any[] }>(`/api/stock-manage/top-sales?${params}`).catch((e) => {
+        console.error("[ZoneCategoryContent] top-sales 실패:", e);
+        showError(`판매 데이터 로드 실패: ${e instanceof Error ? e.message : String(e)}`);
+        return { data: { rows: [] } };
+      }),
       getProductsMap(),
     ])
       .then(([sv, p]) => { setSales(Array.isArray(sv.data?.rows) ? sv.data.rows : []); setProducts(p ?? {}); })
@@ -89,8 +95,10 @@ const ZoneCategoryContent: React.FC = () => {
     for (const r of sales) {
       const code = String(r.product_code ?? "");
       const p = products[code] ?? {};
-      // 2026-08-29 · 사용자 지시 · 진열위치 (location) 기반 · real_map 아님 · 오래된 spec fallback 유지 (하위호환)
-      const zone = String((p as any).location ?? (p as any).display_location ?? (p as any).spec ?? "").trim();
+      // 2026-08-31 · #69 fix · resolveProductLocation 사용 · location 우선 · display_location · real_map · spec 순 fallback
+      //   · 이전 · location/display_location/spec 만 · real_map 만 있는 상품은 "미배치" 로 빠짐 → 판매 데이터 안 보임
+      //   · 공통 헬퍼 통일 · productLocation.ts
+      const zone = (resolveProductLocation(p) ?? String((p as any).spec ?? "").trim());
       const key = parsePrimaryZone(zone);
       const cur = map.get(key) ?? { zone: key, saleQty: 0, totalAmount: 0, items: [] };
       const saleQty = Number(r.sale_qty ?? 0) || 0;
