@@ -32,18 +32,19 @@ describe("TEXT · 타이포그래피 스케일 (8단계)", () => {
     );
   });
 
-  it("hero · text-[17px] + font-black", () => {
-    expect(TEXT.hero).toContain("text-[17px]");
+  // 2026-08-31 · Phase A · 스케일 +2 반영 · 17→19 · 13→15 · 9→11
+  it("hero · text-[19px] + font-black", () => {
+    expect(TEXT.hero).toContain("text-[19px]");
     expect(TEXT.hero).toContain("font-black");
   });
 
-  it("body · text-[13px] + font-semibold", () => {
-    expect(TEXT.body).toContain("text-[13px]");
+  it("body · text-[15px] + font-semibold", () => {
+    expect(TEXT.body).toContain("text-[15px]");
     expect(TEXT.body).toContain("font-semibold");
   });
 
-  it("micro · text-[9px] + uppercase + tracking-widest", () => {
-    expect(TEXT.micro).toContain("text-[9px]");
+  it("micro · text-[11px] + uppercase + tracking-widest", () => {
+    expect(TEXT.micro).toContain("text-[11px]");
     expect(TEXT.micro).toContain("uppercase");
     expect(TEXT.micro).toContain("tracking-widest");
   });
