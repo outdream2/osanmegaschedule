@@ -20,6 +20,8 @@ import { SearchBar } from "../common/SearchBar";
 import { matchesProductQuery } from "../../lib/productMatch";
 // 2026-08-31 · #11 · 공급사명 검색 통합
 import { matchesSupplierQuery } from "../../lib/supplierMatch";
+// 2026-08-31 · #13 · location 우선 · real_map fallback
+import { resolveProductLocation } from "../../lib/productLocation";
 
 interface ExpiryProduct {
   product_code: string;
@@ -175,7 +177,7 @@ export const ExpiryImminentTab: React.FC = () => {
                         <div className="text-[12px] font-mono text-zinc-400 mt-0.5">{p.product_code}</div>
                       </td>
                       <td className={tableTdCls("left", "text-zinc-600")}>{p.supplier ?? <span className="text-zinc-400">-</span>}</td>
-                      <td className={tableTdCls("left", "text-zinc-600")}>{p.real_map ?? <span className="text-zinc-400">-</span>}</td>
+                      <td className={tableTdCls("left", "text-zinc-600")}>{resolveProductLocation(p) ?? <span className="text-zinc-400">-</span>}</td>
                       <td className={tableTdCls("num", "text-zinc-700")}>{p.current_stock ?? <span className="text-zinc-400">-</span>}</td>
                       <td className={tableTdCls("center", "font-semibold text-ink tabular-nums")}>{fmtDate(p.expiry_date)}</td>
                       <td className={tableTdCls("center")}>{dDayCell(d)}</td>
