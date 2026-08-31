@@ -19,7 +19,9 @@ const router = Router();
 
 // 공개 재고확인 API — 로그인 불필요
 // 2026-08-26 · 사용자 지시 · 전역 판매중 설정 반영 · sale_status="판매중" 만 반환
-router.get("/api/stock-check", asyncHandler(async (req, res) => {
+// 2026-08-31 · server.ts public 구역에 stockCheckPublicRouter 로 등록 · 인라인 중복 제거
+export const stockCheckPublicRouter = Router();
+stockCheckPublicRouter.get("/api/stock-check", asyncHandler(async (req, res) => {
   const raw = String(req.query.q ?? "").trim().slice(0, 60);
   if (raw.length < 1) return res.json([]);
   const { data: setting } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();

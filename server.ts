@@ -26,7 +26,7 @@ import settingsRouter    from "./server/routes/settings/settings";
 import systemConfigRouter from "./server/routes/settings/systemConfig";
 // 2026-08-24 · #253 · 자동 임포트 설정 endpoints (authorize(9) 내부)
 import autoImportRouter  from "./server/routes/settings/autoImport";
-import productsRouter    from "./server/routes/stock/products";
+import productsRouter, { stockCheckPublicRouter } from "./server/routes/stock/products";
 import requestsRouter    from "./server/routes/display/requests";
 import mismatchesRouter  from "./server/routes/display/mismatches";
 import authRouter        from "./server/routes/auth/auth";
@@ -173,29 +173,9 @@ async function startServer() {
   //   · POST 는 내부 level >= 3 자체 검증 · 인증 없이도 안전
   app.use(stockArrivalsRouter);
 
-  // 2026-08-26 · 사용자 리포트 · 로그인 화면 재고확인 안 됨 fix
-  //   · /api/stock-check 는 productsRouter 안에서 "공개" 로 선언되어 있으나 · productsRouter 가 requireAuth 뒤 마운트되어 401
-  //   · 공개 인라인 라우트로 · requireAuth 이전에 등록 · 최소 침습
-  // 2026-08-26 · 사용자 지시 · 전역 판매중 설정 반영 · stats.sale_active_only=true 면 sale_status="판매중" 만
-  app.get("/api/stock-check", async (req, res) => {
-    try {
-      const raw = String(req.query.q ?? "").trim().slice(0, 60);
-      if (raw.length < 1) { res.json([]); return; }
-      const { data: setting } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();
-      const saleActive = setting?.value === true;
-      let query = supabase
-        .from("products")
-        .select("product_name, spec, current_stock, sale_status, category, real_map, display_location, supplier")
-        .eq("hidden", false)
-        .ilike("product_name", `%${raw}%`);
-      if (saleActive) query = query.eq("sale_status", "판매중");
-      const { data, error } = await query.limit(25);
-      if (error) { res.status(500).json({ error: error.message }); return; }
-      res.json(data ?? []);
-    } catch (e: any) {
-      res.status(500).json({ error: e?.message ?? "unknown" });
-    }
-  });
+  // 2026-08-31 · #16 · /api/stock-check · stockCheckPublicRouter (products.ts) 로 교체
+  //   · 이전 인라인 제거 · asyncHandler + HttpError 프레임워크 · 최신 saleActive 로직 (value !== false)
+  app.use(stockCheckPublicRouter);
 
   // ── 2026-08-16 · #112-G · requireAuth 재활성화 · 아래 모든 /api/* 는 로그인 필수 ──
   //   · SPA 정적 자원 (/, /assets/*, /sw.js) · 미들웨어 내부 skip (path !startsWith("/api/"))
@@ -261,7 +241,7 @@ async function startServer() {
   app.use(vendorsRouter);
   app.use(boardRouter);
   app.use(vatRouter);
-  app.use(referenceValuesRouter); // 2026-08-06 · T-DualStorage-Connect
+  // 2026-08-31 · #16 · referenceValuesRouter 이중 등록 제거 · public 구역 (line 169) 에서 이미 처리
   // (재고세기 라우터 · 2026-08-05 파일 삭제됨)
   // app.use(inventorySalesRouter);
 
