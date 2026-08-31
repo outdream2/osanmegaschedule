@@ -8,6 +8,7 @@ interface ProductResult {
   code: string;
   name: string;
   spec: string;
+  /** 진열위치 · location 우선 · real_map fallback (resolveProductLocation 결과) */
   realMap: string | null;
 }
 

@@ -29,7 +29,7 @@ stockCheckPublicRouter.get("/api/stock-check", asyncHandler(async (req, res) => 
   const saleActive = setting?.value !== false;
   let query = supabase
     .from("products")
-    .select("product_name, spec, current_stock, sale_status, category, real_map, display_location, supplier")
+    .select("product_name, spec, current_stock, sale_status, category, location, display_location, real_map, supplier")
     .eq("hidden", false)
     .ilike("product_name", `%${raw}%`);
   if (saleActive) query = query.eq("sale_status", "판매중");
@@ -133,7 +133,7 @@ router.get("/api/products-by-category", asyncHandler(async (req, res) => {
   const category = String(req.query.category ?? "").trim();
   const code = String(req.query.code ?? "").trim();
   if (!category && !code) return res.json([]);
-  const cols = "product_code,product_name,category,category_code,supplier,brand,manufacturer,spec,unit,sale_price,purchase_price,real_map";
+  const cols = "product_code,product_name,category,category_code,supplier,brand,manufacturer,spec,unit,sale_price,purchase_price,location,display_location,real_map";
   // 2026-08-28 · 감사 P2-1 · sale_status 필터 통일 · 판매중만 (설정 반영)
   const { data: saleSetting } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();
   const saleActive = saleSetting?.value !== false;
@@ -175,7 +175,7 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
       ...(padded !== q ? [`product_code.eq.${padded}`] : []),
     ].join(",");
 
-    const cols = "product_code,product_name,spec,supplier,category_code,category,purchase_price,sale_price,profit_rate,expiry_date,real_map,current_stock,sale_status,hidden";
+    const cols = "product_code,product_name,spec,supplier,category_code,category,purchase_price,sale_price,profit_rate,expiry_date,location,display_location,real_map,current_stock,sale_status,hidden";
 
     // 1차: search_keywords + hidden 필터 포함 시도
     let query = supabase.from("products").select(cols).or(buildOr(true));
@@ -186,7 +186,7 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
 
     // 2차 fallback 1: hidden 컬럼 없으면 제외하고 재시도
     if (error && /"?hidden"?|does not exist|column/i.test(error.message) && /hidden/i.test(error.message)) {
-      const cols2 = "product_code,product_name,spec,supplier,purchase_price,sale_price,profit_rate,expiry_date,real_map,current_stock,sale_status";
+      const cols2 = "product_code,product_name,spec,supplier,purchase_price,sale_price,profit_rate,expiry_date,location,display_location,real_map,current_stock,sale_status";
       let q2 = supabase.from("products").select(cols2).or(buildOr(true));
       if (supplier.length >= 2) q2 = q2.ilike("supplier", `%${supplier}%`);
       const r2 = await q2.limit(40);
@@ -506,7 +506,7 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
   // 2026-08-29 · #154 P2 · sale_status join · 클라이언트 3-way 필터
   const { data, error } = await supabase
     .from("products")
-    .select("product_code, product_name, spec, supplier, real_map, current_stock, expiry_date, sale_status")
+    .select("product_code, product_name, spec, supplier, location, display_location, real_map, current_stock, expiry_date, sale_status")
     .eq("hidden", false)
     .not("expiry_date", "is", null)
     .order("expiry_date", { ascending: true })
@@ -523,7 +523,7 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
 router.get("/api/products/hidden", asyncHandler(async (_req, res) => {
   const { data, error } = await supabase
     .from("products")
-    .select("product_code, product_name, spec, supplier, real_map, current_stock, sale_price")
+    .select("product_code, product_name, spec, supplier, location, display_location, real_map, current_stock, sale_price")
     .eq("hidden", true)
     .order("product_name", { ascending: true })
     .limit(500);
@@ -587,6 +587,8 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
   res.json({
     ...data,
     realMap: data.real_map ?? null,
+    // location 우선 · real_map fallback (하위호환)
+    location: data.location ?? data.display_location ?? data.real_map ?? null,
     // 재고 DB에서 병합
     warehouse_stock: data.warehouse_stock ?? warehouseStock,
     store_stock: data.store_stock ?? storeStock,

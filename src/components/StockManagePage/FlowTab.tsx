@@ -32,6 +32,7 @@ import type { StockFlowRow, SortKey, SortDir, FlowGroup } from "./FlowTab.types"
 import { fmt, GLOBAL_FLOW_CACHE, FLOW_CACHE_TTL } from "./FlowTab.types";
 // 2026-08-22 · Framework Phase 4 · row rendering 별도 파일 이관
 import { FlowRow } from "./FlowRow";
+import { resolveProductLocation } from "../../lib/productLocation";
 // 2026-08-22 · Framework Phase 4 · 3섹션 별도 컴포넌트 이관
 import { FlowFilterBar, HiddenManagerModal, SupplierDetailModalWrapper } from "./FlowTab.panels";
 // 2026-08-26 · 사용자 지시 · 적정재고 기준 일수 코멘트
@@ -101,7 +102,7 @@ export const FlowTab: React.FC = () => {
     getProductsMap().then(map => {
       if (!alive) return;
       const m: Record<string, string | null> = {};
-      for (const [k, v] of Object.entries(map)) m[k] = (v as any)?.real_map ?? null;
+      for (const [k, v] of Object.entries(map)) m[k] = resolveProductLocation(v as any);
       setProductRealMapById(m);
     }).catch(() => { /* 캐시 없으면 필터 미분류 처리 */ });
     return () => { alive = false; };
@@ -137,6 +138,7 @@ export const FlowTab: React.FC = () => {
       optimal_stock: p.optimal_stock ?? null,
       supplier: p.supplier ?? null,
       real_map: p.real_map ?? null,
+      location: p.location ?? null,
       warehouse_stock: p.warehouse_stock ?? null,
       store_stock: p.store_stock ?? null,
     };
@@ -384,7 +386,7 @@ export const FlowTab: React.FC = () => {
   }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowMonths, flowCategoryFilter, vendorCategoryMap, infoSearchQuery]);
 
   // 3-way tab 카운트
-  const getRealMap = useCallback((p: any) => (p as any).real_map ?? productRealMapById[String(p.product_code)] ?? null, [productRealMapById]);
+  const getRealMap = useCallback((p: any) => resolveProductLocation(p) ?? productRealMapById[String(p.product_code)] ?? null, [productRealMapById]);
   const essentialCount = useMemo(() => baseFlow.filter(p => matchClassFilter(getRealMap(p), "stationery")).length, [baseFlow, getRealMap]);
   const generalCount = useMemo(() => baseFlow.filter(p => matchClassFilter(getRealMap(p), "general")).length, [baseFlow, getRealMap]);
   const allCount = baseFlow.length;

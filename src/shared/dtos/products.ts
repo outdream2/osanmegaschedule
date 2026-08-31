@@ -9,6 +9,8 @@ export interface Product {
   min_stock: number | null;
   sale_price: number | null;
   purchase_price: number | null;
+  location?: string | null;          // 진열위치 (location 우선 · real_map fallback)
+  display_location?: string | null;
   real_map: string | null;          // 실제배정구역 (DB=real_map, JS=realMap)
   hidden: boolean;
   category?: string | null;

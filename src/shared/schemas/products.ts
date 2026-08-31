@@ -10,6 +10,8 @@ export const CreateProductSchema = z.object({
   unit: z.string().max(30).nullable().optional(),
   spec: z.string().max(100).nullable().optional(),
   barcode: z.string().max(50).nullable().optional(),
+  location: z.string().max(200).nullable().optional(),
+  display_location: z.string().max(200).nullable().optional(),
   real_map: z.string().max(100).nullable().optional(),
   optimal_stock: z.number().int().min(0).max(999999).nullable().optional(),
   sale_price: z.number().min(0).max(999999999).nullable().optional(),

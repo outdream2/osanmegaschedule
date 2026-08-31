@@ -8,6 +8,7 @@ import React from "react";
 import {
   Search, Boxes, EyeOff, Loader2 as LoaderIcon,
 } from "lucide-react";
+import { resolveProductLocation } from "../../lib/productLocation";
 import { Spinner } from "../common/Spinner";
 import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
@@ -267,7 +268,7 @@ export const HiddenManagerModal: React.FC<HiddenManagerModalProps> = ({
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-bold text-zinc-800 break-words leading-tight">{(p as any).product_name}</div>
                       <div className="text-[14px] tabular-nums text-zinc-400 break-words whitespace-normal leading-tight">
-                        #{code}{(p as any).supplier ? ` · ${(p as any).supplier}` : ""}{(p as any).real_map ? ` · ${(p as any).real_map}` : ""}{(p as any).current_stock != null ? ` · 재고 ${(p as any).current_stock}` : ""}
+                        #{code}{(p as any).supplier ? ` · ${(p as any).supplier}` : ""}{resolveProductLocation(p) ? ` · ${resolveProductLocation(p)}` : ""}{(p as any).current_stock != null ? ` · 재고 ${(p as any).current_stock}` : ""}
                       </div>
                     </div>
                     <button onClick={() => onUnhideProduct(code)} disabled={busy}

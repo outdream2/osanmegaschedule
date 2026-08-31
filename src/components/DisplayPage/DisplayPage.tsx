@@ -37,6 +37,7 @@ import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { useContactInfo } from "../../hooks/useContactInfo";
 import { usePagePermissions } from "../../hooks/usePagePermissions";
 import type { AuthSession } from "../../types";
+import { resolveProductLocation } from "../../lib/productLocation";
 import { api, ApiError } from "../../lib/apiClient";
 import type { DpSubTabKey, DisplayPageProps, DisplayRequest, Employee, TodayStaff, PopoverAnchor } from "./DisplayPage.types";
 import {
@@ -484,7 +485,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       const name = String(p.name ?? p.product_name ?? "");
       const spec = String(p.spec ?? "");
       if (name.toLowerCase().includes(q) || spec.toLowerCase().includes(q)) {
-        results.push({ code, name, spec, realMap: p.real_map ?? null });
+        results.push({ code, name, spec, realMap: resolveProductLocation(p) });
         if (results.length >= 30) break;
       }
     }

@@ -212,7 +212,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   const [flowSelectedProduct, setFlowSelectedProduct] = useState<ProductInfo | null>(null);
   const loadFlowSelectedProduct = useCallback(async (p: any) => {
     const code = String(p.product_code ?? "").trim();
-    const partial: ProductInfo = { code, name: String(p.product_name ?? ""), spec: String(p.spec ?? ""), current_stock: p.current_stock ?? null, optimal_stock: p.optimal_stock ?? null, supplier: p.supplier ?? null, real_map: p.real_map ?? null };
+    const partial: ProductInfo = { code, name: String(p.product_name ?? ""), spec: String(p.spec ?? ""), current_stock: p.current_stock ?? null, optimal_stock: p.optimal_stock ?? null, supplier: p.supplier ?? null, real_map: p.real_map ?? null, location: p.location ?? null };
     setFlowSelectedProduct(partial);
     try {
       let full = lookupProduct(code);

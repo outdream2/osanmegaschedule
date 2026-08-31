@@ -6,6 +6,7 @@ import { StatusPill } from "../common/StatusPill";
 import { Modal } from "../common/Modal";
 import { Card } from "../common/Card";
 import type { ProductInfo } from "../../lib/productsCache";
+import { resolveProductLocation } from "../../lib/productLocation";
 
 export interface ZoneProductsModalState {
   zoneId: string;
@@ -65,7 +66,7 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
   };
 
   const matched = (Object.values(productsMap) as ProductInfo[]).filter(p =>
-    matchesZone(p.spec) || matchesZone(p.real_map)
+    matchesZone(p.spec) || matchesZone(resolveProductLocation(p))
   );
 
   const q = search.trim().toLowerCase();
@@ -73,7 +74,7 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
     if (q && !(String(p.name ?? "").toLowerCase().includes(q))) return false;
     if (filter === "mismatch") {
       const specStr = String(p.spec ?? "").trim();
-      const realStr = String(p.real_map ?? "").trim();
+      const realStr = String(resolveProductLocation(p) ?? "").trim();
       if (specStr === realStr) return false;
     }
     return true;
@@ -108,7 +109,7 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
     switch (sort.key) {
       case "name": return dir * cmpStr(String(a.name ?? ""), String(b.name ?? ""));
       case "spec": return dir * cmpStr(String(a.spec ?? ""), String(b.spec ?? ""));
-      case "real_map": return dir * cmpStr(String(a.real_map ?? ""), String(b.real_map ?? ""));
+      case "real_map": return dir * cmpStr(resolveProductLocation(a) ?? "", resolveProductLocation(b) ?? "");
       case "current_stock": {
         const aS = numOrNaN((a as any).current_stock); const bS = numOrNaN((b as any).current_stock);
         return dir * cmpNum(Number.isFinite(aS) ? aS : -Infinity, Number.isFinite(bS) ? bS : -Infinity);
@@ -129,8 +130,8 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
       }
       case "status": return dir * cmpNum(statusRank(a), statusRank(b));
       case "mismatch": {
-        const aMis = (String(a.spec ?? "").trim() !== String(a.real_map ?? "").trim()) ? 1 : 0;
-        const bMis = (String(b.spec ?? "").trim() !== String(b.real_map ?? "").trim()) ? 1 : 0;
+        const aMis = (String(a.spec ?? "").trim() !== String(resolveProductLocation(a) ?? "").trim()) ? 1 : 0;
+        const bMis = (String(b.spec ?? "").trim() !== String(resolveProductLocation(b) ?? "").trim()) ? 1 : 0;
         return dir * cmpNum(aMis, bMis);
       }
       default: return 0;
@@ -266,10 +267,10 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
                     <tr key={p.code} className="hover:bg-zinc-50 cursor-pointer" onClick={() => onProductClick(p)}>
                       <td className="text-left px-2 py-1.5 min-w-0">
                         <div className="text-[12px] font-bold text-zinc-800 truncate" title={p.name}>{p.name}</div>
-                        {((p as any).spec || (p as any).real_map) && (
+                        {((p as any).spec || resolveProductLocation(p)) && (
                           <div className="mt-0.5 text-[9px] text-zinc-400 truncate">
                             {(p as any).spec && <span className="font-mono" title="전산배치구역">전산 {String((p as any).spec)}</span>}
-                            {(p as any).real_map && <span className="font-mono" title="실제배치구역"> · 실제 {String((p as any).real_map)}</span>}
+                            {resolveProductLocation(p) && <span className="font-mono" title="실제배치구역"> · 실제 {resolveProductLocation(p)}</span>}
                           </div>
                         )}
                       </td>
