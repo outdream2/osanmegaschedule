@@ -546,7 +546,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
       )}
 
       {/* Grid Container */}
-      <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-zinc-100 gap-0 w-full lg:max-w-[1600px] lg:mx-auto min-w-0">
+      <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-zinc-100 gap-0 max-w-[1360px] w-[85%] mx-auto min-w-0">
         <ScheduleToolbar
           currentYear={currentYear} currentMonth={currentMonth}
           isAdmin={isAdmin} editMode={editMode}

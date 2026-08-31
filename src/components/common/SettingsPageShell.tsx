@@ -34,8 +34,8 @@ interface Props {
 
   /** 헤더 우측 추가 슬롯 (예: 저장 상태 배지 · 새로고침 버튼) */
   rightSlot?: React.ReactNode;
-  /** max-width · 기본 max-w-3xl · 필요 시 override */
-  maxWidth?: "max-w-2xl" | "max-w-3xl" | "max-w-4xl" | "max-w-[1100px]";
+  /** max-width · 기본 max-w-[1360px] w-[85%] · 필요 시 override */
+  maxWidth?: "max-w-2xl" | "max-w-3xl" | "max-w-4xl" | "max-w-[1100px]" | "max-w-[1360px]";
   /** 2026-08-16 · 페이지별 title/description 폰트 커스텀 */
   titleClassName?: string;
   descriptionClassName?: string;
@@ -51,7 +51,7 @@ interface Props {
 export const SettingsPageShell: React.FC<Props> = ({
   activePage, authSession, onBack, onNavigate, onLogout,
   icon: Icon, title, description,
-  rightSlot, maxWidth = "max-w-3xl",
+  rightSlot, maxWidth = "max-w-[1360px]",
   titleClassName = "text-[22px] font-extrabold text-ink leading-tight tracking-tight",
   descriptionClassName = "text-[13px] text-ink-soft mt-1 leading-relaxed",
   showBreadcrumb = true,
@@ -68,7 +68,7 @@ export const SettingsPageShell: React.FC<Props> = ({
         onLogout={onLogout}
         rightSlot={rightSlot}
       />
-      <main className={`flex-1 ${maxWidth} mx-auto w-full px-4 py-5 flex flex-col gap-4`}>
+      <main className={`flex-1 ${maxWidth} w-[85%] mx-auto px-4 py-5 flex flex-col gap-4`}>
         {/* 2026-08-29 · #122 P5 · breadcrumb · 홈 > 설정 > 현재 페이지 */}
         {showBreadcrumb && (
           <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[13px] text-ink-soft font-medium -mb-1">

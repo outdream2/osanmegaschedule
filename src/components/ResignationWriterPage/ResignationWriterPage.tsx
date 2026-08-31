@@ -356,7 +356,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
         />
       )}
 
-      <main className="flex-1 max-w-[1400px] mx-auto w-full px-3 sm:px-5 py-5 flex flex-col gap-4">
+      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-3 sm:px-5 py-5 flex flex-col gap-4">
         {/* 페이지 헤더 */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">

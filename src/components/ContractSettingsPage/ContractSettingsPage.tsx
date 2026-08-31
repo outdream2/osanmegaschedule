@@ -440,7 +440,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
         />
       )}
 
-      <main className="flex-1 max-w-[1100px] mx-auto w-full px-3 sm:px-5 py-4 flex flex-col gap-3">
+      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-3 sm:px-5 py-4 flex flex-col gap-3">
 
         {/* 2026-08-29 · #122 · 최상단 GradientAccent (size=thin) */}
         <GradientAccent size="thin" absolute={false} />

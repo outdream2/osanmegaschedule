@@ -285,7 +285,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
       />
       )}
 
-      <div className="max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-3">
+      <div className="max-w-[1360px] w-[85%] mx-auto px-4 py-4 flex flex-col gap-3">
         {/* 2026-08-25 · 사용자 지시 · 입고알림 페이지 v9 목업 개선 · 헤더 툴바 · IconTile + 폰트 +2 */}
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center shrink-0">

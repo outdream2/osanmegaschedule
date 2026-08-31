@@ -179,7 +179,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
 
   return (
     <div className="flex-1 flex flex-col">
-      <main className="flex-1 max-w-3xl mx-auto w-full px-3 sm:px-5 py-5 flex flex-col gap-3">
+      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-3 sm:px-5 py-5 flex flex-col gap-3">
         {/* 페이지 헤더 · 2026-08-17 · 세련 · accent bar + gradient icon card */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">

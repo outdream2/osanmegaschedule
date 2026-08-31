@@ -141,7 +141,7 @@ export const SalesTrendPage: React.FC = () => {
   const unhideProduct = _hm.unhide;
 
   return (
-    <div className="flex-1 flex flex-col max-w-[1360px] mx-auto w-full px-3 sm:px-6 py-2 sm:py-4 gap-3">
+    <div className="flex-1 flex flex-col max-w-[1360px] w-[85%] mx-auto px-3 sm:px-6 py-2 sm:py-4 gap-3">
       {/* 페이지 제목 */}
       <div className="flex items-center gap-2 min-w-0">
         <TrendingUp size={18} className="text-teal-600 shrink-0" />

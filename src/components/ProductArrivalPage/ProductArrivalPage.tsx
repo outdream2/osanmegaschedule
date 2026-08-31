@@ -296,7 +296,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
       {/* ── Page header strip · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 ── */}
       <div className="bg-white border-b border-line shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
+        <div className="max-w-[1360px] w-[85%] mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
           <AccentBar h={22} className="shrink-0" />
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-deep
             flex items-center justify-center shadow-sm shrink-0">
@@ -320,7 +320,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       </div>
 
       {/* ── 내부 서브탭 (2026-08-03 · 상품입고 / 입고내역) ── */}
-      <div className="max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 pt-3">
+      <div className="max-w-[1360px] w-[85%] mx-auto px-3 sm:px-4 lg:px-6 pt-3">
         <Card padding="none" className="inline-flex p-1">
           {([
             { k: "input"   as const, label: "상품입고", icon: PackagePlus, color: "sky"    },
@@ -349,7 +349,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
       {/* ── Main layout (arrivalTab === "input") ── */}
       {arrivalTab === "input" && (
-      <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col">
+      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col">
         <SplitPanel
           storageKey="productArrivalPage.leftWidth"
           defaultWidth={340}

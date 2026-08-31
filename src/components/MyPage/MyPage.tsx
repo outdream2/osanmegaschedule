@@ -107,7 +107,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
     <div className="min-h-screen flex flex-col bg-[#F4F7FA]">
       <AppNavHeader activePage={"mypage" as AppNavPage} authSession={authSession} onBack={onBack} onNavigate={onNavigate} onLogout={onLogout} />
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-3 sm:px-4 py-4 sm:py-6 space-y-3">
+      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-3">
         {/* 2026-08-17 · 프로필 헤더 v2 · 성씨 initial 제거 (사용자 요청) · User 아이콘 + gradient · 세련 */}
         <div className="bg-white rounded-xl shadow-sm border border-line p-4 sm:p-6">
           <div className="flex items-center gap-4">

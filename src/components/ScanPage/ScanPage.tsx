@@ -618,7 +618,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
       {/* ── Page header strip · 2026-08-17 · 최신 트렌드 · 좌측 accent bar + 딥네이비 통일 ── */}
       <div className="bg-white border-b border-line shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
+        <div className="max-w-[1360px] w-[85%] mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
           <AccentBar h={22} className="shrink-0" />
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-deep
             flex items-center justify-center shadow-sm shrink-0">
@@ -640,7 +640,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
       {/* ── A5 · Draft 복구 배너 ── */}
       {draftBanner && rows.length === 0 && (
-        <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 pt-3">
+        <div className="max-w-[1360px] w-[85%] mx-auto px-3 sm:px-4 lg:px-6 pt-3">
           <Card variant="raw-sm" bg="bg-amber-50" borderColor="border-amber-200/80" className="flex items-center gap-3 px-4 py-3">
             {/* 2026-08-18 · IconTile 확산 */}
             <IconTile icon={<RotateCcw size={13} />} tone="amber" size="sm" />
@@ -670,7 +670,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       )}
 
       {/* ── Main layout ── */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col">
+      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col">
         <SplitPanel
           storageKey="scanPage.leftWidth"
           defaultWidth={300}
