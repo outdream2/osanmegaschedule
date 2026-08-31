@@ -16,6 +16,7 @@ import { useIsMobile } from "../../hooks/use-mobile";
 // 2026-08-17 · #131 · 페이지 안보이기 · 내부 subtab tab bar 필터
 import { usePagePermissions } from "../../hooks/usePagePermissions";
 import { TabBar, type TabDef } from "../common/TabBar";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { LeavePage } from "../LeavePage/LeavePage";
 import { LunchPage } from "../LunchPage/LunchPage";
 import type { AuthSession } from "../../types";
@@ -140,7 +141,7 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
       )}
 
       {/* ── 서브탭 컨텐츠 ── */}
-      <main className="flex-1 flex flex-col min-h-0">
+      <main className={`flex-1 flex flex-col min-h-0 ${PAGE_CONTAINER_CLS}`}>
         {subTab === "leave" && (
           <LeavePage {...commonSubPageProps} mode="apply" />
         )}

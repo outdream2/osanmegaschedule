@@ -14,7 +14,7 @@ import { LunchPage } from "../LunchPage/LunchPage";
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 import type { AuthSession } from "../../types";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
-import { TEXT } from "../../styles/tokens";
+import { TEXT, PAGE_CONTAINER_CLS } from "../../styles/tokens";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../lib/apiClient";
 import { Spinner } from "../common/Spinner";
@@ -212,7 +212,7 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
       )}
 
       {/* ── 서브탭 컨텐츠 ── */}
-      <main className="flex-1 flex flex-col min-h-0">
+      <main className={`flex-1 flex flex-col min-h-0 ${PAGE_CONTAINER_CLS}`}>
         {subTab === "staff-manage" && (
           <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="직원관리 로딩 중..." size={16} tone="brand" /></div>}>
             <StaffManagePage
