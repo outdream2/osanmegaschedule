@@ -419,7 +419,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                       // 새 브라우저 · 새 창 · 사용자가 원하는 브라우저에서 열도록 target='_blank'
                       window.open(url.toString(), "_blank", "noopener,noreferrer");
                     } catch (err: any) {
-                      alert(`SSO 토큰 발급 실패: ${err?.message ?? "네트워크 오류"}\n\n수동으로 URL 을 다른 브라우저에서 열어주세요:\n${window.location.href}`);
+                      showError(`SSO 토큰 발급 실패: ${err?.message ?? "네트워크 오류"}`);
                     }
                   }}
                   className="mt-3 w-full inline-flex items-center justify-center gap-2 h-11 rounded-lg bg-white text-rose-700 text-[14px] font-bold hover:bg-rose-50 active:scale-[0.98] transition cursor-pointer shadow-md"
