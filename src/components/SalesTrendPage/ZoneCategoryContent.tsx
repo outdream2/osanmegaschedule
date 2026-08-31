@@ -40,6 +40,16 @@ const ZoneCategoryContent: React.FC = () => {
   const [products, setProducts] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
+  // 2026-08-31 · 사용자 지시 · 좌측 카드 · 화살표 = 카드 아래 요약(상품수·판매·진행바) 접기 토글 · 기본 펼침
+  const [collapsedZones, setCollapsedZones] = useState<Set<string>>(new Set());
+  const toggleZoneCollapse = (zone: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCollapsedZones(prev => {
+      const next = new Set(prev);
+      if (next.has(zone)) next.delete(zone); else next.add(zone);
+      return next;
+    });
+  };
   const [season, setSeason] = useState<SeasonKey | null>(null);
   const [months, setMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
   // 2026-08-31 · #69 root cause · stock_history 최신 스냅샷이 오래됐을 때 (예: 34일 전) 기본 1개월 조회에 데이터 없음
@@ -204,22 +214,34 @@ const ZoneCategoryContent: React.FC = () => {
               <span className={`text-[11px] font-bold ${textCls} break-words whitespace-normal leading-tight`}>{zoneCategoryLabel(g.zone)}</span>
             )}
           </div>
-          <span className={`text-zinc-400 text-[10px] transition-transform shrink-0 ${isSelected ? "rotate-90" : ""}`}>▶</span>
+          {/* 2026-08-31 · 사용자 지시 · 화살표 = 아래 요약 접기 토글 (오른쪽 상세와 무관) */}
+          <span
+            role="button"
+            tabIndex={0}
+            aria-label={collapsedZones.has(g.zone) ? "요약 펼치기" : "요약 접기"}
+            onClick={(e) => toggleZoneCollapse(g.zone, e)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleZoneCollapse(g.zone, e as any); } }}
+            className={`text-zinc-400 text-[10px] transition-transform shrink-0 cursor-pointer hover:text-zinc-600 px-1 ${!collapsedZones.has(g.zone) ? "rotate-90" : ""}`}
+          >▶</span>
         </div>
-        <div className="flex items-center justify-between gap-2 flex-wrap text-[11px] tabular-nums">
-          <div className="flex items-center gap-1.5 text-zinc-500 font-semibold">
-            <span>상품 <span className="font-bold text-zinc-700">{g.items.length}</span>종</span>
-            <span className="text-zinc-300">·</span>
-            <span>판매 <span className="font-bold text-orange-700">{fmt(g.saleQty)}</span></span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="font-bold text-emerald-700 text-[12px]">{fmtWon(g.totalAmount)}</span>
-            <span className="text-[10px] font-bold text-zinc-400">{pct.toFixed(1)}%</span>
-          </div>
-        </div>
-        <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-          <div className={`h-full ${barCls} transition-all`} style={{ width: `${pct}%` }} />
-        </div>
+        {!collapsedZones.has(g.zone) && (
+          <>
+            <div className="flex items-center justify-between gap-2 flex-wrap text-[11px] tabular-nums">
+              <div className="flex items-center gap-1.5 text-zinc-500 font-semibold">
+                <span>상품 <span className="font-bold text-zinc-700">{g.items.length}</span>종</span>
+                <span className="text-zinc-300">·</span>
+                <span>판매 <span className="font-bold text-orange-700">{fmt(g.saleQty)}</span></span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-emerald-700 text-[12px]">{fmtWon(g.totalAmount)}</span>
+                <span className="text-[10px] font-bold text-zinc-400">{pct.toFixed(1)}%</span>
+              </div>
+            </div>
+            <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+              <div className={`h-full ${barCls} transition-all`} style={{ width: `${pct}%` }} />
+            </div>
+          </>
+        )}
       </button>
     );
   };
