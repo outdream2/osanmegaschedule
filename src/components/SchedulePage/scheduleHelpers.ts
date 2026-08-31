@@ -118,6 +118,8 @@ export const getCalculatedSummary = (
     const day = parseInt(currentDate.split("-")[2]);
     let openCount = 0, middleCount = 0, closeCount = 0;
     let pharmacistCount = 0, staffCount = 0, otherCount = 0;
+    // 2026-08-31 · #50 · 물류·창고 분리 카운트
+    let logisticsCount = 0, warehouseCount = 0;
 
     for (const emp of sourceEmployees) {
       if (emp.hireDate && currentDate < emp.hireDate) continue;
@@ -133,6 +135,8 @@ export const getCalculatedSummary = (
         if (!isOff && type.trim() !== "") {
           if (isPharm(emp.position)) pharmacistCount++;
           else if (isOtherPosition(emp.position, emp.employmentType)) otherCount++;
+          else if (emp.position === "창고") { warehouseCount++; staffCount++; }
+          else if (emp.position.includes("물류")) { logisticsCount++; staffCount++; }
           else staffCount++;
         }
       }
@@ -148,6 +152,8 @@ export const getCalculatedSummary = (
       pharmacistCount,
       staffCount,
       otherCount,
+      logisticsCount,
+      warehouseCount,
     };
   });
 };

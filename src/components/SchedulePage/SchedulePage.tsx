@@ -640,6 +640,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
               isMonthLocked={isMonthLocked}
               showSummary={showSummary}
               currentSummaryList={currentSummaryList}
+              positionTab={positionTab}
               draggedRowId={draggedRowId}
               dragOverRowId={dragOverRowId}
               settingsScheduleTypes={settingsScheduleTypes}

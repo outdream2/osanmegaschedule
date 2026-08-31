@@ -136,8 +136,11 @@ export interface MonthlySummary {
   closeCount: number;
   totalCount: number;
   pharmacistCount: number;
-  staffCount: number;  // 약사·알바 제외 사원
+  staffCount: number;  // 약사·알바·물류·창고 제외 사원
   otherCount: number;  // 알바(기타)
+  // 2026-08-31 · #50 · 물류·창고 합계 분리 표시
+  logisticsCount: number;  // 물류
+  warehouseCount: number;  // 창고
 }
 
 // T-CompanyInfo-DB · 근로계약서 사업주 정보 · settings "company_info" key 로 서버 저장

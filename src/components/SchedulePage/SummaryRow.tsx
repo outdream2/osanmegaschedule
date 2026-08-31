@@ -4,7 +4,8 @@ import { MonthlySummary } from "../../types";
 
 interface SummaryRowProps {
   summaries: MonthlySummary[];
-  label: "약사" | "사원" | "기타" | "근무인원";
+  // 2026-08-31 · #50 · 물류/창고 신규 · 필터별 표시
+  label: "약사" | "사원" | "기타" | "물류" | "창고" | "근무인원";
   totalCell?: React.ReactNode; // kept for backward compat, no longer rendered
   showMonthTotal?: boolean;    // 월별 합계 열 표시 여부 (기본 true)
 }
@@ -13,15 +14,21 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
   const isPharmacist = label === "약사";
   const isStaff = label === "사원";
   const isOther = label === "기타";
+  const isLogistics = label === "물류";
+  const isWarehouse = label === "창고";
   const isTotal = label === "근무인원";
 
-  // 색상 팔레트 4개로 압축: emerald(약사) · slate(사원/기타) · indigo(총계)
+  // 색상 팔레트: emerald(약사) · slate(사원/기타) · sky(물류) · amber(창고) · indigo(총계)
   const labelCls = isPharmacist
     ? "bg-emerald-600 text-white border-r border-emerald-500"
     : isStaff
     ? "bg-zinc-600 text-white border-r border-zinc-500"
     : isOther
     ? "bg-zinc-400 text-white border-r border-zinc-300"
+    : isLogistics
+    ? "bg-sky-600 text-white border-r border-sky-500"
+    : isWarehouse
+    ? "bg-amber-600 text-white border-r border-amber-500"
     : "bg-brand-deep text-white border-r border-indigo-500";
 
   const valActiveCls = isPharmacist
@@ -30,6 +37,10 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
     ? "bg-zinc-50 text-zinc-700 font-bold"
     : isOther
     ? "bg-zinc-50/70 text-zinc-600 font-bold"
+    : isLogistics
+    ? "bg-sky-50 text-sky-700 font-bold"
+    : isWarehouse
+    ? "bg-amber-50 text-amber-700 font-bold"
     : "bg-indigo-50 text-indigo-700 font-bold";
 
   const valEmptyCls = "bg-transparent text-zinc-200";
@@ -40,6 +51,10 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
     ? "bg-zinc-100 text-zinc-600 border-l-2 border-line"
     : isOther
     ? "bg-zinc-50 text-zinc-500 border-l-2 border-line"
+    : isLogistics
+    ? "bg-sky-50 text-sky-700 border-l-2 border-line"
+    : isWarehouse
+    ? "bg-amber-50 text-amber-700 border-l-2 border-line"
     : "bg-indigo-50 text-indigo-700 border-l-2 border-line";
 
   const todayStr = (() => {
@@ -48,7 +63,12 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
   })();
 
   const getVal = (sum: MonthlySummary) =>
-    isPharmacist ? sum.pharmacistCount : isStaff ? sum.staffCount : isOther ? sum.otherCount : sum.totalCount;
+    isPharmacist ? sum.pharmacistCount
+    : isStaff ? sum.staffCount
+    : isOther ? sum.otherCount
+    : isLogistics ? sum.logisticsCount
+    : isWarehouse ? sum.warehouseCount
+    : sum.totalCount;
 
   return (
     <tr className={isTotal ? "border-t-2 border-line" : "border-t border-zinc-100/70"}>

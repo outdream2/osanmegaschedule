@@ -31,6 +31,8 @@ interface ScheduleGridProps {
   isMonthLocked: boolean;
   showSummary: "hidden" | "summary" | "labor";
   currentSummaryList: MonthlySummary[];
+  /** 2026-08-31 · #50 · 필터 상태 · 합계 행 · 필터별 표시 */
+  positionTab?: "전체" | "약사" | "사원" | "창고" | "매장";
   draggedRowId: number | null;
   dragOverRowId: number | null;
   settingsScheduleTypes: ScheduleTypeEntry[];
@@ -54,7 +56,7 @@ interface ScheduleGridProps {
 export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
   employees, filteredEmployees, displayDates, todayStr, todayColRef, nameThRef,
   currentYear, currentMonth, isLoading, error, isAdmin, isManagerRole, isEmployeeMode, userLevel,
-  sessionEmployeeId, editMode, isMonthLocked, showSummary, currentSummaryList,
+  sessionEmployeeId, editMode, isMonthLocked, showSummary, currentSummaryList, positionTab = "전체",
   draggedRowId, dragOverRowId,
   settingsScheduleTypes, settingsWageRates, settingsEmployeeWageOverrides,
   getTypeHoursMap,
@@ -265,24 +267,24 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
           </tr>
         ))}
 
-        {/* Summary rows */}
+        {/* 2026-08-31 · #50 · 필터별 합계 행 · 활성 필터만 표시 · 물류/창고 신규 · 전체는 전체대로 */}
         <>
-          <SummaryRow
-            summaries={currentSummaryList} label="약사" showMonthTotal={showMonthTotal}
-            totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.pharmacistCount, 0)}인일</div>{isAdmin && showLabor && pharmacistCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(pharmacistCost)}</div>}</div>}
-          />
-          <SummaryRow
-            summaries={currentSummaryList} label="사원" showMonthTotal={showMonthTotal}
-            totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.staffCount, 0)}인일</div>{isAdmin && showLabor && staffCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(staffCost)}</div>}</div>}
-          />
-          <SummaryRow
-            summaries={currentSummaryList} label="기타" showMonthTotal={showMonthTotal}
-            totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.otherCount, 0)}인일</div>{isAdmin && showLabor && otherCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(otherCost)}</div>}</div>}
-          />
-          <SummaryRow
-            summaries={currentSummaryList} label="근무인원" showMonthTotal={showMonthTotal}
-            totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.totalCount, 0)}인일</div>{isAdmin && showLabor && totalCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(totalCost)}</div>}</div>}
-          />
+          {(positionTab === "전체" || positionTab === "약사") && (
+            <SummaryRow summaries={currentSummaryList} label="약사" showMonthTotal={showMonthTotal} />
+          )}
+          {(positionTab === "전체" || positionTab === "사원") && (
+            <SummaryRow summaries={currentSummaryList} label="사원" showMonthTotal={showMonthTotal} />
+          )}
+          {positionTab === "전체" && currentSummaryList.some(s => s.logisticsCount > 0) && (
+            <SummaryRow summaries={currentSummaryList} label="물류" showMonthTotal={showMonthTotal} />
+          )}
+          {(positionTab === "전체" || positionTab === "창고") && currentSummaryList.some(s => s.warehouseCount > 0) && (
+            <SummaryRow summaries={currentSummaryList} label="창고" showMonthTotal={showMonthTotal} />
+          )}
+          {positionTab === "전체" && currentSummaryList.some(s => s.otherCount > 0) && (
+            <SummaryRow summaries={currentSummaryList} label="기타" showMonthTotal={showMonthTotal} />
+          )}
+          <SummaryRow summaries={currentSummaryList} label="근무인원" showMonthTotal={showMonthTotal} />
         </>
       </tbody>
     </table>
