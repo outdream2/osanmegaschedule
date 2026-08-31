@@ -49,6 +49,8 @@ export { MiniCard } from "./MiniCard";
 export { MobileOnlyGate } from "./MobileOnlyGate";
 export { Modal } from "./Modal";
 export { NotificationToast } from "./NotificationToast";
+export { PageContainer } from "./PageContainer";
+export type { PageContainerProps } from "./PageContainer";
 export { PageHeader } from "./PageHeader";
 export { PageToolbar } from "./PageToolbar";
 export { Panel } from "./Panel";

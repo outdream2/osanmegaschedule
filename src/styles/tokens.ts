@@ -115,6 +115,14 @@ export const COLOR = {
 // JS 에서 조건부 조합이 필요한 경우 사용 · 기본은 CSS 클래스 우선
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * 2026-08-31 · 사용자 지시 · 페이지 컨텐츠 표준 폭 · 프레임워크
+ *   · 모든 페이지 · 사이드메뉴 오른쪽 컨텐츠 · 화면 너비의 85% · 최대 1360px
+ *   · main/wrapper 에 이 상수 적용 · 하드코딩 대체
+ *   · 예외 · LandingPage (홈 카드 grid) · 모달·팝오버 (전체 페이지 아님)
+ */
+export const PAGE_CONTAINER_CLS = "max-w-[1360px] w-[85%] mx-auto";
+
 /** 기본 카드 · bg-white + 테두리 + 그림자 (index.css .card-panel 과 동일) */
 export const CARD_BASE =
   "bg-white rounded-xl border border-zinc-200 shadow-sm";
