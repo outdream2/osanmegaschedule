@@ -39,10 +39,11 @@ const SHAPE_CLS: Record<BadgeShape, string> = {
   square:  "",
 };
 
+// 2026-08-31 · #53 · 목업 톤 · 폰트 +1 (40대+ 가독성 · StatusPill 과 정렬)
 const SIZE_CLS: Record<BadgeSize, string> = {
-  xs: "text-[11px] px-1.5 py-0.5 gap-0.5",
-  sm: "text-[12px] px-2 py-0.5 gap-1",
-  md: "text-[13px] px-2.5 py-1 gap-1",
+  xs: "text-[12px] px-1.5 py-0.5 gap-0.5",
+  sm: "text-[13px] px-2 py-0.5 gap-1",
+  md: "text-[14px] px-2.5 py-1 gap-1",
 };
 
 export interface BadgeProps {

@@ -58,10 +58,11 @@ export interface StatusPillProps {
   children: ReactNode;
 }
 
+// 2026-08-31 · #53 · 목업 톤 · 폰트 +1 · 대원칙 · 40대+ 가독성
 const SIZE_CLS: Record<NonNullable<StatusPillProps["size"]>, string> = {
-  xs: "h-5 px-2 text-[11px] gap-1",
-  sm: "h-6 px-2.5 text-[12px] gap-1.5",
-  md: "px-2.5 py-0.5 text-[13px] gap-1.5",
+  xs: "h-5 px-2 text-[12px] gap-1",
+  sm: "h-6 px-2.5 text-[13px] gap-1.5",
+  md: "px-2.5 py-0.5 text-[14px] gap-1.5",
 };
 
 /**
