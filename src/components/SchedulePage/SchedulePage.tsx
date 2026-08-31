@@ -120,7 +120,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
     const lvl = authSession?.level ?? 0;
     if (lvl >= 2) return true;
     if (lvl === 1) return false;
-    return localStorage.getItem("megatown_admin") === "true";
+    return false; // #14 보안 · localStorage 임의 조작 차단 · JWT 레벨만 신뢰
   });
   useEffect(() => {
     const lvl = authSession?.level ?? 0;
@@ -140,7 +140,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
     e.preventDefault();
     if (loginId === "osanmega" && loginPw === "1234") {
       setIsAdmin(true);
-      localStorage.setItem("megatown_admin", "true");
       setIsLoginModalOpen(false);
       setLoginId(""); setLoginPw(""); setLoginError("");
       showNotification("성공적으로 로그인되었습니다. (관리자 모드 활성화)");
@@ -153,7 +152,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
     setIsAdmin(false);
     if (onLogout) { onLogout(); }
     else {
-      localStorage.removeItem("megatown_admin");
       localStorage.removeItem("megatown_auth_session");
       onBack?.();
     }
