@@ -15,6 +15,7 @@ import { CARD_BASE } from "../../styles/tokens";
 import { StatusPill, type PillTone } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
+import { EmptyState } from "../common/EmptyState";
 import { RESIZER_CLS } from "../../hooks/useColumnResize";
 import { ListToolbar } from "./ListToolbar";
 import type { DisplayRequest, OrderRequest, InventoryCheck } from "./types";
@@ -99,7 +100,7 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
       {displayLoading && displayReqs.length === 0 ? (
         <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>
       ) : !displayLoading && displayReqs.length === 0 ? (
-        <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
+        <EmptyState title="진열 요청 없음" size="compact" />
       ) : (
         <div className={`${CARD_BASE} overflow-x-auto ${displayLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
           <table className="w-full min-w-[640px] border-collapse text-left" style={{ tableLayout: "fixed" }}>
@@ -314,7 +315,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
         {orderLoading && orderReqs.length === 0 ? (
           <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>
         ) : !orderLoading && orderReqs.length === 0 && !orderError ? (
-          <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
+          <EmptyState title="발주 요청 없음" size="compact" />
         ) : (
           <div className={`${CARD_BASE} divide-y divide-zinc-50 ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             {orderReqs.map(r => {
@@ -365,7 +366,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
         {productsLoading && lowStock.length === 0 ? (
           <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>
         ) : !productsLoading && lowStock.length === 0 ? (
-          <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
+          <EmptyState title="발주 필요 상품 없음" size="compact" />
         ) : (
           <div className={`${CARD_BASE} divide-y divide-zinc-50 ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             {lowStock.map(p => {
@@ -483,7 +484,7 @@ export const InventoryCheckTab: React.FC<InventoryCheckTabProps> = ({
       {inventoryLoading && inventoryChecks.length === 0 ? (
         <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>
       ) : !inventoryLoading && inventoryChecks.length === 0 ? (
-        <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
+        <EmptyState title="재고 점검 항목 없음" size="compact" />
       ) : (
         <div className={`${CARD_BASE} divide-y divide-zinc-50 ${inventoryLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
           {inventoryChecks.map(r => {

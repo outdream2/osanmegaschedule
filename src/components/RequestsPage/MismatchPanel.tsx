@@ -4,6 +4,7 @@ import React from "react";
 import { fmtDateMD } from "../../lib/format";
 import { CARD_BASE } from "../../styles/tokens";
 import { Spinner } from "../common/Spinner";
+import { EmptyState } from "../common/EmptyState";
 import { ListToolbar } from "./ListToolbar";
 import { RequestCheckbox } from "./RequestsPage.tabs";
 import type { ZoneMismatch } from "./types";
@@ -56,7 +57,7 @@ export const MismatchPanel: React.FC<MismatchPanelProps> = ({
         <button onClick={onRefresh} className="mt-2 text-xs text-orange-600 underline cursor-pointer">다시 시도</button>
       </div>
     ) : !mismatchLoading && mismatches.length === 0 ? (
-      <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
+      <EmptyState title="구역 불일치 없음" hint="진열 요청이 승인되면 표시됩니다" size="compact" />
     ) : (
       <div className={`${CARD_BASE} divide-y divide-zinc-50 ${mismatchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
         {mismatches.map(m => (

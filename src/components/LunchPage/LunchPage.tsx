@@ -8,6 +8,7 @@ import { Spinner } from "../common/Spinner";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { AccentBar } from "../common/AccentBar";
 import { Card } from "../common/Card";
+import { EmptyState } from "../common/EmptyState";
 import type { AuthSession } from "../../types";
 
 interface LunchRequest {
@@ -541,7 +542,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               <span className="text-[14px] font-semibold text-brand-deep tabular-nums">불참 {noEatCount}명</span>
             </div>
             {noEatCount === 0 ? (
-              <div className="text-center text-[14px] text-ink-soft py-6">데이터 없음</div>
+              <EmptyState title="불참 없음" hint="오늘 모두 식사합니다" size="compact" />
             ) : (
               <div className="divide-y divide-line">
                 {allRequests.filter(r => !r.eating).map(r => (

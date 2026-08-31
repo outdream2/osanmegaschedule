@@ -6,6 +6,7 @@ import { CARD_BASE } from "../../styles/tokens";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
+import { EmptyState } from "../common/EmptyState";
 import type { LunchRequest } from "./types";
 
 interface LunchPanelProps {
@@ -52,7 +53,7 @@ export const LunchPanel: React.FC<LunchPanelProps> = ({
           <Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} />
         </div>
       ) : !lunchLoading && lunchRequests.length === 0 ? (
-        <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
+        <EmptyState title="점심 응답 없음" hint="오늘의 점심 신청 현황이 없습니다" size="compact" />
       ) : (
         <div className={`${CARD_BASE} divide-y divide-zinc-50 ${lunchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
           {lunchRequests.map(r => (

@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
+import { EmptyState } from "../common/EmptyState";
 import {
   CalendarDays, Clock, CheckCircle2, XCircle,
   RefreshCw, Plus, X, Trash2, ChevronDown, Loader2,
@@ -347,7 +348,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               {myLoading && myRequests.length === 0 ? (
                 <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩 중..." labelSize={19} /></div>
               ) : !myLoading && myRequests.length === 0 ? (
-                <div className="text-center text-[18px] text-zinc-300 py-6">데이터 없음</div>
+                <EmptyState title="신청한 연차 없음" hint="우측 상단 [연차 신청] 으로 신청하세요" size="compact" />
               ) : (
                 <div className={`flex flex-col divide-y divide-zinc-50 ${myLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                   {myRequests.map(r => (
@@ -448,7 +449,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
             ) : (
               <div className={`flex flex-col divide-y divide-zinc-50 ${allLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {(mgrTab === "pending" ? pending : reviewed).length === 0 ? (
-                  <div className="text-center text-[19px] text-zinc-300 py-6">데이터 없음</div>
+                  <EmptyState title={mgrTab === "pending" ? "대기 중인 신청 없음" : "검토 완료 없음"} size="compact" />
                 ) : (
                   (mgrTab === "pending" ? pending : reviewed).map(r => (
                     <div key={r.id} className={`py-1.5 hover:bg-zinc-50/60 transition-all duration-150 rounded-lg ${r.status === "pending" ? "border-l-2 border-amber-300 pl-2" : r.status === "approved" ? "border-l-2 border-emerald-300 pl-2" : "border-l-2 border-rose-300 pl-2"}`}>

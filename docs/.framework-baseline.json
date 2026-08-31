@@ -3,18 +3,18 @@
   "version": 1,
   "totalViolations": 2,
   "files": {
-    "src/components/BarcodeScanner/BarcodeScanner.tsx": {
-      "lines": 593,
+    "src/components/OcrPage/RawOcrTable.tsx": {
+      "lines": 801,
       "violations": [
         {
-          "ruleId": "raw-alert",
+          "ruleId": "large-file-warn",
           "count": 1
         }
       ],
       "totalWeight": 3
     },
     "src/components/StockManagePage/FlowTab.tsx": {
-      "lines": 811,
+      "lines": 812,
       "violations": [
         {
           "ruleId": "large-file-warn",
