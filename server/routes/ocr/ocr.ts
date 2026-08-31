@@ -376,7 +376,7 @@ router.get("/api/ocr-ping", (_req, res) => {
   res.json({ ok: true, gemini: keys.length > 0, geminiKeyCount: keys.length, mistral: mKeys.length > 0, mistralKeyCount: mKeys.length });
 });
 
-router.post("/api/ocr-match", asyncHandler(async (req, res) => {
+router.post("/api/ocr-match", authorize(5), asyncHandler(async (req, res) => {
     const { names } = req.body ?? {};
     const isCandidateMode = typeof req.body?.name === "string" && req.body?.topN;
     if (!isCandidateMode && !Array.isArray(names)) throw badRequest("names 배열 필요");
@@ -527,7 +527,7 @@ router.get("/api/ocr-synonyms", asyncHandler(async (_req, res) => {
     res.json({ synonyms: data ?? [] });
 }));
 
-router.post("/api/ocr-synonyms", asyncHandler(async (req, res) => {
+router.post("/api/ocr-synonyms", authorize(5), asyncHandler(async (req, res) => {
     const { prod_name_old, prod_name_new, supplier_old, supplier_new, product_code } = req.body ?? {};
     // 2026-07-28 · 사용자 요청 · product_code 없어도 · 이름 매핑만 저장 허용 (수동 코드 링크는 나중에)
     if (!prod_name_old?.trim()) throw badRequest("prod_name_old 필요");
@@ -559,7 +559,7 @@ router.post("/api/ocr-synonyms", asyncHandler(async (req, res) => {
     res.json({ synonym: data });
 }));
 
-router.patch("/api/ocr-synonyms/:id", asyncHandler(async (req, res) => {
+router.patch("/api/ocr-synonyms/:id", authorize(5), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const { prod_name_old, prod_name_new, product_code, supplier_old, supplier_new } = req.body ?? {};
     if (!prod_name_old?.trim() || !product_code?.trim()) throw badRequest("prod_name_old, product_code 필요");
@@ -578,7 +578,7 @@ router.patch("/api/ocr-synonyms/:id", asyncHandler(async (req, res) => {
 }));
 
 // DELETE by prod_name_old (for pre-existing synonyms without a known ID) — must be before /:id
-router.delete("/api/ocr-synonyms/by-name", asyncHandler(async (req, res) => {
+router.delete("/api/ocr-synonyms/by-name", authorize(5), asyncHandler(async (req, res) => {
     const { prod_name_old } = req.body ?? {};
     if (!prod_name_old?.trim()) throw badRequest("prod_name_old 필요");
     const nameOldNorm = prod_name_old.trim().toLowerCase();
@@ -591,7 +591,7 @@ router.delete("/api/ocr-synonyms/by-name", asyncHandler(async (req, res) => {
 // 2차 보정 ✕ 취소: 삭제 대신 cancelled=true 마킹 (재적용 방지 + 관리 가능)
 // 마이그레이션(20260705_ocr_synonyms_cancelled.sql)이 적용되어야 정상 동작.
 // 미적용 시에는 400 응답 대신 delete로 폴백.
-router.post("/api/ocr-synonyms/cancel-by-name", asyncHandler(async (req, res) => {
+router.post("/api/ocr-synonyms/cancel-by-name", authorize(5), asyncHandler(async (req, res) => {
     const { prod_name_old, product_code } = req.body ?? {};
     if (!prod_name_old?.trim()) throw badRequest("prod_name_old 필요");
     const nameOldNorm = prod_name_old.trim().toLowerCase();
@@ -632,7 +632,7 @@ router.post("/api/ocr-synonyms/cancel-by-name", asyncHandler(async (req, res) =>
 }));
 
 // 취소 항목 복원 (cancelled=false)
-router.post("/api/ocr-synonyms/restore/:id", asyncHandler(async (req, res) => {
+router.post("/api/ocr-synonyms/restore/:id", authorize(5), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const { error } = await supabase.from("ocr_synonyms")
       .update({ cancelled: false, cancelled_at: null }).eq("id", id);
@@ -655,7 +655,7 @@ router.get("/api/ocr-supplier-aliases", asyncHandler(async (_req, res) => {
     res.json({ aliases: data ?? [] });
 }));
 
-router.post("/api/ocr-supplier-aliases", asyncHandler(async (req, res) => {
+router.post("/api/ocr-supplier-aliases", authorize(5), asyncHandler(async (req, res) => {
     const { alias, supplier_name } = req.body ?? {};
     if (!alias?.trim() || !supplier_name?.trim()) throw badRequest("alias, supplier_name 필요");
     const aliasNorm = alias.trim();
@@ -680,7 +680,7 @@ router.post("/api/ocr-supplier-aliases", asyncHandler(async (req, res) => {
     res.json({ alias: result });
 }));
 
-router.patch("/api/ocr-supplier-aliases/:id", asyncHandler(async (req, res) => {
+router.patch("/api/ocr-supplier-aliases/:id", authorize(5), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const { alias, supplier_name } = req.body ?? {};
     if (!alias?.trim() || !supplier_name?.trim()) throw badRequest("alias, supplier_name 필요");
@@ -705,7 +705,7 @@ router.get("/api/ocr-templates", asyncHandler(async (_req, res) => {
     res.json({ templates: data ?? [] });
 }));
 
-router.post("/api/ocr-templates", asyncHandler(async (req, res) => {
+router.post("/api/ocr-templates", authorize(5), asyncHandler(async (req, res) => {
     const { supplier_name, headers, column_mapping } = req.body ?? {};
     if (!supplier_name?.trim() || !Array.isArray(headers)) throw badRequest("supplier_name, headers 필요");
     // column_mapping: 원본 컬럼 순서 유지 배열 (선택) · 예: ["품명","","수량","단가","금액","유통기한"]
@@ -1542,7 +1542,7 @@ router.post("/api/ocr", async (req, res) => {
 //     - headers/rows/meta 는 raw OCR (ocr-engine 스테이지) 결과 그대로
 //   출력: { pages: [{page, headers, rows, meta, rawText}, ...] }
 //   중요: rearrange 스테이지는 실행하지 않음 (approach="default") · 원래 ONNX 흐름과 동일
-router.post("/api/ocr/parse-local", asyncHandler(async (req, res) => {
+router.post("/api/ocr/parse-local", authorize(5), asyncHandler(async (req, res) => {
   const reqStart = Date.now();
     const { buildPostParsePipeline } = await import("../../ocr/pipeline");
     const { pages } = req.body as {
@@ -1611,7 +1611,7 @@ router.post("/api/ocr/parse-local", asyncHandler(async (req, res) => {
 //   입력: { pages: [{page, rawText}, ...] }
 //   출력: { pages: [{page, headers, rows, meta, rawText}, ...] }
 //   기존 Gemini 비전 OCR (engine=gemini) 흐름과 완전 분리 · gemini.ts 미변경
-router.post("/api/ocr/parse-gemini", asyncHandler(async (req, res) => {
+router.post("/api/ocr/parse-gemini", authorize(5), asyncHandler(async (req, res) => {
   const reqStart = Date.now();
     const { callGeminiTextParse } = await import("../../ocr/geminiTextParse");
     const { getGeminiKeys, geminiState, parseGeminiText } = await import("../../ocr/gemini");
@@ -1747,7 +1747,7 @@ router.get("/api/supplier-balances", asyncHandler(async (_req, res) => {
     res.json({ balances: data ?? [] });
 }));
 
-router.post("/api/supplier-balances", asyncHandler(async (req, res) => {
+router.post("/api/supplier-balances", authorize(5), asyncHandler(async (req, res) => {
     const { supplier_name, invoice_date, balance } = req.body ?? {};
     if (!supplier_name?.trim() || balance == null) throw badRequest("supplier_name, balance 필요");
     const { data, error } = await supabase
@@ -1758,7 +1758,7 @@ router.post("/api/supplier-balances", asyncHandler(async (req, res) => {
     res.json({ balance: data });
 }));
 
-router.delete("/api/supplier-balances/:id", asyncHandler(async (req, res) => {
+router.delete("/api/supplier-balances/:id", authorize(5), asyncHandler(async (req, res) => {
     const { error } = await supabase.from("supplier_balances").delete().eq("id", Number(req.params.id));
     if (error) throw new HttpError(500, error.message);
     res.json({ ok: true });
