@@ -5,6 +5,7 @@
 import React from "react";
 import { Pill, Pencil } from "lucide-react";
 import type { ZoneMap, SlotMap, TypeTone, WorkerEntry } from "./types";
+import { TEXT } from "@/styles/tokens";
 import { DEFAULT_TONE } from "./types";
 import { ZONE_ROWS } from "./types";
 import { HOUR_SLOTS, pct, widthPct, minToStr } from "./utils";
@@ -115,7 +116,7 @@ export const WorkTimeSection: React.FC<WorkTimeSectionProps> = ({
             <div className="h-7" />
             {displayGroups.flatMap(g => [
               <div key={`hdr-${g.label}`}
-                className={`mb-1 h-5 px-1 flex items-end text-[12px] font-bold uppercase tracking-wider border-b border-line ${g.hdrCls}`}>
+                className={`mb-1 h-5 px-1 flex items-end ${TEXT.label} border-b border-line ${g.hdrCls}`}>
                 {g.label} · {g.items.length}
               </div>,
               ...g.items.map(({ emp, schedule }) => {

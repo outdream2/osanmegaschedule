@@ -14,6 +14,7 @@ import Modal from "../common/Modal";
 import { Card } from "../common/Card";
 import { Spinner } from "../common/Spinner";
 import type { AuthSession } from "../../types";
+import { TEXT } from "@/styles/tokens";
 
 export type PharmTabKey = "education" | "reference" | "video" | "docs";
 
@@ -257,7 +258,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
 
   const title = useMemo(() => (
     <span className="flex items-center gap-2">
-      <span className="text-zinc-500 text-[12px] font-bold uppercase tracking-wider">{tabLabel}</span>
+      <span className={`text-zinc-500 ${TEXT.label}`}>{tabLabel}</span>
       <span className="text-zinc-300">/</span>
       <span className="text-zinc-800 truncate">{categoryTitle}</span>
       <span className="text-zinc-400 text-[12px] font-bold">· 하위메뉴 설정</span>

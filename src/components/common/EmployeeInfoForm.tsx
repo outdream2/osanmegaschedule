@@ -22,6 +22,7 @@ import { POSITIONS } from "../../constants/jobCategories";
 import { useSettings } from "../../hooks/useSettings";
 // 2026-08-21 · Framework Phase 3 · Card 프리미티브
 import { Card } from "./Card";
+import { TEXT } from "@/styles/tokens";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 
@@ -120,7 +121,7 @@ const GRD = {
   label: "text-[11px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none",
   input: "border border-indigo-300 rounded-md px-2 py-0.5 text-[13px] focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint bg-indigo-50/40 h-7 w-full",
   view: (hasValue: boolean) =>
-    `text-[13px] font-semibold leading-snug min-h-[20px] ${hasValue ? "text-zinc-700" : "text-zinc-300 italic"}`,
+    `${TEXT.caption} min-h-[20px] ${hasValue ? "text-zinc-700" : "text-zinc-300 italic"}`,
   select: "border border-indigo-300 rounded-md px-2 text-[13px] bg-white focus:outline-none bg-indigo-50/40 h-7 w-full",
 } as const;
 

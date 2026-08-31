@@ -1,6 +1,7 @@
 // 2026-08-16 · #8 · Phase 2A · WorkerChips 추출 · slim
 import React from "react";
 import type { WorkerEntry, TypeTone } from "./types";
+import { TEXT } from "@/styles/tokens";
 import { DEFAULT_TONE } from "./types";
 import { isStaffEmp, isOtherEmp, createGhost, moveGhost, removeGhost } from "./utils";
 
@@ -99,7 +100,7 @@ export const WorkerChips: React.FC<Props> = React.memo(({
       {workers.length === 0 && <span className="text-[15px] text-zinc-300 italic">근무자 없음</span>}
       {assignedByGroup.map(({ label, items, labelCls }) => items.length === 0 ? null : (
         <div key={label}>
-          <span className={`text-[12px] font-bold uppercase tracking-wider ${labelCls} mb-0.5 block`}>{label}</span>
+          <span className={`${TEXT.label} ${labelCls} mb-0.5 block`}>{label}</span>
           <div className="flex flex-wrap gap-1">{renderList(items)}</div>
         </div>
       ))}
@@ -107,7 +108,7 @@ export const WorkerChips: React.FC<Props> = React.memo(({
         <>
           {hasAnyAssigned && <div className="h-px bg-sky-200/70 my-0.5" />}
           <div>
-            <span className="text-[12px] font-bold uppercase tracking-wider text-zinc-400 mb-0.5 block">
+            <span className={`${TEXT.label} text-zinc-400 mb-0.5 block`}>
               미배정 ({unassigned.length}명)
             </span>
             <div className="flex flex-wrap gap-1">{renderList(unassigned)}</div>

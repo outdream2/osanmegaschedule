@@ -20,6 +20,7 @@
 
 import React from "react";
 import { Card } from "./Card";
+import { TEXT } from "@/styles/tokens";
 
 // ═══════════════════════════════════════════════════════════════════
 // ListPanel · 리스트 wrapper · Card clip + divide-y + 상단 gradient accent (옵션)
@@ -184,7 +185,7 @@ export function ListRow({
               </span>
             )}
             {pill && (
-              <span className={`shrink-0 inline-flex items-center h-[22px] px-2 rounded-md text-[12px] font-bold uppercase tracking-wider ring-1 ${PILL_TONE_MAP[pill.tone]}`}>
+              <span className={`shrink-0 inline-flex items-center h-[22px] px-2 rounded-md ${TEXT.label} ring-1 ${PILL_TONE_MAP[pill.tone]}`}>
                 {pill.text}
               </span>
             )}

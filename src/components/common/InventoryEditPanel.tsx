@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from "react";
 import { Package, MapPin } from "lucide-react";
 import { Card } from "./Card";
+import { TEXT } from "@/styles/tokens";
 
 // ─────────────────────────────────────────────────────────────
 // Types (InventoryValues 는 backwards compat 용 export 유지)
@@ -76,7 +77,7 @@ const DeltaInput: React.FC<DeltaInputProps> = ({
         type="button"
         onClick={dec}
         disabled={disabled || cur <= 0}
-        className="w-7 shrink-0 text-zinc-500 hover:bg-zinc-100 hover:text-rose-600 active:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 text-[16px] font-bold leading-none flex items-center justify-center cursor-pointer border-r border-line"
+        className={`w-7 shrink-0 text-zinc-500 hover:bg-zinc-100 hover:text-rose-600 active:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 ${TEXT.tab} flex items-center justify-center cursor-pointer border-r border-line`}
         title="감소"
         tabIndex={-1}
       >−</button>
@@ -97,7 +98,7 @@ const DeltaInput: React.FC<DeltaInputProps> = ({
         type="button"
         onClick={inc}
         disabled={disabled}
-        className="w-7 shrink-0 text-zinc-500 hover:bg-zinc-100 hover:text-emerald-600 active:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 text-[16px] font-bold leading-none flex items-center justify-center cursor-pointer border-l border-line"
+        className={`w-7 shrink-0 text-zinc-500 hover:bg-zinc-100 hover:text-emerald-600 active:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 ${TEXT.tab} flex items-center justify-center cursor-pointer border-l border-line`}
         title="증가"
         tabIndex={-1}
       >+</button>
