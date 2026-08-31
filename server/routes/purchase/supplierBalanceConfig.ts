@@ -4,6 +4,8 @@ import { supabase } from "../../../src/supabase/client";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
+import { validateBody } from "../../middleware/zodValidate";
+import { UpsertSupplierBalanceConfigSchema } from "../../../src/shared/schemas/supplierBalanceConfig";
 
 const router = Router();
 const TABLE = "supplier_balance_configs";
@@ -48,9 +50,8 @@ router.get("/api/supplier-balance-configs", asyncHandler(async (_req, res) => {
 
 // PUT /api/supplier-balance-configs  →  upsert { supplier_name, balance_field, column_layout? }
 // 2026-08-29 · 보안 P1 N12 fix · authorize(5) · 잔고 config 임의 변경 방지
-router.put("/api/supplier-balance-configs", authorize(5), asyncHandler(async (req, res) => {
-  const { supplier_name, balance_field, column_layout } = req.body ?? {};
-  if (!supplier_name) throw badRequest("supplier_name 필수");
+router.put("/api/supplier-balance-configs", authorize(5), validateBody(UpsertSupplierBalanceConfigSchema), asyncHandler(async (req, res) => {
+  const { supplier_name, balance_field, column_layout } = req.body;
 
   const payload: Record<string, unknown> = {
     supplier_name,

@@ -5,6 +5,8 @@ import { clearOcrAggCache } from "../stock/stockManage";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
+import { validateBody } from "../../middleware/zodValidate";
+import { CreateOcrConfirmedItemsSchema } from "../../../src/shared/schemas/ocrConfirmed";
 
 const router = Router();
 const TABLE = "ocr_confirmed_items";
@@ -70,12 +72,10 @@ const toNumOrNull = (v: unknown): number | null => {
 
 // POST /api/ocr-confirmed-items  →  batch insert
 // 2026-08-29 · 보안 P1 N9 fix · authorize(2) · OCR 확정 매입 임의 삽입 방지
-router.post("/api/ocr-confirmed-items", authorize(2), asyncHandler(async (req, res) => {
-  const body = req.body ?? {};
-  const rawItems: ConfirmedItemInput[] = Array.isArray(body.items) ? body.items : [];
-  const defaultSavedAt: string | undefined = typeof body.saved_at === "string" ? body.saved_at : undefined;
-
-  if (rawItems.length === 0) throw badRequest("items 배열이 비어 있습니다.");
+router.post("/api/ocr-confirmed-items", authorize(2), validateBody(CreateOcrConfirmedItemsSchema), asyncHandler(async (req, res) => {
+  const body = req.body;
+  const rawItems: ConfirmedItemInput[] = body.items;
+  const defaultSavedAt: string | undefined = body.saved_at;
 
   const rows = rawItems
     .map(item => {

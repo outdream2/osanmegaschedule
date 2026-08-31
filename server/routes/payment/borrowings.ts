@@ -11,6 +11,14 @@ import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError, unauthorized } from "../../middleware/errorHandler";
 import { getSession } from "../../middleware/requireAuth";
+import { validateBody } from "../../middleware/zodValidate";
+import {
+  CreateBorrowingSchema,
+  UpdateBorrowingSchema,
+  ReturnBorrowingSchema,
+  CreateBorrowingPartySchema,
+  AddBorrowingSignatureSchema,
+} from "../../../src/shared/schemas/borrowings";
 
 const router = Router();
 
@@ -50,27 +58,23 @@ router.get("/api/borrowings", authorize(1), asyncHandler(async (req, res) => {
 // body: { direction · supplier · product_code · product_name · qty · unit_price? · due_date? · note? · signature_url? · created_by? · created_by_id? }
 // 2026-08-31 · #9 Phase A · lender_party_id · borrower_party_id · signatures[] 확장
 //   · signatures = [{ role, signer_name, signature_url, stamp_url?, intent_text? }]
-router.post("/api/borrowings", authorize(5), asyncHandler(async (req, res) => {
-  const b = req.body ?? {};
-  const direction = String(b.direction ?? "lend").trim();
-  if (direction !== "lend" && direction !== "borrow") throw badRequest("direction must be lend or borrow");
-  const qty = Math.max(0, Number(b.qty ?? 0) || 0);
-  if (qty <= 0) throw badRequest("qty > 0 필수");
+router.post("/api/borrowings", authorize(5), validateBody(CreateBorrowingSchema), asyncHandler(async (req, res) => {
+  const b = req.body;
   const row: Record<string, unknown> = {
-    direction,
-    supplier:      String(b.supplier ?? "").trim() || null,
-    product_code:  String(b.product_code ?? "").trim() || null,
-    product_name:  String(b.product_name ?? "").trim() || null,
-    qty,
-    unit_price:    b.unit_price != null && b.unit_price !== "" ? Number(b.unit_price) : null,
-    due_date:      String(b.due_date ?? "").trim() || null,
-    note:          String(b.note ?? "").trim() || null,
-    signature_url: String(b.signature_url ?? "").trim() || null,
+    direction:     b.direction,
+    supplier:      b.supplier ? String(b.supplier).trim() || null : null,
+    product_code:  b.product_code ? String(b.product_code).trim() || null : null,
+    product_name:  b.product_name ? String(b.product_name).trim() || null : null,
+    qty:           b.qty,
+    unit_price:    b.unit_price ?? null,
+    due_date:      b.due_date ? String(b.due_date).trim() || null : null,
+    note:          b.note ? String(b.note).trim() || null : null,
+    signature_url: b.signature_url ? String(b.signature_url).trim() || null : null,
     status:        "open",
-    created_by:    String(b.created_by ?? "").trim() || null,
-    created_by_id: b.created_by_id != null ? Number(b.created_by_id) : null,
-    lender_party_id:   b.lender_party_id != null ? Number(b.lender_party_id) : null,
-    borrower_party_id: b.borrower_party_id != null ? Number(b.borrower_party_id) : null,
+    created_by:    b.created_by ? String(b.created_by).trim() || null : null,
+    created_by_id: b.created_by_id ?? null,
+    lender_party_id:   b.lender_party_id ?? null,
+    borrower_party_id: b.borrower_party_id ?? null,
   };
   const { data, error } = await supabase.from("borrowings").insert([row]).select(SELECT_COLS).single();
   if (error) throw new HttpError(500, error.message);
@@ -122,22 +126,18 @@ router.get("/api/borrowings/parties", authorize(1), asyncHandler(async (req, res
 }));
 
 // POST /api/borrowings/parties · upsert (name+phone dedup 없음 · 명시 create)
-router.post("/api/borrowings/parties", authorize(5), asyncHandler(async (req, res) => {
-  const b = req.body ?? {};
-  const name = String(b.name ?? "").trim();
-  if (!name) throw badRequest("name 필수");
-  const partyType = String(b.party_type ?? "external").trim();
-  if (!["self", "vendor", "external"].includes(partyType)) throw badRequest("party_type invalid");
+router.post("/api/borrowings/parties", authorize(5), validateBody(CreateBorrowingPartySchema), asyncHandler(async (req, res) => {
+  const b = req.body;
   const row = {
-    party_type: partyType,
-    vendor_id: b.vendor_id != null ? Number(b.vendor_id) : null,
-    employee_id: b.employee_id != null ? Number(b.employee_id) : null,
-    name,
-    contact_name: String(b.contact_name ?? "").trim() || null,
-    contact_phone: String(b.contact_phone ?? "").trim() || null,
-    contact_email: String(b.contact_email ?? "").trim() || null,
-    address: String(b.address ?? "").trim() || null,
-    memo: String(b.memo ?? "").trim() || null,
+    party_type:    b.party_type,
+    vendor_id:     b.vendor_id ?? null,
+    employee_id:   b.employee_id ?? null,
+    name:          b.name.trim(),
+    contact_name:  b.contact_name ? String(b.contact_name).trim() || null : null,
+    contact_phone: b.contact_phone ? String(b.contact_phone).trim() || null : null,
+    contact_email: b.contact_email ? String(b.contact_email).trim() || null : null,
+    address:       b.address ? String(b.address).trim() || null : null,
+    memo:          b.memo ? String(b.memo).trim() || null : null,
   };
   const { data, error } = await supabase.from("borrowing_parties").insert([row]).select("*").single();
   if (error) throw new HttpError(500, error.message);
@@ -145,25 +145,21 @@ router.post("/api/borrowings/parties", authorize(5), asyncHandler(async (req, re
 }));
 
 // POST /api/borrowings/:id/signatures · 사후 서명 추가 (반환·증인 등)
-router.post("/api/borrowings/:id/signatures", authorize(5), asyncHandler(async (req, res) => {
+router.post("/api/borrowings/:id/signatures", authorize(5), validateBody(AddBorrowingSignatureSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!Number.isFinite(id)) throw badRequest("invalid id");
-  const b = req.body ?? {};
-  const role = String(b.role ?? "").trim();
-  if (!["lender", "borrower", "lender_return", "borrower_return", "witness"].includes(role)) throw badRequest("role invalid");
-  const signatureUrl = String(b.signature_url ?? "").trim();
-  if (!signatureUrl) throw badRequest("signature_url 필수");
+  const b = req.body;
   const row = {
-    borrowing_id: id,
-    role,
-    signer_name: String(b.signer_name ?? "").trim() || "-",
-    signer_id: b.signer_id != null ? Number(b.signer_id) : null,
-    party_id: b.party_id != null ? Number(b.party_id) : null,
-    signature_url: signatureUrl,
-    stamp_url: b.stamp_url ? String(b.stamp_url) : null,
-    ip_address: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || (req as any).ip || null,
-    user_agent: String(req.headers["user-agent"] ?? ""),
-    intent_text: b.intent_text ? String(b.intent_text) : null,
+    borrowing_id:  id,
+    role:          b.role,
+    signer_name:   b.signer_name ? String(b.signer_name).trim() || "-" : "-",
+    signer_id:     b.signer_id ?? null,
+    party_id:      b.party_id ?? null,
+    signature_url: b.signature_url,
+    stamp_url:     b.stamp_url ?? null,
+    ip_address:    (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || (req as any).ip || null,
+    user_agent:    String(req.headers["user-agent"] ?? ""),
+    intent_text:   b.intent_text ?? null,
   };
   const { data, error } = await supabase.from("borrowing_signatures").insert([row]).select("*").single();
   if (error) throw new HttpError(500, error.message);
@@ -188,24 +184,21 @@ router.get("/api/borrowings/:id/signatures", authorize(1), asyncHandler(async (r
 
 // PATCH /api/borrowings/:id
 // body: { status? · qty? · unit_price? · due_date? · note? · signature_url? }
-router.patch("/api/borrowings/:id", authorize(5), asyncHandler(async (req, res) => {
+router.patch("/api/borrowings/:id", authorize(5), validateBody(UpdateBorrowingSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!Number.isFinite(id)) throw badRequest("invalid id");
-  const b = req.body ?? {};
+  const b = req.body;
   const patch: Record<string, unknown> = {};
   if (b.status != null) {
-    const s = String(b.status).trim();
-    if (!["open", "settled", "cancelled"].includes(s)) throw badRequest("invalid status");
-    patch.status = s;
+    patch.status = b.status;
     // settled 로 전환 시 settled_at 자동 세팅 · 그 외 상태로 전환 시 null 로 되돌림
-    patch.settled_at = s === "settled" ? new Date().toISOString() : null;
+    patch.settled_at = b.status === "settled" ? new Date().toISOString() : null;
   }
-  if (b.qty != null)           patch.qty = Math.max(0, Number(b.qty) || 0);
+  if (b.qty != null)              patch.qty = Math.max(0, b.qty);
   if (b.unit_price !== undefined) patch.unit_price = b.unit_price === null || b.unit_price === "" ? null : Number(b.unit_price);
-  if (b.due_date !== undefined)   patch.due_date = String(b.due_date ?? "").trim() || null;
-  if (b.note !== undefined)       patch.note = String(b.note ?? "").trim() || null;
-  if (b.signature_url !== undefined) patch.signature_url = String(b.signature_url ?? "").trim() || null;
-  if (Object.keys(patch).length === 0) throw badRequest("수정 필드 없음");
+  if (b.due_date !== undefined)   patch.due_date = b.due_date ? String(b.due_date).trim() || null : null;
+  if (b.note !== undefined)       patch.note = b.note ? String(b.note).trim() || null : null;
+  if (b.signature_url !== undefined) patch.signature_url = b.signature_url ? String(b.signature_url).trim() || null : null;
   const { data, error } = await supabase.from("borrowings").update(patch).eq("id", id).select(SELECT_COLS).single();
   if (error) throw new HttpError(500, error.message);
   res.json({ ok: true, row: data });
@@ -215,21 +208,19 @@ router.patch("/api/borrowings/:id", authorize(5), asyncHandler(async (req, res) 
 // body: { return_signature_url · return_note? }
 // · returned_by · returned_by_id · returned_at 서버 자동 세팅
 // · status = 'settled' · settled_at 도 함께 세팅 (기존 PATCH 동일 규칙)
-router.patch("/api/borrowings/:id/return", authorize(5), asyncHandler(async (req, res) => {
+router.patch("/api/borrowings/:id/return", authorize(5), validateBody(ReturnBorrowingSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!Number.isFinite(id)) throw badRequest("invalid id");
   const session = getSession(req);
   if (!session) throw unauthorized("로그인 필요");
-  const b = req.body ?? {};
-  const signature = String(b.return_signature_url ?? "").trim();
-  if (!signature) throw badRequest("반환 서명 필수 · return_signature_url");
+  const b = req.body;
   const now = new Date().toISOString();
   const patch: Record<string, unknown> = {
-    return_signature_url: signature,
+    return_signature_url: b.return_signature_url,
     returned_by:    session.name,
     returned_by_id: session.sub,
     returned_at:    now,
-    return_note:    String(b.return_note ?? "").trim() || null,
+    return_note:    b.return_note ? String(b.return_note).trim() || null : null,
     status:         "settled",
     settled_at:     now,
   };

@@ -16,6 +16,11 @@ import { notificationsService } from "../../services/notificationsService";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
+import { validateBody } from "../../middleware/zodValidate";
+import {
+  CreateSupplierPaymentSchema,
+  UpdateSupplierPaymentSchema,
+} from "../../../src/shared/schemas/supplierPayments";
 
 const router = Router();
 
@@ -202,65 +207,32 @@ router.get("/api/supplier-payments/pending-count", asyncHandler(async (_req, res
 //           allocations?: [{ocr_confirmed_item_id, allocated_amount}] }
 //   · 원자성: allocations insert 실패 시 payment 롤백 (best-effort)
 // ─────────────────────────────────────────────────────────────────────
-router.post("/api/supplier-payments", authorize(5), asyncHandler(async (req, res) => {
-  const {
-    supplier_name,
-    payment_date,
-    amount,
-    method,
-    memo,
-    created_by,
-    created_by_id,
-    allocations,
-  } = req.body ?? {};
+router.post("/api/supplier-payments", authorize(5), validateBody(CreateSupplierPaymentSchema), asyncHandler(async (req, res) => {
+  const b = req.body;
+  const allocations = b.allocations;
 
-  // 검증
-  if (!supplier_name || typeof supplier_name !== "string" || !supplier_name.trim()) {
-    throw badRequest("supplier_name 필수");
-  }
-  if (!isYmd(payment_date)) {
-    throw badRequest("payment_date 는 YYYY-MM-DD 형식이어야 합니다");
-  }
-  const amt = toNumOrNull(amount);
-  if (amt == null || amt <= 0) {
-    throw badRequest("amount 는 양수여야 합니다");
-  }
-  const methodClean = String(method ?? "transfer").trim().toLowerCase();
-  if (!VALID_METHODS.has(methodClean)) {
-    throw badRequest(`method 는 ${Array.from(VALID_METHODS).join(",")} 중 하나여야 합니다`);
-  }
-
-  // allocations 검증
+  // allocations 총액 검증 (Zod 개별 항목 검증 후 · 합산 초과 검사)
   const allocList: Array<{ ocr_confirmed_item_id: number; allocated_amount: number }> = [];
-  if (Array.isArray(allocations)) {
+  if (Array.isArray(allocations) && allocations.length > 0) {
     let sum = 0;
     for (const a of allocations) {
-      const invId = Number(a?.ocr_confirmed_item_id);
-      const allocAmt = toNumOrNull(a?.allocated_amount);
-      if (!Number.isFinite(invId) || invId <= 0) {
-        throw badRequest("allocation.ocr_confirmed_item_id 가 유효하지 않습니다");
-      }
-      if (allocAmt == null || allocAmt <= 0) {
-        throw badRequest("allocation.allocated_amount 는 양수여야 합니다");
-      }
-      sum += allocAmt;
-      allocList.push({ ocr_confirmed_item_id: invId, allocated_amount: allocAmt });
+      sum += a.allocated_amount;
+      allocList.push({ ocr_confirmed_item_id: a.ocr_confirmed_item_id, allocated_amount: a.allocated_amount });
     }
-    // 부동소수 오차 허용치 0.5 (원 단위 데이터 · 실무상 정수)
-    if (sum > amt + 0.5) {
-      throw badRequest(`배분 총액(${sum.toLocaleString()}) 이 결제 금액(${amt.toLocaleString()}) 을 초과할 수 없습니다`);
+    if (sum > b.amount + 0.5) {
+      throw badRequest(`배분 총액(${sum.toLocaleString()}) 이 결제 금액(${b.amount.toLocaleString()}) 을 초과할 수 없습니다`);
     }
   }
 
   // 1. payment insert
   const payload: Record<string, any> = {
-    supplier_name: supplier_name.trim(),
-    payment_date,
-    amount: amt,
-    method: methodClean,
-    memo: memo != null && String(memo).trim() ? String(memo).trim() : null,
-    created_by: created_by != null && String(created_by).trim() ? String(created_by).trim() : null,
-    created_by_id: Number.isFinite(Number(created_by_id)) ? Number(created_by_id) : null,
+    supplier_name: b.supplier_name.trim(),
+    payment_date:  b.payment_date,
+    amount:        b.amount,
+    method:        b.method ?? "transfer",
+    memo:          b.memo ? String(b.memo).trim() || null : null,
+    created_by:    b.created_by ? String(b.created_by).trim() || null : null,
+    created_by_id: b.created_by_id ?? null,
   };
 
   const { data: payRow, error: payErr } = await supabase
@@ -280,7 +252,7 @@ router.post("/api/supplier-payments", authorize(5), asyncHandler(async (req, res
   // 2026-08-13 · #107 · 관리자 broadcast · 결제 등록 알림 (인앱 + push)
   notificationsService.notifyAllAdmins({
     title: "💰 결제 등록",
-    body: `${supplier_name} · ${amt.toLocaleString()}원 (${methodClean}) 결제 등록됨.`,
+    body: `${b.supplier_name} · ${b.amount.toLocaleString()}원 (${payload.method}) 결제 등록됨.`,
     type: "success",
     push: { url: "/", tag: `payment-new-${payRow.id}` },
   }).catch(() => null);
@@ -292,20 +264,15 @@ router.post("/api/supplier-payments", authorize(5), asyncHandler(async (req, res
 // PATCH /api/supplier-payments/:id
 //   · memo · method 만 수정 (금액·날짜 변경은 삭제→재등록 유도)
 // ─────────────────────────────────────────────────────────────────────
-router.patch("/api/supplier-payments/:id", authorize(5), asyncHandler(async (req, res) => {
+router.patch("/api/supplier-payments/:id", authorize(5), validateBody(UpdateSupplierPaymentSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!Number.isFinite(id) || id <= 0) throw badRequest("invalid id");
-  const { method, memo } = req.body ?? {};
+  const b = req.body;
   const updates: Record<string, any> = {};
-  if (method !== undefined) {
-    const m = String(method ?? "").trim().toLowerCase();
-    if (!VALID_METHODS.has(m)) throw badRequest(`method 는 ${Array.from(VALID_METHODS).join(",")} 중 하나`);
-    updates.method = m;
+  if (b.method !== undefined) updates.method = b.method;
+  if (b.memo !== undefined) {
+    updates.memo = b.memo != null && String(b.memo).trim() ? String(b.memo).trim() : null;
   }
-  if (memo !== undefined) {
-    updates.memo = memo != null && String(memo).trim() ? String(memo).trim() : null;
-  }
-  if (Object.keys(updates).length === 0) throw badRequest("수정할 필드 없음 (method/memo 만 허용)");
 
   const { data, error } = await supabase
     .from("supplier_payments")
