@@ -41,6 +41,9 @@ interface StaffListPanelProps {
   onWriteContract?: (emp: Employee) => void;
   // 2026-08-31 · 사용자 지시 · 사직서 컬럼 · 재직 필터 시 숨김
   filterStatus?: "active" | "pending_resignation" | "retired" | "all";
+  // 2026-08-31 · 대원칙 · SplitListPanel search prop 필수 (부모에서 관리 · 필터링은 upstream)
+  search?: string;
+  onSearchChange?: (v: string) => void;
 }
 
 const SortIcon: React.FC<{ k: SortKey; sortKey: SortKey; sortDir: "asc" | "desc" }> = ({ k, sortKey, sortDir }) =>
@@ -58,6 +61,7 @@ export const StaffListPanel: React.FC<StaffListPanelProps> = ({
   handleSelect, showError, onCreateOpen, onRefresh,
   uploadResumeForRow, uploadBankbookForRow, uploadResignationFileForRow,
   onWriteContract, filterStatus = "all",
+  search = "", onSearchChange,
 }) => {
   const sortIcon = (k: SortKey) => <SortIcon k={k} sortKey={sortKey} sortDir={sortDir} />;
   // 2026-08-31 · 사용자 지시 · 사직서 컬럼 · 퇴사예정·퇴사 필터일 때만 표시
@@ -151,6 +155,9 @@ export const StaffListPanel: React.FC<StaffListPanelProps> = ({
           <span>직원 목록</span>
         </span>
       }
+      search={search}
+      onSearchChange={onSearchChange}
+      searchPlaceholder="이름 · 직군 · 계약유형 검색"
       countDisplay={
         filtered.length !== employees.length ? (
           <span className="text-[14px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-px tabular-nums">

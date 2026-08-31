@@ -414,6 +414,9 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
             uploadBankbookForRow={uploadBankbookForRow}
             uploadResignationFileForRow={uploadResignationFileForRow}
             onWriteContract={onWriteContract}
+            search={search}
+            onSearchChange={setSearch}
+            filterStatus={filterStatus}
           />
         }
         right={

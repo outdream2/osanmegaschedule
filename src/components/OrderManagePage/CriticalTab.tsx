@@ -5,6 +5,7 @@
 //   · 좌 · 실재고 + 발주요청 리스트 (컴팩트 · SplitListPanel)
 //   · 우 · 클릭 시 ProductDetailRightPanel (재고위치 등 상세)
 //   · CategoryChips · dropdown 제거
+// 2026-08-31 · 대원칙 · SplitListPanel search/onSearchChange 필수 추가
 
 import React, { useMemo, useState } from "react";
 import { AlertTriangle } from "lucide-react";
@@ -45,6 +46,8 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [selected, setSelected] = useState<ProductInfo | null>(null);
   const [requesting, setRequesting] = useState<string | null>(null);
+  // 2026-08-31 · 대원칙 · SplitListPanel search prop 필수
+  const [search, setSearch] = useState("");
   // 2026-08-29 · #154 · 판매중 필터 (default active) · 판매중지 품절임박 자동 제외
   const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "critical.saleFilter" });
 
@@ -76,13 +79,21 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
   }, [critical, getVendorCategory, dbVendorCategories]);
 
   const filtered = useMemo(() => {
-    if (categoryFilter === "all") return critical;
-    return critical.filter(p => {
+    let list = categoryFilter === "all" ? critical : critical.filter(p => {
       const supName = String(p.supplier ?? "").trim();
       const cat = supName ? (getVendorCategory(supName) ?? "미지정") : "미지정";
       return cat === categoryFilter;
     });
-  }, [critical, categoryFilter, getVendorCategory]);
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter(p =>
+        String(p.product_name ?? "").toLowerCase().includes(q) ||
+        String(getCode(p)).toLowerCase().includes(q) ||
+        String(p.supplier ?? "").toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [critical, categoryFilter, getVendorCategory, search, getCode]);
 
   const chipOptions = useMemo(() => {
     const opts: Array<{ value: string; label: string; tone?: ChipTone; count?: number }> = [
@@ -105,6 +116,9 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
     <SplitListPanel
       topAccent
       title="품절임박"
+      search={search}
+      onSearchChange={setSearch}
+      searchPlaceholder="상품명 · 코드 · 공급사 검색"
       countDisplay={<StatusPill tone="amber" size="md">{filtered.length}건</StatusPill>}
       filters={
         <div className="flex items-center gap-2 flex-wrap">
