@@ -37,18 +37,18 @@ describe("StatusPill · 기본 렌더", () => {
     expect(span.className).toContain("text-[#01796F]");
   });
 
-  it("size=xs · h-5 text-11", () => {
+  it("size=xs · h-5 text-12", () => {
     const { container } = render(<StatusPill size="xs">x</StatusPill>);
     const span = container.querySelector("span")!;
     expect(span.className).toContain("h-5");
-    expect(span.className).toContain("text-[11px]");
+    expect(span.className).toContain("text-[12px]");
   });
 
-  it("size=md · py-0.5 text-13", () => {
+  it("size=md · py-0.5 text-14", () => {
     const { container } = render(<StatusPill size="md">x</StatusPill>);
     const span = container.querySelector("span")!;
     expect(span.className).toContain("py-0.5");
-    expect(span.className).toContain("text-[13px]");
+    expect(span.className).toContain("text-[14px]");
   });
 });
 

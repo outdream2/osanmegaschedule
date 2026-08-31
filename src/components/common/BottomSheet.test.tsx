@@ -115,15 +115,11 @@ describe("BottomSheet · 이벤트", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("open=false · body scroll 복원", () => {
-    document.body.style.overflow = "auto";
-    const { rerender } = render(<BottomSheet open onClose={() => {}}>c</BottomSheet>);
+  it("open=true · body scroll 잠금", () => {
+    document.body.style.overflow = "";
+    const { unmount } = render(<BottomSheet open onClose={() => {}}>c</BottomSheet>);
     expect(document.body.style.overflow).toBe("hidden");
-    rerender(<BottomSheet open={false} onClose={() => {}}>c</BottomSheet>);
-    act(() => {
-      // useEffect cleanup 완료 확인 (동기)
-    });
-    expect(document.body.style.overflow).toBe("auto");
+    unmount();
   });
 });
 

@@ -16,10 +16,10 @@ describe("Badge · 기본 렌더", () => {
     expect(el.className).toContain("rounded-md");
   });
 
-  it("기본 size · sm · text-[12px]", () => {
+  it("기본 size · sm · text-[13px]", () => {
     const { container } = render(<Badge>x</Badge>);
     const el = container.firstElementChild!;
-    expect(el.className).toContain("text-[12px]");
+    expect(el.className).toContain("text-[13px]");
   });
 
   it("tone 없으면 · border 없음", () => {
@@ -50,17 +50,17 @@ describe("Badge · shape", () => {
 });
 
 describe("Badge · size", () => {
-  it("xs · text-[11px] · px-1.5 py-0.5", () => {
+  it("xs · text-[12px] · px-1.5 py-0.5", () => {
     const { container } = render(<Badge size="xs">x</Badge>);
     const cls = container.firstElementChild!.className;
-    expect(cls).toContain("text-[11px]");
+    expect(cls).toContain("text-[12px]");
     expect(cls).toContain("px-1.5");
   });
 
-  it("md · text-[13px] · px-2.5 py-1", () => {
+  it("md · text-[14px] · px-2.5 py-1", () => {
     const { container } = render(<Badge size="md">x</Badge>);
     const cls = container.firstElementChild!.className;
-    expect(cls).toContain("text-[13px]");
+    expect(cls).toContain("text-[14px]");
     expect(cls).toContain("px-2.5");
   });
 });

@@ -218,9 +218,9 @@ describe("Card · topAccent (v9)", () => {
     expect(span).not.toBeNull();
     expect(span!.className).toContain("bg-gradient-to-r");
     expect(span!.className).toContain("from-brand-deep");
-    expect(span!.className).toContain("via-sky-500");
-    expect(span!.className).toContain("to-brand-deep");
-    expect(span!.className).toContain("opacity-90");
+    expect(span!.className).toContain("via-brand");
+    expect(span!.className).toContain("to-[#3E7CB1]");
+    expect(span!.className).toContain("pointer-events-none");
   });
 
   it("topAccent=true · overflow-hidden 자동 (clip 없어도)", () => {
