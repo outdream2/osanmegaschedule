@@ -11,6 +11,7 @@ import {
   fetchContractWriterSettings,
 } from '../../lib/contract';
 import { api, ApiError } from '../../lib/apiClient';
+import { consumeContractPrefill } from '../../lib/contractPrefill';
 import { JOB_CATEGORIES } from '../../constants/jobCategories';
 import { todayIso } from './wageCalc';
 import type { Employee } from '../../types';
@@ -70,9 +71,7 @@ export function useContractLoad({ form, setForm }: UseContractLoadProps) {
   useEffect(() => {
     if (prefillConsumed) return;
     try {
-      const raw = localStorage.getItem("contract-writer-prefill");
-      if (!raw) { setPrefillConsumed(true); return; }
-      const p = JSON.parse(raw);
+      const p = consumeContractPrefill();
       if (!p || typeof p !== "object") { setPrefillConsumed(true); return; }
 
       const mapCategory = (pos: string): { cat: ContractForm["employeeCategory"]; custom: string } => {
@@ -139,7 +138,6 @@ export function useContractLoad({ form, setForm }: UseContractLoadProps) {
           employeeWorkplace: typeof p.workplace === "string" && p.workplace ? p.workplace : prev.employeeWorkplace,
         };
       });
-      localStorage.removeItem("contract-writer-prefill");
     } catch { /* silent */ } finally {
       setPrefillConsumed(true);
     }

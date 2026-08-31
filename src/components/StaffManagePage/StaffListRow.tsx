@@ -9,6 +9,7 @@ import { getEmploymentStatus } from "../../lib/employmentStatus";
 import { Avatar } from "./StaffManagePage.subcomponents";
 import { StatusPill } from "../common/StatusPill";
 import { Badge } from "../common/Badge";
+import { setContractPrefill } from "../../lib/contractPrefill";
 
 interface StaffListRowProps {
   emp: Employee;
@@ -208,19 +209,16 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              try {
-                const prefill = {
-                  employeeId: emp.id,
-                  employeeName: emp.name ?? "",
-                  employeePhone: emp.phone ?? "",
-                  employeeAddress: (emp as any).address ?? "",
-                  hireDate: emp.hire_date ?? "",
-                  position: emp.position ?? "",
-                  employmentType: (emp as any).employmentType ?? (emp as any).employment_type ?? "",
-                  annualLeaveDays: (emp as any).annual_leave_days ?? null,
-                };
-                localStorage.setItem("contract-writer-prefill", JSON.stringify(prefill));
-              } catch { /* localStorage 실패 무시 */ }
+              setContractPrefill({
+                employeeId: emp.id,
+                employeeName: emp.name ?? "",
+                employeePhone: emp.phone ?? "",
+                employeeAddress: (emp as any).address ?? "",
+                hireDate: emp.hire_date ?? "",
+                position: emp.position ?? "",
+                employmentType: (emp as any).employmentType ?? (emp as any).employment_type ?? "",
+                annualLeaveDays: (emp as any).annual_leave_days ?? null,
+              });
               if (onWriteContract) {
                 onWriteContract(emp);
               } else {
