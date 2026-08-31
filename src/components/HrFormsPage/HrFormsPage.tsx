@@ -11,6 +11,7 @@
 // #209 UI 세련화: 드래그&드롭 업로드 · 파일타입 아이콘 · 개선된 empty state · 카테고리 segmented control
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { useSortableTable, type SortDir } from "../../hooks/useSortableTable";
 import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
@@ -224,7 +225,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
         />
       )}
 
-      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-3 sm:px-5 py-5 flex flex-col gap-4">
+      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-3 sm:px-5 py-5 flex flex-col gap-4`}>
 
         {/* 2026-08-31 · 목업 톤 재적용 · Hero 컴포넌트 (Linear/Vercel gradient + aurora) */}
         <Hero

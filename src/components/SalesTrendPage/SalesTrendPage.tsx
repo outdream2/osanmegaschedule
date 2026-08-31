@@ -11,6 +11,7 @@ import { resolveProductLocation } from "../../lib/productLocation";
 import { useHiddenManager } from "../../hooks/useHiddenManager";
 import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
 import { api } from "../../lib/apiClient";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 // 2026-08-22 · Framework Phase 4 · types + helpers 별도 파일 이관
 import type { PeriodRow, ChartSeries, LineChartProps } from "./SalesTrendPage.helpers";
 import {
@@ -144,7 +145,7 @@ export const SalesTrendPage: React.FC = () => {
   const unhideProduct = _hm.unhide;
 
   return (
-    <div className="flex-1 flex flex-col max-w-[1360px] w-[85%] mx-auto px-3 sm:px-6 py-2 sm:py-4 gap-3">
+    <div className={`flex-1 flex flex-col ${PAGE_CONTAINER_CLS} px-3 sm:px-6 py-2 sm:py-4 gap-3`}>
       {/* 페이지 제목 */}
       <div className="flex items-center gap-2 min-w-0">
         <TrendingUp size={18} className="text-teal-600 shrink-0" />

@@ -2,6 +2,8 @@
 // 2026-08-22 · #framework-4 · 분리 완료 · 2378 → ~700라인
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { api } from "../../lib/apiClient";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
+import { SK_AUTH_SESSION, SK_EMPLOYEE_ORDER } from "../../lib/storageKeys";
 import { Employee, AuthSession } from "../../types";
 import { isLogisticsPosition as isLogistics } from "../../lib/employeeCategory";
 import { ScheduleFilterBar } from "./ScheduleFilterBar";
@@ -152,7 +154,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
     setIsAdmin(false);
     if (onLogout) { onLogout(); }
     else {
-      localStorage.removeItem("megatown_auth_session");
+      localStorage.removeItem(SK_AUTH_SESSION);
       onBack?.();
     }
   };
@@ -350,7 +352,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
       setEmployees(updatedEmployees);
       if (sortBy !== "none") setSortBy("none");
       if (todayFirst) setTodayFirst(false);
-      localStorage.setItem("megatown_employee_order", JSON.stringify(updatedEmployees.map(emp => emp.id)));
+      localStorage.setItem(SK_EMPLOYEE_ORDER, JSON.stringify(updatedEmployees.map(emp => emp.id)));
       showNotification("직원 순서가 변경되었습니다.");
     }
     setDraggedRowId(null); setDragOverRowId(null);
@@ -513,7 +515,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
         sortBy={sortBy} setSortBy={setSortBy}
         sortOrder={sortOrder} setSortOrder={setSortOrder}
         onResetCustomOrder={async () => {
-          localStorage.removeItem("megatown_employee_order");
+          localStorage.removeItem(SK_EMPLOYEE_ORDER);
           await fetchScheduleData(dateList, true);
           showNotification("정렬 순서가 기본값으로 초기화되었습니다.");
         }}
@@ -546,7 +548,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
       )}
 
       {/* Grid Container */}
-      <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-zinc-100 gap-0 max-w-[1360px] w-[85%] mx-auto min-w-0">
+      <div className={`flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-zinc-100 gap-0 ${PAGE_CONTAINER_CLS} min-w-0`}>
         <ScheduleToolbar
           currentYear={currentYear} currentMonth={currentMonth}
           isAdmin={isAdmin} editMode={editMode}

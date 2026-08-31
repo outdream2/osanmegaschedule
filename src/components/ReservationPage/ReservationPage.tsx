@@ -2,6 +2,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useState, useCallback, useEffect } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useApiCall } from "../../hooks/useApiCall";
 import {
@@ -309,7 +310,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
       {/* 2026-07-29 · 사용자 요청 · 공통 헤더 (AppNavHeader) 로 통일 · reservation 은 AppNavPage 에 없어서 landing 표시 */}
       <AppNavHeader activePage="landing" authSession={authSession ?? null} onBack={onBack} />
 
-      <div className="flex-1 flex flex-col lg:flex-row gap-0 overflow-hidden max-w-[1360px] w-[85%] mx-auto">
+      <div className={`flex-1 flex flex-col lg:flex-row gap-0 overflow-hidden ${PAGE_CONTAINER_CLS}`}>
 
         {/* ====== LEFT PANEL: Calendar ====== */}
         <div className="lg:w-[340px] shrink-0 bg-white border-b lg:border-b-0 lg:border-r border-line p-4 sm:p-5 flex flex-col gap-4">

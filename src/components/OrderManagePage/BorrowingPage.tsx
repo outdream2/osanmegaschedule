@@ -42,6 +42,7 @@ import { matchesProductQuery } from "../../lib/productMatch";
 import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { ApiError } from "../../lib/apiClient";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import type { AuthSession } from "../../types";
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -289,7 +290,7 @@ export const BorrowingPage: React.FC<BorrowingPageProps> = ({ authSession }) => 
       {toast && (
         <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
       )}
-      <div className="max-w-[1360px] w-[85%] mx-auto px-3 sm:px-5 py-5 flex flex-col gap-4">
+      <div className={`${PAGE_CONTAINER_CLS} px-3 sm:px-5 py-5 flex flex-col gap-4`}>
         {/* Hero · 목업 톤 · GradientAccent 상단 라인 */}
         <div className="relative">
           <GradientAccent />

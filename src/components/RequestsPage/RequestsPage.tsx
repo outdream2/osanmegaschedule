@@ -1,6 +1,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { api } from "../../lib/apiClient";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { dispatchApprovalChange, useApprovalRefreshListener } from "../../lib/approvalEvents";
 import { TIMING } from "../../constants/timing";
 import { ShoppingCart, Square, CheckSquare } from "lucide-react";
@@ -508,7 +509,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
       {/* 2026-08-17 · 탭 바 · 최신 트렌드 · 딥네이비 segmented pill · 통일 (프레임워크 톤) */}
       <div className="bg-white/95 backdrop-blur-sm border-b border-line sticky top-14 z-20 shadow-sm">
-        <div className="max-w-[1360px] w-[85%] mx-auto px-2 sm:px-4 py-2">
+        <div className={`${PAGE_CONTAINER_CLS} px-2 sm:px-4 py-2`}>
           <div className="inline-flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             {TABS.map(([key, label, count]) => (
               <button key={key} onClick={() => setTab(key)}
@@ -527,7 +528,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         </div>
       </div>
 
-      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-4 py-4">
+      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-4 py-4`}>
 
         {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · DisplayRequestTab */}
         {tab === "display" && (

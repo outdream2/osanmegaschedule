@@ -19,6 +19,7 @@ import {
   deleteResume as apiDeleteResume,
 } from "../../lib/employeeApi";
 import { api, ApiError } from "../../lib/apiClient";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { AddressSearchModal } from "../common/features/AddressSearchModal";
 import { getEmploymentStatus } from "../../lib/employmentStatus";
 
@@ -366,7 +367,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
 
   // ── 렌더링 ──────────────────────────────────────────────────────────────────
   return (
-    <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-4 py-4 flex flex-col gap-3 min-h-0">
+    <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-4 py-4 flex flex-col gap-3 min-h-0`}>
 
       {/* 상단 필터바 */}
       <StaffToolbar

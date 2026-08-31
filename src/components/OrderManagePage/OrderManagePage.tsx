@@ -57,6 +57,7 @@ import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { api, ApiError } from "../../lib/apiClient";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 
 import type {
   OrderRequest, ProductInfo, OrderManagePageProps,
@@ -532,7 +533,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   );
 
   return (
-    <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-4 py-4 flex flex-col gap-4">
+    <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-4 py-4 flex flex-col gap-4`}>
       {!hideTopTabs && (
         <TabBar<typeof topTab>
           level={2}

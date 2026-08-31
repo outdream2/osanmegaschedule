@@ -1,6 +1,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { UtensilsCrossed, Clock, RefreshCw, Users, ChevronLeft, ChevronRight, Stethoscope, UserRound, Coffee } from "lucide-react";
 import { Spinner } from "../common/Spinner";
@@ -271,7 +272,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
         />
       )}
 
-      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-4 py-6 flex flex-col gap-5">
+      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-4 py-6 flex flex-col gap-5`}>
 
         {/* 날짜 네비게이션 · 2026-08-17 · 최신 트렌드 · 딥네이비 accent · 폰트 +2 */}
         <div className="flex items-center justify-between gap-3 flex-wrap">

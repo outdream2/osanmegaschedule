@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import type { AuthSession } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
-import { CARD_BASE } from "../../styles/tokens";
+import { CARD_BASE, PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { AccentBar } from "../common/AccentBar";
 import { Spinner } from "../common/Spinner";
@@ -93,7 +93,7 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
       <AppNavHeader activePage="board" authSession={authSession} onBack={onBack} onNavigate={onNavigate} onLogout={onLogout} />
 
       {/* 2026-08-31 · 사용자 지시 · SplitPanel 통일 넓이 (85% · max 1360px) · 목업 톤 */}
-      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-3 sm:px-4 py-3 sm:py-4">
+      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-3 sm:px-4 py-3 sm:py-4`}>
         {/* 필터 · 검색 · 새글 */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <div className="flex-1 min-w-[180px] relative">

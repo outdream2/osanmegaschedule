@@ -1,6 +1,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useState, useCallback } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import {
   CalendarDays, Clock, CheckCircle2, XCircle,
   RefreshCw, Plus, X, Trash2, ChevronDown, Loader2,
@@ -211,7 +212,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
         />
       )}
 
-      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-4 py-5">
+      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-4 py-5`}>
 
         {/* ── 직원 뷰 (신청) ── 2026-08-12 · 글씨 -1 단계 · 무게 살짝 완화 */}
         {showApply && (

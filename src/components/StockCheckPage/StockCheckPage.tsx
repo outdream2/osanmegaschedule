@@ -1,6 +1,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { TIMING } from "../../constants/timing";
 import { Package, Search, X } from "lucide-react";
 import { Spinner } from "../common/Spinner";
@@ -159,7 +160,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
         }
       />
 
-      <div className="flex-1 flex flex-col max-w-[1360px] w-[85%] mx-auto px-4 pt-6 pb-20">
+      <div className={`flex-1 flex flex-col ${PAGE_CONTAINER_CLS} px-4 pt-6 pb-20`}>
         {/* Search bar */}
         <div className="relative mb-2">
           <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />

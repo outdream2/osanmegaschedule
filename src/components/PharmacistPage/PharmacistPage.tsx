@@ -2,6 +2,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -288,7 +289,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
       </div>
 
       {/* 2026-08-31 · 사용자 지시 · 화면 85% · SplitPanel 통일 · 목업 톤 */}
-      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3">
+      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3`}>
         {/* 2026-08-31 · #58 · UI_MOCKUP_2026-08-21 톤 · Card topAccent + 그라디언트 아이콘 · 목업 통일 */}
         <Card padding="none" rounded="xl" topAccent className="px-5 py-4 flex items-center gap-3.5">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-deep to-[#3E7CB1] text-white flex items-center justify-center shadow-md shrink-0">

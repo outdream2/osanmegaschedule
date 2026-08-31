@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import axios from "axios";
 import { Upload, X, Zap, AlertCircle, Images, BookOpen, FileText } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
@@ -446,7 +447,7 @@ return (
 
     {/* Tab bar */}
     <div className="bg-white/90 backdrop-blur-sm border-b border-line/70 sticky top-0 z-10">
-      <div className="max-w-[1360px] w-[85%] mx-auto px-2 sm:px-4 py-2">
+      <div className={`${PAGE_CONTAINER_CLS} px-2 sm:px-4 py-2`}>
         <div className="flex flex-wrap bg-zinc-100/70 border border-line/60 rounded-2xl p-1 gap-0.5">
           <button
             onClick={() => setMainTab("ocr")}
@@ -487,7 +488,7 @@ return (
       <SynonymsTab />
     ) : (
     /* ── OCR 추출 탭 ── */
-    <div className="flex-1 flex flex-col px-4 py-6 gap-5 max-w-[1360px] w-[85%] mx-auto">
+    <div className={`flex-1 flex flex-col px-4 py-6 gap-5 ${PAGE_CONTAINER_CLS}`}>
 
       {/* 파일 업로드 + 이미지 뷰어 */}
       <Card clip padding="none" className="w-full">

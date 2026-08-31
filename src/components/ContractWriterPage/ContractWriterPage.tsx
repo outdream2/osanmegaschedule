@@ -2,6 +2,7 @@
 // 2026-08-23 · #framework-4 · 전체 분리 완료 · 타입/상수/계산/서브컴포넌트 모두 이관
 
 import React, { useMemo } from "react";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { toastClass } from "../../hooks/useToast";
 import {
   NotePencil, CalendarBlank, Eraser, DownloadSimple, Warning, Check,
@@ -397,7 +398,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         />
       )}
 
-      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-3 sm:px-5 py-4 flex flex-col gap-3 min-h-0">
+      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-3 sm:px-5 py-4 flex flex-col gap-3 min-h-0`}>
         {/* 페이지 헤더 · T-CTR-11 · 컴팩트 축소 */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">

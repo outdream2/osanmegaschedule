@@ -23,6 +23,7 @@ import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 import { api, ApiError } from "../../lib/apiClient";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { matchHangul } from "../../lib/hangulSearch";
 import type { AuthSession } from "../../types";
 import { UpdateProductSchema, type UpdateProductInput } from "../../shared/schemas/products";
@@ -560,7 +561,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
   return (
     <>
       {/* 2026-08-30 · 사용자 지시 · 전체 화면 넓이의 85% · 중앙 정렬 */}
-      <div className="flex-1 flex min-h-0 gap-0 bg-white rounded-xl border border-line overflow-hidden max-w-[1360px] w-[85%] mx-auto">
+      <div className={`flex-1 flex min-h-0 gap-0 bg-white rounded-xl border border-line overflow-hidden ${PAGE_CONTAINER_CLS}`}>
         {/* 좌측 · 리스트 (mobile 전체폭 · desktop leftWidth) */}
         <div
           className="flex flex-col min-h-0"

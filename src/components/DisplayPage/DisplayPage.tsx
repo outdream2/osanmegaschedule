@@ -3,6 +3,7 @@
 //   · ZoneDetailModal · StaffInfoModal · ZoneProductsModal · ProductInfoModal
 //   · DisplayStoreMap · useDisplayData · DisplaySearchBar
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { type ZoneStatus, type DowMap, type DisplayZone } from "../../utils/zoneUtils";
 import { type ProductInfo } from "../../lib/productsCache";
@@ -630,7 +631,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       ) : dpSubTab === "return" && dpCanSeeStockManage ? (
         /* 2026-08-29 · #193 · 사용자 지시 · 반품 서브탭 · 매입 우회 · 직접 이너 탭 (반품필요·반품확정)
            2026-08-30 · #37 · 사용자 지시 · SplitListPanel 넓이 통일 · max-w-[1360px] 컨테이너 (다른 페이지와 동일) */
-        <main className="flex-1 max-w-[1360px] w-[85%] mx-auto flex flex-col min-h-0 px-3">
+        <main className={`flex-1 ${PAGE_CONTAINER_CLS} flex flex-col min-h-0 px-3`}>
           <div className="bg-white border-b border-line px-3">
             <TabBar<"need" | "confirmed">
               level={3}
@@ -672,7 +673,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           </div>
         </main>
       ) : (
-        <main className="max-w-[1360px] w-[85%] mx-auto p-4 flex flex-col gap-4 flex-1">
+        <main className={`${PAGE_CONTAINER_CLS} p-4 flex flex-col gap-4 flex-1`}>
           {/* 2026-08-25 · 매장구역도/배치불일치 · 2026-08-26 · 창고1/창고2 추가 */}
           <div className="bg-white rounded-xl border border-line overflow-hidden">
             <SplitRightTabs

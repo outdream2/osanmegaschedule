@@ -24,6 +24,7 @@
 //   · embedded 모드 · DocumentWriterPage 임베드 시 자체 헤더 skip
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../lib/apiClient";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { useConfirm } from "../../hooks/useConfirm";
 import {
   Gear, FloppyDisk, ArrowsClockwise, Check, Warning, Info,
@@ -440,7 +441,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
         />
       )}
 
-      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-3 sm:px-5 py-4 flex flex-col gap-3">
+      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-3 sm:px-5 py-4 flex flex-col gap-3`}>
 
         {/* 2026-08-29 · #122 · 최상단 GradientAccent (size=thin) */}
         <GradientAccent size="thin" absolute={false} />

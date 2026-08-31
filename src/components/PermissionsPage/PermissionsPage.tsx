@@ -1,6 +1,7 @@
 // 2026-08-16 · apiClient 마이그레이션
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { api } from "../../lib/apiClient";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { Shield, Loader2, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Save, Eye, EyeOff } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { invalidatePagePermissions } from "../../hooks/usePagePermissions";
@@ -503,7 +504,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     return (
       <div className="flex-1 flex flex-col">
         {remapModal}
-        <div className="flex-1 max-w-[1360px] w-[85%] mx-auto px-4 py-4">
+        <div className={`flex-1 ${PAGE_CONTAINER_CLS} px-4 py-4`}>
           {renderPermissionsBody()}
         </div>
       </div>
