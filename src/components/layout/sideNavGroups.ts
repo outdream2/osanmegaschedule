@@ -366,6 +366,50 @@ export function isItemActive(
   return false;
 }
 
+/**
+ * 2026-08-31 · 사용자 지시 · 모든 페이지 브레드크럼 (홈 › 그룹 › 페이지)
+ *   · currentPage + activeSubTab → BreadcrumbSegment[] 파생
+ *   · SIDE_NAV_GROUPS 단일 소스 · 순서 · 라벨 자동 동기
+ *   · 랜딩 · [{홈}] 하나만
+ *   · 최상위 (스케줄·이슈·약사 등) · [{홈, page:landing}, {페이지명}]
+ *   · 그룹 + 서브 · [{홈, page:landing}, {그룹명}, {페이지명·서브탭}]
+ */
+export interface BreadcrumbSegment {
+  label: string;
+  page?: AppNavPage;
+  subTab?: string;
+}
+export function buildBreadcrumb(currentPage: AppNavPage, activeSubTab?: string | null): BreadcrumbSegment[] {
+  if (currentPage === "landing") {
+    return [{ label: "홈" }];
+  }
+  const home: BreadcrumbSegment = { label: "홈", page: "landing" };
+  let matchedGroup = SIDE_NAV_GROUPS.find(g =>
+    g.items.some(i => i.key === currentPage && i.subTab && activeSubTab && i.subTab === activeSubTab)
+  );
+  let matchedItem: SideNavItem | undefined = matchedGroup?.items.find(
+    i => i.key === currentPage && i.subTab === activeSubTab
+  );
+  if (!matchedGroup) {
+    matchedGroup = SIDE_NAV_GROUPS.find(g => g.items.some(i => i.key === currentPage));
+    matchedItem = matchedGroup?.items.find(i => i.key === currentPage);
+  }
+  if (!matchedGroup) return [home, { label: String(currentPage) }];
+  const groupIsSingle = matchedGroup.items.length === 1 && !matchedGroup.items[0].subTab;
+  if (groupIsSingle) {
+    return [home, { label: matchedGroup.label }];
+  }
+  const seg: BreadcrumbSegment[] = [home];
+  const groupPage = matchedGroup.topTab?.key as AppNavPage | undefined;
+  seg.push({
+    label: matchedGroup.label,
+    page: groupPage && groupPage !== currentPage ? groupPage : undefined,
+  });
+  const pageLabel = matchedItem?.label ?? String(currentPage);
+  seg.push({ label: pageLabel });
+  return seg;
+}
+
 /** 컬러 → tailwind 클래스 (활성 톤 · 비활성 hover 톤 · phosphor 톤에 맞춤) */
 export const COLOR_TONES: Record<SideNavColor, {
   activeBar: string;

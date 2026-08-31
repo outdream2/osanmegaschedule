@@ -20,6 +20,8 @@ export { ActionBar } from "./ActionBar";
 export { Badge } from "./Badge";
 export type { BadgeTone } from "./Badge";
 export { BottomSheet } from "./BottomSheet";
+export { Breadcrumb } from "./Breadcrumb";
+export type { BreadcrumbItem, BreadcrumbProps } from "./Breadcrumb";
 export { Button } from "./Button";
 export { Card } from "./Card";
 export type { CardProps, CardVariant, CardPadding, CardRounded } from "./Card";

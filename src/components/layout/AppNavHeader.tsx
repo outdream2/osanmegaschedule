@@ -16,6 +16,10 @@ import logoImg from "../../images/logo2.png";
 import { useSidebarEnabled } from "../../hooks/useSidebar";
 // 2026-08-31 · 사용자 리포트 · 사이드바 opener 명시 트리거 · shadcn Sidebar
 import { SidebarTrigger } from "../ui/sidebar";
+// 2026-08-31 · 사용자 지시 · 모든 페이지 브레드크럼 (홈 › 그룹 › 페이지)
+import { Breadcrumb } from "../common/Breadcrumb";
+import { buildBreadcrumb } from "./sideNavGroups";
+import { useActiveSubTab } from "../../hooks/useActiveSubTab";
 // 2026-08-16 · 페이지 hidden · 공통헤더에서도 필터
 import { usePagePermissions } from "../../hooks/usePagePermissions";
 import { SIDE_NAV_GROUPS } from "./sideNavGroups";
@@ -530,15 +534,34 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   // 2026-08-31 · 사용자 리포트 · 사이드바 opener 안 보임 · header 좌측 · SidebarTrigger 재추가
   //   · 사용자가 SidebarRail (우측 경계선) 을 찾기 어려움 · 명시적 버튼 필요
   //   · 접힘·펼침 상태 모두 · shadcn 표준 · Cmd/Ctrl+B 단축키 유지
+  // 2026-08-31 · 사용자 지시 · 브레드크럼 · 모든 페이지 · 링크 이동 지원
+  const activeSubTab = useActiveSubTab(activePage);
+  const breadcrumbItems = useMemo(
+    () => buildBreadcrumb(activePage, activeSubTab).map(s => ({
+      label: s.label,
+      page: s.page,
+      subTab: s.subTab,
+    })),
+    [activePage, activeSubTab],
+  );
+  const handleBreadcrumbNav = (page: AppNavPage) => {
+    if (page === "landing" && onBack) onBack();
+    else onNavigate?.(page);
+  };
+
   if (SIDEBAR_ENABLED && !isMobileNav) {
     return (
-      <div className="flex items-center justify-between px-3 py-1 shrink-0 bg-white/60 backdrop-blur-sm border-b border-line/50">
-        <SidebarTrigger
-          className="h-8 w-8 rounded-md text-brand-deep/60 hover:text-brand-deep hover:bg-brand-tint transition cursor-pointer"
-          aria-label="사이드바 열기/접기"
-          title="사이드바 열기·접기 (Cmd/Ctrl+B)"
-        />
-        <div className="flex items-center gap-2">{rightSlot}</div>
+      <div className="flex items-center justify-between gap-3 px-3 py-1 shrink-0 bg-white/60 backdrop-blur-sm border-b border-line/50">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <SidebarTrigger
+            className="h-8 w-8 rounded-md text-brand-deep/60 hover:text-brand-deep hover:bg-brand-tint transition cursor-pointer shrink-0"
+            aria-label="사이드바 열기/접기"
+            title="사이드바 열기·접기 (Cmd/Ctrl+B)"
+          />
+          <span className="w-px h-4 bg-line/60 shrink-0" aria-hidden />
+          <Breadcrumb items={breadcrumbItems} onNavigate={handleBreadcrumbNav} className="min-w-0" />
+        </div>
+        <div className="flex items-center gap-2 shrink-0">{rightSlot}</div>
       </div>
     );
   }
@@ -642,6 +665,13 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           )}
         </div>
       </div>
+
+      {/* 2026-08-31 · 사용자 지시 · 브레드크럼 · 모든 페이지 · 링크 이동 · white strip */}
+      {breadcrumbItems.length > 0 && (
+        <div className="relative px-4 sm:px-6 py-1.5 bg-white/[0.96] backdrop-blur-sm border-t border-white/10">
+          <Breadcrumb items={breadcrumbItems} onNavigate={handleBreadcrumbNav} />
+        </div>
+      )}
 
       {/* ── Row 2 · Desktop/태블릿 nav tabs · 딥네이비 · Row 1 gradient 연장 ── */}
       <div className="relative hidden sm:block px-4 sm:px-5 md:px-6 pt-1 pb-2 border-t border-white/[0.06]">

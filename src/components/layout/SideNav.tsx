@@ -63,45 +63,9 @@ function writeGroupOpen(groupId: string, open: boolean): void {
   localStorage.setItem(`sidebar.groups.${groupId}`, String(open));
 }
 
-// ─── useActiveSubTab · 2026-08-31 · Phase 3 완성 · 서브탭 활성 표시 fix ──────
-//   · 현재 페이지의 활성 서브탭을 tracking · SideNav 하위 아이템 활성 판정용
-//   · 입력 · currentPage · 페이지 변경 시 다시 계산
-//   · 소스 · localStorage(subTabStorageKey) 초기값 + "sidebar:subtab" CustomEvent
-//   · 페이지 내부에서 · TabBar 클릭 시 · dispatchEvent("sidebar:subtab", { page, subTab }) 하면 자동 동기
-//   · 각 페이지가 이미 · 사이드바 클릭용 이벤트 리스너 등록됨 · SideNav 도 리스너 등록 · 양방향 동기
-function useActiveSubTab(currentPage: AppNavPage): string | null {
-  const [activeSubTab, setActiveSubTab] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      return localStorage.getItem(subTabStorageKey(currentPage));
-    } catch {
-      return null;
-    }
-  });
-
-  // 페이지 변경 시 · localStorage 재읽기 (각 페이지 mount 시 removeItem 하는 경우 있음 · 미리 캡처)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = localStorage.getItem(subTabStorageKey(currentPage));
-      setActiveSubTab(raw);
-    } catch { /* silent */ }
-  }, [currentPage]);
-
-  // 사이드바 or 페이지 내부의 subtab 변경 이벤트 리스너
-  useEffect(() => {
-    const onSubTab = (e: Event) => {
-      const detail = (e as CustomEvent<{ page: string; subTab: string; nested?: string | null }>).detail;
-      if (!detail) return;
-      if (detail.page !== currentPage) return;
-      setActiveSubTab(detail.subTab ?? null);
-    };
-    window.addEventListener("sidebar:subtab", onSubTab);
-    return () => window.removeEventListener("sidebar:subtab", onSubTab);
-  }, [currentPage]);
-
-  return activeSubTab;
-}
+// 2026-08-31 · useActiveSubTab · 공용 위치 이관 (src/hooks/useActiveSubTab.ts)
+//   · AppNavHeader Breadcrumb 등 다른 소비자와 공유
+import { useActiveSubTab } from "../../hooks/useActiveSubTab";
 
 // ─── CollapsibleGroup: 개별 그룹 접이식 트리 ────────────────────────────────
 interface CollapsibleGroupProps {
