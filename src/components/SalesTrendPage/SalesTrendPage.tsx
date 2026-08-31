@@ -61,6 +61,8 @@ export const SalesTrendPage: React.FC = () => {
       current_stock: p.current_stock ?? null,
       optimal_stock: p.optimal_stock ?? null,
       supplier: p.supplier ?? null,
+      // 2026-08-31 · #13 · location 우선 · real_map fallback
+      location: p.location ?? p.real_map ?? p.realMap ?? null,
       real_map: p.real_map ?? null,
       warehouse_stock: p.warehouse_stock ?? null,
       store_stock: p.store_stock ?? null,
@@ -118,7 +120,7 @@ export const SalesTrendPage: React.FC = () => {
   const [supplierSelectedProduct, setSupplierSelectedProduct] = useState<ProductInfo | null>(null);
   const loadSupplierSelectedProduct = useCallback(async (p: any) => {
     const code = String(p.product_code ?? p.code ?? "").trim();
-    const partial: ProductInfo = { code, name: String(p.product_name ?? p.name ?? ""), spec: String(p.spec ?? ""), current_stock: p.current_stock ?? null, optimal_stock: p.optimal_stock ?? null, supplier: p.supplier ?? null, real_map: p.real_map ?? null };
+    const partial: ProductInfo = { code, name: String(p.product_name ?? p.name ?? ""), spec: String(p.spec ?? ""), current_stock: p.current_stock ?? null, optimal_stock: p.optimal_stock ?? null, supplier: p.supplier ?? null, location: p.location ?? p.real_map ?? p.realMap ?? null, real_map: p.real_map ?? null };
     setSupplierSelectedProduct(partial);
     try {
       let full = lookupProduct(code);
