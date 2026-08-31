@@ -7,10 +7,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { api } from "../../lib/apiClient";
 import { SK_FLOW_CLASSFILTER } from "../../lib/storageKeys";
 import { useVendors } from "../../hooks/useVendors";
-import {
-  Boxes, EyeOff,
-  ChevronRight, ChevronDown, CheckSquare, Square, X as XIcon,
-} from "lucide-react";
+import { Boxes } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
@@ -21,16 +18,16 @@ import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
 import { EmptyState } from "../common/EmptyState";
-import { fmtWonCompact } from "../../lib/format";
+
 import { LoadingState } from "../common/LoadingState";
-import { CARD_BASE, TEXT } from "../../styles/tokens";
-import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
+import { CARD_BASE } from "../../styles/tokens";
+import { useColumnResize } from "../../hooks/useColumnResize";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
 
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · types + fmt + cache
 import type { StockFlowRow, SortKey, SortDir, FlowGroup } from "./FlowTab.types";
-import { fmt, GLOBAL_FLOW_CACHE, FLOW_CACHE_TTL } from "./FlowTab.types";
+import { GLOBAL_FLOW_CACHE, FLOW_CACHE_TTL } from "./FlowTab.types";
 // 2026-08-22 · Framework Phase 4 · row rendering 별도 파일 이관
 import { FlowRow } from "./FlowRow";
 import { resolveProductLocation } from "../../lib/productLocation";
@@ -38,8 +35,10 @@ import { resolveProductLocation } from "../../lib/productLocation";
 import { FlowFilterBar, HiddenManagerModal, SupplierDetailModalWrapper } from "./FlowTab.panels";
 // 2026-08-26 · 사용자 지시 · 적정재고 기준 일수 코멘트
 import { OptimalStockNoteBanner } from "../common/OptimalStockNoteBanner";
-
-const fmtWon = fmtWonCompact;
+// 2026-08-31 · large-file 분리 · thead + Σ 행 + 3-way 탭 별도 컴포넌트
+import { FlowTableHeader } from "./FlowTableHeader";
+import { FlowSummaryRow } from "./FlowSummaryRow";
+import { FlowClassFilterTabs } from "./FlowClassFilterTabs";
 
 // ─── FlowTab ─────────────────────────────────────────────────────────────────
 
@@ -507,34 +506,15 @@ export const FlowTab: React.FC = () => {
         >
           <section className={`${CARD_BASE} p-4 flex-1 min-h-0 flex flex-col overflow-hidden`}>
             <div className="flex-1 min-h-0 flex flex-col">
-              {/* 소제목 */}
-              <div className="flex items-center gap-2 mb-2 shrink-0">
-                <span className="inline-block w-1 h-3.5 rounded-full bg-sky-400 shrink-0" />
-                <span className="text-[15px] font-semibold text-zinc-500">재고 · 매입 · 판매 현황</span>
-                <span className="text-[15px] text-zinc-400 font-normal tabular-nums">{filteredFlow.length}건</span>
-                {selectedFlowCodes.size > 0 && (
-                  <span className="text-[15px] text-rose-600 font-semibold tabular-nums ml-1">· {selectedFlowCodes.size}개 선택됨</span>
-                )}
-              </div>
-
-              {/* 상비약/일반약/전체 3-way 필터 */}
-              <div className="flex items-center gap-1 border-b-2 border-line bg-white px-1 pt-1 shrink-0">
-                <button type="button" onClick={() => setClassFilter("stationery")}
-                  className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-zinc-400 hover:text-zinc-600"}`}>
-                  상비약 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({essentialCount})</span>
-                  {classFilter === "stationery" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-violet-500" />}
-                </button>
-                <button type="button" onClick={() => setClassFilter("general")}
-                  className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-zinc-400 hover:text-zinc-600"}`}>
-                  일반약 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({generalCount})</span>
-                  {classFilter === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-sky-500" />}
-                </button>
-                <button type="button" onClick={() => setClassFilter("all")}
-                  className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-zinc-800" : "text-zinc-400 hover:text-zinc-600"}`}>
-                  전체 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({allCount})</span>
-                  {classFilter === "all" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-zinc-500" />}
-                </button>
-              </div>
+              <FlowClassFilterTabs
+                classFilter={classFilter}
+                filteredCount={filteredFlow.length}
+                essentialCount={essentialCount}
+                generalCount={generalCount}
+                allCount={allCount}
+                selectedCount={selectedFlowCodes.size}
+                onSetFilter={setClassFilter}
+              />
 
               <div className="relative flex-1 overflow-auto max-h-[50vh]">
                 {loading && filteredFlow.length > 0 && (
@@ -560,186 +540,35 @@ export const FlowTab: React.FC = () => {
                 ) : (
                   <div className={`transition-opacity duration-200 ${loading ? "opacity-60" : "opacity-100"}`}>
                     <table className="w-full text-[15px] sm:text-sm" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
-                      <thead className="sticky top-0 bg-white z-20 shadow-sm">
-                        {selectedFlowCodes.size > 0 && (
-                          <tr className="bg-rose-50 border-b border-rose-200">
-                            <td colSpan={10} className="px-2 py-1.5">
-                              <div className="flex items-center gap-2 text-[15px]">
-                                <span className="font-bold text-rose-700">{selectedFlowCodes.size}개 선택됨</span>
-                                <button onClick={bulkHideFlow} disabled={flowBulkHiding}
-                                  className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold shadow-sm disabled:opacity-50">
-                                  {flowBulkHiding ? <Spinner size={11} tone="white" /> : <EyeOff size={11} />}
-                                  선택 숨김
-                                </button>
-                                <button onClick={() => setSelectedFlowCodes(new Set())}
-                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-zinc-100 hover:bg-zinc-200 text-zinc-600 font-bold">
-                                  <XIcon size={11} /> 해제
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                        {/* 2026-08-24 · 사용자 지시 · 카테고리 그룹 헤더 (재고현황·매입현황·판매현황) 제거 · 서브헤더만 표시 */}
-                        {/* 서브헤더 */}
-                        <tr className="border-b border-zinc-100 text-[15px] font-bold text-zinc-500 uppercase tracking-wider bg-white">
-                          {(() => {
-                            const arrowFor = (key: SortKey) => flowSort !== key ? "⇅" : flowDir === "desc" ? "▼" : "▲";
-                            return (
-                              <>
-                                <th className="relative text-center px-1 py-1.5" style={{ width: getWidth("sel"), minWidth: getWidth("sel") }}>
-                                  <div className="flex items-center justify-center gap-1.5">
-                                    <button onClick={() => {
-                                      if (selectedFlowCodes.size === filteredFlow.length) setSelectedFlowCodes(new Set());
-                                      else setSelectedFlowCodes(new Set(filteredFlow.map(r => String(r.product_code))));
-                                    }} className="text-zinc-400 hover:text-rose-500 transition inline-flex items-center justify-center" title="전체 선택/해제">
-                                      {selectedFlowCodes.size === filteredFlow.length && filteredFlow.length > 0
-                                        ? <CheckSquare size={13} className="text-rose-500" />
-                                        : <Square size={13} />}
-                                    </button>
-                                    <span className="text-[14px] font-bold text-zinc-500">#</span>
-                                  </div>
-                                  <span {...resizerProps("sel")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
-                                </th>
-                                <th onClick={() => toggleFlowSort("name")}
-                                  className={`relative text-left px-1 py-1.5 cursor-pointer select-none hover:bg-zinc-50 transition ${flowSort === "name" ? "text-zinc-800 font-bold" : "text-zinc-500"}`}
-                                  style={{ width: getWidth("name"), minWidth: getWidth("name") }}>
-                                  <span className="flex flex-col leading-tight items-start">
-                                    <span>상품명</span>
-                                    <span className="text-[14px] opacity-70">{arrowFor("name")}</span>
-                                  </span>
-                                  <span {...resizerProps("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                                </th>
-                                {/* 재고현황 그룹 */}
-                                {isFlowGroupCollapsed("stock") && <th className="bg-sky-50/20" />}
-                                {!isFlowGroupCollapsed("stock") && <>
-                                  <th onClick={() => toggleFlowSort("sale")}
-                                    className={`relative text-right px-0.5 py-1.5 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === "sale" ? "text-sky-800 font-bold" : "text-sky-600 font-bold"}`}
-                                    style={{ width: getWidth("stock_sale"), minWidth: getWidth("stock_sale") }}>
-                                    <span className="flex flex-col leading-tight items-end"><span>판매량</span><span className="text-[14px] opacity-70">{arrowFor("sale")}</span></span>
-                                    <span {...resizerProps("stock_sale")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                                  </th>
-                                  <th onClick={() => toggleFlowSort("current")}
-                                    className={`relative text-right px-0.5 py-1.5 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === "current" ? "text-sky-800 font-bold" : "text-sky-600 font-bold"}`}
-                                    style={{ width: getWidth("stock_cur"), minWidth: getWidth("stock_cur") }}>
-                                    <span className="flex flex-col leading-tight items-end"><span>현재고</span><span className="text-[14px] opacity-70">{arrowFor("current")}</span></span>
-                                    <span {...resizerProps("stock_cur")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                                  </th>
-                                  <th onClick={() => toggleFlowSort("optimal" as any)}
-                                    className={`relative text-right px-0.5 py-1.5 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition text-sky-600 font-bold`}
-                                    style={{ width: getWidth("stock_opt"), minWidth: getWidth("stock_opt") }}>
-                                    <span className="flex flex-col leading-tight items-end"><span>추천적정재고</span><span className="text-[14px] opacity-70">{arrowFor("optimal" as any)}</span></span>
-                                    <span {...resizerProps("stock_opt")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                                  </th>
-                                  <th className="relative text-right px-0.5 py-1.5 bg-sky-50/40 text-sky-600 font-bold"
-                                    style={{ width: getWidth("stock_month"), minWidth: getWidth("stock_month") }}>
-                                    <span className="flex flex-col leading-tight items-end"><span>최근30일</span><span className="text-[14px] opacity-70">판매</span></span>
-                                    <span {...resizerProps("stock_month")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
-                                  </th>
-                                </>}
-                                {/* 매입현황 그룹 */}
-                                {isFlowGroupCollapsed("purchase") && <th className="bg-amber-50/20" />}
-                                {!isFlowGroupCollapsed("purchase") && <>
-                                  <th onClick={() => toggleFlowSort("cycle")}
-                                    className={`relative text-right px-0.5 py-1.5 text-[15px] font-bold cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "cycle" ? "text-amber-800" : "text-amber-600"}`}
-                                    style={{ width: getWidth("pur_cycle"), minWidth: getWidth("pur_cycle") }}>
-                                    <span className="flex flex-col leading-tight items-end">
-                                      <span className="text-[14px] font-semibold text-amber-500">평균</span>
-                                      <span>매입주기</span>
-                                      <span className="text-[14px] opacity-70">{arrowFor("cycle")}</span>
-                                    </span>
-                                    <span {...resizerProps("pur_cycle")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                                  </th>
-                                  <th onClick={() => toggleFlowSort("last_purchase")}
-                                    className={`relative text-right px-0.5 py-1.5 text-[15px] font-bold cursor-pointer select-none bg-amber-50/40 hover:bg-amber-100 transition ${flowSort === "last_purchase" ? "text-amber-800" : "text-amber-600"}`}
-                                    style={{ width: getWidth("pur_last"), minWidth: getWidth("pur_last") }}>
-                                    <span className="flex flex-col leading-tight items-end">
-                                      <span className="text-[14px] font-semibold text-amber-500">최근</span>
-                                      <span>매입일</span>
-                                      <span className="text-[14px] opacity-70">{arrowFor("last_purchase")}</span>
-                                    </span>
-                                    <span {...resizerProps("pur_last")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                                  </th>
-                                  <th onClick={() => toggleFlowSort("purchase")}
-                                    className={`relative text-right px-0.5 py-1.5 text-[15px] font-bold cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "purchase" ? "text-amber-800" : "text-amber-600"}`}
-                                    style={{ width: getWidth("pur_qty"), minWidth: getWidth("pur_qty") }}>
-                                    <span className="flex flex-col leading-tight items-end">
-                                      <span className="text-[14px] font-semibold text-amber-500">최근</span>
-                                      <span>매입량</span>
-                                      <span className="text-[14px] opacity-70">{arrowFor("purchase")}</span>
-                                    </span>
-                                    <span {...resizerProps("pur_qty")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                                  </th>
-                                </>}
-                                {/* 판매현황 그룹 */}
-                                {isFlowGroupCollapsed("sales") && <th className="bg-rose-50/20" />}
-                                {!isFlowGroupCollapsed("sales") && <>
-                                  <th onClick={() => toggleFlowSort("sale")}
-                                    className={`relative text-right px-0.5 py-1.5 text-[15px] font-bold cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale" ? "text-rose-800" : "text-rose-700"}`}
-                                    style={{ width: getWidth("sal_qty"), minWidth: getWidth("sal_qty") }}>
-                                    <span className="flex flex-col leading-tight items-end"><span>판매량</span><span className="text-[14px] opacity-70">{arrowFor("sale")}</span></span>
-                                    <span {...resizerProps("sal_qty")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                                  </th>
-                                  <th onClick={() => toggleFlowSort("amount")}
-                                    className={`relative text-right px-0.5 py-1.5 text-[15px] font-bold cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "amount" ? "text-rose-800" : "text-rose-700"}`}
-                                    style={{ width: getWidth("sal_amount"), minWidth: getWidth("sal_amount") }}>
-                                    <span className="flex flex-col leading-tight items-end"><span>판매금액</span><span className="text-[14px] opacity-70">{arrowFor("amount")}</span></span>
-                                    <span {...resizerProps("sal_amount")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                                  </th>
-                                  <th onClick={() => toggleFlowSort("last_purchase_price")}
-                                    className={`relative text-right px-0.5 py-1.5 text-[15px] font-bold cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "last_purchase_price" ? "text-rose-800" : "text-rose-600"}`}
-                                    style={{ width: getWidth("sal_unit"), minWidth: getWidth("sal_unit") }}>
-                                    <span className="flex flex-col leading-tight items-end">
-                                      <span className="font-semibold text-rose-500">ERP</span>
-                                      <span>단가</span>
-                                      <span className="text-[14px] opacity-70">{arrowFor("last_purchase_price")}</span>
-                                    </span>
-                                    <span {...resizerProps("sal_unit")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                                  </th>
-                                  <th onClick={() => toggleFlowSort("sale_price")}
-                                    className={`relative text-right px-0.5 py-1.5 text-[15px] font-bold cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale_price" ? "text-rose-800" : "text-rose-600"}`}
-                                    style={{ width: getWidth("sal_price"), minWidth: getWidth("sal_price") }}>
-                                    <span className="flex flex-col leading-tight items-end"><span>판매가</span><span className="text-[14px] opacity-70">{arrowFor("sale_price")}</span></span>
-                                    <span {...resizerProps("sal_price")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                                  </th>
-                                  <th onClick={() => toggleFlowSort("profit_rate")}
-                                    className={`relative text-right px-0.5 py-1.5 text-[15px] font-bold cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "profit_rate" ? "text-rose-800" : "text-rose-600"}`}
-                                    style={{ width: getWidth("sal_profit"), minWidth: getWidth("sal_profit") }}>
-                                    <span className="flex flex-col leading-tight items-end"><span>이익률</span><span className="text-[14px] opacity-70">{arrowFor("profit_rate")}</span></span>
-                                    <span {...resizerProps("sal_profit")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                                  </th>
-                                </>}
-                              </>
-                            );
-                          })()}
-                        </tr>
-                      </thead>
+                      <FlowTableHeader
+                        flowSort={flowSort}
+                        flowDir={flowDir}
+                        toggleFlowSort={toggleFlowSort}
+                        isFlowGroupCollapsed={isFlowGroupCollapsed}
+                        selectedFlowCodes={selectedFlowCodes}
+                        filteredFlowLength={filteredFlow.length}
+                        flowBulkHiding={flowBulkHiding}
+                        onSelectAll={() => {
+                          if (selectedFlowCodes.size === filteredFlow.length) setSelectedFlowCodes(new Set());
+                          else setSelectedFlowCodes(new Set(filteredFlow.map(r => String(r.product_code))));
+                        }}
+                        onBulkHide={bulkHideFlow}
+                        onClearSelection={() => setSelectedFlowCodes(new Set())}
+                        getWidth={getWidth}
+                        resizerProps={resizerProps}
+                      />
                       <tbody className="divide-y divide-zinc-50">
                         {/* 합계 요약 행 · 필터/정렬된 visible rows 기준 */}
-                        <tr className="bg-zinc-100 border-b-2 border-zinc-300 font-bold text-zinc-800 text-[14px]">
-                          <td className="text-center px-1 py-1.5 align-middle" style={{ width: 48, minWidth: 48, maxWidth: 48 }}>Σ</td>
-                          <td className="px-2 py-1.5 align-middle text-zinc-800 font-bold">합계 <span className="text-zinc-500 font-bold">({filteredFlow.length}건)</span></td>
-                          {!isFlowGroupCollapsed("stock") && <>
-                            <td className="text-right px-1.5 py-1.5 tabular-nums font-bold text-zinc-800 bg-sky-100/60">{flowTotals.saleV.toLocaleString()}</td>
-                            <td className="text-right px-1.5 py-1.5 tabular-nums font-bold text-zinc-800 bg-sky-100/60">{flowTotals.curV.toLocaleString()}</td>
-                            <td className="text-right px-1.5 py-1.5 tabular-nums font-bold text-zinc-800 bg-sky-100/60">{flowTotals.optV.toLocaleString()}</td>
-                            <td className="text-right px-1.5 py-1.5 tabular-nums font-bold text-sky-700 bg-sky-100/60">{flowTotals.monthV.toLocaleString()}</td>
-                          </>}
-                          {isFlowGroupCollapsed("stock") && <td className="bg-zinc-100" />}
-                          {!isFlowGroupCollapsed("purchase") && <>
-                            <td className="text-right px-1.5 py-1.5 tabular-nums text-zinc-400">-</td>
-                            <td className="text-right px-1.5 py-1.5 tabular-nums text-zinc-400">-</td>
-                            <td className="text-right px-1.5 py-1.5 tabular-nums font-bold text-zinc-800 bg-amber-100/60">{flowTotals.purchV > 0 ? flowTotals.purchV.toLocaleString() : "-"}</td>
-                          </>}
-                          {isFlowGroupCollapsed("purchase") && <td className="bg-zinc-100" />}
-                          {!isFlowGroupCollapsed("sales") && <>
-                            <td className="text-right px-1.5 py-1.5 tabular-nums font-bold text-rose-700 bg-rose-100/60">{flowTotals.saleV > 0 ? flowTotals.saleV.toLocaleString() : "-"}</td>
-                            <td className="text-right px-1.5 py-1.5 tabular-nums font-bold text-rose-700 bg-rose-100/60">{flowTotals.amountV > 0 ? fmtWon(flowTotals.amountV) : "-"}</td>
-                            <td className="text-right px-1.5 py-1.5 tabular-nums text-zinc-400">평균</td>
-                            <td className="text-right px-1.5 py-1.5 tabular-nums text-zinc-400">평균</td>
-                            <td className="text-right px-1.5 py-1.5 tabular-nums text-zinc-400">-</td>
-                          </>}
-                          {isFlowGroupCollapsed("sales") && <td className="bg-zinc-100" />}
-                        </tr>
+                        <FlowSummaryRow
+                          filteredFlowLength={filteredFlow.length}
+                          isFlowGroupCollapsed={isFlowGroupCollapsed}
+                          saleV={flowTotals.saleV}
+                          curV={flowTotals.curV}
+                          optV={flowTotals.optV}
+                          monthV={flowTotals.monthV}
+                          purchV={flowTotals.purchV}
+                          amountV={flowTotals.amountV}
+                        />
                         {/* 2026-08-22 · Framework Phase 4 · FlowRow 별도 컴포넌트 이관 */}
                         {filteredFlow.map((p, i) => (
                           <FlowRow
