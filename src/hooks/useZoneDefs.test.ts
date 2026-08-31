@@ -1,5 +1,7 @@
+// @vitest-environment jsdom
 // 2026-08-19 · useZoneDefs · findZone · groupZonesBySection (순수 유틸)
-import { describe, it, expect } from "vitest";
+// 2026-08-31 · #63 · zone-defs-updated 이벤트 · source 스킵 제거 검증
+import { describe, it, expect, vi } from "vitest";
 import { findZone, groupZonesBySection } from "./useZoneDefs";
 import type { ZoneDef } from "../constants/displayZones";
 
@@ -47,5 +49,24 @@ describe("groupZonesBySection", () => {
     expect(g.wing.length).toBe(1);
     expect(g.left_wall).toEqual([]);
     expect(g.event).toEqual([]);
+  });
+});
+
+// 2026-08-31 · #63 · zone-defs-updated 이벤트 dispatch/listen 검증
+//   · source 스킵 제거 · 모든 리스너가 event 수신 시 refetch 트리거
+describe("zone-defs-updated 이벤트", () => {
+  it("dispatchEvent · 모든 리스너 호출 (source 무관)", () => {
+    const listener1 = vi.fn();
+    const listener2 = vi.fn();
+    window.addEventListener("zone-defs-updated", listener1);
+    window.addEventListener("zone-defs-updated", listener2);
+    // 다양한 source · 자기 자신 포함
+    window.dispatchEvent(new CustomEvent("zone-defs-updated", { detail: { source: "instance-A" } }));
+    window.dispatchEvent(new CustomEvent("zone-defs-updated", { detail: { source: "instance-B" } }));
+    window.dispatchEvent(new CustomEvent("zone-defs-updated", { detail: { id: 1, source: "instance-A" } }));
+    expect(listener1).toHaveBeenCalledTimes(3);
+    expect(listener2).toHaveBeenCalledTimes(3);
+    window.removeEventListener("zone-defs-updated", listener1);
+    window.removeEventListener("zone-defs-updated", listener2);
   });
 });

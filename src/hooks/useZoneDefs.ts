@@ -257,11 +257,14 @@ export function useZoneDefs(): {
 
   // 2026-08-30 · 사용자 지시 · 저장 즉시 좌측 매장구역도 반영
   //   · 다른 useZoneDefs 인스턴스가 편집 성공 시 broadcast → 이 인스턴스 refetch
-  //   · 자기 자신은 이미 setZonesRaw 로 로컬 갱신 · source 로 스킵
+  // 2026-08-31 · #63 · 사용자 리포트 · "매장구역편집 저장 → 매장구역도 자동 업데이트 X"
+  //   · 이전: source 스킵 로직 · 자기 자신은 refetch 안 함 (setZonesRaw 로 로컬 갱신 됨)
+  //   · 문제: 부모 (DisplayPage) 훅 인스턴스가 자식 (ZoneEditPanel) 이 dispatch 한 이벤트를 받아도
+  //           탭 전환 (zoneEdit → map) 시점에 이미 zonesRaw 는 갱신 되어 있어야 하는데 · 미갱신 리포트
+  //   · 수정: source 스킵 제거 · 모든 인스턴스 항상 refetch · 안전성 우선 (미미한 중복 fetch 감내)
+  //           자기 자신도 refetch → server round-trip 으로 DB 반영값 재확인 · 일관성 보장
   useEffect(() => {
-    const onUpdate = (e: Event) => {
-      const src = (e as CustomEvent).detail?.source;
-      if (src === instanceIdRef.current) return; // 자기 자신 스킵
+    const onUpdate = () => {
       setReloadTick(t => t + 1);
     };
     window.addEventListener("zone-defs-updated", onUpdate as EventListener);
