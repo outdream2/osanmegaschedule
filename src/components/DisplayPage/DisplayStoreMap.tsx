@@ -205,8 +205,10 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
                   //   · zonesRaw 에서 id 로 찾아서 · raw.zone 사용
                   const rawB = zonesRaw.find(r => r.id === (zd as any)?.__rowIdB);
                   const rawA = zonesRaw.find(r => r.id === (zd as any)?.__rowIdA);
-                  const zoneLabelB = rawB?.zone ?? `진열대 ${num}B`;
-                  const zoneLabelA = rawA?.zone ?? `진열대 ${num}A`;
+                  // 2026-09-01 · P0 fix · rawB/A.zone (대분류 "중앙상비약존") → location ("1B"/"1A")
+                  //   이전 · zone_defs 스키마 변경 후 "진열대 1A" 대신 "중앙상비약존" 표시되는 회귀
+                  const zoneLabelB = rawB?.location ?? `${num}B`;
+                  const zoneLabelA = rawA?.location ?? `${num}A`;
                   return (
                     <div key={`pair-${num}`} className="flex flex-row gap-0.5 items-stretch basis-[calc(50%-6px)] sm:basis-[calc(25%-6px)] lg:basis-0 lg:flex-[2_2_0%] lg:min-w-[60px]">
                       {/* B side · 좌 · 통합 셀 (카테고리 + 담당자) */}

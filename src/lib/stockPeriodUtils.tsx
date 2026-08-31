@@ -246,23 +246,26 @@ export const MultiLineChart = React.memo(MultiLineChartInner);
 
 // ─── 기간 목록 생성 ─────────────────────────────────────────────────────────
 function generatePeriods(rangeDays: number): Array<{ start: string; end: string; period_type: "early" | "mid" | "late" }> {
+  // 2026-09-01 · P0 fix · UTC 기준 통일 · 로컬 시간 사용 시 시간대 경계 (새벽 UTC+9) 에서 매칭 실패
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10);
   const cutoff = new Date(today);
-  cutoff.setDate(cutoff.getDate() - rangeDays);
+  cutoff.setUTCDate(cutoff.getUTCDate() - rangeDays);
   const cutoffStr = cutoff.toISOString().slice(0, 10);
 
   const periods: Array<{ start: string; end: string; period_type: "early" | "mid" | "late" }> = [];
-  let year = cutoff.getFullYear();
-  let month = cutoff.getMonth() + 1;
+  let year = cutoff.getUTCFullYear();
+  let month = cutoff.getUTCMonth() + 1;
+  const todayYear = today.getUTCFullYear();
+  const todayMonth = today.getUTCMonth() + 1;
 
   while (true) {
     const mm = String(month).padStart(2, "0");
-    const lastDay = new Date(year, month, 0).getDate();
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
     periods.push({ start: `${year}-${mm}-01`, end: `${year}-${mm}-10`, period_type: "early" });
     periods.push({ start: `${year}-${mm}-11`, end: `${year}-${mm}-20`, period_type: "mid" });
     periods.push({ start: `${year}-${mm}-21`, end: `${year}-${mm}-${String(lastDay).padStart(2, "0")}`, period_type: "late" });
-    if (year === today.getFullYear() && month === today.getMonth() + 1) break;
+    if (year === todayYear && month === todayMonth) break;
     month += 1;
     if (month > 12) { month = 1; year += 1; }
   }
