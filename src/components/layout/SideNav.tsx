@@ -211,15 +211,26 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
 
             return (
               <SidebarMenuItem key={`${item.key}-${item.subTab ?? "_"}-${itemIdx}`} className="relative">
-                {/* 2026-08-18 v5 · 활성 stripe · 두께 4px + 강력한 glow */}
+                {/* 2026-08-31 · 사용자 지시 · 선택 표시 강화 · Linear/Vercel/Attio 2026 톤
+                   · 좌측 accent bar · 5px · glow 3-layer · 확대 (h 95%)
+                   · 우측 accent dot · 항상 표시 · 위치 명확화 */}
                 {active && (
-                  <span
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[4px] h-[85%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
-                    style={{
-                      background: NAV_ACCENT[item.color].hex,
-                      boxShadow: `0 0 12px ${NAV_ACCENT[item.color].hex}, 0 0 24px ${NAV_ACCENT[item.color].hex}80`,
-                    }}
-                  />
+                  <>
+                    <span
+                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[5px] h-[95%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
+                      style={{
+                        background: NAV_ACCENT[item.color].hex,
+                        boxShadow: `0 0 8px ${NAV_ACCENT[item.color].hex}, 0 0 16px ${NAV_ACCENT[item.color].hex}CC, 0 0 32px ${NAV_ACCENT[item.color].hex}66`,
+                      }}
+                    />
+                    <span
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
+                      style={{
+                        background: NAV_ACCENT[item.color].hex,
+                        boxShadow: `0 0 6px ${NAV_ACCENT[item.color].hex}`,
+                      }}
+                    />
+                  </>
                 )}
 
                 <SidebarMenuButton
@@ -230,34 +241,35 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   aria-label={item.label}
                   className={[
                     "group-data-[collapsible=icon]:pl-2 pl-4",
-                    "h-7 rounded-lg",
+                    "h-8 rounded-lg",
                     "text-[18px]",
-                    // 2026-08-18 v5 · 심플 배경 (gradient 제거 · 사용자 피드백)
+                    // 2026-08-31 · 강한 대비 · bg 강도 up (10% → 22%) · text 강도 up · font-extrabold
                     active
                       ? [
-                          "bg-white/[0.10]",
-                          tone.activeText, // text-white
-                          "font-bold",
-                          "shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]",
+                          "bg-white/[0.22]",
+                          "text-white",
+                          "font-extrabold tracking-tight",
+                          "shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(0,0,0,0.10)]",
+                          "ring-1 ring-white/15",
                         ].join(" ")
                       : [
                           "font-semibold text-[#C4DAEE]/85",
-                          "hover:bg-white/[0.06] hover:text-white",
+                          "hover:bg-white/[0.08] hover:text-white",
                           "hover:translate-x-px",
                         ].join(" "),
                     "transition-all duration-200 ease-out",
                   ].join(" ")}
                 >
-                  {/* 2026-08-18 v5 · 하위 아이콘 · 항상 그룹 accent color (액센트 유지) */}
+                  {/* 아이콘 · 활성 시 · scale 125 + 강한 glow */}
                   <Icon
-                    size={15}
+                    size={16}
                     weight={active ? "fill" : "duotone"}
                     className={[
                       "shrink-0 transition-all duration-200 ease-out",
-                      NAV_ACCENT[item.color].iconText,   // 항상 그룹 accent color
-                      active ? "scale-110" : "opacity-70 group-hover:opacity-100 group-hover:scale-[1.05]",
+                      NAV_ACCENT[item.color].iconText,
+                      active ? "scale-125" : "opacity-70 group-hover:opacity-100 group-hover:scale-[1.05]",
                     ].join(" ")}
-                    style={active ? { filter: `drop-shadow(0 0 6px ${NAV_ACCENT[item.color].hex}90) drop-shadow(0 0 14px ${NAV_ACCENT[item.color].hex}40)` } : undefined}
+                    style={active ? { filter: `drop-shadow(0 0 8px ${NAV_ACCENT[item.color].hex}) drop-shadow(0 0 16px ${NAV_ACCENT[item.color].hex}80)` } : undefined}
                   />
                   <span>{item.label}</span>
                 </SidebarMenuButton>
@@ -279,10 +291,28 @@ interface SingleItemGroupProps {
 const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, onNavigate }) => {
   const item = group.items[0];
   const active = isItemActive(item, activePage);
-  // 2026-08-17 · deep teal · DARK_COLOR_TONES
-  const tone = DARK_COLOR_TONES[group.color];
   const Icon = item.icon;
   return (
+    <div className="relative">
+      {/* 2026-08-31 · 사용자 지시 · SingleItemGroup 활성 표시 강화 (SubItem 과 통일) */}
+      {active && (
+        <>
+          <span
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-[5px] h-[85%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
+            style={{
+              background: NAV_ACCENT[group.color].hex,
+              boxShadow: `0 0 8px ${NAV_ACCENT[group.color].hex}, 0 0 16px ${NAV_ACCENT[group.color].hex}CC, 0 0 32px ${NAV_ACCENT[group.color].hex}66`,
+            }}
+          />
+          <span
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
+            style={{
+              background: NAV_ACCENT[group.color].hex,
+              boxShadow: `0 0 6px ${NAV_ACCENT[group.color].hex}`,
+            }}
+          />
+        </>
+      )}
     <button
       type="button"
       onClick={() => onNavigate(item.key)}
@@ -295,35 +325,37 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
         "text-[19px] leading-none",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
-        // 2026-08-18 v5 · 심플 배경 (gradient 제거)
+        // 2026-08-31 · 강한 대비 · SubItem 과 동일 톤
         active
           ? [
-              "bg-white/[0.10]",
-              tone.activeText, // text-white
-              "font-bold",
-              "shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]",
+              "bg-white/[0.22]",
+              "text-white",
+              "font-extrabold tracking-tight",
+              "shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(0,0,0,0.10)]",
+              "ring-1 ring-white/15",
             ].join(" ")
           : [
               "text-[#C4DAEE]",
-              "hover:bg-white/[0.06] hover:text-white hover:translate-x-[1px]",
+              "hover:bg-white/[0.08] hover:text-white hover:translate-x-[1px]",
               "font-semibold",
             ].join(" "),
         "group-data-[collapsible=icon]:justify-center",
       ].join(" ")}
     >
-      {/* 2026-08-18 v5 · 아이콘 · 항상 그룹 accent color (액센트 유지) */}
+      {/* 아이콘 · 활성 시 · scale 125 + 강한 glow · SubItem 과 통일 */}
       <Icon
         size={18}
         weight={active ? "fill" : "duotone"}
         className={[
           "shrink-0 transition-all duration-200 ease-out",
-          NAV_ACCENT[group.color].iconText,   // 항상 그룹 accent color
-          active ? "scale-110" : "opacity-80 group-hover:opacity-100 group-hover:scale-[1.05]",
+          NAV_ACCENT[group.color].iconText,
+          active ? "scale-125" : "opacity-80 group-hover:opacity-100 group-hover:scale-[1.05]",
         ].join(" ")}
         style={active ? { filter: `drop-shadow(0 0 6px ${NAV_ACCENT[group.color].hex}90) drop-shadow(0 0 14px ${NAV_ACCENT[group.color].hex}40)` } : undefined}
       />
       <span className="group-data-[collapsible=icon]:hidden tracking-wide">{group.label}</span>
     </button>
+    </div>
   );
 };
 
