@@ -1,6 +1,6 @@
 # 서버 프레임워크 감사 (Phase 1)
 
-- 생성 · 2026-08-30 04:27:02
+- 생성 · 2026-08-31 00:41:08
 - 스캔 파일 · 41개
 - 총 라우트 · 246개
 - 위반 · 115건 (high 20)
@@ -53,9 +53,9 @@
 - 🟡 L354 · **no-validate-body** · POST /api/zone-day/copy-month · validateBody() 미적용 · Zod 검증 없음
 
 ### server/routes/display/zoneDefs.ts (3건)
-- 🟡 L69 · **no-validate-body** · PATCH /api/zone-defs/:id · validateBody() 미적용 · Zod 검증 없음
-- 🟡 L94 · **no-validate-body** · PUT /api/zone-defs · validateBody() 미적용 · Zod 검증 없음
-- 🟡 L114 · **no-validate-body** · POST /api/zone-defs · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L74 · **no-validate-body** · PATCH /api/zone-defs/:id · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L102 · **no-validate-body** · PUT /api/zone-defs · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L122 · **no-validate-body** · POST /api/zone-defs · validateBody() 미적용 · Zod 검증 없음
 
 ### server/routes/display/zoneLabels.ts (2건)
 - 🟡 L47 · **no-validate-body** · PUT /api/zone-labels · validateBody() 미적용 · Zod 검증 없음
@@ -107,8 +107,8 @@
 - 🟡 L51 · **no-validate-body** · PUT /api/supplier-balance-configs · validateBody() 미적용 · Zod 검증 없음
 
 ### server/routes/purchase/supplierPayments.ts (2건)
-- 🟡 L216 · **no-validate-body** · POST /api/supplier-payments · validateBody() 미적용 · Zod 검증 없음
-- 🟡 L322 · **no-validate-body** · PATCH /api/supplier-payments/:id · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L205 · **no-validate-body** · POST /api/supplier-payments · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L295 · **no-validate-body** · PATCH /api/supplier-payments/:id · validateBody() 미적용 · Zod 검증 없음
 
 ### server/routes/purchase/vendors.ts (8건)
 - 🔴 L19 · **no-authorize** · POST /api/upload-vendors · authorize() 미적용 · 권한 우회 가능
@@ -161,12 +161,12 @@
 - 🟡 L202 · **no-validate-body** · POST /api/loss-tracking/snapshot · validateBody() 미적용 · Zod 검증 없음
 
 ### server/routes/stock/products.ts (6건)
-- 🟡 L272 · **no-validate-body** · POST /api/upload-products · validateBody() 미적용 · Zod 검증 없음
-- 🟡 L444 · **no-validate-body** · POST /api/products/sync-real-map-to-spec · validateBody() 미적용 · Zod 검증 없음
-- 🟡 L592 · **no-validate-body** · PATCH /api/products/:code/realmap · validateBody() 미적용 · Zod 검증 없음
-- 🟡 L634 · **no-validate-body** · POST /api/products/refill-optimal-stock · validateBody() 미적용 · Zod 검증 없음
-- 🟡 L671 · **no-validate-body** · PATCH /api/products/:code · validateBody() 미적용 · Zod 검증 없음
-- 🟡 L724 · **no-validate-body** · POST /api/products · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L279 · **no-validate-body** · POST /api/upload-products · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L451 · **no-validate-body** · POST /api/products/sync-real-map-to-spec · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L599 · **no-validate-body** · PATCH /api/products/:code/realmap · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L641 · **no-validate-body** · POST /api/products/refill-optimal-stock · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L678 · **no-validate-body** · PATCH /api/products/:code · validateBody() 미적용 · Zod 검증 없음
+- 🟡 L731 · **no-validate-body** · POST /api/products · validateBody() 미적용 · Zod 검증 없음
 
 ### server/routes/stock/stockArrivals.ts (5건)
 - 🟡 L93 · **no-validate-body** · POST /api/stock-arrivals · validateBody() 미적용 · Zod 검증 없음

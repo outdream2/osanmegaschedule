@@ -24,7 +24,8 @@ import {
 } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { FilterBar } from "../common/FilterBar";
-import { AccentBar } from "../common/AccentBar";
+// 2026-08-31 · #48 · AccentBar 미사용 (Card topAccent 로 대체)
+// import { AccentBar } from "../common/AccentBar";
 import { IconTile } from "../common/IconTile";
 import { StatusPill, type PillTone } from "../common/StatusPill";
 import { Card } from "../common/Card";
@@ -228,17 +229,18 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
       <main className="flex-1 max-w-[1200px] mx-auto w-full px-3 sm:px-5 py-5 flex flex-col gap-4">
 
-        {/* ── 헤더 영역 · 2026-08-17 · 세련 · accent bar + gradient icon card ── */}
+        {/* 2026-08-31 · #48 · UI_MOCKUP_HR_FORMS_2026-08-27 톤 · Card topAccent + 그라디언트 아이콘 · 목업 통일 */}
+        <Card padding="none" rounded="xl" topAccent className="px-5 py-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <AccentBar size="hero" className="shrink-0" />
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-tint to-white border border-brand/15 text-brand-deep flex items-center justify-center shadow-[0_1px_2px_rgba(10,46,74,0.04),0_2px_8px_rgba(10,46,74,0.06)]">
-              <FileText size={20} />
+          <div className="flex items-center gap-3.5">
+            {/* 목업 · gradient icon card · brand-deep → brand · shadow */}
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-deep to-[#3E7CB1] text-white flex items-center justify-center shadow-md shrink-0">
+              <FileText size={22} />
             </div>
             <div>
-              <h1 className="text-[20px] sm:text-[24px] font-extrabold text-ink tracking-tight leading-tight">각종 양식</h1>
-              <p className="text-[15px] text-ink-soft font-medium mt-1">
-                근로계약서 · 사직서 · 서약서 · 위임장 · 급여 · 기타 인사 양식 · 업로드 · 다운로드 · 삭제
+              <h1 className="text-[22px] sm:text-[26px] font-extrabold text-ink tracking-tight leading-tight">각종 양식</h1>
+              <p className="text-[16px] text-ink-soft font-medium mt-1">
+                근로계약서 · 사직서 · 서약서 · 위임장 · 급여 · 기타 인사 양식
               </p>
             </div>
           </div>
@@ -273,6 +275,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
             )}
           </div>
         </div>
+        </Card>
 
         {/* ── 업로드 폼 ──────────────────────────────────────────────────── */}
         {showUploadForm && isManager && (
