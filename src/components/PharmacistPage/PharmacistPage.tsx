@@ -10,7 +10,8 @@ import { Settings2, Plus, Eye, FileText as FileTextIcon, ChevronRight, ChevronDo
 import { Spinner } from "../common/Spinner";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
-import { AccentBar } from "../common/AccentBar";
+// 2026-08-31 · AccentBar 제거 · Card topAccent 사용
+// import { AccentBar } from "../common/AccentBar";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
 import { SplitPanel } from "../common/SplitPanel";
 import { StatusPill } from "../common/StatusPill";
@@ -286,16 +287,16 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
         />
       </div>
 
-      <main className="flex-1 max-w-[1360px] mx-auto w-full px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3">
-        {/* 정보 헤더 · 2026-08-17 · 세련 · accent bar + gradient icon card + 폰트 +2 */}
-        <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_16px_rgba(10,46,74,0.06)] px-4 py-3.5 flex items-center gap-3">
-          <AccentBar size="hero" className="shrink-0" />
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-gradient-to-br from-brand-deep to-[#1E5C8E] shadow-[0_2px_8px_rgba(10,46,74,0.25)] ring-1 ring-brand/10 shrink-0">
-            <FirstAid size={20} className="text-white" weight="fill" />
+      {/* 2026-08-31 · 사용자 지시 · 화면 85% · SplitPanel 통일 · 목업 톤 */}
+      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3">
+        {/* 2026-08-31 · #58 · UI_MOCKUP_2026-08-21 톤 · Card topAccent + 그라디언트 아이콘 · 목업 통일 */}
+        <Card padding="none" rounded="xl" topAccent className="px-5 py-4 flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-deep to-[#3E7CB1] text-white flex items-center justify-center shadow-md shrink-0">
+            <FirstAid size={22} weight="fill" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-[20px] sm:text-[24px] font-extrabold text-ink tracking-tight leading-tight">약사 전용</h1>
-            <p className="text-[15px] text-ink-soft mt-1 truncate">복약 · 처방 · 상담 · 학술 자료 관리 · <b className="text-emerald-700">약사 전용 (lv 3+)</b> · PDF 인라인 · 워터마크 보안</p>
+            <h1 className="text-[22px] sm:text-[26px] font-extrabold text-ink tracking-tight leading-tight">약사 전용</h1>
+            <p className="text-[16px] text-ink-soft mt-1 truncate">복약 · 처방 · 상담 · 학술 자료 · <b className="text-emerald-700">약사 (lv 3+)</b> · PDF 워터마크 보안</p>
           </div>
           <div className="flex-1" />
           <div className="hidden sm:flex items-center gap-1.5 text-[13px] font-semibold">
@@ -321,7 +322,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
               하위메뉴 설정
             </button>
           )}
-        </div>
+        </Card>
 
         {/* Level-2 TabBar · admin 만 드래그 재정렬 */}
         <TabBar<PharmTabKey>
