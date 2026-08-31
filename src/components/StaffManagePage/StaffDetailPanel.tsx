@@ -165,19 +165,19 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
             </div>
           )}
 
-          {/* 이름 · 배지 */}
+          {/* 이름 · 배지 · 2026-08-31 · HR 목업 톤 · 폰트 강화 · 배치 개선 */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-baseline gap-2 mb-1">
+            <div className="flex items-baseline gap-2 mb-1.5">
               {editing ? (
                 <input
                   value={draft?.name ?? ""}
                   onChange={(e) => setField("name", e.target.value)}
-                  className="text-base font-bold text-zinc-800 border-b-2 border-indigo-400 bg-transparent focus:outline-none leading-tight"
+                  className="text-[22px] font-extrabold text-ink border-b-2 border-brand-deep bg-transparent focus:outline-none leading-tight tracking-tight"
                 />
               ) : (
-                <h3 className="text-base font-bold text-zinc-800 leading-tight">{displayEmp.name}</h3>
+                <h3 className="text-[22px] font-extrabold text-ink leading-tight tracking-tight">{displayEmp.name}</h3>
               )}
-              <span className="text-[14px] text-zinc-300">#{displayEmp.id}</span>
+              <span className="text-[13px] font-bold text-zinc-400 tabular-nums">#{displayEmp.id}</span>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
               {/* 직군 */}
@@ -185,13 +185,13 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
                 <select
                   value={draft?.position ?? ""}
                   onChange={(e) => setField("position", e.target.value)}
-                  className="text-[15px] border border-zinc-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-brand-deep"
+                  className="text-[16px] font-semibold border border-zinc-300 rounded-md px-2.5 h-7 bg-white focus:outline-none focus:border-brand-deep"
                 >
                   <option value="">직군 없음</option>
                   {POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
               ) : (
-                <Badge className={positionColor(displayEmp.position)} size="sm">
+                <Badge className={positionColor(displayEmp.position)} size="md">
                   {(displayEmp.position === "창고" || displayEmp.position === "매장")
                     ? `물류 · ${displayEmp.position}`
                     : (displayEmp.position || "직군 없음")}
@@ -202,14 +202,14 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
                 <select
                   value={draft?.rank ?? ""}
                   onChange={(e) => setField("rank", e.target.value)}
-                  className="text-[15px] border border-zinc-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-brand-deep"
+                  className="text-[16px] font-semibold border border-zinc-300 rounded-md px-2.5 h-7 bg-white focus:outline-none focus:border-brand-deep"
                   title="직급 (시스템설정 · 직급 탭에서 편집)"
                 >
                   <option value="">직급 없음</option>
                   {ranks.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               ) : displayEmp.rank ? (
-                <Badge tone="zinc" size="sm" title="직급">{displayEmp.rank}</Badge>
+                <Badge tone="zinc" size="md" title="직급">{displayEmp.rank}</Badge>
               ) : null}
               {/* 계약유형 · 자동 배지 (#219) */}
               {(() => {
@@ -229,7 +229,7 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
                 <select
                   value={draft?.contract_type ?? ""}
                   onChange={(e) => setField("contract_type", e.target.value)}
-                  className="text-[15px] border border-zinc-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-brand-deep"
+                  className="text-[16px] font-semibold border border-zinc-300 rounded-md px-2.5 h-7 bg-white focus:outline-none focus:border-brand-deep"
                 >
                   <option value="">계약유형 없음</option>
                   {CONTRACT_TYPES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
@@ -381,24 +381,24 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
             <SectionCard title="근로조건 요약" icon={<CalendarDays size={11} />} group="work" defaultOpen>
               <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[14px] font-semibold text-zinc-400 leading-none">주 소정근로시간</span>
-                  <span className="text-[15px] font-semibold text-zinc-700 leading-snug">
+                  <span className="text-[13px] font-bold text-ink-soft uppercase tracking-wider leading-none">주 소정근로시간</span>
+                  <span className="text-[17px] font-bold text-ink leading-snug">
                     {displayEmp.working_hours_per_week != null
                       ? `${displayEmp.working_hours_per_week}시간`
                       : <span className="text-zinc-300 italic">미등록</span>}
                   </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[14px] font-semibold text-zinc-400 leading-none">임금</span>
-                  <span className="text-[15px] font-semibold text-zinc-700 leading-snug">
+                  <span className="text-[13px] font-bold text-ink-soft uppercase tracking-wider leading-none">임금</span>
+                  <span className="text-[17px] font-bold text-ink leading-snug">
                     {displayEmp.wage_calc_type && displayEmp.wage_amount
                       ? `${({ hourly: "시급", daily: "일급", monthly: "월급", annual: "연봉" } as Record<string, string>)[displayEmp.wage_calc_type] ?? displayEmp.wage_calc_type} ${Number(displayEmp.wage_amount).toLocaleString()}원`
                       : <span className="text-zinc-300 italic">미등록</span>}
                   </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[14px] font-semibold text-zinc-400 leading-none">계약기간</span>
-                  <span className="text-[15px] font-semibold text-zinc-700 leading-snug">
+                  <span className="text-[13px] font-bold text-ink-soft uppercase tracking-wider leading-none">계약기간</span>
+                  <span className="text-[17px] font-bold text-ink leading-snug">
                     {latestContract?.start_date
                       ? `${latestContract.start_date} ~ ${latestContract.end_date ?? "무기한"}`
                       : displayEmp.contract_start
@@ -407,8 +407,8 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
                   </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[14px] font-semibold text-zinc-400 leading-none">유급 주휴일</span>
-                  <span className="text-[15px] font-semibold text-zinc-700 leading-snug">
+                  <span className="text-[13px] font-bold text-ink-soft uppercase tracking-wider leading-none">유급 주휴일</span>
+                  <span className="text-[17px] font-bold text-ink leading-snug">
                     {displayEmp.weekly_holiday || <span className="text-zinc-300 italic">미등록</span>}
                   </span>
                 </div>
@@ -420,9 +420,9 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex items-baseline gap-1">
                   <span className="text-[22px] font-bold text-sky-700 tabular-nums">{fmtD(remainDays)}</span>
-                  <span className="text-[14px] text-zinc-400 font-semibold">일 잔여</span>
+                  <span className="text-[15px] text-ink-soft font-semibold">일 잔여</span>
                 </div>
-                <div className="text-[14px] text-zinc-400">/ 총 {fmtD(totalDays)}일 · 사용 {fmtD(usedDays)}일</div>
+                <div className="text-[15px] text-ink-soft">/ 총 {fmtD(totalDays)}일 · 사용 {fmtD(usedDays)}일</div>
               </div>
               <div className="h-2 bg-zinc-100 rounded-full overflow-hidden mt-2">
                 <div
@@ -430,7 +430,7 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
                   style={{ width: totalDays > 0 ? `${Math.min(100, (usedDays / totalDays) * 100)}%` : "0%" }}
                 />
               </div>
-              <p className="text-[13px] text-zinc-400 mt-1.5">
+              <p className="text-[14px] text-ink-soft mt-1.5">
                 상세 이력은 <button type="button" onClick={() => setActiveTab("timeoff")} className="text-sky-600 underline cursor-pointer">Time Off 탭</button>에서 확인하세요
               </p>
             </SectionCard>
