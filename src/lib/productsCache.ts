@@ -2,20 +2,36 @@
 //   · location = 진열위치 · spec은 하위호환 (원본 규격 · 사용 안 함)
 export interface ProductInfo { code: string; name: string; spec: string; location?: string | null; [key: string]: any; }
 
+const TTL_MS = 60_000; // 60초 TTL · 2026-08-31
+
 let _map: Record<string, ProductInfo> | null = null;
 let _promise: Promise<Record<string, ProductInfo>> | null = null;
+let _fetchedAt: number | null = null;
 
-export function prefetchProducts(): void {
-  if (_map || _promise) return;
+function _isStale(): boolean {
+  return _fetchedAt == null || Date.now() - _fetchedAt > TTL_MS;
+}
+
+function _doFetch(): void {
   _promise = fetch("/products.json")
     .then(r => r.json())
-    .then((m: Record<string, ProductInfo>) => { _map = m; return m; })
+    .then((m: Record<string, ProductInfo>) => { _map = m; _fetchedAt = Date.now(); return m; })
     .catch(() => { _promise = null; return {}; });
 }
 
+// 2026-08-31 · product-mutated 이벤트 → 즉시 캐시 무효화
+if (typeof window !== "undefined") {
+  window.addEventListener("product-mutated", () => { _map = null; _promise = null; _fetchedAt = null; });
+}
+
+export function prefetchProducts(): void {
+  if ((_map || _promise) && !_isStale()) return;
+  _doFetch();
+}
+
 export function getProductsMap(): Promise<Record<string, ProductInfo>> {
-  if (_map) return Promise.resolve(_map);
-  if (_promise) return _promise;
+  if (_map && !_isStale()) return Promise.resolve(_map);
+  if (_promise && !_isStale()) return _promise;
   prefetchProducts();
   return _promise!;
 }
@@ -43,6 +59,7 @@ export function updateCachedProduct(code: string, updates: Record<string, any>):
 export function resetProductsCache(): void {
   _map = null;
   _promise = null;
+  _fetchedAt = null;
 }
 export async function reloadProductsCache(): Promise<Record<string, ProductInfo>> {
   resetProductsCache();
