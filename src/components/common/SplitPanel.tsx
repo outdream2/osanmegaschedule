@@ -1,14 +1,19 @@
 // src/components/common/SplitPanel.tsx
 // 2026-08-03 (#183) · 공통 마스터-디테일 split 패널
 //   - 좌측 (list) + divider (drag resize) + 우측 (detail)
-//   - 데스크탑 (lg:1024px+) · 가로 배치 + 폭 조정 · localStorage 저장
-//   - 모바일 (< lg) · 좌측만 표시 · 우측은 모달로 렌더링 (mobileRightAsModal=true)
+//   - 데스크탑 (md:768px+) · 가로 배치 + 폭 조정 · localStorage 저장
+//   - 모바일 (< md) · 좌측만 표시 · 우측은 모달로 렌더링 (mobileRightAsModal=true)
 //   - dividerColor · 프리셋 (indigo · teal · emerald 등) · hover 컬러 강조
 // 2026-08-04 (#B-3-2) · mobileRightAsModal 추가
 //   - 모바일에서 우측 패널을 모달로 자동 처리
 //   - mobileModalTitle · 모달 제목
 //   - 좌측 아이템 클릭 시 mobileOpen=true → 자동 모달 오픈
 //   - ESC · backdrop 클릭 · X 버튼 모두로 닫기
+// 2026-08-31 (#68) · autoFitLeft 추가
+//   - 좌측 컨텐츠 scrollWidth 를 ResizeObserver 로 측정
+//   - localStorage 저장값 없을 때 · 실제 min-content 폭으로 자동 초기화
+//   - 저장값 있으면 · max(저장값, 측정폭) 로 수렴 (컨텐츠 잘림 방지)
+//   - opt-in (autoFitLeft=false 기본) · BC 완전 유지
 //
 // 사용 예:
 //   <SplitPanel
@@ -16,6 +21,7 @@
 //     defaultWidth={288}
 //     minWidth={200}
 //     maxWidth={640}
+//     autoFitLeft={true}
 //     dividerColor="indigo"
 //     mobileRightAsModal={true}
 //     mobileModalTitle="상세 정보"
@@ -28,7 +34,7 @@
 // storageKey 는 localStorage 에 자동 저장 (megatown_ prefix 붙음)
 // 좌측 aside · 우측 section 시맨틱 · card-panel 스타일 자동 적용
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { AccentBar } from "./AccentBar";
 
@@ -72,6 +78,14 @@ export interface SplitPanelProps {
   style?: React.CSSProperties;
   /** 컨테이너 추가 className */
   className?: string;
+  /**
+   * 좌측 컨텐츠 scrollWidth 를 자동 측정해 listWidth 초기값·최솟값으로 반영 (기본 false)
+   *   - localStorage 저장값 없음 → 측정 scrollWidth 를 초기값으로 사용
+   *   - localStorage 저장값 있음 → max(저장값, 측정폭) 로 수렴 (컨텐츠 잘림 방지)
+   *   - 드래그 후에는 사용자 값 우선 · 자동 측정 중단
+   * 2026-08-31 (#68)
+   */
+  autoFitLeft?: boolean;
   // ── 모바일 모달 옵션 (B-3-2 · 2026-08-04) ──────────────────────────────
   /** 모바일 < lg 에서 우측 패널을 모달로 표시 (기본 true) */
   mobileRightAsModal?: boolean;
@@ -104,12 +118,24 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
   leftClassName = "",
   style,
   className = "",
+  autoFitLeft = false,
   mobileRightAsModal = true,
   mobileModalTitle,
   mobileOpen: mobileOpenProp,
   onMobileClose,
 }) => {
   const fullKey = STORAGE_PREFIX + storageKey;
+
+  // localStorage 저장값 존재 여부 (초기 1회만 판별 · autoFitLeft 와 조합)
+  const hadStoredValue = useRef<boolean>((() => {
+    try {
+      const s = localStorage.getItem(fullKey);
+      const n = s ? parseInt(s, 10) : NaN;
+      return Number.isFinite(n) && n >= minWidth && n <= maxWidth;
+    } catch {
+      return false;
+    }
+  })());
 
   // 초기 폭 · localStorage 우선
   const [listWidth, setListWidth] = useState<number>(() => {
@@ -130,6 +156,44 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
       // quota / private mode · silent fail
     }
   }, [fullKey, listWidth]);
+
+  // ── autoFitLeft (#68 · 2026-08-31) ──────────────────────────────────────
+  // 좌측 내부 scrollWidth 를 ResizeObserver 로 측정 →
+  //   · localStorage 저장값 없음: 측정값을 초기 폭으로 반영
+  //   · localStorage 저장값 있음: max(저장값, 측정값) 로 수렴 (테이블 컬럼 잘림 방지)
+  //   · 사용자가 드래그로 조정한 후에는 자동 측정 중단 (userAdjusted flag)
+  const leftInnerRef = useRef<HTMLElement>(null);
+  const userAdjustedRef = useRef(false); // 드래그 후 true → 자동 fit 중단
+
+  useLayoutEffect(() => {
+    if (!autoFitLeft || !leftInnerRef.current) return;
+
+    const measure = (el: Element) => {
+      // scrollWidth = 내부 min-content 폭 (overflow 포함)
+      const contentW = el.scrollWidth;
+      if (!contentW || contentW <= 0) return;
+      const clamped = Math.max(minWidth, Math.min(maxWidth, contentW));
+
+      if (userAdjustedRef.current) return; // 드래그 후 자동 fit 비활성
+
+      setListWidth(prev => {
+        // 저장값 없음 → 측정값으로 덮어씀
+        // 저장값 있음 → 측정값이 더 크면 확장 (컨텐츠 잘림 방지)
+        if (!hadStoredValue.current) return clamped;
+        return Math.max(prev, clamped);
+      });
+    };
+
+    // 최초 측정
+    measure(leftInnerRef.current);
+
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) measure(entry.target);
+    });
+    ro.observe(leftInnerRef.current);
+    return () => ro.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFitLeft, minWidth, maxWidth]);
 
   // 2026-08-25 · #263 · 반응형 개편 (사용자 지시 "반응형 엉망")
   //   · 데스크탑 기준 lg (1024) → md (768) · 태블릿부터 좌우 배치
@@ -179,6 +243,8 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
   const startWRef = useRef<number>(0);
   const startResize = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
+    // 사용자가 드래그한 후에는 autoFitLeft 자동 측정 중단 (의도된 폭 우선)
+    userAdjustedRef.current = true;
     startXRef.current = e.clientX;
     startWRef.current = listWidth;
 
@@ -261,6 +327,7 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
       <div className={`split-container ${className}`} style={style}>
         {/* 좌측: 리스트 · 폭 조정 · 2026-08-26 · 사용자 지시 · 프레임워크 폰트 +2 (data-scope) */}
         <aside
+          ref={autoFitLeft ? leftInnerRef : undefined}
           data-scope="split-left"
           className={leftCls}
           style={isDesktop ? { width: `${listWidth}px` } : undefined}

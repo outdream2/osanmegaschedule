@@ -756,6 +756,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         minWidth={380}
         maxWidth={1100}
         dividerColor="rose"
+        autoFitLeft
         left={leftPanel}
         right={rightPanel}
         wrapLeft={false}

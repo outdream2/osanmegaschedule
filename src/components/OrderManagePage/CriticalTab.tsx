@@ -219,6 +219,7 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
         minWidth={340}
         maxWidth={1000}
         dividerColor="amber"
+        autoFitLeft
         left={left}
         right={right}
         wrapLeft={false}

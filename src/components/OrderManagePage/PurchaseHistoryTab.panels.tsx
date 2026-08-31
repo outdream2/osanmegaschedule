@@ -194,6 +194,7 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
       minWidth={320}
       maxWidth={1200}
       dividerColor="emerald"
+      autoFitLeft
       wrapLeft={false}
       wrapRight={false}
       leftClassName="max-h-[calc(100dvh-100px)] lg:max-h-none"
@@ -325,6 +326,7 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
       minWidth={320}
       maxWidth={1200}
       dividerColor="sky"
+      autoFitLeft
       wrapLeft={false}
       wrapRight={false}
       leftClassName="max-h-[80vh] lg:max-h-none"
