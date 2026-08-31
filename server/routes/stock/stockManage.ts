@@ -522,7 +522,10 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       // products 매핑 (숨김 제외) — 결과 code 만 조회
       // 2026-07-29 · 사용자 원칙: 상품 관련만 products 조회 · 매입 관련은 purchase_details
       const codesRaw = Array.from(new Set(rawRows.map(r => String(r.product_code ?? "").trim()).filter(Boolean)));
-      const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; min_order: number }>();
+      // 2026-08-31 · #71 fix · location + real_map 추가 · 판매중지 상품도 zone 파악 가능
+      //   · 클라 · products cache 는 판매중만 (getPublicProductMap) → 판매중지 상품 zone 안 나옴
+      //   · 서버 응답에 location + real_map 포함해서 · 클라가 row 자체로 zone 판별
+      const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; min_order: number; location: string | null; real_map: string | null }>();
       const hiddenSet = new Set<string>();
       try {
         const CHUNK = 500;
@@ -530,7 +533,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
           const chunk = codesRaw.slice(i, i + CHUNK);
           const { data: page } = await supabase
             .from("products")
-            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, min_order, hidden")
+            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, min_order, hidden, location, display_location, real_map")
             .in("product_code", chunk);
           for (const p of page ?? []) {
             const code = String(p.product_code ?? "").trim();
@@ -542,6 +545,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
               purchase_price:Number(p.purchase_price ?? 0) || 0,
               current_stock: Number(p.current_stock ?? 0) || 0,
               min_order:     Number(p.min_order ?? 0) || 0,
+              location:      (String(p.location ?? p.display_location ?? "").trim() || null),
+              real_map:      (String(p.real_map ?? "").trim() || null),
             });
           }
         }
@@ -579,6 +584,9 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             first_purchase_date: null as string | null,  // purchase_details 조인에서 세팅
             purchase_count: 0,                            // purchase_details 조인에서 세팅
             min_order:     prod?.min_order ?? 0,
+            // 2026-08-31 · #71 · 판매중지 상품도 zone 파악 가능 · 클라 ZoneCategoryContent fallback
+            location:      prod?.location ?? null,
+            real_map:      prod?.real_map ?? null,
           });
         }
         const agg = byCode.get(code)!;
@@ -724,6 +732,9 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
               sale_qty_month:      r.sale_qty_month ?? 0,
               sale_amount_month:   r.sale_amount_month ?? 0,
               last_purchase_qty:   r.last_purchase_qty ?? null,
+              // 2026-08-31 · #71 · RPC 미포함 · 아래 batch fetch 로 주입
+              location:   null as string | null,
+              real_map:   null as string | null,
             }));
             // 2026-07-30 · 사용자 지적 · 반품필요 리스트 · sale_qty_month · last_purchase_qty 안 나옴
             //   RPC 반환에 이 두 필드 없음 · 서버에서 batch fetch 로 보강
@@ -818,6 +829,40 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             } catch (e: any) {
               console.warn(`[top-sales/rpc] boost fetch 실패:`, e?.message);
             }
+            // 2026-08-31 · #71 · location + real_map 배치 조회 · 판매중지 상품 zone 파악용 (RPC 미포함)
+            //   · 대상 · rows.slice(0, limit) 만 (성능)
+            try {
+              const targetCodes = rows.slice(0, limit).map(r => String(r.product_code ?? "").trim()).filter(Boolean);
+              if (targetCodes.length > 0) {
+                const locMap = new Map<string, { location: string | null; real_map: string | null }>();
+                const CHUNK = 500;
+                for (let i = 0; i < targetCodes.length; i += CHUNK) {
+                  const chunk = targetCodes.slice(i, i + CHUNK);
+                  const { data: page } = await supabase
+                    .from("products")
+                    .select("product_code, location, display_location, real_map")
+                    .in("product_code", chunk);
+                  for (const p of page ?? []) {
+                    const code = String(p.product_code ?? "").trim();
+                    if (!code) continue;
+                    locMap.set(code, {
+                      location: (String(p.location ?? p.display_location ?? "").trim() || null),
+                      real_map: (String(p.real_map ?? "").trim() || null),
+                    });
+                  }
+                }
+                for (const r of rows) {
+                  const code = String(r.product_code ?? "").trim();
+                  const info = locMap.get(code);
+                  if (info) {
+                    r.location = info.location;
+                    r.real_map = info.real_map;
+                  }
+                }
+              }
+            } catch (e: any) {
+              console.warn(`[top-sales/rpc] location fetch 실패:`, e?.message);
+            }
             // 클라이언트 정렬
             const sign = dir === "asc" ? 1 : -1;
             const sorted = rows.sort((a: any, b: any) => {
@@ -877,7 +922,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       }
 
       // products 매핑 (숨김 제외)
-      const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; last_purchase_date: string | null; min_order: number }>();
+      // 2026-08-31 · #71 · location + real_map 추가 · 판매중지 상품 zone 파악용
+      const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; last_purchase_date: string | null; min_order: number; location: string | null; real_map: string | null }>();
       const hiddenSet = new Set<string>();
       try {
         const OP_PAGE = 1000;
@@ -885,7 +931,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         while (true) {
           const { data: page } = await supabase
             .from("products")
-            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden")
+            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden, location, display_location, real_map")
             .range(opFrom, opFrom + OP_PAGE - 1);
           if (!page || page.length === 0) break;
           for (const p of page) {
@@ -899,6 +945,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
               current_stock: Number(p.current_stock ?? 0) || 0,
               last_purchase_date: p.last_purchase_date ?? null,
               min_order:     Number(p.min_order ?? 0) || 0,
+              location:      (String(p.location ?? p.display_location ?? "").trim() || null),
+              real_map:      (String(p.real_map ?? "").trim() || null),
             });
           }
           if (page.length < OP_PAGE) break;
@@ -943,6 +991,9 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             min_order:     productMap.get(code)?.min_order ?? 0,
             purchase_count: 0,
             first_purchase_date: null as string | null,
+            // 2026-08-31 · #71 · 판매중지 상품도 zone 파악 가능
+            location:      productMap.get(code)?.location ?? null,
+            real_map:      productMap.get(code)?.real_map ?? null,
           });
         }
         const agg = byCode.get(code)!;
@@ -1320,7 +1371,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
     // products 조회: 결과 rows 의 product_code 만 in() 으로 최소 fetch (5000 → ~100)
     //   기존: 전체 products 페이지네이션 로드 (5000+행)
     //   개선: 이번 응답에 필요한 코드만
-    const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; last_purchase_date: string | null; min_order: number }>();
+    // 2026-08-31 · #71 · location + real_map 추가
+    const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; last_purchase_date: string | null; min_order: number; location: string | null; real_map: string | null }>();
     const hiddenSet = new Set<string>();
     const codesInResult = Array.from(new Set(data.map(r => String(r.product_code ?? "").trim()).filter(Boolean)));
     try {
@@ -1330,7 +1382,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         const chunk = codesInResult.slice(i, i + CHUNK);
         const { data: page } = await supabase
           .from("products")
-          .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden")
+          .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden, location, display_location, real_map")
           .in("product_code", chunk);
         for (const p of page ?? []) {
           const code = String(p.product_code ?? "").trim();
@@ -1343,6 +1395,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             current_stock: Number(p.current_stock ?? 0) || 0,
             last_purchase_date: p.last_purchase_date ?? null,
             min_order:     Number(p.min_order ?? 0) || 0,
+            location:      (String(p.location ?? p.display_location ?? "").trim() || null),
+            real_map:      (String(p.real_map ?? "").trim() || null),
           });
         }
       }
@@ -1430,6 +1484,9 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         first_purchase_date:   purchaseInfo?.firstDate  ?? null,
         // 최소주문량 (products.min_order) — 공급사재고 확장 리스트에 표시
         min_order: Number(prod?.min_order ?? 0) || 0,
+        // 2026-08-31 · #71 · 판매중지 상품도 zone 파악 가능 · 클라 ZoneCategoryContent fallback
+        location:      prod?.location  ?? null,
+        real_map:      prod?.real_map  ?? null,
       };
     });
     const sign = dir === "asc" ? 1 : -1;
