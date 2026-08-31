@@ -4,6 +4,7 @@ import {
   isPharmPosition, isLogisticsPosition, isWarehousePosition,
   isPartTimeEmployment, isOtherPosition,
   isPharmEmp, isOtherEmp, isStaffEmp,
+  isStorePosition, isStoreOrLogisticsPosition,
 } from "./employeeCategory";
 import type { Employee } from "../types";
 
@@ -40,6 +41,34 @@ describe("position 판별", () => {
     expect(isOtherPosition("알바", "정규직")).toBe(true);
     expect(isOtherPosition("캐셔", "알바")).toBe(true);
     expect(isOtherPosition("캐셔", "정규직")).toBe(false);
+  });
+});
+
+describe("#64 매장구역도 담당자 필터", () => {
+  it("isStorePosition · 캐셔·진열·매장 true · 그 외 false", () => {
+    expect(isStorePosition("캐셔")).toBe(true);
+    expect(isStorePosition("진열")).toBe(true);
+    expect(isStorePosition("매장")).toBe(true);
+    expect(isStorePosition("약사")).toBe(false);
+    expect(isStorePosition("물류")).toBe(false);
+    expect(isStorePosition("거래처")).toBe(false);
+    expect(isStorePosition("기타")).toBe(false);
+    expect(isStorePosition("")).toBe(false);
+  });
+  it("isStorePosition · 겸직 (물류/캐셔) true", () => {
+    expect(isStorePosition("물류/캐셔")).toBe(true);
+    expect(isStorePosition("캐셔/물류")).toBe(true);
+  });
+  it("isStoreOrLogisticsPosition · 물류·매장 직군만 true", () => {
+    expect(isStoreOrLogisticsPosition("물류")).toBe(true);
+    expect(isStoreOrLogisticsPosition("캐셔")).toBe(true);
+    expect(isStoreOrLogisticsPosition("진열")).toBe(true);
+    expect(isStoreOrLogisticsPosition("매장")).toBe(true);
+    expect(isStoreOrLogisticsPosition("물류/캐셔")).toBe(true);
+    expect(isStoreOrLogisticsPosition("약사")).toBe(false);
+    expect(isStoreOrLogisticsPosition("거래처")).toBe(false);
+    expect(isStoreOrLogisticsPosition("기타")).toBe(false);
+    expect(isStoreOrLogisticsPosition("")).toBe(false);
   });
 });
 

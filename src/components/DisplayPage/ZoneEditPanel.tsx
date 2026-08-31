@@ -19,6 +19,8 @@ import { PanZoomImage } from "../common/PanZoomImage";
 import { useZoneDefs, type ZoneDef, type ZoneDefRaw, type ZoneDefWithRowIds } from "../../hooks/useZoneDefs";
 // 2026-08-30 · 사용자 지시 · AssigneeEditor 프리미티브 재사용 · 인라인 정의 제거
 import { AssigneeEditor as SharedAssigneeEditor } from "../common/AssigneeEditor";
+// 2026-08-31 · #64 · 매장구역도 담당자 · 물류·매장 직군만 필터
+import { isStoreOrLogisticsPosition } from "../../lib/employeeCategory";
 // 2026-08-26 · 사용자 지시 · 원본 매장구역도 이미지 (pan/zoom viewer)
 import zoneCategoryImg from "../../sample/zonecategory.png";
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -416,6 +418,7 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
                             value={fr.assignee}
                             canEdit={canEdit && !!fr.rowId}
                             onSave={async (next) => { if (fr.rowId) await updateZoneRaw(fr.rowId, { assignee: next }); }}
+                            filter={(e) => isStoreOrLogisticsPosition(e.position)}
                           />
                         </td>
                       </tr>

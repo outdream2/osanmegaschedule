@@ -2,7 +2,7 @@
 // 2026-08-11 · 사이드바 V2 · shadcn Sidebar + Radix Collapsible · 6그룹 접이식 트리
 // 2026-08-12 · V3 · Warm Cream + Soft Pill + Micro Glow · 시인성 강화 · chevron pill 강조
 // 디자인 참고: Notion · Anthropic · Attio · 2026 SaaS Warm Trend
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Collapsible } from "radix-ui";
 import { LogOut } from "lucide-react";
 // 2026-08-12 · 접힘 아이콘 · CaretDown (Radix/shadcn 표준 · 부드러운 화살표)
@@ -63,16 +63,58 @@ function writeGroupOpen(groupId: string, open: boolean): void {
   localStorage.setItem(`sidebar.groups.${groupId}`, String(open));
 }
 
+// ─── useActiveSubTab · 2026-08-31 · Phase 3 완성 · 서브탭 활성 표시 fix ──────
+//   · 현재 페이지의 활성 서브탭을 tracking · SideNav 하위 아이템 활성 판정용
+//   · 입력 · currentPage · 페이지 변경 시 다시 계산
+//   · 소스 · localStorage(subTabStorageKey) 초기값 + "sidebar:subtab" CustomEvent
+//   · 페이지 내부에서 · TabBar 클릭 시 · dispatchEvent("sidebar:subtab", { page, subTab }) 하면 자동 동기
+//   · 각 페이지가 이미 · 사이드바 클릭용 이벤트 리스너 등록됨 · SideNav 도 리스너 등록 · 양방향 동기
+function useActiveSubTab(currentPage: AppNavPage): string | null {
+  const [activeSubTab, setActiveSubTab] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return localStorage.getItem(subTabStorageKey(currentPage));
+    } catch {
+      return null;
+    }
+  });
+
+  // 페이지 변경 시 · localStorage 재읽기 (각 페이지 mount 시 removeItem 하는 경우 있음 · 미리 캡처)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem(subTabStorageKey(currentPage));
+      setActiveSubTab(raw);
+    } catch { /* silent */ }
+  }, [currentPage]);
+
+  // 사이드바 or 페이지 내부의 subtab 변경 이벤트 리스너
+  useEffect(() => {
+    const onSubTab = (e: Event) => {
+      const detail = (e as CustomEvent<{ page: string; subTab: string; nested?: string | null }>).detail;
+      if (!detail) return;
+      if (detail.page !== currentPage) return;
+      setActiveSubTab(detail.subTab ?? null);
+    };
+    window.addEventListener("sidebar:subtab", onSubTab);
+    return () => window.removeEventListener("sidebar:subtab", onSubTab);
+  }, [currentPage]);
+
+  return activeSubTab;
+}
+
 // ─── CollapsibleGroup: 개별 그룹 접이식 트리 ────────────────────────────────
 interface CollapsibleGroupProps {
   group: SideNavGroup;
   activePage: AppNavPage;
+  activeSubTab: string | null;
   onNavigate: (page: AppNavPage) => void;
 }
 
 const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
   group,
   activePage,
+  activeSubTab,
   onNavigate,
 }) => {
   const [open, setOpen] = useState<boolean>(() => readGroupOpen(group.id));
@@ -87,7 +129,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
 
   // 그룹 내 활성 항목 여부 (접힌 상태에서 헤더 accent 표시용)
   const hasActiveItem = group.items.some((item) =>
-    isItemActive(item, activePage),
+    isItemActive(item, activePage, activeSubTab),
   );
 
   // 2026-08-17 · 사이드바 deep teal 배경 · DARK_COLOR_TONES 사용 (목업 톤)
@@ -205,7 +247,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
           {group.items.map((item, itemIdx) => {
             // 2026-08-12 · 사용자 지시 · 하위 메뉴 아이콘 = 그룹 아이콘 (공통헤더 탭 아이콘) 통일
             const Icon = group.icon || item.icon;
-            const active = isItemActive(item, activePage);
+            const active = isItemActive(item, activePage, activeSubTab);
             // 2026-08-17 · deep teal · DARK_COLOR_TONES
             const tone = DARK_COLOR_TONES[item.color];
 
@@ -286,11 +328,12 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
 interface SingleItemGroupProps {
   group: SideNavGroup;
   activePage: AppNavPage;
+  activeSubTab: string | null;
   onNavigate: (page: AppNavPage) => void;
 }
-const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, onNavigate }) => {
+const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, activeSubTab, onNavigate }) => {
   const item = group.items[0];
-  const active = isItemActive(item, activePage);
+  const active = isItemActive(item, activePage, activeSubTab);
   const Icon = item.icon;
   return (
     <div className="relative">
@@ -367,6 +410,8 @@ export const SideNav: React.FC<SideNavProps> = ({
   onLogout,
 }) => {
   const isMobile = useIsMobile();
+  // 2026-08-31 · 서브탭 활성 표시 fix · 현재 페이지 활성 서브탭 tracking
+  const activeSubTab = useActiveSubTab(activePage);
   // 2026-08-12 · hideOnMobile 그룹은 반응형(모바일)에서 숨김 (거래처 그룹 등 · PC 관리자 전용)
   // 2026-08-16 · 페이지 숨김 반영 · 서버 perms 참조
   const { perms } = usePagePermissions();
@@ -483,6 +528,7 @@ export const SideNav: React.FC<SideNavProps> = ({
               key={group.id}
               group={group}
               activePage={activePage}
+              activeSubTab={activeSubTab}
               onNavigate={onNavigate}
             />
           ) : (
@@ -490,6 +536,7 @@ export const SideNav: React.FC<SideNavProps> = ({
               key={group.id}
               group={group}
               activePage={activePage}
+              activeSubTab={activeSubTab}
               onNavigate={onNavigate}
             />
           )

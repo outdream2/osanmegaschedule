@@ -341,10 +341,26 @@ export function filterGroupsForSession(
     .filter(g => g.items.length > 0);
 }
 
-/** 아이템 활성 판정 · 현재 페이지가 이 아이템이거나 · business-manage 서브페이지면 business-manage 활성 */
+/** 아이템 활성 판정 · 현재 페이지가 이 아이템이거나 · business-manage 서브페이지면 business-manage 활성
+ *  2026-08-31 · Phase 3 완성 · activeSubTab 옵션 · 서브탭 항목 활성 판정 지원
+ *    · activeSubTab · "purchase-order" 또는 "document-writer:contract" (nested)
+ *    · item.subTab 이 activeSubTab 과 일치 (page 도 일치) 시 · true
+ *    · activeSubTab 미제공 · 이전 동작 유지 (subTab 항목 false) */
 const BUSINESS_SUB_PAGES: Set<AppNavPage> = new Set(["business-manage", "permissions", "hr-forms"]);
-export function isItemActive(item: SideNavItem, currentPage: AppNavPage): boolean {
-  if (item.subTab) return false; // 서브탭 항목은 · 페이지가 같아도 · 정확한 서브탭 판정 어려워 · 활성 스킵 (Phase 3에서 완성)
+export function isItemActive(
+  item: SideNavItem,
+  currentPage: AppNavPage,
+  activeSubTab?: string | null,
+): boolean {
+  if (item.subTab) {
+    // 서브탭 항목 · 페이지 + 서브탭 일치 시 활성
+    if (!activeSubTab) return false;
+    if (item.key !== currentPage) return false;
+    // nested subtab 지원 · "outer:inner" · outer 만 저장돼도 매칭 (하위 호환)
+    if (item.subTab === activeSubTab) return true;
+    // nested item · outer 만 활성 상태일 때 · outer 항목만 활성 (nested 항목은 false)
+    return false;
+  }
   if (item.key === currentPage) return true;
   if (item.key === "business-manage" && BUSINESS_SUB_PAGES.has(currentPage)) return true;
   return false;

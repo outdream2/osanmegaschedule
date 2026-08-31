@@ -4,14 +4,20 @@
 //   · 최초 사용처 · ZoneEditPanel · 이후 ZoneCellPicker 등 재사용
 //   · 원칙 · GET /api/employees · 모듈 캐시 (인스턴스 최초 1회)
 //
+// 2026-08-31 · #64 · 사용자 지시 · 후보 filter prop 추가
+//   · 매장구역도 담당자 · 물류·매장 직군만 노출 (isStoreOrLogisticsPosition)
+//   · 다른 페이지 (스케쥴 배정 등) 는 filter 미지정 → 전체 노출 유지 (BC)
+//
 // 사용:
 //   <AssigneeEditor value={assignee} onSave={(next) => api.patch(...)} />
+//   <AssigneeEditor value={...} onSave={...} filter={isStoreOrLogisticsPosition} />
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { api } from "../../lib/apiClient";
 
-type EmpItem = { id: number; name: string };
+/** 프리미티브 내부 후보 캐시 · position 포함 · filter prop 지원 */
+export type EmpItem = { id: number; name: string; position: string };
 let _empCache: EmpItem[] | null = null;
 let _empPromise: Promise<EmpItem[]> | null = null;
 
@@ -21,7 +27,9 @@ async function fetchEmployeesCached(): Promise<EmpItem[]> {
   _empPromise = (async () => {
     try {
       const { data } = await api.get<EmpItem[]>("/api/employees");
-      _empCache = Array.isArray(data) ? data.map(e => ({ id: e.id, name: e.name })) : [];
+      _empCache = Array.isArray(data)
+        ? data.map(e => ({ id: e.id, name: e.name, position: String((e as any).position ?? "") }))
+        : [];
       return _empCache;
     } catch { return []; }
   })();
@@ -37,6 +45,8 @@ export interface AssigneeEditorProps {
   /** 편집 불가 상태 · 배지만 표시 */
   disabled?: boolean;
   className?: string;
+  /** 2026-08-31 · #64 · 후보 필터 · true 반환 시 노출 · 미지정 시 전체 (BC) */
+  filter?: (emp: EmpItem) => boolean;
 }
 
 export const AssigneeEditor: React.FC<AssigneeEditorProps> = ({
@@ -46,6 +56,7 @@ export const AssigneeEditor: React.FC<AssigneeEditorProps> = ({
   placeholder = "직원명 검색·선택",
   disabled = false,
   className = "",
+  filter,
 }) => {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -83,9 +94,11 @@ export const AssigneeEditor: React.FC<AssigneeEditorProps> = ({
     setSaving(false);
   };
 
+  // 2026-08-31 · #64 · filter 적용 · 이미 선택된 담당자는 filter 무관하게 유지 (기존 데이터 보호)
+  const pool = useMemo(() => (filter ? emps.filter(filter) : emps), [emps, filter]);
   const filtered = query.trim()
-    ? emps.filter(e => e.name.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 8)
-    : emps.slice(0, 8);
+    ? pool.filter(e => e.name.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 8)
+    : pool.slice(0, 8);
 
   const readOnly = disabled || !canEdit;
 

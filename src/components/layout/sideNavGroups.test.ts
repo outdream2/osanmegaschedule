@@ -271,9 +271,36 @@ describe("isItemActive", () => {
     expect(isItemActive(item as any, "business-manage" as any)).toBe(true);
   });
 
-  it("subTab 있는 item · 활성 판정 스킵 (false)", () => {
+  it("subTab 있는 item · activeSubTab 미제공 · 활성 스킵 (false · 하위 호환)", () => {
     const item = { key: "display", label: "발주", icon: (() => null) as any, subTab: "purchase-order" };
     expect(isItemActive(item as any, "display" as any)).toBe(false);
+  });
+
+  // 2026-08-31 · Phase 3 완성 · activeSubTab 옵션 · 서브탭 항목 활성 판정
+  it("subTab item · activeSubTab 일치 + 페이지 일치 · true", () => {
+    const item = { key: "display", label: "발주", icon: (() => null) as any, subTab: "purchase-order" };
+    expect(isItemActive(item as any, "display" as any, "purchase-order")).toBe(true);
+  });
+
+  it("subTab item · activeSubTab 불일치 · false", () => {
+    const item = { key: "display", label: "발주", icon: (() => null) as any, subTab: "purchase-order" };
+    expect(isItemActive(item as any, "display" as any, "payment")).toBe(false);
+  });
+
+  it("subTab item · 페이지 불일치 · activeSubTab 일치해도 false", () => {
+    const item = { key: "display", label: "발주", icon: (() => null) as any, subTab: "purchase-order" };
+    expect(isItemActive(item as any, "business-manage" as any, "purchase-order")).toBe(false);
+  });
+
+  it("subTab item · activeSubTab null · false", () => {
+    const item = { key: "display", label: "발주", icon: (() => null) as any, subTab: "purchase-order" };
+    expect(isItemActive(item as any, "display" as any, null)).toBe(false);
+  });
+
+  it("subTab 없는 item · activeSubTab 무관 · 기존 로직", () => {
+    const item = { key: "schedule", label: "스케줄", icon: (() => null) as any };
+    expect(isItemActive(item as any, "schedule" as any, "irrelevant")).toBe(true);
+    expect(isItemActive(item as any, "display" as any, "purchase-order")).toBe(false);
   });
 });
 

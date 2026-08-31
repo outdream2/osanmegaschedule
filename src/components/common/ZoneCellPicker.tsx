@@ -11,6 +11,8 @@ import { useZoneDefs, type ZoneDefRaw } from "../../hooks/useZoneDefs";
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-30 · 사용자 지시 · 매장구역도에서 담당자 직접 배정 가능 · AssigneeEditor 프리미티브
 import { AssigneeEditor } from "./AssigneeEditor";
+// 2026-08-31 · #64 · 매장구역도 담당자 · 물류·매장 직군만 필터
+import { isStoreOrLogisticsPosition } from "../../lib/employeeCategory";
 
 interface Props {
   /** 대상 zone_defs.cellId · 편집 대상 셀 */
@@ -182,6 +184,7 @@ export const ZoneCellPicker: React.FC<Props> = ({ cellId, canEdit = false, trigg
                   value={currentAssignee}
                   canEdit={canEdit && !!zone}
                   onSave={async (next) => { if (zone) await updateZoneRaw(zone.id, { assignee: next }); }}
+                  filter={(e) => isStoreOrLogisticsPosition(e.position)}
                 />
               </section>
             </div>
