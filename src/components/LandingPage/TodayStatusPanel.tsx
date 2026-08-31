@@ -6,6 +6,7 @@ import { AccentBar } from "../common/AccentBar";
 import { Card } from "../common/Card";
 // 2026-08-25 · 사용자 지시 · 페이지 숨김 시 오늘의 현황에서도 관련 건수 숨김
 import { usePageVisibility } from "../../hooks/usePageVisibility";
+import { usePagePermissions } from "../../hooks/usePagePermissions";
 import { useIsMobile } from "../../hooks/use-mobile";
 
 interface TodayStatusPanelProps {
@@ -44,12 +45,21 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
   //   · 점심 신청 (승인요청 그룹 · approval-request) · 현재 뷰포트 (PC / 모바일) 숨김이면 lunch 통계 비표시
   //   · SideNav 는 현재 뷰포트 기준 filter · 여기도 동일하게 현재 뷰포트만 체크
   const { isVisible } = usePageVisibility();
+  // 2026-08-31 · fix · page_permissions.hidden 도 체크 (PermissionsPage 페이지별 설정 반영)
+  const { perms } = usePagePermissions();
   const isMobile = useIsMobile();
   const currentViewport = isMobile ? "mobile" : "pc";
-  // 2026-08-25 · 사용자 지시 · 점심 서브탭 단독 노출 토글 지원
-  // 2026-08-27 · Fix · PermissionsPage 저장 key 는 "lunch" (composite "approval-request:lunch" 아님)
-  //   · 메뉴설정 · [점심 불참] 언체크 시 · 랜딩·오늘의 현황 즉시 반영
-  const lunchMenuVisible = isVisible("lunch", currentViewport);
+  const isPermsHidden = (key: string): boolean => {
+    const e = (perms as any)?.[key];
+    if (e?.hidden === true) return true;
+    if (!e) {
+      for (const k of Object.keys(perms ?? {})) {
+        if (k.endsWith(`:${key}`) && (perms as any)[k]?.hidden === true) return true;
+      }
+    }
+    return false;
+  };
+  const lunchMenuVisible = isVisible("lunch", currentViewport) && !isPermsHidden("lunch");
   return (
     <div className="w-full mb-6">
       <div className="flex items-center gap-2.5 mb-2 flex-wrap">

@@ -8,6 +8,7 @@
 import type { ReactNode, ElementType } from "react";
 // 2026-08-27 · 사용자 지시 · 메뉴 설정 · pageKey 기반 visibility gate
 import { usePageVisibility } from "../../hooks/usePageVisibility";
+import { usePagePermissions } from "../../hooks/usePagePermissions";
 
 export type MenuCardColor =
   | "teal" | "amber" | "coral" | "sky"
@@ -82,9 +83,19 @@ export function MenuCard({ color, icon: Icon, title, description, onClick, order
   const c = COLOR_MAP[color];
   // 2026-08-27 · pageKey 있으면 · usePageVisibility 로 체크 · false 면 안 렌더
   const { isVisible, loaded } = usePageVisibility();
+  // 2026-08-31 · fix · page_permissions.hidden 도 체크 · PermissionsPage 페이지별 설정 반영
+  const { perms } = usePagePermissions();
   if (pageKey && loaded) {
     const vp: "pc" | "mobile" = viewport ?? (typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches ? "pc" : "mobile");
     if (!isVisible(pageKey, vp)) return null;
+    // page_permissions · hidden 이면 · leaf/composite 양방향 확인
+    const permEntry = (perms as any)?.[pageKey];
+    if (permEntry?.hidden === true) return null;
+    if (!permEntry) {
+      for (const k of Object.keys(perms ?? {})) {
+        if (k.endsWith(`:${pageKey}`) && (perms as any)[k]?.hidden === true) return null;
+      }
+    }
   }
   // 2026-08-17 · 사용자 지시 · 반응형 랜딩 메뉴 폰트 +2 (기존 15 → 17) · 2026-08-23 · #200 +2 (17 → 19)
   const descSize = descClass ?? "text-[19px] leading-[1.5]";
