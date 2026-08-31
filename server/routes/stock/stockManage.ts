@@ -1485,6 +1485,9 @@ router.get("/api/stock-manage/low-stock", asyncHandler(async (_req, res) => {
     current_stock: r.current_stock,
     optimal_stock: r.optimal_stock,
     supplier: r.supplier,
+    // 2026-08-31 · #71 fix · 판매 구역현황 · row 자체 location + real_map 병행 응답 · 클라 fallback
+    location: (r as any).location ?? null,
+    display_location: (r as any).display_location ?? null,
     real_map: r.real_map,
     purchase_price: r.purchase_price,
     sale_price: r.sale_price,
