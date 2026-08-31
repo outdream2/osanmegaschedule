@@ -316,7 +316,7 @@ router.get("/api/sales-trend/product", asyncHandler(async (req, res) => {
   const { data, error } = await q
     .order("period_start_date", { ascending: true, nullsFirst: false })
     .order("snapshot_date", { ascending: true });
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message, "DB_ERROR");
   // 계절 월 필터 (년도 무관)
   const rows = seasonMonths
     ? (data ?? []).filter(r => inSeasonMonths(String(r.snapshot_date ?? ""), seasonMonths))
@@ -355,7 +355,7 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
       const { data, error } = await q
         .order("period_start_date", { ascending: true, nullsFirst: false })
         .range(from, from + PAGE - 1);
-      if (error) return res.status(500).json({ error: error.message });
+      if (error) throw new HttpError(500, error.message, "DB_ERROR");
       if (!data || data.length === 0) break;
       if (seasonMonths) {
         for (const r of data) if (inSeasonMonths(String(r.snapshot_date ?? ""), seasonMonths)) all.push(r);
@@ -421,7 +421,7 @@ router.get("/api/sales-trend/overview", asyncHandler(async (_req, res) => {
         .select("period_start_date, snapshot_date, period_type, purchase_qty, sale_qty, closing_stock, supply_amount, total_amount")
         .order("period_start_date", { ascending: true, nullsFirst: false })
         .range(from, from + PAGE - 1);
-      if (error) return res.status(500).json({ error: error.message });
+      if (error) throw new HttpError(500, error.message, "DB_ERROR");
       if (!data || data.length === 0) break;
       all.push(...data);
       if (data.length < PAGE) break;
@@ -1571,20 +1571,20 @@ router.get("/api/stock-manage/product-history", asyncHandler(async (req, res) =>
 router.post("/api/upload-stock", authorize(9), express.raw({ type: "application/octet-stream", limit: "50mb" }), asyncHandler(async (req, res) => {
   const { managerId } = req.query as Record<string, string>;
   if (!req.body || !Buffer.isBuffer(req.body) || req.body.length === 0) {
-    return res.status(400).json({ error: "파일이 없습니다" });
+    throw badRequest("파일이 없습니다");
   }
   {
     // 권한: level >= 9
     if (managerId) {
       const { data: emp } = await supabase.from("employees").select("level").eq("id", Number(managerId)).maybeSingle();
-      if ((emp?.level ?? 0) < 9) return res.status(403).json({ error: "level 9 이상 관리자만 가능합니다" });
+      if ((emp?.level ?? 0) < 9) throw new HttpError(403, "level 9 이상 관리자만 가능합니다", "FORBIDDEN");
     } else {
-      return res.status(403).json({ error: "managerId 필요" });
+      throw new HttpError(403, "managerId 필요", "FORBIDDEN");
     }
     const buf = req.body as Buffer;
     const isXlsx = buf[0] === 0x50 && buf[1] === 0x4B && buf[2] === 0x03 && buf[3] === 0x04;
     const isXls  = buf[0] === 0xD0 && buf[1] === 0xCF && buf[2] === 0x11 && buf[3] === 0xE0;
-    if (!isXlsx && !isXls) return res.status(400).json({ error: "xlsx/xls 파일만 가능합니다" });
+    if (!isXlsx && !isXls) throw badRequest("xlsx/xls 파일만 가능합니다");
 
     const wb = XLSX.read(buf, { type: "buffer" });
     const ws = wb.Sheets[wb.SheetNames[0]];
@@ -1595,7 +1595,7 @@ router.post("/api/upload-stock", authorize(9), express.raw({ type: "application/
     // Row 2+: 실제 데이터
     // → header:1로 배열형태 읽기 후 Row 1을 헤더로 사용, Row 2부터 데이터
     const arrRows = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, defval: "" });
-    if (arrRows.length < 3) return res.status(400).json({ error: "데이터가 부족합니다" });
+    if (arrRows.length < 3) throw badRequest("데이터가 부족합니다");
 
     // 두 후보 헤더 (Row 0 vs Row 1) 중 실제 컬럼명이 있는 쪽을 선택
     // 병합 헤더(Row 0)는 같은 카테고리명이 반복되고 (예: "세부구분" x4, "재고금액" x5)
@@ -1657,18 +1657,18 @@ router.post("/api/upload-stock", authorize(9), express.raw({ type: "application/
     // 스냅샷 기준일 = 종료재고일 (사용자 명시 필수)
     const snapshotHint = String(req.query.snapshot_date ?? "").trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(snapshotHint)) {
-      return res.status(400).json({ error: "snapshot_date(종료재고일) 형식 오류 · YYYY-MM-DD 필요" });
+      throw badRequest("snapshot_date(종료재고일) 형식 오류 · YYYY-MM-DD 필요");
     }
     const snapshotDate = snapshotHint;
     // 시작재고일 (사용자 명시 · 필수) — 기간 식별자로 사용됨
     // 같은 시작재고일로 재임포트 시 기존 rows 자동 대체 (DELETE-then-INSERT)
     const startHint = String(req.query.start_date ?? "").trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(startHint)) {
-      return res.status(400).json({ error: "start_date(시작재고일) 형식 오류 · YYYY-MM-DD 필요" });
+      throw badRequest("start_date(시작재고일) 형식 오류 · YYYY-MM-DD 필요");
     }
     const periodStartDate: string = startHint;
     if (periodStartDate > snapshotDate) {
-      return res.status(400).json({ error: "start_date(시작재고일)가 종료재고일보다 뒤에 있습니다" });
+      throw badRequest("start_date(시작재고일)가 종료재고일보다 뒤에 있습니다");
     }
     // 기간 구분: early(1-10일) / mid(11-20일) / late(21-말일) — 종료일 dd 로 자동 판정 (전달값도 허용)
     const periodTypeRaw = String(req.query.period_type ?? "").trim().toLowerCase();
@@ -1733,7 +1733,7 @@ router.post("/api/upload-stock", authorize(9), express.raw({ type: "application/
         total_amount:     totalI   >= 0 ? parseNum(r[totalI])   : 0,
       });
     }
-    if (xlsxRows.length === 0) return res.status(400).json({ error: "유효한 데이터가 없습니다" });
+    if (xlsxRows.length === 0) throw badRequest("유효한 데이터가 없습니다");
 
     // 진단 로그: 파일 파싱 결과 요약
     console.log(`[upload-stock] snapshot=${snapshotDate} · start=${periodStartDate ?? "(none)"} · period=${periodType} · 파싱=${history.length}행 · rawDataRows=${dataRows.length}행 · headerRowIdx=${headerRowIdx}`);
@@ -2178,7 +2178,7 @@ router.get("/api/stock-manage/trending-period", asyncHandler(async (req, res) =>
   const priorTo = String(req.query.prior_to ?? "").trim();
   const limit = Math.max(1, Math.min(1000, parseInt(String(req.query.limit ?? "20"), 10) || 20));
   if (!from || !to || !priorFrom || !priorTo) {
-    return res.status(400).json({ error: "from · to · prior_from · prior_to 필수 (YYYY-MM-DD)" });
+    throw badRequest("from · to · prior_from · prior_to 필수 (YYYY-MM-DD)");
   }
   {
     // stock_history · 두 기간 (prior_from ~ to) 통합 조회 (한 번 · 페이지네이션)
