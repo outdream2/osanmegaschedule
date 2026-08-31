@@ -744,7 +744,7 @@ router.get("/api/inventory-checks", asyncHandler(async (req, res) => {
   //   + 실재고 컬럼 전체 (warehouse1/2, store1/2/3, 레거시)
   const COLS = [
     "id", "product_code", "product_name", "checked_at", "checked_by",
-    "warehouse_stock", "warehouse1_stock", "warehouse2_stock",
+    "warehouse1_stock", "warehouse2_stock",
     "store_stock", "store_stock_2", "store3_stock",
     "store1_zone", "store2_zone", "store3_zone",
     "system_stock", "optimal_stock", "status", "note",
@@ -765,6 +765,7 @@ router.post("/api/inventory-checks", authorize(1), asyncHandler(async (req, res)
   // 2026-08-03 · Phase 3 · 5분리 (창고1·창고2·매장1·매장2·매장3) · 구역 3개 추가
   //   - warehouse1_stock / warehouse2_stock / store3_stock / store1_zone / store2_zone / store3_zone
   //   - 레거시 하위 호환: warehouse_stock = warehouse1_stock, store_stock = store1_stock (== store_stock)
+  // 2026-08-31 · warehouse_stock DROP · 레거시 요청 → warehouse1_stock 리다이렉트
   const hasWarehouse  = Object.prototype.hasOwnProperty.call(b, "warehouse_stock");
   const hasStore      = Object.prototype.hasOwnProperty.call(b, "store_stock");
   const hasStore2     = Object.prototype.hasOwnProperty.call(b, "store_stock_2");
@@ -792,9 +793,10 @@ router.post("/api/inventory-checks", authorize(1), asyncHandler(async (req, res)
     checked_at:    now,
     status:        "pending",
   };
-  // 각 컬럼 독립 저장 · mirror 제거 (2026-08-31 · DROP 예약됨)
+  // 각 컬럼 독립 저장 · 2026-08-31 · warehouse_stock DROP 완료
   if (hasWarehouse1) payload.warehouse1_stock = num(b.warehouse1_stock);
-  if (hasWarehouse)  payload.warehouse_stock  = num(b.warehouse_stock);
+  // 레거시 warehouse_stock 요청 → warehouse1_stock 이 없을 때만 warehouse1_stock 으로 리다이렉트
+  if (hasWarehouse && !hasWarehouse1) payload.warehouse1_stock = num(b.warehouse_stock);
   if (hasWarehouse2) payload.warehouse2_stock = num(b.warehouse2_stock);
   if (hasStore)      payload.store_stock      = num(b.store_stock);
   if (hasStore2)     payload.store_stock_2    = num(b.store_stock_2);
@@ -806,7 +808,7 @@ router.post("/api/inventory-checks", authorize(1), asyncHandler(async (req, res)
   if (hasExpiryInput) payload.expiry_input_date = str(b.expiry_input_date);
   if (hasExpiryDate)  payload.expiry_date       = str(b.expiry_date);
 
-  const { data: existingList } = await supabase.from("inventory_checks").select("id, warehouse_stock, store_stock, store_stock_2").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
+  const { data: existingList } = await supabase.from("inventory_checks").select("id, store_stock, store_stock_2").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
   const existing = existingList?.[0] ?? null;
   const applyPayload = async (): Promise<{ error?: string } | null> => {
     if (existing) {
@@ -815,9 +817,8 @@ router.post("/api/inventory-checks", authorize(1), asyncHandler(async (req, res)
       return null;
     }
     const insertPayload: Record<string, any> = { ...payload, product_code: code };
-    if (!("warehouse_stock" in insertPayload))  insertPayload.warehouse_stock  = null;
-    if (!("store_stock" in insertPayload))      insertPayload.store_stock      = null;
-    if (!("store_stock_2" in insertPayload))    insertPayload.store_stock_2    = null;
+    if (!("store_stock" in insertPayload))   insertPayload.store_stock   = null;
+    if (!("store_stock_2" in insertPayload)) insertPayload.store_stock_2 = null;
     const { error } = await supabase.from("inventory_checks").insert([insertPayload]);
     if (error) return { error: error.message };
     return null;
@@ -866,8 +867,8 @@ router.post("/api/inventory-checks", authorize(1), asyncHandler(async (req, res)
 //   store1_zone, store2_zone, store3_zone
 // }] }
 // 하위 호환:
-//   - warehouse_stock (레거시 · 단일 창고) → warehouse1_stock 미지정 시 fallback
-//   - 구 클라이언트: warehouse_stock / store_stock / store_stock_2 만 보내는 경우 그대로 저장
+//   - warehouse_stock (레거시) → warehouse1_stock 으로 병합 (2026-08-31 DROP 완료)
+//   - 구 클라이언트: store_stock / store_stock_2 만 보내는 경우 그대로 저장
 //   - 신규 컬럼 미존재 DB · 신규 필드 stripping 후 재시도 (자동 다운그레이드)
 router.post("/api/inventory-checks/bulk", authorize(1), asyncHandler(async (req, res) => {
   const b = req.body ?? {};
@@ -897,10 +898,9 @@ router.post("/api/inventory-checks/bulk", authorize(1), asyncHandler(async (req,
       checked_by,
       checked_at: now,
       status: "pending",
-      // 레거시 mirror · 기존 소비자 (LowStockPanel · DisplayPage · RequestsPage) 하위 호환
-      warehouse_stock: wh1,
-      store_stock:     s1,
-      store_stock_2:   s2,
+      // 2026-08-31 · warehouse_stock DROP · mirror 제거
+      store_stock:   s1,
+      store_stock_2: s2,
     };
     // 신규 컬럼
     if (!downgraded) {

@@ -101,8 +101,8 @@ async function fetchLatestInventory(codes?: string[]): Promise<Map<string, {
     if (codes && !codes.includes(code)) continue;
     if (map.has(code)) continue;
 
-    const w1 = r.warehouse1_stock != null ? Number(r.warehouse1_stock)
-             : r.warehouse_stock  != null ? Number(r.warehouse_stock)  : null;
+    // 2026-08-31 · warehouse_stock DROP · warehouse1_stock 단일 사용
+    const w1 = r.warehouse1_stock != null ? Number(r.warehouse1_stock) : null;
     const w2 = r.warehouse2_stock != null ? Number(r.warehouse2_stock) : null;
     const s1 = r.store_stock      != null ? Number(r.store_stock)      : null;
     const s2 = r.store_stock_2    != null ? Number(r.store_stock_2)    : null;

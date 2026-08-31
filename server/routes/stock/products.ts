@@ -207,6 +207,7 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
     }
     // 실재고 (inventory_checks) · 최근 스냅샷 (stock_history) 병합 조회
     const codes = (data ?? []).map((p: any) => String(p.product_code ?? "").trim()).filter(Boolean);
+    // 2026-08-31 · warehouse_stock DROP · warehouse1_stock 사용
     let invByCode = new Map<string, { warehouse_stock: number | null; store_stock: number | null; checked_at: string | null }>();
     let histByCode = new Map<string, { last_snapshot: string | null; last_purchase_qty: number | null }>();
     if (codes.length > 0) {
@@ -214,14 +215,14 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
       try {
         const { data: iv } = await supabase
           .from("inventory_checks")
-          .select("product_code, warehouse_stock, store_stock, checked_at")
+          .select("product_code, warehouse1_stock, store_stock, checked_at")
           .in("product_code", codes)
           .order("checked_at", { ascending: false });
         for (const r of iv ?? []) {
           const c = String(r.product_code ?? "").trim();
           if (!c || invByCode.has(c)) continue;
           invByCode.set(c, {
-            warehouse_stock: r.warehouse_stock != null ? Number(r.warehouse_stock) : null,
+            warehouse_stock: r.warehouse1_stock != null ? Number(r.warehouse1_stock) : null,
             store_stock: r.store_stock != null ? Number(r.store_stock) : null,
             checked_at: r.checked_at ?? null,
           });
@@ -555,15 +556,16 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
   let storeStock: number | null = null;
   let invCheckedAt: string | null = null;
   try {
+    // 2026-08-31 · warehouse_stock DROP · warehouse1_stock 사용
     const { data: iv } = await supabase
       .from("inventory_checks")
-      .select("warehouse_stock, store_stock, checked_at")
+      .select("warehouse1_stock, store_stock, checked_at")
       .eq("product_code", productCode)
       .order("checked_at", { ascending: false })
       .limit(1);
     if (iv && iv.length > 0) {
-      warehouseStock = iv[0].warehouse_stock != null ? Number(iv[0].warehouse_stock) : null;
-      storeStock     = iv[0].store_stock     != null ? Number(iv[0].store_stock)     : null;
+      warehouseStock = iv[0].warehouse1_stock != null ? Number(iv[0].warehouse1_stock) : null;
+      storeStock     = iv[0].store_stock      != null ? Number(iv[0].store_stock)      : null;
       invCheckedAt   = iv[0].checked_at ?? null;
     }
   } catch { /* silent */ }

@@ -84,14 +84,15 @@ async function buildTodaySnapshotRows(): Promise<Array<{
   try {
     const invRows = await fetchAllWithRange<any>(() => supabase
       .from("inventory_checks")
-      .select("product_code, warehouse_stock, warehouse1_stock, warehouse2_stock, store_stock, store_stock_2, store3_stock, checked_at")
+      // 2026-08-31 · warehouse_stock DROP · warehouse1_stock 단일 사용
+      .select("product_code, warehouse1_stock, warehouse2_stock, store_stock, store_stock_2, store3_stock, checked_at")
       .order("checked_at", { ascending: false }), 100000);
     for (const r of invRows ?? []) {
       const code = String(r.product_code ?? "").trim();
       if (!code || invMap.has(code)) continue;
       // warehouse 총합 · store 총합 (모든 신규·레거시 컬럼 합산 · 없으면 0)
       const wh = (
-        (r.warehouse1_stock != null ? Number(r.warehouse1_stock) : (r.warehouse_stock != null ? Number(r.warehouse_stock) : 0)) +
+        (r.warehouse1_stock != null ? Number(r.warehouse1_stock) : 0) +
         (r.warehouse2_stock != null ? Number(r.warehouse2_stock) : 0)
       );
       const st = (
