@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
 import { api } from "../../lib/apiClient";
 import {
-  loadZones, saveZones, loadRequests, saveRequests,
+  loadRequests, saveRequests,
   fetchZonesFromDB, saveZonesToDB, fetchRequestsFromDB,
   SKIP_TYPES,
 } from "./DisplayPage.helpers";
+import { buildDefaultZones } from "../../utils/zoneUtils";
 import type { ZoneGroup } from "./ZoneGroupPanel";
 import type { DisplayZone } from "../../utils/zoneUtils";
 import type { DisplayRequest, Employee, TodayStaff } from "./DisplayPage.types";
@@ -38,7 +39,7 @@ export function useDisplayData(selectedDate: string, selectedYM: string): UseDis
   const [todayStaff, setTodayStaff] = useState<TodayStaff[]>([]);
   const [staffLoading, setStaffLoading] = useState(true);
   const [staffError, setStaffError] = useState<string | null>(null);
-  const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
+  const [zones, setZones] = useState<DisplayZone[]>(buildDefaultZones);
   const [zonesLoaded, setZonesLoaded] = useState(false);
   const [requests, setRequests] = useState<DisplayRequest[]>(() => loadRequests());
   const [productsMap, setProductsMap] = useState<Record<string, ProductInfo>>({});
@@ -85,7 +86,7 @@ export function useDisplayData(selectedDate: string, selectedYM: string): UseDis
   // Load zones from DB on mount
   useEffect(() => {
     fetchZonesFromDB().then((dbZones) => {
-      if (dbZones) { setZones(dbZones); saveZones(dbZones); }
+      if (dbZones) { setZones(dbZones); }
       setZonesLoaded(true);
     });
   }, []); // eslint-disable-line
@@ -106,7 +107,6 @@ export function useDisplayData(selectedDate: string, selectedYM: string): UseDis
         return { ...z, assignedStaffName: validName, assignedStaffId: firstEmp?.id ?? null };
       });
       if (changed) {
-        saveZones(validated);
         saveZonesToDB(validated);
       }
       return changed ? validated : prev;
@@ -182,9 +182,8 @@ export function useDisplayData(selectedDate: string, selectedYM: string): UseDis
     return () => clearTimeout(t);
   }, [zoneGroups, zoneGroupsLoaded]);
 
-  // Persist zones: localStorage immediately; debounce DB save
+  // Persist zones: debounce DB save
   useEffect(() => {
-    saveZones(zones);
     if (!zonesLoaded) return;
     if (dbSaveTimer.current) clearTimeout(dbSaveTimer.current);
     setSaveStatus("saving");

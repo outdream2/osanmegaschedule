@@ -4,10 +4,10 @@ import {
   Bell, ClipboardList, Package, Store, BarChart2, Wallet, Building2,
   RotateCcw, Boxes,
 } from "lucide-react";
-import { ZONES_STORAGE_KEY, ZONE_DEFS } from "../../constants/displayZones";
+import { ZONE_DEFS } from "../../constants/displayZones";
 import {
   type ZoneStatus, type DowMap, type DisplayZone,
-  expandZoneDef, buildDefaultZones,
+  expandZoneDef,
 } from "../../utils/zoneUtils";
 import { api, ApiError } from "../../lib/apiClient";
 import { type TabDef as CommonTabDef } from "../common/TabBar";
@@ -38,36 +38,8 @@ export const DOW_LABELS = ["일", "월", "화", "수", "목", "금", "토"] as c
 export const isDowActive = (mask: number | undefined | null, dow: number): boolean =>
   mask == null ? true : ((mask >> dow) & 1) === 1;
 
-// ─── localStorage helpers ─────────────────────────────────────────────
-export const ZONES_KEY = ZONES_STORAGE_KEY;
+// ─── localStorage helpers (requests only) ────────────────────────────
 export const REQS_KEY = "megatown_display_requests";
-
-export const loadZones = (): DisplayZone[] => {
-  try {
-    const raw = localStorage.getItem(ZONES_KEY);
-    if (!raw) { const d = buildDefaultZones(); localStorage.setItem(ZONES_KEY, JSON.stringify(d)); return d; }
-    const parsed = JSON.parse(raw) as DisplayZone[];
-    if (!Array.isArray(parsed) || parsed.length === 0) { const d = buildDefaultZones(); localStorage.setItem(ZONES_KEY, JSON.stringify(d)); return d; }
-    // merge: expand A/B for aisles 1-8, preserve saved status/staff/products by id
-    return ZONE_DEFS.flatMap((def) => {
-      const expanded = expandZoneDef(def);
-      return expanded.map(base => {
-        // 하위 호환: 옛 id (예: "1")로 저장된 값은 A로 매핑, B는 새로 시작
-        const saved = parsed.find((z) => z.id === base.id)
-          ?? (base.id.endsWith("A") ? parsed.find((z) => z.id === String(def.num)) : null);
-        return {
-          ...base,
-          assignedStaffId: saved?.assignedStaffId ?? null,
-          assignedStaffName: saved?.assignedStaffName ?? "",
-          status: saved?.status ?? "normal",
-          products: saved?.products ?? "",
-          dowMap: (saved as any)?.dowMap ?? null,
-        };
-      });
-    });
-  } catch { return buildDefaultZones(); }
-};
-export const saveZones = (z: DisplayZone[]) => { try { localStorage.setItem(ZONES_KEY, JSON.stringify(z)); } catch { } };
 
 export const loadRequests = (): DisplayRequest[] => {
   try { const r = localStorage.getItem(REQS_KEY); return r ? (JSON.parse(r) as DisplayRequest[]) : []; }

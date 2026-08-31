@@ -43,7 +43,7 @@ import type { DpSubTabKey, DisplayPageProps, DisplayRequest, Employee, TodayStaf
 import {
   DP_SUBTAB_DEFAULTS,
   DOW_ALL, DOW_LABELS, isDowActive,
-  saveZones, saveRequests,
+  saveRequests,
   STATUS_LABEL, statusCell, statusDot, statusBadge,
   SHIFT_BADGE, formatRel,
   STAFF_COLORS,
@@ -253,7 +253,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       for (const n of names) nextDow[n] = (nextDow[n] ?? DOW_ALL) | dowBit;
       return { ...z, dowMap: nextDow };
     });
-    setZones(nextZones); saveZones(nextZones); saveRequests(requests);
+    setZones(nextZones); saveRequests(requests);
     try {
       await api.post("/api/zones", { zones: nextZones.map((z) => ({ zone_id: z.id, employee_id: z.assignedStaffId, employee_name: z.assignedStaffName, status: z.status, products: z.products, dow_map: z.dowMap ?? null })) });
     } catch (err: any) {
@@ -312,7 +312,6 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const handleConfirmAutoAssign = useCallback(async () => {
     if (!pendingAutoAssign) return;
     const { assignedList } = pendingAutoAssign;
-    saveZones(zones);
     try {
       await api.post("/api/zones", { zones: zones.map((z) => ({ zone_id: z.id, employee_id: z.assignedStaffId, employee_name: z.assignedStaffName, status: z.status, products: z.products, dow_map: z.dowMap ?? null })) });
     } catch (err: any) {

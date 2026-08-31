@@ -1,9 +1,10 @@
 // src/components/SchedulePage/useDisplayZones.ts
-// 2026-08-22 · #framework-4 · SchedulePage 분리 · 디스플레이 존 로컬스토리지 훅
-import { useState } from "react";
+// #14 · 2026-08-31 · KV→DB 이관 · localStorage 제거 · /api/zones 단일 소스
+import { useState, useEffect, useRef } from "react";
 import { Employee } from "../../types";
-import { ZONE_DEFS, ZONES_STORAGE_KEY } from "../../constants/displayZones";
+import { ZONE_DEFS } from "../../constants/displayZones";
 import { isLogisticsPosition as isLogistics } from "../../lib/employeeCategory";
+import { fetchZonesFromDB, saveZonesToDB } from "../DisplayPage/DisplayPage.helpers";
 import type { LogisticsZoneProps } from "../EmployeeCalendarModal";
 
 export type DisplayZoneSlim = {
@@ -12,68 +13,106 @@ export type DisplayZoneSlim = {
   category: string; section: string; products: string;
 };
 
-export function useDisplayZones() {
-  const [displayZoneVer, setDisplayZoneVer] = useState(0);
+const buildDefaultSlimZones = (): DisplayZoneSlim[] =>
+  ZONE_DEFS.map(d => ({
+    id: String(d.num), num: d.num, label: d.label, category: d.category,
+    section: d.section, assignedStaffId: null, assignedStaffName: "",
+    status: "normal", products: "",
+  }));
 
-  const loadDisplayZones = (): DisplayZoneSlim[] => {
-    try {
-      const raw = localStorage.getItem(ZONES_STORAGE_KEY);
-      if (!raw) return ZONE_DEFS.map(d => ({
-        id: String(d.num), num: d.num, label: d.label, category: d.category,
-        section: d.section, assignedStaffId: null, assignedStaffName: "",
-        status: "normal", products: "",
+export function useDisplayZones() {
+  const [zones, setZones] = useState<DisplayZoneSlim[]>(buildDefaultSlimZones);
+  const [displayZoneVer, setDisplayZoneVer] = useState(0);
+  const pendingSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 마운트 시 DB에서 로드
+  useEffect(() => {
+    fetchZonesFromDB().then(dbZones => {
+      if (!dbZones) return;
+      // DisplayZone → DisplayZoneSlim 형 변환
+      const slim: DisplayZoneSlim[] = dbZones.map(z => ({
+        id: z.id,
+        num: typeof (z as any).num === "number" ? (z as any).num : parseInt(z.id, 10),
+        assignedStaffId: z.assignedStaffId,
+        assignedStaffName: z.assignedStaffName,
+        status: z.status,
+        label: (z as any).label ?? "",
+        category: (z as any).category ?? "",
+        section: (z as any).section ?? "",
+        products: z.products ?? "",
       }));
-      return JSON.parse(raw) as DisplayZoneSlim[];
-    } catch { return []; }
+      setZones(slim);
+    });
+  }, []);
+
+  const saveZonesDebounced = (nextZones: DisplayZoneSlim[]) => {
+    if (pendingSaveRef.current) clearTimeout(pendingSaveRef.current);
+    pendingSaveRef.current = setTimeout(() => {
+      // DisplayZoneSlim → DisplayZone 형태로 변환해서 saveZonesToDB 호출
+      const full = nextZones.map(z => ({
+        id: z.id,
+        assignedStaffId: z.assignedStaffId,
+        assignedStaffName: z.assignedStaffName,
+        status: z.status as any,
+        products: z.products,
+        dowMap: null,
+        label: z.label,
+        category: z.category,
+        section: z.section,
+      }));
+      saveZonesToDB(full as any).catch(() => { });
+    }, 800);
   };
 
-  const saveDisplayZones = (zones: DisplayZoneSlim[]) => {
-    localStorage.setItem(ZONES_STORAGE_KEY, JSON.stringify(zones));
-    setDisplayZoneVer(v => v + 1);
+  const updateZones = (updater: (prev: DisplayZoneSlim[]) => DisplayZoneSlim[]) => {
+    setZones(prev => {
+      const next = updater(prev);
+      saveZonesDebounced(next);
+      setDisplayZoneVer(v => v + 1);
+      return next;
+    });
   };
 
   const buildLogisticsZoneProps = (calendarEmployee: Employee): LogisticsZoneProps | undefined => {
     if (!isLogistics(calendarEmployee.position)) return undefined;
-    const zones = loadDisplayZones();
-    const assignedZoneNums = zones.filter(z => z.assignedStaffId === calendarEmployee.id).map(z => z.num);
     const empId = calendarEmployee.id;
     const empName = calendarEmployee.name;
+    const assignedZoneNums = zones.filter(z => z.assignedStaffId === empId).map(z => z.num);
     return {
       assignedZoneNums,
       onToggle: (zoneNum: number) => {
-        const current = loadDisplayZones();
-        saveDisplayZones(current.map(z => {
+        updateZones(prev => prev.map(z => {
           if (z.num !== zoneNum) return z;
           return z.assignedStaffId === empId
             ? { ...z, assignedStaffId: null, assignedStaffName: "" }
             : { ...z, assignedStaffId: empId, assignedStaffName: empName };
         }));
       },
-      onClearAll: () => saveDisplayZones(loadDisplayZones().map(z =>
-        z.assignedStaffId === empId ? { ...z, assignedStaffId: null, assignedStaffName: "" } : z
-      )),
-      onSaveToDow: async (dow: number) => {
-        const currentZones = loadDisplayZones();
-        const currentNums = currentZones.filter(z => z.assignedStaffId === empId).map(z => z.num);
-        localStorage.setItem(`megatown_zone_template_emp${empId}_dow${dow}`, JSON.stringify(currentNums));
+      onClearAll: () => {
+        updateZones(prev => prev.map(z =>
+          z.assignedStaffId === empId ? { ...z, assignedStaffId: null, assignedStaffName: "" } : z
+        ));
+      },
+      onSaveToDow: async (_dow: number) => {
+        // #14 · dow 템플릿은 DB 미지원 · 추후 구현 예정 · localStorage 제거
       },
     };
   };
 
-  const getEmpZoneNums = (empId: number): number[] => {
-    return loadDisplayZones().filter(z => z.assignedStaffId === empId).map(z => z.num);
-  };
+  const getEmpZoneNums = (empId: number): number[] =>
+    zones.filter(z => z.assignedStaffId === empId).map(z => z.num);
 
   const applyZones = (empId: number, name: string, position: string, zoneNums: number[]) => {
     if (position !== "물류") return;
-    const current = loadDisplayZones();
-    const cleared = current.map(z =>
-      z.assignedStaffId === empId ? { ...z, assignedStaffId: null, assignedStaffName: "" } : z
-    );
-    saveDisplayZones(cleared.map(z =>
-      zoneNums.includes(z.num) ? { ...z, assignedStaffId: empId, assignedStaffName: name } : z
-    ));
+    updateZones(prev => {
+      const cleared = prev.map(z =>
+        z.assignedStaffId === empId ? { ...z, assignedStaffId: null, assignedStaffName: "" } : z
+      );
+      return cleared.map(z =>
+        zoneNums.includes(z.num) ? { ...z, assignedStaffId: empId, assignedStaffName: name } : z
+      );
+    });
   };
 
-  return { loadDisplayZones, saveDisplayZones, buildLogisticsZoneProps, getEmpZoneNums, applyZones, displayZoneVer };
+  return { buildLogisticsZoneProps, getEmpZoneNums, applyZones, displayZoneVer };
 }
