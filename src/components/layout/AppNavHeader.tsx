@@ -4,33 +4,28 @@
 //   - 모바일: 균등 분할 · 넘치는 탭 삼선(☰) 드롭다운 처리
 //   - 로고 클릭 → 홈(랜딩) 이동
 //   - 경영관리 탭 클릭 → business-manage 페이지로 단순 라우팅 (팝오버 제거)
+// 2026-08-31 · 분리: NavDesktopTab · NavMobileTab · AppNavHeader.types
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
 import { Lock, LogOut, Menu } from "lucide-react";
 import type { AuthSession } from "../../types";
 import { NotificationBell } from "../NotificationBell";
 import { NotificationToggle } from "../NotificationToggle";
-// 2026-08-17 · 사용자 지시 · 반응형 헤더 · logo2 (사이드바와 통일)
 import logoImg from "../../images/logo2.png";
-// 2026-08-11 · 사이드바 V2 · flag ON 시 슬림 헤더로 대체
-// 2026-08-16 · env → 서버 KV 설정 훅으로 이관
 import { useSidebarEnabled } from "../../hooks/useSidebar";
-// 2026-08-31 · 사용자 리포트 · 사이드바 opener 명시 트리거 · shadcn Sidebar
 import { SidebarTrigger } from "../ui/sidebar";
-// 2026-08-31 · 사용자 지시 · 모든 페이지 브레드크럼 (홈 › 그룹 › 페이지)
 import { Breadcrumb } from "../common/Breadcrumb";
 import { buildBreadcrumb } from "./sideNavGroups";
 import { useActiveSubTab } from "../../hooks/useActiveSubTab";
-// 2026-08-16 · 페이지 hidden · 공통헤더에서도 필터
 import { usePagePermissions } from "../../hooks/usePagePermissions";
 import { SIDE_NAV_GROUPS } from "./sideNavGroups";
-// 2026-08-12 · PC 사이드바 접기 · 헤더에 토글 버튼 노출
 import { useIsMobile } from "../../hooks/use-mobile";
-// 2026-08-23 · #188 · usePageVisibility · 공통헤더 탭 · 뷰포트별 필터
 import { usePageVisibility } from "../../hooks/usePageVisibility";
-// 2026-08-12 · 프레임워크 · logo alt 만 brand.shortName 반영 (하드코딩 fallback 유지)
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
-// 2026-08-12 · #62 · 공통헤더 TABS 를 SIDE_NAV_GROUPS 로부터 파생 (단일 소스 · B 방식)
-import { DERIVED_TOP_TABS, type DerivedTopTab, type SideNavColor, NAV_ACCENT, headerAccentGradient } from "./sideNavGroups";
+import { DERIVED_TOP_TABS, type DerivedTopTab, type SideNavColor } from "./sideNavGroups";
+import type { TabDef } from "./AppNavHeader.types";
+import { TAB_COLOR_MAP } from "./AppNavHeader.types";
+import { NavDesktopTab } from "./NavDesktopTab";
+import { NavMobileTab } from "./NavMobileTab";
 
 export type AppNavPage =
   | "landing"
@@ -38,25 +33,25 @@ export type AppNavPage =
   | "display"
   | "requests"
   | "leave"
-  | "reservation"          // 예약 페이지 · 랜딩 카드에서 접근 · 헤더 탭 노출 없음
-  | "scan"                 // 헤더 탭에서는 제거되었으나 라우팅용 union 유지 · 랜딩 카드·매입 서브탭·설정 등에서 접근
-  | "productarrival"       // 헤더 탭에서는 제거되었으나 라우팅용 union 유지 · 랜딩 카드·매입 서브탭 등에서 접근
-  | "ocr"                  // 헤더 탭에서는 제거되었으나 라우팅용 union 유지 · 매입 사입 서브탭에서 접근
+  | "reservation"
+  | "scan"
+  | "productarrival"
+  | "ocr"
   | "lunch"
   | "permissions"
   | "stockarrivals"
   | "stockcheck"
   | "board"
   | "mypage"
-  | "zone-labels"          // 2026-08-03 · 구역 라벨 관리 (설정 링크에서 접근 · 헤더 탭 노출 없음 · 라우팅 union 유지)
-  | "business-manage"      // 2026-08-03 · 경영관리 통합 페이지
-  | "hr-forms"             // 2026-08-03 · 각종 양식 (경영관리 서브탭 · 별도 라우팅 union 유지)
-  | "pharmacist"           // 2026-08-03 · 약사 전용 페이지
-  | "approval-request"     // 2026-08-12 · 승인요청 통합 페이지 (연차·점심불참·서류작성 서브탭)
-  | "branding"             // 2026-08-12 · Phase 5 · 브랜딩/연락처/도장/모바일 가시성 통합 설정 페이지
-  | "company-info"         // 2026-08-12 · 회사정보 설정 페이지 (약국명·대표·사업자·주소·전화)
-  | "season-settings"      // 2026-08-12 · 계절 정의 설정 페이지 (MyPage 에서 이동)
-  | "system-settings";     // 2026-08-12 · 시스템 설정 페이지 (env 편집 · 재시작 반영)
+  | "zone-labels"
+  | "business-manage"
+  | "hr-forms"
+  | "pharmacist"
+  | "approval-request"
+  | "branding"
+  | "company-info"
+  | "season-settings"
+  | "system-settings";
   // 2026-08-23 · #181 · zone-settings 제거 · StoreZoneMap 인라인 편집만
 
 // 헤더 내부 탭 렌더용 확장 키 (경영관리 · business-manage 로 라우팅)
@@ -71,23 +66,7 @@ interface AppNavHeaderProps {
   rightSlot?: React.ReactNode;
 }
 
-interface TabDef {
-  key: TabKey;
-  label: string;
-  mobileLabel: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number; weight?: any }>;
-  managerOnly: boolean;
-  pharmacistOnly?: boolean;   // 2026-08-03 · 약사만 노출 (position === '약사' or role 'pharmacist')
-  iconClassName?: string;
-  color?: "slate" | "blue" | "red" | "sky" | "indigo" | "orange" | "emerald" | "violet" | "amber" | "cyan";
-}
-
 // 2026-08-12 · #62 · TABS = SIDE_NAV_GROUPS 로부터 자동 파생 (단일 소스 · sideNavGroups.ts)
-// (이전: 하드코딩 배열 · 사이드바 그룹 정의와 이중 관리 → 파생으로 통일)
-//   · 순서 · 라벨 · 색상 · 아이콘 모두 group 정의 그대로 (회귀 없음)
-//   · business 특수 키 · 헤더 내부에서 business-manage 로 라우팅 유지
-//   · 계정 그룹은 topTab.hideInTopTabs=true 로 헤더 제외
 const TABS: TabDef[] = DERIVED_TOP_TABS.map((t: DerivedTopTab): TabDef => ({
   key: t.key as TabKey,
   label: t.label,
@@ -95,32 +74,10 @@ const TABS: TabDef[] = DERIVED_TOP_TABS.map((t: DerivedTopTab): TabDef => ({
   icon: t.icon,
   managerOnly: t.managerOnly,
   pharmacistOnly: t.pharmacistOnly,
-  // SideNavColor ⊂ TabDef.color · cast 안전 (slate/amber/red/sky/indigo/emerald/violet/cyan 모두 커버)
   color: t.color as SideNavColor & TabDef["color"],
 }));
 
-// 2026-08-06 · 랜딩 파스텔 톤 통일 · 활성 탭: 파스텔 배경 + 진한 텍스트 + border (흰 배경+진한gradient 제거)
-// 2026-08-17 · 사용자 지시 · 헤더 제목 색깔 조금만 진하게 · inactive 500→600 · active 700→800
-// 2026-08-17 · 사용자 지시 · 반응형 · 메인 헤더 딥네이비 배경 · 모바일 tab bar 통일
-//   · 활성 · 반투명 흰 pill (bg-white/[0.14]) · text-white · shadow-sm
-//   · 비활성 · text-[#C4DAEE] (light blue) · hover text-white
-//   · 카테고리 identity · 아이콘 색만 살짝 유지 (renderMobileTab 에서 icon)
-const TAB_COLOR_MAP: Record<string, { activeBg: string; activeText: string; inactiveText: string; inactiveHoverText: string; }> = {
-  slate:   { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
-  blue:    { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
-  red:     { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
-  sky:     { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
-  indigo:  { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
-  orange:  { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
-  emerald: { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
-  violet:  { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
-  amber:   { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
-  cyan:    { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
-};
-
-// 경영관리 탭이 활성인 페이지들 (통합 페이지 + 서브 페이지들 · 헤더 활성 표시용)
 // 2026-08-29 · #196 Phase 4 · SIDE_NAV_GROUPS business 그룹 items 로부터 자동 파생 (하드코드 제거)
-//   · business-manage · permissions · hr-forms 등 · 사이드바 그룹 변경 시 자동 반영
 const BUSINESS_PAGES: Set<AppNavPage> = new Set(
   (() => {
     const businessGroup = SIDE_NAV_GROUPS.find(g => g.id === "business");
@@ -140,10 +97,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   onLogout,
   rightSlot,
 }) => {
-  // 2026-08-11 · 사이드바 V2 · 데스크탑만 슬림 헤더 · 훅 rules 준수 위해 조건 return 은 모든 훅 이후로 이동
   const isMobileNav = useIsMobile();
-  const SIDEBAR_ENABLED = useSidebarEnabled(); // 2026-08-16 · 로컬 상수 유지 · body 로직 변경 최소
-  // 2026-08-12 · 프레임워크 · logo alt 만 반영
+  const SIDEBAR_ENABLED = useSidebarEnabled();
   const { brand: hdrBrand } = useBrandIdentity();
   const userLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
@@ -151,32 +106,23 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     : authSession?.role === "employee" ? 1 : 0);
   const isPrivileged = userLevel >= 2;
 
-  // 2026-08-03 · 경영관리 팝오버 제거 (business-manage 통합 페이지로 라우팅)
-
-  // 약사 판정 · level ≥ 3 · 사용자 확정 (2026-08-03)
   const isPharmacist = useMemo(() => {
     if (!authSession) return false;
     return (authSession.level ?? 0) >= 3;
   }, [authSession]);
 
-  // 2026-08-10 · #22 · 거래처 로그인 (role='vendor') · [홈] 만 노출 · 스케줄·이슈·요청·기타 숨김
   const isVendor = authSession?.role === "vendor";
-  // 2026-08-16 · 페이지 hidden · 공통헤더에서도 반영
-  // 2026-08-18 · #131 fix · admin(lv9) 도 hidden 적용 (sideNavGroups.canAccessItem 과 동일 로직)
-  //   · admin 예외 · ADMIN_ESSENTIAL (permissions/business-manage/account) 만 · 나머지 다 filter
-  //   · 이전 버그: userLevel < 9 조건으로 · admin 은 hidden 필터 건너뜀 → 헤더에 여전히 표시 → 클릭 시 페이지 잠깐 뜸 → 리다이렉트 (flicker)
   const { perms } = usePagePermissions();
-  // 2026-08-23 · #188 · usePageVisibility · 뷰포트별 필터
   const { isVisible: isPageVisible } = usePageVisibility();
   const viewport = isMobileNav ? "mobile" : "pc";
   const ADMIN_ESSENTIAL_KEYS = React.useMemo(() => new Set<string>(["permissions", "business-manage", "account"]), []);
+
   const visibleTabs = useMemo(() => TABS.filter((t) => {
     if (t.key === "landing") return true;
     if (!authSession) return false;
-    if (isVendor) return false;  // 거래처 로그인 시 홈 외 모든 탭 숨김
+    if (isVendor) return false;
     if (t.managerOnly) return isPrivileged;
     if (t.pharmacistOnly) return isPharmacist;
-    // 2026-08-18 · admin 포함 · hidden 필터 · admin 예외는 ADMIN_ESSENTIAL 만
     if (perms) {
       const group = SIDE_NAV_GROUPS.find(g => (g.topTab?.key ?? g.items[0]?.key) === t.key);
       if (group) {
@@ -184,24 +130,19 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           const compositeKey = it.subTab ? `${it.key}:${it.subTab}` : it.key;
           const perm = (perms as any)[compositeKey] ?? (perms as any)[it.key];
           if (perm?.hidden !== true) return false;
-          // admin 예외: essential 페이지는 admin 에게 계속 노출 (lockout 방지)
           if (userLevel >= 9 && ADMIN_ESSENTIAL_KEYS.has(it.key)) return false;
           return true;
         });
         if (allHidden) return false;
       }
     }
-    // 2026-08-23 · #188 · usePageVisibility · 뷰포트별 필터 (사용자 명시 해제)
     if (!isPageVisible(t.key as string, viewport)) return false;
     return true;
   }), [authSession, isPrivileged, isPharmacist, isVendor, perms, userLevel, ADMIN_ESSENTIAL_KEYS, isPageVisible, viewport]);
 
-  // 경영관리 하위 페이지 활성 여부 (연차승인·점심불참·권한관리)
   const isBizPage = BUSINESS_PAGES.has(activePage);
 
-  // ── 모바일 오버플로 처리 (2026-07-15) ─────────────────────────
-  //   실측 폭 기반: 컨테이너에 못 들어가는 탭은 삼선 ☰ 드롭다운으로 이동
-  //   활성 탭은 항상 노출 (오버플로 되어도 앞으로 당김)
+  // ── 모바일 오버플로 처리 ─────────────────────────
   const mobileContainerRef = useRef<HTMLDivElement>(null);
   const mobileMeasureRef = useRef<HTMLDivElement>(null);
   const mobileOverflowBtnRef = useRef<HTMLDivElement>(null);
@@ -214,17 +155,15 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     if (!container || !measure) return;
     const calc = () => {
       const containerW = container.clientWidth;
-      const btnW = 52; // ☰ 버튼 여유 (오버플로 있을 때만 사용)
+      const btnW = 52;
       const tabEls = measure.querySelectorAll<HTMLElement>("[data-mobile-tab]");
       let used = 0;
       let count = 0;
-      const gap = 4; // gap-1
-      const padding = 16; // px-2 좌우
+      const gap = 4;
+      const padding = 16;
       const avail = containerW - padding;
-      // 순차 누적 · 다음 탭 못 들어가면 stop (☰ 버튼 자리 확보)
       for (let i = 0; i < tabEls.length; i++) {
         const w = tabEls[i].offsetWidth + (i > 0 ? gap : 0);
-        // 남은 탭이 하나 이상이면 ☰ 자리 필요
         const willHaveOverflow = i < tabEls.length - 1;
         const limit = willHaveOverflow ? avail - btnW - gap : avail;
         if (used + w > limit) break;
@@ -248,7 +187,6 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [mobileOverflowOpen]);
 
-  // 활성 탭이 오버플로 영역이면 앞으로 당김 (사용자가 현재 위치 볼 수 있도록)
   const mobileOrderedTabs = useMemo(() => {
     const effectiveActive = isBizPage ? "business" : activePage;
     const activeIdx = visibleTabs.findIndex(t => t.key === effectiveActive);
@@ -261,8 +199,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   const mobileShownTabs = mobileOrderedTabs.slice(0, mobileVisibleCount);
   const mobileOverflowTabs = mobileOrderedTabs.slice(mobileVisibleCount);
 
-  // 2026-07-30 · 사용자 재요청 · 데스크탑 오버플로 시 삼선 (☰) 드롭다운 복원 (flex-wrap 폐기)
-  //   실측 폭 기반: 컨테이너에 못 들어가는 탭은 삼선 ☰ 드롭다운으로 이동 · 넓으면 다 노출
+  // ── 데스크탑 오버플로 처리 ─────────────────────────
   const desktopContainerRef = useRef<HTMLDivElement>(null);
   const desktopMeasureRef = useRef<HTMLDivElement>(null);
   const desktopOverflowBtnRef = useRef<HTMLDivElement>(null);
@@ -285,7 +222,6 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         if (tabEls[i].offsetWidth > 0) { anyMeasured = true; break; }
       }
       if (!anyMeasured) return;
-      // 1-pass · 버튼 예약 없이 전부 맞는지 확인
       let totalW = 0;
       for (let i = 0; i < tabEls.length; i++) {
         totalW += tabEls[i].offsetWidth + (i > 0 ? gap : 0);
@@ -294,7 +230,6 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         setDesktopVisibleCount(tabEls.length);
         return;
       }
-      // 2-pass · ☰ 공간 확보 후 재계산
       const limit = containerW - btnW - gap;
       let used = 0;
       let count = 0;
@@ -322,7 +257,6 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [desktopOverflowOpen]);
 
-  // 활성 탭이 오버플로 영역이면 앞으로 당김 (사용자가 현재 위치 볼 수 있도록)
   const desktopOrderedTabs = useMemo(() => {
     const effectiveActive = isBizPage ? "business" : activePage;
     const activeIdx = visibleTabs.findIndex(t => t.key === effectiveActive);
@@ -335,206 +269,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   const desktopShownTabs = desktopOrderedTabs.slice(0, desktopVisibleCount);
   const desktopOverflowTabs = desktopOrderedTabs.slice(desktopVisibleCount);
 
-  // 2026-08-11 · PC 데스크탑 탭 · Linear/Vercel SaaS 스타일 리디자인
-  //   - 활성: 하단 accent underline + 탭 색상 텍스트 + 살짝 tinted 배경
-  //   - 비활성: 텍스트만 · hover 시 subtle 배경 + 색상 전환
-  //   - 모바일 코드(renderMobileTab) 미변경
-  const renderDesktopTab = (tab: TabDef) => {
-    const Icon = tab.icon;
-    const c = TAB_COLOR_MAP[tab.color ?? "slate"];
-
-    // 2026-08-17 · 세련 · 공통헤더 ↔ 사이드바 연동 (NAV_ACCENT 단일 소스 · sideNavGroups.ts)
-    //   · 활성 · glass pill + 그룹 색 아이콘 + 하단 gradient accent bar + subtle glow
-    //   · SideNav 좌측 accent bar 와 동일 hex 참조 → drift 방지
-    const colorKey = (tab.color ?? "slate") as SideNavColor;
-    const validColor: SideNavColor = (["slate","amber","red","sky","indigo","emerald","violet","cyan"] as SideNavColor[]).includes(colorKey) ? colorKey : "slate";
-    const accent = NAV_ACCENT[validColor];
-    const accentGradient = headerAccentGradient(validColor);
-    const iconAccent = accent.iconText;
-    const activeGlow = accent.glow;
-
-    // 2026-08-18 v5 · 심플 배경 (gradient 제거 · 사용자 피드백)
-    const baseCommon = "relative flex items-center gap-1.5 px-3 sm:px-3 md:px-3.5 lg:px-4 py-1.5 rounded-lg text-[19px] sm:text-[19px] md:text-[20px] lg:text-[21px] font-semibold whitespace-nowrap transition-all duration-200 ease-out";
-
-    // active · 흰 반투명 pill + inset highlight (Attio)
-    const activeClass = `${baseCommon} bg-white/[0.10] text-white font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]`;
-    // inactive · 부드러운 hover
-    const inactiveClass = `${baseCommon} text-[#C4DAEE] hover:bg-white/[0.06] hover:text-white hover:-translate-y-[1px] active:scale-95 cursor-pointer disabled:opacity-40 group/tab`;
-
-    // 경영관리 탭 · business-manage 통합 페이지로 단순 라우팅 (2026-08-03)
-    if (tab.key === "business") {
-      const isActive = isBizPage;
-      const bizOnClick = () => onNavigate?.("business-manage");
-      if (isActive) {
-        return (
-          <span key="business" className={activeClass}>
-            <span className="inline-flex" style={{ filter: `drop-shadow(0 0 8px ${accent.hex}) drop-shadow(0 0 16px ${accent.hex}40)` }}>
-              <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent} scale-110 transition-transform`} />
-            </span>
-            <span>{tab.label}</span>
-            {/* 2026-08-18 v5 · 강력한 gradient bar + double glow */}
-            <span
-              className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[90%] h-[3px] rounded-full pointer-events-none"
-              style={{ background: `linear-gradient(90deg, transparent, ${accent.hex} 30%, ${accent.hex} 70%, transparent)`, boxShadow: `0 0 12px ${accent.hex}, 0 2px 10px ${accent.hex}80` }}
-            />
-          </span>
-        );
-      }
-      return (
-        <button
-          key="business"
-          type="button"
-          onClick={bizOnClick}
-          disabled={!onNavigate}
-          className={inactiveClass}
-        >
-          {/* 2026-08-18 v5 · 아이콘 · 항상 그룹 accent color (액센트 유지) */}
-          <Icon size={20} weight="duotone" className={`shrink-0 opacity-75 group-hover/tab:opacity-100 transition-all ${iconAccent}`} />
-          <span>{tab.label}</span>
-          {/* hover underline reveal */}
-          <span
-            className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-0 h-[2px] rounded-full pointer-events-none transition-all duration-300 ease-out group-hover/tab:w-[50%]"
-            style={{ backgroundColor: `${accent.hex}80` }}
-            aria-hidden
-          />
-        </button>
-      );
-    }
-
-    const isActive = tab.key === activePage;
-    const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key as AppNavPage);
-    if (isActive) {
-      return (
-        <span key={tab.key} className={activeClass}>
-          <span className="inline-flex" style={{ filter: `drop-shadow(0 0 8px ${accent.hex}) drop-shadow(0 0 16px ${accent.hex}40)` }}>
-            <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent} scale-110 transition-transform`} />
-          </span>
-          <span>{tab.label}</span>
-          {/* 2026-08-18 v5 · 강력한 gradient bar + double glow */}
-          <span
-            className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[90%] h-[3px] rounded-full pointer-events-none"
-            style={{ background: `linear-gradient(90deg, transparent, ${accent.hex} 30%, ${accent.hex} 70%, transparent)`, boxShadow: `0 0 12px ${accent.hex}, 0 2px 10px ${accent.hex}80` }}
-          />
-        </span>
-      );
-    }
-    return (
-      <button
-        key={tab.key}
-        onClick={onClick}
-        disabled={!onNavigate && !onBack}
-        className={inactiveClass}
-      >
-        {/* 2026-08-18 v5 · 아이콘 · 항상 그룹 accent color (액센트 유지) */}
-        <Icon size={20} weight="duotone" className={`shrink-0 opacity-75 group-hover/tab:opacity-100 transition-all ${iconAccent}`} />
-        <span>{tab.label}</span>
-        {/* hover underline reveal · 그룹 색 반영 */}
-        <span
-          className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-0 h-[2px] rounded-full pointer-events-none transition-all duration-300 ease-out group-hover/tab:w-[50%]"
-          style={{ backgroundColor: `${accent.hex}80` }}
-          aria-hidden
-        />
-      </button>
-    );
-  };
-
-  const renderMobileTab = (tab: TabDef) => {
-    const Icon = tab.icon;
-    const c = TAB_COLOR_MAP[tab.color ?? "slate"];
-    // 2026-08-18 · 모바일 탭 · 그룹 톤 gradient (데스크탑과 통일)
-    const base = "flex-1 min-w-[52px] flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 rounded-lg text-[12px] font-bold transition-all duration-200 ease-out active:scale-95";
-    const activeInset = "shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(0,0,0,0.08)]";
-    // 그룹 톤 gradient · 활성 pill 배경
-    const mobileColorKey = (tab.color ?? "slate") as SideNavColor;
-    const mobileValidColor: SideNavColor = (["slate","amber","red","sky","indigo","emerald","violet","cyan"] as SideNavColor[]).includes(mobileColorKey) ? mobileColorKey : "slate";
-    const mobileAccent = NAV_ACCENT[mobileValidColor];
-    const mobileActiveStyle: React.CSSProperties = {
-      background: `linear-gradient(135deg, ${mobileAccent.hex}30 0%, ${mobileAccent.hex}15 50%, ${mobileAccent.hex}05 100%)`,
-    };
-
-    // 경영관리 탭 (모바일) · business-manage 단순 라우팅 (2026-08-03)
-    if (tab.key === "business") {
-      const isActive = isBizPage;
-      const bizOnClick = () => onNavigate?.("business-manage");
-      if (isActive) {
-        return (
-          <span key="business" className={`${base} bg-white/[0.10] ${c.activeText} ${activeInset} font-bold`}>
-            <span className="inline-flex" style={{ filter: `drop-shadow(0 0 6px ${mobileAccent.hex}) drop-shadow(0 0 12px ${mobileAccent.hex}60)` }}>
-              <Icon size={26} weight="fill" className={`${mobileAccent.iconText} scale-110 transition-transform`} />
-            </span>
-            <span className="leading-tight text-center whitespace-nowrap">경영</span>
-          </span>
-        );
-      }
-      return (
-        <button
-          key="business"
-          type="button"
-          onClick={bizOnClick}
-          disabled={!onNavigate}
-          className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white/[0.10] cursor-pointer disabled:opacity-40`}
-        >
-          {/* 2026-08-18 v5 · 아이콘 · 항상 그룹 accent color (액센트 유지) */}
-          <Icon size={26} weight="fill" className={`${mobileAccent.iconText} opacity-75`} />
-          <span className="leading-tight text-center">경영</span>
-        </button>
-      );
-    }
-
-    const isActive = tab.key === activePage;
-    const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key as AppNavPage);
-    if (isActive) {
-      return (
-        <span key={tab.key} className={`${base} bg-white/[0.10] ${c.activeText} ${activeInset} font-bold`}>
-          <span className="inline-flex" style={{ filter: `drop-shadow(0 0 6px ${mobileAccent.hex}) drop-shadow(0 0 12px ${mobileAccent.hex}60)` }}>
-            <Icon size={26} weight="fill" className={`${mobileAccent.iconText} scale-110 transition-transform`} />
-          </span>
-          <span className="leading-tight text-center">
-            {(() => {
-              const L = tab.label;
-              const isAllAscii = /^[\x20-\x7e]+$/.test(L);
-              if (L.length >= 4 && !isAllAscii) {
-                const custom: Record<string, [string, string]> = {
-                  "거래명세서": ["거래", "명세서"],
-                  "스케줄관리": ["스케줄", "관리"],
-                };
-                if (custom[L]) return <><div>{custom[L][0]}</div><div>{custom[L][1]}</div></>;
-                const half = L.length === 5 ? 2 : Math.ceil(L.length / 2);
-                return <><div>{L.slice(0, half)}</div><div>{L.slice(half)}</div></>;
-              }
-              return L;
-            })()}
-          </span>
-        </span>
-      );
-    }
-    return (
-      <button
-        key={tab.key}
-        onClick={onClick}
-        disabled={!onNavigate && !onBack}
-        className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white/[0.10] cursor-pointer disabled:opacity-40`}
-      >
-        {/* 2026-08-18 v5 · 아이콘 · 항상 그룹 accent color (액센트 유지) */}
-        <Icon size={26} weight="fill" className={`${mobileAccent.iconText} opacity-75`} />
-        <span className="leading-tight text-center whitespace-nowrap">
-          {/* 3자 이하는 한줄 · 4자 이상만 wrap */}
-          {tab.label.length > 3 ? (
-            <>
-              <div>{tab.label.slice(0, tab.label.length - 2)}</div>
-              <div>{tab.label.slice(-2)}</div>
-            </>
-          ) : tab.label}
-        </span>
-      </button>
-    );
-  };
-
-  // 2026-08-11 · 사이드바 V2 · 데스크탑에서는 헤더 최소화
-  // 2026-08-31 · 사용자 리포트 · 사이드바 opener 안 보임 · header 좌측 · SidebarTrigger 재추가
-  //   · 사용자가 SidebarRail (우측 경계선) 을 찾기 어려움 · 명시적 버튼 필요
-  //   · 접힘·펼침 상태 모두 · shadcn 표준 · Cmd/Ctrl+B 단축키 유지
-  // 2026-08-31 · 사용자 지시 · 브레드크럼 · 모든 페이지 · 링크 이동 지원
+  // ── 브레드크럼 ─────────────────────────
   const activeSubTab = useActiveSubTab(activePage);
   const breadcrumbItems = useMemo(
     () => buildBreadcrumb(activePage, activeSubTab).map(s => ({
@@ -549,6 +284,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     else onNavigate?.(page);
   };
 
+  // ── 슬림 헤더 (사이드바 데스크탑) ─────────────────────────
   if (SIDEBAR_ENABLED && !isMobileNav) {
     return (
       <div className="flex items-center justify-between gap-3 px-3 py-1 shrink-0 bg-white/60 backdrop-blur-sm border-b border-line/50">
@@ -566,40 +302,31 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     );
   }
 
+  // ── 풀 헤더 (모바일 / 사이드바 미사용) ─────────────────────────
   return (
-    // 2026-08-17 · 최신 트렌드 v2 · Linear/Vercel/Attio SaaS · 세련 · 초고해상도 · 부드러움
-    //   · gradient · 딥네이비 → 살짝 밝은 네이비 (subtle depth · 3-stop)
-    //   · aurora radial · 좌측 상단 sky glow + 우측 상단 warm glow (매우 저채도 · 브랜드 identity)
-    //   · shadow · 3-layer (즉시/중거리/원거리 · GPU 가속)
-    //   · top hairline · white/6 (subtle inner light · glass 효과 시작점)
-    //   · bottom hairline · mint accent (기존 유지)
     <header
-      // 2026-08-29 · header 에 z-40 (isolate 제거 · Modal z-[60] · BottomSheet z-[100] 가림 회귀 방지)
-      //   · 페이지 sticky/thead(<z-30) 위 stacking 은 z-40 만으로 충분
-      //   · dropdown 은 z-[55] · Modal(z-60) · BottomSheet(z-100) 보다 낮게 · 자연 stacking 유지
       className="relative z-40 border-b border-white/[0.08] shrink-0 shadow-[0_1px_3px_rgba(10,46,74,0.15),0_4px_20px_-4px_rgba(10,46,74,0.20),0_12px_40px_-16px_rgba(10,46,74,0.25)]"
       style={{ background: "linear-gradient(180deg, #0A2E4A 0%, #0D3350 50%, #0F3855 100%)" }}
     >
-      {/* 2026-08-17 v3 · aurora radial glow · 좌상+우상+중앙하 (3-point · 브랜드 signature 강화) */}
+      {/* aurora radial glow */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-24 -left-16 w-[420px] h-[240px] rounded-full opacity-[0.18] blur-3xl" style={{ background: "radial-gradient(closest-side, #5EA9E8, transparent)" }} />
         <div className="absolute -top-24 -right-20 w-[380px] h-[220px] rounded-full opacity-[0.12] blur-3xl" style={{ background: "radial-gradient(closest-side, #6FE3C2, transparent)" }} />
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[500px] h-[160px] rounded-full opacity-[0.08] blur-3xl" style={{ background: "radial-gradient(closest-side, #A5B4FC, transparent)" }} />
       </div>
-      {/* 2026-08-17 v3 · 미세 noise 패턴 · 프리미엄 종이 질감 (Vercel/Linear signature · 매우 저채도) */}
+      {/* noise 패턴 */}
       <div
         className="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay"
         style={{ backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")` }}
         aria-hidden
       />
-      {/* top hairline · inner light · glass 효과 시작점 · 세련 */}
+      {/* top hairline */}
       <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.10) 30%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0.10) 70%, transparent 100%)" }} />
-      {/* bottom hairline · mint accent · 은은한 브랜드 시그니처 */}
+      {/* bottom hairline */}
       <div className="absolute bottom-0 left-0 right-0 h-[1px] pointer-events-none" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(94,169,232,0.3) 20%, rgba(94,169,232,0.5) 50%, rgba(94,169,232,0.3) 80%, transparent 100%)" }} />
 
-      {/* ── Row 1 · 로고 + 서비스명 · 이름 · 알림 · 로그아웃 ── */}
+      {/* ── Row 1 · 로고 + 이름 + 알림 + 로그아웃 ── */}
       <div className="relative px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
-        {/* Left: logo (클릭 시 랜딩 이동) · logo2 · 라운드 · ring-white/20 */}
         <div className="flex items-center min-w-0">
           <button
             type="button"
@@ -608,7 +335,6 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             title="홈으로"
             aria-label="랜딩 페이지로 이동"
           >
-            {/* 2026-08-17 · 로고 · ring-2 · gradient border · subtle glow (브랜드 identity) */}
             <img
               src={logoImg}
               alt={`${hdrBrand.shortName || "OSAN MEGATOWN"} 로고`}
@@ -619,7 +345,6 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                 if (!el.dataset.retried) { el.dataset.retried = "1"; el.src = "/src/images/logo.png"; }
               }}
             />
-            {/* 2026-08-17 · PC (md+) · 서비스명 · subtle divider (좌측 hairline) · 타이포 개선 */}
             <div className="hidden md:flex items-center gap-3">
               <span className="w-px h-7 bg-gradient-to-b from-transparent via-white/25 to-transparent" aria-hidden />
               <div className="flex flex-col gap-0.5 font-bold leading-none select-none">
@@ -630,9 +355,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           </button>
         </div>
 
-        {/* Right: 로그인 이름 + rightSlot + logout · deep navy 톤 · 흰 텍스트 · 반투명 hover */}
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-          {/* 2026-08-17 · 사용자 name chip · subtle ring · hover glow · 세련 */}
           {authSession?.employeeName && (
             <button
               type="button"
@@ -643,12 +366,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
               <span className="truncate">{authSession.employeeName}{authSession.employeeRank ?? ""}</span>
             </button>
           )}
-
           <NotificationToggle authSession={authSession} />
           <NotificationBell authSession={authSession} onNavigate={onNavigate as unknown as (page: string) => void} />
-
           {rightSlot}
-
           {authSession && onLogout ? (
             <button
               onClick={onLogout}
@@ -666,17 +386,17 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         </div>
       </div>
 
-      {/* 2026-08-31 · 사용자 지시 · 브레드크럼 · 모든 페이지 · 링크 이동 · white strip */}
+      {/* 브레드크럼 */}
       {breadcrumbItems.length > 0 && (
         <div className="relative px-4 sm:px-6 py-1.5 bg-white/[0.96] backdrop-blur-sm border-t border-white/10">
           <Breadcrumb items={breadcrumbItems} onNavigate={handleBreadcrumbNav} />
         </div>
       )}
 
-      {/* ── Row 2 · Desktop/태블릿 nav tabs · 딥네이비 · Row 1 gradient 연장 ── */}
+      {/* ── Row 2 · Desktop/태블릿 nav tabs ── */}
       <div className="relative hidden sm:block px-4 sm:px-5 md:px-6 pt-1 pb-2 border-t border-white/[0.06]">
         <div ref={desktopContainerRef} className="flex items-center gap-0.5 min-w-0 relative">
-          {/* 측정용 hidden 영역 · 실제 탭 폭 계산 */}
+          {/* 측정용 hidden 영역 */}
           <div
             ref={desktopMeasureRef}
             aria-hidden="true"
@@ -684,12 +404,16 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             style={{ left: "-9999px", top: 0 }}
           >
             {visibleTabs.map(t => (
-              <div key={`dmeasure-${t.key}`} data-desktop-tab>{renderDesktopTab(t)}</div>
+              <div key={`dmeasure-${t.key}`} data-desktop-tab>
+                <NavDesktopTab tab={t} activePage={activePage} isBizPage={isBizPage} onNavigate={onNavigate} onBack={onBack} />
+              </div>
             ))}
           </div>
           {/* 실제 노출 탭 */}
-          {desktopShownTabs.map(renderDesktopTab)}
-          {/* 오버플로 · 삼선 ☰ 드롭다운 · fallback (매우 좁은 화면) */}
+          {desktopShownTabs.map(t => (
+            <NavDesktopTab key={t.key} tab={t} activePage={activePage} isBizPage={isBizPage} onNavigate={onNavigate} onBack={onBack} />
+          ))}
+          {/* 오버플로 · 삼선 ☰ 드롭다운 */}
           {desktopOverflowTabs.length > 0 && (
             <div ref={desktopOverflowBtnRef} className="relative shrink-0 ml-0.5">
               <button
@@ -708,12 +432,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                 <span className="text-[14px]">{desktopOverflowTabs.length}</span>
               </button>
               {desktopOverflowOpen && (
-                // 2026-08-29 · header 안 dropdown · z-[45] · 페이지 sticky/thead(<z-30) 위
-                //   · ProductDetailPanel fullscreen(z-50)·Modal(z-60)·BottomSheet(z-100) 밑 유지
-                //   · header 자체 z-40 stacking context 안 최상위 · 자연 stacking
-                <div
-                  className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1.5 min-w-[160px] z-[45] max-h-[70vh] overflow-y-auto"
-                >
+                <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1.5 min-w-[160px] z-[45] max-h-[70vh] overflow-y-auto">
                   {desktopOverflowTabs.map(tab => {
                     const Icon = tab.icon;
                     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
@@ -748,12 +467,11 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         </div>
       </div>
 
-      {/* ── Mobile 전용 탭 행: 태블릿·PC 는 상단 탭 사용 (2026-07-16) ── */}
-      {/* 2026-08-17 v2 · 모바일 탭 컨테이너 · frosted glass + inset light + subtle shadow · 세련 */}
+      {/* ── Mobile 전용 탭 행 ── */}
       {visibleTabs.length > 1 && (
         <div className="sm:hidden px-4 pb-2">
           <div ref={mobileContainerRef} className="flex items-stretch gap-1 bg-white/[0.08] border border-white/[0.12] rounded-xl px-2 py-1 relative shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-sm">
-            {/* 측정용 hidden 영역 · 실제 탭 폭 계산 */}
+            {/* 측정용 hidden 영역 */}
             <div
               ref={mobileMeasureRef}
               aria-hidden="true"
@@ -761,11 +479,15 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
               style={{ left: "-9999px", top: 0 }}
             >
               {visibleTabs.map(t => (
-                <div key={`measure-${t.key}`} data-mobile-tab>{renderMobileTab(t)}</div>
+                <div key={`measure-${t.key}`} data-mobile-tab>
+                  <NavMobileTab tab={t} activePage={activePage} isBizPage={isBizPage} onNavigate={onNavigate} onBack={onBack} />
+                </div>
               ))}
             </div>
             {/* 실제 노출 탭 */}
-            {mobileShownTabs.map(renderMobileTab)}
+            {mobileShownTabs.map(t => (
+              <NavMobileTab key={t.key} tab={t} activePage={activePage} isBizPage={isBizPage} onNavigate={onNavigate} onBack={onBack} />
+            ))}
             {/* 오버플로 · 삼선 ☰ 드롭다운 */}
             {mobileOverflowTabs.length > 0 && (
               <div ref={mobileOverflowBtnRef} className="relative shrink-0">
@@ -785,11 +507,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                   <span className="text-[9px]">더보기</span>
                 </button>
                 {mobileOverflowOpen && (
-                  // 2026-08-29 · mobile dropdown · z-[45] · ProductDetail fullscreen(z-50)·Modal(z-60)·BottomSheet(z-100) 밑
-                  //   · header 안 · z-40 stacking context 안 최상위 · 자연 stacking
-                  <div
-                    className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1 min-w-[160px] z-[45] max-h-[70vh] overflow-y-auto"
-                  >
+                  <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1 min-w-[160px] z-[45] max-h-[70vh] overflow-y-auto">
                     {mobileOverflowTabs.map(tab => {
                       const Icon = tab.icon;
                       const c = TAB_COLOR_MAP[tab.color ?? "slate"];
