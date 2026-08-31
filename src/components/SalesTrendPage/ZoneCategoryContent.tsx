@@ -38,6 +38,10 @@ const ZoneCategoryContent: React.FC = () => {
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [season, setSeason] = useState<SeasonKey | null>(null);
   const [months, setMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
+  // 2026-08-31 · #69 root cause · stock_history 최신 스냅샷이 오래됐을 때 (예: 34일 전) 기본 1개월 조회에 데이터 없음
+  //   · 자동 확장 · 요청 기간 rows==0 & 사용자가 명시 변경 아닌 최초 로드 시 · 서버 snapshot_date 참고해서 안내
+  //   · effectiveMonths · UI 상 강조 안 함 (사용자가 pick 한 기간 우선) · 대신 안내 배너로 명시
+  const [autoExpanded, setAutoExpanded] = useState<{ requested: number; effective: number; latestSnapshot: string | null } | null>(null);
   const [itemSort, setItemSort] = useState<{ key: ZoneItemSortKey; dir: "asc" | "desc" }>({ key: "sale", dir: "desc" });
   const [categoryPanelWidth, setCategoryPanelWidth] = useState<number>(() => {
     try { const v = Number(localStorage.getItem("megatown_salestrend_category_w")); return Number.isFinite(v) && v > 0 ? v : 400; } catch { return 400; }
@@ -62,23 +66,56 @@ const ZoneCategoryContent: React.FC = () => {
     setItemSort(prev => prev.key === k ? { key: k, dir: prev.dir === "asc" ? "desc" : "asc" } : { key: k, dir: k === "name" ? "asc" : "desc" });
   };
 
-  const fetchData = (s: SeasonKey | null, m: number) => {
-    setLoading(true);
+  const buildParams = (s: SeasonKey | null, m: number) => {
     const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.MAX) });
     if (s) params.set("season", s);
     else if (m > 0) params.set("months", String(m));
-    Promise.all([
-      // 2026-08-31 · #69 · silent catch 개선 · 로그 + toast · 원인 파악
-      api.get<{ rows?: any[] }>(`/api/stock-manage/top-sales?${params}`).catch((e) => {
-        console.error("[ZoneCategoryContent] top-sales 실패:", e);
-        showError(`판매 데이터 로드 실패: ${e instanceof Error ? e.message : String(e)}`);
-        return { data: { rows: [] } };
-      }),
-      getProductsMap(),
-    ])
-      .then(([sv, p]) => { setSales(Array.isArray(sv.data?.rows) ? sv.data.rows : []); setProducts(p ?? {}); })
-      .catch((err) => { setSales([]); setProducts({}); showError(`데이터 로드 실패: ${err instanceof Error ? err.message : String(err)}`); })
-      .finally(() => setLoading(false));
+    return params;
+  };
+  const fetchOnce = (s: SeasonKey | null, m: number) =>
+    // 2026-08-31 · #69 · silent catch 개선 · 로그 + toast · 원인 파악
+    api.get<{ rows?: any[]; snapshot_date?: string | null; dates?: string[] }>(`/api/stock-manage/top-sales?${buildParams(s, m)}`).catch((e) => {
+      console.error("[ZoneCategoryContent] top-sales 실패:", e);
+      showError(`판매 데이터 로드 실패: ${e instanceof Error ? e.message : String(e)}`);
+      return { data: { rows: [], snapshot_date: null, dates: [] } };
+    });
+  const fetchData = async (s: SeasonKey | null, m: number) => {
+    setLoading(true);
+    try {
+      // 2026-08-31 · #69 root cause · 요청 기간에 rows==0 이면 · 자동 확장 (months 옵션만 · season 은 그대로)
+      //   · 기존 · 최근 stock_history 스냅샷이 오래되면 (예 · 34일 전) months=1 = 0 rows → "데이터 없음" 표시
+      //   · 신규 · rows==0 & months>0 · 6/12 개월까지 확장 시도 · 첫 성공 결과 사용
+      //   · UX · 확장 시 · autoExpanded 배너 노출 (사용자 안내 · 데이터 갱신 필요성)
+      const [initial, p] = await Promise.all([fetchOnce(s, m), getProductsMap()]);
+      let effectiveResp = initial;
+      let effectiveMonths = m;
+      const rowsCount = Array.isArray(initial.data?.rows) ? initial.data!.rows!.length : 0;
+      if (rowsCount === 0 && !s && m > 0 && m < 12) {
+        // 자동 확장 · 2/3/6/12 (기존 m 초과만)
+        for (const nextM of [2, 3, 6, 12].filter(x => x > m)) {
+          const resp = await fetchOnce(s, nextM);
+          if (Array.isArray(resp.data?.rows) && resp.data!.rows!.length > 0) {
+            effectiveResp = resp;
+            effectiveMonths = nextM;
+            break;
+          }
+        }
+      }
+      setSales(Array.isArray(effectiveResp.data?.rows) ? effectiveResp.data!.rows! : []);
+      setProducts(p ?? {});
+      if (effectiveMonths !== m) {
+        setAutoExpanded({ requested: m, effective: effectiveMonths, latestSnapshot: effectiveResp.data?.snapshot_date ?? null });
+      } else {
+        setAutoExpanded(null);
+      }
+    } catch (err) {
+      setSales([]);
+      setProducts({});
+      setAutoExpanded(null);
+      showError(`데이터 로드 실패: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(season, months); }, [season, months]);
@@ -352,6 +389,17 @@ const ZoneCategoryContent: React.FC = () => {
         </button>
       </div>
 
+      {/* 2026-08-31 · #69 · 자동 확장 안내 배너 · 요청 기간에 데이터 없음 · 서버가 확장한 결과 표시 중 */}
+      {autoExpanded && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-[12px]">
+          <span className="font-bold">데이터 안내</span>
+          <span className="text-amber-700">
+            최근 {autoExpanded.requested}개월 판매 스냅샷이 없어 <b>{autoExpanded.effective}개월</b>로 자동 확장했습니다
+            {autoExpanded.latestSnapshot ? ` · 최신 스냅샷 ${autoExpanded.latestSnapshot}` : ""}
+          </span>
+        </div>
+      )}
+
       {/* 매장 구역도 */}
       <StoreZoneMap
         zoneItemCounts={zoneItemCounts}
@@ -380,7 +428,14 @@ const ZoneCategoryContent: React.FC = () => {
               <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
             </div>
           ) : !loading && grouped.length === 0 ? (
-            <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
+            // 2026-08-31 · #69 · 자동 확장 후에도 없음 → 진짜 데이터 없음 · 사용자 액션 안내
+            <div className="flex flex-col items-center gap-2 text-center py-8 px-4">
+              <div className="text-[13px] font-bold text-zinc-500">판매 데이터 없음</div>
+              <div className="text-[11px] text-zinc-400 leading-relaxed">
+                최근 12개월 재고 스냅샷 (stock_history) 이 없습니다.<br />
+                재고관리 화면에서 새 스냅샷을 임포트해 주세요.
+              </div>
+            </div>
           ) : (
             <div className={`overflow-y-auto max-h-[65vh] pr-1 flex flex-col gap-2 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
               <div className="flex items-center gap-1 border-b-2 border-line sticky top-0 bg-white z-10 -mx-1 px-1 pt-1">
