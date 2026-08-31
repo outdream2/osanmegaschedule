@@ -21,7 +21,7 @@
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { asyncHandler } from "../../middleware/asyncHandler";
-import { badRequest } from "../../middleware/errorHandler";
+import { badRequest, HttpError } from "../../middleware/errorHandler";
 
 const router = Router();
 
@@ -101,7 +101,7 @@ router.get("/api/vat/summary", asyncHandler(async (req, res) => {
         warning: "purchase_details 테이블 없음 (매입 데이터 임포트 필요)",
       });
     }
-    throw new Error(error.message);
+    throw new HttpError(500, error.message, "DB_ERROR");
   }
 
   // 공급사별 · category + vat_included 조회 (면세·VAT 포함 여부 판단)
@@ -182,7 +182,7 @@ router.get("/api/vat/vendor-breakdown", asyncHandler(async (req, res) => {
     if (/relation .* does not exist/i.test(error.message)) {
       return res.json({ range, rows: [], warning: "purchase_details 테이블 없음" });
     }
-    throw new Error(error.message);
+    throw new HttpError(500, error.message, "DB_ERROR");
   }
 
   // 공급사 카테고리·사업자번호·vat_included 조회
@@ -282,7 +282,7 @@ router.get("/api/vat/vendor-detail", asyncHandler(async (req, res) => {
     if (/relation .* does not exist/i.test(error.message)) {
       return res.json({ range, supplier, rows: [], warning: "purchase_details 테이블 없음" });
     }
-    throw new Error(error.message);
+    throw new HttpError(500, error.message, "DB_ERROR");
   }
 
   const vatIncluded = await vendorLookupPromise;
@@ -371,7 +371,7 @@ router.get("/api/vat/monthly-summary", asyncHandler(async (req, res) => {
           salesTableMissing = true;
           break;
         }
-        throw new Error(pgErr.message);
+        throw new HttpError(500, pgErr.message, "DB_ERROR");
       }
       if (!pg || pg.length === 0) break;
       for (const r of pg) {
@@ -420,7 +420,7 @@ router.get("/api/vat/monthly-summary", asyncHandler(async (req, res) => {
           purchaseTableMissing = true;
           break;
         }
-        throw new Error(pgErr.message);
+        throw new HttpError(500, pgErr.message, "DB_ERROR");
       }
       if (!pg || pg.length === 0) break;
       for (const r of pg) {

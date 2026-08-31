@@ -146,7 +146,7 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
       const { data, error } = await query.range(from, from + PAGE - 1);
       if (error) {
         if (/relation|does not exist/i.test(error.message)) break;
-        throw new Error(error.message);
+        throw new HttpError(500, error.message, "DB_ERROR");
       }
       if (!data || data.length === 0) break;
       for (const r of data) {
@@ -251,7 +251,7 @@ router.get("/api/stock-manage/snapshot-summary", asyncHandler(async (req, res) =
         .range(from, from + PAGE - 1);
       if (error) {
         if (/relation|does not exist/i.test(error.message)) break;
-        throw new Error(error.message);
+        throw new HttpError(500, error.message, "DB_ERROR");
       }
       if (!data || data.length === 0) break;
       for (const r of data) {
@@ -510,7 +510,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         const { data, error } = await q.range(from, from + PAGE - 1);
         if (error) {
           if (/relation|does not exist/i.test(error.message)) return res.json({ snapshot_date: null, dates: [], rows: [] });
-          throw new Error(error.message);
+          throw new HttpError(500, error.message, "DB_ERROR");
         }
         if (!data || data.length === 0) break;
         // 계절 월 필터
@@ -614,7 +614,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
               .in("product_code", chunk)
               .order("purchase_date", { ascending: false })
               .range(fromRow, fromRow + PAGE - 1);
-            if (pdError) throw new Error(pdError.message);
+            if (pdError) throw new HttpError(500, pdError.message, "DB_ERROR");
             if (!pdRows || pdRows.length === 0) break;
             for (const r of pdRows) {
               const code = String(r.product_code ?? "").trim();
@@ -868,7 +868,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         const { data, error } = await q.range(from, from + PAGE - 1);
         if (error) {
           if (/relation|does not exist/i.test(error.message)) return res.json({ snapshot_date: null, dates: [], rows: [] });
-          throw new Error(error.message);
+          throw new HttpError(500, error.message, "DB_ERROR");
         }
         if (!data || data.length === 0) break;
         rawRows.push(...data);
@@ -985,7 +985,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
               .in("product_code", chunk)
               .order("purchase_date", { ascending: false })
               .range(fromRow, fromRow + PAGE - 1);
-            if (pdError) throw new Error(pdError.message);
+            if (pdError) throw new HttpError(500, pdError.message, "DB_ERROR");
             if (!pdRows || pdRows.length === 0) break;
             allPdRows.push(...pdRows);
             if (pdRows.length < PAGE) break;
@@ -1308,7 +1308,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         const { data: page, error } = await q.range(from, from + PAGE - 1);
         if (error) {
           if (/relation|does not exist/i.test(error.message)) return res.json({ snapshot_date: null, dates: [], rows: [] });
-          throw new Error(error.message);
+          throw new HttpError(500, error.message, "DB_ERROR");
         }
         if (!page || page.length === 0) break;
         data.push(...page);
@@ -1368,7 +1368,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             .in("product_code", chunk)
             .order("purchase_date", { ascending: false })
             .range(fromRow, fromRow + PAGE - 1);
-          if (pdError) throw new Error(pdError.message);
+          if (pdError) throw new HttpError(500, pdError.message, "DB_ERROR");
           if (!pdRows || pdRows.length === 0) break;
           allPdRows.push(...pdRows);
           if (pdRows.length < PAGE) break;
@@ -1963,7 +1963,7 @@ router.get("/api/stock-manage/purchase-info-batch", asyncHandler(async (req, res
             .in("product_code", chunk)
             .order("purchase_date", { ascending: false })
             .range(fromRow, fromRow + PAGE - 1);
-          if (error) throw new Error(error.message);
+          if (error) throw new HttpError(500, error.message, "DB_ERROR");
           if (!pdRows || pdRows.length === 0) break;
           for (const r of pdRows) {
             const code = String(r.product_code ?? "").trim();
@@ -2052,7 +2052,7 @@ router.get("/api/stock-manage/trending", asyncHandler(async (req, res) => {
         .range(from, from + PAGE - 1);
       if (error) {
         if (/relation|does not exist/i.test(error.message)) return res.json({ rows: [] });
-        throw new Error(error.message);
+        throw new HttpError(500, error.message, "DB_ERROR");
       }
       if (!data || data.length === 0) break;
       for (const r of data) {
@@ -2194,7 +2194,7 @@ router.get("/api/stock-manage/trending-period", asyncHandler(async (req, res) =>
         .range(fromRow, fromRow + PAGE - 1);
       if (error) {
         if (/relation|does not exist/i.test(error.message)) return res.json({ rows: [] });
-        throw new Error(error.message);
+        throw new HttpError(500, error.message, "DB_ERROR");
       }
       if (!data || data.length === 0) break;
       for (const r of data) {

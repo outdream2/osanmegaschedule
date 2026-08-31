@@ -237,7 +237,7 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
             .in("product_code", codes)
             .order("purchase_date", { ascending: false })
             .range(fromRow, fromRow + PAGE - 1);
-          if (pdErr) throw new Error(pdErr.message);
+          if (pdErr) throw new HttpError(500, pdErr.message, "DB_ERROR");
           if (!pd || pd.length === 0) break;
           for (const r of pd) {
             const c = String(r.product_code ?? "").trim();

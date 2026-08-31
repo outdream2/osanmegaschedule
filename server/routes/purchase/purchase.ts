@@ -513,7 +513,7 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
       if (/relation .* does not exist/i.test(error.message)) {
         return res.json({ rows: [], warning: "purchase_details 테이블 없음 (임포트 필요)" });
       }
-      throw new Error(error.message);
+      throw new HttpError(500, error.message, "DB_ERROR");
     }
     rows = data ?? [];
   } else {
@@ -528,7 +528,7 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
         if (/relation .* does not exist/i.test(error.message)) {
           return res.json({ rows: [], warning: "purchase_details 테이블 없음 (임포트 필요)" });
         }
-        throw new Error(error.message);
+        throw new HttpError(500, error.message, "DB_ERROR");
       }
       const batch = data ?? [];
       rows.push(...batch);
@@ -599,7 +599,7 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
             .select("product_code, purchase_date")
             .in("product_code", chunk)
             .range(fromRow, fromRow + PAGE - 1);
-          if (histErr) throw new Error(histErr.message);
+          if (histErr) throw new HttpError(500, histErr.message, "DB_ERROR");
           if (!hist || hist.length === 0) break;
           for (const r of hist) {
             const c = String(r.product_code ?? "");
@@ -675,7 +675,7 @@ router.get("/api/purchase-details/summary", asyncHandler(async (req, res) => {
         .range(fromRow, fromRow + PAGE - 1);
       if (error) {
         if (/relation .* does not exist/i.test(error.message)) return res.json({ latest: null, totalQty: 0, totalAmount: 0, count: 0 });
-        throw new Error(error.message);
+        throw new HttpError(500, error.message, "DB_ERROR");
       }
       if (!data || data.length === 0) break;
       rows.push(...data);
