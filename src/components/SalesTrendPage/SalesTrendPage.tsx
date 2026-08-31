@@ -6,6 +6,8 @@ import { Spinner } from "../common/Spinner";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
+// 2026-08-31 · #13 · location 우선 · real_map fallback
+import { resolveProductLocation } from "../../lib/productLocation";
 import { useHiddenManager } from "../../hooks/useHiddenManager";
 import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
 import { api } from "../../lib/apiClient";
@@ -290,7 +292,8 @@ export const SalesTrendPage: React.FC = () => {
                         <div className="text-[10px] tabular-nums text-zinc-400 truncate">
                           #{code}
                           {p.supplier ? ` · ${p.supplier}` : ""}
-                          {p.real_map ? ` · ${p.real_map}` : ""}
+                          {/* 2026-08-31 · #13 · location 우선 · real_map fallback */}
+                          {resolveProductLocation(p) ? ` · ${resolveProductLocation(p)}` : ""}
                           {p.current_stock != null ? ` · 재고 ${p.current_stock}` : ""}
                         </div>
                       </div>
