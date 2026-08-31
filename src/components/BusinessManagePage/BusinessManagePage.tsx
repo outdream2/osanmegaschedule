@@ -4,6 +4,7 @@
 //   서브탭: 직원관리 · 연차승인 · 점심불참 · 직원권한 (DisplayPage 서브탭 스타일 벤치마크)
 //   각 서브탭 · 기존 페이지 임베드 (embedded prop 전달 → 자체 AppNavHeader skip)
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { SK_SUBTAB_BUSINESS_MANAGE } from "../../lib/storageKeys";
 import { UserGear, CalendarDots, ForkKnife, FileText, NotePencil, type Icon as PhIcon } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { useSidebarEnabled } from "../../hooks/useSidebar";
@@ -107,12 +108,12 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   // 2026-08-03 · 페이지 진입(마운트) 시 · 서브탭 · 재정렬된 순서의 첫 탭으로 리셋
   //   · 사용자 요청 (모든 메뉴 진입 시 · 첫 서브탭 기본 표시)
   //   · localStorage 순서 반영 후 첫 원소 · 마운트 1회
-  //   · 2026-08-11 · 사이드바 V2 · localStorage("sidebar.subtab.business-manage") 있으면 우선
+  //   · 2026-08-11 · 사이드바 V2 · localStorage(SK_SUBTAB_BUSINESS_MANAGE) 있으면 우선
   useEffect(() => {
     try {
-      const sb = localStorage.getItem("sidebar.subtab.business-manage") as BmSubTab | null;
+      const sb = localStorage.getItem(SK_SUBTAB_BUSINESS_MANAGE) as BmSubTab | null;
       if (sb) {
-        localStorage.removeItem("sidebar.subtab.business-manage");
+        localStorage.removeItem(SK_SUBTAB_BUSINESS_MANAGE);
         setSubTab(sb);
         return;
       }

@@ -3,8 +3,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import type { AuthSession } from "../types";
 // 2026-08-25 · 프레임워크 · raw fetch 제거 · apiClient 사용
 import { api } from "../lib/apiClient";
+import { SK_AUTH_SESSION, SK_KV_SESSION_IDLE_TIMEOUT } from "../lib/storageKeys";
 
-const STORAGE_KEY = "megatown_auth_session";
+const STORAGE_KEY = SK_AUTH_SESSION;
 
 /** 30 minutes in ms — idle timeout · 2026-08-23 · #252 · KV `session_idle_timeout_minutes` 로 동적 조회 (fallback 30분) */
 const IDLE_TIMEOUT_DEFAULT_MS = 30 * 60 * 1000;
@@ -13,7 +14,7 @@ const IDLE_TIMEOUT_MAX_MS = 480 * 60 * 1000;
 /** useKvSetting 이 localStorage 에 캐시 · 매 tick 최신 값 조회 · 관리자 편집 즉시 반영 */
 function getEffectiveIdleTimeoutMs(): number {
   try {
-    const raw = localStorage.getItem("kv:session_idle_timeout_minutes");
+    const raw = localStorage.getItem(SK_KV_SESSION_IDLE_TIMEOUT);
     if (!raw) return IDLE_TIMEOUT_DEFAULT_MS;
     const parsed = JSON.parse(raw);
     const n = typeof parsed === "number" ? parsed : Number(parsed);

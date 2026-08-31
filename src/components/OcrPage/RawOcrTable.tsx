@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { api } from "../../lib/apiClient";
+import { SK_OCR_DISCOUNT_MODE } from "../../lib/storageKeys";
 
 import type {
   ConfirmedItem,
@@ -83,10 +84,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   const [pageVatIncluded, setPageVatIncluded] = useState<Record<number, boolean>>({});
   const [pageDiscountApplied, setPageDiscountApplied] = useState<Record<number, boolean>>({});
   const [discountApplyMode, setDiscountApplyMode] = useState<Record<number, "before" | "after">>(() => {
-    try { const v = localStorage.getItem("ocr-discount-mode"); return v ? JSON.parse(v) : {}; } catch { return {}; }
+    try { const v = localStorage.getItem(SK_OCR_DISCOUNT_MODE); return v ? JSON.parse(v) : {}; } catch { return {}; }
   });
   useEffect(() => {
-    try { localStorage.setItem("ocr-discount-mode", JSON.stringify(discountApplyMode)); } catch { /* empty */ }
+    try { localStorage.setItem(SK_OCR_DISCOUNT_MODE, JSON.stringify(discountApplyMode)); } catch { /* empty */ }
   }, [discountApplyMode]);
   const [pageSubtotalCustom, setPageSubtotalCustom] = useState<Record<number, number>>({});
   const [pageSupplierBalances, setPageSupplierBalances] = useState<Record<number, number>>({});

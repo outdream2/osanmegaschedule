@@ -5,6 +5,7 @@
  */
 import React from "react";
 import { Download, Bookmark, FileSpreadsheet, Upload as UploadIcon } from "lucide-react";
+import { SK_OCR_XLS_TEMPLATE } from "../../../lib/storageKeys";
 
 export interface XlsxExportSectionProps {
   xlsInputRef: React.RefObject<HTMLInputElement | null>;
@@ -60,7 +61,7 @@ export const XlsxExportSection: React.FC<XlsxExportSectionProps> = ({
               const bytes = new Uint8Array(xlsTemplate);
               const b64 = btoa(String.fromCharCode(...bytes));
               localStorage.setItem(
-                "ocr_xls_template",
+                SK_OCR_XLS_TEMPLATE,
                 JSON.stringify({ name: xlsTemplateName, hdrs: xlsTemplateHdrs, data: b64 })
               );
               setXlsTemplateSaved(true);

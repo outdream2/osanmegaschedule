@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
+import { SK_OCR_ENGINE } from "../../lib/storageKeys";
 import axios from "axios";
 import { Upload, X, Zap, AlertCircle, Images, BookOpen, FileText } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
@@ -63,12 +64,12 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
   type OcrEngine = "onnx" | "gemini";
   const [ocrEngine, setOcrEngine] = useState<OcrEngine>(() => {
     try {
-      const v = localStorage.getItem("megatown_ocr_engine");
+      const v = localStorage.getItem(SK_OCR_ENGINE);
       if (v === "onnx" || v === "gemini") return v;
     } catch { /* ignore */ }
     return "gemini";
   });
-  useEffect(() => { try { localStorage.setItem("megatown_ocr_engine", ocrEngine); } catch { /* ignore */ } }, [ocrEngine]);
+  useEffect(() => { try { localStorage.setItem(SK_OCR_ENGINE, ocrEngine); } catch { /* ignore */ } }, [ocrEngine]);
   const engineToBackend = (e: OcrEngine): string => e;
   // 바코드 매칭 기능 제거됨 (사용자 요청) · 관련 state 유지 안 함
   const [pageImages, setPageImages] = useState<string[]>([]);

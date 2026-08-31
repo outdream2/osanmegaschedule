@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import React from "react";
+import { SK_OCR_INVOICE_COL_WIDTH, SK_OCR_PAGE_ZOOM } from "../../../lib/storageKeys";
 
 interface UseInvoiceImageControlsParams {
   pageImages?: string[] | null;
@@ -18,7 +19,7 @@ export function useInvoiceImageControls({
   // ── 이미지 컬럼 폭 (드래그 리사이즈) ──────────────────────────────────────
   const [invoiceColWidth, setInvoiceColWidth] = useState<number>(() => {
     try {
-      const v = localStorage.getItem("ocr-invoice-col-width");
+      const v = localStorage.getItem(SK_OCR_INVOICE_COL_WIDTH);
       if (!v) return INV_COL_DEFAULT;
       const n = Number(v);
       return Number.isFinite(n) && n >= INV_COL_MIN ? n : INV_COL_DEFAULT;
@@ -27,13 +28,13 @@ export function useInvoiceImageControls({
   const [invColResizing, setInvColResizing] = useState(false);
 
   useEffect(() => {
-    try { localStorage.setItem("ocr-invoice-col-width", String(Math.round(invoiceColWidth))); } catch { /* empty */ }
+    try { localStorage.setItem(SK_OCR_INVOICE_COL_WIDTH, String(Math.round(invoiceColWidth))); } catch { /* empty */ }
   }, [invoiceColWidth]);
 
   // ── 페이지별 이미지 줌 (0.5x ~ 3x · 기본 1x · localStorage 저장) + 드래그 팬 ──
   const [pageZoom, setPageZoom] = useState<Record<number, number>>(() => {
     try {
-      const v = localStorage.getItem("ocr-page-zoom");
+      const v = localStorage.getItem(SK_OCR_PAGE_ZOOM);
       return v ? JSON.parse(v) : {};
     } catch { return {}; }
   });
@@ -41,7 +42,7 @@ export function useInvoiceImageControls({
   const panDragRef = useRef<{ pn: number; startX: number; startY: number; startPanX: number; startPanY: number } | null>(null);
 
   useEffect(() => {
-    try { localStorage.setItem("ocr-page-zoom", JSON.stringify(pageZoom)); } catch { /* empty */ }
+    try { localStorage.setItem(SK_OCR_PAGE_ZOOM, JSON.stringify(pageZoom)); } catch { /* empty */ }
   }, [pageZoom]);
 
   const zoomIn = useCallback((pn: number) => {

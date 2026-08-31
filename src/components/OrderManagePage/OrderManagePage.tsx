@@ -3,6 +3,7 @@
 // 발주관리 페이지 — 발주/매입/결제/통계 4탭
 import React, { Suspense, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useConfirm } from "../../hooks/useConfirm";
+import { SK_SUBTAB_DISPLAY, SK_DP_PRODUCT_INNER_TAB } from "../../lib/storageKeys";
 import { useToast } from "../../hooks/useToast";
 import { useVendors } from "../../hooks/useVendors";
 import { Spinner } from "../common/Spinner";
@@ -120,8 +121,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       const pending = sessionStorage.getItem("megatown_scan_pending_product_code");
       if (pending) {
         // DisplayPage 로 이동 · 상품 서브탭 · info 이너 탭 활성화
-        try { localStorage.setItem("sidebar.subtab.display", "product"); } catch { /* noop */ }
-        try { localStorage.setItem("dp.productInnerTab", "info"); } catch { /* noop */ }
+        try { localStorage.setItem(SK_SUBTAB_DISPLAY, "product"); } catch { /* noop */ }
+        try { localStorage.setItem(SK_DP_PRODUCT_INNER_TAB, "info"); } catch { /* noop */ }
         ocrTabOnNavigate?.("display");
       }
     } catch { /* noop */ }

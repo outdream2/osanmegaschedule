@@ -5,6 +5,7 @@
 // 2026-08-03 (#184) · 설정 탭 추가 · 카테고리별 업무내용 기본값 관리
 // 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬 (useSortableTabs · tabOrder.documentWriter)
 import React, { Suspense, useState, useEffect } from "react";
+import { SK_SUBTAB_DOCUMENT_WRITER } from "../../lib/storageKeys";
 import { NotePencil, SignOut, Gear } from "@phosphor-icons/react";
 import { Spinner } from "../common/Spinner";
 import type { AuthSession } from "../../types";
@@ -47,17 +48,17 @@ const DocumentWriterPage: React.FC<DocumentWriterPageProps> = (props) => {
   const defaultTab: DocTab = visibleTabs[0]?.key ?? "contract";
 
   const [tab, setTab] = useState<DocTab>(() => {
-    // 2026-08-12 · 사이드바 V2 · localStorage("sidebar.subtab.document-writer") 있으면 초기 탭
+    // 2026-08-12 · 사이드바 V2 · localStorage(SK_SUBTAB_DOCUMENT_WRITER) 있으면 초기 탭
     // StrictMode 이중 마운트 대비 · 읽기만 · 삭제는 useEffect 로
     // allowedTabs 지정 시 · 허용된 탭만 선택
     try {
-      const raw = localStorage.getItem("sidebar.subtab.document-writer") as DocTab | null;
+      const raw = localStorage.getItem(SK_SUBTAB_DOCUMENT_WRITER) as DocTab | null;
       if ((raw === "contract" || raw === "resignation" || raw === "settings") && isAllowed(raw)) return raw;
     } catch { /* silent */ }
     return defaultTab;
   });
   useEffect(() => {
-    try { localStorage.removeItem("sidebar.subtab.document-writer"); } catch { /* silent */ }
+    try { localStorage.removeItem(SK_SUBTAB_DOCUMENT_WRITER); } catch { /* silent */ }
   }, []);
   // allowedTabs 가 바뀌어 현재 탭이 제외되면 · 첫 번째 허용 탭으로 이동
   useEffect(() => {

@@ -5,6 +5,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
+import { SK_SUPPLIER_TOTALS_COLLAPSED, SK_STOCKMANAGE_SUPPLIER_W } from "../../lib/storageKeys";
 import { useVendors } from "../../hooks/useVendors";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
@@ -119,20 +120,20 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   //   · 기본 접힘 (사용자 명시) · localStorage 명시적 "0" 저장 시 펼침
   const [totalsCollapsed, setTotalsCollapsed] = useState<boolean>(() => {
     try {
-      const v = localStorage.getItem("megatown_supplier_totals_collapsed");
+      const v = localStorage.getItem(SK_SUPPLIER_TOTALS_COLLAPSED);
       return v !== "0"; // "0" 명시적 펼침 · 그 외 (null·"1") 접힘
     } catch { return true; }
   });
   useEffect(() => {
-    try { localStorage.setItem("megatown_supplier_totals_collapsed", totalsCollapsed ? "1" : "0"); } catch { /* noop */ }
+    try { localStorage.setItem(SK_SUPPLIER_TOTALS_COLLAPSED, totalsCollapsed ? "1" : "0"); } catch { /* noop */ }
   }, [totalsCollapsed]);
 
   // 좌우 패널 폭
   const [supplierPanelWidth, setSupplierPanelWidth] = useState<number>(() => {
     const defaultW = typeof window !== "undefined" ? Math.floor(window.innerWidth * 0.6) : 800;
-    try { const v = Number(localStorage.getItem("megatown_stockmanage_supplier_w")); return Number.isFinite(v) && v > 0 ? v : defaultW; } catch { return defaultW; }
+    try { const v = Number(localStorage.getItem(SK_STOCKMANAGE_SUPPLIER_W)); return Number.isFinite(v) && v > 0 ? v : defaultW; } catch { return defaultW; }
   });
-  useEffect(() => { try { localStorage.setItem("megatown_stockmanage_supplier_w", String(supplierPanelWidth)); } catch { /**/ } }, [supplierPanelWidth]);
+  useEffect(() => { try { localStorage.setItem(SK_STOCKMANAGE_SUPPLIER_W, String(supplierPanelWidth)); } catch { /**/ } }, [supplierPanelWidth]);
   const supplierPanelWidthRef = useRef(supplierPanelWidth);
   useEffect(() => { supplierPanelWidthRef.current = supplierPanelWidth; }, [supplierPanelWidth]);
   const supplierResizeRef = useRef<{ startX: number; startW: number } | null>(null);

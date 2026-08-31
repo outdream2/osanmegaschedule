@@ -3,9 +3,10 @@
 // 2026-08-16 · apiClient 마이그레이션
 import { useEffect, useRef, useState, useCallback } from "react";
 import { api } from "../lib/apiClient";
+import { SK_SIDEBAR_COLLAPSED, SK_SIDEBAR_WIDTH } from "../lib/storageKeys";
 
-const COLLAPSED_KEY = "sidebar.collapsed";
-const WIDTH_KEY = "sidebar.width";
+const COLLAPSED_KEY = SK_SIDEBAR_COLLAPSED;
+const WIDTH_KEY = SK_SIDEBAR_WIDTH;
 const AUTO_COLLAPSE_BELOW = 1280;
 
 export const SIDEBAR_MIN_WIDTH = 180;

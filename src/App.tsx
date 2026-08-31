@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
+import { SK_AUTH_SESSION } from "./lib/storageKeys";
 import SchedulePage from "./components/SchedulePage";
 import { LandingPage } from "./components/LandingPage";
 import { ReservationPage } from "./components/ReservationPage";
@@ -232,7 +233,7 @@ export default function App() {
   useEffect(() => {
     const onExpired = () => {
       // Guard 1 · 미로그인 상태면 no-op (loop 방지)
-      const stored = localStorage.getItem("megatown_auth_session");
+      const stored = localStorage.getItem(SK_AUTH_SESSION);
       if (!stored) {
         console.log("[SESSION_EXPIRED] 미로그인 상태 · 무시 (loop 방지)");
         return;

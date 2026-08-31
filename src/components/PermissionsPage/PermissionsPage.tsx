@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { api } from "../../lib/apiClient";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
+import { SK_PERMISSIONS_TREE_COLLAPSED } from "../../lib/storageKeys";
 import { Shield, Loader2, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Save, Eye, EyeOff } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { invalidatePagePermissions } from "../../hooks/usePagePermissions";
@@ -88,7 +89,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   // 2026-08-12 · #99 · 트리 구조 · 그룹 접힘 상태 (localStorage 유지)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
     try {
-      const raw = localStorage.getItem("permissions.tree.collapsed");
+      const raw = localStorage.getItem(SK_PERMISSIONS_TREE_COLLAPSED);
       if (!raw) return new Set();
       return new Set(JSON.parse(raw) as string[]);
     } catch { return new Set(); }
@@ -97,7 +98,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     setCollapsedGroups(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
-      try { localStorage.setItem("permissions.tree.collapsed", JSON.stringify([...next])); } catch { /* silent */ }
+      try { localStorage.setItem(SK_PERMISSIONS_TREE_COLLAPSED, JSON.stringify([...next])); } catch { /* silent */ }
       return next;
     });
   };

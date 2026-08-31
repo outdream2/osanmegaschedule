@@ -7,6 +7,7 @@
 import { useEffect } from "react";
 import { DP_SUBTAB_DEFAULTS } from "./DisplayPage.helpers";
 import type { DpSubTabKey } from "./DisplayPage.types";
+import { SK_SUBTAB_DISPLAY } from "../../lib/storageKeys";
 
 export function useDpInitialSubTab(
   dpSubTab: DpSubTabKey,
@@ -30,9 +31,9 @@ export function useDpInitialSubTab(
         sessionStorage.removeItem("dpInitialSubTab");
         if (DP_SUBTAB_DEFAULTS.some(t => t.key === req)) { setDpSubTab(req); return; }
       }
-      const sbReq = localStorage.getItem("sidebar.subtab.display") as DpSubTabKey | null;
+      const sbReq = localStorage.getItem(SK_SUBTAB_DISPLAY) as DpSubTabKey | null;
       if (sbReq) {
-        localStorage.removeItem("sidebar.subtab.display");
+        localStorage.removeItem(SK_SUBTAB_DISPLAY);
         if (DP_SUBTAB_DEFAULTS.some(t => t.key === sbReq)) setDpSubTab(sbReq);
       }
     } catch { /* silent */ }

@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 // 2026-08-16 · apiClient 마이그레이션
 import { api, ApiError } from "../../lib/apiClient";
+import { SK_SUBTAB_APPROVAL_REQUEST, SK_SUBTAB_DISPLAY } from "../../lib/storageKeys";
 import { useConfirm } from "../../hooks/useConfirm";
 import { UploadDataModal } from "./UploadDataModal";
 import { LoginModals } from "./LoginModals";
@@ -460,7 +461,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <MenuCard color="sky" icon={CalendarDots} title="연차 신청" description="휴가·연차 신청 및 내역 조회"
                   orderClass="order-5" pageKey="approval-request"
                   onClick={() => {
-                    try { localStorage.setItem("sidebar.subtab.approval-request", "leave"); } catch { /* silent */ }
+                    try { localStorage.setItem(SK_SUBTAB_APPROVAL_REQUEST, "leave"); } catch { /* silent */ }
                     onNavigate("approval-request", authSession!);
                   }} />
 
@@ -612,7 +613,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     onClick={() => {
                       if (isVendor && vendorSelf) { setShowVendorSelf(true); return; }
                       if (isSuperAdminLevel9) {
-                        try { localStorage.setItem("sidebar.subtab.display", "vendor-manage"); } catch { /* silent */ }
+                        try { localStorage.setItem(SK_SUBTAB_DISPLAY, "vendor-manage"); } catch { /* silent */ }
                         onNavigate("display", authSession!);
                       }
                     }} />
@@ -637,7 +638,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                         if (disabled) return;
                         if (isVendor && vendorSelf) { setShowVendorStock(true); return; }
                         if (isSuperAdminLevel9) {
-                          try { localStorage.setItem("sidebar.subtab.display", "vendor-manage"); } catch { /* silent */ }
+                          try { localStorage.setItem(SK_SUBTAB_DISPLAY, "vendor-manage"); } catch { /* silent */ }
                           onNavigate("display", authSession!);
                         }
                       }}

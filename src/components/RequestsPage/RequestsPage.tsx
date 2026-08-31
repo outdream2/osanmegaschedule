@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { api } from "../../lib/apiClient";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
+import { SK_SUBTAB_REQUESTS } from "../../lib/storageKeys";
 import { dispatchApprovalChange, useApprovalRefreshListener } from "../../lib/approvalEvents";
 import { TIMING } from "../../constants/timing";
 import { ShoppingCart, Square, CheckSquare } from "lucide-react";
@@ -44,17 +45,17 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   // 2026-08-21 · Framework Phase 3 · alert → useToast
   const { toast, showError } = useToast();
   const [tab, setTab] = useState<Tab>(() => {
-    // 2026-08-11 · 사이드바 V2 · localStorage("sidebar.subtab.requests") 있으면 초기값 사용
+    // 2026-08-11 · 사이드바 V2 · localStorage(SK_SUBTAB_REQUESTS) 있으면 초기값 사용
     // 2026-08-12 · StrictMode 이중 마운트 대비 · 읽기만 · 삭제는 useEffect 로
     try {
-      const sb = localStorage.getItem("sidebar.subtab.requests") as Tab | null;
+      const sb = localStorage.getItem(SK_SUBTAB_REQUESTS) as Tab | null;
       if (sb) return sb;
     } catch { /* silent */ }
     return "display";
   });
   // mount 완료 후 · localStorage 정리
   useEffect(() => {
-    try { localStorage.removeItem("sidebar.subtab.requests"); } catch { /* silent */ }
+    try { localStorage.removeItem(SK_SUBTAB_REQUESTS); } catch { /* silent */ }
   }, []);
   // 사이드바에서 같은 페이지 서브탭 클릭 시 CustomEvent 리스닝
   useEffect(() => {

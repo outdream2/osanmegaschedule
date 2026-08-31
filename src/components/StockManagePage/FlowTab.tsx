@@ -5,6 +5,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
+import { SK_FLOW_CLASSFILTER } from "../../lib/storageKeys";
 import { useVendors } from "../../hooks/useVendors";
 import {
   Boxes, EyeOff,
@@ -90,11 +91,11 @@ export const FlowTab: React.FC = () => {
   // 상비약/일반약/전체 3-way 필터 (localStorage 저장)
   const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
     try {
-      const v = localStorage.getItem("megatown_flow_classfilter");
+      const v = localStorage.getItem(SK_FLOW_CLASSFILTER);
       return v === "stationery" || v === "general" || v === "all" ? v : "all";
     } catch { return "all"; }
   });
-  useEffect(() => { try { localStorage.setItem("megatown_flow_classfilter", classFilter); } catch { /**/ } }, [classFilter]);
+  useEffect(() => { try { localStorage.setItem(SK_FLOW_CLASSFILTER, classFilter); } catch { /**/ } }, [classFilter]);
   // 상품 real_map 매핑 (products.json 캐시)
   const [productRealMapById, setProductRealMapById] = useState<Record<string, string | null>>({});
   useEffect(() => {

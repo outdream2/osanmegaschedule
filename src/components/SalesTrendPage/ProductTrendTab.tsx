@@ -8,6 +8,7 @@ import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
+import { SK_SALESTREND_FLOW_W } from "../../lib/storageKeys";
 import { api } from "../../lib/apiClient";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import type { PeriodRow } from "./SalesTrendPage.helpers";
@@ -68,9 +69,9 @@ const ProductTrendTab: React.FC<{
 
   // 폭 조절 · localStorage 저장
   const [flowPanelWidth, setFlowPanelWidth] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem("megatown_salestrend_flow_w")); return Number.isFinite(v) && v > 0 ? v : 640; } catch { return 640; }
+    try { const v = Number(localStorage.getItem(SK_SALESTREND_FLOW_W)); return Number.isFinite(v) && v > 0 ? v : 640; } catch { return 640; }
   });
-  useEffect(() => { try { localStorage.setItem("megatown_salestrend_flow_w", String(flowPanelWidth)); } catch { /* ignore */ } }, [flowPanelWidth]);
+  useEffect(() => { try { localStorage.setItem(SK_SALESTREND_FLOW_W, String(flowPanelWidth)); } catch { /* ignore */ } }, [flowPanelWidth]);
   const resizeRef = useRef<{ startX: number; startW: number } | null>(null);
   const onResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();

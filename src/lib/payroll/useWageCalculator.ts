@@ -9,6 +9,7 @@
 // 6. 세전 - 4대보험 - 소득세 - 지방세 = 세후 (100원 이내)
 
 import { useEffect, useMemo, useState } from "react";
+import { TIMING } from "../../constants/timing";
 import { WEEKS_PER_MONTH, MIN_WAGE_2026 } from "./insuranceRates";
 import { grossUp, type GrossUpResult } from "./grossUp";
 import { buildWageBreakdown, type WageBreakdownResult } from "./buildWageBreakdown";
@@ -68,7 +69,7 @@ export function useWageCalculator(input: WageCalculatorInput): WageCalculatorRes
   // debounce 상태 · 200ms
   const [debouncedInput, setDebouncedInput] = useState(input);
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedInput(input), 200);
+    const t = setTimeout(() => setDebouncedInput(input), TIMING.DEBOUNCE_INPUT);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [

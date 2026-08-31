@@ -7,6 +7,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useState, useCallback } from "react";
 import { api } from "../lib/apiClient";
+import { SK_PUSH_SUBSCRIBED_AUTO } from "../lib/storageKeys";
 import { BellRing, BellOff } from "lucide-react";
 import { usePushSubscription } from "../hooks/usePushSubscription";
 import type { AuthSession } from "../types";
@@ -62,7 +63,7 @@ export const NotificationToggle: React.FC<Props> = ({ authSession }) => {
       if (sub) await sub.unsubscribe().catch(() => null);
       try { await api.post("/api/push-subscribe", { employeeId, subscription: null }); }
       catch { /* silent · 서버 저장 실패 무시 */ }
-      try { localStorage.removeItem("megatown_push_subscribed_auto"); } catch { /* ignore */ }
+      try { localStorage.removeItem(SK_PUSH_SUBSCRIBED_AUTO); } catch { /* ignore */ }
       setStatus("off");
     } finally { setBusy(false); }
   };

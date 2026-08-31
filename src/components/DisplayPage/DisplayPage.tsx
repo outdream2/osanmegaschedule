@@ -4,6 +4,7 @@
 //   · DisplayStoreMap · useDisplayData · DisplaySearchBar
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
+import { SK_DP_PRODUCT_INNER_TAB, SK_DP_RETURN_INNER_TAB } from "../../lib/storageKeys";
 import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { type ZoneStatus, type DowMap, type DisplayZone } from "../../utils/zoneUtils";
 import { type ProductInfo } from "../../lib/productsCache";
@@ -126,24 +127,24 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   // 2026-08-30 · 사용자 지시 · 순서 변경 · 상품정보 · 실재고입력 · 상품입고
   const [productInnerTab, setProductInnerTab] = useState<"info" | "scan" | "arrival">(() => {
     try {
-      const raw = localStorage.getItem("dp.productInnerTab");
+      const raw = localStorage.getItem(SK_DP_PRODUCT_INNER_TAB);
       if (raw === "arrival" || raw === "info" || raw === "scan") return raw;
     } catch { /* noop */ }
     return "info"; // 2026-08-30 · 사용자 지시 · 기본 · 상품정보
   });
   useEffect(() => {
-    try { localStorage.setItem("dp.productInnerTab", productInnerTab); } catch { /* noop */ }
+    try { localStorage.setItem(SK_DP_PRODUCT_INNER_TAB, productInnerTab); } catch { /* noop */ }
   }, [productInnerTab]);
   // 2026-08-29 · #193 · 반품 서브탭 안 · 2개 이너 탭 (반품필요·반품확정)
   const [returnInnerTabDp, setReturnInnerTabDp] = useState<"need" | "confirmed">(() => {
     try {
-      const raw = localStorage.getItem("dp.returnInnerTab");
+      const raw = localStorage.getItem(SK_DP_RETURN_INNER_TAB);
       if (raw === "confirmed" || raw === "need") return raw;
     } catch { /* noop */ }
     return "need";
   });
   useEffect(() => {
-    try { localStorage.setItem("dp.returnInnerTab", returnInnerTabDp); } catch { /* noop */ }
+    try { localStorage.setItem(SK_DP_RETURN_INNER_TAB, returnInnerTabDp); } catch { /* noop */ }
   }, [returnInnerTabDp]);
 
   // 2026-08-25 · Framework Phase 4 · 서브탭 초기화 · useDpInitialSubTab 이관

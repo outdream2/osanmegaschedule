@@ -4,6 +4,7 @@
 // 2026-08-23 · #191 Modal v3.4 재마이그레이션 · headerBgClass·headerTextClass 활용
 import React, { useState, useRef, useEffect } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { SK_REMEMBERED_PHONE } from "../../lib/storageKeys";
 import { Lock, X, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { User, CalendarCheck } from "@phosphor-icons/react";
 import { Spinner } from "../common/Spinner";
@@ -34,7 +35,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
   lpBrand,
 }) => {
   // ── 직원 로그인 state ───────────────────────────────────────────────
-  const [empNumber, setEmpNumber] = useState(() => localStorage.getItem("megatown_remembered_phone") ?? "");
+  const [empNumber, setEmpNumber] = useState(() => localStorage.getItem(SK_REMEMBERED_PHONE) ?? "");
   const [empPassword, setEmpPassword] = useState("");
   const [empError, setEmpError] = useState<string | null>(null);
   const [empLoading, setEmpLoading] = useState(false);
@@ -57,7 +58,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
   // ── 직원 모달 open 시 reset ────────────────────────────────────────
   useEffect(() => {
     if (pendingPage) {
-      setEmpNumber(localStorage.getItem("megatown_remembered_phone") ?? "");
+      setEmpNumber(localStorage.getItem(SK_REMEMBERED_PHONE) ?? "");
       setEmpPassword("");
       setEmpError(null);
       setEmpLoading(false);
@@ -131,9 +132,9 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
       onPendingPageClose();
       setEmpPassword("");
       if (rememberMe) {
-        localStorage.setItem("megatown_remembered_phone", phone);
+        localStorage.setItem(SK_REMEMBERED_PHONE, phone);
       } else {
-        localStorage.removeItem("megatown_remembered_phone");
+        localStorage.removeItem(SK_REMEMBERED_PHONE);
         setEmpNumber("");
       }
       const validRoles = ["superadmin", "admin", "manager", "employee", "vendor"] as const;

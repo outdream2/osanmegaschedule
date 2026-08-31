@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { SK_OCR_ERP_COL_WIDTHS } from "../../../lib/storageKeys";
 
 const ERP_TABLE_COLS_DEFAULT: Record<string, number> = {
   "ERP 코드": 100,
@@ -19,14 +20,14 @@ export function useErpViewState() {
   const [editingErpCellVal, setEditingErpCellVal] = useState("");
   const [erpColWidths, setErpColWidths] = useState<Record<string, number>>(() => {
     try {
-      const raw = localStorage.getItem("ocr_erp_col_widths");
+      const raw = localStorage.getItem(SK_OCR_ERP_COL_WIDTHS);
       if (raw) return { ...ERP_TABLE_COLS_DEFAULT, ...JSON.parse(raw) };
     } catch { /* empty */ }
     return { ...ERP_TABLE_COLS_DEFAULT };
   });
 
   useEffect(() => {
-    try { localStorage.setItem("ocr_erp_col_widths", JSON.stringify(erpColWidths)); } catch { /* empty */ }
+    try { localStorage.setItem(SK_OCR_ERP_COL_WIDTHS, JSON.stringify(erpColWidths)); } catch { /* empty */ }
   }, [erpColWidths]);
 
   const startErpColResize = useCallback((col: string, e: React.MouseEvent) => {

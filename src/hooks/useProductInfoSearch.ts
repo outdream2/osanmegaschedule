@@ -10,6 +10,7 @@
 // 2026-08-16 · apiClient 마이그레이션
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../lib/apiClient";
+import { TIMING } from "../constants/timing";
 
 export interface ProductSearchResult {
   product_code?: string;
@@ -48,7 +49,7 @@ export function useProductInfoSearch(): ProductInfoSearch {
     const q = query.trim();
     if (!q) { setResults([]); return; }
     if (selected?.product_name === q) return;
-    const t = setTimeout(runSearch, 250);
+    const t = setTimeout(runSearch, TIMING.DEBOUNCE_SEARCH);
     return () => clearTimeout(t);
   }, [query, selected?.product_name, runSearch]);
 

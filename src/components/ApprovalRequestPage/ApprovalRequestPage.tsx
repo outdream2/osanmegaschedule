@@ -6,6 +6,7 @@
 //   · sidebar:subtab CustomEvent · page="approval-request" 수신 시 setSubTab
 //   · 초기 서브탭 · localStorage("sidebar.subtab.approval-request") · 없으면 "leave"
 import React, { Suspense, useEffect, useMemo, useState } from "react";
+import { SK_SUBTAB_APPROVAL_REQUEST } from "../../lib/storageKeys";
 import { PencilLine } from "@phosphor-icons/react";
 // 2026-08-29 · #196 Phase 3 · 사이드바 · 서브탭 자동 파생
 import { getPageSubTabs } from "../layout/sideNavGroups";
@@ -36,7 +37,7 @@ interface ApprovalRequestPageProps {
 
 type ArSubTab = "leave" | "lunch" | "document-writer";
 
-const STORAGE_KEY = "sidebar.subtab.approval-request";
+const STORAGE_KEY = SK_SUBTAB_APPROVAL_REQUEST;
 
 // 2026-08-29 · #196 Phase 3 · TABS · sideNavGroups.getPageSubTabs 자동 파생 (하드코드 제거)
 //   · SIDE_NAV_GROUPS approvals 그룹 · items · subTab (leave · lunch · document-writer) 자동 반영

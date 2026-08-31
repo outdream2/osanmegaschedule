@@ -4,6 +4,7 @@
 //   · useCompanyInfo / useBrandIdentity · settings.* KV 서버 저장 (debounce 500ms)
 //   · 계약서·사직서·PDF·랜딩·푸터 등 다른 화면에서 즉시 참조
 import React, { useState } from "react";
+import { SK_COMPANY_INFO_TAB } from "../../lib/storageKeys";
 import {
   Buildings, User, IdentificationBadge, MapPin, Phone,
   Palette, TextT,
@@ -55,13 +56,13 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
   // 2026-08-12 · 5탭 상태 · localStorage 저장 (재방문 시 마지막 탭 복원)
   const [tab, setTab] = useState<TabKey>(() => {
     try {
-      const v = localStorage.getItem("companyInfo.tab") as TabKey | null;
+      const v = localStorage.getItem(SK_COMPANY_INFO_TAB) as TabKey | null;
       return (v && TABS.some(t => t.key === v)) ? v : "company";
     } catch { return "company"; }
   });
   const changeTab = (k: TabKey) => {
     setTab(k);
-    try { localStorage.setItem("companyInfo.tab", k); } catch { /* silent */ }
+    try { localStorage.setItem(SK_COMPANY_INFO_TAB, k); } catch { /* silent */ }
   };
 
   const badgeText =

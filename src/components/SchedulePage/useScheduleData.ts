@@ -2,6 +2,7 @@
 // 2026-08-22 · #framework-4 · SchedulePage 분리 · 데이터 fetch/mutate 훅
 import { useState, useRef, useCallback } from "react";
 import { api } from "../../lib/apiClient";
+import { SK_EMPLOYEE_ORDER } from "../../lib/storageKeys";
 import {
   updateEmployee,
   updateEmployeeFull,
@@ -82,7 +83,7 @@ export function useScheduleData(
       }
 
       let merged = Array.from(empMap.values());
-      const savedOrderStr = localStorage.getItem("megatown_employee_order");
+      const savedOrderStr = localStorage.getItem(SK_EMPLOYEE_ORDER);
       if (savedOrderStr) {
         try {
           const savedOrder = JSON.parse(savedOrderStr) as number[];

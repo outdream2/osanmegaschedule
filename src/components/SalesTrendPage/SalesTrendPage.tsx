@@ -1,5 +1,6 @@
 // 2026-08-22 · Framework Phase 4 · 서브컴포넌트 6개 분리 · 2502 → 슬림
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { SK_SALESTREND_SUPPLIER_W } from "../../lib/storageKeys";
 import { TrendingUp, Building2, Activity, Package, Eye, EyeOff, BarChart3 } from "lucide-react";
 import { Modal } from "../common/Modal";
 import { Spinner } from "../common/Spinner";
@@ -108,9 +109,9 @@ export const SalesTrendPage: React.FC = () => {
 
   // 공급사별 탭 · 좌우 분할 레이아웃 state
   const [supplierPanelWidth, setSupplierPanelWidth] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem("megatown_salestrend_supplier_w")); return Number.isFinite(v) && v > 0 ? v : 560; } catch { return 560; }
+    try { const v = Number(localStorage.getItem(SK_SALESTREND_SUPPLIER_W)); return Number.isFinite(v) && v > 0 ? v : 560; } catch { return 560; }
   });
-  useEffect(() => { try { localStorage.setItem("megatown_salestrend_supplier_w", String(supplierPanelWidth)); } catch { /**/ } }, [supplierPanelWidth]);
+  useEffect(() => { try { localStorage.setItem(SK_SALESTREND_SUPPLIER_W, String(supplierPanelWidth)); } catch { /**/ } }, [supplierPanelWidth]);
   const supplierPanelWidthRef = useRef(supplierPanelWidth);
   useEffect(() => { supplierPanelWidthRef.current = supplierPanelWidth; }, [supplierPanelWidth]);
   const supplierResizeRef = useRef<{ startX: number; startW: number } | null>(null);

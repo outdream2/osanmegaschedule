@@ -5,6 +5,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
+import { SK_DIFFTAB_SUBTAB, SK_DIFF_CLASSFILTER, SK_STOCKMANAGE_DIFF_W } from "../../lib/storageKeys";
 import { Layers, Loader2 as LoaderIcon, ChevronRight, ChevronDown, ListChecks, History } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
@@ -57,11 +58,11 @@ export const DiffTab: React.FC = () => {
   // 2026-08-06 · T-LOSS-HISTORY · 상단 서브탭 (현황/이력) · localStorage 저장
   const [subTab, setSubTab] = useState<SubTabKey>(() => {
     try {
-      const v = localStorage.getItem("megatown_difftab_subtab");
+      const v = localStorage.getItem(SK_DIFFTAB_SUBTAB);
       return v === "history" ? "history" : "current";
     } catch { return "current"; }
   });
-  useEffect(() => { try { localStorage.setItem("megatown_difftab_subtab", subTab); } catch { /**/ } }, [subTab]);
+  useEffect(() => { try { localStorage.setItem(SK_DIFFTAB_SUBTAB, subTab); } catch { /**/ } }, [subTab]);
   const subTabs: TabDef<SubTabKey>[] = useMemo(() => [
     { key: "current", label: "현황", icon: ListChecks, color: "violet" },
     { key: "history", label: "이력", icon: History,    color: "sky"    },
@@ -84,18 +85,18 @@ export const DiffTab: React.FC = () => {
   // 상비약/일반약/전체 3-way 필터 (localStorage 저장)
   const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
     try {
-      const v = localStorage.getItem("megatown_diff_classfilter");
+      const v = localStorage.getItem(SK_DIFF_CLASSFILTER);
       return v === "stationery" || v === "general" || v === "all" ? v : "all";
     } catch { return "all"; }
   });
-  useEffect(() => { try { localStorage.setItem("megatown_diff_classfilter", classFilter); } catch { /**/ } }, [classFilter]);
+  useEffect(() => { try { localStorage.setItem(SK_DIFF_CLASSFILTER, classFilter); } catch { /**/ } }, [classFilter]);
 
   // 패널 폭 (localStorage 저장)
   const [diffPanelWidth, setDiffPanelWidth] = useState<number>(() => {
     const defaultW = typeof window !== "undefined" ? Math.floor(window.innerWidth * 0.6) : 800;
-    try { const v = Number(localStorage.getItem("megatown_stockmanage_diff_w")); return Number.isFinite(v) && v > 0 ? v : defaultW; } catch { return defaultW; }
+    try { const v = Number(localStorage.getItem(SK_STOCKMANAGE_DIFF_W)); return Number.isFinite(v) && v > 0 ? v : defaultW; } catch { return defaultW; }
   });
-  useEffect(() => { try { localStorage.setItem("megatown_stockmanage_diff_w", String(diffPanelWidth)); } catch { /**/ } }, [diffPanelWidth]);
+  useEffect(() => { try { localStorage.setItem(SK_STOCKMANAGE_DIFF_W, String(diffPanelWidth)); } catch { /**/ } }, [diffPanelWidth]);
   const diffPanelWidthRef = useRef(diffPanelWidth);
   useEffect(() => { diffPanelWidthRef.current = diffPanelWidth; }, [diffPanelWidth]);
   const diffResizeRef = useRef<{ startX: number; startW: number } | null>(null);

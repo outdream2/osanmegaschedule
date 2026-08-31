@@ -8,6 +8,7 @@ import React, { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { Package } from "@phosphor-icons/react";
 import { api, ApiError } from "../../lib/apiClient";
+import { SK_ANON_PUSH_SUBSCRIBED } from "../../lib/storageKeys";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { Card } from "../common/Card";
 import { Modal } from "../common/Modal";
@@ -41,7 +42,7 @@ export const StockArrivalList: React.FC<StockArrivalListProps> = ({ isVendor }) 
       })
       .catch(() => { })
       .finally(() => setArrivalsLoading(false));
-    setPushSubscribed(localStorage.getItem("anon_push_subscribed") === "1");
+    setPushSubscribed(localStorage.getItem(SK_ANON_PUSH_SUBSCRIBED) === "1");
   }, []);
 
   const handleAnonSubscribe = async () => {
@@ -66,7 +67,7 @@ export const StockArrivalList: React.FC<StockArrivalListProps> = ({ isVendor }) 
         applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC_KEY,
       });
       await api.post("/api/anon-push-subscribe", { subscription: sub.toJSON() });
-      localStorage.setItem("anon_push_subscribed", "1");
+      localStorage.setItem(SK_ANON_PUSH_SUBSCRIBED, "1");
       setPushSubscribed(true);
     } catch (err: unknown) {
       console.error("Push subscribe error:", err);

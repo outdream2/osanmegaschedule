@@ -6,6 +6,7 @@
 //   · 기간 필터 · PeriodSelector + SeasonButtons (프레임워크 통일)
 //   · 엔드포인트 · /api/stock-manage/top-sales (기존 재사용)
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SK_DASHBOARD_LEFT_W } from "../../lib/storageKeys";
 import {
   BarChart3, TrendingUp, Package, AlertTriangle, Percent, DollarSign,
   Boxes,
@@ -149,12 +150,12 @@ export const DashboardTab: React.FC = () => {
   // 좌우 분할 폭 (SplitPanel resize)
   const [leftWidth, setLeftWidth] = useState<number>(() => {
     try {
-      const v = Number(localStorage.getItem("megatown_dashboard_left_w"));
+      const v = Number(localStorage.getItem(SK_DASHBOARD_LEFT_W));
       return Number.isFinite(v) && v > 0 ? v : 780;
     } catch { return 780; }
   });
   useEffect(() => {
-    try { localStorage.setItem("megatown_dashboard_left_w", String(leftWidth)); } catch { /**/ }
+    try { localStorage.setItem(SK_DASHBOARD_LEFT_W, String(leftWidth)); } catch { /**/ }
   }, [leftWidth]);
   const leftWidthRef = useRef(leftWidth);
   useEffect(() => { leftWidthRef.current = leftWidth; }, [leftWidth]);

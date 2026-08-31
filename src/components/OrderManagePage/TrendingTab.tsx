@@ -4,6 +4,7 @@
 //   신규 진입 (prior=0, recent>0) 상단 · 성장률 desc
 
 import React, { useEffect, useMemo, useState } from "react";
+import { SK_TRENDING_CLASSFILTER } from "../../lib/storageKeys";
 import { TrendingUp, AlertTriangle, Loader2 as LoaderIcon, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { useProductDetailModal, type ProductRef } from "../common/features/ProductDetailModal";
@@ -281,11 +282,11 @@ export const TrendingTab: React.FC = () => {
   // 상비약/일반약/전체 3-way 필터 (localStorage 저장) · 기본값: 상비약
   const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
     try {
-      const v = localStorage.getItem("megatown_trending_classfilter");
+      const v = localStorage.getItem(SK_TRENDING_CLASSFILTER);
       return v === "stationery" || v === "general" || v === "all" ? v : "stationery";
     } catch { return "stationery"; }
   });
-  useEffect(() => { try { localStorage.setItem("megatown_trending_classfilter", classFilter); } catch { /**/ } }, [classFilter]);
+  useEffect(() => { try { localStorage.setItem(SK_TRENDING_CLASSFILTER, classFilter); } catch { /**/ } }, [classFilter]);
   // 2026-08-31 · #13 · location 우선 · real_map fallback · resolveProductLocation
   const [productRealMapById, setProductRealMapById] = useState<Record<string, string | null>>({});
   useEffect(() => {

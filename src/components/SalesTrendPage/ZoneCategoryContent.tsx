@@ -1,6 +1,7 @@
 // src/components/SalesTrendPage/ZoneCategoryContent.tsx
 // 2026-08-22 · Framework Phase 4 · SalesTrendPage.tsx 에서 분리
 import React, { useEffect, useMemo, useState } from "react";
+import { SK_SALESTREND_CATEGORY_W } from "../../lib/storageKeys";
 import { X, Loader2, PieChart, Layers } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { LoadingState } from "../common/LoadingState";
@@ -47,7 +48,7 @@ const ZoneCategoryContent: React.FC = () => {
   const [autoExpanded, setAutoExpanded] = useState<{ requested: number; effective: number; latestSnapshot: string | null } | null>(null);
   const [itemSort, setItemSort] = useState<{ key: ZoneItemSortKey; dir: "asc" | "desc" }>({ key: "sale", dir: "desc" });
   const [categoryPanelWidth, setCategoryPanelWidth] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem("megatown_salestrend_category_w")); return Number.isFinite(v) && v > 0 ? v : 400; } catch { return 400; }
+    try { const v = Number(localStorage.getItem(SK_SALESTREND_CATEGORY_W)); return Number.isFinite(v) && v > 0 ? v : 400; } catch { return 400; }
   });
   const [essentialSort, setEssentialSort] = useState<ZoneListSortKey>("amount");
   const [generalSort, setGeneralSort] = useState<ZoneListSortKey>("amount");
@@ -63,7 +64,7 @@ const ZoneCategoryContent: React.FC = () => {
     });
   };
 
-  useEffect(() => { try { localStorage.setItem("megatown_salestrend_category_w", String(categoryPanelWidth)); } catch { /**/ } }, [categoryPanelWidth]);
+  useEffect(() => { try { localStorage.setItem(SK_SALESTREND_CATEGORY_W, String(categoryPanelWidth)); } catch { /**/ } }, [categoryPanelWidth]);
   const categoryPanelWidthRef = React.useRef(categoryPanelWidth);
   useEffect(() => { categoryPanelWidthRef.current = categoryPanelWidth; }, [categoryPanelWidth]);
   const categoryResizeRef = React.useRef<{ startX: number; startW: number } | null>(null);

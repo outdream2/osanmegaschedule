@@ -9,8 +9,9 @@
 // 2026-08-16 · apiClient 마이그레이션
 import { useEffect, useRef } from "react";
 import { api } from "../lib/apiClient";
+import { SK_PUSH_SUBSCRIBED_AUTO } from "../lib/storageKeys";
 
-const LS_KEY = "megatown_push_subscribed_auto";
+const LS_KEY = SK_PUSH_SUBSCRIBED_AUTO;
 
 interface Params {
   employeeId: number | null | undefined;

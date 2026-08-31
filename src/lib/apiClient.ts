@@ -12,6 +12,7 @@
 //   - Zod 스키마로 응답 검증 옵션 (validate)
 import axios, { type AxiosRequestConfig, type AxiosResponse } from "axios";
 import type { ZodSchema } from "zod";
+import { SK_AUTH_SESSION } from "./storageKeys";
 
 /** 통일 API 에러 · try/catch 에서 instanceof 로 판별 */
 export class ApiError extends Error {
@@ -86,7 +87,7 @@ async function handlePotentialServerDown(status: number, err: any): Promise<void
     return;
   }
   // 미로그인 시 skip (loop 방지 · App.tsx guard 와 동일 원칙)
-  const stored = typeof localStorage !== "undefined" ? localStorage.getItem("megatown_auth_session") : null;
+  const stored = typeof localStorage !== "undefined" ? localStorage.getItem(SK_AUTH_SESSION) : null;
   if (!stored) return;
   consecutiveNetworkFailures++;
   if (consecutiveNetworkFailures < 2) return;

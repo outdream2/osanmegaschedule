@@ -1,6 +1,7 @@
 ﻿// src/components/ScheduleFilterBar.tsx
 // 2026-08-17 · 공통 FilterSortLabel/Group/Row · 재사용 프레임워크 · 최신 트렌드 통일
 import React from "react";
+import { SK_EMPLOYEE_ORDER } from "../../lib/storageKeys";
 import { useConfirm } from "../../hooks/useConfirm";
 import { Employee } from "../../types";
 import { FilterSortLabel, FilterSortGroup, FilterSortRow } from "../common/FilterSortBar";
@@ -75,7 +76,7 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
             options={sortOptions}
             active={sortBy === "none" ? "today" : sortBy}
             onSelect={handleSortSelect as any}
-            right={sortBy === "none" && typeof window !== "undefined" && localStorage.getItem("megatown_employee_order") && (
+            right={sortBy === "none" && typeof window !== "undefined" && localStorage.getItem(SK_EMPLOYEE_ORDER) && (
               <button
                 type="button"
                 onClick={async () => {

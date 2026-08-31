@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { SK_OCR_XLS_TEMPLATE } from "../../../lib/storageKeys";
 
 export function useXlsTemplate() {
   const [xlsTemplate,     setXlsTemplate    ] = useState<ArrayBuffer | null>(null);
@@ -10,7 +11,7 @@ export function useXlsTemplate() {
   // Restore from localStorage on mount
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("ocr_xls_template");
+      const raw = localStorage.getItem(SK_OCR_XLS_TEMPLATE);
       if (!raw) return;
       const { name, hdrs, data } = JSON.parse(raw);
       const buf = Uint8Array.from(atob(data), c => c.charCodeAt(0)).buffer;
