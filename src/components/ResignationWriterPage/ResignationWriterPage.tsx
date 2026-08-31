@@ -125,17 +125,18 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
   }, [companyInfoLoaded, companyInfo]);
 
   // ── 직원 목록 로드 ────────────────────────────────────────────────────
+  // 2026-08-31 · 사용자 리포트 · 생년월일 안 나오던 원인
+  //   · 이전 · /api/schedules?year=Y&month=M · 스케쥴 목적 endpoint · birth_date 필드 없음
+  //   · 신규 · /api/employees · 정식 직원 정보 endpoint · birth_date 포함 · 프로젝트 전체 통일
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setEmpLoading(true);
       setEmpError(null);
       try {
-        const now = new Date();
-        const y = now.getFullYear(), m = now.getMonth() + 1;
-        const { data } = await api.get<any>(`/api/schedules?year=${y}&month=${m}`);
+        const { data } = await api.get<any>(`/api/employees`);
         if (cancelled) return;
-        const list = Array.isArray(data?.employees) ? data.employees : [];
+        const list = Array.isArray(data) ? data : (Array.isArray(data?.employees) ? data.employees : []);
         setEmployees(list);
       } catch (err: any) {
         if (!cancelled) setEmpError(err instanceof ApiError ? err.message : (err?.message ?? "직원 목록 불러오기 실패"));
