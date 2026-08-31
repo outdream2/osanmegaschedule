@@ -366,7 +366,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
 
   // ── 렌더링 ──────────────────────────────────────────────────────────────────
   return (
-    <main className="flex-1 max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-3 min-h-0">
+    <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-4 py-4 flex flex-col gap-3 min-h-0">
 
       {/* 상단 필터바 */}
       <StaffToolbar

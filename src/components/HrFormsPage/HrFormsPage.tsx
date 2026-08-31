@@ -227,7 +227,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
         />
       )}
 
-      <main className="flex-1 max-w-[1200px] mx-auto w-full px-3 sm:px-5 py-5 flex flex-col gap-4">
+      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-3 sm:px-5 py-5 flex flex-col gap-4">
 
         {/* 2026-08-31 · #48 · UI_MOCKUP_HR_FORMS_2026-08-27 톤 · Card topAccent + 그라디언트 아이콘 · 목업 통일 */}
         <Card padding="none" rounded="xl" topAccent className="px-5 py-4">

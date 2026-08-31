@@ -547,7 +547,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   );
 
   return (
-    <main className="flex-1 max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-4">
+    <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-4 py-4 flex flex-col gap-4">
       {!hideTopTabs && (
         <TabBar<typeof topTab>
           level={2}
