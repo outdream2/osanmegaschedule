@@ -1,11 +1,11 @@
 // src/components/OrderManagePage/BorrowingPage_v2.tsx
-// 2026-08-31 · #9 차용등록 재설계 Phase C · 중앙 BorrowingEditPanel 연결
+// 2026-08-31 · #9 차용등록 재설계 Phase D · 우측 BorrowingDetailPanel 연결
 //
 //   · 병행 개발 · 원본 BorrowingPage.tsx 보존 (Phase E 에서 교체)
 //   · CSS Grid 3-column · [320px _ 1fr _ 380px] · lg 이상 · 그 아래는 세로 스택
 //   · 좌측 · SplitListPanel (검색 상단 built-in · 상태·기간 필터 · BorrowingCard 리스트)
 //   · 중앙 · BorrowingEditPanel (신규/편집 통합 · Phase C)
-//   · 우측 · EmptyState · 상세 뷰 placeholder (Phase D)
+//   · 우측 · BorrowingDetailPanel (상세·서명·Timeline·CTA · Phase D)
 //   · listBorrowings API · borrowingsApi.ts 재사용 (framework 준수)
 //
 //   대원칙:
@@ -21,9 +21,8 @@
 //     · PartySelectModal / BorrowingEditPanel 등은 Phase C·D 에서 별도 구현
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { HandCoins, Inbox, RefreshCw } from "lucide-react";
+import { HandCoins, RefreshCw } from "lucide-react";
 import { Card } from "../common/Card";
-import { EmptyState } from "../common/EmptyState";
 import { Spinner } from "../common/Spinner";
 import { SplitListPanel } from "../common/SplitListPanel";
 import { SegmentedControl, type SegmentedOption } from "../common/SegmentedControl";
@@ -33,6 +32,7 @@ import { StatusPill } from "../common/StatusPill";
 import { InlineLabel } from "../common/InlineLabel";
 import { GradientAccent } from "../common/GradientAccent";
 import { BorrowingEditPanel, type EditMode } from "./BorrowingEditPanel";
+import { BorrowingDetailPanel } from "./BorrowingDetailPanel";
 import {
   listBorrowings,
   type BorrowingRow,
@@ -258,53 +258,27 @@ export const BorrowingPageV2: React.FC<BorrowingPageV2Props> = ({ authSession })
   );
 
   // ═══════════════════════════════════════════════════════
-  // 우측 · 상세 뷰 자리 (Phase D 에서 구현)
+  // 우측 · 상세 뷰 (Phase D · BorrowingDetailPanel)
+  //   · onChanged · 반환·취소·재열림 시 · rows in-place 업데이트 + selected 유지
+  //   · onDeleted · rows 에서 제거 + 선택 해제 + editMode 초기화
   // ═══════════════════════════════════════════════════════
-  const rightPanel = selectedRow ? (
-    <Card padding="none" rounded="xl" clip className="h-full min-h-[520px] flex flex-col">
-      <div className="shrink-0 px-4 py-3 border-b border-line bg-white flex items-center gap-2">
-        <span className="text-[15px] font-bold text-ink tracking-tight break-keep">
-          #{selectedRow.id} · {selectedRow.product_name ?? "-"}
-        </span>
-        <div className="ml-auto">
-          <StatusPill tone="zinc" size="xs">Phase D 예정</StatusPill>
-        </div>
-      </div>
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
-        <div className="text-[14px] text-ink-soft leading-relaxed">
-          <div><b className="text-ink">방향</b> · {selectedRow.direction === "lend" ? "공급사 → 약국 (대여)" : "약국 → 공급사 (차용)"}</div>
-          <div><b className="text-ink">공급사</b> · {selectedRow.supplier ?? "-"}</div>
-          <div><b className="text-ink">수량</b> · {(selectedRow.qty ?? 0).toLocaleString()}
-            {selectedRow.unit_price != null && <> · @ {selectedRow.unit_price.toLocaleString()}원</>}
-          </div>
-          {selectedRow.due_date && <div><b className="text-ink">예정일</b> · {selectedRow.due_date}</div>}
-          {selectedRow.note && (
-            <div className="mt-2 p-2.5 bg-zinc-50 border border-line rounded-lg text-[13px] whitespace-pre-wrap break-keep">
-              {selectedRow.note}
-            </div>
-          )}
-        </div>
-        <div className="border-t border-line pt-3">
-          <EmptyState
-            icon={Inbox}
-            title="상세 · 서명 감사 · Timeline"
-            hint="Phase D 에서 SignatureStampSlot + Timeline 확장 예정"
-            size="normal"
-          />
-        </div>
-      </div>
-    </Card>
-  ) : (
-    <Card padding="none" rounded="xl" clip className="h-full min-h-[520px] flex flex-col">
-      <div className="flex-1 flex items-center justify-center p-6">
-        <EmptyState
-          icon={Inbox}
-          title="계약을 선택하세요"
-          hint="좌측 리스트에서 항목을 선택하면 · 서명·감사 이력·Timeline 이 여기에 표시됩니다"
-          size="large"
-        />
-      </div>
-    </Card>
+  const handleDetailChanged = useCallback((updated: BorrowingRow) => {
+    setRows((prev) => prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)));
+  }, []);
+
+  const handleDetailDeleted = useCallback((id: number) => {
+    setRows((prev) => prev.filter((r) => r.id !== id));
+    setSelectedId(null);
+    setEditMode((mode) => (mode?.kind === "edit" && mode.id === id ? null : mode));
+  }, []);
+
+  const rightPanel = (
+    <BorrowingDetailPanel
+      row={selectedRow}
+      onChanged={handleDetailChanged}
+      onDeleted={handleDetailDeleted}
+      authSession={authSession ?? null}
+    />
   );
 
   // ═══════════════════════════════════════════════════════
@@ -329,7 +303,7 @@ export const BorrowingPageV2: React.FC<BorrowingPageV2Props> = ({ authSession })
                   차용 관리 · Redesign
                 </h1>
                 <p className="text-[14px] text-ink-soft mt-0.5 break-keep">
-                  양방향 화살표 · 이중 서명·도장 · Timeline 감사 이력 (#9 Phase C)
+                  양방향 화살표 · 이중 서명·도장 · Timeline 감사 이력 (#9 Phase D)
                 </p>
               </div>
             </div>
