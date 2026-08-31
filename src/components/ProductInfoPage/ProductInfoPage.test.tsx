@@ -47,6 +47,15 @@ vi.mock("../../hooks/useSaleActiveOnly", () => ({
   useSaleActiveOnly: () => ({ saleActiveOnly: false, setSaleActiveOnly: vi.fn(), loaded: true }),
 }));
 
+// 2026-08-31 · useSaleStatusFilter · 테스트에서는 "all" · mock 데이터에 sale_status 없어도 전부 통과
+vi.mock("../../hooks/useSaleStatusFilter", () => ({
+  useSaleStatusFilter: () => ({
+    value: "all",
+    setValue: vi.fn(),
+    matches: () => true,
+  }),
+}));
+
 beforeEach(() => {
   mockGet.mockReset();
   mockPatch.mockReset();
@@ -54,7 +63,7 @@ beforeEach(() => {
   mockIsDesktop = true;
   // 기본 · products-map 빈 결과 (에러 없음)
   mockGet.mockImplementation((url: string) => {
-    if (url === "/api/products-map") return Promise.resolve({ data: {} });
+    if (url.startsWith("/api/products-map")) return Promise.resolve({ data: {} });
     if (url.startsWith("/api/products/")) {
       const code = decodeURIComponent(url.split("/api/products/")[1]);
       return Promise.resolve({
@@ -131,7 +140,7 @@ describe("ProductInfoPage · 권한 게이트 · 상품 등록 버튼", () => {
 describe("ProductInfoPage · 상품 리스트 로드 · 선택 · 상세", () => {
   beforeEach(() => {
     mockGet.mockImplementation((url: string) => {
-      if (url === "/api/products-map") {
+      if (url.startsWith("/api/products-map")) {
         return Promise.resolve({
           data: {
             "PC001": { product_name: "타이레놀", supplier: "코스트팜", optimal_stock: 20 },
@@ -184,7 +193,7 @@ describe("ProductInfoPage · 상품 리스트 로드 · 선택 · 상세", () =>
 describe("ProductInfoPage · 편집 모드 (canEdit)", () => {
   beforeEach(() => {
     mockGet.mockImplementation((url: string) => {
-      if (url === "/api/products-map") {
+      if (url.startsWith("/api/products-map")) {
         return Promise.resolve({ data: { "PC001": { product_name: "타이레놀" } } });
       }
       return Promise.resolve({
@@ -200,8 +209,8 @@ describe("ProductInfoPage · 편집 모드 (canEdit)", () => {
     const btn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("타이레놀")) as HTMLButtonElement;
     fireEvent.click(btn);
     await waitFor(() => {
-      // 2026-08-29 · #186 A안 · Hero 액션 슬롯 · [상세 편집] 버튼
-      const editBtn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("상세 편집"));
+      // 2026-08-30 · #41 통합 후 · 상세정보 카드 내 [수정] 버튼
+      const editBtn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("수정"));
       expect(editBtn).toBeTruthy();
     });
   });
@@ -212,9 +221,9 @@ describe("ProductInfoPage · 편집 모드 (canEdit)", () => {
     await waitFor(() => expect(container.textContent).toContain("타이레놀"));
     const btn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("타이레놀")) as HTMLButtonElement;
     fireEvent.click(btn);
-    // 2026-08-29 · #186 A안 · Hero · "코드 PC001" 표시로 상세 로드 확인
+    // 2026-08-30 · #41 통합 후 · 상세 로드 확인 (PC001 코드 표시)
     await waitFor(() => expect(container.textContent).toContain("PC001"));
-    const editBtn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("상세 편집"));
+    const editBtn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("수정"));
     expect(editBtn).toBeFalsy();
   });
 });
