@@ -23,6 +23,8 @@ import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
 // 2026-08-29 · 상품명 검색 · 통일 로직
 import { matchesProductQuery } from "../../lib/productMatch";
+// 2026-08-31 · #11 · 공급사명 검색 통합
+import { matchesSupplierQuery } from "../../lib/supplierMatch";
 // 2026-08-27 · 사용자 지시 · 카테고리 → 창고 slot 지능 배정 (8A=창고1 · 32=창고2)
 import { assignZonesToSlots } from "../../lib/warehouseZoneMap";
 
@@ -225,10 +227,12 @@ export const RealStockTablePage: React.FC = () => {
   const filtered = useMemo(() => {
     let list = rows.filter(r => saleMatches(r.sale_status));
     // 2026-08-29 · 통일 로직 · matchesProductQuery + location 추가 매칭
+    // 2026-08-31 · #11 · 공급사 검색 통합 · matchesSupplierQuery
     const q = search.trim().toLowerCase();
     if (!q) return list;
     return list.filter(r =>
       matchesProductQuery(r, search) ||
+      matchesSupplierQuery({ supplier: (r as any).supplier ?? undefined }, search) ||
       String(r.location ?? "").toLowerCase().includes(q)
     );
   }, [rows, search, saleMatches]);

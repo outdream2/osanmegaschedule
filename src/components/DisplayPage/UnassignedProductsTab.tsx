@@ -20,6 +20,8 @@ import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
 // 2026-08-29 · 사용자 지시 · 상품명 검색 · 프로젝트 전체 · 동일 로직 통일
 import { matchesProductQuery } from "../../lib/productMatch";
+// 2026-08-31 · #11 · 공급사명 검색 통합
+import { matchesSupplierQuery } from "../../lib/supplierMatch";
 
 interface UnassignedProduct {
   product_code: string;
@@ -79,7 +81,11 @@ export const UnassignedProductsTab: React.FC = () => {
 
   const filtered = useMemo(() => {
     // 2026-08-29 · 통일 로직 · matchesProductQuery (초성·부분·코드·바코드)
-    return rows.filter(r => matchesProductQuery(r, search));
+    // 2026-08-31 · #11 · 공급사 검색 통합 · matchesSupplierQuery
+    return rows.filter(r =>
+      matchesProductQuery(r, search) ||
+      matchesSupplierQuery({ supplier: r.supplier ?? undefined }, search)
+    );
   }, [rows, search]);
 
   const startEdit = (row: UnassignedProduct) => {

@@ -18,6 +18,8 @@ import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { SearchBar } from "../common/SearchBar";
 // 2026-08-29 · 사용자 지시 · 상품명 검색 · 통일 로직
 import { matchesProductQuery } from "../../lib/productMatch";
+// 2026-08-31 · #11 · 공급사명 검색 통합
+import { matchesSupplierQuery } from "../../lib/supplierMatch";
 
 interface ExpiryProduct {
   product_code: string;
@@ -80,12 +82,14 @@ export const ExpiryImminentTab: React.FC = () => {
   useEffect(() => { load(); }, [load]);
 
   const filtered = useMemo(() => {
-    // 2026-08-29 · saleMatches AND matchesProductQuery (통일 로직) + real_map 추가 매칭
+    // 2026-08-29 · saleMatches AND (matchesProductQuery OR matchesSupplierQuery) + real_map 매칭
+    // 2026-08-31 · #11 · 공급사 검색 통합 · matchesSupplierQuery 프리미티브
     const saleFiltered = rows.filter(r => saleMatches(r.sale_status));
     const kw = q.trim().toLowerCase();
     if (!kw) return saleFiltered;
     return saleFiltered.filter(r =>
       matchesProductQuery(r, q) ||
+      matchesSupplierQuery({ supplier: r.supplier ?? undefined }, q) ||
       String(r.real_map ?? "").toLowerCase().includes(kw)
     );
   }, [rows, q, saleMatches]);
