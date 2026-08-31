@@ -107,14 +107,15 @@ describe("fillPeriodsWithRows · 기간 채움", () => {
   });
 
   it("일부 rows · matching start_date 는 원본 사용 · 나머지 empty", () => {
-    const now = new Date();
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const yy = now.getFullYear();
+    // UTC 기준으로 날짜 계산 (generatePeriods 와 동일 기준)
+    const todayUtc = new Date().toISOString().slice(0, 10);
+    const yy = todayUtc.slice(0, 4);
+    const mm = todayUtc.slice(5, 7);
     const start = `${yy}-${mm}-01`;
     const existing: PeriodRow = {
       period_start_date: start,
       snapshot_date: `${yy}-${mm}-10`,
-      period_type: "early",
+      period_type: "early" as const,
       purchase_qty: 999,
     };
     const r = fillPeriodsWithRows([existing], 30, makeEmpty);
