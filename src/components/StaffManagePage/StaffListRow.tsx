@@ -70,16 +70,11 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
           <span className={`break-words whitespace-normal ${isSelected ? "text-indigo-800" : ""}`}>{emp.name}</span>
         </div>
       </td>
-      {/* 2026-08-31 · 사용자 지시 · 직군 배지 제거 · 텍스트 수평 · 왼쪽 정렬 · 폰트 +2 */}
+      {/* 2026-08-31 · 사용자 지시 · 직군 · 직급 제외 · 텍스트만 · 왼쪽 정렬 */}
       <td className="px-2 py-2 text-left">
-        <div className="flex items-center gap-1.5 text-[17px]">
-          {emp.position && (
-            <span className="font-bold text-ink">{emp.position}</span>
-          )}
-          {emp.rank && (
-            <span className="text-ink-soft" title="직급">· {emp.rank}</span>
-          )}
-        </div>
+        {emp.position && (
+          <span className="text-[17px] font-bold text-ink">{emp.position}</span>
+        )}
       </td>
       {/* 계약유형 · 계약직 → "계약N" (N=총 계약수) · 정/알 등은 short */}
       {/* 2026-08-29 · #182 Phase B 확장 · contract_end D-30 이내 · 만료 임박 배지 아래 */}
