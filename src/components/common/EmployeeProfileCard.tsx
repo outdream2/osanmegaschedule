@@ -11,12 +11,13 @@
 //   5. 근로계약서 뷰어 모달 (자체 관리)
 
 import React, { useEffect, useRef, useState } from "react";
-import { FileText, Edit2, Upload } from "lucide-react";
+import { FileText, Edit2, Upload, User, Briefcase, IdCard, Phone, Building, CalendarDays, Cake } from "lucide-react";
 import type { Employee } from "../../types";
 import { uploadResume, uploadContract, uploadBankbook } from "../../lib/employeeApi";
 import { getEmploymentStatus, EMPLOYMENT_STATUS_LABEL } from "../../lib/employmentStatus";
 import { Card } from "./Card";
 import { StatusPill } from "./StatusPill";
+import { IconTile } from "./IconTile";
 import { Modal } from "./Modal";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient · alert → useToast
 import { api } from "../../lib/apiClient";
@@ -117,14 +118,17 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
   const emptyCls = "px-2 py-1.5 text-[12px] font-semibold bg-zinc-50 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 rounded-lg inline-flex items-center justify-center gap-1 border border-dashed border-zinc-300 cursor-pointer transition disabled:opacity-60 disabled:cursor-wait";
 
   return (
-    <Card padding="none" className="px-4 py-3 space-y-3">
-      {/* 이름 헤더 + [수정] 버튼 */}
+    // 2026-08-31 · UI_MOCKUP_2026-08-21 톤 · topAccent + IconTile 헤더 · 목업 통일
+    <Card padding="none" topAccent className="px-4 py-4 space-y-4">
+      {/* 이름 헤더 · IconTile + 이름 + 서브 + [수정] */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="min-w-0">
+        <div className="flex items-start gap-3 min-w-0">
+          <IconTile icon={<User size={16} />} tone="brand" size="md" />
+          <div className="min-w-0">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="text-[18px] font-bold text-zinc-900 leading-tight">{localEmployee.name}</span>
+            <span className="text-[19px] font-extrabold text-ink leading-tight tracking-tight">{localEmployee.name}</span>
             {localEmployee.employee_number && (
-              <span className="text-[11px] font-bold text-zinc-400 tabular-nums">사번 {localEmployee.employee_number}</span>
+              <span className="text-[13px] font-bold text-zinc-400 tabular-nums">사번 {localEmployee.employee_number}</span>
             )}
             {/* 2026-08-20 · #175 · 재직상태 배지 · retire_date 파생 (재직/퇴사예정/퇴사) */}
             {(() => {
@@ -142,8 +146,9 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
             })()}
           </div>
           {/* 2026-08-17 · 사용자 지시 · 이름 아래 · 직군 · 근무형태 2개만 (rank 제외) · 폰트 +4 */}
-          <div className="text-[16px] text-zinc-500 font-semibold mt-0.5">
+          <div className="text-[17px] text-ink-soft font-semibold mt-0.5 tracking-tight">
             {[localEmployee.position, localEmployee.employmentType].filter(Boolean).join(" · ")}
+          </div>
           </div>
         </div>
         {onEdit && (
@@ -185,38 +190,58 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
         </div>
       )}
 
-      {/* 정보 grid · 성별·입사일·근무지·연차 (한줄) · 전화 (전체 폭) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 pt-2 border-t border-zinc-100">
-        <div className="flex flex-col">
-          <span className="text-[15px] font-semibold text-zinc-400">성별</span>
-          <span className="text-[17px] font-bold text-zinc-700">{localEmployee.gender ?? "—"}</span>
+      {/* 2026-08-31 · 정보 grid · IconTile + 라벨 uppercase · Attio 톤 · 목업 통일 */}
+      <div className="pt-3 border-t border-line">
+        <div className="flex items-center gap-1.5 mb-2 text-[12px] font-bold text-ink-soft uppercase tracking-wider">
+          <IdCard size={11} className="text-brand-deep/70" /> 기본 정보
         </div>
-        <div className="flex flex-col">
-          <span className="text-[15px] font-semibold text-zinc-400">입사일</span>
-          <span className="text-[17px] font-bold text-zinc-700 tabular-nums">{localEmployee.hireDate || "—"}</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-[15px] font-semibold text-zinc-400">근무지</span>
-          <span className="text-[17px] font-bold text-zinc-700">{localEmployee.workplace}</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-[15px] font-semibold text-zinc-400">연차</span>
-          <span className="text-[17px] font-bold text-zinc-700">
-            {localEmployee.annual_leave_days != null ? `${localEmployee.annual_leave_days}일` : "—"}
-          </span>
-        </div>
-        <div className="col-span-2 sm:col-span-4 flex flex-col">
-          <span className="text-[15px] font-semibold text-blue-400">전화 (로그인 ID)</span>
-          <span className="text-[18px] font-bold text-blue-700 tabular-nums">
-            {localEmployee.phone
-              ? localEmployee.phone.replace(/^(\d{3})(\d{3,4})(\d{4})$/, "$1-$2-$3")
-              : <span className="text-zinc-300 font-normal">미등록</span>}
-          </span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+          <div className="flex flex-col">
+            <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1"><User size={10} /> 성별</span>
+            <span className="text-[17px] font-bold text-ink mt-0.5">{localEmployee.gender ?? <span className="text-zinc-300">—</span>}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1"><CalendarDays size={10} /> 입사일</span>
+            <span className="text-[17px] font-bold text-ink tabular-nums mt-0.5">{localEmployee.hireDate || <span className="text-zinc-300">—</span>}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1"><Building size={10} /> 근무지</span>
+            <span className="text-[17px] font-bold text-ink mt-0.5">{localEmployee.workplace || <span className="text-zinc-300">—</span>}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1"><Briefcase size={10} /> 연차</span>
+            <span className="text-[17px] font-bold text-ink mt-0.5 tabular-nums">
+              {localEmployee.annual_leave_days != null ? `${localEmployee.annual_leave_days}일` : <span className="text-zinc-300">—</span>}
+            </span>
+          </div>
+          {/* 2026-08-31 · 생년월일 · endpoint 통일 후 노출 · #52 */}
+          {(localEmployee as any).birth_date && (
+            <div className="flex flex-col">
+              <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1"><Cake size={10} /> 생년월일</span>
+              <span className="text-[17px] font-bold text-ink tabular-nums mt-0.5">{(localEmployee as any).birth_date}</span>
+            </div>
+          )}
+          {/* 전화 · Accent card · brand tint bg */}
+          <div className="col-span-2 sm:col-span-4 flex items-center gap-2 mt-1 bg-brand-tint/40 border border-brand-deep/15 rounded-lg px-3 py-2">
+            <IconTile icon={<Phone size={13} />} tone="sky" size="sm" />
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-[12px] font-bold text-brand-deep uppercase tracking-wider">전화 · 로그인 ID</span>
+              <span className="text-[18px] font-bold text-brand-deep tabular-nums">
+                {localEmployee.phone
+                  ? localEmployee.phone.replace(/^(\d{3})(\d{3,4})(\d{4})$/, "$1-$2-$3")
+                  : <span className="text-zinc-300 font-normal">미등록</span>}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* 첨부 파일 · 이력서·근계·통장사본 · 3슬롯 · 미등록 시 클릭 업로드 */}
-      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-zinc-100">
+      <div className="pt-3 border-t border-line">
+        <div className="flex items-center gap-1.5 mb-2 text-[12px] font-bold text-ink-soft uppercase tracking-wider">
+          <FileText size={11} className="text-emerald-600/70" /> 첨부 파일
+        </div>
+      <div className="grid grid-cols-3 gap-2">
         <input ref={resumeFileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleResumeUpload(f); e.target.value = ""; }} />
         <input ref={contractFileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleContractUpload(f); e.target.value = ""; }} />
         <input ref={bankbookFileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleBankbookUpload(f); e.target.value = ""; }} />
@@ -283,6 +308,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
             <Upload size={12} /> {uploadingKind === "bankbook" ? "업로드 중..." : "통장사본 · 없음"}
           </button>
         )}
+      </div>
       </div>
 
       {/* 비고 (있을 때만) */}
