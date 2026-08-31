@@ -792,14 +792,9 @@ router.post("/api/inventory-checks", authorize(1), asyncHandler(async (req, res)
     checked_at:    now,
     status:        "pending",
   };
-  // 레거시 · 신규 컬럼 mirror 처리 · warehouse1 → warehouse (없으면 warehouse 값 그대로)
-  if (hasWarehouse1) {
-    payload.warehouse1_stock = num(b.warehouse1_stock);
-    payload.warehouse_stock  = payload.warehouse1_stock; // 레거시 mirror
-  } else if (hasWarehouse) {
-    payload.warehouse_stock  = num(b.warehouse_stock);
-    payload.warehouse1_stock = payload.warehouse_stock;   // 신규 mirror (하위 호환)
-  }
+  // 각 컬럼 독립 저장 · mirror 제거 (2026-08-31 · DROP 예약됨)
+  if (hasWarehouse1) payload.warehouse1_stock = num(b.warehouse1_stock);
+  if (hasWarehouse)  payload.warehouse_stock  = num(b.warehouse_stock);
   if (hasWarehouse2) payload.warehouse2_stock = num(b.warehouse2_stock);
   if (hasStore)      payload.store_stock      = num(b.store_stock);
   if (hasStore2)     payload.store_stock_2    = num(b.store_stock_2);
