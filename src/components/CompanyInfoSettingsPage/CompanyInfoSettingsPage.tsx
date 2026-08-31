@@ -31,8 +31,14 @@ interface Props {
   onLogout?: () => void;
 }
 
-const LABEL_CLS = SET_LABEL;
-const INPUT_CLS = SET_INPUT;
+// 2026-08-31 · 사용자 지시 · 회사·브랜드 페이지 · 폰트 +2 (탭메뉴 이하 모든 필드)
+//   · 공용 SET_LABEL/SET_INPUT +2 로 override (다른 설정 페이지는 영향 X · 페이지 로컬 스코프)
+const LABEL_CLS = "flex items-center gap-1.5 text-[15px] font-bold text-ink mb-1.5";
+const INPUT_CLS =
+  "w-full h-11 bg-[#FAFBFC] border border-line rounded-[10px] px-3 text-[16px] font-medium text-ink " +
+  "focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:bg-white " +
+  "transition disabled:opacity-50";
+void SET_LABEL; void SET_INPUT;
 
 type TabKey = "company" | "brand" | "contact" | "stamps";
 const TABS: Array<{ key: TabKey; label: string; Icon: React.ComponentType<any>; color: string }> = [
@@ -101,7 +107,7 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
                 const el = document.getElementById(`section-${key}`);
                 if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-bold transition-colors cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[16px] font-bold transition-colors cursor-pointer ${
                 active
                   ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
                   : "text-zinc-600 hover:text-zinc-800 hover:bg-zinc-100 border border-transparent"
