@@ -197,8 +197,8 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
           "overflow-hidden",
           "data-[state=open]:animate-collapsible-down",
           "data-[state=closed]:animate-collapsible-up",
-          // icon-only 모드: Content 가 항상 보여야 아이콘이 노출됨
-          "group-data-[collapsible=icon]:!block group-data-[collapsible=icon]:!overflow-visible",
+          // 2026-08-31 · 사용자 지시 · 접힘 시 하위메뉴 완전 숨김
+          "group-data-[collapsible=icon]:!hidden",
         ].join(" ")}
       >
         <SidebarMenu className="gap-0 px-1 pt-0.5 pb-1">

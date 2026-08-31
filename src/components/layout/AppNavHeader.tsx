@@ -14,6 +14,8 @@ import logoImg from "../../images/logo2.png";
 // 2026-08-11 · 사이드바 V2 · flag ON 시 슬림 헤더로 대체
 // 2026-08-16 · env → 서버 KV 설정 훅으로 이관
 import { useSidebarEnabled } from "../../hooks/useSidebar";
+// 2026-08-31 · 사용자 리포트 · 사이드바 opener 명시 트리거 · shadcn Sidebar
+import { SidebarTrigger } from "../ui/sidebar";
 // 2026-08-16 · 페이지 hidden · 공통헤더에서도 필터
 import { usePagePermissions } from "../../hooks/usePagePermissions";
 import { SIDE_NAV_GROUPS } from "./sideNavGroups";
@@ -525,12 +527,17 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   };
 
   // 2026-08-11 · 사이드바 V2 · 데스크탑에서는 헤더 최소화
-  // 2026-08-28 · A안 · SidebarTrigger 완전 제거 · 접기/펼치기 컨트롤 사이드바로 완전 이관
-  //   · 접힘 상태 · SideNav SidebarRail (우측 경계선 클릭) or Cmd/Ctrl+B 로 펼치기
-  //   · 헤더는 · 전역 요소 (알림 · 프로필) 만 유지
+  // 2026-08-31 · 사용자 리포트 · 사이드바 opener 안 보임 · header 좌측 · SidebarTrigger 재추가
+  //   · 사용자가 SidebarRail (우측 경계선) 을 찾기 어려움 · 명시적 버튼 필요
+  //   · 접힘·펼침 상태 모두 · shadcn 표준 · Cmd/Ctrl+B 단축키 유지
   if (SIDEBAR_ENABLED && !isMobileNav) {
     return (
-      <div className="flex items-center justify-end px-3 py-1 shrink-0 bg-white/60 backdrop-blur-sm border-b border-line/50">
+      <div className="flex items-center justify-between px-3 py-1 shrink-0 bg-white/60 backdrop-blur-sm border-b border-line/50">
+        <SidebarTrigger
+          className="h-8 w-8 rounded-md text-brand-deep/60 hover:text-brand-deep hover:bg-brand-tint transition cursor-pointer"
+          aria-label="사이드바 열기/접기"
+          title="사이드바 열기·접기 (Cmd/Ctrl+B)"
+        />
         <div className="flex items-center gap-2">{rightSlot}</div>
       </div>
     );
