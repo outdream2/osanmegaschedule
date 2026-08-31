@@ -1,6 +1,6 @@
 // 2026-08-22 · Framework Phase 4 · 서브컴포넌트 6개 분리 · 2502 → 슬림
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { TrendingUp, Building2, Activity, Package, Eye, EyeOff } from "lucide-react";
+import { TrendingUp, Building2, Activity, Package, Eye, EyeOff, BarChart3 } from "lucide-react";
 import { Modal } from "../common/Modal";
 import { Spinner } from "../common/Spinner";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
@@ -30,10 +30,13 @@ export { CategoryTab } from "./ZoneCategoryContent";
 export { LossTrackerTab } from "./LossTrackerTab";
 import ProductTrendTab from "./ProductTrendTab";
 import SupplierTrendTab from "./SupplierTrendTab";
+// 2026-08-31 · #36 B안 · 판매대시보드 탭 (신규 · 기존 탭 무영향)
+import DashboardTab from "./DashboardTab";
 
 // ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────
 export const SalesTrendPage: React.FC = () => {
-  type SalesTab = "chart" | "supplier";
+  // 2026-08-31 · #36 B안 · dashboard 탭 추가 (기존 chart · supplier 유지)
+  type SalesTab = "dashboard" | "chart" | "supplier";
   const [salesTab, setSalesTab] = useState<SalesTab>("chart");
   const tab: "product" | "supplier" = salesTab === "supplier" ? "supplier" : "product";
   const setTab = (t: "product" | "supplier") => setSalesTab(t === "supplier" ? "supplier" : "chart");
@@ -154,11 +157,13 @@ export const SalesTrendPage: React.FC = () => {
         {([
           { k: "chart" as SalesTab, label: "판매추이차트", icon: Activity, color: "amber" },
           { k: "supplier" as SalesTab, label: "공급사별판매", icon: Building2, color: "sky" },
+          // 2026-08-31 · #36 B안 · 판매대시보드 (신규)
+          { k: "dashboard" as SalesTab, label: "판매대시보드", icon: BarChart3, color: "teal" },
         ]).map(t => {
           const Icon = t.icon;
           const active = salesTab === t.k;
-          const activeText = { sky: "text-sky-700", amber: "text-amber-700" }[t.color]!;
-          const activeBar = { sky: "bg-sky-500", amber: "bg-amber-500" }[t.color]!;
+          const activeText = { sky: "text-sky-700", amber: "text-amber-700", teal: "text-teal-700" }[t.color]!;
+          const activeBar = { sky: "bg-sky-500", amber: "bg-amber-500", teal: "bg-teal-500" }[t.color]!;
           return (
             <button key={t.k} onClick={() => setSalesTab(t.k)}
               className={`relative basis-1/3 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-[13px] font-bold leading-tight transition-colors duration-150 ${active ? activeText : "text-zinc-400 hover:text-zinc-700"}`}>
@@ -171,6 +176,9 @@ export const SalesTrendPage: React.FC = () => {
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto">
+        {/* 2026-08-31 · #36 B안 · 판매대시보드 · 신규 탭 */}
+        {salesTab === "dashboard" && <DashboardTab />}
+
         {salesTab === "chart" && (
           <ProductTrendTab
             granularity={granularity}
