@@ -3,6 +3,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { X, Loader2, PieChart, Layers } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+import { LoadingState } from "../common/LoadingState";
+import { EmptyState } from "../common/EmptyState";
+import { Package } from "lucide-react";
 import { Card } from "../common/Card";
 import { AccentBar } from "../common/AccentBar";
 import { StoreZoneMap } from "../common/StoreZoneMap";
@@ -427,19 +430,16 @@ const ZoneCategoryContent: React.FC = () => {
             </Card>
           )}
           {loading && grouped.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-8">
-              <div className="w-10 h-10 border-4 border-line border-t-orange-500 rounded-full animate-spin" />
-              <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
-            </div>
+            // 2026-08-31 · 프레임워크 · LoadingState skeleton · 목업 톤
+            <LoadingState skeleton rows={6} size="normal" tone="indigo" />
           ) : !loading && grouped.length === 0 ? (
-            // 2026-08-31 · #69 · 자동 확장 후에도 없음 → 진짜 데이터 없음 · 사용자 액션 안내
-            <div className="flex flex-col items-center gap-2 text-center py-8 px-4">
-              <div className="text-[13px] font-bold text-zinc-500">판매 데이터 없음</div>
-              <div className="text-[11px] text-zinc-400 leading-relaxed">
-                최근 12개월 재고 스냅샷 (stock_history) 이 없습니다.<br />
-                재고관리 화면에서 새 스냅샷을 임포트해 주세요.
-              </div>
-            </div>
+            // 2026-08-31 · 프레임워크 · EmptyState · 진짜 데이터 없음 · 사용자 액션 안내
+            <EmptyState
+              icon={Package}
+              title="판매 데이터 없음"
+              hint="최근 12개월 재고 스냅샷 (stock_history) 이 없습니다. 재고관리 화면에서 새 스냅샷을 임포트해 주세요."
+              size="normal"
+            />
           ) : (
             <div className={`overflow-y-auto max-h-[65vh] pr-1 flex flex-col gap-2 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
               <div className="flex items-center gap-1 border-b-2 border-line sticky top-0 bg-white z-10 -mx-1 px-1 pt-1">
