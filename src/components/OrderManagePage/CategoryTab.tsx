@@ -3,6 +3,7 @@
 //   real_map 기반 구역별 판매금액·수량 집계 + 매장 구역도
 
 import React, { useEffect, useMemo, useState } from "react";
+import { SK_CATEGORY_CLASSFILTER, SK_SALESTREND_CATEGORY_W } from "../../lib/storageKeys";
 import { X, Loader2, Layers, PieChart } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
@@ -72,7 +73,7 @@ const ZoneCategoryContent: React.FC = () => {
 
   // 카테고리 패널 폭 (useResizablePanel 훅 · god-phase1)
   const { width: categoryPanelWidth, startResize: onCategoryResizeStart } = useResizablePanel({
-    storageKey: "megatown_salestrend_category_w",
+    storageKey: SK_SALESTREND_CATEGORY_W,
     defaultWidth: 400,
     minWidth: 260,
     maxWidth: 800,
@@ -148,11 +149,11 @@ const ZoneCategoryContent: React.FC = () => {
   const [allSort, setAllSort] = useState<ZoneListSortKey>("amount");
   const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
     try {
-      const v = localStorage.getItem("megatown_category_classfilter");
+      const v = localStorage.getItem(SK_CATEGORY_CLASSFILTER);
       return v === "stationery" || v === "general" || v === "all" ? v : "stationery";
     } catch { return "stationery"; }
   });
-  useEffect(() => { try { localStorage.setItem("megatown_category_classfilter", classFilter); } catch { /**/ } }, [classFilter]);
+  useEffect(() => { try { localStorage.setItem(SK_CATEGORY_CLASSFILTER, classFilter); } catch { /**/ } }, [classFilter]);
 
   const zoneNum = (zone: string): number => {
     const m = zone.match(/^(\d+)/);
@@ -507,7 +508,7 @@ const ZoneCategoryContent: React.FC = () => {
               <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
             </div>
           ) : !loading && grouped.length === 0 ? (
-            <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
+            <EmptyState title="카테고리 데이터 없음" size="compact" />
           ) : (
             <div className={`overflow-y-auto max-h-[65vh] pr-1 flex flex-col gap-2 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
               <div className="flex items-center gap-1 border-b-2 border-line sticky top-0 bg-white z-10 -mx-1 px-1 pt-1">
