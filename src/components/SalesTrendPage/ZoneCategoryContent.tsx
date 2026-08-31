@@ -53,16 +53,6 @@ const ZoneCategoryContent: React.FC = () => {
   const [essentialSort, setEssentialSort] = useState<ZoneListSortKey>("amount");
   const [generalSort, setGeneralSort] = useState<ZoneListSortKey>("amount");
   const [groupTab, setGroupTab] = useState<"essential" | "general">("essential");
-  // 2026-08-31 · #zone-collapse · 구역 카드별 독립 펼침 상태 · 기본 접힘
-  const [expandedZones, setExpandedZones] = useState<Set<string>>(new Set());
-  const toggleZoneExpand = (zone: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setExpandedZones(prev => {
-      const next = new Set(prev);
-      if (next.has(zone)) next.delete(zone); else next.add(zone);
-      return next;
-    });
-  };
 
   useEffect(() => { try { localStorage.setItem(SK_SALESTREND_CATEGORY_W, String(categoryPanelWidth)); } catch { /**/ } }, [categoryPanelWidth]);
   const categoryPanelWidthRef = React.useRef(categoryPanelWidth);
@@ -197,70 +187,40 @@ const ZoneCategoryContent: React.FC = () => {
   const renderZoneCard = (g: typeof grouped[number], rank: number) => {
     const pct = total > 0 ? (g.totalAmount / total) * 100 : 0;
     const isSelected = selectedZone === g.zone;
-    const isExpanded = expandedZones.has(g.zone);
     const color = colorForZone(g.zone);
     const barCls = { sky: "bg-sky-400", emerald: "bg-emerald-400", amber: "bg-amber-400", rose: "bg-rose-400", indigo: "bg-indigo-400", teal: "bg-teal-400", violet: "bg-violet-400", orange: "bg-orange-400" }[color]!;
     const textCls = { sky: "text-sky-700", emerald: "text-emerald-700", amber: "text-amber-700", rose: "text-rose-700", indigo: "text-indigo-700", teal: "text-teal-700", violet: "text-violet-700", orange: "text-orange-700" }[color]!;
     const selectedBorder = isSelected ? "border-violet-400 bg-violet-50/60 shadow-sm" : "border-line hover:bg-zinc-50";
     const rankCls = rank <= 2 ? "bg-rose-500 text-white border-rose-600" : rank <= 4 ? "bg-sky-500 text-white border-sky-600" : rank <= 6 ? "bg-emerald-500 text-white border-emerald-600" : rank <= 8 ? "bg-violet-500 text-white border-violet-600" : rank <= 10 ? "bg-zinc-400 text-white border-zinc-500" : "bg-white text-zinc-400 border-line";
-    // 상위 3위 상품 (판매액 기준)
-    const top3 = [...g.items].sort((a, b) => b.amount - a.amount).slice(0, 3);
     return (
-      <div key={g.zone} className={`w-full flex flex-col gap-1.5 p-2.5 rounded-xl border text-left transition ${selectedBorder}`}>
-        {/* 상단 행 · 구역명 + 화살표 · 클릭 영역 분리 */}
+      <button key={g.zone} type="button" onClick={() => setSelectedZone(prev => prev === g.zone ? null : g.zone)}
+        className={`w-full flex flex-col gap-1.5 p-2.5 rounded-xl border cursor-pointer text-left transition ${selectedBorder}`}
+      >
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          {/* 구역명 영역 · 클릭 → 우측 상세 열기 */}
-          <button type="button" onClick={() => setSelectedZone(prev => prev === g.zone ? null : g.zone)}
-            className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer text-left"
-          >
+          <div className="flex items-center gap-2 min-w-0">
             <span className={`inline-flex items-center justify-center w-[20px] h-[20px] text-[12px] font-bold rounded-md border tabular-nums shrink-0 ${rankCls}`}>{rank}</span>
             <span className={`text-[13px] font-bold ${textCls} tabular-nums shrink-0`}>{formatZoneDisplayCode(g.zone)}</span>
             {zoneCategoryLabel(g.zone) && (
               <span className={`text-[11px] font-bold ${textCls} break-words whitespace-normal leading-tight`}>{zoneCategoryLabel(g.zone)}</span>
             )}
-          </button>
-          {/* 화살표 · 1·2·3위 토글 · 독립 버튼 */}
-          <button
-            type="button"
-            onClick={(e) => toggleZoneExpand(g.zone, e)}
-            className="w-5 h-5 flex items-center justify-center rounded hover:bg-zinc-200 transition cursor-pointer shrink-0"
-            title={isExpanded ? "상위 상품 숨기기" : "상위 상품 보기"}
-          >
-            <span className={`text-zinc-400 text-[10px] transition-transform duration-150 inline-block ${isExpanded ? "rotate-90" : ""}`}>▶</span>
-          </button>
+          </div>
+          <span className={`text-zinc-400 text-[10px] transition-transform shrink-0 ${isSelected ? "rotate-90" : ""}`}>▶</span>
         </div>
-        {/* 요약 행 · 구역 선택 클릭 */}
-        <button type="button" onClick={() => setSelectedZone(prev => prev === g.zone ? null : g.zone)}
-          className="w-full flex flex-col gap-1.5 cursor-pointer text-left"
-        >
-          <div className="flex items-center justify-between gap-2 flex-wrap text-[11px] tabular-nums">
-            <div className="flex items-center gap-1.5 text-zinc-500 font-semibold">
-              <span>상품 <span className="font-bold text-zinc-700">{g.items.length}</span>종</span>
-              <span className="text-zinc-300">·</span>
-              <span>판매 <span className="font-bold text-orange-700">{fmt(g.saleQty)}</span></span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-emerald-700 text-[12px]">{fmtWon(g.totalAmount)}</span>
-              <span className="text-[10px] font-bold text-zinc-400">{pct.toFixed(1)}%</span>
-            </div>
+        <div className="flex items-center justify-between gap-2 flex-wrap text-[11px] tabular-nums">
+          <div className="flex items-center gap-1.5 text-zinc-500 font-semibold">
+            <span>상품 <span className="font-bold text-zinc-700">{g.items.length}</span>종</span>
+            <span className="text-zinc-300">·</span>
+            <span>판매 <span className="font-bold text-orange-700">{fmt(g.saleQty)}</span></span>
           </div>
-          <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-            <div className={`h-full ${barCls} transition-all`} style={{ width: `${pct}%` }} />
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-emerald-700 text-[12px]">{fmtWon(g.totalAmount)}</span>
+            <span className="text-[10px] font-bold text-zinc-400">{pct.toFixed(1)}%</span>
           </div>
-        </button>
-        {/* 상위 1·2·3위 · 펼침 시만 표시 */}
-        {isExpanded && top3.length > 0 && (
-          <div className="border-t border-line/60 pt-1.5 flex flex-col gap-0.5">
-            {top3.map((it, i) => (
-              <div key={it.code} className="flex items-center gap-1.5 text-[11px]">
-                <span className={`inline-flex items-center justify-center w-[16px] h-[16px] text-[10px] font-bold rounded shrink-0 tabular-nums ${i === 0 ? "bg-rose-100 text-rose-700" : i === 1 ? "bg-sky-100 text-sky-700" : "bg-emerald-100 text-emerald-700"}`}>{i + 1}</span>
-                <span className="flex-1 text-zinc-700 font-medium break-words whitespace-normal leading-tight">{it.name}</span>
-                <span className="text-emerald-700 font-bold tabular-nums shrink-0">{fmtWon(it.amount)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+        </div>
+        <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+          <div className={`h-full ${barCls} transition-all`} style={{ width: `${pct}%` }} />
+        </div>
+      </button>
     );
   };
 
