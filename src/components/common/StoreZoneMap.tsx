@@ -249,7 +249,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         key={num}
         {...extra}
         {...dragProps}
-        className={`relative group rounded-md overflow-visible border border-stone-300 bg-white shadow-sm flex flex-col items-center ${wallMin} ${usePicker ? "cursor-pointer hover:ring-2 hover:ring-brand-tint hover:border-brand-deep/40 transition" : cellInteractive} ${dragClass}`}
+        className={`relative group rounded-md overflow-visible border border-stone-300 bg-white shadow-sm flex flex-col items-stretch ${wallMin} ${usePicker ? "cursor-pointer hover:ring-2 hover:ring-brand-tint hover:border-brand-deep/40 transition" : cellInteractive} ${dragClass}`}
         title={`${zd?.label ?? num} · ${cat}${usePicker ? " · 클릭하여 편집" : enableDrag ? " · 길게 눌러 드래그" : ""}`}
       >
         {/* 상단 · ★BEST 배지 (옵션) · 배지 없어도 line 은 유지 (레이아웃 안정) */}
@@ -258,7 +258,8 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
             {rankBadge(zoneId)}
           </div>
         )}
-        <div className="w-full bg-stone-50 px-1.5 py-1.5 flex flex-col items-center gap-1 flex-1 justify-center relative rounded-md overflow-hidden">
+        {/* 2026-08-31 · 사용자 지시 · 표처럼 줄맞춤 · 구역 라벨 상단 고정 · 카테고리 하단 · 모든 셀 동일 정렬 */}
+        <div className="w-full bg-stone-50 px-1.5 pt-6 pb-2 flex flex-col items-center gap-1.5 flex-1 relative rounded-md overflow-hidden">
           {enableDrag && (
             <span className="absolute top-0.5 right-0.5 text-zinc-400" aria-hidden><GripVertical size={10} /></span>
           )}
@@ -272,12 +273,14 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
               </span>
             );
           })()}
-          <div className="flex items-center justify-center">
-            {/* 2026-08-26 · 사용자 지시 · 원본 num 직접 표시 · getZoneLabel 매핑 우회 (서버 1-16 순차 라벨 무시) */}
+          {/* 구역 라벨 · 상단 고정 · 모든 셀 동일 위치 */}
+          <div className="flex items-center justify-center shrink-0">
             <span className="text-[11px] font-bold text-white bg-amber-700 rounded px-1.5 py-0.5 leading-none">{num}</span>
           </div>
-          {/* 2026-08-26 · 사용자 지시 · line-clamp 제거 · 글씨 크기에 맞춰 셀 자동 성장 · break-keep 로 단어 안 짤림 */}
-          <span className="text-[13px] font-bold text-stone-800 leading-snug text-center break-keep whitespace-normal">{cat}</span>
+          {/* 카테고리 · 상단 라벨 아래 · flex-1 로 남은 공간 확보 · 상단 정렬 */}
+          <div className="flex-1 w-full flex items-start justify-center pt-1">
+            <span className="text-[13px] font-bold text-stone-800 leading-snug text-center break-keep whitespace-normal">{cat}</span>
+          </div>
         </div>
         {/* 2026-08-26 · 사용자 지시 · hover · 상세카테고리 커스텀 팝업 · picker 모드에선 안 표시 (popover 와 충돌 방지) */}
         {!usePicker && zd?.description && <HoverDetail title={`${zoneId} · 상세카테고리${count > 0 ? ` · ${count}개 상품` : ""}`} desc={zd.description} />}
@@ -331,16 +334,16 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         <Tag
           {...extra}
           {...dragProps}
-          className={`relative w-full font-bold ${colors.text} ${colors.bg} border-2 ${colors.border} rounded px-1 py-1.5 leading-tight text-center ${cellMin} flex flex-col items-center justify-center gap-1 ${usePicker ? "cursor-pointer hover:ring-2 hover:ring-brand-tint transition" : cellInteractive} ${dragClass}`}
+          className={`relative w-full font-bold ${colors.text} ${colors.bg} border-2 ${colors.border} rounded px-1 pt-2 pb-2 leading-tight text-center ${cellMin} flex flex-col items-stretch gap-1.5 ${usePicker ? "cursor-pointer hover:ring-2 hover:ring-brand-tint transition" : cellInteractive} ${dragClass}`}
           title={`${zoneLabel} · ${sub}${usePicker ? " · 클릭하여 편집" : enableDrag ? " · 길게 눌러 드래그" : ""}`}
         >
-          {/* 2026-08-30 · 사용자 지시 · 중앙진열대 셀번호 표시 안 함 */}
-          {/* 2026-08-30 · 사용자 지시 · zoneId 배지 위 · 카테고리 아래 */}
-          <div className="flex items-center justify-center">
+          {/* 2026-08-31 · 사용자 지시 · 표처럼 줄맞춤 · zoneId 라벨 상단 고정 · 카테고리 아래로 · 모든 셀 동일 정렬 */}
+          <div className="flex items-center justify-center shrink-0">
             <span className={`text-[11px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{zoneId}</span>
           </div>
-          {/* 카테고리 · 1A 아래 · line-clamp 제거 · break-keep · 자동 확장 */}
-          <span className="text-[13px] leading-snug break-keep whitespace-normal">{sub}</span>
+          <div className="flex-1 w-full flex items-start justify-center pt-1">
+            <span className="text-[13px] leading-snug break-keep whitespace-normal">{sub}</span>
+          </div>
         </Tag>
       );
       return (

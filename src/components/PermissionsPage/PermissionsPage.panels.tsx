@@ -49,9 +49,9 @@ export const PositionsTab: React.FC<PositionsTabProps> = ({
     <div className="w-full min-w-0 space-y-4">
       <div className="flex items-center gap-2">
         <IdCard size={14} className="text-zinc-500" />
-        <h2 className="text-[13px] font-bold text-zinc-700">직군 설정</h2>
+        <h2 className="text-[16px] font-bold text-zinc-700">직군 설정</h2>
       </div>
-      <p className="text-[12px] text-zinc-500 font-semibold">
+      <p className="text-[15px] text-zinc-500 font-semibold">
         직원 등록/수정 화면의 직군 드롭박스에 표시될 목록입니다. 이름 클릭 또는 <Pencil size={11} className="inline align-middle text-violet-500 mx-0.5" /> 아이콘으로 편집 · 드래그로 순서 변경 · <Trash2 size={11} className="inline align-middle text-rose-500 mx-0.5" /> 로 삭제 (사용중이면 재매핑 안내).
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
@@ -85,14 +85,14 @@ export const PositionsTab: React.FC<PositionsTabProps> = ({
                   if (e.key === "Enter") { e.preventDefault(); commitEditPosition(); }
                   else if (e.key === "Escape") { setEditingPosIdx(null); }
                 }}
-                className="flex-1 text-[13px] font-semibold text-zinc-800 bg-white border border-violet-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-brand-tint min-w-0"
+                className="flex-1 text-[16px] font-semibold text-zinc-800 bg-white border border-violet-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-brand-tint min-w-0"
               />
             ) : (
               <>
                 <button
                   type="button"
                   onClick={() => { setEditingPosIdx(idx); setEditingPosValue(pos); }}
-                  className="flex-1 text-[13px] font-semibold text-zinc-800 truncate text-left hover:text-violet-700 cursor-text"
+                  className="flex-1 text-[16px] font-semibold text-zinc-800 truncate text-left hover:text-violet-700 cursor-text"
                   title="클릭하여 이름 수정"
                 >
                   {pos}
@@ -125,12 +125,12 @@ export const PositionsTab: React.FC<PositionsTabProps> = ({
           onChange={(e) => setNewPositionInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNewPosition(); } }}
           placeholder="새 직군 입력 (Enter)"
-          className="flex-1 text-[13px] rounded-lg border border-line focus:border-brand-deep p-2 bg-white focus:outline-none"
+          className="flex-1 text-[16px] rounded-lg border border-line focus:border-brand-deep p-2 bg-white focus:outline-none"
         />
         <button
           type="button"
           onClick={addNewPosition}
-          className="px-3 py-2 text-[12px] font-bold bg-violet-600 hover:bg-violet-700 text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
+          className="px-3 py-2 text-[15px] font-bold bg-violet-600 hover:bg-violet-700 text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
         >
           <Plus size={13} />
           추가
@@ -280,21 +280,22 @@ export const PageSettingsTab: React.FC<PageSettingsTabProps> = ({
                   {GroupIcon && <GroupIcon size={16} className={GROUP_COLOR_CLS[g.color] ?? "text-zinc-500"} />}
                   <span className={`text-[17px] font-bold truncate ${perm.hidden ? "text-zinc-400 line-through" : "text-zinc-700"}`}>{g.label}</span>
                 </div>
-                <div className="flex flex-col items-end gap-1 pr-3">
-                  <LevelSelect value={perm.read} onChange={v => handleChange(row.storageKey, row.pageKey, "read", v)} saving={saving === `${row.storageKey}.read`} saved={savedKeys.has(`${row.storageKey}.read`)} />
+                {/* 2026-08-31 · 사용자 지시 · 직군 + 읽기 최소 · 한 줄 · 직군 앞으로 */}
+                <div className="flex items-center justify-end gap-2 pr-3">
                   <PositionsField page={row.storageKey} field="read" selected={perm.readPositions ?? []} allPositions={presetPositions}
                     isOpen={openPositionPopover?.page === row.storageKey && openPositionPopover?.field === "read"}
                     onToggleOpen={(open) => setOpenPositionPopover(open ? { page: row.storageKey, field: "read" } : null)}
                     onToggle={(p) => togglePositionForPerm(row.storageKey, row.pageKey, "read", p)}
                   />
+                  <LevelSelect value={perm.read} onChange={v => handleChange(row.storageKey, row.pageKey, "read", v)} saving={saving === `${row.storageKey}.read`} saved={savedKeys.has(`${row.storageKey}.read`)} />
                 </div>
-                <div className="flex flex-col items-end gap-1 pr-3">
-                  <LevelSelect value={perm.write} onChange={v => handleChange(row.storageKey, row.pageKey, "write", v)} saving={saving === `${row.storageKey}.write`} saved={savedKeys.has(`${row.storageKey}.write`)} />
+                <div className="flex items-center justify-end gap-2 pr-3">
                   <PositionsField page={row.storageKey} field="write" selected={perm.writePositions ?? []} allPositions={presetPositions}
                     isOpen={openPositionPopover?.page === row.storageKey && openPositionPopover?.field === "write"}
                     onToggleOpen={(open) => setOpenPositionPopover(open ? { page: row.storageKey, field: "write" } : null)}
                     onToggle={(p) => togglePositionForPerm(row.storageKey, row.pageKey, "write", p)}
                   />
+                  <LevelSelect value={perm.write} onChange={v => handleChange(row.storageKey, row.pageKey, "write", v)} saving={saving === `${row.storageKey}.write`} saved={savedKeys.has(`${row.storageKey}.write`)} />
                 </div>
               </div>
             );
@@ -342,21 +343,22 @@ export const PageSettingsTab: React.FC<PageSettingsTabProps> = ({
                       <span className="text-zinc-300 mr-1.5">└</span>
                       {row.label}
                     </div>
-                    <div className="flex flex-col items-end gap-1 pr-3">
-                      <LevelSelect value={perm.read} onChange={v => handleChange(row.storageKey, row.pageKey, "read", v)} saving={saving === `${row.storageKey}.read`} saved={savedKeys.has(`${row.storageKey}.read`)} />
+                    {/* 2026-08-31 · 사용자 지시 · 직군 + 레벨 · 한 줄 · 직군 앞으로 */}
+                    <div className="flex items-center justify-end gap-2 pr-3">
                       <PositionsField page={row.storageKey} field="read" selected={perm.readPositions ?? []} allPositions={presetPositions}
                         isOpen={openPositionPopover?.page === row.storageKey && openPositionPopover?.field === "read"}
                         onToggleOpen={(open) => setOpenPositionPopover(open ? { page: row.storageKey, field: "read" } : null)}
                         onToggle={(p) => togglePositionForPerm(row.storageKey, row.pageKey, "read", p)}
                       />
+                      <LevelSelect value={perm.read} onChange={v => handleChange(row.storageKey, row.pageKey, "read", v)} saving={saving === `${row.storageKey}.read`} saved={savedKeys.has(`${row.storageKey}.read`)} />
                     </div>
-                    <div className="flex flex-col items-end gap-1 pr-3">
-                      <LevelSelect value={perm.write} onChange={v => handleChange(row.storageKey, row.pageKey, "write", v)} saving={saving === `${row.storageKey}.write`} saved={savedKeys.has(`${row.storageKey}.write`)} />
+                    <div className="flex items-center justify-end gap-2 pr-3">
                       <PositionsField page={row.storageKey} field="write" selected={perm.writePositions ?? []} allPositions={presetPositions}
                         isOpen={openPositionPopover?.page === row.storageKey && openPositionPopover?.field === "write"}
                         onToggleOpen={(open) => setOpenPositionPopover(open ? { page: row.storageKey, field: "write" } : null)}
                         onToggle={(p) => togglePositionForPerm(row.storageKey, row.pageKey, "write", p)}
                       />
+                      <LevelSelect value={perm.write} onChange={v => handleChange(row.storageKey, row.pageKey, "write", v)} saving={saving === `${row.storageKey}.write`} saved={savedKeys.has(`${row.storageKey}.write`)} />
                     </div>
                   </div>
                 );

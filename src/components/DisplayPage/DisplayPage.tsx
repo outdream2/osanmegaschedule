@@ -697,8 +697,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             <RealStockTablePage />
           ) : storeInnerTab === "zoneEdit" ? (
             <div className="flex flex-col gap-3">
-              {/* 2026-08-27 · 사용자 지시 · 구역설정(ZoneGroupPanel) 을 매장구역도 편집 탭으로 이동 */}
-              <ZoneGroupPanel groups={zoneGroups} activeGroupId={activeGroupId} employees={employees} onGroupsChange={setZoneGroups} onActiveGroupChange={setActiveGroupId} />
+              {/* 2026-08-31 · 사용자 지시 · 구역그룹설정(ZoneGroupPanel) 제거 · 안 씀 */}
               <ZoneEditPanel canEdit={dpZoneEditable} />
             </div>
           ) : storeInnerTab === "warehouse1" ? (
