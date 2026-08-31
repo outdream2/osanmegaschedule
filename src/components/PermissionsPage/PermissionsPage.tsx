@@ -32,6 +32,7 @@ import { LevelSelect } from "./LevelSelect";
 import { PositionsField } from "./PositionsField";
 // 2026-08-22 · Framework Phase 4 · 4섹션 별도 컴포넌트 이관 (PageSettings·EmployeeLevel·Positions·Construction)
 import { PositionsTab, ConstructionTab, PageSettingsTab, EmployeeLevelTab } from "./PermissionsPage.panels";
+import { Modal } from "../common/Modal";
 
 interface PermissionsPageProps {
   authSession: AuthSession | null;
@@ -133,10 +134,19 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     updateSettings({ positions: [...PRESET_POSITIONS, trimmed] });
     setNewPositionInput("");
   };
+  // 2026-08-31 · window.prompt → Modal + select 대체 (프레임워크 원칙)
+  const [remapDialog, setRemapDialog] = useState<{
+    removing: string;
+    others: string[];
+    using: Employee[];
+    selected: string;
+    loading: boolean;
+  } | null>(null);
+
   // 2026-08-12 · #101 · 직군 삭제 안전장치
-  //   · 사용중인 직원 존재 시 · prompt 로 재매핑 대상 직군 입력 · 자동 이동 후 삭제
+  //   · 사용중인 직원 존재 시 · Modal select 로 재매핑 대상 직군 선택 · 자동 이동 후 삭제
   //   · 대체 직군 없으면 · 삭제 차단
-  const removePositionAt = async (idx: number) => {
+  const removePositionAt = (idx: number) => {
     const removing = PRESET_POSITIONS[idx];
     const others = PRESET_POSITIONS.filter((_, i) => i !== idx);
     const using = employees.filter(e => (e.position ?? "") === removing);
@@ -146,27 +156,28 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
       return;
     }
     if (others.length === 0) {
-      showError(`❌ 직군 "${removing}" 삭제 불가\n사용중인 직원 ${using.length}명 · 다른 직군을 먼저 추가하세요.`);
+      showError(`직군 "${removing}" 삭제 불가 · 사용중인 직원 ${using.length}명 · 다른 직군을 먼저 추가하세요.`);
       return;
     }
-    const newPos = window.prompt(
-      `⚠ "${removing}" 사용중 · 직원 ${using.length}명\n\n재매핑할 직군을 아래 중에서 입력하세요:\n${others.map(p => `  · ${p}`).join("\n")}\n\n입력한 직군으로 자동 이동 후 "${removing}" 을 삭제합니다.`,
-      others[0],
-    );
-    const target = (newPos ?? "").trim();
-    if (!target || !others.includes(target)) {
-      if (newPos !== null) showError(`❌ 취소 · "${newPos}" 는 유효한 직군이 아닙니다.`);
-      return;
-    }
+    setRemapDialog({ removing, others, using, selected: others[0], loading: false });
+  };
+
+  const commitRemap = async () => {
+    if (!remapDialog) return;
+    const { removing, others, using, selected } = remapDialog;
+    if (!selected || !others.includes(selected)) return;
+    setRemapDialog(prev => prev ? { ...prev, loading: true } : null);
     try {
       for (const emp of using) {
-        await updateEmployee(emp, { position: target });
+        await updateEmployee(emp, { position: selected });
       }
-      setEmployees(prev => prev.map(e => (e.position === removing) ? { ...e, position: target } : e));
+      setEmployees(prev => prev.map(e => (e.position === removing) ? { ...e, position: selected } : e));
       updateSettings({ positions: others });
-      setSaveToast(`직원 ${using.length}명 · "${removing}" → "${target}" 재매핑 후 삭제 완료`);
+      setSaveToast(`직원 ${using.length}명 · "${removing}" → "${selected}" 재매핑 후 삭제 완료`);
+      setRemapDialog(null);
     } catch (err) {
       showError(`재매핑 실패 · 삭제 취소: ${(err as any)?.message ?? err}`);
+      setRemapDialog(prev => prev ? { ...prev, loading: false } : null);
     }
   };
   const reorderPosition = (fromIdx: number, toIdx: number) => {
@@ -430,6 +441,52 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     );
   }, [activeEmployees, empSearch]);
 
+  // 2026-08-31 · 직군 재매핑 Modal (window.prompt 대체)
+  const remapModal = remapDialog && (
+    <Modal
+      open
+      onClose={() => setRemapDialog(null)}
+      title={`"${remapDialog.removing}" 직군 재매핑 후 삭제`}
+      size="sm"
+      titleAccent
+    >
+      <div className="flex flex-col gap-4 p-1">
+        <p className="text-[15px] text-zinc-700">
+          사용중인 직원 <strong>{remapDialog.using.length}명</strong>을 아래 직군으로 이동 후 삭제합니다.
+        </p>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-semibold text-zinc-500">재매핑 대상 직군</label>
+          <select
+            className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-[15px] text-zinc-800 bg-white focus:outline-none focus:ring-2 focus:ring-brand-deep"
+            value={remapDialog.selected}
+            onChange={e => setRemapDialog(prev => prev ? { ...prev, selected: e.target.value } : null)}
+          >
+            {remapDialog.others.map(p => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex gap-2 justify-end pt-1">
+          <button
+            type="button"
+            onClick={() => setRemapDialog(null)}
+            className="px-4 py-2 rounded-lg text-[14px] font-semibold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition cursor-pointer"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            onClick={commitRemap}
+            disabled={remapDialog.loading}
+            className="px-4 py-2 rounded-lg text-[14px] font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 transition cursor-pointer"
+          >
+            {remapDialog.loading ? "처리중..." : "재매핑 후 삭제"}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+
   if (userLevel < 9) {
     return (
       <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
@@ -445,6 +502,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   if (embedded) {
     return (
       <div className="flex-1 flex flex-col">
+        {remapModal}
         <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-4">
           {renderPermissionsBody()}
         </div>
@@ -455,6 +513,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   // 2026-08-26 · 사용자 지시 · 페이지별 설정 아래 내용 폰트 +2 · data-scope 격리
   return (
     <div data-scope="permissions">
+      {remapModal}
       <SettingsPageShell
         activePage={"permissions" as AppNavPage}
         authSession={authSession}
