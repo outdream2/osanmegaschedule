@@ -10,6 +10,8 @@ import ReactDOM from "react-dom";
 import { Package, Save, X } from "lucide-react";
 import { Modal } from "../common/Modal";
 import { Card } from "../common/Card";
+// 2026-08-31 · #42 · 카테고리 검색 → 구역 지정 프리미티브
+import { ZoneCategoryPicker } from "../common/ZoneCategoryPicker";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { CreateProductSchema, type CreateProductInput } from "../../shared/schemas/products";
@@ -383,35 +385,16 @@ export const ProductCreateModal: React.FC<Props> = ({
                   <input type="text" value={form.spec} onChange={(e) => set("spec", e.target.value)} className={inputCls} placeholder="예: 10정" maxLength={100} />
                 </Field>
                 {/* 2026-08-24 · 사용자 지시 · 상품코드 = 바코드 · 별도 바코드 필드 제거 (submit 시 자동 세팅) */}
-                {/* 2026-08-24 · 사용자 지시 · 실제배정구역 검색 autocomplete · 구역 리스트 · 클릭 선택 */}
-                <div ref={zoneWrapRef} className="relative min-w-0">
-                  <Field label="실제배정구역">
-                    <input
-                      type="text"
+                {/* 2026-08-31 · #42 · 카테고리 검색 → 구역 지정 프리미티브 · ZoneCategoryPicker
+                   · 사용자 지시 · 예 · "감기약" 검색 → 상세카테고리 팝업 → 구역 선택 → real_map 자동 입력
+                   · 이전 자체 autocomplete · zoneWrapRef · zoneSuggestions · deprecated · 프리미티브로 통합 */}
+                <div className="relative min-w-0">
+                  <Field label="실제배정구역 · 카테고리 검색">
+                    <ZoneCategoryPicker
                       value={form.real_map}
-                      onChange={(e) => { set("real_map", e.target.value); setZoneOpen(true); }}
-                      onFocus={() => setZoneOpen(true)}
-                      className={inputCls}
-                      placeholder="구역 번호·이름 검색"
-                      maxLength={100}
-                      autoComplete="off"
+                      onChange={(loc) => set("real_map", loc ?? "")}
                     />
                   </Field>
-                  <PortalDropdown anchorRef={zoneWrapRef} open={zoneOpen && zoneSuggestions.length > 0}>
-                    <Card padding="none" rounded="lg" className="shadow-xl max-h-56 overflow-y-auto">
-                      {zoneSuggestions.map(z => (
-                        <button
-                          key={z.value}
-                          type="button"
-                          onClick={() => { set("real_map", z.value); setZoneOpen(false); }}
-                          className="w-full text-left px-3 py-2 text-[13px] font-medium text-ink hover:bg-brand-tint/30 focus:outline-none focus:bg-brand-tint/40 flex items-center gap-2 transition-colors"
-                        >
-                          <span className="truncate">{z.label}</span>
-                          <span className="ml-auto text-[11px] text-ink-soft shrink-0">{z.category}</span>
-                        </button>
-                      ))}
-                    </Card>
-                  </PortalDropdown>
                 </div>
               </div>
             </Card>
