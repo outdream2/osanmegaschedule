@@ -1,11 +1,11 @@
-// 2026-08-17 · apiClient 마이그레이션
+// 2026-08-31 · #37 · SplitPanel + SplitListPanel 프레임워크 이관 · 폭/톤/검색바 통일
 // src/components/OrderManagePage/ReturnListPanel.tsx
 // 반품필요 탭을 독립 컴포넌트로 추출 (2026-07-31 · 탭 스왑 · StockManagePage 이동용)
 // 기존 OrderManagePage의 return 탭 state/fetch/JSX 를 그대로 캡슐화
 // 2026-08-03 · 반품 요청서 모달 · 발주서 스타일로 재설계 (#188)
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useVendors } from "../../hooks/useVendors";
-import { Package, Truck, ChevronRight, ChevronDown, CheckCircle2 } from "lucide-react";
+import { Package, Truck, CheckCircle2 } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { lookupProduct, type ProductInfo as ProductInfoType } from "../../lib/productsCache";
 // 2026-08-29 · #154 · 판매중 필터 프레임워크 확산
@@ -13,15 +13,11 @@ import { SaleStatusFilter } from "../common/SaleStatusFilter";
 import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
-// T-CSS Phase 2 · 2026-08-06
-import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
 import { Card } from "../common/Card";
 import { Spinner } from "../common/Spinner";
-import { AccentBar } from "../common/AccentBar";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
-import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { api, ApiError } from "../../lib/apiClient";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -29,14 +25,24 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-29 · 상품명 검색 · 통일 로직
 import { matchesProductQuery } from "../../lib/productMatch";
+// 2026-08-31 · #37 · 프레임워크 이관 · SplitPanel + SplitListPanel
+import { SplitPanel } from "../common/SplitPanel";
+import { SplitListPanel } from "../common/SplitListPanel";
+import { CategoryChips, type ChipTone } from "../common/CategoryChips";
+import { StatusPill } from "../common/StatusPill";
 
-// 2026-08-21 · Framework Phase 4 · large-file 분리 · types + helpers 이관
-import type { ReturnReasonKey, ReturnLineItem } from "./ReturnListPanel.types";
-import { buildReturnNumber, todayStr } from "./ReturnListPanel.types";
 // 2026-08-21 · Framework Phase 4 · ReturnRequestModal 별도 파일 분리
 import { ReturnRequestModal } from "./ReturnRequestModal";
-// 2026-08-22 · Framework Phase 4 · ReturnFilterBar 별도 파일 이관
-import { ReturnFilterBar } from "./ReturnListPanel.panels";
+// 2026-08-22 · Framework Phase 4 · ReturnFilterBar 는 SplitListPanel 필터 슬롯으로 통합됨
+
+const CATEGORY_TONES: Record<string, ChipTone> = {
+  "위탁":   "violet",
+  "선결제": "rose",
+  "60회전": "emerald",
+  "90회전": "teal",
+  "기타":   "zinc",
+  "미지정": "zinc",
+};
 
 interface ReturnListPanelProps {
   /** 공급사명 클릭 시 공급사 상세 모달 열기 콜백 */
@@ -77,7 +83,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
   const [returnSalesQuarterMax, setReturnSalesQuarterMax] = useState<number>(15);
   // 2026-07-31 · 사용자 요청 · 공급사 검색 필터 (부분일치 · 대소문자 무시)
   const [returnSupplierSearch, setReturnSupplierSearch] = useState<string>("");
-  const [returnCategoryFilter, setReturnCategoryFilter] = useState<string>("전체");
+  const [returnCategoryFilter, setReturnCategoryFilter] = useState<string>("all");
   // 2026-08-29 · #154 · 판매중 필터 · 판매중지 반품 후보 자동 제외 (default active)
   const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "returnList.saleFilter" });
 
@@ -196,14 +202,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
   const [returnPanelFull, setReturnPanelFull] = useState<Record<string, any> | null>(null);
   const [returnPanelLoading, setReturnPanelLoading] = useState(false);
   const [returnPanelError, setReturnPanelError] = useState<string | null>(null);
-  const [returnDetailTab, setReturnDetailTab] = useState<"info" | "purchase" | "sales">("info");
-  // 반품 패널 폭 (useResizablePanel 훅 · god-phase1)
-  const { width: returnPanelWidth, startResize: onReturnResizeStart } = useResizablePanel({
-    storageKey: "megatown_return_panel_w",
-    defaultWidth: 560,
-    minWidth: 320,
-    maxWidth: 1000,
-  });
+  // returnDetailTab 은 ProductDetailRightPanel 내부 자체 탭으로 관리 (외부 제어 불필요)
 
   useEffect(() => {
     if (!returnSelectedProduct) { setReturnPanelFull(null); setReturnPanelError(null); return; }
@@ -220,11 +219,6 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
       finally { setReturnPanelLoading(false); }
     })();
   }, [returnSelectedProduct]);
-
-  // ── 그룹 접기 ──────────────────────────────────────────────────────────
-  const [returnGroupCollapsed, setReturnGroupCollapsed] = useState<Set<string>>(new Set());
-  const toggleReturnGroup = (g: string) => setReturnGroupCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
-  const isReturnGroupCollapsed = (g: string) => returnGroupCollapsed.has(g);
 
   // ── 반품요청 모달 ────────────────────────────────────────────────────────
   const [returnRequestItem, setReturnRequestItem] = useState<any | null>(null);
@@ -277,11 +271,6 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
 
   // ── 일괄 반품 · 체크박스 선택 (세션 state · localStorage 없음) ───────────
   const [returnSelected, setReturnSelected] = useState<Set<string>>(new Set());
-  const toggleReturnRow = (code: string) => setReturnSelected(prev => {
-    const n = new Set(prev);
-    if (n.has(code)) n.delete(code); else n.add(code);
-    return n;
-  });
 
   // ── 필터+정렬 완료 rows · 헤더 전체선택과 body map 이 공유 ──────────────
   // 2026-08-25 · 사용자 지시 · 검색어 · 공급사·상품·상품코드 통합 매칭 (OR)
@@ -289,7 +278,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
     return [...returnList].filter(x => {
       // 2026-08-29 · 통일 로직 · matchesProductQuery
       if (!matchesProductQuery(x as any, returnSupplierSearch)) return false;
-      if (returnCategoryFilter !== "전체") {
+      if (returnCategoryFilter !== "all") {
         const cat = vendorCategoryMap[String(x.supplier ?? "").trim()] ?? null;
         if (cat !== returnCategoryFilter) return false;
       }
@@ -400,333 +389,384 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
     action:       { default: 130, min: 110, max: 180 },
   });
 
+  // ── CategoryChips options (카테고리 집계) ───────────────────────────────
+  const categoryCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const x of returnList) {
+      const cat = x.supplier ? (vendorCategoryMap[x.supplier.trim()] ?? "미지정") : "미지정";
+      map.set(cat, (map.get(cat) ?? 0) + 1);
+    }
+    return map;
+  }, [returnList, vendorCategoryMap]);
+
+  const chipOptions = useMemo(() => {
+    const opts: Array<{ value: string; label: string; tone?: ChipTone; count?: number }> = [
+      { value: "all", label: `전체 (${returnList.length})`, tone: "zinc" },
+    ];
+    for (const cat of dbVendorCategories) {
+      const cnt = categoryCounts.get(cat);
+      if (cnt) opts.push({ value: cat, label: `${cat} (${cnt})`, tone: CATEGORY_TONES[cat] ?? "zinc" });
+    }
+    return opts;
+  }, [returnList.length, categoryCounts, dbVendorCategories]);
+
+  // ── 우측 패널 렌더 ──────────────────────────────────────────────────────
+  const rightPanel = returnPanelLoading ? (
+    <div className="flex-1 flex items-center justify-center py-16">
+      <Spinner tone="zinc" size={20} label="불러오는 중..." />
+    </div>
+  ) : returnPanelError ? (
+    <Card padding="md" rounded="xl" className="text-[15px] text-red-700">
+      <div className="font-bold mb-1">조회 실패</div>
+      <div className="text-[15px] text-zinc-600 break-words whitespace-normal">{returnPanelError}</div>
+    </Card>
+  ) : returnPanelFull ? (
+    <ProductDetailRightPanel
+      selected={({
+        code: (returnPanelFull as any).product_code ?? (returnPanelFull as any).code ?? (returnSelectedProduct?.code ?? ""),
+        name: (returnPanelFull as any).product_name ?? (returnPanelFull as any).name ?? (returnSelectedProduct?.name ?? ""),
+        spec: (returnPanelFull as any).spec ?? "",
+        ...returnPanelFull,
+        realMap: (returnPanelFull as any).realMap ?? (returnPanelFull as any).real_map ?? null,
+      } as ProductInfoType)}
+      onClose={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
+      onProductUpdate={(u) => setReturnPanelFull(prev => prev ? { ...prev, ...u } : prev)}
+      onRealMapUpdate={(v) => setReturnPanelFull(prev => prev ? { ...prev, real_map: v, realMap: v } : prev)}
+      showChart
+      context="order-manage"
+      editable={true}
+      emptySub="상세 정보가 표시됩니다"
+    />
+  ) : (
+    <EmptyState
+      icon={Package}
+      title="상품을 클릭하세요"
+      hint="상품명 → 상품정보 · 매입주기 → 매입이력 · 판매량 → 판매정보"
+    />
+  );
+
+  // ── 좌측 리스트 (SplitListPanel) ────────────────────────────────────────
+  const leftPanel = (
+    <SplitListPanel
+      topAccent
+      title="반품필요"
+      countDisplay={
+        <StatusPill tone="rose" size="md">
+          {filteredSortedRows.length !== returnList.length
+            ? `${filteredSortedRows.length}/${returnList.length}건`
+            : `${returnList.length}건`}
+        </StatusPill>
+      }
+      search={returnSupplierSearch}
+      onSearchChange={setReturnSupplierSearch}
+      searchPlaceholder="공급사·상품·코드 검색"
+      recentSearchScope="returnList"
+      loading={returnLoading && returnList.length === 0}
+      loadingLabel="반품필요 목록 불러오는 중..."
+      empty={!returnLoading && returnList.length === 0}
+      emptyText="조건에 맞는 반품필요 상품 없음"
+      emptyHint="매입주기·판매 기준을 조정해보세요"
+      filters={
+        <div className="flex flex-col gap-2">
+          {/* 조건 입력 + 판매중 필터 */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <label className="inline-flex items-center gap-1 text-[15px] text-zinc-600 shrink-0">
+              <span className="font-medium text-zinc-500">매입주기</span>
+              <input
+                type="number"
+                value={returnCycleMin}
+                onChange={e => setReturnCycleMin(Math.max(0, Number(e.target.value) || 0))}
+                className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
+              />
+              <span className="text-zinc-500 whitespace-nowrap">일 ↑</span>
+            </label>
+            <label className="inline-flex items-center gap-1 text-[15px] text-zinc-600 shrink-0">
+              <span className="font-medium text-zinc-500">1M판매</span>
+              <input
+                type="number"
+                value={returnSalesMax}
+                onChange={e => setReturnSalesMax(Math.max(0, Number(e.target.value) || 0))}
+                className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
+              />
+              <span className="text-zinc-500 whitespace-nowrap">개 ↑</span>
+            </label>
+            <label className="inline-flex items-center gap-1 text-[15px] text-zinc-600 shrink-0">
+              <span className="font-medium text-zinc-500">3M판매</span>
+              <input
+                type="number"
+                value={returnSalesQuarterMax}
+                onChange={e => setReturnSalesQuarterMax(Math.max(0, Number(e.target.value) || 0))}
+                className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
+              />
+              <span className="text-zinc-500 whitespace-nowrap">개 ↑</span>
+            </label>
+            <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
+          </div>
+          {/* 카테고리 칩 */}
+          <CategoryChips
+            value={returnCategoryFilter}
+            onChange={(v) => setReturnCategoryFilter(String(v))}
+            options={chipOptions as any}
+            size="sm"
+            ariaLabel="공급사 분류 필터"
+          />
+        </div>
+      }
+      headerActions={
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={openBulkReturnModal}
+            disabled={returnSelected.size === 0}
+            className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[15px] font-bold transition cursor-pointer border ${
+              returnSelected.size > 0
+                ? "text-white bg-rose-500 hover:bg-rose-600 border-rose-700 shadow-sm active:scale-95"
+                : "text-zinc-400 bg-zinc-50 border-line cursor-not-allowed"
+            }`}
+            title={returnSelected.size > 0 ? `선택된 ${returnSelected.size}개 상품 일괄 반품 신청` : "체크박스로 상품을 선택하세요"}
+          >
+            <Truck size={13} strokeWidth={2.5} />
+            일괄 반품 ({returnSelected.size})
+          </button>
+          <button
+            type="button"
+            onClick={bulkConfirmReturn}
+            disabled={returnSelected.size === 0 || bulkConfirming}
+            className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[15px] font-bold transition cursor-pointer border ${
+              returnSelected.size > 0 && !bulkConfirming
+                ? "text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-800 shadow-sm ring-2 ring-emerald-300/40 active:scale-95"
+                : "text-zinc-400 bg-zinc-50 border-line cursor-not-allowed"
+            }`}
+            title={returnSelected.size > 0 ? `선택된 ${returnSelected.size}개 상품 일괄 반품확정 (즉시 done)` : "체크박스로 상품을 선택하세요"}
+          >
+            <CheckCircle2 size={13} strokeWidth={2.5} />
+            {bulkConfirming ? "확정 중..." : `일괄 확정 (${returnSelected.size})`}
+          </button>
+        </div>
+      }
+      bodyClassName={`flex-1 min-h-0 overflow-auto ${returnLoading && returnList.length > 0 ? "opacity-50 pointer-events-none transition-opacity" : "transition-opacity"}`}
+    >
+      <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
+        {/* 테이블 헤더 */}
+        <thead className="sticky top-0 bg-zinc-100/70 z-10 border-b border-line">
+          <tr className="text-[13px] font-bold text-zinc-500 uppercase tracking-wider">
+            {/* 체크박스 + 번호 */}
+            <th className="relative text-center px-0.5 py-2 bg-zinc-50/60"
+              style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
+              <input
+                type="checkbox"
+                checked={allChecked}
+                ref={el => { if (el) el.indeterminate = someChecked; }}
+                onChange={toggleAllReturn}
+                onClick={(e) => e.stopPropagation()}
+                className="w-3.5 h-3.5 accent-rose-500 cursor-pointer"
+                title={allChecked ? "전체 선택 해제" : "화면 표시 항목 전체 선택"}
+              />
+              <span {...colResizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+            </th>
+            {/* 상품명 */}
+            <th onClick={() => handleReturnSort("product_name")} title="상품명 정렬"
+              className="relative text-left px-2 py-2 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30"
+              style={{ width: getWidth("name"), minWidth: getWidth("name") }}>
+              상품{retArrow("product_name")}
+              <span {...colResizerProps("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+            </th>
+            {/* 공급사 */}
+            <th onClick={() => handleReturnSort("supplier")} title="공급사 정렬"
+              className="relative text-left px-1 py-2 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30"
+              style={{ width: getWidth("supplier"), minWidth: getWidth("supplier") }}>
+              공급사{retArrow("supplier")}
+              <span {...colResizerProps("supplier")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+            </th>
+            {/* 재고금액 */}
+            <th onClick={() => handleReturnSort("stock_value")} title="재고금액 정렬"
+              className="relative text-right px-2 py-2 bg-amber-50/40 text-indigo-700 cursor-pointer hover:bg-amber-100 select-none"
+              style={{ width: getWidth("stock_value"), minWidth: getWidth("stock_value") }}>
+              재고금액{retArrow("stock_value")}
+              <span {...colResizerProps("stock_value")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+            </th>
+            {/* 매입주기 */}
+            <th onClick={() => handleReturnSort("purchase_cycle")} title="매입주기 정렬"
+              className="relative text-right px-2 py-2 bg-emerald-50/40 text-emerald-700 cursor-pointer hover:bg-emerald-100 select-none"
+              style={{ width: getWidth("purchase_cycle"), minWidth: getWidth("purchase_cycle") }}>
+              <span className="flex flex-col items-end leading-none gap-0.5">
+                <span>매입주기{retArrow("purchase_cycle")}</span>
+                <span className="text-[12px] text-zinc-400 font-normal">최근매입일·량</span>
+              </span>
+              <span {...colResizerProps("purchase_cycle")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+            </th>
+            {/* 판매량 1/2/3달 */}
+            <th onClick={() => handleReturnSort("sale_qty_month")} title="1달 / 2달 / 3달 판매량 · 클릭 시 1달 기준 정렬"
+              className="relative text-right px-2 py-2 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none tabular-nums"
+              style={{ width: getWidth("sales_qty"), minWidth: getWidth("sales_qty") }}>
+              1/2/3달{retArrow("sale_qty_month")}
+              <span {...colResizerProps("sales_qty")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+            </th>
+            {/* 반품 액션 */}
+            <th className="relative text-center px-1 py-2 bg-zinc-50/60 text-zinc-500 cursor-default select-none"
+              style={{ width: getWidth("action"), minWidth: getWidth("action") }}>
+              반품
+              <span {...colResizerProps("action")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-zinc-50">
+          {filteredSortedRows.map((x, i) => {
+            const isSelected = returnSelectedProduct?.code === x.product_code;
+            const isChecked = returnSelected.has(x.product_code);
+            const toggleOne = () => setReturnSelected(prev => {
+              const n = new Set(prev);
+              if (n.has(x.product_code)) n.delete(x.product_code);
+              else n.add(x.product_code);
+              return n;
+            });
+            return (
+              <tr
+                key={x.product_code}
+                className={`transition cursor-pointer ${isSelected ? "bg-rose-50/60 ring-1 ring-inset ring-rose-200" : isChecked ? "bg-rose-50/30" : "hover:bg-orange-50/30"}`}
+                onClick={() => { setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); }}
+              >
+                {/* 체크박스 */}
+                <td className="px-0.5 py-2 text-center bg-zinc-50/60 align-top">
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={toggleOne}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-3.5 h-3.5 accent-rose-500 cursor-pointer"
+                    title={`${x.product_name} · 반품요청 대상 ${isChecked ? "해제" : "선택"}`}
+                  />
+                  <div className="text-[12px] text-zinc-300 tabular-nums mt-0.5">{i + 1}</div>
+                </td>
+                {/* 상품명 */}
+                <td className="px-2 py-2 align-top bg-sky-50/20">
+                  <div className="flex flex-col leading-tight">
+                    <button
+                      type="button"
+                      className="text-[15px] font-semibold text-zinc-900 hover:underline text-left break-words whitespace-normal cursor-pointer"
+                      onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); }}
+                      title="상품정보 보기"
+                    >{x.product_name}</button>
+                    <span className="text-[13px] text-zinc-400 tabular-nums">{x.product_code}</span>
+                  </div>
+                </td>
+                {/* 공급사 */}
+                <td className="px-1 py-2 align-top bg-sky-50/10">
+                  <div className="flex flex-col leading-tight">
+                    {x.supplier && <VendorCategoryBadge category={vendorCategoryMap[x.supplier.trim()] ?? null} />}
+                    {onSupplierClick && x.supplier ? (
+                      <button
+                        type="button"
+                        className="text-[14px] font-normal text-sky-700 hover:underline text-left break-words whitespace-normal cursor-pointer"
+                        onClick={(e) => { e.stopPropagation(); onSupplierClick(x.supplier!); }}
+                        title={`공급사 정보 조회·수정 (${x.supplier})`}
+                      >{displayVendorName(x.supplier)}</button>
+                    ) : (
+                      <span className="text-[14px] font-normal text-sky-700 break-words whitespace-normal">{x.supplier ? displayVendorName(x.supplier) : "-"}</span>
+                    )}
+                  </div>
+                </td>
+                {/* 재고금액 */}
+                <td className="text-right px-2 py-2 tabular-nums font-normal text-[15px] text-indigo-700 bg-amber-50/20 align-top">
+                  {x.current_stock > 0 && x.purchase_price > 0 ? `${(x.current_stock * x.purchase_price).toLocaleString()}` : "-"}
+                </td>
+                {/* 매입주기 */}
+                <td
+                  className="text-right px-2 py-2 tabular-nums bg-emerald-50/30 align-top cursor-pointer"
+                  onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); }}
+                  title="매입이력 보기"
+                >
+                  <span className="font-normal text-[15px] text-emerald-700 hover:underline tabular-nums">
+                    {x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}
+                  </span>
+                  <span className="block text-[13px] text-zinc-500 leading-snug mt-0.5 font-normal tabular-nums">
+                    {x.last_purchase_date ? (() => {
+                      const [_, m, d] = x.last_purchase_date.split("-");
+                      return `${Number(m)}/${Number(d)}`;
+                    })() : "-"}
+                    {x.last_purchase_qty != null && (
+                      <> · <span>{x.last_purchase_qty}개</span></>
+                    )}
+                  </span>
+                </td>
+                {/* 판매량 1/2/3달 */}
+                <td
+                  className="text-right px-2 py-2 tabular-nums bg-rose-50/20 align-top cursor-pointer"
+                  onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); }}
+                  title="1달 / 2달 / 3달 판매량"
+                >
+                  <span className="font-normal text-[15px] text-rose-700 hover:underline tabular-nums">
+                    {x.sale_qty_month != null ? x.sale_qty_month.toLocaleString() : "-"}
+                    <span className="text-zinc-300"> / </span>
+                    {x.sale_qty_60d != null ? x.sale_qty_60d.toLocaleString() : "-"}
+                    <span className="text-zinc-300"> / </span>
+                    {x.sale_qty_90d != null ? x.sale_qty_90d.toLocaleString() : "-"}
+                  </span>
+                </td>
+                {/* 반품 액션 버튼 */}
+                <td className="text-center px-1 py-2 align-top bg-zinc-50/30">
+                  <div className="inline-flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setReturnRequestItem({ ...x, vendorCategory: x.supplier ? (vendorCategoryMap[x.supplier.trim()] ?? null) : null }); }}
+                      className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[14px] font-semibold text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 transition-colors cursor-pointer active:scale-95 whitespace-nowrap"
+                      title="반품요청 (모달 열기)"
+                    >
+                      <Truck size={11} strokeWidth={2} />반품
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); confirmReturn(x); }}
+                      disabled={confirmingCode === x.product_code}
+                      className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[14px] font-semibold text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700 transition-colors cursor-pointer active:scale-95 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                      title="바로 반품확정 (모달 없이 · done 상태 저장)"
+                    >
+                      {confirmingCode === x.product_code
+                        ? <Spinner size={11} tone="white" />
+                        : <CheckCircle2 size={11} strokeWidth={2} />}
+                      확정
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+          {!returnLoading && filteredSortedRows.length === 0 && returnList.length > 0 && (
+            <tr>
+              <td colSpan={7} className="text-center text-[15px] text-zinc-400 py-8">
+                검색 결과 없음 · 다른 검색어로 시도하세요
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </SplitListPanel>
+  );
+
   // ── 렌더 ────────────────────────────────────────────────────────────────
   return (
     <>
-    {toast && (
-      <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
-    )}
-    <div className="flex flex-col gap-2">
-      {/* 2026-08-29 · #154 · 판매중 필터 · 툴바 상단 배치 · default active */}
-      <div className="flex items-center justify-end px-1">
-        <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
-      </div>
-      {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · ReturnFilterBar */}
-      <ReturnFilterBar
-        returnList={returnList}
-        returnSupplierSearch={returnSupplierSearch}
-        setReturnSupplierSearch={setReturnSupplierSearch}
-        returnCategoryFilter={returnCategoryFilter}
-        setReturnCategoryFilter={setReturnCategoryFilter}
-        vendorCategoryMap={vendorCategoryMap}
-        dbVendorCategories={dbVendorCategories}
-        returnCycleMin={returnCycleMin}
-        setReturnCycleMin={setReturnCycleMin}
-        returnSalesMax={returnSalesMax}
-        setReturnSalesMax={setReturnSalesMax}
-        returnSalesQuarterMax={returnSalesQuarterMax}
-        setReturnSalesQuarterMax={setReturnSalesQuarterMax}
-        returnSelectedSize={returnSelected.size}
-        onOpenBulkReturnModal={openBulkReturnModal}
-        onBulkConfirm={bulkConfirmReturn}
-        bulkConfirming={bulkConfirming}
+      {toast && (
+        <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
+      )}
+
+      <SplitPanel
+        storageKey="returnList.leftWidth"
+        defaultWidth={typeof window !== "undefined" ? Math.max(480, Math.min(860, Math.floor(window.innerWidth * 0.52))) : 560}
+        minWidth={380}
+        maxWidth={1100}
+        dividerColor="rose"
+        left={leftPanel}
+        right={rightPanel}
+        wrapLeft={false}
+        wrapRight={false}
+        leftClassName="max-h-[70vh] md:max-h-none"
+        mobileRightAsModal
+        mobileModalTitle={returnSelectedProduct ? returnSelectedProduct.name : "상품 상세"}
+        mobileOpen={returnSelectedProduct != null}
+        onMobileClose={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
+        style={{ minHeight: "calc(100vh - 200px)" }}
       />
-
-      {/* ── 좌우 split 레이아웃 · 2026-08-17 · items-stretch · 좌우 높이 매칭 ── */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:min-h-[720px] gap-0">
-
-        {/* 좌측: 리스트 */}
-        <div
-          className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
-          style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? returnPanelWidth : undefined }}
-        >
-          <section className={`${CARD_BASE} overflow-hidden flex flex-col min-h-0`}>
-            {/* 로딩 / 빈 상태 */}
-            {returnLoading && returnList.length === 0 ? (
-              <div className="flex items-center justify-center py-12"><Spinner tone="zinc" label="불러오는 중..." labelSize={12} /></div>
-            ) : returnList.length === 0 ? (
-              <div className="py-12 text-center text-[15px] text-zinc-300">
-                조건에 맞는 반품필요 상품 없음
-              </div>
-            ) : (
-              <div className={`overflow-auto flex-1 min-h-0 ${returnLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
-                  {/* 2026-08-24 · v3 확산 · 카테고리 그룹 헤더 제거 · 서브헤더만 · Attio 톤 */}
-                  <thead className="sticky top-0 bg-zinc-100/70 z-10 border-b border-line">
-                    <tr className="text-[13px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider">
-                      {/* 2026-08-25 · 사용자 지시 · # 컬럼 → 체크박스 (전체 선택) */}
-                      <th className="relative text-center px-0.5 py-1.5 bg-zinc-50/60"
-                        style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
-                        <input
-                          type="checkbox"
-                          checked={allChecked}
-                          ref={el => { if (el) el.indeterminate = someChecked; }}
-                          onChange={toggleAllReturn}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-3.5 h-3.5 accent-rose-500 cursor-pointer"
-                          title={allChecked ? "전체 선택 해제" : "화면 표시 항목 전체 선택"}
-                        />
-                        <span {...colResizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
-                      </th>
-                      {isReturnGroupCollapsed("info") ? (
-                        <th className="bg-sky-50/20 w-4"></th>
-                      ) : (
-                        <>
-                          <th onClick={() => handleReturnSort("product_name")} title="상품명 정렬"
-                            className="relative text-left px-1 py-1.5 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30"
-                            style={{ width: getWidth("name"), minWidth: getWidth("name") }}>
-                            상품{retArrow("product_name")}
-                            <span {...colResizerProps("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                          </th>
-                          <th onClick={() => handleReturnSort("supplier")} title="공급사 정렬"
-                            className="relative text-left px-0.5 py-1.5 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30"
-                            style={{ width: getWidth("supplier"), minWidth: getWidth("supplier") }}>
-                            공급사{retArrow("supplier")}
-                            <span {...colResizerProps("supplier")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                          </th>
-                        </>
-                      )}
-                      {/* 재고 서브 · 재고금액만 (2026-08-06 · 현재고·실재고 제거) */}
-                      {isReturnGroupCollapsed("stock") ? (
-                        <th className="bg-amber-50/20 w-4"></th>
-                      ) : (
-                        <th onClick={() => handleReturnSort("stock_value")} title="재고금액 정렬"
-                          className="relative text-right px-1 py-1.5 bg-amber-50/40 text-indigo-700 cursor-pointer hover:bg-amber-100 select-none"
-                          style={{ width: getWidth("stock_value"), minWidth: getWidth("stock_value") }}>
-                          재고금액{retArrow("stock_value")}
-                          <span {...colResizerProps("stock_value")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                        </th>
-                      )}
-                      {isReturnGroupCollapsed("purchase") ? (
-                        <th className="bg-emerald-50/20 w-4"></th>
-                      ) : (
-                        <th onClick={() => handleReturnSort("purchase_cycle")} title="매입주기 정렬"
-                          className="relative text-right px-1 py-1.5 bg-emerald-50/40 text-emerald-700 cursor-pointer hover:bg-emerald-100 select-none"
-                          style={{ width: getWidth("purchase_cycle"), minWidth: getWidth("purchase_cycle") }}>
-                          <span className="flex flex-col items-end leading-none gap-0.5">
-                            <span>매입주기{retArrow("purchase_cycle")}</span>
-                            <span className="text-[15px] text-zinc-400 font-normal">최근매입일·량</span>
-                          </span>
-                          <span {...colResizerProps("purchase_cycle")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                        </th>
-                      )}
-                      {/* 판매 서브 · 1/2/3 달 판매량 통합 · 클릭 시 1달 기준 정렬 (2026-08-06) */}
-                      {isReturnGroupCollapsed("sales") ? (
-                        <th className="bg-rose-50/20 w-4"></th>
-                      ) : (
-                        <th onClick={() => handleReturnSort("sale_qty_month")} title="1달 / 2달 / 3달 판매량 · 클릭 시 1달 기준 정렬"
-                          className="relative text-right px-1 py-1.5 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none tabular-nums"
-                          style={{ width: getWidth("sales_qty"), minWidth: getWidth("sales_qty") }}>
-                          1/2/3달{retArrow("sale_qty_month")}
-                          <span {...colResizerProps("sales_qty")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                        </th>
-                      )}
-                      <th className="relative text-center px-0.5 py-1.5 bg-zinc-50/60 text-zinc-500 cursor-default select-none"
-                        style={{ width: getWidth("action"), minWidth: getWidth("action") }}>
-                        반품
-                        <span {...colResizerProps("action")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-50">
-                    {/* 2026-08-25 · 사용자 지시 · 인라인 filter+sort 제거 · useMemo filteredSortedRows 사용 · 공급사/상품 통합 검색 지원 */}
-                    {filteredSortedRows.map((x, i) => {
-                      const isSelected = returnSelectedProduct?.code === x.product_code;
-                      const isChecked = returnSelected.has(x.product_code);
-                      const toggleOne = () => setReturnSelected(prev => {
-                        const n = new Set(prev);
-                        if (n.has(x.product_code)) n.delete(x.product_code);
-                        else n.add(x.product_code);
-                        return n;
-                      });
-                      return (
-                        <tr
-                          key={x.product_code}
-                          className={`transition cursor-pointer ${isSelected ? "bg-rose-50/60 ring-1 ring-inset ring-rose-200" : isChecked ? "bg-rose-50/30" : "hover:bg-orange-50/30"}`}
-                          onClick={() => { setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("info"); }}
-                        >
-                          {/* 2026-08-25 · 사용자 지시 · # → 체크박스 · 반품요청 대상 선택 */}
-                          <td className="px-0.5 py-1.5 text-center bg-zinc-50/60 align-top">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={toggleOne}
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-3.5 h-3.5 accent-rose-500 cursor-pointer"
-                              title={`${x.product_name} · 반품요청 대상 ${isChecked ? "해제" : "선택"}`}
-                            />
-                            <div className="text-[11px] text-zinc-300 tabular-nums mt-0.5">{i + 1}</div>
-                          </td>
-                          {isReturnGroupCollapsed("info") ? (
-                            <td className="bg-sky-50/10 w-4"></td>
-                          ) : (
-                            <>
-                              <td className="px-1 py-1.5 align-top bg-sky-50/20">
-                                <div className="flex flex-col leading-tight">
-                                  <button
-                                    type="button"
-                                    className="text-[14px] font-semibold text-zinc-900 hover:underline text-left break-words whitespace-normal cursor-pointer"
-                                    onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("info"); }}
-                                    title="상품정보 보기"
-                                  >{x.product_name}</button>
-                                  <span className="text-[14px] text-zinc-400 tabular-nums">{x.product_code}</span>
-                                </div>
-                              </td>
-                              <td className="px-0.5 py-1.5 align-top bg-sky-50/10">
-                                <div className="flex flex-col leading-tight">
-                                  {x.supplier && <VendorCategoryBadge category={vendorCategoryMap[x.supplier.trim()] ?? null} />}
-                                  {onSupplierClick && x.supplier ? (
-                                    <button
-                                      type="button"
-                                      className="text-[14px] font-normal text-sky-700 hover:underline text-left whitespace-nowrap cursor-pointer"
-                                      onClick={(e) => { e.stopPropagation(); onSupplierClick(x.supplier!); }}
-                                      title={`공급사 정보 조회·수정 (${x.supplier})`}
-                                    >{displayVendorName(x.supplier)}</button>
-                                  ) : (
-                                    <span className="text-[14px] font-normal text-sky-700 whitespace-nowrap">{x.supplier ? displayVendorName(x.supplier) : "-"}</span>
-                                  )}
-                                </div>
-                              </td>
-                            </>
-                          )}
-                          {/* 재고 그룹 · 재고금액만 (2026-08-06 · 현재고·실재고 제거) */}
-                          {isReturnGroupCollapsed("stock") ? (
-                            <td className="bg-amber-50/20 w-4"></td>
-                          ) : (
-                            <td className="text-right px-1 py-1.5 tabular-nums font-normal text-[14px] text-indigo-700 bg-amber-50/20 align-top">
-                              {x.current_stock > 0 && x.purchase_price > 0 ? `${(x.current_stock * x.purchase_price).toLocaleString()}` : "-"}
-                            </td>
-                          )}
-                          {isReturnGroupCollapsed("purchase") ? (
-                            <td className="bg-emerald-50/20 w-4"></td>
-                          ) : (
-                            <td
-                              className="text-right px-1 py-1.5 tabular-nums bg-emerald-50/30 align-top cursor-pointer"
-                              onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("purchase"); }}
-                              title="매입이력 보기"
-                            >
-                              <span className="font-normal text-[14px] text-emerald-700 hover:underline tabular-nums">
-                                {x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}
-                              </span>
-                              {/* 2026-08-06 · 최근 매입일 · M/D 짧은 포맷 · 최근 매입량 함께 */}
-                              <span className="block text-[14px] text-zinc-500 leading-snug mt-0.5 font-normal tabular-nums">
-                                {x.last_purchase_date ? (() => {
-                                  const [_, m, d] = x.last_purchase_date.split("-");
-                                  return `${Number(m)}/${Number(d)}`;
-                                })() : "-"}
-                                {x.last_purchase_qty != null && (
-                                  <> · <span>{x.last_purchase_qty}개</span></>
-                                )}
-                              </span>
-                            </td>
-                          )}
-                          {/* 판매 그룹 · 1/2/3 달 판매량 · 통합 셀 (2026-08-06) */}
-                          {isReturnGroupCollapsed("sales") ? (
-                            <td className="bg-rose-50/20 w-4"></td>
-                          ) : (
-                            <td
-                              className="text-right px-1 py-1.5 tabular-nums bg-rose-50/20 align-top cursor-pointer"
-                              onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("sales"); }}
-                              title="1달 / 2달 / 3달 판매량"
-                            >
-                              <span className="font-normal text-[14px] text-rose-700 hover:underline tabular-nums">
-                                {x.sale_qty_month != null ? x.sale_qty_month.toLocaleString() : "-"}
-                                <span className="text-zinc-300"> / </span>
-                                {x.sale_qty_60d != null ? x.sale_qty_60d.toLocaleString() : "-"}
-                                <span className="text-zinc-300"> / </span>
-                                {x.sale_qty_90d != null ? x.sale_qty_90d.toLocaleString() : "-"}
-                              </span>
-                            </td>
-                          )}
-                          <td className="text-center px-1 py-1.5 align-top bg-zinc-50/30">
-                            {/* 2026-08-25 · 사용자 지시 · 반품 (요청) + 반품확정 (즉시 done) · 2버튼 */}
-                            <div className="inline-flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); setReturnRequestItem({ ...x, vendorCategory: x.supplier ? (vendorCategoryMap[x.supplier.trim()] ?? null) : null }); }}
-                                className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[14px] font-semibold text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 transition-colors cursor-pointer active:scale-95 whitespace-nowrap"
-                                title="반품요청 (모달 열기)"
-                              >
-                                <Truck size={11} strokeWidth={2} />반품
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); confirmReturn(x); }}
-                                disabled={confirmingCode === x.product_code}
-                                className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[14px] font-semibold text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700 transition-colors cursor-pointer active:scale-95 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
-                                title="바로 반품확정 (모달 없이 · done 상태 저장)"
-                              >
-                                {confirmingCode === x.product_code
-                                  ? <Spinner size={11} tone="white" />
-                                  : <CheckCircle2 size={11} strokeWidth={2} />}
-                                확정
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {returnList.length === 0 && (
-                      <tr><td colSpan={11} className="text-center text-[15px] text-zinc-300 py-6">검색 결과 없음</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        </div>
-
-        {/* 리사이즈 핸들 (데스크탑만) */}
-        <div onMouseDown={onReturnResizeStart}
-          className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-rose-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
-          title="드래그하여 폭 조절">
-          <span className="text-[15px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
-        </div>
-
-        {/* 우측: 상품 상세 패널 · 탭 전환 */}
-        {returnPanelLoading ? (
-          <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0">
-            <div className={`${CARD_BASE} flex-1 min-h-[400px]`}>
-              <EmptyState title="불러오는 중..." size="normal" />
-            </div>
-          </div>
-        ) : returnPanelError ? (
-          <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0">
-            <Card padding="md" rounded="xl" className="text-sm text-red-700">
-              <div className="font-bold mb-1">조회 실패</div>
-              <div className="text-[15px] font-mono">{returnPanelError}</div>
-            </Card>
-          </div>
-        ) : returnPanelFull ? (
-          /* 2026-08-24 · 사용자 지시 · 외부 3탭 (상품정보/매입이력/판매정보) 제거 ·
-             모두 같은 ProductDetailRightPanel 렌더 · 실제 라우팅 안 됨 · 탭메뉴와 내용 안 맞음
-             ProductDetailRightPanel 내부 자체 5탭 (기간별상품흐름·매입이력·발주내역·재고관리·상품정보) 사용 */
-          <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 overflow-y-auto">
-            <ProductDetailRightPanel
-              selected={({
-                code: (returnPanelFull as any).product_code ?? (returnPanelFull as any).code ?? (returnSelectedProduct?.code ?? ""),
-                name: (returnPanelFull as any).product_name ?? (returnPanelFull as any).name ?? (returnSelectedProduct?.name ?? ""),
-                spec: (returnPanelFull as any).spec ?? "",
-                ...returnPanelFull,
-                realMap: (returnPanelFull as any).realMap ?? (returnPanelFull as any).real_map ?? null,
-              } as ProductInfoType)}
-              onClose={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
-              onProductUpdate={(u) => setReturnPanelFull(prev => prev ? { ...prev, ...u } : prev)}
-              onRealMapUpdate={(v) => setReturnPanelFull(prev => prev ? { ...prev, real_map: v, realMap: v } : prev)}
-              showChart
-              context="order-manage"
-              editable={true}
-              emptySub="상세 정보가 표시됩니다"
-            />
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0">
-            <div className={`${CARD_BASE} flex-1 min-h-[400px]`}>
-              <EmptyState icon={Package} title="상품을 클릭하세요" hint="상품명 → 상품정보 · 매입주기 → 매입이력 · 판매량 → 판매정보" />
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* 반품 요청서 모달 · 2026-08-03 · 발주서 스타일 재설계 */}
       {/* 2026-08-25 · 사용자 지시 · 다중 선택 시 · items 배열도 함께 전달 · 모달에서 전체 라인 렌더 */}
@@ -745,7 +785,6 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
           />
         );
       })()}
-    </div>
     </>
   );
 };

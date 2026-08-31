@@ -191,7 +191,7 @@ export const ReturnConfirmedPanel: React.FC = () => {
                       <td className={tableTdCls("left", "font-semibold text-sky-700 break-keep")}>{r.supplier ?? <span className="text-zinc-400">-</span>}</td>
                       <td className={tableTdCls("left", "font-bold text-zinc-800 break-keep")}>
                         {r.product_name ?? "-"}
-                        <div className="text-[12px] font-mono text-zinc-400 mt-0.5">{r.product_code}</div>
+                        <div className="text-[12px] tabular-nums text-zinc-400 mt-0.5">{r.product_code}</div>
                       </td>
                       <td className={tableTdCls("num", "font-bold text-rose-600")}>{(r.qty ?? 0).toLocaleString()}</td>
                       <td className={tableTdCls("num", "text-zinc-600")}>{r.purchase_price ? r.purchase_price.toLocaleString() : "-"}</td>

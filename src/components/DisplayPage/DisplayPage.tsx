@@ -630,7 +630,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       ) : dpSubTab === "return" && dpCanSeeStockManage ? (
         /* 2026-08-29 · #193 · 사용자 지시 · 반품 서브탭 · 매입 우회 · 직접 이너 탭 (반품필요·반품확정)
            2026-08-30 · #37 · 사용자 지시 · SplitListPanel 넓이 통일 · max-w-[1360px] 컨테이너 (다른 페이지와 동일) */
-        <main className="flex-1 max-w-[1360px] w-full mx-auto flex flex-col min-h-0 px-3">
+        <main className="flex-1 max-w-[1360px] w-[92%] mx-auto flex flex-col min-h-0 px-3">
           <div className="bg-white border-b border-line px-3">
             <TabBar<"need" | "confirmed">
               level={3}
