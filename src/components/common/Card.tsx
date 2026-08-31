@@ -128,11 +128,12 @@ export const Card: React.FC<CardProps> = ({
     className,
   ].filter(Boolean).join(" ");
 
-  // 2026-08-24 · v9 · 상단 2px gradient accent · brand-deep → sky-500 → brand-deep · opacity-90
+  // 2026-08-24 · v9 · 상단 gradient accent · brand-deep → brand → brand-soft
+  // 2026-08-31 · #53 · UI_MOCKUP_2026-08-21 톤 · 3px + brand 팔레트 정렬
   const accentSpan = topAccent ? (
     <span
       aria-hidden
-      className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10 pointer-events-none"
+      className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-brand to-[#3E7CB1] z-10 pointer-events-none"
     />
   ) : null;
 
