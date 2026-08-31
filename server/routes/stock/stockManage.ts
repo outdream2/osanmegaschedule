@@ -8,7 +8,7 @@ import { fetchAllWithRange } from "../../utils/supabaseFetchAll";
 import { queryPurchaseDetails } from "../../utils/purchaseDetailsQuery";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { authorize } from "../../middleware/requireAuth";
-import { HttpError } from "../../middleware/errorHandler";
+import { HttpError, badRequest } from "../../middleware/errorHandler";
 
 const router = Router();
 
@@ -288,7 +288,7 @@ export { clearSalesTrendCache };
 // 하나의 상품에 대한 10일 기간별 시계열 (period_start_date 오름차순)
 router.get("/api/sales-trend/product", asyncHandler(async (req, res) => {
   const code = String(req.query.code ?? "").trim();
-  if (!code) return res.status(400).json({ error: "code 필수" });
+  if (!code) throw badRequest("code 필수");
   // months 지정 시 오늘 기준 최근 N개월 범위로 필터
   const months = Math.max(0, Math.min(24, parseInt(String(req.query.months ?? "0"), 10) || 0));
   // 계절 필터 · 지정 시 년도 무관 · months 무시
@@ -332,7 +332,7 @@ router.get("/api/sales-trend/product", asyncHandler(async (req, res) => {
 // 공급사별 기간 aggregation (모든 상품 합계)
 router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
   const name = String(req.query.name ?? "").trim();
-  if (!name) return res.status(400).json({ error: "name 필수" });
+  if (!name) throw badRequest("name 필수");
   const months = Math.max(0, Math.min(24, parseInt(String(req.query.months ?? "0"), 10) || 0));
   // 계절 필터 · 지정 시 년도 무관 · months 무시
   const seasonParam = String(req.query.season ?? "").trim().toLowerCase();
@@ -1540,7 +1540,7 @@ router.get("/api/stock-manage/product-history", asyncHandler(async (req, res) =>
   const name = String(req.query.product_name ?? "").trim();
   const code = String(req.query.product_code ?? "").trim();
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "7"), 10) || 7));
-  if (!name && !code) return res.status(400).json({ error: "product_name 또는 product_code 필요" });
+  if (!name && !code) throw badRequest("product_name 또는 product_code 필요");
   const sinceYmd = daysAgoISO(days).slice(0, 10);
   // 2026-08-06 · Supabase 1000행 cap 우회 · fetchAllWithRange
   const rawData = await fetchAllWithRange<any>(() => {
