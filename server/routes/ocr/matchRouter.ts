@@ -6,7 +6,16 @@ import { invoiceMatchScore, makeMatchResult, normSupplier, bigramSim } from "../
 import { getGeminiKeys, getMistralKeys } from "../../ocr/llm";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { validateBody } from "../../middleware/zodValidate";
 import { badRequest } from "../../middleware/errorHandler";
+import { z } from "zod";
+
+const OcrMatchSchema = z.object({
+  names: z.array(z.unknown()).optional(),
+  name: z.string().max(300).optional(),
+  topN: z.number().int().min(1).max(30).optional(),
+  supplier: z.string().max(200).optional(),
+});
 
 const router = Router();
 
@@ -18,7 +27,7 @@ router.get("/api/ocr-ping", (_req, res) => {
   res.json({ ok: true, gemini: keys.length > 0, geminiKeyCount: keys.length, mistral: mKeys.length > 0, mistralKeyCount: mKeys.length });
 });
 
-router.post("/api/ocr-match", authorize(5), asyncHandler(async (req, res) => {
+router.post("/api/ocr-match", authorize(5), validateBody(OcrMatchSchema), asyncHandler(async (req, res) => {
   const { names } = req.body ?? {};
   const isCandidateMode = typeof req.body?.name === "string" && req.body?.topN;
   if (!isCandidateMode && !Array.isArray(names)) throw badRequest("names 배열 필요");

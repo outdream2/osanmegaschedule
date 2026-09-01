@@ -4,7 +4,20 @@ import { buildOnnxPipeline, runPipeline, makeInitialContext } from "../../ocr/pi
 import { getGeminiKeys, geminiState } from "../../ocr/llm";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { validateBody } from "../../middleware/zodValidate";
 import { HttpError, badRequest } from "../../middleware/errorHandler";
+import { z } from "zod";
+
+const ParseLocalSchema = z.object({
+  pages: z.array(z.object({
+    page: z.number().int(),
+    rawText: z.string().max(100000),
+    headers: z.array(z.string()).optional(),
+    rows: z.array(z.unknown()).optional(),
+    meta: z.unknown().optional(),
+    supplierHint: z.string().max(200).optional(),
+  })).min(1),
+});
 import {
   matchVendorSupplier, findVendorInText,
   findOcrTemplate, applyColumnMapping, applyTemplateHeaders, upsertOcrTemplate,
@@ -15,7 +28,7 @@ const router = Router();
 // 2026-07-22 · 로컬 파싱 · raw OCR 결과 → 로컬 파이프라인 (vendor-match/normalize/verify/totals)
 //   입력: { pages: [{page, rawText, headers, rows, meta, supplierHint?}, ...] }
 //   출력: { pages: [{page, headers, rows, meta, rawText}, ...] }
-router.post("/api/ocr/parse-local", authorize(5), asyncHandler(async (req, res) => {
+router.post("/api/ocr/parse-local", authorize(5), validateBody(ParseLocalSchema), asyncHandler(async (req, res) => {
   const reqStart = Date.now();
   const { buildPostParsePipeline } = await import("../../ocr/pipeline");
   const { pages } = req.body as {
