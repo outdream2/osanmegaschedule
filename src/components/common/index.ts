@@ -15,8 +15,10 @@
 //   Helpers  · src/lib/ 이동 (barrel 제외)
 
 // ── Primitives (배지·버튼·카드·헤더·필터·아이콘·모달 등) ──
+// 2026-09-01 · 미사용 11개 삭제 · ActionBar · GroupedListPanel · IconButton · MiniCard
+//   · PageContainer · PageHeader · ProductClassFilter · SearchFilterChips · SortableHeader
+//   · SplitRightHeader · SplitRightLoading (자체 test 외 참조 zero)
 export { AccentBar } from "./AccentBar";
-export { ActionBar } from "./ActionBar";
 export { Badge } from "./Badge";
 export type { BadgeTone } from "./Badge";
 export { BottomSheet } from "./BottomSheet";
@@ -40,9 +42,7 @@ export { FormSection } from "./FormSection";
 export type { FormSectionProps } from "./FormSection";
 export { FilterSortLabel, FilterSortGroup, FilterSortRow } from "./FilterSortBar";
 export { GradientAccent } from "./GradientAccent";
-export { GroupedListPanel } from "./GroupedListPanel";
 export { Hero } from "./Hero";
-export { IconButton } from "./IconButton";
 export { IconTile } from "./IconTile";
 export { ImageUploadField } from "./ImageUploadField";
 export { InlineLabel } from "./InlineLabel";
@@ -51,22 +51,16 @@ export { ListLoading } from "./ListLoading";
 export { ListPanel, ListRow } from "./ListRow";
 export type { ListPanelProps, ListRowProps } from "./ListRow";
 export { LoadingState } from "./LoadingState";
-export { MiniCard } from "./MiniCard";
 export { MobileOnlyGate } from "./MobileOnlyGate";
 export { Modal } from "./Modal";
 export { NotificationToast } from "./NotificationToast";
-export { PageContainer } from "./PageContainer";
-export type { PageContainerProps } from "./PageContainer";
-export { PageHeader } from "./PageHeader";
 export { PageToolbar } from "./PageToolbar";
 export { Panel } from "./Panel";
 export { PeriodSelector } from "./PeriodSelector";
-export { ProductClassFilter } from "./ProductClassFilter";
 export { ProductDetailHero } from "./ProductDetailHero";
 export { ResizableTh } from "./ResizableHeader";
 export { SaleStatusFilter } from "./SaleStatusFilter";
 export { SearchBar } from "./SearchBar";
-export { SearchFilterChips } from "./SearchFilterChips";
 export { SeasonButtons } from "./SeasonButtons";
 export { SectionCard } from "./SectionCard";
 export { SectionLabel } from "./SectionLabel";
@@ -75,7 +69,6 @@ export type { SegmentedTone, SegmentedSize, SegmentedOption, SegmentedControlPro
 export { SessionTimeoutWarning } from "./SessionTimeoutWarning";
 export { SettingsPageShell } from "./SettingsPageShell";
 export { SignaturePad } from "./SignaturePad";
-export { SortableHeader } from "./SortableHeader";
 export { SubmitBar } from "./SubmitBar";
 export type { SubmitBarProps } from "./SubmitBar";
 export { Spinner } from "./Spinner";
@@ -86,12 +79,8 @@ export { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "./TableList
 export type { TableListWrapProps, TableThAlign } from "./TableList";
 export { SplitRightEmpty } from "./SplitRightEmpty";
 export type { SplitRightEmptyProps } from "./SplitRightEmpty";
-export { SplitRightLoading } from "./SplitRightLoading";
-export type { SplitRightLoadingProps } from "./SplitRightLoading";
 export { SplitRightError } from "./SplitRightError";
 export type { SplitRightErrorProps } from "./SplitRightError";
-export { SplitRightHeader } from "./SplitRightHeader";
-export type { SplitRightHeaderProps } from "./SplitRightHeader";
 export { SplitRightTabs } from "./SplitRightTabs";
 export type { SplitRightTabsProps, SplitRightTabDef } from "./SplitRightTabs";
 export { StatusPill } from "./StatusPill";
