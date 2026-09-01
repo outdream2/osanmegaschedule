@@ -13,6 +13,11 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError, badRequest, notFound } from "../../middleware/errorHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { CreateOrderRequestSchema, BulkSendOrderSchema } from "../../../src/shared/schemas/orderRequests";
+import {
+  CreateInventoryCheckSchema,
+  BulkInventoryCheckSchema,
+  PatchInventoryCheckSchema,
+} from "../../../src/shared/schemas/inventoryChecks";
 
 const router = Router();
 
@@ -758,9 +763,9 @@ router.get("/api/inventory-checks", asyncHandler(async (req, res) => {
   res.json(data ?? []);
 }));
 
-router.post("/api/inventory-checks", authorize(1), asyncHandler(async (req, res) => {
-  const b = req.body ?? {};
-  const code = String(b.product_code ?? "");
+router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryCheckSchema), asyncHandler(async (req, res) => {
+  const b = req.body;
+  const code = b.product_code;
   const now = new Date().toISOString();
   // 부분 업데이트: 요청에 포함된 필드만 업데이트 (창고/매장 각각 독립 저장 지원)
   // 2026-07-30 · 사용자 요청 · store_stock_2 (매장2) 지원 · real_map "/" 분할
@@ -872,10 +877,9 @@ router.post("/api/inventory-checks", authorize(1), asyncHandler(async (req, res)
 //   - warehouse_stock (레거시) → warehouse1_stock 으로 병합 (2026-08-31 DROP 완료)
 //   - 구 클라이언트: store_stock / store_stock_2 만 보내는 경우 그대로 저장
 //   - 신규 컬럼 미존재 DB · 신규 필드 stripping 후 재시도 (자동 다운그레이드)
-router.post("/api/inventory-checks/bulk", authorize(1), asyncHandler(async (req, res) => {
-  const b = req.body ?? {};
-  const items: any[] = Array.isArray(b.items) ? b.items : [];
-  if (items.length === 0) throw badRequest("items 필수");
+router.post("/api/inventory-checks/bulk", authorize(1), validateBody(BulkInventoryCheckSchema), asyncHandler(async (req, res) => {
+  const b = req.body;
+  const items: any[] = b.items;
   const checked_by = String(b.checked_by ?? "").trim() || "익명";
   const now = new Date().toISOString();
   const num = (v: any): number | null => (v != null && v !== "" ? Number(v) : null);
@@ -958,9 +962,9 @@ router.post("/api/inventory-checks/bulk", authorize(1), asyncHandler(async (req,
   res.json({ ok: true, saved, failed, total: items.length, downgraded });
 }));
 
-router.patch("/api/inventory-checks/:id", authorize(1), asyncHandler(async (req, res) => {
-  const { status } = req.body ?? {};
-  if (!["pending", "done"].includes(status)) throw badRequest("invalid status");
+router.patch("/api/inventory-checks/:id", authorize(1), validateBody(PatchInventoryCheckSchema), asyncHandler(async (req, res) => {
+  const { status } = req.body;
+  if (status && !["pending", "done"].includes(status)) throw badRequest("invalid status");
   const { error } = await supabase.from("inventory_checks").update({ status }).eq("id", req.params.id);
   if (error) throw new HttpError(500, error.message);
   clearLowStockCache(); // 2026-08-05 · T-PERF-1a

@@ -6,20 +6,25 @@ import { notificationsService } from "../../services/notificationsService";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { authorize } from "../../middleware/requireAuth";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
+import { validateBody } from "../../middleware/zodValidate";
+import {
+  PushSubscribeSchema,
+  PushSendSchema,
+  ReadAllNotificationsSchema,
+  CreateNotificationSchema,
+} from "../../../src/shared/schemas/notifications";
 
 const router = Router();
 
-router.post("/api/push-subscribe", authorize(1), asyncHandler(async (req, res) => {
-  const { employeeId, subscription } = req.body ?? {};
-  if (!employeeId || !subscription) throw badRequest("employeeId and subscription are required");
+router.post("/api/push-subscribe", authorize(1), validateBody(PushSubscribeSchema), asyncHandler(async (req, res) => {
+  const { employeeId, subscription } = req.body;
   const { error } = await supabase.from("employees").update({ push_subscription: subscription }).eq("id", employeeId);
   if (error) throw new HttpError(500, error.message);
   res.json({ ok: true });
 }));
 
-router.post("/api/push-send", authorize(5), asyncHandler(async (req, res) => {
-  const { employeeId, title, body, url } = req.body ?? {};
-  if (!employeeId) throw badRequest("employeeId is required");
+router.post("/api/push-send", authorize(5), validateBody(PushSendSchema), asyncHandler(async (req, res) => {
+  const { employeeId, title, body, url } = req.body;
   const { data, error } = await supabase
     .from("employees").select("push_subscription, name").eq("id", employeeId).single();
   if (error || !data) throw notFound("Employee not found");
@@ -60,18 +65,14 @@ router.patch("/api/notifications/:id/read", authorize(1), asyncHandler(async (re
   res.json({ ok: true });
 }));
 
-router.post("/api/notifications/read-all", authorize(1), asyncHandler(async (req, res) => {
-  const { employeeId } = req.body as { employeeId?: number };
-  if (!employeeId) throw badRequest("employeeId required");
+router.post("/api/notifications/read-all", authorize(1), validateBody(ReadAllNotificationsSchema), asyncHandler(async (req, res) => {
+  const { employeeId } = req.body;
   await notificationsService.markAllRead(employeeId);
   res.json({ ok: true });
 }));
 
-router.post("/api/notifications", authorize(5), asyncHandler(async (req, res) => {
-  const { employee_id, title, body, type } = req.body as {
-    employee_id?: number; title?: string; body?: string; type?: string;
-  };
-  if (!employee_id || !title) throw badRequest("employee_id and title required");
+router.post("/api/notifications", authorize(5), validateBody(CreateNotificationSchema), asyncHandler(async (req, res) => {
+  const { employee_id, title, body, type } = req.body;
   const data = await notificationsService.create({ employee_id, title, body, type: type as any });
   res.status(201).json(data);
 }));

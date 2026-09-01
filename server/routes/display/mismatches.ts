@@ -4,6 +4,15 @@ import { supabase } from "../../../src/supabase/client";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
+import { validateBody } from "../../middleware/zodValidate";
+import { z } from "zod";
+
+const UpsertZoneMismatchSchema = z.object({
+  product_code: z.string().min(1, "product_code 필수").max(50),
+  product_name: z.string().max(300).optional(),
+  spec_zone: z.string().max(100).optional(),
+  real_zone: z.string().max(100).optional(),
+});
 
 const router = Router();
 
@@ -75,13 +84,13 @@ router.get("/api/zone-mismatches", asyncHandler(async (_req, res) => {
   res.json([...computed, ...legacyRows]);
 }));
 
-router.post("/api/zone-mismatches", authorize(1), asyncHandler(async (req, res) => {
-  const b = req.body ?? {};
+router.post("/api/zone-mismatches", authorize(1), validateBody(UpsertZoneMismatchSchema), asyncHandler(async (req, res) => {
+  const b = req.body;
   const { error } = await supabase.from("zone_mismatches").upsert([{
-    product_code: String(b.product_code ?? ""),
-    product_name: String(b.product_name ?? ""),
-    spec_zone: String(b.spec_zone ?? ""),
-    real_zone: String(b.real_zone ?? ""),
+    product_code: b.product_code,
+    product_name: b.product_name ?? "",
+    spec_zone: b.spec_zone ?? "",
+    real_zone: b.real_zone ?? "",
   }], { onConflict: "product_code" });
   if (error) throw new HttpError(500, error.message);
   res.json({ ok: true });
