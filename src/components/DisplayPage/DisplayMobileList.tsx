@@ -45,7 +45,7 @@ export const DisplayMobileList: React.FC<DisplayMobileListProps> = ({
         <div className="px-3 py-2 border-b border-zinc-100 bg-zinc-50 flex items-center gap-2">
           <span className="text-lg">📋</span>
           <span className="text-[13px] font-bold text-zinc-700">구역 리스트</span>
-          <span className="text-[10px] font-mono text-zinc-400">({zones.length}개)</span>
+          <span className="text-[10px] tabular-nums text-zinc-400">({zones.length}개)</span>
           <button type="button" onClick={() => setFullMapOpen(true)} className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[10px] font-bold shadow-sm active:scale-95 transition">
             매장 구역도 보기
           </button>

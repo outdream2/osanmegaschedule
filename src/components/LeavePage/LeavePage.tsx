@@ -431,7 +431,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                   <span className="text-sm font-bold text-zinc-700">
                     {mgrTab === "pending" ? "승인 대기" : "전체 목록"}
                   </span>
-                  <span className="text-[18px] font-mono text-zinc-400">
+                  <span className="text-[18px] tabular-nums text-zinc-400">
                     ({(mgrTab === "pending" ? pending : reviewed).length}건)
                   </span>
                 </div>

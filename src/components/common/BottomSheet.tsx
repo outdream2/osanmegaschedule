@@ -201,9 +201,13 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
           {children}
         </div>
 
-        {/* v2 · footer · 하단 액션 바 */}
+        {/* v2 · footer · 하단 액션 바 · safe-area-inset-bottom 포함 */}
         {footer && (
-          <div className="shrink-0 border-t border-line px-4 py-3">{footer}</div>
+          <div className="shrink-0 border-t border-line px-4 py-3" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}>{footer}</div>
+        )}
+        {/* footer 없을 때 safe-area spacer */}
+        {!footer && (
+          <div className="shrink-0" style={{ height: "env(safe-area-inset-bottom, 0px)" }} aria-hidden />
         )}
       </div>
     </div>

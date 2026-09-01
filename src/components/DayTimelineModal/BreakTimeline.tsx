@@ -65,7 +65,7 @@ export const BreakTimeline: React.FC<Props> = React.memo(({
             <button type="button" onClick={() => onShiftOffset(-30)} disabled={offset <= -60}
               className="w-5 h-5 flex items-center justify-center text-[14px] font-bold rounded bg-white border border-line text-zinc-500 hover:border-zinc-400 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               title="30분 앞으로">-</button>
-            <span className="text-[12px] font-mono text-zinc-500 min-w-[36px] text-center">
+            <span className="text-[12px] tabular-nums text-zinc-500 min-w-[36px] text-center">
               {offset === 0 ? "기본" : `${offset > 0 ? "+" : ""}${offset}분`}
             </span>
             <button type="button" onClick={() => onShiftOffset(30)} disabled={offset >= 60}

@@ -228,14 +228,14 @@ const MultiLineChartInner: React.FC<LineChartProps> = ({ labels, series, height 
             }
             <span className="font-bold text-zinc-600">{s.label}</span>
             {hoverIdx != null && (
-              <span className="font-mono text-zinc-800">
+              <span className="tabular-nums text-zinc-800">
                 {s.format === "won" ? fmtWon(s.values[hoverIdx]) : fmt(s.values[hoverIdx])}
               </span>
             )}
           </div>
         ))}
         {hoverIdx != null && (
-          <span className="ml-auto text-zinc-500 font-mono font-bold">{labels[hoverIdx]}</span>
+          <span className="ml-auto text-zinc-500 tabular-nums font-bold">{labels[hoverIdx]}</span>
         )}
       </div>
     </div>
