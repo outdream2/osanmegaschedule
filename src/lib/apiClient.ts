@@ -4,6 +4,7 @@
 //   const { data } = await api.get<Employee[]>("/api/employees");
 //   const { data } = await api.post<{ ok: true }>("/api/x", body);
 //   try { await api.del("/api/x/1"); } catch (e) { if (e instanceof ApiError) { ... } }
+//   const blob = await api.getBlob(externalUrl); // Blob 다운로드 (Supabase Storage 등)
 //
 // 이점:
 //   - withCredentials 자동
@@ -168,14 +169,24 @@ interface Api {
   put: <T = unknown>(url: string, body?: unknown, opts?: Omit<RequestOptions<T>, "url" | "method" | "data">) => Promise<{ data: T; status: number; headers: Record<string, string> }>;
   patch: <T = unknown>(url: string, body?: unknown, opts?: Omit<RequestOptions<T>, "url" | "method" | "data">) => Promise<{ data: T; status: number; headers: Record<string, string> }>;
   del: <T = unknown>(url: string, opts?: Omit<RequestOptions<T>, "url" | "method">) => Promise<{ data: T; status: number; headers: Record<string, string> }>;
+  /** Blob 다운로드 · 외부 URL(Supabase Storage 등) 포함 · CORS-safe fetch 사용 */
+  getBlob: (url: string) => Promise<Blob>;
   raw: typeof request;
 }
 
+/** 외부 URL fetch → Blob 반환 · withCredentials 없이 CORS-safe */
+async function fetchBlob(url: string): Promise<Blob> {
+  const res = await fetch(url);
+  if (!res.ok) throw new ApiError(res.status, `Blob 다운로드 실패 (${res.status})`);
+  return res.blob();
+}
+
 export const api: Api = {
-  get:   (url, opts) => request({ ...opts, url, method: "GET" }),
-  post:  (url, body, opts) => request({ ...opts, url, method: "POST", data: body }),
-  put:   (url, body, opts) => request({ ...opts, url, method: "PUT", data: body }),
-  patch: (url, body, opts) => request({ ...opts, url, method: "PATCH", data: body }),
-  del:   (url, opts) => request({ ...opts, url, method: "DELETE" }),
-  raw:   request,
+  get:     (url, opts) => request({ ...opts, url, method: "GET" }),
+  post:    (url, body, opts) => request({ ...opts, url, method: "POST", data: body }),
+  put:     (url, body, opts) => request({ ...opts, url, method: "PUT", data: body }),
+  patch:   (url, body, opts) => request({ ...opts, url, method: "PATCH", data: body }),
+  del:     (url, opts) => request({ ...opts, url, method: "DELETE" }),
+  getBlob: fetchBlob,
+  raw:     request,
 };

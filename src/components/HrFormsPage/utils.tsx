@@ -4,6 +4,7 @@ import React from "react";
 import {
   FileText, FileImage, FileSpreadsheet, FileArchive, File,
 } from "lucide-react";
+import { api } from "../../lib/apiClient";
 
 export function fmtBytes(bytes: number | null | undefined): string {
   if (bytes == null || !Number.isFinite(bytes)) return "-";
@@ -36,12 +37,11 @@ export function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-// 다운로드 · 원본 파일명 유지 · CORS 회피 위해 fetch → blob → object URL
+// 다운로드 · 원본 파일명 유지 · api.getBlob → blob → object URL
+// 외부 URL(Supabase Storage 등) 포함 · CORS-safe fetch 사용 (withCredentials 없음)
 export async function downloadFile(url: string, filename: string) {
   try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`다운로드 실패 (${res.status})`);
-    const blob = await res.blob();
+    const blob = await api.getBlob(url);
     const objUrl = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = objUrl;
