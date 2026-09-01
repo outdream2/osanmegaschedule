@@ -662,39 +662,53 @@ router.post("/api/order-requests/bulk-send", authorize(3), validateBody(BulkSend
 
     // 2026-08-10 · #14 · order_requests 라인에 status='ordered' + 발주서 정보 저장
     //   각 아이템 · order_request_id 로 UPDATE · 마이그레이션 add_order_dispatch_columns_2026-08-10.sql 대기 시 fallback
-    const requestIds = items.map((it: any) => it.order_request_id).filter(Boolean);
+    // 2026-09-01 · bulk_send_order_requests RPC · for 루프 → 1회 atomic UPDATE
+    const requestIds: bigint[] = items
+      .map((it: any) => it.order_request_id)
+      .filter((id: any) => id != null && id !== "")
+      .map((id: any) => BigInt(id));
     if (requestIds.length > 0) {
-      const orderUpdate: Record<string, any> = {
-        status: "ordered",
-        order_number: order_number,
-        sent_at: now,
-        supplier: supName,
-        supplier_contact: targetName,
-        supplier_email: targetEmail,
-        supplier_phone: targetPhone,
-        order_date: order_date ?? now.slice(0, 10),
-        desired_arrival: desired_arrival ?? null,
-        memo: memo ?? null,
-      };
       try {
-        // 각 아이템별 order_qty·unit_price · 개별 UPDATE (다르므로 in batch 어려움)
-        for (const it of items) {
-          const perItem = {
-            ...orderUpdate,
-            order_qty: it.order_qty ?? null,
-            unit_price: it.unit_price ?? null,
-          };
-          const { error } = await supabase.from("order_requests").update(perItem).eq("id", it.order_request_id);
-          if (error && /column|does not exist/i.test(error.message)) {
-            // 마이그레이션 전 · 컬럼 없음 · 조용히 skip (한 번만 로그)
-            console.warn(`[bulk-send] order_requests status 컬럼 미존재 · 마이그레이션 필요 (${error.message})`);
-            break;
-          } else if (error) {
-            console.warn(`[bulk-send] order_requests UPDATE 실패 (id=${it.order_request_id}): ${error.message}`);
+        const { data: rpcRows, error: rpcErr } = await supabase.rpc(
+          "bulk_send_order_requests",
+          { request_ids: requestIds.map(String) },
+        );
+        if (rpcErr) {
+          // RPC 미존재(마이그레이션 미실행) 시 · 조용히 경고 후 skip
+          if (/function|does not exist|routine/i.test(rpcErr.message)) {
+            console.warn(`[bulk-send] bulk_send_order_requests RPC 미존재 · 마이그레이션 필요 (${rpcErr.message})`);
+          } else {
+            console.error(`[bulk-send] RPC 오류 (${supName}): ${rpcErr.message}`);
+            throw new HttpError(500, `발주 상태 업데이트 실패: ${rpcErr.message}`);
           }
+        } else {
+          // RPC 성공 후 · 공급사/발주서 메타데이터 UPDATE (order_qty·unit_price 제외 공통 필드)
+          const metaUpdate: Record<string, any> = {
+            order_number:     order_number,
+            supplier:         supName,
+            supplier_contact: targetName,
+            supplier_email:   targetEmail,
+            supplier_phone:   targetPhone,
+            order_date:       order_date ?? now.slice(0, 10),
+            desired_arrival:  desired_arrival ?? null,
+            memo:             memo ?? null,
+          };
+          // 아이템별 order_qty·unit_price 는 개별 UPDATE (값이 다르므로)
+          for (const it of items) {
+            if (it.order_request_id == null) continue;
+            const { error: metaErr } = await supabase
+              .from("order_requests")
+              .update({ ...metaUpdate, order_qty: it.order_qty ?? null, unit_price: it.unit_price ?? null })
+              .eq("id", it.order_request_id);
+            if (metaErr && !/column|does not exist/i.test(metaErr.message)) {
+              console.warn(`[bulk-send] 메타 UPDATE 실패 (id=${it.order_request_id}): ${metaErr.message}`);
+            }
+          }
+          console.log(`[bulk-send] RPC 완료 (${supName}) · ${(rpcRows as any[] | null)?.length ?? 0}건 ordered`);
         }
       } catch (e: any) {
-        console.warn(`[bulk-send] order_requests UPDATE 예외: ${e?.message}`);
+        if (e instanceof HttpError) throw e;
+        console.warn(`[bulk-send] RPC 예외 (${supName}): ${e?.message}`);
       }
     }
 
