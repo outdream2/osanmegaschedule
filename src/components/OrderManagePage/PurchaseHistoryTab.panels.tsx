@@ -210,6 +210,9 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
           showExtraPurchaseColumns
           showCycleColumn
           selectedSupplierName={selectedVendor?.company_name ?? null}
+          /* 2026-09-01 · 사용자 지시 · 부모 기간 변경 시 · 공급사 리스트 재fetch → loading 스피너 프레임워크 자동 동작 */
+          periodMonths={periodMonths}
+          periodSeason={periodSeason}
           onSupplierClick={(supplierName) => {
             const clean = (s: string): string =>
               s.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim();

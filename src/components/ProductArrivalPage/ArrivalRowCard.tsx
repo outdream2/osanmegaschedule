@@ -6,12 +6,14 @@
 // 2026-09-01 · #92 · 구역 지정 UI 추가 (RealMapSelector 재사용)
 // 2026-09-01 · #93 · 명세서 상태 · 3종→2종 · 기한임박 UI 제거 (expiring 데이터 필드는 유지)
 
-import React, { useRef, useEffect, useState } from "react";
-import { Box, Hash, Building2, CheckCircle2, XCircle, Trash2, MapPin, Check } from "lucide-react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
+import { Box, Hash, Building2, CheckCircle2, XCircle, Trash2, MapPin, Check, Warehouse, Store, Package } from "lucide-react";
 import type { ProductInfo } from "../../lib/productsCache";
 import { StepperInput } from "../common/StepperInput";
 import { Badge } from "../common/Badge";
 import { RealMapSelector } from "../ScanPage/RealMapSelector";
+// 2026-09-01 · 실재고 UI 벤치마킹 · 창고/매장 자동 분류 · 관련 구역 표시
+import { resolveWarehouseVisibility, classifyArrivalSlot, assignZonesToSlots, type ArrivalSlot } from "../../lib/warehouseZoneMap";
 
 export type ItemStatus = "pending" | "match" | "mismatch";
 
@@ -94,6 +96,15 @@ const ArrivalZoneInline: React.FC<{
   );
 };
 
+// 2026-09-01 · 실재고 UI 벤치마킹 · 슬롯 라벨·톤 (StockRowCard SLOTS 와 동일)
+const ARRIVAL_SLOT_META: Record<ArrivalSlot, { label: string; full: string; dot: string; text: string; softBg: string; icon: React.ReactNode }> = {
+  w1: { label: "창1", full: "창고1", dot: "bg-cyan-500",   text: "text-cyan-700",   softBg: "bg-cyan-50",   icon: <Warehouse size={11} /> },
+  w2: { label: "창2", full: "창고2", dot: "bg-cyan-500",   text: "text-cyan-700",   softBg: "bg-cyan-50",   icon: <Warehouse size={11} /> },
+  s1: { label: "매1", full: "매장1", dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-violet-50", icon: <Store size={11} /> },
+  s2: { label: "매2", full: "매장2", dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-violet-50", icon: <Store size={11} /> },
+  s3: { label: "매3", full: "매장3", dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-violet-50", icon: <Store size={11} /> },
+};
+
 export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
   item, isRecent, onUpdateQty, onSetQty, onSetStatus, onRemove, onSetLocation,
 }) => {
@@ -104,6 +115,25 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
   const isMatch    = item.status === "match";
   const isMismatch = item.status === "mismatch";
   const isPending  = item.status === "pending";
+
+  // 2026-09-01 · 실재고 UI 벤치마킹 · 상품 정보 분석 (관련 창고·매장 슬롯)
+  //   · 상품의 real_map (진열구역) · 창고1/2 소속 판단
+  //   · 사용자가 선택한 입고구역 (item.location) → 자동 슬롯 판정
+  //   · 상품 현재고 · 참고 표시
+  const productRealMap = item.product?.real_map ?? item.product?.location ?? null;
+  const productCategoryCode = item.product?.category_code ?? null;
+  const currentStock = Number(item.product?.current_stock ?? 0);
+  const optimalStock = Number(item.product?.optimal_stock ?? 0);
+  const warehouseVis = useMemo(() => resolveWarehouseVisibility(productRealMap), [productRealMap]);
+  const slotZones = useMemo(() => assignZonesToSlots(productRealMap, productCategoryCode), [productRealMap, productCategoryCode]);
+  const targetSlot = useMemo(() => classifyArrivalSlot(item.location), [item.location]);
+  // 표시할 관련 슬롯 목록 (창고 · 매장 · 상품 소속만)
+  const relatedSlots: { slot: ArrivalSlot; zone: string | null }[] = [];
+  if (warehouseVis.showW1) relatedSlots.push({ slot: "w1", zone: slotZones.w1zone });
+  if (warehouseVis.showW2) relatedSlots.push({ slot: "w2", zone: slotZones.w2zone });
+  if (slotZones.s1zone) relatedSlots.push({ slot: "s1", zone: slotZones.s1zone });
+  if (slotZones.s2zone) relatedSlots.push({ slot: "s2", zone: slotZones.s2zone });
+  if (slotZones.s3zone) relatedSlots.push({ slot: "s3", zone: slotZones.s3zone });
 
   // 좌측 accent stripe (2026-09-01 · #93 · 명세서 상태 2종만 · expiring accent 제거)
   const stripeCls =
@@ -173,6 +203,54 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
             onChange={(v) => onSetLocation(item.key, v)}
           />
         </div>
+
+        {/* 2026-09-01 · 실재고 UI 벤치마킹 · 관련 창고·매장 슬롯 · 현재고 · 자동 판정
+            · 상품의 real_map 기반 · 소속 슬롯만 표시 (창1/창2/매1/매2/매3 중 해당)
+            · 사용자가 선택한 입고구역 → 어느 슬롯에 반영될지 하이라이트
+            · 상품에 real_map 또는 현재고 정보가 있을 때만 렌더 (미등록 상품은 skip) */}
+        {(relatedSlots.length > 0 || currentStock > 0) && (
+          <div className="rounded-xl bg-zinc-50/60 border border-line/60 px-3 py-2 flex flex-col gap-1.5">
+            {/* 헤더 · 현재고·적정재고 */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">재고 현황</span>
+              <span className="ml-auto inline-flex items-center gap-1 text-[13px] font-bold text-zinc-700 tabular-nums">
+                <Package size={11} className="text-zinc-400" />
+                현재고 {currentStock.toLocaleString()}
+                {optimalStock > 0 && (
+                  <span className="text-[11px] font-semibold text-zinc-400 ml-1">/ 적정 {optimalStock.toLocaleString()}</span>
+                )}
+              </span>
+            </div>
+            {/* 관련 슬롯 chip 리스트 · 자동 판정 슬롯 하이라이트 */}
+            {relatedSlots.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {relatedSlots.map(({ slot, zone }) => {
+                  const meta = ARRIVAL_SLOT_META[slot];
+                  const isTarget = targetSlot === slot;
+                  return (
+                    <span
+                      key={slot}
+                      className={[
+                        "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[12px] font-bold tabular-nums transition",
+                        isTarget
+                          ? "border-emerald-400 bg-emerald-50 text-emerald-800 shadow-[0_0_0_2px_rgba(52,211,153,0.15)]"
+                          : `border-line ${meta.softBg} ${meta.text}`,
+                      ].join(" ")}
+                      title={isTarget ? `이번 입고 · ${meta.full} 반영 예정` : meta.full}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
+                      {meta.label}
+                      {zone && <span className="text-[11px] font-mono opacity-70">·{zone}</span>}
+                      {isTarget && (
+                        <span className="text-[10px] font-bold text-emerald-700 ml-0.5">+{item.qty}</span>
+                      )}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 액션 영역 · 수량 stepper + 2-state pill + 삭제 · 2026-09-01 · #93 · 3종→2종 */}
         <div className="flex items-center gap-2 flex-wrap pt-1">

@@ -89,6 +89,12 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
     const qty = Number(it.qty ?? 0) || 0;
     const isExpiring = it.expiring === true;
     const verifyStatus = toVerifyStatus(String(it.status ?? "pending"), isExpiring);
+    // 2026-09-01 · 사용자 지시 · #92 · 상품입고 시 지정한 진열위치 · products.location 반영
+    //   · 상품정보 카드 진열위치 - 표시 원인 · arrival 시 저장되지 않음 · 여기서 반영
+    //   · 매장구역 미지정 시 · 기존 값 유지 (null 로 덮지 않음)
+    const itemLocation = (it.location != null && String(it.location).trim() !== "")
+      ? String(it.location).trim()
+      : null;
 
     // 오늘 자 · 이미 매입 원본 있는지 확인 (OCR/엑셀 임포트 등)
     const { data: existing } = await supabase
@@ -132,6 +138,19 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
         });
       if (iErr) throw new HttpError(500, `verify insert 실패: ${iErr.message}`);
       insertedCount++;
+    }
+
+    // 2026-09-01 · 사용자 지시 · 진열위치 · products 테이블 반영 (매장구역 지정된 경우만)
+    //   · location 컬럼 · display_location 컬럼 · 함께 업데이트 (하위호환)
+    //   · error 시 · 검수 자체는 성공 · location 만 skip (silent · log)
+    if (itemLocation) {
+      const { error: locErr } = await supabase
+        .from("products")
+        .update({ location: itemLocation, display_location: itemLocation })
+        .eq("product_code", productCode);
+      if (locErr) {
+        console.warn(`[arrival→location] product_code=${productCode} · location=${itemLocation} · ${locErr.message}`);
+      }
     }
   }
 

@@ -120,7 +120,7 @@ export const CategoryPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows
 
   if (total === 0) {
     return (
-      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[11px] text-zinc-400`}>
+      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[13px] text-zinc-400`}>
         데이터 없음
       </div>
     );
@@ -128,7 +128,7 @@ export const CategoryPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows
 
   return (
     <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
-      <div className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">
+      <div className="text-[13px] font-bold text-zinc-600 uppercase tracking-wider">
         카테고리별 매입액 비중
       </div>
       <div className="flex items-center gap-4">
@@ -156,7 +156,7 @@ export const CategoryPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows
         </div>
         <ChartLegendList items={data} total={total} />
       </div>
-      <div className="text-right text-[10px] tabular-nums text-zinc-400 font-semibold">
+      <div className="text-right text-[12px] tabular-nums text-zinc-400 font-semibold">
         합계 {fmtWon(total)}원
       </div>
     </div>
@@ -194,7 +194,7 @@ export const MonthlyPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows 
 
   if (total === 0) {
     return (
-      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[11px] text-zinc-400`}>
+      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[13px] text-zinc-400`}>
         최근 6개월 데이터 없음
       </div>
     );
@@ -202,7 +202,7 @@ export const MonthlyPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows 
 
   return (
     <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
-      <div className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">
+      <div className="text-[13px] font-bold text-zinc-600 uppercase tracking-wider">
         월별 매입액 분포 (최근 6개월)
       </div>
       <div className="flex items-center gap-4">
@@ -230,7 +230,7 @@ export const MonthlyPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows 
         </div>
         <ChartLegendList items={data} total={total} />
       </div>
-      <div className="text-right text-[10px] tabular-nums text-zinc-400 font-semibold">
+      <div className="text-right text-[12px] tabular-nums text-zinc-400 font-semibold">
         합계 {fmtWon(total)}원
       </div>
     </div>
@@ -265,7 +265,7 @@ export const TopProductsPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ r
 
   if (total === 0) {
     return (
-      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[11px] text-zinc-400`}>
+      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[13px] text-zinc-400`}>
         데이터 없음
       </div>
     );
@@ -273,7 +273,7 @@ export const TopProductsPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ r
 
   return (
     <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
-      <div className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">
+      <div className="text-[13px] font-bold text-zinc-600 uppercase tracking-wider">
         상품별 매입 Top 10
       </div>
       <div className="flex items-center gap-4">
@@ -301,7 +301,7 @@ export const TopProductsPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ r
         </div>
         <ChartLegendList items={data} total={total} />
       </div>
-      <div className="text-right text-[10px] tabular-nums text-zinc-400 font-semibold">
+      <div className="text-right text-[12px] tabular-nums text-zinc-400 font-semibold">
         합계 {fmtWon(total)}원
       </div>
     </div>
@@ -319,7 +319,7 @@ const Top10Card: React.FC<{
 }> = ({ title, items, formatValue, valueColor }) => {
   if (items.length === 0) {
     return (
-      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[11px] text-zinc-400`}>
+      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[13px] text-zinc-400`}>
         데이터 없음
       </div>
     );
@@ -327,12 +327,12 @@ const Top10Card: React.FC<{
   const max = Math.max(...items.map(i => i.value), 1);
   return (
     <div className={`${CARD_BASE} p-3 flex flex-col gap-2`}>
-      <div className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">{title}</div>
+      <div className="text-[13px] font-bold text-zinc-600 uppercase tracking-wider">{title}</div>
       <div className="flex flex-col gap-1">
         {items.map(it => {
           const pct = (it.value / max) * 100;
           return (
-            <div key={`${it.rank}-${it.name}`} className="flex items-center gap-2 text-[11px]">
+            <div key={`${it.rank}-${it.name}`} className="flex items-center gap-2 text-[13px]">
               <span className={`shrink-0 w-6 h-5 rounded-md flex items-center justify-center font-bold tabular-nums ${
                 it.rank <= 3 ? "bg-amber-100 text-amber-700" : "bg-zinc-100 text-zinc-500"
               }`}>{it.rank}</span>
@@ -343,7 +343,7 @@ const Top10Card: React.FC<{
                 </div>
               </div>
               <span className={`shrink-0 tabular-nums font-bold ${valueColor}`}>{formatValue(it.value)}</span>
-              {it.sub && <span className="shrink-0 text-[10px] text-zinc-400 tabular-nums">{it.sub}</span>}
+              {it.sub && <span className="shrink-0 text-[12px] text-zinc-400 tabular-nums">{it.sub}</span>}
             </div>
           );
         })}
@@ -510,7 +510,7 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
     return <div className="flex-1 flex items-center justify-center py-12"><Spinner label="불러오는 중..." size={13} tone="zinc" labelSize={11} /></div>;
   }
   if (rows.length === 0) {
-    return <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[11px]">해당 기간 매입 데이터 없음</div>;
+    return <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[13px]">해당 기간 매입 데이터 없음</div>;
   }
 
   const pieTitle =
@@ -522,11 +522,11 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
     <div className="flex-1 min-h-0 overflow-auto p-3 flex flex-col gap-3">
       {/* 제목 + 기간 */}
       <div className="flex items-baseline gap-2 px-1">
-        <span className="text-[12px] font-bold text-zinc-700">매입추이 Top 10</span>
+        <span className="text-[14px] font-bold text-zinc-700">매입추이 Top 10</span>
         {dateRange && (
-          <span className="text-[10.5px] text-zinc-400 font-semibold tabular-nums">({dateRange})</span>
+          <span className="text-[12.5px] text-zinc-400 font-semibold tabular-nums">({dateRange})</span>
         )}
-        <span className="text-[10px] text-zinc-400 tabular-nums ml-auto">{rows.length.toLocaleString()}건</span>
+        <span className="text-[12px] text-zinc-400 tabular-nums ml-auto">{rows.length.toLocaleString()}건</span>
       </div>
       {/* 3-metric 탭 */}
       <div className="flex items-center gap-1 border-b border-zinc-100 pb-0.5">
@@ -540,13 +540,13 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
             <button key={t.k}
               type="button"
               onClick={() => setMetric(t.k)}
-              className={`inline-flex items-center gap-1 h-8 px-3 border-b-2 text-[12px] font-bold cursor-pointer transition ${
+              className={`inline-flex items-center gap-1 h-8 px-3 border-b-2 text-[14px] font-bold cursor-pointer transition ${
                 active ? `${activeCls} bg-white` : "text-zinc-400 border-transparent hover:text-zinc-600"
               }`}
               title={t.hint}
             >
               {t.label}
-              <span className="text-[10px] font-normal text-zinc-400">{t.hint}</span>
+              <span className="text-[12px] font-normal text-zinc-400">{t.hint}</span>
             </button>
           );
         })}
@@ -558,7 +558,7 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
       {/* 하단 원형 차트 */}
       {pieData.total > 0 && (
         <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
-          <div className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">{pieTitle}</div>
+          <div className="text-[13px] font-bold text-zinc-600 uppercase tracking-wider">{pieTitle}</div>
           <div className="flex items-center gap-4 flex-wrap">
             <div className="w-[140px] h-[140px] shrink-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -586,7 +586,7 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
               <ChartLegendList items={pieData.data} total={pieData.total} />
             </div>
           </div>
-          <div className="text-right text-[10px] tabular-nums text-zinc-400 font-semibold">
+          <div className="text-right text-[12px] tabular-nums text-zinc-400 font-semibold">
             합계 {pieData.total.toLocaleString()}{pieData.unitLabel}
           </div>
         </div>
@@ -671,7 +671,7 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
             </button>
           );
         })}
-        <div className="ml-auto flex items-center gap-1 text-[10px] text-zinc-400 pr-2">
+        <div className="ml-auto flex items-center gap-1 text-[12px] text-zinc-400 pr-2">
           <ArrowUpDown size={10} />
           <span>헤더 클릭 정렬</span>
         </div>

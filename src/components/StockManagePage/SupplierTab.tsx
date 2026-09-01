@@ -54,6 +54,14 @@ export interface SupplierTabProps {
    *   - true 일 때 · /api/supplier-purchase-summary?days=90 병렬 fetch → avg_cycle_days 매핑
    */
   showCycleColumn?: boolean;
+  /**
+   * 2026-09-01 · 부모 기간 필터 오버라이드 · embedded 모드에서 사용
+   *   - 지정 시 · 내부 supplierMonths/supplierSeason 대신 이 값으로 fetch
+   *   - 부모 기간 변경 시 · fetchData 재실행 → loading state 자동 트리거 (프레임워크 스피너)
+   *   - default undefined (하위호환 · 기존 non-embedded 화면 변경 없음)
+   */
+  periodMonths?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  periodSeason?: SeasonKey | null;
 }
 
 export const SupplierTab: React.FC<SupplierTabProps> = ({
@@ -63,6 +71,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   hideSaleColumns = false,
   showExtraPurchaseColumns = false,
   showCycleColumn = false,
+  periodMonths: periodMonthsProp,
+  periodSeason: periodSeasonProp,
 }) => {
   // 2026-08-21 · Framework Phase 3 · alert → useToast
   const { toast, showError } = useToast();
@@ -80,9 +90,15 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   });
   const [loading, setLoading] = useState(false);
 
-  // 기간 필터
-  const [supplierMonths, setSupplierMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
-  const [supplierSeason, setSupplierSeason] = useState<SeasonKey | null>(null);
+  // 기간 필터 · periodMonths/periodSeason prop 이 제공되면 · 그 값이 실효 기간 (부모가 제어)
+  //   · non-embedded · 내부 SupplierFilterBar 로 조작 · 하위호환 유지
+  //   · embedded · 부모 (PurchaseHistoryTab) 기간 변경 시 · 자동 동기화 → fetchData 재실행 → loading 트리거
+  const [supplierMonthsInternal, setSupplierMonthsInternal] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
+  const [supplierSeasonInternal, setSupplierSeasonInternal] = useState<SeasonKey | null>(null);
+  const supplierMonths = periodMonthsProp ?? supplierMonthsInternal;
+  const supplierSeason = periodSeasonProp ?? supplierSeasonInternal;
+  const setSupplierMonths = setSupplierMonthsInternal;
+  const setSupplierSeason = setSupplierSeasonInternal;
 
   // 공급사 목록
   const [xlsxSuppliers, setXlsxSuppliers] = useState<SupplierAgg[]>([]);

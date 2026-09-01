@@ -588,6 +588,15 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
     }
   } catch { /* silent */ }
 
+  // 2026-09-01 · 사용자 지시 · profit_rate 자동 계산 (products.profit_rate 원본 우선 · null 시 (sale-purchase)/sale*100)
+  //   · 상품정보 카드 이익율 - 표시 원인 · products.profit_rate 미저장 다수 · 서버에서 파생 계산
+  const salePriceN = Number(data.sale_price ?? 0);
+  const purchasePriceN = Number(data.purchase_price ?? 0);
+  const derivedProfitRate =
+    salePriceN > 0 && purchasePriceN > 0
+      ? Number((((salePriceN - purchasePriceN) / salePriceN) * 100).toFixed(2))
+      : null;
+
   res.json({
     ...data,
     realMap: data.real_map ?? null,
@@ -600,6 +609,8 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
     // 매입 · purchase_details 만 신뢰
     last_purchase_date: lastPurchase,
     last_snapshot_date: null,  // deprecated · 하위 호환용
+    // 2026-09-01 · 파생 이익율 · 원본 우선
+    profit_rate: data.profit_rate ?? derivedProfitRate,
   });
 }));
 

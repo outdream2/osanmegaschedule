@@ -4,10 +4,11 @@
 //   · ArrivalHistoryTab · 입고내역 리스트 탭 (기간 필터 · 테이블)
 //   · ArrivalDetailModal · 입고내역 상세 모달 (아이템 리스트 · KPI)
 
-import React from "react";
+import React, { useMemo, useState } from "react";
 import {
   ShieldCheck, ClipboardX,
   Sparkles, AlertCircle, Package, RefreshCw, Trash2, PackagePlus,
+  ChevronDown, ChevronRight, Building2,
 } from "lucide-react";
 import { StatusPill } from "../common/StatusPill";
 import { Badge } from "../common/Badge";
@@ -179,10 +180,68 @@ interface ArrivalHistoryTabProps {
   deleteArrival: (id: string | number) => void;
 }
 
+// 2026-09-01 · 사용자 지시 · 입고내역 · 공급사별 그룹핑 + 아코디언 + 입고번호
+//   · Level 1 · 공급사 헤더 (chevron + 이름 + 총 건수·수량 요약)
+//   · Level 2 (펼침) · 개별 입고건 · 입고번호 (ARR-{seq}) · 발주번호 패턴
+//   · 정렬 · 공급사명 오름차순 (한글)
+function primarySupplier(summary: string | null): string {
+  const s = String(summary ?? "").trim();
+  if (!s) return "(공급사 미상)";
+  const first = s.split(/[·,;\n]/)[0]?.trim();
+  return first || "(공급사 미상)";
+}
+
+interface SupplierArrivalGroup {
+  supplier: string;
+  arrivals: ArrivalHistoryRow[];
+  totalItems: number;
+  totalQty: number;
+  matchCount: number;
+  mismatchCount: number;
+}
+
 export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
   arrivals, arrivalsLoading, arrivalDays, setArrivalDays,
   loadArrivals, selectedArrivalId, setSelectedArrivalId, deleteArrival,
 }) => {
+  // 공급사별 그룹핑
+  const groups = useMemo<SupplierArrivalGroup[]>(() => {
+    const map = new Map<string, SupplierArrivalGroup>();
+    for (const a of arrivals) {
+      const sup = primarySupplier(a.supplier_summary);
+      const g = map.get(sup) ?? { supplier: sup, arrivals: [], totalItems: 0, totalQty: 0, matchCount: 0, mismatchCount: 0 };
+      g.arrivals.push(a);
+      g.totalItems += a.total_items;
+      g.totalQty += a.total_qty;
+      g.matchCount += a.match_count;
+      g.mismatchCount += a.mismatch_count;
+      map.set(sup, g);
+    }
+    // 공급사명 오름차순 · 각 그룹 내부 arrival 은 최신순 (원본 순서 유지)
+    return Array.from(map.values()).sort((a, b) => a.supplier.localeCompare(b.supplier, "ko"));
+  }, [arrivals]);
+
+  // 아코디언 · 기본 전부 접힘 · 첫 로드 시 첫 그룹만 펼침 (UX 힌트)
+  const [expandedSuppliers, setExpandedSuppliers] = useState<Set<string>>(() => new Set());
+  const toggleSupplier = (sup: string) =>
+    setExpandedSuppliers(prev => {
+      const n = new Set(prev);
+      n.has(sup) ? n.delete(sup) : n.add(sup);
+      return n;
+    });
+
+  // 입고번호 (발주번호 패턴) · 전체 arrivals 를 최신순 재정렬 후 · 인덱스 부여
+  //   · 안정적 · id 별 seq · Map 캐시
+  const arrivalNoMap = useMemo(() => {
+    const m = new Map<string | number, string>();
+    // 최신순 (arrival_date 내림차순) · 서버가 이미 그렇게 반환하지만 · 방어적 재정렬
+    const sorted = [...arrivals].sort((a, b) => String(b.arrival_date).localeCompare(String(a.arrival_date)));
+    sorted.forEach((a, i) => {
+      m.set(a.id, `ARR-${String(sorted.length - i).padStart(4, "0")}`);
+    });
+    return m;
+  }, [arrivals]);
+
   return (
     <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col gap-3 min-h-0">
       <Card padding="sm" className="h-12 flex items-center gap-2.5">
@@ -190,7 +249,7 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
         <Package size={16} className="text-brand-deep shrink-0" />
         <span className="text-[16px] font-bold text-ink tracking-tight">입고내역</span>
         <StatusPill tone="brand" size="md">{arrivals.length}건</StatusPill>
-        <span className="text-[13px] font-medium text-ink-soft ml-2 hidden sm:inline">최근 {arrivalDays}일</span>
+        <span className="text-[13px] font-medium text-ink-soft ml-2 hidden sm:inline">공급사 {groups.length} · 최근 {arrivalDays}일</span>
         <div className="flex items-center gap-0.5 bg-zinc-100 border border-line rounded-lg p-1 ml-auto">
           {[7, 30, 90].map(d => (
             <button key={d} onClick={() => setArrivalDays(d as 7 | 30 | 90)}
@@ -212,65 +271,102 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
         ) : arrivals.length === 0 ? (
           <div className="py-12 text-center text-zinc-400 text-[15px] font-semibold">최근 {arrivalDays}일 입고내역 없음</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-[14px] border-collapse">
-              <thead className="bg-indigo-50/50 border-b border-indigo-100 sticky top-0 z-10">
-                <tr>
-                  <th className="px-2 py-2 text-left font-bold text-indigo-800 w-10">#</th>
-                  <th className="px-2 py-2 text-left font-bold text-indigo-800 w-32">등록일시</th>
-                  <th className="px-2 py-2 text-left font-bold text-indigo-800 w-24">담당</th>
-                  <th className="px-2 py-2 text-left font-bold text-indigo-800 min-w-[200px]">공급사 요약</th>
-                  <th className="px-2 py-2 text-right font-bold text-indigo-800 w-14">품목</th>
-                  <th className="px-2 py-2 text-right font-bold text-indigo-800 w-14">수량</th>
-                  <th className="px-2 py-2 text-center font-bold text-emerald-700 w-14">일치</th>
-                  <th className="px-2 py-2 text-center font-bold text-rose-700 w-14">불일치</th>
-                  <th className="px-2 py-2 text-center font-bold text-amber-700 w-14">기한임박</th>
-                  <th className="px-2 py-2 text-center font-bold text-indigo-800 w-24">최종판정</th>
-                  <th className="px-2 py-2 text-center font-bold text-zinc-500 w-24">액션</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {arrivals.map((a, i) => {
-                  const d = new Date(a.arrival_date);
-                  const dateStr = isNaN(d.getTime()) ? "-" : `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-                  const isSelected = selectedArrivalId === a.id;
-                  return (
-                    <tr key={a.id} className={`transition ${isSelected ? "bg-indigo-50/60" : "hover:bg-zinc-50/60"}`}>
-                      <td className="px-2 py-1.5 text-zinc-400 tabular-nums">{i + 1}</td>
-                      <td className="px-2 py-1.5 text-zinc-700 tabular-nums font-semibold">{dateStr}</td>
-                      <td className="px-2 py-1.5 text-zinc-600">{a.checked_by ?? "-"}</td>
-                      <td className="px-2 py-1.5 text-zinc-600 truncate max-w-[240px]" title={a.supplier_summary ?? ""}>{a.supplier_summary ?? "-"}</td>
-                      <td className="px-2 py-1.5 text-right text-zinc-800 font-bold tabular-nums">{a.total_items}</td>
-                      <td className="px-2 py-1.5 text-right text-zinc-800 font-bold tabular-nums">{a.total_qty.toLocaleString()}</td>
-                      <td className="px-2 py-1.5 text-center text-emerald-700 font-bold tabular-nums">{a.match_count}</td>
-                      <td className="px-2 py-1.5 text-center text-rose-700 font-bold tabular-nums">{a.mismatch_count}</td>
-                      <td className="px-2 py-1.5 text-center text-amber-700 font-bold tabular-nums">{a.expiring_count}</td>
-                      <td className="px-2 py-1.5 text-center">
-                        <StatusPill
-                          tone={a.final_decision === "all_match" ? "emerald" : a.final_decision === "has_mismatch" ? "rose" : "zinc"}
-                          size="md"
-                        >
-                          {a.final_decision === "all_match" ? "완전일치" : a.final_decision === "has_mismatch" ? "불일치 있음" : "-"}
-                        </StatusPill>
-                      </td>
-                      <td className="px-2 py-1.5 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <button type="button" onClick={() => setSelectedArrivalId(a.id)}
-                            className="h-7 px-2 rounded-md text-[15px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 cursor-pointer transition">
-                            상세
-                          </button>
-                          <button type="button" onClick={() => deleteArrival(a.id)}
-                            className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-50 border border-line hover:border-rose-200 cursor-pointer transition"
-                            title="삭제">
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="divide-y divide-zinc-100">
+            {groups.map((g) => {
+              const isOpen = expandedSuppliers.has(g.supplier);
+              return (
+                <div key={g.supplier}>
+                  {/* 공급사 헤더 (아코디언) */}
+                  <button
+                    type="button"
+                    onClick={() => toggleSupplier(g.supplier)}
+                    className={`w-full flex items-center gap-2.5 px-4 py-3 transition text-left cursor-pointer ${
+                      isOpen ? "bg-indigo-50/60 hover:bg-indigo-50" : "hover:bg-zinc-50"
+                    }`}
+                  >
+                    <span className={`w-6 h-6 rounded-md flex items-center justify-center transition ${
+                      isOpen ? "bg-indigo-100 text-indigo-700" : "bg-zinc-100 text-zinc-500"
+                    }`}>
+                      {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    </span>
+                    <Building2 size={16} className="text-indigo-600 shrink-0" />
+                    <span className="text-[15px] font-bold text-ink min-w-0 flex-1 truncate" title={g.supplier}>{g.supplier}</span>
+                    <StatusPill tone="indigo" size="sm">{g.arrivals.length}건</StatusPill>
+                    <span className="text-[13px] font-semibold text-zinc-500 tabular-nums whitespace-nowrap">품목 {g.totalItems.toLocaleString()} · 수량 {g.totalQty.toLocaleString()}</span>
+                    {g.matchCount > 0 && (
+                      <StatusPill tone="emerald" size="sm" dot>일치 {g.matchCount}</StatusPill>
+                    )}
+                    {g.mismatchCount > 0 && (
+                      <StatusPill tone="rose" size="sm" dot>불일치 {g.mismatchCount}</StatusPill>
+                    )}
+                  </button>
+                  {/* 상세 · 펼침 시 · 각 입고건 (입고번호 부여) */}
+                  {isOpen && (
+                    <div className="bg-zinc-50/50 border-t border-line/60">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-[14px] border-collapse">
+                          <thead className="bg-white border-b border-line/60">
+                            <tr>
+                              <th className="px-3 py-2 text-left font-bold text-indigo-800 w-28">입고번호</th>
+                              <th className="px-3 py-2 text-left font-bold text-indigo-800 w-32">등록일시</th>
+                              <th className="px-3 py-2 text-left font-bold text-indigo-800 w-24">담당</th>
+                              <th className="px-3 py-2 text-right font-bold text-indigo-800 w-16">품목</th>
+                              <th className="px-3 py-2 text-right font-bold text-indigo-800 w-16">수량</th>
+                              <th className="px-3 py-2 text-center font-bold text-emerald-700 w-14">일치</th>
+                              <th className="px-3 py-2 text-center font-bold text-rose-700 w-14">불일치</th>
+                              <th className="px-3 py-2 text-center font-bold text-amber-700 w-16">기한임박</th>
+                              <th className="px-3 py-2 text-center font-bold text-indigo-800 w-24">최종판정</th>
+                              <th className="px-3 py-2 text-center font-bold text-zinc-500 w-24">액션</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-zinc-100">
+                            {g.arrivals.map((a) => {
+                              const d = new Date(a.arrival_date);
+                              const dateStr = isNaN(d.getTime()) ? "-" : `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                              const isSelected = selectedArrivalId === a.id;
+                              const arrivalNo = arrivalNoMap.get(a.id) ?? String(a.id);
+                              return (
+                                <tr key={a.id} className={`transition ${isSelected ? "bg-indigo-50/60" : "hover:bg-white"}`}>
+                                  <td className="px-3 py-1.5 text-indigo-700 font-mono font-bold tabular-nums text-[13px]">{arrivalNo}</td>
+                                  <td className="px-3 py-1.5 text-zinc-700 tabular-nums font-semibold">{dateStr}</td>
+                                  <td className="px-3 py-1.5 text-zinc-600">{a.checked_by ?? "-"}</td>
+                                  <td className="px-3 py-1.5 text-right text-zinc-800 font-bold tabular-nums">{a.total_items}</td>
+                                  <td className="px-3 py-1.5 text-right text-zinc-800 font-bold tabular-nums">{a.total_qty.toLocaleString()}</td>
+                                  <td className="px-3 py-1.5 text-center text-emerald-700 font-bold tabular-nums">{a.match_count}</td>
+                                  <td className="px-3 py-1.5 text-center text-rose-700 font-bold tabular-nums">{a.mismatch_count}</td>
+                                  <td className="px-3 py-1.5 text-center text-amber-700 font-bold tabular-nums">{a.expiring_count}</td>
+                                  <td className="px-3 py-1.5 text-center">
+                                    <StatusPill
+                                      tone={a.final_decision === "all_match" ? "emerald" : a.final_decision === "has_mismatch" ? "rose" : "zinc"}
+                                      size="md"
+                                    >
+                                      {a.final_decision === "all_match" ? "완전일치" : a.final_decision === "has_mismatch" ? "불일치 있음" : "-"}
+                                    </StatusPill>
+                                  </td>
+                                  <td className="px-3 py-1.5 text-center">
+                                    <div className="flex items-center justify-center gap-1">
+                                      <button type="button" onClick={() => setSelectedArrivalId(a.id)}
+                                        className="h-7 px-2 rounded-md text-[15px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 cursor-pointer transition">
+                                        상세
+                                      </button>
+                                      <button type="button" onClick={() => deleteArrival(a.id)}
+                                        className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-50 border border-line hover:border-rose-200 cursor-pointer transition"
+                                        title="삭제">
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </Card>
