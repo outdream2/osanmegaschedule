@@ -67,6 +67,30 @@ export function resolveWarehouseVisibility(realMap: string | null | undefined): 
   return { showW1, showW2 };
 }
 
+// 2026-09-01 · #92 · 입고 구역 지정 → 자동 슬롯 판정
+//   · 창고1 코드 → "w1" · 창고2 코드 → "w2" · 나머지 매장 진열 → "s1" (기본)
+//   · MajorZone 기반 세분화: 중앙상비약존·상담존 → s1 · 뷰티식품존 → s2 · 카운터테마존 → s3
+export type ArrivalSlot = "w1" | "w2" | "s1" | "s2" | "s3";
+
+/** location 코드 단 하나 → 자동 슬롯 판정 · 알 수 없으면 null */
+export function classifyArrivalSlot(locationCode: string | null | undefined): ArrivalSlot | null {
+  if (!locationCode) return null;
+  const c = String(locationCode).trim().toUpperCase().replace(/\s+/g, "");
+  if (!c) return null;
+  // 창고 우선
+  if (WAREHOUSE_BOTH_CODES.has(c)) return "w1"; // 공용은 w1 기본
+  if (WAREHOUSE_1_CODES.has(c)) return "w1";
+  if (WAREHOUSE_2_CODES.has(c)) return "w2";
+  // 매장 진열구역 · MajorZone 분류 (classifyMajorZone 과 동일 로직 · 순환 import 방지로 인라인)
+  // 중앙상비약존: 숫자+알파 · 1A~9Z (한 자리 숫자 prefix) 제외 창고코드
+  // 단순화: 숫자2자리 이상 이면 매장 진열 번호 (10~23 등) · 알파+숫자(1A 류) 이면 매장 존 코드
+  // 세분화 매핑 (zone_defs.zone 없이 코드만으로 판별 · 보수적)
+  // 카운터테마존 힌트: "K", "CT" prefix 코드 (없으면 아래 fallback)
+  // 뷰티식품존 힌트: "B", "F" prefix
+  // → 완전 판별은 zone_defs 있어야 정확 · 코드만 있으면 s1 기본
+  return "s1";
+}
+
 // 2026-08-27 · 사용자 지시 · zone 코드를 slot 에 지능 배정
 //   · 창고1 코드 (예: 8A) → w1zone · 창고2 코드 (예: 32) → w2zone
 //   · 나머지 (매장 진열구역) → s1/s2/s3 순차

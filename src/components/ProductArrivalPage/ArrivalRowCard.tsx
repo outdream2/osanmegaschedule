@@ -1,14 +1,17 @@
 // ArrivalRowCard · 2026-08-18 · 상품입고 카드형 재설계
 //   · 테이블 → 카드 리스트 (Linear/Attio/Notion 2026 톤)
 //   · 상단: 공급사 + 입고시각 + 상품명 + 규격/코드
-//   · 하단: 큰 수량 stepper + 3-state pill (일치/불일치/기한임박) + 삭제
+//   · 하단: 큰 수량 stepper + 2-state pill (일치/불일치) + 삭제
 //   · 상태별 좌측 accent stripe · 최근 sky ring · 부드러운 shadow
+// 2026-09-01 · #92 · 구역 지정 UI 추가 (RealMapSelector 재사용)
+// 2026-09-01 · #93 · 명세서 상태 · 3종→2종 · 기한임박 UI 제거 (expiring 데이터 필드는 유지)
 
-import React from "react";
-import { Box, Hash, Building2, CheckCircle2, XCircle, Clock, Trash2 } from "lucide-react";
+import React, { useRef, useEffect, useState } from "react";
+import { Box, Hash, Building2, CheckCircle2, XCircle, Trash2, MapPin, Check } from "lucide-react";
 import type { ProductInfo } from "../../lib/productsCache";
 import { StepperInput } from "../common/StepperInput";
 import { Badge } from "../common/Badge";
+import { RealMapSelector } from "../ScanPage/RealMapSelector";
 
 export type ItemStatus = "pending" | "match" | "mismatch";
 
@@ -20,6 +23,8 @@ export interface ArrivalCardItem {
   status: ItemStatus;
   expiring: boolean;
   addedAt: number;
+  /** 2026-09-01 · #92 · 입고 구역 */
+  location: string | null;
 }
 
 interface ArrivalRowCardProps {
@@ -28,13 +33,71 @@ interface ArrivalRowCardProps {
   onUpdateQty: (key: string, delta: number) => void;
   onSetQty: (key: string, qty: number) => void;
   onSetStatus: (key: string, status: ItemStatus) => void;
-  onToggleExpiring: (key: string) => void;
   onRemove: (key: string) => void;
+  /** 2026-09-01 · #92 · 구역 변경 핸들러 */
+  onSetLocation: (key: string, location: string | null) => void;
 }
 
+// ─── 구역 인라인 선택 · ArrivalRowCard 전용 (StockRowCard ZoneInline 동일 패턴)
+const ArrivalZoneInline: React.FC<{
+  value: string | null;
+  onChange: (v: string | null) => void;
+}> = ({ value, onChange }) => {
+  const filled = value != null && value.trim().length > 0;
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+  }, []);
+
+  const handleSelect = (raw: string) => {
+    const next = raw.trim() === "" ? null : raw;
+    onChange(next);
+    setSavedFlash(true);
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    flashTimerRef.current = setTimeout(() => setSavedFlash(false), 1600);
+  };
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <button
+        type="button"
+        onClick={() => setSelectorOpen(true)}
+        className={[
+          "inline-flex items-center gap-1.5 h-8 rounded-full px-3 border-2 transition-all duration-150 cursor-pointer",
+          "text-[13px] font-bold tabular-nums tracking-tight",
+          filled
+            ? "bg-indigo-50 border-indigo-300 text-indigo-700 hover:border-indigo-500"
+            : "bg-white border-dashed border-zinc-300 text-zinc-400 hover:border-indigo-300 hover:bg-zinc-50",
+        ].join(" ")}
+        title={filled ? `입고구역: ${value} · 클릭 시 변경` : "클릭 · 구역 선택"}
+      >
+        <MapPin size={12} fill={filled ? "currentColor" : "none"} className={filled ? "text-indigo-600" : "text-zinc-300"} />
+        <span>{filled ? value : "구역 선택"}</span>
+      </button>
+      {savedFlash && (
+        <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-emerald-700 animate-in fade-in duration-200">
+          <Check size={11} strokeWidth={3} />
+          저장됨
+        </span>
+      )}
+      {selectorOpen && (
+        <RealMapSelector
+          current={value}
+          onSelect={handleSelect}
+          onClose={() => setSelectorOpen(false)}
+        />
+      )}
+    </div>
+  );
+};
+
 export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
-  item, isRecent, onUpdateQty, onSetQty, onSetStatus, onToggleExpiring, onRemove,
+  item, isRecent, onUpdateQty, onSetQty, onSetStatus, onRemove, onSetLocation,
 }) => {
+  void onUpdateQty; // pre-existing unused (StepperInput uses onSetQty)
   const d = new Date(item.addedAt);
   const arrivedAt = `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 
@@ -42,11 +105,10 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
   const isMismatch = item.status === "mismatch";
   const isPending  = item.status === "pending";
 
-  // 좌측 accent stripe (상태 우선 · expiring 은 amber)
+  // 좌측 accent stripe (2026-09-01 · #93 · 명세서 상태 2종만 · expiring accent 제거)
   const stripeCls =
     isMatch    ? "before:bg-emerald-400" :
     isMismatch ? "before:bg-rose-400"    :
-    item.expiring ? "before:bg-amber-400" :
                  "before:bg-transparent";
 
   return (
@@ -103,7 +165,16 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           </span>
         </div>
 
-        {/* 액션 영역 · 수량 stepper + 3-state pill + 삭제 */}
+        {/* 2026-09-01 · #92 · 구역 지정 · 수량 영역 위 */}
+        <div className="flex items-center gap-2 pt-0.5 pb-0.5 border-t border-zinc-100/80 mt-0.5">
+          <span className="text-[12px] font-bold text-zinc-400 uppercase tracking-wider shrink-0">입고구역</span>
+          <ArrivalZoneInline
+            value={item.location}
+            onChange={(v) => onSetLocation(item.key, v)}
+          />
+        </div>
+
+        {/* 액션 영역 · 수량 stepper + 2-state pill + 삭제 · 2026-09-01 · #93 · 3종→2종 */}
         <div className="flex items-center gap-2 flex-wrap pt-1">
           {/* 수량 Stepper · 2026-08-29 · 폭 확장 (132→176) · input 숫자 잘 보이게 · 사용자 지시 */}
           <div className="w-[176px]">
@@ -116,10 +187,10 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
             />
           </div>
 
-          {/* 3-state pill · 일치·불일치·유통기한 · segmented (h-11 통일) */}
+          {/* 2-state pill · 일치·불일치 · segmented (h-11 통일) · 2026-09-01 · 기한임박 제거 */}
           <div
             role="group"
-            aria-label="일치 · 불일치 · 유통기한"
+            aria-label="일치 · 불일치"
             className="flex items-stretch h-11 rounded-xl overflow-hidden border-2 border-line bg-zinc-100/60"
           >
             {/* 일치 */}
@@ -156,22 +227,6 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
               <XCircle size={13} strokeWidth={isMismatch ? 2.5 : 2} />
               불일치
             </button>
-            {/* 기한임박 · 독립 toggle */}
-            <button
-              aria-pressed={item.expiring}
-              onClick={() => onToggleExpiring(item.key)}
-              title="유통기한임박 · 독립 토글"
-              className={[
-                "flex items-center justify-center gap-1 px-2.5 min-w-[68px] border-l border-line",
-                "text-[13px] font-bold transition-all duration-150 cursor-pointer",
-                item.expiring
-                  ? "bg-amber-500 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
-                  : "text-zinc-500 hover:text-amber-700 hover:bg-white",
-              ].join(" ")}
-            >
-              <Clock size={13} strokeWidth={item.expiring ? 2.5 : 2} />
-              기한임박
-            </button>
           </div>
 
           {/* 삭제 · 우측 */}
@@ -187,8 +242,8 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           </button>
         </div>
 
-        {/* pending 힌트 */}
-        {isPending && !item.expiring && (
+        {/* pending 힌트 · 2026-09-01 · expiring 조건 제거 (2종 상태만) */}
+        {isPending && (
           <Badge tone="amber" size="xs" className="self-start">수량 확인 필요</Badge>
         )}
       </div>

@@ -25,7 +25,8 @@ import { Clock as ClockIcon } from "lucide-react";
 // 2026-08-25 · 사용자 지시 · 매장구역 Tier 3 · Selector 통합 · 데이터 정합성 100%
 import { RealMapSelector } from "./RealMapSelector";
 // 2026-08-26 · 사용자 지시 · zone → 창고 매핑 · 해당 상품 소속 창고만 표시
-import { resolveWarehouseVisibility } from "../../lib/warehouseZoneMap";
+// 2026-09-01 · #92 · 구역 선택 → 자동 슬롯 판정
+import { resolveWarehouseVisibility, classifyArrivalSlot } from "../../lib/warehouseZoneMap";
 
 // ─── 5-slot 정의 (창고2 · 매장3) ─────────────────────────────────
 interface SlotDef {
@@ -128,6 +129,32 @@ const ZoneInline: React.FC<{
 
 // 기존 ZoneInput 유지 (다른 곳 참조 방지)
 const ZoneInput = ZoneInline;
+
+// ─── 2026-09-01 · #92 · 미지정 신규 상품 전용 · 구역 자동 배정 버튼 ───────────────
+const AutoZonePicker: React.FC<{ onAssign: (loc: string) => void }> = ({ onAssign }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex items-center gap-2 px-1 py-2 bg-indigo-50/60 rounded-lg border border-indigo-100">
+      <MapPin size={13} className="text-indigo-400 shrink-0" />
+      <span className="text-[13px] font-semibold text-indigo-700">구역 선택 시 슬롯 자동 배정</span>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-[13px] font-bold text-indigo-700 bg-indigo-100 border border-indigo-200 hover:bg-indigo-200 transition cursor-pointer"
+      >
+        <MapPin size={11} />
+        구역 선택
+      </button>
+      {open && (
+        <RealMapSelector
+          current={null}
+          onSelect={(loc) => { onAssign(loc); setOpen(false); }}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </div>
+  );
+};
 
 // ─── 카드 컴포넌트 ───────────────────────────────────────────────
 interface StockRowCardProps {
@@ -355,6 +382,28 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
         // 2026-08-26 · 창고 · 매장 모두 visibleSlots 사용 (해당 상품 · 필요한 것만)
         const warehouses = visibleSlots.filter(s => !s.zoneKey);
         const stores = visibleSlots.filter(s => !!s.zoneKey);
+
+        // 2026-09-01 · #92 · 구역 선택 → 자동 슬롯 배정 핸들러 (신규·완전 미지정 상품 전용)
+        //   · classifyArrivalSlot 으로 창고1/창고2/매장 판정
+        //   · w1/w2 → 해당 창고에 구역 저장 (w1zone/w2zone 미존재 · StockRow 에 없음 → 무시)
+        //   · s1/s2/s3 → store1Zone/store2Zone/store3Zone 순차 자동 배정
+        //   · 이미 배정된 슬롯 있으면 스킵
+        const handleAutoZoneAssign = (locationCode: string) => {
+          const slot = classifyArrivalSlot(locationCode);
+          if (!slot) return;
+          const patch: Partial<StockRow> = {};
+          if (slot === "s1" && !row.store1Zone) {
+            patch.store1Zone = locationCode;
+          } else if (slot === "s2" && !row.store2Zone) {
+            patch.store2Zone = locationCode;
+          } else if (slot === "s3" && !row.store3Zone) {
+            patch.store3Zone = locationCode;
+          } else if ((slot === "w1" || slot === "w2") && !row.store1Zone) {
+            // 창고 코드 → 매장1에 붙이기 (창고 zone 은 product.real_map 기준 · 여기선 store 슬롯 제어)
+            patch.store1Zone = locationCode;
+          }
+          if (Object.keys(patch).length > 0) onPatch(row.key, patch);
+        };
         const renderSlot = (s: typeof SLOTS[number], i: number, isStore: boolean) => {
           const prev = row[s.prevKey] as number | null | undefined;
           const add  = row[s.addKey]  as number | "";
@@ -417,6 +466,10 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
         };
         return (
           <div className="border-t border-line/60 px-4 py-3 flex flex-col gap-2.5">
+            {/* 2026-09-01 · #92 · 완전 미지정 신규 상품 · 구역 먼저 선택 → 자동 슬롯 배정 */}
+            {!slotVis.anyAssigned && (
+              <AutoZonePicker onAssign={handleAutoZoneAssign} />
+            )}
             {/* 2026-08-26 · 사용자 지시 · 현재고 요약 · 5-slot 옆으로 한줄 표시 */}
             <div className="flex items-center gap-3 flex-wrap px-1 py-1.5 bg-zinc-50/60 rounded-md border border-line/60">
               <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider">현재고</span>

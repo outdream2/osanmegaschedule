@@ -17,6 +17,8 @@ export interface ArrivalItem {
   status: ItemStatus;
   expiring: boolean;
   addedAt: number;
+  /** 2026-09-01 · #92 · 입고 구역 지정 · location 코드 (예: "1A" · "26") */
+  location: string | null;
 }
 
 export const STATUS_META: Record<ItemStatus, { label: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {

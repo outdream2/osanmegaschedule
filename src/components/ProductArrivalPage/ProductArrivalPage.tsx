@@ -180,6 +180,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
         status: "pending",
         expiring: false,
         addedAt: Date.now(),
+        location: null,
       };
       addedKey = newItem.key;
       setItems(prev => [newItem, ...prev]);
@@ -206,9 +207,14 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     ));
   };
 
-  const toggleExpiring = (key: string) => {
+  // 2026-09-01 · #93 · toggleExpiring 제거 · 명세서 상태 2종만 (일치·불일치)
+  //   · expiring 필드는 데이터 스키마 하위호환 위해 유지 (신규 아이템 · false 기본값)
+  //   · 서버 payload 도 유지 · 과거 기록 · 하위 호환 · 회귀 zero
+
+  // 2026-09-01 · #92 · 입고 구역 지정 핸들러
+  const setLocation = (key: string, location: string | null) => {
     setItems(prev => prev.map(it =>
-      it.key === key ? { ...it, expiring: !it.expiring } : it
+      it.key === key ? { ...it, location } : it
     ));
   };
 
@@ -506,11 +512,11 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           {/* ── 요약 카운트 카드 ── */}
           <div className="bg-white rounded-2xl border border-line/80
             shadow-[0_2px_8px_rgba(0,0,0,0.06)] px-2 py-2">
-            <div className="grid grid-cols-4 gap-1">
+            {/* 2026-09-01 · #93 · 명세서 상태 2종만 (일치·불일치) · 기한임박 pill 제거 · 4→3 컬럼 */}
+            <div className="grid grid-cols-3 gap-1">
               <SummaryPill label="총건수"  value={counts.total}    valueClass="text-zinc-800" />
               <SummaryPill label="일치"    value={counts.match}    valueClass="text-emerald-600" accent="hover:bg-emerald-50/60 rounded-xl transition" />
               <SummaryPill label="불일치"  value={counts.mismatch} valueClass="text-rose-600"    accent="hover:bg-rose-50/60 rounded-xl transition" />
-              <SummaryPill label="기한임박" value={counts.expiring} valueClass="text-amber-600"   accent="hover:bg-amber-50/60 rounded-xl transition" />
             </div>
             <div className="mx-2 mt-1 pt-2.5 border-t border-zinc-100
               flex items-center justify-between">
@@ -581,8 +587,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     onUpdateQty={updateQty}
                     onSetQty={setQtyDirect}
                     onSetStatus={setStatus}
-                    onToggleExpiring={toggleExpiring}
                     onRemove={removeItem}
+                    onSetLocation={setLocation}
                   />
                 ))}
               </div>
@@ -618,6 +624,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     qty: it.qty,
                     status: it.status,
                     expiring: it.expiring,
+                    // 2026-09-01 · #92 · 입고 구역
+                    location: it.location ?? null,
                   })),
                 });
                 setSavedId(j?.id ?? null);
