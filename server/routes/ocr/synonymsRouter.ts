@@ -7,6 +7,7 @@ import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError, badRequest } from "../../middleware/errorHandler";
 import { validateBody } from "../../middleware/zodValidate";
+import { z } from "zod";
 import { UpsertOcrSynonymSchema, CancelOcrSynonymSchema } from "../../../src/shared/schemas/ocr";
 
 const router = Router();
@@ -114,7 +115,7 @@ router.post("/api/ocr-synonyms/cancel-by-name", authorize(5), validateBody(Cance
 }));
 
 // 취소 항목 복원 (cancelled=false)
-router.post("/api/ocr-synonyms/restore/:id", authorize(5), asyncHandler(async (req, res) => {
+router.post("/api/ocr-synonyms/restore/:id", authorize(5), validateBody(z.object({})), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const { error } = await supabase.from("ocr_synonyms")
     .update({ cancelled: false, cancelled_at: null }).eq("id", id);

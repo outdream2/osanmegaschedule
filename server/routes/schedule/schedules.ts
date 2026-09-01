@@ -12,6 +12,7 @@ import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
 import type { NextEmployeeNumberResponse } from "../../../src/shared/dtos/employees";
 import { UpsertScheduleSchema, BatchScheduleSchema, CopyScheduleSchema } from "../../../src/shared/schemas/schedules";
+import { CreateEmployeeSchema, UpdateEmployeeSchema } from "../../../src/shared/schemas/employees";
 
 const router = Router();
 
@@ -21,7 +22,7 @@ router.put("/api/schedules", authorize(5), validateBody(UpsertScheduleSchema), (
 router.post("/api/schedules/batch", authorize(5), validateBody(BatchScheduleSchema), (req, res) => scheduleController.batchUpdateSchedules(req, res));
 router.post("/api/schedules/copy", authorize(5), validateBody(CopyScheduleSchema), (req, res) => scheduleController.copySchedules(req, res));
 // 2026-08-29 · 보안 S0 · 직원 신규 등록 · 관리자(lv9) 전용
-router.post("/api/employees", authorize(9), (req, res) => scheduleController.createEmployee(req, res));
+router.post("/api/employees", authorize(9), validateBody(CreateEmployeeSchema.partial()), (req, res) => scheduleController.createEmployee(req, res));
 // #122 · 신규 사번 자동 생성 · MAX + 1 · 3자리 zero-pad
 router.get("/api/employees/next-number", asyncHandler(async (_req, res) => {
   const { scheduleService } = await import("../../services/scheduleService");
@@ -31,7 +32,7 @@ router.get("/api/employees/next-number", asyncHandler(async (_req, res) => {
 }));
 // 2026-08-29 · 보안 S0 N5 fix · 직원 정보 수정 · 관리자(lv9) 전용 · 권한 상승 방지 필수
 //   · 이전 · authorize 없음 → lv1 이 다른 직원 level 필드 수정 가능 (privilege escalation)
-router.put("/api/employees/:id", authorize(9), (req, res) => scheduleController.updateEmployee(req, res));
+router.put("/api/employees/:id", authorize(9), validateBody(UpdateEmployeeSchema.partial()), (req, res) => scheduleController.updateEmployee(req, res));
 router.delete("/api/employees/:id", authorize(9), (req, res) => scheduleController.deleteEmployee(req, res));
 
 // 2026-08-29 · 엔드포인트 통일 · 직원 리스트 · GET /api/employees

@@ -7,6 +7,7 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { authorize } from "../../middleware/requireAuth";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
 import { validateBody } from "../../middleware/zodValidate";
+import { z } from "zod";
 import {
   PushSubscribeSchema,
   PushSendSchema,
@@ -58,7 +59,7 @@ router.get("/api/notifications", asyncHandler(async (req, res) => {
   res.json(data);
 }));
 
-router.patch("/api/notifications/:id/read", authorize(1), asyncHandler(async (req, res) => {
+router.patch("/api/notifications/:id/read", authorize(1), validateBody(z.object({})), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (!id) throw badRequest("invalid id");
   await notificationsService.markRead(id);

@@ -27,7 +27,28 @@ import { v2 as cloudinary, type UploadApiResponse } from "cloudinary";
 import { supabase } from "../../../src/supabase/client";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, forbidden, notFound, HttpError } from "../../middleware/errorHandler";
+import { z } from "zod";
+
+const CreatePharmMenuSchema = z.object({
+  tab_key: z.string().max(50),
+  category_key: z.string().max(100),
+  title: z.string().min(1).max(300),
+  sort_order: z.number().int().optional(),
+  data_url: z.string().optional(),
+  file_name: z.string().max(300).optional(),
+  uploaded_by: z.string().max(100).optional(),
+  uploaded_by_id: z.number().int().optional(),
+  editor_level: z.number().int().optional(),
+});
+const PatchPharmMenuSchema = z.object({
+  title: z.string().min(1).max(300).optional(),
+  sort_order: z.number().int().optional(),
+  category_key: z.string().max(100).optional(),
+  tab_key: z.string().max(50).optional(),
+  editor_level: z.number().int().optional(),
+});
 
 const router = Router();
 
@@ -133,7 +154,7 @@ router.get("/api/pharmacist-menu-items", asyncHandler(async (req, res) => {
  *   uploaded_by_id?: number,
  * }
  */
-router.post("/api/pharmacist-menu-items", authorize(5), asyncHandler(async (req, res) => {
+router.post("/api/pharmacist-menu-items", authorize(5), validateBody(CreatePharmMenuSchema), asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const editorLevel = Number(b.editor_level ?? 0);
   if (editorLevel < ADMIN_LEVEL) throw forbidden("관리자 권한 필요 (level ≥ 8)");
@@ -259,7 +280,7 @@ router.post("/api/pharmacist-menu-items", authorize(5), asyncHandler(async (req,
  * Body: { editor_level, title?, sort_order?, category_key?, tab_key? }
  *   · 파일 교체는 지원하지 않음 (삭제 후 재등록)
  */
-router.patch("/api/pharmacist-menu-items/:id", authorize(5), asyncHandler(async (req, res) => {
+router.patch("/api/pharmacist-menu-items/:id", authorize(5), validateBody(PatchPharmMenuSchema), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) throw badRequest("invalid id");
 

@@ -14,7 +14,17 @@ import { Router } from "express";
 import { v2 as cloudinary, type UploadApiResponse } from "cloudinary";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
+import { z } from "zod";
+
+const InvoiceImageUploadSchema = z.object({
+  data_url: z.string().optional(),
+  dataUrl: z.string().optional(),
+  image: z.string().optional(),
+  filename: z.string().max(200).optional(),
+  page: z.number().int().min(0).optional(),
+});
 
 const router = Router();
 
@@ -63,7 +73,7 @@ function normalizeDataUri(input: string): { dataUri: string; approxBytes: number
 // body: { data_url: string, filename?: string, page?: number }
 // resp: { url: string, public_id: string, width?: number, height?: number, bytes?: number, format?: string }
 // 2026-08-29 · 보안 P1 N10 fix · authorize(2) · Cloudinary 업로드 남용 방지 (비용)
-router.post("/api/invoice-images/upload", authorize(2), asyncHandler(async (req, res) => {
+router.post("/api/invoice-images/upload", authorize(2), validateBody(InvoiceImageUploadSchema), asyncHandler(async (req, res) => {
   if (!ensureConfigured()) {
     throw new HttpError(503, "Cloudinary 설정이 없습니다 (env).");
   }
