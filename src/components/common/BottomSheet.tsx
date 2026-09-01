@@ -52,6 +52,11 @@ export interface BottomSheetProps {
   zIndex?: number;
   /** footer · 하단 액션 바 (편집·삭제 등) */
   footer?: React.ReactNode;
+  /**
+   * 2026-09-01 · P3 a11y · aria-describedby · body 안 설명 요소 id
+   *   · 예: describedBy="sheet-help" · body 안 <p id="sheet-help">...</p>
+   */
+  describedBy?: string;
 }
 
 /**
@@ -75,6 +80,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   backdropClass,
   zIndex,
   footer,
+  describedBy,
 }) => {
   // v2 · fullscreen 시 maxHeight 100vh · 기본 60vh
   const resolvedMaxHeight = maxHeight ?? (fullscreen ? "100vh" : "60vh");
@@ -146,7 +152,10 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
       onClick={handleBackdrop}
       role="dialog"
       aria-modal="true"
-      aria-label={typeof title === "string" ? title : "선택"}
+      // 2026-09-01 · P3 a11y · title 이 string 이면 aria-labelledby (id="bottomsheet-title") 로 연결 · 그 외 fallback aria-label
+      aria-labelledby={typeof title === "string" && title ? "bottomsheet-title" : undefined}
+      aria-label={typeof title === "string" && title ? undefined : (typeof title === "string" ? title : "선택")}
+      aria-describedby={describedBy}
     >
       <div
         ref={sheetRef}
@@ -169,7 +178,8 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             <AccentBar size="lg" />
             {title && (
               /* 2026-08-29 · UI 감사 U0 · truncate 제거 · 대원칙 · 말줄임 금지 */
-              <div className="flex-1 min-w-0 text-[16px] font-bold text-ink tracking-tight break-words whitespace-normal leading-tight">
+              /* 2026-09-01 · P3 a11y · id="bottomsheet-title" · aria-labelledby 연결 */
+              <div id="bottomsheet-title" className="flex-1 min-w-0 text-[16px] font-bold text-ink tracking-tight break-words whitespace-normal leading-tight">
                 {title}
               </div>
             )}

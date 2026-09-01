@@ -3,7 +3,8 @@
 //   · 로고 · 파비콘 · QR · 도장 등 브랜딩 관련 이미지 통합 사용
 //   · TextField 대체 · URL 직접 입력도 유지 (기존 URL 도 표시)
 //   · 업로드 성공 시 · 반환 public URL 을 onChange 콜백으로 즉시 전달 → 저장은 상위 훅이 처리
-import React, { useRef, useState } from "react";
+// 2026-09-01 · P3 a11y · label htmlFor + input id (자동 고유) · 미리보기 이미지 alt 확장
+import React, { useId, useRef, useState } from "react";
 import { Upload, Trash, ImageSquare } from "@phosphor-icons/react";
 import { Spinner } from "./Spinner";
 import { supabase } from "../../supabase/client";
@@ -37,6 +38,10 @@ export const ImageUploadField: React.FC<Props> = ({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 2026-09-01 · P3 a11y · label htmlFor 연결용 고유 id (React 18 useId)
+  const inputId = useId();
+  const hintId = useId();
+  const errorId = useId();
 
   const handleFile = async (file: File) => {
     setError(null);
@@ -58,16 +63,25 @@ export const ImageUploadField: React.FC<Props> = ({
     }
   };
 
+  const describedBy = [
+    hint && !error ? hintId : null,
+    error ? errorId : null,
+  ].filter(Boolean).join(" ") || undefined;
+
   return (
     <div>
-      <label className={LABEL_CLS}>{label}</label>
+      {/* 2026-09-01 · P3 a11y · htmlFor 연결 · 라벨 클릭 시 URL input 포커스 */}
+      <label htmlFor={inputId} className={LABEL_CLS}>{label}</label>
       <div className="flex items-stretch gap-2">
         <input
+          id={inputId}
           type="url"
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
           className={INPUT_CLS}
+          aria-describedby={describedBy}
+          aria-invalid={error ? "true" : undefined}
         />
         <button
           type="button"
@@ -96,14 +110,14 @@ export const ImageUploadField: React.FC<Props> = ({
           onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }}
         />
       </div>
-      {hint && !error && <p className="text-[10px] text-zinc-400 mt-1">{hint}</p>}
-      {error && <p className="text-[10px] text-rose-500 mt-1">{error}</p>}
+      {hint && !error && <p id={hintId} className="text-[10px] text-zinc-400 mt-1">{hint}</p>}
+      {error && <p id={errorId} role="alert" className="text-[10px] text-rose-500 mt-1">{error}</p>}
       {value && (
         <div className="mt-2 border border-line rounded-md p-2 bg-zinc-50 flex items-center gap-2">
-          <ImageSquare size={12} className="text-zinc-400 shrink-0" />
+          <ImageSquare size={12} className="text-zinc-400 shrink-0" aria-hidden="true" />
           <img
             src={value}
-            alt="preview"
+            alt={`${label} 미리보기`}
             className="max-h-16 max-w-full object-contain"
             onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
           />

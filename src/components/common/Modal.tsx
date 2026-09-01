@@ -22,6 +22,7 @@
 // 2026-08-23 · v3.4 · headerBgClass · headerTextClass · 커스텀 헤더 배경 지원
 //   - LoginModals (그라디언트 · deep navy) · StaffInfoModal (bg-brand-deep) · StaffMobileDetail (bg-indigo-50) 대응
 //   - default 시 · 기존 headerTint 유지 (bg-zinc-50/60)
+// 2026-09-01 · P3 a11y · aria-describedby · describedBy prop · 스크린 리더 컨텍스트 확장
 //
 // 사용 예 (기본):
 //   <Modal open={open} onClose={() => setOpen(false)} title="상세" size="md">
@@ -116,6 +117,13 @@ export interface ModalProps {
    *   - dark 헤더 (bg-brand-deep 등) 사용 시 · "text-white" 지정
    */
   headerTextClass?: string;
+
+  // ── P3 a11y (2026-09-01) · 모두 optional ──
+  /**
+   * ARIA describedby · body 안 설명 요소 id 지정 시 스크린 리더 컨텍스트 확장
+   *   - 예: id="modal-desc" 요소가 body 안 있을 때 · describedBy="modal-desc"
+   */
+  describedBy?: string;
 }
 
 /**
@@ -149,6 +157,8 @@ export const Modal: React.FC<ModalProps> = ({
   // v3.4 · 확장
   headerBgClass,
   headerTextClass,
+  // P3 a11y (2026-09-01)
+  describedBy,
 }) => {
   // ESC 키 핸들링
   useEffect(() => {
@@ -212,6 +222,7 @@ export const Modal: React.FC<ModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby={title != null ? "modal-title" : undefined}
+      aria-describedby={describedBy}
     >
       <div className={`modal-card ${sizeCls} ${cardRoundedCls} ${className}`} style={cardStyle}>
         {hasHeader && (
