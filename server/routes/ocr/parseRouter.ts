@@ -115,14 +115,27 @@ router.post("/api/ocr/parse-gemini", authorize(5), asyncHandler(async (req, res)
       const key = keys[kidx];
       try {
         const result = await callGeminiTextParse(pg.rawText, key);
-        if (result && Array.isArray(result.headers) && Array.isArray(result.rows)) {
-          outPage = { ...outPage, headers: result.headers, rows: result.rows, meta: result.meta ?? {} };
-          status = "ok";
-          errMsg = undefined;
+        if (result.ok) {
+          let parsed: any = {};
+          try { parsed = JSON.parse(result.text); } catch { /* 파싱 실패 시 빈 객체 */ }
+          if (Array.isArray(parsed.headers) && Array.isArray(parsed.rows)) {
+            outPage = { ...outPage, headers: parsed.headers, rows: parsed.rows, meta: parsed.meta ?? {} };
+            status = "ok";
+            errMsg = undefined;
+            break;
+          }
+          status = "empty";
+          errMsg = "Gemini 응답 비어있음";
+        } else {
+          status = "error";
+          const failResult = result as { ok: false; quota: boolean; error: string };
+          errMsg = failResult.error;
+          if (failResult.quota) {
+            console.warn(`[parse-gemini] key[${kidx}] 할당량 초과 · 다음 키 시도`);
+            continue;
+          }
           break;
         }
-        status = "empty";
-        errMsg = "Gemini 응답 비어있음";
       } catch (e: any) {
         status = "error";
         errMsg = e?.message ?? "unknown";

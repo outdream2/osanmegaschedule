@@ -33,7 +33,7 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
   // 2026-08-25 · #192 · vendor 승인 대기 (approval_status=pending)
   const [display, order, productsWithRealMap, legacy, leave, lunch, inventory, ret, resignation, vendor] = await Promise.all([
     supabase.from("display_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("order_requests").select("id", { count: "exact", head: true }),
+    supabase.from("order_requests").select("id", { count: "exact", head: true }).eq("status", "requested"),
     // 2026-08-28 · 사용자 지시 · 배치구역 불일치 1000건 폭발 원인
     //   · 기존: spec (규격 · "EA"·"Z") vs real_map (진열구역) · 거의 모든 상품 mismatch
     //   · 수정: location (진열위치) vs real_map · display_location 도 fallback · 둘 다 있을 때만
