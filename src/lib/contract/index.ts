@@ -64,24 +64,20 @@ export function loadContractSettings(): ContractWriterSettings {
 }
 
 /**
- * 2026-08-06 · T-DB-Migrate-LocalStorage
  * 서버 조회 · GET /api/settings?key=contract_writer_settings
- * · 성공 → localStorage 캐시에 저장 (다음 loadContractSettings 호출 시 최신값)
- * · 실패 → localStorage fallback (기존 캐시값 유지)
+ * · 실패 → localStorage fallback (하위호환)
  */
 export async function fetchContractWriterSettings(): Promise<ContractWriterSettings> {
-  // 2026-08-21 · Framework Phase 3 · fetch → apiClient
   try {
     const { data: body } = await api.get<{ value?: unknown }>(
       `/api/settings?key=${encodeURIComponent(CONTRACT_WRITER_SETTINGS_DB_KEY)}`,
     );
     if (body?.value == null) {
-      // 서버 값 없음 · localStorage 에 값 있으면 마이그레이션
+      // 서버 값 없음 · localStorage 에 값 있으면 1회 마이그레이션 업로드
       const legacyRaw = (() => { try { return localStorage.getItem(CONTRACT_SETTINGS_KEY); } catch { return null; } })();
       if (legacyRaw) {
         try {
           const legacy = normalizeContractSettings(JSON.parse(legacyRaw));
-          // 서버로 upload (실패 silent · 다음 마운트에서 재시도)
           api.post(`/api/settings`, {
             key: CONTRACT_WRITER_SETTINGS_DB_KEY, value: legacy,
           }).catch(() => { /* silent */ });
@@ -90,9 +86,7 @@ export async function fetchContractWriterSettings(): Promise<ContractWriterSetti
       }
       return { ...DEFAULT_CONTRACT_SETTINGS };
     }
-    const merged = normalizeContractSettings(body.value);
-    try { localStorage.setItem(CONTRACT_SETTINGS_KEY, JSON.stringify(merged)); } catch { /* silent */ }
-    return merged;
+    return normalizeContractSettings(body.value);
   } catch {
     return loadContractSettings();
   }
@@ -100,22 +94,18 @@ export async function fetchContractWriterSettings(): Promise<ContractWriterSetti
 
 /**
  * 서버 저장 · POST /api/settings · key=contract_writer_settings
- * · 성공 → localStorage 캐시도 동기화
- * · 실패 → localStorage 만 저장 (fallback)
+ * · DB 단일 소스 · localStorage 저장 없음
  */
 export async function saveContractWriterSettingsToServer(
   settings: ContractWriterSettings,
 ): Promise<{ ok: boolean; savedToServer: boolean; error?: string }> {
-  // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-  // localStorage 는 항상 저장 (fallback 안전망)
-  try { localStorage.setItem(CONTRACT_SETTINGS_KEY, JSON.stringify(settings)); } catch { /* silent */ }
   try {
     await api.post(`/api/settings`, { key: CONTRACT_WRITER_SETTINGS_DB_KEY, value: settings });
     return { ok: true, savedToServer: true };
   } catch (err: any) {
     const apiErr = err as { data?: { error?: string }; status?: number; message?: string };
     const msg = apiErr?.data?.error ?? (apiErr?.status ? `HTTP ${apiErr.status}` : (apiErr?.message ?? "네트워크 오류"));
-    return { ok: true, savedToServer: false, error: msg };
+    return { ok: false, savedToServer: false, error: msg };
   }
 }
 
@@ -277,39 +267,30 @@ export function loadContractClauses(): ContractClauses {
  * · 실패: localStorage fallback (기존 값 유지)
  */
 export async function fetchContractClauses(): Promise<ContractClauses> {
-  // 2026-08-21 · Framework Phase 3 · fetch → apiClient
   try {
     const { data } = await api.get<unknown>("/api/contract-clauses");
-    const merged = normalizeClauses(data);
-    // localStorage sync · ContractWriterPage 의 동기 loader 가 즉시 최신값 사용
-    try { localStorage.setItem(CONTRACT_CLAUSES_KEY, JSON.stringify(merged)); } catch { /* silent */ }
-    return merged;
+    return normalizeClauses(data);
   } catch {
-    // fallback · 기존 localStorage 값
     return loadContractClauses();
   }
 }
 
 /**
  * 서버 저장 · PUT /api/contract-clauses (일괄)
- * · 성공: localStorage 도 동기화
- * · 실패: localStorage 만 저장 (fallback · 오프라인/서버 다운 시 서비스 유지)
+ * · DB 단일 소스 · localStorage 저장 없음
  * @returns { ok: boolean · savedToServer: boolean }
  */
 export async function saveContractClausesToServer(
   clauses: ContractClauses,
   updatedBy?: number | null,
 ): Promise<{ ok: boolean; savedToServer: boolean; error?: string }> {
-  // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-  // localStorage 는 항상 저장 (fallback 안전망)
-  try { localStorage.setItem(CONTRACT_CLAUSES_KEY, JSON.stringify(clauses)); } catch { /* silent */ }
   try {
     await api.put("/api/contract-clauses", { clauses, updated_by: updatedBy ?? null });
     return { ok: true, savedToServer: true };
   } catch (err: any) {
     const apiErr = err as { data?: { error?: string }; status?: number; message?: string };
     const msg = apiErr?.data?.error ?? (apiErr?.status ? `HTTP ${apiErr.status}` : (apiErr?.message ?? "네트워크 오류"));
-    return { ok: true, savedToServer: false, error: msg };
+    return { ok: false, savedToServer: false, error: msg };
   }
 }
 

@@ -68,11 +68,15 @@ describe("BottomSheet · 헤더 (title + right + close)", () => {
     expect(container.querySelector('button[aria-label="닫기"]')).toBeNull();
   });
 
-  it("title string · aria-label 반영", () => {
+  it("title string · aria-labelledby 반영 (P3 a11y · 2026-09-01)", () => {
     const { container } = render(
       <BottomSheet open onClose={() => {}} title="필터">c</BottomSheet>
     );
-    expect(container.querySelector('[role="dialog"]')!.getAttribute("aria-label")).toBe("필터");
+    // 2026-09-01 · P3 a11y · aria-label 대신 aria-labelledby="bottomsheet-title" 로 변경
+    const dialog = container.querySelector('[role="dialog"]')!;
+    expect(dialog.getAttribute("aria-labelledby")).toBe("bottomsheet-title");
+    const titleEl = container.querySelector('#bottomsheet-title');
+    expect(titleEl?.textContent).toBe("필터");
   });
 });
 

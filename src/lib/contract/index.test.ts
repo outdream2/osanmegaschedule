@@ -148,14 +148,13 @@ describe("loadContractSettings · localStorage 로더", () => {
 });
 
 describe("fetchContractWriterSettings · 서버 조회 + fallback", () => {
-  it("서버 성공 · value 있음 · localStorage 캐시 동기화", async () => {
+  it("서버 성공 · value 있음 · 정규화된 값 반환", async () => {
     mockGet.mockResolvedValue({
       data: { value: { 약사: "S", 매장: "M", 창고: "W", 기타: "E", commonNotice: "N" } },
       status: 200, headers: {},
     });
     const r = await fetchContractWriterSettings();
     expect(r.약사).toBe("S");
-    expect(localStorage.getItem(CONTRACT_SETTINGS_KEY)).toContain("S");
   });
 
   it("서버 실패 (network) · localStorage fallback", async () => {
@@ -181,27 +180,26 @@ describe("fetchContractWriterSettings · 서버 조회 + fallback", () => {
 });
 
 describe("saveContractWriterSettingsToServer", () => {
-  it("성공 · savedToServer=true · localStorage 저장", async () => {
+  it("성공 · ok=true · savedToServer=true", async () => {
     mockPost.mockResolvedValue({ data: {}, status: 200, headers: {} });
     const settings = { ...DEFAULT_CONTRACT_SETTINGS, 약사: "New" };
     const r = await saveContractWriterSettingsToServer(settings);
     expect(r.ok).toBe(true);
     expect(r.savedToServer).toBe(true);
-    expect(localStorage.getItem(CONTRACT_SETTINGS_KEY)).toContain("New");
   });
 
-  it("실패 (ApiError with data.error) · savedToServer=false · localStorage 는 저장됨", async () => {
+  it("실패 (ApiError with data.error) · ok=false · savedToServer=false", async () => {
     mockPost.mockRejectedValue(new ApiError(500, "Server Error", undefined, { error: "fail" }));
     const r = await saveContractWriterSettingsToServer({ ...DEFAULT_CONTRACT_SETTINGS, 약사: "Fallback" });
-    expect(r.ok).toBe(true);
+    expect(r.ok).toBe(false);
     expect(r.savedToServer).toBe(false);
     expect(r.error).toBe("fail");
-    expect(localStorage.getItem(CONTRACT_SETTINGS_KEY)).toContain("Fallback");
   });
 
-  it("네트워크 예외 (Error) · savedToServer=false · error 메시지", async () => {
+  it("네트워크 예외 (Error) · ok=false · savedToServer=false · error 메시지", async () => {
     mockPost.mockRejectedValue(new Error("네트워크 오류"));
     const r = await saveContractWriterSettingsToServer(DEFAULT_CONTRACT_SETTINGS);
+    expect(r.ok).toBe(false);
     expect(r.savedToServer).toBe(false);
     expect(r.error).toBe("네트워크 오류");
   });
@@ -316,11 +314,10 @@ describe("loadContractClauses", () => {
 });
 
 describe("fetchContractClauses · saveContractClausesToServer", () => {
-  it("서버 성공 · localStorage 동기화", async () => {
+  it("서버 성공 · 정규화된 값 반환", async () => {
     mockGet.mockResolvedValue({ data: { wageClauses: ["S1", "S2"] }, status: 200, headers: {} });
     const r = await fetchContractClauses();
     expect(r.wageClauses).toEqual(["S1", "S2"]);
-    expect(localStorage.getItem(CONTRACT_CLAUSES_KEY)).toContain("S1");
   });
 
   it("서버 실패 · fallback (loadContractClauses)", async () => {
@@ -330,24 +327,19 @@ describe("fetchContractClauses · saveContractClausesToServer", () => {
     expect(r.wageClauses).toEqual(["L"]);
   });
 
-  it("save 성공 · savedToServer=true", async () => {
+  it("save 성공 · ok=true · savedToServer=true", async () => {
     mockPut.mockResolvedValue({ data: {}, status: 200, headers: {} });
     const r = await saveContractClausesToServer(DEFAULT_CLAUSES);
+    expect(r.ok).toBe(true);
     expect(r.savedToServer).toBe(true);
   });
 
-  it("save 실패 (ApiError with data.error) · fallback error", async () => {
+  it("save 실패 (ApiError with data.error) · ok=false · error 메시지", async () => {
     mockPut.mockRejectedValue(new ApiError(500, "Bad", undefined, { error: "boom" }));
     const r = await saveContractClausesToServer(DEFAULT_CLAUSES);
+    expect(r.ok).toBe(false);
     expect(r.savedToServer).toBe(false);
     expect(r.error).toBe("boom");
-  });
-
-  it("save · localStorage 는 항상 저장", async () => {
-    mockPut.mockRejectedValue(new Error("bad"));
-    const custom = { ...DEFAULT_CLAUSES, wageClauses: ["Hello"] };
-    await saveContractClausesToServer(custom);
-    expect(localStorage.getItem(CONTRACT_CLAUSES_KEY)).toContain("Hello");
   });
 });
 

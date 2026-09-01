@@ -244,8 +244,6 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
         if (!migrated) {
           setClauses(cloneClauses(serverClauses));
           setInitialClauses(cloneClauses(serverClauses));
-          // localStorage 동기화 (다음 ContractWriterPage 의 동기 loader 가 최신값 사용)
-          try { localStorage.setItem(CONTRACT_CLAUSES_KEY, JSON.stringify(serverClauses)); } catch { /* silent */ }
         }
         setServerLoaded(true);
       } catch {
@@ -345,19 +343,18 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
   }, [allOpen]);
 
   // ── 저장 (각 호만 · 시급은 즉시 저장되므로 여기서 처리 안 함)
-  //   T-C · 서버 저장 · 실패 시 localStorage fallback (saveContractClausesToServer 내부)
   const handleSave = async () => {
     if (saving) return;
     setSaving(true);
     try {
       const result = await saveContractClausesToServer(clauses, authSession?.employeeId ?? null);
-      setInitialClauses(cloneClauses(clauses));
       if (result.savedToServer) {
+        setInitialClauses(cloneClauses(clauses));
         setNotice({ tone: "ok", text: "각 호 내용이 서버에 저장되었습니다. 모든 관리자에게 즉시 반영됩니다." });
       } else {
         setNotice({
           tone: "err",
-          text: `서버 저장 실패 · 이 브라우저에만 저장되었습니다 (${result.error ?? "네트워크 오류"}). 인터넷 확인 후 다시 [저장] 버튼을 눌러 주세요.`,
+          text: `서버 저장 실패 (${result.error ?? "네트워크 오류"}). 인터넷 확인 후 다시 [저장] 버튼을 눌러 주세요.`,
         });
       }
     } catch (err: any) {

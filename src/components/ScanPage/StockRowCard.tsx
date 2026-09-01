@@ -188,33 +188,63 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
   );
   const { showW1, showW2 } = useMemo(() => resolveWarehouseVisibility(productZone), [productZone]);
 
-  // 2026-08-26 · 사용자 지시 · 매장 · 해당 구역만 (기존 값·zone 있는 개수 기준) · [+ 매장 추가] 버튼 (최대 3)
-  //   · 기본 · 실제 zone 또는 실재고 값이 있는 store 개수 (최소 1)
-  //   · 사용자가 [+ 매장 추가] 클릭 시 · 세션 state 증가 (최대 3)
+  // 2026-09-01 · 사용자 지시 · 매장구역 선택 시 해당 슬롯만 노출 (창고는 prev재고 있을 때만)
+  //   · store{N}Zone 지정 → 해당 매장만 표시 · 창고는 prevW1/W2 > 0 or addQty 있을 때만
+  //   · 완전 미지정 → 5슬롯 모두 (신규 편집 UX 유지)
+  //   · [+ 매장 추가] 버튼: zone 미지정 상품 + 아직 표시 안 된 매장 있을 때만
+  const slotVis = useMemo(() => {
+    const hasS1Zone = !!(row.store1Zone && String(row.store1Zone).trim());
+    const hasS2Zone = !!(row.store2Zone && String(row.store2Zone).trim());
+    const hasS3Zone = !!(row.store3Zone && String(row.store3Zone).trim());
+    const hasAnyZone = hasS1Zone || hasS2Zone || hasS3Zone;
+
+    const hasW1 = (row.prevWarehouse1Qty ?? 0) > 0 || (row.warehouse1AddQty !== "" && Number(row.warehouse1AddQty) !== 0);
+    const hasW2 = (row.prevWarehouse2Qty ?? 0) > 0 || (row.warehouse2AddQty !== "" && Number(row.warehouse2AddQty) !== 0);
+    const hasPrevS1 = (row.prevStore1Qty ?? 0) > 0;
+    const hasPrevS2 = (row.prevStore2Qty ?? 0) > 0;
+    const hasPrevS3 = (row.prevStore3Qty ?? 0) > 0;
+
+    const hasS1 = hasS1Zone || hasPrevS1;
+    const hasS2 = hasS2Zone || hasPrevS2;
+    const hasS3 = hasS3Zone || hasPrevS3;
+
+    const anyAssigned = hasAnyZone || hasW1 || hasW2 || hasPrevS1 || hasPrevS2 || hasPrevS3;
+
+    return { hasAnyZone, hasW1, hasW2, hasS1, hasS2, hasS3, anyAssigned };
+  }, [
+    row.store1Zone, row.store2Zone, row.store3Zone,
+    row.prevWarehouse1Qty, row.prevWarehouse2Qty,
+    row.warehouse1AddQty, row.warehouse2AddQty,
+    row.prevStore1Qty, row.prevStore2Qty, row.prevStore3Qty,
+  ]);
+
+  // [+ 매장 추가] · zone 미지정 상품에서만 사용 (zone 있으면 해당 슬롯만 고정 표시)
   const initialStoreCount = useMemo(() => {
-    const hasS1 = !!(row.store1Zone && String(row.store1Zone).trim()) || (row.prevStore1Qty != null && Number(row.prevStore1Qty) > 0);
-    const hasS2 = !!(row.store2Zone && String(row.store2Zone).trim()) || (row.prevStore2Qty != null && Number(row.prevStore2Qty) > 0);
-    const hasS3 = !!(row.store3Zone && String(row.store3Zone).trim()) || (row.prevStore3Qty != null && Number(row.prevStore3Qty) > 0);
-    if (hasS3) return 3;
-    if (hasS2) return 2;
-    return hasS1 ? 1 : 1; // 최소 1
-  }, [row.store1Zone, row.store2Zone, row.store3Zone, row.prevStore1Qty, row.prevStore2Qty, row.prevStore3Qty]);
+    if (slotVis.hasS3) return 3;
+    if (slotVis.hasS2) return 2;
+    return 1;
+  }, [slotVis.hasS2, slotVis.hasS3]);
   const [storeCount, setStoreCount] = useState<number>(initialStoreCount);
-  // 값이 변경되면 count 재조정 (기존 값이 있으면 최소 그 개수 유지)
   useEffect(() => {
     setStoreCount(prev => Math.max(prev, initialStoreCount));
   }, [initialStoreCount]);
   const visibleStoreCount = Math.min(3, Math.max(1, storeCount));
-  const canAddStore = visibleStoreCount < 3;
 
-  const visibleSlots = useMemo(() => SLOTS.filter(s => {
-    if (s.key === "w1") return showW1;
-    if (s.key === "w2") return showW2;
-    if (s.key === "s1") return visibleStoreCount >= 1;
-    if (s.key === "s2") return visibleStoreCount >= 2;
-    if (s.key === "s3") return visibleStoreCount >= 3;
-    return true;
-  }), [showW1, showW2, visibleStoreCount]);
+  const visibleSlots = useMemo(() => {
+    const { anyAssigned, hasAnyZone, hasW1, hasW2, hasS1, hasS2, hasS3 } = slotVis;
+    if (!anyAssigned) return [...SLOTS]; // 완전 미지정 · 5슬롯 모두
+    return SLOTS.filter(s => {
+      if (s.key === "w1") return hasAnyZone ? hasW1 : (showW1 && hasW1);
+      if (s.key === "w2") return hasAnyZone ? hasW2 : (showW2 && hasW2);
+      if (s.key === "s1") return hasAnyZone ? hasS1 : visibleStoreCount >= 1;
+      if (s.key === "s2") return hasAnyZone ? hasS2 : visibleStoreCount >= 2;
+      if (s.key === "s3") return hasAnyZone ? hasS3 : visibleStoreCount >= 3;
+      return true;
+    });
+  }, [slotVis, showW1, showW2, visibleStoreCount]);
+
+  // [+ 매장 추가] · zone 미지정일 때만 표시
+  const canAddStore = !slotVis.hasAnyZone && visibleStoreCount < 3;
 
   return (
     <div
