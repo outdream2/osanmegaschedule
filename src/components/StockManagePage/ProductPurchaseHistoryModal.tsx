@@ -12,6 +12,7 @@ import { Modal } from "../common/Modal";
 import { IconTile } from "../common/IconTile";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 
 export const ProductPurchaseHistoryModal: React.FC<{
   productCode: string;
@@ -29,7 +30,7 @@ export const ProductPurchaseHistoryModal: React.FC<{
     api.get<{ rows?: PurchaseHistoryRow[] }>(`/api/purchase-details?${params}`)
       .then(({ data }) => setRows(Array.isArray(data.rows) ? data.rows : []))
       .catch((e: unknown) => {
-        const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "조회 실패";
+        const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "조회 실패");
         setError(msg);
       })
       .finally(() => setLoading(false));

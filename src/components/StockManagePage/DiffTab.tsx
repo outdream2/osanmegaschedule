@@ -6,7 +6,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { SK_DIFFTAB_SUBTAB, SK_DIFF_CLASSFILTER, SK_STOCKMANAGE_DIFF_W } from "../../lib/storageKeys";
-import { Layers, Loader2 as LoaderIcon, ChevronRight, ChevronDown, ListChecks, History } from "lucide-react";
+import { Layers, RefreshCw, ChevronRight, ChevronDown, ListChecks, History } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
@@ -212,7 +212,7 @@ export const DiffTab: React.FC = () => {
           className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-violet-50 hover:border-violet-300 text-zinc-400 hover:text-violet-500 transition disabled:opacity-40 cursor-pointer"
           title="새로고침"
         >
-          <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
+          {loading ? <Spinner size={13} tone="zinc" /> : <RefreshCw size={13} />}
         </button>
       </div>
 

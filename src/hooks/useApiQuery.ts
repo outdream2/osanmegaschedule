@@ -5,6 +5,7 @@
 // 2026-08-16 · apiClient 로 통일 · 401 refresh + 에러 정규화 (ApiError) 자동
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../lib/apiClient";
+import { getErrorMessage } from "../lib/errorMessage";
 
 interface Options<T> {
   /** true 면 fetch skip · 조건부 fetch 용 */
@@ -40,7 +41,7 @@ export function useApiQuery<T = unknown>(url: string, opts: Options<T> = {}): Qu
     } catch (err) {
       const isApi = err instanceof ApiError;
       const status = isApi ? err.status : 0;
-      const msg = isApi ? err.message : (err as any)?.message ?? "네트워크 오류";
+      const msg = isApi ? err.message : getErrorMessage(err, "네트워크 오류");
       setError(msg);
       if (status === 401 && optsRef.current.onUnauthorized) optsRef.current.onUnauthorized();
     } finally {

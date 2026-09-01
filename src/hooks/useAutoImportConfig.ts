@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../lib/apiClient";
+import { getErrorMessage } from "../lib/errorMessage";
 import {
   AutoImportConfigSchema,
   DEFAULT_AUTO_IMPORT_CONFIG,
@@ -64,7 +65,7 @@ export function useAutoImportConfig(): UseAutoImportConfigResult {
       setTimeout(() => setSaveState("idle"), 3000);
       return true;
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "저장 실패";
+      const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "저장 실패");
       setSaveState("error");
       setSaveError(msg);
       return false;

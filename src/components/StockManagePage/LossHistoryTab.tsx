@@ -11,7 +11,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Calendar, Loader2, TrendingDown, Package, Building2, Camera } from "lucide-react";
+import { Calendar, RefreshCw, TrendingDown, Package, Building2, Camera } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
@@ -219,7 +219,7 @@ export const LossHistoryTab: React.FC = () => {
           className="w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-zinc-50 text-zinc-400 hover:text-zinc-600 transition disabled:opacity-40 cursor-pointer"
           title="새로고침"
         >
-          <Loader2 size={13} className={loading ? "animate-spin" : ""} />
+          {loading ? <Spinner size={13} tone="zinc" /> : <RefreshCw size={13} />}
         </button>
       </div>
 

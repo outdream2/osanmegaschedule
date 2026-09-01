@@ -14,6 +14,7 @@ import {
   OPTIMAL_STOCK_MAX_DAYS as MAX_DAYS,
 } from "../../hooks/useOptimalStockPeriod";
 import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 import { Spinner } from "../common/Spinner";
@@ -81,7 +82,7 @@ export const OptimalStockPeriodSection: React.FC = () => {
         showError(data?.note ?? "재계산 결과 · 업데이트 0건");
       }
     } catch (e: unknown) {
-      const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "네트워크 오류";
+      const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "네트워크 오류");
       showError(`재계산 실패 · ${msg}`);
     } finally { setRecalcing(false); }
   };

@@ -5,7 +5,7 @@
 //   · ProductPurchaseHistoryModalWrapper · 매입 이력 모달 wrapper
 
 import React from "react";
-import { Building2, Loader2 as LoaderIcon, X as XIcon } from "lucide-react";
+import { Building2, RefreshCw, X as XIcon } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
@@ -349,7 +349,7 @@ export const SupplierFilterBar: React.FC<SupplierFilterBarProps> = ({
           </div>
           <button type="button" onClick={fetchData} disabled={loading}
             className="w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-brand-tint hover:border-brand-deep text-ink-soft hover:text-brand-deep transition-colors disabled:opacity-40 cursor-pointer" title="새로고침">
-            <LoaderIcon size={15} className={loading ? "animate-spin" : ""} />
+            {loading ? <Spinner size={15} tone="zinc" /> : <RefreshCw size={15} />}
           </button>
         </>
       }

@@ -16,6 +16,7 @@ import { Card } from "../common/Card";
 // 2026-08-24 · v3 리스트 UI 프레임워크 · 헬퍼
 import { tableHeadCls, tableThCls, tableTdCls } from "../common";
 import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-23 · #178 Phase F · 공급사 special_notes 경고 배너
 import { useVendors } from "../../hooks/useVendors";
@@ -90,7 +91,7 @@ export const OrderHistorySupplierModal: React.FC<Props> = ({ supplier, onClose }
       })
       .catch((e: unknown) => {
         if (!alive) return;
-        const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "조회 실패";
+        const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "조회 실패");
         showError(`발주이력 조회 실패: ${msg}`);
         setOrders([]);
       })

@@ -8,6 +8,7 @@ import React, { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { Package } from "@phosphor-icons/react";
 import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import { SK_ANON_PUSH_SUBSCRIBED } from "../../lib/storageKeys";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { Card } from "../common/Card";
@@ -72,7 +73,7 @@ export const StockArrivalList: React.FC<StockArrivalListProps> = ({ isVendor }) 
       setPushSubscribed(true);
     } catch (err: unknown) {
       console.error("Push subscribe error:", err);
-      const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? String(err);
+      const msg = err instanceof ApiError ? err.message : getErrorMessage(err, String(err));
       showError("알림 구독 실패: " + msg);
     } finally {
       setPushLoading(false);

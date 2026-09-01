@@ -14,6 +14,7 @@ import { IconTile } from "../IconTile";
 import { StatusPill } from "../StatusPill";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api, ApiError } from "../../../lib/apiClient";
+import { getErrorMessage } from "../../../lib/errorMessage";
 
 interface PurchaseHistoryModalProps {
   productCode: string;
@@ -49,7 +50,7 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
     api.get<{ rows?: PurchaseHistoryRow[] }>(`/api/purchase-details?product_code=${encodeURIComponent(productCode)}&limit=500`)
       .then(({ data }) => setRows(Array.isArray(data.rows) ? data.rows : []))
       .catch((e: unknown) => {
-        const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "로드 실패";
+        const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "로드 실패");
         setError(msg);
       })
       .finally(() => setLoading(false));

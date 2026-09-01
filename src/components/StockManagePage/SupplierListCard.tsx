@@ -3,7 +3,7 @@
 // 순수 렌더 컴포넌트 · 모든 state/handler 는 부모(SupplierTab)에서 props 로 주입
 
 import React from "react";
-import { Building2, Loader2 as LoaderIcon, ChevronRight } from "lucide-react";
+import { Building2, RefreshCw, ChevronRight } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
@@ -114,7 +114,7 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
       headerActions={embedded ? (
         <button type="button" onClick={onRefresh} disabled={loading}
           className="w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer" title="새로고침">
-          <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
+          {loading ? <Spinner size={13} tone="zinc" /> : <RefreshCw size={13} />}
         </button>
       ) : undefined}
       filters={

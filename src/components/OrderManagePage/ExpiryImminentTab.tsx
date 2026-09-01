@@ -7,6 +7,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, RefreshCw, Package } from "lucide-react";
 import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
 import { Spinner } from "../common/Spinner";
@@ -74,7 +75,7 @@ export const ExpiryImminentTab: React.FC = () => {
         setRows(Array.isArray(data) ? data : []);
       })
       .catch((e: unknown) => {
-        const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "네트워크 오류";
+        const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "네트워크 오류");
         setError(msg);
         showError(`유통기한 임박 조회 실패: ${msg}`);
       })

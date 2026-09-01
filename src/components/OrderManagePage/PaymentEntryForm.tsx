@@ -10,6 +10,7 @@ import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import { api } from "../../lib/apiClient";
 import { useApiCall } from "../../hooks/useApiCall";
+import { getErrorMessage } from "../../lib/errorMessage";
 import type {
   PaymentRow, VendorItem, BalanceResp, PayMethod,
 } from "./PaymentInfoTab.types";
@@ -47,7 +48,7 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
     errorPrefix: "저장 실패",
     onSuccess: () => setMsg({ type: "ok", text: "결제 등록 완료" }),
     onError: (e: unknown) => {
-      const raw = (e as any)?.message ?? String(e);
+      const raw = getErrorMessage(e, String(e));
       setMsg({ type: "err", text: `저장 실패: ${raw}` });
     },
   });

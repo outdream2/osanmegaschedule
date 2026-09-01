@@ -8,6 +8,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import { useConfirm } from "../../hooks/useConfirm";
 import {
   Save,
@@ -255,7 +256,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
       setZoneMappings(mappings);
       _showToast("저장되었습니다.");
     } catch (err: unknown) {
-      const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? "저장 중 오류가 발생했습니다.";
+      const msg = err instanceof ApiError ? err.message : getErrorMessage(err, "저장 중 오류가 발생했습니다.");
       setSaveError(msg);
     } finally {
       setSaving(false);

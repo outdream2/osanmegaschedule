@@ -5,7 +5,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { SK_TRENDING_CLASSFILTER } from "../../lib/storageKeys";
-import { TrendingUp, AlertTriangle, Loader2 as LoaderIcon, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { TrendingUp, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { useProductDetailModal, type ProductRef } from "../common/features/ProductDetailModal";
 import { getProductsMap } from "../../lib/productsCache";
@@ -396,7 +396,7 @@ export const TrendingTab: React.FC = () => {
             className="w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-brand-tint hover:border-brand-deep text-ink-soft hover:text-brand-deep transition-colors disabled:opacity-40 cursor-pointer"
             title="새로고침"
           >
-            <LoaderIcon size={14} className={loading ? "animate-spin" : ""} />
+            {loading ? <Spinner size={14} tone="zinc" /> : <RefreshCw size={14} />}
           </button>
         }
       />

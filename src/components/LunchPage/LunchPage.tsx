@@ -1,6 +1,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { UtensilsCrossed, Clock, RefreshCw, Users, ChevronLeft, ChevronRight, Stethoscope, UserRound, Coffee } from "lucide-react";
@@ -135,7 +136,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
         });
       }
     } catch (e: any) {
-      const msg = e instanceof ApiError ? ((e.data as any)?.error ?? e.message) : (e?.message ?? "서버 오류");
+      const msg = e instanceof ApiError ? ((e.data as any)?.error ?? e.message) : getErrorMessage(e, "서버 오류");
       setError(msg);
       setMyRequest(null);
     } finally {
@@ -200,7 +201,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
       // 2026-08-18 · 점심 신청 배지 즉시 갱신
       dispatchApprovalChange("lunch");
     } catch (e: unknown) {
-      setError(e instanceof ApiError ? e.message : (e as any)?.message ?? "신청 실패");
+      setError(e instanceof ApiError ? e.message : getErrorMessage(e, "신청 실패"));
     } finally { setSubmitting(false); }
   };
 
@@ -213,7 +214,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
       // 2026-08-18 · 점심 취소 시 배지 즉시 갱신
       dispatchApprovalChange("lunch");
     } catch (e: unknown) {
-      setError(e instanceof ApiError ? e.message : (e as any)?.message ?? "취소 실패");
+      setError(e instanceof ApiError ? e.message : getErrorMessage(e, "취소 실패"));
     } finally { setSubmitting(false); }
   };
 

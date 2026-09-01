@@ -37,7 +37,7 @@ export const ScanRightPanel: React.FC<ScanRightPanelProps> = ({
   const expiryOn = !!targetRow && hasExpiry(targetRow);
   void scanFilter;
   return (
-    <div className="bg-white rounded-2xl border border-line/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex flex-col min-h-[320px] overflow-hidden">
+    <div className="bg-white rounded-2xl border border-line/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex flex-col min-h-[320px] overflow-y-auto">
       <div className="flex flex-col gap-3 px-4 sm:px-5 py-3 sm:py-3.5 border-b border-line/80 bg-zinc-50/80 rounded-t-2xl sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2.5">

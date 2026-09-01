@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { api, ApiError } from "../lib/apiClient";
+import { getErrorMessage } from "../lib/errorMessage";
 import { SECTION_LABEL, type ZoneDef, type ZoneSection } from "../constants/displayZones";
 
 export type { ZoneDef, ZoneSection };
@@ -241,7 +242,7 @@ export function useZoneDefs(): {
         }
       } catch (e) {
         if (cancelled) return;
-        const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "네트워크 오류";
+        const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "네트워크 오류");
         console.error("[useZoneDefs] /api/zone-defs 실패:", msg);
         setError(`매장구역 조회 실패: ${msg}`);
         setZonesRaw([]);

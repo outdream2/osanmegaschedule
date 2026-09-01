@@ -3,6 +3,7 @@
 // 2026-08-23 · #191 · Modal primitive 마이그레이션
 import React, { useState, useRef, useEffect } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../hooks/useToast";
 import { Upload } from "lucide-react";
@@ -148,7 +149,7 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
         window.dispatchEvent(new CustomEvent("products-imported", { detail: { count: data?.count ?? 0 } }));
       } catch { /* 캐시 실패 무시 · 다음 페이지 진입 시 자동 재fetch */ }
     } catch (err: unknown) {
-      const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? "업로드 실패";
+      const msg = err instanceof ApiError ? err.message : getErrorMessage(err, "업로드 실패");
       setUploadResult({ ok: false, msg });
     } finally {
       setUploadLoading(false);
@@ -176,7 +177,7 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
         failed: data?.failed ?? 0,
       });
     } catch (err: unknown) {
-      const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? "업로드 실패";
+      const msg = err instanceof ApiError ? err.message : getErrorMessage(err, "업로드 실패");
       setVendorUploadResult({ ok: false, msg });
     } finally {
       setVendorUploadLoading(false);
@@ -239,7 +240,7 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
       });
       await fetchStockImportLog();
     } catch (err: unknown) {
-      const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? "업로드 실패";
+      const msg = err instanceof ApiError ? err.message : getErrorMessage(err, "업로드 실패");
       setStockUploadResult({ ok: false, msg });
     } finally {
       setStockUploadLoading(false);
@@ -292,7 +293,7 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
         skipped: j?.skipped,
       });
     } catch (err: unknown) {
-      const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? "업로드 실패";
+      const msg = err instanceof ApiError ? err.message : getErrorMessage(err, "업로드 실패");
       setPurchaseUploadResult({ ok: false, msg });
     } finally {
       setPurchaseUploadLoading(false);

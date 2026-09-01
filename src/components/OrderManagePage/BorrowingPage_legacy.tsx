@@ -16,6 +16,7 @@ import { matchesSupplierQuery } from "../../lib/supplierMatch";
 // 2026-08-29 · #130 A안 Phase 1 · SignaturePad 프리미티브 (인라인 → common)
 import { SignaturePad } from "../common/SignaturePad";
 import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import type { AuthSession } from "../../types";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
@@ -132,8 +133,8 @@ const BorrowingForm: React.FC<{
       onCreated(data.row);
       showSuccess(`차용 등록 완료 · ${form.product_name}`);
       setForm(EMPTY);
-    } catch (e: any) {
-      const msg = e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류");
+    } catch (e: unknown) {
+      const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "네트워크 오류");
       showError(`등록 실패: ${msg}`);
     } finally {
       setSaving(false);
@@ -582,7 +583,7 @@ export const BorrowingPage: React.FC<BorrowingPageProps> = ({ authSession }) => 
     api.get<{ rows?: BorrowingRow[] }>(`/api/borrowings?${params.toString()}`)
       .then(({ data }) => setRows(Array.isArray(data?.rows) ? data.rows : []))
       .catch((e: unknown) => {
-        const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "네트워크 오류";
+        const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "네트워크 오류");
         setError(msg);
         showError(`차용 조회 실패: ${msg}`);
       })

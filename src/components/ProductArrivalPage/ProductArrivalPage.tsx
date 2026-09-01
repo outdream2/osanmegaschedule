@@ -8,6 +8,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { useConfirm } from "../../hooks/useConfirm";
 import { SplitPanel } from "../common/SplitPanel";
@@ -125,7 +126,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       setArrivals(prev => prev.filter(a => a.id !== id));
       if (selectedArrivalId === id) setSelectedArrivalId(null);
     } catch (e: unknown) {
-      const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "네트워크 오류";
+      const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "네트워크 오류");
       showError(`삭제 실패: ${msg}`);
     }
   };

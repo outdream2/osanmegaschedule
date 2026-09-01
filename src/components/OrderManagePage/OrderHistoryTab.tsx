@@ -24,6 +24,7 @@ import { Card } from "../common/Card";
 import { tableHeadCls, tableThCls, tableTdCls } from "../common";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-25 · 사용자 지시 · 공급사 분류 필터 · vendors 훅 재사용
 import { useVendors } from "../../hooks/useVendors";
@@ -84,7 +85,7 @@ export const OrderHistoryTab: React.FC = () => {
         if (data?.notice) setNotice(String(data.notice));
       })
       .catch((e: unknown) => {
-        const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "조회 실패";
+        const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "조회 실패");
         setError(msg);
         showError(`발주이력 조회 실패: ${msg}`);
       })

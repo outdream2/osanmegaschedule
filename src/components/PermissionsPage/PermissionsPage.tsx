@@ -1,6 +1,7 @@
 // 2026-08-16 · apiClient 마이그레이션
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { api } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { SK_PERMISSIONS_TREE_COLLAPSED } from "../../lib/storageKeys";
 import { Shield, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Save, Eye, EyeOff } from "lucide-react";
@@ -178,7 +179,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
       setSaveToast(`직원 ${using.length}명 · "${removing}" → "${selected}" 재매핑 후 삭제 완료`);
       setRemapDialog(null);
     } catch (err) {
-      showError(`재매핑 실패 · 삭제 취소: ${(err as any)?.message ?? err}`);
+      showError(`재매핑 실패 · 삭제 취소: ${getErrorMessage(err, String(err))}`);
       setRemapDialog(prev => prev ? { ...prev, loading: false } : null);
     }
   };
@@ -212,7 +213,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         }
         setEmployees(prev => prev.map(e => (e.position === original) ? { ...e, position: trimmed } : e));
       } catch (err) {
-        showError(`직원 재매핑 실패 · 변경 취소: ${(err as any)?.message ?? err}`);
+        showError(`직원 재매핑 실패 · 변경 취소: ${getErrorMessage(err, String(err))}`);
         setEditingPosIdx(null);
         return;
       }

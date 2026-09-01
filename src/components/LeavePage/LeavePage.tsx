@@ -1,6 +1,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useState, useCallback } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
 import {
@@ -159,7 +160,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
       // 2026-08-18 · 승인 대기 배지 즉시 갱신 (관리자 화면 · 알림)
       dispatchApprovalChange("leave");
     } catch (err: unknown) {
-      setSubmitError(err instanceof ApiError ? err.message : (err as any)?.message ?? "오류 발생");
+      setSubmitError(err instanceof ApiError ? err.message : getErrorMessage(err, "오류 발생"));
     } finally { setSubmitting(false); }
   };
 

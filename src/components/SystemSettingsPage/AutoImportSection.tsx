@@ -13,6 +13,7 @@ import { Spinner } from "../common/Spinner";
 // 2026-08-25 · 프레임워크 · useToast (raw alert 제거) + apiClient (raw fetch 제거)
 import { useToast, toastClass } from "../../hooks/useToast";
 import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import {
   useAutoImportConfig,
   useAutoImportStatus,
@@ -127,7 +128,7 @@ export const AutoImportSection: React.FC = () => {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       showSuccess("설치 파일 다운로드 완료 · Downloads 확인 · 아래 6단계 안내 따라 실행");
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "다운로드 실패";
+      const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "다운로드 실패");
       setInstallerError(msg);
       showError(`설치 파일 다운로드 실패: ${msg}`);
     }

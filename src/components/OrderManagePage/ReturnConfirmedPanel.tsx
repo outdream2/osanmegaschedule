@@ -11,6 +11,7 @@ import { SearchBar } from "../common/SearchBar";
 // 2026-08-29 · 상품명 검색 · 통일 로직
 import { matchesProductQuery } from "../../lib/productMatch";
 import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
 import { Spinner } from "../common/Spinner";
@@ -59,7 +60,7 @@ export const ReturnConfirmedPanel: React.FC = () => {
         setRows(list);
       })
       .catch((e: unknown) => {
-        const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "네트워크 오류";
+        const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "네트워크 오류");
         setError(msg);
         showError(`반품확정 조회 실패: ${msg}`);
       })

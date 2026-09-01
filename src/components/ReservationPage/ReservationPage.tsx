@@ -310,7 +310,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
       {/* 2026-07-29 · 사용자 요청 · 공통 헤더 (AppNavHeader) 로 통일 · reservation 은 AppNavPage 에 없어서 landing 표시 */}
       <AppNavHeader activePage="landing" authSession={authSession ?? null} onBack={onBack} />
 
-      <div className={`flex-1 flex flex-col lg:flex-row gap-0 overflow-hidden ${PAGE_CONTAINER_CLS}`}>
+      <div className={`flex-1 flex flex-col lg:flex-row gap-0 lg:overflow-hidden ${PAGE_CONTAINER_CLS}`}>
 
         {/* ====== LEFT PANEL: Calendar ====== */}
         <div className="lg:w-[340px] shrink-0 bg-white border-b lg:border-b-0 lg:border-r border-line p-4 sm:p-5 flex flex-col gap-4">
@@ -454,7 +454,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
         </div>
 
         {/* ====== RIGHT PANEL: 3-column Timetable ====== */}
-        <div className="flex-1 overflow-hidden bg-gray-50 flex flex-col">
+        <div className="flex-1 lg:overflow-hidden bg-gray-50 flex flex-col">
 
           {/* Timetable sticky header */}
           <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-line shrink-0">

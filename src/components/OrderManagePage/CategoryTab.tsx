@@ -4,7 +4,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { SK_CATEGORY_CLASSFILTER, SK_SALESTREND_CATEGORY_W } from "../../lib/storageKeys";
-import { X, Loader2, Layers, PieChart } from "lucide-react";
+import { X, RefreshCw, Layers, PieChart } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import { getProductsMap } from "../../lib/productsCache";
@@ -474,7 +474,7 @@ const ZoneCategoryContent: React.FC = () => {
               className="w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-brand-tint hover:border-brand-deep text-ink-soft hover:text-brand-deep transition-colors disabled:opacity-40 cursor-pointer"
               title="새로고침"
             >
-              <Loader2 size={14} className={loading ? "animate-spin" : ""} />
+              {loading ? <Spinner size={14} tone="zinc" /> : <RefreshCw size={14} />}
             </button>
           </div>
         }

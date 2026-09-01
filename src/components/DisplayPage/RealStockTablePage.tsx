@@ -9,6 +9,7 @@ import React, { useEffect, useMemo, useState, useCallback, useRef } from "react"
 import { PackageCheck, Search, RefreshCw, Check, X, ChevronRight, ChevronDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Modal } from "../common/Modal";
 import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import { Card } from "../common/Card";
 // 2026-08-29 · framework audit · SegmentedControl 프리미티브
 import { SegmentedControl } from "../common/SegmentedControl";
@@ -160,7 +161,7 @@ export const RealStockTablePage: React.FC = () => {
       setProducts(list);
       setInv(iRes.data ?? {});
     } catch (e: unknown) {
-      const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "네트워크 오류";
+      const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "네트워크 오류");
       setError(msg);
       showError(`실재고 테이블 조회 실패: ${msg}`);
     } finally {
@@ -322,7 +323,7 @@ export const RealStockTablePage: React.FC = () => {
       window.dispatchEvent(new CustomEvent("inventory-checks-updated", { detail: { source: "real-stock", productCode: row.product_code } }));
       cancelEdit();
     } catch (e: unknown) {
-      const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "저장 실패";
+      const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "저장 실패");
       showError(`저장 실패: ${msg}`);
     } finally {
       savingRef.current = false;

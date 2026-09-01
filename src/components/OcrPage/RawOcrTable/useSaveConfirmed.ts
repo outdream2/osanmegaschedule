@@ -16,6 +16,7 @@ import type { ConfirmedItem, MatchedItem, BarcodeProduct, CandidateInfo } from "
 import { parseNumber } from "./utils";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api, ApiError } from "../../../lib/apiClient";
+import { getErrorMessage } from "../../../lib/errorMessage";
 
 // ── 타입 정의 ──────────────────────────────────────────────────────────────
 
@@ -253,7 +254,7 @@ export function useSaveConfirmed({
               const { data: d } = await api.post<{ url?: string; public_id?: string }>("/api/invoice-images/upload", { data_url: dataUrl, page: pn });
               return { pn, url: String(d.url ?? ""), public_id: String(d.public_id ?? "") };
             } catch (err: unknown) {
-              const msg = err instanceof ApiError ? `${err.status} ${err.message}` : String((err as any)?.message ?? err);
+              const msg = err instanceof ApiError ? `${err.status} ${err.message}` : getErrorMessage(err, String(err));
               throw new Error(`p.${pn} 업로드 실패: ${msg}`);
             }
           })

@@ -21,6 +21,7 @@
 import { useCallback, useState } from "react";
 import { useToast } from "./useToast";
 import { ApiError } from "../lib/apiClient";
+import { getErrorMessage } from "../lib/errorMessage";
 
 export interface UseApiCallOptions {
   /** 성공 시 toast 메시지 · 미설정 시 showSuccess 안 함 */
@@ -77,7 +78,7 @@ export function useApiCall<T = unknown>(options: UseApiCallOptions = {}): UseApi
     } catch (err: unknown) {
       const rawMsg = err instanceof ApiError
         ? err.message
-        : (err as any)?.message ?? String(err);
+        : getErrorMessage(err, String(err));
       const fullMsg = errorPrefix ? `${errorPrefix}: ${rawMsg}` : rawMsg;
       setError(fullMsg);
       if (showErrorToast) showError(fullMsg);

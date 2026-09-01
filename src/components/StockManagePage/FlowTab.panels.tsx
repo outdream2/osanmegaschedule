@@ -6,7 +6,7 @@
 
 import React from "react";
 import {
-  Search, Boxes, EyeOff, Loader2 as LoaderIcon,
+  Search, Boxes, EyeOff, RefreshCw,
 } from "lucide-react";
 import { resolveProductLocation } from "../../lib/productLocation";
 import { Spinner } from "../common/Spinner";
@@ -195,7 +195,7 @@ export const FlowFilterBar: React.FC<FlowFilterBarProps> = ({
       <button onClick={onFetchStockFlow} disabled={loading}
         className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
         title="새로고침">
-        <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
+        {loading ? <Spinner size={13} tone="zinc" /> : <RefreshCw size={13} />}
       </button>
       </div>
     </div>

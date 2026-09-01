@@ -2,7 +2,7 @@
 // 2026-08-22 · Framework Phase 4 · SalesTrendPage.tsx 에서 분리
 import React, { useEffect, useMemo, useState } from "react";
 import { SK_SALESTREND_CATEGORY_W } from "../../lib/storageKeys";
-import { X, Loader2, PieChart, Layers } from "lucide-react";
+import { X, RefreshCw, PieChart, Layers } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { LoadingState } from "../common/LoadingState";
 import { EmptyState } from "../common/EmptyState";
@@ -415,7 +415,7 @@ const ZoneCategoryContent: React.FC = () => {
         <button type="button" onClick={() => fetchData(season, months)} disabled={loading}
           className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-amber-50 hover:border-amber-300 text-zinc-400 hover:text-amber-500 transition disabled:opacity-40 cursor-pointer"
           title="새로고침">
-          <Loader2 size={13} className={loading ? "animate-spin" : ""} />
+          {loading ? <Spinner size={13} tone="zinc" /> : <RefreshCw size={13} />}
         </button>
       </div>
 

@@ -9,6 +9,7 @@ import { PackageX, RefreshCw, Pencil, Check, X as XIcon } from "lucide-react";
 // 2026-08-29 · #165 Phase A · SearchBar 프리미티브 통일
 import { SearchBar } from "../common/SearchBar";
 import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
 import { Spinner } from "../common/Spinner";
@@ -70,7 +71,7 @@ export const UnassignedProductsTab: React.FC = () => {
         setRows(unassigned);
       })
       .catch((e: unknown) => {
-        const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "네트워크 오류";
+        const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "네트워크 오류");
         setError(msg);
         showError(`미지정 상품 조회 실패: ${msg}`);
       })

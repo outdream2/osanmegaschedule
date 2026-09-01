@@ -1,0 +1,1008 @@
+// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
+// server/routes/supplierPayments.ts
+// 2026-07-31 · 공급사 결제·잔고 관리 시스템 · Phase 2 API
+//   · Zoho / Odoo / QuickBooks 표준: payments 원장 + allocations M:N
+//   · 잔액 계산: SUM(ocr_confirmed_items.amount) - SUM(supplier_payments.amount)
+//   · POST /api/supplier-payments 는 payment + allocations 를 순차 insert 후
+//     allocations 실패 시 payment 롤백 (Supabase JS 는 트랜잭션 미지원 → 수동)
+// 2026-08-03 · #193 · VAT 통합 · supplier-ledger · supplier-purchase-detail 응답에
+//   vat_amount·supply_amount 필드 추가 (vendor.vat_included 반영 · row 저장값 있으면 우선)
+import { Router } from "express";
+import { supabase } from "../../../src/supabase/client";
+import { queryPurchaseDetails } from "../../utils/purchaseDetailsQuery";
+// 2026-08-13 · #107 · 결제 요청 · 관리자 알림 (인앱 + push)
+import { notificationsService } from "../../services/notificationsService";
+// 2026-08-16 · #112-E1
+import { authorize } from "../../middleware/requireAuth";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { badRequest, HttpError } from "../../middleware/errorHandler";
+import { validateBody } from "../../middleware/zodValidate";
+import {
+  CreateSupplierPaymentSchema,
+  UpdateSupplierPaymentSchema,
+} from "../../../src/shared/schemas/supplierPayments";
+
+const router = Router();
+
+// ─────────────────────────────────────────────────────────────────────
+// 공통 유틸
+// ─────────────────────────────────────────────────────────────────────
+const VALID_METHODS = new Set(["transfer", "cash", "card", "check", "offset", "etc"]);
+
+const toNumOrNull = (v: unknown): number | null => {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+const isYmd = (s: unknown): s is string =>
+  typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+
+// ─────────────────────────────────────────────────────────────────────
+// VAT 유틸 (2026-08-03 · #193 · 2026-08-06 개선 · null → true 기본)
+//   splitVat(amount, vat_included)
+//     · vat_included=true  · 총액에 VAT 포함 → vat = amount/11 · supply = amount - vat
+//     · vat_included=false · 총액은 공급가액 (별도과세) → vat = amount*0.1 · supply = amount
+//     · vat_included=null  · true 로 기본 처리 (사용자 요청 · 기본 VAT포함)
+// ─────────────────────────────────────────────────────────────────────
+export function splitVat(amount: number, vatIncluded: boolean | null): { vat: number; supply: number } {
+  if (!Number.isFinite(amount) || amount <= 0) return { vat: 0, supply: 0 };
+  const eff = vatIncluded === false ? false : true; // null → true (default)
+  if (eff) {
+    const vat = Math.round(amount / 11);
+    return { vat, supply: amount - vat };
+  }
+  const vat = Math.round(amount * 0.1);
+  return { vat, supply: amount };
+}
+
+/** 공급사명에서 vat 별도 힌트 감지 · 이름에 "vat미포함/별도/없음" 있으면 false */
+function inferVatFromName(name: string | null | undefined): boolean | null {
+  if (!name) return null;
+  return /vat\s*(미포함|별도|없음)/i.test(String(name)) ? false : null;
+}
+
+/** 공급사명으로 vat_included lookup · 실패해도 null 반환 (컬럼 없는 DB 안전)
+ *  · vendor.vat_included 우선 · 없으면 이름 힌트 · 그래도 없으면 null (호출측이 default 처리)
+ */
+async function fetchVatIncluded(supplier: string): Promise<boolean | null> {
+  try {
+    const { data, error } = await supabase
+      .from("vendors")
+      .select("vat_included, company_name")
+      .eq("company_name", supplier)
+      .maybeSingle();
+    if (error) return inferVatFromName(supplier);
+    const v = data?.vat_included;
+    if (v === true || v === false) return v;
+    // vendor 있으나 vat_included 미설정 · 이름으로 추론
+    return inferVatFromName(data?.company_name ?? supplier);
+  } catch {
+    return inferVatFromName(supplier);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// GET /api/supplier-payments?supplier=X&days=90
+//   · 결제 이력 (allocations 포함)
+// ─────────────────────────────────────────────────────────────────────
+router.get("/api/supplier-payments", asyncHandler(async (req, res) => {
+  const supplier = String(req.query.supplier ?? "").trim();
+  const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "90"), 10) || 90));
+
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+  const cutoffYmd = cutoffDate.toISOString().slice(0, 10);
+
+  let q = supabase
+    .from("supplier_payments")
+    .select("id, supplier_name, payment_date, amount, method, memo, created_by, created_by_id, created_at")
+    .gte("payment_date", cutoffYmd)
+    .order("payment_date", { ascending: false })
+    .order("id", { ascending: false });
+
+  if (supplier) q = q.eq("supplier_name", supplier);
+
+  const { data: payments, error } = await q;
+  if (error) {
+    if (/relation .* does not exist/i.test(error.message)) {
+      return res.json({ rows: [], warning: "supplier_payments 테이블 없음 (docs SQL 실행 필요)" });
+    }
+    throw new HttpError(500, error.message);
+  }
+
+  // 2026-08-30 · 사용자 결정 · allocations 기능 제거 (결제만 등록)
+  //   · supplier_payment_allocations 테이블 참조 삭제 · 항상 빈 배열 반환 (프론트 호환)
+  const rows = (payments ?? []).map(p => ({ ...p, allocations: [] as any[] }));
+  return res.json({ rows });
+}));
+
+// ─────────────────────────────────────────────────────────────────────
+// GET /api/supplier-payments/latest-per-supplier
+//   · 각 공급사별 최근 결제 1건 (payment_date desc + id desc tiebreak)
+//   · 응답: { rows: [{ supplier_name, latest_payment_date, latest_payment_amount }] }
+//   · PaymentInfoTab 좌측 리스트 · 최근결제일·최근결제액 컬럼용 (T-TEST-공급사리스트-최근결제)
+//   · 서버측 groupBy · N+1 request 회피 (100개 공급사면 100 요청 방지)
+//   · supplier_payments 테이블 없으면 rows: [] 빈 배열 반환 (안전)
+// ─────────────────────────────────────────────────────────────────────
+router.get("/api/supplier-payments/latest-per-supplier", asyncHandler(async (_req, res) => {
+  const { data, error } = await supabase
+    .from("supplier_payments")
+    .select("supplier_name, payment_date, amount, id")
+    .order("payment_date", { ascending: false })
+    .order("id", { ascending: false });
+  if (error) {
+    if (/relation .* does not exist/i.test(error.message)) {
+      return res.json({ rows: [], warning: "supplier_payments 테이블 없음" });
+    }
+    throw new HttpError(500, error.message);
+  }
+  // 이미 desc 정렬 · 각 supplier 첫 row 가 최근
+  const map = new Map<string, { latest_payment_date: string; latest_payment_amount: number }>();
+  for (const r of data ?? []) {
+    const nm = String(r.supplier_name ?? "").trim();
+    if (!nm || map.has(nm)) continue;
+    map.set(nm, {
+      latest_payment_date: String(r.payment_date ?? ""),
+      latest_payment_amount: Number(r.amount) || 0,
+    });
+  }
+  const rows = Array.from(map.entries()).map(([supplier_name, v]) => ({
+    supplier_name,
+    ...v,
+  }));
+  return res.json({ rows });
+}));
+
+// ─────────────────────────────────────────────────────────────────────
+// GET /api/supplier-payments/pending-count · 2026-08-23 · #171
+//   · 전체 공급사 · 미결제·부분결제 매입건 수 (관리자 랜딩 배지용)
+//   · ocr_confirmed_items.amount - SUM(allocations.allocated_amount) > 0
+// ─────────────────────────────────────────────────────────────────────
+router.get("/api/supplier-payments/pending-count", asyncHandler(async (_req, res) => {
+  // 2026-09-01 · P3 최적화 · N+1 감소
+  //   · 이전 · ocr_confirmed_items 2회 조회 (id+amount / supplier_name+amount) 순차
+  //   · 신규 · 한 번에 supplier_name+amount 조회 · supplier_payments 병렬 · latency 3→2 라운드 트립
+  const [invRes, payRes] = await Promise.all([
+    supabase.from("ocr_confirmed_items").select("supplier_name, amount"),
+    supabase.from("supplier_payments").select("supplier_name, amount"),
+  ]);
+  if (invRes.error) {
+    if (/relation .* does not exist/i.test(invRes.error.message)) return res.json({ count: 0 });
+    throw new HttpError(500, invRes.error.message);
+  }
+  const invList = invRes.data ?? [];
+  if (invList.length === 0) return res.json({ count: 0 });
+
+  // 2026-08-30 · 사용자 결정 · allocations 제거 · 미결제 = 매입액 - 결제액 (공급사별 대략 계산)
+  //   · 정확한 매입 vs 결제 매칭 없음 · 단순 미결제 개수 반환
+  //   · 공급사별 SUM 매입 vs SUM 결제 · 차액 > 0 인 공급사 매입건 수 근사
+  const paidBySupplier = new Map<string, number>();
+  for (const p of payRes.data ?? []) {
+    const nm = String((p as any).supplier_name ?? "").trim();
+    if (!nm) continue;
+    paidBySupplier.set(nm, (paidBySupplier.get(nm) ?? 0) + (Number((p as any).amount) || 0));
+  }
+  const invBySupplier = new Map<string, number>();
+  for (const i of invList) {
+    const nm = String((i as any).supplier_name ?? "").trim();
+    if (!nm) continue;
+    invBySupplier.set(nm, (invBySupplier.get(nm) ?? 0) + (Number((i as any).amount) || 0));
+  }
+  let count = 0;
+  for (const [nm, invSum] of invBySupplier) {
+    const paidSum = paidBySupplier.get(nm) ?? 0;
+    if (invSum - paidSum > 0.5) count++;
+  }
+  return res.json({ count });
+}));
+
+// ─────────────────────────────────────────────────────────────────────
+// POST /api/supplier-payments
+//   body: { supplier_name, payment_date, amount, method?, memo?,
+//           created_by?, created_by_id?,
+//           allocations?: [{ocr_confirmed_item_id, allocated_amount}] }
+//   · 원자성: allocations insert 실패 시 payment 롤백 (best-effort)
+// ─────────────────────────────────────────────────────────────────────
+router.post("/api/supplier-payments", authorize(5), validateBody(CreateSupplierPaymentSchema), asyncHandler(async (req, res) => {
+  const b = req.body;
+  const allocations = b.allocations;
+
+  // allocations 총액 검증 (Zod 개별 항목 검증 후 · 합산 초과 검사)
+  const allocList: Array<{ ocr_confirmed_item_id: number; allocated_amount: number }> = [];
+  if (Array.isArray(allocations) && allocations.length > 0) {
+    let sum = 0;
+    for (const a of allocations) {
+      sum += a.allocated_amount;
+      allocList.push({ ocr_confirmed_item_id: a.ocr_confirmed_item_id, allocated_amount: a.allocated_amount });
+    }
+    if (sum > b.amount + 0.5) {
+      throw badRequest(`배분 총액(${sum.toLocaleString()}) 이 결제 금액(${b.amount.toLocaleString()}) 을 초과할 수 없습니다`);
+    }
+  }
+
+  // 1. payment insert
+  const payload: Record<string, any> = {
+    supplier_name: b.supplier_name.trim(),
+    payment_date:  b.payment_date,
+    amount:        b.amount,
+    method:        b.method ?? "transfer",
+    memo:          b.memo ? String(b.memo).trim() || null : null,
+    created_by:    b.created_by ? String(b.created_by).trim() || null : null,
+    created_by_id: b.created_by_id ?? null,
+  };
+
+  const { data: payRow, error: payErr } = await supabase
+    .from("supplier_payments")
+    .insert(payload)
+    .select("id, supplier_name, payment_date, amount, method, memo, created_by, created_by_id, created_at")
+    .single();
+
+  if (payErr) throw new HttpError(500, `payment insert 실패: ${payErr.message}`);
+  if (!payRow?.id) throw new HttpError(500, "payment id 획득 실패");
+
+  // 2026-08-30 · 사용자 결정 · allocations 제거 · 결제만 등록 · 매입 매칭 안 함
+  //   · 이전 · allocations INSERT · 매입건별 얼마씩 배분 저장
+  //   · 이후 · 결제 자체만 저장 · 매입 매칭 · 프론트에서 표시 안 함
+  const allocatedRows: any[] = [];
+
+  // 2026-08-13 · #107 · 관리자 broadcast · 결제 등록 알림 (인앱 + push)
+  notificationsService.notifyAllAdmins({
+    title: "💰 결제 등록",
+    body: `${b.supplier_name} · ${b.amount.toLocaleString()}원 (${payload.method}) 결제 등록됨.`,
+    type: "success",
+    push: { url: "/", tag: `payment-new-${payRow.id}` },
+  }).catch(() => null);
+
+  return res.status(201).json({ ...payRow, allocations: allocatedRows });
+}));
+
+// ─────────────────────────────────────────────────────────────────────
+// PATCH /api/supplier-payments/:id
+//   · memo · method 만 수정 (금액·날짜 변경은 삭제→재등록 유도)
+// ─────────────────────────────────────────────────────────────────────
+router.patch("/api/supplier-payments/:id", authorize(5), validateBody(UpdateSupplierPaymentSchema), asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id) || id <= 0) throw badRequest("invalid id");
+  const b = req.body;
+  const updates: Record<string, any> = {};
+  if (b.method !== undefined) updates.method = b.method;
+  if (b.memo !== undefined) {
+    updates.memo = b.memo != null && String(b.memo).trim() ? String(b.memo).trim() : null;
+  }
+
+  const { data, error } = await supabase
+    .from("supplier_payments")
+    .update(updates)
+    .eq("id", id)
+    .select("id, supplier_name, payment_date, amount, method, memo, created_at")
+    .single();
+  if (error) throw new HttpError(500, error.message);
+  return res.json(data);
+}));
+
+// ─────────────────────────────────────────────────────────────────────
+// DELETE /api/supplier-payments/:id
+//   · allocations 은 FK ON DELETE CASCADE 로 자동 삭제
+// ─────────────────────────────────────────────────────────────────────
+router.delete("/api/supplier-payments/:id", authorize(9), asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id) || id <= 0) throw badRequest("invalid id");
+  const { error } = await supabase.from("supplier_payments").delete().eq("id", id);
+  if (error) throw new HttpError(500, error.message);
+  return res.json({ ok: true });
+}));
+
+// ─────────────────────────────────────────────────────────────────────
+// GET /api/supplier-balance/:supplier
+//   · 현재 잔액 = SUM(purchase_details.amount) - SUM(supplier_payments.amount)
+//   · supplier 는 URL 인코딩된 회사명
+//   · 2026-08-09 · 소스 · ocr_confirmed_items → purchase_details (사용자 원칙)
+// ─────────────────────────────────────────────────────────────────────
+router.get("/api/supplier-balance/:supplier", asyncHandler(async (req, res) => {
+  const supplier = decodeURIComponent(req.params.supplier ?? "").trim();
+  if (!supplier) throw badRequest("supplier 필수");
+
+  // 2026-09-01 · P3 최적화 · 매입/결제 쿼리 병렬화 (Promise.all · latency 2→1 라운드 트립)
+  const [purchaseRows, payRes] = await Promise.all([
+    queryPurchaseDetails({ supplier }),
+    supabase
+      .from("supplier_payments")
+      .select("id, amount")
+      .eq("supplier_name", supplier),
+  ]);
+
+  // 매입 합계 (purchase_details · queryPurchaseDetails 헬퍼 · NULL supplier fallback 포함)
+  let totalPurchase = 0;
+  let purchaseCount = 0;
+  for (const r of purchaseRows) {
+    totalPurchase += r.amount;
+    purchaseCount++;
+  }
+
+  // 결제 합계 (supplier_payments)
+  let totalPayment = 0;
+  let paymentCount = 0;
+  if (payRes.error && !/relation .* does not exist/i.test(payRes.error.message)) {
+    throw new HttpError(500, payRes.error.message);
+  }
+  for (const r of payRes.data ?? []) {
+    totalPayment += Number(r.amount) || 0;
+    paymentCount++;
+  }
+
+  const balance = totalPurchase - totalPayment;
+  return res.json({
+    supplier,
+    total_purchase: totalPurchase,
+    total_payment: totalPayment,
+    balance,
+    purchase_count: purchaseCount,
+    payment_count: paymentCount,
+  });
+}));
+
+// ─────────────────────────────────────────────────────────────────────
+// GET /api/supplier-ledger?supplier=X&days=90
+//   · 매입(purchase_details) + 결제(supplier_payments) UNION
+//   · 시간순 asc → running balance 계산
+//   · 2026-08-09 · 소스 · ocr_confirmed_items → purchase_details (사용자 원칙)
+// ─────────────────────────────────────────────────────────────────────
+router.get("/api/supplier-ledger", asyncHandler(async (req, res) => {
+  const supplier = String(req.query.supplier ?? "").trim();
+  if (!supplier) throw badRequest("supplier 필수");
+  const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "90"), 10) || 90));
+
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+  const cutoffYmd = cutoffDate.toISOString().slice(0, 10);
+
+  // 공급사 VAT 설정 (병렬 fetch 는 아래에서 · 여기선 결과만 사용)
+  const vatIncludedPromise = fetchVatIncluded(supplier);
+
+  // 매입 (purchase_details · queryPurchaseDetails 헬퍼) · vat_amount·supply_amount 있으면 우선 사용
+  const purchases: any[] = [];
+  {
+    const rows = await queryPurchaseDetails({ supplier, sinceYmd: cutoffYmd });
+    for (const r of rows) {
+      purchases.push({
+        type: "purchase",
+        id: r.id,
+        date: r.purchase_date,
+        amount: r.amount,
+        _raw_vat: r.vat_amount,
+        _raw_supply: r.supply_amount,
+        method: null,
+        memo: r.product_name || null,
+        allocations: null,
+      });
+    }
+  }
+
+  // 결제 (supplier_payments) · vat_amount 있으면 우선 사용
+  const payments: any[] = [];
+  {
+    let data: any[] | null = null;
+    const r1 = await supabase
+      .from("supplier_payments")
+      .select("id, supplier_name, payment_date, amount, method, memo, vat_amount, tax_invoice_no")
+      .eq("supplier_name", supplier)
+      .gte("payment_date", cutoffYmd);
+    if (!r1.error) data = r1.data ?? [];
+    else if (/vat_amount|tax_invoice_no/i.test(r1.error.message)) {
+      const r2 = await supabase
+        .from("supplier_payments")
+        .select("id, supplier_name, payment_date, amount, method, memo")
+        .eq("supplier_name", supplier)
+        .gte("payment_date", cutoffYmd);
+      if (!r2.error) data = (r2.data ?? []).map((x: any) => ({ ...x, vat_amount: 0, tax_invoice_no: null }));
+      else if (!/relation .* does not exist/i.test(r2.error.message)) throw new HttpError(500, r2.error.message);
+    } else if (!/relation .* does not exist/i.test(r1.error.message)) throw new HttpError(500, r1.error.message);
+
+    for (const r of data ?? []) {
+      payments.push({
+        type: "payment",
+        id: r.id,
+        date: r.payment_date,
+        amount: Number(r.amount) || 0,
+        _raw_vat: Number(r.vat_amount) || 0,
+        method: r.method ?? null,
+        memo: r.memo ?? null,
+        tax_invoice_no: r.tax_invoice_no ?? null,
+        allocations: null,
+      });
+    }
+  }
+
+  // VAT 계산 · row 에 저장된 값 있으면 우선 · 없으면 vendor.vat_included 로 계산
+  const vatIncluded = await vatIncludedPromise;
+  const decoratePurchase = (m: any) => {
+    let vat = m._raw_vat;
+    let supply = m._raw_supply;
+    if (!vat && !supply) {
+      const s = splitVat(m.amount, vatIncluded);
+      vat = s.vat;
+      supply = s.supply;
+    } else if (!supply) {
+      supply = Math.max(0, m.amount - vat);
+    }
+    return { ...m, vat_amount: vat, supply_amount: supply };
+  };
+  const decoratePayment = (m: any) => {
+    let vat = m._raw_vat;
+    if (!vat) {
+      // 결제에서는 vendor.vat_included=true 인 경우만 자동분리 (별도과세는 결제 시점에 VAT 라인 별도 X)
+      vat = vatIncluded === true ? splitVat(m.amount, true).vat : 0;
+    }
+    const supply = Math.max(0, m.amount - vat);
+    return { ...m, vat_amount: vat, supply_amount: supply };
+  };
+
+  const decoratedP = purchases.map(decoratePurchase);
+  const decoratedY = payments.map(decoratePayment);
+
+  // 시간순 asc · date 동일 시 매입 먼저 (재무 관례)
+  const merged = [...decoratedP, ...decoratedY].sort((a, b) => {
+    if (a.date !== b.date) return String(a.date).localeCompare(String(b.date));
+    if (a.type !== b.type) return a.type === "purchase" ? -1 : 1;
+    return a.id - b.id;
+  });
+
+  // running balance · 매입(+) · 결제(-)
+  let running = 0;
+  const rows = merged.map(m => {
+    running += m.type === "purchase" ? m.amount : -m.amount;
+    const { _raw_vat, _raw_supply, ...clean } = m;
+    void _raw_vat; void _raw_supply;
+    return { ...clean, running_balance: running };
+  });
+
+  const totalPurchaseVat = decoratedP.reduce((s, r) => s + (r.vat_amount || 0), 0);
+  const totalPurchaseSupply = decoratedP.reduce((s, r) => s + (r.supply_amount || 0), 0);
+  const totalPaymentVat = decoratedY.reduce((s, r) => s + (r.vat_amount || 0), 0);
+  const totalPaymentSupply = decoratedY.reduce((s, r) => s + (r.supply_amount || 0), 0);
+
+  // 프론트는 desc 로 보여주는 경우가 많으니 반전 옵션 제공
+  // (여기선 asc 로 반환 · 프론트에서 정렬)
+  return res.json({
+    supplier,
+    vat_included: vatIncluded,
+    rows,
+    total_purchase: decoratedP.reduce((s, r) => s + r.amount, 0),
+    total_purchase_vat: Math.round(totalPurchaseVat),
+    total_purchase_supply: Math.round(totalPurchaseSupply),
+    total_payment: decoratedY.reduce((s, r) => s + r.amount, 0),
+    total_payment_vat: Math.round(totalPaymentVat),
+    total_payment_supply: Math.round(totalPaymentSupply),
+    current_balance: running,
+  });
+}));
+
+// ─────────────────────────────────────────────────────────────────────
+// GET /api/supplier-open-invoices?supplier=X
+//   · 결제 미할당 or 부분할당 된 매입건 리스트
+//   · PaymentRegisterModal 에서 체크박스 매칭용
+// ─────────────────────────────────────────────────────────────────────
+router.get("/api/supplier-open-invoices", asyncHandler(async (req, res) => {
+  const supplier = String(req.query.supplier ?? "").trim();
+  if (!supplier) throw badRequest("supplier 필수");
+
+  // 매입건 조회
+  const { data: invoices, error: invErr } = await supabase
+    .from("ocr_confirmed_items")
+    .select("id, invoice_date, saved_at, supplier, product_name, amount")
+    .eq("supplier", supplier)
+    .order("invoice_date", { ascending: false })
+    .order("saved_at", { ascending: false })
+    .limit(500);
+  if (invErr) {
+    if (/relation .* does not exist/i.test(invErr.message)) return res.json({ rows: [] });
+    throw new HttpError(500, invErr.message);
+  }
+  const invList = invoices ?? [];
+  if (invList.length === 0) return res.json({ rows: [] });
+
+  // 2026-08-30 · 사용자 결정 · allocations 제거 · 매입 매칭 안 함
+  //   · allocated · remaining · status · 모두 default 값 (프론트 호환 유지)
+  const rows = invList.map((i: any) => {
+    const amount = Number(i.amount) || 0;
+    const date = (i.invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(i.invoice_date)) ? i.invoice_date : i.saved_at;
+    return {
+      id: i.id,
+      date,
+      product_name: i.product_name,
+      amount,
+      allocated: 0,
+      remaining: amount,
+      status: "open" as const,
+    };
+  });
+
+  return res.json({ rows });
+}));
+
+// ─────────────────────────────────────────────────────────────────────
+// GET /api/supplier-purchase-summary?days=90
+//   · 모든 공급사 매입 요약 (좌측 vendor 카드용)
+//   · 반환: [{ supplier, last_purchase_date, this_month_amount, sku_count,
+//              weekly_sparkline: number[12], total_amount, purchase_count,
+//              first_purchase_date, avg_cycle_days }]
+//   · 2026-08-09 · 원칙 확정 · purchase_details 만 · OCR fallback 제거
+//     사용자 요청: "매입이력없으면 ocr로넘어가면 안돼 · 매입이력은 매입이력만"
+// ─────────────────────────────────────────────────────────────────────
+router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
+  const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "90"), 10) || 90));
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    const cutoffYmd = cutoffDate.toISOString().slice(0, 10);
+
+    // 이번달 시작 (YYYY-MM-01)
+    const now = new Date();
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+
+    // ─── primary · purchase_details (ERP · 사용자 명시 정답 소스) ─────────
+    //   supplier_name · purchase_date · amount|total · product_code
+    //   페이지네이션 (row 1000 초과 대비)
+    interface NormRow {
+      supplier: string;
+      date: string;
+      amount: number;
+      code: string;
+    }
+    const normRows: NormRow[] = [];
+    let pdOk = false;
+    let pdRowCount = 0; // 2026-08-04 fix · primary(purchase_details) 실제 push 된 행 수 (fallback 이 normRows 덮어써도 원본 판별)
+    let pdSkippedNullSupplier = 0; // 2026-08-03 fix · supplier_name NULL 인 행 카운트 (진단용)
+    let pdRelationMissing = false; // 2026-08-04 · purchase_details 테이블 자체 존재하는지
+    // 전체(=cutoff 무관) 통계 · 사용자 진단용 (매입이력이 안들어온다 지적)
+    //   - 90일보다 오래된 매입만 있을 때 · pd_row_count=0 인데 pd_total_all_time>0
+    let pdTotalAllTime: number | null = null;
+    let pdLatestDate: string | null = null;
+    try {
+      const { count } = await supabase
+        .from("purchase_details")
+        .select("id", { count: "exact", head: true });
+      if (count != null) pdTotalAllTime = count;
+      const { data: latestRow } = await supabase
+        .from("purchase_details")
+        .select("purchase_date")
+        .order("purchase_date", { ascending: false })
+        .limit(1);
+      const l = (latestRow ?? [])[0];
+      pdLatestDate = l?.purchase_date ? String(l.purchase_date).slice(0, 10) : null;
+    } catch (e: any) {
+      if (/relation .* does not exist/i.test(String(e?.message ?? ""))) pdRelationMissing = true;
+    }
+    // supplier_code → supplier_name 매핑 (vendors 테이블 · code null 인 raw 매입행 보완용)
+    //   2026-08-04 근본원인 fix · vendors 에 supplier_code 컬럼 없음 · note 컬럼에 code 저장됨
+    //   (예: "0038", "172") · 이걸 못 잡아서 6307행 스킵 · OCR 폴백 오작동
+    //   supplier_code + note 둘 다 조회 (supplier_code 우선 · 미래 컬럼 추가 대비)
+    const codeToName = new Map<string, string>();
+    try {
+      // note (실제 code 저장 위치) 우선 조회 · supplier_code 도 있으면 병행
+      const { data: vdata, error: verr } = await supabase
+        .from("vendors")
+        .select("company_name, note");
+      if (!verr) {
+        for (const v of vdata ?? []) {
+          const code = String(v.note ?? "").trim();
+          const name = String(v.company_name ?? "").trim();
+          // note 는 자유형식 텍스트 · 숫자 3~5자리 code 만 매핑 (오탐 방지)
+          if (code && name && /^\d{1,5}$/.test(code)) codeToName.set(code, name);
+        }
+      }
+      // supplier_code 컬럼도 있으면 병행 (없으면 무해하게 skip)
+      try {
+        const { data: sdata, error: serr } = await supabase
+          .from("vendors")
+          .select("company_name, supplier_code");
+        if (!serr) {
+          for (const v of sdata ?? []) {
+            const code = String(v.supplier_code ?? "").trim();
+            const name = String(v.company_name ?? "").trim();
+            if (code && name) codeToName.set(code, name); // supplier_code 우선 덮어씀
+          }
+        }
+      } catch { /* silent · 컬럼 없음 */ }
+    } catch { /* silent · vendors 없어도 무관 */ }
+    // 2026-08-04 · products.product_code → supplier 매핑 (원칙 준수 · 있는 테이블 조회)
+    //   6307행이 supplier_name·supplier_code 모두 NULL 인 케이스 대응
+    //   products.supplier 로 fallback · 파생컬럼 생성 X · 런타임 조회 (원칙 위배 X)
+    const productCodeToSupplier = new Map<string, string>();
+    try {
+      const PPAGE = 1000;
+      let pfrom = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("products")
+          .select("product_code, supplier")
+          .range(pfrom, pfrom + PPAGE - 1);
+        if (error) break;
+        if (!data || data.length === 0) break;
+        for (const p of data) {
+          const pc = String(p.product_code ?? "").trim();
+          const sup = String(p.supplier ?? "").trim();
+          if (pc && sup) productCodeToSupplier.set(pc, sup);
+        }
+        if (data.length < PPAGE) break;
+        pfrom += PPAGE;
+      }
+    } catch { /* silent · products 없어도 무관 */ }
+    try {
+      const PAGE = 1000;
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("purchase_details")
+          .select("supplier_name, supplier_code, purchase_date, amount, total, product_code")
+          .gte("purchase_date", cutoffYmd)
+          .range(from, from + PAGE - 1);
+        if (error) {
+          if (/relation .* does not exist/i.test(error.message)) { pdRelationMissing = true; break; }
+          if (/column .* does not exist/i.test(error.message)) break;
+          throw new HttpError(500, error.message);
+        }
+        if (!data || data.length === 0) break;
+        for (const r of data) {
+          // supplier_name 결정 순서 (2026-08-04):
+          //   1. raw supplier_name
+          //   2. supplier_code → vendors.note or vendors.supplier_code
+          //   3. product_code → products.supplier (마지막 fallback · 임포트 정책 정합)
+          let supplier = String(r.supplier_name ?? "").trim();
+          if (!supplier) {
+            const code = String(r.supplier_code ?? "").trim();
+            if (code && codeToName.has(code)) supplier = codeToName.get(code)!;
+          }
+          if (!supplier) {
+            const pcode = String(r.product_code ?? "").trim();
+            if (pcode && productCodeToSupplier.has(pcode)) supplier = productCodeToSupplier.get(pcode)!;
+          }
+          if (!supplier) { pdSkippedNullSupplier++; continue; }
+          const date: string = (r.purchase_date && /^\d{4}-\d{2}-\d{2}/.test(String(r.purchase_date)))
+            ? String(r.purchase_date).slice(0, 10)
+            : "";
+          if (!date) continue;
+          // 2026-08-03 fix (이슈 A) · amount 우선 · total fallback (xlsx total 이 amount 와 다르게 부풀린 케이스 방지)
+          //   purchase.ts 임포트 시 amount = 순매입금액 (반품 차감 후) · 정답 값
+          //   total 은 xlsx "총합계" 컬럼 raw 저장 · VAT 포함 여부가 파일마다 상이 · 신뢰 불가
+          const amount = Number(r.amount ?? r.total ?? 0) || 0;
+          const code = String(r.product_code ?? "").trim();
+          normRows.push({ supplier, date, amount, code });
+          pdRowCount++;
+        }
+        pdOk = true;
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+      if (pdSkippedNullSupplier > 0) {
+        console.warn(`[supplier-purchase-summary] purchase_details · supplier_name NULL 로 스킵된 행 ${pdSkippedNullSupplier}개 (supplier_code 매핑 실패)`);
+        // 2026-08-06 · 진단 강화 · 실패 케이스 · 어떤 supplier_code · product_code 가 매핑 안 됐는지
+        //   사용자가 vendors 등록 or products.supplier 채워서 해결 가능
+        try {
+          const { data: skipRows } = await supabase
+            .from("purchase_details")
+            .select("supplier_code, product_code, purchase_date")
+            .is("supplier_name", null)
+            .gte("purchase_date", cutoffYmd)
+            .limit(50);
+          if (skipRows && skipRows.length > 0) {
+            const codes = Array.from(new Set(skipRows.map((r: any) => r.supplier_code).filter(Boolean))).slice(0, 10);
+            const prodCodes = Array.from(new Set(skipRows.map((r: any) => r.product_code).filter(Boolean))).slice(0, 10);
+            console.warn(`[supplier-purchase-summary] 매핑 실패 supplier_code 예시 (최대 10):`, codes);
+            console.warn(`[supplier-purchase-summary] 매핑 실패 product_code 예시 (최대 10):`, prodCodes);
+            console.warn(`[supplier-purchase-summary] 조치: vendors 테이블에 supplier_code 등록 or products.supplier 채우기`);
+          }
+        } catch { /* silent */ }
+      }
+    } catch (e: any) {
+      console.warn("[supplier-purchase-summary] purchase_details 실패 · fallback:", e?.message);
+    }
+
+    // ─── 2026-08-09 · OCR fallback 제거 · purchase_details 만 사용 ───
+    //   사용자 원칙: "매입이력은 매입이력만" · 빈결과여도 OCR로 넘어가지 않음
+
+    // 공급사별 집계
+    interface Agg {
+      supplier: string;
+      last_purchase_date: string | null;
+      first_purchase_date: string | null;
+      this_month_amount: number;
+      total_amount: number;
+      purchase_count: number;
+      sku_set: Set<string>;
+      date_set: Set<string>; // 매입주기 계산용 · 서로 다른 매입일 수
+      // 12주 weekly buckets · 최근주=index 11
+      weekly: number[];
+    }
+    const bucket = new Map<string, Agg>();
+
+    // 12주 · 오늘 기준 · week[i] = (now - (12 - i) 주 ~ now - (11 - i) 주)
+    const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+    const nowMs = now.getTime();
+
+    for (const r of normRows) {
+      let agg = bucket.get(r.supplier);
+      if (!agg) {
+        agg = {
+          supplier: r.supplier,
+          last_purchase_date: null,
+          first_purchase_date: null,
+          this_month_amount: 0,
+          total_amount: 0,
+          purchase_count: 0,
+          sku_set: new Set<string>(),
+          date_set: new Set<string>(),
+          weekly: new Array(12).fill(0),
+        };
+        bucket.set(r.supplier, agg);
+      }
+
+      // 최근 · 최초 매입일
+      if (!agg.last_purchase_date || r.date > agg.last_purchase_date) agg.last_purchase_date = r.date;
+      if (!agg.first_purchase_date || r.date < agg.first_purchase_date) agg.first_purchase_date = r.date;
+      agg.total_amount += r.amount;
+      agg.purchase_count += 1;
+      if (r.code) agg.sku_set.add(r.code);
+      agg.date_set.add(r.date);
+      if (r.date >= monthStart) agg.this_month_amount += r.amount;
+
+      // weekly bucket · 최근 12주
+      const dMs = new Date(r.date + "T00:00:00Z").getTime();
+      if (!Number.isNaN(dMs)) {
+        const weeksAgo = Math.floor((nowMs - dMs) / WEEK_MS);
+        if (weeksAgo >= 0 && weeksAgo < 12) {
+          // weeksAgo=0 → 이번주 → index 11 (오른쪽 끝)
+          agg.weekly[11 - weeksAgo] += r.amount;
+        }
+      }
+    }
+
+    const suppliers = Array.from(bucket.values()).map(a => {
+      // 매입주기 · 서로 다른 매입일 2회 이상일 때만 계산 · (last - first) / (distinct - 1)
+      let avg_cycle_days: number | null = null;
+      const distinctDates = a.date_set.size;
+      if (distinctDates >= 2 && a.first_purchase_date && a.last_purchase_date) {
+        const first = new Date(a.first_purchase_date + "T00:00:00Z").getTime();
+        const last = new Date(a.last_purchase_date + "T00:00:00Z").getTime();
+        if (!Number.isNaN(first) && !Number.isNaN(last) && last > first) {
+          avg_cycle_days = Math.round((last - first) / (86400 * 1000) / (distinctDates - 1));
+        }
+      }
+      return {
+        supplier: a.supplier,
+        last_purchase_date: a.last_purchase_date,
+        first_purchase_date: a.first_purchase_date,
+        this_month_amount: a.this_month_amount,
+        total_amount: a.total_amount,
+        purchase_count: a.purchase_count,
+        sku_count: a.sku_set.size,
+        avg_cycle_days,
+        weekly_sparkline: a.weekly,
+      };
+    });
+
+    // source · pdRowCount 로 정확 판별 (2026-08-04 fix)
+    //   pdRowCount > 0 = purchase_details 에서 실제로 rows push 됨
+    //   pdRowCount == 0 & normRows.length > 0 = fallback(ocr) 만 데이터 있음
+    //   둘 다 있으면 mixed (fallback 은 primary 비었을 때만 도는 로직이라 사실 mixed 없음)
+    return res.json({
+      suppliers,
+      cutoff: cutoffYmd,
+      days,
+      source: "purchase_details",
+      diagnostics: {
+        pd_ok: pdOk,
+        pd_row_count: pdRowCount,
+        pd_skipped_null_supplier: pdSkippedNullSupplier,
+        pd_relation_missing: pdRelationMissing,
+        pd_total_all_time: pdTotalAllTime,    // 90d 무관 · 전체 행 수
+        pd_latest_date: pdLatestDate,          // 가장 최근 매입일 (전체) · 90d 밖이면 여기서 확인
+        total_rows: normRows.length,
+      },
+    });
+}));
+
+// ─────────────────────────────────────────────────────────────────────
+// GET /api/supplier-purchase-detail?supplier=X&days=365
+//   · 특정 공급사 매입 raw rows (product_code, quantity, unit_price, amount)
+//   · Tab 2 상품별 집계 · Tab 3 매입 추이용 · running_balance 없음
+//   · 2026-08-09 · 원칙 확정 · purchase_details 만 사용 · OCR fallback 제거
+//     사용자 요청: "매입이력없으면 ocr로넘어가면 안돼 · 매입이력은 매입이력만"
+// ─────────────────────────────────────────────────────────────────────
+router.get("/api/supplier-purchase-detail", asyncHandler(async (req, res) => {
+  const supplier = String(req.query.supplier ?? "").trim();
+  if (!supplier) throw badRequest("supplier 필수");
+    const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "365"), 10) || 365));
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    const cutoffYmd = cutoffDate.toISOString().slice(0, 10);
+
+    // vendor VAT 설정 (병렬)
+    const vatIncludedPromise = fetchVatIncluded(supplier);
+
+    // ─── purchase_details (ERP · 사용자 명시 정답 소스 · 유일 소스) ─────────
+    //   vat_amount·supply_amount 컬럼 없을 수 있음 · 실패 시 재시도
+    //   2026-08-09 · OCR fallback 제거 (사용자 지시)
+    let data: any[] | null = null;
+    const sourceUsed: "purchase_details" = "purchase_details";
+    // 2026-08-03 fix · supplier_name NULL 인 매입행 회수 · supplier_code (or note) 로도 조회
+    //   2026-08-04 · vendors 에 supplier_code 컬럼 없음 · vendors.note 에 code 저장됨 (숫자 3~5자리)
+    //   product_code → products.supplier 도 fallback 으로 추가 (매입이력 ERP 데이터 반드시 로드)
+    let supplierCode: string | null = null;
+    try {
+      // note 우선 조회 (실제 code 저장 위치)
+      const { data: vn, error: vnerr } = await supabase
+        .from("vendors")
+        .select("note")
+        .eq("company_name", supplier)
+        .limit(1);
+      if (!vnerr) {
+        const c = String((vn ?? [])[0]?.note ?? "").trim();
+        if (c && /^\d{1,5}$/.test(c)) supplierCode = c;
+      }
+      // supplier_code 컬럼 있으면 우선 사용 (미래 호환)
+      try {
+        const { data: vs, error: vserr } = await supabase
+          .from("vendors")
+          .select("supplier_code")
+          .eq("company_name", supplier)
+          .limit(1);
+        if (!vserr) {
+          const c = String((vs ?? [])[0]?.supplier_code ?? "").trim();
+          if (c) supplierCode = c;
+        }
+      } catch { /* silent · 컬럼 없어도 무관 */ }
+    } catch { /* silent · vendors 없어도 무관 */ }
+
+    // 2026-08-04 · products.supplier === 이 supplier 인 product_codes 리스트 (fallback)
+    //   supplier_name/code 모두 NULL 인 purchase_details 행 · product_code 로 supplier 재구성
+    const productCodesForSupplier: string[] = [];
+    try {
+      const PPAGE = 1000;
+      let pfrom = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("products")
+          .select("product_code, supplier")
+          .eq("supplier", supplier)
+          .range(pfrom, pfrom + PPAGE - 1);
+        if (error) break;
+        if (!data || data.length === 0) break;
+        for (const p of data) {
+          const pc = String(p.product_code ?? "").trim();
+          if (pc) productCodesForSupplier.push(pc);
+        }
+        if (data.length < PPAGE) break;
+        pfrom += PPAGE;
+      }
+    } catch { /* silent · products 없어도 무관 */ }
+    // 2026-08-04 · 헬퍼 · purchase_details 조회 (name + code + product_codes IN · dedup by id)
+    const fetchPdByNameAndCode = async (withVatCols: boolean) => {
+      const cols = withVatCols
+        ? "id, purchase_date, product_code, product_name, quantity, unit_price, amount, total, vat_amount, supply_amount"
+        : "id, purchase_date, product_code, product_name, quantity, unit_price, amount, total";
+      const byName = supabase
+        .from("purchase_details")
+        .select(cols)
+        .eq("supplier_name", supplier)
+        .gte("purchase_date", cutoffYmd);
+      const byCode = supplierCode
+        ? supabase
+            .from("purchase_details")
+            .select(cols)
+            .eq("supplier_code", supplierCode)
+            .gte("purchase_date", cutoffYmd)
+        : Promise.resolve({ data: [] as any[], error: null as any });
+      // 2026-08-04 · product_codes IN 조회 (fallback · supplier_name/code 모두 NULL 인 행)
+      //   IN 은 Supabase max ~1000 · 청킹 필요
+      const byProductCodes = async () => {
+        if (productCodesForSupplier.length === 0) return { data: [] as any[], error: null as any };
+        const merged: any[] = [];
+        const CHUNK = 500;
+        for (let i = 0; i < productCodesForSupplier.length; i += CHUNK) {
+          const chunk = productCodesForSupplier.slice(i, i + CHUNK);
+          const { data, error } = await supabase
+            .from("purchase_details")
+            .select(cols)
+            .in("product_code", chunk)
+            .gte("purchase_date", cutoffYmd);
+          if (error) return { data: [] as any[], error };
+          merged.push(...(data ?? []));
+        }
+        return { data: merged, error: null as any };
+      };
+      const [rn, rc, rp] = await Promise.all([byName, byCode, byProductCodes()]);
+      if (rn.error) return rn;
+      const merged: any[] = [...(rn.data ?? [])];
+      const seen = new Set(merged.map(x => x.id));
+      for (const r of ((rc as any).data ?? [])) {
+        if (!seen.has((r as any).id)) { merged.push(r); seen.add((r as any).id); }
+      }
+      for (const r of ((rp as any).data ?? [])) {
+        if (!seen.has((r as any).id)) { merged.push(r); seen.add((r as any).id); }
+      }
+      return { data: merged, error: null as any };
+    };
+    try {
+      const pdFull = await fetchPdByNameAndCode(true);
+      if (!pdFull.error) {
+        data = (pdFull.data ?? []).map((r: any) => ({
+          id: r.id,
+          invoice_date: r.purchase_date,
+          saved_at: r.purchase_date,
+          product_code: r.product_code,
+          product_name: r.product_name,
+          quantity: r.quantity,
+          unit_price: r.unit_price,
+          // 2026-08-03 fix (이슈 A) · amount 우선 · total fallback · 이중산정 방지
+          amount: r.amount ?? r.total ?? 0,
+          vat_amount: r.vat_amount ?? 0,
+          supply_amount: r.supply_amount ?? 0,
+        }));
+      } else if (/vat_amount|supply_amount/i.test(pdFull.error.message)) {
+        // VAT 컬럼 없는 DB · 다시 조회
+        const pdSlim = await fetchPdByNameAndCode(false);
+        if (!pdSlim.error) {
+          data = (pdSlim.data ?? []).map((r: any) => ({
+            id: r.id,
+            invoice_date: r.purchase_date,
+            saved_at: r.purchase_date,
+            product_code: r.product_code,
+            product_name: r.product_name,
+            quantity: r.quantity,
+            unit_price: r.unit_price,
+            amount: r.amount ?? r.total ?? 0,
+            vat_amount: 0,
+            supply_amount: 0,
+          }));
+        } else if (/relation .* does not exist/i.test(pdSlim.error.message)) {
+          data = null; // relation 없음 → fallback 시도
+        }
+      } else if (/relation .* does not exist/i.test(pdFull.error.message)) {
+        data = null; // relation 없음 → fallback 시도
+      }
+    } catch (e: any) {
+      console.warn("[supplier-purchase-detail] purchase_details 실패 · fallback:", e?.message);
+      data = null;
+    }
+
+    // ─── 2026-08-09 · OCR fallback 제거 · purchase_details 만 사용 ───
+    //   사용자 원칙: "매입이력은 매입이력만" · 빈결과여도 OCR로 넘어가지 않음
+    if (!data) data = [];
+
+    const vatIncluded = await vatIncludedPromise;
+    const rows = (data ?? []).map((r: any) => {
+      const date = (r.invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(r.invoice_date))
+        ? r.invoice_date
+        : String(r.saved_at ?? "").slice(0, 10);
+      const amount = Number(r.amount) || 0;
+      let vat = Number(r.vat_amount) || 0;
+      let supply = Number(r.supply_amount) || 0;
+      if (!vat && !supply) {
+        const s = splitVat(amount, vatIncluded);
+        vat = s.vat;
+        supply = s.supply;
+      } else if (!supply) {
+        supply = Math.max(0, amount - vat);
+      }
+      return {
+        id: r.id,
+        date,
+        product_code: r.product_code ?? null,
+        product_name: r.product_name ?? null,
+        quantity: Number(r.quantity) || 0,
+        unit_price: Number(r.unit_price) || 0,
+        amount,
+        vat_amount: vat,
+        supply_amount: supply,
+      };
+    });
+  return res.json({ supplier, vat_included: vatIncluded, rows, source: sourceUsed });
+}));
+
+// 2026-08-30 · #ENDPOINT-AUDIT TOP3 · dead endpoint 제거
+//   GET /api/supplier-monthly-breakdown · 소비처 0 · 200 라인 삭제
+//   audit doc · docs/ENDPOINT_AUDIT_2026-08-29.md
+
+export default router;
