@@ -456,7 +456,7 @@ router.post("/api/vendors/:id/set-password", authorize(9), asyncHandler(async (r
   if (isNaN(id)) throw badRequest("invalid id");
   const { password } = req.body ?? {};
   if (!password || String(password).length < 4) throw badRequest("비밀번호는 4자 이상이어야 합니다.");
-  const password_hash = await bcrypt.hash(String(password), 10);
+  const password_hash = await bcrypt.hash(String(password), 12);
   const { error } = await supabase.from("vendors").update({ password_hash }).eq("id", id);
   if (error) throw new HttpError(500, error.message);
   return res.json({ ok: true });
