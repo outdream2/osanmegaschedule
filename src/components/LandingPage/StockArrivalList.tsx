@@ -14,6 +14,7 @@ import { Card } from "../common/Card";
 import { Modal } from "../common/Modal";
 import { SectionLabel } from "../common/SectionLabel";
 import { Spinner } from "../common/Spinner";
+import { GradientAccent } from "../common/GradientAccent";
 
 interface StockArrival {
   id: number;
@@ -109,7 +110,7 @@ export const StockArrivalList: React.FC<StockArrivalListProps> = ({ isVendor }) 
         ) : (
           /* 2026-08-24 · 최신 트렌드 · UI 대원칙 · Linear/Vercel/Attio 2026 */
           <Card clip padding="none" className={`relative divide-y divide-line/70 ${arrivalsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-            <span className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90" aria-hidden />
+            <GradientAccent />
             {stockArrivals.slice(0, 5).map(a => {
               const createdMs = new Date(a.created_at).getTime();
               const diffMin = Math.floor((Date.now() - createdMs) / 60000);

@@ -6,7 +6,7 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { useToast, toastClass } from "../../hooks/useToast";
 import {
   Bell, BellOff, Calendar, Check, Clock,
-  Package, Pencil, RefreshCw, Send, Trash2, X, Loader2,
+  Package, Pencil, RefreshCw, Send, Trash2, X,
 } from "lucide-react";
 import type { AuthSession } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";

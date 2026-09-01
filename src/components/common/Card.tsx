@@ -105,10 +105,10 @@ export const Card: React.FC<CardProps> = ({
   className = "",
   style,
   role,
+  "aria-label": ariaLabel,
   disabled,
   type = "button",
   children,
-  ...rest
 }) => {
   // v2 · bg · borderColor override · 기본 bg-white · border-line
   const bgCls = bg ?? "bg-white";
@@ -145,7 +145,7 @@ export const Card: React.FC<CardProps> = ({
         className={baseCls}
         disabled={disabled}
         style={style}
-        aria-label={(rest as any)["aria-label"]}
+        aria-label={ariaLabel}
       >
         {accentSpan}
         {children}
@@ -160,7 +160,7 @@ export const Card: React.FC<CardProps> = ({
       style={style}
       onClick={onClick}
       role={role}
-      aria-label={(rest as any)["aria-label"]}
+      aria-label={ariaLabel}
     >
       {accentSpan}
       {children}

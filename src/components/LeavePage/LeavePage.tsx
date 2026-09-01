@@ -5,7 +5,7 @@ import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
 import {
   CalendarDays, Clock, CheckCircle2, XCircle,
-  RefreshCw, Plus, X, Trash2, ChevronDown, Loader2,
+  RefreshCw, Plus, X, Trash2, ChevronDown,
 } from "lucide-react";
 import type { AuthSession } from "../../types";
 import { fmtDateYMD, fmtDateMD } from "../../lib/format";

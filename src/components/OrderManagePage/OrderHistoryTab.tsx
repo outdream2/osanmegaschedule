@@ -15,6 +15,7 @@ import { matchesProductQuery } from "../../lib/productMatch";
 // 2026-08-30 · 사용자 지시 · 공급사명 검색 프로젝트 전체 endpoint 통합 · matchesSupplierQuery 프리미티브
 import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { AccentBar } from "../common/AccentBar";
+import { GradientAccent } from "../common/GradientAccent";
 import { InlineLabel } from "../common/InlineLabel";
 import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
 import { StatusPill } from "../common/StatusPill";
@@ -233,7 +234,7 @@ export const OrderHistoryTab: React.FC = () => {
 
       {/* 리스트 · 2026-08-24 · v3 리스트 프레임워크 · 상단 gradient accent */}
       <Card clip padding="none" className="relative">
-        <span aria-hidden className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-20 rounded-t-md" />
+        <GradientAccent className="z-20 rounded-t-md" />
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Spinner size={16} tone="zinc" label="불러오는 중..." labelSize={15} />

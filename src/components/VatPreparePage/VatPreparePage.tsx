@@ -27,7 +27,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import {
-  Calculator, Calendar, Loader2, AlertTriangle, CheckSquare, Square,
+  Calculator, Calendar, AlertTriangle, CheckSquare, Square,
   FileText, TrendingUp, ChevronRight, RefreshCw,
   Receipt, PackageCheck, FileCheck2,
 } from "lucide-react";

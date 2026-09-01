@@ -23,7 +23,7 @@ export const PageContainer: React.FC<PageContainerProps> = ({
   flex = true,
   as: Tag = "div",
 }) => {
-  const El = Tag as any;
+  const El = Tag as React.ElementType;
   return (
     <El
       className={`${flex ? "flex-1 " : ""}${PAGE_CONTAINER_CLS} px-3 sm:px-4 py-3 sm:py-4 ${className}`}

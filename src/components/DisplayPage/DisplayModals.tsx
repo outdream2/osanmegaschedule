@@ -10,7 +10,7 @@ import { StaffInfoModal } from "./StaffInfoModal";
 import { ZoneProductsModal, type ZoneProductsModalState } from "./ZoneProductsModal";
 import { ProductInfoModal } from "./ProductInfoModal";
 import type { DisplayRequest, Employee, TodayStaff, PopoverAnchor } from "./DisplayPage.types";
-import type { DisplayZone } from "../../utils/zoneUtils";
+import type { DisplayZone, ZoneStatus } from "../../utils/zoneUtils";
 import type { ProductInfo } from "../../lib/productsCache";
 import type { ZoneGroup } from "./ZoneGroupPanel";
 
@@ -37,7 +37,7 @@ interface DisplayModalsProps {
   draftCategory: string;
   draftProducts: string;
   draftStaffId: number | null;
-  draftStatus: string;
+  draftStatus: ZoneStatus;
   requestNote: string;
   savedFlash: boolean;
   requestFlash: boolean;
@@ -46,7 +46,7 @@ interface DisplayModalsProps {
   setActiveZoneId: (id: string | null) => void;
   setDraftStaffId: (v: number | null) => void;
   setDraftProducts: (v: string) => void;
-  setDraftStatus: (v: any) => void;
+  setDraftStatus: (v: ZoneStatus) => void;
   setRequestNote: (v: string) => void;
   handleSave: () => void;
   handleSendRequest: () => void;
@@ -114,7 +114,7 @@ export const DisplayModals: React.FC<DisplayModalsProps> = (p) => (
     {p.activeZone && (
       <ZoneDetailModal
         activeZone={p.activeZone} draftCategory={p.draftCategory} draftProducts={p.draftProducts} draftStaffId={p.draftStaffId}
-        draftStatus={p.draftStatus as any} requestNote={p.requestNote} savedFlash={p.savedFlash} requestFlash={p.requestFlash}
+        draftStatus={p.draftStatus} requestNote={p.requestNote} savedFlash={p.savedFlash} requestFlash={p.requestFlash}
         employees={p.employees} staffColorMap={p.staffColorMap} canRequest={p.canRequest}
         onClose={() => p.setActiveZoneId(null)} onSetDraftStaffId={p.setDraftStaffId} onSetDraftProducts={p.setDraftProducts}
         onSetDraftStatus={p.setDraftStatus} onSetRequestNote={p.setRequestNote} onSave={p.handleSave}

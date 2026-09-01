@@ -22,7 +22,7 @@
 //   · 이 리스트가 홈택스 "매입처별 세금계산서 합계표" 대응
 
 import React, { useMemo } from "react";
-import { Building2, Loader2 } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { StatusPill, type PillTone } from "../../common/StatusPill";
 import { Spinner } from "../../common/Spinner";
 import { Card } from "../../common/Card";

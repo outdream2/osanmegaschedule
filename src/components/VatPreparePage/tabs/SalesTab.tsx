@@ -12,7 +12,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Calendar, AlertCircle, Info, Loader2, RefreshCw,
+  Calendar, AlertCircle, Info, RefreshCw,
   TrendingUp, PackageCheck, Wallet, Calculator,
 } from "lucide-react";
 import { useMonthlyVat, type MonthlyVatRow } from "../hooks/useMonthlyVat";

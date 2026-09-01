@@ -128,7 +128,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       if (group) {
         const allHidden = group.items.length > 0 && group.items.every(it => {
           const compositeKey = it.subTab ? `${it.key}:${it.subTab}` : it.key;
-          const perm = (perms as any)[compositeKey] ?? (perms as any)[it.key];
+          const perm = perms[compositeKey] ?? perms[it.key];
           if (perm?.hidden !== true) return false;
           if (userLevel >= 9 && ADMIN_ESSENTIAL_KEYS.has(it.key)) return false;
           return true;

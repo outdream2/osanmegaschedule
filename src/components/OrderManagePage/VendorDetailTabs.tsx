@@ -15,6 +15,7 @@ import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { StatusPill, type PillTone } from "../common/StatusPill";
 import { SplitRightTabs } from "../common/SplitRightTabs";
 import { IconTile } from "../common/IconTile";
+import { GradientAccent } from "../common/GradientAccent";
 import { CARD_BASE } from "../../styles/tokens";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -213,7 +214,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
         {activeTab === "balance" && (
           <div className={`relative ${CARD_BASE} flex-1 min-h-0 flex flex-col overflow-hidden`}>
             {/* v9 · gradient topAccent (brand-deep → sky-500) */}
-            <span aria-hidden className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10" />
+            <GradientAccent size="thin" className="z-10" />
             {/* 탭 내 KPI 3개 · 매입금액 · 결제금액 · 남은잔고 (미결제) */}
             {/* 2026-08-25 · v9 · IconTile + 폰트 +2 · Delta trend · Vercel/Attio 톤 */}
             {ledger && !ledgerLoading && (() => {

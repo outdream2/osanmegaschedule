@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { Badge } from "../common/Badge";
+import { GradientAccent } from "../common/GradientAccent";
 import { TabBar } from "../common/TabBar";
 import { EmployeeInfoForm } from "../common/EmployeeInfoForm";
 import { Avatar, SectionCard, EmptyDetail } from "./StaffManagePage.subcomponents";
@@ -132,7 +133,7 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
     <>
       {/* ── 프로필 헤더 · v9 · 상단 gradient accent · glass style ── */}
       <div className="relative bg-white border-b border-line px-5 py-3 shrink-0">
-        <span aria-hidden className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10" />
+        <GradientAccent size="thin" className="z-10" />
         <div className="flex items-center gap-3">
           {/* 사진 */}
           {(displayEmp.photo_url || editing) && (

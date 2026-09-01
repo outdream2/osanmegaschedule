@@ -1,7 +1,7 @@
 // src/components/OrderManagePage/OrderRequestTab.tsx
 // 2026-08-22 · Framework Phase 4 · 발주요청 탭 분리
 import React from "react";
-import { Loader2, ShoppingCart, CheckSquare, Square, Send, ChevronRight, ChevronDown, History } from "lucide-react";
+import { ShoppingCart, CheckSquare, Square, Send, ChevronRight, ChevronDown, History } from "lucide-react";
 // 2026-08-23 · #182 · 공급사별 발주이력 모달
 import { OrderHistorySupplierModal } from "./OrderHistorySupplierModal";
 import { Card } from "../common/Card";
@@ -13,6 +13,7 @@ import { Spinner } from "../common/Spinner";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { LoadingState } from "../common/LoadingState";
+import { GradientAccent } from "../common/GradientAccent";
 // 2026-08-25 · #107/#79 · 발주요청 프리미엄 UI · StepperInput (사용자 승인 v3 목업)
 import { StepperInput } from "../common/StepperInput";
 // 2026-08-29 · #154 · 판매중 필터 프레임워크 확산 · 판매중지 상품 자동 제외
@@ -185,7 +186,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                   <button onClick={handleBulkOrder} disabled={sendingBulk || selectedOrder.size === 0}
                     className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[17px] font-bold text-white bg-gradient-to-br from-rose-500 to-rose-600 shadow-sm hover:shadow-md hover:from-rose-600 hover:to-rose-700 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:shadow-none transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap ring-1 ring-rose-500/20"
                     title="선택한 발주요청을 공급사별로 그룹핑">
-                    {sendingBulk ? <Loader2 size={13} strokeWidth={2.5} className="animate-spin" /> : <Send size={13} strokeWidth={2.5} />}
+                    {sendingBulk ? <Spinner size={13} /> : <Send size={13} strokeWidth={2.5} />}
                     <span>{sendingBulk ? "발송 중..." : `일괄 발주${selectedOrder.size > 0 ? ` · ${selectedOrder.size}` : ""}`}</span>
                   </button>
                   <button onClick={toggleAll}
@@ -208,7 +209,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
               {/* 2026-08-24 · v3 목업 실적용 · 표 형식 · sticky thead · Attio/Linear 톤
                   상단 gradient accent (사용자 지시 · 랜딩 톤) · 헤더 폰트 +2 (12→14) */}
               <div className={`max-h-[50vh] lg:max-h-[75vh] overflow-auto relative rounded-xl border border-line bg-white ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                <span aria-hidden className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-20" />
+                <GradientAccent className="z-20" />
                 <table className="w-full text-[16px] sm:text-[17px] min-w-[720px] border-collapse [&_tbody_td]:text-[16px] sm:[&_tbody_td]:text-[17px] [&_thead_th]:text-[17px] sm:[&_thead_th]:text-[16px]">
                   <thead className="sticky top-0 z-10">
                     <tr className="text-zinc-500 uppercase tracking-wider bg-zinc-100/70 border-b border-line">

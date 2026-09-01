@@ -6,6 +6,7 @@ import React, { useRef, useState } from "react";
 import { ShoppingCart, MessageSquare, Mail, FileDown } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { Modal } from "../common/Modal";
+import { GradientAccent } from "../common/GradientAccent";
 import { Card } from "../common/Card";
 // 2026-08-24 · v3 리스트 UI 프레임워크
 import { tableHeadCls, tableThCls } from "../common";
@@ -194,7 +195,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       <div className="flex-1 overflow-y-auto max-h-[45vh] px-6 py-4 bg-zinc-50/30">
         <Card clip padding="none" className="relative">
           {/* 2026-08-24 · v3 · 상단 gradient accent */}
-          <span aria-hidden className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-30 rounded-t-md" />
+          <GradientAccent className="z-30 rounded-t-md" />
           <table className="w-full text-[17px]">
             {/* 2026-08-24 · v3 · tableHeadCls 헬퍼 */}
             <thead className={tableHeadCls()}>

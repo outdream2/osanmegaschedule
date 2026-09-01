@@ -16,7 +16,6 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  Loader2,
 } from "lucide-react";
 import { MapPin } from "@phosphor-icons/react";
 import type { AuthSession } from "../../types";

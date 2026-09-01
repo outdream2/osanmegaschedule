@@ -9,6 +9,7 @@ import { matchesProductQuery } from "../../lib/productMatch";
 import { Spinner } from "../common/Spinner";
 // 2026-08-31 · #30 · 프레임워크 프리미티브 이관 · LoadingState + EmptyState
 import { LoadingState } from "../common/LoadingState";
+import { GradientAccent } from "../common/GradientAccent";
 import { EmptyState } from "../common/EmptyState";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { SeasonButtons } from "../common/SeasonButtons";
@@ -189,7 +190,7 @@ export const StockFlowPanel: React.FC<{
   return (
     <div className={`relative ${CARD_BASE} flex flex-col h-full overflow-hidden`}>
       {/* 2026-08-24 · v9 · 상단 gradient accent */}
-      <span aria-hidden className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10" />
+      <GradientAccent size="thin" className="z-10" />
       {toast && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
           <div className={toastClass(toast.tone)}>{toast.message}</div>

@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { api } from "../../lib/apiClient";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { SK_PERMISSIONS_TREE_COLLAPSED } from "../../lib/storageKeys";
-import { Shield, Loader2, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Save, Eye, EyeOff } from "lucide-react";
+import { Shield, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Save, Eye, EyeOff } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { invalidatePagePermissions } from "../../hooks/usePagePermissions";
 import { useSidebarEnabled, invalidateSidebarEnabled } from "../../hooks/useSidebar";
