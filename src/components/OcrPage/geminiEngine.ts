@@ -20,6 +20,7 @@ export async function runGeminiOcr(
   for (let i = 0; i < images.length; i++) {
     const res = await fetch("/api/ocr", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ images: [images[i]], engine: "gemini" }),
     });

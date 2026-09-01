@@ -266,6 +266,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
 
       const res = await fetch("/api/ocr?stream=1", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
         body: JSON.stringify({
           images: rotatedImages,

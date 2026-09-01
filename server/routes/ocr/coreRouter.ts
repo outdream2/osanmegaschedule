@@ -19,13 +19,15 @@ import {
   applyColumnMapping, applyTemplateHeaders, upsertOcrTemplate,
   buildTemplatePrompt, addToRawCache, getRawCacheTexts,
 } from "./helpers";
+import { authorize } from "../../middleware/requireAuth";
+import { asyncHandler } from "../../middleware/asyncHandler";
 
 const router = Router();
 
 // Gemini 키 중 이번 서버 세션에서 영구 제외된 키 (할당량 초과 or 인증 실패)
 const sessionDeadKeys = new Set<string>();
 
-router.post("/api/ocr", async (req, res) => {
+router.post("/api/ocr", authorize(1), asyncHandler(async (req, res) => {
   const { images, engine: reqEngine = "gemini" } = req.body ?? {};
   const parseMode: "auto" | "raw" = req.body?.parseMode === "raw" ? "raw" : "auto";
   const rawApproach = String(req.query.approach ?? "default");
@@ -733,6 +735,6 @@ router.post("/api/ocr", async (req, res) => {
     }
     res.status(500).json({ error: err?.message ?? "OCR 처리 중 오류" });
   }
-});
+}));
 
 export default router;
