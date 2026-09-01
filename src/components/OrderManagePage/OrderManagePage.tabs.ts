@@ -7,13 +7,15 @@
 import {
   ShoppingCart, ClipboardList, AlertTriangle, Package, Building2, ArrowLeftRight, PackageCheck,
   ScanLine, PackagePlus, Info, Wallet, HandCoins, Calculator, TrendingUp, PieChart, Boxes,
+  BarChart3,
 } from "lucide-react";
 
 export type PurchaseOrderKey = "order" | "need" | "critical" | "history";
 // 2026-08-29 · #193 Phase B · scan · productarrival · productinfo · return 4개 · 매장>상품/반품 서브탭으로 완전 이관 (사용자 지시)
 export type PurchaseKey = "receipt" | "reconciliation" | "purchase-history";
 export type PaymentKey = "vendor" | "payment-input" | "borrowing" | "vat-prepare";
-export type StatKey = "trending" | "category" | "flow" | "diff" | "supplier";
+// 2026-09-01 · 사용자 지시 · 판매대시보드 서브탭 신설 (SalesTrendPage 는 그대로 유지 · 매장>판매>통계 에도 추가)
+export type StatKey = "dashboard" | "trending" | "category" | "flow" | "diff" | "supplier";
 
 export interface SubTabDef<K extends string> {
   key: K;
@@ -46,9 +48,11 @@ export const PAYMENT_DEFAULT_TABS: SubTabDef<PaymentKey>[] = [
 ];
 
 export const STAT_DEFAULT_TABS: SubTabDef<StatKey>[] = [
-  { key: "trending", label: "급상승",       icon: TrendingUp,    color: "indigo"  },
-  { key: "category", label: "구역현황",     icon: PieChart,      color: "amber"   },
-  { key: "flow",     label: "상품현황",     icon: Boxes,         color: "sky"     },
-  { key: "supplier", label: "공급사별현황", icon: Building2,     color: "emerald" },
-  { key: "diff",     label: "손실추적",     icon: AlertTriangle, color: "rose"    },
+  // 2026-09-01 · 사용자 지시 · 판매대시보드 신설 (DashboardTab 재사용 · SalesTrendPage 원본 유지)
+  { key: "dashboard", label: "판매대시보드", icon: BarChart3,    color: "teal"    },
+  { key: "trending",  label: "급상승",       icon: TrendingUp,    color: "indigo"  },
+  { key: "category",  label: "구역현황",     icon: PieChart,      color: "amber"   },
+  { key: "flow",      label: "상품현황",     icon: Boxes,         color: "sky"     },
+  { key: "supplier",  label: "공급사별현황", icon: Building2,     color: "emerald" },
+  { key: "diff",      label: "손실추적",     icon: AlertTriangle, color: "rose"    },
 ];

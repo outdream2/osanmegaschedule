@@ -19,6 +19,8 @@ const ScanPage = React.lazy(() => import("../ScanPage/ScanPage").then(m => ({ de
 const ProductArrivalPage = React.lazy(() => import("../ProductArrivalPage/ProductArrivalPage").then(m => ({ default: m.ProductArrivalPage })));
 // 2026-08-23 · #177 · Phase A · ProductInfoPage 신설 (상품정보 서브탭)
 const ProductInfoPage = React.lazy(() => import("../ProductInfoPage/ProductInfoPage").then(m => ({ default: m.ProductInfoPage })));
+// 2026-09-01 · 사용자 지시 · 판매대시보드 서브탭 (매장>판매>통계 안) · SalesTrendPage 원본 그대로 유지 · DashboardTab 재사용
+const DashboardTab = React.lazy(() => import("../SalesTrendPage/DashboardTab").then(m => ({ default: m.DashboardTab })));
 
 const SubTabFallback = () => (
   <div className="flex-1 flex items-center justify-center py-16">
@@ -129,7 +131,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input" | "borrowing" | "vat-prepare">("payment-input");
-  const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff" | "supplier">("trending");
+  // 2026-09-01 · 사용자 지시 · dashboard 서브탭 추가 (기본 dashboard · 판매대시보드 우선 노출)
+  const [statSubTab, setStatSubTab] = useState<StatKey>("dashboard");
 
   const isAdmin = (ocrTabAuthSession?.level ?? 0) >= 8;
   const [vendorPreselectId, setVendorPreselectId] = useState<number | null>(null);
@@ -691,6 +694,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             statSortable.tabs.map(t => ({ k: t.key, label: t.label, icon: t.icon, color: t.color })),
             statSubTab, setStatSubTab,
             { getTabProps: statSortable.getTabProps, isDragging: statSortable.isDragging },
+          )}
+          {/* 2026-09-01 · 사용자 지시 · 판매대시보드 (DashboardTab 재사용 · SalesTrendPage 원본 그대로 유지) */}
+          {statSubTab === "dashboard" && (
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <Suspense fallback={<SubTabFallback />}>
+                <DashboardTab />
+              </Suspense>
+            </div>
           )}
           {statSubTab === "trending" && (
             <div className="flex-1 min-h-0 overflow-y-auto">
