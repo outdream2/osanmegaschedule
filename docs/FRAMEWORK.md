@@ -24,6 +24,8 @@
    - 3.6 [MenuCard](#36-menucard)
    - 3.7 [employeeCategory + employeeApi + contract lib](#37-도메인-lib)
    - 3.8 [Card · Spinner 프리미티브](#38-card--spinner-프리미티브)
+   - 3.9 [Form · Chart 프리미티브 (2026-09-01)](#39-신규-프리미티브-2026-09-01--form--chart)
+   - 3.10 [미사용 프리미티브 삭제 (2026-09-01)](#310-미사용-프리미티브-삭제-2026-09-01)
 4. [마이그레이션 레시피](#4-마이그레이션-레시피)
 5. [안티패턴 · 금지 목록](#5-안티패턴--금지-목록)
 6. [파일 구조 규칙](#6-파일-구조-규칙)
@@ -797,10 +799,12 @@ import { Card } from "@/components/common/Card";
 <Card as="article" clip rounded="xl" onClick={onSelect}>클릭 가능 카드</Card>
 ```
 
-**확산 현황** · 36곳+ (2026-08-19~20) · OcrPage(8) · BrandingSettingsPage(4) · ContractWriterPage(2) · Stock/Landing/Lunch/ContractSettings/HrForms/Resignation/ProductArrival/OrderManage/Display/Requests/PharmacistMenu/ReturnList/ScanInfo 등
-**29 tests** · variant × padding × rounded × clip × as × onClick 조합
+**확산 현황** · **133곳** (2026-09-01 기준 · UI audit) · 최다 사용 프리미티브 · TOP 5 중 1위
+**34+ tests** · variant × padding × rounded × clip × as × onClick × bg × borderColor · topAccent 조합
+**v2** (2026-08-23) · `bg` · `borderColor` prop · custom tint 지원
+**v2.1** (2026-08-24) · `topAccent` · 3px gradient 자동
 
-**교체 대상**: `<div className="bg-white rounded-xl border border-zinc-200 shadow-sm ...">` 반복 패턴 (36곳 통합 완료)
+**교체 대상**: `<div className="bg-white rounded-xl border border-zinc-200 shadow-sm ...">` 반복 패턴 (실 container · 형식 form input 등 오분류 아님)
 
 ---
 
@@ -831,9 +835,9 @@ import { Spinner } from "@/components/common/Spinner";
 <Spinner label="로딩 중..." size={13} labelSize={12} tone="zinc" />
 ```
 
-**확산 현황** · 60+곳 (2026-08-19 30곳 + 2026-08-20 22곳)
-**8 tests**
-**교체 대상**: `<Loader2 className="animate-spin text-*-600" /> <span>로딩중...</span>` 60+ 반복 (완전 제거)
+**확산 현황** · **129곳** (2026-09-01 · UI audit · TOP 5 중 2위)
+**21+ tests** · 전 tone 커버리지
+**교체 대상**: `<Loader2 className="animate-spin text-*-600" /> <span>로딩중...</span>` 반복 (완전 제거)
 
 ---
 
@@ -841,6 +845,148 @@ import { Spinner } from "@/components/common/Spinner";
 **파일** · `src/lib/contract/index.ts`
 - `loadContractSettings`, `fetchContractWriterSettings`, `loadContractClauses` 등 순수 로직 300+ 라인 추출
 - ContractWriterPage · ContractSettingsPage 공용
+
+---
+
+### 3.9 신규 프리미티브 (2026-09-01) · Form + Chart
+
+#### FormRow
+**파일** · `src/components/common/FormRow.tsx`
+**목적** · label + control + hint/error 조합 · Form 반복 wrapper.
+
+**Props**
+```ts
+interface FormRowProps {
+  label?: string;
+  labelIcon?: React.ReactNode;
+  required?: boolean;
+  hint?: string;
+  error?: string;
+  children: React.ReactNode;  // input/select/textarea
+  className?: string;
+}
+```
+
+**사용**
+```tsx
+<FormRow label="이름" required icon={<User size={12} />}>
+  <input className="..." />
+</FormRow>
+<FormRow label="비고" hint="선택 입력" error={errors.note}>
+  <textarea rows={3} />
+</FormRow>
+```
+
+**교체 대상**: `<div><FieldLabel/><input.../></div>` 반복 (30+ 파일)
+
+---
+
+#### FormSection
+**파일** · `src/components/common/FormSection.tsx`
+**목적** · title + description + fields group · 폼 섹션 표준.
+
+**Props**
+```ts
+interface FormSectionProps {
+  title: string;
+  icon?: React.ReactNode;
+  description?: string;
+  actions?: React.ReactNode;
+  gap?: "sm" | "md" | "lg";
+  padding?: "sm" | "md" | "lg";
+  children: React.ReactNode;
+  className?: string;
+}
+```
+
+**사용**
+```tsx
+<FormSection title="회사 정보" icon={<Building2 />} description="사업자·주소·대표">
+  <FormRow label="회사명" required><input ... /></FormRow>
+  <FormRow label="주소"><input ... /></FormRow>
+</FormSection>
+```
+
+**교체 대상**: Card + title + border-b 반복 폼 섹션 (20+ 파일)
+
+---
+
+#### SubmitBar
+**파일** · `src/components/common/SubmitBar.tsx`
+**목적** · sticky bottom · 저장·취소 액션 바 · Spinner 통합.
+
+**Props**
+```ts
+interface SubmitBarProps {
+  onSubmit?: () => void;
+  onCancel?: () => void;
+  submitLabel?: string;       // 기본 "저장"
+  cancelLabel?: string;       // 기본 "취소"
+  submitting?: boolean;       // spinner + disabled
+  disabled?: boolean;
+  hint?: string;              // 좌측 힌트
+  sticky?: boolean;           // 기본 true
+  submitTone?: "brand" | "rose" | "emerald";  // 삭제·승인 지원
+  children?: React.ReactNode; // 커스텀 액션 override
+  className?: string;
+}
+```
+
+**사용**
+```tsx
+<SubmitBar onSubmit={save} onCancel={close}
+           submitting={saving} submitLabel="저장" hint="자동 저장 후 즉시 반영" />
+<SubmitBar submitTone="rose" submitLabel="삭제" onSubmit={remove} />
+```
+
+**교체 대상**: 폼/모달 하단 저장·취소 버튼 반복 (9+ 파일)
+
+---
+
+#### ChartCard
+**파일** · `src/components/common/ChartCard.tsx`
+**목적** · recharts wrapper · title + description + loading + empty · 차트 반복 통합.
+
+**Props**
+```ts
+interface ChartCardProps {
+  title: string;
+  icon?: React.ReactNode;       // 기본 BarChart3
+  description?: string;
+  actions?: React.ReactNode;    // 기간 선택 등
+  loading?: boolean;
+  empty?: boolean;
+  emptyMessage?: string;
+  emptyHint?: string;
+  minHeight?: number;           // 기본 220
+  padding?: "sm" | "md" | "lg";
+  children: React.ReactNode;    // recharts ResponsiveContainer + Chart
+  className?: string;
+}
+```
+
+**사용**
+```tsx
+<ChartCard title="월별 매입액" icon={<BarChart3 />} description="최근 6개월">
+  <ResponsiveContainer width="100%" height={200}>
+    <BarChart data={data}>...</BarChart>
+  </ResponsiveContainer>
+</ChartCard>
+```
+
+**확산 현황** · DashboardCharts (7 차트) · 향후 SalesTrendPage · PurchaseHistoryTab 확산 예정
+**교체 대상**: recharts 차트 반복 wrapper (10+ 파일)
+
+---
+
+### 3.10 미사용 프리미티브 삭제 (2026-09-01)
+
+**삭제 11건** · 자체 test 외 참조 zero 확인
+- ActionBar · GroupedListPanel · IconButton · MiniCard · PageContainer
+- PageHeader · ProductClassFilter · SearchFilterChips · SortableHeader
+- SplitRightHeader · SplitRightLoading
+
+**대체** · Button variant · Toolbar · SegmentedControl · CategoryChips · LoadingState 등 활용
 
 ---
 

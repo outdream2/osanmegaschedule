@@ -15,8 +15,8 @@ beforeEach(() => {
 });
 
 describe("SIDEBAR 상수", () => {
-  it("MIN 180 · DEFAULT 220 · MAX 380", () => {
-    expect(SIDEBAR_MIN_WIDTH).toBe(180);
+  it("MIN 220 · DEFAULT 220 · MAX 380 (2026-09-01 사용자 지시 · MIN 승격)", () => {
+    expect(SIDEBAR_MIN_WIDTH).toBe(220);
     expect(SIDEBAR_DEFAULT_WIDTH).toBe(220);
     expect(SIDEBAR_MAX_WIDTH).toBe(380);
   });
