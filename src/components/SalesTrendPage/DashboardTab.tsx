@@ -23,6 +23,8 @@ import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 // 2026-09-01 · 사용자 지시 · 판매중 필터 언체크 기능 · 프레임워크 SaleStatusFilter 재사용
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
 import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
+// 2026-09-01 · 사용자 지시 · 대시보드 답게 · 차트 다양화 · 최신 트렌드 (Top10 · 카테고리 · 이익률)
+import { DashboardCharts } from "./DashboardCharts";
 import { fmtWon } from "../../lib/format";
 import { matchesProductQuery } from "../../lib/productMatch";
 import { api } from "../../lib/apiClient";
@@ -414,6 +416,9 @@ export const DashboardTab: React.FC = () => {
           hint="판매수량 가중 평균"
         />
       </div>
+
+      {/* ── 2026-09-01 · 사용자 지시 · 차트 다양화 · 대시보드 답게 (Top10·카테고리·이익률) ── */}
+      <DashboardCharts rows={rows} loading={loading} />
 
       {/* ── 좌 · 재고흐름 테이블 · 우 · 상품 상세 ───────────────────────── */}
       <div className="flex flex-col lg:flex-row gap-2 items-stretch lg:min-h-[560px]">
