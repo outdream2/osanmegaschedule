@@ -10,8 +10,10 @@ import { sanitizeOrValue } from "../../utils/sanitize";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler";
+import { validateBody } from "../../middleware/zodValidate";
+import { z } from "zod";
 import type { HiddenProductsResponse } from "../../../src/shared/dtos/products";
-import { CreateProductSchema } from "../../../src/shared/schemas/products";
+import { CreateProductSchema, UpdateProductSchema } from "../../../src/shared/schemas/products";
 // 2026-08-26 · 사용자 지시 · 적정재고 공통 프레임워크 · server/lib/optimalStock.ts
 import { refillOptimalStock } from "../../lib/optimalStock";
 
@@ -451,7 +453,7 @@ router.delete("/api/product-import-log", authorize(9), asyncHandler(async (_req,
 // 2026-08-26 · 사용자 지시 · 전산구역(spec) 값으로 실제구역(real_map) 일괄 통일
 //   · spec 있는 모든 상품 · real_map = spec 으로 업데이트
 //   · 관리자 lv9 전용 · 대용량 · 청크 배치
-router.post("/api/products/sync-real-map-to-spec", authorize(9), asyncHandler(async (_req, res) => {
+router.post("/api/products/sync-real-map-to-spec", authorize(9), validateBody(z.object({})), asyncHandler(async (_req, res) => {
   const t0 = Date.now();
   // 1. spec 이 있고 real_map 과 다른 상품 조회
   const { data: rows, error: qErr } = await supabase
@@ -602,7 +604,7 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
 }));
 
 // 2026-08-29 · 보안 S1 N8 fix · authorize(1) · 진열위치 편집 · 로그인 직원 필수
-router.patch("/api/products/:code/realmap", authorize(1), asyncHandler(async (req, res) => {
+router.patch("/api/products/:code/realmap", authorize(1), validateBody(z.object({ realMap: z.string().max(100).nullable().optional() })), asyncHandler(async (req, res) => {
   const code = (req.params.code ?? "").trim();
   const { realMap } = req.body ?? {};
   if (!code) throw badRequest("code required");
@@ -644,7 +646,14 @@ const ALLOWED_INLINE_EDIT = new Set([
 //   stock_history · snapshot_date >= today-30d · sale_qty 합산 → products.optimal_stock 일괄 업데이트
 //   body · { days?: number }  기본 30
 // 2026-08-29 · 보안 S1 N8 fix · authorize(9) · 전체 상품 optimal_stock 대량 갱신 · 관리자 전용
-router.post("/api/products/refill-optimal-stock", authorize(9), asyncHandler(async (req, res) => {
+const RefillOptimalStockSchema = z.object({
+  days: z.number().int().min(1).max(365).optional(),
+  fromDate: z.string().max(20).optional(),
+  toDate: z.string().max(20).optional(),
+  zeroIfNoSales: z.boolean().optional(),
+  syncOrderRequests: z.boolean().optional(),
+});
+router.post("/api/products/refill-optimal-stock", authorize(9), validateBody(RefillOptimalStockSchema), asyncHandler(async (req, res) => {
   // 2026-08-26 · 사용자 지시 · 공통 프레임워크 사용 (server/lib/optimalStock.ts)
   //   · 판매 0 상품도 0 으로 명시 설정 (A안 · 기본값)
   //   · fromDate 지정 · 그 날짜부터 오늘까지 판매량 집계 (미지정 시 · 오늘 - days)
@@ -681,7 +690,7 @@ router.post("/api/products/refill-optimal-stock", authorize(9), asyncHandler(asy
 }));
 
 // 2026-08-29 · 보안 S1 N8 fix · authorize(1) · 상품 인라인 편집 (판매상태·위치·가격 등) · 로그인 필수
-router.patch("/api/products/:code", authorize(1), asyncHandler(async (req, res) => {
+router.patch("/api/products/:code", authorize(1), validateBody(UpdateProductSchema), asyncHandler(async (req, res) => {
   const code = (req.params.code ?? "").trim();
   if (!code) throw badRequest("code required");
   const body = req.body ?? {};

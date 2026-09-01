@@ -6,6 +6,8 @@ import { notificationsService } from "../../services/notificationsService";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, forbidden, notFound, HttpError } from "../../middleware/errorHandler";
+import { validateBody } from "../../middleware/zodValidate";
+import { z } from "zod";
 
 const router = Router();
 
@@ -90,7 +92,14 @@ router.get("/api/stock-arrivals", asyncHandler(async (_req, res) => {
   res.json(data ?? []);
 }));
 
-router.post("/api/stock-arrivals", authorize(3), asyncHandler(async (req, res) => {
+const CreateStockArrivalSchema = z.object({
+  title: z.string().min(1).max(200),
+  body: z.string().max(1000).nullable().optional(),
+  employeeId: z.number().int().positive(),
+  send_now: z.boolean().optional(),
+  scheduled_at: z.string().max(50).nullable().optional(),
+});
+router.post("/api/stock-arrivals", authorize(3), validateBody(CreateStockArrivalSchema), asyncHandler(async (req, res) => {
   const { title, body, employeeId, send_now, scheduled_at } = req.body ?? {};
   if (!title || !employeeId) throw badRequest("title and employeeId required");
   const { data: emp, error: empErr } = await supabase
@@ -127,7 +136,7 @@ router.post("/api/stock-arrivals", authorize(3), asyncHandler(async (req, res) =
   res.status(201).json(arrival);
 }));
 
-router.post("/api/stock-arrivals/:id/broadcast", authorize(5), asyncHandler(async (req, res) => {
+router.post("/api/stock-arrivals/:id/broadcast", authorize(5), validateBody(z.object({ employeeId: z.number().int().positive().optional() })), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const { employeeId } = req.body ?? {};
   if (!id) throw badRequest("id required");
@@ -151,7 +160,13 @@ router.post("/api/stock-arrivals/:id/broadcast", authorize(5), asyncHandler(asyn
   res.json(updated);
 }));
 
-router.patch("/api/stock-arrivals/:id", authorize(3), asyncHandler(async (req, res) => {
+const PatchStockArrivalSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  body: z.string().max(1000).nullable().optional(),
+  employeeId: z.number().int().positive().optional(),
+  scheduled_at: z.string().max(50).nullable().optional(),
+});
+router.patch("/api/stock-arrivals/:id", authorize(3), validateBody(PatchStockArrivalSchema), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const { title, body, employeeId, scheduled_at } = req.body ?? {};
   if (!id) throw badRequest("id required");
@@ -187,7 +202,7 @@ router.delete("/api/stock-arrivals/:id", authorize(2), asyncHandler(async (req, 
   res.json({ ok: true });
 }));
 
-router.post("/api/anon-push-subscribe", asyncHandler(async (req, res) => {
+router.post("/api/anon-push-subscribe", validateBody(z.object({ subscription: z.object({ endpoint: z.string().url() }).passthrough() })), asyncHandler(async (req, res) => {
   const { subscription } = req.body ?? {};
   if (!subscription?.endpoint) throw badRequest("subscription with endpoint required");
   const { error } = await supabase

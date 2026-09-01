@@ -10,7 +10,8 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler";
 import type { VendorsListResponse } from "../../../src/shared/dtos/vendors";
-import { CreateVendorSchema } from "../../../src/shared/schemas/vendors";
+import { CreateVendorSchema, UpdateVendorSchema } from "../../../src/shared/schemas/vendors";
+import { z } from "zod";
 
 const router = Router();
 
@@ -269,7 +270,7 @@ router.post("/api/vendors", authorize(5), validateBody(CreateVendorSchema), asyn
 
 // 거래처 수정 (관리자)
 // 2026-08-29 · 보안 S0 N1 fix · authorize(5) · approval_status/company_name 등 임의 수정 방지
-router.patch("/api/vendors/:id", authorize(5), asyncHandler(async (req, res) => {
+router.patch("/api/vendors/:id", authorize(5), validateBody(UpdateVendorSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
   const {
@@ -404,7 +405,8 @@ router.delete("/api/vendors/:id", authorize(9), asyncHandler(async (req, res) =>
 // 공급사현황 엑셀 벌크 임포트 · 회사명(company_name) 중복 시 담당자/연락처 정보 업데이트
 // body: { rows: Array<{ company_name, contact_name, phone, email, category, note }> }
 // 2026-08-29 · 보안 S0 N2 fix · authorize(9) · vendor 대량 변조 방지
-router.post("/api/vendors/bulk-import", authorize(9), asyncHandler(async (req, res) => {
+const BulkImportVendorsSchema = z.object({ rows: z.array(z.record(z.string(), z.unknown())) });
+router.post("/api/vendors/bulk-import", authorize(9), validateBody(BulkImportVendorsSchema), asyncHandler(async (req, res) => {
   const rows: any[] = Array.isArray(req.body?.rows) ? req.body.rows : [];
   if (rows.length === 0) throw badRequest("rows 배열이 비어있습니다.");
   const normalize = (r: any) => ({
@@ -454,7 +456,8 @@ router.post("/api/vendors/bulk-import", authorize(9), asyncHandler(async (req, r
 
 // 거래처 비밀번호 설정 (관리자)
 // 2026-08-29 · 보안 S0 N3 fix · authorize(9) · 임의 vendor 비밀번호 hash 교체 방지 · 계정 탈취 방어
-router.post("/api/vendors/:id/set-password", authorize(9), asyncHandler(async (req, res) => {
+const SetPasswordSchema = z.object({ password: z.string().min(4, "비밀번호는 4자 이상") });
+router.post("/api/vendors/:id/set-password", authorize(9), validateBody(SetPasswordSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
   const { password } = req.body ?? {};
@@ -474,7 +477,7 @@ router.post("/api/vendors/:id/set-password", authorize(9), asyncHandler(async (r
 
 /** 거래처 자체 승인 요청 · 필수 필드 검증 · vendors.approval_status = pending · approval_requested_at = now */
 // 2026-08-29 · 보안 P1 N16 fix · authorize(1) · 인증 없는 위조 방지 (거래처 세션 포함)
-router.post("/api/vendors/:id/approval-request", authorize(1), asyncHandler(async (req, res) => {
+router.post("/api/vendors/:id/approval-request", authorize(1), validateBody(z.object({})), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
   const { data: vendor, error: fetchErr } = await supabase
@@ -516,7 +519,7 @@ router.post("/api/vendors/:id/approval-request", authorize(1), asyncHandler(asyn
 }));
 
 /** 관리자 승인 · authorize(9) */
-router.post("/api/vendors/:id/approve", authorize(9), asyncHandler(async (req, res) => {
+router.post("/api/vendors/:id/approve", authorize(9), validateBody(z.object({})), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
   const approvedBy = (req as any).auth?.employeeId ?? null;
@@ -533,7 +536,8 @@ router.post("/api/vendors/:id/approve", authorize(9), asyncHandler(async (req, r
 }));
 
 /** 관리자 거절 · authorize(9) · optional 사유 */
-router.post("/api/vendors/:id/reject", authorize(9), asyncHandler(async (req, res) => {
+const RejectVendorSchema = z.object({ reason: z.string().max(500).optional() });
+router.post("/api/vendors/:id/reject", authorize(9), validateBody(RejectVendorSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
   const approvedBy = (req as any).auth?.employeeId ?? null;
