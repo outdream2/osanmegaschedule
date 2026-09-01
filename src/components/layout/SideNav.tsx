@@ -21,8 +21,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-  SidebarTrigger,
-  SidebarRail,
 } from "../ui/sidebar";
 import type { AppNavPage } from "./AppNavHeader";
 import type { AuthSession } from "../../types";
@@ -476,11 +474,7 @@ export const SideNav: React.FC<SideNavProps> = ({
               </span>
             </div>
           </button>
-          {/* 접기/펼치기 토글 · 사이드바 내부 · 약국이름 우측 */}
-          <SidebarTrigger
-            className="h-7 w-7 rounded-md text-[#93B4D0] hover:text-white hover:bg-white/8 transition shrink-0 group-data-[collapsible=icon]:hidden"
-            aria-label="사이드바 접기"
-          />
+          {/* 2026-09-01 · 사용자 지시 · 사이드바 내부 토글 제거 · 헤더 위치로 원복 (a06a9abc 이전 UX) */}
         </div>
       </SidebarHeader>
 
@@ -561,8 +555,7 @@ export const SideNav: React.FC<SideNavProps> = ({
         aria-label="사이드바 폭 조절"
         aria-hidden="true"
       />
-      {/* 2026-08-28 · A안 · SidebarRail · 접힘 상태에서 · 사이드바 우측 경계선 클릭으로 펼치기 (shadcn 표준) */}
-      <SidebarRail className="hidden md:block group-data-[collapsible=icon]:block group-data-[collapsible=offcanvas]:hidden" />
+      {/* 2026-09-01 · 사용자 지시 · SidebarRail 제거 · 사이드바 안 토글 전면 폐지 · 헤더 chip 버튼으로 통일 */}
     </Sidebar>
   );
 };

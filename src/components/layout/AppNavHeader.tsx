@@ -288,13 +288,14 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   if (SIDEBAR_ENABLED && !isMobileNav) {
     return (
       <div className="flex items-center justify-between gap-3 px-3 py-1 shrink-0 bg-white/60 backdrop-blur-sm border-b border-line/50">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          {/* 2026-09-01 · 사이드바 토글 · 시각 개선 · 명확한 chip 버튼 (기존 60% 투명 → 명확한 bg+border+icon) */}
           <SidebarTrigger
-            className="h-8 w-8 rounded-md text-brand-deep/60 hover:text-brand-deep hover:bg-brand-tint transition cursor-pointer shrink-0"
+            className="h-9 w-9 rounded-lg text-brand-deep bg-white border border-line hover:bg-brand-tint hover:border-brand-deep/30 hover:shadow-sm active:scale-95 transition-all cursor-pointer shrink-0 [&_svg]:h-4 [&_svg]:w-4"
             aria-label="사이드바 열기/접기"
             title="사이드바 열기·접기 (Cmd/Ctrl+B)"
           />
-          <span className="w-px h-4 bg-line/60 shrink-0" aria-hidden />
+          <span className="w-px h-5 bg-line/70 shrink-0" aria-hidden />
           <Breadcrumb items={breadcrumbItems} onNavigate={handleBreadcrumbNav} className="min-w-0" />
         </div>
         <div className="flex items-center gap-2 shrink-0">{rightSlot}</div>
