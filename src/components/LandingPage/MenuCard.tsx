@@ -88,13 +88,11 @@ export function MenuCard({ color, icon: Icon, title, description, onClick, order
   if (pageKey && loaded) {
     const vp: "pc" | "mobile" = viewport ?? (typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches ? "pc" : "mobile");
     if (!isVisible(pageKey, vp)) return null;
-    // page_permissions · hidden 이면 · leaf/composite 양방향 확인
+    // 2026-09-01 · fix · 항상 양방향 · leaf 있어도 composite 도 체크 · 어느 하나라도 hidden 이면 숨김
     const permEntry = (perms as any)?.[pageKey];
     if (permEntry?.hidden === true) return null;
-    if (!permEntry) {
-      for (const k of Object.keys(perms ?? {})) {
-        if (k.endsWith(`:${pageKey}`) && (perms as any)[k]?.hidden === true) return null;
-      }
+    for (const k of Object.keys(perms ?? {})) {
+      if (k.endsWith(`:${pageKey}`) && (perms as any)[k]?.hidden === true) return null;
     }
   }
   // 2026-08-17 · 사용자 지시 · 반응형 랜딩 메뉴 폰트 +2 (기존 15 → 17) · 2026-08-23 · #200 +2 (17 → 19)

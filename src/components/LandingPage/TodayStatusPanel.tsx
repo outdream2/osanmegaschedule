@@ -49,13 +49,13 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
   const { perms } = usePagePermissions();
   const isMobile = useIsMobile();
   const currentViewport = isMobile ? "mobile" : "pc";
+  // 2026-09-01 · fix · 항상 양방향 체크 · leaf/composite 어느 하나라도 hidden 이면 숨김
+  //   · 이전 · leaf entry 있으면 composite fallback 안 봄 · 사용자 승인요청 그룹 uncheck 무시됨
   const isPermsHidden = (key: string): boolean => {
-    const e = (perms as any)?.[key];
-    if (e?.hidden === true) return true;
-    if (!e) {
-      for (const k of Object.keys(perms ?? {})) {
-        if (k.endsWith(`:${key}`) && (perms as any)[k]?.hidden === true) return true;
-      }
+    const leaf = (perms as any)?.[key];
+    if (leaf?.hidden === true) return true;
+    for (const k of Object.keys(perms ?? {})) {
+      if (k.endsWith(`:${key}`) && (perms as any)[k]?.hidden === true) return true;
     }
     return false;
   };
