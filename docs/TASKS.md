@@ -1,5 +1,6 @@
 # TASKS
 
+> 2026-09-01 · 서버 프레임워크 감사 완료 · validateBody+authorize 32건 추가 · 55→23 위반 (58% 감소) · 4 배치 커밋 · vitest 3410/3410 통과
 > 2026-08-29 · #193 매장서브탭 재편 · #196 사이드바 자동파생 · #198 purchase_details 통합 · #200 미사용테이블 제거 SQL · #197 DB 정합성 2건 fix · 총 22 로컬커밋 · MENU_STRUCTURE 15차 업데이트
 > 2026-08-23 · #31 완료 · RawOcrTable 5268→799줄 · 9 신규 훅/상수 파일 · audit 위반 5→4 · TS clean · build ✓
 > 2026-08-22 · Framework Phase 4 대량 분리 · 6파일 -1,003 라인 · 8 신규 파일 이관 · audit 24 유지 · Phase 2 (가드레일) 완료 · 원격 push 완료
