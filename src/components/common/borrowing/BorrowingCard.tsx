@@ -47,10 +47,20 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
   const Icon = meta.icon;
   const amount = item.qty != null && item.unit_price != null ? item.qty * item.unit_price : null;
 
+  // 2026-09-01 · 목업 gap · status 별 top accent 색상
+  const topAccentCls =
+    status === "settled" ? "from-emerald-400 via-emerald-500 to-emerald-400"
+    : status === "overdue" ? "from-rose-400 via-rose-500 to-rose-400"
+    : status === "cancelled" ? "from-zinc-300 via-zinc-400 to-zinc-300"
+    : "from-violet-400 via-emerald-500 to-emerald-400";
+
   return (
-    <div className={`rounded-xl border border-line bg-white hover:border-brand-deep/30 hover:shadow-md transition-all ${className}`}>
+    <div className={`relative rounded-xl border border-line bg-white hover:border-brand-deep/30 hover:shadow-md transition-all overflow-hidden ${className}`}>
+      {/* 2026-09-01 · 목업 gap · 3px top gradient accent · status 별 색상 (Attio/Linear 시그니처) */}
+      <span aria-hidden className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${topAccentCls} z-10`} />
+
       {/* 헤더 · 항상 표시 */}
-      <div className="flex items-center gap-3 p-3">
+      <div className="flex items-center gap-3 p-3 pt-3.5">
         {/* 확장 토글 */}
         <button
           type="button"
@@ -61,9 +71,9 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
           {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </button>
 
-        {/* Lender chip */}
+        {/* Lender chip · 2026-09-01 · gradient avatar (PartyCard 톤 통일) */}
         <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-violet-50 border border-violet-200">
-          <div className="w-5 h-5 rounded-full bg-violet-500 text-white flex items-center justify-center text-[11px] font-extrabold">
+          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-violet-700 text-white flex items-center justify-center text-[11px] font-extrabold shadow-[0_1px_3px_rgba(0,0,0,0.15)]">
             {String(item.lender_name ?? "?").charAt(0)}
           </div>
           <span className="text-[13px] font-bold text-violet-800 break-words whitespace-normal">{item.lender_name ?? "미지정"}</span>
@@ -86,9 +96,9 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
           </div>
         </div>
 
-        {/* Borrower chip */}
+        {/* Borrower chip · 2026-09-01 · gradient avatar */}
         <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-200">
-          <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[11px] font-extrabold">
+          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 text-white flex items-center justify-center text-[11px] font-extrabold shadow-[0_1px_3px_rgba(0,0,0,0.15)]">
             {String(item.borrower_name ?? "?").charAt(0)}
           </div>
           <span className="text-[13px] font-bold text-emerald-800 break-words whitespace-normal">{item.borrower_name ?? "미지정"}</span>

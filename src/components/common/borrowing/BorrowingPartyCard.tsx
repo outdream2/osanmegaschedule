@@ -26,9 +26,28 @@ export interface BorrowingPartyCardProps {
 }
 
 // 당사자 톤 · lender=violet · borrower=emerald
+// 2026-09-01 · 사용자 지시 · 목업 gap 반영 · gradient avatar + top accent · Attio/Linear 톤
 const TONE = {
-  lender:   { bg: "bg-violet-50", border: "border-violet-200", ring: "ring-violet-300", accentText: "text-violet-700", accentBg: "bg-violet-100", iconBg: "bg-violet-500", label: "대여자 · LENDER" },
-  borrower: { bg: "bg-emerald-50", border: "border-emerald-200", ring: "ring-emerald-300", accentText: "text-emerald-700", accentBg: "bg-emerald-100", iconBg: "bg-emerald-500", label: "차용자 · BORROWER" },
+  lender: {
+    bg: "bg-gradient-to-br from-violet-50 to-white",
+    border: "border-violet-200",
+    ring: "ring-violet-300",
+    accentText: "text-violet-700",
+    accentBg: "bg-violet-100",
+    iconBg: "bg-gradient-to-br from-violet-500 to-violet-700",
+    topAccent: "from-violet-400 via-violet-500 to-violet-400",
+    label: "대여자 · LENDER",
+  },
+  borrower: {
+    bg: "bg-gradient-to-br from-emerald-50 to-white",
+    border: "border-emerald-200",
+    ring: "ring-emerald-300",
+    accentText: "text-emerald-700",
+    accentBg: "bg-emerald-100",
+    iconBg: "bg-gradient-to-br from-emerald-500 to-emerald-700",
+    topAccent: "from-emerald-400 via-emerald-500 to-emerald-400",
+    label: "차용자 · BORROWER",
+  },
 };
 
 export const BorrowingPartyCard: React.FC<BorrowingPartyCardProps> = ({ role, party, onClick, className = "" }) => {
@@ -40,19 +59,22 @@ export const BorrowingPartyCard: React.FC<BorrowingPartyCardProps> = ({ role, pa
     <div
       onClick={onClick}
       className={`
-        relative rounded-xl border-2 ${t.border} ${t.bg} p-4
+        relative rounded-xl border-2 ${t.border} ${t.bg} p-4 overflow-hidden
         ${clickable ? "cursor-pointer hover:shadow-lg hover:-translate-y-0.5" : ""}
         transition-all duration-200 ${className}
       `}
     >
+      {/* 2026-09-01 · 목업 gap · 3px top gradient accent (Attio/Linear 시그니처) */}
+      <span aria-hidden className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${t.topAccent}`} />
       {/* 역할 라벨 */}
-      <div className={`inline-flex items-center h-5 px-2 rounded text-[11px] font-extrabold uppercase tracking-wider ${t.accentBg} ${t.accentText} mb-2`}>
+      <div className={`inline-flex items-center h-5 px-2 rounded text-[11px] font-extrabold uppercase tracking-wider ${t.accentBg} ${t.accentText} mb-2 mt-0.5`}>
         {t.label}
       </div>
 
       {party ? (
         <div className="flex items-start gap-3">
-          <div className={`shrink-0 w-11 h-11 rounded-full ${t.iconBg} text-white flex items-center justify-center text-[18px] font-extrabold ring-2 ${t.ring} shadow-sm`}>
+          {/* 2026-09-01 · 목업 gap · avatar gradient + glow shadow */}
+          <div className={`shrink-0 w-11 h-11 rounded-full ${t.iconBg} text-white flex items-center justify-center text-[18px] font-extrabold ring-2 ${t.ring} shadow-[0_2px_8px_-2px_rgba(0,0,0,0.20)]`}>
             {initial}
           </div>
           <div className="min-w-0 flex-1">
