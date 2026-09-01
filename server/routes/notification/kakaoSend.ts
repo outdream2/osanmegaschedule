@@ -28,6 +28,7 @@ import { z } from "zod";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { authorize } from "../../middleware/requireAuth";
 import { badRequest } from "../../middleware/errorHandler";
+import { validateBody } from "../../middleware/zodValidate";
 import { sendKakaoAlimtalk, isKakaoConfigured } from "../../services/kakaoNotifyService";
 
 const router = Router();
@@ -52,12 +53,9 @@ const kakaoSendBodySchema = z.object({
 router.post(
   "/api/notifications/kakao-send",
   authorize(3),
+  validateBody(kakaoSendBodySchema),
   asyncHandler(async (req, res) => {
-    const parsed = kakaoSendBodySchema.safeParse(req.body ?? {});
-    if (!parsed.success) {
-      throw badRequest(parsed.error.issues[0]?.message ?? "잘못된 요청 형식");
-    }
-    const { to, templateId, variables, attachmentUrl } = parsed.data;
+    const { to, templateId, variables, attachmentUrl } = req.body;
 
     const result = await sendKakaoAlimtalk({
       to,

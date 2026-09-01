@@ -4,10 +4,12 @@
 //   · POST /api/system-config · 관리자 lv≥9 · patch 저장 · restartRequired=true
 // 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
 import { Router } from "express";
+import { z } from "zod";
 import { authorize } from "../../middleware/requireAuth";
 import { readTenantConfig, saveTenantConfig, isSensitive, maskValue } from "../../lib/tenantConfig";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
+import { validateBody } from "../../middleware/zodValidate";
 
 const router = Router();
 
@@ -57,9 +59,10 @@ router.get("/api/system-config", authorize(9), asyncHandler(async (_req, res) =>
   res.json(result);
 }));
 
-router.post("/api/system-config", authorize(9), asyncHandler(async (req, res) => {
-  const patch = req.body ?? {};
-  if (!patch || typeof patch !== "object") throw badRequest("body must be an object");
+const SystemConfigPatchSchema = z.record(z.string(), z.union([z.string(), z.null()]));
+
+router.post("/api/system-config", authorize(9), validateBody(SystemConfigPatchSchema), asyncHandler(async (req, res) => {
+  const patch = req.body;
   const cleanPatch: Record<string, string> = {};
   for (const [k, v] of Object.entries(patch)) {
     if (!SUPPORTED_KEYS.includes(k)) continue;
