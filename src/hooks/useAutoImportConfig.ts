@@ -4,7 +4,7 @@
 //   · GET /api/auto-import/status (heartbeat)
 //   · 서버 KV `auto_import_config` · `auto_import_status`
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../lib/apiClient";
 import { getErrorMessage } from "../lib/errorMessage";
 import {
@@ -31,6 +31,11 @@ export function useAutoImportConfig(): UseAutoImportConfigResult {
   const [loaded, setLoaded] = useState(false);
   const [saveState, setSaveState] = useState<AutoImportSaveState>("idle");
   const [saveError, setSaveError] = useState<string | null>(null);
+  // 2026-09-01 · fix · setTimeout 언마운트 후 setState 방어 · ref 로 timeout 추적 · cleanup 시 clear
+  const savedResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (savedResetTimeoutRef.current) clearTimeout(savedResetTimeoutRef.current);
+  }, []);
 
   const reload = useCallback(async () => {
     try {
@@ -61,8 +66,12 @@ export function useAutoImportConfig(): UseAutoImportConfigResult {
     try {
       await api.post("/api/auto-import/config", config);
       setSaveState("saved");
-      // 3초 후 idle 로 복귀 · UI 배지 자동 hide
-      setTimeout(() => setSaveState("idle"), 3000);
+      // 2026-09-01 · fix · 3초 후 idle 로 복귀 · 이전 timeout 있으면 clear (중복 방지) · ref 로 unmount 대응
+      if (savedResetTimeoutRef.current) clearTimeout(savedResetTimeoutRef.current);
+      savedResetTimeoutRef.current = setTimeout(() => {
+        setSaveState("idle");
+        savedResetTimeoutRef.current = null;
+      }, 3000);
       return true;
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "저장 실패");

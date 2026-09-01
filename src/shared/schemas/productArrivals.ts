@@ -9,6 +9,9 @@ export const ArrivalItemSchema = z.object({
   qty: z.number().nonnegative(),
   status: z.enum(["match", "mismatch", "pending"]).default("pending"),
   expiring: z.boolean().optional(),
+  // 2026-09-01 · fix · 프론트 · 매장구역 (item.location) 송신 · 서버 UPDATE products.location 사용
+  //   · 이전 · Zod schema 누락 · 검증 우회 · 정합성 위험
+  location: z.string().max(100).nullable().optional(),
 });
 export type ArrivalItemInput = z.infer<typeof ArrivalItemSchema>;
 

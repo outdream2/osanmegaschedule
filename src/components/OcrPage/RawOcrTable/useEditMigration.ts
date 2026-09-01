@@ -30,15 +30,14 @@ export function useEditMigration({ pageNums, dispHeaders, setCellEdits, setAutoS
     const prev = prevStructureRef.current;
     prevStructureRef.current = { pageNums: [...pageNums], dispHeaders: [...dispHeaders] };
     if (!prev || prev.pageNums.length === 0) {
-      console.log(`[edit migration DEBUG] 첫 실행 · prev=${prev ? "empty" : "null"} · migrate skip`);
+      // 2026-09-01 · fix · DEBUG log 제거 (프로덕션 노이즈)
       return;
     }
     // 구조 동일하면 스킵
     const samePn = prev.pageNums.length === pageNums.length && prev.pageNums.every((v, i) => v === pageNums[i]);
     const sameHd = prev.dispHeaders.length === dispHeaders.length && prev.dispHeaders.every((v, i) => v === dispHeaders[i]);
     if (samePn && sameHd) return;
-    console.log(`[edit migration DEBUG] 구조 변경 · prev pageNums[${prev.pageNums.length}]=${prev.pageNums.slice(0,10).join(",")}... · new pageNums[${pageNums.length}]=${pageNums.slice(0,10).join(",")}...`);
-    console.log(`[edit migration DEBUG] prev headers[${prev.dispHeaders.length}]=${prev.dispHeaders.join("|")} · new headers[${dispHeaders.length}]=${dispHeaders.join("|")}`);
+    // 2026-09-01 · fix · DEBUG log 제거 · 구조 변경 요약 만 남김 (아래)
     console.log(`[cellEdits migration] 구조 변경 감지 · prev: ${prev.pageNums.length}행 ${prev.dispHeaders.length}컬 → new: ${pageNums.length}행 ${dispHeaders.length}컬`);
     const prevKeys = buildStableKeys(prev.pageNums);
     const newKeys = buildStableKeys(pageNums);
@@ -74,9 +73,7 @@ export function useEditMigration({ pageNums, dispHeaders, setCellEdits, setAutoS
         }
       }
       console.log(`[cellEdits migration] ${editKeys.length}행 → 유지 ${preserved} · 손실 ${lost}`);
-      if (lost > 0) {
-        console.log(`[cellEdits migration DEBUG] 손실 상세 · 편집키(prevRi): ${editKeys.join(",")} · 유지된 newRi: ${Object.keys(next).join(",")}`);
-      }
+      // 2026-09-01 · fix · DEBUG 손실 상세 log 제거 · 손실률 warn 은 유지
       if (lost > 0 && lost >= preserved) {
         console.warn(`[cellEdits migration] 손실률 ${lost}/${editKeys.length} 이 유지보다 많음 · 안전을 위해 원본 유지 (return prevEdits)`);
         return prevEdits;
