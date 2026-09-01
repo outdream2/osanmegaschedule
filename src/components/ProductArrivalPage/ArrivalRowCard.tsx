@@ -127,13 +127,18 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
   const warehouseVis = useMemo(() => resolveWarehouseVisibility(productRealMap), [productRealMap]);
   const slotZones = useMemo(() => assignZonesToSlots(productRealMap, productCategoryCode), [productRealMap, productCategoryCode]);
   const targetSlot = useMemo(() => classifyArrivalSlot(item.location), [item.location]);
-  // 표시할 관련 슬롯 목록 (창고 · 매장 · 상품 소속만)
+  // 2026-09-01 · fix · 사용자가 선택한 location 이 창고 코드면 · 창고 슬롯 자동 추가
+  //   · 이전 · 상품 real_map 만 · 창고 소속 아니면 창고 슬롯 안 나옴 (사용자 지적 버그)
+  //   · 수정 · targetSlot=w1/w2 면 해당 슬롯 강제 표시
+  const showW1 = warehouseVis.showW1 || targetSlot === "w1";
+  const showW2 = warehouseVis.showW2 || targetSlot === "w2";
+  // 표시할 관련 슬롯 목록 (창고 · 매장 · 상품 소속 or 사용자 선택 기반)
   const relatedSlots: { slot: ArrivalSlot; zone: string | null }[] = [];
-  if (warehouseVis.showW1) relatedSlots.push({ slot: "w1", zone: slotZones.w1zone });
-  if (warehouseVis.showW2) relatedSlots.push({ slot: "w2", zone: slotZones.w2zone });
-  if (slotZones.s1zone) relatedSlots.push({ slot: "s1", zone: slotZones.s1zone });
-  if (slotZones.s2zone) relatedSlots.push({ slot: "s2", zone: slotZones.s2zone });
-  if (slotZones.s3zone) relatedSlots.push({ slot: "s3", zone: slotZones.s3zone });
+  if (showW1) relatedSlots.push({ slot: "w1", zone: slotZones.w1zone ?? (targetSlot === "w1" ? item.location : null) });
+  if (showW2) relatedSlots.push({ slot: "w2", zone: slotZones.w2zone ?? (targetSlot === "w2" ? item.location : null) });
+  if (slotZones.s1zone || targetSlot === "s1") relatedSlots.push({ slot: "s1", zone: slotZones.s1zone ?? item.location });
+  if (slotZones.s2zone || targetSlot === "s2") relatedSlots.push({ slot: "s2", zone: slotZones.s2zone ?? item.location });
+  if (slotZones.s3zone || targetSlot === "s3") relatedSlots.push({ slot: "s3", zone: slotZones.s3zone ?? item.location });
 
   // 좌측 accent stripe (2026-09-01 · #93 · 명세서 상태 2종만 · expiring accent 제거)
   const stripeCls =

@@ -23,7 +23,7 @@ import { usePageVisibility } from "../../hooks/usePageVisibility";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { DERIVED_TOP_TABS, type DerivedTopTab, type SideNavColor } from "./sideNavGroups";
 import type { TabDef } from "./AppNavHeader.types";
-import { TAB_COLOR_MAP } from "./AppNavHeader.types";
+// 2026-09-01 · TAB_COLOR_MAP · dropdown fix 후 · 이 파일에서 미사용 (NavDesktopTab·NavMobileTab 은 자체 import)
 import { NavDesktopTab } from "./NavDesktopTab";
 import { NavMobileTab } from "./NavMobileTab";
 
@@ -434,9 +434,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
               </button>
               {desktopOverflowOpen && (
                 <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1.5 min-w-[160px] z-[45] max-h-[70vh] overflow-y-auto">
+                  {/* 2026-09-01 · fix · dropdown 흰 배경 · TAB_COLOR_MAP (헤더용 text-white) 대신 · 명시 dark 톤 */}
                   {desktopOverflowTabs.map(tab => {
                     const Icon = tab.icon;
-                    const c = TAB_COLOR_MAP[tab.color ?? "slate"];
                     const isActive = tab.key === "business" ? isBizPage : tab.key === activePage;
                     const onClickTab = () => {
                       setDesktopOverflowOpen(false);
@@ -451,8 +451,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                         onClick={onClickTab}
                         className={`w-full flex items-center gap-2.5 px-3 py-2 text-[15px] font-semibold transition-all duration-100 rounded-lg mx-1 ${
                           isActive
-                            ? `${c.activeBg} ${c.activeText} font-bold`
-                            : `${c.inactiveText} hover:bg-zinc-50 hover:${c.inactiveHoverText.replace("hover:", "")} cursor-pointer`
+                            ? "bg-brand-tint text-brand-deep font-bold"
+                            : "text-zinc-700 hover:bg-zinc-50 hover:text-brand-deep cursor-pointer"
                         }`}
                         style={{ width: "calc(100% - 8px)" }}
                       >
@@ -509,9 +509,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                 </button>
                 {mobileOverflowOpen && (
                   <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1 min-w-[160px] z-[45] max-h-[70vh] overflow-y-auto">
+                    {/* 2026-09-01 · fix · dropdown 흰 배경 · TAB_COLOR_MAP (헤더용 text-white) 대신 · 명시 dark 톤 */}
                     {mobileOverflowTabs.map(tab => {
                       const Icon = tab.icon;
-                      const c = TAB_COLOR_MAP[tab.color ?? "slate"];
                       const isActive = tab.key === "business" ? isBizPage : tab.key === activePage;
                       const onClickTab = () => {
                         setMobileOverflowOpen(false);
@@ -526,8 +526,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                           onClick={onClickTab}
                           className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-[13px] font-bold min-h-[44px] transition ${
                             isActive
-                              ? `${c.activeBg} ${c.activeText}`
-                              : `${c.inactiveText} hover:bg-zinc-50 cursor-pointer`
+                              ? "bg-brand-tint text-brand-deep"
+                              : "text-zinc-700 hover:bg-zinc-50 hover:text-brand-deep cursor-pointer"
                           }`}
                         >
                           <Icon size={15} weight="fill" />
