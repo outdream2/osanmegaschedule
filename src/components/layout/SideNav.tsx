@@ -244,7 +244,8 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   aria-current={active ? "page" : undefined}
                   aria-label={item.label}
                   className={[
-                    "group-data-[collapsible=icon]:pl-2 pl-4",
+                    // 2026-09-01 · 사용자 지시 · 좌우 여백 감축 · pl-4 → pl-2.5 (16→10px)
+                    "group-data-[collapsible=icon]:pl-2 pl-2.5 pr-2",
                     "h-8 rounded-lg",
                     "text-[18px]",
                     // 2026-08-31 · 강한 대비 · bg 강도 up (10% → 22%) · text 강도 up · font-extrabold
@@ -479,7 +480,8 @@ export const SideNav: React.FC<SideNavProps> = ({
       </SidebarHeader>
 
       {/* ── 그룹 트리 · 2026-08-17 · relative + z-10 (aurora glow 뒤로) ── */}
-      <SidebarContent className="relative px-1 pt-1 z-10">
+      {/* 2026-09-01 · 사용자 지시 · 좌우 여백 감축 · px-1 → px-0.5 (SidebarMenu 자체 px-1 유지 · 총 여백 최소) */}
+      <SidebarContent className="relative px-0.5 pt-1 z-10">
         {groups.map((group) => (
           group.items.length === 1 ? (
             <SingleItemGroup

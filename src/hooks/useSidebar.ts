@@ -9,7 +9,10 @@ const COLLAPSED_KEY = SK_SIDEBAR_COLLAPSED;
 const WIDTH_KEY = SK_SIDEBAR_WIDTH;
 const AUTO_COLLAPSE_BELOW = 1280;
 
-export const SIDEBAR_MIN_WIDTH = 180;
+// 2026-09-01 · 사용자 지시 · 최소 폭 = 기존 default (220) · 이하로 못 줄이게
+//   · 반응형 · 창 폭에 따라 · resize handle 로 확장 가능
+//   · 좌우 여백 감축 (SideNav 안 pl-4 → pl-2.5 등) 병행
+export const SIDEBAR_MIN_WIDTH = 220;
 export const SIDEBAR_MAX_WIDTH = 380;
 export const SIDEBAR_DEFAULT_WIDTH = 220;
 
