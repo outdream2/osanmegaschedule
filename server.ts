@@ -104,23 +104,28 @@ async function startServer() {
     );
   }
 
-  // 2026-08-18 · 사용자 지시 · 아이폰 바코드 카메라 안 됨 · helmet + Permissions-Policy 완전 비활성화
-  //   · 2주 전 (2026-08-05 이전) 잘 작동하던 상태로 복원
-  //   · helmet 은 iOS Safari 에서 getUserMedia 를 조용히 차단하는 것으로 확인
+  // 2026-08-18 · 사용자 지시 · 아이폰 바코드 카메라 안 됨 · helmet CSP/Permissions-Policy 비활성화 유지
+  //   · helmet 전체 비활성화 대신 · iOS 카메라 영향 없는 헤더만 선택 적용
+  //   · 2026-09-01 · 보안 fix · X-Frame-Options · X-Content-Type-Options · X-DNS-Prefetch-Control 3개만
+  //     · contentSecurityPolicy: false   → CSP 없음 (iOS getUserMedia 영향 X)
+  //     · crossOriginEmbedderPolicy: false → COEP 없음 (카메라 영향 X)
+  //     · crossOriginOpenerPolicy: false  → COOP 없음 (카메라 영향 X)
+  //     · crossOriginResourcePolicy: false → CORP 없음
+  //     · permissionsPolicy: false        → Permissions-Policy 없음 (카메라 허용 유지)
   //   · 재도입 시 iOS 실기 테스트 필수 (직접 아이폰에서 카메라 프롬프트 확인)
-  //
-  // app.use(helmet({
-  //   contentSecurityPolicy: false,
-  //   crossOriginEmbedderPolicy: false,
-  //   crossOriginOpenerPolicy: false,
-  //   crossOriginResourcePolicy: false,
-  //   originAgentCluster: false,
-  // }));
-  //
-  // app.use((_req, res, next) => {
-  //   res.setHeader("Permissions-Policy", "camera=*, microphone=*, geolocation=*, fullscreen=*");
-  //   next();
-  // });
+  app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false,
+    originAgentCluster: false,
+    // X-Frame-Options: SAMEORIGIN (클릭재킹 방어)
+    frameguard: { action: "sameorigin" },
+    // X-Content-Type-Options: nosniff (MIME 스니핑 방어)
+    noSniff: true,
+    // X-DNS-Prefetch-Control: off (정보 누출 방어)
+    dnsPrefetchControl: { allow: false },
+  }));
 
   // 2026-08-16 · #112-C · 로그인 route · 무차별 대입 방어 (1분 10회)
   //   · vendor-login · change-password · set-password 도 함께 보호
