@@ -1,5 +1,5 @@
 {
-  "created": "2026-08-31",
+  "created": "2026-09-01",
   "version": 1,
   "totalViolations": 2,
   "files": {
@@ -13,15 +13,15 @@
       ],
       "totalWeight": 3
     },
-    "src/components/StockManagePage/FlowTab.tsx": {
-      "lines": 812,
+    "src/components/SalesTrendPage/DashboardCharts.tsx": {
+      "lines": 720,
       "violations": [
         {
-          "ruleId": "large-file-warn",
+          "ruleId": "raw-card-wrapper",
           "count": 1
         }
       ],
-      "totalWeight": 3
+      "totalWeight": 2
     }
   }
 }

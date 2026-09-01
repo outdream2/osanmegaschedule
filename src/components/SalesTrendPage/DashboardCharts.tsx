@@ -13,11 +13,14 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Cell as PieCell,
   CartesianGrid, LabelList,
+  ScatterChart, Scatter, ZAxis,
+  RadialBarChart, RadialBar,
+  AreaChart, Area,
 } from "recharts";
 import { ChartCard } from "../common/ChartCard";
 import { fmtWon } from "../../lib/format";
 import { calcLoss, type StockFlowRow } from "./StockFlowPanel";
-import { TrendingUp, PieChart as PieIcon, Percent, AlertTriangle } from "lucide-react";
+import { TrendingUp, PieChart as PieIcon, Percent, AlertTriangle, PackageX, Building2, Activity, DollarSign, Gauge, TrendingDown } from "lucide-react";
 
 // ─── 색상 팔레트 · Linear/Vercel 톤 (deep blue · teal · violet · rose · amber)
 const CHART_COLORS = [
@@ -278,7 +281,412 @@ const ProfitDistChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({
   );
 };
 
-// ─── DashboardCharts · 3-column grid wrapper
+// ─── 4. 손실 Top 10 · alert-oriented horizontal bar (rose 톤)
+const LossTopChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ rows, loading }) => {
+  const data = useMemo(() => {
+    const scored = rows
+      .map(r => ({
+        name: String(r.product_name ?? "").trim(),
+        loss: calcLoss(r),
+        salePrice: Number(r.sale_price ?? 0),
+      }))
+      .filter(x => x.name && x.loss > 0);
+    scored.sort((a, b) => b.loss - a.loss);
+    return scored.slice(0, 10).map(x => ({
+      name: x.name.length > 20 ? x.name.slice(0, 20) + "..." : x.name,
+      fullName: x.name,
+      loss: x.loss,
+      lossAmount: x.loss * x.salePrice,
+    }));
+  }, [rows]);
+
+  const totalLoss = useMemo(() => data.reduce((s, d) => s + d.loss, 0), [data]);
+
+  return (
+    <ChartCard
+      title="손실 Top 10"
+      icon={<PackageX size={14} className="text-rose-600" />}
+      description={`총 손실 ${totalLoss.toLocaleString()}개 · 관리 대상`}
+      loading={loading}
+      empty={data.length === 0}
+      emptyMessage="손실 없음"
+      minHeight={280}
+    >
+      <ResponsiveContainer width="100%" height={280}>
+        <BarChart data={data} layout="vertical" margin={{ top: 4, right: 50, bottom: 4, left: 4 }}>
+          <XAxis type="number" hide />
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={110}
+            tick={{ fontSize: 11, fill: "#52525b", fontWeight: 600 }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip
+            formatter={(v: any, name: any) => {
+              if (name === "loss") return [`${v}개`, "손실 수량"];
+              return [v, name];
+            }}
+            labelFormatter={(_: any, payload: any) => payload?.[0]?.payload?.fullName ?? ""}
+            contentStyle={{ background: "white", border: "1px solid #fecaca", borderRadius: 8, fontSize: 12, boxShadow: "0 4px 12px rgba(239,68,68,0.15)" }}
+          />
+          <Bar dataKey="loss" radius={[0, 4, 4, 0]} fill="#EF4444">
+            <LabelList
+              dataKey="loss"
+              position="right"
+              formatter={(v: any) => `${v}개`}
+              style={{ fontSize: 10, fontWeight: 700, fill: "#b91c1c" }}
+            />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
+  );
+};
+
+// ─── 5. 공급사 Top 10 매출 · bar chart
+const SupplierTopChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ rows, loading }) => {
+  const data = useMemo(() => {
+    const map = new Map<string, { amount: number; count: number }>();
+    for (const r of rows) {
+      const sup = String((r as any).supplier ?? "").trim();
+      if (!sup) continue;
+      const qty = Number(r.sale_qty ?? 0);
+      const price = Number(r.sale_price ?? 0);
+      if (qty <= 0 || price <= 0) continue;
+      const cur = map.get(sup) ?? { amount: 0, count: 0 };
+      cur.amount += qty * price;
+      cur.count += 1;
+      map.set(sup, cur);
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[1].amount - a[1].amount)
+      .slice(0, 10)
+      .map(([name, v], i) => ({
+        name: name.length > 12 ? name.slice(0, 12) + "..." : name,
+        fullName: name,
+        amount: v.amount,
+        count: v.count,
+        color: CHART_COLORS[i % CHART_COLORS.length],
+      }));
+  }, [rows]);
+
+  return (
+    <ChartCard
+      title="공급사 Top 10"
+      icon={<Building2 size={14} className="text-brand-deep" />}
+      description="매출 기여도 상위"
+      loading={loading}
+      empty={data.length === 0}
+      emptyMessage="공급사 데이터 없음"
+      minHeight={280}
+    >
+      <ResponsiveContainer width="100%" height={280}>
+        <BarChart data={data} margin={{ top: 20, right: 8, bottom: 40, left: 8 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" vertical={false} />
+          <XAxis
+            dataKey="name"
+            angle={-30}
+            textAnchor="end"
+            height={60}
+            interval={0}
+            tick={{ fontSize: 10, fill: "#52525b", fontWeight: 600 }}
+            axisLine={{ stroke: "#e4e4e7" }}
+            tickLine={false}
+          />
+          <YAxis
+            tick={{ fontSize: 10, fill: "#71717a" }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v: any) => {
+              if (v >= 1e8) return `${(v / 1e8).toFixed(0)}억`;
+              if (v >= 1e4) return `${(v / 1e4).toFixed(0)}만`;
+              return String(v);
+            }}
+          />
+          <Tooltip
+            formatter={(v: any) => [fmtWon(Number(v)) + "원", "매출"]}
+            labelFormatter={(_: any, payload: any) => payload?.[0]?.payload?.fullName ?? ""}
+            contentStyle={{ background: "white", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
+          />
+          <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
+            {data.map((d, i) => (
+              <Cell key={i} fill={d.color} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
+  );
+};
+
+// ─── 6. 재고 vs 판매 산점도 · fast/slow mover 판별
+const StockVsSalesScatter: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ rows, loading }) => {
+  const data = useMemo(() => {
+    return rows
+      .map(r => ({
+        name: String(r.product_name ?? "").trim(),
+        sale: Number(r.sale_qty ?? 0),
+        stock: Number((r as any).closing_stock ?? (r as any).current_stock ?? 0),
+        loss: calcLoss(r),
+      }))
+      .filter(x => x.name && (x.sale > 0 || x.stock > 0))
+      .slice(0, 300);
+  }, [rows]);
+
+  // 4분면 표시 · 판매↑ 재고↑ (안정) · 판매↑ 재고↓ (부족) · 판매↓ 재고↑ (악성) · 판매↓ 재고↓ (양호)
+  return (
+    <ChartCard
+      title="재고 vs 판매 산점도"
+      icon={<Activity size={14} className="text-violet-600" />}
+      description="fast/slow mover 판별"
+      loading={loading}
+      empty={data.length === 0}
+      emptyMessage="분석 데이터 없음"
+      minHeight={280}
+    >
+      <ResponsiveContainer width="100%" height={280}>
+        <ScatterChart margin={{ top: 12, right: 12, bottom: 24, left: 8 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" />
+          <XAxis
+            type="number"
+            dataKey="sale"
+            name="판매수량"
+            tick={{ fontSize: 10, fill: "#71717a" }}
+            axisLine={{ stroke: "#e4e4e7" }}
+            label={{ value: "판매수량 →", position: "insideBottom", offset: -8, fontSize: 11, fill: "#52525b" }}
+          />
+          <YAxis
+            type="number"
+            dataKey="stock"
+            name="재고"
+            tick={{ fontSize: 10, fill: "#71717a" }}
+            axisLine={{ stroke: "#e4e4e7" }}
+            label={{ value: "재고 ↑", angle: -90, position: "insideLeft", fontSize: 11, fill: "#52525b" }}
+          />
+          <ZAxis range={[24, 24]} />
+          <Tooltip
+            cursor={{ strokeDasharray: "3 3" }}
+            formatter={(v: any, name: any) => {
+              if (name === "판매수량") return [`${v}개`, name];
+              if (name === "재고") return [`${v}개`, name];
+              return [v, name];
+            }}
+            labelFormatter={() => ""}
+            content={({ payload }: any) => {
+              if (!payload || !payload.length) return null;
+              const d = payload[0].payload;
+              return (
+                <div className="bg-white border border-line rounded-lg px-2.5 py-1.5 shadow-lg text-[12px]">
+                  <div className="font-bold text-ink mb-0.5">{d.name}</div>
+                  <div className="text-zinc-600">판매 <span className="tabular-nums font-bold text-brand-deep">{d.sale}개</span></div>
+                  <div className="text-zinc-600">재고 <span className="tabular-nums font-bold text-emerald-700">{d.stock}개</span></div>
+                  {d.loss > 0 && <div className="text-rose-600">손실 {d.loss}개</div>}
+                </div>
+              );
+            }}
+          />
+          <Scatter data={data} fill="#8B5CF6" fillOpacity={0.55} />
+        </ScatterChart>
+      </ResponsiveContainer>
+    </ChartCard>
+  );
+};
+
+// ─── 7. 가격대별 판매 분포 · area chart (판매가 buckets)
+const PriceBandChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ rows, loading }) => {
+  const data = useMemo(() => {
+    // 가격대 · 0-1천, 1-3천, 3-5천, 5-10천, 10-20천, 20-50천, 50천+
+    const bands = [
+      { label: "~1천", min: 0, max: 1000 },
+      { label: "1-3천", min: 1000, max: 3000 },
+      { label: "3-5천", min: 3000, max: 5000 },
+      { label: "5-10천", min: 5000, max: 10000 },
+      { label: "10-20천", min: 10000, max: 20000 },
+      { label: "20-50천", min: 20000, max: 50000 },
+      { label: "50천+", min: 50000, max: Infinity },
+    ];
+    return bands.map(b => {
+      let qty = 0;
+      let amount = 0;
+      let count = 0;
+      for (const r of rows) {
+        const sp = Number(r.sale_price ?? 0);
+        const sq = Number(r.sale_qty ?? 0);
+        if (sq <= 0) continue;
+        if (sp >= b.min && sp < b.max) {
+          qty += sq;
+          amount += sq * sp;
+          count += 1;
+        }
+      }
+      return { label: b.label, qty, amount, count };
+    });
+  }, [rows]);
+
+  const total = useMemo(() => data.reduce((s, d) => s + d.amount, 0), [data]);
+  const hasData = total > 0;
+
+  return (
+    <ChartCard
+      title="가격대별 판매"
+      icon={<DollarSign size={14} className="text-emerald-600" />}
+      description={`전체 ${fmtWon(total)}원`}
+      loading={loading}
+      empty={!hasData}
+      emptyMessage="가격 데이터 없음"
+      minHeight={280}
+    >
+      <ResponsiveContainer width="100%" height={280}>
+        <AreaChart data={data} margin={{ top: 16, right: 16, bottom: 4, left: 8 }}>
+          <defs>
+            <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#10B981" stopOpacity={0.55} />
+              <stop offset="100%" stopColor="#10B981" stopOpacity={0.05} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" vertical={false} />
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 10, fill: "#52525b", fontWeight: 600 }}
+            axisLine={{ stroke: "#e4e4e7" }}
+            tickLine={false}
+          />
+          <YAxis
+            tick={{ fontSize: 10, fill: "#71717a" }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v: any) => {
+              if (v >= 1e8) return `${(v / 1e8).toFixed(0)}억`;
+              if (v >= 1e4) return `${(v / 1e4).toFixed(0)}만`;
+              return String(v);
+            }}
+          />
+          <Tooltip
+            formatter={(v: any, name: any) => {
+              if (name === "amount") return [fmtWon(Number(v)) + "원", "매출"];
+              return [v, name];
+            }}
+            contentStyle={{ background: "white", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
+          />
+          <Area type="monotone" dataKey="amount" stroke="#10B981" strokeWidth={2.5} fill="url(#priceGradient)">
+            <LabelList
+              dataKey="count"
+              position="top"
+              formatter={(v: any) => (v > 0 ? `${v}종` : "")}
+              style={{ fontSize: 10, fontWeight: 700, fill: "#059669" }}
+            />
+          </Area>
+        </AreaChart>
+      </ResponsiveContainer>
+    </ChartCard>
+  );
+};
+
+// ─── 8. 재고 상태 게이지 · radial bar (건강도 종합 스코어)
+const StockHealthGauge: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ rows, loading }) => {
+  const { healthy, warning, critical, healthScore } = useMemo(() => {
+    let h = 0, w = 0, c = 0;
+    for (const r of rows) {
+      const cur = Number((r as any).current_stock ?? 0);
+      const opt = Number((r as any).optimal_stock ?? 0);
+      if (opt <= 0) continue;
+      const ratio = cur / opt;
+      if (ratio < 0.3) c += 1;
+      else if (ratio < 0.7) w += 1;
+      else h += 1;
+    }
+    const total = h + w + c;
+    const score = total > 0 ? Math.round((h * 1 + w * 0.5) / total * 100) : 0;
+    return { healthy: h, warning: w, critical: c, healthScore: score };
+  }, [rows]);
+
+  const data = [
+    { name: "critical", value: critical, fill: "#EF4444" },
+    { name: "warning", value: warning, fill: "#F59E0B" },
+    { name: "healthy", value: healthy, fill: "#10B981" },
+  ];
+  const totalCount = healthy + warning + critical;
+  const scoreTone = healthScore >= 70 ? "text-emerald-600" : healthScore >= 40 ? "text-amber-600" : "text-rose-600";
+  const scoreIcon = healthScore >= 70 ? Gauge : healthScore >= 40 ? Activity : TrendingDown;
+  const ScoreIcon = scoreIcon;
+
+  return (
+    <ChartCard
+      title="재고 건강도"
+      icon={<Gauge size={14} className="text-brand-deep" />}
+      description={`${totalCount}종 · 종합 ${healthScore}점`}
+      loading={loading}
+      empty={totalCount === 0}
+      emptyMessage="재고 데이터 없음"
+      minHeight={280}
+    >
+      <div className="flex items-center gap-3 h-[260px]">
+        <div className="relative w-[160px] h-[160px] shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <RadialBarChart
+              cx="50%"
+              cy="50%"
+              innerRadius="55%"
+              outerRadius="100%"
+              barSize={14}
+              data={data}
+              startAngle={90}
+              endAngle={-270}
+            >
+              <RadialBar background dataKey="value" cornerRadius={7} />
+              <Tooltip
+                formatter={(v: any, name: any) => {
+                  if (name === "value") {
+                    const d = data.find(x => x.value === v);
+                    const label = d?.name === "healthy" ? "건강" : d?.name === "warning" ? "주의" : "위험";
+                    return [`${v}종`, label];
+                  }
+                  return [v, name];
+                }}
+                contentStyle={{ background: "white", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 12 }}
+              />
+            </RadialBarChart>
+          </ResponsiveContainer>
+          {/* 중앙 · 스코어 · absolute overlay */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <ScoreIcon size={14} className={scoreTone} />
+            <span className={`text-[26px] font-extrabold tabular-nums leading-none mt-0.5 ${scoreTone}`}>
+              {healthScore}
+            </span>
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">score</span>
+          </div>
+        </div>
+        <div className="flex-1 min-w-0 flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-sm bg-emerald-500 shrink-0" />
+            <span className="text-[12px] font-semibold text-zinc-600 flex-1">건강 (70%+)</span>
+            <span className="tabular-nums font-bold text-emerald-700 text-[13px]">{healthy}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-sm bg-amber-500 shrink-0" />
+            <span className="text-[12px] font-semibold text-zinc-600 flex-1">주의 (30-70%)</span>
+            <span className="tabular-nums font-bold text-amber-700 text-[13px]">{warning}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-sm bg-rose-500 shrink-0" />
+            <span className="text-[12px] font-semibold text-zinc-600 flex-1">위험 (30% 미만)</span>
+            <span className="tabular-nums font-bold text-rose-700 text-[13px]">{critical}</span>
+          </div>
+          {critical > 0 && (
+            <div className="mt-1 pt-2 border-t border-zinc-100 text-[11px] font-bold text-rose-600 flex items-center gap-1">
+              <AlertTriangle size={11} />
+              긴급 발주 · {critical}종
+            </div>
+          )}
+        </div>
+      </div>
+    </ChartCard>
+  );
+};
+
+// ─── DashboardCharts · 다중 row grid (7 차트)
 export interface DashboardChartsProps {
   rows: StockFlowRow[];
   loading?: boolean;
@@ -286,14 +694,26 @@ export interface DashboardChartsProps {
 
 export const DashboardCharts: React.FC<DashboardChartsProps> = ({ rows, loading = false }) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-      <TopSalesChart rows={rows} loading={loading} />
-      <CategoryDistChart rows={rows} loading={loading} />
-      <ProfitDistChart rows={rows} loading={loading} />
+    <div className="flex flex-col gap-3">
+      {/* Row 1 · 매출 인사이트 · Top 상품·카테고리·이익률 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <TopSalesChart rows={rows} loading={loading} />
+        <CategoryDistChart rows={rows} loading={loading} />
+        <ProfitDistChart rows={rows} loading={loading} />
+      </div>
+      {/* Row 2 · 재고·손실·공급사 인사이트 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <LossTopChart rows={rows} loading={loading} />
+        <SupplierTopChart rows={rows} loading={loading} />
+        <StockHealthGauge rows={rows} loading={loading} />
+      </div>
+      {/* Row 3 · 상세 분석 · scatter + area */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <StockVsSalesScatter rows={rows} loading={loading} />
+        <PriceBandChart rows={rows} loading={loading} />
+      </div>
     </div>
   );
 };
 
 export default DashboardCharts;
-// 미사용 · reserved
-void calcLoss;
