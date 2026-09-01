@@ -124,13 +124,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const SIDEBAR_ENABLED = useSidebarEnabled();
   const [dpSubTab, setDpSubTab] = useState<DpSubTabKey>(dpCanSeeStockManage ? "purchase-order" : "store");
   // 2026-08-29 · #193 · 상품 서브탭 안 · 3개 이너 탭 (실재고입력·상품입고·상품정보)
-  // 2026-08-30 · 사용자 지시 · 순서 변경 · 상품정보 · 실재고입력 · 상품입고
-  const [productInnerTab, setProductInnerTab] = useState<"info" | "scan" | "arrival">(() => {
+  // 2026-09-01 · 사용자 지시 · 순서 재조정 · 실재고입력 · 상품입고 · 상품정보
+  const [productInnerTab, setProductInnerTab] = useState<"scan" | "arrival" | "info">(() => {
     try {
       const raw = localStorage.getItem(SK_DP_PRODUCT_INNER_TAB);
-      if (raw === "arrival" || raw === "info" || raw === "scan") return raw;
+      if (raw === "scan" || raw === "arrival" || raw === "info") return raw;
     } catch { /* noop */ }
-    return "info"; // 2026-08-30 · 사용자 지시 · 기본 · 상품정보
+    return "scan"; // 2026-09-01 · 사용자 지시 · 기본 · 실재고입력
   });
   useEffect(() => {
     try { localStorage.setItem(SK_DP_PRODUCT_INNER_TAB, productInnerTab); } catch { /* noop */ }
@@ -659,9 +659,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               activeKey={productInnerTab}
               onSelect={setProductInnerTab}
               tabs={[
-                { key: "info",    label: "상품정보",   visible: true },
                 { key: "scan",    label: "실재고입력", visible: true },
                 { key: "arrival", label: "상품입고",   visible: true },
+                { key: "info",    label: "상품정보",   visible: true },
               ]}
             />
           </div>

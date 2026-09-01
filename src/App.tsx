@@ -127,6 +127,17 @@ export default function App() {
     if (needsProducts.includes(page)) prefetchProducts();
   }, [authSession, page]);
 
+  // 2026-09-01 · 보안 P0 · 미인증 · 현재 page 가 landing 이 아니면 · 즉시 강제 landing
+  //   · 로그아웃·세션만료·미로그인 후 · 브라우저 뒤로가기·popstate 로 다른 page 로 복원되어도 무효화
+  //   · history state 도 clean · 다시 앞으로가기 로 되돌아갈 수 없게
+  useEffect(() => {
+    if (!authSession && page !== "landing") {
+      console.warn("[auth-gate] unauthenticated · page='%s' · force landing", page);
+      setPage("landing");
+      try { history.replaceState({ page: "landing" }, "", "/"); } catch { /* noop */ }
+    }
+  }, [authSession, page]);
+
   // 2026-08-29 · 사용자 크리티컬 · 메뉴설정 pc/mobile 언체크 시 · 라우팅 수준 gate
   //   · 사이드바·상단탭·하단탭·MenuCard 이미 gate 되지만 · URL/직접 setPage 로 접근 가능
   //   · isVisible(page, viewport) 검증 후 · false 면 랜딩 리다이렉트
@@ -189,6 +200,12 @@ export default function App() {
 
   const handleNavigate = (next: Exclude<Page, "landing">, auth?: AuthSession) => {
     if (auth) setAuthSession(auth);
+    // 2026-09-01 · 보안 P0 · 미인증 + auth 파라미터 없음 → 이동 차단 · 로그인 유도
+    if (!authSession && !auth) {
+      console.warn(`[auth-gate] navigate blocked · unauthenticated → ${next}`);
+      navigate("landing");
+      return;
+    }
     if (isHiddenPage(next)) {
       console.warn(`[App] Blocked navigation to hidden page: ${next}`);
       navigate("landing");
@@ -281,7 +298,20 @@ export default function App() {
 
   let pageContent: React.ReactElement;
 
-  if (page === "schedule") {
+  // 2026-09-01 · 보안 P0 · 미인증 · LandingPage 강제 · 다른 페이지 접근 완전 차단
+  //   · authSession null (로그아웃·세션만료·미로그인) 상태 · page 값 무시 · 오직 LandingPage 렌더
+  //   · popstate·history 조작·직접 setPage 로 접근 시도 시 · 무조건 로그인 화면
+  //   · SSO consume 진행 중 (setAuthSession 완료 전) 도 안전 · null 이면 landing
+  if (!authSession) {
+    pageContent = (
+      <LandingPage
+        onNavigate={handleNavigate}
+        authSession={null}
+        onLogout={handleLogout}
+        onAuthOnly={setAuthSession}
+      />
+    );
+  } else if (page === "schedule") {
     pageContent = (
       <SchedulePage
         onBack={goBack}

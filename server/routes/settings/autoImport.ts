@@ -222,41 +222,51 @@ router.get("/api/auto-import/one-click-installer", authorize(9), asyncHandler(as
   const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol || "http";
   const host = req.headers.host || "localhost:3000";
   const base = `${proto}://${host}`;
+  // 2026-09-01 · Fix · ASCII only (cmd.exe CP949/UTF-8 mojibake regression)
+  //   · install.bat 처럼 · 한글 제거 · Windows cmd 인코딩 무관 안전
   const bat = `@echo off
-REM ═══════════════════════════════════════════════════════════════
-REM 메가타운 자동 임포트 · 원클릭 설치 (2026-08-24)
-REM   · 이 파일 하나만 더블클릭 하면 · 모든 것 자동 설치
-REM   · Python 미설치 시 · Python 설치 안내 + 자동 다운로드
-REM   · 스크립트 다운로드 → 폴더 생성 → Task Scheduler 등록 → 첫 실행
-REM ═══════════════════════════════════════════════════════════════
+REM ================================================================
+REM Megatown Auto Import - One-Click Installer (2026-09-01)
+REM   - Double-click this single file to install everything
+REM   - If Python missing, opens python.org for install
+REM   - Downloads scripts -> creates folders -> registers Task Scheduler -> first run
+REM ================================================================
 setlocal enabledelayedexpansion
-chcp 65001 >nul
+
+REM 0. Admin check + auto elevate (Task Scheduler needs admin)
+net session >nul 2>&1
+if errorlevel 1 (
+  echo [!] Administrator privileges required. Requesting elevation...
+  powershell -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+  exit /b 0
+)
+
 cls
 echo.
-echo ═══════════════════════════════════════════════════
-echo   메가타운 자동 임포트 · 원클릭 설치 시작
-echo ═══════════════════════════════════════════════════
+echo ==================================================
+echo   Megatown Auto Import - One-Click Installer
+echo ==================================================
 echo.
 
-REM ── [1/6] Python 확인 ─────────────────────────────
-echo [1/6] Python 확인 중...
+REM -- [1/6] Python check ---------------------------
+echo [1/6] Checking Python...
 where python >nul 2>&1
 if errorlevel 1 (
-  echo   [!] Python 미설치 · Python 3.10+ 필요
-  echo   [!] https://www.python.org/downloads/ 방문 · 설치 후 재실행
-  echo   [!] 설치 시 · "Add Python to PATH" 체크 필수
+  echo   [!] Python not installed. Python 3.10+ required.
+  echo   [!] Opening https://www.python.org/downloads/
+  echo   [!] Check "Add Python to PATH" when installing.
   start https://www.python.org/downloads/
   pause
   exit /b 1
 )
 python --version
-echo   [OK] Python 확인 완료
+echo   [OK] Python detected
 echo.
 
-REM ── [2/6] 설치 폴더 생성 ──────────────────────────
+REM -- [2/6] Create install folders -----------------
 set INSTALL_DIR=%USERPROFILE%\\megatown-auto-import
 set DATA_DIR=%USERPROFILE%\\Downloads\\megatown-importdata
-echo [2/6] 설치 폴더 생성...
+echo [2/6] Creating install folders...
 if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
 if not exist "%DATA_DIR%" mkdir "%DATA_DIR%"
 for %%C in (products stock purchase) do (
@@ -264,16 +274,16 @@ for %%C in (products stock purchase) do (
   if not exist "%DATA_DIR%\\%%C\\_processed" mkdir "%DATA_DIR%\\%%C\\_processed"
   if not exist "%DATA_DIR%\\%%C\\_failed" mkdir "%DATA_DIR%\\%%C\\_failed"
 )
-echo   [OK] 설치 폴더 · %INSTALL_DIR%
-echo   [OK] 데이터 폴더 · %DATA_DIR% (products·stock·purchase)
+echo   [OK] Install folder: %INSTALL_DIR%
+echo   [OK] Data folder:    %DATA_DIR% (products, stock, purchase)
 echo.
 
-REM ── [3/6] 스크립트 다운로드 ───────────────────────
-echo [3/6] 자동 임포트 스크립트 다운로드...
+REM -- [3/6] Download scripts -----------------------
+echo [3/6] Downloading auto-import scripts...
 set BASE_URL=${base}
 powershell -Command "try { Invoke-WebRequest -Uri '${base}/api/auto-import/installer/file?name=auto_import.py' -OutFile '%INSTALL_DIR%\\auto_import.py' -UseBasicParsing } catch { exit 1 }"
 if errorlevel 1 (
-  echo   [!] 다운로드 실패 · 서버 연결 확인 · %BASE_URL%
+  echo   [!] Download failed. Check server URL: %BASE_URL%
   pause
   exit /b 1
 )
@@ -281,51 +291,57 @@ powershell -Command "Invoke-WebRequest -Uri '${base}/api/auto-import/installer/f
 powershell -Command "Invoke-WebRequest -Uri '${base}/api/auto-import/installer/file?name=run.bat' -OutFile '%INSTALL_DIR%\\run.bat' -UseBasicParsing"
 powershell -Command "Invoke-WebRequest -Uri '${base}/api/auto-import/installer/file?name=uninstall.bat' -OutFile '%INSTALL_DIR%\\uninstall.bat' -UseBasicParsing"
 powershell -Command "Invoke-WebRequest -Uri '${base}/api/auto-import/installer/file?name=config.ini.example' -OutFile '%INSTALL_DIR%\\config.ini' -UseBasicParsing"
-echo   [OK] 스크립트·문서 다운로드 완료
+echo   [OK] Scripts downloaded
 echo.
 
-REM ── [4/6] Python 패키지 설치 ─────────────────────
-echo [4/6] 필요 패키지 설치 (requests · openpyxl 등)...
+REM -- [4/6] Install Python packages ----------------
+echo [4/6] Installing Python packages (requests, openpyxl, ...)
 python -m pip install --quiet --upgrade pip
 python -m pip install --quiet -r "%INSTALL_DIR%\\requirements.txt"
-echo   [OK] 패키지 설치 완료
+echo   [OK] Packages installed
 echo.
 
-REM ── [5/6] Task Scheduler 등록 ────────────────────
-echo [5/6] Windows 작업 스케줄러 등록 (10분마다 자동 실행)...
+REM -- [5/6] Register Windows Task Scheduler --------
+echo [5/6] Registering Windows Task Scheduler (10 min interval)
 schtasks /Query /TN "MegatownAutoImport" >nul 2>&1
 if %errorlevel% equ 0 (
-  echo   [i] 기존 작업 · 재등록
+  echo   [i] Existing task found. Re-registering...
   schtasks /Delete /TN "MegatownAutoImport" /F >nul 2>&1
 )
-schtasks /Create /SC MINUTE /MO 10 /TN "MegatownAutoImport" /TR "\"%INSTALL_DIR%\\run.bat\"" /F >nul
-echo   [OK] Task Scheduler · MegatownAutoImport · 10분 간격
+schtasks /Create /SC MINUTE /MO 10 /TN "MegatownAutoImport" /TR "\"%INSTALL_DIR%\\run.bat\"" /RL HIGHEST /F >nul
+if errorlevel 1 (
+  echo   [X] Task Scheduler registration failed. Run as Administrator.
+  pause
+  exit /b 1
+)
+echo   [OK] Task Scheduler: MegatownAutoImport - every 10 min
 echo.
 
-REM ── [6/6] 서버 base URL 기록 ─────────────────────
-echo [6/6] 서버 URL 설정...
+REM -- [6/6] Save server base URL -------------------
+echo [6/6] Saving server URL...
 echo BASE_URL=%BASE_URL% > "%INSTALL_DIR%\\.env"
-echo   [OK] BASE_URL · %BASE_URL%
+echo   [OK] BASE_URL: %BASE_URL%
 echo.
 
-echo ═══════════════════════════════════════════════════
-echo   ✓ 설치 완료
-echo ═══════════════════════════════════════════════════
+echo ==================================================
+echo   Install complete
+echo ==================================================
 echo.
-echo   설치 경로 · %INSTALL_DIR%
-echo   데이터 경로 · %DATA_DIR%
+echo   Install path: %INSTALL_DIR%
+echo   Data path:    %DATA_DIR%
 echo.
-echo   xlsx 파일을 아래 폴더에 넣으면 10분마다 자동 임포트:
-echo     %DATA_DIR%\\products   (상품)
-echo     %DATA_DIR%\\stock      (재고)
-echo     %DATA_DIR%\\purchase   (매입)
+echo   Drop xlsx files into these folders (auto imported every 10 min):
+echo     %DATA_DIR%\\products   (product list)
+echo     %DATA_DIR%\\stock      (stock)
+echo     %DATA_DIR%\\purchase   (purchase)
 echo.
-echo   수동 실행 · %INSTALL_DIR%\\run.bat
-echo   제거 · %INSTALL_DIR%\\uninstall.bat
+echo   Manual run: %INSTALL_DIR%\\run.bat
+echo   Uninstall:  %INSTALL_DIR%\\uninstall.bat
 echo.
-echo   웹 관리자 페이지에서 상태 확인 · 설정 변경 가능
+echo   Check status / change settings in the web admin page.
 echo.
 pause
+endlocal
 `;
   res.setHeader("Content-Type", "application/octet-stream");
   res.setHeader("Content-Disposition", `attachment; filename="megatown-auto-import-installer.bat"`);
