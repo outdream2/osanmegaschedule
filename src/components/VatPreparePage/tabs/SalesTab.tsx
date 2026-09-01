@@ -146,7 +146,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
                   </th>
                   <th rowSpan={2} className="text-right px-2 py-2 font-bold text-rose-700 border-b border-l border-line align-bottom">
                     매출세액
-                    <div className="text-[9px] font-medium text-rose-500/80">과세만</div>
+                    <div className="text-[11px] font-medium text-rose-500/80">과세만</div>
                   </th>
                   <th rowSpan={2} className="text-right px-2 py-2 font-bold border-b border-l border-line align-bottom">매입 총액</th>
                   <th rowSpan={2} className="text-right px-2 py-2 font-bold text-emerald-700 border-b border-line align-bottom">매입세액 공제</th>
@@ -160,11 +160,11 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
                   </th>
                   <th className="text-right px-2 py-2 font-bold border-b border-line bg-zinc-100/70 w-[130px]">
                     <span className="text-amber-700">면세</span>
-                    <span className="text-[9px] font-medium text-amber-600/80 ml-0.5">(TAX FREE · 입력)</span>
+                    <span className="text-[11px] font-medium text-amber-600/80 ml-0.5">(TAX FREE · 입력)</span>
                   </th>
                   <th className="text-right px-2 py-2 font-bold border-b border-line bg-zinc-100/70">
                     <span className="text-zinc-700">과세</span>
-                    <span className="text-[9px] font-medium text-zinc-500 ml-0.5">(자동)</span>
+                    <span className="text-[11px] font-medium text-zinc-500 ml-0.5">(자동)</span>
                   </th>
                 </tr>
               </thead>
@@ -211,7 +211,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
                     }`}>
                       {monthly.totals.expectedVat >= 0 ? "" : "−"}{fmt(Math.abs(monthly.totals.expectedVat))}
                     </div>
-                    <div className={`text-[9px] font-bold ${
+                    <div className={`text-[11px] font-bold ${
                       monthly.totals.expectedVat >= 0 ? "text-rose-500/70" : "text-emerald-500/70"
                     }`}>
                       {monthly.totals.expectedVat >= 0 ? "납부 예상" : "환급 예상"}

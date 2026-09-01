@@ -162,7 +162,7 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
                           {v.supplier_name}
                         </span>
                         {!v.deductible && (
-                          <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-zinc-100 text-zinc-500" title="매입세액 공제 불가">
+                          <span className="text-[11px] font-bold px-1 py-0.5 rounded bg-zinc-100 text-zinc-500" title="매입세액 공제 불가">
                             불공제
                           </span>
                         )}
@@ -196,7 +196,7 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
               <tr className="text-zinc-800 font-bold">
                 <td className="px-3 py-3">
                   <div className="text-[11px]">합계</div>
-                  <div className="text-[9px] font-bold text-zinc-500 mt-0.5">
+                  <div className="text-[11px] font-bold text-zinc-500 mt-0.5">
                     {fmt(totals.vendorCount)}곳 · {fmt(totals.entryCount)}건
                   </div>
                 </td>
@@ -211,7 +211,7 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
                   <div className="tabular-nums text-[15px] font-bold text-rose-700 leading-tight">
                     {fmt(totals.vatTotal)}
                   </div>
-                  <div className="text-[9px] font-bold text-rose-500/70">매입세액</div>
+                  <div className="text-[11px] font-bold text-rose-500/70">매입세액</div>
                 </td>
                 <td className="px-2 py-3"></td>
               </tr>

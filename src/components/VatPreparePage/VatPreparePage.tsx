@@ -321,11 +321,11 @@ const VatPreparePage: React.FC = () => {
             <div className={`flex items-center gap-3 px-4 py-2 rounded-xl ring-1 ${dCountColor.bg} ${dCountColor.ring} shrink-0`}>
               <Calendar size={18} className={dCountColor.text} />
               <div>
-                <div className={`text-[10px] font-bold ${dCountColor.text} uppercase tracking-wide`}>{summary.next.type} · 다음 신고</div>
+                <div className={`text-[12px] font-bold ${dCountColor.text} uppercase tracking-wide`}>{summary.next.type} · 다음 신고</div>
                 <div className={`text-[13px] font-bold ${dCountColor.text} leading-tight`}>
                   {summary.next.label} · <span className="tabular-nums">D-{summary.next.daysLeft}</span>
                 </div>
-                <div className="text-[10px] text-zinc-500">신고 기한 · {summary.next.dueDate}</div>
+                <div className="text-[12px] text-zinc-500">신고 기한 · {summary.next.dueDate}</div>
               </div>
             </div>
           )}
@@ -447,7 +447,7 @@ const VatPreparePage: React.FC = () => {
           />
         </div>
         <div className="text-[11px] font-bold text-sky-700 tabular-nums shrink-0">{readiness}%</div>
-        <div className="text-[10px] text-zinc-500 shrink-0 hidden sm:block">
+        <div className="text-[12px] text-zinc-500 shrink-0 hidden sm:block">
           체크리스트 {Object.values(checklist).filter(Boolean).length}/4 완료
         </div>
       </Card>
@@ -538,7 +538,7 @@ const VatPreparePage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedVendor(null)}
-                className="text-[10px] font-bold text-zinc-500 hover:text-zinc-800 cursor-pointer"
+                className="text-[12px] font-bold text-zinc-500 hover:text-zinc-800 cursor-pointer"
               >
                 × 닫기
               </button>
@@ -550,7 +550,7 @@ const VatPreparePage: React.FC = () => {
               <div className="py-10 text-center text-zinc-400 flex flex-col items-center gap-2">
                 <ChevronRight size={20} className="opacity-30 rotate-180" />
                 <div className="text-[12px] font-bold">좌측 공급사를 선택하세요</div>
-                <div className="text-[10px]">매입일 · 상품 · 수량 · 매입가 · 부가세 명세</div>
+                <div className="text-[12px]">매입일 · 상품 · 수량 · 매입가 · 부가세 명세</div>
               </div>
             ) : detailLoading ? (
               <div className="flex items-center justify-center py-10"><Spinner tone="zinc" size={13} label="불러오는 중..." labelSize={12} /></div>
@@ -574,7 +574,7 @@ const VatPreparePage: React.FC = () => {
                       <td className="px-3 py-1.5 tabular-nums text-zinc-600">{r.purchase_date}</td>
                       <td className="px-2 py-1.5">
                         <div className="text-zinc-700 font-semibold">{r.product_name}</div>
-                        {r.spec && <div className="text-[10px] text-zinc-400">{r.spec}</div>}
+                        {r.spec && <div className="text-[12px] text-zinc-400">{r.spec}</div>}
                       </td>
                       <td className="px-2 py-1.5 text-right tabular-nums text-zinc-700">{r.quantity}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums text-zinc-700">{fmt(r.amount)}</td>
@@ -613,10 +613,10 @@ const VatPreparePage: React.FC = () => {
           <div className="text-[22px] font-bold text-emerald-700 tabular-nums leading-none mb-2">
             {fmt(expectedRefund)}<span className="text-[13px] font-bold ml-1">원</span>
           </div>
-          <div className="text-[10px] text-zinc-500 leading-relaxed">
+          <div className="text-[12px] text-zinc-500 leading-relaxed">
             매출세액에서 위 금액을 공제받을 수 있습니다. 매출세액이 매입세액보다 적으면 환급 · 많으면 차액만 납부.
           </div>
-          <div className="mt-3 pt-3 border-t border-emerald-100 text-[10px] text-zinc-500 leading-relaxed">
+          <div className="mt-3 pt-3 border-t border-emerald-100 text-[12px] text-zinc-500 leading-relaxed">
             <b className="text-zinc-700">약국 특이사항</b><br />
             처방전 조제료·전문의약품 대부분은 <b>면세</b>이므로, 관련 매입세액은 <b>안분 후 불공제</b> 처리. 일반 매약(OTC)은 과세이므로 매입세액 전액 공제 가능.
           </div>
@@ -632,14 +632,14 @@ const VatPreparePage: React.FC = () => {
           <div className={`text-[22px] font-bold ${netPayable >= 0 ? "text-rose-700" : "text-emerald-700"} tabular-nums leading-none mb-2`}>
             {fmt(Math.abs(netPayable))}<span className="text-[13px] font-bold ml-1">원</span>
           </div>
-          <div className="text-[10px] text-zinc-500 leading-relaxed">
+          <div className="text-[12px] text-zinc-500 leading-relaxed">
             매출세액 <b className="text-zinc-700">{fmt(outputVat)}원</b>
             {" − "}
             매입공제 <b className="text-zinc-700">{fmt(expectedRefund)}원</b>
             {" = "}
             <b className={netPayable >= 0 ? "text-rose-700" : "text-emerald-700"}>{fmt(netPayable)}원</b>
           </div>
-          <div className="mt-3 pt-3 border-t border-zinc-100 text-[10px] text-zinc-400 leading-relaxed">
+          <div className="mt-3 pt-3 border-t border-zinc-100 text-[12px] text-zinc-400 leading-relaxed">
             <AlertTriangle size={10} className="inline mb-0.5 mr-0.5" />
             본 계산은 참고용 · 실제 신고는 세무사 검토 필수
           </div>
@@ -754,7 +754,7 @@ const ChecklistItem: React.FC<ChecklistItemProps> = ({ label, hint, checked, onC
     }
     <div className="flex-1 min-w-0">
       <div className={`text-[12px] font-bold ${checked ? "text-emerald-800" : "text-zinc-700"}`}>{label}</div>
-      {hint && <div className="text-[10px] text-zinc-500 mt-0.5 leading-relaxed">{hint}</div>}
+      {hint && <div className="text-[12px] text-zinc-500 mt-0.5 leading-relaxed">{hint}</div>}
     </div>
   </button>
 );
