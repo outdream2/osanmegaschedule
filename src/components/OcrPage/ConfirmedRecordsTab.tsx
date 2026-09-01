@@ -185,7 +185,7 @@ export const ConfirmedRecordsTab: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 py-4 flex flex-col gap-3">
+    <div className="flex-1 w-full mx-auto px-3 sm:px-4 py-4 flex flex-col gap-3">
       <Card clip padding="none">
         <div className="px-4 py-3 border-b border-zinc-100 bg-rose-50 flex items-center gap-2 flex-wrap">
           <FileText size={13} className="text-rose-600" />

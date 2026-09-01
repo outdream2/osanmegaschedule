@@ -243,7 +243,7 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
   }, [arrivals]);
 
   return (
-    <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col gap-3 min-h-0">
+    <main className="flex-1 w-full mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col gap-3 min-h-0">
       <Card padding="sm" className="h-12 flex items-center gap-2.5">
         <AccentBar />
         <Package size={16} className="text-brand-deep shrink-0" />

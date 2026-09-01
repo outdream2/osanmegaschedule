@@ -119,12 +119,16 @@ export const COLOR = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * 2026-08-31 · 사용자 지시 · 페이지 컨텐츠 표준 폭 · 프레임워크
- *   · 모든 페이지 · 사이드메뉴 오른쪽 컨텐츠 · 화면 너비의 90% · 최대 1360px
- *   · main/wrapper 에 이 상수 적용 · 하드코딩 대체
+ * 2026-09-01 · 사용자 지시 · 반응형 · 화면 폭에 비례 확장 · 최소 = 기존 1360px 캡 유지
+ *   · min-w-[1360px] · 1360 이하 스크롤 안 생기게 (기존 최대 캡을 최소로 승격)
+ *   · w-full · 화면 폭 전부 사용 · 넓은 모니터에서 컨텐츠 확장
+ *   · max-w 캡 제거 · 넓은 화면 여백 낭비 방지
+ *   · mx-auto · 중앙 정렬 유지 (좁은 창에서 스크롤 시)
  *   · 예외 · LandingPage (홈 카드 grid) · 모달·팝오버 (전체 페이지 아님)
+ *
+ * 이전: max-w-[1360px] w-[90%] mx-auto · 넓은 화면 1360 캡 · 좌우 여백 큼
  */
-export const PAGE_CONTAINER_CLS = "max-w-[1360px] w-[90%] mx-auto";
+export const PAGE_CONTAINER_CLS = "w-full mx-auto";
 
 /** 기본 카드 · bg-white + 테두리 + 그림자 (index.css .card-panel 과 동일) */
 export const CARD_BASE =
