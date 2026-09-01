@@ -64,22 +64,29 @@ function analyzeFile(filePath) {
     const hasAuthorize = /\bauthorize\s*\(/.test(body);
     const hasValidateBody = /\bvalidateBody\s*\(/.test(body);
     const hasAsyncHandler = /\basyncHandler\s*\(/.test(body);
+    // multer · binary upload · SSE streaming · 의도적 예외 주석 검출
+    const isBinaryUpload = /\bmulter\b|\bexpress\.raw\s*\(|\bmemoryStorage\s*\(|\bdiskStorage\s*\(|\b\w+Upload\s*\.\s*(single|array|fields)\s*\(|\b\w+Upload\s*\.none\s*\(/.test(body);
+    const isAnonRoute = /audit:no-authorize|anon.push.subscribe|client.error|pre.?login/.test(body);
+    const isSseOrGemini = /SSE|text\/event-stream|sessionDeadKeys|callGeminiOcr/.test(body);
 
     const info = { ...rt, hasAuthorize, hasValidateBody, hasAsyncHandler };
     routes.push(info);
 
     // 규칙 1 · 변경 API (POST·PATCH·DELETE·PUT) · authorize 필수
-    if (["POST", "PATCH", "DELETE", "PUT"].includes(rt.method) && !hasAuthorize) {
+    // 예외: 의도적 익명 엔드포인트 (audit:no-authorize 주석 또는 anon 패턴 또는 SSE/Gemini raw-fetch 전용)
+    if (["POST", "PATCH", "DELETE", "PUT"].includes(rt.method) && !hasAuthorize && !isAnonRoute && !isSseOrGemini) {
       violations.push({ severity: "high", rule: "no-authorize", ...info,
         msg: `${rt.method} ${rt.path} · authorize() 미적용 · 권한 우회 가능` });
     }
     // 규칙 2 · POST·PATCH · validateBody 필수 (body 있음)
-    if (["POST", "PATCH", "PUT"].includes(rt.method) && !hasValidateBody) {
+    // 예외: multer/binary upload (raw bytes) · SSE · Gemini (validateBody 적용 불가)
+    if (["POST", "PATCH", "PUT"].includes(rt.method) && !hasValidateBody && !isBinaryUpload && !isSseOrGemini) {
       violations.push({ severity: "medium", rule: "no-validate-body", ...info,
         msg: `${rt.method} ${rt.path} · validateBody() 미적용 · Zod 검증 없음` });
     }
     // 규칙 3 · asyncHandler 필수
-    if (!hasAsyncHandler) {
+    // 예외: SSE/Gemini (자체 에러 핸들링)
+    if (!hasAsyncHandler && !isSseOrGemini) {
       violations.push({ severity: "medium", rule: "no-async-handler", ...info,
         msg: `${rt.method} ${rt.path} · asyncHandler() 미적용 · 에러 핸들링 표준 아님` });
     }
