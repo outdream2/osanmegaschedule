@@ -44,7 +44,7 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
   const computedCodes = new Set(
     (productsWithRealMap.data ?? [])
       .filter(p => {
-        const locZone = String((p as any).location ?? (p as any).display_location ?? "").trim();
+        const locZone = String(p.location ?? p.display_location ?? "").trim();
         const real = String(p.real_map ?? "").trim();
         // 2026-08-28 · fix · location + real_map 둘 다 있을 때만 비교 (spec 무관)
         if (!real || !locZone) return false;
@@ -114,7 +114,7 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
       const nameMap = new Map<string, { name: string; spec: string | null }>();
       for (const p of prods ?? []) {
         const c = String(p.product_code ?? "").trim();
-        if (c) nameMap.set(c, { name: String(p.product_name ?? ""), spec: (p as any).spec ?? null });
+        if (c) nameMap.set(c, { name: String(p.product_name ?? ""), spec: p.spec ?? null });
       }
       for (const r of rows as any[]) {
         const c = String(r.product_code ?? "").trim();
@@ -152,10 +152,10 @@ router.post("/api/display-requests", authorize(1), asyncHandler(async (req, res)
         .eq("product_code", productCode)
         .maybeSingle();
       if (prod) {
-        productName = (prod as any).product_name ?? productCode;
-        if (!zoneId) zoneId = String((prod as any).real_map ?? "").trim();
+        productName = prod.product_name ?? productCode;
+        if (!zoneId) zoneId = String(prod.real_map ?? "").trim();
         if (!zoneLabel && zoneId) zoneLabel = zoneId;
-        if (!category) category = String((prod as any).category ?? "");
+        if (!category) category = String(prod.category ?? "");
       }
     } catch { /* products 조회 실패는 요청 자체 실패시키지 않음 */ }
     // 담당자 자동 매칭 · zone_assignments · assignedStaffId 미지정 시
@@ -167,8 +167,8 @@ router.post("/api/display-requests", authorize(1), asyncHandler(async (req, res)
           .eq("zone_id", zoneId)
           .maybeSingle();
         if (za) {
-          assignedStaffId = (za as any).employee_id ?? null;
-          assignedStaffName = (za as any).employee_name ?? "";
+          assignedStaffId = za.employee_id ?? null;
+          assignedStaffName = za.employee_name ?? "";
         }
       } catch { /* silent */ }
     }
@@ -838,7 +838,7 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
     // 1) 신규 컬럼 일괄 제거 (첫 시도만)
     if (attempt === 0) {
       for (const k of ["warehouse1_stock","warehouse2_stock","store3_stock","store1_zone","store2_zone","store3_zone"]) {
-        delete (payload as any)[k];
+        delete payload[k];
       }
     }
     // 2) 에러 메시지에서 특정 컬럼명 추출 · 해당 필드만 제거 (legacy 포함)
@@ -846,7 +846,7 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
     const colName = m?.[1];
     if (colName && colName in payload) {
       console.warn(`[inventory-checks] legacy 컬럼 미존재 · strip 후 재시도: ${colName}`);
-      delete (payload as any)[colName];
+      delete payload[colName];
     } else if (attempt > 0) {
       // 추가로 벗길 컬럼 없음 · 무한 루프 방지
       break;
@@ -941,7 +941,7 @@ router.post("/api/inventory-checks/bulk", authorize(1), validateBody(BulkInvento
       // 신규 컬럼 미존재 DB → 스트립 후 재시도 · 이후 아이템도 스트립
       downgraded = true;
       for (const k of ["warehouse1_stock","warehouse2_stock","store3_stock","store1_zone","store2_zone","store3_zone"]) {
-        delete (payload as any)[k];
+        delete payload[k];
       }
       const retry = await doWrite(payload);
       error = retry.error ?? null;
