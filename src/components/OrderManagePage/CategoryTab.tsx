@@ -225,35 +225,41 @@ const ZoneCategoryContent: React.FC = () => {
             </span>
           )}
         </div>
-        {/* 3) 1~3위 판매 상품 배지 · 카테고리 아래 */}
-        {bestItems.length > 0 && (
-          <div className="flex items-center gap-1 flex-wrap">
-            {bestItems.map((it, i) => (
-              <span
-                key={it.code}
-                className="inline-flex items-center gap-0.5 text-[14px] font-semibold text-zinc-600 bg-zinc-50 border border-line rounded px-1.5 py-0.5 leading-tight break-words whitespace-normal"
-                title={it.name}
-              >
-                <span className="text-[15px] font-bold text-orange-500 tabular-nums shrink-0">{i + 1}</span>
-                <span className="line-clamp-1">{it.name}</span>
-              </span>
-            ))}
-          </div>
+        {/* 2026-09-01 · 사용자 지시 · 화살표 접힘 시 · 아래 1,2,3위 + 판매정보 + 진행바 · 모두 접힘 (얇은 카드)
+            펼침 (isSelected) 시에만 상세 노출 */}
+        {isSelected && (
+          <>
+            {/* 3) 1~3위 판매 상품 배지 · 카테고리 아래 */}
+            {bestItems.length > 0 && (
+              <div className="flex items-center gap-1 flex-wrap">
+                {bestItems.map((it, i) => (
+                  <span
+                    key={it.code}
+                    className="inline-flex items-center gap-0.5 text-[14px] font-semibold text-zinc-600 bg-zinc-50 border border-line rounded px-1.5 py-0.5 leading-tight break-words whitespace-normal"
+                    title={it.name}
+                  >
+                    <span className="text-[15px] font-bold text-orange-500 tabular-nums shrink-0">{i + 1}</span>
+                    <span className="line-clamp-1">{it.name}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-2 flex-wrap text-[15px] tabular-nums">
+              <div className="flex items-center gap-1.5 text-zinc-500 font-semibold">
+                <span>상품 <span className="font-bold text-zinc-700">{g.items.length}</span>종</span>
+                <span className="text-zinc-300">·</span>
+                <span>판매 <span className="font-bold text-orange-700">{fmt(g.saleQty)}</span></span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-emerald-700 text-[14px]">{fmtWon(g.totalAmount)}</span>
+                <span className="text-[14px] font-bold text-zinc-400">{pct.toFixed(1)}%</span>
+              </div>
+            </div>
+            <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+              <div className={`h-full ${barCls} transition-all`} style={{ width: `${pct}%` }} />
+            </div>
+          </>
         )}
-        <div className="flex items-center justify-between gap-2 flex-wrap text-[15px] tabular-nums">
-          <div className="flex items-center gap-1.5 text-zinc-500 font-semibold">
-            <span>상품 <span className="font-bold text-zinc-700">{g.items.length}</span>종</span>
-            <span className="text-zinc-300">·</span>
-            <span>판매 <span className="font-bold text-orange-700">{fmt(g.saleQty)}</span></span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="font-bold text-emerald-700 text-[14px]">{fmtWon(g.totalAmount)}</span>
-            <span className="text-[14px] font-bold text-zinc-400">{pct.toFixed(1)}%</span>
-          </div>
-        </div>
-        <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-          <div className={`h-full ${barCls} transition-all`} style={{ width: `${pct}%` }} />
-        </div>
       </button>
     );
   };
