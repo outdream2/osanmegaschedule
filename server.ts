@@ -138,6 +138,17 @@ async function startServer() {
     skipSuccessfulRequests: true, // 성공한 로그인은 카운트 X (사용자 편의)
   });
 
+  // 2026-09-01 · OCR route · Gemini API 비용 발생 · 분당 폭주 방어 (분당 30회)
+  //   · 성공/실패 무관 카운트 (비용 발생 기준)
+  //   · authorize(1) 이미 적용됨 (로그인 필수) · 추가 보호 layer
+  const ocrLimiter = rateLimit({
+    windowMs: 60 * 1000,       // 1분
+    max: 30,                    // 분당 30회 · 정상 사용 여유 · 폭주 방어
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "OCR 요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
+  });
+
   app.use(compression());
   // 2026-08-05 T37 · DoS 방어 · 일반 API 는 10MB · 이미지 route 는 route-level 100MB
   //   body-parser 는 req._body 플래그로 재파싱 skip · 앞의 파서가 실행되면 뒤 파서는 자동 skip
@@ -163,6 +174,8 @@ async function startServer() {
 
   // 2026-08-16 · #112-C · 로그인 무차별 대입 방어 · /api/auth/* 전체에 rate-limit 적용
   app.use("/api/auth", authLimiter);
+  // 2026-09-01 · OCR 비용 폭주 방어 · /api/ocr · 분당 30회
+  app.use("/api/ocr", ocrLimiter);
 
   // ── 인증 불필요 (public) · requireAuth 이전 마운트 · 최소한만 ──
   app.use(authRouter);            // /api/auth/* · 로그인·비밀번호 변경 · rate-limit 이미 적용
