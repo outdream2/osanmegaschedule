@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 // 2026-08-19 · BottomSheet · open/onClose + title + right + maxHeight + backdrop/ESC
-import { describe, it, expect, vi } from "vitest";
-import { render, fireEvent, act } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, fireEvent, act, cleanup } from "@testing-library/react";
 import { BottomSheet } from "./BottomSheet";
+
+afterEach(() => cleanup());
 
 describe("BottomSheet · open 제어", () => {
   it("open=false · 렌더 안 함", () => {
