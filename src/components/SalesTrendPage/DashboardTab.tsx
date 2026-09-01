@@ -20,6 +20,9 @@ import { PeriodSelector, type PeriodOption } from "../common/PeriodSelector";
 import { LoadingState } from "../common/LoadingState";
 import { EmptyState } from "../common/EmptyState";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
+// 2026-09-01 · 사용자 지시 · 판매중 필터 언체크 기능 · 프레임워크 SaleStatusFilter 재사용
+import { SaleStatusFilter } from "../common/SaleStatusFilter";
+import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { fmtWon } from "../../lib/format";
 import { matchesProductQuery } from "../../lib/productMatch";
 import { api } from "../../lib/apiClient";
@@ -144,6 +147,10 @@ export const DashboardTab: React.FC = () => {
   const [snapshot, setSnapshot] = useState<string>("");
   const [autoExpanded, setAutoExpanded] = useState<AutoExpanded | null>(null);
 
+  // 2026-09-01 · 사용자 지시 · 판매중 필터 (default active · 언체크 시 · 판매중지·종료 포함)
+  //   · 프레임워크 useSaleStatusFilter · storageKey · localStorage 영속화
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "dashboard.saleFilter" });
+
   // 선택된 상품 (우측 상세 패널)
   const [selected, setSelected] = useState<ProductInfo | null>(null);
 
@@ -243,6 +250,8 @@ export const DashboardTab: React.FC = () => {
     const q = query.trim();
     let filtered = rows.filter(p => {
       if (q && !matchesProductQuery(p as any, q)) return false;
+      // 2026-09-01 · 사용자 지시 · 판매중 필터 (언체크 시 · 판매중지·종료 포함)
+      if (!saleMatches((p as any).sale_status)) return false;
       return true;
     });
     const sign = dir === "asc" ? 1 : -1;
@@ -261,7 +270,7 @@ export const DashboardTab: React.FC = () => {
     }
     // 서버 정렬 키는 이미 서버에서 정렬됨 (재정렬 불필요)
     return filtered;
-  }, [rows, sort, dir, query]);
+  }, [rows, sort, dir, query, saleMatches]);
 
   // ─── KPI 계산 (전체 rows 기준 · 필터/정렬 무관하게 스냅샷 요약) ─────────
   const kpis = useMemo(() => computeKpis(rows), [rows]);
@@ -423,21 +432,25 @@ export const DashboardTab: React.FC = () => {
               aria-hidden
               className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-deep via-sky-500 to-brand-deep opacity-90 z-10"
             />
-            {/* 검색 바 · 상단 필수 (SplitListPanel 원칙 참조) */}
-            <div className="px-3 py-2 border-b border-zinc-100">
-              <SearchBar
-                value={query}
-                onChange={setQuery}
-                placeholder={
-                  limit >= 50000
-                    ? "전체 상품 검색"
-                    : "TOP 리스트 내 검색"
-                }
-                resultCount={displayRows.length}
-                historyKey="megatown_dashboard_search"
-                accent="indigo"
-                widthClass="w-full"
-              />
+            {/* 검색 바 + 판매중 필터 · 상단 필수 (SplitListPanel 원칙 참조) */}
+            {/* 2026-09-01 · 사용자 지시 · SaleStatusFilter · 언체크 시 · 판매중지·종료 포함 */}
+            <div className="px-3 py-2 border-b border-zinc-100 flex items-center gap-2 flex-wrap">
+              <div className="flex-1 min-w-[200px]">
+                <SearchBar
+                  value={query}
+                  onChange={setQuery}
+                  placeholder={
+                    limit >= 50000
+                      ? "전체 상품 검색"
+                      : "TOP 리스트 내 검색"
+                  }
+                  resultCount={displayRows.length}
+                  historyKey="megatown_dashboard_search"
+                  accent="indigo"
+                  widthClass="w-full"
+                />
+              </div>
+              <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
             </div>
 
             <div className="relative flex-1 min-h-0 overflow-auto max-h-[60vh]">
