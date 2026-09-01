@@ -80,8 +80,12 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
   };
 
   // 각 item · purchase_details 조회 후 · UPSERT
+  // 2026-09-01 · fix (audit P0) · 트랜잭션 rollback 없음 · 부분 실패 추적 · 사용자에게 상세 리포트
+  //   · 첫 실패 즉시 throw 대신 · 모든 item 처리 후 실패 리스트 반환 · 재시도 가능
+  //   · 성공 부분은 저장됨 (best-effort · Supabase RPC atomic 은 별도 마이그레이션 필요)
   let insertedCount = 0;
   let updatedCount = 0;
+  const failedItems: Array<{ product_code: string; error: string; step: "check" | "update" | "insert" | "location" }> = [];
   for (const it of items) {
     const productCode = String(it.product_code ?? "").trim();
     if (!productCode) continue;
@@ -97,13 +101,17 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
       : null;
 
     // 오늘 자 · 이미 매입 원본 있는지 확인 (OCR/엑셀 임포트 등)
-    const { data: existing } = await supabase
+    const { data: existing, error: checkErr } = await supabase
       .from("purchase_details")
       .select("id")
       .eq("purchase_date", todayDate)
       .eq("product_code", productCode)
       .is("verify_status", null) // 아직 미검수 · OCR 원본만
       .limit(1);
+    if (checkErr) {
+      failedItems.push({ product_code: productCode, error: checkErr.message, step: "check" });
+      continue;
+    }
 
     if (existing && existing.length > 0) {
       // 기존 매입 있음 → verify_* 만 UPDATE
@@ -116,7 +124,10 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
           verified_expiring: isExpiring,
         })
         .eq("id", existing[0].id);
-      if (uErr) throw new HttpError(500, `verify update 실패: ${uErr.message}`);
+      if (uErr) {
+        failedItems.push({ product_code: productCode, error: uErr.message, step: "update" });
+        continue;
+      }
       updatedCount++;
     } else {
       // 신규 매입 · INSERT
@@ -136,13 +147,16 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
           verified_expiring: isExpiring,
           imported_at: now.toISOString(),
         });
-      if (iErr) throw new HttpError(500, `verify insert 실패: ${iErr.message}`);
+      if (iErr) {
+        failedItems.push({ product_code: productCode, error: iErr.message, step: "insert" });
+        continue;
+      }
       insertedCount++;
     }
 
     // 2026-09-01 · 사용자 지시 · 진열위치 · products 테이블 반영 (매장구역 지정된 경우만)
     //   · location 컬럼 · display_location 컬럼 · 함께 업데이트 (하위호환)
-    //   · error 시 · 검수 자체는 성공 · location 만 skip (silent · log)
+    //   · error 시 · 검수 자체는 성공 · location 만 skip (silent · log · 실패 리스트)
     if (itemLocation) {
       const { error: locErr } = await supabase
         .from("products")
@@ -150,8 +164,20 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
         .eq("product_code", productCode);
       if (locErr) {
         console.warn(`[arrival→location] product_code=${productCode} · location=${itemLocation} · ${locErr.message}`);
+        failedItems.push({ product_code: productCode, error: `location: ${locErr.message}`, step: "location" });
       }
     }
+  }
+
+  // 2026-09-01 · fix (audit P0) · 부분 실패 있으면 · 상세 리포트 응답 (검수는 부분 성공 · UI 재시도 가능)
+  //   · 전체 실패 (0 성공) 시 · 500 status
+  //   · 일부 성공 · 200 with warnings (프론트 · failed 리스트 확인 · 재시도)
+  const savedCount = insertedCount + updatedCount;
+  // 검수 저장 자체 · 성공 0 · 전체 실패
+  //   · location step 만 실패 · savedCount > 0 · 200 OK + warning
+  const hasSavedFailure = failedItems.some(f => f.step !== "location");
+  if (savedCount === 0 && hasSavedFailure) {
+    throw new HttpError(500, `상품입고 검수 실패 · ${failedItems.length}건 · 첫 오류: ${failedItems[0]?.error ?? "unknown"}`);
   }
 
   const groupId = makeGroupId(todayISO, checked_by);
@@ -172,6 +198,9 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
     inserted: insertedCount,
     updated: updatedCount,
     item_count: items.length,
+    // 2026-09-01 · fix · 부분 실패 리스트 · UI 에서 · 재시도·오류 표시 가능
+    failed: failedItems.length > 0 ? failedItems : undefined,
+    failed_count: failedItems.length,
   });
 }));
 

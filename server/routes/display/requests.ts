@@ -32,7 +32,10 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
   // 2026-08-21 · #171 Phase 2 · return · resignation 추가 (BC · 신규 필드만)
   //   · relation 미존재 시 · count 0 (fallback · 안전)
   // 2026-08-25 · #192 · vendor 승인 대기 (approval_status=pending)
-  const [display, order, productsWithRealMap, legacy, leave, lunch, inventory, ret, resignation, vendor] = await Promise.all([
+  // 2026-09-01 · fix · Promise.all → Promise.allSettled · 개별 쿼리 실패 · 전체 endpoint 죽지 않게
+  //   · Supabase 는 대체로 { data, error } · 하지만 네트워크·서버 예외 시 throw 가능
+  //   · allSettled · 각 fulfilled/rejected 개별 처리 · resilient
+  const results = await Promise.allSettled([
     supabase.from("display_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("order_requests").select("id", { count: "exact", head: true }).eq("status", "requested"),
     // 2026-08-28 · 사용자 지시 · 배치구역 불일치 1000건 폭발 원인
@@ -47,6 +50,13 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
     supabase.from("resignation_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("vendors").select("id", { count: "exact", head: true }).eq("approval_status", "pending"),
   ]);
+  // 2026-09-01 · fix · allSettled 결과 · rejected → 기본값 · fulfilled → 원본
+  const unwrap = <T,>(r: PromiseSettledResult<T>): T | { count: number; data: unknown; error: unknown } => {
+    if (r.status === "fulfilled") return r.value;
+    console.warn("[pending-counts] query rejected:", r.reason);
+    return { count: 0, data: [], error: r.reason };
+  };
+  const [display, order, productsWithRealMap, legacy, leave, lunch, inventory, ret, resignation, vendor] = results.map(unwrap) as any[];
   const computedCodes = new Set(
     (productsWithRealMap.data ?? [])
       .filter(p => {

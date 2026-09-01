@@ -19,8 +19,12 @@ const OcrConfirmedItemSchema = z.object({
 });
 
 /** POST /api/ocr-confirmed-items · batch insert */
+// 2026-09-01 · fix · items 상한 1000 · 메모리 폭주 방어 (audit P0)
+//   · OCR 명세서 일반 · 30-100 items · 1000 은 이상값
 export const CreateOcrConfirmedItemsSchema = z.object({
-  items: z.array(OcrConfirmedItemSchema).min(1, "items 배열이 비어 있습니다."),
+  items: z.array(OcrConfirmedItemSchema)
+    .min(1, "items 배열이 비어 있습니다.")
+    .max(1000, "items 배열 최대 1000개 (요청 분할 필요)"),
   saved_at: z.string().max(20).optional(),
 });
 export type CreateOcrConfirmedItemsInput = z.infer<typeof CreateOcrConfirmedItemsSchema>;
