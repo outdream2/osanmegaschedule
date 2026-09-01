@@ -19,6 +19,7 @@ import {
   PatchInventoryCheckSchema,
 } from "../../../src/shared/schemas/inventoryChecks";
 import {
+  CreateDisplayRequestSchema,
   PrepareDisplayRequestSchema,
   CompleteDisplayRequestSchema,
   PatchDisplayRequestSchema,
@@ -136,7 +137,7 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
 //   · product_code 전달 시 · products 에서 real_map/spec/category/product_name 자동 조회
 //   · zone_id·zone_label 자동 채움 (real_map 기반)
 //   · 하위 호환 · 기존 zone_id 기반 요청 (zone-only) 그대로 지원
-router.post("/api/display-requests", authorize(1), asyncHandler(async (req, res) => {
+router.post("/api/display-requests", authorize(1), validateBody(CreateDisplayRequestSchema), asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const productCode = String(b.product_code ?? "").trim();
   const assignedStaffIdRaw = b.assigned_staff_id;

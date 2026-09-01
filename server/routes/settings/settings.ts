@@ -166,7 +166,7 @@ router.get("/api/blocked-slots", asyncHandler(async (req, res) => {
   res.json((data?.value as Record<string, string[]>) ?? {});
 }));
 
-router.post("/api/blocked-slots", validateBody(UpsertBlockedSlotSchema), asyncHandler(async (req, res) => {
+router.post("/api/blocked-slots", authorize(5), validateBody(UpsertBlockedSlotSchema), asyncHandler(async (req, res) => {
   const { date, staffName, time, blocked } = req.body;
   const key = `blocked_slots_${date}`;
   const { data } = await supabase.from("app_settings").select("value").eq("key", key).maybeSingle();
@@ -201,7 +201,7 @@ router.get("/api/zones", asyncHandler(async (_req, res) => {
   res.json(data ?? []);
 }));
 
-router.post("/api/zones", validateBody(UpsertZonesSchema), asyncHandler(async (req, res) => {
+router.post("/api/zones", authorize(5), validateBody(UpsertZonesSchema), asyncHandler(async (req, res) => {
   const { zones } = req.body;
   const rowsWithDow = zones.map((z: any) => ({
     zone_id: String(z.zone_id),
