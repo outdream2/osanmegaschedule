@@ -20,7 +20,7 @@ const ClientErrorSchema = z.object({
   })).max(20),
 });
 
-// 2026-08-27 · client-errors 는 · 로그인 이전 브라우저 에러도 접수 · authorize 미적용 (익명 로그)
+// 2026-08-27 · client-errors 는 · 로그인 이전 브라우저 에러도 접수 · authorize 미적용 (익명 로그) · audit:no-authorize
 router.post("/api/client-errors", validateBody(ClientErrorSchema), asyncHandler(async (req, res) => {
   const { errors } = req.body;
   const ctx = auditContext(req);

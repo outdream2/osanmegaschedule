@@ -743,13 +743,8 @@ router.patch("/api/products/:code", authorize(1), validateBody(UpdateProductSche
 
 // 2026-08-23 · #177 Phase C · 상품 신규 등록 · 관리자 + 매니저 lv5+ 만 (authorize(5))
 //   · Zod · CreateProductSchema · product_code UNIQUE 검사 · 중복 시 409
-router.post("/api/products", authorize(5), asyncHandler(async (req, res) => {
-  const parsed = CreateProductSchema.safeParse(req.body ?? {});
-  if (!parsed.success) {
-    const first = parsed.error.issues[0];
-    throw badRequest(`${first?.path.join(".") ?? "input"}: ${first?.message ?? "유효성 오류"}`);
-  }
-  const input = parsed.data;
+router.post("/api/products", authorize(5), validateBody(CreateProductSchema), asyncHandler(async (req, res) => {
+  const input = req.body as import("../../../src/shared/schemas/products").CreateProductInput;
   const code = input.product_code.trim();
   if (!code) throw badRequest("product_code required");
 

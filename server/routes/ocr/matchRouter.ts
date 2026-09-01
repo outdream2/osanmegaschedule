@@ -19,13 +19,13 @@ const OcrMatchSchema = z.object({
 
 const router = Router();
 
-router.get("/api/health", (_req, res) => res.json({ ok: true }));
+router.get("/api/health", asyncHandler(async (_req, res) => { res.json({ ok: true }); }));
 
-router.get("/api/ocr-ping", (_req, res) => {
+router.get("/api/ocr-ping", asyncHandler(async (_req, res) => {
   const keys = getGeminiKeys();
   const mKeys = getMistralKeys();
   res.json({ ok: true, gemini: keys.length > 0, geminiKeyCount: keys.length, mistral: mKeys.length > 0, mistralKeyCount: mKeys.length });
-});
+}));
 
 router.post("/api/ocr-match", authorize(5), validateBody(OcrMatchSchema), asyncHandler(async (req, res) => {
   const { names } = req.body ?? {};

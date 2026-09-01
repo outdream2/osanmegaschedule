@@ -18,6 +18,13 @@ const ParseLocalSchema = z.object({
     supplierHint: z.string().max(200).optional(),
   })).min(1),
 });
+
+const ParseGeminiSchema = z.object({
+  pages: z.array(z.object({
+    page: z.number().int(),
+    rawText: z.string().max(100000),
+  })).min(1),
+});
 import {
   matchVendorSupplier, findVendorInText,
   findOcrTemplate, applyColumnMapping, applyTemplateHeaders, upsertOcrTemplate,
@@ -96,7 +103,7 @@ router.post("/api/ocr/parse-local", authorize(5), validateBody(ParseLocalSchema)
 // 2026-07-22 · Gemini 텍스트 파싱 · rawText → Gemini → 표준 거래명세서 JSON
 //   입력: { pages: [{page, rawText}, ...] }
 //   출력: { pages: [{page, headers, rows, meta, rawText}, ...] }
-router.post("/api/ocr/parse-gemini", authorize(5), asyncHandler(async (req, res) => {
+router.post("/api/ocr/parse-gemini", authorize(5), validateBody(ParseGeminiSchema), asyncHandler(async (req, res) => {
   const reqStart = Date.now();
   const { callGeminiTextParse } = await import("../../ocr/geminiTextParse");
   const { getGeminiKeys: _gk, geminiState: _gs, parseGeminiText } = await import("../../ocr/gemini");
