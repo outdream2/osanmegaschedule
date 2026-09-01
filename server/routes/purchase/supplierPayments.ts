@@ -160,34 +160,31 @@ router.get("/api/supplier-payments/latest-per-supplier", asyncHandler(async (_re
 //   · ocr_confirmed_items.amount - SUM(allocations.allocated_amount) > 0
 // ─────────────────────────────────────────────────────────────────────
 router.get("/api/supplier-payments/pending-count", asyncHandler(async (_req, res) => {
-  const { data: invoices, error: invErr } = await supabase
-    .from("ocr_confirmed_items")
-    .select("id, amount");
-  if (invErr) {
-    if (/relation .* does not exist/i.test(invErr.message)) return res.json({ count: 0 });
-    throw new HttpError(500, invErr.message);
+  // 2026-09-01 · P3 최적화 · N+1 감소
+  //   · 이전 · ocr_confirmed_items 2회 조회 (id+amount / supplier_name+amount) 순차
+  //   · 신규 · 한 번에 supplier_name+amount 조회 · supplier_payments 병렬 · latency 3→2 라운드 트립
+  const [invRes, payRes] = await Promise.all([
+    supabase.from("ocr_confirmed_items").select("supplier_name, amount"),
+    supabase.from("supplier_payments").select("supplier_name, amount"),
+  ]);
+  if (invRes.error) {
+    if (/relation .* does not exist/i.test(invRes.error.message)) return res.json({ count: 0 });
+    throw new HttpError(500, invRes.error.message);
   }
-  const invList = invoices ?? [];
+  const invList = invRes.data ?? [];
   if (invList.length === 0) return res.json({ count: 0 });
 
   // 2026-08-30 · 사용자 결정 · allocations 제거 · 미결제 = 매입액 - 결제액 (공급사별 대략 계산)
   //   · 정확한 매입 vs 결제 매칭 없음 · 단순 미결제 개수 반환
   //   · 공급사별 SUM 매입 vs SUM 결제 · 차액 > 0 인 공급사 매입건 수 근사
-  const { data: payments } = await supabase
-    .from("supplier_payments")
-    .select("supplier_name, amount");
   const paidBySupplier = new Map<string, number>();
-  for (const p of payments ?? []) {
+  for (const p of payRes.data ?? []) {
     const nm = String((p as any).supplier_name ?? "").trim();
     if (!nm) continue;
     paidBySupplier.set(nm, (paidBySupplier.get(nm) ?? 0) + (Number((p as any).amount) || 0));
   }
-  // 매입 정보 · supplier_name 별 SUM · ocr_confirmed_items 에 supplier 있는지 확인 후
-  const { data: invoicesWithSupplier } = await supabase
-    .from("ocr_confirmed_items")
-    .select("supplier_name, amount");
   const invBySupplier = new Map<string, number>();
-  for (const i of invoicesWithSupplier ?? []) {
+  for (const i of invList) {
     const nm = String((i as any).supplier_name ?? "").trim();
     if (!nm) continue;
     invBySupplier.set(nm, (invBySupplier.get(nm) ?? 0) + (Number((i as any).amount) || 0));
@@ -306,30 +303,32 @@ router.get("/api/supplier-balance/:supplier", asyncHandler(async (req, res) => {
   const supplier = decodeURIComponent(req.params.supplier ?? "").trim();
   if (!supplier) throw badRequest("supplier 필수");
 
+  // 2026-09-01 · P3 최적화 · 매입/결제 쿼리 병렬화 (Promise.all · latency 2→1 라운드 트립)
+  const [purchaseRows, payRes] = await Promise.all([
+    queryPurchaseDetails({ supplier }),
+    supabase
+      .from("supplier_payments")
+      .select("id, amount")
+      .eq("supplier_name", supplier),
+  ]);
+
   // 매입 합계 (purchase_details · queryPurchaseDetails 헬퍼 · NULL supplier fallback 포함)
   let totalPurchase = 0;
   let purchaseCount = 0;
-  {
-    const rows = await queryPurchaseDetails({ supplier });
-    for (const r of rows) {
-      totalPurchase += r.amount;
-      purchaseCount++;
-    }
+  for (const r of purchaseRows) {
+    totalPurchase += r.amount;
+    purchaseCount++;
   }
 
   // 결제 합계 (supplier_payments)
   let totalPayment = 0;
   let paymentCount = 0;
-  {
-    const { data, error } = await supabase
-      .from("supplier_payments")
-      .select("id, amount")
-      .eq("supplier_name", supplier);
-    if (error && !/relation .* does not exist/i.test(error.message)) throw new HttpError(500, error.message);
-    for (const r of data ?? []) {
-      totalPayment += Number(r.amount) || 0;
-      paymentCount++;
-    }
+  if (payRes.error && !/relation .* does not exist/i.test(payRes.error.message)) {
+    throw new HttpError(500, payRes.error.message);
+  }
+  for (const r of payRes.data ?? []) {
+    totalPayment += Number(r.amount) || 0;
+    paymentCount++;
   }
 
   const balance = totalPurchase - totalPayment;

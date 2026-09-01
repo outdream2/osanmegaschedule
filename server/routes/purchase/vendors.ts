@@ -152,8 +152,21 @@ router.get("/api/vendors", asyncHandler(async (req, res) => {
   //   응답 shape 유지 · latestBalance: { balance, invoice_date, created_at } | null
   //     · balance: 매입 - 결제 · invoice_date: 최근 매입일 · created_at: 실시간 계산 시각
   if (req.query.withBalances === "1") {
-    // 1) 전체 매입 로드 (NULL supplier_name 은 vendors.note/products.supplier 로 fallback)
-    const purchases = await queryPurchaseDetails({});
+    // 2026-09-01 · P3 최적화 · 3단계 순차 → Promise.all 병렬화 (latency 3→1 라운드 트립)
+    //   · purchases + payments + configs · 모두 독립적 · 동시 실행 안전
+    const [purchases, payRes, cfgRes] = await Promise.all([
+      queryPurchaseDetails({}),
+      supabase.from("supplier_payments").select("supplier_name, amount").then(
+        r => r,
+        () => ({ data: null, error: { message: "relation not found" } as any }),
+      ),
+      supabase.from("supplier_balance_configs").select("supplier_name, balance_field, updated_at").then(
+        r => r,
+        () => ({ data: null, error: { message: "relation not found" } as any }),
+      ),
+    ]);
+
+    // 1) 매입 aggregate
     const purchaseMap = new Map<string, { total: number; latestDate: string | null }>();
     for (const p of purchases) {
       const cur = purchaseMap.get(p.supplier) ?? { total: 0, latestDate: null };
@@ -162,31 +175,21 @@ router.get("/api/vendors", asyncHandler(async (req, res) => {
       purchaseMap.set(p.supplier, cur);
     }
 
-    // 2) 전체 결제 로드 · supplier_payments 없으면 조용히 skip
+    // 2) 결제 aggregate · supplier_payments 없으면 조용히 skip
     const paymentMap = new Map<string, number>();
-    try {
-      const { data: pays, error: payErr } = await supabase
-        .from("supplier_payments")
-        .select("supplier_name, amount");
-      if (!payErr) {
-        for (const r of pays ?? []) {
-          const name = String(r.supplier_name ?? "").trim();
-          if (!name) continue;
-          paymentMap.set(name, (paymentMap.get(name) ?? 0) + (Number(r.amount) || 0));
-        }
+    if (!payRes.error && payRes.data) {
+      for (const r of payRes.data) {
+        const name = String((r as any).supplier_name ?? "").trim();
+        if (!name) continue;
+        paymentMap.set(name, (paymentMap.get(name) ?? 0) + (Number((r as any).amount) || 0));
       }
-    } catch { /* silent · supplier_payments relation 없어도 무관 */ }
+    }
 
-    // 3) balanceConfig (기존 유지 · 잔고 컬럼 지정 config)
+    // 3) balanceConfig · 없으면 skip
     const cfgMap = new Map<string, any>();
-    try {
-      const { data: configs, error: cfgErr } = await supabase
-        .from("supplier_balance_configs")
-        .select("supplier_name, balance_field, updated_at");
-      if (!cfgErr) {
-        for (const c of configs ?? []) cfgMap.set(c.supplier_name, c);
-      }
-    } catch { /* silent */ }
+    if (!cfgRes.error && cfgRes.data) {
+      for (const c of cfgRes.data as any[]) cfgMap.set(c.supplier_name, c);
+    }
 
     // 4) 실시간 계산 · enrich
     //   latestBalance 확장 (2026-08-09) · total_purchase · total_payment 추가
