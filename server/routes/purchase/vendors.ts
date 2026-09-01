@@ -15,6 +15,18 @@ import { z } from "zod";
 
 const router = Router();
 
+// ── 2026-09-01 · withBalances=1 5분 in-memory 캐시 ───────────────────────────
+// 키: "withBalances" (단일 버킷 · plain 조회는 빠르므로 캐싱 불필요)
+// TTL: 5분 · POST/PATCH/DELETE 시 즉시 무효화 (invalidateVendorCache)
+const VENDOR_CACHE_TTL_MS = 5 * 60 * 1000;
+const vendorCache = new Map<string, { data: any; expiresAt: number }>();
+const CACHE_KEY_BALANCES = "withBalances";
+
+export function invalidateVendorCache(): void {
+  vendorCache.clear();
+  console.log("[vendors] cache invalidated");
+}
+
 // 공급사관리 엑셀 업로드 · LandingPage 데이터 업로드 모달에서 사용
 // binary 로 전송된 xlsx 파일을 서버에서 파싱 후 vendors 테이블에 upsert (company_name 기준)
 router.post("/api/upload-vendors", authorize(9), express.raw({ type: "application/octet-stream", limit: "20mb" }), asyncHandler(async (req, res) => {
@@ -105,6 +117,7 @@ router.post("/api/upload-vendors", authorize(9), express.raw({ type: "applicatio
     else inserted++;
   }
   console.log(`[upload-vendors] total=${cleaned.length} inserted=${inserted} updated=${updated} failed=${failed}`);
+  if (inserted > 0 || updated > 0) invalidateVendorCache();
   return res.json({ ok: true, count: cleaned.length, inserted, updated, failed, errors });
 }));
 
@@ -153,6 +166,16 @@ router.get("/api/vendors", asyncHandler(async (req, res) => {
   //   응답 shape 유지 · latestBalance: { balance, invoice_date, created_at } | null
   //     · balance: 매입 - 결제 · invoice_date: 최근 매입일 · created_at: 실시간 계산 시각
   if (req.query.withBalances === "1") {
+    // 2026-09-01 · 캐시 hit 확인
+    const cached = vendorCache.get(CACHE_KEY_BALANCES);
+    if (cached && Date.now() < cached.expiresAt) {
+      console.log("[vendors] X-Cache: HIT");
+      res.setHeader("Cache-Control", "private, max-age=300");
+      res.setHeader("X-Cache", "HIT");
+      const body: VendorsListResponse = cached.data as any;
+      return res.json(body);
+    }
+
     // 2026-09-01 · P3 최적화 · 3단계 순차 → Promise.all 병렬화 (latency 3→1 라운드 트립)
     //   · purchases + payments + configs · 모두 독립적 · 동시 실행 안전
     const [purchases, payRes, cfgRes] = await Promise.all([
@@ -214,6 +237,12 @@ router.get("/api/vendors", asyncHandler(async (req, res) => {
         balanceConfig: cfgMap.get(v.company_name) ?? null,
       };
     });
+
+    // 2026-09-01 · 캐시 저장 (TTL 5분)
+    vendorCache.set(CACHE_KEY_BALANCES, { data: enriched, expiresAt: Date.now() + VENDOR_CACHE_TTL_MS });
+    console.log("[vendors] X-Cache: MISS · cached for 5 min");
+    res.setHeader("Cache-Control", "private, max-age=300");
+    res.setHeader("X-Cache", "MISS");
     const body: VendorsListResponse = enriched as any;
     return res.json(body);
   }
@@ -256,13 +285,14 @@ router.post("/api/vendors", authorize(5), validateBody(CreateVendorSchema), asyn
     .insert({ ...baseRow, email: email ?? null })
     .select("id, company_name, contact_name, phone, email, category, note, business_number, created_at")
     .single();
-  if (!r1.error) return res.status(201).json(r1.data);
+  if (!r1.error) { invalidateVendorCache(); return res.status(201).json(r1.data); }
   if (/email/i.test(r1.error.message)) {
     const r2 = await supabase.from("vendors")
       .insert(baseRow)
       .select("id, company_name, contact_name, phone, category, note, business_number, created_at")
       .single();
     if (r2.error) throw new HttpError(500, `vendors 등록 실패: ${r2.error.message}`);
+    invalidateVendorCache();
     return res.status(201).json({ ...r2.data, email: null });
   }
   throw new HttpError(500, r1.error.message);
@@ -343,7 +373,7 @@ router.patch("/api/vendors/:id", authorize(5), validateBody(UpdateVendorSchema),
   const SELECT_NO_VAT   = "id, company_name, contact_name, phone, email, category, note, business_number";
   const SELECT_NO_EMAIL = "id, company_name, contact_name, phone, category, note, business_number";
   const r1 = await supabase.from("vendors").update(updates).eq("id", id).select(SELECT_FULL).single();
-  if (!r1.error) return res.json(r1.data);
+  if (!r1.error) { invalidateVendorCache(); return res.json(r1.data); }
   // 2026-08-23 · #178·#192 · 신규 컬럼 없음 fallback (마이그레이션 미실행)
   //   · order_method · region · invoice_method · order_status · special_notes · approval_status
   if (/order_method|region|invoice_method|order_status|special_notes|approval_status/i.test(r1.error.message)) {
@@ -355,7 +385,7 @@ router.patch("/api/vendors/:id", authorize(5), validateBody(UpdateVendorSchema),
     delete noNew.special_notes;
     delete noNew.approval_status;
     const rN = await supabase.from("vendors").update(noNew).eq("id", id).select(SELECT_FULL).single();
-    if (!rN.error) return res.json(rN.data);
+    if (!rN.error) { invalidateVendorCache(); return res.json(rN.data); }
   }
   // team_leader/emergency 컬럼 없음 fallback (마이그레이션 미실행)
   if (/team_leader|emergency_contact/i.test(r1.error.message)) {
@@ -364,19 +394,20 @@ router.patch("/api/vendors/:id", authorize(5), validateBody(UpdateVendorSchema),
     delete noTeam.team_leader_phone;
     delete noTeam.emergency_contact;
     const rT = await supabase.from("vendors").update(noTeam).eq("id", id).select(SELECT_NO_TEAM).single();
-    if (!rT.error) return res.json({ ...rT.data, team_leader_name: null, team_leader_phone: null, emergency_contact: null });
+    if (!rT.error) { invalidateVendorCache(); return res.json({ ...rT.data, team_leader_name: null, team_leader_phone: null, emergency_contact: null }); }
   }
   // vat_included 컬럼 없음 fallback
   if (/vat_included/i.test(r1.error.message)) {
     const noVat = { ...updates };
     delete noVat.vat_included;
     const r2 = await supabase.from("vendors").update(noVat).eq("id", id).select(SELECT_NO_VAT).single();
-    if (!r2.error) return res.json({ ...r2.data, vat_included: null });
+    if (!r2.error) { invalidateVendorCache(); return res.json({ ...r2.data, vat_included: null }); }
     if (/email/i.test(r2.error.message)) {
       const noVatNoEmail = { ...noVat };
       delete noVatNoEmail.email;
       const r3 = await supabase.from("vendors").update(noVatNoEmail).eq("id", id).select(SELECT_NO_EMAIL).single();
       if (r3.error) throw new HttpError(500, `vendors 수정 실패: ${r3.error.message}`);
+      invalidateVendorCache();
       return res.json({ ...r3.data, email: null, vat_included: null });
     }
     throw new HttpError(500, r2.error.message);
@@ -388,6 +419,7 @@ router.patch("/api/vendors/:id", authorize(5), validateBody(UpdateVendorSchema),
     delete noEmail.vat_included;
     const r2 = await supabase.from("vendors").update(noEmail).eq("id", id).select(SELECT_NO_EMAIL).single();
     if (r2.error) throw new HttpError(500, `vendors 수정 실패: ${r2.error.message}`);
+    invalidateVendorCache();
     return res.json({ ...r2.data, email: null, vat_included: null });
   }
   throw new HttpError(500, r1.error.message);
@@ -399,6 +431,7 @@ router.delete("/api/vendors/:id", authorize(9), asyncHandler(async (req, res) =>
   if (isNaN(id)) throw badRequest("invalid id");
   const { error } = await supabase.from("vendors").delete().eq("id", id);
   if (error) throw new HttpError(500, error.message);
+  invalidateVendorCache();
   return res.json({ ok: true });
 }));
 
@@ -451,6 +484,7 @@ router.post("/api/vendors/bulk-import", authorize(9), validateBody(BulkImportVen
       else inserted++;
     }
   }
+  if (inserted > 0 || updated > 0) invalidateVendorCache();
   return res.json({ ok: true, inserted, updated, failed, total: cleaned.length, errors: errors.slice(0, 20) });
 }));
 
