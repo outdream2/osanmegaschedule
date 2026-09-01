@@ -44,6 +44,28 @@ function deriveJwtSecret(): string {
 const JWT_SECRET = deriveJwtSecret();
 const COOKIE_NAME = "mt_auth";               // Access token (짧게 · API 호출용)
 const REFRESH_COOKIE_NAME = "mt_refresh";    // 2026-08-16 · #112-S10 · Refresh token (길게 · access 갱신용)
+
+// ─────────────────────────────────────────────────
+// 2026-09-01 · SSO jti 재사용 방지 · 인메모리 캐시 (Redis-less)
+//   · SSO 토큰 소비 시 jti 를 5분 TTL 캐시에 저장
+//   · 동일 jti 두 번째 소비 시 401
+//   · Map<jti, expiresAt> · 만료된 항목 자동 정리
+// ─────────────────────────────────────────────────
+const _consumedSsoJtis = new Map<string, number>(); // jti → expiresAt (ms)
+const SSO_JTI_TTL_MS = 5 * 60 * 1000; // 5분
+
+/** SSO jti 소비 여부 확인 + 등록. 이미 소비된 jti 면 true 반환 (재사용 = 공격) */
+export function consumeSsoJti(jti: string): boolean {
+  const now = Date.now();
+  // 만료된 항목 정리 (메모리 누수 방지)
+  for (const [k, exp] of _consumedSsoJtis) {
+    if (now > exp) _consumedSsoJtis.delete(k);
+  }
+  if (_consumedSsoJtis.has(jti)) return true; // 이미 소비됨
+  _consumedSsoJtis.set(jti, now + SSO_JTI_TTL_MS);
+  return false;
+}
+
 // 2026-08-16 · #112-S10 · Access + Refresh 분리
 //   Access · 15분 (짧게 · 탈취 시 노출 최소)
 //   Refresh · 30일 (길게 · 자동 갱신 · 사용자 편의)

@@ -2,7 +2,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { supabase } from "../../../src/supabase/client";
-import { issueToken, clearToken, refreshAccessToken, JwtPayload, getSession, authorize } from "../../middleware/requireAuth";
+import { issueToken, clearToken, refreshAccessToken, JwtPayload, getSession, authorize, consumeSsoJti } from "../../middleware/requireAuth";
 import { audit, auditContext } from "../../lib/auditLogger";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
@@ -94,7 +94,7 @@ router.post("/api/auth/set-password", authorize(9), validateBody(SetPasswordSche
   const { employeeId, password } = req.body;
   const idNum = typeof employeeId === "string" ? parseInt(employeeId) : employeeId;
   if (!idNum || isNaN(idNum)) throw badRequest("유효한 employeeId 가 필요합니다");
-  const password_hash = await bcrypt.hash(password, 10);
+  const password_hash = await bcrypt.hash(password, 12);
   const { error } = await supabase.from("employees").update({ password_hash }).eq("id", idNum);
   if (error) throw new HttpError(500, error.message);
   audit("PASSWORD_SET_BY_ADMIN", {
@@ -115,12 +115,16 @@ router.post("/api/auth/sso-token", authorize(1), asyncHandler(async (req, res) =
   if (!JWT_SECRET) throw new HttpError(500, "JWT_SECRET 미설정");
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const jwt = require("jsonwebtoken");
+  // 2026-09-01 · jti 추가 · 재사용 방지 (consumeSsoJti)
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { randomUUID } = require("crypto") as typeof import("crypto");
+  const jti = randomUUID();
   const ssoToken = jwt.sign(
-    { sub: session.sub, name: session.name, role: session.role, level: session.level, typ: "sso" },
+    { sub: session.sub, name: session.name, role: session.role, level: session.level, typ: "sso", jti },
     JWT_SECRET,
     { algorithm: "HS256", expiresIn: "5m" },
   );
-  audit("SSO_TOKEN_ISSUE", { ...auditContext(req), userId: session.sub, name: session.name });
+  audit("SSO_TOKEN_ISSUE", { ...auditContext(req), userId: session.sub, name: session.name, jti });
   res.status(200).json({ token: ssoToken, expiresIn: 300 });
 }));
 
@@ -139,6 +143,13 @@ router.post("/api/auth/sso-consume", asyncHandler(async (req, res) => {
     throw unauthorized("SSO 토큰 만료 또는 무효");
   }
   if (decoded.typ !== "sso") throw unauthorized("SSO 토큰 타입 오류");
+  // 2026-09-01 · jti 재사용 방지 · 동일 SSO 토큰 두 번 이상 소비 시 401
+  const jti = (decoded as any).jti;
+  if (!jti) throw unauthorized("SSO 토큰 형식 오류 (jti 없음)");
+  if (consumeSsoJti(String(jti))) {
+    audit("SSO_REPLAY_BLOCKED", { ...auditContext(req), jti, userId: decoded.sub }, "warn");
+    throw unauthorized("SSO 토큰이 이미 사용되었습니다");
+  }
   try {
     issueToken(res, { sub: decoded.sub, name: decoded.name, role: decoded.role, level: decoded.level }, false);
   } catch {
@@ -216,7 +227,7 @@ router.post("/api/auth/change-password", authorize(1), validateBody(ChangePasswo
   const ok = await bcrypt.compare(currentPassword, emp.password_hash);
   delete (emp as any).password_hash;
   if (!ok) throw unauthorized("현재 비밀번호가 올바르지 않습니다");
-  const password_hash = await bcrypt.hash(newPassword, 10);
+  const password_hash = await bcrypt.hash(newPassword, 12);
   const { error: updErr } = await supabase
     .from("employees")
     .update({ password_hash })
