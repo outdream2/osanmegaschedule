@@ -8,6 +8,15 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
 // 2026-08-29 · #197 C-5 fix · 설정 (KV) 편집 후 · 관련 서버 캐시 즉시 무효화
 import { invalidateSaleActiveOnlyCache, resetProductCache } from "../../productCache";
+import { validateBody } from "../../middleware/zodValidate";
+import {
+  UpsertSettingSchema,
+  UpsertSeasonRangesSchema,
+  UpsertPermissionsSchema,
+  UpsertZoneGroupsSchema,
+  UpsertBlockedSlotSchema,
+  UpsertZonesSchema,
+} from "../../../src/shared/schemas/settings";
 
 const router = Router();
 
@@ -83,8 +92,8 @@ router.get("/api/settings/season-ranges", asyncHandler(async (_req, res) => {
   res.json(ranges);
 }));
 
-router.post("/api/settings/season-ranges", authorize(9), asyncHandler(async (req, res) => {
-  const { ranges } = req.body ?? {};
+router.post("/api/settings/season-ranges", authorize(9), validateBody(UpsertSeasonRangesSchema), asyncHandler(async (req, res) => {
+  const { ranges } = req.body;
   const normalized = normalizeSeasonRanges(ranges);
   const { error } = await supabase.from("app_settings")
     .upsert({ key: "season_ranges", value: normalized, updated_at: new Date().toISOString() }, { onConflict: "key" });
@@ -102,9 +111,8 @@ router.get("/api/settings", asyncHandler(async (req, res) => {
   res.json({ value: data?.value ?? null });
 }));
 
-router.post("/api/settings", authorize(9), asyncHandler(async (req, res) => {
-  const { key, value } = req.body ?? {};
-  if (!key) throw badRequest("key required");
+router.post("/api/settings", authorize(9), validateBody(UpsertSettingSchema), asyncHandler(async (req, res) => {
+  const { key, value } = req.body;
   const { error } = await supabase.from("app_settings")
     .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
   if (error) throw new HttpError(500, error.message);
@@ -125,9 +133,8 @@ router.get("/api/permissions", asyncHandler(async (_req, res) => {
   res.json(data?.value ?? defaults);
 }));
 
-router.post("/api/permissions", authorize(9), asyncHandler(async (req, res) => {
-  const { permissions } = req.body ?? {};
-  if (!permissions) throw badRequest("permissions required");
+router.post("/api/permissions", authorize(9), validateBody(UpsertPermissionsSchema), asyncHandler(async (req, res) => {
+  const { permissions } = req.body;
   const { error } = await supabase.from("app_settings")
     .upsert({ key: "page_permissions", value: permissions, updated_at: new Date().toISOString() }, { onConflict: "key" });
   if (error) throw new HttpError(500, error.message);
@@ -142,9 +149,8 @@ router.get("/api/zone-groups", asyncHandler(async (_req, res) => {
   res.json(Array.isArray(value) ? value : []);
 }));
 
-router.put("/api/zone-groups", authorize(9), asyncHandler(async (req, res) => {
+router.put("/api/zone-groups", authorize(9), validateBody(UpsertZoneGroupsSchema), asyncHandler(async (req, res) => {
   const body = req.body;
-  if (!Array.isArray(body)) throw badRequest("array required");
   const { error } = await supabase.from("app_settings")
     .upsert({ key: "zone_groups", value: body, updated_at: new Date().toISOString() }, { onConflict: "key" });
   if (error) throw new HttpError(500, error.message);
@@ -160,9 +166,8 @@ router.get("/api/blocked-slots", asyncHandler(async (req, res) => {
   res.json((data?.value as Record<string, string[]>) ?? {});
 }));
 
-router.post("/api/blocked-slots", asyncHandler(async (req, res) => {
-  const { date, staffName, time, blocked } = req.body ?? {};
-  if (!date || !staffName || !time) throw badRequest("date, staffName, time required");
+router.post("/api/blocked-slots", validateBody(UpsertBlockedSlotSchema), asyncHandler(async (req, res) => {
+  const { date, staffName, time, blocked } = req.body;
   const key = `blocked_slots_${date}`;
   const { data } = await supabase.from("app_settings").select("value").eq("key", key).maybeSingle();
   const current: Record<string, string[]> = (data?.value as Record<string, string[]>) ?? {};
@@ -196,9 +201,8 @@ router.get("/api/zones", asyncHandler(async (_req, res) => {
   res.json(data ?? []);
 }));
 
-router.post("/api/zones", asyncHandler(async (req, res) => {
-  const { zones } = req.body ?? {};
-  if (!Array.isArray(zones)) throw badRequest("zones array required");
+router.post("/api/zones", validateBody(UpsertZonesSchema), asyncHandler(async (req, res) => {
+  const { zones } = req.body;
   const rowsWithDow = zones.map((z: any) => ({
     zone_id: String(z.zone_id),
     employee_id: z.employee_id ?? null,

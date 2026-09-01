@@ -11,6 +11,8 @@ import { clearLowStockCache } from "../stock/stockManage";
 import { scheduleSnapshotBackground } from "../stock/lossTracking";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError, badRequest, notFound } from "../../middleware/errorHandler";
+import { validateBody } from "../../middleware/zodValidate";
+import { CreateOrderRequestSchema, BulkSendOrderSchema } from "../../../src/shared/schemas/orderRequests";
 
 const router = Router();
 
@@ -432,9 +434,9 @@ router.get("/api/order-requests", asyncHandler(async (req, res) => {
   res.json(data ?? []);
 }));
 
-router.post("/api/order-requests", authorize(1), asyncHandler(async (req, res) => {
-  const b = req.body ?? {};
-  const code = String(b.product_code ?? "");
+router.post("/api/order-requests", authorize(1), validateBody(CreateOrderRequestSchema), asyncHandler(async (req, res) => {
+  const b = req.body;
+  const code = b.product_code;
   const now = new Date().toISOString();
   const payload = {
     current_stock: b.current_stock != null ? Number(b.current_stock) : null,
@@ -537,7 +539,7 @@ router.delete("/api/order-requests/:id", authorize(2), asyncHandler(async (req, 
 // 공급사별로 그룹핑된 발주 항목을 받아 이메일/문자 발송 시도.
 // 실제 SMTP·SMS gateway 설정이 없으면 로그만 남기고 "미구성" 상태 반환.
 // order_dispatches 테이블에 발송 기록 저장 (없으면 로그로 대체)
-router.post("/api/order-requests/bulk-send", authorize(3), asyncHandler(async (req, res) => {
+router.post("/api/order-requests/bulk-send", authorize(3), validateBody(BulkSendOrderSchema), asyncHandler(async (req, res) => {
   const {
     order_number,
     order_date,
@@ -545,7 +547,7 @@ router.post("/api/order-requests/bulk-send", authorize(3), asyncHandler(async (r
     memo,
     channels,
     bySupplier,
-  } = req.body ?? {};
+  } = req.body;
 
   if (!Array.isArray(bySupplier) || bySupplier.length === 0) {
     throw badRequest("bySupplier가 비어있습니다.");
