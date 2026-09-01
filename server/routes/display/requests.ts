@@ -18,6 +18,11 @@ import {
   BulkInventoryCheckSchema,
   PatchInventoryCheckSchema,
 } from "../../../src/shared/schemas/inventoryChecks";
+import {
+  PrepareDisplayRequestSchema,
+  CompleteDisplayRequestSchema,
+  PatchDisplayRequestSchema,
+} from "../../../src/shared/schemas/displayRequests";
 
 const router = Router();
 
@@ -271,8 +276,8 @@ router.post("/api/display-requests", authorize(1), asyncHandler(async (req, res)
 // 2026-08-05 · Phase 1 · 창고담당 pending ↔ prepared 토글
 //   · pending → prepared (준비 완료)
 //   · prepared → pending (되돌리기 · 토글)
-router.patch("/api/display-requests/:id/prepare", authorize(3), asyncHandler(async (req, res) => {
-  const b = req.body ?? {};
+router.patch("/api/display-requests/:id/prepare", authorize(3), validateBody(PrepareDisplayRequestSchema), asyncHandler(async (req, res) => {
+  const b = req.body;
   const preparedById = b.prepared_by ? Number(b.prepared_by) : null;
   const preparedByName = String(b.prepared_by_name ?? "");
   const now = new Date().toISOString();
@@ -336,8 +341,8 @@ router.patch("/api/display-requests/:id/prepare", authorize(3), asyncHandler(asy
 // 2026-08-05 · Phase 1 · 진열담당 prepared/pending ↔ done 토글
 //   · pending or prepared → done (진열 완료)
 //   · done → prepared (되돌리기 · 토글 · 완료자 정보 제거)
-router.patch("/api/display-requests/:id/complete", authorize(3), asyncHandler(async (req, res) => {
-  const b = req.body ?? {};
+router.patch("/api/display-requests/:id/complete", authorize(3), validateBody(CompleteDisplayRequestSchema), asyncHandler(async (req, res) => {
+  const b = req.body;
   const completedById = b.completed_by ? Number(b.completed_by) : null;
   const completedByName = String(b.completed_by_name ?? "");
   const now = new Date().toISOString();
@@ -396,9 +401,8 @@ router.patch("/api/display-requests/:id/complete", authorize(3), asyncHandler(as
 }));
 
 // 하위 호환 · 기존 클라이언트 (status 만 업데이트) 지원 · pending/prepared/done 모두 허용
-router.patch("/api/display-requests/:id", authorize(3), asyncHandler(async (req, res) => {
-  const { status, zone_label, assigned_staff_name } = req.body ?? {};
-  if (!["pending", "prepared", "done"].includes(status)) throw badRequest("invalid status");
+router.patch("/api/display-requests/:id", authorize(3), validateBody(PatchDisplayRequestSchema), asyncHandler(async (req, res) => {
+  const { status, zone_label, assigned_staff_name } = req.body;
   const { error } = await supabase.from("display_requests").update({ status }).eq("id", req.params.id);
   if (error) throw new HttpError(500, error.message);
 

@@ -17,6 +17,14 @@ import type { GeminiResult } from "../../ocr/schema";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError, badRequest } from "../../middleware/errorHandler";
+import { validateBody } from "../../middleware/zodValidate";
+import {
+  UpsertOcrSynonymSchema,
+  CancelOcrSynonymSchema,
+  UpsertOcrSupplierAliasSchema,
+  UpsertOcrTemplateSchema,
+  CreateSupplierBalanceSchema,
+} from "../../../src/shared/schemas/ocr";
 
 // ── 세션 단위 rawText 캐시 (2026-07-10 v4c) ────────────────────────────────
 // 사용자 통찰: "여러 명세서에 공통으로 나오는 정보 = 수신처 (공급받는쪽)"
@@ -527,8 +535,8 @@ router.get("/api/ocr-synonyms", asyncHandler(async (_req, res) => {
     res.json({ synonyms: data ?? [] });
 }));
 
-router.post("/api/ocr-synonyms", authorize(5), asyncHandler(async (req, res) => {
-    const { prod_name_old, prod_name_new, supplier_old, supplier_new, product_code } = req.body ?? {};
+router.post("/api/ocr-synonyms", authorize(5), validateBody(UpsertOcrSynonymSchema), asyncHandler(async (req, res) => {
+    const { prod_name_old, prod_name_new, supplier_old, supplier_new, product_code } = req.body;
     // 2026-07-28 · 사용자 요청 · product_code 없어도 · 이름 매핑만 저장 허용 (수동 코드 링크는 나중에)
     if (!prod_name_old?.trim()) throw badRequest("prod_name_old 필요");
     const nameOldNorm = prod_name_old.trim().toLowerCase();
@@ -559,9 +567,9 @@ router.post("/api/ocr-synonyms", authorize(5), asyncHandler(async (req, res) => 
     res.json({ synonym: data });
 }));
 
-router.patch("/api/ocr-synonyms/:id", authorize(5), asyncHandler(async (req, res) => {
+router.patch("/api/ocr-synonyms/:id", authorize(5), validateBody(UpsertOcrSynonymSchema), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    const { prod_name_old, prod_name_new, product_code, supplier_old, supplier_new } = req.body ?? {};
+    const { prod_name_old, prod_name_new, product_code, supplier_old, supplier_new } = req.body;
     if (!prod_name_old?.trim() || !product_code?.trim()) throw badRequest("prod_name_old, product_code 필요");
     const { data, error } = await supabase.from("ocr_synonyms")
       .update({
@@ -591,8 +599,8 @@ router.delete("/api/ocr-synonyms/by-name", authorize(5), asyncHandler(async (req
 // 2차 보정 ✕ 취소: 삭제 대신 cancelled=true 마킹 (재적용 방지 + 관리 가능)
 // 마이그레이션(20260705_ocr_synonyms_cancelled.sql)이 적용되어야 정상 동작.
 // 미적용 시에는 400 응답 대신 delete로 폴백.
-router.post("/api/ocr-synonyms/cancel-by-name", authorize(5), asyncHandler(async (req, res) => {
-    const { prod_name_old, product_code } = req.body ?? {};
+router.post("/api/ocr-synonyms/cancel-by-name", authorize(5), validateBody(CancelOcrSynonymSchema), asyncHandler(async (req, res) => {
+    const { prod_name_old, product_code } = req.body;
     if (!prod_name_old?.trim()) throw badRequest("prod_name_old 필요");
     const nameOldNorm = prod_name_old.trim().toLowerCase();
     // 존재하면 cancelled=true로 업데이트, 없으면 새 레코드 삽입 (cancelled=true)
@@ -655,9 +663,8 @@ router.get("/api/ocr-supplier-aliases", asyncHandler(async (_req, res) => {
     res.json({ aliases: data ?? [] });
 }));
 
-router.post("/api/ocr-supplier-aliases", authorize(5), asyncHandler(async (req, res) => {
-    const { alias, supplier_name } = req.body ?? {};
-    if (!alias?.trim() || !supplier_name?.trim()) throw badRequest("alias, supplier_name 필요");
+router.post("/api/ocr-supplier-aliases", authorize(5), validateBody(UpsertOcrSupplierAliasSchema), asyncHandler(async (req, res) => {
+    const { alias, supplier_name } = req.body;
     const aliasNorm = alias.trim();
     const nameNorm = supplier_name.trim();
 
@@ -680,10 +687,9 @@ router.post("/api/ocr-supplier-aliases", authorize(5), asyncHandler(async (req, 
     res.json({ alias: result });
 }));
 
-router.patch("/api/ocr-supplier-aliases/:id", authorize(5), asyncHandler(async (req, res) => {
+router.patch("/api/ocr-supplier-aliases/:id", authorize(5), validateBody(UpsertOcrSupplierAliasSchema), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    const { alias, supplier_name } = req.body ?? {};
-    if (!alias?.trim() || !supplier_name?.trim()) throw badRequest("alias, supplier_name 필요");
+    const { alias, supplier_name } = req.body;
     const { data, error } = await supabase.from("ocr_supplier_aliases")
       .update({ alias: alias.trim(), supplier_name: supplier_name.trim() })
       .eq("id", id).select().single();
@@ -705,9 +711,8 @@ router.get("/api/ocr-templates", asyncHandler(async (_req, res) => {
     res.json({ templates: data ?? [] });
 }));
 
-router.post("/api/ocr-templates", authorize(5), asyncHandler(async (req, res) => {
-    const { supplier_name, headers, column_mapping } = req.body ?? {};
-    if (!supplier_name?.trim() || !Array.isArray(headers)) throw badRequest("supplier_name, headers 필요");
+router.post("/api/ocr-templates", authorize(5), validateBody(UpsertOcrTemplateSchema), asyncHandler(async (req, res) => {
+    const { supplier_name, headers, column_mapping } = req.body;
     // column_mapping: 원본 컬럼 순서 유지 배열 (선택) · 예: ["품명","","수량","단가","금액","유통기한"]
     //   빈 문자열 = 이 컬럼은 제외 · 나머지는 표준 필드명
     const payload: any = { supplier_name: supplier_name.trim(), headers, updated_at: new Date().toISOString() };
@@ -1747,9 +1752,8 @@ router.get("/api/supplier-balances", asyncHandler(async (_req, res) => {
     res.json({ balances: data ?? [] });
 }));
 
-router.post("/api/supplier-balances", authorize(5), asyncHandler(async (req, res) => {
-    const { supplier_name, invoice_date, balance } = req.body ?? {};
-    if (!supplier_name?.trim() || balance == null) throw badRequest("supplier_name, balance 필요");
+router.post("/api/supplier-balances", authorize(5), validateBody(CreateSupplierBalanceSchema), asyncHandler(async (req, res) => {
+    const { supplier_name, invoice_date, balance } = req.body;
     const { data, error } = await supabase
       .from("supplier_balances")
       .insert({ supplier_name: supplier_name.trim(), invoice_date: invoice_date ?? null, balance: Number(balance) })

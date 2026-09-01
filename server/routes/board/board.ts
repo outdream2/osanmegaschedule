@@ -19,6 +19,7 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler";
 import { CreatePostSchema, CreateCommentSchema } from "../../../src/shared/schemas/board";
+import { PatchCommentSchema, AcceptCommentSchema, ReactPostSchema } from "../../../src/shared/schemas/boardPatches";
 
 const router = Router();
 
@@ -415,12 +416,11 @@ router.post("/api/board/posts/:id/comments", authorize(1), validateBody(CreateCo
 }));
 
 // ── 댓글 수정 (작성자만)
-router.patch("/api/board/comments/:id", authorize(1), asyncHandler(async (req, res) => {
+router.patch("/api/board/comments/:id", authorize(1), validateBody(PatchCommentSchema), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
-  const b = req.body ?? {};
-  const editorId = Number(b.editor_id ?? 0);
+  const b = req.body;
+  const editorId = Number(b.editor_id);
   if (!Number.isFinite(id)) throw badRequest("invalid id");
-  if (!b.body || typeof b.body !== "string" || !b.body.trim()) throw badRequest("body required");
   const { data: existing } = await supabase.from("board_post_comments").select("author_id").eq("id", id).maybeSingle();
   if (!existing) throw new HttpError(404, "not found");
   if (existing.author_id !== editorId) throw forbidden("본인 댓글만 수정 가능");
@@ -445,9 +445,9 @@ router.delete("/api/board/comments/:id", authorize(2), asyncHandler(async (req, 
 }));
 
 // ── 답변 채택 · 원글 작성자만
-router.post("/api/board/comments/:id/accept", authorize(1), asyncHandler(async (req, res) => {
+router.post("/api/board/comments/:id/accept", authorize(1), validateBody(AcceptCommentSchema), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
-  const editorId = Number(req.body?.editor_id ?? 0);
+  const editorId = Number(req.body.editor_id);
   const { data: cmt } = await supabase.from("board_post_comments").select("post_id, author_id").eq("id", id).maybeSingle();
   if (!cmt) throw new HttpError(404, "not found");
   const { data: post } = await supabase.from("board_posts").select("author_id").eq("id", cmt.post_id).maybeSingle();
@@ -461,10 +461,10 @@ router.post("/api/board/comments/:id/accept", authorize(1), asyncHandler(async (
 }));
 
 // ── 반응 (👍 helpful / 👀 seen) 토글
-router.post("/api/board/posts/:id/react", authorize(1), asyncHandler(async (req, res) => {
+router.post("/api/board/posts/:id/react", authorize(1), validateBody(ReactPostSchema), asyncHandler(async (req, res) => {
   const postId = Number(req.params.id);
-  const empId = Number(req.body?.employee_id ?? 0);
-  const reaction = String(req.body?.reaction ?? "helpful");
+  const empId = Number(req.body.employee_id);
+  const reaction = String(req.body.reaction ?? "helpful");
   if (!Number.isFinite(postId) || !Number.isFinite(empId)) throw badRequest("invalid");
   const { data: existing } = await supabase
     .from("board_post_reactions")
