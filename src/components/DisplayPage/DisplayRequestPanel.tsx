@@ -127,7 +127,7 @@ const RequestCard: React.FC<{
       {/* Row 2: 담당 + 시각 + 액션 */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[12px] font-medium text-zinc-700 truncate">
+          <span className="text-[12px] font-medium text-zinc-700 break-words whitespace-normal">
             {req.assignedStaffName || "미배정"}
           </span>
           <span className="text-[11px] text-zinc-400 shrink-0">{formatRel(req.requestedAt)}</span>

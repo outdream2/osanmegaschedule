@@ -459,7 +459,7 @@ export const ConfirmedRecordsTab: React.FC = () => {
         icon={<IconTile icon={<FileText size={14} />} tone="orange" size="md" />}
         title={
           <div className="min-w-0 flex items-baseline gap-2 flex-wrap">
-            <span className="text-[16px] font-bold text-ink tracking-tight truncate">
+            <span className="text-[16px] font-bold text-ink tracking-tight break-words whitespace-normal">
               {balanceHistory?.supplier} 잔고 히스토리
             </span>
           </div>

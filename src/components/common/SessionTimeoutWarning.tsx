@@ -51,7 +51,7 @@ export const SessionTimeoutWarning: React.FC<Props> = ({
       aria-modal="false"
       aria-label="세션 만료 경고"
       className={`
-        fixed bottom-5 right-5 z-[9999] w-80 rounded-xl shadow-2xl
+        fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px)+8px)] right-4 z-[9999] w-full max-w-[320px] rounded-xl shadow-2xl
         border backdrop-blur-sm
         ${urgent
           ? "bg-red-950/95 border-red-500/60 text-red-100"

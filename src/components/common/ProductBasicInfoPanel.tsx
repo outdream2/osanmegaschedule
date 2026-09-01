@@ -164,11 +164,11 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
       <div className={compact ? "grid grid-cols-2 sm:grid-cols-3 gap-2.5" : "grid grid-cols-2 md:grid-cols-4 gap-3"}>
         {/* Row 1 · 기본 (분류·상품명·공급사) */}
         <Field label="분류코드">
-          <span className={valueCls + " tabular-nums truncate block"} title={product.category ?? undefined}>
+          <span className={valueCls + " tabular-nums break-words whitespace-normal"}>
             {product.category_code || "-"}
           </span>
           {product.category && (
-            <span className="text-[11px] text-ink-soft truncate block" title={product.category}>{product.category}</span>
+            <span className="text-[11px] text-ink-soft break-words whitespace-normal">{product.category}</span>
           )}
         </Field>
         <Field label="상품명" className="col-span-2">
@@ -181,13 +181,13 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
             <button
               type="button"
               onClick={() => onSupplierClick(product.supplier!)}
-              className={valueCls + " truncate block text-sky-700 hover:text-sky-900 hover:underline cursor-pointer text-left w-full"}
+              className={valueCls + " break-words whitespace-normal text-sky-700 hover:text-sky-900 hover:underline cursor-pointer text-left w-full"}
               title="공급사 정보 조회"
             >
               {product.supplier}
             </button>
           ) : (
-            <span className={valueCls + " truncate block"} title={product.supplier ?? undefined}>
+            <span className={valueCls + " break-words whitespace-normal"}>
               {product.supplier || "-"}
             </span>
           )}

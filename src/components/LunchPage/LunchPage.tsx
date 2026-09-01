@@ -415,7 +415,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                             onDragEnd={() => { setDraggedEmpId(null); setDragOverSlot(null); }}
                             className={`px-1.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-grab select-none transition ${isPharm ? "bg-emerald-50 border border-emerald-300 ring-2 ring-emerald-500 ring-offset-1 text-emerald-800 hover:bg-emerald-100" : "bg-indigo-100 border border-indigo-200 text-indigo-800 hover:bg-indigo-200"}`}
                           >
-                            <span className="truncate flex-1">{a.employeeName}</span>
+                            <span className="break-words whitespace-normal flex-1">{a.employeeName}</span>
                             <button
                               onMouseDown={e => e.stopPropagation()}
                               onClick={() => removeAssignment(a.employeeId)}
@@ -550,7 +550,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                   <div key={r.id} className="flex items-center gap-3 px-1 py-2.5">
                     <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-rose-400" />
                     <span className="text-[15px] font-semibold text-ink flex-1">{r.employee_name}</span>
-                    {r.memo && <span className="text-[13px] text-ink-soft max-w-[160px] truncate">{r.memo}</span>}
+                    {r.memo && <span className="text-[13px] text-ink-soft break-words whitespace-normal">{r.memo}</span>}
                     <span className="text-[13px] text-ink-soft shrink-0 tabular-nums">{fmtTime(r.updated_at)}</span>
                   </div>
                 ))}

@@ -363,7 +363,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
               className="inline-flex items-center text-[13px] sm:text-[14px] font-bold text-white whitespace-nowrap px-2 sm:px-2.5 py-1.5 rounded-lg ring-1 ring-white/10 hover:ring-white/25 hover:bg-white/[0.10] hover:shadow-[0_0_16px_rgba(94,169,232,0.25)] active:scale-95 transition-all duration-150 cursor-pointer max-w-[42vw] sm:max-w-none"
               title="마이페이지"
             >
-              <span className="truncate">{authSession.employeeName}{authSession.employeeRank ?? ""}</span>
+              <span className="break-words whitespace-normal leading-tight">{authSession.employeeName}{authSession.employeeRank ?? ""}</span>
             </button>
           )}
           <NotificationToggle authSession={authSession} />

@@ -60,7 +60,7 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
       <div className={`${CARD_BASE} px-4 py-3 flex flex-col gap-2`}>
         <div className="flex items-center gap-2 min-w-0">
           <Package size={16} className="text-sky-500 shrink-0" />
-          <span className="text-[14px] font-bold text-zinc-800 truncate">{product.product_name}</span>
+          <span className="text-[14px] font-bold text-zinc-800 break-words whitespace-normal">{product.product_name}</span>
           {product.product_code && (
             <span className="text-[11px] font-mono text-zinc-400 tabular-nums shrink-0">
               {product.product_code}

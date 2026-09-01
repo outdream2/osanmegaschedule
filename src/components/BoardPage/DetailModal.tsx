@@ -348,7 +348,7 @@ export function DetailModal({
                           <div key={`${img.image_url}-${i}`} className="relative aspect-square rounded-lg overflow-hidden border border-line bg-white">
                             <img src={img.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
                             <button type="button" onClick={() => removeEditImage(i)}
-                              className="absolute top-0.5 right-0.5 w-6 h-6 rounded-full bg-black/70 hover:bg-black text-white text-xs font-bold flex items-center justify-center cursor-pointer shadow"
+                              className="absolute top-0.5 right-0.5 w-7 h-7 rounded-full bg-black/70 hover:bg-black text-white text-xs font-bold flex items-center justify-center cursor-pointer shadow"
                               title="사진 첨부 취소"
                             >✕</button>
                           </div>

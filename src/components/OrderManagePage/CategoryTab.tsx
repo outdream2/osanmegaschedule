@@ -577,10 +577,10 @@ const ZoneCategoryContent: React.FC = () => {
                   <X size={16} strokeWidth={2.4} />
                 </button>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[15px] font-bold text-zinc-800 truncate leading-tight">
+                  <div className="text-[15px] font-bold text-zinc-800 break-words whitespace-normal leading-tight">
                     구역 {formatZoneDisplayCode(selectedZone)}{zoneCategoryLabel(selectedZone) ? ` · ${zoneCategoryLabel(selectedZone)}` : ""}
                   </div>
-                  <div className="text-[14px] tabular-nums text-zinc-500 truncate">
+                  <div className="text-[14px] tabular-nums text-zinc-500">
                     {grouped.find(g => g.zone === selectedZone)?.items.length ?? 0}개 상품
                   </div>
                 </div>

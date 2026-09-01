@@ -114,9 +114,9 @@ export function StockSearch() {
               return (
                 <div key={idx} className="py-2 flex items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="text-zinc-800 font-bold text-sm truncate">{item.product_name}</div>
+                    <div className="text-zinc-800 font-bold text-sm break-words whitespace-normal">{item.product_name}</div>
                     {item.supplier && (
-                      <div className="text-[12px] text-zinc-400 truncate mt-0.5">{item.supplier}</div>
+                      <div className="text-[12px] text-zinc-400 break-words whitespace-normal mt-0.5">{item.supplier}</div>
                     )}
                   </div>
                   <div className="shrink-0 flex items-center gap-1">

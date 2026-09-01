@@ -66,7 +66,7 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
           <div className="w-5 h-5 rounded-full bg-violet-500 text-white flex items-center justify-center text-[11px] font-extrabold">
             {String(item.lender_name ?? "?").charAt(0)}
           </div>
-          <span className="text-[13px] font-bold text-violet-800 truncate max-w-[100px]">{item.lender_name ?? "미지정"}</span>
+          <span className="text-[13px] font-bold text-violet-800 break-words whitespace-normal">{item.lender_name ?? "미지정"}</span>
         </div>
 
         {/* Arrow · settled 시 왕복 */}
@@ -78,7 +78,7 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
 
         {/* 상품 요약 */}
         <div className="flex-1 min-w-0">
-          <div className="text-[14px] font-bold text-ink truncate">{item.product_name ?? item.product_code ?? "-"}</div>
+          <div className="text-[14px] font-bold text-ink break-words whitespace-normal">{item.product_name ?? item.product_code ?? "-"}</div>
           <div className="text-[11px] text-ink-soft tabular-nums">
             {item.qty ?? "-"}개
             {amount != null && ` · ${amount.toLocaleString()}원`}
@@ -91,7 +91,7 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
           <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[11px] font-extrabold">
             {String(item.borrower_name ?? "?").charAt(0)}
           </div>
-          <span className="text-[13px] font-bold text-emerald-800 truncate max-w-[100px]">{item.borrower_name ?? "미지정"}</span>
+          <span className="text-[13px] font-bold text-emerald-800 break-words whitespace-normal">{item.borrower_name ?? "미지정"}</span>
         </div>
 
         {/* 상태 pill */}

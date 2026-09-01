@@ -87,7 +87,7 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
               {pageSupplier ? (
                 <button type="button"
                   onClick={e => { e.stopPropagation(); openVendorEdit(pageSupplier); }}
-                  className="text-[14px] font-bold text-amber-900 whitespace-nowrap hover:text-amber-600 cursor-pointer transition truncate max-w-[160px]"
+                  className="text-[14px] font-bold text-amber-900 break-words whitespace-normal hover:text-amber-600 cursor-pointer transition"
                   title="클릭 · 공급사 정보 조회·수정"
                 >{pageSupplier}</button>
               ) : (

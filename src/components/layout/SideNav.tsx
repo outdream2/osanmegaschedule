@@ -467,11 +467,11 @@ export const SideNav: React.FC<SideNavProps> = ({
             {/* icon-only 모드에서 숨김 · 2026-08-17 · 흰색 텍스트 (deep teal bg 대비) */}
             <div className="flex flex-col gap-0 leading-none group-data-[collapsible=icon]:hidden min-w-0">
               {brand.region && (
-                <span className="text-[15px] font-bold text-white tracking-tight leading-tight truncate">
+                <span className="text-[15px] font-bold text-white tracking-tight leading-tight break-words whitespace-normal">
                   {brand.region}
                 </span>
               )}
-              <span className="text-[11px] font-semibold text-[#93B4D0] tracking-tight leading-tight truncate mt-0.5">
+              <span className="text-[11px] font-semibold text-[#93B4D0] tracking-tight leading-tight break-words whitespace-normal mt-0.5">
                 {brand.shortName}
               </span>
             </div>
@@ -515,7 +515,7 @@ export const SideNav: React.FC<SideNavProps> = ({
         {/* 2026-08-17 v3 · 사용자 이름 · 성씨 initial 제거 · 이름만 표시 (사용자 요청) */}
         {authSession && authSession.employeeName && (
           <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
-            <span className="text-[13px] font-bold text-white truncate leading-tight">
+            <span className="text-[13px] font-bold text-white break-words whitespace-normal leading-tight">
               {authSession.employeeName}
             </span>
           </div>

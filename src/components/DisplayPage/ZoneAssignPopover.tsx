@@ -160,9 +160,9 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
               <Badge size="xs" className={statusCell(zone.status)}>
                 {zone.num}번
               </Badge>
-              <span className="truncate">{zone.label}</span>
+              <span className="break-words whitespace-normal">{zone.label}</span>
             </div>
-            <p className="text-[10px] text-zinc-400 truncate mt-0.5">{zone.category}</p>
+            <p className="text-[10px] text-zinc-400 break-words whitespace-normal mt-0.5">{zone.category}</p>
           </div>
         )}
         <div className="flex items-center gap-0.5 shrink-0">
@@ -214,7 +214,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
                     e.preventDefault();
                     onStaffInfoClick(ts);
                   }}
-                  className={`px-2 py-1.5 rounded-lg border text-left text-[11px] font-bold truncate transition cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-2 py-1.5 rounded-lg border text-left text-[11px] font-bold break-words whitespace-normal transition cursor-pointer flex items-center gap-1.5 ${
                     isAssigned
                       ? `${STAFF_COLORS[colorIdx % STAFF_COLORS.length]} border-indigo-400 shadow-sm`
                       : "bg-white border-line hover:bg-zinc-50 hover:border-zinc-300 text-zinc-700"

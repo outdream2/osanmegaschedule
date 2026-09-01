@@ -167,20 +167,20 @@ export function ListRow({
       <div className={`flex-1 min-w-0 flex items-baseline gap-2 ${subtitle ? "flex-col items-start" : ""}`}>
         {subtitle ? (
           <>
-            <span className="text-[19px] font-semibold text-ink truncate leading-tight tracking-tight group-hover:text-brand-deep transition-colors duration-200 max-w-full">
+            <span className="text-[19px] font-semibold text-ink break-words whitespace-normal leading-tight tracking-tight group-hover:text-brand-deep transition-colors duration-200 max-w-full">
               {title}
             </span>
-            <span className="text-[14px] text-ink-soft/80 truncate leading-snug max-w-full">
+            <span className="text-[14px] text-ink-soft/80 break-words whitespace-normal leading-snug max-w-full">
               {subtitle}
             </span>
           </>
         ) : (
           <>
-            <span className={`text-[19px] font-semibold text-ink truncate tracking-tight ${onClick ? "group-hover:text-brand-deep transition-colors duration-200" : ""} shrink-0 ${description ? "max-w-[55%]" : ""}`}>
+            <span className={`text-[19px] font-semibold text-ink break-words whitespace-normal tracking-tight ${onClick ? "group-hover:text-brand-deep transition-colors duration-200" : ""} shrink-0 ${description ? "max-w-[55%]" : ""}`}>
               {title}
             </span>
             {description && (
-              <span className="text-[15px] font-normal text-ink-soft/70 truncate min-w-0" title={typeof description === "string" ? description : undefined}>
+              <span className="text-[15px] font-normal text-ink-soft/70 break-words whitespace-normal min-w-0">
                 · {description}
               </span>
             )}

@@ -688,14 +688,14 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                       ? formatBizNum(v.business_number)
                       : <span className="text-rose-400 italic text-[10px]">없음</span>}
                   </td>
-                  <td className="px-2 py-1 text-[11px] text-zinc-700 truncate">{v.contact_name ?? "-"}</td>
+                  <td className="px-2 py-1 text-[11px] text-zinc-700 break-words whitespace-normal">{v.contact_name ?? "-"}</td>
                   {/* 연락처 그룹 */}
                   {isVendorGroupCollapsed("contact") ? (
                     <td className="bg-amber-50/10 w-4"></td>
                   ) : (
                     <>
                       <td className="px-3 py-1.5 text-[11px] text-zinc-600 whitespace-nowrap">{v.phone ?? "-"}</td>
-                      <td className="px-3 py-1.5 text-[11px] text-zinc-600 truncate hidden lg:table-cell" title={v.email ?? undefined}>{v.email ?? "-"}</td>
+                      <td className="px-3 py-1.5 text-[11px] text-zinc-600 break-words whitespace-normal hidden lg:table-cell">{v.email ?? "-"}</td>
                     </>
                   )}
                   {/* 잔고 그룹 */}

@@ -120,7 +120,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[14px] font-bold text-brand-deep uppercase tracking-wider">마이페이지</div>
-              <div className="text-lg sm:text-xl font-bold text-zinc-800 mt-0.5 truncate">
+              <div className="text-lg sm:text-xl font-bold text-zinc-800 mt-0.5 break-words whitespace-normal">
                 {me?.name ?? authSession?.employeeName ?? "-"}
                 {me?.rank && <span className="text-sm text-zinc-500 font-bold ml-1">{me.rank}</span>}
               </div>

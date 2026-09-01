@@ -130,9 +130,9 @@ export const StockArrivalList: React.FC<StockArrivalListProps> = ({ isVendor }) 
                   <span className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-r-full bg-brand-deep opacity-0 group-hover:opacity-100 transition-opacity duration-200" aria-hidden />
                   <span className="w-1.5 h-1.5 rounded-full bg-brand-deep shrink-0" aria-hidden />
                   <div className="flex-1 min-w-0 flex items-baseline gap-2 min-w-0">
-                    <span className="text-[18px] font-semibold text-ink truncate tracking-tight group-hover:text-brand-deep transition-colors duration-200 shrink-0 max-w-[60%]">{a.title}</span>
+                    <span className="text-[18px] font-semibold text-ink break-words whitespace-normal tracking-tight group-hover:text-brand-deep transition-colors duration-200 shrink-0 max-w-[60%]">{a.title}</span>
                     {a.body && (
-                      <span className="text-[14px] font-normal text-ink-soft/70 truncate min-w-0" title={a.body}>· {a.body}</span>
+                      <span className="text-[14px] font-normal text-ink-soft/70 break-words whitespace-normal min-w-0">· {a.body}</span>
                     )}
                     {isNew && (
                       <span className="shrink-0 inline-flex items-center h-[22px] px-2 rounded-md text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 ring-1 ring-emerald-500/25">

@@ -56,17 +56,17 @@ export const BorrowingPartyCard: React.FC<BorrowingPartyCardProps> = ({ role, pa
             {initial}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[17px] font-extrabold text-ink tracking-tight truncate">{party.name}</div>
+            <div className="text-[17px] font-extrabold text-ink tracking-tight break-words whitespace-normal">{party.name}</div>
             {party.contact_name && (
               <div className="flex items-center gap-1 mt-0.5 text-[13px] text-ink-soft">
                 <User size={11} className="shrink-0" />
-                <span className="truncate">{party.contact_name}</span>
+                <span className="break-words whitespace-normal">{party.contact_name}</span>
               </div>
             )}
             {party.contact_phone && (
               <div className="flex items-center gap-1 mt-0.5 text-[13px] text-ink-soft tabular-nums">
                 <Phone size={11} className="shrink-0" />
-                <span className="truncate">{party.contact_phone}</span>
+                <span className="break-words whitespace-normal">{party.contact_phone}</span>
               </div>
             )}
           </div>

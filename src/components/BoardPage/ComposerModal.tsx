@@ -162,7 +162,7 @@ export function ComposerModal({
                   <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-line">
                     <img src={img.image_url} alt="" className="w-full h-full object-cover" />
                     <button onClick={() => removeImg(i)}
-                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-white/90 text-rose-600 hover:bg-white shadow-md flex items-center justify-center">
+                      className="absolute top-1 right-1 w-7 h-7 rounded-full bg-white/90 text-rose-600 hover:bg-white shadow-md flex items-center justify-center cursor-pointer">
                       ✕
                     </button>
                   </div>

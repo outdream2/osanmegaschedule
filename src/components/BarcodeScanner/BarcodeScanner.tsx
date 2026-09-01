@@ -304,27 +304,27 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             <button
               onClick={() => state.imageInputRef.current?.click()}
               title="갤러리에서 이미지 선택"
-              className="w-8 h-8 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition flex items-center justify-center cursor-pointer"
+              className="min-w-[44px] min-h-[44px] rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition flex items-center justify-center cursor-pointer"
             >
-              <ImageIcon size={16} />
+              <ImageIcon size={18} />
             </button>
             <button
               onClick={() => state.setTorchOn((v) => !v)}
               title={state.torchOn ? "손전등 끄기" : "손전등 켜기"}
-              className={`w-8 h-8 rounded-lg transition flex items-center justify-center cursor-pointer ${
+              className={`min-w-[44px] min-h-[44px] rounded-lg transition flex items-center justify-center cursor-pointer ${
                 state.torchOn
                   ? "text-amber-300 bg-amber-400/15 ring-1 ring-amber-400/40 shadow-[0_0_12px_rgba(251,191,36,0.35)]"
                   : "text-zinc-400 hover:text-white hover:bg-white/5"
               }`}
             >
-              <Zap size={16} />
+              <Zap size={18} />
             </button>
             <button
               onClick={onClose}
               title="닫기"
-              className="w-8 h-8 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition flex items-center justify-center cursor-pointer"
+              className="min-w-[44px] min-h-[44px] rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition flex items-center justify-center cursor-pointer"
             >
-              <X size={18} />
+              <X size={20} />
             </button>
           </div>
         </div>
