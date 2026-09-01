@@ -17,7 +17,7 @@ import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTa
 import { SplitPanel } from "../common/SplitPanel";
 import { StatusPill } from "../common/StatusPill";
 import { Card } from "../common/Card";
-import { ZONE_DEFS } from "../../constants/displayZones";
+import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { getZoneLabel } from "../../constants/zoneLabels";
 import type { AuthSession } from "../../types";
 import PharmacistMenuSettingsModal, { type PharmMenuItem, type PharmTabKey } from "../PharmacistMenuSettingsPage/PharmacistMenuSettingsPage";
@@ -45,6 +45,8 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
   const { toast, showError } = useToast();
 
   const isAdmin = (authSession?.level ?? 0) >= 8;
+  // 2026-09-01 · DB 단일 소스 · 정적 ZONE_DEFS → useZoneDefs (서버 편집 즉시 반영)
+  const { zones: zoneDefs } = useZoneDefs();
 
   // 탭 재정렬 · admin 만 (useSortableTabs 는 { key } 오브젝트 배열)
   const sortable = useSortableTabs<CommonTabDef<PharmTabKey>>("tabOrder.pharmacist", PHARM_TABS, isAdmin);
@@ -76,7 +78,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
     window.addEventListener("zone-labels-changed", h);
     return () => window.removeEventListener("zone-labels-changed", h);
   }, []);
-  const educationCategories = useMemo(() => buildEducationCategories(), [zoneLabelVer]);
+  const educationCategories = useMemo(() => buildEducationCategories(zoneDefs), [zoneDefs, zoneLabelVer]);
 
   // ── 커스텀 교육 카테고리 (사용자 추가) · app_settings 저장 ──────
   const [customCats, setCustomCats] = useState<CustomCategoryRow[]>([]);

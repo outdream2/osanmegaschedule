@@ -1,7 +1,8 @@
 // src/components/PharmacistPage/utils.ts
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · PharmacistPage 유틸 이관
-import { ZONE_DEFS } from "../../constants/displayZones";
+// 2026-09-01 · 보안 fix · 정적 ZONE_DEFS import 제거 → 호출자에서 useZoneDefs 훅으로 주입
 import { getZoneLabel } from "../../constants/zoneLabels";
+import type { ZoneDef } from "../../hooks/useZoneDefs";
 import type { CategoryItem } from "./constants";
 
 // 파일 → dataURL (신규 카테고리 · 첫 자료 업로드용 · MenuSettings 와 동일 패턴)
@@ -15,15 +16,16 @@ export function readFileAsDataUrl(file: File): Promise<string> {
 }
 
 /**
- * 교육자료 카테고리 · 매장 구역(ZONE_DEFS) 기반 동적 생성
+ * 교육자료 카테고리 · 매장 구역(zones) 기반 동적 생성
+ *  · zones: useZoneDefs() 훅에서 주입 (DB 단일 소스 · 서버 편집 즉시 반영)
  *  · 통계 > 카테고리별 현황 · zone key 규칙과 동일 (예: "1A","1B","22","40A","40B","40C","35","36")
  *  · aisle 1~8 · A/B 서브존 개별 카드 · 22 · 계산대 40 A/B/C · 벽면·윙 통합
  *  · 매장 layout 순 정렬 (aisle → 상단벽면 → 하단벽면 → 윙 → 이벤트)
  */
-export function buildEducationCategories(): CategoryItem[] {
+export function buildEducationCategories(zones: ZoneDef[]): CategoryItem[] {
   const items: CategoryItem[] = [];
   const sectionRank: Record<string, number> = { aisle: 0, top_wall: 1, bottom_wall: 2, wing: 3, left_wall: 4, event: 5 };
-  const sorted = [...ZONE_DEFS].sort((a, b) => {
+  const sorted = [...zones].sort((a, b) => {
     const sa = sectionRank[a.section] ?? 9;
     const sb = sectionRank[b.section] ?? 9;
     if (sa !== sb) return sa - sb;

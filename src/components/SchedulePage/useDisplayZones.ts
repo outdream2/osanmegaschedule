@@ -1,8 +1,9 @@
 // src/components/SchedulePage/useDisplayZones.ts
 // #14 · 2026-08-31 · KV→DB 이관 · localStorage 제거 · /api/zones 단일 소스
+// 2026-09-01 · 보안 fix · 정적 ZONE_DEFS import → useZoneDefs 훅으로 이관 (DB 단일 소스)
 import { useState, useEffect, useRef } from "react";
 import { Employee } from "../../types";
-import { ZONE_DEFS } from "../../constants/displayZones";
+import { useZoneDefs, type ZoneDef } from "../../hooks/useZoneDefs";
 import { isLogisticsPosition as isLogistics } from "../../lib/employeeCategory";
 import { fetchZonesFromDB, saveZonesToDB } from "../DisplayPage/DisplayPage.helpers";
 import type { LogisticsZoneProps } from "../EmployeeCalendarModal";
@@ -13,22 +14,33 @@ export type DisplayZoneSlim = {
   category: string; section: string; products: string;
 };
 
-const buildDefaultSlimZones = (): DisplayZoneSlim[] =>
-  ZONE_DEFS.map(d => ({
+const buildDefaultSlimZones = (zoneDefs: ZoneDef[]): DisplayZoneSlim[] =>
+  zoneDefs.map(d => ({
     id: String(d.num), num: d.num, label: d.label, category: d.category,
     section: d.section, assignedStaffId: null, assignedStaffName: "",
     status: "normal", products: "",
   }));
 
 export function useDisplayZones() {
-  const [zones, setZones] = useState<DisplayZoneSlim[]>(buildDefaultSlimZones);
+  // 2026-09-01 · DB 단일 소스 · 정적 ZONE_DEFS 대신 useZoneDefs 훅 (서버 편집 즉시 반영)
+  const { zones: zoneDefs, loading: zoneDefsLoading } = useZoneDefs();
+  const [zones, setZones] = useState<DisplayZoneSlim[]>(() => buildDefaultSlimZones([]));
   const [displayZoneVer, setDisplayZoneVer] = useState(0);
   const pendingSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initializedRef = useRef(false);
+
+  // zoneDefs 로드 완료 시 기본 슬림 존 갱신 (DB fetch 이전 초기 상태)
+  useEffect(() => {
+    if (!zoneDefsLoading && zoneDefs.length > 0 && !initializedRef.current) {
+      setZones(buildDefaultSlimZones(zoneDefs));
+    }
+  }, [zoneDefsLoading, zoneDefs]);
 
   // 마운트 시 DB에서 로드
   useEffect(() => {
     fetchZonesFromDB().then(dbZones => {
       if (!dbZones) return;
+      initializedRef.current = true;
       // DisplayZone → DisplayZoneSlim 형 변환
       const slim: DisplayZoneSlim[] = dbZones.map(z => ({
         id: z.id,
