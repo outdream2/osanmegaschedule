@@ -11,6 +11,8 @@ import { supabase } from "../../../src/supabase/client";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
+import { validateBody } from "../../middleware/zodValidate";
+import { UpsertZoneLabelsSchema, CreateZoneLabelSchema } from "../../../src/shared/schemas/zoneLabels";
 
 const router = Router();
 
@@ -44,9 +46,8 @@ router.get("/api/zone-labels", asyncHandler(async (_req, res) => {
 // PUT /api/zone-labels
 // body: { mappings: [{ zone_id, number, sub_label? }] }
 // 전체 일괄 upsert · 사용자 편집 저장 시 호출
-router.put("/api/zone-labels", authorize(9), asyncHandler(async (req, res) => {
-  const mappings = Array.isArray(req.body?.mappings) ? req.body.mappings : [];
-  if (mappings.length === 0) throw badRequest("mappings 배열 필요");
+router.put("/api/zone-labels", authorize(9), validateBody(UpsertZoneLabelsSchema), asyncHandler(async (req, res) => {
+  const { mappings } = req.body;
   const rows = mappings.map((m: any) => ({
     zone_id: String(m.zone_id ?? "").trim(),
     number: Number(m.number ?? 0),
@@ -68,14 +69,12 @@ router.put("/api/zone-labels", authorize(9), asyncHandler(async (req, res) => {
 // POST /api/zone-labels
 // body: { zone_id, number, sub_label? }
 // 단일 upsert
-router.post("/api/zone-labels", authorize(9), asyncHandler(async (req, res) => {
-  const zone_id = String(req.body?.zone_id ?? "").trim();
-  const number = Number(req.body?.number ?? 0);
-  if (!zone_id || number <= 0) throw badRequest("zone_id / number 필수");
+router.post("/api/zone-labels", authorize(9), validateBody(CreateZoneLabelSchema), asyncHandler(async (req, res) => {
+  const { zone_id, number, sub_label } = req.body;
   const row = {
     zone_id,
     number,
-    sub_label: req.body?.sub_label ? String(req.body.sub_label).trim() : null,
+    sub_label: sub_label ? String(sub_label).trim() : null,
     updated_at: new Date().toISOString(),
   };
   const { data, error } = await supabase
