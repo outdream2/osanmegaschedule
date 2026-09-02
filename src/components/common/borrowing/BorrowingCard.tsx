@@ -123,39 +123,48 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
         )}
       </div>
 
-      {/* 확장 · Timeline */}
+      {/* 확장 · Timeline · 2026-09-02 · 목업 · Linear Audit Log 스타일 · 좌측 세로 연결선 + step 아이콘 */}
       {expanded && (
-        <div className="border-t border-line px-3 py-3 space-y-2 bg-zinc-50/40 rounded-b-xl">
+        <div className="border-t border-line px-4 py-4 bg-zinc-50/40 rounded-b-xl">
           {item.contract_no && (
-            <div className="text-[11px] font-mono text-ink-soft">계약번호 · {item.contract_no}</div>
-          )}
-          <div className="flex items-start gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-brand-deep mt-2 shrink-0" />
-            <div className="flex-1">
-              <div className="text-[12px] font-bold text-ink">계약 체결</div>
-              <div className="text-[11px] text-ink-soft tabular-nums">{item.created_at ?? "-"}</div>
-              {item.note && <div className="text-[12px] text-ink-soft mt-0.5 italic">"{item.note}"</div>}
+            <div className="text-[12px] font-mono text-ink-soft mb-3 pb-2 border-b border-zinc-100">
+              계약번호 · <span className="font-bold text-ink">{item.contract_no}</span>
             </div>
+          )}
+          <div className="relative pl-6 space-y-3">
+            {/* 세로 연결선 · Linear 톤 · 이벤트 사이 */}
+            <span aria-hidden className="absolute left-[9px] top-2 bottom-2 w-px bg-gradient-to-b from-brand-deep/40 via-zinc-200 to-emerald-500/40" />
+            {/* 계약 체결 */}
+            <div className="relative">
+              <span aria-hidden className="absolute left-[-24px] top-0.5 w-[19px] h-[19px] rounded-full bg-white border-2 border-brand-deep flex items-center justify-center shadow-sm">
+                <CheckCircle size={11} className="text-brand-deep" strokeWidth={2.5} />
+              </span>
+              <div className="text-[13px] font-bold text-ink">계약 체결</div>
+              <div className="text-[12px] text-ink-soft tabular-nums mt-0.5">{item.created_at ?? "-"}</div>
+              {item.note && <div className="text-[12px] text-ink-soft mt-1 italic pl-2 border-l-2 border-brand-deep/20">"{item.note}"</div>}
+            </div>
+            {/* 기한 초과 알림 */}
+            {item.overdue_notified_at && (
+              <div className="relative">
+                <span aria-hidden className="absolute left-[-24px] top-0.5 w-[19px] h-[19px] rounded-full bg-white border-2 border-amber-500 flex items-center justify-center shadow-sm">
+                  <AlertTriangle size={10} className="text-amber-500" strokeWidth={2.5} />
+                </span>
+                <div className="text-[13px] font-bold text-amber-700">기한 초과 알림</div>
+                <div className="text-[12px] text-ink-soft tabular-nums mt-0.5">{item.overdue_notified_at}</div>
+              </div>
+            )}
+            {/* 반환 완료 */}
+            {item.returned_at && (
+              <div className="relative">
+                <span aria-hidden className="absolute left-[-24px] top-0.5 w-[19px] h-[19px] rounded-full bg-emerald-500 flex items-center justify-center shadow-[0_1px_3px_rgba(16,185,129,0.35)]">
+                  <CheckCircle size={11} className="text-white" strokeWidth={2.5} />
+                </span>
+                <div className="text-[13px] font-bold text-emerald-700">반환 완료</div>
+                <div className="text-[12px] text-ink-soft tabular-nums mt-0.5">{item.returned_at}</div>
+                {item.return_note && <div className="text-[12px] text-ink-soft mt-1 italic pl-2 border-l-2 border-emerald-300/40">"{item.return_note}"</div>}
+              </div>
+            )}
           </div>
-          {item.overdue_notified_at && (
-            <div className="flex items-start gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0" />
-              <div className="flex-1">
-                <div className="text-[12px] font-bold text-amber-800">기한 초과 알림</div>
-                <div className="text-[11px] text-ink-soft tabular-nums">{item.overdue_notified_at}</div>
-              </div>
-            </div>
-          )}
-          {item.returned_at && (
-            <div className="flex items-start gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" />
-              <div className="flex-1">
-                <div className="text-[12px] font-bold text-emerald-800">반환 완료</div>
-                <div className="text-[11px] text-ink-soft tabular-nums">{item.returned_at}</div>
-                {item.return_note && <div className="text-[12px] text-ink-soft mt-0.5 italic">"{item.return_note}"</div>}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
