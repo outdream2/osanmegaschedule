@@ -478,11 +478,11 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const inventoryTabCount = inventoryLoading ? (tabCounts?.inventory ?? 0) : inventoryChecks.length;
   const lunchTabCount     = lunchLoading     ? (tabCounts?.lunch     ?? 0) : lunchRequests.filter(r => !r.eating).length;
 
-  // 2026-08-10 · 사용자 요청 · 구역불일치 탭 제거 · 관리자 전용 탭: 실재고차이 · 점심불참
+  // 2026-08-10 · 구역불일치 탭 제거 · 관리자 전용 탭: 실재고차이 · 점심불참
+  // 2026-09-02 · 사용자 지시 · 실재고차이 탭 제거 (요청목록에서 · 실재고 화면에서만 사용)
   const TABS: [Tab, string, number, string, string, string, string][] = [
     ["display",   isManager ? "진열요청" : "내가 받은 요청",   displayTabCount,   "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
     ...(isManager ? ([
-      ["inventory", "실재고차이", inventoryTabCount, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
       ["lunch",     "점심불참",   lunchTabCount,     "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
       ["leave",     "연차승인",   leavePendingCount, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
       // 2026-08-26 · #192 · 거래처승인 신규 탭 · pending-counts.vendor
