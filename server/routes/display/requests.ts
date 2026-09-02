@@ -617,16 +617,63 @@ router.post("/api/order-requests/bulk-send", authorize(3), validateBody(BulkSend
     // 채널별 발송 시도 (환경변수 기반 · 없으면 "미구성" 상태)
     const outcomes: string[] = [];
     if (channels.email) {
-      if (targetEmail && process.env.SMTP_HOST) {
-        // 실제 nodemailer 발송 로직은 별도 구현 필요 (패키지 미설치)
-        outcomes.push(`email:skipped(nodemailer-not-installed)`);
-        dispatch.email_status = "not_configured";
-      } else if (!targetEmail) {
+      if (!targetEmail) {
         outcomes.push("email:no_recipient");
         dispatch.email_status = "no_recipient";
-      } else {
+      } else if (!process.env.SMTP_HOST) {
         outcomes.push("email:no_smtp_env");
         dispatch.email_status = "no_smtp_env";
+      } else {
+        // 2026-09-02 · 사용자 지시 · 이메일 실제 발송 (nodemailer 설치 완료)
+        //   · env · SMTP_HOST · SMTP_PORT (default 587) · SMTP_USER · SMTP_PASS · SMTP_FROM
+        //   · TLS/STARTTLS 자동 (port 465 = TLS · 그 외 = STARTTLS)
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const nodemailer = require("nodemailer");
+          const port = Number(process.env.SMTP_PORT ?? 587);
+          const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port,
+            secure: port === 465,
+            auth: process.env.SMTP_USER ? {
+              user: process.env.SMTP_USER,
+              pass: process.env.SMTP_PASS ?? "",
+            } : undefined,
+          });
+          const itemsHtml = items.map((it: any) =>
+            `<tr><td>${it.product_code ?? ""}</td><td>${it.product_name ?? ""}</td>` +
+            `<td style="text-align:right">${it.order_qty ?? 0}</td>` +
+            `<td style="text-align:right">${it.unit_price ?? "-"}</td></tr>`
+          ).join("");
+          const subject = `[발주서] ${supName} · ${order_number}`;
+          const html = `
+            <div style="font-family:Pretendard,sans-serif;color:#1a1a1a">
+              <h2 style="color:#0A2E4A;margin:0 0 8px">📦 발주서</h2>
+              <p>공급사 <b>${supName}</b> 앞 · 발주번호 <b>${order_number}</b></p>
+              <p>발주일: ${order_date ?? new Date().toISOString().slice(0,10)}
+                 · 희망 입고일: ${desired_arrival ?? "-"}</p>
+              <table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%">
+                <thead style="background:#f5f5f5">
+                  <tr><th>상품코드</th><th>상품명</th><th>수량</th><th>단가</th></tr>
+                </thead>
+                <tbody>${itemsHtml}</tbody>
+              </table>
+              ${memo ? `<p style="margin-top:12px"><b>메모:</b> ${memo}</p>` : ""}
+              <p style="margin-top:16px;color:#888;font-size:12px">본 메일은 자동 발송되었습니다.</p>
+            </div>`;
+          await transporter.sendMail({
+            from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
+            to: targetEmail,
+            subject,
+            html,
+          });
+          outcomes.push("email:sent");
+          dispatch.email_status = "sent";
+        } catch (e: any) {
+          console.error("[bulk-send] email 발송 실패:", e?.message);
+          outcomes.push(`email:error(${e?.message ?? "unknown"})`);
+          dispatch.email_status = "error";
+        }
       }
     }
     if (channels.sms) {
