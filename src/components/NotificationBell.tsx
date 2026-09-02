@@ -193,14 +193,16 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
         .notif-bell-shake { animation: notif-bell-shake 0.8s ease-in-out 2; transform-origin: 50% 20%; }
       `}</style>
 
-      {/* Dropdown panel · 반응형 · 모바일은 fixed 로 화면 폭에 맞춤 (2026-08-05 · 왼쪽 치우침 fix) */}
+      {/* 2026-09-02 · #71 · 사용자 지시 · 종배지 코멘트 가려짐 fix · z-[70] · sticky 탭바(z-30/40) 위로
+           · 모바일 · 중앙 정렬 (사용자 지시 · 상단이 가려지면 · 중앙) · top-1/2 -translate-y-1/2
+           · 데스크탑 · 종전 · absolute right-0 top-full */}
       {open && (
         <Card
           variant="brand-modal"
           rounded="2xl"
           padding="none"
           clip
-          className="fixed inset-x-2 top-14 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 mx-auto sm:mx-0 max-w-[420px] z-50">
+          className="fixed inset-x-2 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 mx-auto sm:mx-0 max-w-[420px] z-[70] max-h-[80vh] sm:max-h-none overflow-hidden">
           {/* Header · 2026-08-17 · 최신 트렌드 · accent bar + 폰트 +2 · 딥네이비 통일 */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-line bg-zinc-50/60">
             <div className="flex items-center gap-2.5">
