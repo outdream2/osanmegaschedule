@@ -243,7 +243,7 @@ export const PaymentInputPage: React.FC = () => {
           <IconTile icon={<Wallet size={16} />} tone="amber" size="md" />
           <div>
             <div className="text-[17px] font-bold text-ink tracking-tight">결제입력</div>
-            <div className="text-[13px] text-ink-soft">공급사를 검색하고 리스트에서 선택하면 즉시 조회됩니다</div>
+            <div className="text-[15px] text-ink-soft">공급사를 검색하고 리스트에서 선택하면 즉시 조회됩니다</div>
           </div>
         </div>
 
@@ -253,9 +253,9 @@ export const PaymentInputPage: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center">
                 <Building2 size={16} className="text-sky-600" />
               </div>
-              <div className="text-[15px] font-bold text-ink">좌측 · 결제 정보</div>
+              <div className="text-[17px] font-bold text-ink">좌측 · 결제 정보</div>
             </div>
-            <ul className="text-[13px] text-ink-soft leading-relaxed pl-1 space-y-1">
+            <ul className="text-[15px] text-ink-soft leading-relaxed pl-1 space-y-1">
               <li>· 공급사 정보 (담당자·연락처·카테고리)</li>
               <li>· 잔고 요약 (미결제 금액)</li>
               <li>· 총 매입액 · 총 판매액 KPI</li>
@@ -268,9 +268,9 @@ export const PaymentInputPage: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
                 <LineChartIcon size={16} className="text-emerald-600" />
               </div>
-              <div className="text-[15px] font-bold text-ink">우측 · 발주·판매내역</div>
+              <div className="text-[17px] font-bold text-ink">우측 · 발주·판매내역</div>
             </div>
-            <ul className="text-[13px] text-ink-soft leading-relaxed pl-1 space-y-1">
+            <ul className="text-[15px] text-ink-soft leading-relaxed pl-1 space-y-1">
               <li>· 발주내역 · 최근 12개월 월별 매입 bar</li>
               <li>· 판매내역 · 상품별 판매량·금액 line</li>
               <li>· 최근 발주 리스트</li>
@@ -279,7 +279,7 @@ export const PaymentInputPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center gap-2 text-[12px] text-ink-soft/70">
+        <div className="mt-4 flex items-center gap-2 text-[14px] text-ink-soft/70">
           <CircleCheck size={13} className="text-emerald-500" />
           <span>상단 검색창에 공급사명 입력 → 리스트 클릭 시 즉시 조회</span>
         </div>
@@ -294,27 +294,27 @@ export const PaymentInputPage: React.FC = () => {
       {/* KPI 3 카드 · 잔고 · 총 매입 · 총 판매 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <Card padding="md" topAccent>
-          <div className="text-[11px] font-bold text-ink-soft uppercase tracking-wider">잔고 (미결제)</div>
+          <div className="text-[13px] font-bold text-ink-soft uppercase tracking-wider">잔고 (미결제)</div>
           <div className={`mt-1 text-[22px] font-extrabold tabular-nums leading-none ${balance && balance.balance > 0 ? "text-rose-700" : "text-emerald-700"}`}>
             {balance ? balance.balance.toLocaleString() : "0"}
-            <span className="text-[13px] font-semibold text-ink-soft ml-1">원</span>
+            <span className="text-[15px] font-semibold text-ink-soft ml-1">원</span>
           </div>
         </Card>
         <Card padding="md" topAccent>
-          <div className="text-[11px] font-bold text-ink-soft uppercase tracking-wider">총 매입 (12개월)</div>
+          <div className="text-[13px] font-bold text-ink-soft uppercase tracking-wider">총 매입 (12개월)</div>
           <div className="mt-1 text-[22px] font-extrabold tabular-nums leading-none text-brand-deep">
             {kpi.totalOrderAmount.toLocaleString()}
-            <span className="text-[13px] font-semibold text-ink-soft ml-1">원</span>
+            <span className="text-[15px] font-semibold text-ink-soft ml-1">원</span>
           </div>
-          <div className="text-[11px] text-ink-soft/80 mt-1 tabular-nums">발주 {kpi.totalOrderCount}건</div>
+          <div className="text-[13px] text-ink-soft/80 mt-1 tabular-nums">발주 {kpi.totalOrderCount}건</div>
         </Card>
         <Card padding="md" topAccent>
-          <div className="text-[11px] font-bold text-ink-soft uppercase tracking-wider">총 판매 (12개월)</div>
+          <div className="text-[13px] font-bold text-ink-soft uppercase tracking-wider">총 판매 (12개월)</div>
           <div className="mt-1 text-[22px] font-extrabold tabular-nums leading-none text-emerald-700">
             {kpi.totalSaleAmount.toLocaleString()}
-            <span className="text-[13px] font-semibold text-ink-soft ml-1">원</span>
+            <span className="text-[15px] font-semibold text-ink-soft ml-1">원</span>
           </div>
-          <div className="text-[11px] text-ink-soft/80 mt-1 tabular-nums">수량 {kpi.totalSaleQty.toLocaleString()}</div>
+          <div className="text-[13px] text-ink-soft/80 mt-1 tabular-nums">수량 {kpi.totalSaleQty.toLocaleString()}</div>
         </Card>
       </div>
 
@@ -358,8 +358,8 @@ export const PaymentInputPage: React.FC = () => {
           <Card padding="md" topAccent>
             <div className="flex items-center gap-2 mb-2">
               <IconTile icon={<ClipboardList size={14} />} tone="brand" size="sm" />
-              <div className="text-[15px] font-bold text-ink">발주내역 · 월별 매입 금액</div>
-              <div className="ml-auto flex items-center gap-1.5 text-[12px] text-ink-soft">
+              <div className="text-[17px] font-bold text-ink">발주내역 · 월별 매입 금액</div>
+              <div className="ml-auto flex items-center gap-1.5 text-[14px] text-ink-soft">
                 <TrendingUp size={12} className="text-brand-deep" /> 최근 12개월
               </div>
             </div>
@@ -384,16 +384,16 @@ export const PaymentInputPage: React.FC = () => {
           {orderHistory.length > 0 && (
             <Card padding="md" topAccent>
               <div className="flex items-center gap-2 mb-2">
-                <div className="text-[14px] font-bold text-ink">최근 발주 · Top 10</div>
-                <div className="ml-auto text-[12px] text-ink-soft tabular-nums">{orderHistory.length}건 중 10건</div>
+                <div className="text-[16px] font-bold text-ink">최근 발주 · Top 10</div>
+                <div className="ml-auto text-[14px] text-ink-soft tabular-nums">{orderHistory.length}건 중 10건</div>
               </div>
               <ul className="divide-y divide-zinc-100">
                 {orderHistory.slice(0, 10).map(o => (
-                  <li key={o.order_number} className="flex items-center gap-2 py-2 text-[13px]">
+                  <li key={o.order_number} className="flex items-center gap-2 py-2 text-[15px]">
                     <span className="text-zinc-400 tabular-nums shrink-0">{String(o.sent_at ?? o.order_date ?? "").slice(0, 10)}</span>
-                    <span className="text-zinc-500 shrink-0 tabular-nums text-[12px]">#{o.order_number}</span>
+                    <span className="text-zinc-500 shrink-0 tabular-nums text-[14px]">#{o.order_number}</span>
                     <span className="ml-auto text-brand-deep font-bold tabular-nums">{fmtWon(o.total_amount)}</span>
-                    <span className="text-[12px] text-zinc-400 tabular-nums shrink-0">{o.items.length}종 · {o.total_qty}개</span>
+                    <span className="text-[14px] text-zinc-400 tabular-nums shrink-0">{o.items.length}종 · {o.total_qty}개</span>
                   </li>
                 ))}
               </ul>
@@ -405,8 +405,8 @@ export const PaymentInputPage: React.FC = () => {
           <Card padding="md" topAccent>
             <div className="flex items-center gap-2 mb-2">
               <IconTile icon={<Package size={14} />} tone="emerald" size="sm" />
-              <div className="text-[15px] font-bold text-ink">판매내역 · 상품별 (Top 12)</div>
-              <div className="ml-auto flex items-center gap-1.5 text-[12px] text-ink-soft">
+              <div className="text-[17px] font-bold text-ink">판매내역 · 상품별 (Top 12)</div>
+              <div className="ml-auto flex items-center gap-1.5 text-[14px] text-ink-soft">
                 <TrendingDown size={12} className="text-emerald-600" /> 최근 12개월
               </div>
             </div>
@@ -441,14 +441,14 @@ export const PaymentInputPage: React.FC = () => {
           {topSalesProducts.length > 0 && (
             <Card padding="md" topAccent>
               <div className="flex items-center gap-2 mb-2">
-                <div className="text-[16px] font-bold text-ink">상품별 · 판매 상위 12</div>
+                <div className="text-[18px] font-bold text-ink">상품별 · 판매 상위 12</div>
               </div>
               <ul className="divide-y divide-zinc-100">
                 {topSalesProducts.map(p => (
-                  <li key={p.product_code} className="flex items-center gap-2 py-2 text-[15px]">
-                    <span className="text-zinc-500 shrink-0 font-mono text-[13px] w-24 truncate">{p.product_code}</span>
+                  <li key={p.product_code} className="flex items-center gap-2 py-2 text-[17px]">
+                    <span className="text-zinc-500 shrink-0 font-mono text-[15px] w-24 truncate">{p.product_code}</span>
                     <span className="text-ink font-bold truncate flex-1 min-w-0">{p.product_name}</span>
-                    <span className="text-[14px] text-zinc-400 tabular-nums shrink-0">{Number(p.sale_qty ?? 0).toLocaleString()}개</span>
+                    <span className="text-[16px] text-zinc-400 tabular-nums shrink-0">{Number(p.sale_qty ?? 0).toLocaleString()}개</span>
                     <span className="text-emerald-700 font-bold tabular-nums shrink-0">{fmtWon(Number(p.total_amount ?? 0))}</span>
                   </li>
                 ))}
@@ -463,17 +463,17 @@ export const PaymentInputPage: React.FC = () => {
         <>
           <div className="grid grid-cols-3 gap-3">
             <Card padding="md" topAccent>
-              <div className="text-[15px] text-zinc-500 font-semibold">총 결제 건수</div>
+              <div className="text-[17px] text-zinc-500 font-semibold">총 결제 건수</div>
               <div className="text-[24px] font-extrabold text-brand-deep tabular-nums mt-1">{payments.length.toLocaleString()}건</div>
             </Card>
             <Card padding="md" topAccent>
-              <div className="text-[15px] text-zinc-500 font-semibold">총 결제 금액</div>
+              <div className="text-[17px] text-zinc-500 font-semibold">총 결제 금액</div>
               <div className="text-[24px] font-extrabold text-emerald-700 tabular-nums mt-1">
                 {fmtWon(payments.reduce((s, p) => s + (Number(p.amount) || 0), 0))}
               </div>
             </Card>
             <Card padding="md" topAccent>
-              <div className="text-[15px] text-zinc-500 font-semibold">최근 결제일</div>
+              <div className="text-[17px] text-zinc-500 font-semibold">최근 결제일</div>
               <div className="text-[20px] font-bold text-ink tabular-nums mt-1">
                 {payments[0]?.payment_date ?? "-"}
               </div>
@@ -484,16 +484,16 @@ export const PaymentInputPage: React.FC = () => {
             <div className="flex items-center gap-2 mb-2">
               <IconTile icon={<Wallet size={14} />} tone="amber" size="sm" />
               <div className="text-[17px] font-bold text-ink">공급사별 결제 이력</div>
-              <div className="ml-auto text-[14px] text-ink-soft tabular-nums">{payments.length}건</div>
+              <div className="ml-auto text-[16px] text-ink-soft tabular-nums">{payments.length}건</div>
             </div>
             {payments.length === 0 ? (
               <EmptyState icon={Wallet} title="결제 이력 없음" hint={`${selected.company_name} · 결제 등록 후 여기 표시`} size="normal" />
             ) : (
               <ul className="divide-y divide-zinc-100">
                 {payments.slice(0, 30).map(p => (
-                  <li key={p.id} className="flex items-center gap-2 py-2.5 text-[15px]">
+                  <li key={p.id} className="flex items-center gap-2 py-2.5 text-[17px]">
                     <span className="text-zinc-500 tabular-nums shrink-0 w-24">{String(p.payment_date).slice(0, 10)}</span>
-                    <span className={`text-[14px] font-semibold px-2 py-0.5 rounded-lg shrink-0 ${
+                    <span className={`text-[16px] font-semibold px-2 py-0.5 rounded-lg shrink-0 ${
                       p.method === "card" ? "bg-blue-50 text-blue-700"
                       : p.method === "transfer" ? "bg-sky-50 text-sky-700"
                       : p.method === "cash" ? "bg-emerald-50 text-emerald-700"
@@ -501,12 +501,12 @@ export const PaymentInputPage: React.FC = () => {
                     }`}>
                       {p.method === "card" ? "카드" : p.method === "transfer" ? "이체" : p.method === "cash" ? "현금" : p.method === "check" ? "수표" : "기타"}
                     </span>
-                    {p.card_id && <span className="text-[13px] text-blue-600 font-semibold shrink-0">#카드{p.card_id}</span>}
+                    {p.card_id && <span className="text-[15px] text-blue-600 font-semibold shrink-0">#카드{p.card_id}</span>}
                     <span className="ml-auto text-brand-deep font-bold tabular-nums">{fmtWon(Number(p.amount) || 0)}</span>
                   </li>
                 ))}
                 {payments.length > 30 && (
-                  <li className="py-2 text-center text-[13px] text-zinc-400">
+                  <li className="py-2 text-center text-[15px] text-zinc-400">
                     · 외 {payments.length - 30}건 · 최근 30건 표시
                   </li>
                 )}
@@ -517,7 +517,7 @@ export const PaymentInputPage: React.FC = () => {
       )}
 
       {dataError && (
-        <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" padding="md" className="text-[13px] text-rose-700">
+        <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" padding="md" className="text-[15px] text-rose-700">
           ⚠ {dataError}
           <button type="button" onClick={() => selected?.company_name && loadSupplierData(String(selected.company_name))} className="ml-2 underline cursor-pointer">다시 시도</button>
         </Card>
@@ -537,8 +537,8 @@ export const PaymentInputPage: React.FC = () => {
             <div className="flex items-center gap-2 flex-wrap">
               <IconTile icon={<Wallet size={15} />} tone="amber" size="md" />
               <div className="min-w-0">
-                <div className="text-[16px] font-bold text-ink leading-tight tracking-tight">결제입력</div>
-                <div className="text-[12px] text-ink-soft leading-tight mt-0.5">공급사 검색 → 리스트 선택 즉시 · 결제 정보 · 발주·판매내역 조회</div>
+                <div className="text-[18px] font-bold text-ink leading-tight tracking-tight">결제입력</div>
+                <div className="text-[14px] text-ink-soft leading-tight mt-0.5">공급사 검색 → 리스트 선택 즉시 · 결제 정보 · 발주·판매내역 조회</div>
               </div>
               {selected && (
                 <StatusPill tone="emerald" size="sm" dot>선택 · {selected.company_name}</StatusPill>
@@ -547,7 +547,7 @@ export const PaymentInputPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => { setSelectedId(null); setQuery(""); setDropdownOpen(false); }}
-                  className="ml-auto inline-flex items-center h-8 px-3 rounded-lg bg-white border border-line text-[13px] font-bold text-ink-soft hover:border-brand-deep/40 hover:text-brand-deep transition cursor-pointer"
+                  className="ml-auto inline-flex items-center h-8 px-3 rounded-lg bg-white border border-line text-[15px] font-bold text-ink-soft hover:border-brand-deep/40 hover:text-brand-deep transition cursor-pointer"
                   title="다른 공급사 검색"
                 >
                   초기화
@@ -681,7 +681,7 @@ const SupplierSearchInput: React.FC<SupplierSearchInputProps> = ({
           if (e.key === "Escape") setDropdownOpen(false);
         }}
         placeholder="공급사명 검색 · 리스트 클릭 즉시 조회 (Enter · 첫 매치)"
-        className="w-full h-10 pl-8 pr-3 rounded-lg border border-line bg-white text-[14px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+        className="w-full h-10 pl-8 pr-3 rounded-lg border border-line bg-white text-[16px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
       />
       {open && pos && ReactDOM.createPortal(
         <div
@@ -700,10 +700,10 @@ const SupplierSearchInput: React.FC<SupplierSearchInputProps> = ({
                 key={v.id}
                 type="button"
                 onClick={() => onSelect(v)}
-                className="w-full text-left px-3 py-2 text-[13px] font-medium text-ink hover:bg-brand-tint/30 flex items-center gap-2 transition-colors border-b border-line/50 last:border-b-0"
+                className="w-full text-left px-3 py-2 text-[15px] font-medium text-ink hover:bg-brand-tint/30 flex items-center gap-2 transition-colors border-b border-line/50 last:border-b-0"
               >
                 <span className="truncate flex-1">{v.company_name}</span>
-                {v.category && <span className="ml-auto text-[11px] text-ink-soft shrink-0">{v.category}</span>}
+                {v.category && <span className="ml-auto text-[13px] text-ink-soft shrink-0">{v.category}</span>}
               </button>
             ))}
           </Card>
