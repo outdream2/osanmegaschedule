@@ -133,7 +133,7 @@ router.get("/api/vendors", asyncHandler(async (req, res) => {
   let hasVatIncluded = true;
   {
     // 2026-09-02 · fix · 확장 필드 포함 (team_leader · emergency_contact · order_method · special_notes · approval_status 등)
-    //   · 저장 후 재조회 시 · 최신 값 반환 · 사용자 · '저장했는데 값이 안 올라옴' 이슈 해소
+    //   · 저장 후 재조회 시 · 최신 값 반환
     //   · password_hash 는 절대 select 하지 않음 (보안)
     const r1 = await supabase
       .from("vendors")
@@ -141,6 +141,16 @@ router.get("/api/vendors", asyncHandler(async (req, res) => {
       .order("company_name");
     if (!r1.error) data = r1.data ?? [];
     else firstErr = r1.error.message;
+  }
+  if (!data) {
+    // 2026-09-02 · fix · email 컬럼 부재 DB 대응 · email 제외 후 확장 필드 유지
+    //   · email 은 응답에서 null 로 채움 (마이그레이션 20260902_vendors_email_column.sql 실행 후 자동 활성)
+    const r1NoEmail = await supabase
+      .from("vendors")
+      .select("id, company_name, contact_name, phone, category, note, business_number, vat_included, team_leader_name, team_leader_phone, emergency_contact, order_method, region, invoice_method, order_status, special_notes, approval_status, approved_at, approval_requested_at, approved_by, manager_phone, created_at")
+      .order("company_name");
+    if (!r1NoEmail.error) data = (r1NoEmail.data ?? []).map((v: any) => ({ ...v, email: null }));
+    else firstErr = `${firstErr} | ${r1NoEmail.error.message}`;
   }
   if (!data) {
     // 확장 필드 없음 fallback · 기존 필드만
