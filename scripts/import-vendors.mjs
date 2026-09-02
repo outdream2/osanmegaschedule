@@ -13,7 +13,7 @@
 //
 // 환경변수:
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (또는 SUPABASE_ANON_KEY · service role 권장)
-//   VENDOR_PW_SUFFIX (기본 "00" · 로그인 비번 규칙 · 이 스크립트에서 저장 안 함 · 서버 파생용)
+// 2026-09-02 · 로그인 비번 · vendors.password_hash (bcrypt · 기본 '1234') · migration 20260902_vendors_password_hash.sql
 
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";

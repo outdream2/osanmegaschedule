@@ -36,10 +36,9 @@ COMMENT ON COLUMN vendors.special_notes  IS '발주 특이사항 (경고 톤 배
 -- ═══════════════════════════════════════════════════════════════════
 -- 애플리케이션 로직 (참고)
 -- ═══════════════════════════════════════════════════════════════════
--- 1) 로그인 규칙 (사용자 결정 · DB 저장 X)
---    · 로그인 ID = vendors.phone (담당자 핸드폰 · 하이픈 제거·숫자만)
---    · 비번 = phone + ENV VENDOR_PW_SUFFIX (기본 "00" · 예: 0101234567800)
---    · 서버 파생 · src/lib/vendorPassword.ts (Phase C-계정 기능 시)
+-- 1) 로그인 규칙 (2026-09-02 · 파생 폐기 · 정식 DB 컬럼 채택)
+--    · 로그인 ID = vendors.manager_phone (담당자 핸드폰 · 하이픈 제거·숫자만) · phone (대표) 하위호환
+--    · 비번 = vendors.password_hash (bcrypt · 기본 '1234') · migration 20260902_vendors_password_hash.sql
 --
 -- 2) xlsx 임포트
 --    · npm run import:vendors:dry  # 파싱 결과만 · DB 변경 없음

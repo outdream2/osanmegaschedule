@@ -8,10 +8,8 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, unauthorized, forbidden, notFound, HttpError } from "../../middleware/errorHandler";
 // 2026-08-16 · shared 스키마 + 응답 DTO (서버·클라 공유 · 타입 duplicate 제거)
-import { LoginSchema, VendorLoginSchema, SetPasswordSchema, ChangePasswordSchema } from "../../../src/shared/schemas/auth";
+import { LoginSchema, VendorLoginSchema, SetPasswordSchema, ChangePasswordSchema, VendorChangePasswordSchema } from "../../../src/shared/schemas/auth";
 import type { LoginResponse, VendorLoginResponse, RefreshResponse, AuthOkResponse } from "../../../src/shared/dtos/auth";
-// 2026-08-23 · #178 · vendor 비밀번호 파생 함수 · 공용 lib 재사용 (중복 제거)
-import { verifyVendorPassword } from "../../../src/lib/vendorPassword";
 
 const router = Router();
 
@@ -46,27 +44,28 @@ router.post("/api/auth/login", validateBody(LoginSchema), asyncHandler(async (re
   res.status(200).json(body);
 }));
 
-// 거래처 로그인 · 규칙 기반 · 핸드폰번호 + "00" 유지
+// 거래처 로그인 · 직원 로그인과 동일 구조 · vendors.password_hash · bcrypt.compare
+// 2026-09-02 · 사용자 지시 · 파생 규칙 (phone+"00") 완전 제거
+//   · migration 20260902_vendors_password_hash.sql · password_hash 컬럼 · 기본 bcrypt('1234')
+//   · ID 매칭 · manager_phone (담당자) 우선 · phone (대표) 하위호환
 router.post("/api/auth/vendor-login", validateBody(VendorLoginSchema), asyncHandler(async (req, res) => {
   const { phone, password } = req.body;
   const cleanPhone = String(phone).replace(/[^0-9]/g, "");
-  const cleanPassword = String(password).replace(/[^0-9]/g, "");
   if (!cleanPhone) throw badRequest("핸드폰번호를 입력해주세요");
-  if (!cleanPassword) throw badRequest("비밀번호를 입력해주세요");
-  // 2026-08-29 · 사용자 지시 · 담당자 핸드폰 로그인 · manager_phone 우선 매칭
-  //   · vendors 테이블 · phone (대표) + manager_phone (담당자) 두 컬럼
-  //   · project_vendor_login_rule.md · ID=담당자 핸드폰 · manager_phone 이 진짜 로그인 아이디
-  //   · 하위호환 · 기존 phone 도 매칭 (단일 컬럼 시대 · 이전 vendor 데이터)
+  if (!password) throw badRequest("비밀번호를 입력해주세요");
   const { data: vendors, error } = await supabase
     .from("vendors")
-    .select("id, company_name, contact_name, phone, manager_phone")
+    .select("id, company_name, contact_name, phone, manager_phone, password_hash")
     .or(`manager_phone.eq.${cleanPhone},phone.eq.${cleanPhone}`)
     .limit(1);
   if (error) throw new HttpError(500, error.message);
   const vendor = vendors?.[0] ?? null;
   if (!vendor) throw unauthorized("등록된 거래처를 찾을 수 없습니다");
-  // 2026-08-23 · #178 · verifyVendorPassword · 공용 파생 함수 (env VENDOR_PW_SUFFIX 반영)
-  if (!verifyVendorPassword(cleanPhone, cleanPassword)) {
+  if (!vendor.password_hash) throw unauthorized("비밀번호가 설정되지 않았습니다. 관리자에게 문의하세요.");
+  const ok = await bcrypt.compare(String(password), vendor.password_hash);
+  delete (vendor as any).password_hash;
+  if (!ok) {
+    audit("VENDOR_LOGIN_FAIL", { ...auditContext(req), phone: cleanPhone, reason: "wrong_password" }, "warn");
     throw unauthorized("핸드폰번호 또는 비밀번호가 올바르지 않습니다");
   }
   try {
@@ -234,6 +233,34 @@ router.post("/api/auth/change-password", authorize(1), validateBody(ChangePasswo
     .eq("id", idNum);
   if (updErr) throw new HttpError(500, updErr.message);
   audit("PASSWORD_CHANGED", { ...auditContext(req), userId: idNum }, "info");
+  res.status(200).json({ ok: true });
+}));
+
+// 2026-09-02 · 거래처 본인 비밀번호 변경 · 직원 change-password 대응
+//   · 세션 role=vendor · sub=vendor.id 만 접근 · authorize(0) + role gate
+router.post("/api/auth/vendor-change-password", authorize(0), validateBody(VendorChangePasswordSchema), asyncHandler(async (req, res) => {
+  const session = getSession(req);
+  if (!session) throw unauthorized();
+  if (session.role !== "vendor") throw forbidden("거래처 세션만 사용 가능합니다");
+  const vendorId = Number(session.sub);
+  if (!vendorId || isNaN(vendorId)) throw badRequest("세션 vendor id 오류");
+  const { currentPassword, newPassword } = req.body;
+  if (currentPassword === newPassword) throw badRequest("새 비밀번호가 현재 비밀번호와 동일합니다");
+  const { data: vendor, error } = await supabase
+    .from("vendors")
+    .select("id, password_hash")
+    .eq("id", vendorId)
+    .maybeSingle();
+  if (error) throw new HttpError(500, error.message);
+  if (!vendor) throw notFound("거래처를 찾을 수 없습니다");
+  if (!vendor.password_hash) throw badRequest("비밀번호가 설정되어 있지 않습니다. 관리자에게 문의하세요.");
+  const ok = await bcrypt.compare(currentPassword, vendor.password_hash);
+  delete (vendor as any).password_hash;
+  if (!ok) throw unauthorized("현재 비밀번호가 올바르지 않습니다");
+  const password_hash = await bcrypt.hash(newPassword, 12);
+  const { error: updErr } = await supabase.from("vendors").update({ password_hash }).eq("id", vendorId);
+  if (updErr) throw new HttpError(500, updErr.message);
+  audit("VENDOR_PASSWORD_CHANGED", { ...auditContext(req), vendorId }, "info");
   res.status(200).json({ ok: true });
 }));
 
