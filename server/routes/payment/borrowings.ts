@@ -107,22 +107,81 @@ router.post("/api/borrowings", authorize(5), validateBody(CreateBorrowingSchema)
 // 2026-08-31 · #9 Phase A · 당사자 (parties) · 자동완성·upsert
 // ═══════════════════════════════════════════════════════
 // GET /api/borrowings/parties?q=...  · 검색 (name·contact_name)
+// 2026-09-02 · #80 · 사용자 지시 · 자동 병합 · 약국(company_info) + 공급사(vendors) + external(borrowing_parties)
 router.get("/api/borrowings/parties", authorize(1), asyncHandler(async (req, res) => {
   const q = String(req.query.q ?? "").trim();
-  let query = supabase
-    .from("borrowing_parties")
-    .select("id, party_type, vendor_id, employee_id, name, contact_name, contact_phone, contact_email, address, memo")
-    .order("created_at", { ascending: false })
-    .limit(50);
-  if (q) query = query.or(`name.ilike.%${q}%,contact_name.ilike.%${q}%`);
-  const { data, error } = await query;
-  if (error) {
-    if (/relation .* does not exist/i.test(error.message)) {
-      return res.json({ rows: [], warning: "borrowing_parties 테이블 없음 (SQL 미실행)" });
+  const qLower = q.toLowerCase();
+  const matches = (name: string | null | undefined) => !q || String(name ?? "").toLowerCase().includes(qLower);
+
+  // 1) self · 약국 · settings (KV) company_info 에서 사업자명
+  const selfParties: any[] = [];
+  try {
+    const { data: settingRow } = await supabase.from("settings").select("value").eq("key", "company_info").maybeSingle();
+    const ci = (settingRow?.value ?? {}) as any;
+    const selfName = String(ci.pharmacyName ?? ci.storeName ?? ci.name ?? "").trim();
+    if (selfName && matches(selfName)) {
+      selfParties.push({
+        id: "self-1",
+        party_type: "self" as const,
+        vendor_id: null, employee_id: null,
+        name: selfName,
+        contact_name: ci.ceo ?? ci.owner ?? null,
+        contact_phone: ci.phone ?? null,
+        contact_email: ci.email ?? null,
+        address: ci.address ?? null,
+        memo: "약국 · 사업자",
+      });
     }
-    throw new HttpError(500, error.message);
+  } catch (e: any) {
+    console.warn("[borrowings/parties] company_info 조회 실패:", e?.message);
   }
-  res.json({ rows: data ?? [] });
+
+  // 2) vendors · 공급사 · 실시간 · vendors 테이블에서
+  const vendorParties: any[] = [];
+  try {
+    let vq = supabase.from("vendors").select("id, company_name, contact_name, phone, email").order("company_name").limit(200);
+    if (q) vq = vq.or(`company_name.ilike.%${q}%,contact_name.ilike.%${q}%`);
+    const { data: vendorRows } = await vq;
+    for (const v of (vendorRows ?? []) as any[]) {
+      vendorParties.push({
+        id: `vendor-${v.id}`,
+        party_type: "vendor" as const,
+        vendor_id: v.id,
+        employee_id: null,
+        name: v.company_name,
+        contact_name: v.contact_name ?? null,
+        contact_phone: v.phone ?? null,
+        contact_email: v.email ?? null,
+        address: null,
+        memo: null,
+      });
+    }
+  } catch (e: any) {
+    console.warn("[borrowings/parties] vendors 조회 실패:", e?.message);
+  }
+
+  // 3) external · borrowing_parties 테이블 (사용자 신규 등록만)
+  const externalParties: any[] = [];
+  try {
+    let extQuery = supabase
+      .from("borrowing_parties")
+      .select("id, party_type, vendor_id, employee_id, name, contact_name, contact_phone, contact_email, address, memo")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (q) extQuery = extQuery.or(`name.ilike.%${q}%,contact_name.ilike.%${q}%`);
+    const { data: extRows, error: extErr } = await extQuery;
+    if (extErr && !/relation .* does not exist/i.test(extErr.message)) {
+      throw new HttpError(500, extErr.message);
+    }
+    for (const p of (extRows ?? []) as any[]) {
+      externalParties.push({ ...p, id: `party-${p.id}` });
+    }
+  } catch (e: any) {
+    console.warn("[borrowings/parties] borrowing_parties 조회 실패:", e?.message);
+  }
+
+  const rows = [...selfParties, ...vendorParties, ...externalParties];
+  res.json({ rows });
 }));
 
 // POST /api/borrowings/parties · upsert (name+phone dedup 없음 · 명시 create)
