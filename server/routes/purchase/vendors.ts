@@ -514,9 +514,11 @@ router.post("/api/vendors/:id/set-password", authorize(9), validateBody(SetPassw
 router.post("/api/vendors/:id/approval-request", authorize(1), validateBody(z.object({})), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
+  // 2026-09-02 · 사용자 지시 · DB 실제 컬럼명 정렬 · team_leader → team_leader_name · emergency_phone → emergency_contact
+  //   · 이전 · DB 컬럼명 (team_leader_name · emergency_contact) 과 쿼리 alias 불일치 · undefined 반환 · 승인 요청 항상 실패
   const { data: vendor, error: fetchErr } = await supabase
     .from("vendors")
-    .select("id, email, order_method, team_leader, team_leader_phone, emergency_phone, business_number, special_notes, note, approval_status")
+    .select("id, email, order_method, team_leader_name, team_leader_phone, emergency_contact, business_number, special_notes, note, approval_status")
     .eq("id", id)
     .maybeSingle();
   if (fetchErr) throw new HttpError(500, `공급사 조회 실패: ${fetchErr.message}`);
@@ -525,13 +527,13 @@ router.post("/api/vendors/:id/approval-request", authorize(1), validateBody(z.ob
   if (vendor.approval_status === "approved") {
     throw badRequest("이미 승인된 공급사입니다.");
   }
-  // 필수 8 필드 검증
+  // 필수 8 필드 검증 · 필드명 정렬 (사용자 지시 · team_leader_name · emergency_contact)
   const missing: string[] = [];
   if (!vendor.email || !String(vendor.email).trim()) missing.push("이메일");
   if (!vendor.order_method || !String(vendor.order_method).trim()) missing.push("주문방식");
-  if (!(vendor as any).team_leader || !String((vendor as any).team_leader).trim()) missing.push("팀장");
+  if (!(vendor as any).team_leader_name || !String((vendor as any).team_leader_name).trim()) missing.push("팀장");
   if (!(vendor as any).team_leader_phone || !String((vendor as any).team_leader_phone).trim()) missing.push("팀장연락처");
-  if (!(vendor as any).emergency_phone || !String((vendor as any).emergency_phone).trim()) missing.push("긴급연락처");
+  if (!(vendor as any).emergency_contact || !String((vendor as any).emergency_contact).trim()) missing.push("긴급연락처");
   if (!vendor.business_number || !String(vendor.business_number).trim()) missing.push("사업자번호");
   if (!vendor.special_notes || !String(vendor.special_notes).trim()) missing.push("특이사항");
   if (!(vendor as any).note || !String((vendor as any).note).trim()) missing.push("비고");

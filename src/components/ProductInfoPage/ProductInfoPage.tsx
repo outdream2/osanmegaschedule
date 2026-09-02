@@ -139,11 +139,13 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
   }
 
   // 2026-08-28 · 사용자 지시 · 13컬럼 통일 상단 · 진열위치·판매상태 인라인 편집
+  // 2026-09-02 · Location API 단순화 · display_location 중복 제거 · products.location 단일화
+  //   · 이전 · location + display_location 이중 저장 · DB 중복 · 정합성 위험
+  //   · 서버 · display_location fallback 유지 (하위 호환)
   const handleLocationChange = async (newLocation: string | null) => {
     try {
       await api.patch(`/api/products/${encodeURIComponent(product.product_code)}`, {
         location: newLocation,
-        display_location: newLocation,
       });
       showSuccess(`진열위치 · ${newLocation ?? "-"} 저장`);
       onSaved();
