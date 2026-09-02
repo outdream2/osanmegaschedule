@@ -146,7 +146,12 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                 const isPrepared = r.status === "prepared";
                 const isPending  = r.status === "pending" || (!isDone && !isPrepared);
                 const completing = completingDisplay.has(r.id);
+                // 2026-09-03 · #63 fix · 서버 (server/routes/display/requests.ts:119) 에서 product_name JOIN 반환
+                //   · 이전 · note/category/zone_label 만 참조 · 실제 상품명 무시 · '(상품명 없음)' 표시
+                //   · 이후 · r.product_name (products JOIN) 우선 · 없으면 note/category/zone_label fallback
                 const productName = (() => {
+                  const pn = String((r as any).product_name ?? "").trim();
+                  if (pn) return pn;
                   if (r.note) {
                     const cleaned = r.note.replace(/\s*진열\s*요청\s*$/u, "").trim();
                     if (cleaned) return cleaned;
