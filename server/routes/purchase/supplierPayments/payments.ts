@@ -125,6 +125,8 @@ router.post("/api/supplier-payments", authorize(5), validateBody(CreateSupplierP
     amount:        b.amount,
     method:        b.method ?? "transfer",
     memo:          b.memo ? String(b.memo).trim() || null : null,
+    // 2026-09-02 · #69 · card_id · 결제방법=card 시 credit_cards.id 매핑
+    card_id:       b.card_id ?? null,
     created_by:    b.created_by ? String(b.created_by).trim() || null : null,
     created_by_id: b.created_by_id ?? null,
   };

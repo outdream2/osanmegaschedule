@@ -37,7 +37,18 @@ import { api } from "../../lib/apiClient";
 import { PaymentEntryForm } from "./PaymentEntryForm";
 import type { VendorItem, BalanceResp } from "./PaymentInfoTab.types";
 
-type RightTab = "orders" | "sales";
+// 2026-09-02 · #69 · 사용자 지시 · 결제내역 탭 추가 (발주내역·판매내역 옆)
+type RightTab = "orders" | "sales" | "payments";
+
+interface PaymentHistoryItem {
+  id: number;
+  payment_date: string;
+  amount: number;
+  method: string;
+  memo: string | null;
+  card_id: number | null;
+  created_at: string;
+}
 
 interface OrderHistoryItem {
   order_number: string;
@@ -103,6 +114,8 @@ export const PaymentInputPage: React.FC = () => {
   const [orderHistory, setOrderHistory] = useState<OrderHistoryItem[]>([]);
   const [sales, setSales] = useState<SalesItem[]>([]);
   const [balance, setBalance] = useState<Balance | null>(null);
+  // 2026-09-02 · #69 · 공급사별 결제 이력 (payments tab)
+  const [payments, setPayments] = useState<PaymentHistoryItem[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
 
@@ -121,13 +134,15 @@ export const PaymentInputPage: React.FC = () => {
   const loadSupplierData = useCallback(async (supplierName: string) => {
     setDataLoading(true);
     setDataError(null);
-    setOrderHistory([]); setSales([]); setBalance(null);
+    setOrderHistory([]); setSales([]); setBalance(null); setPayments([]);
     const supEnc = encodeURIComponent(supplierName);
     try {
-      const [orderRes, salesRes, balRes] = await Promise.allSettled([
+      const [orderRes, salesRes, balRes, payRes] = await Promise.allSettled([
         api.get<{ orders?: OrderHistoryItem[] }>(`/api/order-history?days=365&supplier=${supEnc}`),
         api.get<{ rows?: SalesItem[] }>(`/api/stock-manage/top-sales?months=12&supplier=${supEnc}&sort=sale&dir=desc&limit=200`),
         api.get<any>(`/api/supplier-balances`),
+        // 2026-09-02 · #69 · 공급사별 결제 이력
+        api.get<{ rows?: PaymentHistoryItem[] }>(`/api/supplier-payments?supplier=${supEnc}&days=3650`),
       ]);
       if (orderRes.status === "fulfilled") {
         setOrderHistory(Array.isArray(orderRes.value.data?.orders) ? orderRes.value.data.orders : []);
@@ -139,6 +154,9 @@ export const PaymentInputPage: React.FC = () => {
         const list = Array.isArray(balRes.value.data) ? balRes.value.data : (balRes.value.data?.rows ?? []);
         const hit = list.find((b: any) => String(b.supplier ?? "").trim() === supplierName.trim());
         if (hit) setBalance({ supplier: hit.supplier, balance: Number(hit.balance ?? 0), updated_at: hit.updated_at });
+      }
+      if (payRes.status === "fulfilled") {
+        setPayments(Array.isArray(payRes.value.data?.rows) ? payRes.value.data.rows : []);
       }
     } catch (e: any) {
       setDataError(e?.message ?? "네트워크 오류");
@@ -320,10 +338,12 @@ export const PaymentInputPage: React.FC = () => {
 
   const rightPane = selected ? (
     <div className="flex flex-col gap-3 h-full overflow-auto p-1">
+      {/* 2026-09-02 · 사용자 지시 · 배지 (*건 · *상품) 제거 · 결제내역 탭 추가 · 폰트 +2 */}
       <SplitRightTabs
         tabs={[
-          { key: "orders", label: `발주내역 · ${orderHistory.length}건` },
-          { key: "sales",  label: `판매내역 · ${sales.length}상품` },
+          { key: "orders",   label: "발주내역" },
+          { key: "sales",    label: "판매내역" },
+          { key: "payments", label: "결제내역" },
         ]}
         active={rightTab}
         onSelect={(k) => setRightTab(k as RightTab)}
@@ -421,20 +441,78 @@ export const PaymentInputPage: React.FC = () => {
           {topSalesProducts.length > 0 && (
             <Card padding="md" topAccent>
               <div className="flex items-center gap-2 mb-2">
-                <div className="text-[14px] font-bold text-ink">상품별 · 판매 상위 12</div>
+                <div className="text-[16px] font-bold text-ink">상품별 · 판매 상위 12</div>
               </div>
               <ul className="divide-y divide-zinc-100">
                 {topSalesProducts.map(p => (
-                  <li key={p.product_code} className="flex items-center gap-2 py-2 text-[13px]">
-                    <span className="text-zinc-500 shrink-0 font-mono text-[11px] w-24 truncate">{p.product_code}</span>
+                  <li key={p.product_code} className="flex items-center gap-2 py-2 text-[15px]">
+                    <span className="text-zinc-500 shrink-0 font-mono text-[13px] w-24 truncate">{p.product_code}</span>
                     <span className="text-ink font-bold truncate flex-1 min-w-0">{p.product_name}</span>
-                    <span className="text-[12px] text-zinc-400 tabular-nums shrink-0">{Number(p.sale_qty ?? 0).toLocaleString()}개</span>
+                    <span className="text-[14px] text-zinc-400 tabular-nums shrink-0">{Number(p.sale_qty ?? 0).toLocaleString()}개</span>
                     <span className="text-emerald-700 font-bold tabular-nums shrink-0">{fmtWon(Number(p.total_amount ?? 0))}</span>
                   </li>
                 ))}
               </ul>
             </Card>
           )}
+        </>
+      )}
+
+      {/* 2026-09-02 · #69 · 사용자 지시 · 결제내역 탭 · 공급사별 결제 리스트 · KPI */}
+      {!dataLoading && rightTab === "payments" && (
+        <>
+          <div className="grid grid-cols-3 gap-3">
+            <Card padding="md" topAccent>
+              <div className="text-[15px] text-zinc-500 font-semibold">총 결제 건수</div>
+              <div className="text-[24px] font-extrabold text-brand-deep tabular-nums mt-1">{payments.length.toLocaleString()}건</div>
+            </Card>
+            <Card padding="md" topAccent>
+              <div className="text-[15px] text-zinc-500 font-semibold">총 결제 금액</div>
+              <div className="text-[24px] font-extrabold text-emerald-700 tabular-nums mt-1">
+                {fmtWon(payments.reduce((s, p) => s + (Number(p.amount) || 0), 0))}
+              </div>
+            </Card>
+            <Card padding="md" topAccent>
+              <div className="text-[15px] text-zinc-500 font-semibold">최근 결제일</div>
+              <div className="text-[20px] font-bold text-ink tabular-nums mt-1">
+                {payments[0]?.payment_date ?? "-"}
+              </div>
+            </Card>
+          </div>
+
+          <Card padding="md" topAccent>
+            <div className="flex items-center gap-2 mb-2">
+              <IconTile icon={<Wallet size={14} />} tone="amber" size="sm" />
+              <div className="text-[17px] font-bold text-ink">공급사별 결제 이력</div>
+              <div className="ml-auto text-[14px] text-ink-soft tabular-nums">{payments.length}건</div>
+            </div>
+            {payments.length === 0 ? (
+              <EmptyState icon={Wallet} title="결제 이력 없음" hint={`${selected.company_name} · 결제 등록 후 여기 표시`} size="normal" />
+            ) : (
+              <ul className="divide-y divide-zinc-100">
+                {payments.slice(0, 30).map(p => (
+                  <li key={p.id} className="flex items-center gap-2 py-2.5 text-[15px]">
+                    <span className="text-zinc-500 tabular-nums shrink-0 w-24">{String(p.payment_date).slice(0, 10)}</span>
+                    <span className={`text-[14px] font-semibold px-2 py-0.5 rounded-lg shrink-0 ${
+                      p.method === "card" ? "bg-blue-50 text-blue-700"
+                      : p.method === "transfer" ? "bg-sky-50 text-sky-700"
+                      : p.method === "cash" ? "bg-emerald-50 text-emerald-700"
+                      : "bg-zinc-100 text-zinc-600"
+                    }`}>
+                      {p.method === "card" ? "카드" : p.method === "transfer" ? "이체" : p.method === "cash" ? "현금" : p.method === "check" ? "수표" : "기타"}
+                    </span>
+                    {p.card_id && <span className="text-[13px] text-blue-600 font-semibold shrink-0">#카드{p.card_id}</span>}
+                    <span className="ml-auto text-brand-deep font-bold tabular-nums">{fmtWon(Number(p.amount) || 0)}</span>
+                  </li>
+                ))}
+                {payments.length > 30 && (
+                  <li className="py-2 text-center text-[13px] text-zinc-400">
+                    · 외 {payments.length - 30}건 · 최근 30건 표시
+                  </li>
+                )}
+              </ul>
+            )}
+          </Card>
         </>
       )}
 

@@ -4,12 +4,14 @@ import { z } from "zod";
 const VALID_METHODS = ["transfer", "card", "cash", "check", "other"] as const;
 
 /** POST /api/supplier-payments · 결제 등록 */
+// 2026-09-02 · #69 · card_id 필드 추가 · 결제방법=card 시 credit_cards.id 매핑
 export const CreateSupplierPaymentSchema = z.object({
   supplier_name: z.string().min(1, "supplier_name 필수").max(200),
   payment_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "payment_date 는 YYYY-MM-DD 형식"),
   amount: z.number().positive("amount 는 양수여야 합니다"),
   method: z.enum(VALID_METHODS).default("transfer"),
   memo: z.string().max(500).nullable().optional(),
+  card_id: z.number().int().positive().nullable().optional(),
   created_by: z.string().max(100).nullable().optional(),
   created_by_id: z.number().int().nullable().optional(),
   allocations: z.array(z.object({

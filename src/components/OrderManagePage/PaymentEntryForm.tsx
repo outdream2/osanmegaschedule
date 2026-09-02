@@ -4,8 +4,8 @@
 //   · 부모는 selectedVendor 를 감지해 balance/monthly/recent 로드 후 이 폼 렌더
 //   · key={selectedVendor.id} 로 vendor 변경 시 자동 리셋 (별도 리셋 effect 불필요)
 
-import React, { useCallback, useMemo, useRef, useState } from "react";
-import { Plus, Check, X, CalendarDays, Calendar } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Plus, Check, X, CalendarDays, Calendar, CreditCard as CreditCardIcon } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import { api } from "../../lib/apiClient";
@@ -16,9 +16,11 @@ import type {
 } from "./PaymentInfoTab.types";
 import {
   fmtWonShort, todayYmd, encodeMemo, computeVat,
-  CARD_ISSUERS, BANKS, METHOD_OPTIONS,
+  BANKS, METHOD_OPTIONS,
 } from "./PaymentInfoTab.utils";
 import { AmountField, FieldLabel, inputCls } from "./PaymentInfoTab.subcomponents";
+// 2026-09-02 · #69 · 결제카드 dropdown · credit_cards 목록
+import type { CreditCard } from "../../shared/schemas/creditCards";
 
 interface PaymentEntryFormProps {
   selectedVendor: VendorItem;
@@ -33,8 +35,9 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
   const [paymentDate, setPaymentDate] = useState<string>(todayYmd());
   const [amount, setAmount] = useState<string>("");
   const [method, setMethod] = useState<PayMethod>("card");
-  const [cardIssuer, setCardIssuer] = useState<string>("");
-  const [cardIssuerCustom, setCardIssuerCustom] = useState<string>("");
+  // 2026-09-02 · #69 · 사용자 지시 · 카드사 → 결제카드 dropdown · credit_cards 목록
+  const [cards, setCards] = useState<CreditCard[]>([]);
+  const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
   const [bankName, setBankName] = useState<string>("");
   const [bankNameCustom, setBankNameCustom] = useState<string>("");
   const [etcNote, setEtcNote] = useState<string>("");
@@ -52,6 +55,15 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
       setMsg({ type: "err", text: `저장 실패: ${raw}` });
     },
   });
+
+  // 2026-09-02 · 카드 목록 로드 (active 만)
+  useEffect(() => {
+    let alive = true;
+    api.get<CreditCard[]>("/api/credit-cards?active=1")
+      .then(({ data }) => { if (alive) setCards(Array.isArray(data) ? data : []); })
+      .catch(() => { if (alive) setCards([]); });
+    return () => { alive = false; };
+  }, []);
 
   const paymentDateRef = useRef<HTMLInputElement | null>(null);
   const openDatePicker = useCallback(() => {
@@ -83,15 +95,17 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
       return;
     }
 
+    // 2026-09-02 · #69 · card 결제 · credit_cards 에서 선택된 카드 정보 사용
+    const selectedCard = selectedCardId ? cards.find(c => c.id === selectedCardId) : null;
     const resolvedCard = method === "card"
-      ? (cardIssuer === "직접입력" ? cardIssuerCustom.trim() : cardIssuer)
+      ? (selectedCard ? `${selectedCard.issuer}${selectedCard.alias ? " · " + selectedCard.alias : ""}${selectedCard.last4 ? " (**" + selectedCard.last4 + ")" : ""}` : "")
       : "";
     const resolvedBank = method === "transfer"
       ? (bankName === "직접입력" ? bankNameCustom.trim() : bankName)
       : "";
 
-    if (method === "card" && !resolvedCard) {
-      setMsg({ type: "err", text: "카드사를 선택하세요" });
+    if (method === "card" && !selectedCardId) {
+      setMsg({ type: "err", text: "결제카드를 선택하세요 · 등록된 카드가 없으면 [매장>결제>결제카드등록] 에서 먼저 등록" });
       return;
     }
     if (method === "transfer" && !resolvedBank) {
@@ -116,6 +130,8 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
       amount: amountNum,
       method,
       memo: finalMemo || null,
+      // 2026-09-02 · #69 · 카드 결제 시 · credit_cards.id FK
+      card_id: method === "card" ? selectedCardId : null,
     }));
     if (result) {
       // 리셋 (일부만 · vendor 유지 · 이력 반영 후 재입력 가능)
@@ -203,33 +219,35 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
             </FieldLabel>
           </div>
 
-          {/* sub-option + 결제금액 · 같은 줄 flex row (2026-08-04 · #102) */}
+          {/* 2026-09-02 · #69 · 사용자 지시 · 카드사 → 결제카드 선택 (credit_cards dropdown) + 바로가기 링크 */}
           {method === "card" && (
             <div className="flex items-end gap-3">
               <div className="flex-1 min-w-0">
-                {cardIssuer === "직접입력" ? (
-                  <FieldLabel label="카드사명 직접입력">
-                    <input
-                      type="text"
-                      value={cardIssuerCustom}
-                      onChange={e => setCardIssuerCustom(e.target.value)}
-                      placeholder="카드사 이름"
-                      className={inputCls}
-                    />
-                  </FieldLabel>
-                ) : (
-                  <FieldLabel label="카드사">
-                    <select
-                      value={cardIssuer}
-                      onChange={e => setCardIssuer(e.target.value)}
-                      className={inputCls}
-                    >
-                      <option value="">카드사 선택...</option>
-                      {CARD_ISSUERS.map(c => <option key={c} value={c}>{c}</option>)}
-                      <option value="직접입력">직접 입력...</option>
-                    </select>
-                  </FieldLabel>
-                )}
+                <FieldLabel label="결제카드 선택">
+                  {cards.length === 0 ? (
+                    <div className="text-[15px] text-rose-600 font-semibold px-2 py-2 bg-rose-50 border border-rose-200 rounded-lg">
+                      등록된 카드 없음 · [매장 &gt; 결제 &gt; 결제카드등록] 에서 먼저 등록
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-2.5 flex items-center pointer-events-none">
+                        <CreditCardIcon size={14} className="text-brand-deep" />
+                      </div>
+                      <select
+                        value={selectedCardId ?? ""}
+                        onChange={e => setSelectedCardId(e.target.value ? Number(e.target.value) : null)}
+                        className={`${inputCls} pl-8`}
+                      >
+                        <option value="">카드 선택...</option>
+                        {cards.map(c => (
+                          <option key={c.id} value={c.id}>
+                            {c.issuer}{c.alias ? " · " + c.alias : ""}{c.last4 ? " (**" + c.last4 + ")" : ""} · {c.billing_day}일 결제
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </FieldLabel>
               </div>
               <div className="flex-1 min-w-0">
                 <AmountField
