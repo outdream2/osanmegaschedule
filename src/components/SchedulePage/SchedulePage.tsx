@@ -14,6 +14,8 @@ import { EmployeeFormModal } from "../EmployeeFormModal";
 import { BreakModal } from "../common/features/BreakModal";
 import { useSettings } from "../../hooks/useSettings";
 import { useContactInfo } from "../../hooks/useContactInfo";
+// 2026-09-02 · 사용자 지시 · 공통 푸터로 통일
+import { AppFooter } from "../layout/AppFooter";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { UserPlus, CheckCircle, Lock } from "lucide-react";
 import { Card } from "../common/Card";
@@ -664,10 +666,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="h-9 bg-white border-t border-line shrink-0 px-4 sm:px-6 flex items-center justify-center text-xs font-bold text-zinc-600 tracking-wide">
-        <span>© {spContact.copyrightText || "(주)이룸즈(IRUMS)"}</span>
-      </footer>
+      {/* 2026-09-02 · 사용자 지시 · 공통 푸터 통일 · AppFooter */}
+      <AppFooter className="border-t border-line bg-white shrink-0" />
+      {/* 사용하지 않는 hook · silent */}
+      {(() => { void spContact; return null; })()}
 
       {/* Employee Form Modal */}
       {isEmpModalOpen && (

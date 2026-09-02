@@ -39,39 +39,50 @@ export const AppFooter: React.FC<AppFooterProps> = ({
   const { brand } = useBrandIdentity();
   const { contact } = useContactInfo();
   const hours = contact.businessHours || "09:00 - 22:00";
-  const copyright = contact.copyrightText || "(주)이룸즈(IRUMS)";
   const shortName = brand.shortName || "오산메가타운";
+  // 2026-09-02 · 사용자 지시 · 최신 트렌드 · 통일 카피라이트 · IRUMs · since 2026
   return (
-    <div
+    <footer
       className={[
-        "w-full flex items-center justify-center gap-3 py-3 text-zinc-400 text-[11px] font-medium flex-wrap",
+        "w-full flex items-center justify-center gap-x-3 gap-y-1 py-2.5 text-[12px] font-medium text-zinc-500 flex-wrap tracking-tight",
         className,
       ].filter(Boolean).join(" ")}
       role="contentinfo"
     >
-      <span className="flex items-center gap-1.5"><MapPin size={11} />{shortName}</span>
+      <span className="inline-flex items-center gap-1.5">
+        <MapPin size={12} className="text-zinc-400" />
+        <span className="text-zinc-600 font-semibold">{shortName}</span>
+      </span>
       {!compact && (
         <>
           <span className="w-1 h-1 rounded-full bg-zinc-300" />
-          <span className="flex items-center gap-1.5"><Clock size={11} />{hours}</span>
+          <span className="inline-flex items-center gap-1.5">
+            <Clock size={12} className="text-zinc-400" />
+            <span className="tabular-nums">{hours}</span>
+          </span>
         </>
       )}
       <span className="w-1 h-1 rounded-full bg-zinc-300" />
-      <span className="text-zinc-400">copyright {copyright}</span>
+      <span className="inline-flex items-center gap-1 text-zinc-500">
+        <span className="text-zinc-400">©</span>
+        <span className="font-bold tracking-wide text-brand-deep">IRUMs</span>
+        <span className="text-zinc-500">(주) 이룸즈</span>
+        <span className="text-zinc-400 tabular-nums">since 2026</span>
+      </span>
       {version && (
         <>
           <span className="w-1 h-1 rounded-full bg-zinc-300" />
-          <span className="tabular-nums font-mono text-zinc-300 text-[10px]">{version}</span>
+          <span className="tabular-nums font-mono text-zinc-400 text-[11px]">{version}</span>
         </>
       )}
       {extraLinks && extraLinks.length > 0 && (
-        <span className="flex items-center gap-3 ml-auto">
+        <span className="inline-flex items-center gap-3 ml-auto">
           {extraLinks.map((l, i) => (
             <a
               key={`${l.label}-${i}`}
               href={l.href}
               onClick={l.onClick ? (e) => { if (!l.href) e.preventDefault(); l.onClick?.(); } : undefined}
-              className="text-zinc-500 hover:text-brand-deep transition-colors cursor-pointer text-[11px] font-medium"
+              className="text-zinc-500 hover:text-brand-deep transition-colors cursor-pointer text-[12px] font-medium"
               target={l.href?.startsWith("http") ? "_blank" : undefined}
               rel={l.href?.startsWith("http") ? "noopener noreferrer" : undefined}
             >
@@ -80,6 +91,6 @@ export const AppFooter: React.FC<AppFooterProps> = ({
           ))}
         </span>
       )}
-    </div>
+    </footer>
   );
 };
