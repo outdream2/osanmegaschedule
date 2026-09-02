@@ -63,7 +63,7 @@ export function SplitRightError({
         {title}
       </div>
       {message && (
-        <div className="text-[14px] bg-rose-50 border border-rose-100 rounded px-2 py-1 break-words">
+        <div className="text-[14px] font-mono bg-rose-50 border border-rose-100 rounded px-2 py-1 break-words">
           {message}
         </div>
       )}
