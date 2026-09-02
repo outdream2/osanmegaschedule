@@ -106,7 +106,8 @@ export const PaymentInputPage: React.FC = () => {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("전체");
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [rightTab, setRightTab] = useState<RightTab>("orders");
+  // 2026-09-02 · 사용자 지시 · 최근결제내역이 첫 탭 · 기본 선택
+  const [rightTab, setRightTab] = useState<RightTab>("payments");
   // 2026-08-26 · P0 fix · 모바일 우측 상세 모달 열림/닫힘 별도 state (기존 rightTab != null 은 항상 true)
   const [mobileDetailOpen, setMobileDetailOpen] = useState<boolean>(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -338,12 +339,12 @@ export const PaymentInputPage: React.FC = () => {
 
   const rightPane = selected ? (
     <div className="flex flex-col gap-3 h-full overflow-auto p-1">
-      {/* 2026-09-02 · 사용자 지시 · 배지 (*건 · *상품) 제거 · 결제내역 탭 추가 · 폰트 +2 */}
+      {/* 2026-09-02 · 사용자 지시 · 최근결제내역 · 발주내역 앞 · 배지 (*건 · *상품) 제거 · 폰트 +2 */}
       <SplitRightTabs
         tabs={[
+          { key: "payments", label: "최근결제내역" },
           { key: "orders",   label: "발주내역" },
           { key: "sales",    label: "판매내역" },
-          { key: "payments", label: "결제내역" },
         ]}
         active={rightTab}
         onSelect={(k) => setRightTab(k as RightTab)}
@@ -400,7 +401,7 @@ export const PaymentInputPage: React.FC = () => {
             </Card>
           )}
         </>
-      ) : (
+      ) : rightTab === "sales" ? (
         <>
           <Card padding="md" topAccent>
             <div className="flex items-center gap-2 mb-2">
@@ -456,9 +457,9 @@ export const PaymentInputPage: React.FC = () => {
             </Card>
           )}
         </>
-      )}
+      ) : null}
 
-      {/* 2026-09-02 · #69 · 사용자 지시 · 결제내역 탭 · 공급사별 결제 리스트 · KPI */}
+      {/* 2026-09-02 · #69 · 사용자 지시 · 최근 결제내역 탭 · 공급사별 결제 리스트 · KPI · 첫 탭 */}
       {!dataLoading && rightTab === "payments" && (
         <>
           <div className="grid grid-cols-3 gap-3">
