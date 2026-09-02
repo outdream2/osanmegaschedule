@@ -102,10 +102,11 @@ async function fetchLatestInventory(codes?: string[]): Promise<Map<string, {
     if (map.has(code)) continue;
 
     // 2026-08-31 · warehouse_stock DROP · warehouse1_stock 단일 사용
+    // 2026-09-03 · #83 fix · store_stock_2 컬럼 삭제됨 · s2 는 null 고정 (기존 응답 shape 유지)
     const w1 = r.warehouse1_stock != null ? Number(r.warehouse1_stock) : null;
     const w2 = r.warehouse2_stock != null ? Number(r.warehouse2_stock) : null;
     const s1 = r.store_stock      != null ? Number(r.store_stock)      : null;
-    const s2 = r.store_stock_2    != null ? Number(r.store_stock_2)    : null;
+    const s2 = null; // store_stock_2 컬럼 없음 · schema 유지 위해 필드는 반환
     const s3 = r.store3_stock     != null ? Number(r.store3_stock)     : null;
     const total = [w1, w2, s1, s2, s3].reduce((sum: number, v) => sum + (v ?? 0), 0);
 
