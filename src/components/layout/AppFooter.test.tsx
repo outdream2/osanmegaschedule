@@ -32,10 +32,11 @@ describe("AppFooter · fallback (서버 값 없음)", () => {
     expect(container.textContent).toContain("09:00 - 22:00");
   });
 
-  it("copyright · 기본 '(주)이룸즈(IRUMS)'", () => {
+  it("copyright · 브랜드 통일 · IRUMs (주) 이룸즈 since 2026", () => {
     const { container } = render(<AppFooter />);
-    expect(container.textContent).toContain("copyright");
+    expect(container.textContent).toContain("IRUMs");
     expect(container.textContent).toContain("이룸즈");
+    expect(container.textContent).toContain("since 2026");
   });
 });
 
@@ -49,9 +50,10 @@ describe("AppFooter · flex 레이아웃", () => {
     expect(root.className).toContain("flex-wrap");
   });
 
-  it("dot 구분자 · 2개", () => {
+  it("dot 구분자 · 2개 (shortName · hours · copyright 사이)", () => {
     const { container } = render(<AppFooter />);
-    const dots = container.querySelectorAll(".rounded-full");
+    // rounded-full · dot 구분자 · 2개 (지역명 · 시간 · 카피라이트 사이)
+    const dots = container.querySelectorAll("span.w-1.h-1.rounded-full");
     expect(dots.length).toBe(2);
   });
 });

@@ -66,7 +66,8 @@ describe("BatchScheduleSchema", () => {
 });
 
 describe("CopyScheduleSchema", () => {
-  const valid = { fromYear: 2026, fromMonth: 8, toYear: 2026, toMonth: 9 };
+  // 2026-09-03 · #60 fix · targetYear/Month · controller (targetYear·targetMonth) 형식
+  const valid = { targetYear: 2026, targetMonth: 9 };
 
   it("정상 · 성공", () => {
     const r = CopyScheduleSchema.safeParse(valid);
@@ -74,20 +75,20 @@ describe("CopyScheduleSchema", () => {
   });
 
   it("연도 범위 · 2020-2100", () => {
-    expect(CopyScheduleSchema.safeParse({ ...valid, fromYear: 2019 }).success).toBe(false);
-    expect(CopyScheduleSchema.safeParse({ ...valid, fromYear: 2020 }).success).toBe(true);
-    expect(CopyScheduleSchema.safeParse({ ...valid, fromYear: 2100 }).success).toBe(true);
-    expect(CopyScheduleSchema.safeParse({ ...valid, fromYear: 2101 }).success).toBe(false);
+    expect(CopyScheduleSchema.safeParse({ ...valid, targetYear: 2019 }).success).toBe(false);
+    expect(CopyScheduleSchema.safeParse({ ...valid, targetYear: 2020 }).success).toBe(true);
+    expect(CopyScheduleSchema.safeParse({ ...valid, targetYear: 2100 }).success).toBe(true);
+    expect(CopyScheduleSchema.safeParse({ ...valid, targetYear: 2101 }).success).toBe(false);
   });
 
   it("월 범위 · 1-12", () => {
-    expect(CopyScheduleSchema.safeParse({ ...valid, fromMonth: 0 }).success).toBe(false);
-    expect(CopyScheduleSchema.safeParse({ ...valid, fromMonth: 1 }).success).toBe(true);
-    expect(CopyScheduleSchema.safeParse({ ...valid, fromMonth: 12 }).success).toBe(true);
-    expect(CopyScheduleSchema.safeParse({ ...valid, fromMonth: 13 }).success).toBe(false);
+    expect(CopyScheduleSchema.safeParse({ ...valid, targetMonth: 0 }).success).toBe(false);
+    expect(CopyScheduleSchema.safeParse({ ...valid, targetMonth: 1 }).success).toBe(true);
+    expect(CopyScheduleSchema.safeParse({ ...valid, targetMonth: 12 }).success).toBe(true);
+    expect(CopyScheduleSchema.safeParse({ ...valid, targetMonth: 13 }).success).toBe(false);
   });
 
-  it("소수점 · 실패 (integer 만)", () => {
-    expect(CopyScheduleSchema.safeParse({ ...valid, fromMonth: 8.5 }).success).toBe(false);
+  it("문자열 자동 변환 (union transform)", () => {
+    expect(CopyScheduleSchema.safeParse({ targetYear: "2026", targetMonth: "9" }).success).toBe(true);
   });
 });
