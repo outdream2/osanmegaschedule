@@ -80,7 +80,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-line overflow-hidden">
-      <div className="px-4 py-2 border-b border-zinc-100 bg-emerald-50/60 text-[13px] font-bold text-emerald-700 uppercase tracking-wider flex items-center justify-between gap-1.5">
+      <div className="px-4 py-2 border-b border-zinc-100 bg-emerald-50/60 text-[15px] font-bold text-emerald-700 uppercase tracking-wider flex items-center justify-between gap-1.5">
         <span className="flex items-center gap-1.5">
           <span>🌸☀️🍁❄️</span> 계절 정의 <span className="text-emerald-400 font-semibold normal-case">(관리자 전용)</span>
         </span>
@@ -89,7 +89,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
             type="button"
             onClick={resetToDefault}
             disabled={saving || loading}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-bold text-zinc-500 bg-zinc-100 hover:bg-zinc-200 transition disabled:opacity-40"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[15px] font-bold text-zinc-500 bg-zinc-100 hover:bg-zinc-200 transition disabled:opacity-40"
             title="기본값(3~5·6~8·9~11·12~2)으로 초기화"
           >
             <RotateCcw size={10} /> 기본값
@@ -98,14 +98,14 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
             type="button"
             onClick={handleSave}
             disabled={saving || loading || !dirty}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition disabled:opacity-40"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[15px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition disabled:opacity-40"
           >
             {saving ? <Spinner size={10} tone="white" /> : <Save size={10} />} 저장
           </button>
         </div>
       </div>
       <div className="p-4">
-        <p className="text-[14px] text-zinc-500 font-semibold mb-3 leading-relaxed">
+        <p className="text-[16px] text-zinc-500 font-semibold mb-3 leading-relaxed">
           재고·판매 리스트 조회에서 <b>계절 버튼</b> 클릭 시, 여기 정의된 월들의 데이터 (년도 무관 · 전 기간) 가 조회됩니다.
           <br />각 계절에 속하는 월을 선택하세요.
         </p>
@@ -118,12 +118,12 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
               const col = SEASON_COLOR[season];
               return (
                 <div key={season} className={`rounded-lg border ${col.border} ${col.bg} p-2`}>
-                  <div className={`flex items-center justify-between mb-1.5 text-[15px] font-bold ${col.text}`}>
+                  <div className={`flex items-center justify-between mb-1.5 text-[17px] font-bold ${col.text}`}>
                     <span className="inline-flex items-center gap-1">
                       <span aria-hidden>{SEASON_EMOJI[season]}</span>
                       <span>{SEASON_LABEL[season]}</span>
                     </span>
-                    <span className="text-[13px] tabular-nums opacity-70">
+                    <span className="text-[15px] tabular-nums opacity-70">
                       {ranges[season].length > 0 ? ranges[season].map(m => `${m}`).join("·") + "월" : "없음"}
                     </span>
                   </div>
@@ -135,7 +135,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
                           key={m}
                           type="button"
                           onClick={() => toggleMonth(season, m)}
-                          className={`text-[13px] font-bold rounded-md py-1 border transition cursor-pointer ${
+                          className={`text-[15px] font-bold rounded-md py-1 border transition cursor-pointer ${
                             active
                               ? `${col.active} text-white border-transparent shadow-sm`
                               : "bg-white text-zinc-500 border-line hover:border-zinc-400"
@@ -155,7 +155,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
 
         {/* 검증 안내 */}
         {(duplicateMonths.length > 0 || missingMonths.length > 0) && (
-          <div className="mt-3 text-[13px] text-zinc-500 font-semibold space-y-0.5 border-t border-zinc-100 pt-2">
+          <div className="mt-3 text-[15px] text-zinc-500 font-semibold space-y-0.5 border-t border-zinc-100 pt-2">
             {duplicateMonths.length > 0 && (
               <div className="text-amber-700">
                 ⚠ 여러 계절에 중복된 월: <span className="tabular-nums">{duplicateMonths.sort((a, b) => a - b).join("·")}월</span>

@@ -613,7 +613,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           <button
             type="button"
             onClick={() => setPermSubTab("page")}
-            className={`inline-flex items-center gap-1.5 px-3 h-9 rounded-lg text-[14px] font-semibold transition-colors cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-3.5 h-10 rounded-lg text-[16px] font-bold transition-colors cursor-pointer ${
               permSubTab === "page" ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"
             }`}
           >
@@ -622,7 +622,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           <button
             type="button"
             onClick={() => setPermSubTab("employee")}
-            className={`inline-flex items-center gap-1.5 px-3 h-9 rounded-lg text-[14px] font-semibold transition-colors cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-3.5 h-10 rounded-lg text-[16px] font-bold transition-colors cursor-pointer ${
               permSubTab === "employee" ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"
             }`}
           >
@@ -631,7 +631,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           <button
             type="button"
             onClick={() => setPermSubTab("mobile")}
-            className={`inline-flex items-center gap-1.5 px-3 h-9 rounded-lg text-[14px] font-semibold transition-colors cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-3.5 h-10 rounded-lg text-[16px] font-bold transition-colors cursor-pointer ${
               permSubTab === "mobile" ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"
             }`}
           >

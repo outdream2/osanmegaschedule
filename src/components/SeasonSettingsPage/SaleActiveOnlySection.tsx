@@ -26,11 +26,11 @@ export const SaleActiveOnlySection: React.FC = () => {
         <div className="flex items-start gap-4 mb-6">
           <IconTile icon={<PackageCheck size={22} />} tone="emerald" size="lg" />
           <div className="flex-1 min-w-0">
-            <h3 className="text-[22px] font-extrabold text-ink tracking-tight leading-tight">판매중 상품만 표시</h3>
-            <p className="text-[17px] text-ink-soft mt-2 leading-relaxed">
+            <h3 className="text-[24px] font-extrabold text-ink tracking-tight leading-tight">판매중 상품만 표시</h3>
+            <p className="text-[19px] text-ink-soft mt-2 leading-relaxed">
               활성 시 · 모든 상품 검색·통계에 <b className="text-emerald-700">판매중</b> 상품만 반영
               <br />
-              <span className="text-[15px] text-zinc-500">비활성 시 · 단종·미판매 상품도 포함</span>
+              <span className="text-[17px] text-zinc-500">비활성 시 · 단종·미판매 상품도 포함</span>
             </p>
           </div>
           <StatusPill tone={saleActiveOnly ? "emerald" : "zinc"} size="md">
@@ -54,8 +54,8 @@ export const SaleActiveOnlySection: React.FC = () => {
             className="w-6 h-6 accent-emerald-600 cursor-pointer"
           />
           <div className="flex-1 min-w-0">
-            <div className="text-[19px] font-bold text-ink leading-tight">판매중 상품만 반영</div>
-            <div className="text-[15px] text-ink-soft mt-1 leading-relaxed">
+            <div className="text-[21px] font-bold text-ink leading-tight">판매중 상품만 반영</div>
+            <div className="text-[17px] text-ink-soft mt-1 leading-relaxed">
               상품 리스트 · 매입이력 · 발주 검색 · 통계 등 모든 리스트에 즉시 적용
             </div>
           </div>

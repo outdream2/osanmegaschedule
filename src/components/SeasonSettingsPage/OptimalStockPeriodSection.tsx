@@ -112,11 +112,11 @@ export const OptimalStockPeriodSection: React.FC = () => {
         <div className="flex items-start gap-4">
           <IconTile icon={<Package size={22} />} tone="brand" size="lg" />
           <div className="flex-1 min-w-0">
-            <h3 className="text-[22px] font-extrabold text-ink tracking-tight leading-tight">적정재고 설정</h3>
-            <p className="text-[17px] text-ink-soft mt-2 leading-relaxed">
+            <h3 className="text-[24px] font-extrabold text-ink tracking-tight leading-tight">적정재고 설정</h3>
+            <p className="text-[19px] text-ink-soft mt-2 leading-relaxed">
               <strong className="text-ink">계산법</strong> · <em className="text-brand-deep font-semibold not-italic">N일 판매량 합계</em> = 적정재고
               <br />
-              <span className="text-[15px]">발주필요·저재고 판정 · 진열 표시 · 자동 발주 계산 등 · 모든 소비처에 적용</span>
+              <span className="text-[17px]">발주필요·저재고 판정 · 진열 표시 · 자동 발주 계산 등 · 모든 소비처에 적용</span>
             </p>
           </div>
           {saveState === "saving" && <StatusPill tone="zinc" size="sm">저장 중...</StatusPill>}
@@ -126,12 +126,12 @@ export const OptimalStockPeriodSection: React.FC = () => {
 
         {/* 계산 방식 · segmented pill */}
         <div className="flex flex-col gap-3">
-          <div className="text-[16px] font-bold text-ink tracking-tight">계산 방식</div>
+          <div className="text-[18px] font-bold text-ink tracking-tight">계산 방식</div>
           <div className="inline-flex bg-zinc-100 border border-line rounded-xl p-1.5 gap-1 self-start">
             <button
               type="button"
               onClick={() => setMode("today")}
-              className={`inline-flex items-center gap-2 h-11 px-4 rounded-lg text-[16px] font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-2 h-11 px-4 rounded-lg text-[18px] font-bold transition-all cursor-pointer ${
                 mode === "today"
                   ? "bg-white text-brand-deep shadow-sm ring-1 ring-brand-deep/10"
                   : "text-ink-soft hover:text-ink"
@@ -143,7 +143,7 @@ export const OptimalStockPeriodSection: React.FC = () => {
             <button
               type="button"
               onClick={() => setMode("range")}
-              className={`inline-flex items-center gap-2 h-11 px-4 rounded-lg text-[16px] font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-2 h-11 px-4 rounded-lg text-[18px] font-bold transition-all cursor-pointer ${
                 mode === "range"
                   ? "bg-white text-brand-deep shadow-sm ring-1 ring-brand-deep/10"
                   : "text-ink-soft hover:text-ink"
@@ -159,7 +159,7 @@ export const OptimalStockPeriodSection: React.FC = () => {
         <div className="rounded-xl border-2 border-brand-deep/10 bg-brand-tint/20 p-5">
           {mode === "today" ? (
             <div className="flex items-center gap-4 flex-wrap">
-              <label htmlFor="optimal-stock-days" className="text-[17px] font-bold text-ink">기준 일수</label>
+              <label htmlFor="optimal-stock-days" className="text-[19px] font-bold text-ink">기준 일수</label>
               <input
                 id="optimal-stock-days"
                 type="number"
@@ -171,24 +171,24 @@ export const OptimalStockPeriodSection: React.FC = () => {
                 onBlur={commit}
                 onKeyDown={handleKeyDown}
                 disabled={!loaded}
-                className="w-28 h-12 px-3 text-[22px] font-extrabold text-brand-deep text-right border-2 border-line rounded-xl bg-white focus:outline-none focus:ring-4 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums shadow-sm"
+                className="w-28 h-12 px-3 text-[24px] font-extrabold text-brand-deep text-right border-2 border-line rounded-xl bg-white focus:outline-none focus:ring-4 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums shadow-sm"
               />
-              <span className="text-[19px] font-bold text-ink">일</span>
-              <span className="text-[14px] text-zinc-500 ml-2">(범위 {MIN_DAYS} ~ {MAX_DAYS}일 · 기본 {DEFAULT_DAYS}일)</span>
+              <span className="text-[21px] font-bold text-ink">일</span>
+              <span className="text-[16px] text-zinc-500 ml-2">(범위 {MIN_DAYS} ~ {MAX_DAYS}일 · 기본 {DEFAULT_DAYS}일)</span>
             </div>
           ) : (
             <div className="flex items-center gap-3 flex-wrap">
-              <label htmlFor="optimal-stock-fromdate" className="text-[17px] font-bold text-ink">시작</label>
+              <label htmlFor="optimal-stock-fromdate" className="text-[19px] font-bold text-ink">시작</label>
               <input
                 id="optimal-stock-fromdate"
                 type="date"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
                 max={toDate}
-                className="h-12 px-3 text-[17px] font-semibold text-ink border-2 border-line rounded-xl bg-white focus:outline-none focus:ring-4 focus:ring-brand-tint focus:border-brand-deep tabular-nums shadow-sm"
+                className="h-12 px-3 text-[19px] font-semibold text-ink border-2 border-line rounded-xl bg-white focus:outline-none focus:ring-4 focus:ring-brand-tint focus:border-brand-deep tabular-nums shadow-sm"
               />
-              <span className="text-[19px] text-zinc-400 font-bold">~</span>
-              <label htmlFor="optimal-stock-todate" className="text-[17px] font-bold text-ink">끝</label>
+              <span className="text-[21px] text-zinc-400 font-bold">~</span>
+              <label htmlFor="optimal-stock-todate" className="text-[19px] font-bold text-ink">끝</label>
               <input
                 id="optimal-stock-todate"
                 type="date"
@@ -196,15 +196,15 @@ export const OptimalStockPeriodSection: React.FC = () => {
                 onChange={(e) => setToDate(e.target.value)}
                 min={fromDate}
                 max={new Date().toISOString().slice(0, 10)}
-                className="h-12 px-3 text-[17px] font-semibold text-ink border-2 border-line rounded-xl bg-white focus:outline-none focus:ring-4 focus:ring-brand-tint focus:border-brand-deep tabular-nums shadow-sm"
+                className="h-12 px-3 text-[19px] font-semibold text-ink border-2 border-line rounded-xl bg-white focus:outline-none focus:ring-4 focus:ring-brand-tint focus:border-brand-deep tabular-nums shadow-sm"
               />
-              <span className="text-[14px] text-zinc-500 ml-1">기간 내 판매량 합산</span>
+              <span className="text-[16px] text-zinc-500 ml-1">기간 내 판매량 합산</span>
             </div>
           )}
         </div>
 
         {/* 예시 힌트 · 카드형 · 개선된 가독성 */}
-        <div className="text-[15px] text-ink-soft bg-zinc-50/70 border border-line rounded-xl px-5 py-4 leading-relaxed">
+        <div className="text-[17px] text-ink-soft bg-zinc-50/70 border border-line rounded-xl px-5 py-4 leading-relaxed">
           <div className="mb-1"><b className="text-ink">💡 예시</b> · 30일 · 최근 30일 판매량 30개 → <b className="text-brand-deep">적정재고 30개</b></div>
           <div className="mb-1"><b className="text-emerald-700">✔ 짧게</b> (7~14일) · 빠른 회전 · 소진 위험 · 잦은 발주</div>
           <div><b className="text-amber-700">⚠ 길게</b> (60~90일) · 안전 재고 · 재고 부담 · 자본 부담</div>
@@ -213,15 +213,15 @@ export const OptimalStockPeriodSection: React.FC = () => {
         {/* 재계산 CTA · 강조 · gradient · 큰 버튼 */}
         <div className="flex items-center gap-4 p-5 bg-gradient-to-br from-amber-50 via-white to-amber-50/50 border-2 border-amber-200 rounded-xl">
           <div className="w-11 h-11 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
-            <span className="text-[22px]">⚠</span>
+            <span className="text-[24px]">⚠</span>
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[17px] font-bold text-amber-900 leading-tight">기준 변경 후 · [재계산 실행] 필수</div>
-            <div className="text-[15px] text-amber-800 mt-1 leading-relaxed">
+            <div className="text-[19px] font-bold text-amber-900 leading-tight">기준 변경 후 · [재계산 실행] 필수</div>
+            <div className="text-[17px] text-amber-800 mt-1 leading-relaxed">
               KV 저장은 즉시 · 실제 <b>products.optimal_stock</b> 컬럼은 자동으로 안 바뀝니다.
             </div>
             {lastResult && (
-              <div className="text-[14px] font-semibold text-amber-900 mt-2 leading-relaxed">
+              <div className="text-[16px] font-semibold text-amber-900 mt-2 leading-relaxed">
                 마지막 · <span className="text-emerald-700">{lastResult.updated}건 업데이트</span>
                 {lastResult.failed ? <span className="ml-2 text-rose-600">({lastResult.failed}건 실패)</span> : null}
                 {lastResult.productsWithSales != null && <span className="ml-2 text-zinc-600">· 판매 {lastResult.productsWithSales}종</span>}
@@ -235,7 +235,7 @@ export const OptimalStockPeriodSection: React.FC = () => {
             type="button"
             onClick={runRecalc}
             disabled={recalcing || !loaded}
-            className="inline-flex items-center gap-2 h-12 px-6 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-[16px] font-extrabold shadow-md ring-2 ring-amber-300/40 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0 active:scale-[0.98]"
+            className="inline-flex items-center gap-2 h-12 px-6 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-[18px] font-extrabold shadow-md ring-2 ring-amber-300/40 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0 active:scale-[0.98]"
             title={`현재 ${inputValue}일 기준으로 재계산`}
           >
             {recalcing ? <Spinner size={16} tone="white" /> : <ArrowsClockwise size={19} weight="bold" />}

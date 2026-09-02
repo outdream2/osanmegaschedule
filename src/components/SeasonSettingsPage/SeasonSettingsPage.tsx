@@ -51,7 +51,7 @@ const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
             tone="danger"
             description="이 페이지는 관리자(lv 9) 전용입니다."
           >
-            <div className="text-[14px] text-zinc-500 text-center py-4">
+            <div className="text-[16px] text-zinc-500 text-center py-4">
               관리자 계정으로 로그인 후 · 다시 시도해주세요.
             </div>
           </SectionCard>
@@ -76,8 +76,8 @@ const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
           >
             <div className="h-1 bg-gradient-to-r from-brand-deep via-emerald-500 to-teal-500" />
             <div className="p-5">
-              <h3 className="text-[19px] font-extrabold text-ink tracking-tight leading-tight mb-1">재고·판매 필터</h3>
-              <p className="text-[14px] text-ink-soft leading-relaxed mb-4">
+              <h3 className="text-[21px] font-extrabold text-ink tracking-tight leading-tight mb-1">재고·판매 필터</h3>
+              <p className="text-[16px] text-ink-soft leading-relaxed mb-4">
                 적정재고 산정 기간 · 판매중 상품 필터 · 통합 관리
               </p>
               <div className="flex flex-col gap-4">
