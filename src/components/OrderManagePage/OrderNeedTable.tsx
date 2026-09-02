@@ -262,7 +262,7 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                           }}
                           min={1}
                           size="sm"
-                          className="w-[104px]"
+                          className="w-[84px]"
                         />
                       </div>
                     </td>

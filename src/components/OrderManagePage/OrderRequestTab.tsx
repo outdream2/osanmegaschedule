@@ -450,7 +450,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                           }}
                                           min={0}
                                           size="sm"
-                                          className="w-[104px]"
+                                          className="w-[84px]"
                                         />
                                       </div>
                                     </td>
