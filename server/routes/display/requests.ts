@@ -684,9 +684,43 @@ router.post("/api/order-requests/bulk-send", authorize(3), validateBody(BulkSend
           { request_ids: requestIds.map(String) },
         );
         if (rpcErr) {
-          // RPC 미존재(마이그레이션 미실행) 시 · 조용히 경고 후 skip
+          // RPC 미존재(마이그레이션 미실행) 시 · fallback · 직접 UPDATE (2026-09-02 · #77 fix)
+          //   · 사용자 리포트 · 발주 발송 후 발주이력 안 나옴 · status='ordered' 업데이트 실패 원인
+          //   · fallback · 모든 request_id 에 대해 status='ordered' + sent_at=now UPDATE
           if (/function|does not exist|routine/i.test(rpcErr.message)) {
-            console.warn(`[bulk-send] bulk_send_order_requests RPC 미존재 · 마이그레이션 필요 (${rpcErr.message})`);
+            console.warn(`[bulk-send] bulk_send_order_requests RPC 미존재 · fallback UPDATE 실행 (${rpcErr.message})`);
+            const idStrs = requestIds.map(String);
+            const { error: updErr } = await supabase
+              .from("order_requests")
+              .update({ status: "ordered", sent_at: now })
+              .in("id", idStrs);
+            if (updErr && !/column|does not exist/i.test(updErr.message)) {
+              console.error(`[bulk-send] fallback UPDATE 실패 (${supName}): ${updErr.message}`);
+            } else {
+              // 아이템별 order_qty·unit_price 및 공통 메타 · 개별 UPDATE
+              for (const it of items) {
+                if (it.order_request_id == null) continue;
+                const { error: metaErr } = await supabase
+                  .from("order_requests")
+                  .update({
+                    order_number,
+                    supplier: supName,
+                    supplier_contact: targetName,
+                    supplier_email: targetEmail,
+                    supplier_phone: targetPhone,
+                    order_date: order_date ?? now.slice(0, 10),
+                    desired_arrival: desired_arrival ?? null,
+                    memo: memo ?? null,
+                    order_qty: it.order_qty ?? null,
+                    unit_price: it.unit_price ?? null,
+                  })
+                  .eq("id", it.order_request_id);
+                if (metaErr && !/column|does not exist/i.test(metaErr.message)) {
+                  console.warn(`[bulk-send] fallback 메타 UPDATE 실패 (id=${it.order_request_id}): ${metaErr.message}`);
+                }
+              }
+              console.log(`[bulk-send] fallback UPDATE 완료 (${supName}) · ${idStrs.length}건 status=ordered + 메타`);
+            }
           } else {
             console.error(`[bulk-send] RPC 오류 (${supName}): ${rpcErr.message}`);
             throw new HttpError(500, `발주 상태 업데이트 실패: ${rpcErr.message}`);
