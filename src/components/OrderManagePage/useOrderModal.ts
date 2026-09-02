@@ -172,16 +172,43 @@ export function useOrderModal({
           return `  · ${r.supplier} (#${r.order_number})${r.error ? ` · ${r.error}` : ""}${r.outcomes.length > 0 ? ` · ${r.outcomes.join(", ")}` : ""}`;
         })] : []),
       ].join("\n");
-      // 2026-09-02 · 한달전 로직 복원 · 이메일/연락처 없음 dialog 재활성
-      //   · 실제 :sent 있으면 성공 · 없으면 · 저장만 되고 발송 안 됨
-      //   · no_recipient (이메일/전화번호 없음) · 성공/실패 무관 · 항상 안내 dialog
-      //   · no_env · SMTP/카톡 환경 미설정 · warning toast (개발중 안내)
+      // 2026-09-02 · 사용자 지시 · 채널별 성공/실패 명시 · 카톡만 선택 시 · no_recipient 도 실패로 표시
+      //   · anyRealSent · 하나라도 :sent · 실제 발송 성공
+      //   · anyNoEnv · SMTP/SolAPI 등 환경 미설정
+      //   · anyNoRecipient · 수신처 (이메일/전화) 없음
+      //   · 실 발송 없으면 · 항상 warning (원인 명시)
       const anyRealSent = results.some(r => r.outcomes.some(o => /:sent(\s|$)/.test(o)));
-      const anyNoEnv = results.some(r => r.outcomes.some(o => /no_env|skipped\(.*not-installed/.test(o)));
-      if (!anyRealSent && anyNoEnv) {
-        showError(`발주서 저장 완료 · ⚠ 이메일/카카오/문자 환경 미설정 (개발중 · 실제 발송 X · 관리자 문의)\n\n${summaryLines}`);
+      const anyNoEnv = results.some(r => r.outcomes.some(o => /no_env|no_smtp_env|no_gateway_env|not-installed/.test(o)));
+      const anyNoRecipient = results.some(r => r.outcomes.some(o => /no_recipient/.test(o)));
+      // 채널별 상태 · 이모지로 명시
+      const channelStatus: string[] = [];
+      if (orderModal.channels.email) {
+        const sent = results.some(r => r.outcomes.some(o => /^email:sent/.test(o)));
+        const noRcpt = results.some(r => r.outcomes.some(o => /email:no_recipient/.test(o)));
+        const noEnv = results.some(r => r.outcomes.some(o => /email:(no_smtp_env|skipped)/.test(o)));
+        channelStatus.push(`이메일 ${sent ? "✅ 발송" : noRcpt ? "❌ 이메일 주소 없음" : noEnv ? "⚠ SMTP 미설정" : "❌ 실패"}`);
+      }
+      if (orderModal.channels.sms) {
+        const sent = results.some(r => r.outcomes.some(o => /^sms:sent/.test(o)));
+        const noRcpt = results.some(r => r.outcomes.some(o => /sms:no_recipient/.test(o)));
+        const noEnv = results.some(r => r.outcomes.some(o => /sms:(no_gateway_env|skipped)/.test(o)));
+        channelStatus.push(`문자 ${sent ? "✅ 발송" : noRcpt ? "❌ 전화번호 없음" : noEnv ? "⚠ 문자 gateway 미설정" : "❌ 실패"}`);
+      }
+      if (orderModal.channels.kakao) {
+        const sent = results.some(r => r.outcomes.some(o => /^kakao:sent/.test(o)));
+        const noRcpt = results.some(r => r.outcomes.some(o => /kakao:no_recipient/.test(o)));
+        const noEnv = results.some(r => r.outcomes.some(o => /kakao:(no_env|no_template|skipped)/.test(o)));
+        channelStatus.push(`카톡 ${sent ? "✅ 발송" : noRcpt ? "❌ 전화번호 없음" : noEnv ? "⚠ 카카오 미설정" : "❌ 실패"}`);
+      }
+      const channelSummary = channelStatus.join(" · ");
+      if (!anyRealSent) {
+        const reason = anyNoRecipient && anyNoEnv ? "수신처 없음 + 환경 미설정"
+                     : anyNoRecipient ? "수신처 (이메일·전화) 없음"
+                     : anyNoEnv ? "환경 미설정 (SMTP·카톡)"
+                     : "발송 실패";
+        showError(`❌ 발주서 저장 완료 · 실제 발송 X\n${channelSummary}\n(${reason})\n\n${summaryLines}`);
       } else {
-        showSuccess(`발주서 ${orderModal.suppliers.length}건 발송 결과\n\n${summaryLines}`);
+        showSuccess(`✅ 발주서 발송 완료\n${channelSummary}\n\n${summaryLines}`);
       }
       // 2026-09-02 · 한달전 로직 복원 · missingByReason · 성공/실패 무관 · 모든 결과 대상
       //   · 이전 · failed.filter(...) · realSent=true 시 절대 안 뜸 → 사용자 리포트
