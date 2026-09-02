@@ -108,8 +108,9 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
   storageKey,
   defaultWidth = 288,
   minWidth = 200,
-  // 2026-08-24 · 사용자 지시 · 최대 너비 확장 (640→1200) · 사이드바 앞 여백 · 넓은 화면 UX
-  maxWidth = 1200,
+  // 2026-09-02 · 사용자 지시 · 다시 확대 (1200→2400) · WQHD/4K 모니터 · 넓게 조정 가능
+  //   · 실제 드래그 시 viewport 기반 동적 clamp (하단 startResize) · 우측 최소 320px 보장
+  maxWidth = 2400,
   dividerColor = "indigo",
   left,
   right,
@@ -250,7 +251,10 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
 
     const onMove = (ev: MouseEvent) => {
       const delta = ev.clientX - startXRef.current;
-      const next = Math.max(minWidth, Math.min(maxWidth, startWRef.current + delta));
+      // 2026-09-02 · viewport 기반 동적 clamp · 우측 최소 320px 보장 · maxWidth 는 상한
+      const dynMax = Math.min(maxWidth, window.innerWidth - 320);
+      const eff = Math.max(minWidth, dynMax);
+      const next = Math.max(minWidth, Math.min(eff, startWRef.current + delta));
       setListWidth(next);
     };
     const onUp = () => {
