@@ -178,12 +178,12 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         <div>
           <label className="text-zinc-500 font-bold block mb-1">발주일자</label>
           <input type="date" value={orderModal.orderDate} onChange={e => onDateChange("orderDate", e.target.value)}
-            className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-brand-deep font-mono"/>
+            className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-brand-deep tabular-nums"/>
         </div>
         <div>
           <label className="text-zinc-500 font-bold block mb-1">희망 입고일</label>
           <input type="date" value={orderModal.desiredArrival} onChange={e => onDateChange("desiredArrival", e.target.value)}
-            className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-brand-deep font-mono"/>
+            className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-brand-deep tabular-nums"/>
         </div>
         <div className="col-span-2">
           <label className="text-zinc-500 font-bold block mb-1">수신처</label>
@@ -219,7 +219,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                         <div className="flex items-baseline gap-x-3 gap-y-1 flex-wrap">
                           <span className="text-[15px] font-bold text-sky-600 bg-white border border-sky-200 rounded-full px-2 py-0.5 shrink-0">공급사</span>
                           <span className="text-[16px] font-bold text-zinc-900">{s.supplier}</span>
-                          <span className="text-[15px] font-mono text-indigo-600 bg-white border border-indigo-200 rounded px-1.5 py-0.5 shrink-0">#{s.order_number}</span>
+                          <span className="text-[15px] tabular-nums text-indigo-600 bg-white border border-indigo-200 rounded px-1.5 py-0.5 shrink-0">#{s.order_number}</span>
                           {s.supplier_contact && (
                             <span className="text-[15px] font-semibold text-zinc-700">👤 {s.supplier_contact}</span>
                           )}
@@ -241,21 +241,21 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                       <tr key={it.order_request_id} className="hover:bg-zinc-50/70 border-b border-zinc-100">
                         <td className="p-2 text-center text-zinc-400 font-bold">{iIdx + 1}</td>
                         <td className="p-2 leading-tight">
-                          <div className="font-mono text-[14px] text-zinc-400">{it.product_code}</div>
+                          <div className="tabular-nums text-[14px] text-zinc-400">{it.product_code}</div>
                           <div className="font-bold text-zinc-800 break-words whitespace-normal">{it.product_name}</div>
                         </td>
                         <td className="p-2 text-right">
                           <input type="number" min={1} value={it.order_qty}
                             onChange={e => onUpdateModalItem(sIdx, iIdx, { order_qty: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-16 border border-line rounded px-1.5 py-0.5 text-right font-mono font-bold text-red-600 focus:outline-none focus:border-brand-deep"/>
+                            className="w-16 border border-line rounded px-1.5 py-0.5 text-right tabular-nums font-bold text-red-600 focus:outline-none focus:border-brand-deep"/>
                         </td>
                         <td className="p-2 text-right">
                           <input type="number" min={0} value={it.unit_price ?? ""}
                             onChange={e => onUpdateModalItem(sIdx, iIdx, { unit_price: e.target.value === "" ? null : Number(e.target.value) })}
                             placeholder={it.prev_unit_price != null ? String(it.prev_unit_price) : "0"}
-                            className="w-24 border border-line rounded px-1.5 py-0.5 text-right font-mono focus:outline-none focus:border-brand-deep"/>
+                            className="w-24 border border-line rounded px-1.5 py-0.5 text-right tabular-nums focus:outline-none focus:border-brand-deep"/>
                         </td>
-                        <td className="p-2 text-right font-mono font-bold text-emerald-700">
+                        <td className="p-2 text-right tabular-nums font-bold text-emerald-700">
                           {it.unit_price ? (it.order_qty * it.unit_price).toLocaleString() + "원" : "-"}
                         </td>
                         <td className="p-2">
@@ -268,9 +268,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                     ))}
                     <tr className="bg-zinc-50 border-b-2 border-zinc-300 font-bold text-[15px]">
                       <td colSpan={3} className="p-2 text-right text-zinc-500 uppercase">{s.supplier} 소계</td>
-                      <td className="p-2 text-right text-red-600 font-mono">{totalQty}개</td>
+                      <td className="p-2 text-right text-red-600 tabular-nums">{totalQty}개</td>
                       <td></td>
-                      <td className="p-2 text-right text-emerald-700 font-mono">{totalAmount > 0 ? totalAmount.toLocaleString() + "원" : "-"}</td>
+                      <td className="p-2 text-right text-emerald-700 tabular-nums">{totalAmount > 0 ? totalAmount.toLocaleString() + "원" : "-"}</td>
                     </tr>
                   </React.Fragment>
                 );

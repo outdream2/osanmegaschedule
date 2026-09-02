@@ -58,7 +58,7 @@ export const SearchInsights: React.FC<SearchInsightsProps> = ({
                     {emp.workplace || "매장"}
                   </span>
                 </div>
-                <span className="text-[10px] font-mono text-zinc-400">입사일: {emp.hireDate ? emp.hireDate.split("-").slice(1).join("/") : "-"}</span>
+                <span className="text-[10px] tabular-nums text-zinc-400">입사일: {emp.hireDate ? emp.hireDate.split("-").slice(1).join("/") : "-"}</span>
               </div>
 
               <div className="space-y-1.5">

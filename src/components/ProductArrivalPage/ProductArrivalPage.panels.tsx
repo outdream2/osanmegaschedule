@@ -327,7 +327,7 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
                               const arrivalNo = arrivalNoMap.get(a.id) ?? String(a.id);
                               return (
                                 <tr key={a.id} className={`transition ${isSelected ? "bg-indigo-50/60" : "hover:bg-white"}`}>
-                                  <td className="px-3 py-1.5 text-indigo-700 font-mono font-bold tabular-nums text-[13px]">{arrivalNo}</td>
+                                  <td className="px-3 py-1.5 text-indigo-700 font-bold tabular-nums text-[13px]">{arrivalNo}</td>
                                   <td className="px-3 py-1.5 text-zinc-700 tabular-nums font-semibold">{dateStr}</td>
                                   <td className="px-3 py-1.5 text-zinc-600">{a.checked_by ?? "-"}</td>
                                   <td className="px-3 py-1.5 text-right text-zinc-800 font-bold tabular-nums">{a.total_items}</td>

@@ -167,7 +167,7 @@ export const LedgerTab: React.FC<{
                       ? <ChevronDown size={13} className="text-emerald-500 mx-auto" />
                       : <ChevronRight size={13} className="text-zinc-400 mx-auto" />}
                   </td>
-                  <td className="px-3 py-2 font-mono text-[15px] font-semibold text-zinc-700 whitespace-nowrap">
+                  <td className="px-3 py-2 tabular-nums text-[15px] font-semibold text-zinc-700 whitespace-nowrap">
                     {/* 2026-08-06 · T-TEST-매입이력-날짜포맷 · 2026 줄바꿈 7/20 */}
                     {(() => {
                       const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(g.date);
@@ -187,10 +187,10 @@ export const LedgerTab: React.FC<{
                       <span className="ml-1 text-[17px] text-zinc-500 font-semibold">외 {g.itemCount - 1}건</span>
                     )}
                   </td>
-                  <td className="text-right px-3 py-2 tabular-nums font-mono text-[17px] text-zinc-600 whitespace-nowrap">
+                  <td className="text-right px-3 py-2 tabular-nums text-[17px] text-zinc-600 whitespace-nowrap">
                     {fmt(g.itemCount)}
                   </td>
-                  <td className="text-right px-3 py-2 tabular-nums font-mono font-bold text-emerald-700 whitespace-nowrap">
+                  <td className="text-right px-3 py-2 tabular-nums font-bold text-emerald-700 whitespace-nowrap">
                     {g.totalAmount > 0 ? fmt(g.totalAmount) : "-"}
                   </td>
                 </tr>
@@ -227,13 +227,13 @@ export const LedgerTab: React.FC<{
                                       <div className="text-[16px] font-mono text-zinc-400 tabular-nums">{it.product_code}</div>
                                     )}
                                   </td>
-                                  <td className="text-right px-2 py-1 font-mono font-bold text-zinc-800 tabular-nums align-top">
+                                  <td className="text-right px-2 py-1 font-bold text-zinc-800 tabular-nums align-top">
                                     {Number(it.quantity ?? 0) !== 0 ? fmt(Number(it.quantity ?? 0)) : "-"}
                                   </td>
-                                  <td className="text-right px-2 py-1 font-mono text-zinc-500 tabular-nums align-top">
+                                  <td className="text-right px-2 py-1 text-zinc-500 tabular-nums align-top">
                                     {Number(it.unit_price ?? 0) > 0 ? fmt(Number(it.unit_price ?? 0)) : "-"}
                                   </td>
-                                  <td className="text-right px-2 py-1 font-mono font-bold text-emerald-700 tabular-nums align-top">
+                                  <td className="text-right px-2 py-1 font-bold text-emerald-700 tabular-nums align-top">
                                     {Number(it.amount ?? 0) > 0 ? fmt(Number(it.amount ?? 0)) : "-"}
                                   </td>
                                 </tr>
@@ -264,10 +264,10 @@ export const LedgerTab: React.FC<{
             <td colSpan={2} className="px-3 py-2 text-right text-[17px] font-bold text-zinc-500">
               합계 <span className="text-zinc-400 font-bold">({groups.length}일)</span>
             </td>
-            <td className={`px-3 py-2 text-right tabular-nums font-mono text-[15px] font-bold text-zinc-700 ${sumCollapsed ? "opacity-30" : ""}`}>
+            <td className={`px-3 py-2 text-right tabular-nums text-[15px] font-bold text-zinc-700 ${sumCollapsed ? "opacity-30" : ""}`}>
               {sumCollapsed ? "···" : fmt(totalItems)}
             </td>
-            <td className={`px-3 py-2 text-right tabular-nums font-mono text-[16px] font-bold text-emerald-700 ${sumCollapsed ? "opacity-30" : ""}`}>
+            <td className={`px-3 py-2 text-right tabular-nums text-[16px] font-bold text-emerald-700 ${sumCollapsed ? "opacity-30" : ""}`}>
               {sumCollapsed ? "···" : fmtWon(totalAmount)}
             </td>
           </tr>

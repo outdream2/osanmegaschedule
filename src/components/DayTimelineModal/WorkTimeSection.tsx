@@ -193,7 +193,7 @@ export const WorkTimeSection: React.FC<WorkTimeSectionProps> = ({
                               if (e.key === "Escape") setEditingWork(null);
                             }}
                             placeholder="09:00-18:00"
-                            className="text-[12px] font-mono border border-line rounded px-1 py-0 w-[70px] bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors"
+                            className="text-[12px] tabular-nums border border-line rounded px-1 py-0 w-[70px] bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors"
                           />
                           <button className="text-[11px] text-indigo-500 hover:text-indigo-700 cursor-pointer font-bold"
                             onClick={async e => { e.stopPropagation(); await onUpdateSchedule?.({ employeeId: emp.id, date, type: schedule.type, workingHours: editingWork.value, actualHours: schedule.actualHours || "", memo: schedule.memo || "" }); setEditingWork(null); }}>✓</button>
@@ -204,7 +204,7 @@ export const WorkTimeSection: React.FC<WorkTimeSectionProps> = ({
                     }
                     return displayHours ? (
                       <span
-                        className={`text-[12px] font-mono leading-none cursor-pointer hover:text-indigo-600 hover:underline ${onUpdateSchedule ? "text-zinc-400" : "text-zinc-300"}`}
+                        className={`text-[12px] tabular-nums leading-none cursor-pointer hover:text-indigo-600 hover:underline ${onUpdateSchedule ? "text-zinc-400" : "text-zinc-300"}`}
                         onClick={e => { if (!onUpdateSchedule) return; e.stopPropagation(); setEditingWork({ empId: emp.id, value: displayHours }); }}
                         title={onUpdateSchedule ? "클릭해서 근무시간 편집" : undefined}
                       >{displayHours}</span>

@@ -220,7 +220,7 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
             반품 요청서
             <StatusPill tone="rose" size="sm" dot>반품 예정 · {lines.length}건</StatusPill>
           </div>
-          <div className="text-[13px] font-mono text-ink-soft mt-0.5 truncate">#{returnNumber}</div>
+          <div className="text-[13px] tabular-nums text-ink-soft mt-0.5 truncate">#{returnNumber}</div>
         </div>
       }
       headerRight={
@@ -241,12 +241,12 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
           <div>
             <label className="text-zinc-500 font-bold block mb-1">반품 요청일</label>
             <input type="date" value={requestDate} onChange={e => setRequestDate(e.target.value)}
-              className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-brand-deep font-mono"/>
+              className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-brand-deep tabular-nums"/>
           </div>
           <div>
             <label className="text-zinc-500 font-bold block mb-1">반품 예정일</label>
             <input type="date" value={expectedDate} onChange={e => setExpectedDate(e.target.value)}
-              className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-brand-deep font-mono"/>
+              className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-brand-deep tabular-nums"/>
           </div>
           <div>
             <label className="text-zinc-500 font-bold block mb-1">반품 사유</label>
@@ -288,7 +288,7 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
                 <span className="text-[14px] font-bold text-rose-600 bg-white border border-rose-200 rounded-full px-2 py-0.5 shrink-0">반품 요청서</span>
                 <span className="text-sm font-bold text-zinc-900 truncate">{supplierName || "(공급사 미지정)"}</span>
                 {vendorCategory && <VendorCategoryBadge category={vendorCategory} />}
-                <span className="text-[14px] font-mono text-rose-600 bg-white border border-rose-200 rounded px-1.5 py-0.5 shrink-0">#{returnNumber}</span>
+                <span className="text-[14px] tabular-nums text-rose-600 bg-white border border-rose-200 rounded px-1.5 py-0.5 shrink-0">#{returnNumber}</span>
               </div>
               <div className="flex items-center gap-3 text-[14px] font-semibold text-zinc-500 flex-wrap">
                 {supplierInfo?.contact_name && <span>👤 {supplierInfo.contact_name}</span>}
@@ -301,12 +301,12 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
             <div className="px-4 py-3 bg-zinc-50/60 border-b border-line grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="bg-white rounded-lg border border-rose-200 p-2.5">
                 <div className="text-[15px] font-bold text-rose-500 uppercase tracking-widest mb-1">이번 반품 예상 금액</div>
-                <div className="text-lg font-bold text-rose-700 font-mono">{totalAmount > 0 ? totalAmount.toLocaleString() + "원" : "-"}</div>
+                <div className="text-lg font-bold text-rose-700 tabular-nums">{totalAmount > 0 ? totalAmount.toLocaleString() + "원" : "-"}</div>
                 <div className="text-[15px] text-zinc-400 mt-0.5">반품수량 × 매입가 합계</div>
               </div>
               <div className="bg-white rounded-lg border border-amber-200 p-2.5">
                 <div className="text-[15px] font-bold text-amber-500 uppercase tracking-widest mb-1">총 반품 수량</div>
-                <div className="text-lg font-bold text-amber-700 font-mono">{totalQty > 0 ? `${totalQty.toLocaleString()}개` : "-"}</div>
+                <div className="text-lg font-bold text-amber-700 tabular-nums">{totalQty > 0 ? `${totalQty.toLocaleString()}개` : "-"}</div>
                 <div className="text-[15px] text-zinc-400 mt-0.5">라인 {lines.length}건</div>
               </div>
             </div>
@@ -333,9 +333,9 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
                   return (
                     <tr key={`${r.product_code}-${iIdx}`} className="hover:bg-rose-50/40">
                       <td className="p-2 text-center text-zinc-400 font-bold tabular-nums">{iIdx + 1}</td>
-                      <td className="p-2 font-mono text-[14px] text-zinc-400 tabular-nums">{r.product_code}</td>
+                      <td className="p-2 tabular-nums text-[14px] text-zinc-400">{r.product_code}</td>
                       <td className="p-2 font-bold text-zinc-800 truncate max-w-[220px]">{r.product_name}</td>
-                      <td className="p-2 text-right font-mono text-zinc-600 tabular-nums">
+                      <td className="p-2 text-right text-zinc-600 tabular-nums">
                         {r.current_stock.toLocaleString()}
                         {r.actual_stock != null && r.actual_stock !== r.current_stock && (
                           <span className="block text-[15px] text-amber-600 font-normal leading-none mt-0.5">실 {r.actual_stock}</span>
@@ -345,7 +345,7 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
                         <input
                           type="number" min={1} max={r.current_stock} value={r.return_qty}
                           onChange={e => updateLine(iIdx, { return_qty: Math.max(0, Number(e.target.value) || 0) })}
-                          className={`w-16 border rounded px-1.5 py-0.5 text-right font-mono font-bold focus:outline-none focus:border-brand-deep tabular-nums ${overStock ? "border-red-400 text-red-600 bg-red-50" : "border-line text-rose-600"}`}
+                          className={`w-16 border rounded px-1.5 py-0.5 text-right font-bold focus:outline-none focus:border-brand-deep tabular-nums ${overStock ? "border-red-400 text-red-600 bg-red-50" : "border-line text-rose-600"}`}
                           title={overStock ? "현재고를 초과합니다" : undefined}
                         />
                       </td>
@@ -354,10 +354,10 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
                           type="number" min={0} value={r.purchase_price || ""}
                           onChange={e => updateLine(iIdx, { purchase_price: e.target.value === "" ? 0 : Number(e.target.value) })}
                           placeholder="0"
-                          className="w-20 border border-line rounded px-1.5 py-0.5 text-right font-mono focus:outline-none focus:border-brand-deep tabular-nums"
+                          className="w-20 border border-line rounded px-1.5 py-0.5 text-right focus:outline-none focus:border-brand-deep tabular-nums"
                         />
                       </td>
-                      <td className="p-2 text-right font-mono font-bold text-rose-700 tabular-nums">
+                      <td className="p-2 text-right font-bold text-rose-700 tabular-nums">
                         {amount > 0 ? `${amount.toLocaleString()}원` : "-"}
                       </td>
                       <td className="p-2">
@@ -383,9 +383,9 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
               <tfoot>
                 <tr className="bg-zinc-50 border-t-2 border-zinc-300 font-bold text-[14px]">
                   <td colSpan={4} className="p-2 text-right text-zinc-500 uppercase">소계</td>
-                  <td className="p-2 text-right text-rose-600 font-mono tabular-nums">{totalQty}개</td>
+                  <td className="p-2 text-right text-rose-600 tabular-nums">{totalQty}개</td>
                   <td colSpan={1}></td>
-                  <td className="p-2 text-right text-rose-700 font-mono tabular-nums">{totalAmount > 0 ? totalAmount.toLocaleString() + "원" : "-"}</td>
+                  <td className="p-2 text-right text-rose-700 tabular-nums">{totalAmount > 0 ? totalAmount.toLocaleString() + "원" : "-"}</td>
                   <td colSpan={2}></td>
                 </tr>
               </tfoot>

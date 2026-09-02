@@ -48,7 +48,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       ) : detailError ? (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
           <div className="font-bold mb-1">조회 실패</div>
-          <div className="text-[15px] font-mono">{detailError}</div>
+          <div className="text-[15px]">{detailError}</div>
         </div>
       ) : detailFull && detailProduct ? (
         <ProductInfoCard

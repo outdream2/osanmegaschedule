@@ -102,7 +102,7 @@ export const ScheduleTypesTab: React.FC<ScheduleTypesTabProps> = ({
             value={st[scheduleHourTab]}
             onChange={(e) => updateScheduleTypeEntry(idx, scheduleHourTab, e.target.value)}
             placeholder={scheduleHourTab === "hours" ? "예: 10:00-18:00" : "비워두면 기본값"}
-            className="w-full text-xs rounded border border-line focus:border-[#2563eb] p-1.5 font-mono bg-white focus:outline-none"
+            className="w-full text-xs rounded border border-line focus:border-[#2563eb] p-1.5 tabular-nums bg-white focus:outline-none"
           />
           <button
             type="button"

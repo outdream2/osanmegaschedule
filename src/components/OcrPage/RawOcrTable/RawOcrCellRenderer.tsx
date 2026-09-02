@@ -293,7 +293,7 @@ export const ExpiryCell: React.FC<{
           key={`edit-exp-${ri}-${ci}`} autoFocus type="text" placeholder="2026-12-31"
           size={Math.max(13, editingCellVal.length + 2)}
           style={{ width: `${Math.max(13, editingCellVal.length + 2)}ch`, minWidth: expInputMinW, maxWidth: "100%" }}
-          className="text-[11px] font-mono text-amber-700 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5 outline-none text-right"
+          className="text-[11px] tabular-nums text-amber-700 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5 outline-none text-right"
           value={editingCellVal}
           onChange={e => setEditingCellVal(e.target.value)}
           onKeyDown={e => {

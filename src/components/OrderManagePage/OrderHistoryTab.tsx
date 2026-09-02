@@ -265,7 +265,7 @@ export const OrderHistoryTab: React.FC = () => {
                       <ChevronRight size={16} className="text-zinc-300 shrink-0" />
                     )}
                     {/* 발주번호 */}
-                    <span className="text-[14px] font-mono font-bold text-sky-700 tabular-nums shrink-0">
+                    <span className="text-[14px] font-bold text-sky-700 tabular-nums shrink-0">
                       #{o.order_number ?? "—"}
                     </span>
                     {/* 공급사 · 2026-08-24 · v3 · sky-800 톤 통일 · truncate 제거 */}

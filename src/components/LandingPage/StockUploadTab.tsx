@@ -107,7 +107,7 @@ export const StockUploadTab: React.FC<StockUploadTabProps> = ({
             건 스냅샷 저장됨
           </p>
           {stockUploadResult.snapshot_date && (
-            <p className="text-[13px] text-gray-500">스냅샷일: <span className="font-mono font-bold text-gray-700">{stockUploadResult.snapshot_date}</span></p>
+            <p className="text-[13px] text-gray-500">스냅샷일: <span className="tabular-nums font-bold text-gray-700">{stockUploadResult.snapshot_date}</span></p>
           )}
           {(stockUploadResult.history ?? 0) < (stockUploadResult.total ?? 0) && (
             <p className="text-[12px] text-amber-600">일부 행 저장 실패 (서버 로그 확인 필요)</p>
@@ -122,12 +122,12 @@ export const StockUploadTab: React.FC<StockUploadTabProps> = ({
               <label className="flex flex-col gap-1">
                 <span className="text-[12px] font-bold text-gray-500">시작재고일</span>
                 <input type="date" value={stockStartDate} onChange={(e) => setStockStartDate(e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm font-mono border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep" />
+                  className="w-full px-2 py-1.5 text-sm tabular-nums border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep" />
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-[12px] font-bold text-gray-500">종료재고일</span>
                 <input type="date" value={stockEndDate} onChange={(e) => setStockEndDate(e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm font-mono border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep" />
+                  className="w-full px-2 py-1.5 text-sm tabular-nums border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep" />
               </label>
             </div>
             <div className="mt-2 flex items-center gap-2 flex-wrap text-[12px]">
@@ -184,10 +184,10 @@ export const StockUploadTab: React.FC<StockUploadTabProps> = ({
               return (
                 <div key={i} className="flex items-center justify-between gap-2 text-[13px] py-0.5">
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <span className="text-gray-500 font-mono shrink-0">
+                    <span className="text-gray-500 tabular-nums shrink-0">
                       {new Date(entry.timestamp).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                     </span>
-                    {rangeLabel && <span className="text-emerald-700 font-mono font-bold shrink-0" title={entry.start_date && entry.snapshot_date ? `재고기간 ${entry.start_date} ~ ${entry.snapshot_date}` : `스냅샷일 ${entry.snapshot_date}`}>{rangeLabel}</span>}
+                    {rangeLabel && <span className="text-emerald-700 tabular-nums font-bold shrink-0" title={entry.start_date && entry.snapshot_date ? `재고기간 ${entry.start_date} ~ ${entry.snapshot_date}` : `스냅샷일 ${entry.snapshot_date}`}>{rangeLabel}</span>}
                     {periodLabel && <span className={`text-[12px] font-bold rounded-full px-1.5 py-0.5 border shrink-0 ${periodChipClass}`}>{periodLabel}</span>}
                   </div>
                   <span className={`font-semibold shrink-0 ${i === 0 ? "text-indigo-600" : "text-gray-400"}`}>

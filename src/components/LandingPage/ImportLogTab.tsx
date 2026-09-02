@@ -135,10 +135,10 @@ export const ImportLogTab: React.FC<ImportLogTabProps> = ({
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           <input type="date" value={logFilter.from} onChange={e => setLogFilter(f => ({ ...f, from: e.target.value }))}
-            className="text-[13px] font-mono border border-line rounded-lg px-2 py-1 bg-white text-zinc-700" title="시작일" />
+            className="text-[13px] tabular-nums border border-line rounded-lg px-2 py-1 bg-white text-zinc-700" title="시작일" />
           <span className="text-[12px] text-zinc-400">~</span>
           <input type="date" value={logFilter.to} onChange={e => setLogFilter(f => ({ ...f, to: e.target.value }))}
-            className="text-[13px] font-mono border border-line rounded-lg px-2 py-1 bg-white text-zinc-700" title="종료일" />
+            className="text-[13px] tabular-nums border border-line rounded-lg px-2 py-1 bg-white text-zinc-700" title="종료일" />
           <input type="text" placeholder="검색 (기간·파일명)" value={logFilter.search} onChange={e => setLogFilter(f => ({ ...f, search: e.target.value }))}
             className="flex-1 min-w-[100px] text-[13px] border border-line rounded-lg px-2 py-1 bg-white text-zinc-700 placeholder:text-zinc-300" />
           {(logFilter.type !== "all" || logFilter.from || logFilter.to || logFilter.search) && (
@@ -174,7 +174,7 @@ export const ImportLogTab: React.FC<ImportLogTabProps> = ({
                         <td className="py-1.5 pl-4 pr-3"><span className="text-[12px] font-bold rounded-full px-1.5 py-0.5 border text-orange-700 bg-white border-orange-300">상품</span></td>
                         <td className="py-1.5 pr-3 text-gray-300">—</td>
                         <td className="py-1.5 pr-3 text-gray-300">—</td>
-                        <td className="py-1.5 pr-3 text-right text-gray-500 font-mono">{when}</td>
+                        <td className="py-1.5 pr-3 text-right text-gray-500 tabular-nums">{when}</td>
                         <td className="py-1.5 pr-4 text-right font-semibold text-orange-600">{entry.count.toLocaleString()}개</td>
                       </tr>
                     );
@@ -183,9 +183,9 @@ export const ImportLogTab: React.FC<ImportLogTabProps> = ({
                       return (
                         <tr key={`s-${i}`} className="hover:bg-indigo-50/40 transition">
                           <td className="py-1.5 pl-4 pr-3"><span className="text-[12px] font-bold rounded-full px-1.5 py-0.5 border text-indigo-700 bg-white border-indigo-300">재고</span></td>
-                          <td className="py-1.5 pr-3 text-sky-700 font-mono font-bold" title={entry.start_date ?? "미입력"}>{entry.start_date ?? <span className="text-gray-300">—</span>}</td>
-                          <td className="py-1.5 pr-3 text-emerald-700 font-mono font-bold" title={entry.snapshot_date ?? "미입력"}>{entry.snapshot_date ?? <span className="text-gray-300">—</span>}</td>
-                          <td className="py-1.5 pr-3 text-right text-gray-500 font-mono">{when}</td>
+                          <td className="py-1.5 pr-3 text-sky-700 tabular-nums font-bold" title={entry.start_date ?? "미입력"}>{entry.start_date ?? <span className="text-gray-300">—</span>}</td>
+                          <td className="py-1.5 pr-3 text-emerald-700 tabular-nums font-bold" title={entry.snapshot_date ?? "미입력"}>{entry.snapshot_date ?? <span className="text-gray-300">—</span>}</td>
+                          <td className="py-1.5 pr-3 text-right text-gray-500 tabular-nums">{when}</td>
                           <td className="py-1.5 pr-4 text-right font-semibold text-indigo-600">{stored.toLocaleString()}개{entry.total && entry.total !== stored && <span className="text-gray-300"> / {entry.total.toLocaleString()}</span>}</td>
                         </tr>
                       );
@@ -195,12 +195,12 @@ export const ImportLogTab: React.FC<ImportLogTabProps> = ({
                     return (
                       <tr key={`pu-${i}`} className="hover:bg-sky-50/40 transition">
                         <td className="py-1.5 pl-4 pr-3"><span className="text-[12px] font-bold rounded-full px-1.5 py-0.5 border text-sky-700 bg-white border-sky-300">매입</span></td>
-                        <td className="py-1.5 pr-3 text-sky-700 font-mono font-bold" title={startDisp}>{startDisp || <span className="text-gray-300">—</span>}</td>
-                        <td className="py-1.5 pr-3 text-emerald-700 font-mono font-bold" title={entry.endDate}>
+                        <td className="py-1.5 pr-3 text-sky-700 tabular-nums font-bold" title={startDisp}>{startDisp || <span className="text-gray-300">—</span>}</td>
+                        <td className="py-1.5 pr-3 text-emerald-700 tabular-nums font-bold" title={entry.endDate}>
                           {entry.endDate || <span className="text-gray-300">—</span>}
                           {periodLabel && <span className="ml-1 text-[11px] font-bold px-1 py-0.5 rounded-full border text-purple-700 bg-purple-50 border-purple-200">{periodLabel}</span>}
                         </td>
-                        <td className="py-1.5 pr-3 text-right text-gray-500 font-mono">{when}</td>
+                        <td className="py-1.5 pr-3 text-right text-gray-500 tabular-nums">{when}</td>
                         <td className="py-1.5 pr-4 text-right font-semibold text-sky-600">{entry.count.toLocaleString()}건</td>
                       </tr>
                     );

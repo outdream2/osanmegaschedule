@@ -589,7 +589,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                           <div key={t.value} className="flex items-center gap-2 text-[14px]">
                             <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: hex }} />
                             <span className="font-bold text-ink">{t.label}</span>
-                            <span className="font-mono text-ink-soft tabular-nums">{typeHoursMap[t.value]}</span>
+                            <span className="text-ink-soft tabular-nums">{typeHoursMap[t.value]}</span>
                           </div>
                         );
                       })}

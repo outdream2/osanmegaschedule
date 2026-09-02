@@ -174,7 +174,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           ) : (
             <Badge tone="zinc" size="xs">공급사 미지정</Badge>
           )}
-          <span className="ml-auto text-[12px] font-mono tabular-nums text-ink-soft">
+          <span className="ml-auto text-[12px] tabular-nums text-ink-soft">
             {arrivedAt}
           </span>
         </div>
@@ -245,7 +245,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
                     >
                       <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
                       {meta.label}
-                      {zone && <span className="text-[11px] font-mono opacity-70">·{zone}</span>}
+                      {zone && <span className="text-[11px] opacity-70">·{zone}</span>}
                       {isTarget && (
                         <span className="text-[10px] font-bold text-emerald-700 ml-0.5">+{item.qty}</span>
                       )}

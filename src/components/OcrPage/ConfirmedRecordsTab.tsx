@@ -327,7 +327,7 @@ export const ConfirmedRecordsTab: React.FC = () => {
                             title={groupAllSelected ? "이 명세서 해제" : "이 명세서 전체 선택"}
                           />
                         </td>
-                        <td className="px-3 py-2 text-gray-700 whitespace-nowrap font-mono text-[14px]">{g.invoiceDate}</td>
+                        <td className="px-3 py-2 text-gray-700 whitespace-nowrap tabular-nums text-[14px]">{g.invoiceDate}</td>
                         <td className="px-3 py-2 text-sky-700 font-bold whitespace-nowrap">{g.supplier}</td>
                         <td className="px-3 py-2 text-right text-gray-600 whitespace-nowrap tabular-nums">{g.count}건</td>
                         <td className="px-3 py-2 text-right font-bold text-amber-700 whitespace-nowrap tabular-nums">{fmtNum(g.total)}원</td>
@@ -357,12 +357,12 @@ export const ConfirmedRecordsTab: React.FC = () => {
                           <td colSpan={7} className="px-3 py-2">
                             {/* 명세서 메타 정보 요약 */}
                             <div className="flex flex-wrap items-center gap-3 pb-2 mb-2 border-b border-line text-[15px]">
-                              <span className="font-bold text-zinc-600">거래일 <span className="text-zinc-900 font-mono">{g.invoiceDate}</span></span>
+                              <span className="font-bold text-zinc-600">거래일 <span className="text-zinc-900 tabular-nums">{g.invoiceDate}</span></span>
                               <span className="font-bold text-zinc-600">공급사 <span className="text-sky-700">{g.supplier}</span></span>
                               <span className="font-bold text-zinc-600">품목 <span className="text-gray-800">{g.count}건</span></span>
                               <span className="font-bold text-zinc-600">합계 <span className="text-amber-700">{fmtNum(g.total)}원</span></span>
                               {g.records[0]?.saved_at && (
-                                <span className="font-bold text-zinc-500">저장일 <span className="text-zinc-700 font-mono">{g.records[0].saved_at.slice(0, 10)}</span></span>
+                                <span className="font-bold text-zinc-500">저장일 <span className="text-zinc-700 tabular-nums">{g.records[0].saved_at.slice(0, 10)}</span></span>
                               )}
                               {g.imageUrl && (
                                 <button type="button"
@@ -411,7 +411,7 @@ export const ConfirmedRecordsTab: React.FC = () => {
                                         </button>
                                       ) : fmtNum(x.balance)}
                                     </td>
-                                    <td className="px-2 py-1.5 text-gray-500 whitespace-nowrap text-[14px] font-mono">{x.expiry_date ?? ""}</td>
+                                    <td className="px-2 py-1.5 text-gray-500 whitespace-nowrap text-[14px] tabular-nums">{x.expiry_date ?? ""}</td>
                                     <td className="px-2 py-1.5 text-gray-500 text-[14px] break-words">{x.memo ?? ""}</td>
                                     <td className="px-2 py-1.5 text-right">
                                       <button onClick={() => handleDelete(x.id)} disabled={deletingId === x.id} className="p-1 text-gray-300 hover:text-rose-500 cursor-pointer disabled:opacity-40" title="삭제">

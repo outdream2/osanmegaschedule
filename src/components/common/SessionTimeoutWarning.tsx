@@ -88,7 +88,7 @@ export const SessionTimeoutWarning: React.FC<Props> = ({
         {/* Countdown */}
         <div className="flex items-center gap-1.5 mt-3">
           <Clock size={14} className={urgent ? "text-red-400" : "text-yellow-400"} />
-          <span className={`font-mono text-lg font-bold tabular-nums ${urgent ? "text-red-300" : "text-yellow-300"}`}>
+          <span className={`text-lg font-bold tabular-nums ${urgent ? "text-red-300" : "text-yellow-300"}`}>
             {formatTime(countdown)}
           </span>
           <span className="text-xs text-gray-400 ml-1">후 자동 로그아웃</span>

@@ -484,7 +484,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
         <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
           <Card padding="md" rounded="xl" className="text-sm text-red-700">
             <div className="font-bold mb-1">조회 실패</div>
-            <div className="text-[17px] font-mono">{orderPanelError}</div>
+            <div className="text-[17px]">{orderPanelError}</div>
           </Card>
         </div>
       ) : (

@@ -72,7 +72,7 @@ function getErpCellValue(
         text: erpMasterP != null && erpMasterP > 0
           ? <span className="inline-flex flex-col leading-tight items-center">
               <span className="text-[9px] text-violet-500 font-bold">ERP단가</span>
-              <span className="text-violet-800 font-mono font-bold">{fmt(erpMasterP)}</span>
+              <span className="text-violet-800 tabular-nums font-bold">{fmt(erpMasterP)}</span>
             </span>
           : dash,
         align: "center" as const,
@@ -103,7 +103,7 @@ function getErpCellValue(
         text: erpSaleP != null && erpSaleP > 0
           ? <span className="inline-flex flex-col leading-tight items-center">
               <span className="text-[9px] text-sky-500 font-bold">판매가</span>
-              <span className="text-sky-700 font-mono font-bold">{fmt(erpSaleP)}</span>
+              <span className="text-sky-700 tabular-nums font-bold">{fmt(erpSaleP)}</span>
             </span>
           : dash,
         align: "center" as const,

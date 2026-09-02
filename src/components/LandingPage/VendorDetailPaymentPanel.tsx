@@ -70,7 +70,7 @@ export const VendorDetailPaymentPanel: React.FC<Props> = ({
           {payMsg.text}
         </span>
       )}
-      <span className="ml-auto text-[13px] text-zinc-400 font-mono tabular-nums">
+      <span className="ml-auto text-[13px] text-zinc-400 tabular-nums">
         {ledgerRows.length} 원장 항목
       </span>
     </div>
@@ -100,13 +100,13 @@ export const VendorDetailPaymentPanel: React.FC<Props> = ({
               const paymentRow = isPay ? payments.find(p => p.id === r.id) : null;
               return (
                 <tr key={`${r.type}-${r.id}`} className="hover:bg-zinc-50/60 transition">
-                  <td className="px-3 py-1.5 font-mono text-[13px] text-zinc-500 whitespace-nowrap tabular-nums">
+                  <td className="px-3 py-1.5 text-[13px] text-zinc-500 whitespace-nowrap tabular-nums">
                     {String(r.date).slice(2)}
                   </td>
                   <td className="px-3 py-1.5">
                     <StatusPill tone={isPay ? "emerald" : "indigo"} size="xs">{isPay ? "결제" : "매입"}</StatusPill>
                   </td>
-                  <td className={`text-right px-3 py-1.5 font-mono font-bold whitespace-nowrap tabular-nums ${isPay ? "text-emerald-700" : "text-indigo-700"}`}>
+                  <td className={`text-right px-3 py-1.5 font-bold whitespace-nowrap tabular-nums ${isPay ? "text-emerald-700" : "text-indigo-700"}`}>
                     {isPay ? "-" : "+"}{Number(r.amount).toLocaleString()}
                   </td>
                   <td className="px-3 py-1.5 text-[13px] text-zinc-600">
@@ -118,7 +118,7 @@ export const VendorDetailPaymentPanel: React.FC<Props> = ({
                       <span className="ml-1 text-[12px] font-bold text-emerald-600">· {paymentRow.allocations.length}건 매칭</span>
                     )}
                   </td>
-                  <td className={`text-right px-3 py-1.5 font-mono font-bold whitespace-nowrap tabular-nums ${
+                  <td className={`text-right px-3 py-1.5 font-bold whitespace-nowrap tabular-nums ${
                     r.running_balance > 0 ? "text-rose-700" : r.running_balance < 0 ? "text-emerald-700" : "text-zinc-500"
                   }`}>
                     {Number(r.running_balance).toLocaleString()}

@@ -123,7 +123,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
                       <span aria-hidden>{SEASON_EMOJI[season]}</span>
                       <span>{SEASON_LABEL[season]}</span>
                     </span>
-                    <span className="text-[13px] font-mono opacity-70">
+                    <span className="text-[13px] tabular-nums opacity-70">
                       {ranges[season].length > 0 ? ranges[season].map(m => `${m}`).join("·") + "월" : "없음"}
                     </span>
                   </div>
@@ -158,13 +158,13 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
           <div className="mt-3 text-[13px] text-zinc-500 font-semibold space-y-0.5 border-t border-zinc-100 pt-2">
             {duplicateMonths.length > 0 && (
               <div className="text-amber-700">
-                ⚠ 여러 계절에 중복된 월: <span className="font-mono">{duplicateMonths.sort((a, b) => a - b).join("·")}월</span>
+                ⚠ 여러 계절에 중복된 월: <span className="tabular-nums">{duplicateMonths.sort((a, b) => a - b).join("·")}월</span>
                 <span className="text-zinc-400"> · 사용자가 계절 조회 시 어느 쪽을 눌러도 이 월 데이터가 함께 조회됩니다</span>
               </div>
             )}
             {missingMonths.length > 0 && (
               <div className="text-rose-600">
-                ✕ 어느 계절에도 속하지 않는 월: <span className="font-mono">{missingMonths.join("·")}월</span>
+                ✕ 어느 계절에도 속하지 않는 월: <span className="tabular-nums">{missingMonths.join("·")}월</span>
                 <span className="text-zinc-400"> · 이 월의 데이터는 계절 조회로 볼 수 없습니다</span>
               </div>
             )}

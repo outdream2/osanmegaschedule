@@ -28,7 +28,7 @@ export const ContactPopover: React.FC<ContactPopoverProps> = ({ anchor, name, ph
         {phone ? (
           <a href={`tel:${phone}`} className="flex items-center gap-2 text-[14px] text-zinc-700 hover:text-indigo-700 hover:bg-zinc-50 rounded-lg px-2 py-1.5 cursor-pointer transition">
             <span className="w-6 h-6 rounded-lg bg-sky-100 flex items-center justify-center text-sky-600">📞</span>
-            <span className="font-mono font-bold flex-1">{phone}</span>
+            <span className="tabular-nums font-bold flex-1">{phone}</span>
           </a>
         ) : (
           <div className="flex items-center gap-2 text-[15px] text-zinc-300 px-2 py-1.5">

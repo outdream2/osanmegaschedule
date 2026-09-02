@@ -399,7 +399,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                     const w1 = h.warehouse1_stock ?? h.warehouse_stock;
                     return (
                       <tr key={h.id} className="hover:bg-teal-50/40">
-                        <td className="px-3 py-2 font-mono text-zinc-700 whitespace-nowrap">{dtLabel}</td>
+                        <td className="px-3 py-2 tabular-nums text-zinc-700 whitespace-nowrap">{dtLabel}</td>
                         <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{w1 ?? "-"}</td>
                         <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.warehouse2_stock ?? "-"}</td>
                         <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.store_stock ?? "-"}</td>

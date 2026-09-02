@@ -315,13 +315,13 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
                 {showRowNumber && (
                   <td className="px-2 py-1.5 text-zinc-300 text-[11px] tabular-nums align-top">{i + 1}</td>
                 )}
-                <td className="px-3 py-1.5 font-mono text-[12px] font-semibold text-zinc-700 align-top whitespace-nowrap">
+                <td className="px-3 py-1.5 tabular-nums text-[12px] font-semibold text-zinc-700 align-top whitespace-nowrap">
                   {d || "-"}
                   {isHighlight && <span className="ml-1 text-[10px] text-amber-600 font-bold">◀</span>}
                 </td>
                 {showGap && (
                   <td
-                    className="text-right px-2 py-1.5 tabular-nums font-mono text-[11px] text-sky-600 align-top"
+                    className="text-right px-2 py-1.5 tabular-nums text-[11px] text-sky-600 align-top"
                     title={gap != null ? `${gap}일 만에 재매입` : "이전 매입 없음"}
                   >
                     {gap != null ? `${gap}일` : "-"}
@@ -345,13 +345,13 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
                     )}
                   </td>
                 )}
-                <td className="text-right px-3 py-1.5 font-mono font-bold text-zinc-800 align-top">
+                <td className="text-right px-3 py-1.5 tabular-nums font-bold text-zinc-800 align-top">
                   {rowQty(r) !== 0 ? fmt(rowQty(r)) : "-"}
                 </td>
-                <td className="text-right px-3 py-1.5 font-mono text-zinc-500 align-top">
+                <td className="text-right px-3 py-1.5 tabular-nums text-zinc-500 align-top">
                   {rowUnit(r) > 0 ? fmt(rowUnit(r)) : "-"}
                 </td>
-                <td className="text-right px-3 py-1.5 font-mono font-bold text-emerald-700 align-top">
+                <td className="text-right px-3 py-1.5 tabular-nums font-bold text-emerald-700 align-top">
                   {rowAmount(r) > 0 ? fmtWon(rowAmount(r)) : "-"}
                 </td>
               </tr>
@@ -364,11 +364,11 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
               <td colSpan={colCount - 3} className="px-3 py-2 text-right text-[11px] font-bold text-zinc-500">
                 합계
               </td>
-              <td className="px-3 py-2 text-right tabular-nums font-mono text-[12px] font-bold text-zinc-700">
+              <td className="px-3 py-2 text-right tabular-nums text-[12px] font-bold text-zinc-700">
                 {fmt(totals.qty)}
               </td>
               <td className="px-3 py-2" />
-              <td className="px-3 py-2 text-right tabular-nums font-mono text-[13px] font-bold text-emerald-700">
+              <td className="px-3 py-2 text-right tabular-nums text-[13px] font-bold text-emerald-700">
                 {fmtWon(totals.amt)}
               </td>
             </tr>

@@ -371,7 +371,7 @@ export const PaymentInputPage: React.FC = () => {
                 {orderHistory.slice(0, 10).map(o => (
                   <li key={o.order_number} className="flex items-center gap-2 py-2 text-[13px]">
                     <span className="text-zinc-400 tabular-nums shrink-0">{String(o.sent_at ?? o.order_date ?? "").slice(0, 10)}</span>
-                    <span className="text-zinc-500 shrink-0 font-mono text-[12px]">#{o.order_number}</span>
+                    <span className="text-zinc-500 shrink-0 tabular-nums text-[12px]">#{o.order_number}</span>
                     <span className="ml-auto text-brand-deep font-bold tabular-nums">{fmtWon(o.total_amount)}</span>
                     <span className="text-[12px] text-zinc-400 tabular-nums shrink-0">{o.items.length}종 · {o.total_qty}개</span>
                   </li>

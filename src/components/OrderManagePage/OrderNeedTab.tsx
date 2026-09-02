@@ -260,7 +260,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
             <Card padding="md" rounded="xl" className="text-sm text-red-700">
               <div className="font-bold mb-1">조회 실패</div>
-              <div className="text-[15px] font-mono">{needPanelError}</div>
+              <div className="text-[15px]">{needPanelError}</div>
             </Card>
           </div>
         ) : (

@@ -562,7 +562,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => onShiftLunchOffset(-30)} disabled={lunchOffset <= -60}
                   className="w-4 h-4 flex items-center justify-center text-[12px] font-bold rounded bg-white border border-line text-zinc-500 disabled:opacity-30 cursor-pointer">−</button>
-                <span className="text-[13px] font-mono text-zinc-400 leading-none">{offsetLabel(lunchOffset)}</span>
+                <span className="text-[13px] tabular-nums text-zinc-400 leading-none">{offsetLabel(lunchOffset)}</span>
                 <button type="button" onClick={() => onShiftLunchOffset(30)} disabled={lunchOffset >= 60}
                   className="w-4 h-4 flex items-center justify-center text-[12px] font-bold rounded bg-white border border-line text-zinc-500 disabled:opacity-30 cursor-pointer">+</button>
               </div>
@@ -631,7 +631,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => onShiftRestOffset(-30)} disabled={restOffset <= -60}
                   className="w-4 h-4 flex items-center justify-center text-[12px] font-bold rounded bg-white border border-line text-zinc-500 disabled:opacity-30 cursor-pointer">−</button>
-                <span className="text-[13px] font-mono text-zinc-400 leading-none">{offsetLabel(restOffset)}</span>
+                <span className="text-[13px] tabular-nums text-zinc-400 leading-none">{offsetLabel(restOffset)}</span>
                 <button type="button" onClick={() => onShiftRestOffset(30)} disabled={restOffset >= 60}
                   className="w-4 h-4 flex items-center justify-center text-[12px] font-bold rounded bg-white border border-line text-zinc-500 disabled:opacity-30 cursor-pointer">+</button>
               </div>

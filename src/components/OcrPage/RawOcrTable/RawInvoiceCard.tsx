@@ -509,7 +509,7 @@ export const RawInvoiceCard: React.FC<RawInvoiceCardProps> = ({
                                   commitDatePage(normalizeExpiryDate(editingCellVal.trim()));
                                   setEditingCell(null);
                                 }}
-                                className="w-[100px] text-[11px] font-mono text-amber-800 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5 outline-none"
+                                className="w-[100px] text-[11px] tabular-nums text-amber-800 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5 outline-none"
                                 title="이 명세서의 모든 행에 일괄 적용됩니다"
                               />
                             </td>
@@ -521,7 +521,7 @@ export const RawInvoiceCard: React.FC<RawInvoiceCardProps> = ({
                             className={`px-3 py-2 ${
                               isAmt ? "text-right font-bold text-amber-800 whitespace-nowrap" :
                               isNum ? "text-right text-gray-700 whitespace-nowrap" :
-                              isDateCol ? "text-gray-500 text-[11px] font-mono whitespace-nowrap cursor-pointer hover:bg-amber-50/60" :
+                              isDateCol ? "text-gray-500 text-[11px] tabular-nums whitespace-nowrap cursor-pointer hover:bg-amber-50/60" :
                               h === "품명" ? "font-semibold text-gray-900 break-words whitespace-normal align-top min-w-[180px] max-w-[240px]" :
                               hasEllipsis ? "text-gray-600 break-words whitespace-normal" :
                                             "text-gray-600 whitespace-nowrap"
