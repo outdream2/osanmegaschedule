@@ -342,7 +342,13 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                       const targetRows = selectedInGroup.length > 0 ? selectedInGroup : groupRows;
                                       const subtotal = targetRows.reduce((s, rr) => {
                                         const price = prevPriceMap.get(rr.product_code) ?? 0;
-                                        const qty = orderQtyOverride.has(rr.id) ? orderQtyOverride.get(rr.id)! : Math.max(0, Number((allProductsMap[rr.product_code]?.optimal_stock ?? rr.optimal_stock) ?? 0) - Number((allProductsMap[rr.product_code]?.current_stock ?? rr.current_stock) ?? 0));
+                                        // 2026-09-02 · #76 · fix · 발주필요 저장 key = product_code · 조회 시에도 product_code 사용
+                                        //   · 이전 · rr.id 로 조회 · 발주필요 저장 데이터 조회 실패 · 요청 수량 사라짐
+                                        const qty = orderQtyOverride.has(rr.product_code)
+                                          ? orderQtyOverride.get(rr.product_code)!
+                                          : orderQtyOverride.has(rr.id)
+                                            ? orderQtyOverride.get(rr.id)!
+                                            : Math.max(0, Number((allProductsMap[rr.product_code]?.optimal_stock ?? rr.optimal_stock) ?? 0) - Number((allProductsMap[rr.product_code]?.current_stock ?? rr.current_stock) ?? 0));
                                         return s + qty * price;
                                       }, 0);
                                       return (
@@ -422,7 +428,12 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                               )}
                               {(() => {
                                 const defaultQty = displayShort > 0 ? displayShort : 0;
-                                const orderQty = orderQtyOverride.has(r.id) ? orderQtyOverride.get(r.id)! : defaultQty;
+                                // 2026-09-02 · #76 · fix · 발주필요 저장 key = product_code · 이 fallback 우선
+                                const orderQty = orderQtyOverride.has(r.product_code)
+                                  ? orderQtyOverride.get(r.product_code)!
+                                  : orderQtyOverride.has(r.id)
+                                    ? orderQtyOverride.get(r.id)!
+                                    : defaultQty;
                                 const prevPrice = prevPriceMap.get(r.product_code) ?? null;
                                 const amount = prevPrice != null ? orderQty * prevPrice : null;
                                 return (
