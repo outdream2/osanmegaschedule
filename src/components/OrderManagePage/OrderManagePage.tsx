@@ -52,6 +52,8 @@ import { BorrowingPage } from "./BorrowingPage";
 //   · vendor 탭 · VendorPaymentPanel (→ VendorDetailTabs) 사용
 //   · payment-input 탭 · PaymentInputPage 사용
 import { PaymentInputPage } from "./PaymentInputPage";
+// 2026-09-02 · #69 · 카드 결제 관리 · 결제카드등록 + 카드별 결제내역 신규 2탭
+import { CardRegisterPage } from "./CardRegisterPage";
 import { VatPreparePage } from "../VatPreparePage/VatPreparePage";
 import { CategoryTab } from "./CategoryTab";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
@@ -130,7 +132,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     } catch { /* noop */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input" | "borrowing" | "vat-prepare">("payment-input");
+  // 2026-09-02 · #69 · card-register · card-history 신규 (사용자 지시)
+  const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input" | "card-register" | "card-history" | "borrowing" | "vat-prepare">("payment-input");
   // 2026-09-01 · 사용자 지시 · dashboard 서브탭 추가 (기본 dashboard · 판매대시보드 우선 노출)
   const [statSubTab, setStatSubTab] = useState<StatKey>("dashboard");
 
@@ -684,6 +687,16 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {/* 2026-08-25 · 사용자 지시 · 차용입력 · 공급사↔약국 상품 차용 기록 */}
           {paymentSubTab === "borrowing" && <div className="flex-1 min-h-0"><BorrowingPage authSession={ocrTabAuthSession ?? null} /></div>}
           {paymentSubTab === "vat-prepare" && <div className="flex-1 min-h-0"><VatPreparePage /></div>}
+          {/* 2026-09-02 · #69 · 카드 결제 관리 신규 (사용자 지시) */}
+          {paymentSubTab === "card-register" && <div className="flex-1 min-h-0"><CardRegisterPage /></div>}
+          {paymentSubTab === "card-history" && (
+            <div className="flex-1 min-h-0 flex items-center justify-center text-zinc-400">
+              <div className="text-center py-16">
+                <div className="text-[24px] font-bold text-zinc-500 mb-2">카드별 결제내역</div>
+                <div className="text-[16px] text-zinc-400">Phase 2 · 대시보드 · 차월 예정 · 곧 제공됩니다</div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

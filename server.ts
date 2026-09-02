@@ -54,6 +54,8 @@ import supplierBalanceConfigRouter from "./server/routes/purchase/supplierBalanc
 import supplierPaymentsRouter from "./server/routes/purchase/supplierPayments";
 // 2026-08-25 · 사용자 지시 · 결제 > 차용입력 · 공급사↔약국 상품 차용 기록
 import borrowingsRouter from "./server/routes/payment/borrowings";
+// 2026-09-02 · #69 · 카드 결제 관리 · credit_cards CRUD + summary
+import creditCardsRouter from "./server/routes/purchase/creditCards";
 // 2026-08-09 · SolAPI 카카오 알림톡 · credentials 미설정 시 status 만 응답 · 향후 확장 (사용자 승인 후)
 import { handleSolApiStatus } from "./server/lib/notification/solapiClient";
 // 2026-08-29 · #176/#214 · 발주요청 · 물류팀장 카톡 전송 API (뼈대) · KAKAO_API_KEY 미설정 시 gracefully 미구성 응답
@@ -216,6 +218,8 @@ async function startServer() {
   app.use(supplierBalanceConfigRouter);
   // 2026-08-25 · 차용입력 (borrowings)
   app.use(borrowingsRouter);
+  // 2026-09-02 · #69 · 카드 결제 관리
+  app.use(creditCardsRouter);
 
   // 2026-08-09 · SolAPI 알림톡 상태 조회 · UI 배너용 (설정 필요 안내)
   app.get("/api/notification/solapi-status", handleSolApiStatus);

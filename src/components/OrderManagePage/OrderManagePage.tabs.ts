@@ -7,13 +7,16 @@
 import {
   ShoppingCart, ClipboardList, AlertTriangle, Package, Building2, ArrowLeftRight, PackageCheck,
   ScanLine, PackagePlus, Info, Wallet, HandCoins, Calculator, TrendingUp, PieChart, Boxes,
-  BarChart3,
+  BarChart3, CreditCard, LineChart,
 } from "lucide-react";
 
 export type PurchaseOrderKey = "order" | "need" | "critical" | "history";
 // 2026-08-29 · #193 Phase B · scan · productarrival · productinfo · return 4개 · 매장>상품/반품 서브탭으로 완전 이관 (사용자 지시)
 export type PurchaseKey = "receipt" | "reconciliation" | "purchase-history";
-export type PaymentKey = "vendor" | "payment-input" | "borrowing" | "vat-prepare";
+// 2026-09-02 · #69 · 사용자 지시 · 카드 결제 관리 · 2탭 신규
+//   · card-register · 결제카드등록 (사용할 카드 CRUD)
+//   · card-history  · 카드별 결제내역 (대시보드 · 차월 예정)
+export type PaymentKey = "payment-input" | "vendor" | "card-register" | "card-history" | "borrowing" | "vat-prepare";
 // 2026-09-01 · 사용자 지시 · 판매대시보드 서브탭 신설 (SalesTrendPage 는 그대로 유지 · 매장>판매>통계 에도 추가)
 export type StatKey = "dashboard" | "trending" | "category" | "flow" | "diff" | "supplier";
 
@@ -40,11 +43,14 @@ export const PURCHASE_DEFAULT_TABS: SubTabDef<PurchaseKey>[] = [
 ];
 
 export const PAYMENT_DEFAULT_TABS: SubTabDef<PaymentKey>[] = [
-  { key: "payment-input", label: "결제입력",        icon: Wallet,     color: "amber"  },
-  { key: "vendor",        label: "공급사별결제내역", icon: Building2,  color: "teal"   },
+  { key: "payment-input", label: "결제입력",        icon: Wallet,      color: "amber"  },
+  { key: "vendor",        label: "공급사별결제내역", icon: Building2,   color: "teal"   },
+  // 2026-09-02 · #69 · 카드 결제 관리 · 2탭 신규 (사용자 지시)
+  { key: "card-register", label: "결제카드등록",    icon: CreditCard,  color: "sky"    },
+  { key: "card-history",  label: "카드별결제내역",  icon: LineChart,   color: "violet" },
   // 2026-08-25 · 사용자 지시 · 차용입력 (공급사↔약국 상품 차용 기록)
-  { key: "borrowing",     label: "차용입력",        icon: HandCoins,  color: "indigo" },
-  { key: "vat-prepare",   label: "부가세 준비",      icon: Calculator, color: "rose"   },
+  { key: "borrowing",     label: "차용입력",        icon: HandCoins,   color: "indigo" },
+  { key: "vat-prepare",   label: "부가세 준비",      icon: Calculator,  color: "rose"   },
 ];
 
 export const STAT_DEFAULT_TABS: SubTabDef<StatKey>[] = [
