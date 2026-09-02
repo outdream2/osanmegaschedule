@@ -80,7 +80,11 @@ interface MenuCardProps {
 }
 
 export function MenuCard({ color, icon: Icon, title, description, onClick, orderClass, badge, descClass, statChips, pageKey, viewport }: MenuCardProps) {
-  const c = COLOR_MAP[color];
+  // 2026-09-02 · defensive · 미정의 color 값이 전달돼도 크래시 방지 · zinc fallback + warn
+  const c = COLOR_MAP[color] ?? COLOR_MAP.zinc;
+  if (!COLOR_MAP[color]) {
+    console.warn(`[MenuCard] unknown color "${color}" · zinc fallback 적용`);
+  }
   // 2026-08-27 · pageKey 있으면 · usePageVisibility 로 체크 · false 면 안 렌더
   const { isVisible, loaded } = usePageVisibility();
   // 2026-08-31 · fix · page_permissions.hidden 도 체크 · PermissionsPage 페이지별 설정 반영

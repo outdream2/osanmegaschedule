@@ -630,7 +630,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     : "🔒 공급사 정보 등록 후 · 승인 요청 필요";
                   return (
                     <MenuCard
-                      color={disabled ? "gray" as any : "amber"}
+                      color={disabled ? "zinc" : "amber"}
                       icon={Package}
                       title="공급사 재고확인"
                       description={label}
