@@ -70,7 +70,10 @@ export function useResizablePanel({
     const onMove = (ev: MouseEvent) => {
       const r = resizeRef.current;
       if (!r) return;
-      const next = Math.max(minWidth, Math.min(maxWidth, r.startW + (ev.clientX - r.startX)));
+      // 2026-09-02 · 사용자 지시 · viewport 기반 동적 clamp · 우측 320px 보장 · maxWidth 상한
+      const dynMax = Math.min(maxWidth, window.innerWidth - 320);
+      const eff = Math.max(minWidth, dynMax);
+      const next = Math.max(minWidth, Math.min(eff, r.startW + (ev.clientX - r.startX)));
       setWidthState(next);
     };
     const onUp = () => {
