@@ -1,6 +1,7 @@
 // 2026-09-01 · 서버·클라 공유 · 매장구역도 Zod 스키마
 import { z } from "zod";
 
+// 2026-09-02 · #74 · warehouse 필드 (창고1/창고2/null) · zone_defs.warehouse 컬럼
 const ZoneDefBodySchema = z.object({
   location: z.string().max(100).nullable().optional(),
   zone: z.string().max(100).nullable().optional(),
@@ -8,6 +9,7 @@ const ZoneDefBodySchema = z.object({
   detailedCategory: z.string().max(200).nullable().optional(),
   assignee: z.array(z.string()).optional(),
   cellId: z.number().int().positive("cellId 필요 (양의 정수)"),
+  warehouse: z.enum(["창고1", "창고2"]).nullable().optional(),
 });
 
 /** PATCH /api/zone-defs/:id · 단건 편집 */

@@ -28,6 +28,8 @@ interface ZoneDefRow {
   detailed_category: string | null;
   assignee: string[] | null;
   cell_id: number;
+  // 2026-09-02 · #74 · warehouse 컬럼 (창고1/창고2/null)
+  warehouse?: string | null;
   updated_at: string;
 }
 
@@ -41,6 +43,7 @@ function rowToDto(r: ZoneDefRow) {
     category: r.category ?? undefined,
     detailedCategory: r.detailed_category ?? undefined,
     assignee: Array.isArray(r.assignee) ? r.assignee : [],
+    warehouse: r.warehouse ?? null,
   };
 }
 
@@ -57,19 +60,30 @@ function bodyToRow(b: any) {
       ? b.assignee.map((s: any) => String(s).trim()).filter(Boolean)
       : [],
     cell_id: Number(b.cellId),
+    // 2026-09-02 · #74 · warehouse (창고1/창고2/null)
+    warehouse: b.warehouse === "창고1" || b.warehouse === "창고2" ? b.warehouse : null,
     updated_at: new Date().toISOString(),
   };
 }
 
 // GET /api/zone-defs · 전체 조회 · cell_id 순
 router.get("/api/zone-defs", asyncHandler(async (_req, res) => {
-  const { data, error } = await supabase
+  // 2026-09-02 · #74 · warehouse 컬럼 포함 · 미실행 DB 폴백
+  const r1 = await supabase
     .from("zone_defs")
-    .select("id, location, zone, category, detailed_category, assignee, cell_id, updated_at")
+    .select("id, location, zone, category, detailed_category, assignee, cell_id, warehouse, updated_at")
     .order("cell_id", { ascending: true });
-  if (error) {
-    console.error("[zone-defs GET]", error.message);
-    throw new HttpError(500, error.message);
+  let data = r1.data;
+  if (r1.error && /warehouse/i.test(r1.error.message)) {
+    const r2 = await supabase
+      .from("zone_defs")
+      .select("id, location, zone, category, detailed_category, assignee, cell_id, updated_at")
+      .order("cell_id", { ascending: true });
+    if (r2.error) throw new HttpError(500, r2.error.message);
+    data = (r2.data ?? []).map((r: any) => ({ ...r, warehouse: null }));
+  } else if (r1.error) {
+    console.error("[zone-defs GET]", r1.error.message);
+    throw new HttpError(500, r1.error.message);
   }
   const zones = (data as ZoneDefRow[] | null ?? []).map(rowToDto);
   res.json({ zones, count: zones.length });
@@ -90,11 +104,13 @@ router.patch("/api/zone-defs/:id", authorize(9), validateBody(PatchZoneDefSchema
     ? b.assignee.map((s: any) => String(s).trim()).filter(Boolean)
     : [];
   if (b.cellId           !== undefined) patch.cell_id          = Number(b.cellId);
+  // 2026-09-02 · #74 · warehouse 편집 (창고1/창고2/null · 매장이면 null)
+  if (b.warehouse        !== undefined) patch.warehouse        = b.warehouse === "창고1" || b.warehouse === "창고2" ? b.warehouse : null;
   const { data, error } = await supabase
     .from("zone_defs")
     .update(patch)
     .eq("id", id)
-    .select("id, location, zone, category, detailed_category, assignee, cell_id, updated_at")
+    .select("id, location, zone, category, detailed_category, assignee, cell_id, warehouse, updated_at")
     .maybeSingle();
   if (error) {
     console.error("[zone-defs PATCH]", error.message);
@@ -114,7 +130,7 @@ router.put("/api/zone-defs", authorize(9), validateBody(UpsertZoneDefsSchema), a
   const { data, error } = await supabase
     .from("zone_defs")
     .upsert(rows, { onConflict: "cell_id" })
-    .select("id, location, zone, category, detailed_category, assignee, cell_id, updated_at");
+    .select("id, location, zone, category, detailed_category, assignee, cell_id, warehouse, updated_at");
   if (error) {
     console.error("[zone-defs PUT]", error.message);
     throw new HttpError(500, error.message);
@@ -131,7 +147,7 @@ router.post("/api/zone-defs", authorize(9), validateBody(CreateZoneDefSchema), a
   const { data, error } = await supabase
     .from("zone_defs")
     .insert([row])
-    .select("id, location, zone, category, detailed_category, assignee, cell_id, updated_at")
+    .select("id, location, zone, category, detailed_category, assignee, cell_id, warehouse, updated_at")
     .single();
   if (error) {
     console.error("[zone-defs POST]", error.message);

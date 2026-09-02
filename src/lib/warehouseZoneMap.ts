@@ -4,45 +4,42 @@
 //   · 상품 진열구역 (real_map) 으로부터 창고 소속 판별
 //   · 스캔페이지 등 · 재고위치 표시 시 · 해당 상품 소속 창고만 노출 (반대 창고 슬롯 숨김)
 
-// 창고1 · 파스류 (24·25·26·27) + 한방 (7B) + 경옥고/공진단 등 (8A)
+// 2026-09-02 · 사용자 지시 · 창고1은 6개만 · 나머지는 모두 창고2
+//   · 창고1: 파스류 (24·25·26·27) + 한방 (7B) + 경옥고/공진단 등 (8A)
+//   · 창고2: 위 6개 이외 모든 zone (매장 진열대 포함 · 진열대 자체가 창고2 진열)
 export const WAREHOUSE_1_CODES = new Set<string>([
   "24", "25", "26", "27", "7B", "8A",
 ]);
 
-// 2026-08-27 · 사용자 지시 · 창고2 실제 창고 zone 만 (매장 진열대 코드 제외)
-//   · 왼쪽측면 (28·29·30·31·34·35·36·37·38·39·40) + 화장품 (32·33)
-//   · 진열대 (1A~7A · 10~23) 은 매장 진열 · 창고2 아님
+// (호환) 창고2 명시 리스트 · 신규 로직에서는 · 창고1 아니면 모두 창고2
 export const WAREHOUSE_2_CODES = new Set<string>([
   "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40",
 ]);
 
-// 두 창고 공용 (예: 40 드림크냉장고)
-export const WAREHOUSE_BOTH_CODES = new Set<string>([
-  "40",
-]);
+// 두 창고 공용 (레거시 · 신규 규칙에서는 사용 안 함)
+export const WAREHOUSE_BOTH_CODES = new Set<string>([]);
 
 export type WarehouseVisibility = {
   showW1: boolean;
   showW2: boolean;
 };
 
-/** 단일 zone code 매핑 · 알 수 없으면 both true (안전 기본값 · 슬롯 안 사라짐) */
+/** 단일 zone code 매핑
+ *  2026-09-02 · 사용자 규칙 · 창고1(6개) · 나머지 모두 창고2 · code 없으면 둘 다 표시 (안전)
+ */
 export function resolveWarehouseForCode(code: string | null | undefined): WarehouseVisibility {
   if (!code) return { showW1: true, showW2: true };
   const c = String(code).trim().toUpperCase().replace(/\s+/g, "");
   if (!c) return { showW1: true, showW2: true };
-  if (WAREHOUSE_BOTH_CODES.has(c)) return { showW1: true, showW2: true };
-  const w1 = WAREHOUSE_1_CODES.has(c);
-  const w2 = WAREHOUSE_2_CODES.has(c);
-  if (w1 && w2) return { showW1: true, showW2: true };
-  if (w1) return { showW1: true, showW2: false };
-  if (w2) return { showW1: false, showW2: true };
-  // 알 수 없는 코드 · 안전 · 둘 다 표시
-  return { showW1: true, showW2: true };
+  if (WAREHOUSE_1_CODES.has(c)) return { showW1: true, showW2: false };
+  // 창고1 아니면 모두 창고2
+  return { showW1: false, showW2: true };
 }
 
 /** real_map 문자열 (예: "26" · "26/33" · "24/33/8A") 을 파싱해 창고 가시성 결정
- *  여러 zone 이 있으면 union (하나라도 창고1 이면 showW1=true) */
+ *  2026-09-02 · 사용자 규칙 · 창고1 zone 하나라도 있으면 showW1 · 그 외는 모두 창고2
+ *  · 여러 zone 이 union · 창고1+창고2 zone 혼재 시 둘 다 true
+ */
 export function resolveWarehouseVisibility(realMap: string | null | undefined): WarehouseVisibility {
   if (!realMap) return { showW1: true, showW2: true };
   const parts = String(realMap)
@@ -52,18 +49,11 @@ export function resolveWarehouseVisibility(realMap: string | null | undefined): 
   if (parts.length === 0) return { showW1: true, showW2: true };
   let showW1 = false;
   let showW2 = false;
-  let unknown = false;
   for (const p of parts) {
     const c = p.toUpperCase().replace(/\s+/g, "");
-    if (WAREHOUSE_BOTH_CODES.has(c)) { showW1 = true; showW2 = true; continue; }
-    const inW1 = WAREHOUSE_1_CODES.has(c);
-    const inW2 = WAREHOUSE_2_CODES.has(c);
-    if (inW1) showW1 = true;
-    if (inW2) showW2 = true;
-    if (!inW1 && !inW2) unknown = true;
+    if (WAREHOUSE_1_CODES.has(c)) showW1 = true;
+    else showW2 = true; // 창고1 아니면 창고2
   }
-  // 아무것도 매칭 안됐고 unknown 있으면 · 안전 · 둘 다 표시
-  if (!showW1 && !showW2 && unknown) return { showW1: true, showW2: true };
   return { showW1, showW2 };
 }
 
@@ -72,23 +62,16 @@ export function resolveWarehouseVisibility(realMap: string | null | undefined): 
 //   · MajorZone 기반 세분화: 중앙상비약존·상담존 → s1 · 뷰티식품존 → s2 · 카운터테마존 → s3
 export type ArrivalSlot = "w1" | "w2" | "s1" | "s2" | "s3";
 
-/** location 코드 단 하나 → 자동 슬롯 판정 · 알 수 없으면 null */
+/** location 코드 → 자동 슬롯 판정
+ *  2026-09-02 · 사용자 규칙 · 창고1(6개) 이외 모두 창고2 (매장 진열대도 창고2)
+ *  · 반환 · "w1" | "w2" · 매장 슬롯은 미사용 (사용자 요청 시 확장)
+ */
 export function classifyArrivalSlot(locationCode: string | null | undefined): ArrivalSlot | null {
   if (!locationCode) return null;
   const c = String(locationCode).trim().toUpperCase().replace(/\s+/g, "");
   if (!c) return null;
-  // 창고 우선
-  if (WAREHOUSE_BOTH_CODES.has(c)) return "w1"; // 공용은 w1 기본
   if (WAREHOUSE_1_CODES.has(c)) return "w1";
-  if (WAREHOUSE_2_CODES.has(c)) return "w2";
-  // 매장 진열구역 · MajorZone 분류 (classifyMajorZone 과 동일 로직 · 순환 import 방지로 인라인)
-  // 중앙상비약존: 숫자+알파 · 1A~9Z (한 자리 숫자 prefix) 제외 창고코드
-  // 단순화: 숫자2자리 이상 이면 매장 진열 번호 (10~23 등) · 알파+숫자(1A 류) 이면 매장 존 코드
-  // 세분화 매핑 (zone_defs.zone 없이 코드만으로 판별 · 보수적)
-  // 카운터테마존 힌트: "K", "CT" prefix 코드 (없으면 아래 fallback)
-  // 뷰티식품존 힌트: "B", "F" prefix
-  // → 완전 판별은 zone_defs 있어야 정확 · 코드만 있으면 s1 기본
-  return "s1";
+  return "w2";
 }
 
 // 2026-08-27 · 사용자 지시 · zone 코드를 slot 에 지능 배정
