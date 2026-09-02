@@ -61,11 +61,10 @@ const CompanyInfoSettingsPage = React.lazy(() => import("./components/CompanyInf
 const SeasonSettingsPage = React.lazy(() => import("./components/SeasonSettingsPage/SeasonSettingsPage"));
 // 2026-08-12 · 시스템 설정 (env 편집 · 서버 재시작 반영)
 const SystemSettingsPage = React.lazy(() => import("./components/SystemSettingsPage/SystemSettingsPage"));
-// 2026-09-02 · #74 · 창고 구역 설정 (사용자 지시 · zone_defs.warehouse 편집)
-const WarehouseZoneSettingsPage = React.lazy(() => import("./components/WarehouseZoneSettings/WarehouseZoneSettingsPage"));
 // 2026-08-23 · #181 · ZoneSettingsPage 제거 · StoreZoneMap 인라인 편집만 유지
+// 2026-09-02 · #74 · 창고 구역 설정 페이지 제거 (규칙 고정 · 수동 편집 불필요)
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding" | "company-info" | "season-settings" | "system-settings" | "warehouse-zones";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding" | "company-info" | "season-settings" | "system-settings";
 
 export default function App() {
   // 2026-08-16 · 사이드바 활성 · 서버 KV 설정 (env 아님)
@@ -510,18 +509,6 @@ export default function App() {
     pageContent = (
       <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
         <SeasonSettingsPage
-          authSession={authSession}
-          onBack={goBack}
-          onNavigate={navigateInner}
-          onLogout={handleLogout}
-        />
-      </React.Suspense>
-    );
-  } else if (page === "warehouse-zones") {
-    // 2026-09-02 · #74 · 창고 구역 설정 페이지 (관리자 lv≥9)
-    pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
-        <WarehouseZoneSettingsPage
           authSession={authSession}
           onBack={goBack}
           onNavigate={navigateInner}

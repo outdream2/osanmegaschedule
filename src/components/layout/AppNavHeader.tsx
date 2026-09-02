@@ -51,9 +51,8 @@ export type AppNavPage =
   | "branding"
   | "company-info"
   | "season-settings"
-  | "system-settings"
-  // 2026-09-02 · #74 · 창고 구역 설정 (사용자 지시 · zone_defs.warehouse)
-  | "warehouse-zones";
+  | "system-settings";
+  // 2026-09-02 · #74 · warehouse-zones 제거 (규칙 고정 · 수동 편집 불필요)
   // 2026-08-23 · #181 · zone-settings 제거 · StoreZoneMap 인라인 편집만
 
 // 헤더 내부 탭 렌더용 확장 키 (경영관리 · business-manage 로 라우팅)
