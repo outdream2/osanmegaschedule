@@ -32,22 +32,31 @@ const ROLE_LABEL: Record<SignatureStampSlotProps["role"], string> = {
   borrower_return: "차용자 반환 서명",
 };
 
-const ROLE_TONE: Record<SignatureStampSlotProps["role"], string> = {
-  lender: "border-violet-200 bg-violet-50/40",
-  borrower: "border-emerald-200 bg-emerald-50/40",
-  lender_return: "border-violet-300 bg-violet-100/40",
-  borrower_return: "border-emerald-300 bg-emerald-100/40",
+// 2026-09-02 · 목업 · signed / unsigned 시각 명확화
+//   · signed · solid border · 진한 톤 · shadow
+//   · unsigned · dashed border · 옅은 톤 · shadow 없음
+const ROLE_TONE_SIGNED: Record<SignatureStampSlotProps["role"], string> = {
+  lender: "border-violet-300 bg-violet-50/60 shadow-[0_1px_3px_rgba(139,92,246,0.10)]",
+  borrower: "border-emerald-300 bg-emerald-50/60 shadow-[0_1px_3px_rgba(16,185,129,0.10)]",
+  lender_return: "border-violet-400 bg-violet-100/60 shadow-[0_1px_3px_rgba(139,92,246,0.12)]",
+  borrower_return: "border-emerald-400 bg-emerald-100/60 shadow-[0_1px_3px_rgba(16,185,129,0.12)]",
+};
+const ROLE_TONE_UNSIGNED: Record<SignatureStampSlotProps["role"], string> = {
+  lender: "border-dashed border-violet-200 bg-violet-50/20",
+  borrower: "border-dashed border-emerald-200 bg-emerald-50/20",
+  lender_return: "border-dashed border-violet-200 bg-violet-50/20",
+  borrower_return: "border-dashed border-emerald-200 bg-emerald-50/20",
 };
 
 export const SignatureStampSlot: React.FC<SignatureStampSlotProps> = ({
   role, signature, onSign, disabled = false, className = "",
 }) => {
   const label = ROLE_LABEL[role];
-  const tone = ROLE_TONE[role];
   const isSigned = !!signature?.signature_url;
+  const tone = isSigned ? ROLE_TONE_SIGNED[role] : ROLE_TONE_UNSIGNED[role];
 
   return (
-    <div className={`relative rounded-xl border-2 ${tone} p-3 ${className}`}>
+    <div className={`relative rounded-xl border-2 ${tone} p-3 transition-all ${className}`}>
       <div className="flex items-center gap-1.5 mb-2">
         <PenTool size={12} className="text-ink-soft" />
         <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">{label}</span>
