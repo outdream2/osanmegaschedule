@@ -56,7 +56,9 @@ export function useOrderModal({
         });
       }
       const need = (r.optimal_stock ?? 0) - (r.current_stock ?? 0);
-      const override = orderQtyOverride.get(r.id);
+      // 2026-09-02 · #76 · fix · orderQtyOverride key 통일 · product_code 우선 · id fallback
+      //   · 발주필요 · OrderNeedTable · product_code 로 저장 · 이 모달에서 조회 실패로 finalQty 잘못됨
+      const override = orderQtyOverride.get(r.product_code) ?? orderQtyOverride.get(r.id);
       const finalQty = (override != null && override > 0) ? override : Math.max(1, need);
       bySupplier.get(sup)!.items.push({
         order_request_id: r.id, product_code: r.product_code, product_name: r.product_name,
