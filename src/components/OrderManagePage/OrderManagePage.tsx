@@ -54,6 +54,7 @@ import { BorrowingPage } from "./BorrowingPage";
 import { PaymentInputPage } from "./PaymentInputPage";
 // 2026-09-02 · #69 · 카드 결제 관리 · 결제카드등록 + 카드별 결제내역 신규 2탭
 import { CardRegisterPage } from "./CardRegisterPage";
+import { CardHistoryPage } from "./CardHistoryPage";
 import { VatPreparePage } from "../VatPreparePage/VatPreparePage";
 import { CategoryTab } from "./CategoryTab";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
@@ -689,14 +690,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {paymentSubTab === "vat-prepare" && <div className="flex-1 min-h-0"><VatPreparePage /></div>}
           {/* 2026-09-02 · #69 · 카드 결제 관리 신규 (사용자 지시) */}
           {paymentSubTab === "card-register" && <div className="flex-1 min-h-0"><CardRegisterPage /></div>}
-          {paymentSubTab === "card-history" && (
-            <div className="flex-1 min-h-0 flex items-center justify-center text-zinc-400">
-              <div className="text-center py-16">
-                <div className="text-[24px] font-bold text-zinc-500 mb-2">카드별 결제내역</div>
-                <div className="text-[16px] text-zinc-400">Phase 2 · 대시보드 · 차월 예정 · 곧 제공됩니다</div>
-              </div>
-            </div>
-          )}
+          {paymentSubTab === "card-history"  && <div className="flex-1 min-h-0"><CardHistoryPage /></div>}
         </div>
       )}
 
