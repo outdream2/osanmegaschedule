@@ -261,17 +261,17 @@ export const VendorDetailModal: React.FC<{
     }
   };
 
-  // 2026-08-26 · #192 · 승인 요청 · 필수 8필드 검증 (draft 기준) + POST endpoint
+  // 2026-09-02 · 사용자 지시 · 필수 5필드로 축소
+  //   이메일(발주용) · 사업자번호 · 팀장 이름 · 팀장 연락처 · 긴급 연락처
+  //   주문방식·특이사항·비고 은 필수에서 제외 (선택 입력)
+  const REQUIRED_TOTAL = 5;
   const missingRequired = (() => {
     const missing: string[] = [];
-    if (!draft.email.trim()) missing.push("이메일");
-    if (!draft.order_method.trim()) missing.push("주문방식");
-    if (!draft.team_leader_name.trim()) missing.push("팀장");
-    if (!draft.team_leader_phone.trim()) missing.push("팀장연락처");
-    if (!draft.emergency_contact.trim()) missing.push("긴급연락처");
+    if (!draft.email.trim()) missing.push("이메일(발주용)");
     if (!draft.business_number.trim()) missing.push("사업자번호");
-    if (!draft.special_notes.trim()) missing.push("특이사항");
-    if (!draft.note.trim()) missing.push("비고");
+    if (!draft.team_leader_name.trim()) missing.push("팀장 이름");
+    if (!draft.team_leader_phone.trim()) missing.push("팀장 연락처");
+    if (!draft.emergency_contact.trim()) missing.push("긴급 연락처");
     return missing;
   })();
   const canRequestApproval = panel && approvalStatus !== "approved" && missingRequired.length === 0;
@@ -473,13 +473,25 @@ export const VendorDetailModal: React.FC<{
           {/* 2026-08-10 · 기본정보 단일 컬럼 · 공급요약 위로 이동됨 */}
           <div className="space-y-4">
 
-            {/* Left · 기본 정보 편집 */}
+            {/* Left · 기본 정보 편집 · 2026-09-02 · 2필드/행 · 컴팩트 · 5필드 accent */}
             <div className="space-y-3">
               <SectionTitle icon={<Building2 size={13} />} title="기본 정보" color="sky" />
 
-              {/* 2026-07-30 · 사용자 요청 · 회사명 + 분류 + 사업자번호 · 한 줄 (3열 grid) */}
-              <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-3">
-                <Field label="회사명 *">
+              {/* 2026-09-02 · 사용자 지시 · 승인 필수 5필드 안내 (거래처 로그인 · 미승인 시만) · 색깔 통일 (emerald) */}
+              {isVendorLogin && approvalStatus !== "approved" && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-[15px] leading-relaxed">
+                  <div className="text-zinc-700">
+                    <span className="inline-flex items-center gap-1 font-bold text-emerald-700"><span className="w-2 h-2 rounded-full bg-emerald-500" />초록색</span> 표시된 <span className="font-bold text-zinc-900">5개 항목</span>을 모두 입력하신 후 <span className="font-bold text-emerald-700">[승인 요청]</span> 버튼을 누르시면 · 관리자 승인 완료 후 <span className="font-bold text-emerald-700">당사 재고 현황</span>을 조회하실 수 있습니다.
+                  </div>
+                  <div className="mt-2 text-[14px] font-semibold text-emerald-700">
+                    사업자번호 · 이메일(발주용) · 팀장 이름 · 팀장 연락처 · 긴급 연락처
+                  </div>
+                </div>
+              )}
+
+              {/* Row 1 · 회사명 | 분류 */}
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="회사명" required>
                   <input
                     type="text"
                     value={draft.company_name}
@@ -501,8 +513,11 @@ export const VendorDetailModal: React.FC<{
                     <option value="기타">기타</option>
                   </select>
                 </Field>
-                <Field label="사업자번호 (10자리)">
-                  {/* 2026-08-10 · #30 · 입력 시 자동 하이픈 포맷 (123-45-67890) · 저장은 숫자만 (normalizeBizNum) */}
+              </div>
+
+              {/* Row 2 · 사업자번호 [필수] | 이메일(발주용) [필수] */}
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="사업자번호 (10자리)" accent="emerald">
                   <input
                     type="text"
                     value={formatBizNum(draft.business_number) || draft.business_number}
@@ -512,114 +527,98 @@ export const VendorDetailModal: React.FC<{
                     maxLength={12}
                   />
                 </Field>
+                <Field label="이메일 (발주용)" accent="emerald">
+                  <input
+                    type="email"
+                    value={draft.email}
+                    onChange={e => setDraft({ ...draft, email: e.target.value })}
+                    placeholder="orders@company.com"
+                    className={inputCls}
+                  />
+                </Field>
               </div>
 
-              {/* 2026-08-10 · 사용자 요청 · 담당자 → 팀장 → 긴급연락처 세로 배치 (담당자·전화 → 팀장·전화 → 긴급) */}
-              {/* 담당자 · 전화 (2열) */}
+              {/* Row 3 · 담당자 이름 | 담당자 연락처 */}
               <div className="grid grid-cols-2 gap-3">
-                <Field label="담당자 이름">
+                <Field label="담당자 이름" required>
                   <input type="text" value={draft.contact_name} onChange={e => setDraft({ ...draft, contact_name: e.target.value })} className={inputCls} />
                 </Field>
                 <Field label="담당자 연락처">
                   <input type="text" value={draft.phone} onChange={e => setDraft({ ...draft, phone: e.target.value })}
-                    placeholder="010-0000-0000"
-                    className={inputCls} />
+                    placeholder="010-0000-0000" className={inputCls} />
                 </Field>
               </div>
 
-              {/* 팀장 이름 · 팀장 전화 (2열) */}
+              {/* Row 4 · 팀장 이름 [필수] | 팀장 연락처 [필수] */}
               <div className="grid grid-cols-2 gap-3">
-                <Field label="팀장 이름">
+                <Field label="팀장 이름" accent="emerald">
                   <input type="text" value={draft.team_leader_name}
                     onChange={e => setDraft({ ...draft, team_leader_name: e.target.value })}
-                    placeholder="담당자와 별개"
-                    className={inputCls} />
+                    placeholder="담당자와 별개" className={inputCls} />
                 </Field>
-                <Field label="팀장 연락처">
+                <Field label="팀장 연락처" accent="emerald">
                   <input type="text" value={draft.team_leader_phone}
                     onChange={e => setDraft({ ...draft, team_leader_phone: e.target.value })}
-                    placeholder="010-0000-0000"
-                    className={inputCls} />
+                    placeholder="010-0000-0000" className={inputCls} />
                 </Field>
               </div>
 
-              {/* 긴급 연락처 (single row) */}
-              <Field label="긴급 연락처">
-                <input type="text" value={draft.emergency_contact}
-                  onChange={e => setDraft({ ...draft, emergency_contact: e.target.value })}
-                  placeholder="야간·주말·비상 연락처"
-                  className={inputCls} />
-              </Field>
+              {/* Row 5 · 긴급 연락처 [필수] | 주문 방식 */}
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="긴급 연락처" accent="emerald">
+                  <input type="text" value={draft.emergency_contact}
+                    onChange={e => setDraft({ ...draft, emergency_contact: e.target.value })}
+                    placeholder="야간·주말·비상 연락처" className={inputCls} />
+                </Field>
+                <Field label="주문 방식">
+                  <input type="text" value={draft.order_method}
+                    onChange={e => setDraft({ ...draft, order_method: e.target.value })}
+                    placeholder="사이트 · 이메일 · 전화" className={inputCls} />
+                </Field>
+              </div>
 
-              {/* 이메일 (single row) */}
-              <Field label="이메일">
-                <input
-                  type="email"
-                  value={draft.email}
-                  onChange={e => setDraft({ ...draft, email: e.target.value })}
-                  placeholder="example@company.com"
-                  className={inputCls}
-                />
-              </Field>
+              {/* Row 6 · 지역 | 거래명세서 방식 */}
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="지역">
+                  <input type="text" value={draft.region}
+                    onChange={e => setDraft({ ...draft, region: e.target.value })}
+                    placeholder="서울·강남 / 경기·오산" className={inputCls} />
+                </Field>
+                <Field label="거래명세서 방식">
+                  <input type="text" value={draft.invoice_method}
+                    onChange={e => setDraft({ ...draft, invoice_method: e.target.value })}
+                    placeholder="이메일 · 팩스 · 지참" className={inputCls} />
+                </Field>
+              </div>
 
-              {/* 2026-08-10 · 사용자 요청 · VAT 처리 · 결제정보 세션으로 이동됨 */}
+              {/* Row 7 · 주문 현황 | (빈 공간) */}
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="주문 현황">
+                  <input type="text" value={draft.order_status}
+                    onChange={e => setDraft({ ...draft, order_status: e.target.value })}
+                    placeholder="정상 · 임시중단 · 종료" className={inputCls} />
+                </Field>
+                <div />
+              </div>
 
-              {/* 비고 (single row) */}
-              <Field label="비고">
-                <textarea
-                  value={draft.note}
-                  onChange={e => setDraft({ ...draft, note: e.target.value })}
-                  className={`${inputCls} h-[72px] resize-none`}
-                />
-              </Field>
-
-              {/* 2026-08-23 · #178 Phase D · xlsx 마스터 5 신규 필드 */}
-              <Field label="주문 방식">
-                <input
-                  type="text"
-                  value={draft.order_method}
-                  onChange={e => setDraft({ ...draft, order_method: e.target.value })}
-                  placeholder="사이트 URL · 이메일 · 전화 등"
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="지역">
-                <input
-                  type="text"
-                  value={draft.region}
-                  onChange={e => setDraft({ ...draft, region: e.target.value })}
-                  placeholder="서울 · 강남 / 경기 · 오산"
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="거래명세서 방식">
-                <input
-                  type="text"
-                  value={draft.invoice_method}
-                  onChange={e => setDraft({ ...draft, invoice_method: e.target.value })}
-                  placeholder="이메일 · 팩스 · 지참"
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="주문 현황">
-                <input
-                  type="text"
-                  value={draft.order_status}
-                  onChange={e => setDraft({ ...draft, order_status: e.target.value })}
-                  placeholder="정상 · 임시중단 · 종료"
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="발주 특이사항">
-                <textarea
-                  value={draft.special_notes}
-                  onChange={e => setDraft({ ...draft, special_notes: e.target.value })}
-                  placeholder="월요일 발주 X · 최소주문 5개 · 결제 조건 등"
-                  className={`${inputCls} h-[72px] resize-none border-amber-200 focus:border-amber-500 focus:ring-amber-200`}
-                />
-              </Field>
-
-              {/* 2026-08-09 · 거래처 로그인 비밀번호 · 자동 규칙 (전화번호 + "00") · 수동 저장 필드 제거 (사용자 정책) */}
+              {/* Row 8 · 비고 · 발주 특이사항 · textarea 는 full-width 유지 */}
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="비고">
+                  <textarea
+                    value={draft.note}
+                    onChange={e => setDraft({ ...draft, note: e.target.value })}
+                    className={`${inputCls} h-[72px] resize-none`}
+                  />
+                </Field>
+                <Field label="발주 특이사항">
+                  <textarea
+                    value={draft.special_notes}
+                    onChange={e => setDraft({ ...draft, special_notes: e.target.value })}
+                    placeholder="월요일 발주 X · 최소주문 · 결제 조건"
+                    className={`${inputCls} h-[72px] resize-none border-amber-200 focus:border-amber-500 focus:ring-amber-200`}
+                  />
+                </Field>
+              </div>
             </div>
 
             {/* 2026-08-10 · 사용자 요청 · 결제·잔고·매입이력 탭 안내 문구 제거 */}
@@ -691,7 +690,7 @@ export const VendorDetailModal: React.FC<{
               {approvalRequesting ? <Spinner size={12} tone="white" /> : <Check size={12} strokeWidth={2.5} />}
               {approvalStatus === "pending" ? "재요청" : "승인 요청"}
               {missingRequired.length > 0 && (
-                <span className="ml-1 text-[11px] font-semibold tabular-nums opacity-80">({8 - missingRequired.length}/8)</span>
+                <span className="ml-1 text-[11px] font-semibold tabular-nums opacity-80">({REQUIRED_TOTAL - missingRequired.length}/{REQUIRED_TOTAL})</span>
               )}
             </button>
           )}

@@ -77,9 +77,11 @@ interface MenuCardProps {
   pageKey?: string;
   /** viewport · 명시 안 하면 · 현재 window 폭 기준 자동 */
   viewport?: "pc" | "mobile";
+  /** 2026-09-02 · 사용자 지시 · disabled · 클릭 완전 차단 + 회색 + cursor-not-allowed */
+  disabled?: boolean;
 }
 
-export function MenuCard({ color, icon: Icon, title, description, onClick, orderClass, badge, descClass, statChips, pageKey, viewport }: MenuCardProps) {
+export function MenuCard({ color, icon: Icon, title, description, onClick, orderClass, badge, descClass, statChips, pageKey, viewport, disabled }: MenuCardProps) {
   // 2026-09-02 · defensive · 미정의 color 값이 전달돼도 크래시 방지 · zinc fallback + warn
   const c = COLOR_MAP[color] ?? COLOR_MAP.zinc;
   if (!COLOR_MAP[color]) {
@@ -101,11 +103,17 @@ export function MenuCard({ color, icon: Icon, title, description, onClick, order
   }
   // 2026-08-17 · 사용자 지시 · 반응형 랜딩 메뉴 폰트 +2 (기존 15 → 17) · 2026-08-23 · #200 +2 (17 → 19)
   const descSize = descClass ?? "text-[19px] leading-[1.5]";
+  // 2026-09-02 · disabled · 클릭 완전 차단 · 회색 처리 · hover 효과 제거
+  const disabledCls = disabled
+    ? "opacity-55 grayscale-[0.4] cursor-not-allowed"
+    : `${c.hoverBorder} cursor-pointer hover:-translate-y-1 hover:shadow-[0_2px_4px_rgba(10,46,74,0.06),0_12px_28px_rgba(10,46,74,0.12)]`;
   return (
     <button
       data-menu-card
-      onClick={onClick}
-      className={`${orderClass ?? ""} group relative bg-white border border-line ${c.hoverBorder} rounded-[16px] p-[20px] text-left transition-all duration-200 hover:-translate-y-1 cursor-pointer overflow-hidden flex flex-col gap-3 shadow-[0_1px_2px_rgba(10,46,74,0.04),0_2px_8px_rgba(10,46,74,0.04)] hover:shadow-[0_2px_4px_rgba(10,46,74,0.06),0_12px_28px_rgba(10,46,74,0.12)]`}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      aria-disabled={disabled}
+      className={`${orderClass ?? ""} group relative bg-white border border-line ${disabledCls} rounded-[16px] p-[20px] text-left transition-all duration-200 overflow-hidden flex flex-col gap-3 shadow-[0_1px_2px_rgba(10,46,74,0.04),0_2px_8px_rgba(10,46,74,0.04)]`}
     >
       {/* 상단 1px hairline gradient · 카테고리 identity accent · Linear/Vercel 규칙 · hover 시 진해짐 */}
       <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${c.topAccent} opacity-70 group-hover:opacity-100 transition-opacity`} />

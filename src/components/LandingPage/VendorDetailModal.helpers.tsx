@@ -12,13 +12,36 @@ export const METHOD_OPTIONS: Array<{ key: string; label: string }> = [
   { key: "etc",      label: "기타" },
 ];
 
-// 2026-08-10 · 사용자 요청 · Field 라벨 -1 (15→14) · 유지
-export const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <label className="block space-y-1">
-    <span className="text-[14px] font-semibold text-zinc-600 tracking-tight">{label}</span>
-    {children}
-  </label>
-);
+// 2026-08-10 · Field 라벨 · accent 옵션 · 승인 필수 5필드 시각 강조 (2026-09-02)
+//   · accent = "amber" | "sky" | "violet" | "rose" | "emerald" | ...
+//   · label 앞 · 색상 dot (2px h-1.5 w-1.5) · label 텍스트 진한 색
+export const Field: React.FC<{
+  label: string;
+  children: React.ReactNode;
+  accent?: "sky" | "emerald" | "amber" | "rose" | "violet" | "indigo" | "teal";
+  /** 2026-09-02 · 사용자 지시 · 빨강 * 표시 (기본 정보 필수) */
+  required?: boolean;
+}> = ({ label, children, accent, required }) => {
+  const accentCls = accent ? {
+    sky:     { dot: "bg-sky-500",     text: "text-sky-700"     },
+    emerald: { dot: "bg-emerald-500", text: "text-emerald-700" },
+    amber:   { dot: "bg-amber-500",   text: "text-amber-700"   },
+    rose:    { dot: "bg-rose-500",    text: "text-rose-700"    },
+    violet:  { dot: "bg-violet-500",  text: "text-violet-700"  },
+    indigo:  { dot: "bg-indigo-500",  text: "text-indigo-700"  },
+    teal:    { dot: "bg-teal-500",    text: "text-teal-700"    },
+  }[accent] : null;
+  return (
+    <label className="block space-y-1">
+      <span className={`inline-flex items-center gap-1.5 text-[16px] font-semibold tracking-tight ${accentCls ? accentCls.text : "text-zinc-600"}`}>
+        {accentCls && <span className={`w-1.5 h-1.5 rounded-full ${accentCls.dot} shrink-0`} />}
+        {label}
+        {required && <span className="text-rose-500 font-bold ml-0.5">*</span>}
+      </span>
+      {children}
+    </label>
+  );
+};
 
 export const colorMap = {
   sky:     { bar: "bg-sky-500",     text: "text-sky-700",     icon: "text-sky-600"     },

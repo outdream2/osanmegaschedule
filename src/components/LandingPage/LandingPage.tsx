@@ -634,8 +634,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       icon={Package}
                       title="공급사 재고확인"
                       description={label}
+                      disabled={disabled}
                       onClick={() => {
-                        if (disabled) return;
                         if (isVendor && vendorSelf) { setShowVendorStock(true); return; }
                         if (isSuperAdminLevel9) {
                           try { localStorage.setItem(SK_SUBTAB_DISPLAY, "vendor-manage"); } catch { /* silent */ }

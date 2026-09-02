@@ -298,34 +298,38 @@ router.post("/api/vendors", authorize(5), validateBody(CreateVendorSchema), asyn
   throw new HttpError(500, r1.error.message);
 }));
 
-// 거래처 수정 (관리자)
-// 2026-08-29 · 보안 S0 N1 fix · authorize(5) · approval_status/company_name 등 임의 수정 방지
-router.patch("/api/vendors/:id", authorize(5), validateBody(UpdateVendorSchema), asyncHandler(async (req, res) => {
+// 거래처 수정 · 관리자(lv5+) 또는 거래처 본인 (session.sub === id)
+// 2026-09-02 · 사용자 지시 · vendor 본인은 자기 정보 수정 허용 (승인 요청 위한 5필드 입력)
+//   · vendor session · approval_status · company_name · category · vat_included 제외 (관리자만)
+router.patch("/api/vendors/:id", authorize(0), validateBody(UpdateVendorSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
+  const authUser = (req as any).authUser as { sub: number; role: string; level: number } | undefined;
+  const isVendorSelf = authUser?.role === "vendor" && Number(authUser.sub) === id;
+  const isManagerPlus = (authUser?.level ?? 0) >= 5;
+  if (!isVendorSelf && !isManagerPlus) throw forbidden("본인 정보만 수정 가능합니다");
   const {
     company_name, contact_name, phone, email, category, note, business_number,
     vat_included, team_leader_name, team_leader_phone, emergency_contact,
-    // 2026-08-23 · #178 Phase C · 5 신규 필드 (xlsx 마스터 시트)
     order_method, region, invoice_method, order_status, special_notes,
-    // 2026-08-23 · #192 · approval_status (승인 flow · DB migration 후 사용)
     approval_status,
   } = req.body ?? {};
+  // vendor 본인 · 관리자 전용 필드 요청 시 무시 (silent · 저장은 진행)
+  const vendorAllowed = isVendorSelf && !isManagerPlus;
   const updates: Record<string, any> = {};
-  if (company_name !== undefined) updates.company_name = company_name.trim();
+  // vendor 본인은 · company_name · category · vat_included · approval_status 수정 불가 (silent skip)
+  if (company_name !== undefined && !vendorAllowed) updates.company_name = company_name.trim();
   if (contact_name !== undefined) updates.contact_name = contact_name;
   if (phone !== undefined) updates.phone = phone ? String(phone).replace(/[^0-9]/g, "") : null;
   if (email !== undefined) updates.email = email;
-  if (category !== undefined) updates.category = category;
+  if (category !== undefined && !vendorAllowed) updates.category = category;
   if (note !== undefined) updates.note = note;
-  // 2026-08-23 · #178 · 신규 5 필드 · null 허용 (사용자가 필드 삭제 가능)
   if (order_method !== undefined)   updates.order_method   = order_method;
   if (region !== undefined)         updates.region         = region;
   if (invoice_method !== undefined) updates.invoice_method = invoice_method;
   if (order_status !== undefined)   updates.order_status   = order_status;
   if (special_notes !== undefined)  updates.special_notes  = special_notes;
-  // 2026-08-23 · #192 · approval_status enum
-  if (approval_status !== undefined) updates.approval_status = approval_status;
+  if (approval_status !== undefined && !vendorAllowed) updates.approval_status = approval_status;
   if (business_number !== undefined) {
     const digits = business_number ? String(business_number).replace(/[^0-9]/g, "") : "";
     updates.business_number = digits.length === 10 ? digits : null;
@@ -358,7 +362,7 @@ router.patch("/api/vendors/:id", authorize(5), validateBody(UpdateVendorSchema),
     }
   }
   // 2026-08-03 · #193 · vat_included 저장 (true/false/null 허용)
-  if (vat_included !== undefined) {
+  if (vat_included !== undefined && !vendorAllowed) {
     updates.vat_included = vat_included === true ? true : vat_included === false ? false : null;
   }
   // 2026-08-10 · #21 · 팀장·긴급연락처 (마이그레이션 add_vendor_extra_contacts_2026-08-10.sql)
@@ -514,29 +518,25 @@ router.post("/api/vendors/:id/set-password", authorize(9), validateBody(SetPassw
 router.post("/api/vendors/:id/approval-request", authorize(1), validateBody(z.object({})), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
-  // 2026-09-02 · 사용자 지시 · DB 실제 컬럼명 정렬 · team_leader → team_leader_name · emergency_phone → emergency_contact
-  //   · 이전 · DB 컬럼명 (team_leader_name · emergency_contact) 과 쿼리 alias 불일치 · undefined 반환 · 승인 요청 항상 실패
+  // 2026-09-02 · 사용자 지시 · 필수 5필드로 축소
+  //   이메일(발주용) · 사업자번호 · 팀장 이름 · 팀장 연락처 · 긴급 연락처
+  //   주문방식·특이사항·비고 는 선택 (승인 조건에서 제외)
   const { data: vendor, error: fetchErr } = await supabase
     .from("vendors")
-    .select("id, email, order_method, team_leader_name, team_leader_phone, emergency_contact, business_number, special_notes, note, approval_status")
+    .select("id, email, team_leader_name, team_leader_phone, emergency_contact, business_number, approval_status")
     .eq("id", id)
     .maybeSingle();
   if (fetchErr) throw new HttpError(500, `공급사 조회 실패: ${fetchErr.message}`);
   if (!vendor) throw new HttpError(404, `공급사 없음: id=${id}`);
-  // 이미 승인됨 · 재요청 불가
   if (vendor.approval_status === "approved") {
     throw badRequest("이미 승인된 공급사입니다.");
   }
-  // 필수 8 필드 검증 · 필드명 정렬 (사용자 지시 · team_leader_name · emergency_contact)
   const missing: string[] = [];
-  if (!vendor.email || !String(vendor.email).trim()) missing.push("이메일");
-  if (!vendor.order_method || !String(vendor.order_method).trim()) missing.push("주문방식");
-  if (!(vendor as any).team_leader_name || !String((vendor as any).team_leader_name).trim()) missing.push("팀장");
-  if (!(vendor as any).team_leader_phone || !String((vendor as any).team_leader_phone).trim()) missing.push("팀장연락처");
-  if (!(vendor as any).emergency_contact || !String((vendor as any).emergency_contact).trim()) missing.push("긴급연락처");
+  if (!vendor.email || !String(vendor.email).trim()) missing.push("이메일(발주용)");
   if (!vendor.business_number || !String(vendor.business_number).trim()) missing.push("사업자번호");
-  if (!vendor.special_notes || !String(vendor.special_notes).trim()) missing.push("특이사항");
-  if (!(vendor as any).note || !String((vendor as any).note).trim()) missing.push("비고");
+  if (!(vendor as any).team_leader_name || !String((vendor as any).team_leader_name).trim()) missing.push("팀장 이름");
+  if (!(vendor as any).team_leader_phone || !String((vendor as any).team_leader_phone).trim()) missing.push("팀장 연락처");
+  if (!(vendor as any).emergency_contact || !String((vendor as any).emergency_contact).trim()) missing.push("긴급 연락처");
   if (missing.length > 0) {
     throw badRequest(`필수 항목 미입력: ${missing.join(" · ")}`);
   }
