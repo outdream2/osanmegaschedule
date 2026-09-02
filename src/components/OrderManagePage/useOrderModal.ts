@@ -139,8 +139,15 @@ export function useOrderModal({
                 needed_qty: (it.optimal_stock ?? 0) - (it.current_stock ?? 0), order_qty: it.order_qty, memo: it.memo })) }],
           });
           const outcomes = Array.isArray(body?.results?.[0]?.outcomes) ? body.results[0].outcomes as string[] : [];
-          const realSent = outcomes.some(o => /skipped\(/.test(o));
-          return { supplier: s.supplier, order_number: s.order_number, ok: realSent, status: 200, error: !realSent ? "발송된 채널 없음" : null, outcomes };
+          // 2026-09-02 · #76+ · fix · realSent 로직 재정렬 · 사용자 리포트 "발주 발송 안 돼"
+          //   · 이전 · /skipped\(/ 만 매칭 · 실제 sent 는 false 로 오판 · '발송된 채널 없음' 오류
+          //   · 이후 · :sent (실제 전송) 또는 skipped(...) (환경 미구성 dev) · DB dispatch 저장 성공이면 OK
+          //   · body.ok === true (서버 확정) 우선 · outcomes 는 diagnostic
+          const bodyOk = body?.ok === true || body?.results?.[0]?.dispatch_id != null;
+          const anySent = outcomes.some(o => /:sent(\s|$)/.test(o));
+          const anySkippedDev = outcomes.some(o => /skipped\(/.test(o));
+          const realSent = bodyOk || anySent || anySkippedDev;
+          return { supplier: s.supplier, order_number: s.order_number, ok: realSent, status: 200, error: !realSent ? "발송된 채널 없음 · 이메일·전화·카카오 미등록" : null, outcomes };
         } catch (e: any) {
           const errMsg = e instanceof ApiError ? e.message : (e?.message ?? String(e));
           return { supplier: s.supplier, order_number: s.order_number, ok: false, status: (e instanceof ApiError ? e.status : 0), error: `네트워크 오류: ${errMsg}`, outcomes: [] as string[] };
