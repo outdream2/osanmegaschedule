@@ -151,25 +151,38 @@ interface ConstructionTabProps {
 
 export const ConstructionTab: React.FC<ConstructionTabProps> = ({ underConstruction, onChange }) => {
   return (
+    // 2026-09-02 · 사용자 지시 · amber 중복 accent 제거 · Linear/Vercel 톤
+    //   · 이전 · 헤더 icon amber + 카드 border/bg amber + toggle amber + ON badge amber (4중)
+    //   · 개선 · 헤더 neutral · 카드 상단 3px accent stripe (amber · ON 상태만 강조) · toggle emerald (활성) · ON badge amber (유일 강조)
     <div className="w-full min-w-0 space-y-4 max-w-xl">
       <div className="flex items-center gap-2">
-        <Construction size={14} className="text-amber-600" />
-        <h2 className="text-[13px] font-bold text-zinc-700">공사중 (Under Construction)</h2>
+        <Construction size={14} className="text-zinc-500" />
+        <h2 className="text-[15px] font-bold text-ink tracking-tight">공사중 (Under Construction)</h2>
       </div>
-      <label className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 hover:border-amber-400 cursor-pointer">
+      <label className={`relative w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border bg-white hover:border-brand-deep/30 cursor-pointer transition overflow-hidden ${
+        underConstruction ? "border-amber-300 shadow-[0_1px_3px_rgba(245,158,11,0.10)]" : "border-line"
+      }`}>
+        {/* 상단 3px accent · ON 상태만 · Attio 시그니처 */}
+        {underConstruction && (
+          <span aria-hidden className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400" />
+        )}
         <input
           type="checkbox"
           checked={underConstruction === true}
           onChange={(e) => onChange(e.target.checked)}
-          className="w-4 h-4 accent-amber-500"
+          className="w-5 h-5 accent-brand-deep cursor-pointer"
         />
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-bold text-zinc-800 leading-tight">공사중 모드 활성화</div>
-          <div className="text-[11px] font-semibold text-zinc-500 leading-tight mt-0.5">
+          <div className="text-[14px] font-bold text-ink leading-tight">공사중 모드 활성화</div>
+          <div className="text-[12px] font-medium text-ink-soft leading-snug mt-1">
             비로그인 랜딩페이지 · 재고 검색 숨김 · "곧 오픈 예정입니다" 표시
           </div>
         </div>
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${underConstruction ? "bg-amber-500 text-white" : "bg-zinc-200 text-zinc-500"}`}>
+        <span className={`inline-flex items-center h-6 text-[11px] font-extrabold px-2.5 rounded-md tracking-wider ${
+          underConstruction
+            ? "bg-amber-500 text-white shadow-sm"
+            : "bg-zinc-100 text-zinc-500 border border-line"
+        }`}>
           {underConstruction ? "ON" : "OFF"}
         </span>
       </label>
@@ -246,7 +259,7 @@ export const PageSettingsTab: React.FC<PageSettingsTabProps> = ({
         </div>
       </div>
       <Card padding="none" clip>
-        <div className="grid grid-cols-[44px_minmax(0,1fr)_110px_110px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-5 py-2.5 bg-zinc-50 border-b border-zinc-100 text-[16px] font-bold text-zinc-500 tracking-tight">
+        <div className="grid grid-cols-[44px_minmax(0,1fr)_140px_140px] sm:grid-cols-[64px_minmax(0,1fr)_240px_240px] px-5 py-2.5 bg-zinc-50 border-b border-zinc-100 text-[16px] font-bold text-zinc-500 tracking-tight">
           <span className="text-center">보기</span>
           <span>페이지</span>
           <span className="text-right pr-3">읽기 최소</span>
@@ -265,7 +278,7 @@ export const PageSettingsTab: React.FC<PageSettingsTabProps> = ({
               <div
                 key={g.id}
                 title={row.desc}
-                className={`grid grid-cols-[44px_minmax(0,1fr)_110px_110px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-5 py-2.5 items-center ${isLastGroup ? "" : "border-b border-zinc-100"}`}
+                className={`grid grid-cols-[44px_minmax(0,1fr)_140px_140px] sm:grid-cols-[64px_minmax(0,1fr)_240px_240px] px-5 py-2.5 items-center ${isLastGroup ? "" : "border-b border-zinc-100"}`}
               >
                 <div className="flex justify-center">
                   <input
@@ -307,7 +320,7 @@ export const PageSettingsTab: React.FC<PageSettingsTabProps> = ({
               <button
                 type="button"
                 onClick={() => toggleGroup(g.id)}
-                className="w-full grid grid-cols-[44px_minmax(0,1fr)_110px_110px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-4 py-2.5 items-center bg-zinc-50/60 hover:bg-zinc-100/70 transition-colors text-left"
+                className="w-full grid grid-cols-[44px_minmax(0,1fr)_140px_140px] sm:grid-cols-[64px_minmax(0,1fr)_240px_240px] px-4 py-2.5 items-center bg-zinc-50/60 hover:bg-zinc-100/70 transition-colors text-left"
               >
                 <div />
                 <div className="flex items-center gap-2">
@@ -328,7 +341,7 @@ export const PageSettingsTab: React.FC<PageSettingsTabProps> = ({
                   <div
                     key={row.storageKey}
                     title={row.desc}
-                    className={`grid grid-cols-[44px_minmax(0,1fr)_110px_110px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-5 py-2 items-center border-t border-zinc-100/70`}
+                    className={`grid grid-cols-[44px_minmax(0,1fr)_140px_140px] sm:grid-cols-[64px_minmax(0,1fr)_240px_240px] px-5 py-2 items-center border-t border-zinc-100/70`}
                   >
                     <div className="flex justify-center">
                       <input

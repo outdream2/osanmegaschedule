@@ -8,6 +8,8 @@
 
 import React, { forwardRef } from "react";
 import type { OrderModalState } from "./OrderModal";
+// 2026-09-02 · fix · 사업장 이름 하드코딩 제거 · useCompanyInfo (설정 · 회사·브랜드 · 약국이름)
+import { useCompanyInfo } from "../../hooks/useCompanyInfo";
 
 interface OrderPdfPreviewProps {
   orderModal: OrderModalState;
@@ -45,6 +47,9 @@ const headCell: React.CSSProperties = {
 };
 
 export const OrderPdfPreview = forwardRef<HTMLDivElement, OrderPdfPreviewProps>(({ orderModal }, ref) => {
+  // 2026-09-02 · fix · 회사 이름 · 설정 · 회사·브랜드 (약국이름) 에서
+  const { info: company } = useCompanyInfo();
+  const companyName = company.name || "약국";
   const totalSuppliers = orderModal.suppliers.length;
   const totalItems     = orderModal.suppliers.reduce((n, s) => n + s.items.length, 0);
   const totalQty       = orderModal.suppliers.reduce((n, s) => n + s.items.reduce((m, it) => m + (it.order_qty || 0), 0), 0);
@@ -93,7 +98,7 @@ export const OrderPdfPreview = forwardRef<HTMLDivElement, OrderPdfPreviewProps>(
             </tr>
             <tr>
               <td style={headCell}>발신 (약국)</td>
-              <td style={cell}>오산 메가타운 약국</td>
+              <td style={cell}>{companyName}</td>
             </tr>
           </tbody>
         </table>
@@ -210,7 +215,7 @@ export const OrderPdfPreview = forwardRef<HTMLDivElement, OrderPdfPreviewProps>(
       {/* 푸터 · 단일 · 발행일 + 매장 */}
       <div style={{ marginTop: 18, paddingTop: 8, borderTop: `1px solid ${c.line}`, display: "flex", justifyContent: "space-between", fontSize: 10, color: c.muted, letterSpacing: "0.02em" }}>
         <span>Generated {new Date().toISOString().slice(0, 10)}</span>
-        <span>오산 메가타운 약국</span>
+        <span>{companyName}</span>
       </div>
     </div>
   );

@@ -23,8 +23,9 @@ interface Props {
   hint?: string;
 }
 
+// 2026-09-02 · 사용자 지시 · 로고/파비콘 입력창 (URL·파일 업로드) 폰트 -2 · 공간 절약
 const LABEL_CLS = "text-[11px] font-semibold text-zinc-600 block mb-1.5";
-const INPUT_CLS = "flex-1 bg-white border border-line rounded-lg px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:border-brand-deep transition";
+const INPUT_CLS = "flex-1 bg-white border border-line rounded-lg px-3 py-2 text-[12px] text-zinc-800 focus:outline-none focus:border-brand-deep transition";
 const BTN_CLS = "shrink-0 flex items-center gap-1 px-2.5 h-[38px] rounded-lg text-[11px] font-semibold border cursor-pointer transition";
 
 export const ImageUploadField: React.FC<Props> = ({

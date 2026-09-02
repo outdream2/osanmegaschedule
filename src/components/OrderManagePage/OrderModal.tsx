@@ -16,6 +16,8 @@ import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 // 2026-08-25 · 프레임워크 · useToast (raw alert 제거)
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-09-02 · fix · 사업장 이름 하드코딩 제거 · useCompanyInfo (설정 · 회사·브랜드)
+import { useCompanyInfo } from "../../hooks/useCompanyInfo";
 
 export interface OrderModalItem {
   order_request_id: string;
@@ -81,6 +83,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   onDateChange,
   onChannelChange,
 }) => {
+  // 2026-09-02 · fix · 사업장 이름 · 설정 · 회사·브랜드 (약국이름)
+  const { info: company } = useCompanyInfo();
+  const companyName = company.name || "약국";
   // 2026-08-25 · 사용자 지시 · 발주서 PDF 저장 (A4 텍스트 리포트)
   //   · 오프스크린 프리뷰 → html2canvas → jsPDF 다중 페이지
   //   · 공급사별 페이지 분할 (기본) · 페이지 넘침 시 자동 분할
@@ -187,7 +192,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         </div>
         <div className="col-span-2">
           <label className="text-zinc-500 font-bold block mb-1">수신처</label>
-          <div className="border border-line rounded px-2 py-1 bg-white text-zinc-700 font-semibold">🏪 오산 메가타운 약국</div>
+          <div className="border border-line rounded px-2 py-1 bg-white text-zinc-700 font-semibold">🏪 {companyName}</div>
         </div>
       </div>
 

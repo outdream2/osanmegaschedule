@@ -5,6 +5,8 @@
 
 import React, { forwardRef } from "react";
 import type { ReturnLineItem, ReturnReasonKey } from "./ReturnListPanel.types";
+// 2026-09-02 · fix · 사업장 이름 하드코딩 제거 · useCompanyInfo (설정 · 회사·브랜드)
+import { useCompanyInfo } from "../../hooks/useCompanyInfo";
 
 interface ReturnPdfPreviewProps {
   returnNumber: string;
@@ -28,6 +30,9 @@ const cell: React.CSSProperties = {
 const headCell: React.CSSProperties = { ...cell, background: "#f1f5f9", fontWeight: 700, color: "#1e293b" };
 
 export const ReturnPdfPreview = forwardRef<HTMLDivElement, ReturnPdfPreviewProps>((props, ref) => {
+  // 2026-09-02 · fix · 회사 이름 · 설정 · 회사·브랜드 (약국이름)
+  const { info: company } = useCompanyInfo();
+  const companyName = company.name || "약국";
   const { returnNumber, requestDate, expectedDate, reason, supplierName, supplierContact, supplierPhone, supplierEmail, lines, memo } = props;
   const totalQty    = lines.reduce((s, r) => s + (r.return_qty || 0), 0);
   const totalAmount = lines.reduce((s, r) => s + (r.return_qty || 0) * (r.purchase_price || 0), 0);
@@ -82,7 +87,7 @@ export const ReturnPdfPreview = forwardRef<HTMLDivElement, ReturnPdfPreviewProps
           )}
           <tr>
             <td style={headCell}>발신 (약국)</td>
-            <td style={cell} colSpan={3}>오산 메가타운 약국</td>
+            <td style={cell} colSpan={3}>{companyName}</td>
           </tr>
         </tbody>
       </table>
@@ -158,7 +163,7 @@ export const ReturnPdfPreview = forwardRef<HTMLDivElement, ReturnPdfPreviewProps
       {/* 푸터 */}
       <div style={{ marginTop: 20, paddingTop: 10, borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748b" }}>
         <span>발행일: {new Date().toISOString().slice(0, 10)}</span>
-        <span>오산 메가타운 약국</span>
+        <span>{companyName}</span>
       </div>
     </div>
   );

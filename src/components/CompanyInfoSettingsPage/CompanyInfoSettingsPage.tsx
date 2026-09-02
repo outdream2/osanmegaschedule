@@ -139,11 +139,7 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
               <input className={INPUT_CLS} value={info.representativeName} onChange={e => setInfo({ representativeName: e.target.value })}
                      placeholder="예: 강남성" />
             </div>
-            <div>
-              <label className={LABEL_CLS}><IdentificationBadge size={12} />대표자 직함</label>
-              <input className={INPUT_CLS} value={info.representativeTitle ?? ""} onChange={e => setInfo({ representativeTitle: e.target.value })}
-                     placeholder="예: 대표 · 약국장" />
-            </div>
+            {/* 2026-09-02 · 사용자 지시 · 대표자 직함 · 사업장 정보 아래쪽에 · 필요없음 (필드 자체 제거) */}
             <div>
               <label className={LABEL_CLS}><IdentificationBadge size={12} />사업자등록번호</label>
               <input className={INPUT_CLS} value={info.regNo} onChange={e => setInfo({ regNo: e.target.value })}

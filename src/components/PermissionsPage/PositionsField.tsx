@@ -25,7 +25,8 @@ export const PositionsField: React.FC<PositionsFieldProps> = ({ selected, allPos
     return () => document.removeEventListener("mousedown", handler);
   }, [isOpen, onToggleOpen]);
   return (
-    <div className="relative flex items-center gap-1 flex-wrap justify-end max-w-full" ref={ref}>
+    // 2026-09-02 · 사용자 지시 · flex-wrap 제거 · 한 줄 유지 · 표 형식 정렬
+    <div className="relative flex items-center gap-1 justify-end max-w-full min-w-0" ref={ref}>
       {selected.map(p => (
         <button
           key={p}

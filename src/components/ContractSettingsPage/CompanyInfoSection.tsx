@@ -118,17 +118,7 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
             className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
           />
         </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-bold text-zinc-500">대표자 직함 <span className="text-zinc-400 font-normal">(선택)</span></label>
-          <input
-            type="text"
-            value={companyInfo.representativeTitle ?? ""}
-            onChange={(e) => setCompanyInfo(prev => ({ ...prev, representativeTitle: e.target.value }))}
-            placeholder="예) 대표약사"
-            disabled={!companyInfoLoaded}
-            className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
-          />
-        </div>
+        {/* 2026-09-02 · 사용자 지시 · 대표자 직함 필드 · 필요없음 · 제거 */}
         <div className="flex flex-col gap-1 col-span-2">
           <label className="text-[11px] font-bold text-zinc-500">
             임금지급일 <span className="text-zinc-400 font-normal">(근로계약서에 자동 반영)</span>
