@@ -52,6 +52,15 @@ export const formatBizNum = (s: string | null): string => {
   return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}`;
 };
 
+// 2026-09-02 · 사용자 지시 · 입력 중에도 진행형 하이픈 (000 · 000-00 · 000-00-00000)
+export const formatBizNumProgressive = (s: string | null): string => {
+  if (!s) return "";
+  const d = normalizeBizNum(s);
+  if (d.length <= 3)  return d;
+  if (d.length <= 5)  return `${d.slice(0, 3)}-${d.slice(3)}`;
+  return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}`;
+};
+
 // compact 모드 전용 · 분류별 좌측 컬러 바
 export const CATEGORY_LEFT_BORDER: Record<string, string> = {
   위탁:       "border-l-violet-400",
