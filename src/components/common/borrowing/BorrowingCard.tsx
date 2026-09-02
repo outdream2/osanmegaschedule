@@ -55,7 +55,8 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
     : "from-violet-400 via-emerald-500 to-emerald-400";
 
   return (
-    <div className={`relative rounded-xl border border-line bg-white hover:border-brand-deep/30 hover:shadow-md transition-all overflow-hidden ${className}`}>
+    // 2026-09-02 · 목업 · row-hover · 좌측 gradient 튀는 hint (Linear/Vercel 톤)
+    <div className={`group relative rounded-xl border border-line bg-white hover:border-brand-deep/30 hover:shadow-md hover:bg-gradient-to-r hover:from-brand-tint/20 hover:to-transparent transition-all overflow-hidden ${className}`}>
       {/* 2026-09-01 · 목업 gap · 3px top gradient accent · status 별 색상 (Attio/Linear 시그니처) */}
       <span aria-hidden className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${topAccentCls} z-10`} />
 
