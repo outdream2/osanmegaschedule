@@ -19,6 +19,10 @@ export interface Vendor {
   order_status?: string | null;
   special_notes?: string | null;
   approval_status?: string | null;
+  // 2026-09-02 · 사용자 지시 · 팀장 정보 추가 · migration 20260902_vendors_team_lead.sql
+  team_leader_name?: string | null;
+  team_leader_phone?: string | null;
+  emergency_contact?: string | null;
 }
 
 /** GET /api/vendors · 리스트 (배열 직접 반환 · 하위호환) */

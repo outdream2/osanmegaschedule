@@ -46,6 +46,10 @@ export interface VendorInfoFull {
   invoice_method?: string | null;
   order_status?: string | null;
   special_notes?: string | null;
+  // 2026-09-02 · 사용자 지시 · 팀장 정보 · 담당자 연락 안 될 때 · 헤더 표시
+  team_leader_name?: string | null;
+  team_leader_phone?: string | null;
+  emergency_contact?: string | null;
 }
 
 /** 매입 KPI (VendorHeaderPanel.calcKpis 결과와 동일 구조) */
@@ -194,6 +198,30 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
               </span>
             )}
           </div>
+
+          {/* 2026-09-02 · 사용자 지시 · 팀장 정보 · 담당자 아래줄 · 값 있으면만 표시 */}
+          {(vendor.team_leader_name || vendor.team_leader_phone) && (
+            <div className="flex items-center gap-3 flex-wrap text-[11px] text-zinc-500 mt-0.5">
+              <span className="inline-flex items-center gap-1 font-bold text-violet-600">
+                <User2 size={10} className="text-violet-500" />
+                팀장
+              </span>
+              {vendor.team_leader_name && (
+                <span className="inline-flex items-center gap-1">
+                  {vendor.team_leader_name}
+                </span>
+              )}
+              {vendor.team_leader_phone && (
+                <a
+                  href={`tel:${vendor.team_leader_phone.replace(/\D/g, "")}`}
+                  className="inline-flex items-center gap-1 tabular-nums hover:text-sky-600 transition"
+                >
+                  <Phone size={10} className="text-zinc-400" />
+                  {fmtPhone(vendor.team_leader_phone)}
+                </a>
+              )}
+            </div>
+          )}
 
           {/* 2026-08-24 · #178 · xlsx 5 필드 · 값 있는 항목만 표시 */}
           {(vendor.order_method || vendor.region || vendor.invoice_method || vendor.order_status) && (
