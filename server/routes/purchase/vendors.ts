@@ -132,12 +132,25 @@ router.get("/api/vendors", asyncHandler(async (req, res) => {
   let firstErr: string | null = null;
   let hasVatIncluded = true;
   {
+    // 2026-09-02 · fix · 확장 필드 포함 (team_leader · emergency_contact · order_method · special_notes · approval_status 등)
+    //   · 저장 후 재조회 시 · 최신 값 반환 · 사용자 · '저장했는데 값이 안 올라옴' 이슈 해소
+    //   · password_hash 는 절대 select 하지 않음 (보안)
     const r1 = await supabase
       .from("vendors")
-      .select("id, company_name, contact_name, phone, email, category, note, business_number, vat_included, created_at")
+      .select("id, company_name, contact_name, phone, email, category, note, business_number, vat_included, team_leader_name, team_leader_phone, emergency_contact, order_method, region, invoice_method, order_status, special_notes, approval_status, approved_at, approval_requested_at, approved_by, manager_phone, created_at")
       .order("company_name");
     if (!r1.error) data = r1.data ?? [];
     else firstErr = r1.error.message;
+  }
+  if (!data) {
+    // 확장 필드 없음 fallback · 기존 필드만
+    hasVatIncluded = true;
+    const rExt = await supabase
+      .from("vendors")
+      .select("id, company_name, contact_name, phone, email, category, note, business_number, vat_included, created_at")
+      .order("company_name");
+    if (!rExt.error) data = rExt.data ?? [];
+    else firstErr = `${firstErr} | ${rExt.error.message}`;
   }
   if (!data) {
     // vat_included 컬럼 없음 fallback · email 은 유지
