@@ -259,21 +259,27 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
 
   const visibleSlots = useMemo(() => {
     const { anyAssigned, hasAnyZone, hasS1, hasS2, hasS3 } = slotVis;
-    // 2026-09-03 · #74 재개편 · 사용자 리포트 '실재고 스캔 시 창고 안 나와'
-    //   · 실재고 페이지 특성 · 창고 슬롯 항상 표시 (창고 재고 저장 필요)
-    //   · 매장 진열대 zone 상품이라도 · 창고에 실재고 저장 가능해야 함
-    //   · 창고1·창고2 · 항상 노출 (사용자 필요 시 입력)
+    // 2026-09-03 · #74 · 사용자 지시 · '해당 창고만 표시' · 배타적 필터
+    //   · 상품 real_map · 창고1 zone (24·25·26·27·7B·8A) → showW1=true, showW2=false
+    //   · 창고2 zone → showW2=true, showW1=false
+    //   · real_map null · 미지정 → 둘 다 표시 (사용자가 선택)
     //   · 매장 슬롯 · zone 지정 or 재고 있으면 표시
-    if (!anyAssigned) return [...SLOTS];
+    if (!anyAssigned) {
+      return SLOTS.filter(s => {
+        if (s.key === "w1") return showW1;
+        if (s.key === "w2") return showW2;
+        return true; // 매장은 모두 표시 (미지정 시)
+      });
+    }
     return SLOTS.filter(s => {
-      if (s.key === "w1") return true;  // 창고1 항상 표시
-      if (s.key === "w2") return true;  // 창고2 항상 표시
+      if (s.key === "w1") return showW1;
+      if (s.key === "w2") return showW2;
       if (s.key === "s1") return hasAnyZone ? hasS1 : visibleStoreCount >= 1;
       if (s.key === "s2") return hasAnyZone ? hasS2 : visibleStoreCount >= 2;
       if (s.key === "s3") return hasAnyZone ? hasS3 : visibleStoreCount >= 3;
       return true;
     });
-  }, [slotVis, visibleStoreCount]);
+  }, [slotVis, showW1, showW2, visibleStoreCount]);
 
   // [+ 매장 추가] · zone 미지정일 때만 표시
   const canAddStore = !slotVis.hasAnyZone && visibleStoreCount < 3;
