@@ -172,7 +172,15 @@ export function useOrderModal({
           return `  · ${r.supplier} (#${r.order_number})${r.error ? ` · ${r.error}` : ""}${r.outcomes.length > 0 ? ` · ${r.outcomes.join(", ")}` : ""}`;
         })] : []),
       ].join("\n");
-      showSuccess(`발주서 ${orderModal.suppliers.length}건 발송 결과\n\n${summaryLines}`);
+      // 2026-09-02 · #82 · 사용자 지시 · 안 되는 기능 안내 원칙
+      //   · 실제 :sent 있으면 성공 · 없으면 · 저장만 되고 발송 안 됨 명확히 알림
+      const anyRealSent = results.some(r => r.outcomes.some(o => /:sent(\s|$)/.test(o)));
+      const anyNoEnv = results.some(r => r.outcomes.some(o => /no_env|skipped\(.*not-installed/.test(o)));
+      if (!anyRealSent && anyNoEnv) {
+        showError(`발주서 저장 완료 · ⚠ 실제 발송은 이메일/카카오/문자 환경 미설정 (개발중 · 관리자에게 문의)\n\n${summaryLines}`);
+      } else {
+        showSuccess(`발주서 ${orderModal.suppliers.length}건 발송 결과\n\n${summaryLines}`);
+      }
       const needsEdit = failed.filter(r => missingByReason(r).length > 0);
       for (const r of needsEdit) {
         const missing = missingByReason(r);
