@@ -463,17 +463,23 @@ router.post("/api/order-requests", authorize(1), validateBody(CreateOrderRequest
   const b = req.body;
   const code = b.product_code;
   const now = new Date().toISOString();
+  // 2026-09-02 · 사용자 지시 · '발주필요요청 눌러도 발주요청에 안 들어감' fix
+  //   · 원인 · 기존 row (ordered 상태) 존재 시 · status 유지 · 리스트 필터 (status=requested) 통과 X
+  //   · 이후 · status='requested' 로 리셋 · sent_at·order_number 초기화 · 재요청 flow
   const payload = {
     current_stock: b.current_stock != null ? Number(b.current_stock) : null,
     optimal_stock: b.optimal_stock != null ? Number(b.optimal_stock) : null,
     note: String(b.note ?? ""),
     requested_at: now,
+    status: "requested",
+    sent_at: null,
+    order_number: null,
   };
-  const { data: existing } = await supabase.from("order_requests").select("id").eq("product_code", code).maybeSingle();
+  const { data: existing } = await supabase.from("order_requests").select("id, status").eq("product_code", code).maybeSingle();
   if (existing) {
     const { error } = await supabase.from("order_requests").update(payload).eq("id", existing.id);
     if (error) throw new HttpError(500, error.message);
-    return res.json({ ok: true, updated: true, id: existing.id });
+    return res.json({ ok: true, updated: true, id: existing.id, prevStatus: existing.status });
   }
   const { data, error } = await supabase.from("order_requests").insert([{
     product_code: code,
