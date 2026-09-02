@@ -181,9 +181,26 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
         expiring: false,
         addedAt: Date.now(),
         location: null,
+        // 2026-09-03 · #78 · 상품의 real_map · location 자동 채움 (첫 매칭 zone)
+        unitPrice: null,
+        expiryDate: null,
       };
       addedKey = newItem.key;
       setItems(prev => [newItem, ...prev]);
+      // 2026-09-03 · #78 · 사입 단가 자동 fill · fire-and-forget
+      //   · /api/products/purchase-history · latest_unit_price 조회 · 응답 후 setItems 업데이트
+      const autoFillKey = newItem.key;
+      (async () => {
+        try {
+          const { data: j } = await api.get<any>(`/api/products/purchase-history?codes=${encodeURIComponent(result)}&limit=1`);
+          const latestPrice = j?.history?.[result]?.latest_unit_price;
+          if (latestPrice != null && Number.isFinite(Number(latestPrice))) {
+            setItems(prev => prev.map(it =>
+              it.key === autoFillKey && it.unitPrice == null ? { ...it, unitPrice: Number(latestPrice) } : it
+            ));
+          }
+        } catch { /* silent · 자동 fill 실패해도 수동 입력 가능 */ }
+      })();
     }
     setLastAddedKey(addedKey);
     setFinalDecision(null);
