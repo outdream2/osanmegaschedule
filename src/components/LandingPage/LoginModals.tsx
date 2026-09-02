@@ -202,8 +202,10 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
         className="relative w-14 h-14 object-cover rounded-2xl ring-1 ring-white/30 shadow-lg shrink-0 bg-white"
       />
       <div className="relative min-w-0">
+        {/* 2026-09-02 · fix · region 중복 제거 · shortName 단독 (사용자 · "오산 오산메가타운" 중복 표시 이슈)
+             · shortName 에 region 이 이미 포함되므로 · region 접두 X · 순수 브랜드 shortName 만 */}
         <div className="text-white font-bold text-3xl leading-tight tracking-tight truncate">
-          {(lpBrand.region ? lpBrand.region + " " : "오산 ") + (lpBrand.shortName || "메가타운약국")}
+          {lpBrand.shortName || "메가타운약국"}
         </div>
       </div>
     </div>
