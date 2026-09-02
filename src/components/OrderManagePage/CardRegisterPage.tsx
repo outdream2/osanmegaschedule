@@ -249,6 +249,16 @@ export const CardRegisterPage: React.FC = () => {
               />
               <span className="text-[15px] text-zinc-500 whitespace-nowrap">일</span>
             </div>
+            {/* 2026-09-02 · 사용자 지시 · 청구기간 자동 표시 · 결제일 D → 전월 D+1 ~ 이번 D 매입분 */}
+            {(() => {
+              const d = draft.billing_day;
+              const prev = d === 1 ? 31 : d - 1;
+              return (
+                <div className="mt-1.5 text-[13px] text-brand-deep bg-brand-tint/40 border border-brand/15 rounded-md px-2 py-1 tabular-nums">
+                  💡 청구기간 · 전월 <b>{prev + 1 > 31 ? 1 : prev + 1}일</b> ~ 이번달 <b>{d}일</b> 매입분 → <b>{d}일</b> 청구
+                </div>
+              );
+            })()}
           </div>
           <div className="col-span-2">
             <label className={labelCls}>비고 (선택)</label>

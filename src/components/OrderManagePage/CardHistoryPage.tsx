@@ -158,59 +158,93 @@ export const CardHistoryPage: React.FC = () => {
         />
       </div>
 
-      {/* ─── 카드별 · 차월 결제 예정 개별 리스트 (핵심 · 사용자 지시) ─── */}
+      {/* ─── 카드별 · 차월 결제 예정 (사용자 지시 · 각 카드 클릭 시 · 상세 아래 접혀 노출) ─── */}
       <Card padding="md" topAccent>
         <div className="flex items-center gap-2 mb-3">
           <IconTile icon={<TrendingUp size={14} />} tone="rose" size="sm" />
           <div className="text-[18px] font-bold text-ink">카드별 · 차월 결제 예정</div>
-          <div className="ml-auto text-[14px] text-ink-soft">결제일 기준 · 이번달 이후 결제된 매입</div>
+          <div className="ml-auto text-[14px] text-ink-soft">카드 클릭 시 · 상세 접기 열림</div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {summaries.map(s => (
-            <button
-              key={s.card.id}
-              type="button"
-              onClick={() => setSelectedCardId(s.card.id)}
-              className={`text-left rounded-xl border-2 px-4 py-3 transition ${
-                selectedCardId === s.card.id
-                  ? "border-brand-deep bg-brand-tint/40 shadow-md"
-                  : "border-line bg-white hover:border-brand-deep/40 hover:bg-zinc-50/50"
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <span
-                  className="w-2 h-2 rounded-full"
-                  style={{ background: ISSUER_COLOR[s.card.issuer] ?? "#71717a" }}
-                />
-                <span className="text-[17px] font-bold text-ink">{s.card.issuer}</span>
-                {s.card.alias && <span className="text-[15px] text-zinc-600">· {s.card.alias}</span>}
-              </div>
-              {s.card.last4 && (
-                <div className="text-[14px] text-zinc-500 font-mono mb-2">
-                  **** {s.card.last4}
-                </div>
-              )}
-              <div className="mt-2 pt-2 border-t border-zinc-100">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-[14px] text-zinc-500 font-semibold">차월 예정</span>
-                  <span className="text-[20px] font-extrabold text-rose-600 tabular-nums">
-                    {fmtWon(s.nextBillingAmount)}
+        <div className="space-y-2">
+          {summaries.map(s => {
+            const isOpen = selectedCardId === s.card.id;
+            const color = ISSUER_COLOR[s.card.issuer] ?? "#71717a";
+            return (
+              <div
+                key={s.card.id}
+                className={`rounded-xl border-2 overflow-hidden transition ${
+                  isOpen ? "border-brand-deep bg-brand-tint/20 shadow-md" : "border-line bg-white hover:border-brand-deep/30"
+                }`}
+              >
+                {/* 카드 요약 (button · 클릭 · 접기 토글) */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedCardId(prev => prev === s.card.id ? null : s.card.id)}
+                  className="w-full text-left px-4 py-3 flex items-center gap-4 flex-wrap cursor-pointer"
+                  aria-expanded={isOpen}
+                >
+                  <span className="inline-flex items-center gap-2 shrink-0">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
+                    <span className="text-[18px] font-bold text-ink">{s.card.issuer}</span>
+                    {s.card.alias && <span className="text-[15px] text-zinc-600">· {s.card.alias}</span>}
+                    {s.card.last4 && <span className="text-[14px] text-zinc-400 font-mono">**** {s.card.last4}</span>}
+                    <span className="text-[13px] text-zinc-400">· {s.card.billing_day}일 결제</span>
                   </span>
-                </div>
-                <div className="text-[13px] text-zinc-400 tabular-nums text-right">
-                  {s.nextBillingDate} 결제
-                </div>
-              </div>
-              <div className="mt-1.5">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-[14px] text-zinc-500">이번달 청구</span>
-                  <span className="text-[16px] font-bold text-amber-600 tabular-nums">
-                    {fmtWon(s.currentBillingAmount)}
+                  <span className="inline-flex items-baseline gap-1.5 ml-auto">
+                    <span className="text-[14px] text-zinc-500 font-semibold">이번달</span>
+                    <span className="text-[17px] font-bold text-amber-600 tabular-nums">{fmtWon(s.currentBillingAmount)}</span>
                   </span>
-                </div>
+                  <span className="inline-flex items-baseline gap-1.5">
+                    <span className="text-[14px] text-rose-500 font-semibold">차월</span>
+                    <span className="text-[20px] font-extrabold text-rose-600 tabular-nums">{fmtWon(s.nextBillingAmount)}</span>
+                    <span className="text-[13px] text-zinc-400 tabular-nums">({s.nextBillingDate})</span>
+                  </span>
+                  <span className={`inline-flex items-center justify-center w-7 h-7 rounded-md text-zinc-400 transition-transform shrink-0 ${isOpen ? "rotate-180 text-brand-deep" : ""}`}>
+                    ▾
+                  </span>
+                </button>
+
+                {/* 상세 (접기 · KPI + 월별 mini bar) */}
+                {isOpen && (
+                  <div className="border-t border-zinc-100 bg-white/60 px-4 py-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* 좌 · KPI 4 */}
+                      <div className="space-y-2 text-[16px]">
+                        <div className="flex justify-between py-1.5 border-b border-zinc-100">
+                          <span className="text-zinc-500">총 결제 (12개월)</span>
+                          <span className="font-bold text-brand-deep tabular-nums">{fmtWon(s.totalAmount)}</span>
+                        </div>
+                        <div className="flex justify-between py-1.5 border-b border-zinc-100">
+                          <span className="text-zinc-500">총 건수</span>
+                          <span className="font-bold text-ink tabular-nums">{s.totalCount.toLocaleString()}건</span>
+                        </div>
+                        <div className="flex justify-between py-1.5 border-b border-zinc-100">
+                          <span className="text-zinc-500">이번달 결제 예정 ({s.currentBillingDate})</span>
+                          <span className="font-bold text-amber-600 tabular-nums">{fmtWon(s.currentBillingAmount)}</span>
+                        </div>
+                        <div className="flex justify-between py-1.5">
+                          <span className="text-zinc-500">차월 결제 예정 ({s.nextBillingDate})</span>
+                          <span className="font-extrabold text-rose-600 tabular-nums text-[19px]">{fmtWon(s.nextBillingAmount)}</span>
+                        </div>
+                      </div>
+                      {/* 우 · 월별 mini bar (12개월) */}
+                      <div style={{ width: "100%", height: 180 }}>
+                        <ResponsiveContainer>
+                          <BarChart data={s.monthly.map(m => ({ month: m.month.slice(2).replace("-", "/"), amount: m.amount }))} margin={{ top: 4, right: 4, bottom: 4, left: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis dataKey="month" fontSize={12} stroke="#71717a" />
+                            <YAxis fontSize={12} stroke="#71717a" tickFormatter={fmtWonShort} />
+                            <Tooltip formatter={(v: any) => `${Number(v).toLocaleString()}원`} contentStyle={{ fontSize: 14 }} />
+                            <Bar dataKey="amount" fill={color} radius={[3, 3, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </button>
-          ))}
+            );
+          })}
         </div>
       </Card>
 
@@ -252,85 +286,37 @@ export const CardHistoryPage: React.FC = () => {
         )}
       </Card>
 
-      {/* ─── 카드별 share pie chart + 선택 카드 상세 ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <Card padding="md" topAccent>
-          <div className="flex items-center gap-2 mb-3">
-            <IconTile icon={<CreditCardIcon size={14} />} tone="violet" size="sm" />
-            <div className="text-[18px] font-bold text-ink">카드별 · 총 결제 비중</div>
+      {/* ─── 카드별 share pie chart (선택 카드 상세는 위 accordion 에 통합됨) ─── */}
+      <Card padding="md" topAccent>
+        <div className="flex items-center gap-2 mb-3">
+          <IconTile icon={<CreditCardIcon size={14} />} tone="violet" size="sm" />
+          <div className="text-[18px] font-bold text-ink">카드별 · 총 결제 비중</div>
+        </div>
+        {pieData.length === 0 ? (
+          <EmptyState icon={CreditCardIcon} title="결제 없음" size="normal" />
+        ) : (
+          <div style={{ width: "100%", height: 260 }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={90}
+                  label={(e: any) => `${e.name} ${(e.percent * 100).toFixed(0)}%`}
+                  labelLine={false}
+                  fontSize={13}
+                >
+                  {pieData.map(d => <Cell key={d.id} fill={d.color} />)}
+                </Pie>
+                <Tooltip formatter={(v: any) => `${Number(v).toLocaleString()}원`} contentStyle={{ fontSize: 14 }} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
-          {pieData.length === 0 ? (
-            <EmptyState icon={CreditCardIcon} title="결제 없음" size="normal" />
-          ) : (
-            <div style={{ width: "100%", height: 260 }}>
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={90}
-                    label={(e: any) => `${e.name} ${(e.percent * 100).toFixed(0)}%`}
-                    labelLine={false}
-                    fontSize={13}
-                  >
-                    {pieData.map(d => <Cell key={d.id} fill={d.color} />)}
-                  </Pie>
-                  <Tooltip formatter={(v: any) => `${Number(v).toLocaleString()}원`} contentStyle={{ fontSize: 14 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </Card>
-
-        {selectedSummary && (
-          <Card padding="md" topAccent>
-            <div className="flex items-center gap-2 mb-3">
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{ background: ISSUER_COLOR[selectedSummary.card.issuer] ?? "#71717a" }}
-              />
-              <div className="text-[18px] font-bold text-ink">
-                {selectedSummary.card.issuer}
-                {selectedSummary.card.alias ? " · " + selectedSummary.card.alias : ""}
-              </div>
-              <div className="ml-auto text-[14px] text-zinc-500">결제일 {selectedSummary.card.billing_day}일</div>
-            </div>
-            <div className="space-y-2 text-[16px]">
-              <div className="flex justify-between py-2 border-b border-zinc-100">
-                <span className="text-zinc-500">총 결제 (12개월)</span>
-                <span className="font-bold text-brand-deep tabular-nums">{fmtWon(selectedSummary.totalAmount)}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-zinc-100">
-                <span className="text-zinc-500">총 건수</span>
-                <span className="font-bold text-ink tabular-nums">{selectedSummary.totalCount.toLocaleString()}건</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-zinc-100">
-                <span className="text-zinc-500">이번달 결제 예정 ({selectedSummary.currentBillingDate})</span>
-                <span className="font-bold text-amber-600 tabular-nums">{fmtWon(selectedSummary.currentBillingAmount)}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-zinc-500">차월 결제 예정 ({selectedSummary.nextBillingDate})</span>
-                <span className="font-extrabold text-rose-600 tabular-nums text-[19px]">{fmtWon(selectedSummary.nextBillingAmount)}</span>
-              </div>
-            </div>
-            {/* 월별 개별 · mini bar */}
-            <div className="mt-3" style={{ width: "100%", height: 160 }}>
-              <ResponsiveContainer>
-                <BarChart data={selectedSummary.monthly.map(m => ({ month: m.month.slice(2).replace("-", "/"), amount: m.amount }))} margin={{ top: 4, right: 4, bottom: 4, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="month" fontSize={12} stroke="#71717a" />
-                  <YAxis fontSize={12} stroke="#71717a" tickFormatter={fmtWonShort} />
-                  <Tooltip formatter={(v: any) => `${Number(v).toLocaleString()}원`} contentStyle={{ fontSize: 14 }} />
-                  <Bar dataKey="amount" fill={ISSUER_COLOR[selectedSummary.card.issuer] ?? "#71717a"} radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
         )}
-      </div>
+      </Card>
     </div>
   );
 };
