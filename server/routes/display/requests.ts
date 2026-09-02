@@ -682,9 +682,10 @@ router.post("/api/order-requests/bulk-send", authorize(3), validateBody(BulkSend
       .map((id: any) => String(id));
     if (requestIds.length > 0) {
       try {
+        // 2026-09-02 · #79 fix · RPC 파라미터명 · request_ids → p_request_ids (UUID 대응 · migration 20260902)
         const { data: rpcRows, error: rpcErr } = await supabase.rpc(
           "bulk_send_order_requests",
-          { request_ids: requestIds },
+          { p_request_ids: requestIds },
         );
         if (rpcErr) {
           // RPC 미존재(마이그레이션 미실행) 시 · fallback · 직접 UPDATE (2026-09-02 · #77 fix)
