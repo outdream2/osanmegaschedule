@@ -20,6 +20,8 @@ interface TodayStatusPanelProps {
     inventory: number;
     return: number;
     resignation: number;
+    // 2026-09-02 · 사용자 지시 · 거래처 승인 요청 (관리자만 표시)
+    vendor: number;
   };
   statusDetailOpen: boolean;
   setStatusDetailOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -73,7 +75,8 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
             + requestsCounts.display + requestsCounts.order
             + requestsCounts.mismatch + (lunchMenuVisible ? requestsCounts.lunch : 0)
             + requestsCounts.return
-            + requestsCounts.resignation;
+            + requestsCounts.resignation
+            + (isAdmin ? requestsCounts.vendor : 0);
           return (
             <button
               type="button"
@@ -175,6 +178,18 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
           <span className={`w-2 h-2 rounded-full ${requestsCounts.resignation > 0 ? "bg-red-500" : "bg-zinc-300"}`} />
           사직서 승인 <b className={`font-bold tabular-nums ${requestsCounts.resignation > 0 ? "text-red-700" : "text-ink"}`}>{requestsCounts.resignation}</b>건
         </button>
+        {/* 2026-09-02 · 사용자 지시 · 거래처 승인 요청 · 관리자만 · 요청목록>거래처승인 탭 */}
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => onNavigate("requests", authSession)}
+            className="inline-flex items-center gap-1.5 hover:text-blue-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
+            title="거래처 승인 · 요청목록>거래처승인 탭으로 이동"
+          >
+            <span className={`w-2 h-2 rounded-full ${requestsCounts.vendor > 0 ? "bg-blue-500" : "bg-zinc-300"}`} />
+            거래처 승인 <b className={`font-bold tabular-nums ${requestsCounts.vendor > 0 ? "text-blue-700" : "text-ink"}`}>{requestsCounts.vendor}</b>건
+          </button>
+        )}
       </div>
 
       {/* 2026-08-21 · #171 Phase 3 · 상세 리스트 (전체 N건 클릭 시 토글) · 7항목 breakdown table */}
@@ -195,6 +210,8 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
               // 2026-08-25 · 사용자 지시 · 재고 점검 항목 제거 (breakdown 도 함께 숨김)
               { label: "반품 요청", count: requestsCounts.return, dot: "bg-orange-500", text: "text-orange-700", nav: "requests" as Exclude<AppNavPage, "landing"> },
               { label: "사직서 승인", count: requestsCounts.resignation, dot: "bg-red-500", text: "text-red-700", nav: "business-manage" as Exclude<AppNavPage, "landing"> },
+              // 2026-09-02 · 사용자 지시 · 거래처 승인 · 관리자만
+              ...(isAdmin ? [{ label: "거래처 승인", count: requestsCounts.vendor, dot: "bg-blue-500", text: "text-blue-700", nav: "requests" as Exclude<AppNavPage, "landing"> }] : []),
               // 2026-08-25 · 사용자 지시 · 결제요청 항목 제거 (미결제 매입건 · 오해 소지)
             ].map(item => (
               <button

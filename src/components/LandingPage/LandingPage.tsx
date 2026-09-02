@@ -103,6 +103,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [requestsCounts, setRequestsCounts] = useState({
     display: 0, order: 0, mismatch: 0, lunch: 0,
     inventory: 0, return: 0, resignation: 0,
+    // 2026-09-02 · 사용자 지시 · 거래처 승인 요청 · 오늘의 현황 표시
+    vendor: 0,
   });
   // 2026-08-21 · #171 Phase 3 · "전체 N건" 클릭 시 · 상세 breakdown 카드 토글
   const [statusDetailOpen, setStatusDetailOpen] = useState(false);
@@ -184,7 +186,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const reloadPendingCounts = React.useCallback(() => {
     if (!isManagerOrAdmin) return;
     // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-    api.get<{ leave?: number; display?: number; order?: number; mismatch?: number; lunch?: number; inventory?: number; return?: number; resignation?: number }>("/api/requests/pending-counts")
+    api.get<{ leave?: number; display?: number; order?: number; mismatch?: number; lunch?: number; inventory?: number; return?: number; resignation?: number; vendor?: number }>("/api/requests/pending-counts")
       .then(({ data: d }) => {
         setLeavePendingCount(d?.leave ?? 0);
         setRequestsCounts({
@@ -195,6 +197,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           inventory: d?.inventory ?? 0,
           return: d?.return ?? 0,
           resignation: d?.resignation ?? 0,
+          vendor: d?.vendor ?? 0,
         });
       })
       .catch(() => { });
