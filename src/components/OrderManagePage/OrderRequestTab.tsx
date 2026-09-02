@@ -449,8 +449,8 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                             setOrderQtyOverride(prev => { const m = new Map(prev); m.set(r.id, n); return m; });
                                           }}
                                           min={0}
-                                          size="sm"
-                                          className="w-[84px]"
+                                          size="xs"
+                                          className="w-[72px]"
                                         />
                                       </div>
                                     </td>
