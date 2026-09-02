@@ -173,6 +173,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     managerOnly: true,
     items: [
       { key: "permissions", label: "메뉴 설정", icon: Lock, color: "slate", minLevel: 9 },
+      // 2026-09-02 · #74 · 사용자 지시 · 창고 구역 설정 · zone_defs.warehouse 편집
+      { key: "warehouse-zones", label: "창고 구역", icon: Buildings, color: "slate", minLevel: 9 },
       // 2026-08-23 · #181 · "매장 구역" 설정 페이지 제거 · StoreZoneMap 인라인 편집만 유지
       // 2026-08-12 · 회사정보 + 앱브랜딩 통합 페이지 (약국명·대표·사업자·주소·전화·브랜드·연락처·도장·모바일)
       { key: "company-info", label: "회사·브랜드", icon: Buildings, color: "slate", minLevel: 9 },

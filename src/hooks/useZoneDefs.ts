@@ -26,6 +26,8 @@ export interface ZoneDefRaw {
   detailedCategory?: string;
   /** 2026-08-30 · 담당자 배지 · JSONB 배열 · AssigneePicker */
   assignee?: string[];
+  /** 2026-09-02 · #74 · 창고 소속 (창고1/창고2/null) · zone_defs.warehouse 컬럼 */
+  warehouse?: "창고1" | "창고2" | null;
 }
 
 /** 2026-08-30 · location (예: "1A", "22", "35") 에서 num/side/section 파생 */
