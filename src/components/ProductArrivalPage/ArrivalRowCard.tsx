@@ -27,6 +27,10 @@ export interface ArrivalCardItem {
   addedAt: number;
   /** 2026-09-01 · #92 · 입고 구역 */
   location: string | null;
+  /** 2026-09-02 · #78 · 사입 단가 (사용자 입력 · 선택) */
+  unitPrice?: number | null;
+  /** 2026-09-02 · #78 · 유통기한 (선택 · YYYY-MM-DD) */
+  expiryDate?: string | null;
 }
 
 interface ArrivalRowCardProps {
@@ -38,6 +42,9 @@ interface ArrivalRowCardProps {
   onRemove: (key: string) => void;
   /** 2026-09-01 · #92 · 구역 변경 핸들러 */
   onSetLocation: (key: string, location: string | null) => void;
+  /** 2026-09-02 · #78 · 사입 단가 · 유통기한 · 사용자 입력 (선택) */
+  onSetUnitPrice?: (key: string, unitPrice: number | null) => void;
+  onSetExpiryDate?: (key: string, expiryDate: string | null) => void;
 }
 
 // ─── 구역 인라인 선택 · ArrivalRowCard 전용 (StockRowCard ZoneInline 동일 패턴)
@@ -107,6 +114,7 @@ const ARRIVAL_SLOT_META: Record<ArrivalSlot, { label: string; full: string; dot:
 
 export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
   item, isRecent, onUpdateQty, onSetQty, onSetStatus, onRemove, onSetLocation,
+  onSetUnitPrice, onSetExpiryDate,
 }) => {
   void onUpdateQty; // pre-existing unused (StepperInput uses onSetQty)
   const d = new Date(item.addedAt);
@@ -316,9 +324,40 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           </button>
         </div>
 
-        {/* pending 힌트 · 2026-09-01 · expiring 조건 제거 (2종 상태만) */}
+        {/* 2026-09-02 · #78 · 사용자 지시 · 단가·유통기한 입력 필드 (선택) */}
+        {(onSetUnitPrice || onSetExpiryDate) && (
+          <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-zinc-100/80">
+            {onSetUnitPrice && (
+              <label className="inline-flex items-center gap-1.5">
+                <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">단가</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={item.unitPrice ?? ""}
+                  onChange={(e) => onSetUnitPrice(item.key, e.target.value === "" ? null : Number(e.target.value))}
+                  placeholder="0"
+                  className="w-24 h-8 px-2 rounded-md border border-line text-[14px] tabular-nums text-right focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+                />
+                <span className="text-[13px] text-zinc-400">원</span>
+              </label>
+            )}
+            {onSetExpiryDate && (
+              <label className="inline-flex items-center gap-1.5">
+                <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">유통기한</span>
+                <input
+                  type="date"
+                  value={item.expiryDate ?? ""}
+                  onChange={(e) => onSetExpiryDate(item.key, e.target.value || null)}
+                  className="h-8 px-2 rounded-md border border-line text-[14px] tabular-nums focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+                />
+              </label>
+            )}
+          </div>
+        )}
+
+        {/* pending 힌트 · 2026-09-02 · 사용자 지시 · 폰트 +2 (xs → sm) */}
         {isPending && (
-          <Badge tone="amber" size="xs" className="self-start">수량 확인 필요</Badge>
+          <Badge tone="amber" size="sm" className="self-start">수량 확인 필요</Badge>
         )}
       </div>
     </div>

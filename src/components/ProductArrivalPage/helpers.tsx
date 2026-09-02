@@ -19,6 +19,10 @@ export interface ArrivalItem {
   addedAt: number;
   /** 2026-09-01 · #92 · 입고 구역 지정 · location 코드 (예: "1A" · "26") */
   location: string | null;
+  /** 2026-09-02 · #78 · 사입 단가 (사용자 입력 · 매입 저장용) */
+  unitPrice?: number | null;
+  /** 2026-09-02 · #78 · 유통기한 (선택 · YYYY-MM-DD) */
+  expiryDate?: string | null;
 }
 
 export const STATUS_META: Record<ItemStatus, { label: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {

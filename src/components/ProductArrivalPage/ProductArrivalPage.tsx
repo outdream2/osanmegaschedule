@@ -218,6 +218,18 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     ));
   };
 
+  // 2026-09-02 · #78 · 단가·유통기한 핸들러 (사용자 지시)
+  const setUnitPrice = (key: string, unitPrice: number | null) => {
+    setItems(prev => prev.map(it =>
+      it.key === key ? { ...it, unitPrice } : it
+    ));
+  };
+  const setExpiryDate = (key: string, expiryDate: string | null) => {
+    setItems(prev => prev.map(it =>
+      it.key === key ? { ...it, expiryDate } : it
+    ));
+  };
+
   const removeItem = (key: string) => {
     setItems(prev => prev.filter(it => it.key !== key));
   };
@@ -589,6 +601,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     onSetStatus={setStatus}
                     onRemove={removeItem}
                     onSetLocation={setLocation}
+                    onSetUnitPrice={setUnitPrice}
+                    onSetExpiryDate={setExpiryDate}
                   />
                 ))}
               </div>
