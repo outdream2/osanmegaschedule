@@ -875,10 +875,13 @@ router.get("/api/inventory-checks", asyncHandler(async (req, res) => {
   // 2026-08-05 · T-PERF-1a · select("*") → 명시적 컬럼 지정 (페이로드 최소화)
   //   StockReconciliationTab 사용 컬럼: product_code, product_name, checked_at, checked_by
   //   + 실재고 컬럼 전체 (warehouse1/2, store1/2/3, 레거시)
+  // 2026-09-03 · fix · store_stock_2 컬럼 삭제됨 · SELECT 에서 제거
+  //   · 이전 · 'column inventory_checks.store_stock_2 does not exist' · 500 · 실재고 리스트 조회 실패
+  //   · 스키마 · warehouse1_stock · warehouse2_stock · store_stock (=store1) · store3_stock (store2 컬럼 없음)
   const COLS = [
     "id", "product_code", "product_name", "checked_at", "checked_by",
     "warehouse1_stock", "warehouse2_stock",
-    "store_stock", "store_stock_2", "store3_stock",
+    "store_stock", "store3_stock",
     "store1_zone", "store2_zone", "store3_zone",
     "system_stock", "optimal_stock", "status", "note",
   ].join(", ");
@@ -941,7 +944,8 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
   if (hasExpiryInput) payload.expiry_input_date = str(b.expiry_input_date);
   if (hasExpiryDate)  payload.expiry_date       = str(b.expiry_date);
 
-  const { data: existingList } = await supabase.from("inventory_checks").select("id, store_stock, store_stock_2").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
+  // 2026-09-03 · fix · store_stock_2 컬럼 없음 · id, store_stock 만 조회
+  const { data: existingList } = await supabase.from("inventory_checks").select("id, store_stock").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
   const existing = existingList?.[0] ?? null;
   const applyPayload = async (): Promise<{ error?: string } | null> => {
     if (existing) {

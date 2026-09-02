@@ -70,8 +70,11 @@ router.get("/api/supplier-payments/latest-per-supplier", asyncHandler(async (_re
 // GET /api/supplier-payments/pending-count
 // 2026-09-01 · P3 최적화 · ocr_confirmed_items 2회→1회 · Promise.all 병렬 (3→2 왕복)
 router.get("/api/supplier-payments/pending-count", asyncHandler(async (_req, res) => {
+  // 2026-09-03 · fix · ocr_confirmed_items 실제 컬럼 · supplier (not supplier_name)
+  //   · 이전 · supplier_name 요청 → 500 'column ocr_confirmed_items.supplier_name does not exist'
+  //   · 실 스키마 확인 · supplier · amount · id · product_code · product_name 등
   const [invRes, payRes] = await Promise.all([
-    supabase.from("ocr_confirmed_items").select("supplier_name, amount"),
+    supabase.from("ocr_confirmed_items").select("supplier, amount"),
     supabase.from("supplier_payments").select("supplier_name, amount"),
   ]);
   if (invRes.error) {
@@ -81,7 +84,6 @@ router.get("/api/supplier-payments/pending-count", asyncHandler(async (_req, res
   const invList = invRes.data ?? [];
   if (invList.length === 0) return res.json({ count: 0 });
 
-  // 2026-08-30 · allocations 제거 · 공급사별 SUM 매입 vs SUM 결제 · 차액 > 0 인 공급사 수
   const paidBySupplier = new Map<string, number>();
   for (const p of payRes.data ?? []) {
     const nm = String((p as any).supplier_name ?? "").trim();
@@ -90,7 +92,7 @@ router.get("/api/supplier-payments/pending-count", asyncHandler(async (_req, res
   }
   const invBySupplier = new Map<string, number>();
   for (const i of invList) {
-    const nm = String((i as any).supplier_name ?? "").trim();
+    const nm = String((i as any).supplier ?? "").trim();
     if (!nm) continue;
     invBySupplier.set(nm, (invBySupplier.get(nm) ?? 0) + (Number((i as any).amount) || 0));
   }

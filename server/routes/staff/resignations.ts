@@ -110,7 +110,7 @@ router.get("/api/resignations", asyncHandler(async (req, res) => {
   const { status, employeeId } = req.query;
   let q = supabase
     .from("resignation_requests")
-    .select("id, employee_id, employee_name, position, hire_date, last_work_date, reason, reason_detail, handover_notes, signature_url, pdf_url, status, approved_by, approved_by_id, approved_at, reject_reason, created_at")
+    .select("id, employee_id, employee_name, hire_date, last_work_date, reason, reason_detail, handover_notes, signature_url, pdf_url, status, approved_by, approved_by_id, approved_at, reject_reason, created_at")
     .order("created_at", { ascending: false });
 
   if (status && typeof status === "string" && status !== "all") {
@@ -149,10 +149,10 @@ router.get("/api/resignations/pending-count", asyncHandler(async (_req, res) => 
 
 // ─── POST · 제출 ──────────────────────────────────────────────────────────
 router.post("/api/resignations", authorize(1), validateBody(CreateResignationSchema), asyncHandler(async (req, res) => {
+  // 2026-09-03 · fix · position 컬럼 없음 · destructure 만 · INSERT 에서 제거
   const {
     employee_id,
     employee_name,
-    position,
     hire_date,
     last_work_date,
     reason,
@@ -161,6 +161,7 @@ router.post("/api/resignations", authorize(1), validateBody(CreateResignationSch
     signature_data_url,
     pdf_url,
   } = req.body;
+  void req.body.position; // schema 는 optional 유지 · DB 컬럼 없어 저장 안 함
 
   // 2026-08-29 · 보안 P1 N14 fix · IDOR 방어 · 본인 or 관리자(lv9) 만 자신 명의 사직서 제출 가능
   const session = getSession(req);
@@ -182,7 +183,6 @@ router.post("/api/resignations", authorize(1), validateBody(CreateResignationSch
     .insert([{
       employee_id: Number(employee_id),
       employee_name: String(employee_name),
-      position: position ?? null,
       hire_date: hire_date || null,
       last_work_date,
       reason: String(reason),
