@@ -508,8 +508,9 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         onLogout={onLogout}
       />
 
-      {/* 2026-08-17 · 탭 바 · 최신 트렌드 · 딥네이비 segmented pill · 통일 (프레임워크 톤) */}
-      <div className="bg-white/95 backdrop-blur-sm border-b border-line sticky top-14 z-20 shadow-sm">
+      {/* 2026-09-02 · 탭 바 · sticky top-14 → top-0 · AppNavHeader 비-sticky 이므로 (사용자 지시 · 탭 스크롤 이슈)
+           · 이전 · top-14 (56px) · 스크롤 시 · 헤더 사라지면 상단 56px 공백 · 탭이 안 보이는 느낌 */}
+      <div className="bg-white/95 backdrop-blur-sm border-b border-line sticky top-0 z-30 shadow-sm">
         <div className={`${PAGE_CONTAINER_CLS} px-2 sm:px-4 py-2`}>
           <div className="inline-flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             {TABS.map(([key, label, count]) => (
