@@ -18,11 +18,15 @@ export const BatchScheduleSchema = z.object({
 });
 export type BatchScheduleInput = z.infer<typeof BatchScheduleSchema>;
 
-/** POST /api/schedules/copy · 스케줄 복사 (기존 → 대상 월) */
+/** POST /api/schedules/copy · 전월 복사 (대상 월 지정 · 서버가 자동으로 전월 계산)
+ *  2026-09-03 · #60 fix · 스키마-controller 불일치 근본 fix
+ *   · 클라 · executeCopyFromPreviousMonth 에서 { targetYear, targetMonth } 만 전송 (useScheduleData.ts:406)
+ *   · controller · scheduleController.ts:81 · { targetYear, targetMonth } destructure
+ *   · 이전 스키마 · { fromYear, fromMonth, toYear, toMonth } · 완전 불일치 → 400 · 실행 불가
+ *   · 사용자 리포트 · '전월복사 안 됨'
+ */
 export const CopyScheduleSchema = z.object({
-  fromYear: z.number().int().min(2020).max(2100),
-  fromMonth: z.number().int().min(1).max(12),
-  toYear: z.number().int().min(2020).max(2100),
-  toMonth: z.number().int().min(1).max(12),
+  targetYear: z.union([z.number(), z.string()]).transform(v => Number(v)).pipe(z.number().int().min(2020).max(2100)),
+  targetMonth: z.union([z.number(), z.string()]).transform(v => Number(v)).pipe(z.number().int().min(1).max(12)),
 });
 export type CopyScheduleInput = z.infer<typeof CopyScheduleSchema>;
