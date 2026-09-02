@@ -1,5 +1,6 @@
 # TASKS
 
+> 2026-09-02 (오후 · 자율 세션) · 30+ 로컬 커밋 · 카드 결제 시스템 신규 (#69) · 거래처 로그인 재설계 (#65) · 승인 요청 UX 개편 · 결제입력 결제내역 탭 · 승인 상태 배지 · zone_defs.warehouse 컬럼 · 발주 flow 3중 fix (#76·#77·#79) · 실재고·상품입고 창고 자동 필터 (#74) · 폰트 +2 확산 · 사용자 지시 다수 반영
 > 2026-09-02 · 14 로컬 커밋 · 4 신규 프리미티브(FormRow·FormSection·SubmitBar·ChartCard) · 11 미사용 프리미티브 삭제(-1758라인) · 판매대시보드 차트 7종 · font-mono→tabular-nums 30파일 · OCR rate-limit · Attio gradient · 사업장이름 동적화
 > 2026-09-01 · 서버 프레임워크 감사 완료 · validateBody+authorize 32건 추가 · 55→23 위반 (58% 감소) · 4 배치 커밋 · vitest 3410/3410 통과
 > 2026-08-29 · #193 매장서브탭 재편 · #196 사이드바 자동파생 · #198 purchase_details 통합 · #200 미사용테이블 제거 SQL · #197 DB 정합성 2건 fix · 총 22 로컬커밋 · MENU_STRUCTURE 15차 업데이트
@@ -15,6 +16,54 @@
 > **원칙**: [`feedback_framework_untouchable.md`](../.claude/agents) · [`feedback_ui_top_principle.md`](../.claude/agents) · [`feedback_remote_push_strict.md`](../.claude/agents) · 폰트 +2 규칙
 >
 > **원칙 규칙**: 완료 태스크는 삭제 · 신규 태스크는 상단 등록 · 진행중은 명확히 표시
+
+---
+
+## 🎯 활성 PENDING · v5 (2026-09-02 오후 · 자율 세션)
+
+### ✅ 2026-09-02 오후 (자율 진행 세션 · 완료)
+| # | 태스크 | 커밋 |
+|---|-----|-----|
+| #65 | 거래처 로그인 · 직원 방식 (bcrypt · password_hash) | `6e1c460b` |
+| #66 · #68 · #69 | 카드 결제 관리 시스템 · CRUD + 대시보드 (accordion) | `6054522b` · `15afca11` · `793b2ae7` · `d29eb908` |
+| #71 | 종배지 z-70 · 모바일 중앙 정렬 | `b7753421` |
+| #74 | 상품입고·실재고 · 창고 자동 필터 (zone_defs.warehouse) | `07ebbfd4` · `897ca0f2` · `88627bab` |
+| #76 | 발주필요→발주요청 · 요청 수량 사라짐 fix (product_code key 통일) | `3bfff169` · `df4c9a5d` · `86a7f818` |
+| #77 | 발주발송 후 발주이력 안 나옴 fix (RPC fallback UPDATE) | `cc7698e2` |
+| #61 | 직원 성명 배지 → 텍스트 | `9847d652` |
+| — | Vendor 5필드 · emerald→blue · 공급요약 삭제 · 승인요청 활성 | `a0658e44` · `bd9e5085` · `3797f268` |
+| — | RequestsPage sticky top-14→top-0 | `ee6d9528` |
+| — | AppFooter 통일 · IRUMs (주)이룸즈 since 2026 | `3f5b2257` |
+| — | 결제내역 탭 · 판매 겹침 fix · 최근결제내역 첫 탭 | `318dd4d2` |
+| — | SplitPanel · useResizablePanel maxWidth 2400 + viewport clamp | `c1203c35` · `adb63cca` |
+| — | 상품입고 · 재고현황 섹션 제거 · 창고구역 배지 · 폰트 +2 · 단가/유통기한 입력 | `7ea9cb28` · `b3d81e77` · `9d93ac02` |
+| — | 오늘의 현황 · 거래처 승인 배지 (관리자) | `cfccbf55` |
+
+### 🔴 신규 PENDING (2026-09-02 오후 · 사용자 리포트)
+| # | 태스크 | 우선순위 |
+|---|-----|--------|
+| **#79** | 발주 발송 안 됨 (재리포트) · 브라우저 콘솔 · 서버 로그 확인 필요 | 🔴 |
+| **#78** | 상품입고 · 스캔 시 단가·유통기한 자동 fill (거래명세서 참조) | 🟡 |
+| **#80** | 차용관리 · 대여자/차용자 선택 · 약국은 사업자명 · 공급사 검색 | 🔴 |
+| **#63** | 진열요청 상품이름 안 나옴 · DisplayRequest 스키마 조사 | 🔴 |
+| **#64** | 진열요청 리스트 완전 재구성 | 🔴 |
+| **#60** | 스케쥴 전월 복사 기능 · 조사·fix | 🔴 |
+| **#70** | 탭 sticky 전수 스캔 · 60+ 파일 top-14→top-0 통합 fix | 🟡 |
+| **#72** | 스케쥴 · 직원성명 1주 전 UI 복원 (git 참고) | 🟡 |
+| **#62** | 스케쥴 클릭 모달 · 왼쪽 정보 탭 통합 | 🟡 |
+| **#73** | 상품정보 페이지 · 프레임워크화 | 🟢 |
+| **#75** | 실재고·상품입고 · 스캔 왼쪽 정렬 + 반응형 세로 | 🟢 |
+
+### ✅ 필요 사용자 액션 (2026-09-02)
+- Supabase SQL Editor · 아래 migration 실행 (미실행 시)
+  - `20260902_credit_cards.sql` · 카드 결제 관리
+  - `20260902_zone_defs_warehouse.sql` · 창고 자동 필터
+  - `20260902_vendors_email_column.sql` · vendor email 저장
+  - `20260902_vendors_password_hash.sql` · vendor 비밀번호 (기본 '1234')
+  - `20260902_vendors_team_lead.sql` · vendor 팀장 필드
+  - `20260902_vendors_approval_reset.sql` · 승인 리셋 (UNCOMMENT 후)
+- 서버 재시작 (tsx watch · 자동)
+- 브라우저 하드 리로드 (Ctrl+Shift+R)
 
 ---
 
