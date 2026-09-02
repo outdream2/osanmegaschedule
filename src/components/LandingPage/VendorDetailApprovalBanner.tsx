@@ -53,18 +53,8 @@ export const VendorDetailApprovalBanner: React.FC<Props> = ({ approvalStatus, mi
           </>
         ) : (
           <>
-            <div className="text-[17px] font-bold text-brand-deep leading-tight">
-              색깔 표시된 5개 항목을 채우고 <span className="underline decoration-2 underline-offset-2">[승인 요청]</span> 을 눌러주세요
-            </div>
-            <div className="text-[15px] text-ink-soft mt-1 leading-relaxed">
-              <span className="font-semibold text-ink-soft">필수 5개:</span> 사업자번호 · 이메일(발주용) · 팀장 이름 · 팀장 연락처 · 긴급 연락처
-            </div>
-            <div className="text-[14px] text-zinc-500 mt-1">
-              관리자 승인 완료 시 · [공급사 재고확인] 메뉴가 활성화됩니다
-              {missingCount > 0 && (
-                <span className="ml-2 font-semibold text-rose-500">(미입력 {missingCount}개)</span>
-              )}
-            </div>
+            {/* 2026-09-02 · 사용자 지시 · default 블록 · 안내 텍스트 제거 · '공급사 정보' 헤더로만 */}
+            <div className="text-[19px] font-bold text-brand-deep leading-tight">공급사 정보</div>
           </>
         )}
       </div>

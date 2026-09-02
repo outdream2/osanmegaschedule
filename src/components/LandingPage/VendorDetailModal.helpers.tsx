@@ -18,7 +18,7 @@ export const METHOD_OPTIONS: Array<{ key: string; label: string }> = [
 export const Field: React.FC<{
   label: string;
   children: React.ReactNode;
-  accent?: "sky" | "emerald" | "amber" | "rose" | "violet" | "indigo" | "teal";
+  accent?: "sky" | "emerald" | "amber" | "rose" | "violet" | "indigo" | "teal" | "blue";
   /** 2026-09-02 · 사용자 지시 · 빨강 * 표시 (기본 정보 필수) */
   required?: boolean;
 }> = ({ label, children, accent, required }) => {
@@ -30,11 +30,13 @@ export const Field: React.FC<{
     violet:  { dot: "bg-violet-500",  text: "text-violet-700"  },
     indigo:  { dot: "bg-indigo-500",  text: "text-indigo-700"  },
     teal:    { dot: "bg-teal-500",    text: "text-teal-700"    },
+    // 2026-09-02 · 사용자 지시 · 짙은 파랑 (보라 X · 순수 파랑) · Tailwind blue-700
+    blue:    { dot: "bg-blue-600",    text: "text-blue-700"    },
   }[accent] : null;
   return (
     <label className="block space-y-1">
-      <span className={`inline-flex items-center gap-1.5 text-[16px] font-semibold tracking-tight ${accentCls ? accentCls.text : "text-zinc-600"}`}>
-        {accentCls && <span className={`w-1.5 h-1.5 rounded-full ${accentCls.dot} shrink-0`} />}
+      <span className={`inline-flex items-center gap-1.5 text-[18px] font-semibold tracking-tight ${accentCls ? accentCls.text : "text-zinc-600"}`}>
+        {accentCls && <span className={`w-2 h-2 rounded-full ${accentCls.dot} shrink-0`} />}
         {label}
         {required && <span className="text-rose-500 font-bold ml-0.5">*</span>}
       </span>

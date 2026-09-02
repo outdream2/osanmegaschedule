@@ -513,11 +513,16 @@ router.post("/api/vendors/:id/set-password", authorize(9), validateBody(SetPassw
 //   · POST /api/vendors/:id/reject           · 관리자 거절 (authorize 9)
 // ═══════════════════════════════════════════════════════════════════
 
-/** 거래처 자체 승인 요청 · 필수 필드 검증 · vendors.approval_status = pending · approval_requested_at = now */
-// 2026-08-29 · 보안 P1 N16 fix · authorize(1) · 인증 없는 위조 방지 (거래처 세션 포함)
-router.post("/api/vendors/:id/approval-request", authorize(1), validateBody(z.object({})), asyncHandler(async (req, res) => {
+/** 거래처 자체 승인 요청 · 본인만 · 필수 5필드 검증 · vendors.approval_status = pending */
+// 2026-09-02 · 사용자 지시 · 거래처(vendor role) 만 승인 요청 가능 · 본인 (session.sub === id) 만
+//   · 이전 · authorize(1) · vendor(level 0) 접근 불가 · 401 반환
+//   · 이후 · authorize(0) + role='vendor' + session.sub === id 삼중 게이트
+router.post("/api/vendors/:id/approval-request", authorize(0), validateBody(z.object({})), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
+  const authUser = (req as any).authUser as { sub: number; role: string; level: number } | undefined;
+  if (authUser?.role !== "vendor") throw forbidden("거래처(vendor) 세션만 승인 요청 가능합니다");
+  if (Number(authUser.sub) !== id) throw forbidden("본인 공급사만 승인 요청 가능합니다");
   // 2026-09-02 · 사용자 지시 · 필수 5필드로 축소
   //   이메일(발주용) · 사업자번호 · 팀장 이름 · 팀장 연락처 · 긴급 연락처
   //   주문방식·특이사항·비고 는 선택 (승인 조건에서 제외)

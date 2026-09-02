@@ -277,7 +277,8 @@ export const VendorDetailModal: React.FC<{
     if (!draft.emergency_contact.trim()) missing.push("긴급 연락처");
     return missing;
   })();
-  const canRequestApproval = panel && approvalStatus !== "approved" && missingRequired.length === 0;
+  // 2026-09-02 · 사용자 지시 · panel 조건 제거 · vendor 로그인 시 항상 활성 판정
+  const canRequestApproval = isVendorLogin && approvalStatus !== "approved" && missingRequired.length === 0;
 
   const handleApprovalRequest = async () => {
     if (missingRequired.length > 0) {
@@ -376,8 +377,8 @@ export const VendorDetailModal: React.FC<{
         {/* ── 본문 ── */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5">
 
-          {/* 2026-08-29 · 사용자 지시 · 거래처 로그인일 때만 · 관리자에게는 숨김 */}
-          {panel && isVendorLogin && (
+          {/* 2026-09-02 · 사용자 지시 · vendor 로그인 · panel 불문 항상 표시 */}
+          {isVendorLogin && (
             <VendorDetailApprovalBanner
               approvalStatus={approvalStatus}
               missingCount={missingRequired.length}
@@ -388,61 +389,7 @@ export const VendorDetailModal: React.FC<{
           {(() => { void activeTab; return null; })()}
           {(true) && (
           <>
-          {/* 2026-08-10 · 사용자 요청 · 안내 문구 위 · 공급요약 · PC 항상 노출 (한줄) · 모바일 details 접기 (2줄) */}
-          <div className="mb-1 text-[14px] text-zinc-400 leading-relaxed px-1">
-            💡 자세한 내용은 <span className="font-bold text-amber-700">매입 &gt; 매입이력 &gt; 공급사 관리</span> 에서 확인
-          </div>
-          {/* PC: 제목 옆 나란히 · 한줄 */}
-          <div className="hidden sm:block mb-4 pb-1.5 border-b border-zinc-100">
-            <div className="flex items-center gap-x-5 gap-y-1 flex-wrap">
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="w-1 h-4 rounded-full bg-emerald-500 shrink-0" />
-                <span className="text-[18px] font-bold text-emerald-700">공급 요약</span>
-              </div>
-              <span className="inline-flex items-baseline gap-1.5 text-[16px] leading-tight" title="공급사 상품 각각 · 현재고 × 최근 사입단가 합산">
-                <span className="text-zinc-400 font-semibold">총재고</span>
-                <span className="tabular-nums font-bold text-sky-700">{vendorTotalStock != null ? fmtWon(vendorTotalStock) : "-"}</span>
-              </span>
-              <span className="text-zinc-200">·</span>
-              <span className="inline-flex items-baseline gap-1.5 text-[16px] leading-tight">
-                <span className="text-zinc-400 font-semibold">총 상품</span>
-                <span className="tabular-nums font-bold text-violet-700">{summary ? `${summary.uniqueProducts.toLocaleString()}종` : "-"}</span>
-              </span>
-              <span className="text-zinc-200">·</span>
-              <span className="inline-flex items-baseline gap-1.5 text-[16px] leading-tight">
-                <span className="text-zinc-400 font-semibold">총매입</span>
-                <span className="tabular-nums font-bold text-indigo-700">{summary ? fmtWon(summary.totalAmount) : "-"}</span>
-              </span>
-            </div>
-            {/* 2026-08-10 · 사용자 요청 · 총재고 계산 방법 · 상품별 · ERP 남은 재고 × 사입단가 · 합산 */}
-            <div className="mt-1 text-[13px] text-zinc-400 leading-relaxed px-4">
-              총재고 = 상품별로 <span className="font-mono">ERP 남은 재고 수량 × 사입단가</span> · 합산
-            </div>
-          </div>
-          {/* 모바일: details 접기 · 2줄 grid · 기본 닫힘 */}
-          <details className="sm:hidden mb-4 group [&[open]>summary_.chevron]:rotate-90">
-            <summary className="flex items-center gap-2 cursor-pointer select-none list-none pb-1.5 border-b border-zinc-100">
-              <ChevronRight size={14} className="chevron text-emerald-500 shrink-0 transition-transform" />
-              <span className="w-1 h-4 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-[18px] font-bold text-emerald-700">공급 요약</span>
-            </summary>
-            <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[15px] leading-tight px-2">
-              <span className="inline-flex items-baseline gap-1">
-                <span className="text-zinc-400 font-semibold">총재고</span>
-                <span className="tabular-nums font-bold text-sky-700">{vendorTotalStock != null ? fmtWon(vendorTotalStock) : "-"}</span>
-              </span>
-              <span className="text-zinc-200">·</span>
-              <span className="inline-flex items-baseline gap-1">
-                <span className="text-zinc-400 font-semibold">총 상품</span>
-                <span className="tabular-nums font-bold text-violet-700">{summary ? `${summary.uniqueProducts.toLocaleString()}종` : "-"}</span>
-              </span>
-              <span className="text-zinc-200">·</span>
-              <span className="inline-flex items-baseline gap-1">
-                <span className="text-zinc-400 font-semibold">총매입</span>
-                <span className="tabular-nums font-bold text-indigo-700">{summary ? fmtWon(summary.totalAmount) : "-"}</span>
-              </span>
-            </div>
-          </details>
+          {/* 2026-09-02 · 사용자 지시 · 공급 요약 (총재고·총상품·총매입) 섹션 제거 · vendor 화면 단순화 */}
 
           {/* 2026-08-10 · 사용자 요청 · 결제정보 · VAT 포함/별도 · 2체크박스 (하나만 활성) */}
           <div className="mb-4 pb-1.5 border-b border-zinc-100">
@@ -482,17 +429,17 @@ export const VendorDetailModal: React.FC<{
 
               {/* 2026-09-02 · 사용자 지시 · 승인 필수 5필드 안내 (거래처 로그인 · 미승인 시만) · 색깔 통일 (emerald) */}
               {isVendorLogin && approvalStatus !== "approved" && (
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-[15px] leading-relaxed">
+                <div className="rounded-xl border border-blue-200 bg-blue-50/60 px-4 py-3 text-[17px] leading-relaxed">
                   <div className="text-zinc-700">
-                    <span className="inline-flex items-center gap-1 font-bold text-emerald-700"><span className="w-2 h-2 rounded-full bg-emerald-500" />초록색</span> 표시된 <span className="font-bold text-zinc-900">5개 항목</span>을 모두 입력하신 후 <span className="font-bold text-emerald-700">[승인 요청]</span> 버튼을 누르시면 · 관리자 승인 완료 후 <span className="font-bold text-emerald-700">당사 재고 현황</span>을 조회하실 수 있습니다.
+                    <span className="inline-flex items-center gap-1 font-bold text-blue-700"><span className="w-2 h-2 rounded-full bg-blue-600" />파란색</span> 표시된 <span className="font-bold text-zinc-900">5개 항목</span>을 모두 입력하신 후 <span className="font-bold text-blue-700">[승인 요청]</span> 버튼을 누르시면 · 관리자 승인 완료 후 <span className="font-bold text-blue-700">당사 재고 현황</span>을 조회하실 수 있습니다.
                   </div>
-                  <div className="mt-2 text-[14px] font-semibold text-emerald-700">
+                  <div className="mt-2 text-[16px] font-semibold text-blue-700">
                     사업자번호 · 이메일(발주용) · 팀장 이름 · 팀장 연락처 · 긴급 연락처
                   </div>
                 </div>
               )}
 
-              {/* Row 1 · 회사명 (readonly, required) | 공급자분류 | 사업자번호 (emerald · auto-hyphen) */}
+              {/* Row 1 · 회사명 (readonly) | 공급자분류 | 주문방식 (dropdown + 바로가기) */}
               <div className="grid grid-cols-3 gap-3">
                 <Field label="회사명" required>
                   <input
@@ -517,7 +464,49 @@ export const VendorDetailModal: React.FC<{
                     <option value="기타">기타</option>
                   </select>
                 </Field>
-                <Field label="사업자번호" accent="emerald">
+                <Field label="주문방식">
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      value={draft.order_method}
+                      onChange={e => setDraft({ ...draft, order_method: e.target.value })}
+                      placeholder="목록·직접 입력"
+                      list="vendor-order-methods"
+                      className={`${inputCls} flex-1 min-w-0`}
+                    />
+                    <datalist id="vendor-order-methods">
+                      {VENDOR_ORDER_METHODS.map(m => (
+                        <option key={m.name} value={m.name} />
+                      ))}
+                    </datalist>
+                    {(() => {
+                      const url = findOrderMethodUrl(draft.order_method);
+                      return (
+                        <a
+                          href={url ?? "#"}
+                          target={url ? "_blank" : undefined}
+                          rel={url ? "noopener noreferrer" : undefined}
+                          onClick={e => { if (!url) e.preventDefault(); }}
+                          aria-disabled={!url}
+                          className={`inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[14px] font-semibold shrink-0 transition ${
+                            url
+                              ? "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                              : "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                          }`}
+                          title={url ?? "URL 미등록 주문방식"}
+                        >
+                          <ExternalLink size={12} />
+                          바로가기
+                        </a>
+                      );
+                    })()}
+                  </div>
+                </Field>
+              </div>
+
+              {/* Row 2 · 사업자번호 [indigo] | 담당자 이름 (readonly) | 담당자 연락처 (readonly) */}
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="사업자번호" accent="blue">
                   <input
                     type="text"
                     value={formatBizNumProgressive(draft.business_number)}
@@ -528,10 +517,6 @@ export const VendorDetailModal: React.FC<{
                     inputMode="numeric"
                   />
                 </Field>
-              </div>
-
-              {/* Row 2 · 담당자 이름 (readonly, required) | 담당자 연락처 (readonly) | 이메일(발주용) (emerald) */}
-              <div className="grid grid-cols-3 gap-3">
                 <Field label="담당자 이름" required>
                   <input
                     type="text"
@@ -550,7 +535,11 @@ export const VendorDetailModal: React.FC<{
                     title="담당자 연락처 · 로그인 ID · 관리자만 수정 가능"
                   />
                 </Field>
-                <Field label="이메일 (발주용)" accent="emerald">
+              </div>
+
+              {/* Row 3 · 이메일(발주용) [indigo] | 팀장 이름 [indigo] | 팀장 연락처 [indigo] */}
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="이메일 (발주용)" accent="blue">
                   <input
                     type="email"
                     value={draft.email}
@@ -559,115 +548,40 @@ export const VendorDetailModal: React.FC<{
                     className={inputCls}
                   />
                 </Field>
-              </div>
-
-              {/* Row 3 · 팀장 이름 [emerald] | 팀장 연락처 [emerald] | 긴급 연락처 [emerald] */}
-              <div className="grid grid-cols-3 gap-3">
-                <Field label="팀장 이름" accent="emerald">
+                <Field label="팀장 이름" accent="blue">
                   <input type="text" value={draft.team_leader_name}
                     onChange={e => setDraft({ ...draft, team_leader_name: e.target.value })}
                     placeholder="담당자와 별개" className={inputCls} />
                 </Field>
-                <Field label="팀장 연락처" accent="emerald">
+                <Field label="팀장 연락처" accent="blue">
                   <input type="text" value={draft.team_leader_phone}
                     onChange={e => setDraft({ ...draft, team_leader_phone: e.target.value })}
                     placeholder="010-0000-0000" className={inputCls} />
                 </Field>
-                <Field label="긴급 연락처" accent="emerald">
+              </div>
+
+              {/* Row 4 · 긴급 연락처 [indigo] | (empty) | (empty) */}
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="긴급 연락처" accent="blue">
                   <input type="text" value={draft.emergency_contact}
                     onChange={e => setDraft({ ...draft, emergency_contact: e.target.value })}
                     placeholder="야간·주말·비상" className={inputCls} />
                 </Field>
+                <div />
+                <div />
               </div>
 
-              {/* ─── Section 2 · 주문/발주 · 구분선 ─── */}
+              {/* Row 5 · 발주 특이사항 · textarea full · 구분선 */}
               <div className="pt-3 mt-1 border-t border-zinc-100">
-                <SectionTitle icon={<Building2 size={13} />} title="주문 · 발주" color="amber" />
-              </div>
-
-              {/* Row 4 · 주문방식 (dropdown + 바로가기) */}
-              <Field label="주문방식">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={draft.order_method}
-                    onChange={e => setDraft({ ...draft, order_method: e.target.value })}
-                    placeholder="목록에서 선택 또는 직접 입력"
-                    list="vendor-order-methods"
-                    className={`${inputCls} flex-1`}
+                <Field label="발주 특이사항">
+                  <textarea
+                    value={draft.special_notes}
+                    onChange={e => setDraft({ ...draft, special_notes: e.target.value })}
+                    placeholder="월요일 발주 X · 최소주문 · 결제 조건 등"
+                    className={`${inputCls} h-[84px] resize-none border-amber-200 focus:border-amber-500 focus:ring-amber-200`}
                   />
-                  <datalist id="vendor-order-methods">
-                    {VENDOR_ORDER_METHODS.map(m => (
-                      <option key={m.name} value={m.name} />
-                    ))}
-                  </datalist>
-                  {(() => {
-                    const url = findOrderMethodUrl(draft.order_method);
-                    return (
-                      <a
-                        href={url ?? "#"}
-                        target={url ? "_blank" : undefined}
-                        rel={url ? "noopener noreferrer" : undefined}
-                        onClick={e => { if (!url) e.preventDefault(); }}
-                        aria-disabled={!url}
-                        className={`inline-flex items-center gap-1 h-8 px-3 rounded-lg text-[14px] font-semibold shrink-0 transition ${
-                          url
-                            ? "bg-sky-600 hover:bg-sky-700 text-white cursor-pointer"
-                            : "bg-zinc-200 text-zinc-400 cursor-not-allowed"
-                        }`}
-                        title={url ?? "URL 미등록 주문방식"}
-                      >
-                        <ExternalLink size={13} />
-                        바로가기
-                      </a>
-                    );
-                  })()}
-                </div>
-              </Field>
-
-              {/* Row 5 · 발주 특이사항 · textarea full */}
-              <Field label="발주 특이사항">
-                <textarea
-                  value={draft.special_notes}
-                  onChange={e => setDraft({ ...draft, special_notes: e.target.value })}
-                  placeholder="월요일 발주 X · 최소주문 · 결제 조건 등"
-                  className={`${inputCls} h-[84px] resize-none border-amber-200 focus:border-amber-500 focus:ring-amber-200`}
-                />
-              </Field>
-
-              {/* ─── Section 3 · 기타 (지역 · 거래명세서 · 주문 현황 · 비고) · 접기 ─── */}
-              <details className="mt-2 group">
-                <summary className="cursor-pointer select-none list-none inline-flex items-center gap-1.5 text-[14px] font-semibold text-zinc-500 hover:text-zinc-700 py-1">
-                  <ChevronRight size={14} className="transition-transform group-open:rotate-90" />
-                  기타 정보 (지역 · 거래명세서 · 주문 현황 · 비고)
-                </summary>
-                <div className="mt-2 space-y-3">
-                  <div className="grid grid-cols-3 gap-3">
-                    <Field label="지역">
-                      <input type="text" value={draft.region}
-                        onChange={e => setDraft({ ...draft, region: e.target.value })}
-                        placeholder="서울·강남 / 경기·오산" className={inputCls} />
-                    </Field>
-                    <Field label="거래명세서 방식">
-                      <input type="text" value={draft.invoice_method}
-                        onChange={e => setDraft({ ...draft, invoice_method: e.target.value })}
-                        placeholder="이메일 · 팩스 · 지참" className={inputCls} />
-                    </Field>
-                    <Field label="주문 현황">
-                      <input type="text" value={draft.order_status}
-                        onChange={e => setDraft({ ...draft, order_status: e.target.value })}
-                        placeholder="정상 · 임시중단 · 종료" className={inputCls} />
-                    </Field>
-                  </div>
-                  <Field label="비고">
-                    <textarea
-                      value={draft.note}
-                      onChange={e => setDraft({ ...draft, note: e.target.value })}
-                      className={`${inputCls} h-[64px] resize-none`}
-                    />
-                  </Field>
-                </div>
-              </details>
+                </Field>
+              </div>
             </div>
 
             {/* 2026-08-10 · 사용자 요청 · 결제·잔고·매입이력 탭 안내 문구 제거 */}
@@ -724,22 +638,22 @@ export const VendorDetailModal: React.FC<{
             {saving ? <Spinner size={12} tone="white" /> : <Check size={12} strokeWidth={2.5} />}
             저장
           </button>
-          {/* 2026-08-29 · 사용자 지시 · [승인 요청] 버튼 · 거래처 로그인일 때만 */}
-          {panel && isVendorLogin && approvalStatus !== "approved" && (
+          {/* 2026-09-02 · 사용자 지시 · [승인 요청] 버튼 · vendor 로그인 · panel 불문 항상 표시 */}
+          {isVendorLogin && approvalStatus !== "approved" && (
             <button
               onClick={handleApprovalRequest}
               disabled={!canRequestApproval || approvalRequesting || saving}
-              className={`inline-flex items-center gap-1.5 h-8 px-5 text-[14px] font-bold rounded-lg transition shadow-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+              className={`inline-flex items-center gap-1.5 h-9 px-5 text-[15px] font-bold rounded-lg transition shadow-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                 canRequestApproval
-                  ? "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white ring-2 ring-emerald-300/40"
+                  ? "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white ring-2 ring-blue-300/40"
                   : "bg-zinc-300 text-zinc-500"
               }`}
               title={missingRequired.length > 0 ? `필수 항목 미입력: ${missingRequired.join(" · ")}` : "관리자에게 승인 요청 발송"}
             >
-              {approvalRequesting ? <Spinner size={12} tone="white" /> : <Check size={12} strokeWidth={2.5} />}
+              {approvalRequesting ? <Spinner size={12} tone="white" /> : <Check size={13} strokeWidth={2.5} />}
               {approvalStatus === "pending" ? "재요청" : "승인 요청"}
               {missingRequired.length > 0 && (
-                <span className="ml-1 text-[11px] font-semibold tabular-nums opacity-80">({REQUIRED_TOTAL - missingRequired.length}/{REQUIRED_TOTAL})</span>
+                <span className="ml-1 text-[13px] font-semibold tabular-nums opacity-80">({REQUIRED_TOTAL - missingRequired.length}/{REQUIRED_TOTAL})</span>
               )}
             </button>
           )}
