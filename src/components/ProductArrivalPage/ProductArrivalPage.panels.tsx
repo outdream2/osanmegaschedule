@@ -156,7 +156,7 @@ export const FinalDecisionCard: React.FC<FinalDecisionCardProps> = ({
           <p className="text-[13px] text-rose-600 font-semibold px-1">{saveError}</p>
         )}
         {saveStatus === "done" && (
-          <p className="text-[12px] text-zinc-400 font-medium px-1 leading-relaxed">
+          <p className="text-[14px] text-zinc-400 font-medium px-1 leading-relaxed">
             저장 완료. 발주/사입관리 · 입고매칭 탭에서 발주 대비 확인 가능.
           </p>
         )}
@@ -411,7 +411,7 @@ export const ArrivalDetailModal: React.FC<ArrivalDetailModalProps> = ({
                 <Card padding="sm" rounded="2xl">
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
-                    <div className="text-[12px] font-semibold text-ink-soft tracking-tight">등록일시</div>
+                    <div className="text-[14px] font-semibold text-ink-soft tracking-tight">등록일시</div>
                   </div>
                   <div className="text-[15px] font-extrabold text-ink tabular-nums leading-tight">
                     {(() => { const d = new Date(arrivalDetail.arrival_date); return isNaN(d.getTime()) ? "-" : d.toLocaleString("ko-KR"); })()}
@@ -420,14 +420,14 @@ export const ArrivalDetailModal: React.FC<ArrivalDetailModalProps> = ({
                 <Card padding="sm" rounded="2xl">
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
-                    <div className="text-[12px] font-semibold text-ink-soft tracking-tight">담당자</div>
+                    <div className="text-[14px] font-semibold text-ink-soft tracking-tight">담당자</div>
                   </div>
                   <div className="text-[15px] font-extrabold text-ink leading-tight">{arrivalDetail.checked_by ?? "-"}</div>
                 </Card>
                 <Card padding="sm" rounded="2xl">
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <div className="text-[12px] font-semibold text-ink-soft tracking-tight">품목·수량</div>
+                    <div className="text-[14px] font-semibold text-ink-soft tracking-tight">품목·수량</div>
                   </div>
                   <div className="text-[15px] font-extrabold text-emerald-700 tabular-nums leading-tight">{arrivalDetail.total_items}개 · {arrivalDetail.total_qty.toLocaleString()}수량</div>
                 </Card>
@@ -441,7 +441,7 @@ export const ArrivalDetailModal: React.FC<ArrivalDetailModalProps> = ({
                     <Card padding="sm" rounded="2xl">
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className={`w-1.5 h-1.5 rounded-full ${dotCls}`} />
-                        <div className="text-[12px] font-semibold text-ink-soft tracking-tight">최종 판정</div>
+                        <div className="text-[14px] font-semibold text-ink-soft tracking-tight">최종 판정</div>
                       </div>
                       <div className={`text-[15px] font-extrabold leading-tight ${textCls}`}>{label}</div>
                     </Card>

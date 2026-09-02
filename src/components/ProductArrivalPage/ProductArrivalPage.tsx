@@ -312,7 +312,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           </div>
           <div className="min-w-0">
             <h1 className="text-[17px] sm:text-[19px] font-bold text-ink leading-tight tracking-tight">상품 입고 검수</h1>
-            <p className="text-[13px] sm:text-[14px] text-ink-soft mt-0.5 leading-tight">
+            <p className="text-[15px] sm:text-[16px] text-ink-soft mt-0.5 leading-tight">
               거래명세표와 실제 입고물품·수량 일치 확인
             </p>
           </div>
@@ -343,7 +343,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 key={k}
                 type="button"
                 onClick={() => setArrivalTab(k)}
-                className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[14px] font-bold transition cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[16px] font-bold transition cursor-pointer ${
                   active ? activeColor : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
                 }`}
               >
@@ -393,8 +393,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 <span className="absolute bottom-1 right-1 w-1.5 h-1.5 border-b-2 border-r-2 border-white/70 rounded-br-sm" />
               </div>
               <div className="min-w-0">
-                <p className="text-[16px] font-bold text-ink leading-tight tracking-tight">바코드 스캔</p>
-                <p className="text-[13px] text-ink-soft mt-0.5 leading-tight">
+                <p className="text-[18px] font-bold text-ink leading-tight tracking-tight">바코드 스캔</p>
+                <p className="text-[15px] text-ink-soft mt-0.5 leading-tight">
                   스캔 시 자동 등록됩니다
                 </p>
               </div>
@@ -406,7 +406,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 onClick={() => setScannerOpen(true)}
                 disabled={mapLoading}
                 className="relative w-full min-h-[52px] flex items-center justify-center gap-2.5
-                  py-3.5 rounded-xl font-bold text-[14px] sm:text-[15px] text-white
+                  py-3.5 rounded-xl font-bold text-[16px] sm:text-[17px] text-white
                   bg-brand-deep
                   hover:bg-[#0d3a5c]
                   active:bg-[#08253a]
@@ -436,7 +436,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   <AlertCircle size={15} className="text-amber-500 shrink-0 mt-0.5" />
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-amber-800 leading-none">미등록 상품 코드</p>
-                    <p className="text-[15px] font-mono tabular-nums text-amber-700 break-all mt-1.5
+                    <p className="text-[17px] font-mono tabular-nums text-amber-700 break-all mt-1.5
                       bg-amber-100/60 px-2 py-1 rounded-md">
                       {notFoundCode}
                     </p>
@@ -452,14 +452,14 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   <div className="flex items-center gap-2">
                     <StatusPill tone="emerald" size="sm" dot>최근 스캔</StatusPill>
                     {lastScannedCode && (
-                      <span className="ml-auto text-[13px] font-mono tabular-nums text-ink-soft bg-zinc-50 border border-line px-2 py-0.5 rounded-md">
+                      <span className="ml-auto text-[15px] font-mono tabular-nums text-ink-soft bg-zinc-50 border border-line px-2 py-0.5 rounded-md">
                         #{lastScannedCode}
                       </span>
                     )}
                   </div>
 
                   {/* 상품명 */}
-                  <p className="text-[14px] sm:text-[15px] font-bold text-zinc-800
+                  <p className="text-[16px] sm:text-[17px] font-bold text-zinc-800
                     break-words whitespace-normal leading-snug -mt-0.5">
                     {lastScannedProduct.name}
                   </p>
@@ -467,14 +467,14 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   {/* 규격 + 공급사 */}
                   <div className="flex flex-wrap items-center gap-2">
                     {lastScannedProduct.spec && (
-                      <span className="inline-flex items-center gap-1.5 text-[15px] font-bold text-zinc-600
+                      <span className="inline-flex items-center gap-1.5 text-[17px] font-bold text-zinc-600
                         bg-white/80 border border-line/60 rounded-lg px-2 py-1">
                         <Box size={11} className="text-zinc-400" />
                         {lastScannedProduct.spec}
                       </span>
                     )}
                     {lastScannedProduct.supplier && (
-                      <span className="inline-flex items-center gap-1.5 text-[15px] font-bold text-sky-700
+                      <span className="inline-flex items-center gap-1.5 text-[17px] font-bold text-sky-700
                         bg-sky-50 border border-sky-200/70 rounded-lg px-2 py-1">
                         <Building2 size={11} className="text-sky-500" />
                         {lastScannedProduct.supplier}
@@ -488,16 +488,16 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       border-t border-emerald-200/60">
                       {lastScannedProduct.current_stock != null && (
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[14px] font-semibold text-zinc-400 leading-none">현재고</span>
-                          <span className="text-[15px] font-bold text-amber-700 tabular-nums leading-none">
+                          <span className="text-[16px] font-semibold text-zinc-400 leading-none">현재고</span>
+                          <span className="text-[17px] font-bold text-amber-700 tabular-nums leading-none">
                             {Number(lastScannedProduct.current_stock).toLocaleString()}
                           </span>
                         </div>
                       )}
                       {lastScannedProduct.sale_price != null && Number(lastScannedProduct.sale_price) > 0 && (
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[14px] font-semibold text-zinc-400 leading-none">판매가</span>
-                          <span className="text-[15px] font-bold text-orange-700 tabular-nums leading-none">
+                          <span className="text-[16px] font-semibold text-zinc-400 leading-none">판매가</span>
+                          <span className="text-[17px] font-bold text-orange-700 tabular-nums leading-none">
                             ₩{Number(lastScannedProduct.sale_price).toLocaleString()}
                           </span>
                         </div>
@@ -520,9 +520,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             </div>
             <div className="mx-2 mt-1 pt-2.5 border-t border-zinc-100
               flex items-center justify-between">
-              <span className="text-[15px] font-semibold text-zinc-400">총 입고 수량</span>
-              <span className="text-[15px] font-bold text-zinc-800 tabular-nums">
-                {counts.totalQty}<span className="text-[14px] font-semibold text-zinc-400 ml-0.5">개</span>
+              <span className="text-[17px] font-semibold text-zinc-400">총 입고 수량</span>
+              <span className="text-[17px] font-bold text-zinc-800 tabular-nums">
+                {counts.totalQty}<span className="text-[16px] font-semibold text-zinc-400 ml-0.5">개</span>
               </span>
             </div>
           </div>
@@ -571,8 +571,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   </div>
                 </div>
                 <div className="text-center">
-                  <p className="text-[15px] font-bold text-ink-soft">스캔한 상품이 여기에 표시됩니다</p>
-                  <p className="text-[13px] text-zinc-400 mt-1">바코드 스캔 후 자동 등록</p>
+                  <p className="text-[17px] font-bold text-ink-soft">스캔한 상품이 여기에 표시됩니다</p>
+                  <p className="text-[15px] text-zinc-400 mt-1">바코드 스캔 후 자동 등록</p>
                 </div>
               </div>
             ) : (
