@@ -376,8 +376,9 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                               const isCritical = shortageQty > 0 && currentStock === 0; // 재고 0 · 최우선
                               const isShort = shortageQty > 0 && !isCritical;            // 부족
                               const isSelected = selectedOrder.has(r.id);
+                              // 2026-09-02 · #79 v4 · isSelected · 좌측 3px inset shadow · brand-deep (목업 시그니처)
                               const rowCls = isSelected
-                                ? "bg-sky-50/60"
+                                ? "bg-sky-50/60 shadow-[inset_3px_0_0_var(--tw-shadow-color,#0A2E4A)] shadow-brand-deep"
                                 : isCritical
                                   ? "bg-gradient-to-r from-rose-50/60 via-transparent to-transparent hover:from-rose-50"
                                   : isShort
