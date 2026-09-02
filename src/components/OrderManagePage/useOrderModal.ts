@@ -172,19 +172,24 @@ export function useOrderModal({
           return `  · ${r.supplier} (#${r.order_number})${r.error ? ` · ${r.error}` : ""}${r.outcomes.length > 0 ? ` · ${r.outcomes.join(", ")}` : ""}`;
         })] : []),
       ].join("\n");
-      // 2026-09-02 · #82 · 사용자 지시 · 안 되는 기능 안내 원칙
-      //   · 실제 :sent 있으면 성공 · 없으면 · 저장만 되고 발송 안 됨 명확히 알림
+      // 2026-09-02 · 한달전 로직 복원 · 이메일/연락처 없음 dialog 재활성
+      //   · 실제 :sent 있으면 성공 · 없으면 · 저장만 되고 발송 안 됨
+      //   · no_recipient (이메일/전화번호 없음) · 성공/실패 무관 · 항상 안내 dialog
+      //   · no_env · SMTP/카톡 환경 미설정 · warning toast (개발중 안내)
       const anyRealSent = results.some(r => r.outcomes.some(o => /:sent(\s|$)/.test(o)));
       const anyNoEnv = results.some(r => r.outcomes.some(o => /no_env|skipped\(.*not-installed/.test(o)));
       if (!anyRealSent && anyNoEnv) {
-        showError(`발주서 저장 완료 · ⚠ 실제 발송은 이메일/카카오/문자 환경 미설정 (개발중 · 관리자에게 문의)\n\n${summaryLines}`);
+        showError(`발주서 저장 완료 · ⚠ 이메일/카카오/문자 환경 미설정 (개발중 · 실제 발송 X · 관리자 문의)\n\n${summaryLines}`);
       } else {
         showSuccess(`발주서 ${orderModal.suppliers.length}건 발송 결과\n\n${summaryLines}`);
       }
-      const needsEdit = failed.filter(r => missingByReason(r).length > 0);
+      // 2026-09-02 · 한달전 로직 복원 · missingByReason · 성공/실패 무관 · 모든 결과 대상
+      //   · 이전 · failed.filter(...) · realSent=true 시 절대 안 뜸 → 사용자 리포트
+      //   · 이후 · results 전체 대상 · no_recipient outcome 있으면 dialog 표시
+      const needsEdit = results.filter(r => missingByReason(r).length > 0);
       for (const r of needsEdit) {
         const missing = missingByReason(r);
-        const proceed2 = await confirm({ title: `${r.supplier}`, message: `${missing.join(" · ")}이(가) 없습니다.\n공급사 정보 수정 페이지로 이동하시겠습니까?` });
+        const proceed2 = await confirm({ title: `${r.supplier} · 발송 채널 정보 없음`, message: `${missing.join(" · ")}이(가) 등록되지 않았습니다.\n공급사 정보 수정 페이지로 이동하시겠습니까?` });
         if (proceed2) { openSupplierInfo(r.supplier); break; }
       }
       setOrderModal(null);
