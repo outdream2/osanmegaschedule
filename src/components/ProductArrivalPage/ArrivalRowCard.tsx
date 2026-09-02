@@ -177,83 +177,76 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           </span>
         </div>
 
-        {/* 상품명 */}
-        <h4 className="text-[16px] font-bold text-ink tracking-tight leading-snug break-keep">
-          {item.product?.name ?? <span className="text-rose-500">(미등록 상품)</span>}
-        </h4>
+        {/* 2026-09-02 · 사용자 지시 · 상품명 + 현재고 (오른쪽) · 폰트 +2 (16→18) */}
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <h4 className="text-[18px] font-bold text-ink tracking-tight leading-snug break-keep flex-1 min-w-0">
+            {item.product?.name ?? <span className="text-rose-500">(미등록 상품)</span>}
+          </h4>
+          {(currentStock > 0 || item.product) && (
+            <span className="inline-flex items-center gap-1 text-[15px] font-bold text-zinc-700 tabular-nums shrink-0">
+              <Package size={13} className="text-zinc-400" />
+              현재고 <span className="text-brand-deep">{currentStock.toLocaleString()}</span>
+              {optimalStock > 0 && (
+                <span className="text-[13px] font-semibold text-zinc-400 ml-0.5">/ 적정 {optimalStock.toLocaleString()}</span>
+              )}
+            </span>
+          )}
+        </div>
 
-        {/* 규격 · 코드 */}
+        {/* 규격 · 코드 · 폰트 +2 (11→13) */}
         <div className="flex items-center gap-1.5 flex-wrap -mt-0.5">
           {item.product?.spec && (
             <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5
-              text-[11px] font-semibold text-zinc-500 bg-zinc-100/70">
-              <Box size={9} className="text-zinc-400" />
+              text-[13px] font-semibold text-zinc-500 bg-zinc-100/70">
+              <Box size={11} className="text-zinc-400" />
               {item.product.spec}
             </span>
           )}
           <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5
-            text-[11px] font-mono text-zinc-400 bg-zinc-100/60">
-            <Hash size={9} className="text-zinc-300" />
+            text-[13px] font-mono text-zinc-400 bg-zinc-100/60">
+            <Hash size={11} className="text-zinc-300" />
             {item.code}
           </span>
         </div>
 
-        {/* 2026-09-01 · #92 · 구역 지정 · 수량 영역 위 */}
-        <div className="flex items-center gap-2 pt-0.5 pb-0.5 border-t border-zinc-100/80 mt-0.5">
-          <span className="text-[12px] font-bold text-zinc-400 uppercase tracking-wider shrink-0">입고구역</span>
+        {/* 2026-09-02 · 사용자 지시 · 입고구역 · 창고구역 배지 · 재고현황 섹션 제거
+             · 입고구역 옆에 · 창1/창2 배지 · 폰트 +2 (12→14 · 배지 12→14) */}
+        <div className="flex items-center gap-2 flex-wrap pt-0.5 pb-0.5 border-t border-zinc-100/80 mt-0.5">
+          <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">입고구역</span>
           <ArrivalZoneInline
             value={item.location}
             onChange={(v) => onSetLocation(item.key, v)}
           />
+          {/* 창고구역 배지 · 상품 real_map or 사용자 선택 기반 · 창1/창2 자동 */}
+          {relatedSlots.filter(rs => rs.slot === "w1" || rs.slot === "w2").length > 0 && (
+            <>
+              <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0 ml-1">창고구역</span>
+              {relatedSlots.filter(rs => rs.slot === "w1" || rs.slot === "w2").map(({ slot, zone }) => {
+                const meta = ARRIVAL_SLOT_META[slot];
+                const isTarget = targetSlot === slot;
+                return (
+                  <span
+                    key={slot}
+                    className={[
+                      "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[14px] font-bold tabular-nums transition",
+                      isTarget
+                        ? "border-emerald-400 bg-emerald-50 text-emerald-800 shadow-[0_0_0_2px_rgba(52,211,153,0.15)]"
+                        : `border-line ${meta.softBg} ${meta.text}`,
+                    ].join(" ")}
+                    title={isTarget ? `이번 입고 · ${meta.full} 반영 예정` : meta.full}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
+                    {meta.full}
+                    {zone && <span className="text-[13px] opacity-70">·{zone}</span>}
+                    {isTarget && (
+                      <span className="text-[12px] font-bold text-emerald-700 ml-0.5">+{item.qty}</span>
+                    )}
+                  </span>
+                );
+              })}
+            </>
+          )}
         </div>
-
-        {/* 2026-09-01 · 실재고 UI 벤치마킹 · 관련 창고·매장 슬롯 · 현재고 · 자동 판정
-            · 상품의 real_map 기반 · 소속 슬롯만 표시 (창1/창2/매1/매2/매3 중 해당)
-            · 사용자가 선택한 입고구역 → 어느 슬롯에 반영될지 하이라이트
-            · 상품에 real_map 또는 현재고 정보가 있을 때만 렌더 (미등록 상품은 skip) */}
-        {(relatedSlots.length > 0 || currentStock > 0) && (
-          <div className="rounded-xl bg-zinc-50/60 border border-line/60 px-3 py-2 flex flex-col gap-1.5">
-            {/* 헤더 · 현재고·적정재고 */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">재고 현황</span>
-              <span className="ml-auto inline-flex items-center gap-1 text-[13px] font-bold text-zinc-700 tabular-nums">
-                <Package size={11} className="text-zinc-400" />
-                현재고 {currentStock.toLocaleString()}
-                {optimalStock > 0 && (
-                  <span className="text-[11px] font-semibold text-zinc-400 ml-1">/ 적정 {optimalStock.toLocaleString()}</span>
-                )}
-              </span>
-            </div>
-            {/* 관련 슬롯 chip 리스트 · 자동 판정 슬롯 하이라이트 */}
-            {relatedSlots.length > 0 && (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {relatedSlots.map(({ slot, zone }) => {
-                  const meta = ARRIVAL_SLOT_META[slot];
-                  const isTarget = targetSlot === slot;
-                  return (
-                    <span
-                      key={slot}
-                      className={[
-                        "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[12px] font-bold tabular-nums transition",
-                        isTarget
-                          ? "border-emerald-400 bg-emerald-50 text-emerald-800 shadow-[0_0_0_2px_rgba(52,211,153,0.15)]"
-                          : `border-line ${meta.softBg} ${meta.text}`,
-                      ].join(" ")}
-                      title={isTarget ? `이번 입고 · ${meta.full} 반영 예정` : meta.full}
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                      {meta.label}
-                      {zone && <span className="text-[11px] opacity-70">·{zone}</span>}
-                      {isTarget && (
-                        <span className="text-[10px] font-bold text-emerald-700 ml-0.5">+{item.qty}</span>
-                      )}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* 액션 영역 · 수량 stepper + 2-state pill + 삭제 · 2026-09-01 · #93 · 3종→2종 */}
         <div className="flex items-center gap-2 flex-wrap pt-1">
