@@ -259,14 +259,19 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
 
   const visibleSlots = useMemo(() => {
     const { anyAssigned, hasAnyZone, hasW1, hasW2, hasS1, hasS2, hasS3 } = slotVis;
-    if (!anyAssigned) return [...SLOTS]; // 완전 미지정 · 5슬롯 모두
-    // 2026-09-01 · fix · 창고 슬롯 자동 노출 · 상품 real_map 에 창고 있으면 (showW1/W2) · 재고 없어도 표시
-    //   · 사용자 지시 · 구역 지정 시 · 매장·창고 자동 슬롯 · 창고 슬롯 안 나옴 버그
-    //   · 이전 · hasAnyZone ? hasW1 : (showW1 && hasW1) → 창고 재고 있어야만 표시
-    //   · 수정 · 상품이 해당 창고 소속이면 · 항상 표시 (실재고 입력 위해)
+    // 2026-09-02 · 사용자 지시 · 상품이 있는 구역만 노출 (창고) · showW1/showW2 항상 존중
+    //   · 미지정이든 지정이든 · 창고 슬롯은 real_map 기반으로 배타적 (창1 zone → 창1만 · 창2 zone → 창2만)
+    //   · 매장 슬롯 (s1/s2/s3) 은 기존 로직 유지
+    if (!anyAssigned) {
+      return SLOTS.filter(s => {
+        if (s.key === "w1") return showW1;
+        if (s.key === "w2") return showW2;
+        return true; // 매장 슬롯은 미지정 시 모두 표시
+      });
+    }
     return SLOTS.filter(s => {
-      if (s.key === "w1") return showW1 || hasW1;
-      if (s.key === "w2") return showW2 || hasW2;
+      if (s.key === "w1") return showW1 && (hasW1 || true);  // 창고1 소속만
+      if (s.key === "w2") return showW2 && (hasW2 || true);  // 창고2 소속만
       if (s.key === "s1") return hasAnyZone ? hasS1 : visibleStoreCount >= 1;
       if (s.key === "s2") return hasAnyZone ? hasS2 : visibleStoreCount >= 2;
       if (s.key === "s3") return hasAnyZone ? hasS3 : visibleStoreCount >= 3;
