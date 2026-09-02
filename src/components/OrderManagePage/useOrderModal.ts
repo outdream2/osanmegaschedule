@@ -1,6 +1,6 @@
 // src/components/OrderManagePage/useOrderModal.ts
 // 2026-08-23 · Framework Phase 4 · 발주서 모달 상태·핸들러 훅 분리
-import { useState } from "react";
+import React, { useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -172,51 +172,67 @@ export function useOrderModal({
           return `  · ${r.supplier} (#${r.order_number})${r.error ? ` · ${r.error}` : ""}${r.outcomes.length > 0 ? ` · ${r.outcomes.join(", ")}` : ""}`;
         })] : []),
       ].join("\n");
-      // 2026-09-02 · 사용자 지시 · 채널별 성공/실패 명시 · 카톡만 선택 시 · no_recipient 도 실패로 표시
-      //   · anyRealSent · 하나라도 :sent · 실제 발송 성공
-      //   · anyNoEnv · SMTP/SolAPI 등 환경 미설정
-      //   · anyNoRecipient · 수신처 (이메일/전화) 없음
-      //   · 실 발송 없으면 · 항상 warning (원인 명시)
+      // 2026-09-02 · 최신 트렌드 · Sonner/Vercel style · 채널별 상태 · confirm dialog (자동 dismiss X)
+      //   · 실 발송 여부 · 채널별 no_recipient/no_env 명확 표시
+      //   · 실패 시 · toast (3초 사라짐) 대신 · dialog · 사용자가 확인해야 dismiss
       const anyRealSent = results.some(r => r.outcomes.some(o => /:sent(\s|$)/.test(o)));
-      const anyNoEnv = results.some(r => r.outcomes.some(o => /no_env|no_smtp_env|no_gateway_env|not-installed/.test(o)));
-      const anyNoRecipient = results.some(r => r.outcomes.some(o => /no_recipient/.test(o)));
-      // 채널별 상태 · 이모지로 명시
-      const channelStatus: string[] = [];
-      if (orderModal.channels.email) {
-        const sent = results.some(r => r.outcomes.some(o => /^email:sent/.test(o)));
-        const noRcpt = results.some(r => r.outcomes.some(o => /email:no_recipient/.test(o)));
-        const noEnv = results.some(r => r.outcomes.some(o => /email:(no_smtp_env|skipped)/.test(o)));
-        channelStatus.push(`이메일 ${sent ? "✅ 발송" : noRcpt ? "❌ 이메일 주소 없음" : noEnv ? "⚠ SMTP 미설정" : "❌ 실패"}`);
-      }
-      if (orderModal.channels.sms) {
-        const sent = results.some(r => r.outcomes.some(o => /^sms:sent/.test(o)));
-        const noRcpt = results.some(r => r.outcomes.some(o => /sms:no_recipient/.test(o)));
-        const noEnv = results.some(r => r.outcomes.some(o => /sms:(no_gateway_env|skipped)/.test(o)));
-        channelStatus.push(`문자 ${sent ? "✅ 발송" : noRcpt ? "❌ 전화번호 없음" : noEnv ? "⚠ 문자 gateway 미설정" : "❌ 실패"}`);
-      }
-      if (orderModal.channels.kakao) {
-        const sent = results.some(r => r.outcomes.some(o => /^kakao:sent/.test(o)));
-        const noRcpt = results.some(r => r.outcomes.some(o => /kakao:no_recipient/.test(o)));
-        const noEnv = results.some(r => r.outcomes.some(o => /kakao:(no_env|no_template|skipped)/.test(o)));
-        channelStatus.push(`카톡 ${sent ? "✅ 발송" : noRcpt ? "❌ 전화번호 없음" : noEnv ? "⚠ 카카오 미설정" : "❌ 실패"}`);
-      }
-      const channelSummary = channelStatus.join(" · ");
-      if (!anyRealSent) {
-        const reason = anyNoRecipient && anyNoEnv ? "수신처 없음 + 환경 미설정"
-                     : anyNoRecipient ? "수신처 (이메일·전화) 없음"
-                     : anyNoEnv ? "환경 미설정 (SMTP·카톡)"
-                     : "발송 실패";
-        showError(`❌ 발주서 저장 완료 · 실제 발송 X\n${channelSummary}\n(${reason})\n\n${summaryLines}`);
-      } else {
-        showSuccess(`✅ 발주서 발송 완료\n${channelSummary}\n\n${summaryLines}`);
-      }
-      // 2026-09-02 · 한달전 로직 복원 · missingByReason · 성공/실패 무관 · 모든 결과 대상
-      //   · 이전 · failed.filter(...) · realSent=true 시 절대 안 뜸 → 사용자 리포트
-      //   · 이후 · results 전체 대상 · no_recipient outcome 있으면 dialog 표시
+      type ChannelState = { channel: string; status: "sent" | "no_recipient" | "no_env" | "error"; label: string; icon: string };
+      const channelStates: ChannelState[] = [];
+      const collect = (name: "email" | "sms" | "kakao", label: string) => {
+        if (!orderModal.channels[name]) return;
+        const anySent = results.some(r => r.outcomes.some(o => new RegExp(`^${name}:sent`).test(o)));
+        const anyRcpt = results.some(r => r.outcomes.some(o => new RegExp(`${name}:no_recipient`).test(o)));
+        const anyEnv  = results.some(r => r.outcomes.some(o => new RegExp(`${name}:(no_env|no_smtp_env|no_gateway_env|no_template|skipped)`).test(o)));
+        if (anySent)      channelStates.push({ channel: name, status: "sent",         label, icon: "✅" });
+        else if (anyRcpt) channelStates.push({ channel: name, status: "no_recipient", label, icon: "❌" });
+        else if (anyEnv)  channelStates.push({ channel: name, status: "no_env",       label, icon: "⚠️" });
+        else              channelStates.push({ channel: name, status: "error",        label, icon: "❌" });
+      };
+      collect("email", "이메일");
+      collect("sms",   "문자");
+      collect("kakao", "카카오톡");
+      const reasonLabel: Record<ChannelState["status"], string> = {
+        sent:          "정상 발송됨",
+        no_recipient:  "수신처 정보 없음 (공급사 등록 필요)",
+        no_env:        "환경 미설정 (개발중 · 서버 관리자 문의)",
+        error:         "발송 실패",
+      };
+      const dialogMessage: React.ReactNode = React.createElement("div", { className: "space-y-3 text-[15px]" },
+        React.createElement("div", { className: "text-[14px] text-zinc-500" },
+          `발주서 ${orderModal.suppliers.length}건 · 서버 저장 완료`,
+        ),
+        React.createElement("ul", { className: "flex flex-col gap-2 rounded-lg border border-line bg-zinc-50/50 p-3" },
+          ...channelStates.map(cs => React.createElement("li", {
+            key: cs.channel,
+            className: `flex items-center gap-2 text-[15px] ${cs.status === "sent" ? "text-emerald-700" : cs.status === "no_env" ? "text-amber-700" : "text-rose-700"}`,
+          },
+            React.createElement("span", { className: "text-[18px]" }, cs.icon),
+            React.createElement("span", { className: "font-bold w-16" }, cs.label),
+            React.createElement("span", { className: "text-[14px]" }, reasonLabel[cs.status]),
+          )),
+        ),
+        !anyRealSent && React.createElement("div", { className: "text-[13px] text-rose-600 bg-rose-50 border border-rose-200 rounded-md px-2 py-1.5" },
+          "⚠ 실제 발송된 채널이 없습니다. 서버 환경 설정 · 공급사 연락처 등록 필요.",
+        ),
+      );
+      // Sonner/Vercel style · 사용자가 확인해야 dismiss (자동 사라짐 X)
+      await confirm({
+        title: anyRealSent ? "✅ 발주 발송 결과" : "⚠️ 발주 발송 결과 · 확인 필요",
+        message: dialogMessage,
+        confirmLabel: "확인",
+        cancelLabel: "",
+        danger: !anyRealSent,
+      });
+      // 후속 dialog · no_recipient 공급사 · 정보 수정 이동
       const needsEdit = results.filter(r => missingByReason(r).length > 0);
       for (const r of needsEdit) {
         const missing = missingByReason(r);
-        const proceed2 = await confirm({ title: `${r.supplier} · 발송 채널 정보 없음`, message: `${missing.join(" · ")}이(가) 등록되지 않았습니다.\n공급사 정보 수정 페이지로 이동하시겠습니까?` });
+        const proceed2 = await confirm({
+          title: `${r.supplier} · 발송 채널 정보 없음`,
+          message: `${missing.join(" · ")}이(가) 등록되지 않았습니다.\n공급사 정보 수정 페이지로 이동하시겠습니까?`,
+          confirmLabel: "수정하러 이동",
+          cancelLabel: "취소",
+        });
         if (proceed2) { openSupplierInfo(r.supplier); break; }
       }
       setOrderModal(null);
