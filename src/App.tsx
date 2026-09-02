@@ -250,20 +250,25 @@ export default function App() {
   useEffect(() => {
     const onExpired = () => {
       // Guard 1 · 미로그인 상태면 no-op (loop 방지)
+      // 2026-09-02 · Guard 완화 · localStorage OR React authSession 어느쪽이든 · 로그아웃 발화
+      //   · 이전 · localStorage 만 체크 · React state 는 있는데 storage 는 없는 edge case · 로그아웃 안 됨
       const stored = localStorage.getItem(SK_AUTH_SESSION);
-      if (!stored) {
-        console.log("[SESSION_EXPIRED] 미로그인 상태 · 무시 (loop 방지)");
+      const hasSession = !!stored || !!authSession;
+      if (!hasSession) {
+        console.log("[SESSION_EXPIRED] 미로그인 · 무시 (loop 방지)");
         return;
       }
       // Guard 2 · 1초 이내 중복 발화 무시
       const now = Date.now();
       if (now - lastExpiredAtRef.current < 1000) return;
       lastExpiredAtRef.current = now;
+      console.log("[SESSION_EXPIRED] 세션 만료 감지 · handleLogout 호출");
       handleLogout();
     };
     window.addEventListener("api-session-expired", onExpired);
     return () => window.removeEventListener("api-session-expired", onExpired);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authSession]);
 
   const timeoutWarningOverlay = authSession && showTimeoutWarning ? (
     <SessionTimeoutWarning
