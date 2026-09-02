@@ -672,16 +672,19 @@ router.post("/api/order-requests/bulk-send", authorize(3), validateBody(BulkSend
 
     // 2026-08-10 · #14 · order_requests 라인에 status='ordered' + 발주서 정보 저장
     //   각 아이템 · order_request_id 로 UPDATE · 마이그레이션 add_order_dispatch_columns_2026-08-10.sql 대기 시 fallback
-    // 2026-09-01 · bulk_send_order_requests RPC · for 루프 → 1회 atomic UPDATE
-    const requestIds: bigint[] = items
+    // 2026-09-02 · #79 fix · order_requests.id 는 UUID · BigInt() 변환 시 SyntaxError · 원인
+    //   · 사용자 리포트 · 발주 발송 후 status 업데이트 안 됨
+    //   · 이전 · BigInt(uuid) throw → try/catch 로 감춰짐 → requestIds 빈 배열 → UPDATE 안 됨
+    //   · 이후 · 문자열 그대로 · UUID/bigint 둘 다 대응
+    const requestIds: string[] = items
       .map((it: any) => it.order_request_id)
       .filter((id: any) => id != null && id !== "")
-      .map((id: any) => BigInt(id));
+      .map((id: any) => String(id));
     if (requestIds.length > 0) {
       try {
         const { data: rpcRows, error: rpcErr } = await supabase.rpc(
           "bulk_send_order_requests",
-          { request_ids: requestIds.map(String) },
+          { request_ids: requestIds },
         );
         if (rpcErr) {
           // RPC 미존재(마이그레이션 미실행) 시 · fallback · 직접 UPDATE (2026-09-02 · #77 fix)
@@ -689,7 +692,8 @@ router.post("/api/order-requests/bulk-send", authorize(3), validateBody(BulkSend
           //   · fallback · 모든 request_id 에 대해 status='ordered' + sent_at=now UPDATE
           if (/function|does not exist|routine/i.test(rpcErr.message)) {
             console.warn(`[bulk-send] bulk_send_order_requests RPC 미존재 · fallback UPDATE 실행 (${rpcErr.message})`);
-            const idStrs = requestIds.map(String);
+            // requestIds already string[] (2026-09-02 · UUID 호환)
+            const idStrs = requestIds;
             const { error: updErr } = await supabase
               .from("order_requests")
               .update({ status: "ordered", sent_at: now })
