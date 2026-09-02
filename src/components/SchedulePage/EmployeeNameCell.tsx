@@ -142,9 +142,9 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
             {emp.name}
           </span>
 
-          {/* 직군 chip · 하단 */}
+          {/* 2026-09-02 · #61 · 사용자 지시 · 직원성명 배지 → 텍스트만 · 직군 텍스트 (border/bg 제거) */}
           {emp.position && (
-            <span className={`inline-flex items-center self-start h-4 px-1.5 rounded text-[10px] sm:text-[11px] font-bold border tabular-nums ${tone.posBg} ${tone.posText}`}>
+            <span className={`self-start text-[11px] sm:text-[12px] font-semibold tabular-nums ${tone.posText}`}>
               {emp.position}
             </span>
           )}
