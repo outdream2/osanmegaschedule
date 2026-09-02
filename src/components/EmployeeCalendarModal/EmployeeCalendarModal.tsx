@@ -359,95 +359,50 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
         </div>
 
         {/* 2026-08-17 · 사용자 지시 · 반응형 · 직원정보 접기 토글 (md 미만 · md+ 는 사이드바 상시) */}
-        <button
-          type="button"
-          onClick={() => setProfileCollapsedMobile(v => !v)}
-          className="md:hidden flex items-center gap-2 px-4 py-2.5 border-b-2 border-brand-deep/15 bg-brand-tint text-[16px] font-semibold text-brand-deep hover:brightness-95 transition-all cursor-pointer shrink-0"
-        >
-          <User size={16} strokeWidth={2.2} className="shrink-0" />
-          <span>직원정보</span>
-          {/* 2026-08-17 · 사용자 지시 · 펼치기/접기 라벨 · 직원정보 옆으로 가깝게 */}
-          <span className="ml-1 flex items-center gap-0.5 text-[15px] text-brand">
-            {profileCollapsedMobile ? "펼치기" : "접기"}
-            {profileCollapsedMobile ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-          </span>
-        </button>
+        {/* 2026-09-03 · #62 · 모바일 접기 버튼 제거 · 직원정보 · 탭으로 통합됨 */}
+        {(() => { void profileCollapsedMobile; void setProfileCollapsedMobile; return null; })()}
 
-        {/* Body · 좌 (직원정보 항상) + 우 (탭) · 반응형 stack (md 미만은 위/아래) */}
-        <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden">
-          {/* ── LEFT · 직원정보 · md 미만 접힘 시 hidden · md+ 항상 노출 ── */}
-          <aside className={`${profileCollapsedMobile ? "hidden" : "block"} md:!block md:w-[300px] md:min-w-[300px] md:max-w-[300px] md:border-r border-b md:border-b-0 border-zinc-100 bg-zinc-50/50 overflow-y-auto shrink-0 max-h-[45vh] md:max-h-none`}>
-            <div className="p-3.5 space-y-3">
-              {isLocked && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-                  <Lock size={12} className="text-amber-500 shrink-0" />
-                  <span className="text-xs font-semibold text-amber-700">이달 스케줄 확정</span>
-                </div>
-              )}
-              <EmployeeProfileCard
-                employee={localEmployee}
-                onEmployeeChange={(u) => setLocalEmployee(u)}
-                onEdit={onEditEmployee}
-              />
-              {(localEmployee.address || localEmployee.email) && (
-                <Card borderColor="border-zinc-100" padding="sm">
-                  <EmployeeInfoForm
-                    values={{
-                      name: localEmployee.name || "",
-                      phone: localEmployee.phone || "",
-                      gender: (localEmployee.gender as "남" | "여" | undefined) ?? "",
-                      position: localEmployee.position || "",
-                      workplace: localEmployee.workplace || "",
-                      hireDate: localEmployee.hireDate || "",
-                      rank: localEmployee.rank || "",
-                      birthDate: "",
-                      address: localEmployee.address || "",
-                      email: localEmployee.email || "",
-                    }}
-                    onChange={() => { /* read-only */ }}
-                    layout="grid"
-                    editing={false}
-                    fields={["address", "email"]}
-                  />
-                </Card>
-              )}
-              {employee.description && (
-                <div className="text-[12px] font-medium text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-                  {employee.description}
-                </div>
-              )}
-            </div>
-          </aside>
-
-          {/* ── RIGHT · 탭 · 달력/일괄/구역 ── */}
+        {/* 2026-09-03 · #62 · 사용자 지시 · 왼쪽 직원정보 → 탭 통합 · 세로 정렬 */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          {/* 전체 · 탭 · 직원정보 / 달력 / 일괄 / 구역 · 통합 */}
           <section className="flex-1 min-w-0 flex flex-col overflow-hidden">
             {/* Tab bar · segmented · 최신 트렌드 (Linear/Vercel) · rounded pill · deep navy accent */}
-            {(isAdmin || (isLogistics && logisticsZoneProps)) && (
-              <div className="flex items-center gap-1 px-3 pt-3 pb-2 border-b border-zinc-100 flex-shrink-0 bg-white overflow-x-auto">
-                {isAdmin && (
-                  <>
-                    <button
-                      onClick={() => setActiveTab("calendar")}
-                      className={`flex items-center gap-1.5 px-3.5 py-2 text-[17px] font-semibold rounded-lg transition-colors ${
-                        activeTab === "calendar"
-                          ? "bg-brand-deep text-white shadow-sm"
-                          : "text-ink-soft hover:bg-zinc-100 hover:text-ink cursor-pointer"
-                      }`}
-                    >
-                      <Calendar size={14} strokeWidth={2.2} /> 달력
-                    </button>
-                    <button
-                      onClick={() => setActiveTab("bulk")}
-                      className={`flex items-center gap-1.5 px-3.5 py-2 text-[17px] font-semibold rounded-lg transition-colors ${
-                        activeTab === "bulk"
-                          ? "bg-brand-deep text-white shadow-sm"
-                          : "text-ink-soft hover:bg-zinc-100 hover:text-ink cursor-pointer"
-                      }`}
-                    >
-                      <CheckCircle size={14} strokeWidth={2.2} /> 일괄 등록
-                    </button>
-                  </>
-                )}
+            <div className="flex items-center gap-1 px-3 pt-3 pb-2 border-b border-zinc-100 flex-shrink-0 bg-white overflow-x-auto">
+              {/* 2026-09-03 · #62 · 직원정보 탭 신규 · 왼쪽 aside 통합 */}
+              <button
+                onClick={() => setActiveTab("info")}
+                className={`flex items-center gap-1.5 px-3.5 py-2 text-[17px] font-semibold rounded-lg transition-colors ${
+                  activeTab === "info"
+                    ? "bg-brand-deep text-white shadow-sm"
+                    : "text-ink-soft hover:bg-zinc-100 hover:text-ink cursor-pointer"
+                }`}
+              >
+                <User size={14} strokeWidth={2.2} /> 직원정보
+              </button>
+              {isAdmin && (
+                <>
+                  <button
+                    onClick={() => setActiveTab("calendar")}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 text-[17px] font-semibold rounded-lg transition-colors ${
+                      activeTab === "calendar"
+                        ? "bg-brand-deep text-white shadow-sm"
+                        : "text-ink-soft hover:bg-zinc-100 hover:text-ink cursor-pointer"
+                    }`}
+                  >
+                    <Calendar size={14} strokeWidth={2.2} /> 달력
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("bulk")}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 text-[17px] font-semibold rounded-lg transition-colors ${
+                      activeTab === "bulk"
+                        ? "bg-brand-deep text-white shadow-sm"
+                        : "text-ink-soft hover:bg-zinc-100 hover:text-ink cursor-pointer"
+                    }`}
+                  >
+                    <CheckCircle size={14} strokeWidth={2.2} /> 일괄 등록
+                  </button>
+                </>
+              )}
                 {isLogistics && logisticsZoneProps && (
                   <button
                     onClick={() => setActiveTab("zone")}
@@ -467,6 +422,51 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     )}
                   </button>
                 )}
+              </div>
+
+            {/* 2026-09-03 · #62 · 직원정보 탭 컨텐츠 · 이전 aside 내용 이관 */}
+            {activeTab === "info" && (
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <div className="p-3.5 space-y-3">
+                  {isLocked && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                      <Lock size={12} className="text-amber-500 shrink-0" />
+                      <span className="text-xs font-semibold text-amber-700">이달 스케줄 확정</span>
+                    </div>
+                  )}
+                  <EmployeeProfileCard
+                    employee={localEmployee}
+                    onEmployeeChange={(u) => setLocalEmployee(u)}
+                    onEdit={onEditEmployee}
+                  />
+                  {(localEmployee.address || localEmployee.email) && (
+                    <Card borderColor="border-zinc-100" padding="sm">
+                      <EmployeeInfoForm
+                        values={{
+                          name: localEmployee.name || "",
+                          phone: localEmployee.phone || "",
+                          gender: (localEmployee.gender as "남" | "여" | undefined) ?? "",
+                          position: localEmployee.position || "",
+                          workplace: localEmployee.workplace || "",
+                          hireDate: localEmployee.hireDate || "",
+                          rank: localEmployee.rank || "",
+                          birthDate: "",
+                          address: localEmployee.address || "",
+                          email: localEmployee.email || "",
+                        }}
+                        onChange={() => { /* read-only */ }}
+                        layout="grid"
+                        editing={false}
+                        fields={["address", "email"]}
+                      />
+                    </Card>
+                  )}
+                  {employee.description && (
+                    <div className="text-[12px] font-medium text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                      {employee.description}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
