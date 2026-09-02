@@ -3,7 +3,8 @@
 // 잔고항목 지정 탭 · 공급처별 잔고 label 매핑
 // 프레임워크: Card
 import React from "react";
-import axios from "axios";
+// 2026-09-02 · 프레임워크 · axios → api.* (인증·에러 프레임워크 통합)
+import { api } from "../../lib/apiClient";
 import { Card } from "../common/Card";
 import type { OcrPageResult } from "./types";
 import { BALANCE_LABEL_OPTIONS } from "./OcrPage.types";
@@ -18,9 +19,9 @@ export const BalanceConfigTab: React.FC<BalanceConfigTabProps> = ({ pages, confi
   const [dbVendors, setDbVendors] = React.useState<string[]>([]);
 
   React.useEffect(() => {
-    axios.get("/api/supplier-balance-configs")
-      .then(r => {
-        const names = (r.data as { supplier_name: string }[]).map(x => x.supplier_name);
+    api.get<{ supplier_name: string }[]>("/api/supplier-balance-configs")
+      .then(({ data }) => {
+        const names = data.map(x => x.supplier_name);
         setDbVendors(names);
       })
       .catch(() => {});

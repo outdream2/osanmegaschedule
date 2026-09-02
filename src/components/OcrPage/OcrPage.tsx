@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { SK_OCR_ENGINE } from "../../lib/storageKeys";
-import axios from "axios";
+// 2026-09-02 · 프레임워크 · axios → api.* (인증·에러 프레임워크 통합)
+import { api } from "../../lib/apiClient";
 import { Upload, X, Zap, AlertCircle, Images, BookOpen, FileText } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import { PageImageViewer } from "./PageImageViewer";
@@ -82,10 +83,10 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
   const [balanceConfig, setBalanceConfig] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    axios.get("/api/supplier-balance-configs")
-      .then(r => {
+    api.get<{ supplier_name: string; balance_field: string }[]>("/api/supplier-balance-configs")
+      .then(({ data }) => {
         const cfg: Record<string, string> = {};
-        for (const row of r.data as { supplier_name: string; balance_field: string }[]) {
+        for (const row of data) {
           if (row.balance_field) cfg[row.supplier_name] = row.balance_field;
         }
         setBalanceConfig(cfg);
@@ -95,7 +96,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
 
   const handleSaveConfirmed = useCallback(async (items: ConfirmedItem[]) => {
     const today = new Date().toISOString().slice(0, 10);
-    await axios.post("/api/ocr-confirmed-items", { items, saved_at: today });
+    await api.post("/api/ocr-confirmed-items", { items, saved_at: today });
   }, []);
 
   const handleBalanceConfigChange = useCallback((vendor: string, label: string) => {
@@ -108,7 +109,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
       }
       return next;
     });
-    axios.put("/api/supplier-balance-configs", { supplier_name: vendor, balance_field: label === "(없음)" ? "" : label })
+    api.put("/api/supplier-balance-configs", { supplier_name: vendor, balance_field: label === "(없음)" ? "" : label })
       .catch(console.error);
   }, []);
 
@@ -116,8 +117,8 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
   const [mainTab, setMainTab] = useState<"ocr" | "synonyms" | "balance" | "records">("ocr");
 
   useEffect(() => {
-    axios.get("/api/ocr-ping")
-      .then(r => setPingStatus(r.data))
+    api.get<any>("/api/ocr-ping")
+      .then(({ data }) => setPingStatus(data))
       .catch(() => setPingStatus({ ok: false, gemini: false, geminiKeyCount: 0 }));
   }, []);
 
@@ -358,8 +359,8 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
         setStatusMsg(`Gemini 파싱 중...`);
         try {
           const payload = { pages: collectedPages.map(p => ({ page: p.page, rawText: p.rawText ?? "" })) };
-          const resp = await axios.post("/api/ocr/parse-gemini", payload);
-          const parsed = resp.data.pages as OcrPageResult[];
+          const { data: respData } = await api.post<{ pages: OcrPageResult[] }>("/api/ocr/parse-gemini", payload);
+          const parsed = respData.pages;
           if (Array.isArray(parsed) && parsed.length > 0) {
             // 2026-07-23 · 사용자 편집 감지 시 · Gemini 재파싱 결과로 덮어쓰지 않음
             if (hasUserEditsRef.current) {
@@ -367,7 +368,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
               setStatusMsg(`Gemini 파싱 완료 · 편집중이라 표는 유지 (${parsed.length}페이지)`);
             } else {
               setPages(parsed);
-              const diag = resp.data?._diag?.summaries;
+              const diag = (respData as any)?._diag?.summaries;
               if (Array.isArray(diag)) {
                 const bad = diag.filter((d: any) => d.status && d.status !== "OK");
                 setStatusMsg(bad.length > 0
@@ -418,8 +419,8 @@ const handleReparsePage = useCallback(async (
     body.cachedRawTexts = [cachedRawText];
   }
   const url = approach === "default" ? "/api/ocr" : `/api/ocr?approach=${encodeURIComponent(approach)}`;
-  const res = await axios.post(url, body);
-  const newPage = res.data.pages?.[0];
+  const { data: resData } = await api.post<{ pages?: OcrPageResult[] }>(url, body);
+  const newPage = resData.pages?.[0];
   if (newPage) {
     setPages(prev => prev.map(p => p.page === pageNum ? { ...newPage, page: pageNum } : p));
   }

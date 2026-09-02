@@ -2,7 +2,9 @@
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · OcrPage 에서 이관
 // 프레임워크: Card · Modal · Spinner · StatusPill · IconTile · useConfirm · useToast · toastClass
 import React from "react";
-import axios from "axios";
+// 2026-09-02 · 프레임워크 · axios → api.* (인증·에러 프레임워크 통합)
+import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import { Trash2, RefreshCw, FileText } from "lucide-react";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -43,21 +45,11 @@ export const ConfirmedRecordsTab: React.FC = () => {
       if (dateFilter) params.set("date", dateFilter);
       if (supplierFilter.trim()) params.set("supplier", supplierFilter.trim());
       if (showBalanceOnly) params.set("hasBalance", "true");
-      const res = await axios.get(`/api/ocr-confirmed-items?${params.toString()}`);
-      const items: ConfirmedRecord[] = Array.isArray(res.data?.items) ? res.data.items : [];
-      // 2026-07-28 · 진단 로그 (이미지 없음 원인 파악 · 이미지 있는/없는 건수 · 첫 3개 샘플)
-      const withImg = items.filter(x => !!x.image_url).length;
-      console.log(`[ConfirmedRecordsTab] 조회 완료 · 총 ${items.length}건 · image_url 있음 ${withImg}건 · 없음 ${items.length - withImg}건`);
-      if (items.length > 0) {
-        console.log(`[ConfirmedRecordsTab] 샘플 첫 항목:`, {
-          id: items[0].id, supplier: items[0].supplier, product_name: items[0].product_name,
-          image_url: items[0].image_url, image_public_id: items[0].image_public_id,
-          keys: Object.keys(items[0]),
-        });
-      }
+      const { data } = await api.get<{ items?: ConfirmedRecord[] }>(`/api/ocr-confirmed-items?${params.toString()}`);
+      const items: ConfirmedRecord[] = Array.isArray(data?.items) ? data.items : [];
       setItems(items);
-    } catch (e: any) {
-      setErr(e?.response?.data?.error ?? e?.message ?? "조회 실패");
+    } catch (e: unknown) {
+      setErr(e instanceof ApiError ? e.message : getErrorMessage(e, "조회 실패"));
     } finally {
       setLoading(false);
     }
@@ -71,10 +63,10 @@ export const ConfirmedRecordsTab: React.FC = () => {
       const params = new URLSearchParams();
       params.set("supplier", supplier);
       params.set("hasBalance", "true");
-      const res = await axios.get(`/api/ocr-confirmed-items?${params.toString()}`);
-      const list: ConfirmedRecord[] = Array.isArray(res.data?.items) ? res.data.items : [];
+      const { data } = await api.get<{ items?: ConfirmedRecord[] }>(`/api/ocr-confirmed-items?${params.toString()}`);
+      const list: ConfirmedRecord[] = Array.isArray(data?.items) ? data.items : [];
       setBalanceHistory({ supplier, items: list });
-    } catch (e: any) {
+    } catch {
       // 조회 실패해도 팝업은 유지 (빈 목록)
       setBalanceHistory({ supplier, items: [] });
     } finally {
@@ -88,11 +80,11 @@ export const ConfirmedRecordsTab: React.FC = () => {
     if (!await confirm({ message: "이 항목을 삭제하시겠습니까?", danger: true })) return;
     setDeletingId(id);
     try {
-      await axios.delete(`/api/ocr-confirmed-items/${id}`);
+      await api.del(`/api/ocr-confirmed-items/${id}`);
       setItems(prev => prev.filter(x => x.id !== id));
       setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
-    } catch (e: any) {
-      showError(e?.response?.data?.error ?? e?.message ?? "삭제 실패");
+    } catch (e: unknown) {
+      showError(e instanceof ApiError ? e.message : getErrorMessage(e, "삭제 실패"));
     } finally {
       setDeletingId(null);
     }
@@ -107,7 +99,7 @@ export const ConfirmedRecordsTab: React.FC = () => {
     // 병렬 삭제 · 실패는 개별 카운트
     await Promise.all(ids.map(async (id) => {
       try {
-        await axios.delete(`/api/ocr-confirmed-items/${id}`);
+        await api.del(`/api/ocr-confirmed-items/${id}`);
         ok++;
       } catch { fail++; }
     }));

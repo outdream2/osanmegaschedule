@@ -9,7 +9,9 @@
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Spinner } from "../common/Spinner";
-import axios from "axios";
+// 2026-09-02 · 프레임워크 · axios → api.* (인증·에러 프레임워크 통합)
+import { api, ApiError } from "../../lib/apiClient";
+import { getErrorMessage } from "../../lib/errorMessage";
 import type { OcrPageResult } from "./types";
 
 export interface GeminiParseOnlyButtonProps {
@@ -45,15 +47,15 @@ export function GeminiParseOnlyButton({
     setLoading(true);
     try {
       const payload = { pages: pages.map(p => ({ page: p.page, rawText: p.rawText ?? "" })) };
-      const res = await axios.post("/api/ocr/parse-gemini", payload);
-      const parsed = res.data.pages as OcrPageResult[];
+      const { data } = await api.post<{ pages: OcrPageResult[] }>("/api/ocr/parse-gemini", payload);
+      const parsed = data.pages;
       if (Array.isArray(parsed) && parsed.length > 0) {
         onResult(parsed);
       } else {
         onError?.("Gemini 파싱 결과가 비어있음");
       }
-    } catch (e: any) {
-      const msg = e?.response?.data?.error ?? e?.message ?? "unknown";
+    } catch (e: unknown) {
+      const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "unknown");
       onError?.(`Gemini 파싱 실패: ${msg}`);
     } finally {
       setLoading(false);
