@@ -294,13 +294,14 @@ export const OrderModal: React.FC<OrderModalProps> = ({
           <div className="flex flex-col gap-1.5">
             <label className="text-[15px] text-zinc-500 font-bold block">발송 채널</label>
             <div className="flex items-center gap-1.5 flex-wrap">
-              <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${notifyLogisticsLeader ? "bg-indigo-50 text-indigo-700 border-indigo-300" : "bg-white text-zinc-400 border-line"}`} title="체크 시 · 관리자(물류팀장)에게 발주서 PDF 카톡 전송">
-                <input type="checkbox" checked={notifyLogisticsLeader} onChange={e => setNotifyLogisticsLeader(e.target.checked)} className="w-3 h-3"/>
-                📋 물류팀장 발송 (PDF)
+              {/* 2026-09-03 · #81·#82 · 미구현 기능 안내 원칙 · 물류팀장 발송·카톡 · 개발중 명시 */}
+              <label className="text-[14px] font-medium border border-dashed border-zinc-300 rounded-lg px-2 py-1 cursor-not-allowed flex items-center gap-1 bg-zinc-50 text-zinc-400" title="물류팀장 카톡 · SolAPI 연동 개발중 · 환경 미설정 (관리자 문의)">
+                <input type="checkbox" disabled className="w-3 h-3"/>
+                📋 물류팀장 발송 <span className="text-[11px]">🚧 개발중</span>
               </label>
-              <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.kakao ? "bg-yellow-50 text-yellow-700 border-yellow-300" : "bg-white text-zinc-400 border-line"}`} title="SolAPI 알림톡">
+              <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.kakao ? "bg-yellow-50 text-yellow-700 border-yellow-300" : "bg-white text-zinc-400 border-line"}`} title="SolAPI 카톡 알림톡 · env 미설정 시 미발송">
                 <input type="checkbox" checked={orderModal.channels.kakao} onChange={e => onChannelChange("kakao", e.target.checked)} className="w-3 h-3"/>
-                💬 카카오톡
+                💬 카카오톡 <span className="text-[11px] text-amber-600">⚠️미설정</span>
               </label>
               <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.email ? "bg-emerald-50 text-emerald-700 border-emerald-300" : "bg-white text-zinc-400 border-line"}`}>
                 <input type="checkbox" checked={orderModal.channels.email} onChange={e => onChannelChange("email", e.target.checked)} className="w-3 h-3"/>
