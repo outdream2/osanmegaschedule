@@ -454,11 +454,13 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   }
 
   // 상품코드 → 최신 실재고 (창고+매장 합계) 맵
+  // 2026-09-03 · fix · warehouse_stock(DROP) → warehouse1_stock + warehouse2_stock 합산
   const invStockMap = new Map<string, { warehouse: number | null; store: number | null; total: number }>();
   for (const inv of inventoryChecks) {
     if (!invStockMap.has(inv.product_code)) {
-      const total = (inv.warehouse_stock ?? 0) + (inv.store_stock ?? 0);
-      invStockMap.set(inv.product_code, { warehouse: inv.warehouse_stock, store: inv.store_stock, total });
+      const wh = (inv.warehouse1_stock ?? 0) + (inv.warehouse2_stock ?? 0);
+      const total = wh + (inv.store_stock ?? 0) + (inv.store3_stock ?? 0);
+      invStockMap.set(inv.product_code, { warehouse: wh || null, store: inv.store_stock, total });
     }
   }
 

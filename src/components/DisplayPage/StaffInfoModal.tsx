@@ -1,4 +1,4 @@
-// src/components/DisplayPage/StaffInfoModal.tsx
+﻿// src/components/DisplayPage/StaffInfoModal.tsx
 // 2026-08-22 · Framework Phase 4 · DisplayPage.tsx 에서 분리
 // 2026-08-23 · #191 Modal v3.4 재마이그레이션 · align=bottom-mobile · headerBgClass 조건부
 import React from "react";
@@ -113,7 +113,7 @@ export const StaffInfoModal: React.FC<StaffInfoModalProps> = ({
             };
             return (
               <div key={section} className="mb-3">
-                <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-1">{sectionLabel[section]}</div>
+                <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1">{sectionLabel[section]}</div>
                 <div className="grid grid-cols-5 gap-1">
                   {sectionZones.map((z) => {
                     const empId = employee.id;

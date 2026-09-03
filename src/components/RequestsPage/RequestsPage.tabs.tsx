@@ -452,15 +452,19 @@ export const InventoryCheckTab: React.FC<InventoryCheckTabProps> = ({
         const totalChecks = inventoryChecks.length;
         let mismatchCount = 0;
         for (const r of inventoryChecks) {
-          const totalActual = (r.warehouse_stock ?? 0) + (r.store_stock ?? 0);
+          // 2026-09-03 · fix · warehouse_stock(DROP) → warehouse1_stock + warehouse2_stock 합산
+          const totalActual =
+            (r.warehouse1_stock ?? 0) + (r.warehouse2_stock ?? 0) + (r.store_stock ?? 0) + (r.store3_stock ?? 0);
           if (r.system_stock != null && totalActual !== r.system_stock) mismatchCount++;
         }
+        // 2026-09-03 · fix · "실재고 차이" KPI 가 "점검 상품"과 동일 값 (inventoryChecks.length) 표시
+        //   · 이후 · "오차 건수" (실재고 ≠ 시스템재고 인 상품 수) = mismatchCount 로 통일
         const metrics = [
           { label: "점검 상품", value: totalChecks, color: "text-purple-600", bg: "bg-purple-50", border: "border-purple-200" },
           { label: "시스템↔실재고 오차", value: mismatchCount, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200" },
           { label: "진열요청", value: displayReqsCount, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
           { label: "발주요청", value: orderReqsCount, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
-          { label: "실재고 차이", value: inventoryChecks.length, color: "text-purple-600", bg: "bg-purple-50", border: "border-purple-200" },
+          { label: "오차 건수", value: mismatchCount, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
         ];
         return (
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -493,7 +497,9 @@ export const InventoryCheckTab: React.FC<InventoryCheckTabProps> = ({
       ) : (
         <div className={`${CARD_BASE} divide-y divide-zinc-50 ${inventoryLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
           {inventoryChecks.map(r => {
-            const totalActual = (r.warehouse_stock ?? 0) + (r.store_stock ?? 0);
+            // 2026-09-03 · fix · warehouse_stock(DROP) → warehouse1_stock + warehouse2_stock 합산
+            const whTotal = (r.warehouse1_stock ?? 0) + (r.warehouse2_stock ?? 0);
+            const totalActual = whTotal + (r.store_stock ?? 0) + (r.store3_stock ?? 0);
             const diff = r.system_stock != null ? totalActual - r.system_stock : null;
             const isShort = diff != null && diff < 0;
             const isOver  = diff != null && diff > 0;
@@ -507,7 +513,7 @@ export const InventoryCheckTab: React.FC<InventoryCheckTabProps> = ({
                     <span className="text-[14px] font-semibold text-zinc-400">{r.product_code}</span>
                     <span className="text-gray-300 text-[14px]">·</span>
                     <span className="text-[15px] text-zinc-500">
-                      창고 <span className="font-bold text-zinc-700">{r.warehouse_stock ?? "—"}</span>
+                      창고 <span className="font-bold text-zinc-700">{r.warehouse1_stock != null || r.warehouse2_stock != null ? whTotal : "—"}</span>
                       <span className="text-zinc-300 mx-0.5">+</span>
                       매장 <span className="font-bold text-zinc-700">{r.store_stock ?? "—"}</span>
                       <span className="text-zinc-300 mx-0.5">=</span>
@@ -582,7 +588,9 @@ export const InventoryCheckTab: React.FC<InventoryCheckTabProps> = ({
                       <span className="text-[14px] font-bold text-gray-400 uppercase tracking-wide">{date}</span>
                     </div>
                     {rows.map(r => {
-                      const totalActual = (r.warehouse_stock ?? 0) + (r.store_stock ?? 0);
+                      // 2026-09-03 · fix · warehouse_stock(DROP) → warehouse1_stock + warehouse2_stock 합산
+                      const whTotal = (r.warehouse1_stock ?? 0) + (r.warehouse2_stock ?? 0);
+                      const totalActual = whTotal + (r.store_stock ?? 0) + (r.store3_stock ?? 0);
                       const diff = r.system_stock != null ? totalActual - r.system_stock : null;
                       const d = new Date(r.checked_at);
                       const time = `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
@@ -592,7 +600,7 @@ export const InventoryCheckTab: React.FC<InventoryCheckTabProps> = ({
                           <div className="flex-1 min-w-0">
                             <span className="text-[14px] font-bold text-gray-800 break-keep">{r.product_name}</span>
                             <span className="text-[14px] text-gray-400">
-                              창고 {r.warehouse_stock ?? "—"} + 매장 {r.store_stock ?? "—"} = <strong className="text-purple-700">{totalActual}</strong>
+                              창고 {r.warehouse1_stock != null || r.warehouse2_stock != null ? whTotal : "—"} + 매장 {r.store_stock ?? "—"} = <strong className="text-purple-700">{totalActual}</strong>
                               {r.system_stock != null && <> · 현재고 {r.system_stock}</>}
                             </span>
                           </div>

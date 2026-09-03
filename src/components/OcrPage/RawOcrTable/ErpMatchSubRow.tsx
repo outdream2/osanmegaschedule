@@ -1,4 +1,4 @@
-// 2026-07-27 · 1차보정 표 · 각 데이터 행 아래 ERP 매칭 sub-row
+﻿// 2026-07-27 · 1차보정 표 · 각 데이터 행 아래 ERP 매칭 sub-row
 //   parent 1차 컬럼 격자에 정확히 정렬 · 각 셀은 해당 컬럼의 ERP 값 (없으면 대시)
 //   ERP 만 표시 · OCR 값과의 중복 X · 위 (OCR 행) ↔ 아래 (ERP 행) 매칭
 import React from "react";
@@ -52,7 +52,7 @@ function getErpCellValue(
         text: (
           <span className="inline-flex flex-col leading-tight gap-0.5 items-start">
             {erpCode && (
-              <span className="font-mono text-[10px] font-bold text-zinc-500">#{erpCode}</span>
+              <span className="font-mono text-[11px] font-bold text-zinc-500">#{erpCode}</span>
             )}
             {erpName && (
               <span className="font-semibold text-violet-800 text-[12px] leading-snug break-words">{erpName}</span>
@@ -71,7 +71,7 @@ function getErpCellValue(
       return {
         text: erpMasterP != null && erpMasterP > 0
           ? <span className="inline-flex flex-col leading-tight items-center">
-              <span className="text-[9px] text-violet-500 font-bold">ERP단가</span>
+              <span className="text-[11px] text-violet-500 font-bold">ERP단가</span>
               <span className="text-violet-800 tabular-nums font-bold">{fmt(erpMasterP)}</span>
             </span>
           : dash,
@@ -87,7 +87,7 @@ function getErpCellValue(
       return {
         text: erpProfit != null && Number.isFinite(erpProfit)
           ? <span className="inline-flex flex-col leading-tight items-center">
-              <span className="text-[9px] text-emerald-500 font-bold">이익률</span>
+              <span className="text-[11px] text-emerald-500 font-bold">이익률</span>
               <span className={`font-bold ${erpProfit >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
                 {Math.trunc(erpProfit)}%
               </span>
@@ -102,7 +102,7 @@ function getErpCellValue(
       return {
         text: erpSaleP != null && erpSaleP > 0
           ? <span className="inline-flex flex-col leading-tight items-center">
-              <span className="text-[9px] text-sky-500 font-bold">판매가</span>
+              <span className="text-[11px] text-sky-500 font-bold">판매가</span>
               <span className="text-sky-700 tabular-nums font-bold">{fmt(erpSaleP)}</span>
             </span>
           : dash,
@@ -127,7 +127,7 @@ export const ErpMatchSubRow: React.FC<Props> = ({
           <span className="text-[10px] font-bold bg-violet-500 text-white rounded px-1 py-px">ERP</span>
           {anyErpInfo && onCancel && (
             <button type="button" onClick={onCancel}
-              className="text-[9px] text-zinc-400 hover:text-rose-500 cursor-pointer"
+              className="text-[11px] text-zinc-400 hover:text-rose-500 cursor-pointer"
               title="ERP 매칭 취소"
             >✕</button>
           )}

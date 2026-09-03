@@ -1,4 +1,4 @@
-// src/components/SalesTrendPage/SupplierTrendTab.tsx
+﻿// src/components/SalesTrendPage/SupplierTrendTab.tsx
 // 2026-08-22 · Framework Phase 4 · SalesTrendPage.tsx 에서 분리
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Search, Building2, X } from "lucide-react";
@@ -253,10 +253,10 @@ const SupplierTrendTab: React.FC<{
                         <Building2 size={11} className="text-sky-500 shrink-0" />
                         <span className="text-xs font-bold text-zinc-700 break-words whitespace-normal leading-tight">{sup.supplier}</span>
                         {sup.supplier_code && (
-                          <span className="text-[9px] tabular-nums text-zinc-400 shrink-0" title="공급사코드">#{sup.supplier_code}</span>
+                          <span className="text-[11px] tabular-nums text-zinc-400 shrink-0" title="공급사코드">#{sup.supplier_code}</span>
                         )}
                         {sup.code_conflict && (
-                          <span className="text-[9px] font-bold text-amber-700 bg-amber-100 border border-amber-300 rounded px-1 shrink-0"
+                          <span className="text-[11px] font-bold text-amber-700 bg-amber-100 border border-amber-300 rounded px-1 shrink-0"
                             title="같은 이름에 여러 공급사코드가 존재 — 중복 의심">⚠</span>
                         )}
                       </div>
@@ -304,7 +304,7 @@ const SupplierTrendTab: React.FC<{
                                         <span className="inline-flex items-center gap-0.5">
                                           {col.label}
                                           {active ? (
-                                            <span className="text-[9px]">{supRowsSort.dir === "asc" ? "▲" : "▼"}</span>
+                                            <span className="text-[11px]">{supRowsSort.dir === "asc" ? "▲" : "▼"}</span>
                                           ) : (
                                             <span className="text-[10px] text-zinc-300">⇅</span>
                                           )}

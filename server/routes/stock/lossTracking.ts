@@ -87,20 +87,21 @@ async function buildTodaySnapshotRows(): Promise<Array<{
     const invRows = await fetchAllWithRange<any>(() => supabase
       .from("inventory_checks")
       // 2026-08-31 · warehouse_stock DROP · warehouse1_stock 단일 사용
-      .select("product_code, warehouse1_stock, warehouse2_stock, store_stock, store_stock_2, store3_stock, checked_at")
+      // 2026-09-03 · fix · store_stock_2 컬럼 삭제됨 · SELECT 에서 제거
+      //   · 이전 · 'column inventory_checks.store_stock_2 does not exist' · 손실 스냅샷 실패
+      .select("product_code, warehouse1_stock, warehouse2_stock, store_stock, store3_stock, checked_at")
       .order("checked_at", { ascending: false }), 100000);
     for (const r of invRows ?? []) {
       const code = String(r.product_code ?? "").trim();
       if (!code || invMap.has(code)) continue;
-      // warehouse 총합 · store 총합 (모든 신규·레거시 컬럼 합산 · 없으면 0)
+      // warehouse 총합 · store 총합 (모든 신규 컬럼 합산 · 없으면 0)
       const wh = (
         (r.warehouse1_stock != null ? Number(r.warehouse1_stock) : 0) +
         (r.warehouse2_stock != null ? Number(r.warehouse2_stock) : 0)
       );
       const st = (
-        (r.store_stock   != null ? Number(r.store_stock)   : 0) +
-        (r.store_stock_2 != null ? Number(r.store_stock_2) : 0) +
-        (r.store3_stock  != null ? Number(r.store3_stock)  : 0)
+        (r.store_stock  != null ? Number(r.store_stock)  : 0) +
+        (r.store3_stock != null ? Number(r.store3_stock) : 0)
       );
       invMap.set(code, {
         warehouse: Number.isFinite(wh) ? wh : null,

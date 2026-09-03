@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { CheckCircle, AlertTriangle, Save } from "lucide-react";
 import { Spinner } from "../../common/Spinner";
 import { Badge } from "../../common/Badge";
@@ -273,7 +273,7 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
                                       className="text-[11px] font-bold px-1.5 py-0.5 hover:bg-emerald-50 cursor-pointer border-t border-line" title="축소">−</button>
                                     <button type="button"
                                       onClick={e => { e.stopPropagation(); setConfImageZoom(prev => { const n = { ...prev }; delete n[pn]; return n; }); setConfImagePan(prev => { const n = { ...prev }; delete n[pn]; return n; }); }}
-                                      className="text-[9px] font-bold px-1.5 py-0.5 hover:bg-zinc-100 cursor-pointer border-t border-line" title="원본 크기">⛶</button>
+                                      className="text-[11px] font-bold px-1.5 py-0.5 hover:bg-zinc-100 cursor-pointer border-t border-line" title="원본 크기">⛶</button>
                                   </div>
                                   <div
                                     onMouseDown={canDrag ? e => {

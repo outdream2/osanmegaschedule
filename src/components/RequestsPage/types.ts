@@ -7,6 +7,9 @@ export interface DisplayRequest {
   requested_at: string; assigned_staff_id: number | null;
   assigned_staff_name: string; status: "pending" | "prepared" | "done" | string; note: string;
   product_code?: string | null;
+  // 2026-09-03 · #63 fix · 서버에서 products JOIN 후 반환 (requests.ts line 119~143)
+  product_name?: string | null;
+  product_spec?: string | null;
   prepared_at?: string | null;
   prepared_by?: number | null;
   prepared_by_name?: string | null;
@@ -33,7 +36,12 @@ export interface LunchRequest {
 
 export interface InventoryCheck {
   id: string; product_code: string; product_name: string;
-  warehouse_stock: number | null; store_stock: number | null;
+  // 2026-09-03 · fix · warehouse_stock → warehouse1_stock (DB 컬럼명 일치)
+  //   · 이전 · warehouse_stock (DROP된 컬럼) 참조 → 항상 undefined → 실재고 차이 계산 오류
+  warehouse1_stock: number | null; warehouse2_stock: number | null;
+  store_stock: number | null; store3_stock: number | null;
+  /** @deprecated 레거시 alias · 서버가 warehouse1_stock 반환 · 이 필드는 undefined */
+  warehouse_stock?: number | null;
   system_stock: number | null; optimal_stock: number | null;
   checked_by: string; note: string; status: string;
   checked_at: string;

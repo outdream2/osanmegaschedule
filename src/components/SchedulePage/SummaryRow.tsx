@@ -1,4 +1,4 @@
-// src/components/SummaryRow.tsx
+﻿// src/components/SummaryRow.tsx
 import React from "react";
 import { MonthlySummary } from "../../types";
 
@@ -88,7 +88,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
               val > 0 ? valActiveCls : valEmptyCls
             } ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-20 relative" : ""}`}
           >
-            {val > 0 ? val : <span className="opacity-20 text-[9px]">·</span>}
+            {val > 0 ? val : <span className="opacity-20 text-[11px]">·</span>}
           </td>
         );
 

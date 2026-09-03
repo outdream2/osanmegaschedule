@@ -1,4 +1,4 @@
-// src/components/DisplayPage/VendorManageSplit.tsx
+﻿// src/components/DisplayPage/VendorManageSplit.tsx
 // 2026-08-22 · Framework Phase 4 · DisplayPage 대형 파일 분리 · VendorManageSplit 이관
 // 2026-08-10 · 사용자 요청 · 매장 > 공급사관리 · SplitPanel · PC 좌우 · 모바일 모달
 //   Left  · 4컬럼 텍스트 리스트 (분류·공급사·담당자·전화) · 아이콘 X · displayVendorName
@@ -82,7 +82,7 @@ export const VendorManageSplit: React.FC = () => {
       {label}
       {sortKey === sk
         ? (sortDir === "asc" ? <ChevronUp size={11} className="shrink-0" /> : <ChevronDown size={11} className="shrink-0" />)
-        : <span className="text-zinc-300 text-[9px]">↕</span>}
+        : <span className="text-zinc-300 text-[11px]">↕</span>}
     </button>
   );
 

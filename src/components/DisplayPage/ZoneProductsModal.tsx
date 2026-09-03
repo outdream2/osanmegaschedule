@@ -1,4 +1,4 @@
-// src/components/DisplayPage/ZoneProductsModal.tsx
+﻿// src/components/DisplayPage/ZoneProductsModal.tsx
 // 2026-08-22 · Framework Phase 4 · DisplayPage.tsx 에서 분리
 // 2026-08-23 · #191 · inline fixed inset-0 → common/Modal primitive
 import React from "react";
@@ -268,7 +268,7 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
                       <td className="text-left px-2 py-1.5 min-w-0">
                         <div className="text-[12px] font-bold text-zinc-800 truncate" title={p.name}>{p.name}</div>
                         {((p as any).spec || resolveProductLocation(p)) && (
-                          <div className="mt-0.5 text-[9px] text-zinc-400 truncate">
+                          <div className="mt-0.5 text-[11px] text-zinc-400 truncate">
                             {(p as any).spec && <span className="font-mono" title="전산배치구역">전산 {String((p as any).spec)}</span>}
                             {resolveProductLocation(p) && <span className="font-mono" title="실제배치구역"> · 실제 {resolveProductLocation(p)}</span>}
                           </div>

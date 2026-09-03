@@ -1,4 +1,4 @@
-// src/components/DisplayPage/RealStockTablePage.tsx
+﻿// src/components/DisplayPage/RealStockTablePage.tsx
 // 2026-08-26 · 사용자 지시 · 실재고 테이블 페이지 · 창고2 옆 신규 탭
 //   · 표형식 · 왼쪽 상품 리스트 · 오른쪽 전산구역·창고1/2·매장1/2/3 재고
 //   · 헤더 자동 정렬 (useSortableTable)
@@ -366,10 +366,10 @@ export const RealStockTablePage: React.FC = () => {
           <span className="text-[12px] font-bold text-ink">{labelText}</span>
           <div className="flex items-center gap-1">
             <button type="button" onClick={(e) => { e.stopPropagation(); toggleSort(qtyKey); }} className={qtyC.base} title="수량 정렬">
-              수량 <span className="text-[9px]">{qtyC.dir || "⇅"}</span>
+              수량 <span className="text-[11px]">{qtyC.dir || "⇅"}</span>
             </button>
             <button type="button" onClick={(e) => { e.stopPropagation(); toggleSort(zoneKey); }} className={zoneC.base} title="구역 정렬">
-              구역 <span className="text-[9px]">{zoneC.dir || "⇅"}</span>
+              구역 <span className="text-[11px]">{zoneC.dir || "⇅"}</span>
             </button>
           </div>
         </div>

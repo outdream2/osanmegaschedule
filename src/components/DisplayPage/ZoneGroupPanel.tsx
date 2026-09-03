@@ -1,4 +1,4 @@
-// src/components/DisplayPage/ZoneGroupPanel.tsx
+﻿// src/components/DisplayPage/ZoneGroupPanel.tsx
 import React from "react";
 import { Plus, Trash2, MapPin, Check } from "lucide-react";
 
@@ -144,7 +144,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
                     onChange={(e) => updateGroup(g.id, { name: e.target.value })}
                     className="flex-1 min-w-0 bg-transparent text-[12px] font-bold text-zinc-800 focus:outline-none focus:bg-white px-1 rounded"
                   />
-                  <span className="text-[9px] font-bold text-zinc-500 bg-white border border-line px-1.5 py-0.5 rounded-full shrink-0">
+                  <span className="text-[11px] font-bold text-zinc-500 bg-white border border-line px-1.5 py-0.5 rounded-full shrink-0">
                     {g.areaIds.length}구역
                   </span>
                   <button

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * EmployeeNameCell.tsx
  * 스케줄표 좌측 고정 컬럼 — 직원 성명 셀
  *
@@ -111,7 +111,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
           {/* 비고 · lg+ */}
           {emp.description && (
             <div
-              className="hidden lg:block text-[9px] text-zinc-400 font-normal truncate leading-tight"
+              className="hidden lg:block text-[11px] text-zinc-400 font-normal truncate leading-tight"
               title={emp.description}
             >
               {emp.description}

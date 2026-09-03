@@ -1,4 +1,4 @@
-// VendorDetailTabs.history.tsx — 매입이력 탭 컨텐츠 (분리 2026-08-29)
+﻿// VendorDetailTabs.history.tsx — 매입이력 탭 컨텐츠 (분리 2026-08-29)
 import React, { useMemo, useState } from "react";
 import { Filter, X } from "lucide-react";
 import { Spinner } from "../common/Spinner";
@@ -179,7 +179,7 @@ export const HistoryContent: React.FC<{
                       <div className={`text-[11px] font-semibold leading-tight break-words whitespace-normal ${isSel ? "text-emerald-800" : "text-zinc-700"}`}>
                         {s.product_name}
                       </div>
-                      <div className="text-[9px] text-zinc-400">{s.product_code}</div>
+                      <div className="text-[11px] text-zinc-400">{s.product_code}</div>
                     </td>
                     <td className="px-3 py-1.5 text-right text-[11px] tabular-nums text-zinc-600 align-top">{s.buy_count}</td>
                     <td className="px-3 py-1.5 text-right text-[11px] tabular-nums text-zinc-600 align-top">{fmt(s.total_qty)}</td>

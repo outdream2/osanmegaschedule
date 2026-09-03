@@ -1,4 +1,4 @@
-// 2026-08-17 · apiClient 마이그레이션
+﻿// 2026-08-17 · apiClient 마이그레이션
 // src/components/ContractSettingsPage/ContractSettingsPage.tsx
 // 근로계약서 설정 페이지 · 2026-08-05 · 재설계
 // - 직군별 주중/주말 시급 (약사·매장·창고·기타)
@@ -577,7 +577,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className={`text-[13px] font-bold ${job.color} leading-none`}>{job.label}</span>
                         {isDefault && (
-                          <span className="text-[9px] font-semibold text-zinc-400 leading-none" title="기본값 사용 중">
+                          <span className="text-[11px] font-semibold text-zinc-400 leading-none" title="기본값 사용 중">
                             기본값
                           </span>
                         )}

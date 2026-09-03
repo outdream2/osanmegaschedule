@@ -209,7 +209,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
               title="클릭하여 복사"
               className="self-start inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-50 border border-line hover:bg-sky-50 hover:border-sky-300 transition text-[11px] font-semibold text-zinc-600 tabular-nums cursor-pointer"
             >
-              <span className="text-zinc-400 text-[9px] font-bold uppercase tracking-wider">사업자</span>
+              <span className="text-zinc-400 text-[11px] font-bold uppercase tracking-wider">사업자</span>
               {fmtBizNum(vendor.business_number)}
             </button>
           )}
@@ -247,7 +247,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
         {vendor.team_leader_name && (
           <span className="inline-flex items-center gap-1" title="팀장">
             <User2 size={11} className="text-amber-500 shrink-0" />
-            <span className="text-[9px] font-bold text-amber-500 uppercase tracking-wider">팀장</span>
+            <span className="text-[11px] font-bold text-amber-500 uppercase tracking-wider">팀장</span>
             {vendor.team_leader_name}
           </span>
         )}
@@ -264,7 +264,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
         {vendor.emergency_contact && (
           <span className="inline-flex items-center gap-1 tabular-nums text-rose-600" title="비상연락처">
             <Phone size={11} className="text-rose-500 shrink-0" />
-            <span className="text-[9px] font-bold text-rose-500 uppercase tracking-wider">비상</span>
+            <span className="text-[11px] font-bold text-rose-500 uppercase tracking-wider">비상</span>
             {vendor.emergency_contact}
           </span>
         )}

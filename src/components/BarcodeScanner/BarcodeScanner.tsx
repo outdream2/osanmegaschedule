@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useZxing } from "react-zxing";
 import { X, ScanLine, Zap, ImageIcon, Info, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 // 2026-08-29 · #174 · SSO 다른 브라우저 열기
@@ -364,7 +364,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
               {diagOpen && (
                 <div className="mt-1.5 w-[280px] p-3 rounded-xl bg-black/85 backdrop-blur-xl ring-1 ring-white/15 shadow-2xl">
                   <div className="text-[10px] font-mono text-white/90 space-y-1 leading-relaxed break-all">
-                    <div className="text-white/50 uppercase tracking-wider mb-1 text-[9px]">진단 정보</div>
+                    <div className="text-white/50 uppercase tracking-wider mb-1 text-[11px]">진단 정보</div>
                     <div><span className="text-white/50">URL:</span> {typeof window !== "undefined" ? window.location.host : "?"}</div>
                     <div><span className="text-white/50">secure:</span> <span className={secure ? "text-emerald-300" : "text-rose-300"}>{String(secure)}</span></div>
                     <div><span className="text-white/50">mediaDevices:</span> <span className={hasMD ? "text-emerald-300" : "text-rose-300"}>{hasMD ? "yes" : "NO"}</span></div>
@@ -375,13 +375,13 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                     <div><span className="text-white/50">UA:</span> {ua.substring(0, 90)}</div>
                     {camError && (
                       <div className="mt-2 pt-2 border-t border-rose-400/30 text-rose-200">
-                        <div className="text-rose-300/70 uppercase tracking-wider mb-0.5 text-[9px]">에러</div>
+                        <div className="text-rose-300/70 uppercase tracking-wider mb-0.5 text-[11px]">에러</div>
                         <div>{camError}</div>
                       </div>
                     )}
                     {ios && !isSafariMain && (
                       <div className="mt-2 pt-2 border-t border-amber-400/30 text-amber-200">
-                        <div className="text-amber-300/70 uppercase tracking-wider mb-0.5 text-[9px]">iOS 웹앱 감지</div>
+                        <div className="text-amber-300/70 uppercase tracking-wider mb-0.5 text-[11px]">iOS 웹앱 감지</div>
                         <div>홈화면 웹앱 · Apple 정책상 카메라 제한 (WebKit Bug 185448)</div>
                         <div className="text-white/70 mt-1">→ Safari 앱에서 직접 열기</div>
                       </div>

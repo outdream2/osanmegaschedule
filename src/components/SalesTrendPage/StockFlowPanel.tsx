@@ -1,4 +1,4 @@
-// src/components/SalesTrendPage/StockFlowPanel.tsx
+﻿// src/components/SalesTrendPage/StockFlowPanel.tsx
 // 2026-08-22 · Framework Phase 4 · SalesTrendPage.tsx 에서 분리
 import React, { useEffect, useMemo, useState } from "react";
 import { TrendingUp, X, Info, EyeOff, CheckSquare, Square, Boxes } from "lucide-react";
@@ -261,7 +261,7 @@ export const StockFlowPanel: React.FC<{
             className="ml-1 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-orange-500 text-white font-bold hover:bg-orange-600 shadow-sm cursor-pointer transition animate-pulse"
             title="선택한 기간으로 조회">확인 →</button>
         ) : (
-          <span className="ml-1 text-[9px] text-zinc-400 font-semibold">{season ? "계절 조회 중" : "조회 완료"}</span>
+          <span className="ml-1 text-[11px] text-zinc-400 font-semibold">{season ? "계절 조회 중" : "조회 완료"}</span>
         )}
         <SeasonButtons
           value={season}

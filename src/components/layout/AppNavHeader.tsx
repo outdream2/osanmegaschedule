@@ -506,7 +506,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                   aria-expanded={mobileOverflowOpen}
                 >
                   <Menu size={18} strokeWidth={2.4} />
-                  <span className="text-[9px]">더보기</span>
+                  <span className="text-[11px]">더보기</span>
                 </button>
                 {mobileOverflowOpen && (
                   <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1 min-w-[160px] z-[45] max-h-[70vh] overflow-y-auto">

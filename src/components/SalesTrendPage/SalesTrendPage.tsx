@@ -1,4 +1,4 @@
-// 2026-08-22 · Framework Phase 4 · 서브컴포넌트 6개 분리 · 2502 → 슬림
+﻿// 2026-08-22 · Framework Phase 4 · 서브컴포넌트 6개 분리 · 2502 → 슬림
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { SK_SALESTREND_SUPPLIER_W } from "../../lib/storageKeys";
 import { TrendingUp, Building2, Activity, Package, Eye, EyeOff, BarChart3 } from "lucide-react";
@@ -212,7 +212,7 @@ export const SalesTrendPage: React.FC = () => {
             <div onMouseDown={onSupplierResizeStart}
               className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-sky-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
               title="드래그하여 폭 조절">
-              <span className="text-[9px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+              <span className="text-[11px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
             </div>
             <ProductDetailRightPanel
               selected={supplierSelectedProduct}

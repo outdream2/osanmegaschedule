@@ -1,4 +1,4 @@
-// src/components/SalesTrendPage/ProductTrendTab.tsx
+﻿// src/components/SalesTrendPage/ProductTrendTab.tsx
 // 2026-08-22 · Framework Phase 4 · SalesTrendPage.tsx 에서 분리
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LineChart, Package, X, Info } from "lucide-react";
@@ -161,7 +161,7 @@ const ProductTrendTab: React.FC<{
         className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-teal-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
         title="드래그하여 폭 조절"
       >
-        <span className="text-[9px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+        <span className="text-[11px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
       </div>
 
       {/* 우측: 차트 + 표 */}
@@ -257,7 +257,7 @@ const ProductTrendTab: React.FC<{
                 </div>
                 <div className="flex items-center gap-1.5 ml-auto flex-wrap">
                   <div className="inline-flex items-center gap-1">
-                    <span className="text-[9px] font-bold text-teal-700 uppercase tracking-wider">기간</span>
+                    <span className="text-[11px] font-bold text-teal-700 uppercase tracking-wider">기간</span>
                     <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-0.5">
                       {[1, 2, 3, 4, 5, 6].map(m => {
                         const active = Math.round(chartRangeDays / 30) === m;
@@ -269,11 +269,11 @@ const ProductTrendTab: React.FC<{
                           >{m}</button>
                         );
                       })}
-                      <span className="text-[9px] font-bold text-zinc-400 self-center px-1">개월</span>
+                      <span className="text-[11px] font-bold text-zinc-400 self-center px-1">개월</span>
                     </div>
                   </div>
                   <div className="inline-flex items-center gap-1">
-                    <span className="text-[9px] font-bold text-teal-700 uppercase tracking-wider">X축</span>
+                    <span className="text-[11px] font-bold text-teal-700 uppercase tracking-wider">X축</span>
                     <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-0.5">
                       <button
                         onClick={() => onGranularityChange?.("10day")}

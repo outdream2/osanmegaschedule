@@ -176,14 +176,14 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
 
         {/* Row 2: Working Hours · 폰트 +2 */}
         {displayWorkingHours && !displayActualHours && (
-          <div className="text-[10px] text-zinc-400 leading-none font-medium tabular-nums mt-0.5">
+          <div className="text-[11px] text-zinc-400 leading-none font-medium tabular-nums mt-0.5">
             {displayWorkingHours}
           </div>
         )}
 
         {/* Row 3: Actual Notes (실근무/특이사항) · 폰트 +2 */}
         {displayActualHours && (
-          <div className={`text-[9px] sm:text-[11px] font-bold leading-none truncate tracking-tighter mt-0.5 px-1 py-0.5 rounded text-center shrink-0 ${
+          <div className={`text-[10px] sm:text-[12px] font-bold leading-none truncate tracking-tighter mt-0.5 px-1 py-0.5 rounded text-center shrink-0 ${
             displayActualHours.includes("지각")
               ? "text-amber-700 bg-amber-50 border border-amber-200"
               : displayActualHours.includes("조퇴")

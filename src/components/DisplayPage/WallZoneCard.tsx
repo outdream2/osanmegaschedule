@@ -1,4 +1,4 @@
-// src/components/DisplayPage/WallZoneCard.tsx
+﻿// src/components/DisplayPage/WallZoneCard.tsx
 // 2026-08-25 · Framework Phase 4 · large-file 분리 · DisplayPage.tsx 벽면 존 카드 이관
 //   · props · num · position · ZONE_DEFS · openZoneProducts · renderRequestButton · renderZoneCell
 //   · 하단 이미지 확대 대체 · category 2줄 표시 · line-clamp
@@ -42,7 +42,7 @@ export const WallZoneCard: React.FC<WallZoneCardProps> = ({
             <span className="w-full flex-1 flex items-center justify-center text-[10px] font-bold text-stone-800 line-clamp-2 text-center leading-tight">{cat}</span>
           )}
         </button>
-        {renderZoneCell(num, "w-full h-10 text-[9px] p-0.5 justify-center border-0 rounded-none", "", true)}
+        {renderZoneCell(num, "w-full h-10 text-[11px] p-0.5 justify-center border-0 rounded-none", "", true)}
       </div>
       {position === "bottom" && renderRequestButton(num)}
     </div>

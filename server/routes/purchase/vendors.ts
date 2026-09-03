@@ -553,7 +553,7 @@ router.post("/api/vendors/:id/approval-request", authorize(0), validateBody(z.ob
   //   주문방식·특이사항·비고 는 선택 (승인 조건에서 제외)
   const { data: vendor, error: fetchErr } = await supabase
     .from("vendors")
-    .select("id, email, team_leader_name, team_leader_phone, emergency_contact, business_number, approval_status")
+    .select("id, company_name, email, team_leader_name, team_leader_phone, emergency_contact, business_number, approval_status")
     .eq("id", id)
     .maybeSingle();
   if (fetchErr) throw new HttpError(500, `공급사 조회 실패: ${fetchErr.message}`);

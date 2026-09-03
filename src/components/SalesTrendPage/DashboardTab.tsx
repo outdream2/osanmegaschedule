@@ -1,4 +1,4 @@
-// src/components/SalesTrendPage/DashboardTab.tsx
+﻿// src/components/SalesTrendPage/DashboardTab.tsx
 // 2026-08-31 · #36 B안 · 판매대시보드 탭 (신규)
 //   · 상단 · KPI 카드 (판매액·판매수량·상품수·손실률·평균이익률)
 //   · 중앙 · 재고흐름 테이블 (top-sales · 판매액/수량/손실/재고 정렬)
@@ -638,7 +638,7 @@ export const DashboardTab: React.FC = () => {
           className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-sky-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
           title="드래그하여 폭 조절"
         >
-          <span className="text-[9px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">
+          <span className="text-[11px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">
             ||
           </span>
         </div>

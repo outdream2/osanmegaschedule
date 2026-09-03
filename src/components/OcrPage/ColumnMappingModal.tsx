@@ -1,4 +1,4 @@
-// src/components/OcrPage/ColumnMappingModal.tsx
+﻿// src/components/OcrPage/ColumnMappingModal.tsx
 // 공급사별 컬럼 매핑 모달 · 시각적 연결선 방식
 //
 // UX:
@@ -283,14 +283,14 @@ export const ColumnMappingModal: React.FC<Props> = ({
                       </div>
                       {isSplittable && (
                         <span
-                          className="text-[9px] font-bold text-amber-700 bg-white border border-amber-300 rounded px-1 py-0.5 whitespace-nowrap"
+                          className="text-[11px] font-bold text-amber-700 bg-white border border-amber-300 rounded px-1 py-0.5 whitespace-nowrap"
                           title={`이 컬럼은 값이 ${tokenCount}개로 감지됨 · 클릭 후 오른쪽 필드 여러 개 선택하면 자동 분할`}
                         >
                           ✂️ 값 {tokenCount}개
                         </span>
                       )}
                       {isMapped && isSplittable && mappedFieldsCount < tokenCount && isSelected && (
-                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 rounded px-1 py-0.5 whitespace-nowrap animate-pulse">
+                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 rounded px-1 py-0.5 whitespace-nowrap animate-pulse">
                           {mappedFieldsCount}/{tokenCount} 지정 · 계속 선택
                         </span>
                       )}
@@ -358,12 +358,12 @@ export const ColumnMappingModal: React.FC<Props> = ({
                 >
                   <span className="text-[12px] font-bold text-zinc-800">{field}</span>
                   {usageCount === 1 && (
-                    <span className="ml-1.5 text-[9px] font-bold text-indigo-600 bg-white border border-indigo-300 rounded px-1 py-0.5">
+                    <span className="ml-1.5 text-[11px] font-bold text-indigo-600 bg-white border border-indigo-300 rounded px-1 py-0.5">
                       연결됨
                     </span>
                   )}
                   {usageCount >= 2 && (
-                    <span className="ml-1.5 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 rounded px-1 py-0.5">
+                    <span className="ml-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 rounded px-1 py-0.5">
                       🔗 {usageCount}개 병합
                     </span>
                   )}

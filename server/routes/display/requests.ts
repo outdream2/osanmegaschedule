@@ -960,8 +960,10 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
       return null;
     }
     const insertPayload: Record<string, any> = { ...payload, product_code: code };
-    if (!("store_stock" in insertPayload))   insertPayload.store_stock   = null;
-    if (!("store_stock_2" in insertPayload)) insertPayload.store_stock_2 = null;
+    // 2026-09-03 · fix · store_stock_2 컬럼 삭제됨 · INSERT 기본값에서 제거 (DB 에러 방지)
+    //   · 이전 · 컬럼 없어도 null 으로 강제 삽입 → 'does not exist' 에러 → 실재고 저장 실패
+    //   · store_stock (=매장1) 만 기본값 · store_stock_2 는 payload 에 있을 때만 포함 (strip 로직이 처리)
+    if (!("store_stock" in insertPayload)) insertPayload.store_stock = null;
     const { error } = await supabase.from("inventory_checks").insert([insertPayload]);
     if (error) return { error: error.message };
     return null;
@@ -972,8 +974,9 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
   const MAX_STRIP_RETRIES = 6;
   for (let attempt = 0; attempt < MAX_STRIP_RETRIES && result?.error && /column .* does not exist|no column named|schema cache/i.test(result.error); attempt++) {
     // 1) 신규 컬럼 일괄 제거 (첫 시도만)
+    // 2026-09-03 · fix · store_stock_2 도 목록에 추가 · 삭제된 컬럼 포함 완전 망라
     if (attempt === 0) {
-      for (const k of ["warehouse1_stock","warehouse2_stock","store3_stock","store1_zone","store2_zone","store3_zone"]) {
+      for (const k of ["warehouse1_stock","warehouse2_stock","store_stock_2","store3_stock","store1_zone","store2_zone","store3_zone"]) {
         delete payload[k];
       }
     }
@@ -1040,9 +1043,10 @@ router.post("/api/inventory-checks/bulk", authorize(1), validateBody(BulkInvento
       checked_by,
       checked_at: now,
       status: "pending",
-      // 2026-08-31 · warehouse_stock DROP · mirror 제거
-      store_stock:   s1,
-      store_stock_2: s2,
+      // 2026-09-03 · fix · store_stock_2 컬럼 삭제됨 · payload 에서 제거 (DB 에러 방지)
+      //   · 이전 · s2 항상 포함 → DB insert 시 'does not exist' 에러 → bulk 저장 실패
+      //   · 이후 · store_stock (=매장1) 만 기본 포함 · s2 는 요청에 있으면 strip 로직이 처리
+      store_stock: s1,
     };
     // 신규 컬럼
     if (!downgraded) {

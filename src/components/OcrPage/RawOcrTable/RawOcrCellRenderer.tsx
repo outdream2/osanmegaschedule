@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Pencil, AlertTriangle, Search, BookOpen } from "lucide-react";
 import type { MatchedItem, BarcodeProduct } from "./types";
 import { fmt, NUM_COLS, renderTextWithBreaks, normalizeExpiryDate } from "./utils";
@@ -488,7 +488,7 @@ export const NameCell: React.FC<{
         className="px-3 py-2 max-w-[240px] cursor-pointer hover:bg-indigo-50/60 group" title="클릭하여 상품명 수정">
         <div className="flex flex-col gap-0">
           <span className="flex items-center gap-1">
-            <span className="text-[9px] font-bold bg-brand-deep text-white px-1 py-px rounded shrink-0" title="products DB 에서 자동 매칭">DB</span>
+            <span className="text-[11px] font-bold bg-brand-deep text-white px-1 py-px rounded shrink-0" title="products DB 에서 자동 매칭">DB</span>
             <BookOpen size={9} className="text-indigo-400 shrink-0" />
             <span className="font-semibold text-indigo-700 break-words whitespace-normal">{renderTextWithBreaks(autoMatch.name)}</span>
             <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />

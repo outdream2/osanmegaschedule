@@ -1,4 +1,4 @@
-// src/components/StockManagePage/DiffTab.tsx
+﻿// src/components/StockManagePage/DiffTab.tsx
 // 손실추적 탭 — 실재고(창고+매장) vs ERP 현재고 차이 리스트
 // 2026-08-03 · StockManagePage 에서 분리 · OrderManagePage 통계 탭에서도 사용
 // 2026-08-17 · apiClient 마이그레이션
@@ -359,7 +359,7 @@ export const DiffTab: React.FC = () => {
         <div onMouseDown={onDiffResizeStart}
           className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-purple-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
           title="드래그하여 폭 조절">
-          <span className="text-[9px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+          <span className="text-[11px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
         {/* 우측: 상품 상세 · ProductDetailRightPanel (공용) */}
