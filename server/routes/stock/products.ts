@@ -52,6 +52,8 @@ router.get("/api/products-map", asyncHandler(async (req, res) => {
     ? await getProductMap()  // 필터 없는 원본 (모든 상품)
     : await getPublicProductMap();
   const isSlim = String(req.query.fields ?? "") === "slim";
+  // 2026-09-03 · #101 · slim mode · profit_rate · purchase_price · sale_price 추가 통일
+  //   · products-search 응답과 필드 정렬 · 페이지별 상품 카드 필수정보 편차 제거
   const payload = isSlim
     ? Object.fromEntries(Object.entries(map).map(([code, p]: [string, any]) => [code, {
         code,
@@ -69,6 +71,10 @@ router.get("/api/products-map", asyncHandler(async (req, res) => {
         barcode: p.barcode ?? null,
         optimal_stock: p.optimal_stock ?? null,
         unit: p.unit ?? null,
+        // #101 · 통일 · 가격·이익율 · 상품 카드 최소필드
+        purchase_price: p.purchase_price ?? null,
+        sale_price: p.sale_price ?? null,
+        profit_rate: p.profit_rate ?? null,
       }]))
     : map;
   res.setHeader("Cache-Control", "no-cache");

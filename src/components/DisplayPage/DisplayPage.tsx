@@ -153,7 +153,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   // 2026-08-30 · 사용자 지시 · 접기/펼치기 제거 · 그냥 보이게 (mapCollapsed prop 유지 안 함)
   // 2026-08-25 · 사용자 지시 · 매장구역 subtab 안 · 매장구역도 vs 배치구역 불일치 탭
   // 2026-08-26 · 창고1 · 창고2 구역도 탭 추가 (storage.webp 기반)
-  const [storeInnerTab, setStoreInnerTab] = useState<"map" | "displayRequest" | "mismatch" | "warehouse1" | "warehouse2" | "stockTable" | "zoneEdit">(() => {
+  const [storeInnerTab, setStoreInnerTab] = useState<"map" | "mismatch" | "warehouse1" | "warehouse2" | "stockTable" | "zoneEdit">(() => {
     try {
       const raw = sessionStorage.getItem("dpStoreInnerTab");
       if (raw === "mismatch") { sessionStorage.removeItem("dpStoreInnerTab"); return "mismatch"; }
@@ -528,20 +528,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   };
 
   // ── Render helpers ──────────────────────────────────────────────────────────
-  const renderRequestButton = (num: number, id?: string): React.ReactNode => {
-    const zoneId = id ?? String(num);
-    const zone = getZoneById(zoneId) ?? zones.find(z => z.num === num && !z.id.match(/[AB]$/));
-    if (!zone) return null;
-    const hasStaff = !!zone.assignedStaffId;
-    // 2026-08-26 · P1 fix · 터치영역 h-6 → h-8 · 폰트 9→11 · 40대+/모바일 가독성
-    return (
-      <button type="button" onClick={() => hasStaff && handleQuickRequest(zone)} disabled={!hasStaff}
-        title={hasStaff ? `${zone.num}번 ${zone.label} 진열 보충 요청` : "담당자 미배정 — 진열요청 불가"}
-        className={`w-full h-8 rounded text-[11px] font-bold flex items-center justify-center gap-1 transition-all border ${hasStaff ? "bg-rose-500 hover:bg-rose-600 active:scale-95 text-white border-rose-600 cursor-pointer shadow-sm" : "bg-zinc-100 text-zinc-300 border-line cursor-not-allowed"}`}>
-        <Bell size={10} />{hasStaff ? "진열요청" : "미배정"}
-      </button>
-    );
-  };
+  // 2026-09-03 · #64 · 구역 진열요청 UI 제거 · 사용자 지시 · 상품 스캔 시 진열요청 (ScanPage) 로 통일
+  //   · 담당자 배정 UI (assignedStaff · dowMap) 는 유지
+  //   · WallZoneCard · DisplayMobileList 등 · renderRequestButton prop 은 남기되 · 항상 null 반환
+  const renderRequestButton = (_num: number, _id?: string): React.ReactNode => null;
 
   const renderZoneFromRaw = (zRaw: DisplayZone, classes: string, wrapperClass: string, hideRequest = false) => {
     const currentDow = selectedDateObj.getDay();
@@ -677,10 +667,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         <main className={`${PAGE_CONTAINER_CLS} p-4 flex flex-col gap-4 flex-1`}>
           {/* 2026-08-25 · 매장구역도/배치불일치 · 2026-08-26 · 창고1/창고2 추가 */}
           <div className="bg-white rounded-xl border border-line overflow-hidden">
+            {/* 2026-09-03 · #64 · 진열요청목록 서브탭 삭제 · 상품 스캔 시 진열요청 (RequestsPage 통합) */}
             <SplitRightTabs
               tabs={[
                 { key: "map",            label: "매장구역도" },
-                { key: "displayRequest", label: "진열요청목록" },
                 { key: "warehouse1",     label: "창고1" },
                 { key: "warehouse2",     label: "창고2" },
                 { key: "stockTable",     label: "실재고 테이블" },
@@ -706,8 +696,6 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             <WarehouseZoneMap filter="1" />
           ) : storeInnerTab === "warehouse2" ? (
             <WarehouseZoneMap filter="2" />
-          ) : storeInnerTab === "displayRequest" ? (
-            <DisplayRequestPanel filteredReqs={filteredReqs} requests={requests} reqFilter={reqFilter} setReqFilter={setReqFilter} setRequests={setRequests} formatRel={formatRel} />
           ) : (<>
           <DisplayProductPanel
             productSearchResults={productSearchResults} productMatchZoneId={productMatchZoneId}
