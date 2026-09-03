@@ -461,10 +461,9 @@ export const InventoryCheckTab: React.FC<InventoryCheckTabProps> = ({
         //   · 이후 · "오차 건수" (실재고 ≠ 시스템재고 인 상품 수) = mismatchCount 로 통일
         const metrics = [
           { label: "점검 상품", value: totalChecks, color: "text-purple-600", bg: "bg-purple-50", border: "border-purple-200" },
-          { label: "시스템↔실재고 오차", value: mismatchCount, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200" },
+          { label: "오차 건수", value: mismatchCount, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
           { label: "진열요청", value: displayReqsCount, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
           { label: "발주요청", value: orderReqsCount, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
-          { label: "오차 건수", value: mismatchCount, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
         ];
         return (
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">

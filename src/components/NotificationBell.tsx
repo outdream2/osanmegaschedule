@@ -237,14 +237,14 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
           {/* Notification list */}
           <div className="max-h-80 overflow-y-auto divide-y divide-zinc-50">
             {loading && notifications.length === 0 ? (
-              <div className="flex items-center justify-center py-10 text-zinc-400 text-xs gap-2">
+              <div className="flex items-center justify-center py-10 text-zinc-400 text-[13px] gap-2">
                 <Spinner size={12} tone="zinc" />
                 불러오는 중...
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 gap-2">
                 <BellOff size={24} className="text-zinc-300" />
-                <span className="text-zinc-400 text-xs">알림이 없습니다</span>
+                <span className="text-zinc-400 text-[13px]">알림이 없습니다</span>
               </div>
             ) : (
               notifications.map((n) => {
@@ -268,13 +268,13 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className={`text-xs font-bold truncate ${n.read ? "text-zinc-600" : "text-zinc-900"}`}>{n.title}</p>
+                        <p className={`text-[13px] font-bold truncate ${n.read ? "text-zinc-600" : "text-zinc-900"}`}>{n.title}</p>
                         {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-brand-deep shrink-0" />}
                       </div>
                       {n.body && (
                         <p className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed line-clamp-2">{n.body}</p>
                       )}
-                      <p className="text-[10px] text-zinc-400 mt-1">{timeAgo(n.created_at)}</p>
+                      <p className="text-[12px] text-zinc-400 mt-1">{timeAgo(n.created_at)}</p>
                     </div>
                   </button>
                 );
@@ -284,7 +284,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
 
           {notifications.length > 0 && (
             <div className="px-4 py-2 border-t border-zinc-100 text-center">
-              <span className="text-[10px] text-zinc-400">최근 30개 알림</span>
+              <span className="text-[12px] text-zinc-400">최근 30개 알림</span>
             </div>
           )}
         </Card>
