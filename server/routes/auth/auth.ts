@@ -58,14 +58,27 @@ router.post("/api/auth/vendor-login", validateBody(VendorLoginSchema), asyncHand
     .select("id, company_name, contact_name, phone, manager_phone, password_hash")
     .or(`manager_phone.eq.${cleanPhone},phone.eq.${cleanPhone}`)
     .limit(1);
-  if (error) throw new HttpError(500, error.message);
+  if (error) {
+    console.error(`[vendor-login] Supabase 조회 실패 · phone=${cleanPhone} · ${error.message}`);
+    throw new HttpError(500, error.message);
+  }
   const vendor = vendors?.[0] ?? null;
-  if (!vendor) throw unauthorized("등록된 거래처를 찾을 수 없습니다");
-  if (!vendor.password_hash) throw unauthorized("비밀번호가 설정되지 않았습니다. 관리자에게 문의하세요.");
+  if (!vendor) {
+    console.warn(`[vendor-login] NO MATCH · phone=${cleanPhone} · manager_phone/phone 매칭 없음`);
+    throw unauthorized("등록된 거래처를 찾을 수 없습니다");
+  }
+  if (!vendor.password_hash) {
+    console.warn(`[vendor-login] NO HASH · vendor.id=${vendor.id} name=${vendor.company_name} · password_hash NULL · migration 미실행 or vendor 신규 등록`);
+    throw unauthorized("비밀번호가 설정되지 않았습니다. 관리자에게 문의하세요.");
+  }
+  // 2026-09-03 · 상세 로그 · bcrypt.compare 실패 원인 판별 · hash format 확인
+  const hashPrefix = String(vendor.password_hash).slice(0, 4);   // $2a$ · $2b$ · $2y$
+  const hashLen    = String(vendor.password_hash).length;
   const ok = await bcrypt.compare(String(password), vendor.password_hash);
   delete (vendor as any).password_hash;
   if (!ok) {
-    audit("VENDOR_LOGIN_FAIL", { ...auditContext(req), phone: cleanPhone, reason: "wrong_password" }, "warn");
+    audit("VENDOR_LOGIN_FAIL", { ...auditContext(req), phone: cleanPhone, reason: "wrong_password", vendorId: vendor.id, hashPrefix, hashLen }, "warn");
+    console.warn(`[vendor-login] BCRYPT FAIL · vendor.id=${vendor.id} name=${vendor.company_name} · hash prefix=${hashPrefix} len=${hashLen} · 비밀번호 불일치 (pgcrypto crypt() vs bcryptjs.compare() 호환성 or 다른 hash)`);
     throw unauthorized("핸드폰번호 또는 비밀번호가 올바르지 않습니다");
   }
   try {
