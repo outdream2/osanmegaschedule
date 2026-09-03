@@ -28,6 +28,10 @@ export interface VendorBasic {
   payment_terms?: string | null;
   active?: boolean | null;
   vat_included?: boolean | null;  // 2026-08-03 · #193
+  // #51 · Vendor DTO 확장 · 팀장·비상연락처
+  team_leader_name?: string | null;
+  team_leader_phone?: string | null;
+  emergency_contact?: string | null;
 }
 
 export interface VendorKpi {
@@ -238,6 +242,31 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
             <Mail size={11} className="text-zinc-400 shrink-0" />
             <span className="truncate">{vendor.email}</span>
           </a>
+        )}
+        {/* #51 · 팀장 · 비상연락처 (있을 때만) */}
+        {vendor.team_leader_name && (
+          <span className="inline-flex items-center gap-1" title="팀장">
+            <User2 size={11} className="text-amber-500 shrink-0" />
+            <span className="text-[9px] font-bold text-amber-500 uppercase tracking-wider">팀장</span>
+            {vendor.team_leader_name}
+          </span>
+        )}
+        {vendor.team_leader_phone && (
+          <a
+            href={`tel:${vendor.team_leader_phone.replace(/\D/g, "")}`}
+            className="inline-flex items-center gap-1 tabular-nums hover:text-amber-600 transition"
+            title="팀장 전화"
+          >
+            <Phone size={11} className="text-amber-500 shrink-0" />
+            {fmtPhone(vendor.team_leader_phone)}
+          </a>
+        )}
+        {vendor.emergency_contact && (
+          <span className="inline-flex items-center gap-1 tabular-nums text-rose-600" title="비상연락처">
+            <Phone size={11} className="text-rose-500 shrink-0" />
+            <span className="text-[9px] font-bold text-rose-500 uppercase tracking-wider">비상</span>
+            {vendor.emergency_contact}
+          </span>
         )}
         {vendor.payment_terms && (
           <span className="inline-flex items-center gap-1 text-zinc-400">

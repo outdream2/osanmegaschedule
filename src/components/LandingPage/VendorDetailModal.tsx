@@ -191,6 +191,10 @@ export const VendorDetailModal: React.FC<{
     draft.category        !== (vendor.category        ?? "") ||
     draft.note            !== (vendor.note            ?? "") ||
     draft.vat_included    !== vatDraftVal(vendor) ||
+    // #54 · 팀장·긴급연락처 3필드 dirty 체크 (승인 필수 항목이므로 저장 판정 정확도 필요)
+    draft.team_leader_name  !== (vendor.team_leader_name  ?? "") ||
+    draft.team_leader_phone !== (vendor.team_leader_phone ?? "") ||
+    draft.emergency_contact !== (vendor.emergency_contact ?? "") ||
     // 2026-08-23 · #178 Phase D · 5 신규 필드 dirty 체크
     draft.order_method    !== (vendor.order_method    ?? "") ||
     draft.region          !== (vendor.region          ?? "") ||

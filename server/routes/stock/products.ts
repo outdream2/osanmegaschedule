@@ -553,22 +553,25 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
   if (!data) throw new HttpError(404, "상품을 찾을 수 없습니다");
   const productCode = data.product_code ?? code;
 
-  // inventory_checks 병합 (창고·매장 실재고)
-  let warehouseStock: number | null = null;
-  let storeStock: number | null = null;
-  let invCheckedAt: string | null = null;
+  // inventory_checks 병합 (창고1/2 · 매장/매장3 실재고 · #58 통합 응답)
+  let warehouseStock:  number | null = null;   // 창고1 (구 warehouse_stock)
+  let warehouse2Stock: number | null = null;   // 창고2 (신규)
+  let storeStock:      number | null = null;   // 매장
+  let store3Stock:     number | null = null;   // 매장3
+  let invCheckedAt:    string | null = null;
   try {
-    // 2026-08-31 · warehouse_stock DROP · warehouse1_stock 사용
     const { data: iv } = await supabase
       .from("inventory_checks")
-      .select("warehouse1_stock, store_stock, checked_at")
+      .select("warehouse1_stock, warehouse2_stock, store_stock, store3_stock, checked_at")
       .eq("product_code", productCode)
       .order("checked_at", { ascending: false })
       .limit(1);
     if (iv && iv.length > 0) {
-      warehouseStock = iv[0].warehouse1_stock != null ? Number(iv[0].warehouse1_stock) : null;
-      storeStock     = iv[0].store_stock      != null ? Number(iv[0].store_stock)      : null;
-      invCheckedAt   = iv[0].checked_at ?? null;
+      warehouseStock  = iv[0].warehouse1_stock != null ? Number(iv[0].warehouse1_stock) : null;
+      warehouse2Stock = iv[0].warehouse2_stock != null ? Number(iv[0].warehouse2_stock) : null;
+      storeStock      = iv[0].store_stock      != null ? Number(iv[0].store_stock)      : null;
+      store3Stock     = iv[0].store3_stock     != null ? Number(iv[0].store3_stock)     : null;
+      invCheckedAt    = iv[0].checked_at ?? null;
     }
   } catch { /* silent */ }
 
@@ -602,10 +605,13 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
     realMap: data.real_map ?? null,
     // location 우선 · real_map fallback (하위호환)
     location: data.location ?? data.display_location ?? data.real_map ?? null,
-    // 재고 DB에서 병합
-    warehouse_stock: data.warehouse_stock ?? warehouseStock,
-    store_stock: data.store_stock ?? storeStock,
-    inv_checked_at: invCheckedAt,
+    // 재고 DB에서 병합 · #58 통합 · 창고1/2 · 매장/매장3
+    warehouse_stock:  data.warehouse_stock ?? warehouseStock,
+    warehouse1_stock: warehouseStock,
+    warehouse2_stock: warehouse2Stock,
+    store_stock:      data.store_stock ?? storeStock,
+    store3_stock:     store3Stock,
+    inv_checked_at:   invCheckedAt,
     // 매입 · purchase_details 만 신뢰
     last_purchase_date: lastPurchase,
     last_snapshot_date: null,  // deprecated · 하위 호환용
