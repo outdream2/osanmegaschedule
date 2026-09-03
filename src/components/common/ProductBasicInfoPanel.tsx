@@ -1,24 +1,18 @@
 // src/components/common/ProductBasicInfoPanel.tsx
 // 2026-08-28 · 사용자 지시 · 상품 조회·수정 정보 통일 프리미티브
+// 2026-09-03 · 사용자 지시 · 배치 재정리 · 수량·단가·바코드·판매상태·구역 우선
 //
-// 13컬럼 통일 · 조회·수정 페이지 모든 곳에서 공유:
-//   분류코드 · 상품명 · 공급사 · 진열위치* · 판매상태*
-//   현재고 · 창고재고 · 매장재고
-//   매입가 · 판매가 · 이익율 · 적정재고(*일) · 최근매입일
+// 14컬럼 통일 · 조회·수정 페이지 모든 곳에서 공유 (배치 순서 · 사용자 우선순위):
+//   Row 1 · 핵심 · 상품명 | 바코드 | 판매상태* | 진열위치*
+//   Row 2 · 수량 · 현재고 | 창고재고 | 매장재고 | 적정재고(*일)
+//   Row 3 · 가격 · 매입가(단가) | 판매가 | 이익율 | 최근매입일
+//   Row 4 · 분류 · 분류코드 | 공급사
 //
 // * · 인라인 편집 지원 (진열위치·판매상태) · onSave 로 서버 PATCH
-//
-// 사용:
-//   <ProductBasicInfoPanel
-//     product={{ product_code, product_name, supplier, location, sale_status, ... }}
-//     editable={true}
-//     onLocationChange={(newLoc) => save({ location: newLoc })}
-//     onSaleStatusChange={(newStatus) => save({ sale_status: newStatus })}
-//   />
 import React, { useState } from "react";
 import { Card } from "./Card";
 import { StatusPill } from "./StatusPill";
-import { Package, Store, Warehouse, MapPin, Coins, Pencil, Check } from "lucide-react";
+import { Package, Store, Warehouse, MapPin, Coins, Pencil, Check, Barcode } from "lucide-react";
 
 export interface ProductBasic {
   product_code: string;
@@ -29,6 +23,7 @@ export interface ProductBasic {
   location?: string | null;
   display_location?: string | null;   // legacy fallback
   sale_status?: string | null;
+  barcode?: string | null;            // 2026-09-03 · 사용자 지시 · 바코드 필수 표시
   current_stock?: number | null;
   warehouse_stock?: number | null;    // inv 파생
   store_stock?: number | null;        // inv 파생
@@ -161,39 +156,38 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
           )}
         </div>
       )}
-      <div className={compact ? "grid grid-cols-2 sm:grid-cols-3 gap-2.5" : "grid grid-cols-2 md:grid-cols-4 gap-3"}>
-        {/* Row 1 · 기본 (분류·상품명·공급사) */}
-        <Field label="분류코드">
-          <span className={valueCls + " tabular-nums break-words whitespace-normal"}>
-            {product.category_code || "-"}
-          </span>
-          {product.category && (
-            <span className="text-[11px] text-ink-soft break-words whitespace-normal">{product.category}</span>
-          )}
-        </Field>
+      <div className={compact ? "grid grid-cols-2 sm:grid-cols-4 gap-2.5" : "grid grid-cols-2 md:grid-cols-4 gap-3"}>
+        {/* 2026-09-03 · 사용자 지시 · 우선순위 재배치 · 수량·단가·바코드·판매상태·구역 우선 */}
+        {/* Row 1 · 핵심 · 상품명 | 바코드 | 판매상태 | 진열위치 */}
         <Field label="상품명" className="col-span-2">
           <span className={valueCls + " break-keep"} title={product.product_name ?? undefined}>
             {product.product_name || "-"}
           </span>
         </Field>
-        <Field label="공급사">
-          {product.supplier && onSupplierClick ? (
-            <button
-              type="button"
-              onClick={() => onSupplierClick(product.supplier!)}
-              className={valueCls + " break-words whitespace-normal text-sky-700 hover:text-sky-900 hover:underline cursor-pointer text-left w-full"}
-              title="공급사 정보 조회"
+        <Field label="바코드" icon={<Barcode size={11} />}>
+          <span className={valueCls + " tabular-nums break-all"} title={product.barcode ?? undefined}>
+            {product.barcode || <span className="text-zinc-300">-</span>}
+          </span>
+        </Field>
+        <Field label="판매상태">
+          {inEditMode && onSaleStatusChange ? (
+            <select
+              value={String(product.sale_status ?? "")}
+              onChange={(e) => void handleStatusChange(e.target.value)}
+              disabled={savingStatus}
+              className="h-7 px-2 rounded border border-amber-300 border-dashed text-[13px] font-bold bg-white outline-none focus:ring-2 focus:ring-brand-tint cursor-pointer"
             >
-              {product.supplier}
-            </button>
+              <option value="">-</option>
+              {SALE_STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
           ) : (
-            <span className={valueCls + " break-words whitespace-normal"}>
-              {product.supplier || "-"}
-            </span>
+            <StatusPill tone={saleStatusPill(product.sale_status)} size="sm">
+              {product.sale_status || "-"}
+            </StatusPill>
           )}
         </Field>
 
-        {/* Row 2 · 진열위치 (편집) · 판매상태 (편집) · 현재고 · 창고재고 · 매장재고 */}
+        {/* Row 2 · 수량 · 현재고 | 창고재고 | 매장재고 | 적정재고 · + 진열위치 */}
         <Field label="진열위치" icon={<MapPin size={11} />}>
           {inEditMode && editingLoc ? (
             <form onSubmit={(e) => { e.preventDefault(); void submitLocation(); }} className="flex items-center gap-1">
@@ -221,23 +215,6 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
             </button>
           )}
         </Field>
-        <Field label="판매상태">
-          {inEditMode && onSaleStatusChange ? (
-            <select
-              value={String(product.sale_status ?? "")}
-              onChange={(e) => void handleStatusChange(e.target.value)}
-              disabled={savingStatus}
-              className="h-7 px-2 rounded border border-amber-300 border-dashed text-[13px] font-bold bg-white outline-none focus:ring-2 focus:ring-brand-tint cursor-pointer"
-            >
-              <option value="">-</option>
-              {SALE_STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          ) : (
-            <StatusPill tone={saleStatusPill(product.sale_status)} size="sm">
-              {product.sale_status || "-"}
-            </StatusPill>
-          )}
-        </Field>
         <Field label="현재고" icon={<Package size={11} />}>
           <span className={numCls}>{num(product.current_stock)}</span>
         </Field>
@@ -248,8 +225,8 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
           <span className={numCls}>{num(product.store_stock)}</span>
         </Field>
 
-        {/* Row 3 · 가격·이익율·적정재고·최근매입일 */}
-        <Field label="매입가" icon={<Coins size={11} />}>
+        {/* Row 3 · 가격 · 매입가(단가) | 판매가 | 이익율 | 적정재고 */}
+        <Field label="매입가(단가)" icon={<Coins size={11} />}>
           <span className={numCls}>{currency(product.purchase_price)}</span>
         </Field>
         <Field label="판매가">
@@ -260,6 +237,32 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
         </Field>
         <Field label={`적정재고 (${optimalDays}일)`}>
           <span className={numCls}>{num(product.optimal_stock)}</span>
+        </Field>
+
+        {/* Row 4 · 분류·공급 · 분류코드 | 공급사 | 최근매입일 */}
+        <Field label="분류코드">
+          <span className={valueCls + " tabular-nums break-words whitespace-normal"}>
+            {product.category_code || "-"}
+          </span>
+          {product.category && (
+            <span className="text-[11px] text-ink-soft break-words whitespace-normal">{product.category}</span>
+          )}
+        </Field>
+        <Field label="공급사">
+          {product.supplier && onSupplierClick ? (
+            <button
+              type="button"
+              onClick={() => onSupplierClick(product.supplier!)}
+              className={valueCls + " break-words whitespace-normal text-sky-700 hover:text-sky-900 hover:underline cursor-pointer text-left w-full"}
+              title="공급사 정보 조회"
+            >
+              {product.supplier}
+            </button>
+          ) : (
+            <span className={valueCls + " break-words whitespace-normal"}>
+              {product.supplier || "-"}
+            </span>
+          )}
         </Field>
         <Field label="최근매입일" className="col-span-2">
           <span className={valueCls + " tabular-nums"}>{formatDate(product.last_purchase_date)}</span>

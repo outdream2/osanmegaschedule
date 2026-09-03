@@ -284,6 +284,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             location: (product as any).location ?? (product as any).display_location,
             display_location: (product as any).display_location,
             sale_status: (product as any).sale_status,
+            barcode: (product as any).barcode,
             current_stock: (product as any).current_stock,
             warehouse_stock: (product as any).warehouse_stock,
             store_stock: (product as any).store_stock,
