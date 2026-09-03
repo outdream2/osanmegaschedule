@@ -1,4 +1,4 @@
-﻿// src/components/ScheduleCell.tsx
+// src/components/ScheduleCell.tsx
 import React, { useState, useRef, useEffect } from "react";
 import { Schedule } from "../../types";
 import { SCHEDULE_TYPES, getTypeHex, isLightHex } from "../../constants";

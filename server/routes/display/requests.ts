@@ -657,7 +657,10 @@ router.post("/api/order-requests/bulk-send", authorize(3), validateBody(BulkSend
             `<td style="text-align:right">${it.unit_price ?? "-"}</td></tr>`
           ).join("");
           const subject = `[발주서] ${supName} · ${order_number}`;
-          const html = `
+          // 2026-09-03 · 한글 인코딩 fix · <meta charset=utf-8> 명시
+          //   · 일부 이메일 클라이언트 (Outlook 구버전 등) 는 charset 미명시 시 · CP949 로 해석 · 한글 깨짐
+          //   · nodemailer 는 Content-Type charset=utf-8 자동이지만 · HTML body 내부에도 명시하는 게 안전
+          const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
             <div style="font-family:Pretendard,sans-serif;color:#1a1a1a">
               <h2 style="color:#0A2E4A;margin:0 0 8px">📦 발주서</h2>
               <p>공급사 <b>${supName}</b> 앞 · 발주번호 <b>${order_number}</b></p>
@@ -671,12 +674,14 @@ router.post("/api/order-requests/bulk-send", authorize(3), validateBody(BulkSend
               </table>
               ${memo ? `<p style="margin-top:12px"><b>메모:</b> ${memo}</p>` : ""}
               <p style="margin-top:16px;color:#888;font-size:12px">본 메일은 자동 발송되었습니다.</p>
-            </div>`;
+            </div>
+          </body></html>`;
           await transporter.sendMail({
             from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
             to: targetEmail,
             subject,
             html,
+            textEncoding: "base64", // 한글 헤더 (Subject) · MIME word encoding 강제 · 클라이언트 호환성
           });
           outcomes.push("email:sent");
           dispatch.email_status = "sent";

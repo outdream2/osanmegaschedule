@@ -1,4 +1,4 @@
-﻿// src/components/ScheduleFilterBar.tsx
+// src/components/ScheduleFilterBar.tsx
 // 2026-08-17 · 공통 FilterSortLabel/Group/Row · 재사용 프레임워크 · 최신 트렌드 통일
 import React from "react";
 import { SK_EMPLOYEE_ORDER } from "../../lib/storageKeys";
