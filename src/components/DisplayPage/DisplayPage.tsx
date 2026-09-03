@@ -9,7 +9,7 @@ import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { type ZoneStatus, type DowMap, type DisplayZone } from "../../utils/zoneUtils";
 import { type ProductInfo } from "../../lib/productsCache";
 import {
-  Bell, CheckCircle2, ChevronLeft, ChevronRight,
+  CheckCircle2, ChevronLeft, ChevronRight,
   Layers, Save, ScanLine, X, Store,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
@@ -21,7 +21,7 @@ import { ZoneGroupPanel, type ZoneGroup } from "./ZoneGroupPanel";
 import { AppNavHeader } from "../layout/AppNavHeader";
 import { useSidebarEnabled } from "../../hooks/useSidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
-import { DisplayRequestPanel } from "./DisplayRequestPanel";
+// 2026-09-03 · #64 · DisplayRequestPanel · 구역 진열요청 삭제와 함께 미사용
 import { StockArrivalPage } from "../StockArrivalPage/StockArrivalPage";
 import OrderManagePage from "../OrderManagePage/OrderManagePage";
 // 2026-08-29 · #193 · 사용자 지시 · 상품 서브탭 · 3개 이너 탭 (실재고입력·상품입고·상품정보) 매입에서 이관
@@ -224,22 +224,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     prevZones: DisplayZone[];
     assignedList: Array<{ zoneId: string; name: string; id: number }>;
   }>(null);
-  const [quickReqToast, setQuickReqToast] = useState<string | null>(null);
-
-  const handleQuickRequest = useCallback((zone: DisplayZone) => {
-    if (!zone.assignedStaffId) return;
-    const req: DisplayRequest = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      zoneId: zone.id, zoneLabel: `${zone.num}번 ${zone.label}`, category: zone.category,
-      requestedAt: new Date().toISOString(), assignedStaffId: zone.assignedStaffId,
-      assignedStaffName: zone.assignedStaffName, status: "pending", note: "빠른 요청",
-    };
-    setRequests((prev) => [req, ...prev]);
-    setQuickReqToast(`${zone.assignedStaffName}님께 ${zone.num}번 ${zone.label} 보충 요청 전송됨`);
-    setTimeout(() => setQuickReqToast(null), 3500);
-    api.post("/api/display-requests", { zone_id: zone.id, zone_label: `${zone.num}번 ${zone.label}`, category: zone.category, requested_at: new Date().toISOString(), assigned_staff_id: zone.assignedStaffId, assigned_staff_name: zone.assignedStaffName, note: "빠른 요청" }).catch(() => {});
-    api.post("/api/push-send", { employeeId: zone.assignedStaffId, title: "📦 진열 보충 요청", body: `${zone.num}번 ${zone.label} (${zone.category}) 보충이 필요합니다.`, url: "/" }).catch(() => {});
-  }, []);
+  // 2026-09-03 · #64 · quickReqToast · handleQuickRequest 제거 · 구역 진열요청 UI 삭제 (사용자 지시)
+  //   · 상품 스캔 시 진열요청 (ScanPage) 로 통일 · 매장구역도는 담당자 배정 UI 만 유지
 
   const handleApplyToWeekday = useCallback(async () => {
     const d = new Date(selectedDate + "T00:00:00");
@@ -713,11 +699,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   <CheckCircle2 size={14} />전 요일에 현재 배정이 적용 · DB 저장되었습니다.
                 </div>
               )}
-              {quickReqToast && (
-                <div className="fixed top-5 right-5 z-[71] bg-amber-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 animate-in slide-in-from-top-2 duration-200 max-w-xs">
-                  <Bell size={14} />{quickReqToast}
-                </div>
-              )}
+              {/* 2026-09-03 · #64 · quickReqToast 제거 · 구역 진열요청 UI 삭제와 동반 */}
 
               {/* 2026-08-27 · 사용자 지시 · 매장 배치도 상단 헤더 전체 제거 (제목·부제·저장상태·구역설정·매주적용·날짜네비·검색바·스캔·힌트)
                     · 구역설정(ZoneGroupPanel) 은 "매장구역도 편집" 서브탭으로 이관

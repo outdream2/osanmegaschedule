@@ -243,8 +243,11 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
     onEditStart: startEdit, onEditChange: setEditingValue, onCommit: commitEdit, onCancel: cancelEdit,
   };
 
-  // BasicInfoPanel (scan · order-manage)
-  const showBasicPanel = context !== "stock-manage";
+  // 2026-09-03 · #98 · 사용자 지시 · 필요한 정보(수량·단가·바코드·판매상태·구역) 통일 표시
+  //   · 이전 · stock-manage context 는 ProductBasicInfoPanel 숨김 (중복 회피 목적)
+  //   · 이후 · 모든 context 에서 통일 렌더 → 발주필요·발주요청·손실추적·실재고차이 등 11개 탭 우측 패널 자동 개선
+  //   · ScanPage 는 · scan context 로 여전히 표시 (기존 동작 유지)
+  const showBasicPanel = true;
   const handleBasicLocationChange = async (newLocation: string | null) => {
     await api.patch(`/api/products/${encodeURIComponent(product.code)}`, {
       location: newLocation, display_location: newLocation,
@@ -271,6 +274,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               location: (product as any).location ?? (product as any).display_location,
               display_location: (product as any).display_location,
               sale_status: (product as any).sale_status,
+              barcode: (product as any).barcode,
               current_stock: (product as any).current_stock,
               warehouse_stock: (product as any).warehouse_stock,
               store_stock: (product as any).store_stock,
