@@ -439,7 +439,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     onEmployeeChange={(u) => setLocalEmployee(u)}
                     onEdit={onEditEmployee}
                   />
-                  {(localEmployee.address || localEmployee.email) && (
+                  {/* 2026-09-03 · #62 · 직원정보 통일 · birth_date 노출 · address·email 과 함께 표시 */}
+                  {(localEmployee.address || localEmployee.email || (localEmployee as any).birth_date) && (
                     <Card borderColor="border-zinc-100" padding="sm">
                       <EmployeeInfoForm
                         values={{
@@ -450,14 +451,14 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                           workplace: localEmployee.workplace || "",
                           hireDate: localEmployee.hireDate || "",
                           rank: localEmployee.rank || "",
-                          birthDate: "",
+                          birthDate: ((localEmployee as any).birth_date as string | undefined) ?? "",
                           address: localEmployee.address || "",
                           email: localEmployee.email || "",
                         }}
                         onChange={() => { /* read-only */ }}
                         layout="grid"
                         editing={false}
-                        fields={["address", "email"]}
+                        fields={["birthDate", "address", "email"]}
                       />
                     </Card>
                   )}

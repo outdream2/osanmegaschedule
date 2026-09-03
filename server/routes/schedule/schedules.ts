@@ -48,19 +48,23 @@ router.get("/api/employees", authorize(1), asyncHandler(async (_req, res) => {
   res.json(Array.isArray(data) ? data : []);
 }));
 
-// 2026-08-20 · #175 · 단건 조회 · 본인 or 관리자(level ≥ 9) 만 허용
+// 2026-08-20 · #175 · 단건 조회 · 본인 or 관리자(level ≥ 7) 만 허용
+//   · 2026-09-03 · #62 · 직원정보 공통 조회 통일 · StaffManagePage/EmployeeCalendarModal/MyPage
+//   · 확장 HR 필드 (인적사항·계약·임금·보험·경력·자격) 전체 반환
+//   · 권한 lv≥9 → lv≥7 완화 · 매니저(관리자) StaffDetailPanel 접근 가능
 //   · ApprovalRequestPage / useEmploymentStatus · retire_date 파생 · 사직서 gate
-//   · payload · Employee DTO subset · retireDate 필수
 router.get("/api/employees/:id", asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id) || id <= 0) throw badRequest("잘못된 직원 ID");
   const auth = (req as any).authUser as { sub?: number; level?: number } | undefined;
   const level = auth?.level ?? 0;
   const isSelf = auth?.sub === id;
-  if (!isSelf && level < 9) throw new HttpError(403, "본인 또는 관리자만 조회 가능합니다", "FORBIDDEN");
+  if (!isSelf && level < 7) throw new HttpError(403, "본인 또는 관리자만 조회 가능합니다", "FORBIDDEN");
+  // 2026-09-03 · #62 · select("*") · 원본 테이블 전체 컬럼 · 향후 컬럼 추가 시 자동 반영
+  //   · 대원칙 · 원본 테이블 적극 사용 · 파생 컬럼 자제
   const { data, error } = await supabase
     .from("employees")
-    .select("id, name, retireDate, level, position, rank, employmentType, hireDate, workplace, phone")
+    .select("*")
     .eq("id", id)
     .maybeSingle();
   if (error) throw new HttpError(500, error.message);

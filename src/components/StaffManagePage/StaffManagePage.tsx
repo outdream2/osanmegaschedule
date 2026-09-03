@@ -9,6 +9,8 @@ import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-24 · SplitPanel 프리미티브 마이그레이션 · useResizablePanel 제거
 import { SplitPanel } from "../common/SplitPanel";
 import { useLeaveManager } from "../../hooks/useLeaveManager";
+// 2026-09-03 · #62 · 직원정보 상세 공통 조회 훅 · GET /api/employees/:id · 확장 HR 필드
+import { useFetchEmployee } from "../../hooks/useFetchEmployee";
 import {
   updateEmployee,
   createEmployee as apiCreateEmployee,
@@ -260,7 +262,21 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
     status:        { default: 44,  min: 36,  max: 80  },
   });
 
-  const selectedEmp = useMemo(() => employees.find((e) => e.id === selectedId) ?? null, [employees, selectedId]);
+  // 2026-09-03 · #62 · 상세 조회 통일 · GET /api/employees/:id · 확장 HR 필드 (birth_date·계약·임금·보험 등)
+  //   · list 응답은 제한된 subset · 상세 패널 Personal/Job&Wage 탭 데이터 누락 fix
+  //   · 목록 필드 + 상세 필드 병합 · 상세 로딩 중에도 이름/직위 즉시 표시
+  //   · Employee 타입은 두 곳에 정의 · useFetchEmployee 는 src/types.ts 소스 · 여기 지역 타입으로 캐스팅
+  const { employee: detailEmployeeRaw, loading: detailLoading, reload: reloadDetail } = useFetchEmployee(selectedId);
+  const detailEmployee = detailEmployeeRaw as unknown as Employee | null;
+  const listEmp = useMemo(() => employees.find((e) => e.id === selectedId) ?? null, [employees, selectedId]);
+  const selectedEmp = useMemo<Employee | null>(() => {
+    if (!listEmp && !detailEmployee) return null;
+    if (!detailEmployee) return listEmp;
+    if (!listEmp) return detailEmployee;
+    // 상세가 신규 진실의 원천 · list 는 백업 fallback
+    return { ...listEmp, ...detailEmployee };
+  }, [listEmp, detailEmployee]);
+  void detailLoading; // reserved · 필요 시 UI 표시
 
   // ── 핸들러 ──
   const handleSelect = async (emp: Employee) => {
@@ -311,6 +327,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
       }
       setEditing(false); setDraft(null);
       setEmployees((prev) => prev.map((e) => e.id === selectedEmp.id ? { ...e, ...draft } : e));
+      // 2026-09-03 · #62 · 저장 후 상세 재조회 · 서버 정규화값 (trim·기본값 등) 반영
+      void reloadDetail();
     } catch (err: unknown) {
       showError(`저장 오류: ${err instanceof Error ? err.message : String(err)}`);
     } finally { setSaving(false); }
