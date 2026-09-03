@@ -143,7 +143,8 @@ export async function learnVendorBusinessNumber(supplierName: string, bizNum: st
       return { action: "updated" };
     }
     // 새 공급사 생성 · 2026-08-10 · 사용자 요청 · "OCR학습" 카테고리 제거 · null 로 저장 (기타로 노출)
-    const { error } = await supabase.from("vendors").insert({ company_name: cleaned, business_number: bizNum, category: null });
+    // 2026-09-03 · 사용자 리포트 · 자동 승인 방지 · approval_status: null 명시 (승인 요청 flow 유지)
+    const { error } = await supabase.from("vendors").insert({ company_name: cleaned, business_number: bizNum, category: null, approval_status: null });
     if (error) return { action: "skipped", reason: error.message };
     resetVendorBizNumMapCache();
     return { action: "created" };
