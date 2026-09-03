@@ -147,6 +147,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   }, [_rawVendorsSelf, authSession]);
   const [unauthorizedToast, setUnauthorizedToast] = useState(false);
 
+  // 2026-09-03 · fix · 사용자 리포트 · vendor 로그인 후에도 [공급사 정보] 클릭 안 됨
+  //   · 원인 · useVendors 훅 · 마운트 시 1회만 fetch · 로그인 이전 401 실패 후 · 로그인해도 재조회 X
+  //   · fix · authSession 변경 시 (특히 vendor 로그인) · vendors 캐시 강제 재로드
+  useEffect(() => {
+    if (authSession?.role === "vendor") {
+      refreshVendorsSelf();
+    }
+  }, [authSession?.role, authSession?.employeeId, refreshVendorsSelf]);
+
   // ── 인라인 재고검색 (비로그인용) ──────────────────────────────────────
   // 2026-08-17 · #130 · code_slim · StockSearch 컴포넌트로 분리
   //   · stockQuery/Results/Searching state · getStockBadges 헬퍼 · handleStockSearch 로직 모두 이동
