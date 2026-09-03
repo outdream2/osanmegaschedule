@@ -156,6 +156,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     }
   }, [authSession?.role, authSession?.employeeId, refreshVendorsSelf]);
 
+  // 2026-09-04 · Bug fix · 관리자 승인 후 공급사 재고확인 자동 활성화
+  //   · 승인 대기(requested/registered) 상태에서 30초마다 vendor 상태 재조회
+  //   · admin 승인 시 DB → approval_status="approved" → 30초 이내 버튼 자동 활성
+  useEffect(() => {
+    if (authSession?.role !== "vendor") return;
+    const status = (vendorSelf as any)?.approval_status;
+    if (status === "approved") return; // 이미 승인 · 폴링 불필요
+    const id = setInterval(() => { refreshVendorsSelf(); }, 30_000);
+    return () => clearInterval(id);
+  }, [authSession?.role, vendorSelf, refreshVendorsSelf]);
+
   // ── 인라인 재고검색 (비로그인용) ──────────────────────────────────────
   // 2026-08-17 · #130 · code_slim · StockSearch 컴포넌트로 분리
   //   · stockQuery/Results/Searching state · getStockBadges 헬퍼 · handleStockSearch 로직 모두 이동

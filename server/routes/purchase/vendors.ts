@@ -584,11 +584,14 @@ router.post("/api/vendors/:id/approval-request", authorize(0), validateBody(z.ob
 
   // 2026-09-03 · 사용자 지시 · 관리자에게 승인 요청 알림 (인앱 + 웹푸시)
   //   · notificationsService.notifyAllAdmins · level >= 9 관리자 · 인앱 + optional web push
+  // 2026-09-04 · 알림 결과 로그 강화 · 실제 발송 여부 서버 로그 확인 가능
   notificationsService.notifyAllAdmins({
     title: "🏢 거래처 승인 요청",
     body: `${vendor.company_name ?? "(공급사)"} · 정보 등록 완료 · 승인 검토 필요`,
     type: "warning",
     push: { url: "/", tag: `vendor-approval-${id}` },
+  }).then(r => {
+    console.log(`[approval-request] 관리자 알림 발송 완료 · inApp=${r.inApp} · push=${r.push} · 공급사=${vendor.company_name}`);
   }).catch((e: any) => {
     console.warn("[approval-request] 관리자 알림 발송 실패:", e?.message);
   });
@@ -601,6 +604,8 @@ router.post("/api/vendors/:id/approve", authorize(9), validateBody(z.object({}))
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
   const approvedBy = (req as any).auth?.employeeId ?? null;
+  // 승인 전 company_name 조회 (알림 body 용)
+  const { data: vendorBefore } = await supabase.from("vendors").select("company_name").eq("id", id).maybeSingle();
   const { error } = await supabase
     .from("vendors")
     .update({
@@ -610,6 +615,14 @@ router.post("/api/vendors/:id/approve", authorize(9), validateBody(z.object({}))
     })
     .eq("id", id);
   if (error) throw new HttpError(500, `승인 실패: ${error.message}`);
+  // 2026-09-04 · 승인 완료 후 전체 관리자 재알림 (승인한 관리자 포함 · 이력 확인용)
+  notificationsService.notifyAllAdmins({
+    title: "✅ 거래처 승인 완료",
+    body: `${vendorBefore?.company_name ?? "(공급사)"} · 승인 완료 · 재고확인 활성화됨`,
+    type: "success",
+  }).catch((e: any) => {
+    console.warn("[vendor-approve] 관리자 알림 발송 실패:", e?.message);
+  });
   res.json({ ok: true, status: "approved", approved_at: new Date().toISOString(), approved_by: approvedBy });
 }));
 
