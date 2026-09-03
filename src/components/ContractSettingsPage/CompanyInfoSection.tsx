@@ -1,4 +1,4 @@
-// 2026-08-22 · Framework Phase 4 · ContractSettingsPage.tsx large-file 분리
+﻿// 2026-08-22 · Framework Phase 4 · ContractSettingsPage.tsx large-file 분리
 // CompanyInfoSection · 회사 정보 섹션 (접기·회사명·대표자·주소·사업자번호·임금지급일)
 //   · props-driven pure display
 
@@ -52,7 +52,7 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
         </div>
         <div className="flex-1 min-w-0 text-left">
           <h2 className="text-[13px] font-bold text-emerald-700 leading-none">회사 정보</h2>
-          <p className="text-[11px] text-zinc-500 font-semibold mt-0.5">근로계약서 사업주란 자동 채움 · 편집 즉시 저장</p>
+          <p className="text-[13px] text-zinc-500 font-semibold mt-0.5">근로계약서 사업주란 자동 채움 · 편집 즉시 저장</p>
         </div>
         {!companyInfoLoaded && (
           <Spinner size={11} tone="zinc" label="로딩 중..." labelSize={11} className="shrink-0" />
@@ -61,12 +61,12 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
           <Spinner size={11} tone="violet" label="저장 중..." labelSize={11} className="shrink-0" />
         )}
         {companyInfoLoaded && companyInfoSaveState === "saved" && (
-          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 font-semibold shrink-0">
+          <span className="inline-flex items-center gap-1 text-[13px] text-emerald-600 font-semibold shrink-0">
             <Check size={11} weight="bold" /> 저장됨
           </span>
         )}
         {companyInfoLoaded && companyInfoSaveState === "error" && (
-          <span className="inline-flex items-center gap-1 text-[11px] text-rose-500 font-semibold shrink-0">
+          <span className="inline-flex items-center gap-1 text-[13px] text-rose-500 font-semibold shrink-0">
             <Warning size={11} weight="fill" /> 저장 실패
           </span>
         )}
@@ -75,7 +75,7 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
       {companyInfoOpen && (
       <div className="p-3 grid grid-cols-2 gap-2.5">
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-bold text-zinc-500">상호</label>
+          <label className="text-[13px] font-bold text-zinc-500">상호</label>
           <input
             type="text"
             value={companyInfo.name}
@@ -86,7 +86,7 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-bold text-zinc-500">대표자 이름</label>
+          <label className="text-[13px] font-bold text-zinc-500">대표자 이름</label>
           <input
             type="text"
             value={companyInfo.representativeName}
@@ -97,7 +97,7 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
           />
         </div>
         <div className="flex flex-col gap-1 col-span-2">
-          <label className="text-[11px] font-bold text-zinc-500">사업장 주소</label>
+          <label className="text-[13px] font-bold text-zinc-500">사업장 주소</label>
           <input
             type="text"
             value={companyInfo.address}
@@ -108,7 +108,7 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-bold text-zinc-500">사업자등록번호 <span className="text-zinc-400 font-normal">(선택)</span></label>
+          <label className="text-[13px] font-bold text-zinc-500">사업자등록번호 <span className="text-zinc-400 font-normal">(선택)</span></label>
           <input
             type="text"
             value={companyInfo.regNo}
@@ -120,7 +120,7 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
         </div>
         {/* 2026-09-02 · 사용자 지시 · 대표자 직함 필드 · 필요없음 · 제거 */}
         <div className="flex flex-col gap-1 col-span-2">
-          <label className="text-[11px] font-bold text-zinc-500">
+          <label className="text-[13px] font-bold text-zinc-500">
             임금지급일 <span className="text-zinc-400 font-normal">(근로계약서에 자동 반영)</span>
           </label>
           <textarea
