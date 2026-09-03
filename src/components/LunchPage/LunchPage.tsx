@@ -1,4 +1,4 @@
-// 2026-08-17 · apiClient 마이그레이션
+﻿// 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { getErrorMessage } from "../../lib/errorMessage";
@@ -344,7 +344,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
           <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
               <Coffee size={14} className="text-gray-400" />
-              <span className="text-xs font-bold text-gray-700">휴게시간 배정</span>
+              <span className="text-[13px] font-bold text-gray-700">휴게시간 배정</span>
             </div>
             <div className="flex items-center gap-3">
               {/* 탭 */}
@@ -457,7 +457,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                     draggable
                     onDragStart={() => setDraggedEmpId(emp.id)}
                     onDragEnd={() => { setDraggedEmpId(null); setDragOverSlot(null); }}
-                    className={`px-3 py-1.5 bg-white border rounded-xl text-xs font-semibold cursor-grab shadow-sm select-none transition ${isPharm ? "border-emerald-400 ring-2 ring-emerald-500 ring-offset-1 text-emerald-800 hover:border-emerald-500 hover:text-emerald-900" : "border-line text-gray-700 hover:border-indigo-300 hover:text-indigo-700"}`}
+                    className={`px-3 py-1.5 bg-white border rounded-xl text-[13px] font-semibold cursor-grab shadow-sm select-none transition ${isPharm ? "border-emerald-400 ring-2 ring-emerald-500 ring-offset-1 text-emerald-800 hover:border-emerald-500 hover:text-emerald-900" : "border-line text-gray-700 hover:border-indigo-300 hover:text-indigo-700"}`}
                   >
                     {emp.name}
                   </div>

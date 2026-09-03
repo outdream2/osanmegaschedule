@@ -1,4 +1,4 @@
-// 2026-08-10 · 사용자 요청 · 스케쥴표 직원정보 톤으로 통합
+﻿// 2026-08-10 · 사용자 요청 · 스케쥴표 직원정보 톤으로 통합
 // 사용처:
 //   · EmployeeCalendarModal (info 탭) · 스케쥴에서 성명 클릭
 //   · StaffManagePage · 왼쪽 리스트에서 직원 선택 시 오른쪽 상세 (뷰 모드)
@@ -337,7 +337,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
               href={localEmployee.contract_file_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-1.5 text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg transition"
+              className="px-3 py-1.5 text-[13px] font-semibold bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg transition"
             >
               새 탭에서 열기
             </a>

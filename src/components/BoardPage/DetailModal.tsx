@@ -1,4 +1,4 @@
-// src/components/BoardPage/DetailModal.tsx
+﻿// src/components/BoardPage/DetailModal.tsx
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · BoardPage 게시글 상세 모달 이관
 // 프레임워크: Spinner · useToast · toastClass · useConfirm · apiClient · cloudinaryUpload · AuthorBadge · Modal primitive
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -348,7 +348,7 @@ export function DetailModal({
                           <div key={`${img.image_url}-${i}`} className="relative aspect-square rounded-lg overflow-hidden border border-line bg-white">
                             <img src={img.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
                             <button type="button" onClick={() => removeEditImage(i)}
-                              className="absolute top-0.5 right-0.5 w-7 h-7 rounded-full bg-black/70 hover:bg-black text-white text-xs font-bold flex items-center justify-center cursor-pointer shadow"
+                              className="absolute top-0.5 right-0.5 w-7 h-7 rounded-full bg-black/70 hover:bg-black text-white text-[13px] font-bold flex items-center justify-center cursor-pointer shadow"
                               title="사진 첨부 취소"
                             >✕</button>
                           </div>

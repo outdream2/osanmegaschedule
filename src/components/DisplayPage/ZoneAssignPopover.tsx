@@ -1,4 +1,4 @@
-// src/components/DisplayPage/ZoneAssignPopover.tsx
+﻿// src/components/DisplayPage/ZoneAssignPopover.tsx
 // 2026-08-23 · #189 · 구역 편집 모드 (label · category · num) · onZoneUpdate prop
 import React, { useEffect, useRef, useState } from "react";
 import { X, Users, Package, Pencil, Check, XCircle } from "lucide-react";
@@ -156,7 +156,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
           </div>
         ) : (
           <div className="min-w-0 flex-1">
-            <div className="text-xs font-bold text-zinc-800 flex items-center gap-1.5">
+            <div className="text-[13px] font-bold text-zinc-800 flex items-center gap-1.5">
               <Badge size="xs" className={statusCell(zone.status)}>
                 {zone.num}번
               </Badge>
