@@ -25,8 +25,10 @@ export const CreateVendorSchema = z.object({
   team_leader_phone: z.string().max(30).nullable().optional(),
   emergency_contact: z.string().max(100).nullable().optional(),
   vat_included:      z.boolean().nullable().optional(),
-  // 2026-08-23 · #192 Phase B · 승인 flow (DB migration 후 활성)
-  approval_status: z.enum(["pending", "approved", "rejected"]).optional(),
+  // 2026-08-23 · #192 · 2026-09-03 · 사용자 결정 · 4-state
+  //   registered (default · 등록됨) · requested (승인 요청) · approved · rejected
+  //   pending 은 하위호환 (마이그레이션 · 신규는 requested)
+  approval_status: z.enum(["registered", "requested", "approved", "rejected", "pending"]).optional(),
 });
 export type CreateVendorInput = z.infer<typeof CreateVendorSchema>;
 

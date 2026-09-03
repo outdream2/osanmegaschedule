@@ -103,7 +103,7 @@ router.post("/api/upload-vendors", authorize(9), express.raw({ type: "applicatio
     const existingId = existingMap.get(r.company_name);
     const doOp = existingId != null
       ? () => supabase.from("vendors").update(payload).eq("id", existingId!)
-      : () => supabase.from("vendors").insert({ ...payload, approval_status: null });  // 2026-09-03 · 사용자 리포트 · 신규 vendor · 자동 승인 방지 · 명시적 NULL
+      : () => supabase.from("vendors").insert({ ...payload, approval_status: "registered" });  // 2026-09-03 · 사용자 결정 · 4-state · registered (default) · DB default 와 일치 · 명시
     let { error } = await doOp();
     // business_number 컬럼 없으면 마이그레이션 미적용 → 재시도 (컬럼 제외)
     if (error && hasBizNumCol && /business_number/.test(error.message)) {
