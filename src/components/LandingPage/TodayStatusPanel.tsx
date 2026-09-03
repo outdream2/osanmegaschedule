@@ -4,6 +4,8 @@ import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../layout/AppNavHeader";
 import { AccentBar } from "../common/AccentBar";
 import { Card } from "../common/Card";
+// 2026-09-03 · 사용자 지시 · 거래처 승인 클릭 시 · 요청목록 vendor 탭 자동 선택
+import { SK_SUBTAB_REQUESTS } from "../../lib/storageKeys";
 // 2026-08-25 · 사용자 지시 · 페이지 숨김 시 오늘의 현황에서도 관련 건수 숨김
 import { usePageVisibility } from "../../hooks/usePageVisibility";
 import { usePagePermissions } from "../../hooks/usePagePermissions";
@@ -179,10 +181,14 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
           사직서 승인 <b className={`font-bold tabular-nums ${requestsCounts.resignation > 0 ? "text-red-700" : "text-ink"}`}>{requestsCounts.resignation}</b>건
         </button>
         {/* 2026-09-02 · 사용자 지시 · 거래처 승인 요청 · 관리자만 · 요청목록>거래처승인 탭 */}
+        {/* 2026-09-03 · fix · 사용자 리포트 · 진열요청 탭으로 잘못 이동 · SK_SUBTAB_REQUESTS='vendor' 명시 후 이동 */}
         {isAdmin && (
           <button
             type="button"
-            onClick={() => onNavigate("requests", authSession)}
+            onClick={() => {
+              try { localStorage.setItem(SK_SUBTAB_REQUESTS, "vendor"); } catch { /* silent */ }
+              onNavigate("requests", authSession);
+            }}
             className="inline-flex items-center gap-1.5 hover:text-blue-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
             title="거래처 승인 · 요청목록>거래처승인 탭으로 이동"
           >
