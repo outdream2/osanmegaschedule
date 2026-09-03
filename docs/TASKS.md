@@ -19,6 +19,36 @@
 
 ---
 
+## 🎯 활성 PENDING · v6 (2026-09-03 · 전수 감사)
+
+> **2026-09-03 전수 감사** · TypeScript 0에러 확인 · 버그 3건 수정 · TASKS 업데이트
+> 감사 범위: TS 컴파일 · 서버 API 5개 라우터 · 프론트엔드 타입 · store_stock_2 컬럼 삭제 후 잔존 참조
+
+### ✅ 2026-09-03 감사 완료 (버그 수정)
+| 커밋 | 내용 |
+|-----|------|
+| `0d9b7f8f` | store_stock_2 strip 목록 추가 (requests.ts:978) · DisplayRequest.product_name 타입 추가 · lossTracking store_stock_2 SELECT 제거 |
+| `63243fa5` | CompanyInfoSection 폰트 11→13px |
+
+### 🔴 신규 PENDING (2026-09-03 감사 발견)
+| # | 태스크 | 우선순위 | 비고 |
+|---|-----|--------|------|
+| **#112** | `#79 재확인`: bulk-send `dispatch.status` 로직 혼란 · `/skipped\(/` 패턴으로만 "sent" 판별 · 실제 email:sent 케이스 미포함 · 사용자 발주 흐름 확인 후 결정 | 🟡 | 기능적 이슈 (표시 문제) |
+| **#113** | `store_stock_2` 클라이언트 잔존 참조 · RealStockTablePage/ScanPage/ScanPage.panels 등 10+ 파일 · DB 컬럼 없음 · 서버 null 반환으로 graceful · 단 UI에서 "-" 표시 정상 여부 확인 필요 | 🟢 | 현재 서버 null 반환으로 안전 |
+| **#114** | `CompanyInfoSection.tsx` BOM 문자 삽입 (`﻿`) · LF→CRLF 경고 · 기능 무해 · 다음 파일 편집 시 정리 | 🟢 | 기능 무해 |
+
+### ✅ 2026-09-03 감사 확인 (정상 동작)
+- TypeScript 에러: 0건 (TS 클린)
+- `#63` 진열요청 product_name: 서버 JOIN 정상 반환 확인 (`requests.ts:119~143`) · 타입 누락만 수정 완료
+- `#79` 발주 발송: UUID BigInt 변환 오류 `0d9b7f8f`에서 이미 수정 확인
+- `#80` 차용관리 parties API: `borrowings.ts:109` 구현 확인 · `authorize(1)` 정상
+- `vendor.approval-request` 4-state 흐름: `requested`/`approved`/`rejected`/`registered` 정상
+- `product_arrivals` 매입 검수 후 `current_stock += qty` 자동 반영: 정상 구현 (`2026-09-03`)
+- `order_requests` bulk-send UUID 처리: `String(id)` 변환 정상
+- `inventory_checks` store_stock_2 SELECT 제거: 이미 완료
+
+---
+
 ## 🎯 활성 PENDING · v5 (2026-09-02 오후 · 자율 세션)
 
 ### ✅ 2026-09-02 오후 (자율 진행 세션 · 완료)
@@ -42,10 +72,10 @@
 ### 🔴 신규 PENDING (2026-09-02 오후 · 사용자 리포트)
 | # | 태스크 | 우선순위 |
 |---|-----|--------|
-| **#79** | 발주 발송 안 됨 (재리포트) · 브라우저 콘솔 · 서버 로그 확인 필요 | 🔴 |
+| **#79** | ~~발주 발송 안 됨~~ · UUID fix `0d9b7f8f` 완료 · **사용자 재확인 필요** (SMTP 미설정 시 로그만 남음) | 🟡 |
 | **#78** | 상품입고 · 스캔 시 단가·유통기한 자동 fill (거래명세서 참조) | 🟡 |
 | **#80** | 차용관리 · 대여자/차용자 선택 · 약국은 사업자명 · 공급사 검색 | 🔴 |
-| **#63** | 진열요청 상품이름 안 나옴 · DisplayRequest 스키마 조사 | 🔴 |
+| **#63** | ~~진열요청 상품이름 안 나옴~~ · `types.ts product_name 타입 추가` `0d9b7f8f` 완료 | ✅ |
 | **#64** | 진열요청 리스트 완전 재구성 | 🔴 |
 | **#60** | 스케쥴 전월 복사 기능 · 조사·fix | 🔴 |
 | **#70** | 탭 sticky 전수 스캔 · 60+ 파일 top-14→top-0 통합 fix | 🟡 |
