@@ -81,9 +81,10 @@ export function useEmploymentStatus(
 ): UseEmploymentStatusResult {
   const level = session?.level ?? 0;
   const isAdmin = level >= 9;
+  const isVendor = session?.role === "vendor";  // 2026-09-03 · vendor 세션 · employee 아님 · skip
   const employeeId = session?.employeeId;
 
-  const skip = isAdmin || !employeeId;
+  const skip = isAdmin || isVendor || !employeeId;
 
   const [status, setStatus] = useState<EmploymentStatus | null>(() => {
     if (skip) return null;
