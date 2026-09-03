@@ -211,11 +211,16 @@ router.get("/api/employees/latest-contract", asyncHandler(async (req, res) => {
 }));
 
 // ─── GET · 직원별 이력 ─────────────────────────────────────────────────────
+// 2026-09-03 · #103 통일 · latest=1 파라미터 지원 · /api/employees/latest-contract 대체 가능
+//   · &latest=1 · 최신 1건만 배열로 반환 (id 최소화 · 빠른 응답)
+//   · 없으면 · 전체 이력 (기존 동작)
 router.get("/api/employee-contracts", asyncHandler(async (req, res) => {
   const employeeId = Number(req.query.employeeId);
+  const latestOnly = String(req.query.latest ?? "") === "1";
   // select("*") · is_active 컬럼 존재 시 자동 포함 (프론트 이력 UI 활성 계약 강조용)
   let q = supabase.from("employee_contracts").select("*").order("created_at", { ascending: false });
   if (Number.isFinite(employeeId)) q = q.eq("employee_id", employeeId);
+  if (latestOnly) q = q.limit(1);
 
   const { data, error } = await q;
   if (error) {

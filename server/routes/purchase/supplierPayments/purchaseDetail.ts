@@ -10,6 +10,9 @@ const router = Router();
 // GET /api/supplier-purchase-detail?supplier=X&days=365
 //   · 특정 공급사 매입 raw rows (product_code, quantity, unit_price, amount)
 //   · 2026-08-09 · purchase_details 만 사용 · OCR fallback 제거
+// 2026-09-03 · #102 통일 관련 · 이 endpoint 는 특수 로직 유지 (VAT split · 3-way JOIN · vendor supplier_code 자동 매칭)
+//   · 단순 매입 조회는 /api/purchase-details?supplier=X (이미 지원) 사용 권장
+//   · 향후 · vat_amount/supply_amount 필드 표준화 완료 시 · 이 route 제거 검토
 router.get("/api/supplier-purchase-detail", asyncHandler(async (req, res) => {
   const supplier = String(req.query.supplier ?? "").trim();
   if (!supplier) throw badRequest("supplier 필수");
