@@ -290,6 +290,21 @@ BEGIN
 END;
 $$;
 
+
+-- ═══════════════════════════════════════════════════════════════════
+-- 10. purchase_details.expiry_date · 상품입고 유통기한 저장 (2026-09-03 추가)
+--     사용자 지시 · 상품입고 시 단가·유통기한 DB 저장 필수
+-- ═══════════════════════════════════════════════════════════════════
+ALTER TABLE purchase_details
+  ADD COLUMN IF NOT EXISTS expiry_date DATE NULL;
+
+COMMENT ON COLUMN purchase_details.expiry_date IS
+  '유통기한 · 상품입고 검수 시 · ArrivalRowCard 유통기한 입력 필드에서 저장';
+
+CREATE INDEX IF NOT EXISTS idx_purchase_details_expiry_date
+  ON purchase_details (expiry_date) WHERE expiry_date IS NOT NULL;
+
+
 -- ═══════════════════════════════════════════════════════════════════
 -- 검증 (실행 후)
 -- ═══════════════════════════════════════════════════════════════════

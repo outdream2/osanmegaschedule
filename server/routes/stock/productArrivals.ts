@@ -83,9 +83,13 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
   // 2026-09-01 · fix (audit P0) · 트랜잭션 rollback 없음 · 부분 실패 추적 · 사용자에게 상세 리포트
   //   · 첫 실패 즉시 throw 대신 · 모든 item 처리 후 실패 리스트 반환 · 재시도 가능
   //   · 성공 부분은 저장됨 (best-effort · Supabase RPC atomic 은 별도 마이그레이션 필요)
+  // 2026-09-03 · 사용자 지시 · 단가·유통기한 DB 저장 + 매입 후 current_stock 자동 반영
+  //   · unit_price 미지정 · products.purchase_price fallback
+  //   · amount = unit_price × qty
+  //   · products.current_stock += qty (신규 검수 매입만 · 기존 UPDATE 는 이미 계산되어 있음)
   let insertedCount = 0;
   let updatedCount = 0;
-  const failedItems: Array<{ product_code: string; error: string; step: "check" | "update" | "insert" | "location" }> = [];
+  const failedItems: Array<{ product_code: string; error: string; step: "check" | "update" | "insert" | "location" | "stock" }> = [];
   for (const it of items) {
     const productCode = String(it.product_code ?? "").trim();
     if (!productCode) continue;
@@ -98,6 +102,28 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
     //   · 매장구역 미지정 시 · 기존 값 유지 (null 로 덮지 않음)
     const itemLocation = (it.location != null && String(it.location).trim() !== "")
       ? String(it.location).trim()
+      : null;
+
+    // 2026-09-03 · 사용자 지시 · unit_price / current_stock 조회 · products fallback
+    let unitPrice = Number(it.unit_price ?? 0) || 0;
+    let currentStock: number | null = null;
+    const { data: prodRow, error: prodErr } = await supabase
+      .from("products")
+      .select("purchase_price, current_stock")
+      .eq("product_code", productCode)
+      .maybeSingle();
+    if (prodErr) {
+      console.warn(`[arrival→products lookup] ${productCode} · ${prodErr.message}`);
+    }
+    if (prodRow) {
+      if (unitPrice === 0 && prodRow.purchase_price != null) {
+        unitPrice = Number(prodRow.purchase_price) || 0;
+      }
+      currentStock = prodRow.current_stock != null ? Number(prodRow.current_stock) : 0;
+    }
+    const amount = unitPrice * qty;
+    const expiryDate = (it.expiry_date != null && String(it.expiry_date).trim() !== "")
+      ? String(it.expiry_date).trim()
       : null;
 
     // 오늘 자 · 이미 매입 원본 있는지 확인 (OCR/엑셀 임포트 등)
@@ -114,15 +140,23 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
     }
 
     if (existing && existing.length > 0) {
-      // 기존 매입 있음 → verify_* 만 UPDATE
+      // 기존 매입 있음 → verify_* + unit_price/amount 는 클라 명시값 있으면 갱신
+      const updatePayload: Record<string, any> = {
+        verify_status: verifyStatus,
+        verified_by: checked_by,
+        verified_at: now.toISOString(),
+        verified_expiring: isExpiring,
+      };
+      // 클라에서 명시적으로 unit_price 보냈으면 · 덮어쓰기 (그렇지 않으면 원본 유지)
+      if (it.unit_price != null && Number(it.unit_price) > 0) {
+        updatePayload.unit_price = Number(it.unit_price);
+        updatePayload.amount = Number(it.unit_price) * qty;
+      }
+      if (expiryDate) updatePayload.expiry_date = expiryDate;
+
       const { error: uErr } = await supabase
         .from("purchase_details")
-        .update({
-          verify_status: verifyStatus,
-          verified_by: checked_by,
-          verified_at: now.toISOString(),
-          verified_expiring: isExpiring,
-        })
+        .update(updatePayload)
         .eq("id", existing[0].id);
       if (uErr) {
         failedItems.push({ product_code: productCode, error: uErr.message, step: "update" });
@@ -130,28 +164,46 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
       }
       updatedCount++;
     } else {
-      // 신규 매입 · INSERT
+      // 신규 매입 · INSERT · 단가·금액·유통기한 저장
+      const insertPayload: Record<string, any> = {
+        purchase_date: todayDate,
+        supplier_name: supplierName,
+        product_code: productCode,
+        product_name: String(it.product_name ?? "").trim() || null,
+        quantity: qty,
+        unit_price: unitPrice,
+        amount,
+        verified_by: checked_by,
+        verify_status: verifyStatus,
+        verified_at: now.toISOString(),
+        verified_expiring: isExpiring,
+        imported_at: now.toISOString(),
+      };
+      if (expiryDate) insertPayload.expiry_date = expiryDate;
+
       const { error: iErr } = await supabase
         .from("purchase_details")
-        .insert({
-          purchase_date: todayDate,
-          supplier_name: supplierName,
-          product_code: productCode,
-          product_name: String(it.product_name ?? "").trim() || null,
-          quantity: qty,
-          unit_price: 0,
-          amount: 0,
-          verified_by: checked_by,
-          verify_status: verifyStatus,
-          verified_at: now.toISOString(),
-          verified_expiring: isExpiring,
-          imported_at: now.toISOString(),
-        });
+        .insert(insertPayload);
       if (iErr) {
         failedItems.push({ product_code: productCode, error: iErr.message, step: "insert" });
         continue;
       }
       insertedCount++;
+
+      // 2026-09-03 · 사용자 지시 · 신규 매입 · current_stock += qty 자동 반영
+      //   · 기존 UPDATE 케이스는 이미 원본 매입(OCR/엑셀) 시점에 재고 반영되었다고 가정
+      //   · 신규 INSERT · 수동 매입 검수 → 재고 반영 필수
+      if (qty > 0 && currentStock != null) {
+        const newStock = currentStock + qty;
+        const { error: stErr } = await supabase
+          .from("products")
+          .update({ current_stock: newStock })
+          .eq("product_code", productCode);
+        if (stErr) {
+          console.warn(`[arrival→current_stock] ${productCode} · +${qty} → ${newStock} · ${stErr.message}`);
+          failedItems.push({ product_code: productCode, error: `stock: ${stErr.message}`, step: "stock" });
+        }
+      }
     }
 
     // 2026-09-01 · 사용자 지시 · 진열위치 · products 테이블 반영 (매장구역 지정된 경우만)

@@ -657,6 +657,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     expiring: it.expiring,
                     // 2026-09-01 · #92 · 입고 구역
                     location: it.location ?? null,
+                    // 2026-09-03 · 사용자 지시 · 단가·유통기한 DB 저장 (매입 후 현재고 자동 반영)
+                    unit_price: it.unitPrice != null ? Number(it.unitPrice) : null,
+                    expiry_date: it.expiryDate ?? null,
                   })),
                 });
                 setSavedId(j?.id ?? null);

@@ -12,6 +12,11 @@ export const ArrivalItemSchema = z.object({
   // 2026-09-01 · fix · 프론트 · 매장구역 (item.location) 송신 · 서버 UPDATE products.location 사용
   //   · 이전 · Zod schema 누락 · 검증 우회 · 정합성 위험
   location: z.string().max(100).nullable().optional(),
+  // 2026-09-03 · 사용자 지시 · 단가·유통기한 · DB 저장 필수 · 매입 후 현재고 반영
+  //   · unit_price 미지정 · 서버에서 products.purchase_price fallback
+  //   · amount 자동 계산 = qty × unit_price
+  unit_price: z.number().nonnegative().nullable().optional(),
+  expiry_date: z.string().nullable().optional(),  // YYYY-MM-DD
 });
 export type ArrivalItemInput = z.infer<typeof ArrivalItemSchema>;
 
