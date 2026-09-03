@@ -42,12 +42,16 @@ async function sendPushToIds(ids: number[], push: PushOptions): Promise<{ sent: 
       console.warn("[sendPushToIds] subscription fetch failed:", error.message);
       return { sent: 0, skipped: ids.length };
     }
-    const payload = JSON.stringify({
+    // 2026-09-03 · 한글 깨짐 fix · payload · Buffer UTF-8 명시
+    //   · 이전 · JSON.stringify → string · web-push 는 자동 UTF-8 이지만 · 일부 환경(브라우저 sw) CP949 fallback 가능
+    //   · 이후 · Buffer.from(str, 'utf8') 명시 · 서버 push payload 100% UTF-8 보장
+    const payloadStr = JSON.stringify({
       title: push.title ?? "알림",
       body: push.body ?? "",
       url: push.url ?? "/",
       tag: push.tag ?? `notif-${Date.now()}`,
     });
+    const payload = Buffer.from(payloadStr, "utf8");
     let sent = 0;
     const expiredIds: number[] = [];
     for (const row of data ?? []) {
