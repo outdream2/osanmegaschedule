@@ -38,6 +38,8 @@ import { IconTile } from "../common/IconTile";
 import { AccentBar } from "../common/AccentBar";
 import { ArrivalRowCard } from "./ArrivalRowCard";
 import { useToast } from "../../hooks/useToast";
+// 2026-09-03 · #108 · 사용자 리포트 · 미분류 → 상품등록 페이지 이동 flow (ScanPage 와 동일 패턴)
+import { setScanPendingProductCode } from "../../hooks/useScanUnregisteredMode";
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · helpers 이관
 import {
   Toast,
@@ -459,16 +461,28 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 onSelect={(code, p) => handleScan(code, p)}
               />
 
-              {/* 미등록 상품 경고 */}
+              {/* 미등록 상품 경고 + 상품등록 이동 (#108 · 사용자 리포트) */}
               {notFoundCode && !lastScannedProduct && (
                 <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200/80" padding="sm" className="flex items-start gap-2.5">
                   <AlertCircle size={15} className="text-amber-500 shrink-0 mt-0.5" />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold text-amber-800 leading-none">미등록 상품 코드</p>
                     <p className="text-[17px] font-mono tabular-nums text-amber-700 break-all mt-1.5
                       bg-amber-100/60 px-2 py-1 rounded-md">
                       {notFoundCode}
                     </p>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const ok = await confirm({ message: `미등록 코드입니다.\n#${notFoundCode}\n\n상품등록 페이지로 이동할까요?` });
+                        if (!ok) return;
+                        setScanPendingProductCode(notFoundCode);
+                        onNavigate?.("display");
+                      }}
+                      className="mt-2 inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-[13px] font-bold shadow-sm transition cursor-pointer"
+                    >
+                      📝 상품등록 페이지로 이동
+                    </button>
                   </div>
                 </Card>
               )}

@@ -193,14 +193,19 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
       // 2026-09-03 · 사용자 지시 · 신규 매입 · current_stock += qty 자동 반영
       //   · 기존 UPDATE 케이스는 이미 원본 매입(OCR/엑셀) 시점에 재고 반영되었다고 가정
       //   · 신규 INSERT · 수동 매입 검수 → 재고 반영 필수
+      // 2026-09-03 · #107 · 사용자 리포트 · "매장-상품-상품정보 오른쪽정보에 매입시 등록한 정보가 안나와"
+      //   · products.purchase_price 도 · 최신 매입 unit_price 로 동기화 (상품정보 페이지 우측 매입가 반영)
+      //   · unit_price > 0 인 경우만 (fallback 0 은 건너뜀)
       if (qty > 0 && currentStock != null) {
         const newStock = currentStock + qty;
+        const prodUpdate: Record<string, any> = { current_stock: newStock };
+        if (unitPrice > 0) prodUpdate.purchase_price = unitPrice;
         const { error: stErr } = await supabase
           .from("products")
-          .update({ current_stock: newStock })
+          .update(prodUpdate)
           .eq("product_code", productCode);
         if (stErr) {
-          console.warn(`[arrival→current_stock] ${productCode} · +${qty} → ${newStock} · ${stErr.message}`);
+          console.warn(`[arrival→products] ${productCode} · stock=+${qty} price=${unitPrice} · ${stErr.message}`);
           failedItems.push({ product_code: productCode, error: `stock: ${stErr.message}`, step: "stock" });
         }
       }

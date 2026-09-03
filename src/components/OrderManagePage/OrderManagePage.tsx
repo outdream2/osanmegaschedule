@@ -291,20 +291,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // 거래명세서 · 탭 전환 시 로드
   useEffect(() => { if (topTab === "purchase" && purchaseSubTab === "receipt") loadReceipts(); }, [topTab, purchaseSubTab, loadReceipts]);
 
-  const markReceived = async (receipt: any, receivedQtyMap?: Record<string, number>) => {
-    const proceed = await confirm({
-      message: receivedQtyMap
-        ? `${receipt.supplier} · #${receipt.order_number} 입고 확정할까요?\n(부분입고: 수량 조정됨)`
-        : `${receipt.supplier} · #${receipt.order_number} 완전 입고 확정할까요?`,
-    });
-    if (!proceed) return;
-    try {
-      await api.post(`/api/goods-receipts/${receipt.id}/confirm`, { received_at: new Date().toISOString(), received_qty_map: receivedQtyMap ?? null });
-      showSuccess(`입고 확정 완료\n#${receipt.order_number}`);
-      loadReceipts();
-    } catch (err: any) {
-      showError(`입고 확정 실패\n${err instanceof ApiError ? err.message : (err?.message ?? String(err))}\n※ 서버 API 미구성일 수 있습니다.`);
-    }
+  const markReceived = async (_receipt: any, _receivedQtyMap?: Record<string, number>) => {
+    // 2026-09-03 · 사용자 원칙 · 미구현 기능 · "만들고 있음" 안내 (feedback_unfinished_feature_notice)
+    //   · 서버 · /api/goods-receipts/:id/confirm route 미구현 (goods_receipts 테이블 · 마이그레이션 필요)
+    //   · 이전 · confirm dialog → POST → 404 catch → "서버 API 미구성" toast (혼란)
+    //   · 이후 · 사전 · "개발 중" toast · 서버 호출 없음 · 명확
+    showError("🚧 입고 확정 · 개발 중 기능입니다\n(거래명세서 확정 · 부분입고 처리 · 후속 릴리즈 예정)");
   };
 
   const requestedCodes = new Set(orderReqs.map(r => r.product_code));
