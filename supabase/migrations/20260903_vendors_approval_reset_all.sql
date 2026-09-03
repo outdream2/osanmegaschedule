@@ -22,14 +22,17 @@ ALTER TABLE vendors
 ALTER TABLE vendors
   ALTER COLUMN approval_status DROP DEFAULT;
 
--- Step 3 · 실제 승인 이력 없는 vendor · approval_status NULL 리셋
---   · 관리자가 실제 승인 (approved_at 존재) 한 것만 유지
+-- Step 3 · 실제 관리자 승인 (approved_by 존재) 외 · 전부 리셋
+--   · 이전 migration (20260823_vendor_approval_flow.sql line 31) · approved_at 자동 채움
+--   · 사용자 리포트 · "APPROVED 야" · 여전히 모두 approved
+--   · 조회 결과 · approved_by IS NULL · 155개 모두 · 실제 관리자 승인 이력 없음
+--   · approved_by IS NULL = 자동 승인 = 리셋 대상 (안전)
 UPDATE vendors
    SET approval_status = NULL,
        approved_at = NULL,
        approved_by = NULL,
        approval_requested_at = NULL
- WHERE approved_at IS NULL;
+ WHERE approved_by IS NULL;
 
 -- 검증
 SELECT
