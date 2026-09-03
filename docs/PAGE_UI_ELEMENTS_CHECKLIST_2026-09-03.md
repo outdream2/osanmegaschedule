@@ -453,21 +453,551 @@
 
 ---
 
-# Part 3 · HR/직원 8 페이지 (조사 진행 중 · 완료 시 append)
+# Part 3 · 🟡 HR/직원 8 페이지
 
-_TBD_
+## 13. StaffManagePage (경영>직원관리)
 
-# Part 4 · Display 서브·기타 6 페이지 (조사 진행 중)
+### 헤더·필터
+- [ ] 🔍 검색 · 이름·직군·연락처 `StaffToolbar.tsx:55`
+- [ ] 📋 상태 필터 · 재직/퇴사예정/퇴사/전체 `StaffToolbar.tsx:68`
+- [ ] 📋 직군 필터 · 전체/부서별 `StaffToolbar.tsx:85`
+- [ ] 🔘 신규 등록 · 직원 추가 `StaffToolbar.tsx:128`
+- [ ] 🔘 새로고침 `StaffToolbar.tsx:120`
+- [ ] 🔘 스케쥴 · 스케줄 페이지 이동 `StaffToolbar.tsx:111`
 
-_TBD_
+### 상세 편집 (StaffDetailPanel)
+- [ ] 🔘 직원 선택 · 상세 표시
+- [ ] ✏️ 이름 편집 `StaffDetailPanel.tsx:172`
+- [ ] 📋 직군 선택 (position) `StaffDetailPanel.tsx:185`
+- [ ] 📋 직급 선택 (rank) `StaffDetailPanel.tsx:202`
+- [ ] 📋 계약유형 · 정규직/계약직/시간급 `StaffDetailPanel.tsx:229`
+- [ ] 📋 Overview 탭 · 근속/연차/평가 `StaffDetailPanel.tsx:298`
+- [ ] 📋 Personal 탭 · 생년월일/주소/성별
+- [ ] 📋 Job & Wage 탭 · 급여/근무조건
+- [ ] 📋 Documents 탭 · 이력서/통장사본/계약서
+- [ ] 📋 Time Off 탭 · 연차 이력
+- [ ] 🔘 편집 · 정보 수정 진입 `StaffDetailPanel.tsx:279`
+- [ ] 🔘 저장 · DB 저장 `StaffDetailPanel.tsx:269`
+- [ ] 🔘 취소 · 편집 취소 `StaffDetailPanel.tsx:263`
+- [ ] 🔘 삭제 · 직원 제거 `StaffDetailPanel.tsx:285`
 
-# Part 5 · 설정 6 페이지 (조사 진행 중)
+---
 
-_TBD_
+## 14. ContractWriterPage (경영>계약서 작성)
 
-# Part 6 · MyPage/Board/Pharmacist/Reservation/Lunch/Leave 6 페이지 (조사 진행 중)
+### 모드 선택
+- [ ] 🔘 여기서 작성 · 폼 모드 `ContractWriterPage.tsx:233`
+- [ ] 🔘 PDF 업로드 · 파일 모드 `ContractWriterPage.tsx:272`
 
-_TBD_
+### 좌측 폼
+- [ ] 🔍 근로자 검색 · 이름 자동완성 · EmployeeCard
+- [ ] ✏️ 성명 · 근로자 이름 `ContractLeftForm.tsx:117`
+- [ ] ✏️ 생년월일
+- [ ] ✏️ 주소 (Daum 모달)
+- [ ] 🔘 주소 검색 `ContractWriterPage.tsx:219`
+
+### 근무조건
+- [ ] ☑ 요일 · 월화수목금토일 체크박스
+- [ ] 📋 주중/주말 시간
+- [ ] 📋 직군 · 약사/약무사/점원
+- [ ] ✏️ 근무지역
+
+### 임금
+- [ ] ✏️ 기본급 · 월급
+- [ ] ✏️ 시급 override
+- [ ] ✏️ 부양가족 수
+- [ ] 📋 원천징수율 · 3/6/8%
+- [ ] ✏️ 자녀 수
+- [ ] ✏️ 추가공제
+
+### 우측 미리보기
+- [ ] 📋 서명 진행률 · 2/5 bar `ContractWriterPage.tsx:300`
+- [ ] 🔘 전체 서명 지우기 `ContractWriterPage.tsx:314`
+- [ ] 🔘 서명 spot 클릭 · ContractPreview
+- [ ] 🔘 계약완료 승인 · DB 저장 `ContractWriterPage.tsx:338`
+- [ ] 🔘 임시저장 · 로컬 `ContractWriterPage.tsx:354`
+- [ ] 🔘 PDF 다운 · 로컬 파일 `ContractWriterPage.tsx:369`
+- [ ] 🔘 연장 · 기존 계약 연장 `ContractWriterPage.tsx:414`
+- [ ] ✏️ 연장 개월 `ExtendContractModal.tsx:144`
+- [ ] 🔘 초기화 · 폼 리셋 `ContractWriterPage.tsx:429`
+
+---
+
+## 15. ResignationWriterPage (사직서 작성)
+
+### 좌측 폼 (직원 정보)
+- [ ] 🔍 근로자 검색 · 이름 `ResignationWriterPage.tsx:426`
+- [ ] ✏️ 성명 · 사번 · 부서 · 직급 · 생년월일 · 입사일 `ResignationWriterPage.tsx:428-525`
+
+### 사직 정보
+- [ ] ✏️ 마지막 근무일 (필수) `ResignationWriterPage.tsx:542`
+- [ ] ✏️ 제출일 `ResignationWriterPage.tsx:560`
+- [ ] ✏️ 수신 · 대표자명 `ResignationWriterPage.tsx:571`
+- [ ] 📋 퇴사 사유 · 4개 `ResignationWriterPage.tsx:584`
+- [ ] ✏️ 사유 상세 (자유) `ResignationWriterPage.tsx:610`
+- [ ] ✏️ 인수인계 `ResignationWriterPage.tsx:626`
+
+### 금품·회사
+- [ ] ✏️ 금품 지급기일 `ResignationWriterPage.tsx:640`
+- [ ] ✏️ 회사명 · 대표자명 `ResignationWriterPage.tsx:670-683`
+
+### 우측 미리보기·액션
+- [ ] 🔘 서명 spot · 3개 영역
+- [ ] 🔘 PDF 다운 · A4 1페이지 `ResignationWriterPage.tsx:740`
+- [ ] 🔘 사직서 제출 · DB + 관리자 알림 `ResignationWriterPage.tsx:698`
+- [ ] 🔘 초기화 · 폼 리셋 `ResignationWriterPage.tsx:376`
+
+---
+
+## 16. ResignationApprovalPage (사직서 승인)
+
+### 탭
+- [ ] 📋 승인 대기 · 대기중 수 `ResignationApprovalPage.tsx:210`
+- [ ] 📋 처리 완료 · 완료 수
+
+### 리스트
+- [ ] 🔘 직원명 · 상세 표시 `ResignationApprovalPage.tsx:276`
+- [ ] 🔘 상세 보기 토글 (접기/펼치기) `ResignationApprovalPage.tsx:308`
+- [ ] ⚙️ 상태 배지 · 대기/승인/반려
+
+### 상세 (접힘)
+- [ ] 💬 사유 상세 표시
+- [ ] 📝 인수인계 표시
+- [ ] ✍️ 서명 이미지 표시
+- [ ] ⛔ 반려 사유 표시
+
+### 액션 (대기만)
+- [ ] ✏️ 반려 사유 입력 `ResignationApprovalPage.tsx:363`
+- [ ] 🔘 승인 · 사직 승인 `ResignationApprovalPage.tsx:371`
+- [ ] 🔘 반려 · 사직 반려 `ResignationApprovalPage.tsx:379`
+- [ ] 🔘 취소 · 검토 취소 `ResignationApprovalPage.tsx:388`
+
+---
+
+## 17. ApprovalRequestPage (승인요청 3탭)
+
+- [ ] 📋 연차승인 탭 `ApprovalRequestPage.tsx:45`
+- [ ] 📋 점심불참 탭
+- [ ] 📋 사직서 작성 탭 `ApprovalRequestPage.tsx:152`
+- [ ] ⚙️ 퇴사 게이트 · 상태 확인 `ApprovalRequestPage.tsx:192`
+
+## 18. ApprovalCenterPage (승인대기 2탭)
+
+- [ ] 📋 연차승인 탭 (대기 수) `ApprovalCenterPage.tsx:70`
+- [ ] 📋 사직서승인 탭
+- [ ] 🔘 장시간 터치 · 관리자 재정렬 `ApprovalCenterPage.tsx:75`
+
+---
+
+## 19. HrFormsPage (각종양식)
+
+### 헤더
+- [ ] 🔘 새로고침 · 목록 재로드 `HrFormsPage.tsx:238`
+- [ ] 🔘 양식 업로드 폼 표시 `HrFormsPage.tsx:254`
+
+### 업로드 폼
+- [ ] ✏️ 양식명 `HrFormsPage.tsx:284`
+- [ ] 📋 카테고리 · 계약/사직/서약 `HrFormsPage.tsx:299`
+- [ ] 📤 드래그 업로드 · 파일 선택 `HrFormsPage.tsx:323`
+- [ ] ⚙️ 진행률 bar
+- [ ] 🔘 업로드 · 전송 `HrFormsPage.tsx:374`
+
+### 필터·리스트
+- [ ] 📋 카테고리 칩 필터 `HrFormsPage.tsx:400`
+- [ ] 🔍 검색 · 양식명/파일명 `HrFormsPage.tsx:425`
+- [ ] 📋 정렬 · 양식명/분류/파일명/크기/업로더/업로드일 `HrFormsPage.tsx:459-560`
+- [ ] 🔘 다운로드 `HrFormsPage.tsx:643`
+- [ ] 🔘 삭제 `HrFormsPage.tsx:653`
+
+---
+
+## 20. DocumentWriterPage (서류작성 3탭)
+
+- [ ] 📋 근로계약서 작성 탭 `DocumentWriterPage.tsx:36`
+- [ ] 📋 사직서 작성 탭
+- [ ] 📋 설정 탭 · 기본값 관리
+- [ ] 🔘 관리자 재정렬 · long-press `DocumentWriterPage.tsx:69`
+
+---
+
+# Part 4 · 🟢 Display 서브 · 기타 6 페이지
+
+## 21. DisplayPage (매장>매장진열 · 서브탭 6)
+
+### 매장구역도 탭
+- [ ] 🔍 검색 · 상품·담당자·구역명 `DisplayPage.tsx:196`
+- [ ] 🔘 자동배정 · 물류직원 임의배치 `DisplayPage.tsx:255`
+- [ ] 🔘 배치확정 · DB 저장 + 알림 `DisplayPage.tsx:300`
+- [ ] 🔘 배치취소 · 임의 미리보기 취소 `DisplayPage.tsx:336`
+- [ ] 🔘 매주적용 · 요일 적용 `DisplayPage.tsx:230`
+- [ ] ⚙️ 담당자 드래그 · 구역에 드롭 `DisplayPage.tsx:404`
+- [ ] 📋 구역 팝오버 · 담당자 선택/미배정/요일
+- [ ] 🔘 구역카드 상세 · 담당자·상품·상태·카테고리 편집
+- [ ] ⚙️ 매장/창고 탭 전환 `DisplayPage.tsx:656`
+
+### 창고1·창고2 탭
+- [ ] 📍 창고 구역도 · storage.webp
+- [ ] 🔘 구역클릭 · 창고별 현황
+
+### 실재고테이블 탭
+- [ ] 🔍 검색 · 상품명·공급사·코드·위치 `RealStockTablePage.tsx:519`
+- [ ] 📋 판매중 필터 3-state `RealStockTablePage.tsx:528`
+- [ ] ☑ 구역별 그룹 · location 기준 `RealStockTablePage.tsx:529`
+- [ ] 🔘 모두 접기/펼치기 `RealStockTablePage.tsx:535`
+- [ ] 🔘 새로고침 `RealStockTablePage.tsx:554`
+- [ ] ✏️ 수량 편집 · 창고1/2·매장1/2/3 인라인 (Enter 저장) `RealStockTablePage.tsx:267`
+- [ ] 🔘 상품상세 모달 · 위치별 재고·차이 `RealStockTablePage.tsx:257`
+- [ ] 🔘 정렬 헤더 · 컬럼 클릭 `RealStockTablePage.tsx:336`
+
+### 배치구역불일치 탭
+- [ ] 🔍 검색 · 상품/코드/전산구역/실제구역 `ZoneMismatchTab.tsx:329`
+- [ ] 📋 판매중 필터
+- [ ] ☑ 체크박스 · 행/그룹/전체
+- [ ] ⚙️ 그룹 접기/펼치기 · real_zone 기준
+- [ ] ✏️ 상품명·전산구역·실제구역 인라인 편집
+- [ ] 🔘 조정완료 · 실제→전산 정렬 `ZoneMismatchTab.tsx:149`
+- [ ] 🔘 선택삭제 · 일괄 `ZoneMismatchTab.tsx:131`
+- [ ] 🔘 새로고침
+
+### 구역미지정 탭
+- [ ] 📊 미지정 상품 리스트 · UnassignedProductsTab
+
+### 매장구역도 편집 탭
+- [ ] ✏️ 구역번호·라벨·카테고리 편집 · KV
+- [ ] 🔘 구역 추가/삭제 (관리자)
+- [ ] ⚙️ 구역 드래그 정렬
+
+---
+
+## 22-23. MismatchPage · RealStockTablePage
+(위 DisplayPage 서브탭과 동일 · 별도 진입점)
+
+---
+
+## 24. StockArrivalPage (입고알림)
+
+- [ ] ✏️ 제목 입력 · 알림 제목 `StockArrivalPage.tsx:307`
+- [ ] ✏️ 내용 입력 (선택) `StockArrivalPage.tsx:315`
+- [ ] 🔘 저장 · DB 저장 (알림 미발송) `StockArrivalPage.tsx:343`
+- [ ] 🔘 발송 · 즉시 전 직원 push `StockArrivalPage.tsx:350`
+- [ ] 🔘 예약발송 · datetime-local `StockArrivalPage.tsx:325`
+- [ ] 📋 정렬 · 등록일/예약일/제목/발송여부 `StockArrivalPage.tsx:379`
+- [ ] 🔘 수정 · 인라인 편집 `StockArrivalPage.tsx:414`
+- [ ] 🔘 즉시 발송 · 재발송 `StockArrivalPage.tsx:479`
+- [ ] 🔘 예약 설정 · datetime `StockArrivalPage.tsx:484`
+- [ ] 🔘 삭제 · 알림 제거 `StockArrivalPage.tsx:496`
+- [ ] 🔔 알림받기 · Push 구독 토글 `StockArrivalPage.tsx:268`
+
+---
+
+## 25. OcrPage (OCR 도구)
+
+### OCR 추출 탭
+- [ ] 🔘 PDF 업로드 · 드래그·클릭 `OcrPage.tsx:510`
+- [ ] 🔘 이미지 업로드 · 다중 `OcrPage.tsx:524`
+- [ ] 📊 파일 진행률 표시 `OcrPage.tsx:543`
+- [ ] 🔘 페이지 회전 · 자동/수동 `OcrPage.tsx:577`
+- [ ] 📋 엔진 선택 · ONNX/Gemini `OcrPage.tsx:614`
+- [ ] 🔘 OCR 추출 · 문서 처리 `OcrPage.tsx:657`
+- [ ] 🔘 셀 재추출 · 재파싱 · 방식 순환 `OcrPage.tsx:400`
+- [ ] 🔘 매입 임포트 · OCR 결과 → 매장 저장 · RawOcrTable
+- [ ] ⚙️ 검증 오류 하이라이트 · 재추출 유도
+
+### 동의어 관리 탭
+- [ ] ✏️ 동의어 추가 · 대체 매핑
+- [ ] 🔘 동의어 삭제
+- [ ] 🔍 동의어 검색
+
+### 잔고항목 지정 탭
+- [ ] 📋 공급사별 잔고 필드 · 차입/외상/선급금
+- [ ] 🔘 설정 저장 · 공급사별 KV
+
+### 거래명세서 조회 탭
+- [ ] 📊 확정 내역 테이블
+- [ ] 🔍 거래명세 검색 · 공급사·날짜
+
+---
+
+## 26. CardHistoryPage
+(Part 1 · #7 에 이미 포함)
+
+## 27. CardRegisterPage
+(Part 1 · #7 에 이미 포함)
+
+---
+
+# Part 5 · 🟢 설정 7 페이지
+
+## 28. SystemSettingsPage (시스템 설정)
+
+### 카테고리 탭 (8개)
+- [ ] 📋 DB·인증 / AI·OCR / 알림톡·SMS / 이미지 CDN / Web Push / 데이터 업로드 / 자동 임포트 / 세션 설정 `SystemSettingsPage.tsx:173`
+- [ ] ✏️ 텍스트 입력 · 각 env key (SUPABASE_URL·JWT_SECRET·GEMINI_API_KEY 등) `SystemSettingsPage.tsx:203`
+- [ ] ✏️ 멀티라인 · Gemini Keys · OCR 제외 목록 `SystemSettingsPage.tsx:194`
+- [ ] 🔘 저장 · 서버 저장 · 재시작 안내 `SystemSettingsPage.tsx:254`
+- [ ] 🔘 다시 불러오기 · 최신값 새로고침 `SystemSettingsPage.tsx:251`
+- [ ] 📤 데이터 업로드 · 모달 `SystemSettingsPage.tsx:231`
+
+### 세션 설정
+- [ ] ✏️ 세션 만료 · 5~480분 · 기본 30 `SessionTimeoutSection.tsx:112`
+- [ ] 📋 프리셋 · 5·15·30·1h·2h·4h·8h `SessionTimeoutSection.tsx:85`
+
+### AutoImportSection (자동 임포트)
+- [ ] ☑ 자동 임포트 활성 토글 `AutoImportSection.tsx:220`
+- [ ] 🔘 설치 파일 다운로드 · .bat `AutoImportSection.tsx:183`
+- [ ] ✏️ 상품/재고/매입 폴더 경로 · 3 카테고리 `AutoImportSection.tsx:251`
+- [ ] 🔘 폴더 찾기 (Chrome/Edge) `AutoImportSection.tsx:260`
+- [ ] 📋 실행 간격 프리셋 · 10분~매일 `AutoImportSection.tsx:273`
+- [ ] ✏️ 실행 간격 직접 입력 · 5~1440분 `AutoImportSection.tsx:284`
+- [ ] ✏️ 매일 실행 시각 · HH:MM `AutoImportSection.tsx:301`
+- [ ] ☑ 폴더 자동 생성 토글 `AutoImportSection.tsx:314`
+- [ ] 📋 임포트 후 처리 · 유지/이동/_processed/삭제 `AutoImportSection.tsx:332`
+- [ ] ☑ 파일명 자동 정리 토글 `AutoImportSection.tsx:351`
+- [ ] 🔘 저장 · KV 저장 `AutoImportSection.tsx:370`
+- [ ] 🔘 기본값 복원 `AutoImportSection.tsx:237`
+- [ ] 🔘 새로고침 · 상태 로드 `AutoImportSection.tsx:155`
+
+---
+
+## 29. CompanyInfoSettingsPage (회사·브랜드)
+
+### 사업장 정보
+- [ ] ✏️ 약국명 · 사업장 이름 `CompanyInfoSettingsPage.tsx:134`
+- [ ] ✏️ 대표자 이름 `CompanyInfoSettingsPage.tsx:139`
+- [ ] ✏️ 사업자등록번호 `CompanyInfoSettingsPage.tsx:145`
+- [ ] ✏️ 사업장 전화 `CompanyInfoSettingsPage.tsx:150`
+- [ ] ✏️ 사업장 주소 `CompanyInfoSettingsPage.tsx:155`
+
+### 브랜드
+- [ ] ✏️ 앱 이름 (사이드바) `CompanyInfoSettingsPage.tsx:176`
+- [ ] ✏️ 앱 타이틀 (브라우저 탭) `CompanyInfoSettingsPage.tsx:181`
+- [ ] ✏️ 영문 브랜드명 (랜딩) `CompanyInfoSettingsPage.tsx:186`
+- [ ] ✏️ 영문 강조 단어 (컬러) `CompanyInfoSettingsPage.tsx:191`
+- [ ] 📤 로고 이미지 업로드 `CompanyInfoSettingsPage.tsx:195`
+- [ ] 📤 파비콘 업로드 `CompanyInfoSettingsPage.tsx:204`
+
+### 연락처·카카오
+- [ ] ✏️ 대표 전화 · 이메일 · 홈페이지 · 영업시간 `BrandingSettingsPage.tsx:212-237`
+- [ ] ✏️ 카카오톡 채널 URL `BrandingSettingsPage.tsx:240`
+- [ ] 📤 카카오톡 QR 이미지 업로드 `BrandingSettingsPage.tsx:248`
+
+### 도장 매핑
+- [ ] 📋 도장 목록 테이블 · 이름/URL/Fallback/미리보기 `BrandingSettingsPage.tsx:330`
+- [ ] ✏️ 도장 이름 · URL · Fallback 인라인 편집
+- [ ] 🔘 도장 삭제 `BrandingSettingsPage.tsx:405`
+- [ ] ✏️ 새 도장 이름 · 이미지 업로드 · 추가 `BrandingSettingsPage.tsx:428`
+
+---
+
+## 30. BrandingSettingsPage (앱 브랜딩)
+
+- [ ] ✏️ 지역 · 예: 오산 `BrandingSettingsPage.tsx:140`
+- [ ] ✏️ 브랜드 이름 · 예: 메가타운 약국 `BrandingSettingsPage.tsx:148`
+- [ ] ✏️ 영문 브랜드명·강조 단어 · 앱 타이틀 (`BrandingSettingsPage.tsx:154-166`)
+- [ ] ✏️ 로고·파비콘 URL `BrandingSettingsPage.tsx:171-179`
+
+### 메뉴 표시 (PC/모바일)
+- [ ] ☑ 페이지별 PC 노출 체크박스 `BrandingSettingsPage.tsx:546`
+- [ ] ☑ 페이지별 모바일 노출 체크박스 `BrandingSettingsPage.tsx:556`
+
+---
+
+## 31. PermissionsPage (메뉴 설정 · 권한)
+
+### 권한 조정
+- [ ] ☑ 사이드바 활성 토글 `PermissionsPage.tsx:592`
+
+### 페이지별 (서브탭)
+- [ ] ☑ 페이지별 노출 토글 `PermissionsPage.panels.tsx:284`
+- [ ] 📋 읽기 최소 권한 · 1-9 `PermissionsPage.panels.tsx:303`
+- [ ] 📋 쓰기 최소 권한 · 1-9 `PermissionsPage.panels.tsx:311`
+- [ ] 📋 읽기 권한 직군 필터 · 팝오버
+- [ ] 📋 쓰기 권한 직군 필터 · 팝오버
+- [ ] 🔘 그룹 접기/펼치기 · 트리
+- [ ] 🔘 전체 저장 `PermissionsPage.panels.tsx:251`
+
+### 직원별 레벨 (서브탭)
+- [ ] 🔍 직원 검색 · 이름·직군 `PermissionsPage.panels.tsx:426`
+- [ ] 📋 직원별 레벨 · 1-9 (약사 우선) `PermissionsPage.panels.tsx:461`
+
+### 스케쥴 설정 (탭)
+- [ ] 📋 직군 드롭다운 (settings.positions) `PermissionsPage.tsx:697`
+- [ ] ✏️ 직군 이름 인라인 편집 `PermissionsPage.panels.tsx:78`
+- [ ] 🔘 직군 추가 · 삭제 · 위아래 이동 `PermissionsPage.panels.tsx:110-138`
+- [ ] 🔘 저장 · 전체 일괄 `PermissionsPage.tsx:573`
+
+### 직군 설정 (탭)
+- [ ] 📋 직군 카드 · 3컬럼 `PermissionsPage.panels.tsx:57`
+- [ ] ✏️ 직군 인라인 편집 · 아이콘·삭제·드래그
+- [ ] ✏️ 새 직군 입력 + Enter `PermissionsPage.panels.tsx:122`
+
+### 공사중 (탭)
+- [ ] ☑ 공사중 모드 토글 `PermissionsPage.panels.tsx:169`
+
+---
+
+## 32. SeasonSettingsPage (통계 설정)
+
+- [ ] 📅 계절 범위 편집 · SeasonRangesEditor `SeasonSettingsPage.tsx:70`
+
+### 적정재고 설정
+- [ ] 📋 계산 방식 · 최근 N일 / 특정 기간 `OptimalStockPeriodSection.tsx:131`
+- [ ] ✏️ 기준 일수 · 1-365 (기본 15) `OptimalStockPeriodSection.tsx:163`
+- [ ] 📅 시작·끝 날짜 (기간 모드)
+- [ ] 🔘 재계산 실행 · products.optimal_stock 일괄 `OptimalStockPeriodSection.tsx:234`
+
+### 판매중 필터
+- [ ] ☑ 판매중 상품만 표시 토글 · 즉시 적용 `SaleActiveOnlySection.tsx:49`
+
+---
+
+## 33. ContractSettingsPage (근로계약서 설정)
+
+### 배너·전역
+- [ ] 🔘 모두 저장 · 회사·시급·각 호 일괄 `ContractSettingsPage.tsx:464`
+- [ ] 🔘 기본값 초기화 · 전체 복원 `ContractSettingsPage.tsx:488`
+- [ ] 🔘 취소 · 마지막 저장으로 `ContractSettingsPage.tsx:497`
+
+### 회사정보 (좌측)
+- [ ] 🔘 접기/펼치기 (기본 접힘) `ContractSettingsPage.tsx:536`
+- [ ] ✏️ 약국명·대표자·사업자번호·임금지급일
+
+### 직군별 시급 (우측)
+- [ ] 📋 직군 카드 · 약사·매장·창고·기타 (2x2) `ContractSettingsPage.tsx:564`
+- [ ] ✏️ 주중·주말 시급 `ContractSettingsPage.tsx:600-620`
+- [ ] 🔘 시급 기본값 리셋 (직군별)
+- [ ] 🔘 시급 저장 (별도)
+
+### 각 호 편집
+- [ ] 🔘 전체 펼치기/접기 `ContractSettingsPage.tsx:649`
+- [ ] 🔘 그룹 접기/펼치기 · 6개 (임금·근로시간·휴일·징계·기타·개인정보)
+- [ ] ✏️ 조항 텍스트 편집 · textarea `ContractSettingsPage.tsx:708`
+- [ ] 🔘 조항 위/아래 이동 · 삭제 · 추가 `ContractSettingsPage.tsx:716-753`
+- [ ] 🔘 그룹 기본값 복원 `ContractSettingsPage.tsx:755`
+
+---
+
+## 34. PharmacistMenuSettingsPage (약사 메뉴 설정)
+
+### 신규 등록 (관리자 lv8+)
+- [ ] ✏️ 항목 이름 · 최대 120자 `PharmacistMenuSettingsPage.tsx:288`
+- [ ] 🔘 파일 선택 · PDF·이미지·Office · 최대 20MB `PharmacistMenuSettingsPage.tsx:305`
+- [ ] 🔘 등록 · 새 항목 `PharmacistMenuSettingsPage.tsx:315`
+- [ ] 📤 파일 표시 + 제거 `PharmacistMenuSettingsPage.tsx:326`
+
+### 등록된 목록
+- [ ] 🔘 위 (↑) 아래 (↓) 이동 `PharmacistMenuSettingsPage.tsx:401-418`
+- [ ] ✏️ 항목 이름 인라인 편집 `PharmacistMenuSettingsPage.tsx:424`
+- [ ] 🔘 편집 · 저장 · 취소 · 삭제 `PharmacistMenuSettingsPage.tsx:454-490`
+
+---
+
+# Part 6 · 🟢 MyPage/Board/Pharmacist/Reservation/Lunch/Leave (6)
+
+## 35. MyPage
+
+- [ ] 🔍 주소 검색 · Daum 우편번호 `MyPage.tsx:179`
+- [ ] 🔘 주소 저장 `MyPage.tsx:187`
+- [ ] ✏️ 주소 입력 필드 `MyPage.tsx:169`
+- [ ] ✏️ 현재 · 새 · 새 확인 비밀번호 `MyPage.tsx:209-241`
+- [ ] 🔘 비밀번호 변경 `MyPage.tsx:245`
+- [ ] 🔘 표시/숨김 토글 `MyPage.tsx:219`
+- [ ] ☑ 스캔 미분류 처리 방식 · 모달/페이지 `MyPage.tsx:268`
+- [ ] 📋 내 정보 (읽기) · 11 항목 `MyPage.tsx:145`
+- [ ] 📋 계절 정의 편집 (관리자) `SeasonRangesEditor.tsx:130`
+
+---
+
+## 36. BoardPage
+
+- [ ] 🔍 제목·본문 검색 `BoardPage.tsx:100`
+- [ ] 🔘 새 글 · ComposerModal `BoardPage.tsx:109`
+- [ ] 🔘 상태 필터 · 미해결/진행중/해결 `BoardPage.tsx:119`
+- [ ] 🔘 카테고리 필터 · 전체/결제/상품/주문/손님/미분류 `BoardPage.tsx:135`
+
+### 글 액션
+- [ ] 🔘 수정 · 편집 모드 `PostCard.tsx:91`
+- [ ] 🔘 Pin · 고정 · Pencil · Trash `DetailModal.tsx:192-202`
+- [ ] 🔘 저장 · 취소 (편집) `DetailModal.tsx:360-365`
+
+### 댓글
+- [ ] 🔘 댓글 저장 · 취소 `DetailModal.tsx:432-439`
+- [ ] ✏️ 댓글 작성 `DetailModal.tsx:230`
+
+### 입력·편집
+- [ ] ✏️ 제목·본문 (신규) `ComposerModal.tsx:111-138`
+- [ ] ✏️ 제목·본문 편집 `DetailModal.tsx:293-318`
+- [ ] ✏️ 댓글 편집 `DetailModal.tsx:425`
+- [ ] 📷 사진 첨부 · 신규 8장 · 댓글 4장 · 편집 시 `ComposerModal.tsx:143` `DetailModal.tsx:224,331`
+- [ ] ⚙️ 타입 · 질문/이슈/메모 `ComposerModal.tsx:95`
+- [ ] ⚙️ 카테고리 · 없음·결제·상품·주문·손님 `ComposerModal.tsx:121`
+- [ ] ⚙️ 상태 변경 · 미해결/진행중/해결 `DetailModal.tsx:386`
+
+---
+
+## 37. PharmacistPage (약사 전용 4탭)
+
+- [ ] 🔍 카테고리 트리 펼침/접힘 `PharmacistPage.tsx:464`
+- [ ] 🔘 하위메뉴 설정 (관리자) `PharmacistPage.tsx:317`
+- [ ] 🔘 카테고리 추가 (교육탭) `PharmacistPage.tsx:369`
+- [ ] 🔘 기본값 · 계절 정의 초기화 `PharmacistPage.tsx:88`
+- [ ] 🔘 저장 `PharmacistPage.tsx:97`
+- [ ] 🔘 커스텀 카테고리 삭제 `PharmacistPage.tsx:495`
+- [ ] 🔘 풀스크린 · PDF `PharmacistPage.tsx:701`
+- [ ] ✏️ 카테고리 제목 입력 `PharmacistPage.tsx:382`
+- [ ] 📷 자료 파일 · PDF·이미지·문서 (최대 20MB) `PharmacistPage.tsx:392`
+- [ ] 📋 카테고리 트리 or 리스트 선택
+- [ ] 📋 하위메뉴 선택 `PharmacistPage.tsx:525`
+- [ ] ⚙️ 탭 · 교육/강의/서적/전자자료 `PharmacistPage.tsx:330`
+- [ ] ⚙️ 관리자 드래그 재정렬
+
+---
+
+## 38. ReservationPage (방문예약)
+
+- [ ] 🔍 캘린더 월 선택 `ReservationPage.tsx:336`
+- [ ] 🔘 이전/다음 월 `ReservationPage.tsx:338`
+- [ ] 🔘 예약 슬롯 클릭 (외부) `ReservationPage.tsx:585`
+- [ ] 🔘 예약불가 지정/해제 (관리자) `ReservationPage.tsx:558`
+- [ ] 🔘 예약 신청 · 제출 `ReservationPage.tsx:736`
+- [ ] ✏️ 거래처명 (필수) `ReservationPage.tsx:661`
+- [ ] ✏️ 담당자 (필수) `ReservationPage.tsx:677`
+- [ ] ✏️ 연락처 (필수) `ReservationPage.tsx:689`
+- [ ] ✏️ 추가 요청 (선택) `ReservationPage.tsx:727`
+- [ ] 📋 방문 목적 (필수 · 6개) `ReservationPage.tsx:704`
+- [ ] ⚙️ 휴무·피크시간 시각화
+
+---
+
+## 39. LunchPage (점심 관리)
+
+- [ ] 🔍 날짜 선택 · 이전/다음/오늘 `LunchPage.tsx:282-303`
+- [ ] 🔘 새로고침 `LunchPage.tsx:305`
+- [ ] 🔘 점심 불참 신청 `LunchPage.tsx:527`
+- [ ] 🔘 신청 취소 `LunchPage.tsx:508`
+- [ ] ✏️ 메모 · 불참 사유 `LunchPage.tsx:524`
+- [ ] ⚙️ 휴게시간 타임라인 · 드래그 배정
+- [ ] ⚙️ 탭 · 약사/사원/기타 `LunchPage.tsx:351`
+- [ ] ⚙️ 시간 · 30분/1시간 `LunchPage.tsx:360`
+
+---
+
+## 40. LeavePage (연차 신청·승인)
+
+- [ ] 🔍 신청 목록 필터 `LeavePage.tsx:332`
+- [ ] 🔘 연차 신청 · 폼 오픈 `LeavePage.tsx:240`
+- [ ] 🔘 신청 제출 `LeavePage.tsx:320`
+- [ ] 🔘 신청 취소 · 대기 `LeavePage.tsx:390`
+- [ ] 🔘 검토하기 · 승인/반려 UI `LeavePage.tsx:519`
+- [ ] 🔘 승인 · 반려 `LeavePage.tsx:494-509`
+- [ ] 🔘 새로고침 `LeavePage.tsx:339`
+- [ ] 🔘 탭 · 승인 대기/전체 `LeavePage.tsx:411`
+- [ ] ✏️ 휴가 종류 (필수) · 연차/반차/월차/병가 `LeavePage.tsx:263`
+- [ ] ✏️ 시작·종료일 (필수) `LeavePage.tsx:278-299`
+- [ ] ✏️ 사유 (선택) `LeavePage.tsx:309`
+- [ ] ✏️ 관리자 메모 · 승인/반려 시 `LeavePage.tsx:486`
+- [ ] 📋 남은 연차 배너 · 신청 뷰 상단 `LeavePage.tsx:227`
+- [ ] ⚙️ 상태 배지 · 대기/승인/반려
 
 ---
 
@@ -486,5 +1016,12 @@ _TBD_
 ---
 
 **작성일** · 2026-09-03
-**커버 페이지 · Part 1-2 완료 · Part 3-6 조사 진행 중**
-**Part 1-2 총 항목 · 200+ 체크박스**
+**커버 페이지** · 40 페이지 (메인 + 서브)
+**총 항목** · 500+ 체크박스 (조회·수정·편집·검색·버튼 전수)
+**Part 분포**
+- Part 1 · 🔴 크리티컬 7 페이지 · 200+ 항목
+- Part 2 · 🟡 매장 매입/판매 5 페이지 · 80 항목
+- Part 3 · 🟡 HR/직원 8 페이지 · 100+ 항목
+- Part 4 · 🟢 Display 서브·기타 6 페이지 · 60 항목
+- Part 5 · 🟢 설정 7 페이지 · 100+ 항목
+- Part 6 · 🟢 MyPage/Board/Pharmacist/Reservation/Lunch/Leave 6 페이지 · 80+ 항목
