@@ -48,7 +48,8 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
     supabase.from("inventory_checks").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("return_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("resignation_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("vendors").select("id", { count: "exact", head: true }).eq("approval_status", "pending"),
+    // 2026-09-03 · 4-state · requested (승인 요청) · 하위호환 pending 도 포함
+    supabase.from("vendors").select("id", { count: "exact", head: true }).in("approval_status", ["requested", "pending"]),
   ]);
   // 2026-09-01 · fix · allSettled 결과 · rejected → 기본값 · fulfilled → 원본
   const unwrap = <T,>(r: PromiseSettledResult<T>): T | { count: number; data: unknown; error: unknown } => {

@@ -56,8 +56,9 @@ export const VendorApprovalPanel: React.FC = () => {
       // pending vendor 조회 · /api/vendors?withBalances=0 · 클라이언트에서 filter (신규 서버 endpoint 없음)
       const { data } = await api.get<any[]>("/api/vendors");
       const arr = Array.isArray(data) ? data : [];
+      // 2026-09-03 · 4-state · requested (신규 · vendor 승인 요청) + pending (하위호환)
       const pending = arr
-        .filter((v: any) => v?.approval_status === "pending")
+        .filter((v: any) => v?.approval_status === "requested" || v?.approval_status === "pending")
         .sort((a: any, b: any) => String(b?.approval_requested_at ?? "").localeCompare(String(a?.approval_requested_at ?? "")));
       setRows(pending as PendingVendor[]);
     } catch (e: any) {

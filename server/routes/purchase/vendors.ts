@@ -12,6 +12,8 @@ import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler"
 import type { VendorsListResponse } from "../../../src/shared/dtos/vendors";
 import { CreateVendorSchema, UpdateVendorSchema } from "../../../src/shared/schemas/vendors";
 import { z } from "zod";
+// 2026-09-03 · 사용자 지시 · 거래처 승인 요청 시 · 관리자 알림 발송
+import { notificationsService } from "../../services/notificationsService";
 
 const router = Router();
 
@@ -568,18 +570,30 @@ router.post("/api/vendors/:id/approval-request", authorize(0), validateBody(z.ob
   if (missing.length > 0) {
     throw badRequest(`필수 항목 미입력: ${missing.join(" · ")}`);
   }
-  // pending 으로 전환 + timestamp
+  // 2026-09-03 · 사용자 결정 · 4-state · requested (승인 요청됨)
   const { error: updErr } = await supabase
     .from("vendors")
     .update({
-      approval_status: "pending",
+      approval_status: "requested",
       approval_requested_at: new Date().toISOString(),
       approved_at: null,
       approved_by: null,
     })
     .eq("id", id);
   if (updErr) throw new HttpError(500, `승인요청 저장 실패: ${updErr.message}`);
-  res.json({ ok: true, status: "pending", requested_at: new Date().toISOString() });
+
+  // 2026-09-03 · 사용자 지시 · 관리자에게 승인 요청 알림 (인앱 + 웹푸시)
+  //   · notificationsService.notifyAllAdmins · level >= 9 관리자 · 인앱 + optional web push
+  notificationsService.notifyAllAdmins({
+    title: "🏢 거래처 승인 요청",
+    body: `${vendor.company_name ?? "(공급사)"} · 정보 등록 완료 · 승인 검토 필요`,
+    type: "warning",
+    push: { url: "/", tag: `vendor-approval-${id}` },
+  }).catch((e: any) => {
+    console.warn("[approval-request] 관리자 알림 발송 실패:", e?.message);
+  });
+
+  res.json({ ok: true, status: "requested", requested_at: new Date().toISOString() });
 }));
 
 /** 관리자 승인 · authorize(9) */

@@ -431,14 +431,19 @@ export const VendorDetailModal: React.FC<{
             <div className="space-y-3">
               <SectionTitle icon={<Building2 size={13} />} title="기본 정보" color="sky" />
 
-              {/* 2026-09-02 · 사용자 지시 · 승인 필수 5필드 안내 (거래처 로그인 · 미승인 시만) · 색깔 통일 (emerald) */}
+              {/* 2026-09-02 · 사용자 지시 · 승인 flow 안내 (거래처 로그인 · 미승인 시만) */}
+              {/* 2026-09-03 · 사용자 지시 · 저장→승인요청 순서 명시 + 관리자 알림 자동 발송 안내 */}
               {isVendorLogin && approvalStatus !== "approved" && (
                 <div className="rounded-xl border border-blue-200 bg-blue-50/60 px-4 py-3 text-[17px] leading-relaxed">
-                  <div className="text-zinc-700">
-                    <span className="inline-flex items-center gap-1 font-bold text-blue-700"><span className="w-2 h-2 rounded-full bg-blue-600" />파란색</span> 표시된 <span className="font-bold text-zinc-900">5개 항목</span>을 모두 입력하신 후 <span className="font-bold text-blue-700">[승인 요청]</span> 버튼을 누르시면 · 관리자 승인 완료 후 <span className="font-bold text-blue-700">당사 재고 현황</span>을 조회하실 수 있습니다.
-                  </div>
-                  <div className="mt-2 text-[16px] font-semibold text-blue-700">
-                    사업자번호 · 이메일(발주용) · 팀장 이름 · 팀장 연락처 · 긴급 연락처
+                  <div className="font-bold text-blue-800 mb-2">📋 거래처 승인 요청 진행 방법</div>
+                  <ol className="list-decimal list-inside space-y-1 text-zinc-700 mb-3">
+                    <li><span className="inline-flex items-center gap-1 font-bold text-blue-700"><span className="w-2 h-2 rounded-full bg-blue-600" />파란색</span> 표시된 <span className="font-bold text-zinc-900">5개 항목</span> 모두 입력</li>
+                    <li><span className="font-bold text-brand-deep">[저장]</span> 버튼 클릭 · 정보 DB 저장</li>
+                    <li><span className="font-bold text-blue-700">[승인 요청]</span> 버튼 클릭 · <span className="text-blue-800">관리자에게 자동 알림 발송</span></li>
+                    <li>관리자 승인 완료 후 · <span className="font-bold text-blue-700">당사 재고 현황</span> 등 활성</li>
+                  </ol>
+                  <div className="text-[16px] font-semibold text-blue-700 border-t border-blue-200 pt-2">
+                    필수 5필드 · 사업자번호 · 이메일(발주용) · 팀장 이름 · 팀장 연락처 · 긴급 연락처
                   </div>
                 </div>
               )}
