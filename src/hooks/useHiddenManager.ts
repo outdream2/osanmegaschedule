@@ -17,7 +17,7 @@ export interface HiddenProduct {
   product_name: string;
   spec?: string | null;
   supplier?: string | null;
-  real_map?: string | null;
+  location?: string | null;
   current_stock?: number | null;
   sale_price?: number | null;
 }

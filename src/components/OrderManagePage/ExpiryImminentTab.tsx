@@ -21,7 +21,6 @@ import { SearchBar } from "../common/SearchBar";
 import { matchesProductQuery } from "../../lib/productMatch";
 // 2026-08-31 · #11 · 공급사명 검색 통합
 import { matchesSupplierQuery } from "../../lib/supplierMatch";
-// 2026-08-31 · #13 · location 우선 · real_map fallback
 import { resolveProductLocation } from "../../lib/productLocation";
 
 interface ExpiryProduct {
@@ -29,7 +28,8 @@ interface ExpiryProduct {
   product_name: string;
   spec: string | null;
   supplier: string | null;
-  real_map: string | null;
+  location: string | null;
+  display_location: string | null;
   current_stock: number | null;
   expiry_date: string | null;
   sale_status?: string | null; // 2026-08-29 · #154 P2 · 3-way 필터용
@@ -87,7 +87,7 @@ export const ExpiryImminentTab: React.FC = () => {
   const filtered = useMemo(() => {
     // 2026-08-29 · saleMatches AND (matchesProductQuery OR matchesSupplierQuery) + location 매칭
     // 2026-08-31 · #11 · 공급사 검색 통합 · matchesSupplierQuery 프리미티브
-    // 2026-08-31 · #13 · location 우선 · real_map fallback (resolveProductLocation)
+    // resolveProductLocation: location ?? display_location
     const saleFiltered = rows.filter(r => saleMatches(r.sale_status));
     const kw = q.trim().toLowerCase();
     if (!kw) return saleFiltered;

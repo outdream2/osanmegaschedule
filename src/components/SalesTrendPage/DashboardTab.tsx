@@ -288,8 +288,7 @@ export const DashboardTab: React.FC = () => {
       current_stock: p.current_stock ?? null,
       optimal_stock: p.optimal_stock ?? null,
       supplier: p.supplier ?? null,
-      location: (p as any).location ?? (p as any).real_map ?? null,
-      real_map: (p as any).real_map ?? null,
+      location: (p as any).location ?? (p as any).display_location ?? null,
     };
     setSelected(partial);
     try {
@@ -649,9 +648,6 @@ export const DashboardTab: React.FC = () => {
           onClose={() => setSelected(null)}
           onProductUpdate={(u) =>
             setSelected(prev => (prev ? { ...prev, ...u } : prev))
-          }
-          onRealMapUpdate={(v) =>
-            setSelected(prev => (prev ? { ...prev, real_map: v } : prev))
           }
           showChart={true}
           context="stock-manage"

@@ -38,10 +38,7 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
   const results = await Promise.allSettled([
     supabase.from("display_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("order_requests").select("id", { count: "exact", head: true }).eq("status", "requested"),
-    // 2026-08-28 · 사용자 지시 · 배치구역 불일치 1000건 폭발 원인
-    //   · 기존: spec (규격 · "EA"·"Z") vs real_map (진열구역) · 거의 모든 상품 mismatch
-    //   · 수정: location (진열위치) vs real_map · display_location 도 fallback · 둘 다 있을 때만
-    supabase.from("products").select("product_code, location, display_location, real_map").eq("hidden", false).not("real_map", "is", null).neq("real_map", ""),
+    // 2026-09-04 · real_map 제거 · legacy zone_mismatches 테이블만 사용
     supabase.from("zone_mismatches").select("product_code"),
     supabase.from("leave_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("lunch_requests").select("id", { count: "exact", head: true }).eq("date", today).eq("eating", false),
@@ -57,20 +54,8 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
     console.warn("[pending-counts] query rejected:", r.reason);
     return { count: 0, data: [], error: r.reason };
   };
-  const [display, order, productsWithRealMap, legacy, leave, lunch, inventory, ret, resignation, vendor] = results.map(unwrap) as any[];
-  const computedCodes = new Set(
-    (productsWithRealMap.data ?? [])
-      .filter(p => {
-        const locZone = String(p.location ?? p.display_location ?? "").trim();
-        const real = String(p.real_map ?? "").trim();
-        // 2026-08-28 · fix · location + real_map 둘 다 있을 때만 비교 (spec 무관)
-        if (!real || !locZone) return false;
-        return locZone !== real;
-      })
-      .map(p => p.product_code)
-  );
-  const legacyCodes = (legacy.data ?? []).filter(r => !computedCodes.has(r.product_code));
-  const mismatchCount = computedCodes.size + legacyCodes.length;
+  const [display, order, legacy, leave, lunch, inventory, ret, resignation, vendor] = results.map(unwrap) as any[];
+  const mismatchCount = (legacy.data ?? []).length;
   const lunchCount = lunch.count ?? 0;
   const inventoryCount = inventory.count ?? 0;
   const returnCount = ret.error ? 0 : (ret.count ?? 0);
@@ -145,8 +130,8 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
 }));
 
 // 2026-08-05 · 상품별 진열요청 지원 (ScanPage 진입점)
-//   · product_code 전달 시 · products 에서 real_map/spec/category/product_name 자동 조회
-//   · zone_id·zone_label 자동 채움 (real_map 기반)
+//   · product_code 전달 시 · products 에서 location/spec/category/product_name 자동 조회
+//   · zone_id·zone_label 자동 채움 (location 기반)
 //   · 하위 호환 · 기존 zone_id 기반 요청 (zone-only) 그대로 지원
 router.post("/api/display-requests", authorize(1), validateBody(CreateDisplayRequestSchema), asyncHandler(async (req, res) => {
   const b = req.body ?? {};
@@ -160,17 +145,17 @@ router.post("/api/display-requests", authorize(1), validateBody(CreateDisplayReq
   const note = String(b.note ?? "");
   let productName: string | null = null;
 
-  // 상품 기반 요청: products 에서 real_map · category · name 자동 조회
+  // 상품 기반 요청: products 에서 location · category · name 자동 조회
   if (productCode) {
     try {
       const { data: prod } = await supabase
         .from("products")
-        .select("product_code, product_name, real_map, spec, category")
+        .select("product_code, product_name, location, display_location, spec, category")
         .eq("product_code", productCode)
         .maybeSingle();
       if (prod) {
         productName = prod.product_name ?? productCode;
-        if (!zoneId) zoneId = String(prod.real_map ?? "").trim();
+        if (!zoneId) zoneId = String((prod as any).location ?? (prod as any).display_location ?? "").trim();
         if (!zoneLabel && zoneId) zoneLabel = zoneId;
         if (!category) category = String(prod.category ?? "");
       }

@@ -270,11 +270,9 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
               name: (needPanelFull as any).product_name ?? (needPanelFull as any).name ?? (needPanelProduct?.name ?? ""),
               spec: (needPanelFull as any).spec ?? "",
               ...needPanelFull,
-              realMap: (needPanelFull as any).realMap ?? (needPanelFull as any).real_map ?? null,
             } as ProductInfoType) : null}
             onClose={() => setNeedPanelProduct(null)}
             onProductUpdate={(u) => setNeedPanelFull(prev => prev ? { ...prev, ...u } : prev)}
-            onRealMapUpdate={(v) => setNeedPanelFull(prev => prev ? { ...prev, real_map: v, realMap: v } : prev)}
             showChart={true}
             context="order-manage"
             editable={true}

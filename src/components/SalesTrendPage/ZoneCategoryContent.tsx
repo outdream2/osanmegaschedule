@@ -146,12 +146,10 @@ const ZoneCategoryContent: React.FC = () => {
     for (const r of sales) {
       const code = String(r.product_code ?? "");
       const p = products[code] ?? {};
-      // 2026-08-31 · #71 fix · row 자체 location/real_map 우선 · products fallback
-      //   · 판매중지 상품은 products cache 미포함 or location NULL · row 자체 필드로 zone 확보
-      //   · 서버 top-sales 응답에 location + real_map 포함됨 (stockManage.ts)
+      // row 자체 location/display_location 우선 · products fallback
       const zone = (
         String((r as any).location ?? "").trim() ||
-        String((r as any).real_map ?? "").trim() ||
+        String((r as any).display_location ?? "").trim() ||
         (resolveProductLocation(p) ?? String((p as any).spec ?? "").trim())
       );
       const key = parsePrimaryZone(zone);

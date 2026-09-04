@@ -33,7 +33,7 @@ export interface ProductDetailPanelProps {
   product: ProductInfo;
   /** 상품 필드 편집 후 부모 state 동기화 */
   onProductUpdate?: (u: Partial<ProductInfo>) => void;
-  /** 실제배치구역 변경 후 부모 state 동기화 */
+  /** @deprecated real_map 제거 · 사용 불필요 · 하위호환용 */
   onRealMapUpdate?: (v: string) => void;
   /** 닫기 버튼 클릭 (모바일 fullscreen 헤더) */
   onClose?: () => void;

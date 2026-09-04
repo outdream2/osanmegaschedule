@@ -427,11 +427,9 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         name: (returnPanelFull as any).product_name ?? (returnPanelFull as any).name ?? (returnSelectedProduct?.name ?? ""),
         spec: (returnPanelFull as any).spec ?? "",
         ...returnPanelFull,
-        realMap: (returnPanelFull as any).realMap ?? (returnPanelFull as any).real_map ?? null,
       } as ProductInfoType)}
       onClose={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
       onProductUpdate={(u) => setReturnPanelFull(prev => prev ? { ...prev, ...u } : prev)}
-      onRealMapUpdate={(v) => setReturnPanelFull(prev => prev ? { ...prev, real_map: v, realMap: v } : prev)}
       showChart
       context="order-manage"
       editable={true}

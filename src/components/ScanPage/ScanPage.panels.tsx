@@ -248,7 +248,7 @@ export const SaveCard: React.FC<SaveCardProps> = ({
           <ul className="max-h-[36vh] overflow-auto">
             {rows.map((r, idx) => {
               const total = calcRowTotal(r);
-              const location = String((r.product as any).realMap ?? (r.product as any).real_map ?? "").trim();
+              const location = String((r.product as any).location ?? (r.product as any).display_location ?? "").trim();
               return (
                 <li key={r.key} className="px-3 py-1.5 flex items-center gap-2 text-[14px] hover:bg-white/60 transition-colors">
                   <span className="w-5 h-5 shrink-0 rounded bg-brand-tint text-brand-deep inline-flex items-center justify-center text-[15px] font-bold tabular-nums">

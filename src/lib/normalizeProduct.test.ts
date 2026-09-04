@@ -38,15 +38,13 @@ describe("normalizeProductRow · raw DB row → ProductInfo shape", () => {
     expect(r.name).toBe("");
   });
 
-  it("real_map + realMap · 양방향 정규화", () => {
-    // real_map (snake_case · DB) → realMap (camelCase · JS) 도 세팅
-    const r1 = normalizeProductRow({ product_code: "A", real_map: "1A" }, "");
-    expect(r1.realMap).toBe("1A");
-    expect(r1.real_map).toBe("1A");
-    // realMap (camelCase · client 계산) → real_map 도 세팅
-    const r2 = normalizeProductRow({ product_code: "A", realMap: "2B" }, "");
-    expect(r2.realMap).toBe("2B");
-    expect(r2.real_map).toBe("2B");
+  it("location · 정규화 (real_map 제거 · location 사용)", () => {
+    // location (DB 컬럼) 은 그대로 유지
+    const r1 = normalizeProductRow({ product_code: "A", location: "24" }, "");
+    expect(r1.location).toBe("24");
+    // display_location fallback
+    const r2 = normalizeProductRow({ product_code: "A", display_location: "25" }, "");
+    expect(r2.location).toBe("25");
   });
 
   it("supplier null · null 그대로 유지", () => {

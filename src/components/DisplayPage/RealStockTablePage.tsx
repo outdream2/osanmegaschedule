@@ -33,9 +33,7 @@ interface Product {
   product_code: string;
   product_name: string;
   supplier: string | null;
-  // 2026-08-27 · 사용자 지시 · spec + display_location → location 통합
   location: string | null;      // 진열위치 (매장/창고 zone code 문자열 · "/" 구분)
-  real_map: string | null;
   category_code: string | null;
   current_stock: number | null; // 2026-08-26 · ERP 재고 (products.current_stock)
   sale_status: string | null;   // 2026-08-26 · 판매중 필터용
@@ -54,9 +52,7 @@ interface Row {
   product_name: string;
   supplier: string | null;
   category_code: string | null;        // 2026-08-26 · 분류코드
-  // 2026-08-27 · 사용자 지시 · location 컬럼 통합
   location: string | null;             // 진열위치 (매장/창고 zone code 문자열)
-  real_map: string | null;
   erp: number | null;                  // 2026-08-26 · ERP 재고 (products.current_stock)
   w1: number | null;
   w2: number | null;
@@ -152,7 +148,6 @@ export const RealStockTablePage: React.FC = () => {
         supplier: p?.supplier ?? null,
         // 2026-08-27 · 사용자 지시 · 엑셀 진열위치 (display_location) 기준만 · spec 은 규격 · 사용 X
         location: String(p?.location ?? p?.display_location ?? "").trim() || null,
-        real_map: p?.real_map ?? null,
         category_code: p?.category_code ?? null,
         current_stock: p?.current_stock != null ? Number(p.current_stock) : null,
         sale_status: p?.sale_status ?? null,
@@ -212,7 +207,6 @@ export const RealStockTablePage: React.FC = () => {
       supplier: p.supplier,
       category_code: p.category_code,
       location: p.location,
-      real_map: p.real_map,
       erp,
       w1, w2, s1, s2, s3,
       s1zone: slots.s1zone,
@@ -464,7 +458,6 @@ export const RealStockTablePage: React.FC = () => {
               <Field label="상품코드" value={<span className="font-mono text-[15px] tabular-nums">{detailRow.product_code}</span>} />
               <Field label="공급사"  value={detailRow.supplier ?? "-"} />
               <Field label="진열위치" value={detailRow.location ?? "미지정"} />
-              <Field label="실제구역" value={detailRow.real_map ?? "미지정"} />
               <Field label="ERP재고"  value={<b className="text-amber-700 tabular-nums text-[17px]">{detailRow.erp ?? "-"}</b>} />
               <Field label="실재고합계" value={<b className="text-brand-deep tabular-nums text-[17px]">{detailRow.total > 0 ? detailRow.total : "-"}</b>} />
             </div>

@@ -41,7 +41,7 @@ interface OrderRequestTabProps {
   orderError: string | null;
   allProductsMap: Record<string, any>;
   invStockMap: Map<string, InvStockEntry>;
-  zoneMap: Map<string, { real_map: string | null; spec: string | null }>;
+  zoneMap: Map<string, { location: string | null; spec: string | null }>;
   prevPriceMap: Map<string, number>;
   orderQtyOverride: Map<string, number>;
   selectedOrder: Set<string>;
@@ -506,11 +506,9 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
             name: (orderPanelFull as any).product_name ?? (orderPanelFull as any).name ?? (orderPanelProduct?.name ?? ""),
             spec: (orderPanelFull as any).spec ?? "",
             ...orderPanelFull,
-            realMap: (orderPanelFull as any).realMap ?? (orderPanelFull as any).real_map ?? null,
           } as ProductInfoType) : null}
           onClose={() => setOrderPanelProduct(null)}
           onProductUpdate={(u) => setOrderPanelFull(prev => prev ? { ...prev, ...u } : prev)}
-          onRealMapUpdate={(v) => setOrderPanelFull(prev => prev ? { ...prev, real_map: v, realMap: v } : prev)}
           showChart={true}
           context="order-manage"
           editable={true}

@@ -7,7 +7,7 @@ import { Spinner } from "../common/Spinner";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
-// 2026-08-31 · #13 · location 우선 · real_map fallback
+// 2026-09-04 · real_map 제거 · location / display_location 사용
 import { resolveProductLocation } from "../../lib/productLocation";
 import { useHiddenManager } from "../../hooks/useHiddenManager";
 import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
@@ -66,9 +66,7 @@ export const SalesTrendPage: React.FC = () => {
       current_stock: p.current_stock ?? null,
       optimal_stock: p.optimal_stock ?? null,
       supplier: p.supplier ?? null,
-      // 2026-08-31 · #13 · location 우선 · real_map fallback
-      location: p.location ?? p.real_map ?? p.realMap ?? null,
-      real_map: p.real_map ?? null,
+      location: p.location ?? p.display_location ?? null,
       warehouse_stock: p.warehouse_stock ?? null,
       store_stock: p.store_stock ?? null,
     };
@@ -125,7 +123,7 @@ export const SalesTrendPage: React.FC = () => {
   const [supplierSelectedProduct, setSupplierSelectedProduct] = useState<ProductInfo | null>(null);
   const loadSupplierSelectedProduct = useCallback(async (p: any) => {
     const code = String(p.product_code ?? p.code ?? "").trim();
-    const partial: ProductInfo = { code, name: String(p.product_name ?? p.name ?? ""), spec: String(p.spec ?? ""), current_stock: p.current_stock ?? null, optimal_stock: p.optimal_stock ?? null, supplier: p.supplier ?? null, location: p.location ?? p.real_map ?? p.realMap ?? null, real_map: p.real_map ?? null };
+    const partial: ProductInfo = { code, name: String(p.product_name ?? p.name ?? ""), spec: String(p.spec ?? ""), current_stock: p.current_stock ?? null, optimal_stock: p.optimal_stock ?? null, supplier: p.supplier ?? null, location: p.location ?? p.display_location ?? null };
     setSupplierSelectedProduct(partial);
     try {
       let full = lookupProduct(code);
@@ -218,7 +216,6 @@ export const SalesTrendPage: React.FC = () => {
               selected={supplierSelectedProduct}
               onClose={() => setSupplierSelectedProduct(null)}
               onProductUpdate={(u) => setSupplierSelectedProduct(prev => prev ? { ...prev, ...u } : prev)}
-              onRealMapUpdate={(v) => setSupplierSelectedProduct(prev => prev ? { ...prev, real_map: v } : prev)}
               showChart={true}
               context="stock-manage"
               editable={true}
@@ -251,7 +248,6 @@ export const SalesTrendPage: React.FC = () => {
               product={scanProductModal}
               context="stock-manage"
               editable
-              onRealMapUpdate={(v) => setScanProductModal(prev => prev ? { ...prev, real_map: v } : prev)}
               onProductUpdate={(u) => setScanProductModal(prev => prev ? { ...prev, ...u } : prev)}
             />
           </div>
@@ -304,7 +300,7 @@ export const SalesTrendPage: React.FC = () => {
                         <div className="text-[10px] tabular-nums text-zinc-400 truncate">
                           #{code}
                           {p.supplier ? ` · ${p.supplier}` : ""}
-                          {/* 2026-08-31 · #13 · location 우선 · real_map fallback */}
+                          {/* location: resolveProductLocation 사용 */}
                           {resolveProductLocation(p) ? ` · ${resolveProductLocation(p)}` : ""}
                           {p.current_stock != null ? ` · 재고 ${p.current_stock}` : ""}
                         </div>

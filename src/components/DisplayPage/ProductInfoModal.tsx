@@ -13,14 +13,12 @@ import type { ProductInfo } from "../../lib/productsCache";
 interface ProductInfoModalProps {
   product: ProductInfo;
   onClose: () => void;
-  onRealMapUpdate: (newValue: string) => void;
   onProductUpdate: (updates: Partial<ProductInfo>) => void;
 }
 
 export const ProductInfoModal: React.FC<ProductInfoModalProps> = ({
   product,
   onClose,
-  onRealMapUpdate,
   onProductUpdate,
 }) => {
   const code = String(product.code ?? (product as any).product_code ?? "");
@@ -88,7 +86,6 @@ export const ProductInfoModal: React.FC<ProductInfoModalProps> = ({
           product={product}
           context="stock-manage"
           editable
-          onRealMapUpdate={onRealMapUpdate}
           onProductUpdate={onProductUpdate}
         />
       </div>

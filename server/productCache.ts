@@ -181,7 +181,7 @@ export async function getProductMap(): Promise<Record<string, ProductInfo>> {
         //   · spec 은 원본 "규격" (EA · Z 등) · 진열위치 아님 · fallback 제거
         //   · row.location 우선 (SQL 마이그레이션 후) · fallback display_location · spec 절대 사용 X
         const locationVal = String(row.location ?? row.display_location ?? "").trim() || null;
-        const info: ProductInfo = { code, name: row.product_name ?? "", spec: row.spec ?? "", ...row, realMap: row.real_map ?? null, location: locationVal };
+        const info: ProductInfo = { code, name: row.product_name ?? "", spec: row.spec ?? "", ...row, location: locationVal };
         map[code] = info;
         const stripped = code.replace(/^0+/, "");
         if (stripped && stripped !== code && !map[stripped]) map[stripped] = info;

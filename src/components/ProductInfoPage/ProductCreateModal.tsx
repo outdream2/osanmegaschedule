@@ -59,7 +59,7 @@ interface Props {
    * 등록 성공 콜백 · (code, product) 형태로 확장 (하위 호환 유지)
    *   · product · 방금 등록한 상품 정보 · 후속 로컬 캐시 삽입 · UI 반영 등에 사용
    */
-  onCreated: (code: string, product?: { product_name: string; supplier: string | null; spec: string | null; barcode: string | null; real_map: string | null }) => void;
+  onCreated: (code: string, product?: { product_name: string; supplier: string | null; spec: string | null; barcode: string | null; location: string | null }) => void;
   /** 2026-08-23 · #179 · 바코드 스캔 미등록 즉시 등록 · product_code 사전 채움 */
   initialCode?: string;
   /** 2026-08-23 · #179 · barcode 사전 채움 (스캔 코드가 바코드 = product_code 인 경우 함께) */
@@ -78,7 +78,7 @@ type Form = {
   unit: string;
   spec: string;
   barcode: string;
-  real_map: string;
+  location: string;
   optimal_stock: string;
   sale_price: string;
   purchase_price: string;
@@ -94,7 +94,7 @@ const EMPTY: Form = {
   unit: "",
   spec: "",
   barcode: "",
-  real_map: "",
+  location: "",
   optimal_stock: "",
   sale_price: "",
   purchase_price: "",
@@ -145,13 +145,13 @@ export const ProductCreateModal: React.FC<Props> = ({
   const [zoneOpen, setZoneOpen] = useState(false);
   const zoneWrapRef = useRef<HTMLDivElement | null>(null);
   const zoneSuggestions = useMemo(() => {
-    const q = form.real_map.trim().toLowerCase();
+    const q = form.location.trim().toLowerCase();
     const all = zones.map(z => ({ label: `${z.num}. ${z.label}`, value: String(z.num), category: z.category }));
     if (!q) return all.slice(0, 12);
     return all
       .filter(z => z.label.toLowerCase().includes(q) || z.value.includes(q) || z.category.toLowerCase().includes(q))
       .slice(0, 12);
-  }, [form.real_map, zones]);
+  }, [form.location, zones]);
   useEffect(() => {
     if (!zoneOpen) return;
     const onDoc = (e: MouseEvent) => {
@@ -176,7 +176,7 @@ export const ProductCreateModal: React.FC<Props> = ({
     unit: string | null;
     sale_price: number | null;
     purchase_price: number | null;
-    real_map: string | null;
+    location: string | null;
   };
   const [refList, setRefList] = useState<RefProduct[]>([]);
   const [refLoading, setRefLoading] = useState(false);
@@ -202,7 +202,7 @@ export const ProductCreateModal: React.FC<Props> = ({
       category: prev.category || r.category || "",
       unit: prev.unit || r.unit || "",
       spec: prev.spec || r.spec || "",
-      real_map: prev.real_map || r.real_map || "",
+      location: prev.location || r.location || "",
       brand: prev.brand || r.brand || "",
       manufacturer: prev.manufacturer || r.manufacturer || "",
       sale_price: prev.sale_price || (r.sale_price != null ? String(r.sale_price) : ""),
@@ -244,7 +244,7 @@ export const ProductCreateModal: React.FC<Props> = ({
         spec: form.spec.trim() || null,
         // 2026-08-24 · 사용자 지시 · 상품코드 = 바코드 · 자동 동일값 세팅
         barcode: form.product_code.trim() || null,
-        real_map: form.real_map.trim() || null,
+        location: form.location.trim() || null,
         optimal_stock: parseNum(form.optimal_stock),
         sale_price: parseNum(form.sale_price),
         purchase_price: parseNum(form.purchase_price),
@@ -267,7 +267,7 @@ export const ProductCreateModal: React.FC<Props> = ({
         supplier: parsed.data.supplier ?? null,
         spec: parsed.data.spec ?? null,
         barcode: parsed.data.barcode ?? null,
-        real_map: parsed.data.real_map ?? null,
+        location: parsed.data.location ?? null,
       });
       setForm(EMPTY);
       onClose();
@@ -385,14 +385,11 @@ export const ProductCreateModal: React.FC<Props> = ({
                   <input type="text" value={form.spec} onChange={(e) => set("spec", e.target.value)} className={inputCls} placeholder="예: 10정" maxLength={100} />
                 </Field>
                 {/* 2026-08-24 · 사용자 지시 · 상품코드 = 바코드 · 별도 바코드 필드 제거 (submit 시 자동 세팅) */}
-                {/* 2026-08-31 · #42 · 카테고리 검색 → 구역 지정 프리미티브 · ZoneCategoryPicker
-                   · 사용자 지시 · 예 · "감기약" 검색 → 상세카테고리 팝업 → 구역 선택 → real_map 자동 입력
-                   · 이전 자체 autocomplete · zoneWrapRef · zoneSuggestions · deprecated · 프리미티브로 통합 */}
                 <div className="relative min-w-0">
-                  <Field label="실제배정구역 · 카테고리 검색">
+                  <Field label="배치구역 · 카테고리 검색">
                     <ZoneCategoryPicker
-                      value={form.real_map}
-                      onChange={(loc) => set("real_map", loc ?? "")}
+                      value={form.location}
+                      onChange={(loc) => set("location", loc ?? "")}
                     />
                   </Field>
                 </div>

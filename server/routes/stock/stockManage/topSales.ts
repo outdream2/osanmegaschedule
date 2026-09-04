@@ -58,9 +58,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       }
 
       // products 매핑 (숨김 제외)
-      // 2026-08-31 · #71 fix · location + real_map 추가
       const codesRaw = Array.from(new Set(rawRows.map(r => String(r.product_code ?? "").trim()).filter(Boolean)));
-      const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; min_order: number; location: string | null; real_map: string | null }>();
+      const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; min_order: number; location: string | null }>();
       const hiddenSet = new Set<string>();
       try {
         const CHUNK = 500;
@@ -68,7 +67,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
           const chunk = codesRaw.slice(i, i + CHUNK);
           const { data: page } = await supabase
             .from("products")
-            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, min_order, hidden, location, display_location, real_map")
+            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, min_order, hidden, location, display_location")
             .in("product_code", chunk);
           for (const p of page ?? []) {
             const code = String(p.product_code ?? "").trim();
@@ -81,7 +80,6 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
               current_stock:  Number(p.current_stock  ?? 0) || 0,
               min_order:      Number(p.min_order      ?? 0) || 0,
               location:  (String(p.location ?? p.display_location ?? "").trim() || null),
-              real_map:  (String(p.real_map ?? "").trim() || null),
             });
           }
         }
@@ -120,7 +118,6 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             purchase_count: 0,
             min_order:     prod?.min_order ?? 0,
             location:      prod?.location ?? null,
-            real_map:      prod?.real_map ?? null,
           });
         }
         const agg = byCode.get(code)!;
@@ -260,9 +257,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
               sale_qty_month:  r.sale_qty_month  ?? 0,
               sale_amount_month: r.sale_amount_month ?? 0,
               last_purchase_qty: r.last_purchase_qty ?? null,
-              // 2026-08-31 · #71 · RPC 미포함 · 아래 batch fetch 로 주입
               location: null as string | null,
-              real_map: null as string | null,
             }));
             // 2026-07-30 · 반품필요 리스트 · sale_qty_month · last_purchase_qty
             // 2026-08-03 · 60d/90d 추가
@@ -347,31 +342,28 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             } catch (e: any) {
               console.warn(`[top-sales/rpc] boost fetch 실패:`, e?.message);
             }
-            // 2026-08-31 · #71 · location + real_map 배치 조회
+            // location 배치 조회
             try {
               const targetCodes = rows.slice(0, limit).map(r => String(r.product_code ?? "").trim()).filter(Boolean);
               if (targetCodes.length > 0) {
-                const locMap = new Map<string, { location: string | null; real_map: string | null }>();
+                const locMap = new Map<string, string | null>();
                 const CHUNK = 500;
                 for (let i = 0; i < targetCodes.length; i += CHUNK) {
                   const chunk = targetCodes.slice(i, i + CHUNK);
                   const { data: page } = await supabase
                     .from("products")
-                    .select("product_code, location, display_location, real_map")
+                    .select("product_code, location, display_location")
                     .in("product_code", chunk);
                   for (const p of page ?? []) {
                     const code = String(p.product_code ?? "").trim();
                     if (!code) continue;
-                    locMap.set(code, {
-                      location: (String(p.location ?? p.display_location ?? "").trim() || null),
-                      real_map: (String(p.real_map ?? "").trim() || null),
-                    });
+                    locMap.set(code, (String(p.location ?? p.display_location ?? "").trim() || null));
                   }
                 }
                 for (const r of rows) {
                   const code = String(r.product_code ?? "").trim();
-                  const info = locMap.get(code);
-                  if (info) { r.location = info.location; r.real_map = info.real_map; }
+                  const loc = locMap.get(code);
+                  if (loc !== undefined) r.location = loc;
                 }
               }
             } catch (e: any) {
@@ -434,8 +426,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       }
 
       // products 매핑 (숨김 제외)
-      // 2026-08-31 · #71 · location + real_map 추가
-      const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; last_purchase_date: string | null; min_order: number; location: string | null; real_map: string | null }>();
+      const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; last_purchase_date: string | null; min_order: number; location: string | null }>();
       const hiddenSet = new Set<string>();
       try {
         const OP_PAGE = 1000;
@@ -443,7 +434,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         while (true) {
           const { data: page } = await supabase
             .from("products")
-            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden, location, display_location, real_map")
+            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden, location, display_location")
             .range(opFrom, opFrom + OP_PAGE - 1);
           if (!page || page.length === 0) break;
           for (const p of page) {
@@ -458,7 +449,6 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
               last_purchase_date: p.last_purchase_date ?? null,
               min_order:      Number(p.min_order      ?? 0) || 0,
               location:  (String(p.location ?? p.display_location ?? "").trim() || null),
-              real_map:  (String(p.real_map ?? "").trim() || null),
             });
           }
           if (page.length < OP_PAGE) break;
@@ -493,14 +483,11 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             sale_price:    productMap.get(code)?.sale_price    ?? 0,
             purchase_price:productMap.get(code)?.purchase_price ?? 0,
             current_stock: productMap.get(code)?.current_stock ?? 0,
-            // 2026-07-29 · 매입 관련 필드는 purchase_details 조인에서만 세팅
             last_purchase_date:  null as string | null,
             min_order:     productMap.get(code)?.min_order ?? 0,
             purchase_count: 0,
             first_purchase_date: null as string | null,
-            // 2026-08-31 · #71
             location:  productMap.get(code)?.location ?? null,
-            real_map:  productMap.get(code)?.real_map ?? null,
           });
         }
         const agg = byCode.get(code)!;
@@ -820,8 +807,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
     }
 
     // products 조회 (결과 rows 의 product_code 만 in() 으로 최소 fetch)
-    // 2026-08-31 · #71 · location + real_map 추가
-    const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; last_purchase_date: string | null; min_order: number; location: string | null; real_map: string | null }>();
+    const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; last_purchase_date: string | null; min_order: number; location: string | null }>();
     const hiddenSet = new Set<string>();
     const codesInResult = Array.from(new Set(data.map(r => String(r.product_code ?? "").trim()).filter(Boolean)));
     try {
@@ -830,7 +816,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         const chunk = codesInResult.slice(i, i + CHUNK);
         const { data: page } = await supabase
           .from("products")
-          .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden, location, display_location, real_map")
+          .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden, location, display_location")
           .in("product_code", chunk);
         for (const p of page ?? []) {
           const code = String(p.product_code ?? "").trim();
@@ -844,7 +830,6 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             last_purchase_date: p.last_purchase_date ?? null,
             min_order:      Number(p.min_order      ?? 0) || 0,
             location:  (String(p.location ?? p.display_location ?? "").trim() || null),
-            real_map:  (String(p.real_map ?? "").trim() || null),
           });
         }
       }
@@ -923,9 +908,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         purchase_count:        purchaseInfo?.count       ?? 0,
         first_purchase_date:   purchaseInfo?.firstDate   ?? null,
         min_order: Number(prod?.min_order ?? 0) || 0,
-        // 2026-08-31 · #71
         location: prod?.location ?? null,
-        real_map: prod?.real_map ?? null,
       };
     });
     const sign = dir === "asc" ? 1 : -1;

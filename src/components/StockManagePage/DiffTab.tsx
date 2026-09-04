@@ -44,7 +44,7 @@ interface ProductLite {
   current_stock: number | null;
   optimal_stock: number | null;
   supplier: string | null;
-  real_map: string | null;
+  location: string | null;
   warehouse_stock?: number | null;
   store_stock?: number | null;
   // 2026-08-06 · 손실추적 확장 · 단가·판매가 표시용
@@ -112,7 +112,7 @@ export const DiffTab: React.FC = () => {
   const [diffSelectedProduct, setDiffSelectedProduct] = useState<ProductInfo | null>(null);
   const loadDiffSelectedProduct = useCallback(async (p: any) => {
     const code = String(p.product_code ?? "").trim();
-    const partial: ProductInfo = { code, name: String(p.product_name ?? ""), spec: String(p.spec ?? ""), current_stock: p.current_stock ?? null, optimal_stock: p.optimal_stock ?? null, supplier: p.supplier ?? null, real_map: p.real_map ?? null, warehouse_stock: p.warehouse_stock ?? null, store_stock: p.store_stock ?? null };
+    const partial: ProductInfo = { code, name: String(p.product_name ?? ""), spec: String(p.spec ?? ""), current_stock: p.current_stock ?? null, optimal_stock: p.optimal_stock ?? null, supplier: p.supplier ?? null, location: p.location ?? null, warehouse_stock: p.warehouse_stock ?? null, store_stock: p.store_stock ?? null };
     setDiffSelectedProduct(partial);
     try {
       let full = lookupProduct(code);
@@ -171,13 +171,13 @@ export const DiffTab: React.FC = () => {
     .filter(Boolean) as Array<any>, [lowStock]);
 
   // 3-way tab 카운트
-  const essentialCount = useMemo(() => diffBase.filter(p => matchClassFilter(p.real_map, "stationery")).length, [diffBase]);
-  const generalCount = useMemo(() => diffBase.filter(p => matchClassFilter(p.real_map, "general")).length, [diffBase]);
+  const essentialCount = useMemo(() => diffBase.filter(p => matchClassFilter(p.location,"stationery")).length, [diffBase]);
+  const generalCount = useMemo(() => diffBase.filter(p => matchClassFilter(p.location,"general")).length, [diffBase]);
   const allCount = diffBase.length;
 
   // 차이 리스트 (classFilter 적용)
   const diffList = useMemo(() =>
-    classFilter === "all" ? diffBase : diffBase.filter(p => matchClassFilter(p.real_map, classFilter)),
+    classFilter === "all" ? diffBase : diffBase.filter(p => matchClassFilter(p.location,classFilter)),
     [diffBase, classFilter]);
 
   return (
@@ -367,7 +367,6 @@ export const DiffTab: React.FC = () => {
           selected={diffSelectedProduct}
           onClose={() => setDiffSelectedProduct(null)}
           onProductUpdate={(u) => setDiffSelectedProduct(prev => prev ? { ...prev, ...u } : prev)}
-          onRealMapUpdate={(v) => setDiffSelectedProduct(prev => prev ? { ...prev, real_map: v } : prev)}
           showChart={true}
           context="stock-manage"
           editable={true}

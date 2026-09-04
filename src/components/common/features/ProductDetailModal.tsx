@@ -82,13 +82,10 @@ export function useProductDetailModal() {
               name: (detailFull as any).product_name ?? detailFull.name ?? open.name ?? open.code,
               spec: (detailFull as any).spec ?? "",
               ...detailFull,
-              // 2026-08-31 · #13 · location 우선 · real_map fallback
-              location: (detailFull as any).location ?? (detailFull as any).realMap ?? (detailFull as any).real_map ?? null,
-              realMap: (detailFull as any).realMap ?? (detailFull as any).real_map ?? null,
+              location: (detailFull as any).location ?? (detailFull as any).display_location ?? null,
             } as ProductInfoType}
             context="order-manage"
             editable
-            onRealMapUpdate={(newValue) => setDetailFull(prev => prev ? { ...prev, location: newValue, realMap: newValue, real_map: newValue } : prev)}
             onProductUpdate={(updates) => setDetailFull(prev => prev ? { ...prev, ...updates } : prev)}
           />
         ) : null}

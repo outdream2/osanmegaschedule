@@ -20,7 +20,8 @@ export interface ProductInfoSections {
 
 export interface ProductInfoCardProps {
   product: ProductInfo;
-  onRealMapUpdate: (newValue: string) => void;
+  /** @deprecated real_map 컬럼 제거 · location 변경은 onProductUpdate 사용 */
+  onRealMapUpdate?: (newValue: string) => void;
   checkedBy?: string;
   /** 사용 컨텍스트 · 섹션 default 프리셋 자동 선택 */
   context?: "scan" | "stock-manage" | "order-manage";

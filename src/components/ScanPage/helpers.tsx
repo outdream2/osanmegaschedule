@@ -7,14 +7,14 @@ import { NotificationToast } from "../common/NotificationToast";
 import type { Comparator, SortDir } from "../../hooks/useSortableTable";
 
 // ─────────────────────────────────────────────────────────────
-// real_map 파싱 · "/" 기준 분할 → 매장1 · 매장2 · 매장3
+// location 파싱 · "/" 기준 분할 → 매장1 · 매장2 · 매장3
 // 예: "8A/냉/2B" → ["8A", "냉", "2B"]
 //     "8A/냉"    → ["8A", "냉", null]
 //     "9B"       → ["9B", null, null]
 // ─────────────────────────────────────────────────────────────
-export function parseRealMap(realMap: string | null | undefined): [string | null, string | null, string | null] {
-  if (!realMap) return [null, null, null];
-  const parts = String(realMap).split("/").map(s => s.trim()).filter(Boolean);
+export function parseRealMap(location: string | null | undefined): [string | null, string | null, string | null] {
+  if (!location) return [null, null, null];
+  const parts = String(location).split("/").map(s => s.trim()).filter(Boolean);
   return [parts[0] ?? null, parts[1] ?? null, parts[2] ?? null];
 }
 
@@ -50,15 +50,15 @@ export const SortIcon: React.FC<{ active: boolean; dir: SortDir }> = ({ active, 
 };
 
 // 정렬 비교 함수 (컴포넌트 외부 · 안정 참조)
-export type ScanSortKey = "addedAt" | "name" | "supplier" | "realMap";
+export type ScanSortKey = "addedAt" | "name" | "supplier" | "location";
 
 export const SCAN_SORT_CMP: Record<ScanSortKey, Comparator<any>> = {
   addedAt:  (a, b) => a.addedAt - b.addedAt,
   name:     (a, b) => a.product.name.localeCompare(b.product.name, "ko"),
   supplier: (a, b) => ((a.product as any).supplier ?? "").localeCompare(((b.product as any).supplier ?? ""), "ko"),
-  realMap:  (a, b) => {
-    const ra = (a.product as any).realMap ?? (a.product as any).real_map ?? "";
-    const rb = (b.product as any).realMap ?? (b.product as any).real_map ?? "";
+  location: (a, b) => {
+    const ra = (a.product as any).location ?? (a.product as any).display_location ?? "";
+    const rb = (b.product as any).location ?? (b.product as any).display_location ?? "";
     return String(ra).localeCompare(String(rb), "ko");
   },
 };

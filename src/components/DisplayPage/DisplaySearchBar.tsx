@@ -8,8 +8,7 @@ interface ProductResult {
   code: string;
   name: string;
   spec: string;
-  /** 진열위치 · location 우선 · real_map fallback (resolveProductLocation 결과) */
-  realMap: string | null;
+  location: string | null;
 }
 
 interface DisplaySearchBarProps {
@@ -18,7 +17,7 @@ interface DisplaySearchBarProps {
   productsMap: Record<string, ProductInfo>;
   onSearchChange: (q: string) => void;
   onClear: () => void;
-  onProductResultClick: (realMap: string | null) => void;
+  onProductResultClick: (location: string | null) => void;
   onProductInfoClick: (p: ProductInfo) => void;
   onScanClick: () => void;
 }
@@ -58,14 +57,14 @@ export const DisplaySearchBar: React.FC<DisplaySearchBarProps> = ({
           <div className="max-h-72 overflow-y-auto divide-y divide-zinc-50">
             {productSearchResults.map((p) => (
               <div key={p.code} className="px-3 py-2 flex items-start justify-between gap-2 hover:bg-zinc-50 transition">
-                <button type="button" onClick={() => onProductResultClick(p.realMap)} className="flex-1 min-w-0 text-left cursor-pointer">
+                <button type="button" onClick={() => onProductResultClick(p.location)} className="flex-1 min-w-0 text-left cursor-pointer">
                   <div className="text-[13px] font-semibold text-zinc-800 truncate">{p.name}</div>
                   {p.spec && <div className="text-[11px] text-zinc-400 truncate mt-0.5">{p.spec}</div>}
                 </button>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  {p.realMap && (
-                    <button type="button" onClick={() => onProductResultClick(p.realMap)} className="flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 whitespace-nowrap hover:text-emerald-900 transition cursor-pointer">
-                      <MapPin size={9} />{p.realMap}
+                  {p.location && (
+                    <button type="button" onClick={() => onProductResultClick(p.location)} className="flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 whitespace-nowrap hover:text-emerald-900 transition cursor-pointer">
+                      <MapPin size={9} />{p.location}
                     </button>
                   )}
                   <button type="button" onClick={(e) => { e.stopPropagation(); const full = productsMap[p.code] ?? productsMap[p.code.replace(/^0+/, "")] ?? p as unknown as ProductInfo; onProductInfoClick(full); }} className="flex items-center gap-0.5 text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-indigo-100 transition cursor-pointer">

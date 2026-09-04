@@ -39,7 +39,7 @@ describe("CreateProductSchema · optional 필드", () => {
       unit: "정",
       spec: "10정",
       barcode: "8801234567890",
-      real_map: "12번",
+      location: "12번",
       optimal_stock: 30,
       sale_price: 5000,
       purchase_price: 3500,

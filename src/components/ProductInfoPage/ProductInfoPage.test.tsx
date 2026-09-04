@@ -72,7 +72,7 @@ beforeEach(() => {
           product_name: "테스트상품",
           supplier: "코스트팜",
           category: "감기약",
-          real_map: "12번",
+          location: "12번",
           optimal_stock: 30,
         },
       });
@@ -197,7 +197,7 @@ describe("ProductInfoPage · 편집 모드 (canEdit)", () => {
         return Promise.resolve({ data: { "PC001": { product_name: "타이레놀" } } });
       }
       return Promise.resolve({
-        data: { product_code: "PC001", product_name: "타이레놀", supplier: "코스트팜", real_map: "12번" },
+        data: { product_code: "PC001", product_name: "타이레놀", supplier: "코스트팜", location: "12번" },
       });
     });
   });

@@ -1,7 +1,7 @@
 // src/lib/warehouseZoneMap.ts
-// 2026-08-26 · 사용자 지시 · zone code → 창고1/창고2 매핑 (하드코딩)
+// 2026-08-26 · zone code → 창고1/창고2 매핑 (하드코딩)
 //   · storage1_description / storage2_description 이미지 기반
-//   · 상품 진열구역 (real_map) 으로부터 창고 소속 판별
+//   · 상품 진열위치 (location) 으로부터 창고 소속 판별
 //   · 스캔페이지 등 · 재고위치 표시 시 · 해당 상품 소속 창고만 노출 (반대 창고 슬롯 숨김)
 
 // 2026-09-02 · 사용자 지시 · 창고1은 6개만 · 나머지는 모두 창고2
@@ -36,13 +36,13 @@ export function resolveWarehouseForCode(code: string | null | undefined): Wareho
   return { showW1: false, showW2: true };
 }
 
-/** real_map 문자열 (예: "26" · "26/33" · "24/33/8A") 을 파싱해 창고 가시성 결정
+/** location 문자열 (예: "26" · "26/33" · "24/33/8A") 을 파싱해 창고 가시성 결정
  *  2026-09-02 · 사용자 규칙 · 창고1 zone 하나라도 있으면 showW1 · 그 외는 모두 창고2
  *  · 여러 zone 이 union · 창고1+창고2 zone 혼재 시 둘 다 true
  */
-export function resolveWarehouseVisibility(realMap: string | null | undefined): WarehouseVisibility {
-  if (!realMap) return { showW1: true, showW2: true };
-  const parts = String(realMap)
+export function resolveWarehouseVisibility(location: string | null | undefined): WarehouseVisibility {
+  if (!location) return { showW1: true, showW2: true };
+  const parts = String(location)
     .split(/[\/,·]/)
     .map(s => s.trim())
     .filter(Boolean);
@@ -77,7 +77,7 @@ export function classifyArrivalSlot(locationCode: string | null | undefined): Ar
 // 2026-08-27 · 사용자 지시 · zone 코드를 slot 에 지능 배정
 //   · 창고1 코드 (예: 8A) → w1zone · 창고2 코드 (예: 32) → w2zone
 //   · 나머지 (매장 진열구역) → s1/s2/s3 순차
-//   · A제품 real_map = "1/2/8A" · s1=1 · s2=2 · w1=8A · w2=null · s3=null
+//   · 예: location = "1/2/8A" · s1=1 · s2=2 · w1=8A · w2=null · s3=null
 export type SlotZones = {
   s1zone: string | null;
   s2zone: string | null;

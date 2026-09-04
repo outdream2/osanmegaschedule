@@ -43,9 +43,7 @@ const ProductTrendTab: React.FC<{
       current_stock: p.current_stock ?? null,
       optimal_stock: p.optimal_stock ?? null,
       supplier: p.supplier ?? p.supplier_name ?? null,
-      // 2026-08-31 · #13 · location 우선 · real_map fallback
-      location: p.location ?? p.real_map ?? p.realMap ?? null,
-      real_map: p.real_map ?? null,
+      location: p.location ?? p.display_location ?? null,
       warehouse_stock: p.warehouse_stock ?? null,
       store_stock: p.store_stock ?? null,
     };
@@ -360,9 +358,6 @@ const ProductTrendTab: React.FC<{
               product={scanProductModal}
               context="stock-manage"
               editable
-              onRealMapUpdate={(newValue) => {
-                setScanProductModal(prev => prev ? { ...prev, real_map: newValue } : prev);
-              }}
               onProductUpdate={(updates) => {
                 setScanProductModal(prev => prev ? { ...prev, ...updates } : prev);
               }}

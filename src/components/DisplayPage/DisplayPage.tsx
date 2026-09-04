@@ -214,7 +214,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const [zoneProductsModal, setZoneProductsModal] = useState<ZoneProductsModalState | null>(null);
   const [fullMapOpen, setFullMapOpen] = useState(false);
   const [zoneProductsFilter, setZoneProductsFilter] = useState<"all" | "mismatch">("all");
-  const [zoneProductsSort, setZoneProductsSort] = useState<{ key: "name" | "spec" | "real_map" | "current_stock" | "warehouse_stock" | "store_stock" | "real_total" | "loss" | "optimal_stock" | "status" | "mismatch"; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
+  const [zoneProductsSort, setZoneProductsSort] = useState<{ key: "name" | "spec" | "current_stock" | "warehouse_stock" | "store_stock" | "real_total" | "loss" | "optimal_stock" | "status" | "mismatch"; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
   const [zoneProductsSearch, setZoneProductsSearch] = useState("");
   const [reqFilter, setReqFilter] = useState<"all" | "pending" | "done">("all");
   const [zoneConfigOpen, setZoneConfigOpen] = useState(false);
@@ -464,7 +464,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     const q = searchQuery.toLowerCase().trim();
     if (q.length < 1) return [];
     const seen = new Set<string>();
-    const results: Array<{ code: string; name: string; spec: string; realMap: string | null }> = [];
+    const results: Array<{ code: string; name: string; spec: string; location: string | null }> = [];
     for (const p of Object.values(productsMap) as ProductInfo[]) {
       const code = String(p.code ?? p.product_code ?? "");
       if (seen.has(code)) continue;
@@ -472,7 +472,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       const name = String(p.name ?? p.product_name ?? "");
       const spec = String(p.spec ?? "");
       if (name.toLowerCase().includes(q) || spec.toLowerCase().includes(q)) {
-        results.push({ code, name, spec, realMap: resolveProductLocation(p) });
+        results.push({ code, name, spec, location: resolveProductLocation(p) });
         if (results.length >= 30) break;
       }
     }
@@ -497,9 +497,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     }));
   }, [activeGroupId]);
 
-  const handleProductResultClick = useCallback((realMap: string | null) => {
-    if (!realMap) return;
-    const m = realMap.match(/^(\d+)번/);
+  const handleProductResultClick = useCallback((location: string | null) => {
+    if (!location) return;
+    const m = location.match(/^(\d+)번/);
     if (m) { const zone = zones.find((z) => z.num === parseInt(m[1], 10)); if (zone) setProductMatchZoneId(zone.id); }
   }, [zones]);
 

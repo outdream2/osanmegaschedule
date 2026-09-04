@@ -29,7 +29,7 @@ import { ProductInfoMeta } from "./ProductInfoCard.meta";
 
 export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
   product,
-  onRealMapUpdate,
+  onRealMapUpdate = () => {},
   checkedBy,
   context = "scan",
   sections,
@@ -199,42 +199,31 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
   const handleRealMapSelect = async (zoneLabel: string) => {
     setSaving(true); setSaveError(null);
     try {
-      await api.patch(`/api/products/${encodeURIComponent(product.code)}/realmap`, { realMap: zoneLabel || null });
+      await api.patch(`/api/products/${encodeURIComponent(product.code)}`, {
+        location: zoneLabel || null,
+        display_location: zoneLabel || null,
+      });
       onRealMapUpdate(zoneLabel);
-      const locationZone = (product as any).location || (product as any).display_location || "미지정";
-      const isMismatch = !!zoneLabel && zoneLabel !== locationZone;
-      if (isMismatch) {
-        api.post("/api/zone-mismatches", {
-          product_code: product.code, product_name: product.name,
-          spec_zone: locationZone, real_zone: zoneLabel,
-        }).then(() => dispatchApprovalChange("mismatch")).catch(() => {});
-      } else {
-        api.del(`/api/zone-mismatches/by-code/${encodeURIComponent(product.code)}`)
-          .then(() => dispatchApprovalChange("mismatch")).catch(() => {});
-      }
+      onProductUpdate?.({ location: zoneLabel || null } as unknown as Partial<ProductInfo>);
     } catch (e: any) {
       const msg: string = e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류");
-      const isColMissing = /column|does not exist|schema cache/i.test(msg);
-      setSaveError(isColMissing
-        ? "DB에 realMap 컬럼이 없습니다. Supabase SQL Editor에서 실행:\nALTER TABLE products ADD COLUMN IF NOT EXISTS \"realMap\" TEXT;"
-        : msg === "네트워크 오류" ? "네트워크 오류 — 다시 시도해주세요" : msg
-      );
+      setSaveError(msg === "네트워크 오류" ? "네트워크 오류 — 다시 시도해주세요" : msg);
     }
     setSaving(false);
   };
 
   // ── 파생 값 ──
-  const realMap: string | null = product.realMap ?? null;
+  const realMap: string | null = (product as any).location ?? (product as any).display_location ?? null;
   const locationZone = (product as any).location || (product as any).display_location || "미지정";
-  const hasMismatch = !!realMap && realMap !== locationZone;
-  const productZoneSrc = String(realMap ?? (product as any).location ?? (product as any).real_map ?? "");
+  const hasMismatch = false; // real_map 컬럼 제거 · 불일치 개념 폐기
+  const productZoneSrc = String((product as any).location ?? (product as any).display_location ?? "");
   const { showW1, showW2 } = resolveWarehouseVisibility(productZoneSrc);
   const cur = product.current_stock != null ? Number(product.current_stock) : null;
   const opt = product.optimal_stock != null ? Number(product.optimal_stock) : null;
   const isLow = cur != null && opt != null && cur < opt;
 
   const catCode = (product as any).category_code ?? null;
-  const slotZones = assignZonesToSlots(String(product.real_map ?? ""), catCode);
+  const slotZones = assignZonesToSlots(String((product as any).location ?? (product as any).display_location ?? ""), catCode);
   const storeZones = [slotZones.s1zone, slotZones.s2zone, slotZones.s3zone].filter(Boolean) as string[];
 
   // 인라인 편집 공통 props
@@ -253,7 +242,6 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
       location: newLocation, display_location: newLocation,
     });
     onProductUpdate?.({ location: newLocation, display_location: newLocation } as unknown as Partial<ProductInfo>);
-    onRealMapUpdate(String(newLocation ?? ""));
   };
   const handleBasicSaleStatusChange = async (newStatus: string) => {
     await api.patch(`/api/products/${encodeURIComponent(product.code)}`, { sale_status: newStatus });

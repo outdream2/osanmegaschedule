@@ -228,7 +228,6 @@ export const SupplierDetailPanel: React.FC<SupplierDetailPanelProps> = ({
               selected={flowSelectedProduct}
               onClose={() => setFlowSelectedProduct(null)}
               onProductUpdate={(u) => setFlowSelectedProduct((prev: any) => prev ? { ...prev, ...u } : prev)}
-              onRealMapUpdate={(v) => setFlowSelectedProduct((prev: any) => prev ? { ...prev, real_map: v } : prev)}
               showChart={true}
               context="stock-manage"
               editable={true}

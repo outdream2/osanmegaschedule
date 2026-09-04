@@ -14,7 +14,6 @@ interface ProductDetailModalProps {
   detailLoading: boolean;
   detailError: string | null;
   onClose: () => void;
-  onRealMapUpdate: (newValue: string | null) => void;
   onProductUpdate: (updates: Record<string, any>) => void;
 }
 
@@ -24,7 +23,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   detailLoading,
   detailError,
   onClose,
-  onRealMapUpdate,
   onProductUpdate,
 }) => (
   <Modal
@@ -57,11 +55,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             name: (detailFull as any).product_name ?? detailFull.name ?? detailProduct.name,
             spec: (detailFull as any).spec ?? "",
             ...detailFull,
-            realMap: (detailFull as any).realMap ?? (detailFull as any).real_map ?? null,
           } as ProductInfoType}
           context="order-manage"
           editable
-          onRealMapUpdate={onRealMapUpdate}
           onProductUpdate={onProductUpdate}
         />
       ) : null}

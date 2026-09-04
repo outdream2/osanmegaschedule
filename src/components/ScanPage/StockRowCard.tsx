@@ -206,10 +206,9 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
   // product.spec 파싱 (매장별 ERP 위치)
   const specParts = String((row.product as any).spec ?? "").split("/").map(s => s.trim());
 
-  // 2026-08-26 · 사용자 지시 · 해당 상품 소속 창고만 표시 · real_map / display_location 기반
+  // 2026-08-26 · 사용자 지시 · 해당 상품 소속 창고만 표시 · location / display_location 기반
   const productZone = String(
-    (row.product as any).real_map
-    ?? (row.product as any).realMap
+    (row.product as any).location
     ?? (row.product as any).display_location
     ?? ""
   );
@@ -260,9 +259,9 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
   const visibleSlots = useMemo(() => {
     const { anyAssigned, hasAnyZone, hasS1, hasS2, hasS3 } = slotVis;
     // 2026-09-03 · #74 · 사용자 지시 · '해당 창고만 표시' · 배타적 필터
-    //   · 상품 real_map · 창고1 zone (24·25·26·27·7B·8A) → showW1=true, showW2=false
+    //   · 상품 location · 창고1 zone (24·25·26·27·7B·8A) → showW1=true, showW2=false
     //   · 창고2 zone → showW2=true, showW1=false
-    //   · real_map null · 미지정 → 둘 다 표시 (사용자가 선택)
+    //   · location null · 미지정 → 둘 다 표시 (사용자가 선택)
     //   · 매장 슬롯 · zone 지정 or 재고 있으면 표시
     if (!anyAssigned) {
       return SLOTS.filter(s => {
@@ -410,7 +409,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
           } else if (slot === "s3" && !row.store3Zone) {
             patch.store3Zone = locationCode;
           } else if ((slot === "w1" || slot === "w2") && !row.store1Zone) {
-            // 창고 코드 → 매장1에 붙이기 (창고 zone 은 product.real_map 기준 · 여기선 store 슬롯 제어)
+            // 창고 코드 → 매장1에 붙이기 (창고 zone 은 product.location 기준 · 여기선 store 슬롯 제어)
             patch.store1Zone = locationCode;
           }
           if (Object.keys(patch).length > 0) onPatch(row.key, patch);

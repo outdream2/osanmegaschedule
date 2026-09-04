@@ -50,7 +50,7 @@ function fmtDate(s: string): string {
 // products PATCH 필드 매핑 · zone-mismatch 컬럼명 → products 컬럼명
 const fieldToProductsColumn = (f: EditField): string => (
   f === "spec_zone" ? "spec"
-  : f === "real_zone" ? "real_map"
+  : f === "real_zone" ? "location"
   : "product_name"
 );
 
@@ -143,9 +143,7 @@ export const ZoneMismatchTab: React.FC = () => {
     }
   };
 
-  // 2026-08-30 · 사용자 지시 · 조정완료 (bulk) · 선택 상품의 real_map 을 spec_zone 으로 일괄 정렬
-  //   · 물리적으로 전산 지정 위치로 이동 완료된 상품 · 일괄 처리
-  //   · real_map = spec_zone 이 되면 mismatch 해소 · 다음 새로고침 시 리스트에서 제외
+  // 조정완료 (bulk) · 선택 상품의 location 을 spec_zone 으로 일괄 정렬
   const adjustSelected = async () => {
     if (selectedIds.size === 0) return;
     const targets = rows.filter(r =>
@@ -159,7 +157,7 @@ export const ZoneMismatchTab: React.FC = () => {
     if (!await confirm({ message: `선택된 ${targets.length}건의 실제구역을 전산구역으로 조정할까요?` })) return;
     try {
       await Promise.all(targets.map(r =>
-        api.patch(`/api/products/${encodeURIComponent(r.product_code)}`, { real_map: r.spec_zone })
+        api.patch(`/api/products/${encodeURIComponent(r.product_code)}`, { location: r.spec_zone, display_location: r.spec_zone })
       ));
       setRows(prev => prev.filter(r => !targets.some(t => t.id === r.id)));
       setSelectedIds(new Set());

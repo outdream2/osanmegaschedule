@@ -125,10 +125,10 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
   const isPending  = item.status === "pending";
 
   // 2026-09-01 · 실재고 UI 벤치마킹 · 상품 정보 분석 (관련 창고·매장 슬롯)
-  //   · 상품의 real_map (진열구역) · 창고1/2 소속 판단
+  //   · 상품 location (진열구역) · 창고1/2 소속 판단
   //   · 사용자가 선택한 입고구역 (item.location) → 자동 슬롯 판정
   //   · 상품 현재고 · 참고 표시
-  const productRealMap = item.product?.real_map ?? item.product?.location ?? null;
+  const productRealMap = item.product?.location ?? item.product?.display_location ?? null;
   const productCategoryCode = item.product?.category_code ?? null;
   const currentStock = Number(item.product?.current_stock ?? 0);
   const optimalStock = Number(item.product?.optimal_stock ?? 0);
@@ -137,7 +137,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
   const targetSlot = useMemo(() => classifyArrivalSlot(item.location), [item.location]);
   // 2026-09-02 · #74 · 사용자 규칙 · 창고1(24·25·26·27·7B·8A) · 나머지 모두 창고2
   //   · 입고구역 선택 시 · 그 구역의 창고만 표시 (배타적 필터)
-  //   · 미선택 시 · 상품 real_map 기반 · 창고1/창고2 모두 (해당 시)
+  //   · 미선택 시 · 상품 location 기반 · 창고1/창고2 모두 (해당 시)
   const hasLocation = !!item.location;
   const showW1 = hasLocation ? targetSlot === "w1" : warehouseVis.showW1;
   const showW2 = hasLocation ? targetSlot === "w2" : warehouseVis.showW2;
@@ -225,7 +225,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
             value={item.location}
             onChange={(v) => onSetLocation(item.key, v)}
           />
-          {/* 창고구역 배지 · 상품 real_map or 사용자 선택 기반 · 창1/창2 자동 */}
+          {/* 창고구역 배지 · 상품 location or 사용자 선택 기반 · 창1/창2 자동 */}
           {relatedSlots.filter(rs => rs.slot === "w1" || rs.slot === "w2").length > 0 && (
             <>
               <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0 ml-1">창고구역</span>

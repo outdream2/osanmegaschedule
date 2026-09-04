@@ -50,14 +50,13 @@ interface ProductRow {
   unit?: string | null;
   current_stock?: number | null;
   optimal_stock?: number | null;
-  real_map?: string | null;
+  location?: string | null;
   barcode?: string | null;
   spec?: string | null;
   sale_status?: string | null; // 2026-08-26 · 사용자 지시 · 판매중 필터용
 }
 
 interface ProductDetail extends ProductRow {
-  realMap?: string | null;
   warehouse_stock?: number | null;
   store_stock?: number | null;
   inv_checked_at?: string | null;
@@ -83,7 +82,7 @@ function canManageProducts(session: AuthSession | null): boolean {
 // product_code 는 편집 금지 · barcode 는 UNIQUE 검사 없음 (Phase 후속)
 type EditableKey =
   | "product_name" | "supplier" | "category" | "unit" | "spec" | "barcode"
-  | "real_map" | "optimal_stock" | "sale_price" | "purchase_price"
+  | "location" | "optimal_stock" | "sale_price" | "purchase_price"
   | "brand" | "manufacturer";
 
 const NUMBER_KEYS = new Set<EditableKey>(["optimal_stock", "sale_price", "purchase_price"]);
@@ -394,7 +393,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                 {editRow("sale_price", "판매가", "number")}
                 {editRow("purchase_price", "매입가", "number")}
                 {editRow("optimal_stock", "적정재고", "number")}
-                {editRow("real_map", "실제배정구역")}
+                {editRow("location", "배치구역")}
                 {editRow("unit", "단위")}
                 {editRow("spec", "규격")}
                 {editRow("barcode", "바코드")}
@@ -473,7 +472,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
           unit: p.unit ?? null,
           current_stock: p.current_stock ?? null,
           optimal_stock: p.optimal_stock ?? null,
-          real_map: p.real_map ?? null,
+          location: p.location ?? null,
           barcode: p.barcode ?? null,
           spec: p.spec ?? null,
           sale_status: (p as any).sale_status ?? null,

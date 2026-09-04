@@ -15,7 +15,7 @@ const emptyProduct: ProductInfo = {
   minStock: null,
   salePrice: null,
   purchasePrice: null,
-  realMap: null,
+  location: null,
   hidden: false,
 } as any;
 

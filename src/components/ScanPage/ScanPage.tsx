@@ -1,6 +1,6 @@
 // src/components/ScanPage/ScanPage.tsx
 // 실재고입력 · 좌 스캐너/상품 · 우 스캔리스트/실재고 입력 (창고1/2·매장1/2/3 5분리)
-// real_map "/" 분할 → 매장 구역 자동 배정 · 하위호환 · warehouse_stock ← warehouse1Qty 등 미러
+// location "/" 분할 → 매장 구역 자동 배정 · 하위호환 · warehouse_stock ← warehouse1Qty 등 미러
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
@@ -267,7 +267,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     const w2 = calcSlotTotal(row.prevWarehouse2Qty, row.warehouse2AddQty);
     const storeSum = store1 + store2 + store3;
     const warehouseSum = w1 + w2;
-    const rm = (row.product as any).realMap ?? (row.product as any).real_map ?? "";
+    const rm = (row.product as any).location ?? (row.product as any).display_location ?? "";
     const targetZone = (zoneOverride && zoneOverride.trim()) ? zoneOverride.trim() : rm;
     const autoNote = storeSum === 0
       ? (warehouseSum > 0 ? `매장 전량 부족 · 창고 ${warehouseSum}개 대기` : "매장·창고 모두 부족")
@@ -338,8 +338,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       return;
     }
 
-    // real_map 파싱 → 매장1·2·3 구역 자동 배정
-    const rm = (found as any).realMap ?? (found as any).real_map ?? null;
+    // location 파싱 → 매장1·2·3 구역 자동 배정
+    const rm = (found as any).location ?? (found as any).display_location ?? null;
     const [z1, z2, z3] = parseRealMap(rm);
 
     const newRow: StockRow = {
@@ -387,7 +387,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               prevStore1Qty:     s1 != null ? Number(s1) : null,
               prevStore2Qty:     s2 != null ? Number(s2) : null,
               prevStore3Qty:     s3 != null ? Number(s3) : null,
-              // 저장된 구역 우선 · 없으면 real_map 기반 유지
+              // 저장된 구역 우선 · 없으면 location 기반 유지
               store1Zone: (last.store1_zone ?? r.store1Zone) || null,
               store2Zone: (last.store2_zone ?? r.store2Zone) || null,
               store3Zone: (last.store3_zone ?? r.store3Zone) || null,
@@ -744,8 +744,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               name: product?.product_name ?? "",
               spec: product?.spec ?? "",
               supplier: product?.supplier ?? null,
-              realMap: product?.real_map ?? null,
-              real_map: product?.real_map ?? null,
+              location: product?.location ?? null,
             });
             setNotFoundCode(null);
             setCreateOpen(false);

@@ -95,7 +95,7 @@ export const FlowTab: React.FC = () => {
     } catch { return "all"; }
   });
   useEffect(() => { try { localStorage.setItem(SK_FLOW_CLASSFILTER, classFilter); } catch { /**/ } }, [classFilter]);
-  // 상품 real_map 매핑 (products.json 캐시)
+  // 상품 위치(location) 매핑 (products.json 캐시)
   const [productRealMapById, setProductRealMapById] = useState<Record<string, string | null>>({});
   useEffect(() => {
     let alive = true;
@@ -141,8 +141,7 @@ export const FlowTab: React.FC = () => {
       current_stock: p.current_stock ?? null,
       optimal_stock: p.optimal_stock ?? null,
       supplier: p.supplier ?? null,
-      real_map: p.real_map ?? null,
-      location: p.location ?? null,
+      location: p.location ?? p.display_location ?? null,
       warehouse_stock: p.warehouse_stock ?? null,
       store_stock: p.store_stock ?? null,
     };
@@ -603,7 +602,6 @@ export const FlowTab: React.FC = () => {
           selected={flowSelectedProduct}
           onClose={() => setFlowSelectedProduct(null)}
           onProductUpdate={(u) => setFlowSelectedProduct(prev => prev ? { ...prev, ...u } : prev)}
-          onRealMapUpdate={(v) => setFlowSelectedProduct(prev => prev ? { ...prev, real_map: v } : prev)}
           showChart={true}
           context="stock-manage"
           editable={true}

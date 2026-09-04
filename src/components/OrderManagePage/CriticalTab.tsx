@@ -204,8 +204,7 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
     name: String(selected.product_name ?? ""),
     spec: String((selected as any).spec ?? ""),
     supplier: (selected as any).supplier ?? null,
-    real_map: (selected as any).real_map ?? null,
-    realMap: (selected as any).real_map ?? null,
+    location: (selected as any).location ?? (selected as any).display_location ?? null,
     ...(selected as any),
   } as CacheProductInfo : null;
 

@@ -87,10 +87,10 @@ describe("ScanLeftPanel · #179 · notFoundCode 카드", () => {
 });
 
 // 2026-08-23 · #202 · SaveCard · 등록 준비 요약 리스트
-const mkRow = (code: string, name: string, realMap: string | null = null, addQty = 0): StockRow => ({
+const mkRow = (code: string, name: string, location: string | null = null, addQty = 0): StockRow => ({
   key: code + "_1",
   code,
-  product: { code, name, spec: "" } as any,
+  product: { code, name, spec: "", ...(location ? { location } : {}) } as any,
   addedAt: Date.now(),
   prevWarehouse1Qty: null,
   prevWarehouse2Qty: null,
@@ -105,7 +105,6 @@ const mkRow = (code: string, name: string, realMap: string | null = null, addQty
   store1Zone: null,
   store2Zone: null,
   store3Zone: null,
-  ...(realMap ? { product: { code, name, spec: "", realMap } as any } : {}),
 });
 
 describe("SaveCard · #202 · 등록 준비 요약 리스트", () => {
@@ -148,7 +147,7 @@ describe("SaveCard · #202 · 등록 준비 요약 리스트", () => {
     expect(container.textContent).toContain("3개");
   });
 
-  it("realMap 있음 · 위치 배지 (보라) 노출", () => {
+  it("location 있음 · 위치 배지 (보라) 노출", () => {
     const rows = [mkRow("PC001", "타이레놀", "12번", 5)];
     const { container } = render(<SaveCard {...baseSave} rows={rows} />);
     // 위치 배지 · text-violet-700

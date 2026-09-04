@@ -21,7 +21,6 @@ export interface ProductWithInventory {
   spec: string | null;
   location: string | null;
   display_location: string | null;
-  real_map: string | null;
   current_stock: number | null;
   optimal_stock: number | null;
   purchase_price: number | null;      // 2026-08-29 · #168 Phase 2 확장
@@ -171,7 +170,7 @@ export async function queryProductsWithInventory(
   //   · 각 endpoint 소비 필드 · 모두 포함 · 응답 형식 매핑 용이
   let productQuery = supabase
     .from("products")
-    .select("product_code, product_name, supplier, category, category_code, spec, location, display_location, real_map, current_stock, optimal_stock, purchase_price, sale_price, profit_rate, expiry_date, brand, manufacturer, unit, search_keywords, sale_status, hidden");
+    .select("product_code, product_name, supplier, category, category_code, spec, location, display_location, current_stock, optimal_stock, purchase_price, sale_price, profit_rate, expiry_date, brand, manufacturer, unit, search_keywords, sale_status, hidden");
   if (!includeHidden) productQuery = productQuery.eq("hidden", false);
   if (saleActive) productQuery = productQuery.eq("sale_status", "판매중");
   if (codes && codes.length > 0) productQuery = productQuery.in("product_code", codes);
@@ -219,7 +218,6 @@ export async function queryProductsWithInventory(
       spec: p.spec ?? null,
       location: p.location ?? p.display_location ?? null,
       display_location: p.display_location ?? null,
-      real_map: p.real_map ?? null,
       current_stock: p.current_stock != null ? Number(p.current_stock) : null,
       optimal_stock: p.optimal_stock != null ? Number(p.optimal_stock) : null,
       purchase_price: p.purchase_price != null ? Number(p.purchase_price) : null,

@@ -31,7 +31,7 @@ stockCheckPublicRouter.get("/api/stock-check", asyncHandler(async (req, res) => 
   const saleActive = setting?.value !== false;
   let query = supabase
     .from("products")
-    .select("product_name, spec, current_stock, sale_status, category, location, display_location, real_map, supplier")
+    .select("product_name, spec, current_stock, sale_status, category, location, display_location, supplier")
     .eq("hidden", false)
     .ilike("product_name", `%${raw}%`);
   if (saleActive) query = query.eq("sale_status", "판매중");
@@ -65,7 +65,6 @@ router.get("/api/products-map", asyncHandler(async (req, res) => {
         spec: p.spec ?? null,  // 하위호환 · 점진 제거 예정 · 진열위치 아님
         category: p.category ?? null,
         category_code: p.category_code ?? null,
-        real_map: p.real_map ?? p.realMap ?? null,
         current_stock: p.current_stock ?? null,
         sale_status: p.sale_status ?? null,
         barcode: p.barcode ?? null,
@@ -136,12 +135,12 @@ router.get("/api/inventory-latest", asyncHandler(async (_req, res) => {
 
 // 2026-08-28 · 사용자 지시 · 스캔 미등록 등록 모달 · 분류(category) 기반 참조 상품 리스트
 // GET /api/products-by-category?category=xxx  or  ?code=xxx  · 최대 100건
-// 응답: product_code · product_name · category · category_code · supplier · brand · manufacturer · spec · unit · sale_price · purchase_price · real_map
+// 응답: product_code · product_name · category · category_code · supplier · brand · manufacturer · spec · unit · sale_price · purchase_price · location
 router.get("/api/products-by-category", asyncHandler(async (req, res) => {
   const category = String(req.query.category ?? "").trim();
   const code = String(req.query.code ?? "").trim();
   if (!category && !code) return res.json([]);
-  const cols = "product_code,product_name,category,category_code,supplier,brand,manufacturer,spec,unit,sale_price,purchase_price,location,display_location,real_map";
+  const cols = "product_code,product_name,category,category_code,supplier,brand,manufacturer,spec,unit,sale_price,purchase_price,location,display_location";
   // 2026-08-28 · 감사 P2-1 · sale_status 필터 통일 · 판매중만 (설정 반영)
   const { data: saleSetting } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();
   const saleActive = saleSetting?.value !== false;
@@ -183,7 +182,7 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
       ...(padded !== q ? [`product_code.eq.${padded}`] : []),
     ].join(",");
 
-    const cols = "product_code,product_name,spec,supplier,category_code,category,purchase_price,sale_price,profit_rate,expiry_date,location,display_location,real_map,current_stock,sale_status,hidden";
+    const cols = "product_code,product_name,spec,supplier,category_code,category,purchase_price,sale_price,profit_rate,expiry_date,location,display_location,current_stock,sale_status,hidden";
 
     // 1차: search_keywords + hidden 필터 포함 시도
     let query = supabase.from("products").select(cols).or(buildOr(true));
@@ -194,7 +193,7 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
 
     // 2차 fallback 1: hidden 컬럼 없으면 제외하고 재시도
     if (error && /"?hidden"?|does not exist|column/i.test(error.message) && /hidden/i.test(error.message)) {
-      const cols2 = "product_code,product_name,spec,supplier,purchase_price,sale_price,profit_rate,expiry_date,location,display_location,real_map,current_stock,sale_status";
+      const cols2 = "product_code,product_name,spec,supplier,purchase_price,sale_price,profit_rate,expiry_date,location,display_location,current_stock,sale_status";
       let q2 = supabase.from("products").select(cols2).or(buildOr(true));
       if (supplier.length >= 2) q2 = q2.ilike("supplier", `%${supplier}%`);
       const r2 = await q2.limit(40);
@@ -456,56 +455,6 @@ router.delete("/api/product-import-log", authorize(9), asyncHandler(async (_req,
   res.json({ ok: true });
 }));
 
-// 2026-08-26 · 사용자 지시 · 전산구역(spec) 값으로 실제구역(real_map) 일괄 통일
-//   · spec 있는 모든 상품 · real_map = spec 으로 업데이트
-//   · 관리자 lv9 전용 · 대용량 · 청크 배치
-router.post("/api/products/sync-real-map-to-spec", authorize(9), validateBody(z.object({})), asyncHandler(async (_req, res) => {
-  const t0 = Date.now();
-  // 1. spec 이 있고 real_map 과 다른 상품 조회
-  const { data: rows, error: qErr } = await supabase
-    .from("products")
-    .select("product_code, spec, real_map")
-    .not("spec", "is", null)
-    .neq("spec", "");
-  if (qErr) throw new HttpError(500, qErr.message);
-  const targets = (rows ?? []).filter(r => {
-    const spec = String(r.spec ?? "").trim();
-    const real = String(r.real_map ?? "").trim();
-    return spec !== "" && spec !== real;
-  });
-  console.log(`[sync-real-map] 조회 ${rows?.length ?? 0}건 · 업데이트 대상 ${targets.length}건`);
-
-  // 2. 청크 500씩 · 각 상품 real_map = spec 로 upsert
-  let updated = 0;
-  const CHUNK = 500;
-  for (let i = 0; i < targets.length; i += CHUNK) {
-    const chunk = targets.slice(i, i + CHUNK);
-    const payload = chunk.map(r => ({ product_code: r.product_code, real_map: String(r.spec).trim() }));
-    const { error: uErr } = await supabase.from("products").upsert(payload, { onConflict: "product_code" });
-    if (uErr) {
-      console.error("[sync-real-map] upsert 오류:", uErr.message);
-      throw new HttpError(500, uErr.message);
-    }
-    updated += chunk.length;
-    console.log(`[sync-real-map] chunk ${i / CHUNK + 1} · ${updated}/${targets.length}`);
-  }
-  resetProductCache();
-  console.log(`[sync-real-map] 완료 · ${updated}건 · ${Date.now() - t0}ms`);
-  res.json({ ok: true, checked: rows?.length ?? 0, updated, elapsedMs: Date.now() - t0 });
-}));
-
-router.get("/api/products/realmap-check", asyncHandler(async (_req, res) => {
-  const { data, error } = await supabase.from("products").select("real_map").limit(1);
-  if (error) {
-    // 200 으로 ok:false 응답 (진단 엔드포인트 · 프론트에서 error 필드 감지)
-    return res.json({
-      ok: false,
-      error: error.message,
-      fix: "Supabase SQL Editor에서 실행: ALTER TABLE products ADD COLUMN IF NOT EXISTS \"real_map\" TEXT;",
-    });
-  }
-  res.json({ ok: true, sample: data?.[0]?.real_map ?? null });
-}));
 
 // 2026-08-25 · 사용자 지시 · 유통기한 임박 상품 리스트 · products.expiry_date IS NOT NULL
 //   · 매입 서브탭 (구 "실재고" → "유통기한 임박") · 화면 리스트 소스
@@ -515,7 +464,7 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
   // 2026-08-29 · #154 P2 · sale_status join · 클라이언트 3-way 필터
   const { data, error } = await supabase
     .from("products")
-    .select("product_code, product_name, spec, supplier, location, display_location, real_map, current_stock, expiry_date, sale_status")
+    .select("product_code, product_name, spec, supplier, location, display_location, current_stock, expiry_date, sale_status")
     .eq("hidden", false)
     .not("expiry_date", "is", null)
     .order("expiry_date", { ascending: true })
@@ -532,7 +481,7 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
 router.get("/api/products/hidden", asyncHandler(async (_req, res) => {
   const { data, error } = await supabase
     .from("products")
-    .select("product_code, product_name, spec, supplier, location, display_location, real_map, current_stock, sale_price")
+    .select("product_code, product_name, spec, supplier, location, display_location, current_stock, sale_price")
     .eq("hidden", true)
     .order("product_name", { ascending: true })
     .limit(500);
@@ -608,9 +557,7 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
 
   res.json({
     ...data,
-    realMap: data.real_map ?? null,
-    // location 우선 · real_map fallback (하위호환)
-    location: data.location ?? data.display_location ?? data.real_map ?? null,
+    location: data.location ?? data.display_location ?? null,
     // 재고 DB에서 병합 · #58 통합 · 창고1/2 · 매장/매장3
     warehouse_stock:  data.warehouse_stock ?? warehouseStock,
     warehouse1_stock: warehouseStock,
@@ -626,20 +573,6 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
   });
 }));
 
-// 2026-08-29 · 보안 S1 N8 fix · authorize(1) · 진열위치 편집 · 로그인 직원 필수
-router.patch("/api/products/:code/realmap", authorize(1), validateBody(z.object({ realMap: z.string().max(100).nullable().optional() })), asyncHandler(async (req, res) => {
-  const code = (req.params.code ?? "").trim();
-  const { realMap } = req.body ?? {};
-  if (!code) throw badRequest("code required");
-  const { error } = await supabase.from("products").update({ real_map: realMap }).eq("product_code", code);
-  if (error) {
-    console.error("[realmap PATCH] Supabase error:", error.message, "code:", code);
-    throw new HttpError(500, error.message);
-  }
-  resetProductCache();
-  res.json({ ok: true });
-}));
-
 // 상품 인라인 편집 · 허용 컬럼만 수정 (부적절 컬럼 차단)
 // 2026-08-25 · products 테이블에 없는 컬럼 · cost_price 제거
 const ALLOWED_INLINE_EDIT = new Set([
@@ -648,7 +581,6 @@ const ALLOWED_INLINE_EDIT = new Set([
   "purchase_price",
   "supplier",
   "spec",
-  "real_map",
   "brand",
   "manufacturer",
   "barcode",

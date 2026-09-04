@@ -1,8 +1,8 @@
 // src/components/DisplayPage/UnassignedProductsTab.tsx
-// 2026-08-26 · #125 · 사용자 지시 · 배치구역 · 미지정 상품 별도 탭
-//   · products.real_map 이 null / empty · 배치되지 않은 상품 리스트
+// 2026-08-26 · #125 · 배치구역 미지정 상품 별도 탭
+//   · products.location 이 null / empty · 배치되지 않은 상품 리스트
 //   · 검색 · 상품명/공급사/코드 · 실시간 필터
-//   · 인라인 편집 · real_map 지정 → 즉시 반영 (편집 후 목록에서 제외)
+//   · 인라인 편집 · location 지정 → 즉시 반영 (편집 후 목록에서 제외)
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { PackageX, RefreshCw, Pencil, Check, X as XIcon } from "lucide-react";
@@ -29,11 +29,11 @@ interface UnassignedProduct {
   product_name: string;
   supplier: string | null;
   spec: string | null;
-  real_map: string | null;
+  location: string | null;
+  display_location: string | null;
   current_stock: number | null;
-  sale_status: string | null; // 2026-08-26 · 판매중 필터용
-  /** 2026-08-26 · 사용자 지시 · 미배정 사유 · "spec" (전산구역 없음) · "real_map" (실제위치 없음) · "both" */
-  missing?: "spec" | "real_map" | "both";
+  sale_status: string | null;
+  missing?: "spec" | "location" | "both";
 }
 
 export const UnassignedProductsTab: React.FC = () => {
@@ -51,21 +51,18 @@ export const UnassignedProductsTab: React.FC = () => {
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
-    // /api/products-search?q=&limit=... · 서버에서 real_map IS NULL 상품 조회 필요
-    //   · 임시 · 대용량 조회 (limit=500) 후 · 클라이언트에서 real_map 미지정 필터
-    // 2026-08-26 · 사용자 지시 · spec (전산구역) OR real_map (실제위치) 미배정 상품
+    // 대용량 조회 후 클라이언트에서 location 미지정 필터
     api.get<{ items?: UnassignedProduct[] } | UnassignedProduct[]>("/api/products-search?q=&limit=1000")
       .then(({ data }) => {
         const list: UnassignedProduct[] = Array.isArray(data) ? (data as UnassignedProduct[]) : ((data as any)?.items ?? []);
         const isEmpty = (v: string | null) => !v || String(v).trim() === "" || String(v).trim() === "미지정";
         const unassigned = list
-          .filter(p => isEmpty(p.spec) || isEmpty(p.real_map))
-          // 2026-08-29 · #154 Phase 1 · 3-way filter · saleMatches (전체/판매중/판매중지)
+          .filter(p => isEmpty(p.spec) || (isEmpty(p.location) && isEmpty(p.display_location)))
           .filter(p => saleMatches(p.sale_status))
           .map(p => {
             const noSpec = isEmpty(p.spec);
-            const noMap  = isEmpty(p.real_map);
-            const missing: "spec" | "real_map" | "both" = noSpec && noMap ? "both" : noSpec ? "spec" : "real_map";
+            const noLoc  = isEmpty(p.location) && isEmpty(p.display_location);
+            const missing: "spec" | "location" | "both" = noSpec && noLoc ? "both" : noSpec ? "spec" : "location";
             return { ...p, missing };
           });
         setRows(unassigned);
@@ -100,7 +97,7 @@ export const UnassignedProductsTab: React.FC = () => {
     if (!value) return;
     setSavingId(row.product_code);
     try {
-      await api.patch(`/api/products/${encodeURIComponent(row.product_code)}`, { real_map: value });
+      await api.patch(`/api/products/${encodeURIComponent(row.product_code)}`, { location: value, display_location: value });
       setRows(prev => prev.filter(r => r.product_code !== row.product_code));
       showSuccess(`${row.product_name} · ${value} 지정 완료`);
       cancelEdit();
@@ -194,7 +191,7 @@ export const UnassignedProductsTab: React.FC = () => {
                       ) : p.missing === "spec" ? (
                         <span className="inline-flex items-center h-6 px-2 rounded-md text-[12px] font-bold bg-amber-100 text-amber-700 border border-amber-200">전산 없음</span>
                       ) : (
-                        <span className="inline-flex items-center h-6 px-2 rounded-md text-[12px] font-bold bg-sky-100 text-sky-700 border border-sky-200">실제 없음</span>
+                        <span className="inline-flex items-center h-6 px-2 rounded-md text-[12px] font-bold bg-sky-100 text-sky-700 border border-sky-200">위치 없음</span>
                       )}
                     </td>
                     <td className={tableTdCls("center")}>

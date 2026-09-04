@@ -15,7 +15,7 @@ export interface ZoneProductsModalState {
   category: string;
 }
 
-type SortKey = "name" | "spec" | "real_map" | "current_stock" | "warehouse_stock" | "store_stock" | "real_total" | "loss" | "optimal_stock" | "status" | "mismatch";
+type SortKey = "name" | "spec" | "current_stock" | "warehouse_stock" | "store_stock" | "real_total" | "loss" | "optimal_stock" | "status" | "mismatch";
 
 interface ZoneProductsModalProps {
   modal: ZoneProductsModalState;
@@ -109,7 +109,6 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
     switch (sort.key) {
       case "name": return dir * cmpStr(String(a.name ?? ""), String(b.name ?? ""));
       case "spec": return dir * cmpStr(String(a.spec ?? ""), String(b.spec ?? ""));
-      case "real_map": return dir * cmpStr(resolveProductLocation(a) ?? "", resolveProductLocation(b) ?? "");
       case "current_stock": {
         const aS = numOrNaN((a as any).current_stock); const bS = numOrNaN((b as any).current_stock);
         return dir * cmpNum(Number.isFinite(aS) ? aS : -Infinity, Number.isFinite(bS) ? bS : -Infinity);

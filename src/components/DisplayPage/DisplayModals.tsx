@@ -149,11 +149,6 @@ export const DisplayModals: React.FC<DisplayModalsProps> = (p) => (
     {p.productInfoModal && (
       <ProductInfoModal
         product={p.productInfoModal} onClose={() => p.setProductInfoModal(null)}
-        onRealMapUpdate={(newValue) => {
-          const pim = p.productInfoModal!;
-          p.setProductInfoModal(prev => prev ? { ...prev, real_map: newValue } : prev);
-          p.setProductsMap(prev => { const code = String(pim.code ?? "").trim(); if (!code || !prev[code]) return prev; return { ...prev, [code]: { ...prev[code], real_map: newValue } }; });
-        }}
         onProductUpdate={(updates) => {
           const pim = p.productInfoModal!;
           p.setProductInfoModal(prev => prev ? { ...prev, ...updates } : prev);

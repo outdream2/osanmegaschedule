@@ -17,7 +17,7 @@ interface StockItem {
   current_stock: string | null;
   sale_status: string | null;
   category: string | null;
-  real_map: string | null;
+  location: string | null;
   display_location: string | null;
   supplier: string | null;
 }
@@ -65,7 +65,7 @@ const STATE_META: Record<StockState, { label: string; bg: string; text: string; 
   out:     { label: "재고없음",  bg: "bg-red-100",     text: "text-red-600",     dot: "bg-red-400"     },
 };
 
-type StockSortKey = "product_name" | "current_stock" | "real_map" | "supplier";
+type StockSortKey = "product_name" | "current_stock" | "location" | "supplier";
 const STOCK_SORT_CMP: Record<StockSortKey, Comparator<StockItem>> = {
   current_stock: (a, b) => {
     const va = Number.isFinite(Number(a.current_stock)) ? Number(a.current_stock) : -Infinity;
@@ -73,8 +73,7 @@ const STOCK_SORT_CMP: Record<StockSortKey, Comparator<StockItem>> = {
     return va - vb;
   },
   product_name: (a, b) => String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko"),
-  // 2026-08-10 · 사용자 정책 · "구역" 정렬 = spec (진열위치 구역) · real_map (실제진열위치) 아님
-  real_map:     (a, b) => String(a.spec ?? "").localeCompare(String(b.spec ?? ""), "ko"),
+  location:     (a, b) => String(a.spec ?? "").localeCompare(String(b.spec ?? ""), "ko"),
   supplier:     (a, b) => String(a.supplier     ?? "").localeCompare(String(b.supplier     ?? ""), "ko"),
 };
 
@@ -188,7 +187,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
             <button onClick={() => toggleSort("product_name")} className={sortBtnCls("product_name")} title="상품명 정렬">상품명{arrow("product_name")}</button>
             <button onClick={() => toggleSort("current_stock")} className={sortBtnCls("current_stock")} title="재고수량 정렬">재고{arrow("current_stock")}</button>
             {isLoggedIn && <>
-              <button onClick={() => toggleSort("real_map")} className={sortBtnCls("real_map")} title="실제배치구역 정렬">구역{arrow("real_map")}</button>
+              <button onClick={() => toggleSort("location")} className={sortBtnCls("location")} title="실제배치구역 정렬">구역{arrow("location")}</button>
               <button onClick={() => toggleSort("supplier")} className={sortBtnCls("supplier")} title="공급처 정렬">공급처{arrow("supplier")}</button>
             </>}
           </div>
@@ -282,11 +281,11 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                           <div className="text-[15px] text-zinc-400 break-words mt-0.5" title="전산배치구역">{item.spec}</div>
                         )}
                         {/* 로그인 시: 구역(실제배치·진열·공급처) 표시 */}
-                        {isLoggedIn && (item.real_map || item.display_location || item.supplier) && (
+                        {isLoggedIn && (item.location || item.display_location || item.supplier) && (
                           <div className="flex items-center gap-2 flex-wrap mt-1">
-                            {item.real_map && (
-                              <span className="text-[14px] font-semibold text-emerald-700 whitespace-nowrap" title="실제배치구역">
-                                실제 {item.real_map}
+                            {item.location && (
+                              <span className="text-[14px] font-semibold text-emerald-700 whitespace-nowrap" title="배치구역">
+                                위치 {item.location}
                               </span>
                             )}
                             {item.display_location && (
