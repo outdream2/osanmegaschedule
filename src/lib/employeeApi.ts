@@ -44,6 +44,37 @@ export interface EmployeeUpdatePayload {
   bankbook_image_url?: string | null;
   // 2026-08-16 · #122 · 사번 (create · 사용자 편집 or 자동 생성)
   employee_number?: string | null;
+  // HR 확장 필드 (updateEmployee 에서 patch 로 전달)
+  contract_type?: string | null;
+  contract_start?: string | null;
+  contract_end?: string | null;
+  probation_end_date?: string | null;
+  birth_date?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  emergency_contact_rel?: string | null;
+  schedule_type?: string | null;
+  work_area?: string | null;
+  work_location?: string | null;
+  job_duties?: string | null;
+  working_hours_per_week?: number | null;
+  weekly_holiday?: string | null;
+  wage_calc_type?: string | null;
+  wage_amount?: number | null;
+  wage_pay_day?: string | null;
+  wage_pay_method?: string | null;
+  bank_name?: string | null;
+  bank_account_no?: string | null;
+  insurance_nps_date?: string | null;
+  insurance_nhis_date?: string | null;
+  insurance_ei_date?: string | null;
+  insurance_wcia_date?: string | null;
+  insurance_excluded?: boolean | null;
+  pharmacist_license_no?: string | null;
+  health_check_expiry?: string | null;
+  performance_rating?: string | null;
+  break_time_minutes?: number | null;
+  break_apply_paid?: boolean | null;
 }
 
 /**
