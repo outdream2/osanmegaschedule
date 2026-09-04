@@ -1,8 +1,8 @@
 # 서버 프레임워크 감사 (Phase 1)
 
-- 생성 · 2026-09-01 11:50:39
-- 스캔 파일 · 71개
-- 총 라우트 · 249개
+- 생성 · 2026-09-04 01:52:01
+- 스캔 파일 · 72개
+- 총 라우트 · 251개
 - 위반 · 0건 (high 0)
 
 ## 규칙
@@ -34,6 +34,6 @@ _없음 · 모든 라우트 준수_
 - ✅ · server/routes/ocr/synonymsRouter.ts · 7 라우트
 - ✅ · server/routes/ocr/templatesRouter.ts · 3 라우트
 - ✅ · server/routes/payment/borrowings.ts · 9 라우트
+- ✅ · server/routes/purchase/creditCards.ts · 5 라우트
 - ✅ · server/routes/purchase/invoiceImages.ts · 2 라우트
 - ✅ · server/routes/purchase/ocrConfirmed.ts · 3 라우트
-- ✅ · server/routes/purchase/purchase.ts · 5 라우트

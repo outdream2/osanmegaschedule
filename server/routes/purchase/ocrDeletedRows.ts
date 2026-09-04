@@ -4,12 +4,22 @@
 // 서명(signature) = normSupplier(supplier) + "|" + normName(product_name)
 //   같은 공급사 + 같은 (정규화) 품명 조합은 유일하게 결정됨
 // 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
+// 2026-09-04 · 보안 감사 · authorize(1) + validateBody 추가 (POST/DELETE 무인증 취약점)
 
+import { z } from "zod";
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { normSupplier } from "../../ocr/match";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
+import { authorize } from "../../middleware/requireAuth";
+import { validateBody } from "../../middleware/zodValidate";
+
+const OcrDeletedRowsCreateSchema = z.object({
+  items: z.array(z.object({ supplier: z.string().min(1), name: z.string().min(1) })).optional(),
+  supplier: z.string().optional(),
+  name: z.string().optional(),
+});
 
 /** 품명 정규화 (서명용): 소문자·공백·특수문자·괄호 제거 */
 function normName(s: string | null | undefined): string {
@@ -28,7 +38,7 @@ export const ocrDeletedRowsRouter = Router();
  * GET /api/ocr-deleted-rows?supplier=경방신약
  *   특정 공급사만
  */
-ocrDeletedRowsRouter.get("/api/ocr-deleted-rows", asyncHandler(async (req, res) => {
+ocrDeletedRowsRouter.get("/api/ocr-deleted-rows", authorize(1), asyncHandler(async (req, res) => {
   const supplier = String(req.query.supplier ?? "").trim();
   let q = supabase.from("ocr_deleted_rows").select("id, supplier_norm, name_norm, signature, supplier_raw, name_raw, deleted_at").order("deleted_at", { ascending: false });
   if (supplier) {
@@ -44,7 +54,7 @@ ocrDeletedRowsRouter.get("/api/ocr-deleted-rows", asyncHandler(async (req, res) 
  *   body: { items: [{ supplier, name }, ...] } 또는 { supplier, name }
  *   중복 서명은 upsert (에러 무시)
  */
-ocrDeletedRowsRouter.post("/api/ocr-deleted-rows", asyncHandler(async (req, res) => {
+ocrDeletedRowsRouter.post("/api/ocr-deleted-rows", authorize(1), validateBody(OcrDeletedRowsCreateSchema), asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const items: Array<{ supplier: string; name: string }> = Array.isArray(b.items)
     ? b.items
@@ -79,7 +89,7 @@ ocrDeletedRowsRouter.post("/api/ocr-deleted-rows", asyncHandler(async (req, res)
 /**
  * DELETE /api/ocr-deleted-rows/:id — 특정 삭제 기록 복구 (다시 표시되도록)
  */
-ocrDeletedRowsRouter.delete("/api/ocr-deleted-rows/:id", asyncHandler(async (req, res) => {
+ocrDeletedRowsRouter.delete("/api/ocr-deleted-rows/:id", authorize(2), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) throw badRequest("invalid id");
   const { error } = await supabase.from("ocr_deleted_rows").delete().eq("id", id);

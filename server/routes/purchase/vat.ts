@@ -22,6 +22,7 @@ import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -80,7 +81,7 @@ function calcVat(amount: number, vat: number, vatIncluded: boolean | null = null
 // GET /api/vat/summary?period=2026-1H
 //   · 기간별 매입세액 총계 · 매입가 · 공급사수 · 예상 공제액
 // ═════════════════════════════════════════════════════════════════
-router.get("/api/vat/summary", asyncHandler(async (req, res) => {
+router.get("/api/vat/summary", authorize(1), asyncHandler(async (req, res) => {
   const periodParam = String(req.query.period ?? "").trim();
   const range = resolvePeriod(periodParam);
   if (!range) throw badRequest("period 형식 오류 · 예: 2026-1H · 2026-Q1");
@@ -166,7 +167,7 @@ router.get("/api/vat/summary", asyncHandler(async (req, res) => {
 // GET /api/vat/vendor-breakdown?period=2026-1H
 //   · 공급사별 매입가·부가세·건수 집계 (내림차순)
 // ═════════════════════════════════════════════════════════════════
-router.get("/api/vat/vendor-breakdown", asyncHandler(async (req, res) => {
+router.get("/api/vat/vendor-breakdown", authorize(1), asyncHandler(async (req, res) => {
   const periodParam = String(req.query.period ?? "").trim();
   const range = resolvePeriod(periodParam);
   if (!range) throw badRequest("period 형식 오류");
@@ -252,7 +253,7 @@ router.get("/api/vat/vendor-breakdown", asyncHandler(async (req, res) => {
 // GET /api/vat/vendor-detail?period=2026-1H&supplier=코스트팜
 //   · 특정 공급사의 기간 내 매입 상세 명세
 // ═════════════════════════════════════════════════════════════════
-router.get("/api/vat/vendor-detail", asyncHandler(async (req, res) => {
+router.get("/api/vat/vendor-detail", authorize(1), asyncHandler(async (req, res) => {
   const periodParam = String(req.query.period ?? "").trim();
   const supplier = String(req.query.supplier ?? "").trim();
   const range = resolvePeriod(periodParam);
@@ -309,7 +310,7 @@ router.get("/api/vat/vendor-detail", asyncHandler(async (req, res) => {
 //   · 반환 · months[] 오름차순 · 각 월 { month, salesTotal, salesVat, salesSupply,
 //                                        purchaseGross, purchaseSupply, purchaseVat, purchaseDeductibleVat }
 // ═════════════════════════════════════════════════════════════════
-router.get("/api/vat/monthly-summary", asyncHandler(async (req, res) => {
+router.get("/api/vat/monthly-summary", authorize(1), asyncHandler(async (req, res) => {
   const fromParam = String(req.query.from ?? "").trim();
   const toParam = String(req.query.to ?? "").trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fromParam) || !/^\d{4}-\d{2}-\d{2}$/.test(toParam)) {
