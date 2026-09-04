@@ -20,6 +20,8 @@ export interface ProductSummary {
   //   · null · 매핑 실패 or 판매 데이터 없음 (0 과 구분 · UI 회색 처리)
   sale_qty?: number | null;
   sale_amount?: number | null;
+  // 2026-09-04 · productsCache 조인 · 현재고
+  current_stock?: number | null;
 }
 
 interface ProductRowCardProps {
@@ -65,6 +67,8 @@ export const ProductRowCard: React.FC<ProductRowCardProps> = React.memo(({
   // 2026-08-04 · 판매 지표 (사용자 요청 · null 은 미매핑 · 0 은 매핑됐지만 판매 없음)
   const saleQty = product.sale_qty ?? null;
   const saleAmt = product.sale_amount ?? null;
+  const totalQty = product.total_qty ?? 0;
+  const currentStock = product.current_stock ?? null;
   const supplierLabel = product.primary_supplier
     ? (product.supplier_count > 1 ? `${product.primary_supplier} 외 ${product.supplier_count - 1}` : product.primary_supplier)
     : "공급사 미상";
@@ -94,20 +98,22 @@ export const ProductRowCard: React.FC<ProductRowCardProps> = React.memo(({
         </span>
       </div>
 
-      {/* Line 2 · 총 매입액 + 매입건수 + 대표 공급사 */}
+      {/* Line 2 · 총 매입액 + 매입수량 + 매입건수 + 대표 공급사 */}
       <div className="flex items-center gap-2 w-full min-w-0">
         <span
-          className={`text-[12px] font-bold tabular-nums shrink-0 ${
+          className={`text-[13px] font-bold tabular-nums shrink-0 ${
             totalAmount > 0 ? (active ? "text-sky-700" : "text-zinc-600") : "text-zinc-300"
           }`}
           title={`총 매입액 · ${totalAmount.toLocaleString()}원`}
         >
           {fmtWon(totalAmount)}
         </span>
-        <span className="text-[11px] font-semibold text-zinc-400 tabular-nums shrink-0" title={`매입 건수 · ${purchaseCount}건`}>
+        <span className="text-[12px] font-semibold text-amber-600 tabular-nums shrink-0" title={`매입수량 · ${totalQty.toLocaleString()}개`}>
+          {totalQty.toLocaleString()}개
+        </span>
+        <span className="text-[12px] font-semibold text-zinc-400 tabular-nums shrink-0" title={`매입 건수 · ${purchaseCount}건`}>
           {purchaseCount}건
         </span>
-        {/* 2026-08-24 · 말줄임표 X · 줄바꿈 (원칙 · 새 규칙) */}
         <span
           className="text-[12px] text-zinc-500 flex-1 min-w-0 whitespace-normal break-words leading-snug"
           title={product.primary_supplier ?? "공급사 정보 없음"}
@@ -121,9 +127,9 @@ export const ProductRowCard: React.FC<ProductRowCardProps> = React.memo(({
         )}
       </div>
 
-      {/* Line 3 · 판매량 · 판매금액 (최근 1개월 · 2026-08-04 사용자 요청) */}
+      {/* Line 3 · 판매량·판매금액 (최근 1개월) + 현재고 */}
       <div className="flex items-center gap-2 w-full min-w-0">
-        <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">판매</span>
+        <span className="text-[12px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">판매</span>
         <span
           className={`text-[12px] font-semibold tabular-nums shrink-0 ${
             saleQty != null && saleQty > 0 ? "text-rose-600" : "text-zinc-300"
@@ -139,6 +145,16 @@ export const ProductRowCard: React.FC<ProductRowCardProps> = React.memo(({
           title={saleAmt != null ? `판매금액 · ${saleAmt.toLocaleString()}원 (최근 1개월)` : "판매 데이터 없음"}
         >
           {saleAmt != null ? fmtWon(saleAmt) : "-"}
+        </span>
+        <span className="flex-1" />
+        <span className="text-[12px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">현재고</span>
+        <span
+          className={`text-[12px] font-bold tabular-nums shrink-0 ${
+            currentStock != null && currentStock > 0 ? (active ? "text-sky-800" : "text-brand-deep") : "text-zinc-300"
+          }`}
+          title={currentStock != null ? `현재 시스템 재고 · ${currentStock.toLocaleString()}개` : "재고 데이터 없음"}
+        >
+          {currentStock != null ? `${currentStock.toLocaleString()}개` : "-"}
         </span>
       </div>
     </button>

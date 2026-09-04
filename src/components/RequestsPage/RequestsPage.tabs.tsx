@@ -6,9 +6,9 @@
 
 import React from "react";
 import {
-  Bell, Package, CheckCircle2, Clock, ShoppingCart,
-  Square, CheckSquare, Send, ScrollText, ChevronDown, ChevronUp,
-} from "lucide-react";
+  Bell, Package, CheckCircle, Clock, ShoppingCart,
+  Square, CheckSquare, PaperPlaneTilt, Scroll, CaretDown, CaretUp,
+} from "@phosphor-icons/react";
 import type { ProductInfo } from "../../lib/productsCache";
 import { fmtDateMD } from "../../lib/format";
 import { CARD_BASE } from "../../styles/tokens";
@@ -24,8 +24,8 @@ const fmtDate = fmtDateMD;
 
 // ─── 공통 Checkbox ─────────────────────────────────────────────
 export const RequestCheckbox: React.FC<{ checked: boolean; onChange: () => void }> = ({ checked, onChange }) => (
-  <button onClick={onChange} className="shrink-0 cursor-pointer text-gray-300 hover:text-gray-500 transition">
-    {checked ? <CheckSquare size={16} className="text-rose-500" /> : <Square size={16} />}
+  <button onClick={onChange} className="shrink-0 cursor-pointer text-zinc-300 hover:text-zinc-500 transition">
+    {checked ? <CheckSquare size={16} weight="fill" className="text-brand-deep" /> : <Square size={16} />}
   </button>
 );
 
@@ -67,8 +67,8 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
   return (
     <div className="flex flex-col gap-2">
       {notifyToast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-blue-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 whitespace-nowrap">
-          <Bell size={13} />{notifyToast}
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-brand-deep text-white text-[14px] font-bold px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 whitespace-nowrap">
+          <Bell size={13} weight="fill" />{notifyToast}
         </div>
       )}
       <ListToolbar
@@ -84,9 +84,9 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
             <button
               onClick={onNotifyAll}
               disabled={notifying || displayReqs.filter(r => r.status === "pending").length === 0}
-              className="flex items-center gap-1.5 text-[15px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border border-blue-400 px-2.5 h-6 rounded-md transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              className="flex items-center gap-1.5 text-[15px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border border-brand px-2.5 h-6 rounded-md transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
             >
-              {notifying ? <Spinner size={11} tone="white" /> : <Send size={11} />}
+              {notifying ? <Spinner size={11} tone="white" /> : <PaperPlaneTilt size={11} weight="fill" />}
               알림전송
             </button>
           ) : null
@@ -109,7 +109,7 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                 <th className="relative px-2 py-2" style={{ width: rw("check"), minWidth: rw("check") }}>
                   <button onClick={onToggleAll} className="shrink-0 cursor-pointer text-zinc-400 hover:text-zinc-600 transition">
                     {selectedDisplay.size === displayReqs.length && displayReqs.length > 0
-                      ? <CheckSquare size={14} className="text-rose-500" />
+                      ? <CheckSquare size={14} weight="fill" className="text-brand-deep" />
                       : <Square size={14} />}
                   </button>
                   <span {...rr("check")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
@@ -165,24 +165,24 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                 return (
                   <tr
                     key={r.id}
-                    className={`transition-all duration-150 ${rowLeftBorder} ${selectedDisplay.has(r.id) ? "bg-rose-50/50" : "hover:bg-zinc-50/60"} ${isDone ? "opacity-60" : ""}`}
+                    className={`transition-all duration-150 ${rowLeftBorder} ${selectedDisplay.has(r.id) ? "bg-brand-tint/50" : "hover:bg-brand-tint/25"} ${isDone ? "opacity-60" : ""}`}
                   >
                     <td className="w-8 px-2 py-2">
                       <RequestCheckbox checked={selectedDisplay.has(r.id)} onChange={() => onToggleOne(r.id)} />
                     </td>
                     <td className="px-3 py-2 max-w-[200px]">
-                      <span className={`text-[14px] font-semibold break-words whitespace-normal leading-tight ${isDone ? "line-through text-zinc-400" : "text-zinc-800"}`}>
+                      <span className={`text-[15px] font-semibold break-words whitespace-normal leading-tight ${isDone ? "line-through text-zinc-400" : "text-zinc-800"}`}>
                         {productName}
                       </span>
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap">
-                      <span className="text-[14px] font-bold text-zinc-700 break-keep">
+                      <span className="text-[15px] font-bold text-zinc-700 break-keep">
                         {r.zone_label || r.zone_id || "—"}
                       </span>
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap">
                       {r.assigned_staff_name
-                        ? <span className="text-[14px] font-bold text-indigo-700">{r.assigned_staff_name}</span>
+                        ? <span className="text-[15px] font-bold text-brand-deep">{r.assigned_staff_name}</span>
                         : <span className="text-[15px] text-zinc-300">미지정</span>}
                     </td>
                     <td className="px-3 py-2 text-center whitespace-nowrap">
@@ -192,8 +192,8 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                         const clickable = !disabled;
                         const label = prepared ? "완료" : "대기";
                         const cls = prepared
-                          ? "text-sky-700 bg-sky-50 border-sky-200 hover:bg-sky-100"
-                          : "text-amber-700 bg-amber-50 border-amber-300 hover:bg-amber-100";
+                          ? "text-sky-700 border-sky-200 hover:bg-sky-50/60"
+                          : "text-amber-600 border-amber-300 hover:bg-amber-50/60";
                         const Icon = prepared ? Package : Clock;
                         return (
                           <button
@@ -224,9 +224,9 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                         const clickable = !disabled;
                         const label = done ? "완료" : "대기";
                         const cls = done
-                          ? "text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
-                          : "text-amber-700 bg-amber-50 border-amber-300 hover:bg-amber-100";
-                        const Icon = done ? CheckCircle2 : Clock;
+                          ? "text-emerald-700 border-emerald-200 hover:bg-emerald-50/60"
+                          : "text-amber-600 border-amber-300 hover:bg-amber-50/60";
+                        const Icon = done ? CheckCircle : Clock;
                         return (
                           <button
                             onClick={() => onCompleteDisplay(r)}
@@ -565,10 +565,10 @@ export const InventoryCheckTab: React.FC<InventoryCheckTabProps> = ({
             className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 border border-line rounded-xl text-[15px] font-bold text-gray-500 hover:bg-gray-100 transition cursor-pointer"
           >
             <span className="flex items-center gap-1.5">
-              <ScrollText size={12} className="text-purple-400" />
+              <Scroll size={12} className="text-purple-400" />
               점검 이력 로그 ({inventoryChecks.length}건)
             </span>
-            {invLogOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            {invLogOpen ? <CaretUp size={13} /> : <CaretDown size={13} />}
           </button>
 
           {invLogOpen && (() => {

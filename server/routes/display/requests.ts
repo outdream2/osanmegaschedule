@@ -717,7 +717,7 @@ router.post("/api/order-requests/bulk-send", authorize(3), validateBody(BulkSend
       }
     }
 
-    dispatch.status = outcomes.some(o => /skipped\(/.test(o)) ? "sent" : "dry_run";
+    dispatch.status = outcomes.some(o => /:sent$/.test(o) || /skipped\(/.test(o)) ? "sent" : "dry_run";
 
     // 2026-08-10 · #14 · order_requests 라인에 status='ordered' + 발주서 정보 저장
     //   각 아이템 · order_request_id 로 UPDATE · 마이그레이션 add_order_dispatch_columns_2026-08-10.sql 대기 시 fallback

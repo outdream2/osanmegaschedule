@@ -14,6 +14,7 @@ import React, { useCallback, useEffect, useMemo, useState, useRef } from "react"
 import { useVendors } from "../../hooks/useVendors";
 // 2026-08-29 · 상품명 검색 · 통일 로직
 import { matchesProductQuery } from "../../lib/productMatch";
+import { lookupProduct } from "../../lib/productsCache";
 // 2026-08-22 · Framework Phase 4 · UI imports 정리 (panels 로 이관)
 // T-CSS Phase 2 · 2026-08-06
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
@@ -625,6 +626,7 @@ export const PurchaseHistoryTab: React.FC = () => {
           if (stripped) sales = productSalesMap.get(stripped);
         }
       }
+      const cached = a.product_code ? lookupProduct(a.product_code) : null;
       list.push({
         product_code: a.product_code,
         product_name: a.product_name,
@@ -635,6 +637,7 @@ export const PurchaseHistoryTab: React.FC = () => {
         primary_supplier: top ? top[0] : null,
         supplier_count: a.supplierSet.size,
         sale_qty: sales ? sales.qty : null,
+        current_stock: cached ? (cached.current_stock ?? null) : null,
         sale_amount: sales ? sales.amt : null,
       });
     }

@@ -1,4 +1,4 @@
-﻿// 2026-08-22 · Framework Phase 4 · ContractSettingsPage.tsx large-file 분리
+// 2026-08-22 · Framework Phase 4 · ContractSettingsPage.tsx large-file 분리
 // CompanyInfoSection · 회사 정보 섹션 (접기·회사명·대표자·주소·사업자번호·임금지급일)
 //   · props-driven pure display
 
