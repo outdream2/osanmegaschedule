@@ -3,9 +3,12 @@
 // 2026-09-02 · 🔴 fix · team_leader_name/phone · emergency_contact · vat_included 누락 (사용자 지시)
 //   · 이전 · Zod 미포함 · validateBody 가 body 에서 스트립 → 서버 destructure = undefined → 저장 안 됨
 //   · 사용자 "5필드 저장 안 됨" 이슈 · 근본 원인
+// 2026-09-04 · 🔴 fix · UpdateVendorSchema · email 포맷 강제 제거 (사용자 지시)
+//   · 이전 · autosave 800ms · 부분 입력 중 (예: "abc") · 400 반환 · 사용자 랜딩 이탈 리포트
+//   · 이후 · email 은 문자열 · 형식 강제 X · DB 저장 시에만 사용 · Create 는 유지
 import { z } from "zod";
 
-/** POST /api/vendors · 공급사 등록 */
+/** POST /api/vendors · 공급사 등록 (신규 등록 시 이메일 형식 검증 유지) */
 export const CreateVendorSchema = z.object({
   company_name: z.string().min(1, "회사명은 필수입니다").max(100),
   contact_name: z.string().max(50).nullable().optional(),
@@ -32,6 +35,11 @@ export const CreateVendorSchema = z.object({
 });
 export type CreateVendorInput = z.infer<typeof CreateVendorSchema>;
 
-/** PATCH /api/vendors/:id · 공급사 수정 (부분 갱신) */
-export const UpdateVendorSchema = CreateVendorSchema.partial();
+/** PATCH /api/vendors/:id · 공급사 수정 (부분 갱신)
+ *  2026-09-04 · fix · email · 형식 강제 제거 · autosave 부분 입력 400 방지
+ *   · vendor 자동저장 800ms · 사용자가 "a" 만 쳐도 서버 400 → 사용자 이탈 UX 문제
+ *   · email 형식 검증은 프론트 <input type="email"> 브라우저 검증만 사용 · 서버는 문자열 저장 */
+export const UpdateVendorSchema = CreateVendorSchema.partial().extend({
+  email: z.string().max(200).nullable().optional(),
+});
 export type UpdateVendorInput = z.infer<typeof UpdateVendorSchema>;

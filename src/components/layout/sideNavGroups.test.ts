@@ -92,10 +92,23 @@ describe("canAccessItem", () => {
     expect(canAccessItem(restricted as any, adminSession)).toBe(true);
   });
 
-  it("vendor 세션 · landing 만 접근", () => {
+  // 2026-09-04 · Bug #3 · vendor 허용 whitelist 확장 · reservation·display(vendor-manage)·vendor-stock
+  it("vendor 세션 · 허용 whitelist · landing·reservation·display(vendor-manage)·vendor-stock", () => {
     const vendorSession = { role: "vendor", level: 0 } as any;
+    // 허용되지 않는 페이지 (schedule) · false
     expect(canAccessItem(item as any, vendorSession)).toBe(false);
+    // landing · true
     expect(canAccessItem({ key: "landing", label: "홈", icon: (() => null) as any }, vendorSession)).toBe(true);
+    // reservation · true
+    expect(canAccessItem({ key: "reservation", label: "방문예약", icon: (() => null) as any } as any, vendorSession)).toBe(true);
+    // display + vendor-manage · true
+    expect(canAccessItem({ key: "display", label: "공급사 정보", icon: (() => null) as any, subTab: "vendor-manage" } as any, vendorSession)).toBe(true);
+    // display + 다른 서브탭 · false (관리자 전용)
+    expect(canAccessItem({ key: "display", label: "매입", icon: (() => null) as any, subTab: "purchase" } as any, vendorSession)).toBe(false);
+    // vendor-stock · true
+    expect(canAccessItem({ key: "vendor-stock", label: "공급사 재고확인", icon: (() => null) as any } as any, vendorSession)).toBe(true);
+    // 다른 페이지 (business-manage 등) · false
+    expect(canAccessItem({ key: "business-manage", label: "경영", icon: (() => null) as any } as any, vendorSession)).toBe(false);
   });
 
   it("managerOnly · level >= 2 만", () => {

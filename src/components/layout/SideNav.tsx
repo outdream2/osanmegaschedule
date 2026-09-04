@@ -65,12 +65,24 @@ function writeGroupOpen(groupId: string, open: boolean): void {
 //   · AppNavHeader Breadcrumb 등 다른 소비자와 공유
 import { useActiveSubTab } from "../../hooks/useActiveSubTab";
 
+// 2026-09-04 · fix (Bug #3) · vendor 사이드바 · 공급사 정보 클릭 시 · 랜딩 이동 + 모달 open 신호
+//   · vendor 는 DisplayPage 접근 불가 · LandingPage 의 VendorDetailModal 을 대신 open
+//   · localStorage 신호 + custom event · LandingPage 마운트 시 감지 (또는 mount 상태에서 event 처리)
+export const LANDING_ACTION_KEY = "landing.action";
+export const LANDING_ACTION_EVENT = "landing:action";
+export type LandingAction = "open-vendor-self" | "open-vendor-stock";
+export function dispatchLandingAction(action: LandingAction): void {
+  try { localStorage.setItem(LANDING_ACTION_KEY, action); } catch { /* quota */ }
+  try { window.dispatchEvent(new CustomEvent<LandingAction>(LANDING_ACTION_EVENT, { detail: action })); } catch { /* silent */ }
+}
+
 // ─── CollapsibleGroup: 개별 그룹 접이식 트리 ────────────────────────────────
 interface CollapsibleGroupProps {
   group: SideNavGroup;
   activePage: AppNavPage;
   activeSubTab: string | null;
   onNavigate: (page: AppNavPage) => void;
+  isVendor: boolean;
 }
 
 const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
@@ -78,6 +90,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
   activePage,
   activeSubTab,
   onNavigate,
+  isVendor,
 }) => {
   const [open, setOpen] = useState<boolean>(() => readGroupOpen(group.id));
 
@@ -100,6 +113,14 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
   // 서브탭 클릭 시 · localStorage 저장 + custom event dispatch → 각 페이지가 리스닝하여 setSubTab
   //   · subTab 형식 "sub:nested" (예: "document-writer:contract") 는 3레벨 지원
   const handleNavItem = (item: SideNavItem) => {
+    // 2026-09-04 · Bug #3 · vendor 특수 라우팅
+    //   · vendor 는 DisplayPage 접근 불가 · "공급사 정보" (display+vendor-manage) 는 랜딩에서 모달 open
+    //   · signal + event · LandingPage 가 감지하여 VendorDetailModal 자동 open
+    if (isVendor && item.key === "display" && item.subTab === "vendor-manage") {
+      dispatchLandingAction("open-vendor-self");
+      onNavigate("landing");
+      return;
+    }
     if (item.subTab) {
       const [outer, inner] = item.subTab.split(":");
       try {
@@ -498,6 +519,7 @@ export const SideNav: React.FC<SideNavProps> = ({
               activePage={activePage}
               activeSubTab={activeSubTab}
               onNavigate={onNavigate}
+              isVendor={authSession?.role === "vendor"}
             />
           )
         ))}

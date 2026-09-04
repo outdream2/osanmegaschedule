@@ -93,9 +93,24 @@ describe("UpdateVendorSchema (partial)", () => {
     expect(r.success).toBe(true);
   });
 
-  it("email · 잘못된 형식 · 실패 (partial 이라도 검증)", () => {
+  // 2026-09-04 · Bug #1·#4 fix · UpdateVendorSchema · email 형식 강제 제거
+  //   · autosave 부분 입력 (예: "abc") · 400 반환 방지 · 사용자 이탈 UX 이슈 해결
+  //   · CreateVendorSchema 는 여전히 형식 강제 (신규 등록 시 검증)
+  it("email · 형식 무관 · 성공 (autosave 부분 입력 대응)", () => {
     const r = UpdateVendorSchema.safeParse({ email: "not-email" });
-    expect(r.success).toBe(false);
+    expect(r.success).toBe(true);
+  });
+  it("email · 정상 형식 · 성공", () => {
+    const r = UpdateVendorSchema.safeParse({ email: "orders@company.com" });
+    expect(r.success).toBe(true);
+  });
+  it("email · null · 성공", () => {
+    const r = UpdateVendorSchema.safeParse({ email: null });
+    expect(r.success).toBe(true);
+  });
+  it("email · 빈 문자열 · 성공", () => {
+    const r = UpdateVendorSchema.safeParse({ email: "" });
+    expect(r.success).toBe(true);
   });
 });
 

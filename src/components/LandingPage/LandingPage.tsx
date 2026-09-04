@@ -43,7 +43,9 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { TIMING } from "../../constants/timing";
 // 2026-08-09 · 거래처 담당자 로그인 시 · 본인 공급사 조회·수정 · 공통 VendorDetailModal 재사용
 import { VendorDetailModal, type Vendor as VendorFull } from "./VendorListEditor";
-import { VendorStockModal } from "./VendorStockModal";
+// 2026-09-04 · #23 · 공급사 재고확인 · 모달 → 전용 페이지 (VendorStockPage) 이관
+//   · VendorStockModal 은 회귀 방지 위해 파일 유지 (다른 위치에서 재사용 여지)
+//   · 랜딩 진입점만 · setShowVendorStock 대신 onNavigate("vendor-stock")
 import { useVendors } from "../../hooks/useVendors";
 import { MenuCard } from "./MenuCard";
 import { StockSearch } from "./StockSearch";
@@ -133,8 +135,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   // 2026-08-25 · Framework Phase 4 · 입고알림 · StockArrivalList 로 이관
   // 2026-08-09 · 거래처 담당자 · 본인 공급사 조회·수정 모달 여부
   const [showVendorSelf, setShowVendorSelf] = useState(false);
-  // 2026-08-10 · #23 · 공급사 재고확인 모달
-  const [showVendorStock, setShowVendorStock] = useState(false);
+  // 2026-09-04 · #23 · 공급사 재고확인 · 모달 → 전용 페이지 (VendorStockPage) 이관
+  //   · showVendorStock 상태 제거 · 버튼 클릭 시 onNavigate("vendor-stock") 호출
   const { vendors: _rawVendorsSelf, refresh: refreshVendorsSelf } = useVendors();
   const vendorSelf = useMemo<VendorFull | null>(() => {
     if (!authSession || authSession.role !== "vendor") return null;
@@ -166,6 +168,43 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     const id = setInterval(() => { refreshVendorsSelf(); }, 30_000);
     return () => clearInterval(id);
   }, [authSession?.role, vendorSelf, refreshVendorsSelf]);
+
+  // 2026-09-04 · Bug #3 · 사이드바 vendor · "공급사 정보" 클릭 시 · VendorDetailModal open 신호 처리
+  //   · SideNav.dispatchLandingAction("open-vendor-self") → localStorage + CustomEvent
+  //   · 여기서 감지 · showVendorSelf true · 신호 소비 (localStorage 삭제)
+  //   · mount 시 (초기 진입) 도 localStorage 확인 · 이미 저장된 신호 처리
+  useEffect(() => {
+    if (authSession?.role !== "vendor") return;
+    const openIfSelf = () => {
+      if (vendorSelf) setShowVendorSelf(true);
+    };
+    const consume = () => {
+      try {
+        const action = localStorage.getItem("landing.action");
+        if (action === "open-vendor-self") {
+          openIfSelf();
+          localStorage.removeItem("landing.action");
+        } else if (action === "open-vendor-stock") {
+          // 2026-09-04 · #23 · 모달 → 전용 페이지 이관 · 즉시 라우팅
+          localStorage.removeItem("landing.action");
+          if (authSession) onNavigate("vendor-stock", authSession);
+        }
+      } catch { /* silent */ }
+    };
+    // 초기 진입 시 · localStorage 신호 소비
+    consume();
+    // custom event · 이미 랜딩에 있을 때 · 사이드바 클릭 즉시 반응
+    const onAction = (e: Event) => {
+      const detail = (e as CustomEvent<string>).detail;
+      if (detail === "open-vendor-self") openIfSelf();
+      // 2026-09-04 · #23 · 모달 → 전용 페이지 이관 · 즉시 라우팅
+      else if (detail === "open-vendor-stock" && authSession) onNavigate("vendor-stock", authSession);
+      try { localStorage.removeItem("landing.action"); } catch { /* silent */ }
+    };
+    window.addEventListener("landing:action", onAction);
+    return () => window.removeEventListener("landing:action", onAction);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authSession?.role, vendorSelf]);
 
   // ── 인라인 재고검색 (비로그인용) ──────────────────────────────────────
   // 2026-08-17 · #130 · code_slim · StockSearch 컴포넌트로 분리
@@ -659,7 +698,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       description={label}
                       disabled={disabled}
                       onClick={() => {
-                        if (isVendor && vendorSelf) { setShowVendorStock(true); return; }
+                        // 2026-09-04 · #23 · 모달 → 전용 페이지 (VendorStockPage) 이관
+                        if (isVendor && vendorSelf) { onNavigate("vendor-stock", authSession!); return; }
                         if (isSuperAdminLevel9) {
                           try { localStorage.setItem(SK_SUBTAB_DISPLAY, "vendor-manage"); } catch { /* silent */ }
                           onNavigate("display", authSession!);
@@ -695,14 +735,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         />
       )}
 
-      {/* 2026-08-10 · #23 · 거래처 · 공급사 재고확인 모달 */}
-      {showVendorStock && vendorSelf && (
-        <VendorStockModal
-          open={showVendorStock}
-          onClose={() => setShowVendorStock(false)}
-          vendorName={vendorSelf.company_name ?? ""}
-        />
-      )}
+      {/* 2026-09-04 · #23 · 공급사 재고확인 · 모달 → 전용 페이지 (VendorStockPage · App.tsx 라우팅) 이관 */}
 
       {/* ── Unauthorized toast ── */}
       {unauthorizedToast && (

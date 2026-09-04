@@ -162,8 +162,12 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     items: [
       { key: "reservation", label: "방문예약",       icon: CalendarDots, color: "emerald" },
       // 2026-08-12 · 공급사 정보 · 공통 모듈 (매장>공급사 · VendorListEditor + VendorDetailModal) 연결
-      { key: "display",     label: "공급사 정보",     icon: Buildings,    color: "emerald", subTab: "vendor-manage", managerOnly: true },
-      { key: "landing",     label: "공급사 재고확인", icon: Package,      color: "emerald", subTab: "vendor-stock" },
+      // 2026-09-04 · fix · managerOnly 제거 · vendor 도 본인 공급사 정보 편집 가능
+      //   · LandingPage 가 vendor 로그인 시 VendorDetailModal 자동 open (본인 vendor 만)
+      //   · 관리자 접근 게이트는 filterGroupsForSession 의 vendor 그룹 필터에서 이미 관리
+      { key: "display",     label: "공급사 정보",     icon: Buildings,    color: "emerald", subTab: "vendor-manage" },
+      // 2026-09-04 · #23 · 공급사 재고확인 · 모달 → 전용 페이지 (VendorStockPage) · 직접 라우팅
+      { key: "vendor-stock", label: "공급사 재고확인", icon: Package,      color: "emerald" },
     ],
   },
   {
@@ -290,7 +294,19 @@ export function canAccessItem(
   const isVendor = session.role === "vendor";
   const isPrivileged = level >= 2;
 
-  if (isVendor && (item.key as AppNavPage) !== "landing") return false;
+  // 2026-09-04 · fix · vendor 허용 페이지 확장 (Bug #3)
+  //   · 이전 · isVendor && key !== "landing" · 방문예약·공급사정보 노출 X
+  //   · 이후 · whitelist 방식 · reservation/display(공급사정보)/landing(공급사재고) 허용
+  //   · display 는 subTab === "vendor-manage" 인 경우만 vendor 허용 (다른 display 서브탭은 관리자 전용)
+  // 2026-09-04 · #23 · vendor-stock 전용 페이지 추가 (모달 → 페이지 이관)
+  const VENDOR_ALLOWED_KEYS: readonly string[] = ["landing", "reservation", "display", "vendor-stock"];
+  if (isVendor) {
+    if (!VENDOR_ALLOWED_KEYS.includes(String(item.key))) return false;
+    // display 는 vendor-manage 서브탭만 vendor 허용
+    if (item.key === "display" && item.subTab !== "vendor-manage") return false;
+    // vendor 는 managerOnly / minLevel / pharmacistOnly 검사 skip (whitelist 로 이미 게이트됨)
+    return true;
+  }
   if (item.minLevel != null && level < item.minLevel) return false;
   if (item.managerOnly && !isPrivileged) return false;
   if (item.pharmacistOnly && !isPharmacist) return false;

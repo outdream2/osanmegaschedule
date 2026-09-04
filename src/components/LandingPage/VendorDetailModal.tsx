@@ -233,12 +233,15 @@ export const VendorDetailModal: React.FC<{
     setSaving(true); setSaveMsg(null);
     try {
       await api.patch(`/api/vendors/${vendor.id}`, {
-        // 2026-07-22: 'email' 컬럼이 Supabase vendors 스키마에 없어 저장 실패 · 페이로드에서 제외
-        //   (UI 는 유지 · 나중에 DB 마이그레이션 시 다시 활성)
+        // 2026-09-04 · fix · email 페이로드 포함 (Bug #2 · DB 저장 안 됨 원인)
+        //   · 이전 · 2026-07-22 email 컬럼 부재 우려로 제외 · 서버는 email 컬럼 fallback 지원함
+        //   · 이후 · 서버 fallback (SELECT_NO_EMAIL) 이 있으므로 안전 전송 · vendor 승인 요청 5필드 저장 정상화
+        //   · 스키마 (UpdateVendorSchema) email 은 문자열만 검증 · 형식 강제 X (autosave 부분입력 방지)
         company_name:    draft.company_name.trim(),
         business_number: bnDigits || null,
         contact_name:    draft.contact_name.trim() || null,
         phone:           draft.phone.trim() || null,
+        email:           draft.email.trim() || null,
         category:        draft.category.trim() || null,
         note:            draft.note.trim() || null,
         // 2026-08-03 · #193 · VAT 포함 여부 (unset → null)

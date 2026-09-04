@@ -7,6 +7,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { SK_AUTH_SESSION } from "./lib/storageKeys";
 import SchedulePage from "./components/SchedulePage";
 import { LandingPage } from "./components/LandingPage";
+// 2026-09-04 · #23 · 공급사 재고확인 · 모달 → 전용 페이지 전환
+import { VendorStockPage } from "./components/LandingPage/VendorStockPage";
 import { ReservationPage } from "./components/ReservationPage";
 import { DisplayPage } from "./components/DisplayPage";
 import { ScanPage } from "./components/ScanPage/ScanPage";
@@ -64,7 +66,7 @@ const SystemSettingsPage = React.lazy(() => import("./components/SystemSettingsP
 // 2026-08-23 · #181 · ZoneSettingsPage 제거 · StoreZoneMap 인라인 편집만 유지
 // 2026-09-02 · #74 · 창고 구역 설정 페이지 제거 (규칙 고정 · 수동 편집 불필요)
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding" | "company-info" | "season-settings" | "system-settings";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding" | "company-info" | "season-settings" | "system-settings" | "vendor-stock";
 
 export default function App() {
   // 2026-08-16 · 사이드바 활성 · 서버 KV 설정 (env 아님)
@@ -427,6 +429,19 @@ export default function App() {
         onBack={goBack}
         onLogout={handleLogout}
         onNavigate={navigateInner}
+      />
+    );
+  } else if (page === "vendor-stock") {
+    // 2026-09-04 · #23 · 공급사 재고확인 · 전용 페이지 (모달에서 이관)
+    //   · vendor 로그인 시 · authSession.employeeName 을 vendorName 으로 전달
+    //   · admin/superadmin 이 접근하면 · 본인 이름 (기본) · 공급사 미지정 시 조회 결과 없음
+    pageContent = (
+      <VendorStockPage
+        vendorName={authSession?.employeeName ?? ""}
+        authSession={authSession}
+        onBack={goBack}
+        onNavigate={navigateInner}
+        onLogout={handleLogout}
       />
     );
   } else if (page === "zone-labels") {
