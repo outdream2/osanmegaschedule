@@ -8,9 +8,11 @@
 // 프레임워크 원칙 · SplitListPanel · Card · Modal · SplitPanel(resize) · apiClient · useToast
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Package, Info as InfoIcon, Pencil, Save, X } from "lucide-react";
+import {
+  Package, PencilSimple, FloppyDisk, X,
+  ArrowSquareOut,
+} from "@phosphor-icons/react";
 import { SplitListPanel } from "../common/SplitListPanel";
-// 2026-08-30 · 사용자 지시 · 판매중/판매중지 필터 · 프레임워크 SaleStatusFilter 재사용
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
 import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { Modal } from "../common/Modal";
@@ -27,18 +29,7 @@ import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { matchHangul } from "../../lib/hangulSearch";
 import type { AuthSession } from "../../types";
 import { UpdateProductSchema, type UpdateProductInput } from "../../shared/schemas/products";
-// 2026-08-23 · #197 · 스캔 페이지에서 넘어온 pending code · 자동 등록 모달
 import { consumeScanPendingProductCode } from "../../hooks/useScanUnregisteredMode";
-// 2026-08-28 · 감사 P1-3 · 이중 필터 제거 · 서버 (getPublicProductMap) 이 이미 판매중 필터
-// import { useSaleActiveOnly } from "../../hooks/useSaleActiveOnly";  // deprecated · 이중 필터 원인
-// 2026-08-28 · 사용자 지시 · 13컬럼 통일 · ProductBasicInfoPanel 상단 삽입
-import { ProductBasicInfoPanel } from "../common/ProductBasicInfoPanel";
-// 2026-08-29 · #186 A안 · Attio Sticky Hero · 상단 고정 상품명·배지·액션
-import { ProductDetailHero } from "../common/ProductDetailHero";
-// 2026-08-29 · #186 후속 · SectionCard 프리미티브 · 메타 정보 섹션
-import { SectionCard } from "../common/SectionCard";
-import { Tag, Building2, Calendar } from "lucide-react";
-// 2026-08-30 · 사용자 지시 · 공급사 클릭 → 공급사정보 모달 · 프레임워크 재사용
 import { useVendorInfoModal } from "../common/features/VendorInfoModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────
@@ -78,19 +69,18 @@ function canManageProducts(session: AuthSession | null): boolean {
   return false;
 }
 
-// ─── Phase D · 편집 가능 필드 · 스캔페이지 ProductInfoCard 와 유사 ─────
-// product_code 는 편집 금지 · barcode 는 UNIQUE 검사 없음 (Phase 후속)
+// ─── Detail panel ─────────────────────────────────────────────────────────
 type EditableKey =
   | "product_name" | "supplier" | "category" | "unit" | "spec" | "barcode"
   | "location" | "optimal_stock" | "sale_price" | "purchase_price"
-  | "brand" | "manufacturer";
+  | "brand" | "manufacturer" | "sale_status";
 
 const NUMBER_KEYS = new Set<EditableKey>(["optimal_stock", "sale_price", "purchase_price"]);
+const SALE_STATUS_OPTIONS = ["판매중", "판매중지", "숨김"];
 
-const detailInputCls =
-  "w-full h-8 px-2 rounded-md border border-line bg-white text-[16px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors";
+const inputCls =
+  "w-full h-8 px-2.5 rounded-md border border-line bg-white text-[15px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors";
 
-// ─── Detail panel · 재사용 (PC 우측 / 모바일 modal 내부 동일) ─────────────
 interface DetailProps {
   product: ProductDetail | null;
   loading: boolean;
@@ -98,85 +88,33 @@ interface DetailProps {
   canEdit: boolean;
   onSaved: () => void;
 }
+
 const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, canEdit, onSaved }) => {
   const { toast, showSuccess, showError } = useToast();
   const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Record<EditableKey, string>>({} as Record<EditableKey, string>);
   const [saving, setSaving] = useState(false);
-  // 2026-08-30 · 사용자 지시 · 공급사 클릭 → 공급사정보 모달 · 프레임워크 useVendorInfoModal
   const vendorModal = useVendorInfoModal();
 
-  // product 변경 시 · 편집 종료 (다른 상품 선택 시 draft 리셋)
   useEffect(() => {
     setEditing(false);
     setDraft({} as Record<EditableKey, string>);
   }, [product?.product_code]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <Spinner size={22} tone="brand" label="상품 상세 불러오는 중..." />
-      </div>
-    );
-  }
-  if (error) {
-    return (
-      <div className="p-4">
-        <Card variant="flat" padding="md" rounded="lg" bg="bg-rose-50" borderColor="border-rose-200" className="text-[16px] text-rose-700 font-medium">
-          {error}
-        </Card>
-      </div>
-    );
-  }
-  if (!product) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <EmptyState icon={Package} title="상품을 선택하세요" hint="좌측 리스트에서 상품을 선택하면 상세정보가 표시됩니다" />
-      </div>
-    );
-  }
+  if (loading) return <div className="flex items-center justify-center py-16"><Spinner size={22} tone="brand" label="불러오는 중..." /></div>;
+  if (error) return <div className="p-4"><Card variant="flat" padding="md" rounded="lg" bg="bg-rose-50" borderColor="border-rose-200" className="text-[16px] text-rose-700 font-medium">{error}</Card></div>;
+  if (!product) return <div className="flex items-center justify-center py-16"><EmptyState icon={Package as any} title="상품을 선택하세요" hint="좌측 리스트에서 상품을 선택하면 상세정보가 표시됩니다" /></div>;
 
-  // 2026-08-28 · 사용자 지시 · 13컬럼 통일 상단 · 진열위치·판매상태 인라인 편집
-  // 2026-09-02 · Location API 단순화 · display_location 중복 제거 · products.location 단일화
-  //   · 이전 · location + display_location 이중 저장 · DB 중복 · 정합성 위험
-  //   · 서버 · display_location fallback 유지 (하위 호환)
-  const handleLocationChange = async (newLocation: string | null) => {
-    try {
-      await api.patch(`/api/products/${encodeURIComponent(product.product_code)}`, {
-        location: newLocation,
-      });
-      showSuccess(`진열위치 · ${newLocation ?? "-"} 저장`);
-      onSaved();
-    } catch (e) {
-      const msg = e instanceof ApiError ? e.message : (e as Error)?.message ?? "저장 실패";
-      showError(`[진열위치] ${msg}`);
-    }
-  };
-  const handleSaleStatusChange = async (newStatus: string) => {
-    try {
-      await api.patch(`/api/products/${encodeURIComponent(product.product_code)}`, { sale_status: newStatus });
-      showSuccess(`판매상태 · ${newStatus} 저장`);
-      onSaved();
-    } catch (e) {
-      const msg = e instanceof ApiError ? e.message : (e as Error)?.message ?? "저장 실패";
-      showError(`[판매상태] ${msg}`);
-    }
-  };
-
+  const p = product as unknown as Record<string, unknown>;
   const val = (k: EditableKey): string => {
     if (k in draft) return draft[k];
-    const p = product as unknown as Record<string, unknown>;
     const v = p[k];
     return v == null ? "" : String(v);
   };
   const set = (k: EditableKey, v: string) => setDraft(prev => ({ ...prev, [k]: v }));
 
-  const startEdit = () => {
-    setEditing(true);
-    setDraft({} as Record<EditableKey, string>);
-  };
-
+  const startEdit = () => { setEditing(true); setDraft({} as Record<EditableKey, string>); };
   const cancelEdit = async () => {
     if (Object.keys(draft).length > 0) {
       const ok = await confirm({ title: "변경 취소", message: "저장하지 않은 변경사항을 취소하시겠습니까?", danger: true });
@@ -185,26 +123,18 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
     setEditing(false);
     setDraft({} as Record<EditableKey, string>);
   };
-
   const save = async () => {
-    // draft 에 있는 것만 변경사항으로 · 실제 값이 원본과 다른지 확인
     const changes: Partial<UpdateProductInput> = {};
     for (const [rawK, rawV] of Object.entries(draft)) {
       const k = rawK as EditableKey;
       const trimmed = rawV.trim();
-      const originalRaw = (product as unknown as Record<string, unknown>)[k];
+      const originalRaw = p[k];
       const original = originalRaw == null ? "" : String(originalRaw);
       if (trimmed === original) continue;
-      if (NUMBER_KEYS.has(k)) {
-        (changes as Record<string, unknown>)[k] = trimmed === "" ? null : Number(trimmed);
-      } else {
-        (changes as Record<string, unknown>)[k] = trimmed === "" ? null : trimmed;
-      }
+      if (NUMBER_KEYS.has(k)) (changes as Record<string, unknown>)[k] = trimmed === "" ? null : Number(trimmed);
+      else (changes as Record<string, unknown>)[k] = trimmed === "" ? null : trimmed;
     }
-    if (Object.keys(changes).length === 0) {
-      showError("변경사항이 없습니다");
-      return;
-    }
+    if (Object.keys(changes).length === 0) { showError("변경사항이 없습니다"); return; }
     const parsed = UpdateProductSchema.safeParse(changes);
     if (!parsed.success) {
       const first = parsed.error.issues[0];
@@ -219,202 +149,168 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
       setDraft({} as Record<EditableKey, string>);
       onSaved();
     } catch (e: unknown) {
-      const msg = e instanceof ApiError ? e.message : (e as Error)?.message ?? "저장 실패";
-      showError(`[상품 편집] ${msg}`);
-    } finally {
-      setSaving(false);
-    }
+      showError(`[상품 편집] ${e instanceof ApiError ? e.message : (e as Error)?.message ?? "저장 실패"}`);
+    } finally { setSaving(false); }
   };
 
-  // ─── row builder · display vs edit mode ───────────────────────────────
-  const displayRow = (k: EditableKey, label: string, extra?: React.ReactNode) => {
-    const p = product as unknown as Record<string, unknown>;
-    const v = p[k];
-    return (
-      <React.Fragment key={label}>
-        <dt className="text-zinc-500 font-medium">{label}</dt>
-        <dd className="text-ink">
-          {v == null || v === "" ? <span className="text-zinc-400">—</span> : String(v)}
-          {extra}
-        </dd>
-      </React.Fragment>
-    );
+  // ─── field helpers ─────────────────────────────────────────────────────
+  const dispVal = (key: string) => {
+    const v = p[key];
+    return v == null || v === "" ? <span className="text-zinc-300">-</span> : <span className="text-ink font-semibold">{String(v)}</span>;
   };
-  const editRow = (k: EditableKey, label: string, type: "text" | "number" = "text") => (
-    <React.Fragment key={label}>
-      <dt className="text-zinc-500 font-medium pt-1">{label}</dt>
-      <dd>
+  const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
+      <div className="text-[15px]">{children}</div>
+    </div>
+  );
+  const EditField = ({ k, label, type = "text" }: { k: EditableKey; label: string; type?: "text" | "number" }) => (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
+      {k === "sale_status" ? (
+        <select value={val(k)} onChange={(e) => set(k, e.target.value)} className={inputCls}>
+          {SALE_STATUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      ) : (
         <input
           type={type}
           value={val(k)}
           onChange={(e) => set(k, e.target.value)}
           min={type === "number" ? 0 : undefined}
-          step={k === "optimal_stock" ? 1 : undefined}
-          className={detailInputCls + (type === "number" ? " tabular-nums" : "")}
+          className={inputCls + (type === "number" ? " tabular-nums" : "")}
         />
-      </dd>
-    </React.Fragment>
+      )}
+    </div>
   );
+
+  const profitRate = (() => {
+    const sp = Number(p.sale_price ?? 0), pp = Number(p.purchase_price ?? 0);
+    if (!sp) return null;
+    return Math.round((sp - pp) / sp * 1000) / 10;
+  })();
 
   return (
     <>
-      {/* 2026-08-29 · #186 A안 · Attio Sticky Hero · 상단 고정 · 상품명·배지 · [수정] 버튼 인라인 카드로 이동 */}
-      <ProductDetailHero
-        product={{
-          product_code: product.product_code,
-          product_name: product.product_name,
-          category: (product as any).category,
-          category_code: (product as any).category_code,
-          supplier: product.supplier,
-          sale_status: (product as any).sale_status,
-          barcode: (product as any).barcode,
-        }}
-        actions={null}
-      />
-      <div className="p-4 space-y-3">
-        {/* 2026-08-28 · 사용자 지시 · 13컬럼 통일 · ProductBasicInfoPanel · 진열위치·판매상태 인라인 편집 */}
-        <ProductBasicInfoPanel
-          product={{
-            product_code: product.product_code,
-            category_code: (product as any).category_code,
-            category: (product as any).category,
-            product_name: product.product_name,
-            supplier: product.supplier,
-            location: (product as any).location ?? (product as any).display_location,
-            display_location: (product as any).display_location,
-            sale_status: (product as any).sale_status,
-            barcode: (product as any).barcode,
-            current_stock: (product as any).current_stock,
-            warehouse_stock: (product as any).warehouse_stock,
-            store_stock: (product as any).store_stock,
-            purchase_price: (product as any).purchase_price,
-            sale_price: (product as any).sale_price,
-            profit_rate: (product as any).profit_rate,
-            optimal_stock: (product as any).optimal_stock,
-            last_purchase_date: (product as any).last_purchase_date,
-          }}
-          editable={canEdit}
-          onLocationChange={handleLocationChange}
-          onSaleStatusChange={handleSaleStatusChange}
-          /* 2026-08-30 · 사용자 지시 · 공급사 클릭 → 공급사정보 모달 */
-          onSupplierClick={(name) => vendorModal.openVendorInfo(name)}
-        />
-        {vendorModal.modalElement}
-        {/* 2026-08-29 · #186 후속 · 메타 정보 Section 카드 · Attio Section Stack */}
-        {((product as any).brand || (product as any).manufacturer || (product as any).last_modified_at) && (
-          <SectionCard
-            title="메타 정보"
-            icon={<Tag size={16} />}
-            description="브랜드 · 제조사 · 최근 수정"
-          >
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-[17px]">
-              {(product as any).brand && (
-                <div className="flex items-center gap-2">
-                  <Tag size={12} className="text-brand-deep/60 shrink-0" />
-                  <dt className="text-zinc-500 font-medium min-w-[60px]">브랜드</dt>
-                  <dd className="text-ink font-semibold">{(product as any).brand}</dd>
-                </div>
-              )}
-              {(product as any).manufacturer && (
-                <div className="flex items-center gap-2">
-                  <Building2 size={12} className="text-brand-deep/60 shrink-0" />
-                  <dt className="text-zinc-500 font-medium min-w-[60px]">제조사</dt>
-                  <dd className="text-ink font-semibold">{(product as any).manufacturer}</dd>
-                </div>
-              )}
-              {(product as any).last_modified_at && (
-                <div className="flex items-center gap-2">
-                  <Calendar size={12} className="text-brand-deep/60 shrink-0" />
-                  <dt className="text-zinc-500 font-medium min-w-[60px]">최근 수정</dt>
-                  <dd className="text-ink-soft tabular-nums text-[16px]">
-                    {String((product as any).last_modified_at).slice(0, 10)}
-                  </dd>
-                </div>
-              )}
-            </dl>
-          </SectionCard>
+      {/* ─── Header ─────────────────────────────────────────────────── */}
+      <div className="px-4 pt-4 pb-2 flex items-center gap-2 border-b border-zinc-100">
+        <span className="text-[13px] font-mono text-zinc-400 bg-zinc-100 rounded px-1.5 py-0.5">#{product.product_code}</span>
+        <div className="flex-1" />
+        {editing ? (
+          <>
+            <StatusPill tone="amber" size="xs">편집 중</StatusPill>
+            <button type="button" onClick={save} disabled={saving}
+              className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-brand-deep text-white text-[15px] font-bold hover:bg-[#0d3a5c] disabled:opacity-50 cursor-pointer shadow-sm">
+              <FloppyDisk size={13} weight="bold" />{saving ? "저장중" : "저장"}
+            </button>
+            <button type="button" onClick={cancelEdit} disabled={saving}
+              className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-line text-[15px] font-semibold text-zinc-600 hover:bg-zinc-50 cursor-pointer disabled:opacity-50">
+              <X size={13} />취소
+            </button>
+          </>
+        ) : canEdit && (
+          <button type="button" onClick={startEdit}
+            className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-line text-[15px] font-semibold text-brand-deep hover:bg-brand-tint hover:border-brand-deep cursor-pointer transition-colors shadow-sm">
+            <PencilSimple size={13} />수정
+          </button>
         )}
       </div>
-      {/* 2026-08-30 · 사용자 지시 · 상세정보 · 인라인 노출 · 모달 제거 · 편집 여기로 통합 */}
-      <div className="px-4 pb-4">
-        <Card variant="flat" padding="md" rounded="lg" topAccent className="bg-white">
-          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-line">
-            <InfoIcon size={16} className="text-brand-deep" />
-            <h3 className="text-[18px] font-bold text-ink tracking-tight">상세정보</h3>
-            <span className="text-[14px] text-ink-soft">단위 · 규격 · 바코드 · 브랜드 · 제조사 · 메모</span>
-            <div className="flex-1" />
-            {editing ? (
-              <>
-                <StatusPill tone="amber" size="xs">편집 중</StatusPill>
-                <button
-                  type="button"
-                  onClick={save}
-                  disabled={saving}
-                  className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-brand-deep text-white text-[15px] font-bold hover:bg-[#0d3a5c] disabled:opacity-50 cursor-pointer shadow-sm"
-                >
-                  <Save size={13} />{saving ? "저장중" : "저장"}
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelEdit}
-                  disabled={saving}
-                  className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-line text-[15px] font-semibold text-zinc-600 hover:bg-zinc-50 cursor-pointer disabled:opacity-50"
-                >
-                  <X size={13} />취소
-                </button>
-              </>
-            ) : (
-              canEdit && (
-                <button
-                  type="button"
-                  onClick={startEdit}
-                  title="상품 편집"
-                  className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-line text-[15px] font-semibold text-brand-deep hover:bg-brand-tint hover:border-brand-deep cursor-pointer transition-colors shadow-sm"
-                >
-                  <Pencil size={13} />수정
-                </button>
-              )
-            )}
-          </div>
-          {/* 2026-08-30 · 사용자 지시 · 중요·필수 = ProductBasicInfoPanel (위 카드) · 여기는 상세정보 · 중요 X 필드
-             · 편집 시 상단 필수 필드 (진열위치·판매상태·상품명·공급사·카테고리·가격·적정재고) 도 여기서 함께 편집
-             · 표시 전용은 단위·규격·바코드·브랜드·제조사·메모 */}
-          <dl className="grid grid-cols-[110px_1fr] gap-y-2 gap-x-3 text-[16px]">
-            <dt className="text-zinc-500 font-medium">상품코드</dt>
-            <dd className="tabular-nums font-semibold text-ink">
-              {product.product_code}
-              <span className="ml-1.5 text-[14px] text-zinc-400 font-normal">(변경 불가)</span>
-            </dd>
-            {editing ? (
-              <>
-                {editRow("product_name", "상품명")}
-                {editRow("supplier", "공급사")}
-                {editRow("category", "카테고리")}
-                {editRow("sale_price", "판매가", "number")}
-                {editRow("purchase_price", "매입가", "number")}
-                {editRow("optimal_stock", "적정재고", "number")}
-                {editRow("location", "배치구역")}
-                {editRow("unit", "단위")}
-                {editRow("spec", "규격")}
-                {editRow("barcode", "바코드")}
-                {editRow("brand", "브랜드")}
-                {editRow("manufacturer", "제조사")}
-              </>
-            ) : (
-              <>
-                {displayRow("unit", "단위")}
-                {displayRow("spec", "규격")}
-                {displayRow("barcode", "바코드")}
-                {displayRow("brand", "브랜드")}
-                {displayRow("manufacturer", "제조사")}
-              </>
-            )}
-          </dl>
-        </Card>
+
+      {/* ─── Fields grid ────────────────────────────────────────────── */}
+      <div className="p-4 grid grid-cols-2 gap-x-6 gap-y-4">
+        {/* 상품명 · full row */}
+        <div className="col-span-2">
+          {editing
+            ? <EditField k="product_name" label="상품명" />
+            : <Field label="상품명"><span className="text-[17px] font-bold text-ink">{product.product_name || <span className="text-zinc-300">-</span>}</span></Field>}
+        </div>
+
+        {/* 공급사 | 카테고리 */}
+        {editing
+          ? <EditField k="supplier" label="공급사" />
+          : <Field label="공급사">
+              {product.supplier
+                ? <button type="button" onClick={() => vendorModal.openVendorInfo(product.supplier!)}
+                    className="inline-flex items-center gap-1 text-brand-deep font-semibold hover:underline cursor-pointer">
+                    {product.supplier}<ArrowSquareOut size={12} />
+                  </button>
+                : <span className="text-zinc-300">-</span>}
+            </Field>}
+        {editing
+          ? <EditField k="category" label="카테고리" />
+          : <Field label="카테고리">{dispVal("category")}</Field>}
+
+        {/* 바코드 | 판매상태 */}
+        {editing ? <EditField k="barcode" label="바코드" /> : <Field label="바코드">{dispVal("barcode")}</Field>}
+        {editing
+          ? <EditField k="sale_status" label="판매상태" />
+          : <Field label="판매상태">
+              {(() => {
+                const s = String(p.sale_status ?? "");
+                const tone = s === "판매중" ? "emerald" : s === "판매중지" ? "rose" : "zinc";
+                return s ? <StatusPill tone={tone} size="sm">{s}</StatusPill> : <span className="text-zinc-300">-</span>;
+              })()}
+            </Field>}
+
+        {/* 진열위치 | 단위 */}
+        {editing ? <EditField k="location" label="진열위치" /> : <Field label="진열위치">{dispVal("location")}</Field>}
+        {editing ? <EditField k="unit" label="단위" /> : <Field label="단위">{dispVal("unit")}</Field>}
+
+        {/* 매입가 | 판매가 */}
+        {editing
+          ? <EditField k="purchase_price" label="매입가 (단가)" type="number" />
+          : <Field label="매입가 (단가)">
+              {p.purchase_price != null
+                ? <span className="tabular-nums font-bold text-amber-700">{Number(p.purchase_price).toLocaleString()}원</span>
+                : <span className="text-zinc-300">-</span>}
+            </Field>}
+        {editing
+          ? <EditField k="sale_price" label="판매가" type="number" />
+          : <Field label="판매가">
+              {p.sale_price != null
+                ? <span className="tabular-nums font-bold text-brand-deep">{Number(p.sale_price).toLocaleString()}원</span>
+                : <span className="text-zinc-300">-</span>}
+            </Field>}
+
+        {/* 이익율 | 적정재고 */}
+        <Field label="이익율">
+          {profitRate != null
+            ? <span className={`tabular-nums font-bold ${profitRate >= 30 ? "text-emerald-600" : profitRate >= 15 ? "text-amber-600" : "text-rose-600"}`}>{profitRate}%</span>
+            : <span className="text-zinc-300">-</span>}
+        </Field>
+        {editing
+          ? <EditField k="optimal_stock" label="적정재고 (30일)" type="number" />
+          : <Field label="적정재고 (30일)">
+              {p.optimal_stock != null ? <span className="tabular-nums font-semibold">{String(p.optimal_stock)}개</span> : <span className="text-zinc-300">-</span>}
+            </Field>}
+
+        {/* 현재고 | 창고재고 */}
+        <Field label="현재고">
+          {p.current_stock != null ? <span className="tabular-nums font-bold text-brand-deep">{String(p.current_stock)}개</span> : <span className="text-zinc-300">-</span>}
+        </Field>
+        <Field label="창고재고">
+          {p.warehouse_stock != null ? <span className="tabular-nums font-semibold">{String(p.warehouse_stock)}개</span> : <span className="text-zinc-300">-</span>}
+        </Field>
+
+        {/* 매장재고 | 최근매입일 */}
+        <Field label="매장재고">
+          {p.store_stock != null ? <span className="tabular-nums font-semibold">{String(p.store_stock)}개</span> : <span className="text-zinc-300">-</span>}
+        </Field>
+        <Field label="최근매입일">
+          {p.last_purchase_date ? <span className="tabular-nums text-zinc-600">{String(p.last_purchase_date).slice(0, 10)}</span> : <span className="text-zinc-300">-</span>}
+        </Field>
+
+        {/* 규격 | 브랜드 */}
+        {editing ? <EditField k="spec" label="규격" /> : <Field label="규격">{dispVal("spec")}</Field>}
+        {editing ? <EditField k="brand" label="브랜드" /> : <Field label="브랜드">{dispVal("brand")}</Field>}
+
+        {/* 제조사 */}
+        {editing
+          ? <EditField k="manufacturer" label="제조사" />
+          : <Field label="제조사">{dispVal("manufacturer")}</Field>}
       </div>
-      {toast && (
-        <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
-      )}
+
+      {vendorModal.modalElement}
+      {toast && <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>}
     </>
   );
 };
@@ -585,7 +481,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
             loading={listLoading}
             empty={!listLoading && filtered.length === 0}
             emptyText={search ? "검색 결과 없음" : "상품이 없습니다"}
-            emptyIcon={Package}
+            emptyIcon={Package as any}
             error={listError}
           >
             {listBody}
