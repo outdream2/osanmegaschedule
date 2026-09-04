@@ -31,8 +31,15 @@
 | `f1d97540` | 공급사 승인 후 재고확인 활성화 폴링 · 승인알림 강화 |
 | `1882f1df` | useFetchEmployee 공통 훅 · GET /api/employees/:id 확장 |
 | `732a69fa` | contract_type 등 HR 필드 PUT Zod strip 버그 수정 |
-| *(pending)* | 스케줄표 이름 클릭 모달 탭 순서 (달력→일괄등록→직원정보) |
-| *(pending)* | 스케줄설정 페이지 신규 (기본연차일 직군별) |
+| `0f49a8a7` | 스케줄표 모달 탭 순서 (달력→일괄→직원정보) + 스케줄설정 페이지 (기본연차일) |
+| `3775e259` | 프레임워크 전수감사: ocrDeletedRows·vat authorize 누락 수정 |
+
+### ✅ 2026-09-04 감사 확인 (이미 완료됨)
+- **#60** 스케줄 전월 복사: `useScheduleData.executeCopyFromPreviousMonth` + `POST /api/schedules/copy` 정상 구현 확인
+- **#62** 스케줄 클릭 모달 탭: `commit 1882f1df` 완료 확인
+- **#70** 탭 sticky top-14→top-0: `SplitRightTabs sticky top-0` 정상 · 잔여 2개는 테이블 내부 중첩 (정상)
+- **#72** 직원성명 UI 복원: `commit 116d7146` 완료 확인
+- **#78** 상품입고 단가·유통기한 fill: `ProductArrivalPage` purchase-history API auto-fill 구현 확인
 
 ### 🔴 신규 PENDING (2026-09-04 사용자 요청)
 | # | 태스크 | 우선순위 | 비고 |
