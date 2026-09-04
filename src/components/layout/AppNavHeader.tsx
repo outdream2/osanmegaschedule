@@ -53,7 +53,9 @@ export type AppNavPage =
   | "season-settings"
   | "system-settings"
   // 2026-09-04 · #23 · 공급사 재고확인 · 모달 → 전용 페이지 전환 (VendorStockPage)
-  | "vendor-stock";
+  | "vendor-stock"
+  // 2026-09-04 · 스케줄 설정 (기본연차일 등)
+  | "schedule-settings";
   // 2026-09-02 · #74 · warehouse-zones 제거 (규칙 고정 · 수동 편집 불필요)
   // 2026-08-23 · #181 · zone-settings 제거 · StoreZoneMap 인라인 편집만
 

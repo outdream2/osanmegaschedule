@@ -19,7 +19,25 @@
 
 ---
 
-## 🎯 활성 PENDING · v6 (2026-09-03 · 전수 감사)
+## 🎯 활성 PENDING · v7 (2026-09-04 · 신규 태스크 등록)
+
+> **2026-09-04 완료** · contract_type HR 필드 Zod strip 버그 수정 · 공급사재고 페이지화 · 공급사정보 버그 4건 · 스케줄표 모달 탭 순서 · 스케줄 설정 페이지 신규
+
+### ✅ 2026-09-04 완료
+| 커밋 | 내용 |
+|-----|------|
+| `7adf338e` | 공급사재고 모달→전용 페이지 (VendorStockPage · SplitPanel 대시보드) |
+| `7adf338e` | 공급사정보 버그 4건 · email strip 완화 · sideNav vendor whitelist · onSaved refresh |
+| `f1d97540` | 공급사 승인 후 재고확인 활성화 폴링 · 승인알림 강화 |
+| `1882f1df` | useFetchEmployee 공통 훅 · GET /api/employees/:id 확장 |
+| `732a69fa` | contract_type 등 HR 필드 PUT Zod strip 버그 수정 |
+| *(pending)* | 스케줄표 이름 클릭 모달 탭 순서 (달력→일괄등록→직원정보) |
+| *(pending)* | 스케줄설정 페이지 신규 (기본연차일 직군별) |
+
+### 🔴 신규 PENDING (2026-09-04 사용자 요청)
+| # | 태스크 | 우선순위 | 비고 |
+|---|-----|--------|------|
+| **#115** | real_map 컬럼 DB DROP SQL 실행 필요 · `migrations/20260904_drop_real_map.sql` · Supabase SQL Editor에서 수동 실행 | 🟡 | 사용자 직접 |
 
 > **2026-09-03 전수 감사** · TypeScript 0에러 확인 · 버그 3건 수정 · TASKS 업데이트
 > 감사 범위: TS 컴파일 · 서버 API 5개 라우터 · 프론트엔드 타입 · store_stock_2 컬럼 삭제 후 잔존 참조

@@ -368,17 +368,6 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
           <section className="flex-1 min-w-0 flex flex-col overflow-hidden">
             {/* Tab bar · segmented · 최신 트렌드 (Linear/Vercel) · rounded pill · deep navy accent */}
             <div className="flex items-center gap-1 px-3 pt-3 pb-2 border-b border-zinc-100 flex-shrink-0 bg-white overflow-x-auto">
-              {/* 2026-09-03 · #62 · 직원정보 탭 신규 · 왼쪽 aside 통합 */}
-              <button
-                onClick={() => setActiveTab("info")}
-                className={`flex items-center gap-1.5 px-3.5 py-2 text-[17px] font-semibold rounded-lg transition-colors ${
-                  activeTab === "info"
-                    ? "bg-brand-deep text-white shadow-sm"
-                    : "text-ink-soft hover:bg-zinc-100 hover:text-ink cursor-pointer"
-                }`}
-              >
-                <User size={14} strokeWidth={2.2} /> 직원정보
-              </button>
               {isAdmin && (
                 <>
                   <button
@@ -403,26 +392,36 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                   </button>
                 </>
               )}
-                {isLogistics && logisticsZoneProps && (
-                  <button
-                    onClick={() => setActiveTab("zone")}
-                    className={`flex items-center gap-1.5 px-3.5 py-2 text-[17px] font-semibold rounded-lg transition-colors ${
-                      activeTab === "zone"
-                        ? "bg-brand-deep text-white shadow-sm"
-                        : "text-ink-soft hover:bg-zinc-100 hover:text-ink cursor-pointer"
-                    }`}
-                  >
-                    <MapPin size={14} strokeWidth={2.2} /> 구역 배정
-                    {logisticsZoneProps.assignedZoneNums.length > 0 && (
-                      <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        activeTab === "zone" ? "bg-white/20 text-white" : "bg-brand-tint text-brand-deep"
-                      }`}>
-                        {logisticsZoneProps.assignedZoneNums.length}
-                      </span>
-                    )}
-                  </button>
-                )}
-              </div>
+              {isLogistics && logisticsZoneProps && (
+                <button
+                  onClick={() => setActiveTab("zone")}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 text-[17px] font-semibold rounded-lg transition-colors ${
+                    activeTab === "zone"
+                      ? "bg-brand-deep text-white shadow-sm"
+                      : "text-ink-soft hover:bg-zinc-100 hover:text-ink cursor-pointer"
+                  }`}
+                >
+                  <MapPin size={14} strokeWidth={2.2} /> 구역 배정
+                  {logisticsZoneProps.assignedZoneNums.length > 0 && (
+                    <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      activeTab === "zone" ? "bg-white/20 text-white" : "bg-brand-tint text-brand-deep"
+                    }`}>
+                      {logisticsZoneProps.assignedZoneNums.length}
+                    </span>
+                  )}
+                </button>
+              )}
+              <button
+                onClick={() => setActiveTab("info")}
+                className={`flex items-center gap-1.5 px-3.5 py-2 text-[17px] font-semibold rounded-lg transition-colors ${
+                  activeTab === "info"
+                    ? "bg-brand-deep text-white shadow-sm"
+                    : "text-ink-soft hover:bg-zinc-100 hover:text-ink cursor-pointer"
+                }`}
+              >
+                <User size={14} strokeWidth={2.2} /> 직원정보
+              </button>
+            </div>
 
             {/* 2026-09-03 · #62 · 직원정보 탭 컨텐츠 · 이전 aside 내용 이관 */}
             {activeTab === "info" && (

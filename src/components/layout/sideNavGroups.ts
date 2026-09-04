@@ -4,7 +4,7 @@
 //   · 각 아래 트리 구조 = 그 페이지의 서브탭 + 관련 페이지
 //   · subTab 클릭 시 · localStorage 저장 후 페이지 이동 → 각 페이지 마운트 시 localStorage 읽어 초기 탭 설정
 import {
-  House, Calendar, CalendarDots, Bookmarks, Coffee,
+  House, Calendar, CalendarDots, CalendarBlank, Bookmarks, Coffee,
   SquaresFour, ScanSmiley, Package, Bell,
   ShoppingCart, FileMagnifyingGlass, Truck, CurrencyKrw, ChartBar, Storefront, Buildings,
   ChatCircle, FirstAid, FileText,
@@ -179,6 +179,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     managerOnly: true,
     items: [
       { key: "permissions", label: "메뉴 설정", icon: Lock, color: "slate", minLevel: 9 },
+      // 2026-09-04 · 스케줄 설정 (기본연차일 직군별)
+      { key: "schedule-settings", label: "스케줄 설정", icon: CalendarBlank, color: "slate", minLevel: 9 },
       // 2026-09-02 · #74 · 창고 구역 · 매장 그룹으로 이동됨 (사용자 지시)
       // 2026-08-23 · #181 · "매장 구역" 설정 페이지 제거 · StoreZoneMap 인라인 편집만 유지
       // 2026-08-12 · 회사정보 + 앱브랜딩 통합 페이지 (약국명·대표·사업자·주소·전화·브랜드·연락처·도장·모바일)

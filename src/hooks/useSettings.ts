@@ -18,6 +18,14 @@ export interface WageRate {
   weekend: number;
 }
 
+/** 2026-09-04 · 직군별 기본 연차일수 · ScheduleSettingsPage 에서 편집 */
+export interface DefaultAnnualLeave {
+  pharmacist: number;
+  default: number;
+}
+
+export const DEFAULT_ANNUAL_LEAVE: DefaultAnnualLeave = { pharmacist: 3, default: 12 };
+
 export interface AppSettings {
   positions: string[];
   /** 2026-08-29 · #177 P2 · 직급(rank) 목록 · 자유 텍스트 · 대표·부장·과장·사원 등 · 편집 시 재직 직원 자동 rename · optional (DB migration 없이 자동 default) */
@@ -29,6 +37,8 @@ export interface AppSettings {
   employeeWageOverrides: Record<number, WageRate>;
   /** 2026-08-11 · 공사중 (비로그인 랜딩페이지 · 재고 검색 숨김 · "곧 오픈 예정" 표시) */
   underConstruction?: boolean;
+  /** 2026-09-04 · 직군별 기본 연차일수 · 약사=3일, 그 외=12일 */
+  defaultAnnualLeave?: DefaultAnnualLeave;
 }
 
 const STORAGE_KEY = "app_settings";
@@ -138,6 +148,10 @@ function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
     wageRates: sanitizeWageRates(parsed.wageRates),
     employeeWageOverrides: sanitizeEmployeeOverrides(parsed.employeeWageOverrides),
     underConstruction: parsed.underConstruction === true,
+    defaultAnnualLeave: {
+      pharmacist: (parsed.defaultAnnualLeave?.pharmacist ?? DEFAULT_ANNUAL_LEAVE.pharmacist),
+      default: (parsed.defaultAnnualLeave?.default ?? DEFAULT_ANNUAL_LEAVE.default),
+    },
   };
 }
 
@@ -245,6 +259,7 @@ export function useSettings() {
     wageRates: settings.wageRates,
     employeeWageOverrides: settings.employeeWageOverrides,
     underConstruction: settings.underConstruction === true,
+    defaultAnnualLeave: settings.defaultAnnualLeave ?? DEFAULT_ANNUAL_LEAVE,
     settings,
     update,
     saveNow,

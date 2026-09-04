@@ -1,6 +1,6 @@
 # Framework Audit Report (자동 생성)
 
-> 생성 · 2026-09-01 · `scripts/audit-framework.cjs` · 매 세션 재실행
+> 생성 · 2026-09-04 · `scripts/audit-framework.cjs` · 매 세션 재실행
 >
 > **로드맵 · `docs/FRAMEWORK_ROADMAP.md` Phase 1 (인벤토리)**
 
@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 784 |
+| 스캔 파일 | 789 |
 | 위반 파일 | 2 |
-| 클린 파일 | 782 (100%) |
+| 클린 파일 | 787 (100%) |
 | 총 위반 개수 | 2 |
 
 ## 🚨 규칙별 위반 현황
