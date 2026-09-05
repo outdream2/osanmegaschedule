@@ -58,11 +58,11 @@ export const SET_ERROR = "text-[12px] text-rose-500 mt-1.5 font-semibold";
 // ─── 배지 · 상태 알림 ─────────────────────────────────────────────────────
 /** 저장 상태 배지 (저장 중 · 저장됨 · 오류 등) · 페이지 헤더 rightSlot */
 export const SET_BADGE =
-  "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border";
+  "inline-flex items-center gap-1 text-[12px] font-bold px-2 py-1 rounded-full border";
 
 /** 카테고리별 정보 배지 (총 X건 · 변경 Y건 등) · 페이지 헤더 rightSlot */
 export const SET_INFO_BADGE =
-  "inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md border";
+  "inline-flex items-center gap-1 text-[13px] font-bold px-2 py-0.5 rounded-md border";
 
 // ─── 액션 버튼 ────────────────────────────────────────────────────────────
 // 2026-08-27 · #122 v2 · h-10 · gradient · shadow-sm · ring-brand-deep/30

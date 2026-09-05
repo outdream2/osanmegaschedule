@@ -46,7 +46,7 @@ export const TEXT = {
   /** T-2 · 컬럼 헤더 · 폼 라벨 · 배지 · UPPERCASE (10 → 12) */
   label: "text-[12px] font-bold uppercase tracking-wider",
   /** T-1 · 마이크로 · 최소 표시 (9 → 11) */
-  micro: "text-[11px] font-bold uppercase tracking-widest",
+  micro: "text-[13px] font-bold uppercase tracking-widest",
   /** 숫자 전용 · 색상은 별도 지정 · tabular-nums 정렬 */
   num: "tabular-nums font-black",
 } as const;
@@ -207,7 +207,7 @@ export const KPI_GRID =
 
 /** 섹션 제목 (카드 안 · 필터 섹션 위) */
 export const SECTION_TITLE =
-  "text-[11px] font-bold text-zinc-500 uppercase tracking-wider";
+  "text-[13px] font-bold text-zinc-500 uppercase tracking-wider";
 
 /** 구분선 */
 export const DIVIDER = "border-t border-zinc-100";

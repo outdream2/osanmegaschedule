@@ -95,15 +95,15 @@ describe("SET_HINT · SET_ERROR", () => {
 });
 
 describe("SET_BADGE · SET_INFO_BADGE", () => {
-  it("SET_BADGE · rounded-full · border · text-[10px]", () => {
+  it("SET_BADGE · rounded-full · border · text-[12px]", () => {
     expect(SET_BADGE).toContain("rounded-full");
     expect(SET_BADGE).toContain("border");
-    expect(SET_BADGE).toContain("text-[10px]");
+    expect(SET_BADGE).toContain("text-[12px]");
   });
 
-  it("SET_INFO_BADGE · rounded-md · text-[11px]", () => {
+  it("SET_INFO_BADGE · rounded-md · text-[13px]", () => {
     expect(SET_INFO_BADGE).toContain("rounded-md");
-    expect(SET_INFO_BADGE).toContain("text-[11px]");
+    expect(SET_INFO_BADGE).toContain("text-[13px]");
   });
 });
 

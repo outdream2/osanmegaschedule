@@ -43,8 +43,8 @@ describe("TEXT · 타이포그래피 스케일 (8단계)", () => {
     expect(TEXT.body).toContain("font-semibold");
   });
 
-  it("micro · text-[11px] + uppercase + tracking-widest", () => {
-    expect(TEXT.micro).toContain("text-[11px]");
+  it("micro · text-[13px] + uppercase + tracking-widest", () => {
+    expect(TEXT.micro).toContain("text-[13px]");
     expect(TEXT.micro).toContain("uppercase");
     expect(TEXT.micro).toContain("tracking-widest");
   });
