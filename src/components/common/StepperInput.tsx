@@ -135,6 +135,7 @@ export const StepperInput: React.FC<StepperInputProps> = ({
         className={[
           autoSize ? "shrink-0" : "flex-1 min-w-0",
           "h-full text-center px-0.5 bg-transparent border-0",
+          "[appearance:textfield] [&::-webkit-inner-spin-button]:hidden [&::-webkit-outer-spin-button]:hidden",
           inputTextCls,
           "font-bold tabular-nums text-ink",
           "focus:outline-none disabled:text-zinc-300 placeholder:text-zinc-300",
