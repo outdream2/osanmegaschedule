@@ -278,7 +278,7 @@ export const ConfirmedRecordsTab: React.FC = () => {
             <table className="w-full text-xs border-collapse">
               {/* 2026-08-24 · v3 확산 · thead · bg zinc-100/70 · Attio 톤 · rose 제거 */}
               <thead>
-                <tr className="bg-zinc-100/70 border-b border-line text-[13px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider">
+                <tr className="bg-zinc-100/70 border-b border-line text-[15px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider">
                   <th className="px-2 py-2.5 w-8 text-center">
                     {(() => {
                       const allIds = items.map(x => x.id);
@@ -465,11 +465,11 @@ export const ConfirmedRecordsTab: React.FC = () => {
         {balanceHistoryLoading ? (
           <div className="py-8 flex items-center justify-center"><Spinner tone="zinc" label="불러오는 중..." labelSize={13} /></div>
         ) : !balanceHistory || balanceHistory.items.length === 0 ? (
-          <div className="py-8 text-center text-ink-soft text-[13px]">
+          <div className="py-8 text-center text-ink-soft text-[15px]">
             잔고가 기록된 항목이 없습니다.
           </div>
         ) : (
-          <table className="w-full text-[13px] border-collapse">
+          <table className="w-full text-[15px] border-collapse">
             <thead className="sticky top-0 bg-white">
               <tr className="bg-orange-50/60 border-b border-orange-100">
                 <th className="px-3 py-2 text-left font-bold text-orange-800 whitespace-nowrap">저장일</th>

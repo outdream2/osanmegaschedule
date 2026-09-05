@@ -93,7 +93,7 @@ export const SupplierChangeDialog: React.FC<SupplierChangeDialogProps> = ({
         </>
       }
     >
-      <p className="text-[13px] text-ink-soft leading-relaxed">
+      <p className="text-[15px] text-ink-soft leading-relaxed">
         <span className="font-bold text-sky-700">"{supplierConfirm.newVal}"</span>으로 변경합니다.{" "}
         해당 페이지의 <span className="font-bold text-ink">{supplierConfirm.rowCount}개</span> 항목과
         이후 모든 프로세스(보정 결과 · 확정 표)에 즉시 반영됩니다.
@@ -108,10 +108,10 @@ export const SupplierChangeDialog: React.FC<SupplierChangeDialogProps> = ({
             onChange={e => setSupplierConfirm(prev => prev ? { ...prev, addSynonyms: e.target.checked } : null)}
             className="mt-0.5 accent-brand-deep"
           />
-          <span className="text-[13px] text-ink-soft leading-snug">
+          <span className="text-[15px] text-ink-soft leading-snug">
             <span className="font-bold text-brand-deep">동의어 일괄 추가</span> — 이 페이지 상품명을{" "}
             <span className="font-semibold text-sky-700">"{supplierConfirm.newVal}"</span> 공급사로 동의어 사전에 등록
-            <span className="block text-[11px] text-ink-soft mt-0.5">(DB 매칭 후 상품코드 포함 자동 등록)</span>
+            <span className="block text-[15px] text-ink-soft mt-0.5">(DB 매칭 후 상품코드 포함 자동 등록)</span>
           </span>
         </label>
       )}

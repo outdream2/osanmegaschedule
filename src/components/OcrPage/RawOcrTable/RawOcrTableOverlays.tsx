@@ -107,7 +107,7 @@ export const RawOcrTableOverlays: React.FC<RawOcrTableOverlaysProps> = ({
         onMouseDown={e => e.preventDefault()}
       >
         {nameEditResults.length === 0 ? (
-          <div className="px-3 py-2.5 text-[12px] text-gray-400 text-center">상품이 없습니다</div>
+          <div className="px-3 py-2.5 text-[14px] text-gray-400 text-center">상품이 없습니다</div>
         ) : nameEditResults.map((p, pi) => (
           <button key={pi}
             onMouseDown={e => e.preventDefault()}
@@ -164,7 +164,7 @@ export const RawOcrTableOverlays: React.FC<RawOcrTableOverlaysProps> = ({
                 })();
               }, 100);
             }}
-            className="flex items-center gap-2 w-full text-left px-3 py-1.5 hover:bg-indigo-50 text-[12px] border-b border-gray-50 last:border-0">
+            className="flex items-center gap-2 w-full text-left px-3 py-1.5 hover:bg-indigo-50 text-[14px] border-b border-gray-50 last:border-0">
             <span className="flex-1 font-semibold text-gray-800 break-words">{p.product_name}</span>
             {p.spec && <span className="text-gray-400 shrink-0 max-w-[60px] break-words">{p.spec}</span>}
             {p.supplier && <span className="text-sky-500 shrink-0 max-w-[60px] break-words">{p.supplier}</span>}
@@ -211,15 +211,15 @@ export const RawOcrTableOverlays: React.FC<RawOcrTableOverlaysProps> = ({
           className="fixed z-[9999] max-h-52 overflow-y-auto bg-white border border-sky-300 rounded-lg shadow-xl text-xs"
           style={{ top: rect.top + 2, left: rect.left, width: rect.width }}
         >
-          <div className="px-2 py-1 text-[10px] text-zinc-500 border-b border-zinc-100 bg-zinc-50 font-bold">
+          <div className="px-2 py-1 text-[14px] text-zinc-500 border-b border-zinc-100 bg-zinc-50 font-bold">
             공급사 DB · {vendorNames.length === 0 ? "⚠ vendors 로드 안 됨 (F5 시도)" : `${matches.length}건${q ? ` ("${q}" 매칭)` : " (전체)"} / 총 ${vendorNames.length}`}
           </div>
           {vendorNames.length === 0 ? (
-            <div className="px-2 py-3 text-[11px] text-rose-500 text-center">
+            <div className="px-2 py-3 text-[15px] text-rose-500 text-center">
               공급사 DB 목록이 로드되지 않았어요.<br />/api/vendors 응답 확인 필요.
             </div>
           ) : matches.length === 0 ? (
-            <div className="px-2 py-2 text-[11px] text-zinc-400 text-center">"{q}" 매칭 없음</div>
+            <div className="px-2 py-2 text-[15px] text-zinc-400 text-center">"{q}" 매칭 없음</div>
           ) : matches.map(name => (
             <button
               key={name}

@@ -238,8 +238,8 @@ export const NumericEditableCell: React.FC<{
                 {typeof cell === "number" ? fmt(cell) : String(cell)}
               </span>
           }
-          {isCorrectedAmt && <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1 rounded font-bold">보정</span>}
-          {dbFilledCells.has(`${ri}-${ci}`) && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1 rounded font-bold" title="products DB 에서 자동 채움">DB</span>}
+          {isCorrectedAmt && <span className="text-[12px] bg-emerald-100 text-emerald-600 px-1 rounded font-bold">보정</span>}
+          {dbFilledCells.has(`${ri}-${ci}`) && <span className="text-[12px] bg-indigo-100 text-indigo-700 px-1 rounded font-bold" title="products DB 에서 자동 채움">DB</span>}
           <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
         </span>
         {(h === "수량" || h === "단가") && (
@@ -293,7 +293,7 @@ export const ExpiryCell: React.FC<{
           key={`edit-exp-${ri}-${ci}`} autoFocus type="text" placeholder="2026-12-31"
           size={Math.max(13, editingCellVal.length + 2)}
           style={{ width: `${Math.max(13, editingCellVal.length + 2)}ch`, minWidth: expInputMinW, maxWidth: "100%" }}
-          className="text-[11px] tabular-nums text-amber-700 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5 outline-none text-right"
+          className="text-[13px] tabular-nums text-amber-700 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5 outline-none text-right"
           value={editingCellVal}
           onChange={e => setEditingCellVal(e.target.value)}
           onKeyDown={e => {
@@ -317,7 +317,7 @@ export const ExpiryCell: React.FC<{
   return (
     <td key={ci} style={{ minWidth: numCellMinW }}
       onClick={e => { e.stopPropagation(); setEditingCell({ ri, ci }); setEditingCellVal(""); }}
-      className="px-1 py-2 text-gray-500 text-[11px] group cursor-pointer hover:bg-amber-50/60 text-right"
+      className="px-1 py-2 text-gray-500 text-[13px] group cursor-pointer hover:bg-amber-50/60 text-right"
       title="클릭하여 유통기한 수정">
       <span className={numCellInnerCls}>
         <span className="flex items-center justify-end gap-1">
@@ -398,13 +398,13 @@ export const NameCell: React.FC<{
       <td key={ci} className="px-3 py-2 max-w-[240px]">
         <div className="flex flex-col gap-0">
           <span className="flex items-center gap-1">
-            <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-1 rounded shrink-0">BC</span>
+            <span className="text-[12px] bg-emerald-100 text-emerald-700 font-bold px-1 rounded shrink-0">BC</span>
             <span className="font-semibold text-emerald-700 break-words whitespace-normal">{renderTextWithBreaks(barcodeMatch.name)}</span>
             <button type="button" title="ERP 자동보정 취소"
               onClick={e => { e.stopPropagation(); setCancelledAutoMap(prev => new Set([...prev, ri])); }}
-              className="text-[10px] px-1 py-px rounded bg-rose-100 text-rose-600 hover:bg-rose-200 cursor-pointer shrink-0">✕</button>
+              className="text-[12px] px-1 py-px rounded bg-rose-100 text-rose-600 hover:bg-rose-200 cursor-pointer shrink-0">✕</button>
           </span>
-          <span className="text-gray-300 text-[11px] line-through break-words whitespace-normal">{renderTextWithBreaks(String(origCell ?? ""))}</span>
+          <span className="text-gray-300 text-[13px] line-through break-words whitespace-normal">{renderTextWithBreaks(String(origCell ?? ""))}</span>
         </div>
       </td>
     );
@@ -488,17 +488,17 @@ export const NameCell: React.FC<{
         className="px-3 py-2 max-w-[240px] cursor-pointer hover:bg-indigo-50/60 group" title="클릭하여 상품명 수정">
         <div className="flex flex-col gap-0">
           <span className="flex items-center gap-1">
-            <span className="text-[11px] font-bold bg-brand-deep text-white px-1 py-px rounded shrink-0" title="products DB 에서 자동 매칭">DB</span>
+            <span className="text-[13px] font-bold bg-brand-deep text-white px-1 py-px rounded shrink-0" title="products DB 에서 자동 매칭">DB</span>
             <BookOpen size={9} className="text-indigo-400 shrink-0" />
             <span className="font-semibold text-indigo-700 break-words whitespace-normal">{renderTextWithBreaks(autoMatch.name)}</span>
             <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
             <button type="button" title="ERP 자동보정 취소"
               onClick={e => { e.stopPropagation(); setCancelledAutoMap(prev => new Set([...prev, ri])); }}
-              className="text-[10px] px-1 py-px rounded bg-rose-100 text-rose-600 hover:bg-rose-200 cursor-pointer shrink-0">✕</button>
+              className="text-[12px] px-1 py-px rounded bg-rose-100 text-rose-600 hover:bg-rose-200 cursor-pointer shrink-0">✕</button>
           </span>
           <button type="button"
             onClick={e => { e.stopPropagation(); setDeleteSynConfirm({ ri, origName: String(origCell ?? "") }); }}
-            className="text-gray-300 text-[11px] line-through break-words whitespace-normal hover:text-rose-400 cursor-pointer text-left" title="클릭하여 동의어 삭제">
+            className="text-gray-300 text-[13px] line-through break-words whitespace-normal hover:text-rose-400 cursor-pointer text-left" title="클릭하여 동의어 삭제">
             {renderTextWithBreaks(String(origCell ?? ""))}
           </button>
         </div>
@@ -529,14 +529,14 @@ export const NameCell: React.FC<{
             title={isCycling ? "순환 재추출" : "품명 재추출"}
             onClick={e => { e.stopPropagation(); reextractProductName(ri); }}
             disabled={reextractingName.has(ri)}
-            className={`text-[10px] px-1.5 py-0.5 rounded disabled:opacity-50 cursor-pointer shrink-0 transition font-bold ${
+            className={`text-[12px] px-1.5 py-0.5 rounded disabled:opacity-50 cursor-pointer shrink-0 transition font-bold ${
               isCycling ? "bg-brand-deep text-white hover:bg-brand-deep" : "bg-sky-100 text-sky-700 hover:bg-sky-500 hover:text-white"
             }`}
           >{reextractingName.has(ri) ? "⏳ 재추출중" : `🔄 재추출${cycleLabel}`}</button>
           {isCancelledAutoMap && (
             <button type="button" title="ERP 자동보정 복원"
               onClick={e => { e.stopPropagation(); setCancelledAutoMap(prev => { const s = new Set(prev); s.delete(ri); return s; }); }}
-              className="text-[10px] px-1 py-px rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 cursor-pointer shrink-0">↩ 복원</button>
+              className="text-[12px] px-1 py-px rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 cursor-pointer shrink-0">↩ 복원</button>
           )}
         </span>
       </div>

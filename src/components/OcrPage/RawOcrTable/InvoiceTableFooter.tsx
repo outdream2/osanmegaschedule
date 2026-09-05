@@ -47,7 +47,7 @@ export const InvoiceTableFooter: React.FC<InvoiceTableFooterProps> = ({
               <td colSpan={Math.max(1, amtOrderIdx)} className="px-3 py-2 text-right font-semibold text-gray-500">
                 {supplier} <span className="text-gray-400">({count}매)</span>
                 {balAmt != null && balAmt > 0 && (
-                  <span className="ml-2 text-[11px] text-rose-600 font-bold" title={`최신 미수금 · ${balRec?.invoice_date ?? ""}`}>
+                  <span className="ml-2 text-[15px] text-rose-600 font-bold" title={`최신 미수금 · ${balRec?.invoice_date ?? ""}`}>
                     미수 {fmt(balAmt)}원
                   </span>
                 )}
@@ -91,7 +91,7 @@ export const InvoiceTableFooter: React.FC<InvoiceTableFooterProps> = ({
               className={`cursor-pointer hover:underline ${grandTotalOverride != null ? "text-orange-700" : ""}`}
             >
               {fmt(grandTotalOverride ?? total)}원
-              {grandTotalOverride != null && <span className="text-[10px] font-bold text-orange-500 ml-1">✎</span>}
+              {grandTotalOverride != null && <span className="text-[14px] font-bold text-orange-500 ml-1">✎</span>}
             </button>
           )}
         </td>

@@ -52,7 +52,7 @@ export const DeleteSynonymDialog: React.FC<DeleteSynonymDialogProps> = ({
         </>
       }
     >
-      <p className="text-[13px] text-ink-soft leading-relaxed">
+      <p className="text-[15px] text-ink-soft leading-relaxed">
         <span className="line-through text-zinc-400">{deleteSynConfirm.origName}</span>의 동의어 매핑을 삭제합니다.
       </p>
     </Modal>

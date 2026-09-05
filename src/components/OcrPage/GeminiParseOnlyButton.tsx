@@ -64,8 +64,8 @@ export function GeminiParseOnlyButton({
 
   const isSm = size === "sm";
   const cls = isSm
-    ? "px-2.5 py-1.5 rounded-lg text-[12px] gap-1"
-    : "px-3 py-2 rounded-xl text-[13px] gap-1.5";
+    ? "px-2.5 py-1.5 rounded-lg text-[14px] gap-1"
+    : "px-3 py-2 rounded-xl text-[15px] gap-1.5";
   const iconSize = isSm ? 12 : 14;
 
   return (

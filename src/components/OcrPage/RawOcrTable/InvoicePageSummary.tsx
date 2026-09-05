@@ -83,7 +83,7 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
         <div className="flex flex-col gap-0 px-3 py-2">
           <div className="flex items-center justify-between gap-3 min-w-0 flex-wrap">
             <div className="flex items-center gap-2 min-w-0 flex-wrap">
-              <span className="text-[12px] font-bold text-amber-700 whitespace-nowrap">{pn}번</span>
+              <span className="text-[14px] font-bold text-amber-700 whitespace-nowrap">{pn}번</span>
               {pageSupplier ? (
                 <button type="button"
                   onClick={e => { e.stopPropagation(); openVendorEdit(pageSupplier); }}
@@ -91,9 +91,9 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
                   title="클릭 · 공급사 정보 조회·수정"
                 >{pageSupplier}</button>
               ) : (
-                <span className="text-[13px] font-bold text-amber-400 italic">공급사 미지정</span>
+                <span className="text-[15px] font-bold text-amber-400 italic">공급사 미지정</span>
               )}
-              <span className="text-[12px] font-semibold text-amber-700">총</span>
+              <span className="text-[14px] font-semibold text-amber-700">총</span>
 
               {/* ── 소계 입력 ── */}
               {isCustom ? (
@@ -107,7 +107,7 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
                   />
                   <span className="text-[16px] font-bold text-amber-900">원</span>
                   <button type="button" onClick={() => setPageSubtotalChoices(prev => { const n = { ...prev }; delete n[pn]; return n; })}
-                    className="text-[10px] font-bold text-zinc-500 hover:text-zinc-700 underline"
+                    className="text-[14px] font-bold text-zinc-500 hover:text-zinc-700 underline"
                   >취소</button>
                 </>
               ) : (
@@ -145,14 +145,14 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
                         />
                         <span className="text-[14px] font-bold text-amber-900">원</span>
                         {vatOn && (
-                          <span className="text-[10px] font-bold text-amber-600 bg-amber-100 border border-amber-300 rounded px-1 py-px whitespace-nowrap">
+                          <span className="text-[14px] font-bold text-amber-600 bg-amber-100 border border-amber-300 rounded px-1 py-px whitespace-nowrap">
                             +VAT {fmt(vatAmount)}
                           </span>
                         )}
                       </>
                     );
                   })()}
-                  <label className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 cursor-pointer hover:text-amber-900 ml-1"
+                  <label className="inline-flex items-center gap-1 text-[15px] font-bold text-amber-700 cursor-pointer hover:text-amber-900 ml-1"
                     title="체크 시 · 소계에 VAT 10% 자동 합산 (매입총계 · 정산 반영)">
                     <input type="checkbox"
                       checked={!!pageVatIncluded[pn]}
@@ -165,7 +165,7 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
               )}
 
               {/* ── 정산차액 ── */}
-              <span className="text-[12px] font-semibold text-orange-700 ml-2"
+              <span className="text-[14px] font-semibold text-orange-700 ml-2"
                 title={discs.length > 0 ? discs.map(d => `${d.label}: ${fmt(d.amount)}`).join(" · ") : "차액·에누리·할인 자동 감지"}>정산차액</span>
               {(() => {
                 const totalDisc = discs.reduce((s, d) => s + d.amount, 0);
@@ -188,7 +188,7 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
                       setEditingSummary(null);
                     }}
                     onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
-                    className="w-[110px] text-[13px] font-bold text-orange-800 bg-orange-50 border border-orange-300 hover:border-orange-500 focus:bg-white rounded px-1.5 py-0.5 focus:outline-none focus:border-brand-deep text-right"
+                    className="w-[110px] text-[15px] font-bold text-orange-800 bg-orange-50 border border-orange-300 hover:border-orange-500 focus:bg-white rounded px-1.5 py-0.5 focus:outline-none focus:border-brand-deep text-right"
                   />
                 );
               })()}
@@ -198,7 +198,7 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
                 const explicit = pageDiscountApplied[pn];
                 const isChecked = explicit !== undefined ? explicit : anyValid;
                 return (
-                  <label className={`inline-flex items-center gap-1 text-[11px] font-bold cursor-pointer transition ${anyInvalid ? "text-zinc-400 hover:text-zinc-600" : "text-orange-700 hover:text-orange-900"}`}
+                  <label className={`inline-flex items-center gap-1 text-[15px] font-bold cursor-pointer transition ${anyInvalid ? "text-zinc-400 hover:text-zinc-600" : "text-orange-700 hover:text-orange-900"}`}
                     title={anyInvalid
                       ? "수식 미매칭 (rowsSum - stated ≠ 정산차액) · 자동 미적용 · 체크로 강제 적용 가능"
                       : "체크 시 · 매입총계에서 정산차액 반영 · 해제 시 소계 그대로"}>
@@ -212,7 +212,7 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
               })()}
 
               {/* ── 미수금 ── */}
-              <span className="text-[12px] font-semibold text-rose-700 ml-2" title="잔고 = 미수금 (동의어)">미수금</span>
+              <span className="text-[14px] font-semibold text-rose-700 ml-2" title="잔고 = 미수금 (동의어)">미수금</span>
               <input type="text" inputMode="numeric"
                 value={
                   editingSummary?.pn === pn && editingSummary.kind === "balance"
@@ -241,7 +241,7 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
                   setEditingSummary(null);
                 }}
                 onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
-                className="w-[110px] text-[13px] font-bold text-rose-800 bg-rose-50 border border-rose-300 hover:border-rose-500 focus:bg-white rounded px-1.5 py-0.5 focus:outline-none focus:border-brand-deep text-right"
+                className="w-[110px] text-[15px] font-bold text-rose-800 bg-rose-50 border border-rose-300 hover:border-rose-500 focus:bg-white rounded px-1.5 py-0.5 focus:outline-none focus:border-brand-deep text-right"
               />
 
               {/* ── ERP 매칭 · 확정 버튼 ── */}
@@ -253,7 +253,7 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
                       await handleMatchPage(pn);
                     }}
                     disabled={!!matchingPage[pn]}
-                    className={`text-[13px] font-bold text-white disabled:bg-zinc-300 disabled:cursor-not-allowed border-2 rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-md ring-1 transition shrink-0 ${
+                    className={`text-[15px] font-bold text-white disabled:bg-zinc-300 disabled:cursor-not-allowed border-2 rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-md ring-1 transition shrink-0 ${
                       hasErpSubRow
                         ? "bg-violet-500 hover:bg-violet-600 border-violet-700 ring-violet-200"
                         : "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border-indigo-700 ring-indigo-200"
@@ -276,7 +276,7 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
                       setConfirmed(true);
                     }}
                     disabled={!!matchingPage[pn]}
-                    className={`text-[13px] font-bold text-white disabled:bg-zinc-300 disabled:cursor-not-allowed border-2 rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-md ring-1 transition shrink-0 ${
+                    className={`text-[15px] font-bold text-white disabled:bg-zinc-300 disabled:cursor-not-allowed border-2 rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-md ring-1 transition shrink-0 ${
                       isConfirmed
                         ? "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border-emerald-800 ring-emerald-200"
                         : "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border-emerald-700 ring-emerald-200 animate-pulse"

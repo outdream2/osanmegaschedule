@@ -63,7 +63,7 @@ export const RawPageImageCell: React.FC<RawPageImageCellProps> = ({
     >
       {resizeHandle}
       {!imgSrc ? (
-        <div className="flex items-center justify-center h-full p-3 text-[11px] text-gray-400">이미지 없음</div>
+        <div className="flex items-center justify-center h-full p-3 text-[15px] text-gray-400">이미지 없음</div>
       ) : (
         <div
           style={{ position: "relative", width: "100%", height: "100%", cursor: canPan ? (panDragRef.current?.pn === pn ? "grabbing" : "grab") : "zoom-in" }}
@@ -112,10 +112,10 @@ export const RawPageImageCell: React.FC<RawPageImageCellProps> = ({
               }}
             />
             <div className="mt-1 flex items-center justify-between px-0.5">
-              <span className="text-[10px] text-gray-400">{pn}번</span>
+              <span className="text-[14px] text-gray-400">{pn}번</span>
               <a href={imgSrc} target="_blank" rel="noopener noreferrer"
                 onClick={e => e.stopPropagation()}
-                className="text-[10px] font-bold text-indigo-500 hover:text-indigo-700"
+                className="text-[14px] font-bold text-indigo-500 hover:text-indigo-700"
                 title="원본 이미지 새 창으로 열기">원본↗</a>
             </div>
           </button>

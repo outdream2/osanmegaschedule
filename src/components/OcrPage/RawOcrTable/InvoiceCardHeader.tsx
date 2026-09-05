@@ -50,16 +50,16 @@ export const InvoiceCardHeader: React.FC<InvoiceCardHeaderProps> = ({
             <button
               type="button"
               onClick={commitRawRowsDeletion}
-              className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-rose-500 hover:bg-rose-600 active:bg-rose-700 px-2 py-0.5 rounded shadow-sm transition cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-1 text-[15px] font-bold text-white bg-rose-500 hover:bg-rose-600 active:bg-rose-700 px-2 py-0.5 rounded shadow-sm transition cursor-pointer whitespace-nowrap"
               title={`선택된 ${hiddenRawRows.size}행 완전 삭제 + DB 서명 저장 (다음 스캔에도 자동 필터)`}
             >
               🗑 {hiddenRawRows.size}행 삭제
             </button>
           )}
-          {meta.date     && <span className="text-[11px] text-gray-400">{meta.date}</span>}
-          {meta.supplier && <span className="text-[11px] text-gray-400">공급: {meta.supplier}</span>}
+          {meta.date     && <span className="text-[15px] text-gray-400">{meta.date}</span>}
+          {meta.supplier && <span className="text-[15px] text-gray-400">공급: {meta.supplier}</span>}
           {autoSynonymLoading && (
-            <span className="text-[11px] text-indigo-500 font-bold flex items-center gap-1">
+            <span className="text-[15px] text-indigo-500 font-bold flex items-center gap-1">
               <Spinner size={10} />동의어 검색 중...
             </span>
           )}
@@ -69,7 +69,7 @@ export const InvoiceCardHeader: React.FC<InvoiceCardHeaderProps> = ({
             </StatusPill>
           )}
           {synonymAddStatus?.status === 'loading' && (
-            <span className="text-[11px] text-sky-500 font-bold flex items-center gap-1">
+            <span className="text-[15px] text-sky-500 font-bold flex items-center gap-1">
               <Spinner size={10} />동의어 추가 중...
             </span>
           )}
@@ -86,7 +86,7 @@ export const InvoiceCardHeader: React.FC<InvoiceCardHeaderProps> = ({
 
       {/* ── 공급사 미입력 페이지 경고 배너 ── */}
       {hasMissingSupplier && (
-        <div className="mx-3 my-2 px-3 py-2 rounded-lg bg-rose-50 border-2 border-rose-300 flex items-start gap-2 text-[12px] font-semibold text-rose-800">
+        <div className="mx-3 my-2 px-3 py-2 rounded-lg bg-rose-50 border-2 border-rose-300 flex items-start gap-2 text-[14px] font-semibold text-rose-800">
           <AlertTriangle size={14} className="shrink-0 mt-0.5 text-rose-600" />
           <div className="flex-1">
             <div className="font-bold text-rose-900 mb-0.5">
@@ -107,23 +107,23 @@ export const InvoiceCardHeader: React.FC<InvoiceCardHeaderProps> = ({
         const supplier = reparseSupplier[pn] ?? "";
         if (!supplier) return null;
         if (status === 'loading') return (
-          <div key={pn} className="px-4 py-2 bg-indigo-50 border-b border-indigo-200 flex items-center gap-2 text-[12px] font-semibold text-indigo-700">
+          <div key={pn} className="px-4 py-2 bg-indigo-50 border-b border-indigo-200 flex items-center gap-2 text-[14px] font-semibold text-indigo-700">
             <Spinner size={12} className="shrink-0" />
             {pn}번 명세서 "{supplier}" 공급처 템플릿으로 재파싱 중...
           </div>
         );
         if (status === 'error') return (
-          <div key={pn} className="px-4 py-2 bg-rose-50 border-b border-rose-200 flex items-center gap-2 text-[12px] font-semibold text-amber-700">
+          <div key={pn} className="px-4 py-2 bg-rose-50 border-b border-rose-200 flex items-center gap-2 text-[14px] font-semibold text-amber-700">
             <XCircle size={12} className="shrink-0" />{pn}번 명세서 재파싱 실패 — 원본 결과를 유지합니다
           </div>
         );
         if (status === 'done') return (
-          <div key={pn} className="px-4 py-2 bg-emerald-50 border-b border-emerald-200 flex items-center gap-2 flex-wrap text-[12px] font-semibold text-emerald-700">
+          <div key={pn} className="px-4 py-2 bg-emerald-50 border-b border-emerald-200 flex items-center gap-2 flex-wrap text-[14px] font-semibold text-emerald-700">
             <CheckCircle size={12} className="shrink-0" />
             <span>{pn}번 명세서 재파싱 완료</span>
             <span className="text-gray-500 font-normal">이 결과를 <span className="font-bold text-sky-700">"{supplier}"</span> 공급처 템플릿으로 저장하면 다음부터 자동 적용됩니다.</span>
             <button onClick={() => saveTemplate(pn, supplier)}
-              className="ml-auto text-[11px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] px-2 py-0.5 rounded transition cursor-pointer shrink-0">
+              className="ml-auto text-[15px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] px-2 py-0.5 rounded transition cursor-pointer shrink-0">
               템플릿 저장
             </button>
             <button onClick={() => setReparseStatus(prev => { const s = { ...prev }; delete s[pn]; return s; })}
@@ -133,7 +133,7 @@ export const InvoiceCardHeader: React.FC<InvoiceCardHeaderProps> = ({
           </div>
         );
         if (status === 'saved') return (
-          <div key={pn} className="px-4 py-2 bg-emerald-50 border-b border-emerald-200 flex items-center gap-2 text-[12px] font-semibold text-emerald-700">
+          <div key={pn} className="px-4 py-2 bg-emerald-50 border-b border-emerald-200 flex items-center gap-2 text-[14px] font-semibold text-emerald-700">
             <BookmarkCheck size={12} className="shrink-0" /><span className="font-bold text-sky-700">"{supplier}"</span> 공급처 템플릿 저장 완료 — 다음 스캔부터 자동 적용됩니다
           </div>
         );

@@ -125,7 +125,7 @@ export const RawInvoiceCard: React.FC<RawInvoiceCardProps> = ({
       />
 
       <div className="w-full max-w-[1400px] mx-auto overflow-x-auto pl-3 pr-8 box-border" ref={invTableWrapRef}>
-        <table className={`w-full border-collapse ${_cw < 500 ? "text-[10px]" : "text-xs"}`} style={{ tableLayout: "fixed" }}>
+        <table className={`w-full border-collapse ${_cw < 500 ? "text-[14px]" : "text-xs"}`} style={{ tableLayout: "fixed" }}>
           <InvoiceTableHeader
             dispHeaders={dispHeaders}
             showRawDetail={showRawDetail}
@@ -221,7 +221,7 @@ export const RawInvoiceCard: React.FC<RawInvoiceCardProps> = ({
                             <button
                               type="button"
                               onClick={e => { e.stopPropagation(); openVendorEdit(pageSupplierHeadRaw); }}
-                              className="inline-flex items-center gap-0.5 text-[10px] font-bold text-white bg-teal-500 hover:bg-teal-600 rounded px-1.5 py-0.5 whitespace-nowrap"
+                              className="inline-flex items-center gap-0.5 text-[14px] font-bold text-white bg-teal-500 hover:bg-teal-600 rounded px-1.5 py-0.5 whitespace-nowrap"
                               title={`${pageSupplierHeadRaw} 공급사 정보 조회·수정`}
                             >
                               🔍 조회
@@ -231,12 +231,12 @@ export const RawInvoiceCard: React.FC<RawInvoiceCardProps> = ({
                           <button type="button"
                             onClick={() => runColumnPipeline(pn)}
                             disabled={!!runningPipeline[pn]}
-                            className="ml-1 text-[10px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-zinc-300 disabled:cursor-not-allowed rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
+                            className="ml-1 text-[14px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-zinc-300 disabled:cursor-not-allowed rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
                             title="상품명 매칭 → 빈 단가 DB 조회 → OCR vs DB 큰차이 스왑 · 페이지 로드 시 자동 실행됨 · 재실행용"
                           >{runningPipeline[pn] ? "⏳ 정리중..." : "🎯 자동정리"}</button>
                           <button type="button"
                             onClick={() => addManualRow(pn)}
-                            className="ml-1 text-[10px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
+                            className="ml-1 text-[14px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
                             title={`${pn}번 명세서 하단에 빈 상품 행 추가 · 수동 입력`}
                           >➕ 행추가</button>
                         </span>
@@ -324,7 +324,7 @@ export const RawInvoiceCard: React.FC<RawInvoiceCardProps> = ({
                               <button
                                 type="button"
                                 onMouseDown={e => { e.preventDefault(); e.stopPropagation(); const name = editingRawSuppVal.trim() || String(cell ?? "").trim(); if (name) openVendorEdit(name); }}
-                                className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-sky-700 bg-white border border-sky-300 hover:bg-sky-50 rounded px-1.5 py-0.5 whitespace-nowrap cursor-pointer transition"
+                                className="shrink-0 flex items-center gap-1 text-[15px] font-bold text-sky-700 bg-white border border-sky-300 hover:bg-sky-50 rounded px-1.5 py-0.5 whitespace-nowrap cursor-pointer transition"
                                 title="공급사 정보 조회·수정"
                               >
                                 <Search size={10} /> 조회
@@ -357,7 +357,7 @@ export const RawInvoiceCard: React.FC<RawInvoiceCardProps> = ({
                           >
                             <span className="flex items-center gap-1">
                               {isEmpty ? (
-                                <span className="flex items-center gap-0.5 text-[11px] font-bold whitespace-nowrap">
+                                <span className="flex items-center gap-0.5 text-[15px] font-bold whitespace-nowrap">
                                   <AlertTriangle size={10} className="shrink-0" />
                                   공급사 필수
                                 </span>
@@ -376,10 +376,10 @@ export const RawInvoiceCard: React.FC<RawInvoiceCardProps> = ({
                         return (
                           <td key={ci} className="px-2 py-1.5" onClick={e => e.stopPropagation()}>
                             <div className="flex flex-col items-start gap-0.5">
-                              {cell != null && <span className="text-gray-400 text-[11px]">{String(cell)}</span>}
+                              {cell != null && <span className="text-gray-400 text-[15px]">{String(cell)}</span>}
                               <button
                                 onClick={() => openModal(ri)}
-                                className="text-[11px] font-bold text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100 rounded px-1.5 py-0.5 leading-tight"
+                                className="text-[15px] font-bold text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100 rounded px-1.5 py-0.5 leading-tight"
                               >
                                 보기
                               </button>
@@ -509,7 +509,7 @@ export const RawInvoiceCard: React.FC<RawInvoiceCardProps> = ({
                                   commitDatePage(normalizeExpiryDate(editingCellVal.trim()));
                                   setEditingCell(null);
                                 }}
-                                className="w-[100px] text-[11px] tabular-nums text-amber-800 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5 outline-none"
+                                className="w-[100px] text-[15px] tabular-nums text-amber-800 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5 outline-none"
                                 title="이 명세서의 모든 행에 일괄 적용됩니다"
                               />
                             </td>
@@ -521,7 +521,7 @@ export const RawInvoiceCard: React.FC<RawInvoiceCardProps> = ({
                             className={`px-3 py-2 ${
                               isAmt ? "text-right font-bold text-amber-800 whitespace-nowrap" :
                               isNum ? "text-right text-gray-700 whitespace-nowrap" :
-                              isDateCol ? "text-gray-500 text-[11px] tabular-nums whitespace-nowrap cursor-pointer hover:bg-amber-50/60" :
+                              isDateCol ? "text-gray-500 text-[15px] tabular-nums whitespace-nowrap cursor-pointer hover:bg-amber-50/60" :
                               h === "품명" ? "font-semibold text-gray-900 break-words whitespace-normal align-top min-w-[180px] max-w-[240px]" :
                               hasEllipsis ? "text-gray-600 break-words whitespace-normal" :
                                             "text-gray-600 whitespace-nowrap"

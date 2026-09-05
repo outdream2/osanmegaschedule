@@ -38,7 +38,7 @@ export const CrossCheckBadge: React.FC<CrossCheckBadgeProps> = ({
 
   if (allOk) {
     return (
-      <span className="text-[11px] font-bold text-emerald-600 whitespace-nowrap" title={commonTitle}>
+      <span className="text-[15px] font-bold text-emerald-600 whitespace-nowrap" title={commonTitle}>
         ✓ 검증
       </span>
     );
@@ -48,7 +48,7 @@ export const CrossCheckBadge: React.FC<CrossCheckBadgeProps> = ({
   if (canChoose) {
     const chosen = currentChoice ?? "stated";
     return (
-      <span className="inline-flex items-center gap-1 flex-nowrap whitespace-nowrap text-[11px]" title={commonTitle}>
+      <span className="inline-flex items-center gap-1 flex-nowrap whitespace-nowrap text-[15px]" title={commonTitle}>
         <button
           type="button"
           onClick={() => onChooseSubtotal!(pn, "computed")}
@@ -82,7 +82,7 @@ export const CrossCheckBadge: React.FC<CrossCheckBadgeProps> = ({
   }
 
   return (
-    <span className="text-[11px] font-semibold text-rose-600 whitespace-nowrap" title={commonTitle}>
+    <span className="text-[15px] font-semibold text-rose-600 whitespace-nowrap" title={commonTitle}>
       금액합계 {fmt(rowSum)}{statedTotal != null && !rowSumOk ? ` ≠ OCR ${fmt(statedTotal)}` : ""}{qpaMismatchCount > 0 ? ` · 수식오탐 ${qpaMismatchCount}` : ""}
     </span>
   );

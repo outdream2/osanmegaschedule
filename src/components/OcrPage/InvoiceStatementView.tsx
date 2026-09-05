@@ -76,18 +76,18 @@ const InvoicePageCard: React.FC<InvoicePageCardProps> = ({ page, theme }) => {
   return (
     <Card variant="raw-sm" padding="none" rounded="lg" borderColor={theme.border} clip>
       <div className={`${theme.bgHeader} px-3 py-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b ${theme.border}`}>
-        <span className={`text-[12px] font-bold ${theme.text}`}>page {page.page}</span>
+        <span className={`text-[14px] font-bold ${theme.text}`}>page {page.page}</span>
         <span className={`text-[14px] font-bold ${theme.text}`}>{supplier}</span>
-        <span className="text-[11px] text-zinc-500">거래일 {date}</span>
-        <span className={`text-[12px] font-bold ${theme.accent} ml-auto`}>
+        <span className="text-[15px] text-zinc-500">거래일 {date}</span>
+        <span className={`text-[14px] font-bold ${theme.accent} ml-auto`}>
           합계 {fmt(total)} 원 · {rowsCount}행
         </span>
       </div>
       {rowsCount === 0 ? (
-        <div className="px-3 py-4 text-center text-[12px] text-zinc-400">상품 행 없음</div>
+        <div className="px-3 py-4 text-center text-[14px] text-zinc-400">상품 행 없음</div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
+          <table className="w-full text-[14px]">
             <thead className="bg-zinc-50">
               <tr className="text-left">
                 <th className="px-2 py-1.5 text-zinc-500 font-bold w-10 text-center">#</th>
@@ -133,7 +133,7 @@ export function InvoiceStatementView({
   const body = (
     <div className="flex flex-col gap-2 mt-2">
       {pages.length === 0 ? (
-        <div className="text-[12px] text-zinc-400 text-center py-4">파싱된 페이지 없음</div>
+        <div className="text-[14px] text-zinc-400 text-center py-4">파싱된 페이지 없음</div>
       ) : (
         pages.map(p => <InvoicePageCard key={p.page} page={p} theme={theme} />)
       )}
@@ -143,7 +143,7 @@ export function InvoiceStatementView({
   if (!collapsible) {
     return (
       <div className="w-full">
-        {title && <div className={`text-[13px] font-bold ${theme.text}`}>{title}</div>}
+        {title && <div className={`text-[15px] font-bold ${theme.text}`}>{title}</div>}
         {body}
       </div>
     );
@@ -151,9 +151,9 @@ export function InvoiceStatementView({
 
   return (
     <details className="w-full bg-zinc-50/50 border border-line rounded-xl px-3 py-2" open={defaultOpen}>
-      <summary className={`cursor-pointer text-[13px] font-bold ${theme.text} select-none flex flex-wrap items-baseline gap-x-3`}>
+      <summary className={`cursor-pointer text-[15px] font-bold ${theme.text} select-none flex flex-wrap items-baseline gap-x-3`}>
         <span>📋 {title ?? "거래명세서 뷰"}</span>
-        <span className="text-[11px] text-zinc-500 font-normal">
+        <span className="text-[15px] text-zinc-500 font-normal">
           {pages.length}페이지 · {totalRows}행 · 합계 {fmt(totalSum)} 원
         </span>
       </summary>

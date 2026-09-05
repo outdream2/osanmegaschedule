@@ -68,7 +68,7 @@ export const XlsxExportSection: React.FC<XlsxExportSectionProps> = ({
             } catch { /* silent */ }
           }}
           title="서식 파일을 브라우저에 저장 (다음 방문 시 자동 복원)"
-          className={`flex items-center gap-1 text-[12px] font-bold px-2 py-1 rounded-lg transition cursor-pointer shrink-0 border ${
+          className={`flex items-center gap-1 text-[14px] font-bold px-2 py-1 rounded-lg transition cursor-pointer shrink-0 border ${
             xlsTemplateSaved
               ? "text-emerald-600 bg-emerald-50 border-emerald-200"
               : "text-indigo-600 bg-indigo-50 border-indigo-200 hover:bg-indigo-100"
@@ -81,7 +81,7 @@ export const XlsxExportSection: React.FC<XlsxExportSectionProps> = ({
       <button
         onClick={() => xlsInputRef.current?.click()}
         title={xlsTemplateName ?? "엑셀 서식 파일 업로드"}
-        className={`flex items-center gap-1 text-[12px] font-bold px-2 py-1 rounded-lg transition cursor-pointer shrink-0 border ${
+        className={`flex items-center gap-1 text-[14px] font-bold px-2 py-1 rounded-lg transition cursor-pointer shrink-0 border ${
           xlsTemplateName
             ? "text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
             : "text-gray-500 bg-white border-line hover:bg-gray-50"
@@ -97,7 +97,7 @@ export const XlsxExportSection: React.FC<XlsxExportSectionProps> = ({
       {/* 2026-07-28 · ERP 업로드 전용 서식 · 고정 컬럼 순서 · 소비기한=유통기한 */}
       <button
         onClick={handleErpUploadExport}
-        className="flex items-center gap-1 text-[12px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0"
+        className="flex items-center gap-1 text-[14px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0"
         title="ERP 시스템 업로드용 엑셀 서식 (상품코드·상품명·규격·마스터매입단가·공급처·전표매입단가·매입수량·매입총계·판매단가·이익률·소비기한)"
       >
         <FileSpreadsheet size={11} />ERP업로드 엑셀
@@ -106,7 +106,7 @@ export const XlsxExportSection: React.FC<XlsxExportSectionProps> = ({
       {xlsTemplate && (
         <button
           onClick={handleExcelExport}
-          className="flex items-center gap-1 text-[12px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0"
+          className="flex items-center gap-1 text-[14px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0"
           title="사용자 서식 파일로 엑셀 다운로드"
         >
           <FileSpreadsheet size={11} />서식별 엑셀
@@ -115,7 +115,7 @@ export const XlsxExportSection: React.FC<XlsxExportSectionProps> = ({
       {/* 2026-07-22 · CSV 다운로드 · 3차 확정표에 통합 (사용자 요청) */}
       <button
         onClick={() => handleExport(confHeaders, confRows, "확정")}
-        className="flex items-center gap-1 text-[12px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0"
+        className="flex items-center gap-1 text-[14px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0"
       >
         <Download size={11} />CSV
       </button>

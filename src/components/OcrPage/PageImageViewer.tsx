@@ -84,7 +84,7 @@ export const PageImageViewer: React.FC<PageImageViewerProps> = ({
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-gray-500">원본 이미지</span>
           {loading && images.length < totalPages && (
-            <span className="text-[10px] text-amber-500 font-bold">· 렌더링 중...</span>
+            <span className="text-[14px] text-amber-500 font-bold">· 렌더링 중...</span>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -94,7 +94,7 @@ export const PageImageViewer: React.FC<PageImageViewerProps> = ({
           </button>
           <button
             onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); }}
-            className={`text-[10px] font-bold min-w-[2.5rem] text-center transition cursor-pointer ${
+            className={`text-[14px] font-bold min-w-[2.5rem] text-center transition cursor-pointer ${
               zoom !== 1 ? "text-blue-500 hover:underline" : "text-gray-300"
             }`}
           >
@@ -116,7 +116,7 @@ export const PageImageViewer: React.FC<PageImageViewerProps> = ({
             <RotateCw size={14} />
           </button>
           {rotation !== 0 && (
-            <span className="text-[10px] text-amber-600 font-bold">{rotation}°</span>
+            <span className="text-[14px] text-amber-600 font-bold">{rotation}°</span>
           )}
           <span className="text-xs font-bold text-gray-400 ml-1">
             {currentIdx + 1} / {images.length}

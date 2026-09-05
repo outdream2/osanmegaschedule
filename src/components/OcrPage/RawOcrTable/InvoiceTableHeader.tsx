@@ -70,7 +70,7 @@ export const InvoiceTableHeader: React.FC<InvoiceTableHeaderProps> = ({
       <tr className="bg-amber-50 border-b-2 border-amber-200">
         {pageImages?.length ? (
           <th
-            className="p-0 text-center bg-gray-50 border-r border-line text-[10px] font-bold text-gray-500 whitespace-nowrap select-none"
+            className="p-0 text-center bg-gray-50 border-r border-line text-[14px] font-bold text-gray-500 whitespace-nowrap select-none"
             style={{ width: effectiveInvColWidth, minWidth: effectiveInvColWidth, maxWidth: effectiveInvColWidth, position: "relative", boxSizing: "border-box" }}
           >
             <div style={{ padding: "8px 4px", textAlign: "center" }}>
@@ -97,7 +97,7 @@ export const InvoiceTableHeader: React.FC<InvoiceTableHeaderProps> = ({
           </th>
         ) : null}
         <th className="px-1 py-2 text-center" style={{ width: 56 }} title="선택 · 재추출">
-          <span className="text-[10px] font-bold text-amber-700">선택 · 🔄</span>
+          <span className="text-[14px] font-bold text-amber-700">선택 · 🔄</span>
         </th>
         {colList.map(({ origIdx }) => {
           const h = dispHeaders[origIdx];
@@ -116,7 +116,7 @@ export const InvoiceTableHeader: React.FC<InvoiceTableHeaderProps> = ({
           return (
             <th key={origIdx}
               style={{ width: colW, position: 'relative', overflow: 'hidden' }}
-              className={`px-1.5 py-1.5 font-bold text-amber-900 select-none text-[11px] ${NUM_COLS.has(h) ? "text-right" : "text-left"} truncate`}>
+              className={`px-1.5 py-1.5 font-bold text-amber-900 select-none text-[15px] ${NUM_COLS.has(h) ? "text-right" : "text-left"} truncate`}>
               {`OCR ${h}`}
               <div
                 style={{ position: 'absolute', right: 0, top: 4, bottom: 4, width: 4, cursor: 'col-resize', zIndex: 2 }}
