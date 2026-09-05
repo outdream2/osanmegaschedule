@@ -229,7 +229,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [contactPopover, setContactPopover] = useState<null | { anchor: DOMRect; name: string; phone: string | null; email: string | null }>(null);
 
   // 패널 상태
-  const { width: orderPanelWidth, startResize: onOrderResizeStart } = useResizablePanel({ storageKey: "megatown_ordermanage_order_w", defaultWidth: 640, minWidth: 320, maxWidth: 2400 });
+  const { width: orderPanelWidth, startResize: onOrderResizeStart } = useResizablePanel({ storageKey: "megatown_ordermanage_order_w", defaultRatio: 0.68, minWidth: 320, maxWidth: 2400 });
   const [orderPanelProduct, setOrderPanelProduct] = useState<{ code: string; name: string } | null>(null);
   const [orderPanelFull, setOrderPanelFull] = useState<Record<string, any> | null>(null);
   const [orderPanelLoading, setOrderPanelLoading] = useState(false);
@@ -246,7 +246,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     })();
   }, [orderPanelProduct]);
 
-  const { width: needPanelWidth, startResize: onNeedResizeStart } = useResizablePanel({ storageKey: "megatown_ordermanage_need_w", defaultWidth: 600, minWidth: 320, maxWidth: 2400 });
+  const { width: needPanelWidth, startResize: onNeedResizeStart } = useResizablePanel({ storageKey: "megatown_ordermanage_need_w", defaultRatio: 0.68, minWidth: 320, maxWidth: 2400 });
   const [orderNeedConfig, setOrderNeedConfig] = useState<OrderNeedFilterConfig>(() => loadOrderNeedConfig());
   const [needAdvancedOpen, setNeedAdvancedOpen] = useState(false);
   const [needCategoryFilter, setNeedCategoryFilter] = useState<string>(orderNeedConfig.defaultCategory);

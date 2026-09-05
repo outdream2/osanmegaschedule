@@ -5,7 +5,9 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 
 export interface UseResizablePanelOptions {
   storageKey: string;
-  defaultWidth: number;
+  defaultWidth?: number;
+  /** viewport 너비 비율(0~1) · defaultWidth 대신 사용 · 미저장 첫 방문 시 적용 */
+  defaultRatio?: number;
   minWidth?: number;
   maxWidth?: number;
   /** 데스크탑 감지 기준 px (default 1024) · true 이면 isDesktop 상태 제공 */
@@ -22,18 +24,22 @@ export interface UseResizablePanelResult {
 
 export function useResizablePanel({
   storageKey,
-  defaultWidth,
+  defaultWidth = 600,
+  defaultRatio,
   minWidth = 0,
   maxWidth = 9999,
   detectDesktop = false,
   desktopBreakpoint = 1024,
 }: UseResizablePanelOptions): UseResizablePanelResult {
   const [width, setWidthState] = useState<number>(() => {
+    const fallback = defaultRatio != null && typeof window !== "undefined"
+      ? Math.round(window.innerWidth * defaultRatio)
+      : defaultWidth;
     try {
       const v = Number(localStorage.getItem(storageKey));
-      return Number.isFinite(v) && v >= minWidth && v <= maxWidth ? v : defaultWidth;
+      return Number.isFinite(v) && v >= minWidth && v <= maxWidth ? v : fallback;
     } catch {
-      return defaultWidth;
+      return fallback;
     }
   });
 
