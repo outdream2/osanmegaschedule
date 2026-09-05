@@ -32,17 +32,17 @@ export const WallZoneCard: React.FC<WallZoneCardProps> = ({
       {position === "top" && renderRequestButton(num)}
       <div className="rounded-lg overflow-hidden border-2 border-stone-300 bg-white shadow-sm hover:border-amber-400 transition">
         <button type="button" onClick={openProducts} title={`${num}번 · ${zd?.category ?? ""} → 진열상품 조회`} className="w-full h-[64px] bg-stone-50 hover:bg-amber-50 px-1 py-1 flex flex-col items-center gap-0.5 border-b border-stone-200 cursor-pointer transition">
-          <span className="text-[10px] font-bold text-white bg-amber-700 rounded px-1 py-0.5 leading-none shrink-0">{getZoneLabel(num)}</span>
+          <span className="text-[14px] font-bold text-white bg-amber-700 rounded px-1 py-0.5 leading-none shrink-0">{getZoneLabel(num)}</span>
           {parts.length >= 2 ? (
             <div className="w-full flex-1 flex flex-col justify-center gap-0.5 min-h-0">
-              <span className="text-[10px] font-bold text-stone-800 leading-tight text-center line-clamp-1">{parts[0]}</span>
-              <span className="text-[10px] font-bold text-stone-800 leading-tight text-center line-clamp-1">{parts.slice(1).join(" · ")}</span>
+              <span className="text-[14px] font-bold text-stone-800 leading-tight text-center line-clamp-1">{parts[0]}</span>
+              <span className="text-[14px] font-bold text-stone-800 leading-tight text-center line-clamp-1">{parts.slice(1).join(" · ")}</span>
             </div>
           ) : (
-            <span className="w-full flex-1 flex items-center justify-center text-[10px] font-bold text-stone-800 line-clamp-2 text-center leading-tight">{cat}</span>
+            <span className="w-full flex-1 flex items-center justify-center text-[14px] font-bold text-stone-800 line-clamp-2 text-center leading-tight">{cat}</span>
           )}
         </button>
-        {renderZoneCell(num, "w-full h-10 text-[11px] p-0.5 justify-center border-0 rounded-none", "", true)}
+        {renderZoneCell(num, "w-full h-10 text-[15px] p-0.5 justify-center border-0 rounded-none", "", true)}
       </div>
       {position === "bottom" && renderRequestButton(num)}
     </div>

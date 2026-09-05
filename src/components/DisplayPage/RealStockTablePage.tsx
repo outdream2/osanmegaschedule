@@ -337,7 +337,7 @@ export const RealStockTablePage: React.FC = () => {
         style={Object.keys(style).length ? style : undefined}
         title={`${label} 정렬`}
       >
-        {label}<span className="ml-1 text-zinc-400 text-[11px]">{sortIndicator(k) || "⇅"}</span>
+        {label}<span className="ml-1 text-zinc-400 text-[15px]">{sortIndicator(k) || "⇅"}</span>
       </th>
     );
   };
@@ -348,7 +348,7 @@ export const RealStockTablePage: React.FC = () => {
       const active = sortKey === k;
       const dir = active ? (sortDir === "asc" ? "▲" : "▼") : "";
       return {
-        base: `inline-flex items-center gap-0.5 px-1.5 h-5 rounded text-[11px] font-bold transition cursor-pointer select-none ${active ? "bg-brand-deep text-white shadow-sm" : "bg-white text-zinc-500 border border-line hover:border-brand-deep hover:text-brand-deep"}`,
+        base: `inline-flex items-center gap-0.5 px-1.5 h-5 rounded text-[15px] font-bold transition cursor-pointer select-none ${active ? "bg-brand-deep text-white shadow-sm" : "bg-white text-zinc-500 border border-line hover:border-brand-deep hover:text-brand-deep"}`,
         dir,
       };
     };
@@ -357,13 +357,13 @@ export const RealStockTablePage: React.FC = () => {
     return (
       <th className={`${tableThCls("center")} select-none ${extra}`} style={minW ? { minWidth: minW } : undefined}>
         <div className="flex flex-col items-center gap-1">
-          <span className="text-[12px] font-bold text-ink">{labelText}</span>
+          <span className="text-[14px] font-bold text-ink">{labelText}</span>
           <div className="flex items-center gap-1">
             <button type="button" onClick={(e) => { e.stopPropagation(); toggleSort(qtyKey); }} className={qtyC.base} title="수량 정렬">
-              수량 <span className="text-[11px]">{qtyC.dir || "⇅"}</span>
+              수량 <span className="text-[15px]">{qtyC.dir || "⇅"}</span>
             </button>
             <button type="button" onClick={(e) => { e.stopPropagation(); toggleSort(zoneKey); }} className={zoneC.base} title="구역 정렬">
-              구역 <span className="text-[11px]">{zoneC.dir || "⇅"}</span>
+              구역 <span className="text-[15px]">{zoneC.dir || "⇅"}</span>
             </button>
           </div>
         </div>
@@ -379,7 +379,7 @@ export const RealStockTablePage: React.FC = () => {
     const zone = slot === "w1" ? r.w1zone : slot === "w2" ? r.w2zone : slot === "s1" ? r.s1zone : slot === "s2" ? r.s2zone : r.s3zone;
     const tone: "cyan" | "violet" = (slot === "w1" || slot === "w2") ? "cyan" : "violet";
     if (!zone) {
-      return <span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[13px]">—</span>;
+      return <span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[15px]">—</span>;
     }
     const cls = tone === "cyan" ? "bg-cyan-100 text-cyan-800" : "bg-violet-100 text-violet-800";
     return (
@@ -392,7 +392,7 @@ export const RealStockTablePage: React.FC = () => {
   const renderZoneQtyCell = (r: Row, slot: SlotKey) => (
     <div className="inline-flex items-center gap-1.5">
       {renderZoneCell(r, slot)}
-      <span className="text-zinc-400 text-[13px] font-medium">-</span>
+      <span className="text-zinc-400 text-[15px] font-medium">-</span>
       {renderQtyCell(r, slot)}
     </div>
   );
@@ -472,8 +472,8 @@ export const RealStockTablePage: React.FC = () => {
                   { label: "창고2", qty: detailRow.w2, zone: detailRow.w2zone, tone: "cyan" },
                 ].map((s) => (
                   <div key={s.label} className={`rounded-lg border p-2 text-center ${s.tone === "violet" ? "bg-violet-50/40 border-violet-200" : "bg-cyan-50/40 border-cyan-200"}`}>
-                    <div className={`text-[12px] font-bold ${s.tone === "violet" ? "text-violet-700" : "text-cyan-700"}`}>{s.label}</div>
-                    {s.zone && <div className="text-[11px] font-bold text-zinc-500 mt-0.5">{s.zone}</div>}
+                    <div className={`text-[14px] font-bold ${s.tone === "violet" ? "text-violet-700" : "text-cyan-700"}`}>{s.label}</div>
+                    {s.zone && <div className="text-[15px] font-bold text-zinc-500 mt-0.5">{s.zone}</div>}
                     <div className={`text-[18px] font-extrabold tabular-nums mt-0.5 ${s.qty != null && s.qty > 0 ? (s.tone === "violet" ? "text-violet-800" : "text-cyan-800") : "text-zinc-300"}`}>{s.qty ?? "-"}</div>
                   </div>
                 ))}
@@ -579,7 +579,7 @@ export const RealStockTablePage: React.FC = () => {
           <>
             {/* 2026-08-29 · framework audit · SegmentedControl 프리미티브 사용 · raw-card-wrapper 해소 */}
             <div className="flex items-center gap-2 px-1 mb-2 flex-wrap">
-              <span className="text-[12px] font-bold text-ink-soft mr-1">보기:</span>
+              <span className="text-[14px] font-bold text-ink-soft mr-1">보기:</span>
               <SegmentedControl
                 value={locFilter}
                 onChange={(v) => setLocFilter(v as typeof locFilter)}
@@ -590,7 +590,7 @@ export const RealStockTablePage: React.FC = () => {
                   { value: "warehouse", label: "창고만", tone: "sky",    title: "창고만 표시" },
                 ]}
               />
-              <span className="text-[12px] text-ink-soft ml-auto tabular-nums">
+              <span className="text-[14px] text-ink-soft ml-auto tabular-nums">
                 {sorted.length}건
               </span>
             </div>
@@ -653,7 +653,7 @@ export const RealStockTablePage: React.FC = () => {
                             {collapsedGroups.has(k) ? <ChevronRight size={16} className="text-brand-deep shrink-0" /> : <ChevronDown size={16} className="text-brand-deep shrink-0" />}
                             <span className="w-1 h-4 rounded-full bg-brand-deep" />
                             <span className="text-[15px] font-extrabold text-brand-deep tabular-nums">{k}</span>
-                            <span className="text-[12px] font-bold text-brand-deep/70 tabular-nums">· {rows.length}건</span>
+                            <span className="text-[14px] font-bold text-brand-deep/70 tabular-nums">· {rows.length}건</span>
                             {/* 2026-08-27 · 사용자 지시 · 구역별 전체보기 · 이 그룹만 열고 나머지 접기 */}
                             <button
                               type="button"
@@ -662,7 +662,7 @@ export const RealStockTablePage: React.FC = () => {
                                 const others = sortedKeys.filter(x => x !== k);
                                 setCollapsedGroups(new Set(others));
                               }}
-                              className="ml-1 inline-flex items-center gap-1 h-6 px-2 rounded-md bg-white/70 border border-brand-deep/30 text-[11px] font-bold text-brand-deep hover:bg-white cursor-pointer transition"
+                              className="ml-1 inline-flex items-center gap-1 h-6 px-2 rounded-md bg-white/70 border border-brand-deep/30 text-[15px] font-bold text-brand-deep hover:bg-white cursor-pointer transition"
                               title="이 구역만 전체보기 (다른 구역 접기)"
                             >
                               전체보기
@@ -684,7 +684,7 @@ export const RealStockTablePage: React.FC = () => {
                             >
                               <ArrowDown size={12} />
                             </button>
-                            <span className="ml-auto flex items-center gap-3 text-[12px] font-bold tabular-nums">
+                            <span className="ml-auto flex items-center gap-3 text-[14px] font-bold tabular-nums">
                               <span className="text-amber-700">ERP 합계 {totalErp}</span>
                               <span className="text-brand-deep">실재고 합계 {totalReal}</span>
                               <span className={totalErp - totalReal > 0 ? "text-rose-600" : totalErp - totalReal < 0 ? "text-emerald-600" : "text-zinc-400"}>
@@ -702,8 +702,8 @@ export const RealStockTablePage: React.FC = () => {
                               {r.product_name}
                             </button>
                           </td>
-                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.location ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[16px] tabular-nums tracking-tight">{r.location}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[13px]">—</span>)}</td>
-                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.erp != null && r.erp > 0 ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[16px] tabular-nums tracking-tight">{r.erp}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[13px]">—</span>)}</td>
+                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.location ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[16px] tabular-nums tracking-tight">{r.location}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[15px]">—</span>)}</td>
+                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.erp != null && r.erp > 0 ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[16px] tabular-nums tracking-tight">{r.erp}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[15px]">—</span>)}</td>
                           {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s1")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s1")}</td></>}
                           {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s2")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s2")}</td></>}
                           {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s3")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s3")}</td></>}
@@ -758,7 +758,7 @@ export const RealStockTablePage: React.FC = () => {
 // 상세 모달 · Field 헬퍼 · 라벨/값 정렬
 const Field: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
   <div className="flex flex-col gap-0.5 min-w-0">
-    <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">{label}</span>
+    <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider">{label}</span>
     <span className="text-[15px] text-ink break-keep">{value}</span>
   </div>
 );

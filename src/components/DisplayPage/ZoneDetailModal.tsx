@@ -71,7 +71,7 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-base font-bold text-zinc-900 truncate">{activeZone.label}</div>
-        <div className="text-[11px] text-zinc-500">{activeZone.category}</div>
+        <div className="text-[15px] text-zinc-500">{activeZone.category}</div>
       </div>
       <StatusPill tone={STATUS_TONE[draftStatus]} size="xs">
         {STATUS_LABEL[draftStatus]}
@@ -89,7 +89,7 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
         title={!canRequest ? "상태를 부족/품절로 변경하고 담당 직원을 배정하세요" : ""}
         className="flex-1 px-4 py-2.5 text-sm font-bold rounded-xl bg-violet-600 text-white hover:bg-violet-700 transition cursor-pointer flex items-center justify-center gap-2 disabled:bg-zinc-200 disabled:cursor-not-allowed disabled:text-zinc-400 shadow-sm shadow-violet-200">
         <Send size={15} />진열 요청 보내기
-        {!canRequest && <span className="text-[10px] font-normal opacity-70">(부족·품절 + 담당자 필요)</span>}
+        {!canRequest && <span className="text-[14px] font-normal opacity-70">(부족·품절 + 담당자 필요)</span>}
       </button>
     </div>
   );
@@ -108,7 +108,7 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
 
         {/* Assigned staff */}
         <div>
-          <label className="text-[13px] font-semibold text-zinc-600 mb-2 flex items-center gap-1 block">
+          <label className="text-[15px] font-semibold text-zinc-600 mb-2 flex items-center gap-1 block">
             <User size={11} />담당 직원
           </label>
           {(() => {
@@ -116,13 +116,13 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
             const isLogistics = assignedStaff?.position.includes("물류");
             return assignedStaff ? (
               <div className="flex items-center gap-3 px-3 py-3 rounded-xl border-2 border-indigo-200 bg-indigo-50">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-semibold shrink-0 bg-brand-tint text-brand-deep">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-semibold shrink-0 bg-brand-tint text-brand-deep">
                   {assignedStaff.name.slice(0, 2)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-bold text-zinc-900">{assignedStaff.name}</div>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${isLogistics ? "bg-indigo-200 text-indigo-800" : "bg-zinc-200 text-zinc-600"}`}>
+                    <span className={`text-[14px] font-bold px-1.5 py-0.5 rounded-md ${isLogistics ? "bg-indigo-200 text-indigo-800" : "bg-zinc-200 text-zinc-600"}`}>
                       {assignedStaff.position || "약사"}
                     </span>
                   </div>
@@ -148,16 +148,16 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
         {/* 요일별 담당 (다중 요일 선택) */}
         {activeZone.assignedStaffName && (
           <div>
-            <label className="text-[13px] font-semibold text-zinc-600 mb-2 flex items-center gap-1">
+            <label className="text-[15px] font-semibold text-zinc-600 mb-2 flex items-center gap-1">
               적용 요일
-              <span className="text-[10px] font-normal text-zinc-400">체크된 요일에만 이 담당이 표시됩니다</span>
+              <span className="text-[14px] font-normal text-zinc-400">체크된 요일에만 이 담당이 표시됩니다</span>
             </label>
             <div className="space-y-2">
               {activeZone.assignedStaffName.split(",").map(s => s.trim()).filter(Boolean).map((name) => {
                 const mask = activeZone.dowMap?.[name] ?? DOW_ALL;
                 return (
                   <div key={name} className="flex items-center gap-2 flex-wrap px-2 py-1.5 bg-zinc-50 rounded-lg border border-line">
-                    <span className="text-[13px] font-bold text-zinc-700 shrink-0 min-w-[3rem]">{name}</span>
+                    <span className="text-[15px] font-bold text-zinc-700 shrink-0 min-w-[3rem]">{name}</span>
                     <div className="flex items-center gap-1 flex-wrap">
                       {DOW_LABELS.map((lb, dow) => {
                         const active = ((mask >> dow) & 1) === 1;
@@ -166,7 +166,7 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
                             key={dow}
                             type="button"
                             onClick={() => toggleZoneDow(activeZone.id, name, dow)}
-                            className={`w-7 h-7 text-[11px] font-bold rounded-md border transition cursor-pointer ${active
+                            className={`w-7 h-7 text-[15px] font-bold rounded-md border transition cursor-pointer ${active
                               ? (dow === 0 ? "bg-rose-500 text-white border-rose-500"
                                 : dow === 6 ? "bg-sky-500 text-white border-sky-500"
                                   : "bg-brand-deep text-white border-indigo-500")
@@ -186,11 +186,11 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
 
         {/* Status */}
         <div>
-          <label className="text-[13px] font-semibold text-zinc-600 mb-2 block">진열 상태</label>
+          <label className="text-[15px] font-semibold text-zinc-600 mb-2 block">진열 상태</label>
           <div className="grid grid-cols-3 gap-2">
             {(["normal", "low", "empty"] as const).map((s) => (
               <button key={s} type="button" onClick={() => onSetDraftStatus(s)}
-                className={`py-2.5 text-[13px] font-semibold rounded-xl border-2 transition cursor-pointer flex items-center justify-center gap-1.5 ${draftStatus === s
+                className={`py-2.5 text-[15px] font-semibold rounded-xl border-2 transition cursor-pointer flex items-center justify-center gap-1.5 ${draftStatus === s
                   ? s === "normal" ? "bg-emerald-50 text-emerald-700 border-emerald-400 shadow-sm"
                     : s === "low" ? "bg-amber-50 text-amber-700 border-amber-400 shadow-sm"
                       : "bg-red-50 text-red-700 border-red-400 shadow-sm"
@@ -205,12 +205,12 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
         {/* Products */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-[13px] font-semibold text-zinc-600">진열 상품 메모</label>
+            <label className="text-[15px] font-semibold text-zinc-600">진열 상품 메모</label>
             <button
               type="button"
               onClick={onScanProducts}
               title="바코드 스캔으로 상품 추가"
-              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[14px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer"
             >
               <ScanLine size={11} />
               바코드 스캔
@@ -224,7 +224,7 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
         {/* Request note */}
         {(draftStatus === "low" || draftStatus === "empty") && (
           <div>
-            <label className="text-[13px] font-semibold text-zinc-600 mb-1.5 block">요청 메모 (선택)</label>
+            <label className="text-[15px] font-semibold text-zinc-600 mb-1.5 block">요청 메모 (선택)</label>
             <input type="text" value={requestNote} onChange={(e) => onSetRequestNote(e.target.value)}
               placeholder="오늘 오후까지 보충 부탁드립니다"
               className="w-full px-3 py-2 text-sm rounded-xl border border-zinc-300 bg-white focus:border-brand-deep outline-none transition" />
@@ -232,12 +232,12 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
         )}
 
         {savedFlash && (
-          <Card variant="flat" bg="bg-emerald-50" borderColor="border-emerald-200" padding="none" className="px-3 py-2 text-emerald-700 text-[13px] font-semibold flex items-center gap-1.5">
+          <Card variant="flat" bg="bg-emerald-50" borderColor="border-emerald-200" padding="none" className="px-3 py-2 text-emerald-700 text-[15px] font-semibold flex items-center gap-1.5">
             <CheckCircle2 size={13} />저장되었습니다
           </Card>
         )}
         {requestFlash && (
-          <Card variant="flat" bg="bg-violet-50" borderColor="border-violet-200" padding="none" className="px-3 py-2 text-violet-700 text-[13px] font-semibold flex items-center gap-1.5">
+          <Card variant="flat" bg="bg-violet-50" borderColor="border-violet-200" padding="none" className="px-3 py-2 text-violet-700 text-[15px] font-semibold flex items-center gap-1.5">
             <Send size={13} />진열 요청이 전송되었습니다
           </Card>
         )}

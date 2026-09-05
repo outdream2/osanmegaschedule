@@ -228,7 +228,7 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
   for (const k of MAJOR_ZONE_ORDER) grouped[k].sort((a, b) => a.num - b.num);
 
   const inputCls = "flex-1 min-w-0 h-9 px-2.5 rounded-md border border-brand-deep bg-white text-[14px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint";
-  const textareaCls = "flex-1 min-w-0 min-h-[36px] max-h-[180px] px-2.5 py-1.5 rounded-md border border-brand-deep bg-white text-[13px] text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint resize-y";
+  const textareaCls = "flex-1 min-w-0 min-h-[36px] max-h-[180px] px-2.5 py-1.5 rounded-md border border-brand-deep bg-white text-[15px] text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint resize-y";
 
   const renderEdit = (zone: ZoneDef, field: EditField, display: React.ReactNode, multiline = false) => {
     const isEditing = editing?.num === zone.num && editing?.field === field;
@@ -282,7 +282,7 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
         <div className="flex items-center gap-2 px-1">
           <span className="w-1.5 h-4 rounded-full bg-rose-500" />
           <span className="text-[15px] font-bold text-ink">원본 구역 카테고리 (zonecategory)</span>
-          <span className="text-[12px] text-zinc-400 ml-auto">스크롤 · 줌 · 드래그 · 이동</span>
+          <span className="text-[14px] text-zinc-400 ml-auto">스크롤 · 줌 · 드래그 · 이동</span>
         </div>
         <PanZoomImage
           src={zoneCategoryImg}
@@ -299,7 +299,7 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
         <div className="flex items-center gap-2 px-1">
           <span className="w-1.5 h-4 rounded-full bg-brand-deep" />
           <span className="text-[15px] font-bold text-ink">전체 매장 구역도</span>
-          <span className="text-[12px] text-zinc-400 ml-auto">공통 모듈 · 편집 즉시 반영</span>
+          <span className="text-[14px] text-zinc-400 ml-auto">공통 모듈 · 편집 즉시 반영</span>
         </div>
         <div className="flex-1 overflow-auto">
           {/* 2026-08-30 · 사용자 지시 · 셀 클릭 → picker popover · zone_defs 직접 편집 */}
@@ -322,7 +322,7 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
           <IconTile icon={<Pencil size={16} />} tone="violet" size="md" />
           <div className="flex-1 min-w-0">
             <div className="text-[17px] font-bold text-ink tracking-tight">매장구역도 편집</div>
-            <div className="text-[13px] text-ink-soft mt-0.5">
+            <div className="text-[15px] text-ink-soft mt-0.5">
               탭으로 존 선택 · 구역별 카테고리·상세카테고리 인라인 편집 · Enter 즉시 저장 (DB 반영)
               {!canEdit && <span className="ml-2 text-rose-500 font-bold">· 관리자 (lv 9) 전용</span>}
             </div>
@@ -335,7 +335,7 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
               type="button"
               onClick={resetToDefault}
               disabled={saving}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] font-bold text-zinc-600 bg-white border border-line hover:bg-zinc-50 hover:border-brand-deep hover:text-brand-deep transition cursor-pointer disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[15px] font-bold text-zinc-600 bg-white border border-line hover:bg-zinc-50 hover:border-brand-deep hover:text-brand-deep transition cursor-pointer disabled:opacity-40"
               title="zonecategory.png 기본값으로 복원"
             >
               <RotateCcw size={13} /> 기본값 복원
@@ -369,8 +369,8 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
                 >
                   <span className={`w-2 h-2 rounded-full ${t.bar}`} />
                   <span>{MAJOR_ZONE_LABEL[mz]}</span>
-                  <span className={`inline-flex items-center h-5 px-1.5 rounded border text-[11px] font-bold tabular-nums ${t.badge}`}>{MAJOR_ZONE_RANGE[mz]}</span>
-                  <span className="text-[11px] text-zinc-500 tabular-nums">{total}행</span>
+                  <span className={`inline-flex items-center h-5 px-1.5 rounded border text-[15px] font-bold tabular-nums ${t.badge}`}>{MAJOR_ZONE_RANGE[mz]}</span>
+                  <span className="text-[15px] text-zinc-500 tabular-nums">{total}행</span>
                 </button>
               );
             })}
@@ -381,13 +381,13 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
             <div className="flex items-center gap-2.5 mb-3 pb-2 border-b border-line">
               <span className={`w-2 h-6 rounded-full ${activeTone.bar}`} />
               <span className="text-[17px] font-extrabold text-ink tracking-tight">{MAJOR_ZONE_LABEL[activeTab]}</span>
-              <span className={`inline-flex items-center h-6 px-2 rounded-md border text-[12px] font-bold tabular-nums ${activeTone.badge}`}>{MAJOR_ZONE_RANGE[activeTab]}</span>
-              <span className="text-[12px] text-zinc-400 ml-auto tabular-nums">{grouped[activeTab].length}구역 · {activeFlatRows.length}행</span>
+              <span className={`inline-flex items-center h-6 px-2 rounded-md border text-[14px] font-bold tabular-nums ${activeTone.badge}`}>{MAJOR_ZONE_RANGE[activeTab]}</span>
+              <span className="text-[14px] text-zinc-400 ml-auto tabular-nums">{grouped[activeTab].length}구역 · {activeFlatRows.length}행</span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px] table-fixed">
+              <table className="w-full text-[15px] table-fixed">
                 <thead>
-                  <tr className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">
+                  <tr className="text-[14px] font-bold text-zinc-500 uppercase tracking-wider">
                     <th className="text-left px-2 py-1.5" style={{ width: 76 }}>구역</th>
                     <th className="text-left px-2 py-1.5" style={{ width: "32%" }}>카테고리</th>
                     <th className="text-left px-2 py-1.5">상세카테고리</th>
@@ -410,7 +410,7 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
                         </td>
                         <td className="px-2 py-2">
                           {renderEdit(z, fr.descField, fr.descValue
-                            ? <span className="text-[13px] text-ink-soft leading-relaxed whitespace-pre-wrap">{fr.descValue}</span>
+                            ? <span className="text-[15px] text-ink-soft leading-relaxed whitespace-pre-wrap">{fr.descValue}</span>
                             : <span className="text-zinc-300 italic">(비어있음 · 클릭하여 입력)</span>, true)}
                         </td>
                         <td className="px-2 py-2">

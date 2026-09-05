@@ -88,7 +88,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
         <div className="flex items-center gap-2">
           <MapPin size={14} className="text-indigo-600" />
           <h3 className="text-sm font-bold text-zinc-800">구역 그룹 설정</h3>
-          <span className="text-[10px] text-zinc-500 font-semibold bg-zinc-100 px-2 py-0.5 rounded-full">
+          <span className="text-[14px] text-zinc-500 font-semibold bg-zinc-100 px-2 py-0.5 rounded-full">
             {groups.length}개 그룹
           </span>
         </div>
@@ -96,7 +96,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
           type="button"
           onClick={addGroup}
           disabled={groups.length >= PALETTE.length}
-          className="flex items-center gap-1 px-2.5 py-1 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-zinc-300 disabled:cursor-not-allowed text-white text-[11px] font-bold rounded-lg transition cursor-pointer"
+          className="flex items-center gap-1 px-2.5 py-1 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-zinc-300 disabled:cursor-not-allowed text-white text-[15px] font-bold rounded-lg transition cursor-pointer"
         >
           <Plus size={12} />
           새 구역 추가
@@ -105,7 +105,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
 
       {activeGroup && (
         <div
-          className="mb-2 px-3 py-2 rounded-lg text-[11px] font-bold flex items-center gap-2"
+          className="mb-2 px-3 py-2 rounded-lg text-[15px] font-bold flex items-center gap-2"
           style={{ backgroundColor: `${activeGroup.color}15`, color: activeGroup.color, border: `1px solid ${activeGroup.color}55` }}
         >
           <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: activeGroup.color }} />
@@ -142,9 +142,9 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
                     value={g.name}
                     onClick={(e) => e.stopPropagation()}
                     onChange={(e) => updateGroup(g.id, { name: e.target.value })}
-                    className="flex-1 min-w-0 bg-transparent text-[12px] font-bold text-zinc-800 focus:outline-none focus:bg-white px-1 rounded"
+                    className="flex-1 min-w-0 bg-transparent text-[14px] font-bold text-zinc-800 focus:outline-none focus:bg-white px-1 rounded"
                   />
-                  <span className="text-[11px] font-bold text-zinc-500 bg-white border border-line px-1.5 py-0.5 rounded-full shrink-0">
+                  <span className="text-[15px] font-bold text-zinc-500 bg-white border border-line px-1.5 py-0.5 rounded-full shrink-0">
                     {g.areaIds.length}구역
                   </span>
                   <button
@@ -161,7 +161,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
                     value={g.employeeId ?? ""}
                     onClick={(e) => e.stopPropagation()}
                     onChange={(e) => handleEmployeeChange(g.id, e.target.value)}
-                    className="flex-1 text-[10px] font-semibold bg-white border border-line rounded px-1 py-1 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep cursor-pointer transition-colors"
+                    className="flex-1 text-[14px] font-semibold bg-white border border-line rounded px-1 py-1 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep cursor-pointer transition-colors"
                   >
                     <option value="">담당자 선택...</option>
                     {employees.map((e) => (

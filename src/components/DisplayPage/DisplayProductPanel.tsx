@@ -31,7 +31,7 @@ export const DisplayProductPanel: React.FC<DisplayProductPanelProps> = ({
       <div className="flex-1 flex flex-col gap-3 min-w-0">
         <div className="bg-white rounded-xl border border-emerald-200 shadow-xs overflow-hidden shrink-0">
           <div className="px-3 py-2 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700">
+            <div className="flex items-center gap-1.5 text-[15px] font-bold text-emerald-700">
               <Pill size={12} />약 위치 검색 결과 ({productSearchResults.length}건)
             </div>
             <button type="button" onClick={onClear} className="text-zinc-400 hover:text-zinc-600 transition cursor-pointer"><X size={12} /></button>
@@ -45,12 +45,12 @@ export const DisplayProductPanel: React.FC<DisplayProductPanelProps> = ({
                 <div key={p.code} className={`px-3 py-2 flex items-start justify-between gap-2 ${isMatch ? "bg-emerald-50 border-l-2 border-emerald-400" : ""}`}>
                   <button type="button" onClick={() => onProductResultClick(p.location)} className="flex-1 min-w-0 text-left hover:opacity-75 transition cursor-pointer">
                     {/* 2026-08-29 · UI 감사 U1 · truncate 제거 · 상품명·규격 잘림 방지 (대원칙) */}
-                    <div className="text-[13px] font-semibold text-zinc-800 break-words whitespace-normal leading-tight">{p.name}</div>
-                    {p.spec && <div className="text-[11px] text-zinc-400 break-words whitespace-normal leading-tight mt-0.5">{p.spec}</div>}
+                    <div className="text-[15px] font-semibold text-zinc-800 break-words whitespace-normal leading-tight">{p.name}</div>
+                    {p.spec && <div className="text-[15px] text-zinc-400 break-words whitespace-normal leading-tight mt-0.5">{p.spec}</div>}
                   </button>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    {p.location && <button type="button" onClick={() => onProductResultClick(p.location)} className="flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 whitespace-nowrap hover:text-emerald-900 transition cursor-pointer"><MapPin size={9} />{p.location}</button>}
-                    <button type="button" onClick={(e) => { e.stopPropagation(); const full = productsMap[p.code] ?? productsMap[p.code.replace(/^0+/, "")] ?? p as unknown as ProductInfo; onProductInfoClick(full); }} className="flex items-center gap-0.5 text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-indigo-100 transition cursor-pointer"><Info size={9} />상품정보</button>
+                    {p.location && <button type="button" onClick={() => onProductResultClick(p.location)} className="flex items-center gap-0.5 text-[14px] font-semibold text-emerald-700 whitespace-nowrap hover:text-emerald-900 transition cursor-pointer"><MapPin size={9} />{p.location}</button>}
+                    <button type="button" onClick={(e) => { e.stopPropagation(); const full = productsMap[p.code] ?? productsMap[p.code.replace(/^0+/, "")] ?? p as unknown as ProductInfo; onProductInfoClick(full); }} className="flex items-center gap-0.5 text-[14px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-indigo-100 transition cursor-pointer"><Info size={9} />상품정보</button>
                   </div>
                 </div>
               );

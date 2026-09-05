@@ -183,15 +183,15 @@ export const UnassignedProductsTab: React.FC = () => {
                   <tr key={p.product_code} className="hover:bg-zinc-50/60 transition text-[15px]">
                     <td className={tableTdCls("left", "font-bold text-zinc-800 break-keep whitespace-normal")}>{p.product_name}</td>
                     <td className={tableTdCls("left", "text-zinc-700")}>{p.supplier ?? "-"}</td>
-                    <td className={tableTdCls("left", "font-mono text-[13px] text-zinc-500")}>{p.product_code}</td>
+                    <td className={tableTdCls("left", "font-mono text-[15px] text-zinc-500")}>{p.product_code}</td>
                     <td className={tableTdCls("center", "font-bold text-zinc-700 tabular-nums")}>{p.current_stock ?? "-"}</td>
                     <td className={tableTdCls("center")}>
                       {p.missing === "both" ? (
-                        <span className="inline-flex items-center h-6 px-2 rounded-md text-[12px] font-bold bg-rose-100 text-rose-700 border border-rose-200">둘 다 없음</span>
+                        <span className="inline-flex items-center h-6 px-2 rounded-md text-[14px] font-bold bg-rose-100 text-rose-700 border border-rose-200">둘 다 없음</span>
                       ) : p.missing === "spec" ? (
-                        <span className="inline-flex items-center h-6 px-2 rounded-md text-[12px] font-bold bg-amber-100 text-amber-700 border border-amber-200">전산 없음</span>
+                        <span className="inline-flex items-center h-6 px-2 rounded-md text-[14px] font-bold bg-amber-100 text-amber-700 border border-amber-200">전산 없음</span>
                       ) : (
-                        <span className="inline-flex items-center h-6 px-2 rounded-md text-[12px] font-bold bg-sky-100 text-sky-700 border border-sky-200">위치 없음</span>
+                        <span className="inline-flex items-center h-6 px-2 rounded-md text-[14px] font-bold bg-sky-100 text-sky-700 border border-sky-200">위치 없음</span>
                       )}
                     </td>
                     <td className={tableTdCls("center")}>
@@ -233,7 +233,7 @@ export const UnassignedProductsTab: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => startEdit(p)}
-                          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[13px] font-bold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 hover:border-amber-300 transition cursor-pointer"
+                          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[15px] font-bold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 hover:border-amber-300 transition cursor-pointer"
                         >
                           <Pencil size={11} /> 배치구역 지정
                         </button>

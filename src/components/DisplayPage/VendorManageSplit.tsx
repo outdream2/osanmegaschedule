@@ -82,7 +82,7 @@ export const VendorManageSplit: React.FC = () => {
       {label}
       {sortKey === sk
         ? (sortDir === "asc" ? <ChevronUp size={11} className="shrink-0" /> : <ChevronDown size={11} className="shrink-0" />)
-        : <span className="text-zinc-300 text-[11px]">↕</span>}
+        : <span className="text-zinc-300 text-[15px]">↕</span>}
     </button>
   );
 
@@ -160,7 +160,7 @@ export const VendorManageSplit: React.FC = () => {
               >
                 <div className="flex items-start gap-2 mb-1.5">
                   {v.category && (
-                    <span className={`shrink-0 inline-flex items-center text-[12px] font-bold px-2 py-0.5 rounded-md border ${catCls}`}>
+                    <span className={`shrink-0 inline-flex items-center text-[14px] font-bold px-2 py-0.5 rounded-md border ${catCls}`}>
                       {v.category}
                     </span>
                   )}
@@ -228,7 +228,7 @@ export const VendorManageSplit: React.FC = () => {
                 >
                   <td className="px-3 py-2.5 align-top" title={String(v.company_name ?? "")}>
                     <div className="flex flex-col leading-tight">
-                      <span className={`text-[13px] font-bold ${catCls}`}>
+                      <span className={`text-[15px] font-bold ${catCls}`}>
                         {v.category || <span className="text-zinc-300">-</span>}
                       </span>
                       <span className={`text-[15px] font-bold break-words whitespace-normal ${isActive ? "text-indigo-900" : "text-zinc-800"}`}>

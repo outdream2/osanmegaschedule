@@ -48,7 +48,7 @@ export const ProductInfoModal: React.FC<ProductInfoModalProps> = ({
           </div>
           <div className="min-w-0">
             <div className="text-base font-bold text-zinc-800 truncate">{product.name ?? (product as any).product_name}</div>
-            <div className="text-[11px] font-mono text-zinc-500 mt-0.5">#{code}</div>
+            <div className="text-[15px] font-mono text-zinc-500 mt-0.5">#{code}</div>
           </div>
         </div>
       }

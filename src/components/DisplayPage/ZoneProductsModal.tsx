@@ -147,10 +147,10 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
   //   · 상단 accent · 폰트 +2 (10/11 → 13/14) · 필터 chip 프리미티브 톤 · 검색 input focus ring
   const modalTitle = (
     <div className="flex-1 min-w-0">
-      <div className="text-[12px] font-bold text-emerald-600 uppercase tracking-wider">구역별 상품 리스트</div>
+      <div className="text-[14px] font-bold text-emerald-600 uppercase tracking-wider">구역별 상품 리스트</div>
       <div className="text-[19px] font-bold text-ink mt-0.5 tracking-tight">{zoneLabel}</div>
       {category && (
-        <div className="text-[13px] text-ink-soft mt-0.5 line-clamp-2">{category}</div>
+        <div className="text-[15px] text-ink-soft mt-0.5 line-clamp-2">{category}</div>
       )}
     </div>
   );
@@ -173,18 +173,18 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
         <input type="text" value={search} onChange={e => onSetSearch(e.target.value)} placeholder="상품명 검색"
           className="flex-1 min-w-[160px] h-9 text-[14px] border border-line rounded-lg px-3 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition placeholder:text-zinc-400" />
         <Card padding="none" rounded="lg" className="inline-flex p-0.5">
-          <button onClick={() => onSetFilter("all")}      className={`h-8 px-3 text-[13px] font-bold rounded-md cursor-pointer transition ${filter === "all" ? "bg-brand-deep text-white shadow-sm" : "text-ink-soft hover:text-brand-deep"}`}>전체</button>
-          <button onClick={() => onSetFilter("mismatch")} className={`h-8 px-3 text-[13px] font-bold rounded-md cursor-pointer transition ${filter === "mismatch" ? "bg-rose-500 text-white shadow-sm" : "text-rose-500 hover:bg-rose-50"}`}>불일치</button>
+          <button onClick={() => onSetFilter("all")}      className={`h-8 px-3 text-[15px] font-bold rounded-md cursor-pointer transition ${filter === "all" ? "bg-brand-deep text-white shadow-sm" : "text-ink-soft hover:text-brand-deep"}`}>전체</button>
+          <button onClick={() => onSetFilter("mismatch")} className={`h-8 px-3 text-[15px] font-bold rounded-md cursor-pointer transition ${filter === "mismatch" ? "bg-rose-500 text-white shadow-sm" : "text-rose-500 hover:bg-rose-50"}`}>불일치</button>
         </Card>
-        <span className="text-[13px] font-bold text-ink-soft ml-auto tabular-nums">{filtered.length}<span className="text-zinc-400 font-medium">/{matched.length}건</span></span>
+        <span className="text-[15px] font-bold text-ink-soft ml-auto tabular-nums">{filtered.length}<span className="text-zinc-400 font-medium">/{matched.length}건</span></span>
       </div>
       {/* List */}
       <div className="overflow-y-auto overflow-x-hidden bg-zinc-50 -mx-5 px-2 sm:px-4 pb-2">
         {filtered.length === 0 ? (
-          <Card padding="lg" rounded="xl" className="text-center text-[13px] font-medium text-zinc-400">해당 조건의 상품 없음</Card>
+          <Card padding="lg" rounded="xl" className="text-center text-[15px] font-medium text-zinc-400">해당 조건의 상품 없음</Card>
         ) : (
           <Card padding="none" rounded="xl" className="overflow-hidden">
-            <table className="w-full text-[11px] table-fixed">
+            <table className="w-full text-[15px] table-fixed">
               <colgroup>
                 <col />
                 <col className="w-[44px]" />
@@ -196,45 +196,45 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
                 <col className="w-[60px]" />
               </colgroup>
               <thead className="bg-zinc-50 border-b border-line sticky top-0 z-10">
-                <tr className="text-[10px] font-bold text-zinc-600 uppercase tracking-wide">
+                <tr className="text-[14px] font-bold text-zinc-600 uppercase tracking-wide">
                   <th className="text-left px-2 py-2">
                     <button type="button" onClick={() => toggleSort("name")} className="hover:text-zinc-900 cursor-pointer inline-flex items-center gap-1">
-                      상품명 <span className="text-zinc-400 text-[10px]">{sortIcon("name")}</span>
+                      상품명 <span className="text-zinc-400 text-[14px]">{sortIcon("name")}</span>
                     </button>
                   </th>
                   <th className="text-right px-1 py-2 text-amber-500" title="ERP 현재고">
                     <button type="button" onClick={() => toggleSort("current_stock")} className="hover:text-amber-700 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
-                      ERP<span className="text-zinc-400 text-[10px]">{sortIcon("current_stock")}</span>
+                      ERP<span className="text-zinc-400 text-[14px]">{sortIcon("current_stock")}</span>
                     </button>
                   </th>
                   <th className="text-right px-1 py-2 bg-cyan-50 text-cyan-600 font-bold" title="실재고 · 창고">
                     <button type="button" onClick={() => toggleSort("warehouse_stock")} className="hover:text-cyan-800 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
-                      창고<span className="text-zinc-400 text-[10px]">{sortIcon("warehouse_stock")}</span>
+                      창고<span className="text-zinc-400 text-[14px]">{sortIcon("warehouse_stock")}</span>
                     </button>
                   </th>
                   <th className="text-right px-1 py-2 bg-violet-50 text-violet-600 font-bold" title="실재고 · 매장">
                     <button type="button" onClick={() => toggleSort("store_stock")} className="hover:text-violet-800 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
-                      매장<span className="text-zinc-400 text-[10px]">{sortIcon("store_stock")}</span>
+                      매장<span className="text-zinc-400 text-[14px]">{sortIcon("store_stock")}</span>
                     </button>
                   </th>
                   <th className="text-right px-1 py-2 text-emerald-600 font-bold" title="실재고 합계">
                     <button type="button" onClick={() => toggleSort("real_total")} className="hover:text-emerald-800 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
-                      실재고<span className="text-zinc-400 text-[10px]">{sortIcon("real_total")}</span>
+                      실재고<span className="text-zinc-400 text-[14px]">{sortIcon("real_total")}</span>
                     </button>
                   </th>
                   <th className="text-right px-1 py-2 text-rose-500 font-bold" title="손실">
                     <button type="button" onClick={() => toggleSort("loss")} className="hover:text-rose-700 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
-                      손실<span className="text-zinc-400 text-[10px]">{sortIcon("loss")}</span>
+                      손실<span className="text-zinc-400 text-[14px]">{sortIcon("loss")}</span>
                     </button>
                   </th>
                   <th className="text-right px-1 py-2 text-zinc-500" title="추천적정재고">
                     <button type="button" onClick={() => toggleSort("optimal_stock")} className="hover:text-zinc-800 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
-                      추천적정<span className="text-zinc-400 text-[10px]">{sortIcon("optimal_stock")}</span>
+                      추천적정<span className="text-zinc-400 text-[14px]">{sortIcon("optimal_stock")}</span>
                     </button>
                   </th>
                   <th className="text-center px-1 py-2">
                     <button type="button" onClick={() => toggleSort("status")} className="hover:text-zinc-900 cursor-pointer inline-flex items-center justify-center gap-0.5 w-full">
-                      상황<span className="text-zinc-400 text-[10px]">{sortIcon("status")}</span>
+                      상황<span className="text-zinc-400 text-[14px]">{sortIcon("status")}</span>
                     </button>
                   </th>
                 </tr>
@@ -265,27 +265,27 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
                   return (
                     <tr key={p.code} className="hover:bg-zinc-50 cursor-pointer" onClick={() => onProductClick(p)}>
                       <td className="text-left px-2 py-1.5 min-w-0">
-                        <div className="text-[12px] font-bold text-zinc-800 truncate" title={p.name}>{p.name}</div>
+                        <div className="text-[14px] font-bold text-zinc-800 truncate" title={p.name}>{p.name}</div>
                         {((p as any).spec || resolveProductLocation(p)) && (
-                          <div className="mt-0.5 text-[11px] text-zinc-400 truncate">
+                          <div className="mt-0.5 text-[15px] text-zinc-400 truncate">
                             {(p as any).spec && <span className="font-mono" title="전산배치구역">전산 {String((p as any).spec)}</span>}
                             {resolveProductLocation(p) && <span className="font-mono" title="실제배치구역"> · 실제 {resolveProductLocation(p)}</span>}
                           </div>
                         )}
                       </td>
-                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[13px] ${!Number.isFinite(stockNum) ? "text-zinc-300" : stockNum <= 0 ? "text-red-600" : "text-amber-700"}`}>{Number.isFinite(stockNum) ? stockNum : "-"}</td>
-                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[13px] bg-cyan-50/50 ${wh != null ? "text-cyan-700" : "text-zinc-300"}`}>{fmt(wh)}</td>
-                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[13px] bg-violet-50/50 ${st != null ? "text-violet-700" : "text-zinc-300"}`}>{fmt(st)}</td>
-                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[13px] ${realTotalVal == null ? "text-zinc-300" : mismatch ? "text-rose-600" : "text-emerald-700"}`} title={mismatch ? `실재고 ${realTotalVal} ≠ ERP ${stockNum} · 불일치` : "실재고 합계"}>{realTotalVal == null ? "-" : realTotalVal}</td>
+                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[15px] ${!Number.isFinite(stockNum) ? "text-zinc-300" : stockNum <= 0 ? "text-red-600" : "text-amber-700"}`}>{Number.isFinite(stockNum) ? stockNum : "-"}</td>
+                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[15px] bg-cyan-50/50 ${wh != null ? "text-cyan-700" : "text-zinc-300"}`}>{fmt(wh)}</td>
+                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[15px] bg-violet-50/50 ${st != null ? "text-violet-700" : "text-zinc-300"}`}>{fmt(st)}</td>
+                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[15px] ${realTotalVal == null ? "text-zinc-300" : mismatch ? "text-rose-600" : "text-emerald-700"}`} title={mismatch ? `실재고 ${realTotalVal} ≠ ERP ${stockNum} · 불일치` : "실재고 합계"}>{realTotalVal == null ? "-" : realTotalVal}</td>
                       {(() => {
                         const closingRaw = (p as any).closing_stock;
                         const closingNum = closingRaw != null && closingRaw !== "" ? Number(closingRaw) : NaN;
                         const loss = (Number.isFinite(closingNum) && Number.isFinite(stockNum)) ? (closingNum - stockNum) : null;
                         return (
-                          <td className={`text-right px-1 py-1.5 font-mono font-bold text-[13px] ${loss == null ? "text-zinc-300" : loss > 0 ? "text-rose-600" : loss < 0 ? "text-sky-600" : "text-zinc-500"}`} title={loss == null ? "마감재고 없음" : `마감재고 ${closingNum} - 현재고 ${stockNum} = ${loss}`}>{loss == null ? "-" : loss}</td>
+                          <td className={`text-right px-1 py-1.5 font-mono font-bold text-[15px] ${loss == null ? "text-zinc-300" : loss > 0 ? "text-rose-600" : loss < 0 ? "text-sky-600" : "text-zinc-500"}`} title={loss == null ? "마감재고 없음" : `마감재고 ${closingNum} - 현재고 ${stockNum} = ${loss}`}>{loss == null ? "-" : loss}</td>
                         );
                       })()}
-                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[13px] ${Number.isFinite(optNum) ? "text-zinc-600" : "text-zinc-300"}`}>{Number.isFinite(optNum) ? optNum : "-"}</td>
+                      <td className={`text-right px-1 py-1.5 font-mono font-bold text-[15px] ${Number.isFinite(optNum) ? "text-zinc-600" : "text-zinc-300"}`}>{Number.isFinite(optNum) ? optNum : "-"}</td>
                       <td className="text-center px-1 py-1.5">
                         <StatusPill tone={statusTone} size="xs" dot={statusTone !== "zinc"} pulse={statusPulse}>{statusLabel}</StatusPill>
                       </td>

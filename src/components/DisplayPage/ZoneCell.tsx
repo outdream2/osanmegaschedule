@@ -176,17 +176,17 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
       )}
 
       {/* Row 1: 구역 번호 (1-8: A/B 로 구분 필요 · 9+: 카테고리와 중복이므로 번호 숨김) + 상태 dot
-       *  2026-08-29 · #151 · 서브라벨 (A/B) 강조 · text-[11px]→[13px] · A/B 대비 배지
+       *  2026-08-29 · #151 · 서브라벨 (A/B) 강조 · text-[15px]→[13px] · A/B 대비 배지
        */}
       <div className="flex items-center justify-between px-1 pt-0.5 shrink-0">
         {zone.num <= 8 ? (
-          <span className="text-[13px] font-extrabold leading-none flex items-center gap-0.5">
+          <span className="text-[15px] font-extrabold leading-none flex items-center gap-0.5">
             <span>{zone.num}</span>
             {zone.id.endsWith("A") && (
-              <span className="px-1 py-px rounded bg-white/25 text-[11px] font-black tracking-tight">A</span>
+              <span className="px-1 py-px rounded bg-white/25 text-[15px] font-black tracking-tight">A</span>
             )}
             {zone.id.endsWith("B") && (
-              <span className="px-1 py-px rounded bg-black/15 text-[11px] font-black tracking-tight">B</span>
+              <span className="px-1 py-px rounded bg-black/15 text-[15px] font-black tracking-tight">B</span>
             )}
           </span>
         ) : (
@@ -202,7 +202,7 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
       {/* Row 2: 담당자 이름 뱃지 */}
       <div className="flex-1 flex items-center justify-center w-full px-0.5 min-h-0 pb-0.5">
         {zone.assignedStaffName ? (
-          <span className={`text-[10px] font-bold px-1 py-px rounded leading-tight text-center max-w-full break-all ${
+          <span className={`text-[14px] font-bold px-1 py-px rounded leading-tight text-center max-w-full break-all ${
             staffColorIndex !== null && staffColorIndex !== undefined
               ? STAFF_AVATAR_COLORS[staffColorIndex % STAFF_AVATAR_COLORS.length]
               : "bg-zinc-600 text-white"
@@ -210,19 +210,19 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
             {zone.assignedStaffName.slice(0, 3)}
           </span>
         ) : (
-          <span className="text-[10px] opacity-30 font-normal">-</span>
+          <span className="text-[14px] opacity-30 font-normal">-</span>
         )}
       </div>
 
       {/* Row 3: showDetails 카테고리 텍스트 (선택적) */}
       {showDetails && (
-        <div className="text-[11px] leading-tight font-medium line-clamp-1 text-center opacity-70 w-full px-0.5 shrink-0 pb-0.5">{zone.category}</div>
+        <div className="text-[15px] leading-tight font-medium line-clamp-1 text-center opacity-70 w-full px-0.5 shrink-0 pb-0.5">{zone.category}</div>
       )}
 
       {/* Group label badge */}
       {groupLabel && (
         <span
-          className="absolute bottom-0.5 right-0.5 text-[11px] font-bold px-1 rounded leading-none text-white pointer-events-none shadow"
+          className="absolute bottom-0.5 right-0.5 text-[15px] font-bold px-1 rounded leading-none text-white pointer-events-none shadow"
           style={{ backgroundColor: groupColor ?? "#64748b" }}
         >
           {groupLabel}
@@ -232,7 +232,7 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
       {/* Config mode in-group checkmark */}
       {configMode && inSelectedGroup && (
         <span
-          className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center text-white text-[10px] font-bold pointer-events-none shadow"
+          className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center text-white text-[14px] font-bold pointer-events-none shadow"
           style={{ backgroundColor: groupColor ?? "#6366f1" }}
         >
           ✓

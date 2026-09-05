@@ -350,7 +350,7 @@ export const ZoneMismatchTab: React.FC = () => {
                 className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-emerald-600 text-white text-[16px] font-bold hover:bg-emerald-700 shadow-sm transition cursor-pointer disabled:opacity-40"
                 title="선택 상품의 실제구역을 전산구역으로 조정"
               >
-                <Check size={13} /> 조정완료 <span className="ml-1 px-1.5 py-0.5 rounded-md bg-white/25 text-[13px] tabular-nums">{selectedIds.size}</span>
+                <Check size={13} /> 조정완료 <span className="ml-1 px-1.5 py-0.5 rounded-md bg-white/25 text-[15px] tabular-nums">{selectedIds.size}</span>
               </button>
             )}
           </div>

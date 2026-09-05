@@ -132,7 +132,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
                 max={999}
                 value={editNum}
                 onChange={(e) => setEditNum(Number(e.target.value))}
-                className="w-14 h-7 px-1.5 text-[12px] font-bold text-ink text-center border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums"
+                className="w-14 h-7 px-1.5 text-[14px] font-bold text-ink text-center border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums"
                 placeholder="번호"
                 title="구역 번호"
               />
@@ -140,7 +140,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
                 type="text"
                 value={editLabel}
                 onChange={(e) => setEditLabel(e.target.value)}
-                className="flex-1 min-w-0 h-7 px-1.5 text-[12px] font-bold text-ink border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"
+                className="flex-1 min-w-0 h-7 px-1.5 text-[14px] font-bold text-ink border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"
                 placeholder="구역명"
                 title="구역 이름"
               />
@@ -149,20 +149,20 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
               type="text"
               value={editCategory}
               onChange={(e) => setEditCategory(e.target.value)}
-              className="h-6 px-1.5 text-[11px] text-ink-soft border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"
+              className="h-6 px-1.5 text-[15px] text-ink-soft border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"
               placeholder="카테고리"
               title="카테고리"
             />
           </div>
         ) : (
           <div className="min-w-0 flex-1">
-            <div className="text-[13px] font-bold text-zinc-800 flex items-center gap-1.5">
+            <div className="text-[15px] font-bold text-zinc-800 flex items-center gap-1.5">
               <Badge size="xs" className={statusCell(zone.status)}>
                 {zone.num}번
               </Badge>
               <span className="break-words whitespace-normal">{zone.label}</span>
             </div>
-            <p className="text-[10px] text-zinc-400 break-words whitespace-normal mt-0.5">{zone.category}</p>
+            <p className="text-[14px] text-zinc-400 break-words whitespace-normal mt-0.5">{zone.category}</p>
           </div>
         )}
         <div className="flex items-center gap-0.5 shrink-0">
@@ -192,12 +192,12 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
 
       {/* Logistics Roster */}
       <div className="space-y-1">
-        <div className="text-[10px] font-bold text-zinc-500 flex items-center gap-1">
+        <div className="text-[14px] font-bold text-zinc-500 flex items-center gap-1">
           <Users size={11} />물류 담당 배정
         </div>
 
         {logisticsStaff.length === 0 ? (
-          <div className="text-[10px] text-zinc-400 italic py-2 text-center">오늘 출근한 물류 직원이 없습니다.</div>
+          <div className="text-[14px] text-zinc-400 italic py-2 text-center">오늘 출근한 물류 직원이 없습니다.</div>
         ) : (
           <div className="grid grid-cols-2 gap-1.5 max-h-[120px] overflow-y-auto pr-0.5">
             {logisticsStaff.map((ts) => {
@@ -214,7 +214,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
                     e.preventDefault();
                     onStaffInfoClick(ts);
                   }}
-                  className={`px-2 py-1.5 rounded-lg border text-left text-[11px] font-bold break-words whitespace-normal transition cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-2 py-1.5 rounded-lg border text-left text-[15px] font-bold break-words whitespace-normal transition cursor-pointer flex items-center gap-1.5 ${
                     isAssigned
                       ? `${STAFF_COLORS[colorIdx % STAFF_COLORS.length]} border-indigo-400 shadow-sm`
                       : "bg-white border-line hover:bg-zinc-50 hover:border-zinc-300 text-zinc-700"
@@ -235,7 +235,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
           <button
             type="button"
             onClick={onUnassign}
-            className="flex-1 text-[10px] font-bold text-rose-600 hover:text-rose-700 py-1.5 rounded-xl hover:bg-rose-50 border border-transparent transition cursor-pointer"
+            className="flex-1 text-[14px] font-bold text-rose-600 hover:text-rose-700 py-1.5 rounded-xl hover:bg-rose-50 border border-transparent transition cursor-pointer"
           >
             배정 해제
           </button>
@@ -243,7 +243,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
         <button
           type="button"
           onClick={onOpenDetail}
-          className="flex-1 text-[10px] font-semibold text-zinc-500 hover:text-zinc-700 py-1.5 rounded-xl hover:bg-zinc-100 border border-transparent transition cursor-pointer flex items-center justify-center gap-1"
+          className="flex-1 text-[14px] font-semibold text-zinc-500 hover:text-zinc-700 py-1.5 rounded-xl hover:bg-zinc-100 border border-transparent transition cursor-pointer flex items-center justify-center gap-1"
         >
           <Package size={11} />상세 편집
         </button>
@@ -251,7 +251,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
           <button
             type="button"
             onClick={onOpenProducts}
-            className="flex-1 text-[10px] font-bold text-emerald-700 hover:text-emerald-900 py-1.5 rounded-xl hover:bg-emerald-50 border border-transparent transition cursor-pointer flex items-center justify-center gap-1"
+            className="flex-1 text-[14px] font-bold text-emerald-700 hover:text-emerald-900 py-1.5 rounded-xl hover:bg-emerald-50 border border-transparent transition cursor-pointer flex items-center justify-center gap-1"
             title="이 구역에 배정된 상품 리스트"
           >
             📦 상품 리스트

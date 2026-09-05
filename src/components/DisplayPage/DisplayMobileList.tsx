@@ -44,9 +44,9 @@ export const DisplayMobileList: React.FC<DisplayMobileListProps> = ({
       <Card clip padding="none" className="sm:hidden mb-2">
         <div className="px-3 py-2 border-b border-zinc-100 bg-zinc-50 flex items-center gap-2">
           <span className="text-lg">📋</span>
-          <span className="text-[13px] font-bold text-zinc-700">구역 리스트</span>
-          <span className="text-[10px] tabular-nums text-zinc-400">({zones.length}개)</span>
-          <button type="button" onClick={() => setFullMapOpen(true)} className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[10px] font-bold shadow-sm active:scale-95 transition">
+          <span className="text-[15px] font-bold text-zinc-700">구역 리스트</span>
+          <span className="text-[14px] tabular-nums text-zinc-400">({zones.length}개)</span>
+          <button type="button" onClick={() => setFullMapOpen(true)} className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-bold shadow-sm active:scale-95 transition">
             매장 구역도 보기
           </button>
         </div>
@@ -57,16 +57,16 @@ export const DisplayMobileList: React.FC<DisplayMobileListProps> = ({
             const staffNames = z.assignedStaffName ? z.assignedStaffName.split(",").map(s => s.trim()).filter(Boolean) : [];
             return (
               <li key={`mobile-list-${z.id}`} className="grid grid-cols-[40px_1fr_84px_62px] items-center gap-2 px-2 py-1.5 hover:bg-zinc-50 transition">
-                <button type="button" onClick={() => onZoneProductsOpen({ zoneId: z.id, zoneNum: z.num, zoneLabel, category: z.category })} className={`w-full h-[38px] rounded text-[13px] font-bold flex items-center justify-center leading-none active:scale-95 transition ${pillCls}`}>{zoneLabel}</button>
-                <span className="text-[12px] font-bold text-zinc-800 break-keep whitespace-normal leading-tight">{z.category || "-"}</span>
+                <button type="button" onClick={() => onZoneProductsOpen({ zoneId: z.id, zoneNum: z.num, zoneLabel, category: z.category })} className={`w-full h-[38px] rounded text-[15px] font-bold flex items-center justify-center leading-none active:scale-95 transition ${pillCls}`}>{zoneLabel}</button>
+                <span className="text-[14px] font-bold text-zinc-800 break-keep whitespace-normal leading-tight">{z.category || "-"}</span>
                 <div className="flex flex-wrap gap-1 justify-end cursor-pointer" onClick={(e) => { e.stopPropagation(); const rect = (e.currentTarget as HTMLElement).getBoundingClientRect(); onZoneCellClick(z, rect); }} title="담당자 변경">
                   {staffNames.length > 0 ? staffNames.map((name) => {
                     const emp = employees.find(e2 => e2.name === name);
                     const colorIdx = emp ? (staffColorMap.get(emp.id) ?? 0) : 0;
                     const chip = STAFF_COLORS[colorIdx % STAFF_COLORS.length];
                     const isPharm = emp ? (emp.position === "약사" || emp.position.startsWith("약사")) : false;
-                    return <span key={`${z.id}-${name}`} className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold border ${chip} active:scale-95 transition ${isPharm ? "ring-2 ring-emerald-500 ring-offset-1" : ""}`}>{name}</span>;
-                  }) : <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-zinc-400 bg-zinc-50 border border-dashed border-zinc-300 active:scale-95 transition">+ 배정</span>}
+                    return <span key={`${z.id}-${name}`} className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[15px] font-bold border ${chip} active:scale-95 transition ${isPharm ? "ring-2 ring-emerald-500 ring-offset-1" : ""}`}>{name}</span>;
+                  }) : <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[14px] font-bold text-zinc-400 bg-zinc-50 border border-dashed border-zinc-300 active:scale-95 transition">+ 배정</span>}
                 </div>
                 <div className="w-full">{renderRequestButton(z.num, z.id)}</div>
               </li>
@@ -91,7 +91,7 @@ export const DisplayMobileList: React.FC<DisplayMobileListProps> = ({
             </div>
           }
           footer={
-            <div className="text-[10px] text-zinc-500 text-center py-1">
+            <div className="text-[14px] text-zinc-500 text-center py-1">
               좌우로 드래그하여 전체 구역도 확인 · 셀 클릭 → 진열상품 조회
             </div>
           }

@@ -46,14 +46,14 @@ export const StaffInfoModal: React.FC<StaffInfoModalProps> = ({
         <div className="min-w-0">
           <div className="text-xl font-bold text-white leading-tight">{employee.name}</div>
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/25 text-white">
+            <span className="text-[15px] font-bold px-2 py-0.5 rounded-full bg-white/25 text-white">
               {employee.position || "약사"}
             </span>
             <Badge shape="pill" size="xs" className={SHIFT_BADGE[scheduleType] ?? "bg-zinc-100 text-zinc-700 border-line"}>
               {scheduleType}
             </Badge>
             {workingHours && (
-              <span className="text-[11px] text-white/80 font-medium">{workingHours}</span>
+              <span className="text-[15px] text-white/80 font-medium">{workingHours}</span>
             )}
           </div>
         </div>
@@ -98,7 +98,7 @@ export const StaffInfoModal: React.FC<StaffInfoModalProps> = ({
               <button
                 type="button"
                 onClick={() => onClearAllZones(employee.id)}
-                className="text-[10px] font-bold text-rose-500 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                className="text-[14px] font-bold text-rose-500 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 transition cursor-pointer"
               >
                 전체 해제
               </button>
@@ -113,7 +113,7 @@ export const StaffInfoModal: React.FC<StaffInfoModalProps> = ({
             };
             return (
               <div key={section} className="mb-3">
-                <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1">{sectionLabel[section]}</div>
+                <div className="text-[15px] font-bold text-zinc-400 uppercase tracking-wider mb-1">{sectionLabel[section]}</div>
                 <div className="grid grid-cols-5 gap-1">
                   {sectionZones.map((z) => {
                     const empId = employee.id;
@@ -133,13 +133,13 @@ export const StaffInfoModal: React.FC<StaffInfoModalProps> = ({
                         }`}
                       >
                         {z.num <= 8 && (
-                          <div className={`text-[10px] font-bold leading-tight ${isAssigned ? "text-indigo-800" : otherName ? "text-amber-700" : "text-zinc-700"}`}>
+                          <div className={`text-[14px] font-bold leading-tight ${isAssigned ? "text-indigo-800" : otherName ? "text-amber-700" : "text-zinc-700"}`}>
                             {z.num}
                             {z.id.endsWith("A") && "A"}
                             {z.id.endsWith("B") && "B"}
                           </div>
                         )}
-                        <div className={`text-[10px] leading-none ${z.num <= 8 ? "mt-0.5" : "mt-0"} truncate ${isAssigned ? "text-indigo-500" : otherName ? "text-amber-500" : "text-zinc-400"}`}>
+                        <div className={`text-[14px] leading-none ${z.num <= 8 ? "mt-0.5" : "mt-0"} truncate ${isAssigned ? "text-indigo-500" : otherName ? "text-amber-500" : "text-zinc-400"}`}>
                           {otherName ? otherName : z.label}
                         </div>
                       </button>

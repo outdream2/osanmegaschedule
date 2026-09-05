@@ -119,7 +119,7 @@ const RequestCard: React.FC<{
     >
       {/* Row 1: 구역 + 상태 */}
       <div className="flex items-center justify-between">
-        <span className={`text-[13px] font-bold ${urgent ? "text-rose-800" : "text-zinc-900"}`}>
+        <span className={`text-[15px] font-bold ${urgent ? "text-rose-800" : "text-zinc-900"}`}>
           {req.zoneLabel}
         </span>
         <StatusBadge req={req} />
@@ -127,10 +127,10 @@ const RequestCard: React.FC<{
       {/* Row 2: 담당 + 시각 + 액션 */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[12px] font-medium text-zinc-700 break-words whitespace-normal">
+          <span className="text-[14px] font-medium text-zinc-700 break-words whitespace-normal">
             {req.assignedStaffName || "미배정"}
           </span>
-          <span className="text-[11px] text-zinc-400 shrink-0">{formatRel(req.requestedAt)}</span>
+          <span className="text-[15px] text-zinc-400 shrink-0">{formatRel(req.requestedAt)}</span>
         </div>
         <ActionButtons req={req} onComplete={onComplete} onDelete={onDelete} />
       </div>
@@ -161,19 +161,19 @@ const RequestTableRow: React.FC<{
       {/* 2026-08-10 · 사용자 요청 · 상품명 · 맨 앞 컬럼 */}
       <td className="px-3 py-2.5">
         {/* 2026-08-29 · UI 감사 U1 · truncate 제거 · 상품명 잘림 방지 */}
-        <span className={`text-[12px] font-bold ${urgent ? "text-rose-800" : "text-zinc-900"} block break-words whitespace-normal leading-tight`} title={req.productName ?? undefined}>
+        <span className={`text-[14px] font-bold ${urgent ? "text-rose-800" : "text-zinc-900"} block break-words whitespace-normal leading-tight`} title={req.productName ?? undefined}>
           {req.productName ?? <span className="text-zinc-300">-</span>}
         </span>
       </td>
       <td className="px-3 py-2.5">
-        <span className={`text-[12px] font-bold ${urgent ? "text-rose-800" : "text-zinc-700"}`}>
+        <span className={`text-[14px] font-bold ${urgent ? "text-rose-800" : "text-zinc-700"}`}>
           {req.zoneLabel}
         </span>
       </td>
-      <td className="px-3 py-2.5 text-[12px] font-medium text-zinc-700">
+      <td className="px-3 py-2.5 text-[14px] font-medium text-zinc-700">
         {req.assignedStaffName || <span className="text-zinc-400">미배정</span>}
       </td>
-      <td className="px-3 py-2.5 text-[11px] text-zinc-400 whitespace-nowrap">
+      <td className="px-3 py-2.5 text-[15px] text-zinc-400 whitespace-nowrap">
         {formatRel(req.requestedAt)}
       </td>
       <td className="px-3 py-2.5 text-center">
@@ -194,7 +194,7 @@ const EmptyState: React.FC<{ reqFilter: "all" | "pending" | "done" }> = ({ reqFi
     <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center">
       <Bell size={18} className="opacity-50 animate-bounce" />
     </div>
-    <p className="text-[12px] font-medium">
+    <p className="text-[14px] font-medium">
       {reqFilter === "done"
         ? "완료된 요청이 없습니다"
         : reqFilter === "pending"
@@ -256,7 +256,7 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
           {/* 2026-08-18 · IconTile 확산 */}
           <IconTile icon={<ClipboardList size={14} />} tone="violet" size="md" />
 
-          <span className="text-[13px] font-bold text-zinc-900 whitespace-nowrap">
+          <span className="text-[15px] font-bold text-zinc-900 whitespace-nowrap">
             진열 보충 요청
           </span>
           {/* 대기 pill · 2026-08-17 · StatusPill 프레임워크 통일 */}
@@ -278,7 +278,7 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
               key={k}
               type="button"
               onClick={() => setReqFilter(k)}
-              className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all duration-150 cursor-pointer whitespace-nowrap ${
+              className={`px-2.5 py-1 text-[15px] font-semibold rounded-md transition-all duration-150 cursor-pointer whitespace-nowrap ${
                 reqFilter === k
                   ? "bg-white text-zinc-900 shadow-sm"
                   : "text-zinc-500 hover:text-zinc-700"
@@ -315,12 +315,12 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
                 <thead>
                   {/* 2026-08-10 · 사용자 요청 · 상품명 · 맨 앞 컬럼 */}
                   <tr className="bg-zinc-50/80 border-b border-zinc-100">
-                    <th className="px-3 py-2 text-[11px] font-bold text-zinc-500">상품명</th>
-                    <th className="px-3 py-2 text-[11px] font-bold text-zinc-500 w-24">구역</th>
-                    <th className="px-3 py-2 text-[11px] font-bold text-zinc-500 w-20">담당</th>
-                    <th className="px-3 py-2 text-[11px] font-bold text-zinc-500 w-16">시각</th>
-                    <th className="px-3 py-2 text-[11px] font-bold text-zinc-500 text-center w-16">상태</th>
-                    <th className="px-3 py-2 text-[11px] font-bold text-zinc-500 text-center w-16">작업</th>
+                    <th className="px-3 py-2 text-[15px] font-bold text-zinc-500">상품명</th>
+                    <th className="px-3 py-2 text-[15px] font-bold text-zinc-500 w-24">구역</th>
+                    <th className="px-3 py-2 text-[15px] font-bold text-zinc-500 w-20">담당</th>
+                    <th className="px-3 py-2 text-[15px] font-bold text-zinc-500 w-16">시각</th>
+                    <th className="px-3 py-2 text-[15px] font-bold text-zinc-500 text-center w-16">상태</th>
+                    <th className="px-3 py-2 text-[15px] font-bold text-zinc-500 text-center w-16">작업</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100/80">
