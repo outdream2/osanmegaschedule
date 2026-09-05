@@ -586,7 +586,7 @@ const ZoneCategoryContent: React.FC = () => {
                   <div className="text-[15px] font-bold text-zinc-800 break-words whitespace-normal leading-tight">
                     구역 {formatZoneDisplayCode(selectedZone)}{zoneCategoryLabel(selectedZone) ? ` · ${zoneCategoryLabel(selectedZone)}` : ""}
                   </div>
-                  <div className="text-[14px] tabular-nums text-zinc-500">
+                  <div className="text-[16px] tabular-nums text-zinc-500">
                     {grouped.find(g => g.zone === selectedZone)?.items.length ?? 0}개 상품
                   </div>
                 </div>
