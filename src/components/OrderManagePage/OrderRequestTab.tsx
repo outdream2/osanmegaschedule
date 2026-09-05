@@ -110,7 +110,9 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
     return orderReqsFiltered.filter(r => {
       const cv = [r.product_code, r.product_code.replace(/^0+/, ""), r.product_code.padStart(8, "0")];
       const p = cv.map(c => allProductsMap[c]).find(Boolean) as any;
-      return saleMatches(p?.sale_status);
+      // allProductsMap 미매핑 상품은 필터 통과 (판매상태 불명 = 제외 X)
+      if (!p) return true;
+      return saleMatches(p.sale_status);
     });
   }, [orderReqsFiltered, saleFilter, saleMatches, allProductsMap]);
   const toggleGroupCollapse = (sup: string) => {

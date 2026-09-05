@@ -390,8 +390,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       });
       await loadOrderReqs();
       dispatchApprovalChange("order");
-    } catch { /* silent */ }
-    finally { setRequestingOrder(prev => { const n = new Set(prev); n.delete(code); return n; }); }
+    } catch (e: any) {
+      showError(e?.message ?? "발주 요청 실패. 다시 시도해주세요.");
+    } finally { setRequestingOrder(prev => { const n = new Set(prev); n.delete(code); return n; }); }
   };
 
   const deleteOrder = async (ids: string[]) => {

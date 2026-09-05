@@ -437,7 +437,7 @@ router.get("/api/order-requests", asyncHandler(async (req, res) => {
   //   · 기본 · status='requested' 만 반환 · 발주요청 대기 목록
   //   · ?status=all · 모든 상태 반환 · ?status=xxx · 특정 상태 필터
   const statusFilter = String(req.query.status ?? "requested").trim();
-  let q = supabase.from("order_requests").select("id, product_code, product_name, current_stock, optimal_stock, note, requested_at, status").order("requested_at", { ascending: false });
+  let q = supabase.from("order_requests").select("id, product_code, product_name, current_stock, optimal_stock, note, requested_at, status, supplier").order("requested_at", { ascending: false });
   if (req.query.product_code) q = q.eq("product_code", String(req.query.product_code));
   if (statusFilter && statusFilter !== "all") q = q.eq("status", statusFilter);
   const { data, error } = await q;
