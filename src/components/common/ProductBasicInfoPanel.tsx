@@ -98,7 +98,7 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
   const location = product.location ?? product.display_location ?? null;
   const inEditMode = editable && editMode;
 
-  const labelCls = compact ? "text-[11px] font-bold text-ink-soft uppercase tracking-wider" : "text-[12px] font-bold text-ink-soft uppercase tracking-wider";
+  const labelCls = compact ? "text-[13px] font-bold text-ink-soft uppercase tracking-wider" : "text-[14px] font-bold text-ink-soft uppercase tracking-wider";
   const valueCls = compact ? "text-[14px] font-bold text-ink" : "text-[15px] font-bold text-ink";
   const numCls = `${valueCls} tabular-nums`;
 
@@ -137,7 +137,7 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
             <button
               type="button"
               onClick={() => setEditMode(false)}
-              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[12px] font-bold shadow-sm transition cursor-pointer"
+              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[14px] font-bold shadow-sm transition cursor-pointer"
               title="편집 완료"
             >
               <Check size={12} strokeWidth={2.5} />
@@ -147,7 +147,7 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
             <button
               type="button"
               onClick={() => setEditMode(true)}
-              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-white hover:bg-brand-tint border border-line hover:border-brand-deep text-brand-deep text-[12px] font-bold shadow-sm transition cursor-pointer"
+              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-white hover:bg-brand-tint border border-line hover:border-brand-deep text-brand-deep text-[14px] font-bold shadow-sm transition cursor-pointer"
               title="진열위치·판매상태 편집"
             >
               <Pencil size={12} strokeWidth={2.5} />
@@ -175,7 +175,7 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
               value={String(product.sale_status ?? "")}
               onChange={(e) => void handleStatusChange(e.target.value)}
               disabled={savingStatus}
-              className="h-7 px-2 rounded border border-amber-300 border-dashed text-[13px] font-bold bg-white outline-none focus:ring-2 focus:ring-brand-tint cursor-pointer"
+              className="h-7 px-2 rounded border border-amber-300 border-dashed text-[15px] font-bold bg-white outline-none focus:ring-2 focus:ring-brand-tint cursor-pointer"
             >
               <option value="">-</option>
               {SALE_STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -245,7 +245,7 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
             {product.category_code || "-"}
           </span>
           {product.category && (
-            <span className="text-[11px] text-ink-soft break-words whitespace-normal">{product.category}</span>
+            <span className="text-[13px] text-ink-soft break-words whitespace-normal">{product.category}</span>
           )}
         </Field>
         <Field label="공급사">

@@ -294,7 +294,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
           </div>
           <div className="min-w-0">
             <div className="text-[17px] font-bold text-ink leading-tight tracking-tight">입고알림</div>
-            <div className="text-[13px] text-ink-soft leading-tight mt-0.5">
+            <div className="text-[15px] text-ink-soft leading-tight mt-0.5">
               전 직원에게 즉시 · 예약 발송 · 총 {arrivals.length}건
             </div>
           </div>
@@ -449,19 +449,19 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-[16px] font-bold text-ink truncate">{a.title}</span>
                         {pending && (
-                          <span className="inline-flex items-center gap-1 text-[13px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-1.5 py-0.5 shrink-0">
+                          <span className="inline-flex items-center gap-1 text-[15px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-1.5 py-0.5 shrink-0">
                             <Clock size={10} /> 예약
                           </span>
                         )}
                         {!a.scheduled_at && !a.broadcast_sent && (
-                          <span className="inline-flex items-center text-[13px] text-zinc-400 font-semibold bg-zinc-50 border border-zinc-200 rounded-md px-1.5 py-0.5 shrink-0">미발송</span>
+                          <span className="inline-flex items-center text-[15px] text-zinc-400 font-semibold bg-zinc-50 border border-zinc-200 rounded-md px-1.5 py-0.5 shrink-0">미발송</span>
                         )}
                         {a.broadcast_sent && (
-                          <span className="inline-flex items-center text-[13px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 rounded-md px-1.5 py-0.5 shrink-0">발송됨</span>
+                          <span className="inline-flex items-center text-[15px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 rounded-md px-1.5 py-0.5 shrink-0">발송됨</span>
                         )}
                       </div>
                       {a.body && <p className="text-[15px] text-ink-soft truncate leading-snug mt-0.5">{a.body}</p>}
-                      <p className="text-[13px] text-zinc-400 mt-1 tabular-nums">
+                      <p className="text-[15px] text-zinc-400 mt-1 tabular-nums">
                         {fmtDT(a.created_at)}
                         {pending && a.scheduled_at && (
                           <span className="ml-1.5 text-amber-600 font-semibold">→ {fmtDT(a.scheduled_at)}</span>

@@ -52,7 +52,7 @@ function getErpCellValue(
         text: (
           <span className="inline-flex flex-col leading-tight gap-0.5 items-start">
             {erpCode && (
-              <span className="font-mono text-[13px] font-bold text-zinc-500">#{erpCode}</span>
+              <span className="font-mono text-[15px] font-bold text-zinc-500">#{erpCode}</span>
             )}
             {erpName && (
               <span className="font-semibold text-violet-800 text-[14px] leading-snug break-words">{erpName}</span>
@@ -71,7 +71,7 @@ function getErpCellValue(
       return {
         text: erpMasterP != null && erpMasterP > 0
           ? <span className="inline-flex flex-col leading-tight items-center">
-              <span className="text-[13px] text-violet-500 font-bold">ERP단가</span>
+              <span className="text-[15px] text-violet-500 font-bold">ERP단가</span>
               <span className="text-violet-800 tabular-nums font-bold">{fmt(erpMasterP)}</span>
             </span>
           : dash,
@@ -87,7 +87,7 @@ function getErpCellValue(
       return {
         text: erpProfit != null && Number.isFinite(erpProfit)
           ? <span className="inline-flex flex-col leading-tight items-center">
-              <span className="text-[13px] text-emerald-500 font-bold">이익률</span>
+              <span className="text-[15px] text-emerald-500 font-bold">이익률</span>
               <span className={`font-bold ${erpProfit >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
                 {Math.trunc(erpProfit)}%
               </span>
@@ -102,7 +102,7 @@ function getErpCellValue(
       return {
         text: erpSaleP != null && erpSaleP > 0
           ? <span className="inline-flex flex-col leading-tight items-center">
-              <span className="text-[13px] text-sky-500 font-bold">판매가</span>
+              <span className="text-[15px] text-sky-500 font-bold">판매가</span>
               <span className="text-sky-700 tabular-nums font-bold">{fmt(erpSaleP)}</span>
             </span>
           : dash,
@@ -124,10 +124,10 @@ export const ErpMatchSubRow: React.FC<Props> = ({
       {/* 왼쪽 체크박스 컬럼 자리 · ERP 라벨 + 취소 버튼 */}
       <td className="w-14 px-1 py-1 text-center align-middle">
         <div className="flex items-center justify-center gap-0.5">
-          <span className="text-[10px] font-bold bg-violet-500 text-white rounded px-1 py-px">ERP</span>
+          <span className="text-[12px] font-bold bg-violet-500 text-white rounded px-1 py-px">ERP</span>
           {anyErpInfo && onCancel && (
             <button type="button" onClick={onCancel}
-              className="text-[13px] text-zinc-400 hover:text-rose-500 cursor-pointer"
+              className="text-[15px] text-zinc-400 hover:text-rose-500 cursor-pointer"
               title="ERP 매칭 취소"
             >✕</button>
           )}
@@ -141,7 +141,7 @@ export const ErpMatchSubRow: React.FC<Props> = ({
         return (
           <td key={origIdx}
             style={w != null ? { width: w, overflow: "hidden" } : undefined}
-            className={`px-1.5 py-1 text-[13px] ${align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left"} ${isNameCol ? "" : "truncate"}`}>
+            className={`px-1.5 py-1 text-[15px] ${align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left"} ${isNameCol ? "" : "truncate"}`}>
             {text}
           </td>
         );

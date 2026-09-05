@@ -181,7 +181,7 @@ export const PartySelectModal: React.FC<PartySelectModalProps> = ({
   }, [newForm, showError, showSuccess, handleSelect]);
 
   const inputCls = "w-full h-9 px-2.5 rounded-lg border border-line bg-white text-[15px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition";
-  const labelCls = "text-[13px] font-bold text-ink-soft";
+  const labelCls = "text-[15px] font-bold text-ink-soft";
   const roleLabel = role === "lender" ? "대여자" : "차용자";
 
   const setNew = <K extends keyof NewFormState>(k: K, v: NewFormState[K]) =>
@@ -280,7 +280,7 @@ export const PartySelectModal: React.FC<PartySelectModalProps> = ({
                                 </StatusPill>
                               </div>
                               {(p.contact_name || p.contact_phone) && (
-                                <div className="text-[12px] text-ink-soft mt-0.5 break-keep">
+                                <div className="text-[14px] text-ink-soft mt-0.5 break-keep">
                                   {p.contact_name && <span>{p.contact_name}</span>}
                                   {p.contact_name && p.contact_phone && <span className="mx-1">·</span>}
                                   {p.contact_phone && <span className="tabular-nums">{p.contact_phone}</span>}
@@ -308,7 +308,7 @@ export const PartySelectModal: React.FC<PartySelectModalProps> = ({
                   type="button"
                   onClick={() => setShowNewForm(false)}
                   disabled={saving}
-                  className="ml-auto text-[13px] text-ink-soft hover:text-brand-deep cursor-pointer disabled:opacity-40"
+                  className="ml-auto text-[15px] text-ink-soft hover:text-brand-deep cursor-pointer disabled:opacity-40"
                 >
                   ← 목록으로
                 </button>

@@ -188,7 +188,7 @@ export const CardHistoryPage: React.FC = () => {
                     <span className="text-[18px] font-bold text-ink">{s.card.issuer}</span>
                     {s.card.alias && <span className="text-[15px] text-zinc-600">· {s.card.alias}</span>}
                     {s.card.last4 && <span className="text-[14px] text-zinc-400 font-mono">**** {s.card.last4}</span>}
-                    <span className="text-[13px] text-zinc-400">· {s.card.billing_day}일 결제</span>
+                    <span className="text-[15px] text-zinc-400">· {s.card.billing_day}일 결제</span>
                   </span>
                   <span className="inline-flex items-baseline gap-1.5 ml-auto">
                     <span className="text-[14px] text-zinc-500 font-semibold">이번달</span>
@@ -197,7 +197,7 @@ export const CardHistoryPage: React.FC = () => {
                   <span className="inline-flex items-baseline gap-1.5">
                     <span className="text-[14px] text-rose-500 font-semibold">차월</span>
                     <span className="text-[20px] font-extrabold text-rose-600 tabular-nums">{fmtWon(s.nextBillingAmount)}</span>
-                    <span className="text-[13px] text-zinc-400 tabular-nums">({s.nextBillingDate})</span>
+                    <span className="text-[15px] text-zinc-400 tabular-nums">({s.nextBillingDate})</span>
                   </span>
                   <span className={`inline-flex items-center justify-center w-7 h-7 rounded-md text-zinc-400 transition-transform shrink-0 ${isOpen ? "rotate-180 text-brand-deep" : ""}`}>
                     ▾
@@ -349,7 +349,7 @@ const KpiTile: React.FC<KpiTileProps> = ({ icon, tone, label, value, sub, emphas
         <span className="text-[15px] font-semibold text-zinc-500">{label}</span>
       </div>
       <div className={`text-[24px] font-extrabold tabular-nums leading-tight ${t.text}`}>{value}</div>
-      {sub && <div className="text-[13px] text-zinc-400 mt-0.5">{sub}</div>}
+      {sub && <div className="text-[15px] text-zinc-400 mt-0.5">{sub}</div>}
     </Card>
   );
 };

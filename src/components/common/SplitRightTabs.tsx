@@ -73,7 +73,7 @@ export function SplitRightTabs<K extends string = string>({
   const stickyCls = sticky ? "sticky top-0 z-20" : "";
   const borderCls = withBorder ? "border-b border-line" : "";
   const sizeCls = size === "lg" ? "text-[18px] sm:text-[19px]"
-                : size === "sm" ? "text-[13px] sm:text-[14px]"
+                : size === "sm" ? "text-[15px] sm:text-[14px]"
                 :                 "text-[15px] sm:text-[16px]";
   const btnH   = size === "lg" ? "h-12 px-4" : "h-10 px-3";
   return (
@@ -115,7 +115,7 @@ export function SplitRightTabs<K extends string = string>({
             <span>{t.label}</span>
             {t.count != null && t.count > 0 && (
               <span
-                className={`inline-flex items-center justify-center min-w-[20px] h-[18px] px-1.5 rounded-full text-[11px] font-bold tabular-nums leading-none transition-colors ${
+                className={`inline-flex items-center justify-center min-w-[20px] h-[18px] px-1.5 rounded-full text-[13px] font-bold tabular-nums leading-none transition-colors ${
                   isActive
                     ? "bg-brand-tint text-brand-deep"
                     : "bg-zinc-100 text-zinc-500"

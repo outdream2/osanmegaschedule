@@ -55,12 +55,12 @@ export const PeriodCoverageWidget: React.FC<{
         <div className="flex items-center gap-2 min-w-0">
           <Badge tone={color} shape="pill" size="xs">{label}</Badge>
           {loading ? (
-            <span className="text-[12px] text-zinc-400">로딩...</span>
+            <span className="text-[14px] text-zinc-400">로딩...</span>
           ) : periods.length === 0 ? (
-            <span className="text-[12px] text-zinc-400">아직 데이터 없음</span>
+            <span className="text-[14px] text-zinc-400">아직 데이터 없음</span>
           ) : (
             <>
-              <span className="text-[12px] tabular-nums text-zinc-500">
+              <span className="text-[14px] tabular-nums text-zinc-500">
                 {periods[0].ym} ~ {periods[periods.length - 1].ym}
               </span>
               {missingCount > 0 && (
@@ -78,9 +78,9 @@ export const PeriodCoverageWidget: React.FC<{
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full text-[12px] tabular-nums">
+                <table className="w-full text-[14px] tabular-nums">
                   <thead>
-                    <tr className="text-zinc-400 text-[11px] uppercase">
+                    <tr className="text-zinc-400 text-[13px] uppercase">
                       <th className="text-left px-1 py-1">월</th>
                       <th className="text-center px-1 py-1">초순</th>
                       <th className="text-center px-1 py-1">중순</th>
@@ -97,7 +97,7 @@ export const PeriodCoverageWidget: React.FC<{
                           const filled = v > 0;
                           return (
                             <td key={pt} className="px-1 py-0.5 text-center">
-                              <span className={`inline-block min-w-[42px] px-1.5 py-0.5 rounded border text-[12px] font-bold ${filled ? cellClsFilled : cellClsEmpty}`}
+                              <span className={`inline-block min-w-[42px] px-1.5 py-0.5 rounded border text-[14px] font-bold ${filled ? cellClsFilled : cellClsEmpty}`}
                                 title={filled ? `${ptxt[pt]}: ${v}건` : `${p.ym} ${ptxt[pt]} 데이터 없음`}>
                                 {filled ? v : "–"}
                               </span>
@@ -127,36 +127,36 @@ export const PeriodCoverageWidget: React.FC<{
                   else partialMonths.push({ ym, slots });
                 }
                 return (
-                  <div className="mt-2 text-[13px] bg-amber-50/60 border border-amber-200 rounded-lg px-3 py-2 flex flex-col gap-1.5">
+                  <div className="mt-2 text-[15px] bg-amber-50/60 border border-amber-200 rounded-lg px-3 py-2 flex flex-col gap-1.5">
                     <div className="flex items-center gap-1.5">
                       <span className="text-amber-500 text-sm">📅</span>
                       <span className="font-bold text-amber-700">데이터 없는 기간 {missingCount}개</span>
-                      <span className="text-[11px] text-amber-500 font-semibold">해당 기간 xlsx 업로드 필요</span>
+                      <span className="text-[13px] text-amber-500 font-semibold">해당 기간 xlsx 업로드 필요</span>
                     </div>
                     {fullyEmptyMonths.length > 0 && (
                       <div className="flex items-start gap-1.5">
-                        <span className="text-[11px] font-bold text-rose-600 rounded px-1.5 py-0.5 shrink-0 mt-0.5">완전공백</span>
-                        <div className="text-[13px] text-rose-700 tabular-nums">
+                        <span className="text-[13px] font-bold text-rose-600 rounded px-1.5 py-0.5 shrink-0 mt-0.5">완전공백</span>
+                        <div className="text-[15px] text-rose-700 tabular-nums">
                           {fullyEmptyMonths.slice(0, 8).join(" · ")}
-                          {fullyEmptyMonths.length > 8 && <span className="text-rose-400 text-[13px]"> +{fullyEmptyMonths.length - 8}개월</span>}
+                          {fullyEmptyMonths.length > 8 && <span className="text-rose-400 text-[15px]"> +{fullyEmptyMonths.length - 8}개월</span>}
                         </div>
                       </div>
                     )}
                     {partialMonths.length > 0 && (
                       <div className="flex flex-col gap-0.5">
                         {partialMonths.slice(0, 6).map(({ ym, slots }) => (
-                          <div key={ym} className="flex items-center gap-1.5 text-[12px]">
+                          <div key={ym} className="flex items-center gap-1.5 text-[14px]">
                             <span className="tabular-nums font-bold text-amber-800 w-16">{ym}</span>
                             <div className="flex gap-1">
                               {slots.map(s => (
                                 <Badge key={s} tone={s === "초순" ? "sky" : s === "중순" ? "indigo" : "violet"} size="xs">{s}</Badge>
                               ))}
-                              <span className="text-zinc-400 text-[11px]">누락</span>
+                              <span className="text-zinc-400 text-[13px]">누락</span>
                             </div>
                           </div>
                         ))}
                         {partialMonths.length > 6 && (
-                          <div className="text-[12px] text-zinc-400 mt-0.5">... 그 외 {partialMonths.length - 6}개월</div>
+                          <div className="text-[14px] text-zinc-400 mt-0.5">... 그 외 {partialMonths.length - 6}개월</div>
                         )}
                       </div>
                     )}

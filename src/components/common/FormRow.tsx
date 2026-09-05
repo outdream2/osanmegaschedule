@@ -48,11 +48,11 @@ export const FormRow: React.FC<FormRowProps> = ({
       )}
       {children}
       {error ? (
-        <p className="text-[12px] font-semibold text-rose-600 mt-0.5 leading-tight">
+        <p className="text-[14px] font-semibold text-rose-600 mt-0.5 leading-tight">
           {error}
         </p>
       ) : hint ? (
-        <p className="text-[12px] font-medium text-ink-soft mt-0.5 leading-tight">
+        <p className="text-[14px] font-medium text-ink-soft mt-0.5 leading-tight">
           {hint}
         </p>
       ) : null}

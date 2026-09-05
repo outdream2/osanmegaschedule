@@ -52,7 +52,7 @@ interface EmployeeFormModalProps {
 }
 
 const SELECT_CLS = "w-full text-[14px] rounded border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint p-2 bg-white text-zinc-800 focus:outline-none transition-all";
-const LABEL_CLS = "block text-[13px] font-bold text-zinc-500 uppercase tracking-wide mb-1";
+const LABEL_CLS = "block text-[15px] font-bold text-zinc-500 uppercase tracking-wide mb-1";
 
 // POSITIONS · RANKS · WORKPLACES → src/constants/jobCategories.ts
 const GENDERS   = [{ v: "", label: "미지정" }, { v: "남", label: "남자" }, { v: "여", label: "여자" }];
@@ -136,7 +136,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                 value={employeeNumber}
                 onChange={e => setEmployeeNumber(e.target.value)}
                 placeholder="예: 004"
-                className="w-full font-mono text-[13px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2 bg-white text-zinc-900 focus:outline-none transition"
+                className="w-full font-mono text-[15px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2 bg-white text-zinc-900 focus:outline-none transition"
               />
             </div>
           )}
@@ -160,7 +160,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
           <div>
             <label className={LABEL_CLS}>
               핸드폰번호 <span className="text-rose-500 normal-case">*</span>
-              <span className="text-[12px] font-normal text-zinc-400 normal-case ml-1">(로그인 ID — 숫자만, 예: 01012345678)</span>
+              <span className="text-[14px] font-normal text-zinc-400 normal-case ml-1">(로그인 ID — 숫자만, 예: 01012345678)</span>
             </label>
             <input
               type="tel"
@@ -171,12 +171,12 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               className="w-full text-sm rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2.5 bg-white text-zinc-900 placeholder:text-zinc-300 focus:outline-none transition-all"
             />
             {empPhone && !/^01[0-9]{8,9}$/.test(empPhone.replace(/[^0-9]/g, "")) && (
-              <p className="mt-1 text-[13px] text-rose-500 font-semibold">
+              <p className="mt-1 text-[15px] text-rose-500 font-semibold">
                 올바른 핸드폰번호 형식이 아닙니다 (예: 01012345678)
               </p>
             )}
             {!empPhone && empModalMode === "create" && (
-              <p className="mt-1 text-[13px] text-rose-500 font-semibold">
+              <p className="mt-1 text-[15px] text-rose-500 font-semibold">
                 * 핸드폰번호는 로그인 ID로 필수입니다.
               </p>
             )}
@@ -231,8 +231,8 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                           }}
                           className="w-3.5 h-3.5 accent-blue-500 cursor-pointer"
                         />
-                        <span className="text-[13px] font-bold text-blue-700">캐셔 겸직</span>
-                        <span className="text-[10px] text-zinc-400">(구역배정 표시)</span>
+                        <span className="text-[15px] font-bold text-blue-700">캐셔 겸직</span>
+                        <span className="text-[12px] text-zinc-400">(구역배정 표시)</span>
                       </label>
                     )}
                   </>
@@ -352,10 +352,10 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
           {(empPosition === "물류" || empPosition.startsWith("물류/") || empPosition.includes("/물류")) && (
             <div className="border border-violet-200 bg-violet-50/40 rounded-xl p-3 space-y-2.5">
               <div className="flex items-center justify-between">
-                <label className="text-[13px] font-extrabold text-violet-800 flex items-center gap-1.5">
+                <label className="text-[15px] font-extrabold text-violet-800 flex items-center gap-1.5">
                   <MapPin size={13} className="text-violet-600" />
                   담당 구역 배정
-                  <span className="text-[12px] font-normal text-violet-500">(복수 선택)</span>
+                  <span className="text-[14px] font-normal text-violet-500">(복수 선택)</span>
                 </label>
                 <div className="flex items-center gap-2">
                   {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
@@ -364,7 +364,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                   )}
                   {empZoneNums.length > 0 && (
                     <button type="button" onClick={() => setEmpZoneNums([])}
-                      className="text-[12px] font-bold text-rose-500 hover:text-rose-700 cursor-pointer transition">
+                      className="text-[14px] font-bold text-rose-500 hover:text-rose-700 cursor-pointer transition">
                       전체 해제
                     </button>
                   )}
@@ -375,7 +375,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                   const zones = ZONE_DEFS.filter(z => z.section === section);
                   return (
                     <div key={section}>
-                      <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-1">{SECTION_LABEL[section]}</div>
+                      <div className="text-[13px] font-bold text-zinc-400 uppercase tracking-wider mb-1">{SECTION_LABEL[section]}</div>
                       <div className="flex flex-wrap gap-1">
                         {zones.map(z => {
                           const isOn = empZoneNums.includes(z.num);
@@ -387,8 +387,8 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                               }`}
                               title={z.category}
                             >
-                              <span className={`text-[11px] font-bold leading-none ${isOn ? "text-violet-800" : "text-zinc-600"}`}>{z.num}</span>
-                              <span className={`text-[11px] ml-0.5 ${isOn ? "text-violet-600" : "text-zinc-400"}`}>{z.label}</span>
+                              <span className={`text-[13px] font-bold leading-none ${isOn ? "text-violet-800" : "text-zinc-600"}`}>{z.num}</span>
+                              <span className={`text-[13px] ml-0.5 ${isOn ? "text-violet-600" : "text-zinc-400"}`}>{z.label}</span>
                             </button>
                           );
                         })}
@@ -402,9 +402,9 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
 
           {/* ── 8. 상세사항 ── */}
           <div className="bg-zinc-50 p-3 rounded-xl border border-line">
-            <label className="block text-[13px] font-bold text-zinc-700 mb-1.5 flex items-center gap-1">
+            <label className="block text-[15px] font-bold text-zinc-700 mb-1.5 flex items-center gap-1">
               상세사항
-              <span className="text-[12px] font-normal text-zinc-400">(근무 패턴 / 메모)</span>
+              <span className="text-[14px] font-normal text-zinc-400">(근무 패턴 / 메모)</span>
             </label>
             <input
               type="text"
@@ -414,10 +414,10 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               className="w-full text-[14px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2 bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none transition-all"
             />
             <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-line">
-              <span className="text-[12px] text-zinc-400 font-semibold self-center mr-0.5">패턴:</span>
+              <span className="text-[14px] text-zinc-400 font-semibold self-center mr-0.5">패턴:</span>
               {["주6일 일 휴무", "수목 휴무", "토일", "금일", "일월", "3주 목<->토", "월화", "화수", "평일마감 주말오픈"].map(pat => (
                 <button key={pat} type="button" onClick={() => setEmpDescription(pat)}
-                  className="px-1.5 py-0.5 text-[11px] bg-white hover:bg-zinc-100 border border-line hover:border-zinc-400 rounded text-zinc-600 font-semibold cursor-pointer transition">
+                  className="px-1.5 py-0.5 text-[13px] bg-white hover:bg-zinc-100 border border-line hover:border-zinc-400 rounded text-zinc-600 font-semibold cursor-pointer transition">
                   {pat}
                 </button>
               ))}
@@ -426,16 +426,16 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
 
           {/* ── 9. 근로계약서 첨부 ── */}
           <div className="border border-line rounded-xl p-3">
-            <label className="block text-[13px] font-bold text-zinc-700 mb-2 flex items-center gap-1.5">
+            <label className="block text-[15px] font-bold text-zinc-700 mb-2 flex items-center gap-1.5">
               <FileText size={13} className="text-zinc-500" />
               근로계약서 첨부
-              <span className="text-[12px] font-normal text-zinc-400">(PDF, HWP, 이미지, 20MB 이하)</span>
+              <span className="text-[14px] font-normal text-zinc-400">(PDF, HWP, 이미지, 20MB 이하)</span>
             </label>
 
             {/* 기존 파일 링크 */}
             {empContractUrl && !empContractFile && (
               <a href={empContractUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-[13px] text-blue-600 hover:text-blue-800 font-semibold mb-2 hover:underline">
+                className="flex items-center gap-1.5 text-[15px] text-blue-600 hover:text-blue-800 font-semibold mb-2 hover:underline">
                 <ExternalLink size={11} />
                 현재 첨부 파일 열기
               </a>
@@ -465,7 +465,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             </button>
             {empContractFile && (
               <button type="button" onClick={() => setEmpContractFile(null)}
-                className="mt-1 text-[10px] text-rose-400 hover:text-rose-600 font-semibold cursor-pointer transition">
+                className="mt-1 text-[12px] text-rose-400 hover:text-rose-600 font-semibold cursor-pointer transition">
                 선택 취소
               </button>
             )}

@@ -151,17 +151,17 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
             <h2 className="text-[15px] font-bold text-zinc-800 break-words" title={rawName}>{displayName}</h2>
             <VendorCategoryBadge category={vendor.category} />
             {vendor.business_number && (
-              <span className="text-[10px] font-semibold text-zinc-500 bg-zinc-50 border border-line rounded px-1.5 py-0.5 tabular-nums">
+              <span className="text-[12px] font-semibold text-zinc-500 bg-zinc-50 border border-line rounded px-1.5 py-0.5 tabular-nums">
                 {fmtBizNum(vendor.business_number)}
               </span>
             )}
             {/* 부가세 · 텍스트 · 2026-08-06 · 사용자 요청 · 배지 → 깔끔한 텍스트 */}
             {effectiveVatIncluded === true && (
-              <span className="text-[11px] font-semibold text-emerald-700">VAT 포함</span>
+              <span className="text-[13px] font-semibold text-emerald-700">VAT 포함</span>
             )}
             {effectiveVatIncluded === false && (
               <span
-                className="text-[11px] font-semibold text-zinc-500"
+                className="text-[13px] font-semibold text-zinc-500"
                 title={vendor.vat_included == null && nameHintsVatExcluded ? "공급사명에서 자동 추론" : undefined}
               >
                 부가세 별도
@@ -170,7 +170,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
           </div>
 
           {/* Sub-line · 담당자·전화·이메일·등록일 */}
-          <div className="flex items-center gap-3 flex-wrap text-[11px] text-zinc-500">
+          <div className="flex items-center gap-3 flex-wrap text-[13px] text-zinc-500">
             {vendor.contact_name && (
               <span className="inline-flex items-center gap-1">
                 <User2 size={10} className="text-zinc-400" />
@@ -201,7 +201,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
 
           {/* 2026-09-02 · 사용자 지시 · 팀장 정보 · 담당자 아래줄 · 값 있으면만 표시 */}
           {(vendor.team_leader_name || vendor.team_leader_phone) && (
-            <div className="flex items-center gap-3 flex-wrap text-[11px] text-zinc-500 mt-0.5">
+            <div className="flex items-center gap-3 flex-wrap text-[13px] text-zinc-500 mt-0.5">
               <span className="inline-flex items-center gap-1 font-bold text-violet-600">
                 <User2 size={10} className="text-violet-500" />
                 팀장
@@ -225,7 +225,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
 
           {/* 2026-08-24 · #178 · xlsx 5 필드 · 값 있는 항목만 표시 */}
           {(vendor.order_method || vendor.region || vendor.invoice_method || vendor.order_status) && (
-            <div className="flex items-center gap-3 flex-wrap text-[12px] text-zinc-600 mt-0.5">
+            <div className="flex items-center gap-3 flex-wrap text-[14px] text-zinc-600 mt-0.5">
               {vendor.order_method && (
                 <span className="inline-flex items-center gap-1" title={`주문 방식: ${vendor.order_method}`}>
                   <ShoppingCart size={11} className="text-emerald-500 shrink-0" />
@@ -263,7 +263,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
           <button
             type="button"
             onClick={onEdit}
-            className="shrink-0 inline-flex items-center gap-1 h-7 px-2.5 rounded-lg border border-line text-[11px] font-semibold text-zinc-600 hover:bg-zinc-50 hover:text-zinc-800 transition cursor-pointer"
+            className="shrink-0 inline-flex items-center gap-1 h-7 px-2.5 rounded-lg border border-line text-[13px] font-semibold text-zinc-600 hover:bg-zinc-50 hover:text-zinc-800 transition cursor-pointer"
             title="공급사 정보 조회 및 수정"
           >
             <Pencil size={11} />
@@ -277,8 +277,8 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
         <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 mt-1">
           <AlertTriangle size={13} className="text-amber-600 shrink-0 mt-0.5" />
           <div className="flex flex-col min-w-0">
-            <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">발주 특이사항</span>
-            <span className="text-[13px] text-amber-900 font-semibold leading-relaxed break-words whitespace-normal">
+            <span className="text-[13px] font-bold text-amber-700 uppercase tracking-wider">발주 특이사항</span>
+            <span className="text-[15px] text-amber-900 font-semibold leading-relaxed break-words whitespace-normal">
               {vendor.special_notes}
             </span>
           </div>

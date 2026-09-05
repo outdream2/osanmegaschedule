@@ -105,7 +105,7 @@ export const VendorRowCard: React.FC<VendorRowCardProps> = React.memo(({
 
       {/* 1. 공급사 (카테고리 좌측 · 이름) */}
       <div className="flex items-center gap-1.5 min-w-0">
-        <VendorCategoryBadge category={category} className="text-[10px]" />
+        <VendorCategoryBadge category={category} className="text-[12px]" />
         <span className={`text-[14px] font-semibold leading-tight truncate tracking-tight ${
           active ? "text-brand-deep" : "text-ink"
         }`}>
@@ -114,7 +114,7 @@ export const VendorRowCard: React.FC<VendorRowCardProps> = React.memo(({
       </div>
       {/* 2. 매입액 (이번달) · 뉴트럴 색 · Vercel 규칙 (KPI 뉴트럴) */}
       <span
-        className={`text-right text-[13px] font-bold tabular-nums leading-none ${
+        className={`text-right text-[15px] font-bold tabular-nums leading-none ${
           thisMonth > 0 ? (active ? "text-brand-deep" : "text-ink") : "text-ink-soft/40"
         }`}
         title={`이번달 매입액 · ${thisMonth.toLocaleString()}원`}
@@ -123,14 +123,14 @@ export const VendorRowCard: React.FC<VendorRowCardProps> = React.memo(({
       </span>
       {/* 3. 최근매입일 (MM-DD · tooltip 에 full ISO) · semantic recency color */}
       <span
-        className={`text-right text-[13px] font-bold tabular-nums leading-none ${recentCls}`}
+        className={`text-right text-[15px] font-bold tabular-nums leading-none ${recentCls}`}
         title={lastDate ? `최근매입 · ${lastDate}${days != null ? ` (${days}일 전)` : ""}` : "매입 이력 없음"}
       >
         {recentLabel(lastDate)}
       </span>
       {/* 4. 매입주기 · semantic color */}
       <span
-        className={`text-right text-[13px] font-bold tabular-nums leading-none ${cycleColor}`}
+        className={`text-right text-[15px] font-bold tabular-nums leading-none ${cycleColor}`}
         title={cycle != null ? `매입주기 · 평균 ${cycle}일 (매입일 2회↑ 기준)` : "매입 2회 미만 · 계산 불가"}
       >
         {cycle != null ? `${cycle}일` : "-"}

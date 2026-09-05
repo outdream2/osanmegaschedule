@@ -84,7 +84,7 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
                     await onResetCustomOrder();
                   }
                 }}
-                className="px-2.5 py-1 text-[13px] font-semibold text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-md transition-colors cursor-pointer shrink-0 min-h-[30px] ml-1"
+                className="px-2.5 py-1 text-[15px] font-semibold text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-md transition-colors cursor-pointer shrink-0 min-h-[30px] ml-1"
                 title="드래그앤드롭 사용자 지정 순서 초기화"
               >
                 순서초기화

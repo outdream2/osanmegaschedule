@@ -123,12 +123,12 @@ export const SignaturePad: React.FC<SignaturePadProps> = ({
         onTouchMove={move}
         onTouchEnd={end}
       />
-      <div className="flex items-center justify-between text-[12px]">
+      <div className="flex items-center justify-between text-[14px]">
         <span className="text-zinc-400">{hint}</span>
         <button
           type="button"
           onClick={clear}
-          className="text-[12px] font-bold text-zinc-500 hover:text-rose-600 underline underline-offset-4 cursor-pointer"
+          className="text-[14px] font-bold text-zinc-500 hover:text-rose-600 underline underline-offset-4 cursor-pointer"
         >{clearLabel}</button>
       </div>
     </div>

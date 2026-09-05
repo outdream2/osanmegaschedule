@@ -312,7 +312,7 @@ const VatPreparePage: React.FC = () => {
             </div>
             <div>
               <div className="text-[18px] font-bold text-ink leading-tight tracking-tight">부가세 준비</div>
-              <div className="text-[13px] text-ink-soft leading-tight mt-0.5">공급사별 매입세액 집계 · 신고 준비 체크리스트</div>
+              <div className="text-[15px] text-ink-soft leading-tight mt-0.5">공급사별 매입세액 집계 · 신고 준비 체크리스트</div>
             </div>
           </div>
 
@@ -321,11 +321,11 @@ const VatPreparePage: React.FC = () => {
             <div className={`flex items-center gap-3 px-4 py-2 rounded-xl ring-1 ${dCountColor.bg} ${dCountColor.ring} shrink-0`}>
               <Calendar size={18} className={dCountColor.text} />
               <div>
-                <div className={`text-[12px] font-bold ${dCountColor.text} uppercase tracking-wide`}>{summary.next.type} · 다음 신고</div>
-                <div className={`text-[13px] font-bold ${dCountColor.text} leading-tight`}>
+                <div className={`text-[14px] font-bold ${dCountColor.text} uppercase tracking-wide`}>{summary.next.type} · 다음 신고</div>
+                <div className={`text-[15px] font-bold ${dCountColor.text} leading-tight`}>
                   {summary.next.label} · <span className="tabular-nums">D-{summary.next.daysLeft}</span>
                 </div>
-                <div className="text-[12px] text-zinc-500">신고 기한 · {summary.next.dueDate}</div>
+                <div className="text-[14px] text-zinc-500">신고 기한 · {summary.next.dueDate}</div>
               </div>
             </div>
           )}
@@ -337,7 +337,7 @@ const VatPreparePage: React.FC = () => {
                 key={p}
                 type="button"
                 onClick={() => applyPreset(p)}
-                className={`h-8 px-3 text-[11px] font-bold rounded-lg transition cursor-pointer ${
+                className={`h-8 px-3 text-[13px] font-bold rounded-lg transition cursor-pointer ${
                   preset === p
                     ? "bg-rose-500 text-white shadow"
                     : "bg-zinc-50 text-zinc-600 border border-line hover:bg-zinc-100"
@@ -349,7 +349,7 @@ const VatPreparePage: React.FC = () => {
             <select
               value={period}
               onChange={e => { setPreset("custom"); setPeriod(e.target.value); }}
-              className="h-8 px-2 text-[11px] font-semibold border border-line rounded-lg outline-none focus:ring-2 focus:ring-brand-tint"
+              className="h-8 px-2 text-[13px] font-semibold border border-line rounded-lg outline-none focus:ring-2 focus:ring-brand-tint"
             >
               {[0, 1, 2].map(offset => {
                 const y = new Date().getFullYear() - offset;
@@ -376,7 +376,7 @@ const VatPreparePage: React.FC = () => {
         </div>
 
         {summary?.range && (
-          <div className="mt-3 pt-3 border-t border-zinc-100 text-[11px] text-zinc-500 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <div className="mt-3 pt-3 border-t border-zinc-100 text-[13px] text-zinc-500 flex flex-wrap items-center gap-x-4 gap-y-1">
             <span><b className="text-zinc-700">조회 기간</b> · {summary.range.from} ~ {summary.range.to}</span>
             <span><b className="text-zinc-700">신고 유형</b> · {summary.range.type}</span>
             <span><b className="text-zinc-700">신고 기한</b> · {summary.range.dueDate}</span>
@@ -387,12 +387,12 @@ const VatPreparePage: React.FC = () => {
 
       {/* ── 경고 · 에러 ── */}
       {error && (
-        <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" rounded="lg" padding="sm" className="flex items-center gap-2 text-[12px] text-rose-700">
+        <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" rounded="lg" padding="sm" className="flex items-center gap-2 text-[14px] text-rose-700">
           <AlertTriangle size={14} /><span>{error}</span>
         </Card>
       )}
       {warning && (
-        <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" rounded="lg" padding="sm" className="flex items-center gap-2 text-[12px] text-amber-800">
+        <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" rounded="lg" padding="sm" className="flex items-center gap-2 text-[14px] text-amber-800">
           <AlertTriangle size={14} /><span>{warning}</span>
         </Card>
       )}
@@ -439,15 +439,15 @@ const VatPreparePage: React.FC = () => {
       {/* 신고 준비도 (별도 · 5 KPI 카드 정렬 유지 위해 하단 얇은 바) */}
       <Card padding="none" className="px-4 py-3 flex items-center gap-3">
         <CheckSquare size={14} className="text-sky-500 shrink-0" />
-        <div className="text-[11px] font-bold text-zinc-600 shrink-0">신고 준비도</div>
+        <div className="text-[13px] font-bold text-zinc-600 shrink-0">신고 준비도</div>
         <div className="flex-1 h-2 bg-zinc-100 rounded-full overflow-hidden">
           <div
             className="h-full bg-sky-500 transition-all"
             style={{ width: `${readiness}%` }}
           />
         </div>
-        <div className="text-[11px] font-bold text-sky-700 tabular-nums shrink-0">{readiness}%</div>
-        <div className="text-[12px] text-zinc-500 shrink-0 hidden sm:block">
+        <div className="text-[13px] font-bold text-sky-700 tabular-nums shrink-0">{readiness}%</div>
+        <div className="text-[14px] text-zinc-500 shrink-0 hidden sm:block">
           체크리스트 {Object.values(checklist).filter(Boolean).length}/4 완료
         </div>
       </Card>
@@ -467,7 +467,7 @@ const VatPreparePage: React.FC = () => {
                 key={t.key}
                 type="button"
                 onClick={() => setMainTab(t.key)}
-                className={`relative flex items-center gap-2 px-5 py-3 text-[13px] font-bold transition cursor-pointer ${
+                className={`relative flex items-center gap-2 px-5 py-3 text-[15px] font-bold transition cursor-pointer ${
                   active ? t.color : "text-zinc-500 hover:text-zinc-700"
                 }`}
               >
@@ -493,7 +493,7 @@ const VatPreparePage: React.FC = () => {
       {mainTab === "sales" && !summary?.range && (
         <Card padding="none" className="p-8 text-center">
           <Spinner size={20} tone="zinc" />
-          <div className="text-[11px] text-zinc-400 mt-2">기간 정보를 불러오는 중…</div>
+          <div className="text-[13px] text-zinc-400 mt-2">기간 정보를 불러오는 중…</div>
         </Card>
       )}
 
@@ -501,8 +501,8 @@ const VatPreparePage: React.FC = () => {
       {mainTab === "preview" && (
         <Card padding="none" className="p-10 text-center">
           <FileCheck2 size={32} className="text-sky-400 mx-auto" />
-          <div className="mt-3 text-[13px] font-bold text-zinc-700">신고서 미리보기 · Phase 3 예정</div>
-          <div className="mt-1 text-[11px] text-zinc-500 leading-relaxed max-w-lg mx-auto">
+          <div className="mt-3 text-[15px] font-bold text-zinc-700">신고서 미리보기 · Phase 3 예정</div>
+          <div className="mt-1 text-[13px] text-zinc-500 leading-relaxed max-w-lg mx-auto">
             홈택스 일반과세자 신고서 서식 · 매입처별 세금계산서 합계표 · 신용카드 매출전표 수령명세서 등
             <br />
             자동 생성 · PDF 미리보기 기능을 Phase 3 에서 추가 예정입니다.
@@ -530,7 +530,7 @@ const VatPreparePage: React.FC = () => {
           <div className="px-4 py-3 border-b border-zinc-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileText size={14} className="text-rose-500" />
-              <div className="text-[13px] font-bold text-zinc-800">
+              <div className="text-[15px] font-bold text-zinc-800">
                 매입 명세{selectedVendor ? ` · ${selectedVendor}` : ""}
               </div>
             </div>
@@ -538,7 +538,7 @@ const VatPreparePage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedVendor(null)}
-                className="text-[12px] font-bold text-zinc-500 hover:text-zinc-800 cursor-pointer"
+                className="text-[14px] font-bold text-zinc-500 hover:text-zinc-800 cursor-pointer"
               >
                 × 닫기
               </button>
@@ -549,15 +549,15 @@ const VatPreparePage: React.FC = () => {
             {!selectedVendor ? (
               <div className="py-10 text-center text-zinc-400 flex flex-col items-center gap-2">
                 <ChevronRight size={20} className="opacity-30 rotate-180" />
-                <div className="text-[12px] font-bold">좌측 공급사를 선택하세요</div>
-                <div className="text-[12px]">매입일 · 상품 · 수량 · 매입가 · 부가세 명세</div>
+                <div className="text-[14px] font-bold">좌측 공급사를 선택하세요</div>
+                <div className="text-[14px]">매입일 · 상품 · 수량 · 매입가 · 부가세 명세</div>
               </div>
             ) : detailLoading ? (
               <div className="flex items-center justify-center py-10"><Spinner tone="zinc" size={13} label="불러오는 중..." labelSize={12} /></div>
             ) : detail.length === 0 ? (
-              <div className="py-10 text-center text-[11px] text-zinc-300">해당 기간 매입 없음</div>
+              <div className="py-10 text-center text-[13px] text-zinc-300">해당 기간 매입 없음</div>
             ) : (
-              <table className="w-full text-[11px]">
+              <table className="w-full text-[13px]">
                 <thead className="sticky top-0 bg-zinc-50 z-10 shadow-sm">
                   <tr className="text-zinc-600">
                     <th className="text-left px-3 py-2 font-bold">매입일</th>
@@ -574,7 +574,7 @@ const VatPreparePage: React.FC = () => {
                       <td className="px-3 py-1.5 tabular-nums text-zinc-600">{r.purchase_date}</td>
                       <td className="px-2 py-1.5">
                         <div className="text-zinc-700 font-semibold">{r.product_name}</div>
-                        {r.spec && <div className="text-[12px] text-zinc-400">{r.spec}</div>}
+                        {r.spec && <div className="text-[14px] text-zinc-400">{r.spec}</div>}
                       </td>
                       <td className="px-2 py-1.5 text-right tabular-nums text-zinc-700">{r.quantity}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums text-zinc-700">{fmt(r.amount)}</td>
@@ -585,14 +585,14 @@ const VatPreparePage: React.FC = () => {
                 </tbody>
                 <tfoot className="sticky bottom-0 bg-zinc-50 shadow-inner">
                   <tr className="text-zinc-800 font-bold">
-                    <td className="px-3 py-2 text-[11px]" colSpan={3}>합계 · {detail.length}건</td>
-                    <td className="px-2 py-2 text-right tabular-nums text-[11px]">
+                    <td className="px-3 py-2 text-[13px]" colSpan={3}>합계 · {detail.length}건</td>
+                    <td className="px-2 py-2 text-right tabular-nums text-[13px]">
                       {fmt(detail.reduce((s, r) => s + r.amount, 0))}
                     </td>
-                    <td className="px-2 py-2 text-right tabular-nums text-rose-700 text-[11px]">
+                    <td className="px-2 py-2 text-right tabular-nums text-rose-700 text-[13px]">
                       {fmt(detail.reduce((s, r) => s + r.vat, 0))}
                     </td>
-                    <td className="px-2 py-2 text-right tabular-nums text-[11px]">
+                    <td className="px-2 py-2 text-right tabular-nums text-[13px]">
                       {fmt(detail.reduce((s, r) => s + (r.total || r.amount + r.vat), 0))}
                     </td>
                   </tr>
@@ -608,15 +608,15 @@ const VatPreparePage: React.FC = () => {
         <div className="bg-emerald-50 rounded-xl border border-emerald-200 shadow-sm p-4">
           <div className="flex items-center gap-2 mb-2">
             <PackageCheck size={14} className="text-emerald-600" />
-            <div className="text-[13px] font-bold text-emerald-800">예상 매입세액 공제</div>
+            <div className="text-[15px] font-bold text-emerald-800">예상 매입세액 공제</div>
           </div>
           <div className="text-[22px] font-bold text-emerald-700 tabular-nums leading-none mb-2">
-            {fmt(expectedRefund)}<span className="text-[13px] font-bold ml-1">원</span>
+            {fmt(expectedRefund)}<span className="text-[15px] font-bold ml-1">원</span>
           </div>
-          <div className="text-[12px] text-zinc-500 leading-relaxed">
+          <div className="text-[14px] text-zinc-500 leading-relaxed">
             매출세액에서 위 금액을 공제받을 수 있습니다. 매출세액이 매입세액보다 적으면 환급 · 많으면 차액만 납부.
           </div>
-          <div className="mt-3 pt-3 border-t border-emerald-100 text-[12px] text-zinc-500 leading-relaxed">
+          <div className="mt-3 pt-3 border-t border-emerald-100 text-[14px] text-zinc-500 leading-relaxed">
             <b className="text-zinc-700">약국 특이사항</b><br />
             처방전 조제료·전문의약품 대부분은 <b>면세</b>이므로, 관련 매입세액은 <b>안분 후 불공제</b> 처리. 일반 매약(OTC)은 과세이므로 매입세액 전액 공제 가능.
           </div>
@@ -625,21 +625,21 @@ const VatPreparePage: React.FC = () => {
         <div className={`${netPayable >= 0 ? "bg-rose-50" : "bg-emerald-50"} rounded-xl border ${netPayable >= 0 ? "border-rose-200" : "border-emerald-200"} shadow-sm p-4`}>
           <div className="flex items-center gap-2 mb-2">
             <Calculator size={14} className={netPayable >= 0 ? "text-rose-600" : "text-emerald-600"} />
-            <div className={`text-[13px] font-bold ${netPayable >= 0 ? "text-rose-800" : "text-emerald-800"}`}>
+            <div className={`text-[15px] font-bold ${netPayable >= 0 ? "text-rose-800" : "text-emerald-800"}`}>
               {netPayable >= 0 ? "예상 납부세액" : "예상 환급세액"}
             </div>
           </div>
           <div className={`text-[22px] font-bold ${netPayable >= 0 ? "text-rose-700" : "text-emerald-700"} tabular-nums leading-none mb-2`}>
-            {fmt(Math.abs(netPayable))}<span className="text-[13px] font-bold ml-1">원</span>
+            {fmt(Math.abs(netPayable))}<span className="text-[15px] font-bold ml-1">원</span>
           </div>
-          <div className="text-[12px] text-zinc-500 leading-relaxed">
+          <div className="text-[14px] text-zinc-500 leading-relaxed">
             매출세액 <b className="text-zinc-700">{fmt(outputVat)}원</b>
             {" − "}
             매입공제 <b className="text-zinc-700">{fmt(expectedRefund)}원</b>
             {" = "}
             <b className={netPayable >= 0 ? "text-rose-700" : "text-emerald-700"}>{fmt(netPayable)}원</b>
           </div>
-          <div className="mt-3 pt-3 border-t border-zinc-100 text-[12px] text-zinc-400 leading-relaxed">
+          <div className="mt-3 pt-3 border-t border-zinc-100 text-[14px] text-zinc-400 leading-relaxed">
             <AlertTriangle size={10} className="inline mb-0.5 mr-0.5" />
             본 계산은 참고용 · 실제 신고는 세무사 검토 필수
           </div>
@@ -654,7 +654,7 @@ const VatPreparePage: React.FC = () => {
           <AccentBar />
           <CheckSquare size={16} className="text-brand-deep" />
           <div className="text-[16px] font-bold text-ink tracking-tight">신고 준비 체크리스트</div>
-          <div className="text-[12px] text-ink-soft ml-auto font-medium">자동 저장 · 서버 공유</div>
+          <div className="text-[14px] text-ink-soft ml-auto font-medium">자동 저장 · 서버 공유</div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <ChecklistItem
@@ -715,12 +715,12 @@ const KpiCard: React.FC<KpiCardProps> = ({ label, value, sub, icon, color, loadi
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 leading-tight">
             <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-            <div className="text-[12px] font-semibold text-ink-soft tracking-tight">{label}</div>
+            <div className="text-[14px] font-semibold text-ink-soft tracking-tight">{label}</div>
           </div>
           <div className={`text-[18px] font-extrabold ${c.text} tabular-nums leading-tight mt-1`}>
             {loading ? <Spinner size={14} tone="zinc" className="inline" /> : value}
           </div>
-          {sub && <div className="text-[11px] text-ink-soft mt-0.5 leading-tight truncate font-medium">{sub}</div>}
+          {sub && <div className="text-[13px] text-ink-soft mt-0.5 leading-tight truncate font-medium">{sub}</div>}
         </div>
       </div>
       {typeof bar === "number" && (
@@ -753,8 +753,8 @@ const ChecklistItem: React.FC<ChecklistItemProps> = ({ label, hint, checked, onC
       : <Square size={16} className="text-zinc-400 shrink-0 mt-0.5" />
     }
     <div className="flex-1 min-w-0">
-      <div className={`text-[12px] font-bold ${checked ? "text-emerald-800" : "text-zinc-700"}`}>{label}</div>
-      {hint && <div className="text-[12px] text-zinc-500 mt-0.5 leading-relaxed">{hint}</div>}
+      <div className={`text-[14px] font-bold ${checked ? "text-emerald-800" : "text-zinc-700"}`}>{label}</div>
+      {hint && <div className="text-[14px] text-zinc-500 mt-0.5 leading-relaxed">{hint}</div>}
     </div>
   </button>
 );

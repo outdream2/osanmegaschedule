@@ -85,13 +85,13 @@ export const ProductRowCard: React.FC<ProductRowCardProps> = React.memo(({
     >
       {/* Line 1 · 상품명 + 최근성 */}
       <div className="flex items-center gap-1.5 w-full min-w-0">
-        <span className={`text-[12px] font-semibold leading-tight flex-1 min-w-0 break-words ${
+        <span className={`text-[14px] font-semibold leading-tight flex-1 min-w-0 break-words ${
           active ? "text-sky-800" : "text-zinc-700"
         }`}>
           {product.product_name}
         </span>
         <span
-          className={`text-[11px] font-bold rounded px-1.5 py-0.5 border leading-none shrink-0 tabular-nums ${recency.cls}`}
+          className={`text-[13px] font-bold rounded px-1.5 py-0.5 border leading-none shrink-0 tabular-nums ${recency.cls}`}
           title={product.last_purchase_date ?? "매입 이력 없음"}
         >
           {recency.label}
@@ -101,27 +101,27 @@ export const ProductRowCard: React.FC<ProductRowCardProps> = React.memo(({
       {/* Line 2 · 총 매입액 + 매입수량 + 매입건수 + 대표 공급사 */}
       <div className="flex items-center gap-2 w-full min-w-0">
         <span
-          className={`text-[13px] font-bold tabular-nums shrink-0 ${
+          className={`text-[15px] font-bold tabular-nums shrink-0 ${
             totalAmount > 0 ? (active ? "text-sky-700" : "text-zinc-600") : "text-zinc-300"
           }`}
           title={`총 매입액 · ${totalAmount.toLocaleString()}원`}
         >
           {fmtWon(totalAmount)}
         </span>
-        <span className="text-[12px] font-semibold text-amber-600 tabular-nums shrink-0" title={`매입수량 · ${totalQty.toLocaleString()}개`}>
+        <span className="text-[14px] font-semibold text-amber-600 tabular-nums shrink-0" title={`매입수량 · ${totalQty.toLocaleString()}개`}>
           {totalQty.toLocaleString()}개
         </span>
-        <span className="text-[12px] font-semibold text-zinc-400 tabular-nums shrink-0" title={`매입 건수 · ${purchaseCount}건`}>
+        <span className="text-[14px] font-semibold text-zinc-400 tabular-nums shrink-0" title={`매입 건수 · ${purchaseCount}건`}>
           {purchaseCount}건
         </span>
         <span
-          className="text-[12px] text-zinc-500 flex-1 min-w-0 whitespace-normal break-words leading-snug"
+          className="text-[14px] text-zinc-500 flex-1 min-w-0 whitespace-normal break-words leading-snug"
           title={product.primary_supplier ?? "공급사 정보 없음"}
         >
           {supplierLabel}
         </span>
         {product.product_code && (
-          <span className="text-[11px] text-zinc-300 font-mono tabular-nums shrink-0" title={`상품코드 · ${product.product_code}`}>
+          <span className="text-[13px] text-zinc-300 font-mono tabular-nums shrink-0" title={`상품코드 · ${product.product_code}`}>
             {product.product_code}
           </span>
         )}
@@ -129,9 +129,9 @@ export const ProductRowCard: React.FC<ProductRowCardProps> = React.memo(({
 
       {/* Line 3 · 판매량·판매금액 (최근 1개월) + 현재고 */}
       <div className="flex items-center gap-2 w-full min-w-0">
-        <span className="text-[12px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">판매</span>
+        <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">판매</span>
         <span
-          className={`text-[12px] font-semibold tabular-nums shrink-0 ${
+          className={`text-[14px] font-semibold tabular-nums shrink-0 ${
             saleQty != null && saleQty > 0 ? "text-rose-600" : "text-zinc-300"
           }`}
           title={saleQty != null ? `판매량 · ${saleQty.toLocaleString()}개 (최근 1개월)` : "판매 데이터 없음"}
@@ -139,7 +139,7 @@ export const ProductRowCard: React.FC<ProductRowCardProps> = React.memo(({
           {saleQty != null ? `${fmtWon(saleQty)}개` : "-"}
         </span>
         <span
-          className={`text-[12px] font-bold tabular-nums shrink-0 ${
+          className={`text-[14px] font-bold tabular-nums shrink-0 ${
             saleAmt != null && saleAmt > 0 ? "text-rose-700" : "text-zinc-300"
           }`}
           title={saleAmt != null ? `판매금액 · ${saleAmt.toLocaleString()}원 (최근 1개월)` : "판매 데이터 없음"}
@@ -147,9 +147,9 @@ export const ProductRowCard: React.FC<ProductRowCardProps> = React.memo(({
           {saleAmt != null ? fmtWon(saleAmt) : "-"}
         </span>
         <span className="flex-1" />
-        <span className="text-[12px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">현재고</span>
+        <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">현재고</span>
         <span
-          className={`text-[12px] font-bold tabular-nums shrink-0 ${
+          className={`text-[14px] font-bold tabular-nums shrink-0 ${
             currentStock != null && currentStock > 0 ? (active ? "text-sky-800" : "text-brand-deep") : "text-zinc-300"
           }`}
           title={currentStock != null ? `현재 시스템 재고 · ${currentStock.toLocaleString()}개` : "재고 데이터 없음"}

@@ -63,7 +63,7 @@ export function PageToolbar({
           <StatusPill tone="brand" size="md">{count}{countLabel}</StatusPill>
         )}
         {selectedCount !== undefined && selectedCount > 0 && (
-          <span className="inline-flex items-center rounded-full font-semibold whitespace-nowrap px-2.5 py-0.5 text-[13px] bg-brand-deep text-white tabular-nums shadow-sm">
+          <span className="inline-flex items-center rounded-full font-semibold whitespace-nowrap px-2.5 py-0.5 text-[15px] bg-brand-deep text-white tabular-nums shadow-sm">
             선택 {selectedCount}
           </span>
         )}

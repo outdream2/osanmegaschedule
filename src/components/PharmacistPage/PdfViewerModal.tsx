@@ -136,8 +136,8 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     <div className="flex items-center gap-2 min-w-0 flex-1">
       <FileWarning size={16} className="text-amber-400 shrink-0" />
       <div className="min-w-0">
-        <div className="text-[13px] font-bold text-white truncate">{fileName || "PDF 뷰어"}</div>
-        <div className="text-[10px] text-zinc-400 font-semibold truncate">
+        <div className="text-[15px] font-bold text-white truncate">{fileName || "PDF 뷰어"}</div>
+        <div className="text-[12px] text-zinc-400 font-semibold truncate">
           보안 뷰어 · 복사·인쇄·저장 · 스크린샷 금지 · {watermark} · {openedAt}
         </div>
       </div>
@@ -178,7 +178,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
                   이 뷰어는 PDF 만 지원합니다.<br />
                   아래 버튼으로 새 창에서 열거나 다운로드하세요.
                 </div>
-                <div className="text-[11px] text-amber-400/80 font-semibold mt-3">
+                <div className="text-[13px] text-amber-400/80 font-semibold mt-3">
                   ※ 열람 시에도 보안 규정을 준수하세요 (복사·촬영 금지)
                 </div>
               </div>

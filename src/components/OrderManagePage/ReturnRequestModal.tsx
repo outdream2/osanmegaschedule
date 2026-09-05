@@ -220,7 +220,7 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
             반품 요청서
             <StatusPill tone="rose" size="sm" dot>반품 예정 · {lines.length}건</StatusPill>
           </div>
-          <div className="text-[13px] tabular-nums text-ink-soft mt-0.5 truncate">#{returnNumber}</div>
+          <div className="text-[15px] tabular-nums text-ink-soft mt-0.5 truncate">#{returnNumber}</div>
         </div>
       }
       headerRight={

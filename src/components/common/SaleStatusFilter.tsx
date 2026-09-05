@@ -37,7 +37,7 @@ export const SaleStatusFilter: React.FC<SaleStatusFilterProps> = ({
         ]}
       />
       {value === "active" && typeof activeCount === "number" && typeof totalCount === "number" && (
-        <span className="text-[11px] text-ink-soft tabular-nums whitespace-nowrap">
+        <span className="text-[13px] text-ink-soft tabular-nums whitespace-nowrap">
           {activeCount.toLocaleString()} / {totalCount.toLocaleString()}
         </span>
       )}

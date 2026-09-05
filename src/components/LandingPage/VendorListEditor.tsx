@@ -219,11 +219,11 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="회사명 · 담당자 · 전화"
-                className="h-7 pl-7 pr-2 text-[12px] border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep w-full transition"
+                className="h-7 pl-7 pr-2 text-[14px] border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep w-full transition"
               />
             </div>
             {/* 건수 */}
-            <span className="text-[11px] text-zinc-400 tabular-nums whitespace-nowrap shrink-0">
+            <span className="text-[13px] text-zinc-400 tabular-nums whitespace-nowrap shrink-0">
               {loading
                 ? <Spinner size={10} tone="zinc" />
                 : `${filtered.length}건`}
@@ -243,7 +243,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
               <button
                 key={cat}
                 onClick={() => setCategoryFilter(cat)}
-                className={`h-6 px-2 rounded-md text-[10px] font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
+                className={`h-6 px-2 rounded-md text-[12px] font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
                   categoryFilter === cat
                     ? "bg-brand-deep text-white shadow-sm"
                     : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-md"
@@ -272,7 +272,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="회사명 · 사업자번호 · 담당자 · 전화 · 이메일"
-              className="h-8 pl-8 pr-3 text-[12px] border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep w-full sm:w-80 transition"
+              className="h-8 pl-8 pr-3 text-[14px] border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep w-full sm:w-80 transition"
             />
           </div>
           {/* 2026-08-17 · CategoryChips 프레임워크 통일 · status dot per identity */}
@@ -293,7 +293,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
             }))}
           />
           {/* 2026-08-09 · 사업자번호 미등록 필터 · 사용자 요청 · 제거 */}
-          <span className="text-[12px] text-zinc-400 tabular-nums">
+          <span className="text-[14px] text-zinc-400 tabular-nums">
             {loading
               ? <Spinner size={11} tone="zinc" label="로딩..." labelSize={12} />
               : `${filtered.length} / ${vendors.length}건`}
@@ -301,7 +301,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
           {/* 2026-08-09 · 신규 공급사 등록 · 사용자 요청 · dashboard/일반 모드 */}
           <button
             onClick={() => setShowNewVendor(true)}
-            className="ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm transition cursor-pointer"
+            className="ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-bold shadow-sm transition cursor-pointer"
             title="신규 공급사 등록"
           >
             <Plus size={12} strokeWidth={2.5} />
@@ -330,7 +330,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                   onClick={() => toggleCompactSort("company_name")}
                   className={[
                     "sticky top-0 z-10 border-b border-line",
-                    "text-[11px] font-bold uppercase tracking-wide whitespace-nowrap",
+                    "text-[13px] font-bold uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-zinc-100 transition-colors duration-100",
                     "py-1.5 text-left pl-2 pr-1 w-[140px]",
                     compactSortKey === "company_name" ? "text-indigo-600 bg-indigo-50/70" : "text-zinc-500 bg-zinc-50",
@@ -354,7 +354,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                   onClick={() => toggleCompactSort("balance")}
                   className={[
                     "sticky top-0 z-10 border-b border-line",
-                    "text-[11px] font-bold uppercase tracking-wide whitespace-nowrap",
+                    "text-[13px] font-bold uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-zinc-100 transition-colors duration-100",
                     "py-1.5 text-right pr-2 pl-1 w-20",
                     compactSortKey === "balance" ? "text-indigo-600 bg-indigo-50/70" : "text-zinc-500 bg-zinc-50",
@@ -373,7 +373,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                   onClick={() => toggleCompactSort("stock_value")}
                   className={[
                     "sticky top-0 z-10 border-b border-line",
-                    "text-[11px] font-bold uppercase tracking-wide whitespace-nowrap",
+                    "text-[13px] font-bold uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-zinc-100 transition-colors duration-100",
                     "py-1.5 text-right pr-2 pl-1 w-20",
                     compactSortKey === "stock_value" ? "text-indigo-600 bg-indigo-50/70" : "text-zinc-500 bg-zinc-50",
@@ -392,7 +392,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                   onClick={() => toggleCompactSort("sales_total")}
                   className={[
                     "sticky top-0 z-10 border-b border-line",
-                    "text-[11px] font-bold uppercase tracking-wide whitespace-nowrap",
+                    "text-[13px] font-bold uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-zinc-100 transition-colors duration-100",
                     "py-1.5 text-right pr-2 pl-1 w-20",
                     compactSortKey === "sales_total" ? "text-indigo-600 bg-indigo-50/70" : "text-zinc-500 bg-zinc-50",
@@ -411,7 +411,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                   onClick={() => toggleCompactSort("invoice_date")}
                   className={[
                     "sticky top-0 z-10 border-b border-line",
-                    "text-[11px] font-bold uppercase tracking-wide whitespace-nowrap",
+                    "text-[13px] font-bold uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-zinc-100 transition-colors duration-100",
                     "py-1.5 text-left px-2 w-16",
                     compactSortKey === "invoice_date" ? "text-indigo-600 bg-indigo-50/70" : "text-zinc-500 bg-zinc-50",
@@ -432,7 +432,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                   <td colSpan={5} className="text-center py-12">
                     <div className="flex flex-col items-center gap-2 text-zinc-400">
                       <Building2 size={28} className="opacity-25" />
-                      <span className="text-[13px] font-semibold">
+                      <span className="text-[15px] font-semibold">
                         {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 없음"}
                       </span>
                     </div>
@@ -468,8 +468,8 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                     {/* 공급사: 분류(위·색상) + 이름(아래·bold) */}
                     <td className="pl-2 pr-1 py-1.5 min-w-[120px] max-w-[160px]">
                       <div className="leading-tight">
-                        <VendorCategoryBadge category={v.category} className="text-[10px] mb-0.5" />
-                        <div className={`text-[13px] font-bold break-keep leading-snug ${isActive ? "text-indigo-900" : "text-zinc-800"}`}
+                        <VendorCategoryBadge category={v.category} className="text-[12px] mb-0.5" />
+                        <div className={`text-[15px] font-bold break-keep leading-snug ${isActive ? "text-indigo-900" : "text-zinc-800"}`}
                           title={v.company_name}>
                           {displayVendorName(v.company_name) || v.company_name}
                         </div>
@@ -479,36 +479,36 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                     <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
                       {hasBal
                         ? (
-                          <span className={`text-[12px] font-bold tabular-nums ${v.latestBalance!.balance > 0 ? "text-emerald-600" : "text-zinc-400"}`}>
+                          <span className={`text-[14px] font-bold tabular-nums ${v.latestBalance!.balance > 0 ? "text-emerald-600" : "text-zinc-400"}`}>
                             {fmtWon(v.latestBalance!.balance)}
                           </span>
                         )
-                        : <span className="text-[10px] text-zinc-300">-</span>}
+                        : <span className="text-[12px] text-zinc-300">-</span>}
                     </td>
                     {/* 총재고자산 · 우측 정렬 · 최근 3개월 */}
                     <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
                       {stockValue != null && stockValue > 0
                         ? (
-                          <span className="text-[12px] font-bold tabular-nums text-sky-700"
+                          <span className="text-[14px] font-bold tabular-nums text-sky-700"
                             title={`${stockValue.toLocaleString()}원 · 최근 3개월 재고금액 합`}>
                             {fmtWon(stockValue)}
                           </span>
                         )
-                        : <span className="text-[10px] text-zinc-300">-</span>}
+                        : <span className="text-[12px] text-zinc-300">-</span>}
                     </td>
                     {/* 총판매액 · 우측 정렬 · 최근 3개월 */}
                     <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
                       {salesTotal != null && salesTotal > 0
                         ? (
-                          <span className="text-[12px] font-bold tabular-nums text-violet-700"
+                          <span className="text-[14px] font-bold tabular-nums text-violet-700"
                             title={`${Math.round(salesTotal).toLocaleString()}원 · 최근 3개월 판매액`}>
                             {fmtWon(salesTotal)}
                           </span>
                         )
-                        : <span className="text-[10px] text-zinc-300">-</span>}
+                        : <span className="text-[12px] text-zinc-300">-</span>}
                     </td>
                     {/* 최근매입 */}
-                    <td className="px-2 py-1.5 text-[11px] text-zinc-500 tabular-nums whitespace-nowrap">
+                    <td className="px-2 py-1.5 text-[13px] text-zinc-500 tabular-nums whitespace-nowrap">
                       {fmtDate(invDate)}
                     </td>
                   </tr>
@@ -534,14 +534,14 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 className="w-full text-left px-3 py-2.5 hover:bg-teal-50/60 active:bg-teal-100 transition"
               >
                 <div className="flex items-start gap-2">
-                  <span className="text-[11px] text-zinc-400 mt-0.5 w-6 shrink-0">{i + 1}</span>
+                  <span className="text-[13px] text-zinc-400 mt-0.5 w-6 shrink-0">{i + 1}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1 mb-0.5 flex-wrap">
                       <Building2 size={11} className="text-teal-500 shrink-0" />
-                      <span className="text-[13px] font-bold text-zinc-800 break-words">{v.company_name}</span>
+                      <span className="text-[15px] font-bold text-zinc-800 break-words">{v.company_name}</span>
                       <VendorCategoryBadge category={v.category} />
                     </div>
-                    <div className="text-[11px] text-zinc-500 flex items-center gap-1.5 flex-wrap">
+                    <div className="text-[13px] text-zinc-500 flex items-center gap-1.5 flex-wrap">
                       {v.business_number
                         ? <span>{formatBizNum(v.business_number)}</span>
                         : <span className="text-rose-500 font-semibold italic">사번없음</span>}
@@ -562,7 +562,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
           <table className="hidden md:table w-full text-xs">
             <thead className="sticky top-0 bg-white z-10 border-b border-line">
               {/* 그룹 컬러 헤더 */}
-              <tr className="text-[10px] font-bold uppercase tracking-wider border-b border-zinc-100">
+              <tr className="text-[12px] font-bold uppercase tracking-wider border-b border-zinc-100">
                 <th colSpan={4} className="text-center py-1.5 bg-sky-50 text-sky-700 border-r border-zinc-100">
                   기본 정보
                 </th>
@@ -595,7 +595,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 </th>
               </tr>
               {/* 서브 헤더 · 2026-08-04 · A-2 · 모든 컬럼 헤더 클릭 정렬 · 화살표 표시 */}
-              <tr className="text-[11px] text-zinc-500 uppercase tracking-wider">
+              <tr className="text-[13px] text-zinc-500 uppercase tracking-wider">
                 <th className="text-left px-2 py-1.5 w-8 bg-sky-50/30">#</th>
                 {(() => {
                   const arrow = (k: CompactSortKey) => compactSortKey !== k
@@ -675,34 +675,34 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                   className="hover:bg-zinc-50/60 cursor-pointer transition"
                   title="클릭하여 상세 · 편집"
                 >
-                  <td className="px-2 py-1 text-[11px] text-zinc-400 tabular-nums">{i + 1}</td>
-                  <td className="px-2 py-1 text-[13px] font-semibold text-zinc-800">
+                  <td className="px-2 py-1 text-[13px] text-zinc-400 tabular-nums">{i + 1}</td>
+                  <td className="px-2 py-1 text-[15px] font-semibold text-zinc-800">
                     <span className="inline-flex items-center gap-1 flex-wrap">
                       <Building2 size={11} className="text-teal-500 shrink-0" />
                       <span className="underline decoration-dotted decoration-teal-300 underline-offset-2 break-words">{v.company_name}</span>
                       <VendorCategoryBadge category={v.category} />
                     </span>
                   </td>
-                  <td className="px-2 py-1 text-[11px] text-zinc-600 whitespace-nowrap">
+                  <td className="px-2 py-1 text-[13px] text-zinc-600 whitespace-nowrap">
                     {v.business_number
                       ? formatBizNum(v.business_number)
-                      : <span className="text-rose-400 italic text-[10px]">없음</span>}
+                      : <span className="text-rose-400 italic text-[12px]">없음</span>}
                   </td>
-                  <td className="px-2 py-1 text-[11px] text-zinc-700 break-words whitespace-normal">{v.contact_name ?? "-"}</td>
+                  <td className="px-2 py-1 text-[13px] text-zinc-700 break-words whitespace-normal">{v.contact_name ?? "-"}</td>
                   {/* 연락처 그룹 */}
                   {isVendorGroupCollapsed("contact") ? (
                     <td className="bg-amber-50/10 w-4"></td>
                   ) : (
                     <>
-                      <td className="px-3 py-1.5 text-[11px] text-zinc-600 whitespace-nowrap">{v.phone ?? "-"}</td>
-                      <td className="px-3 py-1.5 text-[11px] text-zinc-600 break-words whitespace-normal hidden lg:table-cell">{v.email ?? "-"}</td>
+                      <td className="px-3 py-1.5 text-[13px] text-zinc-600 whitespace-nowrap">{v.phone ?? "-"}</td>
+                      <td className="px-3 py-1.5 text-[13px] text-zinc-600 break-words whitespace-normal hidden lg:table-cell">{v.email ?? "-"}</td>
                     </>
                   )}
                   {/* 잔고 그룹 */}
                   {isVendorGroupCollapsed("balance") ? (
                     <td className="bg-emerald-50/10 w-4"></td>
                   ) : (
-                    <td className="px-3 py-1.5 text-right text-[11px] font-bold text-emerald-700 whitespace-nowrap">
+                    <td className="px-3 py-1.5 text-right text-[13px] font-bold text-emerald-700 whitespace-nowrap">
                       {v.latestBalance?.balance != null ? fmtWon(v.latestBalance.balance) : <span className="text-zinc-300">-</span>}
                     </td>
                   )}
@@ -715,7 +715,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                         <VendorCategoryBadge category={v.category} />
                         {!v.category && <span className="text-zinc-300">-</span>}
                       </td>
-                      <td className="px-3 py-1.5 text-[11px] text-zinc-400 hidden lg:table-cell">
+                      <td className="px-3 py-1.5 text-[13px] text-zinc-400 hidden lg:table-cell">
                         {v.created_at ? String(v.created_at).slice(0, 10) : "-"}
                       </td>
                     </>

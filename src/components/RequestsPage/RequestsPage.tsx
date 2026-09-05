@@ -513,7 +513,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 }`}>
                 <span>{label}</span>
                 {count > 0 && (
-                  <span className={`text-[13px] font-semibold px-1.5 py-0.5 rounded-full tabular-nums ${tab === key ? "bg-white/20 text-white" : "bg-brand-tint text-brand-deep"}`}>{count}</span>
+                  <span className={`text-[15px] font-semibold px-1.5 py-0.5 rounded-full tabular-nums ${tab === key ? "bg-white/20 text-white" : "bg-brand-tint text-brand-deep"}`}>{count}</span>
                 )}
               </button>
             ))}

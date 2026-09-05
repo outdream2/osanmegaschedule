@@ -116,7 +116,7 @@ export const BulkTab: React.FC<BulkTabProps> = ({
                   }}
                   className="sr-only"
                 />
-                <span className={`text-[13px] font-medium ${isChecked ? "text-white/80" : dayIndex === 6 ? "text-sky-500" : dayIndex === 0 ? "text-rose-500" : "text-ink-soft"}`}>
+                <span className={`text-[15px] font-medium ${isChecked ? "text-white/80" : dayIndex === 6 ? "text-sky-500" : dayIndex === 0 ? "text-rose-500" : "text-ink-soft"}`}>
                   {dayWord}
                 </span>
                 <span className="text-[16px] font-bold tabular-nums">{dayNum}</span>

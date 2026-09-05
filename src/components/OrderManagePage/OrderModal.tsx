@@ -156,10 +156,10 @@ export const OrderModal: React.FC<OrderModalProps> = ({
     title={
       <div className="min-w-0">
         <div className="text-[17px] font-bold text-ink tracking-tight flex items-center gap-1.5 flex-wrap">
-          발주서 {orderModal.suppliers.length > 1 && <span className="text-[13px] font-semibold text-ink-soft">· 공급사별 {orderModal.suppliers.length}건 개별 발주</span>}
+          발주서 {orderModal.suppliers.length > 1 && <span className="text-[15px] font-semibold text-ink-soft">· 공급사별 {orderModal.suppliers.length}건 개별 발주</span>}
         </div>
         {/* 2026-08-29 · UI 감사 U1/U2 · font-mono → tabular-nums · truncate 제거 */}
-        <div className="text-[13px] tabular-nums text-ink-soft mt-0.5 break-words whitespace-normal">
+        <div className="text-[15px] tabular-nums text-ink-soft mt-0.5 break-words whitespace-normal">
           {orderModal.suppliers.length > 1 ? "일괄 발송 · 각 공급사별 고유 번호" : `#${orderModal.suppliers[0]?.order_number ?? orderModal.orderNumber}`}
         </div>
       </div>
@@ -297,11 +297,11 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               {/* 2026-09-03 · #81·#82 · 미구현 기능 안내 원칙 · 물류팀장 발송·카톡 · 개발중 명시 */}
               <label className="text-[14px] font-medium border border-dashed border-zinc-300 rounded-lg px-2 py-1 cursor-not-allowed flex items-center gap-1 bg-zinc-50 text-zinc-400" title="물류팀장 카톡 · SolAPI 연동 개발중 · 환경 미설정 (관리자 문의)">
                 <input type="checkbox" disabled className="w-3 h-3"/>
-                📋 물류팀장 발송 <span className="text-[11px]">🚧 개발중</span>
+                📋 물류팀장 발송 <span className="text-[13px]">🚧 개발중</span>
               </label>
               <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.kakao ? "bg-yellow-50 text-yellow-700 border-yellow-300" : "bg-white text-zinc-400 border-line"}`} title="SolAPI 카톡 알림톡 · env 미설정 시 미발송">
                 <input type="checkbox" checked={orderModal.channels.kakao} onChange={e => onChannelChange("kakao", e.target.checked)} className="w-3 h-3"/>
-                💬 카카오톡 <span className="text-[11px] text-amber-600">⚠️미설정</span>
+                💬 카카오톡 <span className="text-[13px] text-amber-600">⚠️미설정</span>
               </label>
               <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.email ? "bg-emerald-50 text-emerald-700 border-emerald-300" : "bg-white text-zinc-400 border-line"}`}>
                 <input type="checkbox" checked={orderModal.channels.email} onChange={e => onChannelChange("email", e.target.checked)} className="w-3 h-3"/>

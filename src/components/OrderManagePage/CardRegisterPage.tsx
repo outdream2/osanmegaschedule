@@ -254,7 +254,7 @@ export const CardRegisterPage: React.FC = () => {
               const d = draft.billing_day;
               const prev = d === 1 ? 31 : d - 1;
               return (
-                <div className="mt-1.5 text-[13px] text-brand-deep bg-brand-tint/40 border border-brand/15 rounded-md px-2 py-1 tabular-nums">
+                <div className="mt-1.5 text-[15px] text-brand-deep bg-brand-tint/40 border border-brand/15 rounded-md px-2 py-1 tabular-nums">
                   💡 청구기간 · 전월 <b>{prev + 1 > 31 ? 1 : prev + 1}일</b> ~ 이번달 <b>{d}일</b> 매입분 → <b>{d}일</b> 청구
                 </div>
               );

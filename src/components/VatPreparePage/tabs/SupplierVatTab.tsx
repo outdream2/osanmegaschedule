@@ -107,10 +107,10 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
       <div className="px-4 py-3 border-b border-zinc-100 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Building2 size={14} className="text-rose-500" />
-          <div className="text-[13px] font-bold text-zinc-800">공급사별 매입세액</div>
-          <span className="text-[10px] font-bold text-zinc-400 ml-1">부가세 신고용</span>
+          <div className="text-[15px] font-bold text-zinc-800">공급사별 매입세액</div>
+          <span className="text-[12px] font-bold text-zinc-400 ml-1">부가세 신고용</span>
         </div>
-        <div className="text-[10px] font-bold text-zinc-500 tabular-nums">
+        <div className="text-[12px] font-bold text-zinc-500 tabular-nums">
           공급사 {fmt(totals.vendorCount)}곳 · 매입 {fmt(totals.entryCount)}건
         </div>
       </div>
@@ -120,9 +120,9 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
         {loading ? (
           <div className="flex items-center justify-center py-10"><Spinner tone="zinc" size={13} label="불러오는 중..." labelSize={12} /></div>
         ) : rows.length === 0 ? (
-          <div className="py-10 text-center text-[11px] text-zinc-300">매입 데이터 없음</div>
+          <div className="py-10 text-center text-[13px] text-zinc-300">매입 데이터 없음</div>
         ) : (
-          <table className="w-full text-[11px]">
+          <table className="w-full text-[13px]">
             <thead className="sticky top-0 bg-zinc-50 z-10 shadow-sm">
               <tr className="text-zinc-600">
                 <th className="text-left px-3 py-2 font-bold">공급사</th>
@@ -162,13 +162,13 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
                           {v.supplier_name}
                         </span>
                         {!v.deductible && (
-                          <span className="text-[11px] font-bold px-1 py-0.5 rounded bg-zinc-100 text-zinc-500" title="매입세액 공제 불가">
+                          <span className="text-[13px] font-bold px-1 py-0.5 rounded bg-zinc-100 text-zinc-500" title="매입세액 공제 불가">
                             불공제
                           </span>
                         )}
                       </div>
                       {v.business_number && (
-                        <div className="text-[10px] text-zinc-400 tabular-nums">
+                        <div className="text-[12px] text-zinc-400 tabular-nums">
                           {fmtBusinessNumber(v.business_number)}
                         </div>
                       )}
@@ -195,15 +195,15 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
             <tfoot className="sticky bottom-0 bg-zinc-100 shadow-inner">
               <tr className="text-zinc-800 font-bold">
                 <td className="px-3 py-3">
-                  <div className="text-[11px]">합계</div>
-                  <div className="text-[11px] font-bold text-zinc-500 mt-0.5">
+                  <div className="text-[13px]">합계</div>
+                  <div className="text-[13px] font-bold text-zinc-500 mt-0.5">
                     {fmt(totals.vendorCount)}곳 · {fmt(totals.entryCount)}건
                   </div>
                 </td>
-                <td className="px-2 py-3 text-right tabular-nums text-[12px] text-zinc-900">
+                <td className="px-2 py-3 text-right tabular-nums text-[14px] text-zinc-900">
                   {fmt(totals.grandTotal)}
                 </td>
-                <td className="px-2 py-3 text-right tabular-nums text-[11px] text-zinc-700">
+                <td className="px-2 py-3 text-right tabular-nums text-[13px] text-zinc-700">
                   {fmt(totals.supplyTotal)}
                 </td>
                 {/* 부가세 합계 · 강조 · 큰 폰트 · 신고서 상 매입세액 총액 */}
@@ -211,7 +211,7 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
                   <div className="tabular-nums text-[15px] font-bold text-rose-700 leading-tight">
                     {fmt(totals.vatTotal)}
                   </div>
-                  <div className="text-[11px] font-bold text-rose-500/70">매입세액</div>
+                  <div className="text-[13px] font-bold text-rose-500/70">매입세액</div>
                 </td>
                 <td className="px-2 py-3"></td>
               </tr>

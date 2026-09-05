@@ -111,7 +111,7 @@ export function SegmentedControl<V extends string>({
     );
   }
   // flat (기존 동작)
-  const hCls = size === "md" ? "h-9 text-[15px]" : "h-8 text-[13px]";
+  const hCls = size === "md" ? "h-9 text-[15px]" : "h-8 text-[15px]";
   return (
     <div
       role="radiogroup"

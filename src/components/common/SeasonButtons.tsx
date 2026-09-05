@@ -33,9 +33,9 @@ export const SeasonButtons: React.FC<SeasonButtonsProps> = ({
   const ranges = useSeasonRanges();
   // 2026-08-17 · 최신 트렌드 · 폰트 +2 · 접근성 (h-7+) · 딥네이비 통일
   const sizeCls = size === "sm"
-    ? "px-2 h-7 text-[12px] gap-1"
-    : "px-2.5 h-8 text-[13px] gap-1";
-  const labelCls = size === "sm" ? "text-[12px]" : "text-[13px]";
+    ? "px-2 h-7 text-[14px] gap-1"
+    : "px-2.5 h-8 text-[15px] gap-1";
+  const labelCls = size === "sm" ? "text-[14px]" : "text-[15px]";
   return (
     <div className={`inline-flex items-center gap-2 flex-wrap ${className}`}>
       {!hideLabel && label && (

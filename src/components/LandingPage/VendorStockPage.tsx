@@ -220,7 +220,7 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
   const sortIcon = (key: SortKey) =>
     sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "";
   const hdrCls =
-    "px-3 py-2 cursor-pointer hover:bg-zinc-100 transition select-none text-[13px] font-semibold text-zinc-500";
+    "px-3 py-2 cursor-pointer hover:bg-zinc-100 transition select-none text-[15px] font-semibold text-zinc-500";
 
   // ─── 좌측 대시보드 ──────────────────────────────────────────────────
   const dashboardNode = (
@@ -228,7 +228,7 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
       <SplitLeftHeader
         icon={<Package size={17} />}
         title="재고 대시보드"
-        subtitle={<span className="text-[13px] text-ink-soft">공급사 상품 · ERP 현재고 기준</span>}
+        subtitle={<span className="text-[15px] text-ink-soft">공급사 상품 · ERP 현재고 기준</span>}
       />
 
       {/* KPI 4개 · 2x2 grid */}
@@ -296,7 +296,7 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
                 type="button"
                 onClick={() => applyPreset(k)}
                 className={[
-                  "h-8 rounded-md text-[13px] font-semibold border transition-all",
+                  "h-8 rounded-md text-[15px] font-semibold border transition-all",
                   active
                     ? "bg-brand-deep text-white border-brand-deep shadow-sm"
                     : "bg-white text-ink-soft border-line hover:border-brand-deep hover:text-brand-deep",
@@ -317,9 +317,9 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
               setDateFrom(e.target.value);
               setPeriodPreset("custom");
             }}
-            className="flex-1 min-w-0 h-8 px-2 text-[13px] border border-line rounded-md focus:outline-none focus:border-brand-deep"
+            className="flex-1 min-w-0 h-8 px-2 text-[15px] border border-line rounded-md focus:outline-none focus:border-brand-deep"
           />
-          <span className="text-zinc-400 text-[13px]">~</span>
+          <span className="text-zinc-400 text-[15px]">~</span>
           <input
             type="date"
             value={dateTo}
@@ -327,7 +327,7 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
               setDateTo(e.target.value);
               setPeriodPreset("custom");
             }}
-            className="flex-1 min-w-0 h-8 px-2 text-[13px] border border-line rounded-md focus:outline-none focus:border-brand-deep"
+            className="flex-1 min-w-0 h-8 px-2 text-[15px] border border-line rounded-md focus:outline-none focus:border-brand-deep"
           />
         </div>
 
@@ -335,7 +335,7 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
           <button
             type="button"
             onClick={clearPeriod}
-            className="mt-2 w-full h-7 text-[12px] font-semibold text-ink-soft bg-zinc-50 border border-line rounded-md hover:bg-zinc-100 transition"
+            className="mt-2 w-full h-7 text-[14px] font-semibold text-ink-soft bg-zinc-50 border border-line rounded-md hover:bg-zinc-100 transition"
           >
             기간 필터 초기화
           </button>
@@ -343,7 +343,7 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
 
         {/* 안내 · 시계열 API 확장 후 실적용 */}
         <div className="mt-2.5 px-2.5 py-2 rounded-md bg-amber-50/70 border border-amber-200/70">
-          <div className="text-[12px] text-amber-800 leading-relaxed">
+          <div className="text-[14px] text-amber-800 leading-relaxed">
             <span className="font-bold">안내</span> · 현재는 시점 재고만 표시됩니다.
             매입이력 시계열 연동 후 · 기간별 입출고 통계가 적용될 예정입니다.
           </div>
@@ -394,7 +394,7 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
           <table className="w-full text-[14px]">
             <thead className="sticky top-0 bg-zinc-50 border-b border-line z-10">
               <tr>
-                <th className="text-center px-2 py-2 w-10 text-[13px] font-semibold text-zinc-500">#</th>
+                <th className="text-center px-2 py-2 w-10 text-[15px] font-semibold text-zinc-500">#</th>
                 <th className={`${hdrCls} text-left w-28`} onClick={() => toggleSort("code")}>
                   상품코드{sortIcon("code")}
                 </th>
@@ -422,10 +422,10 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
                 const pillLabel = level === "normal" ? "정상" : level === "low" ? "부족" : "없음";
                 return (
                   <tr key={`${p.code}-${i}`} className="hover:bg-sky-50/40 transition-colors">
-                    <td className="text-center px-2 py-2 text-zinc-400 tabular-nums text-[13px]">
+                    <td className="text-center px-2 py-2 text-zinc-400 tabular-nums text-[15px]">
                       {i + 1}
                     </td>
-                    <td className="px-3 py-2 font-mono text-[13px] text-zinc-600 tabular-nums">
+                    <td className="px-3 py-2 font-mono text-[15px] text-zinc-600 tabular-nums">
                       {p.code}
                     </td>
                     <td className="px-3 py-2 font-semibold text-ink break-words whitespace-normal leading-tight">
@@ -478,7 +478,7 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
               <Package size={20} className="text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-semibold text-ink-soft leading-tight">공급사 재고현황</div>
+              <div className="text-[15px] font-semibold text-ink-soft leading-tight">공급사 재고현황</div>
               <div className="text-[22px] font-bold text-ink tracking-tight leading-tight truncate">
                 {vendorName || "-"}
               </div>

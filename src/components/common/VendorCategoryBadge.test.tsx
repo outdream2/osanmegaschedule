@@ -52,10 +52,10 @@ describe("VendorCategoryBadge · 5 카테고리 색상", () => {
 });
 
 describe("VendorCategoryBadge · 기본 스타일", () => {
-  it("text-[11px] font-bold leading-none shrink-0 whitespace-nowrap", () => {
+  it("text-[13px] font-bold leading-none shrink-0 whitespace-nowrap", () => {
     const { container } = render(<VendorCategoryBadge category="위탁" />);
     const span = container.querySelector("span")!;
-    expect(span.className).toContain("text-[11px]");
+    expect(span.className).toContain("text-[13px]");
     expect(span.className).toContain("font-bold");
     expect(span.className).toContain("leading-none");
     expect(span.className).toContain("shrink-0");

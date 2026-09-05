@@ -50,7 +50,7 @@ export const SessionTimeoutSection: React.FC = () => {
         </div>
         <div className="min-w-0">
           <div className="text-[17px] font-bold text-ink leading-tight tracking-tight">세션 만료 시간</div>
-          <div className="text-[13px] text-ink-soft leading-tight mt-0.5">
+          <div className="text-[15px] text-ink-soft leading-tight mt-0.5">
             무동작 시 자동 로그아웃 · 전역 즉시 반영
           </div>
         </div>
@@ -64,12 +64,12 @@ export const SessionTimeoutSection: React.FC = () => {
       {/* 현재값 카드 · 큰 숫자 · 시각 강조 */}
       <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-3 items-stretch">
         <div className="rounded-xl border border-brand-deep/20 bg-gradient-to-br from-brand-tint to-white p-4 min-w-[180px]">
-          <div className="text-[12px] font-bold text-brand-deep/70 uppercase tracking-wider">현재 설정</div>
+          <div className="text-[14px] font-bold text-brand-deep/70 uppercase tracking-wider">현재 설정</div>
           <div className="mt-1 flex items-baseline gap-1.5">
             <span className="text-[36px] font-extrabold text-brand-deep tabular-nums leading-none tracking-tighter">{current}</span>
             <span className="text-[15px] font-bold text-brand-deep/60">분</span>
           </div>
-          <div className="mt-2 text-[13px] text-ink-soft flex items-center gap-1">
+          <div className="mt-2 text-[15px] text-ink-soft flex items-center gap-1">
             <Clock size={13} className="text-brand-deep/60" />
             <span>
               {current < 60 ? `${current}분` : `${Math.floor(current/60)}시간${current%60 ? ` ${current%60}분` : ""}`}
@@ -80,7 +80,7 @@ export const SessionTimeoutSection: React.FC = () => {
 
         {/* 프리셋 · 원클릭 적용 */}
         <div className="flex flex-col gap-2 min-w-0">
-          <div className="text-[13px] font-bold text-ink-soft tracking-tight">프리셋 · 원클릭 적용</div>
+          <div className="text-[15px] font-bold text-ink-soft tracking-tight">프리셋 · 원클릭 적용</div>
           <div className="flex flex-wrap gap-1.5">
             {PRESETS.map(p => {
               const active = current === p.minutes;
@@ -91,7 +91,7 @@ export const SessionTimeoutSection: React.FC = () => {
                   onClick={() => setMinutes(p.minutes)}
                   disabled={!loaded}
                   className={[
-                    "inline-flex items-center h-8 px-3 rounded-lg text-[13px] font-bold cursor-pointer transition disabled:opacity-40",
+                    "inline-flex items-center h-8 px-3 rounded-lg text-[15px] font-bold cursor-pointer transition disabled:opacity-40",
                     active
                       ? "bg-brand-deep text-white shadow-sm ring-1 ring-brand-deep/40"
                       : "bg-white border border-line text-ink-soft hover:border-brand-deep/40 hover:bg-brand-tint/20 hover:text-brand-deep",
@@ -106,7 +106,7 @@ export const SessionTimeoutSection: React.FC = () => {
 
           {/* 수동 입력 */}
           <div className="mt-2 flex items-center gap-2 flex-wrap">
-            <label htmlFor="session-timeout-minutes" className="text-[13px] font-semibold text-ink-soft">
+            <label htmlFor="session-timeout-minutes" className="text-[15px] font-semibold text-ink-soft">
               직접 입력
             </label>
             <input
@@ -120,8 +120,8 @@ export const SessionTimeoutSection: React.FC = () => {
               disabled={!loaded}
               className="w-24 h-9 px-2.5 text-[15px] font-bold text-ink text-right border border-line rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"
             />
-            <span className="text-[13px] text-ink-soft">분</span>
-            <span className="text-[12px] text-zinc-400">
+            <span className="text-[15px] text-ink-soft">분</span>
+            <span className="text-[14px] text-zinc-400">
               (범위 {SESSION_TIMEOUT_MIN_MINUTES}분 ~ {SESSION_TIMEOUT_MAX_MINUTES}분 · 기본 {SESSION_TIMEOUT_DEFAULT_MINUTES}분)
             </span>
           </div>
@@ -140,15 +140,15 @@ export const SessionTimeoutSection: React.FC = () => {
                     :                          "border-emerald-200 bg-emerald-50/40";
           return (
             <div key={i} className={`rounded-lg border ${cls} px-3 py-2.5`}>
-              <div className="text-[13px] font-bold text-ink">{tip.label}</div>
-              <div className="text-[12px] text-ink-soft leading-snug mt-0.5">{tip.desc}</div>
+              <div className="text-[15px] font-bold text-ink">{tip.label}</div>
+              <div className="text-[14px] text-ink-soft leading-snug mt-0.5">{tip.desc}</div>
             </div>
           );
         })}
       </div>
 
       {/* 만료 경고 안내 */}
-      <div className="flex items-start gap-2 rounded-lg border border-line bg-zinc-50/60 px-3 py-2 text-[13px] text-ink-soft leading-relaxed">
+      <div className="flex items-start gap-2 rounded-lg border border-line bg-zinc-50/60 px-3 py-2 text-[15px] text-ink-soft leading-relaxed">
         <ShieldCheck size={16} className="text-brand-deep/70 shrink-0 mt-0.5" />
         <div>
           만료 <b className="text-ink">5분 전</b> · 우측 하단 경고 알림 (계속 사용 / 로그아웃 선택)

@@ -178,7 +178,7 @@ export const MultiLineChartInner: React.FC<LineChartProps> = ({ labels, series, 
         )}
       </svg>
       {/* 범례 + hover 상세 */}
-      <div className="flex items-center gap-3 mt-2 flex-wrap text-[13px]">
+      <div className="flex items-center gap-3 mt-2 flex-wrap text-[15px]">
         {series.map((s, si) => (
           <div key={`lg-${si}`} className="flex items-center gap-1">
             {s.kind === "bar"

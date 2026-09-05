@@ -64,20 +64,20 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
       {/* 조회 기간 · 리로드 */}
       <Card padding="none" className="px-4 py-3 flex flex-wrap items-center gap-3">
         <Calendar size={14} className="text-rose-500 shrink-0" />
-        <div className="text-[12px] font-bold text-zinc-800">
+        <div className="text-[14px] font-bold text-zinc-800">
           월별 부가세 요약
-          <span className="ml-2 text-[11px] font-bold text-zinc-500 tabular-nums">
+          <span className="ml-2 text-[13px] font-bold text-zinc-500 tabular-nums">
             {fromDate} ~ {toDate}
           </span>
         </div>
-        <div className="text-[10px] text-zinc-500 hidden md:inline">
+        <div className="text-[12px] text-zinc-500 hidden md:inline">
           매출·매입 DB 자동 조회 · 경비만 수동 입력
         </div>
         <button
           type="button"
           onClick={monthly.reload}
           disabled={monthly.loading}
-          className="ml-auto h-8 px-2 rounded-lg text-[11px] font-bold bg-zinc-50 border border-line hover:bg-zinc-100 text-zinc-600 cursor-pointer disabled:opacity-50 flex items-center gap-1"
+          className="ml-auto h-8 px-2 rounded-lg text-[13px] font-bold bg-zinc-50 border border-line hover:bg-zinc-100 text-zinc-600 cursor-pointer disabled:opacity-50 flex items-center gap-1"
           title="새로고침"
         >
           <RefreshCw size={12} className={monthly.loading ? "animate-spin" : ""} />
@@ -87,19 +87,19 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
 
       {/* 에러 · 경고 */}
       {monthly.error && (
-        <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" rounded="lg" padding="sm" className="flex items-center gap-2 text-[12px] text-rose-700">
+        <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" rounded="lg" padding="sm" className="flex items-center gap-2 text-[14px] text-rose-700">
           <AlertCircle size={14} /><span>{monthly.error}</span>
         </Card>
       )}
       {monthly.warning && (
-        <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" rounded="lg" padding="sm" className="flex items-start gap-2 text-[11px] text-amber-800">
+        <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" rounded="lg" padding="sm" className="flex items-start gap-2 text-[13px] text-amber-800">
           <AlertCircle size={14} className="mt-0.5 shrink-0" />
           <span>{monthly.warning}</span>
         </Card>
       )}
 
       {/* 계산 방식 안내 */}
-      <div className="bg-zinc-50 border border-line rounded-lg p-3 flex items-start gap-2 text-[11px] text-zinc-600">
+      <div className="bg-zinc-50 border border-line rounded-lg p-3 flex items-start gap-2 text-[13px] text-zinc-600">
         <Info size={13} className="mt-0.5 text-zinc-500 shrink-0" />
         <div className="leading-relaxed">
           <b className="text-zinc-700">계산 방식</b>
@@ -125,8 +125,8 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
       <Card padding="none">
         <div className="px-4 py-3 border-b border-zinc-100 flex items-center gap-2">
           <TrendingUp size={14} className="text-rose-500" />
-          <div className="text-[13px] font-bold text-zinc-800">월별 매출 · 매입 · 경비 · 예상 부가세</div>
-          <div className="text-[10px] font-bold text-zinc-500 ml-auto">
+          <div className="text-[15px] font-bold text-zinc-800">월별 매출 · 매입 · 경비 · 예상 부가세</div>
+          <div className="text-[12px] font-bold text-zinc-500 ml-auto">
             {monthly.rows.length}개월
           </div>
         </div>
@@ -135,9 +135,9 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
           {monthly.loading && monthly.rows.length === 0 ? (
             <div className="flex items-center justify-center py-10"><Spinner tone="zinc" label="불러오는 중..." labelSize={12} /></div>
           ) : monthly.rows.length === 0 ? (
-            <div className="py-10 text-center text-[11px] text-zinc-300">해당 기간 데이터 없음</div>
+            <div className="py-10 text-center text-[13px] text-zinc-300">해당 기간 데이터 없음</div>
           ) : (
-            <table className="w-full text-[12px]">
+            <table className="w-full text-[14px]">
               <thead className="sticky top-0 bg-zinc-50 z-10 shadow-sm text-zinc-600">
                 <tr>
                   <th rowSpan={2} className="text-left px-3 py-2 font-bold border-b border-line align-bottom">월</th>
@@ -146,7 +146,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
                   </th>
                   <th rowSpan={2} className="text-right px-2 py-2 font-bold text-rose-700 border-b border-l border-line align-bottom">
                     매출세액
-                    <div className="text-[11px] font-medium text-rose-500/80">과세만</div>
+                    <div className="text-[13px] font-medium text-rose-500/80">과세만</div>
                   </th>
                   <th rowSpan={2} className="text-right px-2 py-2 font-bold border-b border-l border-line align-bottom">매입 총액</th>
                   <th rowSpan={2} className="text-right px-2 py-2 font-bold text-emerald-700 border-b border-line align-bottom">매입세액 공제</th>
@@ -160,11 +160,11 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
                   </th>
                   <th className="text-right px-2 py-2 font-bold border-b border-line bg-zinc-100/70 w-[130px]">
                     <span className="text-amber-700">면세</span>
-                    <span className="text-[11px] font-medium text-amber-600/80 ml-0.5">(TAX FREE · 입력)</span>
+                    <span className="text-[13px] font-medium text-amber-600/80 ml-0.5">(TAX FREE · 입력)</span>
                   </th>
                   <th className="text-right px-2 py-2 font-bold border-b border-line bg-zinc-100/70">
                     <span className="text-zinc-700">과세</span>
-                    <span className="text-[11px] font-medium text-zinc-500 ml-0.5">(자동)</span>
+                    <span className="text-[13px] font-medium text-zinc-500 ml-0.5">(자동)</span>
                   </th>
                 </tr>
               </thead>
@@ -180,29 +180,29 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
               </tbody>
               <tfoot className="sticky bottom-0 bg-zinc-100 shadow-inner">
                 <tr className="text-zinc-800 font-bold">
-                  <td className="px-3 py-3 text-[11px]">합계</td>
-                  <td className="px-2 py-3 text-right tabular-nums text-[12px] border-l border-line">
+                  <td className="px-3 py-3 text-[13px]">합계</td>
+                  <td className="px-2 py-3 text-right tabular-nums text-[14px] border-l border-line">
                     {fmt(monthly.totals.salesTotal)}
                   </td>
-                  <td className="px-2 py-3 text-right tabular-nums text-amber-700 text-[12px]">
+                  <td className="px-2 py-3 text-right tabular-nums text-amber-700 text-[14px]">
                     {fmt(monthly.totals.taxfreeSales)}
                   </td>
-                  <td className="px-2 py-3 text-right tabular-nums text-zinc-800 text-[12px]">
+                  <td className="px-2 py-3 text-right tabular-nums text-zinc-800 text-[14px]">
                     {fmt(monthly.totals.taxableSales)}
                   </td>
-                  <td className="px-2 py-3 text-right tabular-nums text-rose-700 text-[13px] border-l border-line">
+                  <td className="px-2 py-3 text-right tabular-nums text-rose-700 text-[15px] border-l border-line">
                     {fmt(monthly.totals.taxableSalesVat)}
                   </td>
-                  <td className="px-2 py-3 text-right tabular-nums text-[12px] border-l border-line">
+                  <td className="px-2 py-3 text-right tabular-nums text-[14px] border-l border-line">
                     {fmt(monthly.totals.purchaseGross)}
                   </td>
-                  <td className="px-2 py-3 text-right tabular-nums text-emerald-700 text-[13px]">
+                  <td className="px-2 py-3 text-right tabular-nums text-emerald-700 text-[15px]">
                     {fmt(monthly.totals.purchaseDeductibleVat)}
                   </td>
-                  <td className="px-2 py-3 text-right tabular-nums text-[12px] border-l border-line">
+                  <td className="px-2 py-3 text-right tabular-nums text-[14px] border-l border-line">
                     {fmt(monthly.totals.expense)}
                   </td>
-                  <td className="px-2 py-3 text-right tabular-nums text-[12px]">
+                  <td className="px-2 py-3 text-right tabular-nums text-[14px]">
                     {fmt(monthly.totals.expenseVat)}
                   </td>
                   <td className="px-2 py-3 text-right border-l border-line">
@@ -211,7 +211,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
                     }`}>
                       {monthly.totals.expectedVat >= 0 ? "" : "−"}{fmt(Math.abs(monthly.totals.expectedVat))}
                     </div>
-                    <div className={`text-[11px] font-bold ${
+                    <div className={`text-[13px] font-bold ${
                       monthly.totals.expectedVat >= 0 ? "text-rose-500/70" : "text-emerald-500/70"
                     }`}>
                       {monthly.totals.expectedVat >= 0 ? "납부 예상" : "환급 예상"}
@@ -225,14 +225,14 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
       </Card>
 
       {/* 면세 매출 안내 */}
-      <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" rounded="lg" padding="sm" className="flex items-start gap-2 text-[11px] text-amber-800">
+      <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" rounded="lg" padding="sm" className="flex items-start gap-2 text-[13px] text-amber-800">
         <AlertCircle size={13} className="mt-0.5 shrink-0 text-amber-600" />
         <div className="leading-relaxed">
           <b>면세(TAX FREE) 매출은 매출세액 산정에서 제외됩니다.</b>
           <span className="mx-1 text-amber-500">·</span>
           현재 POS 데이터에는 과세/면세 구분이 없어 · 각 월별 <b>면세 매출액</b> 셀에 외국인 즉시환급 금액을 직접 입력하세요.
           <span className="mx-1 text-amber-500">·</span>
-          입력값은 서버(<code className="text-[10px] bg-amber-100 px-1 rounded">settings.vat_taxfree_sales</code>)에 저장 · 모든 관리자에게 공유됩니다.
+          입력값은 서버(<code className="text-[12px] bg-amber-100 px-1 rounded">settings.vat_taxfree_sales</code>)에 저장 · 모든 관리자에게 공유됩니다.
         </div>
       </Card>
 
@@ -303,7 +303,7 @@ const MoneyCellInput: React.FC<MoneyCellInputProps> = ({ value, onCommit, placeh
       }}
       onKeyDown={e => { if (e.key === "Enter") { e.currentTarget.blur(); } }}
       placeholder={placeholder ?? "0"}
-      className={`w-full h-8 px-2 text-[11px] text-right tabular-nums border border-zinc-300 rounded outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep ${colorClass ?? ""}`}
+      className={`w-full h-8 px-2 text-[13px] text-right tabular-nums border border-zinc-300 rounded outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep ${colorClass ?? ""}`}
     />
   );
 };
@@ -389,12 +389,12 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ label, value, icon, color, hi
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 leading-tight">
             <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-            <div className="text-[12px] font-semibold text-ink-soft tracking-tight">{label}</div>
+            <div className="text-[14px] font-semibold text-ink-soft tracking-tight">{label}</div>
           </div>
           <div className={`text-[19px] font-extrabold ${c.text} tabular-nums leading-tight mt-1`}>
-            {fmt(value)}<span className="text-[13px] ml-1 font-semibold text-ink-soft">원</span>
+            {fmt(value)}<span className="text-[15px] ml-1 font-semibold text-ink-soft">원</span>
           </div>
-          {hint && <div className="text-[11px] text-ink-soft mt-0.5 leading-tight font-medium">{hint}</div>}
+          {hint && <div className="text-[13px] text-ink-soft mt-0.5 leading-tight font-medium">{hint}</div>}
         </div>
       </div>
     </div>

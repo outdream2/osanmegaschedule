@@ -160,13 +160,13 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
   };
   const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
+      <span className="text-[15px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
       <div className="text-[15px]">{children}</div>
     </div>
   );
   const EditField = ({ k, label, type = "text" }: { k: EditableKey; label: string; type?: "text" | "number" }) => (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
+      <span className="text-[15px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
       {k === "sale_status" ? (
         <select value={val(k)} onChange={(e) => set(k, e.target.value)} className={inputCls}>
           {SALE_STATUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
@@ -193,7 +193,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
     <>
       {/* ─── Header ─────────────────────────────────────────────────── */}
       <div className="px-4 pt-4 pb-2 flex items-center gap-2 border-b border-zinc-100">
-        <span className="text-[13px] font-mono text-zinc-400 bg-zinc-100 rounded px-1.5 py-0.5">#{product.product_code}</span>
+        <span className="text-[15px] font-mono text-zinc-400 bg-zinc-100 rounded px-1.5 py-0.5">#{product.product_code}</span>
         <div className="flex-1" />
         {editing ? (
           <>

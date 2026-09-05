@@ -55,7 +55,7 @@ export const FormSection: React.FC<FormSectionProps> = ({
             {title}
           </h3>
           {description && (
-            <p className="text-[13px] font-medium text-ink-soft mt-0.5 leading-snug">
+            <p className="text-[15px] font-medium text-ink-soft mt-0.5 leading-snug">
               {description}
             </p>
           )}

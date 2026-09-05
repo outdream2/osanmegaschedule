@@ -50,7 +50,7 @@ export const CopyMonthModal: React.FC<CopyMonthModalProps> = ({
             onChange={e => setCopySchedules(e.target.checked)} />
           <div className="flex-1">
             <div className="text-sm font-bold text-zinc-700">전체 월별 스케쥴</div>
-            <div className="text-[11px] text-zinc-500 mt-0.5">직원별 오픈/마감/휴무 등 근무 유형 스케줄</div>
+            <div className="text-[13px] text-zinc-500 mt-0.5">직원별 오픈/마감/휴무 등 근무 유형 스케줄</div>
           </div>
         </label>
         <label className="flex items-start gap-3 p-3 rounded-xl border border-line hover:bg-zinc-50 cursor-pointer">
@@ -59,12 +59,12 @@ export const CopyMonthModal: React.FC<CopyMonthModalProps> = ({
             onChange={e => setCopyDayAssignments(e.target.checked)} />
           <div className="flex-1">
             <div className="text-sm font-bold text-zinc-700">일별 근무설정</div>
-            <div className="text-[11px] text-zinc-500 mt-0.5">일자별 구역/점심/휴게 배정 (같은 일자 기준으로 복사)</div>
+            <div className="text-[13px] text-zinc-500 mt-0.5">일자별 구역/점심/휴게 배정 (같은 일자 기준으로 복사)</div>
           </div>
         </label>
       </div>
 
-      <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+      <div className="text-[13px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
         이번 달에 이미 데이터가 있으면 덮어쓸지 확인창이 뜹니다.
       </div>
 

@@ -111,17 +111,17 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
               const now = new Date(); now.setHours(0, 0, 0, 0);
               const days = Math.round((d.getTime() - now.getTime()) / 86400_000);
               if (days < 0) return (
-                <span className="inline-flex items-center h-4 px-1 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300" title={`계약 만료 ${Math.abs(days)}일 경과`}>
+                <span className="inline-flex items-center h-4 px-1 rounded text-[12px] font-bold bg-rose-100 text-rose-700 border border-rose-300" title={`계약 만료 ${Math.abs(days)}일 경과`}>
                   ⚠ 만료
                 </span>
               );
               if (days === 0) return (
-                <span className="inline-flex items-center h-4 px-1 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-300">
+                <span className="inline-flex items-center h-4 px-1 rounded text-[12px] font-bold bg-rose-100 text-rose-700 border border-rose-300">
                   ⚠ 오늘
                 </span>
               );
               if (days <= 30) return (
-                <span className="inline-flex items-center h-4 px-1 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300" title={`계약 ${days}일 후 만료`}>
+                <span className="inline-flex items-center h-4 px-1 rounded text-[12px] font-bold bg-amber-100 text-amber-800 border border-amber-300" title={`계약 ${days}일 후 만료`}>
                   D-{days}
                 </span>
               );

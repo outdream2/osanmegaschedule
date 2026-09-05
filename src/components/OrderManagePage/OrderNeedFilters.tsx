@@ -107,7 +107,7 @@ export const OrderNeedFilters: React.FC<OrderNeedFiltersProps> = ({
             onChange={(e) => setNeedConditionApply(e.target.checked)}
             className="w-3.5 h-3.5 accent-emerald-600 cursor-pointer"
           />
-          <span className="text-[13px] font-bold tracking-tight">조건적용 · {needConditionApply ? "ON" : "OFF"}</span>
+          <span className="text-[15px] font-bold tracking-tight">조건적용 · {needConditionApply ? "ON" : "OFF"}</span>
         </label>
         {lowStockSearch.trim() && (
           <button

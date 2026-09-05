@@ -61,7 +61,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               <div className="text-[16px] font-bold text-zinc-900">
                 {isChunkError ? "새 버전이 배포되었습니다" : "일시적인 오류가 발생했습니다"}
               </div>
-              <div className="text-[12px] text-zinc-500 mt-0.5">
+              <div className="text-[14px] text-zinc-500 mt-0.5">
                 {isChunkError
                   ? "새로고침 후 계속 이용해주세요"
                   : "새로고침하거나 다시 시도해주세요"}
@@ -70,7 +70,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
           </div>
           {/* 에러 상세 · 개발 모드에서만 · production 은 숨김 */}
           {import.meta.env?.DEV && (
-            <details className="text-[11px] text-zinc-400 bg-zinc-50 rounded p-2">
+            <details className="text-[13px] text-zinc-400 bg-zinc-50 rounded p-2">
               <summary className="cursor-pointer font-semibold">에러 상세 (개발용)</summary>
               <pre className="whitespace-pre-wrap break-words mt-2">{error.message}</pre>
             </details>
@@ -79,7 +79,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             <button
               type="button"
               onClick={this.hardReload}
-              className="flex-1 h-10 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[13px] font-bold shadow-sm transition cursor-pointer active:scale-95"
+              className="flex-1 h-10 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[15px] font-bold shadow-sm transition cursor-pointer active:scale-95"
             >
               🔄 새로고침
             </button>
@@ -87,7 +87,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               <button
                 type="button"
                 onClick={this.reset}
-                className="flex-1 h-10 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[13px] font-bold transition cursor-pointer active:scale-95"
+                className="flex-1 h-10 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[15px] font-bold transition cursor-pointer active:scale-95"
               >
                 다시 시도
               </button>

@@ -44,14 +44,14 @@ export const BorrowingArrow: React.FC<BorrowingArrowProps> = ({ status = "open",
       </svg>
       {productSummary && (
         <div className="text-center px-2 py-1 rounded-md bg-white border border-line shadow-sm">
-          <span className="text-[13px] font-bold text-ink tabular-nums">{productSummary}</span>
+          <span className="text-[15px] font-bold text-ink tabular-nums">{productSummary}</span>
         </div>
       )}
       {status === "overdue" && (
-        <span className="text-[11px] font-extrabold text-rose-600 uppercase tracking-wider">기한 초과</span>
+        <span className="text-[13px] font-extrabold text-rose-600 uppercase tracking-wider">기한 초과</span>
       )}
       {isSettled && (
-        <span className="text-[11px] font-extrabold text-emerald-600 uppercase tracking-wider">정산 완료</span>
+        <span className="text-[13px] font-extrabold text-emerald-600 uppercase tracking-wider">정산 완료</span>
       )}
     </div>
   );

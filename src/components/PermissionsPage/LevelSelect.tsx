@@ -18,7 +18,7 @@ export const LevelSelect: React.FC<LevelSelectProps> = ({ value, onChange, savin
       value={value}
       onChange={e => onChange(Number(e.target.value))}
       disabled={saving}
-      className="appearance-none bg-zinc-50 border border-line rounded-lg px-3 py-1.5 text-[13px] font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep cursor-pointer disabled:opacity-60 pr-7 min-w-[120px]"
+      className="appearance-none bg-zinc-50 border border-line rounded-lg px-3 py-1.5 text-[15px] font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep cursor-pointer disabled:opacity-60 pr-7 min-w-[120px]"
     >
       {LEVELS.map(l => (
         <option key={l} value={l}>Lv.{l}{l === 1 ? " (직원)" : l === 9 ? " (최고관리자)" : ""}</option>

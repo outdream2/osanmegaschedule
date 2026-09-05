@@ -122,7 +122,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
   const hdrCls = "px-3 py-2 cursor-pointer hover:bg-zinc-100 transition select-none";
 
   const footerNode = (
-    <div className="w-full text-[13px] text-zinc-400">
+    <div className="w-full text-[15px] text-zinc-400">
       ERP 재고 · 매장 시스템 기준 · 실재고 (창고·매장별) 세부는 추후 반영
     </div>
   );
@@ -149,10 +149,10 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
     >
       {/* 2026-08-26 · #192 · 상단 코멘트 · 승인 완료 후 이 페이지 접근 가능 안내 */}
       <div className="mb-3 rounded-lg border border-emerald-300/60 bg-gradient-to-br from-emerald-50/60 to-white px-3.5 py-2.5 flex items-center gap-2.5">
-        <span className="w-6 h-6 rounded-md bg-emerald-600 text-white flex items-center justify-center shrink-0 font-bold text-[13px]">✓</span>
+        <span className="w-6 h-6 rounded-md bg-emerald-600 text-white flex items-center justify-center shrink-0 font-bold text-[15px]">✓</span>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-bold text-emerald-700 leading-tight">승인받으면 공급사 재고확인이 가능합니다</div>
-          <div className="text-[12px] text-ink-soft mt-0.5">본 페이지 · 해당 공급사 상품 재고만 표시됩니다</div>
+          <div className="text-[15px] font-bold text-emerald-700 leading-tight">승인받으면 공급사 재고확인이 가능합니다</div>
+          <div className="text-[14px] text-ink-soft mt-0.5">본 페이지 · 해당 공급사 상품 재고만 표시됩니다</div>
         </div>
       </div>
       {/* 2026-08-16 · #94 · 필터 툴바 · 계절 + 기간 + 검색 */}
@@ -190,7 +190,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
           상품 <span className="tabular-nums text-zinc-800 font-bold">{sorted.length}</span> 종 · 총 재고
           <span className="tabular-nums text-sky-700 font-bold ml-1">{totalStock.toLocaleString()}</span>
           {(season || dateFrom || dateTo) && (
-            <span className="ml-2 text-amber-600 text-[10px] font-bold">※ 기간·계절 필터 · 백엔드 시계열 API 확장 후 적용</span>
+            <span className="ml-2 text-amber-600 text-[12px] font-bold">※ 기간·계절 필터 · 백엔드 시계열 API 확장 후 적용</span>
           )}
         </div>
       </div>
@@ -223,7 +223,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
               {sorted.map((p, i) => (
                 <tr key={p.code} className="hover:bg-sky-50/40">
                   <td className="text-center px-2 py-1.5 text-zinc-400 tabular-nums">{i + 1}</td>
-                  <td className="px-3 py-1.5 font-mono text-[13px] text-zinc-500 tabular-nums">{p.code}</td>
+                  <td className="px-3 py-1.5 font-mono text-[15px] text-zinc-500 tabular-nums">{p.code}</td>
                   <td className="px-3 py-1.5 font-semibold text-zinc-800 break-words whitespace-normal leading-tight" style={{ minWidth: 200 }}>{p.name}</td>
                   <td className="text-right px-3 py-1.5 font-bold text-sky-700 tabular-nums">
                     {p.current_stock ?? "-"}

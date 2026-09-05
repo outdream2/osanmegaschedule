@@ -67,7 +67,7 @@ export function FilterSortGroup<T extends string>({
               </span>
             )}
             {isActive && opt.sortDir && (
-              <span className="text-[12px] font-semibold">{opt.sortDir === "asc" ? "↑" : "↓"}</span>
+              <span className="text-[14px] font-semibold">{opt.sortDir === "asc" ? "↑" : "↓"}</span>
             )}
           </button>
         );

@@ -78,7 +78,7 @@ export const HistoryContent: React.FC<{
     </div>
   );
   if (detailRows.length === 0) return (
-    <div className="flex-1 flex items-center justify-center py-16 text-zinc-400 text-[13px]">
+    <div className="flex-1 flex items-center justify-center py-16 text-zinc-400 text-[15px]">
       해당 기간 매입이력 없음
     </div>
   );
@@ -93,7 +93,7 @@ export const HistoryContent: React.FC<{
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
-              className={`h-6 px-3 rounded-md text-[13px] font-bold transition cursor-pointer whitespace-nowrap ${
+              className={`h-6 px-3 rounded-md text-[15px] font-bold transition cursor-pointer whitespace-nowrap ${
                 viewMode === mode
                   ? "bg-white text-zinc-800 shadow-sm ring-1 ring-zinc-200"
                   : "text-zinc-500 hover:text-zinc-700"
@@ -113,14 +113,14 @@ export const HistoryContent: React.FC<{
           widthClass="w-40"
         />
         {/* 건수 */}
-        <span className="text-[12px] text-zinc-400 tabular-nums">
+        <span className="text-[14px] text-zinc-400 tabular-nums">
           {viewMode === "sku" ? `${productStats.length} SKU` : `${allRows.length}건`}
         </span>
         {selectedCode && (
           <button
             type="button"
             onClick={() => setSelectedCode(null)}
-            className="inline-flex items-center gap-1 h-6 px-2 rounded-md bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-[12px] font-semibold cursor-pointer transition"
+            className="inline-flex items-center gap-1 h-6 px-2 rounded-md bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-[14px] font-semibold cursor-pointer transition"
           >
             <X size={10} /> 필터 해제
           </button>
@@ -132,7 +132,7 @@ export const HistoryContent: React.FC<{
         <div className={`${CARD_BASE} flex-1 min-h-0 overflow-auto`}>
           <table className="w-full text-xs min-w-[500px]" style={{ tableLayout: "fixed" }}>
             <thead className="sticky top-0 bg-white z-10 border-b border-zinc-100">
-              <tr className="text-[12px] text-zinc-400 uppercase tracking-wider">
+              <tr className="text-[14px] text-zinc-400 uppercase tracking-wider">
                 <th className="relative text-left px-3 py-2 text-zinc-300" style={{ width: sw("num"), minWidth: sw("num") }}>
                   #
                   <span {...sr("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
@@ -174,22 +174,22 @@ export const HistoryContent: React.FC<{
                       isSel ? "bg-emerald-50 border-l-2 border-emerald-500" : "hover:bg-zinc-50"
                     }`}
                   >
-                    <td className="px-3 py-1.5 text-zinc-300 text-[12px] tabular-nums align-top">{i + 1}</td>
+                    <td className="px-3 py-1.5 text-zinc-300 text-[14px] tabular-nums align-top">{i + 1}</td>
                     <td className="px-3 py-1.5 align-top">
-                      <div className={`text-[13px] font-semibold leading-tight break-words whitespace-normal ${isSel ? "text-emerald-800" : "text-zinc-700"}`}>
+                      <div className={`text-[15px] font-semibold leading-tight break-words whitespace-normal ${isSel ? "text-emerald-800" : "text-zinc-700"}`}>
                         {s.product_name}
                       </div>
-                      <div className="text-[13px] text-zinc-400">{s.product_code}</div>
+                      <div className="text-[15px] text-zinc-400">{s.product_code}</div>
                     </td>
-                    <td className="px-3 py-1.5 text-right text-[13px] tabular-nums text-zinc-600 align-top">{s.buy_count}</td>
-                    <td className="px-3 py-1.5 text-right text-[13px] tabular-nums text-zinc-600 align-top">{fmt(s.total_qty)}</td>
-                    <td className="px-3 py-1.5 text-right text-[13px] tabular-nums font-semibold text-emerald-700 align-top">
+                    <td className="px-3 py-1.5 text-right text-[15px] tabular-nums text-zinc-600 align-top">{s.buy_count}</td>
+                    <td className="px-3 py-1.5 text-right text-[15px] tabular-nums text-zinc-600 align-top">{fmt(s.total_qty)}</td>
+                    <td className="px-3 py-1.5 text-right text-[15px] tabular-nums font-semibold text-emerald-700 align-top">
                       {fmt(s.total_amount)}
                     </td>
-                    <td className="px-3 py-1.5 text-right text-[13px] tabular-nums text-zinc-500 align-top">
+                    <td className="px-3 py-1.5 text-right text-[15px] tabular-nums text-zinc-500 align-top">
                       {fmt(s.latest_unit_price)}
                     </td>
-                    <td className="px-3 py-1.5 text-[12px] text-zinc-400 align-top whitespace-nowrap">
+                    <td className="px-3 py-1.5 text-[14px] text-zinc-400 align-top whitespace-nowrap">
                       {dateLabel(s.latest_date)}
                     </td>
                   </tr>
@@ -209,7 +209,7 @@ export const HistoryContent: React.FC<{
               <span className="text-[14px] font-semibold text-emerald-700">
                 {productStats.find(s => s.product_code === selectedCode)?.product_name ?? selectedCode}
               </span>
-              <span className="text-[13px] text-emerald-500 tabular-nums">{allRows.length}건</span>
+              <span className="text-[15px] text-emerald-500 tabular-nums">{allRows.length}건</span>
             </div>
           )}
           <PurchaseHistoryList

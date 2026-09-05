@@ -104,7 +104,7 @@ export const CollapseCard: React.FC<CollapseCardProps> = ({
           {title}
         </span>
         {!open && (
-          <span className="text-[13px] font-medium text-ink-soft shrink-0">— 펼치기</span>
+          <span className="text-[15px] font-medium text-ink-soft shrink-0">— 펼치기</span>
         )}
         {right && (
           <div onClick={(e) => e.stopPropagation()} className="shrink-0 ml-2">

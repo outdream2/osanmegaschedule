@@ -171,7 +171,7 @@ export const OrderHistoryTab: React.FC = () => {
         title="발주이력"
         count={filteredOrders.length}
         leftSlot={
-          <span className="text-[13px] font-medium text-ink-soft tracking-tight tabular-nums">
+          <span className="text-[15px] font-medium text-ink-soft tracking-tight tabular-nums">
             {totalItems}종 · {fmtWon(totalAmount)}
           </span>
         }
@@ -228,8 +228,8 @@ export const OrderHistoryTab: React.FC = () => {
       {notice && (
         <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" padding="sm" className="text-[14px] text-amber-800">
           <div className="font-bold mb-0.5">📌 마이그레이션 필요</div>
-          <div className="font-mono text-[13px]">{notice}</div>
-          <div className="text-[13px] mt-1">Supabase SQL Editor 에서 실행 후 · 발주 완료 시 자동 저장 시작</div>
+          <div className="font-mono text-[15px]">{notice}</div>
+          <div className="text-[15px] mt-1">Supabase SQL Editor 에서 실행 후 · 발주 완료 시 자동 저장 시작</div>
         </Card>
       )}
 

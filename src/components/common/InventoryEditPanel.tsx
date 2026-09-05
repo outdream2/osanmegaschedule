@@ -92,7 +92,7 @@ const DeltaInput: React.FC<DeltaInputProps> = ({
           onChange(n);
         }}
         placeholder="0"
-        className={`flex-1 min-w-0 h-full text-center px-1 bg-transparent border-0 text-[13px] font-bold tabular-nums focus:outline-none disabled:text-zinc-300 ${accent}`}
+        className={`flex-1 min-w-0 h-full text-center px-1 bg-transparent border-0 text-[15px] font-bold tabular-nums focus:outline-none disabled:text-zinc-300 ${accent}`}
       />
       <button
         type="button"
@@ -119,7 +119,7 @@ const ZoneInput: React.FC<ZoneInputProps> = ({ value, placeholder = "-", accentC
     onChange={e => onChange(e.target.value.trim() === "" ? null : e.target.value)}
     placeholder={placeholder}
     className={`w-full h-5 text-center px-1 bg-transparent border-0 border-b border-dashed border-line
-      text-[10px] font-bold tabular-nums outline-none transition placeholder:text-zinc-300 ${accentClass}`}
+      text-[12px] font-bold tabular-nums outline-none transition placeholder:text-zinc-300 ${accentClass}`}
     title="구역 편집"
   />
 );
@@ -143,8 +143,8 @@ const ZoneRow: React.FC<ZoneRowProps> = ({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-1">
-        <span className={`text-[10px] font-semibold ${accent} block`}>{label}</span>
-        <span className="text-[10px] text-zinc-400 tabular-nums">현재 <span className="font-bold text-zinc-700">{current}</span></span>
+        <span className={`text-[12px] font-semibold ${accent} block`}>{label}</span>
+        <span className="text-[12px] text-zinc-400 tabular-nums">현재 <span className="font-bold text-zinc-700">{current}</span></span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="flex-1">
@@ -159,13 +159,13 @@ const ZoneRow: React.FC<ZoneRowProps> = ({
           type="button"
           onClick={onSave}
           disabled={saving || d <= 0}
-          className="h-9 px-2.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[11px] font-bold transition-colors disabled:opacity-40 cursor-pointer shrink-0"
+          className="h-9 px-2.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[13px] font-bold transition-colors disabled:opacity-40 cursor-pointer shrink-0"
         >
           {saving ? "…" : "+저장"}
         </button>
       </div>
       {d > 0 && (
-        <div className="text-[10px] text-zinc-400 text-right tabular-nums">
+        <div className="text-[12px] text-zinc-400 text-right tabular-nums">
           저장 후: <span className="font-bold text-violet-700">{current + d}</span>
         </div>
       )}
@@ -188,9 +188,9 @@ const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
   return (
     <Card variant="flat" bg="bg-emerald-50" borderColor="border-emerald-100" rounded="xl" padding="none" className="px-2.5 py-2 space-y-1.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] font-bold text-emerald-700 shrink-0">{label}</span>
+        <span className="text-[12px] font-bold text-emerald-700 shrink-0">{label}</span>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-zinc-400 tabular-nums">현재 <span className="font-bold text-zinc-700">{current}</span></span>
+          <span className="text-[12px] text-zinc-400 tabular-nums">현재 <span className="font-bold text-zinc-700">{current}</span></span>
           <div className="max-w-[80px]">
             <ZoneInput
               value={zoneLabel}
@@ -214,13 +214,13 @@ const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
           type="button"
           onClick={onSave}
           disabled={saving || d <= 0}
-          className="h-9 px-2.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[11px] font-bold transition-colors disabled:opacity-40 cursor-pointer shrink-0"
+          className="h-9 px-2.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[13px] font-bold transition-colors disabled:opacity-40 cursor-pointer shrink-0"
         >
           {saving ? "…" : "+저장"}
         </button>
       </div>
       {d > 0 && (
-        <div className="text-[10px] text-zinc-400 text-right tabular-nums">
+        <div className="text-[12px] text-zinc-400 text-right tabular-nums">
           저장 후: <span className="font-bold text-violet-700">{current + d}</span>
         </div>
       )}
@@ -300,8 +300,8 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
           <Package size={13} className="text-violet-600" strokeWidth={2.2} />
         </div>
         <div className="min-w-0">
-          <div className="text-[12px] font-bold text-zinc-800 leading-snug break-words">{productName || productCode}</div>
-          <div className="text-[10px] text-zinc-400 font-mono mt-0.5">{productCode}</div>
+          <div className="text-[14px] font-bold text-zinc-800 leading-snug break-words">{productName || productCode}</div>
+          <div className="text-[12px] text-zinc-400 font-mono mt-0.5">{productCode}</div>
         </div>
       </div>
 
@@ -309,7 +309,7 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
       <div>
         <div className="flex items-center gap-1.5 mb-2">
           <Package size={10} className="text-orange-400" strokeWidth={2.5} />
-          <span className="text-[10px] font-bold text-orange-500 tracking-wide uppercase">창고</span>
+          <span className="text-[12px] font-bold text-orange-500 tracking-wide uppercase">창고</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <ZoneRow
@@ -337,7 +337,7 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
       <div>
         <div className="flex items-center gap-1.5 mb-2">
           <MapPin size={10} className="text-emerald-500" strokeWidth={2.5} />
-          <span className="text-[10px] font-bold text-emerald-600 tracking-wide uppercase">매장</span>
+          <span className="text-[12px] font-bold text-emerald-600 tracking-wide uppercase">매장</span>
         </div>
         <div className="space-y-2">
           <StoreZoneRow
@@ -378,7 +378,7 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
 
       {/* 합계 (현재 + 미저장 delta 합산 미리보기) */}
       <div className="px-3 py-2.5 rounded-xl bg-brand-deep flex items-center justify-between">
-        <span className="text-[11px] font-bold text-violet-100">
+        <span className="text-[13px] font-bold text-violet-100">
           합계 (현재{totalDelta > 0 ? ` + 추가 ${totalDelta}` : ""})
         </span>
         <span className="tabular-nums text-[15px] font-bold text-white">

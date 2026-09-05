@@ -103,28 +103,28 @@ export const SupplierDetailPanel: React.FC<SupplierDetailPanelProps> = ({
                 <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] p-2.5" title={balInfo?.invoice_date ? `기준일 ${balInfo.invoice_date}` : "최신 잔고 없음"}>
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                    <div className="text-[12px] font-semibold text-ink-soft tracking-tight">최신잔고</div>
+                    <div className="text-[14px] font-semibold text-ink-soft tracking-tight">최신잔고</div>
                   </div>
                   <div className="text-[14px] font-extrabold text-amber-700 tabular-nums leading-tight">{balInfo ? fmtWon(balInfo.balance) : "-"}</div>
                 </div>
                 <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] p-2.5">
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <div className="text-[12px] font-semibold text-ink-soft tracking-tight">재고자산</div>
+                    <div className="text-[14px] font-semibold text-ink-soft tracking-tight">재고자산</div>
                   </div>
                   <div className="text-[14px] font-extrabold text-emerald-700 tabular-nums leading-tight">{fmtWon(supplierSelectedObj.totalStockAmount)}</div>
                 </div>
                 <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] p-2.5">
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                    <div className="text-[12px] font-semibold text-ink-soft tracking-tight">매입수량</div>
+                    <div className="text-[14px] font-semibold text-ink-soft tracking-tight">매입수량</div>
                   </div>
                   <div className="text-[14px] font-extrabold text-sky-700 tabular-nums leading-tight">{fmt(supplierSelectedObj.purchaseQty)}</div>
                 </div>
                 <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] p-2.5">
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
-                    <div className="text-[12px] font-semibold text-ink-soft tracking-tight">취급상품</div>
+                    <div className="text-[14px] font-semibold text-ink-soft tracking-tight">취급상품</div>
                   </div>
                   <div className="text-[14px] font-extrabold text-ink tabular-nums leading-tight">{fmt(supplierSelectedObj.itemCount)}종</div>
                 </div>
@@ -143,7 +143,7 @@ export const SupplierDetailPanel: React.FC<SupplierDetailPanelProps> = ({
               return (
                 <div className="text-[15px] text-zinc-400 py-6 flex flex-col items-center gap-1">
                   <span>{noHistory ? "매입 이력이 없는 공급사입니다" : "상품 데이터 없음"}</span>
-                  {noHistory && <span className="text-[13px] text-zinc-300">공급사 정보만 등록된 상태 · 매입 발생 시 자동 표시</span>}
+                  {noHistory && <span className="text-[15px] text-zinc-300">공급사 정보만 등록된 상태 · 매입 발생 시 자동 표시</span>}
                 </div>
               );
             }
@@ -341,7 +341,7 @@ export const SupplierFilterBar: React.FC<SupplierFilterBarProps> = ({
             <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
               {[{ v: 100, label: "100" }, { v: 300, label: "300" }, { v: 1000, label: "1k" }, { v: 2000, label: "2k" }, { v: 999999, label: "전체" }].map(o => (
                 <button key={o.v} onClick={() => setSupListLimit(o.v)}
-                  className={`text-[13px] font-semibold h-8 px-3 rounded-md transition-colors whitespace-nowrap cursor-pointer ${supListLimit === o.v ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}
+                  className={`text-[15px] font-semibold h-8 px-3 rounded-md transition-colors whitespace-nowrap cursor-pointer ${supListLimit === o.v ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}
                 >{o.label}</button>
               ))}
             </div>

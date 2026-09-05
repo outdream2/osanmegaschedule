@@ -74,7 +74,7 @@ export function StockSearch() {
           <Package size={20} className="text-white" weight="fill" />
         </div>
         <div className="relative text-left flex-1 min-w-0">
-          <div className="text-[13px] font-bold uppercase tracking-[0.08em] mb-0.5" style={{ color: "#B9D6EA" }}>Realtime Stock</div>
+          <div className="text-[15px] font-bold uppercase tracking-[0.08em] mb-0.5" style={{ color: "#B9D6EA" }}>Realtime Stock</div>
           <div className="text-white font-extrabold text-[20px] sm:text-[22px] tracking-tight leading-tight">재고 확인</div>
           <div className="text-[14px] mt-1 leading-tight" style={{ color: "#DCE8F3" }}>약품·제품명 입력 시 실시간 재고 확인</div>
         </div>
@@ -116,7 +116,7 @@ export function StockSearch() {
                   <div className="min-w-0 flex-1">
                     <div className="text-zinc-800 font-bold text-sm break-words whitespace-normal">{item.product_name}</div>
                     {item.supplier && (
-                      <div className="text-[12px] text-zinc-400 break-words whitespace-normal mt-0.5">{item.supplier}</div>
+                      <div className="text-[14px] text-zinc-400 break-words whitespace-normal mt-0.5">{item.supplier}</div>
                     )}
                   </div>
                   <div className="shrink-0 flex items-center gap-1">
@@ -130,7 +130,7 @@ export function StockSearch() {
               );
             })}
             {results.length > 20 && (
-              <div className="text-center text-[12px] text-zinc-400 pt-2">
+              <div className="text-center text-[14px] text-zinc-400 pt-2">
                 외 {results.length - 20}건 · 더 자세히 보려면 로그인
               </div>
             )}

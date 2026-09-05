@@ -201,7 +201,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
     if (!rank || rank > 10) return null;
     return (
       <span
-        className={`inline-flex items-center gap-0.5 text-[10px] font-bold border rounded px-1.5 py-0.5 leading-none tabular-nums ${rankBadgeClass(rank)}`}
+        className={`inline-flex items-center gap-0.5 text-[12px] font-bold border rounded px-1.5 py-0.5 leading-none tabular-nums ${rankBadgeClass(rank)}`}
         title={`판매 BEST ${rank}위`}
       >
         ★ BEST{rank}
@@ -225,8 +225,8 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         className={`absolute top-full mt-1 ${alignCls} z-50 min-w-[240px] max-w-[360px] p-2.5 bg-white border-2 border-brand-deep rounded-lg shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 whitespace-normal break-keep`}
         role="tooltip"
       >
-        <div className="text-[11px] font-bold text-brand-deep uppercase tracking-wider mb-1 pb-1 border-b border-line">{title}</div>
-        <div className="text-[12px] text-ink leading-relaxed whitespace-pre-wrap">{desc}</div>
+        <div className="text-[13px] font-bold text-brand-deep uppercase tracking-wider mb-1 pb-1 border-b border-line">{title}</div>
+        <div className="text-[14px] text-ink leading-relaxed whitespace-pre-wrap">{desc}</div>
       </div>
     );
   };
@@ -268,18 +268,18 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
             const cid = cellIdByNumSide(num, null);
             if (cid == null) return null;
             return (
-              <span className="absolute top-0.5 left-0.5 text-[10px] font-bold text-brand-deep bg-brand-tint/70 border border-brand-deep/20 rounded px-1 py-px leading-none tabular-nums" title={`셀번호 ${cid}`}>
+              <span className="absolute top-0.5 left-0.5 text-[12px] font-bold text-brand-deep bg-brand-tint/70 border border-brand-deep/20 rounded px-1 py-px leading-none tabular-nums" title={`셀번호 ${cid}`}>
                 #{cid}
               </span>
             );
           })()}
           {/* 구역 라벨 · 상단 고정 · 모든 셀 동일 위치 */}
           <div className="flex items-center justify-center shrink-0">
-            <span className="text-[11px] font-bold text-white bg-amber-700 rounded px-1.5 py-0.5 leading-none">{num}</span>
+            <span className="text-[13px] font-bold text-white bg-amber-700 rounded px-1.5 py-0.5 leading-none">{num}</span>
           </div>
           {/* 카테고리 · 상단 라벨 아래 · flex-1 로 남은 공간 확보 · 상단 정렬 */}
           <div className="flex-1 w-full flex items-start justify-center pt-1">
-            <span className="text-[13px] font-bold text-stone-800 leading-snug text-center break-keep whitespace-normal">{cat}</span>
+            <span className="text-[15px] font-bold text-stone-800 leading-snug text-center break-keep whitespace-normal">{cat}</span>
           </div>
         </div>
         {/* 2026-08-26 · 사용자 지시 · hover · 상세카테고리 커스텀 팝업 · picker 모드에선 안 표시 (popover 와 충돌 방지) */}
@@ -339,10 +339,10 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         >
           {/* 2026-08-31 · 사용자 지시 · 표처럼 줄맞춤 · zoneId 라벨 상단 고정 · 카테고리 아래로 · 모든 셀 동일 정렬 */}
           <div className="flex items-center justify-center shrink-0">
-            <span className={`text-[11px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{zoneId}</span>
+            <span className={`text-[13px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{zoneId}</span>
           </div>
           <div className="flex-1 w-full flex items-start justify-center pt-1">
-            <span className="text-[13px] leading-snug break-keep whitespace-normal">{sub}</span>
+            <span className="text-[15px] leading-snug break-keep whitespace-normal">{sub}</span>
           </div>
         </Tag>
       );
@@ -392,16 +392,16 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         <Tag
           {...extra}
           {...dragProps}
-          className={`w-full text-[11px] font-bold text-zinc-700 bg-white border border-zinc-300 rounded px-1 py-1.5 leading-snug text-center ${centerMin} flex items-center justify-center ${cellInteractive} ${dragClass}`}
+          className={`w-full text-[13px] font-bold text-zinc-700 bg-white border border-zinc-300 rounded px-1 py-1.5 leading-snug text-center ${centerMin} flex items-center justify-center ${cellInteractive} ${dragClass}`}
           title={`${STORE_AISLE_CENTER} · ${centerLabel}${count > 0 ? ` · ${count}개 상품` : ""}${zd?.description ? `\n\n[상세]\n${zd.description}` : ""}${enableDrag ? "\n\n(길게 눌러 드래그)" : ""}`}
         >
           <span className="break-keep whitespace-normal">{centerLabel}</span>
         </Tag>
         <div className="w-full flex items-center justify-center gap-0.5 flex-wrap mt-0.5">
           {/* 2026-08-26 · 사용자 지시 · 원본 num 직접 표시 */}
-          <span className="text-[10px] font-bold text-white bg-zinc-600 rounded px-1 leading-none py-0.5">{STORE_AISLE_CENTER}</span>
+          <span className="text-[12px] font-bold text-white bg-zinc-600 rounded px-1 leading-none py-0.5">{STORE_AISLE_CENTER}</span>
           {count > 0 && (
-            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 rounded px-1 leading-none tabular-nums">{count}</span>
+            <span className="text-[12px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 rounded px-1 leading-none tabular-nums">{count}</span>
           )}
         </div>
       </div>
@@ -420,7 +420,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
 
   const mobileTableEl = mobileTable ? (
     <div className="sm:hidden">
-      <table className="w-full text-left border-collapse text-[11px]">
+      <table className="w-full text-left border-collapse text-[13px]">
         <thead>
           <tr className="bg-zinc-50 text-zinc-500 font-bold uppercase tracking-wide">
             <th className="px-2 py-1.5 w-[20%]">번호</th>
@@ -451,7 +451,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
                 <td className="px-2 py-1.5 align-middle">
                   <span className="text-zinc-600 leading-tight break-words whitespace-normal">{sub || "-"}</span>
                   {count > 0 && (
-                    <span className="ml-1 text-[10px] text-emerald-600 tabular-nums font-semibold">({count})</span>
+                    <span className="ml-1 text-[12px] text-emerald-600 tabular-nums font-semibold">({count})</span>
                   )}
                 </td>
                 <td className="px-2 py-1.5 align-middle">
@@ -470,7 +470,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
                       대기 {pending}
                     </StatusPill>
                   ) : (
-                    <span className="text-[10px] text-zinc-300">-</span>
+                    <span className="text-[12px] text-zinc-300">-</span>
                   )}
                 </td>
               </tr>
@@ -488,14 +488,14 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
       <div className="flex flex-col gap-1.5">
         {/* 상단 벽면 */}
         <div>
-          <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-0.5 px-0.5">상단 벽면 (21→9)</div>
+          <div className="text-[12px] font-bold text-emerald-600 uppercase tracking-wider mb-0.5 px-0.5">상단 벽면 (21→9)</div>
           <div className="grid gap-0.5 items-stretch auto-rows-fr" style={{ gridTemplateColumns: "repeat(13, minmax(0, 1fr))" }}>
             {STORE_TOP_WALL.map(n => wallCell(n))}
           </div>
         </div>
         {/* 중앙 진열대 · 22 + 8B/8A→1B/1A (17셀) */}
         <div>
-          <div className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-0.5 px-0.5">중앙 진열대 (22 · 8B|8A → 1B|1A · 17구역)</div>
+          <div className="text-[12px] font-bold text-blue-600 uppercase tracking-wider mb-0.5 px-0.5">중앙 진열대 (22 · 8B|8A → 1B|1A · 17구역)</div>
           <div className="flex items-stretch justify-start gap-1.5 bg-zinc-100 border border-line py-1.5 px-1.5 rounded-lg">
             {centerCell()}
             {STORE_AISLE_PAIRS.map(n => pairCell(n))}
@@ -503,7 +503,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         </div>
         {/* 하단 벽면 */}
         <div>
-          <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-0.5 px-0.5">하단 벽면 (23→34)</div>
+          <div className="text-[12px] font-bold text-amber-600 uppercase tracking-wider mb-0.5 px-0.5">하단 벽면 (23→34)</div>
           <div className="grid gap-0.5 items-stretch auto-rows-fr" style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}>
             {STORE_BOTTOM_WALL.map(n => wallCell(n))}
           </div>
@@ -512,7 +512,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
 
       {/* 하단 · 동측 wing · 수평 8셀 · 2026-08-26 · 상하 여백 강화 (겹침 방지 · 사용자 지시) */}
       <div className="border-t-2 border-violet-200 pt-5 mt-4 pb-3">
-        <div className="text-[11px] font-bold text-violet-600 uppercase tracking-wider mb-2 px-0.5">동측 wing (35→42) · 이벤트 · 카운터 · 조제실</div>
+        <div className="text-[13px] font-bold text-violet-600 uppercase tracking-wider mb-2 px-0.5">동측 wing (35→42) · 이벤트 · 카운터 · 조제실</div>
         <div className="grid gap-1 pb-2 items-stretch auto-rows-fr" style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))" }}>
           {STORE_VERTICAL_WING.map(n => wallCell(n))}
         </div>
@@ -529,8 +529,8 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
           onClick={() => setCollapsed(v => !v)}
           className="w-full flex items-center justify-between px-3 py-2 hover:bg-violet-100/40 transition cursor-pointer"
         >
-          <span className="text-[11px] font-bold text-violet-700 inline-flex items-center gap-1">{title}</span>
-          <span className="text-[10px] font-bold text-violet-600">{collapsed ? "펼치기 ▼" : "접기 ▲"}</span>
+          <span className="text-[13px] font-bold text-violet-700 inline-flex items-center gap-1">{title}</span>
+          <span className="text-[12px] font-bold text-violet-600">{collapsed ? "펼치기 ▼" : "접기 ▲"}</span>
         </button>
         {!collapsed && (
           <>

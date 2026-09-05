@@ -115,7 +115,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
   const bankbookUrl = localEmployee.bankbook_image_url;
   const hasBankbook = !!bankbookUrl;
 
-  const emptyCls = "px-2 py-1.5 text-[12px] font-semibold bg-zinc-50 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 rounded-lg inline-flex items-center justify-center gap-1 border border-dashed border-zinc-300 cursor-pointer transition disabled:opacity-60 disabled:cursor-wait";
+  const emptyCls = "px-2 py-1.5 text-[14px] font-semibold bg-zinc-50 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 rounded-lg inline-flex items-center justify-center gap-1 border border-dashed border-zinc-300 cursor-pointer transition disabled:opacity-60 disabled:cursor-wait";
 
   return (
     // 2026-08-31 · UI_MOCKUP_2026-08-21 톤 · topAccent + IconTile 헤더 · 목업 통일
@@ -128,7 +128,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
           <div className="flex items-baseline gap-2 flex-wrap">
             <span className="text-[19px] font-extrabold text-ink leading-tight tracking-tight">{localEmployee.name}</span>
             {localEmployee.employee_number && (
-              <span className="text-[13px] font-bold text-zinc-400 tabular-nums">사번 {localEmployee.employee_number}</span>
+              <span className="text-[15px] font-bold text-zinc-400 tabular-nums">사번 {localEmployee.employee_number}</span>
             )}
             {/* 2026-08-20 · #175 · 재직상태 배지 · retire_date 파생 (재직/퇴사예정/퇴사) */}
             {(() => {
@@ -155,7 +155,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
           <button
             type="button"
             onClick={onEdit}
-            className="px-3 py-1.5 text-[13px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition cursor-pointer shrink-0"
+            className="px-3 py-1.5 text-[15px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition cursor-pointer shrink-0"
           >
             <Edit2 size={14} /> 수정
           </button>
@@ -165,7 +165,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
       {/* 근로 조건 · 최신 계약서 · 2026-08-17 · #144 · 계약 없으면 "작성전입니다" 메시지 */}
       {!latestContract && (
         <div className="flex items-center gap-2 pt-2 border-t border-zinc-100 text-[14px]">
-          <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wide">근로 조건</span>
+          <span className="text-[13px] font-bold text-amber-600 uppercase tracking-wide">근로 조건</span>
           <span className="text-zinc-500 font-semibold">근로계약서 작성전입니다</span>
         </div>
       )}
@@ -192,24 +192,24 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
 
       {/* 2026-08-31 · 정보 grid · IconTile + 라벨 uppercase · Attio 톤 · 목업 통일 */}
       <div className="pt-3 border-t border-line">
-        <div className="flex items-center gap-1.5 mb-2 text-[12px] font-bold text-ink-soft uppercase tracking-wider">
+        <div className="flex items-center gap-1.5 mb-2 text-[14px] font-bold text-ink-soft uppercase tracking-wider">
           <IdCard size={11} className="text-brand-deep/70" /> 기본 정보
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
           <div className="flex flex-col">
-            <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1"><User size={10} /> 성별</span>
+            <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1"><User size={10} /> 성별</span>
             <span className="text-[17px] font-bold text-ink mt-0.5">{localEmployee.gender ?? <span className="text-zinc-300">—</span>}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1"><CalendarDays size={10} /> 입사일</span>
+            <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1"><CalendarDays size={10} /> 입사일</span>
             <span className="text-[17px] font-bold text-ink tabular-nums mt-0.5">{localEmployee.hireDate || <span className="text-zinc-300">—</span>}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1"><Building size={10} /> 근무지</span>
+            <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1"><Building size={10} /> 근무지</span>
             <span className="text-[17px] font-bold text-ink mt-0.5">{localEmployee.workplace || <span className="text-zinc-300">—</span>}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1"><Briefcase size={10} /> 연차</span>
+            <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1"><Briefcase size={10} /> 연차</span>
             <span className="text-[17px] font-bold text-ink mt-0.5 tabular-nums">
               {localEmployee.annual_leave_days != null ? `${localEmployee.annual_leave_days}일` : <span className="text-zinc-300">—</span>}
             </span>
@@ -217,7 +217,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
           {/* 2026-08-31 · 생년월일 · endpoint 통일 후 노출 · #52 */}
           {(localEmployee as any).birth_date && (
             <div className="flex flex-col">
-              <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1"><Cake size={10} /> 생년월일</span>
+              <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1"><Cake size={10} /> 생년월일</span>
               <span className="text-[17px] font-bold text-ink tabular-nums mt-0.5">{(localEmployee as any).birth_date}</span>
             </div>
           )}
@@ -225,7 +225,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
           <div className="col-span-2 sm:col-span-4 flex items-center gap-2 mt-1 bg-brand-tint/40 border border-brand-deep/15 rounded-lg px-3 py-2">
             <IconTile icon={<Phone size={13} />} tone="sky" size="sm" />
             <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-[12px] font-bold text-brand-deep uppercase tracking-wider">전화 · 로그인 ID</span>
+              <span className="text-[14px] font-bold text-brand-deep uppercase tracking-wider">전화 · 로그인 ID</span>
               <span className="text-[18px] font-bold text-brand-deep tabular-nums">
                 {localEmployee.phone
                   ? localEmployee.phone.replace(/^(\d{3})(\d{3,4})(\d{4})$/, "$1-$2-$3")
@@ -238,7 +238,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
 
       {/* 첨부 파일 · 이력서·근계·통장사본 · 3슬롯 · 미등록 시 클릭 업로드 */}
       <div className="pt-3 border-t border-line">
-        <div className="flex items-center gap-1.5 mb-2 text-[12px] font-bold text-ink-soft uppercase tracking-wider">
+        <div className="flex items-center gap-1.5 mb-2 text-[14px] font-bold text-ink-soft uppercase tracking-wider">
           <FileText size={11} className="text-emerald-600/70" /> 첨부 파일
         </div>
       <div className="grid grid-cols-3 gap-2">
@@ -251,7 +251,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
             href={localEmployee.resume_url!}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-2 py-1.5 text-[12px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition"
+            className="px-2 py-1.5 text-[14px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition"
             title="이력서 · 새 탭에서 열기"
           >
             <FileText size={13} /> 이력서
@@ -271,7 +271,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
           <button
             type="button"
             onClick={() => setContractModalOpen(true)}
-            className="px-2 py-1.5 text-[12px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition cursor-pointer"
+            className="px-2 py-1.5 text-[14px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition cursor-pointer"
             title="근로계약서 · 미리보기"
           >
             <FileText size={13} /> 근로계약서
@@ -292,7 +292,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
             href={bankbookUrl!}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-2 py-1.5 text-[12px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition"
+            className="px-2 py-1.5 text-[14px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition"
             title="통장사본 · 새 탭에서 열기"
           >
             <FileText size={13} /> 통장사본
@@ -314,8 +314,8 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
       {/* 비고 (있을 때만) */}
       {localEmployee.description && (
         <div className="flex items-start gap-2 pt-2 border-t border-zinc-100">
-          <span className="text-[11px] font-semibold text-zinc-400 shrink-0 mt-0.5">비고</span>
-          <span className="text-[13px] text-zinc-700 leading-snug">{localEmployee.description}</span>
+          <span className="text-[13px] font-semibold text-zinc-400 shrink-0 mt-0.5">비고</span>
+          <span className="text-[15px] text-zinc-700 leading-snug">{localEmployee.description}</span>
         </div>
       )}
 
@@ -337,7 +337,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
               href={localEmployee.contract_file_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-1.5 text-[13px] font-semibold bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg transition"
+              className="px-3 py-1.5 text-[15px] font-semibold bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg transition"
             >
               새 탭에서 열기
             </a>

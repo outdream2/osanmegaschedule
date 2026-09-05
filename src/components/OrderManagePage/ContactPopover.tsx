@@ -16,7 +16,7 @@ export const ContactPopover: React.FC<ContactPopoverProps> = ({ anchor, name, ph
     <div className="fixed z-50 bg-white border border-zinc-300 rounded-xl shadow-2xl p-3 min-w-[220px]"
       style={{ top: Math.min(window.innerHeight - 150, anchor.bottom + 4), left: Math.min(window.innerWidth - 240, anchor.left) }}>
       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-zinc-100">
-        <div className="w-8 h-8 rounded-full bg-brand-tint flex items-center justify-center text-brand-deep font-semibold text-[13px]">
+        <div className="w-8 h-8 rounded-full bg-brand-tint flex items-center justify-center text-brand-deep font-semibold text-[15px]">
           {name.slice(0, 2)}
         </div>
         <div className="min-w-0">

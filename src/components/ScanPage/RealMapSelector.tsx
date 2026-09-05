@@ -309,7 +309,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
                   {major !== "(미분류)" && (
                     <span
                       className={[
-                        "shrink-0 rounded-full px-2 py-0.5 border text-[13px] font-bold whitespace-nowrap",
+                        "shrink-0 rounded-full px-2 py-0.5 border text-[15px] font-bold whitespace-nowrap",
                         pillCls,
                       ].join(" ")}
                     >

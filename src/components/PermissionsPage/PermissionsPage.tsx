@@ -458,7 +458,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           사용중인 직원 <strong>{remapDialog.using.length}명</strong>을 아래 직군으로 이동 후 삭제합니다.
         </p>
         <div className="flex flex-col gap-1.5">
-          <label className="text-[13px] font-semibold text-zinc-500">재매핑 대상 직군</label>
+          <label className="text-[15px] font-semibold text-zinc-500">재매핑 대상 직군</label>
           <select
             className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-[15px] text-zinc-800 bg-white focus:outline-none focus:ring-2 focus:ring-brand-deep"
             value={remapDialog.selected}
@@ -528,7 +528,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         title="메뉴 설정"
         description="페이지별 최소 권한 · 직원별 레벨 · 근무 유형·직군·공사중 등 앱 전체 설정을 관리합니다. 관리자(lv 9) 전용."
         titleClassName="text-base font-bold text-zinc-800 leading-tight"
-        descriptionClassName="text-[11px] text-zinc-500 mt-0.5 leading-relaxed"
+        descriptionClassName="text-[13px] text-zinc-500 mt-0.5 leading-relaxed"
         maxWidth="max-w-4xl"
       >
         {/* 2026-08-29 · #122 · 최상단 GradientAccent (size=thin) */}

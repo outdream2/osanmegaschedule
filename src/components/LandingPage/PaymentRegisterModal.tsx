@@ -208,7 +208,7 @@ const PaymentRegisterModal: React.FC<{
           <IconTile icon={<Wallet size={18} />} tone="emerald" size="lg" />
           <div className="min-w-0">
             <div className="text-[17px] font-bold text-zinc-800 truncate leading-tight">결제 등록</div>
-            <div className="text-[13px] text-zinc-500 truncate">{supplierName}</div>
+            <div className="text-[15px] text-zinc-500 truncate">{supplierName}</div>
           </div>
         </div>
       }
@@ -237,7 +237,7 @@ const PaymentRegisterModal: React.FC<{
               className={`${inputCls} text-right tabular-nums font-bold`}
             />
             {amountNum > 0 && (
-              <p className="text-[13px] text-zinc-400 mt-1 text-right tabular-nums">{fmtWon(amountNum)}</p>
+              <p className="text-[15px] text-zinc-400 mt-1 text-right tabular-nums">{fmtWon(amountNum)}</p>
             )}
           </Field>
           <Field label="결제 방법">
@@ -275,7 +275,7 @@ const PaymentRegisterModal: React.FC<{
             <button
               onClick={autoAllocate}
               disabled={amountNum <= 0 || loading}
-              className="inline-flex items-center gap-1 h-7 px-3 text-[13px] font-bold rounded-lg bg-teal-600 hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed text-white transition cursor-pointer shadow-sm"
+              className="inline-flex items-center gap-1 h-7 px-3 text-[15px] font-bold rounded-lg bg-teal-600 hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed text-white transition cursor-pointer shadow-sm"
               title="상단부터 결제금액만큼 자동 배분"
             >
               <TrendingUp size={11} strokeWidth={2.5} />
@@ -293,7 +293,7 @@ const PaymentRegisterModal: React.FC<{
             ) : (
               <table className="w-full text-[14px]">
                 <thead className="sticky top-0 z-10 bg-zinc-50 border-b border-line">
-                  <tr className="text-[13px] font-bold uppercase tracking-wider text-zinc-500">
+                  <tr className="text-[15px] font-bold uppercase tracking-wider text-zinc-500">
                     <th className="px-2 py-2 w-8"></th>
                     <th className="text-left px-3 py-2 w-20">일자</th>
                     <th className="text-left px-3 py-2">상품</th>
@@ -317,13 +317,13 @@ const PaymentRegisterModal: React.FC<{
                             className="w-4 h-4 accent-teal-600 cursor-pointer disabled:cursor-not-allowed"
                           />
                         </td>
-                        <td className="px-3 py-1.5 text-[13px] text-zinc-500 whitespace-nowrap tabular-nums">
+                        <td className="px-3 py-1.5 text-[15px] text-zinc-500 whitespace-nowrap tabular-nums">
                           {String(inv.date).slice(2)}
                         </td>
-                        <td className="px-3 py-1.5 text-zinc-700 break-words leading-snug text-[13px]">
+                        <td className="px-3 py-1.5 text-zinc-700 break-words leading-snug text-[15px]">
                           {inv.product_name}
-                          {inv.status === "partial" && <span className="ml-1 text-[12px] font-bold text-amber-600">· 부분</span>}
-                          {inv.status === "paid" && <span className="ml-1 text-[12px] font-bold text-zinc-400">· 완납</span>}
+                          {inv.status === "partial" && <span className="ml-1 text-[14px] font-bold text-amber-600">· 부분</span>}
+                          {inv.status === "paid" && <span className="ml-1 text-[14px] font-bold text-zinc-400">· 완납</span>}
                         </td>
                         <td className="text-right px-3 py-1.5 tabular-nums text-zinc-600 whitespace-nowrap">
                           {Number(inv.amount).toLocaleString()}
@@ -340,7 +340,7 @@ const PaymentRegisterModal: React.FC<{
                             value={v?.alloc ?? ""}
                             disabled={disabled || !v?.checked}
                             onChange={e => updateAlloc(inv.id, e.target.value.replace(/[^0-9]/g, ""))}
-                            className="w-full h-7 px-2 text-right text-[13px] tabular-nums border border-line rounded focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:bg-zinc-50 disabled:text-zinc-400"
+                            className="w-full h-7 px-2 text-right text-[15px] tabular-nums border border-line rounded focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:bg-zinc-50 disabled:text-zinc-400"
                           />
                         </td>
                       </tr>
@@ -357,14 +357,14 @@ const PaymentRegisterModal: React.FC<{
           <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] px-3 py-2.5">
             <div className="flex items-center gap-1.5 mb-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <div className="text-[13px] font-semibold text-ink-soft tracking-tight">결제 금액</div>
+              <div className="text-[15px] font-semibold text-ink-soft tracking-tight">결제 금액</div>
             </div>
             <div className="text-[17px] font-extrabold tabular-nums text-emerald-700 leading-tight">{amountNum.toLocaleString()}</div>
           </div>
           <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] px-3 py-2.5">
             <div className="flex items-center gap-1.5 mb-1">
               <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
-              <div className="text-[13px] font-semibold text-ink-soft tracking-tight">배분 총액</div>
+              <div className="text-[15px] font-semibold text-ink-soft tracking-tight">배분 총액</div>
             </div>
             <div className="text-[17px] font-extrabold tabular-nums text-teal-700 leading-tight">{allocSum.toLocaleString()}</div>
           </div>
@@ -378,7 +378,7 @@ const PaymentRegisterModal: React.FC<{
               <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] px-3 py-2.5">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className={`w-1.5 h-1.5 rounded-full ${dotCls}`} />
-                  <div className="text-[13px] font-semibold text-ink-soft tracking-tight">{label}</div>
+                  <div className="text-[15px] font-semibold text-ink-soft tracking-tight">{label}</div>
                 </div>
                 <div className={`text-[17px] font-extrabold tabular-nums leading-tight ${textCls}`}>{diff.toLocaleString()}</div>
               </div>

@@ -32,7 +32,7 @@ export const PositionsField: React.FC<PositionsFieldProps> = ({ selected, allPos
           key={p}
           type="button"
           onClick={() => onToggle(p)}
-          className="inline-flex items-center gap-0.5 px-1.5 h-5 text-[10px] font-bold text-brand-deep bg-brand-tint border border-brand/15 rounded hover:brightness-95 cursor-pointer"
+          className="inline-flex items-center gap-0.5 px-1.5 h-5 text-[12px] font-bold text-brand-deep bg-brand-tint border border-brand/15 rounded hover:brightness-95 cursor-pointer"
           title={`${p} 직군 · 클릭 시 해제`}
         >
           {p}<span className="text-brand-deep/60">×</span>
@@ -41,7 +41,7 @@ export const PositionsField: React.FC<PositionsFieldProps> = ({ selected, allPos
       <button
         type="button"
         onClick={() => onToggleOpen(!isOpen)}
-        className={`h-5 px-1.5 text-[10px] font-bold rounded border transition-colors cursor-pointer ${
+        className={`h-5 px-1.5 text-[12px] font-bold rounded border transition-colors cursor-pointer ${
           isOpen
             ? "bg-brand-deep text-white border-brand-deep"
             : "bg-white text-ink-soft border-line hover:border-brand-deep hover:text-brand-deep"
@@ -50,9 +50,9 @@ export const PositionsField: React.FC<PositionsFieldProps> = ({ selected, allPos
       >+ 직군</button>
       {isOpen && (
         <Card variant="raw-lg" rounded="lg" padding="none" className="absolute right-0 top-full mt-1 z-30 w-40 p-2 flex flex-col gap-1">
-          <div className="text-[10px] font-bold text-zinc-400 uppercase mb-1 px-1">직군 (OR 조건)</div>
+          <div className="text-[12px] font-bold text-zinc-400 uppercase mb-1 px-1">직군 (OR 조건)</div>
           {allPositions.length === 0 ? (
-            <div className="text-[11px] text-zinc-400 px-1 py-2 text-center">직군 없음</div>
+            <div className="text-[13px] text-zinc-400 px-1 py-2 text-center">직군 없음</div>
           ) : allPositions.map(p => (
             <label key={p} className="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-zinc-50 cursor-pointer">
               <input
@@ -61,7 +61,7 @@ export const PositionsField: React.FC<PositionsFieldProps> = ({ selected, allPos
                 onChange={() => onToggle(p)}
                 className="w-3 h-3 accent-[#1E5C8E] cursor-pointer"
               />
-              <span className="text-[12px] font-semibold text-zinc-700">{p}</span>
+              <span className="text-[14px] font-semibold text-zinc-700">{p}</span>
             </label>
           ))}
         </Card>

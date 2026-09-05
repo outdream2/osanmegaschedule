@@ -479,7 +479,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                         setScanPendingProductCode(notFoundCode);
                         onNavigate?.("display");
                       }}
-                      className="mt-2 inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-[13px] font-bold shadow-sm transition cursor-pointer"
+                      className="mt-2 inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-[15px] font-bold shadow-sm transition cursor-pointer"
                     >
                       📝 상품등록 페이지로 이동
                     </button>

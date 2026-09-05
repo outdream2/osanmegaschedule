@@ -76,7 +76,7 @@ const ArrivalZoneInline: React.FC<{
         onClick={() => setSelectorOpen(true)}
         className={[
           "inline-flex items-center gap-1.5 h-8 rounded-full px-3 border-2 transition-all duration-150 cursor-pointer",
-          "text-[13px] font-bold tabular-nums tracking-tight",
+          "text-[15px] font-bold tabular-nums tracking-tight",
           filled
             ? "bg-indigo-50 border-indigo-300 text-indigo-700 hover:border-indigo-500"
             : "bg-white border-dashed border-zinc-300 text-zinc-400 hover:border-indigo-300 hover:bg-zinc-50",
@@ -87,7 +87,7 @@ const ArrivalZoneInline: React.FC<{
         <span>{filled ? value : "구역 선택"}</span>
       </button>
       {savedFlash && (
-        <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-emerald-700 animate-in fade-in duration-200">
+        <span className="inline-flex items-center gap-1 text-[15px] font-semibold text-emerald-700 animate-in fade-in duration-200">
           <Check size={11} strokeWidth={3} />
           저장됨
         </span>
@@ -180,7 +180,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           ) : (
             <Badge tone="zinc" size="xs">공급사 미지정</Badge>
           )}
-          <span className="ml-auto text-[12px] tabular-nums text-ink-soft">
+          <span className="ml-auto text-[14px] tabular-nums text-ink-soft">
             {arrivedAt}
           </span>
         </div>
@@ -195,7 +195,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
               <Package size={13} className="text-zinc-400" />
               현재고 <span className="text-brand-deep">{currentStock.toLocaleString()}</span>
               {optimalStock > 0 && (
-                <span className="text-[13px] font-semibold text-zinc-400 ml-0.5">/ 적정 {optimalStock.toLocaleString()}</span>
+                <span className="text-[15px] font-semibold text-zinc-400 ml-0.5">/ 적정 {optimalStock.toLocaleString()}</span>
               )}
             </span>
           )}
@@ -205,13 +205,13 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
         <div className="flex items-center gap-1.5 flex-wrap -mt-0.5">
           {item.product?.spec && (
             <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5
-              text-[13px] font-semibold text-zinc-500 bg-zinc-100/70">
+              text-[15px] font-semibold text-zinc-500 bg-zinc-100/70">
               <Box size={11} className="text-zinc-400" />
               {item.product.spec}
             </span>
           )}
           <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5
-            text-[13px] font-mono text-zinc-400 bg-zinc-100/60">
+            text-[15px] font-mono text-zinc-400 bg-zinc-100/60">
             <Hash size={11} className="text-zinc-300" />
             {item.code}
           </span>
@@ -245,9 +245,9 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
                   >
                     <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
                     {meta.full}
-                    {zone && <span className="text-[13px] opacity-70">·{zone}</span>}
+                    {zone && <span className="text-[15px] opacity-70">·{zone}</span>}
                     {isTarget && (
-                      <span className="text-[12px] font-bold text-emerald-700 ml-0.5">+{item.qty}</span>
+                      <span className="text-[14px] font-bold text-emerald-700 ml-0.5">+{item.qty}</span>
                     )}
                   </span>
                 );
@@ -283,7 +283,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
               title="수량 일치 · 클릭 시 선택/해제"
               className={[
                 "flex items-center justify-center gap-1 px-2.5 min-w-[64px]",
-                "text-[13px] font-bold transition-all duration-150 cursor-pointer",
+                "text-[15px] font-bold transition-all duration-150 cursor-pointer",
                 isMatch
                   ? "bg-emerald-500 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
                   : "text-zinc-500 hover:text-emerald-700 hover:bg-white",
@@ -300,7 +300,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
               title="수량 불일치 · 클릭 시 선택/해제"
               className={[
                 "flex items-center justify-center gap-1 px-2.5 min-w-[64px] border-l border-line",
-                "text-[13px] font-bold transition-all duration-150 cursor-pointer",
+                "text-[15px] font-bold transition-all duration-150 cursor-pointer",
                 isMismatch
                   ? "bg-rose-500 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
                   : "text-zinc-500 hover:text-rose-700 hover:bg-white",
@@ -338,7 +338,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
                   placeholder="0"
                   className="w-24 h-8 px-2 rounded-md border border-line text-[14px] tabular-nums text-right focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
                 />
-                <span className="text-[13px] text-zinc-400">원</span>
+                <span className="text-[15px] text-zinc-400">원</span>
               </label>
             )}
             {onSetExpiryDate && (

@@ -76,7 +76,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
         {/* 2026-08-18 · IconTile 확산 */}
         <IconTile icon={<Building2 size={15} />} tone="sky" size="lg" />
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">신규 공급사</div>
+          <div className="text-[12px] font-bold text-sky-600 uppercase tracking-wider">신규 공급사</div>
           <div className="text-[14px] font-bold text-zinc-800">공급사 등록</div>
         </div>
         <button
@@ -93,7 +93,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
       {/* 폼 */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 min-h-0">
         <label className="flex flex-col gap-1">
-          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+          <span className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">
             회사명 <span className="text-rose-500">*</span>
           </span>
           <input
@@ -102,17 +102,17 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
             placeholder="예: (주)메가헬스케어"
-            className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
+            className="h-9 px-3 text-[15px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
           />
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">카테고리</span>
+          <span className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">카테고리</span>
           <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
               onClick={() => setCategory("")}
-              className={`h-8 px-3 rounded-md text-[11px] font-bold transition cursor-pointer ${
+              className={`h-8 px-3 rounded-md text-[13px] font-bold transition cursor-pointer ${
                 category === "" ? "bg-zinc-700 text-white shadow-sm" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
               }`}
             >
@@ -123,7 +123,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
                 key={c}
                 type="button"
                 onClick={() => setCategory(c)}
-                className={`h-8 px-3 rounded-md text-[11px] font-bold transition cursor-pointer ${
+                className={`h-8 px-3 rounded-md text-[13px] font-bold transition cursor-pointer ${
                   category === c
                     ? c === "위탁"    ? "bg-violet-500 text-white shadow-sm"
                     : c === "선결제"  ? "bg-rose-500 text-white shadow-sm"
@@ -141,62 +141,62 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
 
         <div className="grid grid-cols-2 gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">담당자</span>
+            <span className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">담당자</span>
             <input
               type="text"
               value={contactName}
               onChange={(e) => setContactName(e.target.value)}
               placeholder="이름"
-              className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
+              className="h-9 px-3 text-[15px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">전화</span>
+            <span className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">전화</span>
             <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="010-0000-0000"
-              className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition tabular-nums"
+              className="h-9 px-3 text-[15px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition tabular-nums"
             />
           </label>
         </div>
 
         <label className="flex flex-col gap-1">
-          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">이메일</span>
+          <span className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">이메일</span>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="email@example.com"
-            className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
+            className="h-9 px-3 text-[15px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
           />
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">사업자번호</span>
+          <span className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">사업자번호</span>
           <input
             type="text"
             value={businessNumber}
             onChange={(e) => setBusinessNumber(e.target.value)}
             placeholder="000-00-00000"
-            className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition tabular-nums"
+            className="h-9 px-3 text-[15px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition tabular-nums"
           />
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">비고</span>
+          <span className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">비고</span>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="추가 정보"
             rows={2}
-            className="px-3 py-2 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition resize-none"
+            className="px-3 py-2 text-[15px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition resize-none"
           />
         </label>
 
         {err && (
-          <div className="text-[11px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-md px-2 py-1.5">
+          <div className="text-[13px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-md px-2 py-1.5">
             {err}
           </div>
         )}
@@ -207,7 +207,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
         <button
           type="button"
           onClick={onClose}
-          className="h-9 px-4 rounded-lg border border-line bg-white text-zinc-600 hover:bg-zinc-50 text-[12px] font-bold transition cursor-pointer"
+          className="h-9 px-4 rounded-lg border border-line bg-white text-zinc-600 hover:bg-zinc-50 text-[14px] font-bold transition cursor-pointer"
         >
           취소
         </button>
@@ -215,7 +215,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
           type="button"
           onClick={handleSave}
           disabled={disabled}
-          className="ml-auto h-9 px-4 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm inline-flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+          className="ml-auto h-9 px-4 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-bold shadow-sm inline-flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
         >
           {saving ? <Spinner size={13} tone="white" /> : <Save size={13} strokeWidth={2.5} />}
           {saving ? "저장 중..." : "등록"}

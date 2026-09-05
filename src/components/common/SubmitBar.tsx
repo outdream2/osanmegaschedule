@@ -69,7 +69,7 @@ export const SubmitBar: React.FC<SubmitBarProps> = ({
       className={`${posCls} bg-white/95 backdrop-blur-sm border-t border-line px-4 py-3 flex items-center gap-2 ${className}`}
     >
       {hint && (
-        <span className="text-[13px] font-medium text-ink-soft min-w-0 truncate">
+        <span className="text-[15px] font-medium text-ink-soft min-w-0 truncate">
           {hint}
         </span>
       )}

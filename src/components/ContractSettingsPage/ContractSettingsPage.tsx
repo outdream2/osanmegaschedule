@@ -449,14 +449,14 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             {/* 2026-08-18 · IconTile 확산 */}
             <IconTile icon={<Gear size={15} weight="fill" />} tone="indigo" size="md" />
 
-            <span className="text-[13px] font-bold text-zinc-800 leading-none hidden sm:block">근로계약서 설정</span>
+            <span className="text-[15px] font-bold text-zinc-800 leading-none hidden sm:block">근로계약서 설정</span>
             {overallSaveState === "saved" && (
-              <span className="inline-flex items-center gap-1 text-[13px] text-emerald-600 font-bold">
+              <span className="inline-flex items-center gap-1 text-[15px] text-emerald-600 font-bold">
                 <Check size={11} weight="bold" /> 모든 항목 저장됨
               </span>
             )}
             {overallSaveState === "error" && (
-              <span className="inline-flex items-center gap-1 text-[13px] text-rose-500 font-bold">
+              <span className="inline-flex items-center gap-1 text-[15px] text-rose-500 font-bold">
                 <Warning size={11} weight="fill" /> 일부 저장 실패
               </span>
             )}
@@ -465,7 +465,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             type="button"
             onClick={handleSaveAll}
             disabled={overallSaving}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-indigo-300 text-white text-[12px] font-bold shadow-sm transition-colors cursor-pointer shrink-0"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-indigo-300 text-white text-[14px] font-bold shadow-sm transition-colors cursor-pointer shrink-0"
           >
             <FloppyDisk size={13} weight="bold" />
             {overallSaving ? "저장 중..." : "모두 저장"}
@@ -477,7 +477,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
           <div className="flex items-center gap-2">
             <div>
               <h1 className="text-base sm:text-lg font-bold text-zinc-800 leading-none">근로계약서 설정</h1>
-              <p className="text-[13px] text-zinc-500 mt-0.5 font-semibold">
+              <p className="text-[15px] text-zinc-500 mt-0.5 font-semibold">
                 시급·회사정보 · 즉시 저장 &nbsp;·&nbsp; 각 호 · 저장 버튼으로 확정
                 {!serverLoaded && <span className="ml-1.5 text-zinc-400">· 서버 로드 중...</span>}
               </p>
@@ -488,7 +488,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             <button
               type="button"
               onClick={handleResetToDefault}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-line bg-white text-zinc-500 hover:bg-zinc-50 text-[12px] font-semibold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-line bg-white text-zinc-500 hover:bg-zinc-50 text-[14px] font-semibold transition-colors cursor-pointer"
               title="기본값 초기화"
             >
               <ArrowsClockwise size={13} />
@@ -498,7 +498,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
               type="button"
               onClick={handleRevert}
               disabled={!dirty}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-line bg-white text-zinc-500 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed text-[12px] font-semibold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-line bg-white text-zinc-500 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed text-[14px] font-semibold transition-colors cursor-pointer"
             >
               취소
             </button>
@@ -506,7 +506,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
               type="button"
               onClick={handleSave}
               disabled={!dirty || saving}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-indigo-300 text-white text-[12px] font-bold shadow-sm transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-indigo-300 text-white text-[14px] font-bold shadow-sm transition-colors cursor-pointer"
             >
               <FloppyDisk size={13} weight="bold" />
               {saving ? "저장 중..." : "각 호 저장"}
@@ -517,7 +517,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
         {/* 안내 배너 */}
         {notice && (
           <div
-            className={`rounded-lg border px-3 py-2 text-[12px] font-semibold flex items-center gap-2 ${
+            className={`rounded-lg border px-3 py-2 text-[14px] font-semibold flex items-center gap-2 ${
               notice.tone === "ok"  ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
               notice.tone === "err" ? "bg-rose-50 text-rose-700 border-rose-200" :
                                       "bg-zinc-50 text-zinc-700 border-line"
@@ -555,8 +555,8 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                 <CurrencyKrw size={14} weight="fill" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="text-[13px] font-bold text-indigo-700 leading-none">직군별 시급</h2>
-                <p className="text-[13px] text-zinc-500 font-semibold mt-0.5">편집 즉시 서버 저장 · 근로계약서 자동 반영</p>
+                <h2 className="text-[15px] font-bold text-indigo-700 leading-none">직군별 시급</h2>
+                <p className="text-[15px] text-zinc-500 font-semibold mt-0.5">편집 즉시 서버 저장 · 근로계약서 자동 반영</p>
               </div>
             </header>
 
@@ -575,9 +575,9 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                     {/* 카드 헤더 · 직군명 + 리셋 */}
                     <div className={`flex items-center justify-between px-3 py-2 ${job.bg}`}>
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className={`text-[13px] font-bold ${job.color} leading-none`}>{job.label}</span>
+                        <span className={`text-[15px] font-bold ${job.color} leading-none`}>{job.label}</span>
                         {isDefault && (
-                          <span className="text-[13px] font-semibold text-zinc-400 leading-none" title="기본값 사용 중">
+                          <span className="text-[15px] font-semibold text-zinc-400 leading-none" title="기본값 사용 중">
                             기본값
                           </span>
                         )}
@@ -596,7 +596,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                     {/* 주중 · 주말 나란히 */}
                     <div className="flex items-stretch divide-x divide-zinc-100 px-3 py-2.5">
                       <div className="flex-1 flex flex-col gap-1 pr-3">
-                        <label className="text-[12px] font-bold text-zinc-400 tracking-wide">주중 (원)</label>
+                        <label className="text-[14px] font-bold text-zinc-400 tracking-wide">주중 (원)</label>
                         <input
                           type="number"
                           min={0}
@@ -604,11 +604,11 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                           value={rate.weekday || ""}
                           placeholder={String(fallback.weekday)}
                           onChange={(e) => updWage(job.key, "weekday", Math.max(0, Number(e.target.value) || 0))}
-                          className={`w-full bg-zinc-50 border rounded-lg px-2 py-1.5 text-[13px] font-bold text-right tabular-nums focus:outline-none focus:bg-white focus:border-brand-deep transition ${isDefault ? "border-line text-zinc-400" : "border-line text-zinc-800"}`}
+                          className={`w-full bg-zinc-50 border rounded-lg px-2 py-1.5 text-[15px] font-bold text-right tabular-nums focus:outline-none focus:bg-white focus:border-brand-deep transition ${isDefault ? "border-line text-zinc-400" : "border-line text-zinc-800"}`}
                         />
                       </div>
                       <div className="flex-1 flex flex-col gap-1 pl-3">
-                        <label className="text-[12px] font-bold text-zinc-400 tracking-wide">주말 (원)</label>
+                        <label className="text-[14px] font-bold text-zinc-400 tracking-wide">주말 (원)</label>
                         <input
                           type="number"
                           min={0}
@@ -616,7 +616,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                           value={rate.weekend || ""}
                           placeholder={String(fallback.weekend)}
                           onChange={(e) => updWage(job.key, "weekend", Math.max(0, Number(e.target.value) || 0))}
-                          className={`w-full bg-zinc-50 border rounded-lg px-2 py-1.5 text-[13px] font-bold text-right tabular-nums focus:outline-none focus:bg-white focus:border-brand-deep transition ${isDefault ? "border-line text-zinc-400" : "border-line text-zinc-800"}`}
+                          className={`w-full bg-zinc-50 border rounded-lg px-2 py-1.5 text-[15px] font-bold text-right tabular-nums focus:outline-none focus:bg-white focus:border-brand-deep transition ${isDefault ? "border-line text-zinc-400" : "border-line text-zinc-800"}`}
                         />
                       </div>
                     </div>
@@ -628,7 +628,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                 <button
                   type="button"
                   onClick={saveSettingsNow}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-bold shadow-sm transition-colors cursor-pointer"
                   title="시급 즉시 서버 저장 (자동 저장 중이지만 명시적 저장도 가능)"
                 >
                   <FloppyDisk size={12} weight="bold" />
@@ -648,7 +648,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             <button
               type="button"
               onClick={toggleAllOpen}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-line bg-white text-zinc-500 hover:bg-zinc-50 text-[13px] font-bold transition-colors cursor-pointer shrink-0"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-line bg-white text-zinc-500 hover:bg-zinc-50 text-[15px] font-bold transition-colors cursor-pointer shrink-0"
             >
               {allOpen ? <CaretDown size={11} weight="bold" /> : <CaretRight size={11} weight="bold" />}
               {allOpen ? "전체 접기" : "전체 펼치기"}
@@ -679,10 +679,10 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                     <Icon size={13} weight="fill" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className={`text-[13px] font-bold ${grp.color} leading-none`}>{grp.label}</h3>
-                    <p className="text-[13px] text-zinc-500 font-semibold mt-0.5">{grp.desc}</p>
+                    <h3 className={`text-[15px] font-bold ${grp.color} leading-none`}>{grp.label}</h3>
+                    <p className="text-[15px] text-zinc-500 font-semibold mt-0.5">{grp.desc}</p>
                   </div>
-                  <span className={`text-[12px] font-bold px-1.5 py-0.5 rounded-full ${grp.bg} ${grp.color} shrink-0`}>{list.length}</span>
+                  <span className={`text-[14px] font-bold px-1.5 py-0.5 rounded-full ${grp.bg} ${grp.color} shrink-0`}>{list.length}</span>
                   {isOpen
                     ? <CaretDown size={12} weight="bold" className="text-zinc-400 shrink-0" />
                     : <CaretRight size={12} weight="bold" className="text-zinc-400 shrink-0" />}
@@ -692,7 +692,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                 {isOpen && (
                   <div className={`border-t ${grp.border} p-3 flex flex-col gap-2`}>
                     {list.length === 0 && (
-                      <div className="text-[13px] text-zinc-400 font-semibold text-center py-3 border border-dashed border-line rounded-lg">
+                      <div className="text-[15px] text-zinc-400 font-semibold text-center py-3 border border-dashed border-line rounded-lg">
                         등록된 항목이 없습니다.
                       </div>
                     )}
@@ -702,7 +702,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                         key={idx}
                         className="flex items-start gap-2 p-2 rounded-lg border border-zinc-100 bg-zinc-50/40 hover:border-line transition-colors"
                       >
-                        <div className={`flex items-center justify-center min-w-[22px] h-[22px] rounded-md ${grp.bg} ${grp.color} text-[12px] font-bold shrink-0 mt-1`}>
+                        <div className={`flex items-center justify-center min-w-[22px] h-[22px] rounded-md ${grp.bg} ${grp.color} text-[14px] font-bold shrink-0 mt-1`}>
                           {idx + 1}
                         </div>
                         <textarea
@@ -710,7 +710,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                           onChange={(e) => updClause(grp.key, idx, e.target.value)}
                           rows={Math.max(2, Math.min(5, Math.ceil(text.length / 55) || 2))}
                           placeholder="내용을 입력하세요."
-                          className="flex-1 bg-white border border-line rounded-lg px-2 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:shadow-sm transition resize-y leading-relaxed"
+                          className="flex-1 bg-white border border-line rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:shadow-sm transition resize-y leading-relaxed"
                         />
                         <div className="flex flex-col gap-1 shrink-0 pt-0.5">
                           <button
@@ -747,7 +747,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                       <button
                         type="button"
                         onClick={() => addClause(grp.key)}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-zinc-300 bg-white text-zinc-500 hover:bg-zinc-50 hover:border-indigo-400 hover:text-indigo-600 text-[13px] font-bold transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-zinc-300 bg-white text-zinc-500 hover:bg-zinc-50 hover:border-indigo-400 hover:text-indigo-600 text-[15px] font-bold transition-colors cursor-pointer"
                       >
                         <Plus size={11} weight="bold" />
                         항목 추가
@@ -755,7 +755,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                       <button
                         type="button"
                         onClick={() => handleResetGroup(grp.key)}
-                        className="text-[12px] font-bold text-zinc-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                        className="text-[14px] font-bold text-zinc-400 hover:text-indigo-600 transition-colors cursor-pointer"
                         title="이 그룹 기본값으로 되돌리기"
                       >
                         기본값 복원

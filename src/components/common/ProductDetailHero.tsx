@@ -62,11 +62,11 @@ export const ProductDetailHero: React.FC<ProductDetailHeroProps> = ({
               <h1 className="text-[22px] font-bold text-ink tracking-tight leading-tight break-keep">
                 {product.product_name || "(이름 없음)"}
               </h1>
-              <span className={`inline-flex items-center h-6 px-2 rounded-full border text-[12px] font-bold ${tone.bg} ${tone.text}`}>
+              <span className={`inline-flex items-center h-6 px-2 rounded-full border text-[14px] font-bold ${tone.bg} ${tone.text}`}>
                 {tone.label}
               </span>
             </div>
-            <div className="mt-1.5 flex items-center gap-3 flex-wrap text-[13px] text-ink-soft">
+            <div className="mt-1.5 flex items-center gap-3 flex-wrap text-[15px] text-ink-soft">
               <span className="font-mono tabular-nums text-zinc-500">코드 {product.product_code}</span>
               {product.category && (
                 <>
@@ -83,7 +83,7 @@ export const ProductDetailHero: React.FC<ProductDetailHeroProps> = ({
               {product.barcode && (
                 <>
                   <span className="text-zinc-300">·</span>
-                  <span className="font-mono tabular-nums text-zinc-400 text-[12px]">BC {product.barcode}</span>
+                  <span className="font-mono tabular-nums text-zinc-400 text-[14px]">BC {product.barcode}</span>
                 </>
               )}
             </div>

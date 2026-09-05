@@ -135,7 +135,7 @@ export const StockArrivalList: React.FC<StockArrivalListProps> = ({ isVendor }) 
                       <span className="text-[14px] font-normal text-ink-soft/70 break-words whitespace-normal min-w-0">· {a.body}</span>
                     )}
                     {isNew && (
-                      <span className="shrink-0 inline-flex items-center h-[22px] px-2 rounded-md text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 ring-1 ring-emerald-500/25">
+                      <span className="shrink-0 inline-flex items-center h-[22px] px-2 rounded-md text-[13px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 ring-1 ring-emerald-500/25">
                         NEW
                       </span>
                     )}
@@ -161,7 +161,7 @@ export const StockArrivalList: React.FC<StockArrivalListProps> = ({ isVendor }) 
           arrivalDetail ? (
             <div className="min-w-0">
               <div className="text-[18px] font-bold text-ink tracking-tight truncate">{arrivalDetail.title}</div>
-              <div className="text-[11px] text-ink-soft mt-0.5 tabular-nums">
+              <div className="text-[13px] text-ink-soft mt-0.5 tabular-nums">
                 {new Date(arrivalDetail.created_at).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
               </div>
             </div>

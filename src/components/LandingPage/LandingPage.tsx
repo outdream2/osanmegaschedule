@@ -447,7 +447,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   pageKey="business-manage"
                   onClick={() => onNavigate("business-manage", authSession!)}
                   badge={leavePendingCount > 0 ? (
-                    <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[13px] font-bold tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
+                    <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[15px] font-bold tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
                       {leavePendingCount}
                     </div>
                   ) : undefined} />
@@ -460,7 +460,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     const total = requestsCounts.display + requestsCounts.order + requestsCounts.mismatch + requestsCounts.lunch;
                     if (total === 0) return undefined;
                     return (
-                      <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[13px] font-bold tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
+                      <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[15px] font-bold tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
                         {total}
                       </div>
                     );
@@ -542,7 +542,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     onClick={() => onNavigate("requests", authSession!)}
                     badge={myPendingCount > 0 ? (
                       <div className="absolute top-2 right-2 z-10">
-                        <span className="min-w-[24px] h-[24px] px-1.5 rounded-full flex items-center justify-center text-[13px] font-bold text-white bg-rose-500 shadow-lg ring-2 ring-white animate-pulse">
+                        <span className="min-w-[24px] h-[24px] px-1.5 rounded-full flex items-center justify-center text-[15px] font-bold text-white bg-rose-500 shadow-lg ring-2 ring-white animate-pulse">
                           {myPendingCount > 99 ? "99+" : myPendingCount}
                         </span>
                       </div>
@@ -583,7 +583,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     );
                   })()}
                 </span>
-                <div className="text-slate-400 text-[13px] sm:text-sm mt-1 font-semibold tracking-wide">{lpBrand.shortName || "오산 메가타운 약국"}</div>
+                <div className="text-slate-400 text-[15px] sm:text-sm mt-1 font-semibold tracking-wide">{lpBrand.shortName || "오산 메가타운 약국"}</div>
               </div>
               {/* 2026-08-17 · 사용자 지시 · 공사중 배너 · 최신 트렌드 · 노랑 → 딥네이비 modern (Linear/Vercel 톤) */}
               {underConstruction ? (
@@ -634,9 +634,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               {!underConstruction && (
               <Card variant="raw-md" rounded="2xl" padding="none" bg="bg-[#FEE500]" borderColor="border-[#F0D700]/70" clip className="w-full mt-3">
                 <div className="px-4 pt-3 pb-2 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-md bg-zinc-900 text-[#FEE500] font-bold text-[12px] flex items-center justify-center">talk</span>
+                  <span className="w-6 h-6 rounded-md bg-zinc-900 text-[#FEE500] font-bold text-[14px] flex items-center justify-center">talk</span>
                   <span className="text-zinc-900 font-bold text-[15px]">카카오톡 채널</span>
-                  <span className="ml-auto text-zinc-800/70 font-semibold text-[13px]">새 소식 알림받기</span>
+                  <span className="ml-auto text-zinc-800/70 font-semibold text-[15px]">새 소식 알림받기</span>
                 </div>
                 <div className="bg-white px-4 py-3 flex items-center gap-3">
                   <img
@@ -646,7 +646,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   />
                   <div className="flex-1 flex flex-col gap-1.5 min-w-0">
                     <div className="text-zinc-900 font-bold text-[15px] leading-tight whitespace-pre-line">{lpBrand.shortName || "오산\n메가타운약국"}</div>
-                    <div className="text-zinc-500 text-[13px] leading-tight">QR 스캔 또는 아래 버튼 클릭</div>
+                    <div className="text-zinc-500 text-[15px] leading-tight">QR 스캔 또는 아래 버튼 클릭</div>
                     <a
                       href={lpContact.kakaoChannelUrl || "https://pf.kakao.com/_XWuiX/friend"}
                       target="_blank"

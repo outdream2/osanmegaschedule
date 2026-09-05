@@ -180,9 +180,9 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
         <CalendarCheck size={28} className="text-white" weight="fill" />
       </div>
       <div className="relative">
-        <div className="text-white/70 text-[12px] font-semibold tracking-widest uppercase mb-0.5">Vendor Portal</div>
+        <div className="text-white/70 text-[14px] font-semibold tracking-widest uppercase mb-0.5">Vendor Portal</div>
         <div className="text-white font-bold text-3xl leading-tight tracking-tight">거래처 로그인</div>
-        <div className="text-emerald-100 text-[13px] font-medium tracking-wide mt-0.5">방문예약 이용</div>
+        <div className="text-emerald-100 text-[15px] font-medium tracking-wide mt-0.5">방문예약 이용</div>
       </div>
     </div>
   );
@@ -272,7 +272,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
             >
               {vendorLoading ? <><Spinner size={16} tone="white" /><span>로그인 중...</span></> : <span>거래처로 입장하기</span>}
             </button>
-            <p className="text-[13px] text-zinc-400 text-center leading-relaxed">비밀번호 분실 시 관리자에게 문의하세요</p>
+            <p className="text-[15px] text-zinc-400 text-center leading-relaxed">비밀번호 분실 시 관리자에게 문의하세요</p>
           </form>
         </div>
       </Modal>
@@ -351,7 +351,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
             <Button type="submit" variant="primary" size="lg" fullWidth loading={empLoading} className="mt-1">
               {empLoading ? "로그인 중..." : "직원으로 입장하기"}
             </Button>
-            <p className="text-[13px] text-zinc-400 text-center leading-relaxed">비밀번호 분실 시 관리자에게 문의하세요</p>
+            <p className="text-[15px] text-zinc-400 text-center leading-relaxed">비밀번호 분실 시 관리자에게 문의하세요</p>
           </form>
         </div>
       </Modal>

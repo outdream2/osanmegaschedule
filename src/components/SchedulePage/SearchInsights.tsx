@@ -53,12 +53,12 @@ export const SearchInsights: React.FC<SearchInsightsProps> = ({
               <div className="flex items-center justify-between border-b border-zinc-100 pb-2 mb-2">
                 <div className="flex items-center gap-2">
                   <span className="font-extrabold text-zinc-800 text-sm">{emp.name}</span>
-                  <span className="text-[10px] font-semibold bg-zinc-100 text-zinc-600 px-1.5 py-0.5 rounded">{emp.position}</span>
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${(emp.workplace || "매장") === "매장" ? "bg-emerald-50 text-emerald-800 border border-emerald-100" : "bg-indigo-50 text-indigo-800 border border-indigo-100"}`}>
+                  <span className="text-[12px] font-semibold bg-zinc-100 text-zinc-600 px-1.5 py-0.5 rounded">{emp.position}</span>
+                  <span className={`text-[12px] font-semibold px-1.5 py-0.5 rounded ${(emp.workplace || "매장") === "매장" ? "bg-emerald-50 text-emerald-800 border border-emerald-100" : "bg-indigo-50 text-indigo-800 border border-indigo-100"}`}>
                     {emp.workplace || "매장"}
                   </span>
                 </div>
-                <span className="text-[10px] tabular-nums text-zinc-400">입사일: {emp.hireDate ? emp.hireDate.split("-").slice(1).join("/") : "-"}</span>
+                <span className="text-[12px] tabular-nums text-zinc-400">입사일: {emp.hireDate ? emp.hireDate.split("-").slice(1).join("/") : "-"}</span>
               </div>
 
               <div className="space-y-1.5">
@@ -69,11 +69,11 @@ export const SearchInsights: React.FC<SearchInsightsProps> = ({
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  {shiftBreakdown["오픈"] > 0 && <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-100 px-2 py-0.5 rounded-lg font-extrabold">오픈: {shiftBreakdown["오픈"]}회</span>}
-                  {shiftBreakdown["미들"] > 0 && <span className="text-[10px] bg-sky-50 text-sky-800 border border-sky-100 px-2 py-0.5 rounded-lg font-extrabold">미들: {shiftBreakdown["미들"]}회</span>}
-                  {shiftBreakdown["마감"] > 0 && <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-100 px-2 py-0.5 rounded-lg font-extrabold">마감: {shiftBreakdown["마감"]}회</span>}
-                  {shiftBreakdown["오전반차"] > 0 && <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-100 px-2 py-0.5 rounded-lg font-extrabold">오전반차: {shiftBreakdown["오전반차"]}회</span>}
-                  {shiftBreakdown["오후반차"] > 0 && <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-100 px-2 py-0.5 rounded-lg font-extrabold">오후반차: {shiftBreakdown["오후반차"]}회</span>}
+                  {shiftBreakdown["오픈"] > 0 && <span className="text-[12px] bg-amber-50 text-amber-800 border border-amber-100 px-2 py-0.5 rounded-lg font-extrabold">오픈: {shiftBreakdown["오픈"]}회</span>}
+                  {shiftBreakdown["미들"] > 0 && <span className="text-[12px] bg-sky-50 text-sky-800 border border-sky-100 px-2 py-0.5 rounded-lg font-extrabold">미들: {shiftBreakdown["미들"]}회</span>}
+                  {shiftBreakdown["마감"] > 0 && <span className="text-[12px] bg-emerald-50 text-emerald-800 border border-emerald-100 px-2 py-0.5 rounded-lg font-extrabold">마감: {shiftBreakdown["마감"]}회</span>}
+                  {shiftBreakdown["오전반차"] > 0 && <span className="text-[12px] bg-amber-50 text-amber-800 border border-amber-100 px-2 py-0.5 rounded-lg font-extrabold">오전반차: {shiftBreakdown["오전반차"]}회</span>}
+                  {shiftBreakdown["오후반차"] > 0 && <span className="text-[12px] bg-emerald-50 text-emerald-800 border border-emerald-100 px-2 py-0.5 rounded-lg font-extrabold">오후반차: {shiftBreakdown["오후반차"]}회</span>}
                 </div>
               </div>
             </Card>

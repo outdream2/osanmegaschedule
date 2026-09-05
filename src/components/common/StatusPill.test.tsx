@@ -41,7 +41,7 @@ describe("StatusPill · 기본 렌더", () => {
     const { container } = render(<StatusPill size="xs">x</StatusPill>);
     const span = container.querySelector("span")!;
     expect(span.className).toContain("h-5");
-    expect(span.className).toContain("text-[12px]");
+    expect(span.className).toContain("text-[14px]");
   });
 
   it("size=md · py-0.5 text-14", () => {

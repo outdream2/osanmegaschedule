@@ -94,13 +94,13 @@ export const StatCard: React.FC<{
     <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] px-3 py-2.5">
       <div className="flex items-center gap-1.5 mb-1">
         <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-        <span className={`inline-flex items-center gap-1 text-[13px] font-semibold text-ink-soft tracking-tight`}>
+        <span className={`inline-flex items-center gap-1 text-[15px] font-semibold text-ink-soft tracking-tight`}>
           <span className={c.iconColor}>{icon}</span><span>{label}</span>
         </span>
       </div>
       {/* 2026-08-29 · UI 감사 U1/U2 · font-mono → tabular-nums · truncate 제거 (KPI 잘림 방지) */}
       <div className={`text-[17px] font-extrabold ${c.text} tabular-nums break-words whitespace-normal leading-tight`} title={value}>{value}</div>
-      {sub && <div className="text-[13px] font-medium text-ink-soft mt-0.5 break-words whitespace-normal" title={sub}>{sub}</div>}
+      {sub && <div className="text-[15px] font-medium text-ink-soft mt-0.5 break-words whitespace-normal" title={sub}>{sub}</div>}
     </div>
   );
 };

@@ -44,7 +44,7 @@ export const AppFooter: React.FC<AppFooterProps> = ({
   return (
     <footer
       className={[
-        "w-full flex items-center justify-center gap-x-3 gap-y-1 py-2.5 text-[12px] font-medium text-zinc-500 flex-wrap tracking-tight",
+        "w-full flex items-center justify-center gap-x-3 gap-y-1 py-2.5 text-[14px] font-medium text-zinc-500 flex-wrap tracking-tight",
         className,
       ].filter(Boolean).join(" ")}
       role="contentinfo"
@@ -72,7 +72,7 @@ export const AppFooter: React.FC<AppFooterProps> = ({
       {version && (
         <>
           <span className="w-1 h-1 rounded-full bg-zinc-300" />
-          <span className="tabular-nums font-mono text-zinc-400 text-[11px]">{version}</span>
+          <span className="tabular-nums font-mono text-zinc-400 text-[13px]">{version}</span>
         </>
       )}
       {extraLinks && extraLinks.length > 0 && (
@@ -82,7 +82,7 @@ export const AppFooter: React.FC<AppFooterProps> = ({
               key={`${l.label}-${i}`}
               href={l.href}
               onClick={l.onClick ? (e) => { if (!l.href) e.preventDefault(); l.onClick?.(); } : undefined}
-              className="text-zinc-500 hover:text-brand-deep transition-colors cursor-pointer text-[12px] font-medium"
+              className="text-zinc-500 hover:text-brand-deep transition-colors cursor-pointer text-[14px] font-medium"
               target={l.href?.startsWith("http") ? "_blank" : undefined}
               rel={l.href?.startsWith("http") ? "noopener noreferrer" : undefined}
             >

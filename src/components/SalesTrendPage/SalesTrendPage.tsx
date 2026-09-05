@@ -275,7 +275,7 @@ export const SalesTrendPage: React.FC = () => {
               총 <span className="text-amber-700 font-bold">{hiddenList.length}</span>개 숨김
             </span>
             <button onClick={loadHiddenList} disabled={hiddenLoading}
-              className="text-[12px] font-bold text-zinc-500 hover:text-zinc-800 border border-line hover:border-zinc-400 rounded-lg px-2 py-1 cursor-pointer transition">
+              className="text-[14px] font-bold text-zinc-500 hover:text-zinc-800 border border-line hover:border-zinc-400 rounded-lg px-2 py-1 cursor-pointer transition">
               {hiddenLoading ? "..." : "새로고침"}
             </button>
           </div>
@@ -297,7 +297,7 @@ export const SalesTrendPage: React.FC = () => {
                     <li key={`st-hidden-${code}`} className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-amber-50/30 transition">
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-bold text-zinc-800 truncate" title={p.product_name}>{p.product_name}</div>
-                        <div className="text-[12px] tabular-nums text-zinc-400 truncate">
+                        <div className="text-[14px] tabular-nums text-zinc-400 truncate">
                           #{code}
                           {p.supplier ? ` · ${p.supplier}` : ""}
                           {/* location: resolveProductLocation 사용 */}
@@ -306,7 +306,7 @@ export const SalesTrendPage: React.FC = () => {
                         </div>
                       </div>
                       <button onClick={() => unhideProduct(code)} disabled={busy}
-                        className="shrink-0 flex items-center gap-1 text-[12px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-2.5 py-1.5 cursor-pointer transition"
+                        className="shrink-0 flex items-center gap-1 text-[14px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-2.5 py-1.5 cursor-pointer transition"
                         title="숨김 해제 · 다시 검색·발주 리스트에 표시">
                         {busy ? <Spinner size={11} tone="emerald" /> : <Eye size={11} />}
                         다시 표시

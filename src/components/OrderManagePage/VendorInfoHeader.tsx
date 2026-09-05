@@ -195,7 +195,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                 type="button"
                 onClick={onEdit}
                 title="공급사 정보 조회 및 수정"
-                className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-[13px] font-bold text-sky-800 bg-sky-50 border border-sky-200 hover:bg-sky-100 hover:border-sky-300 active:scale-[0.98] transition-all cursor-pointer"
+                className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-[15px] font-bold text-sky-800 bg-sky-50 border border-sky-200 hover:bg-sky-100 hover:border-sky-300 active:scale-[0.98] transition-all cursor-pointer"
               >
                 수정
               </button>
@@ -207,9 +207,9 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
               type="button"
               onClick={copyBizNum}
               title="클릭하여 복사"
-              className="self-start inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-50 border border-line hover:bg-sky-50 hover:border-sky-300 transition text-[11px] font-semibold text-zinc-600 tabular-nums cursor-pointer"
+              className="self-start inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-50 border border-line hover:bg-sky-50 hover:border-sky-300 transition text-[13px] font-semibold text-zinc-600 tabular-nums cursor-pointer"
             >
-              <span className="text-zinc-400 text-[11px] font-bold uppercase tracking-wider">사업자</span>
+              <span className="text-zinc-400 text-[13px] font-bold uppercase tracking-wider">사업자</span>
               {fmtBizNum(vendor.business_number)}
             </button>
           )}
@@ -217,7 +217,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
       </div>
 
       {/* 연락처 서브라인 */}
-      <div className="flex items-center gap-3 flex-wrap text-[11px] text-zinc-500 pl-1">
+      <div className="flex items-center gap-3 flex-wrap text-[13px] text-zinc-500 pl-1">
         {vendor.contact_name && (
           <span className="inline-flex items-center gap-1">
             <User2 size={11} className="text-zinc-400 shrink-0" />
@@ -247,7 +247,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
         {vendor.team_leader_name && (
           <span className="inline-flex items-center gap-1" title="팀장">
             <User2 size={11} className="text-amber-500 shrink-0" />
-            <span className="text-[11px] font-bold text-amber-500 uppercase tracking-wider">팀장</span>
+            <span className="text-[13px] font-bold text-amber-500 uppercase tracking-wider">팀장</span>
             {vendor.team_leader_name}
           </span>
         )}
@@ -264,7 +264,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
         {vendor.emergency_contact && (
           <span className="inline-flex items-center gap-1 tabular-nums text-rose-600" title="비상연락처">
             <Phone size={11} className="text-rose-500 shrink-0" />
-            <span className="text-[11px] font-bold text-rose-500 uppercase tracking-wider">비상</span>
+            <span className="text-[13px] font-bold text-rose-500 uppercase tracking-wider">비상</span>
             {vendor.emergency_contact}
           </span>
         )}
@@ -289,32 +289,32 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
       {loading ? (
         <div className="pl-1 py-4"><Spinner label="로딩 중..." size={13} tone="zinc" labelSize={12} /></div>
       ) : !hasMonthly ? (
-        <div className="text-[12px] text-zinc-400 pl-1 py-4">
+        <div className="text-[14px] text-zinc-400 pl-1 py-4">
           월별 데이터가 없습니다.
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           {/* 표 · 가로 스크롤 (모바일 대응) */}
           <div className="overflow-x-auto -mx-1">
-            <table className="w-full min-w-[480px] border-collapse text-[12px] tabular-nums">
+            <table className="w-full min-w-[480px] border-collapse text-[14px] tabular-nums">
               <thead className="sticky top-0 z-10 bg-zinc-50">
                 <tr className="border-b-2 border-line">
-                  <th className="text-left px-2 py-1.5 font-bold text-zinc-600 text-[11px] uppercase tracking-wider">
+                  <th className="text-left px-2 py-1.5 font-bold text-zinc-600 text-[13px] uppercase tracking-wider">
                     월
                   </th>
-                  <th className="text-right px-2 py-1.5 font-bold text-emerald-700 text-[11px] uppercase tracking-wider">
+                  <th className="text-right px-2 py-1.5 font-bold text-emerald-700 text-[13px] uppercase tracking-wider">
                     매입액
                   </th>
-                  <th className="text-right px-2 py-1.5 font-bold text-zinc-500 text-[11px] uppercase tracking-wider">
+                  <th className="text-right px-2 py-1.5 font-bold text-zinc-500 text-[13px] uppercase tracking-wider">
                     건수
                   </th>
-                  <th className="text-right px-2 py-1.5 font-bold text-sky-700 text-[11px] uppercase tracking-wider">
+                  <th className="text-right px-2 py-1.5 font-bold text-sky-700 text-[13px] uppercase tracking-wider">
                     결제액
                   </th>
-                  <th className="text-right px-2 py-1.5 font-bold text-amber-700 text-[11px] uppercase tracking-wider">
+                  <th className="text-right px-2 py-1.5 font-bold text-amber-700 text-[13px] uppercase tracking-wider">
                     잔고
                   </th>
-                  <th className="text-right px-2 py-1.5 font-bold text-zinc-600 text-[11px] uppercase tracking-wider">
+                  <th className="text-right px-2 py-1.5 font-bold text-zinc-600 text-[13px] uppercase tracking-wider">
                     평균단가
                   </th>
                 </tr>
@@ -358,7 +358,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-zinc-300 bg-zinc-100/60">
-                  <td className="px-2 py-2 font-bold text-zinc-700 text-[11px] uppercase tracking-wider">
+                  <td className="px-2 py-2 font-bold text-zinc-700 text-[13px] uppercase tracking-wider">
                     누적
                   </td>
                   <td className="text-right px-2 py-2 font-bold text-emerald-800">
@@ -387,14 +387,14 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
           </div>
 
           {/* 표 하단 · 평균 매입주기 · 활성 상품수 */}
-          <div className="flex items-center gap-4 flex-wrap pl-1 pt-1 text-[12px] text-zinc-500">
+          <div className="flex items-center gap-4 flex-wrap pl-1 pt-1 text-[14px] text-zinc-500">
             <span className="inline-flex items-baseline gap-1">
               <span className="text-zinc-400">평균 매입주기</span>
               <span className="font-bold text-zinc-700 tabular-nums">
                 {kpi.avgCycleDays != null ? kpi.avgCycleDays : "-"}
               </span>
               {kpi.avgCycleDays != null && (
-                <span className="text-[11px] font-bold text-zinc-400">일</span>
+                <span className="text-[13px] font-bold text-zinc-400">일</span>
               )}
             </span>
             {kpi.activeProductCount != null && (
@@ -403,7 +403,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                 <span className="font-bold text-zinc-700 tabular-nums">
                   {kpi.activeProductCount}
                 </span>
-                <span className="text-[11px] font-bold text-zinc-400">종</span>
+                <span className="text-[13px] font-bold text-zinc-400">종</span>
               </span>
             )}
           </div>

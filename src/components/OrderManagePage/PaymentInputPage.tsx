@@ -295,27 +295,27 @@ export const PaymentInputPage: React.FC = () => {
       {/* KPI 3 카드 · 잔고 · 총 매입 · 총 판매 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <Card padding="md" topAccent>
-          <div className="text-[13px] font-bold text-ink-soft uppercase tracking-wider">잔고 (미결제)</div>
+          <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">잔고 (미결제)</div>
           <div className={`mt-1 text-[22px] font-extrabold tabular-nums leading-none ${balance && balance.balance > 0 ? "text-rose-700" : "text-emerald-700"}`}>
             {balance ? balance.balance.toLocaleString() : "0"}
             <span className="text-[15px] font-semibold text-ink-soft ml-1">원</span>
           </div>
         </Card>
         <Card padding="md" topAccent>
-          <div className="text-[13px] font-bold text-ink-soft uppercase tracking-wider">총 매입 (12개월)</div>
+          <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">총 매입 (12개월)</div>
           <div className="mt-1 text-[22px] font-extrabold tabular-nums leading-none text-brand-deep">
             {kpi.totalOrderAmount.toLocaleString()}
             <span className="text-[15px] font-semibold text-ink-soft ml-1">원</span>
           </div>
-          <div className="text-[13px] text-ink-soft/80 mt-1 tabular-nums">발주 {kpi.totalOrderCount}건</div>
+          <div className="text-[15px] text-ink-soft/80 mt-1 tabular-nums">발주 {kpi.totalOrderCount}건</div>
         </Card>
         <Card padding="md" topAccent>
-          <div className="text-[13px] font-bold text-ink-soft uppercase tracking-wider">총 판매 (12개월)</div>
+          <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">총 판매 (12개월)</div>
           <div className="mt-1 text-[22px] font-extrabold tabular-nums leading-none text-emerald-700">
             {kpi.totalSaleAmount.toLocaleString()}
             <span className="text-[15px] font-semibold text-ink-soft ml-1">원</span>
           </div>
-          <div className="text-[13px] text-ink-soft/80 mt-1 tabular-nums">수량 {kpi.totalSaleQty.toLocaleString()}</div>
+          <div className="text-[15px] text-ink-soft/80 mt-1 tabular-nums">수량 {kpi.totalSaleQty.toLocaleString()}</div>
         </Card>
       </div>
 
@@ -704,7 +704,7 @@ const SupplierSearchInput: React.FC<SupplierSearchInputProps> = ({
                 className="w-full text-left px-3 py-2 text-[15px] font-medium text-ink hover:bg-brand-tint/30 flex items-center gap-2 transition-colors border-b border-line/50 last:border-b-0"
               >
                 <span className="truncate flex-1">{v.company_name}</span>
-                {v.category && <span className="ml-auto text-[13px] text-ink-soft shrink-0">{v.category}</span>}
+                {v.category && <span className="ml-auto text-[15px] text-ink-soft shrink-0">{v.category}</span>}
               </button>
             ))}
           </Card>

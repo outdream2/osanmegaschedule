@@ -84,11 +84,11 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
 
         const cell = (
           <td
-            className={`p-1 text-center text-[13px] border-r border-zinc-100 w-[30px] sm:w-[44px] transition-colors ${
+            className={`p-1 text-center text-[15px] border-r border-zinc-100 w-[30px] sm:w-[44px] transition-colors ${
               val > 0 ? valActiveCls : valEmptyCls
             } ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-20 relative" : ""}`}
           >
-            {val > 0 ? val : <span className="opacity-20 text-[11px]">·</span>}
+            {val > 0 ? val : <span className="opacity-20 text-[13px]">·</span>}
           </td>
         );
 
@@ -102,7 +102,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
         return (
           <React.Fragment key={sum.date}>
             {cell}
-            <td className={`p-1 text-center text-[12px] font-semibold ${monthTotalCls}`}>
+            <td className={`p-1 text-center text-[14px] font-semibold ${monthTotalCls}`}>
               {monthTotal > 0 ? `${monthTotal}인` : <span className="opacity-30">-</span>}
             </td>
           </React.Fragment>

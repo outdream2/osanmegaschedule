@@ -18,7 +18,7 @@ interface AdminLoginModalProps {
 const ModalTitle = () => (
   <div>
     <div className="text-sm font-extrabold text-gray-900 tracking-tight">관리자 로그인</div>
-    <div className="text-[10px] text-gray-400 font-medium">관리자 계정정보를 기입해 주십시오.</div>
+    <div className="text-[12px] text-gray-400 font-medium">관리자 계정정보를 기입해 주십시오.</div>
   </div>
 );
 
@@ -40,7 +40,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
         </div>
       )}
       <div>
-        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">관리자 아이디 (osanmega)</label>
+        <label className="block text-[12px] font-bold text-gray-400 uppercase tracking-wider mb-1">관리자 아이디 (osanmega)</label>
         <input
           type="text" value={loginId} onChange={e => setLoginId(e.target.value)}
           placeholder="아이디를 입력하세요" required autoFocus
@@ -48,7 +48,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
         />
       </div>
       <div>
-        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">비밀번호</label>
+        <label className="block text-[12px] font-bold text-gray-400 uppercase tracking-wider mb-1">비밀번호</label>
         <input
           type="password" value={loginPw} onChange={e => setLoginPw(e.target.value)}
           placeholder="비밀번호를 입력하세요" required

@@ -18,8 +18,8 @@ export const Avatar: React.FC<{
   //   · Linear/Notion · 이니셜 폰트 작게 · 뉴트럴 배경 · 텍스트 subtle
   const dim =
     size === "lg" ? "w-20 h-20 text-[15px]"
-    : size === "xs" ? "w-8 h-8 text-[11px]"
-    : "w-9 h-9 text-[13px]";
+    : size === "xs" ? "w-8 h-8 text-[13px]"
+    : "w-9 h-9 text-[15px]";
   if (photoUrl) {
     return (
       <img

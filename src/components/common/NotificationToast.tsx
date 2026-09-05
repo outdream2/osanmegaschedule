@@ -52,7 +52,7 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
         "fixed z-[9999] inline-flex items-center gap-2.5",
         "px-4 py-3 rounded-xl",
         "bg-zinc-900/95 backdrop-blur-md text-white",
-        "text-[13px] font-bold tracking-tight",
+        "text-[15px] font-bold tracking-tight",
         "shadow-[0_8px_32px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.06)]",
         "border border-white/[0.10]",
         "duration-200",

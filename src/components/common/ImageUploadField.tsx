@@ -24,9 +24,9 @@ interface Props {
 }
 
 // 2026-09-02 · 사용자 지시 · 로고/파비콘 입력창 (URL·파일 업로드) 폰트 -2 · 공간 절약
-const LABEL_CLS = "text-[11px] font-semibold text-zinc-600 block mb-1.5";
-const INPUT_CLS = "flex-1 bg-white border border-line rounded-lg px-3 py-2 text-[12px] text-zinc-800 focus:outline-none focus:border-brand-deep transition";
-const BTN_CLS = "shrink-0 flex items-center gap-1 px-2.5 h-[38px] rounded-lg text-[11px] font-semibold border cursor-pointer transition";
+const LABEL_CLS = "text-[13px] font-semibold text-zinc-600 block mb-1.5";
+const INPUT_CLS = "flex-1 bg-white border border-line rounded-lg px-3 py-2 text-[14px] text-zinc-800 focus:outline-none focus:border-brand-deep transition";
+const BTN_CLS = "shrink-0 flex items-center gap-1 px-2.5 h-[38px] rounded-lg text-[13px] font-semibold border cursor-pointer transition";
 
 export const ImageUploadField: React.FC<Props> = ({
   label, value, onChange,
@@ -111,8 +111,8 @@ export const ImageUploadField: React.FC<Props> = ({
           onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }}
         />
       </div>
-      {hint && !error && <p id={hintId} className="text-[10px] text-zinc-400 mt-1">{hint}</p>}
-      {error && <p id={errorId} role="alert" className="text-[10px] text-rose-500 mt-1">{error}</p>}
+      {hint && !error && <p id={hintId} className="text-[12px] text-zinc-400 mt-1">{hint}</p>}
+      {error && <p id={errorId} role="alert" className="text-[12px] text-rose-500 mt-1">{error}</p>}
       {value && (
         <div className="mt-2 border border-line rounded-md p-2 bg-zinc-50 flex items-center gap-2">
           <ImageSquare size={12} className="text-zinc-400 shrink-0" aria-hidden="true" />

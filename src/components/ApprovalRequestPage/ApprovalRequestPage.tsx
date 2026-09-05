@@ -211,7 +211,7 @@ const ResignationGate: React.FC<ResignationGateProps> = ({ authSession, children
       <div className="text-[15px] font-bold text-zinc-700">
         {status === "retired" ? "이미 퇴사 처리되었습니다" : "사직서는 퇴사예정자만 작성할 수 있습니다"}
       </div>
-      <div className="text-[13px] text-zinc-500 leading-relaxed max-w-md">
+      <div className="text-[15px] text-zinc-500 leading-relaxed max-w-md">
         {status === "retired"
           ? "퇴사일 이후에는 사직서를 작성할 수 없습니다. 관리자에게 문의하세요."
           : "먼저 관리자에게 퇴사일을 등록해 달라고 요청하세요. 등록 후 이 화면에서 사직서 작성이 가능합니다."}

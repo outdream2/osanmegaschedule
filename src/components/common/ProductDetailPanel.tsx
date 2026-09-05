@@ -195,7 +195,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
           <div className="text-[14px] font-semibold tracking-tight">로딩 중...</div>
         </div>
       ) : rows.length === 0 ? (
-        <div className="text-center text-[13px] text-ink-soft py-8 font-medium">기간 데이터 없음</div>
+        <div className="text-center text-[15px] text-ink-soft py-8 font-medium">기간 데이터 없음</div>
       ) : (() => {
         const filled = fillPeriodsWithRows(
           rows,
@@ -272,7 +272,7 @@ export const ProductDetailEmpty: React.FC<{ message?: string; sub?: string }> = 
       <Package size={30} className="text-brand-deep/70" />
     </div>
     <div className="text-[15px] font-semibold text-ink tracking-tight">{message}</div>
-    {sub && <div className="text-[13px] text-ink-soft">{sub}</div>}
+    {sub && <div className="text-[15px] text-ink-soft">{sub}</div>}
   </Card>
 );
 
@@ -296,7 +296,7 @@ export const ProductDetailMobileHeader: React.FC<{
       <AccentBar size="xl" className="shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="text-[16px] font-bold text-ink break-keep whitespace-normal leading-tight tracking-tight">{product.name}</div>
-        <div className="text-[13px] tabular-nums text-ink-soft break-words whitespace-normal leading-tight mt-0.5">
+        <div className="text-[15px] tabular-nums text-ink-soft break-words whitespace-normal leading-tight mt-0.5">
           #{product.code} · {product.supplier ?? "-"}
         </div>
       </div>
@@ -369,7 +369,7 @@ const ProductHeaderCard: React.FC<{
             <div className="inline-flex items-center gap-1.5 mb-1">
               {/* status dot · 8px · Vercel 규칙 · 상태만 emerald */}
               <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.15)]" />
-              <span className="text-[12px] font-semibold text-ink-soft uppercase tracking-widest">Product</span>
+              <span className="text-[14px] font-semibold text-ink-soft uppercase tracking-widest">Product</span>
             </div>
             <div className="text-[19px] font-bold text-ink break-words whitespace-normal leading-tight tracking-tight">
               {product.name || "-"}
@@ -627,14 +627,14 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string; i
       ) : (
         <div className="px-3 py-2">
           {ordersLoading ? (
-            <div className="py-6 text-center text-[13px] text-ink-soft font-medium">발주내역 로딩...</div>
+            <div className="py-6 text-center text-[15px] text-ink-soft font-medium">발주내역 로딩...</div>
           ) : orders.length === 0 ? (
-            <div className="py-6 text-center text-[13px] text-ink-soft font-medium">이 상품의 발주내역이 없습니다</div>
+            <div className="py-6 text-center text-[15px] text-ink-soft font-medium">이 상품의 발주내역이 없습니다</div>
           ) : (
             /* 2026-08-17 · 최신 트렌드 · 폰트 +2 · 딥네이비 헤더 톤 · status 는 semantic 색 유지 */
             <div className="overflow-x-auto -mx-1 px-1">
               <table className="w-full text-[14px] min-w-[340px]">
-                <thead className="text-[13px] font-semibold text-ink-soft border-b border-line bg-zinc-50/60">
+                <thead className="text-[15px] font-semibold text-ink-soft border-b border-line bg-zinc-50/60">
                   <tr>
                     <th className="text-left px-3 py-2.5 whitespace-nowrap tracking-tight">요청일시</th>
                     <th className="text-left px-3 py-2.5 tracking-tight">공급사</th>
@@ -646,7 +646,7 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string; i
                 <tbody className="divide-y divide-zinc-100">
                   {orders.map(o => (
                     <tr key={o.id} className="hover:bg-brand-tint/40 transition-colors">
-                      <td className="px-3 py-2 tabular-nums text-ink-soft text-[13px] whitespace-nowrap">
+                      <td className="px-3 py-2 tabular-nums text-ink-soft text-[15px] whitespace-nowrap">
                         {o.requested_at ? new Date(o.requested_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-"}
                       </td>
                       <td className="px-3 py-2 text-[14px] text-ink font-medium break-words">{o.supplier ?? "-"}</td>

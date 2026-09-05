@@ -143,7 +143,7 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
           >
             {label}
             {statusCounts[key] > 0 && (
-              <span className={`tabular-nums text-[13px] ${statusFilter === key ? "opacity-75" : "text-zinc-400"}`}>
+              <span className={`tabular-nums text-[15px] ${statusFilter === key ? "opacity-75" : "text-zinc-400"}`}>
                 {statusCounts[key]}
               </span>
             )}
@@ -221,14 +221,14 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                       </div>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                         {(r.zone_label || r.zone_id) && (
-                          <span className="bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-md text-[13px] font-semibold break-keep">
+                          <span className="bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-md text-[15px] font-semibold break-keep">
                             {r.zone_label || r.zone_id}
                           </span>
                         )}
                         {r.assigned_staff_name
                           ? <span className="text-[14px] font-semibold text-brand-deep">{r.assigned_staff_name}</span>
                           : <span className="text-[14px] text-zinc-300">미지정</span>}
-                        <span className="text-[13px] text-zinc-400 tabular-nums">{fmtDate(r.requested_at)}</span>
+                        <span className="text-[15px] text-zinc-400 tabular-nums">{fmtDate(r.requested_at)}</span>
                       </div>
                     </div>
                     {/* Action buttons */}
@@ -248,7 +248,7 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                                   : "창고 준비 완료 처리"
                                 : "창고담당만 가능"
                             }
-                            className={`text-[13px] font-semibold px-2.5 h-7 rounded-lg border transition-all inline-flex items-center gap-1 disabled:opacity-40 ${
+                            className={`text-[15px] font-semibold px-2.5 h-7 rounded-lg border transition-all inline-flex items-center gap-1 disabled:opacity-40 ${
                               disabled
                                 ? "text-zinc-400 bg-zinc-50 border-zinc-200 cursor-not-allowed"
                                 : prepared
@@ -278,7 +278,7 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                                     : "진열 완료 처리"
                                 : "진열담당만 가능"
                             }
-                            className={`text-[13px] font-semibold px-2.5 h-7 rounded-lg border transition-all inline-flex items-center gap-1 disabled:opacity-40 ${
+                            className={`text-[15px] font-semibold px-2.5 h-7 rounded-lg border transition-all inline-flex items-center gap-1 disabled:opacity-40 ${
                               disabled
                                 ? "text-zinc-400 bg-zinc-50 border-zinc-200 cursor-not-allowed"
                                 : isDone

@@ -112,17 +112,17 @@ const GENDERS = ["남", "여"] as const;
 /** compact (ContractWriter) 스타일 */
 const CMP = {
   label: "block text-[10.5px] font-bold uppercase tracking-wider text-zinc-500 mb-1",
-  input: "w-full bg-white border border-line rounded-lg px-3 py-2 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition placeholder:text-zinc-400 placeholder:font-normal",
-  select: "w-full bg-white border border-line rounded-lg px-2 py-2 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition cursor-pointer",
+  input: "w-full bg-white border border-line rounded-lg px-3 py-2 text-[15px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition placeholder:text-zinc-400 placeholder:font-normal",
+  select: "w-full bg-white border border-line rounded-lg px-2 py-2 text-[15px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition cursor-pointer",
 } as const;
 
 /** grid (StaffManage) 스타일 */
 const GRD = {
-  label: "text-[11px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none",
-  input: "border border-indigo-300 rounded-md px-2 py-0.5 text-[13px] focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint bg-indigo-50/40 h-7 w-full",
+  label: "text-[13px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none",
+  input: "border border-indigo-300 rounded-md px-2 py-0.5 text-[15px] focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint bg-indigo-50/40 h-7 w-full",
   view: (hasValue: boolean) =>
     `${TEXT.caption} min-h-[20px] ${hasValue ? "text-zinc-700" : "text-zinc-300 italic"}`,
-  select: "border border-indigo-300 rounded-md px-2 text-[13px] bg-white focus:outline-none bg-indigo-50/40 h-7 w-full",
+  select: "border border-indigo-300 rounded-md px-2 text-[15px] bg-white focus:outline-none bg-indigo-50/40 h-7 w-full",
 } as const;
 
 // ─── 서브: 성명 필드 (검색 드롭다운 포함) ────────────────────────────────────
@@ -181,13 +181,13 @@ const NameField: React.FC<NameFieldProps> = ({
       />
       {hasSearch && searchOpen && (
         matches.length === 0 ? (
-          <Card variant="raw-lg" padding="none" className="absolute left-0 right-0 top-full mt-1 z-30 p-2.5 text-[12px] text-zinc-400 text-center">
+          <Card variant="raw-lg" padding="none" className="absolute left-0 right-0 top-full mt-1 z-30 p-2.5 text-[14px] text-zinc-400 text-center">
             일치하는 직원 없음 · 직접 입력
           </Card>
         ) : (
           <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-line rounded-xl shadow-lg max-h-52 overflow-y-auto divide-y divide-zinc-100">
             {!value.trim() && (
-              <li className="px-3 py-1.5 text-[11px] text-zinc-400 font-semibold bg-zinc-50 border-b border-zinc-100">
+              <li className="px-3 py-1.5 text-[13px] text-zinc-400 font-semibold bg-zinc-50 border-b border-zinc-100">
                 직원 선택 또는 성명 입력
               </li>
             )}
@@ -199,9 +199,9 @@ const NameField: React.FC<NameFieldProps> = ({
                   onClick={() => { onSelectEmployee!(e); setSearchOpen(false); }}
                   className="w-full text-left px-3 py-2 hover:bg-indigo-50 transition-colors flex items-center gap-2"
                 >
-                  <span className="text-[13px] font-bold text-zinc-800">{e.name}</span>
-                  {e.position && <span className="text-[11px] text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded-md">{e.position}</span>}
-                  {e.phone && <span className="text-[11px] text-zinc-400 ml-auto tabular-nums">{e.phone}</span>}
+                  <span className="text-[15px] font-bold text-zinc-800">{e.name}</span>
+                  {e.position && <span className="text-[13px] text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded-md">{e.position}</span>}
+                  {e.phone && <span className="text-[13px] text-zinc-400 ml-auto tabular-nums">{e.phone}</span>}
                 </button>
               </li>
             ))}
@@ -310,7 +310,7 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
                 type="button"
                 disabled={disabled}
                 onClick={() => upd("gender", val === g ? "" : g)}
-                className={`flex-1 py-1.5 rounded-lg border text-[12px] font-bold transition-colors cursor-pointer disabled:opacity-50 ${
+                className={`flex-1 py-1.5 rounded-lg border text-[14px] font-bold transition-colors cursor-pointer disabled:opacity-50 ${
                   val === g
                     ? (g === "남"
                         ? "bg-blue-500 text-white border-blue-500"
@@ -448,7 +448,7 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
                 type="button"
                 onClick={onAddressSearch}
                 disabled={disabled}
-                className="shrink-0 h-7 px-2.5 rounded-md border border-brand/30 bg-brand-tint hover:bg-brand-tint/70 text-brand-deep text-[11px] font-bold transition-all duration-150 ease-out disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                className="shrink-0 h-7 px-2.5 rounded-md border border-brand/30 bg-brand-tint hover:bg-brand-tint/70 text-brand-deep text-[13px] font-bold transition-all duration-150 ease-out disabled:opacity-50 cursor-pointer whitespace-nowrap"
               >
                 주소 검색
               </button>

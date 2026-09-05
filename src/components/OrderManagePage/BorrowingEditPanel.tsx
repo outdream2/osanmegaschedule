@@ -329,7 +329,7 @@ export const BorrowingEditPanel: React.FC<BorrowingEditPanelProps> = ({
   }
 
   const inputCls = "w-full h-9 px-2.5 rounded-lg border border-line bg-white text-[15px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition";
-  const labelCls = "text-[13px] font-bold text-ink-soft";
+  const labelCls = "text-[15px] font-bold text-ink-soft";
 
   return (
     <>
@@ -348,7 +348,7 @@ export const BorrowingEditPanel: React.FC<BorrowingEditPanelProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="ml-auto h-8 px-3 rounded-lg text-[13px] font-semibold text-ink-soft bg-white border border-line hover:bg-zinc-50 cursor-pointer"
+              className="ml-auto h-8 px-3 rounded-lg text-[15px] font-semibold text-ink-soft bg-white border border-line hover:bg-zinc-50 cursor-pointer"
             >
               닫기
             </button>
@@ -467,9 +467,9 @@ export const BorrowingEditPanel: React.FC<BorrowingEditPanelProps> = ({
           <div className="flex flex-col gap-2 border-t border-line pt-4">
             <div className="flex items-center gap-1.5">
               <PenTool size={13} className="text-ink-soft" />
-              <span className="text-[13px] font-bold text-ink-soft uppercase tracking-wider">서명 · 도장</span>
+              <span className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">서명 · 도장</span>
               {isNew && (
-                <span className="text-[12px] text-ink-soft ml-1 normal-case tracking-normal">(선택 · 등록 후에도 추가 가능)</span>
+                <span className="text-[14px] text-ink-soft ml-1 normal-case tracking-normal">(선택 · 등록 후에도 추가 가능)</span>
               )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -573,7 +573,7 @@ export const BorrowingEditPanel: React.FC<BorrowingEditPanelProps> = ({
           }
         >
           <div className="flex flex-col gap-2">
-            <div className="text-[13px] text-ink-soft break-keep">
+            <div className="text-[15px] text-ink-soft break-keep">
               {signPadRole === "lender"
                 ? `대여자 · ${form.lender?.name ?? "미지정"}`
                 : `차용자 · ${form.borrower?.name ?? "미지정"}`}

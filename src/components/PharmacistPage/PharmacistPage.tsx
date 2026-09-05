@@ -302,7 +302,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
             <p className="text-[16px] text-ink-soft mt-1 truncate">복약 · 처방 · 상담 · 학술 자료 · <b className="text-emerald-700">약사 (lv 3+)</b> · PDF 워터마크 보안</p>
           </div>
           <div className="flex-1" />
-          <div className="hidden sm:flex items-center gap-1.5 text-[13px] font-semibold">
+          <div className="hidden sm:flex items-center gap-1.5 text-[15px] font-semibold">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-tint text-brand-deep border border-brand/15">
               <span className="w-1.5 h-1.5 rounded-full bg-brand-deep" />
               level ≥ 3

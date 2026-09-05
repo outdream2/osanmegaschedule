@@ -161,7 +161,7 @@ const BorrowingForm: React.FC<{
                     key={d}
                     type="button"
                     onClick={() => set("direction", d)}
-                    className={`h-8 px-3 rounded-md text-[13px] font-bold cursor-pointer transition ${
+                    className={`h-8 px-3 rounded-md text-[15px] font-bold cursor-pointer transition ${
                       active ? "bg-white text-brand-deep shadow-sm" : "text-zinc-500 hover:text-brand-deep"
                     }`}
                     title={dirLabel(d)}
@@ -175,7 +175,7 @@ const BorrowingForm: React.FC<{
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="flex flex-col gap-1">
-              <span className="text-[12px] font-bold text-ink-soft">공급사 *</span>
+              <span className="text-[14px] font-bold text-ink-soft">공급사 *</span>
               <input
                 list="borrowing-vendor-list"
                 type="text"
@@ -190,31 +190,31 @@ const BorrowingForm: React.FC<{
               </datalist>
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-[12px] font-bold text-ink-soft">반환/정산 예정일</span>
+              <span className="text-[14px] font-bold text-ink-soft">반환/정산 예정일</span>
               <input type="date" value={form.due_date} onChange={(e) => set("due_date", e.target.value)} className={inputCls + " tabular-nums"} />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-[12px] font-bold text-ink-soft">상품명 *</span>
+              <span className="text-[14px] font-bold text-ink-soft">상품명 *</span>
               <input type="text" value={form.product_name} onChange={(e) => set("product_name", e.target.value)} className={inputCls} placeholder="상품명" required />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-[12px] font-bold text-ink-soft">상품코드</span>
+              <span className="text-[14px] font-bold text-ink-soft">상품코드</span>
               <input type="text" value={form.product_code} onChange={(e) => set("product_code", e.target.value)} className={inputCls + " font-mono"} placeholder="(선택)" />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-[12px] font-bold text-ink-soft">수량 *</span>
+              <span className="text-[14px] font-bold text-ink-soft">수량 *</span>
               <input type="number" min={1} value={form.qty} onChange={(e) => set("qty", e.target.value)} className={inputCls + " tabular-nums"} required />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-[12px] font-bold text-ink-soft">단가 (원)</span>
+              <span className="text-[14px] font-bold text-ink-soft">단가 (원)</span>
               <input type="number" min={0} value={form.unit_price} onChange={(e) => set("unit_price", e.target.value)} className={inputCls + " tabular-nums"} placeholder="(선택)" />
             </label>
             <label className="sm:col-span-2 flex flex-col gap-1">
-              <span className="text-[12px] font-bold text-ink-soft">사유·메모</span>
+              <span className="text-[14px] font-bold text-ink-soft">사유·메모</span>
               <textarea value={form.note} onChange={(e) => set("note", e.target.value)} className="w-full min-h-[64px] px-2.5 py-2 rounded-lg border border-line bg-white text-[14px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition resize-y" placeholder="예: 급한 요청으로 임시 대여, 다음 정산 시 반영" />
             </label>
             <div className="sm:col-span-2 flex flex-col gap-1">
-              <span className="text-[12px] font-bold text-ink-soft">서명 (선택)</span>
+              <span className="text-[14px] font-bold text-ink-soft">서명 (선택)</span>
               <SignaturePad value={form.signature_url} onChange={(dataUrl) => set("signature_url", dataUrl)} />
             </div>
           </div>
@@ -293,19 +293,19 @@ const ReturnModal: React.FC<{
           <button type="button" onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 cursor-pointer"><X size={16} /></button>
         </div>
 
-        <div className="text-[13px] text-ink-soft bg-zinc-50 border border-line rounded-lg p-3 leading-relaxed">
+        <div className="text-[15px] text-ink-soft bg-zinc-50 border border-line rounded-lg p-3 leading-relaxed">
           <div><b className="text-brand-deep">{row.direction === "lend" ? "대여" : "차용"}</b> · {row.supplier ?? "-"}</div>
           <div className="mt-1"><b>{row.product_name ?? "-"}</b> · {(row.qty ?? 0).toLocaleString()} 개
             {row.unit_price != null && <> · @ {row.unit_price.toLocaleString()}원</>}</div>
         </div>
 
         <label className="flex flex-col gap-1">
-          <span className="text-[12px] font-bold text-ink-soft">반환 서명 <span className="text-rose-600">*</span></span>
+          <span className="text-[14px] font-bold text-ink-soft">반환 서명 <span className="text-rose-600">*</span></span>
           <SignaturePad value={signature} onChange={setSignature} height={140} />
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-[12px] font-bold text-ink-soft">반환 비고 (선택)</span>
+          <span className="text-[14px] font-bold text-ink-soft">반환 비고 (선택)</span>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -385,7 +385,7 @@ const BorrowingList: React.FC<{
                   key={s}
                   type="button"
                   onClick={() => setStatus(s)}
-                  className={`h-8 px-3 rounded-md text-[13px] font-bold cursor-pointer transition ${
+                  className={`h-8 px-3 rounded-md text-[15px] font-bold cursor-pointer transition ${
                     active ? "bg-white text-brand-deep shadow-sm" : "text-zinc-500 hover:text-brand-deep"
                   }`}
                 >{label}</button>
@@ -467,7 +467,7 @@ const BorrowingList: React.FC<{
                     <td className={tableTdCls("center", "text-zinc-500 tabular-nums")}>{fmtDate(r.created_at)}</td>
                     {/* 2026-08-29 · #130 Phase 2 · 양방향 화살표 시각 · 공급사↔약국 방향 명확화 */}
                     <td className={tableTdCls("center")}>
-                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[12px] font-bold ${r.direction === "lend" ? "bg-sky-50 text-sky-700 border border-sky-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[14px] font-bold ${r.direction === "lend" ? "bg-sky-50 text-sky-700 border border-sky-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}
                         title={r.direction === "lend" ? "공급사 → 약국 (대여)" : "약국 → 공급사 (차용)"}>
                         {r.direction === "lend" ? <ArrowRight size={11} strokeWidth={2.5} /> : <ArrowLeft size={11} strokeWidth={2.5} />}
                         {r.direction === "lend" ? "대여" : "차용"}
@@ -476,35 +476,35 @@ const BorrowingList: React.FC<{
                     <td className={tableTdCls("left", "font-semibold text-sky-700 break-keep")}>{r.supplier ?? <span className="text-zinc-400">-</span>}</td>
                     <td className={tableTdCls("left", "font-bold text-zinc-800 break-keep")}>
                       {r.product_name ?? "-"}
-                      {r.product_code && <div className="text-[12px] font-mono text-zinc-400 mt-0.5">{r.product_code}</div>}
+                      {r.product_code && <div className="text-[14px] font-mono text-zinc-400 mt-0.5">{r.product_code}</div>}
                     </td>
                     <td className={tableTdCls("num", "font-bold text-rose-600")}>{(r.qty ?? 0).toLocaleString()}</td>
                     <td className={tableTdCls("num", "text-zinc-600 tabular-nums")}>
                       {r.unit_price != null ? r.unit_price.toLocaleString() : "-"}
-                      {amount > 0 && <div className="text-[12px] font-bold text-emerald-700">{fmtWon(amount)}</div>}
+                      {amount > 0 && <div className="text-[14px] font-bold text-emerald-700">{fmtWon(amount)}</div>}
                     </td>
                     <td className={tableTdCls("center", "text-zinc-600 tabular-nums")}>{fmtDate(r.due_date)}</td>
                     <td className={tableTdCls("center")}>
                       <StatusPill tone={pill.tone} size="sm">{pill.label}</StatusPill>
                     </td>
-                    <td className={tableTdCls("left", "text-[13px] text-zinc-500")}>{r.note ?? <span className="text-zinc-300">-</span>}</td>
+                    <td className={tableTdCls("left", "text-[15px] text-zinc-500")}>{r.note ?? <span className="text-zinc-300">-</span>}</td>
                     <td className={tableTdCls("center")}>
                       <div className="inline-flex items-center gap-1">
                         {r.signature_url ? (
                           <button
                             type="button"
                             onClick={() => onPreviewSignature(r.signature_url!)}
-                            className="text-[12px] font-bold text-brand-deep underline underline-offset-2 hover:text-brand-deep/80 cursor-pointer"
+                            className="text-[14px] font-bold text-brand-deep underline underline-offset-2 hover:text-brand-deep/80 cursor-pointer"
                             title="등록 서명 미리보기"
                           >등록</button>
-                        ) : <span className="text-zinc-300 text-[12px]">-</span>}
+                        ) : <span className="text-zinc-300 text-[14px]">-</span>}
                         {r.return_signature_url && (
                           <>
-                            <span className="text-zinc-300 text-[10px]">|</span>
+                            <span className="text-zinc-300 text-[12px]">|</span>
                             <button
                               type="button"
                               onClick={() => onPreviewSignature(r.return_signature_url!)}
-                              className="text-[12px] font-bold text-emerald-700 underline underline-offset-2 hover:text-emerald-800 cursor-pointer"
+                              className="text-[14px] font-bold text-emerald-700 underline underline-offset-2 hover:text-emerald-800 cursor-pointer"
                               title={`반환 서명 · ${r.returned_by ?? "-"} · ${fmtDate(r.returned_at ?? null)}`}
                             >반환</button>
                           </>
@@ -518,7 +518,7 @@ const BorrowingList: React.FC<{
                             <button
                               type="button"
                               onClick={() => onReturn(r)}
-                              className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[12px] font-bold cursor-pointer"
+                              className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[14px] font-bold cursor-pointer"
                               title="반환 처리 · 서명 필수"
                             ><CheckCircle2 size={11} /> 반환</button>
                             <button
@@ -532,7 +532,7 @@ const BorrowingList: React.FC<{
                           <button
                             type="button"
                             onClick={() => onPatch(r.id, { status: "open" })}
-                            className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-white border border-line text-zinc-500 hover:text-brand-deep hover:border-brand-deep text-[12px] font-bold cursor-pointer"
+                            className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-white border border-line text-zinc-500 hover:text-brand-deep hover:border-brand-deep text-[14px] font-bold cursor-pointer"
                             title="다시 미해결로 복귀"
                           ><Pencil size={11} /> 재열림</button>
                         )}

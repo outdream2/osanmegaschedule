@@ -174,11 +174,11 @@ export const ConstructionTab: React.FC<ConstructionTabProps> = ({ underConstruct
         />
         <div className="flex-1 min-w-0">
           <div className="text-[14px] font-bold text-ink leading-tight">공사중 모드 활성화</div>
-          <div className="text-[12px] font-medium text-ink-soft leading-snug mt-1">
+          <div className="text-[14px] font-medium text-ink-soft leading-snug mt-1">
             비로그인 랜딩페이지 · 재고 검색 숨김 · "곧 오픈 예정입니다" 표시
           </div>
         </div>
-        <span className={`inline-flex items-center h-6 text-[11px] font-extrabold px-2.5 rounded-md tracking-wider ${
+        <span className={`inline-flex items-center h-6 text-[13px] font-extrabold px-2.5 rounded-md tracking-wider ${
           underConstruction
             ? "bg-amber-500 text-white shadow-sm"
             : "bg-zinc-100 text-zinc-500 border border-line"
@@ -381,7 +381,7 @@ export const PageSettingsTab: React.FC<PageSettingsTabProps> = ({
         })}
       </Card>
 
-      <p className="text-[11px] text-zinc-400 mt-2 mb-6 pl-1">
+      <p className="text-[13px] text-zinc-400 mt-2 mb-6 pl-1">
         레벨 9(최고관리자)는 항상 모든 페이지에 접근할 수 있습니다. 각 페이지 설명은 마우스를 올리면 표시됩니다.
       </p>
     </>
@@ -419,7 +419,7 @@ export const EmployeeLevelTab: React.FC<EmployeeLevelTabProps> = ({
         <div className="flex items-center gap-1.5">
           <Users size={13} className="text-zinc-500" />
           <h2 className="text-[17px] font-bold text-zinc-700">직원별 레벨</h2>
-          <span className="text-[11px] text-zinc-400 font-medium">
+          <span className="text-[13px] text-zinc-400 font-medium">
             ({filteredEmployees.length}명 · 약사 우선)
           </span>
         </div>
@@ -432,7 +432,7 @@ export const EmployeeLevelTab: React.FC<EmployeeLevelTabProps> = ({
         />
       </div>
       <Card padding="none" clip>
-        <div className="grid grid-cols-[1fr_90px_130px_36px] px-5 py-2 bg-zinc-50 border-b border-zinc-100 text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+        <div className="grid grid-cols-[1fr_90px_130px_36px] px-5 py-2 bg-zinc-50 border-b border-zinc-100 text-[13px] font-bold text-zinc-400 uppercase tracking-wider">
           <span>성명</span>
           <span>직군</span>
           <span className="text-center">레벨</span>
@@ -478,7 +478,7 @@ export const EmployeeLevelTab: React.FC<EmployeeLevelTabProps> = ({
           })}
         </div>
       </Card>
-      <p className="text-[11px] text-zinc-400 mt-2 pl-1">
+      <p className="text-[13px] text-zinc-400 mt-2 pl-1">
         변경 즉시 서버에 저장됩니다. 실패 시 이전 값으로 되돌립니다.
       </p>
     </>

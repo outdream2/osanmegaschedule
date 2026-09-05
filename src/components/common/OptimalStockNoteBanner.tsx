@@ -20,7 +20,7 @@ export const OptimalStockNoteBanner: React.FC<Props> = ({ className = "", compac
   const py = compact ? "py-1.5" : "py-2.5";
   const px = compact ? "px-3" : "px-4";
   const iconSize = compact ? 13 : 15;
-  const textSize = compact ? "text-[13px]" : "text-[14px]";
+  const textSize = compact ? "text-[15px]" : "text-[14px]";
   return (
     <div className={`inline-flex items-center gap-2 ${px} ${py} rounded-lg bg-sky-50 border border-sky-200 ${textSize} font-semibold text-sky-800 ${className}`}>
       <Info size={iconSize} className="text-sky-600 shrink-0" strokeWidth={2.2} />

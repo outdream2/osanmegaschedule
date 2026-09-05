@@ -67,7 +67,7 @@ export const BorrowingPartyCard: React.FC<BorrowingPartyCardProps> = ({ role, pa
       {/* 2026-09-01 · 목업 gap · 3px top gradient accent (Attio/Linear 시그니처) */}
       <span aria-hidden className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${t.topAccent}`} />
       {/* 역할 라벨 */}
-      <div className={`inline-flex items-center h-5 px-2 rounded text-[11px] font-extrabold uppercase tracking-wider ${t.accentBg} ${t.accentText} mb-2 mt-0.5`}>
+      <div className={`inline-flex items-center h-5 px-2 rounded text-[13px] font-extrabold uppercase tracking-wider ${t.accentBg} ${t.accentText} mb-2 mt-0.5`}>
         {t.label}
       </div>
 
@@ -80,13 +80,13 @@ export const BorrowingPartyCard: React.FC<BorrowingPartyCardProps> = ({ role, pa
           <div className="min-w-0 flex-1">
             <div className="text-[17px] font-extrabold text-ink tracking-tight break-words whitespace-normal">{party.name}</div>
             {party.contact_name && (
-              <div className="flex items-center gap-1 mt-0.5 text-[13px] text-ink-soft">
+              <div className="flex items-center gap-1 mt-0.5 text-[15px] text-ink-soft">
                 <User size={11} className="shrink-0" />
                 <span className="break-words whitespace-normal">{party.contact_name}</span>
               </div>
             )}
             {party.contact_phone && (
-              <div className="flex items-center gap-1 mt-0.5 text-[13px] text-ink-soft tabular-nums">
+              <div className="flex items-center gap-1 mt-0.5 text-[15px] text-ink-soft tabular-nums">
                 <Phone size={11} className="shrink-0" />
                 <span className="break-words whitespace-normal">{party.contact_phone}</span>
               </div>
@@ -94,7 +94,7 @@ export const BorrowingPartyCard: React.FC<BorrowingPartyCardProps> = ({ role, pa
           </div>
         </div>
       ) : (
-        <div className={`text-[13px] italic text-ink-soft py-3 ${clickable ? "text-center" : ""}`}>
+        <div className={`text-[15px] italic text-ink-soft py-3 ${clickable ? "text-center" : ""}`}>
           {clickable ? "클릭하여 당사자 선택 · 신규 등록" : "미지정"}
         </div>
       )}

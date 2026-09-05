@@ -34,7 +34,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   return (
     <nav
       aria-label="페이지 경로"
-      className={`flex items-center flex-wrap gap-1 text-[13px] font-medium select-none ${className}`}
+      className={`flex items-center flex-wrap gap-1 text-[15px] font-medium select-none ${className}`}
     >
       {items.map((it, i) => {
         const isLast = i === items.length - 1;

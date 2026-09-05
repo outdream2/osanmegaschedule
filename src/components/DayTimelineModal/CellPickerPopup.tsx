@@ -165,9 +165,9 @@ export const CellPickerPopup: React.FC<CellPickerPopupProps> = ({
           )}
           {canReorder && assignedList.length > 0 && (
             <div className="border-b border-line bg-indigo-50/30">
-              <div className="px-5 py-1.5 text-[13px] font-bold uppercase tracking-wider text-indigo-700 border-b border-indigo-100 flex items-center justify-between">
+              <div className="px-5 py-1.5 text-[15px] font-bold uppercase tracking-wider text-indigo-700 border-b border-indigo-100 flex items-center justify-between">
                 <span>배정된 인원 · 순서 조정</span>
-                <span className="text-[12px] font-bold text-indigo-500">↑↓ 로 순서 변경</span>
+                <span className="text-[14px] font-bold text-indigo-500">↑↓ 로 순서 변경</span>
               </div>
               {assignedList.map((empId, i) => {
                 const w = allWorkers.find(ww => ww.emp.id === empId);
@@ -211,7 +211,7 @@ export const CellPickerPopup: React.FC<CellPickerPopupProps> = ({
               if (items.length === 0) return null;
               return (
                 <React.Fragment key={label}>
-                  <div className={`px-5 py-1 text-[13px] font-bold uppercase tracking-wider border-b ${headerCls}`}>{label}</div>
+                  <div className={`px-5 py-1 text-[15px] font-bold uppercase tracking-wider border-b ${headerCls}`}>{label}</div>
                   {items.map(({ emp, schedule }) => {
                     const assigned = isAssigned(emp.id);
                     const c = typeTones[schedule.type] ?? DEFAULT_TONE;

@@ -51,8 +51,8 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
           <Info size={14} weight="fill" />
         </div>
         <div className="flex-1 min-w-0 text-left">
-          <h2 className="text-[13px] font-bold text-emerald-700 leading-none">회사 정보</h2>
-          <p className="text-[13px] text-zinc-500 font-semibold mt-0.5">근로계약서 사업주란 자동 채움 · 편집 즉시 저장</p>
+          <h2 className="text-[15px] font-bold text-emerald-700 leading-none">회사 정보</h2>
+          <p className="text-[15px] text-zinc-500 font-semibold mt-0.5">근로계약서 사업주란 자동 채움 · 편집 즉시 저장</p>
         </div>
         {!companyInfoLoaded && (
           <Spinner size={11} tone="zinc" label="로딩 중..." labelSize={11} className="shrink-0" />
@@ -61,12 +61,12 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
           <Spinner size={11} tone="violet" label="저장 중..." labelSize={11} className="shrink-0" />
         )}
         {companyInfoLoaded && companyInfoSaveState === "saved" && (
-          <span className="inline-flex items-center gap-1 text-[13px] text-emerald-600 font-semibold shrink-0">
+          <span className="inline-flex items-center gap-1 text-[15px] text-emerald-600 font-semibold shrink-0">
             <Check size={11} weight="bold" /> 저장됨
           </span>
         )}
         {companyInfoLoaded && companyInfoSaveState === "error" && (
-          <span className="inline-flex items-center gap-1 text-[13px] text-rose-500 font-semibold shrink-0">
+          <span className="inline-flex items-center gap-1 text-[15px] text-rose-500 font-semibold shrink-0">
             <Warning size={11} weight="fill" /> 저장 실패
           </span>
         )}
@@ -75,52 +75,52 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
       {companyInfoOpen && (
       <div className="p-3 grid grid-cols-2 gap-2.5">
         <div className="flex flex-col gap-1">
-          <label className="text-[13px] font-bold text-zinc-500">상호</label>
+          <label className="text-[15px] font-bold text-zinc-500">상호</label>
           <input
             type="text"
             value={companyInfo.name}
             onChange={(e) => setCompanyInfo(prev => ({ ...prev, name: e.target.value }))}
             placeholder="예) 오산 메가타운 약국"
             disabled={!companyInfoLoaded}
-            className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
+            className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-[13px] font-bold text-zinc-500">대표자 이름</label>
+          <label className="text-[15px] font-bold text-zinc-500">대표자 이름</label>
           <input
             type="text"
             value={companyInfo.representativeName}
             onChange={(e) => setCompanyInfo(prev => ({ ...prev, representativeName: e.target.value }))}
             placeholder="예) 강남성"
             disabled={!companyInfoLoaded}
-            className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
+            className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
           />
         </div>
         <div className="flex flex-col gap-1 col-span-2">
-          <label className="text-[13px] font-bold text-zinc-500">사업장 주소</label>
+          <label className="text-[15px] font-bold text-zinc-500">사업장 주소</label>
           <input
             type="text"
             value={companyInfo.address}
             onChange={(e) => setCompanyInfo(prev => ({ ...prev, address: e.target.value }))}
             placeholder="예) 경기도 오산시 경기대로 868-4 2층"
             disabled={!companyInfoLoaded}
-            className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
+            className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-[13px] font-bold text-zinc-500">사업자등록번호 <span className="text-zinc-400 font-normal">(선택)</span></label>
+          <label className="text-[15px] font-bold text-zinc-500">사업자등록번호 <span className="text-zinc-400 font-normal">(선택)</span></label>
           <input
             type="text"
             value={companyInfo.regNo}
             onChange={(e) => setCompanyInfo(prev => ({ ...prev, regNo: e.target.value }))}
             placeholder="예) 123-45-67890"
             disabled={!companyInfoLoaded}
-            className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
+            className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
           />
         </div>
         {/* 2026-09-02 · 사용자 지시 · 대표자 직함 필드 · 필요없음 · 제거 */}
         <div className="flex flex-col gap-1 col-span-2">
-          <label className="text-[13px] font-bold text-zinc-500">
+          <label className="text-[15px] font-bold text-zinc-500">
             임금지급일 <span className="text-zinc-400 font-normal">(근로계약서에 자동 반영)</span>
           </label>
           <textarea
@@ -129,7 +129,7 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
             placeholder="예) 당월 01일부터 당월 말일 까지 근로한 부분에 대하여 당월 말일에 '을' 본인 명의의 통장으로 지급한다."
             disabled={!paymentDayLoaded}
             rows={2}
-            className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50 resize-none"
+            className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50 resize-none"
           />
         </div>
         <div className="col-span-2 flex justify-end pt-1">
@@ -139,7 +139,7 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
               await Promise.all([saveCompanyInfoNow(), savePaymentDayNow()]);
             }}
             disabled={!companyInfoLoaded || companyInfoSaveState === "saving"}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-emerald-300 text-white text-[12px] font-bold shadow-sm transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-emerald-300 text-white text-[14px] font-bold shadow-sm transition-colors cursor-pointer"
           >
             <FloppyDisk size={12} weight="bold" />
             {companyInfoSaveState === "saving" ? "저장 중..." : "회사 정보 저장"}

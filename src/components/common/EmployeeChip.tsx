@@ -78,12 +78,12 @@ export const EmployeeChip: React.FC<EmployeeChipProps> = ({
         className={`inline-flex items-center gap-1.5 ${clickable ? "cursor-pointer hover:text-brand-deep" : ""} ${className}`}
         title={name}
       >
-        <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-extrabold ${tone.avatarBg} ${tone.avatarText} ring-1 ${tone.ring}`}>
+        <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[13px] font-extrabold ${tone.avatarBg} ${tone.avatarText} ring-1 ${tone.ring}`}>
           {initial}
         </span>
         <span className="text-[14px] font-bold text-ink truncate">{name}</span>
         {employee.position && (
-          <span className={`inline-flex items-center h-4 px-1.5 rounded text-[10px] font-bold border ${tone.posBg} ${tone.posText}`}>
+          <span className={`inline-flex items-center h-4 px-1.5 rounded text-[12px] font-bold border ${tone.posBg} ${tone.posText}`}>
             {employee.position}
           </span>
         )}
@@ -122,22 +122,22 @@ export const EmployeeChip: React.FC<EmployeeChipProps> = ({
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           {employee.position && (
-            <span className={`inline-flex items-center h-4 px-1.5 rounded text-[11px] font-bold border ${tone.posBg} ${tone.posText}`}>
+            <span className={`inline-flex items-center h-4 px-1.5 rounded text-[13px] font-bold border ${tone.posBg} ${tone.posText}`}>
               {employee.position}
             </span>
           )}
           {variant === "detailed" && employee.gender && (
-            <span className="inline-flex items-center h-4 px-1.5 rounded text-[11px] font-bold bg-zinc-50 border border-zinc-200 text-zinc-600">
+            <span className="inline-flex items-center h-4 px-1.5 rounded text-[13px] font-bold bg-zinc-50 border border-zinc-200 text-zinc-600">
               {employee.gender}
             </span>
           )}
           {variant === "detailed" && birthDate && (
-            <span className="text-[11px] font-semibold text-ink-soft tabular-nums">
+            <span className="text-[13px] font-semibold text-ink-soft tabular-nums">
               생 {birthDate}
             </span>
           )}
           {variant === "detailed" && employee.employee_number && (
-            <span className="text-[11px] font-semibold text-zinc-400 tabular-nums">
+            <span className="text-[13px] font-semibold text-zinc-400 tabular-nums">
               #{employee.employee_number}
             </span>
           )}

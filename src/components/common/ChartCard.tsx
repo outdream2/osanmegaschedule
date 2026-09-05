@@ -73,7 +73,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
             {title}
           </h3>
           {description && (
-            <p className="text-[12px] font-medium text-ink-soft mt-0.5 leading-snug">
+            <p className="text-[14px] font-medium text-ink-soft mt-0.5 leading-snug">
               {description}
             </p>
           )}

@@ -70,7 +70,7 @@ export const VendorDetailPaymentPanel: React.FC<Props> = ({
           {payMsg.text}
         </span>
       )}
-      <span className="ml-auto text-[13px] text-zinc-400 tabular-nums">
+      <span className="ml-auto text-[15px] text-zinc-400 tabular-nums">
         {ledgerRows.length} 원장 항목
       </span>
     </div>
@@ -84,7 +84,7 @@ export const VendorDetailPaymentPanel: React.FC<Props> = ({
       ) : (
         <table className="w-full text-[14px]">
           <thead className="sticky top-0 z-10 bg-zinc-50 border-b border-line">
-            <tr className="text-[13px] font-bold uppercase tracking-wider text-zinc-500">
+            <tr className="text-[15px] font-bold uppercase tracking-wider text-zinc-500">
               <th className="text-left px-3 py-2 w-20">날짜</th>
               <th className="text-left px-3 py-2 w-16">유형</th>
               <th className="text-right px-3 py-2 w-24">금액</th>
@@ -100,7 +100,7 @@ export const VendorDetailPaymentPanel: React.FC<Props> = ({
               const paymentRow = isPay ? payments.find(p => p.id === r.id) : null;
               return (
                 <tr key={`${r.type}-${r.id}`} className="hover:bg-zinc-50/60 transition">
-                  <td className="px-3 py-1.5 text-[13px] text-zinc-500 whitespace-nowrap tabular-nums">
+                  <td className="px-3 py-1.5 text-[15px] text-zinc-500 whitespace-nowrap tabular-nums">
                     {String(r.date).slice(2)}
                   </td>
                   <td className="px-3 py-1.5">
@@ -109,13 +109,13 @@ export const VendorDetailPaymentPanel: React.FC<Props> = ({
                   <td className={`text-right px-3 py-1.5 font-bold whitespace-nowrap tabular-nums ${isPay ? "text-emerald-700" : "text-indigo-700"}`}>
                     {isPay ? "-" : "+"}{Number(r.amount).toLocaleString()}
                   </td>
-                  <td className="px-3 py-1.5 text-[13px] text-zinc-600">
+                  <td className="px-3 py-1.5 text-[15px] text-zinc-600">
                     {r.method ? (METHOD_LABEL[r.method] ?? r.method) : "-"}
                   </td>
-                  <td className="px-3 py-1.5 text-zinc-700 break-words leading-snug text-[13px]">
+                  <td className="px-3 py-1.5 text-zinc-700 break-words leading-snug text-[15px]">
                     {r.memo ?? "-"}
                     {paymentRow?.allocations && paymentRow.allocations.length > 0 && (
-                      <span className="ml-1 text-[12px] font-bold text-emerald-600">· {paymentRow.allocations.length}건 매칭</span>
+                      <span className="ml-1 text-[14px] font-bold text-emerald-600">· {paymentRow.allocations.length}건 매칭</span>
                     )}
                   </td>
                   <td className={`text-right px-3 py-1.5 font-bold whitespace-nowrap tabular-nums ${

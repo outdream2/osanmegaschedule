@@ -65,7 +65,7 @@ export const BreakTimeline: React.FC<Props> = React.memo(({
             <button type="button" onClick={() => onShiftOffset(-30)} disabled={offset <= -60}
               className="w-5 h-5 flex items-center justify-center text-[14px] font-bold rounded bg-white border border-line text-zinc-500 hover:border-zinc-400 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               title="30분 앞으로">-</button>
-            <span className="text-[12px] tabular-nums text-zinc-500 min-w-[36px] text-center">
+            <span className="text-[14px] tabular-nums text-zinc-500 min-w-[36px] text-center">
               {offset === 0 ? "기본" : `${offset > 0 ? "+" : ""}${offset}분`}
             </span>
             <button type="button" onClick={() => onShiftOffset(30)} disabled={offset >= 60}
@@ -73,20 +73,20 @@ export const BreakTimeline: React.FC<Props> = React.memo(({
               title="30분 뒤로">+</button>
           </div>
           {assignedIds.size > 0 && (
-            <span className={`text-[13px] font-semibold ${theme.hdr} opacity-70`}>{assignedIds.size}명 배정됨</span>
+            <span className={`text-[15px] font-semibold ${theme.hdr} opacity-70`}>{assignedIds.size}명 배정됨</span>
           )}
         </div>
         {confirmMonth ? (
           <div className="flex items-center gap-1">
-            <span className="text-[13px] text-zinc-500">이 달 전체에 적용?</span>
+            <span className="text-[15px] text-zinc-500">이 달 전체에 적용?</span>
             <button onClick={() => { onApplyMonth(); setConfirmMonth(false); }}
-              className="text-[13px] font-bold px-2 py-0.5 rounded bg-brand-deep text-white hover:bg-brand-deep cursor-pointer">예</button>
+              className="text-[15px] font-bold px-2 py-0.5 rounded bg-brand-deep text-white hover:bg-brand-deep cursor-pointer">예</button>
             <button onClick={() => setConfirmMonth(false)}
-              className="text-[13px] font-bold px-2 py-0.5 rounded bg-zinc-100 text-zinc-600 hover:bg-zinc-200 cursor-pointer">취소</button>
+              className="text-[15px] font-bold px-2 py-0.5 rounded bg-zinc-100 text-zinc-600 hover:bg-zinc-200 cursor-pointer">취소</button>
           </div>
         ) : (
           <button onClick={() => setConfirmMonth(true)}
-            className="text-[13px] font-bold px-2 py-0.5 rounded-full bg-white border border-line text-zinc-500 hover:border-zinc-400 transition cursor-pointer">
+            className="text-[15px] font-bold px-2 py-0.5 rounded-full bg-white border border-line text-zinc-500 hover:border-zinc-400 transition cursor-pointer">
             전월 적용
           </button>
         )}

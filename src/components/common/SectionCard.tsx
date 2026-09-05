@@ -62,7 +62,7 @@ export function SectionCard({
         <div className="min-w-0 flex-1">
           <h3 className="text-[15px] font-bold text-ink tracking-tight leading-tight">{title}</h3>
           {description && (
-            <p className="text-[12px] text-ink-soft mt-0.5 leading-snug">{description}</p>
+            <p className="text-[14px] text-ink-soft mt-0.5 leading-snug">{description}</p>
           )}
         </div>
         {actions && (

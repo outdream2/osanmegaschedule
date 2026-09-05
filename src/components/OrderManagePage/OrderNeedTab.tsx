@@ -161,7 +161,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
         title="발주 필요"
         count={displayed.length}
         leftSlot={
-          <span className="text-[13px] text-ink-soft font-medium tracking-tight">현재고 &lt; 적정재고</span>
+          <span className="text-[15px] text-ink-soft font-medium tracking-tight">현재고 &lt; 적정재고</span>
         }
       />
 

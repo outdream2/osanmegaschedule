@@ -87,7 +87,7 @@ export const ZoneAssignTab: React.FC<{
           <div className="flex items-center gap-2.5">
             <AccentBar />
             <span className="text-[15px] font-bold text-ink tracking-tight">요일 템플릿 저장</span>
-            <span className="text-[13px] font-medium text-ink-soft">— 현재 배정을 선택 요일 기본값으로 저장</span>
+            <span className="text-[15px] font-medium text-ink-soft">— 현재 배정을 선택 요일 기본값으로 저장</span>
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
             {DOW_LABELS.map((label, dow) => {
@@ -138,7 +138,7 @@ export const ZoneAssignTab: React.FC<{
           <div className="flex items-center gap-2.5">
             <AccentBar size="sm" tone="brand-soft" />
             <div className="text-[14px] font-bold text-ink tracking-tight">{label}</div>
-            <span className="text-[13px] font-medium text-ink-soft tabular-nums">· {zones.length}개</span>
+            <span className="text-[15px] font-medium text-ink-soft tabular-nums">· {zones.length}개</span>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
             {zones.map((z) => {
@@ -157,7 +157,7 @@ export const ZoneAssignTab: React.FC<{
                   <div className={`text-[14px] font-bold leading-tight tabular-nums ${isAssigned ? "text-white" : "text-ink"}`}>
                     {z.num}번
                   </div>
-                  <div className={`text-[12px] leading-snug mt-1 line-clamp-2 ${isAssigned ? "text-white/85" : "text-ink-soft"}`}>
+                  <div className={`text-[14px] leading-snug mt-1 line-clamp-2 ${isAssigned ? "text-white/85" : "text-ink-soft"}`}>
                     {z.label}
                   </div>
                 </button>

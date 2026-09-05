@@ -35,7 +35,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       detailProduct ? (
         <div className="min-w-0">
           <div className="text-[17px] font-bold text-ink tracking-tight truncate">{detailProduct.name}</div>
-          <div className="text-[13px] font-mono text-ink-soft mt-0.5">#{detailProduct.code}</div>
+          <div className="text-[15px] font-mono text-ink-soft mt-0.5">#{detailProduct.code}</div>
         </div>
       ) : undefined
     }

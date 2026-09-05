@@ -375,8 +375,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <ShieldCheck size={16} className="text-indigo-600" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-bold text-zinc-800 leading-tight">직원권한 관리</div>
-              <div className="text-[11px] font-semibold text-zinc-500 leading-tight mt-0.5">페이지별 · 직원별 접근 권한 (level 0~9) 설정</div>
+              <div className="text-[15px] font-bold text-zinc-800 leading-tight">직원권한 관리</div>
+              <div className="text-[13px] font-semibold text-zinc-500 leading-tight mt-0.5">페이지별 · 직원별 접근 권한 (level 0~9) 설정</div>
             </div>
             <ChevronRight size={16} className="text-indigo-500 shrink-0 group-hover:translate-x-0.5 transition-transform" />
           </button>

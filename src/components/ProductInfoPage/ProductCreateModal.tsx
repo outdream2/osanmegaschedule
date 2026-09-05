@@ -302,13 +302,13 @@ export const ProductCreateModal: React.FC<Props> = ({
         <form onSubmit={handleSubmit} className="flex flex-col">
           <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto">
             {error && (
-              <Card variant="flat" padding="md" rounded="lg" bg="bg-rose-50" borderColor="border-rose-200" className="text-[13px] text-rose-700 font-medium">
+              <Card variant="flat" padding="md" rounded="lg" bg="bg-rose-50" borderColor="border-rose-200" className="text-[15px] text-rose-700 font-medium">
                 {error}
               </Card>
             )}
 
             <Card variant="flat" padding="md" rounded="lg" className="bg-white">
-              <h3 className="text-[13px] font-bold text-ink mb-2 tracking-tight">필수 정보</h3>
+              <h3 className="text-[15px] font-bold text-ink mb-2 tracking-tight">필수 정보</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Field label={lockCode ? "상품코드 * (스캔 고정)" : "상품코드 *"} required>
                   <input
@@ -336,7 +336,7 @@ export const ProductCreateModal: React.FC<Props> = ({
             </Card>
 
             <Card variant="flat" padding="md" rounded="lg" className="bg-white">
-              <h3 className="text-[13px] font-bold text-ink mb-2 tracking-tight">분류·공급</h3>
+              <h3 className="text-[15px] font-bold text-ink mb-2 tracking-tight">분류·공급</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* 2026-08-24 · 사용자 지시 · 공급사 검색 autocomplete · 입력 시 리스트 · 클릭 선택 */}
                 <div ref={supplierWrapRef} className="relative min-w-0">
@@ -359,10 +359,10 @@ export const ProductCreateModal: React.FC<Props> = ({
                           key={v.id}
                           type="button"
                           onClick={() => { set("supplier", v.company_name ?? ""); setSupplierOpen(false); }}
-                          className="w-full text-left px-3 py-2 text-[13px] font-medium text-ink hover:bg-brand-tint/30 focus:outline-none focus:bg-brand-tint/40 flex items-center gap-2 transition-colors"
+                          className="w-full text-left px-3 py-2 text-[15px] font-medium text-ink hover:bg-brand-tint/30 focus:outline-none focus:bg-brand-tint/40 flex items-center gap-2 transition-colors"
                         >
                           <span className="truncate">{v.company_name}</span>
-                          {v.category && <span className="ml-auto text-[11px] text-ink-soft shrink-0">{v.category}</span>}
+                          {v.category && <span className="ml-auto text-[13px] text-ink-soft shrink-0">{v.category}</span>}
                         </button>
                       ))}
                     </Card>
@@ -400,13 +400,13 @@ export const ProductCreateModal: React.FC<Props> = ({
             {form.category.trim().length >= 2 && (
               <Card variant="flat" padding="md" rounded="lg" className="bg-brand-tint/20 border-brand-deep/20">
                 <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-[13px] font-bold text-ink tracking-tight flex-1">
+                  <h3 className="text-[15px] font-bold text-ink tracking-tight flex-1">
                     분류코드 · 참조 상품 <span className="text-ink-soft font-medium">({refList.length}건)</span>
                   </h3>
                   {refLoading && <Spinner size={12} tone="brand" />}
                 </div>
                 {refList.length === 0 && !refLoading && (
-                  <div className="text-[12px] text-ink-soft italic">해당 분류코드에 등록된 상품 없음</div>
+                  <div className="text-[14px] text-ink-soft italic">해당 분류코드에 등록된 상품 없음</div>
                 )}
                 {refList.length > 0 && (
                   <div className="max-h-56 overflow-y-auto flex flex-col gap-1 pr-1">
@@ -415,14 +415,14 @@ export const ProductCreateModal: React.FC<Props> = ({
                         key={r.product_code}
                         type="button"
                         onClick={() => applyRefProduct(r)}
-                        className="text-left px-2.5 py-1.5 rounded-md bg-white hover:bg-brand-tint/40 border border-line hover:border-brand-deep/40 text-[12px] transition cursor-pointer"
+                        className="text-left px-2.5 py-1.5 rounded-md bg-white hover:bg-brand-tint/40 border border-line hover:border-brand-deep/40 text-[14px] transition cursor-pointer"
                         title="클릭 시 · 빈 필드 자동 채움"
                       >
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-ink flex-1 truncate">{r.product_name}</span>
-                          <span className="text-[11px] text-ink-soft tabular-nums shrink-0">{r.product_code}</span>
+                          <span className="text-[13px] text-ink-soft tabular-nums shrink-0">{r.product_code}</span>
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5 text-[11px] text-ink-soft">
+                        <div className="flex items-center gap-2 mt-0.5 text-[13px] text-ink-soft">
                           {r.supplier && <span className="truncate">📦 {r.supplier}</span>}
                           {r.brand && <span className="truncate">· {r.brand}</span>}
                           {r.spec && <span className="truncate">· {r.spec}</span>}
@@ -436,7 +436,7 @@ export const ProductCreateModal: React.FC<Props> = ({
             )}
 
             <Card variant="flat" padding="md" rounded="lg" className="bg-white">
-              <h3 className="text-[13px] font-bold text-ink mb-2 tracking-tight">가격</h3>
+              <h3 className="text-[15px] font-bold text-ink mb-2 tracking-tight">가격</h3>
               {/* 2026-08-24 · 사용자 지시 · 적정 재고 · 설정에서 자동 계산 · 신규 등록 폼 제외 */}
               {/* 2026-08-25 · 사용자 지시 · products 테이블에 있는 컬럼만 등록 · 원가(cost_price) 필드 제거 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -450,7 +450,7 @@ export const ProductCreateModal: React.FC<Props> = ({
             </Card>
 
             <Card variant="flat" padding="md" rounded="lg" className="bg-white">
-              <h3 className="text-[13px] font-bold text-ink mb-2 tracking-tight">기타</h3>
+              <h3 className="text-[15px] font-bold text-ink mb-2 tracking-tight">기타</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Field label="브랜드">
                   <input type="text" value={form.brand} onChange={(e) => set("brand", e.target.value)} className={inputCls} maxLength={100} />
@@ -468,7 +468,7 @@ export const ProductCreateModal: React.FC<Props> = ({
               type="button"
               onClick={handleReset}
               disabled={submitting}
-              className="h-9 px-3 rounded-lg text-[13px] font-semibold text-zinc-600 hover:bg-white hover:text-ink border border-line cursor-pointer disabled:opacity-50"
+              className="h-9 px-3 rounded-lg text-[15px] font-semibold text-zinc-600 hover:bg-white hover:text-ink border border-line cursor-pointer disabled:opacity-50"
             >
               초기화
             </button>
@@ -477,14 +477,14 @@ export const ProductCreateModal: React.FC<Props> = ({
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="h-9 px-3 rounded-lg text-[13px] font-semibold text-zinc-600 hover:bg-white hover:text-ink border border-line cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
+              className="h-9 px-3 rounded-lg text-[15px] font-semibold text-zinc-600 hover:bg-white hover:text-ink border border-line cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
             >
               <X size={13} /> 취소
             </button>
             <button
               type="submit"
               disabled={!canSubmit}
-              className="h-9 px-4 rounded-lg text-[13px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors inline-flex items-center gap-1.5"
+              className="h-9 px-4 rounded-lg text-[15px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors inline-flex items-center gap-1.5"
             >
               <Save size={13} className="stroke-[2.5]" />
               {submitting ? "등록 중..." : "등록"}
@@ -501,11 +501,11 @@ export const ProductCreateModal: React.FC<Props> = ({
 
 // ─── 재사용 · label + input 래퍼 ────────────────────────────────────────
 const inputCls =
-  "w-full h-9 px-2.5 rounded-lg border border-line bg-white text-[13px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors";
+  "w-full h-9 px-2.5 rounded-lg border border-line bg-white text-[15px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors";
 
 const Field: React.FC<{ label: string; required?: boolean; children: React.ReactNode }> = ({ label, required, children }) => (
   <label className="flex flex-col gap-1 min-w-0">
-    <span className={`text-[11px] font-semibold tracking-tight ${required ? "text-brand-deep" : "text-zinc-500"}`}>{label}</span>
+    <span className={`text-[13px] font-semibold tracking-tight ${required ? "text-brand-deep" : "text-zinc-500"}`}>{label}</span>
     {children}
   </label>
 );

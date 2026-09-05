@@ -122,7 +122,7 @@ export const PanZoomImage: React.FC<PanZoomImageProps> = ({
           <button type="button" onClick={zoomOut} className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-zinc-100 text-ink-soft hover:text-brand-deep cursor-pointer transition" title="축소 (Wheel ↓)">
             <ZoomOut size={14} />
           </button>
-          <span className="text-[11px] font-bold text-ink-soft tabular-nums min-w-[36px] text-center">{Math.round(scale * 100)}%</span>
+          <span className="text-[13px] font-bold text-ink-soft tabular-nums min-w-[36px] text-center">{Math.round(scale * 100)}%</span>
           <button type="button" onClick={zoomIn} className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-zinc-100 text-ink-soft hover:text-brand-deep cursor-pointer transition" title="확대 (Wheel ↑)">
             <ZoomIn size={14} />
           </button>
@@ -135,7 +135,7 @@ export const PanZoomImage: React.FC<PanZoomImageProps> = ({
 
       {/* 안내 hint · 좌하단 · hover 시만 표시 */}
       {showHint && (
-        <div className={`absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-md bg-black/70 text-white text-[11px] font-semibold px-2 py-1 backdrop-blur transition-opacity duration-150 ${hovering && scale === 1 && offset.x === 0 && offset.y === 0 ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+        <div className={`absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-md bg-black/70 text-white text-[13px] font-semibold px-2 py-1 backdrop-blur transition-opacity duration-150 ${hovering && scale === 1 && offset.x === 0 && offset.y === 0 ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
           <Move size={11} />
           <span>스크롤 · 줌 · 드래그 · 이동 · 더블클릭 · 초기화</span>
         </div>

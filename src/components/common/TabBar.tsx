@@ -198,7 +198,7 @@ export function TabBar<K extends string = string>({
                   <span>{t.label}</span>
                   {t.badge != null && t.badge > 0 && (
                     <span
-                      className={`inline-flex items-center justify-center min-w-[20px] h-[20px] px-1 rounded-full text-[11px] font-bold leading-none tabular-nums transition-colors ${active ? `${badgeBg} text-white shadow-sm` : "bg-zinc-200/80 text-zinc-600"}`}
+                      className={`inline-flex items-center justify-center min-w-[20px] h-[20px] px-1 rounded-full text-[13px] font-bold leading-none tabular-nums transition-colors ${active ? `${badgeBg} text-white shadow-sm` : "bg-zinc-200/80 text-zinc-600"}`}
                       title={`${t.label} · ${t.badge}건`}
                     >
                       {t.badge}
@@ -285,7 +285,7 @@ export function TabBar<K extends string = string>({
                   <span>{t.label}</span>
                   {t.badge != null && t.badge > 0 && (
                     <span
-                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold leading-none tabular-nums transition-colors ${active ? "bg-white/25 text-white" : "bg-zinc-200 text-zinc-700"}`}
+                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[12px] font-bold leading-none tabular-nums transition-colors ${active ? "bg-white/25 text-white" : "bg-zinc-200 text-zinc-700"}`}
                       title={`${t.label} · ${t.badge}건`}
                     >
                       {t.badge}
@@ -361,7 +361,7 @@ export function TabBar<K extends string = string>({
                 <span>{t.label}</span>
                 {t.badge != null && t.badge > 0 && (
                   <span
-                    className={`ml-0.5 text-[11px] font-bold tabular-nums leading-none whitespace-nowrap ${c.text}`}
+                    className={`ml-0.5 text-[13px] font-bold tabular-nums leading-none whitespace-nowrap ${c.text}`}
                     title={`${t.label} · ${t.badge}건`}
                   >
                     {t.badge}

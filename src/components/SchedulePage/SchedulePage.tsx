@@ -590,7 +590,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
                 </div>
                 <div>
                   <h4 className="text-[14px] font-bold text-brand-deep">이번 달 ({currentMonth}월) 스케줄 데이터가 비어 있습니다</h4>
-                  <p className="text-[13px] text-brand-deep/80 mt-0.5 leading-relaxed">이전 달의 스케줄 패턴을 그대로 복사해 오시겠습니까?</p>
+                  <p className="text-[15px] text-brand-deep/80 mt-0.5 leading-relaxed">이전 달의 스케줄 패턴을 그대로 복사해 오시겠습니까?</p>
                 </div>
               </div>
               <button
@@ -609,10 +609,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
               {editMode ? (
                 <>
                   <span className="w-1.5 h-1.5 rounded-full bg-brand-deep animate-pulse shrink-0" />
-                  <span className="text-[13px] text-brand-deep font-semibold truncate min-w-0">편집 모드 — 셀 클릭: 오픈 → 미들 → 마감 → 휴무 순환 · 설정 버튼: 상세 편집</span>
+                  <span className="text-[15px] text-brand-deep font-semibold truncate min-w-0">편집 모드 — 셀 클릭: 오픈 → 미들 → 마감 → 휴무 순환 · 설정 버튼: 상세 편집</span>
                 </>
               ) : (
-                <span className="text-[13px] text-ink-soft truncate min-w-0">셀을 수정하려면 상단 <strong className="text-ink font-semibold">편집</strong> 버튼을 눌러 편집 모드를 켜세요</span>
+                <span className="text-[15px] text-ink-soft truncate min-w-0">셀을 수정하려면 상단 <strong className="text-ink font-semibold">편집</strong> 버튼을 눌러 편집 모드를 켜세요</span>
               )}
             </div>
           )}

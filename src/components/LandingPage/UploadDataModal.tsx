@@ -340,11 +340,11 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
                     if (tab === "log") { fetchImportLog(); fetchStockImportLog(); fetchPurchaseImportLog(); }
                     setUploadTab(tab);
                   }}
-                  className={`flex-1 min-w-0 px-2 py-1.5 text-[13px] sm:text-sm font-bold rounded-lg transition-colors duration-150 cursor-pointer leading-tight ${isActive ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
+                  className={`flex-1 min-w-0 px-2 py-1.5 text-[15px] sm:text-sm font-bold rounded-lg transition-colors duration-150 cursor-pointer leading-tight ${isActive ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
                 >
                   {labels[tab]}
                   {tab === "log" && (importLog.length + stockImportLog.length + purchaseImportBatches.length) > 0 && (
-                    <span className={`ml-1 text-[11px] font-mono rounded-full px-1.5 py-0.5 ${isActive ? "bg-indigo-100 text-indigo-700" : "bg-zinc-100 text-zinc-400"}`}>
+                    <span className={`ml-1 text-[13px] font-mono rounded-full px-1.5 py-0.5 ${isActive ? "bg-indigo-100 text-indigo-700" : "bg-zinc-100 text-zinc-400"}`}>
                       {importLog.length + stockImportLog.length + purchaseImportBatches.length}
                     </span>
                   )}
@@ -399,12 +399,12 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
             {importLog.length > 0 && (
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">상품 임포트 이력</p>
-                  <button onClick={handleClearImportLog} className="text-[12px] text-gray-400 hover:text-rose-500 transition cursor-pointer">clear</button>
+                  <p className="text-[14px] font-bold text-gray-400 uppercase tracking-widest">상품 임포트 이력</p>
+                  <button onClick={handleClearImportLog} className="text-[14px] text-gray-400 hover:text-rose-500 transition cursor-pointer">clear</button>
                 </div>
                 <div className="flex flex-col gap-1 max-h-[180px] overflow-y-auto">
                   {importLog.map((entry, i) => (
-                    <div key={i} className="flex items-center justify-between text-[13px]">
+                    <div key={i} className="flex items-center justify-between text-[15px]">
                       <span className="text-gray-500">
                         {new Date(entry.timestamp).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                       </span>
@@ -506,20 +506,20 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
             ) : (
               <div className="flex flex-col gap-3">
                 <div>
-                  <div className="text-[13px] font-bold text-gray-500 mb-1.5">매입 기간 (필수)</div>
+                  <div className="text-[15px] font-bold text-gray-500 mb-1.5">매입 기간 (필수)</div>
                   <div className="grid grid-cols-2 gap-2">
                     <label className="flex flex-col gap-1">
-                      <span className="text-[12px] font-bold text-gray-500">시작매입일</span>
+                      <span className="text-[14px] font-bold text-gray-500">시작매입일</span>
                       <input type="date" value={purchaseFromDate} onChange={(e) => setPurchaseFromDate(e.target.value)}
                         className="w-full px-2 py-1.5 text-sm font-mono border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep" />
                     </label>
                     <label className="flex flex-col gap-1">
-                      <span className="text-[12px] font-bold text-gray-500">종료매입일</span>
+                      <span className="text-[14px] font-bold text-gray-500">종료매입일</span>
                       <input type="date" value={purchaseToDate} onChange={(e) => setPurchaseToDate(e.target.value)}
                         className="w-full px-2 py-1.5 text-sm font-mono border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep" />
                     </label>
                   </div>
-                  <div className="mt-2 flex items-center gap-2 flex-wrap text-[12px]">
+                  <div className="mt-2 flex items-center gap-2 flex-wrap text-[14px]">
                     {purchasePeriodType ? (
                       <StatusPill tone={purchasePeriodType === "early" ? "sky" : purchasePeriodType === "mid" ? "indigo" : "violet"} size="xs">
                         자동판정: {purchasePeriodType === "early" ? "초순 (1-10일)" : purchasePeriodType === "mid" ? "중순 (11-20일)" : "하순 (21-말일)"}
@@ -531,7 +531,7 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
                       <span className="text-rose-600 font-bold">⚠ 시작일이 종료일보다 뒤</span>
                     )}
                   </div>
-                  <p className="text-[12px] text-gray-400 mt-1">예: 7월 매입 → 시작 2026-07-01 · 종료 2026-07-31 (파일명 자동 파싱 지원)</p>
+                  <p className="text-[14px] text-gray-400 mt-1">예: 7월 매입 → 시작 2026-07-01 · 종료 2026-07-31 (파일명 자동 파싱 지원)</p>
                 </div>
                 <input ref={purchaseUploadInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => {
                   const file = e.target.files?.[0] ?? null;
@@ -580,8 +580,8 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
                 {purchaseImportBatches.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-100">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">매입 임포트 이력</p>
-                      <button onClick={fetchPurchaseImportLog} className="text-[12px] text-gray-400 hover:text-sky-500 transition cursor-pointer">새로고침</button>
+                      <p className="text-[14px] font-bold text-gray-400 uppercase tracking-widest">매입 임포트 이력</p>
+                      <button onClick={fetchPurchaseImportLog} className="text-[14px] text-gray-400 hover:text-sky-500 transition cursor-pointer">새로고침</button>
                     </div>
                     <div className="flex flex-col gap-1 max-h-[220px] overflow-y-auto">
                       {purchaseImportBatches.map((b, i) => {
@@ -596,11 +596,11 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
                         const d = new Date(b.imported_at);
                         const ts = isNaN(d.getTime()) ? b.imported_at : d.toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
                         return (
-                          <div key={i} className="flex items-center justify-between gap-2 text-[13px] py-0.5">
+                          <div key={i} className="flex items-center justify-between gap-2 text-[15px] py-0.5">
                             <div className="flex items-center gap-1.5 min-w-0 flex-1">
                               <span className="text-gray-500 font-mono shrink-0">{ts}</span>
                               <span className="text-emerald-700 font-mono font-bold shrink-0" title={`매입기간 ${b.periodStart ?? b.startDate} ~ ${b.endDate}`}>{rangeLabel}</span>
-                              {periodLabel && <span className={`text-[12px] font-bold px-1.5 py-0.5 rounded-full border ${periodChipClass} shrink-0`}>{periodLabel}</span>}
+                              {periodLabel && <span className={`text-[14px] font-bold px-1.5 py-0.5 rounded-full border ${periodChipClass} shrink-0`}>{periodLabel}</span>}
                             </div>
                             <span className="text-emerald-700 font-bold font-mono shrink-0">{b.count.toLocaleString()}건</span>
                           </div>

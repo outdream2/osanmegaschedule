@@ -177,7 +177,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
       >
         <Bell size={compact ? 18 : 22} strokeWidth={hasUnread ? 2.4 : 2.2} className={hasUnread ? "animate-pulse" : ""} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center leading-none shadow-sm ring-2 ring-white tabular-nums">
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[13px] font-bold flex items-center justify-center leading-none shadow-sm ring-2 ring-white tabular-nums">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
@@ -219,7 +219,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
               {unreadCount > 0 && (
                 <button
                   onClick={markAllRead}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[13px] font-semibold text-ink-soft hover:text-brand-deep hover:bg-brand-tint rounded-lg transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[15px] font-semibold text-ink-soft hover:text-brand-deep hover:bg-brand-tint rounded-lg transition-colors cursor-pointer"
                 >
                   <CheckCheck size={13} /> 모두 읽음
                 </button>
@@ -237,14 +237,14 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
           {/* Notification list */}
           <div className="max-h-80 overflow-y-auto divide-y divide-zinc-50">
             {loading && notifications.length === 0 ? (
-              <div className="flex items-center justify-center py-10 text-zinc-400 text-[13px] gap-2">
+              <div className="flex items-center justify-center py-10 text-zinc-400 text-[15px] gap-2">
                 <Spinner size={12} tone="zinc" />
                 불러오는 중...
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 gap-2">
                 <BellOff size={24} className="text-zinc-300" />
-                <span className="text-zinc-400 text-[13px]">알림이 없습니다</span>
+                <span className="text-zinc-400 text-[15px]">알림이 없습니다</span>
               </div>
             ) : (
               notifications.map((n) => {
@@ -268,13 +268,13 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className={`text-[13px] font-bold truncate ${n.read ? "text-zinc-600" : "text-zinc-900"}`}>{n.title}</p>
+                        <p className={`text-[15px] font-bold truncate ${n.read ? "text-zinc-600" : "text-zinc-900"}`}>{n.title}</p>
                         {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-brand-deep shrink-0" />}
                       </div>
                       {n.body && (
-                        <p className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed line-clamp-2">{n.body}</p>
+                        <p className="text-[13px] text-zinc-500 mt-0.5 leading-relaxed line-clamp-2">{n.body}</p>
                       )}
-                      <p className="text-[12px] text-zinc-400 mt-1">{timeAgo(n.created_at)}</p>
+                      <p className="text-[14px] text-zinc-400 mt-1">{timeAgo(n.created_at)}</p>
                     </div>
                   </button>
                 );
@@ -284,7 +284,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
 
           {notifications.length > 0 && (
             <div className="px-4 py-2 border-t border-zinc-100 text-center">
-              <span className="text-[12px] text-zinc-400">최근 30개 알림</span>
+              <span className="text-[14px] text-zinc-400">최근 30개 알림</span>
             </div>
           )}
         </Card>

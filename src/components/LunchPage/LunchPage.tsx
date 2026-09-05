@@ -286,7 +286,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
             <div className="flex items-center gap-2.5">
               <AccentBar />
               <div className="flex flex-col leading-tight">
-                <span className="text-[13px] text-ink-soft font-semibold">점심 관리</span>
+                <span className="text-[15px] text-ink-soft font-semibold">점심 관리</span>
                 <h1 className="text-[19px] font-extrabold text-ink tracking-tight tabular-nums">{dateLabel(selectedDate)}</h1>
               </div>
             </div>
@@ -329,9 +329,9 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                 <span className="font-bold text-amber-700">{attendance.staffCount}명</span>
               </div>
               <div className="ml-auto flex items-center gap-1">
-                <span className="text-[12px] text-gray-400 font-medium">총</span>
+                <span className="text-[14px] text-gray-400 font-medium">총</span>
                 <span className="font-bold text-gray-800 text-base">{attendance.totalCount}명</span>
-                <span className="text-[12px] text-gray-400 font-medium">출근</span>
+                <span className="text-[14px] text-gray-400 font-medium">출근</span>
               </div>
             </div>
           </Card>
@@ -344,14 +344,14 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
           <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
               <Coffee size={14} className="text-gray-400" />
-              <span className="text-[13px] font-bold text-gray-700">휴게시간 배정</span>
+              <span className="text-[15px] font-bold text-gray-700">휴게시간 배정</span>
             </div>
             <div className="flex items-center gap-3">
               {/* 탭 */}
               <div className="flex gap-1">
                 {(["약사", "사원", "기타"] as BreakTab[]).map(tab => (
                   <button key={tab} onClick={() => setBreakTab(tab)}
-                    className={`px-2.5 py-1 text-[12px] font-bold rounded-lg transition ${breakTab === tab ? "bg-brand-deep text-white" : "bg-white border border-line text-gray-500 hover:bg-gray-50"}`}>
+                    className={`px-2.5 py-1 text-[14px] font-bold rounded-lg transition ${breakTab === tab ? "bg-brand-deep text-white" : "bg-white border border-line text-gray-500 hover:bg-gray-50"}`}>
                     {tab}
                   </button>
                 ))}
@@ -360,7 +360,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               <div className="flex gap-1">
                 {([30, 60] as BreakDuration[]).map(d => (
                   <button key={d} onClick={() => setBreakDuration(d)}
-                    className={`px-2.5 py-1 text-[12px] font-bold rounded-lg transition ${breakDuration === d ? "bg-blue-500 text-white" : "bg-white border border-line text-gray-500 hover:bg-gray-50"}`}>
+                    className={`px-2.5 py-1 text-[14px] font-bold rounded-lg transition ${breakDuration === d ? "bg-blue-500 text-white" : "bg-white border border-line text-gray-500 hover:bg-gray-50"}`}>
                     {d === 30 ? "30분" : "1시간"}
                   </button>
                 ))}
@@ -376,7 +376,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                 {TIME_SLOTS.map((slot, idx) => (
                   <div key={slot}
                     style={{ width: `${SLOT_W}px` }}
-                    className={`flex-shrink-0 h-8 flex items-center justify-center text-[11px] font-bold border-r border-gray-100
+                    className={`flex-shrink-0 h-8 flex items-center justify-center text-[13px] font-bold border-r border-gray-100
                       ${slot === "12:00" || slot === "13:00" ? "text-indigo-600 bg-indigo-50" : "text-gray-400 bg-gray-50"}`}>
                     {slot}
                   </div>
@@ -413,7 +413,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                             draggable
                             onDragStart={() => setDraggedEmpId(a.employeeId)}
                             onDragEnd={() => { setDraggedEmpId(null); setDragOverSlot(null); }}
-                            className={`px-1.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-grab select-none transition ${isPharm ? "bg-emerald-50 border border-emerald-300 ring-2 ring-emerald-500 ring-offset-1 text-emerald-800 hover:bg-emerald-100" : "bg-indigo-100 border border-indigo-200 text-indigo-800 hover:bg-indigo-200"}`}
+                            className={`px-1.5 py-1 rounded-lg text-[13px] font-bold flex items-center gap-1 cursor-grab select-none transition ${isPharm ? "bg-emerald-50 border border-emerald-300 ring-2 ring-emerald-500 ring-offset-1 text-emerald-800 hover:bg-emerald-100" : "bg-indigo-100 border border-indigo-200 text-indigo-800 hover:bg-indigo-200"}`}
                           >
                             <span className="break-words whitespace-normal flex-1">{a.employeeName}</span>
                             <button
@@ -425,7 +425,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                         );
                       })}
                       {isOver && (
-                        <div className="flex-1 border-2 border-dashed border-indigo-300 rounded-lg flex items-center justify-center text-[10px] text-indigo-400 font-bold min-h-[32px]">
+                        <div className="flex-1 border-2 border-dashed border-indigo-300 rounded-lg flex items-center justify-center text-[12px] text-indigo-400 font-bold min-h-[32px]">
                           {TIME_SLOTS[slotIdx]}
                         </div>
                       )}
@@ -439,8 +439,8 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
           {/* 미배정 풀 */}
           <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-[11px] text-gray-400 font-bold">미배정</span>
-              <span className="text-[11px] text-gray-300">← 아래에서 위 시간대로 드래그</span>
+              <span className="text-[13px] text-gray-400 font-bold">미배정</span>
+              <span className="text-[13px] text-gray-300">← 아래에서 위 시간대로 드래그</span>
             </div>
             <div
               className={`min-h-[44px] flex flex-wrap gap-2 p-2 rounded-xl border-2 border-dashed transition-colors
@@ -457,17 +457,17 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                     draggable
                     onDragStart={() => setDraggedEmpId(emp.id)}
                     onDragEnd={() => { setDraggedEmpId(null); setDragOverSlot(null); }}
-                    className={`px-3 py-1.5 bg-white border rounded-xl text-[13px] font-semibold cursor-grab shadow-sm select-none transition ${isPharm ? "border-emerald-400 ring-2 ring-emerald-500 ring-offset-1 text-emerald-800 hover:border-emerald-500 hover:text-emerald-900" : "border-line text-gray-700 hover:border-indigo-300 hover:text-indigo-700"}`}
+                    className={`px-3 py-1.5 bg-white border rounded-xl text-[15px] font-semibold cursor-grab shadow-sm select-none transition ${isPharm ? "border-emerald-400 ring-2 ring-emerald-500 ring-offset-1 text-emerald-800 hover:border-emerald-500 hover:text-emerald-900" : "border-line text-gray-700 hover:border-indigo-300 hover:text-indigo-700"}`}
                   >
                     {emp.name}
                   </div>
                 );
               })}
               {unassigned.length === 0 && tabEmployees.length > 0 && (
-                <span className="text-[12px] text-gray-400 self-center">모두 배정됨</span>
+                <span className="text-[14px] text-gray-400 self-center">모두 배정됨</span>
               )}
               {tabEmployees.length === 0 && (
-                <span className="text-[12px] text-gray-400 self-center">출근 {breakTab} 없음</span>
+                <span className="text-[14px] text-gray-400 self-center">출근 {breakTab} 없음</span>
               )}
             </div>
 
@@ -478,7 +478,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                   .filter(a => tabEmployees.some(e => e.id === a.employeeId))
                   .sort((a, b) => a.startSlot - b.startSlot)
                   .map(a => (
-                    <span key={a.employeeId} className="text-[11px] text-gray-500 bg-gray-100 border border-line rounded-lg px-2 py-0.5">
+                    <span key={a.employeeId} className="text-[13px] text-gray-500 bg-gray-100 border border-line rounded-lg px-2 py-0.5">
                       {a.employeeName} <span className="text-gray-400">{TIME_SLOTS[a.startSlot]}~{TIME_SLOTS[a.startSlot + a.duration / 30] ?? "+"}</span>
                     </span>
                   ))}
@@ -550,8 +550,8 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                   <div key={r.id} className="flex items-center gap-3 px-1 py-2.5">
                     <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-rose-400" />
                     <span className="text-[15px] font-semibold text-ink flex-1">{r.employee_name}</span>
-                    {r.memo && <span className="text-[13px] text-ink-soft break-words whitespace-normal">{r.memo}</span>}
-                    <span className="text-[13px] text-ink-soft shrink-0 tabular-nums">{fmtTime(r.updated_at)}</span>
+                    {r.memo && <span className="text-[15px] text-ink-soft break-words whitespace-normal">{r.memo}</span>}
+                    <span className="text-[15px] text-ink-soft shrink-0 tabular-nums">{fmtTime(r.updated_at)}</span>
                   </div>
                 ))}
               </div>

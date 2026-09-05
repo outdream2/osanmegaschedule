@@ -124,7 +124,7 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
                   <span className={`w-9 h-6 flex items-center justify-center rounded-full transition ${active ? "bg-orange-100" : ""}`}>
                     <Icon size={active ? 18 : 17} weight={active ? "fill" : "regular"} />
                   </span>
-                  <span className={`text-[10px] font-bold leading-none tracking-tight ${active ? "text-orange-700" : ""}`}>{t.mobileLabel}</span>
+                  <span className={`text-[12px] font-bold leading-none tracking-tight ${active ? "text-orange-700" : ""}`}>{t.mobileLabel}</span>
                 </button>
               );
             })}
@@ -139,7 +139,7 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
             <span className={`w-9 h-6 flex items-center justify-center rounded-full transition ${isActive("more") ? "bg-orange-100" : ""}`}>
               <Menu size={isActive("more") ? 18 : 17} strokeWidth={isActive("more") ? 2.6 : 2} />
             </span>
-            <span className={`text-[10px] font-bold leading-none tracking-tight ${isActive("more") ? "text-orange-700" : ""}`}>더보기</span>
+            <span className={`text-[12px] font-bold leading-none tracking-tight ${isActive("more") ? "text-orange-700" : ""}`}>더보기</span>
           </button>
         </div>
       </nav>
@@ -164,7 +164,7 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
                       <GroupIcon size={13} weight="fill" className={tone.iconActive} />
                     </span>
                   )}
-                  <span className={`text-[12px] font-bold ${tone.activeText}`}>{group.label}</span>
+                  <span className={`text-[14px] font-bold ${tone.activeText}`}>{group.label}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {group.items.map(it => (
@@ -216,7 +216,7 @@ function SheetTile({
       <span className={`w-10 h-10 rounded-xl ${c.iconBg} flex items-center justify-center`}>
         <Icon size={18} weight="fill" className={c.text} />
       </span>
-      <span className={`text-[11px] font-bold ${c.text} text-center leading-tight`}>{label}</span>
+      <span className={`text-[13px] font-bold ${c.text} text-center leading-tight`}>{label}</span>
     </button>
   );
 }

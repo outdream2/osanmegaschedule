@@ -666,7 +666,7 @@ export const VendorDetailModal: React.FC<{
               {approvalRequesting ? <Spinner size={12} tone="white" /> : <Check size={13} strokeWidth={2.5} />}
               {approvalStatus === "pending" ? "재요청" : "승인 요청"}
               {missingRequired.length > 0 && (
-                <span className="ml-1 text-[13px] font-semibold tabular-nums opacity-80">({REQUIRED_TOTAL - missingRequired.length}/{REQUIRED_TOTAL})</span>
+                <span className="ml-1 text-[15px] font-semibold tabular-nums opacity-80">({REQUIRED_TOTAL - missingRequired.length}/{REQUIRED_TOTAL})</span>
               )}
             </button>
           )}

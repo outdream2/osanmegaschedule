@@ -69,7 +69,7 @@ interface MenuCardProps {
   orderClass?: string;
   /** 우측 상단 절대배치 배지 (pending count 등) */
   badge?: ReactNode;
-  /** 설명 폰트 크기 override · default: text-[13px] leading-[1.5] */
+  /** 설명 폰트 크기 override · default: text-[15px] leading-[1.5] */
   descClass?: string;
   /** 하단 stat chips · 옵션 (진열·발주 카운터 등) */
   statChips?: MenuCardStatChip[];
@@ -139,7 +139,7 @@ export function MenuCard({ color, icon: Icon, title, description, onClick, order
           {statChips.map((chip, i) => (
             <div
               key={i}
-              className={`inline-flex items-center gap-1.5 text-[13px] font-bold px-[9px] py-[3px] pl-[7px] rounded-full ${CHIP_TONE[chip.tone ?? "zinc"]}`}
+              className={`inline-flex items-center gap-1.5 text-[15px] font-bold px-[9px] py-[3px] pl-[7px] rounded-full ${CHIP_TONE[chip.tone ?? "zinc"]}`}
             >
               <span className="tabular-nums">{chip.value}</span>
               {chip.label}

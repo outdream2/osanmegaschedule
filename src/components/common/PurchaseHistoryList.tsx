@@ -230,7 +230,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
     >
       <table className="w-full text-[14px] min-w-[420px]" style={{ tableLayout: "fixed" }}>
         <thead className="sticky top-0 bg-zinc-50 border-b border-line z-10">
-          <tr className="text-[13px] text-zinc-500 uppercase tracking-wider">
+          <tr className="text-[15px] text-zinc-500 uppercase tracking-wider">
             {showRowNumber && (
               <th className="relative text-left px-2 py-2 text-zinc-300" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
                 #
@@ -313,15 +313,15 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
                 }`}
               >
                 {showRowNumber && (
-                  <td className="px-2 py-1.5 text-zinc-300 text-[13px] tabular-nums align-top">{i + 1}</td>
+                  <td className="px-2 py-1.5 text-zinc-300 text-[15px] tabular-nums align-top">{i + 1}</td>
                 )}
                 <td className="px-3 py-1.5 tabular-nums text-[14px] font-semibold text-zinc-700 align-top whitespace-nowrap">
                   {d || "-"}
-                  {isHighlight && <span className="ml-1 text-[12px] text-amber-600 font-bold">◀</span>}
+                  {isHighlight && <span className="ml-1 text-[14px] text-amber-600 font-bold">◀</span>}
                 </td>
                 {showGap && (
                   <td
-                    className="text-right px-2 py-1.5 tabular-nums text-[13px] text-sky-600 align-top"
+                    className="text-right px-2 py-1.5 tabular-nums text-[15px] text-sky-600 align-top"
                     title={gap != null ? `${gap}일 만에 재매입` : "이전 매입 없음"}
                   >
                     {gap != null ? `${gap}일` : "-"}
@@ -341,7 +341,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
                       {r.product_name ?? "-"}
                     </div>
                     {r.product_code && (
-                      <div className="text-[12px] font-mono text-zinc-400 tabular-nums">{r.product_code}</div>
+                      <div className="text-[14px] font-mono text-zinc-400 tabular-nums">{r.product_code}</div>
                     )}
                   </td>
                 )}
@@ -361,7 +361,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
         {showFooterSum && (
           <tfoot className="sticky bottom-0 bg-white border-t-2 border-line">
             <tr>
-              <td colSpan={colCount - 3} className="px-3 py-2 text-right text-[13px] font-bold text-zinc-500">
+              <td colSpan={colCount - 3} className="px-3 py-2 text-right text-[15px] font-bold text-zinc-500">
                 합계
               </td>
               <td className="px-3 py-2 text-right tabular-nums text-[14px] font-bold text-zinc-700">
@@ -376,7 +376,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
         )}
       </table>
       {footerHint && (
-        <div className="px-3 py-2 border-t border-zinc-100 bg-zinc-50/60 text-[13px] text-zinc-400 text-center">
+        <div className="px-3 py-2 border-t border-zinc-100 bg-zinc-50/60 text-[15px] text-zinc-400 text-center">
           {footerHint}
         </div>
       )}

@@ -34,7 +34,7 @@ export const AccountTab: React.FC<AccountTabProps> = ({
     ) : (
       <div className="space-y-3">
         <div>
-          <label className="block text-[11px] font-bold text-zinc-600 mb-1">현재 비밀번호</label>
+          <label className="block text-[13px] font-bold text-zinc-600 mb-1">현재 비밀번호</label>
           <input
             type="password"
             value={pwCurrent}
@@ -45,7 +45,7 @@ export const AccountTab: React.FC<AccountTabProps> = ({
           />
         </div>
         <div>
-          <label className="block text-[11px] font-bold text-zinc-600 mb-1">새 비밀번호 (4자 이상)</label>
+          <label className="block text-[13px] font-bold text-zinc-600 mb-1">새 비밀번호 (4자 이상)</label>
           <input
             type="password"
             value={pwNew}
@@ -56,7 +56,7 @@ export const AccountTab: React.FC<AccountTabProps> = ({
           />
         </div>
         <div>
-          <label className="block text-[11px] font-bold text-zinc-600 mb-1">새 비밀번호 확인</label>
+          <label className="block text-[13px] font-bold text-zinc-600 mb-1">새 비밀번호 확인</label>
           <input
             type="password"
             value={pwConfirm}

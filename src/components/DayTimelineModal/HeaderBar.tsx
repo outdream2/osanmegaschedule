@@ -71,7 +71,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                 : "text-ink-soft hover:bg-zinc-100 hover:text-ink"
             }`}>
             {key}
-            <span className={`text-[13px] px-1.5 py-0.5 rounded-full tabular-nums ${activeTab === key ? "bg-white/20 text-white" : "bg-zinc-200 text-ink-soft"}`}>{count}</span>
+            <span className={`text-[15px] px-1.5 py-0.5 rounded-full tabular-nums ${activeTab === key ? "bg-white/20 text-white" : "bg-zinc-200 text-ink-soft"}`}>{count}</span>
           </button>
         ))}
         {/* 확정 버튼 · 딥네이비 accent · 최신 트렌드 */}

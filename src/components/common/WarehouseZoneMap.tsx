@@ -93,7 +93,7 @@ export const WarehouseZoneMap: React.FC<WarehouseZoneMapProps> = ({ filter = "bo
           <IconTile icon={<Warehouse size={16} />} tone="amber" size="md" />
           <div className="flex-1 min-w-0">
             <div className="text-[17px] font-bold text-ink tracking-tight leading-tight">창고 구역도</div>
-            <div className="text-[13px] text-ink-soft mt-0.5">
+            <div className="text-[15px] text-ink-soft mt-0.5">
               창고1 (좌측 6구역) · 창고2 (안쪽 20구역 · 중앙 13섹션 · 오른쪽 28구역 · 화장품 4구역)
             </div>
           </div>
@@ -133,7 +133,7 @@ export const WarehouseZoneMap: React.FC<WarehouseZoneMapProps> = ({ filter = "bo
             <button
               type="button"
               onClick={() => setImgOpen(v => !v)}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[13px] font-semibold text-ink-soft bg-white border border-line hover:border-brand-deep/40 hover:text-brand-deep transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[15px] font-semibold text-ink-soft bg-white border border-line hover:border-brand-deep/40 hover:text-brand-deep transition cursor-pointer"
               title="원본 이미지 참조"
             >
               {imgOpen ? <ZoomOut size={13} /> : <ZoomIn size={13} />}
@@ -155,7 +155,7 @@ export const WarehouseZoneMap: React.FC<WarehouseZoneMapProps> = ({ filter = "bo
           <div className="flex items-center gap-2 mb-3 pb-2 border-b border-line">
             <span className="w-2 h-2 rounded-full bg-orange-500" />
             <span className="text-[15px] font-bold text-orange-700 tracking-tight">창고 1</span>
-            <span className="text-[12px] text-ink-soft ml-auto">{zones.warehouse1.length} 구역</span>
+            <span className="text-[14px] text-ink-soft ml-auto">{zones.warehouse1.length} 구역</span>
           </div>
           <img src={storage1Img} alt="창고 1 실사진" className="w-full max-w-[720px] mx-auto rounded-lg border border-orange-200 mb-3" loading="lazy" />
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
@@ -178,7 +178,7 @@ export const WarehouseZoneMap: React.FC<WarehouseZoneMapProps> = ({ filter = "bo
           <div className="flex items-center gap-2 mb-3 pb-2 border-b border-line">
             <span className="w-2 h-2 rounded-full bg-teal-500" />
             <span className="text-[15px] font-bold text-teal-700 tracking-tight">창고 2</span>
-            <span className="text-[12px] text-ink-soft ml-auto">
+            <span className="text-[14px] text-ink-soft ml-auto">
               안쪽 {zones.warehouse2_inner.length} · 중앙 {zones.warehouse2_center.length} · 오른쪽 {zones.warehouse2_right.length} · 화장품 {zones.warehouse2_cosmetics.length}
             </span>
           </div>
@@ -216,8 +216,8 @@ const ZoneSection: React.FC<ZoneSectionProps> = ({ title, items, onChange, editi
     <div>
       <div className="flex items-center gap-1.5 mb-2 px-1">
         <Package size={12} className={iconColor} />
-        <span className={`text-[13px] font-bold ${titleColor} uppercase tracking-wider`}>{title}</span>
-        <span className="text-[11px] text-ink-soft ml-auto">{items.length}구역</span>
+        <span className={`text-[15px] font-bold ${titleColor} uppercase tracking-wider`}>{title}</span>
+        <span className="text-[13px] text-ink-soft ml-auto">{items.length}구역</span>
       </div>
       <div className={`grid ${cols ?? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-2"} gap-1.5`}>
         {items.map((z, i) => (
@@ -261,7 +261,7 @@ const ZoneBox: React.FC<ZoneBoxProps> = ({ item, tone, editing, onChange, size =
   return (
     <div className={`${t.bg} ${t.border} border rounded-lg ${isSm ? "px-2 py-1.5" : "px-3 py-2"} flex flex-col items-center justify-center gap-0.5 hover:shadow-sm transition-shadow`}>
       {item.tag && !isSm && (
-        <span className="text-[10px] font-bold text-ink-soft px-1 py-0.5 rounded bg-white/70 border border-line mb-0.5">{item.tag}</span>
+        <span className="text-[12px] font-bold text-ink-soft px-1 py-0.5 rounded bg-white/70 border border-line mb-0.5">{item.tag}</span>
       )}
       <span className={`${t.num} font-bold ${isSm ? "text-[14px]" : "text-[16px]"} tabular-nums leading-none`}>{item.code}</span>
       {editing && labelDraft != null ? (
@@ -272,11 +272,11 @@ const ZoneBox: React.FC<ZoneBoxProps> = ({ item, tone, editing, onChange, size =
           onChange={(e) => setLabelDraft(e.target.value)}
           onBlur={commitLabel}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitLabel(); } if (e.key === "Escape") { e.preventDefault(); setLabelDraft(null); } }}
-          className={`w-full ${isSm ? "text-[11px]" : "text-[12px]"} font-semibold text-center bg-white border ${t.border} rounded px-1 py-0.5 outline-none focus:ring-2 ${t.input}`}
+          className={`w-full ${isSm ? "text-[13px]" : "text-[14px]"} font-semibold text-center bg-white border ${t.border} rounded px-1 py-0.5 outline-none focus:ring-2 ${t.input}`}
         />
       ) : (
         <span
-          className={`${t.label} ${isSm ? "text-[11px]" : "text-[12px]"} font-semibold text-center leading-tight whitespace-normal break-keep w-full ${editing ? "cursor-pointer hover:underline" : ""}`}
+          className={`${t.label} ${isSm ? "text-[13px]" : "text-[14px]"} font-semibold text-center leading-tight whitespace-normal break-keep w-full ${editing ? "cursor-pointer hover:underline" : ""}`}
           onClick={editing ? startEditLabel : undefined}
           title={editing ? "클릭하여 라벨 편집" : item.label}
         >
@@ -292,12 +292,12 @@ const ZoneBox: React.FC<ZoneBoxProps> = ({ item, tone, editing, onChange, size =
             onChange={(e) => setHintDraft(e.target.value)}
             onBlur={commitHint}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitHint(); } if (e.key === "Escape") { e.preventDefault(); setHintDraft(null); } }}
-            className={`w-full text-[10px] text-center bg-white border ${t.border} rounded px-1 py-0.5 outline-none focus:ring-2 ${t.input} mt-0.5`}
+            className={`w-full text-[12px] text-center bg-white border ${t.border} rounded px-1 py-0.5 outline-none focus:ring-2 ${t.input} mt-0.5`}
             placeholder="힌트 (공급사 등)"
           />
         ) : (
           <span
-            className={`text-[10px] text-ink-soft text-center leading-tight whitespace-normal break-keep w-full mt-0.5 ${editing ? "cursor-pointer hover:underline" : ""}`}
+            className={`text-[12px] text-ink-soft text-center leading-tight whitespace-normal break-keep w-full mt-0.5 ${editing ? "cursor-pointer hover:underline" : ""}`}
             onClick={editing ? startEditHint : undefined}
             title={editing ? "클릭하여 힌트 편집" : item.hint}
           >

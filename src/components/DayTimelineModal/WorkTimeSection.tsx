@@ -56,7 +56,7 @@ export const WorkTimeSection: React.FC<WorkTimeSectionProps> = ({
   return (
     <div className="px-4 pt-3 pb-2">
       <div className="flex items-center gap-2 mb-2 flex-wrap">
-        <span className="text-[12px] font-bold text-zinc-400 uppercase tracking-widest">근무시간</span>
+        <span className="text-[14px] font-bold text-zinc-400 uppercase tracking-widest">근무시간</span>
         {/* 미배정 직원 수 배지 — 클릭 시 이름 목록 토글 */}
         {(() => {
           const unassignedList = workers.filter(w => {
@@ -71,19 +71,19 @@ export const WorkTimeSection: React.FC<WorkTimeSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setShowUnassigned(v => !v)}
-                className="text-[13px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 border border-orange-200 hover:bg-orange-200 cursor-pointer transition flex items-center gap-1"
+                className="text-[15px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 border border-orange-200 hover:bg-orange-200 cursor-pointer transition flex items-center gap-1"
                 title="클릭하여 미배정 인원 명단 보기"
               >
                 미배정 {unassignedList.length}명
-                <span className={`text-[12px] transition-transform ${showUnassigned ? "rotate-180" : ""}`}>▾</span>
+                <span className={`text-[14px] transition-transform ${showUnassigned ? "rotate-180" : ""}`}>▾</span>
               </button>
               {showUnassigned && (
                 <div className="absolute z-30 mt-1 left-0 bg-white border border-orange-200 rounded-lg shadow-lg p-2 min-w-[180px] max-w-[280px] max-h-64 overflow-y-auto">
-                  <div className="text-[12px] font-bold text-orange-500 uppercase tracking-wider mb-1 px-1">미배정 인원</div>
+                  <div className="text-[14px] font-bold text-orange-500 uppercase tracking-wider mb-1 px-1">미배정 인원</div>
                   <div className="flex flex-wrap gap-1">
                     {unassignedList.map(w => (
                       <span key={w.emp.id}
-                        className="text-[13px] font-bold px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-100">
+                        className="text-[15px] font-bold px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-100">
                         {w.emp.name}
                       </span>
                     ))}
@@ -98,7 +98,7 @@ export const WorkTimeSection: React.FC<WorkTimeSectionProps> = ({
           return (
             <div key={type} className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.dot }} />
-              <span className="text-[12px] font-semibold text-zinc-500">{type}</span>
+              <span className="text-[14px] font-semibold text-zinc-500">{type}</span>
             </div>
           );
         })}
@@ -144,28 +144,28 @@ export const WorkTimeSection: React.FC<WorkTimeSectionProps> = ({
                     }
                     <span className={`text-[14px] whitespace-nowrap ${isPharmacist ? "text-purple-600 font-bold" : "text-zinc-800 font-bold"}`}>{emp.name}</span>
                     {!!emp.hireDate && date === emp.hireDate && (
-                      <span className="text-[11px] font-bold px-1 py-px rounded bg-emerald-500 text-white leading-none shrink-0" title={`입사일 (${emp.hireDate})`}>입사</span>
+                      <span className="text-[13px] font-bold px-1 py-px rounded bg-emerald-500 text-white leading-none shrink-0" title={`입사일 (${emp.hireDate})`}>입사</span>
                     )}
                     {!!emp.retireDate && date === emp.retireDate && (
-                      <span className="text-[11px] font-bold px-1 py-px rounded bg-rose-500 text-white leading-none shrink-0" title={`퇴사일 (${emp.retireDate})`}>퇴사</span>
+                      <span className="text-[13px] font-bold px-1 py-px rounded bg-rose-500 text-white leading-none shrink-0" title={`퇴사일 (${emp.retireDate})`}>퇴사</span>
                     )}
-                    <span className="text-[12px] font-bold leading-none shrink-0" style={{ color: colors.text }}>{schedule.type}</span>
+                    <span className="text-[14px] font-bold leading-none shrink-0" style={{ color: colors.text }}>{schedule.type}</span>
                     {showZoneBadge && (() => {
                       const zoneNumsRaw = (emp as any).zone_nums ?? (emp as any).zoneNums;
                       const zoneNums: number[] = Array.isArray(zoneNumsRaw) ? zoneNumsRaw : [];
                       if (zoneNums.length === 0) return null;
                       return (
-                        <span className={`text-[11px] font-bold px-1 py-px rounded leading-none shrink-0 ${isCashierLogistics ? "bg-blue-100 text-blue-700 ring-1 ring-blue-300" : "bg-blue-50 text-blue-600"}`}
+                        <span className={`text-[13px] font-bold px-1 py-px rounded leading-none shrink-0 ${isCashierLogistics ? "bg-blue-100 text-blue-700 ring-1 ring-blue-300" : "bg-blue-50 text-blue-600"}`}
                           title={isCashierLogistics ? "캐셔·물류 겸직" : "물류 담당구역"}>
                           {zoneNums.slice(0, 3).join("·")}{zoneNums.length > 3 ? "…" : ""}
                         </span>
                       );
                     })()}
                     {hasLunch && (
-                      <span className="text-[11px] font-bold px-1 py-px rounded bg-yellow-100 text-yellow-600 leading-none shrink-0">점심</span>
+                      <span className="text-[13px] font-bold px-1 py-px rounded bg-yellow-100 text-yellow-600 leading-none shrink-0">점심</span>
                     )}
                     {hasRest && (
-                      <span className="text-[11px] font-bold px-1 py-px rounded bg-violet-100 text-violet-600 leading-none shrink-0">휴게</span>
+                      <span className="text-[13px] font-bold px-1 py-px rounded bg-violet-100 text-violet-600 leading-none shrink-0">휴게</span>
                     )}
                     {onEditEmployee && (
                       <button onClick={() => onEditEmployee(emp)}
@@ -193,24 +193,24 @@ export const WorkTimeSection: React.FC<WorkTimeSectionProps> = ({
                               if (e.key === "Escape") setEditingWork(null);
                             }}
                             placeholder="09:00-18:00"
-                            className="text-[12px] tabular-nums border border-line rounded px-1 py-0 w-[70px] bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors"
+                            className="text-[14px] tabular-nums border border-line rounded px-1 py-0 w-[70px] bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors"
                           />
-                          <button className="text-[11px] text-indigo-500 hover:text-indigo-700 cursor-pointer font-bold"
+                          <button className="text-[13px] text-indigo-500 hover:text-indigo-700 cursor-pointer font-bold"
                             onClick={async e => { e.stopPropagation(); await onUpdateSchedule?.({ employeeId: emp.id, date, type: schedule.type, workingHours: editingWork.value, actualHours: schedule.actualHours || "", memo: schedule.memo || "" }); setEditingWork(null); }}>✓</button>
-                          <button className="text-[11px] text-zinc-400 hover:text-zinc-600 cursor-pointer"
+                          <button className="text-[13px] text-zinc-400 hover:text-zinc-600 cursor-pointer"
                             onClick={e => { e.stopPropagation(); setEditingWork(null); }}>✕</button>
                         </div>
                       );
                     }
                     return displayHours ? (
                       <span
-                        className={`text-[12px] tabular-nums leading-none cursor-pointer hover:text-indigo-600 hover:underline ${onUpdateSchedule ? "text-zinc-400" : "text-zinc-300"}`}
+                        className={`text-[14px] tabular-nums leading-none cursor-pointer hover:text-indigo-600 hover:underline ${onUpdateSchedule ? "text-zinc-400" : "text-zinc-300"}`}
                         onClick={e => { if (!onUpdateSchedule) return; e.stopPropagation(); setEditingWork({ empId: emp.id, value: displayHours }); }}
                         title={onUpdateSchedule ? "클릭해서 근무시간 편집" : undefined}
                       >{displayHours}</span>
                     ) : (
                       onUpdateSchedule ? (
-                        <span className="text-[12px] text-zinc-300 leading-none cursor-pointer hover:text-indigo-400"
+                        <span className="text-[14px] text-zinc-300 leading-none cursor-pointer hover:text-indigo-400"
                           onClick={e => { e.stopPropagation(); setEditingWork({ empId: emp.id, value: "" }); }}>+ 시간</span>
                       ) : null
                     );
@@ -227,12 +227,12 @@ export const WorkTimeSection: React.FC<WorkTimeSectionProps> = ({
               <div className="relative h-7 mb-0.5">
                 <div className="absolute top-0 bottom-0 bg-orange-100 rounded pointer-events-none flex items-end justify-center pb-0.5"
                   style={{ left: `${pct(14 * 60)}%`, width: `${widthPct(14 * 60, 17 * 60)}%` }}>
-                  <span className="text-[11px] font-bold text-orange-500 tracking-tight">피크타임</span>
+                  <span className="text-[13px] font-bold text-orange-500 tracking-tight">피크타임</span>
                 </div>
                 {HOUR_SLOTS.map((slot, i) => (
                   <div key={slot} className="absolute top-0 flex flex-col items-center"
                     style={{ left: `${(i / (HOUR_SLOTS.length - 1)) * 100}%`, transform: "translateX(-50%)" }}>
-                    <span className={`text-[12px] whitespace-nowrap font-medium ${parseInt(slot) >= 14 && parseInt(slot) <= 17 ? "text-orange-500 font-bold" : "text-zinc-400"}`}>{slot}</span>
+                    <span className={`text-[14px] whitespace-nowrap font-medium ${parseInt(slot) >= 14 && parseInt(slot) <= 17 ? "text-orange-500 font-bold" : "text-zinc-400"}`}>{slot}</span>
                     <span className={`mt-0.5 block w-px h-1.5 ${parseInt(slot) >= 14 && parseInt(slot) <= 17 ? "bg-orange-300" : "bg-zinc-300"}`} />
                   </div>
                 ))}
@@ -260,14 +260,14 @@ export const WorkTimeSection: React.FC<WorkTimeSectionProps> = ({
                             backgroundColor: colors.bg,
                           }}>
                           <div className="flex items-center justify-center h-full">
-                            <span className="text-[12px] font-bold select-none truncate px-1" style={{ color: colors.text }}>
+                            <span className="text-[14px] font-bold select-none truncate px-1" style={{ color: colors.text }}>
                               {minToStr(workRange.start)}~{minToStr(workRange.end)}
                             </span>
                           </div>
                         </div>
                       ) : (
                         <div className="flex items-center justify-center h-full">
-                          <span className="text-[13px] text-zinc-300 font-medium">시간 미정</span>
+                          <span className="text-[15px] text-zinc-300 font-medium">시간 미정</span>
                         </div>
                       )}
                     </div>

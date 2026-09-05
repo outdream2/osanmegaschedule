@@ -98,7 +98,7 @@ export const FinalDecisionCard: React.FC<FinalDecisionCardProps> = ({
       <div className="px-5 py-4 flex flex-col gap-3">
         {finalDecision === "has_mismatch" && (
           <div className="flex flex-col gap-1.5">
-            <label className="flex items-center gap-1.5 text-[13px] font-bold text-rose-700">
+            <label className="flex items-center gap-1.5 text-[15px] font-bold text-rose-700">
               <ClipboardX size={12} />
               품목이상 상세 메모
             </label>
@@ -153,7 +153,7 @@ export const FinalDecisionCard: React.FC<FinalDecisionCardProps> = ({
         </button>
 
         {saveError && (
-          <p className="text-[13px] text-rose-600 font-semibold px-1">{saveError}</p>
+          <p className="text-[15px] text-rose-600 font-semibold px-1">{saveError}</p>
         )}
         {saveStatus === "done" && (
           <p className="text-[14px] text-zinc-400 font-medium px-1 leading-relaxed">
@@ -249,7 +249,7 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
         <Package size={16} className="text-brand-deep shrink-0" />
         <span className="text-[16px] font-bold text-ink tracking-tight">입고내역</span>
         <StatusPill tone="brand" size="md">{arrivals.length}건</StatusPill>
-        <span className="text-[13px] font-medium text-ink-soft ml-2 hidden sm:inline">공급사 {groups.length} · 최근 {arrivalDays}일</span>
+        <span className="text-[15px] font-medium text-ink-soft ml-2 hidden sm:inline">공급사 {groups.length} · 최근 {arrivalDays}일</span>
         <div className="flex items-center gap-0.5 bg-zinc-100 border border-line rounded-lg p-1 ml-auto">
           {[7, 30, 90].map(d => (
             <button key={d} onClick={() => setArrivalDays(d as 7 | 30 | 90)}
@@ -292,7 +292,7 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
                     <Building2 size={16} className="text-indigo-600 shrink-0" />
                     <span className="text-[15px] font-bold text-ink min-w-0 flex-1 truncate" title={g.supplier}>{g.supplier}</span>
                     <StatusPill tone="indigo" size="sm">{g.arrivals.length}건</StatusPill>
-                    <span className="text-[13px] font-semibold text-zinc-500 tabular-nums whitespace-nowrap">품목 {g.totalItems.toLocaleString()} · 수량 {g.totalQty.toLocaleString()}</span>
+                    <span className="text-[15px] font-semibold text-zinc-500 tabular-nums whitespace-nowrap">품목 {g.totalItems.toLocaleString()} · 수량 {g.totalQty.toLocaleString()}</span>
                     {g.matchCount > 0 && (
                       <StatusPill tone="emerald" size="sm" dot>일치 {g.matchCount}</StatusPill>
                     )}
@@ -327,7 +327,7 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
                               const arrivalNo = arrivalNoMap.get(a.id) ?? String(a.id);
                               return (
                                 <tr key={a.id} className={`transition ${isSelected ? "bg-indigo-50/60" : "hover:bg-white"}`}>
-                                  <td className="px-3 py-1.5 text-indigo-700 font-bold tabular-nums text-[13px]">{arrivalNo}</td>
+                                  <td className="px-3 py-1.5 text-indigo-700 font-bold tabular-nums text-[15px]">{arrivalNo}</td>
                                   <td className="px-3 py-1.5 text-zinc-700 tabular-nums font-semibold">{dateStr}</td>
                                   <td className="px-3 py-1.5 text-zinc-600">{a.checked_by ?? "-"}</td>
                                   <td className="px-3 py-1.5 text-right text-zinc-800 font-bold tabular-nums">{a.total_items}</td>
@@ -398,7 +398,7 @@ export const ArrivalDetailModal: React.FC<ArrivalDetailModalProps> = ({
       icon={<Package size={18} />}
       titleAccent
       headerRight={selectedArrivalId != null ? (
-        <span className="text-[13px] font-semibold text-ink-soft tabular-nums">ID {selectedArrivalId}</span>
+        <span className="text-[15px] font-semibold text-ink-soft tabular-nums">ID {selectedArrivalId}</span>
       ) : undefined}
       backdropIntensity="brand"
     >

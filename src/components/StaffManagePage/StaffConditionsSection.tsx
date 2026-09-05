@@ -113,17 +113,17 @@ export const StaffConditionsSection: React.FC<StaffConditionsSectionProps> = ({
                   const now = new Date(); now.setHours(0, 0, 0, 0);
                   const days = Math.round((d.getTime() - now.getTime()) / 86400_000);
                   if (days < 0) return (
-                    <span className="inline-flex items-center h-6 px-2 rounded-md text-[12px] font-bold bg-rose-100 text-rose-700 border border-rose-300" title={`만료 ${Math.abs(days)}일 경과`}>
+                    <span className="inline-flex items-center h-6 px-2 rounded-md text-[14px] font-bold bg-rose-100 text-rose-700 border border-rose-300" title={`만료 ${Math.abs(days)}일 경과`}>
                       ⚠ 만료 {Math.abs(days)}일 경과 · 재계약 필요
                     </span>
                   );
                   if (days === 0) return (
-                    <span className="inline-flex items-center h-6 px-2 rounded-md text-[12px] font-bold bg-rose-100 text-rose-700 border border-rose-300">
+                    <span className="inline-flex items-center h-6 px-2 rounded-md text-[14px] font-bold bg-rose-100 text-rose-700 border border-rose-300">
                       ⚠ 오늘 만료
                     </span>
                   );
                   if (days <= 30) return (
-                    <span className="inline-flex items-center h-6 px-2 rounded-md text-[12px] font-bold bg-amber-100 text-amber-800 border border-amber-300" title={`${days}일 후 만료 · 재계약 준비`}>
+                    <span className="inline-flex items-center h-6 px-2 rounded-md text-[14px] font-bold bg-amber-100 text-amber-800 border border-amber-300" title={`${days}일 후 만료 · 재계약 준비`}>
                       ⏰ D-{days} 만료 임박
                     </span>
                   );

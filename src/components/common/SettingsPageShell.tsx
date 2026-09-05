@@ -53,7 +53,7 @@ export const SettingsPageShell: React.FC<Props> = ({
   icon: Icon, title, description,
   rightSlot, maxWidth = "max-w-[1360px]",
   titleClassName = "text-[22px] font-extrabold text-ink leading-tight tracking-tight",
-  descriptionClassName = "text-[13px] text-ink-soft mt-1 leading-relaxed",
+  descriptionClassName = "text-[15px] text-ink-soft mt-1 leading-relaxed",
   showBreadcrumb = true,
   breadcrumbGroup = "설정",
   children,
@@ -71,7 +71,7 @@ export const SettingsPageShell: React.FC<Props> = ({
       <main className={`flex-1 ${maxWidth} w-[85%] mx-auto px-4 py-5 flex flex-col gap-4`}>
         {/* 2026-08-29 · #122 P5 · breadcrumb · 홈 > 설정 > 현재 페이지 */}
         {showBreadcrumb && (
-          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[13px] text-ink-soft font-medium -mb-1">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[15px] text-ink-soft font-medium -mb-1">
             <button
               type="button"
               onClick={onBack}

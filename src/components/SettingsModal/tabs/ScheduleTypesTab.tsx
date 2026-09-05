@@ -46,7 +46,7 @@ export const ScheduleTypesTab: React.FC<ScheduleTypesTabProps> = ({
           key={t.id}
           type="button"
           onClick={() => setScheduleHourTab(t.id)}
-          className={`flex-1 min-w-[72px] py-1.5 px-2 text-[11px] font-bold rounded-lg border transition cursor-pointer whitespace-nowrap ${
+          className={`flex-1 min-w-[72px] py-1.5 px-2 text-[13px] font-bold rounded-lg border transition cursor-pointer whitespace-nowrap ${
             scheduleHourTab === t.id
               ? "bg-brand-deep border-[#2563eb] text-white"
               : "bg-white border-line text-zinc-500 hover:bg-zinc-50"
@@ -58,7 +58,7 @@ export const ScheduleTypesTab: React.FC<ScheduleTypesTabProps> = ({
     </div>
 
     <div className="space-y-1.5">
-      <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)_28px] gap-2 px-3 py-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wide">
+      <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)_28px] gap-2 px-3 py-1 text-[12px] font-bold text-zinc-400 uppercase tracking-wide">
         <span>유형명</span>
         <span>색</span>
         <span>{HOUR_TABS.find(t => t.id === scheduleHourTab)?.label} 시간</span>

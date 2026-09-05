@@ -75,7 +75,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
       <div className="flex items-stretch h-full min-h-[54px] sm:min-h-[58px]">
 
         {/* 행 번호 · 좌측 스트립 */}
-        <div className="flex items-center justify-center w-4 sm:w-5 shrink-0 text-[10px] font-medium text-zinc-300 select-none">
+        <div className="flex items-center justify-center w-4 sm:w-5 shrink-0 text-[12px] font-medium text-zinc-300 select-none">
           {empIdx + 1}
         </div>
 
@@ -93,7 +93,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
         <div className="flex-1 flex flex-col justify-center py-1.5 pl-1 pr-1 min-w-0 gap-0.5">
           {/* 직군 · 작은 텍스트 · 약사 emerald · 그 외 zinc */}
           {emp.position && (
-            <span className={`text-[11px] sm:text-[12px] font-medium leading-none truncate ${isPharmacist ? "text-emerald-600" : "text-zinc-400"}`}>
+            <span className={`text-[13px] sm:text-[14px] font-medium leading-none truncate ${isPharmacist ? "text-emerald-600" : "text-zinc-400"}`}>
               {emp.position}
             </span>
           )}
@@ -111,7 +111,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
           {/* 비고 · lg+ */}
           {emp.description && (
             <div
-              className="hidden lg:block text-[11px] text-zinc-400 font-normal truncate leading-tight"
+              className="hidden lg:block text-[13px] text-zinc-400 font-normal truncate leading-tight"
               title={emp.description}
             >
               {emp.description}

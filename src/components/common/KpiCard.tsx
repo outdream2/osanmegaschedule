@@ -156,7 +156,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         <span className="kpi-card-label">{label}</span>
         {useNewStyle && delta !== undefined && delta !== 0 && (
           <span
-            className={`ml-auto inline-flex items-center gap-0.5 text-[12px] font-bold tabular-nums ${
+            className={`ml-auto inline-flex items-center gap-0.5 text-[14px] font-bold tabular-nums ${
               delta > 0 ? "text-emerald-600" : "text-rose-600"
             }`}
           >
@@ -174,7 +174,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
 
       {/* subtitle (backward compat) or hint (신규) */}
       {(subtitle != null || hint != null) && (
-        <div className="text-[12px] font-medium text-ink-soft tracking-tight">
+        <div className="text-[14px] font-medium text-ink-soft tracking-tight">
           {hint ?? subtitle}
         </div>
       )}

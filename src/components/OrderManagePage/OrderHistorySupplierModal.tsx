@@ -160,8 +160,8 @@ export const OrderHistorySupplierModal: React.FC<Props> = ({ supplier, onClose }
           >
             <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
             <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-bold text-amber-800 leading-tight mb-1">발주 특이사항</div>
-              <div className="text-[13px] text-amber-900 leading-relaxed whitespace-pre-wrap break-words">
+              <div className="text-[15px] font-bold text-amber-800 leading-tight mb-1">발주 특이사항</div>
+              <div className="text-[15px] text-amber-900 leading-relaxed whitespace-pre-wrap break-words">
                 {specialNotes}
               </div>
             </div>
@@ -196,9 +196,9 @@ export const OrderHistorySupplierModal: React.FC<Props> = ({ supplier, onClose }
                           <Calendar size={12} className="text-zinc-400" />
                           {fmtDate(o.sent_at)}
                         </span>
-                        <span className="text-[13px] text-ink-soft">
+                        <span className="text-[15px] text-ink-soft">
                           {o.hope_arrival_date && (
-                            <span className="inline-flex items-center gap-1 text-[13px] text-emerald-700">
+                            <span className="inline-flex items-center gap-1 text-[15px] text-emerald-700">
                               <CalendarCheck size={12} />희망입고 {fmtDate(o.hope_arrival_date)}
                             </span>
                           )}

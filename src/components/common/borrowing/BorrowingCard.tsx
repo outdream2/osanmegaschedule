@@ -74,10 +74,10 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
 
         {/* Lender chip · 2026-09-01 · gradient avatar (PartyCard 톤 통일) */}
         <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-violet-50 border border-violet-200">
-          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-violet-700 text-white flex items-center justify-center text-[11px] font-extrabold shadow-[0_1px_3px_rgba(0,0,0,0.15)]">
+          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-violet-700 text-white flex items-center justify-center text-[13px] font-extrabold shadow-[0_1px_3px_rgba(0,0,0,0.15)]">
             {String(item.lender_name ?? "?").charAt(0)}
           </div>
-          <span className="text-[13px] font-bold text-violet-800 break-words whitespace-normal">{item.lender_name ?? "미지정"}</span>
+          <span className="text-[15px] font-bold text-violet-800 break-words whitespace-normal">{item.lender_name ?? "미지정"}</span>
         </div>
 
         {/* Arrow · settled 시 왕복 */}
@@ -90,7 +90,7 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
         {/* 상품 요약 */}
         <div className="flex-1 min-w-0">
           <div className="text-[14px] font-bold text-ink break-words whitespace-normal">{item.product_name ?? item.product_code ?? "-"}</div>
-          <div className="text-[11px] text-ink-soft tabular-nums">
+          <div className="text-[13px] text-ink-soft tabular-nums">
             {item.qty ?? "-"}개
             {amount != null && ` · ${amount.toLocaleString()}원`}
             {item.due_date && ` · 기한 ${item.due_date}`}
@@ -99,14 +99,14 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
 
         {/* Borrower chip · 2026-09-01 · gradient avatar */}
         <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-200">
-          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 text-white flex items-center justify-center text-[11px] font-extrabold shadow-[0_1px_3px_rgba(0,0,0,0.15)]">
+          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 text-white flex items-center justify-center text-[13px] font-extrabold shadow-[0_1px_3px_rgba(0,0,0,0.15)]">
             {String(item.borrower_name ?? "?").charAt(0)}
           </div>
-          <span className="text-[13px] font-bold text-emerald-800 break-words whitespace-normal">{item.borrower_name ?? "미지정"}</span>
+          <span className="text-[15px] font-bold text-emerald-800 break-words whitespace-normal">{item.borrower_name ?? "미지정"}</span>
         </div>
 
         {/* 상태 pill */}
-        <span className={`inline-flex items-center gap-1 h-6 px-2 rounded-md text-[11px] font-extrabold uppercase tracking-wider ${meta.bg} ${meta.text}`}>
+        <span className={`inline-flex items-center gap-1 h-6 px-2 rounded-md text-[13px] font-extrabold uppercase tracking-wider ${meta.bg} ${meta.text}`}>
           <Icon size={10} />
           {meta.label}
         </span>
@@ -116,7 +116,7 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
           <button
             type="button"
             onClick={() => onAction("return")}
-            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[12px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 cursor-pointer shadow-sm"
+            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[14px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 cursor-pointer shadow-sm"
           >
             반환
           </button>
@@ -127,7 +127,7 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
       {expanded && (
         <div className="border-t border-line px-4 py-4 bg-zinc-50/40 rounded-b-xl">
           {item.contract_no && (
-            <div className="text-[12px] font-mono text-ink-soft mb-3 pb-2 border-b border-zinc-100">
+            <div className="text-[14px] font-mono text-ink-soft mb-3 pb-2 border-b border-zinc-100">
               계약번호 · <span className="font-bold text-ink">{item.contract_no}</span>
             </div>
           )}
@@ -139,9 +139,9 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
               <span aria-hidden className="absolute left-[-24px] top-0.5 w-[19px] h-[19px] rounded-full bg-white border-2 border-brand-deep flex items-center justify-center shadow-sm">
                 <CheckCircle size={11} className="text-brand-deep" strokeWidth={2.5} />
               </span>
-              <div className="text-[13px] font-bold text-ink">계약 체결</div>
-              <div className="text-[12px] text-ink-soft tabular-nums mt-0.5">{item.created_at ?? "-"}</div>
-              {item.note && <div className="text-[12px] text-ink-soft mt-1 italic pl-2 border-l-2 border-brand-deep/20">"{item.note}"</div>}
+              <div className="text-[15px] font-bold text-ink">계약 체결</div>
+              <div className="text-[14px] text-ink-soft tabular-nums mt-0.5">{item.created_at ?? "-"}</div>
+              {item.note && <div className="text-[14px] text-ink-soft mt-1 italic pl-2 border-l-2 border-brand-deep/20">"{item.note}"</div>}
             </div>
             {/* 기한 초과 알림 */}
             {item.overdue_notified_at && (
@@ -149,8 +149,8 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
                 <span aria-hidden className="absolute left-[-24px] top-0.5 w-[19px] h-[19px] rounded-full bg-white border-2 border-amber-500 flex items-center justify-center shadow-sm">
                   <AlertTriangle size={10} className="text-amber-500" strokeWidth={2.5} />
                 </span>
-                <div className="text-[13px] font-bold text-amber-700">기한 초과 알림</div>
-                <div className="text-[12px] text-ink-soft tabular-nums mt-0.5">{item.overdue_notified_at}</div>
+                <div className="text-[15px] font-bold text-amber-700">기한 초과 알림</div>
+                <div className="text-[14px] text-ink-soft tabular-nums mt-0.5">{item.overdue_notified_at}</div>
               </div>
             )}
             {/* 반환 완료 */}
@@ -159,9 +159,9 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
                 <span aria-hidden className="absolute left-[-24px] top-0.5 w-[19px] h-[19px] rounded-full bg-emerald-500 flex items-center justify-center shadow-[0_1px_3px_rgba(16,185,129,0.35)]">
                   <CheckCircle size={11} className="text-white" strokeWidth={2.5} />
                 </span>
-                <div className="text-[13px] font-bold text-emerald-700">반환 완료</div>
-                <div className="text-[12px] text-ink-soft tabular-nums mt-0.5">{item.returned_at}</div>
-                {item.return_note && <div className="text-[12px] text-ink-soft mt-1 italic pl-2 border-l-2 border-emerald-300/40">"{item.return_note}"</div>}
+                <div className="text-[15px] font-bold text-emerald-700">반환 완료</div>
+                <div className="text-[14px] text-ink-soft tabular-nums mt-0.5">{item.returned_at}</div>
+                {item.return_note && <div className="text-[14px] text-ink-soft mt-1 italic pl-2 border-l-2 border-emerald-300/40">"{item.return_note}"</div>}
               </div>
             )}
           </div>

@@ -107,30 +107,30 @@ export const StockUploadTab: React.FC<StockUploadTabProps> = ({
             건 스냅샷 저장됨
           </p>
           {stockUploadResult.snapshot_date && (
-            <p className="text-[13px] text-gray-500">스냅샷일: <span className="tabular-nums font-bold text-gray-700">{stockUploadResult.snapshot_date}</span></p>
+            <p className="text-[15px] text-gray-500">스냅샷일: <span className="tabular-nums font-bold text-gray-700">{stockUploadResult.snapshot_date}</span></p>
           )}
           {(stockUploadResult.history ?? 0) < (stockUploadResult.total ?? 0) && (
-            <p className="text-[12px] text-amber-600">일부 행 저장 실패 (서버 로그 확인 필요)</p>
+            <p className="text-[14px] text-amber-600">일부 행 저장 실패 (서버 로그 확인 필요)</p>
           )}
           <button onClick={() => { setStockUploadResult(null); setStockUploadFile(null); }} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl transition cursor-pointer">확인</button>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
           <div>
-            <div className="text-[13px] font-bold text-gray-500 mb-1.5">재고 기간 (필수)</div>
+            <div className="text-[15px] font-bold text-gray-500 mb-1.5">재고 기간 (필수)</div>
             <div className="grid grid-cols-2 gap-2">
               <label className="flex flex-col gap-1">
-                <span className="text-[12px] font-bold text-gray-500">시작재고일</span>
+                <span className="text-[14px] font-bold text-gray-500">시작재고일</span>
                 <input type="date" value={stockStartDate} onChange={(e) => setStockStartDate(e.target.value)}
                   className="w-full px-2 py-1.5 text-sm tabular-nums border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep" />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-[12px] font-bold text-gray-500">종료재고일</span>
+                <span className="text-[14px] font-bold text-gray-500">종료재고일</span>
                 <input type="date" value={stockEndDate} onChange={(e) => setStockEndDate(e.target.value)}
                   className="w-full px-2 py-1.5 text-sm tabular-nums border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep" />
               </label>
             </div>
-            <div className="mt-2 flex items-center gap-2 flex-wrap text-[12px]">
+            <div className="mt-2 flex items-center gap-2 flex-wrap text-[14px]">
               {stockPeriodType ? (
                 <StatusPill tone={stockPeriodType === "early" ? "sky" : stockPeriodType === "mid" ? "indigo" : "violet"} size="xs">
                   자동판정: {stockPeriodType === "early" ? "초순 (1-10일)" : stockPeriodType === "mid" ? "중순 (11-20일)" : "하순 (21-말일)"}
@@ -142,7 +142,7 @@ export const StockUploadTab: React.FC<StockUploadTabProps> = ({
                 <span className="text-rose-600 font-bold">⚠ 시작일이 종료일보다 뒤</span>
               )}
             </div>
-            <p className="text-[12px] text-gray-400 mt-1">예: 6월 초순 스냅샷 → 시작재고일 2026-06-01 · 종료재고일 2026-06-10</p>
+            <p className="text-[14px] text-gray-400 mt-1">예: 6월 초순 스냅샷 → 시작재고일 2026-06-01 · 종료재고일 2026-06-10</p>
           </div>
           <input ref={stockUploadInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
           <button type="button" onClick={() => stockUploadInputRef.current?.click()}
@@ -166,8 +166,8 @@ export const StockUploadTab: React.FC<StockUploadTabProps> = ({
       {stockImportLog.length > 0 && (
         <div className="mt-4 pt-4 border-t border-gray-100">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">재고 임포트 이력</p>
-            <button onClick={handleClearStockImportLog} className="text-[12px] text-gray-400 hover:text-rose-500 transition cursor-pointer">clear</button>
+            <p className="text-[14px] font-bold text-gray-400 uppercase tracking-widest">재고 임포트 이력</p>
+            <button onClick={handleClearStockImportLog} className="text-[14px] text-gray-400 hover:text-rose-500 transition cursor-pointer">clear</button>
           </div>
           <div className="flex flex-col gap-1 max-h-[220px] overflow-y-auto">
             {stockImportLog.map((entry, i) => {
@@ -182,13 +182,13 @@ export const StockUploadTab: React.FC<StockUploadTabProps> = ({
                   : "text-purple-700 bg-purple-50 border-purple-200";
               const stored = entry.history ?? entry.count;
               return (
-                <div key={i} className="flex items-center justify-between gap-2 text-[13px] py-0.5">
+                <div key={i} className="flex items-center justify-between gap-2 text-[15px] py-0.5">
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     <span className="text-gray-500 tabular-nums shrink-0">
                       {new Date(entry.timestamp).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                     </span>
                     {rangeLabel && <span className="text-emerald-700 tabular-nums font-bold shrink-0" title={entry.start_date && entry.snapshot_date ? `재고기간 ${entry.start_date} ~ ${entry.snapshot_date}` : `스냅샷일 ${entry.snapshot_date}`}>{rangeLabel}</span>}
-                    {periodLabel && <span className={`text-[12px] font-bold rounded-full px-1.5 py-0.5 border shrink-0 ${periodChipClass}`}>{periodLabel}</span>}
+                    {periodLabel && <span className={`text-[14px] font-bold rounded-full px-1.5 py-0.5 border shrink-0 ${periodChipClass}`}>{periodLabel}</span>}
                   </div>
                   <span className={`font-semibold shrink-0 ${i === 0 ? "text-indigo-600" : "text-gray-400"}`}>
                     {stored.toLocaleString()}개

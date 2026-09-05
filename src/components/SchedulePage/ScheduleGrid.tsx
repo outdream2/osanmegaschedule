@@ -69,7 +69,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
     return (
       <div className="w-full py-32 flex flex-col items-center justify-center bg-zinc-50/50">
         <Spinner size={32} tone="brand" />
-        <p className="text-[#64748b] text-[11px] font-bold mt-4 tracking-wider">메가타운 스케줄 데이터 분석 중...</p>
+        <p className="text-[#64748b] text-[13px] font-bold mt-4 tracking-wider">메가타운 스케줄 데이터 분석 중...</p>
       </div>
     );
   }
@@ -121,7 +121,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
         <tr className="bg-white text-ink select-none">
           <th
             ref={nameThRef}
-            className="text-center text-[13px] sm:text-[14px] font-semibold border-r border-line border-b border-b-line sticky left-0 bg-white z-50 py-2 sm:py-2.5 tracking-tight whitespace-nowrap px-0.5 sm:px-1.5 min-w-[90px] sm:min-w-[110px] lg:min-w-[120px] w-[90px] sm:w-[110px] lg:w-[120px] text-ink-soft"
+            className="text-center text-[15px] sm:text-[14px] font-semibold border-r border-line border-b border-b-line sticky left-0 bg-white z-50 py-2 sm:py-2.5 tracking-tight whitespace-nowrap px-0.5 sm:px-1.5 min-w-[90px] sm:min-w-[110px] lg:min-w-[120px] w-[90px] sm:w-[110px] lg:w-[120px] text-ink-soft"
           >
             <span className="hidden sm:inline">직원 성명</span>
             <span className="sm:hidden">성명</span>
@@ -145,7 +145,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                   {dayNum}
                 </th>
                 {isMonthEnd && showSummary !== "hidden" && (
-                  <th className="p-0.5 sm:p-1 text-center text-[11px] sm:text-[12px] font-semibold border-b border-line bg-zinc-50 text-ink-soft whitespace-nowrap border-l-2 border-l-line w-[44px] sm:w-[52px]">
+                  <th className="p-0.5 sm:p-1 text-center text-[13px] sm:text-[14px] font-semibold border-b border-line bg-zinc-50 text-ink-soft whitespace-nowrap border-l-2 border-l-line w-[44px] sm:w-[52px]">
                     {monthLabel}월합
                   </th>
                 )}
@@ -164,11 +164,11 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
             const isMonthEnd = !nextDate || nextDate.substring(0, 7) !== dateStr.substring(0, 7);
             return (
               <React.Fragment key={`day-name-${dateStr}`}>
-                <th className={`p-0.5 text-center text-[13px] sm:text-[14px] border-r border-b border-line w-[44px] bg-zinc-50/60 ${wordClass} ${isToday ? "bg-rose-50 text-rose-700 ring-2 ring-inset ring-rose-500 z-40 relative" : ""}`}>
+                <th className={`p-0.5 text-center text-[15px] sm:text-[14px] border-r border-b border-line w-[44px] bg-zinc-50/60 ${wordClass} ${isToday ? "bg-rose-50 text-rose-700 ring-2 ring-inset ring-rose-500 z-40 relative" : ""}`}>
                   {dayWord}
                 </th>
                 {isMonthEnd && showSummary !== "hidden" && (
-                  <th className="p-0.5 text-center text-[10px] sm:text-[11px] border-b border-line bg-zinc-50/60 text-ink-soft border-l-2 border-l-line w-[44px] sm:w-[52px]">
+                  <th className="p-0.5 text-center text-[12px] sm:text-[13px] border-b border-line bg-zinc-50/60 text-ink-soft border-l-2 border-l-line w-[44px] sm:w-[52px]">
                     일·시간
                   </th>
                 )}
@@ -222,10 +222,10 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                     (canOpenBreak ? "클릭하여 점심/휴게 시간 설정" : undefined)
                   }
                 >
-                  {isHireDay   && <span className="absolute top-0 right-0 z-30 text-[10px] font-bold px-1.5 py-0.5 rounded-bl bg-emerald-500 text-white leading-none shadow-sm pointer-events-none">입사</span>}
-                  {isRetireDay && <span className="absolute top-0 right-0 z-30 text-[10px] font-bold px-1.5 py-0.5 rounded-bl bg-rose-500 text-white leading-none shadow-sm pointer-events-none">퇴사</span>}
+                  {isHireDay   && <span className="absolute top-0 right-0 z-30 text-[12px] font-bold px-1.5 py-0.5 rounded-bl bg-emerald-500 text-white leading-none shadow-sm pointer-events-none">입사</span>}
+                  {isRetireDay && <span className="absolute top-0 right-0 z-30 text-[12px] font-bold px-1.5 py-0.5 rounded-bl bg-rose-500 text-white leading-none shadow-sm pointer-events-none">퇴사</span>}
                   {outOfEmployment ? (
-                    <div className="w-full h-full min-h-[24px] flex items-center justify-center text-[10px] text-zinc-400 font-medium select-none">
+                    <div className="w-full h-full min-h-[24px] flex items-center justify-center text-[12px] text-zinc-400 font-medium select-none">
                       <span className="opacity-40">─</span>
                     </div>
                   ) : (
@@ -257,9 +257,9 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                 <React.Fragment key={`${emp.id}-${dateStr}`}>
                   {cell}
                   <td className="border-l-2 border-line bg-zinc-50/60 text-center align-middle p-1">
-                    <div className="text-[13px] sm:text-[14px] font-bold text-ink leading-tight tabular-nums">{workDays}일</div>
-                    {hoursLabel && <div className="text-[11px] sm:text-[12px] text-ink-soft font-medium leading-tight tabular-nums">{hoursLabel}</div>}
-                    {isAdmin && showSummary === "labor" && costLabel && <div className="text-[11px] sm:text-[12px] text-brand-deep font-semibold leading-tight tabular-nums">{costLabel}원</div>}
+                    <div className="text-[15px] sm:text-[14px] font-bold text-ink leading-tight tabular-nums">{workDays}일</div>
+                    {hoursLabel && <div className="text-[13px] sm:text-[14px] text-ink-soft font-medium leading-tight tabular-nums">{hoursLabel}</div>}
+                    {isAdmin && showSummary === "labor" && costLabel && <div className="text-[13px] sm:text-[14px] text-brand-deep font-semibold leading-tight tabular-nums">{costLabel}원</div>}
                   </td>
                 </React.Fragment>
               );

@@ -85,21 +85,21 @@ export const ZoneCellPicker: React.FC<Props> = ({ cellId, canEdit = false, trigg
                 </PopoverPrimitive.Close>
               </div>
               {!canEdit && (
-                <div className="mt-1.5 text-[11px] font-bold text-rose-600">관리자(lv 9) 만 편집 가능 · 조회만</div>
+                <div className="mt-1.5 text-[13px] font-bold text-rose-600">관리자(lv 9) 만 편집 가능 · 조회만</div>
               )}
               {saveState === "saving" && (
-                <div className="mt-1.5 text-[11px] font-bold text-brand-deep">저장 중...</div>
+                <div className="mt-1.5 text-[13px] font-bold text-brand-deep">저장 중...</div>
               )}
             </div>
 
             <div className="flex-1 overflow-auto p-3 space-y-3">
               {!zone && (
-                <div className="text-[13px] text-rose-600 font-semibold">셀 {cellId} · zone_defs 에 없음 (조회 실패)</div>
+                <div className="text-[15px] text-rose-600 font-semibold">셀 {cellId} · zone_defs 에 없음 (조회 실패)</div>
               )}
 
               {/* 구역 (zone) */}
               <section>
-                <div className="text-[11px] font-bold text-ink-soft uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                <div className="text-[13px] font-bold text-ink-soft uppercase tracking-wider mb-1.5 flex items-center gap-1">
                   <TagIcon size={11} /> 구역
                 </div>
                 <input
@@ -115,7 +115,7 @@ export const ZoneCellPicker: React.FC<Props> = ({ cellId, canEdit = false, trigg
 
               {/* 카테고리 (category) · 자유 입력 + 프리셋 */}
               <section>
-                <div className="text-[11px] font-bold text-ink-soft uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                <div className="text-[13px] font-bold text-ink-soft uppercase tracking-wider mb-1.5 flex items-center gap-1">
                   <Layers size={11} /> 카테고리
                 </div>
                 <input
@@ -124,7 +124,7 @@ export const ZoneCellPicker: React.FC<Props> = ({ cellId, canEdit = false, trigg
                   disabled={!canEdit || !zone}
                   onBlur={e => { const v = e.target.value.trim(); if (v !== currentCat) apply({ category: v }, `카테고리 저장`); }}
                   onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                  className="w-full h-9 px-2.5 text-[13px] rounded-md border border-line focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:bg-zinc-50 mb-2"
+                  className="w-full h-9 px-2.5 text-[15px] rounded-md border border-line focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:bg-zinc-50 mb-2"
                   placeholder="카테고리 직접 입력"
                 />
                 {categoryOptions.length > 0 && (
@@ -135,7 +135,7 @@ export const ZoneCellPicker: React.FC<Props> = ({ cellId, canEdit = false, trigg
                         type="button"
                         disabled={!canEdit || !zone}
                         onClick={() => apply({ category: opt }, `카테고리 저장`)}
-                        className={`w-full text-left px-2.5 py-1.5 text-[13px] font-medium hover:bg-brand-tint/30 hover:text-brand-deep transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 ${opt === currentCat ? "bg-brand-tint/50 text-brand-deep font-bold" : "text-ink"}`}
+                        className={`w-full text-left px-2.5 py-1.5 text-[15px] font-medium hover:bg-brand-tint/30 hover:text-brand-deep transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 ${opt === currentCat ? "bg-brand-tint/50 text-brand-deep font-bold" : "text-ink"}`}
                       >
                         <Check size={11} className={opt === currentCat ? "text-brand-deep" : "text-transparent"} />
                         <span className="flex-1 min-w-0 break-keep">{opt}</span>
@@ -147,14 +147,14 @@ export const ZoneCellPicker: React.FC<Props> = ({ cellId, canEdit = false, trigg
 
               {/* 상세카테고리 (detailedCategory) */}
               <section>
-                <div className="text-[11px] font-bold text-ink-soft uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                <div className="text-[13px] font-bold text-ink-soft uppercase tracking-wider mb-1.5 flex items-center gap-1">
                   <MapPin size={11} /> 상세 카테고리 (hover 표시)
                 </div>
                 <textarea
                   defaultValue={currentDetail}
                   disabled={!canEdit || !zone}
                   onBlur={e => { const v = e.target.value.trim(); if (v !== currentDetail) apply({ detailedCategory: v || undefined }, `상세카테고리 저장`); }}
-                  className="w-full min-h-[60px] max-h-[160px] px-2.5 py-1.5 text-[13px] rounded-md border border-line focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:bg-zinc-50 mb-2 resize-y"
+                  className="w-full min-h-[60px] max-h-[160px] px-2.5 py-1.5 text-[15px] rounded-md border border-line focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:bg-zinc-50 mb-2 resize-y"
                   placeholder="상세 설명 직접 입력 (긴 텍스트 · hover 시 표시)"
                 />
                 {detailOptions.length > 0 && (
@@ -165,7 +165,7 @@ export const ZoneCellPicker: React.FC<Props> = ({ cellId, canEdit = false, trigg
                         type="button"
                         disabled={!canEdit || !zone}
                         onClick={() => apply({ detailedCategory: opt }, `상세카테고리 저장`)}
-                        className={`w-full text-left px-2.5 py-1.5 text-[12px] font-medium hover:bg-brand-tint/30 hover:text-brand-deep transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-start gap-2 ${opt === currentDetail ? "bg-brand-tint/50 text-brand-deep font-bold" : "text-ink-soft"}`}
+                        className={`w-full text-left px-2.5 py-1.5 text-[14px] font-medium hover:bg-brand-tint/30 hover:text-brand-deep transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-start gap-2 ${opt === currentDetail ? "bg-brand-tint/50 text-brand-deep font-bold" : "text-ink-soft"}`}
                       >
                         <Check size={11} className={`mt-0.5 shrink-0 ${opt === currentDetail ? "text-brand-deep" : "text-transparent"}`} />
                         <span className="flex-1 min-w-0 break-keep whitespace-pre-wrap leading-relaxed">{opt}</span>
@@ -177,7 +177,7 @@ export const ZoneCellPicker: React.FC<Props> = ({ cellId, canEdit = false, trigg
 
               {/* 2026-08-30 · 사용자 지시 · 담당자 · 매장구역도에서 직접 배정 · AssigneeEditor 프리미티브 */}
               <section>
-                <div className="text-[11px] font-bold text-ink-soft uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                <div className="text-[13px] font-bold text-ink-soft uppercase tracking-wider mb-1.5 flex items-center gap-1">
                   <Users size={11} /> 담당자
                 </div>
                 <AssigneeEditor
@@ -189,7 +189,7 @@ export const ZoneCellPicker: React.FC<Props> = ({ cellId, canEdit = false, trigg
               </section>
             </div>
 
-            <div className="px-3 py-2 border-t border-line bg-zinc-50/60 flex items-center gap-2 text-[11px] text-ink-soft">
+            <div className="px-3 py-2 border-t border-line bg-zinc-50/60 flex items-center gap-2 text-[13px] text-ink-soft">
               변경 후 Tab 또는 다른 필드 클릭 시 자동 저장 · 프리셋 클릭도 즉시 저장
             </div>
 

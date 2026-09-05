@@ -232,7 +232,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
           onClick={() => setCellPicker({ type: dropKind, slot: slotKey })}
           title="탭하여 인원 배정 (순차)"
         >
-          <span className="text-[13px] font-bold text-zinc-300 select-none">+</span>
+          <span className="text-[15px] font-bold text-zinc-300 select-none">+</span>
         </div>
       );
     }
@@ -283,11 +283,11 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
         onDrop={handleContainerDrop}
         onClick={() => setCellPicker({ type: dropKind, slot: slotKey })}
       >
-        <span className={`text-[13px] font-bold text-center leading-none py-0.5 ${theme.label}`}>:{minLabel}</span>
+        <span className={`text-[15px] font-bold text-center leading-none py-0.5 ${theme.label}`}>:{minLabel}</span>
         {/* 한 공간: 배정된 chip 만 위에서부터 stack · 빈 자리(–) 없음 */}
         <div className="flex flex-col gap-px px-0.5 pb-0.5 min-h-[24px]">
           {visibleChips.length === 0 ? (
-            <span className="text-[12px] text-zinc-300 leading-none text-center py-0.5 select-none">–</span>
+            <span className="text-[14px] text-zinc-300 leading-none text-center py-0.5 select-none">–</span>
           ) : (
             visibleChips.map((chip, listIdx) => {
               const { empId, w, c, origIdx } = chip;
@@ -331,7 +331,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                   onClick={e => { e.stopPropagation(); setCellPicker({ type: dropKind, slot: slotKey }); }}
                   title={w.emp.position.includes("캐셔") && w.emp.position.includes("물류") ? "캐셔 겸직 · 드래그로 순서 변경" : "드래그로 순서 변경 · 탭하여 편집"}
                   style={{ backgroundColor: c.chipBg, color: w.emp.position === "약사" ? "#2563eb" : c.chipText, borderColor: c.chipBorder, opacity: isDragging ? 0.4 : 1 }}
-                  className={`relative w-full text-center rounded text-[13px] border transition leading-none py-px cursor-grab active:cursor-grabbing hover:opacity-60 inline-flex items-center justify-center gap-0.5 whitespace-nowrap overflow-hidden ${w.emp.position === "약사" ? "font-bold" : "font-bold"}`}
+                  className={`relative w-full text-center rounded text-[15px] border transition leading-none py-px cursor-grab active:cursor-grabbing hover:opacity-60 inline-flex items-center justify-center gap-0.5 whitespace-nowrap overflow-hidden ${w.emp.position === "약사" ? "font-bold" : "font-bold"}`}
                 >
                   <span className="truncate">{w.emp.name}</span>
                 </div>
@@ -356,13 +356,13 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
           <span className="w-2 h-2 rounded-full bg-sky-400" />
           <span className="text-[14px] font-bold text-sky-800">구역 · 점심 · 휴게 배정</span>
           {assignedIds.size > 0 && (
-            <span className="text-[13px] font-semibold text-sky-700 opacity-70">{assignedIds.size}명 배정됨</span>
+            <span className="text-[15px] font-semibold text-sky-700 opacity-70">{assignedIds.size}명 배정됨</span>
           )}
           {onAutoSuggest && (
             <button
               type="button"
               onClick={onAutoSuggest}
-              className="text-[13px] font-bold px-2 py-0.5 rounded-full bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white cursor-pointer shadow-sm transition"
+              className="text-[15px] font-bold px-2 py-0.5 rounded-full bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white cursor-pointer shadow-sm transition"
               title="현재 탭 인원 기준으로 카운터·매장을 자동 배치 (약사 1시간 로테이션 + 캐셔 팀)"
             >
               ⚡ 임의배치
@@ -377,7 +377,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                 type="button"
                 onClick={onConfirm}
                 disabled={confirming}
-                className="text-[13px] font-bold px-2 py-0.5 rounded-full bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white cursor-pointer shadow-sm transition disabled:opacity-50"
+                className="text-[15px] font-bold px-2 py-0.5 rounded-full bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white cursor-pointer shadow-sm transition disabled:opacity-50"
                 title="현재 배치를 확정하고 날짜/요일 템플릿에 저장"
               >
                 {confirming ? "저장중…" : "✓ 확정"}
@@ -386,7 +386,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
           )}
         </div>
         <div className="flex items-center gap-1">
-          <span className="text-[12px] text-zinc-400 mr-0.5">요일저장</span>
+          <span className="text-[14px] text-zinc-400 mr-0.5">요일저장</span>
           {DOW_LABELS.map((label, dow) => (
             <button key={dow}
               onClick={() => setSelectedDows(prev => {
@@ -394,7 +394,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                 if (next.has(dow)) next.delete(dow); else next.add(dow);
                 return next;
               })}
-              className={`w-6 h-6 text-[12px] font-bold rounded transition cursor-pointer ${
+              className={`w-6 h-6 text-[14px] font-bold rounded transition cursor-pointer ${
                 selectedDows.has(dow)
                   ? "bg-brand-deep text-white shadow-sm"
                   : dow === currentDow
@@ -414,11 +414,11 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                   setSaving(false);
                   setSelectedDows(new Set());
                 }}
-                className="text-[13px] font-bold px-2 py-0.5 rounded bg-brand-deep text-white hover:bg-brand-deep cursor-pointer disabled:opacity-50 ml-0.5">
+                className="text-[15px] font-bold px-2 py-0.5 rounded bg-brand-deep text-white hover:bg-brand-deep cursor-pointer disabled:opacity-50 ml-0.5">
                 {saving ? "저장중…" : `저장(${selectedDows.size})`}
               </button>
               <button onClick={() => setSelectedDows(new Set())}
-                className="text-[13px] font-bold px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 hover:bg-zinc-200 cursor-pointer">✕</button>
+                className="text-[15px] font-bold px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 hover:bg-zinc-200 cursor-pointer">✕</button>
             </>
           )}
         </div>
@@ -435,7 +435,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               {/* 피크타임 배경 밴드: 14:00~17:00 = 슬롯 인덱스 4~6 (10슬롯 기준 40%~70%) */}
               <div className="absolute top-0 bottom-0 bg-orange-100/70 rounded pointer-events-none flex items-start justify-center"
                 style={{ left: "40%", width: "30%" }}>
-                <span className="text-[11px] font-bold text-orange-500 tracking-tight leading-none pt-0.5">피크타임</span>
+                <span className="text-[13px] font-bold text-orange-500 tracking-tight leading-none pt-0.5">피크타임</span>
               </div>
               <div className="flex relative">
                 {ZONE_SLOTS.map((slot, i) => {
@@ -546,10 +546,10 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             <div className="flex-1 flex relative">
               {ZONE_SLOTS.map(slot => (
                 <div key={slot} className="flex-1 text-left pl-0.5">
-                  <span className="text-[13px] font-bold text-yellow-700/70">{parseInt(slot, 10)}</span>
+                  <span className="text-[15px] font-bold text-yellow-700/70">{parseInt(slot, 10)}</span>
                 </div>
               ))}
-              <span className="text-[13px] font-bold text-yellow-700/70 absolute right-0 top-0 pr-0.5">20</span>
+              <span className="text-[15px] font-bold text-yellow-700/70 absolute right-0 top-0 pr-0.5">20</span>
             </div>
           </div>
 
@@ -561,15 +561,15 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               </div>
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => onShiftLunchOffset(-30)} disabled={lunchOffset <= -60}
-                  className="w-4 h-4 flex items-center justify-center text-[12px] font-bold rounded bg-white border border-line text-zinc-500 disabled:opacity-30 cursor-pointer">−</button>
-                <span className="text-[13px] tabular-nums text-zinc-400 leading-none">{offsetLabel(lunchOffset)}</span>
+                  className="w-4 h-4 flex items-center justify-center text-[14px] font-bold rounded bg-white border border-line text-zinc-500 disabled:opacity-30 cursor-pointer">−</button>
+                <span className="text-[15px] tabular-nums text-zinc-400 leading-none">{offsetLabel(lunchOffset)}</span>
                 <button type="button" onClick={() => onShiftLunchOffset(30)} disabled={lunchOffset >= 60}
-                  className="w-4 h-4 flex items-center justify-center text-[12px] font-bold rounded bg-white border border-line text-zinc-500 disabled:opacity-30 cursor-pointer">+</button>
+                  className="w-4 h-4 flex items-center justify-center text-[14px] font-bold rounded bg-white border border-line text-zinc-500 disabled:opacity-30 cursor-pointer">+</button>
               </div>
               <div className="flex gap-0.5 mt-0.5">
                 {([30, 60, 90] as BreakInterval[]).map(v => (
                   <button key={v} type="button" onClick={() => onSetLunchInterval(v)}
-                    className={`text-[11px] px-0.5 py-px rounded font-bold border transition cursor-pointer ${
+                    className={`text-[13px] px-0.5 py-px rounded font-bold border transition cursor-pointer ${
                       lunchInterval === v ? "bg-yellow-500 text-white border-yellow-500" : "bg-white text-zinc-400 border-line hover:border-yellow-300"
                     }`}>
                     {v === 30 ? "30분" : v === 60 ? "1h" : "1.5h"}
@@ -615,10 +615,10 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             <div className="flex-1 flex relative">
               {ZONE_SLOTS.map(slot => (
                 <div key={slot} className="flex-1 text-left pl-0.5">
-                  <span className="text-[13px] font-bold text-violet-700/70">{parseInt(slot, 10)}</span>
+                  <span className="text-[15px] font-bold text-violet-700/70">{parseInt(slot, 10)}</span>
                 </div>
               ))}
-              <span className="text-[13px] font-bold text-violet-700/70 absolute right-0 top-0 pr-0.5">20</span>
+              <span className="text-[15px] font-bold text-violet-700/70 absolute right-0 top-0 pr-0.5">20</span>
             </div>
           </div>
 
@@ -630,15 +630,15 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               </div>
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => onShiftRestOffset(-30)} disabled={restOffset <= -60}
-                  className="w-4 h-4 flex items-center justify-center text-[12px] font-bold rounded bg-white border border-line text-zinc-500 disabled:opacity-30 cursor-pointer">−</button>
-                <span className="text-[13px] tabular-nums text-zinc-400 leading-none">{offsetLabel(restOffset)}</span>
+                  className="w-4 h-4 flex items-center justify-center text-[14px] font-bold rounded bg-white border border-line text-zinc-500 disabled:opacity-30 cursor-pointer">−</button>
+                <span className="text-[15px] tabular-nums text-zinc-400 leading-none">{offsetLabel(restOffset)}</span>
                 <button type="button" onClick={() => onShiftRestOffset(30)} disabled={restOffset >= 60}
-                  className="w-4 h-4 flex items-center justify-center text-[12px] font-bold rounded bg-white border border-line text-zinc-500 disabled:opacity-30 cursor-pointer">+</button>
+                  className="w-4 h-4 flex items-center justify-center text-[14px] font-bold rounded bg-white border border-line text-zinc-500 disabled:opacity-30 cursor-pointer">+</button>
               </div>
               <div className="flex gap-0.5 mt-0.5">
                 {([30, 60, 90] as BreakInterval[]).map(v => (
                   <button key={v} type="button" onClick={() => onSetRestInterval(v)}
-                    className={`text-[11px] px-0.5 py-px rounded font-bold border transition cursor-pointer ${
+                    className={`text-[13px] px-0.5 py-px rounded font-bold border transition cursor-pointer ${
                       restInterval === v ? "bg-violet-500 text-white border-violet-500" : "bg-white text-zinc-400 border-line hover:border-violet-300"
                     }`}>
                     {v === 30 ? "30분" : v === 60 ? "1h" : "1.5h"}

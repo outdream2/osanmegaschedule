@@ -178,7 +178,7 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
               ) : (
                 <h3 className="text-[22px] font-extrabold text-ink leading-tight tracking-tight">{displayEmp.name}</h3>
               )}
-              <span className="text-[13px] font-bold text-zinc-400 tabular-nums">#{displayEmp.id}</span>
+              <span className="text-[15px] font-bold text-zinc-400 tabular-nums">#{displayEmp.id}</span>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
               {/* 직군 */}
@@ -298,32 +298,32 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
       <div className="grid grid-cols-3 gap-4 px-5 py-3 border-b border-line bg-white shrink-0">
         {/* 근속 */}
         <div className="flex flex-col gap-1">
-          <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-zinc-400 font-bold">
+          <span className="inline-flex items-center gap-1.5 text-[13px] uppercase tracking-wider text-zinc-400 font-bold">
             <span className="w-1.5 h-1.5 rounded-sm bg-brand-deep" />
             <Clock size={10} className="text-brand-deep" />근속
           </span>
           <span className="text-[16px] font-bold text-brand-deep tabular-nums leading-tight">
             {tenure === "-" ? <span className="text-zinc-300 italic font-normal text-[14px]">미등록</span> : tenure}
             {displayEmp.hire_date && (
-              <span className="text-[12px] text-zinc-400 font-semibold ml-1">· {displayEmp.hire_date}</span>
+              <span className="text-[14px] text-zinc-400 font-semibold ml-1">· {displayEmp.hire_date}</span>
             )}
           </span>
         </div>
         {/* 연차 */}
         <div className="flex flex-col gap-1">
-          <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-zinc-400 font-bold">
+          <span className="inline-flex items-center gap-1.5 text-[13px] uppercase tracking-wider text-zinc-400 font-bold">
             <span className="w-1.5 h-1.5 rounded-sm bg-sky-500" />
             <CalendarDays size={10} className="text-sky-500" />연차
           </span>
           <span className="text-[16px] font-bold text-sky-700 tabular-nums leading-tight">
-            {fmtD(remainDays)}<span className="text-[12px] font-semibold text-zinc-400 ml-0.5">/ {fmtD(totalDays)}일</span>
+            {fmtD(remainDays)}<span className="text-[14px] font-semibold text-zinc-400 ml-0.5">/ {fmtD(totalDays)}일</span>
             {editing && (
               <input
                 type="number" min={0} max={30} step={1}
                 value={draft?.annual_leave_days ?? ""}
                 onChange={(e) => setField("annual_leave_days", e.target.value === "" ? null : Number(e.target.value))}
                 placeholder="15"
-                className="w-12 h-5 px-1 ml-2 rounded border border-sky-300 bg-sky-50/40 text-[12px] font-bold text-sky-700 text-right tabular-nums focus:outline-none focus:border-sky-500"
+                className="w-12 h-5 px-1 ml-2 rounded border border-sky-300 bg-sky-50/40 text-[14px] font-bold text-sky-700 text-right tabular-nums focus:outline-none focus:border-sky-500"
                 aria-label="총 연차 편집"
               />
             )}
@@ -337,7 +337,7 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
         </div>
         {/* 평가 */}
         <div className="flex flex-col gap-1">
-          <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-zinc-400 font-bold">
+          <span className="inline-flex items-center gap-1.5 text-[13px] uppercase tracking-wider text-zinc-400 font-bold">
             <span className="w-1.5 h-1.5 rounded-sm bg-emerald-500" />
             <Star size={10} className="text-emerald-500" />평가
           </span>
@@ -382,7 +382,7 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
             <SectionCard title="근로조건 요약" icon={<CalendarDays size={11} />} group="work" defaultOpen>
               <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-bold text-ink-soft uppercase tracking-wider leading-none">주 소정근로시간</span>
+                  <span className="text-[15px] font-bold text-ink-soft uppercase tracking-wider leading-none">주 소정근로시간</span>
                   <span className="text-[17px] font-bold text-ink leading-snug">
                     {displayEmp.working_hours_per_week != null
                       ? `${displayEmp.working_hours_per_week}시간`
@@ -390,7 +390,7 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
                   </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-bold text-ink-soft uppercase tracking-wider leading-none">임금</span>
+                  <span className="text-[15px] font-bold text-ink-soft uppercase tracking-wider leading-none">임금</span>
                   <span className="text-[17px] font-bold text-ink leading-snug">
                     {displayEmp.wage_calc_type && displayEmp.wage_amount
                       ? `${({ hourly: "시급", daily: "일급", monthly: "월급", annual: "연봉" } as Record<string, string>)[displayEmp.wage_calc_type] ?? displayEmp.wage_calc_type} ${Number(displayEmp.wage_amount).toLocaleString()}원`
@@ -398,7 +398,7 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
                   </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-bold text-ink-soft uppercase tracking-wider leading-none">계약기간</span>
+                  <span className="text-[15px] font-bold text-ink-soft uppercase tracking-wider leading-none">계약기간</span>
                   <span className="text-[17px] font-bold text-ink leading-snug">
                     {latestContract?.start_date
                       ? `${latestContract.start_date} ~ ${latestContract.end_date ?? "무기한"}`
@@ -408,7 +408,7 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
                   </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-bold text-ink-soft uppercase tracking-wider leading-none">유급 주휴일</span>
+                  <span className="text-[15px] font-bold text-ink-soft uppercase tracking-wider leading-none">유급 주휴일</span>
                   <span className="text-[17px] font-bold text-ink leading-snug">
                     {displayEmp.weekly_holiday || <span className="text-zinc-300 italic">미등록</span>}
                   </span>

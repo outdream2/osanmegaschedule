@@ -345,7 +345,7 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
           className={`split-divider group ${dividerHoverCls}`}
           title="드래그하여 좌측 폭 조절"
         >
-          <span className="text-[10px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+          <span className="text-[12px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
         {/* 우측: 상세 · 데스크탑만 표시 (모바일은 모달로) · 2026-08-26 프레임워크 폰트 +2 */}

@@ -38,7 +38,7 @@ export const NavMobileTab: React.FC<NavMobileTabProps> = ({
   const mobileValidColor: SideNavColor = (["slate","amber","red","sky","indigo","emerald","violet","cyan"] as SideNavColor[]).includes(mobileColorKey) ? mobileColorKey : "slate";
   const mobileAccent = NAV_ACCENT[mobileValidColor];
 
-  const base = "flex-1 min-w-[52px] flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 rounded-lg text-[12px] font-bold transition-all duration-200 ease-out active:scale-95";
+  const base = "flex-1 min-w-[52px] flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 rounded-lg text-[14px] font-bold transition-all duration-200 ease-out active:scale-95";
   const activeInset = "shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(0,0,0,0.08)]";
 
   if (tab.key === "business") {

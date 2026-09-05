@@ -355,7 +355,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
               <span className="w-px h-7 bg-gradient-to-b from-transparent via-white/25 to-transparent" aria-hidden />
               <div className="flex flex-col gap-0.5 font-bold leading-none select-none">
                 <span className="text-white text-[17px] leading-none tracking-[0.05em]">OSAN</span>
-                <span className="text-[#93B4D0] text-[13px] leading-none tracking-[0.20em] mt-0.5">MEGATOWN</span>
+                <span className="text-[#93B4D0] text-[15px] leading-none tracking-[0.20em] mt-0.5">MEGATOWN</span>
               </div>
             </div>
           </button>
@@ -366,7 +366,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             <button
               type="button"
               onClick={() => onNavigate?.("mypage" as AppNavPage)}
-              className="inline-flex items-center text-[13px] sm:text-[14px] font-bold text-white whitespace-nowrap px-2 sm:px-2.5 py-1.5 rounded-lg ring-1 ring-white/10 hover:ring-white/25 hover:bg-white/[0.10] hover:shadow-[0_0_16px_rgba(94,169,232,0.25)] active:scale-95 transition-all duration-150 cursor-pointer max-w-[42vw] sm:max-w-none"
+              className="inline-flex items-center text-[15px] sm:text-[14px] font-bold text-white whitespace-nowrap px-2 sm:px-2.5 py-1.5 rounded-lg ring-1 ring-white/10 hover:ring-white/25 hover:bg-white/[0.10] hover:shadow-[0_0_16px_rgba(94,169,232,0.25)] active:scale-95 transition-all duration-150 cursor-pointer max-w-[42vw] sm:max-w-none"
               title="마이페이지"
             >
               <span className="break-words whitespace-normal leading-tight">{authSession.employeeName}{authSession.employeeRank ?? ""}</span>
@@ -378,14 +378,14 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           {authSession && onLogout ? (
             <button
               onClick={onLogout}
-              className="flex items-center gap-1.5 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[13px] font-semibold text-white bg-white/[0.10] hover:bg-white/[0.18] border border-white/15 hover:border-white/30 rounded-lg transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
+              className="flex items-center gap-1.5 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[15px] font-semibold text-white bg-white/[0.10] hover:bg-white/[0.18] border border-white/15 hover:border-white/30 rounded-lg transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
               title="로그아웃"
             >
               <LogOut size={14} strokeWidth={2.2} />
               <span className="hidden sm:inline">로그아웃</span>
             </button>
           ) : (
-            <div className="flex items-center gap-1 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[12px] font-semibold bg-white/[0.05] text-white/50 border border-white/10 rounded-lg shrink-0" title="비로그인">
+            <div className="flex items-center gap-1 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[14px] font-semibold bg-white/[0.05] text-white/50 border border-white/10 rounded-lg shrink-0" title="비로그인">
               <Lock size={13} strokeWidth={2.2} />
             </div>
           )}
@@ -500,7 +500,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                 <button
                   type="button"
                   onClick={() => setMobileOverflowOpen(v => !v)}
-                  className={`min-w-[44px] h-full flex flex-col items-center justify-center gap-0.5 px-2 rounded-lg text-[12px] font-bold transition-colors active:scale-95 ${
+                  className={`min-w-[44px] h-full flex flex-col items-center justify-center gap-0.5 px-2 rounded-lg text-[14px] font-bold transition-colors active:scale-95 ${
                     mobileOverflowOpen
                       ? "bg-white/[0.18] text-white shadow-sm"
                       : "text-[#C4DAEE] hover:bg-white/[0.10] hover:text-white"
@@ -510,7 +510,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                   aria-expanded={mobileOverflowOpen}
                 >
                   <Menu size={18} strokeWidth={2.4} />
-                  <span className="text-[11px]">더보기</span>
+                  <span className="text-[13px]">더보기</span>
                 </button>
                 {mobileOverflowOpen && (
                   <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1 min-w-[160px] z-[45] max-h-[70vh] overflow-y-auto">
@@ -529,7 +529,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                           key={tab.key}
                           type="button"
                           onClick={onClickTab}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-[13px] font-bold min-h-[44px] transition ${
+                          className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-[15px] font-bold min-h-[44px] transition ${
                             isActive
                               ? "bg-brand-tint text-brand-deep"
                               : "text-zinc-700 hover:bg-zinc-50 hover:text-brand-deep cursor-pointer"

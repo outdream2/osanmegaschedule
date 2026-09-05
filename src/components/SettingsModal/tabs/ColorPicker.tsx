@@ -67,7 +67,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => 
             })}
           </div>
           <div className="flex items-center gap-1.5 pt-1.5 border-t border-zinc-100">
-            <span className="text-[10px] font-bold text-zinc-500">직접</span>
+            <span className="text-[12px] font-bold text-zinc-500">직접</span>
             <input
               type="color"
               value={value}
@@ -75,7 +75,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => 
               className="w-6 h-6 rounded cursor-pointer border border-line p-0.5 bg-white"
               title="직접 색상 선택"
             />
-            <span className="text-[10px] font-mono text-zinc-400 uppercase">{value}</span>
+            <span className="text-[12px] font-mono text-zinc-400 uppercase">{value}</span>
           </div>
         </Card>
       )}

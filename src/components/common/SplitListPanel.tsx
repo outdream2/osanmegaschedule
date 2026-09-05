@@ -217,7 +217,7 @@ export function SplitListPanel({
       {/* 최근 검색어 dropdown · 최대 3개 · 클릭 시 setSearch · X 로 개별 삭제 */}
       {showRecentsDropdown && (
         <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-line rounded-lg shadow-lg z-30 divide-y divide-zinc-100 overflow-hidden">
-          <div className="px-3 py-1.5 text-[11px] font-bold text-zinc-400 uppercase tracking-wider bg-zinc-50/60">최근 검색</div>
+          <div className="px-3 py-1.5 text-[13px] font-bold text-zinc-400 uppercase tracking-wider bg-zinc-50/60">최근 검색</div>
           {recents.map((q) => (
             <div key={q} className="group flex items-center hover:bg-sky-50/60 transition">
               <button

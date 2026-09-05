@@ -348,7 +348,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             <div className="absolute top-2 left-2 z-30" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => setDiagOpen((v) => !v)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-semibold backdrop-blur-md transition cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-mono font-semibold backdrop-blur-md transition cursor-pointer ${
                   camError
                     ? "bg-rose-500/25 text-rose-100 ring-1 ring-rose-400/50"
                     : videoState === "playing"
@@ -363,8 +363,8 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
               </button>
               {diagOpen && (
                 <div className="mt-1.5 w-[280px] p-3 rounded-xl bg-black/85 backdrop-blur-xl ring-1 ring-white/15 shadow-2xl">
-                  <div className="text-[10px] font-mono text-white/90 space-y-1 leading-relaxed break-all">
-                    <div className="text-white/50 uppercase tracking-wider mb-1 text-[11px]">진단 정보</div>
+                  <div className="text-[12px] font-mono text-white/90 space-y-1 leading-relaxed break-all">
+                    <div className="text-white/50 uppercase tracking-wider mb-1 text-[13px]">진단 정보</div>
                     <div><span className="text-white/50">URL:</span> {typeof window !== "undefined" ? window.location.host : "?"}</div>
                     <div><span className="text-white/50">secure:</span> <span className={secure ? "text-emerald-300" : "text-rose-300"}>{String(secure)}</span></div>
                     <div><span className="text-white/50">mediaDevices:</span> <span className={hasMD ? "text-emerald-300" : "text-rose-300"}>{hasMD ? "yes" : "NO"}</span></div>
@@ -375,13 +375,13 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                     <div><span className="text-white/50">UA:</span> {ua.substring(0, 90)}</div>
                     {camError && (
                       <div className="mt-2 pt-2 border-t border-rose-400/30 text-rose-200">
-                        <div className="text-rose-300/70 uppercase tracking-wider mb-0.5 text-[11px]">에러</div>
+                        <div className="text-rose-300/70 uppercase tracking-wider mb-0.5 text-[13px]">에러</div>
                         <div>{camError}</div>
                       </div>
                     )}
                     {ios && !isSafariMain && (
                       <div className="mt-2 pt-2 border-t border-amber-400/30 text-amber-200">
-                        <div className="text-amber-300/70 uppercase tracking-wider mb-0.5 text-[11px]">iOS 웹앱 감지</div>
+                        <div className="text-amber-300/70 uppercase tracking-wider mb-0.5 text-[13px]">iOS 웹앱 감지</div>
                         <div>홈화면 웹앱 · Apple 정책상 카메라 제한 (WebKit Bug 185448)</div>
                         <div className="text-white/70 mt-1">→ Safari 앱에서 직접 열기</div>
                       </div>
@@ -402,7 +402,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[15px] font-bold leading-tight mb-1">카메라를 열 수 없습니다</div>
-                    <div className="text-[12px] text-white/85 leading-snug break-words">
+                    <div className="text-[14px] text-white/85 leading-snug break-words">
                       {camError}
                       {ios && !isSafariMain && <><br />iOS 홈화면 웹앱은 카메라 제한.</>}
                     </div>
@@ -427,7 +427,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                   <ExternalLink size={16} strokeWidth={2.5} />
                   다른 브라우저로 열기 (로그인 유지)
                 </button>
-                <div className="mt-2 text-[11px] text-white/75 text-center leading-relaxed">
+                <div className="mt-2 text-[13px] text-white/75 text-center leading-relaxed">
                   새 탭이 열리면 · 원하는 브라우저에 URL 복사·붙여넣기 하세요 (5분 내 유효)
                 </div>
               </div>
@@ -443,20 +443,20 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                 <div className="flex gap-2">
                   <button
                     onClick={(e) => { e.stopPropagation(); onClose(); }}
-                    className="px-3.5 py-3 rounded-xl text-[13px] font-semibold text-white bg-rose-500/85 hover:bg-rose-500 ring-1 ring-rose-400/70 active:scale-[0.97] transition backdrop-blur-md cursor-pointer"
+                    className="px-3.5 py-3 rounded-xl text-[15px] font-semibold text-white bg-rose-500/85 hover:bg-rose-500 ring-1 ring-rose-400/70 active:scale-[0.97] transition backdrop-blur-md cursor-pointer"
                     title="스캔 취소 · 창 닫기"
                   >
                     취소
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleRetry(); }}
-                    className="flex-1 py-3 rounded-xl text-[13px] font-semibold text-white bg-white/10 hover:bg-white/15 ring-1 ring-white/25 active:scale-[0.97] transition backdrop-blur-md cursor-pointer"
+                    className="flex-1 py-3 rounded-xl text-[15px] font-semibold text-white bg-white/10 hover:bg-white/15 ring-1 ring-white/25 active:scale-[0.97] transition backdrop-blur-md cursor-pointer"
                   >
                     다시 스캔
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleConfirm(); }}
-                    className="flex-1 py-3 rounded-xl text-[13px] font-semibold text-white bg-emerald-500 hover:bg-emerald-400 ring-1 ring-emerald-400 active:scale-[0.97] transition shadow-[0_8px_24px_rgba(16,185,129,0.35)] cursor-pointer"
+                    className="flex-1 py-3 rounded-xl text-[15px] font-semibold text-white bg-emerald-500 hover:bg-emerald-400 ring-1 ring-emerald-400 active:scale-[0.97] transition shadow-[0_8px_24px_rgba(16,185,129,0.35)] cursor-pointer"
                   >
                     확인
                   </button>
@@ -516,7 +516,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                 <button
                   key={z}
                   onClick={() => setZoomLevel(z)}
-                  className={`w-10 h-10 rounded-full text-[12px] font-bold transition-all active:scale-90 cursor-pointer backdrop-blur-md ${
+                  className={`w-10 h-10 rounded-full text-[14px] font-bold transition-all active:scale-90 cursor-pointer backdrop-blur-md ${
                     zoomLevel === z
                       ? "bg-white text-black ring-2 ring-white shadow-[0_4px_16px_rgba(255,255,255,0.4)]"
                       : "bg-black/40 text-white ring-1 ring-white/25"
@@ -532,7 +532,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           {state.isDecoding && (
             <div className="absolute inset-0 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center gap-3 pointer-events-none">
               <div className="w-10 h-10 border-[3px] border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
-              <p className="text-white text-[13px] font-medium tracking-wide">이미지 인식 중</p>
+              <p className="text-white text-[15px] font-medium tracking-wide">이미지 인식 중</p>
             </div>
           )}
 
@@ -557,14 +557,14 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           {state.darkHint && !state.torchOn ? (
             <button
               onClick={() => state.setTorchOn(true)}
-              className="flex items-center gap-2 text-[13px] text-amber-200 font-semibold bg-amber-400/12 ring-1 ring-amber-400/40 px-4 py-2 rounded-xl animate-pulse active:scale-95 transition cursor-pointer"
+              className="flex items-center gap-2 text-[15px] text-amber-200 font-semibold bg-amber-400/12 ring-1 ring-amber-400/40 px-4 py-2 rounded-xl animate-pulse active:scale-95 transition cursor-pointer"
             >
               <Zap size={14} /> 어둡습니다 · 여기를 눌러 손전등 켜기
             </button>
           ) : (
-            <p className="text-[13px] text-zinc-300 font-medium">바코드를 사각형 안에 맞춰주세요</p>
+            <p className="text-[15px] text-zinc-300 font-medium">바코드를 사각형 안에 맞춰주세요</p>
           )}
-          <p className="text-[11px] text-zinc-500">화면을 탭하면 초점 조정 · 종이 바코드는 5~10cm 거리</p>
+          <p className="text-[13px] text-zinc-500">화면을 탭하면 초점 조정 · 종이 바코드는 5~10cm 거리</p>
         </div>
       </div>
 

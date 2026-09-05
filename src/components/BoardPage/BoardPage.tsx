@@ -172,7 +172,7 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
                 <span className="text-[16px] font-bold text-ink tracking-tight">이슈리스트</span>
                 <StatusPill tone="brand" size="md">{filtered.length}건</StatusPill>
               </div>
-              <span className="text-[13px] text-ink-soft font-medium">항목 클릭 → 상세</span>
+              <span className="text-[15px] text-ink-soft font-medium">항목 클릭 → 상세</span>
             </div>
             <div className="divide-y divide-zinc-50">
             {filtered.map((p: BoardPost) => {

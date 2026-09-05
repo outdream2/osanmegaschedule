@@ -20,7 +20,7 @@ export function Panel({ title, moreLabel, onMore, children, className = "" }: Pa
       <div className="flex items-center justify-between mb-3">
         <div className="text-[15px] font-bold text-ink tracking-tight">{title}</div>
         {moreLabel && onMore && (
-          <button type="button" onClick={onMore} className="text-[13px] text-brand-deep font-semibold cursor-pointer hover:underline hover:underline-offset-2 transition-all duration-150">
+          <button type="button" onClick={onMore} className="text-[15px] text-brand-deep font-semibold cursor-pointer hover:underline hover:underline-offset-2 transition-all duration-150">
             {moreLabel}
           </button>
         )}

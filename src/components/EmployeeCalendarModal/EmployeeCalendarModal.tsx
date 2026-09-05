@@ -403,7 +403,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 >
                   <MapPin size={14} strokeWidth={2.2} /> 구역 배정
                   {logisticsZoneProps.assignedZoneNums.length > 0 && (
-                    <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[12px] font-bold ${
                       activeTab === "zone" ? "bg-white/20 text-white" : "bg-brand-tint text-brand-deep"
                     }`}>
                       {logisticsZoneProps.assignedZoneNums.length}
@@ -462,7 +462,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     </Card>
                   )}
                   {employee.description && (
-                    <div className="text-[12px] font-medium text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                    <div className="text-[14px] font-medium text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
                       {employee.description}
                     </div>
                   )}
@@ -538,22 +538,22 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                         >
                           {/* 입사일/퇴사일 배지 (셀 우상단) */}
                           {isHireDay && (
-                            <span className="absolute -top-1.5 -right-1 text-[10px] font-bold px-1 py-px rounded bg-emerald-500 text-white leading-none shadow-sm z-10">
+                            <span className="absolute -top-1.5 -right-1 text-[12px] font-bold px-1 py-px rounded bg-emerald-500 text-white leading-none shadow-sm z-10">
                               입사
                             </span>
                           )}
                           {isRetireDay && (
-                            <span className="absolute -top-1.5 -right-1 text-[10px] font-bold px-1 py-px rounded bg-rose-500 text-white leading-none shadow-sm z-10">
+                            <span className="absolute -top-1.5 -right-1 text-[12px] font-bold px-1 py-px rounded bg-rose-500 text-white leading-none shadow-sm z-10">
                               퇴사
                             </span>
                           )}
-                          <span className={`text-[13px] font-bold leading-none mb-0.5 ${
+                          <span className={`text-[15px] font-bold leading-none mb-0.5 ${
                             dow === 0 ? "text-rose-500" : dow === 6 ? "text-sky-500" : "text-zinc-600"
                           }`}>
                             {day}
                           </span>
                           {outOfEmployment ? (
-                            <span className="text-[11px] text-zinc-400 font-medium">─</span>
+                            <span className="text-[13px] text-zinc-400 font-medium">─</span>
                           ) : sc?.type ? (
                             <>
                               {/* 2026-08-17 · 사용자 지시 · 셀에는 type 글씨만 · 시간은 아래 범례 · 폰트 +2 (12→14) */}
@@ -561,13 +561,13 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                                 {sc.type}
                               </span>
                               {sc.actualHours && (
-                                <span className="text-[12px] text-indigo-600 leading-tight font-semibold mt-0.5">
+                                <span className="text-[14px] text-indigo-600 leading-tight font-semibold mt-0.5">
                                   {sc.actualHours}
                                 </span>
                               )}
                             </>
                           ) : (
-                            <span className="text-[11px] text-zinc-200">-</span>
+                            <span className="text-[13px] text-zinc-200">-</span>
                           )}
                         </div>
                       );
@@ -579,7 +579,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
               {/* 2026-08-17 · 사용자 지시 · 달력 아래 · 근무형태별 시간 범례 (오픈/미들/마감 등) */}
               {typeHoursMap && Object.keys(typeHoursMap).length > 0 && (
                 <div className="mt-4 pt-3 border-t border-line">
-                  <div className="text-[13px] font-semibold text-ink-soft mb-2">근무 시간표</div>
+                  <div className="text-[15px] font-semibold text-ink-soft mb-2">근무 시간표</div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                     {activeTypes
                       .filter(t => typeHoursMap[t.value])
@@ -645,13 +645,13 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                   </button>
                 </div>
 
-                <p className="text-[13px] text-ink-soft font-medium">
+                <p className="text-[15px] text-ink-soft font-medium">
                   변경사항은 임시 반영됩니다. 하단 <b className="text-brand-deep font-bold">[변경사항 저장]</b> 버튼을 눌러야 실제 반영됩니다.
                 </p>
 
                 <div className="flex gap-2.5">
                   <div className="flex-1">
-                    <label className="text-[13px] font-semibold text-ink-soft mb-1 flex items-center gap-1.5">
+                    <label className="text-[15px] font-semibold text-ink-soft mb-1 flex items-center gap-1.5">
                       <Clock size={12} strokeWidth={2.2} /> 근무 시간
                     </label>
                     <input
@@ -663,7 +663,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="text-[13px] font-semibold text-ink-soft mb-1 flex items-center gap-1.5">
+                    <label className="text-[15px] font-semibold text-ink-soft mb-1 flex items-center gap-1.5">
                       <MessageSquare size={12} strokeWidth={2.2} /> 실근무·기타
                     </label>
                     <input
@@ -677,7 +677,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 </div>
 
                 <div>
-                  <label className="text-[13px] font-semibold text-ink-soft mb-1 block">메모</label>
+                  <label className="text-[15px] font-semibold text-ink-soft mb-1 block">메모</label>
                   <input
                     type="text"
                     value={editMemo}

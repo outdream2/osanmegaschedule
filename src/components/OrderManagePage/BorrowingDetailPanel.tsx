@@ -291,14 +291,14 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
                 #{row.id}
               </span>
               {row.contract_no && (
-                <span className="text-[12px] font-mono text-ink-soft bg-zinc-50 border border-line px-1.5 py-0.5 rounded">
+                <span className="text-[14px] font-mono text-ink-soft bg-zinc-50 border border-line px-1.5 py-0.5 rounded">
                   {row.contract_no}
                 </span>
               )}
               <StatusPill tone={statusTone} size="sm">{statusLabel}</StatusPill>
               {overdue && <StatusPill tone="rose" size="sm">기한 초과</StatusPill>}
             </div>
-            <div className="text-[12px] text-ink-soft mt-0.5 tabular-nums">
+            <div className="text-[14px] text-ink-soft mt-0.5 tabular-nums">
               등록 · {fmtTs(row.created_at)}
               {row.created_by && <> · {row.created_by}</>}
             </div>
@@ -318,38 +318,38 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
           {/* 상세 요약 정보 */}
           <div className="border-t border-line pt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[14px]">
             <div>
-              <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">방향</span>
+              <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider">방향</span>
               <div className="text-ink font-semibold">
                 {row.direction === "lend" ? "공급사 → 약국 · 대여" : "약국 → 공급사 · 차용"}
               </div>
             </div>
             <div>
-              <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">공급사</span>
+              <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider">공급사</span>
               <div className="text-ink font-semibold break-keep">{row.supplier ?? "-"}</div>
             </div>
             <div>
-              <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">수량 · 단가</span>
+              <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider">수량 · 단가</span>
               <div className="text-ink font-semibold tabular-nums">
                 {(row.qty ?? 0).toLocaleString()}
                 {row.unit_price != null && <> · @ {row.unit_price.toLocaleString()}원</>}
               </div>
             </div>
             <div>
-              <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">예정일</span>
+              <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider">예정일</span>
               <div className={`font-semibold tabular-nums ${overdue ? "text-rose-600" : "text-ink"}`}>
                 {row.due_date ?? "-"}
               </div>
             </div>
             {row.product_code && (
               <div className="col-span-2">
-                <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">상품코드</span>
-                <div className="text-ink font-mono text-[13px]">{row.product_code}</div>
+                <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider">상품코드</span>
+                <div className="text-ink font-mono text-[15px]">{row.product_code}</div>
               </div>
             )}
             {row.note && (
               <div className="col-span-2">
-                <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">사유·메모</span>
-                <div className="mt-1 p-2.5 bg-zinc-50 border border-line rounded-lg text-[13px] text-ink whitespace-pre-wrap break-keep">
+                <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider">사유·메모</span>
+                <div className="mt-1 p-2.5 bg-zinc-50 border border-line rounded-lg text-[15px] text-ink whitespace-pre-wrap break-keep">
                   {row.note}
                 </div>
               </div>
@@ -360,9 +360,9 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
           <div className="flex flex-col gap-2 border-t border-line pt-4">
             <div className="flex items-center gap-1.5">
               <PenTool size={13} className="text-ink-soft" />
-              <span className="text-[13px] font-bold text-ink-soft uppercase tracking-wider">서명 · 감사 이력</span>
+              <span className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">서명 · 감사 이력</span>
               {sigError && (
-                <span className="text-[11px] font-bold text-rose-600 ml-1 normal-case tracking-normal inline-flex items-center gap-1">
+                <span className="text-[13px] font-bold text-rose-600 ml-1 normal-case tracking-normal inline-flex items-center gap-1">
                   <AlertTriangle size={11} />
                   {sigError}
                 </span>
@@ -380,7 +380,7 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
               <div className="mt-1 p-2.5 bg-amber-50 border border-amber-200 rounded-lg flex flex-col gap-2">
                 <div className="flex items-center gap-1.5">
                   <FileSignature size={12} className="text-amber-700" />
-                  <span className="text-[12px] font-bold text-amber-800 uppercase tracking-wider">
+                  <span className="text-[14px] font-bold text-amber-800 uppercase tracking-wider">
                     Legacy 서명 (구 데이터)
                   </span>
                 </div>
@@ -389,7 +389,7 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
                     <button
                       type="button"
                       onClick={() => setSignaturePreview(row.signature_url!)}
-                      className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[12px] font-bold text-brand-deep bg-white border border-line hover:border-brand-deep hover:bg-brand-tint/20 cursor-pointer"
+                      className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[14px] font-bold text-brand-deep bg-white border border-line hover:border-brand-deep hover:bg-brand-tint/20 cursor-pointer"
                       title="등록 서명 미리보기"
                     >
                       <FileSignature size={12} /> 등록 서명
@@ -399,7 +399,7 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
                     <button
                       type="button"
                       onClick={() => setSignaturePreview(row.return_signature_url!)}
-                      className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[12px] font-bold text-emerald-700 bg-white border border-line hover:border-emerald-600 hover:bg-emerald-50 cursor-pointer"
+                      className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[14px] font-bold text-emerald-700 bg-white border border-line hover:border-emerald-600 hover:bg-emerald-50 cursor-pointer"
                       title={`반환 서명 · ${row.returned_by ?? "-"} · ${fmtTs(row.returned_at)}`}
                     >
                       <CheckCircle2 size={12} /> 반환 서명
@@ -414,20 +414,20 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
           <div className="flex flex-col gap-2 border-t border-line pt-4">
             <div className="flex items-center gap-1.5">
               <Clock size={13} className="text-ink-soft" />
-              <span className="text-[13px] font-bold text-ink-soft uppercase tracking-wider">Timeline · 감사 로그</span>
+              <span className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">Timeline · 감사 로그</span>
             </div>
             <div className="pl-1 space-y-2.5">
               {/* 계약 체결 */}
               <div className="flex items-start gap-2.5">
                 <div className="w-2 h-2 rounded-full bg-brand-deep mt-1.5 shrink-0 ring-2 ring-brand-tint" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-bold text-ink">계약 체결</div>
-                  <div className="text-[12px] text-ink-soft tabular-nums">
+                  <div className="text-[15px] font-bold text-ink">계약 체결</div>
+                  <div className="text-[14px] text-ink-soft tabular-nums">
                     {fmtTs(row.created_at)}
                     {row.created_by && <> · {row.created_by}</>}
                   </div>
                   {row.note && (
-                    <div className="text-[12px] text-ink-soft mt-0.5 italic break-keep">"{row.note}"</div>
+                    <div className="text-[14px] text-ink-soft mt-0.5 italic break-keep">"{row.note}"</div>
                   )}
                 </div>
               </div>
@@ -437,8 +437,8 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
                 <div className="flex items-start gap-2.5">
                   <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0 ring-2 ring-amber-100" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-bold text-amber-800">기한 초과 알림</div>
-                    <div className="text-[12px] text-ink-soft tabular-nums">{fmtTs(row.overdue_notified_at)}</div>
+                    <div className="text-[15px] font-bold text-amber-800">기한 초과 알림</div>
+                    <div className="text-[14px] text-ink-soft tabular-nums">{fmtTs(row.overdue_notified_at)}</div>
                   </div>
                 </div>
               )}
@@ -448,13 +448,13 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
                 <div className="flex items-start gap-2.5">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0 ring-2 ring-emerald-100" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-bold text-emerald-800">반환 완료</div>
-                    <div className="text-[12px] text-ink-soft tabular-nums">
+                    <div className="text-[15px] font-bold text-emerald-800">반환 완료</div>
+                    <div className="text-[14px] text-ink-soft tabular-nums">
                       {fmtTs(row.returned_at)}
                       {row.returned_by && <> · {row.returned_by}</>}
                     </div>
                     {row.return_note && (
-                      <div className="text-[12px] text-ink-soft mt-0.5 italic break-keep">"{row.return_note}"</div>
+                      <div className="text-[14px] text-ink-soft mt-0.5 italic break-keep">"{row.return_note}"</div>
                     )}
                   </div>
                 </div>
@@ -465,8 +465,8 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
                 <div className="flex items-start gap-2.5">
                   <div className="w-2 h-2 rounded-full bg-zinc-400 mt-1.5 shrink-0 ring-2 ring-zinc-100" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-bold text-zinc-700">계약 취소</div>
-                    <div className="text-[12px] text-ink-soft tabular-nums">
+                    <div className="text-[15px] font-bold text-zinc-700">계약 취소</div>
+                    <div className="text-[14px] text-ink-soft tabular-nums">
                       {fmtTs(row.settled_at ?? null)}
                     </div>
                   </div>
@@ -559,7 +559,7 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
           }
         >
           <form onSubmit={handleReturnSubmit} className="flex flex-col gap-3">
-            <div className="text-[13px] text-ink-soft bg-zinc-50 border border-line rounded-lg p-3 leading-relaxed break-keep">
+            <div className="text-[15px] text-ink-soft bg-zinc-50 border border-line rounded-lg p-3 leading-relaxed break-keep">
               <div>
                 <b className="text-brand-deep">{row.direction === "lend" ? "대여" : "차용"}</b>
                 {" · "}{row.supplier ?? "-"}
@@ -570,17 +570,17 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
                 {row.unit_price != null && <> · @ {row.unit_price.toLocaleString()}원</>}
               </div>
               {authSession?.employeeName && (
-                <div className="mt-1 text-[12px]">처리자 · {authSession.employeeName}</div>
+                <div className="mt-1 text-[14px]">처리자 · {authSession.employeeName}</div>
               )}
             </div>
             <label className="flex flex-col gap-1">
-              <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">
+              <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider">
                 반환 서명 <span className="text-rose-600 normal-case">*</span>
               </span>
               <SignaturePad value={returnPad} onChange={setReturnPad} height={160} />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">반환 비고 (선택)</span>
+              <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider">반환 비고 (선택)</span>
               <textarea
                 value={returnNote}
                 onChange={(e) => setReturnNote(e.target.value)}

@@ -38,7 +38,7 @@ export function Hero({ eyebrow, title, description, actions, aside, className = 
       <div className="relative z-[1] min-w-0 flex-1">
         {eyebrow && (
           // 2026-08-17 · 블루톤 eyebrow · 밝은 sky
-          <div className="text-[13px] font-bold uppercase tracking-[0.04em] mb-2" style={{ color: "#B9D6EA" }}>
+          <div className="text-[15px] font-bold uppercase tracking-[0.04em] mb-2" style={{ color: "#B9D6EA" }}>
             {eyebrow}
           </div>
         )}

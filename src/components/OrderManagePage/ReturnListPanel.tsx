@@ -589,7 +589,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
               style={{ width: getWidth("purchase_cycle"), minWidth: getWidth("purchase_cycle") }}>
               <span className="flex flex-col items-end leading-none gap-0.5">
                 <span>매입주기{retArrow("purchase_cycle")}</span>
-                <span className="text-[12px] text-zinc-400 font-normal">최근매입일·량</span>
+                <span className="text-[14px] text-zinc-400 font-normal">최근매입일·량</span>
               </span>
               <span {...colResizerProps("purchase_cycle")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
@@ -634,7 +634,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                     className="w-3.5 h-3.5 accent-rose-500 cursor-pointer"
                     title={`${x.product_name} · 반품요청 대상 ${isChecked ? "해제" : "선택"}`}
                   />
-                  <div className="text-[12px] text-zinc-300 tabular-nums mt-0.5">{i + 1}</div>
+                  <div className="text-[14px] text-zinc-300 tabular-nums mt-0.5">{i + 1}</div>
                 </td>
                 {/* 상품명 */}
                 <td className="px-2 py-2 align-top bg-sky-50/20">

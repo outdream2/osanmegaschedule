@@ -51,7 +51,7 @@ const SIZE_BTN_W: Record<NonNullable<StepperInputProps["size"]>, string> = {
 };
 
 const SIZE_INPUT_TEXT: Record<NonNullable<StepperInputProps["size"]>, string> = {
-  xs: "text-[13px]",
+  xs: "text-[15px]",
   sm: "text-[15px]",
   md: "text-[16px]",
   lg: "text-[17px]",

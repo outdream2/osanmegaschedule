@@ -44,7 +44,7 @@ export const HiddenManagerModal: React.FC<Props> = ({
       title={
         <div className="min-w-0">
           <div className="text-[17px] font-bold text-ink tracking-tight">숨김 항목 관리</div>
-          <div className="text-[13px] font-medium text-ink-soft mt-0.5">
+          <div className="text-[15px] font-medium text-ink-soft mt-0.5">
             숨김 처리된 상품 · 검색·발주 리스트에서 노출되지 않음
           </div>
         </div>
@@ -52,13 +52,13 @@ export const HiddenManagerModal: React.FC<Props> = ({
       headerRight={<StatusPill tone="amber" size="md">{list.length}건</StatusPill>}
     >
       <div className="flex items-center justify-between px-1 pb-2">
-        <span className="text-[13px] font-semibold text-ink-soft">
+        <span className="text-[15px] font-semibold text-ink-soft">
           총 <span className="text-amber-700 font-bold tabular-nums">{list.length}</span>개 숨김
         </span>
         <button
           onClick={() => onRefresh()}
           disabled={loading}
-          className="text-[12px] font-bold text-ink-soft hover:text-ink border border-line hover:border-brand-deep rounded-lg px-2.5 py-1 cursor-pointer transition"
+          className="text-[14px] font-bold text-ink-soft hover:text-ink border border-line hover:border-brand-deep rounded-lg px-2.5 py-1 cursor-pointer transition"
         >
           {loading ? "..." : "새로고침"}
         </button>
@@ -72,7 +72,7 @@ export const HiddenManagerModal: React.FC<Props> = ({
         <div className="flex flex-col items-center justify-center py-14 text-ink-soft gap-2">
           <EyeOff size={30} className="opacity-40" />
           <div className="text-[15px] font-bold text-ink">숨김 처리된 상품이 없습니다</div>
-          <div className="text-[12px] text-ink-soft">정보확인 창에서 "숨기기"로 항목 추가 가능</div>
+          <div className="text-[14px] text-ink-soft">정보확인 창에서 "숨기기"로 항목 추가 가능</div>
         </div>
       ) : (
         <ul className="divide-y divide-line/60 -mx-1">
@@ -83,7 +83,7 @@ export const HiddenManagerModal: React.FC<Props> = ({
               <li key={`hidden-${code}`} className="flex items-center justify-between gap-3 px-2 py-2.5 hover:bg-amber-50/40 transition rounded-lg">
                 <div className="min-w-0 flex-1">
                   <div className="text-[14px] font-bold text-ink truncate tracking-tight" title={p.product_name}>{p.product_name}</div>
-                  <div className="text-[11px] font-mono text-ink-soft truncate mt-0.5">
+                  <div className="text-[13px] font-mono text-ink-soft truncate mt-0.5">
                     #{code}
                     {p.supplier ? ` · ${p.supplier}` : ""}
                     {(p as any).spec ? ` · ${(p as any).spec}` : ""}
@@ -93,7 +93,7 @@ export const HiddenManagerModal: React.FC<Props> = ({
                 <button
                   onClick={() => onUnhide(code)}
                   disabled={busy}
-                  className="shrink-0 inline-flex items-center gap-1 text-[12px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-3 py-1.5 cursor-pointer transition"
+                  className="shrink-0 inline-flex items-center gap-1 text-[14px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-3 py-1.5 cursor-pointer transition"
                   title="숨김 해제 · 다시 검색·발주 리스트에 표시"
                 >
                   {busy ? <Spinner size={12} tone="emerald" /> : <Eye size={12} />}

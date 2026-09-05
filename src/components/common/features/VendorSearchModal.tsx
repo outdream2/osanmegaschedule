@@ -72,7 +72,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
           <IconTile icon={<Building2 size={15} />} tone="sky" size="lg" />
 
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">공급사</div>
+            <div className="text-[12px] font-bold text-sky-600 uppercase tracking-wider">공급사</div>
             <div className="text-[14px] font-bold text-zinc-800">공급사 검색·등록</div>
           </div>
           <button
@@ -96,7 +96,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
               value={query}
               onChange={(e) => { setQuery(e.target.value); setSelectedId(null); }}
               placeholder="공급사명·사업자번호·담당자 검색"
-              className="w-full h-9 pl-8 pr-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
+              className="w-full h-9 pl-8 pr-3 text-[15px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
             />
           </div>
           {/* 결과 있고 선택됨 · 조회수정 */}
@@ -104,7 +104,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
             <button
               type="button"
               onClick={() => setOpenDetailId(selectedId)}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm transition cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-bold shadow-sm transition cursor-pointer whitespace-nowrap"
               title="선택된 공급사 조회·수정"
             >
               <PencilLine size={12} strokeWidth={2.5} />
@@ -116,7 +116,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
             <button
               type="button"
               onClick={() => setOpenNew(true)}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm transition cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-bold shadow-sm transition cursor-pointer whitespace-nowrap"
               title="신규 공급사 등록"
             >
               <Plus size={12} strokeWidth={2.5} />
@@ -132,13 +132,13 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
           ) : filtered.length === 0 ? (
             <div className="py-8 text-center">
               {q.length === 0 ? (
-                <div className="text-[12px] text-zinc-400">검색어를 입력하세요</div>
+                <div className="text-[14px] text-zinc-400">검색어를 입력하세요</div>
               ) : (
                 <div className="flex flex-col items-center gap-2">
-                  <div className="text-[12px] text-zinc-500 font-semibold">
+                  <div className="text-[14px] text-zinc-500 font-semibold">
                     "{query}" · 검색 결과 없음
                   </div>
-                  <div className="text-[11px] text-zinc-400">우측 상단 [신규등록] 버튼으로 등록</div>
+                  <div className="text-[13px] text-zinc-400">우측 상단 [신규등록] 버튼으로 등록</div>
                 </div>
               )}
             </div>
@@ -158,15 +158,15 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
                     }`}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className={`text-[13px] font-bold truncate ${active ? "text-sky-800" : "text-zinc-800"}`}>
+                      <div className={`text-[15px] font-bold truncate ${active ? "text-sky-800" : "text-zinc-800"}`}>
                         {v.company_name}
                       </div>
-                      <div className="text-[10px] text-zinc-400 truncate">
+                      <div className="text-[12px] text-zinc-400 truncate">
                         {v.business_number || "-"} · {v.contact_name || "-"} · {v.phone || "-"}
                       </div>
                     </div>
                     {active && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-700 shrink-0">
+                      <span className="inline-flex items-center gap-1 text-[12px] font-bold text-sky-700 shrink-0">
                         선택됨
                       </span>
                     )}
@@ -178,7 +178,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
         </div>
 
         {/* 하단 안내 */}
-        <div className="px-4 py-2 border-t border-zinc-100 bg-zinc-50/60 text-[10px] text-zinc-400 shrink-0 leading-snug">
+        <div className="px-4 py-2 border-t border-zinc-100 bg-zinc-50/60 text-[12px] text-zinc-400 shrink-0 leading-snug">
           검색 후 결과 선택 → [조회수정] · 결과 없으면 → [신규등록]
         </div>
       </div>

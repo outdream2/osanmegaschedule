@@ -92,7 +92,7 @@ export function ProductSearchInput({
               setHideList(false); // 다시 타이핑 시 리스트 보이기
             }}
             placeholder={placeholder}
-            className={`w-full h-9 pl-8 pr-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 ${cls.ring} transition placeholder:text-zinc-300`}
+            className={`w-full h-9 pl-8 pr-3 text-[15px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 ${cls.ring} transition placeholder:text-zinc-300`}
           />
           {loading && (
             <Spinner size={11} tone="zinc" className="absolute right-2.5 top-1/2 -translate-y-1/2" />
@@ -102,7 +102,7 @@ export function ProductSearchInput({
           type="button"
           onClick={handleConfirm}
           disabled={!canConfirm}
-          className={`h-9 px-3 rounded-lg text-white text-[12px] font-bold shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer inline-flex items-center gap-1 shrink-0 ${cls.btn}`}
+          className={`h-9 px-3 rounded-lg text-white text-[14px] font-bold shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer inline-flex items-center gap-1 shrink-0 ${cls.btn}`}
           title={canConfirm ? "선택 상품 등록" : "리스트에서 상품 선택"}
         >
           <Check size={12} strokeWidth={3} />
@@ -114,7 +114,7 @@ export function ProductSearchInput({
       {query.trim() && !hideList && (
         <div className="max-h-[180px] overflow-y-auto border border-line rounded-lg bg-white shadow-sm">
           {results.length === 0 && !loading ? (
-            <div className="px-3 py-3 text-center text-[11px] text-zinc-400">
+            <div className="px-3 py-3 text-center text-[13px] text-zinc-400">
               검색 결과 없음
             </div>
           ) : (
@@ -152,10 +152,10 @@ export function ProductSearchInput({
                   >
                     <Package size={11} className="text-zinc-400 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className={`text-[12px] font-bold truncate ${isActive ? "text-zinc-900" : "text-zinc-700"}`}>
+                      <div className={`text-[14px] font-bold truncate ${isActive ? "text-zinc-900" : "text-zinc-700"}`}>
                         {name}
                       </div>
-                      <div className="text-[10px] text-zinc-400 truncate">
+                      <div className="text-[12px] text-zinc-400 truncate">
                         {code || "-"} · {sup || "-"}
                       </div>
                     </div>

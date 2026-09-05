@@ -166,15 +166,15 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
 
       {/* 기간 필터 + 새로고침 */}
       <div className={`${CARD_BASE} px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5`}>
-        <span className="text-[12px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">기간</span>
+        <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">기간</span>
         <div className="flex flex-wrap bg-zinc-50 border border-line rounded-lg p-0.5 gap-0.5">
           <button onClick={() => { setPeriodSeason(null); setPeriodMonths(0); }}
-            className={`px-2.5 h-6 text-[13px] font-semibold rounded-md transition cursor-pointer ${!periodSeason && periodMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+            className={`px-2.5 h-6 text-[15px] font-semibold rounded-md transition cursor-pointer ${!periodSeason && periodMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
             10일
           </button>
           {([1, 2, 3, 4, 5, 6] as const).map(m => (
             <button key={m} onClick={() => { setPeriodSeason(null); setPeriodMonths(m); }}
-              className={`px-2.5 h-6 text-[13px] font-semibold rounded-md transition cursor-pointer ${!periodSeason && periodMonths === m ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+              className={`px-2.5 h-6 text-[15px] font-semibold rounded-md transition cursor-pointer ${!periodSeason && periodMonths === m ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
               {m}개월
             </button>
           ))}
@@ -294,7 +294,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
                         </span>
                         <span className="text-[14px] text-zinc-500 font-semibold">{item.subtitle}</span>
                         {item.vatBadge && (
-                          <span className="text-[13px] text-zinc-500 font-semibold tabular-nums mt-0.5 leading-tight bg-zinc-50 px-2 py-1 rounded-md border border-line">
+                          <span className="text-[15px] text-zinc-500 font-semibold tabular-nums mt-0.5 leading-tight bg-zinc-50 px-2 py-1 rounded-md border border-line">
                             {item.vatBadge}
                           </span>
                         )}

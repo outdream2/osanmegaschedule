@@ -96,7 +96,7 @@ export const RanksTab: React.FC<RanksTabProps> = ({
       </button>
     </div>
     {rankRenaming && (
-      <div className="text-[12px] text-brand-deep font-semibold flex items-center gap-1.5">
+      <div className="text-[14px] text-brand-deep font-semibold flex items-center gap-1.5">
         <span className="w-3 h-3 border-2 border-brand-deep border-t-transparent rounded-full animate-spin" />
         재직 직원 자동 rename 중...
       </div>

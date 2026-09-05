@@ -59,9 +59,9 @@ export const SignatureStampSlot: React.FC<SignatureStampSlotProps> = ({
     <div className={`relative rounded-xl border-2 ${tone} p-3 transition-all ${className}`}>
       <div className="flex items-center gap-1.5 mb-2">
         <PenTool size={12} className="text-ink-soft" />
-        <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">{label}</span>
+        <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider">{label}</span>
         {isSigned && (
-          <span className="ml-auto inline-flex items-center gap-1 h-4 px-1.5 rounded text-[10px] font-extrabold text-emerald-700 bg-emerald-100 border border-emerald-200">
+          <span className="ml-auto inline-flex items-center gap-1 h-4 px-1.5 rounded text-[12px] font-extrabold text-emerald-700 bg-emerald-100 border border-emerald-200">
             <Check size={9} strokeWidth={3} /> 서명됨
           </span>
         )}
@@ -82,7 +82,7 @@ export const SignatureStampSlot: React.FC<SignatureStampSlotProps> = ({
             )}
           </div>
           {/* 감사 메타 */}
-          <div className="flex items-center gap-2 text-[11px] text-ink-soft">
+          <div className="flex items-center gap-2 text-[13px] text-ink-soft">
             <span className="font-bold">{signature!.signer_name}</span>
             <span className="flex items-center gap-0.5 tabular-nums">
               <Clock size={9} />
@@ -93,7 +93,7 @@ export const SignatureStampSlot: React.FC<SignatureStampSlotProps> = ({
             )}
           </div>
           {signature!.intent_text && (
-            <div className="text-[11px] italic text-ink-soft border-t border-line pt-1.5">
+            <div className="text-[13px] italic text-ink-soft border-t border-line pt-1.5">
               "{signature!.intent_text}"
             </div>
           )}
@@ -106,7 +106,7 @@ export const SignatureStampSlot: React.FC<SignatureStampSlotProps> = ({
           className="w-full py-4 rounded-lg border-2 border-dashed border-zinc-300 hover:border-brand-deep hover:bg-white text-ink-soft hover:text-brand-deep cursor-pointer transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <PenTool size={16} className="inline mr-1.5" />
-          <span className="text-[13px] font-bold">서명하기</span>
+          <span className="text-[15px] font-bold">서명하기</span>
         </button>
       )}
     </div>

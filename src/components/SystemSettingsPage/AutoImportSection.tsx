@@ -173,7 +173,7 @@ export const AutoImportSection: React.FC = () => {
           </div>
           {/* 2026-08-24 · 원클릭 설치 · 단일 .bat · 사용자 · 더블클릭 → 자동 */}
           <ol className="text-[14px] text-ink-soft leading-relaxed list-decimal pl-5 space-y-1">
-            <li>[설치 파일 다운로드] 클릭 · <code className="bg-white px-1.5 py-0.5 rounded text-[12px] border border-line">megatown-auto-import-installer.bat</code> 다운로드</li>
+            <li>[설치 파일 다운로드] 클릭 · <code className="bg-white px-1.5 py-0.5 rounded text-[14px] border border-line">megatown-auto-import-installer.bat</code> 다운로드</li>
             <li>Downloads · <b>더블클릭 실행</b> · 6단계 자동 설치 (Python 확인 · 폴더 생성 · 스크립트 다운로드 · pip install · Task Scheduler 등록 · BASE_URL 설정)</li>
             <li>완료 · 이 페이지 새로고침 → 상태 초록불 확인</li>
           </ol>
@@ -224,7 +224,7 @@ export const AutoImportSection: React.FC = () => {
           />
           <span className="text-[15px] font-bold text-ink">자동 임포트 활성화</span>
         </label>
-        <span className="text-[13px] text-ink-soft">
+        <span className="text-[15px] text-ink-soft">
           {config.enabled ? "· Python 스크립트가 매 실행에 이 값 확인" : "· 비활성 시 · 스크립트 즉시 종료"}
         </span>
       </div>
@@ -237,7 +237,7 @@ export const AutoImportSection: React.FC = () => {
           <button
             type="button"
             onClick={applyDefaultFolders}
-            className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[13px] font-semibold text-ink-soft hover:text-brand-deep bg-white border border-line hover:border-brand-deep cursor-pointer transition"
+            className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[15px] font-semibold text-ink-soft hover:text-brand-deep bg-white border border-line hover:border-brand-deep cursor-pointer transition"
             title="Downloads 기본값으로 복원"
           >
             기본값 복원
@@ -260,7 +260,7 @@ export const AutoImportSection: React.FC = () => {
                   type="button"
                   onClick={() => { void handlePickFolder(key); }}
                   disabled={!loaded}
-                  className="inline-flex items-center gap-1 h-9 px-2.5 rounded-lg text-[13px] font-semibold text-ink-soft hover:text-brand-deep bg-white border border-line hover:border-brand-deep cursor-pointer transition shrink-0"
+                  className="inline-flex items-center gap-1 h-9 px-2.5 rounded-lg text-[15px] font-semibold text-ink-soft hover:text-brand-deep bg-white border border-line hover:border-brand-deep cursor-pointer transition shrink-0"
                   title="폴더 찾기 (Chrome/Edge)"
                 >
                   <Folder size={13} />
@@ -269,18 +269,18 @@ export const AutoImportSection: React.FC = () => {
               </div>
               <div className="flex items-center gap-1.5 pl-14 flex-wrap">
                 <Timer size={12} className="text-ink-soft shrink-0" />
-                <span className="text-[12px] text-ink-soft font-semibold">간격 ·</span>
+                <span className="text-[14px] text-ink-soft font-semibold">간격 ·</span>
                 <select
                   value={config.intervals[key]}
                   onChange={(e) => updateInterval(key, Number(e.target.value))}
                   disabled={!loaded}
-                  className="h-7 px-2 text-[13px] font-semibold text-ink border border-line rounded-md bg-white cursor-pointer disabled:opacity-40"
+                  className="h-7 px-2 text-[15px] font-semibold text-ink border border-line rounded-md bg-white cursor-pointer disabled:opacity-40"
                 >
                   {INTERVAL_PRESETS.map(({ value, label: lbl }) => (
                     <option key={value} value={value}>{lbl}</option>
                   ))}
                 </select>
-                <span className="text-[12px] text-ink-soft">or</span>
+                <span className="text-[14px] text-ink-soft">or</span>
                 <input
                   type="number"
                   min={5}
@@ -291,19 +291,19 @@ export const AutoImportSection: React.FC = () => {
                     updateInterval(key, n);
                   }}
                   disabled={!loaded}
-                  className="w-16 h-7 px-1.5 text-[13px] font-semibold text-ink text-right border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"
+                  className="w-16 h-7 px-1.5 text-[15px] font-semibold text-ink text-right border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"
                 />
-                <span className="text-[12px] text-ink-soft">분</span>
+                <span className="text-[14px] text-ink-soft">분</span>
                 {/* 매일(1440) 선택 시 · 실행 시각 · HH:MM 입력 · 2026-08-24 사용자 지시 */}
                 {config.intervals[key] === 1440 && (
                   <>
-                    <span className="text-[12px] text-ink-soft ml-2">· 매일 실행 시각 ·</span>
+                    <span className="text-[14px] text-ink-soft ml-2">· 매일 실행 시각 ·</span>
                     <input
                       type="time"
                       value={config.daily_times[key]}
                       onChange={(e) => updateDailyTime(key, e.target.value)}
                       disabled={!loaded}
-                      className="h-7 px-2 text-[13px] font-semibold text-ink border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"
+                      className="h-7 px-2 text-[15px] font-semibold text-ink border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"
                     />
                   </>
                 )}
@@ -319,7 +319,7 @@ export const AutoImportSection: React.FC = () => {
             disabled={!loaded}
             className="w-4 h-4 accent-brand-deep cursor-pointer"
           />
-          <span className="text-[13px] text-ink-soft">폴더 없으면 · Python 실행 시 자동 생성</span>
+          <span className="text-[15px] text-ink-soft">폴더 없으면 · Python 실행 시 자동 생성</span>
         </label>
       </div>
 
@@ -340,7 +340,7 @@ export const AutoImportSection: React.FC = () => {
                 className="w-4 h-4 accent-brand-deep cursor-pointer"
               />
               <span className="text-[14px] font-semibold text-ink">{label}</span>
-              <span className="text-[13px] text-ink-soft">· {hint}</span>
+              <span className="text-[15px] text-ink-soft">· {hint}</span>
             </label>
           ))}
         </div>
@@ -358,7 +358,7 @@ export const AutoImportSection: React.FC = () => {
           />
           <span className="text-[14px] font-bold text-ink">파일명 자동 정리 (표준 파일명 rename)</span>
         </label>
-        <div className="text-[12px] text-ink-soft pl-6 leading-relaxed">
+        <div className="text-[14px] text-ink-soft pl-6 leading-relaxed">
           · products / vendors · <code>{"{category}_{yyyymmdd_hhmmss}.xlsx"}</code>
           <br />
           · stock / purchase · <code>{"{category}_{start}_{end}.xlsx"}</code>
@@ -388,12 +388,12 @@ export const AutoImportSection: React.FC = () => {
           </button>
         )}
         {saveError && (
-          <span className="text-[13px] text-rose-600 font-semibold">{saveError}</span>
+          <span className="text-[15px] text-rose-600 font-semibold">{saveError}</span>
         )}
       </div>
 
       {/* 안내 */}
-      <div className="text-[13px] text-ink-soft bg-zinc-50/60 border border-line rounded-lg px-3 py-2 leading-relaxed">
+      <div className="text-[15px] text-ink-soft bg-zinc-50/60 border border-line rounded-lg px-3 py-2 leading-relaxed">
         <CheckCircle size={13} className="inline text-emerald-500 mr-1" />
         저장 후 · Python 다음 실행 시 즉시 반영 · interval 변경 시 · Task Scheduler 자동 재등록
       </div>

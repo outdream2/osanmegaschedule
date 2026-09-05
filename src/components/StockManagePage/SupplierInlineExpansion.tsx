@@ -36,7 +36,7 @@ export const SupplierInlineExpansion: React.FC<SupplierInlineExpansionProps> = (
             </div>
             <table className="w-full text-[15px]">
               <thead className="bg-zinc-50/40 border-b border-line">
-                <tr className="text-[13px] text-zinc-500 uppercase tracking-wider">
+                <tr className="text-[15px] text-zinc-500 uppercase tracking-wider">
                   <th className="text-left px-3 py-1.5 font-semibold">상품명</th>
                   <th className="text-right px-3 py-1.5 font-semibold w-16">수량</th>
                   <th className="text-right px-3 py-1.5 font-semibold w-20">단가</th>

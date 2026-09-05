@@ -51,7 +51,7 @@ export const PositionsTab: React.FC<PositionsTabProps> = ({
             <GripVertical size={13} className="text-zinc-300" />
             <span className={`flex-1 text-xs font-semibold ${isTeamLead ? "text-brand-deep" : "text-zinc-800"}`}>
               {pos}
-              {isTeamLead && <span className="ml-1 text-[10px] font-normal text-brand-deep/70">· 유일</span>}
+              {isTeamLead && <span className="ml-1 text-[12px] font-normal text-brand-deep/70">· 유일</span>}
             </span>
             <button
               type="button"

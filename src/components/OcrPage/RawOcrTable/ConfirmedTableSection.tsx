@@ -136,7 +136,7 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
             {pageImages?.length ? (
               <button type="button"
                 onClick={() => setConfImageCollapsed(v => !v)}
-                className="ml-1 flex items-center gap-1 text-[13px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 rounded-lg px-2 py-1 cursor-pointer whitespace-nowrap"
+                className="ml-1 flex items-center gap-1 text-[15px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 rounded-lg px-2 py-1 cursor-pointer whitespace-nowrap"
                 title={confImageCollapsed ? "명세서 이미지 컬럼 펼치기" : "명세서 이미지 컬럼 접기"}>
                 {confImageCollapsed ? "▶ 이미지 펼치기" : "◀ 이미지 접기"}
               </button>
@@ -164,7 +164,7 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
               <tr className="bg-emerald-50/60 border-b-2 border-emerald-200">
                 {pageImages?.length ? (
                   <th
-                    className="p-0 text-center bg-gray-50 border-r border-line text-[12px] font-bold text-gray-500 whitespace-nowrap select-none"
+                    className="p-0 text-center bg-gray-50 border-r border-line text-[14px] font-bold text-gray-500 whitespace-nowrap select-none"
                     style={{
                       width: confImageCollapsed ? 24 : effectiveInvColWidth,
                       minWidth: confImageCollapsed ? 24 : effectiveInvColWidth,
@@ -251,12 +251,12 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
                           >
                             {confImageCollapsed ? (
                               <button type="button" onClick={() => setConfImageCollapsed(false)}
-                                className="w-full h-full flex items-center justify-center text-emerald-500 text-[13px] font-bold hover:bg-emerald-50 cursor-pointer"
+                                className="w-full h-full flex items-center justify-center text-emerald-500 text-[15px] font-bold hover:bg-emerald-50 cursor-pointer"
                                 title="이미지 펼치기">▶</button>
                             ) : (() => {
                               const imgSrc = pageImages[pn - 1];
                               if (!imgSrc) return (
-                                <div className="flex items-center justify-center h-full p-3 text-[13px] text-gray-400">이미지 없음</div>
+                                <div className="flex items-center justify-center h-full p-3 text-[15px] text-gray-400">이미지 없음</div>
                               );
                               const isPortraitRotated = rotation === 90 || rotation === -90 || rotation === 270;
                               const zoom = confImageZoom[pn] ?? 1;
@@ -267,13 +267,13 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
                                   <div className="absolute top-1 right-1 z-10 flex flex-col gap-0.5 bg-white/95 border border-zinc-300 rounded shadow-sm">
                                     <button type="button"
                                       onClick={e => { e.stopPropagation(); setConfImageZoom(prev => ({ ...prev, [pn]: Math.min(4, (prev[pn] ?? 1) + 0.25) })); }}
-                                      className="text-[13px] font-bold px-1.5 py-0.5 hover:bg-emerald-50 cursor-pointer" title="확대">+</button>
+                                      className="text-[15px] font-bold px-1.5 py-0.5 hover:bg-emerald-50 cursor-pointer" title="확대">+</button>
                                     <button type="button"
                                       onClick={e => { e.stopPropagation(); setConfImageZoom(prev => ({ ...prev, [pn]: Math.max(0.5, (prev[pn] ?? 1) - 0.25) })); }}
-                                      className="text-[13px] font-bold px-1.5 py-0.5 hover:bg-emerald-50 cursor-pointer border-t border-line" title="축소">−</button>
+                                      className="text-[15px] font-bold px-1.5 py-0.5 hover:bg-emerald-50 cursor-pointer border-t border-line" title="축소">−</button>
                                     <button type="button"
                                       onClick={e => { e.stopPropagation(); setConfImageZoom(prev => { const n = { ...prev }; delete n[pn]; return n; }); setConfImagePan(prev => { const n = { ...prev }; delete n[pn]; return n; }); }}
-                                      className="text-[13px] font-bold px-1.5 py-0.5 hover:bg-zinc-100 cursor-pointer border-t border-line" title="원본 크기">⛶</button>
+                                      className="text-[15px] font-bold px-1.5 py-0.5 hover:bg-zinc-100 cursor-pointer border-t border-line" title="원본 크기">⛶</button>
                                   </div>
                                   <div
                                     onMouseDown={canDrag ? e => {
@@ -338,7 +338,7 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
                                     } catch { /* skip check */ }
                                     await handleSaveConfirmed(pn);
                                   }}
-                                  className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-white tracking-tight bg-rose-600 hover:bg-rose-500 border border-rose-800 rounded-md px-3.5 py-1.5 cursor-pointer whitespace-nowrap transition-all duration-150 ease-out shadow-sm hover:shadow-md hover:-translate-y-[1px] active:translate-y-0 active:shadow-inner active:bg-rose-700"
+                                  className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-white tracking-tight bg-rose-600 hover:bg-rose-500 border border-rose-800 rounded-md px-3.5 py-1.5 cursor-pointer whitespace-nowrap transition-all duration-150 ease-out shadow-sm hover:shadow-md hover:-translate-y-[1px] active:translate-y-0 active:shadow-inner active:bg-rose-700"
                                   title={`${pn}번 명세서 · 확정표 DB 저장`}
                                 >💾 거래명세서 DB저장</button>
                                 <span className="text-[14px] font-bold text-emerald-900">총 소계 <span className="text-emerald-700">{fmt(confPageTotals.get(pn) ?? 0)}</span>원</span>
@@ -360,7 +360,7 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
                             null;
                           return (
                             <th key={oi}
-                              className={`py-1 font-bold text-[13px] text-emerald-800 leading-tight ${
+                              className={`py-1 font-bold text-[15px] text-emerald-800 leading-tight ${
                                 collapsed ? "px-0 text-center w-4" : "px-3 text-center whitespace-nowrap"
                               }`}>
                               {collapsed ? "·" : twoLine ? (
@@ -400,11 +400,11 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
                             return (
                               <td key={ci} className={cellCls}>
                                 <div className="flex flex-col leading-tight gap-0.5 items-center justify-center">
-                                  <span className={isName ? "text-gray-400 text-[13px] font-mono" : "text-gray-500 text-[13px] font-mono"}>{line1 || "—"}</span>
+                                  <span className={isName ? "text-gray-400 text-[15px] font-mono" : "text-gray-500 text-[15px] font-mono"}>{line1 || "—"}</span>
                                   {line2 && (
                                     <span className={isName
-                                      ? `font-semibold text-[13px] leading-snug break-words text-center ${m ? (score >= 80 ? "text-emerald-700" : score >= 50 ? "text-amber-700" : "text-rose-600") : "text-rose-500 italic"}`
-                                      : "font-bold text-emerald-700 text-[12px] whitespace-nowrap"}>{line2}</span>
+                                      ? `font-semibold text-[15px] leading-snug break-words text-center ${m ? (score >= 80 ? "text-emerald-700" : score >= 50 ? "text-amber-700" : "text-rose-600") : "text-rose-500 italic"}`
+                                      : "font-bold text-emerald-700 text-[14px] whitespace-nowrap"}>{line2}</span>
                                   )}
                                 </div>
                               </td>
@@ -422,10 +422,10 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
                                 isProfitR                    ? "text-emerald-700 font-semibold" :
                                 isBalance                    ? "text-indigo-600 font-bold" :
                                 isNum                        ? "text-gray-700" :
-                                h === "상품코드"             ? "text-gray-400 text-[13px] font-mono" :
-                                h === "유통기한"             ? "text-gray-500 text-[13px]" :
-                                isSpec                       ? "text-gray-400 text-[13px]" :
-                                h === "거래일"               ? "text-gray-500 text-[13px]" :
+                                h === "상품코드"             ? "text-gray-400 text-[15px] font-mono" :
+                                h === "유통기한"             ? "text-gray-500 text-[15px]" :
+                                isSpec                       ? "text-gray-400 text-[15px]" :
+                                h === "거래일"               ? "text-gray-500 text-[15px]" :
                                 isName ? `font-semibold ${m ? (score >= 80 ? "text-emerald-700" : score >= 50 ? "text-amber-700" : "text-rose-600") : "text-rose-500 italic"}` :
                                          "text-gray-600"
                               }`}>
@@ -445,7 +445,7 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
                                       else setPageDateOverride(prev => { const n = { ...prev }; delete n[pn]; return n; });
                                       setEditingConfDate(null); setEditingConfDateVal("");
                                     }}
-                                    className="w-[100px] text-[13px] bg-white border border-emerald-400 rounded px-1.5 py-0.5 focus:outline-none focus:border-brand-deep"
+                                    className="w-[100px] text-[15px] bg-white border border-emerald-400 rounded px-1.5 py-0.5 focus:outline-none focus:border-brand-deep"
                                   />
                                 ) : (
                                   <button type="button"
@@ -475,13 +475,13 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
                                           <button
                                             onClick={e => { e.stopPropagation(); setCancelledAutoSyn(prev => new Set([...prev, ri])); }}
                                             title={`취소 → 원본: ${origOcr}`}
-                                            className="text-[12px] px-1 py-px rounded bg-rose-100 text-rose-600 hover:bg-rose-200 cursor-pointer shrink-0 mt-0.5">✕</button>
+                                            className="text-[14px] px-1 py-px rounded bg-rose-100 text-rose-600 hover:bg-rose-200 cursor-pointer shrink-0 mt-0.5">✕</button>
                                         )}
                                         {hasCorrected && isCancelled && (
                                           <button
                                             onClick={e => { e.stopPropagation(); setCancelledAutoSyn(prev => { const n = new Set(prev); n.delete(ri); return n; }); }}
                                             title="보정 복원"
-                                            className="text-[12px] px-1 py-px rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 cursor-pointer shrink-0 mt-0.5">↩</button>
+                                            className="text-[14px] px-1 py-px rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 cursor-pointer shrink-0 mt-0.5">↩</button>
                                         )}
                                       </div>
                                     );
@@ -507,7 +507,7 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
         {onSaveConfirmed && (
           <div className="px-4 py-3 flex justify-end items-center gap-3 border-t border-emerald-100 bg-white">
             {hasMissingSupplier && (
-              <span className="inline-flex items-center gap-1 text-[13px] font-bold text-rose-700 bg-rose-50 border border-rose-300 rounded px-2 py-0.5">
+              <span className="inline-flex items-center gap-1 text-[15px] font-bold text-rose-700 bg-rose-50 border border-rose-300 rounded px-2 py-0.5">
                 <AlertTriangle size={10} className="shrink-0" />
                 공급사 미입력 ({missingSupplierPages.join(", ")}번) — 저장 차단
               </span>

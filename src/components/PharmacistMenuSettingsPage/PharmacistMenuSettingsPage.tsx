@@ -261,7 +261,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
       <span className={`text-zinc-500 ${TEXT.label}`}>{tabLabel}</span>
       <span className="text-zinc-300">/</span>
       <span className="text-zinc-800 truncate">{categoryTitle}</span>
-      <span className="text-zinc-400 text-[12px] font-bold">· 하위메뉴 설정</span>
+      <span className="text-zinc-400 text-[14px] font-bold">· 하위메뉴 설정</span>
     </span>
   ), [tabLabel, categoryTitle]);
 
@@ -281,7 +281,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
           >
             <div className="flex items-center gap-2">
               <Plus size={15} className="text-sky-600" />
-              <span className="text-[13px] font-bold text-sky-800">신규 하위메뉴 추가</span>
+              <span className="text-[15px] font-bold text-sky-800">신규 하위메뉴 추가</span>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 items-stretch">
@@ -327,7 +327,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-emerald-200">
                 <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
                 <span className="text-xs font-bold text-zinc-700 break-all flex-1">{newFile.name}</span>
-                <span className="text-[10px] text-zinc-400 font-semibold tabular-nums shrink-0">{fmtBytes(newFile.size)}</span>
+                <span className="text-[12px] text-zinc-400 font-semibold tabular-nums shrink-0">{fmtBytes(newFile.size)}</span>
                 <button
                   type="button"
                   onClick={() => { setNewFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
@@ -353,7 +353,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
               </Card>
             )}
 
-            <div className="text-[11px] text-zinc-500 leading-relaxed">
+            <div className="text-[13px] text-zinc-500 leading-relaxed">
               · 파일 없이 이름만 등록해도 됩니다 (이후 파일 교체는 삭제 후 재등록).<br />
               · PDF 권장 · 브라우저 내장 뷰어로 열립니다 · 이미지·Word 는 새 창.<br />
               · 최대 20MB · Supabase Storage 실패 시 로컬 저장 자동 폴백.
@@ -365,8 +365,8 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
         <Card variant="flat" clip padding="none">
           <div className="px-3 py-2 border-b border-zinc-100 bg-zinc-50 flex items-center gap-1.5">
             <FileText size={13} className="text-zinc-400" />
-            <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">등록된 하위메뉴</span>
-            <span className="ml-auto text-[10px] font-bold text-zinc-400 tabular-nums">{items.length}건</span>
+            <span className="text-[13px] font-bold text-zinc-500 uppercase tracking-wider">등록된 하위메뉴</span>
+            <span className="ml-auto text-[12px] font-bold text-zinc-400 tabular-nums">{items.length}건</span>
           </div>
 
           {loadError && (
@@ -437,7 +437,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                       ) : (
                         <>
                           <div className="text-sm font-bold text-zinc-800 break-all leading-snug">{row.title}</div>
-                          <div className="text-[11px] text-zinc-400 mt-0.5 truncate">
+                          <div className="text-[13px] text-zinc-400 mt-0.5 truncate">
                             {row.file_name
                               ? <>파일: <span className="text-zinc-500 font-semibold">{row.file_name}</span> · {fmtBytes(row.file_size)}</>
                               : <span className="italic">파일 없음 (이름만)</span>}
@@ -500,7 +500,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
         </Card>
 
         {!isAdmin && (
-          <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" rounded="lg" padding="sm" className="flex items-start gap-2 text-[11px] text-amber-700">
+          <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" rounded="lg" padding="sm" className="flex items-start gap-2 text-[13px] text-amber-700">
             <AlertCircle size={12} className="shrink-0 mt-0.5" />
             관리자(level ≥ 8) 만 하위메뉴를 추가·수정·삭제할 수 있습니다.
           </Card>

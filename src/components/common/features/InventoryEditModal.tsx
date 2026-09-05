@@ -129,7 +129,7 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
       footer={
         <div className="flex items-center gap-2 w-full">
           {error && (
-            <span className="flex-1 text-[11px] text-rose-600 font-medium truncate">{error}</span>
+            <span className="flex-1 text-[13px] text-rose-600 font-medium truncate">{error}</span>
           )}
           {toast && (
             <span className={toastClass(toast.tone)}>{toast.message}</span>
@@ -137,7 +137,7 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="ml-auto px-4 py-2 rounded-lg text-[12px] font-semibold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors cursor-pointer"
+            className="ml-auto px-4 py-2 rounded-lg text-[14px] font-semibold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors cursor-pointer"
           >
             닫기
           </button>

@@ -330,7 +330,7 @@ const ZoneCategoryContent: React.FC = () => {
           <span className="inline-flex items-center gap-0.5">{label}
             {active
               ? <span className="text-[15px]">{itemSort.dir === "asc" ? "▲" : "▼"}</span>
-              : <span className="text-[10px] text-zinc-300">⇅</span>}
+              : <span className="text-[12px] text-zinc-300">⇅</span>}
           </span>
           <span {...resizerProps(colKey)} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
         </th>

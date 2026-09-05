@@ -102,12 +102,12 @@ export const AssigneeEditor: React.FC<AssigneeEditorProps> = ({
 
   const readOnly = disabled || !canEdit;
 
-  if (readOnly && value.length === 0) return <span className="text-[12px] text-zinc-300">-</span>;
+  if (readOnly && value.length === 0) return <span className="text-[14px] text-zinc-300">-</span>;
   if (readOnly) {
     return (
       <div className={`flex flex-wrap gap-1 ${className}`}>
         {value.map((n, i) => (
-          <span key={i} className="inline-flex items-center h-6 px-2 rounded-full bg-brand-tint text-brand-deep text-[12px] font-bold border border-brand-deep/30">{n}</span>
+          <span key={i} className="inline-flex items-center h-6 px-2 rounded-full bg-brand-tint text-brand-deep text-[14px] font-bold border border-brand-deep/30">{n}</span>
         ))}
       </div>
     );
@@ -117,7 +117,7 @@ export const AssigneeEditor: React.FC<AssigneeEditorProps> = ({
     <div ref={wrapRef} className={`relative ${className}`}>
       <div className={`flex flex-wrap gap-1 items-center min-h-[32px] rounded-md border ${open ? "border-brand-deep ring-2 ring-brand-tint" : "border-transparent hover:border-line"} px-1.5 py-1 transition`}>
         {value.map((n, i) => (
-          <span key={i} className="inline-flex items-center gap-1 h-6 pl-2 pr-1 rounded-full bg-brand-tint text-brand-deep text-[12px] font-bold border border-brand-deep/30">
+          <span key={i} className="inline-flex items-center gap-1 h-6 pl-2 pr-1 rounded-full bg-brand-tint text-brand-deep text-[14px] font-bold border border-brand-deep/30">
             {n}
             <button type="button" onClick={() => removeName(n)} disabled={saving} className="ml-0.5 w-4 h-4 flex items-center justify-center rounded-full hover:bg-brand-deep hover:text-white transition cursor-pointer disabled:opacity-40" title="담당자 제거">
               <X size={10} strokeWidth={2.5} />
@@ -135,14 +135,14 @@ export const AssigneeEditor: React.FC<AssigneeEditorProps> = ({
             if (e.key === "Backspace" && !query && value.length > 0) { e.preventDefault(); removeName(value[value.length - 1]); }
           }}
           placeholder={value.length === 0 ? placeholder : ""}
-          className="flex-1 min-w-[80px] h-6 px-1 bg-transparent text-[13px] text-ink focus:outline-none placeholder:text-zinc-300 placeholder:italic"
+          className="flex-1 min-w-[80px] h-6 px-1 bg-transparent text-[15px] text-ink focus:outline-none placeholder:text-zinc-300 placeholder:italic"
           disabled={saving}
         />
       </div>
       {open && (
         <div className="absolute left-0 right-0 top-full mt-1 z-30 max-h-52 overflow-auto bg-white rounded-lg border border-line shadow-lg">
           {filtered.length === 0 ? (
-            <div className="px-3 py-2 text-[12px] text-zinc-400 italic">일치하는 직원 없음</div>
+            <div className="px-3 py-2 text-[14px] text-zinc-400 italic">일치하는 직원 없음</div>
           ) : filtered.map(e => {
             const already = value.includes(e.name);
             return (
@@ -151,7 +151,7 @@ export const AssigneeEditor: React.FC<AssigneeEditorProps> = ({
                 type="button"
                 onMouseDown={ev => { ev.preventDefault(); if (!already) addName(e.name); }}
                 disabled={already || saving}
-                className={`w-full text-left px-3 py-1.5 text-[13px] font-semibold transition cursor-pointer ${already ? "bg-zinc-50 text-zinc-300 cursor-not-allowed" : "text-ink hover:bg-brand-tint/50"}`}
+                className={`w-full text-left px-3 py-1.5 text-[15px] font-semibold transition cursor-pointer ${already ? "bg-zinc-50 text-zinc-300 cursor-not-allowed" : "text-ink hover:bg-brand-tint/50"}`}
               >
                 {e.name}{already ? " · 이미 선택됨" : ""}
               </button>

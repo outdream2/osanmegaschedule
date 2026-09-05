@@ -115,7 +115,7 @@ export const ZoneCategoryPicker: React.FC<ZoneCategoryPickerProps> = ({
             <span className="inline-flex items-center h-6 px-2 rounded-md bg-brand-tint text-brand-deep text-[14px] font-extrabold tabular-nums">
               {value}
             </span>
-            <span className="text-[12px] text-ink-soft truncate">클릭하여 변경</span>
+            <span className="text-[14px] text-ink-soft truncate">클릭하여 변경</span>
           </button>
         ) : (
           <input
@@ -147,15 +147,15 @@ export const ZoneCategoryPicker: React.FC<ZoneCategoryPickerProps> = ({
       {open && (
         <div className="absolute left-0 right-0 top-full mt-1 z-30 max-h-72 overflow-auto bg-white rounded-lg border border-line shadow-lg">
           {loading ? (
-            <div className="px-3 py-2 text-[13px] text-ink-soft italic">구역 정보 로딩 중...</div>
+            <div className="px-3 py-2 text-[15px] text-ink-soft italic">구역 정보 로딩 중...</div>
           ) : matches.length === 0 ? (
-            <div className="px-3 py-2 text-[13px] text-zinc-400 italic">
+            <div className="px-3 py-2 text-[15px] text-zinc-400 italic">
               {query.trim() ? `"${query}" 매칭 없음` : "카테고리 정보 없음"}
             </div>
           ) : (
             <>
               {!query.trim() && (
-                <div className="px-3 py-1.5 text-[11px] font-bold text-ink-soft uppercase tracking-wider bg-zinc-50 border-b border-line">
+                <div className="px-3 py-1.5 text-[13px] font-bold text-ink-soft uppercase tracking-wider bg-zinc-50 border-b border-line">
                   전체 카테고리 · 검색어 입력하세요
                 </div>
               )}
@@ -176,7 +176,7 @@ export const ZoneCategoryPicker: React.FC<ZoneCategoryPickerProps> = ({
                     <div className="flex items-center gap-2">
                       {isSelected && <Check size={12} className="text-brand-deep shrink-0" />}
                       {m.location && (
-                        <span className="inline-flex items-center h-5 px-1.5 rounded bg-brand-deep text-white text-[12px] font-extrabold tabular-nums shrink-0">
+                        <span className="inline-flex items-center h-5 px-1.5 rounded bg-brand-deep text-white text-[14px] font-extrabold tabular-nums shrink-0">
                           {m.location}
                         </span>
                       )}
@@ -192,7 +192,7 @@ export const ZoneCategoryPicker: React.FC<ZoneCategoryPickerProps> = ({
                       )}
                     </div>
                     {m.detailedCategory && (
-                      <div className="mt-0.5 text-[12px] text-ink-soft leading-snug break-keep whitespace-pre-wrap line-clamp-2">
+                      <div className="mt-0.5 text-[14px] text-ink-soft leading-snug break-keep whitespace-pre-wrap line-clamp-2">
                         {m.detailedCategory}
                       </div>
                     )}

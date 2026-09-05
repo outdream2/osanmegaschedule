@@ -490,7 +490,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                   >
                     <span>{staff.name}</span>
                     {staff.displayName && (
-                      <span className={`text-[13px] font-semibold ${staff.isOff ? "text-gray-400" : "text-indigo-500"}`}>
+                      <span className={`text-[15px] font-semibold ${staff.isOff ? "text-gray-400" : "text-indigo-500"}`}>
                         · {staff.displayName}
                       </span>
                     )}

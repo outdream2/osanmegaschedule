@@ -41,7 +41,7 @@ export const BreakModal: React.FC<BreakModalProps> = ({
       title={
         <div className="min-w-0">
           <div className="text-[16px] font-bold text-ink tracking-tight">점심 · 휴게 시간</div>
-          <div className="text-[12px] text-ink-soft font-medium">{breakModal.date}</div>
+          <div className="text-[14px] text-ink-soft font-medium">{breakModal.date}</div>
         </div>
       }
       titleAccent
@@ -88,7 +88,7 @@ export const BreakModal: React.FC<BreakModalProps> = ({
           <button
             type="button"
             onClick={() => setBreakModal(prev => prev ? { ...prev, lunchStart: "", lunchEnd: "" } : null)}
-            className="mt-1 text-[12px] text-ink-soft hover:text-rose-500 transition cursor-pointer"
+            className="mt-1 text-[14px] text-ink-soft hover:text-rose-500 transition cursor-pointer"
           >
             초기화
           </button>
@@ -114,7 +114,7 @@ export const BreakModal: React.FC<BreakModalProps> = ({
           <button
             type="button"
             onClick={() => setBreakModal(prev => prev ? { ...prev, breakStart: "", breakEnd: "" } : null)}
-            className="mt-1 text-[12px] text-ink-soft hover:text-rose-500 transition cursor-pointer"
+            className="mt-1 text-[14px] text-ink-soft hover:text-rose-500 transition cursor-pointer"
           >
             초기화
           </button>

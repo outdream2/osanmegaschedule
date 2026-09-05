@@ -37,7 +37,7 @@ export const VendorCategoryBadge: React.FC<VendorCategoryBadgeProps> = ({
   const style = CATEGORY_TEXT[trimmed as VendorCategory];
   return (
     <span
-      className={`inline-block text-[11px] font-bold leading-none shrink-0 whitespace-nowrap ${style} ${className}`}
+      className={`inline-block text-[13px] font-bold leading-none shrink-0 whitespace-nowrap ${style} ${className}`}
     >
       {trimmed}
     </span>
