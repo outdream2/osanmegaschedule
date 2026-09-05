@@ -159,7 +159,7 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                   <th onClick={() => handleNeedSort("short")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold text-rose-600">부족<span className="ml-1 text-rose-300">{needArrow("short") || "⇅"}</span></th>
                 </>
               )}
-              <th className="text-center px-1 py-2.5 w-[72px] sm:w-[84px] cursor-default font-bold text-amber-700 bg-amber-50/50 border-l border-amber-100 whitespace-nowrap">수량</th>
+              <th className="text-center px-1 py-2.5 w-[96px] sm:w-[108px] cursor-default font-bold text-amber-700 bg-amber-50/50 border-l border-amber-100 whitespace-nowrap">수량</th>
               <th className="text-center px-2 py-2.5 cursor-default font-bold text-brand-deep bg-brand-tint/50 border-l border-brand/10" style={{ minWidth: 120 }}>발주</th>
             </tr>
           </thead>
@@ -249,21 +249,23 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                     )}
                     <td className="text-center px-0.5 py-1 align-middle whitespace-nowrap bg-amber-50/20">
                       <div className="flex items-center justify-center">
-                        <StepperInput
-                          value={orderQtyOverride?.get(code) ?? Math.max(1, opt - cur)}
-                          onChange={(v) => {
-                            if (!setOrderQtyOverride) return;
-                            const n = typeof v === "number" ? v : Math.max(1, opt - cur);
-                            setOrderQtyOverride(prev => {
-                              const next = new Map(prev);
-                              next.set(code, n);
-                              return next;
-                            });
-                          }}
-                          min={1}
-                          size="xs"
-                          className="!w-[68px] sm:!w-[80px]"
-                        />
+                        <div className="w-[88px] sm:w-[100px]">
+                          <StepperInput
+                            value={orderQtyOverride?.get(code) ?? Math.max(1, opt - cur)}
+                            onChange={(v) => {
+                              if (!setOrderQtyOverride) return;
+                              const n = typeof v === "number" ? v : Math.max(1, opt - cur);
+                              setOrderQtyOverride(prev => {
+                                const next = new Map(prev);
+                                next.set(code, n);
+                                return next;
+                              });
+                            }}
+                            min={1}
+                            size="xs"
+                            className="w-full"
+                          />
+                        </div>
                       </div>
                     </td>
                     <td className="text-center px-1 py-1.5 align-middle whitespace-nowrap">
