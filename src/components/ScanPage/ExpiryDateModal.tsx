@@ -161,12 +161,12 @@ export const ExpiryDateModal: React.FC<ExpiryDateModalProps> = ({ open, onClose,
         {row && (
           <div className="rounded-xl border border-line bg-zinc-50/60 px-3 py-2.5">
             <div className="text-[15px] font-bold text-ink truncate">{row.product.name}</div>
-            <div className="text-[13px] font-mono text-zinc-500 mt-0.5">{row.code}</div>
+            <div className="text-[15px] font-mono text-zinc-500 mt-0.5">{row.code}</div>
           </div>
         )}
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-[13px] font-bold text-ink-soft">입력 날짜</span>
+          <span className="text-[15px] font-bold text-ink-soft">입력 날짜</span>
           <div className="relative">
             <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
             <input
@@ -177,11 +177,11 @@ export const ExpiryDateModal: React.FC<ExpiryDateModalProps> = ({ open, onClose,
               disabled={saving}
             />
           </div>
-          <span className="text-[12px] text-zinc-400">유통기한 임박을 기록한 날짜 · 기본값 오늘</span>
+          <span className="text-[14px] text-zinc-400">유통기한 임박을 기록한 날짜 · 기본값 오늘</span>
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-[13px] font-bold text-ink-soft">유통기한 날짜</span>
+          <span className="text-[15px] font-bold text-ink-soft">유통기한 날짜</span>
           <div className="relative">
             <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
             <input
@@ -192,18 +192,18 @@ export const ExpiryDateModal: React.FC<ExpiryDateModalProps> = ({ open, onClose,
               disabled={saving}
             />
           </div>
-          <span className="text-[12px] text-zinc-400">실제 상품에 표기된 만료일</span>
+          <span className="text-[14px] text-zinc-400">실제 상품에 표기된 만료일</span>
         </label>
 
         {dDayLabel && (
-          <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-[13px] font-bold ${dDayLabel.cls}`}>
+          <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-[15px] font-bold ${dDayLabel.cls}`}>
             <AlertCircle size={13} />
             <span>{dDayLabel.text}</span>
           </div>
         )}
 
         {error && (
-          <div className="text-[13px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-2 rounded-lg">
+          <div className="text-[15px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-2 rounded-lg">
             ⚠ {error}
           </div>
         )}

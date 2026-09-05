@@ -33,7 +33,7 @@ export const ProductInfoHeader: React.FC<ProductInfoHeaderProps> = ({
           onClick={onToggleHidden}
           disabled={hideSaving}
           title={isHidden ? "숨김 해제 · 검색·발주 리스트에 다시 표시" : "이 상품 숨김 · 검색·발주 리스트에서 제외"}
-          className={`shrink-0 inline-flex items-center gap-1 text-[13px] font-semibold px-2.5 py-1 rounded-lg border transition cursor-pointer ${
+          className={`shrink-0 inline-flex items-center gap-1 text-[15px] font-semibold px-2.5 py-1 rounded-lg border transition cursor-pointer ${
             isHidden
               ? "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100"
               : "bg-white border-line text-zinc-400 hover:bg-zinc-50 hover:border-zinc-300 hover:text-zinc-600"
@@ -54,7 +54,7 @@ export const ProductInfoHeader: React.FC<ProductInfoHeaderProps> = ({
           <StatusPill tone="amber" size="xs" dot>숨김 처리됨</StatusPill>
         </span>
       )}
-      {hideError && <p className="text-[13px] text-rose-600 mb-1.5">{hideError}</p>}
+      {hideError && <p className="text-[15px] text-rose-600 mb-1.5">{hideError}</p>}
     </>
   );
 };

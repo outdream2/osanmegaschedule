@@ -136,11 +136,11 @@ const AutoZonePicker: React.FC<{ onAssign: (loc: string) => void }> = ({ onAssig
   return (
     <div className="flex items-center gap-2 px-1 py-2 bg-indigo-50/60 rounded-lg border border-indigo-100">
       <MapPin size={13} className="text-indigo-400 shrink-0" />
-      <span className="text-[13px] font-semibold text-indigo-700">구역 선택 시 슬롯 자동 배정</span>
+      <span className="text-[15px] font-semibold text-indigo-700">구역 선택 시 슬롯 자동 배정</span>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-[13px] font-bold text-indigo-700 bg-indigo-100 border border-indigo-200 hover:bg-indigo-200 transition cursor-pointer"
+        className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-[15px] font-bold text-indigo-700 bg-indigo-100 border border-indigo-200 hover:bg-indigo-200 transition cursor-pointer"
       >
         <MapPin size={11} />
         구역 선택

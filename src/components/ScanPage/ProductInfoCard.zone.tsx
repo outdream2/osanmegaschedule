@@ -22,7 +22,7 @@ export const ProductInfoZone: React.FC<ProductInfoZoneProps> = ({
       {/* 전산배치구역 */}
       <div className="min-w-0 flex-1">
         <p className="text-[14px] font-semibold text-zinc-400 leading-none mb-1 uppercase tracking-wide">전산</p>
-        <p className="text-[13px] font-bold text-zinc-700 leading-snug break-keep whitespace-normal">{locationZone}</p>
+        <p className="text-[15px] font-bold text-zinc-700 leading-snug break-keep whitespace-normal">{locationZone}</p>
       </div>
 
       {/* 화살표 */}
@@ -38,7 +38,7 @@ export const ProductInfoZone: React.FC<ProductInfoZoneProps> = ({
           hasMismatch ? "text-orange-500" : realMap ? "text-teal-600" : "text-zinc-400"
         }`}>실제</p>
         {realMap ? (
-          <p className={`text-[13px] font-bold leading-snug break-keep whitespace-normal ${hasMismatch ? "text-orange-700" : "text-teal-700"}`}>{realMap}</p>
+          <p className={`text-[15px] font-bold leading-snug break-keep whitespace-normal ${hasMismatch ? "text-orange-700" : "text-teal-700"}`}>{realMap}</p>
         ) : (
           <p className="text-[14px] font-semibold text-zinc-400">미등록</p>
         )}
@@ -49,7 +49,7 @@ export const ProductInfoZone: React.FC<ProductInfoZoneProps> = ({
         <button
           onClick={onOpenSelector}
           disabled={saving}
-          className={`shrink-0 flex items-center gap-1 px-2.5 py-2 rounded-lg border text-[13px] font-bold transition cursor-pointer min-h-[44px] ${
+          className={`shrink-0 flex items-center gap-1 px-2.5 py-2 rounded-lg border text-[15px] font-bold transition cursor-pointer min-h-[44px] ${
             realMap
               ? "bg-white border-line text-zinc-500 hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
               : "bg-teal-500 border-teal-600 text-white hover:bg-teal-600"
@@ -67,13 +67,13 @@ export const ProductInfoZone: React.FC<ProductInfoZoneProps> = ({
         {hasMismatch && (
           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-orange-50 border border-orange-200 rounded-lg">
             <AlertTriangle size={10} className="text-orange-500 shrink-0" />
-            <p className="text-[13px] font-semibold text-orange-600">전산배치구역과 실제배치구역이 다릅니다</p>
+            <p className="text-[15px] font-semibold text-orange-600">전산배치구역과 실제배치구역이 다릅니다</p>
           </div>
         )}
         {saveError && (
           <div className="flex items-start gap-1.5 px-2.5 py-1.5 bg-red-50 border border-red-200 rounded-lg">
             <AlertTriangle size={10} className="text-red-500 shrink-0 mt-0.5" />
-            <p className="text-[13px] font-semibold text-red-600 whitespace-pre-wrap">{saveError}</p>
+            <p className="text-[15px] font-semibold text-red-600 whitespace-pre-wrap">{saveError}</p>
           </div>
         )}
       </div>

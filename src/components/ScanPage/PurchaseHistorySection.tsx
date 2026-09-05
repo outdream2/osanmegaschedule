@@ -112,7 +112,7 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
       </button>
       {/* 2026-07-29 · 제목 아래 공급사 (반복이라 컬럼에서 제거하고 여기로) + 월평균 주문 수량 · 이모지·배지 지양 */}
       {!collapsed && (supplierSummary || avgMonthlyQty != null) && (
-        <div className="-mx-2 px-2 pb-1.5 flex items-center gap-2 flex-wrap text-[12px]">
+        <div className="-mx-2 px-2 pb-1.5 flex items-center gap-2 flex-wrap text-[14px]">
           {supplierSummary && (
             <span className="text-zinc-500 font-semibold">공급사 <span className="font-bold text-sky-700">{supplierSummary}</span></span>
           )}

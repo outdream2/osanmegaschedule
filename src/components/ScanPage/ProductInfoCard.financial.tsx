@@ -37,7 +37,7 @@ export const ProductInfoFinancial: React.FC<ProductInfoFinancialProps> = ({
 
   return (
     <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 px-3 py-2 mb-2.5">
-      <p className="text-[13px] font-bold text-zinc-800 mb-2 flex items-center gap-1.5">
+      <p className="text-[15px] font-bold text-zinc-800 mb-2 flex items-center gap-1.5">
         <DollarSign size={14} className="text-indigo-500" />매입 · 판매가
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2">
@@ -46,12 +46,12 @@ export const ProductInfoFinancial: React.FC<ProductInfoFinancialProps> = ({
         <InlineField label="판매가" fieldKey="sale_price" value={salePrice} type="number" accent="indigo"
           format={v => Number(v).toLocaleString() + "원"} {...fieldProps} />
         <div className="min-w-0">
-          <p className="text-[13px] font-semibold text-zinc-500 mb-0.5">마진율</p>
-          <p className="text-[13px] font-bold text-emerald-700">{margin != null ? `${margin}%` : "-"}</p>
+          <p className="text-[15px] font-semibold text-zinc-500 mb-0.5">마진율</p>
+          <p className="text-[15px] font-bold text-emerald-700">{margin != null ? `${margin}%` : "-"}</p>
         </div>
         <div className="min-w-0">
-          <p className="text-[13px] font-semibold text-zinc-500 mb-0.5">재고 자산</p>
-          <p className="text-[13px] font-bold text-zinc-800 break-words leading-tight" title={stockAsset ?? undefined}>{stockAsset ?? "-"}</p>
+          <p className="text-[15px] font-semibold text-zinc-500 mb-0.5">재고 자산</p>
+          <p className="text-[15px] font-bold text-zinc-800 break-words leading-tight" title={stockAsset ?? undefined}>{stockAsset ?? "-"}</p>
         </div>
       </div>
     </div>

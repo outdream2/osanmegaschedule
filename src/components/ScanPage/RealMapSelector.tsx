@@ -200,7 +200,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
       <MapPin size={15} className="text-indigo-500 shrink-0" />
       <p className={`${TEXT.section} text-gray-900`}>매장구역 선택</p>
       {current && (
-        <span className="text-[13px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-md px-2 py-0.5 shrink-0">
+        <span className="text-[15px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-md px-2 py-0.5 shrink-0">
           현재 · {current}
         </span>
       )}
@@ -284,7 +284,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
                   <span
                     className={[
                       "shrink-0 min-w-[2.75rem] text-center rounded-md px-2 py-0.5 border",
-                      "text-[13px] font-black tabular-nums tracking-tight",
+                      "text-[15px] font-black tabular-nums tracking-tight",
                       isSelected
                         ? "bg-indigo-600 text-white border-indigo-600"
                         : "bg-zinc-100 text-zinc-700 border-zinc-200",
@@ -309,7 +309,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
                   {major !== "(미분류)" && (
                     <span
                       className={[
-                        "shrink-0 rounded-full px-2 py-0.5 border text-[11px] font-bold whitespace-nowrap",
+                        "shrink-0 rounded-full px-2 py-0.5 border text-[13px] font-bold whitespace-nowrap",
                         pillCls,
                       ].join(" ")}
                     >

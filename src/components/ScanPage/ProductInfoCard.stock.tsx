@@ -99,12 +99,12 @@ export const ProductInfoStock: React.FC<ProductInfoStockProps> = ({
           <Package size={13} className={`shrink-0 ${isLow ? "text-red-500" : "text-brand-deep"}`} />
           <p className={`text-[15px] font-bold ${isLow ? "text-red-600" : "text-zinc-800"}`}>재고현황</p>
           {isLow && (
-            <span className="text-[13px] font-bold text-red-500 flex items-center gap-0.5 shrink-0">
+            <span className="text-[15px] font-bold text-red-500 flex items-center gap-0.5 shrink-0">
               <AlertTriangle size={12} /> 부족
             </span>
           )}
           {collapsed && (
-            <span className="text-[13px] tabular-nums font-semibold text-zinc-500 ml-1 truncate">현재고 {cur ?? "-"} · 적정 {opt ?? "-"}</span>
+            <span className="text-[15px] tabular-nums font-semibold text-zinc-500 ml-1 truncate">현재고 {cur ?? "-"} · 적정 {opt ?? "-"}</span>
           )}
         </button>
       </div>
@@ -113,11 +113,11 @@ export const ProductInfoStock: React.FC<ProductInfoStockProps> = ({
       {!collapsed && (
         <div className="grid grid-cols-2 gap-2">
           <div className="text-center bg-white rounded-lg border border-line py-2 px-1">
-            <p className="text-[13px] font-semibold text-zinc-500 mb-1">현재고</p>
+            <p className="text-[15px] font-semibold text-zinc-500 mb-1">현재고</p>
             <p className={`text-[18px] font-bold leading-none tabular-nums ${isLow ? "text-red-600" : "text-zinc-800"}`}>{cur ?? "-"}</p>
           </div>
           <div className="text-center bg-white rounded-lg border border-amber-200 py-2 px-1">
-            <p className="text-[13px] font-semibold text-amber-600 mb-1">추천적정재고</p>
+            <p className="text-[15px] font-semibold text-amber-600 mb-1">추천적정재고</p>
             {editingKey === "optimal_stock" ? (
               <div className="flex items-center gap-0.5 justify-center">
                 <input
@@ -202,22 +202,22 @@ export const ProductInfoStock: React.FC<ProductInfoStockProps> = ({
 
       {/* 에러 표시 */}
       {!collapsed && editingKey === "optimal_stock" && editError && (
-        <p className="text-[13px] text-red-500 mt-1">{editError}</p>
+        <p className="text-[15px] text-red-500 mt-1">{editError}</p>
       )}
       {showActualInput && !collapsed && w1Status === "error" && w1Error && (
-        <p className="text-[13px] text-red-500 text-center mt-1">창고1: {w1Error}</p>
+        <p className="text-[15px] text-red-500 text-center mt-1">창고1: {w1Error}</p>
       )}
       {showActualInput && !collapsed && w2Status === "error" && w2Error && (
-        <p className="text-[13px] text-red-500 text-center mt-1">창고2: {w2Error}</p>
+        <p className="text-[15px] text-red-500 text-center mt-1">창고2: {w2Error}</p>
       )}
       {showActualInput && !collapsed && s1Status === "error" && s1Error && (
-        <p className="text-[13px] text-red-500 text-center mt-1">매장1: {s1Error}</p>
+        <p className="text-[15px] text-red-500 text-center mt-1">매장1: {s1Error}</p>
       )}
       {showActualInput && !collapsed && s2Status === "error" && s2Error && (
-        <p className="text-[13px] text-red-500 text-center mt-1">매장2: {s2Error}</p>
+        <p className="text-[15px] text-red-500 text-center mt-1">매장2: {s2Error}</p>
       )}
       {showActualInput && !collapsed && s3Status === "error" && s3Error && (
-        <p className="text-[13px] text-red-500 text-center mt-1">매장3: {s3Error}</p>
+        <p className="text-[15px] text-red-500 text-center mt-1">매장3: {s3Error}</p>
       )}
     </div>
   );
