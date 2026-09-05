@@ -796,5 +796,4 @@ export const PurchaseHistoryTab: React.FC = () => {
     </>
   );
 };
-
 export default PurchaseHistoryTab;

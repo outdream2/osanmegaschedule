@@ -793,8 +793,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
       />
       </div>{/* end 콘텐츠 래퍼 */}
     </div>{/* end 명세서별 2컬럼 그리드 래퍼 */}
-    {/* 2026-08-21 · Framework Phase 3 · toast */}
-    {/* toast · moved to RawOcrTableOverlays */}
     </>
   );
 };
