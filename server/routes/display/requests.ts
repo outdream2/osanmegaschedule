@@ -556,7 +556,7 @@ router.delete("/api/order-requests/:id", authorize(2), asyncHandler(async (req, 
 // 공급사별로 그룹핑된 발주 항목을 받아 이메일/문자 발송 시도.
 // 실제 SMTP·SMS gateway 설정이 없으면 로그만 남기고 "미구성" 상태 반환.
 // order_dispatches 테이블에 발송 기록 저장 (없으면 로그로 대체)
-router.post("/api/order-requests/bulk-send", authorize(3), validateBody(BulkSendOrderSchema), asyncHandler(async (req, res) => {
+router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSendOrderSchema), asyncHandler(async (req, res) => {
   const {
     order_number,
     order_date,
@@ -568,9 +568,6 @@ router.post("/api/order-requests/bulk-send", authorize(3), validateBody(BulkSend
 
   if (!Array.isArray(bySupplier) || bySupplier.length === 0) {
     throw badRequest("bySupplier가 비어있습니다.");
-  }
-  if (!channels || (!channels.email && !channels.sms && !channels.kakao)) {
-    throw badRequest("채널(이메일/문자/카카오톡) 중 하나 이상 선택해야 합니다.");
   }
 
   const results: any[] = [];

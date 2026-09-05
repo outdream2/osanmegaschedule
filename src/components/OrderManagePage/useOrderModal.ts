@@ -121,9 +121,13 @@ export function useOrderModal({
 
   const submitOrderModal = async () => {
     if (!orderModal) return;
-    if (!orderModal.channels.email && !orderModal.channels.sms && !orderModal.channels.kakao) { showError("이메일·문자·카카오톡 중 하나 이상 선택해주세요."); return; }
     const totalItems = orderModal.suppliers.reduce((n, s) => n + s.items.length, 0);
-    const proceed = await confirm({ message: `${orderModal.suppliers.length}개 공급사 · ${totalItems}개 상품에 발주서 ${orderModal.suppliers.length}건을 각각 발송합니다.\n\n계속하시겠습니까?` });
+    const noChannel = !orderModal.channels.email && !orderModal.channels.sms && !orderModal.channels.kakao;
+    const proceed = await confirm({
+      message: noChannel
+        ? `${orderModal.suppliers.length}개 공급사 · ${totalItems}개 상품\n\n발송 채널이 선택되지 않았습니다.\n발주서를 DB에 저장하고 상태만 '발주완료'로 변경합니다.\n공급사에게 별도로 연락해주세요.\n\n계속하시겠습니까?`
+        : `${orderModal.suppliers.length}개 공급사 · ${totalItems}개 상품에 발주서 ${orderModal.suppliers.length}건을 각각 발송합니다.\n\n계속하시겠습니까?`,
+    });
     if (!proceed) return;
     setSendingBulk(true);
     try {
