@@ -678,6 +678,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 });
                 setSavedId(j?.id ?? null);
                 setSaveStatus("done");
+                window.dispatchEvent(new Event("product-mutated"));
                 showToast("DB에 저장 완료");
               } catch (e: unknown) {
                 const msg = e instanceof ApiError ? e.message : (e instanceof Error ? e.message : "저장 실패");

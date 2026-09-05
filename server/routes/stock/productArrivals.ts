@@ -19,6 +19,7 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
 import { CreateProductArrivalSchema } from "../../../src/shared/schemas/productArrivals";
+import { resetProductCache } from "../../productCache";
 
 const router = Router();
 
@@ -140,12 +141,13 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
     }
 
     if (existing && existing.length > 0) {
-      // 기존 매입 있음 → verify_* + unit_price/amount 는 클라 명시값 있으면 갱신
+      // 기존 매입 있음 → verify_* + unit_price/amount/quantity 갱신
       const updatePayload: Record<string, any> = {
         verify_status: verifyStatus,
         verified_by: checked_by,
         verified_at: now.toISOString(),
         verified_expiring: isExpiring,
+        quantity: qty, // 검수 확정 수량 저장
       };
       // 클라에서 명시적으로 unit_price 보냈으면 · 덮어쓰기 (그렇지 않으면 원본 유지)
       if (it.unit_price != null && Number(it.unit_price) > 0) {
@@ -163,6 +165,21 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
         continue;
       }
       updatedCount++;
+
+      // OCR/엑셀 임포트는 재고 미반영 · 검수 확정 시점에 current_stock += qty 반영
+      if (qty > 0 && currentStock != null) {
+        const newStock = currentStock + qty;
+        const prodUpdate: Record<string, any> = { current_stock: newStock };
+        if (unitPrice > 0) prodUpdate.purchase_price = unitPrice;
+        const { error: stErr } = await supabase
+          .from("products")
+          .update(prodUpdate)
+          .eq("product_code", productCode);
+        if (stErr) {
+          console.warn(`[arrival→products update] ${productCode} · stock=+${qty} price=${unitPrice} · ${stErr.message}`);
+          failedItems.push({ product_code: productCode, error: `stock: ${stErr.message}`, step: "stock" });
+        }
+      }
     } else {
       // 신규 매입 · INSERT · 단가·금액·유통기한 저장
       const insertPayload: Record<string, any> = {
@@ -190,9 +207,7 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
       }
       insertedCount++;
 
-      // 2026-09-03 · 사용자 지시 · 신규 매입 · current_stock += qty 자동 반영
-      //   · 기존 UPDATE 케이스는 이미 원본 매입(OCR/엑셀) 시점에 재고 반영되었다고 가정
-      //   · 신규 INSERT · 수동 매입 검수 → 재고 반영 필수
+      // 신규 INSERT · 수동 매입 검수 → 재고 반영 필수
       // 2026-09-03 · #107 · 사용자 리포트 · "매장-상품-상품정보 오른쪽정보에 매입시 등록한 정보가 안나와"
       //   · products.purchase_price 도 · 최신 매입 unit_price 로 동기화 (상품정보 페이지 우측 매입가 반영)
       //   · unit_price > 0 인 경우만 (fallback 0 은 건너뜀)
@@ -236,6 +251,9 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
   if (savedCount === 0 && hasSavedFailure) {
     throw new HttpError(500, `상품입고 검수 실패 · ${failedItems.length}건 · 첫 오류: ${failedItems[0]?.error ?? "unknown"}`);
   }
+
+  // 재고 반영 후 서버 productMap 캐시 즉시 무효화 (30초 TTL 대기 없이 다음 /products.json 에서 최신값 반환)
+  if (savedCount > 0) resetProductCache();
 
   const groupId = makeGroupId(todayISO, checked_by);
   res.json({
