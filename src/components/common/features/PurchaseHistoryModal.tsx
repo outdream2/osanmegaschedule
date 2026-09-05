@@ -83,10 +83,10 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
         <div className="min-w-0">
           <div className="flex items-baseline gap-2 flex-wrap">
             <span className="text-[17px] font-bold text-ink tracking-tight">매입 이력</span>
-            <span className="text-[12px] font-mono text-ink-soft">{productCode}</span>
+            <span className="text-[14px] font-mono text-ink-soft">{productCode}</span>
           </div>
           {productName && (
-            <div className="text-[13px] font-semibold text-ink-soft truncate mt-0.5" title={productName}>
+            <div className="text-[15px] font-semibold text-ink-soft truncate mt-0.5" title={productName}>
               <Package size={12} className="inline mr-1 text-ink-soft" />
               {productName}
             </div>
@@ -100,7 +100,7 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
       }
     >
       {!loading && rows.length > 0 && (
-        <div className="mb-3 flex items-center gap-2 flex-wrap text-[12px] font-medium text-ink-soft">
+        <div className="mb-3 flex items-center gap-2 flex-wrap text-[14px] font-medium text-ink-soft">
           <span>총 <b className="text-ink tabular-nums">{fmt(totalQty)}</b>개</span>
           <span className="text-zinc-300">·</span>
           <span className="text-emerald-700 font-bold tabular-nums">{fmtWon(totalAmt)}</span>
