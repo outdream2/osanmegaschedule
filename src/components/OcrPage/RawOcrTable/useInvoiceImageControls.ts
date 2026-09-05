@@ -108,7 +108,7 @@ export function useInvoiceImageControls({
   const expCellMinW = _cw < 500 ? 72 : 82;
   const numInputMinW = _cw < 500 ? "4rem" : _cw < 700 ? "5rem" : "5.5rem";
   const expInputMinW = _cw < 500 ? "6rem" : _cw < 700 ? "7rem" : "7.5rem";
-  const reextBtnCls = _cw < 500 ? "w-4 h-4 text-[10px]" : "w-5 h-5 text-[12px]";
+  const reextBtnCls = _cw < 500 ? "w-4 h-4 text-[12px]" : "w-5 h-5 text-[14px]";
   const numCellInnerCls = "flex flex-col items-end gap-0.5";
 
   const onInvColResizeStart = useCallback((e: React.MouseEvent) => {
