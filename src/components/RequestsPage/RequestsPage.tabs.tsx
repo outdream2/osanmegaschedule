@@ -4,10 +4,11 @@
 //   · Checkbox 공통 헬퍼는 이 파일에 통합
 //   · toggleAll/toggleOne 등 헬퍼는 부모에서 넘김
 
-import React from "react";
+import React, { useState } from "react";
 import {
-  Bell, Package, CheckCircle, Clock, ShoppingCart,
+  Bell, Package, CheckCircle, ShoppingCart,
   Square, CheckSquare, PaperPlaneTilt, Scroll, CaretDown, CaretUp,
+  MagnifyingGlass,
 } from "@phosphor-icons/react";
 import type { ProductInfo } from "../../lib/productsCache";
 import { fmtDateMD } from "../../lib/format";
@@ -16,7 +17,6 @@ import { StatusPill, type PillTone } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
-import { RESIZER_CLS } from "../../hooks/useColumnResize";
 import { ListToolbar } from "./ListToolbar";
 import type { DisplayRequest, OrderRequest, InventoryCheck } from "./types";
 
@@ -30,7 +30,8 @@ export const RequestCheckbox: React.FC<{ checked: boolean; onChange: () => void 
 );
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 1) DisplayRequestTab · 진열요청 (준비·완료 토글 · 알림전송)
+// 1) DisplayRequestTab · 진열요청 (#64 완전 재구성 · 2026-09-05)
+//    검색(상품명·구역·담당자) · 상태 필터 칩 · 카드 리스트
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface DisplayRequestTabProps {
@@ -45,9 +46,6 @@ interface DisplayRequestTabProps {
   isAdminLevel8: boolean;
   canPrepare: boolean;
   canComplete: boolean;
-  rw: (id: string) => number;
-  rr: (id: string) => { onMouseDown: (e: React.MouseEvent) => void; onTouchStart: (e: React.TouchEvent) => void };
-  onToggleAll: () => void;
   onToggleOne: (id: string) => void;
   onDeleteSelected: () => void;
   onDeleteAll: () => Promise<void> | void;
@@ -57,13 +55,60 @@ interface DisplayRequestTabProps {
   onCompleteDisplay: (req: DisplayRequest) => void;
 }
 
+const getProductName = (r: DisplayRequest): string => {
+  const pn = String((r as any).product_name ?? "").trim();
+  if (pn) return pn;
+  if (r.note) {
+    const cleaned = r.note.replace(/\s*진열\s*요청\s*$/u, "").trim();
+    if (cleaned) return cleaned;
+  }
+  return r.category || r.zone_label || "—";
+};
+
+const STATUS_CHIPS = [
+  { key: "all"      as const, label: "전체" },
+  { key: "pending"  as const, label: "대기" },
+  { key: "prepared" as const, label: "준비완료" },
+  { key: "done"     as const, label: "진열완료" },
+];
+
 export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
-  displayReqs, displayLoading, selectedDisplay, completingDisplay,
+  displayReqs, displayLoading, selectedDisplay, setSelectedDisplay, completingDisplay,
   notifyToast, notifying, isManager, isAdminLevel8, canPrepare, canComplete,
-  rw, rr,
-  onToggleAll, onToggleOne, onDeleteSelected, onDeleteAll, onRefresh,
+  onToggleOne, onDeleteSelected, onDeleteAll, onRefresh,
   onNotifyAll, onPrepareDisplay, onCompleteDisplay,
 }) => {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "prepared" | "done">("all");
+
+  const filtered = displayReqs.filter(r => {
+    if (statusFilter !== "all" && r.status !== statusFilter) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      const name = getProductName(r).toLowerCase();
+      const zone = (r.zone_label || r.zone_id || "").toLowerCase();
+      const staff = (r.assigned_staff_name || "").toLowerCase();
+      if (!name.includes(q) && !zone.includes(q) && !staff.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const statusCounts = {
+    all:      displayReqs.length,
+    pending:  displayReqs.filter(r => r.status === "pending").length,
+    prepared: displayReqs.filter(r => r.status === "prepared").length,
+    done:     displayReqs.filter(r => r.status === "done").length,
+  };
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every(r => selectedDisplay.has(r.id));
+  const handleToggleAllFiltered = () => {
+    if (allFilteredSelected) {
+      setSelectedDisplay(prev => { const s = new Set(prev); filtered.forEach(r => s.delete(r.id)); return s; });
+    } else {
+      setSelectedDisplay(prev => new Set([...prev, ...filtered.map(r => r.id)]));
+    }
+  };
+
   return (
     <div className="flex flex-col gap-2">
       {notifyToast && (
@@ -71,19 +116,63 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
           <Bell size={13} weight="fill" />{notifyToast}
         </div>
       )}
+
+      {/* Search */}
+      <div className="relative">
+        <MagnifyingGlass size={15} weight="bold" className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="상품명·구역·담당자 검색..."
+          className="w-full pl-9 pr-4 h-9 text-[15px] bg-white border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-deep/20 focus:border-brand-deep transition"
+        />
+      </div>
+
+      {/* Status filter chips */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {STATUS_CHIPS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setStatusFilter(key)}
+            className={`px-3 h-7 rounded-full text-[14px] font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+              statusFilter === key
+                ? "bg-brand-deep text-white shadow-sm"
+                : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+            }`}
+          >
+            {label}
+            {statusCounts[key] > 0 && (
+              <span className={`tabular-nums text-[13px] ${statusFilter === key ? "opacity-75" : "text-zinc-400"}`}>
+                {statusCounts[key]}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {displayLoading && displayReqs.length > 0 && (
+        <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="md" padding="none" className="flex items-center justify-center py-1.5 mb-1">
+          <Spinner tone="sky" size={11} label="새로 불러오는 중..." labelSize={14} />
+        </Card>
+      )}
+
       <ListToolbar
-        total={displayReqs.length} selected={selectedDisplay.size}
-        allChecked={selectedDisplay.size === displayReqs.length && displayReqs.length > 0}
-        onToggleAll={onToggleAll}
+        total={filtered.length}
+        selected={selectedDisplay.size}
+        allChecked={allFilteredSelected}
+        onToggleAll={handleToggleAllFiltered}
         onDeleteSelected={onDeleteSelected}
         onDeleteAll={onDeleteAll}
-        onRefresh={onRefresh} loading={displayLoading} accentColor="text-blue-600"
+        onRefresh={onRefresh}
+        loading={displayLoading}
+        accentColor="text-blue-600"
         hideDeleteAll={!isManager}
         extraActions={
           isManager ? (
             <button
               onClick={onNotifyAll}
-              disabled={notifying || displayReqs.filter(r => r.status === "pending").length === 0}
+              disabled={notifying || statusCounts.pending === 0}
               className="flex items-center gap-1.5 text-[15px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border border-brand px-2.5 h-6 rounded-md transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
             >
               {notifying ? <Spinner size={11} tone="white" /> : <PaperPlaneTilt size={11} weight="fill" />}
@@ -93,108 +182,61 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
         }
       />
 
-      {displayLoading && displayReqs.length > 0 && (
-        /* 2026-08-26 · 사용자 버그 fix (#128) · sticky top-0 → 상단 헤더·탭바 위로 올라가 레이아웃 겹침 · sticky 제거 · 일반 flow */
-        <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="md" padding="none" className="flex items-center justify-center py-1.5 mb-1"><Spinner tone="sky" size={11} label="새로 불러오는 중..." labelSize={14} /></Card>
-      )}
       {displayLoading && displayReqs.length === 0 ? (
         <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>
       ) : !displayLoading && displayReqs.length === 0 ? (
         <EmptyState title="진열 요청 없음" size="compact" />
+      ) : filtered.length === 0 ? (
+        <EmptyState title={search.trim() ? "검색 결과 없음" : "해당 상태 없음"} size="compact" />
       ) : (
-        <div className={`${CARD_BASE} overflow-x-auto ${displayLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-          <table className="w-full min-w-[640px] border-collapse text-left" style={{ tableLayout: "fixed" }}>
-            <thead>
-              <tr className="border-b border-zinc-100 bg-zinc-50/80">
-                <th className="relative px-2 py-2" style={{ width: rw("check"), minWidth: rw("check") }}>
-                  <button onClick={onToggleAll} className="shrink-0 cursor-pointer text-zinc-400 hover:text-zinc-600 transition">
-                    {selectedDisplay.size === displayReqs.length && displayReqs.length > 0
-                      ? <CheckSquare size={14} weight="fill" className="text-brand-deep" />
-                      : <Square size={14} />}
-                  </button>
-                  <span {...rr("check")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
-                </th>
-                <th className="relative px-3 py-2 text-[15px] font-bold text-zinc-500 tracking-wide" style={{ width: rw("name"), minWidth: rw("name") }}>
-                  상품명
-                  <span {...rr("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
-                </th>
-                <th className="relative px-3 py-2 text-[15px] font-bold text-zinc-500 tracking-wide" style={{ width: rw("zone"), minWidth: rw("zone") }}>
-                  진열구역
-                  <span {...rr("zone")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
-                </th>
-                <th className="relative px-3 py-2 text-[15px] font-bold text-zinc-500 tracking-wide" style={{ width: rw("staff"), minWidth: rw("staff") }}>
-                  담당자
-                  <span {...rr("staff")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
-                </th>
-                <th className="relative px-3 py-2 text-[15px] font-bold text-zinc-500 tracking-wide text-center" style={{ width: rw("wh_prep"), minWidth: rw("wh_prep") }}>
-                  창고준비
-                  <span {...rr("wh_prep")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
-                </th>
-                <th className="relative px-3 py-2 text-[15px] font-bold text-zinc-500 tracking-wide text-center" style={{ width: rw("disp"), minWidth: rw("disp") }}>
-                  진열완료
-                  <span {...rr("disp")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
-                </th>
-                <th className="relative px-3 py-2 text-[15px] font-bold text-zinc-500 tracking-wide" style={{ width: rw("date"), minWidth: rw("date") }}>
-                  날짜
-                  <span {...rr("date")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-50">
-              {displayReqs.map(r => {
-                const isDone     = r.status === "done";
-                const isPrepared = r.status === "prepared";
-                const isPending  = r.status === "pending" || (!isDone && !isPrepared);
-                const completing = completingDisplay.has(r.id);
-                // 2026-09-03 · #63 fix · 서버 (server/routes/display/requests.ts:119) 에서 product_name JOIN 반환
-                //   · 이전 · note/category/zone_label 만 참조 · 실제 상품명 무시 · '(상품명 없음)' 표시
-                //   · 이후 · r.product_name (products JOIN) 우선 · 없으면 note/category/zone_label fallback
-                const productName = (() => {
-                  const pn = String((r as any).product_name ?? "").trim();
-                  if (pn) return pn;
-                  if (r.note) {
-                    const cleaned = r.note.replace(/\s*진열\s*요청\s*$/u, "").trim();
-                    if (cleaned) return cleaned;
-                  }
-                  return r.category || r.zone_label || "—";
-                })();
-                const rowLeftBorder = isDone
-                  ? "border-l-2 border-l-emerald-300"
-                  : isPrepared ? "border-l-2 border-l-sky-400"
-                  : "border-l-2 border-l-amber-400";
-                return (
-                  <tr
-                    key={r.id}
-                    className={`transition-all duration-150 ${rowLeftBorder} ${selectedDisplay.has(r.id) ? "bg-brand-tint/50" : "hover:bg-brand-tint/25"} ${isDone ? "opacity-60" : ""}`}
-                  >
-                    <td className="w-8 px-2 py-2">
-                      <RequestCheckbox checked={selectedDisplay.has(r.id)} onChange={() => onToggleOne(r.id)} />
-                    </td>
-                    <td className="px-3 py-2 max-w-[200px]">
-                      <span className={`text-[15px] font-semibold break-words whitespace-normal leading-tight ${isDone ? "line-through text-zinc-400" : "text-zinc-800"}`}>
-                        {productName}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      <span className="text-[15px] font-bold text-zinc-700 break-keep">
-                        {r.zone_label || r.zone_id || "—"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      {r.assigned_staff_name
-                        ? <span className="text-[15px] font-bold text-brand-deep">{r.assigned_staff_name}</span>
-                        : <span className="text-[15px] text-zinc-300">미지정</span>}
-                    </td>
-                    <td className="px-3 py-2 text-center whitespace-nowrap">
+        <div className={`${CARD_BASE} divide-y divide-zinc-50 ${displayLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+          {filtered.map(r => {
+            const isDone     = r.status === "done";
+            const isPrepared = r.status === "prepared";
+            const isPending  = !isDone && !isPrepared;
+            const completing = completingDisplay.has(r.id);
+            const productName = getProductName(r);
+            const statusTone: PillTone = isDone ? "emerald" : isPrepared ? "sky" : "amber";
+            const statusLabel = isDone ? "진열완료" : isPrepared ? "준비완료" : "대기";
+            const borderCls   = isDone ? "border-l-emerald-300" : isPrepared ? "border-l-sky-400" : "border-l-amber-400";
+
+            return (
+              <div
+                key={r.id}
+                className={`flex items-start gap-3 px-4 py-3.5 border-l-2 ${borderCls} transition-all duration-150 ${
+                  selectedDisplay.has(r.id) ? "bg-brand-tint/50" : "hover:bg-zinc-50/40"
+                } ${isDone ? "opacity-60" : ""}`}
+              >
+                <div className="pt-0.5 shrink-0">
+                  <RequestCheckbox checked={selectedDisplay.has(r.id)} onChange={() => onToggleOne(r.id)} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`text-[15px] font-bold break-words leading-snug ${isDone ? "line-through text-zinc-400" : "text-zinc-800"}`}>
+                          {productName}
+                        </span>
+                        <StatusPill tone={statusTone} size="xs" dot>{statusLabel}</StatusPill>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        {(r.zone_label || r.zone_id) && (
+                          <span className="bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-md text-[13px] font-semibold break-keep">
+                            {r.zone_label || r.zone_id}
+                          </span>
+                        )}
+                        {r.assigned_staff_name
+                          ? <span className="text-[14px] font-semibold text-brand-deep">{r.assigned_staff_name}</span>
+                          : <span className="text-[14px] text-zinc-300">미지정</span>}
+                        <span className="text-[13px] text-zinc-400 tabular-nums">{fmtDate(r.requested_at)}</span>
+                      </div>
+                    </div>
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-1.5 shrink-0 self-center">
+                      {/* 창고준비 */}
                       {(() => {
                         const prepared = !isPending;
                         const disabled = !canPrepare || completing;
-                        const clickable = !disabled;
-                        const label = prepared ? "완료" : "대기";
-                        const cls = prepared
-                          ? "text-sky-700 border-sky-200 hover:bg-sky-50/60"
-                          : "text-amber-600 border-amber-300 hover:bg-amber-50/60";
-                        const Icon = prepared ? Package : Clock;
                         return (
                           <button
                             onClick={() => onPrepareDisplay(r)}
@@ -202,62 +244,59 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                             title={
                               canPrepare
                                 ? prepared
-                                  ? `클릭 시 대기로 되돌리기 (${r.prepared_by_name ?? ""}${r.prepared_at ? " · " + fmtDate(r.prepared_at) : ""})`
+                                  ? `대기로 되돌리기 (${r.prepared_by_name ?? ""}${r.prepared_at ? " · " + fmtDate(r.prepared_at) : ""})`
                                   : "창고 준비 완료 처리"
                                 : "창고담당만 가능"
                             }
-                            className={`text-[14px] font-semibold px-2.5 h-6 rounded-md border transition-all duration-150 inline-flex items-center gap-0.5 disabled:opacity-40 ${
-                              clickable ? cls + " cursor-pointer" : "text-zinc-400 bg-zinc-100 border-line cursor-not-allowed"
+                            className={`text-[13px] font-semibold px-2.5 h-7 rounded-lg border transition-all inline-flex items-center gap-1 disabled:opacity-40 ${
+                              disabled
+                                ? "text-zinc-400 bg-zinc-50 border-zinc-200 cursor-not-allowed"
+                                : prepared
+                                  ? "text-sky-700 border-sky-200 bg-sky-50/60 hover:bg-sky-100 cursor-pointer"
+                                  : "text-amber-600 border-amber-300 hover:bg-amber-50 cursor-pointer"
                             }`}
                           >
-                            {completing ? <Spinner size={9} tone="zinc" /> : <Icon size={9} />}
-                            {label}
+                            {completing ? <Spinner size={9} tone="zinc" /> : <Package size={11} />}
+                            창고준비
                           </button>
                         );
                       })()}
-                    </td>
-                    <td className="px-3 py-2 text-center whitespace-nowrap">
+                      {/* 진열완료 */}
                       {(() => {
-                        const done = isDone;
                         const gated = isPending && !isAdminLevel8;
                         const disabled = !canComplete || completing || gated;
-                        const clickable = !disabled;
-                        const label = done ? "완료" : "대기";
-                        const cls = done
-                          ? "text-emerald-700 border-emerald-200 hover:bg-emerald-50/60"
-                          : "text-amber-600 border-amber-300 hover:bg-amber-50/60";
-                        const Icon = done ? CheckCircle : Clock;
                         return (
                           <button
                             onClick={() => onCompleteDisplay(r)}
                             disabled={disabled}
                             title={
                               canComplete
-                                ? done
-                                  ? `클릭 시 대기로 되돌리기 (${r.completed_by_name ?? ""}${r.completed_at ? " · " + fmtDate(r.completed_at) : ""})`
+                                ? isDone
+                                  ? `대기로 되돌리기 (${r.completed_by_name ?? ""}${r.completed_at ? " · " + fmtDate(r.completed_at) : ""})`
                                   : gated
                                     ? "창고 준비 완료 후 진열완료 가능"
                                     : "진열 완료 처리"
                                 : "진열담당만 가능"
                             }
-                            className={`text-[14px] font-semibold px-2.5 h-6 rounded-md border transition-all duration-150 inline-flex items-center gap-0.5 disabled:opacity-40 ${
-                              clickable ? cls + " cursor-pointer" : "text-zinc-400 bg-zinc-100 border-line cursor-not-allowed"
+                            className={`text-[13px] font-semibold px-2.5 h-7 rounded-lg border transition-all inline-flex items-center gap-1 disabled:opacity-40 ${
+                              disabled
+                                ? "text-zinc-400 bg-zinc-50 border-zinc-200 cursor-not-allowed"
+                                : isDone
+                                  ? "text-emerald-700 border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100 cursor-pointer"
+                                  : "text-amber-600 border-amber-300 hover:bg-amber-50 cursor-pointer"
                             }`}
                           >
-                            {completing ? <Spinner size={9} tone="zinc" /> : <Icon size={9} />}
-                            {label}
+                            {completing ? <Spinner size={9} tone="zinc" /> : <CheckCircle size={11} />}
+                            진열완료
                           </button>
                         );
                       })()}
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      <span className="text-[14px] text-zinc-400 tabular-nums">{fmtDate(r.requested_at)}</span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

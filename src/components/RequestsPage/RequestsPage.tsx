@@ -10,7 +10,6 @@ import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
 import { fmtDateMD } from "../../lib/format";
 import type { AuthSession } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
-import { useColumnResize } from "../../hooks/useColumnResize";
 import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -68,16 +67,6 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     return () => window.removeEventListener("sidebar:subtab", onSubTab);
   }, []);
   const isManager = (authSession?.level ?? 0) >= 2;
-  const { getWidth: rw, resizerProps: rr } = useColumnResize("requestsDisplay", {
-    check:   { default: 32,  min: 28, max: 48  },
-    name:    { default: 200, min: 100, max: 400 },
-    zone:    { default: 80,  min: 60, max: 160 },
-    staff:   { default: 72,  min: 52, max: 140 },
-    wh_prep: { default: 72,  min: 52, max: 100 },
-    disp:    { default: 72,  min: 52, max: 100 },
-    date:    { default: 72,  min: 52, max: 120 },
-  });
-
   // 진열요청
   const [displayReqs, setDisplayReqs] = useState<DisplayRequest[]>([]);
   const [displayLoading, setDisplayLoading] = useState(false);
@@ -548,9 +537,6 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             isAdminLevel8={isAdminLevel8}
             canPrepare={canPrepare}
             canComplete={canComplete}
-            rw={rw}
-            rr={rr}
-            onToggleAll={() => toggleAll(displayReqs, selectedDisplay, setSelectedDisplay)}
             onToggleOne={(id) => toggleOne(selectedDisplay, id, setSelectedDisplay)}
             onDeleteSelected={() => deleteDisplay([...selectedDisplay])}
             onDeleteAll={async () => { if (await confirm({ message: `진열요청 전체 ${displayReqs.length}건을 삭제할까요?`, danger: true })) deleteDisplay(displayReqs.map(r => r.id)); }}
