@@ -21,7 +21,12 @@
 
 ## 🎯 활성 PENDING · v9 (2026-09-05 · 프레임워크 준수 + 감사 정리)
 
-> **2026-09-05 (2차) 완료** · #73 matchHangul→matchesProductQuery · #130 차용 타이틀 정리 · DashboardCharts raw-card-wrapper → Card (감사 위반 3→2)
+> **2026-09-05 (3차) 완료** · RawOcrTable·PurchaseHistoryTab large-file-warn 제거 · 프레임워크 감사 위반 **0/790 (100% 클린)** 달성
+
+### ✅ 2026-09-05 (3차) 완료
+| 커밋 | 내용 |
+|-----|------|
+| `c7cb2635` | RawOcrTable·PurchaseHistoryTab large-file-warn 제거 · audit 위반 2→**0** · 790파일 100% 클린 |
 
 ### ✅ 2026-09-05 (2차) 완료
 | 커밋 | 내용 |
