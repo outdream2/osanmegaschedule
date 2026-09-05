@@ -303,10 +303,10 @@ export const BorrowingPage: React.FC<BorrowingPageProps> = ({ authSession }) => 
               </div>
               <div className="min-w-0">
                 <h1 className="text-[24px] font-extrabold text-ink tracking-tight leading-tight break-keep">
-                  차용 관리 · Redesign
+                  차용 관리
                 </h1>
                 <p className="text-[14px] text-ink-soft mt-0.5 break-keep">
-                  양방향 화살표 · 이중 서명·도장 · Timeline 감사 이력 (#9 Phase D)
+                  공급사·약국 간 차용 계약 · 양방향 서명·도장 · 정산 이력
                 </p>
               </div>
             </div>
