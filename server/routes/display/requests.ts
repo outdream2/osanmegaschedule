@@ -716,17 +716,19 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
 
     dispatch.status = outcomes.some(o => /:sent$/.test(o) || /skipped\(/.test(o)) ? "sent" : "dry_run";
 
-    // 2026-08-10 · #14 · order_requests 라인에 status='ordered' + 발주서 정보 저장
-    //   각 아이템 · order_request_id 로 UPDATE · 마이그레이션 add_order_dispatch_columns_2026-08-10.sql 대기 시 fallback
-    // 2026-09-02 · #79 fix · order_requests.id 는 UUID · BigInt() 변환 시 SyntaxError · 원인
-    //   · 사용자 리포트 · 발주 발송 후 status 업데이트 안 됨
-    //   · 이전 · BigInt(uuid) throw → try/catch 로 감춰짐 → requestIds 빈 배열 → UPDATE 안 됨
-    //   · 이후 · 문자열 그대로 · UUID/bigint 둘 다 대응
+    // 2026-09-05 · 사용자 지시 · 실제 전송이 없으면(no_recipient 등) ordered 로 마킹하지 않음
+    //   · 발송 채널 미선택(no_channel) = 의도적 DB 저장 → ordered 허용
+    //   · 채널 선택 + 적어도 1채널 :sent → ordered 허용
+    //   · 채널 선택 + 전부 no_recipient/no_env 등 → ordered 금지 · 발주요청에 그대로 남겨야 함
+    const noChannels = !channels.email && !channels.sms && !channels.kakao;
+    const anySentForSupplier = outcomes.some(o => /:sent$/.test(o));
+    const shouldMarkOrdered = noChannels || anySentForSupplier;
+
     const requestIds: string[] = items
       .map((it: any) => it.order_request_id)
       .filter((id: any) => id != null && id !== "")
       .map((id: any) => String(id));
-    if (requestIds.length > 0) {
+    if (requestIds.length > 0 && shouldMarkOrdered) {
       try {
         // 2026-09-02 · #79 fix · RPC 파라미터명 · request_ids → p_request_ids (UUID 대응 · migration 20260902)
         const { data: rpcRows, error: rpcErr } = await supabase.rpc(
@@ -835,12 +837,17 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
     : `${results.length}개 공급사 · ${totalItems}건 저장 완료 (미구성 상태 · 이메일/문자 발송 안 됨)`;
 
   // 2026-08-13 · #107 · 일괄 발주 발송 · 관리자 알림
-  notificationsService.notifyAllAdmins({
-    title: "🚚 발주 발송",
-    body: `${results.length}개 공급사 · ${totalItems}건 발주 발송됨. (${channels.email ? "이메일 " : ""}${channels.sms ? "문자 " : ""}${channels.kakao ? "카톡" : ""})`,
-    type: "success",
-    push: { url: "/", tag: `bulk-send-${order_number ?? Date.now()}` },
-  }).catch(() => null);
+  // 2026-09-05 · 사용자 지시 · 실제 전송 없으면 알림 미발송
+  const anyRealSent = results.some(r => r.outcomes.some((o: string) => /:sent$/.test(o)));
+  const noChannelsSend = !channels.email && !channels.sms && !channels.kakao;
+  if (anyRealSent || noChannelsSend) {
+    notificationsService.notifyAllAdmins({
+      title: "🚚 발주 발송",
+      body: `${results.length}개 공급사 · ${totalItems}건 발주 발송됨. (${channels.email ? "이메일 " : ""}${channels.sms ? "문자 " : ""}${channels.kakao ? "카톡" : ""})`,
+      type: "success",
+      push: { url: "/", tag: `bulk-send-${order_number ?? Date.now()}` },
+    }).catch(() => null);
+  }
 
   res.json({
     ok: true,

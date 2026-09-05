@@ -333,12 +333,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     return () => { alive = false; };
   }, [needExtraRequired, needExtraLoaded]);
 
-  // 발주필요 필터링
+  // 발주필요 필터링 · 발주요청(requestedCodes)에 있는 상품은 제외 (사용자 지시 · 2026-09-05)
   const lowStock = products.filter(p => {
     const cur = p.current_stock != null ? Number(p.current_stock) : NaN;
     const opt = p.optimal_stock != null ? Number(p.optimal_stock) : NaN;
     const minS = (p as any).min_stock != null ? Number((p as any).min_stock) : NaN;
     const code = getCode(p);
+    if (requestedCodes.has(code)) return false; // 이미 발주요청 → 발주필요에서 숨김
     const invEntry = code ? invStockMap.get(code) : undefined;
     const realTotal = invEntry ? Number(invEntry.total) : NaN;
     if (!orderNeedConfig.includeMissingRealStock && !invEntry) return false;
