@@ -136,12 +136,12 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
       bodyClassName="flex-1 min-h-0 overflow-auto"
     >
       {filtered.length === 0 ? (
-        <div className="py-12 text-center text-[15px] font-semibold text-zinc-400">
+        <div className="py-12 text-center text-[17px] font-semibold text-zinc-400">
           {categoryFilter === "all" ? "품절임박 상품 없음 (ERP재고 3개 이하)" : `${categoryFilter} · 품절임박 상품 없음`}
         </div>
       ) : (
-        <table className="w-full text-[14px] tabular-nums">
-          <thead className="sticky top-0 z-10 bg-zinc-100/70 border-b border-line text-[13px] font-bold text-zinc-500 uppercase tracking-wider">
+        <table className="w-full text-[16px] tabular-nums">
+          <thead className="sticky top-0 z-10 bg-zinc-100/70 border-b border-line text-[15px] font-bold text-zinc-500 uppercase tracking-wider">
             <tr>
               <th className="text-left px-3 py-2.5 min-w-[160px]">상품</th>
               <th className="text-right px-2 py-2.5 w-[64px] bg-amber-50/40 text-amber-700">실재고</th>
@@ -169,8 +169,8 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
                   }`}
                 >
                   <td className="text-left px-3 py-2 align-top">
-                    <div className="text-[13px] text-sky-700 font-semibold truncate">{supplier}</div>
-                    <div className="text-[15px] font-bold text-ink break-words whitespace-normal mt-0.5">{name}</div>
+                    <div className="text-[15px] text-sky-700 font-semibold truncate">{supplier}</div>
+                    <div className="text-[17px] font-bold text-ink break-words whitespace-normal mt-0.5">{name}</div>
                   </td>
                   <td className={`text-right px-2 py-2 tabular-nums font-bold ${inv?.total != null ? "text-amber-700" : "text-zinc-300"} bg-amber-50/40 align-middle`}>{inv?.total ?? "-"}</td>
                   <td className={`text-right px-2 py-2 tabular-nums font-bold align-middle ${curNum <= 0 ? "text-rose-700" : "text-zinc-700"}`}>{p.current_stock ?? "-"}</td>
@@ -178,7 +178,7 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
                     <button
                       onClick={(e) => { e.stopPropagation(); handleReq(p); }}
                       disabled={alreadyRequested || requesting === code}
-                      className={`h-7 px-3 rounded-md text-[13px] font-bold cursor-pointer transition ${
+                      className={`h-7 px-3 rounded-md text-[15px] font-bold cursor-pointer transition ${
                         alreadyRequested
                           ? "bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-not-allowed"
                           : requesting === code
@@ -224,7 +224,7 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
     <div className="flex-1 min-h-0 flex flex-col">
       <div className="flex items-center gap-2 px-1 py-1.5 flex-wrap">
         <AlertTriangle size={16} className="text-amber-500 shrink-0" />
-        <span className="text-[13px] text-ink-soft font-medium tracking-tight">ERP재고 3개 이하 · 클릭 시 우측 재고위치 상세</span>
+        <span className="text-[15px] text-ink-soft font-medium tracking-tight">ERP재고 3개 이하 · 클릭 시 우측 재고위치 상세</span>
       </div>
       <SplitPanel
         storageKey="orderNeed.critical.leftWidth"

@@ -166,26 +166,26 @@ const PeriodBucketCard: React.FC<{
           <div className="flex items-center gap-2 flex-wrap">
             <AccentBar className="shrink-0" />
             <span className="text-[16px] font-bold text-ink tracking-tight">{bucket.label}</span>
-            <span className="text-[13px] text-ink-soft">({bucket.sublabel})</span>
+            <span className="text-[15px] text-ink-soft">({bucket.sublabel})</span>
             {!bucket.loading && !bucket.error && (
               <StatusPill tone="indigo" size="md">{bucket.total}건</StatusPill>
             )}
           </div>
-          <div className="text-[13px] text-ink-soft mt-0.5 font-medium">{bucket.vsLabel}</div>
+          <div className="text-[15px] text-ink-soft mt-0.5 font-medium">{bucket.vsLabel}</div>
         </div>
       </div>
       {bucket.loading ? (
         <div className="flex items-center justify-center py-8 gap-2 text-zinc-400">
           <Spinner size={20} tone="sky" />
-          <span className="text-[15px]">불러오는 중...</span>
+          <span className="text-[17px]">불러오는 중...</span>
         </div>
       ) : bucket.error ? (
-        <div className="flex items-center justify-center py-8 text-[15px] text-rose-400 gap-1.5">
+        <div className="flex items-center justify-center py-8 text-[17px] text-rose-400 gap-1.5">
           <AlertTriangle size={14} />
           <span>데이터 로드 실패</span>
         </div>
       ) : bucket.rows.length === 0 ? (
-        <div className="flex items-center justify-center py-8 text-[15px] text-zinc-400 gap-1.5">
+        <div className="flex items-center justify-center py-8 text-[17px] text-zinc-400 gap-1.5">
           <TrendingUp size={14} className="opacity-30" />
           <span>급상승 상품 없음</span>
         </div>
@@ -193,22 +193,22 @@ const PeriodBucketCard: React.FC<{
         <ol className="divide-y divide-zinc-50">
           {bucket.rows.map((r, i) => (
             <li key={r.product_code} className="flex items-start gap-2 px-4 py-2.5 hover:bg-indigo-50/20 transition">
-              <span className="text-[15px] font-semibold text-zinc-400 tabular-nums w-4 shrink-0 mt-0.5">{i + 1}</span>
+              <span className="text-[17px] font-semibold text-zinc-400 tabular-nums w-4 shrink-0 mt-0.5">{i + 1}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <button
                     type="button"
                     onClick={() => onProductClick?.({ code: r.product_code, name: r.product_name })}
-                    className="text-[14px] font-semibold text-zinc-700 hover:text-indigo-700 hover:underline text-left break-words cursor-pointer transition"
+                    className="text-[16px] font-semibold text-zinc-700 hover:text-indigo-700 hover:underline text-left break-words cursor-pointer transition"
                   >
                     {r.product_name}
                   </button>
                   {r.newly_trending && (
-                    <span className="text-[14px] font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded px-1.5 py-0.5 shrink-0">신규</span>
+                    <span className="text-[16px] font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded px-1.5 py-0.5 shrink-0">신규</span>
                   )}
                 </div>
-                {r.supplier && <div className="text-[14px] text-zinc-400 mt-0.5">{r.supplier}</div>}
-                <div className="flex items-center gap-2 mt-1 flex-wrap text-[15px] tabular-nums">
+                {r.supplier && <div className="text-[16px] text-zinc-400 mt-0.5">{r.supplier}</div>}
+                <div className="flex items-center gap-2 mt-1 flex-wrap text-[17px] tabular-nums">
                   <span className="font-semibold text-indigo-700">현재 {fmt(r.recent_sale)}</span>
                   <span className="text-zinc-300">·</span>
                   <span className="text-zinc-400">이전 {fmt(r.prior_sale)}</span>
@@ -375,7 +375,7 @@ export const TrendingTab: React.FC = () => {
         title="판매 급상승"
         count={meta?.total}
         leftSlot={
-          <span className="text-[15px] text-ink-soft hidden sm:block">
+          <span className="text-[17px] text-ink-soft hidden sm:block">
             {meta ? `최근 ${windowDays}일 (${meta.recent_from} ~) vs 이전 ${windowDays}일 비교` : `최근 ${windowDays}일 vs 이전 기간 판매 비교 · 신규진입 상단`}
           </span>
         }
@@ -410,7 +410,7 @@ export const TrendingTab: React.FC = () => {
           <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             {([10, 30, 90, 180] as const).map(w => (
               <button key={w} onClick={() => setWindowDays(w)}
-                className={`h-7 px-2.5 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${windowDays === w ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
+                className={`h-7 px-2.5 text-[16px] font-semibold rounded-md transition-colors cursor-pointer ${windowDays === w ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
                 {w === 10 ? "10일" : w === 30 ? "1개월" : w === 90 ? "3개월" : "6개월"}
               </button>
             ))}
@@ -422,7 +422,7 @@ export const TrendingTab: React.FC = () => {
               { k: "growth" as const, label: "성장률" },
             ]).map(o => (
               <button key={o.k} onClick={() => setSort(o.k, "desc")}
-                className={`h-7 px-2.5 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${sortKey === o.k ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
+                className={`h-7 px-2.5 text-[16px] font-semibold rounded-md transition-colors cursor-pointer ${sortKey === o.k ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
                 {o.label}
               </button>
             ))}
@@ -453,19 +453,19 @@ export const TrendingTab: React.FC = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-14 gap-3 text-zinc-400">
             <Spinner size={36} tone="sky" />
-            <span className="text-[14px] font-semibold">불러오는 중...</span>
+            <span className="text-[16px] font-semibold">불러오는 중...</span>
           </div>
         ) : displayed.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-14 gap-2 text-zinc-400">
             <TrendingUp size={28} className="opacity-20" />
-            <div className="text-[14px] font-semibold">급상승 상품 없음</div>
+            <div className="text-[16px] font-semibold">급상승 상품 없음</div>
           </div>
         ) : (
           <div className="overflow-auto max-h-[70vh]">
-            <table className="w-full text-[14px]" style={{ tableLayout: "fixed" }}>
+            <table className="w-full text-[16px]" style={{ tableLayout: "fixed" }}>
               {/* 2026-08-24 · v3 확산 · 그룹 헤더 제거 · 서브헤더만 · bg zinc-100/70 · Attio 톤 */}
               <thead className="sticky top-0 z-10">
-                <tr className="border-b border-line text-[13px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider bg-zinc-100/70">
+                <tr className="border-b border-line text-[15px] sm:text-[16px] font-bold text-zinc-500 uppercase tracking-wider bg-zinc-100/70">
                   <th className="relative text-center px-2 py-1.5" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
                     #
                     <span {...resizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
@@ -538,32 +538,32 @@ export const TrendingTab: React.FC = () => {
               <tbody className="divide-y divide-zinc-50">
                 {displayed.map((r, i) => (
                   <tr key={r.product_code} className={`hover:bg-indigo-50/20 transition ${r.newly_trending ? "bg-indigo-50/10" : ""}`}>
-                    <td className="text-center px-2 py-2 text-[15px] font-medium text-zinc-400 tabular-nums align-top">{i + 1}</td>
+                    <td className="text-center px-2 py-2 text-[17px] font-medium text-zinc-400 tabular-nums align-top">{i + 1}</td>
                     <td className="text-left px-2 py-2 align-top">
                       <button onClick={() => openProduct({ code: r.product_code, name: r.product_name })}
-                        className="text-left text-[14px] font-semibold text-zinc-700 hover:text-indigo-700 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition">
+                        className="text-left text-[16px] font-semibold text-zinc-700 hover:text-indigo-700 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition">
                         {r.product_name}
                       </button>
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        {r.supplier && <span className="text-[14px] text-zinc-400">{r.supplier}</span>}
+                        {r.supplier && <span className="text-[16px] text-zinc-400">{r.supplier}</span>}
                         {r.newly_trending && (
-                          <span className="text-[14px] font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded px-1.5 py-0.5">신규진입</span>
+                          <span className="text-[16px] font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded px-1.5 py-0.5">신규진입</span>
                         )}
                       </div>
                     </td>
-                    <td className="text-right px-2 py-2 text-[14px] font-semibold text-indigo-700 tabular-nums align-top bg-indigo-50/30">{fmt(r.recent_sale)}</td>
-                    <td className="text-right px-2 py-2 text-[14px] font-medium text-zinc-400 tabular-nums align-top bg-indigo-50/10">{fmt(r.prior_sale)}</td>
-                    <td className={`text-right px-2 py-2 text-[14px] font-bold tabular-nums align-top bg-indigo-50/40 ${r.newly_trending ? "text-indigo-600" :
+                    <td className="text-right px-2 py-2 text-[16px] font-semibold text-indigo-700 tabular-nums align-top bg-indigo-50/30">{fmt(r.recent_sale)}</td>
+                    <td className="text-right px-2 py-2 text-[16px] font-medium text-zinc-400 tabular-nums align-top bg-indigo-50/10">{fmt(r.prior_sale)}</td>
+                    <td className={`text-right px-2 py-2 text-[16px] font-bold tabular-nums align-top bg-indigo-50/40 ${r.newly_trending ? "text-indigo-600" :
                       (r.growth_rate ?? 0) >= 50 ? "text-indigo-700" :
                         (r.growth_rate ?? 0) > 0 ? "text-indigo-600" :
                           "text-zinc-400"
                       }`}>
                       {r.newly_trending ? "NEW" : r.growth_rate != null ? `${r.growth_rate > 0 ? "+" : ""}${r.growth_rate}%` : "-"}
                     </td>
-                    <td className={`text-right px-2 py-2 text-[14px] font-semibold tabular-nums align-top bg-indigo-50/20 ${r.absolute_delta > 0 ? "text-indigo-600" : r.absolute_delta < 0 ? "text-rose-500" : "text-zinc-400"}`}>
+                    <td className={`text-right px-2 py-2 text-[16px] font-semibold tabular-nums align-top bg-indigo-50/20 ${r.absolute_delta > 0 ? "text-indigo-600" : r.absolute_delta < 0 ? "text-rose-500" : "text-zinc-400"}`}>
                       {r.absolute_delta > 0 ? `+${fmt(r.absolute_delta)}` : fmt(r.absolute_delta)}
                     </td>
-                    <td className={`text-right px-2 py-2 text-[14px] font-semibold tabular-nums align-top ${r.below_optimal ? "text-rose-500" : "text-zinc-600"}`}
+                    <td className={`text-right px-2 py-2 text-[16px] font-semibold tabular-nums align-top ${r.below_optimal ? "text-rose-500" : "text-zinc-600"}`}
                       title={r.below_optimal ? `현재고 부족 · ${r.current_stock} < 적정 ${r.optimal_stock}` : ""}>
                       {fmt(r.current_stock)}
                     </td>
