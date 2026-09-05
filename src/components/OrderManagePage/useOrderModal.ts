@@ -237,7 +237,7 @@ export function useOrderModal({
           confirmLabel: "수정하러 이동",
           cancelLabel: "취소",
         });
-        if (proceed2) { openSupplierInfo(r.supplier); break; }
+        if (proceed2) { setOrderModal(null); setSelectedOrder(new Set()); openSupplierInfo(r.supplier); return; }
       }
       setOrderModal(null);
       setSelectedOrder(new Set());

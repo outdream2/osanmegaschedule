@@ -114,12 +114,13 @@ export const VendorDetailModal: React.FC<{
   const [showPayModal, setShowPayModal] = useState(false);
   const [ledgerRows, setLedgerRows] = useState<LedgerRow[]>([]);
 
-  // ESC · 배경 클릭 닫기
+  // ESC 닫기 · panel 모드에서는 외부 Modal closeOnEsc 에 위임
   useEffect(() => {
+    if (panel) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [panel, onClose]);
 
   // 결제·잔고 로드 (payment 탭 · info 탭 KPI 용도)
   const loadPaymentData = useCallback(async () => {

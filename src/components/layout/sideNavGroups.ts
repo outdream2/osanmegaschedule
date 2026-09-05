@@ -116,6 +116,20 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "display", label: "입고알림", icon: Bell, color: "red", subTab: "stock-arrivals", minLevel: 3 },
     ],
   },
+  // 2026-09-05 · 사용자 지시 · 거래처 그룹 · 매장 아래 이동 · 관리자에게도 노출
+  {
+    id: "vendor",
+    label: "거래처",
+    color: "emerald",
+    icon: Buildings,
+    hideOnMobile: true,
+    topTab: { hideInTopTabs: true },
+    items: [
+      { key: "reservation", label: "방문예약",       icon: CalendarDots, color: "emerald" },
+      { key: "display",     label: "공급사 정보",     icon: Buildings,    color: "emerald", subTab: "vendor-manage" },
+      { key: "vendor-stock", label: "공급사 재고확인", icon: Package,      color: "emerald" },
+    ],
+  },
   {
     id: "business",
     label: "경영",
@@ -147,28 +161,6 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     icon: ChatCircle,
     topTab: { key: "board" },
     items: [{ key: "board", label: "이슈", icon: ChatCircle, color: "emerald" }],
-  },
-  // 2026-08-12 · 거래처 그룹 · PC 관리자 편의 · 모바일 숨김
-  //   · 랜딩페이지의 [거래처용] 섹션과 동일 · 사이드바에서 바로 접근
-  //   · 공급사 정보 · 재고확인 은 모달 기반 → landing 라우팅 + localStorage signal 로 자동 open
-  //     (LandingPage 가 mount 시 "landing.action" 읽어서 해당 모달 열고 삭제)
-  {
-    id: "vendor",
-    label: "거래처",
-    color: "emerald",
-    icon: Buildings,
-    hideOnMobile: true,
-    topTab: { hideInTopTabs: true }, // 헤더는 유지 · 사이드바 전용
-    items: [
-      { key: "reservation", label: "방문예약",       icon: CalendarDots, color: "emerald" },
-      // 2026-08-12 · 공급사 정보 · 공통 모듈 (매장>공급사 · VendorListEditor + VendorDetailModal) 연결
-      // 2026-09-04 · fix · managerOnly 제거 · vendor 도 본인 공급사 정보 편집 가능
-      //   · LandingPage 가 vendor 로그인 시 VendorDetailModal 자동 open (본인 vendor 만)
-      //   · 관리자 접근 게이트는 filterGroupsForSession 의 vendor 그룹 필터에서 이미 관리
-      { key: "display",     label: "공급사 정보",     icon: Buildings,    color: "emerald", subTab: "vendor-manage" },
-      // 2026-09-04 · #23 · 공급사 재고확인 · 모달 → 전용 페이지 (VendorStockPage) · 직접 라우팅
-      { key: "vendor-stock", label: "공급사 재고확인", icon: Package,      color: "emerald" },
-    ],
   },
   {
     id: "settings",
@@ -354,10 +346,11 @@ export function filterGroupsForSession(
   employmentStatus?: import("../../lib/employmentStatus").EmploymentStatus | null,
 ): SideNavGroup[] {
   const isVendor = session?.role === "vendor";
+  const level = deriveUserLevel(session);
+  const isPrivileged = level >= 2;
   return SIDE_NAV_GROUPS
-    // 2026-08-26 · 사용자 지시 · vendor 그룹은 거래처 로그인 (role=vendor) 시에만 노출
-    //   · 관리자·직원은 매장>공급사 페이지 접근 · 사이드바 중복 제거
-    .filter(g => g.id !== "vendor" || isVendor)
+    // 2026-09-05 · 사용자 지시 · vendor 그룹 · 거래처 로그인 OR 관리자 이상에게 노출
+    .filter(g => g.id !== "vendor" || isVendor || isPrivileged)
     .map(g => ({ ...g, items: g.items.filter(it => canAccessItem(it, session, perms, employmentStatus)) }))
     .filter(g => g.items.length > 0);
 }
