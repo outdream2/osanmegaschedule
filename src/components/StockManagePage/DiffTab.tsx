@@ -227,24 +227,24 @@ export const DiffTab: React.FC = () => {
             {/* 상비약/일반약/전체 3-way 필터 */}
             <div className="flex items-center gap-1 border-b-2 border-line bg-white px-2 pt-1 shrink-0">
               <button type="button" onClick={() => setClassFilter("stationery")}
-                className={`relative px-4 py-2 text-[13px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-zinc-400 hover:text-zinc-600"}`}>
-                상비약 <span className="text-[11px] font-semibold text-zinc-400 ml-1 tabular-nums">({essentialCount})</span>
+                className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+                상비약 <span className="text-[13px] font-semibold text-zinc-400 ml-1 tabular-nums">({essentialCount})</span>
                 {classFilter === "stationery" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-violet-500" />}
               </button>
               <button type="button" onClick={() => setClassFilter("general")}
-                className={`relative px-4 py-2 text-[13px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-zinc-400 hover:text-zinc-600"}`}>
-                일반약 <span className="text-[11px] font-semibold text-zinc-400 ml-1 tabular-nums">({generalCount})</span>
+                className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+                일반약 <span className="text-[13px] font-semibold text-zinc-400 ml-1 tabular-nums">({generalCount})</span>
                 {classFilter === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-sky-500" />}
               </button>
               <button type="button" onClick={() => setClassFilter("all")}
-                className={`relative px-4 py-2 text-[13px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-zinc-800" : "text-zinc-400 hover:text-zinc-600"}`}>
-                전체 <span className="text-[11px] font-semibold text-zinc-400 ml-1 tabular-nums">({allCount})</span>
+                className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-zinc-800" : "text-zinc-400 hover:text-zinc-600"}`}>
+                전체 <span className="text-[13px] font-semibold text-zinc-400 ml-1 tabular-nums">({allCount})</span>
                 {classFilter === "all" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-zinc-500" />}
               </button>
             </div>
             <div className="flex-1 overflow-y-auto relative">
               {loading && diffList.length > 0 && (
-                <Card variant="flat" bg="bg-violet-50" borderColor="border-violet-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 text-[10px] text-violet-600 font-bold py-1.5 mb-1 sticky top-0 z-10">
+                <Card variant="flat" bg="bg-violet-50" borderColor="border-violet-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 text-[12px] text-violet-600 font-bold py-1.5 mb-1 sticky top-0 z-10">
                   <Spinner size={11} tone="violet" /> 조건 변경 · 새로 불러오는 중...
                 </Card>
               )}
@@ -262,7 +262,7 @@ export const DiffTab: React.FC = () => {
                   <table className="w-full text-xs sm:min-w-[280px]" style={{ tableLayout: "fixed" }}>
                     {/* 2026-08-24 · v3 확산 · 카테고리 그룹 헤더 제거 · 서브헤더만 · Attio 톤 */}
                     <thead className="sticky top-0 z-10">
-                      <tr className="border-b border-line text-[13px] sm:text-[14px] font-bold text-zinc-500 uppercase tracking-wider bg-zinc-100/70">
+                      <tr className="border-b border-line text-[15px] sm:text-[16px] font-bold text-zinc-500 uppercase tracking-wider bg-zinc-100/70">
                         <th className="relative text-left px-2 py-1.5" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
                           #
                           <span {...resizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
@@ -312,36 +312,36 @@ export const DiffTab: React.FC = () => {
                         const loss = p.cur - p.actual;
                         return (
                           <tr key={`diff-${p.product_name}-${i}`} className={`transition ${isSelected ? "bg-violet-50/30" : "hover:bg-zinc-50/60"}`}>
-                            <td className="px-2 py-2 text-zinc-400 font-medium text-[11px] align-top tabular-nums">{i + 1}</td>
+                            <td className="px-2 py-2 text-zinc-400 font-medium text-[13px] align-top tabular-nums">{i + 1}</td>
                             <td className="px-2 py-2 align-top">
                               <button
                                 onClick={() => loadDiffSelectedProduct(p)}
-                                className="text-left text-[12px] font-semibold text-zinc-700 hover:text-violet-700 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
+                                className="text-left text-[14px] font-semibold text-zinc-700 hover:text-violet-700 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
                                 title={p.product_name}
                               >
                                 {p.product_name}
                               </button>
                             </td>
-                            <td className="px-2 py-2 align-top text-[11px] text-sky-700 break-words whitespace-normal leading-snug">
+                            <td className="px-2 py-2 align-top text-[13px] text-sky-700 break-words whitespace-normal leading-snug">
                               {p.supplier ? displayVendorName(p.supplier) : <span className="text-zinc-300">-</span>}
                             </td>
                             {isDiffGroupCollapsed("erp") ? (
                               <td className="bg-zinc-50/10 w-4"></td>
                             ) : (
-                              <td className="text-right px-2 py-2 tabular-nums text-[12px] font-normal bg-zinc-50/40 text-zinc-600 align-top">{fmt(p.cur)}</td>
+                              <td className="text-right px-2 py-2 tabular-nums text-[14px] font-normal bg-zinc-50/40 text-zinc-600 align-top">{fmt(p.cur)}</td>
                             )}
                             {isDiffGroupCollapsed("actual") ? (
                               <td className="bg-violet-50/10 w-4"></td>
                             ) : (
-                              <td className="text-right px-2 py-2 tabular-nums text-[12px] font-normal bg-violet-50/30 text-violet-700 align-top">{fmt(p.actual)}</td>
+                              <td className="text-right px-2 py-2 tabular-nums text-[14px] font-normal bg-violet-50/30 text-violet-700 align-top">{fmt(p.actual)}</td>
                             )}
-                            <td className={`text-right px-2 py-2 tabular-nums text-[12px] font-normal bg-rose-50/40 align-top ${loss > 0 ? "text-rose-700" : "text-emerald-600"}`}>
+                            <td className={`text-right px-2 py-2 tabular-nums text-[14px] font-normal bg-rose-50/40 align-top ${loss > 0 ? "text-rose-700" : "text-emerald-600"}`}>
                               {loss > 0 ? fmt(loss) : loss < 0 ? `+${fmt(-loss)}` : "0"}
                             </td>
-                            <td className="text-right px-2 py-2 tabular-nums text-[12px] font-normal bg-amber-50/20 text-amber-700 align-top">
+                            <td className="text-right px-2 py-2 tabular-nums text-[14px] font-normal bg-amber-50/20 text-amber-700 align-top">
                               {p.purchase_price != null && p.purchase_price > 0 ? fmt(p.purchase_price) : "-"}
                             </td>
-                            <td className="text-right px-2 py-2 tabular-nums text-[12px] font-normal bg-amber-50/20 text-amber-700 align-top">
+                            <td className="text-right px-2 py-2 tabular-nums text-[14px] font-normal bg-amber-50/20 text-amber-700 align-top">
                               {p.sale_price != null && p.sale_price > 0 ? fmt(p.sale_price) : "-"}
                             </td>
                           </tr>

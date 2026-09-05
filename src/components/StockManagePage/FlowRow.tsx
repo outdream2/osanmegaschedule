@@ -62,7 +62,7 @@ export const FlowRow: React.FC<FlowRowProps> = ({
               ? <CheckSquare size={13} className="text-zinc-500" />
               : <Square size={13} className="text-zinc-300 hover:text-zinc-500" />}
           </span>
-          <span className="text-[14px] font-semibold text-zinc-400 tabular-nums">{i + 1}</span>
+          <span className="text-[16px] font-semibold text-zinc-400 tabular-nums">{i + 1}</span>
         </div>
       </td>
       <td className="px-2 py-2.5 align-top">
@@ -70,7 +70,7 @@ export const FlowRow: React.FC<FlowRowProps> = ({
           className="text-left text-[15px] font-bold text-zinc-700 hover:text-zinc-900 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition">
           {p.product_name}
           {(p as any).min_order != null && (p as any).min_order > 0 && (
-            <span className="inline-flex items-center ml-1 px-1.5 py-0.5 rounded-sm text-[14px] font-bold text-zinc-500 bg-zinc-100 border border-line align-middle">
+            <span className="inline-flex items-center ml-1 px-1.5 py-0.5 rounded-sm text-[16px] font-bold text-zinc-500 bg-zinc-100 border border-line align-middle">
               최소{(p as any).min_order}
             </span>
           )}
@@ -91,7 +91,7 @@ export const FlowRow: React.FC<FlowRowProps> = ({
           const mismatch = close !== cur;
           const belowOptimal = opt > 0 && cur < opt;
           return (
-            <td className={`text-right px-1.5 py-2.5 font-bold text-[14px] align-top tabular-nums ${cur <= 0 || mismatch || belowOptimal ? "text-rose-500" : "text-zinc-700"}`}
+            <td className={`text-right px-1.5 py-2.5 font-bold text-[16px] align-top tabular-nums ${cur <= 0 || mismatch || belowOptimal ? "text-rose-500" : "text-zinc-700"}`}
               title={belowOptimal ? `현재고 부족 · ${cur} < 추천적정재고 ${opt}` : mismatch ? `현재고(${fmt(cur)}) ≠ 스냅샷 종료재고(${fmt(close)})` : "ERP 현재고"}>
               {fmt(cur)}
             </td>
@@ -101,38 +101,38 @@ export const FlowRow: React.FC<FlowRowProps> = ({
           const opt = Number((p as any).optimal_stock ?? 0);
           const below = opt > 0 && cur < opt;
           return (
-            <td className={`text-right px-1.5 py-2.5 font-bold text-[14px] align-top tabular-nums ${opt <= 0 ? "text-zinc-300" : below ? "text-rose-400" : "text-zinc-500"}`}>
+            <td className={`text-right px-1.5 py-2.5 font-bold text-[16px] align-top tabular-nums ${opt <= 0 ? "text-zinc-300" : below ? "text-rose-400" : "text-zinc-500"}`}>
               {opt > 0 ? fmt(opt) : "-"}
             </td>
           );
         })()}
-        <td className="text-right px-1.5 py-2.5 font-bold text-[14px] align-top tabular-nums text-sky-600 bg-sky-50/20">
+        <td className="text-right px-1.5 py-2.5 font-bold text-[16px] align-top tabular-nums text-sky-600 bg-sky-50/20">
           {fmt(Number((p as any).sale_qty_month ?? 0))}
         </td>
       </>}
       {isFlowGroupCollapsed("stock") && <td className="bg-zinc-50/20" />}
       {/* 매입현황 그룹 */}
       {!isFlowGroupCollapsed("purchase") && <>
-        <td className={`text-right px-1.5 py-2.5 font-bold text-[14px] align-top tabular-nums ${purchaseCycle != null ? "text-zinc-600" : purchaseCount === 1 ? "text-zinc-400" : "text-zinc-300"}`}
+        <td className={`text-right px-1.5 py-2.5 font-bold text-[16px] align-top tabular-nums ${purchaseCycle != null ? "text-zinc-600" : purchaseCount === 1 ? "text-zinc-400" : "text-zinc-300"}`}
           title={purchaseCycle != null ? `${purchaseCount}회 매입 · 평균 ${purchaseCycle}일 주기` : purchaseCount === 1 && lastPD ? `1회만 매입됨 (${lastPD})` : "매입 이력 없음"}>
           {purchaseCycle != null ? `${purchaseCycle}일` : purchaseCount === 1 ? "1회" : purchaseCount >= 2 && firstPD === lastPD ? "동일일" : "-"}
         </td>
-        <td className="text-right px-1.5 py-2.5 text-zinc-500 font-bold text-[14px] align-top tabular-nums">{lastPDShort}</td>
-        <td className="text-right px-1.5 py-2.5 text-zinc-600 font-bold text-[14px] align-top tabular-nums">{purchV > 0 ? fmt(purchV) : "-"}</td>
+        <td className="text-right px-1.5 py-2.5 text-zinc-500 font-bold text-[16px] align-top tabular-nums">{lastPDShort}</td>
+        <td className="text-right px-1.5 py-2.5 text-zinc-600 font-bold text-[16px] align-top tabular-nums">{purchV > 0 ? fmt(purchV) : "-"}</td>
       </>}
       {isFlowGroupCollapsed("purchase") && <td className="bg-zinc-50/20" />}
       {/* 판매현황 그룹 */}
       {!isFlowGroupCollapsed("sales") && <>
-        <td className="text-right px-1.5 py-2.5 text-rose-700 font-bold text-[14px] align-top tabular-nums">{saleV > 0 ? fmt(saleV) : "-"}</td>
+        <td className="text-right px-1.5 py-2.5 text-rose-700 font-bold text-[16px] align-top tabular-nums">{saleV > 0 ? fmt(saleV) : "-"}</td>
         {(() => {
           const saleAmount = Number((p as any).total_amount ?? 0);
           return (
-            <td className="text-right px-1.5 py-2.5 text-rose-600 font-bold text-[14px] align-top tabular-nums">{fmtMan(saleAmount)}</td>
+            <td className="text-right px-1.5 py-2.5 text-rose-600 font-bold text-[16px] align-top tabular-nums">{fmtMan(saleAmount)}</td>
           );
         })()}
-        <td className="text-right px-1.5 py-2.5 text-zinc-500 font-bold text-[14px] align-top tabular-nums">{purP > 0 ? fmtWon(purP) : "-"}</td>
-        <td className="text-right px-1.5 py-2.5 text-zinc-600 font-bold text-[14px] align-top tabular-nums">{saleP > 0 ? fmtWon(saleP) : "-"}</td>
-        <td className={`text-right px-1.5 py-2.5 font-bold text-[14px] align-top tabular-nums ${profitRate == null ? "text-zinc-300" : profitRate >= 30 ? "text-zinc-700" : profitRate >= 15 ? "text-zinc-600" : profitRate >= 0 ? "text-zinc-500" : "text-rose-500"}`}>
+        <td className="text-right px-1.5 py-2.5 text-zinc-500 font-bold text-[16px] align-top tabular-nums">{purP > 0 ? fmtWon(purP) : "-"}</td>
+        <td className="text-right px-1.5 py-2.5 text-zinc-600 font-bold text-[16px] align-top tabular-nums">{saleP > 0 ? fmtWon(saleP) : "-"}</td>
+        <td className={`text-right px-1.5 py-2.5 font-bold text-[16px] align-top tabular-nums ${profitRate == null ? "text-zinc-300" : profitRate >= 30 ? "text-zinc-700" : profitRate >= 15 ? "text-zinc-600" : profitRate >= 0 ? "text-zinc-500" : "text-rose-500"}`}>
           {profitRate != null ? `${profitRate}%` : "-"}
         </td>
       </>}
