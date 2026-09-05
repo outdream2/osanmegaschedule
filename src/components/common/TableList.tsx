@@ -78,7 +78,7 @@ export function TableListWrap({
 //   · border-collapse 이슈 회피 · thead 만 sticky 시 배경 사라짐 → th 개별 sticky
 //   · tableThCls 에서 개별 th 에 sticky/bg 적용 · 여기는 shared style 만
 export function tableHeadCls(extra = ""): string {
-  return `text-[13px] sm:text-[14px] font-bold text-zinc-600 uppercase tracking-wider ${extra}`.trim();
+  return `text-[15px] sm:text-[16px] font-bold text-zinc-600 uppercase tracking-wider ${extra}`.trim();
 }
 
 /**
