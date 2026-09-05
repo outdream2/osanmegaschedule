@@ -32,6 +32,8 @@ export interface StepperInputProps {
   decLabel?: string;
   /** 증가 버튼 aria-label · 기본 "증가" */
   incLabel?: string;
+  /** 숫자 길이에 맞게 input 너비 자동 조절 · 테이블 컴팩트 열에 사용 */
+  autoSize?: boolean;
 }
 
 const SIZE_H_CLS: Record<NonNullable<StepperInputProps["size"]>, string> = {
@@ -72,6 +74,7 @@ export const StepperInput: React.FC<StepperInputProps> = ({
   className = "",
   decLabel = "감소",
   incLabel = "증가",
+  autoSize = false,
 }) => {
   const cur = value === "" ? min : Number(value) || min;
   const canDec = !disabled && cur > min;
@@ -90,11 +93,13 @@ export const StepperInput: React.FC<StepperInputProps> = ({
   const heightCls = SIZE_H_CLS[size];
   const btnWCls = SIZE_BTN_W[size];
   const inputTextCls = SIZE_INPUT_TEXT[size];
+  const inputSize = autoSize ? Math.max(2, String(value === "" ? placeholder : value).length + 1) : undefined;
 
   return (
     <div
       className={[
-        "inline-flex items-stretch w-full",
+        "inline-flex items-stretch",
+        autoSize ? "w-auto" : "w-full",
         heightCls,
         "bg-white border-2 border-line rounded-xl overflow-hidden transition-all duration-150",
         "focus-within:border-brand-deep",
@@ -126,8 +131,10 @@ export const StepperInput: React.FC<StepperInputProps> = ({
         disabled={disabled}
         onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
         placeholder={placeholder}
+        size={inputSize}
         className={[
-          "flex-1 min-w-0 h-full text-center px-0.5 bg-transparent border-0",
+          autoSize ? "w-auto shrink-0" : "flex-1 min-w-0",
+          "h-full text-center px-1 bg-transparent border-0",
           inputTextCls,
           "font-bold tabular-nums text-ink",
           "focus:outline-none disabled:text-zinc-300 placeholder:text-zinc-300",
