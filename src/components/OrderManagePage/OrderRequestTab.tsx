@@ -237,7 +237,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                           <th onClick={() => handleOrderSort("short")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold text-rose-600">부족<span className="ml-1 text-rose-300">{orderArrow("short") || "⇅"}</span></th>
                         </>
                       )}
-                      <th className="text-center px-1 py-2.5 w-[60px] sm:w-[72px] font-bold text-sky-700 bg-sky-50/60 border-x border-sky-100 whitespace-nowrap">수량</th>
+                      <th className="text-center px-1 py-2.5 w-[72px] sm:w-[84px] font-bold text-sky-700 bg-sky-50/60 border-x border-sky-100 whitespace-nowrap">수량</th>
                       <th className="text-right px-2 py-2.5 w-16 font-bold">단가</th>
                       {/* 발주금액 · brand-tint 옅게 (v3 사용자 지시) */}
                       <th className="text-right px-2 py-2.5 w-20 font-bold text-brand-deep bg-brand-tint/50 border-l border-brand/10">발주금액<span className="ml-1 text-brand/40">▼</span></th>
@@ -449,7 +449,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                           }}
                                           min={0}
                                           size="xs"
-                                          className="!w-[56px] sm:!w-[68px]"
+                                          className="!w-[68px] sm:!w-[80px]"
                                         />
                                       </div>
                                     </td>
