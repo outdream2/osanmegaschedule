@@ -70,33 +70,33 @@ export const ReturnFilterBar: React.FC<ReturnFilterBarProps> = ({
         </StatusPill>
       </div>
       <div className="flex items-center gap-1.5 flex-nowrap shrink-0 basis-full sm:basis-auto">
-        <label className="inline-flex items-center gap-1 text-[15px] text-zinc-600 shrink-0">
+        <label className="inline-flex items-center gap-1 text-[17px] text-zinc-600 shrink-0">
           <span className="font-medium text-zinc-500">매입주기</span>
           <input
             type="number"
             value={returnCycleMin}
             onChange={e => setReturnCycleMin(Math.max(0, Number(e.target.value) || 0))}
-            className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
+            className="w-11 h-7 px-1.5 text-[17px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
           />
           <span className="text-zinc-500 whitespace-nowrap">일 ↑</span>
         </label>
-        <label className="inline-flex items-center gap-1 text-[15px] text-zinc-600 shrink-0">
+        <label className="inline-flex items-center gap-1 text-[17px] text-zinc-600 shrink-0">
           <span className="font-medium text-zinc-500">1M판매</span>
           <input
             type="number"
             value={returnSalesMax}
             onChange={e => setReturnSalesMax(Math.max(0, Number(e.target.value) || 0))}
-            className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
+            className="w-11 h-7 px-1.5 text-[17px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
           />
           <span className="text-zinc-500 whitespace-nowrap">개 ↑</span>
         </label>
-        <label className="inline-flex items-center gap-1 text-[15px] text-zinc-600 shrink-0">
+        <label className="inline-flex items-center gap-1 text-[17px] text-zinc-600 shrink-0">
           <span className="font-medium text-zinc-500">3M판매</span>
           <input
             type="number"
             value={returnSalesQuarterMax}
             onChange={e => setReturnSalesQuarterMax(Math.max(0, Number(e.target.value) || 0))}
-            className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
+            className="w-11 h-7 px-1.5 text-[17px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
           />
           <span className="text-zinc-500 whitespace-nowrap">개 ↑</span>
         </label>
@@ -130,7 +130,7 @@ export const ReturnFilterBar: React.FC<ReturnFilterBarProps> = ({
           type="button"
           onClick={onOpenBulkReturnModal}
           disabled={returnSelectedSize === 0}
-          className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[15px] font-bold transition cursor-pointer border ${
+          className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[17px] font-bold transition cursor-pointer border ${
             returnSelectedSize > 0
               ? "text-white bg-rose-500 hover:bg-rose-600 border-rose-700 shadow-sm active:scale-95"
               : "text-zinc-400 bg-zinc-50 border-line cursor-not-allowed"
@@ -145,7 +145,7 @@ export const ReturnFilterBar: React.FC<ReturnFilterBarProps> = ({
           type="button"
           onClick={onBulkConfirm}
           disabled={returnSelectedSize === 0 || bulkConfirming}
-          className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[15px] font-bold transition cursor-pointer border ${
+          className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[17px] font-bold transition cursor-pointer border ${
             returnSelectedSize > 0 && !bulkConfirming
               ? "text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-800 shadow-sm ring-2 ring-emerald-300/40 active:scale-95"
               : "text-zinc-400 bg-zinc-50 border-line cursor-not-allowed"

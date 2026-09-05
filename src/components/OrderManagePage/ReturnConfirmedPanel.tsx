@@ -116,7 +116,7 @@ export const ReturnConfirmedPanel: React.FC = () => {
             {loading ? <Spinner size={12} tone="emerald" className="inline" /> : `${filtered.length}건`}
           </StatusPill>
           {totals.totalAmount > 0 && (
-            <span className="text-[14px] font-semibold text-ink-soft tabular-nums">
+            <span className="text-[16px] font-semibold text-ink-soft tabular-nums">
               · 수량 {totals.totalQty.toLocaleString()}개 · 금액 {fmtWon(totals.totalAmount)}
             </span>
           )}
@@ -141,7 +141,7 @@ export const ReturnConfirmedPanel: React.FC = () => {
               type="button"
               onClick={load}
               disabled={loading}
-              className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-white border border-line text-[14px] font-bold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep hover:text-brand-deep transition cursor-pointer disabled:opacity-40"
+              className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-white border border-line text-[16px] font-bold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep hover:text-brand-deep transition cursor-pointer disabled:opacity-40"
               title="새로고침"
             >
               <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> 새로고침
@@ -187,17 +187,17 @@ export const ReturnConfirmedPanel: React.FC = () => {
                 {filtered.map(r => {
                   const amount = (r.qty ?? 0) * (r.purchase_price ?? 0);
                   return (
-                    <tr key={r.id} className="hover:bg-zinc-50/60 transition text-[14px]">
+                    <tr key={r.id} className="hover:bg-zinc-50/60 transition text-[16px]">
                       <td className={tableTdCls("center", "text-zinc-500 tabular-nums")}>{fmtDate(r.created_at)}</td>
                       <td className={tableTdCls("left", "font-semibold text-sky-700 break-keep")}>{r.supplier ?? <span className="text-zinc-400">-</span>}</td>
                       <td className={tableTdCls("left", "font-bold text-zinc-800 break-keep")}>
                         {r.product_name ?? "-"}
-                        <div className="text-[12px] tabular-nums text-zinc-400 mt-0.5">{r.product_code}</div>
+                        <div className="text-[14px] tabular-nums text-zinc-400 mt-0.5">{r.product_code}</div>
                       </td>
                       <td className={tableTdCls("num", "font-bold text-rose-600")}>{(r.qty ?? 0).toLocaleString()}</td>
                       <td className={tableTdCls("num", "text-zinc-600")}>{r.purchase_price ? r.purchase_price.toLocaleString() : "-"}</td>
                       <td className={tableTdCls("num", "font-bold text-emerald-700")}>{fmtWon(amount)}</td>
-                      <td className={tableTdCls("left", "text-[13px] text-zinc-500")}>{r.reason ?? <span className="text-zinc-300">-</span>}</td>
+                      <td className={tableTdCls("left", "text-[15px] text-zinc-500")}>{r.reason ?? <span className="text-zinc-300">-</span>}</td>
                       <td className={tableTdCls("center")}>
                         <div className="inline-flex items-center gap-0.5">
                           <button
