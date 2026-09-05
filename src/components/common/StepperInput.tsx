@@ -93,7 +93,7 @@ export const StepperInput: React.FC<StepperInputProps> = ({
   const heightCls = SIZE_H_CLS[size];
   const btnWCls = SIZE_BTN_W[size];
   const inputTextCls = SIZE_INPUT_TEXT[size];
-  const inputSize = autoSize ? Math.max(2, String(value === "" ? placeholder : value).length + 1) : undefined;
+  const inputSize = autoSize ? Math.max(3, String(value === "" ? placeholder : value).length + 1) : undefined;
 
   return (
     <div
