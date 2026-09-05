@@ -547,7 +547,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
       <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
         {/* 테이블 헤더 */}
         <thead className="sticky top-0 bg-zinc-100/70 z-10 border-b border-line">
-          <tr className="text-[13px] font-bold text-zinc-500 uppercase tracking-wider">
+          <tr className="text-[15px] font-bold text-zinc-500 uppercase tracking-wider">
             {/* 체크박스 + 번호 */}
             <th className="relative text-center px-0.5 py-2 bg-zinc-50/60"
               style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
@@ -641,11 +641,11 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                   <div className="flex flex-col leading-tight">
                     <button
                       type="button"
-                      className="text-[15px] font-semibold text-zinc-900 hover:underline text-left break-words whitespace-normal cursor-pointer"
+                      className="text-[17px] font-semibold text-zinc-900 hover:underline text-left break-words whitespace-normal cursor-pointer"
                       onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); }}
                       title="상품정보 보기"
                     >{x.product_name}</button>
-                    <span className="text-[13px] text-zinc-400 tabular-nums">{x.product_code}</span>
+                    <span className="text-[15px] text-zinc-400 tabular-nums">{x.product_code}</span>
                   </div>
                 </td>
                 {/* 공급사 */}
@@ -655,17 +655,17 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                     {onSupplierClick && x.supplier ? (
                       <button
                         type="button"
-                        className="text-[14px] font-normal text-sky-700 hover:underline text-left break-words whitespace-normal cursor-pointer"
+                        className="text-[16px] font-normal text-sky-700 hover:underline text-left break-words whitespace-normal cursor-pointer"
                         onClick={(e) => { e.stopPropagation(); onSupplierClick(x.supplier!); }}
                         title={`공급사 정보 조회·수정 (${x.supplier})`}
                       >{displayVendorName(x.supplier)}</button>
                     ) : (
-                      <span className="text-[14px] font-normal text-sky-700 break-words whitespace-normal">{x.supplier ? displayVendorName(x.supplier) : "-"}</span>
+                      <span className="text-[16px] font-normal text-sky-700 break-words whitespace-normal">{x.supplier ? displayVendorName(x.supplier) : "-"}</span>
                     )}
                   </div>
                 </td>
                 {/* 재고금액 */}
-                <td className="text-right px-2 py-2 tabular-nums font-normal text-[15px] text-indigo-700 bg-amber-50/20 align-top">
+                <td className="text-right px-2 py-2 tabular-nums font-normal text-[17px] text-indigo-700 bg-amber-50/20 align-top">
                   {x.current_stock > 0 && x.purchase_price > 0 ? `${(x.current_stock * x.purchase_price).toLocaleString()}` : "-"}
                 </td>
                 {/* 매입주기 */}
@@ -674,10 +674,10 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                   onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); }}
                   title="매입이력 보기"
                 >
-                  <span className="font-normal text-[15px] text-emerald-700 hover:underline tabular-nums">
+                  <span className="font-normal text-[17px] text-emerald-700 hover:underline tabular-nums">
                     {x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}
                   </span>
-                  <span className="block text-[13px] text-zinc-500 leading-snug mt-0.5 font-normal tabular-nums">
+                  <span className="block text-[15px] text-zinc-500 leading-snug mt-0.5 font-normal tabular-nums">
                     {x.last_purchase_date ? (() => {
                       const [_, m, d] = x.last_purchase_date.split("-");
                       return `${Number(m)}/${Number(d)}`;
@@ -693,7 +693,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                   onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); }}
                   title="1달 / 2달 / 3달 판매량"
                 >
-                  <span className="font-normal text-[15px] text-rose-700 hover:underline tabular-nums">
+                  <span className="font-normal text-[17px] text-rose-700 hover:underline tabular-nums">
                     {x.sale_qty_month != null ? x.sale_qty_month.toLocaleString() : "-"}
                     <span className="text-zinc-300"> / </span>
                     {x.sale_qty_60d != null ? x.sale_qty_60d.toLocaleString() : "-"}
