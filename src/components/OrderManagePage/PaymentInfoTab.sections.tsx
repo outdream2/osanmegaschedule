@@ -49,7 +49,7 @@ export const MonthlyBreakdownSection: React.FC<MonthlyBreakdownSectionProps> = (
     <div className="overflow-hidden rounded-lg border border-line shadow-xs">
       {/* 상단 · 제목 + PeriodSelector */}
       <div className="flex items-center gap-2 px-3 py-2 bg-zinc-50/80 border-b border-line">
-        <span className="text-[15px] font-bold text-zinc-700">월별 요약</span>
+        <span className="text-[17px] font-bold text-zinc-700">월별 요약</span>
         <PeriodSelector
           options={PERIOD_MONTHS_PRESET}
           value={breakdownMonths}
@@ -62,15 +62,15 @@ export const MonthlyBreakdownSection: React.FC<MonthlyBreakdownSectionProps> = (
         {showLoading && <Spinner size={11} tone="zinc" />}
       </div>
       <div className="overflow-x-auto">
-      <table className="w-full min-w-[520px] text-[14px] tabular-nums">
-        <thead className="bg-zinc-50/80 text-[15px] font-bold uppercase tracking-wider text-zinc-500">
+      <table className="w-full min-w-[520px] text-[16px] tabular-nums">
+        <thead className="bg-zinc-50/80 text-[17px] font-bold uppercase tracking-wider text-zinc-500">
           <tr>
             <th className="text-center px-2 py-1.5 w-[56px] border-r border-line">카테고리</th>
             <th className="text-left px-2 py-1.5 w-[64px]">항목</th>
             {months.map(k => (
               <th key={k} className="text-right px-2 py-1.5 whitespace-nowrap">
                 <span className="inline-flex flex-col items-end leading-tight">
-                  <span className="text-zinc-400 text-[15px]">{k.slice(0, 4)}</span>
+                  <span className="text-zinc-400 text-[17px]">{k.slice(0, 4)}</span>
                   <span>{fmtMonthShort(k)}</span>
                 </span>
               </th>
@@ -195,8 +195,8 @@ export const RecentPaymentsSection: React.FC<RecentPaymentsSectionProps> = ({
         {/* 2026-08-18 · IconTile 확산 */}
         <IconTile icon={<ReceiptText size={13} strokeWidth={2.5} />} tone="sky" size="sm" />
 
-        <div className="text-[15px] font-bold text-zinc-800">최근 결제 내역</div>
-        <span className="ml-auto text-[15px] text-zinc-400 tabular-nums">
+        <div className="text-[17px] font-bold text-zinc-800">최근 결제 내역</div>
+        <span className="ml-auto text-[17px] text-zinc-400 tabular-nums">
           {recentLoading ? "로딩..." : `${recentPayments.length}건 (최근)`}
         </span>
         <button
@@ -212,7 +212,7 @@ export const RecentPaymentsSection: React.FC<RecentPaymentsSectionProps> = ({
       {recentLoading ? (
         <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={13} label="불러오는 중..." labelSize={14} /></div>
       ) : recentPayments.length === 0 ? (
-        <div className="py-8 text-center text-[15px] text-zinc-300">결제 이력 없음</div>
+        <div className="py-8 text-center text-[17px] text-zinc-300">결제 이력 없음</div>
       ) : (
         <div className="divide-y divide-zinc-100">
           {recentPayments.map(p => {
@@ -224,27 +224,27 @@ export const RecentPaymentsSection: React.FC<RecentPaymentsSectionProps> = ({
               null;
             return (
               <div key={p.id} className="py-2 flex items-center gap-3 hover:bg-zinc-50/60 -mx-2 px-2 rounded transition">
-                <span className={`inline-flex items-center justify-center w-14 h-8 rounded-lg text-[14px] font-bold ring-1 ${tone.bg} ${tone.text} ${tone.ring}`}>
+                <span className={`inline-flex items-center justify-center w-14 h-8 rounded-lg text-[16px] font-bold ring-1 ${tone.bg} ${tone.text} ${tone.ring}`}>
                   {methodLabel(p.method)}
                 </span>
                 <div className="flex-1 min-w-0 flex flex-col leading-tight gap-0.5">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[15px] font-bold text-zinc-700 tabular-nums shrink-0">
+                    <span className="text-[17px] font-bold text-zinc-700 tabular-nums shrink-0">
                       {p.payment_date}
                     </span>
                     {subLabel && (
-                      <span className="text-[14px] font-semibold text-zinc-500 px-1.5 py-0.5 rounded bg-zinc-50 border border-line truncate">
+                      <span className="text-[16px] font-semibold text-zinc-500 px-1.5 py-0.5 rounded bg-zinc-50 border border-line truncate">
                         {subLabel}
                       </span>
                     )}
                     {meta.tax_invoice_issued && (
-                      <span className="text-[15px] font-bold text-teal-700 px-1 py-0.5 rounded bg-teal-50 border border-teal-200 shrink-0">
+                      <span className="text-[17px] font-bold text-teal-700 px-1 py-0.5 rounded bg-teal-50 border border-teal-200 shrink-0">
                         세금계산서
                       </span>
                     )}
                   </div>
                   {(p.memo || meta.reference_no) && (
-                    <div className="text-[14px] text-zinc-500 truncate flex items-center gap-1">
+                    <div className="text-[16px] text-zinc-500 truncate flex items-center gap-1">
                       {meta.reference_no && (
                         <span className="inline-flex items-center gap-0.5 text-zinc-400 tabular-nums">
                           <ArrowRight size={9} />{meta.reference_no}
@@ -254,7 +254,7 @@ export const RecentPaymentsSection: React.FC<RecentPaymentsSectionProps> = ({
                     </div>
                   )}
                 </div>
-                <span className="text-[15px] font-bold text-emerald-700 tabular-nums shrink-0">
+                <span className="text-[17px] font-bold text-emerald-700 tabular-nums shrink-0">
                   -{p.amount.toLocaleString()}
                 </span>
                 {/* 결제 후 잔고 · Task #104 (2026-08-04)
@@ -262,7 +262,7 @@ export const RecentPaymentsSection: React.FC<RecentPaymentsSectionProps> = ({
                     · feedback_ui_principles B-2-2 · 12px · tabular-nums */}
                 {p.running_balance != null && (
                   <span
-                    className={`text-[14px] font-bold tabular-nums shrink-0 min-w-[64px] text-right ${
+                    className={`text-[16px] font-bold tabular-nums shrink-0 min-w-[64px] text-right ${
                       p.running_balance > 0
                         ? "text-amber-700"
                         : p.running_balance < 0
@@ -322,16 +322,16 @@ export const ProductSummarySection: React.FC<ProductSummarySectionProps> = ({
         {/* 2026-08-18 · IconTile 확산 */}
         <IconTile icon={<Layers size={13} strokeWidth={2.5} />} tone="emerald" size="sm" />
 
-        <div className="text-[15px] font-bold text-zinc-800">상품별 매입 요약</div>
-        <span className="text-[15px] font-semibold text-zinc-400 tabular-nums">
+        <div className="text-[17px] font-bold text-zinc-800">상품별 매입 요약</div>
+        <span className="text-[17px] font-semibold text-zinc-400 tabular-nums">
           · {productSummary.length}개 상품 · 최근 1년
         </span>
-        <span className="ml-auto text-[14px] font-bold text-zinc-400">{showProductGroup ? "접기 ▲" : "펼치기 ▼"}</span>
+        <span className="ml-auto text-[16px] font-bold text-zinc-400">{showProductGroup ? "접기 ▲" : "펼치기 ▼"}</span>
       </button>
       {showProductGroup && (
         <div className="p-2 overflow-x-auto">
-          <table className="w-full text-[14px] tabular-nums" style={{ tableLayout: "fixed" }}>
-            <thead className="bg-zinc-50 text-[14px] font-bold uppercase tracking-wider text-zinc-500">
+          <table className="w-full text-[16px] tabular-nums" style={{ tableLayout: "fixed" }}>
+            <thead className="bg-zinc-50 text-[16px] font-bold uppercase tracking-wider text-zinc-500">
               <tr>
                 <th
                   onClick={() => toggleProdSort("product_name")}
@@ -400,7 +400,7 @@ export const ProductSummarySection: React.FC<ProductSummarySectionProps> = ({
                 <tr key={p.product_code || p.product_name} className="hover:bg-emerald-50/40">
                   {/* 2026-08-29 · UI 감사 U1 · truncate 제거 · 상품명 잘림 방지 (대원칙) */}
                   <td className="px-2 py-1.5 font-semibold text-zinc-700 break-words whitespace-normal leading-tight" style={{ minWidth: 180 }} title={p.product_name}>{p.product_name}</td>
-                  <td className="px-2 py-1.5 text-zinc-400 tabular-nums text-[15px]">{p.product_code || "-"}</td>
+                  <td className="px-2 py-1.5 text-zinc-400 tabular-nums text-[17px]">{p.product_code || "-"}</td>
                   <td className="px-2 py-1.5 text-right font-bold text-zinc-700">{p.totalQty.toLocaleString()}</td>
                   <td className="px-2 py-1.5 text-right font-bold text-emerald-700">{fmtWonShort(p.totalAmount)}</td>
                   <td className="px-2 py-1.5 text-center text-zinc-500">{p.invoiceCount}</td>
@@ -410,7 +410,7 @@ export const ProductSummarySection: React.FC<ProductSummarySectionProps> = ({
             </tbody>
           </table>
           {productSummary.length > 100 && (
-            <div className="text-[14px] text-zinc-400 text-center py-1.5">
+            <div className="text-[16px] text-zinc-400 text-center py-1.5">
               상위 100개 표시 (전체 {productSummary.length}개)
             </div>
           )}

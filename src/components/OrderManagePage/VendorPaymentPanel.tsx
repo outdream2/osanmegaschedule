@@ -45,11 +45,11 @@ export const VendorPaymentPanel: React.FC<VendorPaymentPanelProps> = ({
             <span className="text-lg font-bold">×</span>
           </button>
           <div className="flex-1 min-w-0">
-            <div className="text-[15px] font-bold text-zinc-800 leading-tight">{vendorSelected.company_name}</div>
-            <div className="text-[14px] text-zinc-500">공급사 상세 · 결제잔고 · 매입이력</div>
+            <div className="text-[17px] font-bold text-zinc-800 leading-tight">{vendorSelected.company_name}</div>
+            <div className="text-[16px] text-zinc-500">공급사 상세 · 결제잔고 · 매입이력</div>
           </div>
           <button type="button" onClick={() => onSelectVendor(null)}
-            className="text-[15px] font-bold text-sky-600 border border-sky-200 bg-sky-50 hover:bg-sky-100 rounded-lg px-3 py-1 transition cursor-pointer shrink-0">
+            className="text-[17px] font-bold text-sky-600 border border-sky-200 bg-sky-50 hover:bg-sky-100 rounded-lg px-3 py-1 transition cursor-pointer shrink-0">
             닫기
           </button>
         </div>
