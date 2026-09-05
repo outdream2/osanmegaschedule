@@ -19,6 +19,46 @@
 
 ---
 
+## 🎯 활성 PENDING · v9 (2026-09-05 · 프레임워크 준수 + 감사 정리)
+
+> **2026-09-05 (2차) 완료** · #73 matchHangul→matchesProductQuery · #130 차용 타이틀 정리 · DashboardCharts raw-card-wrapper → Card (감사 위반 3→2)
+
+### ✅ 2026-09-05 (2차) 완료
+| 커밋 | 내용 |
+|-----|------|
+| `a92cf530` | #73 상품정보 검색 matchHangul→matchesProductQuery 프레임워크 통일 |
+| `a4342a39` | #130 차용 관리 제목·부제목 개발용 텍스트 제거 |
+| `583a05d9` | DashboardCharts raw-card-wrapper → Card 프리미티브 · audit 위반 3→2 |
+
+### ✅ 2026-09-05 감사 확인 (이미 완료됨)
+- **#73** 상품정보 프레임워크화: matchesProductQuery 적용 완료
+- **#75** 실재고·상품입고 스캔 왼쪽 정렬 + 반응형 세로: ScanPage·ProductArrivalPage 모두 SplitPanel+mobileRightAsModal=false 정상 구현 확인
+- **#130** 차용등록 재설계: BorrowingPage v2(Phase D) 완료 · BorrowingEditPanel·BorrowingDetailPanel 연결 완료 · GradientAccent·ArrowLeftRight 적용
+
+---
+
+## 🎯 활성 PENDING · v8 (2026-09-05 · 버그수정 + 사이드메뉴 + 발주로직)
+
+> **2026-09-05 완료** · 공급사 모달 즉시닫힘 버그 2건 · 거래처 사이드메뉴 관리자 노출 · 발주요청 항목 발주필요 제외 · 미전송 시 ordered 마킹 금지
+
+### ✅ 2026-09-05 완료
+| 커밋 | 내용 |
+|-----|------|
+| `97458c9a` | 공급사 모달 즉시닫힘 버그 2건 (useOrderModal break→return · VendorDetailModal panel ESC skip) |
+| `97458c9a` | 거래처 사이드메뉴 매장 아래 이동 · 관리자(isPrivileged) 에게도 노출 |
+| `4fa30090` | 발주요청 항목 발주필요에서 숨김 (requestedCodes 필터) |
+| `4fa30090` | bulk-send: 미전송 시(no_recipient 등) ordered 마킹 금지 · 알림 조건부 발송 |
+
+### ✅ 2026-09-05 감사 확인 (이미 완료됨)
+- **#60** 스케줄 전월 복사: 2026-09-04 감사 확인 (구현 완료)
+- **#62** 스케줄 클릭 모달 탭: 2026-09-04 감사 확인 (완료)
+- **#70** 탭 sticky: 2026-09-04 감사 확인 (정상)
+- **#72** 직원성명 UI 복원: 2026-09-04 감사 확인 (완료)
+- **#78** 상품입고 단가·유통기한 fill: 2026-09-04 감사 확인 (완료)
+- **#112** bulk-send dispatch.status: 2026-09-05 improved (shouldMarkOrdered 조건 추가)
+
+---
+
 ## 🎯 활성 PENDING · v7 (2026-09-04 · 신규 태스크 등록)
 
 > **2026-09-04 완료** · contract_type HR 필드 Zod strip 버그 수정 · 공급사재고 페이지화 · 공급사정보 버그 4건 · 스케줄표 모달 탭 순서 · 스케줄 설정 페이지 신규
