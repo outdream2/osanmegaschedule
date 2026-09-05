@@ -100,10 +100,10 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
     <>
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className="inline-block w-1 h-3.5 rounded-full bg-rose-500 shrink-0"></span>
-        <span className="text-[15px] font-bold text-rose-600">발주필요 리스트</span>
-        <span className="text-[15px] text-zinc-400 font-normal">{displayed.length}건</span>
+        <span className="text-[17px] font-bold text-rose-600">발주필요 리스트</span>
+        <span className="text-[17px] text-zinc-400 font-normal">{displayed.length}건</span>
         {selectedLowStock.size > 0 && (
-          <span className="inline-flex items-center gap-1 text-[15px] font-bold text-white bg-rose-500 rounded-full px-2 py-0.5 tabular-nums">
+          <span className="inline-flex items-center gap-1 text-[17px] font-bold text-white bg-rose-500 rounded-full px-2 py-0.5 tabular-nums">
             선택 {selectedLowStock.size}
           </span>
         )}
@@ -116,14 +116,14 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                 setSelectedLowStock(() => new Set(displayed.map(p => getCode(p))));
               }
             }}
-            className="inline-flex items-center gap-1 h-9 px-3.5 rounded-lg text-[15px] font-semibold text-ink-soft bg-white border border-line hover:border-brand-deep/40 hover:bg-brand-tint/20 hover:text-brand-deep active:scale-[0.98] transition-all duration-150 cursor-pointer shrink-0"
+            className="inline-flex items-center gap-1 h-9 px-3.5 rounded-lg text-[17px] font-semibold text-ink-soft bg-white border border-line hover:border-brand-deep/40 hover:bg-brand-tint/20 hover:text-brand-deep active:scale-[0.98] transition-all duration-150 cursor-pointer shrink-0"
           >
             전체선택
           </button>
           <button
             onClick={bulkRequestOrder}
             disabled={bulkRequesting || selectedLowStock.size === 0}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[15px] font-bold text-white bg-gradient-to-br from-rose-500 to-rose-600 shadow-sm hover:shadow-md hover:from-rose-600 hover:to-rose-700 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:shadow-none transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap ring-1 ring-rose-500/20"
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[17px] font-bold text-white bg-gradient-to-br from-rose-500 to-rose-600 shadow-sm hover:shadow-md hover:from-rose-600 hover:to-rose-700 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:shadow-none transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap ring-1 ring-rose-500/20"
             title="선택한 상품 일괄 발주요청 리스트로 전송"
           >
             <span>{bulkRequesting ? "요청 중..." : `일괄 발주요청${selectedLowStock.size > 0 ? ` · ${selectedLowStock.size}` : ""}`}</span>
@@ -137,9 +137,9 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
         </Card>
       )}
 
-      <div className={`max-h-[50vh] overflow-auto relative rounded-xl border border-line bg-white ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+      <div className={`max-h-[50vh] lg:max-h-[75vh] overflow-auto relative rounded-xl border border-line bg-white ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
         <GradientAccent className="z-20" />
-        <table className="w-full text-[14px] sm:text-[15px] min-w-[720px] border-collapse [&_tbody_td]:text-[14px] sm:[&_tbody_td]:text-[15px] [&_thead_th]:text-[13px] sm:[&_thead_th]:text-[14px]">
+        <table className="w-full text-[16px] sm:text-[17px] min-w-[720px] border-collapse [&_tbody_td]:text-[16px] sm:[&_tbody_td]:text-[17px] [&_thead_th]:text-[15px] sm:[&_thead_th]:text-[16px]">
           <thead className="sticky top-0 z-10">
             <tr className="text-zinc-500 uppercase tracking-wider bg-zinc-100/70 border-b border-line">
               {isNeedCollapsed("info") ? (
@@ -165,7 +165,7 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
           </thead>
           <tbody className="divide-y divide-zinc-50">
             {/* 합계 요약 행 */}
-            <tr className="bg-zinc-100 border-b-2 border-zinc-300 font-bold text-zinc-800 text-[14px]">
+            <tr className="bg-zinc-100 border-b-2 border-zinc-300 font-bold text-zinc-800 text-[16px]">
               {isNeedCollapsed("info") ? (
                 <td className="bg-zinc-100" />
               ) : (
@@ -194,14 +194,20 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
               const alreadyRequested = requestedCodes.has(code);
               const busy = requestingOrder.has(code);
               const isChecked = selectedLowStock.has(code);
+              const isCritical = cur === 0;
+              const rowCls = isChecked
+                ? "bg-sky-50/60 shadow-[inset_3px_0_0_var(--tw-shadow-color,#0A2E4A)] shadow-brand-deep"
+                : isCritical
+                  ? "bg-gradient-to-r from-rose-50/60 via-transparent to-transparent hover:from-rose-50"
+                  : "hover:bg-brand-tint/25";
               return (
                 <React.Fragment key={code}>
-                  <tr className={`transition ${isChecked ? "bg-brand-tint/50" : "hover:bg-brand-tint/25"}`}>
+                  <tr className={`transition ${rowCls}`}>
                     {isNeedCollapsed("info") ? (
                       <td className="bg-zinc-50/20 w-4"></td>
                     ) : (
                       <>
-                        <td className="px-0.5 py-1.5 text-[14px] font-semibold align-middle">
+                        <td className="px-0.5 py-1.5 text-[16px] font-semibold align-middle">
                           <div className="flex items-start gap-1.5">
                             <input
                               type="checkbox"
@@ -230,7 +236,7 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                         <td className="px-0.5 py-1.5 align-middle">
                           <button
                             onClick={() => handleRowClick(p)}
-                            className="text-left text-[15px] font-medium text-zinc-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
+                            className="text-left text-[17px] font-semibold text-ink hover:text-sky-800 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
                             title="상품 상세정보 조회 · OFF 조건 상품 · 클릭 시 발주필요 추가 confirm"
                           >{name || "(상품명 없음)"}</button>
                         </td>
@@ -240,10 +246,10 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                       <td className="bg-zinc-50/20 w-4"></td>
                     ) : (
                       <>
-                        <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] text-zinc-700 bg-zinc-50/40 align-middle">{cur}</td>
-                        <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] text-ink align-middle">{opt}</td>
+                        <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[16px] text-zinc-700 bg-zinc-50/40 align-middle">{cur}</td>
+                        <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[16px] text-ink align-middle">{opt}</td>
                         <td className="text-right px-0.5 py-1.5 align-middle">
-                          <span className="tabular-nums font-bold text-[14px] text-rose-600">-{opt - cur}</span>
+                          <span className="tabular-nums font-bold text-[16px] text-rose-600">-{opt - cur}</span>
                         </td>
                       </>
                     )}
@@ -270,7 +276,7 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                       <button
                         onClick={() => handleRequestOrder(p)}
                         disabled={busy}
-                        className={`h-6 px-1.5 rounded text-[14px] font-bold transition cursor-pointer disabled:opacity-40 ${
+                        className={`h-6 px-1.5 rounded text-[16px] font-bold transition cursor-pointer disabled:opacity-40 ${
                           alreadyRequested
                             ? "text-emerald-700 bg-emerald-50 border border-emerald-300 hover:bg-emerald-100"
                             : "text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a]"
@@ -285,7 +291,7 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
               );
             })}
             {displayed.length === 0 && (
-              <tr><td colSpan={14} className="text-center text-[15px] text-zinc-300 py-6">검색 결과 없음</td></tr>
+              <tr><td colSpan={14} className="text-center text-[17px] text-zinc-300 py-6">검색 결과 없음</td></tr>
             )}
           </tbody>
         </table>
