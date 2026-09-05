@@ -237,8 +237,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                           <th onClick={() => handleOrderSort("short")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold text-rose-600">부족<span className="ml-1 text-rose-300">{orderArrow("short") || "⇅"}</span></th>
                         </>
                       )}
-                      {/* 2026-08-31 · 사용자 지시 재개 · 헤더 세로 잘림 fix · 폭 확장 · whitespace-nowrap · 112 */}
-                      <th className="text-center px-2 py-2.5 font-bold text-sky-700 bg-sky-50/60 border-x border-sky-100 whitespace-nowrap" style={{ width: 112, minWidth: 112 }}>주문수량</th>
+                      <th className="text-center px-1 py-2.5 w-20 font-bold text-sky-700 bg-sky-50/60 border-x border-sky-100 whitespace-nowrap">수량</th>
                       <th className="text-right px-2 py-2.5 w-16 font-bold">단가</th>
                       {/* 발주금액 · brand-tint 옅게 (v3 사용자 지시) */}
                       <th className="text-right px-2 py-2.5 w-20 font-bold text-brand-deep bg-brand-tint/50 border-l border-brand/10">발주금액<span className="ml-1 text-brand/40">▼</span></th>
@@ -440,9 +439,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                 const amount = prevPrice != null ? orderQty * prevPrice : null;
                                 return (
                                   <>
-                                    {/* 2026-08-25 · #107/#79 · v3 목업 · StepperInput (−  input  +) · accent tint */}
-                                    <td className="text-center px-1.5 py-2 align-middle bg-sky-50/40 border-x border-sky-100/60">
-                                      {/* 2026-08-31 · 사용자 지시 · 입력창 확장 · sm (h-8) · w-[104px] · 헤더 잘림 fix */}
+                                    <td className="text-center px-0.5 py-1.5 align-middle bg-sky-50/40 border-x border-sky-100/60">
                                       <div onClick={e => e.stopPropagation()} className="flex justify-center">
                                         <StepperInput
                                           value={orderQty}
@@ -452,7 +449,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                           }}
                                           min={0}
                                           size="xs"
-                                          className="w-[72px]"
+                                          className="w-full"
                                         />
                                       </div>
                                     </td>

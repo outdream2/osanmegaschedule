@@ -252,7 +252,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                         <td className="p-2 text-right">
                           <input type="number" min={1} value={it.order_qty}
                             onChange={e => onUpdateModalItem(sIdx, iIdx, { order_qty: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-16 border border-line rounded px-1.5 py-0.5 text-right tabular-nums font-bold text-red-600 focus:outline-none focus:border-brand-deep"/>
+                            className="w-full min-w-[48px] max-w-[80px] border border-line rounded px-1.5 py-0.5 text-right tabular-nums font-bold text-red-600 focus:outline-none focus:border-brand-deep"/>
                         </td>
                         <td className="p-2 text-right">
                           <input type="number" min={0} value={it.unit_price ?? ""}

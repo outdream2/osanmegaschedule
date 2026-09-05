@@ -159,7 +159,7 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                   <th onClick={() => handleNeedSort("short")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold text-rose-600">부족<span className="ml-1 text-rose-300">{needArrow("short") || "⇅"}</span></th>
                 </>
               )}
-              <th className="text-center px-2 py-2.5 cursor-default font-bold text-amber-700 bg-amber-50/50 border-l border-amber-100 whitespace-nowrap" style={{ minWidth: 112, width: 112 }}>수량</th>
+              <th className="text-center px-1 py-2.5 w-20 cursor-default font-bold text-amber-700 bg-amber-50/50 border-l border-amber-100 whitespace-nowrap">수량</th>
               <th className="text-center px-2 py-2.5 cursor-default font-bold text-brand-deep bg-brand-tint/50 border-l border-brand/10" style={{ minWidth: 120 }}>발주</th>
             </tr>
           </thead>
@@ -247,7 +247,7 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                         </td>
                       </>
                     )}
-                    <td className="text-center px-1.5 py-1 align-middle whitespace-nowrap bg-amber-50/20">
+                    <td className="text-center px-0.5 py-1 align-middle whitespace-nowrap bg-amber-50/20">
                       <div className="flex items-center justify-center">
                         <StepperInput
                           value={orderQtyOverride?.get(code) ?? Math.max(1, opt - cur)}
@@ -262,7 +262,7 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                           }}
                           min={1}
                           size="xs"
-                          className="w-[72px]"
+                          className="w-full"
                         />
                       </div>
                     </td>
