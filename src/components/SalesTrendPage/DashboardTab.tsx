@@ -360,7 +360,7 @@ export const DashboardTab: React.FC = () => {
                   key={n}
                   type="button"
                   onClick={() => setLimit(n)}
-                  className={`px-2 py-1 text-[12px] font-bold rounded transition ${
+                  className={`px-2 py-1 text-[14px] font-bold rounded transition ${
                     limit === n
                       ? "bg-white text-brand-deep shadow-sm ring-1 ring-zinc-200"
                       : "text-zinc-500 hover:text-zinc-800"
@@ -478,10 +478,10 @@ export const DashboardTab: React.FC = () => {
                 />
               ) : (
                 <table
-                  className={`w-full text-[13px] ${loading ? "opacity-40 transition-opacity" : ""}`}
+                  className={`w-full text-[15px] ${loading ? "opacity-40 transition-opacity" : ""}`}
                 >
                   <thead className="sticky top-0 bg-zinc-50 border-b-2 border-line z-10 shadow-sm">
-                    <tr className="text-[12px] text-zinc-500 uppercase tracking-wider">
+                    <tr className="text-[14px] text-zinc-500 uppercase tracking-wider">
                       <th className="text-left px-1 py-1.5 w-8">#</th>
                       <th
                         onClick={() => toggleSort("name")}
@@ -559,18 +559,18 @@ export const DashboardTab: React.FC = () => {
                           }`}
                           onClick={() => onProductClick(p)}
                         >
-                          <td className="px-1 py-1.5 text-[12px] font-bold text-brand-deep align-top tabular-nums">
+                          <td className="px-1 py-1.5 text-[14px] font-bold text-brand-deep align-top tabular-nums">
                             {i + 1}
                           </td>
                           <td className="px-2 py-1.5 align-top">
                             <div
-                              className="text-[13px] font-medium text-zinc-800 break-words whitespace-normal leading-tight"
+                              className="text-[15px] font-medium text-zinc-800 break-words whitespace-normal leading-tight"
                               title={p.product_name}
                             >
                               {p.product_name}
                             </div>
                             {p.supplier && (
-                              <div className="text-[11px] text-zinc-400 break-words whitespace-normal mt-0.5">
+                              <div className="text-[15px] text-zinc-400 break-words whitespace-normal mt-0.5">
                                 {p.supplier}
                               </div>
                             )}
@@ -637,7 +637,7 @@ export const DashboardTab: React.FC = () => {
           className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-sky-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
           title="드래그하여 폭 조절"
         >
-          <span className="text-[11px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">
+          <span className="text-[15px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">
             ||
           </span>
         </div>

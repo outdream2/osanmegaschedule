@@ -175,29 +175,29 @@ const SupplierTrendTab: React.FC<{
         <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 min-w-0">
             <Building2 size={14} className="text-sky-600" />
-            <span className="text-sm font-bold text-zinc-700">공급사별 판매현황<span className="text-[10px] font-semibold text-zinc-400 ml-1">(판매액 내림차순)</span></span>
+            <span className="text-sm font-bold text-zinc-700">공급사별 판매현황<span className="text-[14px] font-semibold text-zinc-400 ml-1">(판매액 내림차순)</span></span>
           </div>
-          <span className="text-[11px] font-bold text-zinc-500 shrink-0">
+          <span className="text-[15px] font-bold text-zinc-500 shrink-0">
             {visibleSuppliers.length}개 사<span className="text-zinc-400 font-semibold"> / 총 {filteredSuppliers.length}개</span>
           </span>
         </div>
         {/* 필터 바 */}
-        <div className="flex items-center gap-2 mb-2 flex-wrap text-[11px]">
-          <span className="text-zinc-500 font-bold text-[10px] shrink-0">기간</span>
+        <div className="flex items-center gap-2 mb-2 flex-wrap text-[15px]">
+          <span className="text-zinc-500 font-bold text-[14px] shrink-0">기간</span>
           <div className="inline-flex bg-zinc-100/80 border border-line/60 rounded-lg p-0.5 shadow-inner">
             {PERIOD_PRESETS.map(p => (
               <button key={p.key} type="button" onClick={() => { setPeriodMonths(p.key); setSeason(null); }}
-                className={`px-2 py-1 text-[10px] font-bold rounded transition cursor-pointer ${!season && periodMonths === p.key ? "bg-white text-sky-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
+                className={`px-2 py-1 text-[14px] font-bold rounded transition cursor-pointer ${!season && periodMonths === p.key ? "bg-white text-sky-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
                 {p.label}
               </button>
             ))}
           </div>
           <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setPeriodMonths(0); }} size="sm" hideLabel />
-          <span className="text-zinc-500 font-bold text-[10px] shrink-0 ml-1">Top N</span>
+          <span className="text-zinc-500 font-bold text-[14px] shrink-0 ml-1">Top N</span>
           <div className="inline-flex bg-zinc-100/80 border border-line/60 rounded-lg p-0.5 shadow-inner" title="판매액 내림차순 상위 N개만 표시">
             {([100, 300, 1000, 2000, 0] as const).map(n => (
               <button key={n} type="button" onClick={() => setTopN(n)}
-                className={`px-2 py-1 text-[10px] font-bold rounded transition cursor-pointer ${topN === n ? "bg-white text-sky-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
+                className={`px-2 py-1 text-[14px] font-bold rounded transition cursor-pointer ${topN === n ? "bg-white text-sky-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
                 {n === 0 ? "전체" : `Top ${n}`}
               </button>
             ))}
@@ -216,7 +216,7 @@ const SupplierTrendTab: React.FC<{
             )}
           </div>
         </div>
-        <p className="text-[10px] text-sky-600 font-semibold mb-2 flex items-center gap-1">
+        <p className="text-[14px] text-sky-600 font-semibold mb-2 flex items-center gap-1">
           <span className="text-sky-400">▶</span> 공급사 클릭 → 판매액 내림차순 상품 리스트 펼치기 · 상품명 클릭 → 상세 모달
         </p>
         {loading && suppliers.length > 0 && (
@@ -231,7 +231,7 @@ const SupplierTrendTab: React.FC<{
               <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
             </div>
           ) : visibleSuppliers.length === 0 ? (
-            <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
+            <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
           ) : (
             <div className={`divide-y divide-zinc-50 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
               {visibleSuppliers.map((sup, i) => {
@@ -249,21 +249,21 @@ const SupplierTrendTab: React.FC<{
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className={`text-zinc-400 text-xs transition-transform shrink-0 ${isExpanded ? "rotate-90" : ""}`}>▶</span>
-                        <span className="text-[10px] font-bold text-sky-600 shrink-0">{i + 1}</span>
+                        <span className="text-[14px] font-bold text-sky-600 shrink-0">{i + 1}</span>
                         <Building2 size={11} className="text-sky-500 shrink-0" />
                         <span className="text-xs font-bold text-zinc-700 break-words whitespace-normal leading-tight">{sup.supplier}</span>
                         {sup.supplier_code && (
-                          <span className="text-[11px] tabular-nums text-zinc-400 shrink-0" title="공급사코드">#{sup.supplier_code}</span>
+                          <span className="text-[15px] tabular-nums text-zinc-400 shrink-0" title="공급사코드">#{sup.supplier_code}</span>
                         )}
                         {sup.code_conflict && (
-                          <span className="text-[11px] font-bold text-amber-700 bg-amber-100 border border-amber-300 rounded px-1 shrink-0"
+                          <span className="text-[15px] font-bold text-amber-700 bg-amber-100 border border-amber-300 rounded px-1 shrink-0"
                             title="같은 이름에 여러 공급사코드가 존재 — 중복 의심">⚠</span>
                         )}
                       </div>
-                      <span className="text-[11px] font-bold text-orange-700 shrink-0" title={`판매액 합계 · 판매수량 ${fmt(sup.saleQty)}개`}>{fmt(sup.saleAmount ?? 0)}원</span>
+                      <span className="text-[15px] font-bold text-orange-700 shrink-0" title={`판매액 합계 · 판매수량 ${fmt(sup.saleQty)}개`}>{fmt(sup.saleAmount ?? 0)}원</span>
                     </button>
                     <div className="flex items-center justify-end mt-0.5">
-                      <span className="text-[10px] text-zinc-400 shrink-0 text-right" title={`상품 ${sup.itemCount}종`}>
+                      <span className="text-[14px] text-zinc-400 shrink-0 text-right" title={`상품 ${sup.itemCount}종`}>
                         <span className="text-zinc-500 font-semibold">상품 {sup.itemCount}종</span>
                       </span>
                     </div>
@@ -275,12 +275,12 @@ const SupplierTrendTab: React.FC<{
                             <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
                           </div>
                         ) : !rows || rows.length === 0 ? (
-                          <div className="text-center text-[11px] text-zinc-300 py-6">상품 데이터 없음</div>
+                          <div className="text-center text-[15px] text-zinc-300 py-6">상품 데이터 없음</div>
                         ) : (
                           <div className="max-h-[50vh] overflow-auto">
                             <table className="w-full text-xs sm:min-w-[520px]">
                               <thead className="sticky top-0 bg-zinc-50 border-b-2 border-line z-10 shadow-sm">
-                                <tr className="text-[11px] text-zinc-500 uppercase tracking-wider">
+                                <tr className="text-[15px] text-zinc-500 uppercase tracking-wider">
                                   <th className="text-left px-0.5 py-1.5 w-6">#</th>
                                   {([
                                     { k: "name" as SupRowsSortKey, label: "상품명", align: "text-left", color: "slate" as const },
@@ -304,9 +304,9 @@ const SupplierTrendTab: React.FC<{
                                         <span className="inline-flex items-center gap-0.5">
                                           {col.label}
                                           {active ? (
-                                            <span className="text-[11px]">{supRowsSort.dir === "asc" ? "▲" : "▼"}</span>
+                                            <span className="text-[15px]">{supRowsSort.dir === "asc" ? "▲" : "▼"}</span>
                                           ) : (
-                                            <span className="text-[10px] text-zinc-300">⇅</span>
+                                            <span className="text-[14px] text-zinc-300">⇅</span>
                                           )}
                                         </span>
                                       </th>
@@ -323,12 +323,12 @@ const SupplierTrendTab: React.FC<{
                                   const profitRate = salePrice > 0 && purchasePrice > 0 ? ((salePrice - purchasePrice) / salePrice) * 100 : null;
                                   return (
                                     <tr key={`${key}-${r.product_code ?? ri}`} className="hover:bg-zinc-50/60 transition align-top">
-                                      <td className="px-0.5 py-1.5 text-[12px] font-bold text-orange-600">{ri + 1}</td>
+                                      <td className="px-0.5 py-1.5 text-[14px] font-bold text-orange-600">{ri + 1}</td>
                                       <td className="px-0.5 py-1.5 break-words whitespace-normal leading-tight">
                                         <button
                                           type="button"
                                           onClick={() => onProductClick?.(r)}
-                                          className="text-left text-[13px] font-medium text-zinc-800 hover:text-indigo-600 hover:underline cursor-pointer transition break-words whitespace-normal leading-tight"
+                                          className="text-left text-[15px] font-medium text-zinc-800 hover:text-indigo-600 hover:underline cursor-pointer transition break-words whitespace-normal leading-tight"
                                           title={`${r.product_name} — 클릭 시 상세 정보`}
                                         >{r.product_name}</button>
                                       </td>
@@ -343,7 +343,7 @@ const SupplierTrendTab: React.FC<{
                               </tbody>
                             </table>
                             {rows.length > 200 && (
-                              <div className="text-[10px] text-zinc-400 text-center py-1">상위 200개만 표시 · 전체 {rows.length}개</div>
+                              <div className="text-[14px] text-zinc-400 text-center py-1">상위 200개만 표시 · 전체 {rows.length}개</div>
                             )}
                           </div>
                         )}

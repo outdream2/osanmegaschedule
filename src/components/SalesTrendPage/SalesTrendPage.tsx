@@ -149,7 +149,7 @@ export const SalesTrendPage: React.FC = () => {
       <div className="flex items-center gap-2 min-w-0">
         <TrendingUp size={18} className="text-teal-600 shrink-0" />
         <h2 className="text-lg font-bold text-zinc-800">판매추이</h2>
-        <span className="text-[11px] font-semibold text-zinc-400 hidden md:inline">10일 스냅샷</span>
+        <span className="text-[15px] font-semibold text-zinc-400 hidden md:inline">10일 스냅샷</span>
       </div>
 
       {/* 탭 바 */}
@@ -166,7 +166,7 @@ export const SalesTrendPage: React.FC = () => {
           const activeBar = { sky: "bg-sky-500", amber: "bg-amber-500", teal: "bg-teal-500" }[t.color]!;
           return (
             <button key={t.k} onClick={() => setSalesTab(t.k)}
-              className={`relative basis-1/3 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-[13px] font-bold leading-tight transition-colors duration-150 ${active ? activeText : "text-zinc-400 hover:text-zinc-700"}`}>
+              className={`relative basis-1/3 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-[15px] font-bold leading-tight transition-colors duration-150 ${active ? activeText : "text-zinc-400 hover:text-zinc-700"}`}>
               <Icon size={13} strokeWidth={active ? 2.4 : 1.8} className="hidden sm:inline-block shrink-0" />
               <span>{t.label}</span>
               {active && <span className={`absolute left-0 right-0 -bottom-px h-[2px] ${activeBar} rounded-t-sm`} />}
@@ -210,7 +210,7 @@ export const SalesTrendPage: React.FC = () => {
             <div onMouseDown={onSupplierResizeStart}
               className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-sky-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
               title="드래그하여 폭 조절">
-              <span className="text-[11px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+              <span className="text-[15px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
             </div>
             <ProductDetailRightPanel
               selected={supplierSelectedProduct}
@@ -236,7 +236,7 @@ export const SalesTrendPage: React.FC = () => {
           scanProductModal ? (
             <div className="min-w-0">
               <div className="text-[17px] font-bold text-ink tracking-tight truncate">{scanProductModal.name}</div>
-              <div className="text-[13px] tabular-nums text-ink-soft mt-0.5">#{scanProductModal.code}</div>
+              <div className="text-[15px] tabular-nums text-ink-soft mt-0.5">#{scanProductModal.code}</div>
             </div>
           ) : null
         }
@@ -264,18 +264,18 @@ export const SalesTrendPage: React.FC = () => {
         title={
           <div className="min-w-0">
             <div className="text-[17px] font-bold text-ink tracking-tight">숨김 항목 관리</div>
-            <div className="text-[13px] font-medium text-ink-soft mt-0.5">숨김 처리된 상품 · 검색·발주 리스트에서 노출되지 않음</div>
+            <div className="text-[15px] font-medium text-ink-soft mt-0.5">숨김 처리된 상품 · 검색·발주 리스트에서 노출되지 않음</div>
           </div>
         }
         backdropIntensity="brand"
       >
         <div className="-mx-5 -my-5 flex flex-col">
           <div className="flex items-center justify-between px-5 py-2.5 border-b border-zinc-100 bg-white">
-            <span className="text-[11px] font-bold text-zinc-500">
+            <span className="text-[15px] font-bold text-zinc-500">
               총 <span className="text-amber-700 font-bold">{hiddenList.length}</span>개 숨김
             </span>
             <button onClick={loadHiddenList} disabled={hiddenLoading}
-              className="text-[10px] font-bold text-zinc-500 hover:text-zinc-800 border border-line hover:border-zinc-400 rounded-lg px-2 py-1 cursor-pointer transition">
+              className="text-[12px] font-bold text-zinc-500 hover:text-zinc-800 border border-line hover:border-zinc-400 rounded-lg px-2 py-1 cursor-pointer transition">
               {hiddenLoading ? "..." : "새로고침"}
             </button>
           </div>
@@ -286,7 +286,7 @@ export const SalesTrendPage: React.FC = () => {
               <div className="flex flex-col items-center justify-center py-16 text-zinc-400 gap-2">
                 <EyeOff size={28} className="opacity-40" />
                 <div className="text-sm font-bold">숨김 처리된 상품이 없습니다</div>
-                <div className="text-[11px]">정보확인 창에서 "숨기기"로 항목 추가 가능</div>
+                <div className="text-[15px]">정보확인 창에서 "숨기기"로 항목 추가 가능</div>
               </div>
             ) : (
               <ul className="divide-y divide-zinc-100 bg-white">
@@ -297,7 +297,7 @@ export const SalesTrendPage: React.FC = () => {
                     <li key={`st-hidden-${code}`} className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-amber-50/30 transition">
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-bold text-zinc-800 truncate" title={p.product_name}>{p.product_name}</div>
-                        <div className="text-[10px] tabular-nums text-zinc-400 truncate">
+                        <div className="text-[12px] tabular-nums text-zinc-400 truncate">
                           #{code}
                           {p.supplier ? ` · ${p.supplier}` : ""}
                           {/* location: resolveProductLocation 사용 */}
@@ -306,7 +306,7 @@ export const SalesTrendPage: React.FC = () => {
                         </div>
                       </div>
                       <button onClick={() => unhideProduct(code)} disabled={busy}
-                        className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-2.5 py-1.5 cursor-pointer transition"
+                        className="shrink-0 flex items-center gap-1 text-[12px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-2.5 py-1.5 cursor-pointer transition"
                         title="숨김 해제 · 다시 검색·발주 리스트에 표시">
                         {busy ? <Spinner size={11} tone="emerald" /> : <Eye size={11} />}
                         다시 표시

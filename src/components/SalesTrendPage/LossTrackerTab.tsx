@@ -74,16 +74,16 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
         <div className="flex items-center gap-1.5">
           <AlertOctagon size={14} className="text-rose-600" />
           <span className="text-sm font-bold text-zinc-700">손실추적</span>
-          <span className="text-[10px] text-zinc-400">(시작재고 − 판매) − 종료재고</span>
+          <span className="text-[14px] text-zinc-400">(시작재고 − 판매) − 종료재고</span>
         </div>
-        <span className="text-[11px] font-bold text-zinc-500">{filtered.length}건</span>
+        <span className="text-[15px] font-bold text-zinc-500">{filtered.length}건</span>
       </div>
       {/* 필터 바 */}
-      <div className="flex items-center gap-1.5 text-[11px] flex-wrap">
+      <div className="flex items-center gap-1.5 text-[15px] flex-wrap">
         <div className="inline-flex bg-zinc-100 rounded-md p-0.5">
           {([0, 100, 300, 1000, 2000] as const).map(n => (
             <button key={n} type="button" onClick={() => setTopN(n)}
-              className={`px-1.5 py-0.5 text-[10px] font-bold rounded transition ${topN === n ? "bg-white text-rose-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
+              className={`px-1.5 py-0.5 text-[14px] font-bold rounded transition ${topN === n ? "bg-white text-rose-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
               {n === 0 ? "전체" : `Top ${n}`}
             </button>
           ))}
@@ -111,12 +111,12 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
           <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
         </div>
       ) : !loading && filtered.length === 0 ? (
-        <div className="text-center text-[11px] text-zinc-300 py-6">손실 상품 없음</div>
+        <div className="text-center text-[15px] text-zinc-300 py-6">손실 상품 없음</div>
       ) : (
         <div className={`overflow-auto max-h-[50vh] rounded-lg border border-line ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
           <table className="w-full text-xs sm:min-w-[540px]">
             <thead className="sticky top-0 bg-zinc-50 border-b-2 border-line z-10 shadow-sm">
-              <tr className="text-[11px] text-zinc-500 uppercase tracking-wider">
+              <tr className="text-[15px] text-zinc-500 uppercase tracking-wider">
                 <th className="text-left px-1 py-1.5 w-6">#</th>
                 <th onClick={() => handleSort("name")}
                   className={`text-left px-1 py-1.5 cursor-pointer select-none hover:bg-zinc-100 transition ${sortKey === "name" ? "text-zinc-800 font-bold" : ""}`}>
@@ -156,14 +156,14 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
                 return (
                   <tr key={r.product_code ?? i} className="hover:bg-zinc-50/60 transition align-top"
                     title={`예상 = 시작(${open}) − 판매(${sale}) = ${expected}\n실제 종료 = ${close}\n손실 = ${expected - close}${purch > 0 ? `\n※ 이 기간 입고 ${purch} 있음 (예상 계산에 미반영)` : ""}`}>
-                    <td className="px-0.5 py-1.5 text-[12px] font-bold text-orange-600">{i + 1}</td>
+                    <td className="px-0.5 py-1.5 text-[14px] font-bold text-orange-600">{i + 1}</td>
                     <td className="px-0.5 py-1.5 align-top">
-                      <button onClick={() => onOpenProductInfo(r)} className="text-left text-[13px] font-medium text-zinc-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition">
+                      <button onClick={() => onOpenProductInfo(r)} className="text-left text-[15px] font-medium text-zinc-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition">
                         {r.product_name}
                       </button>
-                      {r.supplier && <div className="text-[11px] text-zinc-400 break-words whitespace-normal">{r.supplier}</div>}
+                      {r.supplier && <div className="text-[15px] text-zinc-400 break-words whitespace-normal">{r.supplier}</div>}
                     </td>
-                    <td className="px-0.5 py-1.5 text-zinc-500 text-[11px] hidden sm:table-cell break-words whitespace-normal leading-tight align-top">{r.supplier}</td>
+                    <td className="px-0.5 py-1.5 text-zinc-500 text-[15px] hidden sm:table-cell break-words whitespace-normal leading-tight align-top">{r.supplier}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-zinc-800 align-top">{fmt(open)}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-orange-700 font-bold bg-orange-50/40 align-top">{fmt(sale)}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-amber-800 font-bold bg-amber-50/40 align-top">{fmt(close)}</td>

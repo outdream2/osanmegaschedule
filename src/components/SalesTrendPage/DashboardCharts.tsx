@@ -176,7 +176,7 @@ const CategoryDistChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = 
           {data.map((d) => {
             const pct = total > 0 ? (d.value / total) * 100 : 0;
             return (
-              <div key={d.name} className="flex items-center gap-2 text-[12px]">
+              <div key={d.name} className="flex items-center gap-2 text-[14px]">
                 <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: d.color }} />
                 <span className="flex-1 min-w-0 font-semibold text-zinc-700 truncate">{d.name}</span>
                 <span className="tabular-nums font-bold text-zinc-800">{pct.toFixed(1)}%</span>
@@ -479,7 +479,7 @@ const StockVsSalesScatter: React.FC<{ rows: StockFlowRow[]; loading: boolean }> 
               if (!payload || !payload.length) return null;
               const d = payload[0].payload;
               return (
-                <Card variant="raw-lg" padding="none" rounded="lg" className="px-2.5 py-1.5 text-[12px]">
+                <Card variant="raw-lg" padding="none" rounded="lg" className="px-2.5 py-1.5 text-[14px]">
                   <div className="font-bold text-ink mb-0.5">{d.name}</div>
                   <div className="text-zinc-600">판매 <span className="tabular-nums font-bold text-brand-deep">{d.sale}개</span></div>
                   <div className="text-zinc-600">재고 <span className="tabular-nums font-bold text-emerald-700">{d.stock}개</span></div>
@@ -656,27 +656,27 @@ const StockHealthGauge: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = (
             <span className={`text-[26px] font-extrabold tabular-nums leading-none mt-0.5 ${scoreTone}`}>
               {healthScore}
             </span>
-            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">score</span>
+            <span className="text-[14px] font-bold text-zinc-400 uppercase tracking-wider">score</span>
           </div>
         </div>
         <div className="flex-1 min-w-0 flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-sm bg-emerald-500 shrink-0" />
-            <span className="text-[12px] font-semibold text-zinc-600 flex-1">건강 (70%+)</span>
-            <span className="tabular-nums font-bold text-emerald-700 text-[13px]">{healthy}</span>
+            <span className="text-[14px] font-semibold text-zinc-600 flex-1">건강 (70%+)</span>
+            <span className="tabular-nums font-bold text-emerald-700 text-[15px]">{healthy}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-sm bg-amber-500 shrink-0" />
-            <span className="text-[12px] font-semibold text-zinc-600 flex-1">주의 (30-70%)</span>
-            <span className="tabular-nums font-bold text-amber-700 text-[13px]">{warning}</span>
+            <span className="text-[14px] font-semibold text-zinc-600 flex-1">주의 (30-70%)</span>
+            <span className="tabular-nums font-bold text-amber-700 text-[15px]">{warning}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-sm bg-rose-500 shrink-0" />
-            <span className="text-[12px] font-semibold text-zinc-600 flex-1">위험 (30% 미만)</span>
-            <span className="tabular-nums font-bold text-rose-700 text-[13px]">{critical}</span>
+            <span className="text-[14px] font-semibold text-zinc-600 flex-1">위험 (30% 미만)</span>
+            <span className="tabular-nums font-bold text-rose-700 text-[15px]">{critical}</span>
           </div>
           {critical > 0 && (
-            <div className="mt-1 pt-2 border-t border-zinc-100 text-[11px] font-bold text-rose-600 flex items-center gap-1">
+            <div className="mt-1 pt-2 border-t border-zinc-100 text-[15px] font-bold text-rose-600 flex items-center gap-1">
               <AlertTriangle size={11} />
               긴급 발주 · {critical}종
             </div>

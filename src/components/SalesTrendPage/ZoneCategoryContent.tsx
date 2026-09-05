@@ -206,10 +206,10 @@ const ZoneCategoryContent: React.FC = () => {
       >
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
-            <span className={`inline-flex items-center justify-center w-[20px] h-[20px] text-[12px] font-bold rounded-md border tabular-nums shrink-0 ${rankCls}`}>{rank}</span>
-            <span className={`text-[13px] font-bold ${textCls} tabular-nums shrink-0`}>{formatZoneDisplayCode(g.zone)}</span>
+            <span className={`inline-flex items-center justify-center w-[20px] h-[20px] text-[14px] font-bold rounded-md border tabular-nums shrink-0 ${rankCls}`}>{rank}</span>
+            <span className={`text-[15px] font-bold ${textCls} tabular-nums shrink-0`}>{formatZoneDisplayCode(g.zone)}</span>
             {zoneCategoryLabel(g.zone) && (
-              <span className={`text-[11px] font-bold ${textCls} break-words whitespace-normal leading-tight`}>{zoneCategoryLabel(g.zone)}</span>
+              <span className={`text-[15px] font-bold ${textCls} break-words whitespace-normal leading-tight`}>{zoneCategoryLabel(g.zone)}</span>
             )}
           </div>
           {/* 2026-08-31 · 사용자 지시 · 화살표 = 아래 요약 접기 토글 (오른쪽 상세와 무관) */}
@@ -219,20 +219,20 @@ const ZoneCategoryContent: React.FC = () => {
             aria-label={collapsedZones.has(g.zone) ? "요약 펼치기" : "요약 접기"}
             onClick={(e) => toggleZoneCollapse(g.zone, e)}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleZoneCollapse(g.zone, e as any); } }}
-            className={`text-zinc-400 text-[10px] transition-transform shrink-0 cursor-pointer hover:text-zinc-600 px-1 ${!collapsedZones.has(g.zone) ? "rotate-90" : ""}`}
+            className={`text-zinc-400 text-[14px] transition-transform shrink-0 cursor-pointer hover:text-zinc-600 px-1 ${!collapsedZones.has(g.zone) ? "rotate-90" : ""}`}
           >▶</span>
         </div>
         {!collapsedZones.has(g.zone) && (
           <>
-            <div className="flex items-center justify-between gap-2 flex-wrap text-[11px] tabular-nums">
+            <div className="flex items-center justify-between gap-2 flex-wrap text-[15px] tabular-nums">
               <div className="flex items-center gap-1.5 text-zinc-500 font-semibold">
                 <span>상품 <span className="font-bold text-zinc-700">{g.items.length}</span>종</span>
                 <span className="text-zinc-300">·</span>
                 <span>판매 <span className="font-bold text-orange-700">{fmt(g.saleQty)}</span></span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-emerald-700 text-[12px]">{fmtWon(g.totalAmount)}</span>
-                <span className="text-[10px] font-bold text-zinc-400">{pct.toFixed(1)}%</span>
+                <span className="font-bold text-emerald-700 text-[14px]">{fmtWon(g.totalAmount)}</span>
+                <span className="text-[14px] font-bold text-zinc-400">{pct.toFixed(1)}%</span>
               </div>
             </div>
             <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
@@ -254,21 +254,21 @@ const ZoneCategoryContent: React.FC = () => {
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-2 flex-wrap px-0.5 pt-1">
           <div className="flex items-center gap-1.5">
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${badgeCls}`}>{badge}</span>
-            <span className="text-[12px] font-semibold text-zinc-700">{label}</span>
-            <span className="text-[11px] text-zinc-400 tabular-nums">{list.length}개 구역</span>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[15px] font-bold border ${badgeCls}`}>{badge}</span>
+            <span className="text-[14px] font-semibold text-zinc-700">{label}</span>
+            <span className="text-[15px] text-zinc-400 tabular-nums">{list.length}개 구역</span>
           </div>
           <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1">
             {SORT_OPTIONS.map(opt => (
               <button key={opt.key} type="button" onClick={() => setSortKey(opt.key)}
-                className={`px-2 py-0.5 text-[11px] font-semibold rounded transition cursor-pointer ${sortKey === opt.key ? "bg-white text-zinc-800 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+                className={`px-2 py-0.5 text-[15px] font-semibold rounded transition cursor-pointer ${sortKey === opt.key ? "bg-white text-zinc-800 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
                 {opt.label}
               </button>
             ))}
           </div>
         </div>
         {list.length === 0 ? (
-          <div className="text-[11px] text-zinc-300 py-2 text-center">해당 구역 없음</div>
+          <div className="text-[15px] text-zinc-300 py-2 text-center">해당 구역 없음</div>
         ) : (
           list.map((g, idx) => renderZoneCard(g, idx + 1))
         )}
@@ -296,8 +296,8 @@ const ZoneCategoryContent: React.FC = () => {
           className={`cursor-pointer select-none hover:bg-zinc-50 transition ${extraCls} ${active ? "font-bold" : ""}`}
           title={`${label} 정렬`}>
           <span className="inline-flex items-center gap-0.5">{label}
-            {active ? <span className="text-[11px]">{itemSort.dir === "asc" ? "▲" : "▼"}</span>
-              : <span className="text-[10px] text-zinc-300">⇅</span>}
+            {active ? <span className="text-[15px]">{itemSort.dir === "asc" ? "▲" : "▼"}</span>
+              : <span className="text-[14px] text-zinc-300">⇅</span>}
           </span>
         </th>
       );
@@ -317,7 +317,7 @@ const ZoneCategoryContent: React.FC = () => {
               <X size={14} strokeWidth={2.4} />
             </button>
           </div>
-          <div className="flex items-center gap-3 mt-2 flex-wrap text-[11px]">
+          <div className="flex items-center gap-3 mt-2 flex-wrap text-[15px]">
             <span className="text-zinc-500">상품 <span className="font-bold text-zinc-800">{g.items.length}개</span></span>
             <span className="text-zinc-500">판매 <span className="font-bold text-violet-700">{fmt(g.saleQty)}개</span></span>
             <span className="text-zinc-500">금액 <span className="font-bold text-emerald-700">{fmtWon(g.totalAmount)}</span></span>
@@ -328,7 +328,7 @@ const ZoneCategoryContent: React.FC = () => {
           <div className="overflow-auto max-h-[55vh]">
             <table className="w-full text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-zinc-50 border-b-2 border-line z-10 shadow-sm">
-                <tr className="text-[11px] text-zinc-500 uppercase tracking-wider">
+                <tr className="text-[15px] text-zinc-500 uppercase tracking-wider">
                   <th className="text-left px-1 py-1.5 w-6">#</th>
                   <th className="text-left px-0.5 py-1.5 w-24">공급사</th>
                   {sortableTh("name", "상품명", "text-left px-0.5 py-1.5")}
@@ -346,21 +346,21 @@ const ZoneCategoryContent: React.FC = () => {
                     : "-";
                   return (
                     <tr key={`${g.zone}-${it.code}`} className="hover:bg-zinc-50/60 align-top transition">
-                      <td className="px-0.5 py-1.5 text-[12px] font-bold text-orange-600">{i + 1}</td>
-                      <td className="px-0.5 py-1.5 text-[11px] text-zinc-500 break-words whitespace-normal leading-tight">{it.supplier || "-"}</td>
+                      <td className="px-0.5 py-1.5 text-[14px] font-bold text-orange-600">{i + 1}</td>
+                      <td className="px-0.5 py-1.5 text-[15px] text-zinc-500 break-words whitespace-normal leading-tight">{it.supplier || "-"}</td>
                       <td className="px-0.5 py-1.5 break-words whitespace-normal leading-tight">
-                        <span className="text-[13px] font-medium text-zinc-800 break-words whitespace-normal leading-tight">{it.name}</span>
+                        <span className="text-[15px] font-medium text-zinc-800 break-words whitespace-normal leading-tight">{it.name}</span>
                       </td>
-                      <td className="text-right px-0.5 py-1.5 text-[12px] tabular-nums text-orange-700 font-bold bg-orange-50/40">{fmt(it.saleQty)}</td>
-                      <td className="text-right px-0.5 py-1.5 text-[12px] tabular-nums font-bold text-emerald-700 bg-emerald-50/40">{fmtWon(it.amount)}</td>
-                      <td className="text-right px-0.5 py-1.5 text-[11px] tabular-nums text-amber-700 font-semibold bg-amber-50/40">{lastPDShort}</td>
-                      <td className={`text-right px-0.5 py-1.5 text-[12px] tabular-nums font-bold bg-zinc-50/40 ${it.optimalStock > 0 ? "text-zinc-700" : "text-zinc-300"}`}>{it.optimalStock > 0 ? fmt(it.optimalStock) : "-"}</td>
+                      <td className="text-right px-0.5 py-1.5 text-[14px] tabular-nums text-orange-700 font-bold bg-orange-50/40">{fmt(it.saleQty)}</td>
+                      <td className="text-right px-0.5 py-1.5 text-[14px] tabular-nums font-bold text-emerald-700 bg-emerald-50/40">{fmtWon(it.amount)}</td>
+                      <td className="text-right px-0.5 py-1.5 text-[15px] tabular-nums text-amber-700 font-semibold bg-amber-50/40">{lastPDShort}</td>
+                      <td className={`text-right px-0.5 py-1.5 text-[14px] tabular-nums font-bold bg-zinc-50/40 ${it.optimalStock > 0 ? "text-zinc-700" : "text-zinc-300"}`}>{it.optimalStock > 0 ? fmt(it.optimalStock) : "-"}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
-            {g.items.length > 200 && <div className="text-[11px] text-zinc-400 text-center py-1">상위 200개만 · 전체 {g.items.length}개</div>}
+            {g.items.length > 200 && <div className="text-[15px] text-zinc-400 text-center py-1">상위 200개만 · 전체 {g.items.length}개</div>}
           </div>
         </div>
       </div>
@@ -392,18 +392,18 @@ const ZoneCategoryContent: React.FC = () => {
           <PieChart size={16} className="text-brand-deep shrink-0" />
           <span className="text-[16px] font-bold text-ink tracking-tight">카테고리별현황</span>
           <StatusPill tone="amber" size="sm">{grouped.length}개 구역</StatusPill>
-          <span className="text-[12px] text-ink-soft hidden sm:inline">진열위치 기반 · 구역 클릭 → 상품 상세</span>
+          <span className="text-[14px] text-ink-soft hidden sm:inline">진열위치 기반 · 구역 클릭 → 상품 상세</span>
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">기간</span>
+          <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">기간</span>
           <div className="flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             <button type="button" onClick={() => { setSeason(null); setMonths(0); }}
-              className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!season && months === 0 ? "bg-amber-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+              className={`px-2 h-6 text-[15px] font-semibold rounded transition cursor-pointer ${!season && months === 0 ? "bg-amber-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
               10일
             </button>
             {[1, 2, 3, 4, 5, 6].map(m => (
               <button key={m} type="button" onClick={() => { setSeason(null); setMonths(m as any); }}
-                className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!season && months === m ? "bg-amber-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+                className={`px-2 h-6 text-[15px] font-semibold rounded transition cursor-pointer ${!season && months === m ? "bg-amber-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
                 {m}개월
               </button>
             ))}
@@ -419,7 +419,7 @@ const ZoneCategoryContent: React.FC = () => {
 
       {/* 2026-08-31 · #69 · 자동 확장 안내 배너 · 요청 기간에 데이터 없음 · 서버가 확장한 결과 표시 중 */}
       {autoExpanded && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-[12px]">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-[14px]">
           <span className="font-bold">데이터 안내</span>
           <span className="text-amber-700">
             최근 {autoExpanded.requested}개월 판매 스냅샷이 없어 <b>{autoExpanded.effective}개월</b>로 자동 확장했습니다
@@ -465,13 +465,13 @@ const ZoneCategoryContent: React.FC = () => {
             <div className={`overflow-y-auto max-h-[65vh] pr-1 flex flex-col gap-2 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
               <div className="flex items-center gap-1 border-b-2 border-line sticky top-0 bg-white z-10 -mx-1 px-1 pt-1">
                 <button type="button" onClick={() => setGroupTab("essential")}
-                  className={`relative px-4 py-2 text-[13px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${groupTab === "essential" ? "text-rose-700" : "text-zinc-400 hover:text-zinc-600"}`}>
-                  상비약 <span className="text-[11px] font-semibold text-zinc-400 ml-1 tabular-nums">({essentialGroups.length})</span>
+                  className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${groupTab === "essential" ? "text-rose-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+                  상비약 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({essentialGroups.length})</span>
                   {groupTab === "essential" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-rose-500" />}
                 </button>
                 <button type="button" onClick={() => setGroupTab("general")}
-                  className={`relative px-4 py-2 text-[13px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${groupTab === "general" ? "text-sky-700" : "text-zinc-400 hover:text-zinc-600"}`}>
-                  일반약 <span className="text-[11px] font-semibold text-zinc-400 ml-1 tabular-nums">({generalGroups.length})</span>
+                  className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${groupTab === "general" ? "text-sky-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+                  일반약 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({generalGroups.length})</span>
                   {groupTab === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-sky-500" />}
                 </button>
               </div>
@@ -489,7 +489,7 @@ const ZoneCategoryContent: React.FC = () => {
           className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-violet-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
           title="드래그하여 폭 조절"
         >
-          <span className="text-[11px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+          <span className="text-[15px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
         {/* 우측: 선택 구역 상세 */}
@@ -508,7 +508,7 @@ const ZoneCategoryContent: React.FC = () => {
                   <div className={`${TEXT.body} text-zinc-800 break-keep whitespace-normal leading-tight`}>
                     구역 {formatZoneDisplayCode(selectedZone)}{zoneCategoryLabel(selectedZone) ? ` · ${zoneCategoryLabel(selectedZone)}` : ""}
                   </div>
-                  <div className="text-[10px] tabular-nums text-zinc-500 break-keep whitespace-normal">
+                  <div className="text-[14px] tabular-nums text-zinc-500 break-keep whitespace-normal">
                     {grouped.find(g => g.zone === selectedZone)?.items.length ?? 0}개 상품
                   </div>
                 </div>
@@ -519,7 +519,7 @@ const ZoneCategoryContent: React.FC = () => {
             <div className="bg-white rounded-xl border border-line flex-1 flex flex-col items-center justify-center p-10 text-zinc-400 min-h-[400px]">
               <Layers size={40} className="mb-3 opacity-30" />
               <div className="text-sm font-bold">구역을 선택하세요</div>
-              <div className="text-[11px] mt-1">해당 구역의 상품 판매 상세가 표시됩니다</div>
+              <div className="text-[15px] mt-1">해당 구역의 상품 판매 상세가 표시됩니다</div>
             </div>
           ) : selectedGroup ? renderDetailPanel(selectedGroup) : null}
         </div>
