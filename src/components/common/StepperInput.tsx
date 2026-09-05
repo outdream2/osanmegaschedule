@@ -93,7 +93,7 @@ export const StepperInput: React.FC<StepperInputProps> = ({
   const heightCls = SIZE_H_CLS[size];
   const btnWCls = SIZE_BTN_W[size];
   const inputTextCls = SIZE_INPUT_TEXT[size];
-  const inputSize = autoSize ? Math.max(3, String(value === "" ? placeholder : value).length + 1) : undefined;
+  const inputChWidth = autoSize ? Math.max(2, String(value === "" ? placeholder : value).length) : undefined;
 
   return (
     <div
@@ -131,10 +131,10 @@ export const StepperInput: React.FC<StepperInputProps> = ({
         disabled={disabled}
         onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
         placeholder={placeholder}
-        size={inputSize}
+        style={inputChWidth != null ? { width: `${inputChWidth}ch` } : undefined}
         className={[
-          autoSize ? "w-auto shrink-0" : "flex-1 min-w-0",
-          "h-full text-center px-1 bg-transparent border-0",
+          autoSize ? "shrink-0" : "flex-1 min-w-0",
+          "h-full text-center px-0.5 bg-transparent border-0",
           inputTextCls,
           "font-bold tabular-nums text-ink",
           "focus:outline-none disabled:text-zinc-300 placeholder:text-zinc-300",
