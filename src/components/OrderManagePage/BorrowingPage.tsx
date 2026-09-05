@@ -42,6 +42,7 @@ import { matchesProductQuery } from "../../lib/productMatch";
 import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { ApiError } from "../../lib/apiClient";
+import { useCompanyInfo } from "../../hooks/useCompanyInfo";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import type { AuthSession } from "../../types";
 
@@ -51,12 +52,10 @@ import type { AuthSession } from "../../types";
 //   · direction=borrow · 약국→공급사 · lender=약국    · borrower=supplier
 // ═══════════════════════════════════════════════════════════════════════════
 
-const SELF_LABEL = "약국";
-
-function toCardData(row: BorrowingRow): BorrowingCardData {
+function toCardData(row: BorrowingRow, selfLabel: string): BorrowingCardData {
   const supplier = row.supplier ?? "-";
-  const lender_name  = row.direction === "lend"  ? supplier    : SELF_LABEL;
-  const borrower_name = row.direction === "lend" ? SELF_LABEL  : supplier;
+  const lender_name  = row.direction === "lend"  ? supplier   : selfLabel;
+  const borrower_name = row.direction === "lend" ? selfLabel  : supplier;
   return {
     id: row.id,
     contract_no: row.contract_no ?? null,
@@ -101,6 +100,9 @@ interface BorrowingPageProps {
 // 중앙 편집 모드 · Phase C · EditMode 타입은 BorrowingEditPanel 에서 재수출
 
 export const BorrowingPage: React.FC<BorrowingPageProps> = ({ authSession }) => {
+  const { info: companyInfo } = useCompanyInfo();
+  const selfLabel = companyInfo.name || "약국";
+
   // ── 데이터 로드 ─────────────────────────────────────────────
   const [rows, setRows] = useState<BorrowingRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -218,7 +220,7 @@ export const BorrowingPage: React.FC<BorrowingPageProps> = ({ authSession }) => 
                 : "hover:ring-1 hover:ring-brand-deep/20"
             }`}
           >
-            <BorrowingCard item={toCardData(r)} />
+            <BorrowingCard item={toCardData(r, selfLabel)} />
           </div>
         );
       })}

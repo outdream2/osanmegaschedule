@@ -42,6 +42,7 @@ import {
 } from "../../lib/borrowingsApi";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useCompanyInfo } from "../../hooks/useCompanyInfo";
 import { ApiError } from "../../lib/apiClient";
 import type { AuthSession } from "../../types";
 
@@ -62,13 +63,11 @@ export interface BorrowingDetailPanelProps {
 //   · borrow · lender=약국    · borrower=공급사
 // ═══════════════════════════════════════════════════════
 
-const SELF_LABEL = "약국";
-
-function partyForCard(row: BorrowingRow, role: "lender" | "borrower"): PartyCardData | null {
+function partyForCard(row: BorrowingRow, role: "lender" | "borrower", selfLabel: string): PartyCardData | null {
   const supplier = row.supplier ?? null;
   const isLender = role === "lender";
   const isSupplierSide = (row.direction === "lend" && isLender) || (row.direction === "borrow" && !isLender);
-  const name = isSupplierSide ? (supplier ?? "미지정") : SELF_LABEL;
+  const name = isSupplierSide ? (supplier ?? "미지정") : selfLabel;
   return {
     name,
     party_type: isSupplierSide ? "vendor" : "self",
@@ -91,6 +90,9 @@ function fmtTs(ts?: string | null): string {
 export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
   row, onChanged, onDeleted, authSession,
 }) => {
+  const { info: companyInfo } = useCompanyInfo();
+  const selfLabel = companyInfo.name || "약국";
+
   const [sigs, setSigs] = useState<BorrowingSignature[]>([]);
   const [loadingSig, setLoadingSig] = useState(false);
   const [sigError, setSigError] = useState<string | null>(null);
@@ -308,9 +310,9 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
         <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-4">
           {/* Party · Arrow · Party */}
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-3 items-center">
-            <BorrowingPartyCard role="lender"   party={partyForCard(row, "lender")} />
+            <BorrowingPartyCard role="lender"   party={partyForCard(row, "lender", selfLabel)} />
             <BorrowingArrow status={arrowStatus} productSummary={productSummary} className="py-2" />
-            <BorrowingPartyCard role="borrower" party={partyForCard(row, "borrower")} />
+            <BorrowingPartyCard role="borrower" party={partyForCard(row, "borrower", selfLabel)} />
           </div>
 
           {/* 상세 요약 정보 */}
