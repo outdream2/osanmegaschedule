@@ -241,9 +241,9 @@ export const OrderHistoryTab: React.FC = () => {
             <Spinner size={16} tone="zinc" label="불러오는 중..." labelSize={15} />
           </div>
         ) : error ? (
-          <div className="p-8 text-center text-rose-600 text-[15px] font-bold">⚠ {error}</div>
+          <div className="p-8 text-center text-rose-600 text-[17px] font-bold">⚠ {error}</div>
         ) : filteredOrders.length === 0 ? (
-          <div className="p-12 text-center text-zinc-400 text-[15px]">
+          <div className="p-12 text-center text-zinc-400 text-[17px]">
             {(supplierSearch.trim() || productSearch.trim()) ? "검색 결과 없음 · 다른 검색어로 시도하세요" : "발주 이력 없음 · 발주 완료 시 여기에 표시"}
           </div>
         ) : (
@@ -265,33 +265,33 @@ export const OrderHistoryTab: React.FC = () => {
                       <ChevronRight size={16} className="text-zinc-300 shrink-0" />
                     )}
                     {/* 발주번호 */}
-                    <span className="text-[14px] font-bold text-sky-700 tabular-nums shrink-0">
+                    <span className="text-[16px] font-bold text-sky-700 tabular-nums shrink-0">
                       #{o.order_number ?? "—"}
                     </span>
                     {/* 공급사 · 2026-08-24 · v3 · sky-800 톤 통일 · truncate 제거 */}
-                    <span className="text-[15px] font-bold text-sky-800 whitespace-normal break-words">
+                    <span className="text-[17px] font-bold text-sky-800 whitespace-normal break-words">
                       {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
                     </span>
                     {/* 상품 종·수량 · 2026-08-17 · StatusPill 통일 */}
                     <StatusPill tone="zinc" size="sm">{o.items.length}종 · {o.total_qty}개</StatusPill>
                     {/* 2026-08-12 · 발주일 · 헤더로 이동 · 상품수 옆 */}
                     {o.order_date && (
-                      <span className="inline-flex items-center gap-1 text-[13px] font-medium text-zinc-500 tabular-nums shrink-0">
+                      <span className="inline-flex items-center gap-1 text-[15px] font-medium text-zinc-500 tabular-nums shrink-0">
                         <Calendar size={13} className="text-zinc-400" />발주 {o.order_date}
                       </span>
                     )}
                     {/* 2026-08-12 · 희망입고일 · 헤더로 이동 · 상품수 옆 */}
                     {o.desired_arrival && (
-                      <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-rose-600 tabular-nums shrink-0">
+                      <span className="inline-flex items-center gap-1 text-[15px] font-semibold text-rose-600 tabular-nums shrink-0">
                         <CalendarCheck size={13} />희망 {o.desired_arrival}
                       </span>
                     )}
                     {/* 총액 · 오른쪽 */}
-                    <span className="ml-auto text-[15px] font-bold text-emerald-700 tabular-nums shrink-0">
+                    <span className="ml-auto text-[17px] font-bold text-emerald-700 tabular-nums shrink-0">
                       {fmtWon(o.total_amount)}
                     </span>
                     {/* 발송 시각 */}
-                    <span className="text-[13px] text-zinc-400 tabular-nums shrink-0 min-w-[90px] text-right">
+                    <span className="text-[15px] text-zinc-400 tabular-nums shrink-0 min-w-[90px] text-right">
                       {o.sent_at?.slice(0, 10) ?? "-"}
                     </span>
                   </button>
@@ -300,7 +300,7 @@ export const OrderHistoryTab: React.FC = () => {
                   {isOpen && (
                     <div className="px-4 pb-3 space-y-2">
                       {/* 수신처 정보 · 발주일·희망입고일 은 헤더로 이동했으므로 · 여기서는 담당자·연락처·메모만 */}
-                      <div className="flex items-center gap-3 flex-wrap text-[13px] text-zinc-500 bg-zinc-50/60 border border-zinc-100 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-3 flex-wrap text-[15px] text-zinc-500 bg-zinc-50/60 border border-zinc-100 rounded-lg px-3 py-2">
                         {o.supplier_contact && (
                           <span className="inline-flex items-center gap-1"><User size={13} />{o.supplier_contact}</span>
                         )}
@@ -318,7 +318,7 @@ export const OrderHistoryTab: React.FC = () => {
                         )}
                       </div>
                       {/* 아이템 테이블 · 2026-08-24 · v3 · 헬퍼 · 줄바꿈 우선 */}
-                      <table className="w-full text-[14px] tabular-nums">
+                      <table className="w-full text-[16px] tabular-nums">
                         <thead className={tableHeadCls()}>
                           <tr>
                             <th className={tableThCls("center", "w-8")}>#</th>
