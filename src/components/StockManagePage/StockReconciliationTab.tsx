@@ -261,7 +261,7 @@ export const StockReconciliationTab: React.FC<{
 
         <div className="ml-auto flex items-center gap-2">
           {refreshedAt && !loading && (
-            <span className="text-[14px] font-semibold text-zinc-400 tabular-nums hidden sm:inline">
+            <span className="text-[16px] font-semibold text-zinc-400 tabular-nums hidden sm:inline">
               {fmtDate(refreshedAt.toISOString())}
             </span>
           )}
@@ -295,7 +295,7 @@ export const StockReconciliationTab: React.FC<{
           <select
             value={supplierFilter}
             onChange={e => setSupplierFilter(e.target.value)}
-            className="h-8 pl-7 pr-6 text-[14px] font-semibold bg-zinc-50 border border-line rounded-lg
+            className="h-8 pl-7 pr-6 text-[16px] font-semibold bg-zinc-50 border border-line rounded-lg
               focus:outline-none focus:border-brand-deep focus:bg-white transition cursor-pointer appearance-none"
           >
             <option value="">전체 공급사</option>
@@ -337,7 +337,7 @@ export const StockReconciliationTab: React.FC<{
           />
         ) : (
           <div className="overflow-auto flex-1 min-h-0">
-            <table className="w-full text-[14px] border-collapse" style={{ tableLayout: "fixed" }}>
+            <table className="w-full text-[16px] border-collapse" style={{ tableLayout: "fixed" }}>
               <thead className="bg-emerald-50/50 border-b border-emerald-100 sticky top-0 z-10">
                 <tr>
                   <th className="relative px-2 py-2 text-left font-bold text-emerald-800" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
@@ -403,8 +403,8 @@ export const StockReconciliationTab: React.FC<{
                     <tr key={r.product_code} className="hover:bg-zinc-50/60 transition">
                       <td className="px-2 py-1.5 text-zinc-400 tabular-nums">{i + 1}</td>
                       <td className="px-2 py-1.5">
-                        <p className="text-[14px] font-bold text-zinc-800 leading-snug break-words">{r.product_name}</p>
-                        <p className="text-[14px] tabular-nums text-zinc-400 mt-0.5">#{r.product_code}</p>
+                        <p className="text-[16px] font-bold text-zinc-800 leading-snug break-words">{r.product_name}</p>
+                        <p className="text-[16px] tabular-nums text-zinc-400 mt-0.5">#{r.product_code}</p>
                       </td>
                       <td className="px-2 py-1.5 text-zinc-600 break-words max-w-[160px]" title={r.supplier ?? ""}>
                         {r.supplier ?? <span className="text-zinc-300">-</span>}

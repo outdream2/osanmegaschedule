@@ -119,9 +119,9 @@ export const FlowFilterBar: React.FC<FlowFilterBarProps> = ({
                 className="w-full text-left px-3 py-2 hover:bg-sky-50 transition flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <div className="text-[15px] font-semibold text-zinc-800 whitespace-nowrap">{(p as any).product_name}</div>
-                  <div className="text-[13px] tabular-nums text-zinc-400 whitespace-nowrap">#{(p as any).product_code} · {(p as any).supplier ?? "-"}</div>
+                  <div className="text-[15px] tabular-nums text-zinc-400 whitespace-nowrap">#{(p as any).product_code} · {(p as any).supplier ?? "-"}</div>
                 </div>
-                <span className="text-[13px] text-zinc-400 shrink-0">재고 {(p as any).current_stock ?? "-"}</span>
+                <span className="text-[15px] text-zinc-400 shrink-0">재고 {(p as any).current_stock ?? "-"}</span>
               </button>
             ))}
           </div>
@@ -180,7 +180,7 @@ export const FlowFilterBar: React.FC<FlowFilterBarProps> = ({
         <span className="text-zinc-400 text-[15px]">개</span>
         {(salesQtyMin || salesQtyMax) && (
           <button onClick={() => { setSalesQtyMin(""); setSalesQtyMax(""); }}
-            className="text-[14px] font-semibold text-rose-500 hover:text-rose-700 px-1.5 py-1 rounded-md hover:bg-rose-50 transition cursor-pointer border border-rose-200">초기화</button>
+            className="text-[16px] font-semibold text-rose-500 hover:text-rose-700 px-1.5 py-1 rounded-md hover:bg-rose-50 transition cursor-pointer border border-rose-200">초기화</button>
         )}
       </div>
 
@@ -234,7 +234,7 @@ export const HiddenManagerModal: React.FC<HiddenManagerModalProps> = ({
       title={
         <div className="min-w-0">
           <div className="text-[17px] font-bold text-ink tracking-tight">숨김 항목 관리</div>
-          <div className="text-[13px] font-medium text-ink-soft mt-0.5">숨김 처리된 상품 · 검색·발주 리스트에서 노출되지 않음</div>
+          <div className="text-[15px] font-medium text-ink-soft mt-0.5">숨김 처리된 상품 · 검색·발주 리스트에서 노출되지 않음</div>
         </div>
       }
     >
@@ -242,7 +242,7 @@ export const HiddenManagerModal: React.FC<HiddenManagerModalProps> = ({
         <div className="flex items-center justify-between px-5 py-2.5 border-b border-zinc-100 bg-white">
           <span className="text-[15px] font-bold text-zinc-500">총 <span className="text-amber-700 font-bold">{hiddenList.length}</span>개 숨김</span>
           <button onClick={loadHiddenList} disabled={hiddenLoading}
-            className="text-[14px] font-bold text-zinc-500 hover:text-zinc-800 border border-line hover:border-zinc-400 rounded-lg px-2 py-1 cursor-pointer transition">
+            className="text-[16px] font-bold text-zinc-500 hover:text-zinc-800 border border-line hover:border-zinc-400 rounded-lg px-2 py-1 cursor-pointer transition">
             {hiddenLoading ? "..." : "새로고침"}
           </button>
         </div>
@@ -267,12 +267,12 @@ export const HiddenManagerModal: React.FC<HiddenManagerModalProps> = ({
                   <li key={`hidden-${code}`} className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-amber-50/30 transition">
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-bold text-zinc-800 break-words leading-tight">{(p as any).product_name}</div>
-                      <div className="text-[14px] tabular-nums text-zinc-400 break-words whitespace-normal leading-tight">
+                      <div className="text-[16px] tabular-nums text-zinc-400 break-words whitespace-normal leading-tight">
                         #{code}{(p as any).supplier ? ` · ${(p as any).supplier}` : ""}{resolveProductLocation(p) ? ` · ${resolveProductLocation(p)}` : ""}{(p as any).current_stock != null ? ` · 재고 ${(p as any).current_stock}` : ""}
                       </div>
                     </div>
                     <button onClick={() => onUnhideProduct(code)} disabled={busy}
-                      className="shrink-0 flex items-center gap-1 text-[14px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-2.5 py-1.5 cursor-pointer transition">
+                      className="shrink-0 flex items-center gap-1 text-[16px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-2.5 py-1.5 cursor-pointer transition">
                       {busy ? <Spinner size={11} /> : <EyeOff size={11} />}
                       다시 표시
                     </button>

@@ -50,7 +50,7 @@ export const ProductPurchaseHistoryModal: React.FC<{
       title={
         <div className="min-w-0">
           <div className="text-[17px] font-bold text-ink break-words leading-tight tracking-tight">{productName}</div>
-          <div className="text-[13px] text-ink-soft tabular-nums mt-0.5">
+          <div className="text-[15px] text-ink-soft tabular-nums mt-0.5">
             코드 <span className="font-bold text-ink">{productCode}</span>
             <span className="ml-2">· 매입 이력 조회</span>
           </div>
@@ -69,16 +69,16 @@ export const ProductPurchaseHistoryModal: React.FC<{
                 shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)]">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className={`w-1.5 h-1.5 rounded-full ${k.dot}`} />
-                  <div className="text-[12px] font-semibold text-ink-soft tracking-tight">{k.label}</div>
+                  <div className="text-[14px] font-semibold text-ink-soft tracking-tight">{k.label}</div>
                 </div>
                 <div className={`text-[18px] font-extrabold tabular-nums leading-tight ${k.text}`}>
                   {k.value}
-                  {k.unit && <span className="text-[12px] ml-0.5 font-semibold text-ink-soft">{k.unit}</span>}
+                  {k.unit && <span className="text-[14px] ml-0.5 font-semibold text-ink-soft">{k.unit}</span>}
                 </div>
               </div>
             ))}
           </div>
-          <div className="text-[12px] text-ink-soft mb-2 flex items-center gap-2">
+          <div className="text-[14px] text-ink-soft mb-2 flex items-center gap-2">
             <span className="font-bold">공급사 종류:</span>
             <span className="tabular-nums text-ink font-semibold">{uniqueSuppliers}개 사</span>
           </div>
@@ -98,7 +98,7 @@ export const ProductPurchaseHistoryModal: React.FC<{
         />
       </div>
       {!loading && !error && rows.length > 0 && (
-        <div className="mt-2 text-[12px] text-ink-soft">
+        <div className="mt-2 text-[14px] text-ink-soft">
           <span className="font-bold">데이터 소스:</span> purchase_details · 매입상세 xlsx 임포트에서 저장된 이력
         </div>
       )}

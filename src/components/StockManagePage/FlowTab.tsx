@@ -455,7 +455,7 @@ export const FlowTab: React.FC = () => {
 
       {/* 2026-08-31 · #30 · 자동 확장 안내 배너 · 요청 기간에 데이터 없음 · 확장한 결과 표시 중 */}
       {flowAutoExpanded && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-[13px] self-start">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-[15px] self-start">
           <span className="font-bold">데이터 안내</span>
           <span className="text-amber-700">
             최근 {flowAutoExpanded.requested}개월 재고 스냅샷이 없어 <b>{flowAutoExpanded.effective}개월</b>로 자동 확장했습니다
@@ -519,7 +519,7 @@ export const FlowTab: React.FC = () => {
                 {loading && filteredFlow.length > 0 && (
                   <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mx-1 mb-1 shrink-0">
                     <Spinner size={11} tone="sky" />
-                    <span className="text-[14px] font-bold text-sky-700">조건 변경 · 새로 불러오는 중...</span>
+                    <span className="text-[16px] font-bold text-sky-700">조건 변경 · 새로 불러오는 중...</span>
                   </Card>
                 )}
 

@@ -175,7 +175,7 @@ export const LossHistoryTab: React.FC = () => {
                 key={k}
                 type="button"
                 onClick={() => setPeriod(k)}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-md border transition cursor-pointer ${
+                className={`px-2.5 py-1 text-[13px] font-bold rounded-md border transition cursor-pointer ${
                   period === k
                     ? "bg-violet-500 text-white border-violet-500"
                     : "bg-white text-zinc-500 border-line hover:bg-zinc-50"
@@ -191,7 +191,7 @@ export const LossHistoryTab: React.FC = () => {
           <select
             value={supplierFilter}
             onChange={(e) => setSupplierFilter(e.target.value)}
-            className="text-[11px] font-semibold border border-line rounded-md px-2 py-1 bg-white cursor-pointer max-w-[140px]"
+            className="text-[13px] font-semibold border border-line rounded-md px-2 py-1 bg-white cursor-pointer max-w-[140px]"
           >
             <option value="">전체 공급사</option>
             {supplierOptions.map(s => (
@@ -207,7 +207,7 @@ export const LossHistoryTab: React.FC = () => {
           onClick={runSnapshot}
           disabled={snapshotting}
           title="지금 손실 스냅샷 저장 (실재고 저장 시 자동으로도 저장됨)"
-          className="ml-auto sm:ml-0 flex items-center gap-1 px-2 py-1 text-[11px] font-bold rounded-md border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 transition disabled:opacity-40 cursor-pointer"
+          className="ml-auto sm:ml-0 flex items-center gap-1 px-2 py-1 text-[13px] font-bold rounded-md border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 transition disabled:opacity-40 cursor-pointer"
         >
           {snapshotting ? <Spinner size={11} tone="violet" /> : <Camera size={11} />}
           스냅샷
@@ -315,7 +315,7 @@ export const LossHistoryTab: React.FC = () => {
                 </span>
                 <span className={`${TEXT.caption} text-zinc-400`}>{supplierTop10.length}건</span>
               </div>
-              <table className="w-full text-[11px]">
+              <table className="w-full text-[13px]">
                 <tbody className="divide-y divide-zinc-50">
                   {supplierTop10.map((r, i) => (
                     <tr key={`sup-${r.key}`} className="hover:bg-zinc-50/60">
@@ -324,7 +324,7 @@ export const LossHistoryTab: React.FC = () => {
                         {displayVendorName(r.label)}
                       </td>
                       <td className="py-1.5 text-right text-rose-700 font-bold tabular-nums">{fmtWon(r.loss_value)}</td>
-                      <td className="py-1.5 pl-2 text-right text-zinc-400 tabular-nums text-[10px] w-14">{fmt(r.count)}건</td>
+                      <td className="py-1.5 pl-2 text-right text-zinc-400 tabular-nums text-[12px] w-14">{fmt(r.count)}건</td>
                     </tr>
                   ))}
                   {supplierTop10.length === 0 && (
@@ -341,7 +341,7 @@ export const LossHistoryTab: React.FC = () => {
                 </span>
                 <span className={`${TEXT.caption} text-zinc-400`}>{productTop10.length}건</span>
               </div>
-              <table className="w-full text-[11px]">
+              <table className="w-full text-[13px]">
                 <tbody className="divide-y divide-zinc-50">
                   {productTop10.map((r, i) => (
                     <tr key={`prod-${r.key}`} className="hover:bg-zinc-50/60">
@@ -350,7 +350,7 @@ export const LossHistoryTab: React.FC = () => {
                         {r.label}
                       </td>
                       <td className="py-1.5 text-right text-rose-700 font-bold tabular-nums">{fmtWon(r.loss_value)}</td>
-                      <td className="py-1.5 pl-2 text-right text-zinc-400 tabular-nums text-[10px] w-14">{fmt(r.count)}건</td>
+                      <td className="py-1.5 pl-2 text-right text-zinc-400 tabular-nums text-[12px] w-14">{fmt(r.count)}건</td>
                     </tr>
                   ))}
                   {productTop10.length === 0 && (

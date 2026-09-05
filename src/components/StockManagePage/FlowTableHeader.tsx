@@ -64,7 +64,7 @@ export const FlowTableHeader: React.FC<FlowTableHeaderProps> = ({
                 ? <CheckSquare size={13} className="text-rose-500" />
                 : <Square size={13} />}
             </button>
-            <span className="text-[14px] font-bold text-zinc-500">#</span>
+            <span className="text-[16px] font-bold text-zinc-500">#</span>
           </div>
           <span {...resizerProps("sel")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
         </th>
@@ -75,7 +75,7 @@ export const FlowTableHeader: React.FC<FlowTableHeaderProps> = ({
           style={{ width: getWidth("name"), minWidth: getWidth("name") }}>
           <span className="flex flex-col leading-tight items-start">
             <span>상품명</span>
-            <span className="text-[14px] opacity-70">{arrowFor("name")}</span>
+            <span className="text-[16px] opacity-70">{arrowFor("name")}</span>
           </span>
           <span {...resizerProps("name")} className={RESIZER_CLS} style={{ touchAction: "none" }}
             onClick={(e: React.MouseEvent) => e.stopPropagation()} />
@@ -87,27 +87,27 @@ export const FlowTableHeader: React.FC<FlowTableHeaderProps> = ({
           <th onClick={() => toggleFlowSort("sale")}
             className={`relative text-right px-0.5 py-1.5 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === "sale" ? "text-sky-800 font-bold" : "text-sky-600 font-bold"}`}
             style={{ width: getWidth("stock_sale"), minWidth: getWidth("stock_sale") }}>
-            <span className="flex flex-col leading-tight items-end"><span>판매량</span><span className="text-[14px] opacity-70">{arrowFor("sale")}</span></span>
+            <span className="flex flex-col leading-tight items-end"><span>판매량</span><span className="text-[16px] opacity-70">{arrowFor("sale")}</span></span>
             <span {...resizerProps("stock_sale")} className={RESIZER_CLS} style={{ touchAction: "none" }}
               onClick={(e: React.MouseEvent) => e.stopPropagation()} />
           </th>
           <th onClick={() => toggleFlowSort("current")}
             className={`relative text-right px-0.5 py-1.5 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === "current" ? "text-sky-800 font-bold" : "text-sky-600 font-bold"}`}
             style={{ width: getWidth("stock_cur"), minWidth: getWidth("stock_cur") }}>
-            <span className="flex flex-col leading-tight items-end"><span>현재고</span><span className="text-[14px] opacity-70">{arrowFor("current")}</span></span>
+            <span className="flex flex-col leading-tight items-end"><span>현재고</span><span className="text-[16px] opacity-70">{arrowFor("current")}</span></span>
             <span {...resizerProps("stock_cur")} className={RESIZER_CLS} style={{ touchAction: "none" }}
               onClick={(e: React.MouseEvent) => e.stopPropagation()} />
           </th>
           <th onClick={() => toggleFlowSort("optimal" as any)}
             className="relative text-right px-0.5 py-1.5 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition text-sky-600 font-bold"
             style={{ width: getWidth("stock_opt"), minWidth: getWidth("stock_opt") }}>
-            <span className="flex flex-col leading-tight items-end"><span>추천적정재고</span><span className="text-[14px] opacity-70">{arrowFor("optimal" as any)}</span></span>
+            <span className="flex flex-col leading-tight items-end"><span>추천적정재고</span><span className="text-[16px] opacity-70">{arrowFor("optimal" as any)}</span></span>
             <span {...resizerProps("stock_opt")} className={RESIZER_CLS} style={{ touchAction: "none" }}
               onClick={(e: React.MouseEvent) => e.stopPropagation()} />
           </th>
           <th className="relative text-right px-0.5 py-1.5 bg-sky-50/40 text-sky-600 font-bold"
             style={{ width: getWidth("stock_month"), minWidth: getWidth("stock_month") }}>
-            <span className="flex flex-col leading-tight items-end"><span>최근30일</span><span className="text-[14px] opacity-70">판매</span></span>
+            <span className="flex flex-col leading-tight items-end"><span>최근30일</span><span className="text-[16px] opacity-70">판매</span></span>
             <span {...resizerProps("stock_month")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
           </th>
         </>}
@@ -119,9 +119,9 @@ export const FlowTableHeader: React.FC<FlowTableHeaderProps> = ({
             className={`relative text-right px-0.5 py-1.5 text-[15px] font-bold cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "cycle" ? "text-amber-800" : "text-amber-600"}`}
             style={{ width: getWidth("pur_cycle"), minWidth: getWidth("pur_cycle") }}>
             <span className="flex flex-col leading-tight items-end">
-              <span className="text-[14px] font-semibold text-amber-500">평균</span>
+              <span className="text-[16px] font-semibold text-amber-500">평균</span>
               <span>매입주기</span>
-              <span className="text-[14px] opacity-70">{arrowFor("cycle")}</span>
+              <span className="text-[16px] opacity-70">{arrowFor("cycle")}</span>
             </span>
             <span {...resizerProps("pur_cycle")} className={RESIZER_CLS} style={{ touchAction: "none" }}
               onClick={(e: React.MouseEvent) => e.stopPropagation()} />
@@ -130,9 +130,9 @@ export const FlowTableHeader: React.FC<FlowTableHeaderProps> = ({
             className={`relative text-right px-0.5 py-1.5 text-[15px] font-bold cursor-pointer select-none bg-amber-50/40 hover:bg-amber-100 transition ${flowSort === "last_purchase" ? "text-amber-800" : "text-amber-600"}`}
             style={{ width: getWidth("pur_last"), minWidth: getWidth("pur_last") }}>
             <span className="flex flex-col leading-tight items-end">
-              <span className="text-[14px] font-semibold text-amber-500">최근</span>
+              <span className="text-[16px] font-semibold text-amber-500">최근</span>
               <span>매입일</span>
-              <span className="text-[14px] opacity-70">{arrowFor("last_purchase")}</span>
+              <span className="text-[16px] opacity-70">{arrowFor("last_purchase")}</span>
             </span>
             <span {...resizerProps("pur_last")} className={RESIZER_CLS} style={{ touchAction: "none" }}
               onClick={(e: React.MouseEvent) => e.stopPropagation()} />
@@ -141,9 +141,9 @@ export const FlowTableHeader: React.FC<FlowTableHeaderProps> = ({
             className={`relative text-right px-0.5 py-1.5 text-[15px] font-bold cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "purchase" ? "text-amber-800" : "text-amber-600"}`}
             style={{ width: getWidth("pur_qty"), minWidth: getWidth("pur_qty") }}>
             <span className="flex flex-col leading-tight items-end">
-              <span className="text-[14px] font-semibold text-amber-500">최근</span>
+              <span className="text-[16px] font-semibold text-amber-500">최근</span>
               <span>매입량</span>
-              <span className="text-[14px] opacity-70">{arrowFor("purchase")}</span>
+              <span className="text-[16px] opacity-70">{arrowFor("purchase")}</span>
             </span>
             <span {...resizerProps("pur_qty")} className={RESIZER_CLS} style={{ touchAction: "none" }}
               onClick={(e: React.MouseEvent) => e.stopPropagation()} />
@@ -156,14 +156,14 @@ export const FlowTableHeader: React.FC<FlowTableHeaderProps> = ({
           <th onClick={() => toggleFlowSort("sale")}
             className={`relative text-right px-0.5 py-1.5 text-[15px] font-bold cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale" ? "text-rose-800" : "text-rose-700"}`}
             style={{ width: getWidth("sal_qty"), minWidth: getWidth("sal_qty") }}>
-            <span className="flex flex-col leading-tight items-end"><span>판매량</span><span className="text-[14px] opacity-70">{arrowFor("sale")}</span></span>
+            <span className="flex flex-col leading-tight items-end"><span>판매량</span><span className="text-[16px] opacity-70">{arrowFor("sale")}</span></span>
             <span {...resizerProps("sal_qty")} className={RESIZER_CLS} style={{ touchAction: "none" }}
               onClick={(e: React.MouseEvent) => e.stopPropagation()} />
           </th>
           <th onClick={() => toggleFlowSort("amount")}
             className={`relative text-right px-0.5 py-1.5 text-[15px] font-bold cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "amount" ? "text-rose-800" : "text-rose-700"}`}
             style={{ width: getWidth("sal_amount"), minWidth: getWidth("sal_amount") }}>
-            <span className="flex flex-col leading-tight items-end"><span>판매금액</span><span className="text-[14px] opacity-70">{arrowFor("amount")}</span></span>
+            <span className="flex flex-col leading-tight items-end"><span>판매금액</span><span className="text-[16px] opacity-70">{arrowFor("amount")}</span></span>
             <span {...resizerProps("sal_amount")} className={RESIZER_CLS} style={{ touchAction: "none" }}
               onClick={(e: React.MouseEvent) => e.stopPropagation()} />
           </th>
@@ -173,7 +173,7 @@ export const FlowTableHeader: React.FC<FlowTableHeaderProps> = ({
             <span className="flex flex-col leading-tight items-end">
               <span className="font-semibold text-rose-500">ERP</span>
               <span>단가</span>
-              <span className="text-[14px] opacity-70">{arrowFor("last_purchase_price")}</span>
+              <span className="text-[16px] opacity-70">{arrowFor("last_purchase_price")}</span>
             </span>
             <span {...resizerProps("sal_unit")} className={RESIZER_CLS} style={{ touchAction: "none" }}
               onClick={(e: React.MouseEvent) => e.stopPropagation()} />
@@ -181,14 +181,14 @@ export const FlowTableHeader: React.FC<FlowTableHeaderProps> = ({
           <th onClick={() => toggleFlowSort("sale_price")}
             className={`relative text-right px-0.5 py-1.5 text-[15px] font-bold cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale_price" ? "text-rose-800" : "text-rose-600"}`}
             style={{ width: getWidth("sal_price"), minWidth: getWidth("sal_price") }}>
-            <span className="flex flex-col leading-tight items-end"><span>판매가</span><span className="text-[14px] opacity-70">{arrowFor("sale_price")}</span></span>
+            <span className="flex flex-col leading-tight items-end"><span>판매가</span><span className="text-[16px] opacity-70">{arrowFor("sale_price")}</span></span>
             <span {...resizerProps("sal_price")} className={RESIZER_CLS} style={{ touchAction: "none" }}
               onClick={(e: React.MouseEvent) => e.stopPropagation()} />
           </th>
           <th onClick={() => toggleFlowSort("profit_rate")}
             className={`relative text-right px-0.5 py-1.5 text-[15px] font-bold cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "profit_rate" ? "text-rose-800" : "text-rose-600"}`}
             style={{ width: getWidth("sal_profit"), minWidth: getWidth("sal_profit") }}>
-            <span className="flex flex-col leading-tight items-end"><span>이익률</span><span className="text-[14px] opacity-70">{arrowFor("profit_rate")}</span></span>
+            <span className="flex flex-col leading-tight items-end"><span>이익률</span><span className="text-[16px] opacity-70">{arrowFor("profit_rate")}</span></span>
             <span {...resizerProps("sal_profit")} className={RESIZER_CLS} style={{ touchAction: "none" }}
               onClick={(e: React.MouseEvent) => e.stopPropagation()} />
           </th>
