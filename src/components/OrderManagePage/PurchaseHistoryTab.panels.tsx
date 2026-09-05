@@ -352,7 +352,7 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
           filters={
             <div className="flex flex-col gap-2 w-full">
               <div className="flex items-center gap-1 flex-wrap">
-                <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">정렬</span>
+                <span className="text-[16px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">정렬</span>
                 {([
                   { k: "amount"   as const, label: "매입액",   color: "sky" as const },
                   { k: "recent"   as const, label: "최근매입", color: "sky" as const },
@@ -367,7 +367,7 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
                       key={o.k}
                       type="button"
                       onClick={() => setProductSort(o.k)}
-                      className={`h-5 px-1.5 text-[14px] font-semibold rounded transition cursor-pointer ${
+                      className={`h-6 px-2 text-[16px] font-semibold rounded transition cursor-pointer ${
                         productSort === o.k
                           ? activeCls
                           : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
@@ -381,7 +381,7 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
           bodyClassName="bg-white rounded-xl border border-line shadow-sm flex-1 min-h-0 max-h-[calc(100dvh-200px)] flex flex-col overflow-hidden mt-2"
         >
           <>
-          <div className="px-3 py-1.5 border-b border-zinc-100 bg-zinc-50/60 shrink-0 grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-[15px] font-bold text-zinc-500 uppercase tracking-wider">
+          <div className="px-3 py-1.5 border-b border-zinc-100 bg-zinc-50/60 shrink-0 grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-[17px] font-bold text-zinc-500 uppercase tracking-wider">
             <span>상품</span>
             <span className="text-right whitespace-nowrap text-amber-600">매입</span>
             <span className="text-right whitespace-nowrap text-rose-600">판매</span>
@@ -399,7 +399,7 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
               />
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="py-8 text-center text-[15px] text-zinc-300">
+            <div className="py-8 text-center text-[17px] text-zinc-300">
               {productSearch ? "검색 결과 없음" : "해당 기간 매입 상품 없음"}
             </div>
           ) : (
@@ -429,16 +429,16 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
             <div className="relative bg-white rounded-xl border border-line shadow-sm px-4 py-2.5 flex items-center gap-2 shrink-0 overflow-hidden">
               <GradientAccent size="thin" className="z-10 rounded-t-xl" />
               <Package size={14} className="text-sky-500 shrink-0" />
-              <span className="text-[15px] font-bold text-zinc-800">상품별 매입 분석</span>
-              <span className="text-[15px] text-zinc-400 font-semibold ml-1">
+              <span className="text-[17px] font-bold text-zinc-800">상품별 매입 분석</span>
+              <span className="text-[17px] text-zinc-400 font-semibold ml-1">
                 {filteredAllDetails.length > 0
                   ? `${filteredAllDetails.length}건 분석`
                   : allDetailsLoading ? "로딩 중..." : "데이터 없음"}
               </span>
-              <span className="ml-auto text-[14px] text-zinc-400">좌측에서 상품을 선택하면 원장 표시</span>
+              <span className="ml-auto text-[16px] text-zinc-400">좌측에서 상품을 선택하면 원장 표시</span>
             </div>
             {allDetailsLoading ? (
-              <div className="bg-white rounded-xl border border-line flex-1 flex items-center justify-center text-zinc-400 text-[14px] gap-2 min-h-[300px]">
+              <div className="bg-white rounded-xl border border-line flex-1 flex items-center justify-center text-zinc-400 text-[16px] gap-2 min-h-[300px]">
                 <Spinner size={14} />
                 <span>매입 데이터 로딩 중...</span>
               </div>
