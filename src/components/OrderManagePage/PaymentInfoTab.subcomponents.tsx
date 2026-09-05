@@ -7,7 +7,7 @@ import { Spinner } from "../common/Spinner";
 import type { VendorSortKey, SortDir } from "./PaymentInfoTab.types";
 
 export const inputCls =
-  "w-full h-9 px-3 text-[14px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white transition placeholder:text-zinc-300";
+  "w-full h-9 px-3 text-[16px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white transition placeholder:text-zinc-300";
 
 export const FieldLabel: React.FC<{
   label: string;
@@ -16,7 +16,7 @@ export const FieldLabel: React.FC<{
   children: React.ReactNode;
 }> = ({ label, icon, required, children }) => (
   <label className="block space-y-1">
-    <span className="inline-flex items-center gap-1 text-[14px] font-bold text-zinc-500 uppercase tracking-wider">
+    <span className="inline-flex items-center gap-1 text-[16px] font-bold text-zinc-500 uppercase tracking-wider">
       {icon && <span className="text-zinc-400">{icon}</span>}
       {label}
       {required && <span className="text-rose-500">*</span>}
@@ -46,13 +46,13 @@ export const AmountField: React.FC<{
         value={amount ? Number(amount).toLocaleString() : ""}
         onChange={e => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
         placeholder="0"
-        className={`${inputCls} pl-7 pr-[52px] text-right tabular-nums font-bold text-[14px] ${overBalance ? "border-amber-400 focus:ring-brand-tint focus:border-brand-deep" : ""}`}
+        className={`${inputCls} pl-7 pr-[52px] text-right tabular-nums font-bold text-[16px] ${overBalance ? "border-amber-400 focus:ring-brand-tint focus:border-brand-deep" : ""}`}
       />
       {currentBalance > 0 && !amount && (
         <button
           type="button"
           onClick={() => setAmount(String(Math.round(currentBalance)))}
-          className="absolute right-1.5 top-1/2 -translate-y-1/2 h-6 px-2 text-[14px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition cursor-pointer"
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 h-6 px-2 text-[16px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition cursor-pointer"
           title="현재 잔고 전액"
         >
           전액
@@ -164,7 +164,7 @@ export const KpiMini: React.FC<{
         {loading ? (
           <Spinner size={12} tone="zinc" />
         ) : (
-          <span className={`text-[14px] font-bold tabular-nums leading-none ${t.text}`}>{value}</span>
+          <span className={`text-[16px] font-bold tabular-nums leading-none ${t.text}`}>{value}</span>
         )}
       </div>
       {hint && <div className="text-[15px] font-semibold text-zinc-400 leading-none">{hint}</div>}
