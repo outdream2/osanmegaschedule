@@ -18,6 +18,7 @@ import {
   AreaChart, Area,
 } from "recharts";
 import { ChartCard } from "../common/ChartCard";
+import { Card } from "../common/Card";
 import { fmtWon } from "../../lib/format";
 import { calcLoss, type StockFlowRow } from "./StockFlowPanel";
 import { TrendingUp, PieChart as PieIcon, Percent, AlertTriangle, PackageX, Building2, Activity, DollarSign, Gauge, TrendingDown } from "lucide-react";
@@ -478,12 +479,12 @@ const StockVsSalesScatter: React.FC<{ rows: StockFlowRow[]; loading: boolean }> 
               if (!payload || !payload.length) return null;
               const d = payload[0].payload;
               return (
-                <div className="bg-white border border-line rounded-lg px-2.5 py-1.5 shadow-lg text-[12px]">
+                <Card variant="raw-lg" padding="none" rounded="lg" className="px-2.5 py-1.5 text-[12px]">
                   <div className="font-bold text-ink mb-0.5">{d.name}</div>
                   <div className="text-zinc-600">판매 <span className="tabular-nums font-bold text-brand-deep">{d.sale}개</span></div>
                   <div className="text-zinc-600">재고 <span className="tabular-nums font-bold text-emerald-700">{d.stock}개</span></div>
                   {d.loss > 0 && <div className="text-rose-600">손실 {d.loss}개</div>}
-                </div>
+                </Card>
               );
             }}
           />
