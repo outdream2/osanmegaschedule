@@ -26,7 +26,7 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 import { api, ApiError } from "../../lib/apiClient";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
-import { matchHangul } from "../../lib/hangulSearch";
+import { matchesProductQuery } from "../../lib/productMatch";
 import type { AuthSession } from "../../types";
 import { UpdateProductSchema, type UpdateProductInput } from "../../shared/schemas/products";
 import { consumeScanPendingProductCode } from "../../hooks/useScanUnregisteredMode";
@@ -395,11 +395,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
     // 2. 검색 필터
     const s = search.trim();
     if (!s) return bySale;
-    return bySale.filter(r =>
-      matchHangul(r.product_name, s) ||
-      r.product_code.toLowerCase().includes(s.toLowerCase()) ||
-      (r.supplier ?? "").toLowerCase().includes(s.toLowerCase()),
-    );
+    return bySale.filter(r => matchesProductQuery(r, s));
   }, [rows, search, saleMatches]);
 
   // 상세 fetch (선택 시 · reloadKey 변경 시에도 refetch · 편집 저장 후 stale 방지)
