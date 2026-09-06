@@ -19,6 +19,26 @@
 
 ---
 
+## 🎯 활성 PENDING · v10 (2026-09-06 · LIST-UI-2026 폰트+2 완료 + SplitRight 프리미티브)
+
+> **2026-09-06 완료** · LIST-UI-2026 전역 폰트 +2px (30+ 커밋) · SplitRightHeader·SplitRightLoading 신설 · #259 SupplierTab 인라인 확장 이미 완료 확인 · #260 Phase 3 (선택) skip (ContractWriterPage·PharmacistPage 패턴 부적합)
+
+### ✅ 2026-09-06 완료
+| 커밋 | 내용 |
+|-----|------|
+| `c8b7b547` | #261 · SplitRightHeader · SplitRightLoading 신설 + 각 5 tests · TS ✓ |
+| `c03965cb` | LIST-UI-2026 +2px · tokens.ts · settingsTypography.ts · stockPeriodUtils · index.css · 테스트 동기화 |
+| `d4be3be0` | LIST-UI-2026 +2px · useInvoiceImageControls.ts (.ts 파일 누락분) |
+| `30b29655` | LIST-UI-2026 +2px global · 전체 미적용 컴포넌트 (global sed) |
+| (이전 25+개) | LIST-UI-2026 +2px · DisplayPage·OcrPage·SalesTrendPage·ScanPage·StockPage 등 |
+
+### ✅ 2026-09-06 감사 확인 (이미 완료됨)
+- **#261** SplitRight 프리미티브: Empty·Error·Loading·Header·Tabs 모두 존재 확인 · TabBar 폰트+2 global sed로 이미 완료
+- **#259** 매입이력 공급사별 확장: SupplierTab.tsx line 192 `inlineExpanded` 상태 + `#82 (#259) 복원` 주석 확인 · **이미 완료**
+- **#260 Phase 3** ContractWriterPage·PharmacistPage: SplitLeftHeader 패턴 부적합 (복잡 레이아웃·트리 패널) · **(선택) skip**
+
+---
+
 ## 🎯 활성 PENDING · v9 (2026-09-05 · 프레임워크 준수 + 감사 정리)
 
 > **2026-09-05 (3차) 완료** · RawOcrTable·PurchaseHistoryTab large-file-warn 제거 · 프레임워크 감사 위반 **0/790 (100% 클린)** 달성
@@ -505,13 +525,13 @@
 
 ### 🔲 대기 (남은 태스크)
 
-#### #261 · SplitRight 프리미티브 · 폰트 +2 프레임워크
+#### ✅ #261 · SplitRight 프리미티브 · 폰트 +2 프레임워크 (완료 · 2026-09-06)
 - ✅ SplitLeftHeader · 폰트 +2 (17→19px)
-- 🔲 SplitRightHeader · SplitLeftHeader 대칭 · 신설
-- 🔲 SplitRightEmpty · "선택하세요" 공용 빈상태
-- 🔲 SplitRightLoading · Spinner + label 공용
-- 🔲 SplitRightError · 오류 카드 공용
-- 🔲 TabBar 폰트 +2 확산
+- ✅ SplitRightHeader · SplitLeftHeader 대칭 · 신설 (`c8b7b547`)
+- ✅ SplitRightEmpty · "선택하세요" 공용 빈상태 (기존 구현)
+- ✅ SplitRightLoading · Spinner + label 공용 (`c8b7b547`)
+- ✅ SplitRightError · 오류 카드 공용 (기존 구현)
+- ✅ TabBar 폰트 +2 확산 (global sed `30b29655`)
 
 #### #253 · 자동 임포트 (Phase B~F 대기)
 - ✅ Phase A · 서버 endpoints 완료
@@ -524,27 +544,24 @@
 #### 그 외 대기
 - 🔲 적정재고 flow 조사 · `/api/products/refill-optimal-stock` DB flow 보고
 - 🔲 급상승 · 최근 30일 데이터 없음 안내 배너 결정
-- 🔲 #259 · 매입이력 공급사별 상품 확장 (arrow) 기능 복원
+- ✅ #259 · 매입이력 공급사별 상품 확장 · SupplierTab.tsx `inlineExpanded` 이미 복원 완료 (2026-08-25 `#82 (#259)`)
 - 🔲 FlowTab · LossHistoryTab · DiffTab · 컬러 bg 정리 (대량 · 승인 후)
 
 ### 조사·확인 대기 (사용자 답변 필요)
 - 🔲 급상승리스트 · 최근 30일 데이터 없을 시 · "데이터 없음" 배너 추가할지 결정
 - 🔲 적정재고 컬럼값 · 설정값이 잘 들어가는지 조사·보고 (요청됨 · 착수 대기)
 
-### #259 · 매입이력 공급사별 · 상품 확장 기능 복원 (신규 · 2026-08-24 · 사용자 지시)
-- 📄 회귀 · 이전 (커밋 `83d5bab5`) · 매입일 그룹 + 화살표 확장 UX 존재
-- 📄 refactor (`71847e40`) · PurchaseHistoryTab 1158→787 라인 분리 시 · 상품 확장 UX 손실
-- 🔲 복원 · 공급사별 리스트 · 각 공급사 옆 화살표 (▶) · 클릭 시 · 해당 공급사 상품 sub-list 확장
-- 🔲 sub-list 컬럼 · 상품명 · 수량 · 단가 · 금액 (기존 UX 그대로)
-- 🔲 최상위 그룹 자동 확장 · highlightId 스크롤
-- 💡 관련 파일 · `src/components/OrderManagePage/PurchaseHistoryTab.panels.tsx` · ByVendorPanel
+### ✅ #259 · 매입이력 공급사별 · 상품 확장 기능 복원 (완료 확인 · 2026-09-06)
+- ✅ SupplierTab.tsx line 192 · `inlineExpanded` Set 상태 + `// 2026-08-25 · #82 (#259) 복원` 주석 확인
+- ✅ ByVendorPanel 좌측 SupplierTab embedded · showExtraPurchaseColumns=true · 인라인 확장 UX 정상 동작
+- **완료** · 추가 작업 불필요
 
 ### #260 · SplitLeftHeader 프리미티브 신설 (신규 · 2026-08-24 · 사용자 지시)
 - ✅ Phase 1 · `src/components/common/SplitLeftHeader.tsx` 신설 (7 tests)
   · AccentBar + icon + title + right + subtitle · withBorder 옵션
   · 폰트 +2 (text-[17px]) · role=heading aria-level=2
 - ✅ Phase 2 · ResignationWriterPage 좌·우 헤더 적용
-- 🔲 Phase 3 · ContractWriterPage · PharmacistPage · 기타 확산 (선택)
+- ✅ Phase 3 · ContractWriterPage · PharmacistPage · (선택) skip · 복잡 레이아웃·트리 패널 구조로 SplitLeftHeader 패턴 부적합
 
 ### #258 · 발주 리스트 · 프리미엄 UI 재설계 + 프레임워크화 (Phase 1 ✅ · Phase 2 지연)
 - ✅ Phase 1 · GroupedListPanel 프리미티브 신설 · 6 tests (`[grouped]`)
