@@ -186,6 +186,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "season-settings", label: "통계 설정", icon: Calendar, color: "slate", minLevel: 9 },
       // 2026-08-12 · 시스템 설정 (env 편집)
       { key: "system-settings", label: "시스템 설정", icon: Gear, color: "slate", minLevel: 9 },
+      // 2026-09-07 · 발주 설정 (SMTP 이메일 · 향후 발주 규칙·템플릿)
+      { key: "order-settings", label: "발주 설정", icon: Truck, color: "slate", minLevel: 9 },
     ],
   },
   {

@@ -183,6 +183,113 @@ router.post("/api/blocked-slots", authorize(5), validateBody(UpsertBlockedSlotSc
   res.json({ ok: true });
 }));
 
+// ═════════════════════════════════════════════════════════════════
+// 발주 이메일 (SMTP) 설정 · 2026-09-07 · 사용자 지시
+//   · GET  /api/settings/order-email · 저장된 SMTP 조회 (pass 마스킹)
+//   · POST /api/settings/order-email · 저장 (app_settings 'order_email_smtp')
+//   · POST /api/settings/order-email/test · 테스트 이메일 발송
+// 서버 재시작 없이 · 저장 즉시 process.env 에 반영 (bulk-send 다음 요청부터 사용)
+// ═════════════════════════════════════════════════════════════════
+const SMTP_KEY = "order_email_smtp";
+
+async function loadSmtp(): Promise<Record<string, string>> {
+  const { data } = await supabase.from("app_settings").select("value").eq("key", SMTP_KEY).maybeSingle();
+  const raw = (data?.value ?? {}) as Record<string, any>;
+  return {
+    smtp_host: String(raw.smtp_host ?? ""),
+    smtp_port: String(raw.smtp_port ?? "587"),
+    smtp_user: String(raw.smtp_user ?? ""),
+    smtp_pass: String(raw.smtp_pass ?? ""),
+    smtp_from: String(raw.smtp_from ?? ""),
+  };
+}
+
+function applySmtpToEnv(cfg: Record<string, string>): void {
+  if (cfg.smtp_host) process.env.SMTP_HOST = cfg.smtp_host;
+  if (cfg.smtp_port) process.env.SMTP_PORT = cfg.smtp_port;
+  if (cfg.smtp_user) process.env.SMTP_USER = cfg.smtp_user;
+  if (cfg.smtp_pass) process.env.SMTP_PASS = cfg.smtp_pass;
+  if (cfg.smtp_from) process.env.SMTP_FROM = cfg.smtp_from;
+}
+
+// 서버 부팅 시 · DB에 저장된 SMTP · process.env 로 로드
+(async () => {
+  try {
+    const cfg = await loadSmtp();
+    if (cfg.smtp_host) {
+      applySmtpToEnv(cfg);
+      console.log(`[settings] SMTP loaded from DB · host=${cfg.smtp_host}`);
+    }
+  } catch (e: any) {
+    console.warn("[settings] SMTP boot load 실패:", e?.message);
+  }
+})();
+
+router.get("/api/settings/order-email", authorize(9), asyncHandler(async (_req, res) => {
+  const cfg = await loadSmtp();
+  res.json({
+    smtp_host: cfg.smtp_host,
+    smtp_port: cfg.smtp_port,
+    smtp_user: cfg.smtp_user,
+    smtp_pass: cfg.smtp_pass ? "••••••••••••" : "", // 마스킹
+    smtp_from: cfg.smtp_from,
+    configured: !!cfg.smtp_host && !!cfg.smtp_from,
+  });
+}));
+
+router.post("/api/settings/order-email", authorize(9), asyncHandler(async (req, res) => {
+  const b = req.body ?? {};
+  const cfg = {
+    smtp_host: String(b.smtp_host ?? "").trim(),
+    smtp_port: String(b.smtp_port ?? "587").trim(),
+    smtp_user: String(b.smtp_user ?? "").trim(),
+    smtp_from: String(b.smtp_from ?? "").trim(),
+    smtp_pass: String(b.smtp_pass ?? ""),
+  };
+  // 마스킹된 pass 유지 (프론트가 변경 안 하고 재저장 시)
+  if (cfg.smtp_pass === "••••••••••••") {
+    const existing = await loadSmtp();
+    cfg.smtp_pass = existing.smtp_pass;
+  }
+  const { error } = await supabase.from("app_settings")
+    .upsert({ key: SMTP_KEY, value: cfg, updated_at: new Date().toISOString() }, { onConflict: "key" });
+  if (error) throw new HttpError(500, error.message);
+  applySmtpToEnv(cfg);
+  res.json({ ok: true, configured: !!cfg.smtp_host && !!cfg.smtp_from });
+}));
+
+router.post("/api/settings/order-email/test", authorize(9), asyncHandler(async (req, res) => {
+  const to = String(req.body?.to ?? "").trim();
+  if (!to) throw new HttpError(400, "수신 이메일 필요");
+  const cfg = await loadSmtp();
+  if (!cfg.smtp_host) throw new HttpError(400, "SMTP 설정이 없습니다");
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const nodemailer = require("nodemailer");
+    const port = Number(cfg.smtp_port || 587);
+    const transporter = nodemailer.createTransport({
+      host: cfg.smtp_host,
+      port,
+      secure: port === 465,
+      auth: cfg.smtp_user ? { user: cfg.smtp_user, pass: cfg.smtp_pass ?? "" } : undefined,
+    });
+    await transporter.sendMail({
+      from: cfg.smtp_from || cfg.smtp_user,
+      to,
+      subject: "[발주 시스템] SMTP 테스트 이메일",
+      html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
+        <div style="font-family:sans-serif;padding:16px">
+          <h2 style="color:#0A2E4A">✅ SMTP 설정 정상</h2>
+          <p>발주 시스템 이메일 발송이 정상 동작합니다.</p>
+          <p style="color:#666;font-size:12px">발신: ${cfg.smtp_from} · 호스트: ${cfg.smtp_host}:${port}</p>
+        </div></body></html>`,
+    });
+    res.json({ ok: true });
+  } catch (e: any) {
+    res.status(200).json({ ok: false, message: e?.message ?? "발송 실패" });
+  }
+}));
+
 router.get("/api/zones", asyncHandler(async (_req, res) => {
   // dow_map 컬럼이 있으면 함께 조회, 없으면 (마이그레이션 미적용) 기존 컬럼만
   let data: any[] | null = null;
