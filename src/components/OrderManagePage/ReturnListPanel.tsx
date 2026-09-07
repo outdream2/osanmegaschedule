@@ -31,6 +31,7 @@ import { SplitListPanel } from "../common/SplitListPanel";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { StatusPill } from "../common/StatusPill";
 import { Button } from "../common/Button";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 
 // 2026-08-21 · Framework Phase 4 · ReturnRequestModal 별도 파일 분리
 import { ReturnRequestModal } from "./ReturnRequestModal";
@@ -740,11 +741,12 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
 
   // ── 렌더 ────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-[#F4F7FA] px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+    <div className="flex-1 flex flex-col bg-[#F4F7FA] min-h-0">
       {toast && (
         <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
       )}
 
+      <div className={`flex-1 min-h-0 ${PAGE_CONTAINER_CLS} px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex flex-col`}>
       <SplitPanel
         className="flex-1 min-h-0"
         storageKey="returnList.leftWidth"
@@ -763,6 +765,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         mobileOpen={returnSelectedProduct != null}
         onMobileClose={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
       />
+      </div>
 
       {/* 반품 요청서 모달 · 2026-08-03 · 발주서 스타일 재설계 */}
       {/* 2026-08-25 · 사용자 지시 · 다중 선택 시 · items 배열도 함께 전달 · 모달에서 전체 라인 렌더 */}

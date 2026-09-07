@@ -21,6 +21,7 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
 import { InlineLabel } from "../common/InlineLabel";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 
 interface ReturnRow {
   id: number;
@@ -103,11 +104,11 @@ export const ReturnConfirmedPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-[#F4F7FA] px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+    <div className="flex-1 flex flex-col bg-[#F4F7FA] min-h-0">
       {toast && (
         <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
       )}
-      <div className="flex flex-col gap-3">
+      <div className={`flex flex-col gap-3 ${PAGE_CONTAINER_CLS} px-3 sm:px-4 lg:px-6 py-3 sm:py-4`}>
         {/* 헤더 툴바 */}
         <div className="flex items-center gap-2 flex-wrap px-1">
           <CheckCircle2 size={20} className="text-emerald-500 shrink-0" />

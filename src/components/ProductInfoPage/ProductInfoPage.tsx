@@ -509,12 +509,10 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
   );
 
   return (
-    <>
-      {/* 2026-08-30 · 사용자 지시 · 전체 화면 넓이의 85% · 중앙 정렬 */}
-      <div className="flex flex-col gap-2 flex-1 min-h-0 bg-[#F4F7FA] px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-
-        {/* ── 상단 FilterBar (매입이력과 동일 구조) ── */}
-        <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2 shrink-0`}>
+    <div className="flex-1 flex flex-col bg-[#F4F7FA] min-h-0">
+      {/* ── 상단 FilterBar ── */}
+      <div className={`${PAGE_CONTAINER_CLS} px-3 sm:px-4 lg:px-6 py-3 shrink-0`}>
+        <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2`}>
           <div className="flex items-center gap-2.5 shrink-0">
             <AccentBar />
             <Package size={16} className="text-brand-deep shrink-0" />
@@ -538,8 +536,10 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
             </Button>
           )}
         </div>
+      </div>
 
-        {/* ── 좌우 분할 패널 · SplitPanel 프레임워크 ── */}
+      {/* ── 좌우 분할 패널 · SplitPanel 프레임워크 ── */}
+      <div className={`flex-1 min-h-0 ${PAGE_CONTAINER_CLS} px-3 sm:px-4 lg:px-6 pb-3 flex flex-col`}>
         <SplitPanel
           storageKey="productInfo.leftWidth.v2"
           defaultWidth={420}
@@ -578,7 +578,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
             </div>
           }
         />
-      </div>    {/* 외부 column flex 닫기 */}
+      </div>
 
       {/* Phase C · 상품 등록 모달 · 2026-08-23 · #197 · pending code 있으면 자동 채움+lock */}
       <ProductCreateModal
@@ -597,7 +597,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
       {toast && (
         <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
       )}
-    </>
+    </div>
   );
 };
 
