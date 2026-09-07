@@ -740,7 +740,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
 
   // ── 렌더 ────────────────────────────────────────────────────────────────
   return (
-    <>
+    <div className="flex flex-col flex-1 min-h-0 bg-[#F4F7FA] px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
       {toast && (
         <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
       )}
@@ -781,7 +781,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
           />
         );
       })()}
-    </>
+    </div>
   );
 };
 

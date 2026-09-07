@@ -103,11 +103,11 @@ export const ReturnConfirmedPanel: React.FC = () => {
   };
 
   return (
-    <>
+    <div className="flex flex-col flex-1 min-h-0 bg-[#F4F7FA] px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
       {toast && (
         <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
       )}
-      <div className="flex flex-col gap-3 p-3 sm:p-4">
+      <div className="flex flex-col gap-3">
         {/* 헤더 툴바 */}
         <div className="flex items-center gap-2 flex-wrap px-1">
           <CheckCircle2 size={20} className="text-emerald-500 shrink-0" />
@@ -226,7 +226,7 @@ export const ReturnConfirmedPanel: React.FC = () => {
           </TableListWrap>
         )}
       </div>
-    </>
+    </div>
   );
 };
 
