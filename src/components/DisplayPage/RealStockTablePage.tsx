@@ -45,6 +45,9 @@ interface InvRow {
   store_stock: number | null;         // 매장1
   store_stock_2: number | null;       // 매장2
   store3_stock: number | null;        // 매장3
+  store1_zone: string | null;
+  store2_zone: string | null;
+  store3_zone: string | null;
 }
 
 interface Row {
@@ -204,6 +207,7 @@ export const RealStockTablePage: React.FC = () => {
     // 2026-08-27 · 사용자 지시 · location (진열위치) → zone slot 지능 배정
     //   · location "1/2/3" → 매장1=1·매장2=2·매장3=3 · location "8A" → 창고1
     //   · category_code fallback · 진열위치에서 창고 못 찾고 category가 창고 코드면 사용
+    // 2026-09-07 · inventory_checks.store1/2/3_zone 우선 사용 · 없으면 products.location 파생
     const slots = assignZonesToSlots(p.location, p.category_code);
     return {
       product_code: p.product_code,
@@ -213,9 +217,9 @@ export const RealStockTablePage: React.FC = () => {
       location: p.location,
       erp,
       w1, w2, s1, s2, s3,
-      s1zone: slots.s1zone,
-      s2zone: slots.s2zone,
-      s3zone: slots.s3zone,
+      s1zone: i?.store1_zone ?? slots.s1zone,
+      s2zone: i?.store2_zone ?? slots.s2zone,
+      s3zone: i?.store3_zone ?? slots.s3zone,
       w1zone: slots.w1zone,
       w2zone: slots.w2zone,
       sale_status: p.sale_status,
@@ -321,6 +325,9 @@ export const RealStockTablePage: React.FC = () => {
           store_stock:      next.s1,
           store_stock_2:    next.s2,
           store3_stock:     next.s3,
+          store1_zone:      row.s1zone,
+          store2_zone:      row.s2zone,
+          store3_zone:      row.s3zone,
         },
       }));
       showSuccess(`${row.product_name} · ${SLOT_LABEL[slot]} = ${parsed} 저장`);
