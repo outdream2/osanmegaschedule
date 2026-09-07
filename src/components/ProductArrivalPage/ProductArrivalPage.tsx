@@ -25,10 +25,13 @@ import { BarcodeScanner } from "../BarcodeScanner";
 import { loadZBar } from "../BarcodeScanner/zbar";
 import {
   getProductsMap, lookupProduct, isProductsLoaded,
+  addCachedProduct,
   type ProductInfo,
 } from "../../lib/productsCache";
 // 2026-08-25 · 프레임워크 · 상품 정규화 + API fallback 공통 유틸
 import { resolveProduct } from "../../lib/normalizeProduct";
+// 2026-09-07 · 사용자 지시 · 미등록 상품 즉시 등록 모달 (ScanPage 와 동일 패턴)
+import { ProductCreateModal } from "../ProductInfoPage/ProductCreateModal";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
@@ -94,6 +97,12 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   const toast = _toastObj?.message ?? null;
   const [lastScannedProduct, setLastScannedProduct] = useState<ProductInfo | null>(null);
   const [lastScannedCode, setLastScannedCode]   = useState<string | null>(null);
+  // 2026-09-07 · 사용자 지시 · 미등록 상품 즉시 등록 · Modal + 권한 게이트
+  const [createOpen, setCreateOpen]             = useState(false);
+  const canManageProducts =
+    authSession?.role === "admin" ||
+    authSession?.role === "superadmin" ||
+    (authSession?.role === "manager" && (authSession?.level ?? 0) >= 5);
 
   // ─── 입고내역(history) state · OrderManagePage 에서 이동 (2026-08-03) ───
   // 2026-08-22 · Framework Phase 4 · 타입은 ProductArrivalPage.panels.tsx 로 이관
@@ -177,6 +186,13 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
         return updated;
       });
     } else {
+      // 2026-09-07 · 사용자 지시 · 신규 등록 상품 · products.purchase_price 를 단가 기본값
+      const productPurchasePrice = Number((found as any).purchase_price ?? 0);
+      // 2026-09-07 · 사용자 지시 · 매장구역 자동 채움 · product.location 첫 zone
+      const productLocationStr = (found as any).location ?? (found as any).display_location ?? null;
+      const firstZone = productLocationStr
+        ? String(productLocationStr).split(/[\/,·]/).map(s => s.trim()).filter(Boolean)[0] ?? null
+        : null;
       const newItem: ArrivalItem = {
         key: `${result}-${Date.now()}`,
         code: result,
@@ -185,9 +201,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
         status: "pending",
         expiring: false,
         addedAt: Date.now(),
-        location: null,
-        // 2026-09-03 · #78 · 상품의 real_map · location 자동 채움 (첫 매칭 zone)
-        unitPrice: null,
+        location: firstZone,
+        // 단가 기본값 · products.purchase_price · 없으면 아래 purchase-history 로 fallback
+        unitPrice: productPurchasePrice > 0 ? productPurchasePrice : null,
         expiryDate: null,
       };
       addedKey = newItem.key;
@@ -501,7 +517,24 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 onSelect={(code, p) => handleScan(code, p)}
               />
 
-              {/* 미등록 상품 경고 + 상품등록 이동 (#108 · 사용자 리포트) */}
+              {/* 2026-09-07 · 사용자 지시 · 상품등록 버튼 · 모달 (ScanPage 와 동일 패턴) */}
+              {canManageProducts && (
+                <button
+                  type="button"
+                  onClick={() => setCreateOpen(true)}
+                  className="w-full min-h-[44px] inline-flex items-center justify-center gap-2
+                    py-2.5 rounded-xl font-bold text-[15px] text-brand-deep
+                    bg-white border border-brand-deep/25
+                    hover:bg-brand-deep/5 hover:border-brand-deep/40
+                    active:bg-brand-deep/10
+                    shadow-sm hover:shadow transition-colors cursor-pointer"
+                >
+                  <PackagePlus size={17} />
+                  상품등록
+                </button>
+              )}
+
+              {/* 미등록 상품 경고 + 상품등록 모달 (2026-09-07 · 페이지 이동 → 모달) */}
               {notFoundCode && !lastScannedProduct && (
                 <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200/80" padding="sm" className="flex items-start gap-2.5">
                   <AlertCircle size={15} className="text-amber-500 shrink-0 mt-0.5" />
@@ -511,18 +544,29 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       bg-amber-100/60 px-2 py-1 rounded-md">
                       {notFoundCode}
                     </p>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const ok = await confirm({ message: `미등록 코드입니다.\n#${notFoundCode}\n\n상품등록 페이지로 이동할까요?` });
-                        if (!ok) return;
-                        setScanPendingProductCode(notFoundCode);
-                        onNavigate?.("display");
-                      }}
-                      className="mt-2 inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-[15px] font-bold shadow-sm transition cursor-pointer"
-                    >
-                      📝 상품등록 페이지로 이동
-                    </button>
+                    {canManageProducts ? (
+                      <button
+                        type="button"
+                        onClick={() => setCreateOpen(true)}
+                        className="mt-2 inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-[15px] font-bold shadow-sm transition cursor-pointer"
+                      >
+                        <PackagePlus size={14} />
+                        상품등록
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const ok = await confirm({ message: `미등록 코드입니다.\n#${notFoundCode}\n\n상품등록 페이지로 이동할까요?` });
+                          if (!ok) return;
+                          setScanPendingProductCode(notFoundCode);
+                          onNavigate?.("display");
+                        }}
+                        className="mt-2 inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-[15px] font-bold shadow-sm transition cursor-pointer"
+                      >
+                        📝 상품등록 페이지로 이동
+                      </button>
+                    )}
                   </div>
                 </Card>
               )}
@@ -755,6 +799,39 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
         arrivalDetailLoading={arrivalDetailLoading}
         onClose={() => setSelectedArrivalId(null)}
       />
+
+      {/* 2026-09-07 · 사용자 지시 · 상품등록 모달 · ScanPage 패턴 재사용 */}
+      {canManageProducts && (
+        <ProductCreateModal
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          initialCode={notFoundCode ?? ""}
+          initialBarcode={notFoundCode ?? ""}
+          lockCode={!!notFoundCode}
+          onCreated={async (code, product) => {
+            setNotFoundCode(null);
+            setCreateOpen(false);
+            // 2026-09-07 · 사용자 지시 · 등록 직후 · 전체 필드 (purchase_price·category_code 등) 필요 · API fresh fetch
+            //   · addCachedProduct 로 부분 필드만 넣으면 · 단가 자동 fill · 매장구역 자동 배정 등 회귀
+            try {
+              const { data } = await api.get<any>(`/api/products/${encodeURIComponent(code)}`);
+              if (data) {
+                addCachedProduct(code, data);
+                await handleScan(code, data);
+                return;
+              }
+            } catch { /* fallback · 최소 필드로 진행 */ }
+            addCachedProduct(code, {
+              code,
+              name: product?.product_name ?? "",
+              spec: product?.spec ?? "",
+              supplier: product?.supplier ?? null,
+              location: product?.location ?? null,
+            });
+            void handleScan(code);
+          }}
+        />
+      )}
     </div>
   );
 };

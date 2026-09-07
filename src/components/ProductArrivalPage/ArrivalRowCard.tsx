@@ -84,7 +84,7 @@ const ArrivalZoneInline: React.FC<{
             ? "bg-indigo-50 border-indigo-300 text-indigo-700 hover:border-indigo-500"
             : "bg-rose-50/60 border-dashed border-rose-300 text-rose-400 hover:border-indigo-300 hover:bg-zinc-50",
         ].join(" ")}
-        title={filled ? `입고구역: ${value} · 클릭 시 변경` : "클릭 · 구역 선택"}
+        title={filled ? `매장구역: ${value} · 클릭 시 변경` : "클릭 · 매장구역 선택"}
       >
         <MapPin size={12} fill={filled ? "currentColor" : "none"} className={filled ? "text-indigo-600" : "text-zinc-300"} />
         <span>{filled ? value : "구역 선택"}</span>
@@ -220,10 +220,10 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           </span>
         </div>
 
-        {/* 입고구역 · 필수 */}
+        {/* 매장구역 · 필수 · 2026-09-07 · 사용자 지시 · 입고구역 → 매장구역 */}
         <div className="flex items-center gap-2 flex-wrap pt-0.5 pb-0.5 border-t border-zinc-100/80 mt-0.5">
           <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">
-            입고구역<span className="text-rose-500 ml-0.5">*</span>
+            매장구역<span className="text-rose-500 ml-0.5">*</span>
           </span>
           <ArrivalZoneInline
             value={item.location}
@@ -276,10 +276,12 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
             </div>
           </div>
 
-          {/* 2-state pill · 일치·불일치 · segmented (h-11 통일) · 2026-09-01 · 기한임박 제거 */}
+          {/* 2-state pill · 거래명세서 일치·불일치 · segmented (h-11 통일) · 2026-09-07 · 사용자 지시 · '거래명세서' 라벨 추가 */}
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[12px] font-semibold text-zinc-400">거래명세서</span>
           <div
             role="group"
-            aria-label="일치 · 불일치"
+            aria-label="거래명세서 일치 · 불일치"
             className="flex items-stretch h-11 rounded-xl overflow-hidden border-2 border-line bg-zinc-100/60"
           >
             {/* 일치 */}
@@ -316,6 +318,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
               <XCircle size={13} strokeWidth={isMismatch ? 2.5 : 2} />
               불일치
             </button>
+          </div>
           </div>
 
           {/* 삭제 · 우측 */}
