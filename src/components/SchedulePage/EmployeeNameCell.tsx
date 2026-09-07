@@ -102,7 +102,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onNameClick(emp); }}
             title={`${emp.name} — 클릭: 개인 스케줄 달력`}
-            className={`font-bold leading-tight cursor-pointer select-none transition-colors truncate text-[14px] sm:text-[15px] ${
+            className={`font-bold leading-tight cursor-pointer select-none transition-colors truncate text-[16px] sm:text-[17px] ${
               isPharmacist ? "text-emerald-700 hover:text-emerald-900" : "text-zinc-700 hover:text-brand-deep"
             }`}
           >

@@ -118,6 +118,14 @@ export const notificationsService = {
     if (error) throw new Error(error.message);
   },
 
+  async deleteAll(employeeId: number): Promise<void> {
+    const { error } = await supabase
+      .from("notifications")
+      .delete()
+      .eq("employee_id", employeeId);
+    if (error) throw new Error(error.message);
+  },
+
   async create(params: {
     employee_id: number;
     title: string;

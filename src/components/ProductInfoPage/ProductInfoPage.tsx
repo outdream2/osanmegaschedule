@@ -9,8 +9,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Package, PencilSimple, FloppyDisk, X,
-  ArrowSquareOut, Cube, Tag, ChartLine,
+  Package, PencilSimple, FloppyDisk, X, ArrowSquareOut,
 } from "@phosphor-icons/react";
 import { SplitListPanel } from "../common/SplitListPanel";
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
@@ -22,7 +21,7 @@ import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import { EmptyState } from "../common/EmptyState";
 import { GradientAccent } from "../common/GradientAccent";
-import { SectionTitle, StatCard } from "../LandingPage/VendorDetailModal.helpers";
+import { SectionTitle } from "../LandingPage/VendorDetailModal.helpers";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -160,18 +159,36 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
     const v = p[key];
     return v == null || v === "" ? <span className="text-zinc-300">-</span> : <span className="text-ink font-semibold">{String(v)}</span>;
   };
+  const [locationOptions, setLocationOptions] = useState<string[]>([]);
+  useEffect(() => {
+    api.get<Array<{ zone?: string; location?: string }>>("/api/zone-defs")
+      .then(({ data }) => {
+        const zones = Array.from(new Set((data ?? []).map(d => d.zone).filter(Boolean))) as string[];
+        setLocationOptions(zones);
+      })
+      .catch(() => { /* silent */ });
+  }, []);
+
   const DField = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
-      <div className="text-[15px]">{children}</div>
+      <span className="text-[15px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
+      <div className="text-[17px]">{children}</div>
     </div>
   );
   const EditField = ({ k, label, type = "text" }: { k: EditableKey; label: string; type?: "text" | "number" }) => (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
+      <span className="text-[15px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
       {k === "sale_status" ? (
         <select value={val(k)} onChange={(e) => set(k, e.target.value)} className={inputCls}>
           {SALE_STATUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      ) : k === "location" ? (
+        <select value={val(k)} onChange={(e) => set(k, e.target.value)} className={inputCls}>
+          <option value="">-선택-</option>
+          {locationOptions.map(z => <option key={z} value={z}>{z}</option>)}
+          {val(k) && !locationOptions.includes(val(k)) && (
+            <option value={val(k)}>{val(k)}</option>
+          )}
         </select>
       ) : (
         <input
@@ -190,8 +207,6 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
     if (!sp) return null;
     return Math.round((sp - pp) / sp * 1000) / 10;
   })();
-  const profitColor: "emerald" | "violet" | "rose" =
-    profitRate == null ? "violet" : profitRate >= 30 ? "emerald" : profitRate >= 15 ? "violet" : "rose";
 
   return (
     <>
@@ -241,33 +256,51 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
         ) : null}
       </div>
 
-      {/* ─── KPI 통계 ─── */}
-      <div className="grid grid-cols-3 gap-2 px-4 py-3 bg-zinc-50/60 border-b border-line">
-        <StatCard
-          icon={<Cube size={12} weight="bold" />}
-          color="emerald"
-          label="현재고"
-          value={p.current_stock != null ? `${String(p.current_stock)}개` : "-"}
-          sub={p.optimal_stock != null ? `적정 ${String(p.optimal_stock)}개` : undefined}
-        />
-        <StatCard
-          icon={<Tag size={12} weight="bold" />}
-          color="indigo"
-          label="판매가"
-          value={p.sale_price != null ? `${Number(p.sale_price).toLocaleString()}원` : "-"}
-          sub={p.purchase_price != null ? `매입 ${Number(p.purchase_price).toLocaleString()}원` : undefined}
-        />
-        <StatCard
-          icon={<ChartLine size={12} weight="bold" />}
-          color={profitColor}
-          label="이익율"
-          value={profitRate != null ? `${profitRate}%` : "-"}
-          sub={product.last_purchase_date ? String(product.last_purchase_date).slice(0, 10) : undefined}
-        />
-      </div>
-
       {/* ─── 본문 ─── */}
       <div className="p-4 sm:p-5 space-y-6">
+
+        {/* 가격 · 재고 — 상품명 바로 아래 */}
+        <div className="space-y-3">
+          <SectionTitle title="가격 · 재고" color="emerald" />
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            {editing ? <EditField k="sale_price" label="판매가" type="number" /> : (
+              <DField label="판매가">
+                {p.sale_price != null
+                  ? <span className="tabular-nums font-bold text-brand-deep">{Number(p.sale_price).toLocaleString()}원</span>
+                  : <span className="text-zinc-300">-</span>}
+              </DField>
+            )}
+            {editing ? <EditField k="purchase_price" label="매입가 (단가)" type="number" /> : (
+              <DField label="매입가 (단가)">
+                {p.purchase_price != null
+                  ? <span className="tabular-nums font-bold text-amber-700">{Number(p.purchase_price).toLocaleString()}원</span>
+                  : <span className="text-zinc-300">-</span>}
+              </DField>
+            )}
+            <DField label="이익율">
+              {profitRate != null
+                ? <span className={`tabular-nums font-bold ${profitRate >= 30 ? "text-emerald-600" : profitRate >= 15 ? "text-amber-600" : "text-rose-600"}`}>{profitRate}%</span>
+                : <span className="text-zinc-300">-</span>}
+            </DField>
+            <DField label="현재고">
+              {p.current_stock != null ? <span className="tabular-nums font-bold text-brand-deep">{String(p.current_stock)}개</span> : <span className="text-zinc-300">-</span>}
+            </DField>
+            {editing ? <EditField k="optimal_stock" label="적정재고 (30일)" type="number" /> : (
+              <DField label="적정재고 (30일)">
+                {p.optimal_stock != null ? <span className="tabular-nums font-semibold">{String(p.optimal_stock)}개</span> : <span className="text-zinc-300">-</span>}
+              </DField>
+            )}
+            <DField label="창고재고">
+              {p.warehouse_stock != null ? <span className="tabular-nums font-semibold">{String(p.warehouse_stock)}개</span> : <span className="text-zinc-300">-</span>}
+            </DField>
+            <DField label="매장재고">
+              {p.store_stock != null ? <span className="tabular-nums font-semibold">{String(p.store_stock)}개</span> : <span className="text-zinc-300">-</span>}
+            </DField>
+            <DField label="최근매입일">
+              {p.last_purchase_date ? <span className="tabular-nums text-zinc-600">{String(p.last_purchase_date).slice(0, 10)}</span> : <span className="text-zinc-300">-</span>}
+            </DField>
+          </div>
+        </div>
 
         {/* 기본 정보 */}
         <div className="space-y-3">
@@ -275,7 +308,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             <div className="col-span-2">
               {editing ? <EditField k="product_name" label="상품명" /> : (
-                <DField label="상품명"><span className="text-[17px] font-bold text-ink">{product.product_name || <span className="text-zinc-300">-</span>}</span></DField>
+                <DField label="상품명"><span className="text-[19px] font-bold text-ink">{product.product_name || <span className="text-zinc-300">-</span>}</span></DField>
               )}
             </div>
             {editing ? <EditField k="supplier" label="공급사" /> : (
@@ -300,53 +333,17 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             )}
             {editing ? <EditField k="barcode" label="바코드" /> : <DField label="바코드">{dispVal("barcode")}</DField>}
             {editing ? <EditField k="location" label="진열위치" /> : <DField label="진열위치">{dispVal("location")}</DField>}
+          </div>
+        </div>
+
+        {/* 기타 (단위 · 규격 · 브랜드 · 제조사) */}
+        <div className="space-y-3">
+          <SectionTitle title="기타" color="amber" />
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             {editing ? <EditField k="unit" label="단위" /> : <DField label="단위">{dispVal("unit")}</DField>}
             {editing ? <EditField k="spec" label="규격" /> : <DField label="규격">{dispVal("spec")}</DField>}
             {editing ? <EditField k="brand" label="브랜드" /> : <DField label="브랜드">{dispVal("brand")}</DField>}
             {editing ? <EditField k="manufacturer" label="제조사" /> : <DField label="제조사">{dispVal("manufacturer")}</DField>}
-          </div>
-        </div>
-
-        {/* 가격 · 재고 */}
-        <div className="space-y-3">
-          <SectionTitle title="가격 · 재고" color="emerald" />
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-            {editing ? <EditField k="purchase_price" label="매입가 (단가)" type="number" /> : (
-              <DField label="매입가 (단가)">
-                {p.purchase_price != null
-                  ? <span className="tabular-nums font-bold text-amber-700">{Number(p.purchase_price).toLocaleString()}원</span>
-                  : <span className="text-zinc-300">-</span>}
-              </DField>
-            )}
-            {editing ? <EditField k="sale_price" label="판매가" type="number" /> : (
-              <DField label="판매가">
-                {p.sale_price != null
-                  ? <span className="tabular-nums font-bold text-brand-deep">{Number(p.sale_price).toLocaleString()}원</span>
-                  : <span className="text-zinc-300">-</span>}
-              </DField>
-            )}
-            <DField label="이익율">
-              {profitRate != null
-                ? <span className={`tabular-nums font-bold ${profitRate >= 30 ? "text-emerald-600" : profitRate >= 15 ? "text-amber-600" : "text-rose-600"}`}>{profitRate}%</span>
-                : <span className="text-zinc-300">-</span>}
-            </DField>
-            {editing ? <EditField k="optimal_stock" label="적정재고 (30일)" type="number" /> : (
-              <DField label="적정재고 (30일)">
-                {p.optimal_stock != null ? <span className="tabular-nums font-semibold">{String(p.optimal_stock)}개</span> : <span className="text-zinc-300">-</span>}
-              </DField>
-            )}
-            <DField label="현재고">
-              {p.current_stock != null ? <span className="tabular-nums font-bold text-brand-deep">{String(p.current_stock)}개</span> : <span className="text-zinc-300">-</span>}
-            </DField>
-            <DField label="창고재고">
-              {p.warehouse_stock != null ? <span className="tabular-nums font-semibold">{String(p.warehouse_stock)}개</span> : <span className="text-zinc-300">-</span>}
-            </DField>
-            <DField label="매장재고">
-              {p.store_stock != null ? <span className="tabular-nums font-semibold">{String(p.store_stock)}개</span> : <span className="text-zinc-300">-</span>}
-            </DField>
-            <DField label="최근매입일">
-              {p.last_purchase_date ? <span className="tabular-nums text-zinc-600">{String(p.last_purchase_date).slice(0, 10)}</span> : <span className="text-zinc-300">-</span>}
-            </DField>
           </div>
         </div>
       </div>

@@ -72,6 +72,13 @@ router.post("/api/notifications/read-all", authorize(1), validateBody(ReadAllNot
   res.json({ ok: true });
 }));
 
+router.delete("/api/notifications", authorize(1), asyncHandler(async (req, res) => {
+  const employeeId = parseInt(req.query.employeeId as string);
+  if (!employeeId) throw badRequest("employeeId required");
+  await notificationsService.deleteAll(employeeId);
+  res.json({ ok: true });
+}));
+
 router.post("/api/notifications", authorize(5), validateBody(CreateNotificationSchema), asyncHandler(async (req, res) => {
   const { employee_id, title, body, type } = req.body;
   const data = await notificationsService.create({ employee_id, title, body, type: type as any });

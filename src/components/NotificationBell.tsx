@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { api } from "../lib/apiClient";
 import { TIMING } from "../constants/timing";
 import { useApprovalRefreshListener } from "../lib/approvalEvents";
-import { Bell, BellOff, CheckCheck, X, Info, AlertTriangle, CheckCircle, AlertCircle } from "lucide-react";
+import { Bell, BellOff, CheckCheck, Trash2, X, Info, AlertTriangle, CheckCircle, AlertCircle } from "lucide-react";
 import type { AuthSession } from "../types";
 import { StatusPill } from "./common/StatusPill";
 import { AccentBar } from "./common/AccentBar";
@@ -37,17 +37,11 @@ interface NotificationBellProps {
  */
 function pickRouteForNotification(n: { title: string; body: string | null; type: string }): string | null {
   const t = `${n.title ?? ""} ${n.body ?? ""}`;
-  // 진열요청·창고준비·진열완료 → 매장관리 (진열요청 서브탭이 나오면 그쪽)
   if (/진열|보충 요청|창고 준비|픽업/i.test(t)) return "display";
-  // 발주요청·재고 → 매입관리
   if (/발주|재고 부족|재고관리/i.test(t)) return "order-manage";
-  // 연차·휴가 → 승인 센터
   if (/연차|휴가|승인/i.test(t)) return "approval";
-  // 스케줄 → 스케줄 페이지
   if (/스케줄|근무|배정/i.test(t)) return "schedule";
-  // 이슈공유 · 게시판
   if (/이슈|게시|댓글|@언급|멘션/i.test(t)) return "board";
-  // OCR · 거래명세서
   if (/OCR|명세서|거래명세/i.test(t)) return "order-manage";
   return null;
 }
@@ -75,14 +69,12 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [justArrived, setJustArrived] = useState(false); // 신규 알림 애니메이션 트리거
-  const panelRef = useRef<HTMLDivElement>(null);
+  const [justArrived, setJustArrived] = useState(false);
   const prevMaxIdRef = useRef<number>(0);
   const employeeId = authSession?.employeeId;
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // 짧은 알림 소리 재생 (Web Audio · 외부 파일 없이 tone 합성)
   const playChime = useCallback(() => {
     try {
       const AC = (window as Window & { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext
@@ -100,7 +92,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
         o.connect(g); g.connect(ctx.destination);
         o.start(now + start); o.stop(now + start + dur);
       };
-      // 도-미 짧은 2음
       play(880, 0,    0.22);
       play(1320, 0.14, 0.24);
       setTimeout(() => ctx.close?.(), 900);
@@ -125,7 +116,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
     finally { setLoading(false); }
   }, [employeeId, playChime]);
 
-  // Initial fetch + poll every 20 seconds (기존 60→20 으로 반응성 강화)
   useEffect(() => {
     if (!employeeId) return;
     fetchNotifications();
@@ -133,38 +123,38 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
     return () => clearInterval(id);
   }, [fetchNotifications]);
 
-  // 2026-08-18 · 요청/승인 상태 변경 시 즉시 알림 재로드 (approvalEvents)
   useApprovalRefreshListener(fetchNotifications);
 
-  // Close on outside click
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  // 2026-09-07 · createPortal 사용으로 panelRef 기반 outside-click 제거
+  //   · 이전 방식: panelRef.contains(target) → portal 내부 클릭도 "외부"로 판단해 즉시 닫힘
+  //   · 이후 방식: 배경 backdrop onClick 으로만 닫기 (정상 동작)
 
+  // 읽음 처리 → 목록에서 즉시 제거 (사용자 요청 2026-09-07)
   const markRead = async (id: number) => {
-    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
-    try { await api.patch(`/api/notifications/${id}/read`); } catch { /* silent · optimistic UI 유지 */ }
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    try { await api.patch(`/api/notifications/${id}/read`); } catch { /* silent */ }
   };
 
+  // 모두 읽음 → 전체 목록 제거
   const markAllRead = async () => {
-    if (!employeeId || unreadCount === 0) return;
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    if (!employeeId || notifications.length === 0) return;
+    setNotifications([]);
     try { await api.post("/api/notifications/read-all", { employeeId }); } catch { /* silent */ }
+  };
+
+  // 모두 삭제 → DB에서 완전 삭제 + 목록 초기화
+  const deleteAll = async () => {
+    if (!employeeId || notifications.length === 0) return;
+    setNotifications([]);
+    try { await api.del(`/api/notifications?employeeId=${employeeId}`); } catch { /* silent */ }
   };
 
   if (!employeeId) return null;
 
   const hasUnread = unreadCount > 0;
   return (
-    <div className="relative" ref={panelRef}>
-      {/* Bell button — 미확인 알림 있으면 강조 · 신규 도착 시 흔들림 */}
-      {/* 2026-08-17 · 최신 트렌드 · 딥네이비 배경 대응 · 반투명 흰 · 접근성 h-9 · 폰트 +2 */}
-      {/* 2026-08-23 · #199 · 테두리와 종 사이 여백 반으로 축소 (시각적 균형) · Bell 16→22 · compact 13→18 */}
+    <div className="relative">
+      {/* 2026-08-23 · #199 · Bell 16→22 · compact 13→18 */}
       <button
         onClick={() => { setOpen((v) => !v); if (!open) fetchNotifications(); }}
         className={`relative flex items-center justify-center rounded-md border transition-colors cursor-pointer ${
@@ -183,7 +173,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
           </span>
         )}
       </button>
-      {/* Shake keyframes — inline style tag · 컴포넌트 유일 */}
       <style>{`
         @keyframes notif-bell-shake {
           0%, 100% { transform: rotate(0deg); }
@@ -194,10 +183,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
         .notif-bell-shake { animation: notif-bell-shake 0.8s ease-in-out 2; transform-origin: 50% 20%; }
       `}</style>
 
-      {/* 2026-09-03 · 사용자 지시 · 알림내역 · 가운데 모달 (데스크탑·모바일 통일)
-           · 이전 · 종 아래 dropdown · 화면 밖으로 나가 안 보임
-           · 이후 · 중앙 fixed · backdrop · max-w-lg
-           · 2026-09-07 · createPortal · 사이드바 transform 컨텍스트 탈출 (fixed 위치 오작동 방지) */}
+      {/* 2026-09-07 · createPortal · 사이드바 transform 컨텍스트 탈출 · 중앙 모달 */}
       {open && createPortal(
         <>
           <div className="fixed inset-0 bg-black/40 z-[69]" onClick={() => setOpen(false)} />
@@ -207,7 +193,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
             padding="none"
             clip
             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] max-w-md z-[70] max-h-[80vh] overflow-hidden shadow-2xl">
-          {/* Header · 2026-08-17 · 최신 트렌드 · accent bar + 폰트 +2 · 딥네이비 통일 */}
+          {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-line bg-zinc-50/60">
             <div className="flex items-center gap-2.5">
               <AccentBar />
@@ -218,12 +204,22 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
               )}
             </div>
             <div className="flex items-center gap-1">
-              {unreadCount > 0 && (
+              {notifications.length > 0 && (
                 <button
                   onClick={markAllRead}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 text-[15px] font-semibold text-ink-soft hover:text-brand-deep hover:bg-brand-tint rounded-lg transition-colors cursor-pointer"
+                  title="모두 읽음 처리"
                 >
                   <CheckCheck size={13} /> 모두 읽음
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  onClick={deleteAll}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[15px] font-semibold text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                  title="모두 삭제"
+                >
+                  <Trash2 size={13} /> 모두 삭제
                 </button>
               )}
               <button
@@ -274,7 +270,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
                         {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-brand-deep shrink-0" />}
                       </div>
                       {n.body && (
-                        <p className="text-[13px] text-zinc-500 mt-0.5 leading-relaxed line-clamp-2">{n.body}</p>
+                        <p className="text-[15px] text-zinc-500 mt-0.5 leading-relaxed line-clamp-2">{n.body}</p>
                       )}
                       <p className="text-[14px] text-zinc-400 mt-1">{timeAgo(n.created_at)}</p>
                     </div>
