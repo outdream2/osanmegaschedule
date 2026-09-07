@@ -610,7 +610,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
            2026-08-30 · #37 · 사용자 지시 · SplitListPanel 넓이 통일 · max-w-[1360px] 컨테이너 (다른 페이지와 동일) */
         <main className="flex-1 flex flex-col min-h-0">
           <TabBar<"need" | "confirmed">
-            level={3}
+            level={2}
             activeKey={returnInnerTabDp}
             onSelect={setReturnInnerTabDp}
             tabs={[
@@ -628,7 +628,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         /* 2026-08-29 · #193 · 사용자 지시 · 상품 서브탭 · 3개 이너 탭 (실재고입력·상품입고·상품정보) · 매입에서 이관 */
         <main className="flex-1 flex flex-col min-h-0">
           <TabBar<"info" | "scan" | "arrival">
-            level={3}
+            level={2}
             activeKey={productInnerTab}
             onSelect={setProductInnerTab}
             tabs={[
