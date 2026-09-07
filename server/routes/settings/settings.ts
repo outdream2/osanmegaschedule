@@ -264,10 +264,10 @@ router.post("/api/settings/order-email/test", authorize(9), asyncHandler(async (
   const cfg = await loadSmtp();
   if (!cfg.smtp_host) throw new HttpError(400, "SMTP 설정이 없습니다");
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const nodemailer = require("nodemailer");
+    // 2026-09-07 · fix · ESM 프로젝트 · require 대신 dynamic import
+    const nodemailer = await import("nodemailer");
     const port = Number(cfg.smtp_port || 587);
-    const transporter = nodemailer.createTransport({
+    const transporter = nodemailer.default.createTransport({
       host: cfg.smtp_host,
       port,
       secure: port === 465,

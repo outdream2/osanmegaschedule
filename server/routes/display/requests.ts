@@ -627,10 +627,10 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
         //   · env · SMTP_HOST · SMTP_PORT (default 587) · SMTP_USER · SMTP_PASS · SMTP_FROM
         //   · TLS/STARTTLS 자동 (port 465 = TLS · 그 외 = STARTTLS)
         try {
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
-          const nodemailer = require("nodemailer");
+          // 2026-09-07 · fix · ESM 프로젝트 · require 대신 dynamic import
+          const nodemailer = await import("nodemailer");
           const port = Number(process.env.SMTP_PORT ?? 587);
-          const transporter = nodemailer.createTransport({
+          const transporter = nodemailer.default.createTransport({
             host: process.env.SMTP_HOST,
             port,
             secure: port === 465,
