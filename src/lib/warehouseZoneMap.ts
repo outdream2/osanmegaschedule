@@ -37,8 +37,8 @@ export function resolveWarehouseForCode(code: string | null | undefined): Wareho
 }
 
 /** location 문자열 (예: "26" · "26/33" · "24/33/8A") 을 파싱해 창고 가시성 결정
- *  2026-09-02 · 사용자 규칙 · 창고1 zone 하나라도 있으면 showW1 · 그 외는 모두 창고2
- *  · 여러 zone 이 union · 창고1+창고2 zone 혼재 시 둘 다 true
+ *  · 유효 구역코드(1~4자)만 판별 · 상품코드·카테고리코드 오분류 방지
+ *  · location 없거나 유효 코드 없으면 · 둘 다 true (기본 표시)
  */
 export function resolveWarehouseVisibility(location: string | null | undefined): WarehouseVisibility {
   if (!location) return { showW1: true, showW2: true };
@@ -46,14 +46,16 @@ export function resolveWarehouseVisibility(location: string | null | undefined):
     .split(/[\/,·]/)
     .map(s => s.trim())
     .filter(Boolean);
-  if (parts.length === 0) return { showW1: true, showW2: true };
   let showW1 = false;
   let showW2 = false;
   for (const p of parts) {
     const c = p.toUpperCase().replace(/\s+/g, "");
+    if (!isValidZoneCode(c)) continue;   // "10102" 같은 코드 무시
     if (WAREHOUSE_1_CODES.has(c)) showW1 = true;
-    else showW2 = true; // 창고1 아니면 창고2
+    else showW2 = true;
   }
+  // 유효 구역코드가 하나도 없으면 · 둘 다 표시 (안전)
+  if (!showW1 && !showW2) return { showW1: true, showW2: true };
   return { showW1, showW2 };
 }
 
@@ -69,7 +71,7 @@ export type ArrivalSlot = "w1" | "w2" | "s1" | "s2" | "s3";
 export function classifyArrivalSlot(locationCode: string | null | undefined): ArrivalSlot | null {
   if (!locationCode) return null;
   const c = String(locationCode).trim().toUpperCase().replace(/\s+/g, "");
-  if (!c) return null;
+  if (!c || !isValidZoneCode(c)) return null;   // 유효하지 않은 코드 무시
   if (WAREHOUSE_1_CODES.has(c)) return "w1";
   return "w2";
 }
@@ -86,9 +88,19 @@ export type SlotZones = {
   w2zone: string | null;
 };
 
-// 2026-09-07 · 창고2 = 창고1(6개) 제외 모든 구역 (숫자·알파뉴메릭 포함)
-//   · 예: "1A", "1B", "28", "41" 등 모두 창고2
-//   · 매장 진열대 구역도 물리적으로 창고2에 속함 (사용자 확인)
+// 유효한 구역코드 패턴: 1~4자, 숫자(1~99) 또는 알파뉴메릭 (예: "1A","7B","28","41")
+// "10102" 같은 5자리 상품코드·카테고리코드는 구역코드로 인정하지 않음
+function isValidZoneCode(c: string): boolean {
+  if (!c || c.length > 4) return false;
+  // 순수 숫자: 1~99
+  const num = parseInt(c, 10);
+  if (!isNaN(num) && String(num) === c) return num >= 1 && num <= 99;
+  // 알파뉴메릭: 2~4자 (예: "7B","8A","1A","1B")
+  return /^[0-9A-Z]{2,4}$/.test(c);
+}
+
+// 2026-09-07 · 창고2 = 창고1(6개) 제외 모든 유효 구역코드
+//   · 유효 구역코드만 (1~4자·숫자1-99·알파뉴메릭) · 상품코드·카테고리코드 오분류 방지
 export function assignZonesToSlots(
   input: string | null | undefined,
   categoryCode?: string | null,
@@ -97,14 +109,14 @@ export function assignZonesToSlots(
   let w1: string | null = null; let w2: string | null = null;
   for (const raw of codes) {
     const c = raw.toUpperCase().replace(/\s+/g, "");
+    if (!isValidZoneCode(c)) continue;   // 유효하지 않은 코드 무시
     if (!w1 && WAREHOUSE_1_CODES.has(c)) { w1 = raw; continue; }
-    if (!w2) { w2 = raw; continue; }  // 창고1 제외 모두 창고2 (첫 번째)
+    if (!w2) { w2 = raw; continue; }    // 창고1 제외 모두 창고2
   }
-  // fallback · category_code 로 창고 판별
-  if ((!w1 || !w2) && categoryCode) {
+  // fallback · category_code 가 유효 창고1 코드면 사용
+  if (!w1 && categoryCode) {
     const cat = String(categoryCode).trim().toUpperCase().replace(/\s+/g, "");
-    if (!w1 && WAREHOUSE_1_CODES.has(cat)) w1 = cat;
-    else if (!w2) w2 = categoryCode.trim();
+    if (WAREHOUSE_1_CODES.has(cat)) w1 = categoryCode.trim();
   }
   return {
     s1zone: null,
