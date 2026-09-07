@@ -1,7 +1,7 @@
 {
   "created": "2026-09-07",
   "version": 1,
-  "totalViolations": 4,
+  "totalViolations": 5,
   "files": {
     "src/components/DisplayPage/RealStockTablePage.tsx": {
       "lines": 816,
@@ -13,8 +13,18 @@
       ],
       "totalWeight": 3
     },
+    "src/components/OrderManagePage/PaymentInputPage.tsx": {
+      "lines": 810,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
+    },
     "src/components/ProductArrivalPage/ProductArrivalPage.tsx": {
-      "lines": 863,
+      "lines": 893,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -34,7 +44,7 @@
       "totalWeight": 3
     },
     "src/components/ScanPage/ScanPage.tsx": {
-      "lines": 814,
+      "lines": 808,
       "violations": [
         {
           "ruleId": "large-file-warn",
