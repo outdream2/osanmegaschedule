@@ -30,6 +30,7 @@ import { SplitPanel } from "../common/SplitPanel";
 import { SplitListPanel } from "../common/SplitListPanel";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { StatusPill } from "../common/StatusPill";
+import { Button } from "../common/Button";
 
 // 2026-08-21 · Framework Phase 4 · ReturnRequestModal 별도 파일 분리
 import { ReturnRequestModal } from "./ReturnRequestModal";
@@ -512,34 +513,28 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
       }
       headerActions={
         <div className="flex items-center gap-1.5">
-          <button
-            type="button"
+          <Button
+            variant="danger"
+            size="sm"
+            icon={<Truck size={13} strokeWidth={2.5} />}
             onClick={openBulkReturnModal}
             disabled={returnSelected.size === 0}
-            className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[15px] font-bold transition cursor-pointer border ${
-              returnSelected.size > 0
-                ? "text-white bg-rose-500 hover:bg-rose-600 border-rose-700 shadow-sm active:scale-95"
-                : "text-zinc-400 bg-zinc-50 border-line cursor-not-allowed"
-            }`}
             title={returnSelected.size > 0 ? `선택된 ${returnSelected.size}개 상품 일괄 반품 신청` : "체크박스로 상품을 선택하세요"}
           >
-            <Truck size={13} strokeWidth={2.5} />
             일괄 반품 ({returnSelected.size})
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<CheckCircle2 size={13} strokeWidth={2.5} />}
             onClick={bulkConfirmReturn}
-            disabled={returnSelected.size === 0 || bulkConfirming}
-            className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[15px] font-bold transition cursor-pointer border ${
-              returnSelected.size > 0 && !bulkConfirming
-                ? "text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-800 shadow-sm ring-2 ring-emerald-300/40 active:scale-95"
-                : "text-zinc-400 bg-zinc-50 border-line cursor-not-allowed"
-            }`}
+            disabled={returnSelected.size === 0}
+            loading={bulkConfirming}
             title={returnSelected.size > 0 ? `선택된 ${returnSelected.size}개 상품 일괄 반품확정 (즉시 done)` : "체크박스로 상품을 선택하세요"}
+            style={{ backgroundColor: returnSelected.size > 0 ? "#059669" : undefined, borderColor: returnSelected.size > 0 ? "#059669" : undefined }}
           >
-            <CheckCircle2 size={13} strokeWidth={2.5} />
             {bulkConfirming ? "확정 중..." : `일괄 확정 (${returnSelected.size})`}
-          </button>
+          </Button>
         </div>
       }
       bodyClassName={`flex-1 min-h-0 overflow-auto ${returnLoading && returnList.length > 0 ? "opacity-50 pointer-events-none transition-opacity" : "transition-opacity"}`}
@@ -704,26 +699,28 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                 {/* 반품 액션 버튼 */}
                 <td className="text-center px-1 py-2 align-top bg-zinc-50/30">
                   <div className="inline-flex items-center gap-1">
-                    <button
-                      type="button"
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      icon={<Truck size={11} strokeWidth={2} />}
                       onClick={(e) => { e.stopPropagation(); setReturnRequestItem({ ...x, vendorCategory: x.supplier ? (vendorCategoryMap[x.supplier.trim()] ?? null) : null }); }}
-                      className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[14px] font-semibold text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 transition-colors cursor-pointer active:scale-95 whitespace-nowrap"
                       title="반품요청 (모달 열기)"
+                      className="!h-7 !text-[14px] !px-2"
                     >
-                      <Truck size={11} strokeWidth={2} />반품
-                    </button>
-                    <button
-                      type="button"
+                      반품
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      icon={confirmingCode === x.product_code ? <Spinner size={11} tone="white" /> : <CheckCircle2 size={11} strokeWidth={2} />}
                       onClick={(e) => { e.stopPropagation(); confirmReturn(x); }}
                       disabled={confirmingCode === x.product_code}
-                      className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[14px] font-semibold text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700 transition-colors cursor-pointer active:scale-95 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
                       title="바로 반품확정 (모달 없이 · done 상태 저장)"
+                      className="!h-7 !text-[14px] !px-2"
+                      style={{ backgroundColor: "#059669", borderColor: "#059669" }}
                     >
-                      {confirmingCode === x.product_code
-                        ? <Spinner size={11} tone="white" />
-                        : <CheckCircle2 size={11} strokeWidth={2} />}
                       확정
-                    </button>
+                    </Button>
                   </div>
                 </td>
               </tr>

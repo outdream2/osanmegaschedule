@@ -11,7 +11,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Package, PencilSimple, FloppyDisk, X, ArrowSquareOut,
 } from "@phosphor-icons/react";
-import { Search as SearchIcon } from "lucide-react";
+import { Button } from "../common/Button";
+import { SearchBar } from "../common/SearchBar";
 import { SplitListPanel } from "../common/SplitListPanel";
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
 import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
@@ -242,21 +243,15 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
         {editing ? (
           <div className="flex items-center gap-1.5 shrink-0">
             <StatusPill tone="amber" size="xs">편집 중</StatusPill>
-            <button type="button" onClick={save} disabled={saving}
-              className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-brand-deep text-white text-[15px] font-bold hover:bg-[#0d3a5c] disabled:opacity-50 cursor-pointer shadow-sm">
-              <FloppyDisk size={13} weight="bold" />{saving ? "저장중" : "저장"}
-            </button>
-            <button type="button" onClick={cancelEdit} disabled={saving}
-              className="w-8 h-8 rounded-md border border-line flex items-center justify-center text-zinc-600 hover:bg-zinc-50 cursor-pointer disabled:opacity-50">
-              <X size={13} />
-            </button>
+            <Button variant="primary" size="sm" icon={<FloppyDisk size={13} weight="bold" />} onClick={save} loading={saving}>
+              저장
+            </Button>
+            <Button variant="secondary" size="sm" icon={<X size={13} />} onClick={cancelEdit} disabled={saving} />
           </div>
         ) : canEdit ? (
-          <button type="button" onClick={startEdit}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white hover:bg-zinc-50 border border-line text-[15px] font-bold text-zinc-600 hover:text-brand-deep hover:border-brand-deep shrink-0 transition cursor-pointer shadow-sm"
-            title="상품정보 수정">
-            <PencilSimple size={13} weight="bold" />수정
-          </button>
+          <Button variant="secondary" size="sm" icon={<PencilSimple size={13} weight="bold" />} onClick={startEdit} title="상품정보 수정">
+            수정
+          </Button>
         ) : null}
       </div>
 
@@ -527,26 +522,20 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
           </div>
           <StatusPill tone="sky" size="sm">{filtered.length}건</StatusPill>
           {/* 검색창 */}
-          <div className="relative flex-1 min-w-[160px] max-w-[260px]">
-            <SearchIcon size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="상품명·코드·공급사 검색"
-              className="w-full h-9 pl-7 pr-3 rounded-lg border border-line bg-zinc-50/60 text-[15px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep focus:bg-white transition-colors"
-            />
-          </div>
+          <SearchBar
+            value={search}
+            onChange={setSearch}
+            placeholder="상품명·코드·공급사 검색"
+            historyKey="megatown_productInfo_search"
+            accent="sky"
+            widthClass="flex-1 min-w-[160px] max-w-[260px]"
+          />
           {/* 판매상태 필터 */}
           <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
           {canManage && (
-            <button
-              type="button"
-              onClick={() => setCreateOpen(true)}
-              className="ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-brand-deep text-white text-[15px] font-bold hover:bg-[#0d3a5c] transition cursor-pointer shadow-sm"
-            >
+            <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)} className="ml-auto">
               + 상품 등록
-            </button>
+            </Button>
           )}
         </div>
 
