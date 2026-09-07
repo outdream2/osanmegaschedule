@@ -606,8 +606,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           />
         </main>
       ) : dpSubTab === "return" && dpCanSeeStockManage ? (
-        <main className="flex-1 flex flex-col min-h-0">
-          <div className="bg-white border-b border-line shrink-0">
+        <main className={`${PAGE_CONTAINER_CLS} p-4 flex flex-col gap-4 flex-1`}>
+          <div className="bg-white rounded-xl border border-line overflow-hidden">
             <SplitRightTabs<"need" | "confirmed">
               tabs={[
                 { key: "need",      label: "반품필요" },
@@ -615,18 +615,17 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               ]}
               active={returnInnerTabDp}
               onSelect={setReturnInnerTabDp}
+              bg="bg-zinc-50/40"
               size="lg"
             />
           </div>
-          <div className="flex-1 min-h-0 flex flex-col">
-            <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
-              {returnInnerTabDp === "need" ? <ReturnListPanelLazy /> : <ReturnConfirmedPanelLazy />}
-            </React.Suspense>
-          </div>
+          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
+            {returnInnerTabDp === "need" ? <ReturnListPanelLazy /> : <ReturnConfirmedPanelLazy />}
+          </React.Suspense>
         </main>
       ) : dpSubTab === "product" && dpUserLevel >= 2 ? (
-        <main className="flex-1 flex flex-col min-h-0">
-          <div className="bg-white border-b border-line shrink-0">
+        <main className={`${PAGE_CONTAINER_CLS} p-4 flex flex-col gap-4 flex-1`}>
+          <div className="bg-white rounded-xl border border-line overflow-hidden">
             <SplitRightTabs<"info" | "scan" | "arrival">
               tabs={[
                 { key: "info",    label: "상품정보",   icon: Info        },
@@ -635,16 +634,15 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               ]}
               active={productInnerTab}
               onSelect={setProductInnerTab}
+              bg="bg-zinc-50/40"
               size="lg"
             />
           </div>
-          <div className="flex-1 min-h-0 flex flex-col">
-            <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
-              {productInnerTab === "scan"    && <ScanPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />}
-              {productInnerTab === "arrival" && <ProductArrivalPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />}
-              {productInnerTab === "info"    && <ProductInfoPageLazy authSession={authSession ?? null} />}
-            </React.Suspense>
-          </div>
+          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
+            {productInnerTab === "scan"    && <ScanPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />}
+            {productInnerTab === "arrival" && <ProductArrivalPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />}
+            {productInnerTab === "info"    && <ProductInfoPageLazy authSession={authSession ?? null} />}
+          </React.Suspense>
         </main>
       ) : (
         <main className={`${PAGE_CONTAINER_CLS} p-4 flex flex-col gap-4 flex-1`}>
