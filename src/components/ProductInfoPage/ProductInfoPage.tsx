@@ -17,13 +17,13 @@ import { SaleStatusFilter } from "../common/SaleStatusFilter";
 import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { Modal } from "../common/Modal";
 import { Card } from "../common/Card";
+import { SplitPanel } from "../common/SplitPanel";
 import { ProductCreateModal } from "./ProductCreateModal";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import { EmptyState } from "../common/EmptyState";
 import { GradientAccent } from "../common/GradientAccent";
 import { SectionTitle } from "../LandingPage/VendorDetailModal.helpers";
-import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 import { api, ApiError } from "../../lib/apiClient";
@@ -411,14 +411,6 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
     }
   }, [canManage]);
 
-  // 좌우 분할 · 폭 저장 · 데스크탑 감지
-  const { width: leftWidth, startResize, isDesktop } = useResizablePanel({
-    storageKey: "productinfo.leftWidth",
-    defaultWidth: 420,
-    minWidth: 300,
-    maxWidth: 720,
-    detectDesktop: true,
-  });
 
   // 리스트 fetch · /api/products-map (전체) 를 배열화
   useEffect(() => {
@@ -486,7 +478,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
 
   const handleSelect = (code: string) => {
     setSelectedCode(code);
-    if (!isDesktop) setMobileOpen(true);
+    setMobileOpen(true);
   };
 
   const listBody = (
@@ -558,69 +550,46 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
           )}
         </div>
 
-        {/* ── 좌우 분할 패널 ── */}
-        <div className={`flex flex-1 min-h-0 gap-0 bg-white rounded-xl border border-line overflow-hidden`}>
-        {/* 좌측 · 리스트 (mobile 전체폭 · desktop leftWidth) */}
-        <div
-          className="flex flex-col min-h-0"
-          style={isDesktop ? { width: leftWidth, flexShrink: 0 } : { width: "100%" }}
-        >
-          <SplitListPanel
-            topAccent
-            title="상품정보"
-            count={filtered.length}
-            loading={listLoading}
-            empty={!listLoading && filtered.length === 0}
-            emptyText={search ? "검색 결과 없음" : "상품이 없습니다"}
-            emptyIcon={Package as any}
-            error={listError}
-          >
-            {listBody}
-          </SplitListPanel>
-        </div>
-
-        {/* PC · 리사이저 */}
-        {isDesktop && (
-          <div
-            onMouseDown={startResize}
-            className="w-[3px] cursor-col-resize bg-line hover:bg-brand-tint transition-colors shrink-0"
-            title="드래그하여 폭 조절"
-          />
-        )}
-
-        {/* PC · 우측 상세 */}
-        {isDesktop && (
-          <div className="flex-1 min-w-0 min-h-0 overflow-y-auto bg-zinc-50/30">
-            <ProductDetailView
-              product={detail}
-              loading={detailLoading}
-              error={detailError}
-              canEdit={canManage}
-              onSaved={() => setReloadKey((k) => k + 1)}
-            />
-          </div>
-        )}
-        </div>  {/* 좌우 분할 패널 닫기 */}
+        {/* ── 좌우 분할 패널 · SplitPanel 프레임워크 ── */}
+        <SplitPanel
+          storageKey="productInfo.leftWidth.v2"
+          defaultWidth={420}
+          minWidth={280}
+          maxWidth={720}
+          wrapLeft={false}
+          wrapRight={false}
+          className="flex-1 min-h-0"
+          mobileRightAsModal={true}
+          mobileModalTitle={detail?.product_name ?? "상품 상세"}
+          mobileOpen={mobileOpen}
+          onMobileClose={() => setMobileOpen(false)}
+          left={
+            <SplitListPanel
+              topAccent
+              title="상품정보"
+              count={filtered.length}
+              loading={listLoading}
+              empty={!listLoading && filtered.length === 0}
+              emptyText={search ? "검색 결과 없음" : "상품이 없습니다"}
+              emptyIcon={Package as any}
+              error={listError}
+            >
+              {listBody}
+            </SplitListPanel>
+          }
+          right={
+            <div className="flex-1 min-h-0 overflow-y-auto bg-zinc-50/30">
+              <ProductDetailView
+                product={detail}
+                loading={detailLoading}
+                error={detailError}
+                canEdit={canManage}
+                onSaved={() => setReloadKey((k) => k + 1)}
+              />
+            </div>
+          }
+        />
       </div>    {/* 외부 column flex 닫기 */}
-
-      {/* Mobile · 상세 모달 */}
-      {!isDesktop && (
-        <Modal
-          open={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-          title={detail?.product_name || "상품 상세"}
-          size="lg-narrow"
-          bodyPadding="none"
-        >
-          <ProductDetailView
-              product={detail}
-              loading={detailLoading}
-              error={detailError}
-              canEdit={canManage}
-              onSaved={() => setReloadKey((k) => k + 1)}
-            />
-        </Modal>
-      )}
 
       {/* Phase C · 상품 등록 모달 · 2026-08-23 · #197 · pending code 있으면 자동 채움+lock */}
       <ProductCreateModal
