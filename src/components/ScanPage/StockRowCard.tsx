@@ -512,9 +512,13 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
             {!slotVis.anyAssigned && (
               <AutoZonePicker onAssign={handleAutoZoneAssign} />
             )}
-            {/* Row 1 · 창고1 + 매장1 나란히 */}
+            {/* Row 1 · 창고(1 혹은 2) + 매장1 나란히 · w1 없으면 w2가 Row 1 왼쪽 */}
             <div className="grid grid-cols-2 gap-2">
-              {w1Slot ? renderSlot(w1Slot, 0, false) : <div />}
+              {w1Slot
+                ? renderSlot(w1Slot, 0, false)
+                : w2Slot
+                  ? renderSlot(w2Slot, 1, false)
+                  : <div />}
               {s1Slot ? renderSlot(s1Slot, STORE_IDX["s1"], true) : <div />}
             </div>
             {/* Row 2 · 매장2 + 매장3 (있을 때만 · 항상 2칸으로 매장1과 너비 동일) */}
@@ -534,8 +538,8 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                 + 매장 추가 ({visibleStoreCount}/3)
               </button>
             )}
-            {/* Row 3 · 창고2 (있을 때만) */}
-            {w2Slot && (
+            {/* Row 3 · 창고2 · w1과 w2 둘 다 있을 때만 별도 행 */}
+            {w1Slot && w2Slot && (
               <div className="grid grid-cols-1">
                 {renderSlot(w2Slot, 1, false)}
               </div>

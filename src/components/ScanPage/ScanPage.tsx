@@ -372,7 +372,17 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       .catch(() => [] as InventoryHistoryRow[])
       .then((list: InventoryHistoryRow[]) => {
         const last = list[0];
-        if (!last) return;
+        if (!last) {
+          // 이력 없음 · products.current_stock fallback → prevWarehouse1Qty 로 표시
+          const fallback = (found as any).current_stock;
+          if (fallback != null && Number(fallback) > 0) {
+            setRows(prev => prev.map(r => r.key === newRow.key
+              ? { ...r, prevWarehouse1Qty: Number(fallback) }
+              : r
+            ));
+          }
+          return;
+        }
         const w1 = last.warehouse1_stock ?? last.warehouse_stock;
         const w2 = last.warehouse2_stock ?? null;
         const s1 = last.store_stock ?? null;              // 매장1 = store_stock
