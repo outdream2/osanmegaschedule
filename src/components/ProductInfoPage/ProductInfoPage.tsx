@@ -26,7 +26,8 @@ import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 import { api, ApiError } from "../../lib/apiClient";
-import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
+import { PAGE_CONTAINER_CLS, CARD_BASE } from "../../styles/tokens";
+import { AccentBar } from "../common/AccentBar";
 import { matchesProductQuery } from "../../lib/productMatch";
 import type { AuthSession } from "../../types";
 import { UpdateProductSchema, type UpdateProductInput } from "../../shared/schemas/products";
@@ -522,7 +523,29 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
   return (
     <>
       {/* 2026-08-30 · 사용자 지시 · 전체 화면 넓이의 85% · 중앙 정렬 */}
-      <div className={`flex-1 flex min-h-0 gap-0 bg-white rounded-xl border border-line overflow-hidden ${PAGE_CONTAINER_CLS}`}>
+      <div className={`flex flex-col gap-2 h-full min-h-0 ${PAGE_CONTAINER_CLS}`}>
+
+        {/* ── 상단 FilterBar (매입이력과 동일 구조) ── */}
+        <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2 shrink-0`}>
+          <div className="flex items-center gap-2.5 shrink-0">
+            <AccentBar />
+            <Package size={16} className="text-brand-deep shrink-0" />
+            <span className="text-[17px] font-bold text-ink">상품정보</span>
+          </div>
+          <StatusPill tone="sky" size="sm">{filtered.length}건</StatusPill>
+          {canManage && (
+            <button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              className="ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-brand-deep text-white text-[15px] font-bold hover:bg-[#0d3a5c] transition cursor-pointer shadow-sm"
+            >
+              + 상품 등록
+            </button>
+          )}
+        </div>
+
+        {/* ── 좌우 분할 패널 ── */}
+        <div className={`flex flex-1 min-h-0 gap-0 bg-white rounded-xl border border-line overflow-hidden`}>
         {/* 좌측 · 리스트 (mobile 전체폭 · desktop leftWidth) */}
         <div
           className="flex flex-col min-h-0"
@@ -538,9 +561,6 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
             recentSearchScope="productInfo"
             /* 2026-08-30 · 사용자 지시 · 판매중/판매중지 3-way 필터 · 프리미티브 재사용 */
             filters={<SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />}
-            onAdd={canManage ? () => setCreateOpen(true) : undefined}
-            addLabel="상품 등록"
-            addTitle="신규 상품 등록"
             loading={listLoading}
             empty={!listLoading && filtered.length === 0}
             emptyText={search ? "검색 결과 없음" : "상품이 없습니다"}
@@ -572,7 +592,8 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
             />
           </div>
         )}
-      </div>
+        </div>  {/* 좌우 분할 패널 닫기 */}
+      </div>    {/* 외부 column flex 닫기 */}
 
       {/* Mobile · 상세 모달 */}
       {!isDesktop && (
