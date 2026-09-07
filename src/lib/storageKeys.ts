@@ -90,8 +90,8 @@ export const SK_DASHBOARD_LEFT_W = "megatown_dashboard_left_w";
 /** 카테고리 패널 너비 · SalesTrendPage/ZoneCategoryContent.tsx */
 export const SK_SALESTREND_CATEGORY_W = "megatown_salestrend_category_w";
 
-/** 공급사 패널 너비 · SalesTrendPage/SalesTrendPage.tsx */
-export const SK_SALESTREND_SUPPLIER_W = "megatown_salestrend_supplier_w";
+/** 공급사 패널 너비 · SalesTrendPage/SalesTrendPage.tsx · 2026-09-07 · 5:5 강제 (기존 저장값 무시) */
+export const SK_SALESTREND_SUPPLIER_W = "megatown_salestrend_supplier_w_5050";
 
 /** 상품 흐름 패널 너비 · SalesTrendPage/ProductTrendTab.tsx */
 export const SK_SALESTREND_FLOW_W = "megatown_salestrend_flow_w";

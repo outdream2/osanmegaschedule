@@ -105,9 +105,13 @@ export const SalesTrendPage: React.FC = () => {
     openScanProductModal(target);
   }, [infoSelected, infoSearchResults, infoSearchQuery, openScanProductModal]);
 
-  // 공급사별 탭 · 좌우 분할 레이아웃 state
+  // 공급사별 탭 · 좌우 분할 레이아웃 state · 2026-09-07 · 사용자 지시 · 5:5 기본
   const [supplierPanelWidth, setSupplierPanelWidth] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem(SK_SALESTREND_SUPPLIER_W)); return Number.isFinite(v) && v > 0 ? v : 560; } catch { return 560; }
+    try {
+      const v = Number(localStorage.getItem(SK_SALESTREND_SUPPLIER_W));
+      if (Number.isFinite(v) && v > 0) return v;
+    } catch { /* ignore */ }
+    return typeof window !== "undefined" ? Math.round(window.innerWidth * 0.5) : 600;
   });
   useEffect(() => { try { localStorage.setItem(SK_SALESTREND_SUPPLIER_W, String(supplierPanelWidth)); } catch { /**/ } }, [supplierPanelWidth]);
   const supplierPanelWidthRef = useRef(supplierPanelWidth);
