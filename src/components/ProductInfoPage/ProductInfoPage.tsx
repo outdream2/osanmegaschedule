@@ -165,6 +165,8 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
       setEditing(false);
       setDraft({} as Record<EditableKey, string>);
       onSaved();
+      // 구역/상품 변경 시 실재고 테이블 등 자동 리로드
+      window.dispatchEvent(new CustomEvent("products-map-updated"));
     } catch (e: unknown) {
       showError(`[상품 편집] ${e instanceof ApiError ? e.message : (e as Error)?.message ?? "저장 실패"}`);
     } finally { setSaving(false); }

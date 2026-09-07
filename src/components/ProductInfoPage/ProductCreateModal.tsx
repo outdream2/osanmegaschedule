@@ -17,6 +17,7 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import { CreateProductSchema, type CreateProductInput } from "../../shared/schemas/products";
 import { useVendors } from "../../hooks/useVendors";
 import { useZoneDefs } from "../../hooks/useZoneDefs";
+import { classifyArrivalSlot } from "../../lib/warehouseZoneMap";
 // 2026-08-28 · 사용자 지시 · 분류코드 참조 상품 리스트 (스크롤 · 클릭 시 자동 채움)
 import { Spinner } from "../common/Spinner";
 
@@ -225,6 +226,16 @@ export const ProductCreateModal: React.FC<Props> = ({
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm(prev => ({ ...prev, [k]: v }));
 
+  // 구역 → 창고1/창고2 자동 판별
+  const warehouseTag = useMemo(() => {
+    const loc = form.location.trim();
+    if (!loc) return null;
+    const slot = classifyArrivalSlot(loc);
+    if (slot === "w1") return { label: "창고1", cls: "text-cyan-700 bg-cyan-50 border-cyan-300" };
+    if (slot === "w2") return { label: "창고2", cls: "text-sky-700 bg-sky-50 border-sky-300" };
+    return null;
+  }, [form.location]);
+
   const canSubmit = useMemo(() => {
     return form.product_code.trim().length > 0 && form.product_name.trim().length > 0 && !submitting;
   }, [form.product_code, form.product_name, submitting]);
@@ -269,6 +280,8 @@ export const ProductCreateModal: React.FC<Props> = ({
         barcode: parsed.data.barcode ?? null,
         location: parsed.data.location ?? null,
       });
+      // 실재고 테이블 등 구독 컴포넌트 자동 리로드
+      window.dispatchEvent(new CustomEvent("products-map-updated"));
       setForm(EMPTY);
       onClose();
     } catch (e: unknown) {
@@ -386,7 +399,16 @@ export const ProductCreateModal: React.FC<Props> = ({
                 </Field>
                 {/* 2026-08-24 · 사용자 지시 · 상품코드 = 바코드 · 별도 바코드 필드 제거 (submit 시 자동 세팅) */}
                 <div className="relative min-w-0">
-                  <Field label="배치구역 · 카테고리 검색">
+                  <Field label={
+                    <span className="flex items-center gap-1.5">
+                      배치구역
+                      {warehouseTag && (
+                        <span className={`text-[12px] font-bold px-1.5 py-0.5 rounded border ${warehouseTag.cls}`}>
+                          → {warehouseTag.label}
+                        </span>
+                      )}
+                    </span>
+                  }>
                     <ZoneCategoryPicker
                       value={form.location}
                       onChange={(loc) => set("location", loc ?? "")}
@@ -503,7 +525,7 @@ export const ProductCreateModal: React.FC<Props> = ({
 const inputCls =
   "w-full h-9 px-2.5 rounded-lg border border-line bg-white text-[15px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors";
 
-const Field: React.FC<{ label: string; required?: boolean; children: React.ReactNode }> = ({ label, required, children }) => (
+const Field: React.FC<{ label: React.ReactNode; required?: boolean; children: React.ReactNode }> = ({ label, required, children }) => (
   <label className="flex flex-col gap-1 min-w-0">
     <span className={`text-[13px] font-semibold tracking-tight ${required ? "text-brand-deep" : "text-zinc-500"}`}>{label}</span>
     {children}

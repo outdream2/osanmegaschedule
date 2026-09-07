@@ -194,6 +194,13 @@ export const RealStockTablePage: React.FC = () => {
     return () => window.removeEventListener("inventory-checks-updated", handler);
   }, [load]);
 
+  // 2026-09-07 · 상품 등록/구역 변경 시 자동 리로드 (products-map-updated 이벤트)
+  useEffect(() => {
+    const handler = () => load();
+    window.addEventListener("products-map-updated", handler);
+    return () => window.removeEventListener("products-map-updated", handler);
+  }, [load]);
+
   const rows: Row[] = useMemo(() => products.map(p => {
     const i = inv[p.product_code];
     const w1 = i?.warehouse1_stock ?? null;
