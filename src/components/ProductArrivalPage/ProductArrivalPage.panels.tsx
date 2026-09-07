@@ -228,8 +228,15 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
     return Array.from(map.values()).sort((a, b) => a.supplier.localeCompare(b.supplier, "ko"));
   }, [arrivals]);
 
-  // 아코디언 · 기본 전부 접힘 · 첫 로드 시 첫 그룹만 펼침 (UX 힌트)
+  // 아코디언 · 2026-09-07 · 사용자 지시 · 기본 전체 펼침 (개별 입고건 즉시 확인)
   const [expandedSuppliers, setExpandedSuppliers] = useState<Set<string>>(() => new Set());
+  const [autoExpanded, setAutoExpanded] = useState(false);
+  useEffect(() => {
+    if (autoExpanded) return;
+    if (groups.length === 0) return;
+    setExpandedSuppliers(new Set(groups.map(g => g.supplier)));
+    setAutoExpanded(true);
+  }, [groups, autoExpanded]);
   const toggleSupplier = (sup: string) =>
     setExpandedSuppliers(prev => {
       const n = new Set(prev);
