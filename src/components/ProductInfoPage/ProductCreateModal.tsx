@@ -9,7 +9,6 @@ import React, { useMemo, useState, useRef, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { Package, Save, X } from "lucide-react";
 import { Modal } from "../common/Modal";
-import { Card } from "../common/Card";
 // 2026-08-31 · #42 · 카테고리 검색 → 구역 지정 프리미티브
 import { ZoneCategoryPicker } from "../common/ZoneCategoryPicker";
 import { api, ApiError } from "../../lib/apiClient";
@@ -304,54 +303,61 @@ export const ProductCreateModal: React.FC<Props> = ({
         open={open}
         onClose={submitting ? () => {} : onClose}
         title={
-          <span className="flex items-center gap-2">
-            <Package size={16} className="text-brand-deep" />
-            <span>상품 신규 등록</span>
+          <span className="flex items-center gap-2.5">
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand-deep/8 text-brand-deep">
+              <Package size={16} strokeWidth={2.4} />
+            </span>
+            <span className="flex flex-col leading-tight">
+              <span className="text-[16px] font-bold text-ink tracking-tight">상품 신규 등록</span>
+              <span className="text-[12px] font-medium text-zinc-400 tracking-tight">필수 항목만 입력해도 등록 가능</span>
+            </span>
           </span>
         }
         size="3xl"
         bodyPadding="none"
       >
         <form onSubmit={handleSubmit} className="flex flex-col">
-          <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto">
+          <div className="max-h-[72vh] overflow-y-auto divide-y divide-zinc-100">
             {error && (
-              <Card variant="flat" padding="md" rounded="lg" bg="bg-rose-50" borderColor="border-rose-200" className="text-[15px] text-rose-700 font-medium">
-                {error}
-              </Card>
+              <div className="px-5 pt-4">
+                <div className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50/70 px-3.5 py-2.5">
+                  <span className="mt-0.5 inline-block w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                  <span className="text-[14px] text-rose-700 font-semibold leading-snug">{error}</span>
+                </div>
+              </div>
             )}
 
-            <Card variant="flat" padding="md" rounded="lg" className="bg-white">
-              <h3 className="text-[15px] font-bold text-ink mb-2 tracking-tight">필수 정보</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Field label={lockCode ? "상품코드 * (스캔 고정)" : "상품코드 *"} required>
+            {/* 필수 정보 */}
+            <Section title="필수 정보" hint="* 표시는 반드시 입력해야 저장됩니다">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label={lockCode ? "상품코드 (스캔 고정)" : "상품코드"} required>
                   <input
                     type="text"
                     value={form.product_code}
                     onChange={(e) => set("product_code", e.target.value)}
-                    className={inputCls + (lockCode ? " bg-zinc-100 cursor-not-allowed" : "")}
+                    className={inputCls + (lockCode ? " bg-zinc-50 text-zinc-500 cursor-not-allowed" : "")}
                     placeholder="예: 20250823001"
                     maxLength={50}
                     readOnly={lockCode}
                     autoFocus={!lockCode}
                   />
                 </Field>
-                <Field label="상품명 *" required>
+                <Field label="상품명" required>
                   <input
                     type="text"
                     value={form.product_name}
                     onChange={(e) => set("product_name", e.target.value)}
                     className={inputCls}
-                    placeholder="상품명 입력"
+                    placeholder="예: 타이레놀 500mg"
                     maxLength={200}
                   />
                 </Field>
               </div>
-            </Card>
+            </Section>
 
-            <Card variant="flat" padding="md" rounded="lg" className="bg-white">
-              <h3 className="text-[15px] font-bold text-ink mb-2 tracking-tight">분류·공급</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* 2026-08-24 · 사용자 지시 · 공급사 검색 autocomplete · 입력 시 리스트 · 클릭 선택 */}
+            {/* 분류·공급 */}
+            <Section title="분류·공급">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div ref={supplierWrapRef} className="relative min-w-0">
                   <Field label="공급사">
                     <input
@@ -366,44 +372,43 @@ export const ProductCreateModal: React.FC<Props> = ({
                     />
                   </Field>
                   <PortalDropdown anchorRef={supplierWrapRef} open={supplierOpen && supplierSuggestions.length > 0}>
-                    <Card padding="none" rounded="lg" className="shadow-xl max-h-56 overflow-y-auto">
+                    <div className="rounded-xl border border-zinc-200 bg-white shadow-[0_16px_48px_-12px_rgba(10,46,74,0.18)] max-h-64 overflow-y-auto py-1">
                       {supplierSuggestions.map(v => (
                         <button
                           key={v.id}
                           type="button"
                           onClick={() => { set("supplier", v.company_name ?? ""); setSupplierOpen(false); }}
-                          className="w-full text-left px-3 py-2 text-[15px] font-medium text-ink hover:bg-brand-tint/30 focus:outline-none focus:bg-brand-tint/40 flex items-center gap-2 transition-colors"
+                          className="w-full text-left px-3 py-2 text-[14px] font-medium text-ink hover:bg-zinc-50 focus:outline-none focus:bg-zinc-50 flex items-center gap-2 transition-colors"
                         >
                           <span className="truncate">{v.company_name}</span>
-                          {v.category && <span className="ml-auto text-[13px] text-ink-soft shrink-0">{v.category}</span>}
+                          {v.category && <span className="ml-auto text-[12px] text-zinc-400 shrink-0 tracking-tight">{v.category}</span>}
                         </button>
                       ))}
-                    </Card>
+                    </div>
                   </PortalDropdown>
                 </div>
-                <Field label="분류코드 (카테고리)">
+                <Field label="분류코드">
                   <input
                     type="text"
                     value={form.category}
                     onChange={(e) => set("category", e.target.value)}
                     className={inputCls}
-                    placeholder="예: 감기약 · 코스트팜 > 약국"
+                    placeholder="예: 감기약"
                     maxLength={100}
                   />
                 </Field>
                 <Field label="단위">
-                  <input type="text" value={form.unit} onChange={(e) => set("unit", e.target.value)} className={inputCls} placeholder="예: 개·박스·정" maxLength={30} />
+                  <input type="text" value={form.unit} onChange={(e) => set("unit", e.target.value)} className={inputCls} placeholder="개 · 박스 · 정" maxLength={30} />
                 </Field>
                 <Field label="규격">
                   <input type="text" value={form.spec} onChange={(e) => set("spec", e.target.value)} className={inputCls} placeholder="예: 10정" maxLength={100} />
                 </Field>
-                {/* 2026-08-24 · 사용자 지시 · 상품코드 = 바코드 · 별도 바코드 필드 제거 (submit 시 자동 세팅) */}
-                <div className="relative min-w-0">
+                <div className="relative min-w-0 md:col-span-2">
                   <Field label={
-                    <span className="flex items-center gap-1.5">
+                    <span className="flex items-center gap-2">
                       배치구역
                       {warehouseTag && (
-                        <span className={`text-[12px] font-bold px-1.5 py-0.5 rounded border ${warehouseTag.cls}`}>
+                        <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md border tracking-tight ${warehouseTag.cls}`}>
                           → {warehouseTag.label}
                         </span>
                       )}
@@ -416,81 +421,79 @@ export const ProductCreateModal: React.FC<Props> = ({
                   </Field>
                 </div>
               </div>
-            </Card>
+            </Section>
 
-            {/* 2026-08-28 · 사용자 지시 · 분류코드 참조 상품 리스트 · 카드 클릭 → 빈 필드 자동 채움 */}
+            {/* 참조 상품 (동일 분류코드) */}
             {form.category.trim().length >= 2 && (
-              <Card variant="flat" padding="md" rounded="lg" className="bg-brand-tint/20 border-brand-deep/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-[15px] font-bold text-ink tracking-tight flex-1">
-                    분류코드 · 참조 상품 <span className="text-ink-soft font-medium">({refList.length}건)</span>
-                  </h3>
-                  {refLoading && <Spinner size={12} tone="brand" />}
-                </div>
+              <Section
+                title="동일 분류 · 참조 상품"
+                hint={refList.length > 0 ? "클릭하면 비어있는 필드에 자동 반영" : undefined}
+                right={<>
+                  <span className="text-[12px] font-semibold text-zinc-400 tabular-nums">{refList.length}건</span>
+                  {refLoading && <Spinner size={11} tone="brand" />}
+                </>}
+              >
                 {refList.length === 0 && !refLoading && (
-                  <div className="text-[14px] text-ink-soft italic">해당 분류코드에 등록된 상품 없음</div>
+                  <div className="text-[13px] text-zinc-400 py-3">해당 분류코드에 등록된 상품이 없습니다</div>
                 )}
                 {refList.length > 0 && (
-                  <div className="max-h-56 overflow-y-auto flex flex-col gap-1 pr-1">
+                  <div className="max-h-56 overflow-y-auto flex flex-col gap-1.5 -mr-1 pr-1">
                     {refList.map(r => (
                       <button
                         key={r.product_code}
                         type="button"
                         onClick={() => applyRefProduct(r)}
-                        className="text-left px-2.5 py-1.5 rounded-md bg-white hover:bg-brand-tint/40 border border-line hover:border-brand-deep/40 text-[14px] transition cursor-pointer"
-                        title="클릭 시 · 빈 필드 자동 채움"
+                        className="text-left px-3 py-2 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 hover:border-brand-deep/35 hover:shadow-sm transition cursor-pointer group"
+                        title="클릭 시 빈 필드에만 자동 반영"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-ink flex-1 truncate">{r.product_name}</span>
-                          <span className="text-[13px] text-ink-soft tabular-nums shrink-0">{r.product_code}</span>
+                          <span className="font-semibold text-[14px] text-ink flex-1 truncate">{r.product_name}</span>
+                          <span className="text-[12px] text-zinc-400 tabular-nums shrink-0 tracking-tight">{r.product_code}</span>
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5 text-[13px] text-ink-soft">
-                          {r.supplier && <span className="truncate">📦 {r.supplier}</span>}
-                          {r.brand && <span className="truncate">· {r.brand}</span>}
-                          {r.spec && <span className="truncate">· {r.spec}</span>}
+                        <div className="flex items-center gap-2 mt-1 text-[12px] text-zinc-500">
+                          {r.supplier && <span className="truncate">{r.supplier}</span>}
+                          {r.brand && <span className="truncate text-zinc-400">· {r.brand}</span>}
+                          {r.spec && <span className="truncate text-zinc-400">· {r.spec}</span>}
                           {r.sale_price != null && <span className="ml-auto shrink-0 font-bold tabular-nums text-brand-deep">₩{r.sale_price.toLocaleString()}</span>}
                         </div>
                       </button>
                     ))}
                   </div>
                 )}
-              </Card>
+              </Section>
             )}
 
-            <Card variant="flat" padding="md" rounded="lg" className="bg-white">
-              <h3 className="text-[15px] font-bold text-ink mb-2 tracking-tight">가격</h3>
-              {/* 2026-08-24 · 사용자 지시 · 적정 재고 · 설정에서 자동 계산 · 신규 등록 폼 제외 */}
-              {/* 2026-08-25 · 사용자 지시 · products 테이블에 있는 컬럼만 등록 · 원가(cost_price) 필드 제거 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* 가격 */}
+            <Section title="가격">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="판매가">
-                  <input type="number" min={0} value={form.sale_price} onChange={(e) => set("sale_price", e.target.value)} className={inputCls + " tabular-nums"} placeholder="0" />
+                  <PriceInput value={form.sale_price} onChange={(v) => set("sale_price", v)} />
                 </Field>
                 <Field label="매입가">
-                  <input type="number" min={0} value={form.purchase_price} onChange={(e) => set("purchase_price", e.target.value)} className={inputCls + " tabular-nums"} placeholder="0" />
+                  <PriceInput value={form.purchase_price} onChange={(v) => set("purchase_price", v)} />
                 </Field>
               </div>
-            </Card>
+            </Section>
 
-            <Card variant="flat" padding="md" rounded="lg" className="bg-white">
-              <h3 className="text-[15px] font-bold text-ink mb-2 tracking-tight">기타</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* 기타 */}
+            <Section title="기타">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="브랜드">
-                  <input type="text" value={form.brand} onChange={(e) => set("brand", e.target.value)} className={inputCls} maxLength={100} />
+                  <input type="text" value={form.brand} onChange={(e) => set("brand", e.target.value)} className={inputCls} placeholder="예: 유한양행" maxLength={100} />
                 </Field>
                 <Field label="제조사">
-                  <input type="text" value={form.manufacturer} onChange={(e) => set("manufacturer", e.target.value)} className={inputCls} maxLength={100} />
+                  <input type="text" value={form.manufacturer} onChange={(e) => set("manufacturer", e.target.value)} className={inputCls} placeholder="예: 한미약품" maxLength={100} />
                 </Field>
-                {/* 2026-08-25 · products 테이블에 없는 컬럼 · note 필드 제거 */}
               </div>
-            </Card>
+            </Section>
           </div>
 
-          <div className="shrink-0 border-t border-line px-4 py-3 flex items-center gap-2 bg-zinc-50/60">
+          <div className="shrink-0 border-t border-zinc-100 px-5 py-3.5 flex items-center gap-2 bg-white/95 backdrop-blur">
             <button
               type="button"
               onClick={handleReset}
               disabled={submitting}
-              className="h-9 px-3 rounded-lg text-[15px] font-semibold text-zinc-600 hover:bg-white hover:text-ink border border-line cursor-pointer disabled:opacity-50"
+              className="h-10 px-3.5 rounded-lg text-[14px] font-semibold text-zinc-500 hover:text-ink hover:bg-zinc-50 cursor-pointer disabled:opacity-40 transition-colors"
             >
               초기화
             </button>
@@ -499,16 +502,16 @@ export const ProductCreateModal: React.FC<Props> = ({
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="h-9 px-3 rounded-lg text-[15px] font-semibold text-zinc-600 hover:bg-white hover:text-ink border border-line cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
+              className="h-10 px-4 rounded-lg text-[14px] font-semibold text-zinc-600 hover:text-ink bg-white border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 cursor-pointer disabled:opacity-40 inline-flex items-center gap-1.5 transition-colors"
             >
-              <X size={13} /> 취소
+              <X size={14} strokeWidth={2.4} /> 취소
             </button>
             <button
               type="submit"
               disabled={!canSubmit}
-              className="h-9 px-4 rounded-lg text-[15px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors inline-flex items-center gap-1.5"
+              className="h-10 px-5 rounded-lg text-[14px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_1px_2px_rgba(10,46,74,0.16),0_2px_6px_-2px_rgba(10,46,74,0.20)]"
             >
-              <Save size={13} className="stroke-[2.5]" />
+              <Save size={14} strokeWidth={2.5} />
               {submitting ? "등록 중..." : "등록"}
             </button>
           </div>
@@ -521,15 +524,48 @@ export const ProductCreateModal: React.FC<Props> = ({
   );
 };
 
-// ─── 재사용 · label + input 래퍼 ────────────────────────────────────────
+// ─── 재사용 · Section · Field · 입력 스타일 ────────────────────────────
 const inputCls =
-  "w-full h-9 px-2.5 rounded-lg border border-line bg-white text-[15px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors";
+  "w-full h-10 px-3 rounded-lg border border-zinc-200 bg-white text-[15px] font-medium text-ink placeholder:text-zinc-300 focus:outline-none focus:border-brand-deep focus:ring-4 focus:ring-brand-deep/8 hover:border-zinc-300 transition-colors";
+
+const Section: React.FC<{
+  title: string;
+  hint?: string;
+  right?: React.ReactNode;
+  children: React.ReactNode;
+}> = ({ title, hint, right, children }) => (
+  <section className="px-5 py-4">
+    <div className="flex items-center gap-2 mb-3">
+      <h3 className="text-[11px] font-bold text-zinc-400 tracking-[0.08em] uppercase">{title}</h3>
+      {hint && <span className="text-[12px] font-medium text-zinc-400 tracking-tight">· {hint}</span>}
+      {right && <span className="ml-auto flex items-center gap-1.5">{right}</span>}
+    </div>
+    {children}
+  </section>
+);
 
 const Field: React.FC<{ label: React.ReactNode; required?: boolean; children: React.ReactNode }> = ({ label, required, children }) => (
-  <label className="flex flex-col gap-1 min-w-0">
-    <span className={`text-[13px] font-semibold tracking-tight ${required ? "text-brand-deep" : "text-zinc-500"}`}>{label}</span>
+  <label className="flex flex-col gap-1.5 min-w-0">
+    <span className="text-[13px] font-semibold text-zinc-600 tracking-tight inline-flex items-center gap-1">
+      {label}
+      {required && <span className="text-rose-500 font-bold">*</span>}
+    </span>
     {children}
   </label>
+);
+
+const PriceInput: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => (
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] font-semibold text-zinc-400 pointer-events-none">₩</span>
+    <input
+      type="number"
+      min={0}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={inputCls + " pl-7 pr-3 tabular-nums text-right"}
+      placeholder="0"
+    />
+  </div>
 );
 
 export default ProductCreateModal;
