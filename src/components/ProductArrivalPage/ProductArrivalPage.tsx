@@ -117,10 +117,18 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     setArrivalsLoading(true);
     try {
       const { data: j } = await api.get<{ rows?: any[] }>(`/api/product-arrivals?limit=100&days=${arrivalDays}`);
-      setArrivals(Array.isArray(j?.rows) ? j.rows : []);
-    } catch { setArrivals([]); }
+      const rows = Array.isArray(j?.rows) ? j.rows : [];
+      console.info(`[ProductArrivalPage] loadArrivals · rows=${rows.length} · days=${arrivalDays}`);
+      setArrivals(rows);
+    } catch (e: unknown) {
+      // 2026-09-07 · 사용자 지시 · silent 실패 방지 · 에러 원인 표면화
+      const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "네트워크 오류");
+      console.error("[ProductArrivalPage] loadArrivals 실패:", e);
+      showError(`[입고내역] 조회 실패 · ${msg}`);
+      setArrivals([]);
+    }
     finally { setArrivalsLoading(false); }
-  }, [arrivalDays]);
+  }, [arrivalDays, showError]);
   useEffect(() => { if (arrivalTab === "history") loadArrivals(); }, [arrivalTab, loadArrivals]);
   // 2026-09-07 · 사용자 지시 · 입고내역 자동 업데이트 · 어느 탭이든 검수 저장·상품 변경 시 즉시 리로드
   //   · product-mutated 이벤트 · 검수 저장 (POST /api/product-arrivals) 후 · 자동 dispatch
