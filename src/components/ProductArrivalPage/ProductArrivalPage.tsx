@@ -446,7 +446,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       <main className={`flex-1 min-h-0 ${PAGE_CONTAINER_CLS} px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex flex-col`}>
         <SplitPanel
           className="flex-1 min-h-0"
-          storageKey="productArrivalPage.split5050"
+          storageKey="productArrivalPage.split5050.v2"
           defaultWidth={typeof window !== "undefined" ? Math.round(window.innerWidth * 0.5) : 600}
           minWidth={280}
           maxWidth={2400}
