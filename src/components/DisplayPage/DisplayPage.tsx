@@ -5,14 +5,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PAGE_CONTAINER_CLS, CARD_BASE } from "../../styles/tokens";
 import { SK_DP_PRODUCT_INNER_TAB, SK_DP_RETURN_INNER_TAB } from "../../lib/storageKeys";
-import { AccentBar } from "../common/AccentBar";
-import { SegmentedControl } from "../common/SegmentedControl";
 import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { type ZoneStatus, type DowMap, type DisplayZone } from "../../utils/zoneUtils";
 import { type ProductInfo } from "../../lib/productsCache";
 import {
   CheckCircle2, ChevronLeft, ChevronRight,
   Layers, Save, X, Store,
+  Info, Package2, ScanLine, RotateCcw,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { StatusPill } from "../common/StatusPill";
@@ -608,49 +607,32 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           />
         </main>
       ) : dpSubTab === "return" && dpCanSeeStockManage ? (
-        <main className={`${PAGE_CONTAINER_CLS} p-4 flex flex-col gap-4 flex-1`}>
-          <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2 shrink-0`}>
-            <div className="flex items-center gap-2.5 shrink-0">
-              <AccentBar />
-              <span className="text-[17px] font-bold text-ink tracking-tight">반품</span>
-            </div>
-            <SegmentedControl<"need" | "confirmed">
-              value={returnInnerTabDp}
-              onChange={setReturnInnerTabDp}
-              ariaLabel="반품 탭 전환"
-              variant="pills"
-              size="sm"
-              options={[
-                { value: "need",      label: "반품필요" },
-                { value: "confirmed", label: "반품확정" },
-              ]}
-            />
-          </div>
+        <main className="flex-1 flex flex-col min-h-0">
+          <TabBar<"need" | "confirmed">
+            level={3}
+            tabs={[
+              { key: "need",      label: "반품필요", icon: RotateCcw,    color: "amber"   },
+              { key: "confirmed", label: "반품확정", icon: CheckCircle2, color: "emerald" },
+            ]}
+            activeKey={returnInnerTabDp}
+            onSelect={setReturnInnerTabDp}
+          />
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
             {returnInnerTabDp === "need" ? <ReturnListPanelLazy /> : <ReturnConfirmedPanelLazy />}
           </React.Suspense>
         </main>
       ) : dpSubTab === "product" && dpUserLevel >= 2 ? (
-        <main className={`${PAGE_CONTAINER_CLS} p-4 flex flex-col gap-4 flex-1`}>
-          <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2 shrink-0`}>
-            <div className="flex items-center gap-2.5 shrink-0">
-              <AccentBar />
-              <span className="text-[17px] font-bold text-ink tracking-tight">상품</span>
-            </div>
-            <SegmentedControl<"info" | "scan" | "arrival">
-              value={productInnerTab}
-              onChange={setProductInnerTab}
-              ariaLabel="상품 탭 전환"
-              variant="pills"
-              size="sm"
-              wrap={true}
-              options={[
-                { value: "info",    label: "상품정보" },
-                { value: "arrival", label: "상품입고" },
-                { value: "scan",    label: "실재고확인" },
-              ]}
-            />
-          </div>
+        <main className="flex-1 flex flex-col min-h-0">
+          <TabBar<"info" | "arrival" | "scan">
+            level={3}
+            tabs={[
+              { key: "info",    label: "상품정보",   icon: Info,     color: "sky"    },
+              { key: "arrival", label: "상품입고",   icon: Package2, color: "violet" },
+              { key: "scan",    label: "실재고확인", icon: ScanLine, color: "teal"   },
+            ]}
+            activeKey={productInnerTab}
+            onSelect={setProductInnerTab}
+          />
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
             {productInnerTab === "scan"    && <ScanPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />}
             {productInnerTab === "arrival" && <ProductArrivalPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />}
