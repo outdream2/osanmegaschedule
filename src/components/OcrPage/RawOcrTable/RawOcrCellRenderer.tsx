@@ -78,7 +78,7 @@ interface CellRendererProps {
   openVendorEdit: (name: string) => void;
   saveSynonym: (ri: number, nameOld: string, productCode: string, supplierNew?: string, nameNew?: string, supplierOld?: string) => void;
   openModal: (rowIdx: number) => void;
-  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean>;
+  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean | "neutral">;
   pageImages?: string[];
   dispRows: (string | number | null | undefined)[][];
   effectiveDispRows: (string | number | null | undefined)[][];
@@ -372,7 +372,7 @@ export const NameCell: React.FC<{
   setDeleteSynConfirm: (v: { ri: number; origName: string } | null) => void;
   reextractProductName: (ri: number) => void;
   saveSynonym: (ri: number, nameOld: string, productCode: string, supplierNew?: string, nameNew?: string) => void;
-  confirm: (opts: { message: string }) => Promise<boolean>;
+  confirm: (opts: { message: string }) => Promise<boolean | "neutral">;
   handleMatchPage: (pn: number) => Promise<void>;
   matchRawToPurchaseHistory: (pn: number) => Promise<void>;
   nameEditResults: any[];

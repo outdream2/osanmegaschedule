@@ -80,7 +80,7 @@ interface OrderRequestTabProps {
   openOrderModal: (rows: OrderRequest[]) => void;
   loadOrderReqs: () => void;
   setOrderQtyOverride: (fn: (prev: Map<string, number>) => Map<string, number>) => void;
-  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean>;
+  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean | "neutral">;
 }
 
 export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({

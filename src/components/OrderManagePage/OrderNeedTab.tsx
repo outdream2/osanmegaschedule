@@ -140,13 +140,29 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
     const code = getCode(p);
     const name = getName(p);
     const inLowStock = Number.isFinite(cur) && Number.isFinite(opt) && cur < opt;
-    if (!inLowStock && !requestedCodes.has(code)) {
+    // 2026-09-07 · 사용자 지시 · 이미 발주요청된 상품 · 3-way (재요청·상세확인·취소)
+    if (requestedCodes.has(code)) {
+      const choice = await confirm({
+        title: "이미 발주요청됨",
+        message: `[${name}]\n현재고 ${Number.isFinite(cur) ? cur : "-"} · 적정재고 ${Number.isFinite(opt) ? opt : "-"}\n\n이 상품은 이미 발주요청 리스트에 있습니다.\n재요청하거나 상세내용을 확인·수정할 수 있습니다.`,
+        confirmLabel: "재요청",
+        neutralLabel: "상세내용 확인",
+        cancelLabel: "취소",
+      });
+      if (choice === true) {
+        await handleRequestOrder(p);
+      } else if (choice === "neutral") {
+        setNeedPanelProduct({ code, name });
+      }
+      return;
+    }
+    if (!inLowStock) {
       const ok = await confirm({
         title: "발주필요 리스트에 추가",
         message: `[${name}]\n현재고 ${Number.isFinite(cur) ? cur : "-"} · 적정재고 ${Number.isFinite(opt) ? opt : "-"}\n\n이 상품을 발주필요 리스트에 추가할까요?`,
         confirmLabel: "추가",
       });
-      if (!ok) return;
+      if (ok !== true) return;
       await handleRequestOrder(p);
       return;
     }

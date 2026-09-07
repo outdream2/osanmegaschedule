@@ -177,7 +177,7 @@ export interface RawInvoiceCardProps {
   setDeleteSynConfirm: React.Dispatch<React.SetStateAction<{ ri: number; origName: string } | null>>;
   reextractProductName: (ri: number) => Promise<void>;
   saveSynonym: (ri: number, nameOld: string, productCode: string, supplierNew?: string, nameNew?: string, supplierOld?: string) => Promise<void>;
-  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean>;
+  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean | "neutral">;
   handleMatchPage: (pn: number) => Promise<void>;
   matchRawToPurchaseHistory: (pn: number) => Promise<void>;
 

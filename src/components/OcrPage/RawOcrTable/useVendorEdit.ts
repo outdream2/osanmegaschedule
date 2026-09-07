@@ -4,7 +4,7 @@ import { useVendors } from "../../../hooks/useVendors";
 import type { Vendor } from "../../LandingPage/VendorListEditor";
 
 interface UseVendorEditParams {
-  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean>;
+  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean | "neutral">;
   showError: (msg: string) => void;
 }
 

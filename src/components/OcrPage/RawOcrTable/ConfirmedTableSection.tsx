@@ -81,7 +81,7 @@ interface ConfirmedTableSectionProps {
   missingSupplierPages: number[];
   handleSaveConfirmed: (pn?: number) => Promise<void>;
   showError: (msg: string) => void;
-  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean>;
+  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean | "neutral">;
 }
 
 export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({

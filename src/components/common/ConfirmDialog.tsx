@@ -25,10 +25,13 @@ export interface ConfirmDialogProps {
   confirmLabel?: string;
   /** 취소 버튼 레이블 (기본 "취소") */
   cancelLabel?: string;
+  /** 중립(제3) 버튼 레이블 · 지정 시 · 취소·확인 사이 표시 · onNeutral 발동 */
+  neutralLabel?: string;
   /** true 시 확인 버튼을 rose 톤(위험 액션)으로 표시 */
   danger?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  onNeutral?: () => void;
 }
 
 /**
@@ -43,9 +46,11 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   message,
   confirmLabel = "확인",
   cancelLabel = "취소",
+  neutralLabel,
   danger = false,
   onConfirm,
   onCancel,
+  onNeutral,
 }) => {
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -119,7 +124,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           {message}
         </div>
 
-        {/* 버튼 · 최신 트렌드 · h-10 · rounded-lg · 폰트 +2 */}
+        {/* 버튼 · 최신 트렌드 · h-10 · rounded-lg · 폰트 +2 · neutralLabel 지정 시 3-way */}
         <div className="px-5 pb-5 flex gap-2 justify-end">
           <button
             type="button"
@@ -128,6 +133,15 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           >
             {cancelLabel}
           </button>
+          {neutralLabel && onNeutral && (
+            <button
+              type="button"
+              onClick={onNeutral}
+              className="h-10 px-4 rounded-lg bg-white border border-brand-deep/40 hover:border-brand-deep text-brand-deep hover:bg-brand-tint/40 text-[15px] font-semibold transition-colors cursor-pointer"
+            >
+              {neutralLabel}
+            </button>
+          )}
           <button
             ref={confirmBtnRef}
             type="button"

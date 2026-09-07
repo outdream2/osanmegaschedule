@@ -50,7 +50,7 @@ interface StaffContractSectionProps {
   setField: <K extends keyof EditDraft>(k: K, v: EditDraft[K]) => void;
   showError: (msg: string) => void;
   showSuccess: (msg: string) => void;
-  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean>;
+  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean | "neutral">;
   uploadResume: (empId: number, file: File) => Promise<{ url: string }>;
   deleteResume: (empId: number) => Promise<void>;
 }

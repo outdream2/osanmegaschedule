@@ -41,7 +41,7 @@ interface InvoicePageSummaryProps {
   setConfirmedPages: React.Dispatch<React.SetStateAction<Set<number>>>;
   setConfirmed: React.Dispatch<React.SetStateAction<boolean>>;
   handleMatchPage: (pn: number) => Promise<void>;
-  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean>;
+  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean | "neutral">;
 }
 
 export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({

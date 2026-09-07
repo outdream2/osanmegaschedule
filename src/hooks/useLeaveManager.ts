@@ -30,7 +30,7 @@ export interface UseLeaveManagerResult {
  */
 export function useLeaveManager(
   selectedId: number | null,
-  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean>,
+  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean | "neutral">,
 ): UseLeaveManagerResult {
   const currentYearNow = new Date().getFullYear();
   const [leaveYear, setLeaveYear] = useState<number>(currentYearNow);

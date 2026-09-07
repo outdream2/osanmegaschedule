@@ -23,14 +23,18 @@ interface ConfirmOptions {
   message: string | React.ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
+  /** 중립(3번째) 버튼 · 지정 시 · Promise 는 "neutral" 반환 */
+  neutralLabel?: string;
   danger?: boolean;
 }
 
+export type ConfirmResult = boolean | "neutral";
+
 interface ConfirmState extends ConfirmOptions {
-  resolve: (result: boolean) => void;
+  resolve: (result: ConfirmResult) => void;
 }
 
-type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>;
+type ConfirmFn = (options: ConfirmOptions) => Promise<ConfirmResult>;
 
 const ConfirmContext = createContext<ConfirmFn | null>(null);
 
@@ -44,10 +48,10 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [state, setState] = useState<ConfirmState | null>(null);
   // resolveRef: setState 후 stale closure 방지
-  const resolveRef = useRef<((result: boolean) => void) | null>(null);
+  const resolveRef = useRef<((result: ConfirmResult) => void) | null>(null);
 
   const confirm = useCallback<ConfirmFn>((options) => {
-    return new Promise<boolean>((resolve) => {
+    return new Promise<ConfirmResult>((resolve) => {
       resolveRef.current = resolve;
       setState({ ...options, resolve });
     });
@@ -65,6 +69,12 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({
     setState(null);
   }, []);
 
+  const handleNeutral = useCallback(() => {
+    resolveRef.current?.("neutral");
+    resolveRef.current = null;
+    setState(null);
+  }, []);
+
   return (
     <ConfirmContext.Provider value={confirm}>
       {children}
@@ -75,9 +85,11 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({
           message={state.message}
           confirmLabel={state.confirmLabel}
           cancelLabel={state.cancelLabel}
+          neutralLabel={state.neutralLabel}
           danger={state.danger}
           onConfirm={handleConfirm}
           onCancel={handleCancel}
+          onNeutral={state.neutralLabel ? handleNeutral : undefined}
         />
       )}
     </ConfirmContext.Provider>

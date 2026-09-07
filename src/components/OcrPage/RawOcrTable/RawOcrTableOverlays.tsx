@@ -30,7 +30,7 @@ export interface RawOcrTableOverlaysProps {
   setCancelledAutoMap: React.Dispatch<React.SetStateAction<Set<number>>>;
   setRawEditValues: React.Dispatch<React.SetStateAction<Record<number, string>>>;
   setMatchItems: React.Dispatch<React.SetStateAction<MatchedItem[] | null>>;
-  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean>;
+  confirm: (opts: { message: string; danger?: boolean }) => Promise<boolean | "neutral">;
   saveSynonym: (ri: number, nameOld: string, productCode: string, supplierNew?: string, nameNew?: string, supplierOld?: string) => Promise<void>;
   setCellEdits: React.Dispatch<React.SetStateAction<Record<number, Record<number, string | number | null>>>>;
   setEditingNameRow: React.Dispatch<React.SetStateAction<number | null>>;
