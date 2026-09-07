@@ -3,14 +3,16 @@
 //   · ZoneDetailModal · StaffInfoModal · ZoneProductsModal · ProductInfoModal
 //   · DisplayStoreMap · useDisplayData · DisplaySearchBar
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
+import { PAGE_CONTAINER_CLS, CARD_BASE } from "../../styles/tokens";
 import { SK_DP_PRODUCT_INNER_TAB, SK_DP_RETURN_INNER_TAB } from "../../lib/storageKeys";
+import { AccentBar } from "../common/AccentBar";
+import { SegmentedControl } from "../common/SegmentedControl";
 import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { type ZoneStatus, type DowMap, type DisplayZone } from "../../utils/zoneUtils";
 import { type ProductInfo } from "../../lib/productsCache";
 import {
   CheckCircle2, ChevronLeft, ChevronRight,
-  Layers, Save, ScanLine, X, Store, PackagePlus, Info,
+  Layers, Save, X, Store,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { StatusPill } from "../common/StatusPill";
@@ -607,16 +609,21 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         </main>
       ) : dpSubTab === "return" && dpCanSeeStockManage ? (
         <main className={`${PAGE_CONTAINER_CLS} p-4 flex flex-col gap-4 flex-1`}>
-          <div className="bg-white rounded-xl border border-line overflow-hidden">
-            <SplitRightTabs<"need" | "confirmed">
-              tabs={[
-                { key: "need",      label: "반품필요" },
-                { key: "confirmed", label: "반품확정" },
+          <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2 shrink-0`}>
+            <div className="flex items-center gap-2.5 shrink-0">
+              <AccentBar />
+              <span className="text-[17px] font-bold text-ink tracking-tight">반품</span>
+            </div>
+            <SegmentedControl<"need" | "confirmed">
+              value={returnInnerTabDp}
+              onChange={setReturnInnerTabDp}
+              ariaLabel="반품 탭 전환"
+              variant="pills"
+              size="sm"
+              options={[
+                { value: "need",      label: "반품필요" },
+                { value: "confirmed", label: "반품확정" },
               ]}
-              active={returnInnerTabDp}
-              onSelect={setReturnInnerTabDp}
-              bg="bg-zinc-50/40"
-              size="lg"
             />
           </div>
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
@@ -625,17 +632,22 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         </main>
       ) : dpSubTab === "product" && dpUserLevel >= 2 ? (
         <main className={`${PAGE_CONTAINER_CLS} p-4 flex flex-col gap-4 flex-1`}>
-          <div className="bg-white rounded-xl border border-line overflow-hidden">
-            <SplitRightTabs<"info" | "scan" | "arrival">
-              tabs={[
-                { key: "info",    label: "상품정보",   icon: Info        },
-                { key: "arrival", label: "상품입고",   icon: PackagePlus },
-                { key: "scan",    label: "실재고확인", icon: ScanLine    },
+          <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2 shrink-0`}>
+            <div className="flex items-center gap-2.5 shrink-0">
+              <AccentBar />
+              <span className="text-[17px] font-bold text-ink tracking-tight">상품</span>
+            </div>
+            <SegmentedControl<"info" | "scan" | "arrival">
+              value={productInnerTab}
+              onChange={setProductInnerTab}
+              ariaLabel="상품 탭 전환"
+              variant="pills"
+              size="sm"
+              options={[
+                { value: "info",    label: "상품정보" },
+                { value: "arrival", label: "상품입고" },
+                { value: "scan",    label: "실재고확인" },
               ]}
-              active={productInnerTab}
-              onSelect={setProductInnerTab}
-              bg="bg-zinc-50/40"
-              size="lg"
             />
           </div>
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
