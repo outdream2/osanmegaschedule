@@ -529,8 +529,7 @@ router.get("/api/product-arrivals/:id", asyncHandler(async (req, res) => {
 }));
 
 // ─────────────────────────────────────────────────────────────────
-// DELETE /api/product-arrivals/:id · soft unlink (verify_* = null)
-//   · 매입 원본 행은 유지 · verified_by · verify_status 만 null 로 · 검수 이력만 제거
+// DELETE /api/product-arrivals/:id · hard delete purchase_details rows
 // ─────────────────────────────────────────────────────────────────
 router.delete("/api/product-arrivals/:id", authorize(2), asyncHandler(async (req, res) => {
   const parsed = parseGroupId(String(req.params.id));
@@ -541,13 +540,7 @@ router.delete("/api/product-arrivals/:id", authorize(2), asyncHandler(async (req
 
   const { error } = await supabase
     .from("purchase_details")
-    .update({
-      verify_status: null,
-      verified_by: null,
-      verified_at: null,
-      verified_expiring: false,
-      verify_note: null,
-    })
+    .delete()
     .eq("verified_by", verifiedBy)
     .gte("verified_at", dayStart.toISOString())
     .lte("verified_at", dayEnd.toISOString());

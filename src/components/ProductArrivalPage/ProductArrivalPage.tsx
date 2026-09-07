@@ -610,7 +610,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             </div>
           </div>
         </>}
-          right={<div className="flex flex-col gap-4">
+          right={<div className="flex-1 flex flex-col gap-3 min-h-0">
 
         {/* ══════════════════════════════════════════════════════
             RIGHT PANEL · 등록 리스트 + 최종 확인
@@ -619,7 +619,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
           {/* ── 등록 리스트 카드 ── */}
           <div className="bg-white rounded-2xl border border-line/80
-            shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex flex-col min-h-[320px] overflow-hidden">
+            shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex-1 flex flex-col min-h-0 overflow-hidden">
 
             {/* 테이블 헤더 바 */}
             <div className="flex items-center justify-between
@@ -660,7 +660,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               </div>
             ) : (
               /* 2026-08-18 · #상품입고 재설계 · 카드형 리스트 · 모바일/PC 통일 */
-              <div className="flex-1 overflow-auto max-h-[58vh] lg:max-h-[64vh]
+              <div className="flex-1 overflow-auto
                 px-3 sm:px-4 py-3 flex flex-col gap-2 bg-zinc-50/30">
                 {sortedItems.map((it) => (
                   <ArrivalRowCard

@@ -173,13 +173,13 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
 
   const DField = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[15px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
+      <span className="text-[18px] font-semibold text-zinc-600 uppercase tracking-wider">{label}</span>
       <div className="text-[17px]">{children}</div>
     </div>
   );
   const EditField = ({ k, label, type = "text" }: { k: EditableKey; label: string; type?: "text" | "number" }) => (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[15px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
+      <span className="text-[18px] font-semibold text-zinc-600 uppercase tracking-wider">{label}</span>
       {k === "sale_status" ? (
         <select value={val(k)} onChange={(e) => set(k, e.target.value)} className={inputCls}>
           {SALE_STATUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
@@ -267,7 +267,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {/* 판매가 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">판매가</span>
+              <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">판매가</span>
               {editing
                 ? <input type="number" min={0} value={val("sale_price")} onChange={e => set("sale_price", e.target.value)} className={inputCls + " tabular-nums"} />
                 : p.sale_price != null
@@ -276,7 +276,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             </div>
             {/* 매입가 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">매입가 (단가)</span>
+              <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">매입가 (단가)</span>
               {editing
                 ? <input type="number" min={0} value={val("purchase_price")} onChange={e => set("purchase_price", e.target.value)} className={inputCls + " tabular-nums"} />
                 : p.purchase_price != null
@@ -285,21 +285,21 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             </div>
             {/* 이익율 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">이익율</span>
+              <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">이익율</span>
               {profitRate != null
                 ? <span className={`text-[20px] font-bold tabular-nums leading-tight ${profitRate >= 30 ? "text-emerald-600" : profitRate >= 15 ? "text-amber-600" : "text-rose-600"}`}>{profitRate}%</span>
                 : <span className="text-zinc-300 text-[16px]">-</span>}
             </div>
             {/* 현재고 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">현재고</span>
+              <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">현재고</span>
               {p.current_stock != null
                 ? <span className="text-[20px] font-bold text-brand-deep tabular-nums leading-tight">{String(p.current_stock)}개</span>
                 : <span className="text-zinc-300 text-[16px]">-</span>}
             </div>
             {/* 적정재고 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">적정재고 (30일)</span>
+              <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">적정재고 (30일)</span>
               {editing
                 ? <input type="number" min={0} value={val("optimal_stock")} onChange={e => set("optimal_stock", e.target.value)} className={inputCls + " tabular-nums"} />
                 : p.optimal_stock != null
@@ -308,21 +308,21 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             </div>
             {/* 창고재고 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">창고재고</span>
+              <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">창고재고</span>
               {p.warehouse_stock != null
                 ? <span className="text-[18px] font-semibold text-ink tabular-nums leading-tight">{String(p.warehouse_stock)}개</span>
                 : <span className="text-zinc-300 text-[16px]">-</span>}
             </div>
             {/* 매장재고 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">매장재고</span>
+              <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">매장재고</span>
               {p.store_stock != null
                 ? <span className="text-[18px] font-semibold text-ink tabular-nums leading-tight">{String(p.store_stock)}개</span>
                 : <span className="text-zinc-300 text-[16px]">-</span>}
             </div>
             {/* 최근매입일 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">최근매입일</span>
+              <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">최근매입일</span>
               {p.last_purchase_date
                 ? <span className="text-[16px] text-zinc-600 tabular-nums leading-tight">{String(p.last_purchase_date).slice(0, 10)}</span>
                 : <span className="text-zinc-300 text-[16px]">-</span>}

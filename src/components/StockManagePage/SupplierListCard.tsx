@@ -349,9 +349,6 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                           {/* 2026-08-30 · 사용자 지시 · 매입이력 embedded 모드 · 공급사 코드 숨김 */}
                           {sup.supplier_code && !embedded && <span className="text-[16px] tabular-nums text-zinc-400 shrink-0 font-mono bg-zinc-100 rounded px-1" title="공급사코드">#{sup.supplier_code}</span>}
                           {sup.code_conflict && <span className="text-[17px] font-semibold text-amber-500 shrink-0" title="같은 이름에 여러 공급사코드가 존재">⚠</span>}
-                          {(sup.purchaseQty === 0 && sup.purchaseAmount === 0 && sup.itemCount === 0 && sup.totalStockAmount === 0) && (
-                            <StatusPill tone="zinc" size="xs">매입 이력 없음</StatusPill>
-                          )}
                         </div>
                       </div>
                     </td>
