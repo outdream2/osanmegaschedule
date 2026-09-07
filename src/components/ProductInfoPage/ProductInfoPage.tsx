@@ -97,11 +97,22 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
   const [draft, setDraft] = useState<Record<EditableKey, string>>({} as Record<EditableKey, string>);
   const [saving, setSaving] = useState(false);
   const vendorModal = useVendorInfoModal();
+  // 진열위치 드롭다운 옵션 (zone_defs) — hooks를 early return 앞에 배치 (Rules of Hooks)
+  const [locationOptions, setLocationOptions] = useState<string[]>([]);
 
   useEffect(() => {
     setEditing(false);
     setDraft({} as Record<EditableKey, string>);
   }, [product?.product_code]);
+
+  useEffect(() => {
+    api.get<Array<{ zone?: string; location?: string }>>("/api/zone-defs")
+      .then(({ data }) => {
+        const zones = Array.from(new Set((data ?? []).map(d => d.zone).filter(Boolean))) as string[];
+        setLocationOptions(zones);
+      })
+      .catch(() => { /* silent */ });
+  }, []);
 
   if (loading) return <div className="flex items-center justify-center py-16"><Spinner size={22} tone="brand" label="불러오는 중..." /></div>;
   if (error) return <div className="p-4"><Card variant="flat" padding="md" rounded="lg" bg="bg-rose-50" borderColor="border-rose-200" className="text-[16px] text-rose-700 font-medium">{error}</Card></div>;
@@ -159,15 +170,6 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
     const v = p[key];
     return v == null || v === "" ? <span className="text-zinc-300">-</span> : <span className="text-ink font-semibold">{String(v)}</span>;
   };
-  const [locationOptions, setLocationOptions] = useState<string[]>([]);
-  useEffect(() => {
-    api.get<Array<{ zone?: string; location?: string }>>("/api/zone-defs")
-      .then(({ data }) => {
-        const zones = Array.from(new Set((data ?? []).map(d => d.zone).filter(Boolean))) as string[];
-        setLocationOptions(zones);
-      })
-      .catch(() => { /* silent */ });
-  }, []);
 
   const DField = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex flex-col gap-0.5">

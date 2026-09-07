@@ -130,7 +130,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       const raw = localStorage.getItem(SK_DP_PRODUCT_INNER_TAB);
       if (raw === "scan" || raw === "arrival" || raw === "info") return raw;
     } catch { /* noop */ }
-    return "scan"; // 2026-09-01 · 사용자 지시 · 기본 · 실재고입력
+    return "info"; // 2026-09-07 · 사용자 지시 · 기본 · 상품정보 맨 앞
   });
   useEffect(() => {
     try { localStorage.setItem(SK_DP_PRODUCT_INNER_TAB, productInnerTab); } catch { /* noop */ }
@@ -635,9 +635,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               activeKey={productInnerTab}
               onSelect={setProductInnerTab}
               tabs={[
-                { key: "scan",    label: "실재고입력", icon: ScanLine,    color: "emerald", visible: true },
-                { key: "arrival", label: "상품입고",   icon: PackagePlus, color: "violet",  visible: true },
                 { key: "info",    label: "상품정보",   icon: Info,        color: "sky",     visible: true },
+                { key: "arrival", label: "상품입고",   icon: PackagePlus, color: "violet",  visible: true },
+                { key: "scan",    label: "실재고입력", icon: ScanLine,    color: "emerald", visible: true },
               ]}
             />
           </div>

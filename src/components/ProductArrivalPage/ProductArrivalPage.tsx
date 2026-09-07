@@ -117,7 +117,10 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     if (selectedArrivalId == null) { setArrivalDetail(null); return; }
     setArrivalDetailLoading(true);
     api.get<any>(`/api/product-arrivals/${selectedArrivalId}`)
-      .then(({ data }) => setArrivalDetail(data ?? null))
+      // 서버: { header, items } 중첩 → flat ArrivalHistoryDetail 로 병합
+      .then(({ data }) => setArrivalDetail(
+        data?.header ? { ...data.header, items: data.items ?? [] } : (data ?? null)
+      ))
       .catch(() => setArrivalDetail(null))
       .finally(() => setArrivalDetailLoading(false));
   }, [selectedArrivalId]);
@@ -663,7 +666,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   final_decision: finalDecision,
                   note: finalDecision === "has_mismatch" ? mismatchMemo.trim() : null,
                   items: items.map(it => ({
-                    product_code: it.code,
+                    // it.product?.code = DB의 product_code (앞 0 제거된 정규화 버전)
+                    // it.code = 바코드 원본 (앞 0 포함 가능) → DB 불일치 방지
+                    product_code: it.product?.code ?? it.code,
                     product_name: it.product?.name ?? "",
                     supplier: it.product?.supplier ?? "",
                     qty: it.qty,
