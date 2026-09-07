@@ -19,25 +19,37 @@
 
 ---
 
-## 🎯 활성 PENDING · v11 (2026-09-07 · UI 개편 + 버그 수정)
+## 🎯 활성 PENDING · v12 (2026-09-07 · 상품입고 개편 + UI 통일)
 
-> **2026-09-07 완료** · 알림종 UI 개선 3종 · 상품정보 패널 리디자인 · 상품탭 아이콘 통일 · productArrivals null 재고 버그
+> **2026-09-07 (2차) 완료** · expiry_date 버그 · 유통기한 임박 체크박스+리스트 · 가격재고 4-col stat grid · 이슈리스트 PC 한줄 · CategoryChips 폰트+1 · 검수완료 및 등록
 
-### ✅ 2026-09-07 완료
+### ✅ 2026-09-07 (2차) 완료
+| 커밋 | 내용 |
+|-----|------|
+| `b1ee07f3` | feat(product+arrival): 가격재고 4-col stat grid · ArrivalRowCard 필수필드 검증 |
+| `072aedb7` | feat(arrival): expiry_date 버그수정(→verify_note) · 유통기한 임박 체크박스+리스트 탭 · 검수완료 및 등록 |
+| `61df6ab1` | feat(board+chips): 이슈리스트 PC 한줄 · 폰트+2 · CategoryChips +1 · 굵기 medium |
+| `9bb2e1b8` | feat(error): 에러경계 개선 · 상세스택/타임스탬프/홈으로 버튼 |
+| `60343a1a` | fix(arrival+product): ArrivalDetail flat merge · product_code 앞0 · hooks순서 · 탭순서 |
+| `7b9ad077` | fix(purchase): #116 · supplier_name 필터 서버측 적용 |
+
+### 🟡 PENDING (신규)
+| # | 태스크 | 우선순위 | 비고 |
+|---|-----|--------|------|
+| **#120** | 상품입고 UI 매입페이지 통일 · 헤더/툴바/카드 스타일 · 색상·타이포 일관성 | 🟡 | |
+| **#121** | 이슈페이지 필터 디자인 → 전체 페이지 적용 · CategoryChips 목업 반영 | 🟡 | |
+| **#117** | 매입이력 삭제 기능 · DELETE /api/purchase-details/:id + UI | 🔴 | |
+| **#119** | 매입이력 단가·수량 필수 validation | 🔴 | |
+| **#115** | real_map 컬럼 DB DROP SQL · `migrations/20260904_drop_real_map.sql` · Supabase SQL Editor | 🟡 | 사용자 직접 |
+
+> **2026-09-07 (1차) 완료** · 알림종 UI 개선 3종 · 상품정보 패널 리디자인 · 상품탭 아이콘 통일 · productArrivals null 재고 버그
+
+### ✅ 2026-09-07 (1차) 완료
 | 커밋 | 내용 |
 |-----|------|
 | `03d4a1f3` | fix(arrivals): currentStock null→0 · 첫 입고 상품 재고 미반영 버그 수정 |
-| `b3fb1e48` | 알림종 모두삭제·읽으면사라짐·portal 닫힘 버그 수정 · 스케줄 이름폰트+2 · 상품정보 UI 개편(KPI 제거·가격→기본→기타·진열위치 드롭다운) |
+| `b3fb1e48` | 알림종 모두삭제·읽으면사라짐·portal 닫힘 버그 수정 · 스케줄 이름폰트+2 · 상품정보 UI 개편 |
 | `d8edba48` | 상품 이너탭 아이콘·색상 추가 · 매입 탭과 UI 통일 |
-
-### 🔴 신규 PENDING (2026-09-07 사용자 리포트)
-| # | 태스크 | 우선순위 | 비고 |
-|---|-----|--------|------|
-| **#116** | 매입이력 "없음" 버그 · 테스트 공급사 purchase_details 있는데 좌측 목록 안 나옴 · supplier_name key 불일치 추정 | 🔴 | |
-| **#117** | 매입이력 삭제 기능 · 잘못 입력 시 삭제 가능하도록 · DELETE /api/purchase-details/:id + UI | 🔴 | |
-| **#118** | 상품입고 필수항목 UI validation · 수량·단가·구역 미입력 시 확정 버튼 차단 | 🔴 | |
-| **#119** | 매입이력 단가·수량 필수 validation · 0이거나 비어있으면 저장 차단 | 🔴 | |
-| **#115** | real_map 컬럼 DB DROP SQL 실행 필요 · `migrations/20260904_drop_real_map.sql` · Supabase SQL Editor | 🟡 | 사용자 직접 |
 
 ---
 

@@ -83,21 +83,22 @@ export function CategoryChips<V extends string | number = string>({
   ariaLabel = "카테고리",
   className = "",
 }: CategoryChipsProps<V>) {
-  // 2026-09-07 · +1 (sm 16→17 · md 17→18)
-  const sizeCls = size === "sm" ? "h-9 px-3 text-[17px]" : "h-10 px-3.5 text-[18px]";
+  // 2026-09-07 · compact · sm=h-7/13px · md=h-8/14px
+  const sizeCls = size === "sm" ? "h-7 px-2.5 text-[13px]" : "h-8 px-3 text-[14px]";
+  const labelSize = size === "sm" ? "text-[13px]" : "text-[14px]";
 
   return (
     <div className={`inline-flex items-center gap-2 flex-wrap ${className}`}>
       {label != null && (
         <span className="flex items-center gap-1.5 shrink-0">
           {showAccentBar && <AccentBar />}
-          <span className="text-[17px] font-semibold text-ink tracking-tight">{label}</span>
+          <span className={`${labelSize} font-semibold text-ink tracking-tight`}>{label}</span>
         </span>
       )}
       <div
         role="group"
         aria-label={ariaLabel}
-        className="inline-flex items-center rounded-lg border border-line bg-zinc-100 p-1 gap-0.5 flex-wrap"
+        className="inline-flex items-center rounded-md border border-line bg-zinc-100 p-0.5 gap-px flex-wrap"
       >
         {options.map((opt) => {
           const active = opt.value === value;

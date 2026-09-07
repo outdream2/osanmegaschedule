@@ -286,6 +286,37 @@
   }
   @keyframes spin{ from{transform:rotate(0);} to{transform:rotate(360deg);} }
 
+  /* ─── CategoryChips · segmented pill filter · 2026-09-07 ─── */
+  .chip-group{
+    display:inline-flex; align-items:center; gap:2px;
+    background:var(--zinc-100); border:1px solid var(--line);
+    border-radius:8px; padding:2px;
+  }
+  .chip-btn{
+    display:inline-flex; align-items:center; gap:5px;
+    height:28px; padding:0 10px;
+    border-radius:6px; border:none; background:transparent;
+    font-size:13px; font-weight:500; color:var(--ink);
+    cursor:pointer; white-space:nowrap;
+    transition:all .15s ease;
+  }
+  .chip-btn:hover{ background:white; color:var(--brand); }
+  .chip-btn.active{
+    font-weight:600; background:var(--brand-deep); color:white;
+    box-shadow:0 1px 2px rgba(10,46,74,.15), 0 2px 6px -2px rgba(10,46,74,.3);
+  }
+  .chip-dot{
+    width:6px; height:6px; border-radius:50%;
+    background:currentColor; opacity:.8; flex-shrink:0;
+  }
+  .chip-btn.active .chip-dot{ opacity:.9; }
+  .chip-btn:not(.active) .chip-dot{ opacity:.6; }
+  .chip-label{
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:13px; font-weight:600; color:var(--ink); flex-shrink:0;
+  }
+  .chip-label .accent-bar{ height:12px; }
+
   /* ─── PageToolbar ─── */
   .page-toolbar{
     display:flex; align-items:center; gap:12px;
@@ -688,6 +719,55 @@
       <div class="section-label"><div class="accent-bar" style="height:14px;"></div>정렬 (sm)</div>
       <div class="section-label"><div class="accent-bar" style="height:18px;"></div>분류 (lg)</div>
       <div class="section-label"><div class="accent-bar" style="height:24px;"></div>큰 라벨 (xl)</div>
+    </div>
+
+    <!-- CategoryChips -->
+    <div class="primitive-header">
+      <h2>CategoryChips</h2><span class="tag">segmented pill · compact · dot identity · 필터·기간·카테고리 전용</span>
+    </div>
+    <!-- 상태 필터 -->
+    <div class="flex-wrap-row" style="gap:12px; flex-direction:column; align-items:flex-start;">
+      <div style="display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span class="chip-label"><div class="accent-bar"></div>상태</span>
+        <div class="chip-group">
+          <button class="chip-btn active"><span class="chip-dot" style="background:#a1a1aa;"></span>전체</button>
+          <button class="chip-btn"><span class="chip-dot" style="background:#f43f5e;"></span>미해결</button>
+          <button class="chip-btn"><span class="chip-dot" style="background:#3b82f6;"></span>진행중</button>
+          <button class="chip-btn"><span class="chip-dot" style="background:#10b981;"></span>해결</button>
+        </div>
+        <span class="chip-label" style="margin-left:4px;"><div class="accent-bar"></div>카테고리</span>
+        <div class="chip-group">
+          <button class="chip-btn active"><span class="chip-dot" style="background:#a1a1aa;"></span>전체</button>
+          <button class="chip-btn"><span class="chip-dot" style="background:#8b5cf6;"></span>결제</button>
+          <button class="chip-btn"><span class="chip-dot" style="background:#06b6d4;"></span>상품</button>
+          <button class="chip-btn"><span class="chip-dot" style="background:#f59e0b;"></span>주문</button>
+          <button class="chip-btn"><span class="chip-dot" style="background:#10b981;"></span>손님</button>
+          <button class="chip-btn"><span class="chip-dot" style="background:#a1a1aa;"></span>기타</button>
+          <button class="chip-btn"><span class="chip-dot" style="background:#a1a1aa;"></span>미분류</button>
+        </div>
+      </div>
+      <!-- 기간 필터 -->
+      <div style="display:inline-flex; align-items:center; gap:8px;">
+        <span class="chip-label"><div class="accent-bar"></div>기간</span>
+        <div class="chip-group">
+          <button class="chip-btn">오늘</button>
+          <button class="chip-btn">이번주</button>
+          <button class="chip-btn active">이번달</button>
+          <button class="chip-btn">3개월</button>
+          <button class="chip-btn">직접입력</button>
+        </div>
+      </div>
+      <!-- 분류 필터 (dot identity) -->
+      <div style="display:inline-flex; align-items:center; gap:8px;">
+        <span class="chip-label"><div class="accent-bar"></div>분류</span>
+        <div class="chip-group">
+          <button class="chip-btn active"><span class="chip-dot" style="background:#a1a1aa;"></span>전체</button>
+          <button class="chip-btn"><span class="chip-dot" style="background:#8b5cf6;"></span>위탁</button>
+          <button class="chip-btn"><span class="chip-dot" style="background:#f43f5e;"></span>선결제</button>
+          <button class="chip-btn"><span class="chip-dot" style="background:#10b981;"></span>60회전</button>
+          <button class="chip-btn"><span class="chip-dot" style="background:#14b8a6;"></span>90회전</button>
+        </div>
+      </div>
     </div>
 
     <!-- KpiCard (already shown above; recap in catalog) -->
