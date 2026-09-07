@@ -83,16 +83,15 @@ export function CategoryChips<V extends string | number = string>({
   ariaLabel = "카테고리",
   className = "",
 }: CategoryChipsProps<V>) {
-  // 2026-08-17 · 사용자 지시 · 폰트 +2 · sm 12→14 · md 13→15
-  // 2026-08-26 · 공급사 분류 필터 등 · 추가 +2 (sm 14→16 · md 15→17)
-  const sizeCls = size === "sm" ? "h-9 px-3 text-[16px]" : "h-10 px-3.5 text-[17px]";
+  // 2026-09-07 · +1 (sm 16→17 · md 17→18)
+  const sizeCls = size === "sm" ? "h-9 px-3 text-[17px]" : "h-10 px-3.5 text-[18px]";
 
   return (
     <div className={`inline-flex items-center gap-2 flex-wrap ${className}`}>
       {label != null && (
         <span className="flex items-center gap-1.5 shrink-0">
           {showAccentBar && <AccentBar />}
-          <span className="text-[17px] font-bold text-ink tracking-tight">{label}</span>
+          <span className="text-[17px] font-semibold text-ink tracking-tight">{label}</span>
         </span>
       )}
       <div
@@ -109,10 +108,10 @@ export function CategoryChips<V extends string | number = string>({
               type="button"
               onClick={() => onChange(opt.value)}
               title={opt.title}
-              className={`inline-flex items-center gap-1.5 ${sizeCls} rounded-md font-semibold leading-none transition-all duration-200 ease-out cursor-pointer whitespace-nowrap ${
+              className={`inline-flex items-center gap-1.5 ${sizeCls} rounded-md leading-none transition-all duration-200 ease-out cursor-pointer whitespace-nowrap ${
                 active
-                  ? "bg-brand-deep text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_2px_rgba(10,46,74,0.15),0_2px_6px_-2px_rgba(10,46,74,0.30)]"
-                  : "text-ink hover:text-brand-deep hover:bg-white"
+                  ? "font-semibold bg-brand-deep text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_2px_rgba(10,46,74,0.15),0_2px_6px_-2px_rgba(10,46,74,0.30)]"
+                  : "font-medium text-ink hover:text-brand-deep hover:bg-white"
               }`}
             >
               <span
