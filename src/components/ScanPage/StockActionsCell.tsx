@@ -25,20 +25,20 @@ export const StockActionsCell: React.FC<StockActionsCellProps> = React.memo(({
     calcSlotTotal(row.prevStore3Qty, row.store3AddQty) === 0;
 
   return (
-    <div className="flex items-center justify-center gap-0.5">
-      {/* 이력 */}
+    <div className="flex items-center justify-center gap-1.5 flex-wrap">
+      {/* 이력 · 2026-09-07 · 사용자 지시 · 버튼+글씨 · 아이콘 only 지양 */}
       <button
         onClick={() => onHistory(row.code, row.product.name)}
-        className="relative w-9 h-9 flex items-center justify-center rounded-lg
-          text-zinc-300 hover:text-teal-600 hover:bg-teal-50
-          transition-all duration-150 cursor-pointer"
+        className="relative inline-flex items-center gap-1 h-8 px-2.5 rounded-lg
+          text-[14px] font-bold cursor-pointer transition
+          bg-white border border-line text-ink-soft
+          hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700"
         title="실재고 저장 이력"
       >
-        <History size={13} />
+        <History size={13} strokeWidth={2.4} />
+        이력
         {(row.historyCount ?? 0) > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1
-            text-[15px] font-bold text-white bg-teal-500 rounded-full
-            flex items-center justify-center leading-none tabular-nums">
+          <span className="ml-0.5 min-w-[18px] h-[18px] px-1 text-[12px] font-bold text-white bg-teal-500 rounded-full inline-flex items-center justify-center leading-none tabular-nums">
             {row.historyCount}
           </span>
         )}
@@ -47,28 +47,34 @@ export const StockActionsCell: React.FC<StockActionsCellProps> = React.memo(({
       {/* 삭제 */}
       <button
         onClick={() => onRemove(row.key)}
-        className="w-9 h-9 flex items-center justify-center rounded-lg
-          text-zinc-300 hover:text-rose-500 hover:bg-rose-50
-          transition-all duration-150 cursor-pointer"
+        className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg
+          text-[14px] font-bold cursor-pointer transition
+          bg-white border border-line text-ink-soft
+          hover:bg-rose-50 hover:border-rose-300 hover:text-rose-600"
         title="삭제"
       >
-        <Trash2 size={13} />
+        <Trash2 size={13} strokeWidth={2.4} />
+        삭제
       </button>
 
-      {/* 2026-08-18 · 사용자 지시 · 진열요청 · 우측 배치 · 붉은색계열 (red-600) */}
+      {/* 진열요청 · 매장 재고 부족 시 강조 (red-600) */}
       <button
         onClick={() => onRequestDisplay(row)}
         disabled={requestingKey === row.key}
-        className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+        className={[
+          "inline-flex items-center gap-1 h-8 px-2.5 rounded-lg",
+          "text-[14px] font-bold cursor-pointer transition",
+          "disabled:cursor-not-allowed disabled:opacity-50",
           storeEmpty
-            ? "text-red-600 bg-red-50 hover:text-red-700 hover:bg-red-100 animate-pulse"
-            : "text-red-500 hover:text-red-700 hover:bg-red-50"
-        }`}
+            ? "bg-red-600 text-white hover:bg-red-700 shadow-sm animate-pulse"
+            : "bg-white border border-line text-red-600 hover:bg-red-50 hover:border-red-300",
+        ].join(" ")}
         title="진열요청 전송 · 매장 재고 부족 시 강조"
       >
         {requestingKey === row.key
           ? <Spinner size={13} tone="red" />
-          : <Megaphone size={13} />}
+          : <Megaphone size={13} strokeWidth={2.4} />}
+        진열요청
       </button>
     </div>
   );
