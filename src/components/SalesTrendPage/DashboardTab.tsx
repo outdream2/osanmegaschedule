@@ -23,6 +23,9 @@ import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 // 2026-09-01 · 사용자 지시 · 판매중 필터 언체크 기능 · 프레임워크 SaleStatusFilter 재사용
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
 import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
+// 2026-09-07 · 사용자 지시 · 판매 대시보드 · 일반약/상비약/전체 분류 필터
+import { FlowClassFilterTabs } from "../StockManagePage/FlowClassFilterTabs";
+import { matchClassFilter, classifyProduct, type ClassFilter } from "../../utils/productClassify";
 // 2026-09-01 · 사용자 지시 · 대시보드 답게 · 차트 다양화 · 최신 트렌드 (Top10 · 카테고리 · 이익률)
 import { DashboardCharts } from "./DashboardCharts";
 import { fmtWon } from "../../lib/format";
@@ -162,6 +165,18 @@ export const DashboardTab: React.FC = () => {
   //   · 프레임워크 useSaleStatusFilter · storageKey · localStorage 영속화
   const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "dashboard.saleFilter" });
 
+  // 2026-09-07 · 사용자 지시 · 일반약/상비약/전체 분류 필터
+  const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
+    try {
+      const v = localStorage.getItem("dashboard.classFilter");
+      if (v === "stationery" || v === "general" || v === "all") return v;
+    } catch { /* ignore */ }
+    return "all";
+  });
+  useEffect(() => {
+    try { localStorage.setItem("dashboard.classFilter", classFilter); } catch { /* ignore */ }
+  }, [classFilter]);
+
   // 선택된 상품 (우측 상세 패널)
   const [selected, setSelected] = useState<ProductInfo | null>(null);
 
@@ -256,10 +271,29 @@ export const DashboardTab: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sort, dir, limit, months, season]);
 
+  // 2026-09-07 · 사용자 지시 · classFilter 별 카운트 (판매중 필터 반영 · location 기반 분류)
+  const classCounts = useMemo(() => {
+    let essential = 0, general = 0, all = 0;
+    for (const p of rows) {
+      if (!saleMatches((p as any).sale_status)) continue;
+      all++;
+      const cls = classifyProduct((p as any).location ?? (p as any).display_location ?? null);
+      if (cls === "stationery") essential++;
+      else if (cls === "general") general++;
+    }
+    return { essential, general, all };
+  }, [rows, saleMatches]);
+
+  // 2026-09-07 · 사용자 지시 · classFilter 적용된 rows (KPI · 차트 · 리스트 공용)
+  const classFilteredRows = useMemo(() => {
+    if (classFilter === "all") return rows;
+    return rows.filter(p => matchClassFilter((p as any).location ?? (p as any).display_location ?? null, classFilter));
+  }, [rows, classFilter]);
+
   // ─── 표시 데이터 · 필터 + 클라 정렬 (loss · profit_rate · name) ─────────
   const displayRows = useMemo(() => {
     const q = query.trim();
-    let filtered = rows.filter(p => {
+    let filtered = classFilteredRows.filter(p => {
       if (q && !matchesProductQuery(p as any, q)) return false;
       // 2026-09-01 · 사용자 지시 · 판매중 필터 (언체크 시 · 판매중지·종료 포함)
       if (!saleMatches((p as any).sale_status)) return false;
@@ -281,10 +315,10 @@ export const DashboardTab: React.FC = () => {
     }
     // 서버 정렬 키는 이미 서버에서 정렬됨 (재정렬 불필요)
     return filtered;
-  }, [rows, sort, dir, query, saleMatches]);
+  }, [classFilteredRows, sort, dir, query, saleMatches]);
 
-  // ─── KPI 계산 (전체 rows 기준 · 필터/정렬 무관하게 스냅샷 요약) ─────────
-  const kpis = useMemo(() => computeKpis(rows), [rows]);
+  // ─── KPI 계산 · classFilter 기준 (2026-09-07 · 사용자 지시) ─────────────
+  const kpis = useMemo(() => computeKpis(classFilteredRows), [classFilteredRows]);
 
   // ─── 상품 클릭 · 상세 로드 ──────────────────────────────────────────────
   const onProductClick = useCallback(async (p: StockFlowRow) => {
@@ -383,6 +417,19 @@ export const DashboardTab: React.FC = () => {
         </div>
       </Card>
 
+      {/* ── 2026-09-07 · 사용자 지시 · 일반약/상비약/전체 분류 필터 ── */}
+      <Card className="p-2">
+        <FlowClassFilterTabs
+          classFilter={classFilter}
+          filteredCount={displayRows.length}
+          essentialCount={classCounts.essential}
+          generalCount={classCounts.general}
+          allCount={classCounts.all}
+          selectedCount={0}
+          onSetFilter={setClassFilter}
+        />
+      </Card>
+
       {/* ── KPI 카드 그리드 ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
         <KpiCard
@@ -426,7 +473,8 @@ export const DashboardTab: React.FC = () => {
       </div>
 
       {/* ── 2026-09-01 · 사용자 지시 · 차트 다양화 · 대시보드 답게 (Top10·카테고리·이익률) ── */}
-      <DashboardCharts rows={rows} loading={loading} vendorCategoryMap={vendorCategoryMap} />
+      {/* 2026-09-07 · classFilter 적용 · rows → classFilteredRows */}
+      <DashboardCharts rows={classFilteredRows} loading={loading} vendorCategoryMap={vendorCategoryMap} />
 
       {/* ── 좌 · 재고흐름 테이블 · 우 · 상품 상세 ───────────────────────── */}
       <div className="flex flex-col lg:flex-row gap-2 items-stretch lg:min-h-[560px]">
