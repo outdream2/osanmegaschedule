@@ -10,7 +10,7 @@ import { type ZoneStatus, type DowMap, type DisplayZone } from "../../utils/zone
 import { type ProductInfo } from "../../lib/productsCache";
 import {
   CheckCircle2, ChevronLeft, ChevronRight,
-  Layers, Save, ScanLine, X, Store,
+  Layers, Save, ScanLine, X, Store, PackagePlus, Info,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { StatusPill } from "../common/StatusPill";
@@ -635,9 +635,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               activeKey={productInnerTab}
               onSelect={setProductInnerTab}
               tabs={[
-                { key: "scan",    label: "실재고입력", visible: true },
-                { key: "arrival", label: "상품입고",   visible: true },
-                { key: "info",    label: "상품정보",   visible: true },
+                { key: "scan",    label: "실재고입력", icon: ScanLine,    color: "emerald", visible: true },
+                { key: "arrival", label: "상품입고",   icon: PackagePlus, color: "violet",  visible: true },
+                { key: "info",    label: "상품정보",   icon: Info,        color: "sky",     visible: true },
               ]}
             />
           </div>
