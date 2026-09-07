@@ -19,6 +19,28 @@
 
 ---
 
+## 🎯 활성 PENDING · v11 (2026-09-07 · UI 개편 + 버그 수정)
+
+> **2026-09-07 완료** · 알림종 UI 개선 3종 · 상품정보 패널 리디자인 · 상품탭 아이콘 통일 · productArrivals null 재고 버그
+
+### ✅ 2026-09-07 완료
+| 커밋 | 내용 |
+|-----|------|
+| `03d4a1f3` | fix(arrivals): currentStock null→0 · 첫 입고 상품 재고 미반영 버그 수정 |
+| `b3fb1e48` | 알림종 모두삭제·읽으면사라짐·portal 닫힘 버그 수정 · 스케줄 이름폰트+2 · 상품정보 UI 개편(KPI 제거·가격→기본→기타·진열위치 드롭다운) |
+| `d8edba48` | 상품 이너탭 아이콘·색상 추가 · 매입 탭과 UI 통일 |
+
+### 🔴 신규 PENDING (2026-09-07 사용자 리포트)
+| # | 태스크 | 우선순위 | 비고 |
+|---|-----|--------|------|
+| **#116** | 매입이력 "없음" 버그 · 테스트 공급사 purchase_details 있는데 좌측 목록 안 나옴 · supplier_name key 불일치 추정 | 🔴 | |
+| **#117** | 매입이력 삭제 기능 · 잘못 입력 시 삭제 가능하도록 · DELETE /api/purchase-details/:id + UI | 🔴 | |
+| **#118** | 상품입고 필수항목 UI validation · 수량·단가·구역 미입력 시 확정 버튼 차단 | 🔴 | |
+| **#119** | 매입이력 단가·수량 필수 validation · 0이거나 비어있으면 저장 차단 | 🔴 | |
+| **#115** | real_map 컬럼 DB DROP SQL 실행 필요 · `migrations/20260904_drop_real_map.sql` · Supabase SQL Editor | 🟡 | 사용자 직접 |
+
+---
+
 ## 🎯 활성 PENDING · v10 (2026-09-06 · LIST-UI-2026 폰트+2 완료 + SplitRight 프리미티브)
 
 > **2026-09-06 완료** · LIST-UI-2026 전역 폰트 +2px (30+ 커밋) · SplitRightHeader·SplitRightLoading 신설 · #259 SupplierTab 인라인 확장 이미 완료 확인 · #260 Phase 3 (선택) skip (ContractWriterPage·PharmacistPage 패턴 부적합)
