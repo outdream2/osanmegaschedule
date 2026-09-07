@@ -478,31 +478,27 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   const handleSaveRow = useCallback(async (rowKey: string) => {
     const row = rows.find(r => r.key === rowKey);
     if (!row) return;
-    const w1 = calcSlotTotal(row.prevWarehouse1Qty, row.warehouse1AddQty);
-    const w2 = calcSlotTotal(row.prevWarehouse2Qty, row.warehouse2AddQty);
-    const s1 = calcSlotTotal(row.prevStore1Qty,     row.store1AddQty);
-    const s2 = calcSlotTotal(row.prevStore2Qty,     row.store2AddQty);
-    const s3 = calcSlotTotal(row.prevStore3Qty,     row.store3AddQty);
-    const hasW1 = row.prevWarehouse1Qty != null || row.warehouse1AddQty !== "";
-    const hasW2 = row.prevWarehouse2Qty != null || row.warehouse2AddQty !== "";
-    const hasS1 = row.prevStore1Qty != null || row.store1AddQty !== "";
-    const hasS2 = row.prevStore2Qty != null || row.store2AddQty !== "";
-    const hasS3 = row.prevStore3Qty != null || row.store3AddQty !== "";
+    // 실재고 모드 · 직접 입력값 = 실재고 (prev+add 합산 아닌 actual count)
+    const hasW1 = row.warehouse1AddQty !== "";
+    const hasW2 = row.warehouse2AddQty !== "";
+    const hasS1 = row.store1AddQty !== "";
+    const hasS2 = row.store2AddQty !== "";
+    const hasS3 = row.store3AddQty !== "";
     try {
       await api.post("/api/inventory-checks/bulk", {
         checked_by: authSession?.employeeName ?? "익명",
         items: [{
           product_code:     row.code,
           product_name:     row.product.name,
-          warehouse1_stock: hasW1 ? w1 : null,
-          warehouse2_stock: hasW2 ? w2 : null,
-          store_stock:      hasS1 ? s1 : null,
-          store_stock_2:    hasS2 ? s2 : null,
-          store3_stock:     hasS3 ? s3 : null,
+          warehouse1_stock: hasW1 ? Number(row.warehouse1AddQty) : null,
+          warehouse2_stock: hasW2 ? Number(row.warehouse2AddQty) : null,
+          store_stock:      hasS1 ? Number(row.store1AddQty) : null,
+          store_stock_2:    hasS2 ? Number(row.store2AddQty) : null,
+          store3_stock:     hasS3 ? Number(row.store3AddQty) : null,
           store1_zone:      row.store1Zone,
           store2_zone:      row.store2Zone,
           store3_zone:      row.store3Zone,
-          warehouse_stock:  hasW1 ? w1 : null,
+          warehouse_stock:  hasW1 ? Number(row.warehouse1AddQty) : null,
         }],
       });
       setRows(prev => prev.map(r => (r.key === rowKey ? { ...r, savedThisSession: true, lastCheckedAt: new Date().toISOString() } : r)));
@@ -534,33 +530,24 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       const { data: j } = await api.post<{ saved?: number; failed?: number; downgraded?: boolean }>("/api/inventory-checks/bulk", {
         checked_by: authSession?.employeeName ?? "익명",
         items: rows.map(r => {
-            // 증분 방식 · 저장값 = prev + add 합산
-            const w1 = calcSlotTotal(r.prevWarehouse1Qty, r.warehouse1AddQty);
-            const w2 = calcSlotTotal(r.prevWarehouse2Qty, r.warehouse2AddQty);
-            const s1 = calcSlotTotal(r.prevStore1Qty,     r.store1AddQty);
-            const s2 = calcSlotTotal(r.prevStore2Qty,     r.store2AddQty);
-            const s3 = calcSlotTotal(r.prevStore3Qty,     r.store3AddQty);
-            // prev·add 모두 빈 경우 null 전송 (미입력 구분)
-            const hasW1 = r.prevWarehouse1Qty != null || r.warehouse1AddQty !== "";
-            const hasW2 = r.prevWarehouse2Qty != null || r.warehouse2AddQty !== "";
-            const hasS1 = r.prevStore1Qty != null || r.store1AddQty !== "";
-            const hasS2 = r.prevStore2Qty != null || r.store2AddQty !== "";
-            const hasS3 = r.prevStore3Qty != null || r.store3AddQty !== "";
+            // 실재고 모드 · 직접 입력값 = 실재고 (incremental 아닌 absolute count)
+            const hasW1 = r.warehouse1AddQty !== "";
+            const hasW2 = r.warehouse2AddQty !== "";
+            const hasS1 = r.store1AddQty !== "";
+            const hasS2 = r.store2AddQty !== "";
+            const hasS3 = r.store3AddQty !== "";
             return {
               product_code:     r.code,
               product_name:     r.product.name,
-              // 신규 5-분리 컬럼 · prev + add 합산값
-              warehouse1_stock: hasW1 ? w1 : null,
-              warehouse2_stock: hasW2 ? w2 : null,
-              store_stock:      hasS1 ? s1 : null,   // 매장1
-              store_stock_2:    hasS2 ? s2 : null,   // 매장2
-              store3_stock:     hasS3 ? s3 : null,   // 매장3
-              // 매장 구역 (편집된 값 · 없으면 auto 값 저장)
+              warehouse1_stock: hasW1 ? Number(r.warehouse1AddQty) : null,
+              warehouse2_stock: hasW2 ? Number(r.warehouse2AddQty) : null,
+              store_stock:      hasS1 ? Number(r.store1AddQty)     : null,
+              store_stock_2:    hasS2 ? Number(r.store2AddQty)     : null,
+              store3_stock:     hasS3 ? Number(r.store3AddQty)     : null,
               store1_zone:      r.store1Zone,
               store2_zone:      r.store2Zone,
               store3_zone:      r.store3Zone,
-              // 레거시 mirror (구 클라이언트 하위 호환용 · 서버가 warehouse1 우선 처리)
-              warehouse_stock:  hasW1 ? w1 : null,
+              warehouse_stock:  hasW1 ? Number(r.warehouse1AddQty) : null,
             };
           }),
       });

@@ -52,13 +52,15 @@ interface ProductRow {
 }
 
 interface ProductDetail extends ProductRow {
-  warehouse_stock?: number | null;
-  store_stock?: number | null;
+  warehouse_stock?: number | null;   // 창고1 (warehouse1_stock alias)
+  warehouse1_stock?: number | null;
+  warehouse2_stock?: number | null;  // 창고2
+  store_stock?: number | null;       // 매장1
+  store3_stock?: number | null;      // 매장3
   inv_checked_at?: string | null;
   last_purchase_date?: string | null;
   sale_price?: number | null;
   purchase_price?: number | null;
-  // 2026-08-25 · products 테이블에 없는 컬럼 · cost_price · note 제거
 }
 
 interface Props {
@@ -234,8 +236,14 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                   {product.supplier}<ArrowSquareOut size={12} />
                 </button>
               )}
-              {product.category && (
-                <span className="text-[13px] font-semibold text-violet-700 bg-violet-50 border border-violet-200 rounded-md px-1.5 py-0.5">{product.category}</span>
+              {(() => {
+                const s = String(p.sale_status ?? "");
+                if (!s) return null;
+                const tone = s === "판매중" ? "emerald" : s === "판매중지" ? "rose" : "zinc";
+                return <StatusPill tone={tone} size="md">{s}</StatusPill>;
+              })()}
+              {p.location && (
+                <span className="text-[15px] font-semibold text-zinc-600 bg-zinc-100 rounded-md px-2 py-0.5">{String(p.location)}</span>
               )}
             </div>
           </div>
@@ -303,19 +311,41 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                   ? <span className="text-[18px] font-semibold text-ink tabular-nums leading-tight">{String(p.optimal_stock)}개</span>
                   : <span className="text-zinc-300 text-[16px]">-</span>}
             </div>
-            {/* 창고재고 */}
-            <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-              <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">창고재고</span>
-              {p.warehouse_stock != null
-                ? <span className="text-[18px] font-semibold text-ink tabular-nums leading-tight">{String(p.warehouse_stock)}개</span>
-                : <span className="text-zinc-300 text-[16px]">-</span>}
-            </div>
+            {/* 창고재고 (창고1+창고2 분리 표시) */}
+            {(() => {
+              const w1 = product.warehouse1_stock ?? product.warehouse_stock ?? null;
+              const w2 = product.warehouse2_stock ?? null;
+              if (w1 == null && w2 == null) {
+                return (
+                  <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
+                    <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">창고재고</span>
+                    <span className="text-zinc-300 text-[16px]">실재고 미조사</span>
+                  </div>
+                );
+              }
+              return (
+                <>
+                  {w1 != null && (
+                    <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
+                      <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">창고1 재고</span>
+                      <span className="text-[18px] font-semibold text-ink tabular-nums leading-tight">{String(w1)}개</span>
+                    </div>
+                  )}
+                  {w2 != null && (
+                    <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
+                      <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">창고2 재고</span>
+                      <span className="text-[18px] font-semibold text-ink tabular-nums leading-tight">{String(w2)}개</span>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
             {/* 매장재고 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
               <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">매장재고</span>
-              {p.store_stock != null
-                ? <span className="text-[18px] font-semibold text-ink tabular-nums leading-tight">{String(p.store_stock)}개</span>
-                : <span className="text-zinc-300 text-[16px]">-</span>}
+              {product.store_stock != null
+                ? <span className="text-[18px] font-semibold text-ink tabular-nums leading-tight">{String(product.store_stock)}개</span>
+                : <span className="text-zinc-300 text-[16px]">실재고 미조사</span>}
             </div>
             {/* 최근매입일 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
@@ -347,17 +377,8 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
               </DField>
             )}
             {editing ? <EditField k="category" label="카테고리" /> : <DField label="카테고리">{dispVal("category")}</DField>}
-            {editing ? <EditField k="sale_status" label="판매상태" /> : (
-              <DField label="판매상태">
-                {(() => {
-                  const s = String(p.sale_status ?? "");
-                  const tone = s === "판매중" ? "emerald" : s === "판매중지" ? "rose" : "zinc";
-                  return s ? <StatusPill tone={tone} size="sm">{s}</StatusPill> : <span className="text-zinc-300">-</span>;
-                })()}
-              </DField>
-            )}
-            {editing ? <EditField k="barcode" label="바코드" /> : <DField label="바코드">{dispVal("barcode")}</DField>}
-            {editing ? <EditField k="location" label="진열위치" /> : <DField label="진열위치">{dispVal("location")}</DField>}
+            {editing && <EditField k="sale_status" label="판매상태" />}
+            {editing && <EditField k="location" label="진열위치" />}
           </div>
         </div>
 

@@ -178,8 +178,8 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
   // 2026-08-25 · 유통기한 임박 · product.expiry_date 있으면 빨간 강조
   const hasExpiryFlag = !!((row.product as { expiry_date?: string | null }).expiry_date && String((row.product as { expiry_date?: string | null }).expiry_date).trim());
   const rowTotal = calcRowTotal(row);
-  const totalAdded = calcTotalAdded(row);
-  const hasAdd = totalAdded !== 0;
+  const totalAdded = calcTotalAdded(row); // 실재고 합계 (이번 세션 입력값)
+  const hasAdd = totalAdded > 0 || SLOTS.some(s => row[s.addKey] !== "");
   // 2026-08-23 · #204 · 이번 세션에 개별 저장 완료 여부 · 저장 후 카드 자동 접힘
   const savedThisSession = !!row.savedThisSession;
 
@@ -330,37 +330,51 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
               {row.code}
             </span>
           </div>
-          {/* Row 3: 현재고 · 추가수량 · 합계 */}
-          <div className="flex items-center gap-3 mt-1">
-            <span className="inline-flex flex-col items-center leading-none bg-zinc-100/80 rounded-lg px-2.5 py-1.5 min-w-[46px]">
-              <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wide">현재고</span>
-              <span className={`text-[20px] font-extrabold tabular-nums mt-0.5 leading-none ${rowTotal - totalAdded > 0 ? "text-zinc-700" : "text-zinc-300"}`}>
-                {rowTotal - totalAdded}
-              </span>
-            </span>
-            <span className="text-zinc-300 text-[16px] font-light">+</span>
-            <span className="inline-flex flex-col items-center leading-none bg-emerald-50 border border-emerald-200/70 rounded-lg px-2.5 py-1.5 min-w-[46px]">
-              <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wide">추가</span>
-              <span className={`text-[20px] font-extrabold tabular-nums mt-0.5 leading-none ${totalAdded > 0 ? "text-emerald-600" : "text-zinc-300"}`}>
-                {totalAdded > 0 ? `+${totalAdded}` : "0"}
-              </span>
-            </span>
-            <span className="text-zinc-300 text-[16px] font-light">=</span>
-            <span className="inline-flex flex-col items-center leading-none bg-brand-deep/10 rounded-lg px-2.5 py-1.5 min-w-[46px]">
-              <span className="text-[11px] font-bold text-brand-deep uppercase tracking-wide">합계</span>
-              <span className={`text-[22px] font-extrabold tabular-nums mt-0.5 leading-none ${rowTotal > 0 ? "text-brand-deep" : "text-zinc-300"}`}>
-                {rowTotal}
-              </span>
-            </span>
-          </div>
-          {/* chip strip · 접힘 시만 · 5-way 한눈 요약 */}
+          {/* Row 3: ERP현재고 · 실재고 · 손실 */}
+          {(() => {
+            const erpQty = Number((row.product as any).current_stock ?? 0);
+            const actualQty = totalAdded; // 이번 세션 입력한 실재고 합계
+            const hasActual = actualQty > 0;
+            const lossQty = erpQty - actualQty;
+            return (
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <span className="inline-flex flex-col items-center leading-none bg-zinc-100/80 rounded-lg px-2.5 py-1.5 min-w-[46px]">
+                  <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wide">ERP</span>
+                  <span className={`text-[20px] font-extrabold tabular-nums mt-0.5 leading-none ${erpQty > 0 ? "text-zinc-700" : "text-zinc-300"}`}>
+                    {erpQty}
+                  </span>
+                </span>
+                <span className="text-zinc-300 text-[15px] font-light">vs</span>
+                <span className="inline-flex flex-col items-center leading-none bg-sky-50 border border-sky-200/70 rounded-lg px-2.5 py-1.5 min-w-[46px]">
+                  <span className="text-[11px] font-bold text-sky-600 uppercase tracking-wide">실재고</span>
+                  <span className={`text-[20px] font-extrabold tabular-nums mt-0.5 leading-none ${actualQty > 0 ? "text-sky-700" : "text-zinc-300"}`}>
+                    {actualQty > 0 ? actualQty : "-"}
+                  </span>
+                </span>
+                {hasActual && (
+                  <>
+                    <span className="text-zinc-300 text-[15px] font-light">=</span>
+                    <span className={`inline-flex flex-col items-center leading-none rounded-lg px-2.5 py-1.5 min-w-[46px] border ${
+                      lossQty < 0 ? "bg-rose-50 border-rose-200/70" : lossQty > 0 ? "bg-amber-50 border-amber-200/70" : "bg-emerald-50 border-emerald-200/70"
+                    }`}>
+                      <span className={`text-[11px] font-bold uppercase tracking-wide ${lossQty < 0 ? "text-rose-600" : lossQty > 0 ? "text-amber-600" : "text-emerald-600"}`}>
+                        {lossQty < 0 ? "손실" : lossQty > 0 ? "이상" : "일치"}
+                      </span>
+                      <span className={`text-[20px] font-extrabold tabular-nums mt-0.5 leading-none ${lossQty < 0 ? "text-rose-600" : lossQty > 0 ? "text-amber-600" : "text-emerald-600"}`}>
+                        {lossQty > 0 ? `+${lossQty}` : lossQty}
+                      </span>
+                    </span>
+                  </>
+                )}
+              </div>
+            );
+          })()}
+          {/* chip strip · 접힘 시만 · 5-way 실재고 요약 */}
           {!expanded && (
             <div className="flex items-center gap-2 flex-wrap mt-1">
               {visibleSlots.map(s => {
-                const prev = row[s.prevKey] as number | null | undefined;
-                const add  = row[s.addKey]  as number | "";
-                const tot  = calcSlotTotal(prev, add);
-                const hasVal = tot > 0 || (add !== "" && Number(add) !== 0);
+                const add = row[s.addKey] as number | "";
+                const hasVal = add !== "" && Number(add) > 0;
                 return (
                   <span
                     key={s.key}
@@ -371,7 +385,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                     <span className={`w-1.5 h-1.5 rounded-full ${s.dot} ${hasVal ? "" : "opacity-40"}`} />
                     <span className={`text-[14px] font-semibold ${hasVal ? s.text : "text-zinc-400"}`}>{s.label}</span>
                     <span className={`text-[13px] font-bold tabular-nums ${hasVal ? "text-ink" : "text-zinc-300"}`}>
-                      {tot > 0 ? tot : "-"}
+                      {add !== "" ? Number(add) : "-"}
                     </span>
                   </span>
                 );
@@ -467,12 +481,22 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                   <X size={11} strokeWidth={2.5} />
                 </button>
               )}
-              {/* 2026-08-26 · 사용자 지시 · 현재 갯수 · 창고/매장 제목 바로 옆 · 잘 보이게 · 폰트 +2 */}
+              {/* 슬롯 헤더: 위치명 + 이전 실재고(reference) */}
               <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
                 <span className={`w-1.5 h-6 rounded-full ${s.dot} shrink-0 self-center`} />
                 <span className={`text-[16px] font-bold ${s.text} truncate`}>{s.full}</span>
+                {/* 창고 슬롯 · 구역 표시 */}
+                {!isStore && (() => {
+                  const parts = productZone.split("/").map(p => p.trim()).filter(Boolean);
+                  const zoneLabel = s.key === "w1" ? (parts[0] || productZone) : (parts[1] || productZone);
+                  return zoneLabel ? (
+                    <span className="text-[13px] font-semibold text-cyan-700 bg-cyan-50 border border-cyan-200 rounded px-1.5 py-0.5">
+                      {zoneLabel}구역
+                    </span>
+                  ) : null;
+                })()}
                 <span className={`inline-flex items-baseline gap-1 shrink-0 px-2 py-0.5 rounded-md ${prev != null && prev > 0 ? "bg-white/80 border border-zinc-200" : ""}`}>
-                  <span className="text-[15px] font-semibold text-ink-soft">현재</span>
+                  <span className="text-[15px] font-semibold text-ink-soft">이전</span>
                   {prev != null
                     ? <b className={`text-[18px] font-extrabold tabular-nums ${prev > 0 ? s.text : "text-zinc-300"}`}>{prev}</b>
                     : <span className="text-[16px] text-zinc-300">-</span>}
@@ -482,13 +506,13 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                 <StepperInput
                   value={add}
                   onChange={v => onPatch(row.key, { [s.addKey]: v } as Partial<StockRow>)}
-                  placeholder="+0"
+                  placeholder="실재고"
                 />
-                <span className={`text-[14px] font-bold tabular-nums text-right min-w-[38px] tracking-tight ${
-                  hasAddVal ? "text-emerald-700" : tot > 0 ? "text-ink" : "text-zinc-300"
-                }`}>
-                  = {tot}
-                </span>
+                {add !== "" && (
+                  <span className={`text-[14px] font-bold tabular-nums text-right min-w-[38px] tracking-tight ${Number(add) > 0 ? "text-sky-700" : "text-zinc-400"}`}>
+                    ={Number(add)}
+                  </span>
+                )}
               </div>
               {isStore && s.zoneKey && (
                 <ZoneInline
