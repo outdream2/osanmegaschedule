@@ -643,6 +643,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               ariaLabel="상품 탭 전환"
               variant="pills"
               size="sm"
+              wrap={true}
               options={[
                 { value: "info",    label: "상품정보" },
                 { value: "arrival", label: "상품입고" },
