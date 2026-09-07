@@ -644,7 +644,7 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
   return (
     <div className={`${CARD_BASE} flex flex-col min-h-0 flex-1`}>
       {/* 탭 헤더 */}
-      <div className="flex flex-wrap items-center border-b border-line bg-zinc-50/50 px-2 pt-1 gap-0">
+      <div className="flex flex-wrap items-center border-b border-line bg-zinc-50/50 px-2 gap-0">
         {TABS.map(t => {
           const Icon = t.icon;
           const active = tab === t.key;
@@ -657,8 +657,8 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
               title={t.hint}
               className={[
                 "relative flex items-center gap-2 sm:gap-2.5",
-                "px-4 sm:px-6 py-3.5 sm:py-4",
-                "text-[16px] sm:text-[18px] font-bold leading-none whitespace-nowrap",
+                "px-4 sm:px-5 py-2.5 sm:py-3",
+                "text-[16px] sm:text-[17px] font-bold leading-none whitespace-nowrap",
                 "transition-colors duration-150 cursor-pointer outline-none",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-300",
                 "active:opacity-70",
