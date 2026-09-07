@@ -18,7 +18,7 @@ router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
   const now = new Date();
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 
-  interface NormRow { supplier: string; date: string; amount: number; code: string; }
+  interface NormRow { supplier: string; date: string; amount: number; code: string; qty: number; }
   const normRows: NormRow[] = [];
   let pdOk = false;
   let pdRowCount = 0;
@@ -85,7 +85,7 @@ router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
     while (true) {
       const { data, error } = await supabase
         .from("purchase_details")
-        .select("supplier_name, supplier_code, purchase_date, amount, total, product_code")
+        .select("supplier_name, supplier_code, purchase_date, amount, total, product_code, quantity")
         .gte("purchase_date", cutoffYmd)
         .range(from, from + PAGE - 1);
       if (error) {
@@ -110,8 +110,9 @@ router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
           : "";
         if (!date) continue;
         const amount = Number(r.amount ?? r.total ?? 0) || 0;
+        const qty = Number((r as any).quantity ?? 0) || 0;
         const code = String(r.product_code ?? "").trim();
-        normRows.push({ supplier, date, amount, code });
+        normRows.push({ supplier, date, amount, code, qty });
         pdRowCount++;
       }
       pdOk = true;
@@ -146,7 +147,9 @@ router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
     last_purchase_date: string | null;
     first_purchase_date: string | null;
     this_month_amount: number;
+    this_month_qty: number;
     total_amount: number;
+    total_qty: number;
     purchase_count: number;
     sku_set: Set<string>;
     date_set: Set<string>;
@@ -162,7 +165,8 @@ router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
       agg = {
         supplier: r.supplier,
         last_purchase_date: null, first_purchase_date: null,
-        this_month_amount: 0, total_amount: 0, purchase_count: 0,
+        this_month_amount: 0, this_month_qty: 0,
+        total_amount: 0, total_qty: 0, purchase_count: 0,
         sku_set: new Set<string>(), date_set: new Set<string>(),
         weekly: new Array(12).fill(0),
       };
@@ -171,10 +175,14 @@ router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
     if (!agg.last_purchase_date || r.date > agg.last_purchase_date) agg.last_purchase_date = r.date;
     if (!agg.first_purchase_date || r.date < agg.first_purchase_date) agg.first_purchase_date = r.date;
     agg.total_amount += r.amount;
+    agg.total_qty += r.qty;
     agg.purchase_count += 1;
     if (r.code) agg.sku_set.add(r.code);
     agg.date_set.add(r.date);
-    if (r.date >= monthStart) agg.this_month_amount += r.amount;
+    if (r.date >= monthStart) {
+      agg.this_month_amount += r.amount;
+      agg.this_month_qty += r.qty;
+    }
     const dMs = new Date(r.date + "T00:00:00Z").getTime();
     if (!Number.isNaN(dMs)) {
       const weeksAgo = Math.floor((nowMs - dMs) / WEEK_MS);
@@ -197,7 +205,9 @@ router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
       last_purchase_date: a.last_purchase_date,
       first_purchase_date: a.first_purchase_date,
       this_month_amount: a.this_month_amount,
+      this_month_qty: a.this_month_qty,
       total_amount: a.total_amount,
+      total_qty: a.total_qty,
       purchase_count: a.purchase_count,
       sku_count: a.sku_set.size,
       avg_cycle_days,

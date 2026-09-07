@@ -108,6 +108,65 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
       from += PAGE;
     }
 
+    // 2026-09-07 · 사용자 지시 · purchase_details 병합
+    //   · stock_history 는 스냅샷 · 최신 매입은 아직 반영 안 될 수 있음
+    //   · purchase_details 원본 매입 (기간 내) 도 합쳐서 · 최신 매입수량·매입액 반영
+    //   · 이미 stock_history 에 있는 supplier 는 max 로 취급 (중복 계산 방지 · 근사)
+    {
+      // 기간 결정
+      const purFrom = fromDateStr ?? targetDate;
+      const purTo = targetDate;
+      const PAGE2 = 1000;
+      let from2 = 0;
+      // 공급사별 purchase_details 합계 (별도 map)
+      const pdMap = new Map<string, { supplier: string; supplier_code: string | null; qty: number; amount: number; products: Set<string> }>();
+      while (true) {
+        let q = supabase
+          .from("purchase_details")
+          .select("supplier_name, supplier_code, product_code, purchase_date, quantity, amount, total");
+        if (purFrom) q = q.gte("purchase_date", purFrom);
+        if (purTo) q = q.lte("purchase_date", purTo);
+        const { data: pdData, error: pdErr } = await q.range(from2, from2 + PAGE2 - 1);
+        if (pdErr) { break; }
+        if (!pdData || pdData.length === 0) break;
+        for (const r of pdData) {
+          const nm = String(r.supplier_name ?? "").trim();
+          const cd = String(r.supplier_code ?? "").trim();
+          if (!nm && !cd) continue;
+          const key = cd ? `c:${cd}` : `n:${nm}`;
+          const cur = pdMap.get(key) ?? { supplier: nm || cd, supplier_code: cd || null, qty: 0, amount: 0, products: new Set<string>() };
+          cur.qty += Number(r.quantity ?? 0) || 0;
+          cur.amount += Number(r.amount ?? r.total ?? 0) || 0;
+          const pc = String(r.product_code ?? "").trim();
+          if (pc) cur.products.add(pc);
+          pdMap.set(key, cur);
+        }
+        if (pdData.length < PAGE2) break;
+        from2 += PAGE2;
+      }
+      // 병합 · stock_history 값이 없거나 작으면 · purchase_details 값 사용
+      for (const [key, pv] of pdMap) {
+        const existing = map.get(key);
+        if (!existing) {
+          map.set(key, {
+            supplier: pv.supplier,
+            supplier_code: pv.supplier_code,
+            names: new Set([pv.supplier]),
+            products: pv.products,
+            purchaseQty: pv.qty,
+            purchaseAmount: pv.amount,
+            saleQty: 0,
+            saleAmount: 0,
+            totalStockAmount: 0,
+          });
+        } else {
+          if (pv.qty > existing.purchaseQty) existing.purchaseQty = pv.qty;
+          if (pv.amount > existing.purchaseAmount) existing.purchaseAmount = pv.amount;
+          for (const pc of pv.products) existing.products.add(pc);
+        }
+      }
+    }
+
     // 이름 충돌 감지
     const nameToCodes = new Map<string, Set<string>>();
     for (const v of map.values()) {

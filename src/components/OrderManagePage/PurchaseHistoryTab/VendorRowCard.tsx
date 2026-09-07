@@ -13,7 +13,9 @@ export interface VendorSummary {
   last_purchase_date: string | null;
   first_purchase_date?: string | null;
   this_month_amount: number;
+  this_month_qty?: number | null;
   total_amount: number;
+  total_qty?: number | null;
   purchase_count: number;
   sku_count: number;
   weekly_sparkline: number[];
@@ -75,6 +77,8 @@ export const VendorRowCard: React.FC<VendorRowCardProps> = React.memo(({
 }) => {
   const days = summary ? daysAgo(summary.last_purchase_date) : null;
   const thisMonth = summary?.this_month_amount ?? 0;
+  const thisMonthQty = summary?.this_month_qty ?? null;
+  const totalQty = summary?.total_qty ?? null;
   const cycle = summary?.avg_cycle_days ?? null;
   const lastDate = summary?.last_purchase_date ?? null;
 
@@ -94,7 +98,7 @@ export const VendorRowCard: React.FC<VendorRowCardProps> = React.memo(({
       type="button"
       onClick={onSelect}
       title={`${companyName}${lastDate ? ` · 최근매입 ${lastDate}${days != null ? ` (${days}일 전)` : ""}` : ""}`}
-      className={`group relative w-full text-left px-3 py-2.5 grid gap-2 items-center transition-colors cursor-pointer grid-cols-[1fr_68px_60px_52px] ${
+      className={`group relative w-full text-left px-3 py-2.5 grid gap-2 items-center transition-colors cursor-pointer grid-cols-[1fr_68px_56px_60px_52px] ${
         active
           ? "bg-brand-tint text-ink"
           : "hover:bg-zinc-50"
@@ -121,7 +125,16 @@ export const VendorRowCard: React.FC<VendorRowCardProps> = React.memo(({
       >
         {thisMonth > 0 ? fmtWon(thisMonth) : "-"}
       </span>
-      {/* 3. 최근매입일 (MM-DD · tooltip 에 full ISO) · semantic recency color */}
+      {/* 3. 매입수량 · 2026-09-07 · 사용자 지시 · 이번달 우선 · 없으면 총합 */}
+      <span
+        className={`text-right text-[15px] font-bold tabular-nums leading-none ${
+          (thisMonthQty ?? totalQty ?? 0) > 0 ? "text-amber-700" : "text-zinc-300"
+        }`}
+        title={`매입수량 · 이번달 ${(thisMonthQty ?? 0).toLocaleString()}개 · 전체 ${(totalQty ?? 0).toLocaleString()}개`}
+      >
+        {(thisMonthQty ?? totalQty ?? 0) > 0 ? `${(thisMonthQty ?? totalQty ?? 0).toLocaleString()}개` : "-"}
+      </span>
+      {/* 4. 최근매입일 (MM-DD · tooltip 에 full ISO) · semantic recency color */}
       <span
         className={`text-right text-[15px] font-bold tabular-nums leading-none ${recentCls}`}
         title={lastDate ? `최근매입 · ${lastDate}${days != null ? ` (${days}일 전)` : ""}` : "매입 이력 없음"}
