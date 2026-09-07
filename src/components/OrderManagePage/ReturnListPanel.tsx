@@ -749,6 +749,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
       )}
 
       <SplitPanel
+        className="flex-1 min-h-0"
         storageKey="returnList.leftWidth"
         defaultWidth={typeof window !== "undefined" ? Math.max(480, Math.min(860, Math.floor(window.innerWidth * 0.52))) : 560}
         minWidth={380}
@@ -759,12 +760,11 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         right={rightPanel}
         wrapLeft={false}
         wrapRight={false}
-        leftClassName="max-h-[70vh] md:max-h-none"
+        leftClassName="overflow-y-auto"
         mobileRightAsModal
         mobileModalTitle={returnSelectedProduct ? returnSelectedProduct.name : "상품 상세"}
         mobileOpen={returnSelectedProduct != null}
         onMobileClose={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
-        style={{ minHeight: "calc(100vh - 200px)" }}
       />
 
       {/* 반품 요청서 모달 · 2026-08-03 · 발주서 스타일 재설계 */}

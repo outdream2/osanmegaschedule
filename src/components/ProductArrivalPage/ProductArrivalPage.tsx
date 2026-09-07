@@ -9,7 +9,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { getErrorMessage } from "../../lib/errorMessage";
-import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
+import { PAGE_CONTAINER_CLS, CARD_BASE } from "../../styles/tokens";
 import { useConfirm } from "../../hooks/useConfirm";
 import { SplitPanel } from "../common/SplitPanel";
 import {
@@ -298,7 +298,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   // Render
   // ─────────────────────────────────────────────────────────────
   return (
-    <div className={embedded ? "flex-1 flex flex-col bg-[#F4F7FA]" : "min-h-screen bg-[#F4F7FA] flex flex-col"}>
+    <div className={embedded ? "flex-1 flex flex-col bg-[#F4F7FA] min-h-0" : "min-h-screen bg-[#F4F7FA] flex flex-col"}>
 
       {/* ── AppNavHeader (embedded 모드에선 부모가 헤더 렌더 · skip) ── */}
       {!embedded && (
@@ -337,65 +337,99 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
         />
       )}
 
-      {/* ── Page header strip · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 ── */}
-      <div className="bg-white border-b border-line shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-        <div className={`${PAGE_CONTAINER_CLS} px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3`}>
-          <AccentBar h={22} className="shrink-0" />
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-deep
-            flex items-center justify-center shadow-sm shrink-0">
-            <PackagePlus size={17} className="text-white" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-[17px] sm:text-[19px] font-bold text-ink leading-tight tracking-tight">상품 입고 검수</h1>
-            <p className="text-[15px] sm:text-[16px] text-ink-soft mt-0.5 leading-tight">
-              거래명세표와 실제 입고물품·수량 일치 확인
-            </p>
-          </div>
-          {arrivalTab === "input" && counts.total > 0 && (
-            <div className="ml-auto flex items-center gap-2 shrink-0">
-              <StatusPill tone="brand" size="md">{counts.total}건 / {counts.totalQty}개</StatusPill>
-              {counts.pending > 0 && (
-                <StatusPill tone="amber" size="md" dot pulse>{counts.pending}건 미결</StatusPill>
-              )}
+      {/* ── Page header strip (standalone only) ── */}
+      {!embedded && (
+        <div className="bg-white border-b border-line shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className={`${PAGE_CONTAINER_CLS} px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3`}>
+            <AccentBar h={22} className="shrink-0" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-deep
+              flex items-center justify-center shadow-sm shrink-0">
+              <PackagePlus size={17} className="text-white" />
             </div>
+            <div className="min-w-0">
+              <h1 className="text-[17px] sm:text-[19px] font-bold text-ink leading-tight tracking-tight">상품 입고 검수</h1>
+              <p className="text-[15px] sm:text-[16px] text-ink-soft mt-0.5 leading-tight">
+                거래명세표와 실제 입고물품·수량 일치 확인
+              </p>
+            </div>
+            {arrivalTab === "input" && counts.total > 0 && (
+              <div className="ml-auto flex items-center gap-2 shrink-0">
+                <StatusPill tone="brand" size="md">{counts.total}건 / {counts.totalQty}개</StatusPill>
+                {counts.pending > 0 && (
+                  <StatusPill tone="amber" size="md" dot pulse>{counts.pending}건 미결</StatusPill>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── FilterBar (매입페이지 스타일 · CARD_BASE) ── */}
+      <div className={`${PAGE_CONTAINER_CLS} px-3 sm:px-4 lg:px-6 ${embedded ? "py-3" : "pt-3"} shrink-0`}>
+        <div className={`${CARD_BASE} px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2`}>
+          {embedded && (
+            <>
+              <AccentBar />
+              <div className="w-7 h-7 rounded-lg bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
+                <PackagePlus size={13} className="text-white" />
+              </div>
+              <span className="text-[15px] font-bold text-ink tracking-tight">상품 입고 검수</span>
+              {arrivalTab === "input" && counts.total > 0 && (
+                <>
+                  <StatusPill tone="brand" size="md">{counts.total}건 / {counts.totalQty}개</StatusPill>
+                  {counts.pending > 0 && (
+                    <StatusPill tone="amber" size="md" dot pulse>{counts.pending}건 미결</StatusPill>
+                  )}
+                </>
+              )}
+            </>
+          )}
+          {/* 탭 버튼 */}
+          <div className={`${embedded ? "ml-auto" : ""} inline-flex items-center rounded-md border border-line bg-zinc-100 p-0.5 gap-px`}>
+            {([
+              { k: "input"   as const, label: "상품입고",    icon: PackagePlus, color: "sky"    },
+              { k: "history" as const, label: "입고내역",    icon: Package,     color: "indigo" },
+              { k: "expiry"  as const, label: "유통기한 임박", icon: Clock,       color: "rose"   },
+            ]).map(({ k, label, icon: Icon, color }) => {
+              const active = arrivalTab === k;
+              const activeColor =
+                color === "sky"   ? "bg-sky-500 text-white shadow-sm" :
+                color === "rose"  ? "bg-rose-500 text-white shadow-sm" :
+                                    "bg-brand-deep text-white shadow-sm";
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setArrivalTab(k)}
+                  className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[13px] font-medium transition cursor-pointer whitespace-nowrap ${
+                    active ? `font-semibold ${activeColor}` : "text-zinc-500 hover:text-zinc-700 hover:bg-white"
+                  }`}
+                >
+                  <Icon size={12} />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          {/* 초기화 버튼 (embedded · 입고 탭 · 아이템 있을 때) */}
+          {embedded && arrivalTab === "input" && items.length > 0 && (
+            <button
+              onClick={resetAll}
+              className="ml-1 flex items-center gap-1 px-2 py-1 rounded-md text-[12px] font-bold
+                text-zinc-400 hover:text-zinc-700 bg-zinc-50 border border-line
+                hover:bg-white hover:border-zinc-300 transition cursor-pointer"
+            >
+              <RotateCcw size={11} />초기화
+            </button>
           )}
         </div>
       </div>
 
-      {/* ── 내부 서브탭 (2026-08-03 · 상품입고 / 입고내역) ── */}
-      <div className={`${PAGE_CONTAINER_CLS} px-3 sm:px-4 lg:px-6 pt-3`}>
-        <Card padding="none" className="inline-flex p-1">
-          {([
-            { k: "input"   as const, label: "상품입고",    icon: PackagePlus, color: "sky"    },
-            { k: "history" as const, label: "입고내역",    icon: Package,     color: "indigo" },
-            { k: "expiry"  as const, label: "유통기한 임박", icon: Clock,       color: "rose"   },
-          ]).map(({ k, label, icon: Icon, color }) => {
-            const active = arrivalTab === k;
-            const activeColor =
-              color === "sky"   ? "bg-sky-500 text-white shadow-sm" :
-              color === "rose"  ? "bg-rose-500 text-white shadow-sm" :
-                                  "bg-brand-deep text-white shadow-sm";
-            return (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setArrivalTab(k)}
-                className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[16px] font-bold transition cursor-pointer ${
-                  active ? activeColor : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
-                }`}
-              >
-                <Icon size={13} />
-                {label}
-              </button>
-            );
-          })}
-        </Card>
-      </div>
-
       {/* ── Main layout (arrivalTab === "input") ── */}
       {arrivalTab === "input" && (
-      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col`}>
+      <main className={`flex-1 min-h-0 ${PAGE_CONTAINER_CLS} px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex flex-col`}>
         <SplitPanel
+          className="flex-1 min-h-0"
           storageKey="productArrivalPage.leftWidth"
           defaultWidth={340}
           minWidth={240}
@@ -403,7 +437,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           dividerColor="sky"
           wrapLeft={false}
           wrapRight={false}
-          leftClassName="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start max-h-none"
+          leftClassName="flex flex-col gap-4 overflow-y-auto"
           mobileRightAsModal={false}
           left={<>
 
