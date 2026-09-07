@@ -14,26 +14,27 @@ export interface StockRow {
   prevStore1Qty?:     number | null;
   prevStore2Qty?:     number | null;
   prevStore3Qty?:     number | null;
-  // ── 추가 입력값 (사용자가 이번 세션에 입고한 수량 입력)
+  // ── 현재 입력값 (서버 로드 시 prev 값으로 pre-fill · 사용자 편집)
   warehouse1AddQty: number | "";
   warehouse2AddQty: number | "";
   store1AddQty:     number | "";
   store2AddQty:     number | "";
   store3AddQty:     number | "";
-  store1Zone:    string | null;
-  store2Zone:    string | null;
-  store3Zone:    string | null;
+  // ── 구역 (매장 + 창고)
+  warehouse1Zone: string | null;
+  warehouse2Zone: string | null;
+  store1Zone:     string | null;
+  store2Zone:     string | null;
+  store3Zone:     string | null;
   lastCheckedAt?: string | null;
   historyCount?: number;
-  // 2026-08-23 · #204 · 개별 저장 완료 여부 · true 시 카드 자동 접힘 (재편집 가능)
   savedThisSession?: boolean;
 }
 
-/** prev + add 합산 · prev 없으면 add 만 · add 없으면 prev 만 */
+/** addQty 가 있으면 그 값(절대값) · 없으면 prev(이전 저장값) */
 export function calcSlotTotal(prev: number | null | undefined, add: number | ""): number {
-  const p = prev != null ? prev : 0;
-  const a = add !== "" ? Number(add) : 0;
-  return p + a;
+  if (add !== "") return Number(add);
+  return prev ?? 0;
 }
 
 /** 합계 셀용 · 5칸 전체 (prev + add) 합산 */

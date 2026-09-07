@@ -178,8 +178,15 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
   // 2026-08-25 · 유통기한 임박 · product.expiry_date 있으면 빨간 강조
   const hasExpiryFlag = !!((row.product as { expiry_date?: string | null }).expiry_date && String((row.product as { expiry_date?: string | null }).expiry_date).trim());
   const rowTotal = calcRowTotal(row);
-  const totalAdded = calcTotalAdded(row); // 실재고 합계 (이번 세션 입력값)
-  const hasAdd = totalAdded > 0 || SLOTS.some(s => row[s.addKey] !== "");
+  const totalAdded = calcTotalAdded(row); // 현재 실재고 합계 (pre-fill 후 = 현재 저장값)
+  // dirty: 입력값이 이전 저장값과 다를 때 저장 버튼 활성화
+  const isDirty = SLOTS.some(s => {
+    const add = row[s.addKey] as number | "";
+    const prev = row[s.prevKey] as number | null | undefined;
+    if (add === "") return false;
+    return Number(add) !== (prev ?? 0);
+  });
+  const hasAdd = isDirty;
   // 2026-08-23 · #204 · 이번 세션에 개별 저장 완료 여부 · 저장 후 카드 자동 접힘
   const savedThisSession = !!row.savedThisSession;
 
@@ -457,70 +464,61 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
         const renderSlot = (s: typeof SLOTS[number], i: number, isStore: boolean) => {
           const prev = row[s.prevKey] as number | null | undefined;
           const add  = row[s.addKey]  as number | "";
-          const tot  = calcSlotTotal(prev, add);
           const hasAddVal = add !== "" && Number(add) !== 0;
           const spec = s.zoneKey ? (specParts[i] ?? "") : "";
-          // 2026-08-31 · #18 · 매장 슬롯 clear · 잘못 추가된 슬롯 정리
           const canClearSlot = isStore && (hasAddVal || (s.zoneKey && !!row[s.zoneKey as keyof StockRow]));
           const clearSlot = () => {
             const patch: Partial<StockRow> = { [s.addKey]: "" as any };
             if (s.zoneKey) (patch as any)[s.zoneKey] = null;
             onPatch(row.key, patch);
           };
+          // 창고 슬롯 zone key
+          const warehouseZoneKey = s.key === "w1" ? "warehouse1Zone" : s.key === "w2" ? "warehouse2Zone" : null;
+          const currentZone = warehouseZoneKey
+            ? (row[warehouseZoneKey as keyof StockRow] as string | null)
+            : (s.zoneKey ? (row[s.zoneKey as keyof StockRow] as string | null) : null);
+
           return (
             <div key={s.key} className={`relative rounded-lg border ${s.softBg} border-zinc-200/70 p-2.5 flex flex-col gap-2`}>
-              {/* 2026-08-31 · #18 · 매장 슬롯 clear × 버튼 · 잘못 추가 정리 · 값·구역 모두 있으면 표시 */}
               {canClearSlot && (
                 <button
                   type="button"
                   onClick={clearSlot}
                   className="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-white/90 border border-zinc-300 hover:bg-rose-500 hover:border-rose-600 hover:text-white text-zinc-500 transition cursor-pointer shadow-sm"
-                  title="이 매장 입력 값 · 구역 초기화 (잘못 추가한 경우)"
+                  title="입력값·구역 초기화"
                   aria-label="슬롯 초기화"
                 >
                   <X size={11} strokeWidth={2.5} />
                 </button>
               )}
-              {/* 슬롯 헤더: 위치명 + 이전 실재고(reference) */}
+              {/* 슬롯 헤더: 위치명 */}
               <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
                 <span className={`w-1.5 h-6 rounded-full ${s.dot} shrink-0 self-center`} />
                 <span className={`text-[16px] font-bold ${s.text} truncate`}>{s.full}</span>
-                {/* 창고 슬롯 · 구역 표시 */}
-                {!isStore && (() => {
-                  const parts = productZone.split("/").map(p => p.trim()).filter(Boolean);
-                  const zoneLabel = s.key === "w1" ? (parts[0] || productZone) : (parts[1] || productZone);
-                  return zoneLabel ? (
-                    <span className="text-[13px] font-semibold text-cyan-700 bg-cyan-50 border border-cyan-200 rounded px-1.5 py-0.5">
-                      {zoneLabel}구역
-                    </span>
-                  ) : null;
-                })()}
-                <span className={`inline-flex items-baseline gap-1 shrink-0 px-2 py-0.5 rounded-md ${prev != null && prev > 0 ? "bg-white/80 border border-zinc-200" : ""}`}>
-                  <span className="text-[15px] font-semibold text-ink-soft">이전</span>
-                  {prev != null
-                    ? <b className={`text-[18px] font-extrabold tabular-nums ${prev > 0 ? s.text : "text-zinc-300"}`}>{prev}</b>
-                    : <span className="text-[16px] text-zinc-300">-</span>}
-                </span>
+                {prev != null && prev !== (add !== "" ? Number(add) : prev) && (
+                  <span className="text-[13px] text-zinc-400 tabular-nums">이전 {prev}</span>
+                )}
               </div>
+              {/* 구역 선택 (창고 + 매장 공통) */}
+              {warehouseZoneKey ? (
+                <ZoneInline
+                  value={currentZone}
+                  onChange={v => onPatch(row.key, { [warehouseZoneKey]: v } as Partial<StockRow>)}
+                />
+              ) : (s.zoneKey && (
+                <ZoneInline
+                  value={currentZone}
+                  onChange={v => onPatch(row.key, { [s.zoneKey!]: v } as Partial<StockRow>)}
+                  erpSpec={spec || undefined}
+                />
+              ))}
               <div className="flex items-center gap-1.5">
                 <StepperInput
                   value={add}
                   onChange={v => onPatch(row.key, { [s.addKey]: v } as Partial<StockRow>)}
-                  placeholder="실재고"
+                  placeholder="실재고 수량"
                 />
-                {add !== "" && (
-                  <span className={`text-[14px] font-bold tabular-nums text-right min-w-[38px] tracking-tight ${Number(add) > 0 ? "text-sky-700" : "text-zinc-400"}`}>
-                    ={Number(add)}
-                  </span>
-                )}
               </div>
-              {isStore && s.zoneKey && (
-                <ZoneInline
-                  value={row[s.zoneKey] as string | null}
-                  onChange={v => onPatch(row.key, { [s.zoneKey!]: v } as Partial<StockRow>)}
-                  erpSpec={spec || undefined}
-                />
-              )}
             </div>
           );
         };

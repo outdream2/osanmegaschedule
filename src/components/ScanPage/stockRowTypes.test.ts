@@ -30,6 +30,8 @@ function makeRow(overrides: Partial<StockRow> = {}): StockRow {
     store1AddQty: "",
     store2AddQty: "",
     store3AddQty: "",
+    warehouse1Zone: null,
+    warehouse2Zone: null,
     store1Zone: null,
     store2Zone: null,
     store3Zone: null,
@@ -37,9 +39,9 @@ function makeRow(overrides: Partial<StockRow> = {}): StockRow {
   };
 }
 
-describe("calcSlotTotal · prev + add 합산", () => {
-  it("prev=5, add=3 · 8", () => {
-    expect(calcSlotTotal(5, 3)).toBe(8);
+describe("calcSlotTotal · add 절대값 · add 없으면 prev", () => {
+  it("prev=5, add=3 · add 절대값 3", () => {
+    expect(calcSlotTotal(5, 3)).toBe(3);
   });
 
   it("prev=null, add=5 · 5", () => {
@@ -50,7 +52,7 @@ describe("calcSlotTotal · prev + add 합산", () => {
     expect(calcSlotTotal(undefined, 2)).toBe(2);
   });
 
-  it("prev=10, add=\"\" · 10", () => {
+  it("prev=10, add=\"\" · prev 사용 10", () => {
     expect(calcSlotTotal(10, "")).toBe(10);
   });
 
@@ -62,8 +64,8 @@ describe("calcSlotTotal · prev + add 합산", () => {
     expect(calcSlotTotal(0, 0)).toBe(0);
   });
 
-  it("음수 add · 지원 (합산 그대로)", () => {
-    expect(calcSlotTotal(5, -2)).toBe(3);
+  it("음수 add · 절대값 반환", () => {
+    expect(calcSlotTotal(5, -2)).toBe(-2);
   });
 });
 
@@ -76,16 +78,16 @@ describe("calcRowTotal · 5칸 전체 합산", () => {
     expect(calcRowTotal(makeRow({ warehouse1AddQty: 3 }))).toBe(3);
   });
 
-  it("prev + add 골고루 · 합산", () => {
+  it("add 있으면 절대값 · add 없으면 prev · 합산", () => {
     const row = makeRow({
-      prevWarehouse1Qty: 10, warehouse1AddQty: 2,
-      prevWarehouse2Qty: 5,  warehouse2AddQty: 1,
-      prevStore1Qty:     3,  store1AddQty:     "",
-      prevStore2Qty:     null, store2AddQty:   4,
-      prevStore3Qty:     null, store3AddQty:   "",
+      prevWarehouse1Qty: 10, warehouse1AddQty: 2,   // add=2 (절대)
+      prevWarehouse2Qty: 5,  warehouse2AddQty: 1,   // add=1 (절대)
+      prevStore1Qty:     3,  store1AddQty:     "",  // add 없음 → prev=3
+      prevStore2Qty:     null, store2AddQty:   4,   // add=4 (절대)
+      prevStore3Qty:     null, store3AddQty:   "",  // add 없음, prev=null → 0
     });
-    // 12 + 6 + 3 + 4 + 0 = 25
-    expect(calcRowTotal(row)).toBe(25);
+    // 2 + 1 + 3 + 4 + 0 = 10
+    expect(calcRowTotal(row)).toBe(10);
   });
 
   it("모든 슬롯 add=1 · 5", () => {

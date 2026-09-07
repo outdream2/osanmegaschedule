@@ -338,9 +338,12 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       return;
     }
 
-    // location 파싱 → 매장1·2·3 구역 자동 배정
+    // location 파싱 → 매장1·2·3 구역 자동 배정 + 창고 구역 파싱
     const rm = (found as any).location ?? (found as any).display_location ?? null;
     const [z1, z2, z3] = parseRealMap(rm);
+    // 창고 구역: location 에서 창고1 코드 (WAREHOUSE_1_CODES) 파싱
+    // 간단히 "/" 분리 후 창고1 여부 판단은 StockRowCard 에서 warehouseZoneMap 으로 처리
+    const rmParts = rm ? String(rm).split("/").map((s: string) => s.trim()).filter(Boolean) : [];
 
     const newRow: StockRow = {
       key: `${result}-${Date.now()}`,
@@ -352,6 +355,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       store1AddQty:     "",
       store2AddQty:     "",
       store3AddQty:     "",
+      warehouse1Zone: rmParts[0] ?? null,
+      warehouse2Zone: rmParts[1] ?? null,
       store1Zone:    z1,
       store2Zone:    z2,
       store3Zone:    z3,
@@ -360,24 +365,20 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     setRows(prev => [newRow, ...prev]);
     setLastAddedKey(newRow.key);
     setSaveStatus("idle");
-    // 2026-08-09 · 사용자 요청 · 스캔 후 중간 팝업(창고1/2·매장1/2/3) 제거
-    // 기존: setScanModal(newRow) · 스캔 즉시 모달 auto-open
-    // 신규: 우측 리스트에 바로 행 추가만 · 사용자가 필요 시 행 클릭으로 상세 보기
 
-    // 기존 실재고 자동 로드 · 신규 컬럼 우선 · 없으면 레거시 fallback
-    // 이력 건수/최근 저장 시각도 함께 저장 (덮어쓰기 confirm · 이력 배지에 사용)
-    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    // 기존 실재고 자동 로드 · pre-fill addQty = prevQty
     api.get<InventoryHistoryRow[]>(`/api/inventory-checks?product_code=${encodeURIComponent(result)}`)
       .then(({ data }) => Array.isArray(data) ? data : [])
       .catch(() => [] as InventoryHistoryRow[])
       .then((list: InventoryHistoryRow[]) => {
         const last = list[0];
         if (!last) {
-          // 이력 없음 · products.current_stock fallback → prevWarehouse1Qty 로 표시
+          // 이력 없음 · products.current_stock fallback
           const fallback = (found as any).current_stock;
-          if (fallback != null && Number(fallback) > 0) {
+          const fb = (fallback != null && Number(fallback) > 0) ? Number(fallback) : null;
+          if (fb != null) {
             setRows(prev => prev.map(r => r.key === newRow.key
-              ? { ...r, prevWarehouse1Qty: Number(fallback) }
+              ? { ...r, prevWarehouse1Qty: fb, warehouse1AddQty: fb }
               : r
             ));
           }
@@ -385,18 +386,28 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         }
         const w1 = last.warehouse1_stock ?? last.warehouse_stock;
         const w2 = last.warehouse2_stock ?? null;
-        const s1 = last.store_stock ?? null;              // 매장1 = store_stock
+        const s1 = last.store_stock ?? null;
         const s2 = last.store_stock_2 ?? null;
         const s3 = last.store3_stock ?? null;
+        const nW1 = w1 != null ? Number(w1) : null;
+        const nW2 = w2 != null ? Number(w2) : null;
+        const nS1 = s1 != null ? Number(s1) : null;
+        const nS2 = s2 != null ? Number(s2) : null;
+        const nS3 = s3 != null ? Number(s3) : null;
         setRows(prev => prev.map(r => r.key === newRow.key
           ? {
               ...r,
-              // 증분 방식 · prev*Qty 에만 이전값 저장 · add*Qty 는 빈 값 유지 (사용자가 신규 입고 수량 입력)
-              prevWarehouse1Qty: w1 != null ? Number(w1) : null,
-              prevWarehouse2Qty: w2 != null ? Number(w2) : null,
-              prevStore1Qty:     s1 != null ? Number(s1) : null,
-              prevStore2Qty:     s2 != null ? Number(s2) : null,
-              prevStore3Qty:     s3 != null ? Number(s3) : null,
+              prevWarehouse1Qty: nW1,
+              prevWarehouse2Qty: nW2,
+              prevStore1Qty:     nS1,
+              prevStore2Qty:     nS2,
+              prevStore3Qty:     nS3,
+              // pre-fill: addQty = prevQty (현재 실재고 입력칸에 표시)
+              warehouse1AddQty: nW1 != null ? nW1 : "",
+              warehouse2AddQty: nW2 != null ? nW2 : "",
+              store1AddQty:     nS1 != null ? nS1 : "",
+              store2AddQty:     nS2 != null ? nS2 : "",
+              store3AddQty:     nS3 != null ? nS3 : "",
               // 저장된 구역 우선 · 없으면 location 기반 유지
               store1Zone: (last.store1_zone ?? r.store1Zone) || null,
               store2Zone: (last.store2_zone ?? r.store2Zone) || null,
@@ -478,7 +489,6 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   const handleSaveRow = useCallback(async (rowKey: string) => {
     const row = rows.find(r => r.key === rowKey);
     if (!row) return;
-    // 실재고 모드 · 직접 입력값 = 실재고 (prev+add 합산 아닌 actual count)
     const hasW1 = row.warehouse1AddQty !== "";
     const hasW2 = row.warehouse2AddQty !== "";
     const hasS1 = row.store1AddQty !== "";
@@ -501,7 +511,23 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           warehouse_stock:  hasW1 ? Number(row.warehouse1AddQty) : null,
         }],
       });
-      setRows(prev => prev.map(r => (r.key === rowKey ? { ...r, savedThisSession: true, lastCheckedAt: new Date().toISOString() } : r)));
+      // 창고 구역 변경 시 products.location 동기화
+      if (row.warehouse1Zone || row.warehouse2Zone) {
+        const zones = [row.warehouse1Zone, row.warehouse2Zone].filter(Boolean).join("/");
+        api.patch(`/api/products/${row.code}`, { location: zones }).catch(() => null);
+      }
+      // 저장 후 prev 갱신 → dirty check 리셋
+      const now2 = new Date().toISOString();
+      setRows(prev => prev.map(r => (r.key === rowKey ? {
+        ...r,
+        savedThisSession: true,
+        lastCheckedAt: now2,
+        prevWarehouse1Qty: row.warehouse1AddQty !== "" ? Number(row.warehouse1AddQty) : r.prevWarehouse1Qty,
+        prevWarehouse2Qty: row.warehouse2AddQty !== "" ? Number(row.warehouse2AddQty) : r.prevWarehouse2Qty,
+        prevStore1Qty:     row.store1AddQty     !== "" ? Number(row.store1AddQty)     : r.prevStore1Qty,
+        prevStore2Qty:     row.store2AddQty     !== "" ? Number(row.store2AddQty)     : r.prevStore2Qty,
+        prevStore3Qty:     row.store3AddQty     !== "" ? Number(row.store3AddQty)     : r.prevStore3Qty,
+      } : r)));
       showToast(`${row.product.name} · 저장 완료`);
     } catch (e: unknown) {
       const msg = e instanceof ApiError ? e.message : (e instanceof Error ? e.message : "저장 실패");

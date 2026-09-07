@@ -13,6 +13,8 @@ import {
   Palette, Gear,
   // 2026-08-25 · 반품 메뉴 신규 (사용자 지시)
   ArrowsLeftRight as ArrowLeftRight,
+  // 2026-09-07 · 실재고 이력조회
+  ClockCounterClockwise,
   type Icon,
 } from "@phosphor-icons/react";
 import type { AppNavPage } from "./AppNavHeader";
@@ -114,6 +116,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       //   · 규칙 고정 · 창고1(6개) · 나머지 모두 창고2 · 수동 편집 불필요
       // 입고알림 · dpCanSeeStockArrivals (level ≥ 3)
       { key: "display", label: "입고알림", icon: Bell, color: "red", subTab: "stock-arrivals", minLevel: 3 },
+      // 2026-09-07 · 실재고 이력조회 페이지
+      { key: "inventory-history", label: "실재고이력", icon: ClockCounterClockwise, color: "red", managerOnly: true },
     ],
   },
   // 2026-09-05 · 사용자 지시 · 거래처 그룹 · 매장 아래 이동 · 관리자에게도 노출

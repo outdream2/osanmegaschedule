@@ -194,48 +194,16 @@ export const SaveCard: React.FC<SaveCardProps> = ({
         : "border-line/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
     }`}>
       {/* 2026-08-25 · 사용자 지시 · 합계 · product_storage.png 톤 (창고 cyan · 매장 violet 파스텔) 적용 */}
-      <div className={`px-5 py-3.5 border-b border-zinc-100/80 flex items-center justify-between gap-2 flex-wrap ${
+      <div className={`px-5 py-3.5 border-b border-zinc-100/80 flex items-center gap-2 ${
         saveStatus === "done" ? "bg-emerald-50/60" : "bg-zinc-50/40"
       }`}>
-        <div className="flex items-center gap-2.5">
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
-            saveStatus === "done" ? "bg-emerald-100" : "bg-zinc-100"
-          }`}>
-            <SaveAll size={14} className={saveStatus === "done" ? "text-emerald-600" : "text-zinc-400"} />
-          </div>
-          <span className="text-[16px] font-bold text-zinc-800">전체 등록</span>
+        <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+          saveStatus === "done" ? "bg-emerald-100" : "bg-zinc-100"
+        }`}>
+          <SaveAll size={14} className={saveStatus === "done" ? "text-emerald-600" : "text-zinc-400"} />
         </div>
-        {(() => {
-          const num = (v: number | null | undefined | "") => (v != null && v !== "" ? Number(v) : 0);
-          const warehouseTotal = rows.reduce((acc, r) =>
-            acc + num(r.prevWarehouse1Qty) + num(r.warehouse1AddQty)
-                + num(r.prevWarehouse2Qty) + num(r.warehouse2AddQty), 0);
-          const storeTotal = rows.reduce((acc, r) =>
-            acc + num(r.prevStore1Qty) + num(r.store1AddQty)
-                + num(r.prevStore2Qty) + num(r.store2AddQty)
-                + num(r.prevStore3Qty) + num(r.store3AddQty), 0);
-          const grandTotal = warehouseTotal + storeTotal;
-          return (
-            <div className="flex items-center gap-1.5 tabular-nums text-[14px] font-bold">
-              <span className="inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-zinc-50 border border-zinc-200 text-zinc-700">
-                <span className="text-[14px] font-semibold text-zinc-500">건수</span>
-                <span>{rows.length}</span>
-              </span>
-              <span className="inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-800" title="창고1 + 창고2 합계">
-                <span className="text-[14px] font-semibold text-cyan-600">창고</span>
-                <span>{warehouseTotal}</span>
-              </span>
-              <span className="inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-violet-50 border border-violet-200 text-violet-800" title="매장1 + 매장2 + 매장3 합계">
-                <span className="text-[14px] font-semibold text-violet-600">매장</span>
-                <span>{storeTotal}</span>
-              </span>
-              <span className="inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-brand-tint border border-brand-deep/20 text-brand-deep" title="창고 + 매장 총합">
-                <span className="text-[14px] font-semibold text-brand-deep/70">총합</span>
-                <span>{grandTotal}</span>
-              </span>
-            </div>
-          );
-        })()}
+        <span className="text-[16px] font-bold text-zinc-800">전체 등록</span>
+        <span className="ml-1 text-[15px] font-semibold text-zinc-500 tabular-nums">{rows.length}건</span>
       </div>
 
       <div className="px-5 py-4 flex flex-col gap-3">
@@ -247,20 +215,37 @@ export const SaveCard: React.FC<SaveCardProps> = ({
           </div>
           <ul className="max-h-[36vh] overflow-auto">
             {rows.map((r, idx) => {
+              const sl = (v: number | "") => v !== "" ? Number(v) : 0;
+              const wh = sl(r.warehouse1AddQty) + sl(r.warehouse2AddQty);
+              const st = sl(r.store1AddQty) + sl(r.store2AddQty) + sl(r.store3AddQty);
               const total = calcRowTotal(r);
-              const location = String((r.product as any).location ?? (r.product as any).display_location ?? "").trim();
+              const w1zone = r.warehouse1Zone;
+              const w2zone = r.warehouse2Zone;
+              const s1zone = r.store1Zone;
               return (
                 <li key={r.key} className="px-3 py-1.5 flex items-center gap-2 text-[14px] hover:bg-white/60 transition-colors">
-                  <span className="w-5 h-5 shrink-0 rounded bg-brand-tint text-brand-deep inline-flex items-center justify-center text-[15px] font-bold tabular-nums">
+                  <span className="w-5 h-5 shrink-0 rounded bg-brand-tint text-brand-deep inline-flex items-center justify-center text-[13px] font-bold tabular-nums">
                     {idx + 1}
                   </span>
                   <span className="min-w-0 flex-1 truncate font-semibold text-ink">{r.product.name}</span>
-                  {location && (
-                    <span className="shrink-0 text-[15px] font-semibold text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded">
-                      {location}
+                  <div className="shrink-0 flex items-center gap-1 tabular-nums text-[14px]">
+                    {wh > 0 && (
+                      <span className="inline-flex items-baseline gap-0.5 px-1.5 py-0.5 rounded bg-cyan-50 border border-cyan-200 text-cyan-800 font-bold" title={[w1zone, w2zone].filter(Boolean).join("/") || "창고"}>
+                        <span className="text-[13px] font-semibold text-cyan-600">창고</span>
+                        {wh}
+                      </span>
+                    )}
+                    {st > 0 && (
+                      <span className="inline-flex items-baseline gap-0.5 px-1.5 py-0.5 rounded bg-violet-50 border border-violet-200 text-violet-800 font-bold" title={s1zone || "매장"}>
+                        <span className="text-[13px] font-semibold text-violet-600">매장</span>
+                        {st}
+                      </span>
+                    )}
+                    <span className="inline-flex items-baseline gap-0.5 px-1.5 py-0.5 rounded bg-brand-tint border border-brand-deep/20 text-brand-deep font-bold">
+                      <span className="text-[13px] font-semibold text-brand-deep/70">합</span>
+                      {total}
                     </span>
-                  )}
-                  <span className="shrink-0 text-[14px] font-bold text-brand-deep tabular-nums">{total}개</span>
+                  </div>
                 </li>
               );
             })}
