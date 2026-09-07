@@ -136,6 +136,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   useEffect(() => {
     try { localStorage.setItem(SK_DP_PRODUCT_INNER_TAB, productInnerTab); } catch { /* noop */ }
   }, [productInnerTab]);
+  // 상품 탭 진입 시 항상 맨 앞 탭(상품정보)으로 리셋
+  useEffect(() => {
+    if (dpSubTab === "product") setProductInnerTab("info");
+  }, [dpSubTab]);
   // 2026-08-29 · #193 · 반품 서브탭 안 · 2개 이너 탭 (반품필요·반품확정)
   const [returnInnerTabDp, setReturnInnerTabDp] = useState<"need" | "confirmed">(() => {
     try {
@@ -607,36 +611,44 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           />
         </main>
       ) : dpSubTab === "return" && dpCanSeeStockManage ? (
-        <main className="flex-1 flex flex-col min-h-0">
-          <TabBar<"need" | "confirmed">
-            level={3}
-            tabs={[
-              { key: "need",      label: "반품필요", icon: RotateCcw,    color: "amber"   },
-              { key: "confirmed", label: "반품확정", icon: CheckCircle2, color: "emerald" },
-            ]}
-            activeKey={returnInnerTabDp}
-            onSelect={setReturnInnerTabDp}
-          />
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="px-4 pt-4 shrink-0">
+            <TabBar<"need" | "confirmed">
+              level={3}
+              tabs={[
+                { key: "need",      label: "반품필요", icon: RotateCcw,    color: "amber"   },
+                { key: "confirmed", label: "반품확정", icon: CheckCircle2, color: "emerald" },
+              ]}
+              activeKey={returnInnerTabDp}
+              onSelect={setReturnInnerTabDp}
+            />
+          </div>
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
-            {returnInnerTabDp === "need" ? <ReturnListPanelLazy /> : <ReturnConfirmedPanelLazy />}
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              {returnInnerTabDp === "need" ? <ReturnListPanelLazy /> : <ReturnConfirmedPanelLazy />}
+            </div>
           </React.Suspense>
         </main>
       ) : dpSubTab === "product" && dpUserLevel >= 2 ? (
-        <main className="flex-1 flex flex-col min-h-0">
-          <TabBar<"info" | "arrival" | "scan">
-            level={3}
-            tabs={[
-              { key: "info",    label: "상품정보",   icon: Info,     color: "sky"    },
-              { key: "arrival", label: "상품입고",   icon: Package2, color: "violet" },
-              { key: "scan",    label: "실재고확인", icon: ScanLine, color: "teal"   },
-            ]}
-            activeKey={productInnerTab}
-            onSelect={setProductInnerTab}
-          />
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="px-4 pt-4 shrink-0">
+            <TabBar<"info" | "arrival" | "scan">
+              level={3}
+              tabs={[
+                { key: "info",    label: "상품정보",   icon: Info,     color: "sky"    },
+                { key: "arrival", label: "상품입고",   icon: Package2, color: "violet" },
+                { key: "scan",    label: "실재고확인", icon: ScanLine, color: "teal"   },
+              ]}
+              activeKey={productInnerTab}
+              onSelect={setProductInnerTab}
+            />
+          </div>
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
-            {productInnerTab === "scan"    && <ScanPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />}
-            {productInnerTab === "arrival" && <ProductArrivalPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />}
-            {productInnerTab === "info"    && <ProductInfoPageLazy authSession={authSession ?? null} />}
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              {productInnerTab === "scan"    && <ScanPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />}
+              {productInnerTab === "arrival" && <ProductArrivalPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />}
+              {productInnerTab === "info"    && <ProductInfoPageLazy authSession={authSession ?? null} />}
+            </div>
           </React.Suspense>
         </main>
       ) : (
