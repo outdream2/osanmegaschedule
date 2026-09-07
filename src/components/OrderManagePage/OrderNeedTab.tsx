@@ -129,9 +129,17 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
   const confirm = useConfirm();
   const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "orderNeed.saleFilter" });
 
+  // 2026-09-07 · 사용자 지시 · 이미 발주요청된 상품은 · 발주필요 리스트에서 자동 제거
+  //   · requestedCodes (order_requests status=requested) 에 있는 코드는 filter out
+  //   · 발주요청 성공 → loadOrderReqs → requestedCodes 갱신 → 자동 사라짐
   const displayed = React.useMemo(
-    () => lowStockFiltered.filter(p => saleMatches(p.sale_status)),
-    [lowStockFiltered, saleMatches]
+    () => lowStockFiltered.filter(p => {
+      if (!saleMatches(p.sale_status)) return false;
+      const code = getCode(p);
+      if (requestedCodes.has(code)) return false;
+      return true;
+    }),
+    [lowStockFiltered, saleMatches, requestedCodes, getCode]
   );
 
   const handleRowClick = React.useCallback(async (p: ProductInfo) => {
