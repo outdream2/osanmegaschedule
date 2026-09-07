@@ -304,7 +304,10 @@ router.get("/api/product-arrivals", asyncHandler(async (req, res) => {
   if (error) throw new HttpError(500, error.message);
 
   const rows = data ?? [];
-  // 그룹핑 · groupId 별로 헤더 집계
+  // 2026-09-07 · 사용자 지시 · 입고내역 UX 재설계
+  //   · 그룹핑 · groupId (verified_at date + verified_by) · 헤더 집계
+  //   · items 필드 추가 · 각 group 내 개별 상품 (product_code · name · qty · verify_status · verified_at)
+  //   · 프론트에서 · 공급사별 아코디언 · chevron 펼침 시 · items 리스트 직접 표시 (모달 불필요)
   const groups = new Map<string, {
     id: string;
     arrival_date: string;
@@ -318,6 +321,17 @@ router.get("/api/product-arrivals", asyncHandler(async (req, res) => {
     final_decision: string | null;
     supplier_summary: string;
     product_names_summary: string;
+    items: Array<{
+      id: number;
+      purchase_date: string | null;
+      product_code: string | null;
+      product_name: string | null;
+      supplier_name: string | null;
+      quantity: number;
+      verify_status: string | null;
+      verified_at: string | null;
+      verified_expiring: boolean;
+    }>;
     note: string | null;
     created_at: string;
     _suppliers: Set<string>;
@@ -340,6 +354,7 @@ router.get("/api/product-arrivals", asyncHandler(async (req, res) => {
       final_decision: null,
       supplier_summary: "",
       product_names_summary: "",
+      items: [],
       note: null,
       created_at: r.verified_at,
       _suppliers: new Set<string>(),
@@ -351,8 +366,18 @@ router.get("/api/product-arrivals", asyncHandler(async (req, res) => {
     if (r.verify_status === "mismatch_noted") g.mismatch_count++;
     if (r.verified_expiring === true) g.expiring_count++;
     if (r.supplier_name) g._suppliers.add(String(r.supplier_name));
-    // 2026-09-07 · 사용자 지시 · 입고내역 · 상품명 표시
     if (r.product_name) g._productNames.push(`${r.product_name}(${r.quantity ?? 0})`);
+    g.items.push({
+      id: r.id,
+      purchase_date: r.purchase_date ?? null,
+      product_code: r.product_code ?? null,
+      product_name: r.product_name ?? null,
+      supplier_name: r.supplier_name ?? null,
+      quantity: Number(r.quantity ?? 0) || 0,
+      verify_status: r.verify_status ?? null,
+      verified_at: r.verified_at ?? null,
+      verified_expiring: r.verified_expiring === true,
+    });
     groups.set(gid, g);
   }
 

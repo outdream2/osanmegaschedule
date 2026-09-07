@@ -28,6 +28,17 @@ const ARRIVAL_DAYS_PRESET: readonly PeriodOption<number>[] = [
 ] as const;
 
 // ─── 입고내역 타입 (기존 inline 정의 이관) ─────────────────────
+export interface ArrivalHistoryItem {
+  id: number;
+  purchase_date: string | null;
+  product_code: string | null;
+  product_name: string | null;
+  supplier_name: string | null;
+  quantity: number;
+  verify_status: string | null;
+  verified_at: string | null;
+  verified_expiring: boolean;
+}
 export interface ArrivalHistoryRow {
   id: number;
   arrival_date: string;
@@ -40,9 +51,10 @@ export interface ArrivalHistoryRow {
   final_decision: string | null;
   supplier_summary: string | null;
   product_names_summary?: string | null;
+  items?: ArrivalHistoryItem[];
   note: string | null;
 }
-export interface ArrivalHistoryDetail extends ArrivalHistoryRow {
+export interface ArrivalHistoryDetail extends Omit<ArrivalHistoryRow, "items"> {
   items: Array<{ id: number; product_code: string | null; product_name: string | null; supplier: string | null; qty: number; status: string }>;
 }
 
@@ -315,67 +327,63 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
                       <StatusPill tone="rose" size="sm" dot>불일치 {g.mismatchCount}</StatusPill>
                     )}
                   </button>
-                  {/* 상세 · 펼침 시 · 각 입고건 (입고번호 부여) */}
+                  {/* 상세 · 2026-09-07 · 사용자 지시 · UX 재설계 · 공급사 chevron 펼치면 · 상품 리스트 직접 표시 */}
                   {isOpen && (
                     <div className="bg-zinc-50/50 border-t border-line/60">
                       <div className="overflow-x-auto">
-                        <table className="w-full text-[14px] border-collapse">
+                        <table className="w-full text-[15px] border-collapse">
                           <thead className="bg-white border-b border-line/60">
                             <tr>
-                              <th className="px-3 py-2 text-left font-bold text-indigo-800 w-28">입고번호</th>
-                              <th className="px-3 py-2 text-left font-bold text-indigo-800 w-32">등록일시</th>
-                              <th className="px-3 py-2 text-left font-bold text-indigo-800 w-24">담당</th>
+                              <th className="px-3 py-2 text-left font-bold text-indigo-800 w-28">매입일</th>
                               <th className="px-3 py-2 text-left font-bold text-indigo-800 min-w-[220px]">상품명</th>
-                              <th className="px-3 py-2 text-right font-bold text-indigo-800 w-16">품목</th>
-                              <th className="px-3 py-2 text-right font-bold text-indigo-800 w-16">수량</th>
-                              <th className="px-3 py-2 text-center font-bold text-emerald-700 w-14">일치</th>
-                              <th className="px-3 py-2 text-center font-bold text-rose-700 w-14">불일치</th>
-                              <th className="px-3 py-2 text-center font-bold text-amber-700 w-16">기한임박</th>
-                              <th className="px-3 py-2 text-center font-bold text-indigo-800 w-24">최종판정</th>
-                              <th className="px-3 py-2 text-center font-bold text-zinc-500 w-24">액션</th>
+                              <th className="px-3 py-2 text-left font-bold text-indigo-800 w-32">상품코드</th>
+                              <th className="px-3 py-2 text-right font-bold text-indigo-800 w-20">수량</th>
+                              <th className="px-3 py-2 text-center font-bold text-indigo-800 w-28">검수</th>
+                              <th className="px-3 py-2 text-left font-bold text-indigo-800 w-32">검수일시</th>
+                              <th className="px-3 py-2 text-left font-bold text-indigo-800 w-24">담당</th>
+                              <th className="px-3 py-2 text-center font-bold text-zinc-500 w-16">액션</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-zinc-100">
-                            {g.arrivals.map((a) => {
-                              const d = new Date(a.arrival_date);
-                              const dateStr = isNaN(d.getTime()) ? "-" : `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-                              const isSelected = selectedArrivalId === a.id;
-                              const arrivalNo = arrivalNoMap.get(a.id) ?? String(a.id);
+                            {/* 공급사에 속한 모든 arrival group 의 items · 매입일 desc */}
+                            {g.arrivals
+                              .flatMap(a => (a.items ?? []).map(it => ({ ...it, _checkedBy: a.checked_by, _arrivalId: a.id })))
+                              .sort((x, y) => String(y.purchase_date ?? "").localeCompare(String(x.purchase_date ?? "")))
+                              .map((it) => {
+                              const vd = it.verified_at ? new Date(it.verified_at) : null;
+                              const verifiedStr = vd && !isNaN(vd.getTime())
+                                ? `${String(vd.getMonth() + 1).padStart(2, "0")}/${String(vd.getDate()).padStart(2, "0")} ${String(vd.getHours()).padStart(2, "0")}:${String(vd.getMinutes()).padStart(2, "0")}`
+                                : "-";
+                              const isMatch = it.verify_status === "verified" && !it.verified_expiring;
+                              const isMismatch = it.verify_status === "mismatch_noted";
                               return (
-                                <tr key={a.id} className={`transition ${isSelected ? "bg-indigo-50/60" : "hover:bg-white"}`}>
-                                  <td className="px-3 py-1.5 text-indigo-700 font-bold tabular-nums text-[15px]">{arrivalNo}</td>
-                                  <td className="px-3 py-1.5 text-zinc-700 tabular-nums font-semibold">{dateStr}</td>
-                                  <td className="px-3 py-1.5 text-zinc-600">{a.checked_by ?? "-"}</td>
-                                  <td className="px-3 py-1.5 text-zinc-700 font-semibold" title={a.product_names_summary ?? ""}>
-                                    <div className="line-clamp-2 break-keep leading-snug">
-                                      {a.product_names_summary || <span className="text-zinc-300">-</span>}
-                                    </div>
+                                <tr key={it.id} className="hover:bg-white transition">
+                                  <td className="px-3 py-1.5 text-zinc-700 tabular-nums font-semibold">{it.purchase_date ?? "-"}</td>
+                                  <td className="px-3 py-1.5 text-ink font-bold">
+                                    {it.product_name || <span className="text-zinc-300">-</span>}
                                   </td>
-                                  <td className="px-3 py-1.5 text-right text-zinc-800 font-bold tabular-nums">{a.total_items}</td>
-                                  <td className="px-3 py-1.5 text-right text-zinc-800 font-bold tabular-nums">{a.total_qty.toLocaleString()}</td>
-                                  <td className="px-3 py-1.5 text-center text-emerald-700 font-bold tabular-nums">{a.match_count}</td>
-                                  <td className="px-3 py-1.5 text-center text-rose-700 font-bold tabular-nums">{a.mismatch_count}</td>
-                                  <td className="px-3 py-1.5 text-center text-amber-700 font-bold tabular-nums">{a.expiring_count}</td>
+                                  <td className="px-3 py-1.5 text-zinc-500 text-[13px] font-mono tabular-nums">{it.product_code ?? "-"}</td>
+                                  <td className="px-3 py-1.5 text-right text-zinc-800 font-bold tabular-nums">{it.quantity.toLocaleString()}</td>
                                   <td className="px-3 py-1.5 text-center">
                                     <StatusPill
-                                      tone={a.final_decision === "all_match" ? "emerald" : a.final_decision === "has_mismatch" ? "rose" : "zinc"}
-                                      size="md"
+                                      tone={isMatch ? "emerald" : isMismatch ? "rose" : "zinc"}
+                                      size="sm"
+                                      dot
                                     >
-                                      {a.final_decision === "all_match" ? "완전일치" : a.final_decision === "has_mismatch" ? "불일치 있음" : "-"}
+                                      {isMatch ? "일치" : isMismatch ? "불일치" : (it.verify_status ?? "-")}
                                     </StatusPill>
+                                    {it.verified_expiring && (
+                                      <span className="ml-1 inline-block text-[12px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1">임박</span>
+                                    )}
                                   </td>
+                                  <td className="px-3 py-1.5 text-zinc-600 tabular-nums">{verifiedStr}</td>
+                                  <td className="px-3 py-1.5 text-zinc-600">{it._checkedBy ?? "-"}</td>
                                   <td className="px-3 py-1.5 text-center">
-                                    <div className="flex items-center justify-center gap-1">
-                                      <button type="button" onClick={() => setSelectedArrivalId(a.id)}
-                                        className="h-7 px-2 rounded-md text-[15px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 cursor-pointer transition">
-                                        상세
-                                      </button>
-                                      <button type="button" onClick={() => deleteArrival(a.id)}
-                                        className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-50 border border-line hover:border-rose-200 cursor-pointer transition"
-                                        title="삭제">
-                                        <Trash2 size={12} />
-                                      </button>
-                                    </div>
+                                    <button type="button" onClick={() => deleteArrival(it._arrivalId)}
+                                      className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-50 border border-line hover:border-rose-200 cursor-pointer transition"
+                                      title="삭제">
+                                      <Trash2 size={12} />
+                                    </button>
                                   </td>
                                 </tr>
                               );
