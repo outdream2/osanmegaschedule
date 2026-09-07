@@ -7,8 +7,13 @@
 
 import React, { useMemo, useState, useRef, useEffect } from "react";
 import ReactDOM from "react-dom";
-import { Package, Save, X } from "lucide-react";
+import {
+  Package, Save, X,
+  Hash, Type, Building2, Layers, Ruler, Tags,
+  MapPin, Coins, ShoppingCart, Award, Factory,
+} from "lucide-react";
 import { Modal } from "../common/Modal";
+import { IconTile } from "../common/IconTile";
 // 2026-08-31 · #42 · 카테고리 검색 → 구역 지정 프리미티브
 import { ZoneCategoryPicker } from "../common/ZoneCategoryPicker";
 import { api, ApiError } from "../../lib/apiClient";
@@ -302,198 +307,200 @@ export const ProductCreateModal: React.FC<Props> = ({
       <Modal
         open={open}
         onClose={submitting ? () => {} : onClose}
+        icon={<IconTile icon={<Package size={16} strokeWidth={2.4} />} tone="brand" size="md" />}
+        titleAccent
         title={
-          <span className="flex items-center gap-2.5">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand-deep/8 text-brand-deep">
-              <Package size={16} strokeWidth={2.4} />
-            </span>
-            <span className="flex flex-col leading-tight">
-              <span className="text-[16px] font-bold text-ink tracking-tight">상품 신규 등록</span>
-              <span className="text-[12px] font-medium text-zinc-400 tracking-tight">필수 항목만 입력해도 등록 가능</span>
-            </span>
+          <span className="flex flex-col leading-tight">
+            <span className="text-[16px] font-bold text-ink tracking-tight">상품 신규 등록</span>
+            <span className="text-[12px] font-medium text-ink-soft tracking-tight mt-0.5">필수 항목만 입력해도 등록 가능</span>
           </span>
         }
         size="3xl"
         bodyPadding="none"
       >
         <form onSubmit={handleSubmit} className="flex flex-col">
-          <div className="max-h-[72vh] overflow-y-auto divide-y divide-zinc-100">
+          <div className="max-h-[72vh] overflow-y-auto bg-[#F7F8FA]">
             {error && (
               <div className="px-5 pt-4">
-                <div className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50/70 px-3.5 py-2.5">
+                <div className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 shadow-[0_1px_2px_rgba(180,65,60,0.08)]">
                   <span className="mt-0.5 inline-block w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
                   <span className="text-[14px] text-rose-700 font-semibold leading-snug">{error}</span>
                 </div>
               </div>
             )}
 
-            {/* 필수 정보 */}
-            <Section title="필수 정보" hint="* 표시는 반드시 입력해야 저장됩니다">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label={lockCode ? "상품코드 (스캔 고정)" : "상품코드"} required>
-                  <input
-                    type="text"
-                    value={form.product_code}
-                    onChange={(e) => set("product_code", e.target.value)}
-                    className={inputCls + (lockCode ? " bg-zinc-50 text-zinc-500 cursor-not-allowed" : "")}
-                    placeholder="예: 20250823001"
-                    maxLength={50}
-                    readOnly={lockCode}
-                    autoFocus={!lockCode}
-                  />
-                </Field>
-                <Field label="상품명" required>
-                  <input
-                    type="text"
-                    value={form.product_name}
-                    onChange={(e) => set("product_name", e.target.value)}
-                    className={inputCls}
-                    placeholder="예: 타이레놀 500mg"
-                    maxLength={200}
-                  />
-                </Field>
-              </div>
-            </Section>
-
-            {/* 분류·공급 */}
-            <Section title="분류·공급">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div ref={supplierWrapRef} className="relative min-w-0">
-                  <Field label="공급사">
+            <div className="p-5 flex flex-col gap-4">
+              {/* 필수 정보 */}
+              <Section title="필수 정보" required>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field icon={<Hash size={12} />} label={lockCode ? "상품코드 (스캔 고정)" : "상품코드"} required>
                     <input
                       type="text"
-                      value={form.supplier}
-                      onChange={(e) => { set("supplier", e.target.value); setSupplierOpen(true); }}
-                      onFocus={() => setSupplierOpen(true)}
+                      value={form.product_code}
+                      onChange={(e) => set("product_code", e.target.value)}
+                      className={inputCls + (lockCode ? " bg-zinc-100 text-zinc-500 cursor-not-allowed" : "")}
+                      placeholder="예: 20250823001"
+                      maxLength={50}
+                      readOnly={lockCode}
+                      autoFocus={!lockCode}
+                    />
+                  </Field>
+                  <Field icon={<Type size={12} />} label="상품명" required>
+                    <input
+                      type="text"
+                      value={form.product_name}
+                      onChange={(e) => set("product_name", e.target.value)}
                       className={inputCls}
-                      placeholder="검색 · 클릭하여 선택"
-                      maxLength={100}
-                      autoComplete="off"
-                    />
-                  </Field>
-                  <PortalDropdown anchorRef={supplierWrapRef} open={supplierOpen && supplierSuggestions.length > 0}>
-                    <div className="rounded-xl border border-zinc-200 bg-white shadow-[0_16px_48px_-12px_rgba(10,46,74,0.18)] max-h-64 overflow-y-auto py-1">
-                      {supplierSuggestions.map(v => (
-                        <button
-                          key={v.id}
-                          type="button"
-                          onClick={() => { set("supplier", v.company_name ?? ""); setSupplierOpen(false); }}
-                          className="w-full text-left px-3 py-2 text-[14px] font-medium text-ink hover:bg-zinc-50 focus:outline-none focus:bg-zinc-50 flex items-center gap-2 transition-colors"
-                        >
-                          <span className="truncate">{v.company_name}</span>
-                          {v.category && <span className="ml-auto text-[12px] text-zinc-400 shrink-0 tracking-tight">{v.category}</span>}
-                        </button>
-                      ))}
-                    </div>
-                  </PortalDropdown>
-                </div>
-                <Field label="분류코드">
-                  <input
-                    type="text"
-                    value={form.category}
-                    onChange={(e) => set("category", e.target.value)}
-                    className={inputCls}
-                    placeholder="예: 감기약"
-                    maxLength={100}
-                  />
-                </Field>
-                <Field label="단위">
-                  <input type="text" value={form.unit} onChange={(e) => set("unit", e.target.value)} className={inputCls} placeholder="개 · 박스 · 정" maxLength={30} />
-                </Field>
-                <Field label="규격">
-                  <input type="text" value={form.spec} onChange={(e) => set("spec", e.target.value)} className={inputCls} placeholder="예: 10정" maxLength={100} />
-                </Field>
-                <div className="relative min-w-0 md:col-span-2">
-                  <Field label={
-                    <span className="flex items-center gap-2">
-                      배치구역
-                      {warehouseTag && (
-                        <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md border tracking-tight ${warehouseTag.cls}`}>
-                          → {warehouseTag.label}
-                        </span>
-                      )}
-                    </span>
-                  }>
-                    <ZoneCategoryPicker
-                      value={form.location}
-                      onChange={(loc) => set("location", loc ?? "")}
+                      placeholder="예: 타이레놀 500mg"
+                      maxLength={200}
                     />
                   </Field>
                 </div>
-              </div>
-            </Section>
-
-            {/* 참조 상품 (동일 분류코드) */}
-            {form.category.trim().length >= 2 && (
-              <Section
-                title="동일 분류 · 참조 상품"
-                hint={refList.length > 0 ? "클릭하면 비어있는 필드에 자동 반영" : undefined}
-                right={<>
-                  <span className="text-[12px] font-semibold text-zinc-400 tabular-nums">{refList.length}건</span>
-                  {refLoading && <Spinner size={11} tone="brand" />}
-                </>}
-              >
-                {refList.length === 0 && !refLoading && (
-                  <div className="text-[13px] text-zinc-400 py-3">해당 분류코드에 등록된 상품이 없습니다</div>
-                )}
-                {refList.length > 0 && (
-                  <div className="max-h-56 overflow-y-auto flex flex-col gap-1.5 -mr-1 pr-1">
-                    {refList.map(r => (
-                      <button
-                        key={r.product_code}
-                        type="button"
-                        onClick={() => applyRefProduct(r)}
-                        className="text-left px-3 py-2 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 hover:border-brand-deep/35 hover:shadow-sm transition cursor-pointer group"
-                        title="클릭 시 빈 필드에만 자동 반영"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-[14px] text-ink flex-1 truncate">{r.product_name}</span>
-                          <span className="text-[12px] text-zinc-400 tabular-nums shrink-0 tracking-tight">{r.product_code}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1 text-[12px] text-zinc-500">
-                          {r.supplier && <span className="truncate">{r.supplier}</span>}
-                          {r.brand && <span className="truncate text-zinc-400">· {r.brand}</span>}
-                          {r.spec && <span className="truncate text-zinc-400">· {r.spec}</span>}
-                          {r.sale_price != null && <span className="ml-auto shrink-0 font-bold tabular-nums text-brand-deep">₩{r.sale_price.toLocaleString()}</span>}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
               </Section>
-            )}
 
-            {/* 가격 */}
-            <Section title="가격">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="판매가">
-                  <PriceInput value={form.sale_price} onChange={(v) => set("sale_price", v)} />
-                </Field>
-                <Field label="매입가">
-                  <PriceInput value={form.purchase_price} onChange={(v) => set("purchase_price", v)} />
-                </Field>
-              </div>
-            </Section>
+              {/* 분류·공급 */}
+              <Section title="분류 · 공급">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div ref={supplierWrapRef} className="relative min-w-0">
+                    <Field icon={<Building2 size={12} />} label="공급사">
+                      <input
+                        type="text"
+                        value={form.supplier}
+                        onChange={(e) => { set("supplier", e.target.value); setSupplierOpen(true); }}
+                        onFocus={() => setSupplierOpen(true)}
+                        className={inputCls}
+                        placeholder="검색 · 클릭하여 선택"
+                        maxLength={100}
+                        autoComplete="off"
+                      />
+                    </Field>
+                    <PortalDropdown anchorRef={supplierWrapRef} open={supplierOpen && supplierSuggestions.length > 0}>
+                      <div className="rounded-xl border border-zinc-200 bg-white shadow-[0_16px_48px_-12px_rgba(10,46,74,0.18)] max-h-64 overflow-y-auto py-1">
+                        {supplierSuggestions.map(v => (
+                          <button
+                            key={v.id}
+                            type="button"
+                            onClick={() => { set("supplier", v.company_name ?? ""); setSupplierOpen(false); }}
+                            className="w-full text-left px-3 py-2 text-[14px] font-medium text-ink hover:bg-zinc-50 focus:outline-none focus:bg-zinc-50 flex items-center gap-2 transition-colors"
+                          >
+                            <span className="truncate">{v.company_name}</span>
+                            {v.category && <span className="ml-auto text-[12px] text-ink-soft shrink-0 tracking-tight">{v.category}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    </PortalDropdown>
+                  </div>
+                  <Field icon={<Tags size={12} />} label="분류코드">
+                    <input
+                      type="text"
+                      value={form.category}
+                      onChange={(e) => set("category", e.target.value)}
+                      className={inputCls}
+                      placeholder="예: 감기약"
+                      maxLength={100}
+                    />
+                  </Field>
+                  <Field icon={<Layers size={12} />} label="단위">
+                    <input type="text" value={form.unit} onChange={(e) => set("unit", e.target.value)} className={inputCls} placeholder="개 · 박스 · 정" maxLength={30} />
+                  </Field>
+                  <Field icon={<Ruler size={12} />} label="규격">
+                    <input type="text" value={form.spec} onChange={(e) => set("spec", e.target.value)} className={inputCls} placeholder="예: 10정" maxLength={100} />
+                  </Field>
+                  <div className="relative min-w-0 md:col-span-2">
+                    <Field icon={<MapPin size={12} />} label={
+                      <span className="flex items-center gap-2">
+                        배치구역
+                        {warehouseTag && (
+                          <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md border tracking-tight ${warehouseTag.cls}`}>
+                            → {warehouseTag.label}
+                          </span>
+                        )}
+                      </span>
+                    }>
+                      <ZoneCategoryPicker
+                        value={form.location}
+                        onChange={(loc) => set("location", loc ?? "")}
+                      />
+                    </Field>
+                  </div>
+                </div>
+              </Section>
 
-            {/* 기타 */}
-            <Section title="기타">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="브랜드">
-                  <input type="text" value={form.brand} onChange={(e) => set("brand", e.target.value)} className={inputCls} placeholder="예: 유한양행" maxLength={100} />
-                </Field>
-                <Field label="제조사">
-                  <input type="text" value={form.manufacturer} onChange={(e) => set("manufacturer", e.target.value)} className={inputCls} placeholder="예: 한미약품" maxLength={100} />
-                </Field>
-              </div>
-            </Section>
+              {/* 참조 상품 (동일 분류코드) */}
+              {form.category.trim().length >= 2 && (
+                <Section
+                  title="동일 분류 · 참조 상품"
+                  right={<>
+                    <span className="text-[12px] font-semibold text-ink-soft tabular-nums bg-zinc-100 rounded-full px-2 py-0.5">{refList.length}건</span>
+                    {refLoading && <Spinner size={11} tone="brand" />}
+                  </>}
+                >
+                  {refList.length === 0 && !refLoading && (
+                    <div className="text-[13px] text-ink-soft py-3">해당 분류코드에 등록된 상품이 없습니다</div>
+                  )}
+                  {refList.length > 0 && (
+                    <>
+                      <p className="text-[12px] text-ink-soft mb-2">클릭하면 비어있는 필드에 자동 반영</p>
+                      <div className="max-h-56 overflow-y-auto flex flex-col gap-1.5 -mr-1 pr-1">
+                        {refList.map(r => (
+                          <button
+                            key={r.product_code}
+                            type="button"
+                            onClick={() => applyRefProduct(r)}
+                            className="text-left px-3 py-2 rounded-lg bg-white hover:bg-brand-tint/30 border border-zinc-200 hover:border-brand hover:shadow-sm transition cursor-pointer"
+                            title="클릭 시 빈 필드에만 자동 반영"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-[14px] text-ink flex-1 truncate">{r.product_name}</span>
+                              <span className="text-[12px] text-ink-soft tabular-nums shrink-0 tracking-tight">{r.product_code}</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 text-[12px] text-ink-soft">
+                              {r.supplier && <span className="truncate">{r.supplier}</span>}
+                              {r.brand && <span className="truncate opacity-70">· {r.brand}</span>}
+                              {r.spec && <span className="truncate opacity-70">· {r.spec}</span>}
+                              {r.sale_price != null && <span className="ml-auto shrink-0 font-bold tabular-nums text-brand-deep">₩{r.sale_price.toLocaleString()}</span>}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </Section>
+              )}
+
+              {/* 가격 */}
+              <Section title="가격">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field icon={<ShoppingCart size={12} />} label="판매가">
+                    <PriceInput value={form.sale_price} onChange={(v) => set("sale_price", v)} />
+                  </Field>
+                  <Field icon={<Coins size={12} />} label="매입가">
+                    <PriceInput value={form.purchase_price} onChange={(v) => set("purchase_price", v)} />
+                  </Field>
+                </div>
+              </Section>
+
+              {/* 기타 */}
+              <Section title="기타">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field icon={<Award size={12} />} label="브랜드">
+                    <input type="text" value={form.brand} onChange={(e) => set("brand", e.target.value)} className={inputCls} placeholder="예: 유한양행" maxLength={100} />
+                  </Field>
+                  <Field icon={<Factory size={12} />} label="제조사">
+                    <input type="text" value={form.manufacturer} onChange={(e) => set("manufacturer", e.target.value)} className={inputCls} placeholder="예: 한미약품" maxLength={100} />
+                  </Field>
+                </div>
+              </Section>
+            </div>
           </div>
 
-          <div className="shrink-0 border-t border-zinc-100 px-5 py-3.5 flex items-center gap-2 bg-white/95 backdrop-blur">
+          {/* 목업 · footer bg-zinc-50 · 우측정렬 */}
+          <div className="shrink-0 border-t border-line px-5 py-3.5 flex items-center gap-2 bg-zinc-50">
             <button
               type="button"
               onClick={handleReset}
               disabled={submitting}
-              className="h-10 px-3.5 rounded-lg text-[14px] font-semibold text-zinc-500 hover:text-ink hover:bg-zinc-50 cursor-pointer disabled:opacity-40 transition-colors"
+              className="h-9 px-3 rounded-[10px] text-[14px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 cursor-pointer disabled:opacity-40 transition-colors"
             >
               초기화
             </button>
@@ -502,14 +509,14 @@ export const ProductCreateModal: React.FC<Props> = ({
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="h-10 px-4 rounded-lg text-[14px] font-semibold text-zinc-600 hover:text-ink bg-white border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 cursor-pointer disabled:opacity-40 inline-flex items-center gap-1.5 transition-colors"
+              className="h-9 px-4 rounded-[10px] text-[14px] font-semibold text-ink bg-white border border-line hover:border-brand hover:text-brand cursor-pointer disabled:opacity-40 inline-flex items-center gap-1.5 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.10)] transition-colors"
             >
               <X size={14} strokeWidth={2.4} /> 취소
             </button>
             <button
               type="submit"
               disabled={!canSubmit}
-              className="h-10 px-5 rounded-lg text-[14px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_1px_2px_rgba(10,46,74,0.16),0_2px_6px_-2px_rgba(10,46,74,0.20)]"
+              className="h-9 px-4 rounded-[10px] text-[14px] font-bold text-white bg-brand-deep hover:bg-brand disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_4px_10px_-4px_rgba(10,46,74,0.4)] hover:shadow-[0_6px_14px_-4px_rgba(10,46,74,0.55)]"
             >
               <Save size={14} strokeWidth={2.5} />
               {submitting ? "등록 중..." : "등록"}
@@ -524,29 +531,36 @@ export const ProductCreateModal: React.FC<Props> = ({
   );
 };
 
-// ─── 재사용 · Section · Field · 입력 스타일 ────────────────────────────
+// ─── 재사용 · Section · Field · 입력 스타일 (목업 UI_MOCKUP_2026-08-21 기준) ─
 const inputCls =
-  "w-full h-10 px-3 rounded-lg border border-zinc-200 bg-white text-[15px] font-medium text-ink placeholder:text-zinc-300 focus:outline-none focus:border-brand-deep focus:ring-4 focus:ring-brand-deep/8 hover:border-zinc-300 transition-colors";
+  "w-full h-10 px-3 rounded-[10px] border border-line bg-white text-[15px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-tint hover:border-zinc-300 transition-colors";
 
 const Section: React.FC<{
   title: string;
-  hint?: string;
+  required?: boolean;
   right?: React.ReactNode;
   children: React.ReactNode;
-}> = ({ title, hint, right, children }) => (
-  <section className="px-5 py-4">
-    <div className="flex items-center gap-2 mb-3">
-      <h3 className="text-[11px] font-bold text-zinc-400 tracking-[0.08em] uppercase">{title}</h3>
-      {hint && <span className="text-[12px] font-medium text-zinc-400 tracking-tight">· {hint}</span>}
+}> = ({ title, required, right, children }) => (
+  <section className="rounded-2xl bg-white border border-line shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.10)] px-5 py-4">
+    <div className="flex items-center gap-2 mb-3.5 pb-2.5 border-b border-line/70">
+      <span className="inline-block w-[3px] h-4 rounded-sm bg-gradient-to-b from-brand-soft to-brand-deep" />
+      <h3 className="text-[15px] font-bold text-ink tracking-tight">{title}</h3>
+      {required && <span className="text-[12px] font-semibold text-rose-500 tracking-tight">* 필수</span>}
       {right && <span className="ml-auto flex items-center gap-1.5">{right}</span>}
     </div>
     {children}
   </section>
 );
 
-const Field: React.FC<{ label: React.ReactNode; required?: boolean; children: React.ReactNode }> = ({ label, required, children }) => (
+const Field: React.FC<{
+  label: React.ReactNode;
+  required?: boolean;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}> = ({ label, required, icon, children }) => (
   <label className="flex flex-col gap-1.5 min-w-0">
-    <span className="text-[13px] font-semibold text-zinc-600 tracking-tight inline-flex items-center gap-1">
+    <span className="text-[13px] font-semibold text-ink tracking-tight inline-flex items-center gap-1.5">
+      {icon && <span className="text-ink-soft">{icon}</span>}
       {label}
       {required && <span className="text-rose-500 font-bold">*</span>}
     </span>
@@ -556,7 +570,7 @@ const Field: React.FC<{ label: React.ReactNode; required?: boolean; children: Re
 
 const PriceInput: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => (
   <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] font-semibold text-zinc-400 pointer-events-none">₩</span>
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] font-semibold text-ink-soft pointer-events-none">₩</span>
     <input
       type="number"
       min={0}
