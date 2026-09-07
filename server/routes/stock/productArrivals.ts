@@ -167,8 +167,10 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
       updatedCount++;
 
       // OCR/엑셀 임포트는 재고 미반영 · 검수 확정 시점에 current_stock += qty 반영
-      if (qty > 0 && currentStock != null) {
-        const newStock = currentStock + qty;
+      // currentStock null = DB 에 값 없음 → 0 으로 취급 (미입력 상품 첫 입고 시 정상 반영)
+      if (qty > 0) {
+        const safeStock = currentStock ?? 0;
+        const newStock = safeStock + qty;
         const prodUpdate: Record<string, any> = { current_stock: newStock };
         if (unitPrice > 0) prodUpdate.purchase_price = unitPrice;
         const { error: stErr } = await supabase
@@ -210,9 +212,10 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
       // 신규 INSERT · 수동 매입 검수 → 재고 반영 필수
       // 2026-09-03 · #107 · 사용자 리포트 · "매장-상품-상품정보 오른쪽정보에 매입시 등록한 정보가 안나와"
       //   · products.purchase_price 도 · 최신 매입 unit_price 로 동기화 (상품정보 페이지 우측 매입가 반영)
-      //   · unit_price > 0 인 경우만 (fallback 0 은 건너뜀)
-      if (qty > 0 && currentStock != null) {
-        const newStock = currentStock + qty;
+      // currentStock null = DB 에 값 없음 → 0 으로 취급 (첫 입고 상품도 재고 반영)
+      if (qty > 0) {
+        const safeStock = currentStock ?? 0;
+        const newStock = safeStock + qty;
         const prodUpdate: Record<string, any> = { current_stock: newStock };
         if (unitPrice > 0) prodUpdate.purchase_price = unitPrice;
         const { error: stErr } = await supabase
