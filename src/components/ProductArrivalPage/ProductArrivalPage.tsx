@@ -172,6 +172,20 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       showToast("등록되지 않은 상품");
       return;
     }
+    // 2026-09-07 · 사용자 지시 · 상품 있지만 분류코드(category_code) 없으면 등록 유도
+    //   · confirm · 취소 시 · 리스트 그냥 추가 · 확인 시 · 상품등록 모달 (분류코드 채워서 재등록)
+    const cat = String((found as any).category ?? (found as any).category_code ?? "").trim();
+    if (!cat && canManageProducts) {
+      const ok = await confirm({
+        title: "비분류 상품",
+        message: `분류코드가 없는 상품입니다.\n#${result}\n${(found as any).name ?? ""}\n\n지금 등록 (분류코드 지정) 하시겠습니까?`,
+      });
+      if (ok) {
+        setNotFoundCode(result);
+        setCreateOpen(true);
+        return;
+      }
+    }
     setLastScannedProduct(found);
     setLastScannedCode(result);
     let addedKey: string;
@@ -766,6 +780,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 setSavedId(j?.id ?? null);
                 setSaveStatus("done");
                 window.dispatchEvent(new Event("product-mutated"));
+                // 2026-09-07 · 사용자 지시 · 입고내역 자동 업데이트 · 저장 후 즉시 리로드
+                void loadArrivals();
                 showToast("DB에 저장 완료");
               } catch (e: unknown) {
                 const msg = e instanceof ApiError ? e.message : (e instanceof Error ? e.message : "저장 실패");

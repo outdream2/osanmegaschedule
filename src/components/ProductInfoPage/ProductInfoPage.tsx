@@ -465,6 +465,17 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
     return () => { alive = false; };
   }, [showError, reloadKey]);
 
+  // 2026-09-07 · 사용자 지시 · 검수 완료 (product-mutated) 후 · 현재고·목록 자동 반영
+  useEffect(() => {
+    const onMutated = () => setReloadKey(k => k + 1);
+    window.addEventListener("product-mutated", onMutated);
+    window.addEventListener("products-map-updated", onMutated);
+    return () => {
+      window.removeEventListener("product-mutated", onMutated);
+      window.removeEventListener("products-map-updated", onMutated);
+    };
+  }, []);
+
   // 2026-08-30 · 사용자 지시 · 판매중/판매중지 3-way 필터 (관리 페이지 · include_inactive=1 로 다 조회)
   const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "productInfo.saleFilter" });
   const filtered = useMemo(() => {
