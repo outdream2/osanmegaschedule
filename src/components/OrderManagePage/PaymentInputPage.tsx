@@ -28,6 +28,7 @@ import { EmptyState } from "../common/EmptyState";
 import { IconTile } from "../common/IconTile";
 import { SplitPanel } from "../common/SplitPanel";
 import { SplitRightTabs } from "../common/SplitRightTabs";
+import { PeriodSelector, PERIOD_MONTHS_EXT_PRESET } from "../common/PeriodSelector";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { Spinner } from "../common/Spinner";
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -97,12 +98,13 @@ const monthKey = (iso: string): string => {
 const monthLabel = (k: string): string => k.slice(2).replace("-", "/"); // "26/08"
 const fmtWon = (n: number): string => n > 0 ? n.toLocaleString() + "원" : "-";
 
-// 최근 12개월 · 빈 달 0 채움
-function build12MonthBuckets(): Array<{ key: string; label: string }> {
+// 2026-09-07 · 사용자 지시 · 기간 필터 대응 · 파라미터화
+function buildMonthBuckets(months: number): Array<{ key: string; label: string }> {
+  const N = months >= 999 ? 12 : Math.max(1, Math.min(24, months));
   const out: Array<{ key: string; label: string }> = [];
   const now = new Date();
   now.setDate(1);
-  for (let i = 11; i >= 0; i--) {
+  for (let i = N - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     out.push({ key: k, label: monthLabel(k) });
@@ -120,6 +122,8 @@ export const PaymentInputPage: React.FC = () => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   // 2026-09-02 · 사용자 지시 · 최근결제내역이 첫 탭 · 기본 선택
   const [rightTab, setRightTab] = useState<RightTab>("payments");
+  // 2026-09-07 · 사용자 지시 · 우측 탭 공통 기간 필터 (1/3/6/12개월/전체)
+  const [rightPeriodMonths, setRightPeriodMonths] = useState<number>(12);
   // 2026-08-26 · P0 fix · 모바일 우측 상세 모달 열림/닫힘 별도 state (기존 rightTab != null 은 항상 true)
   const [mobileDetailOpen, setMobileDetailOpen] = useState<boolean>(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -145,20 +149,22 @@ export const PaymentInputPage: React.FC = () => {
   const selected = useMemo(() => vendors.find(v => v.id === selectedId) ?? null, [vendors, selectedId]);
 
   // 병렬 데이터 로드 · order-history + top-sales + balance
+  // 2026-09-07 · 사용자 지시 · 우측 탭 기간 필터 (rightPeriodMonths) 반영
   const loadSupplierData = useCallback(async (supplierName: string) => {
     setDataLoading(true);
     setDataError(null);
     setOrderHistory([]); setPurchaseDetails([]); setSales([]); setBalance(null); setPayments([]);
     const supEnc = encodeURIComponent(supplierName);
+    // 999 = 전체 · 그 외 · months → days 환산
+    const months = rightPeriodMonths >= 999 ? 120 : rightPeriodMonths;
+    const days = months * 30;
     try {
       const [orderRes, purRes, salesRes, balRes, payRes] = await Promise.allSettled([
-        api.get<{ orders?: OrderHistoryItem[] }>(`/api/order-history?days=365&supplier=${supEnc}`),
-        // 2026-09-07 · 사용자 지시 · 매입내역 · purchase_details 원본 · 최근 12개월
+        api.get<{ orders?: OrderHistoryItem[] }>(`/api/order-history?days=${days}&supplier=${supEnc}`),
         api.get<{ rows?: PurchaseDetailItem[] }>(`/api/purchase-details?supplier=${supEnc}&limit=2000&no_cycle=1`),
-        api.get<{ rows?: SalesItem[] }>(`/api/stock-manage/top-sales?months=12&supplier=${supEnc}&sort=sale&dir=desc&limit=200`),
+        api.get<{ rows?: SalesItem[] }>(`/api/stock-manage/top-sales?months=${months}&supplier=${supEnc}&sort=sale&dir=desc&limit=200`),
         api.get<any>(`/api/supplier-balances`),
-        // 2026-09-02 · #69 · 공급사별 결제 이력
-        api.get<{ rows?: PaymentHistoryItem[] }>(`/api/supplier-payments?supplier=${supEnc}&days=3650`),
+        api.get<{ rows?: PaymentHistoryItem[] }>(`/api/supplier-payments?supplier=${supEnc}&days=${days}`),
       ]);
       if (orderRes.status === "fulfilled") {
         setOrderHistory(Array.isArray(orderRes.value.data?.orders) ? orderRes.value.data.orders : []);
@@ -189,7 +195,7 @@ export const PaymentInputPage: React.FC = () => {
     } finally {
       setDataLoading(false);
     }
-  }, [showError]);
+  }, [showError, rightPeriodMonths]);
 
   useEffect(() => {
     if (selected?.company_name) {
@@ -227,7 +233,7 @@ export const PaymentInputPage: React.FC = () => {
   ), [dbVendorCategories]);
 
   // ─── 집계 · 월별 발주 + 월별 판매 + KPI ───────────────────────────────
-  const buckets = useMemo(() => build12MonthBuckets(), []);
+  const buckets = useMemo(() => buildMonthBuckets(rightPeriodMonths), [rightPeriodMonths]);
 
   const monthlyOrders = useMemo(() => {
     const map = new Map<string, { amount: number; count: number }>();
@@ -363,6 +369,18 @@ export const PaymentInputPage: React.FC = () => {
 
   const rightPane = selected ? (
     <div className="flex flex-col gap-3 h-full overflow-auto p-1">
+      {/* 2026-09-07 · 사용자 지시 · 우측 탭 공통 기간 필터 · 탭 상단 배치 */}
+      <div className="flex items-center gap-2 px-1">
+        <span className="text-[14px] font-semibold text-ink-soft shrink-0">기간</span>
+        <PeriodSelector
+          options={PERIOD_MONTHS_EXT_PRESET}
+          value={rightPeriodMonths}
+          onChange={(v) => setRightPeriodMonths(Number(v))}
+          accent="teal"
+          size="sm"
+          ariaLabel="우측 탭 기간 선택"
+        />
+      </div>
       {/* 2026-09-02 · 사용자 지시 · 최근결제내역 · 발주내역 앞 · 배지 (*건 · *상품) 제거 · 폰트 +2 */}
       <SplitRightTabs
         tabs={[
@@ -430,7 +448,7 @@ export const PaymentInputPage: React.FC = () => {
         // 2026-09-07 · 사용자 지시 · 매입내역 · purchase_details 원본 · 월별 집계 + 최근 리스트
         (() => {
           // 월별 집계
-          const buckets = build12MonthBuckets();
+          const buckets = buildMonthBuckets(rightPeriodMonths);
           const monthMap = new Map<string, number>();
           const monthQtyMap = new Map<string, number>();
           for (const b of buckets) { monthMap.set(b.key, 0); monthQtyMap.set(b.key, 0); }
