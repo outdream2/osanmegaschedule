@@ -88,6 +88,37 @@ export async function sendAlimtalk(payload: AlimtalkPayload): Promise<any> {
 }
 
 /**
+ * SolAPI 단문 SMS · 2026-09-07 · 사용자 지시 · 발주 문자 발송
+ *   · SolAPI Node.js SDK 사용
+ *   · SMS_API_KEY_SECRET 은 SOLAPI 와 동일 (재사용)
+ *   · SOLAPI_SENDER_PHONE 발신
+ */
+export interface SmsPayload {
+  to: string;
+  text: string;
+}
+
+export async function sendSms(payload: SmsPayload): Promise<any> {
+  const missing: string[] = [];
+  if (!process.env.SOLAPI_API_KEY) missing.push("SOLAPI_API_KEY");
+  if (!process.env.SOLAPI_API_SECRET) missing.push("SOLAPI_API_SECRET");
+  if (!process.env.SOLAPI_SENDER_PHONE) missing.push("SOLAPI_SENDER_PHONE");
+  if (missing.length > 0) throw new Error(`SolAPI 미설정 · 환경변수 필요: ${missing.join(", ")}`);
+
+  const { SolapiMessageService } = await import("solapi");
+  const svc = new SolapiMessageService(
+    process.env.SOLAPI_API_KEY!,
+    process.env.SOLAPI_API_SECRET!,
+  );
+  const result = await svc.send({
+    to: payload.to.replace(/[^0-9]/g, ""),
+    from: process.env.SOLAPI_SENDER_PHONE!.replace(/[^0-9]/g, ""),
+    text: payload.text,
+  });
+  return result;
+}
+
+/**
  * 상태 조회 API 핸들러 · GET /api/notification/solapi-status
  *   · UI 에서 SolAPI 설정 여부 확인 · "설정 필요" 배너 표시용
  */

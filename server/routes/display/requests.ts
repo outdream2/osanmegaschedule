@@ -680,26 +680,45 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
         }
       }
     }
+    // 2026-09-07 · SMS 실제 발송 (SolAPI 재사용)
     if (channels.sms) {
-      if (targetPhone && process.env.SMS_API_KEY) {
-        outcomes.push("sms:skipped(gateway-not-installed)");
-        dispatch.sms_status = "not_configured";
-      } else if (!targetPhone) {
+      if (!targetPhone) {
         outcomes.push("sms:no_recipient");
         dispatch.sms_status = "no_recipient";
+      } else if (!process.env.SOLAPI_API_KEY || !process.env.SOLAPI_API_SECRET || !process.env.SOLAPI_SENDER_PHONE) {
+        outcomes.push("sms:no_env");
+        dispatch.sms_status = "no_env";
       } else {
-        outcomes.push("sms:no_gateway_env");
-        dispatch.sms_status = "no_gateway_env";
+        try {
+          const { sendSms } = await import("../../lib/notification/solapiClient.js");
+          const itemsText = items.map((it: any, idx: number) =>
+            `${idx + 1}. ${it.product_name ?? ""} × ${it.order_qty ?? 0}`
+          ).join("\n");
+          const smsBody =
+            `[발주서] ${supName}\n` +
+            `발주번호 ${order_number}\n` +
+            `발주일 ${order_date ?? new Date().toISOString().slice(0, 10)}\n` +
+            `희망 입고일 ${desired_arrival ?? "-"}\n\n` +
+            itemsText +
+            (memo ? `\n\n${memo}` : "");
+          await sendSms({ to: targetPhone, text: smsBody.slice(0, 2000) });
+          outcomes.push("sms:sent");
+          dispatch.sms_status = "sent";
+        } catch (e: any) {
+          outcomes.push(`sms:error(${e?.message ?? "unknown"})`);
+          dispatch.sms_status = "error";
+          console.error(`[bulk-send] SMS 발송 실패 (${supName}):`, e?.message);
+        }
       }
     }
-    // 2026-08-10 · #28 · 카카오톡 알림톡 (SolAPI · env·템플릿·인증 대기)
+    // 2026-09-07 · 카카오 알림톡 실제 발송 (SolAPI · sendAlimtalk 연동)
     if (channels.kakao) {
       if (!targetPhone) {
         outcomes.push("kakao:no_recipient");
         dispatch.kakao_status = "no_recipient";
       } else {
         try {
-          const { getSolApiStatus } = await import("../../lib/notification/solapiClient.js");
+          const { getSolApiStatus, sendAlimtalk } = await import("../../lib/notification/solapiClient.js");
           const solStatus = getSolApiStatus();
           if (!solStatus.configured) {
             outcomes.push(`kakao:no_env(${solStatus.missing.join(",")})`);
@@ -708,13 +727,34 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
             outcomes.push("kakao:no_template");
             dispatch.kakao_status = "no_template";
           } else {
-            // 실제 발송 · 템플릿 있으면 sendAlimtalk 호출
-            outcomes.push("kakao:skipped(template-not-verified)");
-            dispatch.kakao_status = "template_pending";
+            const totalQty = items.reduce((s: number, it: any) => s + (Number(it.order_qty) || 0), 0);
+            const itemsText = items.slice(0, 5).map((it: any, idx: number) =>
+              `${idx + 1}. ${it.product_name ?? ""} × ${it.order_qty ?? 0}`
+            ).join("\n");
+            const more = items.length > 5 ? `\n외 ${items.length - 5}건` : "";
+            await sendAlimtalk({
+              to: targetPhone,
+              templateId: process.env.SOLAPI_KAKAO_TEMPLATE_ORDER,
+              variables: {
+                "#{supplier}": supName,
+                "#{order_number}": String(order_number ?? ""),
+                "#{order_date}": String(order_date ?? new Date().toISOString().slice(0, 10)),
+                "#{desired_arrival}": String(desired_arrival ?? "-"),
+                "#{item_count}": String(items.length),
+                "#{total_qty}": String(totalQty),
+                "#{items}": itemsText + more,
+                "#{memo}": String(memo ?? ""),
+              },
+              fallbackToSms: true,
+              smsText: `[발주] ${supName} · ${order_number} · ${items.length}건`,
+            });
+            outcomes.push("kakao:sent");
+            dispatch.kakao_status = "sent";
           }
         } catch (e: any) {
           outcomes.push(`kakao:error(${e?.message ?? "unknown"})`);
           dispatch.kakao_status = "error";
+          console.error(`[bulk-send] 카카오 알림톡 실패 (${supName}):`, e?.message);
         }
       }
     }
