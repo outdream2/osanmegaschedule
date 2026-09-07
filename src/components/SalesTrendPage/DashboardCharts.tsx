@@ -835,11 +835,11 @@ export interface DashboardChartsProps {
 export const DashboardCharts: React.FC<DashboardChartsProps> = ({ rows, loading = false }) => {
   return (
     <div className="flex flex-col gap-3">
-      {/* Row 1 · 매출 인사이트 · Top 상품·카테고리·이익률 */}
+      {/* Row 1 · 매출 인사이트 · Top판매액 · 급상승Top · 카테고리분포 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <TopSalesChart rows={rows} loading={loading} />
+        <SurgingTopChart rows={rows} loading={loading} />
         <CategoryDistChart rows={rows} loading={loading} />
-        <ProfitDistChart rows={rows} loading={loading} />
       </div>
       {/* Row 2 · 재고·손실·공급사 인사이트 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
@@ -847,9 +847,9 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ rows, loading 
         <SupplierTopChart rows={rows} loading={loading} />
         <StockHealthGauge rows={rows} loading={loading} />
       </div>
-      {/* Row 3 · 급상승·구역별 */}
+      {/* Row 3 · 이익률·구역별 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <SurgingTopChart rows={rows} loading={loading} />
+        <ProfitDistChart rows={rows} loading={loading} />
         <ZoneTopChart rows={rows} loading={loading} />
       </div>
       {/* Row 4 · 상세 분석 · scatter + area */}
