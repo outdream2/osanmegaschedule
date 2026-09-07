@@ -327,12 +327,12 @@ const Top10Card: React.FC<{
   const max = Math.max(...items.map(i => i.value), 1);
   return (
     <div className={`${CARD_BASE} p-3 flex flex-col gap-2`}>
-      <div className="text-[15px] font-bold text-zinc-600 uppercase tracking-wider">{title}</div>
+      <div className="text-[17px] font-bold text-zinc-600 uppercase tracking-wider">{title}</div>
       <div className="flex flex-col gap-1">
         {items.map(it => {
           const pct = (it.value / max) * 100;
           return (
-            <div key={`${it.rank}-${it.name}`} className="flex items-center gap-2 text-[15px]">
+            <div key={`${it.rank}-${it.name}`} className="flex items-center gap-2 text-[17px]">
               <span className={`shrink-0 w-6 h-5 rounded-md flex items-center justify-center font-bold tabular-nums ${
                 it.rank <= 3 ? "bg-amber-100 text-amber-700" : "bg-zinc-100 text-zinc-500"
               }`}>{it.rank}</span>
@@ -343,7 +343,7 @@ const Top10Card: React.FC<{
                 </div>
               </div>
               <span className={`shrink-0 tabular-nums font-bold ${valueColor}`}>{formatValue(it.value)}</span>
-              {it.sub && <span className="shrink-0 text-[14px] text-zinc-400 tabular-nums">{it.sub}</span>}
+              {it.sub && <span className="shrink-0 text-[16px] text-zinc-400 tabular-nums">{it.sub}</span>}
             </div>
           );
         })}
@@ -522,11 +522,11 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
     <div className="flex-1 min-h-0 overflow-auto p-3 flex flex-col gap-3">
       {/* 제목 + 기간 */}
       <div className="flex items-baseline gap-2 px-1">
-        <span className="text-[14px] font-bold text-zinc-700">매입추이 Top 10</span>
+        <span className="text-[16px] font-bold text-zinc-700">매입추이 Top 10</span>
         {dateRange && (
-          <span className="text-[12.5px] text-zinc-400 font-semibold tabular-nums">({dateRange})</span>
+          <span className="text-[14px] text-zinc-400 font-semibold tabular-nums">({dateRange})</span>
         )}
-        <span className="text-[14px] text-zinc-400 tabular-nums ml-auto">{rows.length.toLocaleString()}건</span>
+        <span className="text-[16px] text-zinc-400 tabular-nums ml-auto">{rows.length.toLocaleString()}건</span>
       </div>
       {/* 3-metric 탭 */}
       <div className="flex items-center gap-1 border-b border-zinc-100 pb-0.5">
@@ -540,13 +540,13 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
             <button key={t.k}
               type="button"
               onClick={() => setMetric(t.k)}
-              className={`inline-flex items-center gap-1 h-8 px-3 border-b-2 text-[14px] font-bold cursor-pointer transition ${
+              className={`inline-flex items-center gap-1 h-8 px-3 border-b-2 text-[16px] font-bold cursor-pointer transition ${
                 active ? `${activeCls} bg-white` : "text-zinc-400 border-transparent hover:text-zinc-600"
               }`}
               title={t.hint}
             >
               {t.label}
-              <span className="text-[14px] font-normal text-zinc-400">{t.hint}</span>
+              <span className="text-[16px] font-normal text-zinc-400">{t.hint}</span>
             </button>
           );
         })}

@@ -190,8 +190,8 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
   return (
     <SplitPanel
       key="by-vendor"
-      storageKey="purchaseHistory.byVendor.leftWidth"
-      defaultWidth={380}
+      storageKey="purchaseHistory.byVendor.leftWidth.v2"
+      defaultWidth={typeof window !== "undefined" ? Math.max(320, Math.round(window.innerWidth * 0.5)) : 640}
       minWidth={320}
       maxWidth={1200}
       dividerColor="emerald"
@@ -325,8 +325,8 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
   return (
     <SplitPanel
       key="by-product"
-      storageKey="purchaseHistory.byProduct.leftWidth"
-      defaultWidth={380}
+      storageKey="purchaseHistory.byProduct.leftWidth.v2"
+      defaultWidth={typeof window !== "undefined" ? Math.max(320, Math.round(window.innerWidth * 0.5)) : 640}
       minWidth={320}
       maxWidth={1200}
       dividerColor="sky"

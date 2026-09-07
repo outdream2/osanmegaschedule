@@ -287,7 +287,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
 
       {/* ── KPI 텍스트 줄 (kpis 있을 때만) ── */}
       {kpis != null && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] leading-tight border-t border-zinc-100 pt-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px] leading-tight border-t border-zinc-100 pt-2">
           {/* 누적 매입액 */}
           <span className="inline-flex items-center gap-1.5">
             <span className="text-zinc-400 font-semibold">누적 매입액 (1년)</span>
@@ -306,10 +306,10 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
               : "text-zinc-700"
             }`}>{fmtWon(kpis.thisMonthAmount)}원</span>
             {effectiveVatIncluded === true && (
-              <span className="text-[10.5px] font-semibold text-emerald-700">VAT 포함</span>
+              <span className="text-[12.5px] font-semibold text-emerald-700">VAT 포함</span>
             )}
             {effectiveVatIncluded === false && (
-              <span className="text-[10.5px] font-semibold text-zinc-500">부가세 별도</span>
+              <span className="text-[12.5px] font-semibold text-zinc-500">부가세 별도</span>
             )}
             <span className="text-zinc-400 tabular-nums inline-flex items-center gap-0.5">
               {momIcon}{momText}
@@ -326,7 +326,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
           <span className="text-zinc-200">·</span>
           {/* 활성 상품 */}
           <span className="inline-flex items-center gap-1.5">
-            <Package size={11} className="text-zinc-400 shrink-0" />
+            <Package size={13} className="text-zinc-400 shrink-0" />
             <span className="text-zinc-400 font-semibold">활성 상품</span>
             <span className="tabular-nums font-bold text-zinc-700">
               {kpis.activeSkuCount > 0 ? `${kpis.activeSkuCount.toLocaleString()}종` : "-"}

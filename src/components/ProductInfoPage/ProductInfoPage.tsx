@@ -11,6 +11,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Package, PencilSimple, FloppyDisk, X, ArrowSquareOut,
 } from "@phosphor-icons/react";
+import { Search as SearchIcon } from "lucide-react";
 import { SplitListPanel } from "../common/SplitListPanel";
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
 import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
@@ -533,6 +534,19 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
             <span className="text-[17px] font-bold text-ink">상품정보</span>
           </div>
           <StatusPill tone="sky" size="sm">{filtered.length}건</StatusPill>
+          {/* 검색창 */}
+          <div className="relative flex-1 min-w-[160px] max-w-[260px]">
+            <SearchIcon size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="상품명·코드·공급사 검색"
+              className="w-full h-9 pl-7 pr-3 rounded-lg border border-line bg-zinc-50/60 text-[15px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep focus:bg-white transition-colors"
+            />
+          </div>
+          {/* 판매상태 필터 */}
+          <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
           {canManage && (
             <button
               type="button"
@@ -555,12 +569,6 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
             topAccent
             title="상품정보"
             count={filtered.length}
-            search={search}
-            onSearchChange={setSearch}
-            searchPlaceholder="상품명·코드·공급사 검색"
-            recentSearchScope="productInfo"
-            /* 2026-08-30 · 사용자 지시 · 판매중/판매중지 3-way 필터 · 프리미티브 재사용 */
-            filters={<SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />}
             loading={listLoading}
             empty={!listLoading && filtered.length === 0}
             emptyText={search ? "검색 결과 없음" : "상품이 없습니다"}
