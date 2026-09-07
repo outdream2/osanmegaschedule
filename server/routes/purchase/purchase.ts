@@ -495,6 +495,9 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
     .order("purchase_date", { ascending: false });
 
   if (productCode) q = q.eq("product_code", productCode);
+  // 2026-09-07 · #116 · supplier 파라미터 서버 필터 추가 (기존: 읽고 버림 → 클라이언트만 필터)
+  //   · case-insensitive 정확 매칭 · 클라이언트에서 vat/법인 접두어 정제 후 재필터 (하위 호환)
+  if (supplier) q = (q as any).ilike("supplier_name", supplier);
   if (!seasonMonths) {
     if (from && /^\d{4}-\d{2}-\d{2}$/.test(from)) q = q.gte("purchase_date", from);
     if (to && /^\d{4}-\d{2}-\d{2}$/.test(to)) q = q.lte("purchase_date", to);
