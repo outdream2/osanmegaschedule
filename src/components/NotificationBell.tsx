@@ -1,6 +1,7 @@
 // src/components/NotificationBell.tsx
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { api } from "../lib/apiClient";
 import { TIMING } from "../constants/timing";
 import { useApprovalRefreshListener } from "../lib/approvalEvents";
@@ -195,8 +196,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
 
       {/* 2026-09-03 · 사용자 지시 · 알림내역 · 가운데 모달 (데스크탑·모바일 통일)
            · 이전 · 종 아래 dropdown · 화면 밖으로 나가 안 보임
-           · 이후 · 중앙 fixed · backdrop · max-w-lg */}
-      {open && (
+           · 이후 · 중앙 fixed · backdrop · max-w-lg
+           · 2026-09-07 · createPortal · 사이드바 transform 컨텍스트 탈출 (fixed 위치 오작동 방지) */}
+      {open && createPortal(
         <>
           <div className="fixed inset-0 bg-black/40 z-[69]" onClick={() => setOpen(false)} />
           <Card
@@ -288,7 +290,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
             </div>
           )}
         </Card>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );
