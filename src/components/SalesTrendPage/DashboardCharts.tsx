@@ -37,18 +37,6 @@ const CHART_COLORS = [
   "#84CC16", // lime
 ];
 
-// 카테고리 분류 (LandingPage/공급사에서 추출)
-function classifyCategory(name: string, supplier: string | null): string {
-  const n = String(name ?? "").toLowerCase();
-  const s = String(supplier ?? "").toLowerCase();
-  if (/파스|고약|밴드/.test(n)) return "외용제";
-  if (/스킨|로션|크림|화장|샴푸/.test(n) || /화장품/.test(s)) return "화장품";
-  if (/음료|비타|드링|박카스/.test(n)) return "음료";
-  if (/식품|영양|건강/.test(n)) return "건강식품";
-  if (/마스크|장갑|위생|소독/.test(n)) return "위생용품";
-  if (/타이레놀|해열|진통|감기|알약|정|캡슐/.test(n)) return "일반의약품";
-  return "기타";
-}
 
 // ─── 1. Top 10 판매액 · horizontal bar
 const TopSalesChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ rows, loading }) => {
@@ -115,7 +103,7 @@ const TopSalesChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ r
   );
 };
 
-// ─── 2. 카테고리 분포 · donut
+// ─── 2. 공급사 분포 · donut (공급사별 매출 비중)
 const CategoryDistChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ rows, loading }) => {
   const { data, total } = useMemo(() => {
     const map = new Map<string, number>();
@@ -124,9 +112,9 @@ const CategoryDistChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = 
       const qty = Number(r.sale_qty ?? 0);
       const price = Number(r.sale_price ?? 0);
       if (qty <= 0 || price <= 0) continue;
-      const cat = classifyCategory(String(r.product_name ?? ""), (r as any).supplier);
+      const sup = String(r.supplier ?? "").trim() || "기타";
       const amount = qty * price;
-      map.set(cat, (map.get(cat) ?? 0) + amount);
+      map.set(sup, (map.get(sup) ?? 0) + amount);
       t += amount;
     }
     const sorted = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
@@ -138,7 +126,7 @@ const CategoryDistChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = 
 
   return (
     <ChartCard
-      title="카테고리 분포"
+      title="공급사 분포"
       icon={<PieIcon size={14} className="text-brand-deep" />}
       description={`전체 ${fmtWon(total)}원`}
       loading={loading}
@@ -687,7 +675,158 @@ const StockHealthGauge: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = (
   );
 };
 
-// ─── DashboardCharts · 다중 row grid (7 차트)
+// ─── 9. 급상승 Top 10 · 소진율 기준 (sale_qty / (opening+purchase) × 100)
+const SurgingTopChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ rows, loading }) => {
+  const data = useMemo(() => {
+    return rows
+      .map(r => {
+        const sale = Number(r.sale_qty ?? 0);
+        const avail = Number(r.opening_stock ?? 0) + Number(r.purchase_qty ?? 0);
+        if (sale <= 0 || avail <= 0) return null;
+        const rate = (sale / avail) * 100;
+        return {
+          name: String(r.product_name ?? "").trim(),
+          rate: Math.round(rate),
+          sale,
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null && x.name !== "")
+      .sort((a, b) => b.rate - a.rate)
+      .slice(0, 10)
+      .map((x, i) => ({
+        name: x.name.length > 20 ? x.name.slice(0, 20) + "..." : x.name,
+        fullName: x.name,
+        rate: x.rate,
+        sale: x.sale,
+        color: CHART_COLORS[i % CHART_COLORS.length],
+      }));
+  }, [rows]);
+
+  return (
+    <ChartCard
+      title="급상승 Top 10"
+      icon={<TrendingUp size={14} className="text-emerald-600" />}
+      description="소진율 기준 · 빠르게 팔리는 상품"
+      loading={loading}
+      empty={data.length === 0}
+      emptyMessage="데이터 없음"
+      minHeight={280}
+    >
+      <ResponsiveContainer width="100%" height={280}>
+        <BarChart data={data} layout="vertical" margin={{ top: 4, right: 50, bottom: 4, left: 4 }}>
+          <XAxis type="number" hide domain={[0, 100]} />
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={110}
+            tick={{ fontSize: 11, fill: "#52525b", fontWeight: 600 }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip
+            formatter={(v: any, name: any) => {
+              if (name === "rate") return [`${v}%`, "소진율"];
+              return [v, name];
+            }}
+            labelFormatter={(_: any, payload: any) => payload?.[0]?.payload?.fullName ?? ""}
+            contentStyle={{ background: "white", border: "1px solid #d1fae5", borderRadius: 8, fontSize: 12, boxShadow: "0 4px 12px rgba(16,185,129,0.12)" }}
+          />
+          <Bar dataKey="rate" radius={[0, 4, 4, 0]}>
+            {data.map((d, i) => (
+              <Cell key={i} fill={d.color} />
+            ))}
+            <LabelList
+              dataKey="rate"
+              position="right"
+              formatter={(v: any) => `${v}%`}
+              style={{ fontSize: 10, fontWeight: 700, fill: "#059669" }}
+            />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
+  );
+};
+
+// ─── 10. 구역별 Top 10 · 진열구역별 매출 (location/real_map)
+const ZoneTopChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ rows, loading }) => {
+  const data = useMemo(() => {
+    const map = new Map<string, { amount: number; qty: number }>();
+    for (const r of rows) {
+      const zone = String((r as any).location ?? (r as any).real_map ?? "").trim() || "미지정";
+      const qty = Number(r.sale_qty ?? 0);
+      const price = Number(r.sale_price ?? 0);
+      if (qty <= 0) continue;
+      const cur = map.get(zone) ?? { amount: 0, qty: 0 };
+      cur.amount += qty * (price > 0 ? price : 0);
+      cur.qty += qty;
+      map.set(zone, cur);
+    }
+    return Array.from(map.entries())
+      .filter(([, v]) => v.qty > 0)
+      .sort((a, b) => b[1].amount - a[1].amount)
+      .slice(0, 10)
+      .map(([name, v], i) => ({
+        name,
+        amount: v.amount,
+        qty: v.qty,
+        color: CHART_COLORS[i % CHART_COLORS.length],
+      }));
+  }, [rows]);
+
+  return (
+    <ChartCard
+      title="구역별 Top 10"
+      icon={<Activity size={14} className="text-violet-600" />}
+      description="진열구역 매출 기여도"
+      loading={loading}
+      empty={data.length === 0}
+      emptyMessage="구역 데이터 없음"
+      minHeight={280}
+    >
+      <ResponsiveContainer width="100%" height={280}>
+        <BarChart data={data} margin={{ top: 20, right: 8, bottom: 40, left: 8 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" vertical={false} />
+          <XAxis
+            dataKey="name"
+            angle={-30}
+            textAnchor="end"
+            height={60}
+            interval={0}
+            tick={{ fontSize: 10, fill: "#52525b", fontWeight: 600 }}
+            axisLine={{ stroke: "#e4e4e7" }}
+            tickLine={false}
+          />
+          <YAxis
+            tick={{ fontSize: 10, fill: "#71717a" }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v: any) => {
+              if (v >= 1e8) return `${(v / 1e8).toFixed(0)}억`;
+              if (v >= 1e4) return `${(v / 1e4).toFixed(0)}만`;
+              return String(v);
+            }}
+          />
+          <Tooltip
+            formatter={(v: any, name: any) => {
+              if (name === "amount") return [fmtWon(Number(v)) + "원", "매출"];
+              if (name === "qty") return [`${v}개`, "판매수량"];
+              return [v, name];
+            }}
+            contentStyle={{ background: "white", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
+          />
+          <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
+            {data.map((d, i) => (
+              <Cell key={i} fill={d.color} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
+  );
+};
+
+// ─── DashboardCharts · 다중 row grid (9 차트)
 export interface DashboardChartsProps {
   rows: StockFlowRow[];
   loading?: boolean;
@@ -708,7 +847,12 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ rows, loading 
         <SupplierTopChart rows={rows} loading={loading} />
         <StockHealthGauge rows={rows} loading={loading} />
       </div>
-      {/* Row 3 · 상세 분석 · scatter + area */}
+      {/* Row 3 · 급상승·구역별 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <SurgingTopChart rows={rows} loading={loading} />
+        <ZoneTopChart rows={rows} loading={loading} />
+      </div>
+      {/* Row 4 · 상세 분석 · scatter + area */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <StockVsSalesScatter rows={rows} loading={loading} />
         <PriceBandChart rows={rows} loading={loading} />

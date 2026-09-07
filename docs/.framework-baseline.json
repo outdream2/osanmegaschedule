@@ -1,37 +1,17 @@
 {
-  "created": "2026-09-04",
+  "created": "2026-09-07",
   "version": 1,
-  "totalViolations": 3,
+  "totalViolations": 1,
   "files": {
-    "src/components/OcrPage/RawOcrTable.tsx": {
-      "lines": 801,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/OrderManagePage/PurchaseHistoryTab.tsx": {
-      "lines": 801,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
     "src/components/SalesTrendPage/DashboardCharts.tsx": {
-      "lines": 720,
+      "lines": 865,
       "violations": [
         {
-          "ruleId": "raw-card-wrapper",
+          "ruleId": "large-file-warn",
           "count": 1
         }
       ],
-      "totalWeight": 2
+      "totalWeight": 3
     }
   }
 }

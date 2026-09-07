@@ -69,11 +69,11 @@ export const ChartCard: React.FC<ChartCardProps> = ({
       <div className="flex items-start gap-2 mb-3">
         <span className="shrink-0 mt-0.5">{iconEl}</span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-[15px] font-bold text-ink tracking-tight leading-tight">
+          <h3 className="text-[17px] font-bold text-ink tracking-tight leading-tight">
             {title}
           </h3>
           {description && (
-            <p className="text-[14px] font-medium text-ink-soft mt-0.5 leading-snug">
+            <p className="text-[16px] font-medium text-ink-soft mt-0.5 leading-snug">
               {description}
             </p>
           )}
