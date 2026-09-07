@@ -82,7 +82,7 @@ const NUMBER_KEYS = new Set<EditableKey>(["optimal_stock", "sale_price", "purcha
 const SALE_STATUS_OPTIONS = ["판매중", "판매중지", "숨김"];
 
 const inputCls =
-  "w-full h-8 px-2.5 rounded-md border border-line bg-white text-[15px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors";
+  "w-full h-8 px-2.5 rounded-md border border-line bg-white text-[17px] font-medium text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors";
 
 interface DetailProps {
   product: ProductDetail | null;
@@ -516,7 +516,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
   return (
     <>
       {/* 2026-08-30 · 사용자 지시 · 전체 화면 넓이의 85% · 중앙 정렬 */}
-      <div className={`flex flex-col gap-2 h-full min-h-0 ${PAGE_CONTAINER_CLS}`}>
+      <div className="flex flex-col gap-2 h-full min-h-0 bg-[#F4F7FA] px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
 
         {/* ── 상단 FilterBar (매입이력과 동일 구조) ── */}
         <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2 shrink-0`}>
