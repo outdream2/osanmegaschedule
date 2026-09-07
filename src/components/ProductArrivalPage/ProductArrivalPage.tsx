@@ -122,6 +122,13 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     finally { setArrivalsLoading(false); }
   }, [arrivalDays]);
   useEffect(() => { if (arrivalTab === "history") loadArrivals(); }, [arrivalTab, loadArrivals]);
+  // 2026-09-07 · 사용자 지시 · 입고내역 자동 업데이트 · 어느 탭이든 검수 저장·상품 변경 시 즉시 리로드
+  //   · product-mutated 이벤트 · 검수 저장 (POST /api/product-arrivals) 후 · 자동 dispatch
+  useEffect(() => {
+    const onMutated = () => { void loadArrivals(); };
+    window.addEventListener("product-mutated", onMutated);
+    return () => window.removeEventListener("product-mutated", onMutated);
+  }, [loadArrivals]);
   useEffect(() => {
     if (selectedArrivalId == null) { setArrivalDetail(null); return; }
     setArrivalDetailLoading(true);
