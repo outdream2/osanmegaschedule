@@ -109,6 +109,7 @@ export const RealStockTablePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [noZoneOnly, setNoZoneOnly] = useState(false);
   // 2026-08-28 · 사용자 지시 · 판매중 필터 프레임워크 (D안) · 3-state · localStorage 지속
   //   · 기존 useSaleActiveOnly (전역 KV) → useSaleStatusFilter (페이지 로컬)
   //   · 판매중/판매중지/전체 · Segmented Control · SaleStatusFilter 프리미티브
@@ -224,8 +225,9 @@ export const RealStockTablePage: React.FC = () => {
 
   const filtered = useMemo(() => {
     let list = rows.filter(r => saleMatches(r.sale_status));
+    // 창고 미지정 필터
+    if (noZoneOnly) list = list.filter(r => !r.w1zone && !r.w2zone);
     // 2026-08-29 · 통일 로직 · matchesProductQuery + location 추가 매칭
-    // 2026-08-31 · #11 · 공급사 검색 통합 · matchesSupplierQuery
     const q = search.trim().toLowerCase();
     if (!q) return list;
     return list.filter(r =>
@@ -233,7 +235,7 @@ export const RealStockTablePage: React.FC = () => {
       matchesSupplierQuery({ supplier: (r as any).supplier ?? undefined }, search) ||
       String(r.location ?? "").toLowerCase().includes(q)
     );
-  }, [rows, search, saleMatches]);
+  }, [rows, search, saleMatches, noZoneOnly]);
 
   const { sorted, sortKey, sortDir, toggleSort, setSort } = useSortableTable<Row, SortKey>(filtered, "product_name", CMP, "asc");
 
@@ -553,6 +555,15 @@ export const RealStockTablePage: React.FC = () => {
                   {allExpanded ? "모두 접기" : "모두 펼치기"}
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => setNoZoneOnly(v => !v)}
+                className={`inline-flex items-center gap-1 h-9 px-3 rounded-lg border text-[15px] font-bold transition cursor-pointer ${noZoneOnly ? "bg-rose-500 border-rose-600 text-white shadow-sm" : "bg-white border-line text-zinc-600 hover:border-rose-400 hover:text-rose-600"}`}
+                title="창고 구역 미지정 상품만 표시"
+              >
+                창고 미지정
+                {noZoneOnly && <span className="ml-1 bg-white/20 text-white text-[13px] px-1.5 rounded">{filtered.length}건</span>}
+              </button>
               <button
                 type="button"
                 onClick={load}
