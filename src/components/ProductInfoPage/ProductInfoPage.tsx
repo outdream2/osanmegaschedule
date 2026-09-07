@@ -10,7 +10,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Package, PencilSimple, FloppyDisk, X,
-  ArrowSquareOut,
+  ArrowSquareOut, Cube, Tag, ChartLine,
 } from "@phosphor-icons/react";
 import { SplitListPanel } from "../common/SplitListPanel";
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
@@ -21,6 +21,8 @@ import { ProductCreateModal } from "./ProductCreateModal";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import { EmptyState } from "../common/EmptyState";
+import { GradientAccent } from "../common/GradientAccent";
+import { SectionTitle, StatCard } from "../LandingPage/VendorDetailModal.helpers";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -158,15 +160,15 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
     const v = p[key];
     return v == null || v === "" ? <span className="text-zinc-300">-</span> : <span className="text-ink font-semibold">{String(v)}</span>;
   };
-  const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  const DField = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[15px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
+      <span className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
       <div className="text-[15px]">{children}</div>
     </div>
   );
   const EditField = ({ k, label, type = "text" }: { k: EditableKey; label: string; type?: "text" | "number" }) => (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[15px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
+      <span className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
       {k === "sale_status" ? (
         <select value={val(k)} onChange={(e) => set(k, e.target.value)} className={inputCls}>
           {SALE_STATUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
@@ -188,125 +190,165 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
     if (!sp) return null;
     return Math.round((sp - pp) / sp * 1000) / 10;
   })();
+  const profitColor: "emerald" | "violet" | "rose" =
+    profitRate == null ? "violet" : profitRate >= 30 ? "emerald" : profitRate >= 15 ? "violet" : "rose";
 
   return (
     <>
-      {/* ─── Header ─────────────────────────────────────────────────── */}
-      <div className="px-4 pt-4 pb-2 flex items-center gap-2 border-b border-zinc-100">
-        <span className="text-[15px] font-mono text-zinc-400 bg-zinc-100 rounded px-1.5 py-0.5">#{product.product_code}</span>
-        <div className="flex-1" />
+      {/* ─── Header · VendorDetailModal 패널 스타일 ─────────────────── */}
+      <div className="relative flex items-start justify-between px-5 py-4 border-b border-line bg-white shrink-0 gap-3 sticky top-0 z-10">
+        <GradientAccent size="thin" />
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+            <Package size={18} weight="bold" className="text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[20px] font-bold text-ink leading-tight break-words">
+              {product.product_name || <span className="text-zinc-400">(이름없음)</span>}
+            </div>
+            <div className="flex items-center gap-2.5 mt-1 flex-wrap">
+              <span className="text-[13px] font-mono text-zinc-400 bg-zinc-100 rounded px-1.5 py-0.5">#{product.product_code}</span>
+              {product.supplier && (
+                <button type="button" onClick={() => vendorModal.openVendorInfo(product.supplier!)}
+                  className="inline-flex items-center gap-1 text-[15px] font-semibold text-brand-deep hover:underline cursor-pointer">
+                  {product.supplier}<ArrowSquareOut size={12} />
+                </button>
+              )}
+              {product.category && (
+                <span className="text-[13px] font-semibold text-violet-700 bg-violet-50 border border-violet-200 rounded-md px-1.5 py-0.5">{product.category}</span>
+              )}
+            </div>
+          </div>
+        </div>
         {editing ? (
-          <>
+          <div className="flex items-center gap-1.5 shrink-0">
             <StatusPill tone="amber" size="xs">편집 중</StatusPill>
             <button type="button" onClick={save} disabled={saving}
               className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-brand-deep text-white text-[15px] font-bold hover:bg-[#0d3a5c] disabled:opacity-50 cursor-pointer shadow-sm">
               <FloppyDisk size={13} weight="bold" />{saving ? "저장중" : "저장"}
             </button>
             <button type="button" onClick={cancelEdit} disabled={saving}
-              className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-line text-[15px] font-semibold text-zinc-600 hover:bg-zinc-50 cursor-pointer disabled:opacity-50">
-              <X size={13} />취소
+              className="w-8 h-8 rounded-md border border-line flex items-center justify-center text-zinc-600 hover:bg-zinc-50 cursor-pointer disabled:opacity-50">
+              <X size={13} />
             </button>
-          </>
-        ) : canEdit && (
+          </div>
+        ) : canEdit ? (
           <button type="button" onClick={startEdit}
-            className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-line text-[15px] font-semibold text-brand-deep hover:bg-brand-tint hover:border-brand-deep cursor-pointer transition-colors shadow-sm">
-            <PencilSimple size={13} />수정
+            className="w-8 h-8 rounded-lg bg-white hover:bg-zinc-100 border border-line flex items-center justify-center text-zinc-500 shrink-0 transition cursor-pointer"
+            title="수정">
+            <PencilSimple size={15} />
           </button>
-        )}
+        ) : null}
       </div>
 
-      {/* ─── Fields grid ────────────────────────────────────────────── */}
-      <div className="p-4 grid grid-cols-2 gap-x-6 gap-y-4">
-        {/* 상품명 · full row */}
-        <div className="col-span-2">
-          {editing
-            ? <EditField k="product_name" label="상품명" />
-            : <Field label="상품명"><span className="text-[17px] font-bold text-ink">{product.product_name || <span className="text-zinc-300">-</span>}</span></Field>}
+      {/* ─── KPI 통계 ─── */}
+      <div className="grid grid-cols-3 gap-2 px-4 py-3 bg-zinc-50/60 border-b border-line">
+        <StatCard
+          icon={<Cube size={12} weight="bold" />}
+          color="emerald"
+          label="현재고"
+          value={p.current_stock != null ? `${String(p.current_stock)}개` : "-"}
+          sub={p.optimal_stock != null ? `적정 ${String(p.optimal_stock)}개` : undefined}
+        />
+        <StatCard
+          icon={<Tag size={12} weight="bold" />}
+          color="indigo"
+          label="판매가"
+          value={p.sale_price != null ? `${Number(p.sale_price).toLocaleString()}원` : "-"}
+          sub={p.purchase_price != null ? `매입 ${Number(p.purchase_price).toLocaleString()}원` : undefined}
+        />
+        <StatCard
+          icon={<ChartLine size={12} weight="bold" />}
+          color={profitColor}
+          label="이익율"
+          value={profitRate != null ? `${profitRate}%` : "-"}
+          sub={product.last_purchase_date ? String(product.last_purchase_date).slice(0, 10) : undefined}
+        />
+      </div>
+
+      {/* ─── 본문 ─── */}
+      <div className="p-4 sm:p-5 space-y-6">
+
+        {/* 기본 정보 */}
+        <div className="space-y-3">
+          <SectionTitle title="기본 정보" color="sky" />
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            <div className="col-span-2">
+              {editing ? <EditField k="product_name" label="상품명" /> : (
+                <DField label="상품명"><span className="text-[17px] font-bold text-ink">{product.product_name || <span className="text-zinc-300">-</span>}</span></DField>
+              )}
+            </div>
+            {editing ? <EditField k="supplier" label="공급사" /> : (
+              <DField label="공급사">
+                {product.supplier
+                  ? <button type="button" onClick={() => vendorModal.openVendorInfo(product.supplier!)}
+                      className="inline-flex items-center gap-1 text-brand-deep font-semibold hover:underline cursor-pointer">
+                      {product.supplier}<ArrowSquareOut size={12} />
+                    </button>
+                  : <span className="text-zinc-300">-</span>}
+              </DField>
+            )}
+            {editing ? <EditField k="category" label="카테고리" /> : <DField label="카테고리">{dispVal("category")}</DField>}
+            {editing ? <EditField k="sale_status" label="판매상태" /> : (
+              <DField label="판매상태">
+                {(() => {
+                  const s = String(p.sale_status ?? "");
+                  const tone = s === "판매중" ? "emerald" : s === "판매중지" ? "rose" : "zinc";
+                  return s ? <StatusPill tone={tone} size="sm">{s}</StatusPill> : <span className="text-zinc-300">-</span>;
+                })()}
+              </DField>
+            )}
+            {editing ? <EditField k="barcode" label="바코드" /> : <DField label="바코드">{dispVal("barcode")}</DField>}
+            {editing ? <EditField k="location" label="진열위치" /> : <DField label="진열위치">{dispVal("location")}</DField>}
+            {editing ? <EditField k="unit" label="단위" /> : <DField label="단위">{dispVal("unit")}</DField>}
+            {editing ? <EditField k="spec" label="규격" /> : <DField label="규격">{dispVal("spec")}</DField>}
+            {editing ? <EditField k="brand" label="브랜드" /> : <DField label="브랜드">{dispVal("brand")}</DField>}
+            {editing ? <EditField k="manufacturer" label="제조사" /> : <DField label="제조사">{dispVal("manufacturer")}</DField>}
+          </div>
         </div>
 
-        {/* 공급사 | 카테고리 */}
-        {editing
-          ? <EditField k="supplier" label="공급사" />
-          : <Field label="공급사">
-              {product.supplier
-                ? <button type="button" onClick={() => vendorModal.openVendorInfo(product.supplier!)}
-                    className="inline-flex items-center gap-1 text-brand-deep font-semibold hover:underline cursor-pointer">
-                    {product.supplier}<ArrowSquareOut size={12} />
-                  </button>
+        {/* 가격 · 재고 */}
+        <div className="space-y-3">
+          <SectionTitle title="가격 · 재고" color="emerald" />
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            {editing ? <EditField k="purchase_price" label="매입가 (단가)" type="number" /> : (
+              <DField label="매입가 (단가)">
+                {p.purchase_price != null
+                  ? <span className="tabular-nums font-bold text-amber-700">{Number(p.purchase_price).toLocaleString()}원</span>
+                  : <span className="text-zinc-300">-</span>}
+              </DField>
+            )}
+            {editing ? <EditField k="sale_price" label="판매가" type="number" /> : (
+              <DField label="판매가">
+                {p.sale_price != null
+                  ? <span className="tabular-nums font-bold text-brand-deep">{Number(p.sale_price).toLocaleString()}원</span>
+                  : <span className="text-zinc-300">-</span>}
+              </DField>
+            )}
+            <DField label="이익율">
+              {profitRate != null
+                ? <span className={`tabular-nums font-bold ${profitRate >= 30 ? "text-emerald-600" : profitRate >= 15 ? "text-amber-600" : "text-rose-600"}`}>{profitRate}%</span>
                 : <span className="text-zinc-300">-</span>}
-            </Field>}
-        {editing
-          ? <EditField k="category" label="카테고리" />
-          : <Field label="카테고리">{dispVal("category")}</Field>}
-
-        {/* 바코드 | 판매상태 */}
-        {editing ? <EditField k="barcode" label="바코드" /> : <Field label="바코드">{dispVal("barcode")}</Field>}
-        {editing
-          ? <EditField k="sale_status" label="판매상태" />
-          : <Field label="판매상태">
-              {(() => {
-                const s = String(p.sale_status ?? "");
-                const tone = s === "판매중" ? "emerald" : s === "판매중지" ? "rose" : "zinc";
-                return s ? <StatusPill tone={tone} size="sm">{s}</StatusPill> : <span className="text-zinc-300">-</span>;
-              })()}
-            </Field>}
-
-        {/* 진열위치 | 단위 */}
-        {editing ? <EditField k="location" label="진열위치" /> : <Field label="진열위치">{dispVal("location")}</Field>}
-        {editing ? <EditField k="unit" label="단위" /> : <Field label="단위">{dispVal("unit")}</Field>}
-
-        {/* 매입가 | 판매가 */}
-        {editing
-          ? <EditField k="purchase_price" label="매입가 (단가)" type="number" />
-          : <Field label="매입가 (단가)">
-              {p.purchase_price != null
-                ? <span className="tabular-nums font-bold text-amber-700">{Number(p.purchase_price).toLocaleString()}원</span>
-                : <span className="text-zinc-300">-</span>}
-            </Field>}
-        {editing
-          ? <EditField k="sale_price" label="판매가" type="number" />
-          : <Field label="판매가">
-              {p.sale_price != null
-                ? <span className="tabular-nums font-bold text-brand-deep">{Number(p.sale_price).toLocaleString()}원</span>
-                : <span className="text-zinc-300">-</span>}
-            </Field>}
-
-        {/* 이익율 | 적정재고 */}
-        <Field label="이익율">
-          {profitRate != null
-            ? <span className={`tabular-nums font-bold ${profitRate >= 30 ? "text-emerald-600" : profitRate >= 15 ? "text-amber-600" : "text-rose-600"}`}>{profitRate}%</span>
-            : <span className="text-zinc-300">-</span>}
-        </Field>
-        {editing
-          ? <EditField k="optimal_stock" label="적정재고 (30일)" type="number" />
-          : <Field label="적정재고 (30일)">
-              {p.optimal_stock != null ? <span className="tabular-nums font-semibold">{String(p.optimal_stock)}개</span> : <span className="text-zinc-300">-</span>}
-            </Field>}
-
-        {/* 현재고 | 창고재고 */}
-        <Field label="현재고">
-          {p.current_stock != null ? <span className="tabular-nums font-bold text-brand-deep">{String(p.current_stock)}개</span> : <span className="text-zinc-300">-</span>}
-        </Field>
-        <Field label="창고재고">
-          {p.warehouse_stock != null ? <span className="tabular-nums font-semibold">{String(p.warehouse_stock)}개</span> : <span className="text-zinc-300">-</span>}
-        </Field>
-
-        {/* 매장재고 | 최근매입일 */}
-        <Field label="매장재고">
-          {p.store_stock != null ? <span className="tabular-nums font-semibold">{String(p.store_stock)}개</span> : <span className="text-zinc-300">-</span>}
-        </Field>
-        <Field label="최근매입일">
-          {p.last_purchase_date ? <span className="tabular-nums text-zinc-600">{String(p.last_purchase_date).slice(0, 10)}</span> : <span className="text-zinc-300">-</span>}
-        </Field>
-
-        {/* 규격 | 브랜드 */}
-        {editing ? <EditField k="spec" label="규격" /> : <Field label="규격">{dispVal("spec")}</Field>}
-        {editing ? <EditField k="brand" label="브랜드" /> : <Field label="브랜드">{dispVal("brand")}</Field>}
-
-        {/* 제조사 */}
-        {editing
-          ? <EditField k="manufacturer" label="제조사" />
-          : <Field label="제조사">{dispVal("manufacturer")}</Field>}
+            </DField>
+            {editing ? <EditField k="optimal_stock" label="적정재고 (30일)" type="number" /> : (
+              <DField label="적정재고 (30일)">
+                {p.optimal_stock != null ? <span className="tabular-nums font-semibold">{String(p.optimal_stock)}개</span> : <span className="text-zinc-300">-</span>}
+              </DField>
+            )}
+            <DField label="현재고">
+              {p.current_stock != null ? <span className="tabular-nums font-bold text-brand-deep">{String(p.current_stock)}개</span> : <span className="text-zinc-300">-</span>}
+            </DField>
+            <DField label="창고재고">
+              {p.warehouse_stock != null ? <span className="tabular-nums font-semibold">{String(p.warehouse_stock)}개</span> : <span className="text-zinc-300">-</span>}
+            </DField>
+            <DField label="매장재고">
+              {p.store_stock != null ? <span className="tabular-nums font-semibold">{String(p.store_stock)}개</span> : <span className="text-zinc-300">-</span>}
+            </DField>
+            <DField label="최근매입일">
+              {p.last_purchase_date ? <span className="tabular-nums text-zinc-600">{String(p.last_purchase_date).slice(0, 10)}</span> : <span className="text-zinc-300">-</span>}
+            </DField>
+          </div>
+        </div>
       </div>
 
       {vendorModal.modalElement}
