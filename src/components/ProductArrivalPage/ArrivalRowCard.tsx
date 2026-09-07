@@ -42,9 +42,12 @@ interface ArrivalRowCardProps {
   onRemove: (key: string) => void;
   /** 2026-09-01 · #92 · 구역 변경 핸들러 */
   onSetLocation: (key: string, location: string | null) => void;
-  /** 2026-09-02 · #78 · 사입 단가 · 유통기한 · 사용자 입력 (선택) */
+  /** 사입 단가 (선택) */
   onSetUnitPrice?: (key: string, unitPrice: number | null) => void;
+  /** 유통기한 날짜 (비고란 저장 · 선택 · expiring=true 시 노출) */
   onSetExpiryDate?: (key: string, expiryDate: string | null) => void;
+  /** 유통기한 임박 체크박스 */
+  onSetExpiring?: (key: string, expiring: boolean) => void;
 }
 
 // ─── 구역 인라인 선택 · ArrivalRowCard 전용 (StockRowCard ZoneInline 동일 패턴)
@@ -114,7 +117,7 @@ const ARRIVAL_SLOT_META: Record<ArrivalSlot, { label: string; full: string; dot:
 
 export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
   item, isRecent, onUpdateQty, onSetQty, onSetStatus, onRemove, onSetLocation,
-  onSetUnitPrice, onSetExpiryDate,
+  onSetUnitPrice, onSetExpiryDate, onSetExpiring,
 }) => {
   void onUpdateQty; // pre-existing unused (StepperInput uses onSetQty)
   const d = new Date(item.addedAt);
@@ -328,29 +331,45 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           </button>
         </div>
 
-        {/* 단가 · 필수 / 유통기한 · 선택 */}
-        {(onSetUnitPrice || onSetExpiryDate) && (
-          <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-zinc-100/80">
-            {onSetUnitPrice && (
-              <label className="inline-flex items-center gap-1.5">
-                <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">
-                  단가<span className="text-rose-500 ml-0.5">*</span>
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  value={item.unitPrice ?? ""}
-                  onChange={(e) => onSetUnitPrice(item.key, e.target.value === "" ? null : Number(e.target.value))}
-                  placeholder="0"
-                  className={[
-                    "w-24 h-8 px-2 rounded-md border text-[14px] tabular-nums text-right focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint",
-                    (!item.unitPrice || item.unitPrice <= 0) ? "border-rose-300 bg-rose-50/50" : "border-line",
-                  ].join(" ")}
-                />
-                <span className="text-[15px] text-zinc-400">원</span>
-              </label>
-            )}
-            {onSetExpiryDate && (
+        {/* 단가 + 유통기한 임박 */}
+        {(onSetUnitPrice || onSetExpiring) && (
+          <div className="flex flex-col gap-2 pt-1 border-t border-zinc-100/80">
+            <div className="flex items-center gap-3 flex-wrap">
+              {onSetUnitPrice && (
+                <label className="inline-flex items-center gap-1.5">
+                  <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">
+                    단가<span className="text-rose-500 ml-0.5">*</span>
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={item.unitPrice ?? ""}
+                    onChange={(e) => onSetUnitPrice(item.key, e.target.value === "" ? null : Number(e.target.value))}
+                    placeholder="0"
+                    className={[
+                      "w-24 h-8 px-2 rounded-md border text-[14px] tabular-nums text-right focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint",
+                      (!item.unitPrice || item.unitPrice <= 0) ? "border-rose-300 bg-rose-50/50" : "border-line",
+                    ].join(" ")}
+                  />
+                  <span className="text-[15px] text-zinc-400">원</span>
+                </label>
+              )}
+              {onSetExpiring && (
+                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={item.expiring}
+                    onChange={(e) => onSetExpiring(item.key, e.target.checked)}
+                    className="w-4 h-4 rounded cursor-pointer accent-rose-500"
+                  />
+                  <span className={`text-[14px] font-bold tracking-tight ${item.expiring ? "text-rose-600" : "text-zinc-500"}`}>
+                    유통기한 임박
+                  </span>
+                </label>
+              )}
+            </div>
+            {/* 유통기한 임박 체크 시 날짜 입력 노출 */}
+            {item.expiring && onSetExpiryDate && (
               <label className="inline-flex items-center gap-1.5">
                 <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">유통기한</span>
                 <input

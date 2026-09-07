@@ -4,12 +4,14 @@
 //   · ArrivalHistoryTab · 입고내역 리스트 탭 (기간 필터 · 테이블)
 //   · ArrivalDetailModal · 입고내역 상세 모달 (아이템 리스트 · KPI)
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ShieldCheck, ClipboardX,
   Sparkles, AlertCircle, Package, RefreshCw, Trash2, PackagePlus,
-  ChevronDown, ChevronRight, Building2,
+  ChevronDown, ChevronRight, Building2, Clock, TriangleAlert,
 } from "lucide-react";
+import { api } from "../../lib/apiClient";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { StatusPill } from "../common/StatusPill";
 import { Badge } from "../common/Badge";
 import { Card } from "../common/Card";
@@ -82,7 +84,7 @@ export const FinalDecisionCard: React.FC<FinalDecisionCardProps> = ({
           }`}>
             <ShieldCheck size={14} className={allDecided ? "text-sky-600" : "text-zinc-400"} />
           </div>
-          <span className="text-sm font-bold text-zinc-800">최종 판정 · 등록</span>
+          <span className="text-sm font-bold text-zinc-800">검수완료 및 등록</span>
         </div>
         {allDecided && finalDecision === "all_match" && (
           <StatusPill tone="emerald" size="md" dot>완전 일치</StatusPill>
@@ -142,13 +144,11 @@ export const FinalDecisionCard: React.FC<FinalDecisionCardProps> = ({
             {saveStatus === "done"    && <Sparkles size={16} />}
             {saveStatus === "error"   && <AlertCircle size={16} />}
             {(saveStatus === "idle" && allDecided) && <PackagePlus size={16} />}
-            {!allDecided             ? `${pendingCount}건 상태 지정 필요` :
-             saveStatus === "saving" ? "등록 중..." :
-             saveStatus === "done"   ? `등록 완료 (ID: ${savedId ?? "-"})` :
-             saveStatus === "error"  ? "다시 등록" :
-             finalDecision === "all_match" ? "전체 일치 · 등록" :
-             finalDecision === "has_mismatch" ? "불일치 포함 · 등록" :
-             "등록"}
+            {!allDecided             ? `${pendingCount}건 미완료` :
+             saveStatus === "saving" ? "검수완료 및 등록 중..." :
+             saveStatus === "done"   ? `검수완료 및 등록 완료 (ID: ${savedId ?? "-"})` :
+             saveStatus === "error"  ? "다시 검수완료 및 등록" :
+             "검수완료 및 등록"}
           </span>
         </button>
 
@@ -509,5 +509,189 @@ export const ArrivalDetailModal: React.FC<ArrivalDetailModalProps> = ({
           )}
       </div>
     </Modal>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 4) ExpiryListTab · 유통기한 임박 리스트
+//   · GET /api/product-arrivals/expiring · verified_expiring=true 행
+//   · 남은 기간별 필터 (전체 · 1/2/3/6개월 · 1년)
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface ExpiryRow {
+  id: number;
+  purchase_date: string | null;
+  product_code: string | null;
+  product_name: string | null;
+  supplier_name: string | null;
+  quantity: number | null;
+  unit_price: number | null;
+  verify_note: string | null;
+  verified_at: string | null;
+  verified_by: string | null;
+  expiry_date: string | null; // 서버에서 파싱
+}
+
+type ExpiryPeriod = "전체" | "1개월" | "2개월" | "3개월" | "6개월" | "1년";
+
+const EXPIRY_PERIODS: { label: ExpiryPeriod; days: number | null }[] = [
+  { label: "전체",  days: null },
+  { label: "1개월", days: 30 },
+  { label: "2개월", days: 60 },
+  { label: "3개월", days: 90 },
+  { label: "6개월", days: 180 },
+  { label: "1년",   days: 365 },
+];
+
+function daysRemaining(expiryDate: string | null): number | null {
+  if (!expiryDate) return null;
+  const exp = new Date(expiryDate);
+  if (isNaN(exp.getTime())) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return Math.ceil((exp.getTime() - today.getTime()) / 86_400_000);
+}
+
+function remainingLabel(days: number | null): { text: string; cls: string } {
+  if (days === null) return { text: "-", cls: "text-zinc-400" };
+  if (days < 0)   return { text: `${Math.abs(days)}일 지남`, cls: "text-zinc-400 line-through" };
+  if (days === 0) return { text: "오늘 만료", cls: "text-rose-600 font-bold" };
+  if (days <= 7)  return { text: `${days}일 남음`, cls: "text-rose-600 font-bold" };
+  if (days <= 30) return { text: `${days}일 남음`, cls: "text-amber-600 font-semibold" };
+  return { text: `${days}일 남음`, cls: "text-zinc-600 font-semibold" };
+}
+
+export const ExpiryListTab: React.FC = () => {
+  const [rows, setRows] = useState<ExpiryRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [period, setPeriod] = useState<ExpiryPeriod>("3개월");
+
+  const load = () => {
+    setLoading(true);
+    setError(null);
+    api.get<ExpiryRow[]>("/api/product-arrivals/expiring")
+      .then(({ data }) => setRows(data ?? []))
+      .catch((e: unknown) => setError((e as Error)?.message ?? "불러오기 실패"))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const filtered = useMemo(() => {
+    const p = EXPIRY_PERIODS.find(p => p.label === period);
+    return rows
+      .map(r => ({ ...r, _days: daysRemaining(r.expiry_date) }))
+      .filter(r => {
+        if (p?.days === null) return true;
+        if (r._days === null) return false;
+        return r._days <= p.days;
+      })
+      .sort((a, b) => {
+        if (a._days === null && b._days === null) return 0;
+        if (a._days === null) return 1;
+        if (b._days === null) return -1;
+        return a._days - b._days;
+      });
+  }, [rows, period]);
+
+  return (
+    <div className={`${PAGE_CONTAINER_CLS} px-3 sm:px-4 lg:px-6 py-4 flex flex-col gap-4`}>
+      {/* 헤더 */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center">
+            <Clock size={15} className="text-rose-600" />
+          </div>
+          <div>
+            <div className="text-[17px] font-extrabold text-ink">유통기한 임박 리스트</div>
+            <div className="text-[13px] text-zinc-400 font-medium">{rows.length}건 조회됨</div>
+          </div>
+        </div>
+        <button type="button" onClick={load} disabled={loading}
+          className="ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-line text-[15px] font-bold text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 cursor-pointer transition">
+          <RefreshCw size={12} className={loading ? "animate-spin" : ""} />새로고침
+        </button>
+      </div>
+
+      {/* 기간 필터 */}
+      <Card padding="none" className="inline-flex p-1 self-start flex-wrap gap-0.5">
+        {EXPIRY_PERIODS.map(({ label }) => (
+          <button key={label} type="button" onClick={() => setPeriod(label)}
+            className={`h-8 px-3 rounded-lg text-[15px] font-bold transition cursor-pointer ${
+              period === label
+                ? "bg-rose-500 text-white shadow-sm"
+                : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
+            }`}>{label}</button>
+        ))}
+      </Card>
+
+      {/* 테이블 */}
+      {loading && (
+        <div className="flex items-center justify-center py-16">
+          <div className="text-[15px] text-zinc-400 font-medium">불러오는 중...</div>
+        </div>
+      )}
+      {error && (
+        <div className="text-[15px] text-rose-600 font-semibold px-1">{error}</div>
+      )}
+      {!loading && !error && filtered.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-16 gap-2 text-zinc-400">
+          <Clock size={32} strokeWidth={1.5} />
+          <div className="text-[16px] font-bold">해당 기간 내 유통기한 임박 상품 없음</div>
+        </div>
+      )}
+      {!loading && filtered.length > 0 && (
+        <div className="border border-line rounded-xl overflow-hidden bg-white">
+          <div className="overflow-x-auto">
+            <table className="w-full text-[15px]">
+              <thead>
+                <tr className="border-b border-line bg-zinc-50 text-[13px] font-bold text-zinc-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left min-w-[160px]">상품명</th>
+                  <th className="px-3 py-2 text-left w-28">공급사</th>
+                  <th className="px-3 py-2 text-right w-16">수량</th>
+                  <th className="px-3 py-2 text-center w-28">유통기한</th>
+                  <th className="px-3 py-2 text-center w-28">남은 기간</th>
+                  <th className="px-3 py-2 text-center w-24">입고일</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {filtered.map((r) => {
+                  const rem = remainingLabel(r._days);
+                  const isUrgent = r._days !== null && r._days <= 7;
+                  return (
+                    <tr key={r.id} className={`transition hover:bg-zinc-50 ${isUrgent ? "bg-rose-50/40" : ""}`}>
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-1.5">
+                          {isUrgent && <TriangleAlert size={12} className="text-rose-500 shrink-0" />}
+                          <span className="font-semibold text-ink break-words">{r.product_name ?? "-"}</span>
+                        </div>
+                        {r.product_code && (
+                          <span className="text-[12px] font-mono text-zinc-400 bg-zinc-100 rounded px-1">{r.product_code}</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-[14px] text-zinc-600 whitespace-nowrap">
+                        {r.supplier_name ?? "-"}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums font-bold text-ink">
+                        {r.quantity ?? "-"}
+                      </td>
+                      <td className="px-3 py-2.5 text-center tabular-nums font-semibold text-zinc-700">
+                        {r.expiry_date ?? "-"}
+                      </td>
+                      <td className={`px-3 py-2.5 text-center tabular-nums ${rem.cls}`}>
+                        {rem.text}
+                      </td>
+                      <td className="px-3 py-2.5 text-center text-[13px] text-zinc-400 tabular-nums">
+                        {r.purchase_date ? String(r.purchase_date).slice(0, 10) : "-"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };

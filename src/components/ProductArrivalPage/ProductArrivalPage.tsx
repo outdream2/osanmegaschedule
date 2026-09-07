@@ -53,7 +53,7 @@ import {
 } from "./helpers";
 // 2026-08-22 · Framework Phase 4 · 3섹션 별도 컴포넌트 이관 + 타입
 import {
-  FinalDecisionCard, ArrivalHistoryTab, ArrivalDetailModal,
+  FinalDecisionCard, ArrivalHistoryTab, ArrivalDetailModal, ExpiryListTab,
   type ArrivalHistoryRow, type ArrivalHistoryDetail,
 } from "./ProductArrivalPage.panels";
 
@@ -77,7 +77,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   const confirm = useConfirm();
 
   // 2026-08-03 · 내부 탭 (상품입고 / 입고내역) · 입고내역 로직 · OrderManagePage 에서 이동
-  const [arrivalTab, setArrivalTab]             = useState<"input" | "history">("input");
+  const [arrivalTab, setArrivalTab]             = useState<"input" | "history" | "expiry">("input");
   const [scannerOpen, setScannerOpen]           = useState(false);
   const [mapLoading, setMapLoading]             = useState(false);
   const [items, setItems]                       = useState<ArrivalItem[]>([]);
@@ -240,15 +240,15 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     ));
   };
 
-  // 2026-09-02 · #78 · 단가·유통기한 핸들러 (사용자 지시)
   const setUnitPrice = (key: string, unitPrice: number | null) => {
-    setItems(prev => prev.map(it =>
-      it.key === key ? { ...it, unitPrice } : it
-    ));
+    setItems(prev => prev.map(it => it.key === key ? { ...it, unitPrice } : it));
   };
   const setExpiryDate = (key: string, expiryDate: string | null) => {
+    setItems(prev => prev.map(it => it.key === key ? { ...it, expiryDate } : it));
+  };
+  const setExpiring = (key: string, expiring: boolean) => {
     setItems(prev => prev.map(it =>
-      it.key === key ? { ...it, expiryDate } : it
+      it.key === key ? { ...it, expiring, expiryDate: expiring ? it.expiryDate : null } : it
     ));
   };
 
@@ -366,13 +366,15 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       <div className={`${PAGE_CONTAINER_CLS} px-3 sm:px-4 lg:px-6 pt-3`}>
         <Card padding="none" className="inline-flex p-1">
           {([
-            { k: "input"   as const, label: "상품입고", icon: PackagePlus, color: "sky"    },
-            { k: "history" as const, label: "입고내역", icon: Package,     color: "indigo" },
+            { k: "input"   as const, label: "상품입고",    icon: PackagePlus, color: "sky"    },
+            { k: "history" as const, label: "입고내역",    icon: Package,     color: "indigo" },
+            { k: "expiry"  as const, label: "유통기한 임박", icon: Clock,       color: "rose"   },
           ]).map(({ k, label, icon: Icon, color }) => {
             const active = arrivalTab === k;
-            const activeColor = color === "sky"
-              ? "bg-sky-500 text-white shadow-sm"
-              : "bg-brand-deep text-white shadow-sm";
+            const activeColor =
+              color === "sky"   ? "bg-sky-500 text-white shadow-sm" :
+              color === "rose"  ? "bg-rose-500 text-white shadow-sm" :
+                                  "bg-brand-deep text-white shadow-sm";
             return (
               <button
                 key={k}
@@ -638,6 +640,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     onSetLocation={setLocation}
                     onSetUnitPrice={setUnitPrice}
                     onSetExpiryDate={setExpiryDate}
+                    onSetExpiring={setExpiring}
                   />
                 ))}
               </div>
@@ -711,6 +714,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           deleteArrival={deleteArrival}
         />
       )}
+      {arrivalTab === "expiry" && <ExpiryListTab />}
       <ArrivalDetailModal
         selectedArrivalId={selectedArrivalId}
         arrivalDetail={arrivalDetail}

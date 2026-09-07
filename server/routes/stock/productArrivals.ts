@@ -126,6 +126,8 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
     const expiryDate = (it.expiry_date != null && String(it.expiry_date).trim() !== "")
       ? String(it.expiry_date).trim()
       : null;
+    // expiry_date 컬럼 없음 · verify_note 에 "유통기한: YYYY-MM-DD" 형식으로 저장
+    const expiryNote = expiryDate ? `유통기한: ${expiryDate}` : null;
 
     // 오늘 자 · 이미 매입 원본 있는지 확인 (OCR/엑셀 임포트 등)
     const { data: existing, error: checkErr } = await supabase
@@ -154,7 +156,7 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
         updatePayload.unit_price = Number(it.unit_price);
         updatePayload.amount = Number(it.unit_price) * qty;
       }
-      if (expiryDate) updatePayload.expiry_date = expiryDate;
+      if (expiryNote) updatePayload.verify_note = expiryNote;
 
       const { error: uErr } = await supabase
         .from("purchase_details")
@@ -198,7 +200,7 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
         verified_expiring: isExpiring,
         imported_at: now.toISOString(),
       };
-      if (expiryDate) insertPayload.expiry_date = expiryDate;
+      if (expiryNote) insertPayload.verify_note = expiryNote;
 
       const { error: iErr } = await supabase
         .from("purchase_details")
@@ -433,6 +435,34 @@ router.get("/api/product-arrivals/compare/orders", asyncHandler(async (req, res)
     arrival_count: items.length,
     rows: compareRows,
   });
+}));
+
+// ─────────────────────────────────────────────────────────────────
+// GET /api/product-arrivals/expiring · 유통기한 임박 리스트
+//   · verified_expiring = true AND verify_note LIKE '유통기한:%' 인 행
+//   · 클라이언트에서 남은 기간 계산 · 필터링
+// ─────────────────────────────────────────────────────────────────
+router.get("/api/product-arrivals/expiring", authorize(1), asyncHandler(async (req, res) => {
+  const { data, error } = await supabase
+    .from("purchase_details")
+    .select("id, purchase_date, product_code, product_name, supplier_name, quantity, unit_price, verify_note, verified_at, verified_by, verified_expiring")
+    .eq("verified_expiring", true)
+    .not("verify_note", "is", null)
+    .order("verify_note", { ascending: true })
+    .limit(1000);
+  if (error) throw new HttpError(500, error.message);
+
+  // verify_note 에서 유통기한 파싱 · "유통기한: YYYY-MM-DD" 형식만
+  const rows = (data ?? [])
+    .map((r: any) => {
+      const note = String(r.verify_note ?? "");
+      const match = note.match(/유통기한:\s*(\d{4}-\d{2}-\d{2})/);
+      const expiry_date = match ? match[1] : null;
+      return { ...r, expiry_date };
+    })
+    .filter((r: any) => r.expiry_date !== null);
+
+  res.json(rows);
 }));
 
 // ─────────────────────────────────────────────────────────────────
