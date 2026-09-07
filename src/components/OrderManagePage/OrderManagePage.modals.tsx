@@ -68,7 +68,7 @@ export const OrderManageModals: React.FC<OrderManageModalsProps> = (p) => (
       className="h-[95vh] md:min-h-[85vh] md:max-h-[92vh]"
     >
       {p.supplierInfoModal && (
-        <VendorDetailModal vendor={p.supplierInfoModal} onClose={() => p.setSupplierInfoModal(null)} onSaved={() => p.setSupplierInfoModal(null)} panel />
+        <VendorDetailModal vendor={p.supplierInfoModal} onClose={() => p.setSupplierInfoModal(null)} onSaved={() => {/* 수정 완료 후 모달 유지 · 사용자 직접 닫기 */}} panel />
       )}
     </Modal>
 

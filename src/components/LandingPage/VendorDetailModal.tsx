@@ -205,15 +205,17 @@ export const VendorDetailModal: React.FC<{
   ), [vendor, draft]);
 
   // 2026-08-10 · 자동 저장 · draft 변경 감지 · 800ms debounce · handleSave 호출 · 저장 후 2s 후 msg 사라짐
+  // 2026-09-07 · isDirty 가드 추가 · React18 StrictMode double-invoke 시 첫 렌더 직후 자동저장 방지
   useEffect(() => {
     if (isFirstRenderRef.current) { isFirstRenderRef.current = false; return; }
+    if (!isDirty) return;
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(() => {
       handleSave();
     }, 800);
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft]);
+  }, [draft, isDirty]);
   // saveMsg 2초 후 자동 사라짐
   useEffect(() => {
     if (!saveMsg) return;

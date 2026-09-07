@@ -330,25 +330,25 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
               {row.code}
             </span>
           </div>
-          {/* Row 3: 현재고 · 추가수량 · 합계 (나란히) */}
-          <div className="flex items-center gap-2.5 mt-0.5">
-            <span className="inline-flex items-baseline gap-1">
-              <span className="text-[13px] font-bold text-zinc-800">현재고</span>
-              <span className={`text-[16px] font-extrabold tabular-nums ${rowTotal - totalAdded > 0 ? "text-zinc-700" : "text-zinc-300"}`}>
+          {/* Row 3: 현재고 · 추가수량 · 합계 */}
+          <div className="flex items-center gap-3 mt-1">
+            <span className="inline-flex flex-col items-center leading-none bg-zinc-100/80 rounded-lg px-2.5 py-1.5 min-w-[46px]">
+              <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wide">현재고</span>
+              <span className={`text-[20px] font-extrabold tabular-nums mt-0.5 leading-none ${rowTotal - totalAdded > 0 ? "text-zinc-700" : "text-zinc-300"}`}>
                 {rowTotal - totalAdded}
               </span>
             </span>
-            <span className="text-zinc-300 text-[13px]">·</span>
-            <span className="inline-flex items-baseline gap-1">
-              <span className="text-[13px] font-bold text-zinc-800">추가</span>
-              <span className={`text-[16px] font-extrabold tabular-nums ${totalAdded > 0 ? "text-emerald-600" : "text-zinc-300"}`}>
-                {totalAdded > 0 ? `+${totalAdded}` : totalAdded}
+            <span className="text-zinc-300 text-[16px] font-light">+</span>
+            <span className="inline-flex flex-col items-center leading-none bg-emerald-50 border border-emerald-200/70 rounded-lg px-2.5 py-1.5 min-w-[46px]">
+              <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wide">추가</span>
+              <span className={`text-[20px] font-extrabold tabular-nums mt-0.5 leading-none ${totalAdded > 0 ? "text-emerald-600" : "text-zinc-300"}`}>
+                {totalAdded > 0 ? `+${totalAdded}` : "0"}
               </span>
             </span>
-            <span className="text-zinc-300 text-[13px]">·</span>
-            <span className="inline-flex items-baseline gap-1">
-              <span className="text-[13px] font-bold text-zinc-800">합계</span>
-              <span className={`text-[18px] font-extrabold tabular-nums ${rowTotal > 0 ? "text-brand-deep" : "text-zinc-300"}`}>
+            <span className="text-zinc-300 text-[16px] font-light">=</span>
+            <span className="inline-flex flex-col items-center leading-none bg-brand-deep/10 rounded-lg px-2.5 py-1.5 min-w-[46px]">
+              <span className="text-[11px] font-bold text-brand-deep uppercase tracking-wide">합계</span>
+              <span className={`text-[22px] font-extrabold tabular-nums mt-0.5 leading-none ${rowTotal > 0 ? "text-brand-deep" : "text-zinc-300"}`}>
                 {rowTotal}
               </span>
             </span>
@@ -517,17 +517,11 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
               {w1Slot ? renderSlot(w1Slot, 0, false) : <div />}
               {s1Slot ? renderSlot(s1Slot, STORE_IDX["s1"], true) : <div />}
             </div>
-            {/* Row 2 · 매장2 + 매장3 (있을 때만) */}
+            {/* Row 2 · 매장2 + 매장3 (있을 때만 · 항상 2칸으로 매장1과 너비 동일) */}
             {(s2Slot || s3Slot) && (
-              <div className={`grid gap-2 ${s2Slot && s3Slot ? "grid-cols-2" : "grid-cols-1"}`}>
-                {s2Slot && renderSlot(s2Slot, STORE_IDX["s2"], true)}
-                {s3Slot && renderSlot(s3Slot, STORE_IDX["s3"], true)}
-              </div>
-            )}
-            {/* Row 3 · 창고2 (있을 때만) */}
-            {w2Slot && (
-              <div className="grid grid-cols-1">
-                {renderSlot(w2Slot, 1, false)}
+              <div className="grid grid-cols-2 gap-2">
+                {s2Slot ? renderSlot(s2Slot, STORE_IDX["s2"], true) : <div />}
+                {s3Slot ? renderSlot(s3Slot, STORE_IDX["s3"], true) : null}
               </div>
             )}
             {canAddStore && (
@@ -539,6 +533,12 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
               >
                 + 매장 추가 ({visibleStoreCount}/3)
               </button>
+            )}
+            {/* Row 3 · 창고2 (있을 때만) */}
+            {w2Slot && (
+              <div className="grid grid-cols-1">
+                {renderSlot(w2Slot, 1, false)}
+              </div>
             )}
 
           {/* 액션 · 개별 [저장] 버튼 + StockActionsCell */}
