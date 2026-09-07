@@ -317,9 +317,11 @@ router.get("/api/product-arrivals", asyncHandler(async (req, res) => {
     expiring_count: number;
     final_decision: string | null;
     supplier_summary: string;
+    product_names_summary: string;
     note: string | null;
     created_at: string;
     _suppliers: Set<string>;
+    _productNames: string[];
   }>();
 
   for (const r of rows) {
@@ -337,9 +339,11 @@ router.get("/api/product-arrivals", asyncHandler(async (req, res) => {
       expiring_count: 0,
       final_decision: null,
       supplier_summary: "",
+      product_names_summary: "",
       note: null,
       created_at: r.verified_at,
       _suppliers: new Set<string>(),
+      _productNames: [],
     };
     g.total_items++;
     g.total_qty += Number(r.quantity ?? 0) || 0;
@@ -347,6 +351,8 @@ router.get("/api/product-arrivals", asyncHandler(async (req, res) => {
     if (r.verify_status === "mismatch_noted") g.mismatch_count++;
     if (r.verified_expiring === true) g.expiring_count++;
     if (r.supplier_name) g._suppliers.add(String(r.supplier_name));
+    // 2026-09-07 · 사용자 지시 · 입고내역 · 상품명 표시
+    if (r.product_name) g._productNames.push(`${r.product_name}(${r.quantity ?? 0})`);
     groups.set(gid, g);
   }
 
@@ -354,8 +360,10 @@ router.get("/api/product-arrivals", asyncHandler(async (req, res) => {
     .map(g => ({
       ...g,
       supplier_summary: Array.from(g._suppliers).join(", ").slice(0, 500),
+      product_names_summary: g._productNames.join(" · ").slice(0, 800),
       final_decision: g.mismatch_count > 0 ? "has_mismatch" : (g.total_items > 0 ? "all_match" : null),
       _suppliers: undefined,
+      _productNames: undefined,
     }))
     .sort((a, b) => (a.arrival_date > b.arrival_date ? -1 : 1))
     .slice(0, limit);

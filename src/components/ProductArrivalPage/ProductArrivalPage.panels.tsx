@@ -39,6 +39,7 @@ export interface ArrivalHistoryRow {
   expiring_count: number;
   final_decision: string | null;
   supplier_summary: string | null;
+  product_names_summary?: string | null;
   note: string | null;
 }
 export interface ArrivalHistoryDetail extends ArrivalHistoryRow {
@@ -324,6 +325,7 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
                               <th className="px-3 py-2 text-left font-bold text-indigo-800 w-28">입고번호</th>
                               <th className="px-3 py-2 text-left font-bold text-indigo-800 w-32">등록일시</th>
                               <th className="px-3 py-2 text-left font-bold text-indigo-800 w-24">담당</th>
+                              <th className="px-3 py-2 text-left font-bold text-indigo-800 min-w-[220px]">상품명</th>
                               <th className="px-3 py-2 text-right font-bold text-indigo-800 w-16">품목</th>
                               <th className="px-3 py-2 text-right font-bold text-indigo-800 w-16">수량</th>
                               <th className="px-3 py-2 text-center font-bold text-emerald-700 w-14">일치</th>
@@ -344,6 +346,11 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
                                   <td className="px-3 py-1.5 text-indigo-700 font-bold tabular-nums text-[15px]">{arrivalNo}</td>
                                   <td className="px-3 py-1.5 text-zinc-700 tabular-nums font-semibold">{dateStr}</td>
                                   <td className="px-3 py-1.5 text-zinc-600">{a.checked_by ?? "-"}</td>
+                                  <td className="px-3 py-1.5 text-zinc-700 font-semibold" title={a.product_names_summary ?? ""}>
+                                    <div className="line-clamp-2 break-keep leading-snug">
+                                      {a.product_names_summary || <span className="text-zinc-300">-</span>}
+                                    </div>
+                                  </td>
                                   <td className="px-3 py-1.5 text-right text-zinc-800 font-bold tabular-nums">{a.total_items}</td>
                                   <td className="px-3 py-1.5 text-right text-zinc-800 font-bold tabular-nums">{a.total_qty.toLocaleString()}</td>
                                   <td className="px-3 py-1.5 text-center text-emerald-700 font-bold tabular-nums">{a.match_count}</td>

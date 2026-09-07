@@ -9,33 +9,35 @@
 | 지표 | 값 |
 |---|---:|
 | 스캔 파일 | 797 |
-| 위반 파일 | 3 |
-| 클린 파일 | 794 (100%) |
-| 총 위반 개수 | 3 |
+| 위반 파일 | 4 |
+| 클린 파일 | 793 (99%) |
+| 총 위반 개수 | 4 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
-| `large-file-warn` | 3 | 3 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `large-file-warn` | 4 | 4 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
 | 1 | `src/components/DisplayPage/RealStockTablePage.tsx` | 816 | 3 | large-file-warn(1) |
-| 2 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 947 | 3 | large-file-warn(1) |
-| 3 | `src/components/ScanPage/ScanPage.tsx` | 811 | 3 | large-file-warn(1) |
+| 2 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 863 | 3 | large-file-warn(1) |
+| 3 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 947 | 3 | large-file-warn(1) |
+| 4 | `src/components/ScanPage/ScanPage.tsx` | 814 | 3 | large-file-warn(1) |
 
-## 📝 모든 위반 파일 (3개)
+## 📝 모든 위반 파일 (4개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
 | `src/components/DisplayPage/RealStockTablePage.tsx` | 816 | 3 |
+| `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 863 | 3 |
 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 947 | 3 |
-| `src/components/ScanPage/ScanPage.tsx` | 811 | 3 |
+| `src/components/ScanPage/ScanPage.tsx` | 814 | 3 |
 
 </details>
 
