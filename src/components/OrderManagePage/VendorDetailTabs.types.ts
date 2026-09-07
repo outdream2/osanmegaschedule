@@ -48,9 +48,43 @@ export interface ProductStat {
   latest_unit_price: number;
 }
 
+export interface OrderHistoryItem {
+  id: number | string;
+  product_code: string | null;
+  product_name: string | null;
+  order_qty: number;
+  unit_price: number;
+  line_amount: number;
+  current_stock: number | null;
+}
+
+export interface OrderHistoryGroup {
+  order_number: string | null;
+  order_date: string | null;
+  desired_arrival: string | null;
+  supplier: string;
+  sent_at: string | null;
+  memo: string | null;
+  items: OrderHistoryItem[];
+  total_qty: number;
+  total_amount: number;
+}
+
+export interface SalesTrendRow {
+  period_start_date: string;
+  snapshot_date: string;
+  period_type: string | null;
+  product_count: number;
+  purchase_qty: number;
+  sale_qty: number;
+  closing_stock: number;
+  supply_amount: number;
+  total_amount: number;
+}
+
 export type LedgerSortKey = "date" | "type" | "amount" | "running_balance";
 export type PurchaseSortKey = "date" | "product_name" | "quantity" | "amount";
-export type TabKey = "balance" | "history";
+export type TabKey = "balance" | "order" | "purchase" | "sales";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

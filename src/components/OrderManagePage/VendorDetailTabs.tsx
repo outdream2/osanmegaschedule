@@ -22,8 +22,11 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import { useVendorInfoModal } from "../common/features/VendorInfoModal";
 import { LedgerContent } from "./VendorDetailTabs.ledger";
 import { HistoryContent } from "./VendorDetailTabs.history";
+import { OrderHistoryContent } from "./VendorDetailTabs.orders";
+import { SalesContent } from "./VendorDetailTabs.sales";
 import {
   type LedgerSummary, type PurchaseDetailRow, type TabKey,
+  type OrderHistoryGroup, type SalesTrendRow,
   calcAvgCycle,
 } from "./VendorDetailTabs.types";
 
@@ -44,6 +47,14 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
   // 2026-08-24 · 사용자 지시 · 공급사 정보 수정 · openVendorInfo · [수정] 버튼 wiring
   const { openVendorInfo, modalElement: vendorModalElement } = useVendorInfoModal();
   const [activeTab, setActiveTab] = useState<TabKey>("balance");
+
+  // 발주내역 데이터
+  const [orderGroups, setOrderGroups] = useState<OrderHistoryGroup[]>([]);
+  const [orderLoading, setOrderLoading] = useState(false);
+
+  // 판매내역 데이터
+  const [salesRows, setSalesRows] = useState<SalesTrendRow[]>([]);
+  const [salesLoading, setSalesLoading] = useState(false);
 
   // 기간 필터 (내부 관리)
   const [periodMonths, setPeriodMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
@@ -96,15 +107,40 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
       setDetailRows(Array.isArray(j.rows) ? j.rows : []);
     } catch (e: any) {
       setDetailRows([]);
-      showError(`매입이력 로드 실패: ${e?.message ?? "네트워크 오류"}`);
+      showError(`매입내역 로드 실패: ${e?.message ?? "네트워크 오류"}`);
     } finally { setDetailLoading(false); }
   }, [vendor, days]);
+
+  const loadOrders = useCallback(async () => {
+    if (!vendor) return;
+    setOrderLoading(true);
+    try {
+      const { data: j } = await api.get<any>(`/api/order-history?supplier=${encodeURIComponent(vendor.company_name)}&days=${days}`);
+      setOrderGroups(Array.isArray(j.orders) ? j.orders : []);
+    } catch {
+      setOrderGroups([]);
+    } finally { setOrderLoading(false); }
+  }, [vendor, days]);
+
+  const loadSales = useCallback(async () => {
+    if (!vendor) return;
+    setSalesLoading(true);
+    try {
+      const months = periodSeason ? 12 : (periodMonths === 0 ? 1 : periodMonths);
+      const { data: j } = await api.get<any>(`/api/sales-trend/supplier?name=${encodeURIComponent(vendor.company_name)}&months=${months}`);
+      setSalesRows(Array.isArray(j.rows) ? j.rows : []);
+    } catch {
+      setSalesRows([]);
+    } finally { setSalesLoading(false); }
+  }, [vendor, periodMonths, periodSeason]);
 
   // 공급사/기간 변경 시 재조회
   useEffect(() => {
     loadLedger();
     loadDetail();
-  }, [loadLedger, loadDetail]);
+    loadOrders();
+    loadSales();
+  }, [loadLedger, loadDetail, loadOrders, loadSales]);
 
   // KPI 계산 (ledger 기반)
   const kpi = useMemo<VendorKpi>(() => {
@@ -146,7 +182,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
     };
   }, [ledger, detailRows]);
 
-  const isLoading = ledgerLoading || detailLoading;
+  const isLoading = ledgerLoading || detailLoading || orderLoading || salesLoading;
 
   return (
     <>
@@ -187,7 +223,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
         />
         <button
           type="button"
-          onClick={() => { loadLedger(); loadDetail(); }}
+          onClick={() => { loadLedger(); loadDetail(); loadOrders(); loadSales(); }}
           disabled={isLoading}
           className="ml-auto w-7 h-7 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
           title="새로고침"
@@ -200,8 +236,10 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
       <div className={`${CARD_BASE} overflow-hidden`}>
         <SplitRightTabs
           tabs={[
-            { key: "balance", label: "결제내역", icon: ReceiptText as any, count: ledger?.rows.filter(r => r.type === "payment").length ?? undefined },
-            { key: "history", label: "매입이력", icon: Package2 as any, count: detailRows.length || undefined },
+            { key: "balance",  label: "결제내역", icon: ReceiptText as any, count: ledger?.rows.filter(r => r.type === "payment").length ?? undefined },
+            { key: "order",    label: "발주내역", icon: Package2 as any,    count: orderGroups.length || undefined },
+            { key: "purchase", label: "매입내역", icon: Package2 as any,    count: detailRows.length || undefined },
+            { key: "sales",    label: "판매내역", icon: TrendingUp as any,  count: salesRows.length || undefined },
           ]}
           active={activeTab}
           onSelect={(k) => setActiveTab(k as TabKey)}
@@ -307,8 +345,14 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
             <LedgerContent ledger={ledger} loading={ledgerLoading} error={ledgerError} />
           </div>
         )}
-        {activeTab === "history" && (
+        {activeTab === "purchase" && (
           <HistoryContent detailRows={detailRows} loading={detailLoading} />
+        )}
+        {activeTab === "order" && (
+          <OrderHistoryContent groups={orderGroups} loading={orderLoading} />
+        )}
+        {activeTab === "sales" && (
+          <SalesContent rows={salesRows} loading={salesLoading} />
         )}
       </div>
     </div>
