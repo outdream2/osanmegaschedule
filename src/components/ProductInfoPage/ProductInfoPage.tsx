@@ -251,9 +251,9 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
           </div>
         ) : canEdit ? (
           <button type="button" onClick={startEdit}
-            className="w-8 h-8 rounded-lg bg-white hover:bg-zinc-100 border border-line flex items-center justify-center text-zinc-500 shrink-0 transition cursor-pointer"
-            title="수정">
-            <PencilSimple size={15} />
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white hover:bg-zinc-50 border border-line text-[15px] font-bold text-zinc-600 hover:text-brand-deep hover:border-brand-deep shrink-0 transition cursor-pointer shadow-sm"
+            title="상품정보 수정">
+            <PencilSimple size={13} weight="bold" />수정
           </button>
         ) : null}
       </div>
@@ -261,46 +261,72 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
       {/* ─── 본문 ─── */}
       <div className="p-4 sm:p-5 space-y-6">
 
-        {/* 가격 · 재고 — 상품명 바로 아래 */}
+        {/* 가격 · 재고 — 4-col stat grid (2col on mobile) */}
         <div className="space-y-3">
           <SectionTitle title="가격 · 재고" color="emerald" />
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-            {editing ? <EditField k="sale_price" label="판매가" type="number" /> : (
-              <DField label="판매가">
-                {p.sale_price != null
-                  ? <span className="tabular-nums font-bold text-brand-deep">{Number(p.sale_price).toLocaleString()}원</span>
-                  : <span className="text-zinc-300">-</span>}
-              </DField>
-            )}
-            {editing ? <EditField k="purchase_price" label="매입가 (단가)" type="number" /> : (
-              <DField label="매입가 (단가)">
-                {p.purchase_price != null
-                  ? <span className="tabular-nums font-bold text-amber-700">{Number(p.purchase_price).toLocaleString()}원</span>
-                  : <span className="text-zinc-300">-</span>}
-              </DField>
-            )}
-            <DField label="이익율">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {/* 판매가 */}
+            <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
+              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">판매가</span>
+              {editing
+                ? <input type="number" min={0} value={val("sale_price")} onChange={e => set("sale_price", e.target.value)} className={inputCls + " tabular-nums"} />
+                : p.sale_price != null
+                  ? <span className="text-[20px] font-bold text-brand-deep tabular-nums leading-tight">{Number(p.sale_price).toLocaleString()}원</span>
+                  : <span className="text-zinc-300 text-[16px]">-</span>}
+            </div>
+            {/* 매입가 */}
+            <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
+              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">매입가 (단가)</span>
+              {editing
+                ? <input type="number" min={0} value={val("purchase_price")} onChange={e => set("purchase_price", e.target.value)} className={inputCls + " tabular-nums"} />
+                : p.purchase_price != null
+                  ? <span className="text-[20px] font-bold text-amber-700 tabular-nums leading-tight">{Number(p.purchase_price).toLocaleString()}원</span>
+                  : <span className="text-zinc-300 text-[16px]">-</span>}
+            </div>
+            {/* 이익율 */}
+            <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
+              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">이익율</span>
               {profitRate != null
-                ? <span className={`tabular-nums font-bold ${profitRate >= 30 ? "text-emerald-600" : profitRate >= 15 ? "text-amber-600" : "text-rose-600"}`}>{profitRate}%</span>
-                : <span className="text-zinc-300">-</span>}
-            </DField>
-            <DField label="현재고">
-              {p.current_stock != null ? <span className="tabular-nums font-bold text-brand-deep">{String(p.current_stock)}개</span> : <span className="text-zinc-300">-</span>}
-            </DField>
-            {editing ? <EditField k="optimal_stock" label="적정재고 (30일)" type="number" /> : (
-              <DField label="적정재고 (30일)">
-                {p.optimal_stock != null ? <span className="tabular-nums font-semibold">{String(p.optimal_stock)}개</span> : <span className="text-zinc-300">-</span>}
-              </DField>
-            )}
-            <DField label="창고재고">
-              {p.warehouse_stock != null ? <span className="tabular-nums font-semibold">{String(p.warehouse_stock)}개</span> : <span className="text-zinc-300">-</span>}
-            </DField>
-            <DField label="매장재고">
-              {p.store_stock != null ? <span className="tabular-nums font-semibold">{String(p.store_stock)}개</span> : <span className="text-zinc-300">-</span>}
-            </DField>
-            <DField label="최근매입일">
-              {p.last_purchase_date ? <span className="tabular-nums text-zinc-600">{String(p.last_purchase_date).slice(0, 10)}</span> : <span className="text-zinc-300">-</span>}
-            </DField>
+                ? <span className={`text-[20px] font-bold tabular-nums leading-tight ${profitRate >= 30 ? "text-emerald-600" : profitRate >= 15 ? "text-amber-600" : "text-rose-600"}`}>{profitRate}%</span>
+                : <span className="text-zinc-300 text-[16px]">-</span>}
+            </div>
+            {/* 현재고 */}
+            <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
+              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">현재고</span>
+              {p.current_stock != null
+                ? <span className="text-[20px] font-bold text-brand-deep tabular-nums leading-tight">{String(p.current_stock)}개</span>
+                : <span className="text-zinc-300 text-[16px]">-</span>}
+            </div>
+            {/* 적정재고 */}
+            <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
+              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">적정재고 (30일)</span>
+              {editing
+                ? <input type="number" min={0} value={val("optimal_stock")} onChange={e => set("optimal_stock", e.target.value)} className={inputCls + " tabular-nums"} />
+                : p.optimal_stock != null
+                  ? <span className="text-[18px] font-semibold text-ink tabular-nums leading-tight">{String(p.optimal_stock)}개</span>
+                  : <span className="text-zinc-300 text-[16px]">-</span>}
+            </div>
+            {/* 창고재고 */}
+            <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
+              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">창고재고</span>
+              {p.warehouse_stock != null
+                ? <span className="text-[18px] font-semibold text-ink tabular-nums leading-tight">{String(p.warehouse_stock)}개</span>
+                : <span className="text-zinc-300 text-[16px]">-</span>}
+            </div>
+            {/* 매장재고 */}
+            <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
+              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">매장재고</span>
+              {p.store_stock != null
+                ? <span className="text-[18px] font-semibold text-ink tabular-nums leading-tight">{String(p.store_stock)}개</span>
+                : <span className="text-zinc-300 text-[16px]">-</span>}
+            </div>
+            {/* 최근매입일 */}
+            <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
+              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">최근매입일</span>
+              {p.last_purchase_date
+                ? <span className="text-[16px] text-zinc-600 tabular-nums leading-tight">{String(p.last_purchase_date).slice(0, 10)}</span>
+                : <span className="text-zinc-300 text-[16px]">-</span>}
+            </div>
           </div>
         </div>
 

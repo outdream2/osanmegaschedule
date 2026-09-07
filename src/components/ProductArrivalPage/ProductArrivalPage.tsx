@@ -282,7 +282,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     return c;
   }, [items]);
 
-  const allDecided = counts.total > 0 && counts.pending === 0;
+  const allDecided = counts.total > 0 && counts.pending === 0
+    && items.every(it => it.qty > 0 && !!it.location && it.unitPrice != null && it.unitPrice > 0);
   // 2026-08-29 · 사용자 지시 · finalDecision 자동 도출 (수동 버튼 제거 · UX 슬림)
   useEffect(() => {
     if (!allDecided) {

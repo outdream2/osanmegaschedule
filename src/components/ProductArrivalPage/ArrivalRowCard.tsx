@@ -79,7 +79,7 @@ const ArrivalZoneInline: React.FC<{
           "text-[15px] font-bold tabular-nums tracking-tight",
           filled
             ? "bg-indigo-50 border-indigo-300 text-indigo-700 hover:border-indigo-500"
-            : "bg-white border-dashed border-zinc-300 text-zinc-400 hover:border-indigo-300 hover:bg-zinc-50",
+            : "bg-rose-50/60 border-dashed border-rose-300 text-rose-400 hover:border-indigo-300 hover:bg-zinc-50",
         ].join(" ")}
         title={filled ? `입고구역: ${value} · 클릭 시 변경` : "클릭 · 구역 선택"}
       >
@@ -217,10 +217,11 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           </span>
         </div>
 
-        {/* 2026-09-02 · 사용자 지시 · 입고구역 · 창고구역 배지 · 재고현황 섹션 제거
-             · 입고구역 옆에 · 창1/창2 배지 · 폰트 +2 (12→14 · 배지 12→14) */}
+        {/* 입고구역 · 필수 */}
         <div className="flex items-center gap-2 flex-wrap pt-0.5 pb-0.5 border-t border-zinc-100/80 mt-0.5">
-          <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">입고구역</span>
+          <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">
+            입고구역<span className="text-rose-500 ml-0.5">*</span>
+          </span>
           <ArrivalZoneInline
             value={item.location}
             onChange={(v) => onSetLocation(item.key, v)}
@@ -256,17 +257,20 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           )}
         </div>
 
-        {/* 액션 영역 · 수량 stepper + 2-state pill + 삭제 · 2026-09-01 · #93 · 3종→2종 */}
+        {/* 액션 영역 · 수량 stepper + 2-state pill + 삭제 */}
         <div className="flex items-center gap-2 flex-wrap pt-1">
-          {/* 수량 Stepper · 2026-08-29 · 폭 확장 (132→176) · input 숫자 잘 보이게 · 사용자 지시 */}
-          <div className="w-[176px]">
-            <StepperInput
-              value={item.qty}
-              onChange={(v) => onSetQty(item.key, v === "" ? 0 : v)}
-              size="lg"
-              decLabel="수량 감소"
-              incLabel="수량 증가"
-            />
+          {/* 수량 · 필수 */}
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[12px] font-semibold text-zinc-400">수량<span className="text-rose-500 ml-0.5">*</span></span>
+            <div className={`w-[176px] rounded-lg ${item.qty <= 0 ? "ring-2 ring-rose-300" : ""}`}>
+              <StepperInput
+                value={item.qty}
+                onChange={(v) => onSetQty(item.key, v === "" ? 0 : v)}
+                size="lg"
+                decLabel="수량 감소"
+                incLabel="수량 증가"
+              />
+            </div>
           </div>
 
           {/* 2-state pill · 일치·불일치 · segmented (h-11 통일) · 2026-09-01 · 기한임박 제거 */}
@@ -324,19 +328,24 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           </button>
         </div>
 
-        {/* 2026-09-02 · #78 · 사용자 지시 · 단가·유통기한 입력 필드 (선택) */}
+        {/* 단가 · 필수 / 유통기한 · 선택 */}
         {(onSetUnitPrice || onSetExpiryDate) && (
           <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-zinc-100/80">
             {onSetUnitPrice && (
               <label className="inline-flex items-center gap-1.5">
-                <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">단가</span>
+                <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">
+                  단가<span className="text-rose-500 ml-0.5">*</span>
+                </span>
                 <input
                   type="number"
                   min={0}
                   value={item.unitPrice ?? ""}
                   onChange={(e) => onSetUnitPrice(item.key, e.target.value === "" ? null : Number(e.target.value))}
                   placeholder="0"
-                  className="w-24 h-8 px-2 rounded-md border border-line text-[14px] tabular-nums text-right focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+                  className={[
+                    "w-24 h-8 px-2 rounded-md border text-[14px] tabular-nums text-right focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint",
+                    (!item.unitPrice || item.unitPrice <= 0) ? "border-rose-300 bg-rose-50/50" : "border-line",
+                  ].join(" ")}
                 />
                 <span className="text-[15px] text-zinc-400">원</span>
               </label>
