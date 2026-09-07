@@ -8,7 +8,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
 import {
-  HelpCircle, AlertTriangle, StickyNote, Search, Plus, Send, X as XIcon, Image as ImageIcon,
+  HelpCircle, AlertTriangle, StickyNote, Plus, Send, X as XIcon, Image as ImageIcon,
   ChevronLeft, Pin, MessageCircle, Trash2,
   Camera, AtSign, Pencil, Check,
 } from "lucide-react";
@@ -16,6 +16,8 @@ import type { AuthSession } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { CARD_BASE, PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
+import { SearchBar } from "../common/SearchBar";
+import { Button } from "../common/Button";
 import { AccentBar } from "../common/AccentBar";
 import { Spinner } from "../common/Spinner";
 import { StatusPill } from "../common/StatusPill";
@@ -96,23 +98,23 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
       <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-3 sm:px-4 py-3 sm:py-4`}>
         {/* 필터 · 검색 · 새글 */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <div className="flex-1 min-w-[180px] relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-            <input
-              type="text"
+          <div className="flex-1 min-w-[180px]">
+            <SearchBar
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={setSearch}
               placeholder="제목·본문 검색"
-              className="w-full pl-9 pr-3 py-2 text-[15px] font-semibold bg-white border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint shadow-sm"
+              historyKey="megatown_board_search"
             />
           </div>
-          <button
+          <Button
+            variant="primary"
+            size="md"
+            icon={<Plus size={14} strokeWidth={3} />}
             onClick={() => setShowComposer(true)}
             disabled={!authSession?.employeeId}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[15px] font-bold shadow-sm active:scale-95 transition-all duration-150 disabled:opacity-40"
           >
-            <Plus size={14} strokeWidth={3} /> 새 글
-          </button>
+            새 글
+          </Button>
         </div>
 
         {/* 2026-08-17 · 상태 필터 · 공용 CategoryChips · 딥네이비 · Vercel status dot */}

@@ -4,13 +4,16 @@
 // 2026-08-04 · 내부 <table> 자체 정렬 로직 → 공통 PurchaseHistoryList 로 교체 (사용자 요청 · 통일)
 //   · 하단 원장 · showSupplier · showFooterSum · sticky 헤더 · 헤더 자동 정렬 · 12px 본문
 
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { Package, Building2 } from "lucide-react";
 import { KpiCard } from "../../common/KpiCard";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../../common/PurchaseHistoryList";
-// T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../../styles/tokens";
 import { fmtWonNoUnit, fmtDateSlice } from "../../../lib/format";
+import { api, ApiError } from "../../../lib/apiClient";
+import { getErrorMessage } from "../../../lib/errorMessage";
+import { useToast, toastClass } from "../../../hooks/useToast";
+import { useConfirm } from "../../../hooks/useConfirm";
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -53,9 +56,30 @@ const dateLabel = fmtDateSlice;
 
 export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loading }) => {
   const avgUnitPrice = product.total_qty > 0 ? product.total_amount / product.total_qty : 0;
+  const [deletedIds, setDeletedIds] = useState<Set<string | number>>(new Set());
+  const { toast, showSuccess, showError } = useToast();
+  const confirm = useConfirm();
+
+  const handleDelete = useCallback(async (id: string | number) => {
+    const row = rows.find(r => String(r.id) === String(id));
+    const label = row ? `${fmtDateSlice(row.date)} · ${row.supplier_name ?? "공급사"} · ${fmt(row.quantity)}개` : `#${id}`;
+    if (!await confirm({ message: `매입 기록 삭제: ${label}?`, danger: true })) return;
+    try {
+      await api.del(`/api/purchase-details/${id}`);
+      setDeletedIds(prev => new Set([...prev, id]));
+      showSuccess("매입 기록 삭제 완료");
+    } catch (e: unknown) {
+      showError(`삭제 실패: ${e instanceof ApiError ? e.message : getErrorMessage(e, "네트워크 오류")}`);
+    }
+  }, [rows, confirm, showSuccess, showError]);
+
+  const visibleRows = rows.filter(r => !deletedIds.has(r.id));
 
   return (
     <>
+      {toast && (
+        <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
+      )}
       {/* 상단 · 상품 헤더 (KPI 4카드) */}
       <div className={`${CARD_BASE} px-4 py-3 flex flex-col gap-2`}>
         <div className="flex items-center gap-2 min-w-0">
@@ -94,17 +118,18 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
         <div className="flex items-center border-b border-line bg-zinc-50/50 px-4 py-2.5 shrink-0">
           <span className="text-[15px] font-bold text-sky-700">매입 원장</span>
           <span className="ml-2 text-[13px] font-semibold text-zinc-400 tabular-nums">
-            {rows.length}건
+            {visibleRows.length}건
           </span>
           <div className="ml-auto text-[12px] text-zinc-400">헤더 클릭 정렬</div>
         </div>
         <PurchaseHistoryList
-          rows={rows as unknown as PurchaseHistoryRow[]}
+          rows={visibleRows as unknown as PurchaseHistoryRow[]}
           loading={loading}
           showSupplier
           showRowNumber
           showFooterSum
           emptyText="해당 상품의 매입 이력 없음"
+          onDelete={handleDelete}
         />
       </div>
     </>

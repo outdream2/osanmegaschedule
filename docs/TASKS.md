@@ -21,6 +21,16 @@
 
 ## 🎯 활성 PENDING · v12 (2026-09-07 · 상품입고 개편 + UI 통일)
 
+> **2026-09-07 (3차) 완료** · #117 매입이력 삭제 · #119 단가·수량 validation · #120 상품입고 PeriodSelector 통일 · #121 이슈페이지 SearchBar+Button 프리미티브
+
+### ✅ 2026-09-07 (3차) 완료
+| 커밋 | 내용 |
+|-----|------|
+| (이번 세션) | #117 DELETE /api/purchase-details/:id · PurchaseHistoryList onDelete · ProductPurchaseDetailPanel 삭제 핸들러 |
+| (이번 세션) | #119 매입이력 순수량·단가 0 validation 강화 |
+| (이번 세션) | #120 ArrivalHistoryTab·ExpiryListTab PeriodSelector 통일 · refresh 버튼 표준 패턴 |
+| (이번 세션) | #121 BoardPage raw input→SearchBar · raw button→Button 프리미티브 |
+
 > **2026-09-07 (2차) 완료** · expiry_date 버그 · 유통기한 임박 체크박스+리스트 · 가격재고 4-col stat grid · 이슈리스트 PC 한줄 · CategoryChips 폰트+1 · 검수완료 및 등록
 
 ### ✅ 2026-09-07 (2차) 완료
@@ -33,13 +43,9 @@
 | `60343a1a` | fix(arrival+product): ArrivalDetail flat merge · product_code 앞0 · hooks순서 · 탭순서 |
 | `7b9ad077` | fix(purchase): #116 · supplier_name 필터 서버측 적용 |
 
-### 🟡 PENDING (신규)
+### 🟡 PENDING
 | # | 태스크 | 우선순위 | 비고 |
 |---|-----|--------|------|
-| **#120** | 상품입고 UI 매입페이지 통일 · 헤더/툴바/카드 스타일 · 색상·타이포 일관성 | 🟡 | |
-| **#121** | 이슈페이지 필터 디자인 → 전체 페이지 적용 · CategoryChips 목업 반영 | 🟡 | |
-| **#117** | 매입이력 삭제 기능 · DELETE /api/purchase-details/:id + UI | 🔴 | |
-| **#119** | 매입이력 단가·수량 필수 validation | 🔴 | |
 | **#115** | real_map 컬럼 DB DROP SQL · `migrations/20260904_drop_real_map.sql` · Supabase SQL Editor | 🟡 | 사용자 직접 |
 
 > **2026-09-07 (1차) 완료** · 알림종 UI 개선 3종 · 상품정보 패널 리디자인 · 상품탭 아이콘 통일 · productArrivals null 재고 버그

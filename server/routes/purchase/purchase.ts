@@ -223,22 +223,29 @@ router.post(
       // 반품 있으면 순매입 = 매입 - 반품 (이미 매입합계에 반영됐으므로 참고용 저장만)
       const returnQty = returnQtyI >= 0 ? parseNum(r[returnQtyI]) : 0;
       const returnAmt = returnAmtI >= 0 ? parseNum(r[returnAmtI]) : 0;
-      // 매입 수량 0이면 스킵 (합계=0인 상품은 이 기간 매입 없음)
-      if (qty === 0 && amt === 0) continue;
+      // #119 · 단가·수량 필수 validation
+      const netQty = qty - returnQty;
+      const unitPrice = priceI >= 0 ? parseNum(r[priceI]) : 0;
+      // 수량·금액 모두 0 → 스킵
+      if (qty === 0 && amt === 0) { skipped.push(`code=${code} · 수량·금액 0`); continue; }
+      // 순수량 0 (반품이 매입과 같음) → 스킵
+      if (netQty === 0 && (amt - returnAmt) === 0) { skipped.push(`code=${code} · 순수량·순금액 0`); continue; }
+      // 단가 0 경고 (저장은 하되 skipped 에 기록)
+      if (unitPrice === 0 && priceI >= 0) skipped.push(`code=${code} · 단가 0 (경고)`);
       // period_type: 개별 date 있으면 그 dd 로 판정, 아니면 요약 파일 periodType 사용
       const rowPeriodType = dateI >= 0 ? detectPeriodType(date) : periodType;
       parsed.push({
         purchase_date: date,
-        period_start_date: summaryPeriodStart, // 요약 파일이면 시작일 · 상세 파일이면 null
-        period_type: rowPeriodType,             // early/mid/late
+        period_start_date: summaryPeriodStart,
+        period_type: rowPeriodType,
         supplier_code: supCodeI >= 0 ? String(r[supCodeI] ?? "").trim() || null : null,
         supplier_name: supNameI >= 0 ? String(r[supNameI] ?? "").trim() || forcedSupplier || null : (forcedSupplier || null),
         product_code: code,
         product_name: nameI >= 0 ? String(r[nameI] ?? "").trim() || null : null,
         spec: specI >= 0 ? String(r[specI] ?? "").trim() || null : null,
-        quantity: qty - returnQty, // 순매입 수량 (반품 차감)
-        unit_price: priceI >= 0 ? parseNum(r[priceI]) : 0,
-        amount: amt - returnAmt, // 순매입 금액
+        quantity: netQty,
+        unit_price: unitPrice,
+        amount: amt - returnAmt,
         vat: vatI >= 0 ? parseNum(r[vatI]) : 0,
         total: totalI >= 0 ? parseNum(r[totalI]) : (amt - returnAmt),
         imported_at: now,
@@ -398,6 +405,15 @@ router.get("/api/purchase-details/import-log", asyncHandler(async (_req, res) =>
     filename: l.filename ?? null,
   }));
   res.json({ batches });
+}));
+
+// DELETE /api/purchase-details/:id · 개별 매입 기록 삭제 (#117)
+router.delete("/api/purchase-details/:id", authorize(2), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) throw new HttpError(400, "유효하지 않은 ID");
+  const { error } = await supabase.from("purchase_details").delete().eq("id", id);
+  if (error) throw new HttpError(500, `삭제 실패: ${error.message}`);
+  res.json({ ok: true });
 }));
 
 // DELETE /api/purchase-details/import-log · 이력 초기화

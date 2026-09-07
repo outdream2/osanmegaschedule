@@ -18,7 +18,14 @@ import { Card } from "../common/Card";
 import { Spinner } from "../common/Spinner";
 import { AccentBar } from "../common/AccentBar";
 import { Modal } from "../common/Modal";
+import { PeriodSelector, type PeriodOption } from "../common/PeriodSelector";
 import type { ArrivalItem } from "./helpers";
+
+const ARRIVAL_DAYS_PRESET: readonly PeriodOption<number>[] = [
+  { value: 7,  label: "7일",  title: "최근 7일"  },
+  { value: 30, label: "30일", title: "최근 30일" },
+  { value: 90, label: "90일", title: "최근 90일" },
+] as const;
 
 // ─── 입고내역 타입 (기존 inline 정의 이관) ─────────────────────
 export interface ArrivalHistoryRow {
@@ -250,16 +257,16 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
         <span className="text-[16px] font-bold text-ink tracking-tight">입고내역</span>
         <StatusPill tone="brand" size="md">{arrivals.length}건</StatusPill>
         <span className="text-[15px] font-medium text-ink-soft ml-2 hidden sm:inline">공급사 {groups.length} · 최근 {arrivalDays}일</span>
-        <div className="flex items-center gap-0.5 bg-zinc-100 border border-line rounded-lg p-1 ml-auto">
-          {[7, 30, 90].map(d => (
-            <button key={d} onClick={() => setArrivalDays(d as 7 | 30 | 90)}
-              className={`text-[15px] font-semibold px-2 py-1 rounded transition whitespace-nowrap cursor-pointer ${arrivalDays === d ? "bg-white text-zinc-800 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
-              {d}일
-            </button>
-          ))}
-        </div>
+        <PeriodSelector
+          options={ARRIVAL_DAYS_PRESET}
+          value={arrivalDays}
+          onChange={(v) => setArrivalDays(Number(v) as 7 | 30 | 90)}
+          accent="indigo"
+          size="sm"
+          className="ml-auto"
+        />
         <button onClick={loadArrivals} disabled={arrivalsLoading}
-          className="w-8 h-8 flex items-center justify-center rounded-lg border border-line text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 cursor-pointer disabled:opacity-50"
+          className="inline-flex w-8 h-8 items-center justify-center rounded-lg border border-line text-zinc-500 hover:text-brand-deep hover:border-brand-deep hover:bg-zinc-50 transition cursor-pointer disabled:opacity-50"
           title="새로고침">
           <RefreshCw size={13} className={arrivalsLoading ? "animate-spin" : ""} />
         </button>
@@ -614,16 +621,13 @@ export const ExpiryListTab: React.FC = () => {
       </div>
 
       {/* 기간 필터 */}
-      <Card padding="none" className="inline-flex p-1 self-start flex-wrap gap-0.5">
-        {EXPIRY_PERIODS.map(({ label }) => (
-          <button key={label} type="button" onClick={() => setPeriod(label)}
-            className={`h-8 px-3 rounded-lg text-[15px] font-bold transition cursor-pointer ${
-              period === label
-                ? "bg-rose-500 text-white shadow-sm"
-                : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
-            }`}>{label}</button>
-        ))}
-      </Card>
+      <PeriodSelector
+        options={EXPIRY_PERIODS.map(p => ({ value: p.label, label: p.label }))}
+        value={period}
+        onChange={(v) => setPeriod(v as ExpiryPeriod)}
+        accent="rose"
+        size="sm"
+      />
 
       {/* 테이블 */}
       {loading && (

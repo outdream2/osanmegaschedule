@@ -609,17 +609,15 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         /* 2026-08-29 · #193 · 사용자 지시 · 반품 서브탭 · 매입 우회 · 직접 이너 탭 (반품필요·반품확정)
            2026-08-30 · #37 · 사용자 지시 · SplitListPanel 넓이 통일 · max-w-[1360px] 컨테이너 (다른 페이지와 동일) */
         <main className="flex-1 flex flex-col min-h-0">
-          <div className="bg-white border-b border-line px-3">
-            <TabBar<"need" | "confirmed">
-              level={3}
-              activeKey={returnInnerTabDp}
-              onSelect={setReturnInnerTabDp}
-              tabs={[
-                { key: "need",      label: "반품필요", visible: true },
-                { key: "confirmed", label: "반품확정", visible: true },
-              ]}
-            />
-          </div>
+          <TabBar<"need" | "confirmed">
+            level={3}
+            activeKey={returnInnerTabDp}
+            onSelect={setReturnInnerTabDp}
+            tabs={[
+              { key: "need",      label: "반품필요", visible: true },
+              { key: "confirmed", label: "반품확정", visible: true },
+            ]}
+          />
           <div className="flex-1 min-h-0 flex flex-col">
             <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
               {returnInnerTabDp === "need" ? <ReturnListPanelLazy /> : <ReturnConfirmedPanelLazy />}
@@ -629,18 +627,16 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       ) : dpSubTab === "product" && dpUserLevel >= 2 ? (
         /* 2026-08-29 · #193 · 사용자 지시 · 상품 서브탭 · 3개 이너 탭 (실재고입력·상품입고·상품정보) · 매입에서 이관 */
         <main className="flex-1 flex flex-col min-h-0">
-          <div className="bg-white border-b border-line px-3">
-            <TabBar<"info" | "scan" | "arrival">
-              level={3}
-              activeKey={productInnerTab}
-              onSelect={setProductInnerTab}
-              tabs={[
-                { key: "info",    label: "상품정보",   icon: Info,        color: "sky",     visible: true },
-                { key: "arrival", label: "상품입고",   icon: PackagePlus, color: "violet",  visible: true },
-                { key: "scan",    label: "실재고확인", icon: ScanLine,    color: "emerald", visible: true },
-              ]}
-            />
-          </div>
+          <TabBar<"info" | "scan" | "arrival">
+            level={3}
+            activeKey={productInnerTab}
+            onSelect={setProductInnerTab}
+            tabs={[
+              { key: "info",    label: "상품정보",   icon: Info,        color: "sky",     visible: true },
+              { key: "arrival", label: "상품입고",   icon: PackagePlus, color: "violet",  visible: true },
+              { key: "scan",    label: "실재고확인", icon: ScanLine,    color: "emerald", visible: true },
+            ]}
+          />
           <div className="flex-1 min-h-0 flex flex-col">
             <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
               {productInnerTab === "scan"    && <ScanPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />}

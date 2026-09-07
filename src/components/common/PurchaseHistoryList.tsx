@@ -25,6 +25,7 @@
 //   minRows?       · limit 없이 전부 보이기 (default 999999)
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { Spinner } from "./Spinner";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
@@ -70,6 +71,8 @@ interface PurchaseHistoryListProps {
   emptyText?: string;
   /** 하단 안내 문구 */
   footerHint?: React.ReactNode;
+  /** 삭제 콜백 · 있으면 각 row에 삭제 버튼 표시 (#117) */
+  onDelete?: (id: string | number) => void;
 }
 
 type SortKey = "date" | "supplier_name" | "product_name" | "quantity" | "unit_price" | "amount";
@@ -132,6 +135,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
   initialSortDir = "desc",
   emptyText = "매입 이력 없음",
   footerHint,
+  onDelete,
 }) => {
   // ── 정렬 (T30-followup · useSortableTable)
   const { sorted, sortKey, sortDir, toggleSort: _toggleSort, setSort: _setSort } =
@@ -195,7 +199,8 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
     + (showSupplier ? 1 : 0)
     + (showProduct ? 1 : 0)
     + (showGap ? 1 : 0)
-    + 1; // 단가 (항상 표시)
+    + 1 // 단가 (항상 표시)
+    + (onDelete ? 1 : 0); // 삭제 버튼 컬럼
 
   // ─── Render ────────────────────────────────────────────────────────────
   if (loading) {
@@ -295,6 +300,9 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
               금액{arrow("amount")}
               <span {...resizerProps("amount")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
+            {onDelete && (
+              <th className="w-8 px-1 py-2" />
+            )}
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-100">
@@ -354,6 +362,20 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
                 <td className="text-right px-3 py-1.5 tabular-nums font-bold text-emerald-700 align-top">
                   {rowAmount(r) > 0 ? fmtWon(rowAmount(r)) : "-"}
                 </td>
+                {onDelete && (
+                  <td className="text-center px-1 py-1 align-top">
+                    {r.id != null && (
+                      <button
+                        type="button"
+                        onClick={() => onDelete(r.id!)}
+                        className="inline-flex w-6 h-6 items-center justify-center rounded text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition cursor-pointer"
+                        title="삭제"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             );
           })}
