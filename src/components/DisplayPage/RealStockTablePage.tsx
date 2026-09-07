@@ -100,12 +100,15 @@ const CMP: Record<SortKey, Comparator<Row>> = {
   diff:          (a, b) => a.diff - b.diff,
 };
 
+const PAGE_SIZE = 1000;
+
 export const RealStockTablePage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [inv, setInv] = useState<Record<string, InvRow>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   // 2026-08-28 · 사용자 지시 · 판매중 필터 프레임워크 (D안) · 3-state · localStorage 지속
   //   · 기존 useSaleActiveOnly (전역 KV) → useSaleStatusFilter (페이지 로컬)
   //   · 판매중/판매중지/전체 · Segmented Control · SaleStatusFilter 프리미티브
@@ -233,6 +236,12 @@ export const RealStockTablePage: React.FC = () => {
   }, [rows, search, saleMatches]);
 
   const { sorted, sortKey, sortDir, toggleSort, setSort } = useSortableTable<Row, SortKey>(filtered, "product_name", CMP, "asc");
+
+  // 검색/필터 변경 시 첫 페이지로 리셋
+  useEffect(() => { setPage(1); }, [search, saleFilter, locFilter, groupByZone]);
+
+  const pagedRows = useMemo(() => sorted.slice(0, page * PAGE_SIZE), [sorted, page]);
+  const hasMore = pagedRows.length < sorted.length;
   // 2026-08-27 · 사용자 지시 · 구역별 그룹 활성 시 · 자동으로 진열위치(location) 정렬로 전환
   useEffect(() => {
     if (groupByZone) setSort("location", "asc");
@@ -631,7 +640,7 @@ export const RealStockTablePage: React.FC = () => {
                 {(() => {
                   if (!groupByZone) return null;
                   const groups = new Map<string, Row[]>();
-                  for (const r of sorted) {
+                  for (const r of pagedRows) {
                     const key = String(r.location ?? "").trim() || "(미지정)";
                     if (!groups.has(key)) groups.set(key, []);
                     groups.get(key)!.push(r);
@@ -716,7 +725,7 @@ export const RealStockTablePage: React.FC = () => {
                     ];
                   });
                 })()}
-                {!groupByZone && sorted.map(r => (
+                {!groupByZone && pagedRows.map(r => (
                   <tr key={r.product_code} className="hover:bg-zinc-50/60 transition text-[15px] whitespace-nowrap">
                     <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ?? "-"}</td>
                     <td className={tableTdCls("left")}>
@@ -748,6 +757,21 @@ export const RealStockTablePage: React.FC = () => {
               </tbody>
             </table>
           </TableListWrap>
+          {/* 페이지네이션 · 1000건 단위 */}
+          {hasMore && (
+            <div className="flex items-center justify-center py-4">
+              <button
+                type="button"
+                onClick={() => setPage(p => p + 1)}
+                className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-brand-deep text-white text-[15px] font-bold shadow-sm hover:bg-[#0d3a5c] active:bg-[#08253a] transition cursor-pointer"
+              >
+                더 불러오기 ({pagedRows.length.toLocaleString()} / {sorted.length.toLocaleString()}건)
+              </button>
+            </div>
+          )}
+          {!hasMore && sorted.length > PAGE_SIZE && (
+            <div className="text-center py-3 text-[14px] text-zinc-400">전체 {sorted.length.toLocaleString()}건 표시됨</div>
+          )}
           </>
         )}
       </div>
