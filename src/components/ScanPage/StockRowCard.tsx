@@ -274,14 +274,14 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
       if (s.key === "w1") return showW1;
       if (s.key === "w2") return showW2;
       if (s.key === "s1") return hasAnyZone ? hasS1 : visibleStoreCount >= 1;
-      if (s.key === "s2") return hasAnyZone ? hasS2 : visibleStoreCount >= 2;
-      if (s.key === "s3") return hasAnyZone ? hasS3 : visibleStoreCount >= 3;
+      if (s.key === "s2") return hasAnyZone ? (hasS2 || visibleStoreCount >= 2) : visibleStoreCount >= 2;
+      if (s.key === "s3") return hasAnyZone ? (hasS3 || visibleStoreCount >= 3) : visibleStoreCount >= 3;
       return true;
     });
   }, [slotVis, showW1, showW2, visibleStoreCount]);
 
-  // [+ 매장 추가] · zone 미지정일 때만 표시
-  const canAddStore = !slotVis.hasAnyZone && visibleStoreCount < 3;
+  // [+ 매장 추가] · zone 여부 관계 없이 3개 미만이면 표시
+  const canAddStore = visibleStoreCount < 3;
 
   return (
     <div
@@ -299,44 +299,60 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
               : "border-line/70",
       ].join(" ")}
     >
-      {/* ─── 헤더 (상품명 + 코드 + 우측 합계) · 탭하면 접힘 토글 */}
-      <button
-        type="button"
-        onClick={() => setManuallyExpanded(v => !v)}
-        className="w-full flex items-start gap-3 px-4 py-3 text-left cursor-pointer"
-      >
-        {/* 좌측 · 상품명 · 코드 · chip strip (접힘 시만) */}
-        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-          <div className="flex items-start gap-2 flex-wrap">
+      {/* ─── 헤더 · 탭하면 접힘 토글 */}
+      <div className="w-full flex items-start gap-3 px-4 py-3">
+        {/* 좌측 · 상품명 · 코드 · 현재고/추가/합계 요약 */}
+        <button
+          type="button"
+          onClick={() => setManuallyExpanded(v => !v)}
+          className="flex-1 min-w-0 flex flex-col gap-1 text-left cursor-pointer"
+        >
+          {/* Row 1: 상품명 + 배지 */}
+          <div className="flex items-center gap-1.5 flex-wrap">
             <h4 className="text-[16px] font-bold text-ink tracking-tight leading-snug break-keep">
               {row.product.name}
             </h4>
-            {totalAdded > 0 && (
-              <StatusPill tone="emerald" size="xs">+{totalAdded}</StatusPill>
-            )}
-            {isWarn && (
-              <StatusPill tone="amber" size="xs">이상값</StatusPill>
-            )}
-            {/* 2026-08-25 · 유통기한 임박 배지 */}
-            {hasExpiryFlag && (
-              <StatusPill tone="rose" size="xs">유통기한 임박</StatusPill>
-            )}
+            {isWarn && <StatusPill tone="amber" size="xs">이상값</StatusPill>}
+            {hasExpiryFlag && <StatusPill tone="rose" size="xs">유통기한 임박</StatusPill>}
           </div>
+          {/* Row 2: spec + code */}
           <div className="flex items-center gap-1.5 flex-wrap">
             {(row.product as any).spec && (
-              <span className="inline-flex items-center gap-1 text-[15px] font-semibold
+              <span className="inline-flex items-center gap-1 text-[14px] font-semibold
                 text-zinc-500 bg-zinc-100/70 rounded px-1.5 py-0.5">
                 <Box size={9} className="text-zinc-400" />
                 {(row.product as any).spec}
               </span>
             )}
-            <span className="inline-flex items-center gap-1 text-[15px] font-mono
+            <span className="inline-flex items-center gap-1 text-[14px] font-mono
               text-zinc-400 bg-zinc-100/60 rounded px-1.5 py-0.5">
               <Hash size={9} className="text-zinc-300" />
               {row.code}
             </span>
           </div>
-
+          {/* Row 3: 현재고 · 추가수량 · 합계 (나란히) */}
+          <div className="flex items-center gap-2.5 mt-0.5">
+            <span className="inline-flex items-baseline gap-1">
+              <span className="text-[13px] font-bold text-zinc-800">현재고</span>
+              <span className={`text-[16px] font-extrabold tabular-nums ${rowTotal - totalAdded > 0 ? "text-zinc-700" : "text-zinc-300"}`}>
+                {rowTotal - totalAdded}
+              </span>
+            </span>
+            <span className="text-zinc-300 text-[13px]">·</span>
+            <span className="inline-flex items-baseline gap-1">
+              <span className="text-[13px] font-bold text-zinc-800">추가</span>
+              <span className={`text-[16px] font-extrabold tabular-nums ${totalAdded > 0 ? "text-emerald-600" : "text-zinc-300"}`}>
+                {totalAdded > 0 ? `+${totalAdded}` : totalAdded}
+              </span>
+            </span>
+            <span className="text-zinc-300 text-[13px]">·</span>
+            <span className="inline-flex items-baseline gap-1">
+              <span className="text-[13px] font-bold text-zinc-800">합계</span>
+              <span className={`text-[18px] font-extrabold tabular-nums ${rowTotal > 0 ? "text-brand-deep" : "text-zinc-300"}`}>
+                {rowTotal}
+              </span>
+            </span>
+          </div>
           {/* chip strip · 접힘 시만 · 5-way 한눈 요약 */}
           {!expanded && (
             <div className="flex items-center gap-2 flex-wrap mt-1">
@@ -349,16 +365,12 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                   <span
                     key={s.key}
                     className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 border ${
-                      hasVal
-                        ? `${s.softBg} border-transparent`
-                        : "bg-transparent border-line/60"
+                      hasVal ? `${s.softBg} border-transparent` : "bg-transparent border-line/60"
                     }`}
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${s.dot} ${hasVal ? "" : "opacity-40"}`} />
-                    <span className={`text-[15px] font-semibold ${hasVal ? s.text : "text-zinc-400"}`}>
-                      {s.label}
-                    </span>
-                    <span className={`text-[14px] font-bold tabular-nums ${hasVal ? "text-ink" : "text-zinc-300"}`}>
+                    <span className={`text-[14px] font-semibold ${hasVal ? s.text : "text-zinc-400"}`}>{s.label}</span>
+                    <span className={`text-[13px] font-bold tabular-nums ${hasVal ? "text-ink" : "text-zinc-300"}`}>
                       {tot > 0 ? tot : "-"}
                     </span>
                   </span>
@@ -366,21 +378,35 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
               })}
             </div>
           )}
-        </div>
+        </button>
 
-        {/* 우측 · 총 합계 · 큰 숫자 */}
-        <div className="shrink-0 flex flex-col items-end gap-0.5">
-          <span className="text-[15px] font-semibold text-ink-soft uppercase tracking-wider">합계</span>
-          <span className={`text-[28px] font-bold tabular-nums leading-none tracking-tight ${
-            rowTotal > 0 ? "text-brand-deep" : "text-zinc-300"
-          }`}>
-            {rowTotal}
-          </span>
-          <span className="mt-1 text-ink-soft group-hover:text-brand-deep transition-colors">
+        {/* 우측 · 유통기한임박 버튼 + chevron */}
+        <div className="shrink-0 flex flex-col items-end gap-1.5">
+          {onToggleExpiry && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onToggleExpiry(row); }}
+              className={[
+                "inline-flex items-center gap-1 h-7 px-2 rounded-lg text-[13px] font-bold cursor-pointer transition",
+                hasExpiryFlag
+                  ? "bg-red-500 text-white hover:bg-red-600 shadow-sm"
+                  : "bg-white text-zinc-500 border border-line hover:bg-red-50 hover:border-red-300 hover:text-red-600",
+              ].join(" ")}
+              title={hasExpiryFlag ? "유통기한 임박 해제" : "유통기한 임박 표시"}
+            >
+              <ClockIcon size={11} />
+              {hasExpiryFlag ? "임박해제" : "임박"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setManuallyExpanded(v => !v)}
+            className="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-zinc-100 text-ink-soft group-hover:text-brand-deep transition-colors cursor-pointer"
+          >
             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </span>
+          </button>
         </div>
-      </button>
+      </div>
 
       {/* ─── 확장 · 5-slot editor + 액션
             2026-08-25 · 사용자 지시 · 창고 2개 위 · 매장 3개 아래 · grid 배치
@@ -474,39 +500,36 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
             </div>
           );
         };
+        const w1Slot = visibleSlots.find(s => s.key === "w1");
+        const w2Slot = visibleSlots.find(s => s.key === "w2");
+        const s1Slot = visibleSlots.find(s => s.key === "s1");
+        const s2Slot = visibleSlots.find(s => s.key === "s2");
+        const s3Slot = visibleSlots.find(s => s.key === "s3");
+        const STORE_IDX: Record<string, number> = { s1: 0, s2: 1, s3: 2 };
         return (
           <div className="border-t border-line/60 px-4 py-3 flex flex-col gap-2.5">
-            {/* 2026-09-01 · #92 · 완전 미지정 신규 상품 · 구역 먼저 선택 → 자동 슬롯 배정 */}
+            {/* 완전 미지정 신규 상품 · 구역 먼저 선택 → 자동 슬롯 배정 */}
             {!slotVis.anyAssigned && (
               <AutoZonePicker onAssign={handleAutoZoneAssign} />
             )}
-            {/* 2026-08-26 · 사용자 지시 · 현재고 요약 · 5-slot 옆으로 한줄 표시 */}
-            <div className="flex items-center gap-3 flex-wrap px-1 py-1.5 bg-zinc-50/60 rounded-md border border-line/60">
-              <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider">현재고</span>
-              {visibleSlots.map(s => {
-                const prev = row[s.prevKey] as number | null | undefined;
-                const hasPrev = prev != null && Number(prev) > 0;
-                return (
-                  <span key={`cur-${s.key}`} className="inline-flex items-baseline gap-1 text-[15px]">
-                    <span className={`w-1.5 h-1.5 rounded-full ${s.dot} ${hasPrev ? "" : "opacity-40"} inline-block`} />
-                    <span className={`font-semibold ${hasPrev ? s.text : "text-zinc-400"}`}>{s.full}</span>
-                    <span className={`tabular-nums font-bold ${hasPrev ? "text-ink" : "text-zinc-300"}`}>
-                      {prev != null ? prev : "-"}
-                    </span>
-                  </span>
-                );
-              })}
+            {/* Row 1 · 창고1 + 매장1 나란히 */}
+            <div className="grid grid-cols-2 gap-2">
+              {w1Slot ? renderSlot(w1Slot, 0, false) : <div />}
+              {s1Slot ? renderSlot(s1Slot, STORE_IDX["s1"], true) : <div />}
             </div>
-            {/* Row 1 · 창고 · 해당 상품 소속만 (1-2 col 자동) · cyan 톤 */}
-            {warehouses.length > 0 && (
-              <div className={`grid gap-2 ${warehouses.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
-                {warehouses.map((s, i) => renderSlot(s, i, false))}
+            {/* Row 2 · 매장2 + 매장3 (있을 때만) */}
+            {(s2Slot || s3Slot) && (
+              <div className={`grid gap-2 ${s2Slot && s3Slot ? "grid-cols-2" : "grid-cols-1"}`}>
+                {s2Slot && renderSlot(s2Slot, STORE_IDX["s2"], true)}
+                {s3Slot && renderSlot(s3Slot, STORE_IDX["s3"], true)}
               </div>
             )}
-            {/* Row 2 · 매장 · 사용 중인 개수만큼 · violet 톤 · [+ 매장 추가] 버튼 (최대 3) */}
-            <div className={`grid gap-2 ${stores.length === 3 ? "sm:grid-cols-3" : stores.length === 2 ? "sm:grid-cols-2" : "grid-cols-1"}`}>
-              {stores.map((s, i) => renderSlot(s, i, true))}
-            </div>
+            {/* Row 3 · 창고2 (있을 때만) */}
+            {w2Slot && (
+              <div className="grid grid-cols-1">
+                {renderSlot(w2Slot, 1, false)}
+              </div>
+            )}
             {canAddStore && (
               <button
                 type="button"
@@ -518,7 +541,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
               </button>
             )}
 
-          {/* 액션 · 2026-08-23 · #204 · 개별 [저장] 버튼 + 기존 StockActionsCell */}
+          {/* 액션 · 개별 [저장] 버튼 + StockActionsCell */}
           <div className="mt-1 pt-2 border-t border-line/50 flex items-center justify-between gap-2 flex-wrap">
             {onSaveRow ? (
               <button
@@ -541,32 +564,13 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                 {saving ? "저장 중..." : savedThisSession ? "✓ 저장됨" : "저장"}
               </button>
             ) : <span />}
-            <div className="flex items-center gap-1">
-              {/* 2026-08-25 · 유통기한 임박 토글 · 클릭 시 · product.expiry_date 오늘 날짜 저장 (재클릭 시 해제) */}
-              {onToggleExpiry && (
-                <button
-                  type="button"
-                  onClick={() => onToggleExpiry(row)}
-                  className={[
-                    "inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[15px] font-bold cursor-pointer transition",
-                    hasExpiryFlag
-                      ? "bg-red-500 text-white hover:bg-red-600 shadow-sm"
-                      : "bg-white text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-400",
-                  ].join(" ")}
-                  title={hasExpiryFlag ? "유통기한 임박 해제 (DB 저장)" : "유통기한 임박 표시 (오늘 날짜 DB 저장)"}
-                >
-                  <ClockIcon size={12} />
-                  {hasExpiryFlag ? "임박 해제" : "유통기한 임박"}
-                </button>
-              )}
-              <StockActionsCell
-                row={row}
-                requestingKey={requestingKey}
-                onHistory={onHistory}
-                onRequestDisplay={onRequestDisplay}
-                onRemove={onRemove}
-              />
-            </div>
+            <StockActionsCell
+              row={row}
+              requestingKey={requestingKey}
+              onHistory={onHistory}
+              onRequestDisplay={onRequestDisplay}
+              onRemove={onRemove}
+            />
           </div>
         </div>
         );

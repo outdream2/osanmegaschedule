@@ -637,7 +637,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               tabs={[
                 { key: "info",    label: "상품정보",   icon: Info,        color: "sky",     visible: true },
                 { key: "arrival", label: "상품입고",   icon: PackagePlus, color: "violet",  visible: true },
-                { key: "scan",    label: "실재고입력", icon: ScanLine,    color: "emerald", visible: true },
+                { key: "scan",    label: "실재고확인", icon: ScanLine,    color: "emerald", visible: true },
               ]}
             />
           </div>

@@ -982,6 +982,19 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
     result = await applyPayload();
   }
   if (result?.error) throw new HttpError(500, result.error);
+  // products.current_stock 동기화 · 모든 슬롯 합산
+  {
+    const w1 = num(b.warehouse1_stock ?? b.warehouse_stock);
+    const w2 = num(b.warehouse2_stock);
+    const s1 = num(b.store_stock);
+    const s2 = num(b.store_stock_2);
+    const s3 = num(b.store3_stock);
+    const anySlot = [w1,w2,s1,s2,s3].some(v => v != null);
+    if (anySlot) {
+      const total = (w1 ?? 0) + (w2 ?? 0) + (s1 ?? 0) + (s2 ?? 0) + (s3 ?? 0);
+      await supabase.from("products").update({ current_stock: total }).eq("product_code", code);
+    }
+  }
   clearLowStockCache(); // 2026-08-05 · T-PERF-1a
   scheduleSnapshotBackground(); // 2026-08-06 · T-LOSS-HISTORY · 오늘 손실 스냅샷 자동
   // 2026-08-13 · #107 · 실재고 점검 · 관리자 알림
@@ -1075,7 +1088,12 @@ router.post("/api/inventory-checks/bulk", authorize(1), validateBody(BulkInvento
       const retry = await doWrite(payload);
       error = retry.error ?? null;
     }
-    if (error) { failed++; } else { saved++; }
+    if (error) { failed++; } else {
+      saved++;
+      // products.current_stock 동기화 · 실재고 합계 (w1+w2+s1+s2+s3)
+      const total = (wh1 ?? 0) + (wh2 ?? 0) + (s1 ?? 0) + (s2 ?? 0) + (s3 ?? 0);
+      await supabase.from("products").update({ current_stock: total }).eq("product_code", code);
+    }
   }
   clearLowStockCache(); // 2026-08-05 · T-PERF-1a
   scheduleSnapshotBackground(); // 2026-08-06 · T-LOSS-HISTORY · 오늘 손실 스냅샷 자동
