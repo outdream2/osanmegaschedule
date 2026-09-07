@@ -376,15 +376,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       .then((list: InventoryHistoryRow[]) => {
         const last = list[0];
         if (!last) {
-          // 이력 없음 · products.current_stock fallback
-          const fallback = (found as any).current_stock;
-          const fb = (fallback != null && Number(fallback) > 0) ? Number(fallback) : null;
-          if (fb != null) {
-            setRows(prev => prev.map(r => r.key === newRow.key
-              ? { ...r, prevWarehouse1Qty: fb, warehouse1AddQty: fb }
-              : r
-            ));
-          }
+          // 2026-09-07 · 사용자 지시 · current_stock fallback 제거
+          //   · 실재고 = 창고+매장 실제 입력값의 합 · 현재고와 자동 동일화 금지
+          //   · 이력 없으면 · 모든 슬롯 빈칸 유지 (사용자가 직접 실재고 입력)
           return;
         }
         const w1 = last.warehouse1_stock ?? last.warehouse_stock;
