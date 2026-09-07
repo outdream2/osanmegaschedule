@@ -1,10 +1,10 @@
 {
   "created": "2026-09-07",
   "version": 1,
-  "totalViolations": 2,
+  "totalViolations": 3,
   "files": {
     "src/components/DisplayPage/RealStockTablePage.tsx": {
-      "lines": 802,
+      "lines": 816,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -15,6 +15,16 @@
     },
     "src/components/SalesTrendPage/DashboardCharts.tsx": {
       "lines": 947,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
+    },
+    "src/components/ScanPage/ScanPage.tsx": {
+      "lines": 811,
       "violations": [
         {
           "ruleId": "large-file-warn",
