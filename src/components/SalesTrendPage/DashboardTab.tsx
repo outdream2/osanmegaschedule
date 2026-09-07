@@ -28,6 +28,7 @@ import { DashboardCharts } from "./DashboardCharts";
 import { fmtWon } from "../../lib/format";
 import { matchesProductQuery } from "../../lib/productMatch";
 import { api } from "../../lib/apiClient";
+import { useVendors } from "../../hooks/useVendors";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
@@ -134,6 +135,14 @@ const arrow = (k: DashSortKey, current: DashSortKey, dir: DashSortDir) =>
 // ─── 컴포넌트 ────────────────────────────────────────────────────────────────
 export const DashboardTab: React.FC = () => {
   const { toast, showError } = useToast();
+  const { vendors } = useVendors();
+  const vendorCategoryMap = useMemo<Record<string, string>>(() => {
+    const m: Record<string, string> = {};
+    for (const v of vendors) {
+      if (v.company_name && v.category) m[v.company_name] = v.category;
+    }
+    return m;
+  }, [vendors]);
 
   // 기간 · 계절
   const [months, setMonths] = useState<0 | 1 | 2 | 3 | 6>(1);
@@ -417,7 +426,7 @@ export const DashboardTab: React.FC = () => {
       </div>
 
       {/* ── 2026-09-01 · 사용자 지시 · 차트 다양화 · 대시보드 답게 (Top10·카테고리·이익률) ── */}
-      <DashboardCharts rows={rows} loading={loading} />
+      <DashboardCharts rows={rows} loading={loading} vendorCategoryMap={vendorCategoryMap} />
 
       {/* ── 좌 · 재고흐름 테이블 · 우 · 상품 상세 ───────────────────────── */}
       <div className="flex flex-col lg:flex-row gap-2 items-stretch lg:min-h-[560px]">

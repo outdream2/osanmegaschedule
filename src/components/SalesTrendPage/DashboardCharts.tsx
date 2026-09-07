@@ -103,8 +103,15 @@ const TopSalesChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ r
   );
 };
 
-// ─── 2. 공급사 분포 · donut (공급사별 매출 비중)
-const CategoryDistChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ rows, loading }) => {
+// ─── 2. 공급사 분류별 분포 · donut (위탁·선결제·60회전·90회전·기타)
+const CATEGORY_COLORS: Record<string, string> = {
+  위탁:   "#0A2E4A",
+  선결제: "#0EA5E9",
+  "60회전": "#14B8A6",
+  "90회전": "#8B5CF6",
+  기타:   "#94A3B8",
+};
+const CategoryDistChart: React.FC<{ rows: StockFlowRow[]; loading: boolean; vendorCategoryMap?: Record<string, string> }> = ({ rows, loading, vendorCategoryMap }) => {
   const { data, total } = useMemo(() => {
     const map = new Map<string, number>();
     let t = 0;
@@ -112,21 +119,22 @@ const CategoryDistChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = 
       const qty = Number(r.sale_qty ?? 0);
       const price = Number(r.sale_price ?? 0);
       if (qty <= 0 || price <= 0) continue;
-      const sup = String(r.supplier ?? "").trim() || "기타";
+      const sup = String(r.supplier ?? "").trim();
+      const cat = (vendorCategoryMap && sup ? vendorCategoryMap[sup] : null) || "기타";
       const amount = qty * price;
-      map.set(sup, (map.get(sup) ?? 0) + amount);
+      map.set(cat, (map.get(cat) ?? 0) + amount);
       t += amount;
     }
     const sorted = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
     return {
-      data: sorted.map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] })),
+      data: sorted.map(([name, value]) => ({ name, value, color: CATEGORY_COLORS[name] ?? "#94A3B8" })),
       total: t,
     };
-  }, [rows]);
+  }, [rows, vendorCategoryMap]);
 
   return (
     <ChartCard
-      title="공급사 분포"
+      title="공급사 분류별 분포"
       icon={<PieIcon size={14} className="text-brand-deep" />}
       description={`전체 ${fmtWon(total)}원`}
       loading={loading}
@@ -675,6 +683,77 @@ const StockHealthGauge: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = (
   );
 };
 
+// ─── 9-A. 매입재고자산 Top 10 · purchase_price × closing_stock 기준
+const PurchaseStockTopChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ rows, loading }) => {
+  const data = useMemo(() => {
+    return rows
+      .map(r => {
+        const pp = Number(r.purchase_price ?? 0);
+        const stock = Number(r.closing_stock ?? 0);
+        if (pp <= 0 || stock <= 0) return null;
+        return {
+          name: String(r.product_name ?? "").trim(),
+          asset: Math.round(pp * stock),
+          stock,
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null && x.name !== "")
+      .sort((a, b) => b.asset - a.asset)
+      .slice(0, 10)
+      .map((x, i) => ({
+        name: x.name.length > 20 ? x.name.slice(0, 20) + "..." : x.name,
+        fullName: x.name,
+        asset: x.asset,
+        stock: x.stock,
+        color: CHART_COLORS[i % CHART_COLORS.length],
+      }));
+  }, [rows]);
+
+  const total = useMemo(() => data.reduce((s, d) => s + d.asset, 0), [data]);
+
+  return (
+    <ChartCard
+      title="매입재고자산 Top 10"
+      icon={<DollarSign size={14} className="text-violet-600" />}
+      description={`재고자산 합계 ${fmtWon(total)}원`}
+      loading={loading}
+      empty={data.length === 0}
+      emptyMessage="재고자산 데이터 없음"
+      minHeight={280}
+    >
+      <ResponsiveContainer width="100%" height={280}>
+        <BarChart data={data} layout="vertical" margin={{ top: 4, right: 50, bottom: 4, left: 4 }}>
+          <XAxis type="number" hide />
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={110}
+            tick={{ fontSize: 11, fill: "#52525b", fontWeight: 600 }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip
+            formatter={(v: any) => [fmtWon(Number(v)) + "원", "재고자산"]}
+            labelFormatter={(_: any, payload: any) => payload?.[0]?.payload?.fullName ?? ""}
+            contentStyle={{ background: "white", border: "1px solid #ede9fe", borderRadius: 8, fontSize: 12, boxShadow: "0 4px 12px rgba(139,92,246,0.12)" }}
+          />
+          <Bar dataKey="asset" radius={[0, 4, 4, 0]}>
+            {data.map((d, i) => (
+              <Cell key={i} fill={d.color} />
+            ))}
+            <LabelList
+              dataKey="asset"
+              position="right"
+              formatter={(v: any) => fmtWon(Number(v))}
+              style={{ fontSize: 10, fontWeight: 700, fill: "#7c3aed" }}
+            />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
+  );
+};
+
 // ─── 9. 급상승 Top 10 · 소진율 기준 (sale_qty / (opening+purchase) × 100)
 const SurgingTopChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ rows, loading }) => {
   const data = useMemo(() => {
@@ -826,31 +905,34 @@ const ZoneTopChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ ro
   );
 };
 
-// ─── DashboardCharts · 다중 row grid (9 차트)
+// ─── DashboardCharts · 다중 row grid
 export interface DashboardChartsProps {
   rows: StockFlowRow[];
   loading?: boolean;
+  /** 공급사명 → 분류 맵 (위탁·선결제·60회전·90회전·기타) */
+  vendorCategoryMap?: Record<string, string>;
 }
 
-export const DashboardCharts: React.FC<DashboardChartsProps> = ({ rows, loading = false }) => {
+export const DashboardCharts: React.FC<DashboardChartsProps> = ({ rows, loading = false, vendorCategoryMap }) => {
   return (
     <div className="flex flex-col gap-3">
-      {/* Row 1 · 매출 인사이트 · Top판매액 · 급상승Top · 카테고리분포 */}
+      {/* Row 1 · 맨 윗줄 · 전부 TOP10 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <TopSalesChart rows={rows} loading={loading} />
         <SurgingTopChart rows={rows} loading={loading} />
-        <CategoryDistChart rows={rows} loading={loading} />
+        <PurchaseStockTopChart rows={rows} loading={loading} />
       </div>
-      {/* Row 2 · 재고·손실·공급사 인사이트 */}
+      {/* Row 2 · 구역별 TOP10 시작 · 중간 손실TOP10 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <ZoneTopChart rows={rows} loading={loading} />
         <LossTopChart rows={rows} loading={loading} />
         <SupplierTopChart rows={rows} loading={loading} />
-        <StockHealthGauge rows={rows} loading={loading} />
       </div>
-      {/* Row 3 · 이익률·구역별 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      {/* Row 3 · 이익률·공급사분류·재고건강도 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <ProfitDistChart rows={rows} loading={loading} />
-        <ZoneTopChart rows={rows} loading={loading} />
+        <CategoryDistChart rows={rows} loading={loading} vendorCategoryMap={vendorCategoryMap} />
+        <StockHealthGauge rows={rows} loading={loading} />
       </div>
       {/* Row 4 · 상세 분석 · scatter + area */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
