@@ -47,6 +47,8 @@ import { resolveProduct } from "../../lib/normalizeProduct";
 import { addCachedProduct } from "../../lib/productsCache";
 // 2026-08-23 · #197 · 스캔 미분류 처리 방식 (개인 preference · modal|page 분기)
 import { useScanUnregisteredMode, setScanPendingProductCode } from "../../hooks/useScanUnregisteredMode";
+// 2026-09-07 · 창고 구역 · 상품 location 에서 자동 분류 (w1/w2)
+import { assignZonesToSlots } from "../../lib/warehouseZoneMap";
 
 // ─────────────────────────────────────────────────────────────
 // Props
@@ -341,9 +343,10 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     // location 파싱 → 매장1·2·3 구역 자동 배정 + 창고 구역 파싱
     const rm = (found as any).location ?? (found as any).display_location ?? null;
     const [z1, z2, z3] = parseRealMap(rm);
-    // 창고 구역: location 에서 창고1 코드 (WAREHOUSE_1_CODES) 파싱
-    // 간단히 "/" 분리 후 창고1 여부 판단은 StockRowCard 에서 warehouseZoneMap 으로 처리
-    const rmParts = rm ? String(rm).split("/").map((s: string) => s.trim()).filter(Boolean) : [];
+    // 2026-09-07 · 창고 구역 자동 분류 · assignZonesToSlots
+    //   · 창고1 코드 (24·25·26·27·7B·8A) → w1zone
+    //   · 나머지 유효 zone → w2zone
+    const slotZones = assignZonesToSlots(rm, (found as any).category_code);
 
     const newRow: StockRow = {
       key: `${result}-${Date.now()}`,
@@ -355,8 +358,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       store1AddQty:     "",
       store2AddQty:     "",
       store3AddQty:     "",
-      warehouse1Zone: rmParts[0] ?? null,
-      warehouse2Zone: rmParts[1] ?? null,
+      warehouse1Zone: slotZones.w1zone,
+      warehouse2Zone: slotZones.w2zone,
       store1Zone:    z1,
       store2Zone:    z2,
       store3Zone:    z3,
