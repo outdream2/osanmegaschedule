@@ -25,6 +25,9 @@ import { PageToolbar } from "../common/PageToolbar";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../lib/apiClient";
 import { InlineLabel } from "../common/InlineLabel";
+// 2026-09-08 · 사용자 지시 · 구역현황 상단바 판매중/판매중지/전체 필터
+import { SaleStatusFilter } from "../common/SaleStatusFilter";
+import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
@@ -94,6 +97,9 @@ const ZoneCategoryContent: React.FC = () => {
       .finally(() => setLoading(false));
   }, [season, months]);
 
+  // 2026-09-08 · 사용자 지시 · 판매중/판매중지/전체 필터
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "categoryTab.saleFilter" });
+
   const grouped = useMemo(() => {
     // 2026-08-10 · 사용자 정책 · 진열위치 구역 = spec (real_map 은 실제진열위치 · 별도)
     // spec "8A/냉" 같은 "/" 분리 상품 · 첫 부분(primary)만 카운트
@@ -108,6 +114,8 @@ const ZoneCategoryContent: React.FC = () => {
     for (const r of sales) {
       const code = String(r.product_code ?? "");
       const p = products[code] ?? {};
+      // 2026-09-08 · 사용자 지시 · 판매중 필터
+      if (!saleMatches((p as any).sale_status ?? (r as any).sale_status)) continue;
       // 2026-08-31 · #69 fix · resolveProductLocation 사용 · location 우선 · real_map fallback
       //   · 이전 · spec 만 · location/real_map 만 있는 상품은 "미배치" 로 빠짐 → 판매 데이터 안 보임
       const zone = (resolveProductLocation(p) ?? String((p as any).spec ?? "").trim());
@@ -132,7 +140,7 @@ const ZoneCategoryContent: React.FC = () => {
       map.set(key, cur);
     }
     return [...map.values()].sort((a, b) => b.totalAmount - a.totalAmount);
-  }, [sales, products]);
+  }, [sales, products, saleMatches]);
 
   const total = grouped.reduce((s, g) => s + g.totalAmount, 0);
   const fmt = (n: number) => n.toLocaleString();
@@ -459,6 +467,8 @@ const ZoneCategoryContent: React.FC = () => {
               ))}
             </div>
             <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setMonths(0); }} size="sm" hideLabel />
+            {/* 2026-09-08 · 사용자 지시 · 판매중/판매중지/전체 필터 */}
+            <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
             {/* 새로고침 · 우측 정렬 · 딥네이비 hover */}
             <button
               type="button"
