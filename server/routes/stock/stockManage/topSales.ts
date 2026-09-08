@@ -262,6 +262,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
               sale_amount_month: r.sale_amount_month ?? 0,
               last_purchase_qty: r.last_purchase_qty ?? null,
               location: null as string | null,
+              // 2026-09-08 · 판매중 필터 · RPC 경로에도 sale_status 필드 (기본 null · 아래 배치 조회로 채움)
+              sale_status: null as string | null,
             }));
             // 2026-07-30 · 반품필요 리스트 · sale_qty_month · last_purchase_qty
             // 2026-08-03 · 60d/90d 추가
@@ -347,31 +349,36 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
               console.warn(`[top-sales/rpc] boost fetch 실패:`, e?.message);
             }
             // location 배치 조회
+            // 2026-09-08 · 판매대시보드 판매중 필터 · sale_status 도 함께 조회 · rows 주입
             try {
               const targetCodes = rows.slice(0, limit).map(r => String(r.product_code ?? "").trim()).filter(Boolean);
               if (targetCodes.length > 0) {
                 const locMap = new Map<string, string | null>();
+                const saleStatusMap = new Map<string, string | null>();
                 const CHUNK = 500;
                 for (let i = 0; i < targetCodes.length; i += CHUNK) {
                   const chunk = targetCodes.slice(i, i + CHUNK);
                   const { data: page } = await supabase
                     .from("products")
-                    .select("product_code, location, display_location")
+                    .select("product_code, location, display_location, sale_status")
                     .in("product_code", chunk);
                   for (const p of page ?? []) {
                     const code = String(p.product_code ?? "").trim();
                     if (!code) continue;
                     locMap.set(code, (String(p.location ?? p.display_location ?? "").trim() || null));
+                    saleStatusMap.set(code, (String(p.sale_status ?? "").trim() || null));
                   }
                 }
                 for (const r of rows) {
                   const code = String(r.product_code ?? "").trim();
                   const loc = locMap.get(code);
                   if (loc !== undefined) r.location = loc;
+                  const ss = saleStatusMap.get(code);
+                  if (ss !== undefined) (r as any).sale_status = ss;
                 }
               }
             } catch (e: any) {
-              console.warn(`[top-sales/rpc] location fetch 실패:`, e?.message);
+              console.warn(`[top-sales/rpc] location/sale_status fetch 실패:`, e?.message);
             }
             const sign = dir === "asc" ? 1 : -1;
             const sorted = rows.sort((a: any, b: any) => {

@@ -262,7 +262,8 @@ export const SupplierDetailModalWrapper: React.FC<SupplierDetailModalWrapperProp
       showClose={false}
       cardStyle={{ maxHeight: "90vh" }}
     >
-      {vendor && <VendorDetailModal vendor={vendor} onClose={onClose} onSaved={onClose} />}
+      {/* 2026-09-08 · fix · onSaved={onClose} · 자동 저장 시 모달 즉시 닫힘 버그 · no-op 으로 교체 */}
+      {vendor && <VendorDetailModal vendor={vendor} onClose={onClose} onSaved={() => { /* 저장 후 모달 유지 · 사용자가 명시적으로 닫음 */ }} />}
     </Modal>
   );
 };

@@ -451,49 +451,48 @@ const ZoneCategoryContent: React.FC = () => {
         count={grouped.length}
         countLabel="개 구역"
         leftSlot={<span className="text-[15px] text-ink-soft hidden md:inline">진열위치 기반 · 구역 클릭 → 상품 상세</span>}
-        right={
-          <div className="flex items-center gap-2 flex-wrap">
-            <InlineLabel>기간</InlineLabel>
-            <div className="inline-flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
-              <button type="button" onClick={() => { setSeason(null); setMonths(0); }}
-                className={`px-2.5 h-7 text-[16px] font-semibold rounded-md transition-colors cursor-pointer ${!season && months === 0 ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
-                10일
-              </button>
-              {[1, 2, 3, 4, 5, 6].map(m => (
-                <button key={m} type="button" onClick={() => { setSeason(null); setMonths(m as any); }}
-                  className={`px-2.5 h-7 text-[16px] font-semibold rounded-md transition-colors cursor-pointer ${!season && months === m ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
-                  {m}개월
-                </button>
-              ))}
-            </div>
-            <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setMonths(0); }} size="sm" hideLabel />
-            {/* 2026-09-08 · 사용자 지시 · 판매중/판매중지/전체 필터 */}
-            <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
-            {/* 새로고침 · 우측 정렬 · 딥네이비 hover */}
-            <button
-              type="button"
-              onClick={() => {
-                setLoading(true);
-                const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.MAX) });
-                if (season) params.set("season", season);
-                else if (months > 0) params.set("months", String(months));
-                // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-                Promise.all([
-                  api.get<{ rows?: any[] }>(`/api/stock-manage/top-sales?${params}`).catch(() => ({ data: { rows: [] } })),
-                  getProductsMap(),
-                ])
-                  .then(([s, p]) => { setSales(Array.isArray(s.data?.rows) ? s.data.rows : []); setProducts(p ?? {}); })
-                  .catch((e: any) => { setSales([]); setProducts({}); showError(`새로고침 실패: ${e?.message ?? "네트워크 오류"}`); })
-                  .finally(() => setLoading(false));
-              }}
-              disabled={loading}
-              className="w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-brand-tint hover:border-brand-deep text-ink-soft hover:text-brand-deep transition-colors disabled:opacity-40 cursor-pointer"
-              title="새로고침"
-            >
-              {loading ? <Spinner size={14} tone="zinc" /> : <RefreshCw size={14} />}
+        right={<>
+          {/* 2026-09-08 · fix · PageToolbar right 이중 감싸기 제거 · SaleStatusFilter 추가로 오른쪽 밀림 */}
+          <InlineLabel>기간</InlineLabel>
+          <div className="inline-flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5 shrink-0">
+            <button type="button" onClick={() => { setSeason(null); setMonths(0); }}
+              className={`px-2.5 h-7 text-[16px] font-semibold rounded-md transition-colors cursor-pointer ${!season && months === 0 ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
+              10일
             </button>
+            {[1, 2, 3, 4, 5, 6].map(m => (
+              <button key={m} type="button" onClick={() => { setSeason(null); setMonths(m as any); }}
+                className={`px-2.5 h-7 text-[16px] font-semibold rounded-md transition-colors cursor-pointer ${!season && months === m ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
+                {m}개월
+              </button>
+            ))}
           </div>
-        }
+          <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setMonths(0); }} size="sm" hideLabel />
+          {/* 2026-09-08 · 사용자 지시 · 판매중/판매중지/전체 필터 */}
+          <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
+          {/* 새로고침 · 우측 정렬 · 딥네이비 hover */}
+          <button
+            type="button"
+            onClick={() => {
+              setLoading(true);
+              const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.MAX) });
+              if (season) params.set("season", season);
+              else if (months > 0) params.set("months", String(months));
+              // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+              Promise.all([
+                api.get<{ rows?: any[] }>(`/api/stock-manage/top-sales?${params}`).catch(() => ({ data: { rows: [] } })),
+                getProductsMap(),
+              ])
+                .then(([s, p]) => { setSales(Array.isArray(s.data?.rows) ? s.data.rows : []); setProducts(p ?? {}); })
+                .catch((e: any) => { setSales([]); setProducts({}); showError(`새로고침 실패: ${e?.message ?? "네트워크 오류"}`); })
+                .finally(() => setLoading(false));
+            }}
+            disabled={loading}
+            className="w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-brand-tint hover:border-brand-deep text-ink-soft hover:text-brand-deep transition-colors disabled:opacity-40 cursor-pointer shrink-0"
+            title="새로고침"
+          >
+            {loading ? <Spinner size={14} tone="zinc" /> : <RefreshCw size={14} />}
+          </button>
+        </>}
       />
 
       {/* 매장 구역도 */}
