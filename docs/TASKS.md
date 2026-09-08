@@ -28,26 +28,38 @@
 > - 자동 배정 · 상품 등록 시 · `assignZonesToSlots` 재사용 · 창고1/2 판정 + 매장1 default
 > - 매장 마스터 · KV `settings.storage_locations` (관리자 UI는 별도 태스크)
 > - 매장 상세위치 **필수** (서버 validation) · 창고 선택
-> - 표시 · 진열위치 나오는 32개 파일 · 위치 뱃지 리스트 (`매장1:332 · 매장2:212 · 창고1:105`)
+> - 표시 · 진열위치 나오는 파일 · 위치 뱃지 리스트 (`매장1:332 · 매장2:212 · 창고1:105`)
 > - 매장 미입력 시 · 빨간 뱃지 강조 (`매장1:미입력`)
 
-### 🟡 PENDING (신규 · 순차 진행)
+### ✅ 2026-09-08 완료 (T-SP 세트 · 자율 진행)
+
+| 커밋 | 태스크 | 내용 |
+|-----|-----|------|
+| `6e67a551` | **T-SP-1·2·3** | Migration `inventory_checks.shelf_positions JSONB` · KV `storage_locations` 시드·엔드포인트 · POST 병합·매장 필수 validation |
+| `d7a2712e` | **T-SP-4·6** | 상품등록 자동배정 (buildInitialShelfPositions) · 프리미티브 3종 (ShelfPositionInput·ShelfPositionsBadge·useStorageLocations) |
+| `14db14d7` | **T-SP-7** | ProductInfoPage · '상세 진열위치' 섹션 · 매장 필수 · 위치 추가 버튼 |
+| `b6e70ae3` | **T-SP-8** | InventoryEditPanel · InventoryEditModal · 각 zone stepper + ZONE_TO_LOCATION 병합 · useOrderManageData 확장 |
+| `3ab74edb` | **T-SP-9 P1** | GET /api/products/shelf-positions-map · useShelfPositionsMap · 6개 핵심 파일 뱃지 (ProductBasicInfoPanel·ScanPage·DisplayPage) |
+| `4a9820d5` | **T-SP-9 P2** | ProductPurchaseDetailPanel · ArrivalRowCard 뱃지 통합 |
+
+**결과 · 표시 통합 완료 파일 (사용자 즉시 확인 가능):**
+- ProductInfoPage 편집 뷰 · 헤더 뱃지 + 편집 섹션
+- ScanPage · 스캔 시 · zone 상단 뱃지 + BasicInfoPanel 진열위치 옆
+- DisplayPage · ProductInfoModal · ZoneMismatchTab · RealStockTablePage (grouped·flat·detail)
+- OrderManagePage 매입이력 상세 · 상품정보 탭 배치구역 옆
+- ProductArrivalPage · ArrivalRowCard · 매장구역 옆
+
+### 🟡 PENDING · 후속 (선택)
 
 | # | 태스크 | 우선순위 | 비고 |
 |---|-----|--------|------|
-| **T-SP-1** | Migration · `inventory_checks.shelf_positions JSONB DEFAULT '{}'` | 🔴 P0 | `migrations/20260908_add_inventory_checks_shelf_positions.sql` · 사용자 Supabase 실행 |
-| **T-SP-2** | KV settings · `storage_locations` 기본값 시드 · GET/POST endpoint | 🔴 P0 | 5개 (store1~3·warehouse1·2) · required_detail 플래그 |
-| **T-SP-3** | Server · `inventory_checks` 조회·저장 시 `shelf_positions` 병합 (spread) | 🔴 P0 | requests.ts COLS 확장 · 저장 시 기존 값 보존 |
-| **T-SP-4** | Server · 상품 등록 시 자동배정 · `shelf_positions` 초기화 | 🟡 P1 | `assignZonesToSlots` 재사용 · 매장1 default row |
-| **T-SP-5** | Server · 매장 위치 상세 필수 validation | 🟡 P1 | Zod refine · required_detail=true 인 위치 값 강제 |
-| **T-SP-6** | UI · 3-stepper 공용 프리미티브 (`ShelfPositionInput`) | 🟡 P1 | `src/components/common/ShelfPositionInput.tsx` · [층▲▼][칸▲▼][순서▲▼] |
-| **T-SP-7** | UI · 상품편집 모달에 위치별 상세 입력 통합 | 🟢 P2 | `storage_locations` 순회 · 매장 필수 표시 |
-| **T-SP-8** | UI · 실재고 저장 UI에 상세위치 입력 통합 | 🟢 P2 | StockCheckPage · 수량 옆에 ShelfPositionInput |
-| **T-SP-9** | UI · 진열위치 표시 32개 파일 · 위치별 뱃지 표시 | 🟢 P2 | 공용 헬퍼 `formatShelfPositions` · 매장 미입력 빨간 강조 |
+| **T-SP-USER-1** | Supabase SQL Editor 실행 · `migrations/20260908_add_inventory_checks_shelf_positions.sql` | 🔴 P0 | 사용자 직접 · 컬럼 배포 전에는 fallback 동작 |
+| **T-SP-9-REST** | 나머지 표시 파일 · 진열위치 표시 자리에 shelf 뱃지 확장 | 🟢 P3 | 대부분 location 내부 사용 · UI 렌더 파일 위주로 필요 시 추가 · CategoryTab·CriticalTab·ExpiryImminentTab·SalesTrend 등 |
+| **T-SP-BULK** | POST /api/inventory-checks/bulk · shelf_positions 병합 지원 | 🟢 P3 | 현재 단건 POST만 지원 · bulk 는 append-only |
+| **T-SP-MASTER-UI** | 매장·창고 마스터 관리 UI (매장4·5 추가) | 🟢 P3 | 현재는 KV JSON 직접 편집 · 관리자 페이지 필요 시 |
 
 ### 📋 스코프 밖 (별도 태스크로 분리)
 
-- 매장 마스터 관리 UI (매장4·5 등 추가) · KV JSON 편집으로 임시 대응
 - inventory_checks 기존 컬럼 리팩터 (warehouse1_stock 등 → JSONB) · 대규모 이관 · 별도 검토
 
 ---
