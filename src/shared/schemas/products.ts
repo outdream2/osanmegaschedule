@@ -9,7 +9,7 @@ export const CreateProductSchema = z.object({
   category: z.string().max(100).nullable().optional(),
   unit: z.string().max(30).nullable().optional(),
   spec: z.string().max(100).nullable().optional(),
-  barcode: z.string().max(50).nullable().optional(),
+  // 2026-09-08 · barcode 필드 제거 · product_code 자체가 바코드값 (13자리 EAN)
   location: z.string().max(200).nullable().optional(),
   display_location: z.string().max(200).nullable().optional(),
   optimal_stock: z.number().int().min(0).max(999999).nullable().optional(),

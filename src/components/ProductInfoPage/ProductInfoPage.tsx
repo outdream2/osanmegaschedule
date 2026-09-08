@@ -51,7 +51,7 @@ interface ProductRow {
   current_stock?: number | null;
   optimal_stock?: number | null;
   location?: string | null;
-  barcode?: string | null;
+  // 2026-09-08 · barcode 제거 · product_code 자체가 바코드값
   spec?: string | null;
   sale_status?: string | null; // 2026-08-26 · 사용자 지시 · 판매중 필터용
 }
@@ -83,8 +83,9 @@ function canManageProducts(session: AuthSession | null): boolean {
 }
 
 // ─── Detail panel ─────────────────────────────────────────────────────────
+// 2026-09-08 · barcode 편집 필드 제거 · product_code 자체가 바코드
 type EditableKey =
-  | "product_name" | "supplier" | "category" | "unit" | "spec" | "barcode"
+  | "product_name" | "supplier" | "category" | "unit" | "spec"
   | "location" | "optimal_stock" | "sale_price" | "purchase_price"
   | "brand" | "manufacturer" | "sale_status";
 
@@ -561,7 +562,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
           current_stock: p.current_stock ?? null,
           optimal_stock: p.optimal_stock ?? null,
           location: p.location ?? null,
-          barcode: p.barcode ?? null,
+          // 2026-09-08 · barcode 제거 · product_code 자체가 바코드값
           spec: p.spec ?? null,
           sale_status: (p as any).sale_status ?? null,
         }));

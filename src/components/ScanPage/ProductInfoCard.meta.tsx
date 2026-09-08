@@ -61,7 +61,7 @@ export const ProductInfoMeta: React.FC<ProductInfoMetaProps> = ({
           <div className="grid grid-cols-2 gap-x-3 gap-y-2">
             <InlineField label="브랜드" fieldKey="brand" value={(product as any).brand} {...fieldProps} />
             <InlineField label="제조사" fieldKey="manufacturer" value={(product as any).manufacturer} {...fieldProps} />
-            <InlineField label="바코드" fieldKey="barcode" value={(product as any).barcode} {...fieldProps} />
+            {/* 2026-09-08 · 바코드 편집 제거 · product_code 자체가 바코드값 (헤더 이미 표시) */}
             <InlineField label="유효기간" fieldKey="expiry_date" value={(product as any).expiry_date} type="date" {...fieldProps} />
           </div>
           <div className="mt-2">

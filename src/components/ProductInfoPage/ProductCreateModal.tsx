@@ -64,7 +64,8 @@ interface Props {
    * 등록 성공 콜백 · (code, product) 형태로 확장 (하위 호환 유지)
    *   · product · 방금 등록한 상품 정보 · 후속 로컬 캐시 삽입 · UI 반영 등에 사용
    */
-  onCreated: (code: string, product?: { product_name: string; supplier: string | null; spec: string | null; barcode: string | null; location: string | null }) => void;
+  // 2026-09-08 · barcode 제거 · product_code 자체가 바코드
+  onCreated: (code: string, product?: { product_name: string; supplier: string | null; spec: string | null; location: string | null }) => void;
   /** 2026-08-23 · #179 · 바코드 스캔 미등록 즉시 등록 · product_code 사전 채움 */
   initialCode?: string;
   /** 2026-08-23 · #179 · barcode 사전 채움 (스캔 코드가 바코드 = product_code 인 경우 함께) */
@@ -75,6 +76,7 @@ interface Props {
   initialName?: string;
 }
 
+// 2026-09-08 · barcode 필드 제거 · product_code 자체가 바코드값 (13자리 EAN)
 type Form = {
   product_code: string;
   product_name: string;
@@ -82,7 +84,6 @@ type Form = {
   category: string;
   unit: string;
   spec: string;
-  barcode: string;
   location: string;
   optimal_stock: string;
   sale_price: string;
@@ -98,7 +99,6 @@ const EMPTY: Form = {
   category: "",
   unit: "",
   spec: "",
-  barcode: "",
   location: "",
   optimal_stock: "",
   sale_price: "",
@@ -217,12 +217,12 @@ export const ProductCreateModal: React.FC<Props> = ({
   };
 
   // 2026-08-23 · #179 · open + initialCode 변경 시 · 사전 채움 (한 번만)
+  // 2026-09-08 · barcode 필드 제거 · initialBarcode 는 무시 (product_code 로 통합)
   React.useEffect(() => {
     if (!open) return;
     setForm({
       ...EMPTY,
-      product_code: initialCode ?? "",
-      barcode: initialBarcode ?? initialCode ?? "",
+      product_code: initialCode ?? initialBarcode ?? "",
       product_name: initialName ?? "",
     });
     setError(null);
@@ -257,8 +257,7 @@ export const ProductCreateModal: React.FC<Props> = ({
         category: form.category.trim() || null,
         unit: form.unit.trim() || null,
         spec: form.spec.trim() || null,
-        // 2026-08-24 · 사용자 지시 · 상품코드 = 바코드 · 자동 동일값 세팅
-        barcode: form.product_code.trim() || null,
+        // 2026-09-08 · barcode 필드 제거 · product_code 자체가 바코드값 (13자리 EAN)
         location: form.location.trim() || null,
         optimal_stock: parseNum(form.optimal_stock),
         sale_price: parseNum(form.sale_price),
@@ -277,11 +276,11 @@ export const ProductCreateModal: React.FC<Props> = ({
       const { data } = await api.post<{ ok: boolean; product_code: string }>("/api/products", parsed.data);
       showSuccess(`상품 등록 완료 · ${data.product_code}`);
       // 2026-08-23 · 후속 캐시 삽입용 · product 정보도 전달 (하위 호환)
+      // 2026-09-08 · barcode 필드 제거 · product_code 자체가 바코드값
       onCreated(data.product_code, {
         product_name: parsed.data.product_name,
         supplier: parsed.data.supplier ?? null,
         spec: parsed.data.spec ?? null,
-        barcode: parsed.data.barcode ?? null,
         location: parsed.data.location ?? null,
       });
       // 실재고 테이블 등 구독 컴포넌트 자동 리로드

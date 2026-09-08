@@ -217,7 +217,7 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
               <InfoRow label="현재고 (ERP)" value={infoData.current_stock != null ? `${fmt(infoData.current_stock)}` : "-"} />
               <InfoRow label="적정재고"   value={infoData.optimal_stock != null ? `${fmt(infoData.optimal_stock)}` : "-"} />
               <InfoRow label="판매상태"   value={infoData.sale_status ?? "-"} />
-              <InfoRow label="바코드"     value={infoData.barcode ?? "-"} mono />
+              {/* 2026-09-08 · 바코드 = 상품코드 · 위 '상품코드' InfoRow 중복 · 제거 */}
               <InfoRow label="유통기한"   value={infoData.expiry_date ?? "-"} />
             </div>
           )}

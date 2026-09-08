@@ -267,7 +267,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               location: (product as any).location ?? (product as any).display_location,
               display_location: (product as any).display_location,
               sale_status: (product as any).sale_status,
-              barcode: (product as any).barcode,
+              // 2026-09-08 · barcode 제거 · product_code 자체가 바코드값
               current_stock: (product as any).current_stock,
               warehouse_stock: (product as any).warehouse_stock,
               store_stock: (product as any).store_stock,

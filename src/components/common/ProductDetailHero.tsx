@@ -20,7 +20,7 @@ export interface ProductDetailHeroInfo {
   category_code?: string | null;
   supplier?: string | null;
   sale_status?: string | null;
-  barcode?: string | null;
+  // 2026-09-08 · barcode 제거 · product_code 자체가 바코드값
 }
 
 export interface ProductDetailHeroProps {
@@ -80,12 +80,7 @@ export const ProductDetailHero: React.FC<ProductDetailHeroProps> = ({
                   <span className="text-zinc-600">{product.supplier}</span>
                 </>
               )}
-              {product.barcode && (
-                <>
-                  <span className="text-zinc-300">·</span>
-                  <span className="font-mono tabular-nums text-zinc-400 text-[14px]">BC {product.barcode}</span>
-                </>
-              )}
+              {/* 2026-09-08 · barcode 표시 제거 · product_code 이미 위에 표시됨 (동일 값) */}
             </div>
           </div>
           {actions && (

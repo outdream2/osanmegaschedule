@@ -26,7 +26,7 @@ export interface ProductBasic {
   location?: string | null;
   display_location?: string | null;   // legacy fallback
   sale_status?: string | null;
-  barcode?: string | null;            // 2026-09-03 · 사용자 지시 · 바코드 필수 표시
+  // 2026-09-08 · barcode 제거 · product_code 자체가 바코드값
   current_stock?: number | null;
   warehouse_stock?: number | null;    // inv 파생
   store_stock?: number | null;        // inv 파생
@@ -163,15 +163,16 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
       )}
       <div className={compact ? "grid grid-cols-2 sm:grid-cols-4 gap-2.5" : "grid grid-cols-2 md:grid-cols-4 gap-3"}>
         {/* 2026-09-03 · 사용자 지시 · 우선순위 재배치 · 수량·단가·바코드·판매상태·구역 우선 */}
-        {/* Row 1 · 핵심 · 상품명 | 바코드 | 판매상태 | 진열위치 */}
+        {/* Row 1 · 핵심 · 상품명 | 바코드(=상품코드) | 판매상태 | 진열위치 */}
+        {/* 2026-09-08 · barcode 컬럼 제거 · product_code 자체가 바코드값 (13자리 EAN) */}
         <Field label="상품명" className="col-span-2">
           <span className={valueCls + " break-keep"} title={product.product_name ?? undefined}>
             {product.product_name || "-"}
           </span>
         </Field>
         <Field label="바코드" icon={<Barcode size={11} />}>
-          <span className={valueCls + " tabular-nums break-all"} title={product.barcode ?? undefined}>
-            {product.barcode || <span className="text-zinc-300">-</span>}
+          <span className={valueCls + " tabular-nums break-all"} title={product.product_code ?? undefined}>
+            {product.product_code || <span className="text-zinc-300">-</span>}
           </span>
         </Field>
         <Field label="판매상태">

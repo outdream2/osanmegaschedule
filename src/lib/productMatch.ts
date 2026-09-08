@@ -1,11 +1,11 @@
 // src/lib/productMatch.ts
 // 2026-08-29 · 사용자 지시 · 상품명 검색 · 프로젝트 전체 · 동일 로직 통일
+// 2026-09-08 · barcode 필드 제거 · product_code 자체가 바코드값 (13자리 EAN)
 //
 // 매칭 규칙 (통일):
 //   · product_name · 원문 부분일치 + 초성 매칭 (hangulSearch.matchHangul)
-//   · product_code · 원문 부분일치 (대소문자 무시)
+//   · product_code · 원문 부분일치 (대소문자 무시) · **바코드값 포함**
 //   · supplier    · 원문 부분일치 + 초성 매칭
-//   · barcode     · 원문 부분일치 (있으면)
 //   · 하나라도 매칭 시 · true (OR 조건)
 //
 // 사용:
@@ -20,14 +20,13 @@ export interface ProductMatchable {
   product_name?: string | null;
   product_code?: string | null;
   supplier?: string | null;
-  barcode?: string | null;
 }
 
 /**
  * 상품 하나에 대한 검색어 매칭
  *   · query 비어있으면 · true (모두 통과)
  *   · 상품명·공급사 · 원문 + 초성 매칭 (matchHangul)
- *   · 코드·바코드 · 원문 부분일치만 (대소문자 무시)
+ *   · product_code · 원문 부분일치만 (바코드값 포함 · 대소문자 무시)
  */
 export function matchesProductQuery(product: ProductMatchable, query: string): boolean {
   const q = (query ?? "").trim();
@@ -41,12 +40,9 @@ export function matchesProductQuery(product: ProductMatchable, query: string): b
   const supplier = String(product.supplier ?? "");
   if (supplier && matchHangul(supplier, q)) return true;
 
-  // 코드 · 바코드 · 원문 부분일치 (숫자·영문 · 초성 매칭 불필요)
+  // product_code · 원문 부분일치 (숫자·영문 · 초성 매칭 불필요 · 바코드값 포함)
   const code = String(product.product_code ?? "").toLowerCase();
   if (code && code.includes(qLower)) return true;
-
-  const barcode = String(product.barcode ?? "").toLowerCase();
-  if (barcode && barcode.includes(qLower)) return true;
 
   return false;
 }
