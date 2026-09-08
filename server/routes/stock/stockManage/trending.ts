@@ -60,9 +60,13 @@ router.get("/api/stock-manage/trending", asyncHandler(async (req, res) => {
           name: String(r.product_name ?? code),
           supplier: r.supplier_name ?? null,
         };
+        // 2026-09-08 · fix · prior 중복 카운트 버그
+        //   · 이전 · if + if · snap >= recentFromStr 이면 · priorFromStr 조건도 자동 true (recentFromStr > priorFromStr)
+        //     → recent 판매량이 prior 에도 합산 · 급상승률 왜곡 (recent/prior 비율 항상 낮게)
+        //   · 이후 · else if · recent 아니면 · prior · 상호배타
         if (hasPriorDays) {
           if (snap >= recentFromStr) cur.recent += q;
-          if (snap >= priorFromStr)  cur.prior  += q;
+          else if (snap >= priorFromStr)  cur.prior  += q;
         } else {
           if (snap >= recentFromStr) cur.recent += q;
           else cur.prior += q;
