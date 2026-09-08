@@ -578,6 +578,23 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
   const results: any[] = [];
   const now = new Date().toISOString();
 
+  // 2026-09-08 · 사용자 지시 · 이메일 발주서에 발주처 정보 추가 (약국 이름 · 담당자 · 연락처)
+  //   · KV settings.company_info 에서 name · representativeName · phone 조회
+  let issuer: { name: string; representativeName: string; phone: string } = {
+    name: "약국", representativeName: "", phone: "",
+  };
+  try {
+    const { data: ciRow } = await supabase.from("app_settings").select("value").eq("key", "company_info").maybeSingle();
+    const ci = ciRow?.value as any;
+    if (ci && typeof ci === "object") {
+      issuer = {
+        name: String(ci.name ?? "약국").trim() || "약국",
+        representativeName: String(ci.representativeName ?? "").trim(),
+        phone: String(ci.phone ?? "").trim(),
+      };
+    }
+  } catch { /* silent · fallback default */ }
+
   // 각 공급사 vendors 조회 (담당자·이메일·전화 보강)
   for (const group of bySupplier) {
     const supName = String(group.supplier ?? "").trim();
@@ -651,13 +668,22 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
           // 2026-09-03 · 한글 인코딩 fix · <meta charset=utf-8> 명시
           //   · 일부 이메일 클라이언트 (Outlook 구버전 등) 는 charset 미명시 시 · CP949 로 해석 · 한글 깨짐
           //   · nodemailer 는 Content-Type charset=utf-8 자동이지만 · HTML body 내부에도 명시하는 게 안전
+          // 2026-09-08 · 사용자 지시 · 발주처 정보 추가 (약국 이름 · 담당자 · 연락처)
+          const issuerBlock = `
+            <div style="margin-top:12px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px">
+              <div style="font-size:12px;color:#64748b;font-weight:700;letter-spacing:0.05em;margin-bottom:4px">발주처</div>
+              <div style="font-size:15px;font-weight:700;color:#0A2E4A">${issuer.name}</div>
+              ${issuer.representativeName ? `<div style="font-size:13px;color:#334155;margin-top:2px">담당자 · ${issuer.representativeName}</div>` : ""}
+              ${issuer.phone ? `<div style="font-size:13px;color:#334155;margin-top:2px">연락처 · ${issuer.phone}</div>` : ""}
+            </div>`;
           const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
             <div style="font-family:Pretendard,sans-serif;color:#1a1a1a">
               <h2 style="color:#0A2E4A;margin:0 0 8px">📦 발주서</h2>
               <p>공급사 <b>${supName}</b> 앞 · 발주번호 <b>${order_number}</b></p>
               <p>발주일: ${order_date ?? new Date().toISOString().slice(0,10)}
                  · 희망 입고일: ${desired_arrival ?? "-"}</p>
-              <table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%">
+              ${issuerBlock}
+              <table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;margin-top:12px">
                 <thead style="background:#f5f5f5">
                   <tr><th>상품코드</th><th>상품명</th><th>수량</th><th>단가</th></tr>
                 </thead>

@@ -134,6 +134,14 @@ export function useOrderManageData(getCode: (p: ProductInfo) => string) {
     window.addEventListener("inventory-checks-updated", handler);
     return () => window.removeEventListener("inventory-checks-updated", handler);
   }, [loadInvMap, loadProducts, loadOrderReqs]);
+  // 2026-09-08 · fix · 상품 등록/편집 시 · allProductsMap 자동 재로드
+  //   · 이전 · mount 후 · 재로드 이벤트 없음 → 신규 상품 · 발주필요 검색에서 안 보임
+  //   · 이후 · products-map-updated 이벤트 리스닝 (ProductCreateModal · ProductInfoPage 에서 dispatch)
+  useEffect(() => {
+    const handler = () => { reloadAllProductsMap(); };
+    window.addEventListener("products-map-updated", handler);
+    return () => window.removeEventListener("products-map-updated", handler);
+  }, [reloadAllProductsMap]);
 
   // invStockMap 파생 (창고/매장 합산)
   const invStockMap = new Map<string, InvStockEntry>();
