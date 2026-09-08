@@ -14,6 +14,9 @@ import { Badge } from "../common/Badge";
 import { RealMapSelector } from "../ScanPage/RealMapSelector";
 // 2026-09-01 · 실재고 UI 벤치마킹 · 창고/매장 자동 분류 · 관련 구역 표시
 import { resolveWarehouseVisibility, classifyArrivalSlot, assignZonesToSlots, type ArrivalSlot } from "../../lib/warehouseZoneMap";
+// 2026-09-08 · 상세 진열위치 뱃지 · 매장/창고 구역 옆에 3자리 표시
+import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
+import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
 
 export type ItemStatus = "pending" | "match" | "mismatch";
 
@@ -135,6 +138,9 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
   const productCategoryCode = item.product?.category_code ?? null;
   const currentStock = Number(item.product?.current_stock ?? 0);
   const optimalStock = Number(item.product?.optimal_stock ?? 0);
+  // 2026-09-08 · 상세 진열위치 · 이 상품의 매장/창고 3자리
+  const shelfMap = useShelfPositionsMap();
+  const shelfPositions = item.code ? shelfMap[item.code] : null;
   const warehouseVis = useMemo(() => resolveWarehouseVisibility(productRealMap), [productRealMap]);
   const slotZones = useMemo(() => assignZonesToSlots(productRealMap, productCategoryCode), [productRealMap, productCategoryCode]);
   const targetSlot = useMemo(() => classifyArrivalSlot(item.location), [item.location]);
@@ -229,6 +235,8 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
             value={item.location}
             onChange={(v) => onSetLocation(item.key, v)}
           />
+          {/* 2026-09-08 · 상세 진열위치 뱃지 · 매장구역 옆 필수 표시 */}
+          <ShelfPositionsBadge positions={shelfPositions} size="sm" />
           {/* 창고구역 배지 · 상품 location or 사용자 선택 기반 · 창1/창2 자동 */}
           {relatedSlots.filter(rs => rs.slot === "w1" || rs.slot === "w2").length > 0 && (
             <>

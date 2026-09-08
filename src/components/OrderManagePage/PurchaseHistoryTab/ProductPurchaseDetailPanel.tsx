@@ -17,6 +17,9 @@ import { api, ApiError } from "../../../lib/apiClient";
 import { getErrorMessage } from "../../../lib/errorMessage";
 import { useToast, toastClass } from "../../../hooks/useToast";
 import { useConfirm } from "../../../hooks/useConfirm";
+// 2026-09-08 · 상세 진열위치 뱃지 · 배치구역 옆 표시
+import { ShelfPositionsBadge } from "../../common/ShelfPositionsBadge";
+import { useShelfPositionsMap } from "../../../hooks/useShelfPositionsMap";
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -61,6 +64,9 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
   const [deletedIds, setDeletedIds] = useState<Set<string | number>>(new Set());
   const { toast, showSuccess, showError } = useToast();
   const confirm = useConfirm();
+  // 2026-09-08 · 상세 진열위치 · 상품별 매장/창고 3자리
+  const shelfMap = useShelfPositionsMap();
+  const shelfPositions = shelfMap[product.product_code] ?? null;
 
   const avgUnitPrice = product.total_qty > 0 ? product.total_amount / product.total_qty : 0;
   const visibleRows = rows.filter(r => !deletedIds.has(r.id));
@@ -200,7 +206,12 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
               <InfoRow label="단위"       value={infoData.unit ?? "-"} />
               <InfoRow label="브랜드"     value={infoData.brand ?? "-"} />
               <InfoRow label="제조사"     value={infoData.manufacturer ?? "-"} />
-              <InfoRow label="배치구역"   value={infoData.location ?? infoData.display_location ?? "-"} />
+              <InfoRow label="배치구역"   value={
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span>{infoData.location ?? infoData.display_location ?? "-"}</span>
+                  <ShelfPositionsBadge positions={shelfPositions} size="sm" />
+                </div>
+              } />
               <InfoRow label="판매가"     value={infoData.sale_price != null ? `${fmtWon(infoData.sale_price)}원` : "-"} />
               <InfoRow label="매입가"     value={infoData.purchase_price != null ? `${fmtWon(infoData.purchase_price)}원` : "-"} />
               <InfoRow label="현재고 (ERP)" value={infoData.current_stock != null ? `${fmt(infoData.current_stock)}` : "-"} />
