@@ -64,7 +64,15 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
   onNavigate,
   onLogout,
 }) => {
-  const [subTab, setSubTab] = useState<ArSubTab>(() => readInitialSubTab());
+  const [subTab, _setSubTab] = useState<ArSubTab>(() => readInitialSubTab());
+  // 2026-09-08 · 사용자 지시 · breadcrumb "연차신청" 잘못 표시 fix
+  //   · 내부 subTab 변경 시 · localStorage + sidebar:subtab 이벤트 dispatch
+  //   · useActiveSubTab 훅이 이걸 리슨해서 breadcrumb 라벨 갱신
+  const setSubTab = React.useCallback((next: ArSubTab) => {
+    _setSubTab(next);
+    try { localStorage.setItem("sidebar.subtab.approval-request", next); } catch { /* silent */ }
+    try { window.dispatchEvent(new CustomEvent("sidebar:subtab", { detail: { page: "approval-request", subTab: next } })); } catch { /* silent */ }
+  }, []);
   const isMobile = useIsMobile();
   const SIDEBAR_ENABLED = useSidebarEnabled(); // 2026-08-16 · 로컬 상수 유지
 
