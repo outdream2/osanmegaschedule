@@ -106,7 +106,10 @@ export interface SplitPanelProps {
  */
 export const SplitPanel: React.FC<SplitPanelProps> = ({
   storageKey,
-  defaultWidth = 288,
+  // 2026-09-08 · 사용자 지시 · SplitPanel 프레임워크 기본값 · 5:5 (window.innerWidth × 0.5)
+  //   · 명시적으로 defaultWidth 안 넘기면 · 자동으로 절반 폭 계산
+  //   · localStorage 저장값 있으면 그것 우선 (기존 동작 유지)
+  defaultWidth = typeof window !== "undefined" ? Math.max(280, Math.round(window.innerWidth * 0.5)) : 600,
   minWidth = 200,
   // 2026-09-02 · 사용자 지시 · 다시 확대 (1200→2400) · WQHD/4K 모니터 · 넓게 조정 가능
   //   · 실제 드래그 시 viewport 기반 동적 clamp (하단 startResize) · 우측 최소 320px 보장
