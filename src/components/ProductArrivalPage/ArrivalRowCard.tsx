@@ -321,6 +321,19 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           </div>
           </div>
 
+          {/* 2026-09-08 · 사용자 지시 · 일치 선택 시 · 예상 현재고 = 현재고 + 매입수량 표시 */}
+          {isMatch && item.qty > 0 && (
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <span className="text-[12px] font-semibold text-emerald-600 tracking-tight">예상 현재고</span>
+              <div className="inline-flex items-baseline gap-1 px-2.5 h-11 rounded-xl border-2 border-emerald-200 bg-emerald-50/60 min-w-[80px] justify-center">
+                <span className="text-[13px] font-semibold text-zinc-500 tabular-nums">{currentStock}</span>
+                <span className="text-[12px] font-bold text-emerald-600">+{item.qty}</span>
+                <span className="text-emerald-500 font-light text-[13px]">=</span>
+                <span className="text-[18px] font-extrabold tabular-nums text-emerald-700 leading-none">{currentStock + item.qty}</span>
+              </div>
+            </div>
+          )}
+
           {/* 삭제 · 우측 */}
           <button
             onClick={() => onRemove(item.key)}
