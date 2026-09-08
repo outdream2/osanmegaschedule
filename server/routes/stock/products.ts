@@ -731,6 +731,70 @@ router.patch("/api/products/:code", authorize(1), validateBody(UpdateProductSche
     throw new HttpError(500, updErr.message);
   }
   resetProductCache();
+
+  // 2026-09-08 · 사용자 지시 · 진열구역 (display_location/location) 변경 시 · shelf_positions 자동 업데이트
+  //   · 매장1 default + 창고1/2 (구역 기반) 슬롯 자동 생성 (기존 값 보존 · 신규 키만 추가)
+  //   · 판매중 상품만 대상 (판매중지·숨김은 실재고 없음 · 자동배정 X)
+  const locChanged =
+    Object.prototype.hasOwnProperty.call(updates, "display_location") ||
+    Object.prototype.hasOwnProperty.call(updates, "location");
+  if (locChanged) {
+    try {
+      const { data: prod } = await supabase
+        .from("products")
+        .select("product_name, sale_status, display_location, location, category")
+        .eq("product_code", code)
+        .maybeSingle();
+      const saleStatus = String(prod?.sale_status ?? "판매중").trim();
+      if (saleStatus === "판매중") {
+        const locSource =
+          (typeof prod?.display_location === "string" && prod.display_location) ||
+          (typeof prod?.location === "string" && prod.location) ||
+          null;
+        const initialPositions = buildInitialShelfPositions(locSource, prod?.category ?? null);
+
+        // 기존 inventory_checks row 조회 · 병합
+        const { data: ivList } = await supabase
+          .from("inventory_checks")
+          .select("id, shelf_positions")
+          .eq("product_code", code)
+          .order("checked_at", { ascending: false })
+          .limit(1);
+        const iv = ivList?.[0] ?? null;
+        const existingPos = (iv?.shelf_positions ?? {}) as Record<string, string | null>;
+        const merged: Record<string, string | null> = { ...existingPos };
+        // initial 키 중 · 기존에 없는 key 만 추가 (null 값)
+        for (const [k, v] of Object.entries(initialPositions)) {
+          if (!Object.prototype.hasOwnProperty.call(merged, k)) merged[k] = v;
+        }
+        if (iv) {
+          // 기존 row · UPDATE
+          const { error: mergeErr } = await supabase
+            .from("inventory_checks")
+            .update({ shelf_positions: merged })
+            .eq("id", iv.id);
+          if (mergeErr) console.warn(`[products PATCH] shelf_positions 병합 실패 (무시): ${mergeErr.message}`);
+          else console.log(`[products PATCH] shelf_positions 자동 업데이트 · ${code} · ${JSON.stringify(merged)}`);
+        } else {
+          // 신규 row · INSERT
+          const nowIso = new Date().toISOString();
+          const { error: insErr } = await supabase.from("inventory_checks").insert([{
+            product_code: code,
+            product_name: prod?.product_name ?? "",
+            shelf_positions: merged,
+            checked_at: nowIso,
+            status: "pending",
+            checked_by: "system:location-change",
+          }]);
+          if (insErr) console.warn(`[products PATCH] shelf_positions 신규 생성 실패 (무시): ${insErr.message}`);
+          else console.log(`[products PATCH] shelf_positions 신규 자동배정 · ${code} · ${JSON.stringify(merged)}`);
+        }
+      }
+    } catch (e: any) {
+      console.warn(`[products PATCH] shelf_positions 자동 업데이트 예외 (무시): ${e?.message}`);
+    }
+  }
+
   res.json({ ok: true, updated: Object.keys(updates), stripped: patchStripped });
 }));
 
