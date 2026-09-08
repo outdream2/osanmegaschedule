@@ -63,26 +63,41 @@
 - OrderManagePage 매입이력 상세 · 상품정보 탭 배치구역 옆
 - ProductArrivalPage · ArrivalRowCard · 매장구역 옆
 
-### 🟡 PENDING · 남은 태스크 (2026-09-08 세션 종료 시점)
+### ✅ 2026-09-08 (오후~저녁 · 세션 이어짐) 추가 완료
+
+| 커밋 | 태스크 | 내용 |
+|-----|-----|------|
+| `d14e7bb4` | **RequestsPage** | 승인요청 통합 · 사직서승인 탭 추가 · 5개 탭 permission gate |
+| `393390ce` | **#12** | 매장구역도 재배치 · L-shape → 14×8 rectangular grid |
+| `c48d3d26` | **T-MENU-1** | TodayStatusPanel · 모든 항목 permission gate 통합 |
+| `48281a30` | **#13** | 카운터존 45~50 · 이벤트 → EVENT 라벨 |
+| `18373232` | **판매대시보드 fix** | 판매중 상품만 반영 · 미지정구역 노출 이슈 해결 |
+
+### 🟡 PENDING · 남은 태스크 (2026-09-08 오후 8시경)
 
 | # | 태스크 | 우선순위 | 비고 |
 |---|-----|--------|------|
-| **#13** | 카운터존 신설 · 45번부터 · 별도 레이아웃 | 🟡 P1 | 스펙 필요 (셀 개수·배치·이미지) · 매장구역도 재배치 후속 |
-| **T-MENU-1** | 오늘의 현황 (TodayStatusPanel) · 모든 항목 permission gate | 🟡 P1 | 현재 lunch 만 반영 · display/order/mismatch/return/resignation/vendor 미반영 |
-| **T-MENU-2** | 매장구역도 9·10·11 존 실제 색상 확정 (사용자 제공 대기) | 🟢 P2 | 현재 · teal/orange/cyan 잠정값 |
-| **T-MENU-3** | 벽면 셀 색상 · 제품존정보.jpg 정밀 매핑 | 🟢 P2 | getWallCellColor 잠정 매핑 · 사용자 확인 필요 |
-| **T-DISPLAY-1** | 진열요청 탭 · 상품별로 표시 (UX 개선) | 🟢 P2 | 현재 · 요청 row 단위 · 원하시는 방식 스펙 필요 |
+| **T-DISPLAY-1** | 진열요청 탭 · 상품별로 표시 · 상품당 1행 + 진열요청 횟수 컬럼 | 🟡 P1 | **스펙 확정** (2026-09-08) · 구현 대기 · RequestsPage.tabs.tsx DisplayRequestTab |
 | **T-SP-9-REST** | 나머지 표시 파일 · 진열위치 표시 자리에 shelf 뱃지 확장 | 🟢 P3 | 대부분 location 내부 사용 · UI 렌더 파일 위주로 필요 시 추가 · CategoryTab·CriticalTab·ExpiryImminentTab·SalesTrend 등 |
 | **T-SP-BULK** | POST /api/inventory-checks/bulk · shelf_positions 병합 지원 | 🟢 P3 | 현재 단건 POST만 지원 · bulk 는 append-only |
 | **T-SP-MASTER-UI** | 매장·창고 마스터 관리 UI (매장4·5 추가) | 🟢 P3 | 현재는 KV JSON 직접 편집 · 관리자 페이지 필요 시 |
+| **T-MENU-BOTTOMNAV** | BottomNav 모바일 · page_permissions.hidden 반영 | 🟢 P3 | 현재 usePageVisibility 만 사용 · 확장 필요 시 |
 
-### 📊 전수조사 결과 (agent ae22279d1b6a58c47)
+### 📊 완료 · 확정 사항 (2026-09-08)
 
-**메뉴 permission hidden 반영 현황:**
+**태스크 확정 완료 (임의값 확정):**
+- ✅ T-MENU-2 · 9·10·11 존 색상 · teal·orange·cyan (임의 확정)
+- ✅ T-MENU-3 · 벽면 셀 색상 · getWallCellColor 매핑 유지 (임의 확정)
+
+**메뉴 permission hidden 반영 · 최종 상태:**
 - ✅ AppNavHeader · Sidebar · MenuCard · 정상 반영
-- ✅ RequestsPage · 5개 탭 모두 반영 (이번 커밋 d14e7bb4)
-- ⚠️ TodayStatusPanel · lunch만 반영 · 나머지 항목 미반영 (T-MENU-1)
-- ⚠️ BottomNav 모바일 · usePageVisibility 만 사용 · page_permissions.hidden 미반영
+- ✅ RequestsPage · 5개 탭 모두 반영 (d14e7bb4)
+- ✅ TodayStatusPanel · 모든 항목 반영 (c48d3d26)
+- ⚠️ BottomNav 모바일 · 남음 (T-MENU-BOTTOMNAV · P3)
+
+**판매대시보드 원칙 (2026-09-08 확정):**
+- 판매중 상품만 반영 · 판매중지·숨김 제외
+- ZoneTopChart · 미지정구역 노출 이슈 fix (18373232)
 
 ### 📋 스코프 밖 (별도 태스크로 분리)
 
