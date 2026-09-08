@@ -124,6 +124,10 @@ export const PaymentInputPage: React.FC = () => {
   const [rightTab, setRightTab] = useState<RightTab>("payments");
   // 2026-09-07 · 사용자 지시 · 우측 탭 공통 기간 필터 (1/3/6/12개월/전체)
   const [rightPeriodMonths, setRightPeriodMonths] = useState<number>(12);
+  // 2026-09-08 · 사용자 지시 · 커스텀 기간 지정 (from/to 날짜)
+  //   · 값 있을 때 · rightPeriodMonths 무시 · custom range 우선
+  const [customFrom, setCustomFrom] = useState<string>("");
+  const [customTo, setCustomTo] = useState<string>("");
   // 2026-08-26 · P0 fix · 모바일 우측 상세 모달 열림/닫힘 별도 state (기존 rightTab != null 은 항상 true)
   const [mobileDetailOpen, setMobileDetailOpen] = useState<boolean>(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -156,8 +160,16 @@ export const PaymentInputPage: React.FC = () => {
     setOrderHistory([]); setPurchaseDetails([]); setSales([]); setBalance(null); setPayments([]);
     const supEnc = encodeURIComponent(supplierName);
     // 999 = 전체 · 그 외 · months → days 환산
-    const months = rightPeriodMonths >= 999 ? 120 : rightPeriodMonths;
-    const days = months * 30;
+    // 2026-09-08 · 사용자 지시 · custom from/to 있으면 · 그 기간으로 days 산출
+    let months = rightPeriodMonths >= 999 ? 120 : rightPeriodMonths;
+    let days = months * 30;
+    if (customFrom && customTo) {
+      const f = new Date(customFrom + "T00:00:00");
+      const t = new Date(customTo + "T23:59:59");
+      const diff = Math.max(1, Math.ceil((t.getTime() - f.getTime()) / (24 * 60 * 60 * 1000)));
+      days = diff;
+      months = Math.max(1, Math.round(diff / 30));
+    }
     try {
       const [orderRes, purRes, salesRes, balRes, payRes] = await Promise.allSettled([
         api.get<{ orders?: OrderHistoryItem[] }>(`/api/order-history?days=${days}&supplier=${supEnc}`),
@@ -195,7 +207,7 @@ export const PaymentInputPage: React.FC = () => {
     } finally {
       setDataLoading(false);
     }
-  }, [showError, rightPeriodMonths]);
+  }, [showError, rightPeriodMonths, customFrom, customTo]);
 
   useEffect(() => {
     if (selected?.company_name) {
@@ -370,16 +382,44 @@ export const PaymentInputPage: React.FC = () => {
   const rightPane = selected ? (
     <div className="flex flex-col gap-3 h-full overflow-auto p-1">
       {/* 2026-09-07 · 사용자 지시 · 우측 탭 공통 기간 필터 · 탭 상단 배치 */}
-      <div className="flex items-center gap-2 px-1">
+      {/* 2026-09-08 · 사용자 지시 · 프리셋 옆에 커스텀 기간 (from/to) 지정 */}
+      <div className="flex items-center gap-2 px-1 flex-wrap">
         <span className="text-[14px] font-semibold text-ink-soft shrink-0">기간</span>
         <PeriodSelector
           options={PERIOD_MONTHS_EXT_PRESET}
           value={rightPeriodMonths}
-          onChange={(v) => setRightPeriodMonths(Number(v))}
+          onChange={(v) => { setRightPeriodMonths(Number(v)); setCustomFrom(""); setCustomTo(""); }}
           accent="teal"
           size="sm"
           ariaLabel="우측 탭 기간 선택"
         />
+        <span className="text-zinc-300 text-[13px]">|</span>
+        <span className="text-[13px] font-medium text-ink-soft">직접 지정</span>
+        <input
+          type="date"
+          value={customFrom}
+          onChange={(e) => setCustomFrom(e.target.value)}
+          className="h-8 px-2 text-[13px] border border-line rounded-md bg-white tabular-nums focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+          title="시작일"
+        />
+        <span className="text-zinc-400 text-[13px]">~</span>
+        <input
+          type="date"
+          value={customTo}
+          onChange={(e) => setCustomTo(e.target.value)}
+          className="h-8 px-2 text-[13px] border border-line rounded-md bg-white tabular-nums focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+          title="종료일"
+        />
+        {(customFrom || customTo) && (
+          <button
+            type="button"
+            onClick={() => { setCustomFrom(""); setCustomTo(""); }}
+            className="h-8 px-2 text-[13px] text-zinc-500 hover:text-ink border border-line rounded-md hover:bg-zinc-50 cursor-pointer transition"
+            title="커스텀 기간 초기화"
+          >
+            ✕
+          </button>
+        )}
       </div>
       {/* 2026-09-02 · 사용자 지시 · 최근결제내역 · 발주내역 앞 · 배지 (*건 · *상품) 제거 · 폰트 +2 */}
       <SplitRightTabs
