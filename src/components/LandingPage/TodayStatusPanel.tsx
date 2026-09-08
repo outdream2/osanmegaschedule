@@ -64,6 +64,12 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
     return false;
   };
   const lunchMenuVisible = isVisible("lunch", currentViewport) && !isPermsHidden("lunch");
+  // 2026-09-08 · 사용자 지시 · 모든 항목 · 메뉴 안보이기 반영
+  //   · 규칙 · 페이지 hidden 이면 · 오늘의 현황에서도 해당 항목 숨김
+  const leaveMenuVisible       = isVisible("leave", currentViewport)          && !isPermsHidden("leave");
+  const displayMenuVisible     = isVisible("display", currentViewport)        && !isPermsHidden("display");  // 발주·배치불일치 도 display 하위
+  const requestsMenuVisible    = isVisible("requests", currentViewport)       && !isPermsHidden("requests"); // 진열요청·반품·거래처 도 requests 하위
+  const businessMenuVisible    = isVisible("business-manage", currentViewport) && !isPermsHidden("business-manage"); // 사직서 · business-manage 하위
   return (
     <div className="w-full mb-6">
       <div className="flex items-center gap-2.5 mb-2 flex-wrap">
@@ -104,51 +110,60 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
         {/* 2026-08-25 · 사용자 지시 · 결제요청 배지 제거 · 오해 소지 (미결제 매입건 count · 결제요청 아닌 미납건) */}
       </div>
       {/* 7항목 (연차·진열발주·불일치·점심·재고점검·반품·사직서) · 각 클릭 → 페이지 이동 */}
+      {/* 2026-09-08 · 사용자 지시 · 메뉴 안보이기 설정 · 각 항목 반영 · isPermsHidden 헬퍼로 통합 */}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[19px] text-ink-soft pl-[13px]">
-        <button
-          type="button"
-          onClick={() => onNavigate("leave", authSession)}
-          className="inline-flex items-center gap-1.5 hover:text-amber-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
-          title="연차 승인 페이지로 이동"
-        >
-          <span className={`w-2 h-2 rounded-full ${leavePendingCount > 0 ? "bg-amber-500" : "bg-zinc-300"}`} />
-          연차 승인 <b className={`font-bold tabular-nums ${leavePendingCount > 0 ? "text-amber-700" : "text-ink"}`}>{leavePendingCount}</b>건
-        </button>
+        {leaveMenuVisible && (
+          <button
+            type="button"
+            onClick={() => onNavigate("leave", authSession)}
+            className="inline-flex items-center gap-1.5 hover:text-amber-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
+            title="연차 승인 페이지로 이동"
+          >
+            <span className={`w-2 h-2 rounded-full ${leavePendingCount > 0 ? "bg-amber-500" : "bg-zinc-300"}`} />
+            연차 승인 <b className={`font-bold tabular-nums ${leavePendingCount > 0 ? "text-amber-700" : "text-ink"}`}>{leavePendingCount}</b>건
+          </button>
+        )}
         {/* 2026-08-21 · #171 · 진열/발주 분리 · 사용자 요청 · 발주 별도 항목 (teal) */}
-        <button
-          type="button"
-          onClick={() => onNavigate("requests", authSession)}
-          className="inline-flex items-center gap-1.5 hover:text-sky-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
-          title="진열 요청 · 요청 목록으로 이동"
-        >
-          <span className={`w-2 h-2 rounded-full ${requestsCounts.display > 0 ? "bg-sky-500" : "bg-zinc-300"}`} />
-          진열 요청 <b className={`font-bold tabular-nums ${requestsCounts.display > 0 ? "text-sky-700" : "text-ink"}`}>{requestsCounts.display}</b>건
-        </button>
-        <button
-          type="button"
-          onClick={() => onNavigate("display", authSession)}
-          className="inline-flex items-center gap-1.5 hover:text-teal-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
-          title="발주 요청 · 매장>발주로 이동"
-        >
-          <span className={`w-2 h-2 rounded-full ${requestsCounts.order > 0 ? "bg-teal-500" : "bg-zinc-300"}`} />
-          발주 요청 <b className={`font-bold tabular-nums ${requestsCounts.order > 0 ? "text-teal-700" : "text-ink"}`}>{requestsCounts.order}</b>건
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            // 2026-08-25 · 사용자 지시 · 배치구역 불일치 → 매장구역 subtab 안 mismatch 탭으로 이동
-            try {
-              sessionStorage.setItem("dpInitialSubTab", "store");
-              sessionStorage.setItem("dpStoreInnerTab", "mismatch");
-            } catch { /* silent */ }
-            onNavigate("display", authSession);
-          }}
-          className="inline-flex items-center gap-1.5 hover:text-rose-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
-          title="배치구역 불일치 · 매장구역 안 탭으로 이동"
-        >
-          <span className={`w-2 h-2 rounded-full ${requestsCounts.mismatch > 0 ? "bg-rose-500" : "bg-zinc-300"}`} />
-          배치구역 불일치 <b className={`font-bold tabular-nums ${requestsCounts.mismatch > 0 ? "text-rose-700" : "text-ink"}`}>{requestsCounts.mismatch}</b>건
-        </button>
+        {requestsMenuVisible && (
+          <button
+            type="button"
+            onClick={() => onNavigate("requests", authSession)}
+            className="inline-flex items-center gap-1.5 hover:text-sky-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
+            title="진열 요청 · 요청 목록으로 이동"
+          >
+            <span className={`w-2 h-2 rounded-full ${requestsCounts.display > 0 ? "bg-sky-500" : "bg-zinc-300"}`} />
+            진열 요청 <b className={`font-bold tabular-nums ${requestsCounts.display > 0 ? "text-sky-700" : "text-ink"}`}>{requestsCounts.display}</b>건
+          </button>
+        )}
+        {displayMenuVisible && (
+          <button
+            type="button"
+            onClick={() => onNavigate("display", authSession)}
+            className="inline-flex items-center gap-1.5 hover:text-teal-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
+            title="발주 요청 · 매장>발주로 이동"
+          >
+            <span className={`w-2 h-2 rounded-full ${requestsCounts.order > 0 ? "bg-teal-500" : "bg-zinc-300"}`} />
+            발주 요청 <b className={`font-bold tabular-nums ${requestsCounts.order > 0 ? "text-teal-700" : "text-ink"}`}>{requestsCounts.order}</b>건
+          </button>
+        )}
+        {displayMenuVisible && (
+          <button
+            type="button"
+            onClick={() => {
+              // 2026-08-25 · 사용자 지시 · 배치구역 불일치 → 매장구역 subtab 안 mismatch 탭으로 이동
+              try {
+                sessionStorage.setItem("dpInitialSubTab", "store");
+                sessionStorage.setItem("dpStoreInnerTab", "mismatch");
+              } catch { /* silent */ }
+              onNavigate("display", authSession);
+            }}
+            className="inline-flex items-center gap-1.5 hover:text-rose-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
+            title="배치구역 불일치 · 매장구역 안 탭으로 이동"
+          >
+            <span className={`w-2 h-2 rounded-full ${requestsCounts.mismatch > 0 ? "bg-rose-500" : "bg-zinc-300"}`} />
+            배치구역 불일치 <b className={`font-bold tabular-nums ${requestsCounts.mismatch > 0 ? "text-rose-700" : "text-ink"}`}>{requestsCounts.mismatch}</b>건
+          </button>
+        )}
         {/* 2026-08-25 · 점심 메뉴 숨김 시 · 통계도 숨김 */}
         {lunchMenuVisible && (
           <button
@@ -162,27 +177,31 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
           </button>
         )}
         {/* 2026-08-25 · 사용자 지시 · 오늘의 현황 · 재고 점검 항목 제거 */}
-        <button
-          type="button"
-          onClick={() => onNavigate("requests", authSession)}
-          className="inline-flex items-center gap-1.5 hover:text-orange-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
-          title="반품 요청 · 요청 목록으로 이동"
-        >
-          <span className={`w-2 h-2 rounded-full ${requestsCounts.return > 0 ? "bg-orange-500" : "bg-zinc-300"}`} />
-          반품 요청 <b className={`font-bold tabular-nums ${requestsCounts.return > 0 ? "text-orange-700" : "text-ink"}`}>{requestsCounts.return}</b>건
-        </button>
-        <button
-          type="button"
-          onClick={() => onNavigate("business-manage", authSession)}
-          className="inline-flex items-center gap-1.5 hover:text-red-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
-          title="사직서 승인 · 경영관리로 이동"
-        >
-          <span className={`w-2 h-2 rounded-full ${requestsCounts.resignation > 0 ? "bg-red-500" : "bg-zinc-300"}`} />
-          사직서 승인 <b className={`font-bold tabular-nums ${requestsCounts.resignation > 0 ? "text-red-700" : "text-ink"}`}>{requestsCounts.resignation}</b>건
-        </button>
+        {requestsMenuVisible && (
+          <button
+            type="button"
+            onClick={() => onNavigate("requests", authSession)}
+            className="inline-flex items-center gap-1.5 hover:text-orange-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
+            title="반품 요청 · 요청 목록으로 이동"
+          >
+            <span className={`w-2 h-2 rounded-full ${requestsCounts.return > 0 ? "bg-orange-500" : "bg-zinc-300"}`} />
+            반품 요청 <b className={`font-bold tabular-nums ${requestsCounts.return > 0 ? "text-orange-700" : "text-ink"}`}>{requestsCounts.return}</b>건
+          </button>
+        )}
+        {(businessMenuVisible || requestsMenuVisible) && (
+          <button
+            type="button"
+            onClick={() => onNavigate("business-manage", authSession)}
+            className="inline-flex items-center gap-1.5 hover:text-red-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
+            title="사직서 승인 · 경영관리로 이동"
+          >
+            <span className={`w-2 h-2 rounded-full ${requestsCounts.resignation > 0 ? "bg-red-500" : "bg-zinc-300"}`} />
+            사직서 승인 <b className={`font-bold tabular-nums ${requestsCounts.resignation > 0 ? "text-red-700" : "text-ink"}`}>{requestsCounts.resignation}</b>건
+          </button>
+        )}
         {/* 2026-09-02 · 사용자 지시 · 거래처 승인 요청 · 관리자만 · 요청목록>거래처승인 탭 */}
         {/* 2026-09-03 · fix · 사용자 리포트 · 진열요청 탭으로 잘못 이동 · SK_SUBTAB_REQUESTS='vendor' 명시 후 이동 */}
-        {isAdmin && (
+        {isAdmin && requestsMenuVisible && (
           <button
             type="button"
             onClick={() => {
@@ -205,19 +224,20 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
           <div className="text-[15px] font-bold text-ink-soft mb-2 tracking-tight">요청 상세 · 카테고리별 대기 건수</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[16px]">
             {[
-              { label: "연차 승인", count: leavePendingCount, dot: "bg-amber-500", text: "text-amber-700", nav: "leave" as Exclude<AppNavPage, "landing"> },
-              { label: "진열 요청", count: requestsCounts.display, dot: "bg-sky-500", text: "text-sky-700", nav: "requests" as Exclude<AppNavPage, "landing"> },
-              { label: "발주 요청", count: requestsCounts.order, dot: "bg-teal-500", text: "text-teal-700", nav: "display" as Exclude<AppNavPage, "landing"> },
-              { label: "배치구역 불일치", count: requestsCounts.mismatch, dot: "bg-rose-500", text: "text-rose-700", nav: "display" as Exclude<AppNavPage, "landing">, beforeNav: () => {
+              // 2026-09-08 · 각 항목 · 메뉴 permission gate 통합 (leaveMenuVisible 등)
+              ...(leaveMenuVisible    ? [{ label: "연차 승인", count: leavePendingCount, dot: "bg-amber-500", text: "text-amber-700", nav: "leave" as Exclude<AppNavPage, "landing"> }] : []),
+              ...(requestsMenuVisible ? [{ label: "진열 요청", count: requestsCounts.display, dot: "bg-sky-500", text: "text-sky-700", nav: "requests" as Exclude<AppNavPage, "landing"> }] : []),
+              ...(displayMenuVisible  ? [{ label: "발주 요청", count: requestsCounts.order, dot: "bg-teal-500", text: "text-teal-700", nav: "display" as Exclude<AppNavPage, "landing"> }] : []),
+              ...(displayMenuVisible  ? [{ label: "배치구역 불일치", count: requestsCounts.mismatch, dot: "bg-rose-500", text: "text-rose-700", nav: "display" as Exclude<AppNavPage, "landing">, beforeNav: () => {
                 try { sessionStorage.setItem("dpInitialSubTab", "store"); sessionStorage.setItem("dpStoreInnerTab", "mismatch"); } catch { /* silent */ }
-              } },
+              } }] : []),
               // 2026-08-25 · 점심 메뉴 숨김 시 · 통계도 숨김 (breakdown)
               ...(lunchMenuVisible ? [{ label: "점심 신청", count: requestsCounts.lunch, dot: "bg-emerald-500", text: "text-emerald-700", nav: "lunch" as Exclude<AppNavPage, "landing"> }] : []),
               // 2026-08-25 · 사용자 지시 · 재고 점검 항목 제거 (breakdown 도 함께 숨김)
-              { label: "반품 요청", count: requestsCounts.return, dot: "bg-orange-500", text: "text-orange-700", nav: "requests" as Exclude<AppNavPage, "landing"> },
-              { label: "사직서 승인", count: requestsCounts.resignation, dot: "bg-red-500", text: "text-red-700", nav: "business-manage" as Exclude<AppNavPage, "landing"> },
+              ...(requestsMenuVisible ? [{ label: "반품 요청", count: requestsCounts.return, dot: "bg-orange-500", text: "text-orange-700", nav: "requests" as Exclude<AppNavPage, "landing"> }] : []),
+              ...((businessMenuVisible || requestsMenuVisible) ? [{ label: "사직서 승인", count: requestsCounts.resignation, dot: "bg-red-500", text: "text-red-700", nav: "business-manage" as Exclude<AppNavPage, "landing"> }] : []),
               // 2026-09-02 · 사용자 지시 · 거래처 승인 · 관리자만
-              ...(isAdmin ? [{ label: "거래처 승인", count: requestsCounts.vendor, dot: "bg-blue-500", text: "text-blue-700", nav: "requests" as Exclude<AppNavPage, "landing"> }] : []),
+              ...(isAdmin && requestsMenuVisible ? [{ label: "거래처 승인", count: requestsCounts.vendor, dot: "bg-blue-500", text: "text-blue-700", nav: "requests" as Exclude<AppNavPage, "landing"> }] : []),
               // 2026-08-25 · 사용자 지시 · 결제요청 항목 제거 (미결제 매입건 · 오해 소지)
             ].map(item => (
               <button
