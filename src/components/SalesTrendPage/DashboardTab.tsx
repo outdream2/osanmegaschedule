@@ -286,10 +286,16 @@ export const DashboardTab: React.FC = () => {
   }, [rows, saleMatches]);
 
   // 2026-09-07 · 사용자 지시 · classFilter 적용된 rows (KPI · 차트 · 리스트 공용)
+  // 2026-09-08 · 사용자 지시 · 판매대시보드 전체 · 판매중/판매중지 필터 적용
+  //   · 이전 · KPI (classFilteredRows) 는 saleMatches 미적용 · list 만 적용 · 불일치 유발
+  //   · 이후 · saleMatches 적용 + classFilter 적용 · KPI·Charts·List 모두 동일 base
   const classFilteredRows = useMemo(() => {
-    if (classFilter === "all") return rows;
-    return rows.filter(p => matchClassFilter((p as any).location ?? (p as any).display_location ?? null, classFilter));
-  }, [rows, classFilter]);
+    let base = rows.filter(p => saleMatches((p as any).sale_status));
+    if (classFilter !== "all") {
+      base = base.filter(p => matchClassFilter((p as any).location ?? (p as any).display_location ?? null, classFilter));
+    }
+    return base;
+  }, [rows, classFilter, saleMatches]);
 
   // ─── 표시 데이터 · 필터 + 클라 정렬 (loss · profit_rate · name) ─────────
   const displayRows = useMemo(() => {
@@ -475,10 +481,8 @@ export const DashboardTab: React.FC = () => {
       </div>
 
       {/* ── 2026-09-01 · 사용자 지시 · 차트 다양화 · 대시보드 답게 (Top10·카테고리·이익률) ── */}
-      {/* 2026-09-07 · classFilter 적용 · rows → classFilteredRows */}
-      {/* 2026-09-08 · 사용자 지시 · 판매대시보드 · 판매중 상품만 반영 (판매중지·숨김 제외) */}
-      {/*   · 원인 · '구역별 Top10 · 미지정구역' 노출 · 판매중 아닌 상품에 location 없음 → 미지정으로 집계됨 */}
-      <DashboardCharts rows={classFilteredRows.filter(r => saleMatches((r as any).sale_status))} loading={loading} vendorCategoryMap={vendorCategoryMap} />
+      {/* 2026-09-08 · classFilteredRows 자체가 saleMatches 적용됨 · 중복 filter 제거 */}
+      <DashboardCharts rows={classFilteredRows} loading={loading} vendorCategoryMap={vendorCategoryMap} />
 
       {/* ── 좌 · 재고흐름 테이블 · 우 · 상품 상세 ───────────────────────── */}
       <div className="flex flex-col lg:flex-row gap-2 items-stretch lg:min-h-[560px]">

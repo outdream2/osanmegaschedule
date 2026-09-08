@@ -228,7 +228,11 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
       // 2026-07-29 · Phase 3 (A) · Supabase RPC get_stock_flow 사용 · 단일 SQL 조인
-      if (!supplierFilter && !supplierCodeFilter) {
+      // 2026-09-08 · 사용자 지시 · RPC 심각한 축소 이슈 (실제 3,341건 → 335건 10배 축소)
+      //   · 원인 · RPC 함수 내부 하드 LIMIT 1000 상한
+      //   · fix · RPC 우회 · fallback path (raw stock_history 집계) 강제 · 정확한 판매수량 반영
+      const USE_RPC = false;  // 2026-09-08 · 정확성 우선 · 부하 낮음 (stock_history ~50K rows)
+      if (USE_RPC && !supplierFilter && !supplierCodeFilter) {
         try {
           const t0 = Date.now();
           const { data: rpcData, error: rpcError } = await supabase.rpc("get_stock_flow", {
