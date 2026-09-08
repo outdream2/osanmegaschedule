@@ -4,7 +4,7 @@
 //   · Checkbox 공통 헬퍼는 이 파일에 통합
 //   · toggleAll/toggleOne 등 헬퍼는 부모에서 넘김
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Bell, Package, CheckCircle, ShoppingCart,
   Square, CheckSquare, PaperPlaneTilt, Scroll, CaretDown, CaretUp,
@@ -93,6 +93,40 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
     return true;
   });
 
+  // 2026-09-08 · T-DISPLAY-1 · 상품별 그룹핑 · 상품당 1행 + 요청 횟수 뱃지
+  //   · 그룹 키 · product_code 우선 → product_name → `${category}::${zone_id}` fallback
+  //   · 대표 상태 · pending > prepared > done · 아직 진행 안 된 상태 우선 노출
+  //   · 대표 요청 · 대표 상태의 첫 번째 요청 (액션은 대표 요청 대상 · 처리 후 다음 요청이 자동 승격)
+  //   · 선택 · 그룹 전체 선택 시 그룹 내 모든 request id 추가 (삭제 등 bulk 자연스럽게 동작)
+  const grouped = useMemo(() => {
+    const map = new Map<string, DisplayRequest[]>();
+    for (const r of filtered) {
+      const key =
+        (r.product_code && String(r.product_code).trim()) ||
+        getProductName(r) ||
+        `${r.category}::${r.zone_id}`;
+      const list = map.get(key);
+      if (list) list.push(r); else map.set(key, [r]);
+    }
+    const priority = (s: string): number => (s === "pending" ? 0 : s === "prepared" ? 1 : 2);
+    const groups = Array.from(map.entries()).map(([key, list]) => {
+      const sorted = [...list].sort((a, b) => {
+        const p = priority(a.status) - priority(b.status);
+        if (p !== 0) return p;
+        // 같은 상태 · 최신 요청 우선 (requested_at desc)
+        return String(b.requested_at ?? "").localeCompare(String(a.requested_at ?? ""));
+      });
+      return { key, all: list, rep: sorted[0], count: list.length };
+    });
+    // 그룹 정렬 · 대표 상태 우선순위 → 대표 요청 최신순
+    groups.sort((a, b) => {
+      const p = priority(a.rep.status) - priority(b.rep.status);
+      if (p !== 0) return p;
+      return String(b.rep.requested_at ?? "").localeCompare(String(a.rep.requested_at ?? ""));
+    });
+    return groups;
+  }, [filtered]);
+
   const statusCounts = {
     all:      displayReqs.length,
     pending:  displayReqs.filter(r => r.status === "pending").length,
@@ -107,6 +141,17 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
     } else {
       setSelectedDisplay(prev => new Set([...prev, ...filtered.map(r => r.id)]));
     }
+  };
+
+  // 그룹 단위 선택 토글 · 그룹 내 모든 request id add/remove
+  const handleToggleGroup = (all: DisplayRequest[]) => {
+    const allSelected = all.every(r => selectedDisplay.has(r.id));
+    setSelectedDisplay(prev => {
+      const s = new Set(prev);
+      if (allSelected) all.forEach(r => s.delete(r.id));
+      else all.forEach(r => s.add(r.id));
+      return s;
+    });
   };
 
   return (
@@ -190,7 +235,7 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
         <EmptyState title={search.trim() ? "검색 결과 없음" : "해당 상태 없음"} size="compact" />
       ) : (
         <div className={`${CARD_BASE} divide-y divide-zinc-50 ${displayLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-          {filtered.map(r => {
+          {grouped.map(({ key, rep: r, all, count }) => {
             const isDone     = r.status === "done";
             const isPrepared = r.status === "prepared";
             const isPending  = !isDone && !isPrepared;
@@ -199,16 +244,17 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
             const statusTone: PillTone = isDone ? "emerald" : isPrepared ? "sky" : "amber";
             const statusLabel = isDone ? "진열완료" : isPrepared ? "준비완료" : "대기";
             const borderCls   = isDone ? "border-l-emerald-300" : isPrepared ? "border-l-sky-400" : "border-l-amber-400";
+            const groupSelected = all.every(x => selectedDisplay.has(x.id));
 
             return (
               <div
-                key={r.id}
+                key={key}
                 className={`flex items-start gap-3 px-4 py-3.5 border-l-2 ${borderCls} transition-all duration-150 ${
-                  selectedDisplay.has(r.id) ? "bg-brand-tint/50" : "hover:bg-zinc-50/40"
+                  groupSelected ? "bg-brand-tint/50" : "hover:bg-zinc-50/40"
                 } ${isDone ? "opacity-60" : ""}`}
               >
                 <div className="pt-0.5 shrink-0">
-                  <RequestCheckbox checked={selectedDisplay.has(r.id)} onChange={() => onToggleOne(r.id)} />
+                  <RequestCheckbox checked={groupSelected} onChange={() => handleToggleGroup(all)} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3">
@@ -218,6 +264,12 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                           {productName}
                         </span>
                         <StatusPill tone={statusTone} size="xs" dot>{statusLabel}</StatusPill>
+                        {count > 1 && (
+                          <span
+                            className="text-[13px] font-bold text-brand-deep bg-brand-tint px-1.5 py-0.5 rounded-md tabular-nums"
+                            title={`동일 상품 요청 ${count}건 · 대기 우선 처리`}
+                          >{count}건</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                         {(r.zone_label || r.zone_id) && (
