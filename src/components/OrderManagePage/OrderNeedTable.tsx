@@ -124,9 +124,9 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
             onClick={bulkRequestOrder}
             disabled={bulkRequesting || selectedLowStock.size === 0}
             className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[17px] font-bold text-white bg-gradient-to-br from-rose-500 to-rose-600 shadow-sm hover:shadow-md hover:from-rose-600 hover:to-rose-700 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:shadow-none transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap ring-1 ring-rose-500/20"
-            title="선택한 상품 일괄 발주요청 리스트로 전송"
+            title="체크된 상품 발주정보가 발주요청리스트로 이동"
           >
-            <span>{bulkRequesting ? "요청 중..." : `일괄 발주요청${selectedLowStock.size > 0 ? ` · ${selectedLowStock.size}` : ""}`}</span>
+            <span>{bulkRequesting ? "요청 중..." : `발주요청리스트에 추가${selectedLowStock.size > 0 ? ` · ${selectedLowStock.size}` : ""}`}</span>
           </button>
         </div>
       </div>
@@ -215,7 +215,7 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                               onChange={() => toggleLowStockOne(code)}
                               onClick={(e) => e.stopPropagation()}
                               className="mt-1 w-3.5 h-3.5 shrink-0 cursor-pointer accent-rose-500"
-                              title="선택 (일괄 발주요청)"
+                              title="선택 · 발주요청리스트에 추가"
                             />
                             <div className="min-w-0 flex-1">
                               {p.supplier ? (() => {
