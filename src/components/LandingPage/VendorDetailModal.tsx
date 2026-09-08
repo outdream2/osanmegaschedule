@@ -480,20 +480,41 @@ export const VendorDetailModal: React.FC<{
                   </select>
                 </Field>
                 <Field label="주문방식">
+                  {/* 2026-09-08 · 사용자 지시 · datalist 옆으로 뜨는 이슈 · 정상 select 로 교체 · 이쁜 드롭다운 */}
                   <div className="flex gap-1.5">
-                    <input
-                      type="text"
-                      value={draft.order_method}
-                      onChange={e => setDraft({ ...draft, order_method: e.target.value })}
-                      placeholder="목록·직접 입력"
-                      list="vendor-order-methods"
+                    <select
+                      value={
+                        VENDOR_ORDER_METHODS.some(m => m.name === draft.order_method)
+                          ? draft.order_method
+                          : (draft.order_method ? "__custom__" : "")
+                      }
+                      onChange={e => {
+                        const v = e.target.value;
+                        if (v === "__custom__") {
+                          // 유지 · 아래 커스텀 input 노출
+                          setDraft({ ...draft, order_method: draft.order_method || "" });
+                        } else {
+                          setDraft({ ...draft, order_method: v });
+                        }
+                      }}
                       className={`${inputCls} flex-1 min-w-0`}
-                    />
-                    <datalist id="vendor-order-methods">
+                    >
+                      <option value="">(선택)</option>
                       {VENDOR_ORDER_METHODS.map(m => (
-                        <option key={m.name} value={m.name} />
+                        <option key={m.name} value={m.name}>{m.name}</option>
                       ))}
-                    </datalist>
+                      <option value="__custom__">기타 · 직접 입력</option>
+                    </select>
+                    {/* 기타 선택 · 또는 목록에 없는 값 · 커스텀 입력 노출 */}
+                    {(!VENDOR_ORDER_METHODS.some(m => m.name === draft.order_method) || draft.order_method === "") && draft.order_method !== null && (
+                      <input
+                        type="text"
+                        value={draft.order_method || ""}
+                        onChange={e => setDraft({ ...draft, order_method: e.target.value })}
+                        placeholder="직접 입력"
+                        className={`${inputCls} flex-1 min-w-0`}
+                      />
+                    )}
                     {(() => {
                       const url = findOrderMethodUrl(draft.order_method);
                       return (
