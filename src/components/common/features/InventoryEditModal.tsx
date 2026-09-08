@@ -35,6 +35,8 @@ export interface InventoryEditModalProps {
   checkedBy?: string;
   onSaved?: () => void;
   onClose: () => void;
+  // 2026-09-08 · 실시간 중복 검증 · 상품의 진열구역 · 있으면 각 ShelfPositionInput 에 전달
+  displayLocation?: string | null;
 }
 
 // null/undefined → 0 로 정규화 (누적 방식 · 기준값)
@@ -70,6 +72,7 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
   checkedBy,
   onSaved,
   onClose,
+  displayLocation,
 }) => {
   const { toast, showSuccess, showError } = useToast();
   const [currentValues, setCurrentValues] = useState<CurrentValues>(() => normalizeInitial(initialValues));
@@ -171,6 +174,7 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
         currentValues={currentValues}
         onSaveZone={handleSaveZone}
         savingZone={savingZone}
+        displayLocation={displayLocation}
       />
     </Modal>
   );

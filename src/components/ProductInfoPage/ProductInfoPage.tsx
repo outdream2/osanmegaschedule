@@ -465,6 +465,9 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                       required={loc.required_detail}
                       value={shelfDraft[loc.code] ?? null}
                       onChange={(v) => setShelf(loc.code, v)}
+                      productCode={product.product_code}
+                      displayLocation={String(p.location ?? p.display_location ?? "").trim() || null}
+                      storageKey={loc.code}
                     />
                   );
                 })}

@@ -56,6 +56,8 @@ export interface InventoryEditPanelProps {
   savingZone?: ZoneKey | null;
   /** compact 모드 (패딩 최소화) */
   dense?: boolean;
+  /** 2026-09-08 · 상세위치 실시간 중복 검증 · 상품의 진열구역 · 있으면 ShelfPositionInput 에 전달 */
+  displayLocation?: string | null;
 }
 
 // 2026-09-08 · zone code → storage_location code 매핑
@@ -155,10 +157,15 @@ interface ZoneRowProps {
   // 2026-09-08 · 창고 상세위치 (선택 · optional) · shelfDetail null → 미표시
   shelfDetail?: string | null;
   onShelfDetailChange?: (v: string | null) => void;
+  // 2026-09-08 · 실시간 중복 검증 · 3개 다 있으면 활성
+  productCode?: string;
+  displayLocation?: string | null;
+  storageKey?: string;
 }
 const ZoneRow: React.FC<ZoneRowProps> = ({
   label, current, delta, onDeltaChange, onSave, saving, accent,
   shelfDetail, onShelfDetailChange,
+  productCode, displayLocation, storageKey,
 }) => {
   const d = delta === "" ? 0 : Number(delta);
   return (
@@ -174,6 +181,9 @@ const ZoneRow: React.FC<ZoneRowProps> = ({
             value={shelfDetail ?? null}
             onChange={onShelfDetailChange}
             compact
+            productCode={productCode}
+            displayLocation={displayLocation}
+            storageKey={storageKey}
           />
         </div>
       )}
@@ -219,6 +229,7 @@ const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
   label, current, delta, onDeltaChange, onSave, saving, accent,
   zoneLabel, onZoneLabelChange,
   shelfDetail, onShelfDetailChange, shelfRequired,
+  productCode, displayLocation, storageKey,
 }) => {
   const d = delta === "" ? 0 : Number(delta);
   return (
@@ -237,7 +248,7 @@ const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
           </div>
         </div>
       </div>
-      {/* 2026-09-08 · 상세 진열위치 (3자리) · 매장 필수 · 저장 시 함께 반영 */}
+      {/* 2026-09-08 · 상세 진열위치 (3자리) · 매장 필수 · 저장 시 함께 반영 · 실시간 중복 검증 */}
       <div className="flex items-center gap-2">
         <span className="text-[11px] font-semibold text-emerald-700 shrink-0 w-14">상세위치</span>
         <ShelfPositionInput
@@ -245,6 +256,9 @@ const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
           onChange={onShelfDetailChange}
           required={shelfRequired}
           compact
+          productCode={productCode}
+          displayLocation={displayLocation}
+          storageKey={storageKey}
         />
       </div>
       <div className="flex items-center gap-1.5">
@@ -286,6 +300,7 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
   onSaveZone,
   savingZone = null,
   dense = false,
+  displayLocation,
 }) => {
   const pad = dense ? "p-3 space-y-3" : "p-4 space-y-4";
 
@@ -406,6 +421,9 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
             accent="text-orange-600"
             shelfDetail={shelfDetails.w1}
             onShelfDetailChange={v => setShelf("w1", v)}
+            productCode={productCode}
+            displayLocation={displayLocation}
+            storageKey={ZONE_TO_LOCATION.w1}
           />
           <ZoneRow
             label="창고 2"
@@ -417,6 +435,9 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
             accent="text-orange-600"
             shelfDetail={shelfDetails.w2}
             onShelfDetailChange={v => setShelf("w2", v)}
+            productCode={productCode}
+            displayLocation={displayLocation}
+            storageKey={ZONE_TO_LOCATION.w2}
           />
         </div>
       </div>
@@ -441,6 +462,9 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
             shelfDetail={shelfDetails.s1}
             onShelfDetailChange={v => setShelf("s1", v)}
             shelfRequired
+            productCode={productCode}
+            displayLocation={displayLocation}
+            storageKey={ZONE_TO_LOCATION.s1}
           />
           <StoreZoneRow
             label="매장 2"
@@ -455,6 +479,9 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
             shelfDetail={shelfDetails.s2}
             onShelfDetailChange={v => setShelf("s2", v)}
             shelfRequired
+            productCode={productCode}
+            displayLocation={displayLocation}
+            storageKey={ZONE_TO_LOCATION.s2}
           />
           <StoreZoneRow
             label="매장 3"
@@ -469,6 +496,9 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
             shelfDetail={shelfDetails.s3}
             onShelfDetailChange={v => setShelf("s3", v)}
             shelfRequired
+            productCode={productCode}
+            displayLocation={displayLocation}
+            storageKey={ZONE_TO_LOCATION.s3}
           />
         </div>
       </div>

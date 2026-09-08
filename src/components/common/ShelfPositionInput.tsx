@@ -4,13 +4,18 @@
 //   · 값 형식 · 3자리 문자열 "332" · 각 자리 · 0~9 or A~Z
 //   · null → "미입력" 배지 · required=true 인데 빈 값 → 붉은 강조
 //   · 사용처 · 상품편집 모달 · 실재고 저장 UI · 관리자 화면
+// 2026-09-08 · 실시간 중복 검증 · productCode·displayLocation·storageKey 지정 시 · debounce 500ms · 서버 조회 · 중복이면 붉은 경고
 //
 // 사용 예:
 //   <ShelfPositionInput value={"332"} onChange={setV} required label="매장1" />
-//   <ShelfPositionInput value={null} onChange={setV} label="창고1" />
+//   <ShelfPositionInput
+//     value={"332"} onChange={setV} required label="매장1"
+//     productCode="8806..." displayLocation="1A" storageKey="store1"
+//   />
 
-import React, { useMemo } from "react";
-import { Minus, Plus } from "lucide-react";
+import React, { useMemo, useEffect, useState } from "react";
+import { Minus, Plus, AlertTriangle } from "lucide-react";
+import { api } from "../../lib/apiClient";
 
 export interface ShelfPositionInputProps {
   value: string | null | undefined;   // 3자리 or null (미입력)
@@ -20,6 +25,16 @@ export interface ShelfPositionInputProps {
   disabled?: boolean;
   compact?: boolean;                   // true · 인라인 (리스트 내부 등)
   className?: string;
+  // 2026-09-08 · 실시간 중복 검증 · 3개 다 있으면 활성
+  productCode?: string;                // 자기 자신 제외용
+  displayLocation?: string | null;     // 진열구역 · 유일성 판정 기준
+  storageKey?: string;                 // shelf_positions key · store1·warehouse1 등
+}
+
+interface ConflictInfo {
+  conflict: boolean;
+  product_code?: string;
+  product_name?: string;
 }
 
 const CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -50,10 +65,37 @@ export const ShelfPositionInput: React.FC<ShelfPositionInputProps> = ({
   disabled = false,
   compact = false,
   className = "",
+  productCode,
+  displayLocation,
+  storageKey,
 }) => {
   const isEmpty = !value || value.length !== 3;
   const [d0, d1, d2] = useMemo(() => splitValue(value), [value]);
   const digits = [d0, d1, d2];
+
+  // 2026-09-08 · 실시간 중복 검증 · 조건 갖춰지면 debounce 500ms 서버 조회
+  const [conflict, setConflict] = useState<ConflictInfo | null>(null);
+  const [checking, setChecking] = useState(false);
+  const canCheck = !!(productCode && displayLocation && storageKey && !isEmpty);
+  useEffect(() => {
+    if (!canCheck) { setConflict(null); return; }
+    let cancelled = false;
+    setChecking(true);
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams({
+        display_location: String(displayLocation),
+        key: String(storageKey),
+        value: String(value),
+        exclude: String(productCode),
+      });
+      api.get<ConflictInfo>(`/api/inventory-checks/shelf-conflict?${params.toString()}`)
+        .then(res => { if (!cancelled) setConflict(res.data ?? { conflict: false }); })
+        .catch(() => { if (!cancelled) setConflict(null); })
+        .finally(() => { if (!cancelled) setChecking(false); });
+    }, 500);
+    return () => { cancelled = true; clearTimeout(timer); setChecking(false); };
+  }, [canCheck, displayLocation, storageKey, value, productCode]);
+  const hasConflict = !!conflict?.conflict;
 
   const commit = (arr: string[]) => {
     const joined = arr.join("");
@@ -81,36 +123,52 @@ export const ShelfPositionInput: React.FC<ShelfPositionInputProps> = ({
 
   const containerCls = [
     "inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 bg-white",
-    missingRequired ? "border-rose-300 ring-1 ring-rose-100" : "border-zinc-200",
+    hasConflict
+      ? "border-rose-400 ring-2 ring-rose-200"
+      : missingRequired ? "border-rose-300 ring-1 ring-rose-100" : "border-zinc-200",
     disabled ? "opacity-60 cursor-not-allowed" : "",
     className,
   ].join(" ");
 
+  const conflictHint = hasConflict && conflict?.product_name ? (
+    <div className="mt-1 flex items-center gap-1 text-[11px] text-rose-600 font-semibold">
+      <AlertTriangle size={11} className="shrink-0" />
+      <span>이미 사용 중 · {conflict.product_name} (#{conflict.product_code})</span>
+    </div>
+  ) : null;
+  const checkingHint = checking && canCheck && !hasConflict ? (
+    <span className="text-[10px] text-zinc-400 ml-1">검사중...</span>
+  ) : null;
+
   if (compact) {
     // 인라인 리드-온리 뱃지 형태 · 편집 X · 표시 전용은 formatShelfPositions 헬퍼 사용 · 여기선 편집 컴팩트
     return (
-      <div className={containerCls}>
-        {label && <span className="text-[12px] font-bold text-ink-soft mr-1">{label}</span>}
-        {digits.map((d, i) => (
-          <DigitStepper
-            key={i}
-            slotLabel={STEPPER_LABELS[i]}
-            value={isEmpty ? "" : d}
-            onUp={() => bump(i, +1)}
-            onDown={() => bump(i, -1)}
-            onType={(v) => setDigit(i, v)}
-            disabled={disabled}
-            compact
-          />
-        ))}
-        {!isEmpty && !required && (
-          <button
-            type="button"
-            onClick={clear}
-            className="text-[11px] text-ink-soft hover:text-rose-500 ml-1"
-            title="지우기"
-          >지우기</button>
-        )}
+      <div className="inline-flex flex-col">
+        <div className={containerCls}>
+          {label && <span className="text-[12px] font-bold text-ink-soft mr-1">{label}</span>}
+          {digits.map((d, i) => (
+            <DigitStepper
+              key={i}
+              slotLabel={STEPPER_LABELS[i]}
+              value={isEmpty ? "" : d}
+              onUp={() => bump(i, +1)}
+              onDown={() => bump(i, -1)}
+              onType={(v) => setDigit(i, v)}
+              disabled={disabled}
+              compact
+            />
+          ))}
+          {checkingHint}
+          {!isEmpty && !required && (
+            <button
+              type="button"
+              onClick={clear}
+              className="text-[11px] text-ink-soft hover:text-rose-500 ml-1"
+              title="지우기"
+            >지우기</button>
+          )}
+        </div>
+        {conflictHint}
       </div>
     );
   }
@@ -136,6 +194,7 @@ export const ShelfPositionInput: React.FC<ShelfPositionInputProps> = ({
             disabled={disabled}
           />
         ))}
+        {checkingHint}
         {!isEmpty && !required && (
           <button
             type="button"
@@ -145,6 +204,7 @@ export const ShelfPositionInput: React.FC<ShelfPositionInputProps> = ({
           >지우기</button>
         )}
       </div>
+      {conflictHint}
     </div>
   );
 };

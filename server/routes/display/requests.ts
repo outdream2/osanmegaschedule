@@ -935,6 +935,57 @@ router.get("/api/inventory-checks", asyncHandler(async (req, res) => {
   res.json(data ?? []);
 }));
 
+// 2026-09-08 · 상세 진열위치 중복 실시간 검증
+//   · UI ShelfPositionInput · 값 입력 중 debounce 500ms 조회
+//   · 규칙 · (display_location, location_detail) 유일 · storage_location 무관
+//   · GET /api/inventory-checks/shelf-conflict
+//     query · display_location · key (storage code · store1·warehouse1 등) · value (3자리) · exclude (자기 자신 product_code)
+//     응답 · { conflict: boolean, product_code?, product_name? }
+router.get("/api/inventory-checks/shelf-conflict", asyncHandler(async (req, res) => {
+  const display_location = String(req.query.display_location ?? "").trim();
+  const key = String(req.query.key ?? "").trim();
+  const value = String(req.query.value ?? "").trim().toUpperCase();
+  const exclude = String(req.query.exclude ?? "").trim();
+  if (!display_location || !key || !value) {
+    return res.json({ conflict: false });
+  }
+  if (!/^[0-9A-Z]{3}$/.test(value)) {
+    return res.json({ conflict: false });
+  }
+  try {
+    // JSONB path 조회 · shelf_positions->>key = value · exclude 자신
+    let q = supabase
+      .from("inventory_checks")
+      .select("product_code")
+      .filter("shelf_positions->>" + key, "eq", value);
+    if (exclude) q = q.neq("product_code", exclude);
+    const { data: candidates } = await q;
+    if (!candidates || candidates.length === 0) return res.json({ conflict: false });
+
+    // 각 후보 · display_location 확인 · 동일하면 진짜 중복
+    const codes = candidates.map(c => String((c as any).product_code));
+    const { data: prods } = await supabase
+      .from("products")
+      .select("product_code, product_name, display_location, location")
+      .in("product_code", codes);
+    const dup = (prods ?? []).find(p => {
+      const loc = (p as any).display_location ?? (p as any).location ?? null;
+      return String(loc ?? "").trim() === display_location;
+    });
+    if (dup) {
+      return res.json({
+        conflict: true,
+        product_code: (dup as any).product_code,
+        product_name: (dup as any).product_name,
+      });
+    }
+    return res.json({ conflict: false });
+  } catch (e: any) {
+    // 컬럼 미배포 시 · silent · conflict=false
+    return res.json({ conflict: false });
+  }
+}));
+
 router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryCheckSchema), asyncHandler(async (req, res) => {
   const b = req.body;
   const code = b.product_code;
