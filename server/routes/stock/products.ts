@@ -16,8 +16,6 @@ import type { HiddenProductsResponse } from "../../../src/shared/dtos/products";
 import { CreateProductSchema, UpdateProductSchema } from "../../../src/shared/schemas/products";
 // 2026-08-26 · 사용자 지시 · 적정재고 공통 프레임워크 · server/lib/optimalStock.ts
 import { refillOptimalStock } from "../../lib/optimalStock";
-// 2026-09-08 · 신규 상품 등록 시 · 구역→창고 자동배정 + 매장1 default · shelf_positions 초기화
-import { buildInitialShelfPositions } from "../../utils/shelfPositionAssign";
 
 const router = Router();
 
@@ -40,36 +38,6 @@ stockCheckPublicRouter.get("/api/stock-check", asyncHandler(async (req, res) => 
   const { data, error } = await query.limit(25);
   if (error) throw new HttpError(500, error.message);
   res.json(data ?? []);
-}));
-
-// 2026-09-08 · 상세 진열위치 맵 · 진열위치 표시 32개 파일 공용 데이터 소스
-//   · GET /api/products/shelf-positions-map · { [product_code]: { [location_code]: "332" | null } }
-//   · inventory_checks 에서 · 각 상품별 최신 row 의 shelf_positions 만 추출
-//   · 응답 크기 최소화 · public (로그인 불필요 · 진열위치는 매장 운영 표시용 · 민감 정보 아님)
-router.get("/api/products/shelf-positions-map", asyncHandler(async (_req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("inventory_checks")
-      .select("product_code, shelf_positions, checked_at")
-      .order("checked_at", { ascending: false });
-    if (error) throw new HttpError(500, error.message);
-    const map: Record<string, Record<string, string | null>> = {};
-    for (const r of data ?? []) {
-      const code = String((r as any).product_code ?? "").trim();
-      if (!code || map[code]) continue;  // 최신 row 만 (첫 등장)
-      const sp = (r as any).shelf_positions;
-      if (sp && typeof sp === "object" && Object.keys(sp).length > 0) {
-        map[code] = sp;
-      }
-    }
-    res.json(map);
-  } catch (e: any) {
-    // shelf_positions 컬럼 미배포 시 · 빈 맵 반환 (frontend 안전 동작)
-    if (/column .* does not exist|schema cache/i.test(e?.message ?? "")) {
-      return res.json({});
-    }
-    throw e;
-  }
 }));
 
 router.get("/api/products-map", asyncHandler(async (req, res) => {
@@ -99,7 +67,7 @@ router.get("/api/products-map", asyncHandler(async (req, res) => {
         category_code: p.category_code ?? null,
         current_stock: p.current_stock ?? null,
         sale_status: p.sale_status ?? null,
-        // 2026-09-08 · barcode 응답 제거 · product_code 자체가 바코드값
+        barcode: p.barcode ?? null,
         optimal_stock: p.optimal_stock ?? null,
         unit: p.unit ?? null,
         // #101 · 통일 · 가격·이익율 · 상품 카드 최소필드
@@ -455,16 +423,34 @@ router.post("/api/upload-products", authorize(9), express.raw({ type: "applicati
   const hiddenCount = 0;
   // 2026-08-26 · 성능 조사 · post-upload 단계별 시간 측정
   // 임포트 완료 후 optimal_stock_backup → optimal_stock 복원 (ERP wipe 방어)
+  // 2026-09-08 · 사용자 지시 · RPC → 직접 쿼리 (LIMIT 1000 이슈 · 유지보수)
+  //   restore_optimal_stock_from_backup RPC 제거
+  //   · optimal_stock_backup IS NOT NULL 인 행 조회 → optimal_stock 에 복원
+  //   · Supabase JS 클라이언트는 column-to-column UPDATE 미지원 → 2단계 (fetch + update)
   let restoredCount = 0;
   const tRestore = Date.now();
   try {
-    const { data: restoreData, error: restoreErr } = await supabase.rpc("restore_optimal_stock_from_backup");
-    if (restoreErr) {
-      console.warn("[upload] restore_optimal_stock RPC failed:", restoreErr.message);
-    } else {
-      restoredCount = Number(restoreData ?? 0) || 0;
-      console.log(`[upload] restore RPC · ${restoredCount}건 · ${Date.now() - tRestore}ms`);
+    const PAGE = 1000;
+    let from = 0;
+    while (true) {
+      const { data: rows, error: fetchErr } = await supabase
+        .from("products")
+        .select("product_code, optimal_stock_backup")
+        .not("optimal_stock_backup", "is", null)
+        .range(from, from + PAGE - 1);
+      if (fetchErr) { console.warn("[upload] restore fetch 실패:", fetchErr.message); break; }
+      if (!rows || rows.length === 0) break;
+      for (const row of rows) {
+        const { error: updErr } = await supabase
+          .from("products")
+          .update({ optimal_stock: row.optimal_stock_backup })
+          .eq("product_code", row.product_code);
+        if (!updErr) restoredCount++;
+      }
+      if (rows.length < PAGE) break;
+      from += PAGE;
     }
+    console.log(`[upload] restore 직접쿼리 · ${restoredCount}건 · ${Date.now() - tRestore}ms`);
   } catch (e: any) {
     console.warn("[upload] restore_optimal_stock exception:", e.message);
   }
@@ -546,12 +532,10 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
   let storeStock:      number | null = null;   // 매장
   let store3Stock:     number | null = null;   // 매장3
   let invCheckedAt:    string | null = null;
-  // 2026-09-08 · 상세 진열위치 병합 (shelf_positions JSONB)
-  let shelfPositions: Record<string, string | null> = {};
   try {
     const { data: iv } = await supabase
       .from("inventory_checks")
-      .select("warehouse1_stock, warehouse2_stock, store_stock, store3_stock, checked_at, shelf_positions")
+      .select("warehouse1_stock, warehouse2_stock, store_stock, store3_stock, checked_at")
       .eq("product_code", productCode)
       .order("checked_at", { ascending: false })
       .limit(1);
@@ -561,10 +545,8 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
       storeStock      = iv[0].store_stock      != null ? Number(iv[0].store_stock)      : null;
       store3Stock     = iv[0].store3_stock     != null ? Number(iv[0].store3_stock)     : null;
       invCheckedAt    = iv[0].checked_at ?? null;
-      const sp = (iv[0] as any).shelf_positions;
-      if (sp && typeof sp === "object") shelfPositions = sp;
     }
-  } catch { /* silent · shelf_positions 컬럼 미배포 대비 */ }
+  } catch { /* silent */ }
 
   // 2026-07-29 · 사용자 원칙 · 매입 관련은 purchase_details (매입 테이블)
   //   이전 · products.last_purchase_date → 없으면 stock_history 이중 fallback
@@ -606,8 +588,6 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
     last_snapshot_date: null,  // deprecated · 하위 호환용
     // 2026-09-01 · 파생 이익율 · 원본 우선
     profit_rate: data.profit_rate ?? derivedProfitRate,
-    // 2026-09-08 · 상세 진열위치 · 위치별 3자리 (층·칸·순서)
-    shelf_positions: shelfPositions,
   });
 }));
 
@@ -621,7 +601,7 @@ const ALLOWED_INLINE_EDIT = new Set([
   "spec",
   "brand",
   "manufacturer",
-  // 2026-09-08 · barcode 인라인 편집 제거 · product_code 자체가 바코드
+  "barcode",
   "expiry_date",
   "memo",
   // 2026-08-25 · products 테이블에 없는 컬럼 · note 제거 (스키마 캐시 에러)
@@ -731,70 +711,6 @@ router.patch("/api/products/:code", authorize(1), validateBody(UpdateProductSche
     throw new HttpError(500, updErr.message);
   }
   resetProductCache();
-
-  // 2026-09-08 · 사용자 지시 · 진열구역 (display_location/location) 변경 시 · shelf_positions 자동 업데이트
-  //   · 매장1 default + 창고1/2 (구역 기반) 슬롯 자동 생성 (기존 값 보존 · 신규 키만 추가)
-  //   · 판매중 상품만 대상 (판매중지·숨김은 실재고 없음 · 자동배정 X)
-  const locChanged =
-    Object.prototype.hasOwnProperty.call(updates, "display_location") ||
-    Object.prototype.hasOwnProperty.call(updates, "location");
-  if (locChanged) {
-    try {
-      const { data: prod } = await supabase
-        .from("products")
-        .select("product_name, sale_status, display_location, location, category")
-        .eq("product_code", code)
-        .maybeSingle();
-      const saleStatus = String(prod?.sale_status ?? "판매중").trim();
-      if (saleStatus === "판매중") {
-        const locSource =
-          (typeof prod?.display_location === "string" && prod.display_location) ||
-          (typeof prod?.location === "string" && prod.location) ||
-          null;
-        const initialPositions = buildInitialShelfPositions(locSource, prod?.category ?? null);
-
-        // 기존 inventory_checks row 조회 · 병합
-        const { data: ivList } = await supabase
-          .from("inventory_checks")
-          .select("id, shelf_positions")
-          .eq("product_code", code)
-          .order("checked_at", { ascending: false })
-          .limit(1);
-        const iv = ivList?.[0] ?? null;
-        const existingPos = (iv?.shelf_positions ?? {}) as Record<string, string | null>;
-        const merged: Record<string, string | null> = { ...existingPos };
-        // initial 키 중 · 기존에 없는 key 만 추가 (null 값)
-        for (const [k, v] of Object.entries(initialPositions)) {
-          if (!Object.prototype.hasOwnProperty.call(merged, k)) merged[k] = v;
-        }
-        if (iv) {
-          // 기존 row · UPDATE
-          const { error: mergeErr } = await supabase
-            .from("inventory_checks")
-            .update({ shelf_positions: merged })
-            .eq("id", iv.id);
-          if (mergeErr) console.warn(`[products PATCH] shelf_positions 병합 실패 (무시): ${mergeErr.message}`);
-          else console.log(`[products PATCH] shelf_positions 자동 업데이트 · ${code} · ${JSON.stringify(merged)}`);
-        } else {
-          // 신규 row · INSERT
-          const nowIso = new Date().toISOString();
-          const { error: insErr } = await supabase.from("inventory_checks").insert([{
-            product_code: code,
-            product_name: prod?.product_name ?? "",
-            shelf_positions: merged,
-            checked_at: nowIso,
-            status: "pending",
-            checked_by: "system:location-change",
-          }]);
-          if (insErr) console.warn(`[products PATCH] shelf_positions 신규 생성 실패 (무시): ${insErr.message}`);
-          else console.log(`[products PATCH] shelf_positions 신규 자동배정 · ${code} · ${JSON.stringify(merged)}`);
-        }
-      }
-    } catch (e: any) {
-      console.warn(`[products PATCH] shelf_positions 자동 업데이트 예외 (무시): ${e?.message}`);
-    }
-  }
-
   res.json({ ok: true, updated: Object.keys(updates), stripped: patchStripped });
 }));
 
@@ -853,42 +769,6 @@ router.post("/api/products", authorize(5), validateBody(CreateProductSchema), as
     console.log(`[products POST] 신규 등록 · ${code} · ${input.product_name}`);
   }
   resetProductCache();
-
-  // 2026-09-08 · 자동배정 · display_location(구역) → shelf_positions 초기화
-  //   · 매장1 default + 창고1/2 (구역에 따라) · 값 null (상세위치 이후 편집)
-  //   · inventory_checks row 신규 생성 (checked_at=now · status=pending)
-  //   · 실패해도 상품 등록은 성공 처리 (fire-and-forget · 로그만 기록)
-  // 2026-09-08 · 사용자 지시 · **판매중 상품에만** 적용 (판매중지·숨김은 실재고 없음)
-  const saleStatus = String((input as any).sale_status ?? "판매중").trim();
-  if (saleStatus === "판매중") {
-    try {
-      const locationSource =
-        (typeof input.display_location === "string" && input.display_location) ||
-        (typeof input.location === "string" && input.location) ||
-        null;
-      const initialPositions = buildInitialShelfPositions(locationSource, input.category);
-      const now = new Date().toISOString();
-      const { error: shelfErr } = await supabase.from("inventory_checks").insert([{
-        product_code: code,
-        product_name: input.product_name,
-        shelf_positions: initialPositions,
-        checked_at: now,
-        status: "pending",
-        checked_by: "system:auto-assign",
-      }]);
-      if (shelfErr) {
-        // shelf_positions 컬럼 미배포 · 이후 배포 시 정상화 · 상품 등록은 유지
-        console.warn(`[products POST] shelf_positions 초기화 실패 (무시): ${shelfErr.message}`);
-      } else {
-        console.log(`[products POST] shelf_positions 자동배정 · ${code} · ${JSON.stringify(initialPositions)}`);
-      }
-    } catch (e: any) {
-      console.warn(`[products POST] shelf_positions 초기화 예외 (무시): ${e?.message}`);
-    }
-  } else {
-    console.log(`[products POST] shelf_positions 자동배정 skip · sale_status=${saleStatus} · ${code}`);
-  }
-
   res.status(201).json({ ok: true, product_code: code, stripped });
 }));
 

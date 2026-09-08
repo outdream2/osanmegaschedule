@@ -8,7 +8,7 @@
 //
 // 특징:
 //   - hidden=false + sale_active_only 필터 자동 (설정 반영)
-//   - inventory_checks · get_inventory_latest RPC 우선 · fallback 페이지루프
+//   - inventory_checks · 직접 쿼리 (checked_at DESC + JS dedup) · 2026-09-08 RPC 제거
 
 import { supabase } from "../../src/supabase/client";
 
@@ -90,37 +90,53 @@ async function fetchLatestInventory(codes?: string[]): Promise<Map<string, {
   inv_checked_at: string | null;
   inv_total: number | null;
 }>> {
+  // 2026-09-08 · 사용자 지시 · RPC → 직접 쿼리 (LIMIT 1000 이슈 · 유지보수)
+  //   get_inventory_latest RPC 제거 · inventory_checks 직접 페이지 루프 · checked_at DESC
+  //   JS 에서 product_code 별 첫 행(최신) dedup → RPC DISTINCT ON 동치
   const map = new Map<string, any>();
-  const { data: rpcData, error: rpcErr } = await supabase.rpc("get_inventory_latest");
-  const source = rpcErr ? [] : (rpcData ?? []);
+  const PAGE = 1000;
+  let from = 0;
+  while (true) {
+    let q = supabase
+      .from("inventory_checks")
+      .select("product_code, warehouse1_stock, warehouse2_stock, store_stock, store3_stock, store1_zone, store2_zone, store3_zone, checked_at")
+      .order("checked_at", { ascending: false });
+    if (codes && codes.length > 0) q = q.in("product_code", codes);
+    const { data, error } = await q.range(from, from + PAGE - 1);
+    if (error) {
+      console.warn("[fetchLatestInventory] inventory_checks 조회 실패:", error.message);
+      break;
+    }
+    if (!data || data.length === 0) break;
+    for (const r of data) {
+      const code = String(r.product_code ?? "").trim();
+      if (!code) continue;
+      if (map.has(code)) continue; // 이미 최신 행 처리됨 (checked_at DESC · 첫 행이 최신)
 
-  for (const r of source) {
-    const code = String(r.product_code ?? "").trim();
-    if (!code) continue;
-    if (codes && !codes.includes(code)) continue;
-    if (map.has(code)) continue;
+      // 2026-08-31 · warehouse_stock DROP · warehouse1_stock 단일 사용
+      // 2026-09-03 · #83 fix · store_stock_2 컬럼 삭제됨 · s2 는 null 고정 (기존 응답 shape 유지)
+      const w1 = r.warehouse1_stock != null ? Number(r.warehouse1_stock) : null;
+      const w2 = r.warehouse2_stock != null ? Number(r.warehouse2_stock) : null;
+      const s1 = r.store_stock      != null ? Number(r.store_stock)      : null;
+      const s2 = null; // store_stock_2 컬럼 없음 · schema 유지 위해 필드는 반환
+      const s3 = r.store3_stock     != null ? Number(r.store3_stock)     : null;
+      const total = [w1, w2, s1, s2, s3].reduce((sum: number, v) => sum + (v ?? 0), 0);
 
-    // 2026-08-31 · warehouse_stock DROP · warehouse1_stock 단일 사용
-    // 2026-09-03 · #83 fix · store_stock_2 컬럼 삭제됨 · s2 는 null 고정 (기존 응답 shape 유지)
-    const w1 = r.warehouse1_stock != null ? Number(r.warehouse1_stock) : null;
-    const w2 = r.warehouse2_stock != null ? Number(r.warehouse2_stock) : null;
-    const s1 = r.store_stock      != null ? Number(r.store_stock)      : null;
-    const s2 = null; // store_stock_2 컬럼 없음 · schema 유지 위해 필드는 반환
-    const s3 = r.store3_stock     != null ? Number(r.store3_stock)     : null;
-    const total = [w1, w2, s1, s2, s3].reduce((sum: number, v) => sum + (v ?? 0), 0);
-
-    map.set(code, {
-      inv_warehouse1_stock: w1,
-      inv_warehouse2_stock: w2,
-      inv_store_stock: s1,
-      inv_store_stock_2: s2,
-      inv_store3_stock: s3,
-      inv_store1_zone: r.store1_zone ?? null,
-      inv_store2_zone: r.store2_zone ?? null,
-      inv_store3_zone: r.store3_zone ?? null,
-      inv_checked_at: r.checked_at ?? null,
-      inv_total: total,
-    });
+      map.set(code, {
+        inv_warehouse1_stock: w1,
+        inv_warehouse2_stock: w2,
+        inv_store_stock: s1,
+        inv_store_stock_2: s2,
+        inv_store3_stock: s3,
+        inv_store1_zone: r.store1_zone ?? null,
+        inv_store2_zone: r.store2_zone ?? null,
+        inv_store3_zone: r.store3_zone ?? null,
+        inv_checked_at: r.checked_at ?? null,
+        inv_total: total,
+      });
+    }
+    if (data.length < PAGE) break;
+    from += PAGE;
   }
   return map;
 }

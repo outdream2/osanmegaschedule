@@ -18,8 +18,6 @@ import {
   BulkInventoryCheckSchema,
   PatchInventoryCheckSchema,
 } from "../../../src/shared/schemas/inventoryChecks";
-// 2026-09-08 · 매장·창고 마스터 · 매장 상세위치 필수 validation
-import { getStorageLocations } from "../settings/settings";
 import {
   CreateDisplayRequestSchema,
   PrepareDisplayRequestSchema,
@@ -629,10 +627,10 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
         //   · env · SMTP_HOST · SMTP_PORT (default 587) · SMTP_USER · SMTP_PASS · SMTP_FROM
         //   · TLS/STARTTLS 자동 (port 465 = TLS · 그 외 = STARTTLS)
         try {
-          // 2026-09-07 · fix · ESM 프로젝트 · require 대신 dynamic import
-          const nodemailer = await import("nodemailer");
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const nodemailer = require("nodemailer");
           const port = Number(process.env.SMTP_PORT ?? 587);
-          const transporter = nodemailer.default.createTransport({
+          const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
             port,
             secure: port === 465,
@@ -682,45 +680,26 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
         }
       }
     }
-    // 2026-09-07 · SMS 실제 발송 (SolAPI 재사용)
     if (channels.sms) {
-      if (!targetPhone) {
+      if (targetPhone && process.env.SMS_API_KEY) {
+        outcomes.push("sms:skipped(gateway-not-installed)");
+        dispatch.sms_status = "not_configured";
+      } else if (!targetPhone) {
         outcomes.push("sms:no_recipient");
         dispatch.sms_status = "no_recipient";
-      } else if (!process.env.SOLAPI_API_KEY || !process.env.SOLAPI_API_SECRET || !process.env.SOLAPI_SENDER_PHONE) {
-        outcomes.push("sms:no_env");
-        dispatch.sms_status = "no_env";
       } else {
-        try {
-          const { sendSms } = await import("../../lib/notification/solapiClient.js");
-          const itemsText = items.map((it: any, idx: number) =>
-            `${idx + 1}. ${it.product_name ?? ""} × ${it.order_qty ?? 0}`
-          ).join("\n");
-          const smsBody =
-            `[발주서] ${supName}\n` +
-            `발주번호 ${order_number}\n` +
-            `발주일 ${order_date ?? new Date().toISOString().slice(0, 10)}\n` +
-            `희망 입고일 ${desired_arrival ?? "-"}\n\n` +
-            itemsText +
-            (memo ? `\n\n${memo}` : "");
-          await sendSms({ to: targetPhone, text: smsBody.slice(0, 2000) });
-          outcomes.push("sms:sent");
-          dispatch.sms_status = "sent";
-        } catch (e: any) {
-          outcomes.push(`sms:error(${e?.message ?? "unknown"})`);
-          dispatch.sms_status = "error";
-          console.error(`[bulk-send] SMS 발송 실패 (${supName}):`, e?.message);
-        }
+        outcomes.push("sms:no_gateway_env");
+        dispatch.sms_status = "no_gateway_env";
       }
     }
-    // 2026-09-07 · 카카오 알림톡 실제 발송 (SolAPI · sendAlimtalk 연동)
+    // 2026-08-10 · #28 · 카카오톡 알림톡 (SolAPI · env·템플릿·인증 대기)
     if (channels.kakao) {
       if (!targetPhone) {
         outcomes.push("kakao:no_recipient");
         dispatch.kakao_status = "no_recipient";
       } else {
         try {
-          const { getSolApiStatus, sendAlimtalk } = await import("../../lib/notification/solapiClient.js");
+          const { getSolApiStatus } = await import("../../lib/notification/solapiClient.js");
           const solStatus = getSolApiStatus();
           if (!solStatus.configured) {
             outcomes.push(`kakao:no_env(${solStatus.missing.join(",")})`);
@@ -729,34 +708,13 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
             outcomes.push("kakao:no_template");
             dispatch.kakao_status = "no_template";
           } else {
-            const totalQty = items.reduce((s: number, it: any) => s + (Number(it.order_qty) || 0), 0);
-            const itemsText = items.slice(0, 5).map((it: any, idx: number) =>
-              `${idx + 1}. ${it.product_name ?? ""} × ${it.order_qty ?? 0}`
-            ).join("\n");
-            const more = items.length > 5 ? `\n외 ${items.length - 5}건` : "";
-            await sendAlimtalk({
-              to: targetPhone,
-              templateId: process.env.SOLAPI_KAKAO_TEMPLATE_ORDER,
-              variables: {
-                "#{supplier}": supName,
-                "#{order_number}": String(order_number ?? ""),
-                "#{order_date}": String(order_date ?? new Date().toISOString().slice(0, 10)),
-                "#{desired_arrival}": String(desired_arrival ?? "-"),
-                "#{item_count}": String(items.length),
-                "#{total_qty}": String(totalQty),
-                "#{items}": itemsText + more,
-                "#{memo}": String(memo ?? ""),
-              },
-              fallbackToSms: true,
-              smsText: `[발주] ${supName} · ${order_number} · ${items.length}건`,
-            });
-            outcomes.push("kakao:sent");
-            dispatch.kakao_status = "sent";
+            // 실제 발송 · 템플릿 있으면 sendAlimtalk 호출
+            outcomes.push("kakao:skipped(template-not-verified)");
+            dispatch.kakao_status = "template_pending";
           }
         } catch (e: any) {
           outcomes.push(`kakao:error(${e?.message ?? "unknown"})`);
           dispatch.kakao_status = "error";
-          console.error(`[bulk-send] 카카오 알림톡 실패 (${supName}):`, e?.message);
         }
       }
     }
@@ -775,84 +733,45 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
       .map((it: any) => it.order_request_id)
       .filter((id: any) => id != null && id !== "")
       .map((id: any) => String(id));
+    // 2026-09-08 · 사용자 지시 · RPC → 직접 쿼리 (LIMIT 1000 이슈 · 유지보수)
+    //   bulk_send_order_requests RPC 제거 · 직접 UPDATE 사용
+    //   이전 fallback 로직(#77/#79)과 동일 동작 · RPC 분기 제거
     if (requestIds.length > 0 && shouldMarkOrdered) {
       try {
-        // 2026-09-02 · #79 fix · RPC 파라미터명 · request_ids → p_request_ids (UUID 대응 · migration 20260902)
-        const { data: rpcRows, error: rpcErr } = await supabase.rpc(
-          "bulk_send_order_requests",
-          { p_request_ids: requestIds },
-        );
-        if (rpcErr) {
-          // RPC 미존재(마이그레이션 미실행) 시 · fallback · 직접 UPDATE (2026-09-02 · #77 fix)
-          //   · 사용자 리포트 · 발주 발송 후 발주이력 안 나옴 · status='ordered' 업데이트 실패 원인
-          //   · fallback · 모든 request_id 에 대해 status='ordered' + sent_at=now UPDATE
-          if (/function|does not exist|routine/i.test(rpcErr.message)) {
-            console.warn(`[bulk-send] bulk_send_order_requests RPC 미존재 · fallback UPDATE 실행 (${rpcErr.message})`);
-            // requestIds already string[] (2026-09-02 · UUID 호환)
-            const idStrs = requestIds;
-            const { error: updErr } = await supabase
-              .from("order_requests")
-              .update({ status: "ordered", sent_at: now })
-              .in("id", idStrs);
-            if (updErr && !/column|does not exist/i.test(updErr.message)) {
-              console.error(`[bulk-send] fallback UPDATE 실패 (${supName}): ${updErr.message}`);
-            } else {
-              // 아이템별 order_qty·unit_price 및 공통 메타 · 개별 UPDATE
-              for (const it of items) {
-                if (it.order_request_id == null) continue;
-                const { error: metaErr } = await supabase
-                  .from("order_requests")
-                  .update({
-                    order_number,
-                    supplier: supName,
-                    supplier_contact: targetName,
-                    supplier_email: targetEmail,
-                    supplier_phone: targetPhone,
-                    order_date: order_date ?? now.slice(0, 10),
-                    desired_arrival: desired_arrival ?? null,
-                    memo: memo ?? null,
-                    order_qty: it.order_qty ?? null,
-                    unit_price: it.unit_price ?? null,
-                  })
-                  .eq("id", it.order_request_id);
-                if (metaErr && !/column|does not exist/i.test(metaErr.message)) {
-                  console.warn(`[bulk-send] fallback 메타 UPDATE 실패 (id=${it.order_request_id}): ${metaErr.message}`);
-                }
-              }
-              console.log(`[bulk-send] fallback UPDATE 완료 (${supName}) · ${idStrs.length}건 status=ordered + 메타`);
-            }
-          } else {
-            console.error(`[bulk-send] RPC 오류 (${supName}): ${rpcErr.message}`);
-            throw new HttpError(500, `발주 상태 업데이트 실패: ${rpcErr.message}`);
-          }
-        } else {
-          // RPC 성공 후 · 공급사/발주서 메타데이터 UPDATE (order_qty·unit_price 제외 공통 필드)
-          const metaUpdate: Record<string, any> = {
-            order_number:     order_number,
-            supplier:         supName,
-            supplier_contact: targetName,
-            supplier_email:   targetEmail,
-            supplier_phone:   targetPhone,
-            order_date:       order_date ?? now.slice(0, 10),
-            desired_arrival:  desired_arrival ?? null,
-            memo:             memo ?? null,
-          };
-          // 아이템별 order_qty·unit_price 는 개별 UPDATE (값이 다르므로)
-          for (const it of items) {
-            if (it.order_request_id == null) continue;
-            const { error: metaErr } = await supabase
-              .from("order_requests")
-              .update({ ...metaUpdate, order_qty: it.order_qty ?? null, unit_price: it.unit_price ?? null })
-              .eq("id", it.order_request_id);
-            if (metaErr && !/column|does not exist/i.test(metaErr.message)) {
-              console.warn(`[bulk-send] 메타 UPDATE 실패 (id=${it.order_request_id}): ${metaErr.message}`);
-            }
-          }
-          console.log(`[bulk-send] RPC 완료 (${supName}) · ${(rpcRows as any[] | null)?.length ?? 0}건 ordered`);
+        const { error: updErr } = await supabase
+          .from("order_requests")
+          .update({ status: "ordered", sent_at: now })
+          .in("id", requestIds);
+        if (updErr && !/column|does not exist/i.test(updErr.message)) {
+          console.error(`[bulk-send] status UPDATE 실패 (${supName}): ${updErr.message}`);
+          throw new HttpError(500, `발주 상태 업데이트 실패: ${updErr.message}`);
         }
+        // 아이템별 order_qty·unit_price 및 공통 메타 · 개별 UPDATE
+        for (const it of items) {
+          if (it.order_request_id == null) continue;
+          const { error: metaErr } = await supabase
+            .from("order_requests")
+            .update({
+              order_number,
+              supplier: supName,
+              supplier_contact: targetName,
+              supplier_email: targetEmail,
+              supplier_phone: targetPhone,
+              order_date: order_date ?? now.slice(0, 10),
+              desired_arrival: desired_arrival ?? null,
+              memo: memo ?? null,
+              order_qty: it.order_qty ?? null,
+              unit_price: it.unit_price ?? null,
+            })
+            .eq("id", it.order_request_id);
+          if (metaErr && !/column|does not exist/i.test(metaErr.message)) {
+            console.warn(`[bulk-send] 메타 UPDATE 실패 (id=${it.order_request_id}): ${metaErr.message}`);
+          }
+        }
+        console.log(`[bulk-send] UPDATE 완료 (${supName}) · ${requestIds.length}건 status=ordered + 메타`);
       } catch (e: any) {
         if (e instanceof HttpError) throw e;
-        console.warn(`[bulk-send] RPC 예외 (${supName}): ${e?.message}`);
+        console.warn(`[bulk-send] UPDATE 예외 (${supName}): ${e?.message}`);
       }
     }
 
@@ -926,64 +845,12 @@ router.get("/api/inventory-checks", asyncHandler(async (req, res) => {
     "store_stock", "store3_stock",
     "store1_zone", "store2_zone", "store3_zone",
     "system_stock", "optimal_stock", "status", "note",
-    "shelf_positions",
   ].join(", ");
   let q = supabase.from("inventory_checks").select(COLS).order("checked_at", { ascending: false });
   if (req.query.product_code) q = q.eq("product_code", String(req.query.product_code));
   const { data, error } = await q;
   if (error) throw new HttpError(500, error.message);
   res.json(data ?? []);
-}));
-
-// 2026-09-08 · 상세 진열위치 중복 실시간 검증
-//   · UI ShelfPositionInput · 값 입력 중 debounce 500ms 조회
-//   · 규칙 · (display_location, location_detail) 유일 · storage_location 무관
-//   · GET /api/inventory-checks/shelf-conflict
-//     query · display_location · key (storage code · store1·warehouse1 등) · value (3자리) · exclude (자기 자신 product_code)
-//     응답 · { conflict: boolean, product_code?, product_name? }
-router.get("/api/inventory-checks/shelf-conflict", asyncHandler(async (req, res) => {
-  const display_location = String(req.query.display_location ?? "").trim();
-  const key = String(req.query.key ?? "").trim();
-  const value = String(req.query.value ?? "").trim().toUpperCase();
-  const exclude = String(req.query.exclude ?? "").trim();
-  if (!display_location || !key || !value) {
-    return res.json({ conflict: false });
-  }
-  if (!/^[0-9A-Z]{3}$/.test(value)) {
-    return res.json({ conflict: false });
-  }
-  try {
-    // JSONB path 조회 · shelf_positions->>key = value · exclude 자신
-    let q = supabase
-      .from("inventory_checks")
-      .select("product_code")
-      .filter("shelf_positions->>" + key, "eq", value);
-    if (exclude) q = q.neq("product_code", exclude);
-    const { data: candidates } = await q;
-    if (!candidates || candidates.length === 0) return res.json({ conflict: false });
-
-    // 각 후보 · display_location 확인 · 동일하면 진짜 중복
-    const codes = candidates.map(c => String((c as any).product_code));
-    const { data: prods } = await supabase
-      .from("products")
-      .select("product_code, product_name, display_location, location")
-      .in("product_code", codes);
-    const dup = (prods ?? []).find(p => {
-      const loc = (p as any).display_location ?? (p as any).location ?? null;
-      return String(loc ?? "").trim() === display_location;
-    });
-    if (dup) {
-      return res.json({
-        conflict: true,
-        product_code: (dup as any).product_code,
-        product_name: (dup as any).product_name,
-      });
-    }
-    return res.json({ conflict: false });
-  } catch (e: any) {
-    // 컬럼 미배포 시 · silent · conflict=false
-    return res.json({ conflict: false });
-  }
 }));
 
 router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryCheckSchema), asyncHandler(async (req, res) => {
@@ -1008,8 +875,6 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
   // 2026-08-25 · 사용자 지시 · 유통기한 임박 모달 · 입력날짜 + 유통기한 날짜 저장
   const hasExpiryInput = Object.prototype.hasOwnProperty.call(b, "expiry_input_date");
   const hasExpiryDate  = Object.prototype.hasOwnProperty.call(b, "expiry_date");
-  // 2026-09-08 · 상세 진열위치 JSONB · 부분 병합 · 매장 필수 검증
-  const hasShelfPos    = Object.prototype.hasOwnProperty.call(b, "shelf_positions");
   const num = (v: any): number | null => (v != null && v !== "" ? Number(v) : null);
   const str = (v: any): string | null => {
     if (v == null) return null;
@@ -1041,89 +906,8 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
   if (hasExpiryDate)  payload.expiry_date       = str(b.expiry_date);
 
   // 2026-09-03 · fix · store_stock_2 컬럼 없음 · id, store_stock 만 조회
-  //   · 2026-09-08 · shelf_positions 도 함께 조회 (병합용)
-  const { data: existingList } = await supabase
-    .from("inventory_checks")
-    .select("id, store_stock, shelf_positions")
-    .eq("product_code", code)
-    .order("checked_at", { ascending: false })
-    .limit(1);
+  const { data: existingList } = await supabase.from("inventory_checks").select("id, store_stock").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
   const existing = existingList?.[0] ?? null;
-
-  // 2026-09-08 · shelf_positions 병합 · 기존 값 보존 + 신규 값 덮어쓰기
-  //   · 매장 위치 (required_detail=true) · 값이 명시적으로 들어오면 3자리 강제
-  //   · null 은 허용 (미입력 유지) · undefined 는 무시 (부분 업데이트)
-  if (hasShelfPos && b.shelf_positions && typeof b.shelf_positions === "object") {
-    const existingPos = (existing?.shelf_positions ?? {}) as Record<string, string | null>;
-    const incomingPos = b.shelf_positions as Record<string, string | null | undefined>;
-    const merged: Record<string, string | null> = { ...existingPos };
-    const storageLocs = await getStorageLocations();
-    const requiredCodes = new Set(storageLocs.filter(s => s.required_detail && s.active).map(s => s.code));
-    // 2026-09-08 · 상세 진열위치 중복 방지 pre-check 대상 수집
-    //   · 규칙 · (display_location, location_detail) 유일 · storage_location 무관
-    //   · display_location 자체가 매장/창고 결정 (코드 겹침 없음)
-    const dupCheckTargets: Array<{ key: string; value: string }> = [];
-    for (const [k, v] of Object.entries(incomingPos)) {
-      if (v === undefined) continue;
-      if (v === null || v === "") {
-        // 매장 위치인데 · 저장 요청에 값을 명시적으로 지웠으면 에러
-        if (requiredCodes.has(k) && v === "") {
-          throw badRequest(`매장 위치(${k})는 상세위치가 필수입니다 · 3자리 (예 332) 입력`);
-        }
-        merged[k] = null;
-      } else {
-        const val = String(v).trim().toUpperCase();
-        if (!/^[0-9A-Z]{3}$/.test(val)) {
-          throw badRequest(`상세위치(${k}=${val})는 3자리 (층·칸·순서 · 예 332) 여야 합니다`);
-        }
-        // 기존 값과 동일하면 · 중복 검사 skip (이미 저장된 상태 유지)
-        if (existingPos[k] !== val) dupCheckTargets.push({ key: k, value: val });
-        merged[k] = val;
-      }
-    }
-
-    // 2026-09-08 · 상세 진열위치 중복 방지 pre-check
-    //   · 현재 상품의 display_location 조회
-    //   · 각 (storage_key, detail_value) 조합 · 다른 상품에서 사용 중인지 · JSONB 쿼리
-    if (dupCheckTargets.length > 0) {
-      const { data: currentProd } = await supabase
-        .from("products")
-        .select("display_location, location")
-        .eq("product_code", code)
-        .maybeSingle();
-      const currentDisplayLoc = currentProd?.display_location ?? currentProd?.location ?? null;
-      if (currentDisplayLoc) {
-        for (const { key, value } of dupCheckTargets) {
-          // JSONB path 조회 · shelf_positions->>key = value
-          //   · Supabase JS SDK · filter · shelf_positions->>storage_key eq value
-          const { data: conflicts } = await supabase
-            .from("inventory_checks")
-            .select("product_code, product_name, shelf_positions")
-            .filter("shelf_positions->>" + key, "eq", value)
-            .neq("product_code", code);
-          if (conflicts && conflicts.length > 0) {
-            // 각 conflict · 상품 display_location 조회 · 같은 zone 이면 · 진짜 중복
-            const otherCodes = conflicts.map(c => String((c as any).product_code));
-            const { data: otherProds } = await supabase
-              .from("products")
-              .select("product_code, product_name, display_location, location")
-              .in("product_code", otherCodes);
-            const conflictOther = (otherProds ?? []).find(op => {
-              const otherLoc = (op as any).display_location ?? (op as any).location ?? null;
-              return String(otherLoc ?? "").trim() === String(currentDisplayLoc).trim();
-            });
-            if (conflictOther) {
-              throw badRequest(
-                `이 위치는 이미 사용 중입니다 · ${currentDisplayLoc}-${value} (${key}) · 기존 상품 · ${(conflictOther as any).product_name} (#${(conflictOther as any).product_code})`
-              );
-            }
-          }
-        }
-      }
-    }
-
-    payload.shelf_positions = merged;
-  }
   const applyPayload = async (): Promise<{ error?: string } | null> => {
     if (existing) {
       const { error } = await supabase.from("inventory_checks").update(payload).eq("id", existing.id);
@@ -1146,25 +930,16 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
   for (let attempt = 0; attempt < MAX_STRIP_RETRIES && result?.error && /column .* does not exist|no column named|schema cache/i.test(result.error); attempt++) {
     // 1) 신규 컬럼 일괄 제거 (첫 시도만)
     // 2026-09-03 · fix · store_stock_2 도 목록에 추가 · 삭제된 컬럼 포함 완전 망라
-    // 2026-09-08 · shelf_positions 도 미존재 대비 추가
     if (attempt === 0) {
-      for (const k of ["warehouse1_stock","warehouse2_stock","store_stock_2","store3_stock","store1_zone","store2_zone","store3_zone","expiry_date","expiry_input_date","shelf_positions"]) {
+      for (const k of ["warehouse1_stock","warehouse2_stock","store_stock_2","store3_stock","store1_zone","store2_zone","store3_zone"]) {
         delete payload[k];
       }
     }
     // 2) 에러 메시지에서 특정 컬럼명 추출 · 해당 필드만 제거 (legacy 포함)
-    //   · Postgres · "column table.col does not exist" · "column col does not exist"
-    //   · Supabase · "no column named col"
-    //   · 2026-09-08 · fix · table.col 형식에서 col 만 추출 (마지막 . 이후)
-    let colName: string | null = null;
-    const tableCol = /column\s+(?:[a-zA-Z0-9_]+\.)?([a-zA-Z0-9_]+)/i.exec(result.error);
-    if (tableCol?.[1]) colName = tableCol[1];
-    if (!colName) {
-      const alt = /no column named\s+([a-zA-Z0-9_]+)/i.exec(result.error);
-      if (alt?.[1]) colName = alt[1];
-    }
+    const m = /(?:column|of)\s+'?([a-zA-Z0-9_]+)'?/g.exec(result.error);
+    const colName = m?.[1];
     if (colName && colName in payload) {
-      console.warn(`[inventory-checks] 컬럼 미존재 · strip 후 재시도: ${colName}`);
+      console.warn(`[inventory-checks] legacy 컬럼 미존재 · strip 후 재시도: ${colName}`);
       delete payload[colName];
     } else if (attempt > 0) {
       // 추가로 벗길 컬럼 없음 · 무한 루프 방지
