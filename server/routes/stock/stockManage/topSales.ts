@@ -58,8 +58,9 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       }
 
       // products 매핑 (숨김 제외)
+      // 2026-09-08 · 사용자 지시 · 판매대시보드 판매중 필터 제대로 동작 위해 sale_status 응답 포함
       const codesRaw = Array.from(new Set(rawRows.map(r => String(r.product_code ?? "").trim()).filter(Boolean)));
-      const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; min_order: number; location: string | null }>();
+      const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; min_order: number; location: string | null; sale_status: string | null }>();
       const hiddenSet = new Set<string>();
       try {
         const CHUNK = 500;
@@ -67,7 +68,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
           const chunk = codesRaw.slice(i, i + CHUNK);
           const { data: page } = await supabase
             .from("products")
-            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, min_order, hidden, location, display_location")
+            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, min_order, hidden, location, display_location, sale_status")
             .in("product_code", chunk);
           for (const p of page ?? []) {
             const code = String(p.product_code ?? "").trim();
@@ -80,6 +81,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
               current_stock:  Number(p.current_stock  ?? 0) || 0,
               min_order:      Number(p.min_order      ?? 0) || 0,
               location:  (String(p.location ?? p.display_location ?? "").trim() || null),
+              sale_status: (String(p.sale_status ?? "").trim() || null),
             });
           }
         }
@@ -118,6 +120,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             purchase_count: 0,
             min_order:     prod?.min_order ?? 0,
             location:      prod?.location ?? null,
+            // 2026-09-08 · 판매중 필터 · 판매대시보드 · sale_status 응답 포함
+            sale_status:   prod?.sale_status ?? null,
           });
         }
         const agg = byCode.get(code)!;
@@ -426,7 +430,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       }
 
       // products 매핑 (숨김 제외)
-      const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; last_purchase_date: string | null; min_order: number; location: string | null }>();
+      // 2026-09-08 · 판매중 필터 · sale_status 응답 포함
+      const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; last_purchase_date: string | null; min_order: number; location: string | null; sale_status: string | null }>();
       const hiddenSet = new Set<string>();
       try {
         const OP_PAGE = 1000;
@@ -434,7 +439,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         while (true) {
           const { data: page } = await supabase
             .from("products")
-            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden, location, display_location")
+            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden, location, display_location, sale_status")
             .range(opFrom, opFrom + OP_PAGE - 1);
           if (!page || page.length === 0) break;
           for (const p of page) {
@@ -449,6 +454,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
               last_purchase_date: p.last_purchase_date ?? null,
               min_order:      Number(p.min_order      ?? 0) || 0,
               location:  (String(p.location ?? p.display_location ?? "").trim() || null),
+              sale_status: (String(p.sale_status ?? "").trim() || null),
             });
           }
           if (page.length < OP_PAGE) break;
@@ -488,6 +494,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             purchase_count: 0,
             first_purchase_date: null as string | null,
             location:  productMap.get(code)?.location ?? null,
+            // 2026-09-08 · 판매중 필터 · sale_status 응답 포함 (2번째 productMap 타입)
+            sale_status: productMap.get(code)?.sale_status ?? null,
           });
         }
         const agg = byCode.get(code)!;
@@ -807,7 +815,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
     }
 
     // products 조회 (결과 rows 의 product_code 만 in() 으로 최소 fetch)
-    const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; last_purchase_date: string | null; min_order: number; location: string | null }>();
+    // 2026-09-08 · 판매중 필터 · sale_status 응답 포함
+    const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; last_purchase_date: string | null; min_order: number; location: string | null; sale_status: string | null }>();
     const hiddenSet = new Set<string>();
     const codesInResult = Array.from(new Set(data.map(r => String(r.product_code ?? "").trim()).filter(Boolean)));
     try {
@@ -816,7 +825,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         const chunk = codesInResult.slice(i, i + CHUNK);
         const { data: page } = await supabase
           .from("products")
-          .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden, location, display_location")
+          .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden, location, display_location, sale_status")
           .in("product_code", chunk);
         for (const p of page ?? []) {
           const code = String(p.product_code ?? "").trim();
@@ -830,6 +839,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             last_purchase_date: p.last_purchase_date ?? null,
             min_order:      Number(p.min_order      ?? 0) || 0,
             location:  (String(p.location ?? p.display_location ?? "").trim() || null),
+            sale_status: (String(p.sale_status ?? "").trim() || null),
           });
         }
       }
@@ -909,6 +919,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         first_purchase_date:   purchaseInfo?.firstDate   ?? null,
         min_order: Number(prod?.min_order ?? 0) || 0,
         location: prod?.location ?? null,
+        // 2026-09-08 · 판매중 필터 · sale_status 응답 포함
+        sale_status: prod?.sale_status ?? null,
       };
     });
     const sign = dir === "asc" ? 1 : -1;
