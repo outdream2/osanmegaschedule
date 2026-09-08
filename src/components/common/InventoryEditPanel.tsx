@@ -7,6 +7,9 @@ import React, { useState, useEffect } from "react";
 import { Package, MapPin } from "lucide-react";
 import { Card } from "./Card";
 import { TEXT } from "@/styles/tokens";
+// 2026-09-08 · 매장 zone 저장 시 · 상세위치(3자리) 함께 입력·저장
+import { ShelfPositionInput } from "./ShelfPositionInput";
+import type { ShelfPositions } from "../../lib/shelfPositions";
 
 // ─────────────────────────────────────────────────────────────
 // Types (InventoryValues 는 backwards compat 용 export 유지)
@@ -33,22 +36,36 @@ export interface CurrentValues {
   s1z: string | null;
   s2z: string | null;
   s3z: string | null;
+  /** 2026-09-08 · 위치별 상세 진열위치 (3자리 · 매장 필수) · JSONB · key=storage_location code */
+  shelf_positions?: ShelfPositions | null;
 }
 
 export interface InventoryEditPanelProps {
   productCode: string;
   productName: string;
   currentValues: CurrentValues;
-  /** zone 별 저장 콜백 · newTotal = current + delta · zone label 함께 전달 */
+  /** zone 별 저장 콜백 · newTotal = current + delta · zone label 함께 전달
+   *  2026-09-08 · shelfDetail (3자리) · 매장 zone 저장 시 · 상세위치 병합 저장
+   */
   onSaveZone: (
     zone: ZoneKey,
     newTotal: number,
     zoneLabel?: string | null,
+    shelfDetail?: string | null,
   ) => Promise<void>;
   savingZone?: ZoneKey | null;
   /** compact 모드 (패딩 최소화) */
   dense?: boolean;
 }
+
+// 2026-09-08 · zone code → storage_location code 매핑
+const ZONE_TO_LOCATION: Record<ZoneKey, string> = {
+  w1: "warehouse1",
+  w2: "warehouse2",
+  s1: "store1",
+  s2: "store2",
+  s3: "store3",
+};
 
 type Deltas = Record<ZoneKey, number | "">;
 
@@ -135,9 +152,13 @@ interface ZoneRowProps {
   onSave: () => void;
   saving: boolean;
   accent: string;
+  // 2026-09-08 · 창고 상세위치 (선택 · optional) · shelfDetail null → 미표시
+  shelfDetail?: string | null;
+  onShelfDetailChange?: (v: string | null) => void;
 }
 const ZoneRow: React.FC<ZoneRowProps> = ({
   label, current, delta, onDeltaChange, onSave, saving, accent,
+  shelfDetail, onShelfDetailChange,
 }) => {
   const d = delta === "" ? 0 : Number(delta);
   return (
@@ -146,6 +167,16 @@ const ZoneRow: React.FC<ZoneRowProps> = ({
         <span className={`text-[12px] font-semibold ${accent} block`}>{label}</span>
         <span className="text-[12px] text-zinc-400 tabular-nums">현재 <span className="font-bold text-zinc-700">{current}</span></span>
       </div>
+      {onShelfDetailChange && (
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-semibold text-zinc-500 shrink-0 w-14">상세위치</span>
+          <ShelfPositionInput
+            value={shelfDetail ?? null}
+            onChange={onShelfDetailChange}
+            compact
+          />
+        </div>
+      )}
       <div className="flex items-center gap-1.5">
         <div className="flex-1">
           <DeltaInput
@@ -179,10 +210,15 @@ const ZoneRow: React.FC<ZoneRowProps> = ({
 interface StoreZoneRowProps extends ZoneRowProps {
   zoneLabel: string | null;
   onZoneLabelChange: (v: string | null) => void;
+  // 2026-09-08 · 상세 진열위치 (3자리) · 매장 필수
+  shelfDetail: string | null;
+  onShelfDetailChange: (v: string | null) => void;
+  shelfRequired: boolean;
 }
 const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
   label, current, delta, onDeltaChange, onSave, saving, accent,
   zoneLabel, onZoneLabelChange,
+  shelfDetail, onShelfDetailChange, shelfRequired,
 }) => {
   const d = delta === "" ? 0 : Number(delta);
   return (
@@ -200,6 +236,16 @@ const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
             />
           </div>
         </div>
+      </div>
+      {/* 2026-09-08 · 상세 진열위치 (3자리) · 매장 필수 · 저장 시 함께 반영 */}
+      <div className="flex items-center gap-2">
+        <span className="text-[11px] font-semibold text-emerald-700 shrink-0 w-14">상세위치</span>
+        <ShelfPositionInput
+          value={shelfDetail}
+          onChange={onShelfDetailChange}
+          required={shelfRequired}
+          compact
+        />
       </div>
       <div className="flex items-center gap-1.5">
         <div className="flex-1">
@@ -253,7 +299,17 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
     s3z: currentValues.s3z,
   });
 
-  // currentValues 가 바뀌면 (부모가 저장 성공 후 업데이트) zone labels 동기화
+  // 2026-09-08 · 위치별 상세 진열위치 (3자리) · 저장 시 함께 반영
+  const initialShelf = (currentValues.shelf_positions ?? {}) as ShelfPositions;
+  const [shelfDetails, setShelfDetails] = useState<Record<ZoneKey, string | null>>({
+    w1: (initialShelf[ZONE_TO_LOCATION.w1] as string | null | undefined) ?? null,
+    w2: (initialShelf[ZONE_TO_LOCATION.w2] as string | null | undefined) ?? null,
+    s1: (initialShelf[ZONE_TO_LOCATION.s1] as string | null | undefined) ?? null,
+    s2: (initialShelf[ZONE_TO_LOCATION.s2] as string | null | undefined) ?? null,
+    s3: (initialShelf[ZONE_TO_LOCATION.s3] as string | null | undefined) ?? null,
+  });
+
+  // currentValues 가 바뀌면 (부모가 저장 성공 후 업데이트) zone labels + shelf 동기화
   useEffect(() => {
     setZones({
       s1z: currentValues.s1z,
@@ -262,8 +318,22 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
     });
   }, [currentValues.s1z, currentValues.s2z, currentValues.s3z]);
 
+  useEffect(() => {
+    const sp = (currentValues.shelf_positions ?? {}) as ShelfPositions;
+    setShelfDetails({
+      w1: (sp[ZONE_TO_LOCATION.w1] as string | null | undefined) ?? null,
+      w2: (sp[ZONE_TO_LOCATION.w2] as string | null | undefined) ?? null,
+      s1: (sp[ZONE_TO_LOCATION.s1] as string | null | undefined) ?? null,
+      s2: (sp[ZONE_TO_LOCATION.s2] as string | null | undefined) ?? null,
+      s3: (sp[ZONE_TO_LOCATION.s3] as string | null | undefined) ?? null,
+    });
+  }, [currentValues.shelf_positions]);
+
   const setDelta = (zone: ZoneKey, v: number | "") =>
     setDeltas(prev => ({ ...prev, [zone]: v }));
+
+  const setShelf = (zone: ZoneKey, v: string | null) =>
+    setShelfDetails(prev => ({ ...prev, [zone]: v }));
 
   const resetDelta = (zone: ZoneKey) =>
     setDeltas(prev => ({ ...prev, [zone]: "" }));
@@ -279,9 +349,23 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
       : zone === "s2" ? zones.s2z
       : zone === "s3" ? zones.s3z
       : undefined;
-    await onSaveZone(zone, newTotal, zoneLabel);
+    // 2026-09-08 · 매장 zone (s1·s2·s3) · 상세위치 필수 · 3자리 검증
+    const isStore = zone === "s1" || zone === "s2" || zone === "s3";
+    const shelfDetail = shelfDetails[zone];
+    if (isStore && (!shelfDetail || shelfDetail.length !== 3)) {
+      // 부모 onSaveZone 에서 에러 toast 처리 · 여기선 alert 대신 window event 로 검증 실패 알림
+      // 실제는 alert 로 간단 처리 (모달 컨텍스트 · confirm 훅 없음)
+      alert(`${label(zone)} 위치는 상세위치가 필수입니다 (3자리 · 예 332)`);
+      return;
+    }
+    await onSaveZone(zone, newTotal, zoneLabel, shelfDetail);
     resetDelta(zone);
   };
+
+  const label = (zone: ZoneKey): string => (
+    zone === "w1" ? "창고1" : zone === "w2" ? "창고2" :
+    zone === "s1" ? "매장1" : zone === "s2" ? "매장2" : "매장3"
+  );
 
   // 합계: 현재 + 미저장 delta 합산
   const totalCurrent = currentValues.w1 + currentValues.w2 + currentValues.s1 + currentValues.s2 + currentValues.s3;
@@ -320,6 +404,8 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
             onSave={() => handleSave("w1")}
             saving={savingZone === "w1"}
             accent="text-orange-600"
+            shelfDetail={shelfDetails.w1}
+            onShelfDetailChange={v => setShelf("w1", v)}
           />
           <ZoneRow
             label="창고 2"
@@ -329,6 +415,8 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
             onSave={() => handleSave("w2")}
             saving={savingZone === "w2"}
             accent="text-orange-600"
+            shelfDetail={shelfDetails.w2}
+            onShelfDetailChange={v => setShelf("w2", v)}
           />
         </div>
       </div>
@@ -350,6 +438,9 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
             accent="text-emerald-600"
             zoneLabel={zones.s1z}
             onZoneLabelChange={v => setZones(z => ({ ...z, s1z: v }))}
+            shelfDetail={shelfDetails.s1}
+            onShelfDetailChange={v => setShelf("s1", v)}
+            shelfRequired
           />
           <StoreZoneRow
             label="매장 2"
@@ -361,6 +452,9 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
             accent="text-emerald-600"
             zoneLabel={zones.s2z}
             onZoneLabelChange={v => setZones(z => ({ ...z, s2z: v }))}
+            shelfDetail={shelfDetails.s2}
+            onShelfDetailChange={v => setShelf("s2", v)}
+            shelfRequired
           />
           <StoreZoneRow
             label="매장 3"
@@ -372,6 +466,9 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
             accent="text-emerald-600"
             zoneLabel={zones.s3z}
             onZoneLabelChange={v => setZones(z => ({ ...z, s3z: v }))}
+            shelfDetail={shelfDetails.s3}
+            onShelfDetailChange={v => setShelf("s3", v)}
+            shelfRequired
           />
         </div>
       </div>

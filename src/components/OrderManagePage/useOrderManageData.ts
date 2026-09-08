@@ -11,6 +11,8 @@ type InvSplit = {
   w1: number | null; w2: number | null;
   s1: number | null; s2: number | null; s3: number | null;
   s1z: string | null; s2z: string | null; s3z: string | null;
+  // 2026-09-08 · 위치별 상세 진열위치 (3자리) · JSONB · 편집 시 초기값용
+  shelf_positions?: Record<string, string | null> | null;
 };
 
 export type InvStockEntry = {
@@ -18,6 +20,7 @@ export type InvStockEntry = {
   w1: number | null; w2: number | null;
   s1: number | null; s2: number | null; s3: number | null;
   s1z: string | null; s2z: string | null; s3z: string | null;
+  shelf_positions?: Record<string, string | null> | null;
 };
 
 export function useOrderManageData(getCode: (p: ProductInfo) => string) {
@@ -98,11 +101,15 @@ export function useOrderManageData(getCode: (p: ProductInfo) => string) {
         const s3 = numOrNull((r as any).store3_stock);
         const whSum = (w1 != null || w2 != null) ? (Number(w1) || 0) + (Number(w2) || 0) : null;
         const stSum = (s1 != null || s2 != null || s3 != null) ? (Number(s1) || 0) + (Number(s2) || 0) + (Number(s3) || 0) : null;
+        // 2026-09-08 · 상세 진열위치 · JSONB · 편집 모달 초기값용
+        const sp = (r as any).shelf_positions;
+        const shelf = sp && typeof sp === "object" ? sp as Record<string, string | null> : null;
         m[code] = {
           warehouse: whSum, store: stSum, w1, w2, s1, s2, s3,
           s1z: strOrNull((r as any).store1_zone),
           s2z: strOrNull((r as any).store2_zone),
           s3z: strOrNull((r as any).store3_zone),
+          shelf_positions: shelf,
         };
       }
       setInvMap(m);
@@ -134,7 +141,7 @@ export function useOrderManageData(getCode: (p: ProductInfo) => string) {
     const wh = iv.warehouse; const st = iv.store;
     if (wh != null || st != null) {
       const total = (Number(wh) || 0) + (Number(st) || 0);
-      invStockMap.set(code, { warehouse: wh, store: st, total, w1: iv.w1, w2: iv.w2, s1: iv.s1, s2: iv.s2, s3: iv.s3, s1z: iv.s1z, s2z: iv.s2z, s3z: iv.s3z });
+      invStockMap.set(code, { warehouse: wh, store: st, total, w1: iv.w1, w2: iv.w2, s1: iv.s1, s2: iv.s2, s3: iv.s3, s1z: iv.s1z, s2z: iv.s2z, s3z: iv.s3z, shelf_positions: iv.shelf_positions });
     }
   }
   for (const p of products) {

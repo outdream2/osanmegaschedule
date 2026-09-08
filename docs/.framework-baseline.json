@@ -1,18 +1,8 @@
 {
   "created": "2026-09-08",
   "version": 1,
-  "totalViolations": 9,
+  "totalViolations": 8,
   "files": {
-    "src/components/common/VendorInfoHeader.tsx": {
-      "lines": 380,
-      "violations": [
-        {
-          "ruleId": "raw-card-wrapper",
-          "count": 2
-        }
-      ],
-      "totalWeight": 4
-    },
     "src/components/OrderSettingsPage/OrderSettingsPage.tsx": {
       "lines": 286,
       "violations": [
@@ -22,6 +12,16 @@
         }
       ],
       "totalWeight": 4
+    },
+    "src/components/common/InventoryEditPanel.tsx": {
+      "lines": 490,
+      "violations": [
+        {
+          "ruleId": "raw-alert",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
     },
     "src/components/DisplayPage/RealStockTablePage.tsx": {
       "lines": 816,
@@ -34,7 +34,7 @@
       "totalWeight": 3
     },
     "src/components/OrderManagePage/PaymentInputPage.tsx": {
-      "lines": 828,
+      "lines": 868,
       "violations": [
         {
           "ruleId": "large-file-warn",

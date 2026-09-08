@@ -23,6 +23,8 @@ export interface InventoryEditModalInitialValues {
   s1z?: string | null;
   s2z?: string | null;
   s3z?: string | null;
+  // 2026-09-08 · 상세 진열위치 초기값 (편집 · zone별 저장 시 병합)
+  shelf_positions?: Record<string, string | null | undefined> | null;
 }
 
 export interface InventoryEditModalProps {
@@ -46,8 +48,16 @@ function normalizeInitial(iv?: InventoryEditModalInitialValues): CurrentValues {
     s1z: iv?.s1z ?? null,
     s2z: iv?.s2z ?? null,
     s3z: iv?.s3z ?? null,
+    // 2026-09-08 · 상세 진열위치 · JSONB · 편집 시 병합
+    shelf_positions: iv?.shelf_positions ?? {},
   };
 }
+
+// 2026-09-08 · zone → storage_location code 매핑 (InventoryEditPanel 와 동일)
+const ZONE_TO_LOCATION: Record<"w1" | "w2" | "s1" | "s2" | "s3", string> = {
+  w1: "warehouse1", w2: "warehouse2",
+  s1: "store1", s2: "store2", s3: "store3",
+};
 
 // ─────────────────────────────────────────────────────────────
 // InventoryEditModal
@@ -79,6 +89,7 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
     zone: ZoneKey,
     newTotal: number,
     zoneLabel?: string | null,
+    shelfDetail?: string | null,
   ) => {
     if (savingZone) return;
     setSavingZone(zone);
@@ -91,6 +102,14 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
     else if (zone === "s1") { next.s1 = newTotal; if (zoneLabel !== undefined) next.s1z = zoneLabel ?? null; }
     else if (zone === "s2") { next.s2 = newTotal; if (zoneLabel !== undefined) next.s2z = zoneLabel ?? null; }
     else if (zone === "s3") { next.s3 = newTotal; if (zoneLabel !== undefined) next.s3z = zoneLabel ?? null; }
+
+    // 2026-09-08 · 상세위치 병합 · 해당 zone 만 UPDATE · 기존 값 보존
+    const locCode = ZONE_TO_LOCATION[zone];
+    const nextShelf = { ...(currentValues.shelf_positions ?? {}) } as Record<string, string | null>;
+    if (shelfDetail !== undefined) {
+      nextShelf[locCode] = shelfDetail; // null → 미입력 · string → 3자리
+    }
+    next.shelf_positions = nextShelf;
 
     try {
       await api.post("/api/inventory-checks", {
@@ -106,6 +125,8 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
         store2_zone:      next.s2z,
         store3_zone:      next.s3z,
         warehouse_stock:  next.w1, // 레거시 mirror
+        // 2026-09-08 · 상세 진열위치 · 서버에서 병합 처리
+        shelf_positions:  nextShelf,
       });
       setCurrentValues(next);
       showSuccess("재고가 저장되었습니다");
