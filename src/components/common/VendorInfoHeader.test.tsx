@@ -114,38 +114,31 @@ describe("VendorInfoHeader · onEdit 버튼", () => {
   });
 });
 
-describe("VendorInfoHeader · KPI", () => {
+// 2026-09-08 · 사용자 지시 · KPI 재디자인 · 3개월/이번달/잔고 텍스트 라인
+//   · 이전 · 누적/평균주기/활성상품 미니카드 (제거됨)
+describe("VendorInfoHeader · KPI (2026-09-08 재디자인)", () => {
   const kpis: VendorKpis = {
     totalAmount: 1_000_000,
     thisMonthAmount: 200_000,
     lastMonthAmount: 150_000,
+    threeMonthAmount: 500_000,
     momPct: 33.3,
     avgCycleDays: 7,
     activeSkuCount: 42,
+    balance: 50_000,
   };
 
-  it("kpis 없음 · KPI 줄 미렌더", () => {
+  it("kpis 없음 · KPI 라인 미렌더", () => {
     const { container } = render(<VendorInfoHeader vendor={baseVendor} />);
-    expect(container.textContent).not.toContain("누적 매입액");
+    expect(container.textContent).not.toContain("3개월 매입");
+    expect(container.textContent).not.toContain("잔고");
   });
 
-  it("kpis 있음 · '누적 매입액' 표시", () => {
+  it("kpis 있음 · '3개월 매입' · '이번달 매입' · '잔고' 표시", () => {
     const { container } = render(<VendorInfoHeader vendor={baseVendor} kpis={kpis} />);
-    expect(container.textContent).toContain("누적 매입액");
-    expect(container.textContent).toContain("평균 매입주기");
-    expect(container.textContent).toContain("7일");
-  });
-
-  it("kpisLoading · '로딩' 표시", () => {
-    const { container } = render(<VendorInfoHeader vendor={baseVendor} kpis={kpis} kpisLoading />);
-    expect(container.textContent).toContain("로딩");
-  });
-
-  it("detailRowCount=5 · '5건' 표시", () => {
-    const { container } = render(
-      <VendorInfoHeader vendor={baseVendor} kpis={kpis} detailRowCount={5} />
-    );
-    expect(container.textContent).toContain("5건");
+    expect(container.textContent).toContain("3개월 매입");
+    expect(container.textContent).toContain("이번달 매입");
+    expect(container.textContent).toContain("잔고");
   });
 
   it("MoM > 5 · '전월 대비 +33.3%'", () => {
@@ -153,31 +146,32 @@ describe("VendorInfoHeader · KPI", () => {
     expect(container.textContent).toContain("전월 대비 +33.3%");
   });
 
-  it("MoM < -5 · '-' 부호 표시", () => {
-    const { container } = render(
-      <VendorInfoHeader vendor={baseVendor} kpis={{ ...kpis, momPct: -20 }} />
-    );
-    expect(container.textContent).toContain("전월 대비 -20.0%");
-  });
-
-  it("MoM=null · '전월 매입 없음'", () => {
+  it("MoM=null · MoM 라벨 미표시", () => {
     const { container } = render(
       <VendorInfoHeader vendor={baseVendor} kpis={{ ...kpis, momPct: null }} />
     );
-    expect(container.textContent).toContain("전월 매입 없음");
+    expect(container.textContent).not.toContain("전월 대비");
   });
 
-  it("avgCycleDays=null · '-' 표시", () => {
-    const { container } = render(
-      <VendorInfoHeader vendor={baseVendor} kpis={{ ...kpis, avgCycleDays: null }} />
-    );
-    // 평균 매입주기 뒤 값
-    expect(container.textContent).toContain("평균 매입주기");
-  });
-
-  it("activeSkuCount=42 · '42종' 표시", () => {
+  it("balance > 0 · '미결제' 배지", () => {
     const { container } = render(<VendorInfoHeader vendor={baseVendor} kpis={kpis} />);
-    expect(container.textContent).toContain("42종");
+    expect(container.textContent).toContain("미결제");
+  });
+
+  it("balance < 0 · '선결제' 배지", () => {
+    const { container } = render(
+      <VendorInfoHeader vendor={baseVendor} kpis={{ ...kpis, balance: -10_000 }} />
+    );
+    expect(container.textContent).toContain("선결제");
+  });
+
+  it("balance = null · '-' 표시", () => {
+    const { container } = render(
+      <VendorInfoHeader vendor={baseVendor} kpis={{ ...kpis, balance: null }} />
+    );
+    // 잔고 라벨 뒤 "-"
+    expect(container.textContent).toContain("잔고");
+    expect(container.textContent).toMatch(/잔고.*[-]/s);
   });
 });
 
