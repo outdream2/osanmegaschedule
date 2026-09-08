@@ -516,10 +516,12 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
   let storeStock:      number | null = null;   // 매장
   let store3Stock:     number | null = null;   // 매장3
   let invCheckedAt:    string | null = null;
+  // 2026-09-08 · 상세 진열위치 병합 (shelf_positions JSONB)
+  let shelfPositions: Record<string, string | null> = {};
   try {
     const { data: iv } = await supabase
       .from("inventory_checks")
-      .select("warehouse1_stock, warehouse2_stock, store_stock, store3_stock, checked_at")
+      .select("warehouse1_stock, warehouse2_stock, store_stock, store3_stock, checked_at, shelf_positions")
       .eq("product_code", productCode)
       .order("checked_at", { ascending: false })
       .limit(1);
@@ -529,8 +531,10 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
       storeStock      = iv[0].store_stock      != null ? Number(iv[0].store_stock)      : null;
       store3Stock     = iv[0].store3_stock     != null ? Number(iv[0].store3_stock)     : null;
       invCheckedAt    = iv[0].checked_at ?? null;
+      const sp = (iv[0] as any).shelf_positions;
+      if (sp && typeof sp === "object") shelfPositions = sp;
     }
-  } catch { /* silent */ }
+  } catch { /* silent · shelf_positions 컬럼 미배포 대비 */ }
 
   // 2026-07-29 · 사용자 원칙 · 매입 관련은 purchase_details (매입 테이블)
   //   이전 · products.last_purchase_date → 없으면 stock_history 이중 fallback
@@ -572,6 +576,8 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
     last_snapshot_date: null,  // deprecated · 하위 호환용
     // 2026-09-01 · 파생 이익율 · 원본 우선
     profit_rate: data.profit_rate ?? derivedProfitRate,
+    // 2026-09-08 · 상세 진열위치 · 위치별 3자리 (층·칸·순서)
+    shelf_positions: shelfPositions,
   });
 }));
 

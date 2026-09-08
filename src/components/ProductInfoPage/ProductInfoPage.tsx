@@ -35,6 +35,11 @@ import type { AuthSession } from "../../types";
 import { UpdateProductSchema, type UpdateProductInput } from "../../shared/schemas/products";
 import { consumeScanPendingProductCode } from "../../hooks/useScanUnregisteredMode";
 import { useVendorInfoModal } from "../common/features/VendorInfoModal";
+// 2026-09-08 · 상세 진열위치 · 위치별 3-stepper 입력 + 표시
+import { ShelfPositionInput } from "../common/ShelfPositionInput";
+import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
+import { useStorageLocations } from "../../hooks/useStorageLocations";
+import type { ShelfPositions } from "../../lib/shelfPositions";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 interface ProductRow {
@@ -61,6 +66,8 @@ interface ProductDetail extends ProductRow {
   last_purchase_date?: string | null;
   sale_price?: number | null;
   purchase_price?: number | null;
+  // 2026-09-08 · 상세 진열위치 · JSONB (inventory_checks.shelf_positions)
+  shelf_positions?: ShelfPositions | null;
 }
 
 interface Props {
@@ -104,10 +111,14 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
   const vendorModal = useVendorInfoModal();
   // 진열위치 드롭다운 옵션 (zone_defs) — hooks를 early return 앞에 배치 (Rules of Hooks)
   const [locationOptions, setLocationOptions] = useState<string[]>([]);
+  // 2026-09-08 · 상세 진열위치 draft (편집 중 값)
+  const storageLocations = useStorageLocations();
+  const [shelfDraft, setShelfDraft] = useState<ShelfPositions>({});
 
   useEffect(() => {
     setEditing(false);
     setDraft({} as Record<EditableKey, string>);
+    setShelfDraft({});
   }, [product?.product_code]);
 
   useEffect(() => {
@@ -131,14 +142,21 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
   };
   const set = (k: EditableKey, v: string) => setDraft(prev => ({ ...prev, [k]: v }));
 
-  const startEdit = () => { setEditing(true); setDraft({} as Record<EditableKey, string>); };
+  const startEdit = () => {
+    setEditing(true);
+    setDraft({} as Record<EditableKey, string>);
+    // 2026-09-08 · 편집 시작 · 현재 shelf_positions 값을 draft 로 로드 (변경 추적)
+    setShelfDraft({ ...(product?.shelf_positions ?? {}) });
+  };
   const cancelEdit = async () => {
-    if (Object.keys(draft).length > 0) {
+    const hasShelfChange = JSON.stringify(shelfDraft ?? {}) !== JSON.stringify(product?.shelf_positions ?? {});
+    if (Object.keys(draft).length > 0 || hasShelfChange) {
       const ok = await confirm({ title: "변경 취소", message: "저장하지 않은 변경사항을 취소하시겠습니까?", danger: true });
       if (!ok) return;
     }
     setEditing(false);
     setDraft({} as Record<EditableKey, string>);
+    setShelfDraft({});
   };
   const save = async () => {
     const changes: Partial<UpdateProductInput> = {};
@@ -151,7 +169,27 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
       if (NUMBER_KEYS.has(k)) (changes as Record<string, unknown>)[k] = trimmed === "" ? null : Number(trimmed);
       else (changes as Record<string, unknown>)[k] = trimmed === "" ? null : trimmed;
     }
-    if (Object.keys(changes).length === 0) { showError("변경사항이 없습니다"); return; }
+    // 2026-09-08 · shelf_positions 변경 여부
+    const originalShelf = (product?.shelf_positions ?? {}) as ShelfPositions;
+    const shelfChanged = JSON.stringify(shelfDraft) !== JSON.stringify(originalShelf);
+
+    // 매장(required_detail=true) 필수 체크 · 값이 없으면 저장 차단
+    if (shelfChanged) {
+      const requiredCodes = storageLocations.filter(l => l.active && l.required_detail).map(l => l.code);
+      for (const code of requiredCodes) {
+        const v = shelfDraft[code];
+        // key 자체가 없는 위치는 사용자가 안 쓰는 위치 · required 무관 · 저장 없으면 pass
+        // key 는 있는데 값이 없는 경우만 (사용자가 지웠거나 미입력) · 에러
+        const hasKey = Object.prototype.hasOwnProperty.call(shelfDraft, code);
+        if (hasKey && (v === null || v === "" || (typeof v === "string" && v.length !== 3))) {
+          const loc = storageLocations.find(l => l.code === code);
+          showError(`${loc?.name ?? code} 위치는 상세위치가 필수입니다 (3자리 · 예 332)`);
+          return;
+        }
+      }
+    }
+
+    if (Object.keys(changes).length === 0 && !shelfChanged) { showError("변경사항이 없습니다"); return; }
     const parsed = UpdateProductSchema.safeParse(changes);
     if (!parsed.success) {
       const first = parsed.error.issues[0];
@@ -160,16 +198,36 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
     }
     setSaving(true);
     try {
-      await api.patch(`/api/products/${encodeURIComponent(product.product_code)}`, parsed.data);
+      if (Object.keys(changes).length > 0) {
+        await api.patch(`/api/products/${encodeURIComponent(product.product_code)}`, parsed.data);
+      }
+      // 2026-09-08 · 상세 진열위치 저장 · inventory_checks POST (부분 병합)
+      if (shelfChanged) {
+        await api.post("/api/inventory-checks", {
+          product_code: product.product_code,
+          product_name: product.product_name,
+          shelf_positions: shelfDraft,
+        });
+      }
       showSuccess("상품 정보 저장 완료");
       setEditing(false);
       setDraft({} as Record<EditableKey, string>);
+      setShelfDraft({});
       onSaved();
       // 구역/상품 변경 시 실재고 테이블 등 자동 리로드
       window.dispatchEvent(new CustomEvent("products-map-updated"));
     } catch (e: unknown) {
       showError(`[상품 편집] ${e instanceof ApiError ? e.message : (e as Error)?.message ?? "저장 실패"}`);
     } finally { setSaving(false); }
+  };
+
+  // 2026-09-08 · shelf_position 편집 핸들러
+  const setShelf = (code: string, val: string | null) => {
+    setShelfDraft(prev => ({ ...prev, [code]: val }));
+  };
+  const addShelfLocation = (code: string) => {
+    if (Object.prototype.hasOwnProperty.call(shelfDraft, code)) return;
+    setShelfDraft(prev => ({ ...prev, [code]: null }));
   };
 
   // ─── field helpers ─────────────────────────────────────────────────────
@@ -247,6 +305,8 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
               {p.location && (
                 <span className="text-[15px] font-semibold text-zinc-600 bg-zinc-100 rounded-md px-2 py-0.5">{String(p.location)}</span>
               )}
+              {/* 2026-09-08 · 상세 진열위치 뱃지 · 진열위치 옆에 무조건 표시 */}
+              <ShelfPositionsBadge positions={product.shelf_positions} size="sm" />
             </div>
           </div>
         </div>
@@ -382,6 +442,59 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             {editing && <EditField k="sale_status" label="판매상태" />}
             {editing && <EditField k="location" label="진열위치" />}
           </div>
+        </div>
+
+        {/* 2026-09-08 · 상세 진열위치 · 위치별 3-stepper · 매장 필수 강조 */}
+        <div className="space-y-3">
+          <SectionTitle title="상세 진열위치" color="rose" />
+          {editing ? (
+            <div className="space-y-3">
+              <div className="text-[13px] text-ink-soft leading-relaxed">
+                각 위치에 <span className="font-bold text-brand-deep">3자리 (층·칸·순서)</span> 를 입력하세요.
+                예 <span className="font-mono">332</span> = 3층 3칸 2번째. 매장 위치는 필수 입력.
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {storageLocations.filter(l => l.active).map(loc => {
+                  const hasKey = Object.prototype.hasOwnProperty.call(shelfDraft, loc.code);
+                  if (!hasKey) return null;
+                  return (
+                    <ShelfPositionInput
+                      key={loc.code}
+                      label={`${loc.name}${loc.kind === "warehouse" ? " (창고)" : ""}`}
+                      required={loc.required_detail}
+                      value={shelfDraft[loc.code] ?? null}
+                      onChange={(v) => setShelf(loc.code, v)}
+                    />
+                  );
+                })}
+              </div>
+              {/* 위치 추가 · 아직 등록되지 않은 위치를 추가 */}
+              {(() => {
+                const missing = storageLocations.filter(l => l.active && !Object.prototype.hasOwnProperty.call(shelfDraft, l.code));
+                if (missing.length === 0) return null;
+                return (
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <span className="text-[12px] text-ink-soft">위치 추가:</span>
+                    {missing.map(loc => (
+                      <button
+                        key={loc.code}
+                        type="button"
+                        onClick={() => addShelfLocation(loc.code)}
+                        className="text-[12px] px-2 py-0.5 rounded-md border border-brand-tint text-brand-deep hover:bg-brand-tint transition-colors"
+                      >+ {loc.name}</button>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="text-[15px]">
+              <ShelfPositionsBadge positions={product.shelf_positions} size="md" />
+              {(!product.shelf_positions || Object.keys(product.shelf_positions).length === 0) && (
+                <span className="text-zinc-300">등록된 진열위치 없음</span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 기타 (단위 · 규격 · 브랜드 · 제조사) */}
