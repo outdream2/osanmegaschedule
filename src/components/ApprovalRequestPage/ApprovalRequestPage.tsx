@@ -150,11 +150,12 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
           <LunchPage {...commonSubPageProps} />
         )}
         {subTab === "document-writer" && (
-          <ResignationGate authSession={authSession}>
-            <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="사직서 로딩 중..." size={16} tone="brand" /></div>}>
-              <DocumentWriterPage {...commonSubPageProps} allowedTabs={["resignation"]} />
-            </Suspense>
-          </ResignationGate>
+          // 2026-09-08 · 사용자 지시 · 근로계약서 · 사직서 둘 다 접근 가능 (기존은 사직서만)
+          //   · 근로계약서 · 접근 제한 없음 (직원 본인 계약서 조회·확인)
+          //   · 사직서 · ResignationGate · 퇴사예정자만
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="서류 로딩 중..." size={16} tone="brand" /></div>}>
+            <DocumentWriterPage {...commonSubPageProps} allowedTabs={["contract", "resignation"]} />
+          </Suspense>
         )}
       </main>
     </div>
