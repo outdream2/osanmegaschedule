@@ -1008,6 +1008,10 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
     const merged: Record<string, string | null> = { ...existingPos };
     const storageLocs = await getStorageLocations();
     const requiredCodes = new Set(storageLocs.filter(s => s.required_detail && s.active).map(s => s.code));
+    // 2026-09-08 · 상세 진열위치 중복 방지 pre-check 대상 수집
+    //   · 규칙 · (display_location, location_detail) 유일 · storage_location 무관
+    //   · display_location 자체가 매장/창고 결정 (코드 겹침 없음)
+    const dupCheckTargets: Array<{ key: string; value: string }> = [];
     for (const [k, v] of Object.entries(incomingPos)) {
       if (v === undefined) continue;
       if (v === null || v === "") {
@@ -1021,9 +1025,52 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
         if (!/^[0-9A-Z]{3}$/.test(val)) {
           throw badRequest(`상세위치(${k}=${val})는 3자리 (층·칸·순서 · 예 332) 여야 합니다`);
         }
+        // 기존 값과 동일하면 · 중복 검사 skip (이미 저장된 상태 유지)
+        if (existingPos[k] !== val) dupCheckTargets.push({ key: k, value: val });
         merged[k] = val;
       }
     }
+
+    // 2026-09-08 · 상세 진열위치 중복 방지 pre-check
+    //   · 현재 상품의 display_location 조회
+    //   · 각 (storage_key, detail_value) 조합 · 다른 상품에서 사용 중인지 · JSONB 쿼리
+    if (dupCheckTargets.length > 0) {
+      const { data: currentProd } = await supabase
+        .from("products")
+        .select("display_location, location")
+        .eq("product_code", code)
+        .maybeSingle();
+      const currentDisplayLoc = currentProd?.display_location ?? currentProd?.location ?? null;
+      if (currentDisplayLoc) {
+        for (const { key, value } of dupCheckTargets) {
+          // JSONB path 조회 · shelf_positions->>key = value
+          //   · Supabase JS SDK · filter · shelf_positions->>storage_key eq value
+          const { data: conflicts } = await supabase
+            .from("inventory_checks")
+            .select("product_code, product_name, shelf_positions")
+            .filter("shelf_positions->>" + key, "eq", value)
+            .neq("product_code", code);
+          if (conflicts && conflicts.length > 0) {
+            // 각 conflict · 상품 display_location 조회 · 같은 zone 이면 · 진짜 중복
+            const otherCodes = conflicts.map(c => String((c as any).product_code));
+            const { data: otherProds } = await supabase
+              .from("products")
+              .select("product_code, product_name, display_location, location")
+              .in("product_code", otherCodes);
+            const conflictOther = (otherProds ?? []).find(op => {
+              const otherLoc = (op as any).display_location ?? (op as any).location ?? null;
+              return String(otherLoc ?? "").trim() === String(currentDisplayLoc).trim();
+            });
+            if (conflictOther) {
+              throw badRequest(
+                `이 위치는 이미 사용 중입니다 · ${currentDisplayLoc}-${value} (${key}) · 기존 상품 · ${(conflictOther as any).product_name} (#${(conflictOther as any).product_code})`
+              );
+            }
+          }
+        }
+      }
+    }
+
     payload.shelf_positions = merged;
   }
   const applyPayload = async (): Promise<{ error?: string } | null> => {
