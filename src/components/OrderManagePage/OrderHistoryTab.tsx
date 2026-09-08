@@ -3,8 +3,13 @@
 // 컬럼 없으면 · 서버가 empty + notice 반환 · UI 는 안내 메시지 표시
 // 2026-08-12 · UI 리디자인 · 폰트 +2 · 굵기 완화 · 발주일·희망입고일 · 헤더 · 상품수 옆
 
-import React, { useEffect, useState } from "react";
-import { Package, ChevronDown, ChevronRight, Mail, Phone, User, Calendar, CalendarCheck } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Package, ChevronDown, ChevronRight, Mail, Phone, User, Calendar, CalendarCheck, FileDown } from "lucide-react";
+// 2026-09-08 · 사용자 지시 · 발주이력 각 행 PDF 다운 · html2canvas + jsPDF
+import html2canvas from "html2canvas-pro";
+import jsPDF from "jspdf";
+import { OrderPdfPreview } from "./OrderPdfPreview";
+import type { OrderModalState } from "./OrderModal";
 import { Spinner } from "../common/Spinner";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { PageToolbar } from "../common/PageToolbar";
@@ -65,6 +70,69 @@ export const OrderHistoryTab: React.FC = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [days, setDays] = useState(90);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // 2026-09-08 · 사용자 지시 · 각 행 PDF 다운 · 오프스크린 프리뷰 + html2canvas + jsPDF
+  const pdfRef = useRef<HTMLDivElement | null>(null);
+  const [pdfTarget, setPdfTarget] = useState<OrderModalState | null>(null);
+  const [pdfSavingKey, setPdfSavingKey] = useState<string | null>(null);
+  const orderToModalState = (o: OrderHistoryOrder): OrderModalState => ({
+    orderDate: o.order_date ?? o.sent_at?.slice(0, 10) ?? "",
+    desiredArrival: o.desired_arrival ?? "",
+    memo: o.memo ?? "",
+    channels: { email: false, sms: false, kakao: false },
+    suppliers: [{
+      supplier: o.supplier,
+      supplier_contact: o.supplier_contact,
+      supplier_email: o.supplier_email,
+      supplier_phone: o.supplier_phone,
+      memo: o.memo ?? null,
+      order_number: o.order_number ?? "",
+      items: o.items.map(it => ({
+        order_request_id: null,
+        product_code: (it as any).product_code ?? "",
+        product_name: (it as any).product_name ?? "",
+        current_stock: (it as any).current_stock ?? null,
+        optimal_stock: (it as any).optimal_stock ?? null,
+        order_qty: (it as any).order_qty ?? 0,
+        unit_price: (it as any).unit_price ?? null,
+        memo: null,
+      })),
+    }],
+  }) as unknown as OrderModalState;
+  const handleDownloadPdf = async (o: OrderHistoryOrder) => {
+    const key = String(o.order_number ?? o.sent_at);
+    setPdfSavingKey(key);
+    setPdfTarget(orderToModalState(o));
+    // React 다음 프레임에서 프리뷰가 마운트된 후 캡처
+    await new Promise(r => setTimeout(r, 100));
+    try {
+      const node = pdfRef.current;
+      if (!node) throw new Error("PDF 프리뷰를 찾을 수 없습니다");
+      const canvas = await html2canvas(node, { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false, windowWidth: node.scrollWidth });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = pdf.internal.pageSize.getHeight();
+      const imgH = (canvas.height * pdfW) / canvas.width;
+      if (imgH <= pdfH) {
+        pdf.addImage(imgData, "PNG", 0, 0, pdfW, imgH, undefined, "FAST");
+      } else {
+        let yOffset = 0; let remaining = imgH;
+        while (remaining > 0) {
+          pdf.addImage(imgData, "PNG", 0, -yOffset, pdfW, imgH, undefined, "FAST");
+          remaining -= pdfH; yOffset += pdfH;
+          if (remaining > 0) pdf.addPage();
+        }
+      }
+      const ymd = (o.sent_at ?? new Date().toISOString()).slice(0, 10).replace(/-/g, "");
+      const supName = (o.supplier ?? "발주서").replace(/[\\/:*?"<>|]/g, "_");
+      pdf.save(`발주서_${ymd}_${supName}_${o.order_number ?? ""}.pdf`);
+    } catch (e: any) {
+      showError(`PDF 다운 실패: ${e?.message ?? "오류"}`);
+    } finally {
+      setPdfSavingKey(null);
+      setPdfTarget(null);
+    }
+  };
   // 2026-08-23 · #180 · A안 · 공급사·상품 별도 검색창 2개 · 클라 filter (AND)
   const [supplierSearch, setSupplierSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
@@ -294,6 +362,19 @@ export const OrderHistoryTab: React.FC = () => {
                     <span className="text-[15px] text-zinc-400 tabular-nums shrink-0 min-w-[90px] text-right">
                       {o.sent_at?.slice(0, 10) ?? "-"}
                     </span>
+                    {/* 2026-09-08 · 사용자 지시 · PDF 다운 버튼 */}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); void handleDownloadPdf(o); }}
+                      disabled={pdfSavingKey === String(o.order_number ?? o.sent_at)}
+                      className="ml-1 inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-white border border-line text-[13px] font-bold text-ink-soft hover:border-brand-deep hover:text-brand-deep hover:bg-brand-tint/20 shadow-sm active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                      title="발주서 PDF 다운로드"
+                    >
+                      {pdfSavingKey === String(o.order_number ?? o.sent_at)
+                        ? <Spinner size={12} tone="brand" />
+                        : <FileDown size={12} strokeWidth={2.4} />}
+                      PDF
+                    </button>
                   </button>
 
                   {/* 확장 내용 · 아이템 리스트 + 수신처 · 폰트 +2 */}
@@ -351,6 +432,12 @@ export const OrderHistoryTab: React.FC = () => {
         )}
       </Card>
     </div>
+    {/* 2026-09-08 · 사용자 지시 · 오프스크린 PDF 프리뷰 · 캡처 대상 (visually hidden) */}
+    {pdfTarget && (
+      <div style={{ position: "fixed", left: "-99999px", top: 0, zIndex: -1 }} aria-hidden>
+        <OrderPdfPreview ref={pdfRef} orderModal={pdfTarget} />
+      </div>
+    )}
     </>
   );
 };
