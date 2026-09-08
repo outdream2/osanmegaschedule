@@ -827,12 +827,13 @@ const SurgingTopChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({
   );
 };
 
-// ─── 10. 구역별 Top 10 · 진열구역별 매출 (location/real_map)
+// ─── 10. 구역별 Top 10 · 진열구역별 매출 (location)
+// 2026-09-08 · real_map fallback 제거 · 컬럼 폐기 예정
 const ZoneTopChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ rows, loading }) => {
   const data = useMemo(() => {
     const map = new Map<string, { amount: number; qty: number }>();
     for (const r of rows) {
-      const zone = String((r as any).location ?? (r as any).real_map ?? "").trim() || "미지정";
+      const zone = String((r as any).location ?? "").trim() || "미지정";
       const qty = Number(r.sale_qty ?? 0);
       const price = Number(r.sale_price ?? 0);
       if (qty <= 0) continue;
