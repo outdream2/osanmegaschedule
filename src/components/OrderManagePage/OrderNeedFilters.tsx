@@ -109,16 +109,7 @@ export const OrderNeedFilters: React.FC<OrderNeedFiltersProps> = ({
           />
           <span className="text-[15px] font-bold tracking-tight">조건적용 · {needConditionApply ? "ON" : "OFF"}</span>
         </label>
-        {lowStockSearch.trim() && (
-          <button
-            type="button"
-            onClick={() => setLowStockSearch("")}
-            className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line bg-white hover:bg-zinc-50 text-[15px] font-bold text-zinc-500 hover:text-rose-600 transition cursor-pointer"
-            title="검색 초기화"
-          >
-            <RotateCcw size={11} />초기화
-          </button>
-        )}
+        {/* 2026-09-08 · 사용자 지시 · 초기화 버튼 2개 · 검색 초기화 삭제 (발주 조건 초기화 유지) */}
       </div>
 
       {/* Row 2: 카테고리 + 발주조건 */}
