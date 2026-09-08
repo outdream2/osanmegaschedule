@@ -10,6 +10,8 @@ import {
   STORE_TOP_WALL, STORE_BOTTOM_WALL, STORE_LEFT_WALL,
   STORE_AISLE_COLUMNS, CAT_A_COLORS, CAT_B_COLORS,
   EVENT_ZONE_COLOR, getWallCellColor,
+  // 2026-09-08 · 사용자 지시 · 카운터존 45~50 (제품존과 별도)
+  COUNTER_ZONE_CELLS,
 } from "../../constants/storeMapLayout";
 import { getZoneSubLabel } from "../../constants/zoneLabels";
 import { Card } from "../common/Card";
@@ -333,6 +335,30 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
             </div>
           ))}
         </div>
+
+        {/* 2026-09-08 · 카운터존 · 45~50 순차 6셀 · 제품존과 별도 영역 */}
+        <Card variant="raw-md" rounded="2xl" padding="none" className="w-full mt-2 p-3 flex flex-col gap-3 shadow-zinc-200/60">
+          <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-zinc-900 flex items-center justify-center shadow-sm">
+                <span className="text-[15px]">🛒</span>
+              </div>
+              <span className="text-[15px] font-bold text-zinc-900 leading-none">카운터존</span>
+              <span className="text-[13px] font-semibold text-zinc-400 leading-none uppercase tracking-wider">45 ~ 50</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+            {COUNTER_ZONE_CELLS.map((cell) => (
+              <div key={`cz-${cell.num}`} className="flex flex-col items-center gap-1">
+                <span className={`text-[11px] font-bold uppercase tracking-wider ${cell.kind === "event" ? "text-amber-700" : "text-brand-deep"}`}>
+                  {cell.label}
+                </span>
+                <span className="text-[13px] font-bold text-zinc-500 tabular-nums">{cell.num}</span>
+                {renderZoneCell(cell.num, `w-full h-[60px] text-[13px] p-1 justify-center ${cell.kind === "event" ? "bg-amber-50 border-amber-200" : "bg-brand-tint/40 border-brand-tint"}`)}
+              </div>
+            ))}
+          </div>
+        </Card>
 
       </div>
     </div>

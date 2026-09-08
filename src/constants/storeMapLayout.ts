@@ -21,6 +21,25 @@ export const STORE_BOTTOM_WALL: number[] = [25, 24, 23, 22, 21, 20, 19, 18, 17, 
 /** 좌측 벽면 · 위→아래 · 31→26 (6셀) */
 export const STORE_LEFT_WALL: number[] = [31, 30, 29, 28, 27, 26];
 
+/**
+ * 2026-09-08 · 사용자 지시 · 카운터존 · 45~50 순차 6셀
+ *   · 이벤트 라벨은 "EVENT" 로 저장 (사용자 지시)
+ *   · 제품존과 별도 영역 · 카운터·이벤트·정면약진열·시설 등
+ */
+export const COUNTER_ZONE_CELLS: Array<{ num: number; label: string; kind: "event" | "counter" }> = [
+  { num: 45, label: "EVENT", kind: "event" },
+  { num: 46, label: "EVENT", kind: "event" },
+  { num: 47, label: "EVENT", kind: "event" },
+  { num: 48, label: "COUNTER", kind: "counter" },
+  { num: 49, label: "COUNTER", kind: "counter" },
+  { num: 50, label: "COUNTER", kind: "counter" },
+];
+
+/**
+ * 중앙 aisle 이벤트 셀 라벨 · "이벤트" → "EVENT" 로 일괄 정정 (사용자 지시)
+ */
+export const EVENT_LABEL = "EVENT";
+
 export interface AisleColorSet {
   bg: string;
   border: string;
@@ -37,8 +56,8 @@ export interface AisleColumn {
 export const STORE_AISLE_COLUMNS: AisleColumn[] = [
   // Col 2 · 9B/9A · 10B/10A · 11B/11A
   { col: 2, pairs: [{ b: 9, a: 9 }, { b: 10, a: 10 }, { b: 11, a: 11 }] },
-  // Col 5 · 8B/8A · 이벤트/이벤트 · 7B/7A
-  { col: 5, pairs: [{ b: 8, a: 8 }, { b: "이벤트", a: "이벤트" }, { b: 7, a: 7 }] },
+  // Col 5 · 8B/8A · EVENT/EVENT · 7B/7A · 2026-09-08 · 이벤트 → EVENT (사용자 지시)
+  { col: 5, pairs: [{ b: 8, a: 8 }, { b: "EVENT", a: "EVENT" }, { b: 7, a: 7 }] },
   // Col 8 · 4B/4A · 5B/5A · 6B/6A
   { col: 8, pairs: [{ b: 4, a: 4 }, { b: 5, a: 5 }, { b: 6, a: 6 }] },
   // Col 12 · 3B/3A · 2B/2A · 1B/1A

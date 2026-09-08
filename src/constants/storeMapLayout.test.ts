@@ -57,10 +57,10 @@ describe("STORE_AISLE_COLUMNS · aisle 칼럼 정의", () => {
       expect(col.pairs).toHaveLength(3);
     }
   });
-  it("col 5 · 이벤트 pair 포함", () => {
+  it("col 5 · EVENT pair 포함 · 2026-09-08 · 이벤트 → EVENT 정정", () => {
     const col5 = STORE_AISLE_COLUMNS.find(c => c.col === 5)!;
-    expect(col5.pairs[1].b).toBe("이벤트");
-    expect(col5.pairs[1].a).toBe("이벤트");
+    expect(col5.pairs[1].b).toBe("EVENT");
+    expect(col5.pairs[1].a).toBe("EVENT");
   });
   it("col 12 · 1B/1A pair 포함", () => {
     const col12 = STORE_AISLE_COLUMNS.find(c => c.col === 12)!;
