@@ -794,29 +794,35 @@ router.post("/api/products", authorize(5), validateBody(CreateProductSchema), as
   //   · 매장1 default + 창고1/2 (구역에 따라) · 값 null (상세위치 이후 편집)
   //   · inventory_checks row 신규 생성 (checked_at=now · status=pending)
   //   · 실패해도 상품 등록은 성공 처리 (fire-and-forget · 로그만 기록)
-  try {
-    const locationSource =
-      (typeof input.display_location === "string" && input.display_location) ||
-      (typeof input.location === "string" && input.location) ||
-      null;
-    const initialPositions = buildInitialShelfPositions(locationSource, input.category);
-    const now = new Date().toISOString();
-    const { error: shelfErr } = await supabase.from("inventory_checks").insert([{
-      product_code: code,
-      product_name: input.product_name,
-      shelf_positions: initialPositions,
-      checked_at: now,
-      status: "pending",
-      checked_by: "system:auto-assign",
-    }]);
-    if (shelfErr) {
-      // shelf_positions 컬럼 미배포 · 이후 배포 시 정상화 · 상품 등록은 유지
-      console.warn(`[products POST] shelf_positions 초기화 실패 (무시): ${shelfErr.message}`);
-    } else {
-      console.log(`[products POST] shelf_positions 자동배정 · ${code} · ${JSON.stringify(initialPositions)}`);
+  // 2026-09-08 · 사용자 지시 · **판매중 상품에만** 적용 (판매중지·숨김은 실재고 없음)
+  const saleStatus = String((input as any).sale_status ?? "판매중").trim();
+  if (saleStatus === "판매중") {
+    try {
+      const locationSource =
+        (typeof input.display_location === "string" && input.display_location) ||
+        (typeof input.location === "string" && input.location) ||
+        null;
+      const initialPositions = buildInitialShelfPositions(locationSource, input.category);
+      const now = new Date().toISOString();
+      const { error: shelfErr } = await supabase.from("inventory_checks").insert([{
+        product_code: code,
+        product_name: input.product_name,
+        shelf_positions: initialPositions,
+        checked_at: now,
+        status: "pending",
+        checked_by: "system:auto-assign",
+      }]);
+      if (shelfErr) {
+        // shelf_positions 컬럼 미배포 · 이후 배포 시 정상화 · 상품 등록은 유지
+        console.warn(`[products POST] shelf_positions 초기화 실패 (무시): ${shelfErr.message}`);
+      } else {
+        console.log(`[products POST] shelf_positions 자동배정 · ${code} · ${JSON.stringify(initialPositions)}`);
+      }
+    } catch (e: any) {
+      console.warn(`[products POST] shelf_positions 초기화 예외 (무시): ${e?.message}`);
     }
-  } catch (e: any) {
-    console.warn(`[products POST] shelf_positions 초기화 예외 (무시): ${e?.message}`);
+  } else {
+    console.log(`[products POST] shelf_positions 자동배정 skip · sale_status=${saleStatus} · ${code}`);
   }
 
   res.status(201).json({ ok: true, product_code: code, stripped });
