@@ -141,59 +141,80 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
     : true;
 
   return (
-    <div className={`bg-white rounded-xl border border-line shadow-sm ${pad} flex flex-col gap-2.5 ${className}`}>
+    <div
+      className={`relative overflow-hidden bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_12px_-4px_rgba(10,46,74,0.06)] ${pad} flex flex-col gap-3 ${className}`}
+    >
+      {/* 2026-09-08 · 사용자 지시 · 목업 톤 재디자인 · 3px gradient top accent */}
+      <span aria-hidden className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-brand-deep via-brand to-[#3E7CB1]" />
+
       {/* ── 공급사 헤더 라인 ── */}
-      <div className="flex items-start gap-2 flex-wrap">
-        <Building2 size={dense ? 14 : 16} className="text-emerald-600 shrink-0 mt-0.5" />
-        <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-          {/* 공급사명 · 분류 · 사업자번호 · 2026-08-06 · 정제 이름 사용 */}
+      <div className="flex items-start gap-3 flex-wrap">
+        {/* IconTile · brand-deep gradient */}
+        <div className={`${dense ? "w-9 h-9" : "w-11 h-11"} rounded-xl bg-gradient-to-br from-brand-deep to-brand shadow-[0_2px_8px_-1px_rgba(10,46,74,0.25)] flex items-center justify-center shrink-0`}>
+          <Building2 size={dense ? 16 : 20} className="text-white" strokeWidth={2.2} />
+        </div>
+        <div className="flex flex-col gap-1 min-w-0 flex-1">
+          {/* 공급사명 · 분류 · 사업자번호 · VAT */}
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-[15px] font-bold text-zinc-800 break-words" title={rawName}>{displayName}</h2>
-            <VendorCategoryBadge category={vendor.category} />
+            <h2
+              className={`${dense ? "text-[18px]" : "text-[20px]"} font-extrabold text-ink tracking-tight leading-tight break-words`}
+              title={rawName}
+            >
+              {displayName}
+            </h2>
+            <VendorCategoryBadge category={vendor.category} className="text-[14px]" />
             {vendor.business_number && (
-              <span className="text-[12px] font-semibold text-zinc-500 bg-zinc-50 border border-line rounded px-1.5 py-0.5 tabular-nums">
+              <span className="text-[14px] font-semibold text-ink-soft bg-zinc-50 border border-line rounded-md px-2 py-0.5 tabular-nums">
                 {fmtBizNum(vendor.business_number)}
               </span>
             )}
-            {/* 부가세 · 텍스트 · 2026-08-06 · 사용자 요청 · 배지 → 깔끔한 텍스트 */}
             {effectiveVatIncluded === true && (
-              <span className="text-[13px] font-semibold text-emerald-700">VAT 포함</span>
+              <span className="inline-flex items-center gap-1 text-[13px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-1.5 py-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                VAT 포함
+              </span>
             )}
             {effectiveVatIncluded === false && (
               <span
-                className="text-[13px] font-semibold text-zinc-500"
+                className="inline-flex items-center gap-1 text-[13px] font-bold text-zinc-500 bg-zinc-100 border border-zinc-200 rounded-md px-1.5 py-0.5"
                 title={vendor.vat_included == null && nameHintsVatExcluded ? "공급사명에서 자동 추론" : undefined}
               >
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
                 부가세 별도
               </span>
             )}
           </div>
 
-          {/* Sub-line · 담당자·전화·이메일·등록일 */}
-          <div className="flex items-center gap-3 flex-wrap text-[13px] text-zinc-500">
+          {/* Sub-line · 담당자·전화·이메일·등록일 · 폰트 +2 */}
+          <div className="flex items-center gap-3 flex-wrap text-[15px] text-ink-soft">
             {vendor.contact_name && (
-              <span className="inline-flex items-center gap-1">
-                <User2 size={10} className="text-zinc-400" />
+              <span className="inline-flex items-center gap-1.5 font-semibold">
+                <User2 size={13} className="text-zinc-400" />
                 {vendor.contact_name}
               </span>
             )}
             {vendor.phone && (
               <a
                 href={`tel:${vendor.phone.replace(/\D/g, "")}`}
-                className="inline-flex items-center gap-1 tabular-nums hover:text-sky-600 transition"
+                className="inline-flex items-center gap-1.5 tabular-nums font-semibold hover:text-brand-deep transition"
               >
-                <Phone size={10} className="text-zinc-400" />
+                <Phone size={13} className="text-zinc-400" />
                 {fmtPhone(vendor.phone)}
               </a>
             )}
             {vendor.email && (
-              <span className="inline-flex items-center gap-1 truncate max-w-[200px]" title={vendor.email}>
-                @{vendor.email}
-              </span>
+              <a
+                href={`mailto:${vendor.email}`}
+                className="inline-flex items-center gap-1.5 truncate max-w-[260px] font-semibold hover:text-brand-deep transition"
+                title={vendor.email}
+              >
+                <span className="text-zinc-400">@</span>
+                {vendor.email}
+              </a>
             )}
             {vendor.created_at && (
-              <span className="inline-flex items-center gap-1 tabular-nums">
-                <Calendar size={10} className="text-zinc-400" />
+              <span className="inline-flex items-center gap-1.5 tabular-nums font-medium text-zinc-400">
+                <Calendar size={13} className="text-zinc-400" />
                 등록 {fmtDate(vendor.created_at)}
               </span>
             )}
@@ -258,15 +279,15 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
           )}
         </div>
 
-        {/* [조회 및 수정] 버튼 */}
+        {/* [조회 및 수정] 버튼 · 목업 톤 */}
         {onEdit && (
           <button
             type="button"
             onClick={onEdit}
-            className="shrink-0 inline-flex items-center gap-1 h-7 px-2.5 rounded-lg border border-line text-[13px] font-semibold text-zinc-600 hover:bg-zinc-50 hover:text-zinc-800 transition cursor-pointer"
+            className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-white border border-line text-[14px] font-bold text-ink-soft hover:border-brand-deep hover:text-brand-deep hover:bg-brand-tint/20 shadow-sm active:scale-[0.98] transition cursor-pointer"
             title="공급사 정보 조회 및 수정"
           >
-            <Pencil size={11} />
+            <Pencil size={13} strokeWidth={2.4} />
             조회·수정
           </button>
         )}
@@ -285,53 +306,70 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
         </div>
       )}
 
-      {/* ── KPI 텍스트 줄 (kpis 있을 때만) ── */}
+      {/* ── KPI 미니카드 그리드 · 2026-09-08 · 사용자 지시 · 목업 톤 · 폰트 +2 ── */}
       {kpis != null && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px] leading-tight border-t border-zinc-100 pt-2">
-          {/* 누적 매입액 */}
-          <span className="inline-flex items-center gap-1.5">
-            <span className="text-zinc-400 font-semibold">누적 매입액 (1년)</span>
-            <span className="tabular-nums font-bold text-emerald-700">{fmtWon(kpis.totalAmount)}원</span>
-            <span className="text-zinc-400 tabular-nums">
-              ({kpisLoading ? "로딩" : detailRowCount != null ? `${detailRowCount}건` : ""})
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 border-t border-line/70 pt-3">
+          {/* 누적 매입액 (1년) */}
+          <div className="bg-emerald-50/60 border border-emerald-200/60 rounded-xl px-3 py-2 flex flex-col gap-0.5">
+            <span className="text-[12px] font-bold text-emerald-700 uppercase tracking-wider">누적 매입 (1년)</span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[18px] font-extrabold tabular-nums text-emerald-800 leading-none">
+                {fmtWon(kpis.totalAmount)}
+              </span>
+              <span className="text-[13px] font-semibold text-emerald-700/70">원</span>
+            </div>
+            <span className="text-[12px] font-medium text-emerald-700/60 tabular-nums">
+              {kpisLoading ? "로딩 중" : detailRowCount != null ? `${detailRowCount}건` : "-"}
             </span>
-          </span>
-          <span className="text-zinc-200">·</span>
-          {/* 이번달 매입 + MoM + VAT 정보 (2026-08-06 · 사용자 요청) */}
-          <span className="inline-flex items-center gap-1.5">
-            <span className="text-zinc-400 font-semibold">이번달 매입</span>
-            <span className={`tabular-nums font-bold ${
-              momTone === "rose" ? "text-rose-700"
-              : momTone === "emerald" ? "text-emerald-700"
-              : "text-zinc-700"
-            }`}>{fmtWon(kpis.thisMonthAmount)}원</span>
-            {effectiveVatIncluded === true && (
-              <span className="text-[12.5px] font-semibold text-emerald-700">VAT 포함</span>
-            )}
-            {effectiveVatIncluded === false && (
-              <span className="text-[12.5px] font-semibold text-zinc-500">부가세 별도</span>
-            )}
-            <span className="text-zinc-400 tabular-nums inline-flex items-center gap-0.5">
-              {momIcon}{momText}
+          </div>
+
+          {/* 이번달 매입 + MoM + VAT */}
+          <div className="bg-brand-tint/50 border border-brand-deep/20 rounded-xl px-3 py-2 flex flex-col gap-0.5">
+            <span className="text-[12px] font-bold text-brand-deep uppercase tracking-wider">이번달 매입</span>
+            <div className="flex items-baseline gap-1">
+              <span className={`text-[18px] font-extrabold tabular-nums leading-none ${
+                momTone === "rose" ? "text-rose-700"
+                : momTone === "emerald" ? "text-emerald-700"
+                : "text-brand-deep"
+              }`}>{fmtWon(kpis.thisMonthAmount)}</span>
+              <span className="text-[13px] font-semibold text-brand-deep/70">원</span>
+              <span className="ml-auto text-[12px] font-semibold text-ink-soft inline-flex items-center gap-0.5 tabular-nums">
+                {momIcon}{momText}
+              </span>
+            </div>
+            <span className="text-[12px] font-medium text-ink-soft">
+              {effectiveVatIncluded === true ? "VAT 포함" : effectiveVatIncluded === false ? "부가세 별도" : ""}
             </span>
-          </span>
-          <span className="text-zinc-200">·</span>
+          </div>
+
           {/* 평균 매입주기 */}
-          <span className="inline-flex items-center gap-1.5">
-            <span className="text-zinc-400 font-semibold">평균 매입주기</span>
-            <span className="tabular-nums font-bold text-zinc-700">
-              {kpis.avgCycleDays != null ? `${kpis.avgCycleDays}일` : "-"}
+          <div className="bg-white border border-line rounded-xl px-3 py-2 flex flex-col gap-0.5">
+            <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">평균 매입주기</span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[18px] font-extrabold tabular-nums text-ink leading-none">
+                {kpis.avgCycleDays != null ? kpis.avgCycleDays : "-"}
+              </span>
+              <span className="text-[13px] font-semibold text-ink-soft">{kpis.avgCycleDays != null ? "일" : ""}</span>
+            </div>
+            <span className="text-[12px] font-medium text-zinc-400">
+              {kpis.avgCycleDays != null ? "매입일 2회 이상 기준" : "매입 2회 미만"}
             </span>
-          </span>
-          <span className="text-zinc-200">·</span>
+          </div>
+
           {/* 활성 상품 */}
-          <span className="inline-flex items-center gap-1.5">
-            <Package size={13} className="text-zinc-400 shrink-0" />
-            <span className="text-zinc-400 font-semibold">활성 상품</span>
-            <span className="tabular-nums font-bold text-zinc-700">
-              {kpis.activeSkuCount > 0 ? `${kpis.activeSkuCount.toLocaleString()}종` : "-"}
-            </span>
-          </span>
+          <div className="bg-white border border-line rounded-xl px-3 py-2 flex flex-col gap-0.5">
+            <div className="inline-flex items-center gap-1.5">
+              <Package size={12} className="text-ink-soft shrink-0" />
+              <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">활성 상품</span>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[18px] font-extrabold tabular-nums text-ink leading-none">
+                {kpis.activeSkuCount > 0 ? kpis.activeSkuCount.toLocaleString() : "-"}
+              </span>
+              <span className="text-[13px] font-semibold text-ink-soft">{kpis.activeSkuCount > 0 ? "종" : ""}</span>
+            </div>
+            <span className="text-[12px] font-medium text-zinc-400">거래 SKU 수</span>
+          </div>
         </div>
       )}
     </div>

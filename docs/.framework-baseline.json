@@ -1,8 +1,18 @@
 {
-  "created": "2026-09-07",
+  "created": "2026-09-08",
   "version": 1,
-  "totalViolations": 7,
+  "totalViolations": 9,
   "files": {
+    "src/components/common/VendorInfoHeader.tsx": {
+      "lines": 380,
+      "violations": [
+        {
+          "ruleId": "raw-card-wrapper",
+          "count": 2
+        }
+      ],
+      "totalWeight": 4
+    },
     "src/components/OrderSettingsPage/OrderSettingsPage.tsx": {
       "lines": 286,
       "violations": [
