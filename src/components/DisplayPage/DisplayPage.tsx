@@ -123,7 +123,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   }, [dpPerms]);
   const isDpMobile = useIsMobile();
   const SIDEBAR_ENABLED = useSidebarEnabled();
-  const [dpSubTab, setDpSubTab] = useState<DpSubTabKey>(dpCanSeeStockManage ? "purchase-order" : "store");
+  const [dpSubTab, _setDpSubTab] = useState<DpSubTabKey>(dpCanSeeStockManage ? "purchase-order" : "store");
+  // 2026-09-08 · 사용자 지시 · breadcrumb 오표시 fix · setDpSubTab 시 dispatch
+  const setDpSubTab = React.useCallback((next: DpSubTabKey) => {
+    _setDpSubTab(next);
+    try { localStorage.setItem("sidebar.subtab.display", next); } catch { /* silent */ }
+    try { window.dispatchEvent(new CustomEvent("sidebar:subtab", { detail: { page: "display", subTab: next } })); } catch { /* silent */ }
+  }, []);
   // 2026-08-29 · #193 · 상품 서브탭 안 · 3개 이너 탭 (실재고입력·상품입고·상품정보)
   // 2026-09-01 · 사용자 지시 · 순서 재조정 · 실재고입력 · 상품입고 · 상품정보
   const [productInnerTab, setProductInnerTab] = useState<"scan" | "arrival" | "info">(() => {

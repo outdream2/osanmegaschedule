@@ -71,7 +71,13 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   initialEmployeeId,
   initialFromPage,
 }) => {
-  const [subTab, setSubTab] = useState<BmSubTab>("staff-manage");
+  const [subTab, _setSubTab] = useState<BmSubTab>("staff-manage");
+  // 2026-09-08 · 사용자 지시 · breadcrumb 오표시 fix · setSubTab 시 dispatch
+  const setSubTab = React.useCallback((next: BmSubTab) => {
+    _setSubTab(next);
+    try { localStorage.setItem("sidebar.subtab.business-manage", next); } catch { /* silent */ }
+    try { window.dispatchEvent(new CustomEvent("sidebar:subtab", { detail: { page: "business-manage", subTab: next } })); } catch { /* silent */ }
+  }, []);
   const isBmMobile = useIsMobile();
   const SIDEBAR_ENABLED = useSidebarEnabled(); // 2026-08-16 · 로컬 상수 유지
 

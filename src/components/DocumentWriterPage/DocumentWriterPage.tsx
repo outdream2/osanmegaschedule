@@ -47,16 +47,30 @@ const DocumentWriterPage: React.FC<DocumentWriterPageProps> = (props) => {
   const isAllowed = (k: DocTab): boolean => visibleTabs.some(t => t.key === k);
   const defaultTab: DocTab = visibleTabs[0]?.key ?? "contract";
 
-  const [tab, setTab] = useState<DocTab>(() => {
+  const [tab, _setTab] = useState<DocTab>(() => {
     // 2026-08-12 · 사이드바 V2 · localStorage(SK_SUBTAB_DOCUMENT_WRITER) 있으면 초기 탭
-    // StrictMode 이중 마운트 대비 · 읽기만 · 삭제는 useEffect 로
-    // allowedTabs 지정 시 · 허용된 탭만 선택
     try {
       const raw = localStorage.getItem(SK_SUBTAB_DOCUMENT_WRITER) as DocTab | null;
       if ((raw === "contract" || raw === "resignation" || raw === "settings") && isAllowed(raw)) return raw;
     } catch { /* silent */ }
     return defaultTab;
   });
+  // 2026-09-08 · 사용자 지시 · breadcrumb 오표시 fix · nested subTab dispatch
+  //   · 부모 (approval-request or business-manage) 가 리슨해서 breadcrumb 갱신
+  const setTab = React.useCallback((next: DocTab) => {
+    _setTab(next);
+    try { localStorage.setItem(SK_SUBTAB_DOCUMENT_WRITER, next); } catch { /* silent */ }
+    try {
+      // 승인요청 시 · nested tab dispatch
+      window.dispatchEvent(new CustomEvent("sidebar:subtab", {
+        detail: { page: "approval-request", subTab: "document-writer", nested: next },
+      }));
+      // 경영관리 시 · nested tab dispatch
+      window.dispatchEvent(new CustomEvent("sidebar:subtab", {
+        detail: { page: "business-manage", subTab: "document-writer", nested: next },
+      }));
+    } catch { /* silent */ }
+  }, []);
   useEffect(() => {
     try { localStorage.removeItem(SK_SUBTAB_DOCUMENT_WRITER); } catch { /* silent */ }
   }, []);
