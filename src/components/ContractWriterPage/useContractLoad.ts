@@ -188,7 +188,10 @@ export function useContractLoad({ form, setForm }: UseContractLoadProps) {
           setExistingContract(first);
         }
         const emp = employees.find(e => e.id === empId);
-        const hd = (emp as any)?.hire_date ?? null;
+        // 2026-09-08 · 사용자 지시 · DB 컬럼 매칭 fix · 서버는 camelCase (hireDate) 반환
+        //   · 이전 · hire_date (snake) 만 · 항상 null → 계약서 "입사일" 참조 blank
+        //   · 이후 · hireDate 우선 · hire_date fallback (하위호환)
+        const hd = (emp as any)?.hireDate ?? (emp as any)?.hire_date ?? null;
         if (!cancelled) setHireDateReference(typeof hd === "string" && hd ? hd : null);
       } catch {
         if (!cancelled) {
