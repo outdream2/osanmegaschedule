@@ -31,7 +31,7 @@
 > - 표시 · 진열위치 나오는 파일 · 위치 뱃지 리스트 (`매장1:332 · 매장2:212 · 창고1:105`)
 > - 매장 미입력 시 · 빨간 뱃지 강조 (`매장1:미입력`)
 
-### ✅ 2026-09-08 완료 (T-SP 세트 · 자율 진행)
+### ✅ 2026-09-08 완료 (T-SP 세트 + 후속 정리 · 자율 진행 · 14 커밋)
 
 | 커밋 | 태스크 | 내용 |
 |-----|-----|------|
@@ -41,6 +41,20 @@
 | `b6e70ae3` | **T-SP-8** | InventoryEditPanel · InventoryEditModal · 각 zone stepper + ZONE_TO_LOCATION 병합 · useOrderManageData 확장 |
 | `3ab74edb` | **T-SP-9 P1** | GET /api/products/shelf-positions-map · useShelfPositionsMap · 6개 핵심 파일 뱃지 (ProductBasicInfoPanel·ScanPage·DisplayPage) |
 | `4a9820d5` | **T-SP-9 P2** | ProductPurchaseDetailPanel · ArrivalRowCard 뱃지 통합 |
+| `b503c640` | **백필 fix** | 판매중 상품에만 자동배정 · 잘못된 백필 5220건 revert · scripts/backfill·revert·check |
+| `eab28c5e` | **real_map cleanup** | DashboardCharts real_map fallback 제거 · location 단일 소스 |
+| `3fd7d1d9` | **barcode 완전 제거** | products.barcode 컬럼 참조 10파일 정리 · product_code 로 통합 (99.97% NULL 검증 후) |
+| `7d8f0cca` | **T-SP 중복방지** | 상세위치 pre-check · (display_location, location_detail) 유일 · POST 시 서버 검증 |
+| `61f663d2` | **#14** | UI 실시간 중복 검증 · debounce 500ms + 붉은 경고 뱃지 · GET /api/inventory-checks/shelf-conflict |
+| `3c22fdf9` | **참조 이미지** | src/sample/제품존정보.jpg · zonecategory.png 등록 |
+| `e5857360` | **PATCH auto** | 진열구역 변경 시 shelf_positions 자동 병합 (POST뿐 아니라 편집도) |
+| `393390ce` | **#12** | 매장구역도 재배치 · L-shape → 14×8 rectangular grid (사용자 zonecategory.png 참고) |
+| `d14e7bb4` | **승인요청 통합** | 사직서승인 탭 신규 · 5개 탭 permission gate (진열·점심·연차·거래처·사직서) |
+
+**사용자 완료 (Supabase SQL):**
+- ✅ Migration · `inventory_checks.shelf_positions JSONB` 실행
+- ✅ products.real_map DROP
+- ✅ products.barcode DROP
 
 **결과 · 표시 통합 완료 파일 (사용자 즉시 확인 가능):**
 - ProductInfoPage 편집 뷰 · 헤더 뱃지 + 편집 섹션
@@ -49,14 +63,26 @@
 - OrderManagePage 매입이력 상세 · 상품정보 탭 배치구역 옆
 - ProductArrivalPage · ArrivalRowCard · 매장구역 옆
 
-### 🟡 PENDING · 후속 (선택)
+### 🟡 PENDING · 남은 태스크 (2026-09-08 세션 종료 시점)
 
 | # | 태스크 | 우선순위 | 비고 |
 |---|-----|--------|------|
-| **T-SP-USER-1** | Supabase SQL Editor 실행 · `migrations/20260908_add_inventory_checks_shelf_positions.sql` | 🔴 P0 | 사용자 직접 · 컬럼 배포 전에는 fallback 동작 |
+| **#13** | 카운터존 신설 · 45번부터 · 별도 레이아웃 | 🟡 P1 | 스펙 필요 (셀 개수·배치·이미지) · 매장구역도 재배치 후속 |
+| **T-MENU-1** | 오늘의 현황 (TodayStatusPanel) · 모든 항목 permission gate | 🟡 P1 | 현재 lunch 만 반영 · display/order/mismatch/return/resignation/vendor 미반영 |
+| **T-MENU-2** | 매장구역도 9·10·11 존 실제 색상 확정 (사용자 제공 대기) | 🟢 P2 | 현재 · teal/orange/cyan 잠정값 |
+| **T-MENU-3** | 벽면 셀 색상 · 제품존정보.jpg 정밀 매핑 | 🟢 P2 | getWallCellColor 잠정 매핑 · 사용자 확인 필요 |
+| **T-DISPLAY-1** | 진열요청 탭 · 상품별로 표시 (UX 개선) | 🟢 P2 | 현재 · 요청 row 단위 · 원하시는 방식 스펙 필요 |
 | **T-SP-9-REST** | 나머지 표시 파일 · 진열위치 표시 자리에 shelf 뱃지 확장 | 🟢 P3 | 대부분 location 내부 사용 · UI 렌더 파일 위주로 필요 시 추가 · CategoryTab·CriticalTab·ExpiryImminentTab·SalesTrend 등 |
 | **T-SP-BULK** | POST /api/inventory-checks/bulk · shelf_positions 병합 지원 | 🟢 P3 | 현재 단건 POST만 지원 · bulk 는 append-only |
 | **T-SP-MASTER-UI** | 매장·창고 마스터 관리 UI (매장4·5 추가) | 🟢 P3 | 현재는 KV JSON 직접 편집 · 관리자 페이지 필요 시 |
+
+### 📊 전수조사 결과 (agent ae22279d1b6a58c47)
+
+**메뉴 permission hidden 반영 현황:**
+- ✅ AppNavHeader · Sidebar · MenuCard · 정상 반영
+- ✅ RequestsPage · 5개 탭 모두 반영 (이번 커밋 d14e7bb4)
+- ⚠️ TodayStatusPanel · lunch만 반영 · 나머지 항목 미반영 (T-MENU-1)
+- ⚠️ BottomNav 모바일 · usePageVisibility 만 사용 · page_permissions.hidden 미반영
 
 ### 📋 스코프 밖 (별도 태스크로 분리)
 
