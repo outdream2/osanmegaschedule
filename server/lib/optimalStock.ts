@@ -179,6 +179,26 @@ export async function syncOrderRequestsOptimalStock(codeToOptimal: Map<string, n
   return updated;
 }
 
+/**
+ * 2026-09-08 · 사용자 지시 · KV settings 에서 days 읽어서 refill
+ *   · app_settings.optimal_stock_days · 정수 (기본 30)
+ *   · 매일 자정 CRON 에서 이 함수 호출
+ *   · zeroIfNoSales=true · 판매 이력 없는 상품도 optimal_stock=0 명시적 세팅
+ */
+export async function refillOptimalStockFromSettings(): Promise<RefillResult> {
+  let days = 30;
+  try {
+    const { data } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "optimal_stock_days")
+      .maybeSingle();
+    const v = Number(data?.value ?? 30);
+    if (Number.isFinite(v) && v >= 1 && v <= 365) days = Math.floor(v);
+  } catch { /* silent · 기본 30일 */ }
+  return refillOptimalStock({ days, zeroIfNoSales: true, syncOrderRequests: true });
+}
+
 /** 재계산 통합 실행 (옵션 기반) */
 export async function refillOptimalStock(opts: RefillOptions = {}): Promise<RefillResult> {
   const t0 = Date.now();

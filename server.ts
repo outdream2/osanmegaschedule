@@ -304,9 +304,42 @@ async function startServer() {
   // T38 · 부팅 시 오래된 로그 파일 자동 정리 (14일 초과)
   cleanupStaleLogs();
 
+  // 2026-09-08 · 사용자 지시 · 적정재고 매일 자동 계산 CRON
+  //   · KV settings.optimal_stock_days 만큼의 판매수량 합계 = optimal_stock
+  //   · 판매 이력 없는 상품 · optimal_stock=0 명시 (zeroIfNoSales=true)
+  //   · 서버 부팅 즉시 1회 · 그 후 매일 자정 실행
+  scheduleOptimalStockRefill();
+
   httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`[Server] Megatown schedule service running on http://localhost:${PORT}`);
   });
+}
+
+// 2026-09-08 · 적정재고 매일 자동 refill CRON · 서버 부팅 후 시작
+async function scheduleOptimalStockRefill(): Promise<void> {
+  const { refillOptimalStockFromSettings } = await import("./server/lib/optimalStock");
+  const runOnce = async () => {
+    try {
+      const t0 = Date.now();
+      const r = await refillOptimalStockFromSettings();
+      console.log(`[optimal-stock/cron] refill · since=${r.since} until=${r.until} · products=${r.totalProducts} · zeroed=${r.productsZeroed} · updated=${r.productsUpdated} · orders=${r.orderRequestsUpdated} · ${Date.now() - t0}ms`);
+    } catch (e: any) {
+      console.warn("[optimal-stock/cron] refill 실패:", e?.message);
+    }
+  };
+  // 부팅 즉시 1회 (5초 지연 · 서버 안정화 후)
+  setTimeout(() => { void runOnce(); }, 5000);
+  // 매일 자정 (KST) 실행
+  const scheduleNextMidnight = () => {
+    const now = new Date();
+    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 5, 0);  // 익일 00:05 (buffer)
+    const ms = next.getTime() - now.getTime();
+    setTimeout(async () => {
+      await runOnce();
+      scheduleNextMidnight();  // 재귀 · 다음날 예약
+    }, ms);
+  };
+  scheduleNextMidnight();
 }
 
 startServer();

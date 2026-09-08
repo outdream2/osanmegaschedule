@@ -9,6 +9,7 @@ import { badRequest, HttpError } from "../../middleware/errorHandler";
 // 2026-08-29 · #197 C-5 fix · 설정 (KV) 편집 후 · 관련 서버 캐시 즉시 무효화
 import { invalidateSaleActiveOnlyCache, resetProductCache } from "../../productCache";
 import { validateBody } from "../../middleware/zodValidate";
+import { z } from "zod";
 import {
   UpsertSettingSchema,
   UpsertSeasonRangesSchema,
@@ -118,6 +119,22 @@ export async function getStorageLocations(): Promise<StorageLocation[]> {
     return DEFAULT_STORAGE_LOCATIONS;
   }
 }
+
+// 2026-09-08 · 사용자 지시 · 적정재고 계산 일수 · 매일 CRON refill 에서 사용
+//   · GET 공개 (설정 화면 노출) · POST 관리자 (level>=9)
+//   · 값 · 정수 1~365 · 기본 30
+router.get("/api/settings/optimal-stock-days", asyncHandler(async (_req, res) => {
+  const { data } = await supabase.from("app_settings").select("value").eq("key", "optimal_stock_days").maybeSingle();
+  const v = Number(data?.value ?? 30);
+  res.json({ days: Number.isFinite(v) && v >= 1 && v <= 365 ? Math.floor(v) : 30 });
+}));
+router.post("/api/settings/optimal-stock-days", authorize(9), validateBody(z.object({ days: z.number().int().min(1).max(365) })), asyncHandler(async (req, res) => {
+  const days = req.body.days;
+  const { error } = await supabase.from("app_settings")
+    .upsert({ key: "optimal_stock_days", value: days, updated_at: new Date().toISOString() }, { onConflict: "key" });
+  if (error) throw new HttpError(500, error.message);
+  res.json({ ok: true, days });
+}));
 
 router.get("/api/settings/storage-locations", asyncHandler(async (_req, res) => {
   const list = await getStorageLocations();
