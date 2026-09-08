@@ -147,12 +147,10 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
       {/* 2026-09-08 · 사용자 지시 · 목업 톤 재디자인 · 3px gradient top accent */}
       <span aria-hidden className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-brand-deep via-brand to-[#3E7CB1]" />
 
-      {/* ── 공급사 헤더 라인 ── */}
+      {/* ── 공급사 헤더 라인 · 2026-09-08 · 사용자 지시 · 빌딩 아이콘 → 심플 말머리표 · 활성상품 제거 */}
       <div className="flex items-start gap-3 flex-wrap">
-        {/* IconTile · brand-deep gradient */}
-        <div className={`${dense ? "w-9 h-9" : "w-11 h-11"} rounded-xl bg-gradient-to-br from-brand-deep to-brand shadow-[0_2px_8px_-1px_rgba(10,46,74,0.25)] flex items-center justify-center shrink-0`}>
-          <Building2 size={dense ? 16 : 20} className="text-white" strokeWidth={2.2} />
-        </div>
+        {/* 심플 말머리표 · 3px vertical bullet · brand gradient */}
+        <span aria-hidden className="mt-1.5 shrink-0 inline-block w-1 h-6 rounded-full bg-gradient-to-b from-brand-soft to-brand-deep" />
         <div className="flex flex-col gap-1 min-w-0 flex-1">
           {/* 공급사명 · 분류 · 사업자번호 · VAT */}
           <div className="flex items-center gap-2 flex-wrap">
@@ -306,9 +304,9 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
         </div>
       )}
 
-      {/* ── KPI 미니카드 그리드 · 2026-09-08 · 사용자 지시 · 목업 톤 · 폰트 +2 ── */}
+      {/* ── KPI 미니카드 그리드 · 2026-09-08 · 사용자 지시 · 활성상품 제거 · 3-col ── */}
       {kpis != null && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 border-t border-line/70 pt-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 border-t border-line/70 pt-3">
           {/* 누적 매입액 (1년) */}
           <div className="bg-emerald-50/60 border border-emerald-200/60 rounded-xl px-3 py-2 flex flex-col gap-0.5">
             <span className="text-[12px] font-bold text-emerald-700 uppercase tracking-wider">누적 매입 (1년)</span>
@@ -356,20 +354,6 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
             </span>
           </div>
 
-          {/* 활성 상품 */}
-          <div className="bg-white border border-line rounded-xl px-3 py-2 flex flex-col gap-0.5">
-            <div className="inline-flex items-center gap-1.5">
-              <Package size={12} className="text-ink-soft shrink-0" />
-              <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">활성 상품</span>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-[18px] font-extrabold tabular-nums text-ink leading-none">
-                {kpis.activeSkuCount > 0 ? kpis.activeSkuCount.toLocaleString() : "-"}
-              </span>
-              <span className="text-[13px] font-semibold text-ink-soft">{kpis.activeSkuCount > 0 ? "종" : ""}</span>
-            </div>
-            <span className="text-[12px] font-medium text-zinc-400">거래 SKU 수</span>
-          </div>
         </div>
       )}
     </div>
