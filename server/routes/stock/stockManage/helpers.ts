@@ -43,5 +43,8 @@ export function clearSalesTrendCache(): void { salesTrendCache.clear(); }
 
 // ── top-sales cache (TTL 10분) ────────────────────────────────────────────
 // 2026-07-29 · Phase 1 · 로딩 속도 개선 (3분 → 10분)
+// 2026-09-08 · CRITICAL-1 fix · sale_status 필드 재추가 · 이전 캐시 stale · 서버 부팅 시 자동 clear 통해 방어
+//   · Node 프로세스 재시작 시 · Map 초기화됨 · 별도 명시 clear 불필요
 export const topSalesCache = new Map<string, { data: any; expiresAt: number }>();
 export const TOP_SALES_TTL = 10 * 60 * 1000;
+export function clearTopSalesCache(): void { topSalesCache.clear(); }

@@ -153,13 +153,19 @@ async function fetchLatestPurchase(codes: string[]): Promise<Map<string, { last_
   const map = new Map<string, { last_purchase_date: string | null; last_snapshot_qty: number | null }>();
   if (codes.length === 0) return map;
   const CHUNK = 200;
+  const PAGE = 1000;
   for (let i = 0; i < codes.length; i += CHUNK) {
     const slice = codes.slice(i, i + CHUNK);
+    // 2026-09-08 · HIGH-1 fix · 페이지 루프 추가 (Supabase 1000 cap · 이전 range 없어 stale date 위험)
+    let fromRow = 0;
+    while (true) {
     const { data } = await supabase
       .from("purchase_details")
       .select("product_code, purchase_date, quantity")
       .in("product_code", slice)
-      .order("purchase_date", { ascending: false });
+      .order("purchase_date", { ascending: false })
+      .range(fromRow, fromRow + PAGE - 1);
+    if (!data || data.length === 0) break;
     for (const r of data ?? []) {
       const code = String(r.product_code ?? "").trim();
       if (!code || map.has(code)) continue;
@@ -167,6 +173,9 @@ async function fetchLatestPurchase(codes: string[]): Promise<Map<string, { last_
         last_purchase_date: r.purchase_date ?? null,
         last_snapshot_qty: r.quantity != null ? Number(r.quantity) : null,
       });
+    }
+      if (data.length < PAGE) break;
+      fromRow += PAGE;
     }
   }
   return map;

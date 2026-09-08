@@ -440,12 +440,18 @@ router.post("/api/upload-products", authorize(9), express.raw({ type: "applicati
         .range(from, from + PAGE - 1);
       if (fetchErr) { console.warn("[upload] restore fetch 실패:", fetchErr.message); break; }
       if (!rows || rows.length === 0) break;
-      for (const row of rows) {
-        const { error: updErr } = await supabase
-          .from("products")
-          .update({ optimal_stock: row.optimal_stock_backup })
-          .eq("product_code", row.product_code);
-        if (!updErr) restoredCount++;
+      // 2026-09-08 · CRITICAL-2 · N+1 sequential → Promise.all 병렬 배치 (50개 단위)
+      //   · 이전 · 7,000 sequential UPDATE · 몇 분 소요
+      //   · 이후 · 50개씩 병렬 · ~14 batches · 몇 초로 단축
+      const BATCH = 50;
+      for (let bi = 0; bi < rows.length; bi += BATCH) {
+        const batch = rows.slice(bi, bi + BATCH);
+        const results = await Promise.all(batch.map(row =>
+          supabase.from("products")
+            .update({ optimal_stock: row.optimal_stock_backup })
+            .eq("product_code", row.product_code)
+        ));
+        for (const r of results) if (!r.error) restoredCount++;
       }
       if (rows.length < PAGE) break;
       from += PAGE;
