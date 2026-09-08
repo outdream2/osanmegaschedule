@@ -41,8 +41,8 @@ describe("ProductCreateModal · 렌더", () => {
     );
     expect(container.textContent).toContain("상품 신규 등록");
     expect(container.textContent).toContain("필수 정보");
-    expect(container.textContent).toContain("분류·공급");
-    // 2026-08-24 · 적정재고 필드 제거 · 섹션명 "가격·재고" → "가격"
+    // 2026-09-07 · 목업 재디자인 · '분류·공급' → '분류 · 공급'
+    expect(container.textContent).toContain("분류");
     expect(container.textContent).toContain("가격");
     expect(container.textContent).toContain("기타");
     const submit = container.querySelector('button[type="submit"]');
@@ -89,7 +89,7 @@ describe("ProductCreateModal · initialCode / initialBarcode / lockCode (#179)",
       <ProductCreateModal open onClose={vi.fn()} onCreated={vi.fn()}
         initialName="아세트아미노펜 500mg" />,
     );
-    const nameInput = container.querySelector('input[placeholder="상품명 입력"]') as HTMLInputElement;
+    const nameInput = container.querySelector('input[placeholder*="타이레놀"]') as HTMLInputElement;
     expect(nameInput?.value).toBe("아세트아미노펜 500mg");
   });
 });
@@ -100,7 +100,7 @@ describe("ProductCreateModal · 폼 입력 · 필수 검증", () => {
       <ProductCreateModal open onClose={vi.fn()} onCreated={vi.fn()} />,
     );
     const codeInput = container.querySelector('input[placeholder*="20250823001"]') as HTMLInputElement;
-    const nameInput = container.querySelector('input[placeholder="상품명 입력"]') as HTMLInputElement;
+    const nameInput = container.querySelector('input[placeholder*="타이레놀"]') as HTMLInputElement;
     fireEvent.change(codeInput, { target: { value: "PC001" } });
     fireEvent.change(nameInput, { target: { value: "테스트상품" } });
     const submit = container.querySelector('button[type="submit"]') as HTMLButtonElement;
@@ -111,7 +111,7 @@ describe("ProductCreateModal · 폼 입력 · 필수 검증", () => {
     const { container } = render(
       <ProductCreateModal open onClose={vi.fn()} onCreated={vi.fn()} />,
     );
-    const nameInput = container.querySelector('input[placeholder="상품명 입력"]') as HTMLInputElement;
+    const nameInput = container.querySelector('input[placeholder*="타이레놀"]') as HTMLInputElement;
     fireEvent.change(nameInput, { target: { value: "테스트" } });
     const submit = container.querySelector('button[type="submit"]') as HTMLButtonElement;
     expect(submit.disabled).toBe(true);
@@ -127,7 +127,7 @@ describe("ProductCreateModal · submit (mock)", () => {
       <ProductCreateModal open onClose={onClose} onCreated={onCreated} />,
     );
     const codeInput = container.querySelector('input[placeholder*="20250823001"]') as HTMLInputElement;
-    const nameInput = container.querySelector('input[placeholder="상품명 입력"]') as HTMLInputElement;
+    const nameInput = container.querySelector('input[placeholder*="타이레놀"]') as HTMLInputElement;
     fireEvent.change(codeInput, { target: { value: "  PC002  " } });
     fireEvent.change(nameInput, { target: { value: "테스트상품" } });
     const form = container.querySelector("form")!;
