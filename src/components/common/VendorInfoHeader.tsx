@@ -62,6 +62,10 @@ export interface VendorKpis {
   /** null = 매입일 2개 미만 */
   avgCycleDays: number | null;
   activeSkuCount: number;
+  // 2026-09-08 · 사용자 지시 · 3개월 매입금액 (신규)
+  threeMonthAmount?: number;
+  // 2026-09-08 · 사용자 지시 · 결제내역 잔고 (결제내역 테이블에서 조회)
+  balance?: number | null;
 }
 
 export interface VendorInfoHeaderProps {
@@ -304,56 +308,52 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
         </div>
       )}
 
-      {/* ── KPI 미니카드 그리드 · 2026-09-08 · 사용자 지시 · 활성상품 제거 · 3-col ── */}
+      {/* ── KPI 텍스트 라인 · 2026-09-08 · 사용자 지시 · 미니카드 → 깔끔한 텍스트 · 3개월/이번달/잔고 ── */}
       {kpis != null && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 border-t border-line/70 pt-3">
-          {/* 누적 매입액 (1년) */}
-          <div className="bg-emerald-50/60 border border-emerald-200/60 rounded-xl px-3 py-2 flex flex-col gap-0.5">
-            <span className="text-[12px] font-bold text-emerald-700 uppercase tracking-wider">누적 매입 (1년)</span>
-            <div className="flex items-baseline gap-1">
-              <span className="text-[18px] font-extrabold tabular-nums text-emerald-800 leading-none">
-                {fmtWon(kpis.totalAmount)}
-              </span>
-              <span className="text-[13px] font-semibold text-emerald-700/70">원</span>
-            </div>
-            <span className="text-[12px] font-medium text-emerald-700/60 tabular-nums">
-              {kpisLoading ? "로딩 중" : detailRowCount != null ? `${detailRowCount}건` : "-"}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[15px] leading-tight border-t border-line/70 pt-3">
+          {/* 3개월 매입금액 */}
+          <span className="inline-flex items-baseline gap-1.5">
+            <span className="text-ink-soft font-semibold">3개월 매입</span>
+            <span className="tabular-nums font-extrabold text-brand-deep text-[17px]">
+              {fmtWon(kpis.threeMonthAmount ?? 0)}
             </span>
-          </div>
+            <span className="text-ink-soft/70 text-[13px]">원</span>
+          </span>
+          <span className="text-line font-light">|</span>
 
-          {/* 이번달 매입 + MoM + VAT */}
-          <div className="bg-brand-tint/50 border border-brand-deep/20 rounded-xl px-3 py-2 flex flex-col gap-0.5">
-            <span className="text-[12px] font-bold text-brand-deep uppercase tracking-wider">이번달 매입</span>
-            <div className="flex items-baseline gap-1">
-              <span className={`text-[18px] font-extrabold tabular-nums leading-none ${
-                momTone === "rose" ? "text-rose-700"
-                : momTone === "emerald" ? "text-emerald-700"
-                : "text-brand-deep"
-              }`}>{fmtWon(kpis.thisMonthAmount)}</span>
-              <span className="text-[13px] font-semibold text-brand-deep/70">원</span>
-              <span className="ml-auto text-[12px] font-semibold text-ink-soft inline-flex items-center gap-0.5 tabular-nums">
+          {/* 이번달 매입금액 */}
+          <span className="inline-flex items-baseline gap-1.5">
+            <span className="text-ink-soft font-semibold">이번달 매입</span>
+            <span className={`tabular-nums font-extrabold text-[17px] ${
+              momTone === "rose" ? "text-rose-700"
+              : momTone === "emerald" ? "text-emerald-700"
+              : "text-ink"
+            }`}>{fmtWon(kpis.thisMonthAmount)}</span>
+            <span className="text-ink-soft/70 text-[13px]">원</span>
+            {momText && (
+              <span className="text-[12px] font-semibold text-ink-soft inline-flex items-center gap-0.5 tabular-nums">
                 {momIcon}{momText}
               </span>
-            </div>
-            <span className="text-[12px] font-medium text-ink-soft">
-              {effectiveVatIncluded === true ? "VAT 포함" : effectiveVatIncluded === false ? "부가세 별도" : ""}
-            </span>
-          </div>
+            )}
+          </span>
+          <span className="text-line font-light">|</span>
 
-          {/* 평균 매입주기 */}
-          <div className="bg-white border border-line rounded-xl px-3 py-2 flex flex-col gap-0.5">
-            <span className="text-[12px] font-bold text-ink-soft uppercase tracking-wider">평균 매입주기</span>
-            <div className="flex items-baseline gap-1">
-              <span className="text-[18px] font-extrabold tabular-nums text-ink leading-none">
-                {kpis.avgCycleDays != null ? kpis.avgCycleDays : "-"}
-              </span>
-              <span className="text-[13px] font-semibold text-ink-soft">{kpis.avgCycleDays != null ? "일" : ""}</span>
-            </div>
-            <span className="text-[12px] font-medium text-zinc-400">
-              {kpis.avgCycleDays != null ? "매입일 2회 이상 기준" : "매입 2회 미만"}
-            </span>
-          </div>
-
+          {/* 잔고 (결제내역 테이블 링크) */}
+          <span className="inline-flex items-baseline gap-1.5">
+            <span className="text-ink-soft font-semibold">잔고</span>
+            {kpis.balance != null ? (
+              <>
+                <span className={`tabular-nums font-extrabold text-[17px] ${
+                  kpis.balance > 0 ? "text-rose-700" : kpis.balance < 0 ? "text-emerald-700" : "text-ink"
+                }`}>{fmtWon(kpis.balance)}</span>
+                <span className="text-ink-soft/70 text-[13px]">원</span>
+                {kpis.balance > 0 && <span className="text-[12px] font-semibold text-rose-600">미결제</span>}
+                {kpis.balance < 0 && <span className="text-[12px] font-semibold text-emerald-600">선결제</span>}
+              </>
+            ) : (
+              <span className="text-zinc-400 text-[15px]">-</span>
+            )}
+          </span>
         </div>
       )}
     </div>
