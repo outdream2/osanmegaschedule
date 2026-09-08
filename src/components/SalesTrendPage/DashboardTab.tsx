@@ -476,7 +476,9 @@ export const DashboardTab: React.FC = () => {
 
       {/* ── 2026-09-01 · 사용자 지시 · 차트 다양화 · 대시보드 답게 (Top10·카테고리·이익률) ── */}
       {/* 2026-09-07 · classFilter 적용 · rows → classFilteredRows */}
-      <DashboardCharts rows={classFilteredRows} loading={loading} vendorCategoryMap={vendorCategoryMap} />
+      {/* 2026-09-08 · 사용자 지시 · 판매대시보드 · 판매중 상품만 반영 (판매중지·숨김 제외) */}
+      {/*   · 원인 · '구역별 Top10 · 미지정구역' 노출 · 판매중 아닌 상품에 location 없음 → 미지정으로 집계됨 */}
+      <DashboardCharts rows={classFilteredRows.filter(r => saleMatches((r as any).sale_status))} loading={loading} vendorCategoryMap={vendorCategoryMap} />
 
       {/* ── 좌 · 재고흐름 테이블 · 우 · 상품 상세 ───────────────────────── */}
       <div className="flex flex-col lg:flex-row gap-2 items-stretch lg:min-h-[560px]">
