@@ -4,7 +4,7 @@ import webpush from "web-push";
 import { supabase } from "../../../src/supabase/client";
 import { notificationsService } from "../../services/notificationsService";
 // 2026-08-16 · #112-E1 Phase 2 · 매니저(lv 2+) 만 DELETE
-import { authorize } from "../../middleware/requireAuth";
+import { authorize, getSession } from "../../middleware/requireAuth";
 // 2026-08-05 · T-PERF-1a · inventory-checks 변경 시 low-stock 캐시 무효화
 import { clearLowStockCache } from "../stock/stockManage";
 // 2026-08-06 · T-LOSS-HISTORY · 실재고 저장 시 · 오늘 손실 스냅샷 fire-and-forget
@@ -578,22 +578,34 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
   const results: any[] = [];
   const now = new Date().toISOString();
 
-  // 2026-09-08 · 사용자 지시 · 이메일 발주서에 발주처 정보 추가 (약국 이름 · 담당자 · 연락처)
-  //   · KV settings.company_info 에서 name · representativeName · phone 조회
-  let issuer: { name: string; representativeName: string; phone: string } = {
-    name: "약국", representativeName: "", phone: "",
-  };
+  // 2026-09-08 · 사용자 지시 · 이메일 발주서 발주처 정보
+  //   · 약국명 (company_info.name) · 담당자 (로그인 직원) · 연락처 (약국 + 담당자 개인 둘 다)
+  const session = getSession(req);
+  let issuer: {
+    name: string;
+    contactName: string;
+    orgPhone: string;
+    personPhone: string;
+  } = { name: "약국", contactName: "", orgPhone: "", personPhone: "" };
   try {
     const { data: ciRow } = await supabase.from("app_settings").select("value").eq("key", "company_info").maybeSingle();
     const ci = ciRow?.value as any;
     if (ci && typeof ci === "object") {
-      issuer = {
-        name: String(ci.name ?? "약국").trim() || "약국",
-        representativeName: String(ci.representativeName ?? "").trim(),
-        phone: String(ci.phone ?? "").trim(),
-      };
+      issuer.name = String(ci.name ?? "약국").trim() || "약국";
+      issuer.orgPhone = String(ci.phone ?? "").trim();
     }
   } catch { /* silent · fallback default */ }
+  if (session) {
+    issuer.contactName = String(session.name ?? "").trim();
+    try {
+      const { data: emp } = await supabase
+        .from("employees")
+        .select("phone")
+        .eq("id", session.sub)
+        .maybeSingle();
+      issuer.personPhone = String(emp?.phone ?? "").trim();
+    } catch { /* silent · 담당자 개인 연락처 없으면 · 약국 대표만 표시 */ }
+  }
 
   // 각 공급사 vendors 조회 (담당자·이메일·전화 보강)
   for (const group of bySupplier) {
@@ -668,13 +680,14 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
           // 2026-09-03 · 한글 인코딩 fix · <meta charset=utf-8> 명시
           //   · 일부 이메일 클라이언트 (Outlook 구버전 등) 는 charset 미명시 시 · CP949 로 해석 · 한글 깨짐
           //   · nodemailer 는 Content-Type charset=utf-8 자동이지만 · HTML body 내부에도 명시하는 게 안전
-          // 2026-09-08 · 사용자 지시 · 발주처 정보 추가 (약국 이름 · 담당자 · 연락처)
+          // 2026-09-08 · 사용자 지시 · 발주처 정보 (약국명 · 담당자=로그인 직원 · 연락처=약국+담당자 둘 다)
           const issuerBlock = `
             <div style="margin-top:12px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px">
               <div style="font-size:12px;color:#64748b;font-weight:700;letter-spacing:0.05em;margin-bottom:4px">발주처</div>
               <div style="font-size:15px;font-weight:700;color:#0A2E4A">${issuer.name}</div>
-              ${issuer.representativeName ? `<div style="font-size:13px;color:#334155;margin-top:2px">담당자 · ${issuer.representativeName}</div>` : ""}
-              ${issuer.phone ? `<div style="font-size:13px;color:#334155;margin-top:2px">연락처 · ${issuer.phone}</div>` : ""}
+              ${issuer.contactName ? `<div style="font-size:13px;color:#334155;margin-top:2px">담당자 · ${issuer.contactName}</div>` : ""}
+              ${issuer.orgPhone ? `<div style="font-size:13px;color:#334155;margin-top:2px">약국 · ${issuer.orgPhone}</div>` : ""}
+              ${issuer.personPhone ? `<div style="font-size:13px;color:#334155;margin-top:2px">담당자 연락처 · ${issuer.personPhone}</div>` : ""}
             </div>`;
           const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
             <div style="font-family:Pretendard,sans-serif;color:#1a1a1a">
