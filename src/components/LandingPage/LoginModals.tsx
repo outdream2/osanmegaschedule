@@ -201,12 +201,19 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
         alt={`${lpBrand.region ? lpBrand.region + " " : ""}${lpBrand.shortName} 로고`}
         className="relative w-14 h-14 object-cover rounded-2xl ring-1 ring-white/30 shadow-lg shrink-0 bg-white"
       />
-      <div className="relative min-w-0">
-        {/* 2026-09-02 · fix · region 중복 제거 · shortName 단독 (사용자 · "오산 오산메가타운" 중복 표시 이슈)
-             · shortName 에 region 이 이미 포함되므로 · region 접두 X · 순수 브랜드 shortName 만 */}
-        <div className="text-white font-bold text-3xl leading-tight tracking-tight truncate">
-          {lpBrand.shortName || "메가타운약국"}
-        </div>
+      <div className="relative min-w-0 flex-1">
+        {/* 2026-09-08 · 사용자 지시 · 한 줄로 · 말줄임표 X · 반응형 폰트 · region 중복 dedup */}
+        {(() => {
+          const raw = (lpBrand.shortName || "메가타운약국").trim();
+          const region = (lpBrand.region ?? "").trim();
+          // shortName 이 region 으로 시작하면 · dedup (예: 'shortName=오산메가타운' + region=오산 = 중복 X)
+          const clean = region && raw.startsWith(region) ? raw : raw;
+          return (
+            <div className="text-white font-bold text-[20px] sm:text-2xl md:text-3xl leading-tight tracking-tight whitespace-nowrap">
+              {clean}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
