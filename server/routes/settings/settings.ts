@@ -16,6 +16,9 @@ import {
   UpsertZoneGroupsSchema,
   UpsertBlockedSlotSchema,
   UpsertZonesSchema,
+  UpsertStorageLocationsSchema,
+  DEFAULT_STORAGE_LOCATIONS,
+  type StorageLocation,
 } from "../../../src/shared/schemas/settings";
 
 const router = Router();
@@ -90,6 +93,44 @@ export async function resolveSeasonMonths(season: string | undefined | null): Pr
 router.get("/api/settings/season-ranges", asyncHandler(async (_req, res) => {
   const ranges = await getSeasonRanges();
   res.json(ranges);
+}));
+
+// ═════════════════════════════════════════════════════════════════
+// 2026-09-08 · 매장·창고 마스터 (진열위치 상세 저장·표시)
+//   · KV app_settings.storage_locations · 5분 캐시
+//   · GET  /api/settings/storage-locations · 공개 (모든 사용자 조회)
+//   · POST /api/settings/storage-locations · 관리자 (level≥9)
+// ═════════════════════════════════════════════════════════════════
+const STORAGE_LOCATIONS_KEY = "storage_locations";
+const STORAGE_LOCATIONS_TTL = 5 * 60 * 1000;
+let storageLocationsCache: { data: StorageLocation[]; expiresAt: number } | null = null;
+
+export async function getStorageLocations(): Promise<StorageLocation[]> {
+  if (storageLocationsCache && storageLocationsCache.expiresAt > Date.now()) return storageLocationsCache.data;
+  try {
+    const { data } = await supabase
+      .from("app_settings").select("value").eq("key", STORAGE_LOCATIONS_KEY).maybeSingle();
+    const raw = data?.value;
+    const list = Array.isArray(raw) && raw.length > 0 ? (raw as StorageLocation[]) : DEFAULT_STORAGE_LOCATIONS;
+    storageLocationsCache = { data: list, expiresAt: Date.now() + STORAGE_LOCATIONS_TTL };
+    return list;
+  } catch {
+    return DEFAULT_STORAGE_LOCATIONS;
+  }
+}
+
+router.get("/api/settings/storage-locations", asyncHandler(async (_req, res) => {
+  const list = await getStorageLocations();
+  res.json(list);
+}));
+
+router.post("/api/settings/storage-locations", authorize(9), validateBody(UpsertStorageLocationsSchema), asyncHandler(async (req, res) => {
+  const { locations } = req.body;
+  const { error } = await supabase.from("app_settings")
+    .upsert({ key: STORAGE_LOCATIONS_KEY, value: locations, updated_at: new Date().toISOString() }, { onConflict: "key" });
+  if (error) throw new HttpError(500, error.message);
+  storageLocationsCache = { data: locations, expiresAt: Date.now() + STORAGE_LOCATIONS_TTL };
+  res.json({ ok: true, locations });
 }));
 
 router.post("/api/settings/season-ranges", authorize(9), validateBody(UpsertSeasonRangesSchema), asyncHandler(async (req, res) => {

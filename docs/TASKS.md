@@ -19,6 +19,39 @@
 
 ---
 
+## 🎯 활성 PENDING · v13 (2026-09-08 · 진열위치 상세 · 실재고 통합)
+
+> **결정 사항 (2026-09-08 · 사용자 합의)**
+> - 저장 위치 · `inventory_checks` 테이블 확장 (별도 테이블 신설 X)
+> - 컬럼 · `shelf_positions JSONB` 단일 (매장 무제한 확장 · 스키마 변경 없음)
+> - 입력 방식 · **C안 · 3-stepper** (층·칸·순서 각 1자리 · 예 "332")
+> - 자동 배정 · 상품 등록 시 · `assignZonesToSlots` 재사용 · 창고1/2 판정 + 매장1 default
+> - 매장 마스터 · KV `settings.storage_locations` (관리자 UI는 별도 태스크)
+> - 매장 상세위치 **필수** (서버 validation) · 창고 선택
+> - 표시 · 진열위치 나오는 32개 파일 · 위치 뱃지 리스트 (`매장1:332 · 매장2:212 · 창고1:105`)
+> - 매장 미입력 시 · 빨간 뱃지 강조 (`매장1:미입력`)
+
+### 🟡 PENDING (신규 · 순차 진행)
+
+| # | 태스크 | 우선순위 | 비고 |
+|---|-----|--------|------|
+| **T-SP-1** | Migration · `inventory_checks.shelf_positions JSONB DEFAULT '{}'` | 🔴 P0 | `migrations/20260908_add_inventory_checks_shelf_positions.sql` · 사용자 Supabase 실행 |
+| **T-SP-2** | KV settings · `storage_locations` 기본값 시드 · GET/POST endpoint | 🔴 P0 | 5개 (store1~3·warehouse1·2) · required_detail 플래그 |
+| **T-SP-3** | Server · `inventory_checks` 조회·저장 시 `shelf_positions` 병합 (spread) | 🔴 P0 | requests.ts COLS 확장 · 저장 시 기존 값 보존 |
+| **T-SP-4** | Server · 상품 등록 시 자동배정 · `shelf_positions` 초기화 | 🟡 P1 | `assignZonesToSlots` 재사용 · 매장1 default row |
+| **T-SP-5** | Server · 매장 위치 상세 필수 validation | 🟡 P1 | Zod refine · required_detail=true 인 위치 값 강제 |
+| **T-SP-6** | UI · 3-stepper 공용 프리미티브 (`ShelfPositionInput`) | 🟡 P1 | `src/components/common/ShelfPositionInput.tsx` · [층▲▼][칸▲▼][순서▲▼] |
+| **T-SP-7** | UI · 상품편집 모달에 위치별 상세 입력 통합 | 🟢 P2 | `storage_locations` 순회 · 매장 필수 표시 |
+| **T-SP-8** | UI · 실재고 저장 UI에 상세위치 입력 통합 | 🟢 P2 | StockCheckPage · 수량 옆에 ShelfPositionInput |
+| **T-SP-9** | UI · 진열위치 표시 32개 파일 · 위치별 뱃지 표시 | 🟢 P2 | 공용 헬퍼 `formatShelfPositions` · 매장 미입력 빨간 강조 |
+
+### 📋 스코프 밖 (별도 태스크로 분리)
+
+- 매장 마스터 관리 UI (매장4·5 등 추가) · KV JSON 편집으로 임시 대응
+- inventory_checks 기존 컬럼 리팩터 (warehouse1_stock 등 → JSONB) · 대규모 이관 · 별도 검토
+
+---
+
 ## 🎯 활성 PENDING · v12 (2026-09-07 · 상품입고 개편 + UI 통일)
 
 > **2026-09-07 (3차) 완료** · #117 매입이력 삭제 · #119 단가·수량 validation · #120 상품입고 PeriodSelector 통일 · #121 이슈페이지 SearchBar+Button 프리미티브

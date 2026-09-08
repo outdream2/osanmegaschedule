@@ -1,7 +1,11 @@
 // 2026-09-01 · 서버·클라 공유 · 실재고 점검 Zod 스키마
 import { z } from "zod";
+import { ShelfPositionsSchema } from "./settings";
 
 const numNullable = z.union([z.number(), z.null(), z.literal("")]).optional();
+
+// 2026-09-08 · 위치별 상세 진열위치 · JSONB · 매장 상세 필수 (validation은 서버에서)
+const shelfPositionsField = ShelfPositionsSchema.optional();
 
 /** POST /api/inventory-checks · 실재고 단건 저장 (부분 업데이트 허용) */
 export const CreateInventoryCheckSchema = z.object({
@@ -23,6 +27,7 @@ export const CreateInventoryCheckSchema = z.object({
   store3_zone: z.string().max(100).nullable().optional(),
   expiry_input_date: z.string().max(20).nullable().optional(),
   expiry_date: z.string().max(20).nullable().optional(),
+  shelf_positions: shelfPositionsField,
 });
 export type CreateInventoryCheckInput = z.infer<typeof CreateInventoryCheckSchema>;
 
@@ -40,6 +45,7 @@ const InventoryCheckItemSchema = z.object({
   store3_zone: z.string().max(100).nullable().optional(),
   expiry_input_date: z.string().max(20).nullable().optional(),
   expiry_date: z.string().max(20).nullable().optional(),
+  shelf_positions: shelfPositionsField,
 });
 
 /** POST /api/inventory-checks/bulk · 실재고 일괄 저장 */

@@ -18,6 +18,8 @@ import {
   BulkInventoryCheckSchema,
   PatchInventoryCheckSchema,
 } from "../../../src/shared/schemas/inventoryChecks";
+// 2026-09-08 · 매장·창고 마스터 · 매장 상세위치 필수 validation
+import { getStorageLocations } from "../settings/settings";
 import {
   CreateDisplayRequestSchema,
   PrepareDisplayRequestSchema,
@@ -924,6 +926,7 @@ router.get("/api/inventory-checks", asyncHandler(async (req, res) => {
     "store_stock", "store3_stock",
     "store1_zone", "store2_zone", "store3_zone",
     "system_stock", "optimal_stock", "status", "note",
+    "shelf_positions",
   ].join(", ");
   let q = supabase.from("inventory_checks").select(COLS).order("checked_at", { ascending: false });
   if (req.query.product_code) q = q.eq("product_code", String(req.query.product_code));
@@ -954,6 +957,8 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
   // 2026-08-25 · 사용자 지시 · 유통기한 임박 모달 · 입력날짜 + 유통기한 날짜 저장
   const hasExpiryInput = Object.prototype.hasOwnProperty.call(b, "expiry_input_date");
   const hasExpiryDate  = Object.prototype.hasOwnProperty.call(b, "expiry_date");
+  // 2026-09-08 · 상세 진열위치 JSONB · 부분 병합 · 매장 필수 검증
+  const hasShelfPos    = Object.prototype.hasOwnProperty.call(b, "shelf_positions");
   const num = (v: any): number | null => (v != null && v !== "" ? Number(v) : null);
   const str = (v: any): string | null => {
     if (v == null) return null;
@@ -985,8 +990,42 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
   if (hasExpiryDate)  payload.expiry_date       = str(b.expiry_date);
 
   // 2026-09-03 · fix · store_stock_2 컬럼 없음 · id, store_stock 만 조회
-  const { data: existingList } = await supabase.from("inventory_checks").select("id, store_stock").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
+  //   · 2026-09-08 · shelf_positions 도 함께 조회 (병합용)
+  const { data: existingList } = await supabase
+    .from("inventory_checks")
+    .select("id, store_stock, shelf_positions")
+    .eq("product_code", code)
+    .order("checked_at", { ascending: false })
+    .limit(1);
   const existing = existingList?.[0] ?? null;
+
+  // 2026-09-08 · shelf_positions 병합 · 기존 값 보존 + 신규 값 덮어쓰기
+  //   · 매장 위치 (required_detail=true) · 값이 명시적으로 들어오면 3자리 강제
+  //   · null 은 허용 (미입력 유지) · undefined 는 무시 (부분 업데이트)
+  if (hasShelfPos && b.shelf_positions && typeof b.shelf_positions === "object") {
+    const existingPos = (existing?.shelf_positions ?? {}) as Record<string, string | null>;
+    const incomingPos = b.shelf_positions as Record<string, string | null | undefined>;
+    const merged: Record<string, string | null> = { ...existingPos };
+    const storageLocs = await getStorageLocations();
+    const requiredCodes = new Set(storageLocs.filter(s => s.required_detail && s.active).map(s => s.code));
+    for (const [k, v] of Object.entries(incomingPos)) {
+      if (v === undefined) continue;
+      if (v === null || v === "") {
+        // 매장 위치인데 · 저장 요청에 값을 명시적으로 지웠으면 에러
+        if (requiredCodes.has(k) && v === "") {
+          throw badRequest(`매장 위치(${k})는 상세위치가 필수입니다 · 3자리 (예 332) 입력`);
+        }
+        merged[k] = null;
+      } else {
+        const val = String(v).trim().toUpperCase();
+        if (!/^[0-9A-Z]{3}$/.test(val)) {
+          throw badRequest(`상세위치(${k}=${val})는 3자리 (층·칸·순서 · 예 332) 여야 합니다`);
+        }
+        merged[k] = val;
+      }
+    }
+    payload.shelf_positions = merged;
+  }
   const applyPayload = async (): Promise<{ error?: string } | null> => {
     if (existing) {
       const { error } = await supabase.from("inventory_checks").update(payload).eq("id", existing.id);
@@ -1009,8 +1048,9 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
   for (let attempt = 0; attempt < MAX_STRIP_RETRIES && result?.error && /column .* does not exist|no column named|schema cache/i.test(result.error); attempt++) {
     // 1) 신규 컬럼 일괄 제거 (첫 시도만)
     // 2026-09-03 · fix · store_stock_2 도 목록에 추가 · 삭제된 컬럼 포함 완전 망라
+    // 2026-09-08 · shelf_positions 도 미존재 대비 추가
     if (attempt === 0) {
-      for (const k of ["warehouse1_stock","warehouse2_stock","store_stock_2","store3_stock","store1_zone","store2_zone","store3_zone","expiry_date","expiry_input_date"]) {
+      for (const k of ["warehouse1_stock","warehouse2_stock","store_stock_2","store3_stock","store1_zone","store2_zone","store3_zone","expiry_date","expiry_input_date","shelf_positions"]) {
         delete payload[k];
       }
     }
