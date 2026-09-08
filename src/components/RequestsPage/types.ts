@@ -48,4 +48,5 @@ export interface InventoryCheck {
 }
 
 // 2026-08-25 · #192 · vendor 승인 탭 추가
-export type Tab = "display" | "order" | "mismatch" | "lunch" | "inventory" | "leave" | "vendor";
+// 2026-09-08 · resignation 승인 탭 추가 (business-manage 에서 이관 · 승인 요청 통합)
+export type Tab = "display" | "order" | "mismatch" | "lunch" | "inventory" | "leave" | "vendor" | "resignation";

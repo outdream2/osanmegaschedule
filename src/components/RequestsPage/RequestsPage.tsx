@@ -22,6 +22,8 @@ import { Modal } from "../common/Modal";
 import { LeavePage } from "../LeavePage/LeavePage";
 // 2026-08-26 · #192 · 거래처승인 탭
 import { VendorApprovalPanel } from "./VendorApprovalPanel";
+// 2026-09-08 · 사직서 승인 탭 · 승인 요청 통합 (business-manage 에서 이관)
+import ResignationApprovalPage from "../ResignationApprovalPage/ResignationApprovalPage";
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · types
 import type { DisplayRequest, OrderRequest, ZoneMismatch, LunchRequest, InventoryCheck, Tab } from "./types";
 // 2026-08-22 · Framework Phase 4 · 3탭 별도 컴포넌트 이관 (Display/Order/Inventory)
@@ -104,7 +106,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const [requestingInvOrder, setRequestingInvOrder] = useState<Set<string>>(new Set());
 
   // 빠른 탭 갯수 (pending-counts 엔드포인트)
-  const [tabCounts, setTabCounts] = useState<{display:number; order:number; mismatch:number; lunch:number; inventory:number; vendor?:number} | null>(null);
+  const [tabCounts, setTabCounts] = useState<{display:number; order:number; mismatch:number; lunch:number; inventory:number; vendor?:number; resignation?:number} | null>(null);
 
   // 2026-08-12 · 연차승인 탭 · pending 건수 별도 폴링 (leave-requests/pending-count)
   const [leavePendingCount, setLeavePendingCount] = useState<number>(0);
@@ -474,13 +476,26 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   // 2026-08-10 · 구역불일치 탭 제거 · 관리자 전용 탭: 실재고차이 · 점심불참
   // 2026-09-02 · 사용자 지시 · 실재고차이 탭 제거 (요청목록에서 · 실재고 화면에서만 사용)
   // 2026-09-08 · 사용자 지시 · 메뉴에서 페이지 안보이기 설정된 탭은 · 요청목록에서도 자동 숨김
+  //   · 규칙 통일 · 모든 탭 · 각자 permission key hidden 반영
+  //   · 사직서승인 탭 신규 · business-manage 에서 이관 (승인 요청 통합)
   const { perms } = usePagePermissions();
-  const isLunchHidden = (perms as any)?.["lunch"]?.hidden === true
-    || (perms as any)?.["approval-request:lunch"]?.hidden === true;
-  const isLeaveHidden = (perms as any)?.["leave"]?.hidden === true
-    || (perms as any)?.["approval-request:leave"]?.hidden === true;
+  const checkHidden = (key: string): boolean => {
+    if ((perms as any)?.[key]?.hidden === true) return true;
+    // 하위 키 (approval-request:leave 등) · leaf 로 hide 하면 상위도 반영
+    for (const k of Object.keys(perms ?? {})) {
+      if (k.endsWith(`:${key}`) && (perms as any)[k]?.hidden === true) return true;
+    }
+    return false;
+  };
+  const isDisplayHidden = checkHidden("display") || checkHidden("requests");
+  const isLunchHidden = checkHidden("lunch");
+  const isLeaveHidden = checkHidden("leave");
+  const isVendorHidden = checkHidden("vendor") || checkHidden("business-manage");
+  const isResignationHidden = checkHidden("resignation") || checkHidden("business-manage");
   const TABS: [Tab, string, number, string, string, string, string][] = [
-    ["display",   isManager ? "진열요청" : "내가 받은 요청",   displayTabCount,   "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
+    ...(isDisplayHidden ? [] : ([
+      ["display",   isManager ? "진열요청" : "내가 받은 요청",   displayTabCount,   "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
+    ] as [Tab, string, number, string, string, string, string][])),
     ...(isManager ? ([
       ...(isLunchHidden ? [] : ([
         ["lunch",     "점심불참",   lunchTabCount,     "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
@@ -489,7 +504,13 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         ["leave",     "연차승인",   leavePendingCount, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
       ] as [Tab, string, number, string, string, string, string][])),
       // 2026-08-26 · #192 · 거래처승인 신규 탭 · pending-counts.vendor
-      ["vendor",    "거래처승인", tabCounts?.vendor ?? 0, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-emerald-100 text-emerald-700", "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
+      ...(isVendorHidden ? [] : ([
+        ["vendor",    "거래처승인", tabCounts?.vendor ?? 0, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-emerald-100 text-emerald-700", "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
+      ] as [Tab, string, number, string, string, string, string][])),
+      // 2026-09-08 · 사직서승인 · business-manage 에서 이관 · 승인 요청 통합
+      ...(isResignationHidden ? [] : ([
+        ["resignation", "사직서승인", tabCounts?.resignation ?? 0, "bg-white text-zinc-900 ring-zinc-200/70", "text-zinc-800", "bg-rose-100 text-rose-700", "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
+      ] as [Tab, string, number, string, string, string, string][])),
     ] as [Tab, string, number, string, string, string, string][]) : []),
   ];
 
@@ -644,6 +665,13 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         {tab === "vendor" && isManager && (
           <div className="flex flex-col gap-2">
             <VendorApprovalPanel />
+          </div>
+        )}
+
+        {/* 2026-09-08 · 사직서승인 · business-manage 에서 이관 · 승인 요청 통합 */}
+        {tab === "resignation" && isManager && (
+          <div className="flex flex-col gap-2">
+            <ResignationApprovalPage authSession={authSession ?? null} />
           </div>
         )}
 
