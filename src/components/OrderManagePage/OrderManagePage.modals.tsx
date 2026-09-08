@@ -22,6 +22,8 @@ interface OrderManageModalsProps {
   setOrderModal: React.Dispatch<React.SetStateAction<any>>;
   submitOrderModal: () => void | Promise<void>;
   updateModalItem: (supIdx: number, itemIdx: number, patch: any) => void;
+  // 2026-09-08 · OrderModal 이 savePdf 함수를 useOrderModal 에 등록할 콜백
+  registerSavePdf?: (fn: () => Promise<void>) => void;
   // Contact popover
   contactPopover: null | { anchor: DOMRect; name: string; phone: string | null; email: string | null };
   setContactPopover: (v: null | { anchor: DOMRect; name: string; phone: string | null; email: string | null }) => void;
@@ -47,6 +49,7 @@ export const OrderManageModals: React.FC<OrderManageModalsProps> = (p) => (
         onUpdateModalItem={p.updateModalItem}
         onDateChange={(field, value) => p.setOrderModal((prev: any) => prev && ({ ...prev, [field]: value }))}
         onChannelChange={(ch, value) => p.setOrderModal((prev: any) => prev && ({ ...prev, channels: { ...prev.channels, [ch]: value } }))}
+        onReadyToSavePdf={p.registerSavePdf}
       />
     )}
 

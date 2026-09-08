@@ -405,7 +405,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   // 발주서 모달 훅
   const { orderModal, setOrderModal, sendingBulk, notifyLogisticsLeader, setNotifyLogisticsLeader,
-    openOrderModal, updateModalItem, submitOrderModal } = useOrderModal({
+    openOrderModal, updateModalItem, submitOrderModal, registerSavePdf } = useOrderModal({
     allProductsMap, orderQtyOverride, findVendorByName, openSupplierInfo,
     loadOrderReqs, setSelectedOrder,
   });
@@ -721,6 +721,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         orderModal={orderModal} sendingBulk={sendingBulk}
         notifyLogisticsLeader={notifyLogisticsLeader} setNotifyLogisticsLeader={setNotifyLogisticsLeader}
         setOrderModal={setOrderModal} submitOrderModal={submitOrderModal} updateModalItem={updateModalItem}
+        registerSavePdf={registerSavePdf}
         contactPopover={contactPopover} setContactPopover={setContactPopover}
         supplierInfoModal={supplierInfoModal} setSupplierInfoModal={setSupplierInfoModal}
         inventoryEditModal={inventoryEditModal} setInventoryEditModal={setInventoryEditModal}

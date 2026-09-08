@@ -1,6 +1,6 @@
 // src/components/OrderManagePage/useOrderModal.ts
 // 2026-08-23 · Framework Phase 4 · 발주서 모달 상태·핸들러 훅 분리
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -33,6 +33,11 @@ export function useOrderModal({
   const [notifyLogisticsLeader, setNotifyLogisticsLeader] = useState(true);
   // 2026-08-29 · 사용자 지시 · 발주 발송 시 · 로컬 PDF 자동 저장 · 기본 true
   const [autoPdfOnSend, setAutoPdfOnSend] = useState(true);
+  // 2026-09-08 · 사용자 지시 · OrderModal 이 노출한 savePdf 함수 저장 (발주 성공 후 트리거)
+  const savePdfRef = useRef<(() => Promise<void>) | null>(null);
+  const registerSavePdf = useCallback((fn: () => Promise<void>) => {
+    savePdfRef.current = fn;
+  }, []);
 
   const openOrderModal = (rows: OrderRequest[]) => {
     if (rows.length === 0) return;
@@ -239,6 +244,19 @@ export function useOrderModal({
         });
         if (proceed2) { setOrderModal(null); setSelectedOrder(new Set()); openSupplierInfo(r.supplier); return; }
       }
+      // 2026-09-08 · 사용자 지시 · 발주 성공 후 · PDF 다운로드 팝업
+      //   · 실제 발송된 채널 있을 때만 노출 (no_recipient 등 실패 시 · 노출 안 함)
+      if (anyRealSent && savePdfRef.current) {
+        const wantPdf = await confirm({
+          title: "✅ 발주 요청 완료",
+          message: "발주가 요청되었습니다.\n발주서 PDF 를 다운받으시겠습니까?",
+          confirmLabel: "PDF 다운",
+          cancelLabel: "닫기",
+        });
+        if (wantPdf === true) {
+          try { await savePdfRef.current(); } catch (e: any) { showError(`PDF 저장 실패: ${e?.message ?? "오류"}`); }
+        }
+      }
       setOrderModal(null);
       setSelectedOrder(new Set());
       loadOrderReqs();
@@ -254,5 +272,7 @@ export function useOrderModal({
     openOrderModal,
     updateModalItem,
     submitOrderModal,
+    // 2026-09-08 · OrderModal 이 savePdf 함수를 등록할 콜백
+    registerSavePdf,
   };
 }

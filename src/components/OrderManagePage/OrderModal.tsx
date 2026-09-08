@@ -70,6 +70,8 @@ interface OrderModalProps {
   onUpdateModalItem: (supIdx: number, itemIdx: number, patch: Partial<OrderModalItem>) => void;
   onDateChange: (field: "orderDate" | "desiredArrival", value: string) => void;
   onChannelChange: (ch: "email" | "sms" | "kakao", value: boolean) => void;
+  /** 2026-09-08 · 사용자 지시 · 부모(useOrderModal) 가 발주 성공 후 PDF 저장할 수 있도록 · savePdf 함수 노출 */
+  onReadyToSavePdf?: (savePdf: () => Promise<void>) => void;
 }
 
 export const OrderModal: React.FC<OrderModalProps> = ({
@@ -82,6 +84,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   onUpdateModalItem,
   onDateChange,
   onChannelChange,
+  onReadyToSavePdf,
 }) => {
   // 2026-09-02 · fix · 사업장 이름 · 설정 · 회사·브랜드 (약국이름)
   const { info: company } = useCompanyInfo();
@@ -134,6 +137,13 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       setGeneratingPdf(false);
     }
   };
+
+  // 2026-09-08 · 사용자 지시 · savePdf 함수 · 부모 useOrderModal 에 노출
+  //   · 발주 성공 후 · confirm → handleSavePdf 트리거 가능
+  React.useEffect(() => {
+    if (onReadyToSavePdf) onReadyToSavePdf(handleSavePdf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onReadyToSavePdf, orderModal]);
 
   return (
   <>
@@ -338,16 +348,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             className="h-9 px-4 rounded-lg text-[15px] font-semibold text-ink-soft bg-white border border-line hover:border-brand-deep/40 hover:bg-brand-tint/20 hover:text-brand-deep active:scale-[0.98] transition-all duration-150 cursor-pointer disabled:opacity-40">
             취소
           </button>
-          {/* 2026-08-25 · 사용자 지시 · A4 텍스트 리포트 PDF 저장 */}
-          <button
-            onClick={handleSavePdf}
-            disabled={sendingBulk || generatingPdf || orderModal.suppliers.length === 0}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[15px] font-bold text-white bg-slate-700 hover:bg-slate-800 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 cursor-pointer shadow-sm ring-1 ring-slate-700/30"
-            title="발주서 PDF 저장 (A4 텍스트 리포트)"
-          >
-            {generatingPdf ? <Spinner size={13} tone="white" /> : <FileDown size={14} strokeWidth={2.5} />}
-            {generatingPdf ? "PDF 생성 중..." : "PDF 저장"}
-          </button>
+          {/* 2026-09-07 · 사용자 지시 · 발주 전 PDF 버튼 제거 · 발주 성공 후 팝업으로 대체 */}
           <button onClick={onSubmit} disabled={sendingBulk || generatingPdf}
             className="inline-flex items-center gap-1.5 h-9 px-5 rounded-lg text-[15px] font-bold text-white bg-gradient-to-br from-brand-deep to-[#0d3a5c] shadow-sm hover:shadow-md hover:from-[#0d3a5c] hover:to-[#08253a] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:shadow-none transition-all duration-150 cursor-pointer ring-1 ring-brand-deep/30">
             {sendingBulk && <Spinner size={13} tone="white" />}
