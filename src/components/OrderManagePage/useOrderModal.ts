@@ -229,7 +229,8 @@ export function useOrderModal({
         title: anyRealSent ? "✅ 발주 발송 결과" : "⚠️ 발주 발송 결과 · 확인 필요",
         message: dialogMessage,
         confirmLabel: "확인",
-        cancelLabel: "",
+        // 2026-09-08 · fix · 이전 · 빈 문자열 → 텍스트 없는 빈 버튼 노출 · 사용자 닫기 못 찾음
+        cancelLabel: "닫기",
         danger: !anyRealSent,
       });
       // 후속 dialog · no_recipient 공급사 · 정보 수정 이동

@@ -626,9 +626,12 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
         // 2026-09-02 · 사용자 지시 · 이메일 실제 발송 (nodemailer 설치 완료)
         //   · env · SMTP_HOST · SMTP_PORT (default 587) · SMTP_USER · SMTP_PASS · SMTP_FROM
         //   · TLS/STARTTLS 자동 (port 465 = TLS · 그 외 = STARTTLS)
+        // 2026-09-08 · fix · package.json "type":"module" (ESM) 환경 · require 는 ReferenceError
+        //   · 이전 · require("nodemailer") → 실제 발송 시 crash → outcome=email:error → 사용자 · 발송 실패
+        //   · 이후 · await import("nodemailer") · settings/test 엔드포인트와 동일 ESM 방식
         try {
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
-          const nodemailer = require("nodemailer");
+          const nodemailerMod = await import("nodemailer");
+          const nodemailer = (nodemailerMod as any).default ?? nodemailerMod;
           const port = Number(process.env.SMTP_PORT ?? 587);
           const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
