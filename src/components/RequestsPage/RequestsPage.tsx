@@ -29,6 +29,8 @@ import { DisplayRequestTab, OrderRequestTab, InventoryCheckTab } from "./Request
 // 2026-08-26 · Framework Phase 4 · large-file 분리 · 구역불일치·점심불참 패널
 import { MismatchPanel } from "./MismatchPanel";
 import { LunchPanel } from "./LunchPanel";
+// 2026-09-08 · 사용자 지시 · 메뉴 안보이기 설정 시 · 요청목록 탭도 자동 숨김
+import { usePagePermissions } from "../../hooks/usePagePermissions";
 
 interface RequestsPageProps {
   onBack: () => void;
@@ -471,11 +473,21 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
   // 2026-08-10 · 구역불일치 탭 제거 · 관리자 전용 탭: 실재고차이 · 점심불참
   // 2026-09-02 · 사용자 지시 · 실재고차이 탭 제거 (요청목록에서 · 실재고 화면에서만 사용)
+  // 2026-09-08 · 사용자 지시 · 메뉴에서 페이지 안보이기 설정된 탭은 · 요청목록에서도 자동 숨김
+  const { perms } = usePagePermissions();
+  const isLunchHidden = (perms as any)?.["lunch"]?.hidden === true
+    || (perms as any)?.["approval-request:lunch"]?.hidden === true;
+  const isLeaveHidden = (perms as any)?.["leave"]?.hidden === true
+    || (perms as any)?.["approval-request:leave"]?.hidden === true;
   const TABS: [Tab, string, number, string, string, string, string][] = [
     ["display",   isManager ? "진열요청" : "내가 받은 요청",   displayTabCount,   "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
     ...(isManager ? ([
-      ["lunch",     "점심불참",   lunchTabCount,     "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
-      ["leave",     "연차승인",   leavePendingCount, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
+      ...(isLunchHidden ? [] : ([
+        ["lunch",     "점심불참",   lunchTabCount,     "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
+      ] as [Tab, string, number, string, string, string, string][])),
+      ...(isLeaveHidden ? [] : ([
+        ["leave",     "연차승인",   leavePendingCount, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
+      ] as [Tab, string, number, string, string, string, string][])),
       // 2026-08-26 · #192 · 거래처승인 신규 탭 · pending-counts.vendor
       ["vendor",    "거래처승인", tabCounts?.vendor ?? 0, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-emerald-100 text-emerald-700", "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
     ] as [Tab, string, number, string, string, string, string][]) : []),
