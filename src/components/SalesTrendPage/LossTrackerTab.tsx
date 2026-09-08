@@ -33,7 +33,8 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
   const [lossPurchaseModal, setLossPurchaseModal] = useState<{ product_code: string; product_name: string } | null>(null);
   const [minLoss, setMinLoss] = useState<string>("");
   const [maxLoss, setMaxLoss] = useState<string>("");
-  const [topN, setTopN] = useState<number>(0);
+  // 2026-09-08 · 사용자 지시 · TopN 버튼 제거 · 0 = 전체 하드코딩
+  const [topN] = useState<number>(0);
   const [season, setSeason] = useState<SeasonKey | null>(null);
   const fmt = (n: number) => n.toLocaleString();
 
@@ -78,16 +79,8 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
         </div>
         <span className="text-[15px] font-bold text-zinc-500">{filtered.length}건</span>
       </div>
-      {/* 필터 바 */}
+      {/* 필터 바 · 2026-09-08 · 사용자 지시 · TopN 버튼 제거 · 전체 로드 */}
       <div className="flex items-center gap-1.5 text-[15px] flex-wrap">
-        <div className="inline-flex bg-zinc-100 rounded-md p-0.5">
-          {([0, 100, 300, 1000, 2000] as const).map(n => (
-            <button key={n} type="button" onClick={() => setTopN(n)}
-              className={`px-1.5 py-0.5 text-[14px] font-bold rounded transition ${topN === n ? "bg-white text-rose-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
-              {n === 0 ? "전체" : `Top ${n}`}
-            </button>
-          ))}
-        </div>
         <SeasonButtons value={season} onChange={setSeason} size="sm" />
         <span className="text-zinc-500 font-bold ml-1">손실 갯수</span>
         <input type="number" value={minLoss} onChange={e => setMinLoss(e.target.value)}

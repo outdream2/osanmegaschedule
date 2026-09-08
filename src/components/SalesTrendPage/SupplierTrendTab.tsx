@@ -42,7 +42,8 @@ const SupplierTrendTab: React.FC<{
   const [suppliers, setSuppliers] = useState<SupplierAggRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
-  const [topN, setTopN] = useState<number>(100);
+  // 2026-09-08 · 사용자 지시 · TopN 제거 · 전체 로드 · 0 = 전체
+  const [topN] = useState<number>(0);
   const [expandedSuppliers, setExpandedSuppliers] = useState<Set<string>>(new Set());
   const [supplierRowsMap, setSupplierRowsMap] = useState<Record<string, any[] | null>>({});
   const [supplierRowsLoading, setSupplierRowsLoading] = useState<Set<string>>(new Set());
@@ -193,15 +194,7 @@ const SupplierTrendTab: React.FC<{
             ))}
           </div>
           <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setPeriodMonths(0); }} size="sm" hideLabel />
-          <span className="text-zinc-500 font-bold text-[14px] shrink-0 ml-1">Top N</span>
-          <div className="inline-flex bg-zinc-100/80 border border-line/60 rounded-lg p-0.5 shadow-inner" title="판매액 내림차순 상위 N개만 표시">
-            {([100, 300, 1000, 2000, 0] as const).map(n => (
-              <button key={n} type="button" onClick={() => setTopN(n)}
-                className={`px-2 py-1 text-[14px] font-bold rounded transition cursor-pointer ${topN === n ? "bg-white text-sky-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
-                {n === 0 ? "전체" : `Top ${n}`}
-              </button>
-            ))}
-          </div>
+          {/* 2026-09-08 · 사용자 지시 · Top N 버튼 제거 · 전체 로드 */}
         </div>
         {/* 검색 */}
         <div className="mb-2">

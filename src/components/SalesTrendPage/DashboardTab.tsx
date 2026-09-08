@@ -156,7 +156,8 @@ export const DashboardTab: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [sort, setSort] = useState<DashSortKey>("sale_qty");
   const [dir, setDir] = useState<DashSortDir>("desc");
-  const [limit, setLimit] = useState<number>(300);
+  // 2026-09-08 · 사용자 지시 · TopN 버튼 제거 · 전체 로드 통일
+  const [limit, setLimit] = useState<number>(50000);
   const [query, setQuery] = useState("");
   const [snapshot, setSnapshot] = useState<string>("");
   const [autoExpanded, setAutoExpanded] = useState<AutoExpanded | null>(null);
@@ -395,7 +396,8 @@ export const DashboardTab: React.FC = () => {
             size="sm"
             hideLabel
           />
-          <div className="ml-auto flex items-center gap-2">
+          {/* 2026-09-08 · 사용자 지시 · 상위 TopN 버튼 완전 제거 · 전체 (50000) 하드코딩 */}
+          <div className="ml-auto flex items-center gap-2 hidden">
             <span className={`${TEXT.caption} text-ink-soft`}>상위</span>
             <div className="inline-flex bg-zinc-100 rounded-md p-0.5">
               {[100, 300, 1000, 2000, 50000].map(n => (

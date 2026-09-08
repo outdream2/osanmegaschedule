@@ -76,7 +76,8 @@ export const StockFlowPanel: React.FC<{
   const [loading, setLoading] = useState(false);
   const [sort, setSort] = useState<FlowSortKey>(defaultSort);
   const [dir, setDir] = useState<FlowSortDir>(defaultDir);
-  const [limit, setLimit] = useState<number>(100);
+  // 2026-09-08 · 사용자 지시 · TopN 제거 · 전체 로드
+  const [limit] = useState<number>(50000);
   const [snapshot, setSnapshot] = useState<string>("");
   const [query, setQuery] = useState<string>("");
   const [monthsLocal, setMonthsLocal] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
@@ -229,19 +230,7 @@ export const StockFlowPanel: React.FC<{
               );
             })()}
           </div>
-          <div className="flex items-center gap-1 sm:shrink-0 overflow-x-auto scrollbar-none">
-            {[
-              { v: 100, label: "Top 100" },
-              { v: 300, label: "Top 300" },
-              { v: 1000, label: "Top 1000" },
-              { v: 2000, label: "Top 2000" },
-              { v: 50000, label: "전체" },
-            ].map(o => (
-              <button key={o.v} onClick={() => setLimit(o.v)}
-                className={`text-[14px] font-bold px-1.5 py-0.5 rounded transition ${limit === o.v ? "bg-orange-500 text-white" : "text-zinc-500 hover:bg-zinc-100"}`}
-              >{o.label}</button>
-            ))}
-          </div>
+          {/* 2026-09-08 · 사용자 지시 · TopN 버튼 제거 · 전체 로드 */}
         </div>
         <p className="text-[14px] text-zinc-500 font-semibold leading-tight">
           💡 상품명을 누르면 판매추이 그래프가 나옵니다
