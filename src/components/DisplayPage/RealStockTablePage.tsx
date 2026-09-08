@@ -28,6 +28,9 @@ import { matchesProductQuery } from "../../lib/productMatch";
 import { matchesSupplierQuery } from "../../lib/supplierMatch";
 // 2026-08-27 · 사용자 지시 · 카테고리 → 창고 slot 지능 배정 (8A=창고1 · 32=창고2)
 import { assignZonesToSlots } from "../../lib/warehouseZoneMap";
+// 2026-09-08 · 상세 진열위치 뱃지 · 진열위치 옆 매장/창고별 3자리 표시
+import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
+import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
 
 interface Product {
   product_code: string;
@@ -125,6 +128,8 @@ export const RealStockTablePage: React.FC = () => {
   const [locFilter, setLocFilter] = useState<"all" | "store" | "warehouse">("all");
   const showStore = locFilter !== "warehouse";
   const showWarehouse = locFilter !== "store";
+  // 2026-09-08 · 상세 진열위치 맵 · 진열위치 컬럼 옆 뱃지 표시
+  const shelfMap = useShelfPositionsMap();
   // 2026-08-27 · 사용자 지시 · 각 그룹 접기/펼치기 · Set 저장 (collapsed 그룹만 저장)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const toggleGroup = useCallback((key: string) => {
@@ -482,7 +487,12 @@ export const RealStockTablePage: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <Field label="상품코드" value={<span className="font-mono text-[15px] tabular-nums">{detailRow.product_code}</span>} />
               <Field label="공급사"  value={detailRow.supplier ?? "-"} />
-              <Field label="진열위치" value={detailRow.location ?? "미지정"} />
+              <Field label="진열위치" value={
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span>{detailRow.location ?? "미지정"}</span>
+                  <ShelfPositionsBadge positions={shelfMap[detailRow.product_code]} size="sm" />
+                </div>
+              } />
               <Field label="ERP재고"  value={<b className="text-amber-700 tabular-nums text-[17px]">{detailRow.erp ?? "-"}</b>} />
               <Field label="실재고합계" value={<b className="text-brand-deep tabular-nums text-[17px]">{detailRow.total > 0 ? detailRow.total : "-"}</b>} />
             </div>
@@ -736,7 +746,12 @@ export const RealStockTablePage: React.FC = () => {
                               {r.product_name}
                             </button>
                           </td>
-                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.location ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[16px] tabular-nums tracking-tight">{r.location}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[15px]">—</span>)}</td>
+                          <td className={tableTdCls("center", "bg-amber-50/30")}>
+                            <div className="flex flex-col items-center gap-0.5">
+                              {r.location ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[16px] tabular-nums tracking-tight">{r.location}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[15px]">—</span>)}
+                              <ShelfPositionsBadge positions={shelfMap[r.product_code]} size="sm" />
+                            </div>
+                          </td>
                           <td className={tableTdCls("center", "bg-amber-50/30")}>{r.erp != null && r.erp > 0 ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[16px] tabular-nums tracking-tight">{r.erp}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[15px]">—</span>)}</td>
                           {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s1")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s1")}</td></>}
                           {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s2")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s2")}</td></>}
@@ -764,7 +779,12 @@ export const RealStockTablePage: React.FC = () => {
                       </button>
                     </td>
                     {/* 2026-08-27 · 컬럼 분리 · 진열위치·ERP 각각 · 매장/창고 구역·수량 분리 · 색깔톤 shade */}
-                    <td className={tableTdCls("center", "bg-amber-50/30")}><span className={`text-[16px] font-semibold ${r.location ? "text-amber-500" : "text-zinc-300"} tabular-nums`}>{r.location ?? "-"}</span></td>
+                    <td className={tableTdCls("center", "bg-amber-50/30")}>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className={`text-[16px] font-semibold ${r.location ? "text-amber-500" : "text-zinc-300"} tabular-nums`}>{r.location ?? "-"}</span>
+                        <ShelfPositionsBadge positions={shelfMap[r.product_code]} size="sm" />
+                      </div>
+                    </td>
                     <td className={tableTdCls("num", `tabular-nums font-extrabold text-[18px] ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-100/40`)}>{r.erp ?? "-"}</td>
                     {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s1")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s1")}</td></>}
                     {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s2")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s2")}</td></>}

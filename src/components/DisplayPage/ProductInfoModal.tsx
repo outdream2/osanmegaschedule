@@ -9,6 +9,8 @@ import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductBasicInfoPanel } from "../common/ProductBasicInfoPanel";
 import { api } from "../../lib/apiClient";
 import type { ProductInfo } from "../../lib/productsCache";
+// 2026-09-08 · 상세 진열위치 · 매장·창고별 3자리 위치
+import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
 
 interface ProductInfoModalProps {
   product: ProductInfo;
@@ -22,6 +24,9 @@ export const ProductInfoModal: React.FC<ProductInfoModalProps> = ({
   onProductUpdate,
 }) => {
   const code = String(product.code ?? (product as any).product_code ?? "");
+  // 2026-09-08 · 상세 진열위치 · 이 상품의 위치별 3자리
+  const shelfMap = useShelfPositionsMap();
+  const shelfPositions = shelfMap[code] ?? null;
 
   // 진열위치 편집 · PATCH /api/products/:code · location 필드
   const handleLocationChange = async (newLocation: string | null) => {
@@ -75,6 +80,7 @@ export const ProductInfoModal: React.FC<ProductInfoModalProps> = ({
             profit_rate: (product as any).profit_rate ?? null,
             optimal_stock: (product as any).optimal_stock ?? null,
             last_purchase_date: (product as any).last_purchase_date ?? null,
+            shelf_positions: shelfPositions,
           }}
           editable
           onLocationChange={handleLocationChange}

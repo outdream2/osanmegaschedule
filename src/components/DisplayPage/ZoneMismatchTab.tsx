@@ -22,6 +22,9 @@ import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-29 · #154 Phase 1 · 판매중 3-way 필터
 import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
+// 2026-09-08 · 상세 진열위치 뱃지 · 실제구역 옆에 매장/창고별 3자리 표시
+import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
+import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
 
 interface ZoneMismatch {
   id: string;
@@ -70,6 +73,8 @@ export const ZoneMismatchTab: React.FC = () => {
   const confirm = useConfirm();
   // 2026-08-29 · #154 Phase 1 · 3-way 판매중 필터 (전체/판매중/판매중지)
   const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "zoneMismatch.saleFilter" });
+  // 2026-09-08 · 상세 진열위치 맵 · 실제구역 옆 뱃지 표시용
+  const shelfMap = useShelfPositionsMap();
 
   const toggleSelected = (id: string) => setSelectedIds(prev => {
     const n = new Set(prev);
@@ -463,11 +468,15 @@ export const ZoneMismatchTab: React.FC = () => {
                               )}
                             </td>
                             <td className={tableTdCls("center", "font-bold text-rose-700")}>
-                              {renderEditable(m, "real_zone",
-                                m.real_zone
-                                  ? m.real_zone
-                                  : <span className="text-zinc-300">—</span>
-                              )}
+                              <div className="flex flex-col items-center gap-1">
+                                {renderEditable(m, "real_zone",
+                                  m.real_zone
+                                    ? m.real_zone
+                                    : <span className="text-zinc-300">—</span>
+                                )}
+                                {/* 2026-09-08 · 상세 진열위치 뱃지 · 실제구역 옆 필수 표시 */}
+                                <ShelfPositionsBadge positions={shelfMap[m.product_code]} size="sm" />
+                              </div>
                             </td>
                             <td className={tableTdCls("center")}>
                               <button

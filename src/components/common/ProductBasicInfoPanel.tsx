@@ -13,6 +13,9 @@ import React, { useState } from "react";
 import { Card } from "./Card";
 import { StatusPill } from "./StatusPill";
 import { Package, Store, Warehouse, MapPin, Coins, Pencil, Check, Barcode } from "lucide-react";
+// 2026-09-08 · 상세 진열위치 뱃지 · 진열위치 옆 필수 표시
+import { ShelfPositionsBadge } from "./ShelfPositionsBadge";
+import type { ShelfPositions } from "../../lib/shelfPositions";
 
 export interface ProductBasic {
   product_code: string;
@@ -32,6 +35,8 @@ export interface ProductBasic {
   profit_rate?: number | null;
   optimal_stock?: number | null;      // "*일" 라벨은 optimalDays prop 으로
   last_purchase_date?: string | null;
+  // 2026-09-08 · 위치별 상세 진열위치 (JSONB · 매장/창고)
+  shelf_positions?: ShelfPositions | null;
 }
 
 export interface ProductBasicInfoPanelProps {
@@ -204,15 +209,19 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
               />
             </form>
           ) : (
-            <button
-              type="button"
-              disabled={!inEditMode}
-              onClick={() => { if (inEditMode) { setLocDraft(String(location ?? "")); setEditingLoc(true); } }}
-              className={`${valueCls} tabular-nums ${inEditMode ? "hover:bg-amber-50 hover:text-amber-800 rounded px-1 -mx-1 cursor-pointer transition border border-dashed border-amber-300" : "cursor-default"}`}
-              title={inEditMode ? "클릭하여 편집" : undefined}
-            >
-              {location || <span className="text-zinc-300">-</span>}
-            </button>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                disabled={!inEditMode}
+                onClick={() => { if (inEditMode) { setLocDraft(String(location ?? "")); setEditingLoc(true); } }}
+                className={`${valueCls} tabular-nums ${inEditMode ? "hover:bg-amber-50 hover:text-amber-800 rounded px-1 -mx-1 cursor-pointer transition border border-dashed border-amber-300" : "cursor-default"}`}
+                title={inEditMode ? "클릭하여 편집" : undefined}
+              >
+                {location || <span className="text-zinc-300">-</span>}
+              </button>
+              {/* 2026-09-08 · 상세 진열위치 · 위치 뱃지 · 진열위치 옆 필수 표시 */}
+              <ShelfPositionsBadge positions={product.shelf_positions} size="sm" />
+            </div>
           )}
         </Field>
         <Field label="현재고" icon={<Package size={11} />}>

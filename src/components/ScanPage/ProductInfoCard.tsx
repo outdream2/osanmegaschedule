@@ -12,6 +12,8 @@ import { RealMapSelector } from "./RealMapSelector";
 import { PurchaseHistorySection } from "./PurchaseHistorySection";
 import { resolveWarehouseVisibility, assignZonesToSlots } from "../../lib/warehouseZoneMap";
 import { ProductBasicInfoPanel } from "../common/ProductBasicInfoPanel";
+// 2026-09-08 · 상세 진열위치 · 스캔 시 매장/창고 위치 노출
+import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
 
 import {
   SECTION_PRESETS,
@@ -37,6 +39,9 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
   onProductUpdate,
 }) => {
   const confirm = useConfirm();
+  // 2026-09-08 · 상세 진열위치 · 이 상품의 위치별 3자리 (매장/창고)
+  const shelfMap = useShelfPositionsMap();
+  const shelfPositions = shelfMap[product.code] ?? null;
 
   const S = { ...SECTION_PRESETS[context], ...(sections ?? {}) };
   const inlineEditEnabled = editable ?? context === "stock-manage";
@@ -271,6 +276,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               profit_rate: (product as any).profit_rate,
               optimal_stock: (product as any).optimal_stock,
               last_purchase_date: (product as any).last_purchase_date,
+              shelf_positions: shelfPositions,
             }}
             editable={inlineEditEnabled}
             onLocationChange={handleBasicLocationChange}
@@ -299,6 +305,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
             saving={saving}
             saveError={saveError}
             onOpenSelector={() => setMapSelectorOpen(true)}
+            shelfPositions={shelfPositions}
           />
         )}
 

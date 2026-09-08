@@ -4,6 +4,9 @@
 import React from "react";
 import { ArrowRight, AlertTriangle, Pencil } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+// 2026-09-08 · 상세 진열위치 뱃지 · 매장·창고별 3자리 위치 표시
+import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
+import type { ShelfPositions } from "../../lib/shelfPositions";
 
 interface ProductInfoZoneProps {
   locationZone: string;
@@ -12,12 +15,21 @@ interface ProductInfoZoneProps {
   saving: boolean;
   saveError: string | null;
   onOpenSelector: () => void;
+  // 2026-09-08 · 상세 진열위치 · 있으면 하단에 뱃지 리스트 표시
+  shelfPositions?: ShelfPositions | null;
 }
 
 export const ProductInfoZone: React.FC<ProductInfoZoneProps> = ({
   locationZone, realMap, hasMismatch, saving, saveError, onOpenSelector,
+  shelfPositions,
 }) => (
   <>
+    {/* 2026-09-08 · 상세 진열위치 뱃지 · 매장·창고별 3자리 위치 · 진열위치 옆 필수 표시 */}
+    {shelfPositions && Object.keys(shelfPositions).length > 0 && (
+      <div className="mb-2">
+        <ShelfPositionsBadge positions={shelfPositions} size="sm" />
+      </div>
+    )}
     <div className="flex items-stretch gap-2 mb-2 px-2.5 py-2 rounded-xl border border-line bg-zinc-50/60">
       {/* 전산배치구역 */}
       <div className="min-w-0 flex-1">
