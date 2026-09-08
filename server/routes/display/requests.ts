@@ -1010,15 +1010,23 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
     // 1) 신규 컬럼 일괄 제거 (첫 시도만)
     // 2026-09-03 · fix · store_stock_2 도 목록에 추가 · 삭제된 컬럼 포함 완전 망라
     if (attempt === 0) {
-      for (const k of ["warehouse1_stock","warehouse2_stock","store_stock_2","store3_stock","store1_zone","store2_zone","store3_zone"]) {
+      for (const k of ["warehouse1_stock","warehouse2_stock","store_stock_2","store3_stock","store1_zone","store2_zone","store3_zone","expiry_date","expiry_input_date"]) {
         delete payload[k];
       }
     }
     // 2) 에러 메시지에서 특정 컬럼명 추출 · 해당 필드만 제거 (legacy 포함)
-    const m = /(?:column|of)\s+'?([a-zA-Z0-9_]+)'?/g.exec(result.error);
-    const colName = m?.[1];
+    //   · Postgres · "column table.col does not exist" · "column col does not exist"
+    //   · Supabase · "no column named col"
+    //   · 2026-09-08 · fix · table.col 형식에서 col 만 추출 (마지막 . 이후)
+    let colName: string | null = null;
+    const tableCol = /column\s+(?:[a-zA-Z0-9_]+\.)?([a-zA-Z0-9_]+)/i.exec(result.error);
+    if (tableCol?.[1]) colName = tableCol[1];
+    if (!colName) {
+      const alt = /no column named\s+([a-zA-Z0-9_]+)/i.exec(result.error);
+      if (alt?.[1]) colName = alt[1];
+    }
     if (colName && colName in payload) {
-      console.warn(`[inventory-checks] legacy 컬럼 미존재 · strip 후 재시도: ${colName}`);
+      console.warn(`[inventory-checks] 컬럼 미존재 · strip 후 재시도: ${colName}`);
       delete payload[colName];
     } else if (attempt > 0) {
       // 추가로 벗길 컬럼 없음 · 무한 루프 방지
