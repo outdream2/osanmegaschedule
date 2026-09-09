@@ -188,10 +188,13 @@ export async function syncOrderRequestsOptimalStock(codeToOptimal: Map<string, n
 export async function refillOptimalStockFromSettings(): Promise<RefillResult> {
   let days = 30;
   try {
+    // 2026-09-09 · KV 키 통일 fix · UI 저장 키(optimal_stock_period_days) 참조
+    //   · 이전 · "optimal_stock_days" 조회 · UI 저장 키와 불일치 → CRON 항상 기본값 30일 사용
+    //   · 설정 UI (OptimalStockPeriodSection.tsx) 는 "optimal_stock_period_days" 에 저장
     const { data } = await supabase
       .from("app_settings")
       .select("value")
-      .eq("key", "optimal_stock_days")
+      .eq("key", "optimal_stock_period_days")
       .maybeSingle();
     const v = Number(data?.value ?? 30);
     if (Number.isFinite(v) && v >= 1 && v <= 365) days = Math.floor(v);
