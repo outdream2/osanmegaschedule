@@ -287,8 +287,8 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
             minWidth: "620px",
           }}
         >
-          {/* Row 0: 상단 벽 · col-span-5 · 내부 flex 14셀 */}
-          <div style={{ gridColumn: "1 / -1", gridRow: 1, display: "flex", gap: "3px" }}>
+          {/* Row 0: 상단 벽 · col-span-5 · 내부 flex 14셀 · 균일 여백 */}
+          <div style={{ gridColumn: "1 / -1", gridRow: 1, display: "flex", gap: "6px" }} className="px-1 py-1">
             {STORE_TOP_WALL.map((num, i) => (
               <div key={`tw-${i}`} className="flex-1 min-w-0">
                 {renderTopWallCell(num, `tw-${i}-${num}`)}
@@ -317,8 +317,8 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
             ))
           ))}
 
-          {/* Row 7: 하단 벽 · col-span-5 · 내부 flex 14셀 */}
-          <div style={{ gridColumn: "1 / -1", gridRow: 8, display: "flex", gap: "3px" }}>
+          {/* Row 7: 하단 벽 · col-span-5 · 내부 flex 14셀 · 균일 여백 */}
+          <div style={{ gridColumn: "1 / -1", gridRow: 8, display: "flex", gap: "6px" }} className="px-1 py-1">
             {STORE_BOTTOM_WALL.map((num, i) => (
               <div key={`bw-${i}`} className="flex-1 min-w-0">
                 {renderBottomWallCell(num, `bw-${i}-${num}`)}
