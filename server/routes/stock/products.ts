@@ -67,7 +67,8 @@ router.get("/api/products-map", asyncHandler(async (req, res) => {
         category_code: p.category_code ?? null,
         current_stock: p.current_stock ?? null,
         sale_status: p.sale_status ?? null,
-        barcode: p.barcode ?? null,
+        // 2026-09-09 · barcode 제거 · products.barcode 컬럼 DROP (3fd7d1d9) · 항상 null 반환하던 dead field
+        //   · 상품 분류 코드는 product_code 로 통합됨
         optimal_stock: p.optimal_stock ?? null,
         unit: p.unit ?? null,
         // #101 · 통일 · 가격·이익율 · 상품 카드 최소필드
@@ -607,7 +608,7 @@ const ALLOWED_INLINE_EDIT = new Set([
   "spec",
   "brand",
   "manufacturer",
-  "barcode",
+  // 2026-09-09 · barcode 제거 · products.barcode 컬럼 DROP (3fd7d1d9) · PATCH 시 컬럼 없음 에러
   "expiry_date",
   "memo",
   // 2026-08-25 · products 테이블에 없는 컬럼 · note 제거 (스키마 캐시 에러)
