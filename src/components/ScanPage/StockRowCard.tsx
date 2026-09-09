@@ -517,12 +517,18 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                 const shelfMap = (row.product as { shelf_positions?: Record<string, string | null> } | undefined)?.shelf_positions;
                 const detail = shelfMap?.[s.shelfCode];
                 if (!detail || String(detail).trim() === "") return null;
+                // 2026-09-09 · 사용자 지시 · 매장구역 pill 톤과 통일 · 슬롯별 색상 (매장=indigo · 창고=cyan)
+                const isStore = s.key.startsWith("s");
+                const toneCls = isStore
+                  ? "bg-indigo-50 border-indigo-300 text-indigo-700"
+                  : "bg-cyan-50 border-cyan-200 text-cyan-700";
+                const subCls  = isStore ? "text-indigo-500" : "text-cyan-500";
                 return (
                   <span
-                    className="inline-flex items-center gap-1 h-9 rounded-full px-2.5 border border-rose-200 bg-rose-50 text-[13px] font-bold text-rose-700 tabular-nums"
+                    className={`inline-flex items-center gap-1 h-9 rounded-full px-2.5 border-2 text-[14px] font-bold tabular-nums tracking-tight ${toneCls}`}
                     title={`${s.full} 상세구역 · ${detail}`}
                   >
-                    <span className="text-[11px] font-semibold text-rose-500 uppercase tracking-wide">상세</span>
+                    <span className={`text-[11px] font-semibold uppercase tracking-wide ${subCls}`}>상세</span>
                     {detail}
                   </span>
                 );

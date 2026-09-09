@@ -267,11 +267,11 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           )}
         </div>
 
-        {/* 상세구역 · 매장/창고구역 아래 별도 라인 · 2026-09-09 · 사용자 지시 */}
+        {/* 상세구역 · 매장/창고구역 아래 별도 라인 · 2026-09-09 · 사용자 지시 · 매장구역 톤 통일 */}
         {shelfPositions && Object.keys(shelfPositions).length > 0 && (
           <div className="flex items-center gap-2 flex-wrap pt-0.5 pb-0.5">
             <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">상세구역</span>
-            <ShelfPositionsBadge positions={shelfPositions} size="sm" />
+            <ShelfPositionsBadge positions={shelfPositions} size="sm" variant="badge" />
           </div>
         )}
 

@@ -27,27 +27,28 @@ export const ShelfPositionsBadge: React.FC<ShelfPositionsBadgeProps> = ({ positi
 
   const sizeCls = size === "md" ? "text-[14px]" : "text-[13px]";
 
-  // 2026-09-09 · badge variant · 매장구역 pill 스타일과 동일 크기 · 색상만 로즈 계열
+  // 2026-09-09 v2 · badge variant · 매장구역 pill 톤 완전 통일 (사용자 지시)
+  //   · 형태 · h-8 rounded-full border-2 · 매장구역·창고구역 pill 과 동일 규격
+  //   · 색상 · store → violet (매장구역과 통일) · warehouse → cyan (창고구역과 통일) · 미입력 → rose (경고)
   if (variant === "badge") {
-    const chipBase = size === "md"
-      ? "text-[13px] px-2 py-0.5 rounded-md font-semibold tabular-nums"
-      : "text-[12px] px-1.5 py-0.5 rounded font-semibold tabular-nums";
+    const pillBase = size === "md"
+      ? "inline-flex items-center gap-1 h-8 rounded-full px-2.5 border-2 text-[14px] font-bold tabular-nums tracking-tight"
+      : "inline-flex items-center gap-1 h-7 rounded-full px-2 border-2 text-[13px] font-bold tabular-nums tracking-tight";
+    const toneFor = (p: (typeof list)[number]) => {
+      if (p.isMissing) return "bg-rose-50 border-rose-300 text-rose-700";
+      if (p.kind === "store") return "bg-indigo-50 border-indigo-300 text-indigo-700";
+      return "bg-cyan-50 border-cyan-200 text-cyan-700";
+    };
     return (
-      <span className={`inline-flex flex-wrap items-center gap-1 ${className}`}>
+      <span className={`inline-flex flex-wrap items-center gap-1.5 ${className}`}>
         {list.map(p => (
           <span
             key={p.code}
-            className={`${chipBase} ${
-              p.isMissing
-                ? "bg-rose-50 text-rose-700 border border-rose-200"
-                : p.detail
-                  ? "bg-rose-50 text-rose-700 border border-rose-200"
-                  : "bg-zinc-50 text-zinc-500 border border-zinc-200"
-            }`}
+            className={`${pillBase} ${toneFor(p)}`}
             title={p.detail ? `${p.name} · ${p.detail}` : p.isMissing ? `${p.name} · 상세위치 미입력` : p.name}
           >
-            <span className="opacity-70 mr-0.5 font-medium">{p.name}</span>
-            {p.detail ? p.detail : p.isMissing ? "미입력" : ""}
+            <span className="opacity-70 font-semibold text-[12px]">{p.name}</span>
+            <span className="font-bold">{p.detail ? p.detail : p.isMissing ? "미입력" : ""}</span>
           </span>
         ))}
       </span>

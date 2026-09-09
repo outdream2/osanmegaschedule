@@ -70,11 +70,11 @@ export const ProductInfoZone: React.FC<ProductInfoZoneProps> = ({
         </div>
       </div>
 
-      {/* 하단 · 상세구역 별도 라인 · 2026-09-09 · 사용자 지시 · 매장/창고구역 아래 표시 */}
+      {/* 하단 · 상세구역 별도 라인 · 2026-09-09 · 사용자 지시 · 매장/창고구역 아래 표시 · 매장구역 톤 통일 */}
       {shelfPositions && Object.keys(shelfPositions).length > 0 && (
         <div className="flex items-center gap-2 px-2.5 py-1.5 border-t border-line bg-white/70">
           <span className="text-[13px] font-bold text-zinc-500 tracking-tight shrink-0 uppercase">상세구역</span>
-          <ShelfPositionsBadge positions={shelfPositions} size="sm" />
+          <ShelfPositionsBadge positions={shelfPositions} size="sm" variant="badge" />
         </div>
       )}
     </div>
