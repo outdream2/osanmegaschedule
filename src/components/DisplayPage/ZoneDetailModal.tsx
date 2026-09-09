@@ -203,7 +203,7 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
               바코드 스캔
             </button>
           </div>
-          <textarea value={draftProducts} onChange={(e) => onSetDraftProducts(e.target.value)} rows={2}
+          <textarea lang="ko" value={draftProducts} onChange={(e) => onSetDraftProducts(e.target.value)} rows={2}
             placeholder="예: 타이레놀 500mg, 베아제, 판콜에이..."
             className="w-full px-3 py-2 text-sm rounded-xl border border-zinc-300 bg-white focus:border-brand-deep focus:ring-2 focus:ring-brand-tint outline-none transition resize-none" />
         </div>

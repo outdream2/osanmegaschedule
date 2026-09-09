@@ -286,7 +286,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
 
             <div className="flex flex-col sm:flex-row gap-2 items-stretch">
               <input
-                type="text"
+                lang="ko" type="text"
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
                 placeholder="항목 이름 (예: 병용 금기 요약표)"
@@ -423,7 +423,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                     <div className="flex-1 min-w-0">
                       {isEdit ? (
                         <input
-                          type="text"
+                          lang="ko" type="text"
                           value={editingTitle}
                           onChange={e => setEditingTitle(e.target.value)}
                           className="w-full bg-white border border-sky-300 rounded-md px-2 py-1 text-sm font-semibold text-zinc-800 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"

@@ -198,7 +198,7 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
           {inEditMode && editingLoc ? (
             <form onSubmit={(e) => { e.preventDefault(); void submitLocation(); }} className="flex items-center gap-1">
               <input
-                type="text"
+                lang="ko" type="text"
                 value={locDraft}
                 onChange={(e) => setLocDraft(e.target.value)}
                 onBlur={submitLocation}

@@ -431,7 +431,7 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
                               }`}>
                               {h === "거래일" ? (
                                 editingConfDate === pn ? (
-                                  <input type="text" inputMode="text" autoFocus
+                                  <input lang="ko" type="text" inputMode="text" autoFocus
                                     value={editingConfDateVal}
                                     placeholder="YYYY-MM-DD"
                                     onChange={e => setEditingConfDateVal(e.target.value)}

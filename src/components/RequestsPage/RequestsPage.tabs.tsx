@@ -121,7 +121,7 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
       <div className="relative">
         <MagnifyingGlass size={15} weight="bold" className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
         <input
-          type="text"
+          lang="ko" type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="상품명·구역·담당자 검색..."

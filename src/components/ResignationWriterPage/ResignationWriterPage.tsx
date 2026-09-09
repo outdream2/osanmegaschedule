@@ -426,7 +426,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 <div className="relative">
                   <input
-                    type="text"
+                    lang="ko" type="text"
                     value={form.employeeName}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -478,7 +478,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                   })()}
                 </div>
                 <input
-                  type="text"
+                  lang="ko" type="text"
                   value={form.employeeNo}
                   onChange={(e) => upd("employeeNo", e.target.value)}
                   placeholder="사번 (자동)"
@@ -488,14 +488,14 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
               {/* 부서 + 직급 한 줄 */}
               <div className="grid grid-cols-2 gap-2">
                 <input
-                  type="text"
+                  lang="ko" type="text"
                   value={form.department}
                   onChange={(e) => upd("department", e.target.value)}
                   placeholder="부서 (예: 매장·창고)"
                   className="bg-white border border-line rounded-lg px-3 py-2 text-[17px] text-ink font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:shadow-sm transition-colors placeholder:text-zinc-400 placeholder:text-[17px]"
                 />
                 <input
-                  type="text"
+                  lang="ko" type="text"
                   value={form.position}
                   onChange={(e) => upd("position", e.target.value)}
                   placeholder="직급 (예: 약사·사원)"
@@ -569,7 +569,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                   수신
                 </FieldLabel>
                 <input
-                  type="text"
+                  lang="ko" type="text"
                   value={form.recipient}
                   onChange={(e) => upd("recipient", e.target.value)}
                   placeholder="예: 코스트팜(Costpharm) 대표"
@@ -608,7 +608,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                 {form.reason === "기타" ? "기타 사유 (자유 입력)" : "사유 상세 (선택)"}
               </FieldLabel>
               <textarea
-                value={form.reasonDetail}
+                lang="ko" value={form.reasonDetail}
                 onChange={(e) => upd("reasonDetail", e.target.value)}
                 rows={3}
                 placeholder={form.reason === "기타"
@@ -624,7 +624,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                 인수인계 사항 (선택)
               </FieldLabel>
               <textarea
-                value={form.handoverNotes}
+                lang="ko" value={form.handoverNotes}
                 onChange={(e) => upd("handoverNotes", e.target.value)}
                 rows={3}
                 placeholder="담당 업무 · 인수인계할 파일·연락처·주요 진행상황 등"
@@ -668,14 +668,14 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
               </FieldLabel>
               <div className="grid grid-cols-2 gap-2">
                 <input
-                  type="text"
+                  lang="ko" type="text"
                   value={form.companyName}
                   onChange={(e) => upd("companyName", e.target.value)}
                   placeholder="회사명"
                   className="bg-white border border-line rounded-lg px-3 py-2 text-[17px] text-ink font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:shadow-sm transition-colors placeholder:text-zinc-400 placeholder:text-[17px]"
                 />
                 <input
-                  type="text"
+                  lang="ko" type="text"
                   value={form.employerName}
                   onChange={(e) => upd("employerName", e.target.value)}
                   placeholder="대표자명"

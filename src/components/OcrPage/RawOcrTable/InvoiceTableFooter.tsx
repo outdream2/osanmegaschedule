@@ -69,7 +69,7 @@ export const InvoiceTableFooter: React.FC<InvoiceTableFooterProps> = ({
         )}
         <td className="px-3 py-2.5 text-right font-bold text-amber-700 text-sm whitespace-nowrap">
           {editingGrandTotal !== null ? (
-            <input type="text" inputMode="numeric" autoFocus
+            <input lang="ko" type="text" inputMode="numeric" autoFocus
               value={editingGrandTotal}
               onChange={e => setEditingGrandTotal(e.target.value)}
               onBlur={() => {

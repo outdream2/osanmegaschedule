@@ -293,7 +293,7 @@ export const RawInvoiceCard: React.FC<RawInvoiceCardProps> = ({
                           <td key={ci} className="px-1 py-1" onClick={e => e.stopPropagation()}>
                             <div className="flex items-center gap-1">
                               <input
-                                ref={el => {
+                                lang="ko" ref={el => {
                                   if (el && suppInputRef.current !== el) {
                                     suppInputRef.current = el;
                                     const r = el.getBoundingClientRect();
@@ -490,7 +490,7 @@ export const RawInvoiceCard: React.FC<RawInvoiceCardProps> = ({
                           return (
                             <td key={ci} className="px-1 py-1" onClick={e => e.stopPropagation()}>
                               <input
-                                autoFocus
+                                lang="ko" autoFocus
                                 type="text"
                                 inputMode="text"
                                 placeholder="YYYY-MM-DD"

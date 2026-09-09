@@ -305,7 +305,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
         {canWrite && (
           <Card padding="md" topAccent clip className="flex flex-col gap-3">
             <input
-              ref={titleRef}
+              lang="ko" ref={titleRef}
               className="border border-line rounded-lg px-3 py-2.5 text-[15px] outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
               placeholder="제목 (필수)"
               maxLength={80}
@@ -313,7 +313,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
               onChange={e => setNewTitle(e.target.value)}
             />
             <textarea
-              className="border border-line rounded-lg px-3 py-2.5 text-[15px] outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint resize-none transition"
+              lang="ko" className="border border-line rounded-lg px-3 py-2.5 text-[15px] outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint resize-none transition"
               placeholder="내용 (선택)"
               maxLength={200}
               rows={2}
@@ -414,14 +414,14 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
                 {isEditing ? (
                   <div className="px-3 py-2.5 bg-sky-50/40 flex flex-col gap-2">
                     <input
-                      className="border border-line rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-brand-deep w-full"
+                      lang="ko" className="border border-line rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-brand-deep w-full"
                       value={editTitle}
                       onChange={e => setEditTitle(e.target.value)}
                       placeholder="제목"
                       autoFocus
                     />
                     <input
-                      className="border border-line rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-brand-deep w-full"
+                      lang="ko" className="border border-line rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-brand-deep w-full"
                       value={editBody}
                       onChange={e => setEditBody(e.target.value)}
                       placeholder="내용 (선택)"

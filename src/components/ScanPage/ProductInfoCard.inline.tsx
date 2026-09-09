@@ -44,7 +44,7 @@ export const InlineField: React.FC<InlineFieldProps> = ({
       {isEditing ? (
         <div className="flex items-center gap-1">
           <input
-            type={type}
+            lang="ko" type={type}
             value={editingValue}
             onChange={e => onEditChange(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") onCommit(); if (e.key === "Escape") onCancel(); }}

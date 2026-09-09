@@ -139,7 +139,7 @@ export const ImportLogTab: React.FC<ImportLogTabProps> = ({
           <span className="text-[14px] text-zinc-400">~</span>
           <input type="date" value={logFilter.to} onChange={e => setLogFilter(f => ({ ...f, to: e.target.value }))}
             className="text-[15px] tabular-nums border border-line rounded-lg px-2 py-1 bg-white text-zinc-700" title="종료일" />
-          <input type="text" placeholder="검색 (기간·파일명)" value={logFilter.search} onChange={e => setLogFilter(f => ({ ...f, search: e.target.value }))}
+          <input lang="ko" type="text" placeholder="검색 (기간·파일명)" value={logFilter.search} onChange={e => setLogFilter(f => ({ ...f, search: e.target.value }))}
             className="flex-1 min-w-[100px] text-[15px] border border-line rounded-lg px-2 py-1 bg-white text-zinc-700 placeholder:text-zinc-300" />
           {(logFilter.type !== "all" || logFilter.from || logFilter.to || logFilter.search) && (
             <button type="button" onClick={() => setLogFilter({ type: "all", from: "", to: "", search: "" })}

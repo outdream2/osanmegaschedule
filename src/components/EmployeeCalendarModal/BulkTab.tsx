@@ -172,7 +172,7 @@ export const BulkTab: React.FC<BulkTabProps> = ({
               <MessageSquare size={13} strokeWidth={2.2} /> 특이사항
             </label>
             <input
-              type="text"
+              lang="ko" type="text"
               value={bulkActualHours}
               onChange={e => setBulkActualHours(e.target.value)}
               placeholder="예: 2시간 연장, 지각, 조퇴"
@@ -184,7 +184,7 @@ export const BulkTab: React.FC<BulkTabProps> = ({
               <MessageSquare size={13} strokeWidth={2.2} /> 메모
             </label>
             <input
-              type="text"
+              lang="ko" type="text"
               value={bulkMemo}
               onChange={e => setBulkMemo(e.target.value)}
               placeholder="마우스 오버 시 표시될 메모"

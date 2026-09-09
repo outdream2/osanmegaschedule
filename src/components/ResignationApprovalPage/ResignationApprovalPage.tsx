@@ -361,7 +361,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                       reviewingId === r.id ? (
                         <div className="ml-4 flex flex-col gap-2 mt-2">
                           <input
-                            type="text"
+                            lang="ko" type="text"
                             value={rejectReason}
                             onChange={e => setRejectReason(e.target.value)}
                             placeholder="반려 사유 (반려 시 필수)"

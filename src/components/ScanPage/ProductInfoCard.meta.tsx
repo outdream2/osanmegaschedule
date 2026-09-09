@@ -69,7 +69,7 @@ export const ProductInfoMeta: React.FC<ProductInfoMetaProps> = ({
             {editingKey === "memo" ? (
               <div className="flex flex-col gap-1">
                 <textarea
-                  value={editingValue}
+                  lang="ko" value={editingValue}
                   onChange={e => onEditChange(e.target.value)}
                   onKeyDown={e => { if (e.key === "Escape") onCancel(); }}
                   disabled={editSaving}

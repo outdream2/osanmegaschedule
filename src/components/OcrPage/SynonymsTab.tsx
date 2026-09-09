@@ -166,11 +166,11 @@ export const SynonymsTab: React.FC = () => {
             {/* 추가 폼 */}
             <p className="text-xs font-bold text-indigo-700 flex items-center gap-1.5"><Plus size={12} /> 상품명 동의어 추가</p>
             <div className="grid grid-cols-2 gap-2">
-              <input className="col-span-2 border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep font-mono" placeholder="상품코드 (필수)" value={addProdCode} onChange={e => setAddProdCode(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
-              <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="상품명(OCR) — 필수" value={addProdOld} onChange={e => setAddProdOld(e.target.value)} />
-              <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="상품명(보정후)" value={addProdNew} onChange={e => setAddProdNew(e.target.value)} />
-              <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="공급사명(OCR)" value={addProdSuppOld} onChange={e => setAddProdSuppOld(e.target.value)} />
-              <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="공급사명(보정후)" value={addProdSuppNew} onChange={e => setAddProdSuppNew(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
+              <input lang="ko" className="col-span-2 border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep font-mono" placeholder="상품코드 (필수)" value={addProdCode} onChange={e => setAddProdCode(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
+              <input lang="ko" className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="상품명(OCR) — 필수" value={addProdOld} onChange={e => setAddProdOld(e.target.value)} />
+              <input lang="ko" className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="상품명(보정후)" value={addProdNew} onChange={e => setAddProdNew(e.target.value)} />
+              <input lang="ko" className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="공급사명(OCR)" value={addProdSuppOld} onChange={e => setAddProdSuppOld(e.target.value)} />
+              <input lang="ko" className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="공급사명(보정후)" value={addProdSuppNew} onChange={e => setAddProdSuppNew(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
             </div>
             <button onClick={addProductSynonym} disabled={!addProdOld.trim() || !addProdCode.trim() || synSaving} className="self-end px-4 py-1.5 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg transition disabled:opacity-40 cursor-pointer">추가</button>
           </div>
@@ -178,8 +178,8 @@ export const SynonymsTab: React.FC = () => {
           <div className="p-4 flex flex-col gap-3">
             <p className="text-xs font-bold text-sky-700 flex items-center gap-1.5"><Plus size={12} /> 공급사 별칭 추가</p>
             <div className="grid grid-cols-2 gap-2">
-              <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="OCR 오인식 공급사명 (필수)" value={addSuppAlias} onChange={e => setAddSuppAlias(e.target.value)} onKeyDown={e => e.key === "Enter" && addSupplierAlias()} />
-              <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="실제 공급사명 (필수)" value={addSuppName} onChange={e => setAddSuppName(e.target.value)} onKeyDown={e => e.key === "Enter" && addSupplierAlias()} />
+              <input lang="ko" className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="OCR 오인식 공급사명 (필수)" value={addSuppAlias} onChange={e => setAddSuppAlias(e.target.value)} onKeyDown={e => e.key === "Enter" && addSupplierAlias()} />
+              <input lang="ko" className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="실제 공급사명 (필수)" value={addSuppName} onChange={e => setAddSuppName(e.target.value)} onKeyDown={e => e.key === "Enter" && addSupplierAlias()} />
             </div>
             <button onClick={addSupplierAlias} disabled={!addSuppAlias.trim() || !addSuppName.trim() || synSaving} className="self-end px-4 py-1.5 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg transition disabled:opacity-40 cursor-pointer">추가</button>
           </div>
@@ -234,9 +234,9 @@ export const SynonymsTab: React.FC = () => {
                     {isEditing ? (
                       prodListView === "prodname" ? (
                         <>
-                          <td className="px-2 py-1.5"><input className={`${cellCls} font-mono`} value={editingProd.product_code} onChange={e => setEditingProd(p => p && ({ ...p, product_code: e.target.value }))} /></td>
-                          <td className="px-2 py-1.5"><input className={cellCls} value={editingProd.prod_name_old} onChange={e => setEditingProd(p => p && ({ ...p, prod_name_old: e.target.value }))} /></td>
-                          <td className="px-2 py-1.5"><input className={cellCls} value={editingProd.prod_name_new} onChange={e => setEditingProd(p => p && ({ ...p, prod_name_new: e.target.value }))} placeholder="(없음)" /></td>
+                          <td className="px-2 py-1.5"><input lang="ko" className={`${cellCls} font-mono`} value={editingProd.product_code} onChange={e => setEditingProd(p => p && ({ ...p, product_code: e.target.value }))} /></td>
+                          <td className="px-2 py-1.5"><input lang="ko" className={cellCls} value={editingProd.prod_name_old} onChange={e => setEditingProd(p => p && ({ ...p, prod_name_old: e.target.value }))} /></td>
+                          <td className="px-2 py-1.5"><input lang="ko" className={cellCls} value={editingProd.prod_name_new} onChange={e => setEditingProd(p => p && ({ ...p, prod_name_new: e.target.value }))} placeholder="(없음)" /></td>
                           <td className="px-2 py-1.5">
                             <div className="flex items-center gap-1">
                               <button onClick={saveEditProd} disabled={editSaving || !editingProd.prod_name_old.trim() || !editingProd.product_code.trim()} className="p-1 text-indigo-500 hover:text-indigo-700 cursor-pointer disabled:opacity-40"><Check size={13} /></button>
@@ -246,9 +246,9 @@ export const SynonymsTab: React.FC = () => {
                         </>
                       ) : (
                         <>
-                          <td className="px-2 py-1.5"><input className={`${cellClsSky} font-mono`} value={editingProd.product_code} onChange={e => setEditingProd(p => p && ({ ...p, product_code: e.target.value }))} /></td>
-                          <td className="px-2 py-1.5"><input className={cellClsSky} value={editingProd.supplier_old} onChange={e => setEditingProd(p => p && ({ ...p, supplier_old: e.target.value }))} placeholder="(없음)" /></td>
-                          <td className="px-2 py-1.5"><input className={cellClsSky} value={editingProd.supplier_new} onChange={e => setEditingProd(p => p && ({ ...p, supplier_new: e.target.value }))} placeholder="(없음)" /></td>
+                          <td className="px-2 py-1.5"><input lang="ko" className={`${cellClsSky} font-mono`} value={editingProd.product_code} onChange={e => setEditingProd(p => p && ({ ...p, product_code: e.target.value }))} /></td>
+                          <td className="px-2 py-1.5"><input lang="ko" className={cellClsSky} value={editingProd.supplier_old} onChange={e => setEditingProd(p => p && ({ ...p, supplier_old: e.target.value }))} placeholder="(없음)" /></td>
+                          <td className="px-2 py-1.5"><input lang="ko" className={cellClsSky} value={editingProd.supplier_new} onChange={e => setEditingProd(p => p && ({ ...p, supplier_new: e.target.value }))} placeholder="(없음)" /></td>
                           <td className="px-2 py-1.5">
                             <div className="flex items-center gap-1">
                               <button onClick={saveEditProd} disabled={editSaving || !editingProd.prod_name_old.trim() || !editingProd.product_code.trim()} className="p-1 text-sky-500 hover:text-sky-700 cursor-pointer disabled:opacity-40"><Check size={13} /></button>
@@ -307,8 +307,8 @@ export const SynonymsTab: React.FC = () => {
                   <tr key={a.id} className={`border-t border-gray-50 ${isEditing ? "bg-sky-50/40" : "hover:bg-gray-50"}`}>
                     {isEditing ? (
                       <>
-                        <td className="px-2 py-1.5"><input className={cellClsSky} value={editingSupp.alias} onChange={e => setEditingSupp(p => p && ({ ...p, alias: e.target.value }))} /></td>
-                        <td className="px-2 py-1.5"><input className={cellClsSky} value={editingSupp.supplier_name} onChange={e => setEditingSupp(p => p && ({ ...p, supplier_name: e.target.value }))} /></td>
+                        <td className="px-2 py-1.5"><input lang="ko" className={cellClsSky} value={editingSupp.alias} onChange={e => setEditingSupp(p => p && ({ ...p, alias: e.target.value }))} /></td>
+                        <td className="px-2 py-1.5"><input lang="ko" className={cellClsSky} value={editingSupp.supplier_name} onChange={e => setEditingSupp(p => p && ({ ...p, supplier_name: e.target.value }))} /></td>
                         <td className="px-2 py-1.5 text-gray-400">{new Date(a.created_at).toLocaleDateString("ko-KR")}</td>
                         <td className="px-2 py-1.5">
                           <div className="flex items-center gap-1">

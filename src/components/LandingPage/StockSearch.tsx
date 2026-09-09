@@ -84,7 +84,7 @@ export function StockSearch() {
         <div className="relative">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
           <input
-            type="search"
+            lang="ko" type="search"
             value={query}
             onChange={e => handleSearch(e.target.value)}
             placeholder="예: 타이레놀, 판콜에이…"

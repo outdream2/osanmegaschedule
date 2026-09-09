@@ -132,7 +132,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                 사번 <span className="text-zinc-400 normal-case font-normal">(자동 생성 · 편집 가능)</span>
               </label>
               <input
-                type="text"
+                lang="ko" type="text"
                 value={employeeNumber}
                 onChange={e => setEmployeeNumber(e.target.value)}
                 placeholder="예: 004"
@@ -147,7 +147,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               성명 <span className="text-rose-500 normal-case">*</span>
             </label>
             <input
-              type="text"
+              lang="ko" type="text"
               placeholder="홍길동"
               value={empName}
               onChange={e => setEmpName(e.target.value)}
@@ -163,7 +163,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               <span className="text-[14px] font-normal text-zinc-400 normal-case ml-1">(로그인 ID — 숫자만, 예: 01012345678)</span>
             </label>
             <input
-              type="tel"
+              lang="ko" type="tel"
               placeholder="01012345678"
               value={empPhone}
               onChange={e => setEmpPhone(e.target.value)}
@@ -213,7 +213,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                     </select>
                     {(primary === "기타" || isCustom) && (
                       <input
-                        type="text"
+                        lang="ko" type="text"
                         placeholder="직종 직접 입력"
                         value={empCustomPosition}
                         onChange={e => setEmpCustomPosition(e.target.value)}
@@ -407,7 +407,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               <span className="text-[14px] font-normal text-zinc-400">(근무 패턴 / 메모)</span>
             </label>
             <input
-              type="text"
+              lang="ko" type="text"
               placeholder="예: 주6일 일 휴무, 수목휴무, 토일 등"
               value={empDescription}
               onChange={e => setEmpDescription(e.target.value)}

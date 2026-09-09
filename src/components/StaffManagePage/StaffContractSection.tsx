@@ -210,7 +210,7 @@ export const StaffContractSection: React.FC<StaffContractSectionProps> = ({
           </span>
           {editing ? (
             <input
-              type="url"
+              lang="ko" type="url"
               value={draft?.contract_file_url ?? ""}
               onChange={(e) => setField("contract_file_url", e.target.value)}
               placeholder="계약서 URL 입력 (https://...)"

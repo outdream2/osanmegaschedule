@@ -293,7 +293,7 @@ const MoneyCellInput: React.FC<MoneyCellInputProps> = ({ value, onCommit, placeh
   }, [value]);
   return (
     <input
-      type="text"
+      lang="ko" type="text"
       inputMode="numeric"
       value={text}
       onChange={e => setText(e.target.value.replace(/[^0-9]/g, ""))}

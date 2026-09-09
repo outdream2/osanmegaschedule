@@ -141,7 +141,7 @@ export function InventoryHistoryPage({ authSession, onBack, onNavigate, onLogout
             <div className="relative flex-1 min-w-[180px]">
               <MagnifyingGlass size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
               <input
-                value={search}
+                lang="ko" value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="상품코드 · 상품명 · 확인자"
                 className="w-full pl-8 pr-3 py-2 text-[14px] border border-zinc-200 rounded-lg bg-white placeholder-zinc-400 outline-none focus:ring-2 focus:ring-brand-deep/30 focus:border-brand-deep/50 transition"

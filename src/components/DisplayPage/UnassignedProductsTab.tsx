@@ -198,7 +198,7 @@ export const UnassignedProductsTab: React.FC = () => {
                       {editingId === p.product_code ? (
                         <div className="flex items-center gap-1 justify-center">
                           <input
-                            autoFocus
+                            lang="ko" autoFocus
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
                             onKeyDown={(e) => {

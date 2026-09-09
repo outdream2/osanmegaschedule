@@ -109,7 +109,7 @@ export function ComposerModal({
 
           {/* 제목 */}
           <input
-            type="text"
+            lang="ko" type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="제목 (필수)"
@@ -130,7 +130,7 @@ export function ComposerModal({
 
           {/* 본문 */}
           <textarea
-            value={body}
+            lang="ko" value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="본문 · 상황을 자세히 남겨주세요"
             rows={5}

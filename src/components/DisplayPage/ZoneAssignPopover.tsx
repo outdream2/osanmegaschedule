@@ -137,7 +137,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
                 title="구역 번호"
               />
               <input
-                type="text"
+                lang="ko" type="text"
                 value={editLabel}
                 onChange={(e) => setEditLabel(e.target.value)}
                 className="flex-1 min-w-0 h-7 px-1.5 text-[14px] font-bold text-ink border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"
@@ -146,7 +146,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
               />
             </div>
             <input
-              type="text"
+              lang="ko" type="text"
               value={editCategory}
               onChange={(e) => setEditCategory(e.target.value)}
               className="h-6 px-1.5 text-[15px] text-ink-soft border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"

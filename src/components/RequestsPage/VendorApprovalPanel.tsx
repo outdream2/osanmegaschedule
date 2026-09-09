@@ -197,7 +197,7 @@ export const VendorApprovalPanel: React.FC = () => {
                 <div className="mb-4 flex items-center gap-2">
                   <MessageSquare size={15} className="text-rose-500 shrink-0" />
                   <input
-                    type="text"
+                    lang="ko" type="text"
                     value={rejectReason}
                     onChange={e => setRejectReason(e.target.value)}
                     placeholder="거절 사유 (선택 · 500자)"

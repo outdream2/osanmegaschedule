@@ -387,7 +387,7 @@ const WageCardBody: React.FC<WageCardBodyProps> = ({
               <span className="flex items-baseline gap-x-1.5">
                 <span className="text-zinc-500">공제항목</span>
                 <input
-                  type="text"
+                  lang="ko" type="text"
                   inputMode="numeric"
                   value={extraDeduction ? extraDeduction.toLocaleString("ko-KR") : ""}
                   onChange={(e) => {
@@ -460,7 +460,7 @@ const WageCardBody: React.FC<WageCardBodyProps> = ({
                   {mealChecked ? (
                     <span className="inline-flex items-center">
                       <input
-                        type="text"
+                        lang="ko" type="text"
                         inputMode="numeric"
                         value={meal ? meal.toLocaleString("ko-KR") : ""}
                         onChange={(e) => setMeal(Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
@@ -491,7 +491,7 @@ const WageCardBody: React.FC<WageCardBodyProps> = ({
                   {vehicleChecked ? (
                     <span className="inline-flex items-center">
                       <input
-                        type="text"
+                        lang="ko" type="text"
                         inputMode="numeric"
                         value={vehicle ? vehicle.toLocaleString("ko-KR") : ""}
                         onChange={(e) => setVehicle(Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}

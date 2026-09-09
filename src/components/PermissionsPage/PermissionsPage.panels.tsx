@@ -77,7 +77,7 @@ export const PositionsTab: React.FC<PositionsTabProps> = ({
             </div>
             {editingPosIdx === idx ? (
               <input
-                autoFocus
+                lang="ko" autoFocus
                 value={editingPosValue}
                 onChange={(e) => setEditingPosValue(e.target.value)}
                 onBlur={commitEditPosition}
@@ -120,7 +120,7 @@ export const PositionsTab: React.FC<PositionsTabProps> = ({
       </div>
       <div className="flex gap-2 pt-1">
         <input
-          type="text"
+          lang="ko" type="text"
           value={newPositionInput}
           onChange={(e) => setNewPositionInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNewPosition(); } }}
@@ -424,7 +424,7 @@ export const EmployeeLevelTab: React.FC<EmployeeLevelTabProps> = ({
           </span>
         </div>
         <input
-          type="text"
+          lang="ko" type="text"
           value={empSearch}
           onChange={e => setEmpSearch(e.target.value)}
           placeholder="이름·직군 검색"

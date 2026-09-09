@@ -131,28 +131,28 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
               <label className={LABEL_CLS}><Buildings size={12} />약국(사업장) 이름</label>
-              <input className={INPUT_CLS} value={info.name} onChange={e => setInfo({ name: e.target.value })}
+              <input lang="ko" className={INPUT_CLS} value={info.name} onChange={e => setInfo({ name: e.target.value })}
                      placeholder="예: 오산 메가타운 약국" />
             </div>
             <div>
               <label className={LABEL_CLS}><User size={12} />대표자 이름</label>
-              <input className={INPUT_CLS} value={info.representativeName} onChange={e => setInfo({ representativeName: e.target.value })}
+              <input lang="ko" className={INPUT_CLS} value={info.representativeName} onChange={e => setInfo({ representativeName: e.target.value })}
                      placeholder="예: 강남성" />
             </div>
             {/* 2026-09-02 · 사용자 지시 · 대표자 직함 · 사업장 정보 아래쪽에 · 필요없음 (필드 자체 제거) */}
             <div>
               <label className={LABEL_CLS}><IdentificationBadge size={12} />사업자등록번호</label>
-              <input className={INPUT_CLS} value={info.regNo} onChange={e => setInfo({ regNo: e.target.value })}
+              <input lang="ko" className={INPUT_CLS} value={info.regNo} onChange={e => setInfo({ regNo: e.target.value })}
                      placeholder="000-00-00000" />
             </div>
             <div>
               <label className={LABEL_CLS}><Phone size={12} />사업장 전화</label>
-              <input className={INPUT_CLS} value={info.phone ?? ""} onChange={e => setInfo({ phone: e.target.value })}
+              <input lang="ko" className={INPUT_CLS} value={info.phone ?? ""} onChange={e => setInfo({ phone: e.target.value })}
                      placeholder="예: 031-000-0000" />
             </div>
             <div className="sm:col-span-2">
               <label className={LABEL_CLS}><MapPin size={12} />사업장 주소</label>
-              <input className={INPUT_CLS} value={info.address} onChange={e => setInfo({ address: e.target.value })}
+              <input lang="ko" className={INPUT_CLS} value={info.address} onChange={e => setInfo({ address: e.target.value })}
                      placeholder="예: 경기도 오산시 경기대로 868-4 2층" />
             </div>
           </div>
@@ -173,22 +173,22 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={LABEL_CLS}><TextT size={12} />앱 이름 (사이드바)</label>
-              <input className={INPUT_CLS} value={brand.shortName} onChange={e => setBrand({ shortName: e.target.value })}
+              <input lang="ko" className={INPUT_CLS} value={brand.shortName} onChange={e => setBrand({ shortName: e.target.value })}
                      placeholder="예: 오산 메가타운 약국" />
             </div>
             <div>
               <label className={LABEL_CLS}><TextT size={12} />앱 타이틀 (브라우저 탭)</label>
-              <input className={INPUT_CLS} value={brand.appTitle} onChange={e => setBrand({ appTitle: e.target.value })}
+              <input lang="ko" className={INPUT_CLS} value={brand.appTitle} onChange={e => setBrand({ appTitle: e.target.value })}
                      placeholder="예: 오산메가타운 관리시스템" />
             </div>
             <div>
               <label className={LABEL_CLS}><TextT size={12} />영문 브랜드명 (랜딩)</label>
-              <input className={INPUT_CLS} value={brand.brandNameEn} onChange={e => setBrand({ brandNameEn: e.target.value })}
+              <input lang="ko" className={INPUT_CLS} value={brand.brandNameEn} onChange={e => setBrand({ brandNameEn: e.target.value })}
                      placeholder="예: OSAN MEGATOWN" />
             </div>
             <div>
               <label className={LABEL_CLS}><TextT size={12} />영문 강조 단어 (랜딩 컬러)</label>
-              <input className={INPUT_CLS} value={brand.brandAccentWord} onChange={e => setBrand({ brandAccentWord: e.target.value })}
+              <input lang="ko" className={INPUT_CLS} value={brand.brandAccentWord} onChange={e => setBrand({ brandAccentWord: e.target.value })}
                      placeholder="예: MEGATOWN" />
             </div>
             <div className="sm:col-span-2">

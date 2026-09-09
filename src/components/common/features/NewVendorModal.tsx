@@ -97,7 +97,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
             회사명 <span className="text-rose-500">*</span>
           </span>
           <input
-            autoFocus
+            lang="ko" autoFocus
             type="text"
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
@@ -143,7 +143,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
           <label className="flex flex-col gap-1">
             <span className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">담당자</span>
             <input
-              type="text"
+              lang="ko" type="text"
               value={contactName}
               onChange={(e) => setContactName(e.target.value)}
               placeholder="이름"
@@ -153,7 +153,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
           <label className="flex flex-col gap-1">
             <span className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">전화</span>
             <input
-              type="tel"
+              lang="ko" type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="010-0000-0000"
@@ -176,7 +176,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
         <label className="flex flex-col gap-1">
           <span className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">사업자번호</span>
           <input
-            type="text"
+            lang="ko" type="text"
             value={businessNumber}
             onChange={(e) => setBusinessNumber(e.target.value)}
             placeholder="000-00-00000"
@@ -187,7 +187,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
         <label className="flex flex-col gap-1">
           <span className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">비고</span>
           <textarea
-            value={note}
+            lang="ko" value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="추가 정보"
             rows={2}

@@ -6,8 +6,8 @@
 //
 // 사용 예:
 //   <FormSection title="회사 정보" icon={<Building2 size={14} />} description="사업자·주소·대표">
-//     <FormRow label="회사명" required><input ... /></FormRow>
-//     <FormRow label="주소"><input ... /></FormRow>
+//     <FormRow label="회사명" required><input lang="ko" ... /></FormRow>
+//     <FormRow label="주소"><input lang="ko" ... /></FormRow>
 //   </FormSection>
 
 import React from "react";

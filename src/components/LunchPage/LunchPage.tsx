@@ -521,7 +521,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
           <Card padding="lg" className="flex flex-col gap-4">
             <p className="text-center text-[19px] font-bold text-ink tracking-tight">오늘 점심 드시나요?</p>
             <p className="text-center text-[14px] text-ink-soft">식사하시면 그냥 두시면 됩니다. 불참일 때만 신청해주세요.</p>
-            <textarea value={memo} onChange={e => setMemo(e.target.value)}
+            <textarea lang="ko" value={memo} onChange={e => setMemo(e.target.value)}
               placeholder="메모 (선택사항)" rows={2}
               className="w-full text-[15px] border border-line rounded-lg px-3 py-2 resize-none outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint text-ink placeholder-ink-soft transition-colors" />
             <button onClick={() => submit(false)} disabled={submitting}

@@ -73,7 +73,7 @@ export function PageToolbar({
       {/* 검색 · 딥네이비 focus · rounded-lg · h-10 · flex-1 */}
       {search && (
         <input
-          type="text"
+          lang="ko" type="text"
           value={search.value}
           onChange={e => search.onChange(e.target.value)}
           placeholder={search.placeholder ?? "검색"}

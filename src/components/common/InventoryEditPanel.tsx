@@ -133,7 +133,7 @@ interface ZoneInputProps {
 }
 const ZoneInput: React.FC<ZoneInputProps> = ({ value, placeholder = "-", accentClass, onChange }) => (
   <input
-    type="text"
+    lang="ko" type="text"
     value={value ?? ""}
     onChange={e => onChange(e.target.value.trim() === "" ? null : e.target.value)}
     placeholder={placeholder}

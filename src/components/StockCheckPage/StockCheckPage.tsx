@@ -164,7 +164,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
         <div className="relative mb-2">
           <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
           <input
-            ref={inputRef}
+            lang="ko" ref={inputRef}
             type="search"
             value={query}
             onChange={e => handleChange(e.target.value)}

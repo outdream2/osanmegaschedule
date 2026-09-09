@@ -229,7 +229,7 @@ const PaymentRegisterModal: React.FC<{
           </Field>
           <Field label="결제 금액 (원) *">
             <input
-              type="text"
+              lang="ko" type="text"
               inputMode="numeric"
               value={amount}
               onChange={e => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
@@ -255,7 +255,7 @@ const PaymentRegisterModal: React.FC<{
 
         <Field label="메모">
           <input
-            type="text"
+            lang="ko" type="text"
             value={memo}
             onChange={e => setMemo(e.target.value)}
             placeholder="예: 6월분 결제 · 상계 처리 · 세금계산서 매칭 등"
@@ -335,7 +335,7 @@ const PaymentRegisterModal: React.FC<{
                         </td>
                         <td className="text-right px-2 py-1">
                           <input
-                            type="text"
+                            lang="ko" type="text"
                             inputMode="numeric"
                             value={v?.alloc ?? ""}
                             disabled={disabled || !v?.checked}

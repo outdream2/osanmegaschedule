@@ -282,7 +282,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                     양식명 <span className="text-rose-500">*</span>
                   </label>
                   <input
-                    type="text"
+                    lang="ko" type="text"
                     value={uploadTitle}
                     onChange={e => setUploadTitle(e.target.value)}
                     placeholder="예: 2026년 표준 근로계약서"
@@ -423,7 +423,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
           {/* 검색 */}
           <input
-            type="text"
+            lang="ko" type="text"
             value={searchQ}
             onChange={e => setSearchQ(e.target.value)}
             placeholder="양식명 · 파일명 · 업로더 검색"

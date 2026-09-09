@@ -63,7 +63,7 @@ const ToolbarSearch: React.FC<ToolbarSearchProps> = ({
         className="absolute left-2.5 text-ink-soft pointer-events-none shrink-0"
       />
       <input
-        ref={inputRef}
+        lang="ko" ref={inputRef}
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}

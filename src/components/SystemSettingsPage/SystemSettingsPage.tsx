@@ -193,7 +193,7 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
                   </label>
                   {meta.multiline ? (
                     <textarea
-                      value={isEditing ? draftVal : ""}
+                      lang="ko" value={isEditing ? draftVal : ""}
                       onChange={e => patchDraft(k, e.target.value)}
                       placeholder={placeholder}
                       rows={2}
@@ -201,7 +201,7 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
                     />
                   ) : (
                     <input
-                      type="text"
+                      lang="ko" type="text"
                       value={isEditing ? draftVal : ""}
                       onChange={e => patchDraft(k, e.target.value)}
                       placeholder={placeholder}

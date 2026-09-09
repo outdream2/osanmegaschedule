@@ -91,7 +91,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
           <div className="relative flex-1 min-w-0">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
             <input
-              autoFocus
+              lang="ko" autoFocus
               type="text"
               value={query}
               onChange={(e) => { setQuery(e.target.value); setSelectedId(null); }}

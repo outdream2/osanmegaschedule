@@ -362,7 +362,7 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
                       </td>
                       <td className="p-2">
                         <input
-                          type="text" value={r.memo}
+                          lang="ko" type="text" value={r.memo}
                           onChange={e => updateLine(iIdx, { memo: e.target.value })}
                           placeholder="(선택)"
                           className="w-full border border-line rounded px-1.5 py-0.5 text-[14px] focus:outline-none focus:border-brand-deep"
@@ -397,7 +397,7 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
         <div className="px-6 py-3 border-t border-zinc-100 bg-zinc-50/50">
           <label className="text-[15px] text-zinc-500 font-bold block mb-1">특이사항 · 요청 메모</label>
           <textarea
-            value={memo} onChange={e => setMemo(e.target.value)}
+            lang="ko" value={memo} onChange={e => setMemo(e.target.value)}
             placeholder="공급사에 전달할 반품 사유·수거 요청 시간 등..."
             rows={2}
             className="w-full border border-line rounded px-2 py-1.5 text-[15px] focus:outline-none focus:border-brand-deep resize-none"

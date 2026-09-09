@@ -212,7 +212,7 @@ export const ConfirmedRecordsTab: React.FC = () => {
           <label className="flex items-center gap-1.5 text-[15px] font-bold text-gray-600">
             공급처
             <input
-              type="text"
+              lang="ko" type="text"
               list="ocr-conf-supplier-list"
               value={supplierFilter}
               onChange={e => setSupplierFilter(e.target.value)}

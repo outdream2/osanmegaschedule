@@ -125,7 +125,7 @@ export const AssigneeEditor: React.FC<AssigneeEditorProps> = ({
           </span>
         ))}
         <input
-          ref={inputRef}
+          lang="ko" ref={inputRef}
           value={query}
           onChange={e => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}

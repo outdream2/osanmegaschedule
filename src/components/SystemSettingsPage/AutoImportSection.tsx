@@ -249,7 +249,7 @@ export const AutoImportSection: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className={`w-12 text-[14px] font-bold ${color} shrink-0`}>{label}</span>
                 <input
-                  type="text"
+                  lang="ko" type="text"
                   value={config.folders[key]}
                   onChange={(e) => updateFolder(key, e.target.value)}
                   disabled={!loaded}

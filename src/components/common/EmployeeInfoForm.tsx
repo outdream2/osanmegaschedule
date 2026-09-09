@@ -169,7 +169,7 @@ const NameField: React.FC<NameFieldProps> = ({
       {layout === "compact" && <label className={labelCls}>성명</label>}
       {layout === "grid"    && <span className={labelCls}><User size={9} />성명</span>}
       <input
-        type="text"
+        lang="ko" type="text"
         value={value}
         onChange={(e) => { onChange(e.target.value); if (hasSearch) setSearchOpen(true); }}
         onFocus={() => hasSearch && setSearchOpen(true)}
@@ -274,7 +274,7 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
         )}
         {active ? (
           <input
-            type={type}
+            lang="ko" type={type}
             value={String(val)}
             onChange={(e) => upd(fieldKey, e.target.value)}
             placeholder={placeholder}
@@ -436,7 +436,7 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
             )}
             <div className="flex gap-1.5 items-center">
               <input
-                type="text"
+                lang="ko" type="text"
                 value={values.address ?? ""}
                 onChange={(e) => upd("address", e.target.value)}
                 placeholder="경기도 오산시 ..."

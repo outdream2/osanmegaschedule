@@ -39,7 +39,7 @@ export const WorkplacesTab: React.FC<WorkplacesTabProps> = ({
     </div>
     <div className="flex gap-2 pt-1">
       <input
-        type="text"
+        lang="ko" type="text"
         value={newWorkplace}
         onChange={(e) => setNewWorkplace(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addWorkplace(); } }}

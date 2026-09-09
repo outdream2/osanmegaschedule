@@ -176,7 +176,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
           <div>
             <label className={fldLabel}>계좌번호</label>
             <input
-              type="text"
+              lang="ko" type="text"
               value={form.bankAccountNumber}
               onChange={(e) => {
                 const v = e.target.value;

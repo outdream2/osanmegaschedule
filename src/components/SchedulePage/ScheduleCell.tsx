@@ -362,7 +362,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                 <Clock size={10} /> 근무 시간 (workingHours)
               </label>
               <input
-                type="text"
+                lang="ko" type="text"
                 value={workingHours}
                 onChange={(e) => setWorkingHours(e.target.value)}
                 placeholder="예: 09:30-18:30"
@@ -376,7 +376,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                 <MessageSquare size={10} /> 실근무/기타 (actualHours)
               </label>
               <input
-                type="text"
+                lang="ko" type="text"
                 value={actualHours}
                 onChange={(e) => setActualHours(e.target.value)}
                 placeholder="예: 2시간 연장, 지각, 10-20 등"
@@ -390,7 +390,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                 <MessageSquare size={10} className="text-blue-500" /> 마우스 오버 팝업 메모 (memo)
               </label>
               <input
-                type="text"
+                lang="ko" type="text"
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
                 placeholder="마우스를 올렸을 때 나타날 정보"

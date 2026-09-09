@@ -233,7 +233,7 @@ const DigitStepper: React.FC<DigitStepperProps> = ({ slotLabel, value, onUp, onD
           title={`${slotLabel} -`}
         ><Minus size={compact ? 10 : 12} /></button>
         <input
-          type="text"
+          lang="ko" type="text"
           value={value}
           maxLength={1}
           onChange={(e) => {

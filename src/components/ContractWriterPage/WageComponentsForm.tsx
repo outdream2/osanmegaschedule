@@ -152,7 +152,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                 <td className="px-1.5 py-1 align-middle text-right">
                   <div className="relative inline-block w-full">
                     <input
-                      type="text"
+                      lang="ko" type="text"
                       inputMode="numeric"
                       value={entry.amount === 0 ? "" : String(entry.amount)}
                       onChange={(e) => updEntry(r.key, "amount", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
@@ -194,7 +194,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                 </td>
                 <td className="px-1.5 py-1 align-middle text-right">
                   <input
-                    type="text"
+                    lang="ko" type="text"
                     inputMode="numeric"
                     value={!enabled ? "" : String(wage.mealAllowance)}
                     onChange={(e) => { const n = Number(e.target.value.replace(/[^0-9]/g, "")) || 0; updFlat("mealAllowance", n); }}
@@ -231,7 +231,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                 </td>
                 <td className="px-1.5 py-1 align-middle text-right">
                   <input
-                    type="text"
+                    lang="ko" type="text"
                     inputMode="numeric"
                     value={!enabled ? "" : String(wage.vehicleAllowance)}
                     onChange={(e) => { const n = Number(e.target.value.replace(/[^0-9]/g, "")) || 0; updFlat("vehicleAllowance", n); }}

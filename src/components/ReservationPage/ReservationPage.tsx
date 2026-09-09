@@ -659,7 +659,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                     <Building2 size={11} /> 거래처명 <span className="text-rose-500">*</span>
                   </label>
                   <input
-                    type="text"
+                    lang="ko" type="text"
                     value={company}
                     onChange={e => setCompany(e.target.value)}
                     placeholder="(주)한국제약"
@@ -675,7 +675,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                       <User size={11} /> 담당자 <span className="text-rose-500">*</span>
                     </label>
                     <input
-                      type="text"
+                      lang="ko" type="text"
                       value={contactName}
                       onChange={e => setContactName(e.target.value)}
                       placeholder="홍길동"
@@ -687,7 +687,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                       <Phone size={11} /> 연락처 <span className="text-rose-500">*</span>
                     </label>
                     <input
-                      type="tel"
+                      lang="ko" type="tel"
                       value={phone}
                       onChange={e => handlePhoneChange(e.target.value)}
                       placeholder="010-0000-0000"
@@ -725,7 +725,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                     <MessageSquare size={11} /> 추가 요청사항
                   </label>
                   <textarea
-                    value={note}
+                    lang="ko" value={note}
                     onChange={e => setNote(e.target.value)}
                     placeholder="특이사항이 있으면 입력해 주세요"
                     rows={2}

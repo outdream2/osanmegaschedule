@@ -119,7 +119,7 @@ export const ZoneCategoryPicker: React.FC<ZoneCategoryPickerProps> = ({
           </button>
         ) : (
           <input
-            ref={inputRef}
+            lang="ko" ref={inputRef}
             type="text"
             value={query}
             onChange={e => { setQuery(e.target.value); setOpen(true); }}

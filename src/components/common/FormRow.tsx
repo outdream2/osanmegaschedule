@@ -5,11 +5,11 @@
 //
 // 사용 예:
 //   <FormRow label="이름" required icon={<User size={12} />}>
-//     <input className="..." />
+//     <input lang="ko" className="..." />
 //   </FormRow>
 //
 //   <FormRow label="비고" hint="선택 입력" error={errors.note}>
-//     <textarea rows={3} />
+//     <textarea lang="ko" rows={3} />
 //   </FormRow>
 
 import React from "react";

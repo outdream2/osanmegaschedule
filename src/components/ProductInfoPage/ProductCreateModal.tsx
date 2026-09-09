@@ -334,7 +334,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Field icon={<Hash size={14} />} label={lockCode ? "상품코드 (스캔 고정)" : "상품코드"} required>
                     <input
-                      type="text"
+                      lang="ko" type="text"
                       value={form.product_code}
                       onChange={(e) => set("product_code", e.target.value)}
                       className={inputCls + (lockCode ? " bg-zinc-100 text-zinc-500 cursor-not-allowed" : "")}
@@ -346,7 +346,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                   </Field>
                   <Field icon={<Type size={14} />} label="상품명" required>
                     <input
-                      type="text"
+                      lang="ko" type="text"
                       value={form.product_name}
                       onChange={(e) => set("product_name", e.target.value)}
                       className={inputCls}
@@ -363,7 +363,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                   <div ref={supplierWrapRef} className="relative min-w-0">
                     <Field icon={<Building2 size={14} />} label="공급사">
                       <input
-                        type="text"
+                        lang="ko" type="text"
                         value={form.supplier}
                         onChange={(e) => { set("supplier", e.target.value); setSupplierOpen(true); }}
                         onFocus={() => setSupplierOpen(true)}
@@ -391,7 +391,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                   </div>
                   <Field icon={<Tags size={14} />} label="분류코드">
                     <input
-                      type="text"
+                      lang="ko" type="text"
                       value={form.category}
                       onChange={(e) => set("category", e.target.value)}
                       className={inputCls}
@@ -400,10 +400,10 @@ export const ProductCreateModal: React.FC<Props> = ({
                     />
                   </Field>
                   <Field icon={<Layers size={14} />} label="단위">
-                    <input type="text" value={form.unit} onChange={(e) => set("unit", e.target.value)} className={inputCls} placeholder="개 · 박스 · 정" maxLength={30} />
+                    <input lang="ko" type="text" value={form.unit} onChange={(e) => set("unit", e.target.value)} className={inputCls} placeholder="개 · 박스 · 정" maxLength={30} />
                   </Field>
                   <Field icon={<Ruler size={14} />} label="규격">
-                    <input type="text" value={form.spec} onChange={(e) => set("spec", e.target.value)} className={inputCls} placeholder="예: 10정" maxLength={100} />
+                    <input lang="ko" type="text" value={form.spec} onChange={(e) => set("spec", e.target.value)} className={inputCls} placeholder="예: 10정" maxLength={100} />
                   </Field>
                   <div className="relative min-w-0 md:col-span-2">
                     <Field icon={<MapPin size={14} />} label={
@@ -483,10 +483,10 @@ export const ProductCreateModal: React.FC<Props> = ({
               <Section title="기타">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Field icon={<Award size={14} />} label="브랜드">
-                    <input type="text" value={form.brand} onChange={(e) => set("brand", e.target.value)} className={inputCls} placeholder="예: 유한양행" maxLength={100} />
+                    <input lang="ko" type="text" value={form.brand} onChange={(e) => set("brand", e.target.value)} className={inputCls} placeholder="예: 유한양행" maxLength={100} />
                   </Field>
                   <Field icon={<Factory size={14} />} label="제조사">
-                    <input type="text" value={form.manufacturer} onChange={(e) => set("manufacturer", e.target.value)} className={inputCls} placeholder="예: 한미약품" maxLength={100} />
+                    <input lang="ko" type="text" value={form.manufacturer} onChange={(e) => set("manufacturer", e.target.value)} className={inputCls} placeholder="예: 한미약품" maxLength={100} />
                   </Field>
                 </div>
               </Section>

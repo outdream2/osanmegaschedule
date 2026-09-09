@@ -167,7 +167,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
           <div className="p-4 flex flex-col gap-2">
             <div className="flex gap-1.5 items-center">
               <input
-                type="text"
+                lang="ko" type="text"
                 value={addressDraft}
                 onChange={e => setAddressDraft(e.target.value)}
                 placeholder="예: 경기도 오산시 …"
@@ -207,7 +207,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
           <div className="p-4 flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
               <input
-                type={showPw ? "text" : "password"}
+                lang="ko" type={showPw ? "text" : "password"}
                 value={currentPw}
                 onChange={e => setCurrentPw(e.target.value)}
                 placeholder="현재 비밀번호"
@@ -224,7 +224,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
               </button>
             </div>
             <input
-              type={showPw ? "text" : "password"}
+              lang="ko" type={showPw ? "text" : "password"}
               value={newPw}
               onChange={e => setNewPw(e.target.value)}
               placeholder="새 비밀번호 (4자 이상)"
@@ -232,7 +232,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
               autoComplete="new-password"
             />
             <input
-              type={showPw ? "text" : "password"}
+              lang="ko" type={showPw ? "text" : "password"}
               value={confirmPw}
               onChange={e => setConfirmPw(e.target.value)}
               placeholder="새 비밀번호 확인"

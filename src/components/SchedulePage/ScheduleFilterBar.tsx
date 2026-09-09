@@ -96,7 +96,7 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
           <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap justify-end">
             <div className="relative flex-1 min-w-[140px] max-w-[240px]">
               <input
-                type="text"
+                lang="ko" type="text"
                 placeholder="성명으로 조회"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}

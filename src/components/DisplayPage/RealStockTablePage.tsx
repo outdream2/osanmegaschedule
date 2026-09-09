@@ -545,7 +545,7 @@ export const RealStockTablePage: React.FC = () => {
               <div className="relative">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
                 <input
-                  type="text"
+                  lang="ko" type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="상품명 · 공급사 · 코드 · 진열위치 검색"

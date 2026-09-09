@@ -35,7 +35,7 @@ export const DisplaySearchBar: React.FC<DisplaySearchBarProps> = ({
   return (
     <div className="relative flex-1 min-w-[140px] sm:min-w-[200px] max-w-[360px]">
       <input
-        type="text"
+        lang="ko" type="text"
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="약 · 증상 검색 (예: 감기약)"

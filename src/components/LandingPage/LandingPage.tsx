@@ -370,7 +370,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               <div className="relative">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
                 <input
-                  type="search"
+                  lang="ko" type="search"
                   value={menuSearch}
                   onChange={e => setMenuSearch(e.target.value)}
                   placeholder="메뉴 검색"

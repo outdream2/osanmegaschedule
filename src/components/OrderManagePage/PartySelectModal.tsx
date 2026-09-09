@@ -333,7 +333,7 @@ export const PartySelectModal: React.FC<PartySelectModalProps> = ({
               <label className="flex flex-col gap-1">
                 <span className={labelCls}>이름 <span className="text-rose-600">*</span></span>
                 <input
-                  type="text"
+                  lang="ko" type="text"
                   value={newForm.name}
                   onChange={(e) => setNew("name", e.target.value)}
                   className={inputCls}
@@ -347,7 +347,7 @@ export const PartySelectModal: React.FC<PartySelectModalProps> = ({
                 <label className="flex flex-col gap-1">
                   <span className={labelCls}>담당자</span>
                   <input
-                    type="text"
+                    lang="ko" type="text"
                     value={newForm.contact_name}
                     onChange={(e) => setNew("contact_name", e.target.value)}
                     className={inputCls}
@@ -357,7 +357,7 @@ export const PartySelectModal: React.FC<PartySelectModalProps> = ({
                 <label className="flex flex-col gap-1">
                   <span className={labelCls}>연락처</span>
                   <input
-                    type="tel"
+                    lang="ko" type="tel"
                     value={newForm.contact_phone}
                     onChange={(e) => setNew("contact_phone", e.target.value)}
                     className={inputCls + " tabular-nums"}
@@ -380,7 +380,7 @@ export const PartySelectModal: React.FC<PartySelectModalProps> = ({
               <label className="flex flex-col gap-1">
                 <span className={labelCls}>메모</span>
                 <textarea
-                  value={newForm.memo}
+                  lang="ko" value={newForm.memo}
                   onChange={(e) => setNew("memo", e.target.value)}
                   rows={2}
                   className="w-full px-2.5 py-2 rounded-lg border border-line bg-white text-[15px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition resize-y"

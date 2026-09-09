@@ -170,7 +170,7 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
     >
       {/* Filters · 폰트 +2 · rounded-lg 프레임워크 톤 */}
       <div className="-mx-5 px-5 py-3 bg-zinc-50/60 border-b border-line flex items-center gap-2 flex-wrap mb-3">
-        <input type="text" value={search} onChange={e => onSetSearch(e.target.value)} placeholder="상품명 검색"
+        <input lang="ko" type="text" value={search} onChange={e => onSetSearch(e.target.value)} placeholder="상품명 검색"
           className="flex-1 min-w-[160px] h-9 text-[14px] border border-line rounded-lg px-3 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition placeholder:text-zinc-400" />
         <Card padding="none" rounded="lg" className="inline-flex p-0.5">
           <button onClick={() => onSetFilter("all")}      className={`h-8 px-3 text-[15px] font-bold rounded-md cursor-pointer transition ${filter === "all" ? "bg-brand-deep text-white shadow-sm" : "text-ink-soft hover:text-brand-deep"}`}>전체</button>

@@ -266,7 +266,7 @@ const ZoneBox: React.FC<ZoneBoxProps> = ({ item, tone, editing, onChange, size =
       <span className={`${t.num} font-bold ${isSm ? "text-[14px]" : "text-[16px]"} tabular-nums leading-none`}>{item.code}</span>
       {editing && labelDraft != null ? (
         <input
-          type="text"
+          lang="ko" type="text"
           autoFocus
           value={labelDraft}
           onChange={(e) => setLabelDraft(e.target.value)}
@@ -286,7 +286,7 @@ const ZoneBox: React.FC<ZoneBoxProps> = ({ item, tone, editing, onChange, size =
       {(item.hint || editing) && (
         editing && hintDraft != null ? (
           <input
-            type="text"
+            lang="ko" type="text"
             autoFocus
             value={hintDraft}
             onChange={(e) => setHintDraft(e.target.value)}

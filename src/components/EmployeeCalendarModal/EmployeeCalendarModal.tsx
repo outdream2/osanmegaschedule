@@ -655,7 +655,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                       <Clock size={12} strokeWidth={2.2} /> 근무 시간
                     </label>
                     <input
-                      type="text"
+                      lang="ko" type="text"
                       value={editWorkingHours}
                       onChange={e => setEditWorkingHours(e.target.value)}
                       placeholder="09:30-18:30"
@@ -667,7 +667,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                       <MessageSquare size={12} strokeWidth={2.2} /> 실근무·기타
                     </label>
                     <input
-                      type="text"
+                      lang="ko" type="text"
                       value={editActualHours}
                       onChange={e => setEditActualHours(e.target.value)}
                       placeholder="지각, 조퇴..."
@@ -679,7 +679,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 <div>
                   <label className="text-[15px] font-semibold text-ink-soft mb-1 block">메모</label>
                   <input
-                    type="text"
+                    lang="ko" type="text"
                     value={editMemo}
                     onChange={e => setEditMemo(e.target.value)}
                     placeholder="메모 (마우스 오버 시 표시)"

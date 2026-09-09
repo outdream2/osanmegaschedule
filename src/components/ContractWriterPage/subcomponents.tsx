@@ -43,7 +43,7 @@ export const SelectOrCustom: React.FC<{
       ) : (
         <>
           <input
-            type="text"
+            lang="ko" type="text"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}

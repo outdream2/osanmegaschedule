@@ -182,7 +182,7 @@ export const WorkTimeSection: React.FC<WorkTimeSectionProps> = ({
                       return (
                         <div className="flex items-center gap-0.5 mt-0.5" onClick={e => e.stopPropagation()}>
                           <input
-                            autoFocus
+                            lang="ko" autoFocus
                             value={editingWork.value}
                             onChange={e => setEditingWork({ empId: emp.id, value: e.target.value })}
                             onKeyDown={async e => {

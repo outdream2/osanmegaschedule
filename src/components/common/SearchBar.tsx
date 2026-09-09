@@ -116,6 +116,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         <Search size={13} className={`absolute left-2.5 ${iconColorClass} pointer-events-none`} />
         <input
           type="text"
+          lang="ko"
           value={value}
           onChange={e => onChange(e.target.value)}
           onFocus={() => historyKey && historyList.length > 0 && setShowHistory(true)}

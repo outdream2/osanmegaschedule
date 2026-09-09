@@ -177,7 +177,7 @@ const BorrowingForm: React.FC<{
             <label className="flex flex-col gap-1">
               <span className="text-[14px] font-bold text-ink-soft">공급사 *</span>
               <input
-                list="borrowing-vendor-list"
+                lang="ko" list="borrowing-vendor-list"
                 type="text"
                 value={form.supplier}
                 onChange={(e) => set("supplier", e.target.value)}
@@ -195,11 +195,11 @@ const BorrowingForm: React.FC<{
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-[14px] font-bold text-ink-soft">상품명 *</span>
-              <input type="text" value={form.product_name} onChange={(e) => set("product_name", e.target.value)} className={inputCls} placeholder="상품명" required />
+              <input lang="ko" type="text" value={form.product_name} onChange={(e) => set("product_name", e.target.value)} className={inputCls} placeholder="상품명" required />
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-[14px] font-bold text-ink-soft">상품코드</span>
-              <input type="text" value={form.product_code} onChange={(e) => set("product_code", e.target.value)} className={inputCls + " font-mono"} placeholder="(선택)" />
+              <input lang="ko" type="text" value={form.product_code} onChange={(e) => set("product_code", e.target.value)} className={inputCls + " font-mono"} placeholder="(선택)" />
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-[14px] font-bold text-ink-soft">수량 *</span>
@@ -211,7 +211,7 @@ const BorrowingForm: React.FC<{
             </label>
             <label className="sm:col-span-2 flex flex-col gap-1">
               <span className="text-[14px] font-bold text-ink-soft">사유·메모</span>
-              <textarea value={form.note} onChange={(e) => set("note", e.target.value)} className="w-full min-h-[64px] px-2.5 py-2 rounded-lg border border-line bg-white text-[14px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition resize-y" placeholder="예: 급한 요청으로 임시 대여, 다음 정산 시 반영" />
+              <textarea lang="ko" value={form.note} onChange={(e) => set("note", e.target.value)} className="w-full min-h-[64px] px-2.5 py-2 rounded-lg border border-line bg-white text-[14px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition resize-y" placeholder="예: 급한 요청으로 임시 대여, 다음 정산 시 반영" />
             </label>
             <div className="sm:col-span-2 flex flex-col gap-1">
               <span className="text-[14px] font-bold text-ink-soft">서명 (선택)</span>
@@ -307,7 +307,7 @@ const ReturnModal: React.FC<{
         <label className="flex flex-col gap-1">
           <span className="text-[14px] font-bold text-ink-soft">반환 비고 (선택)</span>
           <textarea
-            value={note}
+            lang="ko" value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={2}
             className="w-full px-2.5 py-2 rounded-lg border border-line bg-white text-[14px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition resize-y"

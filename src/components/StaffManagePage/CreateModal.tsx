@@ -60,7 +60,7 @@ export const CreateModal: React.FC<{
           <div key={key}>
             <label className="text-[14px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">{label}</label>
             <input
-              type={type}
+              lang="ko" type={type}
               value={String(draft[key] ?? "")}
               onChange={(e) => set(key, e.target.value)}
               placeholder={placeholder}
@@ -82,7 +82,7 @@ export const CreateModal: React.FC<{
         <div>
           <label className="text-[14px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">메모</label>
           <textarea
-            value={String(draft.memo ?? "")}
+            lang="ko" value={String(draft.memo ?? "")}
             onChange={(e) => set("memo", e.target.value)}
             placeholder="(선택) 근무 특이사항 · 알러지 등"
             rows={2}

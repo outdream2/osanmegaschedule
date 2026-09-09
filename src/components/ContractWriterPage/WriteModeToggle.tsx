@@ -111,7 +111,7 @@ export const WriteModeToggle: React.FC<WriteModeToggleProps> = ({
             <div className="col-span-2 relative">
               <label className={fldLabel}>성명 *</label>
               <input
-                type="text"
+                lang="ko" type="text"
                 value={form.employeeName}
                 onChange={(e) => {
                   const val = e.target.value;

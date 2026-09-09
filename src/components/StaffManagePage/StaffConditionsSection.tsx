@@ -268,7 +268,7 @@ export const StaffConditionsSection: React.FC<StaffConditionsSectionProps> = ({
     <SectionCard title="메모" icon={<ClipboardList size={11} />} group="personal" defaultOpen={false}>
       {editing ? (
         <textarea
-          value={draft?.memo ?? ""}
+          lang="ko" value={draft?.memo ?? ""}
           onChange={(e) => setField("memo", e.target.value)}
           placeholder="근무 특이사항 · 알러지 · 기타 참고 사항"
           rows={3}

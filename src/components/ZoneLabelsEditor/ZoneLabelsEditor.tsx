@@ -425,7 +425,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                               <div>
                                 <label className="sm:hidden block text-[14px] font-bold text-zinc-400 mb-0.5">부제</label>
                                 <input
-                                  type="text"
+                                  lang="ko" type="text"
                                   value={m.subLabel ?? ""}
                                   placeholder="(선택) 카테고리·이름 등"
                                   maxLength={40}

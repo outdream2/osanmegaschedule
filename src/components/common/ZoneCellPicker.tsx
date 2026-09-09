@@ -103,7 +103,7 @@ export const ZoneCellPicker: React.FC<Props> = ({ cellId, canEdit = false, trigg
                   <TagIcon size={11} /> 구역
                 </div>
                 <input
-                  type="text"
+                  lang="ko" type="text"
                   defaultValue={currentZone}
                   disabled={!canEdit || !zone}
                   onBlur={e => { const v = e.target.value.trim(); if (v && v !== currentZone) apply({ zone: v }, `구역명 저장`); }}
@@ -119,7 +119,7 @@ export const ZoneCellPicker: React.FC<Props> = ({ cellId, canEdit = false, trigg
                   <Layers size={11} /> 카테고리
                 </div>
                 <input
-                  type="text"
+                  lang="ko" type="text"
                   defaultValue={currentCat}
                   disabled={!canEdit || !zone}
                   onBlur={e => { const v = e.target.value.trim(); if (v !== currentCat) apply({ category: v }, `카테고리 저장`); }}
@@ -151,7 +151,7 @@ export const ZoneCellPicker: React.FC<Props> = ({ cellId, canEdit = false, trigg
                   <MapPin size={11} /> 상세 카테고리 (hover 표시)
                 </div>
                 <textarea
-                  defaultValue={currentDetail}
+                  lang="ko" defaultValue={currentDetail}
                   disabled={!canEdit || !zone}
                   onBlur={e => { const v = e.target.value.trim(); if (v !== currentDetail) apply({ detailedCategory: v || undefined }, `상세카테고리 저장`); }}
                   className="w-full min-h-[60px] max-h-[160px] px-2.5 py-1.5 text-[15px] rounded-md border border-line focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:bg-zinc-50 mb-2 resize-y"

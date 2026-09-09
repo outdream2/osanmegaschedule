@@ -228,7 +228,7 @@ export function DetailModal({
         <input ref={cmtFileRef} type="file" accept="image/*" multiple capture="environment" className="hidden"
           onChange={(e) => { handleCmtFiles(e.target.files); e.target.value = ""; }} />
         <input
-          type="text"
+          lang="ko" type="text"
           value={commentBody}
           onChange={(e) => setCommentBody(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
@@ -291,7 +291,7 @@ export function DetailModal({
               </div>
               {editingPost ? (
                 <input
-                  type="text"
+                  lang="ko" type="text"
                   value={editDraft.title}
                   onChange={e => setEditDraft(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="제목"
@@ -310,7 +310,7 @@ export function DetailModal({
               {editingPost ? (
                 <>
                   <textarea
-                    value={editDraft.body}
+                    lang="ko" value={editDraft.body}
                     onChange={e => setEditDraft(prev => ({ ...prev, body: e.target.value }))}
                     rows={6}
                     placeholder="본문"
@@ -423,7 +423,7 @@ export function DetailModal({
                       {editing ? (
                         <div className="flex flex-col gap-2">
                           <textarea
-                            value={editingCommentBody}
+                            lang="ko" value={editingCommentBody}
                             onChange={(e) => setEditingCommentBody(e.target.value)}
                             rows={3}
                             className="w-full px-2 py-1.5 text-[15px] border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint resize-none"

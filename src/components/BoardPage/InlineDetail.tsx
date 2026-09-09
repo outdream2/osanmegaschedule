@@ -112,7 +112,7 @@ export const InlineDetail: React.FC<{
                   </div>
                   {editing ? (
                     <div className="flex flex-col gap-1">
-                      <textarea value={editingCommentBody} onChange={(e) => setEditingCommentBody(e.target.value)} rows={2}
+                      <textarea lang="ko" value={editingCommentBody} onChange={(e) => setEditingCommentBody(e.target.value)} rows={2}
                         className="w-full px-2 py-1 text-[14px] border border-line rounded focus:outline-none focus:border-brand-deep resize-none" />
                       <div className="flex gap-1">
                         <button onClick={() => saveEdit(c.id)} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-bold">
@@ -142,7 +142,7 @@ export const InlineDetail: React.FC<{
           {authSession?.employeeId && (
             <div className="flex items-center gap-1.5 mt-1">
               <input
-                type="text"
+                lang="ko" type="text"
                 value={commentBody}
                 onChange={(e) => setCommentBody(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}

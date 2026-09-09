@@ -217,7 +217,7 @@ export const CardRegisterPage: React.FC = () => {
           <div>
             <label className={labelCls}>별칭 (선택)</label>
             <input
-              type="text"
+              lang="ko" type="text"
               value={draft.alias}
               onChange={e => setDraft({ ...draft, alias: e.target.value })}
               placeholder="법인 삼성 SDI · 개인 국민 체크 등"
@@ -227,7 +227,7 @@ export const CardRegisterPage: React.FC = () => {
           <div>
             <label className={labelCls}>카드번호 뒷 4자리 (선택)</label>
             <input
-              type="text"
+              lang="ko" type="text"
               inputMode="numeric"
               value={draft.last4}
               onChange={e => setDraft({ ...draft, last4: e.target.value.replace(/[^0-9]/g, "").slice(0, 4) })}
@@ -263,7 +263,7 @@ export const CardRegisterPage: React.FC = () => {
           <div className="col-span-2">
             <label className={labelCls}>비고 (선택)</label>
             <textarea
-              value={draft.note}
+              lang="ko" value={draft.note}
               onChange={e => setDraft({ ...draft, note: e.target.value })}
               placeholder="사용 목적 · 관리자 · 결제 조건 등"
               rows={2}

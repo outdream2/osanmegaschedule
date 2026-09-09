@@ -260,7 +260,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
         </select>
       ) : (
         <input
-          type={type}
+          lang="ko" type={type}
           value={val(k)}
           onChange={(e) => set(k, e.target.value)}
           min={type === "number" ? 0 : undefined}

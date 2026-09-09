@@ -75,7 +75,7 @@ export const ImageUploadField: React.FC<Props> = ({
       <label htmlFor={inputId} className={LABEL_CLS}>{label}</label>
       <div className="flex items-stretch gap-2">
         <input
-          id={inputId}
+          lang="ko" id={inputId}
           type="url"
           value={value}
           onChange={e => onChange(e.target.value)}

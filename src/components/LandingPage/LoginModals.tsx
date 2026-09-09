@@ -238,7 +238,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
               <div className="relative">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none"><User size={14} className="text-zinc-400" weight="fill" /></div>
                 <input
-                  ref={vendorPhoneRef}
+                  lang="ko" ref={vendorPhoneRef}
                   type="tel" inputMode="numeric"
                   value={vendorPhone}
                   onChange={(e) => { setVendorPhone(e.target.value); setVendorError(null); }}
@@ -254,7 +254,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
               <div className="relative">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none"><Lock size={14} className="text-zinc-400" /></div>
                 <input
-                  type={showVendorPassword ? "text" : "password"}
+                  lang="ko" type={showVendorPassword ? "text" : "password"}
                   value={vendorPassword}
                   onChange={(e) => { setVendorPassword(e.target.value); setVendorError(null); }}
                   placeholder="비밀번호 입력"
@@ -304,7 +304,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
                   <User size={14} className="text-zinc-400" weight="fill" />
                 </div>
                 <input
-                  ref={empNumberRef}
+                  lang="ko" ref={empNumberRef}
                   type="tel" inputMode="numeric"
                   value={empNumber}
                   onChange={(e) => { setEmpNumber(e.target.value); setEmpError(null); }}
@@ -322,7 +322,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
                   <Lock size={14} className="text-zinc-400" />
                 </div>
                 <input
-                  type={showPassword ? "text" : "password"}
+                  lang="ko" type={showPassword ? "text" : "password"}
                   value={empPassword}
                   onChange={(e) => { setEmpPassword(e.target.value); setEmpError(null); }}
                   placeholder="비밀번호 입력"

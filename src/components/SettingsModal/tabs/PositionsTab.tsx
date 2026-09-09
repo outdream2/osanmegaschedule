@@ -67,7 +67,7 @@ export const PositionsTab: React.FC<PositionsTabProps> = ({
     </div>
     <div className="flex gap-2 pt-1">
       <input
-        type="text"
+        lang="ko" type="text"
         value={newPosition}
         onChange={(e) => setNewPosition(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPosition(); } }}

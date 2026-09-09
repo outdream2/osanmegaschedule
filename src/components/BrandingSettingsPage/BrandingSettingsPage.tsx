@@ -105,7 +105,7 @@ function TextField({
     <div className="flex flex-col gap-1">
       <label className={LABEL_BASE}>{label}</label>
       <input
-        type={type}
+        lang="ko" type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
@@ -352,7 +352,7 @@ export const StampsSection: React.FC = () => {
                     <tr key={`${s.name}-${idx}`} className="border-b border-zinc-100">
                       <td className="py-2 pr-2 align-top">
                         <input
-                          value={s.name}
+                          lang="ko" value={s.name}
                           onChange={(e) => handleUpdate(idx, { name: e.target.value })}
                           className={INPUT_BASE}
                           placeholder="예: 강남성"
@@ -360,7 +360,7 @@ export const StampsSection: React.FC = () => {
                       </td>
                       <td className="py-2 pr-2 align-top">
                         <input
-                          value={s.imageUrl}
+                          lang="ko" value={s.imageUrl}
                           onChange={(e) => handleUpdate(idx, { imageUrl: e.target.value })}
                           className={INPUT_BASE}
                           placeholder="Storage URL 또는 비워두고 fallback 선택"
@@ -426,7 +426,7 @@ export const StampsSection: React.FC = () => {
           <div className="flex flex-col gap-2">
             <div className="flex flex-col sm:flex-row gap-2">
               <input
-                value={draftName}
+                lang="ko" value={draftName}
                 onChange={(e) => setDraftName(e.target.value)}
                 placeholder="이름 (예: 강남성)"
                 className={INPUT_BASE + " sm:max-w-[180px]"}

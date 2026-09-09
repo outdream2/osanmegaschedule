@@ -267,7 +267,7 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
                 {bankName === "직접입력" ? (
                   <FieldLabel label="은행명 직접입력">
                     <input
-                      type="text"
+                      lang="ko" type="text"
                       value={bankNameCustom}
                       onChange={e => setBankNameCustom(e.target.value)}
                       placeholder="은행 이름"
@@ -305,7 +305,7 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
               <div className="flex-1 min-w-0">
                 <FieldLabel label="결제 방법 설명">
                   <input
-                    type="text"
+                    lang="ko" type="text"
                     value={etcNote}
                     onChange={e => setEtcNote(e.target.value)}
                     placeholder="예: 페이코 · 카카오페이 · 상계 · 어음 등"
@@ -388,7 +388,7 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
         <div className="px-4 py-3">
           <FieldLabel label="메모 (선택)">
             <textarea
-              value={note}
+              lang="ko" value={note}
               onChange={e => setNote(e.target.value)}
               placeholder="6월분 결제 · 부분 결제 · 특이사항 등"
               rows={2}

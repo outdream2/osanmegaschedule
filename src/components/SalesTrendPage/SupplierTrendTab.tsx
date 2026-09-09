@@ -200,7 +200,7 @@ const SupplierTrendTab: React.FC<{
         <div className="mb-2">
           <div className="relative">
             <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400" />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="공급사명 검색"
+            <input lang="ko" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="공급사명 검색"
               className="w-full pl-7 pr-8 py-1.5 text-xs border border-line rounded-lg focus:outline-none focus:border-brand-deep bg-white" />
             {query && (
               <button onClick={() => setQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-300 hover:text-zinc-600">

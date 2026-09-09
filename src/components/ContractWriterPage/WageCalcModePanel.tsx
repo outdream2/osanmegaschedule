@@ -106,7 +106,7 @@ const WageCalcModePanel: React.FC<WageCalcModePanelProps> = ({
           <div className="flex items-center gap-1.5">
             <span className="shrink-0">목표 월급</span>
             <input
-              type="text"
+              lang="ko" type="text"
               inputMode="numeric"
               value={targetTotal}
               onChange={(e) => setTargetTotal(e.target.value.replace(/[^0-9]/g, ""))}

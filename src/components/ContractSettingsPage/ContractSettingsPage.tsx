@@ -706,7 +706,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                           {idx + 1}
                         </div>
                         <textarea
-                          value={text}
+                          lang="ko" value={text}
                           onChange={(e) => updClause(grp.key, idx, e.target.value)}
                           rows={Math.max(2, Math.min(5, Math.ceil(text.length / 55) || 2))}
                           placeholder="내용을 입력하세요."

@@ -152,7 +152,7 @@ export const OrderSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavi
           <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="SMTP 호스트" required hint="예: smtp.gmail.com · smtp.naver.com">
               <input
-                type="text"
+                lang="ko" type="text"
                 value={form.smtp_host}
                 onChange={(e) => set("smtp_host", e.target.value)}
                 placeholder="smtp.gmail.com"
@@ -170,7 +170,7 @@ export const OrderSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavi
             </Field>
             <Field label="사용자 (이메일)" hint="SMTP 인증 사용자 · 보통 발신 이메일과 동일">
               <input
-                type="text"
+                lang="ko" type="text"
                 value={form.smtp_user}
                 onChange={(e) => set("smtp_user", e.target.value)}
                 placeholder="pharmacy@gmail.com"
@@ -190,7 +190,7 @@ export const OrderSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavi
             </Field>
             <Field label="발신 이메일 (FROM)" required hint="공급사에 표시되는 발신 주소" className="md:col-span-2">
               <input
-                type="text"
+                lang="ko" type="text"
                 value={form.smtp_from}
                 onChange={(e) => set("smtp_from", e.target.value)}
                 placeholder="orders@pharmacy.com"
@@ -235,7 +235,7 @@ export const OrderSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavi
         <div className="p-5 flex flex-wrap items-end gap-3">
           <Field label="테스트 수신 이메일" className="flex-1 min-w-[220px]">
             <input
-              type="text"
+              lang="ko" type="text"
               value={testEmail}
               onChange={(e) => setTestEmail(e.target.value)}
               placeholder="test@example.com"

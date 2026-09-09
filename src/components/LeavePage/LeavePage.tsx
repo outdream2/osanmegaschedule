@@ -309,7 +309,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                   <div>
                     <label className="text-[19px] font-semibold text-zinc-600 block mb-1.5">사유 <span className="font-normal text-zinc-400">(선택)</span></label>
                     <textarea
-                      value={formReason}
+                      lang="ko" value={formReason}
                       onChange={e => setFormReason(e.target.value)}
                       placeholder="사유를 입력하세요"
                       rows={2}
@@ -484,7 +484,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                         reviewingId === r.id ? (
                           <div className="flex flex-col gap-2 mt-2">
                             <input
-                              type="text"
+                              lang="ko" type="text"
                               value={reviewNote}
                               onChange={e => setReviewNote(e.target.value)}
                               placeholder="메모 (선택)"

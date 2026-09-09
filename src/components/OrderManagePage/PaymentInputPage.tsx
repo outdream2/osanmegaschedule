@@ -823,7 +823,7 @@ const SupplierSearchInput: React.FC<SupplierSearchInputProps> = ({
     <div ref={wrapRef} className="relative flex-1 min-w-[220px] max-w-md">
       <Building2 size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
       <input
-        ref={inputRef}
+        lang="ko" ref={inputRef}
         type="text"
         value={query}
         onChange={(e) => { setQuery(e.target.value); setDropdownOpen(true); }}

@@ -274,7 +274,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                           {it.unit_price ? (it.order_qty * it.unit_price).toLocaleString() + "원" : "-"}
                         </td>
                         <td className="p-2">
-                          <input type="text" value={it.memo ?? ""}
+                          <input lang="ko" type="text" value={it.memo ?? ""}
                             onChange={e => onUpdateModalItem(sIdx, iIdx, { memo: e.target.value })}
                             placeholder="(선택)"
                             className="w-full border border-line rounded px-1.5 py-0.5 text-[14px] focus:outline-none focus:border-brand-deep"/>

@@ -40,7 +40,7 @@ export const RanksTab: React.FC<RanksTabProps> = ({
             {isEditing ? (
               <>
                 <input
-                  autoFocus
+                  lang="ko" autoFocus
                   type="text"
                   value={editingRankValue}
                   onChange={(e) => setEditingRankValue(e.target.value)}
@@ -82,7 +82,7 @@ export const RanksTab: React.FC<RanksTabProps> = ({
     </div>
     <div className="flex gap-2 pt-1">
       <input
-        type="text"
+        lang="ko" type="text"
         value={newRank}
         onChange={(e) => setNewRank(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addRank(); } }}

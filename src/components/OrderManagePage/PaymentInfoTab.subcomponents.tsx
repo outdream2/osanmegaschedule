@@ -41,7 +41,7 @@ export const AmountField: React.FC<{
     <div className="relative">
       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[15px] font-bold text-zinc-400 select-none">₩</span>
       <input
-        type="text"
+        lang="ko" type="text"
         inputMode="numeric"
         value={amount ? Number(amount).toLocaleString() : ""}
         onChange={e => setAmount(e.target.value.replace(/[^0-9]/g, ""))}

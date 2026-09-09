@@ -216,7 +216,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
             <div className="relative flex-1 min-w-0">
               <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
               <input
-                value={search}
+                lang="ko" value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="회사명 · 담당자 · 전화"
                 className="h-7 pl-7 pr-2 text-[14px] border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep w-full transition"
@@ -269,7 +269,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
           <div className="relative flex-1 min-w-[200px] sm:min-w-[260px] sm:flex-none">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
             <input
-              value={search}
+              lang="ko" value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="회사명 · 사업자번호 · 담당자 · 전화 · 이메일"
               className="h-8 pl-8 pr-3 text-[14px] border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep w-full sm:w-80 transition"

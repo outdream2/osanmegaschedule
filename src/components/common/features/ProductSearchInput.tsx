@@ -83,7 +83,7 @@ export function ProductSearchInput({
         <div className="relative flex-1 min-w-0">
           <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
           <input
-            ref={inputRef}
+            lang="ko" ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => {

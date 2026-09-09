@@ -267,7 +267,7 @@ export const ZoneMismatchTab: React.FC = () => {
       return (
         <div className="flex items-center gap-1">
           <input
-            autoFocus
+            lang="ko" autoFocus
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={(e) => {

@@ -138,7 +138,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
                     style={{ backgroundColor: g.color }}
                   />
                   <input
-                    type="text"
+                    lang="ko" type="text"
                     value={g.name}
                     onClick={(e) => e.stopPropagation()}
                     onChange={(e) => updateGroup(g.id, { name: e.target.value })}

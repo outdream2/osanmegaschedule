@@ -380,7 +380,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                   {addCatOpen && (
                     <form onSubmit={handleAddCustomCat} className="px-3 pb-3 flex flex-col gap-2">
                       <input
-                        type="text"
+                        lang="ko" type="text"
                         value={newCatTitle}
                         onChange={e => setNewCatTitle(e.target.value)}
                         placeholder="카테고리 제목 (예: 겨울철 감기 대응)"

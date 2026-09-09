@@ -5,7 +5,7 @@
 //
 // 사용 예:
 //   <FilterBar>
-//     <input ... />
+//     <input lang="ko" ... />
 //     <select ... />
 //     <button ... className="ml-auto">전체선택</button>
 //   </FilterBar>

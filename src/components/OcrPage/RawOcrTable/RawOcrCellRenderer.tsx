@@ -136,7 +136,7 @@ export const NumericEditableCell: React.FC<{
     return (
       <td key={ci} className="px-1 py-1 text-right" onClick={e => e.stopPropagation()}>
         <input
-          key={`edit-${ri}-${ci}`}
+          lang="ko" key={`edit-${ri}-${ci}`}
           autoFocus type="text" inputMode="numeric"
           size={Math.max(6, editingCellVal.length + 2)}
           style={{ width: `${Math.max(6, editingCellVal.length + 2)}ch`, minWidth: numInputMinW, maxWidth: "100%" }}
@@ -290,7 +290,7 @@ export const ExpiryCell: React.FC<{
     return (
       <td key={ci} className="px-1 py-1 text-right" onClick={e => e.stopPropagation()}>
         <input
-          key={`edit-exp-${ri}-${ci}`} autoFocus type="text" placeholder="2026-12-31"
+          lang="ko" key={`edit-exp-${ri}-${ci}`} autoFocus type="text" placeholder="2026-12-31"
           size={Math.max(13, editingCellVal.length + 2)}
           style={{ width: `${Math.max(13, editingCellVal.length + 2)}ch`, minWidth: expInputMinW, maxWidth: "100%" }}
           className="text-[15px] tabular-nums text-amber-700 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5 outline-none text-right"

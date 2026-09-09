@@ -171,7 +171,7 @@ export const StaffDetailPanel: React.FC<StaffDetailPanelProps> = ({
             <div className="flex items-baseline gap-2 mb-1.5">
               {editing ? (
                 <input
-                  value={draft?.name ?? ""}
+                  lang="ko" value={draft?.name ?? ""}
                   onChange={(e) => setField("name", e.target.value)}
                   className="text-[22px] font-extrabold text-ink border-b-2 border-brand-deep bg-transparent focus:outline-none leading-tight tracking-tight"
                 />

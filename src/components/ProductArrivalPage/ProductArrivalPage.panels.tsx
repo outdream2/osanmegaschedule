@@ -125,7 +125,7 @@ export const FinalDecisionCard: React.FC<FinalDecisionCardProps> = ({
               품목이상 상세 메모
             </label>
             <textarea
-              value={mismatchMemo}
+              lang="ko" value={mismatchMemo}
               onChange={(e) => setMismatchMemo(e.target.value)}
               rows={2}
               placeholder="예) 박카스디 10병 · 3개 부족 · 명세표 20 실물 17"

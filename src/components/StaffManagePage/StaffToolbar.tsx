@@ -54,7 +54,7 @@ export const StaffToolbar: React.FC<StaffToolbarProps> = ({
     <div className="relative min-w-[160px]">
       <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
       <input
-        type="text"
+        lang="ko" type="text"
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="이름 · 직군 · 연락처"
