@@ -36,6 +36,7 @@ interface SlotDef {
   addKey: keyof StockRow;
   prevKey: keyof StockRow;
   zoneKey?: keyof StockRow;
+  shelfCode: string;  // "warehouse1" · shelf_positions map 키
   dot: string;        // "bg-orange-500"
   text: string;       // "text-orange-700"
   softBg: string;     // "bg-orange-50/50"
@@ -44,11 +45,11 @@ interface SlotDef {
 // 2026-08-25 · 사용자 지시 · 톤 통일 · 창고 (창1·창2) 같은 cyan · 매장 (매1·매2·매3) 같은 violet
 //   · product_storage.png 톤 · WAREHOUSE_TONE / STORE_TONE 통일
 const SLOTS: readonly SlotDef[] = [
-  { key: "w1", label: "창1", full: "창고1", addKey: "warehouse1AddQty", prevKey: "prevWarehouse1Qty",                          dot: "bg-cyan-500",   text: "text-cyan-700",   softBg: "bg-cyan-50/60"   },
-  { key: "w2", label: "창2", full: "창고2", addKey: "warehouse2AddQty", prevKey: "prevWarehouse2Qty",                          dot: "bg-cyan-500",   text: "text-cyan-700",   softBg: "bg-cyan-50/60"   },
-  { key: "s1", label: "매1", full: "매장1", addKey: "store1AddQty",     prevKey: "prevStore1Qty",     zoneKey: "store1Zone", dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-violet-50/60" },
-  { key: "s2", label: "매2", full: "매장2", addKey: "store2AddQty",     prevKey: "prevStore2Qty",     zoneKey: "store2Zone", dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-violet-50/60" },
-  { key: "s3", label: "매3", full: "매장3", addKey: "store3AddQty",     prevKey: "prevStore3Qty",     zoneKey: "store3Zone", dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-violet-50/60" },
+  { key: "w1", label: "창1", full: "창고1", addKey: "warehouse1AddQty", prevKey: "prevWarehouse1Qty",                          shelfCode: "warehouse1", dot: "bg-cyan-500",   text: "text-cyan-700",   softBg: "bg-cyan-50/60"   },
+  { key: "w2", label: "창2", full: "창고2", addKey: "warehouse2AddQty", prevKey: "prevWarehouse2Qty",                          shelfCode: "warehouse2", dot: "bg-cyan-500",   text: "text-cyan-700",   softBg: "bg-cyan-50/60"   },
+  { key: "s1", label: "매1", full: "매장1", addKey: "store1AddQty",     prevKey: "prevStore1Qty",     zoneKey: "store1Zone",   shelfCode: "store1",     dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-violet-50/60" },
+  { key: "s2", label: "매2", full: "매장2", addKey: "store2AddQty",     prevKey: "prevStore2Qty",     zoneKey: "store2Zone",   shelfCode: "store2",     dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-violet-50/60" },
+  { key: "s3", label: "매3", full: "매장3", addKey: "store3AddQty",     prevKey: "prevStore3Qty",     zoneKey: "store3Zone",   shelfCode: "store3",     dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-violet-50/60" },
 ] as const;
 
 const WARN_THRESHOLD = 100;
@@ -499,7 +500,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                   <span className="text-[13px] text-zinc-400 tabular-nums">이전 {prev}</span>
                 )}
               </div>
-              {/* 구역 선택 (창고 + 매장 공통) */}
+              {/* 구역 선택 (창고 + 매장 공통) · 옆에 상세구역 표시 · 2026-09-09 · 사용자 지시 */}
               {warehouseZoneKey ? (
                 <ZoneInline
                   value={currentZone}
@@ -512,6 +513,20 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                   erpSpec={spec || undefined}
                 />
               ))}
+              {(() => {
+                const shelfMap = (row.product as { shelf_positions?: Record<string, string | null> } | undefined)?.shelf_positions;
+                const detail = shelfMap?.[s.shelfCode];
+                if (!detail || String(detail).trim() === "") return null;
+                return (
+                  <span
+                    className="inline-flex items-center gap-1 h-9 rounded-full px-2.5 border border-rose-200 bg-rose-50 text-[13px] font-bold text-rose-700 tabular-nums"
+                    title={`${s.full} 상세구역 · ${detail}`}
+                  >
+                    <span className="text-[11px] font-semibold text-rose-500 uppercase tracking-wide">상세</span>
+                    {detail}
+                  </span>
+                );
+              })()}
               <div className="flex items-center gap-1.5">
                 <StepperInput
                   value={add}

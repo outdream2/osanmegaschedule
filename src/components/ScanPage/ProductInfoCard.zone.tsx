@@ -24,55 +24,59 @@ export const ProductInfoZone: React.FC<ProductInfoZoneProps> = ({
   shelfPositions,
 }) => (
   <>
-    {/* 2026-09-09 · 사용자 지시 · 상세구역 뱃지 · 매장구역(실제) 바로 옆에 표시 (상단 별도 라인 X) */}
-    <div className="flex items-stretch gap-2 mb-2 px-2.5 py-2 rounded-xl border border-line bg-zinc-50/60">
-      {/* 전산배치구역 */}
-      <div className="min-w-0 flex-1">
-        <p className="text-[14px] font-semibold text-zinc-400 leading-none mb-1 uppercase tracking-wide">전산</p>
-        <p className="text-[15px] font-bold text-zinc-700 leading-snug break-keep whitespace-normal">{locationZone}</p>
+    {/* 2026-09-09 v2 · 사용자 지시 · 상세구역 · 매장/창고구역 아래 별도 라인 표시 */}
+    <div className="mb-2 rounded-xl border border-line bg-zinc-50/60 overflow-hidden">
+      {/* 상단 · 전산 → 실제(매장구역) · 변경 버튼 */}
+      <div className="flex items-stretch gap-2 px-2.5 py-2">
+        {/* 전산배치구역 */}
+        <div className="min-w-0 flex-1">
+          <p className="text-[14px] font-semibold text-zinc-400 leading-none mb-1 uppercase tracking-wide">전산</p>
+          <p className="text-[15px] font-bold text-zinc-700 leading-snug break-keep whitespace-normal">{locationZone}</p>
+        </div>
+
+        {/* 화살표 */}
+        <div className="flex items-center">
+          <ArrowRight size={14} className={`shrink-0 ${hasMismatch ? "text-orange-400" : "text-zinc-300"}`} />
+        </div>
+
+        {/* 실제배치구역 */}
+        <div className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 ${
+          hasMismatch ? "bg-orange-50 border border-orange-200" : realMap ? "bg-teal-50 border border-teal-200" : "bg-white border border-dashed border-line"
+        }`}>
+          <p className={`text-[14px] font-semibold leading-none mb-1 uppercase tracking-wide ${
+            hasMismatch ? "text-orange-500" : realMap ? "text-teal-600" : "text-zinc-400"
+          }`}>실제</p>
+          {realMap ? (
+            <p className={`text-[15px] font-bold leading-snug break-keep whitespace-normal ${hasMismatch ? "text-orange-700" : "text-teal-700"}`}>{realMap}</p>
+          ) : (
+            <p className="text-[14px] font-semibold text-zinc-400">미등록</p>
+          )}
+        </div>
+
+        {/* 변경/등록 버튼 */}
+        <div className="flex items-center">
+          <button
+            onClick={onOpenSelector}
+            disabled={saving}
+            className={`shrink-0 flex items-center gap-1 px-2.5 py-2 rounded-lg border text-[15px] font-bold transition cursor-pointer min-h-[44px] ${
+              realMap
+                ? "bg-white border-line text-zinc-500 hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
+                : "bg-teal-500 border-teal-600 text-white hover:bg-teal-600"
+            }`}
+          >
+            {saving ? <Spinner size={11} /> : <Pencil size={11} />}
+            {saving ? "" : realMap ? "변경" : "등록"}
+          </button>
+        </div>
       </div>
 
-      {/* 화살표 */}
-      <div className="flex items-center">
-        <ArrowRight size={14} className={`shrink-0 ${hasMismatch ? "text-orange-400" : "text-zinc-300"}`} />
-      </div>
-
-      {/* 실제배치구역 */}
-      <div className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 ${
-        hasMismatch ? "bg-orange-50 border border-orange-200" : realMap ? "bg-teal-50 border border-teal-200" : "bg-white border border-dashed border-line"
-      }`}>
-        <p className={`text-[14px] font-semibold leading-none mb-1 uppercase tracking-wide ${
-          hasMismatch ? "text-orange-500" : realMap ? "text-teal-600" : "text-zinc-400"
-        }`}>실제</p>
-        {realMap ? (
-          <p className={`text-[15px] font-bold leading-snug break-keep whitespace-normal ${hasMismatch ? "text-orange-700" : "text-teal-700"}`}>{realMap}</p>
-        ) : (
-          <p className="text-[14px] font-semibold text-zinc-400">미등록</p>
-        )}
-      </div>
-
-      {/* 2026-09-09 · 상세구역 뱃지 · 매장1:332 · 창고1:105 · 실제 옆에 배치 */}
+      {/* 하단 · 상세구역 별도 라인 · 2026-09-09 · 사용자 지시 · 매장/창고구역 아래 표시 */}
       {shelfPositions && Object.keys(shelfPositions).length > 0 && (
-        <div className="min-w-0 flex items-center">
+        <div className="flex items-center gap-2 px-2.5 py-1.5 border-t border-line bg-white/70">
+          <span className="text-[13px] font-bold text-zinc-500 tracking-tight shrink-0 uppercase">상세구역</span>
           <ShelfPositionsBadge positions={shelfPositions} size="sm" />
         </div>
       )}
-
-      {/* 변경/등록 버튼 */}
-      <div className="flex items-center">
-        <button
-          onClick={onOpenSelector}
-          disabled={saving}
-          className={`shrink-0 flex items-center gap-1 px-2.5 py-2 rounded-lg border text-[15px] font-bold transition cursor-pointer min-h-[44px] ${
-            realMap
-              ? "bg-white border-line text-zinc-500 hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
-              : "bg-teal-500 border-teal-600 text-white hover:bg-teal-600"
-          }`}
-        >
-          {saving ? <Spinner size={11} /> : <Pencil size={11} />}
-          {saving ? "" : realMap ? "변경" : "등록"}
-        </button>
-      </div>
     </div>
 
     {/* 불일치 경고 / 저장 오류 */}

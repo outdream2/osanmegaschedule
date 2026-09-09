@@ -227,6 +227,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
         </div>
 
         {/* 매장구역 · 필수 · 2026-09-07 · 사용자 지시 · 입고구역 → 매장구역 */}
+        {/* 2026-09-09 · 상세구역 · 매장구역/창고구역 아래 별도 라인 · 사용자 지시 */}
         <div className="flex items-center gap-2 flex-wrap pt-0.5 pb-0.5 border-t border-zinc-100/80 mt-0.5">
           <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">
             매장구역<span className="text-rose-500 ml-0.5">*</span>
@@ -235,8 +236,6 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
             value={item.location}
             onChange={(v) => onSetLocation(item.key, v)}
           />
-          {/* 2026-09-08 · 상세 진열위치 뱃지 · 매장구역 옆 필수 표시 */}
-          <ShelfPositionsBadge positions={shelfPositions} size="sm" />
           {/* 창고구역 배지 · 상품 location or 사용자 선택 기반 · 창1/창2 자동 */}
           {relatedSlots.filter(rs => rs.slot === "w1" || rs.slot === "w2").length > 0 && (
             <>
@@ -267,6 +266,14 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
             </>
           )}
         </div>
+
+        {/* 상세구역 · 매장/창고구역 아래 별도 라인 · 2026-09-09 · 사용자 지시 */}
+        {shelfPositions && Object.keys(shelfPositions).length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap pt-0.5 pb-0.5">
+            <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">상세구역</span>
+            <ShelfPositionsBadge positions={shelfPositions} size="sm" />
+          </div>
+        )}
 
         {/* 액션 영역 · 수량 stepper + 2-state pill + 삭제 */}
         <div className="flex items-center gap-2 flex-wrap pt-1">
