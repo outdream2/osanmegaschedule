@@ -12,6 +12,8 @@ import {
   STORE_TOP_WALL, STORE_BOTTOM_WALL, STORE_LEFT_WALL,
   STORE_AISLE_COLUMNS, CAT_A_COLORS, CAT_B_COLORS,
   EVENT_ZONE_COLOR, getWallCellColor,
+  // 2026-09-09 · 카운터존 45~50 · DisplayStoreMap 과 동일 렌더
+  COUNTER_ZONE_CELLS,
 } from "../../constants/storeMapLayout";
 import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { getZoneSubLabel } from "../../constants/zoneLabels";
@@ -496,6 +498,30 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
           {STORE_BOTTOM_WALL.map((num, i) => (
             <div key={`bw-${i}`} className="min-w-0 px-1.5 py-1 relative group h-full">
               {wallCell(num, "bottom")}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 2026-09-09 · 카운터존 45~50 · 하단 별도 카드 · DisplayStoreMap 과 동일 */}
+      <div className="mt-2 p-3 bg-white border border-line rounded-2xl flex flex-col gap-3 shadow-sm">
+        <div className="flex items-center gap-2 pb-2 border-b border-zinc-100">
+          <div className="w-6 h-6 rounded-lg bg-zinc-900 flex items-center justify-center shadow-sm">
+            <span className="text-[15px]">🛒</span>
+          </div>
+          <span className="text-[15px] font-bold text-zinc-900 leading-none">카운터존</span>
+          <span className="text-[13px] font-semibold text-zinc-400 leading-none uppercase tracking-wider">45 ~ 50</span>
+        </div>
+        <div className="grid grid-cols-6 gap-2">
+          {COUNTER_ZONE_CELLS.map((cell) => (
+            <div key={`cz-${cell.num}`} className="flex flex-col items-center gap-1.5">
+              <span className={`text-[12px] font-bold uppercase tracking-wider ${cell.kind === "event" ? "text-amber-700" : "text-brand-deep"}`}>
+                {cell.label}
+              </span>
+              <span className="text-[13px] font-bold text-zinc-500 tabular-nums">{cell.num}</span>
+              <div className={`w-full h-full min-h-[76px] rounded border ${cell.kind === "event" ? "bg-amber-50 border-amber-200" : "bg-brand-tint/40 border-brand-tint"} flex items-center justify-center px-1 py-1`}>
+                <span className="text-[12px] font-semibold text-brand-deep tabular-nums">{cell.num}</span>
+              </div>
             </div>
           ))}
         </div>
