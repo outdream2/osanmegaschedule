@@ -137,6 +137,8 @@ interface ArrivalZoneSlotListProps {
 const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
   productCode, productName, location, onSetLocation, relatedSlots, targetSlot, qty, shelfPositions,
 }) => {
+  // 2026-09-09 · 진단 · shelfPositions 갱신 반영 확인
+  console.log("[ArrivalZoneSlotList] render", { productCode, shelfPositions });
   const [storeCount, setStoreCount] = useState(1);
   // 2026-09-09 · 사용자 지시 · 슬롯 클릭 시 · 해당 위치 하나만 편집
   const [shelfEditCode, setShelfEditCode] = useState<string | null>(null);
