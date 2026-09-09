@@ -16,6 +16,8 @@ import type { HiddenProductsResponse } from "../../../src/shared/dtos/products";
 import { CreateProductSchema, UpdateProductSchema } from "../../../src/shared/schemas/products";
 // 2026-08-26 · 사용자 지시 · 적정재고 공통 프레임워크 · server/lib/optimalStock.ts
 import { refillOptimalStock } from "../../lib/optimalStock";
+// 2026-09-09 · 적정재고 재계산 후 · 발주필요 캐시 무효화 · 자동 반영
+import { clearLowStockCache } from "./stockManage";
 // 2026-09-09 · afaf8a65 (RPC 리팩터) 에서 실수로 삭제된 import 복구 · buildInitialShelfPositions
 //   · 신규 상품 등록 시 · 구역→창고 자동배정 · shelf_positions 초기화 (POST /api/products 참조)
 import { buildInitialShelfPositions } from "../../utils/shelfPositionAssign";
@@ -686,6 +688,9 @@ router.post("/api/products/refill-optimal-stock", authorize(9), validateBody(Ref
       syncOrderRequests: body.syncOrderRequests !== false, // 기본 true
     });
     resetProductCache();
+    // 2026-09-09 · 사용자 지시 · 재계산 후 · 발주필요 리스트 자동 반영
+    //   · low-stock 2분 캐시 · 재계산 결과 즉시 반영되도록 무효화
+    clearLowStockCache();
     console.log(`[refill-optimal-stock] since=${result.since} until=${result.until} · history=${result.totalHistoryRows} · sales=${result.productsWithSales} · zeroed=${result.productsZeroed} · updated=${result.productsUpdated} · orderReqs=${result.orderRequestsUpdated} · total=${result.elapsedMs}ms (sale ${result.saleMs}ms + product ${result.productMs}ms + order ${result.orderMs}ms)`);
     return res.json({
       ok: true,

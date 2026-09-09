@@ -132,7 +132,12 @@ export function useOrderManageData(getCode: (p: ProductInfo) => string) {
   useEffect(() => {
     const handler = () => { loadInvMap(); loadProducts(); loadOrderReqs(); };
     window.addEventListener("inventory-checks-updated", handler);
-    return () => window.removeEventListener("inventory-checks-updated", handler);
+    // 2026-09-09 · 사용자 지시 · 적정재고 재계산 완료 시 · 발주필요 리스트 자동 반영
+    window.addEventListener("optimal-stock-updated", handler);
+    return () => {
+      window.removeEventListener("inventory-checks-updated", handler);
+      window.removeEventListener("optimal-stock-updated", handler);
+    };
   }, [loadInvMap, loadProducts, loadOrderReqs]);
   // 2026-09-08 · fix · 상품 등록/편집 시 · allProductsMap 자동 재로드
   //   · 이전 · mount 후 · 재로드 이벤트 없음 → 신규 상품 · 발주필요 검색에서 안 보임

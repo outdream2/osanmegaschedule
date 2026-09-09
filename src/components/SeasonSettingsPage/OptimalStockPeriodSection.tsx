@@ -82,6 +82,9 @@ export const OptimalStockPeriodSection: React.FC = () => {
       });
       if (data?.updated) {
         showSuccess(`재계산 완료 · ${data.updated}건 (판매 있음 ${data.productsWithSales ?? "?"} · 0 처리 ${data.productsZeroed ?? "?"})`);
+        // 2026-09-09 · 사용자 지시 · 재계산 완료 후 · 발주필요 리스트 자동 반영
+        //   · OrderManagePage · useOrderManageData 훅이 이 이벤트 리스닝 · 즉시 refetch
+        try { window.dispatchEvent(new CustomEvent("optimal-stock-updated")); } catch { /* silent */ }
       } else {
         showError(data?.note ?? "재계산 결과 · 업데이트 0건");
       }
