@@ -49,6 +49,15 @@ export async function refetchShelfPositionsMap(): Promise<ShelfMap> {
   return fetchMap();
 }
 
+/** 2026-09-09 · 저장 직후 · 서버 응답 값 (=DB 저장값) · 즉시 캐시에 반영 · 구독자 통지
+ *  · UI 즉시 갱신 보장 · refetch 응답 지연 대비 */
+export function patchShelfPositionsCache(productCode: string, shelfPositions: ShelfPositions): void {
+  const nextData = { ...(cache?.data ?? {}) };
+  nextData[productCode] = shelfPositions;
+  cache = { data: nextData, expiresAt: Date.now() + TTL_MS };
+  subscribers.forEach(fn => { try { fn(nextData); } catch { /* silent */ } });
+}
+
 export function useShelfPositionsMap(): ShelfMap {
   const [map, setMap] = useState<ShelfMap>(cache?.data ?? {});
   useEffect(() => {
