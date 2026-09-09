@@ -51,14 +51,18 @@ function joinDigits(digits: [string, string, string]): string | null {
 }
 
 // ─── 좌측 예시 그림 · 선반 층·칸·순서 시각화 ────────────────────────
+// 2026-09-09 · 사용자 지시 · 원점 = 왼쪽 맨 위 (1층 1칸)
+//   · 층 · 맨 위부터 1 · 아래로 증가
+//   · 칸 · 왼쪽부터 1 · 오른쪽으로 증가
+//   · 순서 · 왼쪽에서 오른쪽으로 증가 (각 칸 안 · 앞→뒤)
 const ShelfExampleDiagram: React.FC = () => (
   <div className="flex flex-col gap-3 p-4 bg-gradient-to-br from-brand-tint/40 to-white rounded-xl border border-brand-deep/10">
     <p className="text-[13px] font-bold text-brand-deep tracking-tight">
       3자리 = 층 · 칸 · 순서
     </p>
     <div className="flex flex-col gap-1.5">
-      {/* 3층 선반 시각화 */}
-      {[3, 2, 1].map(floor => (
+      {/* 3층 선반 시각화 · 맨 위 = 1층 · 아래로 증가 */}
+      {[1, 2, 3].map(floor => (
         <div key={floor} className="flex items-center gap-1.5">
           <span className="text-[11px] font-bold text-zinc-500 tabular-nums w-6 text-right shrink-0">
             {floor}층
@@ -68,9 +72,9 @@ const ShelfExampleDiagram: React.FC = () => (
               <div
                 key={col}
                 className={`h-8 rounded text-[10px] font-semibold text-zinc-500 flex items-center justify-center border border-dashed border-zinc-200 ${
-                  floor === 3 && col === 3 ? "bg-indigo-100 border-indigo-400 text-indigo-700" : "bg-zinc-50/70"
+                  floor === 1 && col === 1 ? "bg-indigo-100 border-indigo-400 text-indigo-700" : "bg-zinc-50/70"
                 }`}
-                title={floor === 3 && col === 3 ? "예: 3층 3칸 2순서 → 332" : `${floor}층 ${col}칸`}
+                title={floor === 1 && col === 1 ? "원점 · 1층 1칸 (예: 111)" : `${floor}층 ${col}칸`}
               >
                 {col}칸
               </div>
@@ -80,10 +84,15 @@ const ShelfExampleDiagram: React.FC = () => (
       ))}
     </div>
     <div className="flex flex-col gap-1 pt-2 border-t border-brand-deep/10">
-      <p className="text-[12px] text-zinc-500 font-semibold">예시</p>
-      <p className="text-[13px] text-zinc-700 leading-relaxed">
-        <span className="inline-block px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold tabular-nums mr-1">332</span>
-        · <b>3층</b>의 <b>3칸</b> 중 <b>2순서</b> (앞에서 두번째)
+      <p className="text-[12px] text-zinc-500 font-semibold">규칙</p>
+      <ul className="text-[12px] text-zinc-700 leading-relaxed space-y-0.5 list-none">
+        <li>· 층 · 맨 위 = <b>1층</b> · 아래로 증가</li>
+        <li>· 칸 · 왼쪽 = <b>1칸</b> · 오른쪽으로 증가</li>
+        <li>· 순서 · 왼쪽 = <b>1순서</b> · 오른쪽으로 증가 (앞→뒤)</li>
+      </ul>
+      <p className="text-[13px] text-zinc-700 leading-relaxed mt-1">
+        <span className="inline-block px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold tabular-nums mr-1">1-1-1</span>
+        · 원점 · <b>왼쪽 맨 위</b>
       </p>
       <p className="text-[12px] text-zinc-400">
         · 각 자리 · 0~9 · A~Z
