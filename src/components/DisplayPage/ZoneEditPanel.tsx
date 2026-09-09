@@ -436,10 +436,10 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
 
   return (
     <SplitPanel
-      storageKey="zoneEdit.leftWidth"
-      defaultWidth={520}
-      minWidth={360}
-      maxWidth={820}
+      storageKey="zoneEdit.leftWidth.v2"
+      defaultWidth={typeof window !== "undefined" ? Math.round(window.innerWidth * 0.5) : 640}
+      minWidth={320}
+      maxWidth={2400}
       dividerColor="violet"
       mobileRightAsModal={false}
       left={leftPanel}
