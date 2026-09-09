@@ -627,8 +627,11 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
     setMobileOpen(true);
   };
 
+  // 2026-09-09 · 사용자 지시 · 왼쪽 상품 리스트 · 세로 스크롤 · UI 프레임워크 적용
+  //   · SplitListPanel body(flex-1 min-h-0 overflow-y-auto) 안에 렌더 · 자체 height 제약 강제
+  //   · calc · 헤더·검색·필터·페이지 컨테이너 padding 감안 · 240px 오프셋 (실측)
   const listBody = (
-    <ul className="divide-y divide-zinc-100">
+    <ul className="divide-y divide-zinc-100 max-h-[calc(100vh-240px)] overflow-y-auto">
       {filtered.map(r => {
         const active = r.product_code === selectedCode;
         return (
