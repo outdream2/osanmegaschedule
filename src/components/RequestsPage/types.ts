@@ -20,6 +20,9 @@ export interface DisplayRequest {
   // 2026-09-09 · 상품별 dedup · 재요청마다 request_count 증가 · requested_at 갱신 · first_requested_at 유지
   request_count?: number;
   first_requested_at?: string | null;
+  // 2026-09-09 · stale fix · 서버 GET 에서 products.display_location 최신값 JOIN 후 별도 필드로 전달
+  //   · zone_label 은 요청 생성 시 스냅샷이라 stale 가능 · UI 에서 이 필드 우선 표시
+  product_display_location?: string | null;
 }
 
 export interface OrderRequest {

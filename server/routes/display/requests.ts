@@ -103,6 +103,9 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
   if (error) throw new HttpError(500, error.message);
 
   // 2026-08-10 · 사용자 요청 · 각 요청에 product_name 추가 (products JOIN · 프론트 상품명 컬럼용)
+  // 2026-09-09 · stale fix · products.display_location · location 도 함께 조회
+  //   · 요청 생성 시 zone_label 스냅샷 저장 · 이후 products 변경되면 진열위치 stale
+  //   · 프론트에 최신 display_location 을 별도 필드로 전달 · UI 에서 우선 표시
   const rows = data ?? [];
   const productCodes = Array.from(new Set(
     rows.map((r: any) => String(r.product_code ?? "").trim()).filter(Boolean)
@@ -111,18 +114,25 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
     try {
       const { data: prods } = await supabase
         .from("products")
-        .select("product_code, product_name, spec")
+        .select("product_code, product_name, spec, display_location, location")
         .in("product_code", productCodes);
-      const nameMap = new Map<string, { name: string; spec: string | null }>();
+      const infoMap = new Map<string, { name: string; spec: string | null; display_location: string | null; location: string | null }>();
       for (const p of prods ?? []) {
         const c = String(p.product_code ?? "").trim();
-        if (c) nameMap.set(c, { name: String(p.product_name ?? ""), spec: p.spec ?? null });
+        if (c) infoMap.set(c, {
+          name: String(p.product_name ?? ""),
+          spec: p.spec ?? null,
+          display_location: (p as any).display_location ?? null,
+          location: (p as any).location ?? null,
+        });
       }
       for (const r of rows as any[]) {
         const c = String(r.product_code ?? "").trim();
-        const info = c ? nameMap.get(c) : null;
+        const info = c ? infoMap.get(c) : null;
         r.product_name = info?.name ?? null;
         r.product_spec = info?.spec ?? null;
+        // 최신 진열위치 · display_location 우선 · 없으면 location · 없으면 null
+        r.product_display_location = info?.display_location ?? info?.location ?? null;
       }
     } catch { /* silent · products 조회 실패해도 요청 응답은 반환 */ }
   }

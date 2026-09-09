@@ -199,6 +199,14 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
             const statusTone: PillTone = isDone ? "emerald" : isPrepared ? "sky" : "amber";
             const statusLabel = isDone ? "진열완료" : isPrepared ? "준비완료" : "대기";
             const borderCls   = isDone ? "border-l-emerald-300" : isPrepared ? "border-l-sky-400" : "border-l-amber-400";
+            // 2026-09-09 · 서버 dedup · request_count · first_requested_at · product_display_location 반영
+            //   · 진열위치 · products.display_location 최신값 우선 · zone_label 은 요청 생성 시 스냅샷이라 stale 가능
+            //   · 요청 횟수 · 2회 이상일 때만 텍스트 표기 · 배지 X
+            //   · 첫/최근 요청일 · 재요청 있을 때만 첫 요청일 병기 · 없으면 최근만
+            const zoneDisplay = (r as any).product_display_location ?? r.zone_label ?? r.zone_id ?? "";
+            const count = Math.max(1, Number(r.request_count ?? 1));
+            const firstAt = r.first_requested_at ?? null;
+            const showFirstAt = count > 1 && firstAt && firstAt !== r.requested_at;
 
             return (
               <div
@@ -218,17 +226,25 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                           {productName}
                         </span>
                         <StatusPill tone={statusTone} size="xs" dot>{statusLabel}</StatusPill>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                        {(r.zone_label || r.zone_id) && (
-                          <span className="bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-md text-[15px] font-semibold break-keep">
-                            {r.zone_label || r.zone_id}
+                        {count > 1 && (
+                          <span className="text-[14px] font-semibold text-rose-500 tabular-nums" title="누적 요청 횟수 (같은 상품 재요청)">
+                            누적 {count}회
                           </span>
                         )}
+                      </div>
+                      <div className="flex items-center gap-x-2.5 gap-y-1 mt-1.5 flex-wrap text-[15px]">
+                        {zoneDisplay && (
+                          <span className="font-semibold text-zinc-700">{zoneDisplay}</span>
+                        )}
                         {r.assigned_staff_name
-                          ? <span className="text-[14px] font-semibold text-brand-deep">{r.assigned_staff_name}</span>
-                          : <span className="text-[14px] text-zinc-300">미지정</span>}
-                        <span className="text-[15px] text-zinc-400 tabular-nums">{fmtDate(r.requested_at)}</span>
+                          ? <span className="font-semibold text-brand-deep">{r.assigned_staff_name}</span>
+                          : <span className="text-zinc-300">미지정</span>}
+                        {showFirstAt && (
+                          <span className="text-zinc-400 tabular-nums">{fmtDate(firstAt!)} 처음</span>
+                        )}
+                        <span className="text-zinc-400 tabular-nums">
+                          {showFirstAt ? `${fmtDate(r.requested_at)} 최근` : fmtDate(r.requested_at)}
+                        </span>
                       </div>
                     </div>
                     {/* Action buttons */}
