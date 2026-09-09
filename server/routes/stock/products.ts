@@ -47,20 +47,22 @@ stockCheckPublicRouter.get("/api/stock-check", asyncHandler(async (req, res) => 
   res.json(data ?? []);
 }));
 
-// 2026-09-09 · #15 · products.shelf_positions 단일 소스 · optimal_stock 원칙 동일 (사용자 지시)
+// 2026-09-08 · 상세 진열위치 맵 · 진열위치 표시 32개 파일 공용 데이터 소스
+// 2026-09-09 · CRITICAL 회귀 복구 · afaf8a65 (RPC 리팩터) 에서 실수로 삭제됨 · endpoint 32줄 재추가
 //   · GET /api/products/shelf-positions-map · { [product_code]: { [location_code]: "332" | null } }
-//   · products 마스터에서만 조회 · inventory_checks 스냅샷 폐지
+//   · inventory_checks 에서 · 각 상품별 최신 row 의 shelf_positions 만 추출
 //   · 응답 크기 최소화 · public (로그인 불필요 · 진열위치는 매장 운영 표시용 · 민감 정보 아님)
 router.get("/api/products/shelf-positions-map", asyncHandler(async (_req, res) => {
   try {
     const { data, error } = await supabase
-      .from("products")
-      .select("product_code, shelf_positions");
+      .from("inventory_checks")
+      .select("product_code, shelf_positions, checked_at")
+      .order("checked_at", { ascending: false });
     if (error) throw new HttpError(500, error.message);
     const map: Record<string, Record<string, string | null>> = {};
     for (const r of data ?? []) {
       const code = String((r as any).product_code ?? "").trim();
-      if (!code) continue;
+      if (!code || map[code]) continue;  // 최신 row 만 (첫 등장)
       const sp = (r as any).shelf_positions;
       if (sp && typeof sp === "object" && Object.keys(sp).length > 0) {
         map[code] = sp;
