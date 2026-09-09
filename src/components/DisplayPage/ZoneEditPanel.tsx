@@ -22,7 +22,8 @@ import { AssigneeEditor as SharedAssigneeEditor } from "../common/AssigneeEditor
 // 2026-08-31 · #64 · 매장구역도 담당자 · 물류·매장 직군만 필터
 import { isStoreOrLogisticsPosition } from "../../lib/employeeCategory";
 // 2026-08-26 · 사용자 지시 · 원본 매장구역도 이미지 (pan/zoom viewer)
-import zoneCategoryImg from "../../sample/zonecategory.png";
+// 2026-09-09 · 사용자 지시 · zonecategory.png → 제품존정보.jpg 교체
+import zoneCategoryImg from "../../sample/제품존정보.jpg";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 import { ZONE_DEFS as DEFAULT_ZONES } from "../../constants/displayZones";
