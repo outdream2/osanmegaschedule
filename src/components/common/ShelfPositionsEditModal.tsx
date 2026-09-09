@@ -191,13 +191,20 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
     [locations, kindFilter, locationCode],
   );
   // 각 위치별 · 3자리 digit 상태
-  const [draft, setDraft] = useState<Record<string, [string, string, string]>>(() => {
+  const [draft, setDraft] = useState<Record<string, [string, string, string]>>({});
+  // 2026-09-09 · 사용자 지시 · 기존 데이터 조회되게 · activeLocs (async) 로드 후 · initial 값으로 draft 채움
+  //   · useState lazy init 은 · 첫 마운트 때 activeLocs=[] 라 draft={} 로 시작하는 버그 방지
+  //   · locations · initial 변경 시마다 재계산 · 편집 중이 아니면 서버 값 반영
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => {
+    if (dirty) return; // 사용자 편집 중이면 덮어쓰지 않음
     const seed: Record<string, [string, string, string]> = {};
     for (const loc of activeLocs) {
       seed[loc.code] = splitValue(initial?.[loc.code]);
     }
-    return seed;
-  });
+    setDraft(seed);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLocs, initial]);
   const [saving, setSaving] = useState(false);
   const { toast, showSuccess, showError } = useToast();
   // 2026-09-09 · 사용자 지시 · 반응형 · 모바일에서는 설명(예시 그림) 기본 접힘 · 화살표로 토글
@@ -213,6 +220,7 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
   }, [onClose, saving]);
 
   const setDigit = (code: string, idx: number, v: string) => {
+    setDirty(true);
     setDraft(prev => {
       const cur = prev[code] ?? ["", "", ""];
       const next: [string, string, string] = [...cur];
@@ -221,17 +229,18 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
     });
   };
   const bumpDigitAt = (code: string, idx: number, delta: 1 | -1) => {
+    setDirty(true);
     setDraft(prev => {
       const cur = prev[code] ?? ["", "", ""];
       const base = cur[idx] === "" ? "1" : cur[idx];
       const next: [string, string, string] = [...cur];
       next[idx] = bumpDigit(base, delta);
-      // 다른 자리 비어있으면 · 1 로 채움 (사용자 편의)
       for (let i = 0; i < 3; i++) if (next[i] === "") next[i] = "1";
       return { ...prev, [code]: next };
     });
   };
   const clearRow = (code: string) => {
+    setDirty(true);
     setDraft(prev => ({ ...prev, [code]: ["", "", ""] }));
   };
 
