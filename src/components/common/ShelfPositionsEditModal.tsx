@@ -233,12 +233,24 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
   const handleSave = async () => {
     setSaving(true);
     try {
-      // kindFilter 있으면 · 편집한 kind 만 payload · 나머지는 initial 유지 (merge)
-      const payload: ShelfPositions = { ...(initial ?? {}) };
+      // 2026-09-09 · payload 정규화 · undefined 제거 · 3자리 아닌 값 null 로 (Zod z.string().length(3) 검증 통과)
+      //   · initial merge · 다른 kind/location 값 유지 · locationCode 편집 시 다른 위치 값 안 지워짐
+      const payload: Record<string, string | null> = {};
+      // 1) initial 정규화 · undefined 제거 · 잘못된 길이 null 로
+      if (initial) {
+        for (const [k, v] of Object.entries(initial)) {
+          if (v === null) { payload[k] = null; continue; }
+          if (typeof v === "string" && v.length === 3) { payload[k] = v; continue; }
+          // undefined · 잘못된 길이 · 그 외 · null 로 저장 (또는 스킵)
+          payload[k] = null;
+        }
+      }
+      // 2) 편집한 위치 오버라이드
       for (const loc of activeLocs) {
         const val = joinDigits(draft[loc.code] ?? ["", "", ""]);
         payload[loc.code] = val;
       }
+      console.log("[ShelfPositionsEditModal] save payload:", { productCode, payload });
       await api.patch(`/api/products/${encodeURIComponent(productCode)}/shelf-positions`, {
         shelf_positions: payload,
       });
