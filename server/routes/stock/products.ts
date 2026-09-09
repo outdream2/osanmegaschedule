@@ -18,11 +18,8 @@ import { CreateProductSchema, UpdateProductSchema } from "../../../src/shared/sc
 import { refillOptimalStock } from "../../lib/optimalStock";
 // 2026-09-09 · 적정재고 재계산 후 · 발주필요 캐시 무효화 · 자동 반영
 import { clearLowStockCache } from "./stockManage";
-// 2026-09-09 · afaf8a65 (RPC 리팩터) 에서 실수로 삭제된 import 복구 · buildInitialShelfPositions
-//   · 신규 상품 등록 시 · 구역→창고 자동배정 · shelf_positions 초기화 (POST /api/products 참조)
-import { buildInitialShelfPositions } from "../../utils/shelfPositionAssign";
-// buildInitialShelfPositions · 향후 POST /api/products 등록 로직에서 재활용 가능 (백필 스크립트 등)
-void buildInitialShelfPositions;
+// 2026-09-09 · shelf_positions · inventory_checks 통합 (사용자 지시) · products 컬럼 미사용
+//   · buildInitialShelfPositions · 상품 등록 시 products.shelf_positions 초기화용 · 현재 미사용
 
 const router = Router();
 
