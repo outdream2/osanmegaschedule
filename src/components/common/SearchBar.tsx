@@ -51,7 +51,8 @@ const ACCENT_MAP = {
   amber:   "focus:ring-brand-tint focus:border-brand-deep",
 };
 
-const HISTORY_MAX = 5;
+// 2026-09-09 · 사용자 지시 · 최근 검색어 3개 제한 (기존 5개)
+const HISTORY_MAX = 3;
 
 export const SearchBar: React.FC<SearchBarProps> = ({
   value,
