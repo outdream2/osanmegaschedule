@@ -287,10 +287,15 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
             minWidth: "620px",
           }}
         >
-          {/* Row 0: 상단 벽 · col-span-5 · 내부 flex 14셀 · 균일 여백 (aisle과 통일) */}
-          <div style={{ gridColumn: "1 / -1", gridRow: 1, display: "flex" }}>
+          {/* Row 0: 상단 벽 · col-span-5 · 내부 grid 14셀 · 완벽 균등 크기 · 균일 여백 */}
+          <div style={{
+            gridColumn: "1 / -1",
+            gridRow: 1,
+            display: "grid",
+            gridTemplateColumns: `repeat(${STORE_TOP_WALL.length}, minmax(0, 1fr))`,
+          }}>
             {STORE_TOP_WALL.map((num, i) => (
-              <div key={`tw-${i}`} className="flex-1 min-w-0 px-1.5 py-1">
+              <div key={`tw-${i}`} className="min-w-0 px-1.5 py-1">
                 {renderTopWallCell(num, `tw-${i}-${num}`)}
               </div>
             ))}
@@ -317,10 +322,15 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
             ))
           ))}
 
-          {/* Row 7: 하단 벽 · col-span-5 · 내부 flex 14셀 · 균일 여백 (aisle과 통일) */}
-          <div style={{ gridColumn: "1 / -1", gridRow: 8, display: "flex" }}>
+          {/* Row 7: 하단 벽 · col-span-5 · 내부 grid 14셀 · 완벽 균등 크기 · 균일 여백 */}
+          <div style={{
+            gridColumn: "1 / -1",
+            gridRow: 8,
+            display: "grid",
+            gridTemplateColumns: `repeat(${STORE_BOTTOM_WALL.length}, minmax(0, 1fr))`,
+          }}>
             {STORE_BOTTOM_WALL.map((num, i) => (
-              <div key={`bw-${i}`} className="flex-1 min-w-0 px-1.5 py-1">
+              <div key={`bw-${i}`} className="min-w-0 px-1.5 py-1">
                 {renderBottomWallCell(num, `bw-${i}-${num}`)}
               </div>
             ))}
