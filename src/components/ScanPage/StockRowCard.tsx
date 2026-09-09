@@ -27,6 +27,8 @@ import { RealMapSelector } from "./RealMapSelector";
 // 2026-08-26 · 사용자 지시 · zone → 창고 매핑 · 해당 상품 소속 창고만 표시
 // 2026-09-01 · #92 · 구역 선택 → 자동 슬롯 판정
 import { resolveWarehouseVisibility, classifyArrivalSlot } from "../../lib/warehouseZoneMap";
+// 2026-09-09 · 사용자 지시 · 슬롯 구역 옆 상세구역 · shelfMap 훅 사용 (최신 값 · 편집 반영)
+import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
 
 // ─── 5-slot 정의 (창고2 · 매장3) ─────────────────────────────────
 interface SlotDef {
@@ -176,6 +178,10 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
   row, isRecent, requestingKey, onPatch, onRemove, onHistory, onRequestDisplay,
   onSaveRow, onToggleExpiry,
 }) => {
+  // 2026-09-09 · 사용자 지시 · 슬롯 구역 옆 상세구역 · shelfMap 훅 · 최신 값 (편집 반영)
+  const shelfPositionsMap = useShelfPositionsMap();
+  const rowShelfPositions = shelfPositionsMap[row.code]
+    ?? ((row.product as { shelf_positions?: Record<string, string | null> } | undefined)?.shelf_positions);
   // 2026-08-25 · 유통기한 임박 · product.expiry_date 있으면 빨간 강조
   const hasExpiryFlag = !!((row.product as { expiry_date?: string | null }).expiry_date && String((row.product as { expiry_date?: string | null }).expiry_date).trim());
   const rowTotal = calcRowTotal(row);
@@ -514,8 +520,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                 />
               ))}
               {(() => {
-                const shelfMap = (row.product as { shelf_positions?: Record<string, string | null> } | undefined)?.shelf_positions;
-                const detail = shelfMap?.[s.shelfCode];
+                const detail = rowShelfPositions?.[s.shelfCode];
                 if (!detail || String(detail).trim() === "") return null;
                 // 2026-09-09 · 사용자 지시 · 매장구역 pill 톤과 통일 · 슬롯별 색상 (매장=indigo · 창고=cyan)
                 const isStore = s.key.startsWith("s");
