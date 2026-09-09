@@ -249,7 +249,12 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                         <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[16px] text-zinc-700 bg-zinc-50/40 align-middle">{cur}</td>
                         <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[16px] text-ink align-middle">{opt}</td>
                         <td className="text-right px-0.5 py-1.5 align-middle">
-                          <span className="tabular-nums font-bold text-[16px] text-rose-600">-{opt - cur}</span>
+                          {(() => {
+                            const short = opt - cur;
+                            if (short > 0) return <span className="tabular-nums font-bold text-[16px] text-rose-600">-{short}</span>;
+                            if (short < 0) return <span className="tabular-nums font-bold text-[16px] text-emerald-600">+{-short}</span>;
+                            return <span className="tabular-nums font-bold text-[16px] text-zinc-400">0</span>;
+                          })()}
                         </td>
                       </>
                     )}
