@@ -256,14 +256,16 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
         payload[loc.code] = val;
       }
       console.log("[ShelfPositionsEditModal] save payload:", { productCode, payload });
-      await api.patch(
+      const resp = await api.patch<{ ok: boolean; product_code: string; shelf_positions?: ShelfPositions }>(
         `/api/products/${encodeURIComponent(productCode)}/shelf-positions`,
         { shelf_positions: payload },
       );
+      console.log("[ShelfPositionsEditModal] server response:", resp.data);
       // 2026-09-09 · 사용자 지시 · 캐시 낙관 업데이트 X · DB 재조회로 실제 값 반영
       invalidateShelfPositionsMap();
       const freshMap = await refetchShelfPositionsMap();
-      const saved = freshMap[productCode] ?? payload;
+      console.log("[ShelfPositionsEditModal] refetched map for code:", productCode, "value:", freshMap[productCode]);
+      const saved = freshMap[productCode] ?? resp.data?.shelf_positions ?? payload;
       window.dispatchEvent(new CustomEvent("inventory-checks-updated"));
       showSuccess("상세구역 저장 완료");
       onSaved?.(saved);
