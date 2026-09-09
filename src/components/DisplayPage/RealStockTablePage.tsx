@@ -119,7 +119,8 @@ export const RealStockTablePage: React.FC = () => {
   // 2026-08-28 · 사용자 지시 · 판매중 필터 프레임워크 (D안) · 3-state · localStorage 지속
   //   · 기존 useSaleActiveOnly (전역 KV) → useSaleStatusFilter (페이지 로컬)
   //   · 판매중/판매중지/전체 · Segmented Control · SaleStatusFilter 프리미티브
-  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "realStock.saleFilter" });
+  // 2026-09-09 · 사용자 지시 · 판매중 기본값 강제 · storageKey bump v2 · localStorage 초기화
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "realStock.saleFilter.v2" });
   const saleOnly = saleFilter === "active";  // 기존 API 하위 호환 (재로드 트리거)
   const { toast, showError, showSuccess } = useToast();
   // 2026-08-27 · 사용자 지시 · Group by 구역 뷰 토글 (옵션 3)
