@@ -17,6 +17,7 @@ import { resolveWarehouseVisibility, classifyArrivalSlot, assignZonesToSlots, ty
 // 2026-09-08 · 상세 진열위치 뱃지 · 매장/창고 구역 옆에 3자리 표시
 import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
 import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
+import { ShelfPositionsEditModal } from "../common/ShelfPositionsEditModal";
 
 export type ItemStatus = "pending" | "match" | "mismatch";
 
@@ -141,6 +142,8 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
   // 2026-09-08 · 상세 진열위치 · 이 상품의 매장/창고 3자리
   const shelfMap = useShelfPositionsMap();
   const shelfPositions = item.code ? shelfMap[item.code] : null;
+  // 2026-09-09 · #15 · 상세구역 편집 모달 open state
+  const [shelfEditOpen, setShelfEditOpen] = useState(false);
   const warehouseVis = useMemo(() => resolveWarehouseVisibility(productRealMap), [productRealMap]);
   const slotZones = useMemo(() => assignZonesToSlots(productRealMap, productCategoryCode), [productRealMap, productCategoryCode]);
   const targetSlot = useMemo(() => classifyArrivalSlot(item.location), [item.location]);
@@ -227,7 +230,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
         </div>
 
         {/* 매장구역 · 필수 · 2026-09-07 · 사용자 지시 · 입고구역 → 매장구역 */}
-        {/* 2026-09-09 · 상세구역 · 매장구역/창고구역 아래 별도 라인 · 사용자 지시 */}
+        {/* 2026-09-09 · 상세구역 · 데이터 옆 인라인 텍스트 · 클릭 시 모달 편집 · 사용자 지시 */}
         <div className="flex items-center gap-2 flex-wrap pt-0.5 pb-0.5 border-t border-zinc-100/80 mt-0.5">
           <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">
             매장구역<span className="text-rose-500 ml-0.5">*</span>
@@ -236,6 +239,28 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
             value={item.location}
             onChange={(v) => onSetLocation(item.key, v)}
           />
+          {(() => {
+            const storeParts = (["store1","store2","store3"] as const)
+              .map(k => shelfPositions?.[k])
+              .filter((v): v is string => typeof v === "string" && v.length === 3);
+            const label = storeParts.length ? storeParts.join(" · ") : "비어있음";
+            const empty = storeParts.length === 0;
+            return (
+              <button
+                type="button"
+                onClick={() => setShelfEditOpen(true)}
+                className={[
+                  "text-[14px] tabular-nums tracking-tight cursor-pointer transition rounded px-1.5 py-0.5",
+                  empty
+                    ? "text-zinc-400 font-medium hover:bg-zinc-100"
+                    : "text-indigo-700 font-semibold hover:bg-indigo-50",
+                ].join(" ")}
+                title="상세구역 편집"
+              >
+                · {label}
+              </button>
+            );
+          })()}
           {/* 창고구역 배지 · 상품 location or 사용자 선택 기반 · 창1/창2 자동 */}
           {relatedSlots.filter(rs => rs.slot === "w1" || rs.slot === "w2").length > 0 && (
             <>
@@ -243,23 +268,40 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
               {relatedSlots.filter(rs => rs.slot === "w1" || rs.slot === "w2").map(({ slot, zone }) => {
                 const meta = ARRIVAL_SLOT_META[slot];
                 const isTarget = targetSlot === slot;
+                const shelfKey = slot === "w1" ? "warehouse1" : "warehouse2";
+                const shelfDetail = shelfPositions?.[shelfKey];
+                const hasDetail = typeof shelfDetail === "string" && shelfDetail.length === 3;
                 return (
-                  <span
-                    key={slot}
-                    className={[
-                      "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[14px] font-bold tabular-nums transition",
-                      isTarget
-                        ? "border-emerald-400 bg-emerald-50 text-emerald-800 shadow-[0_0_0_2px_rgba(52,211,153,0.15)]"
-                        : `border-line ${meta.softBg} ${meta.text}`,
-                    ].join(" ")}
-                    title={isTarget ? `이번 입고 · ${meta.full} 반영 예정` : meta.full}
-                  >
-                    <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
-                    {meta.full}
-                    {zone && <span className="text-[15px] opacity-70">·{zone}</span>}
-                    {isTarget && (
-                      <span className="text-[14px] font-bold text-emerald-700 ml-0.5">+{item.qty}</span>
-                    )}
+                  <span key={slot} className="inline-flex items-baseline gap-1">
+                    <span
+                      className={[
+                        "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[14px] font-bold tabular-nums transition",
+                        isTarget
+                          ? "border-emerald-400 bg-emerald-50 text-emerald-800 shadow-[0_0_0_2px_rgba(52,211,153,0.15)]"
+                          : `border-line ${meta.softBg} ${meta.text}`,
+                      ].join(" ")}
+                      title={isTarget ? `이번 입고 · ${meta.full} 반영 예정` : meta.full}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
+                      {meta.full}
+                      {zone && <span className="text-[15px] opacity-70">·{zone}</span>}
+                      {isTarget && (
+                        <span className="text-[14px] font-bold text-emerald-700 ml-0.5">+{item.qty}</span>
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShelfEditOpen(true)}
+                      className={[
+                        "text-[14px] tabular-nums tracking-tight cursor-pointer transition rounded px-1.5 py-0.5",
+                        hasDetail
+                          ? "text-cyan-700 font-semibold hover:bg-cyan-50"
+                          : "text-zinc-400 font-medium hover:bg-zinc-100",
+                      ].join(" ")}
+                      title={`${meta.full} 상세구역 편집`}
+                    >
+                      · {hasDetail ? shelfDetail : "비어있음"}
+                    </button>
                   </span>
                 );
               })}
@@ -267,12 +309,15 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           )}
         </div>
 
-        {/* 상세구역 · 매장/창고구역 아래 별도 라인 · 2026-09-09 · 사용자 지시 · 매장구역 톤 통일 */}
-        {shelfPositions && Object.keys(shelfPositions).length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap pt-0.5 pb-0.5">
-            <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">상세구역</span>
-            <ShelfPositionsBadge positions={shelfPositions} size="sm" variant="badge" />
-          </div>
+        {/* 상세구역 편집 모달 · 2026-09-09 · #15 */}
+        {shelfEditOpen && (
+          <ShelfPositionsEditModal
+            productCode={item.code}
+            productName={item.product?.product_name ?? item.product?.name ?? undefined}
+            displayLocation={productRealMap}
+            initial={shelfPositions}
+            onClose={() => setShelfEditOpen(false)}
+          />
         )}
 
         {/* 액션 영역 · 수량 stepper + 2-state pill + 삭제 */}

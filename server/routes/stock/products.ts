@@ -712,6 +712,33 @@ router.post("/api/products/refill-optimal-stock", authorize(9), validateBody(Ref
   }
 }));
 
+// 2026-09-09 · #15 · 상세구역 (shelf_positions) 전용 PATCH · authorize(1) · 모달 편집
+//   · body: { shelf_positions: { store1?: "332" | null, warehouse1?: "105" | null, ... } }
+//   · products.shelf_positions JSONB 전체 replace (atomic)
+//   · 3자리 or null 검증 · 필요시 서버에서 정규화
+const ShelfPositionsPatchSchema = z.object({
+  shelf_positions: z.record(z.string(), z.union([z.string().length(3), z.null()])),
+});
+router.patch("/api/products/:code/shelf-positions", authorize(1), validateBody(ShelfPositionsPatchSchema), asyncHandler(async (req, res) => {
+  const code = (req.params.code ?? "").trim();
+  if (!code) throw badRequest("code required");
+  const body = req.body as { shelf_positions: Record<string, string | null> };
+  const { error } = await supabase
+    .from("products")
+    .update({ shelf_positions: body.shelf_positions })
+    .eq("product_code", code);
+  if (error) {
+    // shelf_positions 컬럼 미배포 시 안전 실패
+    if (/column .* does not exist|schema cache/i.test(error.message ?? "")) {
+      throw new HttpError(503, "shelf_positions 컬럼 미배포");
+    }
+    console.error("[products PATCH shelf-positions] error:", error.message);
+    throw new HttpError(500, error.message);
+  }
+  resetProductCache();
+  res.json({ ok: true, product_code: code });
+}));
+
 // 2026-08-29 · 보안 S1 N8 fix · authorize(1) · 상품 인라인 편집 (판매상태·위치·가격 등) · 로그인 필수
 router.patch("/api/products/:code", authorize(1), validateBody(UpdateProductSchema), asyncHandler(async (req, res) => {
   const code = (req.params.code ?? "").trim();

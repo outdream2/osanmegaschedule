@@ -299,6 +299,8 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 
         {S.zoneAssignment && (
           <ProductInfoZone
+            productCode={product.code}
+            productName={product.name}
             locationZone={locationZone}
             realMap={realMap}
             hasMismatch={hasMismatch}
