@@ -409,14 +409,30 @@ export const RealStockTablePage: React.FC = () => {
   const renderZoneCell = (r: Row, slot: SlotKey) => {
     const zone = slot === "w1" ? r.w1zone : slot === "w2" ? r.w2zone : slot === "s1" ? r.s1zone : slot === "s2" ? r.s2zone : r.s3zone;
     const tone: "cyan" | "violet" = (slot === "w1" || slot === "w2") ? "cyan" : "violet";
+    // 2026-09-09 · 사용자 지시 · 구역 셀 아래 · 해당 구역의 상세구역 표시 (구역별 매핑)
+    const shelfCode = slot === "w1" ? "warehouse1" : slot === "w2" ? "warehouse2"
+      : slot === "s1" ? "store1" : slot === "s2" ? "store2" : "store3";
+    const sp = shelfMap[r.product_code];
+    const detailRaw = sp?.[shelfCode];
+    const shelfDetail = typeof detailRaw === "string" && detailRaw.length === 3
+      ? `${detailRaw[0]}-${detailRaw[1]}-${detailRaw[2]}` : null;
+    const shelfCls = tone === "cyan" ? "text-cyan-600" : "text-violet-600";
     if (!zone) {
-      return <span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[15px]">—</span>;
+      return (
+        <div className="inline-flex flex-col items-center gap-0.5">
+          <span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[15px]">—</span>
+          {shelfDetail && <span className={`text-[11px] font-semibold tabular-nums ${shelfCls}`}>{shelfDetail}</span>}
+        </div>
+      );
     }
     const cls = tone === "cyan" ? "bg-cyan-100 text-cyan-800" : "bg-violet-100 text-violet-800";
     return (
-      <span className={`inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md ${cls} font-extrabold text-[16px] tabular-nums tracking-tight`}>
-        {zone}
-      </span>
+      <div className="inline-flex flex-col items-center gap-0.5">
+        <span className={`inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md ${cls} font-extrabold text-[16px] tabular-nums tracking-tight`}>
+          {zone}
+        </span>
+        {shelfDetail && <span className={`text-[11px] font-semibold tabular-nums ${shelfCls}`}>{shelfDetail}</span>}
+      </div>
     );
   };
   // 2026-08-27 · 사용자 지시 · 구역-수량 하나 셀 통합 · [배지] - [숫자]
@@ -500,19 +516,32 @@ export const RealStockTablePage: React.FC = () => {
             <div className="border-t border-line pt-3">
               <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider mb-2">위치별 실재고</div>
               <div className="grid grid-cols-5 gap-2">
-                {[
-                  { label: "매장1", qty: detailRow.s1, zone: detailRow.s1zone, tone: "violet" },
-                  { label: "매장2", qty: detailRow.s2, zone: detailRow.s2zone, tone: "violet" },
-                  { label: "매장3", qty: detailRow.s3, zone: detailRow.s3zone, tone: "violet" },
-                  { label: "창고1", qty: detailRow.w1, zone: detailRow.w1zone, tone: "cyan" },
-                  { label: "창고2", qty: detailRow.w2, zone: detailRow.w2zone, tone: "cyan" },
-                ].map((s) => (
-                  <div key={s.label} className={`rounded-lg border p-2 text-center ${s.tone === "violet" ? "bg-violet-50/40 border-violet-200" : "bg-cyan-50/40 border-cyan-200"}`}>
-                    <div className={`text-[14px] font-bold ${s.tone === "violet" ? "text-violet-700" : "text-cyan-700"}`}>{s.label}</div>
-                    {s.zone && <div className="text-[15px] font-bold text-zinc-500 mt-0.5">{s.zone}</div>}
-                    <div className={`text-[18px] font-extrabold tabular-nums mt-0.5 ${s.qty != null && s.qty > 0 ? (s.tone === "violet" ? "text-violet-800" : "text-cyan-800") : "text-zinc-300"}`}>{s.qty ?? "-"}</div>
-                  </div>
-                ))}
+                {(() => {
+                  const sp = shelfMap[detailRow.product_code] ?? {};
+                  const fmt = (v: string | null | undefined): string | null =>
+                    typeof v === "string" && v.length === 3 ? `${v[0]}-${v[1]}-${v[2]}` : null;
+                  return [
+                    { label: "매장1", qty: detailRow.s1, zone: detailRow.s1zone, tone: "violet", shelfCode: "store1" },
+                    { label: "매장2", qty: detailRow.s2, zone: detailRow.s2zone, tone: "violet", shelfCode: "store2" },
+                    { label: "매장3", qty: detailRow.s3, zone: detailRow.s3zone, tone: "violet", shelfCode: "store3" },
+                    { label: "창고1", qty: detailRow.w1, zone: detailRow.w1zone, tone: "cyan", shelfCode: "warehouse1" },
+                    { label: "창고2", qty: detailRow.w2, zone: detailRow.w2zone, tone: "cyan", shelfCode: "warehouse2" },
+                  ].map((s) => {
+                    const shelfDetail = fmt(sp[s.shelfCode]);
+                    return (
+                      <div key={s.label} className={`rounded-lg border p-2 text-center ${s.tone === "violet" ? "bg-violet-50/40 border-violet-200" : "bg-cyan-50/40 border-cyan-200"}`}>
+                        <div className={`text-[14px] font-bold ${s.tone === "violet" ? "text-violet-700" : "text-cyan-700"}`}>{s.label}</div>
+                        {s.zone && <div className="text-[15px] font-bold text-zinc-500 mt-0.5">{s.zone}</div>}
+                        {shelfDetail && (
+                          <div className={`text-[12px] font-semibold tabular-nums mt-0.5 ${s.tone === "violet" ? "text-violet-600" : "text-cyan-600"}`}>
+                            상세 {shelfDetail}
+                          </div>
+                        )}
+                        <div className={`text-[18px] font-extrabold tabular-nums mt-0.5 ${s.qty != null && s.qty > 0 ? (s.tone === "violet" ? "text-violet-800" : "text-cyan-800") : "text-zinc-300"}`}>{s.qty ?? "-"}</div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
             <div className="border-t border-line pt-3 flex items-center justify-between">
