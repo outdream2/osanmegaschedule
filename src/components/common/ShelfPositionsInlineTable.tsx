@@ -7,7 +7,7 @@
 import React, { useMemo, useState } from "react";
 import { useStorageLocations } from "../../hooks/useStorageLocations";
 import { ShelfPositionsEditModal } from "./ShelfPositionsEditModal";
-import type { ShelfPositions } from "../../lib/shelfPositions";
+import { formatShelfDetail, type ShelfPositions } from "../../lib/shelfPositions";
 
 export interface ShelfPositionsInlineTableProps {
   productCode: string;
@@ -62,7 +62,7 @@ export const ShelfPositionsInlineTable: React.FC<ShelfPositionsInlineTableProps>
             ].join(" ")}
             title="매장 상세구역 편집"
           >
-            {storeEmpty ? "비어있음" : storeParts.join(" · ")}
+            {storeEmpty ? "비어있음" : storeParts.map(formatShelfDetail).join(" · ")}
           </button>
         </div>
         <div className="flex flex-col gap-1 min-w-0">
@@ -76,7 +76,7 @@ export const ShelfPositionsInlineTable: React.FC<ShelfPositionsInlineTableProps>
             ].join(" ")}
             title="창고 상세구역 편집"
           >
-            {warehouseEmpty ? "비어있음" : warehouseParts.join(" · ")}
+            {warehouseEmpty ? "비어있음" : warehouseParts.map(formatShelfDetail).join(" · ")}
           </button>
         </div>
       </div>

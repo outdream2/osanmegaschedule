@@ -118,6 +118,149 @@ const ARRIVAL_SLOT_META: Record<ArrivalSlot, { label: string; full: string; dot:
   s3: { label: "매3", full: "매장3", dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-violet-50", icon: <Store size={11} /> },
 };
 
+// ─── 슬롯 카드 리스트 · B안 · 실재고확인 슬롯 카드 UI 이식 · 구역·상세구역만 편집 · 수량은 하단 단일 유지 ────
+// 2026-09-09 · #15 · 사용자 지시 · "창고2 · 1A · 5 / 매장1 · 1A · 5 / + 매장 추가 (1/3)" UI 그대로
+import { ShelfPositionsEditModal } from "../common/ShelfPositionsEditModal";
+import { formatShelfDetail, type ShelfPositions } from "../../lib/shelfPositions";
+
+interface ArrivalZoneSlotListProps {
+  productCode: string;
+  productName?: string;
+  location: string | null;
+  onSetLocation: (v: string | null) => void;
+  relatedSlots: { slot: ArrivalSlot; zone: string | null }[];
+  targetSlot: ArrivalSlot | null;
+  qty: number;
+  shelfPositions?: ShelfPositions | null;
+}
+
+const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
+  productCode, productName, location, onSetLocation, relatedSlots, targetSlot, qty, shelfPositions,
+}) => {
+  const [storeCount, setStoreCount] = useState(1);
+  const [shelfEditKind, setShelfEditKind] = useState<"store" | "warehouse" | null>(null);
+  const w1 = relatedSlots.find(rs => rs.slot === "w1");
+  const w2 = relatedSlots.find(rs => rs.slot === "w2");
+  const canAddStore = storeCount < 3;
+
+  const renderWarehouseSlot = (slot: "w1" | "w2", zone: string | null) => {
+    const meta = ARRIVAL_SLOT_META[slot];
+    const isTarget = targetSlot === slot;
+    const shelfKey = slot === "w1" ? "warehouse1" : "warehouse2";
+    const shelfDetail = shelfPositions?.[shelfKey];
+    const hasDetail = typeof shelfDetail === "string" && shelfDetail.length === 3;
+    return (
+      <div key={slot} className={`relative rounded-lg border ${meta.softBg} border-zinc-200/70 p-2.5 flex flex-col gap-2`}>
+        <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
+          <span className={`w-1.5 h-6 rounded-full ${meta.dot} shrink-0 self-center`} />
+          <span className={`text-[16px] font-bold ${meta.text} truncate`}>{meta.full}</span>
+          {isTarget && (
+            <span className="text-[13px] font-bold text-emerald-700 tabular-nums">+{qty}</span>
+          )}
+        </div>
+        {zone && (
+          <span className="inline-flex items-center gap-1 h-8 rounded-full px-3 border-2 border-cyan-300 bg-cyan-50 text-cyan-700 text-[14px] font-bold tabular-nums self-start" title={`${meta.full} 구역 (자동)`}>
+            <MapPin size={12} className="text-cyan-600" />
+            {zone}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={() => setShelfEditKind("warehouse")}
+          className={[
+            "text-[14px] tabular-nums tracking-tight cursor-pointer transition rounded px-1.5 py-0.5 text-left hover:bg-cyan-100/40 self-start",
+            hasDetail ? "text-cyan-700 font-semibold" : "text-zinc-400 font-medium",
+          ].join(" ")}
+          title="창고 상세구역 편집"
+        >
+          {hasDetail ? `상세 ${formatShelfDetail(shelfDetail)}` : "상세 · 비어있음"}
+        </button>
+      </div>
+    );
+  };
+
+  const renderStoreSlot = (idx: 1 | 2 | 3) => {
+    const meta = ARRIVAL_SLOT_META[`s${idx}` as ArrivalSlot];
+    const shelfKey = `store${idx}`;
+    const shelfDetail = shelfPositions?.[shelfKey];
+    const hasDetail = typeof shelfDetail === "string" && shelfDetail.length === 3;
+    // 매장1 만 실제 편집 pill · 매장2·3 은 표시만 (상품입고 데이터 모델 · row.location 단일)
+    const isPrimary = idx === 1;
+    return (
+      <div key={`s${idx}`} className={`relative rounded-lg border ${meta.softBg} border-zinc-200/70 p-2.5 flex flex-col gap-2`}>
+        <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
+          <span className={`w-1.5 h-6 rounded-full ${meta.dot} shrink-0 self-center`} />
+          <span className={`text-[16px] font-bold ${meta.text} truncate`}>{meta.full}</span>
+        </div>
+        {isPrimary ? (
+          <ArrivalZoneInline value={location} onChange={onSetLocation} />
+        ) : (
+          <span className="inline-flex items-center gap-1 h-8 rounded-full px-3 border-2 border-dashed border-zinc-200 text-zinc-400 text-[14px] font-medium self-start" title="매장 추가 슬롯 · 표시용">
+            <MapPin size={12} />
+            추가 슬롯
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={() => setShelfEditKind("store")}
+          className={[
+            "text-[14px] tabular-nums tracking-tight cursor-pointer transition rounded px-1.5 py-0.5 text-left hover:bg-indigo-100/40 self-start",
+            hasDetail ? "text-indigo-700 font-semibold" : "text-zinc-400 font-medium",
+          ].join(" ")}
+          title="매장 상세구역 편집"
+        >
+          {hasDetail ? `상세 ${formatShelfDetail(shelfDetail)}` : "상세 · 비어있음"}
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-2.5 pt-1 pb-0.5 border-t border-zinc-100/80 mt-0.5">
+      {/* Row 1 · 창고 하나 (있으면) + 매장1 나란히 */}
+      <div className="grid grid-cols-2 gap-2">
+        {w1 ? renderWarehouseSlot("w1", w1.zone) : w2 ? renderWarehouseSlot("w2", w2.zone) : <div />}
+        {renderStoreSlot(1)}
+      </div>
+      {/* Row 2 · 매장2/3 (storeCount 에 따라) */}
+      {storeCount >= 2 && (
+        <div className="grid grid-cols-2 gap-2">
+          {renderStoreSlot(2)}
+          {storeCount >= 3 ? renderStoreSlot(3) : <div />}
+        </div>
+      )}
+      {/* + 매장 추가 (n/3) */}
+      {canAddStore && (
+        <button
+          type="button"
+          onClick={() => setStoreCount(c => Math.min(3, c + 1))}
+          className="inline-flex items-center gap-1.5 self-start h-8 px-3 rounded-lg text-[14px] font-bold text-violet-700 bg-violet-50 border border-violet-200 hover:bg-violet-100 hover:border-violet-300 transition cursor-pointer active:scale-95"
+          title={`매장${storeCount + 1} 추가`}
+        >
+          + 매장 추가 ({storeCount}/3)
+        </button>
+      )}
+      {/* Row 3 · 창고2 · w1 과 w2 둘 다 있을 때만 별도 행 */}
+      {w1 && w2 && (
+        <div className="grid grid-cols-1">
+          {renderWarehouseSlot("w2", w2.zone)}
+        </div>
+      )}
+
+      {shelfEditKind && (
+        <ShelfPositionsEditModal
+          productCode={productCode}
+          productName={productName}
+          displayLocation={location}
+          initial={shelfPositions}
+          kindFilter={shelfEditKind}
+          onClose={() => setShelfEditKind(null)}
+        />
+      )}
+    </div>
+  );
+};
+
 export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
   item, isRecent, onUpdateQty, onSetQty, onSetStatus, onRemove, onSetLocation,
   onSetUnitPrice, onSetExpiryDate, onSetExpiring,
@@ -226,64 +369,18 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           </span>
         </div>
 
-        {/* 구역 · 상세구역 · 2행 2열 grid · 사용자 지시 · #15 · 실재고확인과 동일 UI · 매장 추가 자동 대응 */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 items-start pt-1 pb-0.5 border-t border-zinc-100/80 mt-0.5">
-          {/* R1 · C1 · 매장구역 */}
-          <div className="flex flex-col gap-1 min-w-0">
-            <span className="text-[15px] font-bold text-zinc-500 tracking-tight">
-              매장구역<span className="text-rose-500 ml-0.5">*</span>
-            </span>
-            <ArrivalZoneInline
-              value={item.location}
-              onChange={(v) => onSetLocation(item.key, v)}
-            />
-          </div>
-
-          {/* R1 · C2 · 창고구역 */}
-          <div className="flex flex-col gap-1 min-w-0">
-            <span className="text-[15px] font-bold text-zinc-500 tracking-tight">창고구역</span>
-            {relatedSlots.filter(rs => rs.slot === "w1" || rs.slot === "w2").length > 0 ? (
-              <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                {relatedSlots.filter(rs => rs.slot === "w1" || rs.slot === "w2").map(({ slot, zone }) => {
-                  const meta = ARRIVAL_SLOT_META[slot];
-                  const isTarget = targetSlot === slot;
-                  return (
-                    <span
-                      key={slot}
-                      className={[
-                        "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[14px] font-bold tabular-nums transition",
-                        isTarget
-                          ? "border-emerald-400 bg-emerald-50 text-emerald-800 shadow-[0_0_0_2px_rgba(52,211,153,0.15)]"
-                          : `border-line ${meta.softBg} ${meta.text}`,
-                      ].join(" ")}
-                      title={isTarget ? `이번 입고 · ${meta.full} 반영 예정` : meta.full}
-                    >
-                      <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
-                      {meta.full}
-                      {zone && <span className="text-[15px] opacity-70">·{zone}</span>}
-                      {isTarget && (
-                        <span className="text-[14px] font-bold text-emerald-700 ml-0.5">+{item.qty}</span>
-                      )}
-                    </span>
-                  );
-                })}
-              </div>
-            ) : (
-              <span className="text-[14px] font-medium text-zinc-400 px-1.5 py-0.5">-</span>
-            )}
-          </div>
-
-          {/* R2 · 매장/창고 상세구역 · 공통 컴포넌트 · storage_locations 기반 동적 · col-span-2 */}
-          <div className="col-span-2">
-            <ShelfPositionsInlineTable
-              productCode={item.code}
-              productName={item.product?.product_name ?? item.product?.name ?? undefined}
-              displayLocation={productRealMap}
-              shelfPositions={shelfPositions}
-              labelSize="sm"
-            />
-          </div>
-        </div>
+        {/* 슬롯 카드 UI · B안 · 실재고확인 슬롯 카드 그대로 이식 · 구역·상세구역만 편집 · 수량은 하단 단일 유지 · 사용자 지시 */}
+        <ArrivalZoneSlotList
+          productCode={item.code}
+          productName={item.product?.product_name ?? item.product?.name ?? undefined}
+          location={item.location}
+          onSetLocation={(v) => onSetLocation(item.key, v)}
+          relatedSlots={relatedSlots}
+          targetSlot={targetSlot}
+          qty={item.qty}
+          shelfPositions={shelfPositions}
+        />
+        {/* 창고 상세구역 · 매장 상세구역 · 슬롯 카드 아래 요약 (인라인) · 편집은 슬롯 카드 안에서 */}
 
         {/* 액션 영역 · 수량 stepper + 2-state pill + 삭제 */}
         <div className="flex items-center gap-2 flex-wrap pt-1">

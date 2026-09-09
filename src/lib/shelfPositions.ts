@@ -8,6 +8,12 @@ import type { StorageLocation } from "@/shared/schemas/settings";
 
 export type ShelfPositions = Record<string, string | null | undefined>;
 
+/** 3자리 → 하이픈 표시 · "332" → "3-3-2" · 2026-09-09 · 사용자 지시 UI 포맷 */
+export function formatShelfDetail(v: string | null | undefined): string {
+  if (typeof v !== "string" || v.length !== 3) return typeof v === "string" ? v : "";
+  return `${v[0]}-${v[1]}-${v[2]}`;
+}
+
 export interface FormattedShelfPosition {
   code: string;                        // "store1" · "warehouse1"
   name: string;                        // "매장1" · "창고1"
