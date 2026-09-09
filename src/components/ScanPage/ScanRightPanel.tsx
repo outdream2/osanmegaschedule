@@ -25,12 +25,15 @@ interface ScanRightPanelProps {
   openHistory: (code: string, name: string) => void | Promise<void>;
   handleSaveRow: (rowKey: string) => void | Promise<void>;
   toggleExpiry: (row: StockRow) => void | Promise<void>;
+  /** 2026-09-09 · 관리자 권한 · 슬롯 상세구역 편집 · 매장 추가/삭제 */
+  canManage?: boolean;
 }
 
 export const ScanRightPanel: React.FC<ScanRightPanelProps> = ({
   rows, filteredRows, lastCode, lastAddedKey, requestingKey,
   scanFilter, setScanFilter, setExpiryModalRow,
   requestDisplay, patchRow, removeRow, openHistory, handleSaveRow, toggleExpiry,
+  canManage = false,
 }) => {
   const targetRow = lastCode ? rows.find(r => r.code === lastCode) : null;
   const disabled = !targetRow;
@@ -105,6 +108,7 @@ export const ScanRightPanel: React.FC<ScanRightPanelProps> = ({
               onRequestDisplay={requestDisplay}
               onSaveRow={handleSaveRow}
               onToggleExpiry={toggleExpiry}
+              canManage={canManage}
             />
           ))}
         </div>

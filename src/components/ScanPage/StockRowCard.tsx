@@ -29,6 +29,8 @@ import { RealMapSelector } from "./RealMapSelector";
 import { resolveWarehouseVisibility, classifyArrivalSlot } from "../../lib/warehouseZoneMap";
 // 2026-09-09 · 사용자 지시 · 슬롯 구역 옆 상세구역 · shelfMap 훅 사용 (최신 값 · 편집 반영)
 import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
+// 2026-09-09 · 사용자 지시 · 관리자만 슬롯 상세구역 편집 모달 · 매장 추가/삭제
+import { ShelfPositionsEditModal } from "../common/ShelfPositionsEditModal";
 
 // ─── 5-slot 정의 (창고2 · 매장3) ─────────────────────────────────
 interface SlotDef {
@@ -168,20 +170,22 @@ interface StockRowCardProps {
   onRemove: (key: string) => void;
   onHistory: (code: string, name: string) => void;
   onRequestDisplay: (row: StockRow) => void;
-  // 2026-08-23 · #204 · 개별 저장 (bulk endpoint · items=[one])
   onSaveRow?: (key: string) => Promise<void> | void;
-  // 2026-08-25 · 유통기한 임박 토글 · product.expiry_date 업데이트
   onToggleExpiry?: (row: StockRow) => Promise<void> | void;
+  // 2026-09-09 · 사용자 지시 · 관리자만 상세구역 편집 · 매장 추가/삭제
+  canManage?: boolean;
 }
 
 export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
   row, isRecent, requestingKey, onPatch, onRemove, onHistory, onRequestDisplay,
-  onSaveRow, onToggleExpiry,
+  onSaveRow, onToggleExpiry, canManage = false,
 }) => {
   // 2026-09-09 · 사용자 지시 · 슬롯 구역 옆 상세구역 · shelfMap 훅 · 최신 값 (편집 반영)
   const shelfPositionsMap = useShelfPositionsMap();
   const rowShelfPositions = shelfPositionsMap[row.code]
     ?? ((row.product as { shelf_positions?: Record<string, string | null> } | undefined)?.shelf_positions);
+  // 2026-09-09 · 슬롯 상세구역 편집 모달 · 관리자만
+  const [shelfEditCode, setShelfEditCode] = useState<string | null>(null);
   // 2026-08-25 · 유통기한 임박 · product.expiry_date 있으면 빨간 강조
   const hasExpiryFlag = !!((row.product as { expiry_date?: string | null }).expiry_date && String((row.product as { expiry_date?: string | null }).expiry_date).trim());
   const rowTotal = calcRowTotal(row);
@@ -506,38 +510,48 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                   <span className="text-[13px] text-zinc-400 tabular-nums">이전 {prev}</span>
                 )}
               </div>
-              {/* 구역 선택 (창고 + 매장 공통) · 옆에 상세구역 표시 · 2026-09-09 · 사용자 지시 */}
-              {warehouseZoneKey ? (
-                <ZoneInline
-                  value={currentZone}
-                  onChange={v => onPatch(row.key, { [warehouseZoneKey]: v } as Partial<StockRow>)}
-                />
-              ) : (s.zoneKey && (
-                <ZoneInline
-                  value={currentZone}
-                  onChange={v => onPatch(row.key, { [s.zoneKey!]: v } as Partial<StockRow>)}
-                  erpSpec={spec || undefined}
-                />
-              ))}
-              {(() => {
-                const detail = rowShelfPositions?.[s.shelfCode];
-                if (!detail || String(detail).trim() === "") return null;
-                // 2026-09-09 · 사용자 지시 · 매장구역 pill 톤과 통일 · 슬롯별 색상 (매장=indigo · 창고=cyan)
-                const isStore = s.key.startsWith("s");
-                const toneCls = isStore
-                  ? "bg-indigo-50 border-indigo-300 text-indigo-700"
-                  : "bg-cyan-50 border-cyan-200 text-cyan-700";
-                const subCls  = isStore ? "text-indigo-500" : "text-cyan-500";
-                return (
-                  <span
-                    className={`inline-flex items-center gap-1 h-9 rounded-full px-2.5 border-2 text-[14px] font-bold tabular-nums tracking-tight ${toneCls}`}
-                    title={`${s.full} 상세구역 · ${detail}`}
-                  >
-                    <span className={`text-[11px] font-semibold uppercase tracking-wide ${subCls}`}>상세</span>
-                    {`${detail[0]}-${detail[1]}-${detail[2]}`}
-                  </span>
-                );
-              })()}
+              {/* 구역 + 상세구역 · 넓으면 옆에 · 좁으면 위아래 · 관리자만 상세 편집 · 2026-09-09 · 사용자 지시 */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1.5">
+                {warehouseZoneKey ? (
+                  <ZoneInline
+                    value={currentZone}
+                    onChange={v => onPatch(row.key, { [warehouseZoneKey]: v } as Partial<StockRow>)}
+                  />
+                ) : (s.zoneKey && (
+                  <ZoneInline
+                    value={currentZone}
+                    onChange={v => onPatch(row.key, { [s.zoneKey!]: v } as Partial<StockRow>)}
+                    erpSpec={spec || undefined}
+                  />
+                ))}
+                {(() => {
+                  const detail = rowShelfPositions?.[s.shelfCode];
+                  const hasDetail = typeof detail === "string" && detail.length === 3;
+                  const isStoreSlot = s.key.startsWith("s");
+                  const toneCls = isStoreSlot
+                    ? (hasDetail ? "bg-indigo-50 border-indigo-300 text-indigo-700" : "bg-zinc-50 border-dashed border-zinc-300 text-zinc-400")
+                    : (hasDetail ? "bg-cyan-50 border-cyan-200 text-cyan-700" : "bg-zinc-50 border-dashed border-zinc-300 text-zinc-400");
+                  const subCls  = isStoreSlot ? "text-indigo-500" : "text-cyan-500";
+                  const label = hasDetail ? `${detail[0]}-${detail[1]}-${detail[2]}` : "비어있음";
+                  const clickable = canManage;
+                  const Cmp: any = clickable ? "button" : "span";
+                  return (
+                    <Cmp
+                      type={clickable ? "button" : undefined}
+                      onClick={clickable ? () => setShelfEditCode(s.shelfCode) : undefined}
+                      className={[
+                        "inline-flex items-center gap-1 h-9 rounded-full px-2.5 border-2 text-[14px] font-bold tabular-nums tracking-tight",
+                        toneCls,
+                        clickable ? "cursor-pointer hover:opacity-80 transition" : "",
+                      ].join(" ")}
+                      title={clickable ? `${s.full} 상세구역 · 클릭하여 편집` : undefined}
+                    >
+                      <span className={`text-[11px] font-semibold uppercase tracking-wide ${hasDetail ? subCls : "text-zinc-400"}`}>상세</span>
+                      {label}
+                    </Cmp>
+                  );
+                })()}
+              </div>
               <div className="flex items-center gap-1.5">
                 <StepperInput
                   value={add}
@@ -627,6 +641,16 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
         </div>
         );
       })()}
+      {shelfEditCode && (
+        <ShelfPositionsEditModal
+          productCode={row.code}
+          productName={row.product?.product_name ?? row.product?.name ?? undefined}
+          displayLocation={(row.product as { location?: string | null; display_location?: string | null } | null)?.location ?? (row.product as { display_location?: string | null } | null)?.display_location ?? null}
+          initial={rowShelfPositions}
+          locationCode={shelfEditCode}
+          onClose={() => setShelfEditCode(null)}
+        />
+      )}
     </div>
   );
 });

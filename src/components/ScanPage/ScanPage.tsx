@@ -727,6 +727,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 setExpiryModalRow={setExpiryModalRow} requestDisplay={requestDisplay}
                 patchRow={patchRow} removeRow={removeRow} openHistory={openHistory}
                 handleSaveRow={handleSaveRow} toggleExpiry={toggleExpiry}
+                canManage={canManageProducts}
               />
 
           {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · SaveCard */}
