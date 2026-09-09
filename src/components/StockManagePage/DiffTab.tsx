@@ -244,8 +244,8 @@ export const DiffTab: React.FC = () => {
             </div>
             <div className="flex-1 overflow-y-auto relative">
               {loading && diffList.length > 0 && (
-                <Card variant="flat" bg="bg-violet-50" borderColor="border-violet-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 text-[14px] text-violet-600 font-bold py-1.5 mb-1 sticky top-0 z-10">
-                  <Spinner size={11} tone="violet" /> 조건 변경 · 새로 불러오는 중...
+                <Card variant="flat" bg="bg-violet-50" borderColor="border-violet-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mb-1 sticky top-0 z-10">
+                  <Spinner size={11} tone="violet" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
                 </Card>
               )}
               {loading && diffList.length === 0 ? (

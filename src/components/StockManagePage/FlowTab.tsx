@@ -518,8 +518,7 @@ export const FlowTab: React.FC = () => {
               <div className="relative flex-1 overflow-auto max-h-[50vh]">
                 {loading && filteredFlow.length > 0 && (
                   <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mx-1 mb-1 shrink-0">
-                    <Spinner size={11} tone="sky" />
-                    <span className="text-[16px] font-bold text-sky-700">조건 변경 · 새로 불러오는 중...</span>
+                    <Spinner size={11} tone="sky" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
                   </Card>
                 )}
 
