@@ -103,7 +103,8 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
   const location = product.location ?? product.display_location ?? null;
   const inEditMode = editable && editMode;
 
-  const labelCls = compact ? "text-[13px] font-bold text-ink-soft uppercase tracking-wider" : "text-[14px] font-bold text-ink-soft uppercase tracking-wider";
+  // 2026-09-09 · 사용자 지시 · 라벨 폰트 +2 (13→15 · 14→16)
+  const labelCls = compact ? "text-[15px] font-bold text-ink-soft uppercase tracking-wider" : "text-[16px] font-bold text-ink-soft uppercase tracking-wider";
   const valueCls = compact ? "text-[14px] font-bold text-ink" : "text-[15px] font-bold text-ink";
   const numCls = `${valueCls} tabular-nums`;
 
