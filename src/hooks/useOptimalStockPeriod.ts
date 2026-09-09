@@ -11,7 +11,8 @@ import { useKvSetting } from "./useKvSetting";
 // 2026-08-24 · 사용자 지시 · 기본 15일 (이전 30 · 회전 빠른 매장 표준)
 export const OPTIMAL_STOCK_DEFAULT_DAYS = 15;
 export const OPTIMAL_STOCK_MIN_DAYS = 1;
-export const OPTIMAL_STOCK_MAX_DAYS = 90;
+// 2026-09-09 · 사용자 지시 · 90 → 120일까지 가능
+export const OPTIMAL_STOCK_MAX_DAYS = 120;
 
 function sanitize(raw: unknown): number | null {
   const n = typeof raw === "number" ? raw : Number(raw);
