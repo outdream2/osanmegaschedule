@@ -61,7 +61,8 @@ const ShelfExampleDiagram: React.FC = () => (
       3자리 = 층 · 칸 · 순서
     </p>
     <div className="flex flex-col gap-1.5">
-      {/* 3층 선반 시각화 · 맨 위 = 1층 · 아래로 증가 */}
+      {/* 층·칸 시각화 · 맨 위 = 1층 · 아래로 증가 · 왼쪽 = 1칸 · 오른쪽으로 증가 */}
+      <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">층 · 칸</span>
       {[1, 2, 3].map(floor => (
         <div key={floor} className="flex items-center gap-1.5">
           <span className="text-[14px] font-bold text-zinc-500 tabular-nums w-10 text-right shrink-0">
@@ -83,6 +84,29 @@ const ShelfExampleDiagram: React.FC = () => (
         </div>
       ))}
     </div>
+
+    {/* 순서 시각화 · 한 칸 안 · 왼쪽 = 1순서 · 오른쪽으로 증가 (앞 → 뒤) */}
+    <div className="flex flex-col gap-1.5">
+      <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">순서 · 한 칸 안</span>
+      <div className="flex items-center gap-1.5">
+        <span className="text-[14px] font-bold text-zinc-500 tabular-nums w-10 text-right shrink-0">
+          앞→뒤
+        </span>
+        <div className="flex-1 flex items-center gap-1 border-2 border-zinc-300 rounded-md bg-white/60 p-1">
+          {[1, 2, 3].map(seq => (
+            <div
+              key={seq}
+              className={`flex-1 h-9 rounded text-[13px] font-semibold flex items-center justify-center border border-dashed ${
+                seq === 1 ? "bg-indigo-100 border-indigo-400 text-indigo-700" : "bg-zinc-50/70 border-zinc-200 text-zinc-500"
+              }`}
+              title={seq === 1 ? "1순서 · 앞" : `${seq}순서`}
+            >
+              {seq}순서
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
     <div className="flex flex-col gap-1 pt-2 border-t border-brand-deep/10">
       <p className="text-[12px] text-zinc-500 font-semibold">규칙</p>
       <ul className="text-[12px] text-zinc-700 leading-relaxed space-y-0.5 list-none">
@@ -101,51 +125,58 @@ const ShelfExampleDiagram: React.FC = () => (
   </div>
 );
 
-// ─── 표 안 · 각 자리 stepper (1자리) · 없으면 "-" ─────────────────────
-const CellStepper: React.FC<{
-  value: string; // "" 또는 1자
+// ─── 큰 3자리 stepper · 라벨 + input + 버튼 · 반응형 · 2026-09-09 · 사용자 지시 ────
+const BigDigitStepper: React.FC<{
+  label: string;
+  value: string;
   onChange: (v: string) => void;
   onBump: (delta: 1 | -1) => void;
   disabled?: boolean;
-  ariaLabel: string;
-}> = ({ value, onChange, onBump, disabled, ariaLabel }) => (
-  <div className="inline-flex items-center gap-0.5">
-    <button
-      type="button"
-      onClick={() => onBump(-1)}
-      disabled={disabled}
-      className="w-6 h-7 rounded-md bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-ink-soft disabled:opacity-50"
-      title={`${ariaLabel} -`}
-      tabIndex={-1}
-    >
-      <Minus size={12} />
-    </button>
-    <input
-      lang="ko" type="text"
-      value={value}
-      maxLength={1}
-      onChange={(e) => {
-        const v = e.target.value.slice(-1);
-        if (v === "") { onChange(""); return; }
-        onChange(normalizeDigit(v));
-      }}
-      disabled={disabled}
-      className="w-8 h-7 text-center text-[14px] font-bold tabular-nums rounded-md border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-brand-tint"
-      placeholder="-"
-      aria-label={ariaLabel}
-    />
-    <button
-      type="button"
-      onClick={() => onBump(+1)}
-      disabled={disabled}
-      className="w-6 h-7 rounded-md bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-ink-soft disabled:opacity-50"
-      title={`${ariaLabel} +`}
-      tabIndex={-1}
-    >
-      <Plus size={12} />
-    </button>
-  </div>
-);
+  tone: "store" | "warehouse";
+}> = ({ label, value, onChange, onBump, disabled, tone }) => {
+  const focusRing = tone === "store" ? "focus:ring-indigo-200 focus:border-indigo-500" : "focus:ring-cyan-200 focus:border-cyan-500";
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      <span className="text-[13px] font-bold text-zinc-500 tracking-wide uppercase">{label}</span>
+      <div className="inline-flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => onBump(-1)}
+          disabled={disabled}
+          className="w-9 h-11 rounded-lg bg-white border-2 border-zinc-200 hover:bg-zinc-50 hover:border-zinc-400 flex items-center justify-center text-ink-soft disabled:opacity-50 cursor-pointer transition"
+          title={`${label} 감소`}
+          tabIndex={-1}
+        >
+          <Minus size={14} strokeWidth={2.5} />
+        </button>
+        <input
+          lang="ko" type="text"
+          value={value}
+          maxLength={1}
+          onChange={(e) => {
+            const v = e.target.value.slice(-1);
+            if (v === "") { onChange(""); return; }
+            onChange(normalizeDigit(v));
+          }}
+          disabled={disabled}
+          className={`w-12 h-11 text-center text-[22px] font-bold tabular-nums rounded-lg border-2 border-zinc-200 focus:outline-none focus:ring-2 transition ${focusRing}`}
+          placeholder="-"
+          aria-label={label}
+        />
+        <button
+          type="button"
+          onClick={() => onBump(+1)}
+          disabled={disabled}
+          className="w-9 h-11 rounded-lg bg-white border-2 border-zinc-200 hover:bg-zinc-50 hover:border-zinc-400 flex items-center justify-center text-ink-soft disabled:opacity-50 cursor-pointer transition"
+          title={`${label} 증가`}
+          tabIndex={-1}
+        >
+          <Plus size={14} strokeWidth={2.5} />
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = ({
   productCode, productName, displayLocation, initial, kindFilter, locationCode, onClose, onSaved,
@@ -263,94 +294,104 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
           </button>
         </div>
 
-        {/* 바디 · 좌측 예시 그림 + 우측 표 */}
+        {/* 바디 · 좌측 예시 그림 + 우측 카드 리스트 · 반응형 (md 이하 stack) */}
         <div className="flex-1 overflow-y-auto p-5">
-          <div className="grid gap-5" style={{ gridTemplateColumns: "220px 1fr" }}>
-            <ShelfExampleDiagram />
-            <div className="min-w-0">
-              {activeLocs.length === 0 ? (
+          <div className="flex flex-col md:flex-row gap-5">
+            {/* 좌측 · 예시 그림 · md 이상만 사이드 · sm 은 상단 */}
+            <div className="md:w-[240px] shrink-0">
+              <ShelfExampleDiagram />
+            </div>
+
+            {/* 우측 · 위치별 카드 리스트 */}
+            <div className="flex-1 min-w-0 flex flex-col gap-3">
+              {activeLocs.length === 0 && (
                 <div className="text-[14px] text-ink-soft">활성화된 저장 위치가 없습니다</div>
-              ) : (
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b-2 border-line">
-                      <th className="text-left text-[15px] font-bold text-zinc-500 uppercase tracking-wide py-2 pr-2">위치</th>
-                      <th className="text-left text-[15px] font-bold text-zinc-500 uppercase tracking-wide py-2 px-2">구역</th>
-                      <th className="text-center text-[15px] font-bold text-zinc-500 uppercase tracking-wide py-2 px-2">층</th>
-                      <th className="text-center text-[15px] font-bold text-zinc-500 uppercase tracking-wide py-2 px-2">칸</th>
-                      <th className="text-center text-[15px] font-bold text-zinc-500 uppercase tracking-wide py-2 px-2">순서</th>
-                      <th className="py-2 pl-2"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activeLocs.map(loc => {
-                      const digits = draft[loc.code] ?? ["", "", ""];
-                      const empty = digits.every(d => !d);
-                      const missing = loc.required_detail && empty;
-                      return (
-                        <tr key={loc.code} className={`border-b border-zinc-100 ${missing ? "bg-rose-50/30" : ""}`}>
-                          <td className="py-2 pr-2">
-                            <div className="flex flex-col">
-                              <span className={`text-[15px] font-bold leading-tight ${loc.kind === "store" ? "text-indigo-700" : "text-cyan-700"}`}>
-                                {loc.name}
-                              </span>
-                              <span className="text-[11px] text-zinc-400 mt-0.5">
-                                {loc.kind === "store" ? "매장" : "창고"}
-                                {loc.required_detail && <span className="text-rose-500 ml-1">*</span>}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-2 px-2">
-                            <span className="text-[14px] font-semibold text-zinc-700 tabular-nums">
+              )}
+              {activeLocs.map(loc => {
+                const digits = draft[loc.code] ?? ["", "", ""];
+                const empty = digits.every(d => !d);
+                const missing = loc.required_detail && empty;
+                const isStore = loc.kind === "store";
+                const accentBg = isStore ? "bg-indigo-500" : "bg-cyan-500";
+                const nameCls = isStore ? "text-indigo-700" : "text-cyan-700";
+                const cardBg = isStore ? "bg-indigo-50/40" : "bg-cyan-50/40";
+                const cardBorder = missing ? "border-rose-300" : isStore ? "border-indigo-200/70" : "border-cyan-200/70";
+                return (
+                  <div
+                    key={loc.code}
+                    className={`relative rounded-2xl border-2 ${cardBorder} ${cardBg} p-4 flex flex-col gap-4 transition`}
+                  >
+                    {/* 카드 상단 · 위치명 + 구역 + 지우기 */}
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className={`w-2 h-8 rounded-full ${accentBg} shrink-0`} />
+                        <div className="flex flex-col min-w-0">
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <span className={`text-[20px] font-bold leading-none tracking-tight ${nameCls}`}>
+                              {loc.name}
+                            </span>
+                            <span className="text-[12px] font-semibold text-zinc-400 uppercase tracking-wide">
+                              {isStore ? "매장" : "창고"}
+                              {loc.required_detail && <span className="text-rose-500 ml-1">*</span>}
+                            </span>
+                          </div>
+                          <div className="flex items-baseline gap-1.5 mt-1">
+                            <span className="text-[12px] font-semibold text-zinc-400 uppercase">구역</span>
+                            <span className="text-[15px] font-bold text-zinc-700 tabular-nums">
                               {displayLocation ?? "-"}
                             </span>
-                          </td>
-                          <td className="py-2 px-2 text-center">
-                            <CellStepper
-                              value={digits[0]}
-                              onChange={(v) => setDigit(loc.code, 0, v)}
-                              onBump={(d) => bumpDigitAt(loc.code, 0, d)}
-                              disabled={saving}
-                              ariaLabel={`${loc.name} 층`}
-                            />
-                          </td>
-                          <td className="py-2 px-2 text-center">
-                            <CellStepper
-                              value={digits[1]}
-                              onChange={(v) => setDigit(loc.code, 1, v)}
-                              onBump={(d) => bumpDigitAt(loc.code, 1, d)}
-                              disabled={saving}
-                              ariaLabel={`${loc.name} 칸`}
-                            />
-                          </td>
-                          <td className="py-2 px-2 text-center">
-                            <CellStepper
-                              value={digits[2]}
-                              onChange={(v) => setDigit(loc.code, 2, v)}
-                              onBump={(d) => bumpDigitAt(loc.code, 2, d)}
-                              disabled={saving}
-                              ariaLabel={`${loc.name} 순서`}
-                            />
-                          </td>
-                          <td className="py-2 pl-2">
-                            {!empty && (
-                              <button
-                                type="button"
-                                onClick={() => clearRow(loc.code)}
-                                disabled={saving}
-                                className="text-[12px] text-zinc-400 hover:text-rose-500 font-medium disabled:opacity-40"
-                                title="지우기"
-                              >
-                                지우기
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
+                          </div>
+                        </div>
+                      </div>
+                      {!empty && (
+                        <button
+                          type="button"
+                          onClick={() => clearRow(loc.code)}
+                          disabled={saving}
+                          className="text-[13px] text-zinc-400 hover:text-rose-500 font-medium disabled:opacity-40 shrink-0 h-8 px-2 rounded-md hover:bg-rose-50 transition"
+                          title="지우기"
+                        >
+                          지우기
+                        </button>
+                      )}
+                    </div>
+
+                    {/* 카드 하단 · 층 · 칸 · 순서 stepper · flex-wrap 반응형 */}
+                    <div className="flex items-end justify-center gap-3 sm:gap-5 flex-wrap pt-1 border-t border-white/50">
+                      <BigDigitStepper
+                        label="층"
+                        value={digits[0]}
+                        onChange={(v) => setDigit(loc.code, 0, v)}
+                        onBump={(d) => bumpDigitAt(loc.code, 0, d)}
+                        disabled={saving}
+                        tone={loc.kind}
+                      />
+                      <div className="text-[24px] font-light text-zinc-300 self-center pb-3">-</div>
+                      <BigDigitStepper
+                        label="칸"
+                        value={digits[1]}
+                        onChange={(v) => setDigit(loc.code, 1, v)}
+                        onBump={(d) => bumpDigitAt(loc.code, 1, d)}
+                        disabled={saving}
+                        tone={loc.kind}
+                      />
+                      <div className="text-[24px] font-light text-zinc-300 self-center pb-3">-</div>
+                      <BigDigitStepper
+                        label="순서"
+                        value={digits[2]}
+                        onChange={(v) => setDigit(loc.code, 2, v)}
+                        onBump={(d) => bumpDigitAt(loc.code, 2, d)}
+                        disabled={saving}
+                        tone={loc.kind}
+                      />
+                    </div>
+
+                    {missing && (
+                      <p className="text-[12px] font-semibold text-rose-500 -mt-1">필수 · 층·칸·순서 입력 필요</p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
