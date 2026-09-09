@@ -85,6 +85,8 @@ export function ProductSearchInput({
           <input
             lang="ko" ref={inputRef}
             type="text"
+            inputMode="text"
+            autoComplete="off"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
