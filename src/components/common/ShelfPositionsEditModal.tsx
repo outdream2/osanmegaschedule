@@ -57,22 +57,22 @@ function joinDigits(digits: [string, string, string]): string | null {
 //   · 순서 · 왼쪽에서 오른쪽으로 증가 (각 칸 안 · 앞→뒤)
 const ShelfExampleDiagram: React.FC = () => (
   <div className="flex flex-col gap-3 p-4 bg-gradient-to-br from-brand-tint/40 to-white rounded-xl border border-brand-deep/10">
-    <p className="text-[13px] font-bold text-brand-deep tracking-tight">
+    <p className="text-[15px] font-bold text-brand-deep tracking-tight">
       3자리 = 층 · 칸 · 순서
     </p>
     <div className="flex flex-col gap-1.5">
       {/* 층·칸 시각화 · 맨 위 = 1층 · 아래로 증가 · 왼쪽 = 1칸 · 오른쪽으로 증가 */}
-      <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">층 · 칸</span>
+      <span className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wide">층 · 칸</span>
       {[1, 2, 3].map(floor => (
         <div key={floor} className="flex items-center gap-1.5">
-          <span className="text-[14px] font-bold text-zinc-500 tabular-nums w-10 text-right shrink-0">
+          <span className="text-[16px] font-bold text-zinc-500 tabular-nums w-12 text-right shrink-0">
             {floor}층
           </span>
           <div className="flex-1 grid grid-cols-3 gap-1 border-2 border-b-4 border-zinc-300 rounded-md bg-white/60 p-1">
             {[1, 2, 3].map(col => (
               <div
                 key={col}
-                className={`h-9 rounded text-[13px] font-semibold text-zinc-500 flex items-center justify-center border border-dashed border-zinc-200 ${
+                className={`h-9 rounded text-[15px] font-semibold text-zinc-500 flex items-center justify-center border border-dashed border-zinc-200 ${
                   floor === 1 && col === 1 ? "bg-indigo-100 border-indigo-400 text-indigo-700" : "bg-zinc-50/70"
                 }`}
                 title={floor === 1 && col === 1 ? "원점 · 1층 1칸 (예: 111)" : `${floor}층 ${col}칸`}
@@ -87,16 +87,16 @@ const ShelfExampleDiagram: React.FC = () => (
 
     {/* 순서 시각화 · 한 칸 안 · 왼쪽 = 1순서 · 오른쪽으로 증가 (앞 → 뒤) */}
     <div className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">순서 · 한 칸 안</span>
+      <span className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wide">순서 · 한 칸 안</span>
       <div className="flex items-center gap-1.5">
-        <span className="text-[14px] font-bold text-zinc-500 tabular-nums w-10 text-right shrink-0">
+        <span className="text-[16px] font-bold text-zinc-500 tabular-nums w-12 text-right shrink-0">
           앞→뒤
         </span>
         <div className="flex-1 flex items-center gap-1 border-2 border-zinc-300 rounded-md bg-white/60 p-1">
           {[1, 2, 3].map(seq => (
             <div
               key={seq}
-              className={`flex-1 h-9 rounded text-[13px] font-semibold flex items-center justify-center border border-dashed ${
+              className={`flex-1 h-9 rounded text-[15px] font-semibold flex items-center justify-center border border-dashed ${
                 seq === 1 ? "bg-indigo-100 border-indigo-400 text-indigo-700" : "bg-zinc-50/70 border-zinc-200 text-zinc-500"
               }`}
               title={seq === 1 ? "1순서 · 앞" : `${seq}순서`}
@@ -108,17 +108,17 @@ const ShelfExampleDiagram: React.FC = () => (
       </div>
     </div>
     <div className="flex flex-col gap-1 pt-2 border-t border-brand-deep/10">
-      <p className="text-[12px] text-zinc-500 font-semibold">규칙</p>
-      <ul className="text-[12px] text-zinc-700 leading-relaxed space-y-0.5 list-none">
+      <p className="text-[14px] text-zinc-500 font-semibold">규칙</p>
+      <ul className="text-[14px] text-zinc-700 leading-relaxed space-y-0.5 list-none">
         <li>· 층 · 맨 위 = <b>1층</b> · 아래로 증가</li>
         <li>· 칸 · 왼쪽 = <b>1칸</b> · 오른쪽으로 증가</li>
         <li>· 순서 · 왼쪽 = <b>1순서</b> · 오른쪽으로 증가 (앞→뒤)</li>
       </ul>
-      <p className="text-[13px] text-zinc-700 leading-relaxed mt-1">
+      <p className="text-[15px] text-zinc-700 leading-relaxed mt-1">
         <span className="inline-block px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold tabular-nums mr-1">1-1-1</span>
         · 원점 · <b>왼쪽 맨 위</b>
       </p>
-      <p className="text-[12px] text-zinc-400">
+      <p className="text-[14px] text-zinc-400">
         · 각 자리 · 0~9 · A~Z
       </p>
     </div>
