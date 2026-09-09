@@ -138,58 +138,46 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
     );
   };
 
-  // ─── aisle pair 셀 렌더 (B 위 / A 아래) ───────────────────────────────────
-  const renderAislePair = (b: number | string, a: number | string, aisleColIdx: number, pairIdx: number) => {
-    const isEvent = typeof b === "string";
-
-    const renderSide = (val: number | string, side: "B" | "A") => {
-      if (isEvent) {
-        const c = EVENT_ZONE_COLOR;
-        const zd = typeof val === "number" ? ZONE_DEFS.find((z: any) => z.num === val) : null;
-        const cat = zd ? (getZoneSubLabel(String(val)) || zd.category || "") : "이벤트";
-        return (
-          <div
-            key={`event-${aisleColIdx}-${pairIdx}-${side}`}
-            className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-center h-[76px] px-1 py-1.5 gap-1 overflow-hidden flex-1`}
-          >
-            <span className={`text-[11px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none`}>이벤트</span>
-            <span className={`text-[11px] font-semibold ${c.text} text-center leading-tight`}>{cat}</span>
-          </div>
-        );
-      }
-
-      const num = val as number;
-      const ca = CAT_A_COLORS[num] ?? CAT_A_COLORS[1];
-      const cb = CAT_B_COLORS[num] ?? CAT_B_COLORS[1];
-      const colors = side === "B" ? cb : ca;
-      const zd = ZONE_DEFS.find((z: any) => z.num === num);
-      const sub = side === "B"
-        ? (getZoneSubLabel(`${num}B`) || (zd?.subB ?? ""))
-        : (getZoneSubLabel(`${num}A`) || (zd?.subA ?? ""));
-      const zoneId = `${num}${side}`;
-      // zonesRaw location lookup
-      const rawRow = zonesRaw.find(r => r.id === (side === "B" ? (zd as any)?.__rowIdB : (zd as any)?.__rowIdA));
-      const zoneLabel = rawRow?.location ?? zoneId;
-
+  // ─── aisle side 셀 렌더 (B or A 개별) · 2026-09-09 · 5-column grid 재구성 ───
+  //   · 사용자 지시 · 각 B/A · 각각 하나의 격자 셀 · 표처럼 깔끔 정렬
+  const renderAisleSide = (val: number | string, aisleColIdx: number, pairIdx: number, side: "B" | "A") => {
+    const isEvent = typeof val === "string";
+    if (isEvent) {
+      const c = EVENT_ZONE_COLOR;
       return (
-        <button
-          key={`pair-${aisleColIdx}-${pairIdx}-${side}`}
-          type="button"
-          onClick={() => onZoneProductsOpen({ zoneId, zoneNum: num, zoneLabel, category: sub })}
-          title={`${zoneLabel} · ${sub} · 클릭 → 상품 조회`}
-          className={`${colors.bg} border ${colors.border} rounded flex flex-col items-center justify-center h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden flex-1`}
+        <div
+          key={`event-${aisleColIdx}-${pairIdx}-${side}`}
+          className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-center h-[76px] px-1 py-1.5 gap-1 overflow-hidden w-full`}
         >
-          <span className={`text-[11px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{zoneId}</span>
-          <span className={`text-[11px] ${colors.text} text-center leading-tight break-keep whitespace-normal`}>{sub}</span>
-        </button>
+          <span className={`text-[11px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none`}>이벤트</span>
+          <span className={`text-[11px] font-semibold ${c.text} text-center leading-tight`}>{side}</span>
+        </div>
       );
-    };
+    }
+
+    const num = val as number;
+    const ca = CAT_A_COLORS[num] ?? CAT_A_COLORS[1];
+    const cb = CAT_B_COLORS[num] ?? CAT_B_COLORS[1];
+    const colors = side === "B" ? cb : ca;
+    const zd = ZONE_DEFS.find((z: any) => z.num === num);
+    const sub = side === "B"
+      ? (getZoneSubLabel(`${num}B`) || (zd?.subB ?? ""))
+      : (getZoneSubLabel(`${num}A`) || (zd?.subA ?? ""));
+    const zoneId = `${num}${side}`;
+    const rawRow = zonesRaw.find(r => r.id === (side === "B" ? (zd as any)?.__rowIdB : (zd as any)?.__rowIdA));
+    const zoneLabel = rawRow?.location ?? zoneId;
 
     return (
-      <div key={`aisle-col${aisleColIdx}-pair${pairIdx}`} className="flex flex-col gap-0.5 flex-1">
-        {renderSide(b, "B")}
-        {renderSide(a, "A")}
-      </div>
+      <button
+        key={`aisle-${aisleColIdx}-${pairIdx}-${side}`}
+        type="button"
+        onClick={() => onZoneProductsOpen({ zoneId, zoneNum: num, zoneLabel, category: sub })}
+        title={`${zoneLabel} · ${sub} · 클릭 → 상품 조회`}
+        className={`${colors.bg} border ${colors.border} rounded flex flex-col items-center justify-center h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden w-full`}
+      >
+        <span className={`text-[11px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{zoneId}</span>
+        <span className={`text-[11px] ${colors.text} text-center leading-tight break-keep whitespace-normal`}>{sub}</span>
+      </button>
     );
   };
 
@@ -278,61 +266,65 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
           <span className="ml-auto text-[12px] bg-rose-50 text-rose-700 border border-rose-300 font-extrabold px-1.5 rounded-full uppercase tracking-wider shadow-sm">유통기한 임박존</span>
         </div>
 
-        {/* ── 14×8 그리드 매장 구역도 ──────────────────────────────────────── */}
+        {/* ── 2026-09-09 · 5-column × 8-row 격자 재구성 · 사용자 지시 ──────── */}
         {/*
-          Grid 구조:
-            Row 0 (grid-row 1): 14 columns 상단 벽면 (full width)
-            Row 1-6 (grid-row 2-7): col 0 = 좌측벽 · col 1,3,4,6,7,9,10,11,13 = 빈 공간 · col 2,5,8,12 = aisle pair columns
-            Row 7 (grid-row 8): 14 columns 하단 벽면 (full width)
-
-          aisle 각 col 은 B(위)/A(아래) 2행을 차지 (각 pair 는 rows 2개씩)
-          3 pairs × 2 rows = 6 rows (2-7)
+          Row 0: 상단 벽 (col-span 5 · 내부 14셀 flex)
+          Row 1: 31 · 9B · 8B · 4B · 3B
+          Row 2: 30 · 9A · 8A · 4A · 3A
+          Row 3: 29 · 10B · EVENT · 5B · 2B
+          Row 4: 28 · 10A · EVENT · 5A · 2A
+          Row 5: 27 · 11B · 7B · 6B · 1B
+          Row 6: 26 · 11A · 7A · 6A · 1A
+          Row 7: 하단 벽 (col-span 5 · 내부 14셀 flex)
         */}
         <div
           className="w-full"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(14, minmax(0, 1fr))",
-            gridTemplateRows: "auto repeat(6, minmax(56px, 1fr)) auto",
+            gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+            gridTemplateRows: "auto repeat(6, minmax(76px, 1fr)) auto",
             gap: "3px",
-            minWidth: "860px",
+            minWidth: "620px",
           }}
         >
-          {/* Row 0: 상단 벽면 14셀 */}
-          {STORE_TOP_WALL.map((num, i) => (
-            <div key={`tw-${i}`} style={{ gridColumn: i + 1, gridRow: 1 }}>
-              {renderTopWallCell(num, `tw-${i}-${num}`)}
-            </div>
-          ))}
+          {/* Row 0: 상단 벽 · col-span-5 · 내부 flex 14셀 */}
+          <div style={{ gridColumn: "1 / -1", gridRow: 1, display: "flex", gap: "3px" }}>
+            {STORE_TOP_WALL.map((num, i) => (
+              <div key={`tw-${i}`} className="flex-1 min-w-0">
+                {renderTopWallCell(num, `tw-${i}-${num}`)}
+              </div>
+            ))}
+          </div>
 
-          {/* Row 1-6: 좌측 벽면 (col 0) */}
+          {/* Row 1-6: 좌측 벽 (Col 1) */}
           {STORE_LEFT_WALL.map((num, i) => (
             <div key={`lw-${num}`} style={{ gridColumn: 1, gridRow: i + 2 }}>
               {renderLeftWallCell(num)}
             </div>
           ))}
 
-          {/* Row 1-6: aisle 칼럼들 (col 2, 5, 8, 12) */}
+          {/* Row 1-6: aisle · 각 pair · B (홀수 row) / A (짝수 row) 개별 셀 */}
           {STORE_AISLE_COLUMNS.map((aisleCol, aci) => (
             aisleCol.pairs.map(({ b, a }, pairIdx) => (
-              <div
-                key={`aisle-${aci}-${pairIdx}`}
-                style={{
-                  gridColumn: aisleCol.col + 1, // 0-based → 1-based
-                  gridRow: pairIdx + 2,          // rows 2-4 (each pair occupies 1 row, B and A stacked inside)
-                }}
-              >
-                {renderAislePair(b, a, aci, pairIdx)}
-              </div>
+              <React.Fragment key={`aisle-${aci}-${pairIdx}`}>
+                <div style={{ gridColumn: aisleCol.col + 1, gridRow: pairIdx * 2 + 2 }}>
+                  {renderAisleSide(b, aci, pairIdx, "B")}
+                </div>
+                <div style={{ gridColumn: aisleCol.col + 1, gridRow: pairIdx * 2 + 3 }}>
+                  {renderAisleSide(a, aci, pairIdx, "A")}
+                </div>
+              </React.Fragment>
             ))
           ))}
 
-          {/* Row 7: 하단 벽면 14셀 */}
-          {STORE_BOTTOM_WALL.map((num, i) => (
-            <div key={`bw-${i}`} style={{ gridColumn: i + 1, gridRow: 8 }}>
-              {renderBottomWallCell(num, `bw-${i}-${num}`)}
-            </div>
-          ))}
+          {/* Row 7: 하단 벽 · col-span-5 · 내부 flex 14셀 */}
+          <div style={{ gridColumn: "1 / -1", gridRow: 8, display: "flex", gap: "3px" }}>
+            {STORE_BOTTOM_WALL.map((num, i) => (
+              <div key={`bw-${i}`} className="flex-1 min-w-0">
+                {renderBottomWallCell(num, `bw-${i}-${num}`)}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* 2026-09-08 · 카운터존 · 45~50 순차 6셀 · 제품존과 별도 영역 */}

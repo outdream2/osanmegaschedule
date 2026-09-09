@@ -53,15 +53,17 @@ export interface AisleColumn {
   pairs: Array<{ b: number | string; a: number | string }>;
 }
 
+// 2026-09-09 · 사용자 지시 · 5-column grid 재구성 (14-column L-shape → 균일 격자)
+//   · Col 0 · 좌측 벽 (31→26) · 하드코딩 렌더에서 처리
+//   · Col 1 · Aisle 1 · 9·10·11
+//   · Col 2 · Aisle 2 · 8·EVENT·7
+//   · Col 3 · Aisle 3 · 4·5·6
+//   · Col 4 · Aisle 4 · 3·2·1
 export const STORE_AISLE_COLUMNS: AisleColumn[] = [
-  // Col 2 · 9B/9A · 10B/10A · 11B/11A
-  { col: 2, pairs: [{ b: 9, a: 9 }, { b: 10, a: 10 }, { b: 11, a: 11 }] },
-  // Col 5 · 8B/8A · EVENT/EVENT · 7B/7A · 2026-09-08 · 이벤트 → EVENT (사용자 지시)
-  { col: 5, pairs: [{ b: 8, a: 8 }, { b: "EVENT", a: "EVENT" }, { b: 7, a: 7 }] },
-  // Col 8 · 4B/4A · 5B/5A · 6B/6A
-  { col: 8, pairs: [{ b: 4, a: 4 }, { b: 5, a: 5 }, { b: 6, a: 6 }] },
-  // Col 12 · 3B/3A · 2B/2A · 1B/1A
-  { col: 12, pairs: [{ b: 3, a: 3 }, { b: 2, a: 2 }, { b: 1, a: 1 }] },
+  { col: 1, pairs: [{ b: 9, a: 9 }, { b: 10, a: 10 }, { b: 11, a: 11 }] },
+  { col: 2, pairs: [{ b: 8, a: 8 }, { b: "EVENT", a: "EVENT" }, { b: 7, a: 7 }] },
+  { col: 3, pairs: [{ b: 4, a: 4 }, { b: 5, a: 5 }, { b: 6, a: 6 }] },
+  { col: 4, pairs: [{ b: 3, a: 3 }, { b: 2, a: 2 }, { b: 1, a: 1 }] },
 ];
 
 /**
