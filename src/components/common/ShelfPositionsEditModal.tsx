@@ -64,14 +64,14 @@ const ShelfExampleDiagram: React.FC = () => (
       {/* 3층 선반 시각화 · 맨 위 = 1층 · 아래로 증가 */}
       {[1, 2, 3].map(floor => (
         <div key={floor} className="flex items-center gap-1.5">
-          <span className="text-[11px] font-bold text-zinc-500 tabular-nums w-6 text-right shrink-0">
+          <span className="text-[14px] font-bold text-zinc-500 tabular-nums w-10 text-right shrink-0">
             {floor}층
           </span>
           <div className="flex-1 grid grid-cols-3 gap-1 border-2 border-b-4 border-zinc-300 rounded-md bg-white/60 p-1">
             {[1, 2, 3].map(col => (
               <div
                 key={col}
-                className={`h-8 rounded text-[10px] font-semibold text-zinc-500 flex items-center justify-center border border-dashed border-zinc-200 ${
+                className={`h-9 rounded text-[13px] font-semibold text-zinc-500 flex items-center justify-center border border-dashed border-zinc-200 ${
                   floor === 1 && col === 1 ? "bg-indigo-100 border-indigo-400 text-indigo-700" : "bg-zinc-50/70"
                 }`}
                 title={floor === 1 && col === 1 ? "원점 · 1층 1칸 (예: 111)" : `${floor}층 ${col}칸`}
@@ -274,11 +274,11 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
                 <table className="w-full">
                   <thead>
                     <tr className="border-b-2 border-line">
-                      <th className="text-left text-[12px] font-bold text-zinc-500 uppercase tracking-wide py-2 pr-2">위치</th>
-                      <th className="text-left text-[12px] font-bold text-zinc-500 uppercase tracking-wide py-2 px-2">구역</th>
-                      <th className="text-center text-[12px] font-bold text-zinc-500 uppercase tracking-wide py-2 px-2">층</th>
-                      <th className="text-center text-[12px] font-bold text-zinc-500 uppercase tracking-wide py-2 px-2">칸</th>
-                      <th className="text-center text-[12px] font-bold text-zinc-500 uppercase tracking-wide py-2 px-2">순서</th>
+                      <th className="text-left text-[15px] font-bold text-zinc-500 uppercase tracking-wide py-2 pr-2">위치</th>
+                      <th className="text-left text-[15px] font-bold text-zinc-500 uppercase tracking-wide py-2 px-2">구역</th>
+                      <th className="text-center text-[15px] font-bold text-zinc-500 uppercase tracking-wide py-2 px-2">층</th>
+                      <th className="text-center text-[15px] font-bold text-zinc-500 uppercase tracking-wide py-2 px-2">칸</th>
+                      <th className="text-center text-[15px] font-bold text-zinc-500 uppercase tracking-wide py-2 px-2">순서</th>
                       <th className="py-2 pl-2"></th>
                     </tr>
                   </thead>
