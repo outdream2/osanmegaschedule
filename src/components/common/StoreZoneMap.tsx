@@ -444,15 +444,17 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
           gap: "3px",
         }}
       >
-        {/* Row 0: 상단 벽 · col-span-5 · 내부 grid 14셀 · 균등 크기 */}
+        {/* Row 0: 상단 벽 · col-span-5 · 내부 grid 14셀 · 균등 크기 · row 최대 셀 기준 stretch */}
         <div style={{
           gridColumn: "1 / -1",
           gridRow: 1,
           display: "grid",
           gridTemplateColumns: `repeat(${STORE_TOP_WALL.length}, minmax(0, 1fr))`,
+          gridAutoRows: "1fr",
+          alignItems: "stretch",
         }}>
           {STORE_TOP_WALL.map((num, i) => (
-            <div key={`tw-${i}`} className="min-w-0 px-1.5 py-1 relative group">
+            <div key={`tw-${i}`} className="min-w-0 px-1.5 py-1 relative group h-full">
               {typeof num === "number"
                 ? wallCell(num, "top")
                 : <div className="bg-zinc-100 border border-zinc-200 rounded text-[13px] font-bold text-zinc-400 flex items-center justify-center h-full min-h-[76px]">{num}</div>
@@ -482,15 +484,17 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
           ))
         ))}
 
-        {/* Row 7: 하단 벽 · col-span-5 · 내부 grid 14셀 · 균등 크기 */}
+        {/* Row 7: 하단 벽 · col-span-5 · 내부 grid 14셀 · 균등 크기 · row 최대 셀 기준 stretch */}
         <div style={{
           gridColumn: "1 / -1",
           gridRow: 8,
           display: "grid",
           gridTemplateColumns: `repeat(${STORE_BOTTOM_WALL.length}, minmax(0, 1fr))`,
+          gridAutoRows: "1fr",
+          alignItems: "stretch",
         }}>
           {STORE_BOTTOM_WALL.map((num, i) => (
-            <div key={`bw-${i}`} className="min-w-0 px-1.5 py-1 relative group">
+            <div key={`bw-${i}`} className="min-w-0 px-1.5 py-1 relative group h-full">
               {wallCell(num, "bottom")}
             </div>
           ))}
