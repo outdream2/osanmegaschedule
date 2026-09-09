@@ -80,7 +80,7 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
   //   · min-h · flex-1 · 표 격자 느낌 · AB 셀과 통일
   const renderTopWallCell = (num: number | string, key: string) => {
     if (typeof num !== "number") {
-      return <div key={key} className="bg-zinc-100 border border-zinc-200 rounded text-[13px] font-bold text-zinc-400 flex items-center justify-center h-full h-[76px]">{num}</div>;
+      return <div key={key} className="bg-zinc-100 border border-zinc-200 rounded text-[13px] font-bold text-zinc-400 flex items-center justify-center h-full h-full min-h-[76px]">{num}</div>;
     }
     const c = getWallCellColor(num);
     const zd = ZONE_DEFS.find((z: any) => z.num === num);
@@ -91,7 +91,7 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
         type="button"
         onClick={() => onZoneProductsOpen({ zoneId: String(num), zoneNum: num, zoneLabel: String(num), category: cat })}
         title={`${num} · ${cat} · 클릭 → 상품 조회`}
-        className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-center h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden`}
+        className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-center h-full min-h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden`}
       >
         <span className={`text-[11px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none tabular-nums`}>{num}</span>
         <span className={`text-[11px] font-semibold ${c.text} text-center leading-tight break-keep whitespace-normal`}>{cat}</span>
@@ -110,7 +110,7 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
         type="button"
         onClick={() => onZoneProductsOpen({ zoneId: String(num), zoneNum: num, zoneLabel: String(num), category: cat })}
         title={`${num} · ${cat} · 클릭 → 상품 조회`}
-        className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-center h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden`}
+        className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-center h-full min-h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden`}
       >
         <span className={`text-[11px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none tabular-nums`}>{num}</span>
         <span className={`text-[11px] font-semibold ${c.text} text-center leading-tight break-keep whitespace-normal`}>{cat}</span>
@@ -119,7 +119,7 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
   };
 
   // ─── 좌측 벽면 셀 렌더 ────────────────────────────────────────────────────
-  // 2026-09-09 · #14 · 셀 크기 통일 · h-[76px] · 격자 균일
+  // 2026-09-09 · #14 · 셀 크기 통일 · h-full min-h-[76px] · 격자 균일
   const renderLeftWallCell = (num: number) => {
     const c = getWallCellColor(num);
     const zd = ZONE_DEFS.find((z: any) => z.num === num);
@@ -130,7 +130,7 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
         type="button"
         onClick={() => onZoneProductsOpen({ zoneId: String(num), zoneNum: num, zoneLabel: String(num), category: cat })}
         title={`${num} · ${cat} · 클릭 → 상품 조회`}
-        className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-center h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden w-full h-full`}
+        className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-center h-full min-h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden w-full h-full`}
       >
         <span className={`text-[11px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none tabular-nums`}>{num}</span>
         <span className={`text-[11px] font-semibold ${c.text} text-center leading-tight break-keep whitespace-normal`}>{cat}</span>
@@ -147,7 +147,7 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
       return (
         <div
           key={`event-${aisleColIdx}-${pairIdx}-${side}`}
-          className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-center h-[76px] px-1 py-1.5 gap-1 overflow-hidden w-full`}
+          className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-center h-full min-h-[76px] px-1 py-1.5 gap-1 overflow-hidden w-full`}
         >
           <span className={`text-[11px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none`}>이벤트</span>
           <span className={`text-[11px] font-semibold ${c.text} text-center leading-tight`}>{side}</span>
@@ -173,7 +173,7 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
         type="button"
         onClick={() => onZoneProductsOpen({ zoneId, zoneNum: num, zoneLabel, category: sub })}
         title={`${zoneLabel} · ${sub} · 클릭 → 상품 조회`}
-        className={`${colors.bg} border ${colors.border} rounded flex flex-col items-center justify-center h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden w-full`}
+        className={`${colors.bg} border ${colors.border} rounded flex flex-col items-center justify-center h-full min-h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden w-full`}
       >
         <span className={`text-[11px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{zoneId}</span>
         <span className={`text-[11px] ${colors.text} text-center leading-tight break-keep whitespace-normal`}>{sub}</span>
@@ -282,7 +282,7 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-            gridTemplateRows: "auto repeat(6, minmax(76px, 1fr)) auto",
+            gridTemplateRows: "auto repeat(6, auto) auto",
             gap: "3px",
             minWidth: "620px",
           }}
