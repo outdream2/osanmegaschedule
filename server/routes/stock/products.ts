@@ -44,30 +44,37 @@ stockCheckPublicRouter.get("/api/stock-check", asyncHandler(async (req, res) => 
   res.json(data ?? []);
 }));
 
-// 2026-09-08 · 상세 진열위치 맵 · 진열위치 표시 32개 파일 공용 데이터 소스
-// 2026-09-09 · CRITICAL 회귀 복구 · afaf8a65 (RPC 리팩터) 에서 실수로 삭제됨 · endpoint 32줄 재추가
+// 2026-09-09 · 상세 진열위치 맵 · products/inventory-checks 페이지네이션 chunked fetch
 //   · GET /api/products/shelf-positions-map · { [product_code]: { [location_code]: "332" | null } }
-//   · inventory_checks 에서 · 각 상품별 최신 row 의 shelf_positions 만 추출
-//   · 응답 크기 최소화 · public (로그인 불필요 · 진열위치는 매장 운영 표시용 · 민감 정보 아님)
+//   · Supabase default limit 1000 → chunked · 전 데이터 안전 수집 (사용자 지시 fix)
+//   · inventory_checks · 상품별 UNIQUE · 최신 row = 유일 row
 router.get("/api/products/shelf-positions-map", asyncHandler(async (_req, res) => {
   try {
-    const { data, error } = await supabase
-      .from("inventory_checks")
-      .select("product_code, shelf_positions, checked_at")
-      .order("checked_at", { ascending: false });
-    if (error) throw new HttpError(500, error.message);
     const map: Record<string, Record<string, string | null>> = {};
-    for (const r of data ?? []) {
-      const code = String((r as any).product_code ?? "").trim();
-      if (!code || map[code]) continue;  // 최신 row 만 (첫 등장)
-      const sp = (r as any).shelf_positions;
-      if (sp && typeof sp === "object" && Object.keys(sp).length > 0) {
-        map[code] = sp;
+    const PAGE = 1000;
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from("inventory_checks")
+        .select("product_code, shelf_positions, checked_at")
+        .order("checked_at", { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error) throw new HttpError(500, error.message);
+      const rows = data ?? [];
+      for (const r of rows) {
+        const code = String((r as any).product_code ?? "").trim();
+        if (!code || map[code]) continue; // 최신 row 만 (첫 등장 · UNIQUE 후에는 자동 유일)
+        const sp = (r as any).shelf_positions;
+        if (sp && typeof sp === "object" && Object.keys(sp).length > 0) {
+          map[code] = sp;
+        }
       }
+      if (rows.length < PAGE) break;
+      from += PAGE;
+      if (from > 50000) break; // 안전 상한
     }
     res.json(map);
   } catch (e: any) {
-    // shelf_positions 컬럼 미배포 시 · 빈 맵 반환 (frontend 안전 동작)
     if (/column .* does not exist|schema cache/i.test(e?.message ?? "")) {
       return res.json({});
     }
