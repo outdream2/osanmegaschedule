@@ -680,7 +680,9 @@ router.post("/api/products/refill-optimal-stock", authorize(9), validateBody(Ref
       days: Number(body.days ?? 30),
       fromDate: String(body.fromDate ?? "").trim() || undefined,
       toDate: String(body.toDate ?? "").trim() || undefined,
-      zeroIfNoSales: body.zeroIfNoSales !== false, // 기본 true
+      // 2026-09-09 · 사용자 지시 · 기본 false · 판매 없는 상품 · 기존 optimal_stock 유지
+      //   · 관리자가 수동 입력한 값 · 보존 · 재계산 반복해도 0으로 안 밀림
+      zeroIfNoSales: body.zeroIfNoSales === true, // 기본 false · 명시 true 요청 시만 0 처리
       syncOrderRequests: body.syncOrderRequests !== false, // 기본 true
     });
     resetProductCache();

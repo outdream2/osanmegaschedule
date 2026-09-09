@@ -199,14 +199,18 @@ export async function refillOptimalStockFromSettings(): Promise<RefillResult> {
     const v = Number(data?.value ?? 30);
     if (Number.isFinite(v) && v >= 1 && v <= 365) days = Math.floor(v);
   } catch { /* silent · 기본 30일 */ }
-  return refillOptimalStock({ days, zeroIfNoSales: true, syncOrderRequests: true });
+  // 2026-09-09 · 사용자 지시 · 판매 이력 없는 상품 · optimal_stock 기존 값 유지 (0 강제 X)
+  //   · 이전 · zeroIfNoSales=true · 판매 없는 상품 전부 0 · 발주필요 리스트 안 뜸
+  //   · 이후 · false · 관리자가 수동 입력한 optimal_stock 보존
+  return refillOptimalStock({ days, zeroIfNoSales: false, syncOrderRequests: true });
 }
 
 /** 재계산 통합 실행 (옵션 기반) */
 export async function refillOptimalStock(opts: RefillOptions = {}): Promise<RefillResult> {
   const t0 = Date.now();
   const { since: sinceStr, until: untilStr } = computeDateRange(opts);
-  const zeroIfNoSales = opts.zeroIfNoSales !== false;
+  // 2026-09-09 · 사용자 지시 · 기본값 false 로 변경 · 명시적 true 요청 시만 0 처리
+  const zeroIfNoSales = opts.zeroIfNoSales === true;
   const syncOrders = opts.syncOrderRequests !== false;
 
   const tSales = Date.now();
