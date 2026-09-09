@@ -23,7 +23,31 @@ export const ShelfPositionsBadge: React.FC<ShelfPositionsBadgeProps> = ({ positi
   const locations = useStorageLocations();
   if (!locations.length) return null;
   const list = formatShelfPositions(positions, locations);
-  if (list.length === 0) return null;
+
+  // 2026-09-09 · 사용자 지시 · 데이터 없어도 "비어있음" 뱃지 항상 노출
+  if (list.length === 0) {
+    if (variant === "badge") {
+      const pillBase = size === "md"
+        ? "inline-flex items-center gap-1 h-8 rounded-full px-2.5 border-2 text-[14px] font-bold tabular-nums tracking-tight"
+        : "inline-flex items-center gap-1 h-7 rounded-full px-2 border-2 text-[13px] font-bold tabular-nums tracking-tight";
+      return (
+        <span className={`inline-flex flex-wrap items-center gap-1.5 ${className}`}>
+          <span
+            className={`${pillBase} bg-zinc-50 border-dashed border-zinc-300 text-zinc-500`}
+            title="상세구역 미입력"
+          >
+            비어있음
+          </span>
+        </span>
+      );
+    }
+    // text variant fallback
+    return (
+      <span className={`inline-flex items-baseline ${size === "md" ? "text-[14px]" : "text-[13px]"} text-zinc-400 font-medium ${className}`}>
+        비어있음
+      </span>
+    );
+  }
 
   const sizeCls = size === "md" ? "text-[14px]" : "text-[13px]";
 
