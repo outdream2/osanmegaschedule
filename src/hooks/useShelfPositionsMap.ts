@@ -21,16 +21,22 @@ let inflight: Promise<ShelfMap> | null = null;
 const subscribers = new Set<(m: ShelfMap) => void>();
 
 async function fetchMap(): Promise<ShelfMap> {
-  if (cache && cache.expiresAt > Date.now()) return cache.data;
+  if (cache && cache.expiresAt > Date.now()) {
+    console.log("[useShelfPositionsMap] cache hit · size:", Object.keys(cache.data).length);
+    return cache.data;
+  }
   if (inflight) return inflight;
+  console.log("[useShelfPositionsMap] fetching · GET /api/products/shelf-positions-map");
   inflight = api.get<ShelfMap>("/api/products/shelf-positions-map")
     .then(res => {
       const map = (res.data && typeof res.data === "object") ? res.data : {};
+      console.log("[useShelfPositionsMap] fetch response size:", Object.keys(map).length, "sample keys:", Object.keys(map).slice(0, 5));
       cache = { data: map, expiresAt: Date.now() + TTL_MS };
       subscribers.forEach(fn => { try { fn(map); } catch { /* silent */ } });
       return map;
     })
-    .catch(() => {
+    .catch((err) => {
+      console.error("[useShelfPositionsMap] fetch error:", err);
       const empty: ShelfMap = {};
       cache = { data: empty, expiresAt: Date.now() + TTL_MS };
       return empty;

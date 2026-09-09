@@ -295,6 +295,8 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
   // 2026-09-08 · 상세 진열위치 · 이 상품의 매장/창고 3자리
   const shelfMap = useShelfPositionsMap();
   const shelfPositions = item.code ? shelfMap[item.code] : null;
+  // 2026-09-09 · 진단 · shelfMap 반영 여부 확인
+  console.log("[ArrivalRowCard] shelfMap size:", Object.keys(shelfMap).length, "has item.code?", item.code, !!shelfMap[item.code], "sample keys:", Object.keys(shelfMap).slice(0, 3));
   const warehouseVis = useMemo(() => resolveWarehouseVisibility(productRealMap), [productRealMap]);
   const slotZones = useMemo(() => assignZonesToSlots(productRealMap, productCategoryCode), [productRealMap, productCategoryCode]);
   const targetSlot = useMemo(() => classifyArrivalSlot(item.location), [item.location]);
