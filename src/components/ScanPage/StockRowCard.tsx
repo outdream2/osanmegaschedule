@@ -529,7 +529,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                     title={`${s.full} 상세구역 · ${detail}`}
                   >
                     <span className={`text-[11px] font-semibold uppercase tracking-wide ${subCls}`}>상세</span>
-                    {detail}
+                    {`${detail[0]}-${detail[1]}-${detail[2]}`}
                   </span>
                 );
               })()}

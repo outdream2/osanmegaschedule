@@ -6,7 +6,7 @@
 //   · 이름은 하위호환 유지 · 실제 렌더는 배지 아님
 
 import React from "react";
-import { formatShelfPositions, type ShelfPositions } from "../../lib/shelfPositions";
+import { formatShelfPositions, formatShelfDetail, type ShelfPositions } from "../../lib/shelfPositions";
 import { useStorageLocations } from "../../hooks/useStorageLocations";
 
 export interface ShelfPositionsBadgeProps {
@@ -69,10 +69,10 @@ export const ShelfPositionsBadge: React.FC<ShelfPositionsBadgeProps> = ({ positi
           <span
             key={p.code}
             className={`${pillBase} ${toneFor(p)}`}
-            title={p.detail ? `${p.name} · ${p.detail}` : p.isMissing ? `${p.name} · 상세위치 미입력` : p.name}
+            title={p.detail ? `${p.name} · ${formatShelfDetail(p.detail)}` : p.isMissing ? `${p.name} · 상세위치 미입력` : p.name}
           >
             <span className="opacity-70 font-semibold text-[12px]">{p.name}</span>
-            <span className="font-bold">{p.detail ? p.detail : p.isMissing ? "미입력" : ""}</span>
+            <span className="font-bold">{p.detail ? formatShelfDetail(p.detail) : p.isMissing ? "미입력" : ""}</span>
           </span>
         ))}
       </span>
@@ -93,10 +93,10 @@ export const ShelfPositionsBadge: React.FC<ShelfPositionsBadgeProps> = ({ positi
                   ? "text-rose-600 font-semibold tabular-nums"
                   : "text-ink-soft font-medium tabular-nums"
             }
-            title={p.detail ? `${p.name} · ${p.detail}` : p.isMissing ? `${p.name} · 상세위치 미입력` : p.name}
+            title={p.detail ? `${p.name} · ${formatShelfDetail(p.detail)}` : p.isMissing ? `${p.name} · 상세위치 미입력` : p.name}
           >
             <span className="text-zinc-500 font-medium mr-0.5">{p.name}</span>
-            {p.detail ? p.detail : p.isMissing ? <span className="text-rose-500">미입력</span> : ""}
+            {p.detail ? formatShelfDetail(p.detail) : p.isMissing ? <span className="text-rose-500">미입력</span> : ""}
           </span>
         </React.Fragment>
       ))}

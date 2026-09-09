@@ -51,11 +51,12 @@ export function formatShelfPositions(
   return out;
 }
 
-/** 짧은 문자열 요약 · "매장1:332 · 매장2:212 · 창고1"
+/** 짧은 문자열 요약 · "매장1:3-3-2 · 매장2:2-1-2 · 창고1"
  *  · null 값은 "미입력" 대신 그냥 이름만 표시 (공간 절약)
+ *  · 2026-09-09 · 상세는 formatShelfDetail 로 하이픈 표시 (사용자 지시)
  */
 export function summarizeShelfPositions(list: FormattedShelfPosition[]): string {
   return list
-    .map(p => (p.detail ? `${p.name}:${p.detail}` : p.isMissing ? `${p.name}:미입력` : p.name))
+    .map(p => (p.detail ? `${p.name}:${formatShelfDetail(p.detail)}` : p.isMissing ? `${p.name}:미입력` : p.name))
     .join(" · ");
 }
