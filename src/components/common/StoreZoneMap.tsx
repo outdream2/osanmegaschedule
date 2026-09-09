@@ -161,9 +161,10 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
   const cellClickable = typeof onZoneClick === "function";
   const cellInteractive = cellClickable ? "cursor-pointer hover:brightness-95 transition" : "";
 
-  // 셀 높이 클래스
-  const wallCellH  = compact ? "min-h-[120px]" : "min-h-[160px]";
-  const aisleCellH = compact ? "min-h-[100px]" : "min-h-[140px]";
+  // 2026-09-09 · 사용자 지시 · DisplayStoreMap 과 동일 크기 · h-full min-h-[76px]
+  //   · 편집 페이지 (ZoneEditPanel) 하단 매장구역도와 · 조회 페이지 (DisplayPage) 매장구역도 통일
+  const wallCellH  = "h-full min-h-[76px]";
+  const aisleCellH = "h-full min-h-[76px]";
 
   // BEST 배지
   const rankBadge = (zoneId: string) => {
@@ -235,7 +236,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
             <span className={`text-[13px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none`}>{num}</span>
           </div>
           <div className="flex-1 w-full flex items-start justify-center pt-1">
-            <span className={`text-[15px] font-bold ${c.text} leading-snug text-center break-keep whitespace-normal`}>{cat}</span>
+            <span className={`text-[12px] font-bold ${c.text} leading-snug text-center break-keep whitespace-normal`}>{cat}</span>
           </div>
         </div>
         {!usePicker && zd?.description && (
@@ -285,7 +286,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
           <span className={`text-[13px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{zoneId}</span>
         </div>
         <div className="flex-1 w-full flex items-start justify-center pt-1">
-          <span className="text-[15px] leading-snug break-keep whitespace-normal">{sub}</span>
+          <span className="text-[12px] leading-snug break-keep whitespace-normal">{sub}</span>
         </div>
       </Tag>
     );
@@ -509,7 +510,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
           <div className="w-6 h-6 rounded-lg bg-zinc-900 flex items-center justify-center shadow-sm">
             <span className="text-[15px]">🛒</span>
           </div>
-          <span className="text-[15px] font-bold text-zinc-900 leading-none">카운터존</span>
+          <span className="text-[12px] font-bold text-zinc-900 leading-none">카운터존</span>
           <span className="text-[13px] font-semibold text-zinc-400 leading-none uppercase tracking-wider">45 ~ 50</span>
         </div>
         <div className="grid grid-cols-6 gap-2">
