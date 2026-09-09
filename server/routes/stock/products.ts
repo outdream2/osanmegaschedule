@@ -748,6 +748,7 @@ router.patch("/api/products/:code/shelf-positions", authorize(1), validateBody(S
   const merged: Record<string, string | null> = { ...existingPos, ...body.shelf_positions };
 
   if (existing) {
+    console.log("[inventory_checks PATCH shelf-positions] update", { code, existingId: existing.id, merged });
     const { error } = await supabase
       .from("inventory_checks")
       .update({ shelf_positions: merged })
@@ -760,25 +761,45 @@ router.patch("/api/products/:code/shelf-positions", authorize(1), validateBody(S
       throw new HttpError(500, error.message);
     }
   } else {
-    // 최신 row 없음 · 신규 insert (상세구역 등록 · 실재고는 null)
-    const { error } = await supabase
-      .from("inventory_checks")
-      .insert([{
-        product_code: code,
-        product_name: productName,
-        shelf_positions: merged,
-        checked_at: new Date().toISOString(),
-        status: "pending",
-      }]);
-    if (error) {
-      if (/column .* does not exist|schema cache/i.test(error.message ?? "")) {
-        throw new HttpError(503, "shelf_positions 컬럼 미배포");
+    // 최신 row 없음 · 신규 insert (상세구역 등록 · 실재고 컬럼 모두 null 명시)
+    const insertRow = {
+      product_code: code,
+      product_name: productName,
+      shelf_positions: merged,
+      checked_at: new Date().toISOString(),
+      status: "pending",
+      // NOT NULL 대비 · null 명시적 세팅
+      warehouse1_stock: null,
+      warehouse2_stock: null,
+      store_stock: null,
+      store3_stock: null,
+      system_stock: null,
+      checked_by: "",
+      note: "",
+    };
+    console.log("[inventory_checks PATCH shelf-positions] insert", { code, insertRow });
+    let { error } = await supabase.from("inventory_checks").insert([insertRow]);
+    // 컬럼 미존재 시 · 해당 컬럼 strip 후 재시도 (스키마 편차 대비)
+    let attempt = 0;
+    while (error && /column .* does not exist|no column named|schema cache/i.test(error.message ?? "") && attempt < 6) {
+      attempt++;
+      const m = /column\s+(?:[a-zA-Z0-9_]+\.)?["']?([a-zA-Z0-9_]+)["']?/i.exec(error.message);
+      const colName = m?.[1];
+      if (!colName || !(colName in insertRow)) break;
+      if (colName === "shelf_positions") {
+        throw new HttpError(503, "shelf_positions 컬럼 미배포 (inventory_checks)");
       }
+      delete (insertRow as any)[colName];
+      console.warn("[inventory_checks PATCH shelf-positions] insert strip:", colName);
+      const retry = await supabase.from("inventory_checks").insert([insertRow]);
+      error = retry.error;
+    }
+    if (error) {
       console.error("[inventory_checks PATCH shelf-positions] insert error:", error.message);
       throw new HttpError(500, error.message);
     }
   }
-  res.json({ ok: true, product_code: code });
+  res.json({ ok: true, product_code: code, shelf_positions: merged });
 }));
 
 // 2026-08-29 · 보안 S1 N8 fix · authorize(1) · 상품 인라인 편집 (판매상태·위치·가격 등) · 로그인 필수
