@@ -65,8 +65,6 @@ const SeasonSettingsPage = React.lazy(() => import("./components/SeasonSettingsP
 const SystemSettingsPage = React.lazy(() => import("./components/SystemSettingsPage/SystemSettingsPage"));
 // 2026-09-04 · 스케줄 설정 (기본연차일 직군별)
 const ScheduleSettingsPage = React.lazy(() => import("./components/ScheduleSettingsPage/ScheduleSettingsPage"));
-// 2026-09-07 · 실재고 이력조회 페이지
-const InventoryHistoryPage = React.lazy(() => import("./components/InventoryHistoryPage/InventoryHistoryPage"));
 // 2026-09-07 · 발주 설정 (SMTP·이메일)
 const OrderSettingsPage = React.lazy(() => import("./components/OrderSettingsPage/OrderSettingsPage"));
 // 2026-09-07 · 설정 허브 (모든 설정 통합 진입)
@@ -74,7 +72,7 @@ const SettingsHubPage = React.lazy(() => import("./components/SettingsHubPage/Se
 // 2026-08-23 · #181 · ZoneSettingsPage 제거 · StoreZoneMap 인라인 편집만 유지
 // 2026-09-02 · #74 · 창고 구역 설정 페이지 제거 (규칙 고정 · 수동 편집 불필요)
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding" | "company-info" | "season-settings" | "system-settings" | "vendor-stock" | "schedule-settings" | "inventory-history" | "order-settings" | "settings-hub";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding" | "company-info" | "season-settings" | "system-settings" | "vendor-stock" | "schedule-settings" | "order-settings" | "settings-hub";
 
 export default function App() {
   // 2026-08-16 · 사이드바 활성 · 서버 KV 설정 (env 아님)
@@ -556,18 +554,6 @@ export default function App() {
     pageContent = (
       <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
         <ScheduleSettingsPage
-          authSession={authSession}
-          onBack={goBack}
-          onNavigate={navigateInner}
-          onLogout={handleLogout}
-        />
-      </React.Suspense>
-    );
-  } else if (page === "inventory-history") {
-    // 2026-09-07 · 실재고 이력조회 페이지
-    pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
-        <InventoryHistoryPage
           authSession={authSession}
           onBack={goBack}
           onNavigate={navigateInner}
