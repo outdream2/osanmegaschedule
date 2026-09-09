@@ -90,9 +90,16 @@ export const OptimalStockPeriodSection: React.FC = () => {
       });
       if (data?.updated) {
         showSuccess(`재계산 완료 · ${data.updated}건 (판매 있음 ${data.productsWithSales ?? "?"} · 0 처리 ${data.productsZeroed ?? "?"})`);
-        // 2026-09-09 · 사용자 지시 · 재계산 완료 후 · 발주필요 리스트 자동 반영
-        //   · OrderManagePage · useOrderManageData 훅이 이 이벤트 리스닝 · 즉시 refetch
-        try { window.dispatchEvent(new CustomEvent("optimal-stock-updated")); } catch { /* silent */ }
+        // 2026-09-09 · 사용자 지시 · 재계산 완료 후 · 적정재고 참조하는 모든 리스트 자동 반영
+        //   · products.optimal_stock 대량 변경 · 프론트 캐시 무효화 필요
+        //   · products-map-updated · 9 파일 리스너 (OrderManage · ProductInfo · RealStock · Requests · Scan 등)
+        //   · inventory-checks-updated · OrderManage 등 실재고 관련 refetch
+        //   · optimal-stock-updated · 앞으로 optimal 전용 리스너 추가할 페이지용
+        try {
+          window.dispatchEvent(new CustomEvent("optimal-stock-updated"));
+          window.dispatchEvent(new CustomEvent("products-map-updated"));
+          window.dispatchEvent(new CustomEvent("inventory-checks-updated"));
+        } catch { /* silent */ }
       } else {
         showError(data?.note ?? "재계산 결과 · 업데이트 0건");
       }
