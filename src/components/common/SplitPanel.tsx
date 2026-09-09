@@ -86,6 +86,14 @@ export interface SplitPanelProps {
    * 2026-08-31 (#68)
    */
   autoFitLeft?: boolean;
+  /**
+   * 2026-09-09 · 실제 컨테이너 폭 기준 비율 초기화 (사용자 지시 · 5:5 정합)
+   *   · 값 지정 시 · mount 후 컨테이너 clientWidth × ratio 로 listWidth 초기화
+   *   · defaultWidth 는 SSR/초기 폴백만 사용 · 이후 실제 폭으로 재계산
+   *   · localStorage 저장값 있으면 그것 우선 (기존 동작 유지)
+   *   · 사용자 드래그 후에는 재조정 안 함 (userAdjustedRef)
+   */
+  defaultRatio?: number;
   // ── 모바일 모달 옵션 (B-3-2 · 2026-08-04) ──────────────────────────────
   /** 모바일 < lg 에서 우측 패널을 모달로 표시 (기본 true) */
   mobileRightAsModal?: boolean;
@@ -123,12 +131,14 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
   style,
   className = "",
   autoFitLeft = false,
+  defaultRatio,
   mobileRightAsModal = true,
   mobileModalTitle,
   mobileOpen: mobileOpenProp,
   onMobileClose,
 }) => {
   const fullKey = STORAGE_PREFIX + storageKey;
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // localStorage 저장값 존재 여부 (초기 1회만 판별 · autoFitLeft 와 조합)
   const hadStoredValue = useRef<boolean>((() => {
@@ -160,6 +170,21 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
       // quota / private mode · silent fail
     }
   }, [fullKey, listWidth]);
+
+  // 2026-09-09 · defaultRatio · 실제 컨테이너 폭 기준 초기 5:5 (사용자 지시)
+  //   · localStorage 저장값 없을 때만 · mount 후 clientWidth × ratio 로 재설정
+  //   · defaultWidth 는 SSR/초기 폴백 · 실제 폭과 다를 수 있음 (padding 등)
+  useLayoutEffect(() => {
+    if (defaultRatio == null) return;
+    if (hadStoredValue.current) return; // 저장값 있으면 그것 우선
+    const el = containerRef.current;
+    if (!el) return;
+    const w = el.clientWidth;
+    if (!w || w <= 0) return;
+    const target = Math.max(minWidth, Math.min(maxWidth, Math.round(w * defaultRatio)));
+    setListWidth(target);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultRatio]);
 
   // ── autoFitLeft (#68 · 2026-08-31) ──────────────────────────────────────
   // 좌측 내부 scrollWidth 를 ResizeObserver 로 측정 →
@@ -331,7 +356,7 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
 
   return (
     <>
-      <div className={`split-container ${className}`} style={style}>
+      <div ref={containerRef} className={`split-container ${className}`} style={style}>
         {/* 좌측: 리스트 · 폭 조정 · 2026-08-26 · 사용자 지시 · 프레임워크 폰트 +2 (data-scope) */}
         <aside
           ref={autoFitLeft ? leftInnerRef : undefined}

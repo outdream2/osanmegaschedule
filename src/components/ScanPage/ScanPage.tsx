@@ -693,8 +693,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       {/* ── Main layout ── */}
       <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col`}>
         <SplitPanel
-          storageKey="scanPage.split5050.v6"
-          defaultWidth={typeof window !== "undefined" ? Math.round(window.innerWidth * 0.5) : 600}
+          storageKey="scanPage.split5050.v7"
+          defaultRatio={0.5}
           minWidth={280}
           dividerColor="teal"
           wrapLeft={false}
