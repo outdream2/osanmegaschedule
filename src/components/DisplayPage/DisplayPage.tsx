@@ -215,9 +215,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const [draftProducts, setDraftProducts] = useState("");
   const [draftStaffId, setDraftStaffId] = useState<number | null>(null);
   const [draftStatus, setDraftStatus] = useState<ZoneStatus>("normal");
-  const [requestNote, setRequestNote] = useState("");
+  // 2026-09-09 · 구역별 진열요청 UI 제거 · requestNote · requestFlash · canRequest · handleSendRequest 삭제
+  //   · 진열요청은 ScanPage(실재고 확인) 에서 상품별로만 생성 · 서버 dedup (request_count++)
   const [savedFlash, setSavedFlash] = useState(false);
-  const [requestFlash, setRequestFlash] = useState(false);
   type ScannerMode = "search" | "products" | null;
   const [scannerMode, setScannerMode] = useState<ScannerMode>(null);
   const [productMatchZoneId, setProductMatchZoneId] = useState<string | null>(null);
@@ -362,7 +362,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     if (activeZone) {
       setDraftCategory(activeZone.category); setDraftProducts(activeZone.products);
       setDraftStaffId(activeZone.assignedStaffId); setDraftStatus(activeZone.status);
-      setRequestNote(""); setSavedFlash(false); setRequestFlash(false);
+      setSavedFlash(false);
     }
   }, [activeZoneId]); // eslint-disable-line
 
@@ -445,18 +445,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     setSavedFlash(true); setTimeout(() => setSavedFlash(false), 1500);
   }, [activeZone, draftCategory, draftProducts, draftStaffId, draftStatus, employees]);
 
-  const canRequest = (draftStatus === "low" || draftStatus === "empty") && draftStaffId !== null;
-
-  const handleSendRequest = useCallback(() => {
-    if (!activeZone || !canRequest) return;
-    const staff = employees.find((e) => e.id === draftStaffId);
-    if (!staff) return;
-    setZones((prev) => prev.map((z) => z.id !== activeZone.id ? z : { ...z, category: draftCategory, products: draftProducts, assignedStaffId: staff.id, assignedStaffName: staff.name, status: draftStatus }));
-    const req: DisplayRequest = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, zoneId: activeZone.id, zoneLabel: `${activeZone.num}번 ${activeZone.label}`, category: draftCategory, requestedAt: new Date().toISOString(), assignedStaffId: staff.id, assignedStaffName: staff.name, status: "pending", note: requestNote };
-    setRequests((prev) => [req, ...prev]);
-    api.post("/api/display-requests", { zone_id: activeZone.id, zone_label: `${activeZone.num}번 ${activeZone.label}`, category: draftCategory, requested_at: new Date().toISOString(), assigned_staff_id: staff.id, assigned_staff_name: staff.name, note: requestNote }).catch(() => {});
-    setRequestFlash(true); setTimeout(() => setRequestFlash(false), 1500);
-  }, [activeZone, canRequest, draftCategory, draftProducts, draftStaffId, draftStatus, requestNote, employees]);
+  // 2026-09-09 · 구역별 진열요청(handleSendRequest) 완전 제거
+  //   · 진열요청 = 상품별 (ScanPage 실재고 확인에서만 생성) · 서버가 상품 dedup (같은 상품 pending 있으면 request_count++)
 
   // ── Search & filter ─────────────────────────────────────────────────────────
   const searchedZones = useMemo(() => {
@@ -753,11 +743,11 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         saveZoneDefsNow={saveZoneDefsNow} showSuccess={showSuccess} showError={showError}
         canEditZone={dpZoneEditable}
         activeZone={activeZone} draftCategory={draftCategory} draftProducts={draftProducts} draftStaffId={draftStaffId}
-        draftStatus={draftStatus} requestNote={requestNote} savedFlash={savedFlash} requestFlash={requestFlash}
-        employees={employees} canRequest={canRequest}
+        draftStatus={draftStatus} savedFlash={savedFlash}
+        employees={employees}
         setActiveZoneId={setActiveZoneId} setDraftStaffId={setDraftStaffId} setDraftProducts={setDraftProducts}
-        setDraftStatus={setDraftStatus} setRequestNote={setRequestNote}
-        handleSave={handleSave} handleSendRequest={handleSendRequest} setScannerMode={setScannerMode} toggleZoneDow={toggleZoneDow}
+        setDraftStatus={setDraftStatus}
+        handleSave={handleSave} setScannerMode={setScannerMode} toggleZoneDow={toggleZoneDow}
         activeStaffInfo={activeStaffInfo} zones={zones} setZones={setZones}
         zoneProductsModal={zoneProductsModal} productsMap={productsMap}
         zoneProductsFilter={zoneProductsFilter} zoneProductsSearch={zoneProductsSearch} zoneProductsSort={zoneProductsSort}

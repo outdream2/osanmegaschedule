@@ -2,7 +2,8 @@
 // 2026-08-22 · Framework Phase 4 · DisplayPage.tsx 에서 분리
 // 2026-08-23 · #191 · inline fixed inset-0 → common/Modal primitive
 import React from "react";
-import { CheckCircle2, Save, Send, ScanLine, User } from "lucide-react";
+// 2026-09-09 · 구역별 진열요청 제거 · Send 아이콘 제거 (상품별 진열요청은 ScanPage 로 통일)
+import { CheckCircle2, Save, ScanLine, User } from "lucide-react";
 import type { ZoneStatus } from "../../utils/zoneUtils";
 import type { DisplayZone } from "../../utils/zoneUtils";
 import type { Employee } from "./DisplayPage.types";
@@ -20,25 +21,22 @@ const STATUS_TONE: Record<ZoneStatus, PillTone> = {
   empty: "rose",
 };
 
+// 2026-09-09 · 구역별 진열요청 제거 · 진열요청은 ScanPage(실재고 확인) 에서 상품별로만 생성
+//   · requestNote · requestFlash · canRequest · onSetRequestNote · onSendRequest props 제거
 interface ZoneDetailModalProps {
   activeZone: DisplayZone;
   draftCategory: string;
   draftProducts: string;
   draftStaffId: number | null;
   draftStatus: ZoneStatus;
-  requestNote: string;
   savedFlash: boolean;
-  requestFlash: boolean;
   employees: Employee[];
   staffColorMap: Map<number, number>;
-  canRequest: boolean;
   onClose: () => void;
   onSetDraftStaffId: (id: number | null) => void;
   onSetDraftProducts: (v: string) => void;
   onSetDraftStatus: (s: ZoneStatus) => void;
-  onSetRequestNote: (v: string) => void;
   onSave: () => void;
-  onSendRequest: () => void;
   onScanProducts: () => void;
   toggleZoneDow: (zoneId: string, nameKey: string, dow: number) => void;
 }
@@ -48,19 +46,14 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
   draftProducts,
   draftStaffId,
   draftStatus,
-  requestNote,
   savedFlash,
-  requestFlash,
   employees,
   staffColorMap,
-  canRequest,
   onClose,
   onSetDraftStaffId,
   onSetDraftProducts,
   onSetDraftStatus,
-  onSetRequestNote,
   onSave,
-  onSendRequest,
   onScanProducts,
   toggleZoneDow,
 }) => {
@@ -80,16 +73,10 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
   );
 
   const modalFooter = (
-    <div className="flex flex-col-reverse sm:flex-row gap-2 w-full">
+    <div className="flex w-full">
       <button onClick={onSave}
-        className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-semibold rounded-xl bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 transition cursor-pointer flex items-center justify-center gap-1.5">
+        className="flex-1 px-4 py-2.5 text-sm font-bold rounded-xl bg-brand-deep text-white hover:bg-[#0d3a5c] transition cursor-pointer flex items-center justify-center gap-1.5">
         <Save size={14} />저장
-      </button>
-      <button onClick={onSendRequest} disabled={!canRequest}
-        title={!canRequest ? "상태를 부족/품절로 변경하고 담당 직원을 배정하세요" : ""}
-        className="flex-1 px-4 py-2.5 text-sm font-bold rounded-xl bg-violet-600 text-white hover:bg-violet-700 transition cursor-pointer flex items-center justify-center gap-2 disabled:bg-zinc-200 disabled:cursor-not-allowed disabled:text-zinc-400 shadow-sm shadow-violet-200">
-        <Send size={15} />진열 요청 보내기
-        {!canRequest && <span className="text-[14px] font-normal opacity-70">(부족·품절 + 담당자 필요)</span>}
       </button>
     </div>
   );
@@ -221,24 +208,9 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
             className="w-full px-3 py-2 text-sm rounded-xl border border-zinc-300 bg-white focus:border-brand-deep focus:ring-2 focus:ring-brand-tint outline-none transition resize-none" />
         </div>
 
-        {/* Request note */}
-        {(draftStatus === "low" || draftStatus === "empty") && (
-          <div>
-            <label className="text-[15px] font-semibold text-zinc-600 mb-1.5 block">요청 메모 (선택)</label>
-            <input type="text" value={requestNote} onChange={(e) => onSetRequestNote(e.target.value)}
-              placeholder="오늘 오후까지 보충 부탁드립니다"
-              className="w-full px-3 py-2 text-sm rounded-xl border border-zinc-300 bg-white focus:border-brand-deep outline-none transition" />
-          </div>
-        )}
-
         {savedFlash && (
           <Card variant="flat" bg="bg-emerald-50" borderColor="border-emerald-200" padding="none" className="px-3 py-2 text-emerald-700 text-[15px] font-semibold flex items-center gap-1.5">
             <CheckCircle2 size={13} />저장되었습니다
-          </Card>
-        )}
-        {requestFlash && (
-          <Card variant="flat" bg="bg-violet-50" borderColor="border-violet-200" padding="none" className="px-3 py-2 text-violet-700 text-[15px] font-semibold flex items-center gap-1.5">
-            <Send size={13} />진열 요청이 전송되었습니다
           </Card>
         )}
       </div>

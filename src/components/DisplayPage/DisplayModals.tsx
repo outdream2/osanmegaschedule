@@ -32,24 +32,19 @@ interface DisplayModalsProps {
   showError?: (msg: string) => void;
   canEditZone?: boolean;
 
-  // Zone Detail
+  // Zone Detail · 2026-09-09 · 구역별 진열요청 UI 제거 (requestNote/requestFlash/canRequest/handleSendRequest)
   activeZone: DisplayZone | null;
   draftCategory: string;
   draftProducts: string;
   draftStaffId: number | null;
   draftStatus: ZoneStatus;
-  requestNote: string;
   savedFlash: boolean;
-  requestFlash: boolean;
   employees: Employee[];
-  canRequest: boolean;
   setActiveZoneId: (id: string | null) => void;
   setDraftStaffId: (v: number | null) => void;
   setDraftProducts: (v: string) => void;
   setDraftStatus: (v: ZoneStatus) => void;
-  setRequestNote: (v: string) => void;
   handleSave: () => void;
-  handleSendRequest: () => void;
   setScannerMode: (v: "search" | "products" | null) => void;
   toggleZoneDow: (zoneId: string, nameKey: string, dow: number) => void;
 
@@ -110,15 +105,15 @@ export const DisplayModals: React.FC<DisplayModalsProps> = (p) => (
       />
     )}
 
-    {/* Zone Detail Modal */}
+    {/* Zone Detail Modal · 2026-09-09 · 구역별 진열요청 UI 제거 */}
     {p.activeZone && (
       <ZoneDetailModal
         activeZone={p.activeZone} draftCategory={p.draftCategory} draftProducts={p.draftProducts} draftStaffId={p.draftStaffId}
-        draftStatus={p.draftStatus} requestNote={p.requestNote} savedFlash={p.savedFlash} requestFlash={p.requestFlash}
-        employees={p.employees} staffColorMap={p.staffColorMap} canRequest={p.canRequest}
+        draftStatus={p.draftStatus} savedFlash={p.savedFlash}
+        employees={p.employees} staffColorMap={p.staffColorMap}
         onClose={() => p.setActiveZoneId(null)} onSetDraftStaffId={p.setDraftStaffId} onSetDraftProducts={p.setDraftProducts}
-        onSetDraftStatus={p.setDraftStatus} onSetRequestNote={p.setRequestNote} onSave={p.handleSave}
-        onSendRequest={p.handleSendRequest} onScanProducts={() => p.setScannerMode("products")} toggleZoneDow={p.toggleZoneDow}
+        onSetDraftStatus={p.setDraftStatus} onSave={p.handleSave}
+        onScanProducts={() => p.setScannerMode("products")} toggleZoneDow={p.toggleZoneDow}
       />
     )}
 

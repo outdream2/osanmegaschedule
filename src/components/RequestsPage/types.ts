@@ -2,6 +2,7 @@
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · RequestsPage 타입 이관
 
 // 2026-08-05 · T-SCAN-1 · 3단계 워크플로우 필드 통합 (pending → prepared → done)
+// 2026-09-09 · 상품별 dedup · request_count · first_requested_at 추가
 export interface DisplayRequest {
   id: string; zone_id: string; zone_label: string; category: string;
   requested_at: string; assigned_staff_id: number | null;
@@ -16,6 +17,9 @@ export interface DisplayRequest {
   completed_at?: string | null;
   completed_by?: number | null;
   completed_by_name?: string | null;
+  // 2026-09-09 · 상품별 dedup · 재요청마다 request_count 증가 · requested_at 갱신 · first_requested_at 유지
+  request_count?: number;
+  first_requested_at?: string | null;
 }
 
 export interface OrderRequest {

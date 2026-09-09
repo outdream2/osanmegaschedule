@@ -129,10 +129,10 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
   res.json(rows);
 }));
 
-// 2026-08-05 · 상품별 진열요청 지원 (ScanPage 진입점)
-//   · product_code 전달 시 · products 에서 location/spec/category/product_name 자동 조회
-//   · zone_id·zone_label 자동 채움 (location 기반)
-//   · 하위 호환 · 기존 zone_id 기반 요청 (zone-only) 그대로 지원
+// 2026-08-05 · 상품별 진열요청 (ScanPage 진입점)
+// 2026-09-09 · 상품별 dedup · product_code 필수 · 같은 상품 pending 이미 있으면 · request_count 증가 (신규 insert 하지 않음)
+//   · zone_id·zone_label 자동 채움 (products.location 기반)
+//   · 담당자(assigned_staff) · 최근 요청자로 덮어씀 · first_requested_at 은 유지
 router.post("/api/display-requests", authorize(1), validateBody(CreateDisplayRequestSchema), asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const productCode = String(b.product_code ?? "").trim();
@@ -146,51 +146,88 @@ router.post("/api/display-requests", authorize(1), validateBody(CreateDisplayReq
   let productName: string | null = null;
 
   // 상품 기반 요청: products 에서 location · category · name 자동 조회
-  if (productCode) {
-    try {
-      const { data: prod } = await supabase
-        .from("products")
-        .select("product_code, product_name, location, display_location, spec, category")
-        .eq("product_code", productCode)
-        .maybeSingle();
-      if (prod) {
-        productName = prod.product_name ?? productCode;
-        if (!zoneId) zoneId = String((prod as any).location ?? (prod as any).display_location ?? "").trim();
-        if (!zoneLabel && zoneId) zoneLabel = zoneId;
-        if (!category) category = String(prod.category ?? "");
-      }
-    } catch { /* products 조회 실패는 요청 자체 실패시키지 않음 */ }
-    // 담당자 자동 매칭 · zone_assignments · assignedStaffId 미지정 시
-    if (zoneId && (!assignedStaffId || Number.isNaN(assignedStaffId))) {
-      try {
-        const { data: za } = await supabase
-          .from("zone_assignments")
-          .select("employee_id, employee_name")
-          .eq("zone_id", zoneId)
-          .maybeSingle();
-        if (za) {
-          assignedStaffId = za.employee_id ?? null;
-          assignedStaffName = za.employee_name ?? "";
-        }
-      } catch { /* silent */ }
+  try {
+    const { data: prod } = await supabase
+      .from("products")
+      .select("product_code, product_name, location, display_location, spec, category")
+      .eq("product_code", productCode)
+      .maybeSingle();
+    if (prod) {
+      productName = prod.product_name ?? productCode;
+      if (!zoneId) zoneId = String((prod as any).location ?? (prod as any).display_location ?? "").trim();
+      if (!zoneLabel && zoneId) zoneLabel = zoneId;
+      if (!category) category = String(prod.category ?? "");
     }
+  } catch { /* products 조회 실패는 요청 자체 실패시키지 않음 */ }
+  // 담당자 자동 매칭 · zone_assignments · assignedStaffId 미지정 시
+  if (zoneId && (!assignedStaffId || Number.isNaN(assignedStaffId))) {
+    try {
+      const { data: za } = await supabase
+        .from("zone_assignments")
+        .select("employee_id, employee_name")
+        .eq("zone_id", zoneId)
+        .maybeSingle();
+      if (za) {
+        assignedStaffId = za.employee_id ?? null;
+        assignedStaffName = za.employee_name ?? "";
+      }
+    } catch { /* silent */ }
   }
 
-  const { data, error } = await supabase
+  const nowIso = b.requested_at ? new Date(b.requested_at).toISOString() : new Date().toISOString();
+  const finalNote = note || (productName ? `${productName} 진열 요청` : "");
+
+  // 2026-09-09 · dedup · 기존 pending 있으면 · request_count++ · 최근 요청자·요청일 갱신
+  const { data: existing } = await supabase
     .from("display_requests")
-    .insert([{
-      zone_id: zoneId,
-      zone_label: zoneLabel,
-      category,
-      requested_at: b.requested_at ? new Date(b.requested_at).toISOString() : new Date().toISOString(),
-      assigned_staff_id: assignedStaffId,
-      assigned_staff_name: assignedStaffName,
-      note: note || (productName ? `${productName} 진열 요청` : ""),
-      status: "pending",
-      product_code: productCode || null,
-    }])
-    .select("id").single();
-  if (error) throw new HttpError(500, error.message);
+    .select("id, request_count")
+    .eq("product_code", productCode)
+    .eq("status", "pending")
+    .maybeSingle();
+
+  let recordId: string | null = null;
+  let isRecount = false;
+  let currentCount = 1;
+
+  if (existing) {
+    isRecount = true;
+    currentCount = (Number((existing as any).request_count) || 1) + 1;
+    const { data: updated, error } = await supabase
+      .from("display_requests")
+      .update({
+        request_count: currentCount,
+        requested_at: nowIso,
+        assigned_staff_id: assignedStaffId,
+        assigned_staff_name: assignedStaffName,
+        zone_id: zoneId,
+        zone_label: zoneLabel,
+        category,
+        note: finalNote,
+      })
+      .eq("id", (existing as any).id)
+      .select("id").single();
+    if (error) throw new HttpError(500, error.message);
+    recordId = (updated as any)?.id ?? (existing as any).id;
+  } else {
+    const { data: inserted, error } = await supabase
+      .from("display_requests")
+      .insert([{
+        zone_id: zoneId,
+        zone_label: zoneLabel,
+        category,
+        requested_at: nowIso,
+        first_requested_at: nowIso,
+        request_count: 1,
+        assigned_staff_id: assignedStaffId,
+        assigned_staff_name: assignedStaffName,
+        note: finalNote,
+        status: "pending",
+        product_code: productCode,
+      }])
+      .select("id").single();
+    if (error) throw new HttpError(500, error.message);
+    recordId = (inserted as any)?.id ?? null;
+  }
 
   // 2026-08-05 · 신규 3단계 워크플로우 · pending 시 창고담당 전원 알림
   //   · position ∈ {"창고", "물류"} 인 직원 전체
@@ -198,10 +235,12 @@ router.post("/api/display-requests", authorize(1), validateBody(CreateDisplayReq
   //   · 하위 호환 · assigned_staff_id 만 있고 창고담당 없으면 · 기존처럼 assigned 에게 알림 (zone-only 구 방식)
   (async () => {
     try {
-      const title = "🛒 진열 보충 요청";
+      // 2026-09-09 · 재요청(dedup)이면 · 요청 횟수 표시 · 창고담당 인지 유지
+      const title = isRecount ? "🛒 진열 보충 재요청" : "🛒 진열 보충 요청";
       const productLabel = productName ? `${productName} · ` : "";
       const zoneLabelStr = zoneLabel ? `"${zoneLabel}"` : (zoneId ? `"${zoneId}"` : "");
-      const bodyText = `${productLabel}${zoneLabelStr}${category ? ` (${category})` : ""} 진열 보충 요청${note ? ` · ${note}` : ""}`;
+      const countSuffix = isRecount ? ` · 누적 ${currentCount}회` : "";
+      const bodyText = `${productLabel}${zoneLabelStr}${category ? ` (${category})` : ""} 진열 보충 요청${note ? ` · ${note}` : ""}${countSuffix}`;
       // 창고담당 전원 알림
       const { data: warehouseStaff } = await supabase
         .from("employees")
@@ -226,7 +265,7 @@ router.post("/api/display-requests", authorize(1), validateBody(CreateDisplayReq
           }
         }
       };
-      const tagBase = `disp-req-${data?.id ?? Date.now()}`;
+      const tagBase = `disp-req-${recordId ?? Date.now()}`;
       const notifiedIds = new Set<number>();
       // 1) 창고담당 (position ∈ 창고/물류) 전원 알림
       if (warehouseStaff && warehouseStaff.length > 0) {
@@ -267,7 +306,7 @@ router.post("/api/display-requests", authorize(1), validateBody(CreateDisplayReq
     }
   })();
 
-  res.json({ ok: true, id: data?.id });
+  res.json({ ok: true, id: recordId, request_count: currentCount, recount: isRecount });
 }));
 
 // 2026-08-05 · Phase 1 · 창고담당 pending ↔ prepared 토글
