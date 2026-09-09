@@ -235,9 +235,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
           {/* Notification list */}
           <div className="max-h-80 overflow-y-auto divide-y divide-zinc-50">
             {loading && notifications.length === 0 ? (
-              <div className="flex items-center justify-center py-10 text-zinc-400 text-[15px] gap-2">
-                <Spinner size={12} tone="zinc" />
-                불러오는 중...
+              <div className="flex items-center justify-center py-10">
+                <Spinner size={12} tone="zinc" label="불러오는 중..." labelSize={15} />
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 gap-2">

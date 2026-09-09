@@ -44,6 +44,14 @@ import { useIsMobile } from "./hooks/use-mobile";
 import { MobileOnlyGate } from "./components/common/MobileOnlyGate";
 // 2026-08-29 · 사용자 크리티컬 · 메뉴설정 pc/mobile 언체크 · 라우팅 수준 gate
 import { usePageVisibility } from "./hooks/usePageVisibility";
+import { Spinner } from "./components/common/Spinner";
+
+// 2026-09-09 · 사용자 지시 · React.Suspense fallback 통일 · Spinner 컴포넌트
+const PageFallback = () => (
+  <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
+    <Spinner size={20} tone="brand" label="불러오는 중..." labelSize={16} />
+  </div>
+);
 
 // 관리자 전용 · 구역 라벨 편집 UI · lazy 로드 (초기 번들 축소)
 const ZoneLabelsEditor = React.lazy(() => import("./components/ZoneLabelsEditor/ZoneLabelsEditor"));
@@ -452,14 +460,14 @@ export default function App() {
     );
   } else if (page === "zone-labels") {
     pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
+      <React.Suspense fallback={<PageFallback />}>
         <ZoneLabelsEditor authSession={authSession} onBack={goBack} />
       </React.Suspense>
     );
   } else if (page === "business-manage") {
     // 2026-08-03 · 경영관리 통합 페이지 (직원관리 · 연차승인 · 점심불참 · 직원권한 서브탭)
     pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
+      <React.Suspense fallback={<PageFallback />}>
         <BusinessManagePage
           authSession={authSession}
           onBack={goBack}
@@ -473,7 +481,7 @@ export default function App() {
   } else if (page === "pharmacist") {
     // 2026-08-03 · 약사 전용 페이지 · 교육자료·복약지도 등 · 약사 rank 만 접근
     pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
+      <React.Suspense fallback={<PageFallback />}>
         <PharmacistPage
           authSession={authSession}
           onBack={goBack}
@@ -485,14 +493,14 @@ export default function App() {
   } else if (page === "hr-forms") {
     // 2026-08-03 · 각종 양식 (인사 문서 관리) · 별도 라우팅 진입 시 · BusinessManagePage 안 서브탭에서도 접근 가능
     pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
+      <React.Suspense fallback={<PageFallback />}>
         <HrFormsPage authSession={authSession} onBack={goBack} onNavigate={navigateInner} onLogout={handleLogout} />
       </React.Suspense>
     );
   } else if (page === "approval-request") {
     // 2026-08-12 · 승인요청 통합 페이지 (연차승인·점심불참·서류작성 서브탭)
     pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
+      <React.Suspense fallback={<PageFallback />}>
         <ApprovalRequestPage
           authSession={authSession}
           onBack={goBack}
@@ -504,7 +512,7 @@ export default function App() {
   } else if (page === "branding") {
     // 2026-08-12 · Phase 5 · 브랜딩·연락처·도장·모바일 가시성 통합 설정 페이지
     pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
+      <React.Suspense fallback={<PageFallback />}>
         <BrandingSettingsPage
           authSession={authSession}
           onBack={goBack}
@@ -516,7 +524,7 @@ export default function App() {
   } else if (page === "company-info") {
     // 2026-08-12 · 회사정보 설정 페이지 (관리자 lv≥9)
     pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
+      <React.Suspense fallback={<PageFallback />}>
         <CompanyInfoSettingsPage
           authSession={authSession}
           onBack={goBack}
@@ -528,7 +536,7 @@ export default function App() {
   } else if (page === "season-settings") {
     // 2026-08-12 · 계절 정의 설정 페이지 (관리자 lv≥9)
     pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
+      <React.Suspense fallback={<PageFallback />}>
         <SeasonSettingsPage
           authSession={authSession}
           onBack={goBack}
@@ -540,7 +548,7 @@ export default function App() {
   } else if (page === "system-settings") {
     // 2026-08-12 · 시스템 설정 페이지 (env 편집 · 관리자 lv≥9)
     pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
+      <React.Suspense fallback={<PageFallback />}>
         <SystemSettingsPage
           authSession={authSession}
           onBack={goBack}
@@ -552,7 +560,7 @@ export default function App() {
   } else if (page === "schedule-settings") {
     // 2026-09-04 · 스케줄 설정 (기본연차일 직군별 · 관리자 lv≥9)
     pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
+      <React.Suspense fallback={<PageFallback />}>
         <ScheduleSettingsPage
           authSession={authSession}
           onBack={goBack}
@@ -564,7 +572,7 @@ export default function App() {
   } else if (page === "order-settings") {
     // 2026-09-07 · 발주 설정 (SMTP · 이메일)
     pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
+      <React.Suspense fallback={<PageFallback />}>
         <OrderSettingsPage
           authSession={authSession}
           onBack={goBack}
@@ -576,7 +584,7 @@ export default function App() {
   } else if (page === "settings-hub") {
     // 2026-09-07 · 설정 허브 · 모든 설정 통합 진입
     pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center text-zinc-400 text-sm">불러오는 중...</div>}>
+      <React.Suspense fallback={<PageFallback />}>
         <SettingsHubPage
           authSession={authSession}
           onBack={goBack}
