@@ -137,7 +137,7 @@ const BigDigitStepper: React.FC<{
   const focusRing = tone === "store" ? "focus:ring-indigo-200 focus:border-indigo-500" : "focus:ring-cyan-200 focus:border-cyan-500";
   return (
     <div className="flex flex-col items-center gap-1.5">
-      <span className="text-[13px] font-bold text-zinc-500 tracking-wide uppercase">{label}</span>
+      <span className="text-[16px] font-bold text-zinc-500 tracking-wide uppercase">{label}</span>
       <div className="inline-flex items-center gap-1">
         <button
           type="button"
@@ -327,17 +327,17 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
                         <span className={`w-2 h-8 rounded-full ${accentBg} shrink-0`} />
                         <div className="flex flex-col min-w-0">
                           <div className="flex items-baseline gap-2 flex-wrap">
-                            <span className={`text-[20px] font-bold leading-none tracking-tight ${nameCls}`}>
+                            <span className={`text-[23px] font-bold leading-none tracking-tight ${nameCls}`}>
                               {loc.name}
                             </span>
-                            <span className="text-[12px] font-semibold text-zinc-400 uppercase tracking-wide">
+                            <span className="text-[15px] font-semibold text-zinc-400 uppercase tracking-wide">
                               {isStore ? "매장" : "창고"}
                               {loc.required_detail && <span className="text-rose-500 ml-1">*</span>}
                             </span>
                           </div>
                           <div className="flex items-baseline gap-1.5 mt-1">
-                            <span className="text-[12px] font-semibold text-zinc-400 uppercase">구역</span>
-                            <span className="text-[15px] font-bold text-zinc-700 tabular-nums">
+                            <span className="text-[15px] font-semibold text-zinc-400 uppercase">구역</span>
+                            <span className="text-[18px] font-bold text-zinc-700 tabular-nums">
                               {displayLocation ?? "-"}
                             </span>
                           </div>
@@ -348,7 +348,7 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
                           type="button"
                           onClick={() => clearRow(loc.code)}
                           disabled={saving}
-                          className="text-[13px] text-zinc-400 hover:text-rose-500 font-medium disabled:opacity-40 shrink-0 h-8 px-2 rounded-md hover:bg-rose-50 transition"
+                          className="text-[16px] text-zinc-400 hover:text-rose-500 font-medium disabled:opacity-40 shrink-0 h-9 px-2.5 rounded-md hover:bg-rose-50 transition"
                           title="지우기"
                         >
                           지우기
@@ -387,7 +387,7 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
                     </div>
 
                     {missing && (
-                      <p className="text-[12px] font-semibold text-rose-500 -mt-1">필수 · 층·칸·순서 입력 필요</p>
+                      <p className="text-[15px] font-semibold text-rose-500 -mt-1">필수 · 층·칸·순서 입력 필요</p>
                     )}
                   </div>
                 );
