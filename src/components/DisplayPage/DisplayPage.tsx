@@ -53,10 +53,10 @@ import {
   saveZonesToDB,
   MULTI_ASSIGN_ZONE_NUMS,
 } from "./DisplayPage.helpers";
-// 2026-08-25 · Framework Phase 4 · 4 modals wrapper + WallZoneCard + subtab 초기화 hook
+// 2026-09-09 · #23 · WallZoneCard 제거 · DisplayStoreMap 안 renderTopWallCell/renderBottomWallCell 통합
+//                    · 담당자는 셀 클릭 팝오버로 통합 (ZoneAssignPopover)
 import { DisplayModals } from "./DisplayModals";
 import { type ZoneProductsModalState } from "./ZoneProductsModal";
-import { WallZoneCard } from "./WallZoneCard";
 import { useDpInitialSubTab } from "./useDpInitialSubTab";
 import { DisplayStoreMap } from "./DisplayStoreMap";
 import { DisplaySearchBar } from "./DisplaySearchBar";
@@ -550,11 +550,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const renderZoneCellById = (id: string, classes = "", wrapperClass = "", hideRequest = false) => { const z = getZoneById(id); return z ? renderZoneFromRaw(z, classes, wrapperClass, hideRequest) : null; };
   const renderZoneCell = (num: number, classes = "", wrapperClass = "", hideRequest = false) => { const z = zones.find(z => z.num === num && !z.id.match(/[AB]$/)); return z ? renderZoneFromRaw(z, classes, wrapperClass, hideRequest) : null; };
 
-  // 2026-08-25 · Framework Phase 4 · 벽면 존 카드 · WallZoneCard 이관
-  const renderWallZoneCard = (num: number, position: "top" | "bottom") => (
-    <WallZoneCard num={num} position={position} zoneDefs={ZONE_DEFS}
-      openZoneProducts={openZoneProducts} renderRequestButton={renderRequestButton} renderZoneCell={renderZoneCell} />
-  );
+  // 2026-09-09 · #23 · WallZoneCard 제거 · dead prop (DisplayStoreMap 내부 · renderTopWallCell/renderBottomWallCell 사용)
+  //   · 담당자 표시는 셀 클릭 시 팝오버 (ZoneAssignPopover) 로 통합
+  const renderWallZoneCard = () => null;
 
   const popoverZone = useMemo(() => (popoverAnchor ? zones.find((z) => z.id === popoverAnchor.zoneId) ?? null : null), [popoverAnchor, zones]);
 

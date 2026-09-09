@@ -38,7 +38,8 @@ interface DisplayStoreMapProps {
   onZoneProductsOpen: (args: { zoneId: string; zoneNum: number; zoneLabel: string; category: string }) => void;
   renderZoneCellById: (id: string, classes?: string, wrapperClass?: string, hideRequest?: boolean) => React.ReactNode;
   renderZoneCell: (num: number, classes?: string, wrapperClass?: string, hideRequest?: boolean) => React.ReactNode;
-  renderWallZoneCard: (num: number, position: "top" | "bottom") => React.ReactNode;
+  // 2026-09-09 · #23 · dead prop · WallZoneCard 제거 · renderTopWallCell/renderBottomWallCell 내부 사용
+  renderWallZoneCard?: (num: number, position: "top" | "bottom") => React.ReactNode;
   renderRequestButton: (num: number, id?: string) => React.ReactNode;
 }
 
