@@ -6,7 +6,7 @@
 //   · invalidateShelfPositionsMap + inventory-checks-updated dispatch
 
 import React, { useEffect, useMemo, useState } from "react";
-import { X, Minus, Plus } from "lucide-react";
+import { X, Minus, Plus, ChevronDown } from "lucide-react";
 import { api } from "../../lib/apiClient";
 import { useStorageLocations } from "../../hooks/useStorageLocations";
 import { invalidateShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
@@ -200,6 +200,11 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
   });
   const [saving, setSaving] = useState(false);
   const { toast, showSuccess, showError } = useToast();
+  // 2026-09-09 · 사용자 지시 · 반응형 · 모바일에서는 설명(예시 그림) 기본 접힘 · 화살표로 토글
+  //   · md 이상 · 항상 표시 (CSS 로 강제)
+  const [exampleOpen, setExampleOpen] = useState<boolean>(
+    () => typeof window !== "undefined" && window.innerWidth >= 768,
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !saving) onClose(); };
@@ -309,9 +314,32 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
         {/* 바디 · 좌측 예시 그림 + 우측 카드 리스트 · 반응형 (md 이하 stack) */}
         <div className="flex-1 overflow-y-auto p-5">
           <div className="flex flex-col md:flex-row gap-5">
-            {/* 좌측 · 예시 그림 · md 이상만 사이드 · sm 은 상단 */}
+            {/* 좌측 · 예시 그림 · md 이상만 사이드 · sm 은 상단 (기본 접힘 · 토글) */}
             <div className="md:w-[240px] shrink-0">
-              <ShelfExampleDiagram />
+              {/* 모바일 전용 · 접힘 토글 헤더 · md 이상 숨김 */}
+              <button
+                type="button"
+                onClick={() => setExampleOpen(o => !o)}
+                className="md:hidden w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border-2 border-brand-deep/15 bg-brand-tint/30 hover:bg-brand-tint/50 text-brand-deep transition"
+                aria-expanded={exampleOpen}
+              >
+                <span className="text-[14px] font-bold tracking-tight">
+                  {exampleOpen ? "설명 접기" : "설명 · 층·칸·순서 규칙 보기"}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`shrink-0 transition-transform ${exampleOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+              {!exampleOpen && (
+                <p className="md:hidden text-[12px] text-zinc-400 text-center mt-1.5">
+                  ▲ 위 버튼을 눌러 설명을 볼 수 있습니다
+                </p>
+              )}
+              {/* 예시 그림 · md 이상 항상 표시 · md 미만 exampleOpen 시만 · 애니메이션 */}
+              <div className={`${exampleOpen ? "block mt-2 md:mt-0" : "hidden"} md:block`}>
+                <ShelfExampleDiagram />
+              </div>
             </div>
 
             {/* 우측 · 위치별 카드 리스트 */}
