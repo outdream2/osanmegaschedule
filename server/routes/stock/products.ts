@@ -714,8 +714,9 @@ router.post("/api/products/refill-optimal-stock", authorize(9), validateBody(Ref
 
 // 2026-09-09 · #15 · 상세구역 (shelf_positions) 전용 PATCH · authorize(1) · 모달 편집
 //   · body: { shelf_positions: { store1?: "332" | null, warehouse1?: "105" | null, ... } }
-//   · products.shelf_positions JSONB 전체 replace (atomic)
-//   · 3자리 or null 검증 · 필요시 서버에서 정규화
+//   · inventory_checks 최신 row 에 upsert · 매장별 zone (store1_zone/store2_zone/store3_zone) 컬럼과 동일 위치 유지
+//   · 사용자 지시 · products.shelf_positions X · inventory_checks 통합 (매장별 zone 여러개 필요)
+//   · 3자리 or null 검증
 const ShelfPositionsPatchSchema = z.object({
   shelf_positions: z.record(z.string(), z.union([z.string().length(3), z.null()])),
 });
@@ -723,19 +724,63 @@ router.patch("/api/products/:code/shelf-positions", authorize(1), validateBody(S
   const code = (req.params.code ?? "").trim();
   if (!code) throw badRequest("code required");
   const body = req.body as { shelf_positions: Record<string, string | null> };
-  const { error } = await supabase
+
+  // 상품명 확보 (없는 경우 insert 시 필요)
+  const { data: prod } = await supabase
     .from("products")
-    .update({ shelf_positions: body.shelf_positions })
-    .eq("product_code", code);
-  if (error) {
-    // shelf_positions 컬럼 미배포 시 안전 실패
-    if (/column .* does not exist|schema cache/i.test(error.message ?? "")) {
+    .select("product_name")
+    .eq("product_code", code)
+    .maybeSingle();
+  const productName = prod?.product_name ?? "";
+
+  // inventory_checks 최신 row 조회
+  const { data: existingList, error: selErr } = await supabase
+    .from("inventory_checks")
+    .select("id, shelf_positions")
+    .eq("product_code", code)
+    .order("checked_at", { ascending: false })
+    .limit(1);
+  if (selErr) {
+    if (/column .* does not exist|schema cache/i.test(selErr.message ?? "")) {
       throw new HttpError(503, "shelf_positions 컬럼 미배포");
     }
-    console.error("[products PATCH shelf-positions] error:", error.message);
-    throw new HttpError(500, error.message);
+    throw new HttpError(500, selErr.message);
   }
-  resetProductCache();
+  const existing = existingList?.[0] ?? null;
+  const existingPos = ((existing?.shelf_positions ?? {}) as Record<string, string | null>);
+  const merged: Record<string, string | null> = { ...existingPos, ...body.shelf_positions };
+
+  if (existing) {
+    const { error } = await supabase
+      .from("inventory_checks")
+      .update({ shelf_positions: merged })
+      .eq("id", existing.id);
+    if (error) {
+      if (/column .* does not exist|schema cache/i.test(error.message ?? "")) {
+        throw new HttpError(503, "shelf_positions 컬럼 미배포");
+      }
+      console.error("[inventory_checks PATCH shelf-positions] update error:", error.message);
+      throw new HttpError(500, error.message);
+    }
+  } else {
+    // 최신 row 없음 · 신규 insert (상세구역 등록 · 실재고는 null)
+    const { error } = await supabase
+      .from("inventory_checks")
+      .insert([{
+        product_code: code,
+        product_name: productName,
+        shelf_positions: merged,
+        checked_at: new Date().toISOString(),
+        status: "pending",
+      }]);
+    if (error) {
+      if (/column .* does not exist|schema cache/i.test(error.message ?? "")) {
+        throw new HttpError(503, "shelf_positions 컬럼 미배포");
+      }
+      console.error("[inventory_checks PATCH shelf-positions] insert error:", error.message);
+      throw new HttpError(500, error.message);
+    }
+  }
   res.json({ ok: true, product_code: code });
 }));
 
