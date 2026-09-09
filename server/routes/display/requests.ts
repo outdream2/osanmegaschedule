@@ -18,6 +18,8 @@ import {
   BulkInventoryCheckSchema,
   PatchInventoryCheckSchema,
 } from "../../../src/shared/schemas/inventoryChecks";
+// 2026-09-09 · 회귀 복구 · afaf8a65 에서 삭제됐던 · shelf_positions 병합 시 매장 필수 검증용
+import { getStorageLocations } from "../settings/settings";
 import {
   CreateDisplayRequestSchema,
   PrepareDisplayRequestSchema,
@@ -934,12 +936,14 @@ router.get("/api/inventory-checks", asyncHandler(async (req, res) => {
   // 2026-09-03 · fix · store_stock_2 컬럼 삭제됨 · SELECT 에서 제거
   //   · 이전 · 'column inventory_checks.store_stock_2 does not exist' · 500 · 실재고 리스트 조회 실패
   //   · 스키마 · warehouse1_stock · warehouse2_stock · store_stock (=store1) · store3_stock (store2 컬럼 없음)
+  // 2026-09-09 · CRITICAL 회귀 복구 · afaf8a65 에서 삭제됐던 shelf_positions 컬럼 재추가
   const COLS = [
     "id", "product_code", "product_name", "checked_at", "checked_by",
     "warehouse1_stock", "warehouse2_stock",
     "store_stock", "store3_stock",
     "store1_zone", "store2_zone", "store3_zone",
     "system_stock", "optimal_stock", "status", "note",
+    "shelf_positions",
   ].join(", ");
   let q = supabase.from("inventory_checks").select(COLS).order("checked_at", { ascending: false });
   if (req.query.product_code) q = q.eq("product_code", String(req.query.product_code));
@@ -948,16 +952,62 @@ router.get("/api/inventory-checks", asyncHandler(async (req, res) => {
   res.json(data ?? []);
 }));
 
+// 2026-09-08 · 상세 진열위치 중복 실시간 검증
+//   · UI ShelfPositionInput · 값 입력 중 debounce 500ms 조회
+//   · 규칙 · (storage_key, display_location, detail_3digit) 3중 유일
+//   · GET /api/inventory-checks/shelf-conflict
+//     query · display_location · key (storage code · store1·warehouse1 등) · value (3자리) · exclude (자기 자신 product_code)
+//     응답 · { conflict: boolean, product_code?, product_name? }
+// 2026-09-09 · afaf8a65 에서 실수 삭제된 endpoint 복구
+router.get("/api/inventory-checks/shelf-conflict", asyncHandler(async (req, res) => {
+  const display_location = String(req.query.display_location ?? "").trim();
+  const key = String(req.query.key ?? "").trim();
+  const value = String(req.query.value ?? "").trim().toUpperCase();
+  const exclude = String(req.query.exclude ?? "").trim();
+  if (!display_location || !key || !value) {
+    return res.json({ conflict: false });
+  }
+  if (!/^[0-9A-Z]{3}$/.test(value)) {
+    return res.json({ conflict: false });
+  }
+  try {
+    // JSONB path 조회 · shelf_positions->>key = value · exclude 자신
+    let q = supabase
+      .from("inventory_checks")
+      .select("product_code")
+      .filter("shelf_positions->>" + key, "eq", value);
+    if (exclude) q = q.neq("product_code", exclude);
+    const { data: candidates } = await q;
+    if (!candidates || candidates.length === 0) return res.json({ conflict: false });
+
+    // 각 후보 · display_location 확인 · 동일하면 진짜 중복
+    const codes = candidates.map(c => String((c as any).product_code));
+    const { data: prods } = await supabase
+      .from("products")
+      .select("product_code, product_name, display_location, location")
+      .in("product_code", codes);
+    const dup = (prods ?? []).find(p => {
+      const loc = (p as any).display_location ?? (p as any).location ?? null;
+      return String(loc ?? "").trim() === display_location;
+    });
+    if (dup) {
+      return res.json({
+        conflict: true,
+        product_code: (dup as any).product_code,
+        product_name: (dup as any).product_name,
+      });
+    }
+    return res.json({ conflict: false });
+  } catch (e: any) {
+    // 컬럼 미배포 시 · silent · conflict=false
+    return res.json({ conflict: false });
+  }
+}));
+
 router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryCheckSchema), asyncHandler(async (req, res) => {
   const b = req.body;
   const code = b.product_code;
   const now = new Date().toISOString();
-  // 부분 업데이트: 요청에 포함된 필드만 업데이트 (창고/매장 각각 독립 저장 지원)
-  // 2026-07-30 · 사용자 요청 · store_stock_2 (매장2) 지원 · real_map "/" 분할
-  // 2026-08-03 · Phase 3 · 5분리 (창고1·창고2·매장1·매장2·매장3) · 구역 3개 추가
-  //   - warehouse1_stock / warehouse2_stock / store3_stock / store1_zone / store2_zone / store3_zone
-  //   - 레거시 하위 호환: warehouse_stock = warehouse1_stock, store_stock = store1_stock (== store_stock)
-  // 2026-08-31 · warehouse_stock DROP · 레거시 요청 → warehouse1_stock 리다이렉트
   const hasWarehouse  = Object.prototype.hasOwnProperty.call(b, "warehouse_stock");
   const hasStore      = Object.prototype.hasOwnProperty.call(b, "store_stock");
   const hasStore2     = Object.prototype.hasOwnProperty.call(b, "store_stock_2");
@@ -967,9 +1017,10 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
   const hasZone1      = Object.prototype.hasOwnProperty.call(b, "store1_zone");
   const hasZone2      = Object.prototype.hasOwnProperty.call(b, "store2_zone");
   const hasZone3      = Object.prototype.hasOwnProperty.call(b, "store3_zone");
-  // 2026-08-25 · 사용자 지시 · 유통기한 임박 모달 · 입력날짜 + 유통기한 날짜 저장
   const hasExpiryInput = Object.prototype.hasOwnProperty.call(b, "expiry_input_date");
   const hasExpiryDate  = Object.prototype.hasOwnProperty.call(b, "expiry_date");
+  // 2026-09-09 · 회귀 복구 · afaf8a65 에서 삭제된 shelf_positions 부분 병합 로직
+  const hasShelfPos    = Object.prototype.hasOwnProperty.call(b, "shelf_positions");
   const num = (v: any): number | null => (v != null && v !== "" ? Number(v) : null);
   const str = (v: any): string | null => {
     if (v == null) return null;
@@ -985,9 +1036,7 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
     checked_at:    now,
     status:        "pending",
   };
-  // 각 컬럼 독립 저장 · 2026-08-31 · warehouse_stock DROP 완료
   if (hasWarehouse1) payload.warehouse1_stock = num(b.warehouse1_stock);
-  // 레거시 warehouse_stock 요청 → warehouse1_stock 이 없을 때만 warehouse1_stock 으로 리다이렉트
   if (hasWarehouse && !hasWarehouse1) payload.warehouse1_stock = num(b.warehouse_stock);
   if (hasWarehouse2) payload.warehouse2_stock = num(b.warehouse2_stock);
   if (hasStore)      payload.store_stock      = num(b.store_stock);
@@ -996,13 +1045,85 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
   if (hasZone1)      payload.store1_zone      = str(b.store1_zone);
   if (hasZone2)      payload.store2_zone      = str(b.store2_zone);
   if (hasZone3)      payload.store3_zone      = str(b.store3_zone);
-  // 2026-08-25 · 유통기한 임박 날짜 · YYYY-MM-DD 문자열 그대로 저장 (DATE 컬럼)
   if (hasExpiryInput) payload.expiry_input_date = str(b.expiry_input_date);
   if (hasExpiryDate)  payload.expiry_date       = str(b.expiry_date);
 
-  // 2026-09-03 · fix · store_stock_2 컬럼 없음 · id, store_stock 만 조회
-  const { data: existingList } = await supabase.from("inventory_checks").select("id, store_stock").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
+  // 2026-09-08 · shelf_positions 도 함께 조회 (병합용)
+  const { data: existingList } = await supabase
+    .from("inventory_checks")
+    .select("id, store_stock, shelf_positions")
+    .eq("product_code", code)
+    .order("checked_at", { ascending: false })
+    .limit(1);
   const existing = existingList?.[0] ?? null;
+
+  // 2026-09-08 · shelf_positions 병합 · 기존 값 보존 + 신규 값 덮어쓰기
+  //   · 매장 위치 (required_detail=true) · 값이 명시적으로 들어오면 3자리 강제
+  //   · null 은 허용 (미입력 유지) · undefined 는 무시 (부분 업데이트)
+  // 2026-09-09 · 중복 방지 규칙 명확화 (사용자 지시)
+  //   · 유일 키 = (storage_key, display_location, detail_3digit) 3중 조합
+  //   · 예 · (warehouse2, "1A", "312") 조합이 다른 상품과 겹치면 에러
+  if (hasShelfPos && b.shelf_positions && typeof b.shelf_positions === "object") {
+    const existingPos = (existing?.shelf_positions ?? {}) as Record<string, string | null>;
+    const incomingPos = b.shelf_positions as Record<string, string | null | undefined>;
+    const merged: Record<string, string | null> = { ...existingPos };
+    const storageLocs = await getStorageLocations();
+    const requiredCodes = new Set(storageLocs.filter(s => s.required_detail && s.active).map(s => s.code));
+    const dupCheckTargets: Array<{ key: string; value: string }> = [];
+    for (const [k, v] of Object.entries(incomingPos)) {
+      if (v === undefined) continue;
+      if (v === null || v === "") {
+        if (requiredCodes.has(k) && v === "") {
+          throw badRequest(`매장 위치(${k})는 상세위치가 필수입니다 · 3자리 (예 332) 입력`);
+        }
+        merged[k] = null;
+      } else {
+        const val = String(v).trim().toUpperCase();
+        if (!/^[0-9A-Z]{3}$/.test(val)) {
+          throw badRequest(`상세위치(${k}=${val})는 3자리 (층·칸·순서 · 예 332) 여야 합니다`);
+        }
+        if (existingPos[k] !== val) dupCheckTargets.push({ key: k, value: val });
+        merged[k] = val;
+      }
+    }
+
+    // 중복 방지 pre-check · (storage_key, display_location, detail) 3중 조합 유일
+    if (dupCheckTargets.length > 0) {
+      const { data: currentProd } = await supabase
+        .from("products")
+        .select("display_location, location")
+        .eq("product_code", code)
+        .maybeSingle();
+      const currentDisplayLoc = currentProd?.display_location ?? currentProd?.location ?? null;
+      if (currentDisplayLoc) {
+        for (const { key, value } of dupCheckTargets) {
+          const { data: conflicts } = await supabase
+            .from("inventory_checks")
+            .select("product_code, product_name, shelf_positions")
+            .filter("shelf_positions->>" + key, "eq", value)
+            .neq("product_code", code);
+          if (conflicts && conflicts.length > 0) {
+            const otherCodes = conflicts.map(c => String((c as any).product_code));
+            const { data: otherProds } = await supabase
+              .from("products")
+              .select("product_code, product_name, display_location, location")
+              .in("product_code", otherCodes);
+            const conflictOther = (otherProds ?? []).find(op => {
+              const otherLoc = (op as any).display_location ?? (op as any).location ?? null;
+              return String(otherLoc ?? "").trim() === String(currentDisplayLoc).trim();
+            });
+            if (conflictOther) {
+              throw badRequest(
+                `이 위치는 이미 사용 중입니다 · ${currentDisplayLoc}-${value} (${key}) · 기존 상품 · ${(conflictOther as any).product_name} (#${(conflictOther as any).product_code})`
+              );
+            }
+          }
+        }
+      }
+    }
+
+    payload.shelf_positions = merged;
+  }
   const applyPayload = async (): Promise<{ error?: string } | null> => {
     if (existing) {
       const { error } = await supabase.from("inventory_checks").update(payload).eq("id", existing.id);
@@ -1010,42 +1131,37 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
       return null;
     }
     const insertPayload: Record<string, any> = { ...payload, product_code: code };
-    // 2026-09-03 · fix · store_stock_2 컬럼 삭제됨 · INSERT 기본값에서 제거 (DB 에러 방지)
-    //   · 이전 · 컬럼 없어도 null 으로 강제 삽입 → 'does not exist' 에러 → 실재고 저장 실패
-    //   · store_stock (=매장1) 만 기본값 · store_stock_2 는 payload 에 있을 때만 포함 (strip 로직이 처리)
     if (!("store_stock" in insertPayload)) insertPayload.store_stock = null;
     const { error } = await supabase.from("inventory_checks").insert([insertPayload]);
     if (error) return { error: error.message };
     return null;
   };
-  // 신규 컬럼 미존재 DB 하위 호환 · 실패 시 신규 필드 stripping 후 재시도
-  // 2026-08-24 · legacy store_stock_2 도 일부 DB 누락 대응 · 에러 메시지 컬럼 이름 자동 추출 후 제거
   let result = await applyPayload();
   const MAX_STRIP_RETRIES = 6;
   for (let attempt = 0; attempt < MAX_STRIP_RETRIES && result?.error && /column .* does not exist|no column named|schema cache/i.test(result.error); attempt++) {
-    // 1) 신규 컬럼 일괄 제거 (첫 시도만)
-    // 2026-09-03 · fix · store_stock_2 도 목록에 추가 · 삭제된 컬럼 포함 완전 망라
     if (attempt === 0) {
-      for (const k of ["warehouse1_stock","warehouse2_stock","store_stock_2","store3_stock","store1_zone","store2_zone","store3_zone"]) {
+      for (const k of ["warehouse1_stock","warehouse2_stock","store_stock_2","store3_stock","store1_zone","store2_zone","store3_zone","expiry_date","expiry_input_date","shelf_positions"]) {
         delete payload[k];
       }
     }
-    // 2) 에러 메시지에서 특정 컬럼명 추출 · 해당 필드만 제거 (legacy 포함)
-    const m = /(?:column|of)\s+'?([a-zA-Z0-9_]+)'?/g.exec(result.error);
-    const colName = m?.[1];
+    let colName: string | null = null;
+    const tableCol = /column\s+(?:[a-zA-Z0-9_]+\.)?([a-zA-Z0-9_]+)/i.exec(result.error);
+    if (tableCol?.[1]) colName = tableCol[1];
+    if (!colName) {
+      const alt = /no column named\s+([a-zA-Z0-9_]+)/i.exec(result.error);
+      if (alt?.[1]) colName = alt[1];
+    }
     if (colName && colName in payload) {
-      console.warn(`[inventory-checks] legacy 컬럼 미존재 · strip 후 재시도: ${colName}`);
+      console.warn(`[inventory-checks] 컬럼 미존재 · strip 후 재시도: ${colName}`);
       delete payload[colName];
     } else if (attempt > 0) {
-      // 추가로 벗길 컬럼 없음 · 무한 루프 방지
       break;
     }
     result = await applyPayload();
   }
   if (result?.error) throw new HttpError(500, result.error);
-  clearLowStockCache(); // 2026-08-05 · T-PERF-1a
-  scheduleSnapshotBackground(); // 2026-08-06 · T-LOSS-HISTORY · 오늘 손실 스냅샷 자동
-  // 2026-09-07 · 사용자 지시 · 실재고 저장 알림 제거 (스팸)
+  clearLowStockCache();
+  scheduleSnapshotBackground();
   return res.json({ ok: true, updated: !!existing });
 }));
 
