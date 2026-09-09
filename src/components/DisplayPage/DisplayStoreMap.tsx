@@ -94,7 +94,7 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
         className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-start h-full min-h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden`}
       >
         <span className={`text-[13px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none tabular-nums`}>{num}</span>
-        <span className={`text-[11px] font-semibold ${c.text} text-center leading-tight break-keep whitespace-normal`}>{cat}</span>
+        <span className={`text-[12px] font-semibold ${c.text} text-center leading-tight break-keep whitespace-normal`}>{cat}</span>
       </button>
     );
   };
@@ -113,7 +113,7 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
         className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-start h-full min-h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden`}
       >
         <span className={`text-[13px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none tabular-nums`}>{num}</span>
-        <span className={`text-[11px] font-semibold ${c.text} text-center leading-tight break-keep whitespace-normal`}>{cat}</span>
+        <span className={`text-[12px] font-semibold ${c.text} text-center leading-tight break-keep whitespace-normal`}>{cat}</span>
       </button>
     );
   };
@@ -133,7 +133,7 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
         className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-start h-full min-h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden w-full h-full`}
       >
         <span className={`text-[13px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none tabular-nums`}>{num}</span>
-        <span className={`text-[11px] font-semibold ${c.text} text-center leading-tight break-keep whitespace-normal`}>{cat}</span>
+        <span className={`text-[12px] font-semibold ${c.text} text-center leading-tight break-keep whitespace-normal`}>{cat}</span>
       </button>
     );
   };
@@ -150,7 +150,7 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
           className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-start h-full min-h-[76px] px-1 py-1.5 gap-1 overflow-hidden w-full`}
         >
           <span className={`text-[13px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none`}>이벤트</span>
-          <span className={`text-[11px] font-semibold ${c.text} text-center leading-tight`}>{side}</span>
+          <span className={`text-[12px] font-semibold ${c.text} text-center leading-tight`}>{side}</span>
         </div>
       );
     }
@@ -262,8 +262,6 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
         {/* 매장 구역도 헤더 */}
         <div className="flex items-center gap-2 mb-1">
           <span className="text-[14px] font-bold text-zinc-700 uppercase tracking-wider">매장 구역도</span>
-          <span className="text-[12px] text-zinc-400">14×8 그리드 · zonecategory 기준</span>
-          <span className="ml-auto text-[12px] bg-rose-50 text-rose-700 border border-rose-300 font-extrabold px-1.5 rounded-full uppercase tracking-wider shadow-sm">유통기한 임박존</span>
         </div>
 
         {/* ── 2026-09-09 · 5-column × 8-row 격자 재구성 · 사용자 지시 ──────── */}
@@ -348,14 +346,14 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
               <span className="text-[13px] font-semibold text-zinc-400 leading-none uppercase tracking-wider">45 ~ 50</span>
             </div>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          <div className="grid grid-cols-6 gap-2">
             {COUNTER_ZONE_CELLS.map((cell) => (
-              <div key={`cz-${cell.num}`} className="flex flex-col items-center gap-1">
-                <span className={`text-[11px] font-bold uppercase tracking-wider ${cell.kind === "event" ? "text-amber-700" : "text-brand-deep"}`}>
+              <div key={`cz-${cell.num}`} className="flex flex-col items-center gap-1.5">
+                <span className={`text-[12px] font-bold uppercase tracking-wider ${cell.kind === "event" ? "text-amber-700" : "text-brand-deep"}`}>
                   {cell.label}
                 </span>
                 <span className="text-[13px] font-bold text-zinc-500 tabular-nums">{cell.num}</span>
-                {renderZoneCell(cell.num, `w-full h-[60px] text-[13px] p-1 justify-center ${cell.kind === "event" ? "bg-amber-50 border-amber-200" : "bg-brand-tint/40 border-brand-tint"}`)}
+                {renderZoneCell(cell.num, `w-full h-full min-h-[76px] text-[12px] p-1 justify-start items-center ${cell.kind === "event" ? "bg-amber-50 border-amber-200" : "bg-brand-tint/40 border-brand-tint"}`)}
               </div>
             ))}
           </div>
