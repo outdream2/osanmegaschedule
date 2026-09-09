@@ -5,8 +5,12 @@
 //   Right · VendorDetailModal panel 모드 (사업자번호·이메일 · 상세에서만)
 //   Mobile · SplitPanel mobileRightAsModal · 우측 자동 모달
 import React, { useMemo, useState } from "react";
-import { Building2, ChevronDown, ChevronUp } from "lucide-react";
+import { Building2, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { useVendors as useVendorsHook } from "../../hooks/useVendors";
+import { useAuth } from "../../hooks/useAuth";
+import { api } from "../../lib/apiClient";
+import { useConfirm } from "../../hooks/useConfirm";
+import { useToast, toastClass } from "../../hooks/useToast";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { Spinner } from "../common/Spinner";
 import { SplitPanel } from "../common/SplitPanel";
@@ -29,6 +33,35 @@ export const VendorManageSplit: React.FC = () => {
   const [catFilter, setCatFilter] = useState<string>("전체");
   // 2026-08-10 · 사용자 요청 · 신규 공급사 등록 모달 (복원 · 90회전 옆 [+ 신규] 버튼)
   const [showNewVendor, setShowNewVendor] = useState(false);
+  // 2026-09-09 · 사용자 지시 · 관리자만 · 신규등록 옆 삭제 버튼 · #40
+  const { session } = useAuth();
+  const canManage = (session?.level ?? 0) >= 9;
+  const confirm = useConfirm();
+  const { toast, showSuccess, showError } = useToast();
+  const [deleting, setDeleting] = useState(false);
+  const selectedVendor = useMemo(() => vendors.find(v => v.id === selectedId) ?? null, [vendors, selectedId]);
+  const handleDelete = async () => {
+    if (!selectedVendor) return;
+    const ok = await confirm({
+      title: "공급사 삭제",
+      message: `[${displayVendorName(String(selectedVendor.company_name ?? "")) || String(selectedVendor.company_name ?? "")}]\n\n이 공급사를 완전히 삭제합니다.\n관련 매입내역·상품 매핑은 유지되지만 공급사 마스터에서 사라집니다.\n계속하시겠어요?`,
+      confirmLabel: "삭제",
+      cancelLabel: "취소",
+    });
+    if (!ok) return;
+    setDeleting(true);
+    try {
+      await api.del(`/api/vendors/${selectedVendor.id}`);
+      showSuccess("공급사 삭제됨");
+      setSelectedId(null);
+      refresh();
+    } catch (e: any) {
+      console.error("[VendorManageSplit] delete error", e);
+      showError(e?.response?.data?.error?.message ?? e?.message ?? "삭제 실패");
+    } finally {
+      setDeleting(false);
+    }
+  };
   // 2026-08-10 · 사용자 요청 · 자동 정렬 · 헤더 클릭 · 원칙
   type VmSortKey = "category" | "company_name" | "contact_name" | "phone";
   const [sortKey, setSortKey] = useState<VmSortKey>("company_name");
@@ -115,6 +148,18 @@ export const VendorManageSplit: React.FC = () => {
       onAdd={() => setShowNewVendor(true)}
       addLabel="신규 등록"
       addTitle="새 공급사 등록"
+      headerActions={canManage && selectedVendor ? (
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={deleting}
+          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg border-2 border-rose-200 bg-white text-rose-600 hover:bg-rose-50 hover:border-rose-400 text-[14px] font-bold disabled:opacity-40 cursor-pointer transition"
+          title={`${selectedVendor.company_name} 삭제`}
+        >
+          <Trash2 size={13} strokeWidth={2.5} />
+          삭제
+        </button>
+      ) : null}
       filters={
         <CategoryChips
           value={catFilter}
@@ -272,20 +317,23 @@ export const VendorManageSplit: React.FC = () => {
   );
 
   return (
-    <SplitPanel
-      storageKey="vendor-manage.leftWidth"
-      /* 2026-08-10 · 사용자 요청 · 기본 5:5 · 뷰포트 절반 (min-1200px 라면 600) */
-      defaultWidth={typeof window !== "undefined" ? Math.max(400, Math.min(900, Math.floor(window.innerWidth / 2))) : 600}
-      minWidth={280}
-      maxWidth={1200}
-      dividerColor="indigo"
-      left={left}
-      right={right}
-      wrapLeft={false}
-      mobileRightAsModal
-      mobileModalTitle={selected ? String((selected as any).company_name ?? "공급사 상세") : "공급사 상세"}
-      mobileOpen={selectedId != null}
-      onMobileClose={() => setSelectedId(null)}
-    />
+    <>
+      {toast && <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>}
+      <SplitPanel
+        storageKey="vendor-manage.leftWidth"
+        /* 2026-08-10 · 사용자 요청 · 기본 5:5 · 뷰포트 절반 (min-1200px 라면 600) */
+        defaultWidth={typeof window !== "undefined" ? Math.max(400, Math.min(900, Math.floor(window.innerWidth / 2))) : 600}
+        minWidth={280}
+        maxWidth={1200}
+        dividerColor="indigo"
+        left={left}
+        right={right}
+        wrapLeft={false}
+        mobileRightAsModal
+        mobileModalTitle={selected ? String((selected as any).company_name ?? "공급사 상세") : "공급사 상세"}
+        mobileOpen={selectedId != null}
+        onMobileClose={() => setSelectedId(null)}
+      />
+    </>
   );
 };

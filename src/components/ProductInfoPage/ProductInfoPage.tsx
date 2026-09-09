@@ -521,7 +521,8 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
 
 // ─── Main page ────────────────────────────────────────────────────────────
 export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
-  const { toast, showError } = useToast();
+  const { toast, showError, showSuccess } = useToast();
+  const confirm = useConfirm();
   const canManage = canManageProducts(authSession);
 
   const [rows, setRows] = useState<ProductRow[]>([]);
@@ -688,6 +689,35 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
           {canManage && (
             <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)} className="ml-auto">
               + 상품 등록
+            </Button>
+          )}
+          {canManage && selectedCode && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={async () => {
+                const target = filtered.find(p => p.product_code === selectedCode);
+                if (!target) return;
+                const ok = await confirm({
+                  title: "상품 삭제",
+                  message: `[${target.product_name}]\n\n이 상품을 완전히 삭제합니다.\n관련 매입내역·실재고는 유지되지만 상품 마스터에서 사라집니다.\n계속하시겠어요?`,
+                  confirmLabel: "삭제",
+                  cancelLabel: "취소",
+                });
+                if (!ok) return;
+                try {
+                  await api.del(`/api/products/${encodeURIComponent(selectedCode)}`);
+                  showSuccess("상품 삭제됨");
+                  setSelectedCode(null);
+                  setReloadKey(k => k + 1);
+                } catch (e: any) {
+                  console.error("[ProductInfoPage] delete error", e);
+                  showError(e?.response?.data?.error?.message ?? e?.message ?? "삭제 실패");
+                }
+              }}
+              className="!border-rose-200 !text-rose-600 hover:!bg-rose-50 hover:!border-rose-400"
+            >
+              삭제
             </Button>
           )}
         </div>

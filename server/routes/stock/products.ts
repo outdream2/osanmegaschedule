@@ -522,6 +522,20 @@ router.delete("/api/product-import-log", authorize(9), asyncHandler(async (_req,
   res.json({ ok: true });
 }));
 
+// 2026-09-09 · #40 · 상품 삭제 · 관리자 (level ≥ 9) · 사용자 지시
+//   · 참조 데이터 (inventory_checks · order_requests · stock_history 등) 는 유지 · products 마스터만 제거
+router.delete("/api/products/:code", authorize(9), asyncHandler(async (req, res) => {
+  const code = (req.params.code ?? "").trim();
+  if (!code) throw badRequest("code required");
+  const { error } = await supabase.from("products").delete().eq("product_code", code);
+  if (error) {
+    console.error("[products DELETE] error:", error.message);
+    throw new HttpError(500, error.message);
+  }
+  resetProductCache();
+  res.json({ ok: true, product_code: code });
+}));
+
 
 // 2026-08-25 · 사용자 지시 · 유통기한 임박 상품 리스트 · products.expiry_date IS NOT NULL
 //   · 매입 서브탭 (구 "실재고" → "유통기한 임박") · 화면 리스트 소스
