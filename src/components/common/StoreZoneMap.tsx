@@ -433,85 +433,68 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
     </div>
   ) : null;
 
-  // ─── 14×8 그리드 매장 배치 ───────────────────────────────────────────────
+  // ─── 2026-09-09 · 5×8 격자 재구성 · DisplayStoreMap 과 동일 · 공통 모듈화 ─────
   const body = (
-    <div style={{ minWidth: compact ? "700px" : "860px" }}>
-      {/* 섹션 라벨 */}
-      <div className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider mb-1.5 px-0.5">
-        상단 벽면 · aisle 구역 · 하단 벽면 — 14×8 그리드
-      </div>
-
-      {/*
-        Grid 구조:
-          Row 1 (gridRow 1): 상단 벽면 14셀
-          Row 2-4 (gridRow 2-4): 좌측벽 col1 · aisle 칼럼들 (col 3,6,9,13) · 나머지 빈칸
-          Row 5 (gridRow 5): 하단 벽면 14셀
-
-        aisle 칼럼: 각 pair 는 B(위)+A(아래) 두 셀을 하나의 그리드 셀 내 세로 배치
-        (pair 는 그리드에서 1행 차지, 내부에서 flex-col 로 B/A 분리)
-      */}
+    <div style={{ minWidth: compact ? "500px" : "620px" }}>
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(14, minmax(0, 1fr))",
-          // Row 1: top wall | Row 2-4: aisle rows (3 pairs) | Row 5: bottom wall
-          gridTemplateRows: "auto repeat(3, minmax(0, 1fr)) auto",
+          gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+          gridTemplateRows: "auto repeat(6, auto) auto",
           gap: "3px",
         }}
       >
-        {/* Row 1: 상단 벽면 */}
-        {STORE_TOP_WALL.map((num, i) => {
-          const c = typeof num === "number" ? getWallCellColor(num) : null;
-          const zd = typeof num === "number" ? ZONE_DEFS.find(z => z.num === num) : null;
-          const cat = typeof num === "number" ? (getZoneSubLabel(num) || (zd?.category ?? "")) : "";
-          const cellContent = c ? (
-            <div
-              style={{ gridColumn: i + 1, gridRow: 1 }}
-              key={`tw-${i}`}
-              className="relative group"
-            >
-              {wallCell(num as number, "top")}
+        {/* Row 0: 상단 벽 · col-span-5 · 내부 grid 14셀 · 균등 크기 */}
+        <div style={{
+          gridColumn: "1 / -1",
+          gridRow: 1,
+          display: "grid",
+          gridTemplateColumns: `repeat(${STORE_TOP_WALL.length}, minmax(0, 1fr))`,
+        }}>
+          {STORE_TOP_WALL.map((num, i) => (
+            <div key={`tw-${i}`} className="min-w-0 px-1.5 py-1 relative group">
+              {typeof num === "number"
+                ? wallCell(num, "top")
+                : <div className="bg-zinc-100 border border-zinc-200 rounded text-[13px] font-bold text-zinc-400 flex items-center justify-center h-full min-h-[76px]">{num}</div>
+              }
             </div>
-          ) : (
-            <div
-              style={{ gridColumn: i + 1, gridRow: 1 }}
-              key={`tw-${i}`}
-              className="bg-zinc-100 border border-zinc-200 rounded text-[13px] font-bold text-zinc-400 flex items-center justify-center"
-            >
-              {num}
-            </div>
-          );
-          return cellContent;
-        })}
+          ))}
+        </div>
 
-        {/* Rows 2-4: 좌측 벽면 (col 1) · 각 row 에 1셀 */}
+        {/* Rows 1-6: 좌측 벽 (Col 1) */}
         {STORE_LEFT_WALL.map((num, i) => (
           <div key={`lw-${num}`} style={{ gridColumn: 1, gridRow: i + 2 }} className="relative group">
             {wallCell(num, "left")}
           </div>
         ))}
 
-        {/* Rows 2-4: aisle 칼럼들 (col 2+1, 5+1, 8+1, 12+1 → 1-based 3,6,9,13) */}
-        {STORE_AISLE_COLUMNS.map((aisleCol, aci) =>
+        {/* Rows 1-6: aisle · 각 pair · B (홀수 row) / A (짝수 row) 개별 셀 · 좌우 여백 */}
+        {STORE_AISLE_COLUMNS.map((aisleCol, aci) => (
           aisleCol.pairs.map(({ b, a }, pairIdx) => (
-            <div
-              key={`aisle-${aci}-p${pairIdx}`}
-              style={{
-                gridColumn: aisleCol.col + 1,  // 0-based col → 1-based CSS
-                gridRow: pairIdx + 2,           // rows 2, 3, 4
-              }}
-            >
-              {renderAisleColPair(b, a, aci, pairIdx)}
-            </div>
+            <React.Fragment key={`aisle-${aci}-${pairIdx}`}>
+              <div style={{ gridColumn: aisleCol.col + 1, gridRow: pairIdx * 2 + 2 }} className="px-1.5 py-1 relative group">
+                {typeof b === "string" ? eventCell("B") : aisleCell(b as number, "B")}
+              </div>
+              <div style={{ gridColumn: aisleCol.col + 1, gridRow: pairIdx * 2 + 3 }} className="px-1.5 py-1 relative group">
+                {typeof a === "string" ? eventCell("A") : aisleCell(a as number, "A")}
+              </div>
+            </React.Fragment>
           ))
-        )}
-
-        {/* Row 5: 하단 벽면 */}
-        {STORE_BOTTOM_WALL.map((num, i) => (
-          <div key={`bw-${i}`} style={{ gridColumn: i + 1, gridRow: 5 }} className="relative group">
-            {wallCell(num, "bottom")}
-          </div>
         ))}
+
+        {/* Row 7: 하단 벽 · col-span-5 · 내부 grid 14셀 · 균등 크기 */}
+        <div style={{
+          gridColumn: "1 / -1",
+          gridRow: 8,
+          display: "grid",
+          gridTemplateColumns: `repeat(${STORE_BOTTOM_WALL.length}, minmax(0, 1fr))`,
+        }}>
+          {STORE_BOTTOM_WALL.map((num, i) => (
+            <div key={`bw-${i}`} className="min-w-0 px-1.5 py-1 relative group">
+              {wallCell(num, "bottom")}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
