@@ -91,9 +91,9 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
         type="button"
         onClick={() => onZoneProductsOpen({ zoneId: String(num), zoneNum: num, zoneLabel: String(num), category: cat })}
         title={`${num} · ${cat} · 클릭 → 상품 조회`}
-        className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-center h-full min-h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden`}
+        className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-start h-full min-h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden`}
       >
-        <span className={`text-[11px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none tabular-nums`}>{num}</span>
+        <span className={`text-[13px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none tabular-nums`}>{num}</span>
         <span className={`text-[11px] font-semibold ${c.text} text-center leading-tight break-keep whitespace-normal`}>{cat}</span>
       </button>
     );
@@ -110,9 +110,9 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
         type="button"
         onClick={() => onZoneProductsOpen({ zoneId: String(num), zoneNum: num, zoneLabel: String(num), category: cat })}
         title={`${num} · ${cat} · 클릭 → 상품 조회`}
-        className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-center h-full min-h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden`}
+        className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-start h-full min-h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden`}
       >
-        <span className={`text-[11px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none tabular-nums`}>{num}</span>
+        <span className={`text-[13px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none tabular-nums`}>{num}</span>
         <span className={`text-[11px] font-semibold ${c.text} text-center leading-tight break-keep whitespace-normal`}>{cat}</span>
       </button>
     );
@@ -130,9 +130,9 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
         type="button"
         onClick={() => onZoneProductsOpen({ zoneId: String(num), zoneNum: num, zoneLabel: String(num), category: cat })}
         title={`${num} · ${cat} · 클릭 → 상품 조회`}
-        className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-center h-full min-h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden w-full h-full`}
+        className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-start h-full min-h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden w-full h-full`}
       >
-        <span className={`text-[11px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none tabular-nums`}>{num}</span>
+        <span className={`text-[13px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none tabular-nums`}>{num}</span>
         <span className={`text-[11px] font-semibold ${c.text} text-center leading-tight break-keep whitespace-normal`}>{cat}</span>
       </button>
     );
@@ -147,9 +147,9 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
       return (
         <div
           key={`event-${aisleColIdx}-${pairIdx}-${side}`}
-          className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-center h-full min-h-[76px] px-1 py-1.5 gap-1 overflow-hidden w-full`}
+          className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-start h-full min-h-[76px] px-1 py-1.5 gap-1 overflow-hidden w-full`}
         >
-          <span className={`text-[11px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none`}>이벤트</span>
+          <span className={`text-[13px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none`}>이벤트</span>
           <span className={`text-[11px] font-semibold ${c.text} text-center leading-tight`}>{side}</span>
         </div>
       );
@@ -173,9 +173,9 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
         type="button"
         onClick={() => onZoneProductsOpen({ zoneId, zoneNum: num, zoneLabel, category: sub })}
         title={`${zoneLabel} · ${sub} · 클릭 → 상품 조회`}
-        className={`${colors.bg} border ${colors.border} rounded flex flex-col items-center justify-center h-full min-h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden w-full`}
+        className={`${colors.bg} border ${colors.border} rounded flex flex-col items-center justify-start h-full min-h-[76px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden w-full`}
       >
-        <span className={`text-[11px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{zoneId}</span>
+        <span className={`text-[13px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{zoneId}</span>
         <span className={`text-[11px] ${colors.text} text-center leading-tight break-keep whitespace-normal`}>{sub}</span>
       </button>
     );
