@@ -1,6 +1,6 @@
 # Framework Audit Report (자동 생성)
 
-> 생성 · 2026-09-08 · `scripts/audit-framework.cjs` · 매 세션 재실행
+> 생성 · 2026-09-09 · `scripts/audit-framework.cjs` · 매 세션 재실행
 >
 > **로드맵 · `docs/FRAMEWORK_ROADMAP.md` Phase 1 (인벤토리)**
 
@@ -9,16 +9,16 @@
 | 지표 | 값 |
 |---|---:|
 | 스캔 파일 | 804 |
-| 위반 파일 | 7 |
-| 클린 파일 | 797 (99%) |
-| 총 위반 개수 | 8 |
+| 위반 파일 | 8 |
+| 클린 파일 | 796 (99%) |
+| 총 위반 개수 | 9 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
 | `raw-alert` | 1 | 1 | high | useToast (showError·showSuccess) |
-| `raw-card-wrapper` | 2 | 1 | medium | Card 프리미티브 (padding·variant·clip) |
+| `raw-card-wrapper` | 3 | 2 | medium | Card 프리미티브 (padding·variant·clip) |
 | `large-file-warn` | 5 | 5 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
@@ -32,8 +32,9 @@
 | 5 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 893 | 3 | large-file-warn(1) |
 | 6 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 | large-file-warn(1) |
 | 7 | `src/components/ScanPage/ScanPage.tsx` | 808 | 3 | large-file-warn(1) |
+| 8 | `src/components/common/StoreZoneMap.tsx` | 564 | 2 | raw-card-wrapper(1) |
 
-## 📝 모든 위반 파일 (7개)
+## 📝 모든 위반 파일 (8개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -46,6 +47,7 @@
 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 893 | 3 |
 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 |
 | `src/components/ScanPage/ScanPage.tsx` | 808 | 3 |
+| `src/components/common/StoreZoneMap.tsx` | 564 | 2 |
 
 </details>
 

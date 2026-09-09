@@ -236,7 +236,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
             <span className={`text-[13px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none`}>{num}</span>
           </div>
           <div className="flex-1 w-full flex items-start justify-center pt-1">
-            <span className={`text-[12px] font-bold ${c.text} leading-snug text-center break-keep whitespace-normal`}>{cat}</span>
+            <span className={`text-[12px] font-bold ${c.text} leading-snug text-center whitespace-normal break-words [word-break:keep-all] [overflow-wrap:anywhere]`}>{cat}</span>
           </div>
         </div>
         {!usePicker && zd?.description && (
@@ -286,7 +286,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
           <span className={`text-[13px] font-bold text-white ${colors.labelBg} rounded px-1.5 py-0.5 leading-none`}>{zoneId}</span>
         </div>
         <div className="flex-1 w-full flex items-start justify-center pt-1">
-          <span className="text-[12px] leading-snug break-keep whitespace-normal">{sub}</span>
+          <span className="text-[12px] leading-snug whitespace-normal break-words [word-break:keep-all] [overflow-wrap:anywhere]">{sub}</span>
         </div>
       </Tag>
     );

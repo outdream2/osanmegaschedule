@@ -117,6 +117,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         <input
           type="text"
           lang="ko"
+          inputMode="text"
+          autoComplete="off"
           value={value}
           onChange={e => onChange(e.target.value)}
           onFocus={() => historyKey && historyList.length > 0 && setShowHistory(true)}
