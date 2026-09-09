@@ -15,9 +15,8 @@ import { RealMapSelector } from "../ScanPage/RealMapSelector";
 // 2026-09-01 · 실재고 UI 벤치마킹 · 창고/매장 자동 분류 · 관련 구역 표시
 import { resolveWarehouseVisibility, classifyArrivalSlot, assignZonesToSlots, type ArrivalSlot } from "../../lib/warehouseZoneMap";
 // 2026-09-08 · 상세 진열위치 뱃지 · 매장/창고 구역 옆에 3자리 표시
-import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
 import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
-import { ShelfPositionsEditModal } from "../common/ShelfPositionsEditModal";
+import { ShelfPositionsInlineTable } from "../common/ShelfPositionsInlineTable";
 
 export type ItemStatus = "pending" | "match" | "mismatch";
 
@@ -142,8 +141,6 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
   // 2026-09-08 · 상세 진열위치 · 이 상품의 매장/창고 3자리
   const shelfMap = useShelfPositionsMap();
   const shelfPositions = item.code ? shelfMap[item.code] : null;
-  // 2026-09-09 · #15 · 상세구역 편집 모달 open state
-  const [shelfEditOpen, setShelfEditOpen] = useState(false);
   const warehouseVis = useMemo(() => resolveWarehouseVisibility(productRealMap), [productRealMap]);
   const slotZones = useMemo(() => assignZonesToSlots(productRealMap, productCategoryCode), [productRealMap, productCategoryCode]);
   const targetSlot = useMemo(() => classifyArrivalSlot(item.location), [item.location]);
@@ -229,51 +226,30 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           </span>
         </div>
 
-        {/* 매장구역 · 필수 · 2026-09-07 · 사용자 지시 · 입고구역 → 매장구역 */}
-        {/* 2026-09-09 · 상세구역 · 데이터 옆 인라인 텍스트 · 클릭 시 모달 편집 · 사용자 지시 */}
-        <div className="flex items-center gap-2 flex-wrap pt-0.5 pb-0.5 border-t border-zinc-100/80 mt-0.5">
-          <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">
-            매장구역<span className="text-rose-500 ml-0.5">*</span>
-          </span>
-          <ArrivalZoneInline
-            value={item.location}
-            onChange={(v) => onSetLocation(item.key, v)}
-          />
-          {(() => {
-            const storeParts = (["store1","store2","store3"] as const)
-              .map(k => shelfPositions?.[k])
-              .filter((v): v is string => typeof v === "string" && v.length === 3);
-            const label = storeParts.length ? storeParts.join(" · ") : "비어있음";
-            const empty = storeParts.length === 0;
-            return (
-              <button
-                type="button"
-                onClick={() => setShelfEditOpen(true)}
-                className={[
-                  "text-[14px] tabular-nums tracking-tight cursor-pointer transition rounded px-1.5 py-0.5",
-                  empty
-                    ? "text-zinc-400 font-medium hover:bg-zinc-100"
-                    : "text-indigo-700 font-semibold hover:bg-indigo-50",
-                ].join(" ")}
-                title="상세구역 편집"
-              >
-                · {label}
-              </button>
-            );
-          })()}
-          {/* 창고구역 배지 · 상품 location or 사용자 선택 기반 · 창1/창2 자동 */}
-          {relatedSlots.filter(rs => rs.slot === "w1" || rs.slot === "w2").length > 0 && (
-            <>
-              <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0 ml-1">창고구역</span>
-              {relatedSlots.filter(rs => rs.slot === "w1" || rs.slot === "w2").map(({ slot, zone }) => {
-                const meta = ARRIVAL_SLOT_META[slot];
-                const isTarget = targetSlot === slot;
-                const shelfKey = slot === "w1" ? "warehouse1" : "warehouse2";
-                const shelfDetail = shelfPositions?.[shelfKey];
-                const hasDetail = typeof shelfDetail === "string" && shelfDetail.length === 3;
-                return (
-                  <span key={slot} className="inline-flex items-baseline gap-1">
+        {/* 구역 · 상세구역 · 2행 2열 grid · 사용자 지시 · #15 · 실재고확인과 동일 UI · 매장 추가 자동 대응 */}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 items-start pt-1 pb-0.5 border-t border-zinc-100/80 mt-0.5">
+          {/* R1 · C1 · 매장구역 */}
+          <div className="flex flex-col gap-1 min-w-0">
+            <span className="text-[13px] font-bold text-zinc-500 tracking-tight">
+              매장구역<span className="text-rose-500 ml-0.5">*</span>
+            </span>
+            <ArrivalZoneInline
+              value={item.location}
+              onChange={(v) => onSetLocation(item.key, v)}
+            />
+          </div>
+
+          {/* R1 · C2 · 창고구역 */}
+          <div className="flex flex-col gap-1 min-w-0">
+            <span className="text-[13px] font-bold text-zinc-500 tracking-tight">창고구역</span>
+            {relatedSlots.filter(rs => rs.slot === "w1" || rs.slot === "w2").length > 0 ? (
+              <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                {relatedSlots.filter(rs => rs.slot === "w1" || rs.slot === "w2").map(({ slot, zone }) => {
+                  const meta = ARRIVAL_SLOT_META[slot];
+                  const isTarget = targetSlot === slot;
+                  return (
                     <span
+                      key={slot}
                       className={[
                         "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[14px] font-bold tabular-nums transition",
                         isTarget
@@ -289,36 +265,25 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
                         <span className="text-[14px] font-bold text-emerald-700 ml-0.5">+{item.qty}</span>
                       )}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setShelfEditOpen(true)}
-                      className={[
-                        "text-[14px] tabular-nums tracking-tight cursor-pointer transition rounded px-1.5 py-0.5",
-                        hasDetail
-                          ? "text-cyan-700 font-semibold hover:bg-cyan-50"
-                          : "text-zinc-400 font-medium hover:bg-zinc-100",
-                      ].join(" ")}
-                      title={`${meta.full} 상세구역 편집`}
-                    >
-                      · {hasDetail ? shelfDetail : "비어있음"}
-                    </button>
-                  </span>
-                );
-              })}
-            </>
-          )}
-        </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <span className="text-[14px] font-medium text-zinc-400 px-1.5 py-0.5">-</span>
+            )}
+          </div>
 
-        {/* 상세구역 편집 모달 · 2026-09-09 · #15 */}
-        {shelfEditOpen && (
-          <ShelfPositionsEditModal
-            productCode={item.code}
-            productName={item.product?.product_name ?? item.product?.name ?? undefined}
-            displayLocation={productRealMap}
-            initial={shelfPositions}
-            onClose={() => setShelfEditOpen(false)}
-          />
-        )}
+          {/* R2 · 매장/창고 상세구역 · 공통 컴포넌트 · storage_locations 기반 동적 · col-span-2 */}
+          <div className="col-span-2">
+            <ShelfPositionsInlineTable
+              productCode={item.code}
+              productName={item.product?.product_name ?? item.product?.name ?? undefined}
+              displayLocation={productRealMap}
+              shelfPositions={shelfPositions}
+              labelSize="sm"
+            />
+          </div>
+        </div>
 
         {/* 액션 영역 · 수량 stepper + 2-state pill + 삭제 */}
         <div className="flex items-center gap-2 flex-wrap pt-1">

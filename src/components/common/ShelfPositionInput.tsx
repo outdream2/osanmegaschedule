@@ -121,11 +121,13 @@ export const ShelfPositionInput: React.FC<ShelfPositionInputProps> = ({
 
   const missingRequired = required && isEmpty;
 
+  // 2026-09-09 · 사용자 지시 · +/- 누를 때 크기 들쭉날쭉 방지
+  //   · ring 사용하면 outline 두께 만큼 컨테이너 크기 변화 · border-2 로 통일 · 두께 일정 유지
   const containerCls = [
-    "inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 bg-white",
+    "inline-flex items-center gap-1.5 rounded-xl border-2 px-2.5 py-1.5 bg-white",
     hasConflict
-      ? "border-rose-400 ring-2 ring-rose-200"
-      : missingRequired ? "border-rose-300 ring-1 ring-rose-100" : "border-zinc-200",
+      ? "border-rose-400"
+      : missingRequired ? "border-rose-300" : "border-zinc-200",
     disabled ? "opacity-60 cursor-not-allowed" : "",
     className,
   ].join(" ");
