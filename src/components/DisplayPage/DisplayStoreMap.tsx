@@ -303,14 +303,14 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
             </div>
           ))}
 
-          {/* Row 1-6: aisle · 각 pair · B (홀수 row) / A (짝수 row) 개별 셀 */}
+          {/* Row 1-6: aisle · 각 pair · B (홀수 row) / A (짝수 row) 개별 셀 · 상하좌우 여백 */}
           {STORE_AISLE_COLUMNS.map((aisleCol, aci) => (
             aisleCol.pairs.map(({ b, a }, pairIdx) => (
               <React.Fragment key={`aisle-${aci}-${pairIdx}`}>
-                <div style={{ gridColumn: aisleCol.col + 1, gridRow: pairIdx * 2 + 2 }}>
+                <div style={{ gridColumn: aisleCol.col + 1, gridRow: pairIdx * 2 + 2 }} className="px-1.5 py-1">
                   {renderAisleSide(b, aci, pairIdx, "B")}
                 </div>
-                <div style={{ gridColumn: aisleCol.col + 1, gridRow: pairIdx * 2 + 3 }}>
+                <div style={{ gridColumn: aisleCol.col + 1, gridRow: pairIdx * 2 + 3 }} className="px-1.5 py-1">
                   {renderAisleSide(a, aci, pairIdx, "A")}
                 </div>
               </React.Fragment>
