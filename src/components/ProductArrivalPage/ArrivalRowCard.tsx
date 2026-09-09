@@ -230,7 +230,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 items-start pt-1 pb-0.5 border-t border-zinc-100/80 mt-0.5">
           {/* R1 · C1 · 매장구역 */}
           <div className="flex flex-col gap-1 min-w-0">
-            <span className="text-[13px] font-bold text-zinc-500 tracking-tight">
+            <span className="text-[15px] font-bold text-zinc-500 tracking-tight">
               매장구역<span className="text-rose-500 ml-0.5">*</span>
             </span>
             <ArrivalZoneInline
@@ -241,7 +241,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
 
           {/* R1 · C2 · 창고구역 */}
           <div className="flex flex-col gap-1 min-w-0">
-            <span className="text-[13px] font-bold text-zinc-500 tracking-tight">창고구역</span>
+            <span className="text-[15px] font-bold text-zinc-500 tracking-tight">창고구역</span>
             {relatedSlots.filter(rs => rs.slot === "w1" || rs.slot === "w2").length > 0 ? (
               <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                 {relatedSlots.filter(rs => rs.slot === "w1" || rs.slot === "w2").map(({ slot, zone }) => {
@@ -289,7 +289,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
         <div className="flex items-center gap-2 flex-wrap pt-1">
           {/* 수량 · 필수 */}
           <div className="flex flex-col gap-0.5">
-            <span className="text-[12px] font-semibold text-zinc-400">수량<span className="text-rose-500 ml-0.5">*</span></span>
+            <span className="text-[14px] font-semibold text-zinc-400">수량<span className="text-rose-500 ml-0.5">*</span></span>
             <div className={`w-[176px] rounded-lg ${item.qty <= 0 ? "ring-2 ring-rose-300" : ""}`}>
               <StepperInput
                 value={item.qty}
@@ -303,7 +303,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
 
           {/* 2-state pill · 거래명세서 일치·불일치 · segmented (h-11 통일) · 2026-09-07 · 사용자 지시 · '거래명세서' 라벨 추가 */}
           <div className="flex flex-col gap-0.5">
-            <span className="text-[12px] font-semibold text-zinc-400">거래명세서</span>
+            <span className="text-[14px] font-semibold text-zinc-400">거래명세서</span>
           <div
             role="group"
             aria-label="거래명세서 일치 · 불일치"
@@ -349,7 +349,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           {/* 2026-09-08 · 사용자 지시 · 일치 선택 시 · 예상 현재고 = 현재고 + 매입수량 표시 */}
           {isMatch && item.qty > 0 && (
             <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[12px] font-semibold text-emerald-600 tracking-tight">예상 현재고</span>
+              <span className="text-[14px] font-semibold text-emerald-600 tracking-tight">예상 현재고</span>
               <div className="inline-flex items-baseline gap-1 px-2.5 h-11 rounded-xl border-2 border-emerald-200 bg-emerald-50/60 min-w-[80px] justify-center">
                 <span className="text-[13px] font-semibold text-zinc-500 tabular-nums">{currentStock}</span>
                 <span className="text-[12px] font-bold text-emerald-600">+{item.qty}</span>
@@ -378,7 +378,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
             <div className="flex items-center gap-3 flex-wrap">
               {onSetUnitPrice && (
                 <label className="inline-flex items-center gap-1.5">
-                  <span className="text-[14px] font-bold text-zinc-500 tracking-tight shrink-0">
+                  <span className="text-[16px] font-bold text-zinc-500 tracking-tight shrink-0">
                     단가<span className="text-rose-500 ml-0.5">*</span>
                   </span>
                   <input
@@ -403,7 +403,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
                     onChange={(e) => onSetExpiring(item.key, e.target.checked)}
                     className="w-4 h-4 rounded cursor-pointer accent-rose-500"
                   />
-                  <span className={`text-[14px] font-bold tracking-tight ${item.expiring ? "text-rose-600" : "text-zinc-500"}`}>
+                  <span className={`text-[16px] font-bold tracking-tight ${item.expiring ? "text-rose-600" : "text-zinc-500"}`}>
                     유통기한 임박
                   </span>
                 </label>

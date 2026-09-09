@@ -42,9 +42,10 @@ export const ShelfPositionsInlineTable: React.FC<ShelfPositionsInlineTableProps>
 
   const storeEmpty = storeParts.length === 0;
   const warehouseEmpty = warehouseParts.length === 0;
+  // 2026-09-09 · 사용자 지시 · 라벨 +2 · sm 14 · md 15
   const labelCls = labelSize === "md"
-    ? "text-[13px] font-bold text-zinc-500 tracking-tight uppercase"
-    : "text-[12px] font-bold text-zinc-500 tracking-tight uppercase";
+    ? "text-[15px] font-bold text-zinc-500 tracking-tight uppercase"
+    : "text-[14px] font-bold text-zinc-500 tracking-tight uppercase";
 
   return (
     <>
