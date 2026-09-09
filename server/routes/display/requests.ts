@@ -772,6 +772,8 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
       }
     }
     if (channels.sms) {
+      // 2026-09-09 · 개발중 · 사업자등록증 승인 · SMS 게이트웨이 계약 후 · 실제 발송 활성화 예정
+      //   · 지금은 · env·게이트웨이 미설치 · outcomes 에 skip 명시 · 프론트 UI 도 disabled 처리
       if (targetPhone && process.env.SMS_API_KEY) {
         outcomes.push("sms:skipped(gateway-not-installed)");
         dispatch.sms_status = "not_configured";
@@ -784,6 +786,8 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
       }
     }
     // 2026-08-10 · #28 · 카카오톡 알림톡 (SolAPI · env·템플릿·인증 대기)
+    // 2026-09-09 · 개발중 · 사업자등록증 승인 · SolAPI 계정·템플릿 인증 후 · 실제 발송 활성화 예정
+    //   · 지금은 · getSolApiStatus() · sendAlimtalk 스텁 유지 · 프론트 UI 도 disabled 처리
     if (channels.kakao) {
       if (!targetPhone) {
         outcomes.push("kakao:no_recipient");
