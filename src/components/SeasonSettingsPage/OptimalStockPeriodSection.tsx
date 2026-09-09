@@ -47,7 +47,15 @@ export const OptimalStockPeriodSection: React.FC = () => {
     const d = new Date(); d.setDate(d.getDate() - 30);
     return d.toISOString().slice(0, 10);
   });
-  const [toDate, setToDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  // 2026-09-09 · 사용자 지시 · range 모드 · "특정 기간 (시작 ~ 끝)" → "특정일부터 N일"
+  //   · toDate 는 fromDate + rangeDays 파생값으로 자동 계산
+  const [rangeDays, setRangeDays] = useState<number>(30);
+  const toDate = React.useMemo(() => {
+    const d = new Date(fromDate + "T00:00:00");
+    if (!Number.isFinite(d.getTime())) return fromDate;
+    d.setDate(d.getDate() + Math.max(1, rangeDays) - 1);
+    return d.toISOString().slice(0, 10);
+  }, [fromDate, rangeDays]);
   const [lastResult, setLastResult] = useState<{ updated: number; failed?: number; note?: string; productsWithSales?: number; productsZeroed?: number; from?: string; to?: string } | null>(null);
 
   // 2026-09-09 · 사용자 지시 · 기준 변경 시 · DB 즉시 반영 · 확인 다이얼로그 없이 자동 실행
@@ -106,15 +114,17 @@ export const OptimalStockPeriodSection: React.FC = () => {
   };
 
   // 2026-09-09 · 기간 (range) 변경 · 자동 재계산 · debounce 800ms
+  //   · range · fromDate + rangeDays · 둘 중 하나 변경 시 자동 재계산
   const rangeRecalcTimer = React.useRef<number | null>(null);
   useEffect(() => {
     if (!loaded || mode !== "range") return;
-    if (fromDate > toDate) return;
+    if (!fromDate) return;
+    if (!Number.isFinite(rangeDays) || rangeDays < 1) return;
     if (rangeRecalcTimer.current) window.clearTimeout(rangeRecalcTimer.current);
     rangeRecalcTimer.current = window.setTimeout(() => { void runRecalc(true); }, 800);
     return () => { if (rangeRecalcTimer.current) window.clearTimeout(rangeRecalcTimer.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fromDate, toDate, mode, loaded]);
+  }, [fromDate, rangeDays, mode, loaded]);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value);
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") { commit(); (e.target as HTMLInputElement).blur(); }
@@ -171,7 +181,7 @@ export const OptimalStockPeriodSection: React.FC = () => {
               }`}
             >
               <CalendarRange size={17} strokeWidth={2.2} />
-              특정 기간 (시작 ~ 끝)
+              특정일부터 · N일
             </button>
           </div>
         </div>
@@ -199,27 +209,33 @@ export const OptimalStockPeriodSection: React.FC = () => {
             </div>
           ) : (
             <div className="flex items-center gap-3 flex-wrap">
-              <label htmlFor="optimal-stock-fromdate" className="text-[19px] font-bold text-ink">시작</label>
+              <label htmlFor="optimal-stock-fromdate" className="text-[19px] font-bold text-ink">시작일</label>
               <input
                 id="optimal-stock-fromdate"
                 type="date"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
-                max={toDate}
-                className="h-12 px-3 text-[19px] font-semibold text-ink border-2 border-line rounded-xl bg-white focus:outline-none focus:ring-4 focus:ring-brand-tint focus:border-brand-deep tabular-nums shadow-sm"
-              />
-              <span className="text-[21px] text-zinc-400 font-bold">~</span>
-              <label htmlFor="optimal-stock-todate" className="text-[19px] font-bold text-ink">끝</label>
-              <input
-                id="optimal-stock-todate"
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                min={fromDate}
                 max={new Date().toISOString().slice(0, 10)}
                 className="h-12 px-3 text-[19px] font-semibold text-ink border-2 border-line rounded-xl bg-white focus:outline-none focus:ring-4 focus:ring-brand-tint focus:border-brand-deep tabular-nums shadow-sm"
               />
-              <span className="text-[16px] text-zinc-500 ml-1">기간 내 판매량 합산</span>
+              <label htmlFor="optimal-stock-range-days" className="text-[19px] font-bold text-ink ml-2">기간</label>
+              <input
+                id="optimal-stock-range-days"
+                type="number"
+                min={1}
+                max={365}
+                step={1}
+                value={rangeDays}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  if (Number.isFinite(n) && n >= 1) setRangeDays(Math.min(365, Math.max(1, Math.round(n))));
+                }}
+                className="w-24 h-12 px-3 text-[24px] font-extrabold text-brand-deep text-right border-2 border-line rounded-xl bg-white focus:outline-none focus:ring-4 focus:ring-brand-tint focus:border-brand-deep tabular-nums shadow-sm"
+              />
+              <span className="text-[21px] font-bold text-ink">일</span>
+              <span className="text-[16px] text-zinc-500 ml-2 tabular-nums">
+                → 계산 종료일 · <b className="text-brand-deep">{toDate}</b>
+              </span>
             </div>
           )}
         </div>
