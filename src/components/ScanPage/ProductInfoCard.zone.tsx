@@ -24,12 +24,7 @@ export const ProductInfoZone: React.FC<ProductInfoZoneProps> = ({
   shelfPositions,
 }) => (
   <>
-    {/* 2026-09-08 · 상세 진열위치 뱃지 · 매장·창고별 3자리 위치 · 진열위치 옆 필수 표시 */}
-    {shelfPositions && Object.keys(shelfPositions).length > 0 && (
-      <div className="mb-2">
-        <ShelfPositionsBadge positions={shelfPositions} size="sm" />
-      </div>
-    )}
+    {/* 2026-09-09 · 사용자 지시 · 상세구역 뱃지 · 매장구역(실제) 바로 옆에 표시 (상단 별도 라인 X) */}
     <div className="flex items-stretch gap-2 mb-2 px-2.5 py-2 rounded-xl border border-line bg-zinc-50/60">
       {/* 전산배치구역 */}
       <div className="min-w-0 flex-1">
@@ -55,6 +50,13 @@ export const ProductInfoZone: React.FC<ProductInfoZoneProps> = ({
           <p className="text-[14px] font-semibold text-zinc-400">미등록</p>
         )}
       </div>
+
+      {/* 2026-09-09 · 상세구역 뱃지 · 매장1:332 · 창고1:105 · 실제 옆에 배치 */}
+      {shelfPositions && Object.keys(shelfPositions).length > 0 && (
+        <div className="min-w-0 flex items-center">
+          <ShelfPositionsBadge positions={shelfPositions} size="sm" />
+        </div>
+      )}
 
       {/* 변경/등록 버튼 */}
       <div className="flex items-center">
