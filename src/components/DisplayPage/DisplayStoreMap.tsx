@@ -75,9 +75,12 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
   ];
 
   // ─── 상단 벽면 셀 렌더 ────────────────────────────────────────────────────
+  // 2026-09-09 · #14 · 사용자 지시 · 숫자구역 · AB구역과 동일 스타일 · WallZoneCard 담당자 카드 제거
+  //   · 셀 · label + category 만 · 심플 · 담당자는 향후 팝오버로 (#23)
+  //   · min-h · flex-1 · 표 격자 느낌 · AB 셀과 통일
   const renderTopWallCell = (num: number | string, key: string) => {
     if (typeof num !== "number") {
-      return <div key={key} className="bg-zinc-100 border border-zinc-200 rounded text-[13px] font-bold text-zinc-400 flex items-center justify-center h-full min-h-[48px]">{num}</div>;
+      return <div key={key} className="bg-zinc-100 border border-zinc-200 rounded text-[13px] font-bold text-zinc-400 flex items-center justify-center h-full min-h-[64px]">{num}</div>;
     }
     const c = getWallCellColor(num);
     const zd = ZONE_DEFS.find((z: any) => z.num === num);
@@ -88,11 +91,10 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
         type="button"
         onClick={() => onZoneProductsOpen({ zoneId: String(num), zoneNum: num, zoneLabel: String(num), category: cat })}
         title={`${num} · ${cat} · 클릭 → 상품 조회`}
-        className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-between min-h-[48px] px-0.5 py-1 gap-0.5 cursor-pointer hover:brightness-95 transition overflow-hidden`}
+        className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-center min-h-[64px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden`}
       >
-        <span className={`text-[11px] font-bold text-white ${c.labelBg} rounded px-1 py-px leading-none tabular-nums`}>{num}</span>
+        <span className={`text-[11px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none tabular-nums`}>{num}</span>
         <span className={`text-[11px] font-semibold ${c.text} text-center leading-tight break-keep whitespace-normal`}>{cat}</span>
-        <div className="w-full mt-auto">{renderWallZoneCard(num, "top")}</div>
       </button>
     );
   };
@@ -108,11 +110,10 @@ export const DisplayStoreMap: React.FC<DisplayStoreMapProps> = ({
         type="button"
         onClick={() => onZoneProductsOpen({ zoneId: String(num), zoneNum: num, zoneLabel: String(num), category: cat })}
         title={`${num} · ${cat} · 클릭 → 상품 조회`}
-        className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-between min-h-[48px] px-0.5 py-1 gap-0.5 cursor-pointer hover:brightness-95 transition overflow-hidden`}
+        className={`${c.bg} border ${c.border} rounded flex flex-col items-center justify-center min-h-[64px] px-1 py-1.5 gap-1 cursor-pointer hover:brightness-95 transition overflow-hidden`}
       >
-        <span className={`text-[11px] font-bold text-white ${c.labelBg} rounded px-1 py-px leading-none tabular-nums`}>{num}</span>
+        <span className={`text-[11px] font-bold text-white ${c.labelBg} rounded px-1.5 py-0.5 leading-none tabular-nums`}>{num}</span>
         <span className={`text-[11px] font-semibold ${c.text} text-center leading-tight break-keep whitespace-normal`}>{cat}</span>
-        <div className="w-full mt-auto">{renderWallZoneCard(num, "bottom")}</div>
       </button>
     );
   };
