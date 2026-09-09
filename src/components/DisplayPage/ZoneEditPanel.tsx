@@ -273,34 +273,16 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
     );
   };
 
-  // ── 좌측 · 상단 = 원본 zonecategory.png (pan/zoom) · 하단 = 공통 StoreZoneMap ────
-  //   · zonecategory · 원본 참조 이미지 · 마우스 hover · wheel 줌 · 드래그 이동 · 더블클릭 초기화
+  // ── 좌측 · 매장 구역도 (실시간 편집 반영) · 2026-09-09 · 원본 이미지 제거 · 매장구역도만 ────
   //   · StoreZoneMap · 공통 프레임워크 모듈 · zone_defs (KV) 실시간 반영 · 편집 즉시 갱신
+  //   · 사용자 지시 · 원본 zonecategory 이미지 pan/zoom viewer 제거
   const leftPanel = (
     <div className="flex flex-col gap-3 p-2 min-h-full">
-      {/* 원본 zonecategory 참조 이미지 · pan/zoom */}
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center gap-2 px-1">
-          <span className="w-1.5 h-4 rounded-full bg-rose-500" />
-          <span className="text-[15px] font-bold text-ink">원본 구역 카테고리 (zonecategory)</span>
-          <span className="text-[14px] text-zinc-400 ml-auto">스크롤 · 줌 · 드래그 · 이동</span>
-        </div>
-        <PanZoomImage
-          src={zoneCategoryImg}
-          alt="zonecategory · 매장 원본 구역 카테고리 참조"
-          className="min-h-[280px] max-h-[420px]"
-          initialScale={1}
-          minScale={0.5}
-          maxScale={8}
-        />
-      </div>
-
-      {/* 공통 프레임워크 · 전체 매장 구역도 (실시간 편집 반영) */}
       <div className="flex flex-col gap-1.5 flex-1">
         <div className="flex items-center gap-2 px-1">
           <span className="w-1.5 h-4 rounded-full bg-brand-deep" />
           <span className="text-[15px] font-bold text-ink">전체 매장 구역도</span>
-          <span className="text-[14px] text-zinc-400 ml-auto">공통 모듈 · 편집 즉시 반영</span>
+          <span className="text-[14px] text-zinc-400 ml-auto">편집 즉시 반영</span>
         </div>
         <div className="flex-1 overflow-auto">
           {/* 2026-08-30 · 사용자 지시 · 셀 클릭 → picker popover · zone_defs 직접 편집 */}
