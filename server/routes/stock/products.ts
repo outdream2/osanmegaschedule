@@ -749,10 +749,11 @@ router.patch("/api/products/:code/shelf-positions", authorize(1), validateBody(S
 
   if (existing) {
     console.log("[inventory_checks PATCH shelf-positions] update", { code, existingId: existing.id, merged });
+    // product_code 로 update · UNIQUE 제약 후 · 실질적 upsert 효과
     const { error } = await supabase
       .from("inventory_checks")
       .update({ shelf_positions: merged })
-      .eq("id", existing.id);
+      .eq("product_code", code);
     if (error) {
       if (/column .* does not exist|schema cache/i.test(error.message ?? "")) {
         throw new HttpError(503, "shelf_positions 컬럼 미배포");
