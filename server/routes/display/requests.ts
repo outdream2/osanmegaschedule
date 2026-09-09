@@ -488,12 +488,29 @@ router.get("/api/order-requests", asyncHandler(async (req, res) => {
   //   · 기본 · status='requested' 만 반환 · 발주요청 대기 목록
   //   · ?status=all · 모든 상태 반환 · ?status=xxx · 특정 상태 필터
   const statusFilter = String(req.query.status ?? "requested").trim();
-  let q = supabase.from("order_requests").select("id, product_code, product_name, current_stock, optimal_stock, note, requested_at, status, supplier").order("requested_at", { ascending: false });
+  // 2026-09-09 · optimal_stock 스냅샷 제거 · products.optimal_stock JOIN · 사용자 지시 대원칙
+  let q = supabase.from("order_requests").select("id, product_code, product_name, current_stock, note, requested_at, status, supplier").order("requested_at", { ascending: false });
   if (req.query.product_code) q = q.eq("product_code", String(req.query.product_code));
   if (statusFilter && statusFilter !== "all") q = q.eq("status", statusFilter);
   const { data, error } = await q;
   if (error) throw new HttpError(500, error.message);
-  res.json(data ?? []);
+  // 2026-09-09 · products JOIN · 최신 optimal_stock 병합
+  const rows = data ?? [];
+  const codes = Array.from(new Set(rows.map((r: any) => String(r.product_code ?? "").trim()).filter(Boolean)));
+  if (codes.length > 0) {
+    try {
+      const { data: prods } = await supabase.from("products").select("product_code, optimal_stock").in("product_code", codes);
+      const optMap = new Map<string, number | null>();
+      for (const p of prods ?? []) {
+        const opt = (p as any).optimal_stock;
+        optMap.set(String((p as any).product_code ?? "").trim(), opt != null ? Number(opt) : null);
+      }
+      for (const r of rows as any[]) {
+        r.optimal_stock = optMap.get(String(r.product_code ?? "").trim()) ?? null;
+      }
+    } catch { /* silent · products 조회 실패 시 · optimal_stock null */ }
+  }
+  res.json(rows);
 }));
 
 router.post("/api/order-requests", authorize(1), validateBody(CreateOrderRequestSchema), asyncHandler(async (req, res) => {
@@ -507,9 +524,10 @@ router.post("/api/order-requests", authorize(1), validateBody(CreateOrderRequest
   const supplierVal = b.supplier != null && String(b.supplier).trim() !== ""
     ? String(b.supplier).trim()
     : null;
+  // 2026-09-09 · optimal_stock 스냅샷 제거 · products.optimal_stock 단일 소스 (사용자 지시)
+  //   · payload 에서 optimal_stock 저장 안 함 · GET 시 · products JOIN 으로 최신값 표시
   const basePayload: Record<string, any> = {
     current_stock: b.current_stock != null ? Number(b.current_stock) : null,
-    optimal_stock: b.optimal_stock != null ? Number(b.optimal_stock) : null,
     note: String(b.note ?? ""),
     requested_at: now,
     status: "requested",
@@ -547,9 +565,10 @@ router.get("/api/order-history", asyncHandler(async (req, res) => {
   const since = new Date(Date.now() - days * 86400000).toISOString();
   const supplier = String(req.query.supplier ?? "").trim();
 
+  // 2026-09-09 · optimal_stock 스냅샷 제거 · products.optimal_stock 단일 소스
   let q = supabase
     .from("order_requests")
-    .select("id, order_number, order_date, desired_arrival, supplier, supplier_contact, supplier_email, supplier_phone, product_code, product_name, current_stock, optimal_stock, order_qty, unit_price, memo, sent_at, note")
+    .select("id, order_number, order_date, desired_arrival, supplier, supplier_contact, supplier_email, supplier_phone, product_code, product_name, current_stock, order_qty, unit_price, memo, sent_at, note")
     .eq("status", "ordered")
     .gte("sent_at", since)
     .order("sent_at", { ascending: false });
@@ -593,10 +612,28 @@ router.get("/api/order-history", asyncHandler(async (req, res) => {
       unit_price: price,
       line_amount: qty * price,
       current_stock: row.current_stock,
-      optimal_stock: row.optimal_stock,
+      // 2026-09-09 · optimal_stock · products JOIN 결과 병합 (아래 loop 후)
     });
     g.total_qty += qty;
     g.total_amount += qty * price;
+  }
+  // 2026-09-09 · products.optimal_stock 병합 · 발주 이력에도 최신값 표시 (재계산 변동 감수)
+  const allCodes = new Set<string>();
+  for (const g of grouped.values()) for (const it of g.items) if (it.product_code) allCodes.add(String(it.product_code));
+  if (allCodes.size > 0) {
+    try {
+      const { data: prods } = await supabase.from("products").select("product_code, optimal_stock").in("product_code", [...allCodes]);
+      const optMap = new Map<string, number | null>();
+      for (const p of prods ?? []) {
+        const opt = (p as any).optimal_stock;
+        optMap.set(String((p as any).product_code ?? "").trim(), opt != null ? Number(opt) : null);
+      }
+      for (const g of grouped.values()) {
+        for (const it of g.items) {
+          it.optimal_stock = optMap.get(String(it.product_code ?? "").trim()) ?? null;
+        }
+      }
+    } catch { /* silent · products 조회 실패 시 · optimal_stock null */ }
   }
   const orders = [...grouped.values()].sort((a, b) => String(b.sent_at ?? "").localeCompare(String(a.sent_at ?? "")));
   return res.json({ orders, count: orders.length });
@@ -942,7 +979,8 @@ router.get("/api/inventory-checks", asyncHandler(async (req, res) => {
     "warehouse1_stock", "warehouse2_stock",
     "store_stock", "store3_stock",
     "store1_zone", "store2_zone", "store3_zone",
-    "system_stock", "optimal_stock", "status", "note",
+    // 2026-09-09 · optimal_stock 스냅샷 제거 · products.optimal_stock 단일 소스 (사용자 지시)
+    "system_stock", "status", "note",
     "shelf_positions",
   ].join(", ");
   let q = supabase.from("inventory_checks").select(COLS).order("checked_at", { ascending: false });
@@ -1027,10 +1065,10 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
     const s = String(v).trim();
     return s === "" ? null : s;
   };
+  // 2026-09-09 · optimal_stock 스냅샷 제거 · products.optimal_stock 단일 소스 (사용자 지시)
   const payload: Record<string, any> = {
     product_name:  String(b.product_name ?? ""),
     system_stock:  b.system_stock  != null ? Number(b.system_stock)  : null,
-    optimal_stock: b.optimal_stock != null ? Number(b.optimal_stock) : null,
     checked_by:    String(b.checked_by ?? ""),
     note:          String(b.note ?? ""),
     checked_at:    now,

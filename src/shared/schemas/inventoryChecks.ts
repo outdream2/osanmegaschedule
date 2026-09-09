@@ -12,7 +12,8 @@ export const CreateInventoryCheckSchema = z.object({
   product_code: z.string().min(1, "product_code 필수").max(50),
   product_name: z.string().max(300).optional(),
   system_stock: numNullable,
-  optimal_stock: numNullable,
+  // 2026-09-09 · optimal_stock 스냅샷 제거 · products.optimal_stock 단일 소스 (사용자 지시)
+  //   · 조회 시 · products JOIN 으로 최신값 사용
   checked_by: z.string().max(100).optional(),
   note: z.string().max(500).optional(),
   // 재고 컬럼 (모두 optional · 부분 업데이트 지원)
