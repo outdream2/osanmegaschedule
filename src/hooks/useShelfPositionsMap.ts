@@ -43,12 +43,10 @@ export function invalidateShelfPositionsMap(): void {
   cache = null;
 }
 
-/** 2026-09-09 · 저장 직후 · 즉시 캐시 반영 · UI 반영 지연 방지 · 사용자 지시 */
-export function patchShelfPositionsCache(productCode: string, shelfPositions: ShelfPositions): void {
-  const nextData = { ...(cache?.data ?? {}) };
-  nextData[productCode] = shelfPositions;
-  cache = { data: nextData, expiresAt: Date.now() + TTL_MS };
-  subscribers.forEach(fn => { try { fn(nextData); } catch { /* silent */ } });
+/** 2026-09-09 · 사용자 지시 · 캐시 X · DB 값 재조회 · 저장 직후 실제 값 확인용 */
+export async function refetchShelfPositionsMap(): Promise<ShelfMap> {
+  cache = null;
+  return fetchMap();
 }
 
 export function useShelfPositionsMap(): ShelfMap {

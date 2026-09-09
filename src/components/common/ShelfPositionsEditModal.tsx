@@ -9,7 +9,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { X, Minus, Plus, ChevronDown } from "lucide-react";
 import { api } from "../../lib/apiClient";
 import { useStorageLocations } from "../../hooks/useStorageLocations";
-import { invalidateShelfPositionsMap, patchShelfPositionsCache } from "../../hooks/useShelfPositionsMap";
+import { invalidateShelfPositionsMap, refetchShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
 import { Button } from "./Button";
 import { Spinner } from "./Spinner";
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -256,17 +256,17 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
         payload[loc.code] = val;
       }
       console.log("[ShelfPositionsEditModal] save payload:", { productCode, payload });
-      const res = await api.patch<{ ok: boolean; product_code: string; shelf_positions?: ShelfPositions }>(
+      await api.patch(
         `/api/products/${encodeURIComponent(productCode)}/shelf-positions`,
         { shelf_positions: payload },
       );
-      // 서버 응답의 shelf_positions (merged) 로 캐시 즉시 갱신 · UI 지연 방지
-      const nextSaved = res.data?.shelf_positions ?? payload;
-      patchShelfPositionsCache(productCode, nextSaved);
+      // 2026-09-09 · 사용자 지시 · 캐시 낙관 업데이트 X · DB 재조회로 실제 값 반영
       invalidateShelfPositionsMap();
+      const freshMap = await refetchShelfPositionsMap();
+      const saved = freshMap[productCode] ?? payload;
       window.dispatchEvent(new CustomEvent("inventory-checks-updated"));
       showSuccess("상세구역 저장 완료");
-      onSaved?.(nextSaved);
+      onSaved?.(saved);
       onClose();
     } catch (e: any) {
       console.error("[ShelfPositionsEditModal] save error", e);
