@@ -171,17 +171,25 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
     }
   }, [fullKey, listWidth]);
 
-  // 2026-09-09 · defaultRatio · 실제 컨테이너 폭 기준 초기 5:5 (사용자 지시)
-  //   · localStorage 저장값 없을 때만 · mount 후 clientWidth × ratio 로 재설정
-  //   · defaultWidth 는 SSR/초기 폴백 · 실제 폭과 다를 수 있음 (padding 등)
+  // 2026-09-09 · defaultRatio · SplitPanel 좌우 실제 5:5 정합 (사용자 지시)
+  //   · localStorage 저장값 없을 때만 · mount 후 계산
+  //   · aside + gap + divider + gap + section = clientWidth
+  //   · 5:5 aside = (clientWidth - dividerWidth - 2 × gap) × ratio
+  //   · divider·gap 을 감안하지 않으면 aside 가 더 커져 5:5 어긋남
   useLayoutEffect(() => {
     if (defaultRatio == null) return;
     if (hadStoredValue.current) return; // 저장값 있으면 그것 우선
     const el = containerRef.current;
     if (!el) return;
-    const w = el.clientWidth;
-    if (!w || w <= 0) return;
-    const target = Math.max(minWidth, Math.min(maxWidth, Math.round(w * defaultRatio)));
+    const containerW = el.clientWidth;
+    if (!containerW || containerW <= 0) return;
+    const dividerEl = el.querySelector<HTMLDivElement>(".split-divider");
+    const dividerW = dividerEl ? dividerEl.offsetWidth : 6;
+    const styles = window.getComputedStyle(el);
+    const gapPx = parseFloat(styles.columnGap || styles.gap || "0") || 12;
+    // aside + section 이 채울 실제 폭 (divider · gap × 2 제외)
+    const innerW = Math.max(0, containerW - dividerW - gapPx * 2);
+    const target = Math.max(minWidth, Math.min(maxWidth, Math.round(innerW * defaultRatio)));
     setListWidth(target);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultRatio]);
