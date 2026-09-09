@@ -22,6 +22,8 @@ export interface ShelfPositionsEditModalProps {
   initial?: ShelfPositions | null;
   /** 2026-09-09 · 사용자 지시 · 매장 클릭 → 매장만 · 창고 클릭 → 창고만 · undefined 면 전체 */
   kindFilter?: "store" | "warehouse";
+  /** 2026-09-09 · 사용자 지시 · 개별 위치 편집 · 예: "store1" → 매장1 하나만 표시 · locationCode 우선 */
+  locationCode?: string;
   onClose: () => void;
   onSaved?: (next: ShelfPositions) => void;
 }
@@ -137,15 +139,16 @@ const CellStepper: React.FC<{
 );
 
 export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = ({
-  productCode, productName, displayLocation, initial, kindFilter, onClose, onSaved,
+  productCode, productName, displayLocation, initial, kindFilter, locationCode, onClose, onSaved,
 }) => {
   const locations = useStorageLocations();
+  // 우선순위: locationCode > kindFilter > 전체
   const activeLocs = useMemo(
     () => locations
       .filter(l => l.active)
-      .filter(l => !kindFilter || l.kind === kindFilter)
+      .filter(l => locationCode ? l.code === locationCode : (!kindFilter || l.kind === kindFilter))
       .sort((a, b) => a.sort_order - b.sort_order),
-    [locations, kindFilter],
+    [locations, kindFilter, locationCode],
   );
   // 각 위치별 · 3자리 digit 상태
   const [draft, setDraft] = useState<Record<string, [string, string, string]>>(() => {
@@ -229,7 +232,9 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
         <div className="flex items-start gap-3 px-5 py-4 border-b border-line bg-zinc-50/60 shrink-0">
           <div className="w-1.5 rounded-full bg-brand-deep self-stretch" />
           <div className="flex-1 min-w-0">
-            <div className="text-[17px] font-bold text-ink leading-tight tracking-tight">상세구역 편집</div>
+            <div className="text-[17px] font-bold text-ink leading-tight tracking-tight">
+              {activeLocs.length === 1 ? `${activeLocs[0].name} 상세구역 편집` : "상세구역 편집"}
+            </div>
             {productName && (
               <div className="text-[13px] text-ink-soft mt-1 truncate">
                 {productName}

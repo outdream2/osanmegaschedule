@@ -138,7 +138,8 @@ const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
   productCode, productName, location, onSetLocation, relatedSlots, targetSlot, qty, shelfPositions,
 }) => {
   const [storeCount, setStoreCount] = useState(1);
-  const [shelfEditKind, setShelfEditKind] = useState<"store" | "warehouse" | null>(null);
+  // 2026-09-09 · 사용자 지시 · 슬롯 클릭 시 · 해당 위치 하나만 편집
+  const [shelfEditCode, setShelfEditCode] = useState<string | null>(null);
   const w1 = relatedSlots.find(rs => rs.slot === "w1");
   const w2 = relatedSlots.find(rs => rs.slot === "w2");
   const canAddStore = storeCount < 3;
@@ -166,7 +167,7 @@ const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
         )}
         <button
           type="button"
-          onClick={() => setShelfEditKind("warehouse")}
+          onClick={() => setShelfEditCode(shelfKey)}
           className={[
             "text-[14px] tabular-nums tracking-tight cursor-pointer transition rounded px-1.5 py-0.5 text-left hover:bg-cyan-100/40 self-start",
             hasDetail ? "text-cyan-700 font-semibold" : "text-zinc-400 font-medium",
@@ -202,7 +203,7 @@ const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
         )}
         <button
           type="button"
-          onClick={() => setShelfEditKind("store")}
+          onClick={() => setShelfEditCode(shelfKey)}
           className={[
             "text-[14px] tabular-nums tracking-tight cursor-pointer transition rounded px-1.5 py-0.5 text-left hover:bg-indigo-100/40 self-start",
             hasDetail ? "text-indigo-700 font-semibold" : "text-zinc-400 font-medium",
@@ -247,14 +248,14 @@ const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
         </div>
       )}
 
-      {shelfEditKind && (
+      {shelfEditCode && (
         <ShelfPositionsEditModal
           productCode={productCode}
           productName={productName}
           displayLocation={location}
           initial={shelfPositions}
-          kindFilter={shelfEditKind}
-          onClose={() => setShelfEditKind(null)}
+          locationCode={shelfEditCode}
+          onClose={() => setShelfEditCode(null)}
         />
       )}
     </div>
