@@ -24,7 +24,8 @@ export const ShelfPositionsInlineTable: React.FC<ShelfPositionsInlineTableProps>
   productCode, productName, displayLocation, shelfPositions, className = "", labelSize = "sm",
 }) => {
   const locations = useStorageLocations();
-  const [open, setOpen] = useState(false);
+  // 2026-09-09 · 사용자 지시 · 매장 클릭 → 매장만 · 창고 클릭 → 창고만
+  const [openKind, setOpenKind] = useState<"store" | "warehouse" | null>(null);
 
   const { storeParts, warehouseParts } = useMemo(() => {
     const store: string[] = [];
@@ -54,7 +55,7 @@ export const ShelfPositionsInlineTable: React.FC<ShelfPositionsInlineTableProps>
           <span className={labelCls}>매장 상세구역</span>
           <button
             type="button"
-            onClick={() => setOpen(true)}
+            onClick={() => setOpenKind("store")}
             className={[
               "text-[14px] tabular-nums tracking-tight cursor-pointer transition rounded px-1.5 py-0.5 text-left hover:bg-indigo-50 self-start",
               storeEmpty ? "text-zinc-400 font-medium" : "text-indigo-700 font-semibold",
@@ -68,7 +69,7 @@ export const ShelfPositionsInlineTable: React.FC<ShelfPositionsInlineTableProps>
           <span className={labelCls}>창고 상세구역</span>
           <button
             type="button"
-            onClick={() => setOpen(true)}
+            onClick={() => setOpenKind("warehouse")}
             className={[
               "text-[14px] tabular-nums tracking-tight cursor-pointer transition rounded px-1.5 py-0.5 text-left hover:bg-cyan-50 self-start",
               warehouseEmpty ? "text-zinc-400 font-medium" : "text-cyan-700 font-semibold",
@@ -80,13 +81,14 @@ export const ShelfPositionsInlineTable: React.FC<ShelfPositionsInlineTableProps>
         </div>
       </div>
 
-      {open && (
+      {openKind && (
         <ShelfPositionsEditModal
           productCode={productCode}
           productName={productName}
           displayLocation={displayLocation ?? null}
           initial={shelfPositions}
-          onClose={() => setOpen(false)}
+          kindFilter={openKind}
+          onClose={() => setOpenKind(null)}
         />
       )}
     </>

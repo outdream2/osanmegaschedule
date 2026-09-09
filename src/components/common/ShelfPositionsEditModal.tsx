@@ -20,6 +20,8 @@ export interface ShelfPositionsEditModalProps {
   productName?: string;
   displayLocation?: string | null;
   initial?: ShelfPositions | null;
+  /** 2026-09-09 · 사용자 지시 · 매장 클릭 → 매장만 · 창고 클릭 → 창고만 · undefined 면 전체 */
+  kindFilter?: "store" | "warehouse";
   onClose: () => void;
   onSaved?: (next: ShelfPositions) => void;
 }
@@ -135,12 +137,15 @@ const CellStepper: React.FC<{
 );
 
 export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = ({
-  productCode, productName, displayLocation, initial, onClose, onSaved,
+  productCode, productName, displayLocation, initial, kindFilter, onClose, onSaved,
 }) => {
   const locations = useStorageLocations();
   const activeLocs = useMemo(
-    () => locations.filter(l => l.active).sort((a, b) => a.sort_order - b.sort_order),
-    [locations],
+    () => locations
+      .filter(l => l.active)
+      .filter(l => !kindFilter || l.kind === kindFilter)
+      .sort((a, b) => a.sort_order - b.sort_order),
+    [locations, kindFilter],
   );
   // 각 위치별 · 3자리 digit 상태
   const [draft, setDraft] = useState<Record<string, [string, string, string]>>(() => {
@@ -185,7 +190,8 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
   const handleSave = async () => {
     setSaving(true);
     try {
-      const payload: ShelfPositions = {};
+      // kindFilter 있으면 · 편집한 kind 만 payload · 나머지는 initial 유지 (merge)
+      const payload: ShelfPositions = { ...(initial ?? {}) };
       for (const loc of activeLocs) {
         const val = joinDigits(draft[loc.code] ?? ["", "", ""]);
         payload[loc.code] = val;
