@@ -50,14 +50,18 @@ export const OptimalStockPeriodSection: React.FC = () => {
   const [toDate, setToDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [lastResult, setLastResult] = useState<{ updated: number; failed?: number; note?: string; productsWithSales?: number; productsZeroed?: number; from?: string; to?: string } | null>(null);
 
-  const runRecalc = async () => {
+  // 2026-09-09 · 사용자 지시 · 기준 변경 시 · DB 즉시 반영 · 확인 다이얼로그 없이 자동 실행
+  //   · silent · true · confirm 스킵 (자동 재계산용)
+  const runRecalc = async (silent = false) => {
     const n = Number(inputValue) || days;
-    const modeLabel = mode === "today" ? `최근 ${n}일` : `${fromDate} ~ ${toDate}`;
-    const ok = await confirm({
-      title: "적정재고 재계산",
-      message: `${modeLabel} 판매량 합계 = 적정재고\n\n대상 · 전체 상품 (판매 0 이면 optimal_stock = 0)\n\n진행할까요?`,
-    });
-    if (!ok) return;
+    if (!silent) {
+      const modeLabel = mode === "today" ? `최근 ${n}일` : `${fromDate} ~ ${toDate}`;
+      const ok = await confirm({
+        title: "적정재고 재계산",
+        message: `${modeLabel} 판매량 합계 = 적정재고\n\n대상 · 전체 상품 (판매 0 이면 optimal_stock = 0)\n\n진행할까요?`,
+      });
+      if (!ok) return;
+    }
     if (mode === "range" && fromDate > toDate) { showError("시작 날짜가 끝 날짜보다 늦습니다"); return; }
     setRecalcing(true);
     setLastResult(null);
@@ -91,9 +95,23 @@ export const OptimalStockPeriodSection: React.FC = () => {
     const n = Number(inputValue);
     if (!Number.isFinite(n)) { setInputValue(String(days)); return; }
     const clamped = Math.max(MIN_DAYS, Math.min(MAX_DAYS, Math.round(n)));
+    if (clamped === days) { setInputValue(String(clamped)); return; }
     setDays(clamped);
     setInputValue(String(clamped));
+    // 2026-09-09 · 사용자 지시 · 기준 변경 후 · 자동 재계산 (confirm 없이 · DB 즉시 반영)
+    setTimeout(() => { void runRecalc(true); }, 100);
   };
+
+  // 2026-09-09 · 기간 (range) 변경 · 자동 재계산 · debounce 800ms
+  const rangeRecalcTimer = React.useRef<number | null>(null);
+  useEffect(() => {
+    if (!loaded || mode !== "range") return;
+    if (fromDate > toDate) return;
+    if (rangeRecalcTimer.current) window.clearTimeout(rangeRecalcTimer.current);
+    rangeRecalcTimer.current = window.setTimeout(() => { void runRecalc(true); }, 800);
+    return () => { if (rangeRecalcTimer.current) window.clearTimeout(rangeRecalcTimer.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fromDate, toDate, mode, loaded]);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value);
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") { commit(); (e.target as HTMLInputElement).blur(); }
@@ -233,7 +251,7 @@ export const OptimalStockPeriodSection: React.FC = () => {
           </div>
           <button
             type="button"
-            onClick={runRecalc}
+            onClick={() => runRecalc()}
             disabled={recalcing || !loaded}
             className="inline-flex items-center gap-2 h-12 px-6 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-[18px] font-extrabold shadow-md ring-2 ring-amber-300/40 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0 active:scale-[0.98]"
             title={`현재 ${inputValue}일 기준으로 재계산`}
