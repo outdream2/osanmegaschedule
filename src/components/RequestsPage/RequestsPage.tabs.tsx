@@ -190,9 +190,9 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
         <EmptyState title={search.trim() ? "검색 결과 없음" : "해당 상태 없음"} size="compact" />
       ) : (
         // 2026-09-09 · 사용자 지시 · 카드 리스트 → 표 형식
-        //   · 컬럼 · [체크] · 상품명 · 상태 · 진열위치 · 담당자 · 요청일 · 액션
-        //   · 배지 최소화 원칙 · StatusPill (상태 워크플로우 · 기능적 신호) 만 유지 · 그 외 텍스트
-        //   · 요청일 셀 · "M/D HH:mm" · count>1 시 · 아래 줄에 "누적 N회 · M/D 처음"
+        //   · 컬럼 · [체크] · 상품명 · 상태 · 진열위치 · 담당자 · 요청횟수 · 요청일 · 완료
+        //   · 배지 최소화 원칙 · StatusPill 만 유지 · 그 외 텍스트
+        //   · 창고준비 워크플로우 제거 · 진열완료(완료) 만 남김 · pending → done 직행
         <div className={`${CARD_BASE} overflow-x-auto ${displayLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
           <table className="w-full text-[15px]">
             <thead>
@@ -202,15 +202,15 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                 <th className="py-2.5 px-2 text-left w-20">상태</th>
                 <th className="py-2.5 px-2 text-left w-24">진열위치</th>
                 <th className="py-2.5 px-2 text-left w-28">담당자</th>
+                <th className="py-2.5 px-2 text-left w-20">요청횟수</th>
                 <th className="py-2.5 px-2 text-left w-32">요청일</th>
-                <th className="py-2.5 px-3 text-right w-44">액션</th>
+                <th className="py-2.5 px-3 text-right w-28">완료</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {filtered.map(r => {
                 const isDone     = r.status === "done";
                 const isPrepared = r.status === "prepared";
-                const isPending  = !isDone && !isPrepared;
                 const completing = completingDisplay.has(r.id);
                 const productName = getProductName(r);
                 const statusTone: PillTone = isDone ? "emerald" : isPrepared ? "sky" : "amber";
@@ -248,73 +248,46 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                         ? <span className="font-semibold text-brand-deep">{r.assigned_staff_name}</span>
                         : <span className="text-zinc-300">미지정</span>}
                     </td>
+                    <td className="px-2 py-2.5 align-middle tabular-nums">
+                      <span className={count > 1 ? "font-bold text-rose-500" : "text-zinc-500"} title={showFirstAt ? `${fmtDate(firstAt!)} 첫 요청` : ""}>
+                        {count}회
+                      </span>
+                    </td>
                     <td className="px-2 py-2.5 align-middle tabular-nums text-zinc-500">
                       <div>{fmtDate(r.requested_at)}{timeStr && <span className="text-zinc-400"> {timeStr}</span>}</div>
-                      {count > 1 && (
-                        <div className="text-[13px] text-rose-500 font-semibold mt-0.5">
-                          누적 {count}회{showFirstAt && <span className="text-zinc-400 font-normal"> · {fmtDate(firstAt!)} 처음</span>}
+                      {showFirstAt && (
+                        <div className="text-[13px] text-zinc-400 font-normal mt-0.5">
+                          {fmtDate(firstAt!)} 처음
                         </div>
                       )}
                     </td>
                     <td className="px-3 py-2.5 align-middle text-right whitespace-nowrap">
-                      <div className="inline-flex items-center gap-1.5">
-                        {(() => {
-                          const prepared = !isPending;
-                          const disabled = !canPrepare || completing;
-                          return (
-                            <button
-                              onClick={() => onPrepareDisplay(r)}
-                              disabled={disabled}
-                              title={
-                                canPrepare
-                                  ? prepared
-                                    ? `대기로 되돌리기 (${r.prepared_by_name ?? ""}${r.prepared_at ? " · " + fmtDate(r.prepared_at) : ""})`
-                                    : "창고 준비 완료 처리"
-                                  : "창고담당만 가능"
-                              }
-                              className={`text-[14px] font-semibold px-2.5 h-7 rounded-lg border transition-all inline-flex items-center gap-1 disabled:opacity-40 ${
-                                disabled
-                                  ? "text-zinc-400 bg-zinc-50 border-zinc-200 cursor-not-allowed"
-                                  : prepared
-                                    ? "text-sky-700 border-sky-200 bg-sky-50/60 hover:bg-sky-100 cursor-pointer"
-                                    : "text-amber-600 border-amber-300 hover:bg-amber-50 cursor-pointer"
-                              }`}
-                            >
-                              {completing ? <Spinner size={9} tone="zinc" /> : <Package size={11} />}
-                              창고준비
-                            </button>
-                          );
-                        })()}
-                        {(() => {
-                          const gated = isPending && !isAdminLevel8;
-                          const disabled = !canComplete || completing || gated;
-                          return (
-                            <button
-                              onClick={() => onCompleteDisplay(r)}
-                              disabled={disabled}
-                              title={
-                                canComplete
-                                  ? isDone
-                                    ? `대기로 되돌리기 (${r.completed_by_name ?? ""}${r.completed_at ? " · " + fmtDate(r.completed_at) : ""})`
-                                    : gated
-                                      ? "창고 준비 완료 후 진열완료 가능"
-                                      : "진열 완료 처리"
-                                  : "진열담당만 가능"
-                              }
-                              className={`text-[14px] font-semibold px-2.5 h-7 rounded-lg border transition-all inline-flex items-center gap-1 disabled:opacity-40 ${
-                                disabled
-                                  ? "text-zinc-400 bg-zinc-50 border-zinc-200 cursor-not-allowed"
-                                  : isDone
-                                    ? "text-emerald-700 border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100 cursor-pointer"
-                                    : "text-amber-600 border-amber-300 hover:bg-amber-50 cursor-pointer"
-                              }`}
-                            >
-                              {completing ? <Spinner size={9} tone="zinc" /> : <CheckCircle size={11} />}
-                              진열완료
-                            </button>
-                          );
-                        })()}
-                      </div>
+                      {(() => {
+                        const disabled = !canComplete || completing;
+                        return (
+                          <button
+                            onClick={() => onCompleteDisplay(r)}
+                            disabled={disabled}
+                            title={
+                              canComplete
+                                ? isDone
+                                  ? `대기로 되돌리기 (${r.completed_by_name ?? ""}${r.completed_at ? " · " + fmtDate(r.completed_at) : ""})`
+                                  : "진열 완료 처리"
+                                : "진열담당만 가능"
+                            }
+                            className={`text-[14px] font-semibold px-2.5 h-7 rounded-lg border transition-all inline-flex items-center gap-1 disabled:opacity-40 ${
+                              disabled
+                                ? "text-zinc-400 bg-zinc-50 border-zinc-200 cursor-not-allowed"
+                                : isDone
+                                  ? "text-emerald-700 border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100 cursor-pointer"
+                                  : "text-amber-600 border-amber-300 hover:bg-amber-50 cursor-pointer"
+                            }`}
+                          >
+                            {completing ? <Spinner size={9} tone="zinc" /> : <CheckCircle size={11} />}
+                            완료
+                          </button>
+                        );
+                      })()}
                     </td>
                   </tr>
                 );
