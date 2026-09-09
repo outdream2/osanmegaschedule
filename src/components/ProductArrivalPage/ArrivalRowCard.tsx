@@ -135,13 +135,16 @@ interface ArrivalZoneSlotListProps {
 }
 
 const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
-  productCode, productName, location, onSetLocation, relatedSlots, targetSlot, qty, shelfPositions,
+  productCode, productName, location, onSetLocation, relatedSlots, targetSlot, qty, shelfPositions: propShelfPositions,
 }) => {
-  // 2026-09-09 · 진단 · shelfPositions 갱신 반영 확인
-  console.log("[ArrivalZoneSlotList] render", { productCode, shelfPositions });
   const [storeCount, setStoreCount] = useState(1);
   // 2026-09-09 · 사용자 지시 · 슬롯 클릭 시 · 해당 위치 하나만 편집
   const [shelfEditCode, setShelfEditCode] = useState<string | null>(null);
+  // 2026-09-09 · 저장 후 · UI 즉시 반영 보장 · 로컬 override state (props 캐시 갱신 지연 방어)
+  const [shelfOverride, setShelfOverride] = useState<ShelfPositions | null>(null);
+  const shelfPositions = shelfOverride ?? propShelfPositions;
+  // 진단 · shelfPositions 갱신 확인
+  console.log("[ArrivalZoneSlotList] render", { productCode, propShelfPositions, shelfOverride, effective: shelfPositions });
   const w1 = relatedSlots.find(rs => rs.slot === "w1");
   const w2 = relatedSlots.find(rs => rs.slot === "w2");
   const canAddStore = storeCount < 3;
@@ -257,6 +260,11 @@ const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
           displayLocation={location}
           initial={shelfPositions}
           locationCode={shelfEditCode}
+          onSaved={(saved) => {
+            // 로컬 즉시 반영 · UI 지연 완전 방어
+            console.log("[ArrivalZoneSlotList] onSaved override:", saved);
+            setShelfOverride(saved);
+          }}
           onClose={() => setShelfEditCode(null)}
         />
       )}
