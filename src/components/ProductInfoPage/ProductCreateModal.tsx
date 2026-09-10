@@ -371,17 +371,36 @@ export const ProductCreateModal: React.FC<Props> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div ref={supplierWrapRef} className="relative min-w-0">
                     <Field icon={<Building2 size={14} />} label="공급사">
-                      <input
-                        lang="ko" type="text"
-                        value={form.supplier}
-                        onChange={(e) => { set("supplier", e.target.value); setSupplierOpen(true); }}
-                        onFocus={() => setSupplierOpen(true)}
-                        className={inputCls}
-                        placeholder="검색 · 클릭하여 선택"
-                        maxLength={100}
-                        autoComplete="off"
-                      />
+                      {(() => {
+                        const s = form.supplier.trim();
+                        const isValid = !s || vendors.some(v => (v.company_name ?? "").trim() === s);
+                        return (
+                          <input
+                            lang="ko" type="text"
+                            value={form.supplier}
+                            onChange={(e) => { set("supplier", e.target.value); setSupplierOpen(true); }}
+                            onFocus={() => setSupplierOpen(true)}
+                            onBlur={() => {
+                              // 2026-09-10 · #63 · 사용자 지시 · vendors 매칭 안 되면 · clear (자유 입력 금지)
+                              const val = form.supplier.trim();
+                              if (val && !vendors.some(v => (v.company_name ?? "").trim() === val)) {
+                                setTimeout(() => set("supplier", ""), 200);
+                              }
+                            }}
+                            className={`${inputCls} ${!isValid ? "!border-rose-400 !bg-rose-50/50" : ""}`}
+                            placeholder="검색 · 목록에서 선택 필수"
+                            maxLength={100}
+                            autoComplete="off"
+                            aria-invalid={!isValid}
+                          />
+                        );
+                      })()}
                     </Field>
+                    {form.supplier.trim() && !vendors.some(v => (v.company_name ?? "").trim() === form.supplier.trim()) && (
+                      <div className="mt-1 text-[13px] font-semibold text-rose-600">
+                        ⚠ 목록에 없는 공급사 · 드롭다운에서 선택하세요
+                      </div>
+                    )}
                     <PortalDropdown anchorRef={supplierWrapRef} open={supplierOpen && supplierSuggestions.length > 0}>
                       <div className="rounded-xl border border-zinc-200 bg-white shadow-[0_16px_48px_-12px_rgba(10,46,74,0.18)] max-h-64 overflow-y-auto py-1">
                         {supplierSuggestions.map(v => (
