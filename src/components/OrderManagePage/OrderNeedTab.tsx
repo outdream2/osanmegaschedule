@@ -136,20 +136,16 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
   // 2026-09-10 · 사용자 지시 · 판매중 기본값 강제 · storageKey bump v2
   const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "orderNeed.saleFilter.v2" });
 
-  // 2026-09-10 · #42 · 최신 UX 트렌드 · 사용자 지시
-  //   · 검색어 없음 · 요청됨 상품 자동 숨김 (기본 리스트 · 노이즈 방지 · 발주요청 탭으로 이동)
-  //   · 검색어 있음 · 모두 표시 (재요청 UX · 사용자가 특정 상품 찾을 때 · 이미 요청 상태도 확인 가능)
-  //   · 요청됨 상품 클릭 시 · 기존 3-way confirm (재요청 / 상세확인 / 취소)
-  const hasSearch = !!lowStockSearch.trim();
+  // 2026-09-10 · 사용자 지시 · 발주요청 되어도 · 리스트에 남아있음 · [✓] 배지로만 상태 표시
+  //   · 이전 · 요청됨 상품 자동 숨김 → 제거 · 항상 표시
   const displayed = React.useMemo(
     () => lowStockFiltered.filter(p => {
       if (!saleMatches(p.sale_status)) return false;
-      const code = getCode(p);
-      if (!hasSearch && requestedCodes.has(code)) return false;
       return true;
     }),
-    [lowStockFiltered, saleMatches, requestedCodes, getCode, hasSearch]
+    [lowStockFiltered, saleMatches]
   );
+  void requestedCodes; void lowStockSearch;
 
   // 2026-09-10 · 사용자 지시 · 상품명 클릭 · 항상 · 우측 상세 정보 표시
   //   · 이전 · 재고 초과/이미 요청 등 confirm 팝업 · 사용자 UX 방해 · 팝업 제거
