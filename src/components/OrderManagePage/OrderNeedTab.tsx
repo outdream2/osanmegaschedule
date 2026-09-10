@@ -151,12 +151,14 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
     const code = getCode(p);
     const name = getName(p);
     const inLowStock = Number.isFinite(cur) && Number.isFinite(opt) && cur < opt;
-    // 2026-09-07 · 사용자 지시 · 이미 발주요청된 상품 · 3-way (재요청·상세확인·취소)
+    // 2026-09-10 · 사용자 지시 · 이미 발주요청된 상품 · 3-way (덮어쓰기·상세확인·취소)
+    //   · 재요청 시 · 발주요청 리스트에 기존 정보 덮어쓰기 · 명시적 안내
     if (requestedCodes.has(code)) {
+      const shortage = Number.isFinite(cur) && Number.isFinite(opt) ? Math.max(1, opt - cur) : 1;
       const choice = await confirm({
         title: "이미 발주요청됨",
-        message: `[${name}]\n현재고 ${Number.isFinite(cur) ? cur : "-"} · 적정재고 ${Number.isFinite(opt) ? opt : "-"}\n\n이 상품은 이미 발주요청 리스트에 있습니다.\n재요청하거나 상세내용을 확인·수정할 수 있습니다.`,
-        confirmLabel: "재요청",
+        message: `[${name}]\n현재고 ${Number.isFinite(cur) ? cur : "-"} · 적정재고 ${Number.isFinite(opt) ? opt : "-"} · 부족 ${shortage}\n\n이 정보로 발주요청 리스트에 다시 추가하시겠습니까?\n⚠️ 기존 정보를 덮어쓰게 됩니다.`,
+        confirmLabel: "덮어쓰기",
         neutralLabel: "상세내용 확인",
         cancelLabel: "취소",
       });

@@ -11,6 +11,8 @@ export const CreateOrderRequestSchema = z.object({
   product_name: z.string().max(300).optional(),
   supplier: z.string().max(300).nullable().optional(),
   current_stock: z.coerce.number().nullable().optional(),
+  // 2026-09-10 · 사용자 지시 · [요청] 클릭 시 · 부족량(자동) or 사용자 조정 수량 · 그대로 발주요청 전달
+  order_qty: z.coerce.number().nullable().optional(),
   note: z.string().max(500).optional(),
   // 하위호환 · 클라이언트가 requested_at 보내도 무시 (백엔드가 새로 세팅)
   requested_at: z.string().nullable().optional(),

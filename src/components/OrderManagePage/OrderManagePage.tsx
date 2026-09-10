@@ -382,11 +382,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   const handleRequestOrder = async (p: ProductInfo) => {
     const code = getCode(p);
+    // 2026-09-10 · 사용자 지시 · 발주필요 수량 · 발주요청으로 그대로 전달
+    //   · 우선순위 · orderQtyOverride[code] > Math.max(1, opt-cur) > null
+    const cur = Number(p.current_stock ?? 0);
+    const opt = Number(p.optimal_stock ?? 0);
+    const shortage = Math.max(1, opt - cur);
+    const orderQty = orderQtyOverride.get(code) ?? shortage;
     setRequestingOrder(prev => { const n = new Set(prev); n.add(code); return n; });
     try {
       await api.post("/api/order-requests", {
         product_code: code, product_name: getName(p),
-        current_stock: p.current_stock, optimal_stock: p.optimal_stock,
+        current_stock: p.current_stock,
+        order_qty: orderQty,
         supplier: p.supplier, requested_at: new Date().toISOString(),
       });
       await loadOrderReqs();

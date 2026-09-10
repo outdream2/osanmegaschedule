@@ -535,6 +535,8 @@ router.post("/api/order-requests", authorize(1), validateBody(CreateOrderRequest
     order_number: null,
   };
   if (supplierVal) basePayload.supplier = supplierVal;
+  // 2026-09-10 · 사용자 지시 · 발주필요에서 지정한 수량 · 발주요청에 그대로 저장
+  if (b.order_qty != null) basePayload.order_qty = Number(b.order_qty);
   const { data: existing } = await supabase.from("order_requests").select("id, status").eq("product_code", code).maybeSingle();
   if (existing) {
     const { error } = await supabase.from("order_requests").update(basePayload).eq("id", existing.id);
