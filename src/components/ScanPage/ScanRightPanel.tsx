@@ -48,11 +48,12 @@ export const ScanRightPanel: React.FC<ScanRightPanelProps> = ({
             <span className="text-[15px] font-bold text-ink tracking-tight">스캔한 상품 · 실재고 입력</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0" aria-label="마지막 스캔 상품 액션">
+            {/* 2026-09-10 · #74 · 사용자 지시 · 진열요청 · 빨간색 (rose) 강조 · 하단 액션 셀 중복 제거 */}
             <button
               type="button"
               disabled={disabled || requestingKey === (targetRow?.key ?? "")}
               onClick={() => { if (targetRow) requestDisplay(targetRow); }}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[15px] font-bold shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-violet-500 hover:bg-violet-600 active:bg-violet-700 text-white"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[15px] font-bold shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white"
               title={disabled ? "먼저 상품을 스캔하세요" : `${targetRow?.product.name} · 진열요청 전송`}
             >
               <Megaphone size={13} strokeWidth={2.5} />

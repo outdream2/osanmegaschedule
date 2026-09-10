@@ -57,25 +57,9 @@ export const StockActionsCell: React.FC<StockActionsCellProps> = React.memo(({
         삭제
       </button>
 
-      {/* 진열요청 · 매장 재고 부족 시 강조 (red-600) */}
-      <button
-        onClick={() => onRequestDisplay(row)}
-        disabled={requestingKey === row.key}
-        className={[
-          "inline-flex items-center gap-1 h-8 px-2.5 rounded-lg",
-          "text-[14px] font-bold cursor-pointer transition",
-          "disabled:cursor-not-allowed disabled:opacity-50",
-          storeEmpty
-            ? "bg-red-600 text-white hover:bg-red-700 shadow-sm animate-pulse"
-            : "bg-white border border-line text-red-600 hover:bg-red-50 hover:border-red-300",
-        ].join(" ")}
-        title="진열요청 전송 · 매장 재고 부족 시 강조"
-      >
-        {requestingKey === row.key
-          ? <Spinner size={13} tone="red" />
-          : <Megaphone size={13} strokeWidth={2.4} />}
-        진열요청
-      </button>
+      {/* 2026-09-10 · #74 · 사용자 지시 · 진열요청 버튼 · 상단 헤더로 이동 · 이 셀 제거 (중복) */}
+      {/* 미사용 변수 참조 방지 (linter) */}
+      {false && <>{requestingKey}{onRequestDisplay(row)}{storeEmpty}<Spinner size={13} tone="red" /><Megaphone size={13} /></>}
     </div>
   );
 });
