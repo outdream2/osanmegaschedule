@@ -34,6 +34,8 @@ interface VendorListEditorProps {
   onEditRequest?: (vendorId: number) => void;
   /** 2026-07-16 · 좌우 split 좌측용 컴팩트 모드 · 공급사명·사업자번호·담당자 3컬럼만 */
   compact?: boolean;
+  /** 2026-09-10 · #71 · 사용자 지시 · 부모에서 기간 통합 관리 시 · 외부 값 사용 (자체 기간 UI 숨김) */
+  externalAggregateMonths?: number;
 }
 
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · types + utils
@@ -56,6 +58,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   initialSelectedId,
   onEditRequest,
   compact = false,
+  externalAggregateMonths,
 }) => {
   const confirm = useConfirm();
 
@@ -81,7 +84,9 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   // 2026-09-10 · 사용자 지시 · 재고자산 로딩 상태 · "-" 대신 · 로딩 중 표시
   const [supplierAggLoading, setSupplierAggLoading] = useState(false);
   // 2026-08-09 · 기간 조회 · 1개월/3개월/6개월/12개월 (default 3)
-  const [aggregateMonths, setAggregateMonths] = useState<number>(3);
+  // 2026-09-10 · #71 · 사용자 지시 · 외부에서 관리하면 · 그 값 우선 (자체 상태는 fallback)
+  const [aggregateMonthsLocal, setAggregateMonths] = useState<number>(3);
+  const aggregateMonths = externalAggregateMonths ?? aggregateMonthsLocal;
   const toggleCompactSort = (key: CompactSortKey) => {
     if (compactSortKey === key) {
       setCompactSortDir(d => d === "asc" ? "desc" : "asc");
@@ -279,15 +284,17 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 집계 로딩 중…
               </span>
             )}
-            {/* 기간 조회 · 공용 PeriodSelector (2026-08-09) */}
-            <PeriodSelector<number>
-              options={PERIOD_MONTHS_PRESET}
-              value={aggregateMonths}
-              onChange={(v) => setAggregateMonths(v)}
-              accent="teal"
-              className={supplierAggLoading ? "" : "ml-auto"}
-              ariaLabel="재고자산·판매액 집계 기간"
-            />
+            {/* 2026-09-10 · #71 · 사용자 지시 · 외부 기간 사용 시 · 자체 기간 UI 숨김 (상단 툴바로 통합) */}
+            {externalAggregateMonths == null && (
+              <PeriodSelector<number>
+                options={PERIOD_MONTHS_PRESET}
+                value={aggregateMonths}
+                onChange={(v) => setAggregateMonths(v)}
+                accent="teal"
+                className={supplierAggLoading ? "" : "ml-auto"}
+                ariaLabel="재고자산·판매액 집계 기간"
+              />
+            )}
           </div>
         </div>
       ) : (

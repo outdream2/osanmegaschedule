@@ -34,15 +34,14 @@ import {
 
 interface VendorDetailTabsProps {
   vendor: VendorBasic;
-  /** 외부에서 기간 필터를 공유할 때 사용 · 미지정 시 내부에서 관리 */
-  periodMonths?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
-  periodSeason?: SeasonKey | null;
-  onPeriodChange?: (months: 0 | 1 | 2 | 3 | 4 | 5 | 6, season: SeasonKey | null) => void;
+  // 2026-09-10 · #71 · 사용자 지시 · 부모 상단 툴바 · 기간 통합 시 · 값 수신
+  externalPeriodMonths?: number;
+  externalPeriodSeason?: string | null;
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 
-export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) => {
+export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, externalPeriodMonths, externalPeriodSeason }) => {
   const { toast, showError } = useToast();
   // 2026-08-24 · 사용자 지시 · 공급사 정보 수정 · openVendorInfo · [수정] 버튼 wiring
   const { openVendorInfo, modalElement: vendorModalElement } = useVendorInfoModal();
@@ -58,8 +57,13 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
   const [salesLoading, setSalesLoading] = useState(false);
 
   // 기간 필터 (내부 관리)
-  const [periodMonths, setPeriodMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
-  const [periodSeason, setPeriodSeason] = useState<SeasonKey | null>(null);
+  // 2026-09-10 · #71 · 사용자 지시 · external 값 있으면 사용 · 없으면 내부 관리 (fallback)
+  const [periodMonthsLocal, setPeriodMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
+  const [periodSeasonLocal, setPeriodSeason] = useState<SeasonKey | null>(null);
+  const periodMonths = (externalPeriodMonths != null ? (externalPeriodMonths as 0|1|2|3|4|5|6) : periodMonthsLocal);
+  const periodSeason = (externalPeriodSeason !== undefined ? (externalPeriodSeason as SeasonKey | null) : periodSeasonLocal);
+  // 미사용 setter 경고 회피
+  void setPeriodMonths; void setPeriodSeason;
 
   // 원장 데이터
   const [ledger, setLedger] = useState<LedgerSummary | null>(null);
@@ -207,38 +211,40 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
     <div className="flex flex-col gap-3 min-h-0 flex-1">
       {vendorModalElement}
 
-      {/* 2026-09-10 · 사용자 지시 · 기간 필터 · 맨 상단 → 그 아래 · 월별 내역 (VendorInfoHeader) */}
-      {/* 기간 필터 + 새로고침 */}
-      <div className={`${CARD_BASE} px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5`}>
-        <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">기간</span>
-        <div className="flex flex-wrap bg-zinc-50 border border-line rounded-lg p-0.5 gap-0.5">
-          <button onClick={() => { setPeriodSeason(null); setPeriodMonths(0); }}
-            className={`px-2.5 h-6 text-[15px] font-semibold rounded-md transition cursor-pointer ${!periodSeason && periodMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
-            10일
-          </button>
-          {([1, 2, 3, 4, 5, 6] as const).map(m => (
-            <button key={m} onClick={() => { setPeriodSeason(null); setPeriodMonths(m); }}
-              className={`px-2.5 h-6 text-[15px] font-semibold rounded-md transition cursor-pointer ${!periodSeason && periodMonths === m ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
-              {m}개월
+      {/* 2026-09-10 · #71 · 사용자 지시 · 기간 필터 · 상단 툴바 (VendorPaymentPanel) 로 통합
+          · external 값 사용 시 · 자체 UI 완전 숨김 · 외부 툴바가 기간 관리 */}
+      {externalPeriodMonths == null && (
+        <div className={`${CARD_BASE} px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5`}>
+          <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">기간</span>
+          <div className="flex flex-wrap bg-zinc-50 border border-line rounded-lg p-0.5 gap-0.5">
+            <button onClick={() => { setPeriodSeason(null); setPeriodMonths(0); }}
+              className={`px-2.5 h-6 text-[15px] font-semibold rounded-md transition cursor-pointer ${!periodSeason && periodMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+              10일
             </button>
-          ))}
+            {([1, 2, 3, 4, 5, 6] as const).map(m => (
+              <button key={m} onClick={() => { setPeriodSeason(null); setPeriodMonths(m); }}
+                className={`px-2.5 h-6 text-[15px] font-semibold rounded-md transition cursor-pointer ${!periodSeason && periodMonths === m ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+                {m}개월
+              </button>
+            ))}
+          </div>
+          <SeasonButtons
+            value={periodSeason}
+            onChange={v => { setPeriodSeason(v); if (v) setPeriodMonths(0); }}
+            size="sm"
+            hideLabel
+          />
+          <button
+            type="button"
+            onClick={() => { loadLedger(); loadDetail(); loadOrders(); loadSales(); }}
+            disabled={isLoading}
+            className="ml-auto w-7 h-7 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
+            title="새로고침"
+          >
+            <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
+          </button>
         </div>
-        <SeasonButtons
-          value={periodSeason}
-          onChange={v => { setPeriodSeason(v); if (v) setPeriodMonths(0); }}
-          size="sm"
-          hideLabel
-        />
-        <button
-          type="button"
-          onClick={() => { loadLedger(); loadDetail(); loadOrders(); loadSales(); }}
-          disabled={isLoading}
-          className="ml-auto w-7 h-7 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
-          title="새로고침"
-        >
-          <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
-        </button>
-      </div>
+      )}
 
       {/* 헤더 카드 · 벤더 정보 + 월별 표 · 2026-09-10 · 사용자 지시 · 기간 필터 아래로 이동 */}
       <VendorInfoHeader

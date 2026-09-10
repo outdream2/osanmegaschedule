@@ -148,6 +148,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [vendorSelected, setVendorSelected] = useState<Vendor | null>(null);
   const [vendorReloadKey, setVendorReloadKey] = useState(0);
   const [supplierInfoModal, setSupplierInfoModal] = useState<Vendor | null>(null);
+  // 2026-09-10 · #71 · 사용자 지시 · 결제 페이지 · 기간 필터 통합 (상단 툴바 · 좌우 공용)
+  const [vendorPeriodMonths, setVendorPeriodMonths] = useState<number>(3);
+  const [vendorPeriodSeason, setVendorPeriodSeason] = useState<string | null>(null);
 
   // 접기 상태
   const [needCollapsed, setNeedCollapsed] = useState<Set<string>>(new Set());
@@ -679,7 +682,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {paymentSubTab === "vendor" && (
             <VendorPaymentPanel vendorPanelWidth={vendorPanelWidth} onVendorResizeStart={onVendorResizeStart}
               vendorReloadKey={vendorReloadKey} vendorPreselectId={vendorPreselectId}
-              vendorSelected={vendorSelected} onEditRequest={handleVendorEditRequest} onSelectVendor={setVendorSelected} />
+              vendorSelected={vendorSelected} onEditRequest={handleVendorEditRequest} onSelectVendor={setVendorSelected}
+              periodMonths={vendorPeriodMonths} onPeriodMonthsChange={setVendorPeriodMonths}
+              periodSeason={vendorPeriodSeason} onPeriodSeasonChange={setVendorPeriodSeason}
+            />
           )}
           {/* 2026-08-25 · #111 · 결제입력 · 신규 PaymentInputPage · 상단 검색+필터 · 하단 좌/우 (설명 화면 → 확인 후 데이터) */}
           {paymentSubTab === "payment-input" && <div className="flex-1 min-h-0"><PaymentInputPage /></div>}
