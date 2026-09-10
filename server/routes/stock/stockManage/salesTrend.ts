@@ -104,6 +104,26 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
       from += PAGE;
     }
   }
+  // 2026-09-10 · 사용자 지시 · 팔린만큼의 사입액 (COGS) 계산용 · 상품별 purchase_price map
+  const priceMap = new Map<string, number>();
+  {
+    const PAGE = 1000;
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from("products")
+        .select("product_code, purchase_price")
+        .range(from, from + PAGE - 1);
+      if (error) break;
+      if (!data || data.length === 0) break;
+      for (const p of data) {
+        const code = String((p as any).product_code ?? "").trim();
+        if (code) priceMap.set(code, Number(p.purchase_price ?? 0) || 0);
+      }
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+  }
   {
     const all: any[] = [];
     const PAGE = 1000;
@@ -129,6 +149,9 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
       from += PAGE;
     }
     // 기간별 집계
+    // 2026-09-10 · 사용자 지시 · 정합성 공식 · 재고자산 + 판매원가(사입액) = 매입액(원가)
+    //   · cogs_amount = 판매 수량 × 사입단가 (팔린 것의 원가 · 판매원가)
+    //   · purchase_cost = 매입 수량 × 사입단가 (실제 매입 원가)
     const byPeriod = new Map<string, {
       period_start_date: string;
       snapshot_date: string;
@@ -139,6 +162,8 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
       closing_stock: number;
       supply_amount: number;
       total_amount: number;
+      cogs_amount: number;
+      purchase_cost: number;
     }>();
     // 2026-09-10 · #69 · 사용자 지시 · 상품별 집계 (상품명 · 판매수량 · 매입수량 · 매출액)
     const byProduct = new Map<string, {
@@ -148,8 +173,16 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
       sale_qty: number;
       closing_stock: number;
       total_amount: number;
+      cogs_amount: number;
     }>();
     for (const r of all) {
+      const code = String(r.product_code ?? "").trim();
+      const pp = priceMap.get(code) ?? 0;
+      const sqty = Number(r.sale_qty ?? 0) || 0;
+      const pqty = Number(r.purchase_qty ?? 0) || 0;
+      const cogs = sqty * pp;
+      const pcost = pqty * pp;
+
       const key = String(r.period_start_date ?? r.snapshot_date);
       if (!byPeriod.has(key)) {
         byPeriod.set(key, {
@@ -162,24 +195,28 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
           closing_stock: 0,
           supply_amount: 0,
           total_amount: 0,
+          cogs_amount: 0,
+          purchase_cost: 0,
         });
       }
       const agg = byPeriod.get(key)!;
       agg.product_count += 1;
-      agg.purchase_qty  += Number(r.purchase_qty ?? 0) || 0;
-      agg.sale_qty      += Number(r.sale_qty ?? 0) || 0;
+      agg.purchase_qty  += pqty;
+      agg.sale_qty      += sqty;
       agg.closing_stock += Number(r.closing_stock ?? 0) || 0;
       agg.supply_amount += Number(r.supply_amount ?? 0) || 0;
       agg.total_amount  += Number(r.total_amount ?? 0) || 0;
+      agg.cogs_amount   += cogs;
+      agg.purchase_cost += pcost;
       if (r.snapshot_date > agg.snapshot_date) agg.snapshot_date = r.snapshot_date;
 
       // 상품별 aggregate
-      const code = String(r.product_code ?? "").trim();
       if (code) {
-        const p = byProduct.get(code) ?? { product_code: code, product_name: "", purchase_qty: 0, sale_qty: 0, closing_stock: 0, total_amount: 0 };
-        p.purchase_qty  += Number(r.purchase_qty ?? 0) || 0;
-        p.sale_qty      += Number(r.sale_qty ?? 0) || 0;
+        const p = byProduct.get(code) ?? { product_code: code, product_name: "", purchase_qty: 0, sale_qty: 0, closing_stock: 0, total_amount: 0, cogs_amount: 0 };
+        p.purchase_qty  += pqty;
+        p.sale_qty      += sqty;
         p.total_amount  += Number(r.total_amount ?? 0) || 0;
+        p.cogs_amount   += cogs;
         p.closing_stock = Number(r.closing_stock ?? 0) || 0; // 최신 마감 재고 (덮어씀)
         byProduct.set(code, p);
       }

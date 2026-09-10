@@ -68,6 +68,10 @@ interface VendorInfoHeaderProps {
   monthlySalesMap?: Map<string, number>;
   /** 2026-09-10 · #66 · 사용자 지시 · 판매액 합계 (기간 내 총 판매액) */
   totalSalesValue?: number | null;
+  /** 2026-09-10 · 사용자 지시 · 월별 원가 map (ym → cogs_amount · 판매 수량 × 사입단가) */
+  monthlyCogsMap?: Map<string, number>;
+  /** 2026-09-10 · 사용자 지시 · 원가 합계 · 정합성 · 매입액 = 재고자산 + 원가 */
+  totalCogsValue?: number | null;
 }
 
 // ─── Types (월별 집계) ─────────────────────────────────────────────────
@@ -138,7 +142,15 @@ function buildMonthlyAgg(rows: LedgerRowMinimal[], limit = 12): MonthlyAgg[] {
 export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
   vendor, kpi, loading = false, ledgerRows, onEdit,
   currentStockValue = null, monthlySalesMap, totalSalesValue = null,
+  monthlyCogsMap, totalCogsValue = null,
 }) => {
+  // 2026-09-10 · 사용자 지시 · 각 행 접기 (원가/마진 · 세부 정보)
+  const [rowsCollapsed, setRowsCollapsed] = useState<Set<string>>(() => new Set(["cogs", "margin"]));
+  const toggleRow = (k: string) => setRowsCollapsed(prev => {
+    const n = new Set(prev);
+    if (n.has(k)) n.delete(k); else n.add(k);
+    return n;
+  });
   const copyBizNum = () => {
     if (!vendor.business_number) return;
     const raw = vendor.business_number.replace(/\D/g, "");
@@ -389,9 +401,14 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                     {currentStockValue != null && currentStockValue > 0 ? fmtWonFull(currentStockValue) : "-"}
                   </td>
                 </tr>
-                {/* 판매액 · 2026-09-10 · #66 · 사용자 지시 · monthlySalesMap 으로 월별 표시 */}
-                <tr className="border-b border-zinc-100 hover:bg-zinc-50/50 transition">
-                  <td className="px-2 py-1.5 font-bold text-teal-700 sticky left-0 bg-white z-10">판매액</td>
+                {/* 판매액 · 2026-09-10 · #66 · 사용자 지시 · monthlySalesMap 으로 월별 표시 · 클릭 시 원가·마진 접기/펼치기 */}
+                <tr className="border-b border-zinc-100 hover:bg-zinc-50/50 transition cursor-pointer" onClick={() => { toggleRow("cogs"); toggleRow("margin"); }}>
+                  <td className="px-2 py-1.5 font-bold text-teal-700 sticky left-0 bg-white z-10">
+                    <span className="inline-flex items-center gap-1">
+                      <span className="text-zinc-400 text-[10px]">{rowsCollapsed.has("cogs") ? "▶" : "▼"}</span>
+                      판매액
+                    </span>
+                  </td>
                   {monthlyAgg.map(m => {
                     const v = monthlySalesMap?.get(m.ym) ?? 0;
                     return (
@@ -404,6 +421,42 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                     {totalSalesValue != null && totalSalesValue > 0 ? fmtWonFull(totalSalesValue) : "-"}
                   </td>
                 </tr>
+                {/* 원가 (COGS) · 판매 수량 × 사입단가 · 하위 접기 가능 · 2026-09-10 사용자 지시 */}
+                {!rowsCollapsed.has("cogs") && (
+                  <tr className="border-b border-zinc-100 hover:bg-zinc-50/50 transition bg-zinc-50/40">
+                    <td className="px-2 py-1.5 font-semibold text-zinc-600 sticky left-0 bg-zinc-50/40 z-10 pl-6">└ 원가</td>
+                    {monthlyAgg.map(m => {
+                      const v = monthlyCogsMap?.get(m.ym) ?? 0;
+                      return (
+                        <td key={m.ym} className="text-right px-2 py-1.5 text-zinc-600">
+                          {v > 0 ? fmtWonFull(v) : "-"}
+                        </td>
+                      );
+                    })}
+                    <td className="text-right px-2 py-1.5 text-zinc-700 font-bold bg-sky-50/50">
+                      {totalCogsValue != null && totalCogsValue > 0 ? fmtWonFull(totalCogsValue) : "-"}
+                    </td>
+                  </tr>
+                )}
+                {/* 마진 · 판매액 - 원가 · 하위 접기 가능 · 2026-09-10 사용자 지시 */}
+                {!rowsCollapsed.has("margin") && (
+                  <tr className="border-b border-zinc-100 hover:bg-zinc-50/50 transition bg-zinc-50/40">
+                    <td className="px-2 py-1.5 font-semibold text-emerald-700 sticky left-0 bg-zinc-50/40 z-10 pl-6">└ 마진</td>
+                    {monthlyAgg.map(m => {
+                      const sale = monthlySalesMap?.get(m.ym) ?? 0;
+                      const cogs = monthlyCogsMap?.get(m.ym) ?? 0;
+                      const margin = sale - cogs;
+                      return (
+                        <td key={m.ym} className="text-right px-2 py-1.5 text-emerald-700 font-semibold">
+                          {sale > 0 ? fmtWonFull(margin) : "-"}
+                        </td>
+                      );
+                    })}
+                    <td className="text-right px-2 py-1.5 text-emerald-800 font-bold bg-sky-50/50">
+                      {totalSalesValue != null && totalSalesValue > 0 ? fmtWonFull((totalSalesValue ?? 0) - (totalCogsValue ?? 0)) : "-"}
+                    </td>
+                  </tr>
+                )}
                 {/* 잔고 (amber/rose · 부호별) · 미지급 / 선지급 */}
                 <tr className="hover:bg-zinc-50/50 transition">
                   <td className="px-2 py-1.5 font-bold text-amber-700 sticky left-0 bg-white z-10">잔고 (선지급/미지급)</td>

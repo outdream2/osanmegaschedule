@@ -259,6 +259,17 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
           return m;
         })()}
         totalSalesValue={salesRows.reduce((s, r) => s + Number(r.total_amount ?? 0), 0)}
+        monthlyCogsMap={(() => {
+          // 2026-09-10 · 원가 · salesRows → ym → cogs_amount map
+          const m = new Map<string, number>();
+          for (const r of salesRows) {
+            const ym = String(r.snapshot_date ?? r.period_start_date ?? "").slice(0, 7);
+            if (!ym) continue;
+            m.set(ym, (m.get(ym) ?? 0) + Number((r as any).cogs_amount ?? 0));
+          }
+          return m;
+        })()}
+        totalCogsValue={salesRows.reduce((s, r) => s + Number((r as any).cogs_amount ?? 0), 0)}
       />
 
       {/* 2026-08-25 · SplitRightTabs 프리미티브 이관 · v9 브랜드 시그니처 · 폰트 +2 */}

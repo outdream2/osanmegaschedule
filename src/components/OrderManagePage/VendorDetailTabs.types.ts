@@ -80,6 +80,10 @@ export interface SalesTrendRow {
   closing_stock: number;
   supply_amount: number;
   total_amount: number;
+  // 2026-09-10 · 사용자 지시 · 원가 = 판매 수량 × 사입단가 (팔린 것의 원가)
+  cogs_amount?: number;
+  // 2026-09-10 · 사용자 지시 · 매입 원가 = 매입 수량 × 사입단가
+  purchase_cost?: number;
 }
 
 // 2026-09-10 · #69 · 사용자 지시 · 판매내역 · 상품별 상세
