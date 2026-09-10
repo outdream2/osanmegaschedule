@@ -125,10 +125,13 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
           });
         }
         const agg = byCode.get(code)!;
+        const prodSp = productMap.get(code);
+        const sqty = Number(r.sale_qty ?? 0) || 0;
         agg.purchase_qty += Number(r.purchase_qty ?? 0) || 0;
-        agg.sale_qty     += Number(r.sale_qty ?? 0) || 0;
+        agg.sale_qty     += sqty;
         agg.disposal_qty += Number(r.disposal_qty ?? 0) || 0;
-        agg.total_amount += Number(r.total_amount ?? 0) || 0;
+        // 2026-09-10 · 사용자 지시 · 판매액 = sale_qty × sale_price (xlsx total_amount 사용 금지)
+        agg.total_amount += sqty * (Number(prodSp?.sale_price ?? 0) || 0);
         if (snap < agg.first_snap) {
           agg.first_snap = snap;
           agg.opening_stock = Number(r.opening_stock ?? 0) || 0;
@@ -323,10 +326,13 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
           });
         }
         const agg = byCode.get(code)!;
+        const prodSp = productMap.get(code);
+        const sqty = Number(r.sale_qty ?? 0) || 0;
         agg.purchase_qty += Number(r.purchase_qty ?? 0) || 0;
-        agg.sale_qty     += Number(r.sale_qty ?? 0) || 0;
+        agg.sale_qty     += sqty;
         agg.disposal_qty += Number(r.disposal_qty ?? 0) || 0;
-        agg.total_amount += Number(r.total_amount ?? 0) || 0;
+        // 2026-09-10 · 사용자 지시 · 판매액 = sale_qty × sale_price (xlsx total_amount 사용 금지)
+        agg.total_amount += sqty * (Number(prodSp?.sale_price ?? 0) || 0);
         if (snap < agg.first_snap) {
           agg.first_snap = snap;
           agg.opening_stock = Number(r.opening_stock ?? 0) || 0;
