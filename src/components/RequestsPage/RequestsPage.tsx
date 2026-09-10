@@ -5,7 +5,9 @@ import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { SK_SUBTAB_REQUESTS } from "../../lib/storageKeys";
 import { dispatchApprovalChange, useApprovalRefreshListener } from "../../lib/approvalEvents";
 import { TIMING } from "../../constants/timing";
-import { ShoppingCart, Square, CheckSquare } from "lucide-react";
+import { ShoppingCart, Square, CheckSquare, ClipboardList, Package, MapPin, Coffee, CalendarDays, Handshake, FileText } from "lucide-react";
+// 2026-09-10 · #50 · 사용자 지시 · 탭 메뉴 · 매입이력 스타일 통일 · TabBar 프리미티브
+import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
 import { fmtDateMD } from "../../lib/format";
 import type { AuthSession } from "../../types";
@@ -532,25 +534,28 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         onLogout={onLogout}
       />
 
-      {/* 2026-09-02 · 탭 바 · sticky top-14 → top-0 · AppNavHeader 비-sticky 이므로 (사용자 지시 · 탭 스크롤 이슈)
-           · 이전 · top-14 (56px) · 스크롤 시 · 헤더 사라지면 상단 56px 공백 · 탭이 안 보이는 느낌 */}
+      {/* 2026-09-10 · #50 · 사용자 지시 · 탭 메뉴 · 매입이력(OrderManagePage) 스타일 통일 · TabBar 프리미티브 */}
       <div className="bg-white/95 backdrop-blur-sm border-b border-line sticky top-0 z-30 shadow-sm">
         <div className={`${PAGE_CONTAINER_CLS} px-2 sm:px-4 py-2`}>
-          <div className="inline-flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
-            {TABS.map(([key, label, count]) => (
-              <button key={key} onClick={() => setTab(key)}
-                className={`px-3 sm:px-4 py-1.5 flex items-center gap-2 rounded-md text-[15px] sm:text-[16px] font-semibold transition-colors cursor-pointer justify-center ${
-                  tab === key
-                    ? "bg-brand-deep text-white shadow-sm"
-                    : "text-ink hover:text-brand-deep hover:bg-white"
-                }`}>
-                <span>{label}</span>
-                {count > 0 && (
-                  <span className={`text-[15px] font-semibold px-1.5 py-0.5 rounded-full tabular-nums ${tab === key ? "bg-white/20 text-white" : "bg-brand-tint text-brand-deep"}`}>{count}</span>
-                )}
-              </button>
-            ))}
-          </div>
+          <TabBar<Tab>
+            level={2}
+            tabs={TABS.map(([key, label, count]) => {
+              const meta: Record<Tab, { icon: any; color: any }> = {
+                display:     { icon: ClipboardList, color: "sky"     },
+                order:       { icon: Package,       color: "amber"   },
+                mismatch:    { icon: MapPin,        color: "rose"    },
+                lunch:       { icon: Coffee,        color: "orange"  },
+                inventory:   { icon: Package,       color: "violet"  },
+                leave:       { icon: CalendarDays,  color: "indigo"  },
+                vendor:      { icon: Handshake,     color: "emerald" },
+                resignation: { icon: FileText,      color: "rose"    },
+              };
+              const m = meta[key];
+              return { key, label, icon: m.icon, color: m.color, badge: count > 0 ? count : undefined } as CommonTabDef<Tab>;
+            })}
+            activeKey={tab}
+            onSelect={setTab}
+          />
         </div>
       </div>
 
