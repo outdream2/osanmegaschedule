@@ -537,25 +537,67 @@ router.delete("/api/products/:code", authorize(9), asyncHandler(async (req, res)
 }));
 
 
-// 2026-08-25 · 사용자 지시 · 유통기한 임박 상품 리스트 · products.expiry_date IS NOT NULL
-//   · 매입 서브탭 (구 "실재고" → "유통기한 임박") · 화면 리스트 소스
+// 2026-09-10 · #36 · 사용자 지시 · 유통기한 임박 · 소스 = inventory_checks.expiry_date
+//   · products.expiry_date 사용 중단 (임포트 위험) · SSOT = inventory_checks
+//   · 상품 단위 · 최임박 로트 (MIN expiry_date) 표시 · UI 로트 관리 X
 //   · /:code 라우트보다 먼저 등록해야 매칭됨
 router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
-  // 2026-08-28 · 감사 P2-2 · hidden 필터 추가 · 판매중지+숨김 상품 제외
-  // 2026-08-29 · #154 P2 · sale_status join · 클라이언트 3-way 필터
-  const { data, error } = await supabase
-    .from("products")
-    .select("product_code, product_name, spec, supplier, location, display_location, current_stock, expiry_date, sale_status")
-    .eq("hidden", false)
-    .not("expiry_date", "is", null)
-    .order("expiry_date", { ascending: true })
-    .limit(500);
-  if (error) {
-    console.error("[expiry-imminent GET] error:", error.message);
-    throw new HttpError(500, error.message);
+  // 1. inventory_checks · 상품별 · 최임박 (MIN expiry_date) 집계
+  const { data: icRows, error: icErr } = await supabase
+    .from("inventory_checks")
+    .select("product_code, expiry_date")
+    .not("expiry_date", "is", null);
+  if (icErr) {
+    console.error("[expiry-imminent GET] inventory_checks error:", icErr.message);
+    throw new HttpError(500, icErr.message);
   }
+  const minExpiry = new Map<string, string>();
+  for (const r of icRows ?? []) {
+    if (!r.product_code || !r.expiry_date) continue;
+    const cur = minExpiry.get(r.product_code);
+    if (!cur || String(r.expiry_date) < cur) minExpiry.set(r.product_code, String(r.expiry_date));
+  }
+  const codes = Array.from(minExpiry.keys());
+  if (codes.length === 0) {
+    res.setHeader("Cache-Control", "no-store");
+    return res.json([]);
+  }
+
+  // 2. products · JOIN · 상품 정보 (hidden=false)
+  const CHUNK = 500;
+  const products: any[] = [];
+  for (let i = 0; i < codes.length; i += CHUNK) {
+    const chunk = codes.slice(i, i + CHUNK);
+    const { data, error } = await supabase
+      .from("products")
+      .select("product_code, product_name, spec, supplier, location, display_location, current_stock, sale_status, hidden")
+      .in("product_code", chunk)
+      .eq("hidden", false);
+    if (error) {
+      console.error("[expiry-imminent GET] products error:", error.message);
+      throw new HttpError(500, error.message);
+    }
+    products.push(...(data ?? []));
+  }
+
+  // 3. 상품별 최임박 결합 · 정렬 (오래된 유통기한 우선)
+  const result = products
+    .map(p => ({
+      product_code: p.product_code,
+      product_name: p.product_name,
+      spec: p.spec,
+      supplier: p.supplier,
+      location: p.location,
+      display_location: p.display_location,
+      current_stock: p.current_stock,
+      sale_status: p.sale_status,
+      expiry_date: minExpiry.get(p.product_code) ?? null,
+    }))
+    .sort((a, b) => String(a.expiry_date ?? "9999").localeCompare(String(b.expiry_date ?? "9999")))
+    .slice(0, 500);
+
   res.setHeader("Cache-Control", "no-store");
-  res.json(Array.isArray(data) ? data : []);
+  res.json(result);
 }));
 
 // 숨김 처리된 상품 리스트 (숨김 관리 UI 용) — /:code 라우트보다 먼저 등록해야 매칭됨
