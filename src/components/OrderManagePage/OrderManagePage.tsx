@@ -474,8 +474,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     const base: ProductInfo[] = useAll ? Object.values(allProductsMap) as ProductInfo[] : lowStock;
     return base.filter(p => {
       if (q) {
-        const name = getName(p), code = getCode(p), sup = String((p as any).supplier ?? "");
-        if (!(matchHangul(name, q) || matchHangul(code, q) || matchHangul(sup, q))) return false;
+        // 2026-09-10 · 사용자 지시 · matchesProductQuery 통일 · 공백 정규화 매칭 지원
+        //   · 이전 · matchHangul 직접 호출 · '테스트 상품등록' → '테스트상품등록' 미매칭 이슈
+        if (!matchesProductQuery({
+          product_name: getName(p),
+          product_code: getCode(p),
+          supplier: (p as any).supplier ?? null,
+        }, q)) return false;
       }
       return applyCategory(p);
     });
