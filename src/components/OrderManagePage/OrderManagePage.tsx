@@ -471,7 +471,21 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     //   · 검색어 없음 + needConditionApply ON · lowStock 만
     //   · 검색어 없음 + needConditionApply OFF · 전체
     const useAll = !!q || !needConditionApply;
-    const base: ProductInfo[] = useAll ? Object.values(allProductsMap) as ProductInfo[] : lowStock;
+    // 2026-09-10 · productCache · stripped 별도 key 로 · 같은 info 2번 · Object.values 시 중복
+    //   · 중복 제거 · 상품별 유일한 code 기준
+    let base: ProductInfo[];
+    if (useAll) {
+      const seen = new Set<string>();
+      base = [];
+      for (const p of Object.values(allProductsMap) as ProductInfo[]) {
+        const c = getCode(p);
+        if (!c || seen.has(c)) continue;
+        seen.add(c);
+        base.push(p);
+      }
+    } else {
+      base = lowStock;
+    }
     return base.filter(p => {
       if (q) {
         // 2026-09-10 · 사용자 지시 · matchesProductQuery 통일 · 공백 정규화 매칭 지원
