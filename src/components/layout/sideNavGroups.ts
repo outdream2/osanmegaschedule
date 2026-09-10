@@ -103,10 +103,11 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     items: [
       // 2026-08-29 · #193 · 사용자 지시 · 사이드바 3개 flat 롤백 · '상품' 서브탭 하나 · 매장 페이지 안 · 3개 이너 탭
       //   · 매입에 있던 scan·productarrival·productinfo 3개 · '상품' 서브탭 아래로 그대로 이동
+      // 2026-09-10 · 사용자 지시 · 순서 · 상품 → 발주 → 매입 → 판매
       { key: "display", label: "상품", icon: Package, color: "red", subTab: "product", managerOnly: true },
+      { key: "display", label: "발주", icon: Truck, color: "red", subTab: "purchase-order", minLevel: 9 },
       { key: "display", label: "매입", icon: Package, color: "red", subTab: "purchase", minLevel: 9 },
       { key: "display", label: "판매", icon: ChartBar, color: "red", subTab: "statistics", minLevel: 9 },
-      { key: "display", label: "발주", icon: Truck, color: "red", subTab: "purchase-order", minLevel: 9 },
       { key: "display", label: "결제", icon: CurrencyKrw, color: "red", subTab: "payment", minLevel: 9 },
       { key: "display", label: "반품", icon: ArrowLeftRight, color: "red", subTab: "return", minLevel: 9 },
       { key: "display", label: "매장진열", icon: Storefront, color: "red", subTab: "store", managerOnly: true },
