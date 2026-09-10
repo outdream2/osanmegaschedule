@@ -141,8 +141,12 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
   };
 
   // 월별 집계 (최근 12개월)
+  // 2026-09-10 · #65 · 사용자 지시 · 왼쪽=오래된·오른쪽=최신 · buildMonthlyAgg 은 desc 반환 · reverse 로 asc
   const monthlyAgg = useMemo(
-    () => (ledgerRows && ledgerRows.length > 0 ? buildMonthlyAgg(ledgerRows, 12) : []),
+    () => {
+      const base = ledgerRows && ledgerRows.length > 0 ? buildMonthlyAgg(ledgerRows, 12) : [];
+      return [...base].reverse(); // 오래된 → 최신 (왼쪽 → 오른쪽)
+    },
     [ledgerRows],
   );
 
@@ -173,8 +177,9 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
       count += m.purchaseCount;
     }
     const avgUnit = count > 0 ? Math.round(purchase / count) : 0;
-    // 잔고 · 가장 최근 월의 endBalance (즉 monthlyAgg[0])
-    const latestBalance = monthlyAgg[0]?.endBalance ?? kpi.balance;
+    // 잔고 · 가장 최근 월의 endBalance
+    // 2026-09-10 · #65 · reverse 후 · monthlyAgg 는 asc (오래된→최신) · 최신 = 마지막 원소
+    const latestBalance = (monthlyAgg[monthlyAgg.length - 1]?.endBalance) ?? kpi.balance;
     return { purchase, payment, count, avgUnit, latestBalance };
   }, [monthlyAgg, kpi.balance]);
 
@@ -387,24 +392,39 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                 <tr className="hover:bg-zinc-50/50 transition">
                   <td className="px-2 py-1.5 font-bold text-amber-700 sticky left-0 bg-white z-10">잔고 (선지급/미지급)</td>
                   {monthlyAgg.map(m => {
-                    const balColor =
-                      m.endBalance > 0 ? "text-amber-700" :
-                      m.endBalance < 0 ? "text-sky-700" : "text-zinc-400";
+                    // 2026-09-10 · #67 · 사용자 지시 · 선지급 붉은색 (rose) · 미지급 파란색 (sky) · 라벨 줄바꿈
+                    const isSelected = m.endBalance < 0;
+                    const isUnpaid = m.endBalance > 0;
                     return (
-                      <td key={m.ym} className={`text-right px-2 py-1.5 font-semibold ${balColor}`}>
-                        {m.endBalance === 0
-                          ? "완납"
-                          : `${fmtWonFull(Math.abs(m.endBalance))}${m.endBalance < 0 ? " 선지급" : ""}`}
+                      <td key={m.ym} className="text-right px-2 py-1.5">
+                        {m.endBalance === 0 ? (
+                          <span className="font-semibold text-zinc-400">완납</span>
+                        ) : (
+                          <div className="flex flex-col items-end leading-tight">
+                            <span className={`text-[11px] font-bold ${isSelected ? "text-rose-600" : "text-sky-700"}`}>
+                              {isSelected ? "선지급" : "미지급"}
+                            </span>
+                            <span className={`font-semibold tabular-nums ${isSelected ? "text-rose-600" : "text-sky-700"}`}>
+                              {fmtWonFull(Math.abs(m.endBalance))}
+                            </span>
+                          </div>
+                        )}
                       </td>
                     );
                   })}
-                  <td className={`text-right px-2 py-1.5 font-bold bg-sky-50/50 ${
-                    totals.latestBalance > 0 ? "text-amber-800" :
-                    totals.latestBalance < 0 ? "text-sky-800" : "text-zinc-500"
-                  }`}>
-                    {totals.latestBalance === 0
-                      ? "완납"
-                      : `${fmtWonFull(Math.abs(totals.latestBalance))}${totals.latestBalance < 0 ? " 선지급" : ""}`}
+                  <td className={`text-right px-2 py-1.5 bg-sky-50/50`}>
+                    {totals.latestBalance === 0 ? (
+                      <span className="font-bold text-zinc-500">완납</span>
+                    ) : (
+                      <div className="flex flex-col items-end leading-tight">
+                        <span className={`text-[11px] font-bold ${totals.latestBalance < 0 ? "text-rose-700" : "text-sky-800"}`}>
+                          {totals.latestBalance < 0 ? "선지급" : "미지급"}
+                        </span>
+                        <span className={`font-bold tabular-nums ${totals.latestBalance < 0 ? "text-rose-700" : "text-sky-800"}`}>
+                          {fmtWonFull(Math.abs(totals.latestBalance))}
+                        </span>
+                      </div>
+                    )}
                   </td>
                 </tr>
               </tbody>

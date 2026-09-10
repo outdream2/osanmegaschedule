@@ -74,6 +74,24 @@ interface Props {
   lockCode?: boolean;
   /** 2026-08-23 · #179 · 초기 상품명 (예: OCR/스캔 힌트) */
   initialName?: string;
+  // 2026-09-10 · #64 · 사용자 지시 · 편집 모드 지원 (신규/편집 통합)
+  /** 편집 모드 · "edit" 이면 PATCH · 아니면 POST (기본 create) */
+  mode?: "create" | "edit";
+  /** 편집 모드 초기값 · 기존 상품 정보 */
+  initialProduct?: Partial<{
+    product_code: string;
+    product_name: string;
+    supplier: string | null;
+    category: string | null;
+    unit: string | null;
+    spec: string | null;
+    location: string | null;
+    optimal_stock: number | null;
+    sale_price: number | null;
+    purchase_price: number | null;
+    brand: string | null;
+    manufacturer: string | null;
+  }>;
 }
 
 // 2026-09-08 · barcode 필드 제거 · product_code 자체가 바코드값 (13자리 EAN)
@@ -118,7 +136,9 @@ const parseNum = (s: string): number | null => {
 export const ProductCreateModal: React.FC<Props> = ({
   open, onClose, onCreated,
   initialCode, initialBarcode, lockCode = false, initialName,
+  mode = "create", initialProduct,
 }) => {
+  const isEdit = mode === "edit";
   const { toast, showSuccess, showError } = useToast();
   const [form, setForm] = useState<Form>(EMPTY);
   const [submitting, setSubmitting] = useState(false);
@@ -218,15 +238,33 @@ export const ProductCreateModal: React.FC<Props> = ({
 
   // 2026-08-23 · #179 · open + initialCode 변경 시 · 사전 채움 (한 번만)
   // 2026-09-08 · barcode 필드 제거 · initialBarcode 는 무시 (product_code 로 통합)
+  // 2026-09-10 · #64 · 편집 모드 · initialProduct 로 form 초기화
   React.useEffect(() => {
     if (!open) return;
-    setForm({
-      ...EMPTY,
-      product_code: initialCode ?? initialBarcode ?? "",
-      product_name: initialName ?? "",
-    });
+    if (isEdit && initialProduct) {
+      setForm({
+        product_code: initialProduct.product_code ?? "",
+        product_name: initialProduct.product_name ?? "",
+        supplier: initialProduct.supplier ?? "",
+        category: initialProduct.category ?? "",
+        unit: initialProduct.unit ?? "",
+        spec: initialProduct.spec ?? "",
+        location: initialProduct.location ?? "",
+        optimal_stock: initialProduct.optimal_stock != null ? String(initialProduct.optimal_stock) : "",
+        sale_price: initialProduct.sale_price != null ? String(initialProduct.sale_price) : "",
+        purchase_price: initialProduct.purchase_price != null ? String(initialProduct.purchase_price) : "",
+        brand: initialProduct.brand ?? "",
+        manufacturer: initialProduct.manufacturer ?? "",
+      });
+    } else {
+      setForm({
+        ...EMPTY,
+        product_code: initialCode ?? initialBarcode ?? "",
+        product_name: initialName ?? "",
+      });
+    }
     setError(null);
-  }, [open, initialCode, initialBarcode, initialName]);
+  }, [open, initialCode, initialBarcode, initialName, isEdit, initialProduct]);
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm(prev => ({ ...prev, [k]: v }));
 
@@ -276,26 +314,51 @@ export const ProductCreateModal: React.FC<Props> = ({
         // 2026-08-30 · 사용자 지시 · 상품 등록 시 · 판매중 자동 설정 (조회 필터 통과)
         sale_status: "판매중",
       };
-      // 클라이언트 사전 검증 (Zod)
-      const parsed = CreateProductSchema.safeParse(payload);
-      if (!parsed.success) {
-        const first = parsed.error.issues[0];
-        throw new Error(`${first?.path.join(".") ?? "input"}: ${first?.message ?? "유효성 오류"}`);
+      // 2026-09-10 · #64 · 편집 모드 · PATCH · 신규 · POST
+      if (isEdit) {
+        const code = form.product_code.trim();
+        const patchBody = {
+          product_name: payload.product_name,
+          supplier: payload.supplier,
+          category: payload.category,
+          unit: payload.unit,
+          spec: payload.spec,
+          location: payload.location,
+          optimal_stock: payload.optimal_stock,
+          sale_price: payload.sale_price,
+          purchase_price: payload.purchase_price,
+          brand: payload.brand,
+          manufacturer: payload.manufacturer,
+        };
+        await api.patch(`/api/products/${encodeURIComponent(code)}`, patchBody);
+        showSuccess(`상품 정보 수정 완료 · ${code}`);
+        onCreated(code, {
+          product_name: patchBody.product_name,
+          supplier: patchBody.supplier ?? null,
+          spec: patchBody.spec ?? null,
+          location: patchBody.location ?? null,
+        });
+        window.dispatchEvent(new CustomEvent("products-map-updated"));
+        onClose();
+      } else {
+        // 클라이언트 사전 검증 (Zod)
+        const parsed = CreateProductSchema.safeParse(payload);
+        if (!parsed.success) {
+          const first = parsed.error.issues[0];
+          throw new Error(`${first?.path.join(".") ?? "input"}: ${first?.message ?? "유효성 오류"}`);
+        }
+        const { data } = await api.post<{ ok: boolean; product_code: string }>("/api/products", parsed.data);
+        showSuccess(`상품 등록 완료 · ${data.product_code}`);
+        onCreated(data.product_code, {
+          product_name: parsed.data.product_name,
+          supplier: parsed.data.supplier ?? null,
+          spec: parsed.data.spec ?? null,
+          location: parsed.data.location ?? null,
+        });
+        window.dispatchEvent(new CustomEvent("products-map-updated"));
+        setForm(EMPTY);
+        onClose();
       }
-      const { data } = await api.post<{ ok: boolean; product_code: string }>("/api/products", parsed.data);
-      showSuccess(`상품 등록 완료 · ${data.product_code}`);
-      // 2026-08-23 · 후속 캐시 삽입용 · product 정보도 전달 (하위 호환)
-      // 2026-09-08 · barcode 필드 제거 · product_code 자체가 바코드값
-      onCreated(data.product_code, {
-        product_name: parsed.data.product_name,
-        supplier: parsed.data.supplier ?? null,
-        spec: parsed.data.spec ?? null,
-        location: parsed.data.location ?? null,
-      });
-      // 실재고 테이블 등 구독 컴포넌트 자동 리로드
-      window.dispatchEvent(new CustomEvent("products-map-updated"));
-      setForm(EMPTY);
-      onClose();
     } catch (e: unknown) {
       const msg = e instanceof ApiError ? e.message : (e as Error)?.message ?? "상품 등록 실패";
       setError(msg);
@@ -319,8 +382,11 @@ export const ProductCreateModal: React.FC<Props> = ({
         titleAccent
         title={
           <span className="flex flex-col leading-tight">
-            <span className="text-[18px] font-bold text-ink tracking-tight">상품 신규 등록</span>
-            <span className="text-[14px] font-medium text-ink-soft tracking-tight mt-0.5">필수 항목만 입력해도 등록 가능</span>
+            {/* 2026-09-10 · #64 · 사용자 지시 · 신규/편집 · 모드별 제목 */}
+            <span className="text-[18px] font-bold text-ink tracking-tight">{isEdit ? "상품 정보 수정" : "상품 신규 등록"}</span>
+            <span className="text-[14px] font-medium text-ink-soft tracking-tight mt-0.5">
+              {isEdit ? "변경할 항목만 편집 후 저장" : "필수 항목만 입력해도 등록 가능"}
+            </span>
           </span>
         }
         size="3xl"
