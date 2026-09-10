@@ -65,6 +65,18 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [ledgerError, setLedgerError] = useState<string | null>(null);
 
+  // 2026-09-10 · #58 · 사용자 지시 · 현장 재고금액 (ERP · 현재고 × 사입단가 · 공급사별)
+  const [stockValue, setStockValue] = useState<number | null>(null);
+  const [stockValueLoading, setStockValueLoading] = useState(false);
+  useEffect(() => {
+    if (!vendor) { setStockValue(null); return; }
+    setStockValueLoading(true);
+    api.get<{ stock_value: number }>(`/api/supplier-stock-value/${encodeURIComponent(vendor.company_name)}`)
+      .then(({ data }) => setStockValue(Number(data?.stock_value ?? 0) || 0))
+      .catch(() => setStockValue(0))
+      .finally(() => setStockValueLoading(false));
+  }, [vendor?.company_name]);
+
   // 매입상세 데이터
   const [detailRows, setDetailRows] = useState<PurchaseDetailRow[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -287,16 +299,40 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
                   vatBadge: vatMode === true && ledger.total_payment_vat > 0 ? `VAT ${ledger.total_payment_vat.toLocaleString()}원 · 공급가액 ${ledger.total_payment_supply.toLocaleString()}원` : null,
                   trend: null,
                 },
+                // 2026-09-10 · #57·#58 · 사용자 지시 · 매입·결제·재고금액·잔고 · 4개 KPI
+                //   · 재고 금액 · 별도 KPI (신규 API · /api/supplier-stock-value)
+                //   · 잔고 · 선지급/미지급 부호별 라벨
                 {
-                  label: "남은 잔고 (미결제)",
-                  value: ledger.current_balance,
-                  tone: ledger.current_balance > 0 ? "amber" as const : "emerald" as const,
+                  label: "현장 재고금액",
+                  value: stockValue ?? 0,
+                  tone: "violet" as const,
+                  icon: <Package2 size={14} strokeWidth={2.4} />,
+                  subtitle: stockValueLoading ? "계산 중…" : "매장·창고 재고 × 매입단가",
+                  vatBadge: null,
+                  trend: null,
+                },
+                {
+                  label: ledger.current_balance > 0
+                    ? "잔고 (미지급)"
+                    : ledger.current_balance < 0
+                      ? "잔고 (선지급)"
+                      : "잔고 (완납)",
+                  value: Math.abs(ledger.current_balance),
+                  tone: ledger.current_balance > 0
+                    ? "amber" as const
+                    : ledger.current_balance < 0
+                      ? "sky" as const
+                      : "emerald" as const,
                   icon: ledger.current_balance > 0
                     ? <TrendingUp size={14} strokeWidth={2.4} />
                     : ledger.current_balance < 0
                       ? <TrendingDown size={14} strokeWidth={2.4} />
                       : <Minus size={14} strokeWidth={2.4} />,
-                  subtitle: ledger.current_balance > 0 ? "지불 필요" : ledger.current_balance < 0 ? "초과 결제" : "완납",
+                  subtitle: ledger.current_balance > 0
+                    ? "지불 필요"
+                    : ledger.current_balance < 0
+                      ? "초과 결제 · 다음 매입 상쇄"
+                      : "완납",
                   vatBadge: null,
                   trend: null,
                 },
@@ -316,9 +352,10 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
                       <StatusPill tone={vatModeTone} size="sm" dot={vatMode !== null}>{vatModeText}</StatusPill>
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-0 border-b border-line bg-gradient-to-b from-zinc-50/60 to-white">
+                  {/* 2026-09-10 · #57·#58 · 사용자 지시 · 4개 KPI · grid-cols-2 lg:grid-cols-4 */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-0 border-b border-line bg-gradient-to-b from-zinc-50/60 to-white">
                     {items.map((item, i) => (
-                      <div key={i} className={`px-4 py-3.5 ${i < 2 ? "border-r border-line" : ""} flex flex-col gap-1.5`}>
+                      <div key={i} className={`px-4 py-3.5 ${i < items.length - 1 ? "border-r border-line" : ""} flex flex-col gap-1.5`}>
                         <div className="flex items-center gap-2">
                           <IconTile icon={item.icon} tone={item.tone} size="sm" />
                           <span className="text-[15px] font-bold text-zinc-600 tracking-tight">{item.label}</span>
@@ -326,6 +363,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
                         <span className={`text-[22px] font-extrabold tabular-nums leading-tight tracking-tight ${
                           item.tone === "emerald" ? "text-emerald-700" :
                           item.tone === "sky" ? "text-sky-700" :
+                          item.tone === "violet" ? "text-violet-700" :
                           "text-amber-700"
                         }`}>
                           {item.value.toLocaleString()}<span className="text-[15px] font-bold ml-0.5 text-zinc-400">원</span>

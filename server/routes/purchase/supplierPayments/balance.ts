@@ -8,6 +8,41 @@ import { splitVat, fetchVatIncluded } from "./helpers";
 
 const router = Router();
 
+// 2026-09-10 · #58 · 사용자 지시 · 공급사별 현장 재고금액
+//   · ERP 기준 · SUM(current_stock × purchase_price) · 공급사별 · hidden 제외
+router.get("/api/supplier-stock-value/:supplier", asyncHandler(async (req, res) => {
+  const supplier = decodeURIComponent(req.params.supplier ?? "").trim();
+  if (!supplier) throw badRequest("supplier 필수");
+
+  let stockValue = 0;
+  let productCount = 0;
+  const PAGE = 1000;
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from("products")
+      .select("product_code, current_stock, purchase_price, hidden")
+      .eq("supplier", supplier)
+      .range(from, from + PAGE - 1);
+    if (error) {
+      if (/relation .* does not exist/i.test(error.message)) break;
+      throw new HttpError(500, error.message, "DB_ERROR");
+    }
+    if (!data || data.length === 0) break;
+    for (const p of data) {
+      if (p.hidden === true) continue;
+      const qty = Number(p.current_stock ?? 0) || 0;
+      const price = Number(p.purchase_price ?? 0) || 0;
+      stockValue += qty * price;
+      productCount++;
+    }
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+
+  res.json({ supplier, stock_value: stockValue, product_count: productCount });
+}));
+
 // GET /api/supplier-balance/:supplier
 // 2026-09-01 · P3 최적화 · purchases + payments 병렬 Promise.all (2→1 왕복)
 router.get("/api/supplier-balance/:supplier", asyncHandler(async (req, res) => {
