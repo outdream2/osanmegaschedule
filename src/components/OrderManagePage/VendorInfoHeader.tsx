@@ -72,6 +72,10 @@ interface VendorInfoHeaderProps {
   monthlyCogsMap?: Map<string, number>;
   /** 2026-09-10 · 사용자 지시 · 원가 합계 · 정합성 · 매입액 = 재고자산 + 원가 */
   totalCogsValue?: number | null;
+  /** 2026-09-10 · #72 · 확정 공식 · 월별 재고자산 map (매입원가 - 판매원가) */
+  monthlyStockAssetMap?: Map<string, number>;
+  /** 2026-09-10 · #72 · 확정 공식 · 총 재고자산 = 총 매입원가 - 총 판매원가 */
+  totalStockAssetValue?: number | null;
 }
 
 // ─── Types (월별 집계) ─────────────────────────────────────────────────
@@ -143,6 +147,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
   vendor, kpi, loading = false, ledgerRows, onEdit,
   currentStockValue = null, monthlySalesMap, totalSalesValue = null,
   monthlyCogsMap, totalCogsValue = null,
+  monthlyStockAssetMap, totalStockAssetValue = null,
 }) => {
   // 2026-09-10 · 사용자 지시 · 각 행 접기 (원가/마진 · 세부 정보)
   const [rowsCollapsed, setRowsCollapsed] = useState<Set<string>>(() => new Set(["cogs", "margin"]));
@@ -386,19 +391,21 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                     {totals.payment > 0 ? fmtWonFull(totals.payment) : "-"}
                   </td>
                 </tr>
-                {/* 재고자산 (violet) · 월별 스냅샷 · 현재 = currentStockValue prop */}
+                {/* 재고자산 · 2026-09-10 · #72 · 확정 공식 · 매입원가 - 판매원가 (월별) · 합계도 동일 · monthlyStockAssetMap 우선 · fallback: 기존 monthlyStockValueMap (스냅샷) */}
                 <tr className="border-b border-zinc-100 hover:bg-zinc-50/50 transition">
                   <td className="px-2 py-1.5 font-bold text-violet-700 sticky left-0 bg-white z-10">재고자산</td>
                   {monthlyAgg.map(m => {
-                    const v = monthlyStockValueMap.get(m.ym) ?? 0;
+                    const v = monthlyStockAssetMap?.get(m.ym) ?? monthlyStockValueMap.get(m.ym) ?? 0;
                     return (
                       <td key={m.ym} className="text-right px-2 py-1.5 text-violet-700 font-semibold">
-                        {v > 0 ? fmtWonFull(v) : "-"}
+                        {v !== 0 ? fmtWonFull(v) : "-"}
                       </td>
                     );
                   })}
                   <td className="text-right px-2 py-1.5 text-violet-800 font-bold bg-sky-50/50">
-                    {currentStockValue != null && currentStockValue > 0 ? fmtWonFull(currentStockValue) : "-"}
+                    {totalStockAssetValue != null && totalStockAssetValue !== 0
+                      ? fmtWonFull(totalStockAssetValue)
+                      : (currentStockValue != null && currentStockValue > 0 ? fmtWonFull(currentStockValue) : "-")}
                   </td>
                 </tr>
                 {/* 판매액 · 2026-09-10 · #66 · 사용자 지시 · monthlySalesMap 으로 월별 표시 · 클릭 시 원가·마진 접기/펼치기 */}

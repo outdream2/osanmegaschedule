@@ -105,20 +105,24 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
     }
   }
   // 2026-09-10 · 사용자 지시 · 팔린만큼의 사입액 (COGS) 계산용 · 상품별 purchase_price map
+  //   + 판매액 정확 계산용 · sale_price map (xlsx total_amount 대신 · sale_qty × sale_price)
   const priceMap = new Map<string, number>();
+  const salePriceMap = new Map<string, number>();
   {
     const PAGE = 1000;
     let from = 0;
     while (true) {
       const { data, error } = await supabase
         .from("products")
-        .select("product_code, purchase_price")
+        .select("product_code, purchase_price, sale_price")
         .range(from, from + PAGE - 1);
       if (error) break;
       if (!data || data.length === 0) break;
       for (const p of data) {
         const code = String((p as any).product_code ?? "").trim();
-        if (code) priceMap.set(code, Number(p.purchase_price ?? 0) || 0);
+        if (!code) continue;
+        priceMap.set(code, Number(p.purchase_price ?? 0) || 0);
+        salePriceMap.set(code, Number((p as any).sale_price ?? 0) || 0);
       }
       if (data.length < PAGE) break;
       from += PAGE;
@@ -178,10 +182,13 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
     for (const r of all) {
       const code = String(r.product_code ?? "").trim();
       const pp = priceMap.get(code) ?? 0;
+      const sp = salePriceMap.get(code) ?? 0;
       const sqty = Number(r.sale_qty ?? 0) || 0;
       const pqty = Number(r.purchase_qty ?? 0) || 0;
       const cogs = sqty * pp;
       const pcost = pqty * pp;
+      // 2026-09-10 · 사용자 지시 · 판매액 = sale_qty × sale_price (xlsx total_amount 대신)
+      const saleAmount = sqty * sp;
 
       const key = String(r.period_start_date ?? r.snapshot_date);
       if (!byPeriod.has(key)) {
@@ -205,17 +212,18 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
       agg.sale_qty      += sqty;
       agg.closing_stock += Number(r.closing_stock ?? 0) || 0;
       agg.supply_amount += Number(r.supply_amount ?? 0) || 0;
-      agg.total_amount  += Number(r.total_amount ?? 0) || 0;
+      // 2026-09-10 · 사용자 지시 · 합계 컬럼(total_amount) 사용 금지 · 판매수량 × 판매단가 계산
+      agg.total_amount  += saleAmount;
       agg.cogs_amount   += cogs;
       agg.purchase_cost += pcost;
       if (r.snapshot_date > agg.snapshot_date) agg.snapshot_date = r.snapshot_date;
 
-      // 상품별 aggregate
+      // 상품별 aggregate · 판매액 · sale_qty × sale_price (합계 컬럼 아님)
       if (code) {
         const p = byProduct.get(code) ?? { product_code: code, product_name: "", purchase_qty: 0, sale_qty: 0, closing_stock: 0, total_amount: 0, cogs_amount: 0 };
         p.purchase_qty  += pqty;
         p.sale_qty      += sqty;
-        p.total_amount  += Number(r.total_amount ?? 0) || 0;
+        p.total_amount  += saleAmount;
         p.cogs_amount   += cogs;
         p.closing_stock = Number(r.closing_stock ?? 0) || 0; // 최신 마감 재고 (덮어씀)
         byProduct.set(code, p);
