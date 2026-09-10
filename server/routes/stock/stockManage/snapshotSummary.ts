@@ -31,12 +31,33 @@ router.get("/api/stock-manage/snapshot-summary", asyncHandler(async (req, res) =
       positiveStockCount: 0,
       zeroStockCount: 0,
     };
+    // 2026-09-10 · #73 · 사용자 지시 · 판매액 = sale_qty × sale_price (xlsx total_amount 사용 금지)
+    // products.sale_price map 사전 fetch · in memory
+    const salePriceMap = new Map<string, number>();
+    {
+      const PP = 1000;
+      let pFrom = 0;
+      while (true) {
+        const { data } = await supabase
+          .from("products")
+          .select("product_code, sale_price")
+          .range(pFrom, pFrom + PP - 1);
+        if (!data || data.length === 0) break;
+        for (const p of data) {
+          const c = String((p as any).product_code ?? "").trim();
+          if (c) salePriceMap.set(c, Number((p as any).sale_price ?? 0) || 0);
+        }
+        if (data.length < PP) break;
+        pFrom += PP;
+      }
+    }
+
     const PAGE = 1000;
     let from = 0;
     while (true) {
       const { data, error } = await supabase
         .from("stock_history")
-        .select("sale_qty, purchase_qty, disposal_qty, closing_stock, total_amount")
+        .select("product_code, sale_qty, purchase_qty, disposal_qty, closing_stock, total_amount")
         .eq("snapshot_date", targetDate)
         .range(from, from + PAGE - 1);
       if (error) {
@@ -46,10 +67,14 @@ router.get("/api/stock-manage/snapshot-summary", asyncHandler(async (req, res) =
       if (!data || data.length === 0) break;
       for (const r of data) {
         totals.itemCount++;
-        totals.totalSale     += Number(r.sale_qty ?? 0) || 0;
+        const sqty = Number(r.sale_qty ?? 0) || 0;
+        const code = String((r as any).product_code ?? "").trim();
+        const sp = salePriceMap.get(code) ?? 0;
+        totals.totalSale     += sqty;
         totals.totalPurchase += Number(r.purchase_qty ?? 0) || 0;
         totals.totalDisposal += Number(r.disposal_qty ?? 0) || 0;
-        totals.totalAmount   += Number(r.total_amount ?? 0) || 0;
+        // 판매액 · sale_qty × sale_price
+        totals.totalAmount   += sqty * sp;
         const closing = Number(r.closing_stock ?? 0);
         if (closing < 0) totals.negativeStockCount++;
         else if (closing > 0) totals.positiveStockCount++;
