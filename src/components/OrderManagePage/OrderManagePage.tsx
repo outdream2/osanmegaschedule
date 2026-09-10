@@ -204,6 +204,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   const [requestingOrder, setRequestingOrder] = useState<Set<string>>(new Set());
   const [lowStockSearch, setLowStockSearch] = useState("");
+  // 2026-09-10 · #45 · 사용자 지시 · 발주필요 검색창 · 페이지(서브탭) 이탈 시 초기화
+  useEffect(() => {
+    if (purchaseOrderSubTab !== "need") setLowStockSearch("");
+  }, [purchaseOrderSubTab]);
   // 2026-08-25 · 사용자 지시 · 발주필요 · 검색 시 조건 적용 on/off (기본 ON = 재고 부족만)
   const [needConditionApply, setNeedConditionApply] = useState<boolean>(true);
   // 2026-08-25 · 사용자 지시 · 반품 서브탭 · 이너 탭 (반품확정/반품필요)
