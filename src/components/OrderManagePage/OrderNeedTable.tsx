@@ -289,7 +289,14 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                       </div>
                     </td>
                     <td className="text-center px-1 py-1.5 align-middle whitespace-nowrap">
-                      <div className="inline-flex flex-col items-center gap-0.5">
+                      {/* 2026-09-10 · 사용자 지시 · N일전 배지 + 요청됨 버튼 · 가로 나란히 (N일전 앞) */}
+                      <div className="inline-flex flex-row items-center gap-1">
+                        {alreadyRequested && requestedAtMap && (() => {
+                          const label = formatDaysAgo(requestedAtMap.get(code));
+                          return label ? (
+                            <span className="text-[11px] font-bold text-amber-700 tabular-nums bg-amber-50 border border-amber-300 rounded px-1.5 h-5 inline-flex items-center">{label}</span>
+                          ) : null;
+                        })()}
                         <button
                           onClick={() => handleRequestOrder(p)}
                           disabled={busy}
@@ -302,13 +309,6 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                         >
                           {busy ? "..." : alreadyRequested ? "✓ 요청됨" : "요청"}
                         </button>
-                        {/* 2026-09-10 · 사용자 지시 · 옵션 A · "N일 전" 표시 · 시각 강조 */}
-                        {alreadyRequested && requestedAtMap && (() => {
-                          const label = formatDaysAgo(requestedAtMap.get(code));
-                          return label ? (
-                            <span className="text-[11px] font-semibold text-emerald-600 tabular-nums">{label}</span>
-                          ) : null;
-                        })()}
                       </div>
                     </td>
                   </tr>
