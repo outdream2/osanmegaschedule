@@ -130,17 +130,20 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
   // 2026-09-10 · 사용자 지시 · 판매중 기본값 강제 · storageKey bump v2
   const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "orderNeed.saleFilter.v2" });
 
-  // 2026-09-07 · 사용자 지시 · 이미 발주요청된 상품은 · 발주필요 리스트에서 자동 제거
-  //   · requestedCodes (order_requests status=requested) 에 있는 코드는 filter out
-  //   · 발주요청 성공 → loadOrderReqs → requestedCodes 갱신 → 자동 사라짐
+  // 2026-09-10 · 사용자 지시 · 최신 UX 트렌드 · 발주요청됨도 검색 결과에 표시 (뱃지로 구분)
+  //   · 검색어 없음 · 이미 요청됨 자동 숨김 (기본 리스트 · 노이즈 방지)
+  //   · 검색어 있음 · 모두 표시 · 재요청 UX (사용자가 특정 상품 찾을 때 · 이미 요청 상태도 확인)
+  //   · 요청됨 표시는 · row 렌더에서 배지·비활성 스타일로 구분 (핸들러는 기존 3-way confirm)
+  const hasSearch = !!lowStockSearch.trim();
   const displayed = React.useMemo(
     () => lowStockFiltered.filter(p => {
       if (!saleMatches(p.sale_status)) return false;
       const code = getCode(p);
-      if (requestedCodes.has(code)) return false;
+      // 검색 시 · 요청됨 상품도 표시 (재요청 편의) · 검색어 없음 · 기존대로 자동 숨김
+      if (!hasSearch && requestedCodes.has(code)) return false;
       return true;
     }),
-    [lowStockFiltered, saleMatches, requestedCodes, getCode]
+    [lowStockFiltered, saleMatches, requestedCodes, getCode, hasSearch]
   );
 
   const handleRowClick = React.useCallback(async (p: ProductInfo) => {
