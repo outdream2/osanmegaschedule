@@ -347,7 +347,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {/* 판매가 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-              <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">판매가</span>
+              <span className="text-[16px] font-semibold text-zinc-600 uppercase tracking-wider">판매가</span>
               {editing
                 ? <input type="number" min={0} value={val("sale_price")} onChange={e => set("sale_price", e.target.value)} className={inputCls + " tabular-nums"} />
                 : p.sale_price != null
@@ -356,7 +356,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             </div>
             {/* 매입가 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-              <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">매입가 (단가)</span>
+              <span className="text-[16px] font-semibold text-zinc-600 uppercase tracking-wider">매입가 (단가)</span>
               {editing
                 ? <input type="number" min={0} value={val("purchase_price")} onChange={e => set("purchase_price", e.target.value)} className={inputCls + " tabular-nums"} />
                 : p.purchase_price != null
@@ -365,21 +365,21 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             </div>
             {/* 이익율 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-              <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">이익율</span>
+              <span className="text-[16px] font-semibold text-zinc-600 uppercase tracking-wider">이익율</span>
               {profitRate != null
                 ? <span className={`text-[20px] font-bold tabular-nums leading-tight ${profitRate >= 30 ? "text-emerald-600" : profitRate >= 15 ? "text-amber-600" : "text-rose-600"}`}>{profitRate}%</span>
                 : <span className="text-zinc-300 text-[16px]">-</span>}
             </div>
             {/* 현재고 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-              <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">현재고</span>
+              <span className="text-[16px] font-semibold text-zinc-600 uppercase tracking-wider">현재고</span>
               {p.current_stock != null
                 ? <span className="text-[20px] font-bold text-brand-deep tabular-nums leading-tight">{String(p.current_stock)}개</span>
                 : <span className="text-zinc-300 text-[16px]">-</span>}
             </div>
             {/* 적정재고 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-              <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">적정재고 (30일)</span>
+              <span className="text-[16px] font-semibold text-zinc-600 uppercase tracking-wider">적정재고 (30일)</span>
               {editing
                 ? <input type="number" min={0} value={val("optimal_stock")} onChange={e => set("optimal_stock", e.target.value)} className={inputCls + " tabular-nums"} />
                 : p.optimal_stock != null
@@ -393,7 +393,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
               if (w1 == null && w2 == null) {
                 return (
                   <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-                    <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">창고재고</span>
+                    <span className="text-[16px] font-semibold text-zinc-600 uppercase tracking-wider">창고재고</span>
                     <span className="text-zinc-300 text-[16px]">실재고 미조사</span>
                   </div>
                 );
@@ -402,13 +402,13 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                 <>
                   {w1 != null && (
                     <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-                      <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">창고1 재고</span>
+                      <span className="text-[16px] font-semibold text-zinc-600 uppercase tracking-wider">창고1 재고</span>
                       <span className="text-[18px] font-semibold text-ink tabular-nums leading-tight">{String(w1)}개</span>
                     </div>
                   )}
                   {w2 != null && (
                     <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-                      <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">창고2 재고</span>
+                      <span className="text-[16px] font-semibold text-zinc-600 uppercase tracking-wider">창고2 재고</span>
                       <span className="text-[18px] font-semibold text-ink tabular-nums leading-tight">{String(w2)}개</span>
                     </div>
                   )}
@@ -417,14 +417,14 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             })()}
             {/* 매장재고 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-              <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">매장재고</span>
+              <span className="text-[16px] font-semibold text-zinc-600 uppercase tracking-wider">매장재고</span>
               {product.store_stock != null
                 ? <span className="text-[18px] font-semibold text-ink tabular-nums leading-tight">{String(product.store_stock)}개</span>
                 : <span className="text-zinc-300 text-[16px]">실재고 미조사</span>}
             </div>
             {/* 최근매입일 */}
             <div className="bg-white border border-zinc-100 rounded-xl p-3 flex flex-col gap-1.5">
-              <span className="text-[14px] font-semibold text-zinc-600 uppercase tracking-wider">최근매입일</span>
+              <span className="text-[16px] font-semibold text-zinc-600 uppercase tracking-wider">최근매입일</span>
               {p.last_purchase_date
                 ? <span className="text-[16px] text-zinc-600 tabular-nums leading-tight">{String(p.last_purchase_date).slice(0, 10)}</span>
                 : <span className="text-zinc-300 text-[16px]">-</span>}
@@ -446,7 +446,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                 {product.supplier
                   ? (
                     <span className="inline-flex items-center gap-2">
-                      <span className="text-[17px] font-semibold text-ink">{product.supplier}</span>
+                      <span className="text-[18px] font-semibold text-ink">{product.supplier}</span>
                       {/* 2026-09-10 · 사용자 지시 · 화살표 → [상세보기] 버튼 */}
                       <button
                         type="button"
@@ -460,7 +460,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                   : <span className="text-zinc-300">-</span>}
               </DField>
             )}
-            {editing ? <EditField k="category" label="카테고리" /> : <DField label="카테고리">{dispVal("category")}</DField>}
+            {editing ? <EditField k="category" label="카테고리" /> : <DField label="카테고리"><span className="text-[18px] font-semibold text-ink">{dispVal("category")}</span></DField>}
             {editing && <EditField k="sale_status" label="판매상태" />}
             {editing && <EditField k="location" label="진열위치" />}
           </div>
