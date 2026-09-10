@@ -15,6 +15,8 @@ import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { OrderNeedFilters } from "./OrderNeedFilters";
 import { OrderNeedTable } from "./OrderNeedTable";
 import type { ProductInfo, OrderNeedFilterConfig } from "./OrderManagePage.types";
+// 2026-09-10 · 사용자 지시 · 발주필요 페이지에도 · 적정재고 기준 일수 안내 (발주요청 탭과 동일 위치)
+import { OptimalStockNoteBanner } from "../common/OptimalStockNoteBanner";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 
 type NeedSortKey = "supplier" | "contact" | "name" | "current" | "inv" | "optimal" | "short" | "sale_month";
@@ -193,6 +195,9 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
           <span className="text-[15px] text-ink-soft font-medium tracking-tight">현재고 &lt; 적정재고</span>
         }
       />
+
+      {/* 2026-09-10 · 사용자 지시 · 적정재고 기준 일수 안내 (발주요청 탭과 동일) */}
+      <OptimalStockNoteBanner compact className="self-start" />
 
       {/* 통합 조건 카드 */}
       <OrderNeedFilters
