@@ -1,7 +1,7 @@
 {
-  "created": "2026-09-09",
+  "created": "2026-09-10",
   "version": 1,
-  "totalViolations": 9,
+  "totalViolations": 10,
   "files": {
     "src/components/OrderSettingsPage/OrderSettingsPage.tsx": {
       "lines": 286,
@@ -24,7 +24,7 @@
       "totalWeight": 3
     },
     "src/components/DisplayPage/RealStockTablePage.tsx": {
-      "lines": 836,
+      "lines": 866,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -53,6 +53,16 @@
       ],
       "totalWeight": 3
     },
+    "src/components/ProductInfoPage/ProductInfoPage.tsx": {
+      "lines": 832,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
+    },
     "src/components/SalesTrendPage/DashboardCharts.tsx": {
       "lines": 948,
       "violations": [
@@ -64,7 +74,7 @@
       "totalWeight": 3
     },
     "src/components/ScanPage/ScanPage.tsx": {
-      "lines": 808,
+      "lines": 809,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -74,7 +84,7 @@
       "totalWeight": 3
     },
     "src/components/common/StoreZoneMap.tsx": {
-      "lines": 564,
+      "lines": 565,
       "violations": [
         {
           "ruleId": "raw-card-wrapper",

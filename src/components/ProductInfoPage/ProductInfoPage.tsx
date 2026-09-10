@@ -101,9 +101,11 @@ interface DetailProps {
   error: string | null;
   canEdit: boolean;
   onSaved: () => void;
+  // 2026-09-10 · #64 · 사용자 지시 · [수정] 버튼 · 인라인 편집 대신 · 모달 open 콜백
+  onEditClick?: (product: ProductDetail) => void;
 }
 
-const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, canEdit, onSaved }) => {
+const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, canEdit, onSaved, onEditClick }) => {
   const { toast, showSuccess, showError } = useToast();
   const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
@@ -320,7 +322,17 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             <Button variant="secondary" size="sm" icon={<X size={13} />} onClick={cancelEdit} disabled={saving} />
           </div>
         ) : canEdit ? (
-          <Button variant="secondary" size="sm" icon={<PencilSimple size={13} weight="bold" />} onClick={startEdit} title="상품정보 수정">
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<PencilSimple size={13} weight="bold" />}
+            onClick={() => {
+              // 2026-09-10 · #64 · 사용자 지시 · 인라인 편집 대신 · 모달 편집 (onEditClick prop 있으면 우선)
+              if (onEditClick && product) { onEditClick(product); return; }
+              startEdit();
+            }}
+            title="상품정보 수정"
+          >
             수정
           </Button>
         ) : null}
@@ -537,6 +549,8 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // 2026-09-10 · #64 · 사용자 지시 · 상품 편집 모달 · 인라인 편집 대신 · ProductCreateModal edit mode
+  const [editProduct, setEditProduct] = useState<ProductDetail | null>(null);
   // 2026-08-23 · #197 · 스캔 페이지에서 넘어온 pending code · 자동 등록 모달 (권한자만)
   const [pendingCode, setPendingCode] = useState<string | null>(null);
   useEffect(() => {
@@ -760,6 +774,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
                 error={detailError}
                 canEdit={canManage}
                 onSaved={() => setReloadKey((k) => k + 1)}
+                onEditClick={(prod) => setEditProduct(prod)}
               />
             </div>
           }
@@ -776,6 +791,32 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
         onCreated={(code) => {
           setSelectedCode(code);
           setPendingCode(null);
+          setReloadKey((k) => k + 1);
+        }}
+      />
+
+      {/* 2026-09-10 · #64 · 사용자 지시 · 상품 편집 모달 · ProductCreateModal edit mode */}
+      <ProductCreateModal
+        open={!!editProduct}
+        onClose={() => setEditProduct(null)}
+        mode="edit"
+        initialProduct={editProduct ? {
+          product_code: editProduct.product_code,
+          product_name: editProduct.product_name,
+          supplier: (editProduct as any).supplier ?? null,
+          category: (editProduct as any).category ?? null,
+          unit: (editProduct as any).unit ?? null,
+          spec: (editProduct as any).spec ?? null,
+          location: (editProduct as any).location ?? null,
+          optimal_stock: (editProduct as any).optimal_stock ?? null,
+          sale_price: (editProduct as any).sale_price ?? null,
+          purchase_price: (editProduct as any).purchase_price ?? null,
+          brand: (editProduct as any).brand ?? null,
+          manufacturer: (editProduct as any).manufacturer ?? null,
+        } : undefined}
+        lockCode={true}
+        onCreated={() => {
+          setEditProduct(null);
           setReloadKey((k) => k + 1);
         }}
       />

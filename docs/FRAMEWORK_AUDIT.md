@@ -1,6 +1,6 @@
 # Framework Audit Report (자동 생성)
 
-> 생성 · 2026-09-09 · `scripts/audit-framework.cjs` · 매 세션 재실행
+> 생성 · 2026-09-10 · `scripts/audit-framework.cjs` · 매 세션 재실행
 >
 > **로드맵 · `docs/FRAMEWORK_ROADMAP.md` Phase 1 (인벤토리)**
 
@@ -8,10 +8,10 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 804 |
-| 위반 파일 | 8 |
+| 스캔 파일 | 805 |
+| 위반 파일 | 9 |
 | 클린 파일 | 796 (99%) |
-| 총 위반 개수 | 9 |
+| 총 위반 개수 | 10 |
 
 ## 🚨 규칙별 위반 현황
 
@@ -19,7 +19,7 @@
 |---|---:|---:|---|---|
 | `raw-alert` | 1 | 1 | high | useToast (showError·showSuccess) |
 | `raw-card-wrapper` | 3 | 2 | medium | Card 프리미티브 (padding·variant·clip) |
-| `large-file-warn` | 5 | 5 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `large-file-warn` | 6 | 6 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
@@ -27,14 +27,15 @@
 |---:|---|---:|---:|---|
 | 1 | `src/components/OrderSettingsPage/OrderSettingsPage.tsx` | 286 | 4 | raw-card-wrapper(2) |
 | 2 | `src/components/common/InventoryEditPanel.tsx` | 520 | 3 | raw-alert(1) |
-| 3 | `src/components/DisplayPage/RealStockTablePage.tsx` | 836 | 3 | large-file-warn(1) |
+| 3 | `src/components/DisplayPage/RealStockTablePage.tsx` | 866 | 3 | large-file-warn(1) |
 | 4 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 868 | 3 | large-file-warn(1) |
 | 5 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 893 | 3 | large-file-warn(1) |
-| 6 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 | large-file-warn(1) |
-| 7 | `src/components/ScanPage/ScanPage.tsx` | 808 | 3 | large-file-warn(1) |
-| 8 | `src/components/common/StoreZoneMap.tsx` | 564 | 2 | raw-card-wrapper(1) |
+| 6 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 832 | 3 | large-file-warn(1) |
+| 7 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 | large-file-warn(1) |
+| 8 | `src/components/ScanPage/ScanPage.tsx` | 809 | 3 | large-file-warn(1) |
+| 9 | `src/components/common/StoreZoneMap.tsx` | 565 | 2 | raw-card-wrapper(1) |
 
-## 📝 모든 위반 파일 (8개)
+## 📝 모든 위반 파일 (9개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -42,12 +43,13 @@
 |---|---:|---:|
 | `src/components/OrderSettingsPage/OrderSettingsPage.tsx` | 286 | 4 |
 | `src/components/common/InventoryEditPanel.tsx` | 520 | 3 |
-| `src/components/DisplayPage/RealStockTablePage.tsx` | 836 | 3 |
+| `src/components/DisplayPage/RealStockTablePage.tsx` | 866 | 3 |
 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 868 | 3 |
 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 893 | 3 |
+| `src/components/ProductInfoPage/ProductInfoPage.tsx` | 832 | 3 |
 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 |
-| `src/components/ScanPage/ScanPage.tsx` | 808 | 3 |
-| `src/components/common/StoreZoneMap.tsx` | 564 | 2 |
+| `src/components/ScanPage/ScanPage.tsx` | 809 | 3 |
+| `src/components/common/StoreZoneMap.tsx` | 565 | 2 |
 
 </details>
 
