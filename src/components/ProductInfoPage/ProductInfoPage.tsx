@@ -444,10 +444,19 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             {editing ? <EditField k="supplier" label="공급사" /> : (
               <DField label="공급사">
                 {product.supplier
-                  ? <button type="button" onClick={() => vendorModal.openVendorInfo(product.supplier!)}
-                      className="inline-flex items-center gap-1 text-brand-deep font-semibold hover:underline cursor-pointer">
-                      {product.supplier}<ArrowSquareOut size={12} />
-                    </button>
+                  ? (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="text-[17px] font-semibold text-ink">{product.supplier}</span>
+                      {/* 2026-09-10 · 사용자 지시 · 화살표 → [상세보기] 버튼 */}
+                      <button
+                        type="button"
+                        onClick={() => vendorModal.openVendorInfo(product.supplier!)}
+                        className="inline-flex items-center gap-1 h-6 px-2 rounded-md border border-line bg-white text-[13px] font-bold text-brand-deep hover:bg-brand-tint/40 hover:border-brand-deep transition cursor-pointer"
+                      >
+                        상세보기
+                      </button>
+                    </span>
+                  )
                   : <span className="text-zinc-300">-</span>}
               </DField>
             )}
