@@ -11,7 +11,7 @@
 >  - 다른 참조 문서 만들지 말고 이 파일 하나에 통합 (사용자 명시 요구 · 2026-08-06)
 
 **프로젝트**: megatown-staff-scheduler
-**최종 업데이트**: 2026-08-29 (15차 · 매장 서브탭 재편 #193 · 사이드바 자동 파생 #196 · purchase_details 통합 #198 · 미사용 파생 테이블 제거 #200 · DB 정합성 fix #197 · UI fix 다수)
+**최종 업데이트**: 2026-09-10 (16차 · 결제탭 재고자산/잔고 확정 공식 · 신규 API 4종 · vendors UNIQUE 마이그레이션 · 판매액 공식 통일 · 공급사 유효성 검증)
 **생성**: 2026-08-05 (초판) · **확장**: 2026-08-06 (공통 자산 통합 · 백엔드/DB/RPC 심화)
 **출처**: 코드 실측 (LandingPage · 각 페이지 컴포넌트 · TAB 정의 · src/styles · src/components/common · src/hooks · migrations · server/routes)
 **용도**: 새 페이지·기능 추가 시 · 새 세션 진입 시 · 다른 에이전트 위임 시 · **먼저 참고**해야 할 단일 소스
@@ -116,6 +116,22 @@
 - 제거: 기간 내 결제 컬럼 (최근결제일·결제액이 대체 · `b0e5c52`)
 - 신규 API: `GET /api/supplier-payments/latest-per-supplier`
 - **헤더 자동정렬·공통 CSS** (`5fabc6e` · safe-refactoring-expert) · 통계 헤더 · **기간 조회** UI 추가
+
+**결제 탭 대규모 개편 (2026-09-10 · #57~#73)**:
+- **상단 통합 툴바** (`2bcaa825` · #71): 기간·계절 PeriodSelector 왼쪽 리스트로 통합 · 우측 별도 기간 UI 제거 · SplitPanel 표준 레이아웃
+- **재고자산·잔고 확정 공식** (`1ed40cae` · #72):
+  - **재고자산 = 매입액 − 판매원가 (cogs)**
+  - **실제잔고 = 매입액 − 결제액**
+  - 미지급(양수) → amber 표시 · 선지급(음수) → sky 표시
+- **판매액 공식 확정** (`1cbbb722`·`19382a81`·`7b79d5b0` · #73):
+  - **판매액 = sale_qty × sale_price** · xlsx total_amount 합계 컬럼 절대 사용 금지
+  - topSales.ts · snapshotSummary.ts 모두 통일
+- **왼쪽 리스트 컬럼** (`a2d9abf8` · #59): 총재고자산·총판매액·총결제액·총잔고 · 로딩 Spinner
+- **잔고 셀 색상** (`1bede008` · #67): 선지급=rose · 미지급=sky + 줄바꿈
+- **월별 표 순서 반전** (`1bede008` · #65): 왼쪽=오래된 · 오른쪽=최신
+- **판매내역 상품별 aggregate** (`e73e3dbf` · #69): 오른쪽 판매내역 · 상품명 표시
+- **원가·마진 행** (`e49ef342`): 판매액 하위 · 접기 가능 · salesTrend cogs_amount/purchase_cost
+- **KPI 추가** (#58): 공급사별 상세 · 재고자산 KPI (products.current_stock × purchase_price)
 
 **공급사 · VAT 표시 개선** (2026-08-06):
 - 이름 정제 표시 + VAT 자동 추론 (`058e92d`)
@@ -774,6 +790,17 @@ server/routes/
 - **C-2 fix** · `server/productCache.ts` · TTL 만료 후 stale promise 재사용 방지 (TTL 체크 후 새 fetch 시작)
 - **C-5 fix** · `settings` KV 편집 후 · `saleActiveOnlyCache` + `resetProductCache()` 두 캐시 동시 무효화
 
+**신규 엔드포인트** (2026-09-10 · #57~#59 · 결제탭 재고자산/잔고):
+- `GET /api/supplier-stock-value/:supplier` · 공급사별 현장 재고금액 (current_stock × purchase_price)
+- `GET /api/supplier-stock-values-map` · 전체 공급사 재고 map (supplier → stockValue)
+- `GET /api/supplier-monthly-stock-values/:supplier` · 월별 재고자산 추이
+- `GET /api/supplier-balances-map` · 전체 공급사 매입액·결제액·판매원가·재고자산·잔고 map (커밋 `1ed40cae`)
+
+**신규 유효성 검증** (2026-09-10 · #41·#63):
+- `POST /api/products` · supplier → vendors 테이블 존재 검증 · 없으면 400 `SUPPLIER_NOT_FOUND`
+- `PATCH /api/products/:code` · 동일 검증
+- `vendors.company_name` UNIQUE 제약 · `migrations/20260910_vendors_company_name_unique.sql`
+
 ### 16-2. 응답 형식 표준
 
 | 성공 | 형식 |
@@ -1421,6 +1448,44 @@ npm run test        # vitest (필요 시)
 ---
 
 ## CHANGELOG · 변경 이력
+
+### 2026-09-10 (16차 · 결제탭 재고자산/잔고 확정 공식 · 신규 API 4종 · vendors UNIQUE · 판매액 공식 통일 · 10+ 로컬 커밋)
+
+**요약**: 결제 탭 전면 개편. 재고자산·실제잔고 공식 확정 및 전 서버 반영. 판매액 계산 공식 통일. vendors UNIQUE 마이그레이션. 상품 등록/수정 시 공급사 유효성 검증 추가.
+
+#### 확정 공식 (대원칙 · 2026-09-10)
+- **재고자산 = 매입액 − 판매원가 (cogs)** · `1ed40cae`
+- **실제잔고 = 매입액 − 결제액** · `1ed40cae`
+- **판매액 = sale_qty × sale_price** · xlsx total_amount 합계 컬럼 절대 금지 · `1cbbb722`·`19382a81`·`7b79d5b0`
+
+#### 신규 API (#57~#59 · #72 · `1ed40cae`)
+- `GET /api/supplier-stock-value/:supplier`
+- `GET /api/supplier-stock-values-map`
+- `GET /api/supplier-monthly-stock-values/:supplier`
+- `GET /api/supplier-balances-map` · cogs/stock_asset 계산 포함
+
+#### 결제탭 UI (#57~#73 · 다수 커밋)
+- 상단 통합 툴바 · 기간·계절 왼쪽 리스트로 통합 (`2bcaa825` · #71)
+- 월별 표 순서 반전 · 왼쪽=오래된 (`1bede008` · #65)
+- 잔고 셀 선지급 rose·미지급 sky 색상 + 줄바꿈 (`1bede008` · #67)
+- 판매내역 상품별 aggregate + 상품명 (`e73e3dbf` · #69)
+- 왼쪽 리스트 Spinner 추가 (`9de3de02` · #70 일부)
+- 원가·마진 행 추가 (`e49ef342`)
+
+#### vendors UNIQUE 마이그레이션 (#41 · 이전 세션)
+- `migrations/20260910_vendors_company_name_unique.sql`
+- `vendors.company_name` UNIQUE 제약 추가
+
+#### 공급사 유효성 검증 (#63 · 이전 세션)
+- `POST /api/products` · `PATCH /api/products/:code` · 400 SUPPLIER_NOT_FOUND
+
+#### 신규 스크립트 파일 (진단용)
+- `scripts/insert-test-sale.mjs`
+- `scripts/audit-supplier-integrity.mjs`
+- `scripts/check-supplier-stock-map.mjs`
+- `scripts/check-donga-data.mjs`
+
+---
 
 ### 2026-08-29 (15차 · 매장 서브탭 재편 · 사이드바 자동 파생 · purchase_details 통합 · DB 정합성 fix · 22 로컬 커밋)
 
