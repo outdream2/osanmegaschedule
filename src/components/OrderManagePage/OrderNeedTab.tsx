@@ -277,25 +277,15 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
             </Card>
           </div>
         ) : (
+          /* 2026-09-10 · 사용자 지시 · 우측 · 판매정보 패널 · 상품 선택 무관 · 계절·이벤트 정보 (전체)
+              · 상품명 클릭 · 우측 갱신 X · 모달만 open */
           <SalesRecommendationPanel
-            product={needPanelProduct ? ({
-              product_code: needPanelProduct.code,
-              product_name: needPanelProduct.name,
-              current_stock: Number((needPanelFull as any)?.current_stock ?? 0) || 0,
-              optimal_stock: Number((needPanelFull as any)?.optimal_stock ?? 0) || 0,
-            } as ProductInfo) : null}
-            saleMonth={needPanelProduct ? (needExtraMap.get(needPanelProduct.code)?.saleMonth ?? null) : null}
-            saleQuarter={needPanelProduct ? (needExtraMap.get(needPanelProduct.code)?.saleQuarter ?? null) : null}
-            onApplyQty={(code, qty) => {
-              if (!setOrderQtyOverride) return;
-              setOrderQtyOverride(prev => {
-                const next = new Map(prev);
-                next.set(code, Math.max(1, qty));
-                return next;
-              });
-            }}
-            onOpenDetail={() => onOpenDetail?.()}
-            onClose={() => setNeedPanelProduct(null)}
+            product={null}
+            saleMonth={null}
+            saleQuarter={null}
+            onApplyQty={() => {}}
+            onOpenDetail={() => {}}
+            onClose={() => {}}
           />
         )}
       </div>
