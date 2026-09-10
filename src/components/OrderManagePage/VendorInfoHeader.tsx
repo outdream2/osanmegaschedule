@@ -62,8 +62,12 @@ interface VendorInfoHeaderProps {
   ledgerRows?: LedgerRowMinimal[];
   /** 2026-08-24 · 공급사 정보 수정 콜백 · 있으면 [수정] 버튼 표시 (사용자 지시) */
   onEdit?: () => void;
-  /** 2026-09-10 · 사용자 지시 · 표 맨 오른쪽 "현재" 열 · 현장 재고자산 (ERP 현재고 × 사입단가) */
+  /** 2026-09-10 · 사용자 지시 · 표 맨 오른쪽 "합계" 열 · 현장 재고자산 (ERP 현재고 × 사입단가) */
   currentStockValue?: number | null;
+  /** 2026-09-10 · #66 · 사용자 지시 · 월별 판매액 map (ym → total_amount) */
+  monthlySalesMap?: Map<string, number>;
+  /** 2026-09-10 · #66 · 사용자 지시 · 판매액 합계 (기간 내 총 판매액) */
+  totalSalesValue?: number | null;
 }
 
 // ─── Types (월별 집계) ─────────────────────────────────────────────────
@@ -132,7 +136,8 @@ function buildMonthlyAgg(rows: LedgerRowMinimal[], limit = 12): MonthlyAgg[] {
 // ─── VendorInfoHeader ─────────────────────────────────────────────────────
 
 export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
-  vendor, kpi, loading = false, ledgerRows, onEdit, currentStockValue = null,
+  vendor, kpi, loading = false, ledgerRows, onEdit,
+  currentStockValue = null, monthlySalesMap, totalSalesValue = null,
 }) => {
   const copyBizNum = () => {
     if (!vendor.business_number) return;
@@ -384,13 +389,20 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                     {currentStockValue != null && currentStockValue > 0 ? fmtWonFull(currentStockValue) : "-"}
                   </td>
                 </tr>
-                {/* 판매액 · TODO · salesTrend 데이터 연동 예정 · 2026-09-10 사용자 지시 · 판매금액→판매액 */}
+                {/* 판매액 · 2026-09-10 · #66 · 사용자 지시 · monthlySalesMap 으로 월별 표시 */}
                 <tr className="border-b border-zinc-100 hover:bg-zinc-50/50 transition">
                   <td className="px-2 py-1.5 font-bold text-teal-700 sticky left-0 bg-white z-10">판매액</td>
-                  {monthlyAgg.map(m => (
-                    <td key={m.ym} className="text-right px-2 py-1.5 text-zinc-300">-</td>
-                  ))}
-                  <td className="text-right px-2 py-1.5 text-zinc-300 bg-sky-50/50">-</td>
+                  {monthlyAgg.map(m => {
+                    const v = monthlySalesMap?.get(m.ym) ?? 0;
+                    return (
+                      <td key={m.ym} className="text-right px-2 py-1.5 text-teal-700 font-semibold">
+                        {v > 0 ? fmtWonFull(v) : "-"}
+                      </td>
+                    );
+                  })}
+                  <td className="text-right px-2 py-1.5 text-teal-800 font-bold bg-sky-50/50">
+                    {totalSalesValue != null && totalSalesValue > 0 ? fmtWonFull(totalSalesValue) : "-"}
+                  </td>
                 </tr>
                 {/* 잔고 (amber/rose · 부호별) · 미지급 / 선지급 */}
                 <tr className="hover:bg-zinc-50/50 transition">

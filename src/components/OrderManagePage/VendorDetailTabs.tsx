@@ -248,6 +248,17 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
         ledgerRows={ledger?.rows as LedgerRowMinimal[] | undefined}
         onEdit={() => openVendorInfo(vendor as any)}
         currentStockValue={stockValue}
+        monthlySalesMap={(() => {
+          // 2026-09-10 · #66 · salesRows → ym → total_amount map
+          const m = new Map<string, number>();
+          for (const r of salesRows) {
+            const ym = String(r.snapshot_date ?? r.period_start_date ?? "").slice(0, 7);
+            if (!ym) continue;
+            m.set(ym, (m.get(ym) ?? 0) + Number(r.total_amount ?? 0));
+          }
+          return m;
+        })()}
+        totalSalesValue={salesRows.reduce((s, r) => s + Number(r.total_amount ?? 0), 0)}
       />
 
       {/* 2026-08-25 · SplitRightTabs 프리미티브 이관 · v9 브랜드 시그니처 · 폰트 +2 */}
