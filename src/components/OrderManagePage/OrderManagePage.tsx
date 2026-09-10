@@ -333,52 +333,16 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     return () => { alive = false; };
   }, [needExtraRequired, needExtraLoaded]);
 
-  // 발주필요 필터링 · 발주요청(requestedCodes)에 있는 상품은 제외 (사용자 지시 · 2026-09-05)
+  // 2026-09-10 · 사용자 지시 · 발주필요 조건 단순화 · 적정재고 > 현재고 만 사용
+  //   · 고급설정 (shortageBasis · minShortage · minMonthlySales · deferredCurrent 등) 모두 제거
+  //   · 이미 발주요청된 상품은 자동 제외 (검색 시에는 노출 · OrderNeedTab 에서 처리)
   const lowStock = products.filter(p => {
-    const cur = p.current_stock != null ? Number(p.current_stock) : NaN;
-    const opt = p.optimal_stock != null ? Number(p.optimal_stock) : NaN;
-    const minS = (p as any).min_stock != null ? Number((p as any).min_stock) : NaN;
+    const cur = Number(p.current_stock ?? 0);
+    const opt = Number(p.optimal_stock ?? 0);
     const code = getCode(p);
-    if (requestedCodes.has(code)) return false; // 이미 발주요청 → 발주필요에서 숨김
-    const invEntry = code ? invStockMap.get(code) : undefined;
-    const realTotal = invEntry ? Number(invEntry.total) : NaN;
-    if (!orderNeedConfig.includeMissingRealStock && !invEntry) return false;
-    let shortage = 0;
-    if (orderNeedConfig.shortageBasis === "min") {
-      if (isNaN(cur) || isNaN(minS) || minS <= 0) return false;
-      shortage = minS - cur;
-    } else if (orderNeedConfig.shortageBasis === "realStock") {
-      if (isNaN(opt) || opt <= 0) return false;
-      if (isNaN(realTotal)) return false;
-      shortage = opt - realTotal;
-    } else {
-      if (isNaN(cur) || isNaN(opt) || opt <= 0) return false;
-      shortage = opt - cur;
-    }
-    if (shortage < Math.max(1, orderNeedConfig.minShortage)) return false;
-    if (orderNeedConfig.minMonthlySales > 0) {
-      const extra = code ? needExtraMap.get(code) : undefined;
-      if (extra) {
-        if (extra.saleMonth == null || extra.saleMonth < orderNeedConfig.minMonthlySales) return false;
-      } else if (needExtraLoaded) { return false; }
-    }
-    if (needFilter.deferredCurrentEnabled && needFilter.deferredInlineCurrent > 0) {
-      if (isNaN(cur) || cur > needFilter.deferredInlineCurrent) return false;
-    }
-    if ((needFilter.deferredSalesMonthEnabled && needFilter.deferredInlineSalesMonth > 0) ||
-        (needFilter.deferredSalesQuarterEnabled && needFilter.deferredInlineSalesQuarter > 0)) {
-      const extra = code ? needExtraMap.get(code) : undefined;
-      if (extra) {
-        if (needFilter.deferredSalesMonthEnabled && needFilter.deferredInlineSalesMonth > 0) {
-          if ((extra.saleMonth ?? 0) > needFilter.deferredInlineSalesMonth) return false;
-        }
-        if (needFilter.deferredSalesQuarterEnabled && needFilter.deferredInlineSalesQuarter > 0) {
-          if ((extra.saleQuarter ?? 0) > needFilter.deferredInlineSalesQuarter) return false;
-        }
-      }
-    }
-    return true;
-  }).sort((a, b) => (Number(b.optimal_stock) - Number(b.current_stock)) - (Number(a.optimal_stock) - Number(a.current_stock)));
+    if (requestedCodes.has(code)) return false;
+    return opt > cur;
+  }).sort((a, b) => (Number(b.optimal_stock ?? 0) - Number(b.current_stock ?? 0)) - (Number(a.optimal_stock ?? 0) - Number(a.current_stock ?? 0)));
 
   const handleRequestOrder = async (p: ProductInfo) => {
     const code = getCode(p);

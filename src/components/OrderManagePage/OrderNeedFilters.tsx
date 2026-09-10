@@ -196,7 +196,8 @@ export const OrderNeedFilters: React.FC<OrderNeedFiltersProps> = ({
         )}
       </div>
 
-      {/* 발주판정 고급설정 */}
+      {/* 2026-09-10 · 사용자 지시 · 발주판정 고급설정 UI 제거 · 조건 단순화 (opt > cur) */}
+      {false && (
       <div>
         <button
           type="button"
@@ -205,14 +206,6 @@ export const OrderNeedFilters: React.FC<OrderNeedFiltersProps> = ({
         >
           <ChevronRight size={13} className={`text-zinc-400 shrink-0 transition-transform ${needAdvancedOpen ? "rotate-90" : ""}`} />
           <span className="text-[14px] font-bold uppercase tracking-wider text-zinc-400">발주판정 고급설정</span>
-          <span className="ml-1 text-[14px] text-zinc-400 hidden sm:inline">
-            {orderNeedConfig.shortageBasis === "min" && "최소재고 기준"}
-            {orderNeedConfig.shortageBasis === "realStock" && "실재고 기준"}
-            {orderNeedConfig.shortageBasis === "optimal" && "추천적정재고 기준"}
-            {orderNeedConfig.minShortage > 1 && ` · 부족 ${orderNeedConfig.minShortage}개+`}
-            {!orderNeedConfig.includeMissingRealStock && " · 실재고 있는 것만"}
-            {orderNeedConfig.minMonthlySales > 0 && ` · 한달판매 ≥${orderNeedConfig.minMonthlySales}개`}
-          </span>
         </button>
 
         {needAdvancedOpen && (
@@ -388,6 +381,7 @@ export const OrderNeedFilters: React.FC<OrderNeedFiltersProps> = ({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };
