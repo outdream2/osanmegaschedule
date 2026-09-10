@@ -151,42 +151,16 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
     [lowStockFiltered, saleMatches, requestedCodes, getCode, hasSearch]
   );
 
+  // 2026-09-10 · 사용자 지시 · 상품명 클릭 · 항상 · 우측 상세 정보 표시
+  //   · 이전 · 재고 초과/이미 요청 등 confirm 팝업 · 사용자 UX 방해 · 팝업 제거
+  //   · 발주 요청은 · row 오른쪽 [요청]/[✓] 버튼으로 별도 처리
   const handleRowClick = React.useCallback(async (p: ProductInfo) => {
-    const cur = Number(p.current_stock ?? NaN);
-    const opt = Number(p.optimal_stock ?? NaN);
     const code = getCode(p);
     const name = getName(p);
-    const inLowStock = Number.isFinite(cur) && Number.isFinite(opt) && cur < opt;
-    // 2026-09-10 · 사용자 지시 · 이미 발주요청된 상품 · 3-way (덮어쓰기·상세확인·취소)
-    //   · 재요청 시 · 발주요청 리스트에 기존 정보 덮어쓰기 · 명시적 안내
-    if (requestedCodes.has(code)) {
-      const shortage = Number.isFinite(cur) && Number.isFinite(opt) ? Math.max(1, opt - cur) : 1;
-      const choice = await confirm({
-        title: "이미 발주요청됨",
-        message: `[${name}]\n현재고 ${Number.isFinite(cur) ? cur : "-"} · 적정재고 ${Number.isFinite(opt) ? opt : "-"} · 부족 ${shortage}\n\n이 정보로 발주요청 리스트에 다시 추가하시겠습니까?\n⚠️ 기존 정보를 덮어쓰게 됩니다.`,
-        confirmLabel: "덮어쓰기",
-        neutralLabel: "상세내용 확인",
-        cancelLabel: "취소",
-      });
-      if (choice === true) {
-        await handleRequestOrder(p);
-      } else if (choice === "neutral") {
-        setNeedPanelProduct({ code, name });
-      }
-      return;
-    }
-    if (!inLowStock) {
-      const ok = await confirm({
-        title: "발주필요 리스트에 추가",
-        message: `[${name}]\n현재고 ${Number.isFinite(cur) ? cur : "-"} · 적정재고 ${Number.isFinite(opt) ? opt : "-"}\n\n이 상품을 발주필요 리스트에 추가할까요?`,
-        confirmLabel: "추가",
-      });
-      if (ok !== true) return;
-      await handleRequestOrder(p);
-      return;
-    }
     setNeedPanelProduct({ code, name });
-  }, [confirm, getCode, getName, handleRequestOrder, requestedCodes, setNeedPanelProduct]);
+  }, [getCode, getName, setNeedPanelProduct]);
+  // 미사용 참조 방지 (기존 로직 · handleRequestOrder·requestedCodes·confirm)
+  void confirm; void requestedCodes; void handleRequestOrder;
 
   return (
     <div className="flex flex-col gap-2">
