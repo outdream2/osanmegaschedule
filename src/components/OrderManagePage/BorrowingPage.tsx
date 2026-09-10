@@ -220,7 +220,15 @@ export const BorrowingPage: React.FC<BorrowingPageProps> = ({ authSession }) => 
                 : "hover:ring-1 hover:ring-brand-deep/20"
             }`}
           >
-            <BorrowingCard item={toCardData(r, selfLabel)} />
+            <BorrowingCard
+              item={toCardData(r, selfLabel)}
+              onAction={(action) => {
+                // 2026-09-10 · #47 · 사용자 지시 · 이력 리스트 · PDF 보기 액션
+                if (action === "pdf") {
+                  try { window.open(`/borrowing/${r.id}/pdf`, "_blank", "noopener"); } catch { /* silent */ }
+                }
+              }}
+            />
           </div>
         );
       })}

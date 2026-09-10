@@ -5,7 +5,7 @@
 //   · 확장 시 Timeline (계약 → 알림 → 반환) · Linear Audit Log 스타일
 
 import React, { useState } from "react";
-import { ChevronDown, ChevronRight, ArrowRight, ArrowLeftRight, Clock, CheckCircle, AlertTriangle } from "lucide-react";
+import { ChevronDown, ChevronRight, ArrowRight, ArrowLeftRight, Clock, CheckCircle, AlertTriangle, FileText } from "lucide-react";
 
 export interface BorrowingCardData {
   id: number;
@@ -28,7 +28,8 @@ export interface BorrowingCardData {
 
 export interface BorrowingCardProps {
   item: BorrowingCardData;
-  onAction?: (action: "return" | "cancel" | "detail" | "signature") => void;
+  // 2026-09-10 · #47 · 사용자 지시 · pdf 액션 추가 (이력 리스트 · PDF 보기)
+  onAction?: (action: "return" | "cancel" | "detail" | "signature" | "pdf") => void;
   defaultExpanded?: boolean;
   className?: string;
 }
@@ -119,6 +120,18 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
             className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[14px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 cursor-pointer shadow-sm"
           >
             반환
+          </button>
+        )}
+        {/* 2026-09-10 · #47 · 사용자 지시 · PDF 보기 · 모든 상태 */}
+        {onAction && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onAction("pdf"); }}
+            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[14px] font-bold text-brand-deep bg-white border border-line hover:bg-brand-tint/30 cursor-pointer"
+            title="PDF 보기"
+          >
+            <FileText size={12} strokeWidth={2.2} />
+            PDF
           </button>
         )}
       </div>
