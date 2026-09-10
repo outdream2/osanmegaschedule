@@ -512,14 +512,17 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                         )
                         : <span className="text-[12px] text-zinc-300">-</span>}
                     </td>
-                    {/* 총재고자산 · 우측 정렬 · ERP 현재고 × 사입단가 (공급사별) · 2026-09-10 · #59 */}
+                    {/* 총재고자산 · 우측 정렬 · ERP 현재고 × 사입단가 (공급사별) · 2026-09-10 · #59
+                        · 사용자 지시 · 0원도 명시 표시 · products.current_stock=0 or purchase_price=0 시 · "0원" 명확 */}
                     <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
                       {supplierAggLoading && stockValue == null
-                        ? <span className="text-[12px] text-zinc-400 italic">...</span>
-                        : stockValue != null && stockValue > 0
+                        ? <span className="inline-flex items-center gap-1 text-[12px] text-zinc-400 italic">
+                            <span className="inline-block w-2.5 h-2.5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+                          </span>
+                        : stockValue != null
                           ? (
-                            <span className="text-[14px] font-bold tabular-nums text-sky-700"
-                              title={`${stockValue.toLocaleString()}원 · ERP 현재고 × 사입단가`}>
+                            <span className={`text-[14px] font-bold tabular-nums ${stockValue > 0 ? "text-sky-700" : "text-zinc-300"}`}
+                              title={stockValue > 0 ? `${stockValue.toLocaleString()}원 · ERP 현재고 × 사입단가` : "재고 없음 or 사입단가 미설정"}>
                               {fmtWon(stockValue)}
                             </span>
                           )
