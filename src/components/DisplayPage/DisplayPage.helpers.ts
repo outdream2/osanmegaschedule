@@ -155,6 +155,12 @@ export const fetchRequestsFromDB = async (): Promise<DisplayRequest[] | null> =>
       assignedStaffName: r.assigned_staff_name ?? "",
       status: (r.status ?? "pending") as "pending" | "done",
       note: r.note ?? "",
+      // 2026-09-10 · #51 · 사용자 지시 · 서버 products JOIN 필드 반영
+      productName: r.product_name ?? null,
+      productCode: r.product_code ?? null,
+      productSpec: r.product_spec ?? null,
+      productDisplayLocation: r.product_display_location ?? null,
+      productLocationDetail: r.product_location_detail ?? null,
     }));
   } catch { return null; }
 };

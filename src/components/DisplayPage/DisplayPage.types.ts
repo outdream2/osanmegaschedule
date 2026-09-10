@@ -35,6 +35,12 @@ export interface DisplayRequest {
   assignedStaffName: string;
   status: "pending" | "done";
   note: string;
+  // 2026-09-10 · #51 · 서버 products JOIN 반영 (progressive · 옵션)
+  productName?: string | null;
+  productCode?: string | null;
+  productSpec?: string | null;
+  productDisplayLocation?: string | null;
+  productLocationDetail?: string | null;
 }
 
 export interface ScheduleEntry {

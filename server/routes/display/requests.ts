@@ -114,11 +114,12 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
   ));
   if (productCodes.length > 0) {
     try {
+      // 2026-09-10 · #51 · 사용자 지시 · 진열요청 · 상세위치 (location_detail) 컬럼 추가
       const { data: prods } = await supabase
         .from("products")
-        .select("product_code, product_name, spec, display_location, location")
+        .select("product_code, product_name, spec, display_location, location, location_detail")
         .in("product_code", productCodes);
-      const infoMap = new Map<string, { name: string; spec: string | null; display_location: string | null; location: string | null }>();
+      const infoMap = new Map<string, { name: string; spec: string | null; display_location: string | null; location: string | null; location_detail: string | null }>();
       for (const p of prods ?? []) {
         const c = String(p.product_code ?? "").trim();
         if (c) infoMap.set(c, {
@@ -126,6 +127,7 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
           spec: p.spec ?? null,
           display_location: (p as any).display_location ?? null,
           location: (p as any).location ?? null,
+          location_detail: (p as any).location_detail ?? null,
         });
       }
       for (const r of rows as any[]) {
@@ -135,6 +137,7 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
         r.product_spec = info?.spec ?? null;
         // 최신 진열위치 · display_location 우선 · 없으면 location · 없으면 null
         r.product_display_location = info?.display_location ?? info?.location ?? null;
+        r.product_location_detail = info?.location_detail ?? null;
       }
     } catch { /* silent · products 조회 실패해도 요청 응답은 반환 */ }
   }

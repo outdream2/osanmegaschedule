@@ -33,6 +33,9 @@ interface DisplayRequest {
   productName?: string | null;
   productSpec?: string | null;
   productCode?: string | null;
+  // 2026-09-10 · #51 · 사용자 지시 · 상세위치 컬럼 · 서버 products.location_detail
+  productDisplayLocation?: string | null;
+  productLocationDetail?: string | null;
 }
 
 interface DisplayRequestPanelProps {
@@ -167,7 +170,13 @@ const RequestTableRow: React.FC<{
       </td>
       <td className="px-3 py-2.5">
         <span className={`text-[14px] font-bold ${urgent ? "text-rose-800" : "text-zinc-700"}`}>
-          {req.zoneLabel}
+          {req.productDisplayLocation || req.zoneLabel}
+        </span>
+      </td>
+      {/* 2026-09-10 · #51 · 사용자 지시 · 진열위치 옆 · 상세위치 컬럼 */}
+      <td className="px-3 py-2.5">
+        <span className={`text-[13px] font-mono ${urgent ? "text-rose-700" : "text-zinc-600"}`}>
+          {req.productLocationDetail || <span className="text-zinc-300">-</span>}
         </span>
       </td>
       <td className="px-3 py-2.5 text-[14px] font-medium text-zinc-700">
@@ -316,7 +325,9 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
                   {/* 2026-08-10 · 사용자 요청 · 상품명 · 맨 앞 컬럼 */}
                   <tr className="bg-zinc-50/80 border-b border-zinc-100">
                     <th className="px-3 py-2 text-[15px] font-bold text-zinc-500">상품명</th>
-                    <th className="px-3 py-2 text-[15px] font-bold text-zinc-500 w-24">구역</th>
+                    <th className="px-3 py-2 text-[15px] font-bold text-zinc-500 w-24">진열위치</th>
+                    {/* 2026-09-10 · #51 · 사용자 지시 · 상세위치 컬럼 추가 */}
+                    <th className="px-3 py-2 text-[15px] font-bold text-zinc-500 w-24">상세위치</th>
                     <th className="px-3 py-2 text-[15px] font-bold text-zinc-500 w-20">담당</th>
                     <th className="px-3 py-2 text-[15px] font-bold text-zinc-500 w-16">시각</th>
                     <th className="px-3 py-2 text-[15px] font-bold text-zinc-500 text-center w-16">상태</th>
