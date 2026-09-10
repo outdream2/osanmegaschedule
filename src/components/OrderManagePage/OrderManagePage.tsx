@@ -81,6 +81,8 @@ import { OrderRequestTab } from "./OrderRequestTab";
 import { VendorPaymentPanel } from "./VendorPaymentPanel";
 // 2026-08-25 · Framework Phase 4 · 모달 래퍼 이관
 import { OrderManageModals } from "./OrderManagePage.modals";
+// 2026-09-10 · #46 · 발주필요 우측 판매 추천 → [상세 정보] 클릭 · 상품 상세 모달
+import { ProductDetailModal } from "./ProductDetailModal";
 
 const OrderManagePage: React.FC<OrderManagePageProps> = ({
   ocrTabAuthSession,
@@ -264,6 +266,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [needPanelFull, setNeedPanelFull] = useState<Record<string, any> | null>(null);
   const [needPanelLoading, setNeedPanelLoading] = useState(false);
   const [needPanelError, setNeedPanelError] = useState<string | null>(null);
+  // 2026-09-10 · #46 · 사용자 지시 · 상품 상세 정보는 별도 모달 (판매 추천 패널 [상세 정보] 버튼)
+  const [needDetailModal, setNeedDetailModal] = useState<{ code: string; name: string } | null>(null);
   useEffect(() => {
     if (!needPanelProduct) { setNeedPanelFull(null); setNeedPanelError(null); return; }
     setNeedPanelLoading(true); setNeedPanelError(null);
@@ -594,6 +598,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               handleRequestOrder={handleRequestOrder}
               orderQtyOverride={orderQtyOverride}
               setOrderQtyOverride={setOrderQtyOverride}
+              onOpenDetail={() => needPanelProduct && setNeedDetailModal(needPanelProduct)}
             />
           )}
           {purchaseOrderSubTab === "critical" && (
@@ -717,6 +722,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         inventoryEditModal={inventoryEditModal} setInventoryEditModal={setInventoryEditModal}
         loadInvMap={loadInvMap}
         toast={toast}
+      />
+      {/* 2026-09-10 · #46 · 사용자 지시 · 발주필요 우측 판매 추천 패널 [상세 정보] 클릭 시 · 상품 상세 모달 */}
+      <ProductDetailModal
+        detailProduct={needDetailModal}
+        detailFull={needPanelFull}
+        detailLoading={needPanelLoading}
+        detailError={needPanelError}
+        onClose={() => setNeedDetailModal(null)}
+        onProductUpdate={(u) => setNeedPanelFull(prev => prev ? { ...prev, ...u } : prev)}
       />
     </main>
   );

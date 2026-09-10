@@ -121,7 +121,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[14px] font-bold text-ink">{s.label}</span>
-                  <StatusPill label={s.note} tone={s.tone === "amber" ? "amber" : s.tone === "emerald" ? "emerald" : "zinc"} size="xs" />
+                  <StatusPill tone={s.tone === "amber" ? "amber" : s.tone === "emerald" ? "emerald" : "zinc"} size="xs">{s.note}</StatusPill>
                 </div>
                 <div className="text-[12px] text-ink-soft mt-0.5">발주량 {s.qty.toLocaleString()}개</div>
               </div>
