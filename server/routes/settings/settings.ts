@@ -376,7 +376,7 @@ router.post("/api/zones", authorize(5), validateBody(UpsertZonesSchema), asyncHa
   if (!Array.isArray(zones) || zones.length === 0) {
     return res.json({ ok: true, skipped: "empty zones" });
   }
-  const rowsWithDow = zones.map((z: any) => ({
+  const rowsWithDowRaw = zones.map((z: any) => ({
     zone_id: String(z.zone_id),
     employee_id: z.employee_id ?? null,
     employee_name: z.employee_name ?? "",
@@ -384,6 +384,12 @@ router.post("/api/zones", authorize(5), validateBody(UpsertZonesSchema), asyncHa
     products: z.products ?? "",
     dow_map: z.dow_map ?? null,
   }));
+  // 2026-09-10 · #46-2 · 사용자 오류 로그 · "ON CONFLICT DO UPDATE command cannot affect row a second time"
+  //   · 원인 · 동일 zone_id 여러 번 포함 · upsert 시 · Postgres · 같은 row · 두 번 update 시도 · 오류
+  //   · fix · 서버측 dedupe · 뒤에 온 값 · last-write-wins (Map)
+  const dedup = new Map<string, typeof rowsWithDowRaw[number]>();
+  for (const r of rowsWithDowRaw) dedup.set(r.zone_id, r);
+  const rowsWithDow = Array.from(dedup.values());
   let { error } = await supabase
     .from("zone_assignments")
     .upsert(rowsWithDow, { onConflict: "zone_id" });

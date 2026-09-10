@@ -41,14 +41,17 @@ export function useDpInitialSubTab(
   }, []);
 
   // 사이드바 V2 CustomEvent 서브탭 이동
+  // 2026-09-10 · #46-2 · 무한 루프 fix · sub === dpSubTab 이면 setDpSubTab 호출 X
+  //   · 이전 · setDpSubTab → dispatchEvent("sidebar:subtab") → onSubTab → setDpSubTab · RangeError
   useEffect(() => {
     const onSubTab = (e: Event) => {
       const detail = (e as CustomEvent<{ page: string; subTab: string }>).detail;
       if (detail?.page !== "display") return;
       const sub = detail.subTab as DpSubTabKey;
+      if (sub === dpSubTab) return;
       if (DP_SUBTAB_DEFAULTS.some(t => t.key === sub)) setDpSubTab(sub);
     };
     window.addEventListener("sidebar:subtab", onSubTab);
     return () => window.removeEventListener("sidebar:subtab", onSubTab);
-  }, [setDpSubTab]);
+  }, [setDpSubTab, dpSubTab]);
 }
