@@ -90,12 +90,71 @@ router.get("/api/supplier-balances-map", asyncHandler(async (_req, res) => {
     }
   } catch { /* silent */ }
 
-  const values: Record<string, { purchase: number; payment: number; balance: number }> = {};
-  const allNames = new Set([...purchaseMap.keys(), ...paymentMap.keys()]);
+  // 2026-09-10 · #72 · 확정 공식 · 재고자산 = 매입액 - 판매원가 (COGS) 계산 추가
+  //   · 판매원가 = SUM(sale_qty × products.purchase_price) · 공급사별
+  const cogsMap = new Map<string, number>();
+  try {
+    // 1) products · product_code → purchase_price map
+    const priceMap = new Map<string, number>();
+    const productSupplierMap = new Map<string, string>();
+    {
+      const PAGE = 1000;
+      let from = 0;
+      while (true) {
+        const { data } = await supabase
+          .from("products")
+          .select("product_code, supplier, purchase_price")
+          .range(from, from + PAGE - 1);
+        if (!data || data.length === 0) break;
+        for (const p of data) {
+          const code = String((p as any).product_code ?? "").trim();
+          if (!code) continue;
+          priceMap.set(code, Number((p as any).purchase_price ?? 0) || 0);
+          const sup = String((p as any).supplier ?? "").trim();
+          if (sup) productSupplierMap.set(code, sup);
+        }
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+    }
+    // 2) stock_history · sale_qty × purchase_price · 공급사 (supplier_name or products.supplier fallback) 합
+    {
+      const PAGE = 1000;
+      let from = 0;
+      while (true) {
+        const { data } = await supabase
+          .from("stock_history")
+          .select("supplier_name, product_code, sale_qty")
+          .range(from, from + PAGE - 1);
+        if (!data || data.length === 0) break;
+        for (const r of data) {
+          const code = String((r as any).product_code ?? "").trim();
+          const supRaw = String((r as any).supplier_name ?? "").trim() || productSupplierMap.get(code) || "";
+          if (!supRaw) continue;
+          const qty = Number((r as any).sale_qty ?? 0) || 0;
+          const price = priceMap.get(code) ?? 0;
+          if (qty <= 0 || price <= 0) continue;
+          cogsMap.set(supRaw, (cogsMap.get(supRaw) ?? 0) + qty * price);
+        }
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+    }
+  } catch { /* silent · cogs 계산 실패해도 balance 는 반환 */ }
+
+  const values: Record<string, { purchase: number; payment: number; balance: number; cogs: number; stock_asset: number }> = {};
+  const allNames = new Set([...purchaseMap.keys(), ...paymentMap.keys(), ...cogsMap.keys()]);
   for (const name of allNames) {
     const purchase = purchaseMap.get(name) ?? 0;
     const payment = paymentMap.get(name) ?? 0;
-    values[name] = { purchase, payment, balance: purchase - payment };
+    const cogs = cogsMap.get(name) ?? 0;
+    values[name] = {
+      purchase,
+      payment,
+      cogs,
+      stock_asset: purchase - cogs,  // 재고자산 = 매입액 − 판매원가
+      balance: purchase - payment,   // 실제잔고 = 매입액 − 결제액
+    };
   }
   res.json({ values });
 }));

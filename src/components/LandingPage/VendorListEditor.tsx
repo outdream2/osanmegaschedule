@@ -79,8 +79,9 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   const [compactSortKey, setCompactSortKey] = useState<CompactSortKey>(compact ? "balance" : "company_name");
   const [compactSortDir, setCompactSortDir] = useState<"asc" | "desc">(compact ? "desc" : "asc");
   // 2026-08-04 · #101 · 공급사별 재고자산·판매액 (총 3개월 · /api/stock-manage/supplier-purchases)
-  //   key = normalizeSupplierKey(supplier_name) · value = { stockValue, salesTotal }
-  const [supplierAggMap, setSupplierAggMap] = useState<Map<string, { stockValue: number; salesTotal: number }>>(new Map());
+  //   key = normalizeSupplierKey(supplier_name) · value = { stockValue, salesTotal, balance }
+  //   2026-09-10 · #72 · balance 추가 (매입액 − 결제액 · 확정 공식)
+  const [supplierAggMap, setSupplierAggMap] = useState<Map<string, { stockValue: number; salesTotal: number; balance?: number }>>(new Map());
   // 2026-09-10 · 사용자 지시 · 재고자산 로딩 상태 · "-" 대신 · 로딩 중 표시
   const [supplierAggLoading, setSupplierAggLoading] = useState(false);
   // 2026-08-09 · 기간 조회 · 1개월/3개월/6개월/12개월 (default 3)
@@ -115,33 +116,33 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
     setSupplierAggLoading(true);
     (async () => {
       try {
-        // 2026-09-10 · #59 · 사용자 지시 · 총재고자산 정의 수정
-        //   · 기존 · stock_history.total_amount 합 = 매입액 (잘못된 정의)
-        //   · 신규 · ERP 현재고 × 사입단가 · /api/supplier-stock-values-map
+        // 2026-09-10 · #72 · 확정 공식 · 재고자산 = 매입액 − 판매원가 · 잔고 = 매입액 − 결제액
+        //   · /api/supplier-balances-map · values[supplier] = { purchase, payment, cogs, stock_asset, balance }
         //   · 판매액 (salesTotal) 은 여전히 supplier-purchases 사용 · 두 API 병렬
-        const [purchRes, stockRes] = await Promise.all([
+        const [purchRes, balRes] = await Promise.all([
           api.get<any>(`/api/stock-manage/supplier-purchases?months=${aggregateMonths}&limit=50000`),
-          api.get<{ values: Record<string, number> }>(`/api/supplier-stock-values-map`),
+          api.get<{ values: Record<string, { purchase: number; payment: number; cogs: number; stock_asset: number; balance: number }> }>(`/api/supplier-balances-map`),
         ]);
         const rows: any[] = Array.isArray(purchRes.data?.rows) ? purchRes.data.rows : [];
-        const stockMap = stockRes.data?.values ?? {};
-        const m = new Map<string, { stockValue: number; salesTotal: number }>();
+        const balMap = balRes.data?.values ?? {};
+        const m = new Map<string, { stockValue: number; salesTotal: number; balance?: number }>();
         // 판매액 · supplier-purchases 기반 aggregation
         for (const r of rows) {
           const nm = String(r.supplier ?? "").trim();
           if (!nm) continue;
           const key = normalizeSupplierKey(nm);
           if (!key) continue;
-          const cur = m.get(key) ?? { stockValue: 0, salesTotal: 0 };
+          const cur = m.get(key) ?? { stockValue: 0, salesTotal: 0, balance: 0 };
           cur.salesTotal += Number(r.saleAmount ?? 0) || 0;
           m.set(key, cur);
         }
-        // 재고자산 · products 기반 · 정확한 정의
-        for (const [supplier, value] of Object.entries(stockMap)) {
+        // 재고자산·잔고 · 확정 공식 (재고자산 = 매입액 − 판매원가 · 잔고 = 매입액 − 결제액)
+        for (const [supplier, v] of Object.entries(balMap)) {
           const key = normalizeSupplierKey(supplier);
           if (!key) continue;
-          const cur = m.get(key) ?? { stockValue: 0, salesTotal: 0 };
-          cur.stockValue = Number(value) || 0;
+          const cur = m.get(key) ?? { stockValue: 0, salesTotal: 0, balance: 0 };
+          cur.stockValue = Number(v.stock_asset) || 0;
+          cur.balance = Number(v.balance) || 0;
           m.set(key, cur);
         }
         if (!cancelled) setSupplierAggMap(m);
@@ -476,12 +477,14 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 const isActive  = activeId === v.id;
                 const catBorder = v.category ? (CATEGORY_LEFT_BORDER[v.category] ?? "border-l-zinc-200") : "border-l-zinc-200";
                 const catBg     = v.category ? (CATEGORY_LEFT_BG[v.category] ?? "") : "";
-                const hasBal    = v.latestBalance?.balance != null;
+                // 2026-09-10 · #72 · 확정 공식 · balance = 매입액 − 결제액 · agg.balance 우선 (없으면 legacy latestBalance fallback)
                 const invDate   = v.latestBalance?.invoice_date;
                 // 2026-08-04 · #101 · 재고자산·판매액 (최근 3개월 · supplierAggMap)
                 const agg = supplierAggMap.get(normalizeSupplierKey(v.company_name));
                 const stockValue = agg?.stockValue ?? null;
                 const salesTotal = agg?.salesTotal ?? null;
+                const balanceVal = agg?.balance != null ? agg.balance : (v.latestBalance?.balance ?? null);
+                const hasBal = balanceVal != null;
                 const fmtDate   = (d: string | null | undefined): string => {
                   if (!d) return "-";
                   const m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -509,12 +512,18 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                         </div>
                       </div>
                     </td>
-                    {/* 총잔고 · 우측 정렬 */}
+                    {/* 총잔고 · 우측 정렬 · 2026-09-10 · #72 · 확정 공식 · 매입액 − 결제액 · 미지급 amber · 선지급 sky */}
                     <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
                       {hasBal
                         ? (
-                          <span className={`text-[14px] font-bold tabular-nums ${v.latestBalance!.balance > 0 ? "text-emerald-600" : "text-zinc-400"}`}>
-                            {fmtWon(v.latestBalance!.balance)}
+                          <span
+                            className={`text-[14px] font-bold tabular-nums ${
+                              balanceVal! > 0 ? "text-amber-700" :
+                              balanceVal! < 0 ? "text-sky-700" : "text-zinc-400"
+                            }`}
+                            title={balanceVal! > 0 ? "미지급" : balanceVal! < 0 ? "선지급" : "완납"}
+                          >
+                            {fmtWon(Math.abs(balanceVal!))}
                           </span>
                         )
                         : <span className="text-[12px] text-zinc-300">-</span>}
