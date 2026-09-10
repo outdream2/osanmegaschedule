@@ -127,7 +127,8 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
   orderQtyOverride, setOrderQtyOverride,
 }) => {
   const confirm = useConfirm();
-  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "orderNeed.saleFilter" });
+  // 2026-09-10 · 사용자 지시 · 판매중 기본값 강제 · storageKey bump v2
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "orderNeed.saleFilter.v2" });
 
   // 2026-09-07 · 사용자 지시 · 이미 발주요청된 상품은 · 발주필요 리스트에서 자동 제거
   //   · requestedCodes (order_requests status=requested) 에 있는 코드는 filter out
