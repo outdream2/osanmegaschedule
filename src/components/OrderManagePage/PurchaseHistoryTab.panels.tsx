@@ -190,7 +190,8 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
   return (
     <SplitPanel
       key="by-vendor"
-      storageKey="purchaseHistory.byVendor.leftWidth.v2"
+      // 2026-09-10 · #35 · 사용자 지시 · 매입이력 공급사별 · 좌우 5:5 초기화 · storageKey bump v3
+      storageKey="purchaseHistory.byVendor.leftWidth.v3"
       defaultWidth={typeof window !== "undefined" ? Math.max(320, Math.round(window.innerWidth * 0.5)) : 640}
       minWidth={320}
       maxWidth={1200}
