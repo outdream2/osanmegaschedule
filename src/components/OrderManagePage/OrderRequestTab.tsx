@@ -103,7 +103,8 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
   // 2026-08-24 · v3 목업 확정 · 공급사별 그룹 접기/펼치기 · Set of supplier names collapsed
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set());
   // 2026-08-29 · #154 · 판매중 필터 · products join (allProductsMap) 에서 sale_status 조회
-  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "orderRequest.saleFilter" });
+  // 2026-09-10 · 사용자 지시 · 판매중 기본값 강제 · v2
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "orderRequest.saleFilter.v2" });
   // 판매중 필터 적용 파생 리스트 · orderReqsFiltered 는 부모 필터 유지
   const displayedReqs = React.useMemo(() => {
     if (saleFilter === "all") return orderReqsFiltered;

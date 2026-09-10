@@ -466,11 +466,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       }
       return cat === needCategoryFilter;
     };
-    // 2026-09-09 · 사용자 지시 · 조건적용 토글 정상 작동 복원
-    //   · needConditionApply=ON · 조건 (재고 부족 등) 적용 · lowStock 만
-    //   · needConditionApply=OFF · 검색어 있으면 전체 · 조건 무시
-    //   · 검색어 없으면 · 항상 lowStock (기본 리스트)
-    const useAll = !!q && !needConditionApply;
+    // 2026-09-10 · 사용자 지시 · 검색 시 조건 무시 (재고 초과 상품도 매칭) · 토글은 검색어 없을 때 유의미
+    //   · 검색어 있음 · 항상 전체 (조건 무시 · lowStock 아닌 상품도 표시)
+    //   · 검색어 없음 + needConditionApply ON · lowStock 만
+    //   · 검색어 없음 + needConditionApply OFF · 전체
+    const useAll = !!q || !needConditionApply;
     const base: ProductInfo[] = useAll ? Object.values(allProductsMap) as ProductInfo[] : lowStock;
     return base.filter(p => {
       if (q) {
