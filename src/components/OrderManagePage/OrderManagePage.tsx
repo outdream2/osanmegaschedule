@@ -362,6 +362,17 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   const handleRequestOrder = async (p: ProductInfo) => {
     const code = getCode(p);
+    const name = getName(p);
+    // 2026-09-10 · 사용자 지시 · 재요청 (이미 발주요청됨) · confirm 필수 · 기존 정보 덮어쓰기 안내
+    const isAlreadyRequested = requestedCodes.has(code);
+    if (isAlreadyRequested) {
+      const ok = await confirm({
+        title: "재요청",
+        message: `[${name}]\n이미 발주요청 리스트에 있는 상품입니다.\n다시 요청하시겠습니까?\n⚠️ 기존 정보를 덮어쓰게 됩니다.`,
+        confirmLabel: "덮어쓰기",
+      });
+      if (ok !== true) return;
+    }
     // 2026-09-10 · 사용자 지시 · 발주필요 수량 · 발주요청으로 그대로 전달
     //   · 우선순위 · orderQtyOverride[code] > Math.max(1, opt-cur) > null
     const cur = Number(p.current_stock ?? 0);
@@ -371,13 +382,17 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     setRequestingOrder(prev => { const n = new Set(prev); n.add(code); return n; });
     try {
       await api.post("/api/order-requests", {
-        product_code: code, product_name: getName(p),
+        product_code: code, product_name: name,
         current_stock: p.current_stock,
         order_qty: orderQty,
         supplier: p.supplier, requested_at: new Date().toISOString(),
       });
       await loadOrderReqs();
       dispatchApprovalChange("order");
+      // 2026-09-10 · 사용자 지시 · 성공 알람 필수
+      showSuccess(isAlreadyRequested
+        ? `[${name}] 발주요청 · 재요청 완료 (수량 ${orderQty})`
+        : `[${name}] 발주요청 리스트에 추가됨 (수량 ${orderQty})`);
     } catch (e: any) {
       showError(e?.message ?? "발주 요청 실패. 다시 시도해주세요.");
     } finally { setRequestingOrder(prev => { const n = new Set(prev); n.delete(code); return n; }); }
