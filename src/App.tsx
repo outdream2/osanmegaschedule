@@ -269,10 +269,19 @@ export default function App() {
       // Guard 1 · 미로그인 상태면 no-op (loop 방지)
       // 2026-09-02 · Guard 완화 · localStorage OR React authSession 어느쪽이든 · 로그아웃 발화
       //   · 이전 · localStorage 만 체크 · React state 는 있는데 storage 는 없는 edge case · 로그아웃 안 됨
+      // 2026-09-10 · #96 · 사용자 지시 · 미로그인 상태 + 로그인 화면 아니면 · 강제 리다이렉트
+      //   · 이전 · 무시만 하고 리다이렉트 X · 사용자 어디로 가야할지 모름 · UI 는 로그인 상태로 보임
       const stored = localStorage.getItem(SK_AUTH_SESSION);
       const hasSession = !!stored || !!authSession;
       if (!hasSession) {
-        console.log("[SESSION_EXPIRED] 미로그인 · 무시 (loop 방지)");
+        // 이미 로그인 화면 (경로 "/") 이면 · loop 방지 무시
+        if (window.location.pathname === "/" || window.location.pathname === "") {
+          console.log("[SESSION_EXPIRED] 미로그인 · 이미 로그인 화면 · 무시 (loop 방지)");
+          return;
+        }
+        // 로그인 화면 아니면 · 강제 리다이렉트
+        console.log("[SESSION_EXPIRED] 미로그인 · 로그인 화면으로 강제 이동");
+        window.location.replace("/");
         return;
       }
       // Guard 2 · 1초 이내 중복 발화 무시
