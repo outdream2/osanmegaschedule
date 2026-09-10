@@ -10,13 +10,15 @@ export interface OrderRequest {
   product_name: string;
   current_stock: number | null;
   optimal_stock: number | null;
+  /** 2026-09-10 · 사용자 지시 · 발주필요에서 지정한 발주 수량 (부족량 또는 조정값) */
+  order_qty?: number | null;
   requested_at: string;
   supplier?: string | null;
-  supplier_contact?: string | null; // 담당자
+  supplier_contact?: string | null;
   supplier_email?: string | null;
   supplier_phone?: string | null;
-  balance?: number | null;           // 계산 잔고
-  ocr_balance?: number | null;       // 거래명세서 OCR 잔고 (비교용)
+  balance?: number | null;
+  ocr_balance?: number | null;
 }
 
 export interface ProductInfo {

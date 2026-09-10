@@ -430,12 +430,13 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                               )}
                               {(() => {
                                 const defaultQty = displayShort > 0 ? displayShort : 0;
-                                // 2026-09-02 · #76 · fix · 발주필요 저장 key = product_code · 이 fallback 우선
+                                // 2026-09-10 · 사용자 지시 · DB order_qty 우선 · 발주필요 요청 시 저장된 값 반영
+                                //   · 우선순위 · override > DB order_qty > defaultQty
                                 const orderQty = orderQtyOverride.has(r.product_code)
                                   ? orderQtyOverride.get(r.product_code)!
                                   : orderQtyOverride.has(r.id)
                                     ? orderQtyOverride.get(r.id)!
-                                    : defaultQty;
+                                    : (r.order_qty != null && Number(r.order_qty) > 0 ? Number(r.order_qty) : defaultQty);
                                 const prevPrice = prevPriceMap.get(r.product_code) ?? null;
                                 const amount = prevPrice != null ? orderQty * prevPrice : null;
                                 return (

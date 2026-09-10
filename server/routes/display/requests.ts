@@ -489,7 +489,8 @@ router.get("/api/order-requests", asyncHandler(async (req, res) => {
   //   · ?status=all · 모든 상태 반환 · ?status=xxx · 특정 상태 필터
   const statusFilter = String(req.query.status ?? "requested").trim();
   // 2026-09-09 · optimal_stock 스냅샷 제거 · products.optimal_stock JOIN · 사용자 지시 대원칙
-  let q = supabase.from("order_requests").select("id, product_code, product_name, current_stock, note, requested_at, status, supplier").order("requested_at", { ascending: false });
+  // 2026-09-10 · 사용자 지시 · order_qty 반환 · 발주필요→발주요청 수량 이동
+  let q = supabase.from("order_requests").select("id, product_code, product_name, current_stock, order_qty, note, requested_at, status, supplier").order("requested_at", { ascending: false });
   if (req.query.product_code) q = q.eq("product_code", String(req.query.product_code));
   if (statusFilter && statusFilter !== "all") q = q.eq("status", statusFilter);
   const { data, error } = await q;
