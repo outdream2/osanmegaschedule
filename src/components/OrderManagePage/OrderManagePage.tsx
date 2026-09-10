@@ -369,20 +369,22 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const handleRequestOrder = async (p: ProductInfo) => {
     const code = getCode(p);
     const name = getName(p);
-    // 2026-09-10 · #46-2 · 사용자 신고 · 발주요청 안 됨 · debug 로그 추가
-    console.log("[handleRequestOrder] click", { code, name, alreadyRequested: requestedCodes.has(code) });
-    // 2026-09-10 · 사용자 지시 · 재요청 (이미 발주요청됨) · confirm 필수 · 기존 정보 덮어쓰기 안내
+    // 2026-09-10 · #46-4 · 사용자 지시 · 신규·재요청 · 모두 확인창 필수
     const isAlreadyRequested = requestedCodes.has(code);
-    if (isAlreadyRequested) {
-      console.log("[handleRequestOrder] confirm dialog opening");
-      const ok = await confirm({
-        title: "재요청",
-        message: `[${name}]\n이미 발주요청 리스트에 있는 상품입니다.\n다시 요청하시겠습니까?\n⚠️ 기존 정보를 덮어쓰게 됩니다.`,
-        confirmLabel: "덮어쓰기",
-      });
-      console.log("[handleRequestOrder] confirm result:", ok);
-      if (ok !== true) return;
-    }
+    const ok = await confirm(
+      isAlreadyRequested
+        ? {
+            title: "재요청",
+            message: `[${name}]\n이미 발주요청 리스트에 있는 상품입니다.\n다시 추가하시겠습니까?\n⚠️ 기존 정보를 덮어쓰게 됩니다.`,
+            confirmLabel: "다시 추가",
+          }
+        : {
+            title: "발주요청 추가",
+            message: `[${name}]\n발주요청 리스트에 추가하시겠습니까?`,
+            confirmLabel: "추가",
+          }
+    );
+    if (ok !== true) return;
     // 2026-09-10 · 사용자 지시 · 발주필요 수량 · 발주요청으로 그대로 전달
     //   · 우선순위 · orderQtyOverride[code] > Math.max(1, opt-cur) > null
     const cur = Number(p.current_stock ?? 0);
@@ -449,24 +451,26 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       showError("선택한 상품을 찾을 수 없습니다");
       return;
     }
-    // 2026-09-10 · 사용자 지시 · 재요청 · 통합 confirm · 상세 내용 (상품명 · 수량) 표시
+    // 2026-09-10 · #46-4 · 사용자 지시 · 실수·두번 주문 방지 · 신규·재요청 모두 확인창 필수
     const alreadyReq = prods.filter(p => requestedCodes.has(getCode(p)));
-    if (alreadyReq.length > 0) {
-      const detailList = alreadyReq.map(p => {
-        const cur = Number(p.current_stock ?? 0);
-        const opt = Number(p.optimal_stock ?? 0);
-        const shortage = Math.max(1, opt - cur);
-        const code = getCode(p);
-        const qty = orderQtyOverride.get(code) ?? shortage;
-        return `• ${getName(p)} · 수량 ${qty}`;
-      }).join("\n");
-      const ok = await confirm({
-        title: `재요청 · ${alreadyReq.length}건`,
-        message: `이미 발주요청된 ${alreadyReq.length}개 상품 · 재요청 시 · 기존 정보 덮어씀\n\n${detailList}\n\n계속하시겠습니까?`,
-        confirmLabel: "덮어쓰기",
-      });
-      if (ok !== true) return;
-    }
+    const newReq = prods.filter(p => !requestedCodes.has(getCode(p)));
+    const buildDetail = (arr: ProductInfo[]) => arr.map(p => {
+      const cur = Number(p.current_stock ?? 0);
+      const opt = Number(p.optimal_stock ?? 0);
+      const shortage = Math.max(1, opt - cur);
+      const code = getCode(p);
+      const qty = orderQtyOverride.get(code) ?? shortage;
+      return `• ${getName(p)} · 수량 ${qty}`;
+    }).join("\n");
+    const parts: string[] = [];
+    if (newReq.length > 0) parts.push(`◆ 신규 · ${newReq.length}건\n${buildDetail(newReq)}`);
+    if (alreadyReq.length > 0) parts.push(`◆ 재요청 (덮어씀) · ${alreadyReq.length}건\n${buildDetail(alreadyReq)}`);
+    const ok = await confirm({
+      title: `발주요청 추가 · 총 ${prods.length}건`,
+      message: `${parts.join("\n\n")}\n\n계속하시겠습니까?`,
+      confirmLabel: alreadyReq.length > 0 ? "추가·덮어쓰기" : "추가",
+    });
+    if (ok !== true) return;
     setBulkRequesting(true);
     try {
       // 재요청 confirm 이미 처리 · handleRequestOrder 내부 confirm 건너뛰기 위해 · 직접 처리

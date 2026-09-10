@@ -235,7 +235,7 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                         <>
                           <th onClick={() => handleOrderSort("current")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">ERP<span className="ml-1 text-zinc-400">{orderArrow("current") || "⇅"}</span></th>
                           <th onClick={() => handleOrderSort("optimal")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">적정<span className="ml-1 text-zinc-400">{orderArrow("optimal") || "⇅"}</span></th>
-                          <th onClick={() => handleOrderSort("short")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold text-rose-600">부족<span className="ml-1 text-rose-300">{orderArrow("short") || "⇅"}</span></th>
+                          <th onClick={() => handleOrderSort("short")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold text-zinc-600">상태<span className="ml-1 text-zinc-400">{orderArrow("short") || "⇅"}</span></th>
                         </>
                       )}
                       <th className="text-center px-1 py-2.5 font-bold text-sky-700 bg-sky-50/60 border-x border-sky-100 whitespace-nowrap">수량</th>
@@ -424,7 +424,13 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                   </td>
                                   <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[16px] text-zinc-700 bg-zinc-50/40 align-middle whitespace-nowrap">{displayOptimal ?? "-"}</td>
                                   <td className="text-right px-0.5 py-1.5 align-middle whitespace-nowrap">
-                                    <span className="tabular-nums font-bold text-[16px] text-rose-600">{displayShort > 0 ? `-${displayShort}` : "0"}</span>
+                                    {/* 2026-09-10 · #46-4 · 사용자 지시 · 부족 → 상태 · 발주필요 리스트와 동일 3-way 색상 (부족 rose · 잉여 emerald · 0 zinc) */}
+                                    {displayShort > 0
+                                      ? <span className="tabular-nums font-bold text-[16px] text-rose-600">-{displayShort}</span>
+                                      : displayShort < 0
+                                        ? <span className="tabular-nums font-bold text-[16px] text-emerald-600">+{-displayShort}</span>
+                                        : <span className="tabular-nums font-bold text-[16px] text-zinc-400">0</span>
+                                    }
                                   </td>
                                 </>
                               )}
