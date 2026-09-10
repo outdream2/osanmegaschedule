@@ -82,6 +82,16 @@ export interface SalesTrendRow {
   total_amount: number;
 }
 
+// 2026-09-10 · #69 · 사용자 지시 · 판매내역 · 상품별 상세
+export interface SalesProductRow {
+  product_code: string;
+  product_name: string;
+  purchase_qty: number;
+  sale_qty: number;
+  closing_stock: number;
+  total_amount: number;
+}
+
 export type LedgerSortKey = "date" | "type" | "amount" | "running_balance";
 export type PurchaseSortKey = "date" | "product_name" | "quantity" | "amount";
 export type TabKey = "balance" | "order" | "purchase" | "sales";

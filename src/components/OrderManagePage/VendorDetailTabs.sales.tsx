@@ -1,28 +1,28 @@
-// VendorDetailTabs.sales.tsx — 판매내역 탭 컨텐츠 (2026-09-07)
+// VendorDetailTabs.sales.tsx — 판매내역 탭 (상품별 상세 · 2026-09-10 · #69)
 import React from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { CARD_BASE } from "../../styles/tokens";
-import { fmt, dateLabel, type SalesTrendRow } from "./VendorDetailTabs.types";
+import { fmt, type SalesProductRow } from "./VendorDetailTabs.types";
 
 export const SalesContent: React.FC<{
-  rows: SalesTrendRow[];
+  products: SalesProductRow[];
   loading: boolean;
-}> = ({ rows, loading }) => {
+}> = ({ products, loading }) => {
   if (loading) return (
     <div className="flex-1 flex items-center justify-center py-16">
       <Spinner size={18} tone="zinc" label="판매내역 로딩 중..." labelSize={12} />
     </div>
   );
-  if (rows.length === 0) return (
+  if (products.length === 0) return (
     <div className="flex-1 flex items-center justify-center py-16 text-zinc-400 text-[15px]">
       해당 기간 판매 데이터 없음
     </div>
   );
 
-  const totalSaleQty  = rows.reduce((s, r) => s + r.sale_qty, 0);
-  const totalPurchQty = rows.reduce((s, r) => s + r.purchase_qty, 0);
-  const totalAmount   = rows.reduce((s, r) => s + r.total_amount, 0);
+  const totalSaleQty  = products.reduce((s, r) => s + r.sale_qty, 0);
+  const totalPurchQty = products.reduce((s, r) => s + r.purchase_qty, 0);
+  const totalAmount   = products.reduce((s, r) => s + r.total_amount, 0);
 
   return (
     <div className={`${CARD_BASE} flex-1 min-h-0 overflow-auto flex flex-col`}>
@@ -42,24 +42,25 @@ export const SalesContent: React.FC<{
         </div>
       </div>
 
-      {/* 기간별 목록 */}
+      {/* 상품별 목록 · 2026-09-10 · #69 */}
       <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
         <thead className="sticky top-0 bg-white z-10 border-b border-zinc-100">
           <tr className="text-[13px] font-bold text-zinc-400 uppercase tracking-wider">
-            <th className="text-left px-4 py-2">기간</th>
-            <th className="text-right px-3 py-2 w-20">판매수량</th>
-            <th className="text-right px-3 py-2 w-20">매입수량</th>
+            <th className="text-left px-4 py-2">상품명</th>
+            <th className="text-right px-3 py-2 w-20">판매</th>
+            <th className="text-right px-3 py-2 w-20">매입</th>
             <th className="text-right px-3 py-2 w-24">재고</th>
             <th className="text-right px-4 py-2 w-28">매출금액</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-50">
-          {[...rows].reverse().map((r, i) => {
+          {products.map((r) => {
             const isPositive = r.sale_qty > r.purchase_qty;
             return (
-              <tr key={i} className="hover:bg-zinc-50 transition">
-                <td className="px-4 py-2 text-[15px] text-zinc-600 font-semibold whitespace-nowrap">
-                  {dateLabel(r.period_start_date)}
+              <tr key={r.product_code} className="hover:bg-zinc-50 transition">
+                <td className="px-4 py-2 text-[15px] text-zinc-800 font-semibold truncate" title={`${r.product_name} · ${r.product_code}`}>
+                  {r.product_name}
+                  <span className="ml-2 text-[12px] font-mono font-medium text-zinc-400">#{r.product_code}</span>
                 </td>
                 <td className="px-3 py-2 text-right">
                   <span className="text-[15px] tabular-nums font-bold text-sky-700 inline-flex items-center justify-end gap-1">

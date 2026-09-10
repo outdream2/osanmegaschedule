@@ -140,6 +140,15 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
       supply_amount: number;
       total_amount: number;
     }>();
+    // 2026-09-10 · #69 · 사용자 지시 · 상품별 집계 (상품명 · 판매수량 · 매입수량 · 매출액)
+    const byProduct = new Map<string, {
+      product_code: string;
+      product_name: string;
+      purchase_qty: number;
+      sale_qty: number;
+      closing_stock: number;
+      total_amount: number;
+    }>();
     for (const r of all) {
       const key = String(r.period_start_date ?? r.snapshot_date);
       if (!byPeriod.has(key)) {
@@ -163,10 +172,40 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
       agg.supply_amount += Number(r.supply_amount ?? 0) || 0;
       agg.total_amount  += Number(r.total_amount ?? 0) || 0;
       if (r.snapshot_date > agg.snapshot_date) agg.snapshot_date = r.snapshot_date;
+
+      // 상품별 aggregate
+      const code = String(r.product_code ?? "").trim();
+      if (code) {
+        const p = byProduct.get(code) ?? { product_code: code, product_name: "", purchase_qty: 0, sale_qty: 0, closing_stock: 0, total_amount: 0 };
+        p.purchase_qty  += Number(r.purchase_qty ?? 0) || 0;
+        p.sale_qty      += Number(r.sale_qty ?? 0) || 0;
+        p.total_amount  += Number(r.total_amount ?? 0) || 0;
+        p.closing_stock = Number(r.closing_stock ?? 0) || 0; // 최신 마감 재고 (덮어씀)
+        byProduct.set(code, p);
+      }
     }
+
+    // 상품명 · products JOIN (stock_history 에는 product_name 없을 수 있음)
+    const productCodes = Array.from(byProduct.keys());
+    if (productCodes.length > 0) {
+      const CHUNK = 500;
+      for (let i = 0; i < productCodes.length; i += CHUNK) {
+        const chunk = productCodes.slice(i, i + CHUNK);
+        const { data } = await supabase.from("products").select("product_code, product_name").in("product_code", chunk);
+        for (const p of data ?? []) {
+          const code = String(p.product_code ?? "").trim();
+          const item = byProduct.get(code);
+          if (item && !item.product_name) item.product_name = String(p.product_name ?? "").trim() || code;
+        }
+      }
+      // Fallback · 상품명 없으면 코드
+      for (const p of byProduct.values()) if (!p.product_name) p.product_name = p.product_code;
+    }
+
     const rows = Array.from(byPeriod.values()).sort((a, b) => a.period_start_date.localeCompare(b.period_start_date));
+    const products = Array.from(byProduct.values()).sort((a, b) => b.sale_qty - a.sale_qty); // 판매수량 desc
     res.setHeader("Cache-Control", "no-store");
-    res.json({ supplier: name, season: seasonParam || undefined, season_months: seasonMonths ?? undefined, rows });
+    res.json({ supplier: name, season: seasonParam || undefined, season_months: seasonMonths ?? undefined, rows, products });
   }
 }));
 

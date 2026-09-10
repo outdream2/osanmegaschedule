@@ -54,6 +54,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
 
   // 판매내역 데이터
   const [salesRows, setSalesRows] = useState<SalesTrendRow[]>([]);
+  const [salesProducts, setSalesProducts] = useState<import("./VendorDetailTabs.types").SalesProductRow[]>([]);
   const [salesLoading, setSalesLoading] = useState(false);
 
   // 기간 필터 (내부 관리)
@@ -141,8 +142,10 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
       const months = periodSeason ? 12 : (periodMonths === 0 ? 1 : periodMonths);
       const { data: j } = await api.get<any>(`/api/sales-trend/supplier?name=${encodeURIComponent(vendor.company_name)}&months=${months}`);
       setSalesRows(Array.isArray(j.rows) ? j.rows : []);
+      setSalesProducts(Array.isArray(j.products) ? j.products : []);
     } catch {
       setSalesRows([]);
+      setSalesProducts([]);
     } finally { setSalesLoading(false); }
   }, [vendor, periodMonths, periodSeason]);
 
@@ -254,7 +257,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
             { key: "balance",  label: "결제내역", icon: ReceiptText as any, count: ledger?.rows.filter(r => r.type === "payment").length ?? undefined },
             { key: "order",    label: "발주내역", icon: Package2 as any,    count: orderGroups.length || undefined },
             { key: "purchase", label: "매입내역", icon: Package2 as any,    count: detailRows.length || undefined },
-            { key: "sales",    label: "판매내역", icon: TrendingUp as any,  count: salesRows.length || undefined },
+            { key: "sales",    label: "판매내역", icon: TrendingUp as any,  count: salesProducts.length || undefined },
           ]}
           active={activeTab}
           onSelect={(k) => setActiveTab(k as TabKey)}
@@ -408,7 +411,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
           <OrderHistoryContent groups={orderGroups} loading={orderLoading} />
         )}
         {activeTab === "sales" && (
-          <SalesContent rows={salesRows} loading={salesLoading} />
+          <SalesContent products={salesProducts} loading={salesLoading} />
         )}
       </div>
     </div>
