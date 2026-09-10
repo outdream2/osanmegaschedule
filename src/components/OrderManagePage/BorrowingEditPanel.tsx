@@ -41,6 +41,10 @@ import {
 import { useToast, toastClass } from "../../hooks/useToast";
 import { ApiError } from "../../lib/apiClient";
 import type { AuthSession } from "../../types";
+// 2026-09-10 · #47 · 사용자 지시 · 상품명 검색 · 자동 채움 (product_code · qty · unit_price)
+import { ProductSearchInput } from "../common/features/ProductSearchInput";
+// 2026-09-10 · #47 · 등록 후 PDF 저장 confirm
+import { useConfirm } from "../../hooks/useConfirm";
 
 // ═══════════════════════════════════════════════════════
 // Props / EditMode
@@ -128,6 +132,7 @@ export const BorrowingEditPanel: React.FC<BorrowingEditPanelProps> = ({
   const [saving, setSaving] = useState(false);
   const [existingSignatures, setExistingSignatures] = useState<SignatureRecord[]>([]);
   const [loadingSig, setLoadingSig] = useState(false);
+  const confirm = useConfirm();
 
   // 서명 모달 (신규 등록 시 · 대여자/차용자 각각)
   const [signPadRole, setSignPadRole] = useState<"lender" | "borrower" | null>(null);
@@ -247,6 +252,19 @@ export const BorrowingEditPanel: React.FC<BorrowingEditPanelProps> = ({
         showSuccess(`차용 등록 완료 · ${created.product_name ?? `#${created.id}`}`);
         onSaved(created);
         setForm(EMPTY_FORM);
+        // 2026-09-10 · #47 · 사용자 지시 · 등록 후 PDF 저장 confirm
+        const openPdf = await confirm({
+          title: "PDF 저장",
+          message: `[${created.product_name ?? `#${created.id}`}]\n계약 등록이 완료되었습니다.\nPDF로 저장하시겠습니까?`,
+          confirmLabel: "PDF 저장",
+          cancelLabel: "닫기",
+        });
+        if (openPdf === true) {
+          // 새 창으로 PDF 보기 페이지 open (BorrowingPage · pdf preview URL 파라미터)
+          try {
+            window.open(`/borrowing/${created.id}/pdf`, "_blank", "noopener");
+          } catch { /* silent */ }
+        }
       } else if (isEdit && mode?.kind === "edit") {
         const patch: Partial<CreateBorrowingInput> = {
           direction: form.direction,
@@ -398,17 +416,34 @@ export const BorrowingEditPanel: React.FC<BorrowingEditPanelProps> = ({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1 sm:col-span-2">
+              {/* 2026-09-10 · #47 · 사용자 지시 · 상품명 검색 · autocomplete · 선택 시 상품코드·단가 자동 채움 · 사용자 수정 가능 */}
+              <div className="flex flex-col gap-1 sm:col-span-2">
                 <span className={labelCls}>상품명 <span className="text-rose-600">*</span></span>
+                <ProductSearchInput
+                  accent="emerald"
+                  placeholder="상품명·코드 검색 후 [확인] · 자동 채움"
+                  onSelect={(code, product) => {
+                    const nm = String(product?.product_name ?? "").trim();
+                    const pc = String(product?.product_code ?? code ?? "").trim();
+                    const up = product?.purchase_price != null ? String(product.purchase_price) : "";
+                    setForm((prev) => ({
+                      ...prev,
+                      product_name: nm || prev.product_name,
+                      product_code: pc || prev.product_code,
+                      unit_price: up || prev.unit_price,
+                      qty: prev.qty || "1",
+                    }));
+                  }}
+                />
                 <input
                   lang="ko" type="text"
                   value={form.product_name}
                   onChange={(e) => set("product_name", e.target.value)}
                   className={inputCls}
-                  placeholder="예: 타이레놀 500mg 100T"
+                  placeholder="선택한 상품명 · 필요 시 수정 가능"
                   required
                 />
-              </label>
+              </div>
               <label className="flex flex-col gap-1">
                 <span className={labelCls}>상품코드</span>
                 <input
@@ -416,7 +451,7 @@ export const BorrowingEditPanel: React.FC<BorrowingEditPanelProps> = ({
                   value={form.product_code}
                   onChange={(e) => set("product_code", e.target.value)}
                   className={inputCls + " font-mono"}
-                  placeholder="(선택)"
+                  placeholder="(자동 채움 · 수정 가능)"
                 />
               </label>
               <label className="flex flex-col gap-1">
