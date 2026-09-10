@@ -122,7 +122,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
             <div className="flex items-center gap-2">
               <AccentBar className="shrink-0" />
               <TrendingUp size={17} className="text-brand-deep shrink-0" />
-              <span className="text-[16px] font-bold text-ink tracking-tight">기간별 상품흐름</span>
+              <span className="text-[16px] font-bold text-ink tracking-tight">판매현황</span>
               {collapsed
                 ? <ChevronRight size={17} className="ml-auto text-ink-soft shrink-0" />
                 : <ChevronDown size={17} className="ml-auto text-brand-deep shrink-0" />}
@@ -605,7 +605,7 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string; i
       {!hideTabs && (
       <SplitRightTabs
         tabs={[
-          { key: "flow",     label: "기간별 상품흐름", icon: TrendingUp },
+          { key: "flow",     label: "판매현황", icon: TrendingUp },
           { key: "purchase", label: "매입이력",        icon: History },
           { key: "order",    label: "발주내역",        icon: ClipboardList },
         ]}

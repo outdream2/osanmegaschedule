@@ -5,10 +5,11 @@ import React from "react";
 import { ClipboardList } from "lucide-react";
 import { Card } from "../common/Card";
 import { PageToolbar } from "../common/PageToolbar";
-// 2026-09-10 · #46 · 우측 · 상품 상세 → 판매 추천 정보 패널로 대체 (사용자 지시)
-import { SalesRecommendationPanel } from "./SalesRecommendationPanel";
+// 2026-09-10 · #46 롤백 · 판매 추천 패널 별로 · 사용자 지시 · 기존 ProductDetailRightPanel 복원
+import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { LoadingState } from "../common/LoadingState";
 import { CARD_BASE } from "../../styles/tokens";
+import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 // 2026-08-25 · 사용자 지시 A · OFF 조건 + 리스트 클릭 시 · 발주필요 추가 confirm
 import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-29 · #154 · 판매중 필터 프레임워크 확산
@@ -286,7 +287,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
           <span className="text-[15px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
-        {/* 우측: 판매 추천 정보 패널 · 2026-09-10 · #46 · 사용자 지시 */}
+        {/* 우측: 상품 상세 정보 · 2026-09-10 · #46 롤백 · 사용자 지시 · 오늘 아침 버전 (ProductDetailRightPanel) 복원 */}
         {needPanelLoading ? (
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
             <div className={`${CARD_BASE} flex-1 min-h-[400px]`}>
@@ -301,25 +302,20 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
             </Card>
           </div>
         ) : (
-          <SalesRecommendationPanel
-            product={needPanelProduct ? ({
-              product_code: needPanelProduct.code,
-              product_name: needPanelProduct.name,
-              current_stock: Number((needPanelFull as any)?.current_stock ?? 0) || 0,
-              optimal_stock: Number((needPanelFull as any)?.optimal_stock ?? 0) || 0,
-            } as ProductInfo) : null}
-            saleMonth={needPanelProduct ? (needExtraMap.get(needPanelProduct.code)?.saleMonth ?? null) : null}
-            saleQuarter={needPanelProduct ? (needExtraMap.get(needPanelProduct.code)?.saleQuarter ?? null) : null}
-            onApplyQty={(code, qty) => {
-              if (!setOrderQtyOverride) return;
-              setOrderQtyOverride(prev => {
-                const next = new Map(prev);
-                next.set(code, Math.max(1, qty));
-                return next;
-              });
-            }}
-            onOpenDetail={() => onOpenDetail?.()}
+          <ProductDetailRightPanel
+            selected={needPanelFull ? ({
+              code: (needPanelFull as any).product_code ?? (needPanelFull as any).code ?? (needPanelProduct?.code ?? ""),
+              name: (needPanelFull as any).product_name ?? (needPanelFull as any).name ?? (needPanelProduct?.name ?? ""),
+              spec: (needPanelFull as any).spec ?? "",
+              ...needPanelFull,
+            } as ProductInfoType) : null}
             onClose={() => setNeedPanelProduct(null)}
+            onProductUpdate={(u) => setNeedPanelFull(prev => prev ? { ...prev, ...u } : prev)}
+            showChart={true}
+            context="order-manage"
+            editable={true}
+            emptySub="상세 정보가 표시됩니다"
+            onSupplierInfoOpen={(nm) => openSupplierInfo(nm)}
           />
         )}
       </div>
