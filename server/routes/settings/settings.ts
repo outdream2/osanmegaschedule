@@ -208,10 +208,14 @@ router.get("/api/zone-groups", asyncHandler(async (_req, res) => {
 }));
 
 router.put("/api/zone-groups", authorize(9), validateBody(UpsertZoneGroupsSchema), asyncHandler(async (req, res) => {
+  // 2026-09-10 · #44 · 빈 배열 허용 · 로그 강화
   const body = req.body;
   const { error } = await supabase.from("app_settings")
     .upsert({ key: "zone_groups", value: body, updated_at: new Date().toISOString() }, { onConflict: "key" });
-  if (error) throw new HttpError(500, error.message);
+  if (error) {
+    console.error(`[zone-groups PUT] upsert error: ${error.message} (code=${(error as any).code ?? "?"})`);
+    throw new HttpError(500, error.message);
+  }
   res.json({ ok: true });
 }));
 
@@ -368,6 +372,10 @@ router.get("/api/zones", asyncHandler(async (_req, res) => {
 
 router.post("/api/zones", authorize(5), validateBody(UpsertZonesSchema), asyncHandler(async (req, res) => {
   const { zones } = req.body;
+  // 2026-09-10 · #44 · 빈 배열 · 조기 반환 (zone_assignments upsert · empty rows · Supabase 오류 방지)
+  if (!Array.isArray(zones) || zones.length === 0) {
+    return res.json({ ok: true, skipped: "empty zones" });
+  }
   const rowsWithDow = zones.map((z: any) => ({
     zone_id: String(z.zone_id),
     employee_id: z.employee_id ?? null,
@@ -380,10 +388,14 @@ router.post("/api/zones", authorize(5), validateBody(UpsertZonesSchema), asyncHa
     .from("zone_assignments")
     .upsert(rowsWithDow, { onConflict: "zone_id" });
   if (error) {
+    console.error(`[zones POST] first upsert error: ${error.message} (code=${(error as any).code ?? "?"})`);
     // 마이그레이션 미적용 시 dow_map 없이 재시도 (하위 호환)
     const rowsNoDow = rowsWithDow.map(({ dow_map: _dm, ...rest }) => rest);
     const fb = await supabase.from("zone_assignments").upsert(rowsNoDow, { onConflict: "zone_id" });
-    if (fb.error) throw new HttpError(500, fb.error.message);
+    if (fb.error) {
+      console.error(`[zones POST] fallback upsert error: ${fb.error.message} (code=${(fb.error as any).code ?? "?"})`);
+      throw new HttpError(500, fb.error.message);
+    }
   }
   res.json({ ok: true });
 }));

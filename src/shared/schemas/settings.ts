@@ -20,8 +20,8 @@ export const UpsertPermissionsSchema = z.object({
 });
 export type UpsertPermissionsInput = z.infer<typeof UpsertPermissionsSchema>;
 
-/** PUT /api/zone-groups */
-export const UpsertZoneGroupsSchema = z.array(z.unknown()).min(1, "array required");
+/** PUT /api/zone-groups · 2026-09-10 · #44 · 빈 배열 허용 (구역 그룹 전체 삭제 상태 저장) */
+export const UpsertZoneGroupsSchema = z.array(z.unknown());
 export type UpsertZoneGroupsInput = z.infer<typeof UpsertZoneGroupsSchema>;
 
 /** POST /api/blocked-slots */
@@ -33,9 +33,9 @@ export const UpsertBlockedSlotSchema = z.object({
 });
 export type UpsertBlockedSlotInput = z.infer<typeof UpsertBlockedSlotSchema>;
 
-/** POST /api/zones */
+/** POST /api/zones · 2026-09-10 · #44 · 빈 배열 허용 (구역 전체 초기화 저장) */
 export const UpsertZonesSchema = z.object({
-  zones: z.array(z.record(z.string(), z.unknown())).min(1, "zones array required"),
+  zones: z.array(z.record(z.string(), z.unknown())),
 });
 export type UpsertZonesInput = z.infer<typeof UpsertZonesSchema>;
 
