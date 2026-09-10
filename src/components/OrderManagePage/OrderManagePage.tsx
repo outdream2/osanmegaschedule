@@ -440,7 +440,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const bulkRequestOrder = async () => {
     if (selectedLowStock.size === 0) return;
     const codes = Array.from(selectedLowStock);
-    const prods = lowStock.filter(p => codes.includes(getCode(p)));
+    // 2026-09-10 · #46-3 · 사용자 지시 · 검색·조건적용 OFF 상관없이 다 반영
+    //   · allProductsMap (전체 상품 마스터) 에서 직접 조회 · 필터 무관 · 100% 성공
+    const prods: ProductInfo[] = codes
+      .map(code => allProductsMap?.[code] as ProductInfo | undefined)
+      .filter((p): p is ProductInfo => !!p);
+    if (prods.length === 0) {
+      showError("선택한 상품을 찾을 수 없습니다");
+      return;
+    }
     // 2026-09-10 · 사용자 지시 · 재요청 · 통합 confirm · 상세 내용 (상품명 · 수량) 표시
     const alreadyReq = prods.filter(p => requestedCodes.has(getCode(p)));
     if (alreadyReq.length > 0) {
