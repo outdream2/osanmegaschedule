@@ -369,14 +369,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const handleRequestOrder = async (p: ProductInfo) => {
     const code = getCode(p);
     const name = getName(p);
+    // 2026-09-10 · #46-2 · 사용자 신고 · 발주요청 안 됨 · debug 로그 추가
+    console.log("[handleRequestOrder] click", { code, name, alreadyRequested: requestedCodes.has(code) });
     // 2026-09-10 · 사용자 지시 · 재요청 (이미 발주요청됨) · confirm 필수 · 기존 정보 덮어쓰기 안내
     const isAlreadyRequested = requestedCodes.has(code);
     if (isAlreadyRequested) {
+      console.log("[handleRequestOrder] confirm dialog opening");
       const ok = await confirm({
         title: "재요청",
         message: `[${name}]\n이미 발주요청 리스트에 있는 상품입니다.\n다시 요청하시겠습니까?\n⚠️ 기존 정보를 덮어쓰게 됩니다.`,
         confirmLabel: "덮어쓰기",
       });
+      console.log("[handleRequestOrder] confirm result:", ok);
       if (ok !== true) return;
     }
     // 2026-09-10 · 사용자 지시 · 발주필요 수량 · 발주요청으로 그대로 전달
@@ -387,13 +391,16 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     const orderQty = orderQtyOverride.get(code) ?? shortage;
     setRequestingOrder(prev => { const n = new Set(prev); n.add(code); return n; });
     try {
-      await api.post("/api/order-requests", {
+      console.log("[handleRequestOrder] POST /api/order-requests", { code, orderQty });
+      const res = await api.post("/api/order-requests", {
         product_code: code, product_name: name,
         current_stock: p.current_stock,
         order_qty: orderQty,
         supplier: p.supplier, requested_at: new Date().toISOString(),
       });
+      console.log("[handleRequestOrder] POST result:", res);
       await loadOrderReqs();
+      console.log("[handleRequestOrder] loadOrderReqs done");
       dispatchApprovalChange("order");
       // 2026-09-10 · 사용자 지시 · 성공 알람 필수
       showSuccess(isAlreadyRequested
