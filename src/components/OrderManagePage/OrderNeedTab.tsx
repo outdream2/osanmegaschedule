@@ -5,7 +5,8 @@ import React from "react";
 import { ClipboardList } from "lucide-react";
 import { Card } from "../common/Card";
 import { PageToolbar } from "../common/PageToolbar";
-import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
+// 2026-09-10 · #46 · 우측 · 상품 상세 → 판매 추천 정보 패널로 대체 (사용자 지시)
+import { SalesRecommendationPanel } from "./SalesRecommendationPanel";
 import { LoadingState } from "../common/LoadingState";
 import { CARD_BASE } from "../../styles/tokens";
 // 2026-08-25 · 사용자 지시 A · OFF 조건 + 리스트 클릭 시 · 발주필요 추가 confirm
@@ -17,7 +18,6 @@ import { OrderNeedTable } from "./OrderNeedTable";
 import type { ProductInfo, OrderNeedFilterConfig } from "./OrderManagePage.types";
 // 2026-09-10 · 사용자 지시 · 발주필요 페이지에도 · 적정재고 기준 일수 안내 (발주요청 탭과 동일 위치)
 import { OptimalStockNoteBanner } from "../common/OptimalStockNoteBanner";
-import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 
 type NeedSortKey = "supplier" | "contact" | "name" | "current" | "inv" | "optimal" | "short" | "sale_month";
 type NeedCategoryFilter = string;
@@ -102,6 +102,8 @@ interface OrderNeedTabProps {
   /** 2026-08-30 · 사용자 지시 · 발주필요 좌측 · 수량 조정 · orderQtyOverride 공유 */
   orderQtyOverride?: Map<string, number>;
   setOrderQtyOverride?: React.Dispatch<React.SetStateAction<Map<string, number>>>;
+  /** 2026-09-10 · #46 · 사용자 지시 · 상품 상세 정보 모달 트리거 (상품명 클릭 · [상세 정보] 버튼) */
+  onOpenDetail?: () => void;
 }
 
 export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
@@ -127,6 +129,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
   toggleLowStockOne, clearLowStockSelection, setSelectedLowStock, bulkRequestOrder,
   handleRequestOrder,
   orderQtyOverride, setOrderQtyOverride,
+  onOpenDetail,
 }) => {
   const confirm = useConfirm();
   // 2026-09-10 · 사용자 지시 · 판매중 기본값 강제 · storageKey bump v2
@@ -283,7 +286,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
           <span className="text-[15px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
-        {/* 우측: 상품 상세 */}
+        {/* 우측: 판매 추천 정보 패널 · 2026-09-10 · #46 · 사용자 지시 */}
         {needPanelLoading ? (
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
             <div className={`${CARD_BASE} flex-1 min-h-[400px]`}>
@@ -298,20 +301,25 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
             </Card>
           </div>
         ) : (
-          <ProductDetailRightPanel
-            selected={needPanelFull ? ({
-              code: (needPanelFull as any).product_code ?? (needPanelFull as any).code ?? (needPanelProduct?.code ?? ""),
-              name: (needPanelFull as any).product_name ?? (needPanelFull as any).name ?? (needPanelProduct?.name ?? ""),
-              spec: (needPanelFull as any).spec ?? "",
-              ...needPanelFull,
-            } as ProductInfoType) : null}
+          <SalesRecommendationPanel
+            product={needPanelProduct ? ({
+              product_code: needPanelProduct.code,
+              product_name: needPanelProduct.name,
+              current_stock: Number((needPanelFull as any)?.current_stock ?? 0) || 0,
+              optimal_stock: Number((needPanelFull as any)?.optimal_stock ?? 0) || 0,
+            } as ProductInfo) : null}
+            saleMonth={needPanelProduct ? (needExtraMap.get(needPanelProduct.code)?.saleMonth ?? null) : null}
+            saleQuarter={needPanelProduct ? (needExtraMap.get(needPanelProduct.code)?.saleQuarter ?? null) : null}
+            onApplyQty={(code, qty) => {
+              if (!setOrderQtyOverride) return;
+              setOrderQtyOverride(prev => {
+                const next = new Map(prev);
+                next.set(code, Math.max(1, qty));
+                return next;
+              });
+            }}
+            onOpenDetail={() => onOpenDetail?.()}
             onClose={() => setNeedPanelProduct(null)}
-            onProductUpdate={(u) => setNeedPanelFull(prev => prev ? { ...prev, ...u } : prev)}
-            showChart={true}
-            context="order-manage"
-            editable={true}
-            emptySub="상세 정보가 표시됩니다"
-            onSupplierInfoOpen={(nm) => openSupplierInfo(nm)}
           />
         )}
       </div>
