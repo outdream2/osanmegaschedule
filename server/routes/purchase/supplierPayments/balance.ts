@@ -40,6 +40,66 @@ router.get("/api/supplier-stock-values-map", asyncHandler(async (_req, res) => {
   res.json({ values: map, counts: countMap });
 }));
 
+// 2026-09-10 · 사용자 지시 · 정합성 공식 · 재고자산 = 매입액 - 결제액 = 잔고 (미지급/선지급)
+//   · 전체 공급사 · balance map (전체 기간 total_purchase - total_payment)
+//   · 왼쪽 리스트 총잔고 · 총재고자산 (동일 값) · 한 번에 fetch
+router.get("/api/supplier-balances-map", asyncHandler(async (_req, res) => {
+  const purchaseMap = new Map<string, number>();
+  const paymentMap = new Map<string, number>();
+
+  // purchase_details 전체 · supplier_name 별 · amount 합
+  const PD_PAGE = 1000;
+  let pdFrom = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from("purchase_details")
+      .select("supplier_name, amount")
+      .range(pdFrom, pdFrom + PD_PAGE - 1);
+    if (error) {
+      if (/relation .* does not exist/i.test(error.message)) break;
+      throw new HttpError(500, error.message, "DB_ERROR");
+    }
+    if (!data || data.length === 0) break;
+    for (const r of data) {
+      const s = String((r as any).supplier_name ?? "").trim();
+      if (!s) continue;
+      purchaseMap.set(s, (purchaseMap.get(s) ?? 0) + (Number((r as any).amount) || 0));
+    }
+    if (data.length < PD_PAGE) break;
+    pdFrom += PD_PAGE;
+  }
+
+  // supplier_payments 전체 · amount 합
+  try {
+    const SP_PAGE = 1000;
+    let spFrom = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from("supplier_payments")
+        .select("supplier_name, amount")
+        .range(spFrom, spFrom + SP_PAGE - 1);
+      if (error) break;
+      if (!data || data.length === 0) break;
+      for (const r of data) {
+        const s = String((r as any).supplier_name ?? "").trim();
+        if (!s) continue;
+        paymentMap.set(s, (paymentMap.get(s) ?? 0) + (Number((r as any).amount) || 0));
+      }
+      if (data.length < SP_PAGE) break;
+      spFrom += SP_PAGE;
+    }
+  } catch { /* silent */ }
+
+  const values: Record<string, { purchase: number; payment: number; balance: number }> = {};
+  const allNames = new Set([...purchaseMap.keys(), ...paymentMap.keys()]);
+  for (const name of allNames) {
+    const purchase = purchaseMap.get(name) ?? 0;
+    const payment = paymentMap.get(name) ?? 0;
+    values[name] = { purchase, payment, balance: purchase - payment };
+  }
+  res.json({ values });
+}));
+
 // 2026-09-10 · 사용자 지시 · 공급사별 · 월별 재고자산
 //   · 각 월 마지막 snapshot_date · closing_stock × purchase_price · 공급사 상품 합산
 //   · 응답 · [{ ym: "YYYY-MM", stock_value: number }]
