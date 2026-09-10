@@ -335,8 +335,12 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                       {fmtYmShort(m.ym)}
                     </th>
                   ))}
-                  <th className="text-right px-2 py-1.5 font-bold text-zinc-800 text-[13px] uppercase tracking-wider whitespace-nowrap bg-sky-50/50">
-                    현재
+                  {/* 2026-09-10 · 사용자 지시 · "현재" → "합계" · 왼쪽 리스트 값과 정합성 매핑 */}
+                  <th
+                    className="text-right px-2 py-1.5 font-bold text-zinc-800 text-[13px] uppercase tracking-wider whitespace-nowrap bg-sky-50/50"
+                    title="왼쪽 공급사 리스트 · 총잔고/총재고자산/총판매액 값과 동일해야 합니다 (정합성)"
+                  >
+                    합계
                   </th>
                 </tr>
               </thead>
