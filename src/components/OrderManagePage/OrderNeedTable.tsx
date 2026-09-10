@@ -156,14 +156,7 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                 <>
                   <th onClick={() => handleNeedSort("current")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">ERP<span className="ml-1 text-zinc-400">{needArrow("current") || "⇅"}</span></th>
                   <th onClick={() => handleNeedSort("optimal")} className="text-right px-2 py-2.5 w-16 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">적정<span className="ml-1 text-zinc-400">{needArrow("optimal") || "⇅"}</span></th>
-                  <th onClick={() => handleNeedSort("short")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold text-zinc-600">
-                    <div className="flex flex-col items-end leading-tight">
-                      <span>상태<span className="ml-1 text-zinc-400">{needArrow("short") || "⇅"}</span></span>
-                      <span className="text-[11px] font-medium text-zinc-400">
-                        <span className="text-rose-500">-</span>/<span className="text-emerald-600">+</span>
-                      </span>
-                    </div>
-                  </th>
+                  <th onClick={() => handleNeedSort("short")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold text-zinc-600">상태<span className="ml-1 text-zinc-400">{needArrow("short") || "⇅"}</span></th>
                 </>
               )}
               <th className="text-center px-1 py-2.5 cursor-default font-bold text-amber-700 bg-amber-50/50 border-l border-amber-100 whitespace-nowrap">수량</th>
