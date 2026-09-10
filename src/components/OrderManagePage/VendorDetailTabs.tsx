@@ -244,6 +244,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
         loading={isLoading}
         ledgerRows={ledger?.rows as LedgerRowMinimal[] | undefined}
         onEdit={() => openVendorInfo(vendor as any)}
+        currentStockValue={stockValue}
       />
 
       {/* 2026-08-25 · SplitRightTabs 프리미티브 이관 · v9 브랜드 시그니처 · 폰트 +2 */}

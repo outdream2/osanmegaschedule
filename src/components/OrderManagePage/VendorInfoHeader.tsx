@@ -62,6 +62,8 @@ interface VendorInfoHeaderProps {
   ledgerRows?: LedgerRowMinimal[];
   /** 2026-08-24 · 공급사 정보 수정 콜백 · 있으면 [수정] 버튼 표시 (사용자 지시) */
   onEdit?: () => void;
+  /** 2026-09-10 · 사용자 지시 · 표 맨 오른쪽 "현재" 열 · 현장 재고자산 (ERP 현재고 × 사입단가) */
+  currentStockValue?: number | null;
 }
 
 // ─── Types (월별 집계) ─────────────────────────────────────────────────
@@ -130,7 +132,7 @@ function buildMonthlyAgg(rows: LedgerRowMinimal[], limit = 12): MonthlyAgg[] {
 // ─── VendorInfoHeader ─────────────────────────────────────────────────────
 
 export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
-  vendor, kpi, loading = false, ledgerRows, onEdit,
+  vendor, kpi, loading = false, ledgerRows, onEdit, currentStockValue = null,
 }) => {
   const copyBizNum = () => {
     if (!vendor.business_number) return;
@@ -314,107 +316,98 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {/* 표 · 가로 스크롤 (모바일 대응) */}
+          {/* 2026-09-10 · 사용자 지시 · 표 전치 · 왼쪽 첫 컬럼 = 항목 (5행) · 열 = 월들 + 현재
+              · 행: 매입액 · 결제액 · 재고자산 · 판매금액 · 잔고 (선지급/미지급) */}
           <div className="overflow-x-auto -mx-1">
             <table className="w-full min-w-[480px] border-collapse text-[14px] tabular-nums">
               <thead className="sticky top-0 z-10 bg-zinc-50">
                 <tr className="border-b-2 border-line">
-                  <th className="text-left px-2 py-1.5 font-bold text-zinc-600 text-[13px] uppercase tracking-wider">
-                    월
+                  <th className="text-left px-2 py-1.5 font-bold text-zinc-600 text-[13px] uppercase tracking-wider sticky left-0 bg-zinc-50 z-20">
+                    항목
                   </th>
-                  <th className="text-right px-2 py-1.5 font-bold text-emerald-700 text-[13px] uppercase tracking-wider">
-                    매입액
-                  </th>
-                  <th className="text-right px-2 py-1.5 font-bold text-zinc-500 text-[13px] uppercase tracking-wider">
-                    건수
-                  </th>
-                  {/* 2026-09-10 · 사용자 지시 · 재고자산 컬럼 추가 (월별) */}
-                  <th className="text-right px-2 py-1.5 font-bold text-violet-700 text-[13px] uppercase tracking-wider">
-                    재고자산
-                  </th>
-                  <th className="text-right px-2 py-1.5 font-bold text-sky-700 text-[13px] uppercase tracking-wider">
-                    결제액
-                  </th>
-                  <th className="text-right px-2 py-1.5 font-bold text-amber-700 text-[13px] uppercase tracking-wider">
-                    잔고 (선지급/미지급)
+                  {monthlyAgg.map(m => (
+                    <th key={m.ym} className="text-right px-2 py-1.5 font-semibold text-zinc-500 text-[13px] whitespace-nowrap">
+                      {fmtYmShort(m.ym)}
+                    </th>
+                  ))}
+                  <th className="text-right px-2 py-1.5 font-bold text-zinc-800 text-[13px] uppercase tracking-wider whitespace-nowrap bg-sky-50/50">
+                    현재
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {monthlyAgg.map((m, idx) => {
-                  const avgUnit = m.purchaseCount > 0 ? Math.round(m.purchase / m.purchaseCount) : 0;
-                  const balColor =
-                    m.endBalance > 0 ? "text-amber-700" :
-                    m.endBalance < 0 ? "text-rose-700" : "text-zinc-400";
-                  return (
-                    <tr
-                      key={m.ym}
-                      className={`border-b border-zinc-100 hover:bg-zinc-50/50 transition ${
-                        idx === 0 ? "bg-sky-50/30" : ""
-                      }`}
-                    >
-                      <td className="px-2 py-1.5 font-semibold text-zinc-700">
-                        {fmtYmShort(m.ym)}
+                {/* 매입액 (emerald) */}
+                <tr className="border-b border-zinc-100 hover:bg-zinc-50/50 transition">
+                  <td className="px-2 py-1.5 font-bold text-emerald-700 sticky left-0 bg-white z-10">매입액</td>
+                  {monthlyAgg.map(m => (
+                    <td key={m.ym} className="text-right px-2 py-1.5 text-emerald-700 font-semibold">
+                      {m.purchase > 0 ? fmtWonFull(m.purchase) : "-"}
+                    </td>
+                  ))}
+                  <td className="text-right px-2 py-1.5 text-emerald-800 font-bold bg-sky-50/50">
+                    {totals.purchase > 0 ? fmtWonFull(totals.purchase) : "-"}
+                  </td>
+                </tr>
+                {/* 결제액 (sky) */}
+                <tr className="border-b border-zinc-100 hover:bg-zinc-50/50 transition">
+                  <td className="px-2 py-1.5 font-bold text-sky-700 sticky left-0 bg-white z-10">결제액</td>
+                  {monthlyAgg.map(m => (
+                    <td key={m.ym} className="text-right px-2 py-1.5 text-sky-700 font-semibold">
+                      {m.payment > 0 ? fmtWonFull(m.payment) : "-"}
+                    </td>
+                  ))}
+                  <td className="text-right px-2 py-1.5 text-sky-800 font-bold bg-sky-50/50">
+                    {totals.payment > 0 ? fmtWonFull(totals.payment) : "-"}
+                  </td>
+                </tr>
+                {/* 재고자산 (violet) · 월별 스냅샷 · 현재 = currentStockValue prop */}
+                <tr className="border-b border-zinc-100 hover:bg-zinc-50/50 transition">
+                  <td className="px-2 py-1.5 font-bold text-violet-700 sticky left-0 bg-white z-10">재고자산</td>
+                  {monthlyAgg.map(m => {
+                    const v = monthlyStockValueMap.get(m.ym) ?? 0;
+                    return (
+                      <td key={m.ym} className="text-right px-2 py-1.5 text-violet-700 font-semibold">
+                        {v > 0 ? fmtWonFull(v) : "-"}
                       </td>
-                      <td className="text-right px-2 py-1.5 font-semibold text-emerald-700">
-                        {m.purchase > 0 ? fmtWonFull(m.purchase) : "-"}
-                      </td>
-                      <td className="text-right px-2 py-1.5 text-zinc-500">
-                        {m.purchaseCount > 0 ? m.purchaseCount : "-"}
-                      </td>
-                      {/* 2026-09-10 · 사용자 지시 · 재고자산 컬럼 (월별) */}
-                      <td className="text-right px-2 py-1.5 font-semibold text-violet-700">
-                        {(() => {
-                          const v = monthlyStockValueMap.get(m.ym) ?? 0;
-                          return v > 0 ? fmtWonFull(v) : "-";
-                        })()}
-                      </td>
-                      <td className="text-right px-2 py-1.5 font-semibold text-sky-700">
-                        {m.payment > 0 ? fmtWonFull(m.payment) : "-"}
-                      </td>
-                      <td className={`text-right px-2 py-1.5 font-semibold ${balColor}`}>
+                    );
+                  })}
+                  <td className="text-right px-2 py-1.5 text-violet-800 font-bold bg-sky-50/50">
+                    {currentStockValue != null && currentStockValue > 0 ? fmtWonFull(currentStockValue) : "-"}
+                  </td>
+                </tr>
+                {/* 판매액 · TODO · salesTrend 데이터 연동 예정 · 2026-09-10 사용자 지시 · 판매금액→판매액 */}
+                <tr className="border-b border-zinc-100 hover:bg-zinc-50/50 transition">
+                  <td className="px-2 py-1.5 font-bold text-teal-700 sticky left-0 bg-white z-10">판매액</td>
+                  {monthlyAgg.map(m => (
+                    <td key={m.ym} className="text-right px-2 py-1.5 text-zinc-300">-</td>
+                  ))}
+                  <td className="text-right px-2 py-1.5 text-zinc-300 bg-sky-50/50">-</td>
+                </tr>
+                {/* 잔고 (amber/rose · 부호별) · 미지급 / 선지급 */}
+                <tr className="hover:bg-zinc-50/50 transition">
+                  <td className="px-2 py-1.5 font-bold text-amber-700 sticky left-0 bg-white z-10">잔고 (선지급/미지급)</td>
+                  {monthlyAgg.map(m => {
+                    const balColor =
+                      m.endBalance > 0 ? "text-amber-700" :
+                      m.endBalance < 0 ? "text-sky-700" : "text-zinc-400";
+                    return (
+                      <td key={m.ym} className={`text-right px-2 py-1.5 font-semibold ${balColor}`}>
                         {m.endBalance === 0
                           ? "완납"
-                          : `${fmtWonFull(Math.abs(m.endBalance))}${m.endBalance < 0 ? " 초과" : ""}`}
+                          : `${fmtWonFull(Math.abs(m.endBalance))}${m.endBalance < 0 ? " 선지급" : ""}`}
                       </td>
-                      {/* 2026-09-10 · 사용자 지시 · 평균단가 컬럼 제거 (avgUnit=${avgUnit}) */}
-                    </tr>
-                  );
-                })}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-zinc-300 bg-zinc-100/60">
-                  <td className="px-2 py-2 font-bold text-zinc-700 text-[13px] uppercase tracking-wider">
-                    누적
-                  </td>
-                  <td className="text-right px-2 py-2 font-bold text-emerald-800">
-                    {fmtWonFull(totals.purchase)}
-                  </td>
-                  <td className="text-right px-2 py-2 font-bold text-zinc-700">
-                    {totals.count > 0 ? totals.count : "-"}
-                  </td>
-                  {/* 2026-09-10 · 사용자 지시 · 재고자산 · 최신 월 값 (스냅샷) */}
-                  <td className="text-right px-2 py-2 font-bold text-violet-800">
-                    {(() => {
-                      const latestYm = monthlyAgg[0]?.ym;
-                      const v = latestYm ? (monthlyStockValueMap.get(latestYm) ?? 0) : 0;
-                      return v > 0 ? fmtWonFull(v) : "-";
-                    })()}
-                  </td>
-                  <td className="text-right px-2 py-2 font-bold text-sky-800">
-                    {fmtWonFull(totals.payment)}
-                  </td>
-                  <td className={`text-right px-2 py-2 font-bold ${
+                    );
+                  })}
+                  <td className={`text-right px-2 py-1.5 font-bold bg-sky-50/50 ${
                     totals.latestBalance > 0 ? "text-amber-800" :
-                    totals.latestBalance < 0 ? "text-rose-800" : "text-zinc-500"
+                    totals.latestBalance < 0 ? "text-sky-800" : "text-zinc-500"
                   }`}>
                     {totals.latestBalance === 0
                       ? "완납"
-                      : `${fmtWonFull(Math.abs(totals.latestBalance))}${totals.latestBalance < 0 ? " 초과" : ""}`}
+                      : `${fmtWonFull(Math.abs(totals.latestBalance))}${totals.latestBalance < 0 ? " 선지급" : ""}`}
                   </td>
-                  {/* 2026-09-10 · 사용자 지시 · 평균단가 컬럼 제거 */}
                 </tr>
-              </tfoot>
+              </tbody>
             </table>
           </div>
 

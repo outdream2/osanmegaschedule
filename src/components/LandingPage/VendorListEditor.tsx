@@ -505,16 +505,18 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                         )
                         : <span className="text-[12px] text-zinc-300">-</span>}
                     </td>
-                    {/* 총재고자산 · 우측 정렬 · 최근 3개월 */}
+                    {/* 총재고자산 · 우측 정렬 · ERP 현재고 × 사입단가 (공급사별) · 2026-09-10 · #59 */}
                     <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
-                      {stockValue != null && stockValue > 0
-                        ? (
-                          <span className="text-[14px] font-bold tabular-nums text-sky-700"
-                            title={`${stockValue.toLocaleString()}원 · 최근 3개월 재고금액 합`}>
-                            {fmtWon(stockValue)}
-                          </span>
-                        )
-                        : <span className="text-[12px] text-zinc-300">-</span>}
+                      {supplierAggLoading && stockValue == null
+                        ? <span className="text-[12px] text-zinc-400 italic">...</span>
+                        : stockValue != null && stockValue > 0
+                          ? (
+                            <span className="text-[14px] font-bold tabular-nums text-sky-700"
+                              title={`${stockValue.toLocaleString()}원 · ERP 현재고 × 사입단가`}>
+                              {fmtWon(stockValue)}
+                            </span>
+                          )
+                          : <span className="text-[12px] text-zinc-300">-</span>}
                     </td>
                     {/* 총판매액 · 우측 정렬 · 최근 3개월 */}
                     <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
