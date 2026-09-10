@@ -248,6 +248,15 @@ export const ProductCreateModal: React.FC<Props> = ({
     e.preventDefault();
     if (!canSubmit) return;
     setError(null);
+    // 2026-09-10 · #63 · 사용자 지적 · 공급사 · vendors 목록 유효성 검증 필수 (자유 입력 금지)
+    const supplierValue = form.supplier.trim();
+    if (supplierValue) {
+      const validVendor = vendors.some(v => (v.company_name ?? "").trim() === supplierValue);
+      if (!validVendor) {
+        setError(`공급사 "${supplierValue}" 는 등록된 공급사 목록에 없습니다. 드롭다운에서 선택해주세요.`);
+        return;
+      }
+    }
     setSubmitting(true);
     try {
       const payload: CreateProductInput = {

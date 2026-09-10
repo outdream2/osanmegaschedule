@@ -843,6 +843,20 @@ router.patch("/api/products/:code", authorize(1), validateBody(UpdateProductSche
     }
   }
   if (Object.keys(updates).length === 0) throw badRequest("수정할 필드가 없습니다");
+  // 2026-09-10 · #63 · 사용자 지시 · 공급사 · vendors 유효성 검증 (편집 시에도)
+  if (Object.prototype.hasOwnProperty.call(updates, "supplier")) {
+    const supplierVal = String(updates.supplier ?? "").trim();
+    if (supplierVal) {
+      const { data: matched } = await supabase
+        .from("vendors")
+        .select("company_name")
+        .eq("company_name", supplierVal)
+        .maybeSingle();
+      if (!matched) {
+        throw new HttpError(400, `공급사 "${supplierVal}" 는 등록된 공급사 목록에 없습니다.`, "SUPPLIER_NOT_FOUND");
+      }
+    }
+  }
   // 적정재고 변경 시 백업 컬럼에 자동 저장 (ERP 임포트로 wipe 되는 것 방어)
   if (Object.prototype.hasOwnProperty.call(updates, "optimal_stock")) {
     updates.optimal_stock_backup = updates.optimal_stock;
@@ -891,6 +905,20 @@ router.post("/api/products", authorize(5), validateBody(CreateProductSchema), as
     .maybeSingle();
   if (existErr) throw new HttpError(500, existErr.message);
   if (exist) throw new HttpError(409, `상품코드 중복: ${code}`);
+
+  // 2026-09-10 · #63 · 사용자 지시 · 공급사 · vendors 유효성 검증 (자유 입력 금지)
+  //   · supplier 필드 · 빈 값 (null) 이면 통과 · 값 있으면 · vendors.company_name 정확 매칭 필수
+  const supplierVal = String(input.supplier ?? "").trim();
+  if (supplierVal) {
+    const { data: matched } = await supabase
+      .from("vendors")
+      .select("company_name")
+      .eq("company_name", supplierVal)
+      .maybeSingle();
+    if (!matched) {
+      throw new HttpError(400, `공급사 "${supplierVal}" 는 등록된 공급사 목록에 없습니다. 공급사 관리에서 먼저 등록하거나 · 드롭다운에서 선택해주세요.`, "SUPPLIER_NOT_FOUND");
+    }
+  }
 
   // INSERT · undefined → 컬럼 미포함 · null 명시는 그대로 저장
   const row: Record<string, unknown> = { product_code: code };
