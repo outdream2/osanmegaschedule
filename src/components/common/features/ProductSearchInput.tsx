@@ -16,9 +16,11 @@
 //   - 결과 리스트 · 최대 20건 표시 (스크롤)
 
 import { useEffect, useRef, useState } from "react";
-import { Search, Check, Package } from "lucide-react";
+import { Search, Check, Package, Clock, X } from "lucide-react";
 import { Spinner } from "../Spinner";
 import { useProductInfoSearch } from "../../../hooks/useProductInfoSearch";
+// 2026-09-10 · #48 · 사용자 지시 · 최근 검색어 3개 · 통일 프레임워크
+import { useRecentSearches } from "../../../hooks/useRecentSearches";
 
 interface ProductSearchInputProps {
   /** 확인 시 콜백 · product_code 전달 (없으면 product_name) */
@@ -29,6 +31,8 @@ interface ProductSearchInputProps {
   accent?: "teal" | "sky" | "emerald" | "amber" | "indigo";
   /** className */
   className?: string;
+  /** 최근 검색어 scope · 페이지별 격리 · 기본 "productSearch" */
+  recentScope?: string;
 }
 
 const ACCENT_MAP = {
@@ -44,13 +48,17 @@ export function ProductSearchInput({
   placeholder = "상품명 · 코드 검색",
   accent = "teal",
   className = "",
+  recentScope = "productSearch",
 }: ProductSearchInputProps) {
   const { query, setQuery, results, setResults, selected, setSelected } = useProductInfoSearch();
   const [loading, setLoading] = useState(false);
   // 2026-08-09 · 사용자 요청 · 리스트 숨김 flag · 선택 or 확인 시 true · 다시 타이핑 시 false
   const [hideList, setHideList] = useState(false);
+  const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const cls = ACCENT_MAP[accent];
+  // 2026-09-10 · #48 · 사용자 지시 · 최근 검색어 3개 · 통일
+  const { recents, push: pushRecent, remove: removeRecent } = useRecentSearches(recentScope);
 
   // 로딩 상태 · debounce fire 감지
   useEffect(() => {
@@ -65,6 +73,8 @@ export function ProductSearchInput({
     if (!selected) return;
     const code = String(selected.product_code ?? selected.product_name ?? "").trim();
     if (!code) return;
+    // 2026-09-10 · #48 · 검색어 저장 · onSelect 전 push
+    if (query.trim()) pushRecent(query.trim());
     onSelect(code, selected);
     // 리셋 · 다음 검색 준비
     setQuery("");
@@ -93,6 +103,8 @@ export function ProductSearchInput({
               setSelected(null);
               setHideList(false); // 다시 타이핑 시 리스트 보이기
             }}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setTimeout(() => setFocused(false), 150)}
             placeholder={placeholder}
             className={`w-full h-9 pl-8 pr-3 text-[15px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 ${cls.ring} transition placeholder:text-zinc-300`}
           />
@@ -111,6 +123,37 @@ export function ProductSearchInput({
           확인
         </button>
       </div>
+
+      {/* 2026-09-10 · #48 · 최근 검색어 · focus + empty 시 표시 · 최대 3개 */}
+      {focused && !query.trim() && recents.length > 0 && (
+        <div className="border border-line rounded-lg bg-white shadow-sm">
+          <div className="px-2.5 py-1 text-[12px] font-bold text-zinc-500 flex items-center gap-1 border-b border-zinc-100">
+            <Clock size={11} strokeWidth={2.2} />
+            최근 검색어
+          </div>
+          <div className="divide-y divide-zinc-100">
+            {recents.map((r) => (
+              <div key={r} className="flex items-center hover:bg-zinc-50 group">
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); setQuery(r); setHideList(false); }}
+                  className="flex-1 text-left px-2.5 py-1.5 text-[14px] text-zinc-700 cursor-pointer"
+                >
+                  {r}
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); removeRecent(r); }}
+                  className="px-2 opacity-50 group-hover:opacity-100 cursor-pointer text-zinc-400 hover:text-rose-500"
+                  title="삭제"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 결과 리스트 · 2026-08-09 · hideList true 면 숨김 (선택·확인 후) */}
       {query.trim() && !hideList && (
@@ -137,6 +180,8 @@ export function ProductSearchInput({
                       setHideList(true);
                       const codeStr = String(p.product_code ?? p.product_name ?? "").trim();
                       if (codeStr) {
+                        // 2026-09-10 · #48 · 최근 검색어 저장 · onSelect 전
+                        if (query.trim()) pushRecent(query.trim());
                         onSelect(codeStr, p);
                         // 리셋 · handleConfirm 동일 동작
                         setTimeout(() => {
