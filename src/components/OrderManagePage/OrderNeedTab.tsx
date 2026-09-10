@@ -36,6 +36,7 @@ interface OrderNeedTabProps {
   productsLoading: boolean;
   invStockMap: Map<string, InvStockEntry>;
   requestedCodes: Set<string>;
+  requestedAtMap?: Map<string, string>;
   requestingOrder: Set<string>;
   selectedLowStock: Set<string>;
   bulkRequesting: boolean;
@@ -108,7 +109,7 @@ interface OrderNeedTabProps {
 }
 
 export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
-  lowStockFiltered, productsLoading, invStockMap, requestedCodes, requestingOrder,
+  lowStockFiltered, productsLoading, invStockMap, requestedCodes, requestedAtMap, requestingOrder,
   selectedLowStock, bulkRequesting, needExtraMap, dbVendorCategories,
   lowStockSearch, setLowStockSearch, needConditionApply, setNeedConditionApply, needCategoryFilter, setNeedCategoryFilter,
   needSortKey, needSortDir, handleNeedSort, needArrow,
@@ -223,6 +224,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
                 productsLoading={productsLoading}
                 invStockMap={invStockMap}
                 requestedCodes={requestedCodes}
+                requestedAtMap={requestedAtMap}
                 requestingOrder={requestingOrder}
                 selectedLowStock={selectedLowStock}
                 bulkRequesting={bulkRequesting}

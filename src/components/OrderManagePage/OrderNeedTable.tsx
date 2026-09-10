@@ -23,6 +23,7 @@ interface OrderNeedTableProps {
   productsLoading: boolean;
   invStockMap: Map<string, InvStockEntry>;
   requestedCodes: Set<string>;
+  requestedAtMap?: Map<string, string>;
   requestingOrder: Set<string>;
   selectedLowStock: Set<string>;
   bulkRequesting: boolean;
@@ -48,7 +49,7 @@ interface OrderNeedTableProps {
 }
 
 export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
-  displayed, productsLoading, invStockMap, requestedCodes, requestingOrder,
+  displayed, productsLoading, invStockMap, requestedCodes, requestedAtMap, requestingOrder,
   selectedLowStock, bulkRequesting, needExtraMap,
   needSortKey, needSortDir, handleNeedSort, needArrow,
   isNeedCollapsed,
@@ -57,6 +58,16 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
   toggleLowStockOne, clearLowStockSelection, setSelectedLowStock, bulkRequestOrder,
   handleRowClick, handleRequestOrder,
 }) => {
+  // 2026-09-10 · 사용자 지시 · 옵션 A · "N일 전 요청" 표시 helper
+  const formatDaysAgo = (iso?: string): string | null => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return null;
+    const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+    if (days <= 0) return "오늘";
+    if (days === 1) return "1일 전";
+    return `${days}일 전`;
+  };
   if (productsLoading && displayed.length === 0) {
     return <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩 중..." labelSize={12} /></div>;
   }
@@ -278,18 +289,27 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                       </div>
                     </td>
                     <td className="text-center px-1 py-1.5 align-middle whitespace-nowrap">
-                      <button
-                        onClick={() => handleRequestOrder(p)}
-                        disabled={busy}
-                        className={`h-6 px-1.5 rounded text-[16px] font-bold transition cursor-pointer disabled:opacity-40 ${
-                          alreadyRequested
-                            ? "text-emerald-700 bg-emerald-50 border border-emerald-300 hover:bg-emerald-100"
-                            : "text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a]"
-                        }`}
-                        title={alreadyRequested ? "발주요청추가됨 · 다시 요청" : "발주요청추가"}
-                      >
-                        {busy ? "..." : alreadyRequested ? "✓" : "요청"}
-                      </button>
+                      <div className="inline-flex flex-col items-center gap-0.5">
+                        <button
+                          onClick={() => handleRequestOrder(p)}
+                          disabled={busy}
+                          className={`h-6 px-1.5 rounded text-[16px] font-bold transition cursor-pointer disabled:opacity-40 ${
+                            alreadyRequested
+                              ? "text-emerald-700 bg-emerald-50 border border-emerald-300 hover:bg-emerald-100"
+                              : "text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a]"
+                          }`}
+                          title={alreadyRequested ? "발주요청추가됨 · 다시 요청" : "발주요청추가"}
+                        >
+                          {busy ? "..." : alreadyRequested ? "✓ 요청됨" : "요청"}
+                        </button>
+                        {/* 2026-09-10 · 사용자 지시 · 옵션 A · "N일 전" 표시 · 시각 강조 */}
+                        {alreadyRequested && requestedAtMap && (() => {
+                          const label = formatDaysAgo(requestedAtMap.get(code));
+                          return label ? (
+                            <span className="text-[11px] font-semibold text-emerald-600 tabular-nums">{label}</span>
+                          ) : null;
+                        })()}
+                      </div>
                     </td>
                   </tr>
                 </React.Fragment>

@@ -316,6 +316,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   };
 
   const requestedCodes = new Set(orderReqs.map(r => r.product_code));
+  // 2026-09-10 · 사용자 지시 · 옵션 A (하이브리드) · 요청 · 요청일 map · "N일 전" 표시용
+  const requestedAtMap = React.useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of orderReqs) if (r.product_code && r.requested_at) m.set(String(r.product_code), String(r.requested_at));
+    return m;
+  }, [orderReqs]);
 
   // 발주필요 · 판매 enrich
   interface NeedExtra { saleMonth: number | null; saleQuarter: number | null; }
@@ -629,7 +635,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {purchaseOrderSubTab === "need" && (
             <OrderNeedTab
               lowStockFiltered={lowStockFiltered} productsLoading={productsLoading}
-              invStockMap={invStockMap} requestedCodes={requestedCodes} requestingOrder={requestingOrder}
+              invStockMap={invStockMap} requestedCodes={requestedCodes} requestedAtMap={requestedAtMap} requestingOrder={requestingOrder}
               selectedLowStock={selectedLowStock} bulkRequesting={bulkRequesting} needExtraMap={needExtraMap}
               dbVendorCategories={dbVendorCategories} lowStockSearch={lowStockSearch}
               needConditionApply={needConditionApply} setNeedConditionApply={setNeedConditionApply}
