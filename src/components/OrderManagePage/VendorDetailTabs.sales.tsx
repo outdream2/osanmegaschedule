@@ -30,15 +30,15 @@ export const SalesContent: React.FC<{
       <div className="grid grid-cols-3 divide-x divide-zinc-100 border-b border-zinc-100 shrink-0">
         <div className="px-4 py-3 flex flex-col gap-0.5">
           <span className="text-[13px] font-bold text-zinc-400 uppercase tracking-wider">판매수량</span>
-          <span className="text-[22px] font-extrabold text-sky-700 tabular-nums">{fmt(totalSaleQty)}</span>
+          <span className="text-[22px] font-extrabold text-sky-700 tabular-nums">{fmt(Math.round(totalSaleQty))}<span className="text-[14px] font-bold ml-0.5 text-zinc-400">개</span></span>
         </div>
         <div className="px-4 py-3 flex flex-col gap-0.5">
           <span className="text-[13px] font-bold text-zinc-400 uppercase tracking-wider">매입수량</span>
-          <span className="text-[22px] font-extrabold text-emerald-700 tabular-nums">{fmt(totalPurchQty)}</span>
+          <span className="text-[22px] font-extrabold text-emerald-700 tabular-nums">{fmt(Math.round(totalPurchQty))}<span className="text-[14px] font-bold ml-0.5 text-zinc-400">개</span></span>
         </div>
         <div className="px-4 py-3 flex flex-col gap-0.5">
           <span className="text-[13px] font-bold text-zinc-400 uppercase tracking-wider">매출금액</span>
-          <span className="text-[22px] font-extrabold text-violet-700 tabular-nums">{fmt(totalAmount)}</span>
+          <span className="text-[22px] font-extrabold text-violet-700 tabular-nums">{fmt(Math.round(totalAmount))}<span className="text-[14px] font-bold ml-0.5 text-zinc-400">원</span></span>
         </div>
       </div>
 
@@ -67,12 +67,12 @@ export const SalesContent: React.FC<{
                     {isPositive
                       ? <TrendingUp size={12} className="text-sky-500" />
                       : <TrendingDown size={12} className="text-zinc-400" />}
-                    {fmt(r.sale_qty)}
+                    {fmt(Math.round(r.sale_qty))}<span className="text-[12px] font-medium ml-0.5 text-zinc-400">개</span>
                   </span>
                 </td>
-                <td className="px-3 py-2 text-right text-[15px] tabular-nums text-emerald-700 font-semibold">{fmt(r.purchase_qty)}</td>
-                <td className="px-3 py-2 text-right text-[15px] tabular-nums text-zinc-500">{fmt(r.closing_stock)}</td>
-                <td className="px-4 py-2 text-right text-[15px] tabular-nums font-extrabold text-violet-700">{fmt(r.total_amount)}</td>
+                <td className="px-3 py-2 text-right text-[15px] tabular-nums text-emerald-700 font-semibold">{fmt(Math.round(r.purchase_qty))}<span className="text-[12px] font-medium ml-0.5 text-zinc-400">개</span></td>
+                <td className="px-3 py-2 text-right text-[15px] tabular-nums text-zinc-500">{fmt(Math.round(r.closing_stock))}<span className="text-[12px] font-medium ml-0.5 text-zinc-400">개</span></td>
+                <td className="px-4 py-2 text-right text-[15px] tabular-nums font-extrabold text-violet-700">{fmt(Math.round(r.total_amount))}<span className="text-[12px] font-medium ml-0.5 text-zinc-400">원</span></td>
               </tr>
             );
           })}

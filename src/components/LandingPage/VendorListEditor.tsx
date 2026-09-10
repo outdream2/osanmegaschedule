@@ -272,13 +272,20 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 {cat}
               </button>
             ))}
+            {/* 2026-09-10 · 사용자 지시 · 기간 옆 · 로딩 Spinner (재고자산·판매액 fetch 중) */}
+            {supplierAggLoading && (
+              <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-teal-600 tabular-nums ml-auto">
+                <span className="inline-block w-3 h-3 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+                집계 로딩 중…
+              </span>
+            )}
             {/* 기간 조회 · 공용 PeriodSelector (2026-08-09) */}
             <PeriodSelector<number>
               options={PERIOD_MONTHS_PRESET}
               value={aggregateMonths}
               onChange={(v) => setAggregateMonths(v)}
               accent="teal"
-              className="ml-auto"
+              className={supplierAggLoading ? "" : "ml-auto"}
               ariaLabel="재고자산·판매액 집계 기간"
             />
           </div>
