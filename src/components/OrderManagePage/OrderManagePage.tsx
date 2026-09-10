@@ -208,6 +208,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   useEffect(() => {
     if (purchaseOrderSubTab !== "need") setLowStockSearch("");
   }, [purchaseOrderSubTab]);
+  // 2026-09-10 · 사용자 지시 · 공급사별 결제내역 · 페이지(topTab) 이탈 시 · vendorSelected 리셋
+  //   · 재진입 시 · empty state ("공급사를 클릭하세요") 부터 표시
+  useEffect(() => {
+    if (topTab !== "payment") setVendorSelected(null);
+  }, [topTab]);
   // 2026-08-25 · 사용자 지시 · 발주필요 · 검색 시 조건 적용 on/off (기본 ON = 재고 부족만)
   const [needConditionApply, setNeedConditionApply] = useState<boolean>(true);
   // 2026-08-25 · 사용자 지시 · 반품 서브탭 · 이너 탭 (반품확정/반품필요)
