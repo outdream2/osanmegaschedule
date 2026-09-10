@@ -448,10 +448,16 @@ export const ProductCreateModal: React.FC<Props> = ({
                             onFocus={() => setSupplierOpen(true)}
                             onBlur={() => {
                               // 2026-09-10 · #63 · 사용자 지시 · vendors 매칭 안 되면 · clear (자유 입력 금지)
-                              const val = form.supplier.trim();
-                              if (val && !vendors.some(v => (v.company_name ?? "").trim() === val)) {
-                                setTimeout(() => set("supplier", ""), 200);
-                              }
+                              // 2026-09-10 · fix · stale closure 회피 · setForm(prev) 로 최신 값 참조 (드롭다운 클릭 반영 후 검증)
+                              setTimeout(() => {
+                                setForm(prev => {
+                                  const v = prev.supplier.trim();
+                                  if (v && !vendors.some(x => (x.company_name ?? "").trim() === v)) {
+                                    return { ...prev, supplier: "" };
+                                  }
+                                  return prev;
+                                });
+                              }, 200);
                             }}
                             className={`${inputCls} ${!isValid ? "!border-rose-400 !bg-rose-50/50" : ""}`}
                             placeholder="검색 · 목록에서 선택 필수"
