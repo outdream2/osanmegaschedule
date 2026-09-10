@@ -4,7 +4,7 @@
 // 2026-08-04 · Task #97 · KPI 카드/드롭다운 제거 → 월별 데이터 표 (12개월 · 누적행 포함)
 // Props: vendor + ledger KPI + activeProductCount
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Building2, Phone, User2, Mail, Calendar, Wallet,
 } from "lucide-react";
@@ -12,6 +12,8 @@ import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { StatusPill } from "../common/StatusPill";
 import { fmtWonFull, fmtDateSlice } from "../../lib/format";
 import { Spinner } from "../common/Spinner";
+// 2026-09-10 · 사용자 지시 · 월별 재고자산 컬럼 · 신규 API fetch
+import { api } from "../../lib/apiClient";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -141,6 +143,24 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
     () => (ledgerRows && ledgerRows.length > 0 ? buildMonthlyAgg(ledgerRows, 12) : []),
     [ledgerRows],
   );
+
+  // 2026-09-10 · 사용자 지시 · 월별 재고자산 · vendor 변경 시 fetch
+  const [monthlyStockValueMap, setMonthlyStockValueMap] = useState<Map<string, number>>(new Map());
+  useEffect(() => {
+    if (!vendor.company_name) { setMonthlyStockValueMap(new Map()); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.get<{ rows: { ym: string; stock_value: number }[] }>(
+          `/api/supplier-monthly-stock-values/${encodeURIComponent(vendor.company_name)}?months=12`
+        );
+        const m = new Map<string, number>();
+        for (const r of data?.rows ?? []) m.set(r.ym, Number(r.stock_value) || 0);
+        if (!cancelled) setMonthlyStockValueMap(m);
+      } catch { if (!cancelled) setMonthlyStockValueMap(new Map()); }
+    })();
+    return () => { cancelled = true; };
+  }, [vendor.company_name]);
 
   // 표 하단 누적 (표시 중인 월 기준)
   const totals = useMemo(() => {
@@ -308,13 +328,16 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                   <th className="text-right px-2 py-1.5 font-bold text-zinc-500 text-[13px] uppercase tracking-wider">
                     건수
                   </th>
+                  {/* 2026-09-10 · 사용자 지시 · 재고자산 컬럼 추가 (월별) */}
+                  <th className="text-right px-2 py-1.5 font-bold text-violet-700 text-[13px] uppercase tracking-wider">
+                    재고자산
+                  </th>
                   <th className="text-right px-2 py-1.5 font-bold text-sky-700 text-[13px] uppercase tracking-wider">
                     결제액
                   </th>
                   <th className="text-right px-2 py-1.5 font-bold text-amber-700 text-[13px] uppercase tracking-wider">
-                    잔고
+                    잔고 (선지급/미지급)
                   </th>
-                  {/* 2026-09-10 · 사용자 지시 · 평균단가 컬럼 제거 */}
                 </tr>
               </thead>
               <tbody>
@@ -339,6 +362,13 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                       <td className="text-right px-2 py-1.5 text-zinc-500">
                         {m.purchaseCount > 0 ? m.purchaseCount : "-"}
                       </td>
+                      {/* 2026-09-10 · 사용자 지시 · 재고자산 컬럼 (월별) */}
+                      <td className="text-right px-2 py-1.5 font-semibold text-violet-700">
+                        {(() => {
+                          const v = monthlyStockValueMap.get(m.ym) ?? 0;
+                          return v > 0 ? fmtWonFull(v) : "-";
+                        })()}
+                      </td>
                       <td className="text-right px-2 py-1.5 font-semibold text-sky-700">
                         {m.payment > 0 ? fmtWonFull(m.payment) : "-"}
                       </td>
@@ -362,6 +392,14 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                   </td>
                   <td className="text-right px-2 py-2 font-bold text-zinc-700">
                     {totals.count > 0 ? totals.count : "-"}
+                  </td>
+                  {/* 2026-09-10 · 사용자 지시 · 재고자산 · 최신 월 값 (스냅샷) */}
+                  <td className="text-right px-2 py-2 font-bold text-violet-800">
+                    {(() => {
+                      const latestYm = monthlyAgg[0]?.ym;
+                      const v = latestYm ? (monthlyStockValueMap.get(latestYm) ?? 0) : 0;
+                      return v > 0 ? fmtWonFull(v) : "-";
+                    })()}
                   </td>
                   <td className="text-right px-2 py-2 font-bold text-sky-800">
                     {fmtWonFull(totals.payment)}

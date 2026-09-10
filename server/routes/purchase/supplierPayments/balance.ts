@@ -40,6 +40,102 @@ router.get("/api/supplier-stock-values-map", asyncHandler(async (_req, res) => {
   res.json({ values: map, counts: countMap });
 }));
 
+// 2026-09-10 · 사용자 지시 · 공급사별 · 월별 재고자산
+//   · 각 월 마지막 snapshot_date · closing_stock × purchase_price · 공급사 상품 합산
+//   · 응답 · [{ ym: "YYYY-MM", stock_value: number }]
+router.get("/api/supplier-monthly-stock-values/:supplier", asyncHandler(async (req, res) => {
+  const supplier = decodeURIComponent(req.params.supplier ?? "").trim();
+  if (!supplier) throw badRequest("supplier 필수");
+  const months = Math.max(1, Math.min(24, parseInt(String(req.query.months ?? "12"), 10) || 12));
+
+  // 공급사 상품 · purchase_price map
+  const priceMap = new Map<string, number>();
+  {
+    const PAGE = 1000;
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from("products")
+        .select("product_code, purchase_price, hidden")
+        .eq("supplier", supplier)
+        .range(from, from + PAGE - 1);
+      if (error) {
+        if (/relation .* does not exist/i.test(error.message)) break;
+        throw new HttpError(500, error.message, "DB_ERROR");
+      }
+      if (!data || data.length === 0) break;
+      for (const p of data) {
+        if (p.hidden === true) continue;
+        const code = String((p as any).product_code ?? "").trim();
+        if (!code) continue;
+        priceMap.set(code, Number(p.purchase_price ?? 0) || 0);
+      }
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+  }
+
+  if (priceMap.size === 0) {
+    return res.json({ supplier, rows: [] as { ym: string; stock_value: number }[] });
+  }
+
+  // stock_history · 최근 months 개월 · 공급사 상품 · 각 (product_code, ym) 최신 snapshot 의 closing_stock
+  const today = new Date();
+  const cutoff = new Date(today.getFullYear(), today.getMonth() - months + 1, 1);
+  const cutoffStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}-01`;
+
+  const codes = Array.from(priceMap.keys());
+  const latestByProductYm = new Map<string, { snap: string; closing: number }>(); // key = `${code}::${ym}`
+
+  const CHUNK = 200;
+  const PAGE = 1000;
+  for (let i = 0; i < codes.length; i += CHUNK) {
+    const chunk = codes.slice(i, i + CHUNK);
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from("stock_history")
+        .select("snapshot_date, product_code, closing_stock")
+        .in("product_code", chunk)
+        .gte("snapshot_date", cutoffStr)
+        .order("snapshot_date", { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error) {
+        if (/relation .* does not exist/i.test(error.message)) break;
+        throw new HttpError(500, error.message, "DB_ERROR");
+      }
+      if (!data || data.length === 0) break;
+      for (const r of data) {
+        const code = String(r.product_code ?? "").trim();
+        const snap = String(r.snapshot_date ?? "");
+        if (!code || !snap) continue;
+        const ym = snap.slice(0, 7);
+        const key = `${code}::${ym}`;
+        const cur = latestByProductYm.get(key);
+        if (!cur || snap > cur.snap) {
+          latestByProductYm.set(key, { snap, closing: Number(r.closing_stock ?? 0) || 0 });
+        }
+      }
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+  }
+
+  // ym 별 합산
+  const ymMap = new Map<string, number>();
+  for (const [key, v] of latestByProductYm) {
+    const [code, ym] = key.split("::");
+    const price = priceMap.get(code) ?? 0;
+    ymMap.set(ym, (ymMap.get(ym) ?? 0) + v.closing * price);
+  }
+
+  const rows = Array.from(ymMap.entries())
+    .map(([ym, stock_value]) => ({ ym, stock_value: Math.round(stock_value) }))
+    .sort((a, b) => b.ym.localeCompare(a.ym)); // 최신 월 먼저
+
+  res.json({ supplier, rows });
+}));
+
 // 2026-09-10 · #58 · 사용자 지시 · 공급사별 현장 재고금액
 //   · ERP 기준 · SUM(current_stock × purchase_price) · 공급사별 · hidden 제외
 router.get("/api/supplier-stock-value/:supplier", asyncHandler(async (req, res) => {

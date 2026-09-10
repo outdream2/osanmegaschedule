@@ -365,30 +365,32 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
                       <StatusPill tone={vatModeTone} size="sm" dot={vatMode !== null}>{vatModeText}</StatusPill>
                     </span>
                   </div>
-                  {/* 2026-09-10 · 사용자 지시 · 5개 KPI · grid-cols-2 lg:grid-cols-5 · 매입액·건수·총재고자산·결제내역·잔고 */}
-                  <div className="grid grid-cols-2 lg:grid-cols-5 gap-0 border-b border-line bg-gradient-to-b from-zinc-50/60 to-white">
-                    {items.map((item, i) => (
-                      <div key={i} className={`px-4 py-3.5 ${i < items.length - 1 ? "border-r border-line" : ""} flex flex-col gap-1.5`}>
-                        <div className="flex items-center gap-2">
-                          <IconTile icon={item.icon} tone={item.tone} size="sm" />
-                          <span className="text-[15px] font-bold text-zinc-600 tracking-tight">{item.label}</span>
-                        </div>
-                        <span className={`text-[22px] font-extrabold tabular-nums leading-tight tracking-tight ${
-                          item.tone === "emerald" ? "text-emerald-700" :
-                          item.tone === "sky" ? "text-sky-700" :
-                          item.tone === "violet" ? "text-violet-700" :
-                          "text-amber-700"
-                        }`}>
-                          {item.value.toLocaleString()}<span className="text-[15px] font-bold ml-0.5 text-zinc-400">{item.isCount ? "건" : "원"}</span>
-                        </span>
-                        <span className="text-[14px] text-zinc-500 font-semibold">{item.subtitle}</span>
-                        {item.vatBadge && (
-                          <span className="text-[15px] text-zinc-500 font-semibold tabular-nums mt-0.5 leading-tight bg-zinc-50 px-2 py-1 rounded-md border border-line">
-                            {item.vatBadge}
+                  {/* 2026-09-10 · 사용자 지시 · UI 대원칙 · Linear/Vercel/Notion 톤
+                      · 카드형 → 미니멀 텍스트 · 아이콘·배경 gradient·IconTile 제거
+                      · 컬럼 구분 · 얇은 zinc-100 세로선 · 뉴트럴 톤 · 값에만 액센트 */}
+                  <div className="grid grid-cols-2 lg:grid-cols-5 gap-0 border-b border-line">
+                    {items.map((item, i) => {
+                      const valueCls =
+                        item.tone === "amber" ? "text-amber-700" :
+                        item.tone === "sky" ? "text-sky-700" :
+                        item.tone === "emerald" && item.label.startsWith("잔고") ? "text-emerald-600" :
+                        "text-zinc-900";
+                      return (
+                        <div key={i} className={`px-5 py-4 ${i < items.length - 1 ? "lg:border-r border-zinc-100" : ""} flex flex-col gap-2`}>
+                          <span className="text-[13px] text-zinc-500 font-medium tracking-tight">{item.label}</span>
+                          <span className={`text-[26px] font-bold tabular-nums leading-none tracking-tight ${valueCls}`}>
+                            {item.value.toLocaleString()}
+                            <span className="text-[14px] font-medium ml-1 text-zinc-400">{item.isCount ? "건" : "원"}</span>
                           </span>
-                        )}
-                      </div>
-                    ))}
+                          <span className="text-[12px] text-zinc-400 font-medium">{item.subtitle}</span>
+                          {item.vatBadge && (
+                            <span className="text-[12px] text-zinc-500 font-medium tabular-nums leading-tight mt-0.5">
+                              {item.vatBadge}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
