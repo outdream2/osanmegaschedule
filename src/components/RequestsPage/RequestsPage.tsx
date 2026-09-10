@@ -534,32 +534,27 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         onLogout={onLogout}
       />
 
-      {/* 2026-09-10 · #50 · 사용자 지시 · 탭 메뉴 · 매입이력(OrderManagePage) 스타일 통일 · TabBar 프리미티브 */}
-      <div className="bg-white/95 backdrop-blur-sm border-b border-line sticky top-0 z-30 shadow-sm">
-        <div className={`${PAGE_CONTAINER_CLS} px-2 sm:px-4 py-2`}>
-          <TabBar<Tab>
-            level={2}
-            tabs={TABS.map(([key, label, count]) => {
-              const meta: Record<Tab, { icon: any; color: any }> = {
-                display:     { icon: ClipboardList, color: "sky"     },
-                order:       { icon: Package,       color: "amber"   },
-                mismatch:    { icon: MapPin,        color: "rose"    },
-                lunch:       { icon: Coffee,        color: "orange"  },
-                inventory:   { icon: Package,       color: "violet"  },
-                leave:       { icon: CalendarDays,  color: "indigo"  },
-                vendor:      { icon: Handshake,     color: "emerald" },
-                resignation: { icon: FileText,      color: "rose"    },
-              };
-              const m = meta[key];
-              return { key, label, icon: m.icon, color: m.color, badge: count > 0 ? count : undefined } as CommonTabDef<Tab>;
-            })}
-            activeKey={tab}
-            onSelect={setTab}
-          />
-        </div>
-      </div>
-
-      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-4 py-4`}>
+      {/* 2026-09-10 · #50 · 사용자 지시 · 매입이력(OrderManagePage) 그대로 · TabBar · main 안 · gap-4 · 완전 동일 구조 */}
+      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-4 py-4 flex flex-col gap-4`}>
+        <TabBar<Tab>
+          level={2}
+          tabs={TABS.map(([key, label, count]) => {
+            const meta: Record<Tab, { icon: any; color: any }> = {
+              display:     { icon: ClipboardList, color: "sky"     },
+              order:       { icon: Package,       color: "amber"   },
+              mismatch:    { icon: MapPin,        color: "rose"    },
+              lunch:       { icon: Coffee,        color: "orange"  },
+              inventory:   { icon: Package,       color: "violet"  },
+              leave:       { icon: CalendarDays,  color: "indigo"  },
+              vendor:      { icon: Handshake,     color: "emerald" },
+              resignation: { icon: FileText,      color: "rose"    },
+            };
+            const m = meta[key];
+            return { key, label, icon: m.icon, color: m.color, badge: count > 0 ? count : undefined } as CommonTabDef<Tab>;
+          })}
+          activeKey={tab}
+          onSelect={setTab}
+        />
 
         {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · DisplayRequestTab */}
         {tab === "display" && (
