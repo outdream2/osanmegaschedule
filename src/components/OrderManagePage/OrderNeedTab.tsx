@@ -5,11 +5,10 @@ import React from "react";
 import { ClipboardList } from "lucide-react";
 import { Card } from "../common/Card";
 import { PageToolbar } from "../common/PageToolbar";
-// 2026-09-10 · #46 롤백 · 판매 추천 패널 별로 · 사용자 지시 · 기존 ProductDetailRightPanel 복원
-import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
+// 2026-09-10 · #46 재개 · 사용자 지시 · 판매정보 패널 재활성화 · 상품 상세는 모달로 (부모에서 관리)
+import { SalesRecommendationPanel } from "./SalesRecommendationPanel";
 import { LoadingState } from "../common/LoadingState";
 import { CARD_BASE } from "../../styles/tokens";
-import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 // 2026-08-25 · 사용자 지시 A · OFF 조건 + 리스트 클릭 시 · 발주필요 추가 confirm
 import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-29 · #154 · 판매중 필터 프레임워크 확산
@@ -148,16 +147,20 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
   );
   void requestedCodes; void lowStockSearch;
 
-  // 2026-09-10 · 사용자 지시 · 상품명 클릭 · 항상 · 우측 상세 정보 표시
-  //   · 이전 · 재고 초과/이미 요청 등 confirm 팝업 · 사용자 UX 방해 · 팝업 제거
-  //   · 발주 요청은 · row 오른쪽 [요청]/[✓] 버튼으로 별도 처리
+  // 2026-09-10 · 사용자 지시 · 상품명 클릭 · 우측 판매정보 패널 갱신 + 상품 상세 모달 open
+  //   · 우측 · 판매정보 (계절·이벤트·명절 등) · SalesRecommendationPanel
+  //   · 상품 상세 정보 · ProductDetailModal · 부모(OrderManagePage) 렌더
   const handleRowClick = React.useCallback(async (p: ProductInfo) => {
     const code = getCode(p);
     const name = getName(p);
     setNeedPanelProduct({ code, name });
-  }, [getCode, getName, setNeedPanelProduct]);
-  // 미사용 참조 방지 (기존 로직 · handleRequestOrder·requestedCodes·confirm)
-  void confirm; void requestedCodes; void handleRequestOrder;
+    // 상품명 클릭 시 · 상품 상세 모달도 함께 open
+    if (onOpenDetail) {
+      setTimeout(() => onOpenDetail(), 50); // needPanelProduct fetch 시작 후 open
+    }
+  }, [getCode, getName, setNeedPanelProduct, onOpenDetail]);
+  // 미사용 참조 방지 (기존 로직)
+  void confirm; void requestedCodes; void handleRequestOrder; void openSupplierInfo;
 
   return (
     <div className="flex flex-col gap-2">
@@ -274,20 +277,25 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
             </Card>
           </div>
         ) : (
-          <ProductDetailRightPanel
-            selected={needPanelFull ? ({
-              code: (needPanelFull as any).product_code ?? (needPanelFull as any).code ?? (needPanelProduct?.code ?? ""),
-              name: (needPanelFull as any).product_name ?? (needPanelFull as any).name ?? (needPanelProduct?.name ?? ""),
-              spec: (needPanelFull as any).spec ?? "",
-              ...needPanelFull,
-            } as ProductInfoType) : null}
+          <SalesRecommendationPanel
+            product={needPanelProduct ? ({
+              product_code: needPanelProduct.code,
+              product_name: needPanelProduct.name,
+              current_stock: Number((needPanelFull as any)?.current_stock ?? 0) || 0,
+              optimal_stock: Number((needPanelFull as any)?.optimal_stock ?? 0) || 0,
+            } as ProductInfo) : null}
+            saleMonth={needPanelProduct ? (needExtraMap.get(needPanelProduct.code)?.saleMonth ?? null) : null}
+            saleQuarter={needPanelProduct ? (needExtraMap.get(needPanelProduct.code)?.saleQuarter ?? null) : null}
+            onApplyQty={(code, qty) => {
+              if (!setOrderQtyOverride) return;
+              setOrderQtyOverride(prev => {
+                const next = new Map(prev);
+                next.set(code, Math.max(1, qty));
+                return next;
+              });
+            }}
+            onOpenDetail={() => onOpenDetail?.()}
             onClose={() => setNeedPanelProduct(null)}
-            onProductUpdate={(u) => setNeedPanelFull(prev => prev ? { ...prev, ...u } : prev)}
-            showChart={true}
-            context="order-manage"
-            editable={true}
-            emptySub="상세 정보가 표시됩니다"
-            onSupplierInfoOpen={(nm) => openSupplierInfo(nm)}
           />
         )}
       </div>
