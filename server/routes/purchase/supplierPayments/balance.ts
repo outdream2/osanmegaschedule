@@ -8,6 +8,38 @@ import { splitVat, fetchVatIncluded } from "./helpers";
 
 const router = Router();
 
+// 2026-09-10 · #59 · 사용자 지시 · 전체 공급사 · 현장 재고금액 map (VendorListEditor 좌측 리스트용)
+//   · 응답 · { [supplier_name]: stock_value } · 한 번에 fetch
+router.get("/api/supplier-stock-values-map", asyncHandler(async (_req, res) => {
+  const map: Record<string, number> = {};
+  const countMap: Record<string, number> = {};
+  const PAGE = 1000;
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from("products")
+      .select("supplier, current_stock, purchase_price, hidden")
+      .range(from, from + PAGE - 1);
+    if (error) {
+      if (/relation .* does not exist/i.test(error.message)) break;
+      throw new HttpError(500, error.message, "DB_ERROR");
+    }
+    if (!data || data.length === 0) break;
+    for (const p of data) {
+      if (p.hidden === true) continue;
+      const supplier = String((p as any).supplier ?? "").trim();
+      if (!supplier) continue;
+      const qty = Number(p.current_stock ?? 0) || 0;
+      const price = Number(p.purchase_price ?? 0) || 0;
+      map[supplier] = (map[supplier] ?? 0) + qty * price;
+      countMap[supplier] = (countMap[supplier] ?? 0) + 1;
+    }
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  res.json({ values: map, counts: countMap });
+}));
+
 // 2026-09-10 · #58 · 사용자 지시 · 공급사별 현장 재고금액
 //   · ERP 기준 · SUM(current_stock × purchase_price) · 공급사별 · hidden 제외
 router.get("/api/supplier-stock-value/:supplier", asyncHandler(async (req, res) => {

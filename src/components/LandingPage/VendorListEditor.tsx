@@ -107,17 +107,33 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
     let cancelled = false;
     (async () => {
       try {
-        const { data: j } = await api.get<any>(`/api/stock-manage/supplier-purchases?months=${aggregateMonths}&limit=50000`);
-        const rows: any[] = Array.isArray(j?.rows) ? j.rows : [];
+        // 2026-09-10 · #59 · 사용자 지시 · 총재고자산 정의 수정
+        //   · 기존 · stock_history.total_amount 합 = 매입액 (잘못된 정의)
+        //   · 신규 · ERP 현재고 × 사입단가 · /api/supplier-stock-values-map
+        //   · 판매액 (salesTotal) 은 여전히 supplier-purchases 사용 · 두 API 병렬
+        const [purchRes, stockRes] = await Promise.all([
+          api.get<any>(`/api/stock-manage/supplier-purchases?months=${aggregateMonths}&limit=50000`),
+          api.get<{ values: Record<string, number> }>(`/api/supplier-stock-values-map`),
+        ]);
+        const rows: any[] = Array.isArray(purchRes.data?.rows) ? purchRes.data.rows : [];
+        const stockMap = stockRes.data?.values ?? {};
         const m = new Map<string, { stockValue: number; salesTotal: number }>();
+        // 판매액 · supplier-purchases 기반 aggregation
         for (const r of rows) {
           const nm = String(r.supplier ?? "").trim();
           if (!nm) continue;
           const key = normalizeSupplierKey(nm);
           if (!key) continue;
           const cur = m.get(key) ?? { stockValue: 0, salesTotal: 0 };
-          cur.stockValue += Number(r.totalStockAmount ?? 0) || 0;
           cur.salesTotal += Number(r.saleAmount ?? 0) || 0;
+          m.set(key, cur);
+        }
+        // 재고자산 · products 기반 · 정확한 정의
+        for (const [supplier, value] of Object.entries(stockMap)) {
+          const key = normalizeSupplierKey(supplier);
+          if (!key) continue;
+          const cur = m.get(key) ?? { stockValue: 0, salesTotal: 0 };
+          cur.stockValue = Number(value) || 0;
           m.set(key, cur);
         }
         if (!cancelled) setSupplierAggMap(m);

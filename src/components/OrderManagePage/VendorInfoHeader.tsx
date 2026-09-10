@@ -314,9 +314,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                   <th className="text-right px-2 py-1.5 font-bold text-amber-700 text-[13px] uppercase tracking-wider">
                     잔고
                   </th>
-                  <th className="text-right px-2 py-1.5 font-bold text-zinc-600 text-[13px] uppercase tracking-wider">
-                    평균단가
-                  </th>
+                  {/* 2026-09-10 · 사용자 지시 · 평균단가 컬럼 제거 */}
                 </tr>
               </thead>
               <tbody>
@@ -349,9 +347,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                           ? "완납"
                           : `${fmtWonFull(Math.abs(m.endBalance))}${m.endBalance < 0 ? " 초과" : ""}`}
                       </td>
-                      <td className="text-right px-2 py-1.5 text-zinc-600">
-                        {avgUnit > 0 ? fmtWonFull(avgUnit) : "-"}
-                      </td>
+                      {/* 2026-09-10 · 사용자 지시 · 평균단가 컬럼 제거 (avgUnit=${avgUnit}) */}
                     </tr>
                   );
                 })}
@@ -378,9 +374,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                       ? "완납"
                       : `${fmtWonFull(Math.abs(totals.latestBalance))}${totals.latestBalance < 0 ? " 초과" : ""}`}
                   </td>
-                  <td className="text-right px-2 py-2 font-bold text-zinc-700">
-                    {totals.avgUnit > 0 ? fmtWonFull(totals.avgUnit) : "-"}
-                  </td>
+                  {/* 2026-09-10 · 사용자 지시 · 평균단가 컬럼 제거 */}
                 </tr>
               </tfoot>
             </table>
