@@ -26,6 +26,8 @@ import settingsRouter    from "./server/routes/settings/settings";
 import systemConfigRouter from "./server/routes/settings/systemConfig";
 // 2026-08-24 · #253 · 자동 임포트 설정 endpoints (authorize(9) 내부)
 import autoImportRouter  from "./server/routes/settings/autoImport";
+// 2026-09-10 · #52·#54 · 계절·이벤트 관리 · CRUD + 오늘 활성 조회
+import eventsRouter      from "./server/routes/settings/events";
 import productsRouter, { stockCheckPublicRouter } from "./server/routes/stock/products";
 import requestsRouter    from "./server/routes/display/requests";
 import mismatchesRouter  from "./server/routes/display/mismatches";
@@ -183,6 +185,7 @@ async function startServer() {
   app.use(authRouter);            // /api/auth/* · 로그인·비밀번호 변경 · rate-limit 이미 적용
   // 혼합 (GET public + POST 내부 authorize) · 랜딩/브랜드 로딩 필수
   app.use(settingsRouter);        // GET /api/permissions·settings (브랜드·연락처) · POST 는 내부 authorize(9)
+  app.use(eventsRouter);          // 2026-09-10 · #52·#54 · GET·POST·PATCH·DELETE /api/events + event_products
   app.use(systemConfigRouter);    // GET /api/system-config · 내부 authorize(9)
   // 2026-08-24 · #253 · 자동 임포트 · GET/POST config · POST heartbeat · authorize(9) 내부
   app.use(autoImportRouter);
