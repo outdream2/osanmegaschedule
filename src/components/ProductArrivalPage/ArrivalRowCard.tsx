@@ -194,6 +194,18 @@ const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
     const isPrimary = idx === 1;
     return (
       <div key={`s${idx}`} className={`relative rounded-lg border ${meta.softBg} border-zinc-200/70 p-2.5 flex flex-col gap-2`}>
+        {/* 2026-09-10 · #60 · 사용자 지시 · 매장2·3 · 우측 상단 · X 삭제 버튼 · 클릭 시 storeCount 축소 */}
+        {!isPrimary && (
+          <button
+            type="button"
+            onClick={() => setStoreCount(c => Math.max(1, c - 1))}
+            className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-full bg-white/80 hover:bg-rose-50 border border-zinc-200 hover:border-rose-300 text-zinc-400 hover:text-rose-600 transition cursor-pointer active:scale-90"
+            title={`${meta.full} 삭제`}
+            aria-label={`${meta.full} 삭제`}
+          >
+            <span className="text-[16px] font-bold leading-none">×</span>
+          </button>
+        )}
         <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
           <span className={`w-1.5 h-6 rounded-full ${meta.dot} shrink-0 self-center`} />
           <span className={`text-[16px] font-bold ${meta.text} truncate`}>{meta.full}</span>
