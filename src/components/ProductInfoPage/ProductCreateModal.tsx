@@ -264,7 +264,10 @@ export const ProductCreateModal: React.FC<Props> = ({
       });
     }
     setError(null);
-  }, [open, initialCode, initialBarcode, initialName, isEdit, initialProduct]);
+  // 2026-09-10 · fix · initialProduct 객체 dep · 매 render 재실행 · form 리셋 문제
+  //   → product_code 만 dep 로 · 실제 상품 변경 시만 재초기화 · 편집 중 입력 유지
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialCode, initialBarcode, initialName, isEdit, initialProduct?.product_code]);
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm(prev => ({ ...prev, [k]: v }));
 
