@@ -482,7 +482,12 @@ export const ProductCreateModal: React.FC<Props> = ({
                           <button
                             key={v.id}
                             type="button"
-                            onClick={() => { set("supplier", v.company_name ?? ""); setSupplierOpen(false); }}
+                            /* 2026-09-10 · fix · onMouseDown · outside-click·onBlur 발동 전 · 값 세팅 · onClick 은 · dropdown unmount 이후 발동 안 됨 */
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              set("supplier", v.company_name ?? "");
+                              setSupplierOpen(false);
+                            }}
                             className="w-full text-left px-3 py-2 text-[16px] font-medium text-ink hover:bg-zinc-50 focus:outline-none focus:bg-zinc-50 flex items-center gap-2 transition-colors"
                           >
                             <span className="truncate">{v.company_name}</span>
