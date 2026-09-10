@@ -27,22 +27,38 @@ export interface ProductMatchable {
  *   · query 비어있으면 · true (모두 통과)
  *   · 상품명·공급사 · 원문 + 초성 매칭 (matchHangul)
  *   · product_code · 원문 부분일치만 (바코드값 포함 · 대소문자 무시)
+ *   · 2026-09-10 · 사용자 지시 · 공백 정규화 매칭 (양쪽 공백 제거 후 · 검색어와 대상 모두 · 공백 제외 부분일치)
+ *     · 예: "테스트 상품등록" 검색 → "테스트상품등록" 상품명 매칭 ✅
  */
 export function matchesProductQuery(product: ProductMatchable, query: string): boolean {
   const q = (query ?? "").trim();
   if (!q) return true;
   const qLower = q.toLowerCase();
+  const qNoSpace = qLower.replace(/\s+/g, "");
 
-  // 상품명 · 공급사 · 초성 매칭 (한글 부분일치 + 자음 초성)
   const name = String(product.product_name ?? "");
-  if (name && matchHangul(name, q)) return true;
-
   const supplier = String(product.supplier ?? "");
+  const code = String(product.product_code ?? "").toLowerCase();
+
+  // 1) 상품명 · 공급사 · matchHangul (원문 부분일치 + 초성)
+  if (name && matchHangul(name, q)) return true;
   if (supplier && matchHangul(supplier, q)) return true;
 
-  // product_code · 원문 부분일치 (숫자·영문 · 초성 매칭 불필요 · 바코드값 포함)
-  const code = String(product.product_code ?? "").toLowerCase();
+  // 2) product_code · 원문 부분일치 (바코드값 포함)
   if (code && code.includes(qLower)) return true;
+
+  // 3) 2026-09-10 · 공백 정규화 매칭 · 검색어와 대상 모두 공백 제거 후 부분일치
+  if (qNoSpace && qNoSpace !== qLower) {
+    if (name && name.toLowerCase().replace(/\s+/g, "").includes(qNoSpace)) return true;
+    if (supplier && supplier.toLowerCase().replace(/\s+/g, "").includes(qNoSpace)) return true;
+    if (code && code.replace(/\s+/g, "").includes(qNoSpace)) return true;
+  } else if (qLower) {
+    // 검색어에 공백 없어도 · 대상에 공백 있을 수 있음 (예: "테스트 상품")
+    const nameNoSp = name.toLowerCase().replace(/\s+/g, "");
+    if (nameNoSp && nameNoSp.includes(qLower)) return true;
+    const supNoSp = supplier.toLowerCase().replace(/\s+/g, "");
+    if (supNoSp && supNoSp.includes(qLower)) return true;
+  }
 
   return false;
 }
