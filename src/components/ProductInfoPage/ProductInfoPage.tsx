@@ -595,7 +595,8 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
   }, []);
 
   // 2026-08-30 · 사용자 지시 · 판매중/판매중지 3-way 필터 (관리 페이지 · include_inactive=1 로 다 조회)
-  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "productInfo.saleFilter" });
+  // 2026-09-10 · 사용자 지시 · 판매중 기본값 강제 · storageKey bump v2 · localStorage 초기화
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "productInfo.saleFilter.v2" });
   const filtered = useMemo(() => {
     const list = rows;
     // 1. 판매상태 필터
