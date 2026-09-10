@@ -52,6 +52,24 @@ router.get("/api/sales-trend/product", asyncHandler(async (req, res) => {
   res.json(payload);
 }));
 
+// 2026-09-10 · 사용자 지시 · 공급사명 정규화 매칭 (완전 일치 → 정규화 · 양방향 contains)
+//   · Why · products.supplier 와 stock_history.supplier_name 이 서로 짧거나 다르게 저장된 경우
+//     (예: vendor "테스트2" · products.supplier "테스" · stock_history.supplier_name "테스")
+//   · How · normalize (trim·lower·공백·특수문자 제거) 후 · 서로 포함 관계면 매칭
+function normalizeSupplierName(s: string | null | undefined): string {
+  return String(s ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[()（）\[\]【】·・∙•,\/\\]/g, "");
+}
+function supplierMatches(a: string | null | undefined, b: string | null | undefined): boolean {
+  const na = normalizeSupplierName(a);
+  const nb = normalizeSupplierName(b);
+  if (!na || !nb) return false;
+  return na === nb || na.includes(nb) || nb.includes(na);
+}
+
 // GET /api/sales-trend/supplier
 router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
   const name = String(req.query.name ?? "").trim();
@@ -63,6 +81,29 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
   const cutoffStr = (!seasonMonths && months > 0)
     ? (() => { const t = new Date(); const c = new Date(t.getFullYear(), t.getMonth() - months, t.getDate()); return `${c.getFullYear()}-${String(c.getMonth() + 1).padStart(2, "0")}-${String(c.getDate()).padStart(2, "0")}`; })()
     : null;
+
+  // 2026-09-10 · 사용자 지시 · products.supplier 정규화 매칭 · product_code 수집 (마스터 기반)
+  const matchedCodes = new Set<string>();
+  {
+    const PAGE = 1000;
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from("products")
+        .select("product_code, supplier")
+        .range(from, from + PAGE - 1);
+      if (error) break;
+      if (!data || data.length === 0) break;
+      for (const p of data) {
+        if (supplierMatches((p as any).supplier, name)) {
+          const code = String((p as any).product_code ?? "").trim();
+          if (code) matchedCodes.add(code);
+        }
+      }
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+  }
   {
     const all: any[] = [];
     const PAGE = 1000;
@@ -70,18 +111,19 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
     while (true) {
       let q = supabase
         .from("stock_history")
-        .select("period_start_date, snapshot_date, period_type, product_code, purchase_qty, sale_qty, closing_stock, supply_amount, total_amount")
-        .eq("supplier_name", name);
+        .select("period_start_date, snapshot_date, period_type, product_code, supplier_name, purchase_qty, sale_qty, closing_stock, supply_amount, total_amount");
       if (cutoffStr) q = q.gte("snapshot_date", cutoffStr);
       const { data, error } = await q
         .order("period_start_date", { ascending: true, nullsFirst: false })
         .range(from, from + PAGE - 1);
       if (error) throw new HttpError(500, error.message, "DB_ERROR");
       if (!data || data.length === 0) break;
-      if (seasonMonths) {
-        for (const r of data) if (inSeasonMonths(String(r.snapshot_date ?? ""), seasonMonths)) all.push(r);
-      } else {
-        all.push(...data);
+      for (const r of data) {
+        const code = String(r.product_code ?? "").trim();
+        // products 매칭 or supplier_name 직접 매칭 (양쪽 다 확인)
+        if (!matchedCodes.has(code) && !supplierMatches(r.supplier_name, name)) continue;
+        if (seasonMonths && !inSeasonMonths(String(r.snapshot_date ?? ""), seasonMonths)) continue;
+        all.push(r);
       }
       if (data.length < PAGE) break;
       from += PAGE;

@@ -385,10 +385,14 @@ button[class^="px-6"]:not([class^="px-60"]) {
 
 /* 세로 스크롤바가 나타날 때 오른쪽 컬럼 잘림 방지 (2026-07-15)
  *  scrollbar-gutter: stable 은 스크롤바 유무와 무관하게 항상 트랙 폭 확보 → 컨텐츠 리플로우 없음
- *  overflow-y-auto / overflow-auto 클래스가 붙은 모든 컨테이너에 적용 */
-.overflow-y-auto, .overflow-auto {
+ *  overflow-y-auto / overflow-auto 클래스가 붙은 모든 컨테이너에 적용
+ *  2026-09-10 · #62 · 사용자 지시 · 반응형 넘침 · 전역 적용 제거
+ *    · 원인 · 모든 overflow-y-auto 컨테이너 · 우측 10px 예약 → 화면 넘침·모달 살짝 잘림
+ *    · Modal.modal-body 안 등 · 필요 시 개별 적용
+ */
+/* .overflow-y-auto, .overflow-auto {
   scrollbar-gutter: stable;
-}
+} */
 
 /* 스크롤 컨테이너 내부 table 의 마지막 th/td 에 오른쪽 여백 추가 (2026-07-15)
  *  scrollbar-gutter 만으로는 sticky thead + 좁은 뷰포트에서 잘림이 남는 경우 보완
@@ -411,7 +415,8 @@ body:has(.fixed.inset-0[class*="bg-gray-9"]),
 body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
   overflow: hidden;
   overscroll-behavior: none;
-  scrollbar-gutter: stable;
+  /* 2026-09-10 · #62 · 사용자 지시 · overflow:hidden 자체가 스크롤바 제거 · gutter 예약 불필요 · 넘침 원인 */
+  /* scrollbar-gutter: stable; */
 }
 
 /* 모달 오버레이 (배경 클래스가 있는 fixed inset-0) 자체는 스크롤 격리 · iOS rubber-band 차단 */
