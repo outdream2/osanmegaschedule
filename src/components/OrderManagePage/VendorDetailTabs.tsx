@@ -248,7 +248,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
         ledgerRows={ledger?.rows as LedgerRowMinimal[] | undefined}
         onEdit={() => openVendorInfo(vendor as any)}
         currentStockValue={stockValue}
-        monthlySalesMap={(() => {
+        monthlySalesMap={useMemo(() => {
           // 2026-09-10 · #66 · salesRows → ym → total_amount map
           const m = new Map<string, number>();
           for (const r of salesRows) {
@@ -257,19 +257,19 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
             m.set(ym, (m.get(ym) ?? 0) + Number(r.total_amount ?? 0));
           }
           return m;
-        })()}
-        totalSalesValue={salesRows.reduce((s, r) => s + Number(r.total_amount ?? 0), 0)}
-        monthlyCogsMap={(() => {
+        }, [salesRows])}
+        totalSalesValue={useMemo(() => salesRows.reduce((s, r) => s + Number(r.total_amount ?? 0), 0), [salesRows])}
+        monthlyCogsMap={useMemo(() => {
           // 2026-09-10 · 원가 · salesRows → ym → cogs_amount map
           const m = new Map<string, number>();
           for (const r of salesRows) {
             const ym = String(r.snapshot_date ?? r.period_start_date ?? "").slice(0, 7);
             if (!ym) continue;
-            m.set(ym, (m.get(ym) ?? 0) + Number((r as any).cogs_amount ?? 0));
+            m.set(ym, (m.get(ym) ?? 0) + Number(r.cogs_amount ?? 0));
           }
           return m;
-        })()}
-        totalCogsValue={salesRows.reduce((s, r) => s + Number((r as any).cogs_amount ?? 0), 0)}
+        }, [salesRows])}
+        totalCogsValue={useMemo(() => salesRows.reduce((s, r) => s + Number(r.cogs_amount ?? 0), 0), [salesRows])}
       />
 
       {/* 2026-08-25 · SplitRightTabs 프리미티브 이관 · v9 브랜드 시그니처 · 폰트 +2 */}
