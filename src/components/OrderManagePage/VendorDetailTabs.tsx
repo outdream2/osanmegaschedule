@@ -202,16 +202,9 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
       <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
     )}
     <div className="flex flex-col gap-3 min-h-0 flex-1">
-      {/* 헤더 카드 · 2026-08-24 · [수정] 버튼 · openVendorInfo → VendorDetailModal */}
-      <VendorInfoHeader
-        vendor={vendor}
-        kpi={kpi}
-        loading={isLoading}
-        ledgerRows={ledger?.rows as LedgerRowMinimal[] | undefined}
-        onEdit={() => openVendorInfo(vendor as any)}
-      />
       {vendorModalElement}
 
+      {/* 2026-09-10 · 사용자 지시 · 기간 필터 · 맨 상단 → 그 아래 · 월별 내역 (VendorInfoHeader) */}
       {/* 기간 필터 + 새로고침 */}
       <div className={`${CARD_BASE} px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5`}>
         <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">기간</span>
@@ -243,6 +236,15 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
           <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
         </button>
       </div>
+
+      {/* 헤더 카드 · 벤더 정보 + 월별 표 · 2026-09-10 · 사용자 지시 · 기간 필터 아래로 이동 */}
+      <VendorInfoHeader
+        vendor={vendor}
+        kpi={kpi}
+        loading={isLoading}
+        ledgerRows={ledger?.rows as LedgerRowMinimal[] | undefined}
+        onEdit={() => openVendorInfo(vendor as any)}
+      />
 
       {/* 2026-08-25 · SplitRightTabs 프리미티브 이관 · v9 브랜드 시그니처 · 폰트 +2 */}
       <div className={`${CARD_BASE} overflow-hidden`}>

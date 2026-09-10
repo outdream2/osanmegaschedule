@@ -78,6 +78,8 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   // 2026-08-04 · #101 · 공급사별 재고자산·판매액 (총 3개월 · /api/stock-manage/supplier-purchases)
   //   key = normalizeSupplierKey(supplier_name) · value = { stockValue, salesTotal }
   const [supplierAggMap, setSupplierAggMap] = useState<Map<string, { stockValue: number; salesTotal: number }>>(new Map());
+  // 2026-09-10 · 사용자 지시 · 재고자산 로딩 상태 · "-" 대신 · 로딩 중 표시
+  const [supplierAggLoading, setSupplierAggLoading] = useState(false);
   // 2026-08-09 · 기간 조회 · 1개월/3개월/6개월/12개월 (default 3)
   const [aggregateMonths, setAggregateMonths] = useState<number>(3);
   const toggleCompactSort = (key: CompactSortKey) => {
@@ -105,6 +107,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   useEffect(() => {
     if (!compact) return; // compact 모드에서만 사용
     let cancelled = false;
+    setSupplierAggLoading(true);
     (async () => {
       try {
         // 2026-09-10 · #59 · 사용자 지시 · 총재고자산 정의 수정
@@ -138,6 +141,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
         }
         if (!cancelled) setSupplierAggMap(m);
       } catch { /* 조회 실패 시 빈 map · 컬럼 "-" 표기 */ }
+      finally { if (!cancelled) setSupplierAggLoading(false); }
     })();
     return () => { cancelled = true; };
   }, [compact, aggregateMonths]);
