@@ -426,11 +426,50 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const clearLowStockSelection = () => setSelectedLowStock(new Set());
   const bulkRequestOrder = async () => {
     if (selectedLowStock.size === 0) return;
+    const codes = Array.from(selectedLowStock);
+    const prods = lowStock.filter(p => codes.includes(getCode(p)));
+    // 2026-09-10 · 사용자 지시 · 재요청 · 통합 confirm · 상세 내용 (상품명 · 수량) 표시
+    const alreadyReq = prods.filter(p => requestedCodes.has(getCode(p)));
+    if (alreadyReq.length > 0) {
+      const detailList = alreadyReq.map(p => {
+        const cur = Number(p.current_stock ?? 0);
+        const opt = Number(p.optimal_stock ?? 0);
+        const shortage = Math.max(1, opt - cur);
+        const code = getCode(p);
+        const qty = orderQtyOverride.get(code) ?? shortage;
+        return `• ${getName(p)} · 수량 ${qty}`;
+      }).join("\n");
+      const ok = await confirm({
+        title: `재요청 · ${alreadyReq.length}건`,
+        message: `이미 발주요청된 ${alreadyReq.length}개 상품 · 재요청 시 · 기존 정보 덮어씀\n\n${detailList}\n\n계속하시겠습니까?`,
+        confirmLabel: "덮어쓰기",
+      });
+      if (ok !== true) return;
+    }
     setBulkRequesting(true);
     try {
-      const codes = Array.from(selectedLowStock);
-      const prods = lowStock.filter(p => codes.includes(getCode(p)));
-      for (const p of prods) { await handleRequestOrder(p); }
+      // 재요청 confirm 이미 처리 · handleRequestOrder 내부 confirm 건너뛰기 위해 · 직접 처리
+      for (const p of prods) {
+        const code = getCode(p);
+        const name = getName(p);
+        const cur = Number(p.current_stock ?? 0);
+        const opt = Number(p.optimal_stock ?? 0);
+        const shortage = Math.max(1, opt - cur);
+        const orderQty = orderQtyOverride.get(code) ?? shortage;
+        try {
+          await api.post("/api/order-requests", {
+            product_code: code, product_name: name,
+            current_stock: p.current_stock,
+            order_qty: orderQty,
+            supplier: p.supplier, requested_at: new Date().toISOString(),
+          });
+        } catch (e: any) {
+          showError(`[${name}] 발주 요청 실패: ${e?.message ?? "오류"}`);
+        }
+      }
+      await loadOrderReqs();
+      dispatchApprovalChange("order");
+      showSuccess(`발주요청 · ${prods.length}건 추가 완료`);
       clearLowStockSelection();
     } finally { setBulkRequesting(false); }
   };

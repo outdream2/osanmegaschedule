@@ -1,7 +1,7 @@
 {
   "created": "2026-09-10",
   "version": 1,
-  "totalViolations": 10,
+  "totalViolations": 11,
   "files": {
     "src/components/OrderSettingsPage/OrderSettingsPage.tsx": {
       "lines": 286,
@@ -33,6 +33,16 @@
       ],
       "totalWeight": 3
     },
+    "src/components/OrderManagePage/OrderManagePage.tsx": {
+      "lines": 809,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
+    },
     "src/components/OrderManagePage/PaymentInputPage.tsx": {
       "lines": 868,
       "violations": [
@@ -54,7 +64,7 @@
       "totalWeight": 3
     },
     "src/components/ProductInfoPage/ProductInfoPage.tsx": {
-      "lines": 832,
+      "lines": 841,
       "violations": [
         {
           "ruleId": "large-file-warn",
