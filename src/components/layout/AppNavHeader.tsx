@@ -426,20 +426,21 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           {/* 오버플로 · 삼선 ☰ 드롭다운 */}
           {desktopOverflowTabs.length > 0 && (
             <div ref={desktopOverflowBtnRef} className="relative shrink-0 ml-0.5">
+              {/* 2026-09-10 · #38 · 사용자 지시 · 삼선 메뉴 · 컬러 액센트 (amber) */}
               <button
                 type="button"
                 onClick={() => setDesktopOverflowOpen(v => !v)}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[15px] font-semibold transition-colors duration-150 active:scale-95 cursor-pointer ${
                   desktopOverflowOpen
-                    ? "bg-white/[0.14] text-white"
-                    : "text-[#C4DAEE] hover:bg-white/[0.06] hover:text-white"
+                    ? "bg-amber-400/[0.22] text-amber-200 ring-1 ring-amber-300/40"
+                    : "text-amber-300 hover:bg-amber-400/[0.14] hover:text-amber-200"
                 }`}
                 title={`더보기 (${desktopOverflowTabs.length}개)`}
                 aria-label="더보기 메뉴"
                 aria-expanded={desktopOverflowOpen}
               >
-                <Menu size={16} strokeWidth={2} />
-                <span className="text-[14px]">{desktopOverflowTabs.length}</span>
+                <Menu size={16} strokeWidth={2.4} />
+                <span className="text-[14px] font-bold tabular-nums bg-amber-400/[0.25] rounded-full px-1.5 leading-none py-0.5">{desktopOverflowTabs.length}</span>
               </button>
               {desktopOverflowOpen && (
                 <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1.5 min-w-[160px] z-[45] max-h-[70vh] overflow-y-auto">
@@ -501,19 +502,20 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             {/* 오버플로 · 삼선 ☰ 드롭다운 */}
             {mobileOverflowTabs.length > 0 && (
               <div ref={mobileOverflowBtnRef} className="relative shrink-0">
+                {/* 2026-09-10 · #38 · 사용자 지시 · 삼선 메뉴 · 컬러 액센트 (amber) */}
                 <button
                   type="button"
                   onClick={() => setMobileOverflowOpen(v => !v)}
                   className={`min-w-[44px] h-full flex flex-col items-center justify-center gap-0.5 px-2 rounded-lg text-[14px] font-bold transition-colors active:scale-95 ${
                     mobileOverflowOpen
-                      ? "bg-white/[0.18] text-white shadow-sm"
-                      : "text-[#C4DAEE] hover:bg-white/[0.10] hover:text-white"
+                      ? "bg-amber-400/[0.24] text-amber-200 shadow-sm ring-1 ring-amber-300/40"
+                      : "text-amber-300 hover:bg-amber-400/[0.16] hover:text-amber-200"
                   }`}
                   title={`더보기 (${mobileOverflowTabs.length}개)`}
                   aria-label="더보기 메뉴"
                   aria-expanded={mobileOverflowOpen}
                 >
-                  <Menu size={18} strokeWidth={2.4} />
+                  <Menu size={18} strokeWidth={2.6} />
                   <span className="text-[13px]">더보기</span>
                 </button>
                 {mobileOverflowOpen && (
