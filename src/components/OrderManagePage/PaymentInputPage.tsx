@@ -171,11 +171,13 @@ export const PaymentInputPage: React.FC = () => {
       months = Math.max(1, Math.round(diff / 30));
     }
     try {
+      // 2026-09-11 · #128 · 사용자 지시 · 잔고 · 매입액 − 결제액 · 미지급/선지급 · 대원칙
+      //   · legacy /api/supplier-balances (배열 · balance만) → /api/supplier-balances-map (values · purchase·payment·balance)
       const [orderRes, purRes, salesRes, balRes, payRes] = await Promise.allSettled([
         api.get<{ orders?: OrderHistoryItem[] }>(`/api/order-history?days=${days}&supplier=${supEnc}`),
         api.get<{ rows?: PurchaseDetailItem[] }>(`/api/purchase-details?supplier=${supEnc}&limit=2000&no_cycle=1`),
         api.get<{ rows?: SalesItem[] }>(`/api/stock-manage/top-sales?months=${months}&supplier=${supEnc}&sort=sale&dir=desc&limit=200`),
-        api.get<any>(`/api/supplier-balances`),
+        api.get<{ values?: Record<string, { purchase: number; payment: number; balance: number; cogs: number; stock_asset: number }> }>(`/api/supplier-balances-map`),
         api.get<{ rows?: PaymentHistoryItem[] }>(`/api/supplier-payments?supplier=${supEnc}&days=${days}`),
       ]);
       if (orderRes.status === "fulfilled") {
@@ -194,9 +196,16 @@ export const PaymentInputPage: React.FC = () => {
         setSales(Array.isArray(salesRes.value.data?.rows) ? salesRes.value.data.rows : []);
       }
       if (balRes.status === "fulfilled") {
-        const list = Array.isArray(balRes.value.data) ? balRes.value.data : (balRes.value.data?.rows ?? []);
-        const hit = list.find((b: any) => String(b.supplier ?? "").trim() === supplierName.trim());
-        if (hit) setBalance({ supplier: hit.supplier, balance: Number(hit.balance ?? 0), updated_at: hit.updated_at });
+        // 2026-09-11 · #128 · values[supplier] = { purchase, payment, balance, cogs, stock_asset }
+        //   · 잔고 = 매입액 − 결제액 · 미지급 (>0) · 선지급 (<0)
+        const values = balRes.value.data?.values ?? {};
+        const trimmed = supplierName.trim();
+        const hit = values[trimmed] || values[supplierName] || Object.entries(values).find(([k]) => k.trim() === trimmed)?.[1];
+        if (hit) {
+          setBalance({ supplier: trimmed, balance: Number(hit.balance ?? 0), updated_at: new Date().toISOString() });
+        } else {
+          setBalance({ supplier: trimmed, balance: 0, updated_at: new Date().toISOString() });
+        }
       }
       if (payRes.status === "fulfilled") {
         setPayments(Array.isArray(payRes.value.data?.rows) ? payRes.value.data.rows : []);
