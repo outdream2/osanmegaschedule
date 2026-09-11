@@ -206,15 +206,11 @@ export const VendorDetailModal: React.FC<{
 
   // 2026-08-10 · 자동 저장 · draft 변경 감지 · 800ms debounce · handleSave 호출 · 저장 후 2s 후 msg 사라짐
   // 2026-09-07 · isDirty 가드 추가 · React18 StrictMode double-invoke 시 첫 렌더 직후 자동저장 방지
+  // 2026-09-11 · 사용자 지시 · 자동저장 제거 · [저장] 버튼 눌러야만 저장 · 명시적 컨트롤 우선
+  //   · isFirstRenderRef 는 dirty 판정 · [취소] 원본 복원 등 · 계속 사용
   useEffect(() => {
     if (isFirstRenderRef.current) { isFirstRenderRef.current = false; return; }
-    if (!isDirty) return;
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    autoSaveTimerRef.current = setTimeout(() => {
-      handleSave();
-    }, 800);
-    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // 자동 저장 비활성 · draft 는 그대로 로컬 편집 · 저장은 [저장] 버튼만
   }, [draft, isDirty]);
   // saveMsg 2초 후 자동 사라짐
   useEffect(() => {
@@ -660,6 +656,15 @@ export const VendorDetailModal: React.FC<{
             </span>
           )}
           <div className="flex-1" />
+          {/* 2026-09-11 · 사용자 지시 · 취소 버튼 추가 · isDirty 시 · 원본 draft 복원 */}
+          <button
+            onClick={() => setDraft(emptyDraft(vendor))}
+            disabled={!isDirty || saving}
+            className="h-8 px-4 text-[14px] font-semibold bg-white border border-zinc-300 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-zinc-700 transition cursor-pointer"
+            title="변경사항 취소 · 원본 값으로 되돌리기"
+          >
+            취소
+          </button>
           <button
             onClick={onClose}
             className="h-8 px-4 text-[14px] font-semibold bg-white border border-zinc-300 hover:bg-zinc-50 rounded-lg text-zinc-700 transition cursor-pointer"
