@@ -166,10 +166,16 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
       }
       bodyClassName="relative flex-1 overflow-auto"
     >
+      {/* 2026-09-11 · 사용자 지시 · 리스트 다시 불러올 때 · 전체 리스트 화면에 overlay spinner (기존 상단 카드 spinner + 반투명 오버레이) */}
       {loading && xlsxSuppliers.length > 0 && (
-        <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mt-2">
-          <Spinner size={12} tone="sky" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
-        </Card>
+        <>
+          <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mt-2">
+            <Spinner size={12} tone="sky" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
+          </Card>
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/60 backdrop-blur-[1px] pointer-events-none">
+            <Spinner size={28} tone="sky" label="불러오는 중..." labelSize={16} />
+          </div>
+        </>
       )}
       {displayedXlsxSuppliers.length === 0 ? (
         loading ? (

@@ -71,12 +71,13 @@ export const ExpiryDateModal: React.FC<ExpiryDateModalProps> = ({ open, onClose,
     setSaving(true);
     setError(null);
     try {
-      // 1) inventory_checks · 입력날짜 + 유통기한 저장 (product_code + product_name 은 upsert 매칭용)
+      // 2026-09-11 · 사용자 지시 · #36 후속 · inventory_checks.expiry_date 하나만 저장 (SSOT)
+      //   · 이전 · expiry_input_date 도 전송 → DB 컬럼 없어서 (사용자 · expiry_date 만 마이그레이션 실행) INSERT 실패 → 유통기한 임박 리스트 안 나옴
+      //   · fix · expiry_input_date 필드 제외 · expiry_date 만 upsert
       await api.post("/api/inventory-checks", {
         product_code: row.code,
         product_name: row.product.name,
-        expiry_input_date: inputDate,
-        expiry_date:       expiryDate,
+        expiry_date:  expiryDate,
       });
       // 2) products.expiry_date · 기존 red-highlight 로직 유지 · 유통기한 날짜 그대로 저장
       await api.patch(`/api/products/${encodeURIComponent(row.code)}`, { expiry_date: expiryDate });
@@ -98,11 +99,11 @@ export const ExpiryDateModal: React.FC<ExpiryDateModalProps> = ({ open, onClose,
     setSaving(true);
     setError(null);
     try {
+      // 2026-09-11 · 사용자 지시 · #36 후속 · expiry_input_date 제외 · expiry_date NULL 리셋만
       await api.post("/api/inventory-checks", {
         product_code: row.code,
         product_name: row.product.name,
-        expiry_input_date: null,
-        expiry_date:       null,
+        expiry_date:  null,
       });
       await api.patch(`/api/products/${encodeURIComponent(row.code)}`, { expiry_date: null });
       onSaved(row.key, null);

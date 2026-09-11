@@ -10,6 +10,9 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { fmt } from "./SalesTrendPage.helpers";
+// 2026-09-11 · #106 · 사용자 지시 · 판매중/판매중지 필터 추가
+import { SaleStatusFilter } from "../common/SaleStatusFilter";
+import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 
 // ─── 타입 ────────────────────────────────────────────────────────────────────
 type SupplierAggRow = {
@@ -42,8 +45,9 @@ const SupplierTrendTab: React.FC<{
   const [suppliers, setSuppliers] = useState<SupplierAggRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
-  // 2026-09-08 · 사용자 지시 · TopN 제거 · 전체 로드 · 0 = 전체
-  const [topN] = useState<number>(0);
+  // 2026-09-11 · #107 · 사용자 지시 · TopN 완전 삭제 (dead code 정리)
+  // 2026-09-11 · #106 · 사용자 지시 · 판매중/판매중지 필터 · storageKey 격리
+  const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "supplierTrend.saleFilter" });
   const [expandedSuppliers, setExpandedSuppliers] = useState<Set<string>>(new Set());
   const [supplierRowsMap, setSupplierRowsMap] = useState<Record<string, any[] | null>>({});
   const [supplierRowsLoading, setSupplierRowsLoading] = useState<Set<string>>(new Set());
@@ -160,10 +164,8 @@ const SupplierTrendTab: React.FC<{
     return suppliers.filter(s => s.supplier.toLowerCase().includes(q));
   }, [suppliers, query]);
 
-  const visibleSuppliers = useMemo(
-    () => (topN === 0 ? filteredSuppliers : filteredSuppliers.slice(0, topN)),
-    [filteredSuppliers, topN],
-  );
+  // 2026-09-11 · #107 · TopN 삭제 · 전체 표시
+  const visibleSuppliers = filteredSuppliers;
 
   return (
     <div className="flex flex-col gap-3">
@@ -194,7 +196,8 @@ const SupplierTrendTab: React.FC<{
             ))}
           </div>
           <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setPeriodMonths(0); }} size="sm" hideLabel />
-          {/* 2026-09-08 · 사용자 지시 · Top N 버튼 제거 · 전체 로드 */}
+          {/* 2026-09-11 · #106 · 사용자 지시 · 판매중/판매중지 필터 추가 · 확장된 상품 리스트에 적용 */}
+          <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
         </div>
         {/* 검색 */}
         <div className="mb-2">
@@ -308,7 +311,8 @@ const SupplierTrendTab: React.FC<{
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-zinc-50">
-                                {sortSupRows(rows).slice(0, 200).map((r, ri) => {
+                                {/* 2026-09-11 · #106 · 사용자 지시 · 판매중/판매중지 필터 적용 (상품 sale_status) */}
+                                {sortSupRows(rows).filter((r: any) => saleMatches(r.sale_status)).slice(0, 200).map((r, ri) => {
                                   const saleQty = Number(r.sale_qty ?? 0);
                                   const salePrice = Number(r.sale_price ?? 0);
                                   const purchasePrice = derivePurchasePrice(r);

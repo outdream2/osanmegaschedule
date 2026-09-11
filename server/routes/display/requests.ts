@@ -765,11 +765,31 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
               pass: process.env.SMTP_PASS ?? "",
             } : undefined,
           });
-          const itemsHtml = items.map((it: any) =>
-            `<tr><td>${it.product_code ?? ""}</td><td>${it.product_name ?? ""}</td>` +
-            `<td style="text-align:right">${it.order_qty ?? 0}</td>` +
-            `<td style="text-align:right">${it.unit_price ?? "-"}</td></tr>`
-          ).join("");
+          // 2026-09-11 · #114 · 사용자 지시 · 예쁘게 · 단가·소계·현재고 등 · 정확 표시 · 통화 포맷
+          const fmtWon = (n: any) => {
+            const v = Number(n);
+            if (!Number.isFinite(v) || v === 0) return "-";
+            return v.toLocaleString("ko-KR") + "원";
+          };
+          const fmtQty = (n: any) => {
+            const v = Number(n);
+            return Number.isFinite(v) ? v.toLocaleString("ko-KR") : "-";
+          };
+          let grandTotal = 0;
+          const itemsHtml = items.map((it: any, idx: number) => {
+            const qty = Number(it.order_qty ?? 0);
+            const price = Number(it.unit_price ?? 0);
+            const lineAmt = qty > 0 && price > 0 ? qty * price : 0;
+            grandTotal += lineAmt;
+            return `<tr style="border-bottom:1px solid #e2e8f0">
+              <td style="padding:10px 12px;font-size:13px;color:#64748b;text-align:center">${idx + 1}</td>
+              <td style="padding:10px 12px;font-size:13px;color:#475569;font-family:monospace">${it.product_code ?? ""}</td>
+              <td style="padding:10px 12px;font-size:14px;color:#0f172a;font-weight:600">${it.product_name ?? ""}</td>
+              <td style="padding:10px 12px;text-align:right;font-size:14px;color:#0f172a;font-weight:700">${fmtQty(qty)}</td>
+              <td style="padding:10px 12px;text-align:right;font-size:13px;color:#475569">${fmtWon(price)}</td>
+              <td style="padding:10px 12px;text-align:right;font-size:14px;color:#0A2E4A;font-weight:700">${fmtWon(lineAmt)}</td>
+            </tr>`;
+          }).join("");
           const subject = `[발주서] ${supName} · ${order_number}`;
           // 2026-09-03 · 한글 인코딩 fix · <meta charset=utf-8> 명시
           //   · 일부 이메일 클라이언트 (Outlook 구버전 등) 는 charset 미명시 시 · CP949 로 해석 · 한글 깨짐
@@ -783,20 +803,50 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
               ${issuer.orgPhone ? `<div style="font-size:13px;color:#334155;margin-top:2px">약국 · ${issuer.orgPhone}</div>` : ""}
               ${issuer.personPhone ? `<div style="font-size:13px;color:#334155;margin-top:2px">담당자 연락처 · ${issuer.personPhone}</div>` : ""}
             </div>`;
-          const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
-            <div style="font-family:Pretendard,sans-serif;color:#1a1a1a">
-              <h2 style="color:#0A2E4A;margin:0 0 8px">📦 발주서</h2>
-              <p>공급사 <b>${supName}</b> 앞 · 발주번호 <b>${order_number}</b></p>
-              <p>발주일: ${order_date ?? new Date().toISOString().slice(0,10)}
-                 · 희망 입고일: ${desired_arrival ?? "-"}</p>
-              ${issuerBlock}
-              <table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;margin-top:12px">
-                <thead style="background:#f5f5f5">
-                  <tr><th>상품코드</th><th>상품명</th><th>수량</th><th>단가</th></tr>
-                </thead>
-                <tbody>${itemsHtml}</tbody>
-              </table>
-              ${memo ? `<p style="margin-top:12px"><b>메모:</b> ${memo}</p>` : ""}
+          const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background:#f1f5f9">
+            <div style="max-width:720px;margin:24px auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#0f172a">
+              <div style="background:linear-gradient(135deg,#0A2E4A 0%,#1e40af 100%);padding:24px;color:#ffffff">
+                <div style="font-size:12px;letter-spacing:0.2em;opacity:0.75;font-weight:600">PURCHASE ORDER · 발주서</div>
+                <div style="font-size:24px;font-weight:800;margin-top:4px">${supName}</div>
+                <div style="font-size:13px;margin-top:6px;opacity:0.9;font-family:monospace">${order_number}</div>
+              </div>
+              <div style="padding:20px 24px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;gap:32px;flex-wrap:wrap">
+                <div>
+                  <div style="font-size:11px;color:#64748b;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">발주일</div>
+                  <div style="font-size:15px;font-weight:700;color:#0f172a;margin-top:2px">${order_date ?? new Date().toISOString().slice(0,10)}</div>
+                </div>
+                <div>
+                  <div style="font-size:11px;color:#64748b;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">희망 입고일</div>
+                  <div style="font-size:15px;font-weight:700;color:#0f172a;margin-top:2px">${desired_arrival ?? "-"}</div>
+                </div>
+                <div>
+                  <div style="font-size:11px;color:#64748b;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">품목 수</div>
+                  <div style="font-size:15px;font-weight:700;color:#0f172a;margin-top:2px">${items.length}건</div>
+                </div>
+              </div>
+              <div style="padding:20px 24px">${issuerBlock}</div>
+              <div style="padding:0 24px 20px">
+                <table style="border-collapse:collapse;width:100%;background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
+                  <thead style="background:#f1f5f9">
+                    <tr>
+                      <th style="padding:10px 12px;text-align:center;font-size:12px;color:#475569;font-weight:700;letter-spacing:0.05em">#</th>
+                      <th style="padding:10px 12px;text-align:left;font-size:12px;color:#475569;font-weight:700;letter-spacing:0.05em">상품코드</th>
+                      <th style="padding:10px 12px;text-align:left;font-size:12px;color:#475569;font-weight:700;letter-spacing:0.05em">상품명</th>
+                      <th style="padding:10px 12px;text-align:right;font-size:12px;color:#475569;font-weight:700;letter-spacing:0.05em">수량</th>
+                      <th style="padding:10px 12px;text-align:right;font-size:12px;color:#475569;font-weight:700;letter-spacing:0.05em">단가</th>
+                      <th style="padding:10px 12px;text-align:right;font-size:12px;color:#475569;font-weight:700;letter-spacing:0.05em">소계</th>
+                    </tr>
+                  </thead>
+                  <tbody>${itemsHtml}</tbody>
+                  <tfoot>
+                    <tr style="background:#f8fafc">
+                      <td colspan="5" style="padding:12px;text-align:right;font-size:13px;color:#475569;font-weight:700">합계</td>
+                      <td style="padding:12px;text-align:right;font-size:16px;color:#0A2E4A;font-weight:800">${fmtWon(grandTotal)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              ${memo ? `<div style="padding:0 24px 20px"><div style="padding:12px 16px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:6px;font-size:13px;color:#78350f"><b>메모</b> · ${memo}</div></div>` : ""}
               <p style="margin-top:16px;color:#888;font-size:12px">본 메일은 자동 발송되었습니다.</p>
             </div>
           </body></html>`;
@@ -865,9 +915,14 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
     //   · 발송 채널 미선택(no_channel) = 의도적 DB 저장 → ordered 허용
     //   · 채널 선택 + 적어도 1채널 :sent → ordered 허용
     //   · 채널 선택 + 전부 no_recipient/no_env 등 → ordered 금지 · 발주요청에 그대로 남겨야 함
+    // 2026-09-11 · #113 · 사용자 신고 fix · 발주는 됐는데 이력에 안 남음
+    //   · 원인 · line 862 · dispatch.status='sent' 는 `skipped()` 도 포함 (line 862 outcomes.some 매치 조건 · sent OR skipped)
+    //   · 하지만 · anySentForSupplier 는 · :sent 만 · skipped 제외 → 미스매치 → dispatch=sent 인데 status=requested 유지
+    //   · fix · dispatch.status==='sent' 이면 · order_requests.status='ordered' 마킹 (일관성)
     const noChannels = !channels.email && !channels.sms && !channels.kakao;
     const anySentForSupplier = outcomes.some(o => /:sent$/.test(o));
-    const shouldMarkOrdered = noChannels || anySentForSupplier;
+    const dispatchSent = dispatch.status === "sent";
+    const shouldMarkOrdered = noChannels || anySentForSupplier || dispatchSent;
 
     const requestIds: string[] = items
       .map((it: any) => it.order_request_id)

@@ -142,11 +142,14 @@ export const PurchaseHistoryTab: React.FC = () => {
   const loadSummary = useCallback(async () => {
     setSummaryLoading(true);
     try {
+      // 2026-09-11 · #110 · 사용자 지시 · 기간 필터 반영 · days 동적 계산 (10일=periodMonths=0, N개월=N*30)
+      const isDays10 = periodMonths === 0 && !periodSeason;
+      const summaryDays = isDays10 ? 10 : (periodMonths || 3) * 30;
+      const summaryMonths = periodMonths > 0 ? periodMonths : 1;
       const [summaryResult, salesResult] = await Promise.allSettled([
-        api.get<SummaryResponse & { suppliers: any[] }>("/api/supplier-purchase-summary?days=90"),
-        // top-sales?months=1 · sale_qty_month · sale_amount_month · supplier_name 포함
-        //   ReturnListPanel · OrderManagePage 가 warm 시켜둔 서버 캐시(TTL) 재활용
-        api.get<any>("/api/stock-manage/top-sales?months=1&limit=5000&sort=sale&dir=desc"),
+        api.get<SummaryResponse & { suppliers: any[] }>(`/api/supplier-purchase-summary?days=${summaryDays}`),
+        // top-sales · periodMonths 반영 (이전 · 고정 months=1)
+        api.get<any>(`/api/stock-manage/top-sales?months=${summaryMonths}&limit=5000&sort=sale&dir=desc`),
       ]);
       if (summaryResult.status === "rejected") throw summaryResult.reason;
       const j: SummaryResponse & { suppliers: any[] } = summaryResult.value.data;
@@ -232,7 +235,9 @@ export const PurchaseHistoryTab: React.FC = () => {
       setSummaryMap(new Map());
       showError(`공급사 요약 로드 실패: ${e?.message ?? "네트워크 오류"}`);
     } finally { setSummaryLoading(false); }
-  }, []);
+    // 2026-09-11 · #110 · 사용자 지시 · 기간 필터 반영 · deps 에 periodMonths·periodSeason 추가
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [periodMonths, periodSeason]);
 
   // vendors-changed → loadSummary 재조회 (vendors 는 useVendors 내부에서 자동 갱신)
   useEffect(() => {

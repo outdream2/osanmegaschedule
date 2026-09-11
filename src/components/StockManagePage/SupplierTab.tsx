@@ -10,6 +10,7 @@ import { useVendors } from "../../hooks/useVendors";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { CARD_BASE } from "../../styles/tokens";
+import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { useColumnResize } from "../../hooks/useColumnResize";
 import { API_LIMITS } from "../../constants/apiLimits";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
@@ -121,6 +122,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
     setSupListSort(prev => prev.key === k ? { key: k, dir: prev.dir === "asc" ? "desc" : "asc" } : { key: k, dir: k === "supplier" ? "asc" : "desc" });
   };
   const [supListLimit, setSupListLimit] = useState<number>(999999);
+  // 2026-09-11 · #106·#107 재적용 · TopN 삭제 · 판매중 필터 추가 · storageKey supplierTab.saleFilter
+  const { value: supSaleFilter, setValue: setSupSaleFilter, matches: supSaleMatches } = useSaleStatusFilter({ storageKey: "supplierTab.saleFilter" });
   // 2026-08-24 · #262 · 공급사 검색 · 리스트 상단 배치
   const [supplierSearch, setSupplierSearch] = useState<string>("");
   const [supListCategory, setSupListCategory] = useState<"전체" | "위탁" | "선결제" | "60회전" | "90회전" | "기타">("전체");
@@ -338,6 +341,9 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.LARGE) });
       if (sup.supplier_code) params.set("supplier_code", sup.supplier_code);
       else if (sup.supplier) params.set("supplier", sup.supplier);
+      // 2026-09-11 · 사용자 지시 · 우측 상세 · 기간·계절 필터 · top-sales 호출에 전달 (이전 · 미전달 → 항상 최신 스냅샷 · 판매량·판매금액 기간 미반영)
+      if (supplierSeason) params.set("season", supplierSeason);
+      else if (supplierMonths > 0) params.set("months", String(supplierMonths));
       const { data } = await api.get<any>(`/api/stock-manage/top-sales?${params}`);
       const rows = data?.rows ?? [];
       setSupplierRowsMap(prev => ({ ...prev, [key]: Array.isArray(rows) ? rows : [] }));
@@ -348,7 +354,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       supplierInflightRef.current.delete(key);
       setSupplierRowsLoading(prev => { const n = new Set(prev); n.delete(key); return n; });
     }
-  }, [embedded, onSupplierClick]);
+  }, [embedded, onSupplierClick, supplierSeason, supplierMonths]);
 
   // 공급사 상세 모달 오픈 · 캐시 활용 (inline fetch 제거)
   const openSupplierDetailModal = useCallback((supplierName: string) => {
@@ -508,10 +514,12 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         setSupplierSeason={setSupplierSeason}
         setSupListLimit={setSupListLimit}
         fetchData={fetchData}
+        saleFilter={supSaleFilter}
+        onSaleFilterChange={setSupSaleFilter}
       />
 
-      {/* ── 하단 좌우 split ── */}
-      <div className="flex flex-col lg:flex-row gap-2 lg:min-h-[520px]">
+      {/* ── 하단 좌우 split ── 2026-09-11 · 사용자 지시 · 세로 스크롤 복구 · lg:h-[calc(100vh-260px)] · 다른 분할화면 프레임 통일 */}
+      <div className="flex flex-col lg:flex-row gap-2 lg:min-h-[520px] lg:h-[calc(100vh-260px)] lg:max-h-[820px]">
         {/* 좌측: 공급사 리스트 */}
         <div className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? supplierPanelWidth : undefined }}>

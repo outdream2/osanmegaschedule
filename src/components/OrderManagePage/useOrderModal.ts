@@ -143,9 +143,22 @@ export function useOrderModal({
             desired_arrival: orderModal.desiredArrival, memo: s.memo ?? orderModal.memo,
             channels: orderModal.channels,
             bySupplier: [{ supplier: s.supplier, supplier_contact: s.supplier_contact, supplier_email: s.supplier_email, supplier_phone: s.supplier_phone,
-              items: s.items.map(it => ({ order_request_id: it.order_request_id, product_code: it.product_code, product_name: it.product_name,
-                current_stock: it.current_stock, optimal_stock: it.optimal_stock,
-                needed_qty: (it.optimal_stock ?? 0) - (it.current_stock ?? 0), order_qty: it.order_qty, memo: it.memo })) }],
+              // 2026-09-11 · #114 · 사용자 지시 · 발주서에 있는 필드 · 모두 전송 (단가·재고·이전단가·메모 포함)
+              items: s.items.map(it => ({
+                order_request_id: it.order_request_id,
+                product_code: it.product_code,
+                product_name: it.product_name,
+                current_stock: it.current_stock,
+                optimal_stock: it.optimal_stock,
+                warehouse_stock: it.warehouse_stock ?? null,
+                store_stock: it.store_stock ?? null,
+                needed_qty: (it.optimal_stock ?? 0) - (it.current_stock ?? 0),
+                order_qty: it.order_qty,
+                unit_price: it.unit_price ?? null,
+                prev_unit_price: it.prev_unit_price ?? null,
+                line_amount: it.unit_price != null ? Number(it.order_qty) * Number(it.unit_price) : null,
+                memo: it.memo ?? null,
+              })) }],
           });
           const outcomes = Array.isArray(body?.results?.[0]?.outcomes) ? body.results[0].outcomes as string[] : [];
           // 2026-09-02 · #76+ · fix · realSent 로직 재정렬 · 사용자 리포트 "발주 발송 안 돼"

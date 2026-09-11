@@ -544,16 +544,20 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                           )
                           : <span className="text-[12px] text-zinc-300">-</span>}
                     </td>
-                    {/* 총판매액 · 우측 정렬 · 최근 3개월 */}
+                    {/* 총판매액 · 우측 정렬 · 최근 3개월 · 2026-09-11 · #70 · 사용자 지시 · 로딩 Spinner 추가 (총재고자산과 통일) */}
                     <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
-                      {salesTotal != null && salesTotal > 0
-                        ? (
-                          <span className="text-[14px] font-bold tabular-nums text-violet-700"
-                            title={`${Math.round(salesTotal).toLocaleString()}원 · 최근 3개월 판매액`}>
-                            {fmtWon(salesTotal)}
+                      {supplierAggLoading && salesTotal == null
+                        ? <span className="inline-flex items-center gap-1 text-[12px] text-zinc-400 italic">
+                            <span className="inline-block w-2.5 h-2.5 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
                           </span>
-                        )
-                        : <span className="text-[12px] text-zinc-300">-</span>}
+                        : salesTotal != null && salesTotal > 0
+                          ? (
+                            <span className="text-[14px] font-bold tabular-nums text-violet-700"
+                              title={`${Math.round(salesTotal).toLocaleString()}원 · 최근 3개월 판매액`}>
+                              {fmtWon(salesTotal)}
+                            </span>
+                          )
+                          : <span className="text-[12px] text-zinc-300">-</span>}
                     </td>
                     {/* 최근매입 */}
                     <td className="px-2 py-1.5 text-[13px] text-zinc-500 tabular-nums whitespace-nowrap">

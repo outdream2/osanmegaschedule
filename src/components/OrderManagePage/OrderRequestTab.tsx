@@ -322,11 +322,12 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                                     <VendorCategoryBadge category={getVendorCategory(currentSup)} />
                                     {/* 2026-08-24 · 사용자 지시 · 보라 X · Sky-700 · Attio 톤
                                         · 딥네이비 브랜드와 동일 파란 계열 · 자연스러운 조화 */}
+                                    {/* 2026-09-11 · 사용자 지시 · 공급사명 클릭 · 공급사 정보 수정 모달 (openSupplierInfo) · 발주이력은 우측 [발주이력] 버튼 별도 */}
                                     <button
                                       type="button"
-                                      onClick={(e) => { e.stopPropagation(); setSupplierHistorySupplier(currentSup); }}
+                                      onClick={(e) => { e.stopPropagation(); openSupplierInfo(currentSup); }}
                                       className="text-[17px] font-bold text-sky-800 hover:text-brand-deep hover:underline underline-offset-[3px] decoration-sky-400/60 cursor-pointer transition-colors"
-                                      title="공급사 클릭 · 최신 발주이력 보기"
+                                      title="공급사 클릭 · 공급사 정보 수정"
                                     >
                                       {displayVendorName(currentSup) || currentSup}
                                     </button>

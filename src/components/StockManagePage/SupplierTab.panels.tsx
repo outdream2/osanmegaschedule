@@ -17,6 +17,9 @@ import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { InlineLabel } from "../common/InlineLabel";
 import { PeriodSelector } from "../common/PeriodSelector";
 import { SeasonButtons } from "../common/SeasonButtons";
+// 2026-09-11 · #106 재적용 · 사용자 지시 · 판매중/판매중지 필터
+import { SaleStatusFilter } from "../common/SaleStatusFilter";
+import type { SaleStatusFilter as SaleStatusFilterValue } from "../../hooks/useSaleStatusFilter";
 // 2026-08-23 · #185 · PageToolbar 통일
 import { PageToolbar } from "../common/PageToolbar";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
@@ -302,12 +305,17 @@ interface SupplierFilterBarProps {
   setSupplierSeason: (v: SeasonKey | null) => void;
   setSupListLimit: (v: number) => void;
   fetchData: () => void;
+  // 2026-09-11 · #106 재적용 · 판매중 필터 · optional (embedded 모드 배려)
+  saleFilter?: SaleStatusFilterValue;
+  onSaleFilterChange?: (v: SaleStatusFilterValue) => void;
 }
 
 export const SupplierFilterBar: React.FC<SupplierFilterBarProps> = ({
   displayedCount, supplierMonths, supplierSeason, supListLimit, loading,
   setSupplierMonths, setSupplierSeason, setSupListLimit, fetchData,
+  saleFilter, onSaleFilterChange,
 }) => {
+  void supListLimit; void setSupListLimit;
   return (
     // 2026-08-23 · #185 · PageToolbar 프리미티브 통일 (CategoryTab·TrendingTab 톤 일치)
     <PageToolbar
@@ -318,7 +326,8 @@ export const SupplierFilterBar: React.FC<SupplierFilterBarProps> = ({
       leftSlot={<span className={`${TEXT.caption} text-ink-soft hidden sm:inline`}>행 클릭 → 우측 상품 리스트 · 상품명 클릭 → 상세</span>}
       right={
         <>
-          <div className="flex items-center gap-2">
+          {/* 2026-09-11 · 사용자 지시 · 기간 · 다음 줄 (basis-full · flex-wrap 안에서 강제 개행) */}
+          <div className="flex items-center gap-2 basis-full order-2 sm:order-1 sm:basis-auto">
             <InlineLabel size="sm">기간</InlineLabel>
             <PeriodSelector
               options={[
@@ -336,21 +345,16 @@ export const SupplierFilterBar: React.FC<SupplierFilterBarProps> = ({
               ariaLabel="공급사 조회기간"
             />
           </div>
-          <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
-          <div className="flex items-center gap-2">
-            <InlineLabel size="sm">Top N</InlineLabel>
-            <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
-              {[{ v: 100, label: "100" }, { v: 300, label: "300" }, { v: 1000, label: "1k" }, { v: 2000, label: "2k" }, { v: 999999, label: "전체" }].map(o => (
-                <button key={o.v} onClick={() => setSupListLimit(o.v)}
-                  className={`text-[15px] font-semibold h-8 px-3 rounded-md transition-colors whitespace-nowrap cursor-pointer ${supListLimit === o.v ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}
-                >{o.label}</button>
-              ))}
-            </div>
+          <div className="order-1 sm:order-2 flex items-center gap-2 flex-wrap">
+            <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
+            {saleFilter != null && onSaleFilterChange && (
+              <SaleStatusFilter value={saleFilter} onChange={onSaleFilterChange} size="sm" />
+            )}
+            <button type="button" onClick={fetchData} disabled={loading}
+              className="w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-brand-tint hover:border-brand-deep text-ink-soft hover:text-brand-deep transition-colors disabled:opacity-40 cursor-pointer" title="새로고침">
+              {loading ? <Spinner size={15} tone="zinc" /> : <RefreshCw size={15} />}
+            </button>
           </div>
-          <button type="button" onClick={fetchData} disabled={loading}
-            className="w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-brand-tint hover:border-brand-deep text-ink-soft hover:text-brand-deep transition-colors disabled:opacity-40 cursor-pointer" title="새로고침">
-            {loading ? <Spinner size={15} tone="zinc" /> : <RefreshCw size={15} />}
-          </button>
         </>
       }
     />
