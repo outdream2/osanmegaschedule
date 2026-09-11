@@ -155,20 +155,26 @@ export function ProductSearchInput({
         </div>
       )}
 
-      {/* 결과 리스트 · 2026-08-09 · hideList true 면 숨김 (선택·확인 후) */}
+      {/* 결과 리스트 · 2026-09-11 · #102 · Linear/Vercel 2026 톤 · 재디자인
+          - 클린 카드 · divide 대신 · gap-1 카드 · hover ring
+          - 이니셜 아이콘 · 상품 이미지 대체 · 브랜드 톤 배경
+          - 상품명 (14px bold) + 코드 / 공급사 (12px muted)
+          - 그림자 강화 · 팝오버 느낌 */}
       {query.trim() && !hideList && (
-        <div className="max-h-[180px] overflow-y-auto border border-line rounded-lg bg-white shadow-sm">
+        <div className="max-h-[240px] overflow-y-auto rounded-xl border border-zinc-200 bg-white shadow-[0_8px_24px_-8px_rgba(0,0,0,0.12),0_2px_6px_-2px_rgba(0,0,0,0.06)] p-1">
           {results.length === 0 && !loading ? (
-            <div className="px-3 py-3 text-center text-[13px] text-zinc-400">
-              검색 결과 없음
+            <div className="px-3 py-6 text-center text-[13px] text-zinc-400 flex flex-col items-center gap-1.5">
+              <Package size={16} className="text-zinc-300" />
+              <span>검색 결과 없음</span>
             </div>
           ) : (
-            <div className="divide-y divide-zinc-100">
+            <div className="flex flex-col gap-0.5">
               {results.slice(0, 20).map((p, i) => {
                 const isActive = selected?.product_code === p.product_code && selected?.product_name === p.product_name;
                 const code = String(p.product_code ?? "");
                 const name = String(p.product_name ?? "-");
                 const sup = String(p.supplier ?? "");
+                const initial = (name || "?").charAt(0);
                 return (
                   <button
                     key={`${code}-${i}`}
@@ -193,17 +199,23 @@ export function ProductSearchInput({
                         }, 100);
                       }
                     }}
-                    className={`w-full text-left px-2.5 py-1.5 flex items-center gap-2 transition cursor-pointer ${
-                      isActive ? cls.active : "hover:bg-zinc-50 border-l-2 border-transparent"
+                    className={`w-full text-left px-2 py-1.5 flex items-center gap-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
+                      isActive
+                        ? "bg-brand-tint ring-1 ring-brand-deep/30"
+                        : "hover:bg-zinc-50"
                     }`}
                   >
-                    <Package size={11} className="text-zinc-400 shrink-0" />
+                    <div className={`w-8 h-8 shrink-0 rounded-lg flex items-center justify-center font-bold text-[13px] ${
+                      isActive ? "bg-brand-deep text-white" : "bg-zinc-100 text-zinc-600"
+                    }`}>
+                      {initial}
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <div className={`text-[14px] font-bold truncate ${isActive ? "text-zinc-900" : "text-zinc-700"}`}>
+                      <div className={`text-[14px] font-bold truncate ${isActive ? "text-zinc-900" : "text-zinc-800"}`}>
                         {name}
                       </div>
-                      <div className="text-[12px] text-zinc-400 truncate">
-                        {code || "-"} · {sup || "-"}
+                      <div className="text-[12px] text-zinc-400 truncate tabular-nums">
+                        {code || "-"} {sup && <span className="text-zinc-300">·</span>} {sup && <span className="text-zinc-500">{sup}</span>}
                       </div>
                     </div>
                   </button>
