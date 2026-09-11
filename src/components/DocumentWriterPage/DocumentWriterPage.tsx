@@ -97,9 +97,9 @@ const DocumentWriterPage: React.FC<DocumentWriterPageProps> = (props) => {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* ── 내부 3탭 바 · 공통 TabBar (level 2) · 관리자 long-press 재정렬 ── */}
+      {/* 2026-09-11 · #50 · 사용자 지시 · 매입 서브탭 (매입이력·거래명세서·유통기한임박) 과 동일 · TabBar level=3 */}
       <TabBar<DocTab>
-        level={2}
+        level={3}
         tabs={sortable.tabs}
         activeKey={tab}
         onSelect={setTab}
