@@ -534,10 +534,10 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         onLogout={onLogout}
       />
 
-      {/* 2026-09-10 · #50 · 사용자 지시 · 매입이력(OrderManagePage) 그대로 · TabBar · main 안 · gap-4 · 완전 동일 구조 */}
+      {/* 2026-09-10 · #50 · 사용자 지시 · 매입 서브탭 (매입이력·거래명세서·유통기한임박) 과 동일 · TabBar level=3 · Linear docs 톤 */}
       <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-4 py-4 flex flex-col gap-4`}>
         <TabBar<Tab>
-          level={2}
+          level={3}
           tabs={TABS.map(([key, label, count]) => {
             const meta: Record<Tab, { icon: any; color: any }> = {
               display:     { icon: ClipboardList, color: "sky"     },
