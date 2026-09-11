@@ -776,18 +776,21 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
             return Number.isFinite(v) ? v.toLocaleString("ko-KR") : "-";
           };
           let grandTotal = 0;
+          // 2026-09-11 · 사용자 지시 · 핸드폰 가독성 · 상품코드 아래 · 상품명 줄바꿈 · 상품 셀 통합
           const itemsHtml = items.map((it: any, idx: number) => {
             const qty = Number(it.order_qty ?? 0);
             const price = Number(it.unit_price ?? 0);
             const lineAmt = qty > 0 && price > 0 ? qty * price : 0;
             grandTotal += lineAmt;
             return `<tr style="border-bottom:1px solid #e2e8f0">
-              <td style="padding:10px 12px;font-size:13px;color:#64748b;text-align:center">${idx + 1}</td>
-              <td style="padding:10px 12px;font-size:13px;color:#475569;font-family:monospace">${it.product_code ?? ""}</td>
-              <td style="padding:10px 12px;font-size:14px;color:#0f172a;font-weight:600">${it.product_name ?? ""}</td>
-              <td style="padding:10px 12px;text-align:right;font-size:14px;color:#0f172a;font-weight:700">${fmtQty(qty)}</td>
-              <td style="padding:10px 12px;text-align:right;font-size:13px;color:#475569">${fmtWon(price)}</td>
-              <td style="padding:10px 12px;text-align:right;font-size:14px;color:#0A2E4A;font-weight:700">${fmtWon(lineAmt)}</td>
+              <td style="padding:10px 12px;font-size:13px;color:#64748b;text-align:center;vertical-align:top">${idx + 1}</td>
+              <td style="padding:10px 12px;vertical-align:top">
+                <div style="font-size:12px;color:#64748b;font-family:monospace;letter-spacing:0.02em">${it.product_code ?? ""}</div>
+                <div style="font-size:14px;color:#0f172a;font-weight:700;margin-top:3px;line-height:1.35">${it.product_name ?? ""}</div>
+              </td>
+              <td style="padding:10px 12px;text-align:right;font-size:14px;color:#0f172a;font-weight:700;vertical-align:top;white-space:nowrap">${fmtQty(qty)}</td>
+              <td style="padding:10px 12px;text-align:right;font-size:13px;color:#475569;vertical-align:top;white-space:nowrap">${fmtWon(price)}</td>
+              <td style="padding:10px 12px;text-align:right;font-size:14px;color:#0A2E4A;font-weight:700;vertical-align:top;white-space:nowrap">${fmtWon(lineAmt)}</td>
             </tr>`;
           }).join("");
           const subject = `[발주서] ${supName} · ${order_number}`;
@@ -830,8 +833,7 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
                   <thead style="background:#f1f5f9">
                     <tr>
                       <th style="padding:10px 12px;text-align:center;font-size:12px;color:#475569;font-weight:700;letter-spacing:0.05em">#</th>
-                      <th style="padding:10px 12px;text-align:left;font-size:12px;color:#475569;font-weight:700;letter-spacing:0.05em">상품코드</th>
-                      <th style="padding:10px 12px;text-align:left;font-size:12px;color:#475569;font-weight:700;letter-spacing:0.05em">상품명</th>
+                      <th style="padding:10px 12px;text-align:left;font-size:12px;color:#475569;font-weight:700;letter-spacing:0.05em">상품</th>
                       <th style="padding:10px 12px;text-align:right;font-size:12px;color:#475569;font-weight:700;letter-spacing:0.05em">수량</th>
                       <th style="padding:10px 12px;text-align:right;font-size:12px;color:#475569;font-weight:700;letter-spacing:0.05em">단가</th>
                       <th style="padding:10px 12px;text-align:right;font-size:12px;color:#475569;font-weight:700;letter-spacing:0.05em">소계</th>
@@ -840,7 +842,7 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
                   <tbody>${itemsHtml}</tbody>
                   <tfoot>
                     <tr style="background:#f8fafc">
-                      <td colspan="5" style="padding:12px;text-align:right;font-size:13px;color:#475569;font-weight:700">합계</td>
+                      <td colspan="4" style="padding:12px;text-align:right;font-size:13px;color:#475569;font-weight:700">합계</td>
                       <td style="padding:12px;text-align:right;font-size:16px;color:#0A2E4A;font-weight:800">${fmtWon(grandTotal)}</td>
                     </tr>
                   </tfoot>
