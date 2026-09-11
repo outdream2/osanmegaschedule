@@ -1,6 +1,8 @@
 ﻿// src/components/DisplayPage/ZoneGroupPanel.tsx
 import React from "react";
 import { Plus, Trash2, MapPin, Check } from "lucide-react";
+// 2026-09-11 · #97 · deleteGroup confirm 추가
+import { useConfirm } from "../../hooks/useConfirm";
 
 export interface ZoneGroup {
   id: string;
@@ -48,6 +50,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
   onGroupsChange,
   onActiveGroupChange,
 }) => {
+  const confirm = useConfirm();
   const addGroup = () => {
     const g: ZoneGroup = {
       id: newId(),
@@ -65,7 +68,14 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
     onGroupsChange(groups.map((g) => (g.id === id ? { ...g, ...patch } : g)));
   };
 
-  const deleteGroup = (id: string) => {
+  const deleteGroup = async (id: string) => {
+    // 2026-09-11 · #97 · confirm 추가
+    const g = groups.find((x) => x.id === id);
+    const ok = await confirm({
+      message: `그룹 "${g?.name ?? id}"을(를) 삭제할까요?`,
+      danger: true,
+    });
+    if (!ok) return;
     onGroupsChange(groups.filter((g) => g.id !== id));
     if (activeGroupId === id) onActiveGroupChange(null);
   };

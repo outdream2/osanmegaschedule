@@ -15,6 +15,8 @@ import { dispatchApprovalChange } from "../../lib/approvalEvents";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-09-11 · #97 · handleDelete confirm 추가
+import { useConfirm } from "../../hooks/useConfirm";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -225,6 +227,7 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
   formatRel,
 }) => {
   const { toast, showError, showSuccess } = useToast();
+  const confirm = useConfirm();
   const pendingCount = useMemo(() => requests.filter((r) => r.status === "pending").length, [requests]);
   const doneCount = useMemo(() => requests.filter((r) => r.status === "done").length, [requests]);
   const urgentCount = useMemo(() => requests.filter(isUrgent).length, [requests]);
@@ -241,7 +244,13 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
       });
   };
 
-  const handleDelete = (req: DisplayRequest) => {
+  const handleDelete = async (req: DisplayRequest) => {
+    // 2026-09-11 · #97 · confirm 추가 · 실수 방지
+    const ok = await confirm({
+      message: `"${req.zoneLabel}" 진열요청을 삭제할까요?${req.productName ? `\n\n${req.productName}` : ""}`,
+      danger: true,
+    });
+    if (!ok) return;
     // optimistic update
     setRequests((prev) => prev.filter((r) => r.id !== req.id));
     api.del(`/api/display-requests/${req.id}`)

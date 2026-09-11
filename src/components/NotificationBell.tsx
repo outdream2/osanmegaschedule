@@ -12,6 +12,8 @@ import { AccentBar } from "./common/AccentBar";
 // 2026-08-21 · Framework Phase 3 · Card 프리미티브
 import { Card } from "./common/Card";
 import { Spinner } from "./common/Spinner";
+// 2026-09-11 · #97 · deleteAll confirm 추가
+import { useConfirm } from "../hooks/useConfirm";
 
 interface Notification {
   id: number;
@@ -72,6 +74,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
   const [justArrived, setJustArrived] = useState(false);
   const prevMaxIdRef = useRef<number>(0);
   const employeeId = authSession?.employeeId;
+  const confirm = useConfirm();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -143,8 +146,14 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
   };
 
   // 모두 삭제 → DB에서 완전 삭제 + 목록 초기화
+  // 2026-09-11 · #97 · confirm 추가 · 실수 방지 · 전체 알림 삭제는 파괴적
   const deleteAll = async () => {
     if (!employeeId || notifications.length === 0) return;
+    const ok = await confirm({
+      message: `알림 ${notifications.length}건을 모두 삭제할까요?`,
+      danger: true,
+    });
+    if (!ok) return;
     setNotifications([]);
     try { await api.del(`/api/notifications?employeeId=${employeeId}`); } catch { /* silent */ }
   };

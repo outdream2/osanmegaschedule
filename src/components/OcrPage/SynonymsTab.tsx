@@ -11,12 +11,15 @@ import { Card } from "../common/Card";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { Spinner } from "../common/Spinner";
 import type { ProductSynonym, SupplierAlias, ProdEditState, SuppEditState } from "./OcrPage.types";
+// 2026-09-11 · #97 · confirm 추가
+import { useConfirm } from "../../hooks/useConfirm";
 
 const cellCls = "border border-line rounded px-2 py-1 text-xs outline-none focus:border-brand-deep w-full";
 const cellClsSky = "border border-line rounded px-2 py-1 text-xs outline-none focus:border-brand-deep w-full";
 
 export const SynonymsTab: React.FC = () => {
   const { toast, showSuccess, showError } = useToast();
+  const confirm = useConfirm();
   const [synTab, setSynTab] = useState<"product" | "supplier">("product");
   const [prodListView, setProdListView] = useState<"prodname" | "supplier">("prodname");
   const [productSynonyms, setProductSynonyms] = useState<ProductSynonym[]>([]);
@@ -83,11 +86,25 @@ export const SynonymsTab: React.FC = () => {
   };
 
   const deleteProductSynonym = async (id: number) => {
+    // 2026-09-11 · #97 · confirm 추가
+    const target = productSynonyms.find(s => s.id === id);
+    const ok = await confirm({
+      message: target ? `동의어 "${target.prod_name_old}"을(를) 삭제할까요?` : "동의어를 삭제할까요?",
+      danger: true,
+    });
+    if (!ok) return;
     await api.del(`/api/ocr-synonyms/${id}`).catch(() => {});
     setProductSynonyms(prev => prev.filter(s => s.id !== id));
   };
 
   const deleteSupplierAlias = async (id: number) => {
+    // 2026-09-11 · #97 · confirm 추가
+    const target = supplierAliases.find(a => a.id === id);
+    const ok = await confirm({
+      message: target ? `공급사 별칭 "${target.alias}"을(를) 삭제할까요?` : "별칭을 삭제할까요?",
+      danger: true,
+    });
+    if (!ok) return;
     await api.del(`/api/ocr-supplier-aliases/${id}`).catch(() => {});
     setSupplierAliases(prev => prev.filter(a => a.id !== id));
   };

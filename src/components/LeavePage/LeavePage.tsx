@@ -169,7 +169,16 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
   };
 
   // ── Cancel (employee) ───────────────────────────────────────────────────────
+  // 2026-09-11 · #97 · confirm 추가 · 실수 방지
   const handleCancel = async (id: string) => {
+    const target = myRequests.find(r => r.id === id);
+    const ok = await confirm({
+      message: target
+        ? `${target.leave_type} · ${target.start_date}~${target.end_date} 신청을 취소할까요?`
+        : "연차 신청을 취소할까요?",
+      danger: true,
+    });
+    if (!ok) return;
     setCancellingId(id);
     try {
       await api.del(`/api/leave-requests/${id}`);

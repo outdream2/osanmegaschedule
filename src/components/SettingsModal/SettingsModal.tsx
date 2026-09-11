@@ -149,7 +149,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setNewPosition("");
   };
 
-  const removePosition = (idx: number) => {
+  const removePosition = async (idx: number) => {
+    // 2026-09-11 · #97 · confirm 추가 · 실수 방지
+    const name = positions[idx];
+    const ok = await confirm({
+      message: `직군 "${name}"을(를) 삭제할까요?`,
+      danger: true,
+    });
+    if (!ok) return;
     savePositions(positions.filter((_, i) => i !== idx));
   };
 
@@ -203,6 +210,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setRankRenaming(true);
       Promise.all(using.map(emp => api.patch(`/api/employees/${emp.id}`, { rank: null }).catch(() => null)))
         .finally(() => setRankRenaming(false));
+    } else {
+      // 2026-09-11 · #97 · 사용 안 함 케이스도 · confirm (실수 방지)
+      const ok = await confirm({
+        message: `직급 "${removing}"을(를) 삭제할까요?`,
+        danger: true,
+      });
+      if (!ok) return;
     }
     saveRanks(ranks.filter((_, i) => i !== idx));
   };
@@ -255,7 +269,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setNewWorkplace("");
   };
 
-  const removeWorkplace = (idx: number) => {
+  const removeWorkplace = async (idx: number) => {
+    // 2026-09-11 · #97 · confirm 추가
+    const name = workplaces[idx];
+    const ok = await confirm({
+      message: `근무지 "${name}"을(를) 삭제할까요?`,
+      danger: true,
+    });
+    if (!ok) return;
     saveWorkplaces(workplaces.filter((_, i) => i !== idx));
   };
 
@@ -270,7 +291,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setNewScheduleType("");
   };
 
-  const removeScheduleType = (idx: number) => {
+  const removeScheduleType = async (idx: number) => {
+    // 2026-09-11 · #97 · confirm 추가
+    const name = scheduleTypes[idx]?.type;
+    const ok = await confirm({
+      message: `스케줄 유형 "${name}"을(를) 삭제할까요?`,
+      danger: true,
+    });
+    if (!ok) return;
     saveScheduleTypes(scheduleTypes.filter((_, i) => i !== idx));
   };
 
