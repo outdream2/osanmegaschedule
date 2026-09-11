@@ -346,11 +346,26 @@ export const PaymentInputPage: React.FC = () => {
       {/* KPI 3 카드 · 잔고 · 총 매입 · 총 판매 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <Card padding="md" topAccent>
-          <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">잔고 (미결제)</div>
-          <div className={`mt-1 text-[22px] font-extrabold tabular-nums leading-none ${balance && balance.balance > 0 ? "text-rose-700" : "text-emerald-700"}`}>
-            {balance ? balance.balance.toLocaleString() : "0"}
-            <span className="text-[15px] font-semibold text-ink-soft ml-1">원</span>
-          </div>
+          {/* 2026-09-11 · #128·#122 · 사용자 지시 · 잔고 라벨 · 양수 미지급 (amber) · 음수 선지급 (sky) · 0 완납 (zinc)
+              · 이전 · 항상 "미결제" 라벨 · 음수 시 · 개념 혼동 (실제는 선지급인데 미결제로 보임)
+              · 잔고 = 매입액 − 결제액 · SSOT */}
+          {(() => {
+            const bal = balance?.balance ?? 0;
+            const label = bal > 0 ? "미지급" : bal < 0 ? "선지급" : "완납";
+            const toneCls = bal > 0 ? "text-amber-700" : bal < 0 ? "text-sky-700" : "text-emerald-700";
+            return (
+              <>
+                <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">잔고 · {label}</div>
+                <div className={`mt-1 text-[22px] font-extrabold tabular-nums leading-none ${toneCls}`}>
+                  {Math.abs(bal).toLocaleString()}
+                  <span className="text-[15px] font-semibold text-ink-soft ml-1">원</span>
+                </div>
+                <div className="text-[13px] text-ink-soft/70 mt-1">
+                  {bal > 0 ? "공급사에 지급할 금액" : bal < 0 ? "공급사에 선지급된 금액" : "완납 상태"}
+                </div>
+              </>
+            );
+          })()}
         </Card>
         <Card padding="md" topAccent>
           <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">총 매입 (12개월)</div>
