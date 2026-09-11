@@ -528,6 +528,18 @@ router.post("/api/order-requests", authorize(1), validateBody(CreateOrderRequest
   const supplierVal = b.supplier != null && String(b.supplier).trim() !== ""
     ? String(b.supplier).trim()
     : null;
+  // 2026-09-11 · #63 · 사용자 지시 · 공급사 · vendors 유효성 검증 (자유 입력 금지)
+  //   · 발주요청 · supplier 값 있으면 · vendors.company_name 정확 매칭 필수
+  if (supplierVal) {
+    const { data: matched } = await supabase
+      .from("vendors")
+      .select("company_name")
+      .eq("company_name", supplierVal)
+      .maybeSingle();
+    if (!matched) {
+      throw new HttpError(400, `공급사 "${supplierVal}" 는 등록된 공급사 목록에 없습니다. 공급사 관리에서 먼저 등록해주세요.`, "SUPPLIER_NOT_FOUND");
+    }
+  }
   // 2026-09-09 · optimal_stock 스냅샷 제거 · products.optimal_stock 단일 소스 (사용자 지시)
   //   · payload 에서 optimal_stock 저장 안 함 · GET 시 · products JOIN 으로 최신값 표시
   const basePayload: Record<string, any> = {
