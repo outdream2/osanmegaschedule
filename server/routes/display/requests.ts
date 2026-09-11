@@ -595,6 +595,7 @@ router.get("/api/order-history", asyncHandler(async (req, res) => {
   if (error) {
     // 컬럼 없음 (마이그레이션 미실행) · gracefully empty
     if (/column|does not exist|status/i.test(error.message)) {
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
       return res.json({ orders: [], notice: "마이그레이션 필요: add_order_dispatch_columns_2026-08-10.sql" });
     }
     throw new HttpError(500, error.message);
@@ -654,6 +655,8 @@ router.get("/api/order-history", asyncHandler(async (req, res) => {
     } catch { /* silent · products 조회 실패 시 · optimal_stock null */ }
   }
   const orders = [...grouped.values()].sort((a, b) => String(b.sent_at ?? "").localeCompare(String(a.sent_at ?? "")));
+  // 2026-09-11 · #126 · 사용자 지시 · 발주이력 · 캐시 X · 즉시 DB
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   return res.json({ orders, count: orders.length });
 }));
 

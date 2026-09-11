@@ -183,6 +183,8 @@ router.get("/api/supplier-balances-map", asyncHandler(async (_req, res) => {
       balance: purchase - payment,   // 실제잔고 = 매입액 − 결제액
     };
   }
+  // 2026-09-11 · #126 · 사용자 지시 · 중요 데이터 캐시 X · 즉시 DB
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   res.json({ values });
 }));
 
