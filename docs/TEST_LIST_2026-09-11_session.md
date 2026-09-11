@@ -302,8 +302,12 @@ Radix Popover · 셀 옆 표시 · 스크롤 · 화면 밖 튀어나갈 가능�
 | #109 | 기간 필터 통일 프리셋 | eb7c9710 |
 | #78  | SplitPanel · 5:5 근사값 제거 · 프리미티브 통일 | 1baba68b |
 | #97  | 파괴 버튼 · confirm 6건 추가 · 실수 방지 | 2ee9b822 |
+| #104 | 연차신청 (apply) · 리스트 UI · Linear 톤 통일 | 3c0010d0 |
+| #102 | ProductSearchInput · 결과 팝오버 재디자인 | 9d8e7d6d |
+| #98  | 차용계약 · 반응형 좌우 패널 접기 | 8218fee0 |
+| #121 | 진열요청 담당자 자동 매칭 (이미 서버 완료 확인) | (확인만) |
 
-**총 · 12태스크 완료 · 14커밋 (자율 3-4시간 세션)**
+**총 · 16태스크 완료 · 20커밋 (자율 3-4시간 세션)**
 
 ---
 
@@ -370,6 +374,98 @@ Agent 조사 · 파괴적 작업 · confirm 없음 · 실수 위험 6건 발견.
 ### 회귀 체크
 - 다른 파괴 작업 (30+ 케이스) · 기존 confirm 유지
 - 로컬 편집 (ReturnRequestModal, ScanPage removeRow) · 세션 상태만 · confirm 없음 (위험도 낮음)
+
+---
+
+## #104 · 연차신청 (apply) · 내 신청 내역 · Linear 톤 통일 ✅
+**커밋** · 3c0010d0
+
+### 배경
+approval mode(#131)는 재작성 완료 · apply mode 리스트는 여전히 · border-l-2 색색 · 19px 폰트 · 촌스러움.
+
+### 해결
+- 리스트 카드 · rounded-xl · hover shadow · approval mode와 동일 톤
+- 유형 chip · brand-tint · rounded-full
+- 사유 · MessageSquareText · 관리자 메모 · StickyNote
+- 폰트 계층 · 16/13/12 (기존 19px 대부분 제거)
+- 취소 버튼 · Linear-톤 · rose hover
+
+### 테스트 절차
+1. **일반 직원 로그인** · 연차신청 페이지
+2. **잔여 연차 배너** · 유지 (변경 없음)
+3. **연차 신청** 폼 · 유지 (변경 없음)
+4. **내 신청 내역 리스트:**
+   - approval mode와 동일 스타일 · Linear/Vercel 톤
+   - 날짜 (16px bold) · 유형 chip
+   - 상태 pill 오른쪽 상단
+   - 사유·메모 아이콘 인용문
+5. **신청 취소 (pending만)** · confirm dialog + 취소 버튼
+
+---
+
+## #102 · ProductSearchInput · 결과 팝오버 재디자인 ✅
+**커밋** · 9d8e7d6d
+
+### 배경
+`ProductSearchInput` · 결과 리스트 · divide-y 촌스러움 · Package 아이콘만.
+
+### 해결
+- 팝오버 · 그림자 강화 · rounded-xl · 세련
+- 이니셜 아이콘 · 상품명 첫 글자 · rounded-lg 8x8
+- 활성 상태 · bg-brand-tint · 이니셜 bg-brand-deep white
+- 코드/공급사 · tabular-nums · 색상 계층
+- 최대 높이 · 180 → 240px
+
+### 테스트 절차
+1. **차용계약** or **입고등록** or **발주필요** · 상품 검색창 사용
+2. 검색 · 결과 리스트 팝오버 표시:
+   - 그림자 · rounded-xl · 세련
+   - 각 아이템 · 이니셜 아이콘 + 상품명 + 코드/공급사
+   - 선택 시 · brand-tint 배경 강조
+3. 빈 상태 · Package 아이콘 + 텍스트
+
+---
+
+## #98 · 차용계약 페이지 · 반응형 좌우 패널 접기 ✅
+**커밋** · 8218fee0
+
+### 배경
+3-column 레이아웃 · 좌측 리스트 + 중앙 등록 + 우측 상세. 계약등록 (중앙) 확장 필요 시 · 좌·우 접기 불가.
+
+### 해결
+- 좌·우 패널 · 각각 collapse 상태
+- 접힘 시 · 세로 icon rail (56px · List/FileText 아이콘 + 텍스트)
+- 클릭으로 · 펼치기·접기
+- 계약등록 (중앙) · 접힘 상태에 따라 자동 확장
+
+### 테스트 절차
+1. **차용계약 페이지** · lg (데스크탑) 이상
+2. **좌측 리스트** · 우상단 · ChevronLeft 접기 버튼
+3. **접기 클릭** · 리스트 · 56px icon rail로 축소 · 중앙 확장
+4. **icon rail 클릭** · 다시 펼침
+5. **우측 상세** · 우상단 · ChevronRight 접기 버튼 · 동일 동작
+6. **둘 다 접기** · 계약등록 (중앙) · 최대 폭
+7. **모바일 (lg 미만)** · 기존 세로 스택 유지 (변경 없음)
+
+---
+
+## #121 · 진열요청 담당자 자동 매칭 (확인만) ✅
+
+### 배경
+서버 (`server/routes/display/requests.ts:177-188`) · 이미 zone_assignments 기반 자동 매칭 구현.
+
+### 확인 결과
+```typescript
+// 담당자 자동 매칭 · zone_assignments · assignedStaffId 미지정 시
+if (zoneId && (!assignedStaffId || Number.isNaN(assignedStaffId))) {
+  // zone_assignments 조회 · employee_id 자동 지정
+}
+```
+
+### 테스트 절차
+1. **진열요청 생성** · zone_id 만 지정 · assigned_staff_id 미지정
+2. **자동으로** · 해당 구역의 zone_assignments 기반 · 담당자 자동 배정
+3. 리스트에 표시
 
 ---
 
