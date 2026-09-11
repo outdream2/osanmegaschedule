@@ -86,6 +86,12 @@ interface SalesItem {
 interface Balance {
   supplier: string;
   balance: number;
+  // 2026-09-11 · #125·#127 · 사용자 지시 · 총 매입 · balance-map.purchase 사용 (order-history · 발주 기반) 대체
+  //   · 발주 없이 매입만 있는 상품 (ERP 임포트) · 발주 기반은 0 · 실제 매입 (purchase_details) 기반 사용
+  purchase?: number;
+  payment?: number;
+  cogs?: number;
+  stock_asset?: number;
   updated_at?: string | null;
 }
 
@@ -196,15 +202,24 @@ export const PaymentInputPage: React.FC = () => {
         setSales(Array.isArray(salesRes.value.data?.rows) ? salesRes.value.data.rows : []);
       }
       if (balRes.status === "fulfilled") {
-        // 2026-09-11 · #128 · values[supplier] = { purchase, payment, balance, cogs, stock_asset }
+        // 2026-09-11 · #128·#125 · values[supplier] = { purchase, payment, balance, cogs, stock_asset }
         //   · 잔고 = 매입액 − 결제액 · 미지급 (>0) · 선지급 (<0)
+        //   · purchase·cogs 도 저장 · 상단 KPI (총 매입) · 총 판매원가 · 소스 통일
         const values = balRes.value.data?.values ?? {};
         const trimmed = supplierName.trim();
         const hit = values[trimmed] || values[supplierName] || Object.entries(values).find(([k]) => k.trim() === trimmed)?.[1];
         if (hit) {
-          setBalance({ supplier: trimmed, balance: Number(hit.balance ?? 0), updated_at: new Date().toISOString() });
+          setBalance({
+            supplier: trimmed,
+            balance: Number(hit.balance ?? 0),
+            purchase: Number(hit.purchase ?? 0),
+            payment: Number(hit.payment ?? 0),
+            cogs: Number(hit.cogs ?? 0),
+            stock_asset: Number(hit.stock_asset ?? 0),
+            updated_at: new Date().toISOString(),
+          });
         } else {
-          setBalance({ supplier: trimmed, balance: 0, updated_at: new Date().toISOString() });
+          setBalance({ supplier: trimmed, balance: 0, purchase: 0, payment: 0, cogs: 0, stock_asset: 0, updated_at: new Date().toISOString() });
         }
       }
       if (payRes.status === "fulfilled") {
@@ -382,12 +397,17 @@ export const PaymentInputPage: React.FC = () => {
           })()}
         </Card>
         <Card padding="md" topAccent>
-          <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">총 매입 ({periodLabel})</div>
+          {/* 2026-09-11 · #125·#127 · 사용자 지시 · 총 매입 · balance-map.purchase 우선 (실제 매입 · purchase_details 기반)
+              · fallback · order-history 합계 (발주 기반 · 이전 로직)
+              · 발주 없이 매입만 있는 상품 (ERP 임포트) · balance-map.purchase · 정확 값 */}
+          <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">총 매입 (전체)</div>
           <div className="mt-1 text-[22px] font-extrabold tabular-nums leading-none text-brand-deep">
-            {kpi.totalOrderAmount.toLocaleString()}
+            {(balance?.purchase ?? kpi.totalOrderAmount).toLocaleString()}
             <span className="text-[15px] font-semibold text-ink-soft ml-1">원</span>
           </div>
-          <div className="text-[15px] text-ink-soft/80 mt-1 tabular-nums">발주 {kpi.totalOrderCount}건</div>
+          <div className="text-[15px] text-ink-soft/80 mt-1 tabular-nums">
+            발주 {kpi.totalOrderCount}건 · 결제 {(balance?.payment ?? 0).toLocaleString()}원
+          </div>
         </Card>
         <Card padding="md" topAccent>
           {/* 2026-09-11 · 사용자 지시 · 총판매금액·총판매원가 · 2개 필드 별도 · 명확 강조 */}
