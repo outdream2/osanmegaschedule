@@ -301,8 +301,9 @@ Radix Popover · 셀 옆 표시 · 스크롤 · 화면 밖 튀어나갈 가능�
 | #94  | 매장구역도 팝업 가운데 | e19020e7 |
 | #109 | 기간 필터 통일 프리셋 | eb7c9710 |
 | #78  | SplitPanel · 5:5 근사값 제거 · 프리미티브 통일 | 1baba68b |
+| #97  | 파괴 버튼 · confirm 6건 추가 · 실수 방지 | 2ee9b822 |
 
-**총 · 11태스크 완료 · 9커밋 (자율 3-4시간 세션)**
+**총 · 12태스크 완료 · 14커밋 (자율 3-4시간 세션)**
 
 ---
 
@@ -336,6 +337,39 @@ Radix Popover · 셀 옆 표시 · 스크롤 · 화면 밖 튀어나갈 가능�
 ### 회귀 체크
 - storage 저장 값 · 유지 (storageKey 그대로)
 - 각 페이지 · UI 정상 · 조정 가능
+
+---
+
+## #97 · 파괴 버튼 · confirm 6건 추가 ✅
+**커밋** · 2ee9b822 (Agent 조사 · task adbcea2f 리포트 기반)
+
+### 배경
+Agent 조사 · 파괴적 작업 · confirm 없음 · 실수 위험 6건 발견.
+
+### 해결 · confirm 추가한 파일
+1. **LeavePage.tsx** · `handleCancel` (직원측 연차 신청 취소)
+2. **NotificationBell.tsx** · `deleteAll` (알림 전체 삭제)
+3. **DisplayPage/DisplayRequestPanel.tsx** · `handleDelete` (진열요청 삭제)
+4. **SettingsModal/SettingsModal.tsx** · `removePosition·removeWorkplace·removeScheduleType·removeRank(unused)`
+5. **DisplayPage/ZoneGroupPanel.tsx** · `deleteGroup`
+6. **OcrPage/SynonymsTab.tsx** · `deleteProductSynonym·deleteSupplierAlias`
+
+### 테스트 절차
+1. **연차신청** · 내 신청 · 취소 → confirm dialog
+2. **알림 벨** · 모두 삭제 → confirm dialog
+3. **진열관리** · 진열요청 삭제 → confirm dialog
+4. **설정 모달** · 직군·직급·근무지·스케줄유형 삭제 → confirm dialog
+5. **매장구역도** · 그룹 삭제 → confirm dialog
+6. **OCR 동의어** · 동의어·별칭 삭제 → confirm dialog
+
+### 예상 결과
+- 각 파괴 버튼 · confirm dialog 표시
+- 취소 시 · 삭제 X
+- 대상 이름 표시 (예: `직급 "부장"을 삭제할까요?`)
+
+### 회귀 체크
+- 다른 파괴 작업 (30+ 케이스) · 기존 confirm 유지
+- 로컬 편집 (ReturnRequestModal, ScanPage removeRow) · 세션 상태만 · confirm 없음 (위험도 낮음)
 
 ---
 
