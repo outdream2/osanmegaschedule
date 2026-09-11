@@ -81,7 +81,8 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   // 2026-08-04 · #101 · 공급사별 재고자산·판매액 (총 3개월 · /api/stock-manage/supplier-purchases)
   //   key = normalizeSupplierKey(supplier_name) · value = { stockValue, salesTotal, balance }
   //   2026-09-10 · #72 · balance 추가 (매입액 − 결제액 · 확정 공식)
-  const [supplierAggMap, setSupplierAggMap] = useState<Map<string, { stockValue: number; salesTotal: number; balance?: number }>>(new Map());
+  // 2026-09-11 · 사용자 지시 · 총매입액 컬럼 추가 · purchaseTotal 필드
+  const [supplierAggMap, setSupplierAggMap] = useState<Map<string, { stockValue: number; salesTotal: number; balance?: number; purchaseTotal?: number }>>(new Map());
   // 2026-09-10 · 사용자 지시 · 재고자산 로딩 상태 · "-" 대신 · 로딩 중 표시
   const [supplierAggLoading, setSupplierAggLoading] = useState(false);
   // 2026-08-09 · 기간 조회 · 1개월/3개월/6개월/12개월 (default 3)
@@ -125,24 +126,26 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
         ]);
         const rows: any[] = Array.isArray(purchRes.data?.rows) ? purchRes.data.rows : [];
         const balMap = balRes.data?.values ?? {};
-        const m = new Map<string, { stockValue: number; salesTotal: number; balance?: number }>();
+        const m = new Map<string, { stockValue: number; salesTotal: number; balance?: number; purchaseTotal?: number }>();
         // 판매액 · supplier-purchases 기반 aggregation
         for (const r of rows) {
           const nm = String(r.supplier ?? "").trim();
           if (!nm) continue;
           const key = normalizeSupplierKey(nm);
           if (!key) continue;
-          const cur = m.get(key) ?? { stockValue: 0, salesTotal: 0, balance: 0 };
+          const cur = m.get(key) ?? { stockValue: 0, salesTotal: 0, balance: 0, purchaseTotal: 0 };
           cur.salesTotal += Number(r.saleAmount ?? 0) || 0;
           m.set(key, cur);
         }
-        // 재고자산·잔고 · 확정 공식 (재고자산 = 매입액 − 판매원가 · 잔고 = 매입액 − 결제액)
+        // 재고자산·잔고·매입액 · 확정 공식 (재고자산 = 매입액 − 판매원가 · 잔고 = 매입액 − 결제액)
         for (const [supplier, v] of Object.entries(balMap)) {
           const key = normalizeSupplierKey(supplier);
           if (!key) continue;
-          const cur = m.get(key) ?? { stockValue: 0, salesTotal: 0, balance: 0 };
+          const cur = m.get(key) ?? { stockValue: 0, salesTotal: 0, balance: 0, purchaseTotal: 0 };
           cur.stockValue = Number(v.stock_asset) || 0;
           cur.balance = Number(v.balance) || 0;
+          // 2026-09-11 · 사용자 지시 · 총매입액 컬럼 추가 · v.purchase (기간 누계 매입액)
+          cur.purchaseTotal = Number(v.purchase) || 0;
           m.set(key, cur);
         }
         if (!cancelled) setSupplierAggMap(m);
@@ -223,6 +226,12 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
         case "sales_total": {
           const va = supplierAggMap.get(normalizeSupplierKey(a.company_name))?.salesTotal ?? -Infinity;
           const vb = supplierAggMap.get(normalizeSupplierKey(b.company_name))?.salesTotal ?? -Infinity;
+          cmp = va - vb; break;
+        }
+        // 2026-09-11 · 사용자 지시 · 총매입액 정렬
+        case "purchase_total": {
+          const va = supplierAggMap.get(normalizeSupplierKey(a.company_name))?.purchaseTotal ?? -Infinity;
+          const vb = supplierAggMap.get(normalizeSupplierKey(b.company_name))?.purchaseTotal ?? -Infinity;
           cmp = va - vb; break;
         }
         default: cmp = 0;
@@ -403,6 +412,25 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                       : <ChevronDown size={9} className="text-zinc-300 mr-0.5 shrink-0" />}
                   </span>
                 </th>
+                {/* 2026-09-11 · 사용자 지시 · 총매입액 컬럼 추가 · v.purchase 기간 누계 */}
+                <th
+                  onClick={() => toggleCompactSort("purchase_total")}
+                  className={[
+                    "sticky top-0 z-10 border-b border-line",
+                    "text-[13px] font-bold uppercase tracking-wide whitespace-nowrap",
+                    "select-none cursor-pointer hover:bg-zinc-100 transition-colors duration-100",
+                    "py-1.5 text-right pr-2 pl-1 w-20",
+                    compactSortKey === "purchase_total" ? "text-indigo-600 bg-indigo-50/70" : "text-zinc-500 bg-zinc-50",
+                  ].join(" ")}
+                  title="공급사별 매입액 · 기간 누계"
+                >
+                  <span className="inline-flex items-center flex-row-reverse gap-0.5">
+                    총매입액
+                    {compactSortKey === "purchase_total"
+                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 mr-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 mr-0.5 shrink-0" />)
+                      : <ChevronDown size={9} className="text-zinc-300 mr-0.5 shrink-0" />}
+                  </span>
+                </th>
                 {/* 총재고자산 · 우측 정렬 · 최근 3개월 · totalStockAmount */}
                 <th
                   onClick={() => toggleCompactSort("stock_value")}
@@ -480,9 +508,11 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 // 2026-09-10 · #72 · 확정 공식 · balance = 매입액 − 결제액 · agg.balance 우선 (없으면 legacy latestBalance fallback)
                 const invDate   = v.latestBalance?.invoice_date;
                 // 2026-08-04 · #101 · 재고자산·판매액 (최근 3개월 · supplierAggMap)
+                // 2026-09-11 · 사용자 지시 · 총매입액 컬럼 추가
                 const agg = supplierAggMap.get(normalizeSupplierKey(v.company_name));
                 const stockValue = agg?.stockValue ?? null;
                 const salesTotal = agg?.salesTotal ?? null;
+                const purchaseTotal = agg?.purchaseTotal ?? null;
                 const balanceVal = agg?.balance != null ? agg.balance : (v.latestBalance?.balance ?? null);
                 const hasBal = balanceVal != null;
                 const fmtDate   = (d: string | null | undefined): string => {
@@ -527,6 +557,21 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                           </span>
                         )
                         : <span className="text-[12px] text-zinc-300">-</span>}
+                    </td>
+                    {/* 2026-09-11 · 사용자 지시 · 총매입액 · 우측 정렬 · 기간 누계 · brand-deep 톤 */}
+                    <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
+                      {supplierAggLoading && purchaseTotal == null
+                        ? <span className="inline-flex items-center gap-1 text-[12px] text-zinc-400 italic">
+                            <span className="inline-block w-2.5 h-2.5 border-2 border-brand-deep border-t-transparent rounded-full animate-spin" />
+                          </span>
+                        : purchaseTotal != null && purchaseTotal > 0
+                          ? (
+                            <span className="text-[14px] font-bold tabular-nums text-brand-deep"
+                              title={`${Math.round(purchaseTotal).toLocaleString()}원 · 기간 누계 매입액`}>
+                              {fmtWon(purchaseTotal)}
+                            </span>
+                          )
+                          : <span className="text-[12px] text-zinc-300">-</span>}
                     </td>
                     {/* 총재고자산 · 우측 정렬 · ERP 현재고 × 사입단가 (공급사별) · 2026-09-10 · #59
                         · 사용자 지시 · 0원도 명시 표시 · products.current_stock=0 or purchase_price=0 시 · "0원" 명확 */}

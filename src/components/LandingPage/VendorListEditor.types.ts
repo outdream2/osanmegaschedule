@@ -56,7 +56,9 @@ export interface EditDraft {
 export type CompactSortKey =
   | "company_name" | "category" | "business_number" | "contact_name" | "phone" | "email" | "vat"
   | "balance" | "invoice_date" | "created_at"
-  | "stock_value" | "sales_total";
+  | "stock_value" | "sales_total"
+  // 2026-09-11 · 사용자 지시 · 총매입액 컬럼 추가
+  | "purchase_total";
 
 // VendorDetailModal 관련 타입
 export interface PurchaseRow {
