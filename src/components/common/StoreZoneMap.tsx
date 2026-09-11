@@ -443,8 +443,10 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-          gridTemplateRows: "auto repeat(6, auto) auto",
+          // 2026-09-11 · 사용자 지시 · 매장구역도 셀 · 넓이·높이 균등 · 텍스트 길이 무관 통일
+          gridTemplateRows: "minmax(96px, auto) repeat(6, minmax(120px, 1fr)) minmax(96px, auto)",
           gap: "3px",
+          alignItems: "stretch",
         }}
       >
         {/* Row 0: 상단 벽 · col-span-5 · 내부 grid 14셀 · 균등 크기 · row 최대 셀 기준 stretch */}
@@ -474,13 +476,14 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         ))}
 
         {/* Rows 1-6: aisle · 각 pair · B (홀수 row) / A (짝수 row) 개별 셀 · 좌우 여백 */}
+        {/* 2026-09-11 · 사용자 지시 · h-full · row stretch · 셀 크기 균등 · 텍스트 길이 무관 */}
         {STORE_AISLE_COLUMNS.map((aisleCol, aci) => (
           aisleCol.pairs.map(({ b, a }, pairIdx) => (
             <React.Fragment key={`aisle-${aci}-${pairIdx}`}>
-              <div style={{ gridColumn: aisleCol.col + 1, gridRow: pairIdx * 2 + 2 }} className="px-1.5 py-1 relative group">
+              <div style={{ gridColumn: aisleCol.col + 1, gridRow: pairIdx * 2 + 2 }} className="px-1.5 py-1 relative group h-full flex flex-col">
                 {typeof b === "string" ? eventCell("B") : aisleCell(b as number, "B")}
               </div>
-              <div style={{ gridColumn: aisleCol.col + 1, gridRow: pairIdx * 2 + 3 }} className="px-1.5 py-1 relative group">
+              <div style={{ gridColumn: aisleCol.col + 1, gridRow: pairIdx * 2 + 3 }} className="px-1.5 py-1 relative group h-full flex flex-col">
                 {typeof a === "string" ? eventCell("A") : aisleCell(a as number, "A")}
               </div>
             </React.Fragment>
