@@ -219,7 +219,35 @@ export function useOrderModal({
         no_env:        "환경 미설정 (개발중 · 서버 관리자 문의)",
         error:         "발송 실패",
       };
+      // 2026-09-11 · 사용자 지시 · 발주 발송 결과 · 공급사·담당자·건수·금액 요약 표시
+      const fmtWonSum = (n: number) => Number.isFinite(n) && n > 0 ? n.toLocaleString("ko-KR") + "원" : "-";
+      const supplierSummaries = orderModal.suppliers.map(s => {
+        const itemCount = s.items.length;
+        const totalAmount = s.items.reduce((acc, it) => {
+          const qty = Number(it.order_qty ?? 0);
+          const price = Number(it.unit_price ?? 0);
+          return acc + (qty > 0 && price > 0 ? qty * price : 0);
+        }, 0);
+        const contact = s.supplier_contact ?? "담당자 미지정";
+        return { supplier: s.supplier, contact, itemCount, totalAmount };
+      });
       const dialogMessage: React.ReactNode = React.createElement("div", { className: "space-y-3 text-[15px]" },
+        // 요약 · 공급사별 · N의 M에게 총 K건 W원 발주됨
+        React.createElement("div", { className: "flex flex-col gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50/60 p-3" },
+          ...supplierSummaries.map((ss, idx) => React.createElement("div", {
+            key: `sum-${idx}`,
+            className: "text-[15px] text-emerald-900 leading-relaxed",
+          },
+            React.createElement("b", { className: "text-emerald-700" }, ss.supplier),
+            "의 ",
+            React.createElement("b", { className: "text-emerald-700" }, ss.contact),
+            "에게 총 ",
+            React.createElement("b", { className: "tabular-nums" }, `${ss.itemCount}건`),
+            " · ",
+            React.createElement("b", { className: "tabular-nums" }, fmtWonSum(ss.totalAmount)),
+            " 이 발주되었습니다.",
+          )),
+        ),
         React.createElement("div", { className: "text-[14px] text-zinc-500" },
           `발주서 ${orderModal.suppliers.length}건 · 서버 저장 완료`,
         ),
