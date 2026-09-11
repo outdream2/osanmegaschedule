@@ -390,16 +390,23 @@ export const PaymentInputPage: React.FC = () => {
           <div className="text-[15px] text-ink-soft/80 mt-1 tabular-nums">발주 {kpi.totalOrderCount}건</div>
         </Card>
         <Card padding="md" topAccent>
-          {/* 2026-09-11 · 사용자 지시 · 총판매금액 + 총판매원가 별도 표시 */}
+          {/* 2026-09-11 · 사용자 지시 · 총판매금액·총판매원가 · 2개 필드 별도 · 명확 강조 */}
           <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">총 판매 ({periodLabel})</div>
-          <div className="mt-1 text-[22px] font-extrabold tabular-nums leading-none text-emerald-700">
-            {kpi.totalSaleAmount.toLocaleString()}
-            <span className="text-[15px] font-semibold text-ink-soft ml-1">원</span>
+          <div className="mt-1.5 flex flex-col gap-1">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[13px] font-semibold text-ink-soft">총판매금액</span>
+              <span className="text-[18px] font-extrabold tabular-nums text-emerald-700">
+                {kpi.totalSaleAmount.toLocaleString()}<span className="text-[13px] font-semibold text-ink-soft ml-0.5">원</span>
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[13px] font-semibold text-ink-soft">총판매원가</span>
+              <span className="text-[18px] font-extrabold tabular-nums text-rose-600">
+                {kpi.totalSaleCogs.toLocaleString()}<span className="text-[13px] font-semibold text-ink-soft ml-0.5">원</span>
+              </span>
+            </div>
           </div>
-          <div className="text-[13px] text-ink-soft/80 mt-1 tabular-nums flex items-center gap-3">
-            <span>원가 <span className="font-bold text-rose-600">{kpi.totalSaleCogs.toLocaleString()}원</span></span>
-            <span>수량 {kpi.totalSaleQty.toLocaleString()}</span>
-          </div>
+          <div className="text-[13px] text-ink-soft/70 mt-1.5 tabular-nums">수량 {kpi.totalSaleQty.toLocaleString()}</div>
         </Card>
       </div>
         );
