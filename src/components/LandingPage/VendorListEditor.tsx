@@ -26,6 +26,8 @@ import { fmtWonCompact } from "../../lib/format";
 import { NewVendorModal } from "../common/features/NewVendorModal";
 import { IconTile } from "../common/IconTile";
 import { Spinner } from "../common/Spinner";
+// 2026-09-11 · #68 · 사용자 지시 · 검색창 · SearchBar 프리미티브 통일
+import { SearchBar } from "../common/SearchBar";
 
 interface VendorListEditorProps {
   // 기존 API 호환용 · 무시됨 (모달 방식으로 통일)
@@ -243,25 +245,25 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   return (
     <div className="flex flex-col gap-2 min-h-0 flex-1">
 
-      {/* ── compact 툴바 ── */}
+      {/* ── compact 툴바 ── 2026-09-11 · #68 · 사용자 지시 · SearchBar 프리미티브 통일 · 최근 검색어 3개 · 다른 공급사 검색창과 동일 UX */}
       {compact ? (
         <div className="flex flex-col gap-1.5 bg-white rounded-xl border border-line shadow-sm px-3 py-2">
           {/* 검색 + 새로고침 */}
           <div className="flex items-center gap-2">
-            <div className="relative flex-1 min-w-0">
-              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-              <input
-                lang="ko" value={search}
-                onChange={e => setSearch(e.target.value)}
+            <div className="flex-1 min-w-0">
+              <SearchBar
+                value={search}
+                onChange={setSearch}
                 placeholder="회사명 · 담당자 · 전화"
-                className="h-7 pl-7 pr-2 text-[14px] border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep w-full transition"
+                resultCount={loading ? undefined : filtered.length}
+                historyKey="vendorPayment.leftSearch"
+                accent="sky"
+                widthClass="w-full"
               />
             </div>
-            {/* 건수 */}
+            {/* 건수 (로딩 시만) */}
             <span className="text-[13px] text-zinc-400 tabular-nums whitespace-nowrap shrink-0">
-              {loading
-                ? <Spinner size={10} tone="zinc" />
-                : `${filtered.length}건`}
+              {loading ? <Spinner size={10} tone="zinc" /> : null}
             </span>
             <button
               onClick={loadVendors}
