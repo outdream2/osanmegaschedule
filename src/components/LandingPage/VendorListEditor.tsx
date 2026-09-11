@@ -544,14 +544,16 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                         </div>
                       </div>
                     </td>
-                    {/* 총잔고 · 우측 정렬 · 2026-09-10 · #72 · 확정 공식 · 매입액 − 결제액 · 미지급 amber · 선지급 sky */}
+                    {/* 총잔고 · 우측 정렬 · 2026-09-11 · #122 · 사용자 지시 · 색상 정정
+                        · 미지급 (>0) · 파란색 (sky) · 지급할 금액 · 안정
+                        · 선지급 (<0) · 붉은색 (rose) · 초과 결제 · 주의 */}
                     <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
                       {hasBal
                         ? (
                           <span
                             className={`text-[14px] font-bold tabular-nums ${
-                              balanceVal! > 0 ? "text-amber-700" :
-                              balanceVal! < 0 ? "text-sky-700" : "text-zinc-400"
+                              balanceVal! > 0 ? "text-sky-700" :
+                              balanceVal! < 0 ? "text-rose-700" : "text-zinc-400"
                             }`}
                             title={balanceVal! > 0 ? "미지급" : balanceVal! < 0 ? "선지급" : "완납"}
                           >

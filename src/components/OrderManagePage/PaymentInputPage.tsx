@@ -279,12 +279,20 @@ export const PaymentInputPage: React.FC = () => {
     return [...sales].sort((a, b) => Number(b.total_amount ?? 0) - Number(a.total_amount ?? 0)).slice(0, 12);
   }, [sales]);
 
+  // 2026-09-11 · 사용자 지시 · 총판매원가·총판매금액 · 별도 표시
+  //   · 원가 = SUM(sale_qty × purchase_price) · 대원칙 SSOT
+  //   · 판매금액 = SUM(total_amount) or SUM(sale_qty × sale_price)
   const kpi = useMemo(() => {
     const totalOrderAmount = orderHistory.reduce((s, o) => s + Number(o.total_amount ?? 0), 0);
     const totalOrderCount = orderHistory.length;
     const totalSaleAmount = sales.reduce((s, x) => s + Number(x.total_amount ?? 0), 0);
     const totalSaleQty = sales.reduce((s, x) => s + Number(x.sale_qty ?? 0), 0);
-    return { totalOrderAmount, totalOrderCount, totalSaleAmount, totalSaleQty };
+    const totalSaleCogs = sales.reduce((s, x) => {
+      const qty = Number(x.sale_qty ?? 0);
+      const pp = Number(x.purchase_price ?? 0);
+      return s + (qty > 0 && pp > 0 ? qty * pp : 0);
+    }, 0);
+    return { totalOrderAmount, totalOrderCount, totalSaleAmount, totalSaleQty, totalSaleCogs };
   }, [orderHistory, sales]);
 
   // ─── UI ─────────────────────────────────────────────────────────────
@@ -344,18 +352,24 @@ export const PaymentInputPage: React.FC = () => {
       <VendorInfoHeader vendor={selected as any} />
 
       {/* KPI 3 카드 · 잔고 · 총 매입 · 총 판매 */}
+      {/* 2026-09-11 · 사용자 지시 · 라벨 · 기간 반영 · rightPeriodMonths (1개월·3개월·6개월·1년·전체) */}
+      {(() => {
+        const periodLabel = rightPeriodMonths >= 999 ? "전체" : rightPeriodMonths >= 12 ? "12개월" : `${rightPeriodMonths}개월`;
+        return (
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <Card padding="md" topAccent>
-          {/* 2026-09-11 · #128·#122 · 사용자 지시 · 잔고 라벨 · 양수 미지급 (amber) · 음수 선지급 (sky) · 0 완납 (zinc)
-              · 이전 · 항상 "미결제" 라벨 · 음수 시 · 개념 혼동 (실제는 선지급인데 미결제로 보임)
+          {/* 2026-09-11 · #128·#122 · 사용자 지시 · 잔고 라벨 · 색상 확정 · 기간 반영
+              · 미지급 (>0) · 파란색 (sky) · 공급사에 지급할 금액 (아직 결제 안 함)
+              · 선지급 (<0) · 붉은색 (rose) · 공급사에 선지급된 금액 (초과 결제 · 위험 표시)
+              · 완납 (=0) · emerald
               · 잔고 = 매입액 − 결제액 · SSOT */}
           {(() => {
             const bal = balance?.balance ?? 0;
             const label = bal > 0 ? "미지급" : bal < 0 ? "선지급" : "완납";
-            const toneCls = bal > 0 ? "text-amber-700" : bal < 0 ? "text-sky-700" : "text-emerald-700";
+            const toneCls = bal > 0 ? "text-sky-700" : bal < 0 ? "text-rose-700" : "text-emerald-700";
             return (
               <>
-                <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">잔고 · {label}</div>
+                <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">잔고 · {label} ({periodLabel})</div>
                 <div className={`mt-1 text-[22px] font-extrabold tabular-nums leading-none ${toneCls}`}>
                   {Math.abs(bal).toLocaleString()}
                   <span className="text-[15px] font-semibold text-ink-soft ml-1">원</span>
@@ -368,7 +382,7 @@ export const PaymentInputPage: React.FC = () => {
           })()}
         </Card>
         <Card padding="md" topAccent>
-          <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">총 매입 (12개월)</div>
+          <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">총 매입 ({periodLabel})</div>
           <div className="mt-1 text-[22px] font-extrabold tabular-nums leading-none text-brand-deep">
             {kpi.totalOrderAmount.toLocaleString()}
             <span className="text-[15px] font-semibold text-ink-soft ml-1">원</span>
@@ -376,14 +390,20 @@ export const PaymentInputPage: React.FC = () => {
           <div className="text-[15px] text-ink-soft/80 mt-1 tabular-nums">발주 {kpi.totalOrderCount}건</div>
         </Card>
         <Card padding="md" topAccent>
-          <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">총 판매 (12개월)</div>
+          {/* 2026-09-11 · 사용자 지시 · 총판매금액 + 총판매원가 별도 표시 */}
+          <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider">총 판매 ({periodLabel})</div>
           <div className="mt-1 text-[22px] font-extrabold tabular-nums leading-none text-emerald-700">
             {kpi.totalSaleAmount.toLocaleString()}
             <span className="text-[15px] font-semibold text-ink-soft ml-1">원</span>
           </div>
-          <div className="text-[15px] text-ink-soft/80 mt-1 tabular-nums">수량 {kpi.totalSaleQty.toLocaleString()}</div>
+          <div className="text-[13px] text-ink-soft/80 mt-1 tabular-nums flex items-center gap-3">
+            <span>원가 <span className="font-bold text-rose-600">{kpi.totalSaleCogs.toLocaleString()}원</span></span>
+            <span>수량 {kpi.totalSaleQty.toLocaleString()}</span>
+          </div>
         </Card>
       </div>
+        );
+      })()}
 
       {/* 2026-08-25 · #111 · 결제 등록 폼 · PaymentEntryForm 재사용 (자체 Card + 헤더 포함) */}
       <PaymentEntryForm
