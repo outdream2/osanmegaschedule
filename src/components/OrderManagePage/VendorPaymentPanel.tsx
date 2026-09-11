@@ -68,8 +68,8 @@ export const VendorPaymentPanel: React.FC<VendorPaymentPanelProps> = ({
         </button>
       </div>
 
-      {/* SplitPanel · 좌 리스트 · 우 상세 */}
-      <div className="flex flex-col lg:flex-row gap-2 items-stretch lg:min-h-[720px]">
+      {/* SplitPanel · 좌 리스트 · 우 상세 · 2026-09-11 · #123 · 사용자 지시 · 세로 스크롤 복구 · height 명시 · min-h-only 였을 때 · 무한 확장 → 스크롤 사라짐 */}
+      <div className="flex flex-col lg:flex-row gap-2 items-stretch lg:min-h-[720px] lg:h-[calc(100vh-260px)] lg:max-h-[820px]">
         <div className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? vendorPanelWidth : undefined }}>
           <VendorListEditor
