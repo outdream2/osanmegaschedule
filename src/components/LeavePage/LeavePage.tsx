@@ -7,6 +7,7 @@ import { EmptyState } from "../common/EmptyState";
 import {
   CalendarDays, Clock, CheckCircle2, XCircle,
   RefreshCw, Plus, X, Trash2, ChevronDown,
+  MessageSquareText, StickyNote,
 } from "lucide-react";
 import type { AuthSession } from "../../types";
 import { fmtDateYMD, fmtDateMD } from "../../lib/format";
@@ -16,6 +17,7 @@ import { StatusPill, type PillTone } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
+import { TabBar } from "../common/TabBar";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 
 interface LeaveRequest {
@@ -401,131 +403,159 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
           </div>
         )}
 
-        {/* ── 관리자 뷰 (승인) ── */}
+        {/* ── 관리자 뷰 (승인) ──
+            2026-09-11 · #131 · UI 리디자인 · Linear/Vercel/Notion 2026 톤
+            · TabBar 프리미티브 · 이니셜 아바타 · 유형 chip · 아이콘 인용문 · Linear-톤 검토 버튼 */}
         {showApproval && (
           <div className="flex flex-col gap-4">
-            {/* 탭 */}
-            <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-100 border border-line rounded-xl">
-              {(["pending", "all"] as ManagerTab[]).map(t => (
-                <button
-                  key={t}
-                  onClick={() => setMgrTab(t)}
-                  className={`py-1.5 text-[15px] font-semibold rounded-md transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 ${mgrTab === t ? "bg-white shadow-sm text-zinc-800 border border-line" : "text-zinc-400 hover:text-zinc-600"}`}
-                >
-                  {t === "pending" ? (
-                    <><Clock size={12} />승인 대기 <span className={`ml-0.5 ${pending.length > 0 ? "text-amber-600" : ""}`}>{pending.length}</span></>
-                  ) : (
-                    <><CalendarDays size={12} />전체 목록</>
-                  )}
-                </button>
-              ))}
-            </div>
+            <TabBar
+              level={2}
+              activeKey={mgrTab}
+              onSelect={(k) => setMgrTab(k as ManagerTab)}
+              badgeColor="amber"
+              tabs={[
+                { key: "pending", label: "승인 대기", icon: Clock, badge: pending.length },
+                { key: "all", label: "전체 목록", icon: CalendarDays },
+              ]}
+            />
 
             <Card>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-1.5">
-                  <Clock size={14} className="text-amber-600" />
-                  <span className="text-sm font-bold text-zinc-700">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[16px] font-bold text-zinc-900">
                     {mgrTab === "pending" ? "승인 대기" : "전체 목록"}
                   </span>
-                  <span className="text-[18px] tabular-nums text-zinc-400">
-                    ({(mgrTab === "pending" ? pending : reviewed).length}건)
+                  <span className="text-[13px] tabular-nums text-zinc-400 font-medium">
+                    {(mgrTab === "pending" ? pending : reviewed).length}건
                   </span>
                 </div>
-                <button onClick={loadAllRequests} disabled={allLoading} className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-all duration-150 cursor-pointer">
-                  <RefreshCw size={12} className={allLoading ? "animate-spin" : ""} />
+                <button
+                  onClick={loadAllRequests}
+                  disabled={allLoading}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-all duration-150 cursor-pointer"
+                >
+                  <RefreshCw size={14} className={allLoading ? "animate-spin" : ""} />
                 </button>
               </div>
 
-            {allLoading && (mgrTab === "pending" ? pending : reviewed).length > 0 && (
-              <Card variant="flat" bg="bg-indigo-50" borderColor="border-indigo-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mb-1 sticky top-0 z-10">
-                <Spinner size={11} tone="brand" label="새로 불러오는 중..." labelSize={18} />
-              </Card>
-            )}
-            {allLoading && (mgrTab === "pending" ? pending : reviewed).length === 0 ? (
-              <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩 중..." labelSize={12} /></div>
-            ) : (
-              <div className={`flex flex-col divide-y divide-zinc-50 ${allLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                {(mgrTab === "pending" ? pending : reviewed).length === 0 ? (
-                  <EmptyState title={mgrTab === "pending" ? "대기 중인 신청 없음" : "검토 완료 없음"} size="compact" />
-                ) : (
-                  (mgrTab === "pending" ? pending : reviewed).map(r => (
-                    <div key={r.id} className={`py-1.5 hover:bg-zinc-50/60 transition-all duration-150 rounded-lg ${r.status === "pending" ? "border-l-2 border-amber-300 pl-2" : r.status === "approved" ? "border-l-2 border-emerald-300 pl-2" : "border-l-2 border-rose-300 pl-2"}`}>
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-bold text-zinc-800">{r.employee_name}</p>
-                            <span className="text-[15px] font-semibold text-zinc-500">{r.leave_type}</span>
+              {allLoading && (mgrTab === "pending" ? pending : reviewed).length > 0 && (
+                <Card variant="flat" bg="bg-indigo-50" borderColor="border-indigo-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mb-2 sticky top-0 z-10">
+                  <Spinner size={11} tone="brand" label="새로 불러오는 중..." labelSize={13} />
+                </Card>
+              )}
+              {allLoading && (mgrTab === "pending" ? pending : reviewed).length === 0 ? (
+                <div className="flex items-center justify-center py-12"><Spinner tone="zinc" label="로딩 중..." labelSize={13} /></div>
+              ) : (mgrTab === "pending" ? pending : reviewed).length === 0 ? (
+                <EmptyState title={mgrTab === "pending" ? "대기 중인 신청 없음" : "검토 완료 없음"} size="compact" />
+              ) : (
+                <div className={`flex flex-col gap-2 ${allLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                  {(mgrTab === "pending" ? pending : reviewed).map(r => {
+                    const tone: PillTone = r.status === "pending" ? "amber" : r.status === "approved" ? "emerald" : "rose";
+                    const initial = (r.employee_name ?? "?").charAt(0);
+                    const avatarBg = r.status === "pending" ? "bg-amber-50 text-amber-700 ring-amber-200"
+                      : r.status === "approved" ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                      : "bg-rose-50 text-rose-700 ring-rose-200";
+                    return (
+                      <div
+                        key={r.id}
+                        className="group relative rounded-xl border border-zinc-100 bg-white hover:border-zinc-200 hover:shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-150 p-3.5"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3 min-w-0 flex-1">
+                            <div className={`w-10 h-10 shrink-0 rounded-full ring-1 flex items-center justify-center font-bold text-[16px] ${avatarBg}`}>
+                              {initial}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[17px] font-bold text-zinc-900 leading-tight">{r.employee_name}</span>
+                                <span className="text-[12px] font-semibold text-brand-deep bg-brand-tint px-2 py-0.5 rounded-full">
+                                  {r.leave_type}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-1.5 text-[14px] text-zinc-600">
+                                <CalendarDays size={14} className="text-zinc-400" />
+                                <span className="tabular-nums font-medium">{fmtDate(r.start_date)}</span>
+                                {r.start_date !== r.end_date && (
+                                  <>
+                                    <span className="text-zinc-400">~</span>
+                                    <span className="tabular-nums font-medium">{fmtDate(r.end_date)}</span>
+                                  </>
+                                )}
+                              </div>
+                              {r.reason && (
+                                <div className="mt-2 flex items-start gap-1.5 text-[13px] text-zinc-600 bg-zinc-50 border border-zinc-100 rounded-lg px-2.5 py-1.5">
+                                  <MessageSquareText size={13} className="text-zinc-400 mt-0.5 shrink-0" />
+                                  <span className="break-words">{r.reason}</span>
+                                </div>
+                              )}
+                              {r.reviewer_note && (
+                                <div className="mt-1.5 flex items-start gap-1.5 text-[13px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2.5 py-1.5">
+                                  <StickyNote size={13} className="text-indigo-400 mt-0.5 shrink-0" />
+                                  <span className="break-words"><span className="font-bold">내 메모:</span> {r.reviewer_note}</span>
+                                </div>
+                              )}
+                              <div className="mt-2 text-[12px] text-zinc-400 tabular-nums">
+                                {fmtDateTime(r.created_at)} 신청
+                              </div>
+                            </div>
                           </div>
-                          <p className="text-[15px] text-zinc-500 mt-0.5">{fmtDate(r.start_date)} ~ {fmtDate(r.end_date)}</p>
+                          <StatusPill tone={tone} size="md" dot pulse={r.status === "pending"} className="shrink-0">
+                            {STATUS_LABEL[r.status]}
+                          </StatusPill>
                         </div>
-                        {(() => {
-                          const tone: PillTone = r.status === "pending" ? "amber" : r.status === "approved" ? "emerald" : "rose";
-                          return (
-                            <StatusPill tone={tone} size="md" dot pulse={r.status === "pending"} className="shrink-0">
-                              {STATUS_LABEL[r.status]}
-                            </StatusPill>
-                          );
-                        })()}
-                      </div>
-                      {r.reason && <p className="text-[15px] text-zinc-500 mb-2 bg-zinc-50 px-2.5 py-1.5 rounded-md">{r.reason}</p>}
-                      {r.reviewer_note && (
-                        <p className="text-[15px] text-indigo-700 bg-indigo-50 px-2.5 py-1.5 rounded-lg mb-2">
-                          <span className="font-bold">내 메모:</span> {r.reviewer_note}
-                        </p>
-                      )}
-                      <p className="text-[18px] text-zinc-400 mb-2">신청일: {fmtDateTime(r.created_at)}</p>
 
-                      {/* 승인/반려 패널 */}
-                      {r.status === "pending" && (
-                        reviewingId === r.id ? (
-                          <div className="flex flex-col gap-2 mt-2">
-                            <input
-                              lang="ko" type="text"
-                              value={reviewNote}
-                              onChange={e => setReviewNote(e.target.value)}
-                              placeholder="메모 (선택)"
-                              className="w-full bg-white border border-line rounded-lg px-3 py-2 text-[15px] focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
-                            />
-                            <div className="grid grid-cols-2 gap-2">
+                        {/* 승인/반려 · pending 시만 */}
+                        {r.status === "pending" && (
+                          reviewingId === r.id ? (
+                            <div className="mt-3 pl-[52px] flex flex-col gap-2">
+                              <input
+                                lang="ko" type="text"
+                                value={reviewNote}
+                                onChange={e => setReviewNote(e.target.value)}
+                                placeholder="메모 (선택)"
+                                className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
+                              />
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  onClick={() => handleReview(r.id, "approved")}
+                                  disabled={processingId === r.id}
+                                  className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[14px] font-semibold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white transition-all duration-150 cursor-pointer disabled:opacity-50"
+                                >
+                                  <CheckCircle2 size={14} />
+                                  {processingId === r.id ? "처리 중..." : "승인"}
+                                </button>
+                                <button
+                                  onClick={() => handleReview(r.id, "rejected")}
+                                  disabled={processingId === r.id}
+                                  className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[14px] font-semibold bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white transition-all duration-150 cursor-pointer disabled:opacity-50"
+                                >
+                                  <XCircle size={14} />
+                                  {processingId === r.id ? "처리 중..." : "반려"}
+                                </button>
+                              </div>
                               <button
-                                onClick={() => handleReview(r.id, "approved")}
-                                disabled={processingId === r.id}
-                                className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[15px] font-semibold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white transition-all duration-150 cursor-pointer disabled:opacity-50"
+                                onClick={() => { setReviewingId(null); setReviewNote(""); }}
+                                className="text-[13px] text-zinc-400 hover:text-zinc-600 text-center cursor-pointer py-1"
                               >
-                                <CheckCircle2 size={12} />
-                                {processingId === r.id ? "처리 중..." : "승인"}
-                              </button>
-                              <button
-                                onClick={() => handleReview(r.id, "rejected")}
-                                disabled={processingId === r.id}
-                                className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[15px] font-semibold bg-rose-600 hover:bg-rose-700 text-white transition-all duration-150 cursor-pointer disabled:opacity-50"
-                              >
-                                <XCircle size={12} />
-                                {processingId === r.id ? "처리 중..." : "반려"}
+                                취소
                               </button>
                             </div>
-                            <button
-                              onClick={() => { setReviewingId(null); setReviewNote(""); }}
-                              className="text-[19px] text-zinc-400 hover:text-zinc-600 text-center cursor-pointer"
-                            >
-                              취소
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => { setReviewingId(r.id); setReviewNote(""); }}
-                            className="mt-2 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[15px] font-bold bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition cursor-pointer"
-                          >
-                            검토하기
-                          </button>
-                        )
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
+                          ) : (
+                            <div className="mt-3 pl-[52px]">
+                              <button
+                                onClick={() => { setReviewingId(r.id); setReviewNote(""); }}
+                                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[14px] font-semibold bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-950 text-white transition-all duration-150 cursor-pointer"
+                              >
+                                검토하기
+                              </button>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </Card>
           </div>
         )}
