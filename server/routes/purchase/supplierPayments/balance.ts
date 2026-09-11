@@ -358,6 +358,8 @@ router.get("/api/supplier-balance/:supplier", asyncHandler(async (req, res) => {
 // GET /api/supplier-ledger?supplier=X&days=90
 //   · 매입(purchase_details) + 결제(supplier_payments) UNION · running balance 계산
 router.get("/api/supplier-ledger", asyncHandler(async (req, res) => {
+  // 2026-09-11 · #127·#126 · 대원칙 · 캐시 X · 즉시 업데이트
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const supplier = String(req.query.supplier ?? "").trim();
   if (!supplier) throw badRequest("supplier 필수");
   const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "90"), 10) || 90));
@@ -382,6 +384,11 @@ router.get("/api/supplier-ledger", asyncHandler(async (req, res) => {
         _raw_supply: r.supply_amount,
         method: null,
         memo: r.product_name || null,
+        // 2026-09-11 · #127 · SSOT · 우측 매입내역 탭 표시용
+        product_code: r.product_code || null,
+        product_name: r.product_name || null,
+        quantity: Number((r as any).quantity ?? 0),
+        unit_price: Number((r as any).unit_price ?? 0),
         allocations: null,
       });
     }

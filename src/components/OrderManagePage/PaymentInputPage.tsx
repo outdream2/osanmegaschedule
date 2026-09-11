@@ -177,53 +177,91 @@ export const PaymentInputPage: React.FC = () => {
       months = Math.max(1, Math.round(diff / 30));
     }
     try {
-      // 2026-09-11 · #128 · 사용자 지시 · 잔고 · 매입액 − 결제액 · 미지급/선지급 · 대원칙
-      //   · legacy /api/supplier-balances (배열 · balance만) → /api/supplier-balances-map (values · purchase·payment·balance)
-      const [orderRes, purRes, salesRes, balRes, payRes] = await Promise.allSettled([
+      // 2026-09-11 · #127 · SSOT 통합 · Option A · supplier-ledger 하나로 · 매입·결제·잔고 정합성 100%
+      //   · 이전 · order-history + purchase-details + supplier-balances-map + supplier-payments (4개) · 미스매치 원인
+      //   · 지금 · /api/supplier-ledger · 매입 (purchase_details) + 결제 (supplier_payments) UNION · running balance
+      //   · 유지 · order-history (발주 도메인 · 별도) · top-sales (판매 도메인 · 별도)
+      const [orderRes, ledgerRes, salesRes] = await Promise.allSettled([
         api.get<{ orders?: OrderHistoryItem[] }>(`/api/order-history?days=${days}&supplier=${supEnc}`),
-        api.get<{ rows?: PurchaseDetailItem[] }>(`/api/purchase-details?supplier=${supEnc}&limit=2000&no_cycle=1`),
+        api.get<{
+          supplier: string;
+          rows: Array<{
+            type: "purchase" | "payment";
+            id: number;
+            date: string;
+            amount: number;
+            method: string | null;
+            memo: string | null;
+            product_code?: string | null;
+            product_name?: string | null;
+            quantity?: number;
+            unit_price?: number;
+            vat_amount: number;
+            supply_amount: number;
+            tax_invoice_no?: string | null;
+            running_balance: number;
+          }>;
+          total_purchase: number;
+          total_purchase_vat: number;
+          total_purchase_supply: number;
+          total_payment: number;
+          total_payment_vat: number;
+          total_payment_supply: number;
+          current_balance: number;
+        }>(`/api/supplier-ledger?supplier=${supEnc}&days=${days}`),
         api.get<{ rows?: SalesItem[] }>(`/api/stock-manage/top-sales?months=${months}&supplier=${supEnc}&sort=sale&dir=desc&limit=200`),
-        api.get<{ values?: Record<string, { purchase: number; payment: number; balance: number; cogs: number; stock_asset: number }> }>(`/api/supplier-balances-map`),
-        api.get<{ rows?: PaymentHistoryItem[] }>(`/api/supplier-payments?supplier=${supEnc}&days=${days}`),
       ]);
       if (orderRes.status === "fulfilled") {
         setOrderHistory(Array.isArray(orderRes.value.data?.orders) ? orderRes.value.data.orders : []);
       }
-      if (purRes.status === "fulfilled") {
-        const raw = purRes.value.data;
-        const rows: PurchaseDetailItem[] = Array.isArray((raw as any)?.rows)
-          ? (raw as any).rows
-          : Array.isArray(raw)
-            ? raw as any
-            : [];
-        setPurchaseDetails(rows);
-      }
       if (salesRes.status === "fulfilled") {
         setSales(Array.isArray(salesRes.value.data?.rows) ? salesRes.value.data.rows : []);
       }
-      if (balRes.status === "fulfilled") {
-        // 2026-09-11 · #128·#125 · values[supplier] = { purchase, payment, balance, cogs, stock_asset }
-        //   · 잔고 = 매입액 − 결제액 · 미지급 (>0) · 선지급 (<0)
-        //   · purchase·cogs 도 저장 · 상단 KPI (총 매입) · 총 판매원가 · 소스 통일
-        const values = balRes.value.data?.values ?? {};
+      if (ledgerRes.status === "fulfilled") {
+        const L = ledgerRes.value.data;
         const trimmed = supplierName.trim();
-        const hit = values[trimmed] || values[supplierName] || Object.entries(values).find(([k]) => k.trim() === trimmed)?.[1];
-        if (hit) {
-          setBalance({
-            supplier: trimmed,
-            balance: Number(hit.balance ?? 0),
-            purchase: Number(hit.purchase ?? 0),
-            payment: Number(hit.payment ?? 0),
-            cogs: Number(hit.cogs ?? 0),
-            stock_asset: Number(hit.stock_asset ?? 0),
-            updated_at: new Date().toISOString(),
-          });
-        } else {
-          setBalance({ supplier: trimmed, balance: 0, purchase: 0, payment: 0, cogs: 0, stock_asset: 0, updated_at: new Date().toISOString() });
-        }
-      }
-      if (payRes.status === "fulfilled") {
-        setPayments(Array.isArray(payRes.value.data?.rows) ? payRes.value.data.rows : []);
+        // 재고자산 (SSOT · 재고자산 = 매입액 − 판매원가) · sales 로드 후 파생 계산 필요
+        //   · 여기선 임시 0 · useMemo(kpi) 에서 totalSaleCogs 로 계산 (기존 로직 유지)
+        setBalance({
+          supplier: trimmed,
+          balance: Number(L?.current_balance ?? 0),
+          purchase: Number(L?.total_purchase ?? 0),
+          payment: Number(L?.total_payment ?? 0),
+          cogs: 0,
+          stock_asset: 0,
+          updated_at: new Date().toISOString(),
+        });
+        // rows[type='purchase'] → 우측 매입내역 탭 표시
+        const purRows: PurchaseDetailItem[] = (L?.rows ?? [])
+          .filter(r => r.type === "purchase")
+          .map(r => ({
+            id: r.id,
+            purchase_date: r.date,
+            product_code: r.product_code ?? null,
+            product_name: r.product_name ?? r.memo ?? null,
+            quantity: Number(r.quantity ?? 0),
+            unit_price: Number(r.unit_price ?? 0),
+            amount: Number(r.amount ?? 0),
+            verify_status: null,
+          }));
+        setPurchaseDetails(purRows);
+        // rows[type='payment'] → 우측 결제내역 탭 표시
+        const payRows: PaymentHistoryItem[] = (L?.rows ?? [])
+          .filter(r => r.type === "payment")
+          .map(r => ({
+            id: r.id,
+            payment_date: r.date,
+            amount: Number(r.amount ?? 0),
+            method: String(r.method ?? ""),
+            memo: r.memo ?? null,
+            card_id: null,
+            created_at: r.date,
+          }));
+        setPayments(payRows);
+      } else {
+        setBalance({ supplier: supplierName.trim(), balance: 0, purchase: 0, payment: 0, cogs: 0, stock_asset: 0, updated_at: new Date().toISOString() });
+        setPurchaseDetails([]);
+        setPayments([]);
       }
     } catch (e: any) {
       setDataError(e?.message ?? "네트워크 오류");

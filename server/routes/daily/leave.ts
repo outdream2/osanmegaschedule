@@ -11,6 +11,7 @@ import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
 import { CreateLeaveRequestSchema, ReviewLeaveRequestSchema } from "../../../src/shared/schemas/leave";
 import type { LeaveBalanceResponse, LeaveStatsResponse } from "../../../src/shared/dtos/leave";
+import { nextKstYmd, compareYmd } from "../../lib/kstDate";
 
 const router = Router();
 
@@ -112,12 +113,13 @@ router.put("/api/leave-requests/:id", authorize(5), validateBody(ReviewLeaveRequ
 
   if (status === "approved") {
     const scheduleType = ["오전반차", "오후반차"].includes(data.leave_type) ? data.leave_type : "월차";
+    // 2026-09-11 · #116 · KST off-by-one fix · 문자열 기반 · Date/UTC 변환 회피
     const dates: string[] = [];
-    const cur = new Date(data.start_date + "T00:00:00");
-    const end = new Date(data.end_date + "T00:00:00");
-    while (cur <= end) {
-      dates.push(cur.toISOString().slice(0, 10));
-      cur.setDate(cur.getDate() + 1);
+    let cur: string = String(data.start_date).slice(0, 10);
+    const end: string = String(data.end_date).slice(0, 10);
+    while (compareYmd(cur, end) <= 0) {
+      dates.push(cur);
+      cur = nextKstYmd(cur);
     }
     if (dates.length > 0) {
       await scheduleService.batchUpdateSchedules(

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { AuthSession } from "../../types";
 import { fmtDateYMD, fmtDateMD } from "../../lib/format";
+import { getKstYmd } from "../../lib/kstDate";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { StatusPill, type PillTone } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
@@ -67,10 +68,6 @@ const STATUS_COLOR: Record<string, string> = {
 const fmtDate = fmtDateYMD;
 const fmtDateTime = fmtDateMD;
 
-function today() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNavigate, onLogout, embedded = false, mode = "both" }) => {
   const isManager = (authSession?.level ?? 0) >= 2;
   const employeeId = authSession?.employeeId;
@@ -85,8 +82,8 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
   const [balance, setBalance] = useState<{ total: number; used: number; remaining: number } | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formType, setFormType] = useState(LEAVE_TYPES[0]);
-  const [formStart, setFormStart] = useState(today());
-  const [formEnd, setFormEnd] = useState(today());
+  const [formStart, setFormStart] = useState(getKstYmd());
+  const [formEnd, setFormEnd] = useState(getKstYmd());
   const [formReason, setFormReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -153,8 +150,8 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
       });
       setShowForm(false);
       setFormType(LEAVE_TYPES[0]);
-      setFormStart(today());
-      setFormEnd(today());
+      setFormStart(getKstYmd());
+      setFormEnd(getKstYmd());
       setFormReason("");
       await loadMyRequests();
       // 2026-08-18 · 승인 대기 배지 즉시 갱신 (관리자 화면 · 알림)

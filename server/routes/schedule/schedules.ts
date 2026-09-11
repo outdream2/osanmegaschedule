@@ -13,6 +13,7 @@ import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
 import type { NextEmployeeNumberResponse } from "../../../src/shared/dtos/employees";
 import { UpsertScheduleSchema, BatchScheduleSchema, CopyScheduleSchema } from "../../../src/shared/schemas/schedules";
 import { CreateEmployeeSchema, UpdateEmployeeSchema } from "../../../src/shared/schemas/employees";
+import { getKstYmd } from "../../lib/kstDate";
 
 const router = Router();
 
@@ -131,7 +132,7 @@ router.post("/api/employees/:id/resume", authorize(1), resumeUpload.single("resu
   // 직원명 조회 (파일명 규칙)
   const { data: emp } = await supabase.from("employees").select("name, resume_url").eq("id", id).maybeSingle();
   if (!emp) throw notFound("직원을 찾을 수 없습니다");
-  const ts = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const ts = getKstYmd().replace(/-/g, "");
   const ext = req.file.originalname.split(".").pop() || "pdf";
   const fileName = `${(emp as any).name || `emp${id}`}_이력서_${ts}.${ext}`;
   const result = await uploadToDrive("resume", req.file.buffer, fileName, req.file.mimetype);
@@ -196,7 +197,7 @@ router.post("/api/employees/:id/resignation-file", authorize(1), resignationFile
     .maybeSingle();
   if (!emp) throw notFound("직원을 찾을 수 없습니다");
 
-  const ts = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const ts = getKstYmd().replace(/-/g, "");
   const ext = req.file.originalname.split(".").pop() || "pdf";
   const safeName = ((emp as any).name || `emp${id}`).replace(/[^가-힣a-zA-Z0-9]/g, "_");
   const objectPath = `${id}/${safeName}_사직서_${ts}_${Date.now()}.${ext}`;

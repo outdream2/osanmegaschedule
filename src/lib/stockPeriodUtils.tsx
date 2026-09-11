@@ -3,6 +3,7 @@
 // (순환 참조 방지용 분리 파일)
 
 import React, { useState } from "react";
+import { getKstYmdFrom } from "./kstDate";
 
 // ─── 포맷 헬퍼 ────────────────────────────────────────────────────────────────
 export const fmt = (n: number | null | undefined): string => {
@@ -246,18 +247,17 @@ export const MultiLineChart = React.memo(MultiLineChartInner);
 
 // ─── 기간 목록 생성 ─────────────────────────────────────────────────────────
 function generatePeriods(rangeDays: number): Array<{ start: string; end: string; period_type: "early" | "mid" | "late" }> {
-  // 2026-09-01 · P0 fix · UTC 기준 통일 · 로컬 시간 사용 시 시간대 경계 (새벽 UTC+9) 에서 매칭 실패
+  // 2026-09-11 · #116 · KST 기준 통일 · 브라우저 시간대 무관 · off-by-one 방지
   const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-  const cutoff = new Date(today);
-  cutoff.setUTCDate(cutoff.getUTCDate() - rangeDays);
-  const cutoffStr = cutoff.toISOString().slice(0, 10);
+  const todayStr = getKstYmdFrom(today);
+  const cutoff = new Date(today.getTime() - rangeDays * 86400000);
+  const cutoffStr = getKstYmdFrom(cutoff);
 
   const periods: Array<{ start: string; end: string; period_type: "early" | "mid" | "late" }> = [];
-  let year = cutoff.getUTCFullYear();
-  let month = cutoff.getUTCMonth() + 1;
-  const todayYear = today.getUTCFullYear();
-  const todayMonth = today.getUTCMonth() + 1;
+  let year = Number(cutoffStr.slice(0, 4));
+  let month = Number(cutoffStr.slice(5, 7));
+  const todayYear = Number(todayStr.slice(0, 4));
+  const todayMonth = Number(todayStr.slice(5, 7));
 
   while (true) {
     const mm = String(month).padStart(2, "0");
