@@ -53,6 +53,8 @@ interface DisplayRequestTabProps {
   onNotifyAll: () => void;
   onPrepareDisplay: (req: DisplayRequest) => void;
   onCompleteDisplay: (req: DisplayRequest) => void;
+  // 2026-09-11 · #75 · 사용자 지시 · 담당자 미지정 시 · 지정 UI · optional (부모 미구현 시 no-op)
+  onAssignStaff?: (req: DisplayRequest) => void;
 }
 
 const getProductName = (r: DisplayRequest): string => {
@@ -77,6 +79,7 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
   notifyToast, notifying, isManager, isAdminLevel8, canPrepare, canComplete,
   onToggleOne, onDeleteSelected, onDeleteAll, onRefresh,
   onNotifyAll, onPrepareDisplay, onCompleteDisplay,
+  onAssignStaff,
 }) => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "prepared" | "done">("all");
@@ -213,9 +216,12 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                 const isPrepared = r.status === "prepared";
                 const completing = completingDisplay.has(r.id);
                 const productName = getProductName(r);
-                const statusTone: PillTone = isDone ? "emerald" : isPrepared ? "sky" : "amber";
-                const statusLabel = isDone ? "진열완료" : isPrepared ? "준비완료" : "대기";
+                // 2026-09-11 · #75 · 사용자 지시 · 상태 단순화 · 대기 or 완료 (prepared 도 · 완료 취급)
+                const statusTone: PillTone = (isDone || isPrepared) ? "emerald" : "amber";
+                const statusLabel = (isDone || isPrepared) ? "완료" : "대기";
+                // 2026-09-11 · #75 · 사용자 지시 · 진열위치·상세위치 모두 표시
                 const zoneDisplay = (r as any).product_display_location ?? r.zone_label ?? r.zone_id ?? "";
+                const zoneDetail = (r as any).product_location_detail ?? null;
                 const count = Math.max(1, Number(r.request_count ?? 1));
                 const firstAt = r.first_requested_at ?? null;
                 const showFirstAt = count > 1 && firstAt && firstAt !== r.requested_at;
@@ -240,13 +246,34 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                     <td className="px-2 py-2.5 align-middle">
                       <StatusPill tone={statusTone} size="xs" dot>{statusLabel}</StatusPill>
                     </td>
-                    <td className="px-2 py-2.5 align-middle font-semibold text-zinc-700">
-                      {zoneDisplay || <span className="text-zinc-300 font-normal">—</span>}
+                    <td className="px-2 py-2.5 align-middle">
+                      {/* 2026-09-11 · #75 · 사용자 지시 · 진열위치 + 상세위치 (3자리 · 층-칸-순서) 표시 */}
+                      {zoneDisplay ? (
+                        <div className="flex flex-col leading-tight">
+                          <span className="font-semibold text-zinc-700 text-[15px]">{zoneDisplay}</span>
+                          {zoneDetail && typeof zoneDetail === "string" && zoneDetail.length === 3 && (
+                            <span className="text-[12px] font-semibold text-amber-600 tabular-nums mt-0.5">
+                              {zoneDetail[0]}-{zoneDetail[1]}-{zoneDetail[2]}
+                            </span>
+                          )}
+                        </div>
+                      ) : <span className="text-zinc-300 font-normal">—</span>}
                     </td>
                     <td className="px-2 py-2.5 align-middle">
+                      {/* 2026-09-11 · #75 · 사용자 지시 · 담당자 미지정 시 · [지정] 버튼 · 클릭 시 · onAssignStaff (신규 콜백) */}
                       {r.assigned_staff_name
                         ? <span className="font-semibold text-brand-deep">{r.assigned_staff_name}</span>
-                        : <span className="text-zinc-300">미지정</span>}
+                        : (
+                          <button
+                            type="button"
+                            onClick={() => (onAssignStaff ?? (() => {}))(r)}
+                            disabled={!canPrepare}
+                            className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[13px] font-semibold text-brand-deep border border-brand-deep/40 bg-white hover:bg-brand-tint/50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
+                            title={canPrepare ? "담당자 지정" : "진열담당 권한 필요"}
+                          >
+                            + 지정
+                          </button>
+                        )}
                     </td>
                     <td className="px-2 py-2.5 align-middle tabular-nums">
                       <span className={count > 1 ? "font-bold text-rose-500" : "text-zinc-500"} title={showFirstAt ? `${fmtDate(firstAt!)} 첫 요청` : ""}>
