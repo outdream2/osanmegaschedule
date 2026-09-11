@@ -751,7 +751,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
       <SplitPanel
         className="flex-1 min-h-0"
         storageKey="returnList.leftWidth"
-        defaultWidth={typeof window !== "undefined" ? Math.max(480, Math.min(860, Math.floor(window.innerWidth * 0.52))) : 560}
+        /* 2026-09-11 · #78 · defaultWidth 제거 · SplitPanel 자동 5:5 */
         minWidth={380}
         maxWidth={1100}
         dividerColor="rose"

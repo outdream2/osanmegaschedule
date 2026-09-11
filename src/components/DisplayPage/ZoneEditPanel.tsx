@@ -419,7 +419,7 @@ export const ZoneEditPanel: React.FC<Props> = ({ canEdit = false }) => {
   return (
     <SplitPanel
       storageKey="zoneEdit.leftWidth.v2"
-      defaultWidth={typeof window !== "undefined" ? Math.round(window.innerWidth * 0.5) : 640}
+      /* 2026-09-11 · #78 · defaultWidth 제거 · SplitPanel 자동 5:5 */
       minWidth={320}
       maxWidth={2400}
       dividerColor="violet"

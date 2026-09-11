@@ -192,7 +192,7 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
       key="by-vendor"
       // 2026-09-10 · #35 · 사용자 지시 · 매입이력 공급사별 · 좌우 5:5 초기화 · storageKey bump v3
       storageKey="purchaseHistory.byVendor.leftWidth.v3"
-      defaultWidth={typeof window !== "undefined" ? Math.max(320, Math.round(window.innerWidth * 0.5)) : 640}
+      /* 2026-09-11 · #78 · defaultWidth 제거 · SplitPanel 자동 5:5 */
       minWidth={320}
       maxWidth={1200}
       dividerColor="emerald"
@@ -327,7 +327,7 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
     <SplitPanel
       key="by-product"
       storageKey="purchaseHistory.byProduct.leftWidth.v2"
-      defaultWidth={typeof window !== "undefined" ? Math.max(320, Math.round(window.innerWidth * 0.5)) : 640}
+      /* 2026-09-11 · #78 · defaultWidth 제거 · SplitPanel 자동 5:5 */
       minWidth={320}
       maxWidth={1200}
       dividerColor="sky"

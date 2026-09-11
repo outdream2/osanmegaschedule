@@ -321,8 +321,7 @@ export const VendorManageSplit: React.FC = () => {
       {toast && <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>}
       <SplitPanel
         storageKey="vendor-manage.leftWidth"
-        /* 2026-08-10 · 사용자 요청 · 기본 5:5 · 뷰포트 절반 (min-1200px 라면 600) */
-        defaultWidth={typeof window !== "undefined" ? Math.max(400, Math.min(900, Math.floor(window.innerWidth / 2))) : 600}
+        /* 2026-09-11 · #78 · defaultWidth 제거 · SplitPanel 자동 5:5 */
         minWidth={280}
         maxWidth={1200}
         dividerColor="indigo"
