@@ -17,7 +17,10 @@ import { getKstYmd } from "../../lib/kstDate";
 
 const router = Router();
 
-router.get("/api/schedules", asyncHandler((req, res) => scheduleController.getSchedules(req, res)));
+router.get("/api/schedules", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  return scheduleController.getSchedules(req, res);
+}));
 // 2026-08-29 · 보안 S0 N4 fix · 스케줄 write · 매니저(lv5)+ 만
 router.put("/api/schedules", authorize(5), validateBody(UpsertScheduleSchema), asyncHandler((req, res) => scheduleController.updateSchedule(req, res)));
 router.post("/api/schedules/batch", authorize(5), validateBody(BatchScheduleSchema), asyncHandler((req, res) => scheduleController.batchUpdateSchedules(req, res)));

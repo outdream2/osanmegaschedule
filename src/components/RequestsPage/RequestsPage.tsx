@@ -30,6 +30,8 @@ import ResignationApprovalPage from "../ResignationApprovalPage/ResignationAppro
 import type { DisplayRequest, OrderRequest, ZoneMismatch, LunchRequest, InventoryCheck, Tab } from "./types";
 // 2026-08-22 · Framework Phase 4 · 3탭 별도 컴포넌트 이관 (Display/Order/Inventory)
 import { DisplayRequestTab, OrderRequestTab, InventoryCheckTab } from "./RequestsPage.tabs";
+// 2026-09-11 · #75 · 담당자 지정 모달
+import { AssignStaffModal } from "./AssignStaffModal";
 // 2026-08-26 · Framework Phase 4 · large-file 분리 · 구역불일치·점심불참 패널
 import { MismatchPanel } from "./MismatchPanel";
 import { LunchPanel } from "./LunchPanel";
@@ -77,6 +79,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const [displayReqs, setDisplayReqs] = useState<DisplayRequest[]>([]);
   const [displayLoading, setDisplayLoading] = useState(false);
   const [selectedDisplay, setSelectedDisplay] = useState<Set<string>>(new Set());
+  // 2026-09-11 · #75 · 담당자 지정 모달 대상
+  const [assignTarget, setAssignTarget] = useState<DisplayRequest | null>(null);
 
   // 발주요청
   const [orderReqs, setOrderReqs] = useState<OrderRequest[]>([]);
@@ -577,8 +581,18 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             onNotifyAll={handleNotifyAll}
             onPrepareDisplay={handlePrepareDisplay}
             onCompleteDisplay={handleCompleteDisplay}
+            /* 2026-09-11 · #75 · 담당자 지정 flow · 부모 상태로 request 저장 · 모달 오픈 */
+            onAssignStaff={(r) => setAssignTarget(r)}
           />
         )}
+        {/* 2026-09-11 · #75 · 담당자 지정 모달 */}
+        <AssignStaffModal
+          open={!!assignTarget}
+          onClose={() => setAssignTarget(null)}
+          request={assignTarget}
+          onAssigned={loadDisplayReqs}
+        />
+
 
         {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · OrderRequestTab */}
         {tab === "order" && (

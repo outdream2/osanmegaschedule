@@ -16,6 +16,7 @@ import { nextKstYmd, compareYmd } from "../../lib/kstDate";
 const router = Router();
 
 router.get("/api/leave-stats", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const { year } = req.query;
   if (!year || typeof year !== "string") throw badRequest("year required");
   const { data, error } = await supabase
@@ -31,6 +32,7 @@ router.get("/api/leave-stats", asyncHandler(async (req, res) => {
 
 // T-SLIM E · List endpoint · 현재 array 반환 · v2 { rows, count } 예정
 router.get("/api/leave-requests", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const { employeeId, all } = req.query;
   let q = supabase.from("leave_requests")
     .select("id, employee_id, employee_name, leave_type, start_date, end_date, reason, status, reviewer_note, created_at, reviewed_at")
@@ -43,6 +45,7 @@ router.get("/api/leave-requests", asyncHandler(async (req, res) => {
 
 // 남은 연차 잔여 계산
 router.get("/api/leave-balance", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const { employeeId } = req.query;
   if (!employeeId) throw badRequest("employeeId required");
   const empIdNum = Number(employeeId);
@@ -72,6 +75,7 @@ router.get("/api/leave-balance", asyncHandler(async (req, res) => {
 }));
 
 router.get("/api/leave-requests/pending-count", asyncHandler(async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const { count, error } = await supabase
     .from("leave_requests").select("*", { count: "exact", head: true }).eq("status", "pending");
   if (error) throw new HttpError(500, error.message);
