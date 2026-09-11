@@ -116,4 +116,14 @@ export const PERIOD_MONTHS_EXT_PRESET: readonly PeriodOption<number>[] = [
   { value: 999, label: "전체", title: "전체 기간" },
 ] as const;
 
+/** 2026-09-11 · #109 · 통일 프리셋 · 10일/1M/2M/3M/6M/12M (일 단위 · 사용자 지시 · 전 페이지 표준) */
+export const PERIOD_UNIFIED_DAYS_PRESET: readonly PeriodOption<number>[] = [
+  { value: 10,  label: "10일", title: "최근 10일" },
+  { value: 30,  label: "1개월", title: "최근 30일" },
+  { value: 60,  label: "2개월", title: "최근 60일" },
+  { value: 90,  label: "3개월", title: "최근 90일" },
+  { value: 180, label: "6개월", title: "최근 180일" },
+  { value: 365, label: "12개월", title: "최근 365일" },
+] as const;
+
 export default PeriodSelector;
