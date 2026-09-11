@@ -18,6 +18,8 @@ import { AccentBar } from "../common/AccentBar";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import { TabBar } from "../common/TabBar";
+import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../hooks/useToast";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 
 interface LeaveRequest {
@@ -74,6 +76,9 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
   const isManager = (authSession?.level ?? 0) >= 2;
   const employeeId = authSession?.employeeId;
   const employeeName = authSession?.employeeName ?? "";
+  // 2026-09-11 · #130 · 연차이력 삭제 · confirm + toast
+  const confirm = useConfirm();
+  const { showSuccess, showError } = useToast();
 
   // 모드별 뷰 활성화 · 관리자 UI 는 실제 관리자에게만 노출 (mode="approval" 이라도 방어)
   const showApply = mode === "apply" || (mode === "both" && !isManager);
@@ -176,6 +181,28 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
   };
 
   // ── Approve / Reject (manager) ──────────────────────────────────────────────
+  // 2026-09-11 · #130 · 관리자 · 연차이력 삭제 (모든 상태 · schedules 정리 포함 · 서버측)
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const handleDeleteLeaveRequest = async (r: LeaveRequest) => {
+    const statusLabel = r.status === "pending" ? "대기 중" : r.status === "approved" ? "승인된" : "반려된";
+    const ok = await confirm({
+      message: `${r.employee_name} · ${r.leave_type} · ${r.start_date}~${r.end_date} · ${statusLabel} 연차이력을 삭제할까요?${r.status === "approved" ? "\n\n승인된 연차의 스케쥴도 함께 제거됩니다." : ""}`,
+      danger: true,
+    });
+    if (!ok) return;
+    setDeletingId(r.id);
+    try {
+      await api.del(`/api/leave-requests/${r.id}`);
+      setAllRequests(prev => prev.filter(x => x.id !== r.id));
+      dispatchApprovalChange("leave");
+      showSuccess("연차이력 삭제 완료");
+    } catch (e) {
+      showError(`삭제 실패: ${getErrorMessage(e)}`);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const handleReview = async (id: string, status: "approved" | "rejected") => {
     setProcessingId(id);
     try {
@@ -499,9 +526,20 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                               </div>
                             </div>
                           </div>
-                          <StatusPill tone={tone} size="md" dot pulse={r.status === "pending"} className="shrink-0">
-                            {STATUS_LABEL[r.status]}
-                          </StatusPill>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <StatusPill tone={tone} size="md" dot pulse={r.status === "pending"}>
+                              {STATUS_LABEL[r.status]}
+                            </StatusPill>
+                            {/* 2026-09-11 · #130 · 관리자 · 이력 삭제 · 승인·반려·대기 모두 가능 */}
+                            <button
+                              onClick={() => handleDeleteLeaveRequest(r)}
+                              disabled={deletingId === r.id}
+                              title="이력 삭제"
+                              className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-all duration-150 cursor-pointer disabled:opacity-40"
+                            >
+                              <Trash2 size={14} className={deletingId === r.id ? "animate-pulse" : ""} />
+                            </button>
+                          </div>
                         </div>
 
                         {/* 승인/반려 · pending 시만 */}

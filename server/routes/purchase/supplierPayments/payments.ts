@@ -12,6 +12,7 @@ const router = Router();
 
 // GET /api/supplier-payments?supplier=X&days=90
 router.get("/api/supplier-payments", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const supplier = String(req.query.supplier ?? "").trim();
   const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "90"), 10) || 90));
 
@@ -43,6 +44,7 @@ router.get("/api/supplier-payments", asyncHandler(async (req, res) => {
 
 // GET /api/supplier-payments/latest-per-supplier
 router.get("/api/supplier-payments/latest-per-supplier", asyncHandler(async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const { data, error } = await supabase
     .from("supplier_payments")
     .select("supplier_name, payment_date, amount, id")
@@ -70,6 +72,7 @@ router.get("/api/supplier-payments/latest-per-supplier", asyncHandler(async (_re
 // GET /api/supplier-payments/pending-count
 // 2026-09-01 · P3 최적화 · ocr_confirmed_items 2회→1회 · Promise.all 병렬 (3→2 왕복)
 router.get("/api/supplier-payments/pending-count", asyncHandler(async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   // 2026-09-03 · fix · ocr_confirmed_items 실제 컬럼 · supplier (not supplier_name)
   //   · 이전 · supplier_name 요청 → 500 'column ocr_confirmed_items.supplier_name does not exist'
   //   · 실 스키마 확인 · supplier · amount · id · product_code · product_name 등
@@ -187,6 +190,7 @@ router.delete("/api/supplier-payments/:id", authorize(9), asyncHandler(async (re
 
 // GET /api/supplier-open-invoices?supplier=X
 router.get("/api/supplier-open-invoices", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const supplier = String(req.query.supplier ?? "").trim();
   if (!supplier) throw badRequest("supplier 필수");
 

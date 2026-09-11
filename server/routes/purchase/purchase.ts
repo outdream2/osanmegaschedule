@@ -391,6 +391,7 @@ router.post(
 //   임포트 배치별 요약 (imported_at 그룹 · 각 배치의 기간·행수)
 // ═════════════════════════════════════════════════════════════════
 router.get("/api/purchase-details/import-log", asyncHandler(async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   // app_settings 에서 로그 조회 (임포트 시 append · Supabase 1000행 제한 회피)
   const { data } = await supabase.from("app_settings").select("value").eq("key", "purchase_import_log").maybeSingle();
   const logs = Array.isArray(data?.value) ? (data.value as any[]) : [];
@@ -431,6 +432,7 @@ router.delete("/api/purchase-details/import-log", authorize(9), asyncHandler(asy
 //   응답: { periods: [{ ym: "2026-07", early: 12, mid: 0, late: 8 }, ...], missing: [{ ym, period_type }] }
 // ═════════════════════════════════════════════════════════════════
 router.get("/api/purchase-details/coverage", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const from = String(req.query.from ?? "").trim();
   const to = String(req.query.to ?? "").trim();
   // 매입 이력 로그(app_settings)에서 임포트된 기간 정보 조회 (Supabase 1000행 제한 회피)
@@ -486,6 +488,7 @@ router.get("/api/purchase-details/coverage", asyncHandler(async (req, res) => {
 //   상품별 or 공급사별 매입 이력 조회
 // ═════════════════════════════════════════════════════════════════
 router.get("/api/purchase-details", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const productCode = String(req.query.product_code ?? "").trim();
   const supplier = String(req.query.supplier ?? "").trim();
   const from = String(req.query.from ?? "").trim();
@@ -677,6 +680,7 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
 //   상품별 요약: 최근 매입일 · 총 매입 수량 · 총 매입 금액
 // ═════════════════════════════════════════════════════════════════
 router.get("/api/purchase-details/summary", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const productCode = String(req.query.product_code ?? "").trim();
   if (!productCode) throw badRequest("product_code 필요");
 

@@ -10,6 +10,7 @@ const router = Router();
 //   · 모든 공급사 매입 요약 (좌측 vendor 카드용)
 //   · 2026-08-09 · purchase_details 만 · OCR fallback 제거
 router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "90"), 10) || 90));
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);

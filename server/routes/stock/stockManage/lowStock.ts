@@ -9,6 +9,7 @@ import { lowStockCache, setLowStockCache } from "./helpers";
 const router = Router();
 
 router.get("/api/stock-manage/low-stock", asyncHandler(async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   if (lowStockCache && lowStockCache.expiresAt > Date.now()) {
     res.setHeader("X-Cache", "HIT");
     return res.json(lowStockCache.data);

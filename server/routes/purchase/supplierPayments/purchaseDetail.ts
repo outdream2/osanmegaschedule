@@ -14,6 +14,7 @@ const router = Router();
 //   · 단순 매입 조회는 /api/purchase-details?supplier=X (이미 지원) 사용 권장
 //   · 향후 · vat_amount/supply_amount 필드 표준화 완료 시 · 이 route 제거 검토
 router.get("/api/supplier-purchase-detail", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const supplier = String(req.query.supplier ?? "").trim();
   if (!supplier) throw badRequest("supplier 필수");
   const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "365"), 10) || 365));

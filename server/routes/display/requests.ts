@@ -1045,6 +1045,7 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
 // ── 실재고 점검 ──────────────────────────────────────────────────────────────
 
 router.get("/api/inventory-checks", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   // 2026-08-05 · T-PERF-1a · select("*") → 명시적 컬럼 지정 (페이로드 최소화)
   //   StockReconciliationTab 사용 컬럼: product_code, product_name, checked_at, checked_by
   //   + 실재고 컬럼 전체 (warehouse1/2, store1/2/3, 레거시)
@@ -1076,6 +1077,7 @@ router.get("/api/inventory-checks", asyncHandler(async (req, res) => {
 //     응답 · { conflict: boolean, product_code?, product_name? }
 // 2026-09-09 · afaf8a65 에서 실수 삭제된 endpoint 복구
 router.get("/api/inventory-checks/shelf-conflict", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const display_location = String(req.query.display_location ?? "").trim();
   const key = String(req.query.key ?? "").trim();
   const value = String(req.query.value ?? "").trim().toUpperCase();

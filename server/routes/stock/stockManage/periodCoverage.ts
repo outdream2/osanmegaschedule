@@ -8,6 +8,7 @@ import { asyncHandler } from "../../../middleware/asyncHandler";
 const router = Router();
 
 router.get("/api/stock-manage/period-coverage", asyncHandler(async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   {
     const { data: logData } = await supabase.from("app_settings").select("value").eq("key", "stock_import_log").maybeSingle();
     const logs: any[] = Array.isArray(logData?.value) ? logData.value : [];

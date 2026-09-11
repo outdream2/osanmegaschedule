@@ -14,6 +14,7 @@ const router = Router();
 
 // GET /api/stock-import-log
 router.get("/api/stock-import-log", asyncHandler(async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const { data } = await supabase.from("app_settings").select("value").eq("key", "stock_import_log").maybeSingle();
   res.json(Array.isArray(data?.value) ? data.value : []);
 }));

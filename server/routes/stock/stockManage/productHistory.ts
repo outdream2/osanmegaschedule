@@ -11,6 +11,7 @@ import { daysAgoISO } from "./helpers";
 const router = Router();
 
 router.get("/api/stock-manage/product-history", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const name = String(req.query.product_name ?? "").trim();
   const code = String(req.query.product_code ?? "").trim();
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "7"), 10) || 7));

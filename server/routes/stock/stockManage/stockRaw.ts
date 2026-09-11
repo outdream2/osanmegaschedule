@@ -8,6 +8,7 @@ import { asyncHandler } from "../../../middleware/asyncHandler";
 const router = Router();
 
 router.get("/api/stock-manage/raw", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const dateParam = String(req.query.snapshot_date ?? "").trim();
   const limit = Math.max(1, Math.min(20000, parseInt(String(req.query.limit ?? "5000"), 10) || 5000));
   // 2026-08-06 · Supabase 1000행 cap 우회 · fetchAllWithRange

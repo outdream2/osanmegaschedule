@@ -11,6 +11,7 @@ const router = Router();
 // 2026-09-10 · #59 · 사용자 지시 · 전체 공급사 · 현장 재고금액 map (VendorListEditor 좌측 리스트용)
 //   · 응답 · { [supplier_name]: stock_value } · 한 번에 fetch
 router.get("/api/supplier-stock-values-map", asyncHandler(async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const map: Record<string, number> = {};
   const countMap: Record<string, number> = {};
   const PAGE = 1000;
@@ -44,6 +45,7 @@ router.get("/api/supplier-stock-values-map", asyncHandler(async (_req, res) => {
 //   · 전체 공급사 · balance map (전체 기간 total_purchase - total_payment)
 //   · 왼쪽 리스트 총잔고 · 총재고자산 (동일 값) · 한 번에 fetch
 router.get("/api/supplier-balances-map", asyncHandler(async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const purchaseMap = new Map<string, number>();
   const paymentMap = new Map<string, number>();
 
@@ -192,6 +194,7 @@ router.get("/api/supplier-balances-map", asyncHandler(async (_req, res) => {
 //   · 각 월 마지막 snapshot_date · closing_stock × purchase_price · 공급사 상품 합산
 //   · 응답 · [{ ym: "YYYY-MM", stock_value: number }]
 router.get("/api/supplier-monthly-stock-values/:supplier", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const supplier = decodeURIComponent(req.params.supplier ?? "").trim();
   if (!supplier) throw badRequest("supplier 필수");
   const months = Math.max(1, Math.min(24, parseInt(String(req.query.months ?? "12"), 10) || 12));
@@ -287,6 +290,7 @@ router.get("/api/supplier-monthly-stock-values/:supplier", asyncHandler(async (r
 // 2026-09-10 · #58 · 사용자 지시 · 공급사별 현장 재고금액
 //   · ERP 기준 · SUM(current_stock × purchase_price) · 공급사별 · hidden 제외
 router.get("/api/supplier-stock-value/:supplier", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const supplier = decodeURIComponent(req.params.supplier ?? "").trim();
   if (!supplier) throw badRequest("supplier 필수");
 
@@ -322,6 +326,7 @@ router.get("/api/supplier-stock-value/:supplier", asyncHandler(async (req, res) 
 // GET /api/supplier-balance/:supplier
 // 2026-09-01 · P3 최적화 · purchases + payments 병렬 Promise.all (2→1 왕복)
 router.get("/api/supplier-balance/:supplier", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const supplier = decodeURIComponent(req.params.supplier ?? "").trim();
   if (!supplier) throw badRequest("supplier 필수");
 

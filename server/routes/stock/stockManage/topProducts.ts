@@ -9,6 +9,7 @@ import { daysAgoISO, ocrAggCache, OCR_AGG_TTL } from "./helpers";
 const router = Router();
 
 router.get("/api/stock-manage/top-products", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "7"), 10) || 7));
   const limit = Math.max(1, Math.min(500, parseInt(String(req.query.limit ?? "100"), 10) || 100));
   const sinceYmd = daysAgoISO(days).slice(0, 10);

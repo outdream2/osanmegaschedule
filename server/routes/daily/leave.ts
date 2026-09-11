@@ -189,8 +189,32 @@ router.delete("/api/leave-requests/:id", authorize(5), asyncHandler(async (req, 
   const check = await checkOwnershipOrAdmin(req, { table: "leave_requests", id: req.params.id });
   if (check.ok !== true) throw new HttpError(check.status, check.error);
   if (!check.isAdmin && check.row?.status !== "pending") throw badRequest("승인/거절된 요청은 삭제할 수 없습니다");
-  const { error } = await supabase.from("leave_requests").delete().eq("id", req.params.id).eq("status", "pending");
+  // 2026-09-11 · #130 · 관리자 · 승인/거절 이력도 삭제 가능 · pending 조건 skip
+  //   · 관리자 삭제 시 · 관련 schedules (승인된 연차) 도 함께 제거
+  const wasApproved = check.row?.status === "approved";
+  const empId = check.row?.employee_id;
+  const startDate = check.row?.start_date;
+  const endDate = check.row?.end_date;
+  let q = supabase.from("leave_requests").delete().eq("id", req.params.id);
+  if (!check.isAdmin) q = q.eq("status", "pending");
+  const { error } = await q;
   if (error) throw new HttpError(500, error.message);
+  // 관리자 · 이미 승인된 연차 · schedules 에서 · 대응 항목 제거
+  if (check.isAdmin && wasApproved && empId && startDate && endDate) {
+    const { error: schedErr } = await supabase
+      .from("schedules")
+      .delete()
+      .eq("employeeId", empId)
+      .in("type", ["월차", "오전반차", "오후반차"])
+      .gte("date", startDate)
+      .lte("date", endDate);
+    if (schedErr) {
+      console.error(`[LEAVE DELETE · schedules cleanup failed]`, schedErr.message);
+      // 스케쥴 삭제 실패는 경고만 · leave_requests 삭제는 이미 성공
+    } else {
+      console.log(`[LEAVE DELETE] emp=${empId} · ${startDate}~${endDate} · schedules 정리`);
+    }
+  }
   res.json({ ok: true });
 }));
 

@@ -9,6 +9,7 @@ import { HttpError } from "../../../middleware/errorHandler";
 const router = Router();
 
 router.get("/api/stock-manage/purchase-info-batch", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const codesParam = String(req.query.codes ?? "").trim();
   if (!codesParam) return res.json({ items: {} });
   const codes = codesParam.split(",").map(c => c.trim()).filter(Boolean).slice(0, 5000);

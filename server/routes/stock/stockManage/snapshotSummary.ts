@@ -8,6 +8,7 @@ import { HttpError } from "../../../middleware/errorHandler";
 const router = Router();
 
 router.get("/api/stock-manage/snapshot-summary", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const dateParam = String(req.query.snapshot_date ?? "").trim();
   {
     let targetDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : "";

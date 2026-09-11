@@ -128,6 +128,7 @@ router.post("/api/upload-vendors", authorize(9), express.raw({ type: "applicatio
 // 현재: res.json(array) · 직접 배열 반환 · 프론트 소비 패턴과 breaking 없이 유지
 // 미래 v2: { rows: array, count: number } 로 전환 예정 (프론트 마이그레이션 후)
 router.get("/api/vendors", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   // 2026-07-15: email 컬럼이 없는 DB 도 호환 (첫 시도에 email 포함 → 실패 시 email 없이 재시도)
   // 2026-08-03 · #193 · vat_included 추가 (마이그레이션 미적용 DB 도 호환 · 3단계 fallback)
   let data: any[] | null = null;
@@ -195,7 +196,7 @@ router.get("/api/vendors", asyncHandler(async (req, res) => {
     const cached = vendorCache.get(CACHE_KEY_BALANCES);
     if (cached && Date.now() < cached.expiresAt) {
       console.log("[vendors] X-Cache: HIT");
-      res.setHeader("Cache-Control", "private, max-age=300");
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
       res.setHeader("X-Cache", "HIT");
       const body: VendorsListResponse = cached.data as any;
       return res.json(body);
@@ -266,7 +267,7 @@ router.get("/api/vendors", asyncHandler(async (req, res) => {
     // 2026-09-01 · 캐시 저장 (TTL 5분)
     vendorCache.set(CACHE_KEY_BALANCES, { data: enriched, expiresAt: Date.now() + VENDOR_CACHE_TTL_MS });
     console.log("[vendors] X-Cache: MISS · cached for 5 min");
-    res.setHeader("Cache-Control", "private, max-age=300");
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
     res.setHeader("X-Cache", "MISS");
     const body: VendorsListResponse = enriched as any;
     return res.json(body);

@@ -49,6 +49,7 @@ stockCheckPublicRouter.get("/api/stock-check", asyncHandler(async (req, res) => 
 //   · Supabase default limit 1000 → chunked · 전 데이터 안전 수집 (사용자 지시 fix)
 //   · inventory_checks · 상품별 UNIQUE · 최신 row = 유일 row
 router.get("/api/products/shelf-positions-map", asyncHandler(async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   try {
     const map: Record<string, Record<string, string | null>> = {};
     const PAGE = 1000;
@@ -83,6 +84,7 @@ router.get("/api/products/shelf-positions-map", asyncHandler(async (_req, res) =
 }));
 
 router.get("/api/products-map", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   // 2026-08-26 · 사용자 지시 · 전역 판매중 설정 반영 · getPublicProductMap 사용
   // 2026-08-27 · 사용자 지시 · 로딩 속도 개선 · ?fields=slim 요청 시 필수 필드만 반환 (~50% 응답 감소)
   // 2026-08-30 · 사용자 지시 · 관리 페이지 (ProductInfoPage) · 판매중지·숨김 포함 조회
@@ -119,7 +121,7 @@ router.get("/api/products-map", asyncHandler(async (req, res) => {
         profit_rate: p.profit_rate ?? null,
       }]))
     : map;
-  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   res.json(payload);
 }));
 
@@ -128,6 +130,7 @@ router.get("/api/products-map", asyncHandler(async (req, res) => {
 // 2026-08-03 · Priority 3 · get_inventory_latest RPC 호출 · 단일 DISTINCT ON 쿼리로 교체
 //   fallback: RPC 미생성(does not exist) 시 → 기존 1000건 페이지루프 방식으로 graceful 처리
 router.get("/api/inventory-latest", asyncHandler(async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   // 2026-08-29 · #168 Phase 2 Step 1 · queryProductsWithInventory 유틸 소비
   //   · 회귀 방지 · 응답 형식 100% 유지 (Record<code, InvRow>)
   //   · includeInventoryOnlyRows=true · products 없는 code (임시 실재고) 도 · 반환
@@ -172,7 +175,7 @@ router.get("/api/inventory-latest", asyncHandler(async (_req, res) => {
     };
   }
 
-  res.setHeader("Cache-Control", "private, max-age=15");
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   return res.json(map);
 }));
 
@@ -180,6 +183,7 @@ router.get("/api/inventory-latest", asyncHandler(async (_req, res) => {
 // GET /api/products-by-category?category=xxx  or  ?code=xxx  · 최대 100건
 // 응답: product_code · product_name · category · category_code · supplier · brand · manufacturer · spec · unit · sale_price · purchase_price · location
 router.get("/api/products-by-category", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const category = String(req.query.category ?? "").trim();
   const code = String(req.query.code ?? "").trim();
   if (!category && !code) return res.json([]);
@@ -200,6 +204,7 @@ router.get("/api/products-by-category", asyncHandler(async (req, res) => {
 }));
 
 router.get("/api/products-search", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const rawQ     = String(req.query.q        ?? "").trim();
   const supplier = String(req.query.supplier ?? "").trim();
   const includeHidden = req.query.include_hidden === "1" || req.query.include_hidden === "true";
@@ -542,6 +547,7 @@ router.delete("/api/products/:code", authorize(9), asyncHandler(async (req, res)
 //   · 상품 단위 · 최임박 로트 (MIN expiry_date) 표시 · UI 로트 관리 X
 //   · /:code 라우트보다 먼저 등록해야 매칭됨
 router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   // 1. inventory_checks · 상품별 · 최임박 (MIN expiry_date) 집계
   const { data: icRows, error: icErr } = await supabase
     .from("inventory_checks")
@@ -602,6 +608,7 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
 
 // 숨김 처리된 상품 리스트 (숨김 관리 UI 용) — /:code 라우트보다 먼저 등록해야 매칭됨
 router.get("/api/products/hidden", asyncHandler(async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const { data, error } = await supabase
     .from("products")
     .select("product_code, product_name, spec, supplier, location, display_location, current_stock, sale_price")
@@ -618,6 +625,7 @@ router.get("/api/products/hidden", asyncHandler(async (_req, res) => {
 }));
 
 router.get("/api/products/:code", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const code = (req.params.code ?? "").trim();
   if (!code) throw badRequest("code required");
   let { data, error } = await supabase.from("products").select("*").eq("product_code", code).maybeSingle();

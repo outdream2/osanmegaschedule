@@ -27,6 +27,7 @@ interface HistoryStats {
 
 // GET /api/products/purchase-history?codes=CODE1,CODE2,...&limit=5
 router.get("/api/products/purchase-history", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const codesParam = String(req.query.codes ?? "").trim();
   if (!codesParam) return res.json({ history: {} });
   const codes = codesParam.split(",").map(c => c.trim()).filter(Boolean);

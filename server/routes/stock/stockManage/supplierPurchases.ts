@@ -11,6 +11,7 @@ import { inSeasonMonths } from "./helpers";
 const router = Router();
 
 router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const limit = Math.max(1, Math.min(50000, parseInt(String(req.query.limit ?? "20"), 10) || 20));
   const dateParam = String(req.query.snapshot_date ?? "").trim();
   const monthsParam = Math.max(0, Math.min(24, parseInt(String(req.query.months ?? "0"), 10) || 0));

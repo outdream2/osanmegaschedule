@@ -10,6 +10,7 @@ const router = Router();
 
 // GET /api/stock-manage/trending
 router.get("/api/stock-manage/trending", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const windowDays = Math.max(1, Math.min(180, parseInt(String(req.query.window ?? "30"), 10) || 30));
   // 2026-07-31 · 기준(=prior) window 를 별도 지정 가능
   const priorDaysRaw = req.query.prior_days ?? req.query.prior_window ?? "";
@@ -158,6 +159,7 @@ router.get("/api/stock-manage/trending", asyncHandler(async (req, res) => {
 // GET /api/stock-manage/trending-period
 // 2026-07-30 · 명시적 기간 · 급상승 상품
 router.get("/api/stock-manage/trending-period", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const from      = String(req.query.from       ?? "").trim();
   const to        = String(req.query.to         ?? "").trim();
   const priorFrom = String(req.query.prior_from ?? "").trim();

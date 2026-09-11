@@ -11,6 +11,7 @@ import { inSeasonMonths, topSalesCache, TOP_SALES_TTL } from "./helpers";
 const router = Router();
 
 router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const limit = Math.max(1, Math.min(50000, parseInt(String(req.query.limit ?? "500"), 10) || 500));
   let sort = String(req.query.sort ?? "sale");
   let dir  = String(req.query.dir ?? "desc").toLowerCase() === "asc" ? "asc" : "desc";
