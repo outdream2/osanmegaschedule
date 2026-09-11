@@ -64,7 +64,10 @@ export const ZoneCellPicker: React.FC<Props> = ({ cellId, canEdit = false, trigg
           <PopoverPrimitive.Content
             align={align}
             sideOffset={8}
-            className="z-[9999] w-[360px] max-h-[70vh] overflow-hidden bg-white rounded-xl border border-line shadow-[0_10px_40px_-10px_rgba(10,46,74,0.35),0_4px_12px_-4px_rgba(10,46,74,0.15)] flex flex-col"
+            // 2026-09-11 · #94 · 사용자 지시 · 매장구역도 클릭 팝업 · 화면 가운데 표시
+            //   · Radix 자동 positioning override · style top/left/transform 강제 (className !important 병행)
+            className="!fixed !top-1/2 !left-1/2 z-[9999] w-[360px] max-w-[90vw] max-h-[80vh] overflow-hidden bg-white rounded-xl border border-line shadow-[0_20px_60px_-10px_rgba(10,46,74,0.45),0_6px_16px_-4px_rgba(10,46,74,0.2)] flex flex-col"
+            style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
           >
             {/* Header · 3px gradient accent */}
             <div className="relative px-4 pt-3 pb-2 border-b border-line bg-gradient-to-b from-brand-tint/40 to-white">
