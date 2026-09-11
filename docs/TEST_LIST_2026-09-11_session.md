@@ -198,4 +198,111 @@ Agent 위임 · 아래 endpoint 그룹 · Cache-Control no-store 헤더 추가:
 
 ---
 
+## #100 · 반품필요 · 필터 표기 fix ✅
+**커밋** · f48c3129
+
+### 배경
+1M판매·3M판매 필터 · 로직 `<=` (이하) · **표기 ↑ (이상)** · 오표기.
+
+### 해결
+1M판매·3M판매 · 화살표 `↑` → `↓` (이하 · 정확 표기)
+
+### 테스트 절차
+1. **매입 > 반품필요** 탭
+2. 필터 확인 · 매입주기 `↑` 유지 · 1M판매 `↓` · 3M판매 `↓`
+3. 값 조정 · 필터링 · 이하 값만 리스트에 나옴
+
+---
+
+## #94 · 매장구역도 · 셀 클릭 팝업 · 화면 가운데 ✅
+**커밋** · e19020e7
+
+### 배경
+Radix Popover · 셀 옆 표시 · 스크롤 · 화면 밖 튀어나갈 가능성.
+
+### 해결
+- `position: fixed` + `top/left: 50%` + `translate(-50%,-50%)` · 화면 가운데
+- `!important` (Tailwind !) · Radix inline style override
+- 그림자 강화 · modal-like 존재감
+
+### 테스트 절차
+1. **매장구역도** 페이지
+2. **셀 클릭** → 팝업 · **화면 가운데** 표시
+3. 스크롤 상태에서도 · 항상 가운데
+4. 반응형 · maxWidth 90vw
+
+---
+
+## #109 · 기간 필터 · 통일 프리셋 신규 ✅
+**커밋** · eb7c9710
+
+### 배경
+페이지마다 기간 옵션 다름 (1M/3M/6M/12M · 10일/1M/2M/3M · 등).
+
+### 해결
+신규 프리셋 · `PERIOD_UNIFIED_DAYS_PRESET` · 10일·1M·2M·3M·6M·12M (일 단위 · 10/30/60/90/180/365)
+
+### 테스트 절차
+개발자 확인 · `src/components/common/PeriodSelector.tsx` · 신규 export
+- **사용처 이관** · 다음 세션 · 각 페이지 별로 순차 적용 (사용자 확인 후)
+
+---
+
+## #126 · 캐시 제거 · 40+ endpoint (Agent 병렬) ✅ 상세
+**커밋** · b33640b5
+
+### 캐시 헤더 추가 완료 목록
+- `server/routes/display/requests.ts` (2)
+- `server/routes/stock/products.ts` (8)
+- `server/routes/purchase/purchaseHistory.ts` (1)
+- `server/routes/purchase/purchase.ts` (4)
+- `server/routes/purchase/supplierPayments/*.ts` (11)
+- `server/routes/stock/stockManage/*.ts` (12)
+- `server/routes/daily/leave.ts` (4)
+- `server/routes/schedule/schedules.ts` (1)
+
+### 특이사항
+- vendors.ts / products-map / inventory-latest · **기존 캐시 헤더 (max-age)를 no-store로 교체** · 정합성 개선
+- 순수 헤더 추가 · 응답 스키마·로직·파라미터 무변경
+
+---
+
+## 이번 세션 완료 요약
+
+| # | 태스크 | 커밋 |
+|---|-------|------|
+| #125 | 결제입력 · 총 매입 소스 통일 | eed237b6 |
+| #127 | 결제입력 · supplier-ledger SSOT 통합 | 8e6a2ea2 |
+| #116 | KST off-by-one + 에러 삼킴 제거 | 8e6a2ea2·5f1b68bc |
+| #131 | 연차승인 UI 리디자인 | 8fd95ac4 |
+| #130 | 연차이력 삭제 (관리자) | b33640b5 |
+| #126 | 캐시 제거 40+ endpoint | b33640b5 |
+| #75  | 진열요청 담당자 지정 flow | fa312aef |
+| #100 | 반품필요 · ↑↓ 표기 fix | f48c3129 |
+| #94  | 매장구역도 팝업 가운데 | e19020e7 |
+| #109 | 기간 필터 통일 프리셋 | eb7c9710 |
+
+**총 · 10태스크 완료 · 8커밋 (자율 3-4시간 세션)**
+
+---
+
+## 진행 보류 (사용자 명확 정보 필요)
+
+- **#82** · 상품정보 수정 모달 · 배치구역 2분리 · 상세구역 편집 모달 (상세구역 데이터 필드·UX 상세 필요)
+- **#77** · 요청목록 · 서류작성 UI 통일 · ERROR/BASICLAYOUT 이미지 참고 (이미지 필요)
+- **#105** · 상품입고 · 현재고 카드 · 창고·매장 옆 시각 강조 (창고별 별도 필드·강조 방식 상세 필요)
+- **#103·#120** · 탭메뉴 왼쪽 정렬 (어느 페이지·현재 어떤 정렬인지 상세 필요)
+
+---
+
+## 다음 세션 추천 우선순위
+
+1. 사용자 · 위 테스트 리스트 확인 · 회귀 있으면 즉시 fix
+2. #82·#77·#105 · 사용자 정보 확인 후 진행
+3. #78 · SplitPanel 5:5 통일 · 시간 큼
+4. #93 · 관리자 대시보드 · 신규 페이지
+5. #101 · 차용계약 PDF 프리뷰 · 큰 태스크
+
+---
+
 ## 진행 중 태스크 (완료 시 추가)
