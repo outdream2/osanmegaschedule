@@ -92,6 +92,9 @@ router.get("/api/supplier-balances-map", asyncHandler(async (_req, res) => {
 
   // 2026-09-10 · #72 · 확정 공식 · 재고자산 = 매입액 - 판매원가 (COGS) 계산 추가
   //   · 판매원가 = SUM(sale_qty × products.purchase_price) · 공급사별
+  // 2026-09-11 · #119 · 사용자 신고 fix · 원가 매우 작음 · 원인 · products.purchase_price NULL 상품 대량
+  //   · fix · products.purchase_price 우선 · NULL 시 · purchase_details 최근 unit_price fallback
+  //   · fallback 시에도 없으면 · 0 (원가 계산 제외 · 로그로 확인 가능)
   const cogsMap = new Map<string, number>();
   try {
     // 1) products · product_code → purchase_price map
@@ -117,6 +120,28 @@ router.get("/api/supplier-balances-map", asyncHandler(async (_req, res) => {
         from += PAGE;
       }
     }
+    // 1-b) 2026-09-11 · #119 · products.purchase_price NULL 상품 · purchase_details 최근 unit_price fallback
+    //   · 각 product_code · 최근 매입 단가 · MAX(purchase_date)
+    const nullPriceCodes = Array.from(priceMap.entries()).filter(([, p]) => p <= 0).map(([c]) => c);
+    if (nullPriceCodes.length > 0) {
+      const CHUNK = 500;
+      for (let i = 0; i < nullPriceCodes.length; i += CHUNK) {
+        const chunk = nullPriceCodes.slice(i, i + CHUNK);
+        const { data } = await supabase
+          .from("purchase_details")
+          .select("product_code, unit_price, purchase_date")
+          .in("product_code", chunk)
+          .order("purchase_date", { ascending: false });
+        for (const r of data ?? []) {
+          const code = String((r as any).product_code ?? "").trim();
+          if (!code) continue;
+          const cur = priceMap.get(code) ?? 0;
+          if (cur > 0) continue; // 이미 채워졌으면 skip (최근 date 우선)
+          const p = Number((r as any).unit_price ?? 0) || 0;
+          if (p > 0) priceMap.set(code, p);
+        }
+      }
+    }
     // 2) stock_history · sale_qty × purchase_price · 공급사 (supplier_name or products.supplier fallback) 합
     {
       const PAGE = 1000;
@@ -140,7 +165,9 @@ router.get("/api/supplier-balances-map", asyncHandler(async (_req, res) => {
         from += PAGE;
       }
     }
-  } catch { /* silent · cogs 계산 실패해도 balance 는 반환 */ }
+  } catch (e: any) {
+    console.error("[balance] cogs 계산 실패:", e?.message);
+  }
 
   const values: Record<string, { purchase: number; payment: number; balance: number; cogs: number; stock_asset: number }> = {};
   const allNames = new Set([...purchaseMap.keys(), ...paymentMap.keys(), ...cogsMap.keys()]);
