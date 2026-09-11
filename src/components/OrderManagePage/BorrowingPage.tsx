@@ -21,7 +21,7 @@
 //     · PartySelectModal / BorrowingEditPanel 등은 Phase C·D 에서 별도 구현
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { HandCoins, RefreshCw } from "lucide-react";
+import { HandCoins, RefreshCw, ChevronLeft, ChevronRight, List, FileText } from "lucide-react";
 import { Card } from "../common/Card";
 import { Spinner } from "../common/Spinner";
 import { SplitListPanel } from "../common/SplitListPanel";
@@ -116,6 +116,9 @@ export const BorrowingPage: React.FC<BorrowingPageProps> = ({ authSession }) => 
   // ── 선택·편집 모드 ─────────────────────────────────────────
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [editMode, setEditMode] = useState<EditMode>(null);
+  // 2026-09-11 · #98 · 반응형 · 좌우 패널 접기 (계약등록 중심)
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
 
   const { toast, showError } = useToast();
 
@@ -327,15 +330,47 @@ export const BorrowingPage: React.FC<BorrowingPageProps> = ({ authSession }) => 
           </div>
         </div>
 
-        {/* 3-column shell · lg 이상 [320 _ 1fr _ 380] · 그 아래 세로 스택 */}
-        <div className="grid gap-3 lg:gap-4 grid-cols-1 lg:grid-cols-[320px_1fr_380px] items-stretch">
-          {/* ── 좌측 · 리스트 ───────────────────────────────── */}
+        {/* 3-column shell · lg 이상 · 좌·우 접기 가능 (2026-09-11 · #98)
+            펼침 [320 _ 1fr _ 380] · 좌접힘 [56 _ 1fr _ 380] · 우접힘 [320 _ 1fr _ 56] · 둘다 [56 _ 1fr _ 56] */}
+        <div
+          className={`grid gap-3 lg:gap-4 grid-cols-1 items-stretch ${
+            leftCollapsed && rightCollapsed
+              ? "lg:grid-cols-[56px_1fr_56px]"
+              : leftCollapsed
+              ? "lg:grid-cols-[56px_1fr_380px]"
+              : rightCollapsed
+              ? "lg:grid-cols-[320px_1fr_56px]"
+              : "lg:grid-cols-[320px_1fr_380px]"
+          }`}
+        >
+          {/* ── 좌측 · 리스트 (접힘 시 icon rail) ────────────── */}
+          {leftCollapsed ? (
+            <button
+              type="button"
+              onClick={() => setLeftCollapsed(false)}
+              className="hidden lg:flex flex-col items-center justify-start gap-3 pt-3 h-[calc(100vh-220px)] w-14 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 shadow-sm transition-colors cursor-pointer"
+              title="차용 계약 리스트 펼치기"
+            >
+              <ChevronRight size={16} className="text-zinc-500" />
+              <List size={18} className="text-brand-deep" />
+              <span className="text-[11px] font-semibold text-zinc-500 [writing-mode:vertical-rl] rotate-180">계약 리스트 ({filtered.length})</span>
+            </button>
+          ) : (
           <Card
             padding="none"
             rounded="xl"
             clip
-            className="h-full min-h-[520px] lg:h-[calc(100vh-220px)] flex flex-col overflow-hidden"
+            className="relative h-full min-h-[520px] lg:h-[calc(100vh-220px)] flex flex-col overflow-hidden"
           >
+            {/* 접기 토글 · lg 이상만 */}
+            <button
+              type="button"
+              onClick={() => setLeftCollapsed(true)}
+              className="hidden lg:flex absolute top-2.5 right-2.5 z-10 w-7 h-7 items-center justify-center rounded-md text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
+              title="리스트 패널 접기"
+            >
+              <ChevronLeft size={14} />
+            </button>
             <SplitListPanel
               topAccent
               title="차용 계약"
@@ -360,16 +395,38 @@ export const BorrowingPage: React.FC<BorrowingPageProps> = ({ authSession }) => 
               {listBody}
             </SplitListPanel>
           </Card>
+          )}
 
           {/* ── 중앙 · 신규 등록·편집 폼 (Phase C · BorrowingEditPanel) ── */}
           <div className="min-w-0 lg:h-[calc(100vh-220px)]">
             {centerPanel}
           </div>
 
-          {/* ── 우측 · 상세 뷰 (Phase D 예정) ───────────────── */}
-          <div className="min-w-0 lg:h-[calc(100vh-220px)]">
-            {rightPanel}
-          </div>
+          {/* ── 우측 · 상세 뷰 (접힘 시 icon rail) ─────────── */}
+          {rightCollapsed ? (
+            <button
+              type="button"
+              onClick={() => setRightCollapsed(false)}
+              className="hidden lg:flex flex-col items-center justify-start gap-3 pt-3 h-[calc(100vh-220px)] w-14 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 shadow-sm transition-colors cursor-pointer"
+              title="상세 뷰 펼치기"
+            >
+              <ChevronLeft size={16} className="text-zinc-500" />
+              <FileText size={18} className="text-brand-deep" />
+              <span className="text-[11px] font-semibold text-zinc-500 [writing-mode:vertical-rl] rotate-180">상세 뷰</span>
+            </button>
+          ) : (
+            <div className="relative min-w-0 lg:h-[calc(100vh-220px)]">
+              <button
+                type="button"
+                onClick={() => setRightCollapsed(true)}
+                className="hidden lg:flex absolute top-2.5 right-2.5 z-10 w-7 h-7 items-center justify-center rounded-md text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
+                title="상세 뷰 접기"
+              >
+                <ChevronRight size={14} />
+              </button>
+              {rightPanel}
+            </div>
+          )}
         </div>
 
         {/* 로딩 · 첫 진입 시 하단 스피너 (리스트 카드 empty 상태와 별개) */}
