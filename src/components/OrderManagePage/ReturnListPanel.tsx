@@ -480,6 +480,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
               />
               <span className="text-zinc-500 whitespace-nowrap">일 ↑</span>
             </label>
+            {/* 2026-09-11 · #100 · 판매량 · 이하 검색 · ↓ 표기 (↑ 오표기 fix) */}
             <label className="inline-flex items-center gap-1 text-[15px] text-zinc-600 shrink-0">
               <span className="font-medium text-zinc-500">1M판매</span>
               <input
@@ -488,7 +489,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                 onChange={e => setReturnSalesMax(Math.max(0, Number(e.target.value) || 0))}
                 className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
               />
-              <span className="text-zinc-500 whitespace-nowrap">개 ↑</span>
+              <span className="text-zinc-500 whitespace-nowrap">개 ↓</span>
             </label>
             <label className="inline-flex items-center gap-1 text-[15px] text-zinc-600 shrink-0">
               <span className="font-medium text-zinc-500">3M판매</span>
@@ -498,7 +499,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                 onChange={e => setReturnSalesQuarterMax(Math.max(0, Number(e.target.value) || 0))}
                 className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
               />
-              <span className="text-zinc-500 whitespace-nowrap">개 ↑</span>
+              <span className="text-zinc-500 whitespace-nowrap">개 ↓</span>
             </label>
             <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
           </div>

@@ -115,4 +115,87 @@ node scripts/check-leave-schedule-sync.mjs
 
 ---
 
+## #130 · 연차이력 · 삭제 기능 (관리자) ✅
+**커밋** · b33640b5
+
+### 배경
+연차이력 · 승인·반려된 것 · 삭제 불가. 관리자도 · 잘못 승인·반려한 이력 · 삭제 못 함.
+
+### 해결
+- 서버 · 관리자 (isAdmin) · pending 조건 skip · 승인/반려 이력도 삭제 가능
+- **승인된 연차 삭제 시** · schedules 테이블 · 대응 항목 자동 제거 (월차·오전반차·오후반차)
+- 클라 · 관리자 뷰 (approval) · 각 리스트 아이템 · Trash2 버튼 (rose hover)
+
+### 테스트 절차
+1. **관리자 로그인** · 승인요청 · 연차승인 탭
+2. **대기 중 연차** · Trash2 클릭 · confirm dialog · "대기 중 연차이력을 삭제할까요?" → 예 → 삭제 성공 toast
+3. **승인된 연차** · Trash2 클릭 · confirm dialog · "**승인된 연차의 스케쥴도 함께 제거됩니다.**" 안내 → 예 → 삭제 + 스케쥴표 반영 사라짐
+4. **반려된 연차** · Trash2 클릭 · confirm dialog · "반려된 연차이력을 삭제할까요?" → 예 → 삭제
+
+### 예상 결과
+- 관리자 · 모든 상태 이력 삭제 가능
+- 승인 이력 삭제 시 · 서버 로그 · `[LEAVE DELETE] emp=X · start~end · schedules 정리`
+- 스케쥴표 · 삭제한 연차 · 사라짐
+
+### 회귀 체크
+- 일반 직원 · 자기 pending 만 삭제 가능 (기존 유지)
+- 승인·반려 이력 · 일반 직원 · 삭제 불가 (기존 유지)
+
+---
+
+## #75 · 진열요청 · 담당자 지정 flow ✅
+**커밋** · fa312aef
+
+### 배경
+진열요청 리스트 · 담당자 미지정 상품 · [+ 지정] 버튼만 있고 · 클릭 시 아무 동작 안 함 (부모 콜백 미구현).
+
+### 해결
+- 신규 · `AssignStaffModal.tsx` · 재직 직원 리스트 · 검색 + 클릭 지정
+- 부모 · `RequestsPage.tsx` · 상태 관리 · 모달 mount · 지정 후 리스트 갱신
+
+### 테스트 절차
+1. **진열요청 페이지** · 담당자 없는 요청 확인
+2. **[+ 지정] 버튼** 클릭 · **AssignStaffModal** 오픈
+3. **모달 상단 · 담당자 지정 · zone_label 표시**
+4. **검색창** · 이름·직급·직군 검색 · 필터 정상 작동
+5. **직원 리스트** · 이니셜 아바타 · 이름 · rank · position 표시
+6. **직원 클릭** · 지정 처리 중 · Spinner 표시 · 완료 후 · toast "N님 지정 완료" · 모달 닫힘
+7. **리스트 즉시 갱신** · 해당 요청 · 담당자 표시됨
+8. **재직 필터** · 퇴사자 (retire_date 있음) · 리스트 X
+9. **level 필터** · level < 1 · 리스트 X
+
+### 예상 결과
+- 진열요청 · 담당자 명확히 지정 가능
+- 지정 후 · 즉시 화면 반영 (캐시 X · loadDisplayReqs)
+
+### 회귀 체크
+- 이미 담당자 있는 요청 · [+ 지정] 버튼 · 표시 X (조건부 렌더)
+- 다른 진열요청 flow (준비완료 · 진열완료 · 삭제) · 정상 동작
+
+---
+
+## #126 · 캐시 제거 · 나머지 endpoint (Agent 병렬) ✅
+**커밋** · b33640b5 (23파일 포함)
+
+### 배경
+대원칙 · 중요 데이터 · 캐시 X · 즉시 업데이트. supplier-ledger·order-history·display-requests 는 이미 완료. 나머지 endpoint 다수 캐시 헤더 없음.
+
+### 해결
+Agent 위임 · 아래 endpoint 그룹 · Cache-Control no-store 헤더 추가:
+- `server/routes/purchase/*` (purchase.ts · purchaseHistory.ts · supplierPayments/*)
+- `server/routes/stock/stockManage/*` (lowStock · periodCoverage · productHistory · stockRaw · topProducts · trending 등)
+- `server/routes/daily/leave.ts` (leave-stats · leave-requests · leave-balance)
+
+### 테스트 절차
+1. **네트워크 탭 열기** (F12 · Network)
+2. **결제입력** · **매입이력** · **재고관리** · **연차** 페이지 방문
+3. **응답 헤더** · `Cache-Control: no-store, no-cache, must-revalidate` 확인
+4. **데이터 변경 후** · 새로고침 없이도 · 재요청 시 최신 데이터 반영
+
+### 예상 결과
+- 브라우저 캐시 X · 항상 최신 DB 값
+- 조회 성능 미세 감소 (수용 · 정확성 우선)
+
+---
+
 ## 진행 중 태스크 (완료 시 추가)
