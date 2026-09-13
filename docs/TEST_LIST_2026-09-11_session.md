@@ -323,8 +323,9 @@ Radix Popover · 셀 옆 표시 · 스크롤 · 화면 밖 튀어나갈 가능�
 | #111 | 공급사 저장 · 서버 로그 강화 · 재현 시 원인 추적 | fea5a149 |
 | #112 | 공급사 정보수정 · 발주이력 컴팩트 섹션 통합 | d3d7cea5 |
 | #55·#53 | 발주필요 · 판매추천 · 임박 이벤트 배너 통합 | bc097349 |
+| #52·#54 | 이벤트 관리 UI 신규 · 통계설정 3번째 탭 | 5434854d |
 
-**총 · 34태스크 완료 · 37커밋 (자율 세션)**
+**총 · 36태스크 완료 · 39커밋 (자율 세션)**
 
 ---
 
@@ -651,6 +652,37 @@ if (zoneId && (!assignedStaffId || Number.isNaN(assignedStaffId))) {
 ### 사전 조건 (DB)
 - `events` 테이블에 · recurring=true 계절 (spring/summer/fall/winter) 등록
 - 또는 · start_date/end_date 있는 custom 이벤트
+
+---
+
+## #52·#54 · 이벤트 관리 UI ✅
+**커밋** · 5434854d
+
+### 배경
+`events`·`event_products` 백엔드 완료 · 관리 UI 없음.
+
+### 해결
+- 신규 · `EventsSection.tsx` · 통계설정 3번째 탭
+- 이벤트 CRUD (name·type·start·end·recurring)
+- type 색상 · 봄=pink · 여름=sky · 가을=amber · 겨울=indigo · 명절=rose · 수험생=emerald · custom=violet
+- 매년 반복 · emerald "매년" pill
+- 삭제 confirm · event_products CASCADE 안내
+
+### 테스트 절차
+1. **경영 > 통계설정 > 이벤트 관리** 탭 (3번째)
+2. **신규 이벤트** 버튼 · 폼 표시
+3. 이름·유형·시작일·종료일·매년 반복 · 등록
+4. 리스트 · 색상 배지 · 매년 pill 확인
+5. **편집** · Pencil 아이콘 · 폼에 값 채워짐
+6. **삭제** · Trash2 · confirm dialog · CASCADE 안내
+7. **/api/events/today** · 오늘 활성 이벤트 · #55 발주필요 배너에 자동 반영
+
+### 활용
+- 등록한 이벤트 · **발주필요 우측 판매 추천** 상단 배너에 자동 표시 (#55)
+- 매년 반복 (spring/summer 등) · 계절 자동 적용
+
+### 사전 조건
+- 관리자 (level ≥ 9) 만 편집 가능
 
 ---
 
