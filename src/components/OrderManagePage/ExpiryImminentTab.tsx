@@ -5,7 +5,7 @@
 //   · 표형식 · TableListWrap 프리미티브 · 목업 톤
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, RefreshCw, Package } from "lucide-react";
+import { AlertTriangle, RefreshCw, Package, X } from "lucide-react";
 import { api, ApiError } from "../../lib/apiClient";
 import { getErrorMessage } from "../../lib/errorMessage";
 import { Card } from "../common/Card";
@@ -13,6 +13,8 @@ import { EmptyState } from "../common/EmptyState";
 import { Spinner } from "../common/Spinner";
 import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/TableList";
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-09-13 · #92 · 유통기한 해제 토글 · confirm
+import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-29 · #154 P2 + #165 A · SaleStatusFilter · SearchBar 프리미티브
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
 import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
@@ -63,7 +65,27 @@ export const ExpiryImminentTab: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
-  const { toast, showError } = useToast();
+  const { toast, showError, showSuccess } = useToast();
+  const confirm = useConfirm();
+  const [clearingCode, setClearingCode] = useState<string | null>(null);
+  // 2026-09-13 · #92 · 유통기한 해제 · confirm + PATCH expiry_date=null
+  const handleClearExpiry = useCallback(async (p: ExpiryProduct) => {
+    const ok = await confirm({
+      message: `${p.product_name} · 유통기한 (${fmtDate(p.expiry_date)}) 을(를) 해제할까요?\n\n임박 리스트에서 사라집니다.`,
+      danger: true,
+    });
+    if (!ok) return;
+    setClearingCode(p.product_code);
+    try {
+      await api.patch(`/api/products/${encodeURIComponent(p.product_code)}`, { expiry_date: null });
+      setRows(prev => prev.filter(x => x.product_code !== p.product_code));
+      showSuccess(`${p.product_name} · 유통기한 해제`);
+    } catch (e) {
+      showError(`해제 실패: ${getErrorMessage(e)}`);
+    } finally {
+      setClearingCode(null);
+    }
+  }, [confirm, showError, showSuccess]);
   // 2026-08-29 · #154 P2 · 판매중 3-way 필터 (전체/판매중/판매중지)
   const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "expiryImminent.saleFilter" });
 
@@ -165,7 +187,8 @@ export const ExpiryImminentTab: React.FC = () => {
                   <th className={tableThCls("num")}  style={{ width: "10%" }}>현재고</th>
                   <th className={tableThCls("center")} style={{ width: "16%" }}>유통기한</th>
                   <th className={tableThCls("center")} style={{ width: "12%" }}>남은 일수</th>
-                  <th className={tableThCls("left")} style={{ width: "10%" }}>규격</th>
+                  <th className={tableThCls("left")} style={{ width: "8%" }}>규격</th>
+                  <th className={tableThCls("center")} style={{ width: "6%" }}>해제</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -184,6 +207,18 @@ export const ExpiryImminentTab: React.FC = () => {
                       <td className={tableTdCls("center", "font-semibold text-ink tabular-nums")}>{fmtDate(p.expiry_date)}</td>
                       <td className={tableTdCls("center")}>{dDayCell(d)}</td>
                       <td className={tableTdCls("left", "text-[15px] text-zinc-500")}>{p.spec ?? <span className="text-zinc-400">-</span>}</td>
+                      <td className={tableTdCls("center")}>
+                        {/* 2026-09-13 · #92 · 유통기한 해제 · confirm dialog */}
+                        <button
+                          type="button"
+                          onClick={() => handleClearExpiry(p)}
+                          disabled={clearingCode === p.product_code}
+                          title="유통기한 해제 · 임박 리스트에서 제거"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-all duration-150 cursor-pointer disabled:opacity-40"
+                        >
+                          <X size={14} className={clearingCode === p.product_code ? "animate-pulse" : ""} />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
