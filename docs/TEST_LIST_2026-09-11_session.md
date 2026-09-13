@@ -306,8 +306,9 @@ Radix Popover · 셀 옆 표시 · 스크롤 · 화면 밖 튀어나갈 가능�
 | #102 | ProductSearchInput · 결과 팝오버 재디자인 | 9d8e7d6d |
 | #98  | 차용계약 · 반응형 좌우 패널 접기 | 8218fee0 |
 | #121 | 진열요청 담당자 자동 매칭 (이미 서버 완료 확인) | (확인만) |
+| #93  | 관리자 대시보드 (LandingPage · 이미 구현 확인) | (확인만) |
 
-**총 · 16태스크 완료 · 20커밋 (자율 3-4시간 세션)**
+**총 · 17태스크 완료 · 21커밋 (자율 3-4시간 세션)**
 
 ---
 
@@ -466,6 +467,22 @@ if (zoneId && (!assignedStaffId || Number.isNaN(assignedStaffId))) {
 1. **진열요청 생성** · zone_id 만 지정 · assigned_staff_id 미지정
 2. **자동으로** · 해당 구역의 zone_assignments 기반 · 담당자 자동 배정
 3. 리스트에 표시
+
+---
+
+## #93 · 관리자 대시보드 (확인만) ✅
+
+### 확인 결과
+`src/components/LandingPage/LandingPage.tsx` · 이미 구현됨:
+- `isSuperAdmin` · `isManagerRole` · `isAdmin` 구분
+- 관리자 · TodayStatusPanel · 오늘 요약 표시
+- 관리자만 접근 가능한 링크·기능 gated
+- roleLabel · "최고관리자" / "관리자" / "직원"
+
+### 별도 신규 페이지 필요 여부
+- 현재 · LandingPage 자체가 · 역할별 랜딩 (관리자·직원·공급사)
+- **신규 페이지 불필요** · 필요 시 · LandingPage 확장 (KPI 추가·차트 등)
+- 사용자 · 별도 대시보드 원할 경우 · 스펙 확정 후 진행
 
 ---
 
