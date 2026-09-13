@@ -211,16 +211,33 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
               />
             </form>
           ) : (
+            /* 2026-09-13 · #81 · 진열위치 · 색깔 강조 (창고=cyan · 매장=violet · 미지정=회색)
+               · 매장·창고 판별 · location 첫 글자 · '창'·'W' → 창고 · 나머지 → 매장 */
             <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                type="button"
-                disabled={!inEditMode}
-                onClick={() => { if (inEditMode) { setLocDraft(String(location ?? "")); setEditingLoc(true); } }}
-                className={`${valueCls} tabular-nums ${inEditMode ? "hover:bg-amber-50 hover:text-amber-800 rounded px-1 -mx-1 cursor-pointer transition border border-dashed border-amber-300" : "cursor-default"}`}
-                title={inEditMode ? "클릭하여 편집" : undefined}
-              >
-                {location || <span className="text-zinc-300">-</span>}
-              </button>
+              {(() => {
+                const loc = String(location ?? "").trim();
+                const isWarehouse = /^(창|W|w)/.test(loc);
+                const pillCls = !loc
+                  ? "bg-zinc-100 text-zinc-400 border-zinc-200"
+                  : isWarehouse
+                  ? "bg-cyan-50 text-cyan-700 border-cyan-200"
+                  : "bg-violet-50 text-violet-700 border-violet-200";
+                const editCls = inEditMode
+                  ? "hover:brightness-95 cursor-pointer border-dashed"
+                  : "cursor-default";
+                return (
+                  <button
+                    type="button"
+                    disabled={!inEditMode}
+                    onClick={() => { if (inEditMode) { setLocDraft(loc); setEditingLoc(true); } }}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[14px] font-bold tabular-nums transition-all ${pillCls} ${editCls}`}
+                    title={inEditMode ? "클릭하여 편집" : undefined}
+                  >
+                    {loc ? (isWarehouse ? <Warehouse size={11} /> : <Store size={11} />) : null}
+                    {loc || <span className="opacity-60">-</span>}
+                  </button>
+                );
+              })()}
               {/* 2026-09-08 · 상세 진열위치 · 위치 뱃지 · 진열위치 옆 필수 표시 */}
               <ShelfPositionsBadge positions={product.shelf_positions} size="sm" />
             </div>
