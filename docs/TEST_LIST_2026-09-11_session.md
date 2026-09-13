@@ -315,8 +315,9 @@ Radix Popover · 셀 옆 표시 · 스크롤 · 화면 밖 튀어나갈 가능�
 | #95  | 매장구역도 탭 재구성 (이미 TabBar 매장·창고1·창고2 확인) | (확인만) |
 | #99·#103·#120 | 탭메뉴 통일 (이미 TabBar level=2/3 · 왼쪽 정렬 확인) | (확인만) |
 | #90  | 유통기한 3경로 등록·해제 UI (스캔·매입·상품등록 이미 구현) | (확인만) |
+| #117 | 발주이력 · [매입확인] 버튼 · status='matched' | 5e6e6982 |
 
-**총 · 25태스크 완료 · 26커밋 (자율 세션)**
+**총 · 26태스크 완료 · 28커밋 (자율 세션)**
 
 ---
 
@@ -519,6 +520,41 @@ if (zoneId && (!assignedStaffId || Number.isNaN(assignedStaffId))) {
 - 매장구역도 (`DisplayPage`) · 매장·창고1·창고2 · 3개 탭 이미 구현
 - 탭메뉴 · TabBar 프리미티브 · level=2/3 · 왼쪽 정렬 · 이미 통일
 - 유통기한 3경로 (스캔·매입·상품등록) · ExpiryDateModal 이미 통합
+
+---
+
+## #117 · 발주이력 · [매입확인] 버튼 ✅
+**커밋** · 5e6e6982
+
+### 배경
+발주 완료 · 이력 표시 · 하지만 매입(입고)과 매칭 확인 상태 · 별도 관리 없음. 매입 완료된 발주 · 시각적 구분 필요.
+
+### 해결
+- **서버** · `PATCH /api/order-history/:orderNumber/match` 신규 endpoint
+  - `order_requests` · order_number 그룹 · status='ordered' → 'matched' 일괄 업데이트
+  - authorize(2) · 매입확인 권한
+- **GET /api/order-history** · `status IN ('ordered', 'matched')` · 확장 · 매칭 후에도 이력 유지
+- **클라** · `OrderHistoryTab` · 헤더 우측
+  - `status === "matched"` · `StatusPill emerald "매입확인 완료"` 배지
+  - 그 외 · `[매입확인]` 버튼 · emerald bg · CheckCircle2 아이콘
+
+### 테스트 절차
+1. **매입 > 발주이력** 페이지
+2. 발주 이력 헤더 · PDF 버튼 옆 · **[매입확인]** 초록 버튼
+3. **[매입확인] 클릭** · confirm dialog:
+   - `발주 #XXX · 공급사 · N종 · Q개 · 매입확인 완료 처리할까요?`
+4. **확인** · 서버 로그 · `[ORDER MATCH] order_number=XXX · N건 · status='matched'`
+5. **UI 즉시 업데이트** · 버튼 사라짐 · **"매입확인 완료" pill** (emerald)
+6. 새로고침 · 상태 유지
+
+### 회귀 체크
+- 기존 발주 이력 · status=ordered · 정상 표시
+- 발주 · status=matched · 이력에 표시됨 (사라짐 X)
+- PDF 다운 · 정상
+
+### DB 스키마
+- `order_requests.status` · 기존 CHECK 없음 (text) · 'matched' 값 · 안전하게 추가 가능
+- 마이그레이션 · 별도 필요 없음
 
 ---
 
