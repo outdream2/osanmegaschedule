@@ -319,8 +319,9 @@ Radix Popover · 셀 옆 표시 · 스크롤 · 화면 밖 튀어나갈 가능�
 | #105 | 상품입고 · 현재고 카드 시각 강조 · 창고·매장 배지 | ab42d806 |
 | #80  | 페이지 보이기/숨기기 · usePagePermissions 감사 (이미 광범위 적용) | (확인만) |
 | #76  | 진열요청 담당자 매핑 · AssignStaffModal 이미 존재 | (확인만) |
+| #88·#89 | 통계설정 · 탭메뉴로 변경 · TabBar level=2 통일 | e266f97c |
 
-**총 · 28태스크 완료 · 30커밋 (자율 세션)**
+**총 · 30태스크 완료 · 32커밋 (자율 세션)**
 
 ---
 
@@ -558,6 +559,30 @@ if (zoneId && (!assignedStaffId || Number.isNaN(assignedStaffId))) {
 ### DB 스키마
 - `order_requests.status` · 기존 CHECK 없음 (text) · 'matched' 값 · 안전하게 추가 가능
 - 마이그레이션 · 별도 필요 없음
+
+---
+
+## #88·#89 · 통계설정 · 탭메뉴로 변경 ✅
+**커밋** · e266f97c
+
+### 배경
+`SeasonSettingsPage` · 2섹션 (계절 정의 + 재고·판매 필터) · 세로 스택 · 스크롤 필요.
+
+### 해결
+- **TabBar level=2** 프리미티브 · 2개 탭
+- **계절 정의** · Snowflake 아이콘 · sky 컬러
+- **재고·판매 필터** · Package 아이콘 · emerald 컬러
+- `localStorage.'statsSettings.tab'` · 활성 탭 유지
+
+### 테스트 절차
+1. **경영 > 통계설정** 페이지 진입
+2. 상단 · **TabBar** (계절 정의 · 재고·판매 필터)
+3. **탭 클릭** · 콘텐츠 즉시 전환 · 스크롤 필요 없음
+4. **페이지 재방문** · 마지막 활성 탭 유지 (localStorage)
+
+### 예상 결과
+- 프레임워크 통일 · 다른 페이지와 동일한 TabBar UX
+- 스크롤 최소화 · 각 섹션 · 한 화면에 표시
 
 ---
 
