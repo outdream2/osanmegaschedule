@@ -60,6 +60,7 @@ export interface LedgerRow {
   running_balance: number;
 }
 
-export type DetailTab = "info" | "payment" | "purchase";
+// 2026-09-13 · #112 · 발주이력 탭 추가 · 공급사별 발주 이력 통합
+export type DetailTab = "info" | "payment" | "purchase" | "orders";
 
 export type ApprovalStatus = "pending" | "approved" | "rejected";

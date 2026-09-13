@@ -16,7 +16,7 @@ import {
   ScanLine, AlertCircle, PackagePlus, Clock,
   Minus, Plus, RotateCcw, ClipboardCheck,
   Barcode, Building2, Box, Hash, ArrowUpDown, ArrowUp, ArrowDown,
-  Package,
+  Package, Warehouse, Store,
 } from "lucide-react";
 import { StatusPill } from "../common/StatusPill";
 import { Card } from "../common/Card";
@@ -638,22 +638,43 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     )}
                   </div>
 
-                  {/* 재고·가격 */}
+                  {/* 재고·가격 · 2026-09-13 · #105 · 현재고 카드 시각 강조 · Package 아이콘 + 창고·매장 배지 */}
                   {(lastScannedProduct.current_stock != null || lastScannedProduct.sale_price != null) && (
-                    <div className="flex flex-wrap items-center gap-3 pt-2.5 mt-0.5
-                      border-t border-emerald-200/60">
+                    <div className="flex flex-wrap items-center gap-2.5 pt-2.5 mt-0.5 border-t border-emerald-200/60">
                       {lastScannedProduct.current_stock != null && (
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[16px] font-semibold text-zinc-400 leading-none">현재고</span>
-                          <span className="text-[17px] font-bold text-amber-700 tabular-nums leading-none">
-                            {Number(lastScannedProduct.current_stock).toLocaleString()}
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200">
+                          <Package size={18} className="text-amber-600 shrink-0" strokeWidth={2.2} />
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-[13px] font-semibold text-amber-600/80 leading-none">현재고</span>
+                            <span className="text-[20px] font-extrabold text-amber-800 tabular-nums leading-none">
+                              {Number(lastScannedProduct.current_stock).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {/* 2026-09-13 · #105 · 창고·매장 배지 · 필드 있는 상품만 표시 (선택적) */}
+                      {(lastScannedProduct as any).warehouse_stock != null && (
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-50 border border-cyan-200">
+                          <Warehouse size={14} className="text-cyan-600 shrink-0" />
+                          <span className="text-[13px] font-semibold text-cyan-700">창고</span>
+                          <span className="text-[16px] font-bold text-cyan-800 tabular-nums">
+                            {Number((lastScannedProduct as any).warehouse_stock).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      {(lastScannedProduct as any).store_stock != null && (
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-50 border border-violet-200">
+                          <Store size={14} className="text-violet-600 shrink-0" />
+                          <span className="text-[13px] font-semibold text-violet-700">매장</span>
+                          <span className="text-[16px] font-bold text-violet-800 tabular-nums">
+                            {Number((lastScannedProduct as any).store_stock).toLocaleString()}
                           </span>
                         </div>
                       )}
                       {lastScannedProduct.sale_price != null && Number(lastScannedProduct.sale_price) > 0 && (
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[16px] font-semibold text-zinc-400 leading-none">판매가</span>
-                          <span className="text-[17px] font-bold text-orange-700 tabular-nums leading-none">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-50 border border-orange-200">
+                          <span className="text-[13px] font-semibold text-orange-600">판매가</span>
+                          <span className="text-[16px] font-bold text-orange-800 tabular-nums">
                             ₩{Number(lastScannedProduct.sale_price).toLocaleString()}
                           </span>
                         </div>
