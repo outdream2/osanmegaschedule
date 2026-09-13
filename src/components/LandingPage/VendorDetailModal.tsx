@@ -36,6 +36,8 @@ import { VendorDetailApprovalBanner } from "./VendorDetailApprovalBanner";
 import { useAuth } from "../../hooks/useAuth";
 import { VendorDetailPaymentPanel } from "./VendorDetailPaymentPanel";
 import { VendorDetailPurchasePanel } from "./VendorDetailPurchasePanel";
+// 2026-09-13 · #112 · 발주이력 · info 뷰 하단 · 컴팩트 섹션
+import { VendorOrderHistorySection } from "./VendorOrderHistorySection";
 
 export const VendorDetailModal: React.FC<{
   vendor: Vendor;
@@ -618,6 +620,11 @@ export const VendorDetailModal: React.FC<{
 
             {/* 2026-08-10 · 사용자 요청 · 결제·잔고·매입이력 탭 안내 문구 제거 */}
           </div>
+
+          {/* 2026-09-13 · #112 · 발주이력 · info 뷰 하단 · 컴팩트 섹션 통합 */}
+          {!isVendorLogin && vendor?.company_name && activeTab === "info" && (
+            <VendorOrderHistorySection supplierName={String(vendor.company_name)} />
+          )}
           </>
           )}
 
