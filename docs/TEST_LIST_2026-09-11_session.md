@@ -322,8 +322,9 @@ Radix Popover · 셀 옆 표시 · 스크롤 · 화면 밖 튀어나갈 가능�
 | #88·#89 | 통계설정 · 탭메뉴로 변경 · TabBar level=2 통일 | e266f97c |
 | #111 | 공급사 저장 · 서버 로그 강화 · 재현 시 원인 추적 | fea5a149 |
 | #112 | 공급사 정보수정 · 발주이력 컴팩트 섹션 통합 | d3d7cea5 |
+| #55·#53 | 발주필요 · 판매추천 · 임박 이벤트 배너 통합 | bc097349 |
 
-**총 · 32태스크 완료 · 35커밋 (자율 세션)**
+**총 · 34태스크 완료 · 37커밋 (자율 세션)**
 
 ---
 
@@ -624,6 +625,32 @@ if (zoneId && (!assignedStaffId || Number.isNaN(assignedStaffId))) {
 3. **최근 발주 5건** 표시 · 상태 배지 (sky 발주완료 / emerald 매입확인)
 4. **더 보기** · 전체 (최대 1년) 확장/접기
 5. **새로고침 (RefreshCw)** · 데이터 재조회
+
+---
+
+## #55·#53 · 발주필요 · 임박 이벤트 배너 ✅
+**커밋** · bc097349
+
+### 배경
+`event_products`·`events` 백엔드 완료 (`/api/events/today`) · UI에서 활용 안 됨.
+
+### 해결
+- `SalesRecommendationPanel` · 우측 판매 추천 패널 · product 미선택 시 · 상단 이벤트 배너
+- **GET /api/events/today** · 진행중 + 임박 (30일 이내) 이벤트 표시
+- type별 색상 (봄·여름·가을·겨울·명절·수험생·custom)
+- 진행중 · rose pulse pill · 임박 · amber D-N pill
+- 매핑 상품수 (`product_count`) 표시
+
+### 테스트 절차
+1. **매입 > 발주필요** 페이지
+2. 우측 판매 추천 패널 · 상품 미선택 상태
+3. **상단** · 진행중·임박 이벤트 리스트
+4. 각 이벤트 · type 배지 · 이름 · 기간 · 상태 pill
+5. 이벤트 없는 시기 · 안내만 표시
+
+### 사전 조건 (DB)
+- `events` 테이블에 · recurring=true 계절 (spring/summer/fall/winter) 등록
+- 또는 · start_date/end_date 있는 custom 이벤트
 
 ---
 
