@@ -2,11 +2,41 @@
 // 2026-09-10 · #46 · 사용자 지시 · 발주필요 우측 · 판매 추천 정보 패널
 //   · 30일 판매 요약 · 예상 소진일 · 시나리오 (30/45/90일치) 발주량 [적용]
 //   · 상품 상세 정보는 별도 모달 (onOpenDetail 트리거)
-import React from "react";
-import { Package, TrendingUp, Info, X, Check } from "lucide-react";
+// 2026-09-13 · #55 · 상품 선택 무관 · 임박 이벤트 배너 (GET /api/events/today)
+import React, { useEffect, useState } from "react";
+import { Package, TrendingUp, Info, X, Check, Sparkles, Calendar } from "lucide-react";
 import { Card } from "../common/Card";
 import { StatusPill } from "../common/StatusPill";
+import { api } from "../../lib/apiClient";
 import type { ProductInfo } from "./OrderManagePage.types";
+
+// 2026-09-13 · #55 · 임박 이벤트 · GET /api/events/today
+interface EventToday {
+  id: number;
+  name: string;
+  type: string;
+  start_date: string | null;
+  end_date: string | null;
+  recurring: boolean;
+  product_count?: number;
+}
+
+const TYPE_TONE: Record<string, { label: string; cls: string }> = {
+  spring:   { label: "봄",   cls: "bg-pink-50 border-pink-200 text-pink-700" },
+  summer:   { label: "여름", cls: "bg-sky-50 border-sky-200 text-sky-700" },
+  fall:     { label: "가을", cls: "bg-amber-50 border-amber-200 text-amber-700" },
+  winter:   { label: "겨울", cls: "bg-indigo-50 border-indigo-200 text-indigo-700" },
+  holiday:  { label: "명절", cls: "bg-rose-50 border-rose-200 text-rose-700" },
+  school:   { label: "수험생", cls: "bg-emerald-50 border-emerald-200 text-emerald-700" },
+  custom:   { label: "이벤트", cls: "bg-violet-50 border-violet-200 text-violet-700" },
+};
+
+const dayDiff = (d: string | null): number | null => {
+  if (!d) return null;
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const target = new Date(String(d).slice(0, 10) + "T00:00:00");
+  return Math.round((target.getTime() - now.getTime()) / 86400000);
+};
 
 interface Props {
   product: ProductInfo | null;
@@ -25,13 +55,67 @@ function formatQty(n: number): string {
 export const SalesRecommendationPanel: React.FC<Props> = ({
   product, saleMonth, saleQuarter, loading, onApplyQty, onOpenDetail, onClose,
 }) => {
+  // 2026-09-13 · #55 · 임박 이벤트 · product 무관 · 상단 배너 (product null 시에도 표시)
+  const [eventsToday, setEventsToday] = useState<EventToday[]>([]);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const { data } = await api.get<{ events?: EventToday[] }>(`/api/events/today`);
+        if (alive) setEventsToday(Array.isArray(data?.events) ? data.events : []);
+      } catch { if (alive) setEventsToday([]); }
+    })();
+    return () => { alive = false; };
+  }, []);
+
   if (!product) {
     return (
       <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
-        <Card padding="md" rounded="xl" className="flex-1 min-h-[400px] flex flex-col items-center justify-center gap-2 text-center">
-          <TrendingUp size={40} className="text-zinc-300" strokeWidth={1.5} />
-          <div className="text-[16px] font-bold text-ink">판매 추천 정보</div>
-          <div className="text-[14px] text-ink-soft">상품을 선택하면<br/>추천 발주량이 표시됩니다</div>
+        <Card padding="md" rounded="xl" className="flex-1 min-h-[400px] flex flex-col gap-3 overflow-y-auto">
+          {/* 임박 이벤트 리스트 · 상단 (#55) */}
+          {eventsToday.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-1.5 pb-1.5 border-b border-line">
+                <Sparkles size={14} className="text-brand-deep" />
+                <span className="text-[14px] font-bold text-ink">진행중·임박 이벤트</span>
+                <span className="text-[12px] tabular-nums text-zinc-400 font-medium">{eventsToday.length}건</span>
+              </div>
+              {eventsToday.map(ev => {
+                const tone = TYPE_TONE[ev.type] ?? TYPE_TONE.custom;
+                const d = dayDiff(ev.start_date);
+                const isSoon = d != null && d > 0 && d <= 30;
+                const isNow = d != null && d <= 0;
+                return (
+                  <div key={ev.id} className={`flex items-center gap-2 flex-wrap px-2.5 py-1.5 rounded-lg border ${tone.cls}`}>
+                    <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-white/60 border border-current/20 shrink-0">
+                      {tone.label}
+                    </span>
+                    <span className="text-[14px] font-bold shrink-0">{ev.name}</span>
+                    {ev.start_date && (
+                      <span className="inline-flex items-center gap-1 text-[12px] shrink-0">
+                        <Calendar size={11} />
+                        {ev.start_date}
+                        {ev.end_date && ev.end_date !== ev.start_date && ` ~ ${ev.end_date}`}
+                      </span>
+                    )}
+                    {isNow && <StatusPill tone="rose" size="sm" dot pulse>진행중</StatusPill>}
+                    {isSoon && <StatusPill tone="amber" size="sm">D-{d}</StatusPill>}
+                    {ev.product_count != null && ev.product_count > 0 && (
+                      <span className="ml-auto text-[12px] font-semibold tabular-nums">
+                        상품 {ev.product_count}개
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {/* 상품 미선택 안내 */}
+          <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center min-h-[240px]">
+            <TrendingUp size={40} className="text-zinc-300" strokeWidth={1.5} />
+            <div className="text-[16px] font-bold text-ink">판매 추천 정보</div>
+            <div className="text-[14px] text-ink-soft">상품을 선택하면<br/>추천 발주량이 표시됩니다</div>
+          </div>
         </Card>
       </div>
     );
