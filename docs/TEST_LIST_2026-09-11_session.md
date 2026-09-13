@@ -307,8 +307,16 @@ Radix Popover · 셀 옆 표시 · 스크롤 · 화면 밖 튀어나갈 가능�
 | #98  | 차용계약 · 반응형 좌우 패널 접기 | 8218fee0 |
 | #121 | 진열요청 담당자 자동 매칭 (이미 서버 완료 확인) | (확인만) |
 | #93  | 관리자 대시보드 (LandingPage · 이미 구현 확인) | (확인만) |
+| #115 | 발주 관련 · 잔여 캐시 헤더 3건 추가 | c6882101 |
+| #81  | 상품정보 · 진열위치 색깔 강조 (창고=cyan · 매장=violet) | 3a967f28 |
+| #91  | ExpiryBadge · 상품명 옆 배치 (프리미티브 확산) | 85668f03 |
+| #92  | 유통기한 임박 리스트 · 해제 토글 + confirm | 8009442e |
+| #77  | 서류작성 UI (이미 TabBar level=3 통일 확인) | (확인만) |
+| #95  | 매장구역도 탭 재구성 (이미 TabBar 매장·창고1·창고2 확인) | (확인만) |
+| #99·#103·#120 | 탭메뉴 통일 (이미 TabBar level=2/3 · 왼쪽 정렬 확인) | (확인만) |
+| #90  | 유통기한 3경로 등록·해제 UI (스캔·매입·상품등록 이미 구현) | (확인만) |
 
-**총 · 17태스크 완료 · 21커밋 (자율 3-4시간 세션)**
+**총 · 25태스크 완료 · 26커밋 (자율 세션)**
 
 ---
 
@@ -483,6 +491,34 @@ if (zoneId && (!assignedStaffId || Number.isNaN(assignedStaffId))) {
 - 현재 · LandingPage 자체가 · 역할별 랜딩 (관리자·직원·공급사)
 - **신규 페이지 불필요** · 필요 시 · LandingPage 확장 (KPI 추가·차트 등)
 - 사용자 · 별도 대시보드 원할 경우 · 스펙 확정 후 진행
+
+---
+
+## 추가 완료 태스크 (2026-09-13 자율 이어서)
+
+### #115 · 발주 관련 캐시 잔여 3건 ✅ · 커밋 c6882101
+- `/api/order-requests` · `/api/order-history` · `/api/product-arrivals/compare/orders` · Cache-Control no-store 추가
+- 대원칙 · 발주부분 캐시 X · 즉시 업데이트 · 완료
+
+### #81 · 진열위치 색깔 강조 ✅ · 커밋 3a967f28
+- ProductBasicInfoPanel · 창고=cyan / 매장=violet · Warehouse·Store 아이콘
+- 테스트: 상품 상세 열기 · 진열위치 · 색깔 pill · 창고/매장 구분
+
+### #91 · ExpiryBadge 확산 ✅ · 커밋 85668f03
+- ProductBasicInfoPanel · 상품명 옆 · 유통기한 임박 배지 자동 표시
+- 테스트: 유통기한 있는 상품 조회 · 상품명 옆 · D-N 배지
+
+### #92 · 유통기한 임박 · 해제 토글 ✅ · 커밋 8009442e
+- ExpiryImminentTab · 각 행 우측 · X 해제 버튼
+- confirm dialog · 상품명·유통기한 안내
+- PATCH · expiry_date=null · 리스트에서 즉시 제거
+- 테스트: 매입 > 유통기한 임박 · X 클릭 · confirm → 해제
+
+### #77·#95·#99·#103·#120·#90 · 이미 구현 확인만
+- 서류작성 (`DocumentWriterPage`) · TabBar level=3 이미 통일
+- 매장구역도 (`DisplayPage`) · 매장·창고1·창고2 · 3개 탭 이미 구현
+- 탭메뉴 · TabBar 프리미티브 · level=2/3 · 왼쪽 정렬 · 이미 통일
+- 유통기한 3경로 (스캔·매입·상품등록) · ExpiryDateModal 이미 통합
 
 ---
 
