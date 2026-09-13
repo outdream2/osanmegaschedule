@@ -402,8 +402,10 @@ router.patch("/api/vendors/:id", authorize(0), validateBody(UpdateVendorSchema),
   const SELECT_NO_TEAM  = "id, company_name, contact_name, phone, email, category, note, business_number, vat_included";
   const SELECT_NO_VAT   = "id, company_name, contact_name, phone, email, category, note, business_number";
   const SELECT_NO_EMAIL = "id, company_name, contact_name, phone, category, note, business_number";
+  // 2026-09-13 · #111 · 저장 실패 원인 추적 · 로그 강화 (fallback path 명확화)
   const r1 = await supabase.from("vendors").update(updates).eq("id", id).select(SELECT_FULL).single();
   if (!r1.error) { invalidateVendorCache(); return res.json(r1.data); }
+  console.warn(`[VENDOR PATCH · fallback trigger] id=${id} · err=${r1.error.message} · keys=[${Object.keys(updates).join(",")}]`);
   // 2026-08-23 · #178·#192 · 신규 컬럼 없음 fallback (마이그레이션 미실행)
   //   · order_method · region · invoice_method · order_status · special_notes · approval_status
   if (/order_method|region|invoice_method|order_status|special_notes|approval_status/i.test(r1.error.message)) {
@@ -452,7 +454,9 @@ router.patch("/api/vendors/:id", authorize(0), validateBody(UpdateVendorSchema),
     invalidateVendorCache();
     return res.json({ ...r2.data, email: null, vat_included: null });
   }
-  throw new HttpError(500, r1.error.message);
+  // 2026-09-13 · #111 · 최종 실패 · 원인·시도 payload 전체 로그
+  console.error(`[VENDOR PATCH FAILED] id=${id} · error=${r1.error.message} · attempted_keys=[${Object.keys(updates).join(",")}]`);
+  throw new HttpError(500, `공급사 저장 실패: ${r1.error.message}`);
 }));
 
 // 거래처 삭제 (관리자)
