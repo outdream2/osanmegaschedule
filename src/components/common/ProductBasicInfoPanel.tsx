@@ -16,6 +16,8 @@ import { Package, Store, Warehouse, MapPin, Coins, Pencil, Check, Barcode } from
 // 2026-09-08 · 상세 진열위치 뱃지 · 진열위치 옆 필수 표시
 import { ShelfPositionsBadge } from "./ShelfPositionsBadge";
 import type { ShelfPositions } from "../../lib/shelfPositions";
+// 2026-09-13 · #91 · ExpiryBadge · 상품명 옆 유통기한 임박 표시
+import { ExpiryBadge } from "./ExpiryBadge";
 
 export interface ProductBasic {
   product_code: string;
@@ -37,6 +39,8 @@ export interface ProductBasic {
   last_purchase_date?: string | null;
   // 2026-09-08 · 위치별 상세 진열위치 (JSONB · 매장/창고)
   shelf_positions?: ShelfPositions | null;
+  // 2026-09-13 · #91 · 유통기한 (products.expiry_date · 재고이력 latest)
+  expiry_date?: string | null;
 }
 
 export interface ProductBasicInfoPanelProps {
@@ -167,9 +171,13 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
         {/* Row 1 · 핵심 · 상품명 | 바코드(=상품코드) | 판매상태 | 진열위치 */}
         {/* 2026-09-08 · barcode 컬럼 제거 · product_code 자체가 바코드값 (13자리 EAN) */}
         <Field label="상품명" className="col-span-2">
-          <span className={valueCls + " break-keep"} title={product.product_name ?? undefined}>
-            {product.product_name || "-"}
-          </span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className={valueCls + " break-keep"} title={product.product_name ?? undefined}>
+              {product.product_name || "-"}
+            </span>
+            {/* 2026-09-13 · #91 · 유통기한 임박 배지 · 상품 조회 위치 */}
+            <ExpiryBadge expiryDate={product.expiry_date} size="sm" />
+          </div>
         </Field>
         <Field label="바코드" icon={<Barcode size={11} />}>
           <span className={valueCls + " tabular-nums break-all"} title={product.product_code ?? undefined}>
