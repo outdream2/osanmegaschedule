@@ -34,7 +34,9 @@ import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-25 · 사용자 지시 · 공급사 분류 필터 · vendors 훅 재사용
 import { useVendors } from "../../hooks/useVendors";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
-import { Tags } from "lucide-react";
+import { Tags, CheckCircle2 } from "lucide-react";
+// 2026-09-13 · #117 · 매입확인 버튼 · confirm
+import { useConfirm } from "../../hooks/useConfirm";
 
 interface OrderHistoryItem {
   id: string | number;
@@ -57,13 +59,36 @@ interface OrderHistoryOrder {
   supplier_phone: string | null;
   memo: string | null;
   sent_at: string;
+  // 2026-09-13 · #117 · order_number 그룹의 상태 · 'ordered' (미매칭) | 'matched' (매입확인)
+  status?: "ordered" | "matched";
   items: OrderHistoryItem[];
   total_qty: number;
   total_amount: number;
 }
 
 export const OrderHistoryTab: React.FC = () => {
-  const { toast, showError } = useToast();
+  const { toast, showError, showSuccess } = useToast();
+  const confirm = useConfirm();
+  const [matchingKey, setMatchingKey] = useState<string | null>(null);
+  // 2026-09-13 · #117 · 매입확인 · order_number 단위 · status='matched'
+  const handleMatch = async (o: OrderHistoryOrder) => {
+    if (!o.order_number) { showError("발주번호 없음"); return; }
+    const ok = await confirm({
+      message: `발주 #${o.order_number} · ${o.supplier} · ${o.items.length}종 · ${o.total_qty}개 · 매입확인 완료 처리할까요?\n\n이후 이력에 '매입확인' 배지로 표시됩니다.`,
+    });
+    if (!ok) return;
+    const key = String(o.order_number);
+    setMatchingKey(key);
+    try {
+      await api.patch(`/api/order-history/${encodeURIComponent(o.order_number)}/match`, {});
+      setOrders(prev => prev.map(x => x.order_number === o.order_number ? { ...x, status: "matched" } : x));
+      showSuccess("매입확인 완료");
+    } catch (e) {
+      showError(`매입확인 실패: ${getErrorMessage(e)}`);
+    } finally {
+      setMatchingKey(null);
+    }
+  };
   const [orders, setOrders] = useState<OrderHistoryOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -375,6 +400,25 @@ export const OrderHistoryTab: React.FC = () => {
                         : <FileDown size={12} strokeWidth={2.4} />}
                       PDF
                     </button>
+                    {/* 2026-09-13 · #117 · 매입확인 버튼 · matched 상태로 변경 · 이후 배지 표시 */}
+                    {o.status === "matched" ? (
+                      <StatusPill tone="emerald" size="sm" dot>
+                        매입확인 완료
+                      </StatusPill>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); void handleMatch(o); }}
+                        disabled={matchingKey === String(o.order_number)}
+                        className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[13px] font-bold text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 shadow-sm active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                        title="발주-매입 매칭 확인 · status=matched"
+                      >
+                        {matchingKey === String(o.order_number)
+                          ? <Spinner size={12} tone="brand" />
+                          : <CheckCircle2 size={12} strokeWidth={2.4} />}
+                        매입확인
+                      </button>
+                    )}
                   </button>
 
                   {/* 확장 내용 · 아이템 리스트 + 수신처 · 폰트 +2 */}

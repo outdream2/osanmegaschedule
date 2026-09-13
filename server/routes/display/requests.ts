@@ -588,10 +588,11 @@ router.get("/api/order-history", asyncHandler(async (req, res) => {
   const supplier = String(req.query.supplier ?? "").trim();
 
   // 2026-09-09 · optimal_stock 스냅샷 제거 · products.optimal_stock 단일 소스
+  // 2026-09-13 · #117 · status='ordered' + 'matched' 둘 다 이력에 표시 (매입확인 후에도 이력 보임)
   let q = supabase
     .from("order_requests")
-    .select("id, order_number, order_date, desired_arrival, supplier, supplier_contact, supplier_email, supplier_phone, product_code, product_name, current_stock, order_qty, unit_price, memo, sent_at, note")
-    .eq("status", "ordered")
+    .select("id, order_number, order_date, desired_arrival, supplier, supplier_contact, supplier_email, supplier_phone, product_code, product_name, current_stock, order_qty, unit_price, memo, sent_at, note, status")
+    .in("status", ["ordered", "matched"])
     .gte("sent_at", since)
     .order("sent_at", { ascending: false });
   if (supplier) q = q.eq("supplier", supplier);
@@ -619,10 +620,17 @@ router.get("/api/order-history", asyncHandler(async (req, res) => {
         supplier_phone: row.supplier_phone,
         memo: row.memo,
         sent_at: row.sent_at,
+        // 2026-09-13 · #117 · status · order_number 그룹의 상태 · 'matched' or 'ordered'
+        //   · 여러 라인 중 · 모두 'matched' 면 · 'matched' · 하나라도 'ordered' 면 · 'ordered'
+        status: row.status ?? "ordered",
         items: [],
         total_qty: 0,
         total_amount: 0,
       });
+    } else {
+      // 상태 병합 · 하나라도 ordered 면 · ordered (미매칭 우선)
+      const g = grouped.get(key);
+      if (row.status === "ordered") g.status = "ordered";
     }
     const g = grouped.get(key);
     const qty = Number(row.order_qty ?? 0);
@@ -668,6 +676,26 @@ router.delete("/api/order-requests/:id", authorize(2), asyncHandler(async (req, 
   const { error } = await supabase.from("order_requests").delete().eq("id", req.params.id);
   if (error) throw new HttpError(500, error.message);
   res.json({ ok: true });
+}));
+
+// 2026-09-13 · #117 · 발주이력 · [매입확인] 버튼 · order_number 단위 · status='matched'
+//   · order_requests · order_number 로 GROUP된 모든 행 · status='matched' 로 업데이트
+//   · 발주-매입 매칭 확인 · 이력 리스트에는 유지 · UI 배지로 구분
+router.patch("/api/order-history/:orderNumber/match", authorize(2), asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  const orderNumber = String(req.params.orderNumber ?? "").trim();
+  if (!orderNumber) throw badRequest("order_number 필수");
+  const { data, error } = await supabase
+    .from("order_requests")
+    .update({ status: "matched" })
+    .eq("order_number", orderNumber)
+    .eq("status", "ordered")
+    .select("id");
+  if (error) throw new HttpError(500, error.message);
+  const count = (data ?? []).length;
+  if (count === 0) throw new HttpError(404, "해당 발주번호의 ordered 상태 항목 없음");
+  console.log(`[ORDER MATCH] order_number=${orderNumber} · ${count}건 · status='matched'`);
+  res.json({ ok: true, count, order_number: orderNumber });
 }));
 
 // ── 발주서 일괄/개별 발송 ─────────────────────────────────────────────────────
