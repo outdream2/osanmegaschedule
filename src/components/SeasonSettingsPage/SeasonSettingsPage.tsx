@@ -12,12 +12,14 @@ import { SettingsPageShell } from "../common/SettingsPageShell";
 import { CARD_BASE } from "../../styles/tokens";
 // 2026-08-29 · #122 P2 · SectionCard 프리미티브 (관리자 아닌 경우 · 안내만)
 import { SectionCard } from "../common/SectionCard";
-import { ChartBar, Lock, Snowflake, Package } from "@phosphor-icons/react";
+import { ChartBar, Lock, Snowflake, Package, Sparkle } from "@phosphor-icons/react";
 import { OptimalStockPeriodSection } from "./OptimalStockPeriodSection";
 // 2026-08-26 · #118 · 판매중 상품만 필터 전역 설정 (신규 섹션)
 import { SaleActiveOnlySection } from "./SaleActiveOnlySection";
 // 2026-09-13 · #88 · 통계설정 · 탭메뉴로 변경 · TabBar 프리미티브
 import { TabBar, type TabDef } from "../common/TabBar";
+// 2026-09-13 · #52·#54 · 이벤트 관리 UI 신규
+import { EventsSection } from "./EventsSection";
 
 interface Props {
   onBack: () => void;
@@ -26,11 +28,12 @@ interface Props {
   onLogout?: () => void;
 }
 
-// 2026-09-13 · #88 · 탭 정의
-type StatsTab = "season" | "filters";
+// 2026-09-13 · #88 · 탭 정의 · #52·#54 · 이벤트 관리 탭 추가
+type StatsTab = "season" | "filters" | "events";
 const STATS_TABS: TabDef<StatsTab>[] = [
   { key: "season",  label: "계절 정의",       icon: Snowflake, color: "sky" },
   { key: "filters", label: "재고·판매 필터",  icon: Package,   color: "emerald" },
+  { key: "events",  label: "이벤트 관리",     icon: Sparkle,   color: "violet" },
 ];
 
 const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout }) => {
@@ -40,7 +43,8 @@ const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
   const [statsTab, setStatsTab] = useState<StatsTab>(() => {
     try {
       const raw = localStorage.getItem("statsSettings.tab");
-      return raw === "filters" ? "filters" : "season";
+      if (raw === "filters" || raw === "events") return raw as StatsTab;
+      return "season";
     } catch { return "season"; }
   });
   const handleTabChange = useCallback((k: StatsTab) => {
@@ -116,6 +120,22 @@ const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
                     <SaleActiveOnlySection />
                   </div>
                 </div>
+              </div>
+            </section>
+          )}
+          {/* 2026-09-13 · #52·#54 · 이벤트 관리 탭 */}
+          {statsTab === "events" && (
+            <section
+              className="bg-white rounded-2xl border border-line overflow-hidden"
+              style={{ boxShadow: "0 1px 2px rgba(10,46,74,0.04), 0 4px 12px -4px rgba(10,46,74,0.06)" }}
+            >
+              <div className="h-1 bg-gradient-to-r from-violet-500 via-pink-500 to-rose-500" />
+              <div className="p-5">
+                <h3 className="text-[21px] font-extrabold text-ink tracking-tight leading-tight mb-1">이벤트 관리</h3>
+                <p className="text-[16px] text-ink-soft leading-relaxed mb-4">
+                  계절·명절·수험생·커스텀 이벤트 · 발주필요 판매추천에 자동 반영
+                </p>
+                <EventsSection />
               </div>
             </section>
           )}
