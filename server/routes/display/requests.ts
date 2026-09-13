@@ -487,6 +487,8 @@ router.delete("/api/display-requests/:id", authorize(2), asyncHandler(async (req
 }));
 
 router.get("/api/order-requests", asyncHandler(async (req, res) => {
+  // 2026-09-13 · #115 · 대원칙 · 발주 관련 · 캐시 X · 즉시 업데이트
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   // 2026-09-02 · 사용자 지시 · 발주 완료 (status='ordered') 는 리스트에서 제외
   //   · 기본 · status='requested' 만 반환 · 발주요청 대기 목록
   //   · ?status=all · 모든 상태 반환 · ?status=xxx · 특정 상태 필터
@@ -579,6 +581,8 @@ router.post("/api/order-requests", authorize(1), validateBody(CreateOrderRequest
 //   마이그레이션 add_order_dispatch_columns_2026-08-10.sql 실행 후 활성
 //   컬럼 없으면 gracefully empty 반환
 router.get("/api/order-history", asyncHandler(async (req, res) => {
+  // 2026-09-13 · #115 · 대원칙 · 발주 관련 · 캐시 X · 즉시 업데이트 (기존 에러 케이스에만 있던 것을 함수 시작으로 이동)
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "90")) || 90));
   const since = new Date(Date.now() - days * 86400000).toISOString();
   const supplier = String(req.query.supplier ?? "").trim();

@@ -401,6 +401,8 @@ router.get("/api/product-arrivals", asyncHandler(async (req, res) => {
 //   · 최근 발주 (order_requests) vs 검수 이력 (purchase_details verify_status IS NOT NULL)
 // ─────────────────────────────────────────────────────────────────
 router.get("/api/product-arrivals/compare/orders", asyncHandler(async (req, res) => {
+  // 2026-09-13 · #115 · 대원칙 · 발주 관련 · 캐시 X
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const days = Math.max(1, Math.min(90, parseInt(String(req.query.days ?? "7"), 10) || 7));
   const since = new Date(); since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString();
