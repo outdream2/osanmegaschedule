@@ -8,7 +8,8 @@ import { supabase } from "../../../../src/supabase/client";
 import { asyncHandler } from "../../../middleware/asyncHandler";
 import { authorize } from "../../../middleware/requireAuth";
 import { HttpError, badRequest } from "../../../middleware/errorHandler";
-import { clearSalesTrendCache, topSalesCache } from "./helpers";
+// 2026-09-14 · 캐시 제거 · clear 호출 · no-op stub (호환)
+import { clearSalesTrendCache } from "./helpers";
 
 const router = Router();
 
@@ -273,9 +274,8 @@ router.post("/api/upload-stock", authorize(9), express.raw({ type: "application/
       });
     }
 
-    // 업로드 완료 → 캐시 무효화
+    // 2026-09-14 · 캐시 제거 · clearSalesTrendCache · no-op stub (호출 유지 · 향후 완전 제거)
     clearSalesTrendCache();
-    topSalesCache.clear();
 
     // 임포트 로그 저장
     const { data: logData } = await supabase.from("app_settings").select("value").eq("key", "stock_import_log").maybeSingle();

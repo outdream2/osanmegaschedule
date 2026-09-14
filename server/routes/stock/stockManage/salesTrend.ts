@@ -9,7 +9,8 @@ import { supabase } from "../../../../src/supabase/client";
 import { resolveSeasonMonths } from "../../settings/settings";
 import { asyncHandler } from "../../../middleware/asyncHandler";
 import { HttpError, badRequest } from "../../../middleware/errorHandler";
-import { inSeasonMonths, salesTrendCache, SALES_TREND_TTL } from "./helpers";
+import { inSeasonMonths } from "./helpers";
+// 2026-09-14 · 사용자 대원칙 · salesTrendCache 제거 · 매 요청 실시간 조회
 
 const router = Router();
 
@@ -20,13 +21,6 @@ router.get("/api/sales-trend/product", asyncHandler(async (req, res) => {
   const months = Math.max(0, Math.min(24, parseInt(String(req.query.months ?? "0"), 10) || 0));
   const seasonParam = String(req.query.season ?? "").trim().toLowerCase();
   const seasonMonths = await resolveSeasonMonths(seasonParam);
-  const cacheKey = `${code}::${months}::s=${seasonParam}`;
-  const cached = salesTrendCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) {
-    res.setHeader("Cache-Control", "no-store");
-    res.setHeader("X-Cache", "HIT");
-    return res.json(cached.data);
-  }
   let q = supabase
     .from("stock_history")
     .select("period_start_date, snapshot_date, period_type, supplier_name, product_name, spec, opening_stock, purchase_qty, sale_qty, disposal_qty, closing_stock, supply_amount, total_amount")
@@ -46,9 +40,7 @@ router.get("/api/sales-trend/product", asyncHandler(async (req, res) => {
     ? (data ?? []).filter(r => inSeasonMonths(String(r.snapshot_date ?? ""), seasonMonths))
     : (data ?? []);
   const payload = { code, months, season: seasonParam || undefined, season_months: seasonMonths ?? undefined, rows };
-  salesTrendCache.set(cacheKey, { data: payload, expiresAt: Date.now() + SALES_TREND_TTL });
   res.setHeader("Cache-Control", "no-store");
-  res.setHeader("X-Cache", "MISS");
   res.json(payload);
 }));
 

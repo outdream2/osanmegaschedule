@@ -1,19 +1,14 @@
 // GET /api/stock-manage/low-stock
 // 적정재고보다 현재고가 작은 상품 (current_stock < optimal_stock)
-// 2026-08-05 · T-PERF-1a · 2분 in-memory 캐시 적용
 // 2026-08-29 · #168 Phase 2 · queryProductsWithInventory 유틸 소비
+// 2026-09-14 · 사용자 대원칙 · 캐시 제거 · 매 요청 실시간 조회 · 발주 정확도
 import { Router } from "express";
 import { asyncHandler } from "../../../middleware/asyncHandler";
-import { lowStockCache, setLowStockCache } from "./helpers";
 
 const router = Router();
 
 router.get("/api/stock-manage/low-stock", asyncHandler(async (_req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
-  if (lowStockCache && lowStockCache.expiresAt > Date.now()) {
-    res.setHeader("X-Cache", "HIT");
-    return res.json(lowStockCache.data);
-  }
   const { queryProductsWithInventory } = await import("../../../utils/productInventoryQuery");
   const rows = await queryProductsWithInventory(undefined, {
     filterLowStockOnly: true,
@@ -56,8 +51,6 @@ router.get("/api/stock-manage/low-stock", asyncHandler(async (_req, res) => {
     inv_checked_at:   r.inv_checked_at,
   }));
 
-  setLowStockCache(filtered);
-  res.setHeader("X-Cache", "MISS");
   res.json(filtered);
 }));
 

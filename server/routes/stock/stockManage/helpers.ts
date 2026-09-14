@@ -1,4 +1,7 @@
-// Shared helpers and in-memory caches for stockManage sub-routes
+// Shared helpers for stockManage sub-routes
+// 2026-09-14 · 사용자 대원칙 · 실시간 정확성 · 캐시 4종 제거 (lowStock·ocrAgg·salesTrend·topSales)
+//   · 매 요청 · DB 직접 조회 · 발주·매출·매입 · stale 위험 원천 제거
+//   · clear* 함수 · no-op 스텁 유지 (호출 사이트 호환 · 점진 제거 예정)
 
 /**
  * 스냅샷 날짜(YYYY-MM-DD)가 season 월 배열에 속하는지 검사
@@ -18,33 +21,8 @@ export function daysAgoISO(days: number): string {
   return d.toISOString();
 }
 
-// ── purchase aggregation cache (TTL 5분) ──────────────────────────────────
-// 2026-07-31 · performance QW1 · purchase_details 풀스캔 반복 요청 감소
-// 2026-08-09 · 소스: ocr_confirmed_items → purchase_details · 캐시 이름 유지(하위호환)
-export const ocrAggCache = new Map<string, { data: any; expiresAt: number }>();
-export const OCR_AGG_TTL = 5 * 60 * 1000;
-export function clearOcrAggCache(): void { ocrAggCache.clear(); }
-
-// ── low-stock cache (TTL 2분) ─────────────────────────────────────────────
-// 2026-08-05 · T-PERF-1a · products + inventory_checks 풀스캔 반복 방지
-// inventory-checks POST/PATCH/DELETE 시 무효화
-export let lowStockCache: { data: any; expiresAt: number } | null = null;
-export const LOW_STOCK_TTL = 2 * 60 * 1000;
-export function clearLowStockCache(): void { lowStockCache = null; }
-export function setLowStockCache(data: any): void {
-  lowStockCache = { data, expiresAt: Date.now() + LOW_STOCK_TTL };
-}
-
-// ── sales-trend cache (TTL 5분) ───────────────────────────────────────────
-// stock_history 업로드/변경 시 clearSalesTrendCache() 호출
-export const salesTrendCache = new Map<string, { data: any; expiresAt: number }>();
-export const SALES_TREND_TTL = 5 * 60 * 1000;
-export function clearSalesTrendCache(): void { salesTrendCache.clear(); }
-
-// ── top-sales cache (TTL 10분) ────────────────────────────────────────────
-// 2026-07-29 · Phase 1 · 로딩 속도 개선 (3분 → 10분)
-// 2026-09-08 · CRITICAL-1 fix · sale_status 필드 재추가 · 이전 캐시 stale · 서버 부팅 시 자동 clear 통해 방어
-//   · Node 프로세스 재시작 시 · Map 초기화됨 · 별도 명시 clear 불필요
-export const topSalesCache = new Map<string, { data: any; expiresAt: number }>();
-export const TOP_SALES_TTL = 10 * 60 * 1000;
-export function clearTopSalesCache(): void { topSalesCache.clear(); }
+// 2026-09-14 · 캐시 제거 · clear* 함수 · no-op 스텁 (호출 사이트 호환)
+export function clearOcrAggCache(): void { /* cache removed */ }
+export function clearLowStockCache(): void { /* cache removed */ }
+export function clearSalesTrendCache(): void { /* cache removed */ }
+export function clearTopSalesCache(): void { /* cache removed */ }

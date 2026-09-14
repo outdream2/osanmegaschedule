@@ -6,7 +6,8 @@ import { resolveSeasonMonths } from "../../settings/settings";
 import { fetchAllWithRange } from "../../../utils/supabaseFetchAll";
 import { asyncHandler } from "../../../middleware/asyncHandler";
 import { HttpError } from "../../../middleware/errorHandler";
-import { inSeasonMonths, topSalesCache, TOP_SALES_TTL } from "./helpers";
+import { inSeasonMonths } from "./helpers";
+// 2026-09-14 · 사용자 대원칙 · topSalesCache 제거 · 매 요청 실시간 조회
 
 const router = Router();
 
@@ -26,13 +27,6 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
   const seasonMonths = await resolveSeasonMonths(seasonParam);
   // 2026-07-29 · Phase 2 · Lazy Loading
   const skipPurchase = String(req.query.skip_purchase ?? "").trim() === "1";
-
-  const cacheKey = `${dateParam}::${monthsParam}::${seasonParam}::${sort}::${dir}::${limit}::${supplierFilter}::${supplierCodeFilter}::${skipPurchase ? "basic" : "full"}`;
-  const cached = topSalesCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) {
-    res.setHeader("X-Cache", "HIT");
-    return res.json(cached.data);
-  }
 
   {
     // ── season 지정 시: 년도 무관 · 해당 월들의 전 데이터 aggregation ──
@@ -218,8 +212,6 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         dates_with_period: datesArr.map(d => ({ snapshot_date: d, period_type: null })),
         rows: sorted.slice(0, limit),
       };
-      topSalesCache.set(cacheKey, { data: payload, expiresAt: Date.now() + TOP_SALES_TTL });
-      res.setHeader("X-Cache", "MISS");
       return res.json(payload);
     }
 
@@ -550,8 +542,6 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         dates_with_period: datesArr.map(d => ({ snapshot_date: d, period_type: null })),
         rows: sorted.slice(0, limit),
       };
-      topSalesCache.set(cacheKey, { data: payload, expiresAt: Date.now() + TOP_SALES_TTL });
-      res.setHeader("X-Cache", "MISS");
       return res.json(payload);
     }
 
@@ -765,8 +755,6 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       }
     });
     const payload = { snapshot_date: targetDate, period_type: targetPeriodType, dates, dates_with_period, rows: sorted.slice(0, limit) };
-    topSalesCache.set(cacheKey, { data: payload, expiresAt: Date.now() + TOP_SALES_TTL });
-    res.setHeader("X-Cache", "MISS");
     res.json(payload);
   }
 }));
