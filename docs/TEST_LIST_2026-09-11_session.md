@@ -45,6 +45,7 @@
 | 11 | 🎯 **프레임워크** · stockArrivalsApi 프리미티브 · 5 곳 + 타입 통합 | `72ae0f3a` |
 | — | 🎯 **프레임워크** · permissionsApi 프리미티브 · 6 곳 통합 | `4684d4f0` |
 | 12 | 🐛 **버그 fix** · 세션 알림 UI + optimal_stock 컬럼 + 30일 하드코딩 | `f0b2ec59` · `cf9ec40a` · `ffd4d157` |
+| 13 | 🐛 **재리포트 fix** · optimal_stock 잔재 + ProductInfoPage 우측 패널 리디자인 | `e3e78622` |
 
 **필수 · 서버 재시작** (Ctrl+C · npm run dev) · 백엔드 fix 반영
 
@@ -183,6 +184,50 @@
 ### 예상 결과
 - 상품 등록/수정 → 실재고 테이블 · 즉시 자동 갱신
 - 사용자 새로고침 불필요
+
+---
+
+## 🐛 [13] 사용자 재리포트 · 2건 fix ✅
+**커밋** · `e3e78622`
+
+### 배경 (사용자 재리포트)
+1. `⚠ column order_requests.optimal_stock does not exist` 계속 발생 · 이전 fix (cf9ec40a) 불완전
+2. 상품정보 오른쪽 상품상세정보 UI · 시인성 좋고 예쁘게 최신 트렌드
+
+### 해결
+**A. order_requests.optimal_stock 잔재 SELECT 제거:**
+- `server/routes/stock/productArrivals.ts:432` · GET /api/product-arrivals/compare/orders
+- SELECT 목록에서 optimal_stock 제거 · 응답 매핑에 미사용
+- 전수조사 · 다른 order_requests SELECT · 없음 확인
+
+**B. ProductInfoPage 우측 패널 · Linear/Vercel 톤 리디자인:**
+- 헤더 · uppercase 제거 · 라벨 축소 (16px→12px)
+- 아이콘 · gradient → solid tint · 절제
+- 카드 (가격·재고 그리드) · gradient·hover translate 제거 · flat 스타일
+- 텍스트 사이즈 통일 · 판매가/현재고 20px primary · 나머지 17-18px secondary
+- 단위 (원·개·%) 별도 span · 시각 구분
+- raw-card-wrapper 4건 → Card 프리미티브 (framework audit 통과)
+
+### 테스트 절차
+**A. 발주요청 목록 (optimal_stock 완전 해소)**
+1. **매입 > 발주 > 발주요청** 정상 로드 확인
+2. **매장 > 상품입고 > 매입 이력 비교** (product-arrivals/compare/orders) · 정상 로드
+3. 서버 로그 · `column order_requests.optimal_stock does not exist` 에러 · **완전 사라짐**
+
+**B. 상품정보 우측 패널 리디자인**
+1. **매장 > 상품 > 상품정보** · 임의 상품 선택 · 우측 패널
+2. 헤더 · 라벨 uppercase 없이 자연스러운 한글
+3. 가격·재고 그리드 · 8개 카드 · flat 스타일 · 통일된 padding
+4. 판매가·현재고 · primary 강조 (brand-tint · sky-50 배경)
+5. 매입가·이익율 · secondary · 흰 배경 · line 테두리
+6. 창고1·2 (cyan tint) · 매장 (indigo tint) · 색상 구분
+7. 텍스트 크기 · 통일 · 시인성 우수
+
+### 회귀 확인
+- 발주요청·발주필요·발주이력·매입비교 · 모두 정상
+- 상품정보 · 편집·저장·수정 모달 · 정상 동작
+- Framework audit · 위반 12 → 12 (증가 없음)
+- TS 통과
 
 ---
 
