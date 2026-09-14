@@ -285,260 +285,289 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
     return Math.round((sp - pp) / sp * 1000) / 10;
   })();
 
+  // 2026-09-14 · 사용자 지시 · 완전 재설계 · 중복 제거 + Notion 데이터베이스 톤
+  //   · Hero (큰 상품명 · 하나만) → 3-KPI 인라인 → 진열위치 통합 → 상세정보 key-value 테이블
+  //   · 중복 · 상품명·공급사·진열위치·shelf 뱃지 · 각각 1회만 표시
+  const w1 = product.warehouse1_stock ?? product.warehouse_stock ?? null;
+  const w2 = product.warehouse2_stock ?? null;
+  const totalWarehouse = (w1 ?? 0) + (w2 ?? 0);
+  const totalStore = product.store_stock ?? 0;
+
   return (
     <>
-      {/* ─── Header · 2026-09-14 최신 트렌드 · Linear/Vercel/Notion · 시인성 최우선 ─────────────────── */}
-      <div className="relative flex items-start justify-between px-5 py-4 border-b border-line bg-white shrink-0 gap-3 sticky top-0 z-10">
+      {/* ══════════════ HERO · 상품명 크게 · 코드·상태만 · 편집 버튼 우측 ══════════════ */}
+      <div className="relative px-6 pt-6 pb-5 border-b border-line bg-white shrink-0 sticky top-0 z-10">
         <GradientAccent size="thin" />
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-brand-tint flex items-center justify-center shrink-0 mt-0.5">
-            <Package size={18} weight="fill" className="text-brand-deep" />
-          </div>
+        <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <div className="text-[19px] font-bold text-ink leading-snug break-words tracking-tight">
-              {product.product_name || <span className="text-zinc-400">(이름없음)</span>}
-            </div>
-            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-              <span className="text-[12px] font-mono text-zinc-500 bg-zinc-100 rounded-md px-1.5 py-0.5 tabular-nums">{product.product_code}</span>
-              {product.supplier && (
-                <button type="button" onClick={() => vendorModal.openVendorInfo(product.supplier!)}
-                  className="inline-flex items-center gap-1 text-[13px] font-semibold text-brand-deep hover:underline cursor-pointer">
-                  {product.supplier}<ArrowSquareOut size={11} />
-                </button>
-              )}
+            {/* 상품명 · 큰 hero · 이름·코드·상태·카테고리 */}
+            <h1 className="text-[24px] font-extrabold text-ink leading-tight tracking-tight break-keep">
+              {product.product_name || <span className="text-zinc-300 font-normal">(이름없음)</span>}
+            </h1>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <span className="text-[13px] font-mono text-zinc-500 bg-zinc-100 rounded-md px-2 py-0.5 tabular-nums">{product.product_code}</span>
               {(() => {
                 const s = String(p.sale_status ?? "");
                 if (!s) return null;
                 const tone = s === "판매중" ? "emerald" : s === "판매중지" ? "rose" : "zinc";
                 return <StatusPill tone={tone} size="sm">{s}</StatusPill>;
               })()}
-              {p.location && (
-                <span className="text-[12px] font-semibold text-zinc-600 bg-zinc-100 rounded-md px-1.5 py-0.5">{String(p.location)}</span>
+              {p.category && (
+                <span className="text-[13px] font-semibold text-brand-deep bg-brand-tint/60 rounded-md px-2 py-0.5">{String(p.category)}</span>
               )}
-              {/* 2026-09-08 · 상세 진열위치 뱃지 · 진열위치 옆에 무조건 표시 */}
-              <ShelfPositionsBadge positions={product.shelf_positions} size="sm" />
             </div>
           </div>
-        </div>
-        {editing ? (
-          <div className="flex items-center gap-1.5 shrink-0">
-            <StatusPill tone="amber" size="xs">편집 중</StatusPill>
-            <Button variant="primary" size="sm" icon={<FloppyDisk size={13} weight="bold" />} onClick={save} loading={saving}>
-              저장
+          {editing ? (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <StatusPill tone="amber" size="xs">편집 중</StatusPill>
+              <Button variant="primary" size="sm" icon={<FloppyDisk size={13} weight="bold" />} onClick={save} loading={saving}>저장</Button>
+              <Button variant="secondary" size="sm" icon={<X size={13} />} onClick={cancelEdit} disabled={saving} />
+            </div>
+          ) : canEdit ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<PencilSimple size={13} weight="bold" />}
+              onClick={() => {
+                if (onEditClick && product) { onEditClick(product); return; }
+                startEdit();
+              }}
+              title="상품정보 수정"
+            >
+              수정
             </Button>
-            <Button variant="secondary" size="sm" icon={<X size={13} />} onClick={cancelEdit} disabled={saving} />
-          </div>
-        ) : canEdit ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<PencilSimple size={13} weight="bold" />}
-            onClick={() => {
-              // 2026-09-10 · #64 · 사용자 지시 · 인라인 편집 대신 · 모달 편집 (onEditClick prop 있으면 우선)
-              if (onEditClick && product) { onEditClick(product); return; }
-              startEdit();
-            }}
-            title="상품정보 수정"
-          >
-            수정
-          </Button>
-        ) : null}
+          ) : null}
+        </div>
       </div>
 
-      {/* ─── 본문 ─── */}
-      <div className="p-4 sm:p-5 space-y-6">
+      {/* ══════════════ 본문 · 상품정보 우선 · 클린 텍스트 리스트 (Shopify/Notion 톤) ══════════════ */}
+      {/* 사용자 지시 · 재고보다 가격·공급사 우선 · 텍스트 형식으로 한눈에 · 라벨 +3 크게 */}
+      <div className="px-6 py-5 space-y-5">
 
-        {/* 가격 · 재고 — 2026-09-14 최신 트렌드 · Linear/Vercel · 시인성 최우선 · uppercase 제거 · 라벨 축소 */}
-        <div className="space-y-2.5">
-          <SectionTitle title="가격 · 재고" color="emerald" />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {/* 판매가 · PRIMARY · brand 강조 */}
-            <div className="bg-brand-tint/40 border border-brand-tint rounded-lg p-2.5 flex flex-col gap-1">
-              <span className="text-[12px] font-semibold text-brand-deep">판매가</span>
-              {editing
-                ? <input type="number" min={0} value={val("sale_price")} onChange={e => set("sale_price", e.target.value)} className={inputCls + " tabular-nums"} />
-                : p.sale_price != null
-                  ? <span className="text-[20px] font-bold text-brand-deep tabular-nums leading-tight tracking-tight">{Number(p.sale_price).toLocaleString()}<span className="text-[13px] font-semibold ml-0.5">원</span></span>
-                  : <span className="text-zinc-300 text-[15px]">-</span>}
+        {/* ─── SECTION 1 · 가격 정보 (판매가·매입가·이익율) ─── */}
+        <section className="space-y-2">
+          <h3 className="flex items-center gap-1.5 text-[15px] font-bold text-brand-deep tracking-tight pb-2 border-b-2 border-brand-tint">
+            <span className="w-1.5 h-4 rounded-full bg-brand-deep" />
+            가격 정보
+          </h3>
+          <dl className="divide-y divide-line/60">
+            <div className="grid grid-cols-[110px_1fr] items-center gap-3 py-2.5 min-h-[40px]">
+              <dt className="text-[16px] font-bold text-ink-soft">판매가</dt>
+              <dd>
+                {editing
+                  ? <input type="number" min={0} value={val("sale_price")} onChange={e => set("sale_price", e.target.value)} className={inputCls + " tabular-nums text-[16px]"} />
+                  : p.sale_price != null
+                    ? <span className="text-[22px] font-extrabold text-brand-deep tabular-nums leading-none tracking-tight">{Number(p.sale_price).toLocaleString()}<span className="text-[14px] font-bold ml-0.5 text-brand-deep/70">원</span></span>
+                    : <span className="text-zinc-300 text-[16px]">-</span>}
+              </dd>
             </div>
-            {/* 매입가 */}
-            <Card variant="flat" padding="none" rounded="lg" className="p-2.5 flex flex-col gap-1">
-              <span className="text-[12px] font-semibold text-ink-soft">매입가</span>
-              {editing
-                ? <input type="number" min={0} value={val("purchase_price")} onChange={e => set("purchase_price", e.target.value)} className={inputCls + " tabular-nums"} />
-                : p.purchase_price != null
-                  ? <span className="text-[18px] font-bold text-amber-700 tabular-nums leading-tight tracking-tight">{Number(p.purchase_price).toLocaleString()}<span className="text-[13px] font-semibold ml-0.5">원</span></span>
-                  : <span className="text-zinc-300 text-[15px]">-</span>}
-            </Card>
-            {/* 이익율 · semantic color · 강조 */}
-            <Card variant="flat" padding="none" rounded="lg" borderColor={profitRate != null && profitRate >= 30 ? "border-emerald-200" : profitRate != null && profitRate >= 15 ? "border-amber-200" : profitRate != null ? "border-rose-200" : "border-line"} className="p-2.5 flex flex-col gap-1">
-              <span className="text-[12px] font-semibold text-ink-soft">이익율</span>
-              {profitRate != null
-                ? <span className={`text-[20px] font-bold tabular-nums leading-tight tracking-tight ${profitRate >= 30 ? "text-emerald-600" : profitRate >= 15 ? "text-amber-600" : "text-rose-600"}`}>{profitRate}<span className="text-[13px] font-semibold ml-0.5">%</span></span>
-                : <span className="text-zinc-300 text-[15px]">-</span>}
-            </Card>
-            {/* 현재고 · PRIMARY · sky tone */}
-            <div className="bg-sky-50/60 border border-sky-200 rounded-lg p-2.5 flex flex-col gap-1">
-              <span className="text-[12px] font-semibold text-sky-700">현재고</span>
-              {p.current_stock != null
-                ? <span className="text-[20px] font-bold text-sky-700 tabular-nums leading-tight tracking-tight">{String(p.current_stock)}<span className="text-[13px] font-semibold ml-0.5">개</span></span>
-                : <span className="text-zinc-300 text-[15px]">-</span>}
+            <div className="grid grid-cols-[110px_1fr] items-center gap-3 py-2.5 min-h-[40px]">
+              <dt className="text-[16px] font-bold text-ink-soft">매입가</dt>
+              <dd>
+                {editing
+                  ? <input type="number" min={0} value={val("purchase_price")} onChange={e => set("purchase_price", e.target.value)} className={inputCls + " tabular-nums text-[16px]"} />
+                  : p.purchase_price != null
+                    ? <span className="text-[18px] font-bold text-amber-700 tabular-nums leading-none tracking-tight">{Number(p.purchase_price).toLocaleString()}<span className="text-[13px] font-semibold ml-0.5 text-amber-600">원</span></span>
+                    : <span className="text-zinc-300 text-[16px]">-</span>}
+              </dd>
             </div>
-            {/* 적정재고 */}
-            <Card variant="flat" padding="none" rounded="lg" className="p-2.5 flex flex-col gap-1">
-              <span className="text-[12px] font-semibold text-ink-soft">적정재고 <span className="text-zinc-400 font-medium">· {optimalStockDays}일</span></span>
-              {editing
-                ? <input type="number" min={0} value={val("optimal_stock")} onChange={e => set("optimal_stock", e.target.value)} className={inputCls + " tabular-nums"} />
-                : p.optimal_stock != null
-                  ? <span className="text-[17px] font-semibold text-ink tabular-nums leading-tight tracking-tight">{String(p.optimal_stock)}<span className="text-[13px] font-medium text-ink-soft ml-0.5">개</span></span>
-                  : <span className="text-zinc-300 text-[15px]">-</span>}
-            </Card>
-            {/* 창고재고 (창고1+창고2 분리 표시) · cyan 톤 · 창고 구분 */}
-            {(() => {
-              const w1 = product.warehouse1_stock ?? product.warehouse_stock ?? null;
-              const w2 = product.warehouse2_stock ?? null;
-              if (w1 == null && w2 == null) {
-                return (
-                  <Card variant="flat" padding="none" rounded="lg" className="p-2.5 flex flex-col gap-1">
-                    <span className="text-[12px] font-semibold text-ink-soft">창고재고</span>
-                    <span className="text-zinc-400 text-[13px]">미조사</span>
-                  </Card>
-                );
-              }
-              return (
-                <>
-                  {w1 != null && (
-                    <div className="bg-cyan-50/50 border border-cyan-100 rounded-lg p-2.5 flex flex-col gap-1">
-                      <span className="text-[12px] font-semibold text-cyan-700">창고1</span>
-                      <span className="text-[17px] font-semibold text-ink tabular-nums leading-tight tracking-tight">{String(w1)}<span className="text-[13px] font-medium text-ink-soft ml-0.5">개</span></span>
-                    </div>
-                  )}
-                  {w2 != null && (
-                    <div className="bg-cyan-50/50 border border-cyan-100 rounded-lg p-2.5 flex flex-col gap-1">
-                      <span className="text-[12px] font-semibold text-cyan-700">창고2</span>
-                      <span className="text-[17px] font-semibold text-ink tabular-nums leading-tight tracking-tight">{String(w2)}<span className="text-[13px] font-medium text-ink-soft ml-0.5">개</span></span>
-                    </div>
-                  )}
-                </>
-              );
-            })()}
-            {/* 매장재고 · indigo 톤 · 매장 구분 */}
-            <div className="bg-indigo-50/50 border border-indigo-100 rounded-lg p-2.5 flex flex-col gap-1">
-              <span className="text-[12px] font-semibold text-indigo-700">매장재고</span>
-              {product.store_stock != null
-                ? <span className="text-[17px] font-semibold text-ink tabular-nums leading-tight tracking-tight">{String(product.store_stock)}<span className="text-[13px] font-medium text-ink-soft ml-0.5">개</span></span>
-                : <span className="text-zinc-400 text-[13px]">미조사</span>}
+            <div className="grid grid-cols-[110px_1fr] items-center gap-3 py-2.5 min-h-[40px]">
+              <dt className="text-[16px] font-bold text-ink-soft">이익율</dt>
+              <dd>
+                {profitRate != null
+                  ? <span className={`text-[18px] font-bold tabular-nums leading-none tracking-tight ${profitRate >= 30 ? "text-emerald-600" : profitRate >= 15 ? "text-amber-600" : "text-rose-600"}`}>{profitRate}<span className="text-[13px] font-semibold ml-0.5">%</span></span>
+                  : <span className="text-zinc-300 text-[16px]">-</span>}
+              </dd>
             </div>
-            {/* 최근매입일 */}
-            <Card variant="flat" padding="none" rounded="lg" className="p-2.5 flex flex-col gap-1">
-              <span className="text-[12px] font-semibold text-ink-soft">최근매입일</span>
-              {p.last_purchase_date
-                ? <span className="text-[14px] font-semibold text-ink tabular-nums leading-tight">{String(p.last_purchase_date).slice(0, 10)}</span>
-                : <span className="text-zinc-300 text-[15px]">-</span>}
-            </Card>
-          </div>
-        </div>
+          </dl>
+        </section>
 
-        {/* 기본 정보 · 2026-09-14 · 라벨 축소 · 값 강조 */}
-        <div className="space-y-2.5">
-          <SectionTitle title="기본 정보" color="sky" />
-          <div className="grid grid-cols-2 gap-x-5 gap-y-3">
-            <div className="col-span-2">
-              {editing ? <EditField k="product_name" label="상품명" /> : (
-                <DField label="상품명"><span className="text-[17px] font-bold text-ink tracking-tight">{product.product_name || <span className="text-zinc-300 font-normal">-</span>}</span></DField>
-              )}
-            </div>
-            {editing ? <EditField k="supplier" label="공급사" /> : (
-              <DField label="공급사">
-                {product.supplier
-                  ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="text-[15px] font-semibold text-ink">{product.supplier}</span>
-                      {/* 2026-09-10 · 사용자 지시 · 화살표 → [상세보기] 버튼 · 2026-09-14 축소 */}
-                      <button
-                        type="button"
-                        onClick={() => vendorModal.openVendorInfo(product.supplier!)}
-                        className="inline-flex items-center h-5 px-1.5 rounded-md text-[11px] font-semibold text-brand-deep hover:bg-brand-tint transition cursor-pointer"
-                      >
-                        상세
-                      </button>
-                    </span>
-                  )
-                  : <span className="text-zinc-300 font-normal">-</span>}
-              </DField>
+        {/* ─── SECTION 2 · 공급사·기본 정보 ─── */}
+        <section className="space-y-2">
+          <h3 className="flex items-center gap-1.5 text-[15px] font-bold text-sky-700 tracking-tight pb-2 border-b-2 border-sky-200">
+            <span className="w-1.5 h-4 rounded-full bg-sky-600" />
+            공급사 · 기본 정보
+          </h3>
+          <dl className="divide-y divide-line/60">
+            {editing && (
+              <div className="grid grid-cols-[110px_1fr] items-center gap-3 py-2.5 min-h-[40px]">
+                <dt className="text-[16px] font-bold text-ink-soft">상품명</dt>
+                <dd><EditField k="product_name" label="" /></dd>
+              </div>
             )}
-            {editing ? <EditField k="category" label="카테고리" /> : <DField label="카테고리"><span className="text-[15px] font-semibold text-ink">{dispVal("category")}</span></DField>}
-            {editing && <EditField k="sale_status" label="판매상태" />}
-            {editing && <EditField k="location" label="진열위치" />}
-          </div>
-        </div>
+            <div className="grid grid-cols-[110px_1fr] items-center gap-3 py-2.5 min-h-[40px]">
+              <dt className="text-[16px] font-bold text-ink-soft">공급사</dt>
+              <dd>
+                {editing ? <EditField k="supplier" label="" /> : product.supplier ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="text-[16px] font-bold text-ink">{product.supplier}</span>
+                    <button
+                      type="button"
+                      onClick={() => vendorModal.openVendorInfo(product.supplier!)}
+                      className="inline-flex items-center gap-1 h-6 px-2 rounded-md bg-sky-50 hover:bg-sky-100 text-[12px] font-bold text-sky-700 transition cursor-pointer"
+                    >
+                      상세<ArrowSquareOut size={10} />
+                    </button>
+                  </span>
+                ) : <span className="text-[14px] text-zinc-300">-</span>}
+              </dd>
+            </div>
+            {editing && (
+              <div className="grid grid-cols-[110px_1fr] items-center gap-3 py-2.5 min-h-[40px]">
+                <dt className="text-[16px] font-bold text-ink-soft">카테고리</dt>
+                <dd><EditField k="category" label="" /></dd>
+              </div>
+            )}
+            <div className="grid grid-cols-[110px_1fr] items-center gap-3 py-2.5 min-h-[40px]">
+              <dt className="text-[16px] font-bold text-ink-soft">규격</dt>
+              <dd>{editing ? <EditField k="spec" label="" /> : <span className="text-[16px] font-bold text-ink">{dispVal("spec")}</span>}</dd>
+            </div>
+            <div className="grid grid-cols-[110px_1fr] items-center gap-3 py-2.5 min-h-[40px]">
+              <dt className="text-[16px] font-bold text-ink-soft">단위</dt>
+              <dd>{editing ? <EditField k="unit" label="" /> : <span className="text-[16px] font-bold text-ink">{dispVal("unit")}</span>}</dd>
+            </div>
+            <div className="grid grid-cols-[110px_1fr] items-center gap-3 py-2.5 min-h-[40px]">
+              <dt className="text-[16px] font-bold text-ink-soft">브랜드</dt>
+              <dd>{editing ? <EditField k="brand" label="" /> : <span className="text-[16px] font-bold text-ink">{dispVal("brand")}</span>}</dd>
+            </div>
+            <div className="grid grid-cols-[110px_1fr] items-center gap-3 py-2.5 min-h-[40px]">
+              <dt className="text-[16px] font-bold text-ink-soft">제조사</dt>
+              <dd>{editing ? <EditField k="manufacturer" label="" /> : <span className="text-[16px] font-bold text-ink">{dispVal("manufacturer")}</span>}</dd>
+            </div>
+            <div className="grid grid-cols-[110px_1fr] items-center gap-3 py-2.5 min-h-[40px]">
+              <dt className="text-[16px] font-bold text-ink-soft">최근매입일</dt>
+              <dd>
+                {p.last_purchase_date ? (
+                  <span className="text-[16px] font-bold text-ink tabular-nums">{String(p.last_purchase_date).slice(0, 10)}</span>
+                ) : <span className="text-[14px] text-zinc-300">-</span>}
+              </dd>
+            </div>
+          </dl>
+        </section>
 
-        {/* 2026-09-08 · 상세 진열위치 · 위치별 3-stepper · 매장 필수 강조 · 2026-09-14 폴리시 */}
-        <div className="space-y-2.5">
-          <SectionTitle title="상세 진열위치" color="rose" />
-          {editing ? (
-            <div className="space-y-2.5">
-              <div className="text-[12px] text-ink-soft leading-relaxed">
-                각 위치에 <span className="font-bold text-brand-deep">3자리 (층·칸·순서)</span> 입력.
-                예 <span className="font-mono text-ink">332</span> = 3층 3칸 2번. 매장 필수.
-              </div>
-              <div className="flex flex-wrap gap-2.5">
-                {storageLocations.filter(l => l.active).map(loc => {
-                  const hasKey = Object.prototype.hasOwnProperty.call(shelfDraft, loc.code);
-                  if (!hasKey) return null;
-                  return (
-                    <ShelfPositionInput
-                      key={loc.code}
-                      label={`${loc.name}${loc.kind === "warehouse" ? " (창고)" : ""}`}
-                      required={loc.required_detail}
-                      value={shelfDraft[loc.code] ?? null}
-                      onChange={(v) => setShelf(loc.code, v)}
-                      productCode={product.product_code}
-                      displayLocation={String(p.location ?? p.display_location ?? "").trim() || null}
-                      storageKey={loc.code}
-                    />
-                  );
-                })}
-              </div>
-              {(() => {
-                const missing = storageLocations.filter(l => l.active && !Object.prototype.hasOwnProperty.call(shelfDraft, l.code));
-                if (missing.length === 0) return null;
-                return (
-                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                    <span className="text-[11px] text-ink-soft">위치 추가:</span>
-                    {missing.map(loc => (
-                      <button
-                        key={loc.code}
-                        type="button"
-                        onClick={() => addShelfLocation(loc.code)}
-                        className="text-[11px] font-semibold px-2 h-6 rounded-md border border-brand-tint text-brand-deep hover:bg-brand-tint transition-colors cursor-pointer"
-                      >+ {loc.name}</button>
-                    ))}
+        {/* ─── SECTION 3 · 재고 · 진열위치 (통합) ─── */}
+        <section className="space-y-2">
+          <h3 className="flex items-center gap-1.5 text-[15px] font-bold text-emerald-700 tracking-tight pb-2 border-b-2 border-emerald-200">
+            <span className="w-1.5 h-4 rounded-full bg-emerald-600" />
+            재고 · 진열위치
+          </h3>
+          <dl className="divide-y divide-line/60">
+            <div className="grid grid-cols-[110px_1fr] items-center gap-3 py-2.5 min-h-[40px]">
+              <dt className="text-[16px] font-bold text-ink-soft">현재고</dt>
+              <dd>
+                {p.current_stock != null
+                  ? <span className="inline-flex items-baseline gap-2">
+                      <span className="text-[22px] font-extrabold text-emerald-700 tabular-nums leading-none tracking-tight">{String(p.current_stock)}<span className="text-[13px] font-semibold ml-0.5 text-emerald-600/70">개</span></span>
+                      {p.optimal_stock != null && (() => {
+                        const cur = Number(p.current_stock ?? 0);
+                        const opt = Number(p.optimal_stock);
+                        const short = opt - cur;
+                        if (short <= 0) return <span className="text-[13px] font-bold text-emerald-600">충분</span>;
+                        return <span className="text-[13px] font-bold text-rose-600">부족 {short}개</span>;
+                      })()}
+                    </span>
+                  : <span className="text-zinc-300 text-[16px]">-</span>}
+              </dd>
+            </div>
+            <div className="grid grid-cols-[110px_1fr] items-center gap-3 py-2.5 min-h-[40px]">
+              <dt className="text-[16px] font-bold text-ink-soft">적정재고</dt>
+              <dd>
+                {editing
+                  ? <input type="number" min={0} value={val("optimal_stock")} onChange={e => set("optimal_stock", e.target.value)} className={inputCls + " tabular-nums text-[16px] w-32"} />
+                  : p.optimal_stock != null
+                    ? <span className="inline-flex items-baseline gap-2">
+                        <span className="text-[18px] font-bold text-ink tabular-nums leading-none tracking-tight">{String(p.optimal_stock)}<span className="text-[13px] font-semibold ml-0.5 text-ink-soft">개</span></span>
+                        <span className="text-[12px] font-medium text-zinc-400">· {optimalStockDays}일 기준</span>
+                      </span>
+                    : <span className="text-zinc-300 text-[16px]">-</span>}
+              </dd>
+            </div>
+            <div className="grid grid-cols-[110px_1fr] items-center gap-3 py-2.5 min-h-[40px]">
+              <dt className="text-[16px] font-bold text-ink-soft">창고</dt>
+              <dd>
+                {(w1 != null || w2 != null) ? (
+                  <span className="inline-flex items-baseline gap-2">
+                    <span className="text-[18px] font-bold text-cyan-700 tabular-nums leading-none tracking-tight">{totalWarehouse}<span className="text-[13px] font-semibold ml-0.5 text-cyan-600/70">개</span></span>
+                    {(w1 != null && w2 != null) && (
+                      <span className="text-[12px] font-medium text-cyan-600/70 tabular-nums">창고1 {w1} · 창고2 {w2}</span>
+                    )}
+                  </span>
+                ) : <span className="text-[14px] text-zinc-400">미조사</span>}
+              </dd>
+            </div>
+            <div className="grid grid-cols-[110px_1fr] items-center gap-3 py-2.5 min-h-[40px]">
+              <dt className="text-[16px] font-bold text-ink-soft">매장</dt>
+              <dd>
+                {product.store_stock != null
+                  ? <span className="text-[18px] font-bold text-indigo-700 tabular-nums leading-none tracking-tight">{totalStore}<span className="text-[13px] font-semibold ml-0.5 text-indigo-600/70">개</span></span>
+                  : <span className="text-[14px] text-zinc-400">미조사</span>}
+              </dd>
+            </div>
+            <div className="grid grid-cols-[110px_1fr] items-start gap-3 py-2.5 min-h-[40px]">
+              <dt className="text-[16px] font-bold text-ink-soft pt-0.5">진열위치</dt>
+              <dd>
+                {editing ? (
+                  <div className="space-y-2">
+                    <div className="text-[12px] text-ink-soft leading-relaxed">
+                      각 위치 <span className="font-bold text-brand-deep">3자리 (층·칸·순서)</span> 입력 · 예 <span className="font-mono text-ink font-bold">332</span> · 매장 필수
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {storageLocations.filter(l => l.active).map(loc => {
+                        const hasKey = Object.prototype.hasOwnProperty.call(shelfDraft, loc.code);
+                        if (!hasKey) return null;
+                        return (
+                          <ShelfPositionInput
+                            key={loc.code}
+                            label={`${loc.name}${loc.kind === "warehouse" ? " (창고)" : ""}`}
+                            required={loc.required_detail}
+                            value={shelfDraft[loc.code] ?? null}
+                            onChange={(v) => setShelf(loc.code, v)}
+                            productCode={product.product_code}
+                            displayLocation={String(p.location ?? p.display_location ?? "").trim() || null}
+                            storageKey={loc.code}
+                          />
+                        );
+                      })}
+                    </div>
+                    {(() => {
+                      const missing = storageLocations.filter(l => l.active && !Object.prototype.hasOwnProperty.call(shelfDraft, l.code));
+                      if (missing.length === 0) return null;
+                      return (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[11px] text-ink-soft">위치 추가:</span>
+                          {missing.map(loc => (
+                            <button
+                              key={loc.code}
+                              type="button"
+                              onClick={() => addShelfLocation(loc.code)}
+                              className="text-[12px] font-semibold px-2 h-6 rounded-md border border-brand-tint text-brand-deep hover:bg-brand-tint transition-colors cursor-pointer"
+                            >+ {loc.name}</button>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <EditField k="location" label="구역" />
+                      <EditField k="sale_status" label="판매 상태" />
+                    </div>
                   </div>
-                );
-              })()}
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {p.location && (
+                      <span className="text-[14px] font-bold text-zinc-700 bg-zinc-100 rounded-md px-2 py-0.5">구역 {String(p.location)}</span>
+                    )}
+                    {(product.shelf_positions && Object.keys(product.shelf_positions).length > 0) ? (
+                      <ShelfPositionsBadge positions={product.shelf_positions} size="md" />
+                    ) : (
+                      <span className="text-[13px] text-zinc-400 italic">상세 진열위치 없음</span>
+                    )}
+                  </div>
+                )}
+              </dd>
             </div>
-          ) : (
-            <div>
-              {(product.shelf_positions && Object.keys(product.shelf_positions).length > 0) ? (
-                <ShelfPositionsBadge positions={product.shelf_positions} size="md" />
-              ) : (
-                <span className="text-[13px] text-zinc-400">등록된 진열위치 없음</span>
-              )}
-            </div>
-          )}
-        </div>
+          </dl>
+        </section>
 
-        {/* 기타 (단위 · 규격 · 브랜드 · 제조사) · 2026-09-14 폴리시 */}
-        <div className="space-y-2.5">
-          <SectionTitle title="기타" color="amber" />
-          <div className="grid grid-cols-2 gap-x-5 gap-y-3">
-            {editing ? <EditField k="unit" label="단위" /> : <DField label="단위">{dispVal("unit")}</DField>}
-            {editing ? <EditField k="spec" label="규격" /> : <DField label="규격">{dispVal("spec")}</DField>}
-            {editing ? <EditField k="brand" label="브랜드" /> : <DField label="브랜드">{dispVal("brand")}</DField>}
-            {editing ? <EditField k="manufacturer" label="제조사" /> : <DField label="제조사">{dispVal("manufacturer")}</DField>}
-          </div>
-        </div>
       </div>
 
       {vendorModal.modalElement}
