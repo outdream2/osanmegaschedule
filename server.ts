@@ -90,15 +90,7 @@ async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
-  // real_map 컬럼 존재 확인
-  (async () => {
-    const { error } = await supabase.from("products").select("real_map").limit(1);
-    if (error && /column|does not exist/i.test(error.message)) {
-      console.warn("[SETUP REQUIRED] Supabase products 테이블에 real_map 컬럼이 없습니다.");
-      console.warn("[SETUP REQUIRED] Supabase SQL Editor에서 실행하세요:");
-      console.warn("  ALTER TABLE products ADD COLUMN IF NOT EXISTS \"real_map\" TEXT;");
-    }
-  })();
+  // 2026-09-14 · real_map 컬럼 존재 check 제거 (2026-09-08 DROP 완료 · stale warning)
 
   if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
     webpush.setVapidDetails(

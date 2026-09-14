@@ -65,19 +65,13 @@ function normalizeSeasonRanges(input: any): SeasonRanges {
   return out;
 }
 
-// 서버측 캐시 (5분 TTL) · 여러 endpoint 에서 재사용
-let seasonCache: { data: SeasonRanges; expiresAt: number } | null = null;
-const SEASON_TTL = 5 * 60 * 1000;
-
+// 2026-09-14 · 사용자 대원칙 · 실시간 정확성 · seasonCache 제거 (매 요청 KV 1행 조회)
 export async function getSeasonRanges(): Promise<SeasonRanges> {
-  if (seasonCache && seasonCache.expiresAt > Date.now()) return seasonCache.data;
   try {
     const { data } = await supabase
       .from("app_settings").select("value").eq("key", "season_ranges").maybeSingle();
     const value = data?.value;
-    const ranges = value ? normalizeSeasonRanges(value) : { ...DEFAULT_SEASON_RANGES };
-    seasonCache = { data: ranges, expiresAt: Date.now() + SEASON_TTL };
-    return ranges;
+    return value ? normalizeSeasonRanges(value) : { ...DEFAULT_SEASON_RANGES };
   } catch {
     return { ...DEFAULT_SEASON_RANGES };
   }
@@ -102,19 +96,15 @@ router.get("/api/settings/season-ranges", asyncHandler(async (_req, res) => {
 //   · GET  /api/settings/storage-locations · 공개 (모든 사용자 조회)
 //   · POST /api/settings/storage-locations · 관리자 (level≥9)
 // ═════════════════════════════════════════════════════════════════
+// 2026-09-14 · 사용자 대원칙 · 실시간 정확성 · storageLocationsCache 제거
 const STORAGE_LOCATIONS_KEY = "storage_locations";
-const STORAGE_LOCATIONS_TTL = 5 * 60 * 1000;
-let storageLocationsCache: { data: StorageLocation[]; expiresAt: number } | null = null;
 
 export async function getStorageLocations(): Promise<StorageLocation[]> {
-  if (storageLocationsCache && storageLocationsCache.expiresAt > Date.now()) return storageLocationsCache.data;
   try {
     const { data } = await supabase
       .from("app_settings").select("value").eq("key", STORAGE_LOCATIONS_KEY).maybeSingle();
     const raw = data?.value;
-    const list = Array.isArray(raw) && raw.length > 0 ? (raw as StorageLocation[]) : DEFAULT_STORAGE_LOCATIONS;
-    storageLocationsCache = { data: list, expiresAt: Date.now() + STORAGE_LOCATIONS_TTL };
-    return list;
+    return Array.isArray(raw) && raw.length > 0 ? (raw as StorageLocation[]) : DEFAULT_STORAGE_LOCATIONS;
   } catch {
     return DEFAULT_STORAGE_LOCATIONS;
   }
@@ -146,7 +136,7 @@ router.post("/api/settings/storage-locations", authorize(9), validateBody(Upsert
   const { error } = await supabase.from("app_settings")
     .upsert({ key: STORAGE_LOCATIONS_KEY, value: locations, updated_at: new Date().toISOString() }, { onConflict: "key" });
   if (error) throw new HttpError(500, error.message);
-  storageLocationsCache = { data: locations, expiresAt: Date.now() + STORAGE_LOCATIONS_TTL };
+  // 2026-09-14 · 캐시 제거 · 실시간 조회로 즉시 반영
   res.json({ ok: true, locations });
 }));
 
@@ -156,7 +146,7 @@ router.post("/api/settings/season-ranges", authorize(9), validateBody(UpsertSeas
   const { error } = await supabase.from("app_settings")
     .upsert({ key: "season_ranges", value: normalized, updated_at: new Date().toISOString() }, { onConflict: "key" });
   if (error) throw new HttpError(500, error.message);
-  seasonCache = { data: normalized, expiresAt: Date.now() + SEASON_TTL }; // 캐시 즉시 갱신
+  // 2026-09-14 · 캐시 제거 · 실시간 조회로 즉시 반영
   res.json({ ok: true, ranges: normalized });
 }));
 

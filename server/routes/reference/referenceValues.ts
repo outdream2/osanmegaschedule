@@ -1,26 +1,19 @@
 // server/routes/reference/referenceValues.ts
 // 2026-08-06 · T-DualStorage-Connect · 5개 하드코딩 배열 → DB DISTINCT 값 조회
 // 2026-08-16 · asyncHandler 프레임워크 적용
+// 2026-09-14 · 사용자 대원칙 · 실시간 정확성 · in-memory 캐시 + max-age 5min 제거
 // GET /api/reference-values
 //   · vendors.category      → vendorCategories
 //   · employees.position    → positions
 //   · employees.rank        → ranks
 //   · employees.employmentType → contractTypes
 //   · employees.workplace   → workplaces
-//   · 5분 in-memory 캐시
 
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { asyncHandler } from "../../middleware/asyncHandler";
 
 const router = Router();
-
-const TTL_MS = 5 * 60 * 1000;
-interface CacheEntry {
-  data: ReferenceValues;
-  time: number;
-}
-let _cache: CacheEntry | null = null;
 
 export interface ReferenceValues {
   vendorCategories: string[];
@@ -50,7 +43,6 @@ async function fetchDistinct(table: string, column: string): Promise<string[]> {
 }
 
 async function loadReferenceValues(): Promise<ReferenceValues> {
-  if (_cache && Date.now() - _cache.time < TTL_MS) return _cache.data;
   const [vendorCategories, positions, ranks, contractTypes, workplaces] = await Promise.all([
     fetchDistinct("vendors", "category"),
     fetchDistinct("employees", "position"),
@@ -58,14 +50,12 @@ async function loadReferenceValues(): Promise<ReferenceValues> {
     fetchDistinct("employees", "employmentType"),
     fetchDistinct("employees", "workplace"),
   ]);
-  const data: ReferenceValues = { vendorCategories, positions, ranks, contractTypes, workplaces };
-  _cache = { data, time: Date.now() };
-  return data;
+  return { vendorCategories, positions, ranks, contractTypes, workplaces };
 }
 
 router.get("/api/reference-values", asyncHandler(async (_req, res) => {
   const data = await loadReferenceValues();
-  res.setHeader("Cache-Control", "public, max-age=300");
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   res.json(data);
 }));
 
