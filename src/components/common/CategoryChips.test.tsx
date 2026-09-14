@@ -87,22 +87,22 @@ describe("CategoryChips · onChange", () => {
   });
 });
 
-describe("CategoryChips · size 매핑", () => {
-  it("size=sm · h-9 text-14", () => {
+describe("CategoryChips · size 매핑 (2026-09-07 compact)", () => {
+  it("size=sm · h-7 text-13", () => {
     const { container } = render(
       <CategoryChips options={opts} value="all" onChange={() => {}} size="sm" />,
     );
     const btn = container.querySelector("button")!;
-    expect(btn.className).toContain("h-9");
-    expect(btn.className).toContain("text-[16px]");
+    expect(btn.className).toContain("h-7");
+    expect(btn.className).toContain("text-[13px]");
   });
 
-  it("size=md (기본) · h-10 text-15", () => {
+  it("size=md (기본) · h-8 text-14", () => {
     const { container } = render(
       <CategoryChips options={opts} value="all" onChange={() => {}} />,
     );
     const btn = container.querySelector("button")!;
-    expect(btn.className).toContain("h-10");
-    expect(btn.className).toContain("text-[17px]");
+    expect(btn.className).toContain("h-8");
+    expect(btn.className).toContain("text-[14px]");
   });
 });

@@ -182,9 +182,8 @@ describe("ProductInfoPage · 상품 리스트 로드 · 선택 · 상세", () =>
     await waitFor(() => expect(container.textContent).toContain("타이레놀"));
     const btn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("타이레놀")) as HTMLButtonElement;
     fireEvent.click(btn);
+    // 2026-09-08 · product_code 헤더에 표시 · PC001 텍스트 (# prefix or without)
     await waitFor(() => {
-      // 2026-08-29 · #186 A안 · Hero · "코드 PC001" · Basic Panel · "타이레놀"
-      expect(container.textContent).toContain("코드");
       expect(container.textContent).toContain("PC001");
     });
   });

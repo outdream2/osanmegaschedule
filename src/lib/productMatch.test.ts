@@ -3,11 +3,11 @@ import { describe, it, expect } from "vitest";
 import { matchesProductQuery, filterProducts } from "./productMatch";
 
 describe("matchesProductQuery · 통일 상품 검색", () => {
+  // 2026-09-08 · barcode 필드 제거 · product_code 자체가 바코드값 (13자리 EAN)
   const p = {
     product_name: "타이레놀 500mg",
-    product_code: "PC001",
+    product_code: "8801234567890",
     supplier: "코스트팜",
-    barcode: "8801234567890",
   };
 
   it("빈 query · 모두 통과", () => {
@@ -31,15 +31,11 @@ describe("matchesProductQuery · 통일 상품 검색", () => {
     expect(matchesProductQuery(p, "ㅋㅅㅌㅍ")).toBe(true);  // 코스트팜
   });
 
-  it("상품코드 · 대소문자 무시 부분일치", () => {
-    expect(matchesProductQuery(p, "pc001")).toBe(true);
-    expect(matchesProductQuery(p, "PC001")).toBe(true);
-    expect(matchesProductQuery(p, "001")).toBe(true);
-  });
-
-  it("바코드 · 부분일치", () => {
+  // 2026-09-08 · barcode 필드 제거 · product_code 자체가 바코드값 · 통합 매칭
+  it("상품코드(=바코드) · 대소문자 무시 부분일치", () => {
     expect(matchesProductQuery(p, "88012")).toBe(true);
     expect(matchesProductQuery(p, "567890")).toBe(true);
+    expect(matchesProductQuery(p, "8801234567890")).toBe(true);
   });
 
   it("매칭 없음 · false", () => {

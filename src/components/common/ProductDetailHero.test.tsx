@@ -38,8 +38,9 @@ describe("ProductDetailHero · 프리미티브", () => {
     expect(container.textContent).toContain("감기약");
   });
 
-  it("barcode · 표시", () => {
-    const { container } = render(<ProductDetailHero product={{ ...basic, barcode: "8801234567890" }} />);
+  // 2026-09-08 · barcode 필드 제거 · product_code 자체가 바코드값 · 별도 barcode 표시 안 함
+  it("product_code (=바코드) · 표시", () => {
+    const { container } = render(<ProductDetailHero product={{ ...basic, product_code: "8801234567890" }} />);
     expect(container.textContent).toContain("8801234567890");
   });
 

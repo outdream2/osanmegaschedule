@@ -34,27 +34,13 @@ describe("SupplierFilterBar · #185 PageToolbar 통일", () => {
     expect(container.textContent).toContain("6개월");
   });
 
-  it("Top N 옵션 · 100/300/1k/2k/전체", () => {
+  // 2026-09 · Top N 옵션 UI 폐기 · props supListLimit/setSupListLimit 는 API 호환용 (void)
+  it("Top N 옵션 UI · 폐기 (props 유지 · 렌더 안 함)", () => {
     const { container } = render(<SupplierFilterBar {...baseProps} />);
-    expect(container.textContent).toContain("100");
-    expect(container.textContent).toContain("300");
-    expect(container.textContent).toContain("1k");
-    expect(container.textContent).toContain("2k");
-    expect(container.textContent).toContain("전체");
-  });
-
-  it("Top N 300 선택 상태 · 강조 클래스", () => {
-    const { container } = render(<SupplierFilterBar {...baseProps} supListLimit={300} />);
-    const btn = Array.from(container.querySelectorAll("button")).find(b => b.textContent === "300") as HTMLButtonElement;
-    expect(btn.className).toContain("bg-brand-deep");
-  });
-
-  it("Top N 1000 클릭 · setSupListLimit 호출", () => {
-    const setSupListLimit = vi.fn();
-    const { container } = render(<SupplierFilterBar {...baseProps} setSupListLimit={setSupListLimit} />);
-    const btn = Array.from(container.querySelectorAll("button")).find(b => b.textContent === "1k") as HTMLButtonElement;
-    fireEvent.click(btn);
-    expect(setSupListLimit).toHaveBeenCalledWith(1000);
+    // 렌더 X · 100·300·1k·2k 라벨 없음
+    const btns = Array.from(container.querySelectorAll("button")).map(b => b.textContent);
+    expect(btns.filter(t => t === "100").length).toBe(0);
+    expect(btns.filter(t => t === "1k").length).toBe(0);
   });
 
   it("새로고침 버튼 · fetchData 호출", () => {

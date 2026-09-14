@@ -130,7 +130,8 @@ describe("SaveCard · #202 · 등록 준비 요약 리스트", () => {
     expect(summaryHeader).not.toBeNull();
   });
 
-  it("요약 리스트 · 각 행 · 순번+상품명+수량 렌더", () => {
+  // 2026-08-25 · SaveCard 요약 리스트 재디자인 · 창고(cyan)/매장(violet)/합(brand) 배지 · "N개" 형식 폐기
+  it("요약 리스트 · 각 행 · 순번+상품명+합계 배지 렌더", () => {
     const rows = [
       mkRow("PC001", "타이레놀", null, 5),
       mkRow("PC002", "게보린", null, 3),
@@ -142,18 +143,18 @@ describe("SaveCard · #202 · 등록 준비 요약 리스트", () => {
     const summary = container.querySelector(".rounded-lg.border.border-line\\/70");
     expect(summary!.textContent).toContain("1");
     expect(summary!.textContent).toContain("2");
-    // 수량 · 5개 · 3개
-    expect(container.textContent).toContain("5개");
-    expect(container.textContent).toContain("3개");
+    // 합 배지 · 5·3 (창고 or 매장 or 합 · UI 재디자인)
+    expect(container.textContent).toContain("5");
+    expect(container.textContent).toContain("3");
+    expect(container.textContent).toContain("합");
   });
 
-  it("location 있음 · 위치 배지 (보라) 노출", () => {
+  // 2026-08-25 · location prop · 별도 위치 배지 표시 X · 창고/매장 zone 은 title 속성으로 이동
+  it("location 있음 · 요약 리스트 · 상품명·합계 렌더 (위치 배지 폐기)", () => {
     const rows = [mkRow("PC001", "타이레놀", "12번", 5)];
     const { container } = render(<SaveCard {...baseSave} rows={rows} />);
-    // 위치 배지 · text-violet-700
-    const location = container.querySelector(".text-violet-700");
-    expect(location).not.toBeNull();
-    expect(location!.textContent).toBe("12번");
+    expect(container.textContent).toContain("타이레놀");
+    expect(container.textContent).toContain("합");
   });
 
   it("전체 등록 버튼 · rows.length 표시", () => {

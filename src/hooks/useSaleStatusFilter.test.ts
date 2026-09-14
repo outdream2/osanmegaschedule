@@ -30,24 +30,23 @@ describe("useSaleStatusFilter", () => {
     expect(result.current.value).toBe("all");
   });
 
-  it("setValue · localStorage 저장 + 재로드 시 유지", () => {
+  // 2026-09-10 · 사용자 지시 · localStorage 사용 X · 매 세션 default 강제 · 관련 test 삭제
+  it("setValue · in-memory 만 반영 · 재마운트 시 default 로 복귀", () => {
     const { result } = renderHook(() => useSaleStatusFilter());
     act(() => { result.current.setValue("inactive"); });
     expect(result.current.value).toBe("inactive");
-    expect(localStorage.getItem("saleStatusFilter")).toBe("inactive");
-
-    // 새 훅 인스턴스 · localStorage 값 로드
+    // 새 훅 인스턴스 · default (active) 로 초기화 (localStorage 사용 X)
     const { result: r2 } = renderHook(() => useSaleStatusFilter());
-    expect(r2.current.value).toBe("inactive");
+    expect(r2.current.value).toBe("active");
   });
 
-  it("storageKey override · 페이지별 분리 저장", () => {
+  it("storageKey option · 하위 호환 · 실제 저장 X · 값 유지 안 됨", () => {
     const { result: rA } = renderHook(() => useSaleStatusFilter({ storageKey: "pageA" }));
-    const { result: rB } = renderHook(() => useSaleStatusFilter({ storageKey: "pageB" }));
     act(() => { rA.current.setValue("all"); });
-    act(() => { rB.current.setValue("inactive"); });
-    expect(localStorage.getItem("pageA")).toBe("all");
-    expect(localStorage.getItem("pageB")).toBe("inactive");
+    expect(rA.current.value).toBe("all");
+    // 재마운트 · default 복귀 · localStorage 저장 안 함
+    const { result: rA2 } = renderHook(() => useSaleStatusFilter({ storageKey: "pageA" }));
+    expect(rA2.current.value).toBe("active");
   });
 
   it("matches · value=active · 판매중만 true", () => {
@@ -71,7 +70,8 @@ describe("useSaleStatusFilter", () => {
     expect(result.current.matches(null)).toBe(true);
   });
 
-  it("localStorage 손상값 · 기본값 fallback", () => {
+  // 2026-09-10 · localStorage 사용 X · 손상값 test 제거 (불필요)
+  it("localStorage 손상값 · 매 세션 · default 유지 (localStorage 무시)", () => {
     localStorage.setItem("saleStatusFilter", "invalid_value");
     const { result } = renderHook(() => useSaleStatusFilter());
     expect(result.current.value).toBe("active");

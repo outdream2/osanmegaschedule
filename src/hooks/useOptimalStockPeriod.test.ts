@@ -46,8 +46,8 @@ describe("useOptimalStockPeriod", () => {
     expect(result.current.days).toBe(14);
   });
 
-  it("KV 범위 밖 (100 · 초과) · sanitize null → DEFAULT", async () => {
-    (api.get as any).mockResolvedValueOnce({ data: { value: 100 } });
+  it("KV 범위 밖 (200 · 초과) · sanitize null → DEFAULT (2026-09-09 MAX 90→120)", async () => {
+    (api.get as any).mockResolvedValueOnce({ data: { value: 200 } });
     const { result } = renderHook(() => useOptimalStockPeriod());
     await waitFor(() => expect(result.current.loaded).toBe(true));
     // sanitize 는 null 을 반환 · useKvSetting 은 default 유지

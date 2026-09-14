@@ -47,25 +47,26 @@ describe("STORE_LEFT_WALL · 좌측 벽면 (6셀 · 31→26)", () => {
   });
 });
 
+// 2026-09-08 · 사용자 zonecategory.png 참고 · L-shape → 14×8 rectangular grid · cols [1,2,3,4]
 describe("STORE_AISLE_COLUMNS · aisle 칼럼 정의", () => {
-  it("4개 칼럼 (col 2·5·8·12)", () => {
+  it("4개 칼럼 (col 1·2·3·4)", () => {
     expect(STORE_AISLE_COLUMNS).toHaveLength(4);
-    expect(STORE_AISLE_COLUMNS.map(c => c.col)).toEqual([2, 5, 8, 12]);
+    expect(STORE_AISLE_COLUMNS.map(c => c.col)).toEqual([1, 2, 3, 4]);
   });
   it("각 칼럼 · 3 pair", () => {
     for (const col of STORE_AISLE_COLUMNS) {
       expect(col.pairs).toHaveLength(3);
     }
   });
-  it("col 5 · EVENT pair 포함 · 2026-09-08 · 이벤트 → EVENT 정정", () => {
-    const col5 = STORE_AISLE_COLUMNS.find(c => c.col === 5)!;
-    expect(col5.pairs[1].b).toBe("EVENT");
-    expect(col5.pairs[1].a).toBe("EVENT");
+  it("col 2 · EVENT pair 포함 · 2026-09-08 · 이벤트 → EVENT 정정", () => {
+    const col2 = STORE_AISLE_COLUMNS.find(c => c.col === 2)!;
+    expect(col2.pairs[1].b).toBe("EVENT");
+    expect(col2.pairs[1].a).toBe("EVENT");
   });
-  it("col 12 · 1B/1A pair 포함", () => {
-    const col12 = STORE_AISLE_COLUMNS.find(c => c.col === 12)!;
-    expect(col12.pairs[2].b).toBe(1);
-    expect(col12.pairs[2].a).toBe(1);
+  it("col 4 · 1B/1A pair 포함", () => {
+    const col4 = STORE_AISLE_COLUMNS.find(c => c.col === 4)!;
+    expect(col4.pairs[2].b).toBe(1);
+    expect(col4.pairs[2].a).toBe(1);
   });
 });
 

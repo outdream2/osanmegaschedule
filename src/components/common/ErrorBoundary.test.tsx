@@ -25,29 +25,31 @@ describe("ErrorBoundary · 정상 렌더", () => {
 });
 
 describe("ErrorBoundary · 에러 캐치 (기본 fallback)", () => {
+  // 2026-09-07 · UI 재디자인 · "오류가 발생했습니다" + 홈으로/새로고침/다시 시도 3 버튼
   it("에러 발생 시 · 기본 카드 렌더", () => {
     const { container } = render(
       <ErrorBoundary>
         <ThrowsBoom msg="테스트 에러" />
       </ErrorBoundary>
     );
-    expect(container.textContent).toContain("일시적인 오류가 발생했습니다");
+    expect(container.textContent).toContain("오류가 발생했습니다");
     expect(container.textContent).toContain("새로고침");
   });
 
-  it("일반 에러 · 새로고침 + 다시 시도 버튼 렌더", () => {
+  it("일반 에러 · 홈으로 + 새로고침 + 다시 시도 3 버튼 렌더", () => {
     const { container } = render(
       <ErrorBoundary>
         <ThrowsBoom msg="일반 에러" />
       </ErrorBoundary>
     );
     const btns = container.querySelectorAll("button");
-    expect(btns.length).toBe(2);
-    expect(btns[0].textContent).toContain("새로고침");
-    expect(btns[1].textContent).toContain("다시 시도");
+    expect(btns.length).toBe(3);
+    expect(btns[0].textContent).toContain("홈으로");
+    expect(btns[1].textContent).toContain("새로고침");
+    expect(btns[2].textContent).toContain("다시 시도");
   });
 
-  it("ChunkLoadError · 새 버전 안내 · 다시 시도 버튼 없음", () => {
+  it("ChunkLoadError · 새 버전 안내 · 홈으로 + 새로고침 (다시 시도 없음)", () => {
     const { container } = render(
       <ErrorBoundary>
         <ThrowsBoom msg="ChunkLoadError: Loading chunk 5 failed" />
@@ -55,8 +57,9 @@ describe("ErrorBoundary · 에러 캐치 (기본 fallback)", () => {
     );
     expect(container.textContent).toContain("새 버전이 배포되었습니다");
     const btns = container.querySelectorAll("button");
-    expect(btns.length).toBe(1); // 새로고침만
-    expect(btns[0].textContent).toContain("새로고침");
+    expect(btns.length).toBe(2); // 홈으로 + 새로고침
+    expect(btns[0].textContent).toContain("홈으로");
+    expect(btns[1].textContent).toContain("새로고침");
   });
 
   it("Loading chunk 에러 · 감지", () => {
