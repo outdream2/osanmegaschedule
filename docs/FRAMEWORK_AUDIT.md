@@ -1,6 +1,6 @@
 # Framework Audit Report (자동 생성)
 
-> 생성 · 2026-09-11 · `scripts/audit-framework.cjs` · 매 세션 재실행
+> 생성 · 2026-09-14 · `scripts/audit-framework.cjs` · 매 세션 재실행
 >
 > **로드맵 · `docs/FRAMEWORK_ROADMAP.md` Phase 1 (인벤토리)**
 
@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 807 |
+| 스캔 파일 | 813 |
 | 위반 파일 | 12 |
-| 클린 파일 | 795 (99%) |
+| 클린 파일 | 801 (99%) |
 | 총 위반 개수 | 13 |
 
 ## 🚨 규칙별 위반 현황
@@ -27,16 +27,16 @@
 |---:|---|---:|---:|---|
 | 1 | `src/components/OrderSettingsPage/OrderSettingsPage.tsx` | 286 | 4 | raw-card-wrapper(2) |
 | 2 | `src/components/common/InventoryEditPanel.tsx` | 520 | 3 | raw-alert(1) |
-| 3 | `src/components/DisplayPage/RealStockTablePage.tsx` | 866 | 3 | large-file-warn(1) |
-| 4 | `src/components/LandingPage/VendorListEditor.tsx` | 804 | 3 | large-file-warn(1) |
-| 5 | `src/components/OrderManagePage/OrderManagePage.tsx` | 834 | 3 | large-file-warn(1) |
-| 6 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 868 | 3 | large-file-warn(1) |
+| 3 | `src/components/DisplayPage/RealStockTablePage.tsx` | 870 | 3 | large-file-warn(1) |
+| 4 | `src/components/LandingPage/VendorListEditor.tsx` | 853 | 3 | large-file-warn(1) |
+| 5 | `src/components/OrderManagePage/OrderManagePage.tsx` | 839 | 3 | large-file-warn(1) |
+| 6 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 977 | 3 | large-file-warn(1) |
 | 7 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 805 | 3 | large-file-warn(1) |
-| 8 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 893 | 3 | large-file-warn(1) |
+| 8 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 969 | 3 | large-file-warn(1) |
 | 9 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 841 | 3 | large-file-warn(1) |
 | 10 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 | large-file-warn(1) |
 | 11 | `src/components/ScanPage/ScanPage.tsx` | 809 | 3 | large-file-warn(1) |
-| 12 | `src/components/common/StoreZoneMap.tsx` | 565 | 2 | raw-card-wrapper(1) |
+| 12 | `src/components/common/StoreZoneMap.tsx` | 568 | 2 | raw-card-wrapper(1) |
 
 ## 📝 모든 위반 파일 (12개)
 
@@ -46,16 +46,16 @@
 |---|---:|---:|
 | `src/components/OrderSettingsPage/OrderSettingsPage.tsx` | 286 | 4 |
 | `src/components/common/InventoryEditPanel.tsx` | 520 | 3 |
-| `src/components/DisplayPage/RealStockTablePage.tsx` | 866 | 3 |
-| `src/components/LandingPage/VendorListEditor.tsx` | 804 | 3 |
-| `src/components/OrderManagePage/OrderManagePage.tsx` | 834 | 3 |
-| `src/components/OrderManagePage/PaymentInputPage.tsx` | 868 | 3 |
+| `src/components/DisplayPage/RealStockTablePage.tsx` | 870 | 3 |
+| `src/components/LandingPage/VendorListEditor.tsx` | 853 | 3 |
+| `src/components/OrderManagePage/OrderManagePage.tsx` | 839 | 3 |
+| `src/components/OrderManagePage/PaymentInputPage.tsx` | 977 | 3 |
 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 805 | 3 |
-| `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 893 | 3 |
+| `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 969 | 3 |
 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 841 | 3 |
 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 |
 | `src/components/ScanPage/ScanPage.tsx` | 809 | 3 |
-| `src/components/common/StoreZoneMap.tsx` | 565 | 2 |
+| `src/components/common/StoreZoneMap.tsx` | 568 | 2 |
 
 </details>
 

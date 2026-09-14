@@ -25,9 +25,109 @@
 
 ---
 
-# 🆕 2026-09-14 (오후) · 잔여 태스크 정리 세션
+# 🆕 2026-09-14 (자율 세션) · 잔여 정리 + 캐시 대청소 + 보안 fix + 테스트 정리
 
-## #63 · 공급사 무결성 · 결제·상품입고 · vendors 유효성 검증 ✅
+**세션 요약 (아래 항목 · 순서대로 배치 테스트 권장)**
+
+| # | 카테고리 | 커밋 |
+|---|---|---|
+| 1 | 🛡️ **보안 · /uploads auth + ErrorBoundary NODE_ENV** | `953218e2` |
+| 2 | 🗄️ **캐시 제거 · 10개** (실시간 정확성) | `616ae50b` · `e66e9e96` · `595dab85` · `5591db51` · `747088f7` |
+| 3 | 🔗 **#63 공급사 무결성** · 결제·상품입고 validation | `62e3830e` |
+| 4 | 🔄 **#61 상품 등록·수정** · 실재고 자동 동기 | `1889b95d` |
+| 5 | 🎯 **프레임워크** · InventoryEditPanel · alert→useToast | `c8614c26` |
+| 6 | 🧪 **테스트 19개 정리** · CI 클린 (3355/3355) | `c190ad86` |
+| 7 | 📄 **TASKS.md v5 재확인** · 12건 완료 마킹 | `a96c3051` |
+
+**필수 · 서버 재시작** (Ctrl+C · npm run dev) · 백엔드 fix 반영
+
+---
+
+## 🛡️ [1] 보안 · /uploads auth 강화 + ErrorBoundary NODE_ENV ✅
+**커밋** · `953218e2`
+
+### 배경
+- **/uploads 정적 파일** · requireAuth 이전 마운트 · URL만 알면 인증 없이 다운로드 가능
+- 계약서·사직서·HR 자료 · **개인정보** · 유출 위험 (개인정보보호법 대상)
+- ErrorBoundary · 프로덕션에서도 stack trace 상시 노출 · 내부 경로·라이브러리 힌트 유출
+
+### 해결
+- `/uploads/*` · requireAuth 아래로 이동 · 로그인 필수
+- `/uploads/contracts/*` · `/uploads/resignations/*` · `/uploads/hr-forms/*` · admin (level>=8) 만
+- ErrorBoundary · `import.meta.env.DEV` 조건 · DEV 에서만 stack · 프로덕션 · "발생 시각"만
+
+### 테스트 절차
+1. **로그아웃 상태** · 브라우저 · `http://localhost:XXXX/uploads/contracts/test.pdf` 직접 접근
+2. **기대값** · 로그인 페이지 리다이렉트 or 401 응답 (이전 · 파일 다운로드 됨)
+3. **일반 직원 로그인** (level < 8) · 같은 URL 접근 · 403 응답
+4. **관리자 로그인** (level >= 8) · 같은 URL 접근 · 정상 다운로드
+5. **일반 사용자** · 게시판 첨부 (/uploads/board/*) · 정상 접근 가능
+
+### ErrorBoundary 테스트
+1. **개발 서버** (npm run dev) · 강제 에러 발생 · stack trace + componentStack 표시 (기존 유지)
+2. **프로덕션 빌드** (npm run build && preview) · 강제 에러 · **발생 시각만** 표시 · stack 없음
+3. 홈으로 · 새로고침 · 다시 시도 버튼 · 정상 동작
+
+### 회귀 확인
+- StaffContractSection · 관리자 계약서 조회 · 정상 동작
+- BoardPage · 첨부 다운로드 · 정상 동작
+
+---
+
+## 🗄️ [2] 캐시 제거 · 10개 · 실시간 정확성 ✅
+**커밋** · `616ae50b` · `e66e9e96` · `595dab85` · `5591db51` · `747088f7`
+
+### 배경
+- 사용자 대원칙 · "캐시 절대 X · 실시간 정확성 우선"
+- 이전 · 발주·매출·잔고·매입·판매 · 5-10min TTL · 매입/결제 후 stale · 오판 유발
+- 정적 마스터도 편집 후 5min stale · UX 저해
+
+### 제거 캐시 (10)
+| 캐시 | 이전 TTL | 영향 |
+|---|:---:|---|
+| saleActiveOnlyCache | 5s | 무의미 · 실시간 KV 조회 |
+| lowStockCache | 2min | 발주필요 리스트 · 매입 후 즉시 반영 |
+| ocrAggCache | 5min | 매입 집계 · 발주 판단 근거 |
+| salesTrendCache | 5min | 판매 트렌드 차트 |
+| topSalesCache | 10min | Top 판매 대시보드 |
+| vendorCache (잔고맵) | 5min | 잔고 · 매입/결제 후 즉시 |
+| vendorValidation | 60s | vendor 등록 즉시 · SUPPLIER_NOT_FOUND false-positive 해소 |
+| seasonCache | 5min | 계절 편집 · 즉시 반영 |
+| storageLocationsCache | 5min | 매장·창고 마스터 편집 즉시 |
+| referenceValues cache | 5min | 직급·부서 등 편집 즉시 |
+
+### 테스트 절차
+**A. 발주필요 실시간** (lowStockCache 제거)
+1. **매장 > 발주 > 발주필요** 진입 · 부족 상품 확인
+2. **매장 > 상품입고** · 부족 상품 · 매입 검수 완료
+3. **매장 > 발주 > 발주필요** 새로 진입 · **즉시** 부족량 반영 확인 (이전 · 2min stale)
+
+**B. 잔고맵 실시간** (vendorCache 제거)
+1. **매입 > 공급사관리** · 공급사 잔고 확인
+2. **매입 > 결제 > 결제입력** · 결제 등록
+3. **매입 > 공급사관리** 새로 진입 · **즉시** 잔고 반영 확인 (이전 · 5min stale)
+
+**C. vendor 등록 즉시 사용** (vendorValidation 제거)
+1. **매입 > 공급사관리** · 신규 공급사 등록 (예: "테스트공급사X")
+2. **즉시** · **매입 > 결제 > 결제입력** · supplier_name="테스트공급사X" 로 결제 시도
+3. 정상 저장 확인 (이전 · 60s 대기 or SUPPLIER_NOT_FOUND false-positive)
+
+**D. 시스템설정 마스터 즉시 반영**
+- 계절 편집 · 발주필요 판매추천 배너 즉시 반영
+- 매장·창고 편집 · 진열위치 표시 즉시 반영
+- 직급·부서 편집 · 드롭다운 즉시 반영
+
+**E. 서버 콘솔** · "[SETUP REQUIRED] real_map" 경고 사라짐 확인
+
+### 유지된 캐시 (11)
+- 보안: `_consumedSsoJtis` (JWT 재사용 방지)
+- 성능: `productMapCache` (30s · 6000+ 상품)
+- OCR: 5개 (synonymMap·supplierAlias·vendorNames·vendorBizNumMap·productToSuppliers)
+- 기타: `_recentRawTextCache` (OCR working buffer)
+
+---
+
+## 🔗 [3] #63 · 공급사 무결성 · 결제·상품입고 · vendors 유효성 검증 ✅
 **커밋** · `62e3830e`
 
 ### 배경
@@ -54,7 +154,7 @@
 
 ---
 
-## #61 · 상품 등록·수정 후 · 실재고 테이블 자동 동기 ✅
+## 🔄 [4] #61 · 상품 등록·수정 후 · 실재고 테이블 자동 동기 ✅
 **커밋** · `1889b95d`
 
 ### 배경
@@ -76,6 +176,82 @@
 ### 예상 결과
 - 상품 등록/수정 → 실재고 테이블 · 즉시 자동 갱신
 - 사용자 새로고침 불필요
+
+---
+
+## 🎯 [5] 프레임워크 · InventoryEditPanel · alert → useToast ✅
+**커밋** · `c8614c26`
+
+### 배경
+- framework audit · `src/components/common/InventoryEditPanel.tsx:373` · `alert()` 사용
+- 프레임워크 대원칙 위반 (useToast 표준)
+
+### 해결
+- `useToast` import + `showError` 호출
+- 매장 zone 상세위치 3자리 검증 실패 시 · toast 로 알림 (이전 · alert 팝업)
+
+### 테스트 절차
+1. **매장진열 > 실재고테이블** · 상품 선택 · 편집 모달
+2. 매장1·2·3 zone · **상세위치 미입력** or 3자리 미만 상태에서 저장 시도
+3. **기대값** · 오른쪽 상단 · toast · "매장N 위치는 상세위치가 필수입니다 (3자리 · 예 332)"
+4. 이전 · 브라우저 alert() 팝업 · 신규 · 앱 내부 toast
+
+### 회귀 확인
+- 정상 3자리 입력 시 · 저장 정상 동작
+- 창고 zone (w1·w2) · 상세위치 없어도 저장 정상
+
+---
+
+## 🧪 [6] 테스트 정리 · 19개 실패 → 0 ✅
+**커밋** · `c190ad86`
+
+### 배경
+- npm test · 19개 실패 · 3358개 중 (CI 신뢰도 저하)
+- 사용자 리뷰 지적 · "의도 변경 vs 실제 버그 분류"
+
+### 해결
+- 19개 모두 · **의도적 UI 변경** · 코드 정상 · 테스트만 낡음
+- 10개 test 파일 갱신 · 최신 UI · 최신 스펙 반영
+
+### 갱신 항목
+- useOptimalStockPeriod: MAX 90→120 · KV 100 이제 유효 (200 으로 test 갱신)
+- useSaleStatusFilter: localStorage 사용 X (2026-09-10) · 재로드 default 복귀
+- productMatch: barcode 필드 제거 · product_code 통합
+- CategoryChips: sm h-9→h-7 · md h-10→h-8 (compact)
+- ErrorBoundary: "오류가 발생했습니다" + 3 buttons (홈으로 추가)
+- ProductDetailHero: barcode 제거 · product_code 자체가 바코드
+- ScanPage.panels: "N개" 형식 폐기 · 창고/매장/합 배지
+- SupplierFilterBar: Top N 옵션 UI 폐기
+- storeMapLayout: L-shape → 14×8 grid · cols [1,2,3,4]
+- ProductInfoPage: "코드" label → "#PC001" prefix 헤더
+
+### 테스트 절차
+1. **터미널** · `npm test -- --run` 실행
+2. **기대값** · Test Files 227 passed · Tests 3355 passed · **실패 0**
+
+---
+
+## 📄 [7] TASKS.md v5 재확인 · 12건 완료 마킹 ✅
+**커밋** · `a96c3051`
+
+### 배경
+- v5 (2026-09-02) PENDING 11개 · 이미 완료됐지만 TASKS.md 미갱신 (stale)
+- v13 T-DISPLAY-1 · 이미 완료 (2026-09-09) but 마킹 없음
+
+### 해결
+- 커밋 대조로 완료 확인:
+  - #60 (CopyMonthModal) · #62 (7192c2cb) · #70 (top-14 grep 0) · #72 (116d7146)
+  - #73 (프리미티브 fit) · #75 (SplitPanel 반응형) · #78 (dc323581) · #79 (UUID fix)
+  - #80 (b58a6295) · #63·#64 (0d9b7f8f·58ea6aef)
+  - T-DISPLAY-1 (2026-09-09 표 재구성 · 요청횟수 컬럼)
+
+### 테스트 절차
+- 문서 정리 · **기능 테스트 불필요**
+- `docs/TASKS.md` 열어서 · v5 섹션 · "✅ 재확인 완료" 표 · 시각 확인
+
+---
+
+# 📚 이전 세션 테스트 (2026-09-11 ~ 09-13)
 
 ---
 
