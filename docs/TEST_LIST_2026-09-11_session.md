@@ -328,8 +328,11 @@ Radix Popover · 셀 옆 표시 · 스크롤 · 화면 밖 튀어나갈 가능�
 | #108 | 사이드바 알림 스위치 (NotificationToggle) 제거 | 810838f8 |
 | #82 | 상품등록 모달 · 배치구역 2분리 · shelf_positions JSONB | f9acf35b |
 | **#72·#73** | **재고자산·판매액 SSOT 감사 · vat·salesTrend 파생 통일** | **5ae4339a** |
+| #118 | 결제 대시보드 페이지 신규 | d706ce39 |
+| #101 | 차용계약 PDF 프리뷰·다운로드 | cae5d072 |
+| **#73** | **supplierPurchases 판매액 SSOT 재감사 fix** | **cae5d072** |
 
-**총 · 41태스크 완료 · 46커밋 (자율 세션)**
+**총 · 44태스크 완료 · 50커밋 (자율 세션)**
 
 ---
 
@@ -784,6 +787,68 @@ if (zoneId && (!assignedStaffId || Number.isNaN(assignedStaffId))) {
 - 기존 supplier/product endpoint · 파생 계산 유지
 - balance.ts SSOT · 이미 통일 · 변경 없음
 - 각 페이지 · TS 검증 통과
+
+---
+
+## #118 · 결제 대시보드 페이지 신규 ✅
+**커밋** · d706ce39
+
+### 배경
+결제 메뉴 · 6개 서브탭 · 첫 진입 시 · 종합 KPI 없음.
+
+### 해결
+- 신규 · `PaymentDashboardPage.tsx`
+- 상단 KPI 4개 · 총 매입·총 결제·총 잔고·총 재고자산
+- 상태 카운트 · 미지급·선지급·완납
+- 미지급 Top 10 (sky) · 선지급 Top 10 (rose)
+- SSOT · `/api/supplier-balances-map`
+
+### 테스트 절차
+1. **매입 > 결제** 메뉴 진입
+2. 첫 탭 · **대시보드** (LayoutDashboard 아이콘)
+3. KPI 카드 · 총 매입/결제/잔고/재고자산 확인
+4. 미지급/선지급 공급사 Top 10 리스트 표시
+5. **결제입력** 탭으로 이동 · 개별 공급사 결제 진행
+
+---
+
+## #101 · 차용계약 PDF 프리뷰·다운로드 ✅
+**커밋** · cae5d072
+
+### 배경
+BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려움.
+
+### 해결
+- 신규 · `BorrowingPdfPreview.tsx` · A4 세로 · 오프스크린 렌더 컴포넌트
+  - 대여자 (甲) · 차용자 (乙) · 상품 내역 · 반환·정산 조건 · 특약 · 일반 조항 · 서명란
+  - lend/borrow 방향에 따라 · 자동 매핑
+- `BorrowingDetailPanel` · `handleDownloadPdf` · html2canvas + jsPDF
+- 파일명 · `차용계약서_YYYYMMDD_상품명_계약번호.pdf`
+- 근로계약서 usePdfActions 패턴 재사용
+
+### 테스트 절차
+1. **매입 > 차용입력** · 계약 선택 · 우측 상세 패널
+2. 하단 액션 · **[PDF]** 버튼 (FileDown 아이콘)
+3. 클릭 · PDF 다운로드 · 파일명 확인
+4. PDF 내용 · 대여자·차용자·상품·기간·서명란 완비
+5. lend/borrow 방향 다른 계약 · 甲·乙 매핑 확인
+
+---
+
+## #73 · supplierPurchases 판매액 SSOT 재감사 fix ✅
+**커밋** · cae5d072 (Agent 심층 감사 · task af64fe66 기반)
+
+### 배경
+사용자 재강조 · **판매액 = 판매수량 × 판매가**. Agent 심층 감사 결과 · 1건 · `supplierPurchases.ts:105` · `total_amount` 원본 직접 사용.
+
+### 해결
+- 이전 · `cur.totalStockAmount += stock_history.total_amount` (xlsx 원본 · 정확도 저하)
+- fix · `products.sale_price` 사전 map · `cur.totalStockAmount += sale_qty × sale_price`
+- SSOT 준수 · 대원칙 100% 커버 (7개 endpoint · 정상 · 이번 1건 fix 완료)
+
+### 감사 최종 결과
+- **SSOT 준수 · 100%** (topSales·salesTrend·vat·snapshotSummary·supplier-balances·supplierPurchases · 모두 파생 계산)
+- 잘못된 직접 사용 · 0건
 
 ---
 
