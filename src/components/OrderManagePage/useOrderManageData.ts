@@ -2,8 +2,9 @@
 // 2026-08-23 · Framework Phase 4 · 발주관리 데이터 로딩 훅 분리
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
-// 2026-09-14 · inventoryChecksApi 프리미티브
+// 2026-09-14 · inventoryChecksApi · orderRequestsApi 프리미티브
 import { listInventoryChecks } from "../../lib/inventoryChecksApi";
+import { listOrderRequests } from "../../lib/orderRequestsApi";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useToast } from "../../hooks/useToast";
 import type { OrderRequest, ProductInfo, GoodsReceipt } from "./OrderManagePage.types";
@@ -51,7 +52,7 @@ export function useOrderManageData(getCode: (p: ProductInfo) => string) {
   const loadOrderReqs = useCallback(async () => {
     setOrderLoading(true); setOrderError(null);
     try {
-      const { data: list } = await api.get<OrderRequest[]>("/api/order-requests");
+      const list = await listOrderRequests() as unknown as OrderRequest[];
       setOrderReqs(list);
       const codes = Array.from(new Set(list.map(r => r.product_code).filter(Boolean)));
       if (codes.length > 0) {

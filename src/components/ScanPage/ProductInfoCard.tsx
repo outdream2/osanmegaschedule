@@ -4,8 +4,9 @@
 
 import React, { useState, useEffect } from "react";
 import { api, ApiError } from "../../lib/apiClient";
-// 2026-09-14 · inventoryChecksApi 프리미티브
+// 2026-09-14 · inventoryChecksApi · orderRequestsApi 프리미티브
 import { saveInventoryCheck, listInventoryChecks } from "../../lib/inventoryChecksApi";
+import { createOrderRequest } from "../../lib/orderRequestsApi";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useConfirm } from "../../hooks/useConfirm";
 import { Card } from "../common/Card";
@@ -192,7 +193,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
   const submitOrderRequest = async () => {
     setOrderStatus("loading"); setOrderConfirm(false);
     try {
-      await api.post("/api/order-requests", {
+      await createOrderRequest({
         product_code: product.code, product_name: product.name,
         current_stock: product.current_stock != null ? Number(product.current_stock) : null,
         optimal_stock: product.optimal_stock != null ? Number(product.optimal_stock) : null,

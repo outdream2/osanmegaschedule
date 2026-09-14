@@ -1,8 +1,9 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { api } from "../../lib/apiClient";
-// 2026-09-14 · inventoryChecksApi 프리미티브
+// 2026-09-14 · inventoryChecksApi · orderRequestsApi 프리미티브
 import { listInventoryChecks } from "../../lib/inventoryChecksApi";
+import { listOrderRequests, createOrderRequest } from "../../lib/orderRequestsApi";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { SK_SUBTAB_REQUESTS } from "../../lib/storageKeys";
 import { dispatchApprovalChange, useApprovalRefreshListener } from "../../lib/approvalEvents";
@@ -258,8 +259,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     setOrderLoading(true);
     setOrderError(null);
     try {
-      const { data } = await api.get<any>("/api/order-requests");
-      setOrderReqs(data);
+      const list = await listOrderRequests();
+      setOrderReqs(list as any);
     } catch (e: any) { setOrderError(e?.message ?? "네트워크 오류"); setOrderReqs([]); }
     finally { setOrderLoading(false); }
   }, []);
@@ -408,7 +409,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     setOrderRequestError(null);
     const currentStock = stockOverride !== undefined ? stockOverride : (p.current_stock != null ? Number(p.current_stock) : null);
     try {
-      await api.post("/api/order-requests", {
+      await createOrderRequest({
         product_code: p.code, product_name: p.name,
         current_stock: currentStock,
         optimal_stock: p.optimal_stock != null ? Number(p.optimal_stock) : null, note: "",
@@ -438,7 +439,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     }
     setRequestingInvOrder(prev => new Set([...prev, r.product_code]));
     try {
-      await api.post("/api/order-requests", { product_code: r.product_code, product_name: r.product_name, current_stock: r.system_stock, optimal_stock: r.optimal_stock, note: "" });
+      await createOrderRequest({ product_code: r.product_code, product_name: r.product_name, current_stock: r.system_stock, optimal_stock: r.optimal_stock, note: "" });
       await loadOrderReqs();
       // 2026-08-18 · 발주 요청 배지 즉시 갱신
       dispatchApprovalChange("order");

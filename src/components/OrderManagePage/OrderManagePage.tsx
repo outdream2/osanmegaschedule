@@ -64,6 +64,8 @@ import type { InventoryEditModalInitialValues } from "../common/features/Invento
 import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { api, ApiError } from "../../lib/apiClient";
+// 2026-09-14 · orderRequestsApi 프리미티브
+import { createOrderRequest } from "../../lib/orderRequestsApi";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 
@@ -397,13 +399,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     setRequestingOrder(prev => { const n = new Set(prev); n.add(code); return n; });
     try {
       console.log("[handleRequestOrder] POST /api/order-requests", { code, orderQty });
-      const res = await api.post("/api/order-requests", {
+      await createOrderRequest({
         product_code: code, product_name: name,
         current_stock: p.current_stock,
         order_qty: orderQty,
-        supplier: p.supplier, requested_at: new Date().toISOString(),
+        supplier: p.supplier,
       });
-      console.log("[handleRequestOrder] POST result:", res);
+      console.log("[handleRequestOrder] POST result: ok");
       await loadOrderReqs();
       console.log("[handleRequestOrder] loadOrderReqs done");
       dispatchApprovalChange("order");
@@ -485,11 +487,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         const shortage = Math.max(1, opt - cur);
         const orderQty = orderQtyOverride.get(code) ?? shortage;
         try {
-          await api.post("/api/order-requests", {
+          await createOrderRequest({
             product_code: code, product_name: name,
             current_stock: p.current_stock,
             order_qty: orderQty,
-            supplier: p.supplier, requested_at: new Date().toISOString(),
+            supplier: p.supplier,
           });
         } catch (e: any) {
           showError(`[${name}] 발주 요청 실패: ${e?.message ?? "오류"}`);
