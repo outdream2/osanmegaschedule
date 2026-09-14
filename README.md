@@ -49,7 +49,7 @@ npm run dev       # http://localhost:5173
 
 ## 기술 스택
 
-- **프론트엔드** · React 18 · Vite 6 · TypeScript · Tailwind CSS 4 · shadcn/ui
+- **프론트엔드** · React 19 · Vite 6 · TypeScript · Tailwind CSS 4 · shadcn/ui
 - **백엔드** · Node.js 20 · Express · TypeScript (tsx)
 - **DB** · Supabase (PostgreSQL) · JS SDK
 - **인증** · JWT (bcryptjs · jsonwebtoken)
