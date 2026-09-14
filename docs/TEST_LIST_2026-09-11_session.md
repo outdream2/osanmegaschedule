@@ -50,6 +50,7 @@
 | 15 | 🎯 **프레임워크** · settingsApi 프리미티브 · 6 곳 (KV settings) | `93497b21` |
 | 16 | 🎨 **UI 폴리시** · ProductInfoPage 좌측 리스트 · 우측 통일 | `350f66ab` |
 | 17 | 🐛 **라벨 정정** · 상품입고 개 단위 + 실재고확인 구역/ERP → 규격/현재고 | `72286c28` · `5dfdf6f0` |
+| 18 | 🎨 **ProductInfoPage 상세 재구성** · Hero + 3 섹션 · 반응형 · 컬러 tint pill · 반복 iteration | `5e3994d4` · `02d63bdf` |
 
 **필수 · 서버 재시작** (Ctrl+C · npm run dev) · 백엔드 fix 반영
 
@@ -188,6 +189,60 @@
 ### 예상 결과
 - 상품 등록/수정 → 실재고 테이블 · 즉시 자동 갱신
 - 사용자 새로고침 불필요
+
+---
+
+## 🎨 [18] ProductInfoPage 우측 상세정보 · 완전 재구성 (실시간 반복 피드백) ✅
+**커밋** · `5e3994d4` · `02d63bdf` (+ 여러 iteration)
+
+### 배경 (사용자 실시간 피드백 · 10+ 라운드)
+- "내용도 분류도 별로인데 이쁘지도 않고"
+- "상품정보 페이지니까 가격·공급사가 재고보다 먼저"
+- "한눈에 들어오게 텍스트 형식으로"
+- "판매가·현재고 hero 만 예쁘고 나머지 잘 안보임"
+- "라벨과 데이터 컬러 엑센트로 구분"
+- "라벨 크기 +2"
+- "반응형 · 넓은 화면 2-3개 · 좁으면 1개"
+- "진열위치 값 · 현재고 값처럼 크게"
+- "판매중 옆 분류 제거"
+- "말줄임표 금지"
+
+### 해결 · 최종 구조
+
+**Hero (Sticky):**
+- 상품명 (24px extrabold) · 코드 (mono chip) · 판매중 pill
+
+**Section 1 · 가격 정보 (brand-deep accent bar):**
+- 판매가 [22px extrabold brand-deep] · 매입가 [20px amber] · 이익율 [20px semantic]
+- 반응형 grid · 1/sm:2/lg:3 컬럼
+
+**Section 2 · 공급사·기본 정보 (sky accent bar):**
+- 공급사 [상세보기 chip] · 분류 · 규격 · 단위 · 브랜드 · 제조사 · 최근매입
+- 모든 라벨 · sky tint pill · 15px bold
+
+**Section 3 · 재고·진열위치 (emerald accent bar):**
+- 현재고 [22px emerald + 부족/충분 배지] · 적정재고 [20px + N일 기준]
+- 창고 [20px cyan + 창고1·2 breakdown] · 매장 [20px indigo]
+- 진열위치 [20px extrabold rose + shelf badges]
+
+### 디자인 원칙 · 최종
+- Hero + 3 섹션 · accent bar (컬러 dot + border-b-2)
+- 라벨: 컬러 tint pill (15px · rounded-md · px-2.5 py-1)
+- 값: 대형 dark text (20-22px · tracking-tight · leading-none)
+- 반응형: grid-cols-1 → sm:grid-cols-2 → lg:grid-cols-3
+- 편집 모드: EditField · input 자연스러운 통합
+
+### 테스트 절차
+1. **매장 > 상품 > 상품정보** · 상품 선택 · 우측 상세 확인
+2. 3개 섹션 · 각 accent bar 컬러 · 시각 구분 명확
+3. 라벨 컬러 pill · 값 큰 텍스트 · 헷갈림 없음
+4. 반응형 · 화면 좁혀서 1-col → 넓혀서 3-col 확인
+5. 편집 · 저장 · 취소 · 정상 동작
+
+### 회귀 확인
+- 편집·저장 · 이전과 동일
+- vendor 모달 · 정상 open
+- TS 통과
 
 ---
 
