@@ -46,6 +46,7 @@
 | — | 🎯 **프레임워크** · permissionsApi 프리미티브 · 6 곳 통합 | `4684d4f0` |
 | 12 | 🐛 **버그 fix** · 세션 알림 UI + optimal_stock 컬럼 + 30일 하드코딩 | `f0b2ec59` · `cf9ec40a` · `ffd4d157` |
 | 13 | 🐛 **재리포트 fix** · optimal_stock 잔재 + ProductInfoPage 우측 패널 리디자인 | `e3e78622` |
+| 14 | 🎨 **UI 폴리시** · ProductInfoPage 나머지 3 섹션 (기본·상세·기타) | `edc1a603` |
 
 **필수 · 서버 재시작** (Ctrl+C · npm run dev) · 백엔드 fix 반영
 
@@ -184,6 +185,43 @@
 ### 예상 결과
 - 상품 등록/수정 → 실재고 테이블 · 즉시 자동 갱신
 - 사용자 새로고침 불필요
+
+---
+
+## 🎨 [14] ProductInfoPage 우측 패널 · 나머지 3 섹션 폴리시 ✅
+**커밋** · `edc1a603`
+
+### 배경
+[13] 에서 헤더 + 가격재고 그리드 폴리시 완료 · 나머지 3 섹션 (기본정보·상세진열위치·기타) 추가 진행
+
+### 해결
+**DField·EditField 헬퍼 통일:**
+- 라벨 · text-[18px] uppercase tracking-wider → text-[12px] font-semibold text-ink-soft
+- 값 · text-[16px] font-semibold text-ink
+
+**기본 정보:**
+- 상품명 · 19px → 17px bold tracking-tight
+- 공급사 · 18px → 15px semibold
+- [상세보기] 버튼 · h-6 outlined → h-5 minimal "상세" chip
+
+**상세 진열위치:**
+- 안내 텍스트 · 13px → 12px · 축약
+- 위치 추가 버튼 · font-semibold + h-6 (통일)
+
+**기타:**
+- DField 재사용 · 자동 통일
+
+### 테스트 절차
+1. **매장 > 상품 > 상품정보** · 상품 선택 · 우측 패널
+2. 4개 섹션 (가격재고 · 기본정보 · 상세진열위치 · 기타) 모두 확인
+3. 라벨 · uppercase 없이 · 자연스러운 한글 · text-ink-soft
+4. 값 · 크기·색상 통일 · 시인성 우수
+5. [상세보기] → [상세] · 미니 chip · vendor 모달 정상 open
+
+### 회귀 확인
+- 편집 모드 · EditField · input 정상 표시
+- 저장·수정 flow · 정상
+- 21/21 tests 통과
 
 ---
 
