@@ -22,7 +22,10 @@
 //   - memory feedback_ui_consult · 통일된 디자인 · slate + rose 팔레트 · rounded-xl · shadow-sm
 //   - memory feedback_git_push · remote push 절대 금지
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, ApiError } from "../../lib/apiClient";
+import { ApiError } from "../../lib/apiClient";
+// 2026-09-14 · resignationsApi · employeeApi 프리미티브
+import { createResignation } from "../../lib/resignationsApi";
+import { listEmployees } from "../../lib/employeeApi";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { useConfirm } from "../../hooks/useConfirm";
 import {
@@ -135,9 +138,8 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
       setEmpLoading(true);
       setEmpError(null);
       try {
-        const { data } = await api.get<any>(`/api/employees`);
+        const list = await listEmployees();
         if (cancelled) return;
-        const list = Array.isArray(data) ? data : (Array.isArray(data?.employees) ? data.employees : []);
         setEmployees(list);
       } catch (err: any) {
         if (!cancelled) setEmpError(err instanceof ApiError ? err.message : (err?.message ?? "직원 목록 불러오기 실패"));
@@ -314,7 +316,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
 
     setSubmitting(true);
     try {
-      await api.post("/api/resignations", {
+      await createResignation({
         employee_id: form.employeeId,
         employee_name: form.employeeName,
         position: form.position || null,

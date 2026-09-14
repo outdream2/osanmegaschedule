@@ -4,7 +4,9 @@ import React, { useCallback, useEffect, useState } from "react";
 import { AccentBar } from "../common/AccentBar";
 import { Card } from "../common/Card";
 import { StatusPill } from "../common/StatusPill";
-import { api, ApiError } from "../../lib/apiClient";
+import { ApiError } from "../../lib/apiClient";
+// 2026-09-14 · resignationsApi 프리미티브
+import { listResignations, reviewResignation } from "../../lib/resignationsApi";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
@@ -83,8 +85,8 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
     setLoading(true);
     setError(null);
     try {
-      const { data } = await api.get<any>("/api/resignations");
-      setList(Array.isArray(data) ? data : []);
+      const rows = await listResignations();
+      setList(rows as any);
     } catch (err: any) {
       const msg = err instanceof ApiError ? err.message : (err?.message ?? "불러오기 실패");
       // 테이블 미생성 힌트
@@ -130,7 +132,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
 
     setProcessingId(id);
     try {
-      await api.patch(`/api/resignations/${id}`, {
+      await reviewResignation(id, {
         status,
         reject_reason: status === "rejected" ? rejectReason : undefined,
         approved_by: approverName,

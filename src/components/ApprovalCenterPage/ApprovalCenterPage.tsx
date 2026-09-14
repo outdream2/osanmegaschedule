@@ -16,9 +16,9 @@ import type { AppNavPage } from "../layout/AppNavHeader";
 import { TabBar, type TabDef } from "../common/TabBar";
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-// 2026-09-14 · leaveApi 프리미티브
-import { api } from "../../lib/apiClient";
+// 2026-09-14 · leaveApi · resignationsApi 프리미티브
 import { getLeavePendingCount } from "../../lib/leaveApi";
+import { getResignationPendingCount } from "../../lib/resignationsApi";
 
 const ResignationApprovalPage = React.lazy(() => import("../ResignationApprovalPage/ResignationApprovalPage"));
 
@@ -42,13 +42,11 @@ const ApprovalCenterPage: React.FC<ApprovalCenterPageProps> = (props) => {
 
   const loadCounts = useCallback(async () => {
     try {
-      // 2026-08-21 · Framework Phase 3 · fetch → apiClient · 개별 error 흡수 유지
-      // 2026-09-14 · leaveApi.getLeavePendingCount 프리미티브
-      const [lc, rRes] = await Promise.all([
+      // 2026-09-14 · leaveApi · resignationsApi 프리미티브 통합
+      const [lc, rc] = await Promise.all([
         getLeavePendingCount().catch(() => 0),
-        api.get<{ count?: number }>("/api/resignations/pending-count").catch(() => null),
+        getResignationPendingCount().catch(() => 0),
       ]);
-      const rc = Number(rRes?.data?.count ?? 0);
       setLeaveCount(lc);
       setResignCount(rc);
       onCountsChange?.({ leave: lc, resignation: rc });
