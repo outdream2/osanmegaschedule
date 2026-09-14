@@ -287,6 +287,39 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     ));
   };
 
+  // 2026-09-14 · #138 · 매장별 독립 zone · 매장2·매장3 · 로컬 state + DB 즉시 저장
+  //   · POST /api/inventory-checks · store2_zone·store3_zone · UPSERT (product_code UNIQUE)
+  const setStoreZoneAndSave = React.useCallback(async (key: string, slot: 2 | 3, zone: string | null) => {
+    // 1) 로컬 state 업데이트
+    setItems(prev => prev.map(it => {
+      if (it.key !== key) return it;
+      return slot === 2 ? { ...it, store2Zone: zone } : { ...it, store3Zone: zone };
+    }));
+    // 2) DB 즉시 저장 · product_code 필수
+    const targetItem = items.find(it => it.key === key);
+    const code = targetItem?.product?.code ?? targetItem?.code;
+    if (!code) {
+      console.warn(`[setStoreZoneAndSave] product_code 없음 · key=${key}`);
+      return;
+    }
+    try {
+      const payload: Record<string, any> = {
+        product_code: String(code).trim(),
+        product_name: targetItem?.product?.name ?? "",
+        checked_by: authSession?.employeeName ?? "익명",
+      };
+      if (slot === 2) payload.store2_zone = zone;
+      if (slot === 3) payload.store3_zone = zone;
+      await api.post("/api/inventory-checks", payload);
+      console.log(`[setStoreZoneAndSave] saved · code=${code} · store${slot}_zone=${zone}`);
+    } catch (e: any) {
+      console.error(`[setStoreZoneAndSave] failed · code=${code} · store${slot}_zone=${zone} · ${e?.message ?? e}`);
+    }
+  }, [items, authSession]);
+
+  const setStore2Zone = React.useCallback((key: string, zone: string | null) => setStoreZoneAndSave(key, 2, zone), [setStoreZoneAndSave]);
+  const setStore3Zone = React.useCallback((key: string, zone: string | null) => setStoreZoneAndSave(key, 3, zone), [setStoreZoneAndSave]);
+
   const setUnitPrice = (key: string, unitPrice: number | null) => {
     setItems(prev => prev.map(it => it.key === key ? { ...it, unitPrice } : it));
   };
@@ -768,6 +801,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     onSetStatus={setStatus}
                     onRemove={removeItem}
                     onSetLocation={setLocation}
+                    onSetStore2Zone={setStore2Zone}
+                    onSetStore3Zone={setStore3Zone}
                     onSetUnitPrice={setUnitPrice}
                     onSetExpiryDate={setExpiryDate}
                     onSetExpiring={setExpiring}

@@ -28,8 +28,11 @@ export interface ArrivalCardItem {
   status: ItemStatus;
   expiring: boolean;
   addedAt: number;
-  /** 2026-09-01 · #92 · 입고 구역 */
+  /** 2026-09-01 · #92 · 입고 구역 · 매장1 zone (row.location · products.location 반영) */
   location: string | null;
+  /** 2026-09-14 · #138 · 매장별 독립 zone · 매장2·매장3 · inventory_checks.store*_zone 저장 */
+  store2Zone?: string | null;
+  store3Zone?: string | null;
   /** 2026-09-02 · #78 · 사입 단가 (사용자 입력 · 선택) */
   unitPrice?: number | null;
   /** 2026-09-02 · #78 · 유통기한 (선택 · YYYY-MM-DD) */
@@ -43,8 +46,11 @@ interface ArrivalRowCardProps {
   onSetQty: (key: string, qty: number) => void;
   onSetStatus: (key: string, status: ItemStatus) => void;
   onRemove: (key: string) => void;
-  /** 2026-09-01 · #92 · 구역 변경 핸들러 */
+  /** 2026-09-01 · #92 · 구역 변경 핸들러 · 매장1 zone (row.location) */
   onSetLocation: (key: string, location: string | null) => void;
+  /** 2026-09-14 · #138 · 매장별 독립 zone · 매장2·매장3 zone 변경 · DB 즉시 저장 */
+  onSetStore2Zone?: (key: string, zone: string | null) => void;
+  onSetStore3Zone?: (key: string, zone: string | null) => void;
   /** 사입 단가 (선택) */
   onSetUnitPrice?: (key: string, unitPrice: number | null) => void;
   /** 유통기한 날짜 (비고란 저장 · 선택 · expiring=true 시 노출) */
@@ -303,6 +309,7 @@ const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
 
 export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
   item, isRecent, onUpdateQty, onSetQty, onSetStatus, onRemove, onSetLocation,
+  onSetStore2Zone, onSetStore3Zone,
   onSetUnitPrice, onSetExpiryDate, onSetExpiring,
 }) => {
   void onUpdateQty; // pre-existing unused (StepperInput uses onSetQty)
@@ -421,6 +428,10 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           productName={item.product?.product_name ?? item.product?.name ?? undefined}
           location={item.location}
           onSetLocation={(v) => onSetLocation(item.key, v)}
+          store2Zone={item.store2Zone ?? null}
+          store3Zone={item.store3Zone ?? null}
+          onSetStore2Zone={onSetStore2Zone ? (v) => onSetStore2Zone(item.key, v) : undefined}
+          onSetStore3Zone={onSetStore3Zone ? (v) => onSetStore3Zone(item.key, v) : undefined}
           relatedSlots={relatedSlots}
           targetSlot={targetSlot}
           qty={item.qty}
