@@ -24,7 +24,7 @@ import { Spinner } from "../common/Spinner";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { loadZBar } from "../BarcodeScanner/zbar";
 import {
-  getProductsMap, lookupProduct, isProductsLoaded,
+  getProductsMap, lookupProduct, isProductsLoaded, reloadProductsCache,
   addCachedProduct,
   type ProductInfo,
 } from "../../lib/productsCache";
@@ -211,7 +211,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
         const idx = prev.findIndex(it => it.code === result);
         if (idx < 0) return prev;
         const updated = [...prev];
-        updated[idx] = { ...updated[idx], qty: updated[idx].qty + 1 };
+        // 2026-09-14 · #137 · 왼쪽·오른쪽 · 현재고 값 일치 · product 필드도 최신값으로 갱신
+        //   · 이전 · qty 만 증가 · product · stale (매입 후 · 다시 스캔 시 · 오래된 값)
+        updated[idx] = { ...updated[idx], qty: updated[idx].qty + 1, product: found };
         return updated;
       });
     } else {
@@ -816,10 +818,24 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 setSavedId(j?.id ?? null);
                 setSaveStatus("done");
                 // 2026-09-14 · #135 · 매입 저장 후 · 이벤트 2건 dispatch · 다른 페이지 자동 리로드
-                //   · product-mutated · productsCache 무효화 (기존)
-                //   · products-map-updated · RealStockTablePage · ProductInfoPage 등 리로드
                 window.dispatchEvent(new Event("product-mutated"));
                 window.dispatchEvent(new Event("products-map-updated"));
+                // 2026-09-14 · #137 · 같은 페이지 · 즉시 갱신 · products cache 강제 재조회 · items[].product 최신값 반영
+                //   · 사용자 지시 · 매입 완료 → 같은 페이지 값들 · 바로 업데이트
+                try {
+                  await reloadProductsCache();
+                  setItems(prev => prev.map(it => {
+                    const fresh = lookupProduct(it.code);
+                    return fresh ? { ...it, product: fresh } : it;
+                  }));
+                  // lastScannedProduct 도 최신값
+                  if (lastScannedCode) {
+                    const freshLast = lookupProduct(lastScannedCode);
+                    if (freshLast) setLastScannedProduct(freshLast);
+                  }
+                } catch (cacheErr) {
+                  console.warn("[ProductArrivalPage] products cache 재조회 실패 (경고):", cacheErr);
+                }
                 // 2026-09-07 · 사용자 지시 · 입고내역 자동 업데이트 · 저장 후 즉시 리로드
                 void loadArrivals();
                 showToast("DB에 저장 완료");
