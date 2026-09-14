@@ -30,6 +30,8 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { api, ApiError } from "../../lib/apiClient";
 // 2026-09-14 · inventoryChecksApi 프리미티브
 import { saveInventoryCheck } from "../../lib/inventoryChecksApi";
+// 2026-09-14 · 통계설정 · 적정재고 계산 일수 · 실시간 반영
+import { useOptimalStockPeriod } from "../../hooks/useOptimalStockPeriod";
 import { PAGE_CONTAINER_CLS, CARD_BASE } from "../../styles/tokens";
 import { AccentBar } from "../common/AccentBar";
 import { matchesProductQuery } from "../../lib/productMatch";
@@ -114,6 +116,8 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
   const [draft, setDraft] = useState<Record<EditableKey, string>>({} as Record<EditableKey, string>);
   const [saving, setSaving] = useState(false);
   const vendorModal = useVendorInfoModal();
+  // 2026-09-14 · 통계설정 · 적정재고 계산 일수 (SeasonSettingsPage KV) · 실시간 반영
+  const { days: optimalStockDays } = useOptimalStockPeriod();
   // 진열위치 드롭다운 옵션 (zone_defs) — hooks를 early return 앞에 배치 (Rules of Hooks)
   const [locationOptions, setLocationOptions] = useState<string[]>([]);
   // 2026-09-08 · 상세 진열위치 draft (편집 중 값)
@@ -381,7 +385,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             </div>
             {/* 적정재고 */}
             <div className="bg-white border border-line/70 rounded-xl p-3 flex flex-col gap-1.5 hover:shadow-[0_2px_8px_rgba(10,46,74,0.06)] hover:border-line transition-all duration-200">
-              <span className="text-[16px] font-semibold text-zinc-500 uppercase tracking-wider">적정재고 (30일)</span>
+              <span className="text-[16px] font-semibold text-zinc-500 uppercase tracking-wider">적정재고 ({optimalStockDays}일)</span>
               {editing
                 ? <input type="number" min={0} value={val("optimal_stock")} onChange={e => set("optimal_stock", e.target.value)} className={inputCls + " tabular-nums"} />
                 : p.optimal_stock != null
