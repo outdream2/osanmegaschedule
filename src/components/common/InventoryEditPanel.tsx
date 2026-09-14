@@ -10,6 +10,8 @@ import { TEXT } from "@/styles/tokens";
 // 2026-09-08 · 매장 zone 저장 시 · 상세위치(3자리) 함께 입력·저장
 import { ShelfPositionInput } from "./ShelfPositionInput";
 import type { ShelfPositions } from "../../lib/shelfPositions";
+// 2026-09-14 · framework audit · alert → useToast 통일
+import { useToast } from "../../hooks/useToast";
 
 // ─────────────────────────────────────────────────────────────
 // Types (InventoryValues 는 backwards compat 용 export 유지)
@@ -304,6 +306,9 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
 }) => {
   const pad = dense ? "p-3 space-y-3" : "p-4 space-y-4";
 
+  // 2026-09-14 · framework audit · alert → useToast
+  const { showError } = useToast();
+
   // delta per zone (로컬 state · 저장 성공 시 해당 zone 리셋)
   const [deltas, setDeltas] = useState<Deltas>(EMPTY_DELTAS);
 
@@ -368,9 +373,8 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
     const isStore = zone === "s1" || zone === "s2" || zone === "s3";
     const shelfDetail = shelfDetails[zone];
     if (isStore && (!shelfDetail || shelfDetail.length !== 3)) {
-      // 부모 onSaveZone 에서 에러 toast 처리 · 여기선 alert 대신 window event 로 검증 실패 알림
-      // 실제는 alert 로 간단 처리 (모달 컨텍스트 · confirm 훅 없음)
-      alert(`${label(zone)} 위치는 상세위치가 필수입니다 (3자리 · 예 332)`);
+      // 2026-09-14 · framework audit · alert → useToast (showError)
+      showError(`${label(zone)} 위치는 상세위치가 필수입니다 (3자리 · 예 332)`);
       return;
     }
     await onSaveZone(zone, newTotal, zoneLabel, shelfDetail);
