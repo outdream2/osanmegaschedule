@@ -1,6 +1,8 @@
 // src/components/SessionTimeoutWarning.tsx
+// 2026-09-14 · UI 폴리시 · 최신 트렌드 (Linear/Vercel/Notion) · 텍스트 사이즈 축소 · glassmorphism
 import React, { useEffect, useState } from "react";
-import { AlertTriangle, Clock, X } from "lucide-react";
+import { Clock, X } from "lucide-react";
+import { WarningCircle } from "@phosphor-icons/react";
 
 interface Props {
   /** Seconds remaining at the moment the warning was first shown */
@@ -41,7 +43,7 @@ export const SessionTimeoutWarning: React.FC<Props> = ({
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [countdown > 0]); // restart only when we go from 0→positive
+  }, [countdown > 0]);
 
   const urgent = countdown <= 60;
 
@@ -51,66 +53,67 @@ export const SessionTimeoutWarning: React.FC<Props> = ({
       aria-modal="false"
       aria-label="세션 만료 경고"
       className={`
-        fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px)+8px)] right-4 z-[9999] w-full max-w-[320px] rounded-xl shadow-2xl
-        border backdrop-blur-sm
+        fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px)+8px)] right-4 z-[9999]
+        w-full max-w-[280px] rounded-2xl
+        border backdrop-blur-md
+        shadow-[0_4px_16px_-4px_rgba(0,0,0,0.15),0_16px_48px_-16px_rgba(0,0,0,0.35)]
+        transition-colors duration-300
         ${urgent
-          ? "bg-red-950/95 border-red-500/60 text-red-100"
-          : "bg-gray-900/95 border-yellow-500/60 text-yellow-50"}
-        transition-colors duration-500
+          ? "bg-white/95 border-rose-200/70 text-ink"
+          : "bg-white/95 border-line text-ink"}
       `}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <div className="flex items-center gap-2">
-          <AlertTriangle
-            size={18}
-            className={urgent ? "text-red-400" : "text-yellow-400"}
+      <div className="flex items-center justify-between px-3 pt-3 pb-1.5">
+        <div className="flex items-center gap-1.5">
+          <WarningCircle
+            size={14}
+            weight="fill"
+            className={urgent ? "text-rose-500" : "text-amber-500"}
           />
-          <span className="font-semibold text-sm">세션 만료 임박</span>
+          <span className="text-[12px] font-semibold text-ink tracking-tight">세션 만료 임박</span>
         </div>
         <button
           onClick={onExtend}
           aria-label="경고 닫기"
-          className="text-gray-400 hover:text-white transition-colors"
+          className="text-zinc-400 hover:text-zinc-700 transition-colors -m-1 p-1 cursor-pointer"
         >
-          <X size={16} />
+          <X size={12} strokeWidth={2.4} />
         </button>
       </div>
 
       {/* Body */}
-      <div className="px-4 pb-3">
-        <p className="text-xs text-gray-300 leading-relaxed">
-          장시간 활동이 없어 곧 자동 로그아웃됩니다.
-          <br />
-          작업 중이라면 <strong className="text-white">계속 사용</strong>을 눌러 세션을 연장하세요.
+      <div className="px-3 pb-2.5">
+        <p className="text-[11px] text-ink-soft leading-relaxed">
+          장시간 활동 없음 · 자동 로그아웃 예정
         </p>
 
         {/* Countdown */}
-        <div className="flex items-center gap-1.5 mt-3">
-          <Clock size={14} className={urgent ? "text-red-400" : "text-yellow-400"} />
-          <span className={`text-lg font-bold tabular-nums ${urgent ? "text-red-300" : "text-yellow-300"}`}>
+        <div className="flex items-center gap-1 mt-1.5">
+          <Clock size={11} className={urgent ? "text-rose-500" : "text-amber-500"} strokeWidth={2.4} />
+          <span className={`text-[15px] font-bold tabular-nums tracking-tight ${urgent ? "text-rose-600" : "text-amber-600"}`}>
             {formatTime(countdown)}
           </span>
-          <span className="text-xs text-gray-400 ml-1">후 자동 로그아웃</span>
+          <span className="text-[10px] text-ink-soft/70 ml-0.5">후 로그아웃</span>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 px-4 pb-4">
+      <div className="flex gap-1.5 px-3 pb-3">
         <button
           onClick={onExtend}
           className={`
-            flex-1 rounded-lg py-2 text-sm font-semibold transition-colors
+            flex-1 h-7 rounded-lg text-[12px] font-semibold transition-colors cursor-pointer active:scale-[0.98]
             ${urgent
-              ? "bg-red-500 hover:bg-red-400 text-white"
-              : "bg-yellow-500 hover:bg-yellow-400 text-gray-900"}
+              ? "bg-rose-500 hover:bg-rose-600 text-white shadow-sm"
+              : "bg-brand-deep hover:bg-[#0d3a5c] text-white shadow-sm"}
           `}
         >
           계속 사용
         </button>
         <button
           onClick={onLogout}
-          className="flex-1 rounded-lg py-2 text-sm font-semibold bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors"
+          className="flex-1 h-7 rounded-lg text-[12px] font-semibold bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors cursor-pointer active:scale-[0.98]"
         >
           로그아웃
         </button>

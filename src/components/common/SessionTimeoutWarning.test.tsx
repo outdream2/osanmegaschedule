@@ -51,30 +51,31 @@ describe("SessionTimeoutWarning · 기본", () => {
 });
 
 describe("SessionTimeoutWarning · urgent 스타일 (60초 이하)", () => {
-  it("61초 · 일반 · yellow tone", () => {
+  // 2026-09-14 · UI 폴리시 · 최신 트렌드 · glassmorphism · gray-900 → bg-white/95 · red-950 → bg-white + rose 테두리
+  it("61초 · 일반 · 흰 배경 · amber accent", () => {
     const { container } = render(
       <SessionTimeoutWarning initialSeconds={61} onExtend={() => {}} onLogout={() => {}} />
     );
     const dialog = container.querySelector('[role="alertdialog"]')!;
-    expect(dialog.className).toContain("bg-gray-900");
-    expect(dialog.className).not.toContain("bg-red-950");
+    expect(dialog.className).toContain("bg-white");
+    expect(dialog.className).toContain("border-line");
   });
 
-  it("60초 · urgent · red tone", () => {
+  it("60초 · urgent · rose 테두리 강조", () => {
     const { container } = render(
       <SessionTimeoutWarning initialSeconds={60} onExtend={() => {}} onLogout={() => {}} />
     );
     const dialog = container.querySelector('[role="alertdialog"]')!;
-    expect(dialog.className).toContain("bg-red-950");
+    expect(dialog.className).toContain("border-rose-200");
   });
 
-  it("30초 · urgent · red button", () => {
+  it("30초 · urgent · rose 버튼", () => {
     const { container } = render(
       <SessionTimeoutWarning initialSeconds={30} onExtend={() => {}} onLogout={() => {}} />
     );
     const btns = container.querySelectorAll("button");
     const extendBtn = Array.from(btns).find((b) => b.textContent?.trim() === "계속 사용")!;
-    expect(extendBtn.className).toContain("bg-red-500");
+    expect(extendBtn.className).toContain("bg-rose-500");
   });
 });
 
