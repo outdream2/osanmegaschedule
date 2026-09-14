@@ -115,6 +115,16 @@ function rethrowAsError(err: unknown, defaultMsg: string): never {
   throw new Error(defaultMsg);
 }
 
+/** 2026-09-14 · GET /api/employees · 전체 직원 리스트 (통합 프리미티브) */
+export async function listEmployees(): Promise<Employee[]> {
+  try {
+    const { data } = await api.get<Employee[]>("/api/employees");
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    rethrowAsError(err, "직원 리스트 조회 실패");
+  }
+}
+
 /**
  * 부분 갱신 · base 필수 (기존 값 병합)
  * 전체 갱신 (신규 · full payload) 은 updateEmployeeFull 사용

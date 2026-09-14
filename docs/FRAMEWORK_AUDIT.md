@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 813 |
+| 스캔 파일 | 818 |
 | 위반 파일 | 9 |
-| 클린 파일 | 804 (99%) |
+| 클린 파일 | 809 (99%) |
 | 총 위반 개수 | 9 |
 
 ## 🚨 규칙별 위반 현황
@@ -23,15 +23,15 @@
 
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
-| 1 | `src/components/DisplayPage/RealStockTablePage.tsx` | 870 | 3 | large-file-warn(1) |
+| 1 | `src/components/DisplayPage/RealStockTablePage.tsx` | 872 | 3 | large-file-warn(1) |
 | 2 | `src/components/LandingPage/VendorListEditor.tsx` | 853 | 3 | large-file-warn(1) |
-| 3 | `src/components/OrderManagePage/OrderManagePage.tsx` | 839 | 3 | large-file-warn(1) |
+| 3 | `src/components/OrderManagePage/OrderManagePage.tsx` | 841 | 3 | large-file-warn(1) |
 | 4 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 977 | 3 | large-file-warn(1) |
 | 5 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 805 | 3 | large-file-warn(1) |
-| 6 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 969 | 3 | large-file-warn(1) |
-| 7 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 841 | 3 | large-file-warn(1) |
+| 6 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 971 | 3 | large-file-warn(1) |
+| 7 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 855 | 3 | large-file-warn(1) |
 | 8 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 | large-file-warn(1) |
-| 9 | `src/components/ScanPage/ScanPage.tsx` | 809 | 3 | large-file-warn(1) |
+| 9 | `src/components/ScanPage/ScanPage.tsx` | 811 | 3 | large-file-warn(1) |
 
 ## 📝 모든 위반 파일 (9개)
 
@@ -39,15 +39,15 @@
 
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
-| `src/components/DisplayPage/RealStockTablePage.tsx` | 870 | 3 |
+| `src/components/DisplayPage/RealStockTablePage.tsx` | 872 | 3 |
 | `src/components/LandingPage/VendorListEditor.tsx` | 853 | 3 |
-| `src/components/OrderManagePage/OrderManagePage.tsx` | 839 | 3 |
+| `src/components/OrderManagePage/OrderManagePage.tsx` | 841 | 3 |
 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 977 | 3 |
 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 805 | 3 |
-| `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 969 | 3 |
-| `src/components/ProductInfoPage/ProductInfoPage.tsx` | 841 | 3 |
+| `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 971 | 3 |
+| `src/components/ProductInfoPage/ProductInfoPage.tsx` | 855 | 3 |
 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 |
-| `src/components/ScanPage/ScanPage.tsx` | 809 | 3 |
+| `src/components/ScanPage/ScanPage.tsx` | 811 | 3 |
 
 </details>
 

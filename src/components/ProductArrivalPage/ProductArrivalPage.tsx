@@ -686,6 +686,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                             <span className="text-[20px] font-extrabold text-amber-800 tabular-nums leading-none">
                               {Number(lastScannedProduct.current_stock).toLocaleString()}
                             </span>
+                            <span className="text-[13px] font-semibold text-amber-600/70 leading-none">개</span>
                           </div>
                         </div>
                       )}
