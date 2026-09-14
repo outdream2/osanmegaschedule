@@ -52,6 +52,18 @@ const dayDiff = (d: string | null): number | null => {
   return Math.round((target.getTime() - now.getTime()) / 86400000);
 };
 
+/** 2026-09-14 · #87 · 스코어 기반 · 자동 추천 상품 */
+export interface RecommendedProduct {
+  product_code: string;
+  product_name: string;
+  current: number;
+  optimal: number;
+  score: number;
+  reason: string;
+  daysLeft: number;
+  supplier: string | null;
+}
+
 interface Props {
   product: ProductInfo | null;
   saleMonth: number | null;
@@ -64,6 +76,8 @@ interface Props {
   onRequestProduct?: (product_code: string, product_name: string) => void;
   /** 이미 발주 요청된 상품 코드 · 배지 표시용 */
   requestedCodes?: Set<string>;
+  /** 2026-09-14 · #87 · 스코어 기반 · 자동 추천 상품 · Top N */
+  recommendations?: RecommendedProduct[];
 }
 
 function formatQty(n: number): string {
@@ -72,7 +86,7 @@ function formatQty(n: number): string {
 
 export const SalesRecommendationPanel: React.FC<Props> = ({
   product, saleMonth, saleQuarter, loading, onApplyQty, onOpenDetail, onClose,
-  onRequestProduct, requestedCodes,
+  onRequestProduct, requestedCodes, recommendations,
 }) => {
   // 2026-09-13 · #55 · 임박 이벤트 · product 무관 · 상단 배너 (product null 시에도 표시)
   const [eventsToday, setEventsToday] = useState<EventToday[]>([]);
@@ -219,12 +233,68 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
               })}
             </div>
           )}
-          {/* 상품 미선택 안내 */}
-          <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center min-h-[240px]">
-            <TrendingUp size={40} className="text-zinc-300" strokeWidth={1.5} />
-            <div className="text-[16px] font-bold text-ink">판매 추천 정보</div>
-            <div className="text-[14px] text-ink-soft">상품을 선택하면<br/>추천 발주량이 표시됩니다</div>
-          </div>
+          {/* 2026-09-14 · #87 · 스코어 기반 · 자동 추천 발주 Top N */}
+          {recommendations && recommendations.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-1.5 pb-1.5 border-b border-line">
+                <TrendingUp size={14} className="text-brand-deep" />
+                <span className="text-[14px] font-bold text-ink">우선 발주 추천</span>
+                <span className="text-[12px] tabular-nums text-zinc-400 font-medium">Top {recommendations.length}</span>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {recommendations.map((r, idx) => {
+                  const rankTone = idx === 0 ? "bg-rose-500 text-white" : idx === 1 ? "bg-amber-500 text-white" : idx === 2 ? "bg-emerald-500 text-white" : "bg-zinc-200 text-zinc-700";
+                  const alreadyRequested = requestedCodes?.has(r.product_code) ?? false;
+                  return (
+                    <div key={r.product_code} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white border border-line hover:border-brand-tint hover:shadow-[0_1px_4px_rgba(10,46,74,0.05)] transition-all">
+                      <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold tabular-nums ${rankTone}`}>
+                        {idx + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-bold text-ink truncate">{r.product_name || r.product_code}</div>
+                        <div className="flex items-center gap-2 text-[11px] text-ink-soft tabular-nums mt-0.5">
+                          <span>재고 <span className="font-semibold text-ink">{r.current}</span></span>
+                          <span>/ 적정 <span className="font-semibold text-ink">{r.optimal}</span></span>
+                          {Number.isFinite(r.daysLeft) && r.daysLeft <= 30 && (
+                            <span className="text-rose-600 font-bold">D{r.daysLeft <= 0 ? "-0" : `-${r.daysLeft}`}</span>
+                          )}
+                          <span className="text-brand-deep font-semibold ml-auto">{r.reason}</span>
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-[11px] font-bold text-brand-deep tabular-nums bg-brand-tint/50 px-1.5 py-0.5 rounded-md" title="스코어">
+                        {Math.round(r.score)}
+                      </span>
+                      {onRequestProduct && !alreadyRequested && (
+                        <button
+                          type="button"
+                          onClick={() => onRequestProduct(r.product_code, r.product_name)}
+                          className="inline-flex items-center gap-1 rounded-md bg-brand-deep hover:bg-brand-deep/90 px-2 py-1 text-[11px] font-bold text-white transition shrink-0"
+                          title="발주 필요 리스트에 추가"
+                        >
+                          <Check size={11} strokeWidth={2.5} />
+                          발주
+                        </button>
+                      )}
+                      {alreadyRequested && (
+                        <StatusPill tone="emerald" size="xs" dot>요청됨</StatusPill>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="text-[10.5px] text-ink-soft/80 leading-relaxed">
+                스코어 = 재고부족율 + 소진임박 + 판매속도 + 이벤트 부스트
+              </div>
+            </div>
+          )}
+          {/* 상품 미선택 안내 · 추천 없을 때만 */}
+          {(!recommendations || recommendations.length === 0) && (
+            <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center min-h-[240px]">
+              <TrendingUp size={40} className="text-zinc-300" strokeWidth={1.5} />
+              <div className="text-[16px] font-bold text-ink">판매 추천 정보</div>
+              <div className="text-[14px] text-ink-soft">상품을 선택하면<br/>추천 발주량이 표시됩니다</div>
+            </div>
+          )}
         </Card>
       </div>
     );

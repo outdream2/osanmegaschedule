@@ -6,7 +6,10 @@ import { ClipboardList } from "lucide-react";
 import { Card } from "../common/Card";
 import { PageToolbar } from "../common/PageToolbar";
 // 2026-09-10 · #46 재개 · 사용자 지시 · 판매정보 패널 재활성화 · 상품 상세는 모달로 (부모에서 관리)
-import { SalesRecommendationPanel } from "./SalesRecommendationPanel";
+import { SalesRecommendationPanel, type RecommendedProduct } from "./SalesRecommendationPanel";
+// 2026-09-14 · #87 · 스코어 기반 · 자동 추천 알고리즘
+import { computePriorityScore } from "../../lib/orderPriorityScore";
+import { api } from "../../lib/apiClient";
 import { LoadingState } from "../common/LoadingState";
 import { CARD_BASE } from "../../styles/tokens";
 // 2026-08-25 · 사용자 지시 A · OFF 조건 + 리스트 클릭 시 · 발주필요 추가 confirm
@@ -159,6 +162,63 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
       setTimeout(() => onOpenDetail(), 50); // needPanelProduct fetch 시작 후 open
     }
   }, [getCode, getName, setNeedPanelProduct, onOpenDetail]);
+
+  // 2026-09-14 · #87 · 스코어 기반 · 자동 추천 · 이벤트 코드 셋 fetch
+  const [eventCodes, setEventCodes] = React.useState<Set<string>>(new Set());
+  const [seasonalCodes, setSeasonalCodes] = React.useState<Set<string>>(new Set());
+  React.useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const { data } = await api.get<{ events?: Array<{ type: string; recurring: boolean; products?: Array<{ product_code: string }> }> }>(`/api/events/today`);
+        if (!alive) return;
+        const ec = new Set<string>();
+        const sc = new Set<string>();
+        for (const ev of data?.events ?? []) {
+          const isSeasonal = ev.recurring && ["spring", "summer", "fall", "winter"].includes(ev.type);
+          for (const p of ev.products ?? []) {
+            if (!p.product_code) continue;
+            (isSeasonal ? sc : ec).add(p.product_code);
+          }
+        }
+        setEventCodes(ec);
+        setSeasonalCodes(sc);
+      } catch { /* silent */ }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  // 2026-09-14 · #87 · 스코어 계산 · Top 5 추천
+  const recommendations = React.useMemo<RecommendedProduct[]>(() => {
+    const scored = displayed.map(p => {
+      const code = getCode(p);
+      const name = getName(p);
+      const extra = needExtraMap.get(code);
+      const res = computePriorityScore({
+        current: Number(p.current_stock ?? 0) || 0,
+        optimal: Number(p.optimal_stock ?? 0) || 0,
+        saleMonth: extra?.saleMonth ?? null,
+        saleQuarter: extra?.saleQuarter ?? null,
+        eventCodes, seasonalCodes,
+        product_code: code,
+      });
+      return {
+        product_code: code,
+        product_name: name,
+        current: Number(p.current_stock ?? 0) || 0,
+        optimal: Number(p.optimal_stock ?? 0) || 0,
+        score: res.score,
+        reason: res.reason,
+        daysLeft: res.daysLeft,
+        supplier: (p as any).supplier ?? null,
+      } as RecommendedProduct;
+    });
+    // 요청됨 · score 0 · 제외
+    return scored
+      .filter(r => r.score > 0 && !requestedCodes.has(r.product_code))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+  }, [displayed, needExtraMap, eventCodes, seasonalCodes, getCode, getName, requestedCodes]);
   // 미사용 참조 방지 (기존 로직)
   void confirm; void requestedCodes; void handleRequestOrder; void openSupplierInfo;
 
@@ -288,6 +348,7 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
             onOpenDetail={() => {}}
             onClose={() => {}}
             requestedCodes={requestedCodes}
+            recommendations={recommendations}
             onRequestProduct={(code, name) => {
               // 이벤트 상품 발주 추가 · 최소한의 ProductInfo 구성
               const fakeInfo = { product_code: code, product_name: name } as unknown as ProductInfo;
