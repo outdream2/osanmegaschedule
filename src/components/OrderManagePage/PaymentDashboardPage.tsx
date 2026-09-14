@@ -16,6 +16,10 @@ import { EmptyState } from "../common/EmptyState";
 import { PeriodSelector, PERIOD_UNIFIED_DAYS_PRESET } from "../common/PeriodSelector";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { listBorrowings, type BorrowingRow } from "../../lib/borrowingsApi";
+// 2026-09-14 · #142 · 카드별 결제한도 + 다음달 결제금액 대시보드 추가 (사용자 지시)
+import { listCreditCardSummary } from "../../lib/creditCardsApi";
+import type { CardSummary } from "../../shared/schemas/creditCards";
+import { CreditCard } from "lucide-react";
 
 interface SupplierValues {
   purchase: number;
@@ -41,9 +45,12 @@ export const PaymentDashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { toast, showError } = useToast();
   // 2026-09-14 · #140 · 기간 필터 · 0 = 전체 · N = 최근 N일
-  const [periodDays, setPeriodDays] = useState<number>(0);
+  //   · 사용자 지시 · 기본값 30일 (1개월)
+  const [periodDays, setPeriodDays] = useState<number>(30);
   // 2026-09-14 · #141 · 차용 이력 · 있을 때만 표시
   const [borrowings, setBorrowings] = useState<BorrowingRow[]>([]);
+  // 2026-09-14 · #142 · 카드별 결제한도 + 다음달 결제금액 대시보드
+  const [cardSummary, setCardSummary] = useState<CardSummary[]>([]);
 
   const dateRange = useMemo(() => {
     if (!periodDays || periodDays <= 0) return { start: "", end: "" };
@@ -55,6 +62,10 @@ export const PaymentDashboardPage: React.FC = () => {
   }, [periodDays]);
 
   const load = React.useCallback(async () => {
+    // 2026-09-14 · 사용자 지시 · 기간 변경 시 · 이전 데이터 초기화 → Spinner 표시
+    setRows([]);
+    setBorrowings([]);
+    setCardSummary([]);
     setLoading(true);
     try {
       const qs = new URLSearchParams();
@@ -80,6 +91,11 @@ export const PaymentDashboardPage: React.FC = () => {
         const brs = await listBorrowings({ days: periodDays > 0 ? periodDays : undefined, limit: 20 });
         setBorrowings(brs);
       } catch { setBorrowings([]); }
+      // 2026-09-14 · #142 · 카드별 결제한도 + 다음달 결제금액 · 기간 무관 (카드 결제일 기반)
+      try {
+        const cards = await listCreditCardSummary();
+        setCardSummary(cards);
+      } catch { setCardSummary([]); }
     } catch (e) {
       showError(`대시보드 로드 실패: ${getErrorMessage(e)}`);
     } finally {
@@ -207,7 +223,8 @@ export const PaymentDashboardPage: React.FC = () => {
           ) : unpaidTop.length === 0 ? (
             <EmptyState icon={CircleCheck} title="미지급 공급사 없음" size="compact" />
           ) : (
-            <div className="flex flex-col gap-1.5">
+            // 2026-09-14 · 사용자 지시 · 5개 정도 보이고 나머지 스크롤 (약 5행 · 각 40px + gap = 220px)
+            <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto pr-1">
               {unpaidTop.map((r, idx) => (
                 <div
                   key={r.supplier}
@@ -239,7 +256,8 @@ export const PaymentDashboardPage: React.FC = () => {
           ) : prepaidTop.length === 0 ? (
             <EmptyState icon={CircleCheck} title="선지급 공급사 없음" size="compact" />
           ) : (
-            <div className="flex flex-col gap-1.5">
+            // 2026-09-14 · 사용자 지시 · 5개 정도 보이고 나머지 스크롤
+            <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto pr-1">
               {prepaidTop.map((r, idx) => (
                 <div
                   key={r.supplier}
@@ -255,6 +273,76 @@ export const PaymentDashboardPage: React.FC = () => {
           )}
         </Card>
       </div>
+
+      {/* 2026-09-14 · #142 · 카드별 결제한도 + 다음달 결제금액 대시보드 · 카드 등록 시 표시 (사용자 지시) */}
+      {cardSummary.length > 0 && (
+        <Card padding="md" rounded="xl">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <CreditCard size={16} className="text-indigo-600" />
+              <span className="text-[16px] font-bold text-zinc-900">카드별 결제 · 한도 · 다음달 예정</span>
+              <span className="text-[12px] tabular-nums text-zinc-400 font-medium">{cardSummary.length}장</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            {cardSummary.map(s => {
+              const cardLabel = `${s.card.issuer}${s.card.alias ? " · " + s.card.alias : ""}${s.card.last4 ? " ·· " + s.card.last4 : ""}`;
+              const limit = s.card.credit_limit ?? null;
+              const remain = s.remainingLimit ?? null;
+              const usageRatio = limit && limit > 0 ? Math.min(100, Math.round((s.currentBillingAmount / limit) * 100)) : null;
+              const usageTone: "sky" | "amber" | "rose" =
+                usageRatio == null ? "sky" : usageRatio < 60 ? "sky" : usageRatio < 90 ? "amber" : "rose";
+              return (
+                <div
+                  key={s.card.id}
+                  className="flex flex-col gap-2 px-3 py-2.5 rounded-lg border border-indigo-100 bg-indigo-50/30 hover:bg-indigo-50/60 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <CreditCard size={12} className="text-indigo-500 shrink-0" />
+                    <span className="text-[13px] font-bold text-zinc-900 truncate">{cardLabel}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 text-[12px]">
+                    <div>
+                      <div className="text-[11px] text-zinc-500 font-medium">이번달</div>
+                      <div className="text-[15px] font-extrabold tabular-nums text-zinc-800 leading-tight">
+                        {fmt(s.currentBillingAmount)}<span className="text-[11px] font-semibold text-ink-soft ml-0.5">원</span>
+                      </div>
+                      <div className="text-[10.5px] text-zinc-400 tabular-nums">{s.currentBillingDate}</div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-zinc-500 font-medium">다음달</div>
+                      <div className="text-[15px] font-extrabold tabular-nums text-indigo-700 leading-tight">
+                        {fmt(s.nextBillingAmount)}<span className="text-[11px] font-semibold text-ink-soft ml-0.5">원</span>
+                      </div>
+                      <div className="text-[10.5px] text-zinc-400 tabular-nums">{s.nextBillingDate}</div>
+                    </div>
+                  </div>
+                  {limit != null && (
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-zinc-500 font-medium">한도 {fmt(limit)}</span>
+                        <StatusPill tone={usageTone} size="xs">
+                          {usageRatio != null ? `${usageRatio}%` : "잔여"} · {remain != null ? fmt(remain) : "-"}원
+                        </StatusPill>
+                      </div>
+                      {usageRatio != null && (
+                        <div className="h-1 rounded-full bg-zinc-100 overflow-hidden">
+                          <div
+                            className={`h-full transition-all ${
+                              usageTone === "rose" ? "bg-rose-500" : usageTone === "amber" ? "bg-amber-500" : "bg-sky-500"
+                            }`}
+                            style={{ width: `${usageRatio}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {/* 2026-09-14 · #141 · 차용 이력 · 있을 때만 표시 */}
       {borrowings.length > 0 && (
