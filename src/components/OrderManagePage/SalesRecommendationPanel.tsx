@@ -76,6 +76,8 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
 }) => {
   // 2026-09-13 · #55 · 임박 이벤트 · product 무관 · 상단 배너 (product null 시에도 표시)
   const [eventsToday, setEventsToday] = useState<EventToday[]>([]);
+  // 2026-09-14 · #86 · 오늘 날짜 기준 · 계절 자동 판정 (서버 응답)
+  const [currentSeason, setCurrentSeason] = useState<string>("");
   // 2026-09-14 · #85 · 이벤트별 · 상품 리스트 확장 상태 (accordion)
   const [expandedEvents, setExpandedEvents] = useState<Set<number>>(new Set());
   const toggleEventExpand = React.useCallback((id: number) => {
@@ -89,9 +91,14 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
     let alive = true;
     (async () => {
       try {
-        const { data } = await api.get<{ events?: EventToday[] }>(`/api/events/today`);
-        if (alive) setEventsToday(Array.isArray(data?.events) ? data.events : []);
-      } catch { if (alive) setEventsToday([]); }
+        const { data } = await api.get<{ events?: EventToday[]; current_season?: string }>(`/api/events/today`);
+        if (alive) {
+          setEventsToday(Array.isArray(data?.events) ? data.events : []);
+          setCurrentSeason(String(data?.current_season ?? ""));
+        }
+      } catch {
+        if (alive) { setEventsToday([]); setCurrentSeason(""); }
+      }
     })();
     return () => { alive = false; };
   }, []);
@@ -100,6 +107,19 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
     return (
       <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
         <Card padding="md" rounded="xl" className="flex-1 min-h-[400px] flex flex-col gap-3 overflow-y-auto">
+          {/* 2026-09-14 · #86 · 오늘 날짜 · 계절 배너 · API 연동 확인용 */}
+          {currentSeason && (
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-brand-tint/40 to-emerald-50/40 border border-brand-tint/40">
+              <Calendar size={12} className="text-brand-deep" />
+              <span className="text-[12px] font-semibold text-ink-soft">오늘은</span>
+              <span className={`text-[12px] font-bold px-1.5 py-0.5 rounded-md ${(TYPE_TONE[currentSeason] ?? TYPE_TONE.custom).cls}`}>
+                {(TYPE_TONE[currentSeason] ?? TYPE_TONE.custom).label} 시즌
+              </span>
+              <span className="ml-auto text-[11px] text-ink-soft tabular-nums">
+                {new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" })}
+              </span>
+            </div>
+          )}
           {/* 임박 이벤트 리스트 · 상단 (#55) */}
           {eventsToday.length > 0 && (
             <div className="flex flex-col gap-2">
