@@ -141,10 +141,18 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
                       <span className="shrink-0 text-[14px] font-mono tabular-nums text-ink-soft/70">{r.code}</span>
                     </div>
                     <div className="flex items-baseline gap-2 flex-wrap text-[14px]">
+                      {/* 2026-09-14 · 사용자 지시 · "구역" 라벨 잘못 · 실제 값은 spec(규격) · 라벨 정정 */}
                       {(r.product as any).spec && (
                         <span className="inline-flex items-baseline gap-1">
-                          <span className="text-zinc-400 font-semibold">구역</span>
+                          <span className="text-zinc-400 font-semibold">규격</span>
                           <span className="text-violet-700 font-bold">{(r.product as any).spec}</span>
+                        </span>
+                      )}
+                      {/* 2026-09-14 · 현재고 · products.current_stock · 실재고 입력 참고용 */}
+                      {(r.product as any).current_stock != null && (
+                        <span className="inline-flex items-baseline gap-1">
+                          <span className="text-zinc-400 font-semibold">현재고</span>
+                          <span className="text-amber-700 font-bold tabular-nums">{Number((r.product as any).current_stock).toLocaleString()}<span className="text-[12px] font-semibold text-amber-500/80 ml-0.5">개</span></span>
                         </span>
                       )}
                       {(r.product as any).supplier && (

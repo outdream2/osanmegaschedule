@@ -113,10 +113,10 @@ const ZoneInline: React.FC<{
         </span>
       )}
 
-      {/* ERP 지정 위치 (있으면 · helper text) */}
+      {/* 지정 위치 · ERP(products.spec) 원본 · 2026-09-14 · "ERP" 라벨 → "지정" 명확화 */}
       {erpSpec && !savedFlash && (
-        <span className="inline-flex items-center gap-0.5 text-[15px] text-ink-soft tabular-nums font-medium" title={`ERP 지정 위치 · ${erpSpec}`}>
-          <span className="text-zinc-300">·</span> ERP {erpSpec}
+        <span className="inline-flex items-center gap-0.5 text-[15px] text-ink-soft tabular-nums font-medium" title={`지정 위치 · ERP 원본 · ${erpSpec}`}>
+          <span className="text-zinc-300">·</span> 지정 {erpSpec}
         </span>
       )}
 
@@ -356,9 +356,9 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
             const lossQty = erpQty - actualQty;
             return (
               <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <span className="inline-flex flex-col items-center leading-none bg-zinc-100/80 rounded-lg px-2.5 py-1.5 min-w-[46px]">
-                  <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wide">ERP</span>
-                  <span className={`text-[20px] font-extrabold tabular-nums mt-0.5 leading-none ${erpQty > 0 ? "text-zinc-700" : "text-zinc-300"}`}>
+                <span className="inline-flex flex-col items-center leading-none bg-amber-50 border border-amber-200/70 rounded-lg px-2.5 py-1.5 min-w-[52px]" title="현재고 (products.current_stock · ERP 원본)">
+                  <span className="text-[11px] font-bold text-amber-600 tracking-tight">현재고</span>
+                  <span className={`text-[20px] font-extrabold tabular-nums mt-0.5 leading-none ${erpQty > 0 ? "text-amber-800" : "text-amber-300"}`}>
                     {erpQty}
                   </span>
                 </span>
