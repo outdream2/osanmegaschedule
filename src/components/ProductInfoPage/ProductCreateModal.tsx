@@ -299,6 +299,10 @@ export const ProductCreateModal: React.FC<Props> = ({
           await api.patch(`/api/products/${encodeURIComponent(code)}/shelf-positions`, {
             shelf_positions: { [key]: shelfDetail },
           });
+          // 2026-09-14 · #61 · 실재고 테이블 자동 동기 · inventory_checks 업데이트 이벤트 dispatch
+          window.dispatchEvent(new CustomEvent("inventory-checks-updated", {
+            detail: { source: "product-modal", productCode: code },
+          }));
         } catch (spErr: any) {
           console.warn(`[ProductCreateModal] shelf_positions 저장 실패 (경고 · 등록·수정은 성공): ${spErr?.message ?? spErr}`);
         }
