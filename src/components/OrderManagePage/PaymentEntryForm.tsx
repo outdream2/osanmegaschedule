@@ -9,6 +9,8 @@ import { Plus, Check, X, CalendarDays, Calendar, CreditCard as CreditCardIcon } 
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import { api } from "../../lib/apiClient";
+// 2026-09-14 · creditCardsApi 프리미티브
+import { listCreditCards } from "../../lib/creditCardsApi";
 import { useApiCall } from "../../hooks/useApiCall";
 import { getErrorMessage } from "../../lib/errorMessage";
 import type {
@@ -56,11 +58,11 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
     },
   });
 
-  // 2026-09-02 · 카드 목록 로드 (active 만)
+  // 2026-09-02 · 카드 목록 로드 (active 만) · 2026-09-14 · creditCardsApi 프리미티브
   useEffect(() => {
     let alive = true;
-    api.get<CreditCard[]>("/api/credit-cards?active=1")
-      .then(({ data }) => { if (alive) setCards(Array.isArray(data) ? data : []); })
+    listCreditCards({ active: true })
+      .then((list) => { if (alive) setCards(list); })
       .catch(() => { if (alive) setCards([]); });
     return () => { alive = false; };
   }, []);

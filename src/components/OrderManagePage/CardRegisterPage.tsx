@@ -5,7 +5,9 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { CreditCard as CreditCardIcon, Plus, Trash2, Check, X } from "lucide-react";
-import { api, ApiError } from "../../lib/apiClient";
+import { ApiError } from "../../lib/apiClient";
+// 2026-09-14 · creditCardsApi 프리미티브
+import { listCreditCards, createCreditCard, updateCreditCard, deleteCreditCard } from "../../lib/creditCardsApi";
 import { Card } from "../common/Card";
 import { Button } from "../common/Button";
 import { Spinner } from "../common/Spinner";
@@ -62,8 +64,7 @@ export const CardRegisterPage: React.FC = () => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get<CreditCard[]>("/api/credit-cards");
-      const list = Array.isArray(data) ? data : [];
+      const list = await listCreditCards();
       setCards(list);
       if (selectedId != null) {
         const cur = list.find(c => c.id === selectedId);
@@ -109,12 +110,12 @@ export const CardRegisterPage: React.FC = () => {
       const cb = draft.cashback_rate.trim();
       body.cashback_rate = cb ? Number(cb) : null;
       if (draft.id == null) {
-        const { data } = await api.post<CreditCard>("/api/credit-cards", body);
-        setSelectedId(data?.id ?? null);
+        const created = await createCreditCard(body as any);
+        setSelectedId(created?.id ?? null);
         setSaveMsg({ type: "ok", text: "카드 등록 완료" });
         showSuccess("카드가 등록되었습니다");
       } else {
-        await api.patch(`/api/credit-cards/${draft.id}`, body);
+        await updateCreditCard(draft.id, body as any);
         setSaveMsg({ type: "ok", text: "저장 완료" });
         showSuccess("저장되었습니다");
       }
@@ -132,7 +133,7 @@ export const CardRegisterPage: React.FC = () => {
     if (draft.id == null) return;
     if (!await confirm({ message: `카드 "${draft.alias || draft.issuer}" 를 비활성화(soft delete) 하시겠습니까? 기존 결제 이력은 유지됩니다.`, danger: true })) return;
     try {
-      await api.del(`/api/credit-cards/${draft.id}?soft=1`);
+      await deleteCreditCard(draft.id, true);
       showSuccess("카드가 비활성화되었습니다");
       handleNew();
       await load();

@@ -12,7 +12,8 @@ import {
   BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
-import { api } from "../../lib/apiClient";
+// 2026-09-14 · creditCardsApi 프리미티브
+import { listCreditCardSummary } from "../../lib/creditCardsApi";
 import { Card } from "../common/Card";
 import { Spinner } from "../common/Spinner";
 import { EmptyState } from "../common/EmptyState";
@@ -45,9 +46,8 @@ export const CardHistoryPage: React.FC = () => {
     (async () => {
       setLoading(true);
       try {
-        const { data } = await api.get<CardSummary[]>("/api/credit-cards/summary");
+        const list = await listCreditCardSummary();
         if (alive) {
-          const list = Array.isArray(data) ? data : [];
           setSummaries(list);
           if (list.length > 0 && selectedCardId == null) setSelectedCardId(list[0].card.id);
         }
