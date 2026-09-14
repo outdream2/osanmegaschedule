@@ -48,6 +48,7 @@
 | 13 | 🐛 **재리포트 fix** · optimal_stock 잔재 + ProductInfoPage 우측 패널 리디자인 | `e3e78622` |
 | 14 | 🎨 **UI 폴리시** · ProductInfoPage 나머지 3 섹션 (기본·상세·기타) | `edc1a603` |
 | 15 | 🎯 **프레임워크** · settingsApi 프리미티브 · 6 곳 (KV settings) | `93497b21` |
+| 16 | 🎨 **UI 폴리시** · ProductInfoPage 좌측 리스트 · 우측 통일 | `350f66ab` |
 
 **필수 · 서버 재시작** (Ctrl+C · npm run dev) · 백엔드 fix 반영
 
@@ -186,6 +187,30 @@
 ### 예상 결과
 - 상품 등록/수정 → 실재고 테이블 · 즉시 자동 갱신
 - 사용자 새로고침 불필요
+
+---
+
+## 🎨 [16] ProductInfoPage 좌측 리스트 행 · 우측과 톤 통일 ✅
+**커밋** · `350f66ab`
+
+### 배경
+- [13]·[14] 에서 우측 패널 완전 폴리시 · 좌측 리스트만 남음 · 톤 불일치
+
+### 해결
+- 상품명 · text-[16px] → text-[15px] bold tracking-tight (우측 값 크기와 통일)
+- 코드·공급사 · text-[17px] → text-[12px] (secondary · 라벨 통일)
+- 코드 · font-mono tabular-nums (bar-code 스타일)
+- 공급사 · font-medium · 구분자 · text-zinc-300 (노이즈 감소)
+
+### 테스트 절차
+1. **매장 > 상품 > 상품정보** · 좌측 리스트
+2. 상품명 (bold · 15px) · 코드·공급사 (secondary · 12px)
+3. 활성 행 · brand-tint 배경 · brand-deep 강조
+4. 우측 패널 · 라벨·값 크기 · 좌측 리스트와 동일 톤
+
+### 회귀 확인
+- 선택·검색·삭제·페이지 전환 · 정상
+- 21/21 tests 통과
 
 ---
 
