@@ -188,53 +188,9 @@ export const ProductCreateModal: React.FC<Props> = ({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [zoneOpen]);
 
-  // 2026-08-28 · 사용자 지시 · 분류코드 참조 상품 리스트 · category 입력 시 debounce fetch
-  type RefProduct = {
-    product_code: string;
-    product_name: string;
-    category: string | null;
-    category_code: string | null;
-    supplier: string | null;
-    brand: string | null;
-    manufacturer: string | null;
-    spec: string | null;
-    unit: string | null;
-    sale_price: number | null;
-    purchase_price: number | null;
-    location: string | null;
-  };
-  const [refList, setRefList] = useState<RefProduct[]>([]);
-  const [refLoading, setRefLoading] = useState(false);
-  useEffect(() => {
-    const q = form.category.trim();
-    if (!q || q.length < 2) { setRefList([]); return; }
-    const t = setTimeout(async () => {
-      setRefLoading(true);
-      try {
-        const { data } = await api.get<RefProduct[]>(`/api/products-by-category?category=${encodeURIComponent(q)}`);
-        setRefList(Array.isArray(data) ? data : []);
-      } catch { setRefList([]); }
-      finally { setRefLoading(false); }
-    }, 300);
-    return () => clearTimeout(t);
-  }, [form.category]);
-
-  // 참조 상품 클릭 · 기존 입력값 유지 + 빈 필드만 자동 채움
-  const applyRefProduct = (r: RefProduct) => {
-    setForm(prev => ({
-      ...prev,
-      supplier: prev.supplier || r.supplier || "",
-      category: prev.category || r.category || "",
-      unit: prev.unit || r.unit || "",
-      spec: prev.spec || r.spec || "",
-      location: prev.location || r.location || "",
-      brand: prev.brand || r.brand || "",
-      manufacturer: prev.manufacturer || r.manufacturer || "",
-      sale_price: prev.sale_price || (r.sale_price != null ? String(r.sale_price) : ""),
-      purchase_price: prev.purchase_price || (r.purchase_price != null ? String(r.purchase_price) : ""),
-    }));
-    showSuccess(`참조 · ${r.product_name}`);
-  };
+  // 2026-09-14 · #83 · 사용자 지시 · "동일 분류 참조 상품" 섹션 제거
+  //   · refList·refLoading state · applyRefProduct 함수 · related useEffect 모두 제거
+  //   · 화면 복잡도 감소 · 자동 반영으로 인한 의도치 않은 값 채움 위험 제거
 
   // 2026-08-23 · #179 · open + initialCode 변경 시 · 사전 채움 (한 번만)
   // 2026-09-08 · barcode 필드 제거 · initialBarcode 는 무시 (product_code 로 통합)
@@ -533,47 +489,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                 </div>
               </Section>
 
-              {/* 참조 상품 (동일 분류코드) */}
-              {form.category.trim().length >= 2 && (
-                <Section
-                  title="동일 분류 · 참조 상품"
-                  right={<>
-                    <span className="text-[14px] font-semibold text-ink-soft tabular-nums bg-zinc-100 rounded-full px-2 py-0.5">{refList.length}건</span>
-                    {refLoading && <Spinner size={13} tone="brand" />}
-                  </>}
-                >
-                  {refList.length === 0 && !refLoading && (
-                    <div className="text-[15px] text-ink-soft py-3">해당 분류코드에 등록된 상품이 없습니다</div>
-                  )}
-                  {refList.length > 0 && (
-                    <>
-                      <p className="text-[14px] text-ink-soft mb-2">클릭하면 비어있는 필드에 자동 반영</p>
-                      <div className="max-h-56 overflow-y-auto flex flex-col gap-1.5 -mr-1 pr-1">
-                        {refList.map(r => (
-                          <button
-                            key={r.product_code}
-                            type="button"
-                            onClick={() => applyRefProduct(r)}
-                            className="text-left px-3 py-2 rounded-lg bg-white hover:bg-brand-tint/30 border border-zinc-200 hover:border-brand hover:shadow-sm transition cursor-pointer"
-                            title="클릭 시 빈 필드에만 자동 반영"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-[16px] text-ink flex-1 truncate">{r.product_name}</span>
-                              <span className="text-[14px] text-ink-soft tabular-nums shrink-0 tracking-tight">{r.product_code}</span>
-                            </div>
-                            <div className="flex items-center gap-2 mt-1 text-[14px] text-ink-soft">
-                              {r.supplier && <span className="truncate">{r.supplier}</span>}
-                              {r.brand && <span className="truncate opacity-70">· {r.brand}</span>}
-                              {r.spec && <span className="truncate opacity-70">· {r.spec}</span>}
-                              {r.sale_price != null && <span className="ml-auto shrink-0 font-bold tabular-nums text-brand-deep">₩{r.sale_price.toLocaleString()}</span>}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </Section>
-              )}
+              {/* 2026-09-14 · #83 · 사용자 지시 · "동일 분류 참조 상품" 섹션 제거 */}
 
               {/* 가격 */}
               <Section title="가격">
