@@ -245,15 +245,16 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
     return v == null || v === "" ? <span className="text-zinc-300">-</span> : <span className="text-ink font-semibold">{String(v)}</span>;
   };
 
+  // 2026-09-14 · 최신 트렌드 · uppercase 제거 · 라벨 축소 · 시인성 우선
   const DField = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[18px] font-semibold text-zinc-600 uppercase tracking-wider">{label}</span>
-      <div className="text-[17px]">{children}</div>
+    <div className="flex flex-col gap-1">
+      <span className="text-[12px] font-semibold text-ink-soft">{label}</span>
+      <div className="text-[16px] font-semibold text-ink">{children}</div>
     </div>
   );
   const EditField = ({ k, label, type = "text" }: { k: EditableKey; label: string; type?: "text" | "number" }) => (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[18px] font-semibold text-zinc-600 uppercase tracking-wider">{label}</span>
+    <div className="flex flex-col gap-1">
+      <span className="text-[12px] font-semibold text-ink-soft">{label}</span>
       {k === "sale_status" ? (
         <select value={val(k)} onChange={(e) => set(k, e.target.value)} className={inputCls}>
           {SALE_STATUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
@@ -438,50 +439,50 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
           </div>
         </div>
 
-        {/* 기본 정보 */}
-        <div className="space-y-3">
+        {/* 기본 정보 · 2026-09-14 · 라벨 축소 · 값 강조 */}
+        <div className="space-y-2.5">
           <SectionTitle title="기본 정보" color="sky" />
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <div className="grid grid-cols-2 gap-x-5 gap-y-3">
             <div className="col-span-2">
               {editing ? <EditField k="product_name" label="상품명" /> : (
-                <DField label="상품명"><span className="text-[19px] font-bold text-ink">{product.product_name || <span className="text-zinc-300">-</span>}</span></DField>
+                <DField label="상품명"><span className="text-[17px] font-bold text-ink tracking-tight">{product.product_name || <span className="text-zinc-300 font-normal">-</span>}</span></DField>
               )}
             </div>
             {editing ? <EditField k="supplier" label="공급사" /> : (
               <DField label="공급사">
                 {product.supplier
                   ? (
-                    <span className="inline-flex items-center gap-2">
-                      <span className="text-[18px] font-semibold text-ink">{product.supplier}</span>
-                      {/* 2026-09-10 · 사용자 지시 · 화살표 → [상세보기] 버튼 */}
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="text-[15px] font-semibold text-ink">{product.supplier}</span>
+                      {/* 2026-09-10 · 사용자 지시 · 화살표 → [상세보기] 버튼 · 2026-09-14 축소 */}
                       <button
                         type="button"
                         onClick={() => vendorModal.openVendorInfo(product.supplier!)}
-                        className="inline-flex items-center gap-1 h-6 px-2 rounded-md border border-line bg-white text-[13px] font-bold text-brand-deep hover:bg-brand-tint/40 hover:border-brand-deep transition cursor-pointer"
+                        className="inline-flex items-center h-5 px-1.5 rounded-md text-[11px] font-semibold text-brand-deep hover:bg-brand-tint transition cursor-pointer"
                       >
-                        상세보기
+                        상세
                       </button>
                     </span>
                   )
-                  : <span className="text-zinc-300">-</span>}
+                  : <span className="text-zinc-300 font-normal">-</span>}
               </DField>
             )}
-            {editing ? <EditField k="category" label="카테고리" /> : <DField label="카테고리"><span className="text-[18px] font-semibold text-ink">{dispVal("category")}</span></DField>}
+            {editing ? <EditField k="category" label="카테고리" /> : <DField label="카테고리"><span className="text-[15px] font-semibold text-ink">{dispVal("category")}</span></DField>}
             {editing && <EditField k="sale_status" label="판매상태" />}
             {editing && <EditField k="location" label="진열위치" />}
           </div>
         </div>
 
-        {/* 2026-09-08 · 상세 진열위치 · 위치별 3-stepper · 매장 필수 강조 */}
-        <div className="space-y-3">
+        {/* 2026-09-08 · 상세 진열위치 · 위치별 3-stepper · 매장 필수 강조 · 2026-09-14 폴리시 */}
+        <div className="space-y-2.5">
           <SectionTitle title="상세 진열위치" color="rose" />
           {editing ? (
-            <div className="space-y-3">
-              <div className="text-[13px] text-ink-soft leading-relaxed">
-                각 위치에 <span className="font-bold text-brand-deep">3자리 (층·칸·순서)</span> 를 입력하세요.
-                예 <span className="font-mono">332</span> = 3층 3칸 2번째. 매장 위치는 필수 입력.
+            <div className="space-y-2.5">
+              <div className="text-[12px] text-ink-soft leading-relaxed">
+                각 위치에 <span className="font-bold text-brand-deep">3자리 (층·칸·순서)</span> 입력.
+                예 <span className="font-mono text-ink">332</span> = 3층 3칸 2번. 매장 필수.
               </div>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2.5">
                 {storageLocations.filter(l => l.active).map(loc => {
                   const hasKey = Object.prototype.hasOwnProperty.call(shelfDraft, loc.code);
                   if (!hasKey) return null;
@@ -499,19 +500,18 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                   );
                 })}
               </div>
-              {/* 위치 추가 · 아직 등록되지 않은 위치를 추가 */}
               {(() => {
                 const missing = storageLocations.filter(l => l.active && !Object.prototype.hasOwnProperty.call(shelfDraft, l.code));
                 if (missing.length === 0) return null;
                 return (
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <span className="text-[12px] text-ink-soft">위치 추가:</span>
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    <span className="text-[11px] text-ink-soft">위치 추가:</span>
                     {missing.map(loc => (
                       <button
                         key={loc.code}
                         type="button"
                         onClick={() => addShelfLocation(loc.code)}
-                        className="text-[12px] px-2 py-0.5 rounded-md border border-brand-tint text-brand-deep hover:bg-brand-tint transition-colors"
+                        className="text-[11px] font-semibold px-2 h-6 rounded-md border border-brand-tint text-brand-deep hover:bg-brand-tint transition-colors cursor-pointer"
                       >+ {loc.name}</button>
                     ))}
                   </div>
@@ -519,19 +519,20 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
               })()}
             </div>
           ) : (
-            <div className="text-[15px]">
-              <ShelfPositionsBadge positions={product.shelf_positions} size="md" />
-              {(!product.shelf_positions || Object.keys(product.shelf_positions).length === 0) && (
-                <span className="text-zinc-300">등록된 진열위치 없음</span>
+            <div>
+              {(product.shelf_positions && Object.keys(product.shelf_positions).length > 0) ? (
+                <ShelfPositionsBadge positions={product.shelf_positions} size="md" />
+              ) : (
+                <span className="text-[13px] text-zinc-400">등록된 진열위치 없음</span>
               )}
             </div>
           )}
         </div>
 
-        {/* 기타 (단위 · 규격 · 브랜드 · 제조사) */}
-        <div className="space-y-3">
+        {/* 기타 (단위 · 규격 · 브랜드 · 제조사) · 2026-09-14 폴리시 */}
+        <div className="space-y-2.5">
           <SectionTitle title="기타" color="amber" />
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <div className="grid grid-cols-2 gap-x-5 gap-y-3">
             {editing ? <EditField k="unit" label="단위" /> : <DField label="단위">{dispVal("unit")}</DField>}
             {editing ? <EditField k="spec" label="규격" /> : <DField label="규격">{dispVal("spec")}</DField>}
             {editing ? <EditField k="brand" label="브랜드" /> : <DField label="브랜드">{dispVal("brand")}</DField>}
