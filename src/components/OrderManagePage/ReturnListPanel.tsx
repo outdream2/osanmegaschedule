@@ -19,8 +19,9 @@ import { Spinner } from "../common/Spinner";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { api, ApiError } from "../../lib/apiClient";
-// 2026-09-14 · inventoryChecksApi 프리미티브
+// 2026-09-14 · inventoryChecksApi · productsApi 프리미티브
 import { listInventoryChecks } from "../../lib/inventoryChecksApi";
+import { getProductByCode } from "../../lib/productsApi";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-26 · 프레임워크 · useConfirm 프리미티브 · window.confirm 대체
@@ -217,7 +218,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
     setReturnPanelLoading(true); setReturnPanelError(null);
     (async () => {
       try {
-        const { data } = await api.get<any>(`/api/products/${encodeURIComponent(returnSelectedProduct.code)}`);
+        const data = await getProductByCode<any>(returnSelectedProduct.code);
         setReturnPanelFull(data);
       } catch (e: any) {
         const msg = e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류");

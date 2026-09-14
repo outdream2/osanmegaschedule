@@ -66,6 +66,7 @@ import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { api, ApiError } from "../../lib/apiClient";
 // 2026-09-14 · orderRequestsApi 프리미티브
 import { createOrderRequest } from "../../lib/orderRequestsApi";
+import { getProductByCode } from "../../lib/productsApi";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 
@@ -258,7 +259,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     setOrderPanelLoading(true); setOrderPanelError(null);
     (async () => {
       try {
-        const { data } = await api.get<any>(`/api/products/${encodeURIComponent(orderPanelProduct.code)}`);
+        const data = await getProductByCode<any>(orderPanelProduct.code);
         setOrderPanelFull(data);
       } catch (err: any) { setOrderPanelError(err instanceof ApiError ? err.message : (err?.message ?? "네트워크 오류")); }
       finally { setOrderPanelLoading(false); }
@@ -290,7 +291,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     setNeedPanelLoading(true); setNeedPanelError(null);
     (async () => {
       try {
-        const { data } = await api.get<any>(`/api/products/${encodeURIComponent(needPanelProduct.code)}`);
+        const data = await getProductByCode<any>(needPanelProduct.code);
         setNeedPanelFull(data);
       } catch (err: any) { setNeedPanelError(err instanceof ApiError ? err.message : (err?.message ?? "네트워크 오류")); }
       finally { setNeedPanelLoading(false); }

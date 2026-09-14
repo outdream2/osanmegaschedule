@@ -14,6 +14,8 @@ import { EmptyState } from "../../common/EmptyState";
 import { CARD_BASE } from "../../../styles/tokens";
 import { fmtWonNoUnit, fmtDateSlice } from "../../../lib/format";
 import { api, ApiError } from "../../../lib/apiClient";
+// 2026-09-14 · productsApi 프리미티브
+import { getProductByCode } from "../../../lib/productsApi";
 import { getErrorMessage } from "../../../lib/errorMessage";
 import { useToast, toastClass } from "../../../hooks/useToast";
 import { useConfirm } from "../../../hooks/useConfirm";
@@ -94,8 +96,8 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
     if (tab !== "info" || !product.product_code) return;
     let alive = true;
     setInfoLoading(true);
-    api.get<any>(`/api/products/${encodeURIComponent(product.product_code)}`)
-      .then(({ data }) => { if (alive) setInfoData(data); })
+    getProductByCode<any>(product.product_code)
+      .then((data) => { if (alive) setInfoData(data); })
       .catch(() => { if (alive) setInfoData(null); })
       .finally(() => { if (alive) setInfoLoading(false); });
     return () => { alive = false; };
