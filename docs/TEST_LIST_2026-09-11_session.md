@@ -55,6 +55,7 @@
 | 20 | 🧪 **API 테스트** · 6 신규 프리미티브 · 38 tests (3355→3393) | `cedcabea` |
 | 21 | 🎯 **프레임워크** · leaveApi 프리미티브 · 4 파일 8 곳 통합 + 8 tests | `52ddf180` |
 | 22 | 🎯 **프레임워크** · resignationsApi 프리미티브 · 4 파일 6 곳 통합 + 7 tests | `6d4732ed` |
+| 23 | 🎯 **프레임워크** · productsApi 신규 (10 함수) + 4 파일 부분 마이그레이션 + 16 tests | `ca5ef818` · `1de0f4a9` · `55b80433` |
 
 **필수 · 서버 재시작** (Ctrl+C · npm run dev) · 백엔드 fix 반영
 
