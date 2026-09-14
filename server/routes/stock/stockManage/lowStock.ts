@@ -27,8 +27,9 @@ router.get("/api/stock-manage/low-stock", asyncHandler(async (_req, res) => {
     return shortB - shortA;
   });
 
-  // 2026-09-03 · #100 · 재고 필드명 표준화 · warehouse1_stock · store_stock · checked_at 신규 필드 우선
-  //   · 레거시 alias (warehouse_stock · inv_checked_at) 는 하위호환 유지 (BC)
+  // 2026-09-03 · #100 · 재고 필드명 표준화 · warehouse1_stock · store1_stock · checked_at 신규 필드 우선
+  //   · 레거시 alias (warehouse_stock · store_stock · inv_checked_at) 는 하위호환 유지 (BC)
+  // 2026-09-14 · rename · store_stock → store1_stock · store_stock_2 → store2_stock
   const filtered = sorted.map(r => ({
     product_code:   r.product_code,
     product_name:   r.product_name,
@@ -44,11 +45,14 @@ router.get("/api/stock-manage/low-stock", asyncHandler(async (_req, res) => {
     // 신규 표준 필드 (권장)
     warehouse1_stock: r.inv_warehouse1_stock,
     warehouse2_stock: (r as any).inv_warehouse2_stock ?? null,
-    store_stock:      r.inv_store_stock,
+    store1_stock:     r.inv_store1_stock,
+    store2_stock:     (r as any).inv_store2_stock ?? null,
     store3_stock:     (r as any).inv_store3_stock ?? null,
     checked_at:       r.inv_checked_at,
     // 레거시 alias (하위호환 · 점진 제거)
     warehouse_stock:  r.inv_warehouse1_stock,
+    store_stock:      r.inv_store1_stock,
+    store_stock_2:    (r as any).inv_store2_stock ?? null,
     inv_checked_at:   r.inv_checked_at,
   }));
 

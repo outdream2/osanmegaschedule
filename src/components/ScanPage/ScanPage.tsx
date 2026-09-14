@@ -383,8 +383,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         }
         const w1 = last.warehouse1_stock ?? last.warehouse_stock;
         const w2 = last.warehouse2_stock ?? null;
-        const s1 = last.store_stock ?? null;
-        const s2 = last.store_stock_2 ?? null;
+        const s1 = last.store1_stock ?? last.store_stock ?? null;
+        const s2 = last.store2_stock ?? last.store_stock_2 ?? null;
         const s3 = last.store3_stock ?? null;
         const nW1 = w1 != null ? Number(w1) : null;
         const nW2 = w2 != null ? Number(w2) : null;
@@ -499,8 +499,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           product_name:     row.product.name,
           warehouse1_stock: hasW1 ? Number(row.warehouse1AddQty) : null,
           warehouse2_stock: hasW2 ? Number(row.warehouse2AddQty) : null,
-          store_stock:      hasS1 ? Number(row.store1AddQty) : null,
-          store_stock_2:    hasS2 ? Number(row.store2AddQty) : null,
+          store1_stock:     hasS1 ? Number(row.store1AddQty) : null,
+          store2_stock:     hasS2 ? Number(row.store2AddQty) : null,
           store3_stock:     hasS3 ? Number(row.store3AddQty) : null,
           store1_zone:      row.store1Zone,
           store2_zone:      row.store2Zone,
@@ -564,8 +564,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               product_name:     r.product.name,
               warehouse1_stock: hasW1 ? Number(r.warehouse1AddQty) : null,
               warehouse2_stock: hasW2 ? Number(r.warehouse2AddQty) : null,
-              store_stock:      hasS1 ? Number(r.store1AddQty)     : null,
-              store_stock_2:    hasS2 ? Number(r.store2AddQty)     : null,
+              store1_stock:     hasS1 ? Number(r.store1AddQty)     : null,
+              store2_stock:     hasS2 ? Number(r.store2AddQty)     : null,
               store3_stock:     hasS3 ? Number(r.store3AddQty)     : null,
               store1_zone:      r.store1Zone,
               store2_zone:      r.store2Zone,

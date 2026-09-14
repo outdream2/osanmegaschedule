@@ -96,8 +96,8 @@ export function useOrderManageData(getCode: (p: ProductInfo) => string) {
         if (!code || m[code]) continue;
         const w1 = numOrNull((r as any).warehouse1_stock ?? (r as any).warehouse_stock);
         const w2 = numOrNull((r as any).warehouse2_stock);
-        const s1 = numOrNull((r as any).store_stock);
-        const s2 = numOrNull((r as any).store_stock_2);
+        const s1 = numOrNull((r as any).store1_stock ?? (r as any).store_stock);
+        const s2 = numOrNull((r as any).store2_stock ?? (r as any).store_stock_2);
         const s3 = numOrNull((r as any).store3_stock);
         const whSum = (w1 != null || w2 != null) ? (Number(w1) || 0) + (Number(w2) || 0) : null;
         const stSum = (s1 != null || s2 != null || s3 != null) ? (Number(s1) || 0) + (Number(s2) || 0) + (Number(s3) || 0) : null;
@@ -160,7 +160,7 @@ export function useOrderManageData(getCode: (p: ProductInfo) => string) {
   for (const p of products) {
     const code = getCode(p);
     if (!code || invStockMap.has(code)) continue;
-    const wh = (p as any).warehouse_stock; const st = (p as any).store_stock;
+    const wh = (p as any).warehouse_stock; const st = (p as any).store1_stock ?? (p as any).store_stock;
     if (wh != null || st != null) {
       const total = (Number(wh) || 0) + (Number(st) || 0);
       invStockMap.set(code, { warehouse: wh, store: st, total, w1: wh, w2: null, s1: st, s2: null, s3: null, s1z: null, s2z: null, s3z: null });

@@ -458,8 +458,9 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   for (const inv of inventoryChecks) {
     if (!invStockMap.has(inv.product_code)) {
       const wh = (inv.warehouse1_stock ?? 0) + (inv.warehouse2_stock ?? 0);
-      const total = wh + (inv.store_stock ?? 0) + (inv.store3_stock ?? 0);
-      invStockMap.set(inv.product_code, { warehouse: wh || null, store: inv.store_stock, total });
+      const s1 = (inv as any).store1_stock ?? inv.store_stock ?? null;
+      const total = wh + (s1 ?? 0) + (inv.store3_stock ?? 0);
+      invStockMap.set(inv.product_code, { warehouse: wh || null, store: s1, total });
     }
   }
 

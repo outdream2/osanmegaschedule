@@ -125,7 +125,7 @@ router.get("/api/products-map", asyncHandler(async (req, res) => {
   res.json(payload);
 }));
 
-// GET /api/inventory-latest — 상품코드별 최신 실재고 (warehouse_stock/store_stock/checked_at)
+// GET /api/inventory-latest — 상품코드별 최신 실재고 (warehouse_stock/store1_stock/checked_at)
 // DisplayPage 구역별 상품 리스트에서 재고관리 페이지처럼 창고/매장/실재고 컬럼을 채우기 위해 사용
 // 2026-08-03 · Priority 3 · get_inventory_latest RPC 호출 · 단일 DISTINCT ON 쿼리로 교체
 //   fallback: RPC 미생성(does not exist) 시 → 기존 1000건 페이지루프 방식으로 graceful 처리
@@ -140,9 +140,12 @@ router.get("/api/inventory-latest", asyncHandler(async (_req, res) => {
     warehouse_stock: number | null;
     warehouse1_stock: number | null;
     warehouse2_stock: number | null;
+    store1_stock: number | null;
+    store2_stock: number | null;
+    store3_stock: number | null;
+    // 2026-09-14 · 하위호환 alias · legacy 필드명
     store_stock: number | null;
     store_stock_2: number | null;
-    store3_stock: number | null;
     store1_zone: string | null;
     store2_zone: string | null;
     store3_zone: string | null;
@@ -165,9 +168,12 @@ router.get("/api/inventory-latest", asyncHandler(async (_req, res) => {
       warehouse_stock:  r.inv_warehouse1_stock,   // 레거시 alias
       warehouse1_stock: r.inv_warehouse1_stock,
       warehouse2_stock: r.inv_warehouse2_stock,
-      store_stock:      r.inv_store_stock,        // 매장1 (레거시)
-      store_stock_2:    r.inv_store_stock_2,
+      store1_stock:     r.inv_store1_stock,      // 매장1 (신규명)
+      store2_stock:     r.inv_store2_stock,      // 매장2 (신규명)
       store3_stock:     r.inv_store3_stock,
+      // 2026-09-14 · 하위호환 alias · legacy 필드명 (store_stock=store1)
+      store_stock:      r.inv_store1_stock,
+      store_stock_2:    r.inv_store2_stock,
       store1_zone:      r.inv_store1_zone,
       store2_zone:      r.inv_store2_zone,
       store3_zone:      r.inv_store3_zone,
@@ -263,14 +269,14 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
     // 실재고 (inventory_checks) · 최근 스냅샷 (stock_history) 병합 조회
     const codes = (data ?? []).map((p: any) => String(p.product_code ?? "").trim()).filter(Boolean);
     // 2026-08-31 · warehouse_stock DROP · warehouse1_stock 사용
-    let invByCode = new Map<string, { warehouse_stock: number | null; store_stock: number | null; checked_at: string | null }>();
+    let invByCode = new Map<string, { warehouse_stock: number | null; store1_stock: number | null; checked_at: string | null }>();
     let histByCode = new Map<string, { last_snapshot: string | null; last_purchase_qty: number | null }>();
     if (codes.length > 0) {
       // inventory_checks — 최신값만
       try {
         const { data: iv } = await supabase
           .from("inventory_checks")
-          .select("product_code, warehouse1_stock, store_stock, checked_at")
+          .select("product_code, warehouse1_stock, store1_stock, checked_at")
           .in("product_code", codes)
           .order("checked_at", { ascending: false });
         for (const r of iv ?? []) {
@@ -278,7 +284,7 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
           if (!c || invByCode.has(c)) continue;
           invByCode.set(c, {
             warehouse_stock: r.warehouse1_stock != null ? Number(r.warehouse1_stock) : null,
-            store_stock: r.store_stock != null ? Number(r.store_stock) : null,
+            store1_stock: r.store1_stock != null ? Number(r.store1_stock) : null,
             checked_at: r.checked_at ?? null,
           });
         }
@@ -317,7 +323,9 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
       return {
         ...p,
         warehouse_stock: inv?.warehouse_stock ?? null,
-        store_stock: inv?.store_stock ?? null,
+        store1_stock: inv?.store1_stock ?? null,
+        // 2026-09-14 · 하위호환 alias · legacy store_stock 필드
+        store_stock: inv?.store1_stock ?? null,
         inv_checked_at: inv?.checked_at ?? null,
         // 2026-07-29 · purchase_details 만 신뢰 · products.last_purchase_date fallback 제거
         last_purchase_date: hist?.last_snapshot ?? null,
@@ -639,23 +647,25 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
   if (!data) throw new HttpError(404, "상품을 찾을 수 없습니다");
   const productCode = data.product_code ?? code;
 
-  // inventory_checks 병합 (창고1/2 · 매장/매장3 실재고 · #58 통합 응답)
+  // inventory_checks 병합 (창고1/2 · 매장1/2/3 실재고 · #58 통합 응답)
   let warehouseStock:  number | null = null;   // 창고1 (구 warehouse_stock)
   let warehouse2Stock: number | null = null;   // 창고2 (신규)
-  let storeStock:      number | null = null;   // 매장
+  let store1Stock:     number | null = null;   // 매장1
+  let store2Stock:     number | null = null;   // 매장2
   let store3Stock:     number | null = null;   // 매장3
   let invCheckedAt:    string | null = null;
   try {
     const { data: iv } = await supabase
       .from("inventory_checks")
-      .select("warehouse1_stock, warehouse2_stock, store_stock, store3_stock, checked_at")
+      .select("warehouse1_stock, warehouse2_stock, store1_stock, store2_stock, store3_stock, checked_at")
       .eq("product_code", productCode)
       .order("checked_at", { ascending: false })
       .limit(1);
     if (iv && iv.length > 0) {
       warehouseStock  = iv[0].warehouse1_stock != null ? Number(iv[0].warehouse1_stock) : null;
       warehouse2Stock = iv[0].warehouse2_stock != null ? Number(iv[0].warehouse2_stock) : null;
-      storeStock      = iv[0].store_stock      != null ? Number(iv[0].store_stock)      : null;
+      store1Stock     = iv[0].store1_stock     != null ? Number(iv[0].store1_stock)     : null;
+      store2Stock     = iv[0].store2_stock     != null ? Number(iv[0].store2_stock)     : null;
       store3Stock     = iv[0].store3_stock     != null ? Number(iv[0].store3_stock)     : null;
       invCheckedAt    = iv[0].checked_at ?? null;
     }
@@ -689,12 +699,16 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
   res.json({
     ...data,
     location: data.location ?? data.display_location ?? null,
-    // 재고 DB에서 병합 · #58 통합 · 창고1/2 · 매장/매장3
+    // 재고 DB에서 병합 · #58 통합 · 창고1/2 · 매장1/2/3
     warehouse_stock:  data.warehouse_stock ?? warehouseStock,
     warehouse1_stock: warehouseStock,
     warehouse2_stock: warehouse2Stock,
-    store_stock:      data.store_stock ?? storeStock,
+    store1_stock:     store1Stock,
+    store2_stock:     store2Stock,
     store3_stock:     store3Stock,
+    // 2026-09-14 · 하위호환 alias · legacy store_stock (=store1)
+    store_stock:      (data as any).store_stock ?? store1Stock,
+    store_stock_2:    store2Stock,
     inv_checked_at:   invCheckedAt,
     // 매입 · purchase_details 만 신뢰
     last_purchase_date: lastPurchase,
@@ -843,7 +857,8 @@ router.patch("/api/products/:code/shelf-positions", authorize(1), validateBody(S
       // NOT NULL 대비 · null 명시적 세팅
       warehouse1_stock: null,
       warehouse2_stock: null,
-      store_stock: null,
+      store1_stock: null,
+      store2_stock: null,
       store3_stock: null,
       system_stock: null,
       checked_by: "",

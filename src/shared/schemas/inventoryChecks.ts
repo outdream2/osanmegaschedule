@@ -20,9 +20,12 @@ export const CreateInventoryCheckSchema = z.object({
   warehouse1_stock: numNullable,
   warehouse2_stock: numNullable,
   warehouse_stock: numNullable,  // 레거시 → warehouse1_stock 리다이렉트
+  store1_stock: numNullable,
+  store2_stock: numNullable,
+  store3_stock: numNullable,
+  // 2026-09-14 · 하위호환 · 이전 필드명 (store_stock=store1, store_stock_2=store2) 도 허용
   store_stock: numNullable,
   store_stock_2: numNullable,
-  store3_stock: numNullable,
   store1_zone: z.string().max(100).nullable().optional(),
   store2_zone: z.string().max(100).nullable().optional(),
   store3_zone: z.string().max(100).nullable().optional(),
@@ -38,9 +41,12 @@ const InventoryCheckItemSchema = z.object({
   warehouse1_stock: numNullable,
   warehouse2_stock: numNullable,
   warehouse_stock: numNullable,
+  store1_stock: numNullable,
+  store2_stock: numNullable,
+  store3_stock: numNullable,
+  // 2026-09-14 · 하위호환 · 이전 필드명 허용
   store_stock: numNullable,
   store_stock_2: numNullable,
-  store3_stock: numNullable,
   store1_zone: z.string().max(100).nullable().optional(),
   store2_zone: z.string().max(100).nullable().optional(),
   store3_zone: z.string().max(100).nullable().optional(),

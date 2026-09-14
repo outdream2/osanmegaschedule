@@ -142,8 +142,10 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
         if (last.warehouse1_stock != null) setWarehouse1Stock(Number(last.warehouse1_stock));
         else if (last.warehouse_stock != null) setWarehouse1Stock(Number(last.warehouse_stock));
         if (last.warehouse2_stock != null) setWarehouse2Stock(Number(last.warehouse2_stock));
-        if (last.store_stock != null) setStore1Stock(Number(last.store_stock));
-        if (last.store_stock_2 != null) setStore2Stock(Number(last.store_stock_2));
+        if (last.store1_stock != null) setStore1Stock(Number(last.store1_stock));
+        else if (last.store_stock != null) setStore1Stock(Number(last.store_stock));
+        if (last.store2_stock != null) setStore2Stock(Number(last.store2_stock));
+        else if (last.store_stock_2 != null) setStore2Stock(Number(last.store_stock_2));
         if (last.store3_stock != null) setStore3Stock(Number(last.store3_stock));
       }).catch(() => {});
     api.get<any[]>(`/api/order-requests?product_code=${encodeURIComponent(product.code)}`)
@@ -154,14 +156,14 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
   }, [product.code]);
 
   // 각 재고 슬롯 독립 저장
-  type StockField = "warehouse1_stock" | "warehouse2_stock" | "store_stock" | "store_stock_2" | "store3_stock";
+  type StockField = "warehouse1_stock" | "warehouse2_stock" | "store1_stock" | "store2_stock" | "store3_stock";
   const statusSetters: Record<StockField, React.Dispatch<React.SetStateAction<InvStatus>>> = {
     warehouse1_stock: setW1Status, warehouse2_stock: setW2Status,
-    store_stock: setS1Status, store_stock_2: setS2Status, store3_stock: setS3Status,
+    store1_stock: setS1Status, store2_stock: setS2Status, store3_stock: setS3Status,
   };
   const errorSetters: Record<StockField, React.Dispatch<React.SetStateAction<string | null>>> = {
     warehouse1_stock: setW1Error, warehouse2_stock: setW2Error,
-    store_stock: setS1Error, store_stock_2: setS2Error, store3_stock: setS3Error,
+    store1_stock: setS1Error, store2_stock: setS2Error, store3_stock: setS3Error,
   };
   const submitStockField = async (field: StockField, value: number | "") => {
     if (value === "") return;
@@ -334,8 +336,8 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
             onS3Change={v => { setStore3Stock(v); setS3Status("idle"); }}
             onW1Submit={() => submitStockField("warehouse1_stock", warehouse1Stock)}
             onW2Submit={() => submitStockField("warehouse2_stock", warehouse2Stock)}
-            onS1Submit={() => submitStockField("store_stock", store1Stock)}
-            onS2Submit={() => submitStockField("store_stock_2", store2Stock)}
+            onS1Submit={() => submitStockField("store1_stock", store1Stock)}
+            onS2Submit={() => submitStockField("store2_stock", store2Stock)}
             onS3Submit={() => submitStockField("store3_stock", store3Stock)}
             {...editProps}
           />

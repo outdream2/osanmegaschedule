@@ -49,9 +49,11 @@ interface InventoryCheckRow {
   warehouse_stock?: number | null;
   store_stock?: number | null;
   store_stock_2?: number | null;
-  // 신규 컬럼 (Phase 3 · DB 확장 후)
+  // 신규 컬럼 (Phase 3 · DB 확장 후 · 2026-09-14 rename 반영)
   warehouse1_stock?: number | null;
   warehouse2_stock?: number | null;
+  store1_stock?: number | null;
+  store2_stock?: number | null;
   store3_stock?: number | null;
   checked_at?: string | null;
   checked_by?: string | null;
@@ -78,8 +80,9 @@ type SortDir = "asc" | "desc";
 function actualTotalOf(row: InventoryCheckRow): number {
   const w1 = row.warehouse1_stock ?? row.warehouse_stock ?? 0;
   const w2 = row.warehouse2_stock ?? 0;
-  const s1 = row.store_stock ?? 0;         // store_stock == store1
-  const s2 = row.store_stock_2 ?? 0;
+  // 2026-09-14 · rename · store_stock → store1_stock · store_stock_2 → store2_stock (legacy fallback)
+  const s1 = row.store1_stock ?? row.store_stock ?? 0;
+  const s2 = row.store2_stock ?? row.store_stock_2 ?? 0;
   const s3 = row.store3_stock ?? 0;
   return (
     (Number.isFinite(Number(w1)) ? Number(w1) : 0) +
@@ -96,6 +99,8 @@ function hasAnyActual(row: InventoryCheckRow): boolean {
     row.warehouse1_stock != null ||
     row.warehouse2_stock != null ||
     row.warehouse_stock != null ||
+    row.store1_stock != null ||
+    row.store2_stock != null ||
     row.store_stock != null ||
     row.store_stock_2 != null ||
     row.store3_stock != null

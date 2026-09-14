@@ -45,9 +45,12 @@ interface Product {
 interface InvRow {
   warehouse1_stock: number | null;
   warehouse2_stock: number | null;
-  store_stock: number | null;         // 매장1
-  store_stock_2: number | null;       // 매장2
+  store1_stock: number | null;        // 매장1 (2026-09-14 rename)
+  store2_stock: number | null;        // 매장2 (2026-09-14 rename)
   store3_stock: number | null;        // 매장3
+  // 2026-09-14 · 하위호환 alias (서버가 아직 함께 반환)
+  store_stock?: number | null;
+  store_stock_2?: number | null;
   store1_zone: string | null;
   store2_zone: string | null;
   store3_zone: string | null;
@@ -216,8 +219,8 @@ export const RealStockTablePage: React.FC = () => {
     const i = inv[p.product_code];
     const w1 = i?.warehouse1_stock ?? null;
     const w2 = i?.warehouse2_stock ?? null;
-    const s1 = i?.store_stock ?? null;
-    const s2 = i?.store_stock_2 ?? null;
+    const s1 = i?.store1_stock ?? i?.store_stock ?? null;
+    const s2 = i?.store2_stock ?? i?.store_stock_2 ?? null;
     const s3 = i?.store3_stock ?? null;
     const total = (w1 ?? 0) + (w2 ?? 0) + (s1 ?? 0) + (s2 ?? 0) + (s3 ?? 0);
     const erp = p.current_stock;
@@ -327,8 +330,8 @@ export const RealStockTablePage: React.FC = () => {
         checked_by:       "",
         warehouse1_stock: next.w1,
         warehouse2_stock: next.w2,
-        store_stock:      next.s1,
-        store_stock_2:    next.s2,
+        store1_stock:     next.s1,
+        store2_stock:     next.s2,
         store3_stock:     next.s3,
         store1_zone:      row.s1zone,
         store2_zone:      row.s2zone,
@@ -340,8 +343,8 @@ export const RealStockTablePage: React.FC = () => {
         [row.product_code]: {
           warehouse1_stock: next.w1,
           warehouse2_stock: next.w2,
-          store_stock:      next.s1,
-          store_stock_2:    next.s2,
+          store1_stock:     next.s1,
+          store2_stock:     next.s2,
           store3_stock:     next.s3,
           store1_zone:      row.s1zone,
           store2_zone:      row.s2zone,

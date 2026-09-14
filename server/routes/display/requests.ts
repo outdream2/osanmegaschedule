@@ -1081,14 +1081,14 @@ router.get("/api/inventory-checks", asyncHandler(async (req, res) => {
   // 2026-08-05 · T-PERF-1a · select("*") → 명시적 컬럼 지정 (페이로드 최소화)
   //   StockReconciliationTab 사용 컬럼: product_code, product_name, checked_at, checked_by
   //   + 실재고 컬럼 전체 (warehouse1/2, store1/2/3, 레거시)
-  // 2026-09-03 · fix · store_stock_2 컬럼 삭제됨 · SELECT 에서 제거
-  //   · 이전 · 'column inventory_checks.store_stock_2 does not exist' · 500 · 실재고 리스트 조회 실패
-  //   · 스키마 · warehouse1_stock · warehouse2_stock · store_stock (=store1) · store3_stock (store2 컬럼 없음)
+  // 2026-09-14 · 컬럼명 통일 rename · store_stock → store1_stock · store_stock_2 → store2_stock
+  //   · 스키마 · warehouse1_stock · warehouse2_stock · store1_stock · store2_stock · store3_stock
+  //   · 응답에서 · 하위호환 위해 store_stock/store_stock_2 도 alias 로 함께 노출
   // 2026-09-09 · CRITICAL 회귀 복구 · afaf8a65 에서 삭제됐던 shelf_positions 컬럼 재추가
   const COLS = [
     "id", "product_code", "product_name", "checked_at", "checked_by",
     "warehouse1_stock", "warehouse2_stock",
-    "store_stock", "store3_stock",
+    "store1_stock", "store2_stock", "store3_stock",
     "store1_zone", "store2_zone", "store3_zone",
     // 2026-09-09 · optimal_stock 스냅샷 제거 · products.optimal_stock 단일 소스 (사용자 지시)
     "system_stock", "status", "note",
@@ -1098,7 +1098,14 @@ router.get("/api/inventory-checks", asyncHandler(async (req, res) => {
   if (req.query.product_code) q = q.eq("product_code", String(req.query.product_code));
   const { data, error } = await q;
   if (error) throw new HttpError(500, error.message);
-  res.json(data ?? []);
+  // 2026-09-14 · 하위호환 alias · store_stock (=store1_stock) · store_stock_2 (=store2_stock)
+  //   · 이전 클라이언트 코드 회귀 방지
+  const withAlias = (data ?? []).map((r: any) => ({
+    ...r,
+    store_stock: r.store1_stock,
+    store_stock_2: r.store2_stock,
+  }));
+  res.json(withAlias);
 }));
 
 // 2026-09-08 · 상세 진열위치 중복 실시간 검증
@@ -1159,8 +1166,12 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
   const code = b.product_code;
   const now = new Date().toISOString();
   const hasWarehouse  = Object.prototype.hasOwnProperty.call(b, "warehouse_stock");
-  const hasStore      = Object.prototype.hasOwnProperty.call(b, "store_stock");
-  const hasStore2     = Object.prototype.hasOwnProperty.call(b, "store_stock_2");
+  // 2026-09-14 · rename · store_stock → store1_stock · store_stock_2 → store2_stock
+  //   · legacy 필드도 함께 수용 (하위호환)
+  const hasStore1     = Object.prototype.hasOwnProperty.call(b, "store1_stock");
+  const hasStore2New  = Object.prototype.hasOwnProperty.call(b, "store2_stock");
+  const hasStoreLegacy   = Object.prototype.hasOwnProperty.call(b, "store_stock");
+  const hasStore2Legacy  = Object.prototype.hasOwnProperty.call(b, "store_stock_2");
   const hasWarehouse1 = Object.prototype.hasOwnProperty.call(b, "warehouse1_stock");
   const hasWarehouse2 = Object.prototype.hasOwnProperty.call(b, "warehouse2_stock");
   const hasStore3     = Object.prototype.hasOwnProperty.call(b, "store3_stock");
@@ -1189,8 +1200,11 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
   if (hasWarehouse1) payload.warehouse1_stock = num(b.warehouse1_stock);
   if (hasWarehouse && !hasWarehouse1) payload.warehouse1_stock = num(b.warehouse_stock);
   if (hasWarehouse2) payload.warehouse2_stock = num(b.warehouse2_stock);
-  if (hasStore)      payload.store_stock      = num(b.store_stock);
-  if (hasStore2)     payload.store_stock_2    = num(b.store_stock_2);
+  // 2026-09-14 · store1/2 · 신규 필드 우선 · legacy 필드 fallback
+  if (hasStore1)          payload.store1_stock = num(b.store1_stock);
+  else if (hasStoreLegacy)  payload.store1_stock = num(b.store_stock);
+  if (hasStore2New)       payload.store2_stock = num(b.store2_stock);
+  else if (hasStore2Legacy) payload.store2_stock = num(b.store_stock_2);
   if (hasStore3)     payload.store3_stock     = num(b.store3_stock);
   if (hasZone1)      payload.store1_zone      = str(b.store1_zone);
   if (hasZone2)      payload.store2_zone      = str(b.store2_zone);
@@ -1201,7 +1215,7 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
   // 2026-09-08 · shelf_positions 도 함께 조회 (병합용)
   const { data: existingList } = await supabase
     .from("inventory_checks")
-    .select("id, store_stock, shelf_positions")
+    .select("id, store1_stock, shelf_positions")
     .eq("product_code", code)
     .order("checked_at", { ascending: false })
     .limit(1);
@@ -1281,7 +1295,7 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
       return null;
     }
     const insertPayload: Record<string, any> = { ...payload, product_code: code };
-    if (!("store_stock" in insertPayload)) insertPayload.store_stock = null;
+    if (!("store1_stock" in insertPayload)) insertPayload.store1_stock = null;
     const { error } = await supabase.from("inventory_checks").insert([insertPayload]);
     if (error) return { error: error.message };
     return null;
@@ -1290,7 +1304,7 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
   const MAX_STRIP_RETRIES = 6;
   for (let attempt = 0; attempt < MAX_STRIP_RETRIES && result?.error && /column .* does not exist|no column named|schema cache/i.test(result.error); attempt++) {
     if (attempt === 0) {
-      for (const k of ["warehouse1_stock","warehouse2_stock","store_stock_2","store3_stock","store1_zone","store2_zone","store3_zone","expiry_date","expiry_input_date","shelf_positions"]) {
+      for (const k of ["warehouse1_stock","warehouse2_stock","store2_stock","store3_stock","store1_zone","store2_zone","store3_zone","expiry_date","expiry_input_date","shelf_positions"]) {
         delete payload[k];
       }
     }
@@ -1319,12 +1333,12 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
 // 2026-08-03 · Phase 3 · 5분리 (창고1·창고2·매장1·매장2·매장3) · 구역 3개
 // body: { checked_by, items: [{
 //   product_code, product_name,
-//   warehouse1_stock, warehouse2_stock, store_stock (=store1), store_stock_2 (=store2), store3_stock,
+//   warehouse1_stock, warehouse2_stock, store1_stock, store2_stock, store3_stock,
 //   store1_zone, store2_zone, store3_zone
 // }] }
 // 하위 호환:
 //   - warehouse_stock (레거시) → warehouse1_stock 으로 병합 (2026-08-31 DROP 완료)
-//   - 구 클라이언트: store_stock / store_stock_2 만 보내는 경우 그대로 저장
+//   - 구 클라이언트: store_stock / store_stock_2 → store1_stock / store2_stock 로 매핑 (2026-09-14 rename)
 //   - 신규 컬럼 미존재 DB · 신규 필드 stripping 후 재시도 (자동 다운그레이드)
 router.post("/api/inventory-checks/bulk", authorize(1), validateBody(BulkInventoryCheckSchema), asyncHandler(async (req, res) => {
   const b = req.body;
@@ -1345,23 +1359,23 @@ router.post("/api/inventory-checks/bulk", authorize(1), validateBody(BulkInvento
     // 창고1 우선 · 없으면 레거시 warehouse_stock 사용
     const wh1 = it.warehouse1_stock !== undefined ? num(it.warehouse1_stock) : num(it.warehouse_stock);
     const wh2 = num(it.warehouse2_stock);
-    const s1  = num(it.store_stock);       // 매장1
-    const s2  = num(it.store_stock_2);     // 매장2
-    const s3  = num(it.store3_stock);      // 매장3
+    // 2026-09-14 · rename · store_stock → store1_stock · store_stock_2 → store2_stock
+    //   · legacy 필드도 fallback (하위호환)
+    const s1  = num(it.store1_stock ?? it.store_stock);       // 매장1
+    const s2  = num(it.store2_stock ?? it.store_stock_2);     // 매장2
+    const s3  = num(it.store3_stock);                          // 매장3
     const payload: Record<string, any> = {
       product_name: String(it.product_name ?? ""),
       checked_by,
       checked_at: now,
       status: "pending",
-      // 2026-09-03 · fix · store_stock_2 컬럼 삭제됨 · payload 에서 제거 (DB 에러 방지)
-      //   · 이전 · s2 항상 포함 → DB insert 시 'does not exist' 에러 → bulk 저장 실패
-      //   · 이후 · store_stock (=매장1) 만 기본 포함 · s2 는 요청에 있으면 strip 로직이 처리
-      store_stock: s1,
+      store1_stock: s1,
     };
     // 신규 컬럼
     if (!downgraded) {
       payload.warehouse1_stock = wh1;
       payload.warehouse2_stock = wh2;
+      payload.store2_stock     = s2;
       payload.store3_stock     = s3;
       payload.store1_zone      = str(it.store1_zone);
       payload.store2_zone      = str(it.store2_zone);
@@ -1390,7 +1404,7 @@ router.post("/api/inventory-checks/bulk", authorize(1), validateBody(BulkInvento
     if (error && /column .* does not exist|no column named|schema cache/i.test(error.message)) {
       // 신규 컬럼 미존재 DB → 스트립 후 재시도 · 이후 아이템도 스트립
       downgraded = true;
-      for (const k of ["warehouse1_stock","warehouse2_stock","store3_stock","store1_zone","store2_zone","store3_zone"]) {
+      for (const k of ["warehouse1_stock","warehouse2_stock","store2_stock","store3_stock","store1_zone","store2_zone","store3_zone"]) {
         delete payload[k];
       }
       const retry = await doWrite(payload);

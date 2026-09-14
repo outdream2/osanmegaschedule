@@ -38,7 +38,7 @@ for (const c of allCols) {
 }
 
 console.log("\n━━━ 매장 zone·상세구역 컬럼 존재 여부");
-const critical = ["store1_zone", "store2_zone", "store3_zone", "shelf_positions", "store_stock_2", "store3_stock", "warehouse1_stock", "warehouse2_stock"];
+const critical = ["store1_zone", "store2_zone", "store3_zone", "shelf_positions", "store1_stock", "store2_stock", "store3_stock", "warehouse1_stock", "warehouse2_stock"];
 for (const col of critical) {
   const exists = col in first;
   console.log(`  ${col}: ${exists ? "✅ 존재" : "❌ 없음"}${exists ? ` (값: ${first[col] === null ? "null" : typeof first[col] === "object" ? JSON.stringify(first[col]) : first[col]})` : ""}`);

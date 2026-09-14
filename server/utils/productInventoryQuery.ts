@@ -37,9 +37,12 @@ export interface ProductWithInventory {
   // 재고 (inventory_checks 최신)
   inv_warehouse1_stock: number | null;
   inv_warehouse2_stock: number | null;
+  inv_store1_stock: number | null;
+  inv_store2_stock: number | null;
+  inv_store3_stock: number | null;
+  // 2026-09-14 · 하위호환 alias · legacy 명칭
   inv_store_stock: number | null;
   inv_store_stock_2: number | null;
-  inv_store3_stock: number | null;
   inv_store1_zone: string | null;
   inv_store2_zone: string | null;
   inv_store3_zone: string | null;
@@ -81,8 +84,8 @@ async function readSaleActiveOnly(): Promise<boolean> {
 async function fetchLatestInventory(codes?: string[]): Promise<Map<string, {
   inv_warehouse1_stock: number | null;
   inv_warehouse2_stock: number | null;
-  inv_store_stock: number | null;
-  inv_store_stock_2: number | null;
+  inv_store1_stock: number | null;
+  inv_store2_stock: number | null;
   inv_store3_stock: number | null;
   inv_store1_zone: string | null;
   inv_store2_zone: string | null;
@@ -99,7 +102,7 @@ async function fetchLatestInventory(codes?: string[]): Promise<Map<string, {
   while (true) {
     let q = supabase
       .from("inventory_checks")
-      .select("product_code, warehouse1_stock, warehouse2_stock, store_stock, store3_stock, store1_zone, store2_zone, store3_zone, checked_at")
+      .select("product_code, warehouse1_stock, warehouse2_stock, store1_stock, store2_stock, store3_stock, store1_zone, store2_zone, store3_zone, checked_at")
       .order("checked_at", { ascending: false });
     if (codes && codes.length > 0) q = q.in("product_code", codes);
     const { data, error } = await q.range(from, from + PAGE - 1);
@@ -114,19 +117,19 @@ async function fetchLatestInventory(codes?: string[]): Promise<Map<string, {
       if (map.has(code)) continue; // 이미 최신 행 처리됨 (checked_at DESC · 첫 행이 최신)
 
       // 2026-08-31 · warehouse_stock DROP · warehouse1_stock 단일 사용
-      // 2026-09-03 · #83 fix · store_stock_2 컬럼 삭제됨 · s2 는 null 고정 (기존 응답 shape 유지)
+      // 2026-09-14 · rename · store_stock → store1_stock · store_stock_2 → store2_stock
       const w1 = r.warehouse1_stock != null ? Number(r.warehouse1_stock) : null;
       const w2 = r.warehouse2_stock != null ? Number(r.warehouse2_stock) : null;
-      const s1 = r.store_stock      != null ? Number(r.store_stock)      : null;
-      const s2 = null; // store_stock_2 컬럼 없음 · schema 유지 위해 필드는 반환
+      const s1 = r.store1_stock     != null ? Number(r.store1_stock)     : null;
+      const s2 = r.store2_stock     != null ? Number(r.store2_stock)     : null;
       const s3 = r.store3_stock     != null ? Number(r.store3_stock)     : null;
       const total = [w1, w2, s1, s2, s3].reduce((sum: number, v) => sum + (v ?? 0), 0);
 
       map.set(code, {
         inv_warehouse1_stock: w1,
         inv_warehouse2_stock: w2,
-        inv_store_stock: s1,
-        inv_store_stock_2: s2,
+        inv_store1_stock: s1,
+        inv_store2_stock: s2,
         inv_store3_stock: s3,
         inv_store1_zone: r.store1_zone ?? null,
         inv_store2_zone: r.store2_zone ?? null,
@@ -257,9 +260,12 @@ export async function queryProductsWithInventory(
       hidden: p.hidden === true,
       inv_warehouse1_stock: inv?.inv_warehouse1_stock ?? null,
       inv_warehouse2_stock: inv?.inv_warehouse2_stock ?? null,
-      inv_store_stock: inv?.inv_store_stock ?? null,
-      inv_store_stock_2: inv?.inv_store_stock_2 ?? null,
+      inv_store1_stock: inv?.inv_store1_stock ?? null,
+      inv_store2_stock: inv?.inv_store2_stock ?? null,
       inv_store3_stock: inv?.inv_store3_stock ?? null,
+      // 2026-09-14 · 하위호환 alias · legacy 명칭
+      inv_store_stock: inv?.inv_store1_stock ?? null,
+      inv_store_stock_2: inv?.inv_store2_stock ?? null,
       inv_store1_zone: inv?.inv_store1_zone ?? null,
       inv_store2_zone: inv?.inv_store2_zone ?? null,
       inv_store3_zone: inv?.inv_store3_zone ?? null,

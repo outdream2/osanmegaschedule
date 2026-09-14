@@ -517,7 +517,7 @@ export const InventoryCheckTab: React.FC<InventoryCheckTabProps> = ({
         for (const r of inventoryChecks) {
           // 2026-09-03 · fix · warehouse_stock(DROP) → warehouse1_stock + warehouse2_stock 합산
           const totalActual =
-            (r.warehouse1_stock ?? 0) + (r.warehouse2_stock ?? 0) + (r.store_stock ?? 0) + (r.store3_stock ?? 0);
+            (r.warehouse1_stock ?? 0) + (r.warehouse2_stock ?? 0) + ((r as any).store1_stock ?? r.store_stock ?? 0) + ((r as any).store2_stock ?? r.store_stock_2 ?? 0) + (r.store3_stock ?? 0);
           if (r.system_stock != null && totalActual !== r.system_stock) mismatchCount++;
         }
         // 2026-09-03 · fix · "실재고 차이" KPI 가 "점검 상품"과 동일 값 (inventoryChecks.length) 표시
@@ -561,7 +561,9 @@ export const InventoryCheckTab: React.FC<InventoryCheckTabProps> = ({
           {inventoryChecks.map(r => {
             // 2026-09-03 · fix · warehouse_stock(DROP) → warehouse1_stock + warehouse2_stock 합산
             const whTotal = (r.warehouse1_stock ?? 0) + (r.warehouse2_stock ?? 0);
-            const totalActual = whTotal + (r.store_stock ?? 0) + (r.store3_stock ?? 0);
+            const s1 = (r as any).store1_stock ?? r.store_stock ?? null;
+            const s2 = (r as any).store2_stock ?? r.store_stock_2 ?? null;
+            const totalActual = whTotal + (s1 ?? 0) + (s2 ?? 0) + (r.store3_stock ?? 0);
             const diff = r.system_stock != null ? totalActual - r.system_stock : null;
             const isShort = diff != null && diff < 0;
             const isOver  = diff != null && diff > 0;
@@ -577,7 +579,7 @@ export const InventoryCheckTab: React.FC<InventoryCheckTabProps> = ({
                     <span className="text-[15px] text-zinc-500">
                       창고 <span className="font-bold text-zinc-700">{r.warehouse1_stock != null || r.warehouse2_stock != null ? whTotal : "—"}</span>
                       <span className="text-zinc-300 mx-0.5">+</span>
-                      매장 <span className="font-bold text-zinc-700">{r.store_stock ?? "—"}</span>
+                      매장 <span className="font-bold text-zinc-700">{s1 ?? "—"}</span>
                       <span className="text-zinc-300 mx-0.5">=</span>
                       <span className="font-bold text-purple-700">{totalActual}</span>
                     </span>
@@ -652,7 +654,9 @@ export const InventoryCheckTab: React.FC<InventoryCheckTabProps> = ({
                     {rows.map(r => {
                       // 2026-09-03 · fix · warehouse_stock(DROP) → warehouse1_stock + warehouse2_stock 합산
                       const whTotal = (r.warehouse1_stock ?? 0) + (r.warehouse2_stock ?? 0);
-                      const totalActual = whTotal + (r.store_stock ?? 0) + (r.store3_stock ?? 0);
+                      const s1 = (r as any).store1_stock ?? r.store_stock ?? null;
+                      const s2 = (r as any).store2_stock ?? r.store_stock_2 ?? null;
+                      const totalActual = whTotal + (s1 ?? 0) + (s2 ?? 0) + (r.store3_stock ?? 0);
                       const diff = r.system_stock != null ? totalActual - r.system_stock : null;
                       const d = new Date(r.checked_at);
                       const time = `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
@@ -662,7 +666,7 @@ export const InventoryCheckTab: React.FC<InventoryCheckTabProps> = ({
                           <div className="flex-1 min-w-0">
                             <span className="text-[14px] font-bold text-gray-800 break-keep">{r.product_name}</span>
                             <span className="text-[14px] text-gray-400">
-                              창고 {r.warehouse1_stock != null || r.warehouse2_stock != null ? whTotal : "—"} + 매장 {r.store_stock ?? "—"} = <strong className="text-purple-700">{totalActual}</strong>
+                              창고 {r.warehouse1_stock != null || r.warehouse2_stock != null ? whTotal : "—"} + 매장 {s1 ?? "—"} = <strong className="text-purple-700">{totalActual}</strong>
                               {r.system_stock != null && <> · 현재고 {r.system_stock}</>}
                             </span>
                           </div>

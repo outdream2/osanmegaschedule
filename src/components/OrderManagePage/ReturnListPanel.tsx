@@ -111,7 +111,8 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
       const rows: any[] = Array.isArray(data?.rows) ? data.rows : [];
 
       // 실재고 맵 · product_code 별 최신 · warehouse1+warehouse2+store1+store2+store3
-      //   레거시 fallback · warehouse_stock + store_stock + store_stock_2
+      //   2026-09-14 · rename · store_stock → store1_stock · store_stock_2 → store2_stock
+      //   레거시 fallback · warehouse_stock · store_stock · store_stock_2 도 수용
       const actualByCode = new Map<string, number>();
       if (invResult.status === "fulfilled") {
         try {
@@ -126,13 +127,15 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
             const num = (v: any) => Number.isFinite(Number(v)) ? Number(v) : 0;
             const w1 = row.warehouse1_stock ?? row.warehouse_stock ?? 0;
             const w2 = row.warehouse2_stock ?? 0;
-            const s1 = row.store_stock ?? 0;         // store_stock == store1
-            const s2 = row.store_stock_2 ?? 0;
+            const s1 = row.store1_stock ?? row.store_stock ?? 0;         // 매장1
+            const s2 = row.store2_stock ?? row.store_stock_2 ?? 0;       // 매장2
             const s3 = row.store3_stock ?? 0;
             // hasAny · 아무 값도 없으면 skip (실재고 정보 없음 · null 유지)
             if (row.warehouse1_stock == null && row.warehouse2_stock == null &&
-                row.warehouse_stock == null && row.store_stock == null &&
-                row.store_stock_2 == null && row.store3_stock == null) {
+                row.warehouse_stock == null &&
+                row.store1_stock == null && row.store2_stock == null &&
+                row.store_stock == null && row.store_stock_2 == null &&
+                row.store3_stock == null) {
               return;
             }
             actualByCode.set(code, num(w1) + num(w2) + num(s1) + num(s2) + num(s3));

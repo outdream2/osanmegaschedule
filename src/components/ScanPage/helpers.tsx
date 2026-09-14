@@ -26,9 +26,12 @@ export interface InventoryHistoryRow {
   warehouse_stock?: number | null;
   warehouse1_stock?: number | null;
   warehouse2_stock?: number | null;
+  store1_stock?: number | null;
+  store2_stock?: number | null;
+  store3_stock?: number | null;
+  // 2026-09-14 · 하위호환 alias · legacy 필드명
   store_stock?: number | null;
   store_stock_2?: number | null;
-  store3_stock?: number | null;
   store1_zone?: string | null;
   store2_zone?: string | null;
   store3_zone?: string | null;

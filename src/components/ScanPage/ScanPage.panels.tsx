@@ -387,8 +387,8 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                         <td className="px-3 py-2 tabular-nums text-zinc-700 whitespace-nowrap">{dtLabel}</td>
                         <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{w1 ?? "-"}</td>
                         <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.warehouse2_stock ?? "-"}</td>
-                        <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.store_stock ?? "-"}</td>
-                        <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.store_stock_2 ?? "-"}</td>
+                        <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.store1_stock ?? h.store_stock ?? "-"}</td>
+                        <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.store2_stock ?? h.store_stock_2 ?? "-"}</td>
                         <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.store3_stock ?? "-"}</td>
                         <td className="px-3 py-2 text-zinc-600 truncate max-w-[100px]">{h.checked_by ?? "-"}</td>
                       </tr>
