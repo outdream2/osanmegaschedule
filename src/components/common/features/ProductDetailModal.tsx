@@ -15,7 +15,9 @@ import { Modal } from "../Modal";
 import { Spinner } from "../Spinner";
 import { ProductInfoCard } from "../../ScanPage/ProductInfoCard";
 import type { ProductInfo as ProductInfoType } from "../../../lib/productsCache";
-import { api, ApiError } from "../../../lib/apiClient";
+import { ApiError } from "../../../lib/apiClient";
+// 2026-09-14 · productsApi 프리미티브
+import { getProductByCode } from "../../../lib/productsApi";
 
 export interface ProductRef {
   code: string;
@@ -35,9 +37,9 @@ export function useProductDetailModal() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await api.get<any>(`/api/products/${encodeURIComponent(open.code)}`);
+        const data = await getProductByCode<any>(open.code);
         if (cancelled) return;
-        setDetailFull(data ?? null);
+        setDetailFull(data);
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof ApiError ? e.message : (e as Error)?.message ?? "조회 실패");
