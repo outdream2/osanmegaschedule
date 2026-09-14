@@ -189,6 +189,12 @@ export const CardHistoryPage: React.FC = () => {
                     {s.card.alias && <span className="text-[15px] text-zinc-600">· {s.card.alias}</span>}
                     {s.card.last4 && <span className="text-[14px] text-zinc-400 font-mono">**** {s.card.last4}</span>}
                     <span className="text-[15px] text-zinc-400">· {s.card.billing_day}일 결제</span>
+                    {/* 2026-09-14 · #129 · 캐시백율 배지 */}
+                    {s.card.cashback_rate != null && s.card.cashback_rate > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[12px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 tabular-nums">
+                        캐시백 {s.card.cashback_rate}%
+                      </span>
+                    )}
                   </span>
                   <span className="inline-flex items-baseline gap-1.5 ml-auto">
                     <span className="text-[14px] text-zinc-500 font-semibold">이번달</span>
@@ -199,6 +205,16 @@ export const CardHistoryPage: React.FC = () => {
                     <span className="text-[20px] font-extrabold text-rose-600 tabular-nums">{fmtWon(s.nextBillingAmount)}</span>
                     <span className="text-[15px] text-zinc-400 tabular-nums">({s.nextBillingDate})</span>
                   </span>
+                  {/* 2026-09-14 · #129 · 잔여 한도 배지 · 90%↑ rose · 70%↑ amber */}
+                  {s.remainingLimit != null && s.card.credit_limit != null && s.card.credit_limit > 0 && (() => {
+                    const used = (s.card.credit_limit - s.remainingLimit) / s.card.credit_limit;
+                    const tone = used >= 0.9 ? "bg-rose-50 border-rose-200 text-rose-700" : used >= 0.7 ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-sky-50 border-sky-200 text-sky-700";
+                    return (
+                      <span className={`inline-flex items-center gap-1 text-[12px] font-bold px-1.5 py-0.5 rounded-md border tabular-nums ${tone}`}>
+                        한도 {fmtWonShort(s.remainingLimit)} / {fmtWonShort(s.card.credit_limit)}
+                      </span>
+                    );
+                  })()}
                   <span className={`inline-flex items-center justify-center w-7 h-7 rounded-md text-zinc-400 transition-transform shrink-0 ${isOpen ? "rotate-180 text-brand-deep" : ""}`}>
                     ▾
                   </span>
@@ -208,7 +224,7 @@ export const CardHistoryPage: React.FC = () => {
                 {isOpen && (
                   <div className="border-t border-zinc-100 bg-white/60 px-4 py-3">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* 좌 · KPI 4 */}
+                      {/* 좌 · KPI · 2026-09-14 · #129 · 한도·캐시백 통합 */}
                       <div className="space-y-2 text-[16px]">
                         <div className="flex justify-between py-1.5 border-b border-zinc-100">
                           <span className="text-zinc-500">총 결제 (12개월)</span>
@@ -222,10 +238,42 @@ export const CardHistoryPage: React.FC = () => {
                           <span className="text-zinc-500">이번달 결제 예정 ({s.currentBillingDate})</span>
                           <span className="font-bold text-amber-600 tabular-nums">{fmtWon(s.currentBillingAmount)}</span>
                         </div>
-                        <div className="flex justify-between py-1.5">
+                        <div className="flex justify-between py-1.5 border-b border-zinc-100">
                           <span className="text-zinc-500">차월 결제 예정 ({s.nextBillingDate})</span>
                           <span className="font-extrabold text-rose-600 tabular-nums text-[19px]">{fmtWon(s.nextBillingAmount)}</span>
                         </div>
+                        {/* 2026-09-14 · #129 · 한도 · 등록 시에만 표시 */}
+                        {s.card.credit_limit != null && s.card.credit_limit > 0 && (
+                          <>
+                            <div className="flex justify-between py-1.5 border-b border-zinc-100">
+                              <span className="text-zinc-500">카드 한도</span>
+                              <span className="font-semibold text-ink tabular-nums">{fmtWon(s.card.credit_limit)}</span>
+                            </div>
+                            <div className="flex justify-between py-1.5 border-b border-zinc-100">
+                              <span className="text-zinc-500">잔여 한도 (예정 결제 반영)</span>
+                              <span className={`font-bold tabular-nums ${s.remainingLimit != null && s.remainingLimit < s.card.credit_limit * 0.1 ? "text-rose-600" : "text-sky-700"}`}>
+                                {fmtWon(s.remainingLimit ?? 0)}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        {/* 2026-09-14 · #129 · 캐시백 · 등록 시에만 표시 */}
+                        {s.card.cashback_rate != null && s.card.cashback_rate > 0 && (
+                          <>
+                            <div className="flex justify-between py-1.5 border-b border-zinc-100">
+                              <span className="text-zinc-500">캐시백 요율</span>
+                              <span className="font-semibold text-emerald-700 tabular-nums">{s.card.cashback_rate}%</span>
+                            </div>
+                            <div className="flex justify-between py-1.5 border-b border-zinc-100">
+                              <span className="text-zinc-500">이번달 예상 캐시백</span>
+                              <span className="font-bold text-emerald-600 tabular-nums">{fmtWon(s.currentCashback ?? 0)}</span>
+                            </div>
+                            <div className="flex justify-between py-1.5">
+                              <span className="text-zinc-500">누적 캐시백 (12개월)</span>
+                              <span className="font-extrabold text-emerald-700 tabular-nums text-[18px]">{fmtWon(s.totalCashback ?? 0)}</span>
+                            </div>
+                          </>
+                        )}
                       </div>
                       {/* 우 · 월별 mini bar (12개월) */}
                       <div style={{ width: "100%", height: 180 }}>

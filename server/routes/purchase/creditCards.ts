@@ -23,7 +23,8 @@ import {
 
 const router = Router();
 
-const SELECT_COLS = "id, issuer, alias, last4, billing_day, active, note, created_at, updated_at";
+// 2026-09-14 · #129 · credit_limit·cashback_rate 컬럼 추가 · migration 후 활용
+const SELECT_COLS = "id, issuer, alias, last4, billing_day, active, note, credit_limit, cashback_rate, created_at, updated_at";
 
 // ── GET /api/credit-cards ─────────────────────────────────────────
 router.get("/api/credit-cards", authorize(1), asyncHandler(async (req, res) => {
@@ -38,7 +39,7 @@ router.get("/api/credit-cards", authorize(1), asyncHandler(async (req, res) => {
 // ── POST /api/credit-cards ────────────────────────────────────────
 router.post("/api/credit-cards", authorize(5), validateBody(CreateCreditCardSchema), asyncHandler(async (req, res) => {
   const body = req.body;
-  const insert = {
+  const insert: Record<string, any> = {
     issuer:      String(body.issuer).trim(),
     alias:       body.alias ? String(body.alias).trim() : null,
     last4:       body.last4 && String(body.last4).length === 4 ? body.last4 : null,
@@ -46,6 +47,9 @@ router.post("/api/credit-cards", authorize(5), validateBody(CreateCreditCardSche
     active:      body.active !== false,
     note:        body.note ? String(body.note).trim() : null,
   };
+  // 2026-09-14 · #129 · 한도·캐시백 · optional 필드
+  if (body.credit_limit !== undefined) insert.credit_limit = body.credit_limit == null ? null : Number(body.credit_limit);
+  if (body.cashback_rate !== undefined) insert.cashback_rate = body.cashback_rate == null ? null : Number(body.cashback_rate);
   const { data, error } = await supabase.from("credit_cards").insert(insert).select(SELECT_COLS).single();
   if (error) throw new HttpError(500, `카드 등록 실패: ${error.message}`);
   res.status(201).json(data);
@@ -63,6 +67,9 @@ router.patch("/api/credit-cards/:id", authorize(5), validateBody(UpdateCreditCar
   if (body.billing_day !== undefined) updates.billing_day = Number(body.billing_day);
   if (body.active      !== undefined) updates.active      = Boolean(body.active);
   if (body.note        !== undefined) updates.note        = body.note ? String(body.note).trim() : null;
+  // 2026-09-14 · #129 · 한도·캐시백
+  if (body.credit_limit  !== undefined) updates.credit_limit  = body.credit_limit == null ? null : Number(body.credit_limit);
+  if (body.cashback_rate !== undefined) updates.cashback_rate = body.cashback_rate == null ? null : Number(body.cashback_rate);
   const { data, error } = await supabase.from("credit_cards").update(updates).eq("id", id).select(SELECT_COLS).single();
   if (error) throw new HttpError(500, `카드 수정 실패: ${error.message}`);
   res.json(data);
@@ -142,6 +149,13 @@ router.get("/api/credit-cards/summary", authorize(1), asyncHandler(async (_req, 
       return pd > thisD.toISOString().slice(0, 10) && pd <= nextD.toISOString().slice(0, 10);
     }).reduce((s, p) => s + (Number(p.amount) || 0), 0);
 
+    // 2026-09-14 · #129 · 한도·캐시백 파생 지표
+    const limit = card.credit_limit != null ? Number(card.credit_limit) : null;
+    const rate  = card.cashback_rate != null ? Number(card.cashback_rate) : null;
+    const remainingLimit = limit != null ? Math.max(0, limit - currentAmt - nextAmt) : null;
+    const currentCashback = rate != null ? Math.round(currentAmt * (rate / 100)) : null;
+    const totalCashback   = rate != null ? Math.round(totalAmount * (rate / 100)) : null;
+
     return {
       card,
       totalAmount,
@@ -151,6 +165,9 @@ router.get("/api/credit-cards/summary", authorize(1), asyncHandler(async (_req, 
       currentBillingDate: thisD.toISOString().slice(0, 10),
       nextBillingAmount: nextAmt,
       nextBillingDate: nextD.toISOString().slice(0, 10),
+      remainingLimit,
+      currentCashback,
+      totalCashback,
     };
   });
 

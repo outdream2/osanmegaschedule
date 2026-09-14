@@ -27,10 +27,14 @@ type Draft = {
   billing_day: number;
   active: boolean;
   note: string;
+  // 2026-09-14 · #129 · 한도·캐시백
+  credit_limit: string;    // 텍스트로 관리 · 저장 시 Number 변환
+  cashback_rate: string;
 };
 
 const emptyDraft = (): Draft => ({
   id: null, issuer: "BC", alias: "", last4: "", billing_day: 15, active: true, note: "",
+  credit_limit: "", cashback_rate: "",
 });
 
 const draftFromCard = (c: CreditCard): Draft => ({
@@ -41,6 +45,8 @@ const draftFromCard = (c: CreditCard): Draft => ({
   billing_day: c.billing_day,
   active: c.active,
   note: c.note ?? "",
+  credit_limit: c.credit_limit != null ? String(c.credit_limit) : "",
+  cashback_rate: c.cashback_rate != null ? String(c.cashback_rate) : "",
 });
 
 export const CardRegisterPage: React.FC = () => {
@@ -89,7 +95,7 @@ export const CardRegisterPage: React.FC = () => {
     if (draft.billing_day < 1 || draft.billing_day > 31) { setSaveMsg({ type: "err", text: "결제일은 1~31 사이" }); return; }
     setSaving(true); setSaveMsg(null);
     try {
-      const body = {
+      const body: Record<string, any> = {
         issuer: draft.issuer.trim(),
         alias: draft.alias.trim() || null,
         last4: /^\d{4}$/.test(draft.last4) ? draft.last4 : null,
@@ -97,6 +103,11 @@ export const CardRegisterPage: React.FC = () => {
         active: draft.active,
         note: draft.note.trim() || null,
       };
+      // 2026-09-14 · #129 · 한도·캐시백 · 값 있을 때만 저장
+      const cl = draft.credit_limit.replace(/[^0-9]/g, "");
+      body.credit_limit = cl ? Number(cl) : null;
+      const cb = draft.cashback_rate.trim();
+      body.cashback_rate = cb ? Number(cb) : null;
       if (draft.id == null) {
         const { data } = await api.post<CreditCard>("/api/credit-cards", body);
         setSelectedId(data?.id ?? null);
@@ -259,6 +270,35 @@ export const CardRegisterPage: React.FC = () => {
                 </div>
               );
             })()}
+          </div>
+          {/* 2026-09-14 · #129 · 한도·캐시백 (선택) */}
+          <div>
+            <label className={labelCls}>카드 한도 (선택)</label>
+            <div className="flex items-center gap-2">
+              <input
+                lang="ko" type="text"
+                inputMode="numeric"
+                value={draft.credit_limit ? Number(draft.credit_limit.replace(/[^0-9]/g, "")).toLocaleString() : ""}
+                onChange={e => setDraft({ ...draft, credit_limit: e.target.value.replace(/[^0-9]/g, "") })}
+                placeholder="10000000"
+                className={`${inputCls} tabular-nums`}
+              />
+              <span className="text-[15px] text-zinc-500 whitespace-nowrap">원</span>
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>캐시백 요율 (선택 · %)</label>
+            <div className="flex items-center gap-2">
+              <input
+                lang="ko" type="number"
+                min={0} max={100} step={0.1}
+                value={draft.cashback_rate}
+                onChange={e => setDraft({ ...draft, cashback_rate: e.target.value })}
+                placeholder="0.5"
+                className={`${inputCls} tabular-nums`}
+              />
+              <span className="text-[15px] text-zinc-500 whitespace-nowrap">%</span>
+            </div>
           </div>
           <div className="col-span-2">
             <label className={labelCls}>비고 (선택)</label>

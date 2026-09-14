@@ -16,6 +16,9 @@ export const CreateCreditCardSchema = z.object({
   billing_day: z.number().int().min(1).max(31),
   active:      z.boolean().optional().default(true),
   note:        z.string().max(500).nullable().optional(),
+  // 2026-09-14 · #129 · 한도·캐시백 (optional · migration 후 사용)
+  credit_limit:   z.number().int().min(0).nullable().optional(),
+  cashback_rate:  z.number().min(0).max(100).nullable().optional(),
 });
 export type CreateCreditCardInput = z.infer<typeof CreateCreditCardSchema>;
 
@@ -33,6 +36,9 @@ export interface CreditCard {
   note: string | null;
   created_at: string;
   updated_at: string;
+  // 2026-09-14 · #129 · 한도·캐시백 (optional · migration 후 사용)
+  credit_limit?: number | null;
+  cashback_rate?: number | null;
 }
 export type CreditCardsListResponse = CreditCard[];
 
@@ -51,5 +57,12 @@ export interface CardSummary {
   nextBillingDate: string;                 // YYYY-MM-DD 예정 결제일
   currentBillingAmount: number;            // 이번달 결제 예정액 (아직 안 나감)
   currentBillingDate: string;              // YYYY-MM-DD
+  // 2026-09-14 · #129 · 통합 뷰 · 파생 지표
+  /** 잔여 한도 · credit_limit - currentBillingAmount · 한도 미설정 시 null */
+  remainingLimit?: number | null;
+  /** 예상 캐시백 · currentBillingAmount × cashback_rate% · 캐시백 미설정 시 null */
+  currentCashback?: number | null;
+  /** 최근 12개월 누적 캐시백 · 총 결제액 × cashback_rate% · 캐시백 미설정 시 null */
+  totalCashback?: number | null;
 }
 export type CardsSummaryResponse = CardSummary[];
