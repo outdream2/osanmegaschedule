@@ -7,7 +7,7 @@
 // 2026-09-01 · #93 · 명세서 상태 · 3종→2종 · 기한임박 UI 제거 (expiring 데이터 필드는 유지)
 
 import React, { useRef, useEffect, useState, useMemo } from "react";
-import { Box, Hash, Building2, CheckCircle2, XCircle, Trash2, MapPin, Check, Warehouse, Store, Package } from "lucide-react";
+import { Box, Hash, Building2, CheckCircle2, XCircle, Trash2, MapPin, Check, Warehouse, Store, Package, TrendingUp, ArrowRight } from "lucide-react";
 import type { ProductInfo } from "../../lib/productsCache";
 import { StepperInput } from "../common/StepperInput";
 import { Badge } from "../common/Badge";
@@ -467,17 +467,25 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           </div>
 
           {/* 2026-09-08 · 사용자 지시 · 일치 선택 시 · 예상 현재고 = 현재고 + 매입수량 표시
-              2026-09-14 · #132 · 라벨과 배지 나란히 · 라벨 +2 · 위치 정돈 */}
+              2026-09-14 · #132 · 라벨·배지 나란히 · #135 · 팬시한 UI (그라디언트·아이콘·강조) */}
           {isMatch && item.qty > 0 && (
-            <div className="inline-flex items-center gap-2 shrink-0">
-              <span className="text-[16px] font-bold text-emerald-700 tracking-tight whitespace-nowrap">
-                예상 현재고
-              </span>
-              <div className="inline-flex items-baseline gap-1.5 px-3 h-11 rounded-xl border-2 border-emerald-200 bg-emerald-50/60 min-w-[130px] justify-center">
-                <span className="text-[15px] font-semibold text-zinc-600 tabular-nums leading-none">{currentStock}</span>
-                <span className="text-[14px] font-bold text-emerald-600 leading-none">+{item.qty}</span>
-                <span className="text-emerald-500 font-light text-[15px] leading-none">=</span>
-                <span className="text-[20px] font-extrabold tabular-nums text-emerald-700 leading-none">{currentStock + item.qty}</span>
+            <div className="inline-flex items-stretch gap-0 shrink-0 rounded-xl overflow-hidden border border-emerald-200/80 shadow-[0_1px_2px_rgba(6,95,70,0.05),0_2px_8px_-2px_rgba(6,95,70,0.1)] bg-gradient-to-br from-white to-emerald-50/40">
+              {/* 좌 · 라벨 (아이콘 + 텍스트) */}
+              <div className="inline-flex items-center gap-1.5 px-3 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+                <TrendingUp size={14} strokeWidth={2.4} />
+                <span className="text-[14px] font-bold tracking-tight whitespace-nowrap">예상 현재고</span>
+              </div>
+              {/* 우 · 계산식 (현재고 → +qty → 결과) */}
+              <div className="inline-flex items-center gap-2 px-3.5 h-11 min-w-[150px]">
+                <span className="text-[15px] font-semibold text-zinc-500 tabular-nums leading-none">{currentStock}</span>
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[13px] font-bold tabular-nums leading-none">
+                  +{item.qty}
+                </span>
+                <ArrowRight size={13} className="text-emerald-400 shrink-0" strokeWidth={2.5} />
+                <span className="text-[22px] font-extrabold tabular-nums text-emerald-700 leading-none tracking-tight">
+                  {currentStock + item.qty}
+                </span>
+                <span className="text-[13px] font-semibold text-emerald-600/70 leading-none">개</span>
               </div>
             </div>
           )}
