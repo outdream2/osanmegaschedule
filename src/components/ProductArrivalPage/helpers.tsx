@@ -17,8 +17,15 @@ export interface ArrivalItem {
   status: ItemStatus;
   expiring: boolean;
   addedAt: number;
-  /** 2026-09-01 · #92 · 입고 구역 지정 · location 코드 (예: "1A" · "26") */
+  /** 2026-09-01 · #92 · 입고 구역 지정 · location 코드 (예: "1A" · "26")
+   *  · 매장1 zone (기존 flow 유지 · products.location 반영) */
   location: string | null;
+  /** 2026-09-14 · #138 · 매장별 독립 zone 저장 · [매장2, 매장3]
+   *  · 매장1 은 location 필드 사용 (products.location 반영)
+   *  · 매장2·3 은 · inventory_checks.store2_zone·store3_zone 저장
+   *  · undefined or null · 빈 슬롯 (사용자 클릭 시 zone 선택) */
+  store2Zone?: string | null;
+  store3Zone?: string | null;
   /** 2026-09-02 · #78 · 사입 단가 (사용자 입력 · 매입 저장용) */
   unitPrice?: number | null;
   /** 2026-09-02 · #78 · 유통기한 (선택 · YYYY-MM-DD) */

@@ -128,6 +128,11 @@ interface ArrivalZoneSlotListProps {
   productName?: string;
   location: string | null;
   onSetLocation: (v: string | null) => void;
+  // 2026-09-14 · #138 · 매장2·3 · 매장1과 독립 zone
+  store2Zone?: string | null;
+  store3Zone?: string | null;
+  onSetStore2Zone?: (v: string | null) => void;
+  onSetStore3Zone?: (v: string | null) => void;
   relatedSlots: { slot: ArrivalSlot; zone: string | null }[];
   targetSlot: ArrivalSlot | null;
   qty: number;
@@ -135,7 +140,9 @@ interface ArrivalZoneSlotListProps {
 }
 
 const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
-  productCode, productName, location, onSetLocation, relatedSlots, targetSlot, qty, shelfPositions: propShelfPositions,
+  productCode, productName, location, onSetLocation,
+  store2Zone, store3Zone, onSetStore2Zone, onSetStore3Zone,
+  relatedSlots, targetSlot, qty, shelfPositions: propShelfPositions,
 }) => {
   const [storeCount, setStoreCount] = useState(1);
   // 2026-09-09 · 사용자 지시 · 슬롯 클릭 시 · 해당 위치 하나만 편집
@@ -161,14 +168,20 @@ const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
           <span className={`w-1.5 h-6 rounded-full ${meta.dot} shrink-0 self-center`} />
           <span className={`text-[16px] font-bold ${meta.text} truncate`}>{meta.full}</span>
           {isTarget && (
-            <span className="text-[13px] font-bold text-emerald-700 tabular-nums">+{qty}</span>
+            <span className="inline-flex items-baseline gap-0.5 text-[13px] font-bold text-emerald-700 tabular-nums">
+              <span className="text-[11px] font-semibold text-emerald-600/80">매입</span>
+              +{qty}
+            </span>
           )}
         </div>
         {zone && (
-          <span className="inline-flex items-center gap-1 h-8 rounded-full px-3 border-2 border-cyan-300 bg-cyan-50 text-cyan-700 text-[14px] font-bold tabular-nums self-start" title={`${meta.full} 구역 (자동)`}>
-            <MapPin size={12} className="text-cyan-600" />
-            {zone}
-          </span>
+          <div className="inline-flex items-center gap-1.5 self-start">
+            <span className="text-[12px] font-semibold text-zinc-500">구역</span>
+            <span className="inline-flex items-center gap-1 h-8 rounded-full px-3 border-2 border-cyan-300 bg-cyan-50 text-cyan-700 text-[14px] font-bold tabular-nums" title={`${meta.full} 진열구역 (자동 배정)`}>
+              <MapPin size={12} className="text-cyan-600" />
+              {zone}
+            </span>
+          </div>
         )}
         <button
           type="button"
@@ -190,8 +203,15 @@ const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
     const shelfKey = `store${idx}`;
     const shelfDetail = shelfPositions?.[shelfKey];
     const hasDetail = typeof shelfDetail === "string" && shelfDetail.length === 3;
-    // 매장1 만 실제 편집 pill · 매장2·3 은 표시만 (상품입고 데이터 모델 · row.location 단일)
     const isPrimary = idx === 1;
+    // 2026-09-14 · #138 · 매장별 독립 zone
+    //   · 매장1 · location (기존 · products.location)
+    //   · 매장2 · store2Zone (inventory_checks.store2_zone)
+    //   · 매장3 · store3Zone (inventory_checks.store3_zone)
+    const slotZone = idx === 1 ? location : idx === 2 ? (store2Zone ?? null) : (store3Zone ?? null);
+    const slotOnChange = idx === 1 ? onSetLocation
+      : idx === 2 ? (onSetStore2Zone ?? (() => {}))
+      : (onSetStore3Zone ?? (() => {}));
     return (
       <div key={`s${idx}`} className={`relative rounded-lg border ${meta.softBg} border-zinc-200/70 p-2.5 flex flex-col gap-2`}>
         {/* 2026-09-10 · #60 · 사용자 지시 · 매장2·3 · 우측 상단 · X 삭제 버튼 · 클릭 시 storeCount 축소 */}
@@ -210,12 +230,11 @@ const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
           <span className={`w-1.5 h-6 rounded-full ${meta.dot} shrink-0 self-center`} />
           <span className={`text-[16px] font-bold ${meta.text} truncate`}>{meta.full}</span>
         </div>
-        {/* 2026-09-14 · #134 · 사용자 지시 · 매장 추가 슬롯 · 구역 선택 UI 활성
-            · 이전 · 매장2·3 · '추가 슬롯' 텍스트만 · 클릭 반응 없음
-            · fix · 모든 매장 · ArrivalZoneInline · 구역 선택 팝오버 활성
-            · 참고 · 데이터 모델 · row.location 단일 · 매장별 zone 공유
-              (매장별 다른 zone · 별도 데이터 모델 확장 필요) */}
-        <ArrivalZoneInline value={location} onChange={onSetLocation} />
+        {/* 2026-09-14 · #138·#139 · 매장별 독립 zone + 라벨 · 사용자 클릭 · 별도 zone 저장 */}
+        <div className="inline-flex items-center gap-1.5 self-start">
+          <span className="text-[12px] font-semibold text-zinc-500">구역</span>
+          <ArrivalZoneInline value={slotZone} onChange={slotOnChange} />
+        </div>
         <button
           type="button"
           onClick={() => setShelfEditCode(shelfKey)}
@@ -366,11 +385,15 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
             {item.product?.name ?? <span className="text-rose-500">(미등록 상품)</span>}
           </h4>
           {(currentStock > 0 || item.product) && (
-            <span className="inline-flex items-center gap-1 text-[15px] font-bold text-zinc-700 tabular-nums shrink-0">
-              <Package size={13} className="text-zinc-400" />
-              현재고 <span className="text-brand-deep">{currentStock.toLocaleString()}</span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-[14px] font-bold tabular-nums shrink-0" title="현재 재고 수량 (products.current_stock)">
+              <Package size={13} className="text-amber-600" strokeWidth={2.2} />
+              <span className="text-[12px] font-semibold text-amber-600/80">현재고</span>
+              <span className="text-amber-800 text-[16px] font-extrabold">{currentStock.toLocaleString()}</span>
+              <span className="text-[12px] font-semibold text-amber-600/70">개</span>
               {optimalStock > 0 && (
-                <span className="text-[15px] font-semibold text-zinc-400 ml-0.5">/ 적정 {optimalStock.toLocaleString()}</span>
+                <span className="text-[12px] font-semibold text-amber-500/80 ml-0.5 pl-1.5 border-l border-amber-200/70">
+                  적정 <span className="text-amber-700">{optimalStock.toLocaleString()}</span>개
+                </span>
               )}
             </span>
           )}
@@ -421,71 +444,68 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
             </div>
           </div>
 
-          {/* 2-state pill · 거래명세서 일치·불일치 · segmented (h-11 통일) · 2026-09-07 · 사용자 지시 · '거래명세서' 라벨 추가 */}
+          {/* 2026-09-14 · #139 · 거래명세서 pill · violet·rose 톤 (재고 amber · 예상 sky와 구분 · 검수 도메인 색상) */}
           <div className="flex flex-col gap-0.5">
-            <span className="text-[14px] font-semibold text-zinc-400">거래명세서</span>
-          <div
-            role="group"
-            aria-label="거래명세서 일치 · 불일치"
-            className="flex items-stretch h-11 rounded-xl overflow-hidden border-2 border-line bg-zinc-100/60"
-          >
-            {/* 일치 */}
-            <button
-              role="radio"
-              aria-checked={isMatch}
-              onClick={() => onSetStatus(item.key, isMatch ? "pending" : "match")}
-              title="수량 일치 · 클릭 시 선택/해제"
-              className={[
-                "flex items-center justify-center gap-1 px-2.5 min-w-[64px]",
-                "text-[15px] font-bold transition-all duration-150 cursor-pointer",
-                isMatch
-                  ? "bg-emerald-500 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
-                  : "text-zinc-500 hover:text-emerald-700 hover:bg-white",
-              ].join(" ")}
+            <span className="text-[14px] font-semibold text-violet-500/80">거래명세서 검수</span>
+            <div
+              role="group"
+              aria-label="거래명세서 일치 · 불일치"
+              className="flex items-stretch h-11 rounded-xl overflow-hidden border-2 border-violet-100 bg-gradient-to-br from-violet-50/40 to-white shadow-[0_1px_2px_rgba(139,92,246,0.06)]"
             >
-              <CheckCircle2 size={13} strokeWidth={isMatch ? 2.5 : 2} />
-              일치
-            </button>
-            {/* 불일치 */}
-            <button
-              role="radio"
-              aria-checked={isMismatch}
-              onClick={() => onSetStatus(item.key, isMismatch ? "pending" : "mismatch")}
-              title="수량 불일치 · 클릭 시 선택/해제"
-              className={[
-                "flex items-center justify-center gap-1 px-2.5 min-w-[64px] border-l border-line",
-                "text-[15px] font-bold transition-all duration-150 cursor-pointer",
-                isMismatch
-                  ? "bg-rose-500 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
-                  : "text-zinc-500 hover:text-rose-700 hover:bg-white",
-              ].join(" ")}
-            >
-              <XCircle size={13} strokeWidth={isMismatch ? 2.5 : 2} />
-              불일치
-            </button>
-          </div>
+              {/* 일치 · 검수 통과 · violet 톤 */}
+              <button
+                role="radio"
+                aria-checked={isMatch}
+                onClick={() => onSetStatus(item.key, isMatch ? "pending" : "match")}
+                title="수량 일치 · 검수 통과"
+                className={[
+                  "flex items-center justify-center gap-1 px-3 min-w-[72px]",
+                  "text-[15px] font-bold transition-all duration-150 cursor-pointer",
+                  isMatch
+                    ? "bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
+                    : "text-violet-500/60 hover:text-violet-700 hover:bg-violet-50",
+                ].join(" ")}
+              >
+                <CheckCircle2 size={14} strokeWidth={isMatch ? 2.5 : 2} />
+                일치
+              </button>
+              {/* 불일치 · 검수 이슈 · rose 톤 (danger) */}
+              <button
+                role="radio"
+                aria-checked={isMismatch}
+                onClick={() => onSetStatus(item.key, isMismatch ? "pending" : "mismatch")}
+                title="수량 불일치 · 검수 이슈"
+                className={[
+                  "flex items-center justify-center gap-1 px-3 min-w-[72px] border-l border-violet-100",
+                  "text-[15px] font-bold transition-all duration-150 cursor-pointer",
+                  isMismatch
+                    ? "bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
+                    : "text-rose-400/60 hover:text-rose-700 hover:bg-rose-50",
+                ].join(" ")}
+              >
+                <XCircle size={14} strokeWidth={isMismatch ? 2.5 : 2} />
+                불일치
+              </button>
+            </div>
           </div>
 
-          {/* 2026-09-08 · 사용자 지시 · 일치 선택 시 · 예상 현재고 = 현재고 + 매입수량 표시
-              2026-09-14 · #132 · 라벨·배지 나란히 · #135 · 팬시한 UI (그라디언트·아이콘·강조) */}
+          {/* 2026-09-14 · #139 · 예상 현재고 · sky 톤 (재고 amber와 구분 · 미래값 명확) */}
           {isMatch && item.qty > 0 && (
-            <div className="inline-flex items-stretch gap-0 shrink-0 rounded-xl overflow-hidden border border-emerald-200/80 shadow-[0_1px_2px_rgba(6,95,70,0.05),0_2px_8px_-2px_rgba(6,95,70,0.1)] bg-gradient-to-br from-white to-emerald-50/40">
-              {/* 좌 · 라벨 (아이콘 + 텍스트) */}
-              <div className="inline-flex items-center gap-1.5 px-3 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+            <div className="inline-flex items-stretch gap-0 shrink-0 rounded-xl overflow-hidden border border-sky-200/80 shadow-[0_1px_2px_rgba(3,105,161,0.05),0_2px_8px_-2px_rgba(3,105,161,0.1)] bg-gradient-to-br from-white to-sky-50/40">
+              <div className="inline-flex items-center gap-1.5 px-3 bg-gradient-to-br from-sky-500 to-sky-600 text-white">
                 <TrendingUp size={14} strokeWidth={2.4} />
                 <span className="text-[14px] font-bold tracking-tight whitespace-nowrap">예상 현재고</span>
               </div>
-              {/* 우 · 계산식 (현재고 → +qty → 결과) */}
               <div className="inline-flex items-center gap-2 px-3.5 h-11 min-w-[150px]">
                 <span className="text-[15px] font-semibold text-zinc-500 tabular-nums leading-none">{currentStock}</span>
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[13px] font-bold tabular-nums leading-none">
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-sky-100 text-sky-700 text-[13px] font-bold tabular-nums leading-none">
                   +{item.qty}
                 </span>
-                <ArrowRight size={13} className="text-emerald-400 shrink-0" strokeWidth={2.5} />
-                <span className="text-[22px] font-extrabold tabular-nums text-emerald-700 leading-none tracking-tight">
+                <ArrowRight size={13} className="text-sky-400 shrink-0" strokeWidth={2.5} />
+                <span className="text-[22px] font-extrabold tabular-nums text-sky-700 leading-none tracking-tight">
                   {currentStock + item.qty}
                 </span>
-                <span className="text-[13px] font-semibold text-emerald-600/70 leading-none">개</span>
+                <span className="text-[13px] font-semibold text-sky-600/70 leading-none">개</span>
               </div>
             </div>
           )}
