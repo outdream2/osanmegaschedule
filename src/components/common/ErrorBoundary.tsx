@@ -1,8 +1,11 @@
 // src/components/common/ErrorBoundary.tsx
 // 2026-08-16 · #113 · React lazy chunk 로드 실패 whitescreen 방지
-// 2026-09-07 · 에러 상세 항상 표시 (DEV 전용 아님) · 컴포넌트 스택 · 타임스탬프 · "홈으로"
+// 2026-09-07 · 에러 상세 항상 표시 · 컴포넌트 스택 · 타임스탬프 · "홈으로"
+// 2026-09-14 · 보안 · stack trace · DEV 에서만 노출 (프로덕션 · 내부 경로·라이브러리 힌트 유출 방지)
 import React from "react";
 import { Card } from "./Card";
+
+const IS_DEV = import.meta.env?.DEV === true;
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -70,26 +73,33 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             </div>
           </div>
 
-          {/* 에러 상세 · 항상 표시 (디버그용) */}
-          <div className="bg-zinc-900 rounded-lg p-3 font-mono text-[12px] overflow-auto max-h-[40vh] flex flex-col gap-2">
-            {timestamp && (
-              <div className="text-zinc-400 text-[11px]">⏱ {timestamp}</div>
-            )}
-            <div>
-              <span className="text-rose-400 font-bold">{error.name}: </span>
-              <span className="text-rose-200">{error.message}</span>
+          {/* 에러 상세 · DEV 에서만 표시 (프로덕션 · 내부 정보 유출 방지) */}
+          {IS_DEV && (
+            <div className="bg-zinc-900 rounded-lg p-3 font-mono text-[12px] overflow-auto max-h-[40vh] flex flex-col gap-2">
+              {timestamp && (
+                <div className="text-zinc-400 text-[11px]">⏱ {timestamp}</div>
+              )}
+              <div>
+                <span className="text-rose-400 font-bold">{error.name}: </span>
+                <span className="text-rose-200">{error.message}</span>
+              </div>
+              {error.stack && (
+                <pre className="text-zinc-400 whitespace-pre-wrap break-words text-[11px] leading-relaxed border-t border-zinc-700 pt-2">
+                  {error.stack.replace(error.message, "").trim()}
+                </pre>
+              )}
+              {componentStack && (
+                <pre className="text-amber-300/70 whitespace-pre-wrap break-words text-[11px] leading-relaxed border-t border-zinc-700 pt-2">
+                  {componentStack.trim()}
+                </pre>
+              )}
             </div>
-            {error.stack && (
-              <pre className="text-zinc-400 whitespace-pre-wrap break-words text-[11px] leading-relaxed border-t border-zinc-700 pt-2">
-                {error.stack.replace(error.message, "").trim()}
-              </pre>
-            )}
-            {componentStack && (
-              <pre className="text-amber-300/70 whitespace-pre-wrap break-words text-[11px] leading-relaxed border-t border-zinc-700 pt-2">
-                {componentStack.trim()}
-              </pre>
-            )}
-          </div>
+          )}
+          {!IS_DEV && timestamp && (
+            <div className="text-zinc-400 text-[13px]">
+              발생 시각 · {timestamp}
+            </div>
+          )}
 
           <div className="flex gap-2">
             <button type="button" onClick={this.goHome}

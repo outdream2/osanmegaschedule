@@ -166,7 +166,9 @@ async function startServer() {
   app.use(express.json({ limit: "10mb" })); // 나머지 API · DoS 방어
   // 2026-08-05 T3 · JWT httpOnly 쿠키 파싱
   app.use(cookieParser());
-  app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+  // 2026-09-14 · 보안 · /uploads 정적 파일 · requireAuth 아래로 이동 (아래 L200+)
+  //   · 이전 · /uploads/* · URL만 알면 인증 없이 다운로드 가능 · 계약서 PDF 등 개인정보 유출 위험
+  //   · 신규 · 로그인 필수 + 개인정보 경로 (contracts·resignations·hr-forms) · admin (level>=8) 만
 
   // 2026-08-16 · #112-C · 로그인 무차별 대입 방어 · /api/auth/* 전체에 rate-limit 적용
   app.use("/api/auth", authLimiter);
@@ -198,6 +200,23 @@ async function startServer() {
   //   · 이전에 public 이던 notifications·pharmacist-menu-items · POST/PATCH/DELETE 있으므로 · 안전을 위해 이 아래로 이동
   //   · 개별 세밀 레벨 필요 시 · 각 route 에 authorize(N) 추가 (다음 단계)
   app.use(requireAuth);
+
+  // 2026-09-14 · 보안 · /uploads 정적 파일 · 로그인 필수 이후 마운트
+  //   · /uploads/contracts/* · /uploads/resignations/* · /uploads/hr-forms/* · admin (level>=8) 만
+  //   · /uploads/board/* · 로그인 필요 (기본)
+  const UPLOADS_ADMIN_PREFIXES = ["/contracts/", "/resignations/", "/hr-forms/"];
+  app.use("/uploads", (req, res, next) => {
+    const needsAdmin = UPLOADS_ADMIN_PREFIXES.some(p => req.path.startsWith(p));
+    if (!needsAdmin) return next();
+    const payload = (req as any).authUser;
+    const level = Number(payload?.level ?? 0);
+    if (level < 8) {
+      res.status(403).json({ error: "관리자만 접근 가능한 파일입니다.", code: "FORBIDDEN" });
+      return;
+    }
+    next();
+  });
+  app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
   // 알림·약사 메뉴 (로그인 필수로 이관)
   app.use(notificationsRouter);
