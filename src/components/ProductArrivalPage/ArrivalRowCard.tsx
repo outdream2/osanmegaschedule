@@ -468,15 +468,18 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
           </div>
           </div>
 
-          {/* 2026-09-08 · 사용자 지시 · 일치 선택 시 · 예상 현재고 = 현재고 + 매입수량 표시 */}
+          {/* 2026-09-08 · 사용자 지시 · 일치 선택 시 · 예상 현재고 = 현재고 + 매입수량 표시
+              2026-09-14 · #132 · 라벨과 배지 나란히 · 라벨 +2 · 위치 정돈 */}
           {isMatch && item.qty > 0 && (
-            <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[14px] font-semibold text-emerald-600 tracking-tight">예상 현재고</span>
-              <div className="inline-flex items-baseline gap-1 px-2.5 h-11 rounded-xl border-2 border-emerald-200 bg-emerald-50/60 min-w-[80px] justify-center">
-                <span className="text-[13px] font-semibold text-zinc-500 tabular-nums">{currentStock}</span>
-                <span className="text-[12px] font-bold text-emerald-600">+{item.qty}</span>
-                <span className="text-emerald-500 font-light text-[13px]">=</span>
-                <span className="text-[18px] font-extrabold tabular-nums text-emerald-700 leading-none">{currentStock + item.qty}</span>
+            <div className="inline-flex items-center gap-2 shrink-0">
+              <span className="text-[16px] font-bold text-emerald-700 tracking-tight whitespace-nowrap">
+                예상 현재고
+              </span>
+              <div className="inline-flex items-baseline gap-1.5 px-3 h-11 rounded-xl border-2 border-emerald-200 bg-emerald-50/60 min-w-[130px] justify-center">
+                <span className="text-[15px] font-semibold text-zinc-600 tabular-nums leading-none">{currentStock}</span>
+                <span className="text-[14px] font-bold text-emerald-600 leading-none">+{item.qty}</span>
+                <span className="text-emerald-500 font-light text-[15px] leading-none">=</span>
+                <span className="text-[20px] font-extrabold tabular-nums text-emerald-700 leading-none">{currentStock + item.qty}</span>
               </div>
             </div>
           )}
