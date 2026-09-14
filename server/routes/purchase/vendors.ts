@@ -17,17 +17,11 @@ import { notificationsService } from "../../services/notificationsService";
 
 const router = Router();
 
-// ── 2026-09-01 · withBalances=1 5분 in-memory 캐시 ───────────────────────────
-// 키: "withBalances" (단일 버킷 · plain 조회는 빠르므로 캐싱 불필요)
-// TTL: 5분 · POST/PATCH/DELETE 시 즉시 무효화 (invalidateVendorCache)
-const VENDOR_CACHE_TTL_MS = 5 * 60 * 1000;
-const vendorCache = new Map<string, { data: any; expiresAt: number }>();
-const CACHE_KEY_BALANCES = "withBalances";
-
-export function invalidateVendorCache(): void {
-  vendorCache.clear();
-  console.log("[vendors] cache invalidated");
-}
+// 2026-09-14 · 사용자 대원칙 · 실시간 정확성 · vendorCache (잔고맵) 제거
+//   · 이전 · withBalances=1 · 5min in-memory 캐시 · 매입 후 잔고 stale 위험
+//   · 신규 · 매 요청 · purchase_details + supplier_payments 실시간 계산 (~1-2s)
+//   · invalidateVendorCache · no-op stub 유지 (호출 사이트 호환)
+export function invalidateVendorCache(): void { /* cache removed · 실시간 조회로 전환 */ }
 
 // 공급사관리 엑셀 업로드 · LandingPage 데이터 업로드 모달에서 사용
 // binary 로 전송된 xlsx 파일을 서버에서 파싱 후 vendors 테이블에 upsert (company_name 기준)
@@ -192,16 +186,7 @@ router.get("/api/vendors", asyncHandler(async (req, res) => {
   //   응답 shape 유지 · latestBalance: { balance, invoice_date, created_at } | null
   //     · balance: 매입 - 결제 · invoice_date: 최근 매입일 · created_at: 실시간 계산 시각
   if (req.query.withBalances === "1") {
-    // 2026-09-01 · 캐시 hit 확인
-    const cached = vendorCache.get(CACHE_KEY_BALANCES);
-    if (cached && Date.now() < cached.expiresAt) {
-      console.log("[vendors] X-Cache: HIT");
-      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
-      res.setHeader("X-Cache", "HIT");
-      const body: VendorsListResponse = cached.data as any;
-      return res.json(body);
-    }
-
+    // 2026-09-14 · 캐시 제거 · 매 요청 실시간 계산 (Promise.all 병렬화 유지)
     // 2026-09-01 · P3 최적화 · 3단계 순차 → Promise.all 병렬화 (latency 3→1 라운드 트립)
     //   · purchases + payments + configs · 모두 독립적 · 동시 실행 안전
     const [purchases, payRes, cfgRes] = await Promise.all([
@@ -264,11 +249,8 @@ router.get("/api/vendors", asyncHandler(async (req, res) => {
       };
     });
 
-    // 2026-09-01 · 캐시 저장 (TTL 5분)
-    vendorCache.set(CACHE_KEY_BALANCES, { data: enriched, expiresAt: Date.now() + VENDOR_CACHE_TTL_MS });
-    console.log("[vendors] X-Cache: MISS · cached for 5 min");
+    // 2026-09-14 · 캐시 저장 삭제 · 매 요청 실시간
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
-    res.setHeader("X-Cache", "MISS");
     const body: VendorsListResponse = enriched as any;
     return res.json(body);
   }
