@@ -41,6 +41,7 @@
 | 7 | 📄 **TASKS.md v5 재확인** · 12건 완료 마킹 | `a96c3051` |
 | 8 | 📄 **메타·문서** · package.json + README + Migrations README | `990acf9f` · `1c9a2050` |
 | 9 | 🎯 **프레임워크** · inventoryChecksApi 프리미티브 · 11 파일 통합 | `af71c14a` |
+| 10 | 🎯 **프레임워크** · orderRequestsApi 프리미티브 · 7 곳 통합 | `23ddc1dc` |
 
 **필수 · 서버 재시작** (Ctrl+C · npm run dev) · 백엔드 fix 반영
 
@@ -179,6 +180,45 @@
 ### 예상 결과
 - 상품 등록/수정 → 실재고 테이블 · 즉시 자동 갱신
 - 사용자 새로고침 불필요
+
+---
+
+## 🎯 [10] 프레임워크 · orderRequestsApi 프리미티브 추출 · 7 call sites 통합 ✅
+**커밋** · `23ddc1dc`
+
+### 배경
+- `/api/order-requests` · 7 곳 산발 (POST 5 · GET 2)
+- 프레임워크 대원칙 · 단일 endpoint · 즉시 추출
+
+### 해결
+- **신규:** `src/lib/orderRequestsApi.ts`
+  - `listOrderRequests()` · GET 리스트
+  - `createOrderRequest(payload)` · POST 등록 (requested_at 자동 세팅)
+  - `bulkSendOrderRequests(payload)` · POST bulk-send (SolAPI 카톡·SMTP)
+  - `CreateOrderRequestPayload` · `OrderRequestRow` 타입
+- **4 파일 마이그레이션**
+- **1 파일 skip** (useOrderModal.ts · bulk-send 복잡 payload · 별도 확장 필요)
+
+### 테스트 절차
+**A. 발주필요 → 발주요청 (OrderManagePage)**
+1. **매장 > 발주 > 발주필요** · 부족 상품 · [발주 요청] 클릭
+2. 발주요청 리스트 · 즉시 반영 · toast
+
+**B. 발주요청 일괄 요청 (OrderManagePage)**
+1. 여러 상품 체크 · 일괄 발주 요청 · 각각 정상 저장
+
+**C. 승인요청 · 발주요청 (RequestsPage)**
+1. **승인요청** · 발주요청 탭 · 리스트 정상 로드
+2. 실재고 리스트에서 · 발주 요청 · 정상 동작
+
+**D. 상품 스캔 · 발주 요청 (ProductInfoCard)**
+1. **바코드 스캔** · 상품 · 우측 카드 · [발주 요청] 클릭
+2. 정상 저장 · 이미 요청됨 배지
+
+### 회귀 확인
+- 모든 발주 요청 flow · 이전과 동일 동작
+- requested_at 자동 세팅 (이전 · 각 caller 에서 new Date().toISOString() 수동 세팅)
+- TS 통과 · 3355/3355 tests 통과
 
 ---
 
