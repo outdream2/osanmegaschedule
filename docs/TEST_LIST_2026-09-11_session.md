@@ -25,28 +25,65 @@
 
 ---
 
-# 🆕 2026-09-13 ~ 2026-09-14 세션 · #132 ~ #139
+# 🆕 2026-09-13 ~ 2026-09-14 세션 · #132 ~ #139 + #84
 
-## #139 · 실재고 테이블 · 매장1·2·3 zone·상세구역 표시 fix 🔧 진행중
+## #84 · 상품상세정보 페이지 · 최신 트렌드 UI 개선 ✅
+**커밋** · `0f9ab325` (ProductInfoPage.tsx UI 폴리시 · #139 커밋에 포함)
+
+### 배경
+- 상품상세정보 페이지 · 헤더·KPI 카드 · Linear/Vercel/Notion 톤 적용
+- 파스텔·촌스러움 지양 · 초고해상도·부드러움
+
+### 해결
+- **헤더** · 아이콘 배경 · `bg-emerald-500` → `bg-gradient-to-br from-brand-tint to-emerald-50` · ring 라인 · 절제된 톤
+- **KPI 카드** · Linear 스타일 hover 인터랙션:
+  - `hover:shadow-md`, `hover:-translate-y-0.5`, `transition-all duration-200`
+  - **판매가** · brand-tint gradient primary · 22px 강조
+  - **현재고** · sky-50 gradient primary · 22px 강조
+  - **이익율** · semantic 테두리색 (30% emerald · 15% amber · 미만 rose)
+  - **창고1·2** · cyan-100 테두리 · 창고 그룹 시각적 구분
+  - **매장** · indigo-100 테두리 · 매장 그룹 시각적 구분
+  - **나머지** · line/70 · 미묘한 hover shadow
+
+### 테스트 절차
+1. **상품정보** 페이지 진입 · 좌측 상품 선택
+2. 상세 뷰 · **헤더 아이콘** · 부드러운 gradient · 튀지 않음
+3. **가격·재고** 섹션 4-col grid:
+   - 판매가·현재고 카드 · **primary** · gradient 배경 · 큰 숫자 (22px)
+   - 이익율 · 30%↑ emerald 테두리 · 15%↑ amber · 미만 rose
+   - 창고1·2 · cyan · 매장 · indigo · 시각 구분
+4. **hover** · 각 카드 · shadow up · 살짝 위로 (translate-y-0.5)
+5. 파스텔·이모지·촌스러움 · **없음** · Linear/Vercel 톤
+
+### 예상 결과
+- 시각적 계층 · 뚜렷 · primary 강조
+- hover 인터랙션 · 부드러움
+- 창고·매장 · 색상으로 그룹 구분
+
+### 사용자 피드백 필요
+사용자 · 브라우저 확인 후 · 추가 개선 방향 안내 (기본정보·상세진열위치·기타 섹션도 폴리시 필요 시)
+
+---
+
+## #139 · 실재고 테이블 · 매장1·2·3 zone·상세구역 표시 fix ✅
+**커밋** · `0f9ab325` (코드 통일 · 21 파일) · `2a2ce530` · `b82650e4` · `dffa04f8` (마이그레이션·스크립트)
 **커밋** · `2a2ce530` · `b82650e4` · `dffa04f8` (마이그레이션·확인 스크립트) · 코드 통일 진행 중
 
 ### 배경
 - 실재고 테이블 페이지 · 매장1·2·3 zone·상세구역 표시 안 됨
 - DB · `store_stock` / `store_stock_2` 구 명명 · warehouse1_stock 규칙 불일치
 
-### 해결 (진행중)
-- ✅ DB 마이그레이션 실행 · `store_stock` → `store1_stock` · `store_stock_2` → `store2_stock` (사용자 SQL 완료)
+### 해결 ✅
+- ✅ DB 마이그레이션 · `store_stock` → `store1_stock` · `store_stock_2` → `store2_stock` (사용자 SQL 완료)
 - ✅ Migration files · `20260914_inventory_checks_rename_store_stocks.sql` · `20260914_add_inventory_checks_store_stock_2.sql`
 - ✅ `store2_zone` · `store3_zone` 컬럼 확인 (이미 존재)
-- 🔧 **Agent a57a3123** · 백그라운드 · 15+ 파일 자동 fix 중
-  - `src/shared/schemas/inventoryChecks.ts` · `store_stock` → `store1_stock`
-  - `server/routes/stock/products.ts` · `/api/inventory-latest` 응답 필드명 통일
-  - `src/components/DisplayPage/RealStockTablePage.tsx` · InvRow 인터페이스
-  - `src/components/ScanPage/ScanPage.tsx` · 저장·조회 로직
-  - `server/routes/display/requests.ts` · SELECT 쿼리
-  - `server/routes/stock/lossTracking.ts` · SELECT 쿼리
+- ✅ **Agent a57a3123 완료** · 21 파일 자동 fix · TS Exit 0
+  - 서버 5 파일 · 신규 필드 SELECT + legacy alias 응답 유지 (하위 호환)
+  - 공유 스키마 · 신규+legacy 병행 지원
+  - 클라이언트 13+ 파일 · write 경로 신규 필드로 통일
+  - 회귀 리스크 낮음 · legacy alias 응답 유지로 미변경 클라이언트도 정상
 
-### 테스트 절차 (Agent 완료 후)
+### 테스트 절차
 1. **실재고 테이블** (매장진열 > 실재고테이블) 진입
 2. 매장1·매장2·매장3 zone 컬럼 · 정상 표시
 3. 상세구역 · 옆 컬럼 정상 표시 (위치 뱃지 · 3자리 코드)
