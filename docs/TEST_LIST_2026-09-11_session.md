@@ -40,6 +40,7 @@
 | 6 | 🧪 **테스트 19개 정리** · CI 클린 (3355/3355) | `c190ad86` |
 | 7 | 📄 **TASKS.md v5 재확인** · 12건 완료 마킹 | `a96c3051` |
 | 8 | 📄 **메타·문서** · package.json + README + Migrations README | `990acf9f` · `1c9a2050` |
+| 9 | 🎯 **프레임워크** · inventoryChecksApi 프리미티브 · 11 파일 통합 | `af71c14a` |
 
 **필수 · 서버 재시작** (Ctrl+C · npm run dev) · 백엔드 fix 반영
 
@@ -178,6 +179,62 @@
 ### 예상 결과
 - 상품 등록/수정 → 실재고 테이블 · 즉시 자동 갱신
 - 사용자 새로고침 불필요
+
+---
+
+## 🎯 [9] 프레임워크 · inventoryChecksApi 프리미티브 추출 · 11 call sites 통합 ✅
+**커밋** · `af71c14a`
+
+### 배경
+- `/api/inventory-checks` · 11 파일에서 산발 호출 · 프레임워크 대원칙 위반
+- `/api/inventory-checks/bulk` · 2 파일 산발
+- borrowingsApi.ts · employeeApi.ts 패턴 존재 · 확장 필요
+
+### 해결
+- **신규:** `src/lib/inventoryChecksApi.ts`
+  - `saveInventoryCheck(payload)` · POST 단건
+  - `saveBulkInventoryChecks(payload)` · POST bulk (ScanPage 대량 저장)
+  - `listInventoryChecks({ product_code? })` · GET 리스트 (필터 옵션)
+  - `InventoryCheckPayload` · `InventoryCheckRow` · `BulkInventoryCheckPayload` 타입
+- **11 파일 마이그레이션** (모두 `api.post/get` → 프리미티브 호출)
+
+### 테스트 절차
+**A. 실재고 편집 (InventoryEditModal)**
+1. **매장진열 > 실재고테이블** · 상품 선택 · 편집 모달
+2. w1·w2·s1·s2·s3 값 조정 · 저장 · toast · 새로고침 없이 반영
+
+**B. 실재고 테이블 (RealStockTablePage)**
+1. **매장진열 > 실재고테이블** · 셀 클릭 · 수정 · 저장
+2. inventory-checks-updated 이벤트 · 리스트 자동 반영
+
+**C. 상품정보 편집 (ProductInfoPage)**
+1. **상품정보** · 상품 선택 · [수정] · 상세구역 (shelf) 변경 · 저장
+2. 정상 저장 · #61 fix 와 함께 · 실재고 테이블 자동 동기
+
+**D. 스캔 대량 저장 (ScanPage)**
+1. **바코드 스캔** · 여러 상품 스캔 · 대량 저장 (bulk)
+2. j.saved 카운트 · 정상 표시 · downgraded 배너
+
+**E. 상품 스캔 시 이력 자동 로드 (ScanPage)**
+1. 상품 스캔 · addQty 자동 채움 (직전 저장값)
+
+**F. 유통기한 저장 (ExpiryDateModal)**
+1. **바코드 스캔** · 상품 · 유통기한 모달 · 날짜 저장/해제
+2. inventory_checks.expiry_date + products.expiry_date 저장
+
+**G. 진열 승인요청 · 실재고 조회 (RequestsPage)**
+1. **승인요청** · 실재고 탭 · 리스트 로드 정상
+
+**H. 반품필요 리스트 (ReturnListPanel)**
+1. **매입 > 발주 > 반품필요** · 실재고 컬럼 정상 표시
+
+**I. 재고 재조정 (StockReconciliationTab)**
+1. **매장진열 > 재고 재조정** · inventory-checks 최신 로드
+
+### 회귀 확인
+- 모든 페이지 · 이전과 동일 동작 · payload/response shape 무변경
+- TS 검증 통과 · 3355/3355 tests 통과
+- 응답 shape · 서버 · 로컬 타입 (RequestsPage.InventoryCheck 등) · cast 로 호환
 
 ---
 
