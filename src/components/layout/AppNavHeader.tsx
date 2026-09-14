@@ -9,7 +9,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from "re
 import { Lock, LogOut, Menu } from "lucide-react";
 import type { AuthSession } from "../../types";
 import { NotificationBell } from "../NotificationBell";
-import { NotificationToggle } from "../NotificationToggle";
+// 2026-09-14 · #108 · NotificationToggle 제거 (사용자 결정 · 실사용 빈도 낮음)
 import logoImg from "../../images/logo2.png";
 import { useSidebarEnabled } from "../../hooks/useSidebar";
 import { SidebarTrigger } from "../ui/sidebar";
@@ -376,7 +376,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
               <span className="break-words whitespace-normal leading-tight">{authSession.employeeName}{authSession.employeeRank ?? ""}</span>
             </button>
           )}
-          <NotificationToggle authSession={authSession} />
+          {/* 2026-09-14 · #108 · NotificationToggle 제거 · Bell 만 유지 */}
           <NotificationBell authSession={authSession} onNavigate={onNavigate as unknown as (page: string) => void} />
           {rightSlot}
           {authSession && onLogout ? (

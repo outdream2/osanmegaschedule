@@ -11,7 +11,7 @@ import { useIsMobile } from "../../hooks/use-mobile";
 // 2026-08-23 · #188 · usePageVisibility · 사이드바 items · 뷰포트별 필터
 import { usePageVisibility } from "../../hooks/usePageVisibility";
 import { NotificationBell } from "../NotificationBell";
-import { NotificationToggle } from "../NotificationToggle";
+// 2026-09-14 · #108 · NotificationToggle 제거 (사용자 결정 · 실사용 빈도 낮음)
 import {
   Sidebar,
   SidebarContent,
@@ -543,7 +543,7 @@ export const SideNav: React.FC<SideNavProps> = ({
         {/* 2026-08-26 · 사용자 지시 · 사이드바 접힘 시 튀어나옴 방지 · 세로 stack + overflow-hidden */}
         {authSession && (
           <div className="flex items-center gap-0.5 px-0.5 py-0 rounded-md group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:overflow-hidden group-data-[collapsible=icon]:w-full">
-            <NotificationToggle authSession={authSession} />
+            {/* 2026-09-14 · #108 · NotificationToggle 제거 · NotificationBell (알림 목록) 은 유지 */}
             <NotificationBell authSession={authSession} onNavigate={onNavigate as unknown as (page: string) => void} compact />
           </div>
         )}
