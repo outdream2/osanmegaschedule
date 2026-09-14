@@ -11,6 +11,18 @@ import { api } from "../../lib/apiClient";
 import type { ProductInfo } from "./OrderManagePage.types";
 
 // 2026-09-13 · #55 · 임박 이벤트 · GET /api/events/today
+// 2026-09-14 · #85 · products 배열 · [발주 추가] 액션
+interface EventProduct {
+  product_code: string;
+  product_name: string;
+  current_stock: number | null;
+  optimal_stock: number | null;
+  supplier: string | null;
+  category: string | null;
+  sale_price: number | null;
+  purchase_price: number | null;
+  sale_status?: string | null;
+}
 interface EventToday {
   id: number;
   name: string;
@@ -19,6 +31,8 @@ interface EventToday {
   end_date: string | null;
   recurring: boolean;
   product_count?: number;
+  products?: EventProduct[];
+  d_day?: number | null;
 }
 
 const TYPE_TONE: Record<string, { label: string; cls: string }> = {
@@ -46,6 +60,10 @@ interface Props {
   onApplyQty: (code: string, qty: number) => void;
   onOpenDetail: () => void;
   onClose: () => void;
+  /** 2026-09-14 · #85 · 이벤트 상품 · [발주 추가] 버튼 · 콜백 */
+  onRequestProduct?: (product_code: string, product_name: string) => void;
+  /** 이미 발주 요청된 상품 코드 · 배지 표시용 */
+  requestedCodes?: Set<string>;
 }
 
 function formatQty(n: number): string {
@@ -54,9 +72,19 @@ function formatQty(n: number): string {
 
 export const SalesRecommendationPanel: React.FC<Props> = ({
   product, saleMonth, saleQuarter, loading, onApplyQty, onOpenDetail, onClose,
+  onRequestProduct, requestedCodes,
 }) => {
   // 2026-09-13 · #55 · 임박 이벤트 · product 무관 · 상단 배너 (product null 시에도 표시)
   const [eventsToday, setEventsToday] = useState<EventToday[]>([]);
+  // 2026-09-14 · #85 · 이벤트별 · 상품 리스트 확장 상태 (accordion)
+  const [expandedEvents, setExpandedEvents] = useState<Set<number>>(new Set());
+  const toggleEventExpand = React.useCallback((id: number) => {
+    setExpandedEvents(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -85,25 +113,86 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                 const d = dayDiff(ev.start_date);
                 const isSoon = d != null && d > 0 && d <= 30;
                 const isNow = d != null && d <= 0;
+                const evProducts = ev.products ?? [];
+                const productCount = evProducts.length || ev.product_count || 0;
+                const isExpanded = expandedEvents.has(ev.id);
+                const canExpand = productCount > 0;
                 return (
-                  <div key={ev.id} className={`flex items-center gap-2 flex-wrap px-2.5 py-1.5 rounded-lg border ${tone.cls}`}>
-                    <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-white/60 border border-current/20 shrink-0">
-                      {tone.label}
-                    </span>
-                    <span className="text-[14px] font-bold shrink-0">{ev.name}</span>
-                    {ev.start_date && (
-                      <span className="inline-flex items-center gap-1 text-[12px] shrink-0">
-                        <Calendar size={11} />
-                        {ev.start_date}
-                        {ev.end_date && ev.end_date !== ev.start_date && ` ~ ${ev.end_date}`}
+                  <div key={ev.id} className="flex flex-col gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => canExpand && toggleEventExpand(ev.id)}
+                      disabled={!canExpand}
+                      className={`flex items-center gap-2 flex-wrap px-2.5 py-1.5 rounded-lg border ${tone.cls} ${canExpand ? "cursor-pointer hover:brightness-95 transition" : "cursor-default"}`}
+                    >
+                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-white/60 border border-current/20 shrink-0">
+                        {tone.label}
                       </span>
-                    )}
-                    {isNow && <StatusPill tone="rose" size="sm" dot pulse>진행중</StatusPill>}
-                    {isSoon && <StatusPill tone="amber" size="sm">D-{d}</StatusPill>}
-                    {ev.product_count != null && ev.product_count > 0 && (
-                      <span className="ml-auto text-[12px] font-semibold tabular-nums">
-                        상품 {ev.product_count}개
-                      </span>
+                      <span className="text-[14px] font-bold shrink-0">{ev.name}</span>
+                      {ev.start_date && (
+                        <span className="inline-flex items-center gap-1 text-[12px] shrink-0">
+                          <Calendar size={11} />
+                          {ev.start_date}
+                          {ev.end_date && ev.end_date !== ev.start_date && ` ~ ${ev.end_date}`}
+                        </span>
+                      )}
+                      {isNow && <StatusPill tone="rose" size="sm" dot pulse>진행중</StatusPill>}
+                      {isSoon && <StatusPill tone="amber" size="sm">D-{d}</StatusPill>}
+                      {productCount > 0 && (
+                        <span className="ml-auto inline-flex items-center gap-1 text-[12px] font-semibold tabular-nums">
+                          상품 {productCount}개
+                          {canExpand && (
+                            <span className={`inline-block transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}>▶</span>
+                          )}
+                        </span>
+                      )}
+                    </button>
+                    {/* 2026-09-14 · #85 · 이벤트 상품 리스트 · 확장 시 표시 · [발주 추가] 액션 */}
+                    {isExpanded && evProducts.length > 0 && (
+                      <div className="flex flex-col gap-1 pl-2 border-l-2 border-brand-tint/60 ml-2">
+                        {evProducts.map(p => {
+                          const cur = Number(p.current_stock ?? 0) || 0;
+                          const opt = Number(p.optimal_stock ?? 0) || 0;
+                          const shortage = Math.max(0, opt - cur);
+                          const alreadyRequested = requestedCodes?.has(p.product_code) ?? false;
+                          const isInactive = p.sale_status === "판매중지" || p.sale_status === "숨김";
+                          return (
+                            <div key={p.product_code} className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-white border border-line hover:border-brand-tint hover:shadow-[0_1px_4px_rgba(10,46,74,0.05)] transition-all">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-[13px] font-bold text-ink truncate">{p.product_name || p.product_code}</span>
+                                  {isInactive && <StatusPill tone="zinc" size="xs">{p.sale_status}</StatusPill>}
+                                </div>
+                                <div className="flex items-center gap-2 text-[11px] text-ink-soft tabular-nums mt-0.5">
+                                  <span>재고 <span className="font-semibold text-ink">{cur}</span></span>
+                                  <span>/ 적정 <span className="font-semibold text-ink">{opt}</span></span>
+                                  {shortage > 0 && (
+                                    <span className="text-rose-600 font-bold">부족 {shortage}</span>
+                                  )}
+                                  {p.supplier && <span className="truncate max-w-[80px]">· {p.supplier}</span>}
+                                </div>
+                              </div>
+                              {onRequestProduct && !alreadyRequested && !isInactive && (
+                                <button
+                                  type="button"
+                                  onClick={() => onRequestProduct(p.product_code, p.product_name)}
+                                  className="inline-flex items-center gap-1 rounded-md bg-brand-deep hover:bg-brand-deep/90 px-2 py-1 text-[11px] font-bold text-white transition shrink-0"
+                                  title="발주 필요 리스트에 추가"
+                                >
+                                  <Check size={11} strokeWidth={2.5} />
+                                  발주
+                                </button>
+                              )}
+                              {alreadyRequested && (
+                                <StatusPill tone="emerald" size="xs" dot>요청됨</StatusPill>
+                              )}
+                              {isInactive && (
+                                <StatusPill tone="zinc" size="xs">-</StatusPill>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 );

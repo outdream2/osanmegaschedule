@@ -278,7 +278,8 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
           </div>
         ) : (
           /* 2026-09-10 · 사용자 지시 · 우측 · 판매정보 패널 · 상품 선택 무관 · 계절·이벤트 정보 (전체)
-              · 상품명 클릭 · 우측 갱신 X · 모달만 open */
+              · 상품명 클릭 · 우측 갱신 X · 모달만 open
+              · 2026-09-14 · #85 · 이벤트 상품 · [발주 추가] 액션 · handleRequestOrder 연결 */
           <SalesRecommendationPanel
             product={null}
             saleMonth={null}
@@ -286,6 +287,12 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
             onApplyQty={() => {}}
             onOpenDetail={() => {}}
             onClose={() => {}}
+            requestedCodes={requestedCodes}
+            onRequestProduct={(code, name) => {
+              // 이벤트 상품 발주 추가 · 최소한의 ProductInfo 구성
+              const fakeInfo = { product_code: code, product_name: name } as unknown as ProductInfo;
+              void handleRequestOrder(fakeInfo);
+            }}
           />
         )}
       </div>
