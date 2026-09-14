@@ -354,8 +354,9 @@ router.get("/api/vat/monthly-summary", authorize(1), asyncHandler(async (req, re
   const warnings: string[] = [];
 
   // ── 매출 · stock_history · snapshot_date 로 그룹 ───────────
-  //   NOTE · stock_history 는 SKU × 일자 매트릭스 · total_amount = sale_qty × sale_price
-  //   snapshot_date 기준 월 그룹 · VAT 포함 총액으로 간주
+  // 2026-09-14 · #72·#73 · SSOT · 판매액 = sale_qty × sale_price (파생 계산 · total_amount 원본 사용 금지)
+  //   · stock_history.total_amount 는 xlsx 원본 그대로 · 정확도 저하 위험 (sale_price 변동 등)
+  //   · 다른 endpoint (topSales·salesTrend) 와 동일한 공식 · 일관성 유지
   try {
     const PAGE = 1000;
     let fromRow = 0;
@@ -363,7 +364,7 @@ router.get("/api/vat/monthly-summary", authorize(1), asyncHandler(async (req, re
     while (true) {
       const { data: pg, error: pgErr } = await supabase
         .from("stock_history")
-        .select("snapshot_date, total_amount")
+        .select("snapshot_date, sale_qty, sale_price")
         .gte("snapshot_date", fromParam)
         .lte("snapshot_date", toParam)
         .range(fromRow, fromRow + PAGE - 1);
@@ -379,7 +380,10 @@ router.get("/api/vat/monthly-summary", authorize(1), asyncHandler(async (req, re
         const date = String((r as any).snapshot_date ?? "");
         const month = date.slice(0, 7);
         if (!/^\d{4}-\d{2}$/.test(month)) continue;
-        const amt = Number((r as any).total_amount ?? 0) || 0;
+        // 2026-09-14 · SSOT · 판매액 파생 계산 (sale_qty × sale_price)
+        const qty = Number((r as any).sale_qty ?? 0) || 0;
+        const price = Number((r as any).sale_price ?? 0) || 0;
+        const amt = qty * price;
         if (amt <= 0) continue;
         const bucket = getBucket(month);
         bucket.salesTotal += amt;
