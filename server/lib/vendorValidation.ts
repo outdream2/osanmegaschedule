@@ -23,15 +23,10 @@ function normalizeName(name: string): string {
   return String(name ?? "").trim().replace(/\s+/g, " ");
 }
 
-// 캐시 · TTL 60초 · 매 요청마다 DB 조회 방지
-let vendorCache: { names: Map<string, { id: number; canonical: string }>; loadedAt: number } | null = null;
-const CACHE_TTL = 60_000;
-
+// 2026-09-14 · 사용자 대원칙 · 실시간 정확성 · 캐시 제거
+//   · 이전 · 60sec TTL · vendor 등록 후 최대 60sec stale (등록 즉시 발주·매입 저장 실패 위험)
+//   · 신규 · 매 요청 · DB 실시간 조회 (~5-20ms · 부담 무의미)
 async function loadVendorMap(): Promise<Map<string, { id: number; canonical: string }>> {
-  const now = Date.now();
-  if (vendorCache && (now - vendorCache.loadedAt) < CACHE_TTL) {
-    return vendorCache.names;
-  }
   const m = new Map<string, { id: number; canonical: string }>();
   try {
     const { data } = await supabase
@@ -47,7 +42,6 @@ async function loadVendorMap(): Promise<Map<string, { id: number; canonical: str
   } catch (e: any) {
     console.error("[vendorValidation] vendors 조회 실패:", e?.message);
   }
-  vendorCache = { names: m, loadedAt: now };
   return m;
 }
 
@@ -72,7 +66,5 @@ export async function validateSupplier(supplierName: string | null | undefined):
   };
 }
 
-/** 캐시 무효화 · vendors 변경 시 호출 */
-export function invalidateVendorCache(): void {
-  vendorCache = null;
-}
+/** 2026-09-14 · 캐시 제거 · no-op stub (호출 사이트 호환) */
+export function invalidateVendorCache(): void { /* cache removed · 실시간 조회로 전환 */ }
