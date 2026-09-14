@@ -4,6 +4,8 @@
 
 import React, { useState, useEffect } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+// 2026-09-14 · inventoryChecksApi 프리미티브
+import { saveInventoryCheck, listInventoryChecks } from "../../lib/inventoryChecksApi";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useConfirm } from "../../hooks/useConfirm";
 import { Card } from "../common/Card";
@@ -135,9 +137,9 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
     setOrderStatus("idle"); setExistingOrder(null); setOrderConfirm(false);
 
     if (!product.code) return;
-    api.get<any[]>(`/api/inventory-checks?product_code=${encodeURIComponent(product.code)}`)
-      .then(({ data }) => {
-        const last = (Array.isArray(data) ? data : [])[0];
+    listInventoryChecks({ product_code: product.code })
+      .then((list) => {
+        const last = list[0] as any;
         if (!last) return;
         if (last.warehouse1_stock != null) setWarehouse1Stock(Number(last.warehouse1_stock));
         else if (last.warehouse_stock != null) setWarehouse1Stock(Number(last.warehouse_stock));
@@ -169,8 +171,9 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
     if (value === "") return;
     statusSetters[field]("loading"); errorSetters[field](null);
     try {
-      await api.post("/api/inventory-checks", {
-        product_code: product.code, product_name: product.name,
+      await saveInventoryCheck({
+        product_code: product.code,
+        product_name: product.name,
         [field]: Number(value),
         system_stock: product.current_stock != null ? Number(product.current_stock) : null,
         optimal_stock: product.optimal_stock != null ? Number(product.optimal_stock) : null,

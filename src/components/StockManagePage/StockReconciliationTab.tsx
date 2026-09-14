@@ -36,6 +36,8 @@ import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { StatusPill } from "../common/StatusPill";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api, ApiError } from "../../lib/apiClient";
+// 2026-09-14 · inventoryChecksApi 프리미티브
+import { listInventoryChecks } from "../../lib/inventoryChecksApi";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
@@ -150,12 +152,12 @@ export const StockReconciliationTab: React.FC<{
     setError(null);
     try {
       // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+      // 2026-09-14 · inventoryChecksApi 프리미티브
       // 병렬 · 실재고 최신 + 상품 마스터 (current_stock 포함 → /api/products-map)
-      const [invR, prodR] = await Promise.all([
-        api.get<InventoryCheckRow[]>("/api/inventory-checks"),
+      const [invRaw, prodR] = await Promise.all([
+        listInventoryChecks() as unknown as Promise<InventoryCheckRow[]>,
         api.get<Record<string, any>>("/api/products-map").catch(() => ({ data: {} as Record<string, any> })),
       ]);
-      const invRaw: InventoryCheckRow[] = Array.isArray(invR.data) ? invR.data : [];
       const prodMap: Record<string, any> = prodR.data ?? {};
 
       // product_code 별 최신 row 만 유지 (checked_at desc 로 이미 정렬돼있음)

@@ -8,6 +8,8 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+// 2026-09-14 · inventoryChecksApi 프리미티브
+import { saveInventoryCheck } from "../../lib/inventoryChecksApi";
 import { getErrorMessage } from "../../lib/errorMessage";
 import { PAGE_CONTAINER_CLS, CARD_BASE } from "../../styles/tokens";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -310,7 +312,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       };
       if (slot === 2) payload.store2_zone = zone;
       if (slot === 3) payload.store3_zone = zone;
-      await api.post("/api/inventory-checks", payload);
+      await saveInventoryCheck(payload as any);
       console.log(`[setStoreZoneAndSave] saved · code=${code} · store${slot}_zone=${zone}`);
     } catch (e: any) {
       console.error(`[setStoreZoneAndSave] failed · code=${code} · store${slot}_zone=${zone} · ${e?.message ?? e}`);

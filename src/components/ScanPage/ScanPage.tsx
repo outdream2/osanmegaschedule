@@ -3,6 +3,8 @@
 // location "/" 분할 → 매장 구역 자동 배정 · 하위호환 · warehouse_stock ← warehouse1Qty 등 미러
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+// 2026-09-14 · inventoryChecksApi 프리미티브
+import { saveBulkInventoryChecks, listInventoryChecks } from "../../lib/inventoryChecksApi";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
@@ -370,8 +372,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     setSaveStatus("idle");
 
     // 기존 실재고 자동 로드 · pre-fill addQty = prevQty
-    api.get<InventoryHistoryRow[]>(`/api/inventory-checks?product_code=${encodeURIComponent(result)}`)
-      .then(({ data }) => Array.isArray(data) ? data : [])
+    listInventoryChecks({ product_code: result })
+      .then((list) => list as unknown as InventoryHistoryRow[])
       .catch(() => [] as InventoryHistoryRow[])
       .then((list: InventoryHistoryRow[]) => {
         const last = list[0];
@@ -477,8 +479,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     setHistoryLoading(true);
     setHistoryRows([]);
     try {
-      const { data } = await api.get<any[]>(`/api/inventory-checks?product_code=${encodeURIComponent(code)}`);
-      setHistoryRows(Array.isArray(data) ? data : []);
+      const list = await listInventoryChecks({ product_code: code });
+      setHistoryRows(Array.isArray(list) ? list : []);
     } catch { /* noop */ } finally { setHistoryLoading(false); }
   }, []);
 
@@ -492,7 +494,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     const hasS2 = row.store2AddQty !== "";
     const hasS3 = row.store3AddQty !== "";
     try {
-      await api.post("/api/inventory-checks/bulk", {
+      await saveBulkInventoryChecks({
         checked_by: authSession?.employeeName ?? "익명",
         items: [{
           product_code:     row.code,
@@ -550,7 +552,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     setSaveStatus("saving");
     setSaveError(null);
     try {
-      const { data: j } = await api.post<{ saved?: number; failed?: number; downgraded?: boolean }>("/api/inventory-checks/bulk", {
+      const j = await saveBulkInventoryChecks({
         checked_by: authSession?.employeeName ?? "익명",
         items: rows.map(r => {
             // 실재고 모드 · 직접 입력값 = 실재고 (incremental 아닌 absolute count)

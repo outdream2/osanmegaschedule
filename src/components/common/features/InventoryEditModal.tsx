@@ -4,8 +4,9 @@
 // 저장 완료 후: CustomEvent "inventory-checks-updated" dispatch
 
 // 2026-08-17 · apiClient 마이그레이션
+// 2026-09-14 · inventoryChecksApi 프리미티브 사용
 import React, { useState } from "react";
-import { api } from "../../../lib/apiClient";
+import { saveInventoryCheck } from "../../../lib/inventoryChecksApi";
 import { Modal } from "../Modal";
 import { InventoryEditPanel, type ZoneKey } from "../InventoryEditPanel";
 import type { CurrentValues } from "../InventoryEditPanel";
@@ -115,7 +116,7 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
     next.shelf_positions = nextShelf;
 
     try {
-      await api.post("/api/inventory-checks", {
+      await saveInventoryCheck({
         product_code:     productCode,
         product_name:     productName,
         checked_by:       checkedBy ?? "",

@@ -9,6 +9,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { AlertCircle, Calendar, Save } from "lucide-react";
 import { Modal } from "../common/Modal";
 import { api } from "../../lib/apiClient";
+// 2026-09-14 · inventoryChecksApi 프리미티브
+import { saveInventoryCheck } from "../../lib/inventoryChecksApi";
 import type { StockRow } from "./stockRowTypes";
 
 interface ExpiryDateModalProps {
@@ -74,7 +76,7 @@ export const ExpiryDateModal: React.FC<ExpiryDateModalProps> = ({ open, onClose,
       // 2026-09-11 · 사용자 지시 · #36 후속 · inventory_checks.expiry_date 하나만 저장 (SSOT)
       //   · 이전 · expiry_input_date 도 전송 → DB 컬럼 없어서 (사용자 · expiry_date 만 마이그레이션 실행) INSERT 실패 → 유통기한 임박 리스트 안 나옴
       //   · fix · expiry_input_date 필드 제외 · expiry_date 만 upsert
-      await api.post("/api/inventory-checks", {
+      await saveInventoryCheck({
         product_code: row.code,
         product_name: row.product.name,
         expiry_date:  expiryDate,
@@ -100,7 +102,7 @@ export const ExpiryDateModal: React.FC<ExpiryDateModalProps> = ({ open, onClose,
     setError(null);
     try {
       // 2026-09-11 · 사용자 지시 · #36 후속 · expiry_input_date 제외 · expiry_date NULL 리셋만
-      await api.post("/api/inventory-checks", {
+      await saveInventoryCheck({
         product_code: row.code,
         product_name: row.product.name,
         expiry_date:  null,

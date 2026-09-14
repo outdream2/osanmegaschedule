@@ -2,6 +2,8 @@
 // 2026-08-23 · Framework Phase 4 · 발주관리 데이터 로딩 훅 분리
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+// 2026-09-14 · inventoryChecksApi 프리미티브
+import { listInventoryChecks } from "../../lib/inventoryChecksApi";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useToast } from "../../hooks/useToast";
 import type { OrderRequest, ProductInfo, GoodsReceipt } from "./OrderManagePage.types";
@@ -86,7 +88,7 @@ export function useOrderManageData(getCode: (p: ProductInfo) => string) {
 
   const loadInvMap = useCallback(async () => {
     try {
-      const { data: list } = await api.get<any>("/api/inventory-checks");
+      const list = await listInventoryChecks();
       if (!Array.isArray(list)) return;
       const m: Record<string, InvSplit> = {};
       const numOrNull = (v: unknown) => v == null ? null : Number(v);

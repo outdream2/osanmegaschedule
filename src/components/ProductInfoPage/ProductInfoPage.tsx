@@ -28,6 +28,8 @@ import { SectionTitle } from "../LandingPage/VendorDetailModal.helpers";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 import { api, ApiError } from "../../lib/apiClient";
+// 2026-09-14 · inventoryChecksApi 프리미티브
+import { saveInventoryCheck } from "../../lib/inventoryChecksApi";
 import { PAGE_CONTAINER_CLS, CARD_BASE } from "../../styles/tokens";
 import { AccentBar } from "../common/AccentBar";
 import { matchesProductQuery } from "../../lib/productMatch";
@@ -206,7 +208,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
       }
       // 2026-09-08 · 상세 진열위치 저장 · inventory_checks POST (부분 병합)
       if (shelfChanged) {
-        await api.post("/api/inventory-checks", {
+        await saveInventoryCheck({
           product_code: product.product_code,
           product_name: product.product_name,
           shelf_positions: shelfDraft,

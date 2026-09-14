@@ -9,6 +9,8 @@ import React, { useEffect, useMemo, useState, useCallback, useRef } from "react"
 import { PackageCheck, Search, RefreshCw, Check, X, ChevronRight, ChevronDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Modal } from "../common/Modal";
 import { api, ApiError } from "../../lib/apiClient";
+// 2026-09-14 · inventoryChecksApi 프리미티브
+import { saveInventoryCheck } from "../../lib/inventoryChecksApi";
 import { getErrorMessage } from "../../lib/errorMessage";
 import { Card } from "../common/Card";
 // 2026-08-29 · framework audit · SegmentedControl 프리미티브
@@ -324,7 +326,7 @@ export const RealStockTablePage: React.FC = () => {
       s3: slot === "s3" ? parsed : (row.s3 ?? 0),
     };
     try {
-      await api.post("/api/inventory-checks", {
+      await saveInventoryCheck({
         product_code:     row.product_code,
         product_name:     row.product_name,
         checked_by:       "",

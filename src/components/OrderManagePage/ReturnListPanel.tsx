@@ -19,6 +19,8 @@ import { Spinner } from "../common/Spinner";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { api, ApiError } from "../../lib/apiClient";
+// 2026-09-14 · inventoryChecksApi 프리미티브
+import { listInventoryChecks } from "../../lib/inventoryChecksApi";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-26 · 프레임워크 · useConfirm 프리미티브 · window.confirm 대체
@@ -102,9 +104,10 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
     setReturnLoading(true);
     try {
       // 2026-08-03 · 병렬 · top-sales (반품필요 원본) + inventory-checks (실재고 컬럼용)
+      // 2026-09-14 · inventoryChecksApi 프리미티브 사용
       const [salesResult, invResult] = await Promise.allSettled([
         api.get<any>("/api/stock-manage/top-sales?months=6&limit=5000&sort=sale&dir=desc"),
-        api.get<any>("/api/inventory-checks"),
+        listInventoryChecks(),
       ]);
       if (salesResult.status === "rejected") throw salesResult.reason;
       const data = salesResult.value.data;
@@ -116,7 +119,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
       const actualByCode = new Map<string, number>();
       if (invResult.status === "fulfilled") {
         try {
-          const invRaw: any[] = Array.isArray(invResult.value.data) ? invResult.value.data : [];
+          const invRaw: any[] = Array.isArray(invResult.value) ? invResult.value : [];
           const latestByCode = new Map<string, any>();
           for (const r of Array.isArray(invRaw) ? invRaw : []) {
             const code = String(r?.product_code ?? "").trim();
