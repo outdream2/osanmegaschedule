@@ -282,33 +282,33 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
 
   return (
     <>
-      {/* ─── Header · Linear/Vercel 톤 · 절제된 브랜드 액센트 ─────────────────── */}
+      {/* ─── Header · 2026-09-14 최신 트렌드 · Linear/Vercel/Notion · 시인성 최우선 ─────────────────── */}
       <div className="relative flex items-start justify-between px-5 py-4 border-b border-line bg-white shrink-0 gap-3 sticky top-0 z-10">
         <GradientAccent size="thin" />
         <div className="flex items-start gap-3 flex-1 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-tint to-emerald-50 flex items-center justify-center shrink-0 ring-1 ring-emerald-200/50 mt-0.5">
-            <Package size={18} weight="bold" className="text-emerald-600" />
+          <div className="w-10 h-10 rounded-xl bg-brand-tint flex items-center justify-center shrink-0 mt-0.5">
+            <Package size={18} weight="fill" className="text-brand-deep" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[20px] font-bold text-ink leading-tight break-words">
+            <div className="text-[19px] font-bold text-ink leading-snug break-words tracking-tight">
               {product.product_name || <span className="text-zinc-400">(이름없음)</span>}
             </div>
-            <div className="flex items-center gap-2.5 mt-1 flex-wrap">
-              <span className="text-[13px] font-mono text-zinc-400 bg-zinc-100 rounded px-1.5 py-0.5">#{product.product_code}</span>
+            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+              <span className="text-[12px] font-mono text-zinc-500 bg-zinc-100 rounded-md px-1.5 py-0.5 tabular-nums">{product.product_code}</span>
               {product.supplier && (
                 <button type="button" onClick={() => vendorModal.openVendorInfo(product.supplier!)}
-                  className="inline-flex items-center gap-1 text-[15px] font-semibold text-brand-deep hover:underline cursor-pointer">
-                  {product.supplier}<ArrowSquareOut size={12} />
+                  className="inline-flex items-center gap-1 text-[13px] font-semibold text-brand-deep hover:underline cursor-pointer">
+                  {product.supplier}<ArrowSquareOut size={11} />
                 </button>
               )}
               {(() => {
                 const s = String(p.sale_status ?? "");
                 if (!s) return null;
                 const tone = s === "판매중" ? "emerald" : s === "판매중지" ? "rose" : "zinc";
-                return <StatusPill tone={tone} size="md">{s}</StatusPill>;
+                return <StatusPill tone={tone} size="sm">{s}</StatusPill>;
               })()}
               {p.location && (
-                <span className="text-[15px] font-semibold text-zinc-600 bg-zinc-100 rounded-md px-2 py-0.5">{String(p.location)}</span>
+                <span className="text-[12px] font-semibold text-zinc-600 bg-zinc-100 rounded-md px-1.5 py-0.5">{String(p.location)}</span>
               )}
               {/* 2026-09-08 · 상세 진열위치 뱃지 · 진열위치 옆에 무조건 표시 */}
               <ShelfPositionsBadge positions={product.shelf_positions} size="sm" />

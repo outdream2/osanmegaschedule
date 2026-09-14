@@ -155,28 +155,15 @@ export async function applyOptimalStock(payload: Array<{ product_code: string; o
   return { updated, failed };
 }
 
-/** order_requests 동기화 · products.optimal_stock 값을 스냅샷 컬럼에 반영 */
-export async function syncOrderRequestsOptimalStock(codeToOptimal: Map<string, number>): Promise<number> {
-  const { data: orderRows, error } = await supabase
-    .from("order_requests")
-    .select("id, product_code");
-  if (error) { console.warn("[optimalStock] order_requests 조회 실패:", error.message); return 0; }
-  const payload = (orderRows ?? [])
-    .map(r => {
-      const opt = codeToOptimal.get(String(r.product_code ?? "").trim());
-      if (opt == null) return null;
-      return { id: r.id, optimal_stock: opt };
-    })
-    .filter((x): x is { id: number; optimal_stock: number } => x !== null);
-  let updated = 0;
-  const CHUNK = 500;
-  for (let i = 0; i < payload.length; i += CHUNK) {
-    const chunk = payload.slice(i, i + CHUNK);
-    const { error: uErr } = await supabase.from("order_requests").upsert(chunk, { onConflict: "id" });
-    if (!uErr) updated += chunk.length;
-    else console.error("[optimalStock] order_requests upsert error:", uErr.message);
-  }
-  return updated;
+/** 2026-09-14 · 대원칙 · products.optimal_stock 단일 소스 (2026-09-09 확정 · 사용자 지시)
+ *   · 이전 · order_requests.optimal_stock 스냅샷 컬럼 UPSERT (DROP 됨 · 컬럼 미존재)
+ *   · 신규 · no-op · GET 시 · products JOIN 으로 최신값 표시 (display/requests.ts 이미 처리)
+ *   · 함수 시그니처 유지 · 호출 사이트 호환 (schedule refill)
+ * @deprecated 2026-09-14 · 호출 자체 제거 예정
+ */
+export async function syncOrderRequestsOptimalStock(_codeToOptimal: Map<string, number>): Promise<number> {
+  void _codeToOptimal;
+  return 0;
 }
 
 /**
@@ -245,7 +232,7 @@ export async function refillOptimalStock(opts: RefillOptions = {}): Promise<Refi
   const { updated, failed } = await applyOptimalStock(payload);
   const productMs = Date.now() - tProduct;
 
-  // order_requests 동기화
+  // 2026-09-14 · order_requests 동기화 · no-op (products.optimal_stock 단일 소스 · JOIN 으로 최신값 조회)
   const tOrder = Date.now();
   const orderRequestsUpdated = syncOrders ? await syncOrderRequestsOptimalStock(codeToOptimal) : 0;
   const orderMs = Date.now() - tOrder;
