@@ -105,6 +105,9 @@ type Form = {
   unit: string;
   spec: string;
   location: string;
+  // 2026-09-14 · #133 · 상세구역 · 신규 등록·수정 모달에서 직접 지정 (3자리 · 예: "1A5")
+  //   · 저장 시 · location 유형 판별 (창고/매장) · shelf_positions[key] = detail
+  shelf_detail: string;
   optimal_stock: string;
   sale_price: string;
   purchase_price: string;
@@ -120,6 +123,7 @@ const EMPTY: Form = {
   unit: "",
   spec: "",
   location: "",
+  shelf_detail: "",
   optimal_stock: "",
   sale_price: "",
   purchase_price: "",
@@ -200,6 +204,12 @@ export const ProductCreateModal: React.FC<Props> = ({
   React.useEffect(() => {
     if (!open) return;
     if (isEdit && initialProduct) {
+      // 2026-09-14 · #133 · 편집 모드 · shelf_positions 에서 · 대표 상세구역 초기화
+      //   · warehouse1 → warehouse2 → store1 → store2 → store3 순 · 첫 non-null 값
+      const sp = (initialProduct as any).shelf_positions as Record<string, string | null> | null | undefined;
+      const detail = sp
+        ? (sp.warehouse1 ?? sp.warehouse2 ?? sp.store1 ?? sp.store2 ?? sp.store3 ?? "")
+        : "";
       setForm({
         product_code: initialProduct.product_code ?? "",
         product_name: initialProduct.product_name ?? "",
@@ -208,6 +218,7 @@ export const ProductCreateModal: React.FC<Props> = ({
         unit: initialProduct.unit ?? "",
         spec: initialProduct.spec ?? "",
         location: initialProduct.location ?? "",
+        shelf_detail: String(detail ?? "").trim(),
         optimal_stock: initialProduct.optimal_stock != null ? String(initialProduct.optimal_stock) : "",
         sale_price: initialProduct.sale_price != null ? String(initialProduct.sale_price) : "",
         purchase_price: initialProduct.purchase_price != null ? String(initialProduct.purchase_price) : "",
@@ -275,9 +286,27 @@ export const ProductCreateModal: React.FC<Props> = ({
         // 2026-08-30 · 사용자 지시 · 상품 등록 시 · 판매중 자동 설정 (조회 필터 통과)
         sale_status: "판매중",
       };
+      // 2026-09-14 · #133 · 상세구역 저장 · 등록·수정 성공 후 · shelf_positions PATCH 호출
+      //   · warehouseTag 기반 key 결정 (w1→warehouse1 · w2→warehouse2 · else→store1)
+      const savedCode = form.product_code.trim();
+      const shelfDetail = form.shelf_detail.trim();
+      const saveShelfPositions = async (code: string) => {
+        if (!shelfDetail || shelfDetail.length !== 3) return;
+        const key = warehouseTag?.label === "창고1" ? "warehouse1"
+                  : warehouseTag?.label === "창고2" ? "warehouse2"
+                  : "store1";
+        try {
+          await api.patch(`/api/products/${encodeURIComponent(code)}/shelf-positions`, {
+            shelf_positions: { [key]: shelfDetail },
+          });
+        } catch (spErr: any) {
+          console.warn(`[ProductCreateModal] shelf_positions 저장 실패 (경고 · 등록·수정은 성공): ${spErr?.message ?? spErr}`);
+        }
+      };
+
       // 2026-09-10 · #64 · 편집 모드 · PATCH · 신규 · POST
       if (isEdit) {
-        const code = form.product_code.trim();
+        const code = savedCode;
         const patchBody = {
           product_name: payload.product_name,
           supplier: payload.supplier,
@@ -292,6 +321,7 @@ export const ProductCreateModal: React.FC<Props> = ({
           manufacturer: payload.manufacturer,
         };
         await api.patch(`/api/products/${encodeURIComponent(code)}`, patchBody);
+        await saveShelfPositions(code);
         showSuccess(`상품 정보 수정 완료 · ${code}`);
         onCreated(code, {
           product_name: patchBody.product_name,
@@ -309,6 +339,7 @@ export const ProductCreateModal: React.FC<Props> = ({
           throw new Error(`${first?.path.join(".") ?? "input"}: ${first?.message ?? "유효성 오류"}`);
         }
         const { data } = await api.post<{ ok: boolean; product_code: string }>("/api/products", parsed.data);
+        await saveShelfPositions(data.product_code);
         showSuccess(`상품 등록 완료 · ${data.product_code}`);
         onCreated(data.product_code, {
           product_name: parsed.data.product_name,
@@ -489,18 +520,32 @@ export const ProductCreateModal: React.FC<Props> = ({
                       />
                     </Field>
                   </div>
-                  {/* 상세구역 · 읽기 전용 · 실재고 입력 · 스캔 시 저장 */}
+                  {/* 2026-09-14 · #133 · 상세구역 · 직접 편집 · 3자리 (예: 1A5)
+                      · 진열구역 있어야 저장 가능 (location 기반 · warehouse/store key 결정)
+                      · 등록/수정 후 · shelf_positions PATCH endpoint 로 저장 */}
                   <div className="relative min-w-0">
-                    <Field icon={<MapPin size={14} />} label="상세구역">
-                      <div className="min-h-[38px] flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-zinc-50/60">
-                        {isEdit && initialProduct && (initialProduct as any).shelf_positions ? (
-                          <ShelfPositionsBadge positions={(initialProduct as any).shelf_positions} size="md" />
-                        ) : (
-                          <span className="text-[13px] text-ink-soft">
-                            {isEdit ? "미등록 · 실재고 입력·스캔에서 저장" : "상품 등록 후 · 실재고 입력에서 저장"}
-                          </span>
-                        )}
-                      </div>
+                    <Field icon={<MapPin size={14} />} label={
+                      <span className="flex items-center gap-2">
+                        상세구역
+                        <span className="text-[12px] font-normal text-zinc-400">(3자리 · 예: 1A5)</span>
+                      </span>
+                    }>
+                      <input
+                        lang="ko"
+                        type="text"
+                        value={form.shelf_detail}
+                        onChange={(e) => set("shelf_detail", e.target.value.trim().slice(0, 3).toUpperCase())}
+                        placeholder={form.location.trim() ? "예: 1A5" : "진열구역 먼저 선택"}
+                        disabled={!form.location.trim()}
+                        maxLength={3}
+                        className={`${inputCls} tabular-nums text-center font-bold text-[16px] tracking-wider ${!form.location.trim() ? "bg-zinc-50 text-zinc-400 cursor-not-allowed" : ""}`}
+                      />
+                      {isEdit && initialProduct && (initialProduct as any).shelf_positions && (
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <span className="text-[11px] text-zinc-400">기존 · </span>
+                          <ShelfPositionsBadge positions={(initialProduct as any).shelf_positions} size="sm" />
+                        </div>
+                      )}
                     </Field>
                   </div>
                 </div>
