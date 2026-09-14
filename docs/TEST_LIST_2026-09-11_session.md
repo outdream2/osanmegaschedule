@@ -43,6 +43,8 @@
 | 9 | 🎯 **프레임워크** · inventoryChecksApi 프리미티브 · 11 파일 통합 | `af71c14a` |
 | 10 | 🎯 **프레임워크** · orderRequestsApi 프리미티브 · 7 곳 통합 | `23ddc1dc` |
 | 11 | 🎯 **프레임워크** · stockArrivalsApi 프리미티브 · 5 곳 + 타입 통합 | `72ae0f3a` |
+| — | 🎯 **프레임워크** · permissionsApi 프리미티브 · 6 곳 통합 | `4684d4f0` |
+| 12 | 🐛 **버그 fix** · 세션 알림 UI + optimal_stock 컬럼 + 30일 하드코딩 | `f0b2ec59` · `cf9ec40a` · `ffd4d157` |
 
 **필수 · 서버 재시작** (Ctrl+C · npm run dev) · 백엔드 fix 반영
 
@@ -181,6 +183,54 @@
 ### 예상 결과
 - 상품 등록/수정 → 실재고 테이블 · 즉시 자동 갱신
 - 사용자 새로고침 불필요
+
+---
+
+## 🐛 [12] 사용자 리포트 · 3건 fix ✅
+**커밋** · `f0b2ec59` (session-warning UI) · `cf9ec40a` (optimal_stock 컬럼) · `ffd4d157` (30일 하드코딩)
+
+### 배경 (사용자 실시간 리포트 · 3건)
+1. 세션 만료 메시지 · 글씨 너무 큼 · 최신 트렌드 미반영
+2. 발주요청 목록 페이지 · `⚠ column order_requests.optimal_stock does not exist`
+3. 상품정보 · 통계설정 적정재고 연동 안됨 · 30일 고정 표시
+
+### 해결
+**A. SessionTimeoutWarning 리디자인:**
+- 다크 배경 → glassmorphism (bg-white/95 + backdrop-blur-md)
+- 텍스트 축소 (sm→11px · lg→15px) · Linear/Vercel 톤
+- rose/amber accent · 3-layer shadow · active:scale-[0.98]
+- 13/13 tests 통과
+
+**B. order_requests.optimal_stock 컬럼 미존재 fix:**
+- `server/lib/optimalStock.ts` · syncOrderRequestsOptimalStock · no-op 전환
+- 2026-09-09 원칙 · products.optimal_stock 단일 소스 · 스냅샷 DROP · 이 함수만 잔재
+- GET · products JOIN 으로 이미 최신값 표시 (display/requests.ts:503-517)
+
+**C. 적정재고 30일 하드코딩 fix:**
+- `ProductInfoPage.tsx:L385` · "적정재고 (30일)" → "적정재고 ({optimalStockDays}일)"
+- `useOptimalStockPeriod` 훅 사용 · 통계설정 KV 실시간 반영
+
+### 테스트 절차
+**A. 세션 만료 경고 (30분 후 자동)**
+1. 로그인 후 · 아무 조작 없이 · 세션 만료 임박 시 · 우측 하단 알림
+2. 이전 · 다크 배경 · 큰 글씨 · 신규 · 흰 배경 · 작은 글씨 · 라운드 카드
+3. urgent (60초 이하) · rose 테두리 · 일반 · line 테두리
+
+**B. 발주요청 목록 페이지**
+1. **매입 > 발주 > 발주요청** 페이지 진입
+2. 이전 · `⚠ column order_requests.optimal_stock does not exist` 에러
+3. 신규 · 정상 로드 · optimal_stock · products JOIN 값 표시
+4. **매장 > 발주 > 발주필요** · [발주 요청] 클릭 · 정상 저장
+
+**C. 상품정보 · 적정재고 일수**
+1. **시스템설정 > 통계설정 > 적정재고 계산 일수** · 45일로 변경
+2. **매장 > 상품 > 상품정보** · 임의 상품 · 우측 패널
+3. "적정재고 ({N}일)" · 45일 표시 (이전 · 30일 고정)
+
+### 회귀 확인
+- 발주요청·발주필요 · 정상 저장·조회
+- 상품정보 · 적정재고 값·일수 · 정확 표시
+- 세션 만료 · 계속사용·로그아웃 · 정상 동작
 
 ---
 
