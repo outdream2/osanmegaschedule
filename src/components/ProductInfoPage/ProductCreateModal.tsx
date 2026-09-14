@@ -16,6 +16,8 @@ import { Modal } from "../common/Modal";
 import { IconTile } from "../common/IconTile";
 // 2026-08-31 · #42 · 카테고리 검색 → 구역 지정 프리미티브
 import { ZoneCategoryPicker } from "../common/ZoneCategoryPicker";
+// 2026-09-14 · #82 · 상세구역 표시 · shelf_positions JSONB 배지
+import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { CreateProductSchema, type CreateProductInput } from "../../shared/schemas/products";
@@ -469,10 +471,11 @@ export const ProductCreateModal: React.FC<Props> = ({
                   <Field icon={<Ruler size={14} />} label="규격">
                     <input lang="ko" type="text" value={form.spec} onChange={(e) => set("spec", e.target.value)} className={inputCls} placeholder="예: 10정" maxLength={100} />
                   </Field>
-                  <div className="relative min-w-0 md:col-span-2">
+                  {/* 2026-09-14 · #82 · 배치구역 2분리 · 진열구역 (좌) + 상세구역 (우) · shelf_positions JSONB 활용 */}
+                  <div className="relative min-w-0">
                     <Field icon={<MapPin size={14} />} label={
                       <span className="flex items-center gap-2">
-                        배치구역
+                        진열구역
                         {warehouseTag && (
                           <span className={`text-[13px] font-bold px-1.5 py-0.5 rounded-md border tracking-tight ${warehouseTag.cls}`}>
                             → {warehouseTag.label}
@@ -484,6 +487,20 @@ export const ProductCreateModal: React.FC<Props> = ({
                         value={form.location}
                         onChange={(loc) => set("location", loc ?? "")}
                       />
+                    </Field>
+                  </div>
+                  {/* 상세구역 · 읽기 전용 · 실재고 입력 · 스캔 시 저장 */}
+                  <div className="relative min-w-0">
+                    <Field icon={<MapPin size={14} />} label="상세구역">
+                      <div className="min-h-[38px] flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-zinc-50/60">
+                        {isEdit && initialProduct && (initialProduct as any).shelf_positions ? (
+                          <ShelfPositionsBadge positions={(initialProduct as any).shelf_positions} size="md" />
+                        ) : (
+                          <span className="text-[13px] text-ink-soft">
+                            {isEdit ? "미등록 · 실재고 입력·스캔에서 저장" : "상품 등록 후 · 실재고 입력에서 저장"}
+                          </span>
+                        )}
+                      </div>
                     </Field>
                   </div>
                 </div>
