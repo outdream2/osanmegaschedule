@@ -36,6 +36,7 @@
 | 3 | 🔗 **#63 공급사 무결성** · 결제·상품입고 validation | `62e3830e` |
 | 4 | 🔄 **#61 상품 등록·수정** · 실재고 자동 동기 | `1889b95d` |
 | 5 | 🎯 **프레임워크** · InventoryEditPanel · alert→useToast | `c8614c26` |
+| 5-1 | 🎯 **프레임워크** · OrderSettingsPage + StoreZoneMap · Card 프리미티브 | `083dd828` |
 | 6 | 🧪 **테스트 19개 정리** · CI 클린 (3355/3355) | `c190ad86` |
 | 7 | 📄 **TASKS.md v5 재확인** · 12건 완료 마킹 | `a96c3051` |
 
@@ -176,6 +177,32 @@
 ### 예상 결과
 - 상품 등록/수정 → 실재고 테이블 · 즉시 자동 갱신
 - 사용자 새로고침 불필요
+
+---
+
+## 🎯 [5-1] 프레임워크 · OrderSettingsPage + StoreZoneMap · raw-card-wrapper → Card ✅
+**커밋** · `083dd828`
+
+### 배경
+- framework audit · raw-card-wrapper · 3건 위반
+- 대원칙 · Card 프리미티브 재사용 필수
+
+### 해결
+- OrderSettingsPage.tsx L137·L226 · `<section>` → `<Card as="section" variant="sm" padding="none" clip rounded="2xl">`
+- StoreZoneMap.tsx L513 · 카운터존 카드 · `<Card variant="raw-sm" padding="sm" rounded="2xl">`
+- gradient accent bar (커스텀 색상) · Card 안 div 로 유지 (시각 동일)
+- framework audit · 위반 12 → 9
+
+### 테스트 절차
+1. **설정 > 발주설정** 페이지 진입
+2. SMTP 이메일 설정 카드 · **시각 확인** · 그라디언트 상단 액센트 (brand-deep→brand→sky) 유지
+3. 테스트 발송 카드 · 그라디언트 (emerald→teal) 유지
+4. shadow · rounded-2xl · border · 이전과 동일
+5. **매장진열 > 판매현황** or **매장구역도** · 카운터존 45~50 카드 · 시각 동일
+
+### 회귀 확인
+- OrderSettingsPage · SMTP 저장·테스트 발송 · 정상 동작
+- StoreZoneMap · 카운터존 6 셀 (45~50) · event/normal 색상 구분 유지
 
 ---
 
