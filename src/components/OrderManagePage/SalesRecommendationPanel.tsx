@@ -4,10 +4,12 @@
 //   · 상품 상세 정보는 별도 모달 (onOpenDetail 트리거)
 // 2026-09-13 · #55 · 상품 선택 무관 · 임박 이벤트 배너 (GET /api/events/today)
 import React, { useEffect, useState } from "react";
-import { Package, TrendingUp, Info, X, Check, Sparkles, Calendar } from "lucide-react";
+import { Package, TrendingUp, Info, X, Check, Sparkles, Calendar, AlertTriangle } from "lucide-react";
 import { Card } from "../common/Card";
 import { StatusPill } from "../common/StatusPill";
 import { api } from "../../lib/apiClient";
+// 2026-09-14 · 사용자 지시 · 유통기한 임박 상품 · 우측 판넬 표시 (여전히 안 나옴 → 신규 섹션)
+import { listExpiryImminentProducts } from "../../lib/productsApi";
 import type { ProductInfo } from "./OrderManagePage.types";
 
 // 2026-09-13 · #55 · 임박 이벤트 · GET /api/events/today
@@ -33,6 +35,17 @@ interface EventToday {
   product_count?: number;
   products?: EventProduct[];
   d_day?: number | null;
+}
+
+// 2026-09-14 · 유통기한 임박 상품 · GET /api/products/expiry-imminent
+interface ExpiryImminentProduct {
+  product_code: string;
+  product_name: string;
+  spec: string | null;
+  supplier: string | null;
+  current_stock: number | null;
+  expiry_date: string | null;
+  sale_status?: string | null;
 }
 
 const TYPE_TONE: Record<string, { label: string; cls: string }> = {
@@ -94,6 +107,8 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
   const [currentSeason, setCurrentSeason] = useState<string>("");
   // 2026-09-14 · #85 · 이벤트별 · 상품 리스트 확장 상태 (accordion)
   const [expandedEvents, setExpandedEvents] = useState<Set<number>>(new Set());
+  // 2026-09-14 · 사용자 지시 · 유통기한 임박 상품 · 우측 판넬 신규 섹션
+  const [expiryImminent, setExpiryImminent] = useState<ExpiryImminentProduct[]>([]);
   const toggleEventExpand = React.useCallback((id: number) => {
     setExpandedEvents(prev => {
       const next = new Set(prev);
@@ -112,6 +127,13 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
         }
       } catch {
         if (alive) { setEventsToday([]); setCurrentSeason(""); }
+      }
+      // 2026-09-14 · 유통기한 임박 상품 fetch · 병렬 · 실패 무시
+      try {
+        const list = await listExpiryImminentProducts<ExpiryImminentProduct[]>();
+        if (alive) setExpiryImminent(Array.isArray(list) ? list : []);
+      } catch {
+        if (alive) setExpiryImminent([]);
       }
     })();
     return () => { alive = false; };
@@ -233,6 +255,66 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
               })}
             </div>
           )}
+          {/* 2026-09-14 · 사용자 지시 · 유통기한 임박 상품 · 발주필요 우측 판넬 · [발주 추가] 액션 */}
+          {expiryImminent.length > 0 && (() => {
+            const filtered = expiryImminent
+              .filter(p => p.sale_status !== "판매중지" && p.sale_status !== "숨김")
+              .map(p => ({ ...p, dLeft: dayDiff(p.expiry_date) }))
+              .filter(p => p.dLeft != null && p.dLeft <= 60)
+              .sort((a, b) => (a.dLeft ?? 999) - (b.dLeft ?? 999))
+              .slice(0, 10);
+            if (filtered.length === 0) return null;
+            return (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-1.5 pb-1.5 border-b border-line">
+                  <AlertTriangle size={14} className="text-amber-600" />
+                  <span className="text-[14px] font-bold text-ink">유통기한 임박</span>
+                  <span className="text-[12px] tabular-nums text-zinc-400 font-medium">{filtered.length}건 · D-60 이내</span>
+                </div>
+                <div className="flex flex-col gap-1.5 max-h-[280px] overflow-y-auto pr-1">
+                  {filtered.map(p => {
+                    const d = p.dLeft ?? 999;
+                    const isExpired = d <= 0;
+                    const isSoon = d > 0 && d <= 14;
+                    const tone: "rose" | "amber" | "zinc" = isExpired ? "rose" : isSoon ? "amber" : "zinc";
+                    const alreadyRequested = requestedCodes?.has(p.product_code) ?? false;
+                    const cur = Number(p.current_stock ?? 0) || 0;
+                    return (
+                      <div key={p.product_code} className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-white border border-line hover:border-brand-tint hover:shadow-[0_1px_4px_rgba(10,46,74,0.05)] transition-all">
+                        <StatusPill tone={tone} size="xs">
+                          {isExpired ? `D+${Math.abs(d)}` : `D-${d}`}
+                        </StatusPill>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[13px] font-bold text-ink truncate">{p.product_name || p.product_code}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[11px] text-ink-soft tabular-nums mt-0.5">
+                            <span>{p.expiry_date ? String(p.expiry_date).slice(0, 10) : "-"}</span>
+                            <span>· 재고 <span className="font-semibold text-ink">{cur}</span></span>
+                            {p.supplier && <span className="truncate max-w-[100px]">· {p.supplier}</span>}
+                          </div>
+                        </div>
+                        {onRequestProduct && !alreadyRequested && (
+                          <button
+                            type="button"
+                            onClick={() => onRequestProduct(p.product_code, p.product_name)}
+                            className="inline-flex items-center gap-1 rounded-md bg-brand-deep hover:bg-brand-deep/90 px-2 py-1 text-[11px] font-bold text-white transition shrink-0"
+                            title="발주 필요 리스트에 추가"
+                          >
+                            <Check size={11} strokeWidth={2.5} />
+                            발주
+                          </button>
+                        )}
+                        {alreadyRequested && (
+                          <StatusPill tone="emerald" size="xs" dot>요청됨</StatusPill>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
           {/* 2026-09-14 · #87 · 스코어 기반 · 자동 추천 발주 Top N */}
           {recommendations && recommendations.length > 0 && (
             <div className="flex flex-col gap-2">
@@ -287,8 +369,8 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
               </div>
             </div>
           )}
-          {/* 상품 미선택 안내 · 추천 없을 때만 */}
-          {(!recommendations || recommendations.length === 0) && (
+          {/* 상품 미선택 안내 · 추천/이벤트/유통기한 임박 모두 없을 때만 */}
+          {(!recommendations || recommendations.length === 0) && eventsToday.length === 0 && expiryImminent.length === 0 && (
             <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center min-h-[240px]">
               <TrendingUp size={40} className="text-zinc-300" strokeWidth={1.5} />
               <div className="text-[16px] font-bold text-ink">판매 추천 정보</div>
