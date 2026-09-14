@@ -815,7 +815,11 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 });
                 setSavedId(j?.id ?? null);
                 setSaveStatus("done");
+                // 2026-09-14 · #135 · 매입 저장 후 · 이벤트 2건 dispatch · 다른 페이지 자동 리로드
+                //   · product-mutated · productsCache 무효화 (기존)
+                //   · products-map-updated · RealStockTablePage · ProductInfoPage 등 리로드
                 window.dispatchEvent(new Event("product-mutated"));
+                window.dispatchEvent(new Event("products-map-updated"));
                 // 2026-09-07 · 사용자 지시 · 입고내역 자동 업데이트 · 저장 후 즉시 리로드
                 void loadArrivals();
                 showToast("DB에 저장 완료");

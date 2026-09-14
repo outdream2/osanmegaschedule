@@ -201,10 +201,15 @@ export const RealStockTablePage: React.FC = () => {
   }, [load]);
 
   // 2026-09-07 · 상품 등록/구역 변경 시 자동 리로드 (products-map-updated 이벤트)
+  // 2026-09-14 · #135 · 매입 (product-mutated) 후 · current_stock 자동 반영 · 실재고 리로드
   useEffect(() => {
     const handler = () => load();
     window.addEventListener("products-map-updated", handler);
-    return () => window.removeEventListener("products-map-updated", handler);
+    window.addEventListener("product-mutated", handler);
+    return () => {
+      window.removeEventListener("products-map-updated", handler);
+      window.removeEventListener("product-mutated", handler);
+    };
   }, [load]);
 
   const rows: Row[] = useMemo(() => products.map(p => {
