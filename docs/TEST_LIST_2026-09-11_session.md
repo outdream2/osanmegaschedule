@@ -25,7 +25,137 @@
 
 ---
 
-# 🆕 2026-09-13 ~ 2026-09-14 세션 · #132 ~ #139 + #84
+# 🆕 2026-09-13 ~ 2026-09-14 세션 · #132 ~ #141
+
+## #141 · 결제 대시보드 · 차용 이력 표시 (있을 때) ✅
+**커밋** · `a25b7828`
+
+### 배경
+사용자 지시 · "결제대시보드에 차용이력이 있으면 보여줘"
+
+### 해결
+- PaymentDashboardPage · listBorrowings({ days, limit: 20 }) 조회
+- 차용 있을 때만 섹션 표시 (없으면 렌더 X)
+- 카드 리스트 · direction 배지 (대여 sky · 차용 amber)
+- 상품·공급사·수량·금액 · 상태 배지 · 마감일
+
+### 테스트 절차
+1. **매입 > 결제 > 대시보드** 진입
+2. 차용 이력 있는 경우 · "차용 이력" 섹션 표시
+3. 각 항목 · 대여/차용 · 상태 · 마감일 확인
+4. 차용 없으면 · 섹션 자체 미표시
+
+---
+
+## #140 · 결제 대시보드 · 기간 필터 ✅
+**커밋** · `a25b7828`
+
+### 배경
+사용자 지시 · "결제대시보드에도 기간필터 추가해"
+
+### 해결
+- 서버 · GET /api/supplier-balances-map · ?start=&end= 지원
+  · purchase_details · purchase_date · gte/lte
+  · supplier_payments · payment_date · gte/lte
+- 클라 · PeriodSelector · [전체, 10일, 1M, 2M, 3M, 6M, 12M]
+- 기간 뱃지 · 활성 range 표시
+
+### 테스트 절차
+1. **매입 > 결제 > 대시보드** 진입
+2. 상단 우측 · PeriodSelector · 기간 변경
+3. 매입/결제/잔고 · 기간별 반영
+4. 미지급/선지급 Top 10 · 기간 반영
+
+---
+
+## #129 · 카드별 결제내역 · 차월·한도·캐시백 통합 뷰 ✅
+**커밋** · `615ce17b` (+ migration 파일)
+
+### 배경
+카드별 결제 · 차월 예정 · 한도 · 캐시백 통합 뷰 필요
+
+### 해결
+- Migration · `migrations/20260914_credit_cards_limit_cashback.sql` (사용자가 Supabase 실행)
+  · ADD COLUMN IF NOT EXISTS · credit_limit BIGINT · cashback_rate NUMERIC(5,2)
+- 서버 · summary 응답 · remainingLimit · currentCashback · totalCashback
+- CardHistoryPage · 캐시백 % 배지 · 잔여 한도 배지 (rose/amber/sky)
+- 상세 아코디언 · 한도·캐시백 요율·이번달 예상·누적 캐시백
+- CardRegisterPage · 카드 한도 (원) · 캐시백 요율 (%) 입력 필드
+
+### 테스트 절차
+1. **Supabase SQL Editor** · `migrations/20260914_credit_cards_limit_cashback.sql` 실행
+2. **매입 > 결제 > 결제카드등록** · 카드 · 한도·캐시백율 입력·저장
+3. **매입 > 결제 > 카드별결제내역** · 카드 요약 · 캐시백 배지 표시
+4. 카드 클릭 · 상세 아코디언 · 한도·캐시백 KPI 표시
+5. 한도 90%↑ · rose 배지 · 70%↑ amber · 미만 sky
+
+---
+
+## #87 · 발주필요 · 스코어 기반 자동 추천 (Top 5) ✅
+**커밋** · `bf0199ad`
+
+### 배경
+발주필요 리스트 · 우선순위 자동 추천 · 발주 결정 지원
+
+### 해결
+- 신규 `src/lib/orderPriorityScore.ts` · computePriorityScore()
+  · shortage (재고 부족율) · urgency (소진 임박) · velocity (판매 활발)
+  · eventBoost (이벤트 상품 +30) · seasonBoost (계절 상품 +15)
+- SalesRecommendationPanel · "우선 발주 추천" Top 5 섹션
+  · rank 배지 (1위 rose · 2위 amber · 3위 emerald · 나머지 zinc)
+  · 스코어 · 재고 · 적정 · D-day · 사유
+  · [발주] 버튼 · onRequestProduct 콜백
+- OrderNeedTab · /api/events/today 상품 → event/seasonal 셋 · 스코어 계산
+
+### 테스트 절차
+1. **매입 > 발주 > 발주필요** 진입
+2. 우측 패널 · "우선 발주 추천" 섹션 표시
+3. Top 5 · 순위 배지 · 스코어 · 사유 (재고 부족 · 소진 임박 · 이벤트 등)
+4. [발주] 클릭 · 발주 필요 리스트에 추가
+5. 이미 요청됨 상품 · 자동 제외
+
+---
+
+## #86 · 발주필요 판매추천 · 오늘 날짜 기준 계절 배너 ✅
+**커밋** · `c65e7310`
+
+### 배경
+발주필요 판매추천 · 오늘 계절·명절·수험생·공휴일 자동 반영
+
+### 해결
+- SalesRecommendationPanel · 상단 · "오늘은 [계절] 시즌" 배너
+- GET /api/events/today · current_season 필드 매핑
+- 통계설정 등록 이벤트 · 자동 반영 (events + event_products)
+
+### 테스트 절차
+1. **매입 > 발주 > 발주필요** 진입
+2. 우측 판매정보 패널 상단 · "오늘은 [봄/여름/가을/겨울] 시즌" 배너
+3. 오늘 날짜 · 요일 함께 표시
+
+---
+
+## #85 · 발주필요 우측 · 이벤트 상품 확장 + [발주 추가] ✅
+**커밋** · `84c38bc5`
+
+### 배경
+발주필요 우측 판매정보 · 이벤트 상품 참고 · 매장에서 발주 결정
+
+### 해결
+- SalesRecommendationPanel · 이벤트 배너 클릭 · accordion 확장
+- 확장 시 · 매핑 상품 카드 리스트 · 재고·적정·부족·공급사
+- [발주] 버튼 · onRequestProduct 콜백 · 발주 필요 리스트 즉시 추가
+- 이미 요청됨/판매중지 · 배지로만 표시 · 버튼 disabled
+
+### 테스트 절차
+1. **매입 > 발주 > 발주필요** 진입
+2. 우측 · "진행중·임박 이벤트" 리스트
+3. 각 이벤트 · 클릭 · 상품 리스트 확장
+4. 상품별 [발주] 클릭 · 왼쪽 리스트에 추가
+5. 요청됨 상품 · "요청됨" 배지 · 버튼 없음
+
+---
+
+
 
 ## #84 · 상품상세정보 페이지 · 최신 트렌드 UI 개선 ✅
 **커밋** · `0f9ab325` (ProductInfoPage.tsx UI 폴리시 · #139 커밋에 포함)
