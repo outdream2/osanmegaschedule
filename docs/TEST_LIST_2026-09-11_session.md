@@ -47,6 +47,7 @@
 | 12 | 🐛 **버그 fix** · 세션 알림 UI + optimal_stock 컬럼 + 30일 하드코딩 | `f0b2ec59` · `cf9ec40a` · `ffd4d157` |
 | 13 | 🐛 **재리포트 fix** · optimal_stock 잔재 + ProductInfoPage 우측 패널 리디자인 | `e3e78622` |
 | 14 | 🎨 **UI 폴리시** · ProductInfoPage 나머지 3 섹션 (기본·상세·기타) | `edc1a603` |
+| 15 | 🎯 **프레임워크** · settingsApi 프리미티브 · 6 곳 (KV settings) | `93497b21` |
 
 **필수 · 서버 재시작** (Ctrl+C · npm run dev) · 백엔드 fix 반영
 
@@ -185,6 +186,34 @@
 ### 예상 결과
 - 상품 등록/수정 → 실재고 테이블 · 즉시 자동 갱신
 - 사용자 새로고침 불필요
+
+---
+
+## 🎯 [15] 프레임워크 · settingsApi 프리미티브 · 6 call sites (KV settings) ✅
+**커밋** · `93497b21`
+
+### 배경
+- `/api/settings` · 6 곳 (POST 4 · GET 2) · 매우 단순 · { key, value } 패턴
+- 프레임워크 대원칙 · 3곳 이상 = 즉시 추출
+
+### 해결
+- **신규:** `src/lib/settingsApi.ts`
+  - `getSetting<T>(key)` · GET · KV 값 조회 (encodeURIComponent 자동)
+  - `saveSetting<T>(key, value)` · POST · KV 값 저장
+- **6 파일 마이그레이션** · KV wrap 통합
+
+### 테스트 절차
+1. **시스템설정 > 통계설정** · 계절 편집 · 저장 (useSettings)
+2. **경영관리 > 권한** · 사이드바 활성/비활성 토글 (PermissionsPage)
+3. **경영관리 > 스케줄** · 월 확정/해제 (SchedulePage)
+4. **경영관리 > 점심** · 휴게 배정 저장 (LunchPage · break_timeline)
+5. **랜딩 > 데이터 업로드** · 상품 import log 조회 (UploadDataModal)
+6. **적정재고 계산 일수** 편집 (useKvSetting)
+- 모두 정상 저장·조회 확인
+
+### 회귀 확인
+- KV 값 저장·조회 · 이전과 동일 동작
+- TS 통과 · 3355/3355 tests 통과
 
 ---
 
