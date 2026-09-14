@@ -199,28 +199,20 @@ export async function getProductMap(): Promise<Record<string, ProductInfo>> {
   return p;
 }
 
-// 2026-08-26 · 사용자 지시 · 전역 판매중 설정 반영 · 모든 소비자 (products-map · stock-check · products.json 등) 자동 필터
+// 2026-08-26 · 전역 판매중 설정 반영 · 모든 소비자 자동 필터
 //   · app_settings.stats.sale_active_only === true 이면 · sale_status !== "판매중" 상품 제거
 //   · 설정 OFF (false/null) 이면 · 전체 반환 (기존 동작)
-//   · 설정 값은 5초 캐시 · DB 부하 완화
-let saleActiveOnlyCache: { value: boolean; ts: number } | null = null;
-const SALE_ACTIVE_TTL_MS = 5000;
-// 2026-08-27 · 사용자 지시 · DB 원천차단 · 판매중 필터 default true
-//   · setting 없거나 null → 판매중만 반환 (안전 default)
-//   · 명시적 false 만 · 전체 반환 (관리자 · 데이터임포트 등)
+// 2026-09-14 · 사용자 대원칙 · 실시간 정확성 · 캐시 제거 · 매 요청 DB 직접 조회 (단순 KV 1행 · ~5ms)
 async function readSaleActiveOnly(): Promise<boolean> {
-  const now = Date.now();
-  if (saleActiveOnlyCache && (now - saleActiveOnlyCache.ts) < SALE_ACTIVE_TTL_MS) return saleActiveOnlyCache.value;
   try {
     const { data } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();
-    const v = data?.value === false ? false : true;  // default true · 명시적 false 만 전체
-    saleActiveOnlyCache = { value: v, ts: now };
-    return v;
+    return data?.value === false ? false : true;  // default true · 명시적 false 만 전체
   } catch {
     return true;  // catch 시에도 안전 default true
   }
 }
-export function invalidateSaleActiveOnlyCache(): void { saleActiveOnlyCache = null; }
+// 2026-09-14 · 캐시 제거 · invalidateSaleActiveOnlyCache 는 no-op 유지 (호출 사이트 호환)
+export function invalidateSaleActiveOnlyCache(): void { /* cache removed · 실시간 조회로 전환 */ }
 
 /** 판매중 설정 반영된 상품 map · 모든 공개 endpoint 에서 사용
  * 2026-08-29 · 사용자 지시 · 랜딩 재고확인 · 상품현황 리스트 불일치 원인 fix
