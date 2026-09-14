@@ -427,9 +427,10 @@ router.get("/api/product-arrivals/compare/orders", asyncHandler(async (req, res)
   const since = new Date(); since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString();
 
+  // 2026-09-14 · optimal_stock 컬럼 DROP · SELECT 제거 (SSOT · products.optimal_stock 단일 소스 · 이 endpoint 는 미사용 필드)
   const { data: orders, error: oErr } = await supabase
     .from("order_requests")
-    .select("id, product_code, product_name, current_stock, optimal_stock, note, requested_at")
+    .select("id, product_code, product_name, current_stock, note, requested_at")
     .gte("requested_at", sinceStr)
     .order("requested_at", { ascending: false })
     .limit(1000);
