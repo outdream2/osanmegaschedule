@@ -10,6 +10,8 @@ import { SettingsPageShell } from "../common/SettingsPageShell";
 import { AppNavPage } from "../layout/AppNavHeader";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
+// 2026-09-14 · framework audit · raw-card-wrapper → Card 프리미티브
+import { Card } from "../common/Card";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { api, ApiError } from "../../lib/apiClient";
 import type { AuthSession } from "../../types";
@@ -134,7 +136,7 @@ export const OrderSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavi
       }
     >
       {/* ── 1. SMTP 이메일 설정 ─────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-white border border-line rounded-2xl shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_12px_-4px_rgba(10,46,74,0.06)]">
+      <Card as="section" variant="sm" padding="none" clip rounded="2xl" className="relative">
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-brand-deep via-brand to-[#3E7CB1]" />
         <header className="px-5 pt-5 pb-3 flex items-center gap-3 border-b border-line">
           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-deep to-brand shadow-sm flex items-center justify-center shrink-0">
@@ -218,10 +220,10 @@ export const OrderSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavi
             }
           </div>
         </div>
-      </section>
+      </Card>
 
       {/* ── 2. 테스트 발송 ──────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-white border border-line rounded-2xl shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_12px_-4px_rgba(10,46,74,0.06)]">
+      <Card as="section" variant="sm" padding="none" clip rounded="2xl" className="relative">
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-500" />
         <header className="px-5 pt-5 pb-3 flex items-center gap-3 border-b border-line">
           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm flex items-center justify-center shrink-0">
@@ -252,7 +254,7 @@ export const OrderSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavi
             테스트 발송
           </button>
         </div>
-      </section>
+      </Card>
 
       {toast && (
         <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>

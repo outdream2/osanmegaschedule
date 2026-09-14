@@ -21,6 +21,8 @@ import { StatusPill } from "./StatusPill";
 import { MapPin, User, GripVertical } from "lucide-react";
 import { ZoneCellPicker } from "./ZoneCellPicker";
 import { TIMING } from "../../constants/timing";
+// 2026-09-14 · framework audit · raw-card-wrapper → Card 프리미티브
+import { Card } from "./Card";
 
 export interface StoreZoneMapProps {
   /** 구역별 상품 수 · key = zone id (예: "1A", "9B", "22") */
@@ -508,7 +510,8 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
       </div>
 
       {/* 2026-09-09 · 카운터존 45~50 · 하단 별도 카드 · DisplayStoreMap 과 동일 */}
-      <div className="mt-2 p-3 bg-white border border-line rounded-2xl flex flex-col gap-3 shadow-sm">
+      {/* 2026-09-14 · framework audit · raw-card-wrapper → Card 프리미티브 */}
+      <Card variant="raw-sm" padding="sm" rounded="2xl" className="mt-2 flex flex-col gap-3">
         <div className="flex items-center gap-2 pb-2 border-b border-zinc-100">
           <div className="w-6 h-6 rounded-lg bg-zinc-900 flex items-center justify-center shadow-sm">
             <span className="text-[15px]">🛒</span>
@@ -529,7 +532,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
             </div>
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   );
 
