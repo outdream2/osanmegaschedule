@@ -16,13 +16,8 @@ import { Modal } from "../common/Modal";
 import { SectionLabel } from "../common/SectionLabel";
 import { Spinner } from "../common/Spinner";
 import { GradientAccent } from "../common/GradientAccent";
-
-interface StockArrival {
-  id: number;
-  title: string;
-  body?: string | null;
-  created_at: string;
-}
+// 2026-09-14 · stockArrivalsApi 프리미티브 · 타입 통합
+import { listStockArrivals, type StockArrival } from "../../lib/stockArrivalsApi";
 
 interface StockArrivalListProps {
   isVendor: boolean;
@@ -37,9 +32,8 @@ export const StockArrivalList: React.FC<StockArrivalListProps> = ({ isVendor }) 
   const [pushLoading, setPushLoading] = useState(false);
 
   useEffect(() => {
-    api.get<StockArrival[]>("/api/stock-arrivals")
-      .then(({ data }) => {
-        const list = Array.isArray(data) ? data : [];
+    listStockArrivals()
+      .then((list) => {
         setStockArrivals([...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
       })
       .catch(() => { })

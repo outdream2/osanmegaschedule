@@ -1,4 +1,5 @@
 // 2026-08-17 · apiClient 마이그레이션
+// 2026-09-14 · stockArrivalsApi 프리미티브 · 타입 통합
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
@@ -13,6 +14,13 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
+import {
+  listStockArrivals,
+  createStockArrival,
+  patchStockArrival,
+  deleteStockArrival,
+  type StockArrival,
+} from "../../lib/stockArrivalsApi";
 
 interface StockArrivalPageProps {
   authSession: AuthSession | null;
@@ -20,16 +28,6 @@ interface StockArrivalPageProps {
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
   embedded?: boolean;
-}
-
-interface StockArrival {
-  id: number;
-  title: string;
-  body: string | null;
-  created_at: string;
-  created_by_id: number | null;
-  scheduled_at: string | null;
-  broadcast_sent: boolean;
 }
 
 function toLocalDT(date: Date) {
@@ -94,8 +92,8 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
   const fetchArrivals = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get<any>("/api/stock-arrivals");
-      setArrivals(Array.isArray(data) ? data : []);
+      const list = await listStockArrivals();
+      setArrivals(list);
     } finally { setLoading(false); }
   }, []);
 
@@ -131,7 +129,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
     if (!newTitle.trim() || !employeeId) return;
     setSubmitting(true);
     try {
-      await api.post("/api/stock-arrivals", { title: newTitle.trim(), body: newBody.trim() || null, employeeId, send_now: false });
+      await createStockArrival({ title: newTitle.trim(), body: newBody.trim() || null, employeeId, send_now: false });
       setNewTitle(""); setNewBody(""); await fetchArrivals(); titleRef.current?.focus();
       showSuccess("입고 알림이 저장되었습니다");
     } catch (e: any) {
@@ -144,7 +142,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
     if (!newTitle.trim() || !employeeId) return;
     setSubmitting(true);
     try {
-      await api.post("/api/stock-arrivals", { title: newTitle.trim(), body: newBody.trim() || null, employeeId, send_now: true });
+      await createStockArrival({ title: newTitle.trim(), body: newBody.trim() || null, employeeId, send_now: true });
       setNewTitle(""); setNewBody(""); await fetchArrivals(); titleRef.current?.focus();
       showSuccess("입고 알림이 즉시 발송되었습니다");
     } catch (e: any) {
@@ -165,10 +163,10 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
     try {
       if (schedPickerId === "new") {
         if (!newTitle.trim()) return;
-        await api.post("/api/stock-arrivals", { title: newTitle.trim(), body: newBody.trim() || null, employeeId, scheduled_at: isoTime });
+        await createStockArrival({ title: newTitle.trim(), body: newBody.trim() || null, employeeId, scheduled_at: isoTime });
         setNewTitle(""); setNewBody("");
       } else {
-        const { data: updated } = await api.patch<StockArrival>(`/api/stock-arrivals/${schedPickerId}`, { employeeId, scheduled_at: isoTime });
+        const updated = await patchStockArrival(Number(schedPickerId), { employeeId, scheduled_at: isoTime });
         setArrivals(prev => prev.map(a => a.id === schedPickerId ? updated : a));
       }
       setSchedPickerId(null);
@@ -196,7 +194,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
     if (!editTitle.trim()) return;
     setEditSaving(true);
     try {
-      const { data: updated } = await api.patch<StockArrival>(`/api/stock-arrivals/${id}`, { title: editTitle.trim(), body: editBody.trim() || null, employeeId });
+      const updated = await patchStockArrival(id, { title: editTitle.trim(), body: editBody.trim() || null, employeeId });
       setArrivals(prev => prev.map(a => a.id === id ? updated : a));
       setEditId(null);
       showSuccess("수정되었습니다");
@@ -208,7 +206,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
   const handleDelete = async (id: number) => {
     if (!await confirm({ message: "이 입고 알림을 삭제하시겠습니까?", danger: true })) return;
     try {
-      await api.del(`/api/stock-arrivals/${id}`, { data: { employeeId } });
+      await deleteStockArrival(id, employeeId);
       setArrivals(prev => prev.filter(a => a.id !== id));
       showSuccess("삭제되었습니다");
     } catch (e: any) {
