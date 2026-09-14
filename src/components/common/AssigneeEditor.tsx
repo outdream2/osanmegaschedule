@@ -14,7 +14,8 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
-import { api } from "../../lib/apiClient";
+// 2026-09-14 · employeeApi 프리미티브
+import { listEmployees } from "../../lib/employeeApi";
 
 /** 프리미티브 내부 후보 캐시 · position 포함 · filter prop 지원 */
 export type EmpItem = { id: number; name: string; position: string };
@@ -26,10 +27,8 @@ async function fetchEmployeesCached(): Promise<EmpItem[]> {
   if (_empPromise) return _empPromise;
   _empPromise = (async () => {
     try {
-      const { data } = await api.get<EmpItem[]>("/api/employees");
-      _empCache = Array.isArray(data)
-        ? data.map(e => ({ id: e.id, name: e.name, position: String((e as any).position ?? "") }))
-        : [];
+      const list = await listEmployees();
+      _empCache = list.map(e => ({ id: e.id, name: e.name, position: String((e as any).position ?? "") }));
       return _empCache;
     } catch { return []; }
   })();

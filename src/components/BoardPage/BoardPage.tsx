@@ -7,6 +7,8 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
+// 2026-09-14 · employeeApi 프리미티브
+import { listEmployees } from "../../lib/employeeApi";
 import {
   HelpCircle, AlertTriangle, StickyNote, Plus, Send, X as XIcon, Image as ImageIcon,
   ChevronLeft, Pin, MessageCircle, Trash2,
@@ -78,8 +80,8 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
   useEffect(() => {
     (async () => {
       try {
-        const { data: list } = await api.get<Employee[]>("/api/employees");
-        setEmployees(Array.isArray(list) ? list : []);
+        const list = await listEmployees();
+        setEmployees(list);
       } catch { /* ignore */ }
     })();
   }, []);
