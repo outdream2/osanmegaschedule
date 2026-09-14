@@ -44,19 +44,25 @@ router.get("/api/supplier-stock-values-map", asyncHandler(async (_req, res) => {
 // 2026-09-10 · 사용자 지시 · 정합성 공식 · 재고자산 = 매입액 - 결제액 = 잔고 (미지급/선지급)
 //   · 전체 공급사 · balance map (전체 기간 total_purchase - total_payment)
 //   · 왼쪽 리스트 총잔고 · 총재고자산 (동일 값) · 한 번에 fetch
-router.get("/api/supplier-balances-map", asyncHandler(async (_req, res) => {
+router.get("/api/supplier-balances-map", asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  // 2026-09-14 · #140 · 기간 필터 · optional start/end (YYYY-MM-DD) · 결제대시보드 사용
+  const start = String(req.query.start ?? "").trim();
+  const end   = String(req.query.end ?? "").trim();
+  const hasFilter = /^\d{4}-\d{2}-\d{2}$/.test(start) && /^\d{4}-\d{2}-\d{2}$/.test(end);
   const purchaseMap = new Map<string, number>();
   const paymentMap = new Map<string, number>();
 
-  // purchase_details 전체 · supplier_name 별 · amount 합
+  // purchase_details · supplier_name 별 · amount 합 (기간 필터 시 purchase_date 사이)
   const PD_PAGE = 1000;
   let pdFrom = 0;
   while (true) {
-    const { data, error } = await supabase
+    let q = supabase
       .from("purchase_details")
-      .select("supplier_name, amount")
+      .select("supplier_name, amount, purchase_date")
       .range(pdFrom, pdFrom + PD_PAGE - 1);
+    if (hasFilter) q = q.gte("purchase_date", start).lte("purchase_date", end);
+    const { data, error } = await q;
     if (error) {
       if (/relation .* does not exist/i.test(error.message)) break;
       throw new HttpError(500, error.message, "DB_ERROR");
@@ -71,15 +77,17 @@ router.get("/api/supplier-balances-map", asyncHandler(async (_req, res) => {
     pdFrom += PD_PAGE;
   }
 
-  // supplier_payments 전체 · amount 합
+  // supplier_payments · amount 합 (기간 필터 시 payment_date 사이)
   try {
     const SP_PAGE = 1000;
     let spFrom = 0;
     while (true) {
-      const { data, error } = await supabase
+      let q = supabase
         .from("supplier_payments")
-        .select("supplier_name, amount")
+        .select("supplier_name, amount, payment_date")
         .range(spFrom, spFrom + SP_PAGE - 1);
+      if (hasFilter) q = q.gte("payment_date", start).lte("payment_date", end);
+      const { data, error } = await q;
       if (error) break;
       if (!data || data.length === 0) break;
       for (const r of data) {
