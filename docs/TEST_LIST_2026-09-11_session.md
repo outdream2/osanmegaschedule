@@ -324,8 +324,11 @@ Radix Popover · 셀 옆 표시 · 스크롤 · 화면 밖 튀어나갈 가능�
 | #112 | 공급사 정보수정 · 발주이력 컴팩트 섹션 통합 | d3d7cea5 |
 | #55·#53 | 발주필요 · 판매추천 · 임박 이벤트 배너 통합 | bc097349 |
 | #52·#54 | 이벤트 관리 UI 신규 · 통계설정 3번째 탭 | 5434854d |
+| #83 | 상품등록 모달 · 참조 상품 섹션 제거 | 7dcbacbe |
+| #108 | 사이드바 알림 스위치 (NotificationToggle) 제거 | 810838f8 |
+| #82 | 상품등록 모달 · 배치구역 2분리 · shelf_positions JSONB | f9acf35b |
 
-**총 · 36태스크 완료 · 39커밋 (자율 세션)**
+**총 · 39태스크 완료 · 43커밋 (자율 세션)**
 
 ---
 
@@ -683,6 +686,64 @@ if (zoneId && (!assignedStaffId || Number.isNaN(assignedStaffId))) {
 
 ### 사전 조건
 - 관리자 (level ≥ 9) 만 편집 가능
+
+---
+
+## #83 · ProductCreateModal · 참조 상품 섹션 제거 ✅
+**커밋** · 7dcbacbe
+
+### 배경
+"동일 분류 참조 상품" 섹션 · 분류 2자리 이상 자동 노출 · 화면 복잡도 증가 · 자동 반영으로 인한 값 오채움 위험.
+
+### 해결
+- refList·refLoading state 제거
+- useEffect (products-by-category 조회) 제거
+- applyRefProduct 함수 · RefProduct 타입 · Section UI 완전 삭제
+
+### 테스트 절차
+1. **상품정보** · 신규 등록 or 수정 모달 · 열기
+2. 분류코드 · 2자리 이상 입력
+3. **참조 상품 섹션 · 표시 X** (이전 · 자동 노출) · 확인
+4. 폼 · 가격 · 기타 섹션까지 · 스크롤 없이 표시
+
+---
+
+## #108 · 사이드바 알림 스위치 (NotificationToggle) 제거 ✅
+**커밋** · 810838f8
+
+### 배경
+사이드바 하단 · 알림 온오프 스위치 · 실사용 빈도 낮음 · UI 복잡도.
+
+### 해결
+- `src/components/NotificationToggle.tsx` · 파일 완전 삭제
+- SideNav L546 · AppNavHeader L379 · 제거
+- **NotificationBell (알림 목록) 은 유지**
+
+### 테스트 절차
+1. **사이드바 하단** · 알림 스위치 없음 (NotificationBell 벨 아이콘만)
+2. **PC 헤더** · 알림 스위치 없음
+3. 브라우저 푸시 알림 · 필요 시 · 브라우저 사이트 설정에서 관리
+
+---
+
+## #82 · 상품정보 모달 · 배치구역 2분리 ✅
+**커밋** · f9acf35b
+
+### 배경
+배치구역 · md:col-span-2 · ZoneCategoryPicker 하나만 (진열구역). 상세구역 표시·편집 없음.
+
+### 해결
+- 배치구역 · 2컬럼 나란히
+  - **좌 · 진열구역** · ZoneCategoryPicker (form.location)
+  - **우 · 상세구역** · shelf_positions JSONB 배지 (읽기 전용)
+- 편집은 · 실재고 입력·스캔 페이지 (기존 대원칙 · products.shelf_positions X · inventory_checks 통합)
+
+### 테스트 절차
+1. **상품정보** · 상품 수정 모달 · 열기
+2. **배치구역** · 진열구역 (좌) + 상세구역 (우) 나란히
+3. **상세구역 · shelf_positions** 있는 상품 · 배지 표시 (창고/매장별)
+4. 신규 등록 or 미등록 상품 · "실재고 입력에서 저장" 안내
+5. 편집 · **실재고 입력 · 스캔** 페이지에서 · 저장 (기존 flow 유지)
 
 ---
 
