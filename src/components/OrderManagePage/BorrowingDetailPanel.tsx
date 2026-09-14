@@ -18,11 +18,15 @@
 //     6. iOS 코드 무수정 (SignaturePad 는 그대로 재사용)
 //     7. 파괴적 액션 (삭제·취소) · useConfirm 필수
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   HandCoins, Trash2, CheckCircle2, X, RotateCcw, PenTool, Clock, Save,
-  Inbox, FileSignature, AlertTriangle,
+  Inbox, FileSignature, AlertTriangle, FileDown,
 } from "lucide-react";
+// 2026-09-14 · #101 · 차용계약 PDF 프리뷰 · html2canvas + jsPDF
+import html2canvas from "html2canvas-pro";
+import jsPDF from "jspdf";
+import { BorrowingPdfPreview } from "./BorrowingPdfPreview";
 import { Card } from "../common/Card";
 import { Spinner } from "../common/Spinner";
 import { Modal } from "../common/Modal";
@@ -96,6 +100,51 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
   const [sigs, setSigs] = useState<BorrowingSignature[]>([]);
   const [loadingSig, setLoadingSig] = useState(false);
   const [sigError, setSigError] = useState<string | null>(null);
+  // 2026-09-14 · #101 · 차용계약 PDF 다운
+  const pdfRef = useRef<HTMLDivElement | null>(null);
+  const [pdfSaving, setPdfSaving] = useState(false);
+  const [pdfTarget, setPdfTarget] = useState<BorrowingRow | null>(null);
+  const handleDownloadPdf = useCallback(async () => {
+    if (!row) return;
+    setPdfSaving(true);
+    setPdfTarget(row);
+    // 다음 tick · 오프스크린 렌더링 후 캡처
+    await new Promise(r => setTimeout(r, 120));
+    try {
+      const node = pdfRef.current;
+      if (!node) throw new Error("PDF 프리뷰를 찾을 수 없습니다");
+      const canvas = await html2canvas(node, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+        windowWidth: node.scrollWidth,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = pdf.internal.pageSize.getHeight();
+      const imgH = (canvas.height * pdfW) / canvas.width;
+      if (imgH <= pdfH) {
+        pdf.addImage(imgData, "PNG", 0, 0, pdfW, imgH, undefined, "FAST");
+      } else {
+        let yOffset = 0; let remaining = imgH;
+        while (remaining > 0) {
+          pdf.addImage(imgData, "PNG", 0, -yOffset, pdfW, imgH, undefined, "FAST");
+          remaining -= pdfH; yOffset += pdfH;
+          if (remaining > 0) pdf.addPage();
+        }
+      }
+      const safeName = (row.product_name ?? "차용계약").replace(/[\\/:*?"<>|]/g, "_");
+      const safeDate = (row.created_at ?? new Date().toISOString()).slice(0, 10).replace(/-/g, "");
+      pdf.save(`차용계약서_${safeDate}_${safeName}_${row.contract_no ?? row.id}.pdf`);
+    } catch (e: any) {
+      console.error("[BorrowingDetailPanel] PDF 다운 실패:", e?.message ?? e);
+    } finally {
+      setPdfSaving(false);
+      setPdfTarget(null);
+    }
+  }, [row]);
 
   const [returnOpen, setReturnOpen] = useState(false);
   const [returnPad, setReturnPad] = useState("");
@@ -513,11 +562,22 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
               재열림
             </button>
           )}
+          {/* 2026-09-14 · #101 · 차용계약 PDF 다운로드 · 상태 무관 노출 */}
+          <button
+            type="button"
+            onClick={handleDownloadPdf}
+            disabled={busy || pdfSaving}
+            className="ml-auto inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[14px] font-bold text-brand-deep bg-white border border-line hover:border-brand-deep hover:bg-brand-tint/20 disabled:opacity-40 cursor-pointer"
+            title="차용계약서 PDF 다운로드"
+          >
+            {pdfSaving ? <Spinner size={12} tone="brand" /> : <FileDown size={13} strokeWidth={2.4} />}
+            PDF
+          </button>
           <button
             type="button"
             onClick={handleDelete}
             disabled={busy}
-            className="ml-auto inline-flex items-center justify-center w-9 h-9 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 disabled:opacity-40 cursor-pointer"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 disabled:opacity-40 cursor-pointer"
             title="완전 삭제"
             aria-label="완전 삭제"
           >
@@ -525,6 +585,13 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
           </button>
         </div>
       </Card>
+
+      {/* 2026-09-14 · #101 · 오프스크린 PDF 프리뷰 · 캡처 대상 */}
+      {pdfTarget && (
+        <div style={{ position: "fixed", left: "-10000px", top: 0, pointerEvents: "none", opacity: 0 }} aria-hidden>
+          <BorrowingPdfPreview ref={pdfRef} row={pdfTarget} selfLabel={selfLabel} pharmacyLabel={companyInfo.name} />
+        </div>
+      )}
 
       {/* ─── 반환 처리 · 인라인 Modal · 서명 필수 ─── */}
       {returnOpen && row && (

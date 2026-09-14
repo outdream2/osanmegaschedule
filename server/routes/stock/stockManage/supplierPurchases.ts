@@ -45,6 +45,29 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
     }
     if (!targetDate) return res.json({ snapshot_date: null, top: null, rows: [] });
 
+    // 2026-09-14 · #73 · SSOT · products.sale_price 사전 fetch · totalStockAmount 파생 계산
+    //   · 이전 · stock_history.total_amount 원본 누적 (xlsx 원본 · 정확도 저하)
+    //   · fix · sale_qty × sale_price (판매액 = 수량 × 판매가 · 대원칙)
+    const salePriceMap = new Map<string, number>();
+    {
+      const PP = 1000;
+      let pf = 0;
+      while (true) {
+        const { data } = await supabase
+          .from("products")
+          .select("product_code, sale_price")
+          .range(pf, pf + PP - 1);
+        if (!data || data.length === 0) break;
+        for (const p of data) {
+          const code = String((p as any).product_code ?? "").trim();
+          if (!code) continue;
+          salePriceMap.set(code, Number((p as any).sale_price ?? 0) || 0);
+        }
+        if (data.length < PP) break;
+        pf += PP;
+      }
+    }
+
     // 전체 조회 (페이지네이션) — 공급사코드로 그룹핑 (코드 없으면 이름으로 폴백)
     // 2026-07-28: itemCount 를 stock_history row 수가 아닌 distinct product 수로 계산
     const map = new Map<string, {
@@ -63,7 +86,7 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
     while (true) {
       let query = supabase
         .from("stock_history")
-        .select("product_code, supplier_code, supplier_name, purchase_qty, sale_qty, supply_amount, total_amount, snapshot_date");
+        .select("product_code, supplier_code, supplier_name, purchase_qty, sale_qty, supply_amount, snapshot_date");
       if (seasonMonths) {
         // 전 데이터 스캔 · 후 필터 (Supabase 는 EXTRACT 미지원)
       } else if (fromDateStr) {
@@ -102,7 +125,9 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
         cur.saleQty        += saleQty;
         const total = purchQty + saleQty;
         if (total > 0) cur.saleAmount += supplyAmt * (saleQty / total);
-        cur.totalStockAmount += Number(r.total_amount ?? 0) || 0;
+        // 2026-09-14 · #73 · SSOT · 판매액 = sale_qty × sale_price (파생 · total_amount 원본 X)
+        const salePrice = productCode ? (salePriceMap.get(productCode) ?? 0) : 0;
+        cur.totalStockAmount += saleQty * salePrice;
         map.set(key, cur);
       }
       if (data.length < PAGE) break;
