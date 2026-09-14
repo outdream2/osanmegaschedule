@@ -3,8 +3,8 @@
 //   · 30일 판매 요약 · 예상 소진일 · 시나리오 (30/45/90일치) 발주량 [적용]
 //   · 상품 상세 정보는 별도 모달 (onOpenDetail 트리거)
 // 2026-09-13 · #55 · 상품 선택 무관 · 임박 이벤트 배너 (GET /api/events/today)
-import React, { useEffect, useState } from "react";
-import { Package, TrendingUp, Info, X, Check, Sparkles, Calendar, AlertTriangle } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Package, TrendingUp, Info, X, Check, Sparkles, Calendar, AlertTriangle, Plus } from "lucide-react";
 import { Card } from "../common/Card";
 import { StatusPill } from "../common/StatusPill";
 import { api } from "../../lib/apiClient";
@@ -109,6 +109,50 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
   const [expandedEvents, setExpandedEvents] = useState<Set<number>>(new Set());
   // 2026-09-14 · 사용자 지시 · 유통기한 임박 상품 · 우측 판넬 신규 섹션
   const [expiryImminent, setExpiryImminent] = useState<ExpiryImminentProduct[]>([]);
+  // 2026-09-14 · 사용자 지시 · 이벤트 추가 · 사용자가 이벤트 리스트에서 선택 가능
+  //   · GET /api/events · 전체 이벤트 (지난·현재·향후) · 사용자 pick → eventsToday 에 병합
+  //   · 원래 오늘 이벤트 (auto) 는 originalEventIds 로 추적 · 수동 추가된 것만 해제 가능
+  const [allEvents, setAllEvents] = useState<EventToday[]>([]);
+  const [showEventPicker, setShowEventPicker] = useState(false);
+  const [pickerDate, setPickerDate] = useState<string>("");
+  const originalEventIdsRef = React.useRef<Set<number>>(new Set());
+  const loadAllEvents = React.useCallback(async () => {
+    try {
+      const { data } = await api.get<{ rows?: EventToday[] }>(`/api/events`);
+      setAllEvents(Array.isArray(data?.rows) ? data.rows : []);
+    } catch {
+      setAllEvents([]);
+    }
+  }, []);
+  const openPicker = React.useCallback(() => {
+    setShowEventPicker(true);
+    if (allEvents.length === 0) void loadAllEvents();
+  }, [allEvents.length, loadAllEvents]);
+  const addPickedEvent = React.useCallback(async (ev: EventToday) => {
+    if (eventsToday.some(e => e.id === ev.id)) return; // 이미 표시 중
+    try {
+      const { data } = await api.get<{ products?: EventProduct[] }>(`/api/events/${ev.id}/products`);
+      const products = Array.isArray(data?.products) ? data.products : [];
+      setEventsToday(prev => [...prev, { ...ev, products, product_count: products.length }]);
+    } catch {
+      setEventsToday(prev => [...prev, { ...ev, products: [], product_count: 0 }]);
+    }
+  }, [eventsToday]);
+  const removePickedEvent = React.useCallback((id: number) => {
+    // 원래 오늘 이벤트 (auto) 는 제거 불가 · 수동 추가된 것만 제거
+    if (originalEventIdsRef.current.has(id)) return;
+    setEventsToday(prev => prev.filter(e => e.id !== id));
+  }, []);
+  // 날짜별 필터 · pickerDate 있으면 · 그 날짜에 걸치는 이벤트만
+  const filteredPickerEvents = useMemo(() => {
+    if (!pickerDate) return allEvents;
+    return allEvents.filter(e => {
+      if (!e.start_date && !e.end_date) return false;
+      const s = e.start_date ? String(e.start_date).slice(0, 10) : "";
+      const en = e.end_date ? String(e.end_date).slice(0, 10) : s;
+      return s <= pickerDate && pickerDate <= en;
+    });
+  }, [allEvents, pickerDate]);
   const toggleEventExpand = React.useCallback((id: number) => {
     setExpandedEvents(prev => {
       const next = new Set(prev);
@@ -122,8 +166,11 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
       try {
         const { data } = await api.get<{ events?: EventToday[]; current_season?: string }>(`/api/events/today`);
         if (alive) {
-          setEventsToday(Array.isArray(data?.events) ? data.events : []);
+          const initEvents = Array.isArray(data?.events) ? data.events : [];
+          setEventsToday(initEvents);
           setCurrentSeason(String(data?.current_season ?? ""));
+          // 2026-09-14 · 원래 오늘 이벤트 ID 기록 · 수동 추가된 것과 구분 (제거 버튼 표시)
+          originalEventIdsRef.current = new Set(initEvents.map(e => e.id));
         }
       } catch {
         if (alive) { setEventsToday([]); setCurrentSeason(""); }
@@ -253,6 +300,124 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                   </div>
                 );
               })}
+              {/* 2026-09-14 · 사용자 지시 · 이벤트 추가 · 리스트에서 선택 (날짜 필터 포함) */}
+              <button
+                type="button"
+                onClick={openPicker}
+                className="inline-flex items-center justify-center gap-1 rounded-lg border border-dashed border-brand-tint/60 hover:border-brand-deep hover:bg-brand-tint/10 px-2.5 py-1.5 text-[12px] font-bold text-brand-deep transition self-start"
+                title="다른 이벤트 선택해서 추가"
+              >
+                <Plus size={12} strokeWidth={2.5} />
+                이벤트 추가
+              </button>
+            </div>
+          )}
+          {/* 2026-09-14 · 사용자 지시 · 이벤트 추가 · 오늘 이벤트 없을 때도 · 버튼 표시 */}
+          {eventsToday.length === 0 && (
+            <button
+              type="button"
+              onClick={openPicker}
+              className="inline-flex items-center justify-center gap-1 rounded-lg border border-dashed border-brand-tint/60 hover:border-brand-deep hover:bg-brand-tint/10 px-2.5 py-1.5 text-[12px] font-bold text-brand-deep transition self-start"
+              title="이벤트 리스트에서 선택"
+            >
+              <Plus size={12} strokeWidth={2.5} />
+              이벤트 추가
+            </button>
+          )}
+          {/* 2026-09-14 · 이벤트 선택 패널 · showEventPicker · 날짜 필터 + 이벤트 리스트 */}
+          {showEventPicker && (
+            <div className="flex flex-col gap-2 p-3 rounded-lg border border-brand-tint/60 bg-brand-tint/10">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[13px] font-bold text-ink inline-flex items-center gap-1">
+                  <Calendar size={12} className="text-brand-deep" />
+                  이벤트 선택
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowEventPicker(false)}
+                  className="inline-flex items-center justify-center rounded-md hover:bg-white p-1 text-zinc-500 transition"
+                  title="닫기"
+                >
+                  <X size={14} strokeWidth={2.2} />
+                </button>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <label className="text-[11px] font-semibold text-ink-soft">날짜 필터</label>
+                <input
+                  type="date"
+                  value={pickerDate}
+                  onChange={(e) => setPickerDate(e.target.value)}
+                  className="text-[12px] rounded-md border border-line bg-white px-2 py-1 focus:outline-none focus:border-brand-deep"
+                />
+                {pickerDate && (
+                  <button
+                    type="button"
+                    onClick={() => setPickerDate("")}
+                    className="text-[11px] font-semibold text-zinc-500 hover:text-zinc-700"
+                  >
+                    지우기
+                  </button>
+                )}
+                <span className="ml-auto text-[11px] tabular-nums text-zinc-500">{filteredPickerEvents.length}건</span>
+              </div>
+              <div className="flex flex-col gap-1 max-h-[280px] overflow-y-auto pr-1">
+                {filteredPickerEvents.length === 0 ? (
+                  <div className="text-[12px] text-ink-soft text-center py-4">
+                    {pickerDate ? "해당 날짜 이벤트 없음" : "등록된 이벤트 없음"}
+                  </div>
+                ) : (
+                  filteredPickerEvents.map(ev => {
+                    const isAdded = eventsToday.some(e => e.id === ev.id);
+                    const isOriginal = originalEventIdsRef.current.has(ev.id);
+                    const tone = TYPE_TONE[ev.type] ?? TYPE_TONE.custom;
+                    return (
+                      <div
+                        key={ev.id}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-md bg-white border border-line hover:border-brand-tint transition-all ${
+                          isAdded ? "opacity-60" : ""
+                        }`}
+                      >
+                        <span className={`text-[10px] font-bold px-1 py-0.5 rounded ${tone.cls} shrink-0`}>
+                          {tone.label}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[12.5px] font-bold text-ink truncate">{ev.name}</div>
+                          {(ev.start_date || ev.end_date) && (
+                            <div className="text-[10.5px] tabular-nums text-ink-soft">
+                              {ev.start_date ?? "?"} {ev.end_date && ev.end_date !== ev.start_date && `~ ${ev.end_date}`}
+                            </div>
+                          )}
+                        </div>
+                        {isAdded ? (
+                          isOriginal ? (
+                            <StatusPill tone="zinc" size="xs">진행중</StatusPill>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => removePickedEvent(ev.id)}
+                              className="inline-flex items-center gap-1 rounded-md border border-zinc-300 hover:bg-zinc-50 px-1.5 py-0.5 text-[10.5px] font-semibold text-zinc-600 transition"
+                              title="제거"
+                            >
+                              <X size={10} strokeWidth={2.5} />
+                              제거
+                            </button>
+                          )
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => void addPickedEvent(ev)}
+                            className="inline-flex items-center gap-1 rounded-md bg-brand-deep hover:bg-brand-deep/90 px-1.5 py-0.5 text-[10.5px] font-bold text-white transition"
+                            title="추가"
+                          >
+                            <Plus size={10} strokeWidth={2.5} />
+                            추가
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           )}
           {/* 2026-09-14 · 사용자 지시 · 유통기한 임박 상품 · 발주필요 우측 판넬 · [발주 추가] 액션 */}
