@@ -42,6 +42,7 @@
 | 8 | 📄 **메타·문서** · package.json + README + Migrations README | `990acf9f` · `1c9a2050` |
 | 9 | 🎯 **프레임워크** · inventoryChecksApi 프리미티브 · 11 파일 통합 | `af71c14a` |
 | 10 | 🎯 **프레임워크** · orderRequestsApi 프리미티브 · 7 곳 통합 | `23ddc1dc` |
+| 11 | 🎯 **프레임워크** · stockArrivalsApi 프리미티브 · 5 곳 + 타입 통합 | `72ae0f3a` |
 
 **필수 · 서버 재시작** (Ctrl+C · npm run dev) · 백엔드 fix 반영
 
@@ -180,6 +181,40 @@
 ### 예상 결과
 - 상품 등록/수정 → 실재고 테이블 · 즉시 자동 갱신
 - 사용자 새로고침 불필요
+
+---
+
+## 🎯 [11] 프레임워크 · stockArrivalsApi 프리미티브 추출 · 5 call sites + 타입 통합 ✅
+**커밋** · `72ae0f3a`
+
+### 배경
+- `/api/stock-arrivals` · 5 곳 산발 (GET·POST·PATCH·DELETE)
+- `StockArrival` 타입 · 2 파일 개별 정의 (중복)
+
+### 해결
+- **신규:** `src/lib/stockArrivalsApi.ts`
+  - `listStockArrivals()` · GET 리스트
+  - `createStockArrival(payload)` · POST (send_now·scheduled_at·초안)
+  - `patchStockArrival(id, payload)` · PATCH
+  - `deleteStockArrival(id, employeeId)` · DELETE
+  - `StockArrival` · `CreateStockArrivalPayload` · `PatchStockArrivalPayload` 통합 타입
+- **2 파일 마이그레이션**
+
+### 테스트 절차
+**A. 랜딩 페이지 · 입고 알림 리스트 (StockArrivalList)**
+1. **랜딩 페이지** · 입고 알림 카드 · 리스트 정상 로드 · 최신순 정렬
+2. 항목 클릭 · 상세 모달 정상
+
+**B. 입고 알림 관리 (StockArrivalPage · 관리자)**
+1. **경영관리 > 입고 알림** 페이지
+2. 저장 · 즉시 발송 · 예약 발송 · 각각 정상 동작
+3. 인라인 편집 · 저장 · 정상
+4. 삭제 · confirm · 정상
+
+### 회귀 확인
+- 랜딩 · 관리 페이지 · 이전과 동일 동작
+- 타입 · 통합 후에도 필드 접근 정상
+- TS 통과 · 3355/3355 tests 통과
 
 ---
 
