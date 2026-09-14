@@ -51,6 +51,7 @@
 | 16 | 🎨 **UI 폴리시** · ProductInfoPage 좌측 리스트 · 우측 통일 | `350f66ab` |
 | 17 | 🐛 **라벨 정정** · 상품입고 개 단위 + 실재고확인 구역/ERP → 규격/현재고 | `72286c28` · `5dfdf6f0` |
 | 18 | 🎨 **ProductInfoPage 상세 재구성** · Hero + 3 섹션 · 반응형 · 컬러 tint pill · 반복 iteration | `5e3994d4` · `02d63bdf` |
+| 19 | 🎯 **프레임워크** · employeeApi.listEmployees + creditCardsApi (6 곳) | `af092502` · `49ee512d` |
 
 **필수 · 서버 재시작** (Ctrl+C · npm run dev) · 백엔드 fix 반영
 
@@ -189,6 +190,37 @@
 ### 예상 결과
 - 상품 등록/수정 → 실재고 테이블 · 즉시 자동 갱신
 - 사용자 새로고침 불필요
+
+---
+
+## 🎯 [19] 프레임워크 · employeeApi.listEmployees + creditCardsApi 프리미티브 ✅
+**커밋** · `af092502` (employeeApi.listEmployees) · `49ee512d` (creditCardsApi)
+
+### 배경
+- employeeApi.ts 이미 존재 · listEmployees() 함수만 누락 (2 곳 직접 호출)
+- creditCards · 6 곳 산발 · 프리미티브 없음
+- 프레임워크 대원칙 · 3곳 이상 = 즉시 추출
+
+### 해결
+
+**employeeApi.listEmployees() 추가:**
+- src/lib/employeeApi.ts · 신규 export
+- Migrated 2 곳 (BoardPage @멘션 · AssigneeEditor 담당자 자동완성)
+
+**creditCardsApi 신규:**
+- src/lib/creditCardsApi.ts
+- listCreditCards({ active? }) · listCreditCardSummary() · createCreditCard() · updateCreditCard() · deleteCreditCard()
+- Migrated 3 파일 · 6 call sites (CardHistoryPage · CardRegisterPage · PaymentEntryForm)
+
+### 테스트 절차
+1. **경영 > 게시판** · @멘션 · 직원 목록 · 정상 표시
+2. **매장진열 > 실재고 테이블 등** · 담당자 지정 · 자동완성 · 정상
+3. **매입 > 결제 > 결제카드등록** · 리스트/등록/수정/삭제 · 정상
+4. **매입 > 결제 > 카드별결제내역** · 카드별 요약 · 정상
+5. **매입 > 결제 > 결제입력** · 카드 선택 · active 필터 정상
+
+### 회귀 확인
+- 이전과 동일 동작 · 프리미티브 wrap만 · 3355/3355 tests 통과
 
 ---
 
