@@ -73,6 +73,26 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
   }
   const supplierSummary = [...supplierSet].join(", ").slice(0, 500);
 
+  // 2026-09-14 · #63 · 공급사 무결성 · 검수 items 전체 · vendors 유효성 검증
+  //   · 하나라도 매칭 실패 시 · 400 SUPPLIER_NOT_FOUND (부분 저장 방지)
+  //   · 빈 값 (null/공백) 은 허용 · 매장 자체 검수 flow (공급사 미지정) 지원
+  if (supplierSet.size > 0) {
+    const supplierList = Array.from(supplierSet);
+    const { data: matched } = await supabase
+      .from("vendors")
+      .select("company_name")
+      .in("company_name", supplierList);
+    const matchedSet = new Set((matched ?? []).map((r: any) => String(r.company_name)));
+    const unknown = supplierList.filter((s) => !matchedSet.has(s));
+    if (unknown.length > 0) {
+      throw new HttpError(
+        400,
+        `공급사 미등록 · ${unknown.join(", ")} · 공급사 관리에서 먼저 등록해주세요.`,
+        "SUPPLIER_NOT_FOUND"
+      );
+    }
+  }
+
   // status → verify_status 매핑
   const toVerifyStatus = (status: string, isExpiring: boolean): string => {
     if (status === "mismatch") return "mismatch_noted";

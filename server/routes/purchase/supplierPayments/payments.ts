@@ -124,8 +124,21 @@ router.post("/api/supplier-payments", authorize(5), validateBody(CreateSupplierP
     }
   }
 
+  // 2026-09-14 · #63 · 공급사 무결성 · vendors 유효성 검증
+  const supplierName = b.supplier_name.trim();
+  if (supplierName) {
+    const { data: matched } = await supabase
+      .from("vendors")
+      .select("company_name")
+      .eq("company_name", supplierName)
+      .maybeSingle();
+    if (!matched) {
+      throw new HttpError(400, `공급사 "${supplierName}" 는 등록된 공급사 목록에 없습니다. 공급사 관리에서 먼저 등록해주세요.`, "SUPPLIER_NOT_FOUND");
+    }
+  }
+
   const payload: Record<string, any> = {
-    supplier_name: b.supplier_name.trim(),
+    supplier_name: supplierName,
     payment_date:  b.payment_date,
     amount:        b.amount,
     method:        b.method ?? "transfer",
