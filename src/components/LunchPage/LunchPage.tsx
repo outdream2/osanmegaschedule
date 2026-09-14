@@ -1,6 +1,8 @@
 ﻿// 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+// 2026-09-14 · settingsApi 프리미티브
+import { saveSetting } from "../../lib/settingsApi";
 import { getErrorMessage } from "../../lib/errorMessage";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
@@ -181,7 +183,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
   //     - rest_slots: 시간대별 그룹 배정 · 구역맵과 함께 저장 (구역별)
   //   실수로 같이 편집하지 않도록 UI 에서 상호 배타적 라우팅 필요 (관리자 안내).
   const saveAssignments = async (next: BreakAssignment[]) => {
-    try { await api.post("/api/settings", { key: `break_timeline_${selectedDate}`, value: next }); }
+    try { await saveSetting(`break_timeline_${selectedDate}`, next); }
     catch { /* silent · UI 이미 반영 */ }
   };
 

@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { DEFAULT_SCHEDULE_TYPES } from "../constants";
 import { api } from "../lib/apiClient";
+// 2026-09-14 · settingsApi 프리미티브
+import { saveSetting } from "../lib/settingsApi";
 
 export interface ScheduleTypeEntry {
   type: string;
@@ -178,7 +180,7 @@ async function fetchAllSettings(): Promise<AppSettings | null> {
 const SETTINGS_UPDATED_EVENT = "settings-updated";
 
 async function saveAllSettings(s: AppSettings): Promise<void> {
-  await api.post("/api/settings", { key: DB_KEY, value: s });
+  await saveSetting(DB_KEY, s);
 }
 
 /** 모든 useSettings 인스턴스에 변경을 알리는 이벤트 */

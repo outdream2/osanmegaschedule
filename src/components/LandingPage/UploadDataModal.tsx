@@ -3,6 +3,8 @@
 // 2026-08-23 · #191 · Modal primitive 마이그레이션
 import React, { useState, useRef, useEffect } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+// 2026-09-14 · settingsApi 프리미티브
+import { getSetting } from "../../lib/settingsApi";
 import { getErrorMessage } from "../../lib/errorMessage";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../hooks/useToast";
@@ -97,8 +99,8 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
   // ── API 헬퍼 ────────────────────────────────────────────────────────
   const fetchImportLog = async () => {
     try {
-      const { data } = await api.get<{ value?: unknown }>("/api/settings?key=product_import_log");
-      const logs = Array.isArray(data?.value) ? data.value : [];
+      const value = await getSetting<unknown>("product_import_log");
+      const logs = Array.isArray(value) ? value : [];
       setImportLog(logs as any);
     } catch { setImportLog([]); }
   };

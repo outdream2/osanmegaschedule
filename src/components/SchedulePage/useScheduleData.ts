@@ -2,6 +2,8 @@
 // 2026-08-22 · #framework-4 · SchedulePage 분리 · 데이터 fetch/mutate 훅
 import { useState, useRef, useCallback } from "react";
 import { api } from "../../lib/apiClient";
+// 2026-09-14 · settingsApi 프리미티브
+import { saveSetting } from "../../lib/settingsApi";
 import { SK_EMPLOYEE_ORDER } from "../../lib/storageKeys";
 import {
   updateEmployee,
@@ -343,7 +345,7 @@ export function useScheduleData(
     setIsLockLoading(true);
     try {
       const key = `schedule_lock_${currentYear}-${String(currentMonth).padStart(2, "0")}`;
-      await api.post<any>("/api/settings", { key, value: next });
+      await saveSetting(key, next);
       setIsMonthLocked(next);
       showNotification(`${currentMonth}월 스케줄이 ${label}되었습니다.`);
     } catch {

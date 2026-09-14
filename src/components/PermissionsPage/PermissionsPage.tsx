@@ -1,8 +1,9 @@
 // 2026-08-16 · apiClient 마이그레이션
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { api } from "../../lib/apiClient";
-// 2026-09-14 · permissionsApi 프리미티브
+// 2026-09-14 · permissionsApi · settingsApi 프리미티브
 import { getPagePermissions, savePagePermissions } from "../../lib/permissionsApi";
+import { saveSetting } from "../../lib/settingsApi";
 import { getErrorMessage } from "../../lib/errorMessage";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { SK_PERMISSIONS_TREE_COLLAPSED } from "../../lib/storageKeys";
@@ -77,7 +78,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   const toggleSidebarEnabled = useCallback(async () => {
     setSidebarSaving(true);
     try {
-      await api.post("/api/settings", { key: "sidebar_enabled", value: !sidebarEnabled });
+      await saveSetting("sidebar_enabled", !sidebarEnabled);
       invalidateSidebarEnabled();
       setSaveToast(!sidebarEnabled ? "사이드바 활성" : "사이드바 비활성 · 공통헤더로 전환");
     } catch (err: any) {

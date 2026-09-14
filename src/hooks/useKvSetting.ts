@@ -25,7 +25,8 @@
 
 // 2026-08-16 · apiClient 마이그레이션
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api } from "../lib/apiClient";
+// 2026-09-14 · settingsApi 프리미티브
+import { getSetting, saveSetting } from "../lib/settingsApi";
 
 export interface UseKvSettingOptions<T> {
   /** app_settings.key · 서버 저장 key */
@@ -137,11 +138,11 @@ export function useKvSetting<T>(opts: UseKvSettingOptions<T>): UseKvSettingResul
   const defaultValueRef = useRef(defaultValue);
   defaultValueRef.current = defaultValue;
 
-  // ── 서버 GET · apiClient (401 refresh 자동)
+  // ── 서버 GET · settingsApi (401 refresh 자동)
   const fetchServer = useCallback(async (): Promise<{ ok: boolean; value: unknown | null }> => {
     try {
-      const { data } = await api.get<{ value?: unknown }>(`/api/settings?key=${encodeURIComponent(key)}`);
-      return { ok: true, value: data?.value ?? null };
+      const value = await getSetting<unknown>(key);
+      return { ok: true, value };
     } catch {
       return { ok: false, value: null };
     }
@@ -150,7 +151,7 @@ export function useKvSetting<T>(opts: UseKvSettingOptions<T>): UseKvSettingResul
   // ── 서버 POST (debounced 아님 · 즉시)
   const saveToServer = useCallback(async (next: T): Promise<boolean> => {
     try {
-      await api.post("/api/settings", { key, value: next });
+      await saveSetting(key, next);
       return true;
     } catch {
       return false;
