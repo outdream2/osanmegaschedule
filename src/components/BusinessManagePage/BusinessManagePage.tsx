@@ -17,7 +17,9 @@ import type { AuthSession } from "../../types";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 import { TEXT, PAGE_CONTAINER_CLS } from "../../styles/tokens";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+// 2026-09-14 · leaveApi 프리미티브
 import { api } from "../../lib/apiClient";
+import { getLeavePendingCount } from "../../lib/leaveApi";
 import { Spinner } from "../common/Spinner";
 
 // StaffManagePage · props 없음 · lazy 로드 (초기 진입 시에만 필요)
@@ -152,11 +154,12 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
     if (!showApprovalBadge) return;
     try {
       // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-      const [lRes, rRes] = await Promise.all([
-        api.get<{ count?: number }>("/api/leave-requests/pending-count").catch(() => null),
+      // 2026-09-14 · leaveApi.getLeavePendingCount 프리미티브
+      const [leaveCount, rRes] = await Promise.all([
+        getLeavePendingCount().catch(() => 0),
         api.get<{ count?: number }>("/api/resignations/pending-count").catch(() => null),
       ]);
-      setApprovalPending(Number(lRes?.data?.count ?? 0) + Number(rRes?.data?.count ?? 0));
+      setApprovalPending(leaveCount + Number(rRes?.data?.count ?? 0));
     } catch {
       // no-op
     }

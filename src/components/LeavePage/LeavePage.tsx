@@ -1,6 +1,8 @@
 ﻿// 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useState, useCallback } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+// 2026-09-14 · leaveApi 프리미티브
+import { listLeaveRequests, createLeaveRequest, reviewLeaveRequest, deleteLeaveRequest } from "../../lib/leaveApi";
 import { getErrorMessage } from "../../lib/errorMessage";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
@@ -111,8 +113,8 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
     if (!employeeId) return;
     setMyLoading(true);
     try {
-      const { data } = await api.get<any[]>(`/api/leave-requests?employeeId=${employeeId}`);
-      setMyRequests(Array.isArray(data) ? data : []);
+      const list = await listLeaveRequests({ employeeId });
+      setMyRequests(list as any);
     } catch { setMyRequests([]); }
     finally { setMyLoading(false); }
   }, [employeeId]);
@@ -128,8 +130,8 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
   const loadAllRequests = useCallback(async () => {
     setAllLoading(true);
     try {
-      const { data } = await api.get<any[]>("/api/leave-requests?all=true");
-      setAllRequests(Array.isArray(data) ? data : []);
+      const list = await listLeaveRequests({ all: true });
+      setAllRequests(list as any);
     } catch { setAllRequests([]); }
     finally { setAllLoading(false); }
   }, []);
@@ -147,7 +149,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await api.post("/api/leave-requests", {
+      await createLeaveRequest({
         employee_id: employeeId,
         employee_name: employeeName,
         leave_type: formType,
@@ -181,7 +183,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
     if (!ok) return;
     setCancellingId(id);
     try {
-      await api.del(`/api/leave-requests/${id}`);
+      await deleteLeaveRequest(id);
       setMyRequests(prev => prev.filter(r => r.id !== id));
       // 2026-08-18 · 취소 시 승인 대기 배지 즉시 갱신
       dispatchApprovalChange("leave");
@@ -201,7 +203,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
     if (!ok) return;
     setDeletingId(r.id);
     try {
-      await api.del(`/api/leave-requests/${r.id}`);
+      await deleteLeaveRequest(r.id);
       setAllRequests(prev => prev.filter(x => x.id !== r.id));
       dispatchApprovalChange("leave");
       showSuccess("연차이력 삭제 완료");
@@ -215,7 +217,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
   const handleReview = async (id: string, status: "approved" | "rejected") => {
     setProcessingId(id);
     try {
-      await api.put(`/api/leave-requests/${id}`, { status, reviewer_note: reviewNote });
+      await reviewLeaveRequest(id, { status, reviewer_note: reviewNote });
       setAllRequests(prev => prev.map(r =>
         r.id === id ? { ...r, status, reviewer_note: reviewNote, reviewed_at: new Date().toISOString() } : r,
       ));

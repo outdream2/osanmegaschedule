@@ -1,9 +1,10 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { api } from "../../lib/apiClient";
-// 2026-09-14 · inventoryChecksApi · orderRequestsApi 프리미티브
+// 2026-09-14 · inventoryChecksApi · orderRequestsApi · leaveApi 프리미티브
 import { listInventoryChecks } from "../../lib/inventoryChecksApi";
 import { listOrderRequests, createOrderRequest } from "../../lib/orderRequestsApi";
+import { getLeavePendingCount } from "../../lib/leaveApi";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { SK_SUBTAB_REQUESTS } from "../../lib/storageKeys";
 import { dispatchApprovalChange, useApprovalRefreshListener } from "../../lib/approvalEvents";
@@ -314,11 +315,11 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     } catch {}
   }, []);
 
-  // 연차 pending 건수 · 별도 API
+  // 연차 pending 건수 · 별도 API · 2026-09-14 · leaveApi 프리미티브
   const loadLeavePendingCount = useCallback(async () => {
     try {
-      const { data: d } = await api.get<any>("/api/leave-requests/pending-count");
-      setLeavePendingCount(Number(d?.count ?? 0));
+      const count = await getLeavePendingCount();
+      setLeavePendingCount(count);
     } catch {}
   }, []);
 
