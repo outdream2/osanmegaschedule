@@ -327,8 +327,9 @@ Radix Popover · 셀 옆 표시 · 스크롤 · 화면 밖 튀어나갈 가능�
 | #83 | 상품등록 모달 · 참조 상품 섹션 제거 | 7dcbacbe |
 | #108 | 사이드바 알림 스위치 (NotificationToggle) 제거 | 810838f8 |
 | #82 | 상품등록 모달 · 배치구역 2분리 · shelf_positions JSONB | f9acf35b |
+| **#72·#73** | **재고자산·판매액 SSOT 감사 · vat·salesTrend 파생 통일** | **5ae4339a** |
 
-**총 · 39태스크 완료 · 43커밋 (자율 세션)**
+**총 · 41태스크 완료 · 46커밋 (자율 세션)**
 
 ---
 
@@ -744,6 +745,45 @@ if (zoneId && (!assignedStaffId || Number.isNaN(assignedStaffId))) {
 3. **상세구역 · shelf_positions** 있는 상품 · 배지 표시 (창고/매장별)
 4. 신규 등록 or 미등록 상품 · "실재고 입력에서 저장" 안내
 5. 편집 · **실재고 입력 · 스캔** 페이지에서 · 저장 (기존 flow 유지)
+
+---
+
+## #72·#73 · 재고자산·판매액 SSOT 감사 ✅
+**커밋** · 5ae4339a (Agent 조사 task a50f9b66 기반)
+
+### 배경
+확정된 대원칙:
+- **재고자산 = 매입액 − 판매원가** (COGS)
+- **실제잔고 = 매입액 − 결제액**
+- **판매액 = SUM(sale_qty × sale_price)** · stock_history.total_amount 원본 X
+
+### 감사 결과 (Agent · 30+ 파일)
+
+**✅ SSOT 준수 (6건):**
+- `balance.ts` · 재고자산·잔고 공식 확정 (`stock_asset = purchase - cogs` · `balance = purchase - payment`)
+- `topSales.ts` · `salesTrend.ts` supplier/product · 판매액 파생 계산
+- `DashboardCharts.tsx` · `VendorListEditor.tsx` · `PaymentInputPage.tsx` · API 응답 기반
+
+**⚠️ FIX 완료 (2건):**
+1. **HIGH · `server/routes/purchase/vat.ts:363-390`**
+   - `/api/vat/monthly-summary` 매출 계산
+   - 이전 · `stock_history.total_amount` 직접 합산 (원본 · 정확도 저하 위험)
+   - fix · `sale_qty × sale_price` 파생 계산
+2. **MEDIUM · `server/routes/stock/stockManage/salesTrend.ts:262-303`**
+   - `/api/sales-trend/overview` 전체 판매액
+   - 이전 · `total_amount` 직접 합산
+   - fix · `sale_qty × sale_price` 파생 (supplier·product endpoint 와 동일)
+
+### 테스트 절차
+1. **부가세 준비** 페이지 · 매월 매출 데이터 정상 표시
+2. **판매대시보드** · 전체 overview · 매출액 정확 (sale_price 변동 반영)
+3. **광동제약·테스트 공급사** · 재고자산·잔고 SSOT 값 확인
+4. 서버 재시작 후 · 캐시 없음 · 즉시 반영
+
+### 회귀 체크
+- 기존 supplier/product endpoint · 파생 계산 유지
+- balance.ts SSOT · 이미 통일 · 변경 없음
+- 각 페이지 · TS 검증 통과
 
 ---
 
