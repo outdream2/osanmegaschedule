@@ -210,14 +210,12 @@ const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
           <span className={`w-1.5 h-6 rounded-full ${meta.dot} shrink-0 self-center`} />
           <span className={`text-[16px] font-bold ${meta.text} truncate`}>{meta.full}</span>
         </div>
-        {isPrimary ? (
-          <ArrivalZoneInline value={location} onChange={onSetLocation} />
-        ) : (
-          <span className="inline-flex items-center gap-1 h-8 rounded-full px-3 border-2 border-dashed border-zinc-200 text-zinc-400 text-[14px] font-medium self-start" title="매장 추가 슬롯 · 표시용">
-            <MapPin size={12} />
-            추가 슬롯
-          </span>
-        )}
+        {/* 2026-09-14 · #134 · 사용자 지시 · 매장 추가 슬롯 · 구역 선택 UI 활성
+            · 이전 · 매장2·3 · '추가 슬롯' 텍스트만 · 클릭 반응 없음
+            · fix · 모든 매장 · ArrivalZoneInline · 구역 선택 팝오버 활성
+            · 참고 · 데이터 모델 · row.location 단일 · 매장별 zone 공유
+              (매장별 다른 zone · 별도 데이터 모델 확장 필요) */}
+        <ArrivalZoneInline value={location} onChange={onSetLocation} />
         <button
           type="button"
           onClick={() => setShelfEditCode(shelfKey)}
