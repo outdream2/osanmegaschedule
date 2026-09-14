@@ -39,6 +39,7 @@
 | 5-1 | 🎯 **프레임워크** · OrderSettingsPage + StoreZoneMap · Card 프리미티브 | `083dd828` |
 | 6 | 🧪 **테스트 19개 정리** · CI 클린 (3355/3355) | `c190ad86` |
 | 7 | 📄 **TASKS.md v5 재확인** · 12건 완료 마킹 | `a96c3051` |
+| 8 | 📄 **메타·문서** · package.json + README + Migrations README | `990acf9f` · `1c9a2050` |
 
 **필수 · 서버 재시작** (Ctrl+C · npm run dev) · 백엔드 fix 반영
 
@@ -177,6 +178,37 @@
 ### 예상 결과
 - 상품 등록/수정 → 실재고 테이블 · 즉시 자동 갱신
 - 사용자 새로고침 불필요
+
+---
+
+## 📄 [8] 메타·문서 정리 · package.json + README + Migrations README ✅
+**커밋** · `990acf9f` (package·README) · `1c9a2050` (migrations README)
+
+### 배경
+- 리뷰 지적 · package.json name "react-example" · README "React 18" · clean rm -rf (Windows)
+- migrations/ · supabase/migrations/ · sql/ · 99개 SQL 파일 분산 · 온보딩 혼란
+
+### 해결
+**package.json:**
+- `name` · "react-example" → "megatown-staff-scheduler"
+- `clean` 스크립트 · `rm -rf` → `node fs.rmSync` (Windows 호환)
+
+**README.md:**
+- L52 · "React 18" → "React 19" (실제 의존성 · package.json)
+
+**migrations/README.md (신규):**
+- 3 폴더 (migrations/·supabase/migrations/·sql/) 용도 명시
+- 신규 마이그레이션 표준 위치 (migrations/)
+- 파괴적 SQL 주의 (대원칙)
+- 최근 실행 이력 · 대기 3건
+
+### 테스트 절차
+1. **Windows PowerShell** · `npm run clean` 실행 · 이전 rm -rf 에러 없이 정상 동작
+2. **README.md** · L52 · "React 19" 확인
+3. **migrations/README.md** · 폴더 · 실행 안내 · 시각 확인
+
+### 회귀 확인
+- 없음 (문서·스크립트만 · 코드 무변경)
 
 ---
 
