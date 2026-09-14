@@ -5,8 +5,9 @@
 //   · 편집은 PermissionsPage 에서 별도 저장 후 새로고침 필요 (혹은 window.dispatchEvent 로 무효화)
 
 // 2026-08-16 · apiClient 로 통일 · 401 refresh + 에러 정규화 자동
+// 2026-09-14 · permissionsApi 프리미티브 사용
 import { useEffect, useState } from "react";
-import { api } from "../lib/apiClient";
+import { getPagePermissions } from "../lib/permissionsApi";
 import { DEFAULT_PERMISSIONS, type PagePermissions } from "../types";
 
 const CACHE_EVENT = "page-permissions-updated";
@@ -18,8 +19,8 @@ async function fetchPerms(): Promise<PagePermissions> {
   if (inflight) return inflight;
   inflight = (async () => {
     try {
-      const res = await api.get<Partial<PagePermissions>>("/api/permissions");
-      const merged: PagePermissions = { ...DEFAULT_PERMISSIONS, ...(res.data ?? {}) };
+      const data = await getPagePermissions();
+      const merged: PagePermissions = { ...DEFAULT_PERMISSIONS, ...data };
       cachedPerms = merged;
       return merged;
     } catch {
