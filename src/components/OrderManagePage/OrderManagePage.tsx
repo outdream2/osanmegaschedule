@@ -52,6 +52,8 @@ import { BorrowingPage } from "./BorrowingPage";
 //   · vendor 탭 · VendorPaymentPanel (→ VendorDetailTabs) 사용
 //   · payment-input 탭 · PaymentInputPage 사용
 import { PaymentInputPage } from "./PaymentInputPage";
+// 2026-09-14 · #118 · 결제 대시보드 신규 페이지
+import { PaymentDashboardPage } from "./PaymentDashboardPage";
 // 2026-09-02 · #69 · 카드 결제 관리 · 결제카드등록 + 카드별 결제내역 신규 2탭
 import { CardRegisterPage } from "./CardRegisterPage";
 import { CardHistoryPage } from "./CardHistoryPage";
@@ -136,7 +138,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // 2026-09-02 · #69 · card-register · card-history 신규 (사용자 지시)
-  const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input" | "card-register" | "card-history" | "borrowing" | "vat-prepare">("payment-input");
+  // 2026-09-14 · #118 · 결제 대시보드 · 첫 번째 탭 (기본 진입)
+  const [paymentSubTab, setPaymentSubTab] = useState<"payment-dashboard" | "vendor" | "payment-input" | "card-register" | "card-history" | "borrowing" | "vat-prepare">("payment-dashboard");
   // 2026-09-01 · 사용자 지시 · dashboard 서브탭 추가 (기본 dashboard · 판매대시보드 우선 노출)
   const [statSubTab, setStatSubTab] = useState<StatKey>("dashboard");
 
@@ -767,6 +770,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             />
           )}
           {/* 2026-08-25 · #111 · 결제입력 · 신규 PaymentInputPage · 상단 검색+필터 · 하단 좌/우 (설명 화면 → 확인 후 데이터) */}
+          {/* 2026-09-14 · #118 · 결제 대시보드 신규 · 첫 번째 탭 */}
+          {paymentSubTab === "payment-dashboard" && <div className="flex-1 min-h-0 overflow-y-auto"><PaymentDashboardPage /></div>}
           {paymentSubTab === "payment-input" && <div className="flex-1 min-h-0"><PaymentInputPage /></div>}
           {/* 2026-08-25 · 사용자 지시 · 차용입력 · 공급사↔약국 상품 차용 기록 */}
           {paymentSubTab === "borrowing" && <div className="flex-1 min-h-0"><BorrowingPage authSession={ocrTabAuthSession ?? null} /></div>}

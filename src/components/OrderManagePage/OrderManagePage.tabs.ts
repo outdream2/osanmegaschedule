@@ -7,7 +7,7 @@
 import {
   ShoppingCart, ClipboardList, AlertTriangle, Package, Building2, ArrowLeftRight, PackageCheck,
   ScanLine, PackagePlus, Info, Wallet, HandCoins, Calculator, TrendingUp, PieChart, Boxes,
-  BarChart3, CreditCard, LineChart,
+  BarChart3, CreditCard, LineChart, LayoutDashboard,
 } from "lucide-react";
 
 export type PurchaseOrderKey = "order" | "need" | "critical" | "history";
@@ -16,7 +16,8 @@ export type PurchaseKey = "receipt" | "reconciliation" | "purchase-history";
 // 2026-09-02 · #69 · 사용자 지시 · 카드 결제 관리 · 2탭 신규
 //   · card-register · 결제카드등록 (사용할 카드 CRUD)
 //   · card-history  · 카드별 결제내역 (대시보드 · 차월 예정)
-export type PaymentKey = "payment-input" | "vendor" | "card-register" | "card-history" | "borrowing" | "vat-prepare";
+// 2026-09-14 · #118 · 결제 대시보드 페이지 신규 · 첫 번째 탭
+export type PaymentKey = "payment-dashboard" | "payment-input" | "vendor" | "card-register" | "card-history" | "borrowing" | "vat-prepare";
 // 2026-09-01 · 사용자 지시 · 판매대시보드 서브탭 신설 (SalesTrendPage 는 그대로 유지 · 매장>판매>통계 에도 추가)
 export type StatKey = "dashboard" | "trending" | "category" | "flow" | "diff" | "supplier";
 
@@ -43,6 +44,8 @@ export const PURCHASE_DEFAULT_TABS: SubTabDef<PurchaseKey>[] = [
 ];
 
 export const PAYMENT_DEFAULT_TABS: SubTabDef<PaymentKey>[] = [
+  // 2026-09-14 · #118 · 결제 대시보드 · 종합 KPI · 미지급·선지급 공급사 Top
+  { key: "payment-dashboard", label: "대시보드",     icon: LayoutDashboard, color: "brand" },
   { key: "payment-input", label: "결제입력",        icon: Wallet,      color: "amber"  },
   { key: "vendor",        label: "공급사별결제내역", icon: Building2,   color: "teal"   },
   // 2026-09-02 · #69 · 카드 결제 관리 · 2탭 신규 (사용자 지시)
