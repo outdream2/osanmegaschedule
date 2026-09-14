@@ -28,8 +28,9 @@ import { SectionTitle } from "../LandingPage/VendorDetailModal.helpers";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 import { api, ApiError } from "../../lib/apiClient";
-// 2026-09-14 · inventoryChecksApi 프리미티브
+// 2026-09-14 · inventoryChecksApi · productsApi 프리미티브
 import { saveInventoryCheck } from "../../lib/inventoryChecksApi";
+import { getProductByCode } from "../../lib/productsApi";
 // 2026-09-14 · 통계설정 · 적정재고 계산 일수 · 실시간 반영
 import { useOptimalStockPeriod } from "../../hooks/useOptimalStockPeriod";
 import { PAGE_CONTAINER_CLS, CARD_BASE } from "../../styles/tokens";
@@ -655,8 +656,8 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
     let alive = true;
     setDetailLoading(true);
     setDetailError(null);
-    api.get<ProductDetail>(`/api/products/${encodeURIComponent(selectedCode)}`)
-      .then(({ data }) => { if (alive) setDetail(data); })
+    getProductByCode<ProductDetail>(selectedCode)
+      .then((data) => { if (alive) setDetail(data); })
       .catch((e: unknown) => {
         if (!alive) return;
         const msg = e instanceof ApiError ? e.message : (e as Error)?.message ?? "상품 상세 조회 실패";

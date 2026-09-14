@@ -8,8 +8,9 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
-// 2026-09-14 · inventoryChecksApi 프리미티브
+// 2026-09-14 · inventoryChecksApi · productsApi 프리미티브
 import { saveInventoryCheck } from "../../lib/inventoryChecksApi";
+import { getProductByCode } from "../../lib/productsApi";
 import { getErrorMessage } from "../../lib/errorMessage";
 import { PAGE_CONTAINER_CLS, CARD_BASE } from "../../styles/tokens";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -923,7 +924,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             setCreateOpen(false);
             // 등록 직후 · 전체 필드 fresh fetch (purchase_price/category_code 등) · 자동 채움 회귀 방지
             try {
-              const { data } = await api.get<any>(`/api/products/${encodeURIComponent(code)}`);
+              const data = await getProductByCode<any>(code);
               if (data) {
                 addCachedProduct(code, data);
                 await handleScan(code, data);

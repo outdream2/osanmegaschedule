@@ -14,7 +14,8 @@
 //     · GET /api/products/:code → API fallback
 //     · null → 미등록
 
-import { api } from "./apiClient";
+// 2026-09-14 · productsApi 프리미티브
+import { getProductByCode } from "./productsApi";
 import { addCachedProduct, lookupProduct, type ProductInfo } from "./productsCache";
 
 /**
@@ -52,7 +53,7 @@ export async function resolveProduct(
   const cached = lookupProduct(code);
   if (cached) return cached;
   try {
-    const { data } = await api.get<any>(`/api/products/${encodeURIComponent(code)}`);
+    const data = await getProductByCode<any>(code);
     if (data && (data.product_code || data.code)) {
       const normalized = normalizeProductRow(data, code);
       addCachedProduct(code, normalized);
