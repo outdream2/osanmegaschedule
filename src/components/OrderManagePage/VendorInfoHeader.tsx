@@ -393,7 +393,9 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                 </tr>
                 {/* 재고자산 · 2026-09-10 · #72 · 확정 공식 · 매입원가 - 판매원가 (월별) · 합계도 동일 · monthlyStockAssetMap 우선 · fallback: 기존 monthlyStockValueMap (스냅샷) */}
                 <tr className="border-b border-zinc-100 hover:bg-zinc-50/50 transition">
-                  <td className="px-2 py-1.5 font-bold text-violet-700 sticky left-0 bg-white z-10">재고자산</td>
+                  <td className="px-2 py-1.5 font-bold text-violet-700 sticky left-0 bg-white z-10">
+                    재고자산 <span className="text-[10px] font-normal text-zinc-500">(매입액−판매원가)</span>
+                  </td>
                   {monthlyAgg.map(m => {
                     const v = monthlyStockAssetMap?.get(m.ym) ?? monthlyStockValueMap.get(m.ym) ?? 0;
                     return (

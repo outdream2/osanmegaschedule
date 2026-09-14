@@ -70,17 +70,17 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, exte
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [ledgerError, setLedgerError] = useState<string | null>(null);
 
-  // 2026-09-10 · #58 · 사용자 지시 · 현장 재고금액 (ERP · 현재고 × 사입단가 · 공급사별)
-  const [stockValue, setStockValue] = useState<number | null>(null);
-  const [stockValueLoading, setStockValueLoading] = useState(false);
-  useEffect(() => {
-    if (!vendor) { setStockValue(null); return; }
-    setStockValueLoading(true);
-    api.get<{ stock_value: number }>(`/api/supplier-stock-value/${encodeURIComponent(vendor.company_name)}`)
-      .then(({ data }) => setStockValue(Number(data?.stock_value ?? 0) || 0))
-      .catch(() => setStockValue(0))
-      .finally(() => setStockValueLoading(false));
-  }, [vendor?.company_name]);
+  // 2026-09-14 · 사용자 지시 · 재고자산 공식 통일 · 매입액 − 판매원가 (대원칙 memory · project_stock_asset_balance_formula_2026-09-10.md)
+  //   · 이전 · ERP 현재고 × 사입단가 (/api/supplier-stock-value) · 페이지 내 다른 위치와 상충
+  //   · 이후 · salesRows 파생 · totalPurchaseCost − totalCogs · 페이지 내 모든 재고자산 값 통일
+  const totalStockAsset = useMemo(() => {
+    let totalP = 0; let totalC = 0;
+    for (const r of salesRows) {
+      totalP += Number(r.purchase_cost ?? 0) || 0;
+      totalC += Number(r.cogs_amount ?? 0) || 0;
+    }
+    return totalP - totalC;
+  }, [salesRows]);
 
   // 매입상세 데이터
   const [detailRows, setDetailRows] = useState<PurchaseDetailRow[]>([]);
@@ -253,7 +253,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, exte
         loading={isLoading}
         ledgerRows={ledger?.rows as LedgerRowMinimal[] | undefined}
         onEdit={() => openVendorInfo(vendor as any)}
-        currentStockValue={stockValue}
+        currentStockValue={null}
         monthlySalesMap={useMemo(() => {
           // 2026-09-10 · #66 · salesRows → ym → total_amount map
           const m = new Map<string, number>();
@@ -288,15 +288,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, exte
           }
           return m;
         }, [salesRows])}
-        totalStockAssetValue={useMemo(() => {
-          // 2026-09-10 · #72 · 확정 공식 · 총 재고자산 = 총 매입원가 - 총 판매원가
-          let totalP = 0; let totalC = 0;
-          for (const r of salesRows) {
-            totalP += Number(r.purchase_cost ?? 0) || 0;
-            totalC += Number(r.cogs_amount ?? 0) || 0;
-          }
-          return totalP - totalC;
-        }, [salesRows])}
+        totalStockAssetValue={totalStockAsset}
       />
 
       {/* 2026-08-25 · SplitRightTabs 프리미티브 이관 · v9 브랜드 시그니처 · 폰트 +2 */}
@@ -360,10 +352,10 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, exte
                 },
                 {
                   label: "총 재고자산",
-                  value: stockValue ?? 0,
+                  value: totalStockAsset,
                   tone: "violet" as const,
                   icon: <Package2 size={14} strokeWidth={2.4} />,
-                  subtitle: stockValueLoading ? "계산 중…" : "ERP 현재고 × 사입단가",
+                  subtitle: "매입액 − 판매원가",
                   vatBadge: null,
                   trend: null,
                   isCount: false,
