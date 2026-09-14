@@ -25,6 +25,60 @@
 
 ---
 
+# 🆕 2026-09-14 (오후) · 잔여 태스크 정리 세션
+
+## #63 · 공급사 무결성 · 결제·상품입고 · vendors 유효성 검증 ✅
+**커밋** · `62e3830e`
+
+### 배경
+- 기존: POST/PATCH `/api/products` · 진열요청 · 공급사 유효성 검증 완료
+- 잔여: `/api/supplier-payments` (결제) · `/api/product-arrivals` (상품입고) · validation 없음
+- 위험: vendors 마스터에 없는 공급사명 · 저장 통과 · 잔고·매입·결제 KPI 오염
+
+### 해결
+- **`server/routes/purchase/supplierPayments/payments.ts`** POST · supplier_name · vendors 존재 검증 · 미등록 시 400 SUPPLIER_NOT_FOUND
+- **`server/routes/stock/productArrivals.ts`** POST · items 배열 supplier 전체 · IN 조회로 일괄 검증 · 하나라도 미등록 시 400 (부분 저장 방지)
+- 빈 값 (null/공백) · 허용 · 매장 자체 검수 flow 지원
+
+### 테스트 절차
+1. **매입 > 결제 > 결제입력** 진입
+2. 결제 등록 · 공급사 이름 · vendors 미등록 값 (예: "테스트없음") · 저장 시도
+3. 400 응답 · "공급사 미등록 · 공급사 관리에서 먼저 등록해주세요" toast 확인
+4. **상품입고** 페이지 · 상품 스캔 · 검수 완료 시
+5. 공급사 · vendors 미등록 이름으로 시도 · 400 응답 확인
+6. 등록된 공급사 (예: 광동제약) 로 저장 · 정상 작동 확인
+
+### 예상 결과
+- 무결성 · vendors 마스터에 없는 공급사 · 저장 차단
+- 기존 저장 flow (등록된 공급사) · 완전 무영향
+
+---
+
+## #61 · 상품 등록·수정 후 · 실재고 테이블 자동 동기 ✅
+**커밋** · `1889b95d`
+
+### 배경
+- `ProductCreateModal` · 상품 등록/수정 후 · `saveShelfPositions()` (PATCH `/api/products/:code/shelf-positions`) 호출
+- 성공 후 · `products-map-updated` 이벤트만 dispatch · `inventory-checks-updated` 미발행
+- 결과 · **실재고 테이블** (RealStockTablePage · L202 리스너) · 자동 갱신 X · 새로고침 필요
+
+### 해결
+- `saveShelfPositions()` PATCH 성공 시 · `inventory-checks-updated` CustomEvent dispatch
+- 기존 `products-map-updated` 와 병행 · 두 이벤트로 다른 컴포넌트도 커버
+
+### 테스트 절차
+1. **매장진열 > 실재고테이블** 페이지 진입 (열어둠)
+2. 별도 탭 · **상품정보** 진입 · 임의 상품 · [수정] 클릭
+3. 상세구역 (3자리) 값 변경 (예: "332" → "555") · 저장
+4. **실재고테이블** 탭 · 새로고침 없이 · 자동 갱신되어 상세구역 새 값 반영 확인
+5. 신규 상품 등록도 동일 · 매장1 default 로 자동 반영
+
+### 예상 결과
+- 상품 등록/수정 → 실재고 테이블 · 즉시 자동 갱신
+- 사용자 새로고침 불필요
+
+---
+
 # 🆕 2026-09-13 ~ 2026-09-14 세션 · #132 ~ #141
 
 ## #141 · 결제 대시보드 · 차용 이력 표시 (있을 때) ✅
@@ -1215,6 +1269,115 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 3. #78 · SplitPanel 5:5 통일 · 시간 큼
 4. #93 · 관리자 대시보드 · 신규 페이지
 5. #101 · 차용계약 PDF 프리뷰 · 큰 태스크
+
+---
+
+# 📚 이전 완료 태스크 · 재확인용 (2026-09-14 정리)
+
+> TASKS.md v14 PENDING 정리 시 · 커밋 대조로 완료 확인 · 회귀 재점검용
+> 각 항목 · 이미 커밋 완료 · 사용자 시각 재확인 권장
+
+## #20 · 상품 모달 · 창고·매장 수평 배치 ✅
+**커밋** · `bb3c2647` (#133 신규 등록·수정 모달 · 상세구역)
+
+### 확인 절차
+1. **상품정보** > 상품 선택 > [신규 등록] 또는 [수정] 버튼
+2. `ProductCreateModal` · 배치구역 섹션 · **진열구역 (좌) + 상세구역 (우) 수평 grid**
+3. ProductCreateModal.tsx L505·509·523·529 · 2-column grid layout 확인
+
+---
+
+## #36 · 유통기한 임박 리스트 · SSOT ✅
+**커밋** · `d4a2d823` + `a698b4fe` (후속)
+
+### 확인 절차
+1. **매입 > 유통기한 임박** 페이지
+2. 실재고 검수 시 저장된 유통기한 (`inventory_checks.expiry_date`) SSOT 기준 리스트 표시
+3. `products.expiry_date` (임포트 위험) · 사용 중단 확인
+
+---
+
+## #44 · 매장구역도 저장 오류 fix ✅
+**커밋** · `f64ffbd7`
+
+### 확인 절차
+1. **매장관리 > 매장구역도** 진입
+2. 구역 편집 · 저장
+3. zones POST 500 (ON CONFLICT 중복) · zone-groups PUT 400 · 재발 X 확인
+
+---
+
+## #47 · 결제-차용 · 약국 사업장 정보 자동 채움 ✅
+**커밋** · `9f4f80c0`·`935a5957`·`b58a6295`
+
+### 확인 절차
+1. **매입 > 결제 > 차용계약** 진입
+2. 약국 (자기) 선택 · 시스템설정 회사(사업장) 정보 · 자동 채움 확인
+3. 회사명·주소 등 · 수정 불가 (readonly) 확인 · `useCompanyInfo` 연동
+4. BorrowingPage.tsx L103 · BorrowingDetailPanel.tsx L97 · 훅 사용 확인
+
+---
+
+## #48 · 상품검색 · 최근 검색어 3개 표시 ✅
+**커밋** · `a0025044`
+
+### 확인 절차
+1. **상품 검색창** (모든 페이지 · ProductSearchInput 사용처) 진입
+2. focus + empty 시 · "최근 검색어" 섹션 · 최대 3개 노출
+3. 검색어 선택 시 · onSelect 실행 + 최근 검색어 저장
+4. ProductSearchInput.tsx L22·60·127·189 로직 확인
+
+---
+
+## #50 · 승인요청 페이지 · UI 통일 ✅
+**커밋** · `84078012`·`afe7f6f5`·`0b29dedd`·`7dec1c36`
+
+### 확인 절차
+1. **승인요청** 페이지 진입
+2. 탭 스타일 · **매입이력 서브탭** 과 완전 동일 · TabBar level=3
+3. 5개 탭 (진열·점심·연차·거래처·사직서) · gap-4 · main 안 배치 확인
+4. DocumentWriterPage · 근로계약서·사직서·설정 탭도 TabBar level=3 통일
+
+---
+
+## #64 · 상품정보 편집 모달 · 공급사 수정 · PATCH 연동 ✅
+**커밋** · `33628f2f`·`49c93f99`·`89fd973c`
+
+### 확인 절차
+1. **상품정보** > 상품 선택 > [수정] 버튼 → `ProductCreateModal` edit mode 열림
+2. 공급사 · vendors 자동완성 드롭다운 · 유효성 자동 반영
+3. onMouseDown + preventDefault · outside-click 이전 값 세팅 · 정상 동작
+4. initialProduct 편집 시 · 입력값·드롭다운 선택값 · 리셋 X
+
+---
+
+## #68 · 공급사별 결제내역 · 검색창 통일 ✅
+**커밋** · `033890ed`
+
+### 확인 절차
+1. **매입 > 결제 > 공급사별 결제내역** 진입
+2. 검색창 · SearchBar 프리미티브 스타일 · 통일 확인
+3. 프리미티브 기반 · 검색·클리어·placeholder 표준 동작
+
+---
+
+## #70 · 결제 관련 페이지 · Spinner 통일 ✅
+**커밋** · `a698b4fe` + 이후 각 페이지 개별 반영
+
+### 확인 절차
+5개 페이지 · 로딩 시 Spinner 표시 확인:
+- CardRegisterPage.tsx L168 · "로딩 중..."
+- PaymentInputPage.tsx L547 · "공급사 데이터 로딩 중..."
+- BorrowingPage.tsx L435 · "차용 데이터 로딩 중..."
+- CardHistoryPage.tsx L103 · "카드별 결제 현황 로딩 중..."
+- PaymentDashboardPage.tsx L205·237 · "로딩..."
+
+---
+
+# 🎯 잔여 PENDING · v14 (2026-09-14 정리 후)
+
+- **#39** · 발주필요 리스트 페이지 전수조사 · 🟡 P2 · **스펙 확인 필요** (구체 이슈 명시 X)
+- **#56** · 매장 구역 X 버튼 권한 · 🟢 P4 LATER (맨 뒤 우선순위)
 
 ---
 
