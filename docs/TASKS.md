@@ -134,10 +134,13 @@
 - ⏸ S1/S2/S6/S8/S9 · defer
 - ❌ S3/S4 · 취소
 
-## 🚨 백엔드 보안 · 잔여
+## 🚨 백엔드 보안 · 완료
 
-- 🔲 Vendor 로그인 · bcrypt 전환 또는 사용자 정책 재확정 (사용자 결정)
-- ✅ 나머지 · 완료 (`/api/auth/set-password` · authorize 등)
+- ✅ Vendor 로그인 · bcrypt 전환 완료 (migration `20260902_vendors_password_hash.sql` · auth.ts L77 bcrypt.compare)
+- ✅ `/api/auth/set-password` · authorize(9) 추가
+- ✅ requireAuth 재활성화
+- ✅ 100MB JSON limit · route-level
+- ✅ tsconfig.json exclude 정비
 
 ---
 
