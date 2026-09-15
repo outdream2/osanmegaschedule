@@ -26,6 +26,9 @@ export interface AppConfig {
     employeeId?: number;                   // 로그인 시 저장 · upload API managerId 쿼리용
     role?: string;
     level?: number;
+    /** 2026-09-15 · 사용자 요청 · 아이디 저장 · 로그인 form 자동 채움 */
+    savedPhone?: string;
+    savePhone?: boolean;
   };
   folders: {
     products?: string;

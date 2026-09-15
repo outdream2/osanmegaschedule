@@ -1,8 +1,8 @@
 // Login.tsx
-// 2026-09-15 · Phase 2 · 첫 실행 · 로그인 화면
-// 2026-09-15 · fix · 웹앱과 동일 · 핸드폰번호 + 비밀번호 (email 아님)
+// 2026-09-15 · Phase 2 · 로그인 · 핸드폰번호 + 비밀번호
+// 2026-09-15 · 사용자 요청 · 아이디 저장 · 다음 실행 시 자동 채움
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 // 핸드폰번호 자동 포맷 · 01012345678 → 010-1234-5678
 function formatPhone(raw: string): string {
@@ -15,8 +15,25 @@ function formatPhone(raw: string): string {
 export const Login: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [savePhone, setSavePhone] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  // 저장된 아이디 · 첫 마운트 · 자동 채움
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await window.api.getSavedPhone();
+        if (saved.savedPhone) setPhone(formatPhone(saved.savedPhone));
+        setSavePhone(saved.savePhone);
+      } catch (err) {
+        console.warn("[Login] 저장된 아이디 로드 실패:", err);
+      } finally {
+        setLoaded(true);
+      }
+    })();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +45,7 @@ export const Login: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
     setSubmitting(true);
     setError(null);
     try {
-      const result = await window.api.login(cleanPhone, password);
+      const result = await window.api.login(cleanPhone, password, savePhone);
       if (result.ok) {
         onSuccess();
       } else {
@@ -40,6 +57,10 @@ export const Login: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
       setSubmitting(false);
     }
   };
+
+  if (!loaded) {
+    return <div className="min-h-screen flex items-center justify-center text-zinc-500">로딩 중...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-tint to-white flex items-center justify-center px-6">
@@ -64,7 +85,7 @@ export const Login: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
             value={phone}
             onChange={(e) => setPhone(formatPhone(e.target.value))}
             required
-            autoFocus
+            autoFocus={!phone}
             className="w-full px-4 py-3 border border-zinc-300 rounded-lg text-[15px] focus:border-brand-deep focus:ring-2 focus:ring-brand-tint outline-none transition tabular-nums"
             placeholder="010-1234-5678"
             disabled={submitting}
@@ -72,16 +93,28 @@ export const Login: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
           />
         </label>
 
-        <label className="block mb-4">
+        <label className="block mb-3">
           <span className="text-[14px] font-semibold text-zinc-700 mb-1 block">비밀번호</span>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            autoFocus={!!phone}
             className="w-full px-4 py-3 border border-zinc-300 rounded-lg text-[15px] focus:border-brand-deep focus:ring-2 focus:ring-brand-tint outline-none transition"
             disabled={submitting}
           />
+        </label>
+
+        <label className="flex items-center gap-2 mb-4 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={savePhone}
+            onChange={(e) => setSavePhone(e.target.checked)}
+            className="w-4 h-4 accent-brand-deep cursor-pointer"
+            disabled={submitting}
+          />
+          <span className="text-[13px] text-zinc-600">아이디 저장 · 다음 실행 시 자동 채움</span>
         </label>
 
         {error && (

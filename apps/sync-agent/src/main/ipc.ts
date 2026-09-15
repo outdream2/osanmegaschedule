@@ -28,8 +28,24 @@ export function registerIpcHandlers() {
   // ── Auth ──────────────────────────────────────
   ipcMain.handle("auth:isLoggedIn", () => isLoggedIn());
 
-  ipcMain.handle("auth:login", async (_e, credentials: { phone: string; password: string }) => {
+  ipcMain.handle("auth:getSavedPhone", () => {
+    const cfg = loadConfig();
+    return { savedPhone: cfg.auth.savedPhone ?? "", savePhone: cfg.auth.savePhone ?? true };
+  });
+
+  ipcMain.handle("auth:login", async (_e, credentials: { phone: string; password: string; savePhone?: boolean }) => {
     const result = await login(credentials.phone, credentials.password);
+    // 로그인 성공 · 아이디 저장 설정 반영
+    if (result.ok) {
+      const cleanPhone = credentials.phone.replace(/[^0-9]/g, "");
+      const { patchConfig } = await import("./config");
+      patchConfig({
+        auth: {
+          savedPhone: credentials.savePhone ? cleanPhone : undefined,
+          savePhone: credentials.savePhone ?? false,
+        },
+      });
+    }
     return result;
   });
 

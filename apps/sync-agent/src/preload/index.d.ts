@@ -35,7 +35,8 @@ interface SyncAgentApi {
   getConfig(): Promise<RendererConfig>;
   patchConfig(patch: Partial<RendererConfig>): Promise<{ ok: boolean; config: RendererConfig }>;
   isLoggedIn(): Promise<boolean>;
-  login(phone: string, password: string): Promise<{ ok: boolean; error?: string }>;
+  getSavedPhone(): Promise<{ savedPhone: string; savePhone: boolean }>;
+  login(phone: string, password: string, savePhone: boolean): Promise<{ ok: boolean; error?: string }>;
   logout(): Promise<{ ok: boolean }>;
   selectFolder(options?: { title?: string; defaultPath?: string }): Promise<string | null>;
   runNow(kind: FileKind): Promise<RunResult>;
