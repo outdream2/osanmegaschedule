@@ -19,7 +19,10 @@ import { refillOptimalStock } from "../../lib/optimalStock";
 // 2026-09-09 · 적정재고 재계산 후 · 발주필요 캐시 무효화 · 자동 반영
 import { clearLowStockCache } from "./stockManage";
 // 2026-09-09 · shelf_positions · inventory_checks 통합 (사용자 지시) · products 컬럼 미사용
-//   · buildInitialShelfPositions · 상품 등록 시 products.shelf_positions 초기화용 · 현재 미사용
+// 2026-09-15 · #61 B안 · 사용자 원칙 · 상품테이블 ↔ 실재고테이블 자동 연동
+//   · POST /api/products · buildInitialShelfPositions 로 · inventory_checks row 자동 생성
+//   · products.location 기반 · 창고1/2/매장1 자동 배정 (사용자 원칙)
+import { buildInitialShelfPositions } from "../../utils/shelfPositionAssign";
 
 const router = Router();
 
@@ -951,6 +954,72 @@ router.patch("/api/products/:code", authorize(1), validateBody(UpdateProductSche
     console.error("[products PATCH] error:", updErr.message);
     throw new HttpError(500, updErr.message);
   }
+
+  // 2026-09-15 · #61 B안 · 사용자 원칙 · 진열위치 변경 → 실재고 슬롯 자동 재배정
+  //   · location 변경 시 · inventory_checks.shelf_positions · buildInitialShelfPositions 재계산
+  //   · 기존 상세위치 (사용자 입력 3자리) · **보존** (merge · 새 슬롯 추가 · 사라진 슬롯 제거 X)
+  //   · products·inventory_checks 자동 동기 · SSOT
+  if (Object.prototype.hasOwnProperty.call(updates, "location") || Object.prototype.hasOwnProperty.call(updates, "display_location")) {
+    try {
+      // 최신 products.location · category_code 조회 (updates 이후)
+      const { data: fresh } = await supabase
+        .from("products")
+        .select("location, display_location, category_code")
+        .eq("product_code", code)
+        .maybeSingle();
+      const newLocation = fresh?.location ?? fresh?.display_location ?? null;
+      const categoryCode = (fresh as any)?.category_code ?? null;
+      const autoSlots = buildInitialShelfPositions(newLocation, categoryCode);
+
+      // 기존 inventory_checks · shelf_positions 조회
+      const { data: existingList } = await supabase
+        .from("inventory_checks")
+        .select("id, shelf_positions")
+        .eq("product_code", code)
+        .order("checked_at", { ascending: false })
+        .limit(1);
+      const existing = existingList?.[0] ?? null;
+      const existingPos = ((existing?.shelf_positions ?? {}) as Record<string, string | null>);
+
+      // 신규 슬롯 · null 로 추가 (사용자 편집 대기) · 기존 상세위치는 유지
+      const mergedPos: Record<string, string | null> = { ...existingPos };
+      for (const slotKey of Object.keys(autoSlots)) {
+        if (!(slotKey in mergedPos)) mergedPos[slotKey] = null;
+      }
+
+      if (existing) {
+        const { error: mergeErr } = await supabase
+          .from("inventory_checks")
+          .update({ shelf_positions: mergedPos })
+          .eq("product_code", code);
+        if (mergeErr) console.warn(`[products PATCH] inventory_checks shelf_positions 재배정 실패 (경고): ${mergeErr.message}`);
+        else console.log(`[products PATCH] inventory_checks shelf_positions 재배정 · ${code} · ${JSON.stringify(mergedPos)}`);
+      } else {
+        // inventory_checks row 없음 · 신규 생성 (products 만 있는 상품 · 정합성 복구)
+        const insertRow: Record<string, unknown> = {
+          product_code: code,
+          product_name: (fresh as any)?.product_name ?? "",
+          shelf_positions: autoSlots,
+          checked_at: new Date().toISOString(),
+          status: "pending",
+          warehouse1_stock: null,
+          warehouse2_stock: null,
+          store1_stock: null,
+          store2_stock: null,
+          store3_stock: null,
+          system_stock: null,
+          checked_by: "",
+          note: "",
+        };
+        const { error: insErr2 } = await supabase.from("inventory_checks").insert([insertRow]);
+        if (insErr2) console.warn(`[products PATCH] inventory_checks 신규 생성 실패 (경고): ${insErr2.message}`);
+        else console.log(`[products PATCH] inventory_checks 신규 생성 (location 변경 계기) · ${code}`);
+      }
+    } catch (e: any) {
+      console.warn(`[products PATCH] inventory_checks 동기 예외 (경고): ${e?.message ?? e}`);
+    }
+  }
+
   resetProductCache();
   res.json({ ok: true, updated: Object.keys(updates), stripped: patchStripped });
 }));
@@ -1023,6 +1092,61 @@ router.post("/api/products", authorize(5), validateBody(CreateProductSchema), as
   } else {
     console.log(`[products POST] 신규 등록 · ${code} · ${input.product_name}`);
   }
+
+  // 2026-09-15 · #61 B안 · 사용자 원칙 · 상품테이블 ↔ 실재고테이블 자동 연동
+  //   · products.location → buildInitialShelfPositions → inventory_checks row 자동 생성
+  //   · 창고1/2/매장1 자동 배정 · 상세위치는 null (사용자 편집 대기)
+  //   · 이미 inventory_checks row 있으면 · skip (upsert 유사 · 중복 방지)
+  //   · 실패해도 상품 등록 자체는 성공 (best-effort · warn 로그만)
+  try {
+    const { data: existingIc } = await supabase
+      .from("inventory_checks")
+      .select("id")
+      .eq("product_code", code)
+      .maybeSingle();
+    if (!existingIc) {
+      const shelfPositions = buildInitialShelfPositions(
+        input.location ?? input.display_location ?? null,
+        (input as any).category_code ?? null,
+      );
+      const insertRow: Record<string, unknown> = {
+        product_code: code,
+        product_name: input.product_name,
+        shelf_positions: shelfPositions,
+        checked_at: new Date().toISOString(),
+        status: "pending",
+        warehouse1_stock: null,
+        warehouse2_stock: null,
+        store1_stock: null,
+        store2_stock: null,
+        store3_stock: null,
+        system_stock: null,
+        checked_by: "",
+        note: "",
+      };
+      let { error: icErr } = await supabase.from("inventory_checks").insert([insertRow]);
+      // 컬럼 미존재 시 · strip 후 재시도 (스키마 편차 대비 · 기존 shelf-positions PATCH 와 동일)
+      let attempt = 0;
+      while (icErr && /column .* does not exist|no column named|schema cache/i.test(icErr.message ?? "") && attempt < 6) {
+        attempt++;
+        const m = /column\s+(?:[a-zA-Z0-9_]+\.)?["']?([a-zA-Z0-9_]+)["']?/i.exec(icErr.message);
+        const colName = m?.[1];
+        if (!colName || !(colName in insertRow)) break;
+        if (colName === "shelf_positions") break; // shelf_positions 미배포 · 전체 skip
+        delete insertRow[colName];
+        const retry = await supabase.from("inventory_checks").insert([insertRow]);
+        icErr = retry.error;
+      }
+      if (icErr) {
+        console.warn(`[products POST] inventory_checks 자동 생성 실패 (경고 · 상품 등록은 성공): ${icErr.message}`);
+      } else {
+        console.log(`[products POST] inventory_checks 자동 생성 · ${code} · shelf_positions=${JSON.stringify(shelfPositions)}`);
+      }
+    }
+  } catch (e: any) {
+    console.warn(`[products POST] inventory_checks 자동 생성 예외 (경고 · 상품 등록은 성공): ${e?.message ?? e}`);
+  }
+
   resetProductCache();
   res.status(201).json({ ok: true, product_code: code, stripped });
 }));

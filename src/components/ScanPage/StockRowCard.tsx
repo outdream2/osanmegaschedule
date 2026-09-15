@@ -64,11 +64,13 @@ const StepperInput = CommonStepperInput;
 // ─── 구역 편집 · 매장 전용 · 2026 트렌드 (Linear/Notion inline chip · pin icon + autosave 표시)
 // 2026-08-25 · 사용자 지시 · Tier 3 · Selector 통합 (자유입력 제거 · 데이터 정합성 100%)
 //   · ZONE_DEFS 기반 RealMapSelector 모달 · 오타·존재 안 하는 구역 원천 차단
+// 2026-09-15 · #61 B안 · 사용자 원칙 · "지정 위치 = 진열위치(products.location)" 만 사용
+//   · products.spec 참조 완전 제거 (spec 은 원래 규격 컬럼 · 위치 표시로 부적절)
+//   · 진열구역 (zone) + 상세구역 (shelf_positions) 두 소스만 · 정합성 100%
 const ZoneInline: React.FC<{
   value: string | null;
   onChange: (v: string | null) => void;
-  erpSpec?: string;
-}> = ({ value, onChange, erpSpec }) => {
+}> = ({ value, onChange }) => {
   const filled = value != null && value.trim().length > 0;
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -113,12 +115,9 @@ const ZoneInline: React.FC<{
         </span>
       )}
 
-      {/* 지정 위치 · ERP(products.spec) 원본 · 2026-09-14 · "ERP" 라벨 → "지정" 명확화 */}
-      {erpSpec && !savedFlash && (
-        <span className="inline-flex items-center gap-0.5 text-[15px] text-ink-soft tabular-nums font-medium" title={`지정 위치 · ERP 원본 · ${erpSpec}`}>
-          <span className="text-zinc-300">·</span> 지정 {erpSpec}
-        </span>
-      )}
+      {/* 2026-09-15 · #61 B안 · 사용자 원칙 · "지정 위치" 제거
+          · 이전 · products.spec 파싱 · 매장별 위치 표시 (도메인 mismatch · index 오프셋 버그)
+          · 이후 · 진열구역 (value) + 상세구역 (shelf_positions · 별도 표시) 만 · 정합성 100% */}
 
       {/* RealMapSelector · ZONE_DEFS 기반 · 자유입력 X · 데이터 정합성 100% */}
       {selectorOpen && (
@@ -221,8 +220,9 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
     try { await onSaveRow(row.key); } finally { setSaving(false); }
   };
 
-  // product.spec 파싱 (매장별 ERP 위치)
-  const specParts = String((row.product as any).spec ?? "").split("/").map(s => s.trim());
+  // 2026-09-15 · #61 B안 · 사용자 원칙 · products.spec 참조 제거
+  //   · 이전 · products.spec 을 "/" 파싱 · 매장별 ERP 위치로 사용 (도메인 mismatch)
+  //   · 이후 · 진열위치 = products.location (SSOT) + 상세구역 = shelf_positions
 
   // 2026-08-26 · 사용자 지시 · 해당 상품 소속 창고만 표시 · location / display_location 기반
   const productZone = String(
@@ -472,11 +472,10 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
           }
           if (Object.keys(patch).length > 0) onPatch(row.key, patch);
         };
-        const renderSlot = (s: typeof SLOTS[number], i: number, isStore: boolean) => {
+        const renderSlot = (s: typeof SLOTS[number], _i: number, isStore: boolean) => {
           const prev = row[s.prevKey] as number | null | undefined;
           const add  = row[s.addKey]  as number | "";
           const hasAddVal = add !== "" && Number(add) !== 0;
-          const spec = s.zoneKey ? (specParts[i] ?? "") : "";
           const canClearSlot = isStore && (hasAddVal || (s.zoneKey && !!row[s.zoneKey as keyof StockRow]));
           const clearSlot = () => {
             const patch: Partial<StockRow> = { [s.addKey]: "" as any };
@@ -521,7 +520,6 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                   <ZoneInline
                     value={currentZone}
                     onChange={v => onPatch(row.key, { [s.zoneKey!]: v } as Partial<StockRow>)}
-                    erpSpec={spec || undefined}
                   />
                 ))}
                 {(() => {
