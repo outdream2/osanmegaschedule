@@ -11,6 +11,9 @@ import AutoLaunch from "auto-launch";
 // electron-updater · CommonJS · default import 후 destructure (ESM 호환)
 import electronUpdaterPkg from "electron-updater";
 const { autoUpdater } = electronUpdaterPkg;
+// 2026-09-15 · Phase 2 · Config · Auth · Scheduler · IPC
+import { registerIpcHandlers } from "./ipc";
+import { rescheduleAll, runNowAll, stopAllJobs } from "./scheduler";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -280,13 +283,16 @@ function checkForUpdatesManual() {
   });
 }
 
-// ── 스케줄러 · 임포트 실행 (Phase 2 에서 구현) ────
-function runNowAllTasks() {
-  console.log("[scheduler] runNowAllTasks · 아직 미구현");
-  // TODO Phase 2 · 3 파일 · 즉시 실행
+// ── 스케줄러 · 즉시 실행 (트레이 메뉴) ──────────
+async function runNowAllTasks() {
+  console.log("[main] runNowAllTasks · 3 파일 즉시 실행");
+  const results = await runNowAll();
+  for (const r of results) {
+    console.log(`[main] ${r.kind} · ${r.message}`);
+  }
 }
 
-// ── IPC · Renderer 통신 (Phase 2 에서 확장) ──────
+// ── IPC · Renderer 통신 ─────────────────────────
 ipcMain.handle("app-info", () => ({
   version: app.getVersion(),
   name: AGENT_NAME,
@@ -300,9 +306,15 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window);
   });
 
+  // Phase 2 · IPC handlers 등록
+  registerIpcHandlers();
+
   createTray();
   ensureAutoLaunch();
   setupAutoUpdater();
+
+  // Phase 2 · 저장된 스케줄 복구 · cron job 등록
+  rescheduleAll();
 
   // 개발 모드 · 창 자동 open · 배포 · 트레이만
   if (is.dev) {
@@ -314,7 +326,10 @@ app.whenReady().then(() => {
   });
 });
 
-app.on("before-quit", () => { quitting = true; });
+app.on("before-quit", () => {
+  quitting = true;
+  stopAllJobs();
+});
 
 // Windows · 트레이 종료 후에도 · 앱 유지 (기본 window-all-closed 시 종료 방지)
 app.on("window-all-closed", () => {
