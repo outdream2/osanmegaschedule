@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 831 |
+| 스캔 파일 | 832 |
 | 위반 파일 | 9 |
-| 클린 파일 | 822 (99%) |
+| 클린 파일 | 823 (99%) |
 | 총 위반 개수 | 9 |
 
 ## 🚨 규칙별 위반 현황
@@ -25,11 +25,11 @@
 |---:|---|---:|---:|---|
 | 1 | `src/components/DisplayPage/RealStockTablePage.tsx` | 872 | 3 | large-file-warn(1) |
 | 2 | `src/components/LandingPage/VendorListEditor.tsx` | 853 | 3 | large-file-warn(1) |
-| 3 | `src/components/OrderManagePage/OrderManagePage.tsx` | 842 | 3 | large-file-warn(1) |
+| 3 | `src/components/OrderManagePage/OrderManagePage.tsx` | 844 | 3 | large-file-warn(1) |
 | 4 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 977 | 3 | large-file-warn(1) |
 | 5 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 805 | 3 | large-file-warn(1) |
 | 6 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 973 | 3 | large-file-warn(1) |
-| 7 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 868 | 3 | large-file-warn(1) |
+| 7 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 902 | 3 | large-file-warn(1) |
 | 8 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 | large-file-warn(1) |
 | 9 | `src/components/ScanPage/ScanPage.tsx` | 811 | 3 | large-file-warn(1) |
 
@@ -41,11 +41,11 @@
 |---|---:|---:|
 | `src/components/DisplayPage/RealStockTablePage.tsx` | 872 | 3 |
 | `src/components/LandingPage/VendorListEditor.tsx` | 853 | 3 |
-| `src/components/OrderManagePage/OrderManagePage.tsx` | 842 | 3 |
+| `src/components/OrderManagePage/OrderManagePage.tsx` | 844 | 3 |
 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 977 | 3 |
 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 805 | 3 |
 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 973 | 3 |
-| `src/components/ProductInfoPage/ProductInfoPage.tsx` | 868 | 3 |
+| `src/components/ProductInfoPage/ProductInfoPage.tsx` | 902 | 3 |
 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 |
 | `src/components/ScanPage/ScanPage.tsx` | 811 | 3 |
 
