@@ -98,13 +98,64 @@ function createMainWindow() {
   });
 }
 
-// ── 인라인 트레이 아이콘 (16x16 · brand-deep 색 · fallback · 파일 X 대비) ──
-// 파란 원 · 흰 화살표 (다운로드 심볼)
-const TRAY_ICON_PNG_BASE64 =
-  "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA" +
-  "PklEQVQ4T2NkYGD4z0AEYBxVSDAgo+aTF04MQwGjChkYGP4T" +
-  "EwqjChkYGP4TEwqjChkYGP4TEwqjChkYGGjIAgBAyAsFOFVj" +
-  "cQAAAABJRU5ErkJggg==";
+// ── 인라인 트레이 아이콘 생성 · buffer 로 직접 (16x16 solid brand-deep) ──
+// nativeImage.createFromBuffer · PNG 바이너리 · Electron 표준
+function createTrayIconBuffer(): Buffer {
+  // 16x16 · brand-deep #0A2E4A 색 · solid square PNG
+  // Node.js Buffer · minimal PNG bytes (IHDR + IDAT + IEND)
+  // 실제 이미지는 · 리소스 파일 X 대비 · 최소 fallback
+  // brand-deep RGB (10, 46, 74) · alpha 255
+  const width = 16;
+  const height = 16;
+  const rowSize = 1 + width * 4; // filter byte + RGBA
+  const raw = Buffer.alloc(rowSize * height);
+  for (let y = 0; y < height; y++) {
+    raw[y * rowSize] = 0; // filter: None
+    for (let x = 0; x < width; x++) {
+      const off = y * rowSize + 1 + x * 4;
+      raw[off]     = 10;   // R (brand-deep)
+      raw[off + 1] = 46;   // G
+      raw[off + 2] = 74;   // B
+      raw[off + 3] = 255;  // A
+    }
+  }
+  // zlib deflate (Node 내장)
+  const zlib = require("zlib");
+  const compressed = zlib.deflateSync(raw);
+
+  // PNG chunks
+  const crc32 = (buf: Buffer): number => {
+    let c: number;
+    let crc = 0xffffffff;
+    for (let i = 0; i < buf.length; i++) {
+      c = (crc ^ buf[i]) & 0xff;
+      for (let j = 0; j < 8; j++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      crc = (crc >>> 8) ^ c;
+    }
+    return (crc ^ 0xffffffff) >>> 0;
+  };
+  const chunk = (type: string, data: Buffer): Buffer => {
+    const typeBuf = Buffer.from(type);
+    const len = Buffer.alloc(4); len.writeUInt32BE(data.length, 0);
+    const crcInput = Buffer.concat([typeBuf, data]);
+    const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(crcInput), 0);
+    return Buffer.concat([len, typeBuf, data, crc]);
+  };
+
+  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  const ihdrData = Buffer.alloc(13);
+  ihdrData.writeUInt32BE(width, 0);
+  ihdrData.writeUInt32BE(height, 4);
+  ihdrData[8]  = 8;  // bit depth
+  ihdrData[9]  = 6;  // color type RGBA
+  ihdrData[10] = 0;  // compression
+  ihdrData[11] = 0;  // filter
+  ihdrData[12] = 0;  // interlace
+  const ihdr = chunk("IHDR", ihdrData);
+  const idat = chunk("IDAT", compressed);
+  const iend = chunk("IEND", Buffer.alloc(0));
+  return Buffer.concat([signature, ihdr, idat, iend]);
+}
 
 // ── 시스템 트레이 (하이브리드 · D안) ────────────────
 function createTray() {
@@ -112,20 +163,15 @@ function createTray() {
   const iconPath = join(__dirname, "../../resources/tray-idle.png");
   let trayImage = nativeImage.createFromPath(iconPath);
 
-  // 2. 없으면 · 인라인 base64 PNG · 개발용 fallback
+  // 2. 없으면 · 코드로 생성한 PNG buffer (개발용)
   if (trayImage.isEmpty()) {
-    console.log("[tray] resources/tray-idle.png 없음 · 인라인 fallback 사용");
-    trayImage = nativeImage.createFromDataURL(`data:image/png;base64,${TRAY_ICON_PNG_BASE64}`);
+    console.log("[tray] resources/tray-idle.png 없음 · 인라인 buffer PNG 사용");
+    trayImage = nativeImage.createFromBuffer(createTrayIconBuffer());
   }
 
-  // 3. Windows · 16x16 리사이즈 (시스템 트레이 표준)
-  if (!trayImage.isEmpty()) {
-    trayImage = trayImage.resize({ width: 16, height: 16 });
-  }
-
+  console.log("[tray] 이미지 · isEmpty:", trayImage.isEmpty(), "size:", trayImage.getSize());
   tray = new Tray(trayImage);
   tray.setToolTip(AGENT_NAME);
-  console.log("[tray] 생성 완료 · isEmpty:", trayImage.isEmpty());
 
   const contextMenu = Menu.buildFromTemplate([
     { label: "열기", click: () => createMainWindow() },
