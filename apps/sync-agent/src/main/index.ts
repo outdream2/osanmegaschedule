@@ -98,33 +98,50 @@ function createMainWindow() {
   });
 }
 
-// ── 인라인 트레이 아이콘 · 다운로드 화살표 (16x16) ──
+// ── 인라인 트레이 아이콘 · 다운로드 화살표 (32x32 · 고DPI 대응) ──
 // brand-deep 배경 + 흰색 아래 화살표 (import 심볼)
+// 2026-09-15 · Windows 11 · 32x32 자연 크기 · 트레이 표시 개선
 function createTrayIconBuffer(): Buffer {
-  const width = 16;
-  const height = 16;
+  const width = 32;
+  const height = 32;
   const rowSize = 1 + width * 4;
   const raw = Buffer.alloc(rowSize * height);
 
-  // 화살표 패턴 · X = 흰색 · . = brand-deep
-  //  0123456789012345
+  // 화살표 패턴 · X = 흰색 · . = brand-deep · 32x32
+  //  01234567890123456789012345678901
   const pattern = [
-    "................", // 0
-    "................", // 1
-    "................", // 2
-    "......XXXX......", // 3
-    "......XXXX......", // 4
-    "......XXXX......", // 5
-    "......XXXX......", // 6
-    "......XXXX......", // 7
-    "..XXXXXXXXXXXX..", // 8
-    "...XXXXXXXXXX...", // 9
-    "....XXXXXXXX....", // 10
-    ".....XXXXXX.....", // 11
-    "......XXXX......", // 12
-    ".......XX.......", // 13
-    "................", // 14
-    "................", // 15
+    "................................", // 0
+    "................................", // 1
+    "................................", // 2
+    "................................", // 3
+    "................................", // 4
+    "............XXXXXXXX............", // 5
+    "............XXXXXXXX............", // 6
+    "............XXXXXXXX............", // 7
+    "............XXXXXXXX............", // 8
+    "............XXXXXXXX............", // 9
+    "............XXXXXXXX............", // 10
+    "............XXXXXXXX............", // 11
+    "............XXXXXXXX............", // 12
+    "............XXXXXXXX............", // 13
+    "............XXXXXXXX............", // 14
+    "............XXXXXXXX............", // 15
+    "....XXXXXXXXXXXXXXXXXXXXXXXX....", // 16
+    ".....XXXXXXXXXXXXXXXXXXXXXX.....", // 17
+    "......XXXXXXXXXXXXXXXXXXXX......", // 18
+    ".......XXXXXXXXXXXXXXXXXX.......", // 19
+    "........XXXXXXXXXXXXXXXX........", // 20
+    ".........XXXXXXXXXXXXXX.........", // 21
+    "..........XXXXXXXXXXXX..........", // 22
+    "...........XXXXXXXXXX...........", // 23
+    "............XXXXXXXX............", // 24
+    ".............XXXXXX.............", // 25
+    "..............XXXX..............", // 26
+    "...............XX...............", // 27
+    "................................", // 28
+    "................................", // 29
+    "................................", // 30
+    "................................", // 31
   ];
 
   for (let y = 0; y < height; y++) {
@@ -198,6 +215,16 @@ function createTray() {
   console.log("[tray] 이미지 · isEmpty:", trayImage.isEmpty(), "size:", trayImage.getSize());
   tray = new Tray(trayImage);
   tray.setToolTip(AGENT_NAME);
+  tray.setTitle(""); // Windows · title 없음
+
+  // Windows 11 · 첫 실행 시 · balloon 표시 · 사용자에게 트레이 아이콘 존재 알림
+  if (process.platform === "win32") {
+    tray.displayBalloon({
+      title: AGENT_NAME,
+      content: "트레이 아이콘이 여기 있습니다. 우클릭 · 메뉴 표시.",
+      iconType: "info",
+    });
+  }
 
   const contextMenu = Menu.buildFromTemplate([
     { label: "열기", click: () => createMainWindow() },
