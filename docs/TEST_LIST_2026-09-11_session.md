@@ -2152,6 +2152,57 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 
 ---
 
+## [31] #61 B안 · 지정위치 표시 정합성 + 상품↔실재고 자동 연동 (2026-09-15)
+**커밋** · `a75958da`
+
+### 배경
+- 사용자 원칙 · 지정 위치 = 상품등록 시 진열구역 (`products.location`)
+- 진열위치 → 창고1/2/매장1 자동 결정
+- **상품테이블 ↔ 실재고테이블 자동 연동 필수**
+
+### 버그 fix (Step 1 · 표시)
+- 이전 · StockRowCard "지정 10" · `products.spec` (규격 컬럼) 잘못 사용 · 인덱스 오프셋 mismatch
+- 이후 · "지정 XX" 표시 완전 제거 · 진열구역+상세구역 두 소스만 유지
+
+### Gap fix (Step 3 · 정합성 자동 동기)
+
+#### 시나리오 1 · 상품 신규 등록
+1. **매장 > 매입 > 상품정보** 진입 · **[+ 상품 등록]**
+2. 새 상품 입력 · 진열위치 (예: "매장 3-1" or "24" · 창고1) 지정 · 저장
+3. 서버 로그 · `[products POST] inventory_checks 자동 생성 · CODE · shelf_positions={...}`
+4. **실재고 페이지 (ScanPage)** · 해당 상품 검색 · 자동 배정된 슬롯 표시
+   - 매장 위치 → 매장1 슬롯 활성
+   - "24" (창고1 코드) → 창고1 슬롯 활성
+   - "33" 등 → 창고2 슬롯 활성
+5. Supabase · `inventory_checks` 테이블 · 신규 row · shelf_positions JSONB 확인
+
+#### 시나리오 2 · 진열위치 변경
+1. 기존 상품 · [수정] · **진열위치 변경** (예: "매장 3-1" → "24" · 창고1로 이동)
+2. 서버 로그 · `[products PATCH] inventory_checks shelf_positions 재배정 · CODE · {...}`
+3. 실재고 페이지 · 슬롯 자동 재배정 확인
+4. 기존 상세위치 (3자리 · 예 "332") · **보존** 확인 (사라지지 않음)
+5. 새 슬롯 · null · 사용자 편집 대기 상태
+
+#### 시나리오 3 · inventory_checks 미존재 상품 · location 편집
+1. 기존 · products 만 있고 inventory_checks 없는 상품 (2026-09-15 이전 등록분)
+2. 진열위치 편집
+3. 서버 로그 · `[products PATCH] inventory_checks 신규 생성 (location 변경 계기) · CODE`
+4. 정합성 자동 복구 확인
+
+### 기대값
+- 상품 등록 즉시 · 실재고 페이지에 자동 반영 (별도 저장 X)
+- 진열위치 변경 · 슬롯 자동 재배정 · 상세위치 보존
+- ERP `spec` 오염 표시 완전 제거
+- best-effort · inventory_checks 실패 시에도 상품 등록·수정 자체는 성공
+
+### 회귀 확인
+- 매장 슬롯 · 진열구역 편집 (ZoneInline) · 이전과 동일 동작
+- 창고 슬롯 · warehouse zone 편집 · 이전과 동일
+- 상세구역 shelf_positions · 이전과 동일 (별도 표시 · 편집 유지)
+- ScanPage tests · 52/52 통과
+
+---
+
 ## [30] T-SP-BULK · POST bulk shelf_positions 병합 지원 (2026-09-15)
 **커밋** · `b86a4b20`
 
