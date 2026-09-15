@@ -75,7 +75,7 @@
 | **#253 Phase B~D** | 자동 임포트 Python 스크립트·설치파일 | 대형 별도 세션 |
 | FlowTab·LossHistoryTab·DiffTab | 컬러 bg 정리 (대량) | 승인 후 순차 |
 | **#254~#256** | 세션 보안 강화 · 중복 로그인 방지 · 강제 로그아웃 | 대형 · 별도 세션 |
-| **#191** | Modal 프레임워크화 · Phase B~C (중·고위험) | Phase A 완료 · 사용자 승인 후 |
+| **#191 Phase C** | Modal 프레임워크화 · panel/modal 이중 (VendorDetailModal·VendorPaymentPanel·BorrowingDetailPanel·SupplierTab.panels·ProductDetailPanel) | 고위험 · 사용자 승인 후 · Phase B 완료 (`04935b7b`) |
 
 ### 🔴 사용자 결정 필요
 

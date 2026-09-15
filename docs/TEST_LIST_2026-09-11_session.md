@@ -2152,6 +2152,45 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 
 ---
 
+## [35] #191 Phase B · ShelfPositionsEditModal · Modal 프리미티브 마이그레이션 (2026-09-15)
+**커밋** · `04935b7b`
+
+### 배경
+- 대원칙 · 프레임워크 우선 · 원-오프 코드 금지
+- 이전 · fixed inset-0 z-[100] backdrop + 커스텀 헤더/카드/푸터 · 인라인 (~60라인)
+- Modal 프리미티브 (`common/Modal.tsx`) · v3.4 · 이미 완비 · title/footer/bodyPadding·closeOnEsc 지원
+
+### Fix
+- ShelfPositionsEditModal · 인라인 backdrop → `<Modal open onClose ...>` 감쌈
+- 인라인 useEffect ESC 리스너 제거 (Modal 자동 처리)
+- 헤더 커스텀 div → Modal `title` prop (다중 라인 · titleAccent)
+- 푸터 커스텀 div → Modal `footer` prop
+- saving 시 · closeOnEsc·closeOnBackdrop false (기존 동작 유지)
+
+### 확인 절차
+1. **실재고 (ScanPage)** 진입 · 스캔한 상품 · 상세위치 표기 옆 편집 아이콘 클릭
+2. 모달 열림 · 이전과 동일 UI (좌 예시 그림 + 우 슬롯 카드)
+3. ESC 키 · 닫힘 (저장 중 아닐 때)
+4. 백드롭 클릭 · 닫힘 (저장 중 아닐 때)
+5. X 버튼 · 상단 우측 · 닫힘
+6. 저장 · [저장] 클릭 · 상세위치 저장 · 이전과 동일
+7. 저장 중 · ESC·백드롭·X · 비활성 (안전)
+
+### 기대값
+- 이전 동작 100% 유지 · UX 무변화
+- 코드 15줄 감소 · 표준 모달 동작 일관
+
+### 회귀 확인
+- ScanPage · ArrivalRowCard · ShelfPositionsInlineTable · 사용처 3곳 · 이전과 동일 동작
+- 전체 3446 tests · 통과
+
+### Phase B 상태
+- ✅ ShelfPositionsEditModal · Phase B 실질 유일 대상 · 완료
+- 스킵 · CategoryTab·ZoneCategoryContent·ProductTrendTab · 모바일 풀스크린 responsive 패턴 (모달 아님)
+- Phase C 대기 · VendorDetailModal·VendorPaymentPanel·BorrowingDetailPanel·SupplierTab.panels·ProductDetailPanel · panel/modal 이중 · 고위험 · 사용자 승인 후
+
+---
+
 ## [34] T-SP-9-REST · ExpiryImminentTab · 상세 진열위치 뱃지 확산 (2026-09-15)
 **커밋** · (이 커밋)
 
