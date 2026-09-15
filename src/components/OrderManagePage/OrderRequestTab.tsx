@@ -123,6 +123,31 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
       return n;
     });
   };
+
+  // 2026-09-15 · #107·#258 v4 · 헤더 통계 · 부족·품절 카운트 (사용자 승인 목업)
+  const stats = React.useMemo(() => {
+    let critical = 0;   // 재고 0
+    let shortage = 0;   // 재고 < 적정
+    let overStock = 0;  // 재고 > 적정 (초과)
+    let totalAmount = 0;
+    for (const r of displayedReqs) {
+      const codeVariants = [r.product_code, r.product_code.replace(/^0+/, ""), r.product_code.padStart(8, "0")];
+      const p = codeVariants.map(c => allProductsMap[c]).find(Boolean) as any;
+      const cur = Number(p?.current_stock ?? r.current_stock ?? 0);
+      const opt = Number(p?.optimal_stock ?? r.optimal_stock ?? 0);
+      const short = opt - cur;
+      if (short > 0 && cur === 0) critical++;
+      else if (short > 0) shortage++;
+      else if (short < 0) overStock++;
+      const price = prevPriceMap.get(r.product_code) ?? 0;
+      const qty = orderQtyOverride.has(r.product_code)
+        ? orderQtyOverride.get(r.product_code)!
+        : Math.max(0, opt - cur);
+      totalAmount += qty * price;
+    }
+    return { critical, shortage, overStock, totalAmount };
+  }, [displayedReqs, allProductsMap, prevPriceMap, orderQtyOverride]);
+
   return (
   <div className="flex flex-col gap-2">
     <PageToolbar
@@ -153,6 +178,37 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
 
     {/* 2026-08-26 · 사용자 지시 · 적정재고 기준 일수 코멘트 */}
     <OptimalStockNoteBanner compact className="self-start" />
+
+    {/* 2026-09-15 · #107·#258 v4 · 헤더 통계 · 부족·품절·초과·발주액 요약 */}
+    <div className="flex items-center gap-2 flex-wrap px-1">
+      <span className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-zinc-100 border border-zinc-200 text-[13px] font-bold text-zinc-700 tabular-nums">
+        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+        총 {displayedReqs.length}건
+      </span>
+      {stats.critical > 0 && (
+        <span className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-rose-50 border border-rose-200 text-[13px] font-bold text-rose-700 tabular-nums">
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+          품절 {stats.critical}건
+        </span>
+      )}
+      {stats.shortage > 0 && (
+        <span className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-amber-50 border border-amber-200 text-[13px] font-bold text-amber-700 tabular-nums">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+          부족 {stats.shortage}건
+        </span>
+      )}
+      {stats.overStock > 0 && (
+        <span className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-emerald-50 border border-emerald-200 text-[13px] font-bold text-emerald-700 tabular-nums">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          초과 {stats.overStock}건
+        </span>
+      )}
+      {stats.totalAmount > 0 && (
+        <span className="ml-auto inline-flex items-center gap-1.5 px-3 h-7 rounded-full bg-brand-tint border border-brand-deep/20 text-[14px] font-bold text-brand-deep tabular-nums">
+          발주 예상액 · {stats.totalAmount.toLocaleString()}원
+        </span>
+      )}
+    </div>
 
     <div className="flex flex-col lg:flex-row gap-2 items-stretch lg:min-h-[720px]">
       {/* 좌측: 발주요청 리스트 */}
