@@ -59,8 +59,12 @@ function createMainWindow() {
   });
 
   mainWindow.on("ready-to-show", () => {
-    // 첫 실행 · 트레이 자동 시작이면 · 창 숨김 유지
-    // 사용자가 · 아이콘 클릭 시에만 · 표시
+    // 2026-09-15 · dev 모드 · 첫 실행 · 창 자동 open (확인 편의)
+    // 배포 모드 · 트레이 자동 시작 · 창 숨김 유지 · 아이콘 클릭 시 표시
+    if (is.dev) {
+      mainWindow?.show();
+      mainWindow?.focus();
+    }
   });
 
   mainWindow.on("close", (e) => {
@@ -82,22 +86,46 @@ function createMainWindow() {
 
   if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
     mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
+    // dev 모드 · DevTools 자동 열기 · 콘솔 오류 확인
+    mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
     mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
   }
+
+  // 로딩 실패 진단
+  mainWindow.webContents.on("did-fail-load", (_e, errorCode, errorDescription, validatedURL) => {
+    console.error("[main] Renderer 로딩 실패:", { errorCode, errorDescription, validatedURL });
+  });
 }
+
+// ── 인라인 트레이 아이콘 (16x16 · brand-deep 색 · fallback · 파일 X 대비) ──
+// 파란 원 · 흰 화살표 (다운로드 심볼)
+const TRAY_ICON_PNG_BASE64 =
+  "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA" +
+  "PklEQVQ4T2NkYGD4z0AEYBxVSDAgo+aTF04MQwGjChkYGP4T" +
+  "EwqjChkYGP4TEwqjChkYGP4TEwqjChkYGGjIAgBAyAsFOFVj" +
+  "cQAAAABJRU5ErkJggg==";
 
 // ── 시스템 트레이 (하이브리드 · D안) ────────────────
 function createTray() {
+  // 1. 리소스 파일 시도 (배포 시 · resources/tray-idle.png 있을 때)
   const iconPath = join(__dirname, "../../resources/tray-idle.png");
   let trayImage = nativeImage.createFromPath(iconPath);
+
+  // 2. 없으면 · 인라인 base64 PNG · 개발용 fallback
   if (trayImage.isEmpty()) {
-    // fallback · 16x16 투명 아이콘 · 개발용
-    trayImage = nativeImage.createEmpty();
+    console.log("[tray] resources/tray-idle.png 없음 · 인라인 fallback 사용");
+    trayImage = nativeImage.createFromDataURL(`data:image/png;base64,${TRAY_ICON_PNG_BASE64}`);
+  }
+
+  // 3. Windows · 16x16 리사이즈 (시스템 트레이 표준)
+  if (!trayImage.isEmpty()) {
+    trayImage = trayImage.resize({ width: 16, height: 16 });
   }
 
   tray = new Tray(trayImage);
   tray.setToolTip(AGENT_NAME);
+  console.log("[tray] 생성 완료 · isEmpty:", trayImage.isEmpty());
 
   const contextMenu = Menu.buildFromTemplate([
     { label: "열기", click: () => createMainWindow() },

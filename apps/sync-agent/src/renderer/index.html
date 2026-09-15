@@ -2,7 +2,9 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;" />
+    <!-- 2026-09-15 · CSP · dev 모드 · Vite HMR 위해 완화
+         · 배포 시 · main process 에서 · CSP 헤더 강제 (별도 설정) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: ws: wss: http: https:;" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>메가타운 자동임포트</title>
   </head>
