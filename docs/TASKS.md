@@ -1,5 +1,6 @@
 # TASKS
 
+> 2026-09-15 · **8 로컬 커밋** · 탭바 전역 정렬 fix (초광폭 밀림 해소) · #39 Phase A+B (요청 진행중 접힘 카드 + 지연 tier · Odoo/Zoho/NetSuite 업계 표준 리서치 반영) · #61 B안 (지정위치 정합성 · products.spec 참조 제거 · POST/PATCH inventory_checks 자동 연동) · T-SP-BULK (POST bulk shelf_positions 병합 · 22 tests) · DB 정합성 절대 유지 대원칙 등재 (feedback_db_integrity_absolute_2026-09-15.md)
 > 2026-09-10 · 대량 완료 · #35·#37·#38·#40·#41·#42·#45·#46·#49·#51·#57·#58·#59·#60·#62·#65·#66·#67·#69·#71·#72(부분)·#73(부분) · 결제탭 전면 개편 · 재고자산/잔고 확정 공식 · 신규 API 4종 · vendors UNIQUE 마이그레이션 · 로컬 커밋 10+
 > 2026-09-02 (오후 · 자율 세션) · 30+ 로컬 커밋 · 카드 결제 시스템 신규 (#69) · 거래처 로그인 재설계 (#65) · 승인 요청 UX 개편 · 결제입력 결제내역 탭 · 승인 상태 배지 · zone_defs.warehouse 컬럼 · 발주 flow 3중 fix (#76·#77·#79) · 실재고·상품입고 창고 자동 필터 (#74) · 폰트 +2 확산 · 사용자 지시 다수 반영
 > 2026-09-02 · 14 로컬 커밋 · 4 신규 프리미티브(FormRow·FormSection·SubmitBar·ChartCard) · 11 미사용 프리미티브 삭제(-1758라인) · 판매대시보드 차트 7종 · font-mono→tabular-nums 30파일 · OCR rate-limit · Attio gradient · 사업장이름 동적화
@@ -76,15 +77,31 @@
 | **#68** | 공급사별 결제내역 검색창 통일 | `033890ed` (SearchBar 프리미티브) |
 | **#72·#73** | 재고자산·판매액 SSOT 감사 | `5ae4339a`·`cae5d072`·`7b79d5b0`·`19382a81`·`1cbbb722` |
 
-### 🟡 PENDING · v14 잔여 (2026-09-14 정리)
+### ✅ 2026-09-15 완료 (오늘 세션)
+
+| 커밋 | # | 내용 |
+|-----|---|------|
+| `a576ea27` | — | 탭바 전역 정렬 fix · `.tab-bar-inner` `max-w-[1360px] mx-auto` 제거 · 초광폭 모니터 밀림 해소 |
+| `2277a8a2` | **#39 Phase A+B** | 발주 라이프사이클 · 요청 진행중 접힘 카드 (OrderInProgressCard) + 지연 tier 뱃지 · Odoo/Zoho/NetSuite/Cin7/SAP Ariba 100% 업계 표준 (라인 이동 + 상단 카드 하이브리드) |
+| `b86a4b20` | **T-SP-BULK** | POST /api/inventory-checks/bulk · shelf_positions 병합 지원 · 22 신규 tests · 공용 helper (mergeShelfPositions·checkShelfPositionConflicts) |
+| `a75958da` | **#61 B안** | 지정위치 정합성 + 상품↔실재고 자동 연동 · products.spec 참조 완전 제거 · POST /api/products · inventory_checks 자동 row 생성 · PATCH location 변경 · shelf_positions 재배정 · 기존 상세위치 보존 |
+
+### 🔴 대원칙 추가 (2026-09-15 확정)
+
+- **DB 정합성 절대 유지** · `feedback_db_integrity_absolute_2026-09-15.md` · 파괴적 SQL X · 스냅샷 파생 X · 마스터 참조 무결성 · UNIQUE 이중 방어 · SSOT · 매 DB 작업 체크리스트
+
+### ✅ 2026-09-15 완료 (기존 완료 확인 · TEST_LIST 매핑)
+
+| # | 태스크 | 완료 커밋 · 근거 |
+|---|-----|-----------|
+| **#63** | 공급사 이름 무결성 · 나머지 저장 경로 | `62e3830e` (결제·상품입고 · SUPPLIER_NOT_FOUND validation) |
+| **#70** | 공급사별 결제내역 Spinner | `a698b4fe` (통합 배치 완료) |
+
+### 🟡 PENDING · v14 잔여 (2026-09-15 정리)
 
 | # | 태스크 | 우선순위 | 비고 |
 |---|-----|--------|------|
-| **#39** | 발주필요 리스트 페이지 · 전수조사 | 🟡 P2 | **스펙 확인 필요** (구체 이슈 명시 X) |
 | **#56** | 매장 구역 추가/제거 · X 버튼 권한 | 🟢 P4 (LATER) | 맨 뒤 우선순위 |
-| **#61** | 상품등록 · 구역 저장 · 실재고 테이블 동기 잔여 | 🟡 P2 | 진열위치 셀 fix (`ab7fa4b1`) 완료 · 실재고 동기 잔여 |
-| **#63** | 공급사 이름 무결성 · 나머지 저장 경로 전수조사 | 🟡 P2 | order_requests POST (`747c8c34`) 완료 · 나머지 경로 |
-| **#70** | 공급사별 결제내역 Spinner · 추가 적용 위치 | 🟢 P3 | 통합 배치 (`a698b4fe`) 완료 · 잔여 확인 |
 
 ---
 
