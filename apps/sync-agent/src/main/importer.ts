@@ -40,6 +40,46 @@ function extractDateFromName(fileName: string, fallback: Date): string {
   return fallback.toISOString().slice(0, 10);
 }
 
+/** 폴더 스캔 · 가장 최근 파일 찾기 (파일명 날짜 우선 · fallback mtime)
+ *   · main 폴더 + _processed 폴더 · 모두 스캔 · 절대 최신 파악
+ *   · 반환 · { path, name, date, isProcessed } · 없으면 null */
+export interface LatestFileInfo {
+  path: string;
+  name: string;
+  date: string;         // YYYY-MM-DD (from filename or mtime)
+  mtime: number;
+  isProcessed: boolean; // true = _processed 안에 있음
+}
+export function findLatestFile(folder: string): LatestFileInfo | null {
+  if (!existsSync(folder)) return null;
+  const candidates: LatestFileInfo[] = [];
+  const scanDir = (dir: string, isProcessed: boolean) => {
+    try {
+      const list = readdirSync(dir);
+      for (const f of list) {
+        const p = join(dir, f);
+        try {
+          const st = statSync(p);
+          if (!st.isFile()) continue;
+          const lower = f.toLowerCase();
+          if (!lower.endsWith(".xlsx") && !lower.endsWith(".xls")) continue;
+          const date = extractDateFromName(f, st.mtime);
+          candidates.push({ path: p, name: f, date, mtime: st.mtimeMs, isProcessed });
+        } catch { /* skip */ }
+      }
+    } catch { /* skip */ }
+  };
+  scanDir(folder, false);
+  scanDir(join(folder, "_processed"), true);
+  if (candidates.length === 0) return null;
+  // 정렬 · 파일명 날짜 우선 (내림차순) · 동일하면 mtime 최신
+  candidates.sort((a, b) => {
+    if (a.date !== b.date) return b.date.localeCompare(a.date);
+    return b.mtime - a.mtime;
+  });
+  return candidates[0];
+}
+
 /** 날짜 (YYYY-MM-DD) → period_type · 초순(1-10)·중순(11-20)·하순(21+) */
 function computePeriodType(dateStr: string): "early" | "mid" | "late" {
   const day = parseInt(dateStr.slice(8, 10), 10) || 1;
@@ -83,28 +123,15 @@ async function runImportInternal(kind: FileKind): Promise<ImportResult> {
   ensureDir(processedDir);
   ensureDir(failedDir);
 
-  // xlsx 파일 목록 · _processed · _failed 폴더 제외
-  // 2026-09-15 · 사용자 지시 · 가장 최근 파일 1개만 · mtime 최신 순
-  let allFiles: string[] = [];
-  try {
-    allFiles = readdirSync(folder)
-      .filter((f) => f.toLowerCase().endsWith(".xlsx") || f.toLowerCase().endsWith(".xls"))
-      .map((f) => join(folder, f))
-      .filter((p) => statSync(p).isFile());
-  } catch (err: any) {
-    return recordAndReturn(kind, { ok: false, filesProcessed: 0, filesFailed: 0, errors: [err.message], message: "폴더 스캔 실패" });
+  // 2026-09-15 · 사용자 지시 · 파일제목 (날짜) 기준 · 최신 1개만 임포트
+  //   · main 폴더 + _processed 모두 스캔 (실제 최신 판단)
+  //   · _processed 안 최신 = 이미 임포트 됨 · 재임포트 (사용자가 지금 실행 클릭 = 재확인)
+  const latest = findLatestFile(folder);
+  if (!latest) {
+    return recordAndReturn(kind, { ok: true, filesProcessed: 0, filesFailed: 0, errors: [], message: `xlsx 파일 없음 · ${folder}`, skipped: true });
   }
-
-  console.log(`[importer/${kind}] xlsx 파일 · 전체 ${allFiles.length}건 발견`);
-  if (allFiles.length === 0) {
-    return recordAndReturn(kind, { ok: true, filesProcessed: 0, filesFailed: 0, errors: [], message: `새 파일 없음 · ${folder}`, skipped: true });
-  }
-
-  // 가장 최근 파일 1개만 선택 (mtime 최신)
-  const files = [allFiles
-    .map(f => ({ path: f, mtime: statSync(f).mtimeMs }))
-    .sort((a, b) => b.mtime - a.mtime)[0].path];
-  console.log(`[importer/${kind}] 가장 최근 파일 · ${basename(files[0])} · 처리 시작`);
+  console.log(`[importer/${kind}] 최신 파일 · ${latest.name} · date=${latest.date} · processed=${latest.isProcessed}`);
+  const files = [latest.path];
 
   let processed = 0;
   let failed = 0;
@@ -112,9 +139,16 @@ async function runImportInternal(kind: FileKind): Promise<ImportResult> {
 
   for (const filePath of files) {
     const fileName = basename(filePath);
+    // 2026-09-15 · _processed 안에 있는 파일 · 재임포트 시 · 이동 skip
+    const isAlreadyInProcessed = filePath.includes(`${processedDir.replace(/\\/g, "/")}/`)
+      || filePath.includes(`${processedDir}\\`);
     try {
       await uploadFile(kind, filePath);
-      renameSync(filePath, join(processedDir, `${Date.now()}_${fileName}`));
+      if (!isAlreadyInProcessed) {
+        renameSync(filePath, join(processedDir, `${Date.now()}_${fileName}`));
+      } else {
+        console.log(`[importer/${kind}] 재임포트 · _processed 유지 · ${fileName}`);
+      }
       processed++;
       console.log(`[importer/${kind}] 성공 · ${fileName}`);
     } catch (err: any) {

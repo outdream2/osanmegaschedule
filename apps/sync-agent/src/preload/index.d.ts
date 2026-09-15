@@ -41,6 +41,10 @@ interface SyncAgentApi {
   selectFolder(options?: { title?: string; defaultPath?: string }): Promise<string | null>;
   runNow(kind: FileKind): Promise<RunResult>;
   runAll(): Promise<RunResult[]>;
+  findLatest(kind: FileKind): Promise<
+    | { ok: true; name: string; date: string; isProcessed: boolean; mtime: number }
+    | { ok: false; error: string }
+  >;
   onNavigate(callback: (page: string) => void): () => void;
   onUpdateStatus(callback: (status: { type: string; version?: string }) => void): () => void;
 }

@@ -6,6 +6,7 @@ import { ipcMain, dialog, BrowserWindow } from "electron";
 import { loadConfig, patchConfig, isLoggedIn, type FileKind, type AppConfig } from "./config";
 import { login, logout } from "./auth";
 import { rescheduleAll, runNow, runNowAll } from "./scheduler";
+import { findLatestFile } from "./importer";
 
 export function registerIpcHandlers() {
   // ── Config ────────────────────────────────────
@@ -73,5 +74,21 @@ export function registerIpcHandlers() {
 
   ipcMain.handle("scheduler:runAll", async () => {
     return runNowAll();
+  });
+
+  // ── 최신 파일 정보 조회 (지금 실행 전 · 확인 dialog 용) ──
+  ipcMain.handle("importer:findLatest", async (_e, kind: FileKind) => {
+    const cfg = loadConfig();
+    const folder = cfg.folders[kind];
+    if (!folder) return { ok: false, error: "폴더 미설정" };
+    const latest = findLatestFile(folder);
+    if (!latest) return { ok: false, error: "폴더에 xlsx 파일 없음" };
+    return {
+      ok: true,
+      name: latest.name,
+      date: latest.date,
+      isProcessed: latest.isProcessed,
+      mtime: latest.mtime,
+    };
   });
 }

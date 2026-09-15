@@ -35,6 +35,17 @@ export const Dashboard: React.FC = () => {
   useEffect(() => { load(); }, [load]);
 
   const runOne = async (kind: FileKind) => {
+    // 최신 파일 정보 · 사용자 확인 dialog
+    const latest = await window.api.findLatest(kind);
+    if (!latest.ok) {
+      alert(`${kind} · ${latest.error}\n설정에서 · 폴더 지정 · xlsx 파일 추가 후 다시 시도해주세요.`);
+      return;
+    }
+    const meta = FILE_META[kind];
+    const statusHint = latest.isProcessed ? "\n\n⚠ 이미 임포트됨 (_processed/)  · 다시 임포트?" : "";
+    const msg = `${meta.label} · 최신 파일:\n\n📄 ${latest.name}\n📅 파일 날짜: ${latest.date}${statusHint}\n\n지금 임포트하시겠습니까?`;
+    if (!confirm(msg)) return;
+
     setRunning(kind);
     try {
       await window.api.runNow(kind);

@@ -54,6 +54,11 @@ const api = {
   runAll: () => ipcRenderer.invoke("scheduler:runAll") as Promise<Array<{
     ok: boolean; kind: FileKind; filesProcessed: number; filesFailed: number; message: string;
   }>>,
+  findLatest: (kind: FileKind) =>
+    ipcRenderer.invoke("importer:findLatest", kind) as Promise<
+      | { ok: true; name: string; date: string; isProcessed: boolean; mtime: number }
+      | { ok: false; error: string }
+    >,
 
   // ── 이벤트 리스너 · main → renderer ────────────
   onNavigate: (callback: (page: string) => void): (() => void) => {
