@@ -673,11 +673,16 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
   };
 
   // 2026-09-09 · 사용자 지시 · 왼쪽 상품 리스트 · 세로 스크롤 · UI 프레임워크 적용
-  //   · SplitListPanel body(flex-1 min-h-0 overflow-y-auto) 안에 렌더 · 자체 height 제약 강제
-  //   · calc · 헤더·검색·필터·페이지 컨테이너 padding 감안 · 240px 오프셋 (실측)
-  //   · height 고정 (min-h + max-h) · 로딩·empty·filtered 전환 시 · 크기 변화 없음 · 페이지 스크롤 방지
-  // 2026-09-14 · 리스트 행 · 우측 상세와 톤 통일 · Linear/Notion 톤 · 시인성 우선
-  //   · 상품명 (primary · 15px bold) · 코드·공급사 (secondary · 12px mono/normal) · 적정재고 (right chip)
+  // 2026-09-15 · T-PROD-LABEL · 사용자 지시 · 한글 라벨 · 아이콘·배지 X · 깔끔 텍스트
+  //   · 상품명 (bold · 큰 폰트) · 데이터 설명 라벨 (한글) · 우측 값 정렬
+  //   · 코드 · 공급사 · 카테고리 · 적정재고 · 현재고 (있으면)
+  //   · 밑줄 · 라벨 회색 (label) · 값 진회색 (value) · 활성 시 · brand-tint 배경
+  const rowLabel = (label: string, value: React.ReactNode, valueClass = "text-ink") => (
+    <div className="flex items-baseline gap-2 text-[13px] leading-tight">
+      <span className="text-zinc-400 shrink-0 tracking-tight" style={{ minWidth: 44 }}>{label}</span>
+      <span className={`font-semibold tabular-nums truncate ${valueClass}`}>{value}</span>
+    </div>
+  );
   const listBody = (
     <ul className="divide-y divide-zinc-100 h-[calc(100vh-240px)] overflow-y-auto overscroll-contain">
       {filtered.map(r => {
@@ -687,27 +692,28 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
             <button
               type="button"
               onClick={() => handleSelect(r.product_code)}
-              className={`w-full text-left px-3.5 py-2.5 flex items-center gap-2 cursor-pointer transition-colors ${
+              className={`w-full text-left px-4 py-3 flex flex-col gap-1.5 cursor-pointer transition-colors ${
                 active ? "bg-brand-tint/60" : "hover:bg-zinc-50"
               }`}
             >
-              <div className="min-w-0 flex-1 flex flex-col gap-0.5">
-                <div className={`text-[15px] font-bold truncate tracking-tight ${active ? "text-brand-deep" : "text-ink"}`}>
-                  {r.product_name || <span className="text-zinc-400 font-normal">(이름없음)</span>}
-                </div>
-                <div className="text-[12px] text-ink-soft truncate flex items-center gap-1.5">
-                  <span className="font-mono tabular-nums text-zinc-500">{r.product_code}</span>
-                  {r.supplier && (
-                    <>
-                      <span className="text-zinc-300">·</span>
-                      <span className="font-medium truncate">{r.supplier}</span>
-                    </>
-                  )}
-                </div>
+              {/* 상품명 · 헤드 (bold · 큰 폰트) */}
+              <div className={`text-[16px] font-bold truncate tracking-tight leading-tight ${active ? "text-brand-deep" : "text-ink"}`}>
+                {r.product_name || <span className="text-zinc-400 font-normal">(이름없음)</span>}
               </div>
-              {typeof r.optimal_stock === "number" && (
-                <StatusPill tone="zinc" size="xs">적정 {r.optimal_stock}</StatusPill>
-              )}
+
+              {/* 데이터 설명 · 한글 라벨 + 값 · 세로 정렬 */}
+              <div className="flex flex-col gap-0.5 mt-0.5">
+                {rowLabel("코드", <span className="font-mono text-ink-soft">{r.product_code}</span>)}
+                {r.supplier && rowLabel("공급사", <span className="text-ink">{r.supplier}</span>)}
+                {r.category && rowLabel("카테고리", <span className="text-ink-soft">{r.category}</span>)}
+                {typeof r.optimal_stock === "number" && rowLabel("적정재고", <span className="text-brand-deep">{r.optimal_stock}<span className="font-normal text-zinc-400 ml-0.5">개</span></span>)}
+                {typeof r.current_stock === "number" && rowLabel(
+                  "현재고",
+                  <span className={r.current_stock <= 0 ? "text-rose-600" : "text-ink"}>
+                    {r.current_stock}<span className="font-normal text-zinc-400 ml-0.5">개</span>
+                  </span>
+                )}
+              </div>
             </button>
           </li>
         );

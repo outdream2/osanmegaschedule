@@ -30,6 +30,7 @@
     "uploads",
     "logs",
     ".claude",
+    "apps",
     "**/*.test.ts",
     "**/*.test.tsx"
   ]
