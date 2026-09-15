@@ -475,8 +475,13 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
 .tab-bar-l3 {
   @apply bg-white border-b border-slate-100 w-full shrink-0;
 }
+/* 2026-09-15 · 사용자 지시 · 넓은 화면에서 탭메뉴가 페이지 콘텐츠보다 오른쪽으로 밀리는 이슈 fix
+ *   · PAGE_CONTAINER_CLS 는 max-w 캡 없이 전체폭 사용 (5feb1057 · 2026-09-02)
+ *   · 하지만 .tab-bar-inner 는 max-w-[1360px] mx-auto 유지 · 페이지 콘텐츠와 부조화
+ *   · 탭바 하얀 띠(외부)는 그대로 · 안쪽 버튼 묶음(inner)만 캡 제거 · 페이지와 정렬 통일
+ *   · maxWidth prop (TabBar) 명시 전달 시 · style 로 재정의 가능 (하위호환) */
 .tab-bar-inner {
-  @apply max-w-[1360px] mx-auto px-2 sm:px-5 w-full;
+  @apply w-full px-2 sm:px-5;
 }
 .tab-bar-row {
   @apply flex flex-wrap items-stretch gap-0;

@@ -89,7 +89,9 @@ export interface TabBarProps<K extends string = string> {
   };
   /** 배지 색상 (기본 rose · pending 등에서 rose · info 는 sky 등) */
   badgeColor?: "rose" | "sky" | "amber" | "emerald";
-  /** 커스텀 컨테이너 max-width · 기본 1360 */
+  /** 커스텀 컨테이너 max-width · 미지정 시 전체폭 (페이지 콘텐츠와 정렬) · 2026-09-15
+   *   · 이전 · 1360 기본 · 초광폭 모니터에서 탭이 오른쪽으로 밀리는 이슈
+   *   · 이후 · 미지정 = 전체폭 · 필요 시 숫자·문자열 명시 전달 (하위호환) */
   maxWidth?: number | string;
   /** 배경 (기본 white · nested 서브탭은 zinc-50 등) */
   variant?: "default" | "nested";
@@ -108,7 +110,7 @@ export function TabBar<K extends string = string>({
   onSelect,
   sortable,
   badgeColor = "rose",
-  maxWidth = 1360,
+  maxWidth,
   variant = "default",
   className = "",
 }: TabBarProps<K>) {
@@ -140,7 +142,7 @@ export function TabBar<K extends string = string>({
       <div className={`bg-gradient-to-b from-white to-zinc-50/30 border-b border-line w-full shrink-0 ${className}`}>
         <div
           className="tab-bar-inner py-2.5"
-          style={typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth }}
+          style={maxWidth == null ? undefined : (typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth })}
         >
           <div role="tablist" className={`inline-flex items-center bg-zinc-100/80 backdrop-blur-sm border border-line rounded-2xl p-1 gap-0.5 flex-wrap shadow-[inset_0_1px_2px_rgba(10,46,74,0.04)] ${sortable?.isDragging ? "select-none" : ""}`}>
             {visibleTabs.map(t => {
@@ -221,7 +223,7 @@ export function TabBar<K extends string = string>({
       <div className={`bg-white border-b border-line w-full shrink-0 ${className}`}>
         <div
           className="tab-bar-inner py-2.5"
-          style={typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth }}
+          style={maxWidth == null ? undefined : (typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth })}
         >
           <div role="tablist" className={`inline-flex items-center gap-1.5 flex-wrap ${sortable?.isDragging ? "select-none" : ""}`}>
             {visibleTabs.map(t => {
@@ -305,7 +307,7 @@ export function TabBar<K extends string = string>({
     <div className={outerCls}>
       <div
         className="tab-bar-inner"
-        style={typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth }}
+        style={maxWidth == null ? undefined : (typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth })}
       >
         <div role="tablist" className={`tab-bar-row ${sortable?.isDragging ? "select-none" : ""}`}>
           {visibleTabs.map(t => {
