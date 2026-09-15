@@ -8,7 +8,9 @@ import { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, shell } from "ele
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import { join } from "path";
 import AutoLaunch from "auto-launch";
-import { autoUpdater } from "electron-updater";
+// electron-updater · CommonJS · default import 후 destructure (ESM 호환)
+import electronUpdaterPkg from "electron-updater";
+const { autoUpdater } = electronUpdaterPkg;
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
