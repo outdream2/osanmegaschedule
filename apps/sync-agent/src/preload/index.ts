@@ -60,6 +60,22 @@ const api = {
       | { ok: false; error: string }
     >,
 
+  // ── 로컬 큐 ────────────────────────────────
+  listQueue: () => ipcRenderer.invoke("queue:list") as Promise<Array<{
+    id: string; kind: FileKind; filePath: string; originalName: string;
+    addedAt: string; attempts: number; nextRetryAt: string; lastError?: string;
+  }>>,
+  removeQueueItem: (id: string) => ipcRenderer.invoke("queue:remove", id) as Promise<{ ok: boolean }>,
+  clearQueue: () => ipcRenderer.invoke("queue:clear") as Promise<{ ok: boolean }>,
+
+  // ── 폴더 상태·열기 ────────────────────────
+  folderStats: (kind: FileKind) => ipcRenderer.invoke("folder:stats", kind) as Promise<
+    | { ok: true; folder: string; pending: number; processed: number; failed: number; failedLogs: number }
+    | { ok: false; error: string }
+  >,
+  openFolder: (kind: FileKind, subdir?: "processed" | "failed") =>
+    ipcRenderer.invoke("folder:open", kind, subdir) as Promise<{ ok: boolean; error?: string }>,
+
   // ── 이벤트 리스너 · main → renderer ────────────
   onNavigate: (callback: (page: string) => void): (() => void) => {
     const listener = (_: unknown, page: string) => callback(page);

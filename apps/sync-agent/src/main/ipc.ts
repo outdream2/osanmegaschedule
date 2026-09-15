@@ -2,11 +2,14 @@
 // 2026-09-15 · Phase 2 · IPC handlers · renderer ↔ main
 //   · config CRUD · 로그인 · 폴더 선택 · 스케줄 · 즉시 실행
 
-import { ipcMain, dialog, BrowserWindow } from "electron";
+import { ipcMain, dialog, BrowserWindow, shell } from "electron";
+import { readdirSync, statSync, existsSync } from "fs";
+import { join } from "path";
 import { loadConfig, patchConfig, isLoggedIn, type FileKind, type AppConfig } from "./config";
 import { login, logout } from "./auth";
 import { rescheduleAll, runNow, runNowAll } from "./scheduler";
 import { findLatestFile } from "./importer";
+import { listQueue, clearQueue, removeItem } from "./queue";
 
 export function registerIpcHandlers() {
   // ── Config ────────────────────────────────────
@@ -90,5 +93,57 @@ export function registerIpcHandlers() {
       isProcessed: latest.isProcessed,
       mtime: latest.mtime,
     };
+  });
+
+  // ── 로컬 큐 · 재시도 대기 · Renderer UI 용 ──
+  ipcMain.handle("queue:list", () => listQueue());
+  ipcMain.handle("queue:remove", (_e, id: string) => { removeItem(id); return { ok: true }; });
+  ipcMain.handle("queue:clear", () => { clearQueue(); return { ok: true }; });
+
+  // ── 폴더 상태 · _processed · _failed 갯수 조회 (Logs 탭) ──
+  ipcMain.handle("folder:stats", (_e, kind: FileKind) => {
+    const cfg = loadConfig();
+    const folder = cfg.folders[kind];
+    if (!folder || !existsSync(folder)) return { ok: false, error: "폴더 없음" };
+    const countXlsx = (dir: string): number => {
+      if (!existsSync(dir)) return 0;
+      try {
+        return readdirSync(dir).filter(f => {
+          const p = join(dir, f);
+          try {
+            if (!statSync(p).isFile()) return false;
+          } catch { return false; }
+          const lo = f.toLowerCase();
+          return lo.endsWith(".xlsx") || lo.endsWith(".xls");
+        }).length;
+      } catch { return 0; }
+    };
+    const countLogs = (dir: string): number => {
+      if (!existsSync(dir)) return 0;
+      try {
+        return readdirSync(dir).filter(f => f.toLowerCase().endsWith(".log")).length;
+      } catch { return 0; }
+    };
+    return {
+      ok: true,
+      folder,
+      pending: countXlsx(folder),
+      processed: countXlsx(join(folder, "_processed")),
+      failed: countXlsx(join(folder, "_failed")),
+      failedLogs: countLogs(join(folder, "_failed")),
+    };
+  });
+
+  // ── 폴더 열기 (탐색기) ──
+  ipcMain.handle("folder:open", (_e, kind: FileKind, subdir?: "processed" | "failed") => {
+    const cfg = loadConfig();
+    const folder = cfg.folders[kind];
+    if (!folder) return { ok: false, error: "폴더 미설정" };
+    const target = subdir === "processed" ? join(folder, "_processed")
+                : subdir === "failed"    ? join(folder, "_failed")
+                : folder;
+    if (!existsSync(target)) return { ok: false, error: "폴더 없음 · " + target };
+    shell.openPath(target);
+    return { ok: true };
   });
 }

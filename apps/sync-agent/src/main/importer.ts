@@ -51,32 +51,53 @@ export interface LatestFileInfo {
   isProcessed: boolean; // true = _processed 안에 있음
 }
 export function findLatestFile(folder: string): LatestFileInfo | null {
-  if (!existsSync(folder)) return null;
+  console.log(`[findLatestFile] 스캔 시작 · ${folder}`);
+  if (!existsSync(folder)) {
+    console.warn(`[findLatestFile] 폴더 없음 · ${folder}`);
+    return null;
+  }
   const candidates: LatestFileInfo[] = [];
   const scanDir = (dir: string, isProcessed: boolean) => {
+    if (!existsSync(dir)) {
+      console.log(`[findLatestFile] ${dir} · 없음 · skip`);
+      return;
+    }
+    let list: string[] = [];
     try {
-      const list = readdirSync(dir);
-      for (const f of list) {
-        const p = join(dir, f);
-        try {
-          const st = statSync(p);
-          if (!st.isFile()) continue;
-          const lower = f.toLowerCase();
-          if (!lower.endsWith(".xlsx") && !lower.endsWith(".xls")) continue;
-          const date = extractDateFromName(f, st.mtime);
-          candidates.push({ path: p, name: f, date, mtime: st.mtimeMs, isProcessed });
-        } catch { /* skip */ }
+      list = readdirSync(dir);
+      console.log(`[findLatestFile] ${dir} · readdir · ${list.length}개 항목`);
+    } catch (err: any) {
+      console.warn(`[findLatestFile] readdir 실패 · ${dir} · ${err.message}`);
+      return;
+    }
+    for (const f of list) {
+      const p = join(dir, f);
+      try {
+        const st = statSync(p);
+        const isFile = st.isFile();
+        const lower = f.toLowerCase();
+        const isXlsx = lower.endsWith(".xlsx") || lower.endsWith(".xls");
+        // 디버그 · 모든 항목 로그
+        if (isXlsx || !isFile) {
+          console.log(`[findLatestFile] · ${f} · isFile=${isFile} · isXlsx=${isXlsx} · size=${st.size}`);
+        }
+        if (!isFile || !isXlsx) continue;
+        const date = extractDateFromName(f, st.mtime);
+        candidates.push({ path: p, name: f, date, mtime: st.mtimeMs, isProcessed });
+      } catch (err: any) {
+        console.warn(`[findLatestFile] stat 실패 · ${p} · ${err.message}`);
       }
-    } catch { /* skip */ }
+    }
   };
   scanDir(folder, false);
   scanDir(join(folder, "_processed"), true);
+  console.log(`[findLatestFile] 후보 · ${candidates.length}개`);
   if (candidates.length === 0) return null;
-  // 정렬 · 파일명 날짜 우선 (내림차순) · 동일하면 mtime 최신
   candidates.sort((a, b) => {
     if (a.date !== b.date) return b.date.localeCompare(a.date);
     return b.mtime - a.mtime;
   });
+  console.log(`[findLatestFile] 최신 · ${candidates[0].name} · date=${candidates[0].date}`);
   return candidates[0];
 }
 

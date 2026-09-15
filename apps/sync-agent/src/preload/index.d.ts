@@ -45,6 +45,17 @@ interface SyncAgentApi {
     | { ok: true; name: string; date: string; isProcessed: boolean; mtime: number }
     | { ok: false; error: string }
   >;
+  listQueue(): Promise<Array<{
+    id: string; kind: FileKind; filePath: string; originalName: string;
+    addedAt: string; attempts: number; nextRetryAt: string; lastError?: string;
+  }>>;
+  removeQueueItem(id: string): Promise<{ ok: boolean }>;
+  clearQueue(): Promise<{ ok: boolean }>;
+  folderStats(kind: FileKind): Promise<
+    | { ok: true; folder: string; pending: number; processed: number; failed: number; failedLogs: number }
+    | { ok: false; error: string }
+  >;
+  openFolder(kind: FileKind, subdir?: "processed" | "failed"): Promise<{ ok: boolean; error?: string }>;
   onNavigate(callback: (page: string) => void): () => void;
   onUpdateStatus(callback: (status: { type: string; version?: string }) => void): () => void;
 }
