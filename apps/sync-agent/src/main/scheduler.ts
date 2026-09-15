@@ -6,6 +6,7 @@
 import cron, { ScheduledTask } from "node-cron";
 import { loadConfig, type FileKind } from "./config";
 import { runImport } from "./importer";
+import { notifyImportResult, setTrayState } from "./notifications";
 
 const activeJobs: Partial<Record<FileKind, ScheduledTask>> = {};
 
@@ -31,11 +32,14 @@ export function rescheduleAll(): void {
 
     const task = cron.schedule(cronExpr, async () => {
       console.log(`[scheduler/${kind}] 실행 · ${new Date().toISOString()}`);
+      setTrayState("syncing", `${kind} 동기화 중...`);
       try {
         const result = await runImport(kind);
         console.log(`[scheduler/${kind}] 완료 · ${result.message}`);
+        notifyImportResult(kind, result);
       } catch (err) {
         console.error(`[scheduler/${kind}] 예외:`, err);
+        notifyImportResult(kind, { ok: false, message: String(err), filesProcessed: 0, filesFailed: 1 });
       }
     });
 
@@ -47,7 +51,10 @@ export function rescheduleAll(): void {
 /** 즉시 실행 · 사용자 수동 트리거 · 스케줄 무관 */
 export async function runNow(kind: FileKind) {
   console.log(`[scheduler/${kind}] 수동 실행 요청`);
-  return runImport(kind);
+  setTrayState("syncing", `${kind} 동기화 중...`);
+  const result = await runImport(kind);
+  notifyImportResult(kind, result);
+  return result;
 }
 
 /** 모든 파일 · 즉시 실행 · 트레이 '지금 실행' 메뉴 */

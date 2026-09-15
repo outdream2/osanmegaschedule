@@ -14,6 +14,9 @@ const { autoUpdater } = electronUpdaterPkg;
 // 2026-09-15 · Phase 2 · Config · Auth · Scheduler · IPC
 import { registerIpcHandlers } from "./ipc";
 import { rescheduleAll, runNowAll, stopAllJobs } from "./scheduler";
+// Phase 3 · 알림 · 트레이 상태
+import { registerTray, setTrayState } from "./notifications";
+import { generateTrayIcon } from "./trayIcon";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -101,118 +104,16 @@ function createMainWindow() {
   });
 }
 
-// ── 인라인 트레이 아이콘 · 다운로드 화살표 (32x32 · 고DPI 대응) ──
-// brand-deep 배경 + 흰색 아래 화살표 (import 심볼)
-// 2026-09-15 · Windows 11 · 32x32 자연 크기 · 트레이 표시 개선
-function createTrayIconBuffer(): Buffer {
-  const width = 32;
-  const height = 32;
-  const rowSize = 1 + width * 4;
-  const raw = Buffer.alloc(rowSize * height);
-
-  // 화살표 패턴 · X = 흰색 · . = brand-deep · 32x32
-  //  01234567890123456789012345678901
-  const pattern = [
-    "................................", // 0
-    "................................", // 1
-    "................................", // 2
-    "................................", // 3
-    "................................", // 4
-    "............XXXXXXXX............", // 5
-    "............XXXXXXXX............", // 6
-    "............XXXXXXXX............", // 7
-    "............XXXXXXXX............", // 8
-    "............XXXXXXXX............", // 9
-    "............XXXXXXXX............", // 10
-    "............XXXXXXXX............", // 11
-    "............XXXXXXXX............", // 12
-    "............XXXXXXXX............", // 13
-    "............XXXXXXXX............", // 14
-    "............XXXXXXXX............", // 15
-    "....XXXXXXXXXXXXXXXXXXXXXXXX....", // 16
-    ".....XXXXXXXXXXXXXXXXXXXXXX.....", // 17
-    "......XXXXXXXXXXXXXXXXXXXX......", // 18
-    ".......XXXXXXXXXXXXXXXXXX.......", // 19
-    "........XXXXXXXXXXXXXXXX........", // 20
-    ".........XXXXXXXXXXXXXX.........", // 21
-    "..........XXXXXXXXXXXX..........", // 22
-    "...........XXXXXXXXXX...........", // 23
-    "............XXXXXXXX............", // 24
-    ".............XXXXXX.............", // 25
-    "..............XXXX..............", // 26
-    "...............XX...............", // 27
-    "................................", // 28
-    "................................", // 29
-    "................................", // 30
-    "................................", // 31
-  ];
-
-  for (let y = 0; y < height; y++) {
-    raw[y * rowSize] = 0; // filter: None
-    for (let x = 0; x < width; x++) {
-      const off = y * rowSize + 1 + x * 4;
-      const isWhite = pattern[y]?.[x] === "X";
-      if (isWhite) {
-        raw[off]     = 255;
-        raw[off + 1] = 255;
-        raw[off + 2] = 255;
-        raw[off + 3] = 255;
-      } else {
-        raw[off]     = 10;   // R (brand-deep)
-        raw[off + 1] = 46;   // G
-        raw[off + 2] = 74;   // B
-        raw[off + 3] = 255;  // A
-      }
-    }
-  }
-  // zlib deflate (Node 내장)
-  const zlib = require("zlib");
-  const compressed = zlib.deflateSync(raw);
-
-  // PNG chunks
-  const crc32 = (buf: Buffer): number => {
-    let c: number;
-    let crc = 0xffffffff;
-    for (let i = 0; i < buf.length; i++) {
-      c = (crc ^ buf[i]) & 0xff;
-      for (let j = 0; j < 8; j++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-      crc = (crc >>> 8) ^ c;
-    }
-    return (crc ^ 0xffffffff) >>> 0;
-  };
-  const chunk = (type: string, data: Buffer): Buffer => {
-    const typeBuf = Buffer.from(type);
-    const len = Buffer.alloc(4); len.writeUInt32BE(data.length, 0);
-    const crcInput = Buffer.concat([typeBuf, data]);
-    const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(crcInput), 0);
-    return Buffer.concat([len, typeBuf, data, crc]);
-  };
-
-  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-  const ihdrData = Buffer.alloc(13);
-  ihdrData.writeUInt32BE(width, 0);
-  ihdrData.writeUInt32BE(height, 4);
-  ihdrData[8]  = 8;  // bit depth
-  ihdrData[9]  = 6;  // color type RGBA
-  ihdrData[10] = 0;  // compression
-  ihdrData[11] = 0;  // filter
-  ihdrData[12] = 0;  // interlace
-  const ihdr = chunk("IHDR", ihdrData);
-  const idat = chunk("IDAT", compressed);
-  const iend = chunk("IEND", Buffer.alloc(0));
-  return Buffer.concat([signature, ihdr, idat, iend]);
-}
-
-// ── 시스템 트레이 (하이브리드 · D안) ────────────────
+// ── 시스템 트레이 (하이브리드 · D안) · trayIcon.ts + notifications.ts 로 상태 관리 ──
 function createTray() {
   // 1. 리소스 파일 시도 (배포 시 · resources/tray-idle.png 있을 때)
   const iconPath = join(__dirname, "../../resources/tray-idle.png");
   let trayImage = nativeImage.createFromPath(iconPath);
 
-  // 2. 없으면 · 코드로 생성한 PNG buffer (개발용)
+  // 2. 없으면 · trayIcon.ts · 코드 생성 PNG · brand-deep 기본
   if (trayImage.isEmpty()) {
-    console.log("[tray] resources/tray-idle.png 없음 · 인라인 buffer PNG 사용");
-    trayImage = nativeImage.createFromBuffer(createTrayIconBuffer());
+    console.log("[tray] resources/tray-idle.png 없음 · 코드 생성 아이콘 사용");
+    trayImage = nativeImage.createFromBuffer(generateTrayIcon({ r: 10, g: 46, b: 74 }));
   }
 
   // Windows · 트레이 표준 · 16x16 (자동 스케일)
@@ -221,6 +122,9 @@ function createTray() {
 
   tray = new Tray(trayImage);
   tray.setToolTip(AGENT_NAME);
+  // Phase 3 · 알림 · 트레이 참조 등록 · setTrayState 사용
+  registerTray(tray);
+  setTrayState("idle");
 
   const contextMenu = Menu.buildFromTemplate([
     { label: "열기", click: () => createMainWindow() },
