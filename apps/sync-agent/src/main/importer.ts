@@ -94,17 +94,11 @@ export function findLatestFile(folder: string): LatestFileInfo | null {
   scanDir(join(folder, "_failed"), { isProcessed: false, isFailed: true }); // 이전 실패 파일도 · 재시도 대상
   console.log(`[findLatestFile] 후보 · ${candidates.length}개`);
   if (candidates.length === 0) return null;
-  // 정렬 우선순위:
-  //   1. 상태 (main > _failed > _processed) · 실패 파일 · 재시도 우선 · 처리됨은 뒤
-  //   2. 파일명 날짜 · 최신
-  //   3. mtime · 최신
-  const stateRank = (c: LatestFileInfo) => c.isFailed ? 1 : c.isProcessed ? 2 : 0;
+  // 정렬 · 사용자 지시 · 첫째 파일명(날짜) · 둘째 생성날짜(mtime)
+  //   · 폴더 위치 (main·_processed·_failed) 무관 · 가장 최신만 선택
   candidates.sort((a, b) => {
-    const sa = stateRank(a);
-    const sb = stateRank(b);
-    if (sa !== sb) return sa - sb;
-    if (a.date !== b.date) return b.date.localeCompare(a.date);
-    return b.mtime - a.mtime;
+    if (a.date !== b.date) return b.date.localeCompare(a.date); // 파일명 날짜 · 내림차순
+    return b.mtime - a.mtime;                                    // 생성일 · 내림차순
   });
   console.log(`[findLatestFile] 최신 · ${candidates[0].name} · date=${candidates[0].date} · failed=${candidates[0].isFailed} · processed=${candidates[0].isProcessed}`);
   return candidates[0];

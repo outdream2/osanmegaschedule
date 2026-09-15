@@ -36,19 +36,72 @@ export function getApiClient(): AxiosInstance {
     return config;
   });
 
-  // Response · 401 · 자동 clearAuth
+  // Response · 401 · refresh 시도 · 실패 시 · clearAuth
+  //   · 웹앱 · /api/auth/refresh · mt_refresh 쿠키 검증 · 새 mt_auth 발급
   apiClient.interceptors.response.use(
     (res) => res,
     async (err) => {
-      if (err.response?.status === 401) {
-        console.warn("[auth] 401 응답 · 세션 만료 · clearAuth");
-        clearAuth();
+      const original = err.config;
+      // 이미 재시도한 요청 · 무한 루프 방지
+      if (err.response?.status === 401 && original && !original._retried) {
+        console.warn("[auth] 401 응답 · refresh 시도");
+        original._retried = true;
+        try {
+          await tryRefresh();
+          // 새 쿠키 · 재적용 · 원 요청 재시도
+          const c = loadConfig();
+          if (c.auth.encryptedToken) {
+            const cookie = decryptToken(c.auth.encryptedToken);
+            if (cookie) original.headers.Cookie = cookie;
+          }
+          return apiClient!.request(original);
+        } catch (refreshErr) {
+          console.warn("[auth] refresh 실패 · clearAuth");
+          clearAuth();
+        }
       }
       return Promise.reject(err);
     }
   );
 
   return apiClient;
+}
+
+/** Refresh token · 서버 /api/auth/refresh · 새 access token 발급 */
+async function tryRefresh(): Promise<void> {
+  const cfg = loadConfig();
+  if (!cfg.auth.encryptedToken) throw new Error("저장된 쿠키 없음");
+  const cookie = decryptToken(cfg.auth.encryptedToken);
+  if (!cookie) throw new Error("쿠키 복호화 실패");
+  console.log("[auth] refresh · /api/auth/refresh · POST");
+  const response = await axios.post(
+    `${cfg.server.baseUrl}/api/auth/refresh`,
+    {},
+    { headers: { Cookie: cookie }, timeout: 30_000 }
+  );
+  const setCookie = response.headers["set-cookie"];
+  if (!setCookie || setCookie.length === 0) {
+    throw new Error("refresh 응답 · 쿠키 없음");
+  }
+  // 기존 쿠키 · 새로 발급된 mt_auth 로 교체 · mt_refresh 는 유지
+  const existingCookies = new Map<string, string>();
+  cookie.split(";").forEach(c => {
+    const [name, ...rest] = c.trim().split("=");
+    if (name) existingCookies.set(name, rest.join("="));
+  });
+  for (const c of setCookie) {
+    const [nameValue] = c.split(";");
+    const [name, ...rest] = nameValue.trim().split("=");
+    if (name && rest.length > 0) existingCookies.set(name, rest.join("="));
+  }
+  const newCookieString = Array.from(existingCookies.entries())
+    .map(([n, v]) => `${n}=${v}`)
+    .join("; ");
+  const encrypted = encryptToken(newCookieString);
+  if (encrypted) {
+    patchConfig({ auth: { encryptedToken: encrypted } });
+    console.log("[auth] refresh 성공 · 새 access 저장");
+  }
 }
 
 /** 로그인 · 서버 /api/auth/login · 핸드폰번호 + 비밀번호 · JWT httpOnly 쿠키 저장
