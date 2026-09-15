@@ -50,27 +50,32 @@ function computePeriodType(dateStr: string): "early" | "mid" | "late" {
 
 /** 한 파일 종류 · 폴더 스캔 · xlsx 발견 시 · 서버 업로드 */
 export async function runImport(kind: FileKind): Promise<ImportResult> {
+  console.log(`[importer/${kind}] runImport 진입`);
   // 2026-09-15 · Phase 3 · 중복 실행 방지 mutex
   if (runningLocks.has(kind)) {
     console.warn(`[importer/${kind}] 이미 실행 중 · skip`);
-    return { kind, ok: true, filesProcessed: 0, filesFailed: 0, errors: [], message: "이미 실행 중" };
+    return { kind, ok: false, filesProcessed: 0, filesFailed: 0, errors: [], message: "이미 실행 중 · 잠시 후 재시도" };
   }
   runningLocks.add(kind);
   try {
     return await runImportInternal(kind);
   } finally {
     runningLocks.delete(kind);
+    console.log(`[importer/${kind}] lock 해제`);
   }
 }
 
 async function runImportInternal(kind: FileKind): Promise<ImportResult> {
   const cfg = loadConfig();
   const folder = cfg.folders[kind];
+  console.log(`[importer/${kind}] 폴더: ${folder ?? "(미설정)"}`);
   if (!folder) {
-    return recordAndReturn(kind, { ok: false, filesProcessed: 0, filesFailed: 0, errors: ["폴더 미설정"], message: "폴더 미설정" });
+    console.warn(`[importer/${kind}] 폴더 미설정 · 설정 탭에서 지정 필요`);
+    return recordAndReturn(kind, { ok: false, filesProcessed: 0, filesFailed: 0, errors: ["폴더 미설정"], message: "폴더 미설정 · 설정 탭에서 지정 필요" });
   }
   if (!existsSync(folder)) {
-    return recordAndReturn(kind, { ok: false, filesProcessed: 0, filesFailed: 0, errors: [`폴더 없음 · ${folder}`], message: "폴더 없음" });
+    console.warn(`[importer/${kind}] 폴더 없음: ${folder}`);
+    return recordAndReturn(kind, { ok: false, filesProcessed: 0, filesFailed: 0, errors: [`폴더 없음 · ${folder}`], message: `폴더 없음 · ${folder}` });
   }
 
   const processedDir = join(folder, "_processed");
@@ -89,8 +94,9 @@ async function runImportInternal(kind: FileKind): Promise<ImportResult> {
     return recordAndReturn(kind, { ok: false, filesProcessed: 0, filesFailed: 0, errors: [err.message], message: "폴더 스캔 실패" });
   }
 
+  console.log(`[importer/${kind}] xlsx 파일 · ${files.length}건 발견`);
   if (files.length === 0) {
-    return recordAndReturn(kind, { ok: true, filesProcessed: 0, filesFailed: 0, errors: [], message: "새 파일 없음", skipped: true });
+    return recordAndReturn(kind, { ok: true, filesProcessed: 0, filesFailed: 0, errors: [], message: `새 파일 없음 · ${folder}`, skipped: true });
   }
 
   let processed = 0;

@@ -66,13 +66,33 @@ export function rescheduleAll(): void {
   console.log("[scheduler/retry] 큐 재시도 · 매 5분 등록");
 }
 
-/** 즉시 실행 · 사용자 수동 트리거 · 스케줄 무관 */
+/** 즉시 실행 · 사용자 수동 트리거 · 스케줄 무관
+ *   · 항상 결과 알림 (성공·실패·빈 폴더 · 모두 사용자에게 피드백) */
 export async function runNow(kind: FileKind) {
   console.log(`[scheduler/${kind}] 수동 실행 요청`);
   setTrayState("syncing", `${kind} 동기화 중...`);
   const result = await runImport(kind);
-  notifyImportResult(kind, result);
+  console.log(`[scheduler/${kind}] 수동 실행 결과 · ok=${result.ok} · processed=${result.filesProcessed} · failed=${result.filesFailed} · msg=${result.message}`);
+  // 수동 실행 · 항상 알림 · 빈 폴더도 · 사용자에게 확인
+  const { notify } = await import("./notifications");
+  if (result.filesProcessed > 0) {
+    notify(`✓ ${kindLabel(kind)} 임포트 완료`, `${result.filesProcessed}건 · ${result.message}`, "success");
+    setTrayState("success", `${kind} · 완료`);
+    setTimeout(() => setTrayState("idle"), 3000);
+  } else if (result.filesFailed > 0) {
+    notify(`✕ ${kindLabel(kind)} 임포트 실패`, result.message, "error");
+    setTrayState("error", `${kind} · 실패`);
+    setTimeout(() => setTrayState("idle"), 30_000);
+  } else {
+    // 파일 없음 or 폴더 미설정 · 정보성 알림 · 사용자 인지
+    notify(`ℹ ${kindLabel(kind)}`, result.message, "info");
+    setTrayState("idle");
+  }
   return result;
+}
+
+function kindLabel(kind: FileKind): string {
+  return kind === "products" ? "상품정보" : kind === "stock" ? "재고정보" : kind === "purchase" ? "매입정보" : kind;
 }
 
 /** 모든 파일 · 즉시 실행 · 트레이 '지금 실행' 메뉴 */
