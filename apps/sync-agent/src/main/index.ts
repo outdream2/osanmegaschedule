@@ -52,8 +52,10 @@ function createMainWindow() {
     height: 720,
     minWidth: 720,
     minHeight: 540,
-    show: false, // 초기 · 숨김 · 트레이 클릭 시 · 표시
+    show: false, // 초기 · 숨김 · ready-to-show 에서 · 표시
+    center: true, // 화면 중앙 배치
     autoHideMenuBar: true,
+    backgroundColor: "#F4F7FA", // 로드 전 · 흰 flash 방지
     icon: join(__dirname, "../../resources/icon.png"),
     webPreferences: {
       preload: join(__dirname, "../preload/index.js"),
@@ -68,8 +70,13 @@ function createMainWindow() {
     // 2026-09-15 · createMainWindow · 명시 호출 시 · 항상 창 표시 (dev · 배포 공통)
     //   · 이전 버그 · dev 만 show · 배포 · 트레이 클릭 후에도 창 안 뜸
     //   · 부팅 자동 시작 · createTray 만 호출 · createMainWindow X · 트레이만 상주 (openAsHidden)
+    console.log("[main] ready-to-show · showing window");
     mainWindow?.show();
     mainWindow?.focus();
+    mainWindow?.moveTop();
+    // 2026-09-15 · 창 보이도록 · alwaysOnTop 짧게 · 사용자 인지
+    mainWindow?.setAlwaysOnTop(true);
+    setTimeout(() => mainWindow?.setAlwaysOnTop(false), 500);
   });
 
   mainWindow.on("close", (e) => {
