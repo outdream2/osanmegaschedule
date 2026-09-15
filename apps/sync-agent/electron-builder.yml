@@ -1,0 +1,35 @@
+appId: com.megatown.sync-agent
+productName: 메가타운 자동임포트
+directories:
+  buildResources: build
+  output: release
+files:
+  - "!**/.vscode/*"
+  - "!src/*"
+  - "!electron.vite.config.{js,ts,mjs,cjs}"
+  - "!electron-builder.yml"
+  - "!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}"
+  - "!{.env,.env.*,.npmrc,pnpm-lock.yaml}"
+  - "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}"
+asarUnpack:
+  - resources/**
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+  # 코드 서명 미적용 (사용자 결정 · 2026-09-15)
+  # SmartScreen · 첫 설치 시 · "실행" 클릭 필요
+nsis:
+  artifactName: ${name}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+  perMachine: false        # 사용자별 설치 (관리자 권한 불필요)
+  runAfterFinish: true     # 설치 후 · 자동 실행
+publish:
+  provider: github
+  owner: outdream2
+  repo: megatown-staff-scheduler
+  releaseType: release

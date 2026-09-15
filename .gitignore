@@ -28,6 +28,12 @@ logs/
 
 # 실데이터 xlsx가 소스 트리에 유입되는 것 방지 (엑셀 파일은 uploads/ 로만)
 src/*.xlsx
+
+# ── Electron sync-agent 빌드 산출물 ──
+apps/sync-agent/node_modules/
+apps/sync-agent/out/
+apps/sync-agent/release/
+apps/sync-agent/dist/
 src/sample/*.xlsx
 
 # 2026-08-25 · .omx (로컬 metrics/logs · 프로덕션 무관)
