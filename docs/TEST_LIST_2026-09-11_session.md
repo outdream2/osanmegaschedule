@@ -2152,6 +2152,35 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 
 ---
 
+## [30] T-SP-BULK · POST bulk shelf_positions 병합 지원 (2026-09-15)
+**커밋** · `b86a4b20`
+
+### 확인 절차 (서버 재시작 필요)
+1. **실재고입력 (ScanPage)** 진입 · 여러 상품 스캔
+2. 각 행 · 상세위치 3자리 입력 (예 "332" · 층·칸·순서) · 창고1/2·매장1/2/3 별
+3. **[전체저장]** 클릭 · bulk POST · shelf_positions 병합 저장
+4. Supabase · `inventory_checks.shelf_positions` JSONB · 병합 확인 (기존 값 유지 + 신규 추가)
+
+### 시나리오 확인
+- ✅ 정상 병합 · 200 OK · `{ ok: true, saved: N, failed: 0, errors: [] }`
+- ✅ 매장 필수 위반 · store1 빈값 저장 · 해당 item · errors 배열 · "매장 위치(store1)는 상세위치가 필수..." · 나머지 정상
+- ✅ 3자리 아닌 값 · "3-2" 저장 · errors · "상세위치(store1=3-2)는 3자리 (층·칸·순서) 여야 합니다"
+- ✅ (display_location, key, value) 중복 · errors · "이 위치는 이미 사용 중 · 1A-332 (store1) · 기존 상품 · ..."
+- ✅ BC · shelf_positions 없이 저장 · 이전과 동일 동작 (downgraded=false · errors=[])
+
+### 기대값
+- 단건/일괄 POST · 공용 helper (mergeShelfPositions·checkShelfPositionConflicts) · SSOT
+- Cache-Control · no-store · 재고 대원칙 준수
+- 회귀 위험 · low · 기존 ScanPage bulk (52 tests) 통과
+- 신규 22 tests · 통과
+
+### 관련 원칙
+- 대원칙 · DB 정합성 · UNIQUE 이중 방어 (bulk pre-check + 기존 shelf-conflict endpoint)
+- 대원칙 · 공통 기능 = 단일 helper · 단건/일괄 통일
+- 대원칙 · 매장 필수 · store1/store2/store3 (required_detail=true)
+
+---
+
 ## [29] #39 Phase A+B · 요청 진행중 접힘 카드 + 지연 tier 뱃지 (2026-09-15)
 **커밋** · `2277a8a2`
 
