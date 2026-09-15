@@ -161,27 +161,33 @@ async function runImportInternal(kind: FileKind): Promise<ImportResult> {
   let failed = 0;
   const errors: string[] = [];
 
+  let successData: string = "";
+  let failureData: string = "";
   for (const filePath of files) {
     const fileName = basename(filePath);
-    // 2026-09-15 · _processed 재임포트 · 이동 skip · _failed 재시도 · _processed 로 이동 (원본 xlsx만 · .log 는 남김)
     const inProcessed = filePath.includes("_processed");
     const inFailed = filePath.includes("_failed");
     try {
       await uploadFile(kind, filePath);
+      // 성공 응답 · 데이터 카운트 추출
+      successData = extractCount(kind, lastUploadResponse);
       if (inProcessed) {
         console.log(`[importer/${kind}] 재임포트 · _processed 유지 · ${fileName}`);
       } else if (inFailed) {
-        // _failed 파일 · 재시도 성공 · _processed 로 이동 (원본명 유지 · timestamp prefix)
         renameSync(filePath, join(processedDir, `${Date.now()}_retry_${fileName.replace(/^\d+_/, "")}`));
         console.log(`[importer/${kind}] _failed → _processed · 재시도 성공 · ${fileName}`);
       } else {
         renameSync(filePath, join(processedDir, `${Date.now()}_${fileName}`));
       }
       processed++;
-      console.log(`[importer/${kind}] 성공 · ${fileName}`);
+      console.log(`[importer/${kind}] 성공 · ${fileName} · ${successData}`);
     } catch (err: any) {
       const msg = err.response?.data?.error?.message ?? err.response?.data?.message ?? err.message ?? "알 수 없는 오류";
-      errors.push(`${fileName} · ${msg}`);
+      // 실패 응답 · 부분 데이터 정보도 · errors 에 병합
+      const partial = extractCount(kind, err.response?.data);
+      const errLine = partial ? `${fileName} · ${msg} · (${partial})` : `${fileName} · ${msg}`;
+      errors.push(errLine);
+      failureData = partial; // 마지막 부분 성공 데이터 표시
 
       // 네트워크·서버 다운 (5xx or timeout) · 로컬 큐 · 재시도 대상
       const isRetriable = isRetriableError(err);
@@ -224,22 +230,53 @@ async function runImportInternal(kind: FileKind): Promise<ImportResult> {
   }
 
   const ok = failed === 0 && processed > 0;
+  const dataInfo = successData || failureData;
+  const message = `${processed}건 성공${failed > 0 ? ` · ${failed}건 실패` : ""}${dataInfo ? ` · ${dataInfo}` : ""}`;
   return recordAndReturn(kind, {
     ok,
     filesProcessed: processed,
     filesFailed: failed,
     errors,
-    message: `${processed}건 성공${failed > 0 ? ` · ${failed}건 실패` : ""}`,
+    message,
   });
 }
+
+/** 서버 응답 · 데이터 개수 추출 · 파일 종류별 필드 다름 */
+function extractCount(kind: FileKind, data: any): string {
+  if (!data) return "";
+  if (kind === "products") {
+    const c = data.count;
+    const r = data.restored;
+    const parts: string[] = [];
+    if (typeof c === "number") parts.push(`상품 ${c.toLocaleString()}개`);
+    if (typeof r === "number" && r > 0) parts.push(`복원 ${r.toLocaleString()}개`);
+    return parts.join(" · ");
+  }
+  if (kind === "stock") {
+    // 서버 · updated·total·history·snapshot_date 등
+    const parts: string[] = [];
+    if (typeof data.updated === "number") parts.push(`업데이트 ${data.updated.toLocaleString()}개`);
+    if (typeof data.total === "number") parts.push(`전체 ${data.total.toLocaleString()}개`);
+    if (typeof data.history === "number" && data.history > 0) parts.push(`이력 ${data.history.toLocaleString()}행`);
+    return parts.join(" · ");
+  }
+  if (kind === "purchase") {
+    const parts: string[] = [];
+    if (typeof data.inserted === "number") parts.push(`매입 ${data.inserted.toLocaleString()}행`);
+    if (typeof data.updated === "number") parts.push(`업데이트 ${data.updated.toLocaleString()}개`);
+    if (typeof data.total === "number") parts.push(`전체 ${data.total.toLocaleString()}행`);
+    return parts.join(" · ");
+  }
+  return "";
+}
+
+// 마지막 업로드 · 응답 캐시 · recordAndReturn 에서 · lastRun.message 에 첨부
+let lastUploadResponse: any = null;
 
 /** 실제 서버 업로드 · 웹앱 방식 · application/octet-stream + 쿼리 파라미터
  *   · POST /api/upload-products?managerId=<id>
  *   · POST /api/upload-stock?managerId=<id>&snapshot_date=YYYY-MM-DD&start_date=YYYY-MM-DD&period_type=early|mid|late&force=true
  *   · POST /api/upload-purchase-details?managerId=<id>&filename=<name>&from=YYYY-MM-DD&to=YYYY-MM-DD&force=true
- *   · Body · Buffer · Raw xlsx
- *   · 파일명 · 날짜 자동 추출 · 없으면 파일 mtime
- *   · force=true · 기존 데이터 덮어쓰기 (409 conflict 방지)
  */
 async function uploadFile(kind: FileKind, filePath: string): Promise<void> {
   const endpoint = ENDPOINT_MAP[kind];
@@ -294,6 +331,7 @@ async function uploadFile(kind: FileKind, filePath: string): Promise<void> {
       maxContentLength: 100 * 1024 * 1024,
     });
     console.log(`[importer/${kind}] 성공 · ${fileName} · 응답:`, JSON.stringify(res.data).slice(0, 200));
+    lastUploadResponse = res.data;
   } catch (err: any) {
     // 상세 서버 에러 · 로그
     const status = err.response?.status;
@@ -304,6 +342,8 @@ async function uploadFile(kind: FileKind, filePath: string): Promise<void> {
     if (serverMsg) {
       err.message = `[${status}] ${serverMsg}`;
     }
+    // 실패 응답 · 데이터 정보도 저장 (부분 성공 · 필드 정보)
+    err.responseBody = body;
     throw err;
   }
 }

@@ -17,6 +17,9 @@ import { rescheduleAll, runNowAll, stopAllJobs } from "./scheduler";
 // Phase 3 · 알림 · 트레이 상태
 import { registerTray, setTrayState } from "./notifications";
 import { generateTrayIcon } from "./trayIcon";
+// Phase 3 · 파일 감시 · chokidar
+import { rescanWatchers, stopAllWatchers } from "./watcher";
+import { loadConfig } from "./config";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -198,6 +201,22 @@ async function runNowAllTasks() {
   }
 }
 
+// ── 임포트 모드 적용 · 파일 감시 vs 스케줄 (상호배제) ──
+export function applyImportMode() {
+  const cfg = loadConfig();
+  // 기존 모두 정지 · 재등록
+  stopAllJobs();
+  stopAllWatchers();
+
+  if (cfg.useFileWatcher) {
+    console.log("[main] 임포트 모드 · 파일 감시 (chokidar)");
+    rescanWatchers();
+  } else {
+    console.log("[main] 임포트 모드 · 스케줄 (cron)");
+    rescheduleAll();
+  }
+}
+
 // ── IPC · Renderer 통신 ─────────────────────────
 ipcMain.handle("app-info", () => ({
   version: app.getVersion(),
@@ -219,8 +238,8 @@ app.whenReady().then(() => {
   ensureAutoLaunch();
   setupAutoUpdater();
 
-  // Phase 2 · 저장된 스케줄 복구 · cron job 등록
-  rescheduleAll();
+  // Phase 3 · 파일 감시 모드 · or · 스케줄 모드 · 상호배제
+  applyImportMode();
 
   // 개발 모드 · 창 자동 open · 배포 · 트레이만
   if (is.dev) {
@@ -235,6 +254,7 @@ app.whenReady().then(() => {
 app.on("before-quit", () => {
   quitting = true;
   stopAllJobs();
+  stopAllWatchers();
 });
 
 // Windows · 트레이 종료 후에도 · 앱 유지 (기본 window-all-closed 시 종료 방지)

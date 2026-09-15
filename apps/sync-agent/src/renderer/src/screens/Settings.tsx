@@ -62,8 +62,60 @@ export const Settings: React.FC = () => {
 
   if (!config) return <div className="text-zinc-500">로딩 중...</div>;
 
+  const patchWatcher = async (useFileWatcher: boolean) => {
+    setSaving(true);
+    try {
+      await window.api.patchConfig({ useFileWatcher });
+      await load();
+    } finally { setSaving(false); }
+  };
+
   return (
     <div className="flex flex-col gap-6 max-w-3xl">
+      {/* 임포트 모드 · 상호배제 · 파일 감시 vs 스케줄 */}
+      <section className="bg-white rounded-xl border-2 border-brand-deep/20 p-6 shadow-sm">
+        <h2 className="text-[17px] font-bold mb-2">⚙️ 임포트 모드</h2>
+        <p className="text-[13px] text-zinc-500 mb-4">
+          자동 임포트 방식 · 하나만 선택
+        </p>
+        <div className="flex flex-col gap-2">
+          <label className="flex items-start gap-3 p-3 rounded-lg border border-zinc-200 hover:bg-zinc-50 cursor-pointer transition">
+            <input
+              type="radio"
+              name="importMode"
+              checked={config.useFileWatcher}
+              onChange={() => patchWatcher(true)}
+              className="mt-1 w-4 h-4 accent-brand-deep cursor-pointer"
+              disabled={saving}
+            />
+            <div className="flex-1">
+              <div className="text-[15px] font-bold text-ink">📂 파일 감시 모드 (권장)</div>
+              <div className="text-[13px] text-zinc-500 mt-1">
+                폴더에 · 새 xlsx 파일 저장 시 · <b className="text-brand-deep">10분 후 자동 임포트</b>
+                <br />· 사용자 개입 없이 · 파일 저장만 하면 · 자동 처리
+              </div>
+            </div>
+          </label>
+          <label className="flex items-start gap-3 p-3 rounded-lg border border-zinc-200 hover:bg-zinc-50 cursor-pointer transition">
+            <input
+              type="radio"
+              name="importMode"
+              checked={!config.useFileWatcher}
+              onChange={() => patchWatcher(false)}
+              className="mt-1 w-4 h-4 accent-brand-deep cursor-pointer"
+              disabled={saving}
+            />
+            <div className="flex-1">
+              <div className="text-[15px] font-bold text-ink">⏰ 스케줄 모드</div>
+              <div className="text-[13px] text-zinc-500 mt-1">
+                지정한 시각 (매 5분·매일 08:00 등) · 파일 있으면 임포트
+                <br />· 파일 종류별 · 개별 스케줄
+              </div>
+            </div>
+          </label>
+        </div>
+      </section>
+
       {/* 서버 URL */}
       <section className="bg-white rounded-xl border border-zinc-200 p-6">
         <h2 className="text-[17px] font-bold mb-2">🌐 서버 주소</h2>
@@ -112,17 +164,20 @@ export const Settings: React.FC = () => {
             </p>
           </div>
 
-          {/* 스케줄 */}
-          <div>
-            <label className="text-[14px] font-semibold text-zinc-700 mb-2 block">실행 스케줄</label>
+          {/* 스케줄 · 파일 감시 모드 시 · 비활성 */}
+          <div className={config.useFileWatcher ? "opacity-50 pointer-events-none" : ""}>
+            <label className="text-[14px] font-semibold text-zinc-700 mb-2 block">
+              실행 스케줄
+              {config.useFileWatcher && <span className="ml-2 text-[11px] text-amber-600">· 파일 감시 모드 사용 중 · 스케줄 비활성</span>}
+            </label>
             <select
               value={CRON_PRESETS.find(p => p.expr === (config.schedules[kind] ?? ""))?.key ?? "custom"}
               onChange={(e) => {
                 const preset = CRON_PRESETS.find(p => p.key === e.target.value);
                 if (preset) patchSchedule(kind, preset.expr);
               }}
-              disabled={saving}
-              className="px-3 py-2 border border-zinc-300 rounded-lg text-[14px] focus:border-brand-deep outline-none"
+              disabled={saving || config.useFileWatcher}
+              className="px-3 py-2 border border-zinc-300 rounded-lg text-[14px] focus:border-brand-deep outline-none disabled:bg-zinc-100"
             >
               {CRON_PRESETS.map((p) => (
                 <option key={p.key} value={p.key}>{p.label}</option>

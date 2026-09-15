@@ -20,6 +20,7 @@ interface RendererConfig {
   lastRun: Partial<Record<FileKind, LastRun>>;
   autoStart: boolean;
   showNotifications: boolean;
+  useFileWatcher: boolean;
 }
 
 interface RunResult {

@@ -18,6 +18,7 @@ export interface RendererConfig {
   lastRun: Partial<Record<FileKind, LastRun>>;
   autoStart: boolean;
   showNotifications: boolean;
+  useFileWatcher: boolean;
 }
 
 export interface ImportResult {

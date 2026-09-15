@@ -46,6 +46,9 @@ export interface AppConfig {
   autoStart: boolean;
   /** 알림 표시 여부 */
   showNotifications: boolean;
+  /** 파일 감시 모드 · true = chokidar · 새 파일 시 10분 후 자동 임포트 · 스케줄 비활성
+   *   · false = cron 스케줄 (schedules 필드 사용) */
+  useFileWatcher: boolean;
 }
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -56,6 +59,7 @@ const DEFAULT_CONFIG: AppConfig = {
   lastRun: {},
   autoStart: true,
   showNotifications: true,
+  useFileWatcher: true, // 기본 · 파일 감시 모드 (사용자 요청)
 };
 
 let cachedConfig: AppConfig | null = null;

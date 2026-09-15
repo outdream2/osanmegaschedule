@@ -7,7 +7,7 @@ import { readdirSync, statSync, existsSync } from "fs";
 import { join } from "path";
 import { loadConfig, patchConfig, isLoggedIn, type FileKind, type AppConfig } from "./config";
 import { login, logout } from "./auth";
-import { rescheduleAll, runNow, runNowAll } from "./scheduler";
+import { runNow, runNowAll } from "./scheduler";
 import { findLatestFile } from "./importer";
 import { listQueue, clearQueue, removeItem } from "./queue";
 
@@ -22,10 +22,13 @@ export function registerIpcHandlers() {
     };
   });
 
-  ipcMain.handle("config:patch", (_e, patch: Partial<AppConfig>) => {
+  ipcMain.handle("config:patch", async (_e, patch: Partial<AppConfig>) => {
     const next = patchConfig(patch);
-    // 스케줄 변경 · 자동 재등록
-    if (patch.schedules) rescheduleAll();
+    // 임포트 모드 변경 or 폴더/스케줄 변경 · 재적용
+    if (patch.schedules || patch.folders || patch.useFileWatcher !== undefined) {
+      const { applyImportMode } = await import("./index");
+      applyImportMode();
+    }
     return { ok: true, config: next };
   });
 
