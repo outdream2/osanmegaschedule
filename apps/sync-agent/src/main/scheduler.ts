@@ -5,10 +5,11 @@
 
 import cron, { ScheduledTask } from "node-cron";
 import { loadConfig, type FileKind } from "./config";
-import { runImport } from "./importer";
+import { runImport, retryQueuedItems } from "./importer";
 import { notifyImportResult, setTrayState } from "./notifications";
 
 const activeJobs: Partial<Record<FileKind, ScheduledTask>> = {};
+let queueRetryJob: ScheduledTask | null = null;
 
 /** 각 파일 종류 · 스케줄 등록 (기존 · 정지 후 재등록) */
 export function rescheduleAll(): void {
@@ -46,6 +47,23 @@ export function rescheduleAll(): void {
     activeJobs[kind] = task;
     console.log(`[scheduler/${kind}] 등록 · ${cronExpr}`);
   }
+
+  // Phase 3 · 로컬 큐 재시도 · 매 5분 · 만료된 아이템 순회
+  if (queueRetryJob) {
+    queueRetryJob.stop();
+    queueRetryJob = null;
+  }
+  queueRetryJob = cron.schedule("*/5 * * * *", async () => {
+    try {
+      const r = await retryQueuedItems();
+      if (r.retried > 0) {
+        console.log(`[scheduler/retry] ${r.retried}건 재시도 · 성공 ${r.succeeded} · 실패 ${r.failed}`);
+      }
+    } catch (err) {
+      console.error("[scheduler/retry] 예외:", err);
+    }
+  });
+  console.log("[scheduler/retry] 큐 재시도 · 매 5분 등록");
 }
 
 /** 즉시 실행 · 사용자 수동 트리거 · 스케줄 무관 */
@@ -82,5 +100,9 @@ export function stopAllJobs(): void {
   for (const kind of Object.keys(activeJobs) as FileKind[]) {
     activeJobs[kind]?.stop();
     delete activeJobs[kind];
+  }
+  if (queueRetryJob) {
+    queueRetryJob.stop();
+    queueRetryJob = null;
   }
 }

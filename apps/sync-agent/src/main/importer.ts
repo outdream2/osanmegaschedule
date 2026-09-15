@@ -9,6 +9,7 @@ import { join, basename } from "path";
 import FormData from "form-data";
 import { getApiClient } from "./auth";
 import { loadConfig, patchConfig, type FileKind, type LastRun } from "./config";
+import { enqueue, getReadyItems, markSuccess, markFailure } from "./queue";
 
 // 파일 종류 · 서버 endpoint · 매핑
 const ENDPOINT_MAP: Record<FileKind, string> = {
@@ -71,15 +72,26 @@ export async function runImport(kind: FileKind): Promise<ImportResult> {
     } catch (err: any) {
       const msg = err.response?.data?.error?.message ?? err.response?.data?.message ?? err.message ?? "알 수 없는 오류";
       errors.push(`${fileName} · ${msg}`);
-      const failPath = join(failedDir, `${Date.now()}_${fileName}`);
-      try {
-        renameSync(filePath, failPath);
-        writeFileSync(`${failPath}.log`, `${new Date().toISOString()}\n${kind}\n${msg}\n\n${err.stack ?? ""}`, "utf-8");
-      } catch (moveErr) {
-        console.warn(`[importer/${kind}] _failed 이동 실패:`, moveErr);
+
+      // 네트워크·서버 다운 (5xx or timeout) · 로컬 큐 · 재시도 대상
+      const isRetriable = isRetriableError(err);
+      if (isRetriable) {
+        // 파일 · _failed 이동 X · 원본 위치 유지 · 큐 재시도 시 다시 접근
+        // 대신 · 큐에 등록만
+        enqueue(kind, filePath, fileName, msg);
+        console.log(`[importer/${kind}] 재시도 대상 · 큐 등록 · ${fileName}`);
+      } else {
+        // 영구 실패 (4xx · validation 등) · _failed 이동 · 큐 X
+        const failPath = join(failedDir, `${Date.now()}_${fileName}`);
+        try {
+          renameSync(filePath, failPath);
+          writeFileSync(`${failPath}.log`, `${new Date().toISOString()}\n${kind}\n${msg}\n\n${err.stack ?? ""}`, "utf-8");
+        } catch (moveErr) {
+          console.warn(`[importer/${kind}] _failed 이동 실패:`, moveErr);
+        }
+        console.error(`[importer/${kind}] 영구 실패 · ${fileName} · ${msg}`);
       }
       failed++;
-      console.error(`[importer/${kind}] 실패 · ${fileName} · ${msg}`);
     }
   }
 
@@ -132,6 +144,57 @@ async function uploadFile(kind: FileKind, filePath: string): Promise<void> {
 
 function ensureDir(path: string): void {
   if (!existsSync(path)) mkdirSync(path, { recursive: true });
+}
+
+/** 재시도 가능 여부 · 네트워크·5xx 서버 오류·타임아웃 · true / 4xx validation · false */
+function isRetriableError(err: any): boolean {
+  // Axios error · response 없음 · 네트워크 오류 or timeout
+  if (!err.response) return true;
+  const status = err.response.status;
+  // 5xx · 서버 문제 · 재시도
+  if (status >= 500 && status < 600) return true;
+  // 429 · rate limit · 재시도
+  if (status === 429) return true;
+  // 401·403 · 인증 문제 · 로그아웃 후 재로그인 필요 · 재시도 X
+  // 400·404·422 · validation · 재시도 X
+  return false;
+}
+
+/** 큐 재시도 · 스케줄러 매 tick 에서 호출 · 만료된 아이템 순회 · 업로드 시도 */
+export async function retryQueuedItems(): Promise<{ retried: number; succeeded: number; failed: number }> {
+  const ready = getReadyItems();
+  if (ready.length === 0) return { retried: 0, succeeded: 0, failed: 0 };
+  console.log(`[importer/retry] ${ready.length}건 재시도 시작`);
+  let succeeded = 0;
+  let failed = 0;
+  const cfg = loadConfig();
+  for (const item of ready) {
+    if (!existsSync(item.filePath)) {
+      // 원본 파일 사라짐 · 큐에서 제거
+      markSuccess(item.id);
+      console.log(`[importer/retry] 파일 없음 · 큐 정리 · ${item.originalName}`);
+      continue;
+    }
+    try {
+      await uploadFile(item.kind, item.filePath);
+      // 성공 · _processed 이동 · 큐 제거
+      const folder = cfg.folders[item.kind];
+      if (folder) {
+        const processedDir = join(folder, "_processed");
+        ensureDir(processedDir);
+        renameSync(item.filePath, join(processedDir, `${Date.now()}_${item.originalName}`));
+      }
+      markSuccess(item.id);
+      succeeded++;
+      console.log(`[importer/retry] 성공 · ${item.originalName}`);
+    } catch (err: any) {
+      const msg = err.response?.data?.error?.message ?? err.response?.data?.message ?? err.message ?? "알 수 없는 오류";
+      markFailure(item.id, msg);
+      failed++;
+      console.warn(`[importer/retry] 실패 · ${item.originalName} · ${msg}`);
+    }
+  }
+  return { retried: ready.length, succeeded, failed };
 }
 
 interface RecordInput {
