@@ -7,6 +7,9 @@ import { Modal } from "../common/Modal";
 import { Card } from "../common/Card";
 import type { ProductInfo } from "../../lib/productsCache";
 import { resolveProductLocation } from "../../lib/productLocation";
+// 2026-09-15 · T-SP-9-REST · 진열위치 뱃지 확산 · 매장구역도 상품 리스트 · 상세위치 확인
+import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
+import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
 
 export interface ZoneProductsModalState {
   zoneId: string;
@@ -42,6 +45,8 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
   onSetSort,
   onProductClick,
 }) => {
+  // 2026-09-15 · T-SP-9-REST · 상세위치 map · shelf_positions 뱃지용
+  const shelfPositionsMap = useShelfPositionsMap();
   const { zoneId, zoneNum, zoneLabel, category } = modal;
 
   const parseSideAndNum = (v: string): { num: number; side: "A" | "B" | null } | null => {
@@ -270,6 +275,12 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
                           <div className="mt-0.5 text-[15px] text-zinc-400 truncate">
                             {(p as any).spec && <span className="font-mono" title="전산배치구역">전산 {String((p as any).spec)}</span>}
                             {resolveProductLocation(p) && <span className="font-mono" title="실제배치구역"> · 실제 {resolveProductLocation(p)}</span>}
+                          </div>
+                        )}
+                        {/* 2026-09-15 · T-SP-9-REST · 매장·창고 슬롯별 상세 진열위치 (3자리) */}
+                        {shelfPositionsMap[p.code] && (
+                          <div className="mt-0.5">
+                            <ShelfPositionsBadge positions={shelfPositionsMap[p.code]} size="sm" variant="text" />
                           </div>
                         )}
                       </td>
