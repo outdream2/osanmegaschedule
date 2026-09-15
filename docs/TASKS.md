@@ -64,7 +64,7 @@
 
 | # | 태스크 | 우선순위 | 비고 |
 |---|-----|--------|------|
-| **#253** | 자동 임포트 · Phase B (Python 스크립트) · Phase C (PyInstaller .exe) · Phase D (install.bat) · Phase F (README) | 🟢 P3 | Phase A (서버) + Phase E (웹 UI) 완료 |
+| **#253** | 자동 임포트 · **Electron 앱** (apps/sync-agent) · 진행 중 · 테스트 단계 | 🔵 진행 | Phase A (서버) + Phase E (웹 UI) 완료 · Phase B (Electron) · 사용자 테스트 병행 (2026-09-15) |
 <!-- 2026-09-15 · #193 Phase 2 · 완료 확인 · 이미 wiring 완비 · server/lib/optimalStock.ts L184-187 KV 조회 · OptimalStockPeriodSection.tsx L112-121 setDays → runRecalc 자동 · 3 이벤트 dispatch → 9 파일 리스너 자동 반영 -->
 | **#149** | large-file 분리 잔여 · OcrPage(1215)·PaymentInfoTab(1513)·OrderManagePage(3089)·LandingPage(2319)·ContractWriterPage | 🟢 P3 | Framework Phase 4 잔여 |
 
@@ -73,7 +73,7 @@
 | # | 태스크 | 대기 사유 |
 |---|-----|--------|
 | **#107·#258** | 발주 리스트 프리미엄 UI (GroupedListPanel v3) | 목업 승인 완료 · Phase 2 구현 대기 |
-| **#253 Phase B~D** | 자동 임포트 Python 스크립트·설치파일 | 대형 별도 세션 |
+<!-- 2026-09-15 · #253 · Python 방식 폐기 · Electron 앱으로 전환 · apps/sync-agent · 진행 중 (위 표 참조) -->
 | FlowTab·LossHistoryTab·DiffTab | 컬러 bg 정리 (대량) | 승인 후 순차 |
 | **#254~#256** | 세션 보안 강화 · 중복 로그인 방지 · 강제 로그아웃 | 대형 · 별도 세션 |
 | **#191 Phase C** | Modal 프레임워크화 · panel/modal 이중 (VendorDetailModal·VendorPaymentPanel·BorrowingDetailPanel·SupplierTab.panels·ProductDetailPanel) | 고위험 · 사용자 승인 후 · Phase B 완료 (`04935b7b`) |
@@ -96,6 +96,43 @@
 ### ⏸ 외부 대기
 
 - **#42** · 발주 PDF + 카카오톡 · 사업자등록증 발급 대기 (SolAPI)
+
+---
+
+## 🔵 진행 중 · #253 · Electron 자동 임포트 앱 (2026-09-15)
+
+**위치:** `apps/sync-agent/`
+
+### ✅ 완료된 기능
+- Electron v33 + electron-vite + electron-builder 셋업
+- 트레이 상주 · 부팅 자동 시작 · 하이브리드 UI (D안 · 좌·우·더블 클릭)
+- 로그인 · 핸드폰번호 + JWT 쿠키 인증 · 자동 refresh (15분 → 30일)
+- **아이디 저장** · 다음 실행 자동 채움 · savedPhone
+- 폴더 지정 UI · 3 파일 (상품·재고·매입)
+- **파일 감시 모드 (chokidar · 기본)** · 새 xlsx 파일 감지 · 10분 debounce · 자동 임포트
+- **스케줄 모드** (선택) · cron 프리셋 (매 5분·1시간·매일 08:00 등)
+- 두 모드 상호배제 · Settings 라디오 · UI 자동 비활성
+- 최신 파일 감지 · 파일명 날짜 (YYYY-MM-DD) 우선 · fallback mtime
+- `_processed`·`_failed` 폴더 자동 관리 · 재시도 성공 시 `_failed → _processed`
+- 임포트 · 웹앱 endpoint (`/api/upload-{products|stock|purchase-details}`) · octet-stream + managerId·snapshot_date 등 자동 파라미터
+- 로컬 큐 (JSON) · 지수 백오프 재시도 · 5xx·429·network 오류
+- 데이터 카운트 표시 · '상품 6287개 · 복원 7049개' 등
+- Windows toast 알림 · 트레이 상태 색상 (idle·syncing·success·error)
+- 자동 업데이트 · electron-updater · GitHub Releases
+- Logs 탭 · 실행 이력 · 폴더 상태 (대기·처리됨·실패 카운트) · 재시도 큐 시각화
+- Copyright footer · IRUMs · (주)이룸즈
+
+### 🧪 사용자 테스트 병행 (진행 중)
+- 로그인 · 핸드폰번호 정상 작동 확인
+- 상품 임포트 성공 (`count: 6287, restored: 7049`) 확인됨
+- 파일 감시 모드 · 실제 xlsx 저장 시 · 10분 후 자동 임포트 · 대기 중
+- Google Drive 폴더 사용 · 인식 정상 확인
+
+### 🔲 남은 작업 (배포·안정화)
+- 실 배포 · installer 재빌드 후 · 사용자 설치 테스트
+- 서버 endpoint 응답 형식 재검증 (실제 서버 응답 vs 파싱)
+- 스케줄 모드 · UI 사용자 테스트
+- README · 사용자 매뉴얼
 
 ---
 
