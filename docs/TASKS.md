@@ -1,1737 +1,105 @@
 # TASKS
 
-> 2026-09-15 · **8 로컬 커밋** · 탭바 전역 정렬 fix (초광폭 밀림 해소) · #39 Phase A+B (요청 진행중 접힘 카드 + 지연 tier · Odoo/Zoho/NetSuite 업계 표준 리서치 반영) · #61 B안 (지정위치 정합성 · products.spec 참조 제거 · POST/PATCH inventory_checks 자동 연동) · T-SP-BULK (POST bulk shelf_positions 병합 · 22 tests) · DB 정합성 절대 유지 대원칙 등재 (feedback_db_integrity_absolute_2026-09-15.md)
-> 2026-09-10 · 대량 완료 · #35·#37·#38·#40·#41·#42·#45·#46·#49·#51·#57·#58·#59·#60·#62·#65·#66·#67·#69·#71·#72(부분)·#73(부분) · 결제탭 전면 개편 · 재고자산/잔고 확정 공식 · 신규 API 4종 · vendors UNIQUE 마이그레이션 · 로컬 커밋 10+
-> 2026-09-02 (오후 · 자율 세션) · 30+ 로컬 커밋 · 카드 결제 시스템 신규 (#69) · 거래처 로그인 재설계 (#65) · 승인 요청 UX 개편 · 결제입력 결제내역 탭 · 승인 상태 배지 · zone_defs.warehouse 컬럼 · 발주 flow 3중 fix (#76·#77·#79) · 실재고·상품입고 창고 자동 필터 (#74) · 폰트 +2 확산 · 사용자 지시 다수 반영
-> 2026-09-02 · 14 로컬 커밋 · 4 신규 프리미티브(FormRow·FormSection·SubmitBar·ChartCard) · 11 미사용 프리미티브 삭제(-1758라인) · 판매대시보드 차트 7종 · font-mono→tabular-nums 30파일 · OCR rate-limit · Attio gradient · 사업장이름 동적화
-> 2026-09-01 · 서버 프레임워크 감사 완료 · validateBody+authorize 32건 추가 · 55→23 위반 (58% 감소) · 4 배치 커밋 · vitest 3410/3410 통과
-> 2026-08-29 · #193 매장서브탭 재편 · #196 사이드바 자동파생 · #198 purchase_details 통합 · #200 미사용테이블 제거 SQL · #197 DB 정합성 2건 fix · 총 22 로컬커밋 · MENU_STRUCTURE 15차 업데이트
-> 2026-08-23 · #31 완료 · RawOcrTable 5268→799줄 · 9 신규 훅/상수 파일 · audit 위반 5→4 · TS clean · build ✓
-> 2026-08-22 · Framework Phase 4 대량 분리 · 6파일 -1,003 라인 · 8 신규 파일 이관 · audit 24 유지 · Phase 2 (가드레일) 완료 · 원격 push 완료
-> 2026-08-21 · Framework Phase 4 (large-file 분리) · 44→22 warn/critical · 50% 탈출 · 클린 84%→96% · 35+커밋
-> 2026-08-20 (밤 최신) · Unit test **2514 tests · 176 files** · Spinner 22곳 추가 확산 · common/features Phase A (PurchaseHistoryModal·VendorSearchModal 이동) · LandingPage dots revert (대원칙 위반 재확인) · MENU_STRUCTURE 11차 업데이트 완료
-> 2026-08-20 (밤) · Unit test **2274 tests · 163 files** · #177 상품등록 페이지 대기 (매장>매입) · payroll/contract/stock 테스트 197개 확산 · MENU_STRUCTURE 10차 업데이트 완료 (Card 36곳+ · #177/#178 계획 등록)
-> 2026-08-20 (저녁) · Unit test **2077 tests · 155 files** · **2000 돌파 🎉🎉🎉** · #175 완료 (퇴사예정 3-state 파생·사이드바 gate) · #174 완료 (종 아이콘 compact) · 병렬 3-에이전트 (sideNav gate + common 재분류 리서치 + server routes 순수 테스트 124개)
-> 2026-08-20 · Unit test **1775 tests · 137 files** (2026-08-19 424 → 20일 1775 · **1350+ 신규**) · 모바일 가시성 탭 이관 (회사·브랜드 → 메뉴 설정)
-> 2026-08-19 · Unit test 대량 확산 (150→424) · Spinner 30곳 · 정식 PWA 설정 · BarcodeScanner 로직 복원 + UI 재디자인
->
-> **원칙**: [`feedback_framework_untouchable.md`](../.claude/agents) · [`feedback_ui_top_principle.md`](../.claude/agents) · [`feedback_remote_push_strict.md`](../.claude/agents) · 폰트 +2 규칙
+**규칙**:
+- 완료 태스크는 이 파일에서 **삭제** (아카이브 X)
+- 새 태스크 즉시 추가
+- 세션 시작 시 반드시 read
+- 매 milestone 후 update
+- **회귀 절대 금지** · TS + build + test 통과 후 커밋
+- **리모트 푸시 · 사용자 명시 승인 시에만** (기본 로컬 커밋)
+- **DB · 파생컬럼 사용 금지** · 원래 테이블 활용 최우선
+- **DB 정합성 절대 유지** · 파괴적 SQL X · 스냅샷 파생 X · 마스터 참조 무결성 · UNIQUE 이중 방어 · SSOT · 매 DB 작업 체크리스트
+
+---
+
+> 2026-09-15 · **8 로컬 커밋** · 탭바 전역 정렬 fix · #39 Phase A+B (발주 라이프사이클 · OrderInProgressCard + 지연 tier) · T-SP-BULK (POST bulk shelf_positions 병합 · 22 tests) · #61 B안 (지정위치 정합성 · products.spec 완전 제거 · 상품↔실재고 자동 연동) · DB 정합성 절대 유지 대원칙 등재
+> 2026-09-10 · 대량 완료 · #35·#37·#38·#40·#41·#42·#45·#46·#49·#51·#57·#58·#59·#60·#62·#65·#66·#67·#69·#71·#72(부분)·#73(부분) · 결제탭 전면 개편 · 재고자산/잔고 확정 공식 · 신규 API 4종
+> 2026-09-08 · T-SP 세트 14커밋 · inventory_checks.shelf_positions JSONB · T-DISPLAY-1 · #12 · #13 · T-MENU 완료
+> 2026-09-07 · #115·#117·#119·#120·#121 · expiry_date 버그 · 가격재고 4-col · 이슈리스트 PC 한줄
+> 2026-09-06 · LIST-UI-2026 전역 폰트 +2px (30+ 커밋) · SplitRightHeader·SplitRightLoading 신설 · 프레임워크 100% 클린
+> 2026-09-05 · RawOcrTable·PurchaseHistoryTab large-file-warn 제거 · audit 위반 0/790 100% 클린
+> 2026-09-04 · 공급사재고 전용 페이지 · 스케줄표 모달 탭 · contract_type Zod strip 수정
+> 2026-09-02 (오후 자율) · 30+ 커밋 · 카드 결제 시스템 · 거래처 로그인 · 발주 flow 3중 fix
+> 2026-09-02 · 14 커밋 · 4 신규 프리미티브 · 11 미사용 삭제 · 판매대시보드 차트 7종
+> 2026-09-01 · 서버 프레임워크 감사 완료 · validateBody+authorize 32건 · 55→23 위반 (58% 감소)
+> 2026-08-29 · #193·#196·#198·#200·#197 · 22 로컬커밋 · MENU_STRUCTURE 15차
+> 이전: 2026-08-18~08-23 · Framework Phase 4 · 리모트 push 6회 완료 · test 2514+
 >
 > **원칙 규칙**: 완료 태스크는 삭제 · 신규 태스크는 상단 등록 · 진행중은 명확히 표시
 
 ---
 
-## 🎯 활성 PENDING · v14 (2026-09-10 · 결제탭 재고자산/잔고 공식 확정 · 신규 API 4종)
+## 🎯 활성 PENDING (2026-09-15 기준)
 
-### ✅ 2026-09-10 완료 (오늘 세션)
-
-| 커밋 | # | 내용 |
-|-----|---|------|
-| `1bede008` | **#64·#65·#67** | ProductCreateModal 편집 모드 확장 (mode/initialProduct/PATCH) · 월별 표 순서 반전 · 잔고 셀 선지급 rose/미지급 sky |
-| `9de3de02` | **#69·#70(일부)** | 판매내역 상품별 aggregate + 상품명 · 왼쪽 리스트 집계 Spinner |
-| `c4cce17b` | **#66** | 월별 판매액 · 실제 데이터 연결 |
-| `316d7a43` | — | 월별 표 합계 열 정합성 · 왼쪽 리스트 총재고자산·총판매액·총잔고 매핑 |
-| `e49ef342` | — | 원가·마진 행 추가 · salesTrend cogs_amount/purchase_cost 서버 계산 |
-| `2bcaa825` | **#71** | 결제탭 상단 통합 툴바 · SplitPanel 배치 · 기간·계절 하나로 통일 |
-| `1ed40cae` | **#72(부분)** | 확정 공식: 재고자산=매입액-판매원가 · 잔고=매입액-결제액 · supplier-balances-map 서버 엔드포인트 |
-| `1cbbb722` | **#72·#73(부분)** | 판매액=sale_qty×sale_price (xlsx 합계 컬럼 금지) · VendorInfoHeader monthlyStockAssetMap |
-| `19382a81` | **#73** | topSales.ts 판매액 계산 fix (모든 모드) |
-| `7b79d5b0` | **#73** | snapshotSummary.ts 판매액 fix + products map 사전 fetch |
-| (이전) | **#35** | 매입이력 공급사별 탭 SplitPanel 5:5 |
-| (이전) | **#37** | Spinner 통일 |
-| (이전) | **#38** | 삼선 메뉴 amber 컬러 액센트 |
-| (이전) | **#40** | 공급사·상품 삭제 기능 |
-| (이전) | **#41** | vendors company_name UNIQUE 제약 · migration `20260910_vendors_company_name_unique.sql` |
-| (이전) | **#42** | 발주필요 검색 · 요청됨 표시 |
-| (이전) | **#45** | 발주필요 검색창 이탈 시 초기화 |
-| (이전) | **#46** | 발주필요 우측 · 판매 추천 패널 롤백 · 상품 상세 모달 복원 |
-| (이전) | **#49** | 연차승인 사라짐 · 설정 안내 복구 |
-| (이전) | **#51** | 진열요청 상세위치 컬럼 추가 |
-| (이전) | **#57** | 결제 상세 · 매입/결제/재고자산/잔고 정의 재검토 |
-| (이전) | **#58** | 결제 상세 · 재고자산 KPI · 신규 API |
-| (이전) | **#59** | 왼쪽 리스트 총재고자산 · 확정 공식 (ERP 현재고 × 사입단가) |
-| (이전) | **#60** | 상품입고 매장 삭제 X 버튼 복구 |
-| (이전) | **#62** | 반응형 넘침 fix (scrollbar-gutter) |
-
-### 🔴 대원칙 추가 (2026-09-10 확정)
+### 🔴 대원칙 (확정)
 
 - **재고자산 = 매입액 − 판매원가** (cogs)
 - **실제잔고 = 매입액 − 결제액**
 - **판매액 = 판매수량 × 판매단가** (xlsx total_amount 합계 컬럼 절대 사용 금지)
 - **공급사 이름 · vendors 유효성 검증 필수** (자유 입력 금지 · POST/PATCH /api/products 에서 400 SUPPLIER_NOT_FOUND 반환)
-- **공통 기능 = 단일 endpoint** (2026-09-14 · 사용자 명시) · 같은 목적 route 중복 금지 · 신규 전 grep 필수
+- **공통 기능 = 단일 endpoint** (2026-09-14 사용자 명시) · 같은 목적 route 중복 금지 · 신규 전 grep 필수
+- **DB 정합성 절대 유지** · `feedback_db_integrity_absolute_2026-09-15.md` · 파괴적 SQL X · 스냅샷 파생 X · 마스터 참조 무결성 · UNIQUE 이중 방어 · SSOT
 
-### ✅ 2026-09-13 ~ 09-14 완료 (검증 세션 · 커밋 대조 확인)
-
-| # | 태스크 | 완료 커밋 |
-|---|-----|------|
-| **#20** | 상품 모달 · 창고·매장 수평 배치 | ProductCreateModal L505·509·523·529 · 이미 진열구역/상세구역 좌우 grid (`bb3c2647` #133 확장) |
-| **#36** | 유통기한 임박 리스트 · SSOT | `d4a2d823` + `a698b4fe` (SSOT = inventory_checks.expiry_date) |
-| **#44** | 매장구역도 저장 오류 | `f64ffbd7` (zones POST 500 · zone-groups PUT 400 fix) |
-| **#47** | 결제-차용 · 약국 사업장 자동 | `9f4f80c0`·`935a5957`·`b58a6295` (useCompanyInfo 연동) |
-| **#48** | 상품검색 · 최근 검색어 3개 | `a0025044` (ProductSearchInput 통일 프리미티브) |
-| **#50** | 승인요청 페이지 UI 통일 | `84078012`·`afe7f6f5`·`0b29dedd`·`7dec1c36` (매입이력 스타일 · TabBar level=3) |
-| **#52·#54** | 이벤트 관리 UI (통계설정 3탭) | `5434854d` (2026-09-13) |
-| **#53·#55** | 발주필요 배너 (계절·이벤트) | `bc097349` (통합 배너) · `c65e7310` #86 (계절 배너) |
-| **#64** | 상품정보 편집 모달 · PATCH | `33628f2f`·`49c93f99`·`89fd973c` (편집 모드 + vendors 자동완성) |
-| **#68** | 공급사별 결제내역 검색창 통일 | `033890ed` (SearchBar 프리미티브) |
-| **#72·#73** | 재고자산·판매액 SSOT 감사 | `5ae4339a`·`cae5d072`·`7b79d5b0`·`19382a81`·`1cbbb722` |
-
-### ✅ 2026-09-15 완료 (오늘 세션)
-
-| 커밋 | # | 내용 |
-|-----|---|------|
-| `a576ea27` | — | 탭바 전역 정렬 fix · `.tab-bar-inner` `max-w-[1360px] mx-auto` 제거 · 초광폭 모니터 밀림 해소 |
-| `2277a8a2` | **#39 Phase A+B** | 발주 라이프사이클 · 요청 진행중 접힘 카드 (OrderInProgressCard) + 지연 tier 뱃지 · Odoo/Zoho/NetSuite/Cin7/SAP Ariba 100% 업계 표준 (라인 이동 + 상단 카드 하이브리드) |
-| `b86a4b20` | **T-SP-BULK** | POST /api/inventory-checks/bulk · shelf_positions 병합 지원 · 22 신규 tests · 공용 helper (mergeShelfPositions·checkShelfPositionConflicts) |
-| `a75958da` | **#61 B안** | 지정위치 정합성 + 상품↔실재고 자동 연동 · products.spec 참조 완전 제거 · POST /api/products · inventory_checks 자동 row 생성 · PATCH location 변경 · shelf_positions 재배정 · 기존 상세위치 보존 |
-
-### 🔴 대원칙 추가 (2026-09-15 확정)
-
-- **DB 정합성 절대 유지** · `feedback_db_integrity_absolute_2026-09-15.md` · 파괴적 SQL X · 스냅샷 파생 X · 마스터 참조 무결성 · UNIQUE 이중 방어 · SSOT · 매 DB 작업 체크리스트
-
-### ✅ 2026-09-15 완료 (기존 완료 확인 · TEST_LIST 매핑)
-
-| # | 태스크 | 완료 커밋 · 근거 |
-|---|-----|-----------|
-| **#63** | 공급사 이름 무결성 · 나머지 저장 경로 | `62e3830e` (결제·상품입고 · SUPPLIER_NOT_FOUND validation) |
-| **#70** | 공급사별 결제내역 Spinner | `a698b4fe` (통합 배치 완료) |
-
-### 🟡 PENDING · v14 잔여 (2026-09-15 정리)
+### 🟡 PENDING · v14 잔여
 
 | # | 태스크 | 우선순위 | 비고 |
 |---|-----|--------|------|
 | **#56** | 매장 구역 추가/제거 · X 버튼 권한 | 🟢 P4 (LATER) | 맨 뒤 우선순위 |
 
----
-
-## 🎯 활성 PENDING · v13 (2026-09-08 · 진열위치 상세 · 실재고 통합)
-
-> **결정 사항 (2026-09-08 · 사용자 합의)**
-> - 저장 위치 · `inventory_checks` 테이블 확장 (별도 테이블 신설 X)
-> - 컬럼 · `shelf_positions JSONB` 단일 (매장 무제한 확장 · 스키마 변경 없음)
-> - 입력 방식 · **C안 · 3-stepper** (층·칸·순서 각 1자리 · 예 "332")
-> - 자동 배정 · 상품 등록 시 · `assignZonesToSlots` 재사용 · 창고1/2 판정 + 매장1 default
-> - 매장 마스터 · KV `settings.storage_locations` (관리자 UI는 별도 태스크)
-> - 매장 상세위치 **필수** (서버 validation) · 창고 선택
-> - 표시 · 진열위치 나오는 파일 · 위치 뱃지 리스트 (`매장1:332 · 매장2:212 · 창고1:105`)
-> - 매장 미입력 시 · 빨간 뱃지 강조 (`매장1:미입력`)
-
-### ✅ 2026-09-08 완료 (T-SP 세트 + 후속 정리 · 자율 진행 · 14 커밋)
-
-| 커밋 | 태스크 | 내용 |
-|-----|-----|------|
-| `6e67a551` | **T-SP-1·2·3** | Migration `inventory_checks.shelf_positions JSONB` · KV `storage_locations` 시드·엔드포인트 · POST 병합·매장 필수 validation |
-| `d7a2712e` | **T-SP-4·6** | 상품등록 자동배정 (buildInitialShelfPositions) · 프리미티브 3종 (ShelfPositionInput·ShelfPositionsBadge·useStorageLocations) |
-| `14db14d7` | **T-SP-7** | ProductInfoPage · '상세 진열위치' 섹션 · 매장 필수 · 위치 추가 버튼 |
-| `b6e70ae3` | **T-SP-8** | InventoryEditPanel · InventoryEditModal · 각 zone stepper + ZONE_TO_LOCATION 병합 · useOrderManageData 확장 |
-| `3ab74edb` | **T-SP-9 P1** | GET /api/products/shelf-positions-map · useShelfPositionsMap · 6개 핵심 파일 뱃지 (ProductBasicInfoPanel·ScanPage·DisplayPage) |
-| `4a9820d5` | **T-SP-9 P2** | ProductPurchaseDetailPanel · ArrivalRowCard 뱃지 통합 |
-| `b503c640` | **백필 fix** | 판매중 상품에만 자동배정 · 잘못된 백필 5220건 revert · scripts/backfill·revert·check |
-| `eab28c5e` | **real_map cleanup** | DashboardCharts real_map fallback 제거 · location 단일 소스 |
-| `3fd7d1d9` | **barcode 완전 제거** | products.barcode 컬럼 참조 10파일 정리 · product_code 로 통합 (99.97% NULL 검증 후) |
-| `7d8f0cca` | **T-SP 중복방지** | 상세위치 pre-check · (display_location, location_detail) 유일 · POST 시 서버 검증 |
-| `61f663d2` | **#14** | UI 실시간 중복 검증 · debounce 500ms + 붉은 경고 뱃지 · GET /api/inventory-checks/shelf-conflict |
-| `3c22fdf9` | **참조 이미지** | src/sample/제품존정보.jpg · zonecategory.png 등록 |
-| `e5857360` | **PATCH auto** | 진열구역 변경 시 shelf_positions 자동 병합 (POST뿐 아니라 편집도) |
-| `393390ce` | **#12** | 매장구역도 재배치 · L-shape → 14×8 rectangular grid (사용자 zonecategory.png 참고) |
-| `d14e7bb4` | **승인요청 통합** | 사직서승인 탭 신규 · 5개 탭 permission gate (진열·점심·연차·거래처·사직서) |
-
-**사용자 완료 (Supabase SQL):**
-- ✅ Migration · `inventory_checks.shelf_positions JSONB` 실행
-- ✅ products.real_map DROP
-- ✅ products.barcode DROP
-
-**결과 · 표시 통합 완료 파일 (사용자 즉시 확인 가능):**
-- ProductInfoPage 편집 뷰 · 헤더 뱃지 + 편집 섹션
-- ScanPage · 스캔 시 · zone 상단 뱃지 + BasicInfoPanel 진열위치 옆
-- DisplayPage · ProductInfoModal · ZoneMismatchTab · RealStockTablePage (grouped·flat·detail)
-- OrderManagePage 매입이력 상세 · 상품정보 탭 배치구역 옆
-- ProductArrivalPage · ArrivalRowCard · 매장구역 옆
-
-### ✅ 2026-09-08 (오후~저녁 · 세션 이어짐) 추가 완료
-
-| 커밋 | 태스크 | 내용 |
-|-----|-----|------|
-| `d14e7bb4` | **RequestsPage** | 승인요청 통합 · 사직서승인 탭 추가 · 5개 탭 permission gate |
-| `393390ce` | **#12** | 매장구역도 재배치 · L-shape → 14×8 rectangular grid |
-| `c48d3d26` | **T-MENU-1** | TodayStatusPanel · 모든 항목 permission gate 통합 |
-| `48281a30` | **#13** | 카운터존 45~50 · 이벤트 → EVENT 라벨 |
-| `18373232` | **판매대시보드 fix** | 판매중 상품만 반영 · 미지정구역 노출 이슈 해결 |
-
-### 🟡 PENDING · 남은 태스크 (2026-09-08 오후 8시경)
+### 🟡 PENDING · v13 잔여
 
 | # | 태스크 | 우선순위 | 비고 |
 |---|-----|--------|------|
-| ~~**T-DISPLAY-1**~~ | ✅ 완료 · 진열요청 탭 · 표 형식 · 상품명·상태·진열위치·담당자·**요청횟수**·요청일·완료 | 🟡 P1 | RequestsPage.tabs.tsx L195~207 · 2026-09-09 재구성 |
-| **T-SP-9-REST** | 나머지 표시 파일 · 진열위치 표시 자리에 shelf 뱃지 확장 | 🟢 P3 (부분 완료) | ExpiryImminentTab 완료 (`2026-09-15`) · CategoryTab·CriticalTab · location 명시 표시 없음 (뱃지 자리 없음) · 필요 시 사용자 지시로 추가 |
-| ~~**T-SP-BULK**~~ | ✅ 완료 · POST /api/inventory-checks/bulk · shelf_positions 병합 지원 · `b86a4b20` (2026-09-15) · 공용 helper + 22 tests | — | — |
+| **T-SP-9-REST** | 나머지 표시 파일 · CategoryTab·CriticalTab · location 명시 표시 없음 · 뱃지 자리 없음 | 🟢 P3 (부분 완료) | ExpiryImminentTab 완료 (`5513c8d4`) · 필요 시 사용자 지시로 추가 |
 | **T-SP-MASTER-UI** | 매장·창고 마스터 관리 UI (매장4·5 추가) | 🟢 P3 | 현재는 KV JSON 직접 편집 · 관리자 페이지 필요 시 |
-| ~~**T-MENU-BOTTOMNAV**~~ | ✅ 완료 · BottomNav 하단 4탭 · perms.hidden 필터 추가 · 사이드바 정합 · `2026-09-15` | — | — |
 
-### 📊 완료 · 확정 사항 (2026-09-08)
+### 🟡 PENDING · v12 잔여
 
-**태스크 확정 완료 (임의값 확정):**
-- ✅ T-MENU-2 · 9·10·11 존 색상 · teal·orange·cyan (임의 확정)
-- ✅ T-MENU-3 · 벽면 셀 색상 · getWallCellColor 매핑 유지 (임의 확정)
-
-**메뉴 permission hidden 반영 · 최종 상태:**
-- ✅ AppNavHeader · Sidebar · MenuCard · 정상 반영
-- ✅ RequestsPage · 5개 탭 모두 반영 (d14e7bb4)
-- ✅ TodayStatusPanel · 모든 항목 반영 (c48d3d26)
-- ⚠️ BottomNav 모바일 · 남음 (T-MENU-BOTTOMNAV · P3)
-
-**판매대시보드 원칙 (2026-09-08 확정):**
-- 판매중 상품만 반영 · 판매중지·숨김 제외
-- ZoneTopChart · 미지정구역 노출 이슈 fix (18373232)
-
-### 📋 스코프 밖 (별도 태스크로 분리)
-
-- inventory_checks 기존 컬럼 리팩터 (warehouse1_stock 등 → JSONB) · 대규모 이관 · 별도 검토
-
----
-
-## 🎯 활성 PENDING · v12 (2026-09-07 · 상품입고 개편 + UI 통일)
-
-> **2026-09-07 (3차) 완료** · #117 매입이력 삭제 · #119 단가·수량 validation · #120 상품입고 PeriodSelector 통일 · #121 이슈페이지 SearchBar+Button 프리미티브
-
-### ✅ 2026-09-07 (3차) 완료
-| 커밋 | 내용 |
-|-----|------|
-| (이번 세션) | #117 DELETE /api/purchase-details/:id · PurchaseHistoryList onDelete · ProductPurchaseDetailPanel 삭제 핸들러 |
-| (이번 세션) | #119 매입이력 순수량·단가 0 validation 강화 |
-| (이번 세션) | #120 ArrivalHistoryTab·ExpiryListTab PeriodSelector 통일 · refresh 버튼 표준 패턴 |
-| (이번 세션) | #121 BoardPage raw input→SearchBar · raw button→Button 프리미티브 |
-
-> **2026-09-07 (2차) 완료** · expiry_date 버그 · 유통기한 임박 체크박스+리스트 · 가격재고 4-col stat grid · 이슈리스트 PC 한줄 · CategoryChips 폰트+1 · 검수완료 및 등록
-
-### ✅ 2026-09-07 (2차) 완료
-| 커밋 | 내용 |
-|-----|------|
-| `b1ee07f3` | feat(product+arrival): 가격재고 4-col stat grid · ArrivalRowCard 필수필드 검증 |
-| `072aedb7` | feat(arrival): expiry_date 버그수정(→verify_note) · 유통기한 임박 체크박스+리스트 탭 · 검수완료 및 등록 |
-| `61df6ab1` | feat(board+chips): 이슈리스트 PC 한줄 · 폰트+2 · CategoryChips +1 · 굵기 medium |
-| `9bb2e1b8` | feat(error): 에러경계 개선 · 상세스택/타임스탬프/홈으로 버튼 |
-| `60343a1a` | fix(arrival+product): ArrivalDetail flat merge · product_code 앞0 · hooks순서 · 탭순서 |
-| `7b9ad077` | fix(purchase): #116 · supplier_name 필터 서버측 적용 |
-
-### 🟡 PENDING
 | # | 태스크 | 우선순위 | 비고 |
 |---|-----|--------|------|
-| **#115** | real_map 컬럼 DB DROP SQL · `migrations/20260904_drop_real_map.sql` · Supabase SQL Editor | 🟡 | 사용자 직접 |
+| **#115** | real_map 컬럼 DB DROP SQL 실행 · `migrations/20260904_drop_real_map.sql` · Supabase SQL Editor | 🟡 | 사용자 직접 실행 |
 
-> **2026-09-07 (1차) 완료** · 알림종 UI 개선 3종 · 상품정보 패널 리디자인 · 상품탭 아이콘 통일 · productArrivals null 재고 버그
+### 🟡 PENDING · 대형 백로그
 
-### ✅ 2026-09-07 (1차) 완료
-| 커밋 | 내용 |
-|-----|------|
-| `03d4a1f3` | fix(arrivals): currentStock null→0 · 첫 입고 상품 재고 미반영 버그 수정 |
-| `b3fb1e48` | 알림종 모두삭제·읽으면사라짐·portal 닫힘 버그 수정 · 스케줄 이름폰트+2 · 상품정보 UI 개편 |
-| `d8edba48` | 상품 이너탭 아이콘·색상 추가 · 매입 탭과 UI 통일 |
-
----
-
-## 🎯 활성 PENDING · v10 (2026-09-06 · LIST-UI-2026 폰트+2 완료 + SplitRight 프리미티브)
-
-> **2026-09-06 완료** · LIST-UI-2026 전역 폰트 +2px (30+ 커밋) · SplitRightHeader·SplitRightLoading 신설 · #259 SupplierTab 인라인 확장 이미 완료 확인 · #260 Phase 3 (선택) skip (ContractWriterPage·PharmacistPage 패턴 부적합)
-
-### ✅ 2026-09-06 완료
-| 커밋 | 내용 |
-|-----|------|
-| `c8b7b547` | #261 · SplitRightHeader · SplitRightLoading 신설 + 각 5 tests · TS ✓ |
-| `c03965cb` | LIST-UI-2026 +2px · tokens.ts · settingsTypography.ts · stockPeriodUtils · index.css · 테스트 동기화 |
-| `d4be3be0` | LIST-UI-2026 +2px · useInvoiceImageControls.ts (.ts 파일 누락분) |
-| `30b29655` | LIST-UI-2026 +2px global · 전체 미적용 컴포넌트 (global sed) |
-| (이전 25+개) | LIST-UI-2026 +2px · DisplayPage·OcrPage·SalesTrendPage·ScanPage·StockPage 등 |
-
-### ✅ 2026-09-06 감사 확인 (이미 완료됨)
-- **#261** SplitRight 프리미티브: Empty·Error·Loading·Header·Tabs 모두 존재 확인 · TabBar 폰트+2 global sed로 이미 완료
-- **#259** 매입이력 공급사별 확장: SupplierTab.tsx line 192 `inlineExpanded` 상태 + `#82 (#259) 복원` 주석 확인 · **이미 완료**
-- **#260 Phase 3** ContractWriterPage·PharmacistPage: SplitLeftHeader 패턴 부적합 (복잡 레이아웃·트리 패널) · **(선택) skip**
-
----
-
-## 🎯 활성 PENDING · v9 (2026-09-05 · 프레임워크 준수 + 감사 정리)
-
-> **2026-09-05 (3차) 완료** · RawOcrTable·PurchaseHistoryTab large-file-warn 제거 · 프레임워크 감사 위반 **0/790 (100% 클린)** 달성
-
-### ✅ 2026-09-05 (3차) 완료
-| 커밋 | 내용 |
-|-----|------|
-| `c7cb2635` | RawOcrTable·PurchaseHistoryTab large-file-warn 제거 · audit 위반 2→**0** · 790파일 100% 클린 |
-
-### ✅ 2026-09-05 (2차) 완료
-| 커밋 | 내용 |
-|-----|------|
-| `a92cf530` | #73 상품정보 검색 matchHangul→matchesProductQuery 프레임워크 통일 |
-| `a4342a39` | #130 차용 관리 제목·부제목 개발용 텍스트 제거 |
-| `583a05d9` | DashboardCharts raw-card-wrapper → Card 프리미티브 · audit 위반 3→2 |
-
-### ✅ 2026-09-05 감사 확인 (이미 완료됨)
-- **#73** 상품정보 프레임워크화: matchesProductQuery 적용 완료
-- **#75** 실재고·상품입고 스캔 왼쪽 정렬 + 반응형 세로: ScanPage·ProductArrivalPage 모두 SplitPanel+mobileRightAsModal=false 정상 구현 확인
-- **#130** 차용등록 재설계: BorrowingPage v2(Phase D) 완료 · BorrowingEditPanel·BorrowingDetailPanel 연결 완료 · GradientAccent·ArrowLeftRight 적용
-
----
-
-## 🎯 활성 PENDING · v8 (2026-09-05 · 버그수정 + 사이드메뉴 + 발주로직)
-
-> **2026-09-05 완료** · 공급사 모달 즉시닫힘 버그 2건 · 거래처 사이드메뉴 관리자 노출 · 발주요청 항목 발주필요 제외 · 미전송 시 ordered 마킹 금지
-
-### ✅ 2026-09-05 완료
-| 커밋 | 내용 |
-|-----|------|
-| `97458c9a` | 공급사 모달 즉시닫힘 버그 2건 (useOrderModal break→return · VendorDetailModal panel ESC skip) |
-| `97458c9a` | 거래처 사이드메뉴 매장 아래 이동 · 관리자(isPrivileged) 에게도 노출 |
-| `4fa30090` | 발주요청 항목 발주필요에서 숨김 (requestedCodes 필터) |
-| `4fa30090` | bulk-send: 미전송 시(no_recipient 등) ordered 마킹 금지 · 알림 조건부 발송 |
-
-### ✅ 2026-09-05 감사 확인 (이미 완료됨)
-- **#60** 스케줄 전월 복사: 2026-09-04 감사 확인 (구현 완료)
-- **#62** 스케줄 클릭 모달 탭: 2026-09-04 감사 확인 (완료)
-- **#70** 탭 sticky: 2026-09-04 감사 확인 (정상)
-- **#72** 직원성명 UI 복원: 2026-09-04 감사 확인 (완료)
-- **#78** 상품입고 단가·유통기한 fill: 2026-09-04 감사 확인 (완료)
-- **#112** bulk-send dispatch.status: 2026-09-05 improved (shouldMarkOrdered 조건 추가)
-
----
-
-## 🎯 활성 PENDING · v7 (2026-09-04 · 신규 태스크 등록)
-
-> **2026-09-04 완료** · contract_type HR 필드 Zod strip 버그 수정 · 공급사재고 페이지화 · 공급사정보 버그 4건 · 스케줄표 모달 탭 순서 · 스케줄 설정 페이지 신규
-
-### ✅ 2026-09-04 완료
-| 커밋 | 내용 |
-|-----|------|
-| `7adf338e` | 공급사재고 모달→전용 페이지 (VendorStockPage · SplitPanel 대시보드) |
-| `7adf338e` | 공급사정보 버그 4건 · email strip 완화 · sideNav vendor whitelist · onSaved refresh |
-| `f1d97540` | 공급사 승인 후 재고확인 활성화 폴링 · 승인알림 강화 |
-| `1882f1df` | useFetchEmployee 공통 훅 · GET /api/employees/:id 확장 |
-| `732a69fa` | contract_type 등 HR 필드 PUT Zod strip 버그 수정 |
-| `0f49a8a7` | 스케줄표 모달 탭 순서 (달력→일괄→직원정보) + 스케줄설정 페이지 (기본연차일) |
-| `3775e259` | 프레임워크 전수감사: ocrDeletedRows·vat authorize 누락 수정 |
-
-### ✅ 2026-09-04 감사 확인 (이미 완료됨)
-- **#60** 스케줄 전월 복사: `useScheduleData.executeCopyFromPreviousMonth` + `POST /api/schedules/copy` 정상 구현 확인
-- **#62** 스케줄 클릭 모달 탭: `commit 1882f1df` 완료 확인
-- **#70** 탭 sticky top-14→top-0: `SplitRightTabs sticky top-0` 정상 · 잔여 2개는 테이블 내부 중첩 (정상)
-- **#72** 직원성명 UI 복원: `commit 116d7146` 완료 확인
-- **#78** 상품입고 단가·유통기한 fill: `ProductArrivalPage` purchase-history API auto-fill 구현 확인
-
-### 🔴 신규 PENDING (2026-09-04 사용자 요청)
 | # | 태스크 | 우선순위 | 비고 |
 |---|-----|--------|------|
-| **#115** | real_map 컬럼 DB DROP SQL 실행 필요 · `migrations/20260904_drop_real_map.sql` · Supabase SQL Editor에서 수동 실행 | 🟡 | 사용자 직접 |
+| **#253** | 자동 임포트 · Phase B (Python 스크립트) · Phase C (PyInstaller .exe) · Phase D (install.bat) · Phase F (README) | 🟢 P3 | Phase A (서버) + Phase E (웹 UI) 완료 |
+| **#193 Phase 2** | 통계설정 · 적정재고일수 소비처 wiring (RequestsPage·OrderManagePage·CategoryTab) | 🟢 P3 | Phase 1 완료 (`885ee110`) |
+| **#149** | large-file 분리 잔여 · OcrPage(1215)·PaymentInfoTab(1513)·OrderManagePage(3089)·LandingPage(2319)·ContractWriterPage | 🟢 P3 | Framework Phase 4 잔여 |
 
-> **2026-09-03 전수 감사** · TypeScript 0에러 확인 · 버그 3건 수정 · TASKS 업데이트
-> 감사 범위: TS 컴파일 · 서버 API 5개 라우터 · 프론트엔드 타입 · store_stock_2 컬럼 삭제 후 잔존 참조
+### 🔲 다음 진행 대기 (승인·지시 대기)
 
-### ✅ 2026-09-03 감사 완료 (버그 수정)
-| 커밋 | 내용 |
-|-----|------|
-| `0d9b7f8f` | store_stock_2 strip 목록 추가 (requests.ts:978) · DisplayRequest.product_name 타입 추가 · lossTracking store_stock_2 SELECT 제거 |
-| `63243fa5` | CompanyInfoSection 폰트 11→13px |
-
-### 🔴 신규 PENDING (2026-09-03 감사 발견)
-| # | 태스크 | 우선순위 | 비고 |
-|---|-----|--------|------|
-| **#112** | `#79 재확인`: bulk-send `dispatch.status` 로직 혼란 · `/skipped\(/` 패턴으로만 "sent" 판별 · 실제 email:sent 케이스 미포함 · 사용자 발주 흐름 확인 후 결정 | 🟡 | 기능적 이슈 (표시 문제) |
-| **#113** | ~~`store_stock_2` 잔존 참조~~ · 서버 null 반환 확인 · UI `?? "-"` 모든 참조 graceful · 완료 | ✅ |
-| **#114** | ~~`CompanyInfoSection.tsx` BOM 문자~~ · 실제 파일 확인 결과 BOM 없음 · 완료 | ✅ |
-
-### ✅ 2026-09-03 감사 확인 (정상 동작)
-- TypeScript 에러: 0건 (TS 클린)
-- `#63` 진열요청 product_name: 서버 JOIN 정상 반환 확인 (`requests.ts:119~143`) · 타입 누락만 수정 완료
-- `#79` 발주 발송: UUID BigInt 변환 오류 `0d9b7f8f`에서 이미 수정 확인
-- `#80` 차용관리 parties API: `borrowings.ts:109` 구현 확인 · `authorize(1)` 정상
-- `vendor.approval-request` 4-state 흐름: `requested`/`approved`/`rejected`/`registered` 정상
-- `product_arrivals` 매입 검수 후 `current_stock += qty` 자동 반영: 정상 구현 (`2026-09-03`)
-- `order_requests` bulk-send UUID 처리: `String(id)` 변환 정상
-- `inventory_checks` store_stock_2 SELECT 제거: 이미 완료
-
----
-
-## 🎯 활성 PENDING · v5 (2026-09-02 오후 · 자율 세션)
-
-### ✅ 2026-09-02 오후 (자율 진행 세션 · 완료)
-| # | 태스크 | 커밋 |
-|---|-----|-----|
-| #65 | 거래처 로그인 · 직원 방식 (bcrypt · password_hash) | `6e1c460b` |
-| #66 · #68 · #69 | 카드 결제 관리 시스템 · CRUD + 대시보드 (accordion) | `6054522b` · `15afca11` · `793b2ae7` · `d29eb908` |
-| #71 | 종배지 z-70 · 모바일 중앙 정렬 | `b7753421` |
-| #74 | 상품입고·실재고 · 창고 자동 필터 (zone_defs.warehouse) | `07ebbfd4` · `897ca0f2` · `88627bab` |
-| #76 | 발주필요→발주요청 · 요청 수량 사라짐 fix (product_code key 통일) | `3bfff169` · `df4c9a5d` · `86a7f818` |
-| #77 | 발주발송 후 발주이력 안 나옴 fix (RPC fallback UPDATE) | `cc7698e2` |
-| #61 | 직원 성명 배지 → 텍스트 | `9847d652` |
-| — | Vendor 5필드 · emerald→blue · 공급요약 삭제 · 승인요청 활성 | `a0658e44` · `bd9e5085` · `3797f268` |
-| — | RequestsPage sticky top-14→top-0 | `ee6d9528` |
-| — | AppFooter 통일 · IRUMs (주)이룸즈 since 2026 | `3f5b2257` |
-| — | 결제내역 탭 · 판매 겹침 fix · 최근결제내역 첫 탭 | `318dd4d2` |
-| — | SplitPanel · useResizablePanel maxWidth 2400 + viewport clamp | `c1203c35` · `adb63cca` |
-| — | 상품입고 · 재고현황 섹션 제거 · 창고구역 배지 · 폰트 +2 · 단가/유통기한 입력 | `7ea9cb28` · `b3d81e77` · `9d93ac02` |
-| — | 오늘의 현황 · 거래처 승인 배지 (관리자) | `cfccbf55` |
-
-### ✅ 2026-09-14 재확인 완료 · v5 전체 정리
-
-**2026-09-14 커밋 대조 재검증 결과 · 모두 완료 확인:**
-
-| # | 태스크 | 완료 커밋 · 근거 |
-|---|-----|-----------|
-| **#79** | 발주 발송 · UUID fix | `aa9db925`·`3d178ed3` (BigInt→String) |
-| **#78** | 상품입고 · 단가·유통기한 auto-fill | `dc323581` (실재고 창고 슬롯 + 상품입고 단가) |
-| **#80** | 차용관리 · 사업자명 · useCompanyInfo | `b58a6295` |
-| **#63** | 진열요청 상품이름 · types.ts product_name | `0d9b7f8f` |
-| **#64** | 진열요청 리스트 재구성 | `58ea6aef` |
-| **#60** | 스케쥴 전월 복사 | `CopyMonthModal.tsx` 존재 · SchedulePage L601 · useScheduleData L419 · `ad8d567b` 마킹 |
-| **#70** | 탭 sticky top-14 → top-0 | grep 결과 · top-14 잔재 0개 · 완전 제거 |
-| **#72** | 스케쥴 직원성명 UI | `116d7146` |
-| **#62** | 스케쥴 클릭 모달 · 왼쪽 정보 탭 통합 | `7192c2cb` (왼쪽 직원정보 → 탭 통합) + `1882f1df` |
-| **#73** | 상품정보 페이지 프레임워크화 | ProductInfoPage.tsx + ProductCreateModal.tsx 분리 완료 · 17+ 프리미티브 import |
-| **#75** | 실재고·상품입고 스캔 왼쪽 정렬 + 반응형 세로 | ScanPage L702 `leftClassName="flex flex-col gap-4 lg:sticky lg:top-4"` · SplitPanel 반응형 완료 |
-
-### ✅ 필요 사용자 액션 (2026-09-02)
-- Supabase SQL Editor · 아래 migration 실행 (미실행 시)
-  - `20260902_credit_cards.sql` · 카드 결제 관리
-  - `20260902_zone_defs_warehouse.sql` · 창고 자동 필터
-  - `20260902_vendors_email_column.sql` · vendor email 저장
-  - `20260902_vendors_password_hash.sql` · vendor 비밀번호 (기본 '1234')
-  - `20260902_vendors_team_lead.sql` · vendor 팀장 필드
-  - `20260902_vendors_approval_reset.sql` · 승인 리셋 (UNCOMMENT 후)
-- 서버 재시작 (tsx watch · 자동)
-- 브라우저 하드 리로드 (Ctrl+Shift+R)
-
----
-
-## 🎯 활성 PENDING · 정리 v4 (2026-09-02 · 14 로컬 커밋)
-
-> **2026-09-02 세션 · 14 로컬 커밋 · 4 신규 프리미티브 · 11 삭제 · 차트 7종 · tabular-nums · OCR rate-limit**
-> 완료 태스크 삭제 · pending 만 우선순위 순 재정렬
-
-### ✅ 2026-09-02 세션 완료 (14 로컬 커밋)
-| 커밋 | 내용 |
-|-----|------|
-| `294922f6` | 7-태스크 통합 (공급사탭 로딩·매입추이 폰트·profit_rate·진열위치 저장·입고내역 아코디언·상품입고 카드 슬롯·매장구역도) |
-| `6e11f3ef` | 사이드바 원복 · SideNav 내부 트리거 제거 |
-| `1c9dc4c9` | FRAMEWORK.md 최신화 · 4 신규 프리미티브 반영 |
-| `88d4955a` | FormRow · FormSection · SubmitBar · ChartCard 신규 프리미티브 4종 |
-| `049e27c0` | 사이드바 여백 감축 · 최소폭 220 |
-| `bedbb065` | 미사용 프리미티브 11개 삭제 (-1758 라인) |
-| `5feb1057` | 전체 페이지 폭 반응형 · PAGE_CONTAINER_CLS max-w 캡 제거 |
-| `09c8ba2d` | 판매대시보드 판매중 필터 · SaleStatusFilter 확산 |
-| `4f3743e2` | 판매대시보드 차트 3종 (Top10·카테고리·이익률) |
-| `276c7b36` | 판매대시보드 차트 5종 추가 (손실Top10·공급사Top·산점도·가격대·재고건강도 · 총 7) |
-| `fd7c6b32` | Borrowing gradient + top accent (Attio 톤) |
-| `1b037c94` | OCR rate-limit · 분당 30회 |
-| `19fa92fb` | font-mono → tabular-nums 30 파일 |
-| `a45eb4fd` | A-H 사용자 지시 7건 (사업장이름·대표자직함·폰트·공사중·표형식) |
-
-### ✅ 이전 세션 완료 (48 커밋 · Remote push 반영 완료)
-| 커밋 | 태스크 | 테스트 |
-|-----|-----|-----|
-| `84a98d48` | #178 팀장 유일성 (B안 · position별) | TS ✓ |
-| `6ab3af8e` | #177 P1 · SettingsModal 직군 탭 노출 | TS ✓ |
-| `a3c1bb0a` | #154 P1 · SaleStatusFilter · Unassigned + ZoneMismatch | TS + vitest 9/9 ✓ |
-| `f8dbb3a9` | #186 A안 · ProductDetailHero · Attio Sticky Hero | TS + vitest 21/21 ✓ |
-| `b3d1093e` | #122 P4 · GradientAccent 프리미티브 | TS + vitest 27/27 ✓ |
-| `ef2454fe` | #122 P1 · SectionCard 프리미티브 | TS + vitest 6/6 ✓ |
-| `7a77f7e2` | #122 P2 · CompanyInfoSettingsPage · SectionCard 적용 (-13라인) | TS ✓ |
-| `1726ec0f` | #122 P3 · SystemSettingsPage · upload 섹션 · SectionCard | TS ✓ |
-| `c4ff4618` | #165 P1 · 상품 검색 전수 조사 doc (19페이지 매트릭스) | — |
-| `e3b7ade6` | #165 Phase A · UnassignedProductsTab · SearchBar 프리미티브 | TS ✓ |
-| `67a12bc1` | #165 Phase A · ZoneMismatchTab · SearchBar | TS ✓ |
-| `e7ea8f14` | #176 재확인 · 이미 완료 (useState(true) 기본 체크) | — |
-| `449ca91d` | #148 · 매장구역도 · 2026 트렌드 조사 리포트 | — |
-| `0517141b` | #148 · 셀 높이 통일 · min-h 240px · BEST 유지 | TS ✓ |
-| `50b03e48` | #148 · 종료 (min-h 통일 + 카테고리/서브라벨 표시) | — |
-| `5ee3be43` | #77 후순위 · #79 부터 진행 · 재정렬 | — |
-| `fa5b3dae` | **#177 P2** · SettingsModal · 직급(rank) 탭 · 자유텍스트 + 자동 rename | TS ✓ |
-| `6040a079` | **#174** · 바코드 카메라 실패 · 다른 브라우저 열기 (SSO 로그인 유지) | TS ✓ |
-| `7da7a795` | #154 P2 + #165 A · ExpiryImminentTab · SaleStatusFilter + SearchBar (server sale_status join) | vitest 26/26 ✓ |
-| `693f250a` | #165 A · BorrowingPage · SearchBar | TS ✓ |
-| `5eec7bd5` | #165 A · SearchBar 확산 5 페이지 (Return·StockReconcile·StockFlow·VendorStock) | TS ✓ |
-| `5ee222b2` | **#182 Phase B** · 근로계약서 · 만료 임박 배지 (D-30 · 만료 · 경과) | TS ✓ |
-| `d3b5ba8c` | **#186 후속** · SectionCard · 메타 정보 섹션 (Attio Section Stack) | vitest 21/21 ✓ |
-| `7d6a5dcb` | **#122 P6** · ActionBar 프리미티브 신설 | vitest 5/5 ✓ |
-| `5ece1b94` | **#79 v4** · 발주 리스트 · row-critical/row-short gradient | TS ✓ |
-| `f0e1a84b` | #165 A · VendorDetailTabs · SearchBar | TS ✓ |
-| `c387e534` | #185 조사 · 직원 연동 매트릭스 (15 컴포넌트·60+ 쿼리) | doc |
-| `3ff53945` | **#185 Phase A** · 재로그인 필요 안내 toast (position/level/phone) | TS ✓ |
-| `de3ecb47` | #185 Phase C · CASCADE 정책 조사 · 안전 판정 | doc |
-| `dcd3bd10` | **#182 P B 확장** · 직원 리스트 · 계약 만료 임박 배지 (D-30·오늘·경과) | TS ✓ |
-| `08f60273` | **#185 Phase B** · SettingsModal rank rename · JWT 재로그인 안내 | TS ✓ |
-| `907d9f58` | NEXT_SESSION_PLAN 갱신 | — |
-| `072e6c43` | **세션 핸드오프** + #130 차용등록 리서치 완료 | doc |
-| `4d1d01cb` | **ProductDetailHero 테스트 · 10 vitest** | TS + vitest 10/10 ✓ |
-| `77ac9e7d` | #122 P2 · SeasonSettingsPage · 접근 제한 SectionCard | TS ✓ |
-| `98702941` | TASKS 41 커밋 정리 | — |
-| **`a6775a0b`** | 🎯 **상품 검색 통일** · matchesProductQuery 유틸 신설 + 3 페이지 (Phase 1) | vitest 13/13 ✓ |
-| `a6b53faa` | 상품 검색 통일 Phase 2 · Borrowing + ReturnConfirmed | TS ✓ |
-| `849a051e` | 상품 검색 통일 · OrderHistoryTab (items 배열) | TS ✓ |
-| `bccb926b` | 상품 검색 통일 Phase 3 · 4 페이지 (StockReconcile·VendorStock·StockFlow·VendorDetail) | TS ✓ |
-| `22bc0409` | 상품 검색 통일 · ReturnListPanel | TS ✓ |
-| `4626c408` | 🎯 **상품 검색 통일 100% 완료** · Phase 4 · 3 페이지 (RealStock·OrderManage·PurchaseHistory) · 총 **14 페이지** | TS ✓ |
-| **+ 이전 세션 · 37+ 커밋 · 총 Remote push 완료 · working tree clean** |
-
-### 🔴 크리티컬 · 최우선 (회귀 위험)
-| # | 태스크 | 진행 상황 | 예상 |
-|---|-----|--------|-----|
-| **#182** | 근로계약서 연동 · DTO 일치화 | Step 1 완료 `2caeb4b1` · **삼각화 유지 결정 · 완결** (API DTO / App 도메인 / 편집 draft · 각각 목적 다름 · 통합 시 회귀 위험) | — |
-| **#185** | 직원↔스케쥴·계약서 연동 정리 | Phase B~E 대기 · #182 완료 후 | 8h |
-
-### 🟢 낮은 위험 · 자율 진행 가능
-| # | 태스크 | 진행 상황 | 예상 |
-|---|-----|--------|-----|
-| **#122 P2·3·5·6** | 시스템설정 목업 · SectionCard 확산 (실제 페이지 적용) | P4·P1 프리미티브 완료 · 확산 대기 | 4h |
-| **#165 P1** | 상품 검색 전수 조사 · 페이지별 필터·검색 UX 통일 | 조사 필요 | 4h |
-| **#154 P2** | ProductSearchInput 확산 · FlowTab · LandingPage::StockSearch | 프리미티브 확산 | 4h |
-
-### ✅ 재확인 · 이미 구현 완료 (2026-08-29)
-- **#176** · 발주 카톡 전송 옵션 · `useOrderModal.ts:33` · `notifyLogisticsLeader=useState(true)` · 기본 체크 · PDF+SolAPI 카톡 옵션 완전 구현
-
-### 🟡 중형 · 사용자 확인 필요
 | # | 태스크 | 대기 사유 |
 |---|-----|--------|
-| **#79/#107/#258** | 발주 리스트 프리미엄 UI | **목업 승인됨 (2026-09-01 blanket)** · 구현 대기 |
-| **#130** | 차용등록 재설계 · 양방향 화살표 | **목업 승인됨 (2026-09-01)** · Attio gradient 일부 반영 (`fd7c6b32`) · 구현 대기 |
-| **#174** | 바코드 SSO · 다른 브라우저 열기 | 열린이슈 |
-| **#177 P2** | 직급(rank) 편집 UI · SettingsModal 에 rank 탭 추가 | 사용자 확인 필요 (직급 프리셋 없음 · 자유 텍스트 or 프리셋 결정) |
+| **#107·#258** | 발주 리스트 프리미엄 UI (GroupedListPanel v3) | 목업 승인 완료 · Phase 2 구현 대기 |
+| **#253 Phase B~D** | 자동 임포트 Python 스크립트·설치파일 | 대형 별도 세션 |
+| FlowTab·LossHistoryTab·DiffTab | 컬러 bg 정리 (대량) | 승인 후 순차 |
+| **#254~#256** | 세션 보안 강화 · 중복 로그인 방지 · 강제 로그아웃 | 대형 · 별도 세션 |
+| **#192** | 거래처 승인 flow 3-step · vendors ALTER + UI | 스펙 확정됨 · 별도 세션 |
+| **#191** | Modal 프레임워크화 · Phase B~C (중·고위험) | Phase A 완료 · 사용자 승인 후 |
 
-### 🟠 대형 · 별도 세션 (사용자 지시 · 뒤로 밀기 · 2026-08-29)
-| # | 태스크 |
-|---|-----|
-| **#253 (구 #77)** | 자동 임포트 시스템 · Python 스크립트 · 원클릭 설치 · **후순위** |
+### 🔴 사용자 결정 필요
 
-### 🚫 열린이슈 (사용자 인풋 필요 · 스킵)
-- 상품등록 404 (network log 필요)
-- 타이핑 글씨 깨짐 (위치 확인 필요)
-- **현재 터미널 한글 깨짐 · CC 재시작 필요** (Node 프로세스 CP949 고정)
+| # | 태스크 | 결정 사항 |
+|---|-----|--------|
+| **#89** | DayTimelineModal · settings.positions 자동 파생 | 하드코딩 3 그룹 → settings 순회 여부 |
+| **#92** | 회사·브랜드 페이지 · 완전 통합 (5탭 → 1페이지) | 통합 여부 |
+| **#90** | ContractWriterPage · JOB_CATEGORIES → wageRates 파생 | ContractCategory strict union 광범위 변경 · 재결정 필요 |
+| **#91** | SchedulePage · position 문자열 매칭 → settings | 탭 유지 vs 직군 순회 vs 하이브리드 |
+| **매입이력 검색** | "테스트" vendor · 매입이력 없음 · 클라이언트 union 표시 or 그대로 | 사용자 결정 대기 |
 
----
+### 🚫 열린이슈 · 확인 대기
 
-## ⚙️ Framework Phase 4 · Large-file 분리 현황 (2026-08-21)
+- **상품등록 404** · 네트워크 탭 URL 확인 필요 (서버 재시작 후 재현 여부)
+- **터미널 한글 깨짐** · Node 프로세스 CP949 고정 · `chcp 65001` or CC 재시작
 
-**목표**: 44 warn/critical → 0 · 파일당 800줄 미만
-**현재**: 44 → 24 warn (24 유지 · 모두 large-file · raw-* 0) · 이번 세션 6파일 **-1,003 라인** · 8 신규 파일 이관
+### ⏸ 외부 대기
 
-### 완전 탈출 (warn 0 · 진행 완료)
-
-| 파일 | 원본 | 탈출 후 | 분리 산출물 |
-|-----|------|--------|-----------|
-| `PermissionsPage` | 964 | 탈출 | constants + LevelSelect + PositionsField |
-| `ProductArrivalPage` | 1040 | 탈출 | helpers.tsx |
-| `HrFormsPage` | 1123 | 778 | types + constants + utils + subcomponents |
-| `ContractSettings` | 886 | 탈출 | constants |
-| `PharmacistPage` | 952 | 755 | constants + utils + subcomponents |
-| `ProductInfoCard` | 1015 | 894 | PurchaseHistorySection |
-| `DisplayPage` | 3126 | 790 | 11 신규파일 (2026-08-22) |
-| `BoardPage` | 1177 | 231 | types + constants + utils + PostCard + InlineDetail + ComposerModal + DetailModal |
-| `ResignationWriter` | 1241 | 768 | types + utils + SignatureModal + ResignationPreview |
-
-### 부분 분리 (warn/critical 유지)
-
-| 파일 | 원본 | 현재 | 분리 산출물 | 커밋 |
-|-----|------|-----|-----------|-----|
-| `StaffManagePage` | 2728 | **2153** | types.ts (200) + helpers.ts (148) + CreateModal.tsx (110) + subcomponents.tsx (163) | `2d9ec295`·`11244343` |
-| `OrderManagePage` | 3205 | **3089** | types.ts (90) + utils.ts (54) | `41b5455e` |
-| `LandingPage` | 2467 | **2319** | PeriodCoverageWidget.tsx (163) | `d2dbcc20` |
-| `DisplayPage` | 3126 | **790** ✅ | types+helpers+VendorManageSplit+ZoneDetailModal+StaffInfoModal+ZoneProductsModal+ProductInfoModal+DisplayStoreMap+DisplaySearchBar+DisplayMobileList+DisplayProductPanel+useDisplayData | `0358650b`·`ec957313` |
-| `SalesTrendPage` | 2676 | **2501** | helpers.ts (203) | `3e694ebd` |
-| `OcrPage` | 1768 | 1215 | types + ConfirmedRecordsTab | — |
-| `PaymentInfoTab` | 1926 | 1513 | types + utils + subcomponents | — |
-| `PurchaseHistoryTab` | 1192 | 1158 | types | — |
-| `ReturnListPanel` | 1205 | 805 | types + ReturnRequestModal | — |
-| `PurchaseSubTabs` | 1216 | 1145 | chart-helpers | — |
-| `RequestsPage` | 1307 | 1225 | types + ListToolbar | — |
-| `ScanPage` | 1165 | 1105 | helpers | — |
-| `SupplierTab` | 1005 | 990 | types | — |
-| `FlowTab` | 1111 | 1075 | types | — |
-
-**총 신규 서브 파일**: 58+개 · **분리 원칙**: types / constants / utils / subcomponents 4-tier
-
-### 남은 대상 (우선순위 순)
-
-1. `OcrPage` (1215) · `PaymentInfoTab` (1513) · 최우선
-2. `PurchaseSubTabs` (1145) · `RequestsPage` (1225) · `ScanPage` (1105) · 차순
-3. `OrderManagePage` (3089) · `LandingPage` (2319) · 대형 · 추가 분리 필요
-4. `ContractWriterPage` (2680+) · critical · 대규모 리팩터
-   - `OcrPage/RawOcrTable` ✅ 완료 (5268→799줄 · #31 · 2026-08-23)
+- **#42** · 발주 PDF + 카카오톡 · 사업자등록증 발급 대기 (SolAPI)
 
 ---
 
-## 🎯 최상위 통합 · #LIST-UI-2026 · 리스트 UI 전면 공통 디자인 (2026-08-24 · 사용자 지시)
-
-> **모든 리스트 UI 를 하나의 공통 디자인으로 통합** · 파스텔 지양 · 최신 트렌드 · 깔끔·세련·고급·멋짐·초고해상도·부드러움
-
-### 🎨 공통 디자인 스펙 (확정)
-- **파스텔 bg 절대 X** · sky/amber/rose/indigo 50/100 shade 데이터 셀 배경 금지
-- **강조 · text 색만** · 부족 rose-600 · 발주금액 brand-deep bold · 정상 text-ink
-- **선택 row** · `bg-brand-tint/50` · 딥네이비 톤
-- **hover row** · `bg-brand-tint/25` 통일
-- **상단 gradient accent** · 세션 시그니처 (`from-brand-deep via-sky-500 to-brand-deep`)
-- **말머리표** · `w-1.5 h-1.5 rounded-full bg-brand-deep` · dot
-- **폰트** · title 19px semibold · body 15px · meta 17px tabular-nums
-- **카테고리 그룹 헤더 (colspan) · 제거** · 서브헤더만 · 미니멀
-- **참고** · `docs/UI_MOCKUP_2026-08-21.html` · `docs/UI_MOCKUP_ORDER_LIST_V3_2026-08-24.html`
-- **톤** · Ramp · Brex · Cursor · Linear · Vercel · Notion · Attio 2026
-
-### 📋 통합된 하위 항목 (이전 태스크 흡수)
-- ✅ **#262 · SplitListPanel 검색창 상단 필수** (완료 · `f54c927a` 등)
-- ✅ **#264 Round 1 · 발주 액션 버튼 최신 트렌드** (완료 · `cdb6d00c`)
-- ✅ **#265 · 매입이력 embedded 카테고리 필터 숨김** (완료 · `d584e0e9` 등)
-- ✅ **#266 · PaymentInfoTab 결제등록·최근결제 탭 처리** (완료 · `8baaff80`)
-- ✅ **매입이력·발주필요·발주요청 · 카테고리 그룹 헤더 제거** (완료 · `f61bb407`)
-- ✅ **매입이력·발주 · 서브헤더+body 색상 bg 제거 · zinc 통일** (완료 · `f2ec7e85`·`120e330c`·`78e040ce`·`7512219d`·`5420a188`)
-- ✅ **매입이력 embedded · 세션 상단 가로 gradient accent** (완료 · `fc3869a1`)
-- ✅ **랜딩 입고알림 · 상단 gradient + 말머리표 + 모달** (완료 · `898e75de`)
-- ✅ **반품 오른쪽 · 탭메뉴 불일치 fix** (완료 · `4111690e`)
-- ✅ **ListPanel/ListRow 프리미티브 신설** (완료 · `599926a8`·`405507fb`)
-- ✅ **SplitRightEmpty/Loading/Error 프리미티브 신설** (완료 · `f3d53c5e`·이후)
-
-### 🔲 다음 진행 (승인·지시 대기)
-1. **OrderRequestTab · v3 목업 실적용** · 카드형 리스트 (사용자 승인 필요)
-2. **OrderNeedTab · v3 톤 적용** · 발주필요 리스트
-3. **FlowTab · 통계 상품흐름** · 컬러 bg 40+ 개 정리 (대량)
-4. **LossHistoryTab · 손실 이력** · 테이블 톤 정리
-5. **DiffTab · 실재고 차이** · 톤 정리
-6. **ByProductPanel · 매입이력 상품별** · 톤 정리
-7. **SplitRight 프리미티브 확산** · Empty/Loading/Error 각 페이지 이관
-8. **VendorManageSplit · 공급사관리** · 확산
-9. **ProductInfoPage** · 확산
-10. **StaffManagePage · StaffListPanel** · 확산 (특수 · 상단 toolbar 유지)
-
-### 📚 신규 프리미티브 (지원 라이브러리)
-- `ListPanel` + `ListRow` · 랜딩 톤 · 45+ 예상 소비처
-- `SplitRightEmpty` · 좌측 미선택
-- `SplitRightLoading` · Spinner + label
-- `SplitRightError` · 오류 카드 + 재시도
-- `SplitLeftHeader` · 폰트 +2
-
-### 🎬 접근 방식
-- Phase 1 ✅ 프리미티브 신설 (완료)
-- Phase 2 ⏸ **v3 목업 승인 후** OrderRequestTab 실적용 (사용자 결정 대기)
-- Phase 3 · 차례로 다른 리스트 확산 · 매 페이지 사용자 승인 or 자율 (사용자 지시 따름)
-
----
-
-## 🔥 활성 (진행중 / 대기 · 2026-08-24 세션 후반 정리)
-
-### 🚨 2026-08-25 오전 · 사용자 요청 정리 (사용자 지시)
-
-**완료 · 커밋됨 (로컬)**
-- ✅ SplitRightHeader 프리미티브 (`4bfd7752`)
-- ✅ SPLIT 반응형 대개편 · md부터 좌우 · 자동 clamp (`46318794`)
-- ✅ 안쓰는 목업 9개 삭제 · staff v1~v8 · order v1 (`c17242d4`)
-- ✅ Vitest @/... alias fix · shadcn sidebar 트랜스폼 (`14232295`)
-- ✅ ScanPage 필터 · 4버튼 → 2버튼 (진열요청·유통기한임박) count (`3a00019a`)
-- ✅ 점심 메뉴 숨김 · 오늘의 현황 lunch 통계 숨김 + viewport fix (`0ac9ec62` · `e58a1e74`)
-- ✅ SplitRightTabs 프리미티브 신설 (`f4c9...` 근처) · ProductDetail 5탭 · Payment 2탭 이관
-- ✅ 재고현황 카드 · v9 accent + 폰트 +2 (`85f1463f`)
-- ✅ StockSlotCard · sample/product_storage.png pastel · 창고 cyan · 매장 violet (`b669698a`)
-- ✅ ScanPage 전체 폰트 +2 · 7 파일 (`154751b9`)
-- ✅ 슬롯 그룹 재배치 · 창고 나란히 · 매장 나란히 · 톤 통일 (`7e81d7a9`)
-- ✅ 매장배치도 (구역도 제외) · v9 목업 · 폰트 +2 (`7cbfe5de`)
-- ✅ 유통기한 임박 · 토글 버튼 + 빨간 마크 + DB 저장 (`339eab45`)
-- ✅ return_requests 테이블 마이그레이션 (`399e4e45` · 반품요청 DB 에러 fix)
-
-**완료된 태스크 (2026-08-25 · #1~#30)**
-- ✅ 매장구역 Tier 3 (`38b1a8fe`) · 배치구역불일치 매장구역 안 탭 (`5de30d11`) · 최근스캔 진열요청 헤더 이동 (`f73ba7d6`)
-- ✅ SaveCard 합계 파스텔 (`c466953e`) · 임시저장 draft race fix (`83cc550f`) · 입고알림 v9 (`abf6e9e2`)
-- ✅ 반품요청서 PDF (`a37209d7`) · 공급사관리 반응형 (`2f05c386`) · 반품필요 통합검색+체크박스 (`ca44834b`·`0f093347`)
-- ✅ 직원+거래처 핸드폰 중복검증 (`111d1aaa`·`e6825d62`) · 메뉴 판매/반품 (`5e5f6e97`) · 배치불일치 표형식 (`aaeb6358`)
-- ✅ 유통기한 모달 (`06b09a5d`) · 매입 유통기한임박 rename (`4070dec2`) · 매장구역도 헤더 v9 (`8a84005d`)
-- ✅ 발주서 PDF (`f0f16f6b` · `62030381` 재설계) · 재고점검 제거 (`f8f964e5`) · 서브탭 개별 노출 (`33b9ac4f`)
-- ✅ 발주필요 조건토글 (`e76b785a`) · 품절임박/발주이력 공급사분류필터 (`f76f9bdb`·`24c21655`·`a3e1922f`)
-- ✅ Split 폰트+2 (`18fafbdd`) · cost_price 제거+strip retry (`2938957a`·`44a187aa`·`ca44834b`) · 배치불일치 인라인편집+폰트+3 (`0f0b48d3`)
-
-**미완 (2026-08-25 큐)**
-19. 🟡 **매장구역도 페이지** · 헤더 v9 적용 (`8a84005d`) · 나머지 세부 (라벨 클릭 시 진열상품 조회 UX) 검토 필요
-23. 🟡 **발주요청 리스트 · 오른쪽 상품명 앞 아이콘 개선** (스크린샷 필요 · 정확 위치 확인)
-30. 🟡 **자동 임포트 Phase B/C/D** · installer.bat + Python 감시 스크립트 + Task Scheduler 등록 · 대형 (별도 세션 권장)
-
-**신규 완료 (2026-08-25 저녁)**
-- ✅ **반품확정 페이지 + [확정] 버튼** (`16945bf2`·`56906816`) · ReturnConfirmedPanel + 반품 서브탭 이너 탭 (반품필요/반품확정)
-- ✅ **스캔 검색 미등록 오탐지 버그 fix** (`0c28832b`) · products-map stale · preload + API fallback + cache hydrate
-
-**대기 · 신규 기능 (2026-08-25 저녁)**
-- ✅ **결제 메뉴 · 차용입력 페이지 신설** (`ce0692c0`) · 공급사·약국 차용기록 (상품·갯수·일자·서명 등)
-- 🟡 **결제입력 페이지 UX 재구성** (#111) · 공급사 확인 후 · 좌(정보/결제) + 우(발주내역+판매내역) · 대형 · spec 재확인 필요
-- 🟡 **세션 설정 · 시스템설정 탭 추가** (`6f3e057f`) · v9 목업 · 프리셋 chip · KV 자동 저장
-- 🟡 **Split 왼쪽 검색·필터 반응형 fix** (`afd57117`) · flex-wrap · 겹침 방지
-- 🟡 **#107 · 발주요청 리스트 카드 프리미엄** · 사용자 피드백 대기
-- 🟡 **#108 · large-file 8개 분리** · 별도 대형 세션 · 사용자 승인 대기
-
-### 🚨 열린 이슈 (긴급 · 다음 세션 최우선)
-
-#### 1. 상품등록 404 (사용자 제보 · 미해결)
-- 증상 · 상품 등록 버튼 클릭 → 404
-- 파일 · `src/components/ProductInfoPage/ProductCreateModal.tsx` · `41bbfca4` 이후
-- 원인 후보 · A) 개발 서버 재시작 필요 · B) Vite proxy · C) 브라우저 캐시 · D) Render 프록시
-- 다음 · 서버 재시작 · Network 탭 URL 확인 · 실 원인 파악
-
-#### 2. 매입이력 공급사별 · 검색 안 됨 ("테스트" vendor)
-- 원인 · 서버 `/api/stock-manage/supplier-purchases` · 매입 이력 있는 vendor만 반환
-- 옵션 A (권장) · 클라이언트 · useVendors union · "매입 이력 없음" 표시
-- 사용자 결정 대기
-
-#### 3. 발주 리스트 리디자인 목업 · 사용자 승인 대기
-- 목업 v1 · `docs/UI_MOCKUP_ORDER_LIST_2026-08-24.html`
-- 목업 v2 · `docs/UI_MOCKUP_ORDER_REQUEST_LIST_2026-08-24.html` (Linear/Attio)
-- 목업 v3 · `docs/UI_MOCKUP_ORDER_LIST_V3_2026-08-24.html` (Ramp/Brex/Cursor · 프리미엄)
-- 승인 후 · OrderRequestTab 실적용
-
-#### 4. 타이핑 글씨 깨짐 (사용자 제보 · 위치 확인 필요)
-- 앱? IDE? 터미널? 위치 알려주면 즉시 fix
-- 터미널 · CP949 → UTF-8 (`chcp 65001` · git config `i18n.logOutputEncoding utf-8`)
-- 앱 (Korean IME) · onCompositionStart/End 처리 필요할 수도
-
----
-
-### ✅ 이번 세션 완료 (2026-08-24 · 40+ 커밋 · 로컬만)
-
-#### 반품 오른쪽 탭메뉴 불일치 fix (완료 · `4111690e`)
-- ReturnListPanel · 외부 3탭 (상품정보/매입이력/판매정보) 제거 · 셋 모두 같은 컴포넌트 렌더 문제
-- ProductDetailRightPanel 내부 자체 5탭 (기간별상품흐름·매입이력·발주내역·재고관리·상품정보) 로 통일
-
-#### #178 공급사정보 SQL + 데이터 (완료)
-- ✅ `sql/migrations/2026-08-24_vendor_order_methods.sql` · 실행 완료
-- ✅ VendorInfoHeader · 5 xlsx 필드 (order_method·region·invoice_method·order_status) 표시
-- 🔲 special_notes · 경고 배너 · 다음 세션
-- 🔲 tests 추가
-
-#### #262 · SplitListPanel · 검색창 상단 필수 · 대원칙 등록 (완료)
-- ✅ SupplierTab·ByProductPanel·PaymentInfoTab · custom → built-in search 이관
-- ✅ `docs/CODING_PRINCIPLES.md` · 대원칙 등록
-- ✅ memory `feedback_splitlist_search_required.md` 신설
-
-#### #263 · List UI Framework · ListRow 프리미티브 신설 (진행)
-- ✅ `src/components/common/ListRow.tsx` · ListPanel + ListRow · 13 tests
-- ✅ 랜딩 입고알림 톤 기준 (사용자 승인)
-- ✅ v2 확장 · topAccent · bullet · description · pill · subtitle · onClick modal
-- ⏸ Phase 3 (Split 왼쪽 확산) · 각 페이지 사용자 승인 후 진행 (design 민감)
-
-#### #264 · 발주 액션 버튼 · 최신 트렌드 (Round 1 완료)
-- ✅ Round 1 · 3 버튼 (`cdb6d00c`) · gradient·shadow·ring·scale
-  · OrderNeedTab 일괄 발주요청 · OrderRequestTab 일괄 발주 · OrderModal 발주 발송
-- 🔲 Round 2 · 나머지 15-25 버튼 자동 스캔·일괄 (사용자 확인 후)
-
-#### #265 · 매입이력 embedded 시각 정리 (완료)
-- ✅ 분류 필터 chip 숨김 (`d584e0e9`)
-- ✅ Top N 필터 세션 제거 · 검색 헤더 인라인 (`d2b28305`)
-- ✅ 카테고리 그룹 헤더 tr 전체 제거 (`f61bb407`)
-- ✅ 서브헤더+body 색상 bg 제거 · zinc 통일 (`f2ec7e85`·`120e330c`·`78e040ce`·`7512219d`·`5420a188`)
-- ✅ 세로 accent 제거 (사용자: "별로") · 세션 상단 가로 gradient accent (`fc3869a1`)
-
-#### #266 · 결제입력 우측 탭 처리 (완료 · 신규 · 사용자 지시)
-- ✅ PaymentInfoTab · 결제등록·최근결제 · 나란히 grid → 탭 (`8baaff80`)
-
-#### #267 · ProductCreateModal · 중복·불필요 필드 정리 (완료 · 사용자 지시)
-- ✅ 바코드 필드 제거 · 상품코드 = 바코드 · submit 자동 세팅
-- ✅ 적정재고 필드 제거 · 설정에서 자동 계산
-- ✅ 공급사 · text → autocomplete (useVendors)
-- ✅ 실제배정구역 · text → autocomplete (useZoneDefs)
-- 커밋 `41bbfca4` · 상품등록 404 이슈 해결 대기
-
-#### 계산 회귀 fix (완료)
-- ✅ ProductDetailPanel · 월평균 판매 "최근6개월 월평균" (`94f48021`)
-- ✅ 발주내역 탭 · lookupProduct 동기 함수 · await/.catch 오용 (`4bf256b7`)
-- ✅ 급상승 상품 클릭 · ProductDetailModal 오픈 wiring (`1ca5f399`)
-
----
-
-### 🔲 대기 (남은 태스크)
-
-#### ✅ #261 · SplitRight 프리미티브 · 폰트 +2 프레임워크 (완료 · 2026-09-06)
-- ✅ SplitLeftHeader · 폰트 +2 (17→19px)
-- ✅ SplitRightHeader · SplitLeftHeader 대칭 · 신설 (`c8b7b547`)
-- ✅ SplitRightEmpty · "선택하세요" 공용 빈상태 (기존 구현)
-- ✅ SplitRightLoading · Spinner + label 공용 (`c8b7b547`)
-- ✅ SplitRightError · 오류 카드 공용 (기존 구현)
-- ✅ TabBar 폰트 +2 확산 (global sed `30b29655`)
-
-#### #253 · 자동 임포트 (Phase B~F 대기)
-- ✅ Phase A · 서버 endpoints 완료
-- ✅ Phase E · 웹 UI 완료
-- 🔲 Phase B · Python 스크립트
-- 🔲 Phase C · PyInstaller .exe
-- 🔲 Phase D · install.bat / Task Scheduler
-- 🔲 Phase F · README
-
-#### 그 외 대기
-- 🔲 적정재고 flow 조사 · `/api/products/refill-optimal-stock` DB flow 보고
-- 🔲 급상승 · 최근 30일 데이터 없음 안내 배너 결정
-- ✅ #259 · 매입이력 공급사별 상품 확장 · SupplierTab.tsx `inlineExpanded` 이미 복원 완료 (2026-08-25 `#82 (#259)`)
-- 🔲 FlowTab · LossHistoryTab · DiffTab · 컬러 bg 정리 (대량 · 승인 후)
-
-### 조사·확인 대기 (사용자 답변 필요)
-- 🔲 급상승리스트 · 최근 30일 데이터 없을 시 · "데이터 없음" 배너 추가할지 결정
-- 🔲 적정재고 컬럼값 · 설정값이 잘 들어가는지 조사·보고 (요청됨 · 착수 대기)
-
-### ✅ #259 · 매입이력 공급사별 · 상품 확장 기능 복원 (완료 확인 · 2026-09-06)
-- ✅ SupplierTab.tsx line 192 · `inlineExpanded` Set 상태 + `// 2026-08-25 · #82 (#259) 복원` 주석 확인
-- ✅ ByVendorPanel 좌측 SupplierTab embedded · showExtraPurchaseColumns=true · 인라인 확장 UX 정상 동작
-- **완료** · 추가 작업 불필요
-
-### #260 · SplitLeftHeader 프리미티브 신설 (신규 · 2026-08-24 · 사용자 지시)
-- ✅ Phase 1 · `src/components/common/SplitLeftHeader.tsx` 신설 (7 tests)
-  · AccentBar + icon + title + right + subtitle · withBorder 옵션
-  · 폰트 +2 (text-[17px]) · role=heading aria-level=2
-- ✅ Phase 2 · ResignationWriterPage 좌·우 헤더 적용
-- ✅ Phase 3 · ContractWriterPage · PharmacistPage · (선택) skip · 복잡 레이아웃·트리 패널 구조로 SplitLeftHeader 패턴 부적합
-
-### #258 · 발주 리스트 · 프리미엄 UI 재설계 + 프레임워크화 (Phase 1 ✅ · Phase 2 지연)
-- ✅ Phase 1 · GroupedListPanel 프리미티브 신설 · 6 tests (`[grouped]`)
-- ⏸ Phase 2 · OrderRequestTab 적용 · **지연** · 대형 table 구조 · 카드 기반 GroupedListPanel 로 변환 시 컬럼 정렬 손실 · 별도 세션 (사용자 승인 후)
-- 향후 · GroupedListPanel 은 다른 그룹형 리스트 (발주이력·매입 등)에 확산
-
-### #258-원본스펙 (신규 · 2026-08-24 · 사용자 지시)
-
-**대상**: 발주요청 페이지 · 우측 발주 리스트 (12건 예시)
-- 공급사별 그룹 (동아제약 · 박카스 · 신신제약 등)
-- 그룹 헤더 · [발주이력] 링크 · 발주(N) count · 결제방식 (선결제/기타)
-- 상품 행 · 상품명 · 주문수량 · 이전 · 사입가 · 발주금액
-- 상단 액션 · 일괄 발주 · 전체선택 · 선택삭제 · 12건 카운트
-- 상단 안내 · "공급사를 클릭하면 최신 발주이력 확인"
-
-**설계 요구사항 (사용자 지시)**:
-- **UI 목업 파일 준수** · `docs/UI_MOCKUP_2026-08-21.html`
-- **최신 트렌드** · Linear · Vercel · Notion · Attio 2026 톤
-- **최신 기술** · React 19 · Tailwind · Pretendard · antialiased
-- **품질** · 깔끔 · 고급 · 세련 · 멋짐 · 초고해상도 · 부드러운 UI
-- **파스텔·이모지·촌스러움 금지** · 딥네이비 · 미니멀
-
-**Phase 별 구현**:
-- **Phase 1** · UI 목업 · HTML 파일 (docs/UI_MOCKUP_ORDER_LIST.html) · 사용자 확정
-- **Phase 2** · 프리미티브 신규 · `src/components/common/GroupedListPanel.tsx`
-  · props · groups · groupHeader slot · itemRow slot · actions · summary
-  · a11y · role=list · aria-label · keyboard navigation
-- **Phase 3** · 발주요청 (OrderRequestTab) 적용 · 회귀 방지
-- **Phase 4** · 다른 리스트 확산 (발주필요·발주이력·매입·재고 등) · 각 페이지 개별 검토
-- **Phase 5** · unit tests (프리미티브) + 시각 검증
-
-**UI 대원칙 적용 (필수 · 재확인)**:
-- 목업 파일 · `docs/UI_MOCKUP_2026-08-21.html` PC/모바일 톤 준수
-- 파스텔 · 이모지 · 배지 남발 · 촌스러움 · 금지
-- Linear · Vercel · Notion · Attio 2026 톤 · 딥네이비 액센트
-- Pretendard · antialiased · GPU 가속 · image-rendering
-- 폰트 +2 기본 (40대+ 가독성)
-- 헤더 자동 정렬 · 컬럼 폭 조정 · 카테고리 색깔 분류
-
-**규모** · 15~20시간 (프리미티브 8h + 3~5 소비처 각 2~3h)
-
-**관련 · 이전 프리미티브** · SplitListPanel · Card · StatusPill · CategoryChips · IconTile · Badge · Modal
-
-### #257 · 발주필요 · 실재고 컬럼 삭제 + 오른쪽 판매현황 대체 (✅ 완료 · 2026-08-24)
-- ✅ Phase 1 · 실재고 컬럼 삭제 (`768e91bd`) · 헤더 colSpan · 합계 · 데이터 행
-- ✅ Phase 2 · 오른쪽 상세 판매현황 · **이미 구현됨** · ProductDetailRightPanel showChart=true
-  · 상단 · 상품명 + 공급사 + 공급사조회 버튼 (공급사 종류 표시 완비)
-  · 3탭 · 기간별 상품흐름 (월별 판매 트렌드 차트) · 매입이력 · 발주내역
-  · 재고 · 매입판매가 · 발주 · 배정구역 · 상품정보 (CollapseCard)
-  · 추가 작업 불필요 · 사용자 시각 확인 권장
-
-### #256 · 세션 만료 후 · 로그아웃 상태 강제 · 자동 재로그인 방지 (신규 · 2026-08-24 · 사용자 지시)
-- 📄 현재 · 세션 만료 시 · localStorage 정리 + reload · 하지만 서버 JWT 쿠키 유효할 경우 자동 재로그인 가능성
-- 🔲 만료 시 · `POST /api/auth/logout` 필수 호출 · JWT 쿠키 clear
-- 🔲 refresh token 도 무효화 · 자동 refresh 차단
-- 🔲 로그인화면 · "세션 만료 · 다시 로그인 필요" 배너 명시
-- 🔲 sessionStorage · "megatown_forced_logout" · 자동 로그인 방지 flag (사용자 명시 로그인 시 clear)
-- 💡 관련 · #251 (visibilitychange fix) · #252 (KV timeout)
-
-### #255 · 중복 로그인 방지 (신규 · 2026-08-24 · 사용자 지시)
-- 📄 문제 · 같은 계정 · 여러 브라우저 · 여러 기기 · 동시 로그인 가능
-- 🔲 서버 · 활성 세션 관리 테이블 (session_id · employee_id · issued_at · last_seen · device · ip)
-- 🔲 로그인 시 · 기존 활성 세션 감지 · 사용자에게 선택 (기존 세션 강제 로그아웃 · 취소)
-- 🔲 다른 기기 로그인 감지 시 · 기존 클라이언트 · WebSocket or 폴링 · "다른 기기 로그인 · 로그아웃됨" 알림
-- 🔲 관리자 · 활성 세션 목록 조회 · 강제 로그아웃 (superadmin)
-- 💡 최신 기술 · Redis 세션 스토어 or Supabase user_sessions 테이블
-- 💡 관련 · #254 (세션 보안 강화)
-
-### #254 · 세션 보안 강화 · 최신 기술 반영 (신규 · 2026-08-24 · 사용자 지시)
-- 📄 현재 · JWT (access 1h · refresh 7d) · httpOnly cookie · 30분 idle timeout
-- 🔲 **httpOnly + Secure + SameSite=Strict** cookie 강화 · CSRF 방어
-- 🔲 **Refresh token rotation** · 매 refresh 시 · 신규 refresh token 발급 · 이전 무효화
-- 🔲 **JWT jti** · 토큰 blacklist (로그아웃 · 강제 만료 · 즉시 무효화)
-- 🔲 **Device fingerprint** · 로그인 시 · User-Agent + IP · 이상 감지 (다른 기기 접속 알림)
-- 🔲 **Audit log 강화** · 로그인·로그아웃·refresh·강제만료 · 실패 시도 · IP 기록
-- 🔲 **Rate limiting** · 로그인 API · 5회 실패 시 · 5분 IP 차단
-- 🔲 **PBKDF2 → bcrypt 확정** (이미 대부분 · vendor 만 SHA256 · #112-2 참조)
-- 🔲 **2FA (선택)** · 관리자 계정 · TOTP (Google Authenticator) 지원
-- 💡 관련 · #255 (중복 로그인) · #256 (자동 로그인 방지)
-- 💡 규모 · 대형 · 12~18시간 (5-6개 세부 항목 순차)
-
-### #253 · 자동 임포트 시스템 · 원클릭 설치 + 스케쥴 실행 (Phase A ✅ E ✅ · 2026-08-24)
-
-**Phase A · 서버 endpoints ✅ 완료**:
-- ✅ `src/shared/schemas/autoImport.ts` · Zod 스키마 (Config·Heartbeat)
-- ✅ `server/routes/settings/autoImport.ts` · 5 endpoints (config get/post · heartbeat · status · installer 501)
-- ✅ authorize(9) · 관리자 lv9 전용
-- ✅ server.ts mount
-
-**Phase E · 웹 UI ✅ 완료 (병렬 진행)**:
-- ✅ `src/hooks/useAutoImportConfig.ts` · useAutoImportConfig + useAutoImportStatus + computeStatusTone
-- ✅ `src/components/SystemSettingsPage/AutoImportSection.tsx` · 종합 편집 UI
-- ✅ SystemSettingsPage · "auto-import" 신규 탭 (Robot · violet)
-- ✅ 상태 배지 · green/amber/red/gray · 60초 폴링
-- ✅ 미설치 안내 + [설치 파일 다운로드] (Phase C 후 활성)
-- ✅ 활성 토글 + 폴더 경로 4개 + 기본값 복원 + 자동 생성
-- ✅ 실행 간격 프리셋 (8종) + 사용자 정의
-- ✅ 임포트 후 처리 · 파일명 자동 정리
-- ✅ 저장 · 3193 tests · TS · vite build · audit baseline 갱신
-
-**Phase B~D · F · 착수 대기**:
-- 🔲 Phase B · Python 스크립트 (config 조회·파일 relay·rename·heartbeat)
-- 🔲 Phase C · PyInstaller `.exe` 빌드 · assets/auto-import-template.zip
-- 🔲 Phase D · install.bat/uninstall.bat/run.bat · Task Scheduler 자동 등록
-- 🔲 Phase F · README · 트러블슈팅
-
-### #253-원본스펙 (신규 · 2026-08-24 · 사용자 지시)
-
-**🎯 스펙 확정 (2026-08-24 사용자 결정)**:
-- **폴더 경로 기본값** · `%USERPROFILE%\Downloads\megatown-importdata\` 하위 4개 서브폴더 (products·stock·vendors·purchase)
-  · 사용자 Downloads 폴더 사용 · E:/D: 드라이브 없어도 OK · install.bat 이 자동 생성
-- **폴더 경로 편집** · 웹 UI · 4개 개별 텍스트 입력 · 환경변수 지원 (%USERPROFILE% 등)
-  · 개별 초기화 · 전체 초기화 · 자동 생성 옵션 (☑ 체크 시 · Python 이 없는 폴더 자동 생성)
-  · 저장 → 서버 KV → Python 다음 실행 부터 즉시 반영
-- **파일명 규칙** · 임포트 형식에 맞게 자동 변경 (표준 파일명 rename)
-- **xlsx 파싱** · 현재 서버 임포트 규칙 그대로 (파일명 기반 날짜 · 서버 로직 재사용)
-- **임포트 후** · `_processed/` 폴더 자동 이동
-- **실행 간격** · 웹 UI 에서 편집 · 프리셋 8종 (10·30분·1·2·4·6·12시간·매일) + 사용자 정의 (5~1440분)
-  · 저장 → 서버 KV → Python 다음 실행에서 `schtasks /Change /RI {N} /F` · Task Scheduler 자동 재등록
-  · heartbeat 응답에 `applied_interval` 포함 · 웹 UI · "다음 예정 · X시 Y분" 실시간 표시
-- **인증 · 배포** · 관리자 lv9 만 · 설치·설정·다운로드·수동실행·제거 모두
-- **배포 형식** · PyInstaller `.exe` (Python 설치 불필요)
-- **인증 방식 확정** (2026-08-24) · 웹 로그인 세션 기반
-  · 다운로드 시 · 서버 authorize(9) 검증 통과 → refresh token 발급 → config.ini embed → zip
-  · Python · refresh token 으로 매 실행마다 access token 갱신 (POST /api/auth/refresh)
-  · 관리자 lv9 아니면 · 다운로드 자체 403 (자연스러운 게이트)
-- **xlsx 파싱 확정** (2026-08-24) · 현재 서버 임포트 방식 그대로 재사용 · Python 은 파일 relay + rename 만
-- **웹 UI 위치 확정** (2026-08-24) · SystemSettingsPage 신규 탭 "자동 임포트" 추가
-
-**아키텍처** · Hybrid (서버 KV config + 로컬 Python 스크립트):
-- 서버 KV `auto_import_config` · enabled · folders · interval_minutes · after_import
-- Python 매 실행마다 · GET config · POST heartbeat
-- 웹 UI · 상태 표시 (heartbeat 기반) · 초록/노랑/빨강
-
-**서버 신규 API (3)**:
-- `GET /api/auto-import/config` · Python 조회 + 웹 UI 표시 · authorize(9)
-- `POST /api/auto-import/config` · 웹 UI 저장 · authorize(9)
-- `POST /api/auto-import/heartbeat` · Python 상태 리포트 · authorize(9)
-- `GET /api/auto-import/installer` · zip 다운로드 (auto_import.exe + install.bat + config.ini) · authorize(9)
-
-**웹 UI 위치** · SystemSettingsPage · 데이터 업로드 탭 확장
-- 미설치 · [설치 파일 다운로드] · 3단계 안내
-- 설치완료 · 상태(green/amber/red) · 폴더 편집 · 간격 · [수동실행] · [로그] · [제거]
-
-**Python 스크립트 · 처리 순서**:
-1. `POST /api/auth/login` · 관리자 credential (config.ini 로컬 저장 · 파일 접근제어)
-2. `GET /api/auto-import/config` · enabled=false 면 즉시 종료
-3. 각 폴더 (products·stock·vendors·purchase) 스캔 · 최신 xlsx · hash 미중복
-4. 기존 서버 API POST (`/api/upload-{products|stock|vendors|purchase-details}`)
-5. 성공 → 표준 파일명 rename + `_processed/` 이동 (실패 → `_failed/` 이동 + .log)
-6. `POST /api/auto-import/heartbeat` · 처리 결과 리포트
-
-**폴더 구조 (설치 후)**:
-```
-%USERPROFILE%\Downloads\megatown-importdata\
-├── products\     ← 사용자 xlsx 넣기
-│   ├── _processed\  ← 임포트 완료 · rename
-│   └── _failed\     ← 실패 · .log 함께
-├── stock\
-├── vendors\
-└── purchase\
-```
-
-**install.bat 자동화**:
-- `%USERPROFILE%\Downloads\megatown-importdata\` 하위 4폴더 자동 생성
-- Task Scheduler 등록 (기본 10분 · 웹에서 변경 시 heartbeat 응답으로 재등록)
-- 즉시 1회 실행 · 정상 확인
-
-**규모** · 22~25시간 (대형)
-- 서버 4 endpoints · 4시간
-- 웹 UI 상태별 렌더 + 다운로드 · 6시간
-- Python 스크립트 · 6시간
-- PyInstaller 빌드 파이프라인 · 2시간
-- install.bat / uninstall.bat / Task Scheduler · 2시간
-- 문서 · 트러블슈팅 · 1시간
-
-**의존 · 관련**:
-- 기존 API 재사용 (`/api/upload-{products|stock|vendors|purchase-details}`)
-- 이전 결정 · #252 세션 만료 · 관리자 계정 credential 관리 방식 참고
-
-### #252 · 세션 만료 시간 · 설정에서 변경 가능하도록 (✅ 완료 · 2026-08-23)
-- ✅ 서버 KV `session_idle_timeout_minutes` · 기본 30 · 범위 5~480
-- ✅ 신규 훅 · `useSessionTimeoutSetting` + `useSessionTimeoutSettingEditor` (8 tests)
-- ✅ useAuth · `getEffectiveIdleTimeoutMs()` · localStorage 캐시 매 tick 조회
-- ✅ 편집 UI · `SessionTimeoutSection` · PermissionsPage 앱 설정 탭
-- ✅ 만료 후 즉시 로그아웃 · #251 flow 유지
-
-### #251 · 세션 만료 후 탭 focus 복귀 시 · 즉시 로그아웃 (✅ 완료 · 2026-08-23 · `862d9d58`)
-- ✅ visibilitychange + focus 이벤트 리스너 · 즉시 tick 실행
-- ✅ 브라우저 background throttling 우회
-- ✅ 만료 시 · localStorage 정리 + window.location.replace("/?expired=1")
-
-### #205 · 모든 페이지 · 공통 푸터 (AppFooter) 적용 (✅ 완료 · 2026-08-23 · `c08e0386`)
-> **기존 AppFooter** (`src/components/layout/AppFooter.tsx`) · 모든 페이지 이미 적용 확인 (App.tsx 3 render path)
-> **확장** · optional props · `compact` · `version` · `extraLinks` · `className` · 하위 호환 100%
-> `role='contentinfo'` a11y semantic 추가 · 11 tests (5→11)
-> 향후 · 페이지별 커스텀 필요 시 · props 조합 활용 (예: 로그인 페이지 compact · MyPage version 표시)
-
-### #204 · 스캔페이지 · 개별 상품 저장 버튼 + 다음 스캔 시 이전 상세 접기 (✅ 완료 · 2026-08-23 · `261b80a7`)
-- ✅ StockRow · savedThisSession 필드 추가
-- ✅ ScanPage · handleSaveRow · /api/inventory-checks/bulk items=[one] 재사용
-- ✅ StockRowCard · onSaveRow prop · 확장 액션 영역 [저장] 버튼
-- ✅ autoExpanded 로직 · hasAdd && !savedThisSession · 저장 후 자동 접힘
-- ✅ patchRow · qty/zone 변경 시 savedThisSession=false (dirty 표시)
-- ✅ 다음 스캔 → isRecent 이동 → 이전 카드 자동 접힘
-
-### #204-원본스펙 (기록)
-- 📄 대상 · ScanPage · StockRowCard (스캔한 상품 카드)
-- 🎯 요구사항:
-  - **저장 버튼** · 스캔한 상품 · 갯수 (창고1/2·매장1/2/3) 입력 후 · **개별 [저장] 버튼** (전체 저장 X · 단일 상품 저장)
-  - **자동 접기** · 다음 상품이 스캔되어 리스트에 등록되면 · **이전 상품 카드 상세 자동 접기** (compact 모드)
-- 🔲 구현:
-  - StockRowCard · expanded state (props · row.key === lastAddedKey ? expanded : collapsed)
-  - 단일 저장 버튼 · POST `/api/inventory-checks` (개별 row 저장 · 기존 bulk save 별도 유지 or 통합)
-  - 스캔 시 · setLastAddedKey(newKey) · 이전 항목 자동 접힘
-  - 사용자 · 접힌 카드 · 클릭 시 다시 펼치기 (수동)
-- 🔲 UX 흐름:
-  - 스캔 · 상품 카드 자동 펼침 (수량 입력 대기)
-  - 수량 입력 · [저장] 클릭 · 저장 완료 · 카드 접기 or 저장 표시
-  - 다음 스캔 · 이전 카드 자동 접힘 · 새 카드 펼침
-- 💡 프레임워크 · CollapseCard · Card 프리미티브 활용 검토
-- 💡 대원칙 · 회귀 X · 기존 [전체 등록] flow 유지 · [저장] 추가만
-
-### #203 · SplitPanel 왼쪽·오른쪽 높이 정렬 (✅ 완료 · 2026-08-23 · `56c83390`)
-> CSS · `.split-container` · `lg:items-stretch` 명시 (기본 stretch 확실화)
-> CSS · `.split-left` + `.split-right` · `lg:h-full` 추가 · 명시적 높이 통일
-> 모든 SplitPanel 소비자 (Staff · Payment · Vendor · Product · Purchase · Supplier) 자동 반영
-> 사용자 시각 검증 대기 · 문제 시 페이지별 개별 조정
-
-### #202 · 스캔페이지 UX · 위치+수량 스크롤 제거 · 등록리스트 확장 (✅ 완료 · 2026-08-23 · `79dafe85`)
-> StockRowCard 리스트 · max-h/overflow 제거 · 자연 높이 확장
-> SaveCard · 전체 등록 버튼 바로 위 · "등록 준비 요약" 리스트 (상품명·위치·수량) 신설
-- 📄 대상 · **스캔페이지 (ScanPage · 매장>매입>실재고입력)** · 스캔한 상품 처리 영역
-- 🎯 목표 · 스캔 상품의 **위치정보 + 추가수량 입력** 부분 · **스크롤 안 생기게** · 아래까지 다 보이게
-- 🔲 상세 요구:
-  - 🔲 스캔 상품 카드 (StockRowCard) · 위치정보 (real_map / zone) + 추가수량 입력 · 세로 스크롤 제거 · 내용 자연 확장
-  - 🔲 그 **아래** · **"전체 등록 리스트"** 노출 · 지금까지 스캔한 모든 항목 요약 리스트
-  - 🔲 리스트는 **"전체 등록" 버튼 바로 위** 위치 · 흐름 · [스캔 카드 → 등록 리스트 → 전체등록 버튼]
-- 🔲 프레임워크 준수 · Card / SortableTable · SearchBar (필요 시) · 프리미티브 활용
-- 🔲 모바일 · 스크롤 · 리스트만 오버플로우 · 스캔 카드 부분은 고정 노출
-- ⚠️ 회귀 절대 X · 기존 스캔 → 저장 flow · 유지
-
-### #201 · 삼선메뉴(햄버거) · 하위 레이어 겹침 표시 오류 수정 (✅ 완료 · 2026-08-23)
-- 📄 대상 · 삼선(햄버거) 메뉴 · 사이드바 드로어 · z-index 겹침 문제
-- 🐛 증상 · 삼선메뉴 열었을 때 · 아래 페이지 요소들 (테이블·리스트·모달 등) 과 겹쳐서 **안 보이거나 뒤에 깔림**
-- 🔲 원인 조사:
-  - 관련 파일 · `src/components/layout/AppNavHeader.tsx` · `BottomNav.tsx` · 또는 사이드 드로어 컴포넌트
-  - 현재 z-index · 페이지 콘텐츠 · 모달 · popover 등과 비교
-  - Modal primitive z-50 · 팝오버 z-[100]+ · Toast z-[9999] 등 다른 레이어와 순서
-- 🔲 z-index 계층 재정리 · 삼선메뉴가 최상단에 오도록 (모달/토스트 아래 · 페이지 콘텐츠 위)
-  - 권장 z-index · **z-[45] or z-40** (Modal z-50 아래 · 페이지 콘텐츠 z-0~10 위)
-  - 또는 필요 시 z-[55] (Modal 위 · 다른 UI 아래)
-- 🔲 backdrop 있는 경우 · backdrop z-index 도 함께 조정
-- 🔲 회귀 방지 · 다른 UI (모달·토스트·popover) 순서 유지 · 매 페이지 확인
-- 💡 원인별 status 분리 (feedback_logging_principle.md) · 재현 시나리오 로그
-- 💡 관련 · 이전 세션 · SideBar z-index 이슈 있었으면 참조
-- 💡 목업 파일 톤 유지 · `docs/UI_MOCKUP_2026-08-21.html`
-
-### #200 · 랜딩페이지 · 전체 글씨 사이즈 +2 (✅ 완료 · 2026-08-23 · `cf7a92be`)
-- 📄 대상 · `src/components/LandingPage/LandingPage.tsx` 및 서브 컴포넌트들
-- 🔲 모든 텍스트 · 글씨 사이즈 **+2 통일** (대원칙 · `feedback_font_plus2_default.md`)
-- 🔲 대상 컴포넌트:
-  - LandingPage.tsx (기본)
-  - TodayStatusPanel.tsx
-  - LoginModals.tsx
-  - UploadDataModal.tsx · StockUploadTab.tsx · ImportLogTab.tsx
-  - VendorStockModal.tsx · VendorDetailModal.tsx (LandingPage 관련)
-  - PaymentRegisterModal.tsx
-  - PeriodCoverageWidget.tsx
-  - MenuCard.tsx · StockSearch.tsx (관련)
-- 🔲 매핑 규칙 (기존 목업 대비 +2):
-  - `text-xs` (12) → `text-sm` (14)
-  - `text-sm` (14) → `text-base` (16)
-  - `text-base` (16) → `text-lg` (18)
-  - `text-[Npx]` 형태 · N+2 (예: text-[13px] → text-[15px])
-  - `text-lg` (18) → `text-xl` (20) 등
-- 🔲 회귀 방지 · UI 레이아웃 깨짐 없는지 매 컴포넌트 확인
-- 🔲 목업 파일 · `docs/UI_MOCKUP_2026-08-21.html` · 최종 톤 참조
-- 💡 대원칙 · 40대+ 가독성 · Pretendard · antialiased
-- 💡 이 태스크 이후 · 다른 페이지들도 +2 통일 여부 사용자 결정
-
-### #199 · 로그아웃 옆 종표시 · 테두리·아이콘 여백 반으로 축소 (✅ 완료 · 2026-08-23)
-- 📄 대상 · AppNavHeader · 로그아웃 버튼 왼쪽 종(Bell) 알림 아이콘
-- 🔲 종 아이콘 · 테두리(border/padding)와 아이콘 사이 여백 · **현재의 반으로** 축소
-- 🔲 시각적 균형 조정 · 로그아웃 버튼과 종 아이콘 · 크기·간격 조화
-- 🔲 목업 파일 (`docs/UI_MOCKUP_2026-08-21.html`) 기준 · 톤 유지
-- 💡 이전 #174 (사이드메뉴 종 아이콘 compact · 2026-08-20 완료) 와 유사 · 이번은 헤더 종 아이콘
-- 💡 관련 파일 · `src/components/layout/AppNavHeader.tsx` · IconButton 프리미티브 또는 인라인
-- 💡 회귀 방지 · 알림 배지·기능 flow 100% 유지
-
-### #198 · Split 왼쪽 리스트 UI 프레임워크화 (Phase 2 ✅ 완료 · Phase 3 진행중 · 2026-08-23)
-> ✅ Phase 2 · `src/components/common/SplitListPanel.tsx` 프리미티브 신설 · 18 tests · Card/Spinner/EmptyState/StatusPill 활용
-> ✅ #177 ProductInfoPage · SplitListPanel 적용 완료 (첫 소비자)
-> 🔲 Phase 3 · StaffManagePage/StaffListPanel · SchedulePage 좌측 · OcrPage/RawOcrTable 등 이관 (대형 · 페이지별 세밀 검토)
-> ⚠️ Phase 3 · 각 페이지 회귀 위험 · 사용자 승인 후 순차 진행 권장
-- 📄 대상 · Split 화면의 왼쪽 리스트 UI · 마스터-디테일 좌측 패널 통일
-- 🎯 최종 목표 · **공통 UI 프리미티브** 만들어서 · 이후 모든 split 왼쪽 리스트에 통일 적용
-- 🎨 스타일 원칙:
-  - 최신 트렌드 · Linear · Vercel · Notion · Attio 2026 톤
-  - 초고해상도 · 부드러움 · GPU 가속 · antialiasing
-  - 깔끔 · 세련 · 멋진 · 고급 · 딥네이비 accent
-  - **목업 디자인 톤 반영** · `docs/UI_MOCKUP_2026-08-21.html` 기준 · 통일성
-  - 파스텔 · 이모지 · 촌스러움 · 화려한 그라디언트 지양
-- 🔲 **Phase 1 · 리서치** · 현재 split 왼쪽 리스트 사용처 조사 (research-strategist 활용)
-  - StaffManagePage · StaffListPanel (StaffListRow)
-  - SchedulePage · 스케쥴 조회 · 좌측 리스트
-  - OcrPage/RawOcrTable · 좌측 파일 리스트 (있으면)
-  - 향후 · #177 상품정보 페이지 · 좌측 상품 리스트
-  - 기타 · Board · Requests · OrderHistory 등 검토
-- 🔲 **Phase 2 · 공통 프리미티브 설계** · `src/components/common/SplitListPanel.tsx` (또는 SplitListItem)
-  - 헤더 · SearchBar + FilterBar + "+ 신규" 버튼
-  - 리스트 · 아이템 slot (children · 각 페이지 커스텀)
-  - 선택 시 · highlight · smooth transition
-  - 정렬 · 컬럼 폭 조정 · 카테고리 색깔 (feedback_ui_principles.md)
-  - 가상 스크롤 (react-window · 대량 리스트) · 필요 시
-  - 폰트 +2 원칙 · Pretendard · antialiased
-- 🔲 **Phase 3 · 통일 적용** · 기존 리스트들 · 공통 프리미티브로 이관 · 순차
-- 🔲 **Phase 4 · 검증** · 모든 페이지 시각 통일성 확인 · 사용자 확정
-- 💡 프레임워크 원칙 · 3곳 반복 = 즉시 추출 · 공통화 원-오프 금지
-- 💡 관련 · #177 상품정보 페이지 (SplitPanel 마스터-디테일 · 좌측 리스트) · 이 프리미티브 사용
-- 💡 기존 프리미티브 재사용 · Card · SearchBar · StatusPill · SortableHeader · useSortableTable · useColumnResize · useResizablePanel
-
-### #197 · 상품 스캔 · 미분류 상품 → 상품등록 페이지 자동 연결 (✅ 완료 · 2026-08-23 · `83409c80`)
-
-**구현 완료**:
-- ✅ 신규 훅 · `useScanUnregisteredMode` (localStorage · 개인 preference · storage 이벤트 sync)
-- ✅ MyPage · 설정 토글 카드 (2 버튼 · aria-pressed · 스캔 아이콘)
-- ✅ ScanPage · openUnregisteredCreate 분기 · mode="page" → sessionStorage pending code + navigate
-- ✅ OrderManagePage · mount 시 pending 감지 · topTab=purchase + subTab=productinfo 자동
-- ✅ ProductInfoPage · pending code consume · createModal 자동 오픈 · initialCode+lockCode
-- ✅ 권한 · canManage (admin + manager lv5+) · 페이지 이동 후에도 게이트 유지
-
-**관련 메모리** · `.claude/memory/project_scan_unregistered.md`
-
-### #197-원본스펙 (기록)
-- 📄 대상 · 바코드/상품 스캔 flow · 미등록·미분류 상품 감지 시 · **상품등록 페이지로 자동 이동**
-- 🔲 스캔 결과 · `products` 테이블 조회 · 매칭 없음 (미분류) 감지
-- 🔲 감지 시 · confirm 다이얼로그 (useConfirm) · "미등록 상품입니다. 상품등록 페이지로 이동할까요?"
-- 🔲 사용자 확인 시 · #177 상품정보 페이지 (등록 폼) 으로 이동
-  - onNavigate("productinfo", authSession) · 프론트 라우팅 (or 매장 > 매입 > 상품정보 탭)
-  - 스캔된 바코드 · state or query param 으로 전달 · 등록 폼 자동 채움 (`product_code` prefilled + readonly)
-- 🔲 취소 시 · 스캔 화면 복귀 (기존 flow 유지)
-- 🔲 권한 · 관리자 + 매니저 lv5+ 만 이동 안내 (그 외 · "권한이 없습니다" 안내만)
-- 🔲 스캐너 사용처 · ScanPage · ProductArrivalPage · BarcodeScanner 등 · 각 페이지 판단
-- 💡 **#179 (모달 방식) vs #197 (페이지 이동 방식)** · 선택 or 통합
-  - 옵션 A · 두 방식 병행 · 사용자 설정으로 전환
-  - 옵션 B · 페이지 이동만 (모달 X · #179 취소)
-  - 옵션 C · 모달만 (페이지 이동 X · #197 취소)
-  - **결정 필요 · 사용자 확정**
-- 💡 의존 · #177 (상품정보 페이지) 선행 완료 · 등록 폼 prefill 지원
-- 💡 관련 · #179 (스캔 미등록 즉시 등록 UX)
-
-### #196 · 빈 폴더 정리 · 미사용 디렉토리 삭제 (✅ 완료 · 2026-08-23)
-- 📄 대상 · 빈 폴더 5개 조사 완료 · 처리 방침 결정 필요
-- 🔲 **`src/controllers/`** · 참조 0건 · 삭제 가능 (Express controller 계획된 것 · 실사용 X)
-- 🔲 **`src/services/`** · 참조 0건 · 삭제 가능 (Service layer 계획된 것 · 실사용 X)
-- 🔒 `server/models/.cache/huggingface/download` · HuggingFace 자동 생성 · **유지** · `.gitignore` 추가 검토
-- ⚠️ `sql/fresh-install/` · `docs/DB_SETUP.md` 참조 · 신중 판단 (실사용 SQL 파일 있으면 필요) · **참조 문서 확인 후 결정**
-- 🔒 `uploads/resignations/` · `server/routes/schedule/schedules.ts` 참조 · **유지** (런타임 사직서 저장 폴더)
-- 💡 회귀 방지 · 삭제 전 `git log` 로 최근 커밋 이력 확인 · 계획된 기능 놓치지 않도록
-- 💡 삭제 시 · `git rm -r <dir>` 로 tracked empty 처리 · commit
-
-### #195 · 스케쥴표 확정 버튼 · 재확정 프로세스 (✅ 완료 · 2026-08-23)
-- 📄 대상 · 스케쥴표 페이지 (확정 버튼 위치 확인 필요 · `SchedulePage.tsx` or `DayTimelineModal.tsx`)
-- 🔲 확정된 스케쥴이면 · 버튼 텍스트 **"확정됨"** 으로 표시 (현재는 "확정" 등)
-- 🔲 "확정됨" 버튼 다시 누르면 · 확인 알림 **"다시 확정하시겠습니까?"** (useConfirm)
-- 🔲 사용자 확인 시 · 재저장 프로세스 실행 (기존 저장 로직 재호출)
-- 🔲 사용자 취소 시 · 아무 동작 없음
-- 🔲 useToast + useConfirm 사용 · 알림·확인 표준화
-- 💡 회귀 방지 · 기존 확정 flow 100% 유지 · 재확정 로직 추가만
-- 💡 확정 상태 표시 (StatusPill "확정됨" tone=emerald) · 목업 톤 일치
-
-### #194 · 방문예약 · 대상자 대표/부장/이사 → 대표/이사 축소 (✅ 완료 · 2026-08-23 · `414f5e37`)
-- 📄 대상 · `src/components/ReservationPage/ReservationPage.tsx`
-- 🔲 STAFF_NAMES 배열 수정 · `["대표", "이사", "부장"]` → `["대표", "이사"]` (line 83)
-- 🔲 정규식 수정 · `/^\[대상:(대표|이사|부장)\]/` → `/^\[대상:(대표|이사)\]/` (line 79)
-- 🔲 컬럼 헤더 3개 → 2개 · UI 반응성 확인 · grid 2 col (line 465)
-- 🔲 modalTarget 기본값 유지 · "대표" (line 116)
-- 🔲 주석 수정 · "Employee IDs 1,2,3 (대표/이사/부장)" → "Employee IDs 1,2 (대표/이사)" (line 33) · 실제 employee_id 매핑 확인 필요
-- 🔲 기존 저장된 "[대상:부장]" 예약 데이터 처리 방침 확인 (마이그레이션 or fallback)
-- 🔲 서버 라우트 (`/api/blocked-slots` 등) 에 부장 관련 하드코딩 없는지 확인
-- 💡 회귀 방지 · 예약 flow 100% 유지 · 컬럼 축소 시 grid 폭 자동 조정
-
-### #193 · 통계 설정 · 계절정의 + 적정재고설정 통합 (Phase 1 ✅ 완료 · 2026-08-23 · Phase 2 wiring 별도)
-
-**Phase 1 · UI 통합 + 훅 신설 ✅ 완료 (`885ee110`)**:
-- ✅ SeasonSettingsPage · 이름 변경 · "통계 설정" (2섹션 · 계절 정의 + 적정재고)
-- ✅ OptimalStockPeriodSection · KV `optimal_stock_period_days` 편집 UI · useKvSetting debounce
-- ✅ **useOptimalStockPeriod 훅 신설** · 읽기 전용 · 상수 export · sanitize · 9 tests
-- ✅ 소비처에서 훅 재사용 가능 · `const { days } = useOptimalStockPeriod()`
-
-**Phase 2 · 소비처 wiring (진행 대기)**:
-- 🔲 서버 · `/api/stock-manage/low-stock` · `days` 쿼리 파라미터 수신 · 캐시 키 갱신
-- 🔲 클라 · RequestsPage · OrderManagePage · CategoryTab (option) · 훅 사용 · days 전달
-- 🔲 회귀 검증 필수 · 캐시 무효화 로직 · 대량 데이터 (low-stock 캐시)
-
-### #193-원본스펙 · Phase 1 스펙 (기록)
-- 📄 대상 · 설정 페이지의 **"계절정의"** 메뉴 → **"통계설정"** 으로 이름 변경
-- 🔲 통계설정 · 탭 페이지 구조 (2탭)
-  - **탭 1 · 계절정의** (기존 SeasonRangesEditor 재사용)
-  - **탭 2 · 적정재고설정** (신규)
-- 🔲 적정재고설정 탭
-  - 계산법 · **오늘 기준 * 일 판매량** 을 적정재고로 설정
-  - 현재 하드코딩 · 30일 (한달) 사용중
-  - UI · 숫자 입력창 · 기본값 30 · 범위 예: 7~90일
-  - 저장 · KV setting `optimal_stock_period_days` · debounce 자동 저장 (useKvSetting)
-- 🔲 서버 · GET/PUT `/api/settings` · zod schema
-- 🔲 모든 소비처 (LowStockService · OrderManagePage · RequestsPage 등) · 이 값 참조하도록 업데이트
-- 🔲 현재 참조 파일 (grep 결과)
-  - `src/components/common/ProductDetailPanel.tsx` · optimal_stock 계산·표시
-  - `src/components/OrderManagePage/CategoryTab.tsx` · 하드코딩 30일
-  - `src/components/OrderManagePage/OrderManagePage.tsx` · 발주요청 트리거
-  - `src/components/OrderManagePage/TrendingTab.tsx` · 트렌드 분석
-  - `src/components/RequestsPage/RequestsPage.tsx` · 발주 필요 상품 필터
-  - `src/components/DisplayPage/DisplayPage.tsx` · 진열 표시
-- 🔲 서버 라우터 · `/api/stock-manage/low-stock` · `/api/products/*` · 계산 로직 통일
-- 💡 프레임워크 원칙 · useKvSetting 재사용 · Card·InputField·Tabs 프리미티브 활용
-- 💡 관련 · SeasonRangesEditor 재사용 · 이름만 변경 · 하위호환 유지 (route/import)
-
-### #192 · 거래처 로그인 · 공급사정보 등록 → 승인 → 공급자재고확인 flow (신규 · 2026-08-22 · **스펙 갱신 · 2026-08-25**)
-
-**🎯 서브 결정 대기 (3건 · 기존 유지)**:
-- ① DB · vendors ALTER (`approval_status` · `approval_requested_at` · `approved_at` · `approved_by`) · A(승인) · B(별도 테이블) · C(스킵) · **대기**
-- ② 승인 UI 위치 · RequestsPage 확장 vs 신규 admin 페이지 · **대기**
-- ③ 재로그인 필요 여부 · 승인 즉시 실시간 반영 vs 재로그인 · **대기**
-
-**필수 필드 (8개 · 2026-08-25 재정의)**:
-| 필드 | vendors 컬럼 | 비고 |
-|------|-------------|------|
-| 이메일 | `email` | 기존 컬럼 활용 |
-| 주문방식 | `order_method` | 신규 · 전화/팩스/메일/EDI 등 |
-| 팀장 | `team_leader` | 신규 · 담당 팀장 이름 |
-| 팀장연락처 | `team_leader_phone` | 신규 |
-| 긴급연락처 | `emergency_phone` | 신규 |
-| 사업자번호 | `business_number` | 기존 컬럼 활용 |
-| 특이사항 | `special_notes` | 기존 컬럼 활용 (#178 연계) |
-| 비고 | `note` | 기존 컬럼 활용 (#178 연계) |
-
-- DB · vendors 테이블 신규 컬럼 추가 필요 · `order_method` · `team_leader` · `team_leader_phone` · `emergency_phone`
-- #178 연계 · `special_notes` vs `note` 분리 원칙 그대로 유지
-
-**3-Step Flow (2026-08-25 갱신)**:
-1. **Step 1** · vendor 로그인 → 공급사정보 등록 자동 오픈 · 진행률 (N/8 필드 완료)
-   - 로그인 직후 첫 화면 · 공급사정보 미완성 시 강제 노출
-   - 편집 화면 상단 UI 힌트 문구: **"필수 항목을 채우고 [승인 요청]을 눌러주세요"**
-2. **Step 2** · 필수 8개 필드 모두 완성 → [승인 요청] 활성
-   - 검증 필드: 이메일·주문방식·팀장·팀장연락처·긴급연락처·사업자번호·특이사항·비고
-   - 모든 필수 필드 통과 시 · 회색 disabled → 활성 CTA 전환
-   - 클릭 시 · POST `/api/vendor-approval-requests` · 관리자 알림 발송
-   - 승인 대기 상태 · "관리자 승인 대기 중" 배너 표시
-3. **Step 3** · 관리자 승인 → [공급자재고확인] 버튼 활성화
-   - 승인 완료 vendor 만 버튼 활성 (미승인 · disabled)
-   - 클릭 시 · **해당 vendor 소유 상품만** 리스트업 (전체 재고 X · 해당 공급사 상품 필터)
-   - 필터 기준 · `products.vendor_id = vendor.id` (or `supplier_code` 매핑)
-   - 승인 시 · `vendors.approval_status = "approved"` · vendor 세션 UI 갱신
-
-**TodayStatusPanel 연동 (신규 · 2026-08-25)**:
-- 오늘의 현황 패널 · **거래처승인요청 건수** 표시 항목 추가
-- 표시 조건 · `approval_status = "pending"` 건수 · 관리자만 조회
-- API · GET `/api/vendor-approval-requests?status=pending&count=true`
-
-**RequestsPage 연동 (신규 · 2026-08-25)**:
-- 요청 알림 페이지 · **거래처승인** 탭/항목 추가
-- pending count 뱃지 표시
-- 승인/거절 UI · 각 요청 행 inline (승인 · 녹색 버튼 / 거절 · 회색 버튼 + 거절 사유 입력)
-- 승인 시 · `vendors.approval_status = "approved"` + `approved_at` + `approved_by` 기록
-- 거절 시 · `vendors.approval_status = "rejected"` + 거절 사유 저장
-
-**기술 스펙**:
-- 🔲 DB · vendors ALTER · `approval_status` (pending·approved·rejected) · `approval_requested_at` · `approved_at` · `approved_by` · `order_method` · `team_leader` · `team_leader_phone` · `emergency_phone`
-- 🔲 서버 · Zod schemas · asyncHandler · HttpError (feedback_logging_principle)
-- 🔲 프레임워크 · Card·Modal·StatusPill·Button·useToast·useConfirm 재사용
-- 🔲 이력 로그 · 승인/거절/재신청 audit trail (선택)
-
-**의존 · 관련**:
-- #178 · vendors 스키마 확장 (log규칙 + 신규 컬럼 · `note`/`special_notes` 분리) · 함께 진행 권장
-- #94 · 공급사 재고확인 페이지 (Phase 2 유보) · gate 재활성화 필요
-- 로그인 규칙 · 담당자 핸드폰 + `.env VENDOR_PW_SUFFIX` · #178 결정 재사용
-- 💡 프레임워크 원칙 · 대원칙 19 · 설계 후 구현 · vendors 스키마·인증 flow·UI gate 3-way 정합성
-
-### #191 · Modal 프레임워크화 · inline modal 35+ 마이그레이션 (신규 · 2026-08-22 · **Phase A 자율 진행 승인 2026-08-23**)
-
-**🎯 스펙 확정 (2026-08-23 사용자 결정)**:
-- **Phase A · 자율 진행 승인** · 저위험 self-contained 파일 5-10개 순차 이관 (매 파일 검증 · 문제 시 롤백)
-- Phase B (중위험) · Phase C (고위험) · 사용자 승인 후
-
-**Phase 분류**:
-- **Phase A (자율)** · ImageZoomModal · CellPickerPopup · IosInstallGuide (일부) 등 · state 얽힘 X
-- **Phase B (승인 대기)** · DayTimelineModal · ContractWriterPage 모달 등 · 페이지 내부 modal
-- **Phase C (승인 대기)** · VendorDetailModal · panel/modal 이중 모드 · 고위험
-
-**자율 진행 원칙 (Phase A)**:
-- 각 파일 · Modal props 매핑 (headerRight · titleAccent · bodyPadding 등 정밀 조정)
-- 매 파일 · TS + build + test 검증 · 회귀 없으면 커밋
-- 시각 검증 · 사용자 요청 시 각 파일 스크린샷
-
-**규모**: Phase A 예상 1-2시간 · 5-10 파일 · 각 파일 15-30분
-
-**관련 메모리** · `.claude/memory/project_modal_migration.md`
-
-### #191-원본스펙 (기록)
-- 📄 배경 · Modal 프리미티브 이미 존재 (src/components/common/Modal.tsx · v2 확장 · 2026-08-18)
-- 🔲 문제 · 35+ 파일에서 여전히 `<div className="fixed inset-0 z-[N] backdrop-brand...">` inline 패턴 사용
-- 🔲 대상 파일 예 · DayTimelineModal · CellPickerPopup · DisplayPage · ContractWriterPage · BoardPage · LandingPage · EmployeeCalendarModal · ScanPage · PurchaseSubTabs · CategoryTab · ColumnMappingModal · ConfirmedRecordsTab · ImageZoomModal · OrderManagePage · VendorListEditor · VendorStockModal · PaymentRegisterModal 등
-- 🔲 Phase A · 저위험 신규 (3~5개) · ImageZoomModal · CellPickerPopup 등 self-contained
-- 🔲 Phase B · 중위험 (5~10개) · 각 대형 페이지 내부 modal
-- 🔲 Phase C · 고위험 · 복잡한 상태 얽힌 모달 (VendorDetailModal 등)
-- 🔲 각 마이그레이션 · Modal props (open · onClose · title · icon · titleAccent · headerRight · size · backdropIntensity · footer) 사용
-- 🔲 회귀 방지 · 기능 100% 유지 · className 만 조정
-- 💡 프레임워크 원칙 14 · 매 단계 검증 · 19 · 설계 후 구현
-
-### #190 · 매장구역도 · 설정 vs 매장진열 통합 (대부분 완료 · 2026-08-23 · 데이터 통합·팝오버 편집 · 삭제 여부 사용자 결정)
-- 📄 현재 · **2곳에 별도 존재** · 설정 페이지 매장구역 (편집용 · ZoneSettingsPage) + 매장진열 페이지 매장구역도 (표시용 · StoreZoneMap)
-- ✅ **데이터 통합 완료** (2026-08-23) · 양쪽 다 `useZoneDefs` · KV `zone_defs` · 자동 동기화 · single source of truth 확립
-- ✅ **방안 2 실현** (2026-08-23 · #189 완료) · StoreZoneMap 팝오버에서 편집 (label · category · num) 가능 · 두 페이지 모두 편집 지원
-- 💡 남은 architectural 결정 (사용자 판단 필요):
-  - ZoneSettingsPage 유지 (테이블 편집 · 대량 편집 편함) vs 삭제 (매장진열 팝오버로만)
-  - 삭제 시 · 사이드바 · 라우팅 gate · destructive · 명시 승인 필요
-
-### #189 · 매장구역도 · 구역 클릭 팝업 · 수정 버튼 (✅ 완료 · 2026-08-23)
-- 📄 대상 · StoreZoneMap · 구역 클릭 시 뜨는 팝업 (인라인 상세)
-- 🔲 팝업에 **[수정] 버튼** 추가 · 클릭 시 편집 모드 진입
-- 🔲 편집 가능 필드 · label · category · num (구역명·카테고리·번호)
-- 🔲 저장 · useZoneDefs · debounce 자동 저장
-- 🔲 편집 완료 후 팝업 닫기 or 지속 (사용자 결정)
-- 🔲 설정 페이지의 매장구역 편집과 동기화 (같은 source · useZoneDefs)
-- 💡 관련 · #181 (인라인 편집 + 드래그 위치) 과 통합 가능 · 팝업 내 편집 vs 인라인 편집 UX 결정 필요
-
-### #188 · 메뉴 설정 · 모바일 가시성 · PC/모바일 체크박스 (신규 · 2026-08-22 · **스펙 확정 2026-08-23**)
-
-**🎯 스펙 확정 (2026-08-23 사용자 결정)**:
-- ① 마이그레이션 · **자동** (기존 `useMobilePageLevel` 레벨 → 체크박스 자동 변환 · 데이터 손실 X)
-- ② 저장 · **KV setting** (`page-visibility` · JSON · `useKvSetting` debounce)
-- ③ UI · **위치 유지 · 이름 변경** (PermissionsPage > "메뉴 표시" 서브탭)
-
-**Phase 1 · 서버 마이그레이션**:
-- 🔲 첫 조회 시 · KV `page-visibility` 없으면 · 기존 mobile-page-level 읽어서 변환
-- 🔲 레벨 5+ → mobile OFF · 그 외 ON · 변환 후 저장
-- 🔲 이후 · 새 KV 만 사용
-
-**Phase 2 · 신규 훅**:
-- 🔲 `usePageVisibility(pageKey, viewport?)` 신설
-- 🔲 KV `page-visibility` (`{[pageKey]: {pc: boolean; mobile: boolean}}`) 사용
-- 🔲 사이드바 gate + 공통헤더 필터 · 이 훅 활용
-
-**Phase 3 · UI 개편** ✅ **완료 (2026-08-23 · `29ac75cd`)**:
-- ✅ MobileVisibilitySection · usePageVisibility 통합 · [PC ☑] [모바일 ☑] 체크박스
-- ✅ 서브탭명 "모바일 가시성" → **"메뉴 표시"**
-- ✅ SIDE_NAV_GROUPS 순회 · 페이지별 · 2 체크박스 · 색상 (bothOn=emerald · 하나 OFF=violet)
-- ✅ 자동 마이그레이션 · usePageVisibility 내부 · mobile_min_level 레벨 5+ → mobile OFF
-
-**Phase 4 · Gate/Sidebar 통합** ✅ **완료 (2026-08-23 · `3553f75f`)**:
-- ✅ MobileOnlyGate · usePageVisibility 우선 · mobile OFF · 차단
-- ✅ SideNav · 사이드바 items · 뷰포트별 필터 · isVisible(pageKey, viewport)
-- ✅ 빈 그룹 자동 제거 · landing 예외 (무조건 노출)
-
-**Phase 5 · 공통헤더 뷰포트 필터** ✅ **완료 (2026-08-23)**:
-- ✅ AppNavHeader · `usePageVisibility` · `isPageVisible(t.key, viewport)` · line 181
-- ✅ visibleTabs · 뷰포트별 필터 · 사이드바와 동일 원칙 · 회귀 없음
-
-**관련 메모리** · `.claude/memory/project_page_visibility.md`
-
-### #188-원본스펙 (기록)
-- 📄 대상 · PermissionsPage > 권한 조정 > **모바일 가시성** 서브탭 (MobileVisibilitySection · BrandingSettingsPage.tsx)
-- 🔲 현재 · `useMobilePageLevel` 레벨 기반 (0~10) · 단일 슬라이더
-- 🔲 개선 · **페이지별 PC 체크박스 + 모바일 체크박스** 2개씩 · 각각 노출 여부 제어
-- 🔲 기본값 · 두 체크박스 모두 ON (=모두 보이게) · 하위호환 유지
-- 🔲 체크 해제된 곳 → 해당 뷰포트(PC or 모바일)에서 페이지 숨김
-- 🔲 UI · 페이지 리스트별 [ PC ☑] [모바일 ☑] · CardRow 형태 · SIDE_NAV_GROUPS 순회
-- 🔲 저장 · 서버 KV · 신규 API `/api/settings/page-visibility` or 기존 확장
-- 🔲 라우팅 gate · 사이드바 (sideNavGroups.ts) · 공통헤더 (AppNavHeader) · 각각 뷰포트별 필터
-- 🔲 기존 `useMobilePageLevel` deprecated · 마이그레이션 스크립트 (레벨 5+ → mobile OFF)
-- 💡 프레임워크 원칙 · 신규 훅 `usePageVisibility(pageKey, viewport)` · 재사용
-- 💡 관련 이력 · #172 (모바일 가시성 탭 이관 · 2026-08-20 완료)
-
-### #187 · 실재고 입력 · 현재재고 위치 개선 (모바일 가독성) (✅ 완료 · 2026-08-23)
-- 📄 대상 · ScanPage (실재고 입력) · StockRowCard (스캔한 상품 정보)
-- 🔲 문제 · 반응형 (모바일)에서 창고1/창고2 입력창 (−/+ 사이) 너무 작아 · 현재재고 표시 잘 안 보임
-- 🔲 개선 · 슬롯 제목(창고1·창고2 등) **아래**에 현재재고 표시 (기존 옆·인라인 → 아래 배치)
-- 🔲 각 슬롯 (창고1·창고2·매장1·매장2·매장3) 별로 · [제목] → [현재재고 값 크게] → [−/+ 입력 컨트롤] 순서
-- 🔲 모바일 우선 · 최소 폰트 [15px]+ · 반응형 lg:flex-row 유지 (PC는 옆 배치 가능)
-- 🔲 대상 파일 · `src/components/ScanPage/StockRowCard.tsx`
-- 💡 프레임워크 원칙 · className 만 조정 · props/state/API 무변경 (대원칙 14)
-
-### #186 · 무동작 30분 자동 로그아웃 + 로그인 화면 이동 (✅ 완료 · 2026-08-23)
-- 📄 대상 · 전체 앱 · 로그인 후 30분 이상 마우스·키보드·터치 무동작 시 자동 세션 종료
-- 🔲 유저 activity 감지 · `mousemove` / `keydown` / `click` / `touchstart` 이벤트 → 타이머 reset
-- 🔲 30분 (= 1800s) 카운트다운 · 만료 시 `onLogout()` 호출 + 로그인 페이지 리다이렉트
-- 🔲 기존 `src/components/common/SessionTimeoutWarning.tsx` 재사용/확장 (이미 존재)
-- 🔲 프레임워크 원칙 · `useAuth` 훅 · `onLogout()` 사용 · useEffect + 이벤트 리스너 등록/해제
-- 🔲 기존 401 감지 즉시 로그아웃 (feedback_session_expiry.md) 과 별개 · 무동작 timeout 추가 요건
-- 💡 SessionTimeoutWarning · 만료 전 경고 UI (예: 5분 전 알림) 재사용 가능 여부 확인
-- 💡 주의 · 이벤트 리스너 cleanup · 메모리 누수 방지 · 컴포넌트 unmount 시 clearTimeout
-
-### #185 · 통계 메뉴 상단 세션 · UI 프레임워크 통일 (✅ 완료 · 2026-08-23 · CategoryTab `1dee1e17` · SupplierFilterBar `1a64746f`)
-> PurchaseSubTabs · 이미 상단 툴바 통합됨 (2026-08-10) · 추가 작업 불필요
-
-### #185-원본스펙 (기록)
-- 📄 대상 · 발주관리 > 통계 서브탭 상단 (CategoryTab · TrendingTab · SupplierTab · PurchaseSubTabs 등)
-- 🔲 현재 · 각 서브탭 상단 세션 (제목·필터·기간선택 등) · 스타일·간격·색상 통일 안 됨
-- 🔲 개선 · 프레임워크 프리미티브 적용 · PageToolbar · AccentBar · SeasonButtons · PeriodSelector · CategoryChips 일관 사용
-- 🔲 각 탭 · 동일한 상단 레이아웃 (좌 accent+제목 · 중앙 필터 · 우 액션)
-- 💡 프레임워크 원칙 · common/PageToolbar · common/AccentBar 재사용 · className 만 조정 · 기능 무영향
-
-### #184 · 통계 구역현황 · 순위 옆 구역 표시 강조 (✅ 완료 · 2026-08-23)
-- 📄 대상 · 발주관리 > 통계 > 카테고리별 판매현황 (`CategoryTab.tsx`)
-- 🔲 현재 · 순위 리스트에서 순위 옆에 있는 구역(zone) 표시가 잘 안 보임 · 흐릿함
-- 🔲 개선 · zone 배지 폰트 크기 up · 색상 뚜렷하게 · StatusPill/CategoryChips 프레임워크 활용
-- 💡 프레임워크 원칙 · Card/StatusPill/AccentBar 재사용 · className 만 조정
-
-### #183 · 발주요청 페이지 · 안내 문구 변경 (✅ 완료 · 2026-08-23)
-- 🔲 기존 문구 · "손실 확정이 되었는지 확인하세요 (ERP재고 vs 실재고 차이 · 손실추적 탭 참조)"
-- 🔲 변경 후 · "공급사를 클릭하면 최신 발주이력을 확인할 수 있습니다"
-- 🔲 위치 확인 필요 · OrderManagePage 안 발주요청 리스트 상단 or 빈 상태 안내
-- 💡 **의존** · #182 완료 후 · 안내 문구도 새 기능 (발주이력 우측) 반영
-- 💡 프레임워크 원칙 · 문구 정정 (className 유지)
-
-### #182 · 발주요청 페이지 · 우측 패널 · 발주이력 표시 (✅ 완료 · 2026-08-23 · 모달 방식)
-- 📄 대상 · 매장 > 매입 > 발주 서브탭 (`OrderManagePage.tsx` · `purchase-order` topTab)
-- 🔲 현재 · 왼쪽 발주요청 리스트 · 오른쪽 상품정보 상세
-- 🔲 변경 · 오른쪽 상품정보 → **발주이력** 로 대체
-- 🔲 공급사 클릭 · 오른쪽에 · **날짜별 발주내역 간략 리스트** 표시
-- 🔲 각 이력 항목에 · [상세] 버튼 · 클릭 시 · 해당 공급사의 해당 발주이력 자세히 (모달 or 확장)
-- 🔲 API · `/api/order-history?supplier=X` 재사용 (기존 OrderHistoryTab)
-- 🔲 **SplitPanel 비율 · 7:3** (왼쪽 발주요청 리스트 넓게 · 오른쪽 30%) · minWidth 조정
-- 프레임워크 재사용 · SplitPanel·PurchaseHistoryList·Modal·Card·useSortableTable
-- 확장 · SplitPanel `right` 슬롯에 · OrderHistoryDetailPanel (신규 컴포넌트)
-- 🔲 스펙 확정 필요:
-  - 간략 리스트 컬럼 (날짜·상품수·총액 등)
-  - 상세 모달 vs 인라인 확장 (accordion)
-  - 기간 필터 · 기본 몇 일 (30일?)
-- 💡 **의존** · #180 (발주이력 검색 기능) 과 연계 · 같은 데이터 소스
-- 💡 프레임워크 원칙 준수 (대원칙 17·19)
-
-### #181 · 매장구역도 · 인라인 편집 + 드래그 위치 변경 (✅ 완료 · 2026-08-23 · `20dca31c`·`037e2923`)
-
-**Phase 1 · ZoneSettingsPage 제거 (`20dca31c`)**:
-- ✅ `src/components/ZoneSettingsPage/` · 파일 삭제 (-131 라인)
-- ✅ App.tsx · lazy import + Page type + 라우팅 제거
-- ✅ sideNavGroups.ts · "매장 구역" 항목 삭제 · MapPin 정리
-- ✅ AppNavHeader.tsx · zone-settings 타입 alias 제거
-
-**Phase 2 · 드래그 재정렬 (`037e2923`)**:
-- ✅ StoreZoneMap · `editing` · `onZoneReorder` props (backward-compat)
-- ✅ HTML5 native drag & drop · desktop 즉시 · mobile long-press 500ms
-- ✅ 시각 피드백 · armed(amber pulse) · dragging(opacity-50) · dropTarget(emerald ring)
-- ✅ GripVertical icon · 편집 모드에서만 노출
-- ✅ wallCell/pairCell/centerCell 3 렌더러 모두 num 기준 드래그 지원
-- ✅ DisplayPage handleZoneReorder · fromNum ↔ toNum 스왑 · setZoneDefs debounce 자동 저장
-- ✅ 편집 권한 · dpUserLevel >= 9 (관리자만)
-
-**팝오버 편집** (#189 완료 · 2026-08-23):
-- ✅ ZoneAssignPopover · label · category · num 편집 · onZoneUpdate
-
-**규모** · 3 commit · +145 −158 라인 · Framework 원칙 준수
-
-### #181-원본스펙 (기록 · 2026-08-21)
-
-**현재 상태 (조사 완료)**:
-- `StoreZoneMap` · 표시 전용 · 편집 없음
-- `ZoneSettingsPage` · 별도 페이지 · 표 형식 폼 편집 (debounce 자동 저장)
-- 드래그 · DisplayPage 스케쥴 zone 배정에만 · 구역 자체 위치 변경 X
-
-**구현 방안 (대원칙 19 · 프레임워크 관점 설계)**:
-- **Option A · Inline Popover 편집** (권장 · 저위험)
-  - 셀 클릭 → Popover 열림 (Modal 재사용 or 신규 InlineEditPopover)
-  - Popover 안 · label·category 편집 (useZoneDefs 훅)
-  - 자동 저장 (debounce)
-  - `readonly` prop · 기존 소비자 (SalesTrend·DisplayPage) readonly=true
-- **Option B · Editing Mode + 드래그** (中위험)
-  - StoreZoneMap · `editing` prop · 편집 모드 시 드래그 핸들
-  - useSortableTabs 패턴 참고 · long-press 감지
-  - 드래그 · num 재배정 or section 이동
-- **Option C · A+B 통합** (中위험)
-
-**프레임워크 재사용/확장**:
-- 재사용 · `useZoneDefs`·`Modal`·`Card`·`useKvSetting` debounce·`useSortableTabs` 로직
-- 확장 · `StoreZoneMap` 에 `editing`·`onZoneUpdate`·`onZoneReorder` prop
-- 신규 프리미티브 후보 · `InlineEditPopover<T>` (편집 폼 wrapper)
-
-**의존 · BC**:
-- 기존 소비자 · SalesTrend·DisplayPage·CategoryTab · `editing` 미전달 시 · 현재 동작 유지
-- ZoneSettingsPage · 표 편집 유지 or 통합 (사용자 결정)
-
-**💡 스펙 확정 필요**:
-- Option A/B/C · 어느 방향?
-- ZoneSettingsPage · 유지 vs 통합
-- 드래그 · num 재배정 or section 이동?
-- 편집 권한 · 관리자만 or 매니저부터
-
-### #180 · 발주이력 페이지 · 공급사·상품 검색 기능 (✅ 완료 · 2026-08-23)
-- 📄 대상 · `src/components/OrderManagePage/OrderHistoryTab.tsx` (매장 > 매입 > 발주이력 서브탭)
-- 🔲 상단 검색바 · 공급사 검색 (부분일치 · 한글 초성 검색 지원)
-- 🔲 상품명 검색 (부분일치)
-- 🔲 SearchBar 프리미티브 재사용 (`src/components/common/SearchBar.tsx`)
-- 🔲 기간 필터 (기존) 와 결합 · AND 조건
-- 🔲 검색 결과 · 실시간 필터 (client-side · 서버 재요청 X · 로컬 debounce 200ms)
-- 🔲 결과 없음 안내 · EmptyState 프리미티브
-- 💡 스펙 결정 필요:
-  - 공급사·상품 · 각각 별도 검색 vs 통합 검색 (하나로)
-  - 서버 API 확장 필요 여부 (현재 client-side filter 가능 · limit 초과 시 서버 filter 필요)
-- 💡 프레임워크 원칙 준수 · SearchBar·EmptyState·useSortableTable 재사용
-
-### #179 · 바코드 스캔 · 미등록 상품 즉시 등록 UX (✅ 완료 · 2026-08-23 · `1ad6c2f0`)
-> ProductCreateModal 재사용 (initialCode/initialBarcode/lockCode props) · #177 프레임워크 활용
-> ScanPage · 권한자만 등록 버튼 노출 · 등록 → 로컬 캐시 삽입 → handleScan 자동 재호출
-
-### #179-원본스펙 · 바코드 스캔 미등록 상품 (기록 · 2026-08-21)
-- 🔲 BarcodeScanner · 스캔 결과 · products 테이블에 없으면 · **"상품 추가" 자동 유도**
-- 🔲 미등록 감지 시 · 상품 등록 모달 (#177 페이지의 모달 버전) 오픈
-- 🔲 모달 · `product_code` 필드 · 스캔된 바코드로 **자동 채움** · readonly 표시
-- 🔲 저장 성공 시 · 스캔 흐름 계속 (예: 실재고 입력·발주 등 원래 flow)
-- 🔲 취소 시 · 스캔 화면 복귀
-- 🔲 #177 상품 등록 페이지 · 모달 형태로도 재사용 가능한 구조 필요 (프레임워크화)
-- ✅ **권한 확정 (2026-08-23 사용자 지시)** · **관리자 전체 + 매니저 level 5 이상만** 상품 등록 가능
-  - `authSession.role === "admin"` OR (`role === "manager"` AND `level >= 5`)
-  - 서버 라우터 · 미들웨어에서 권한 검증 (401/403)
-  - 프론트 · 조건부 UI (버튼 노출 여부)
-- 💡 스펙 결정 필요:
-  - 모달 재사용 · 페이지 컴포넌트 안에 `Modal` wrapper 감쌈 or 페이지·모달 각각 별도 컴포넌트?
-  - 자동 감지 조건 · products.product_code 정확 일치 시만 or fuzzy?
-  - 스캐너 사용처 · ScanPage·ProductArrivalPage·재고체크 등 · 어디서 자동 유도?
-- 💡 **의존** · #177 (상품 등록 페이지) 선행 완료 필요
-
-### #178 · 공급사 정보 스키마 확장 · xlsx 원본 반영 (신규 · 2026-08-20 · **스펙 확정 2026-08-23**)
-
-**🎯 스펙 확정 (2026-08-23 사용자 결정)**:
-- **스코프** · xlsx **첫 시트 (마스터)** 만 사용 · 시트 2~57 (공급사별 상품) 완전 무시
-- **로그인 규칙** · ID = 담당자 핸드폰 (`vendors.phone`) · 비번 = 핸드폰 + `.env VENDOR_PW_SUFFIX` (기본 "00") · DB 저장 X · 서버 파생
-- **note vs special_notes** · **분리** · `note` (일반) + `special_notes` (발주 특이사항 · 경고 톤 배너)
-- **Import 방식** · 일회성 스크립트 + 기존 vendors 연동/병합 (매칭 키: company_name)
-- **UI 조회/수정** · 프레임워크 모두 활용 (Modal · Card · SplitListPanel · CategoryChips · Badge · StatusPill · PageToolbar · CollapseCard · useApiCall · useToast · useConfirm)
-
-**Phase A · DB 마이그레이션** ✅ **SQL 파일 완료** (`6b155ed9`) · Supabase 실행 대기:
-- ✅ `sql/migrations/2026-08-23_vendors_xlsx_columns.sql` · IF NOT EXISTS · idempotent
-- ✅ 5 신규 컬럼 (`order_method` · `region` · `invoice_method` · `order_status` · `special_notes`)
-- ✅ `login_credentials` 컬럼 신설 **X** (규칙 파생 · `.env`)
-- ✅ `vendor_order_templates` 테이블 신설 **X** (첫 시트만)
-- ⏳ **사용자 실행 대기** · Supabase Dashboard > SQL Editor
-
-**Phase B · Zod 스키마** ✅ **완료** (`1081fe3e`):
-- ✅ CreateVendorSchema · 5 신규 optional 필드 + `approval_status` enum
-- ✅ 10 신규 tests · 17→27
-
-**Phase C · 서버** ✅ **완료** (`6b155ed9`):
-- ✅ PATCH `/api/vendors/:id` · 신규 5 필드 수신 · approval_status enum
-- ✅ Fallback · 신규 컬럼 없음 시 · 자동 skip (마이그레이션 미실행 안전)
-- 🔲 GET `/api/vendors` · 신규 컬럼 반환 (Supabase select 자동 · 별도 작업 불필요)
-- 🔲 파생 함수 · `src/lib/vendorPassword.ts` · 별도 태스크
-
-**Phase D · UI 조회/수정** ✅ **완료** (`9b131edd`):
-- ✅ Vendor 타입 + EditDraft 타입 · 5 신규 필드 확장 · approval_status enum
-- ✅ emptyDraft utility · 초기값 매핑
-- ✅ VendorDetailModal · isDirty + handleSave payload + 5 신규 form fields
-- ✅ 발주 특이사항 · amber 톤 border (경고 강조 · 목업 준수)
-- ✅ 서버 fallback · DB migration 미실행 시 · 자동 skip (안전)
-- 🔲 발주요청 페이지 · special_notes 경고 배너 (별도 태스크 · Phase F)
-
-**Phase E · xlsx import 스크립트** ✅ **완료** (`53e6e98a`):
-- ✅ `scripts/import-vendors.mjs` · Node ESM
-- ✅ 첫 시트 파싱 · company_name 매칭 · phone fallback
-- ✅ 매칭 O · UPDATE · 매칭 X · INSERT · DELETE 없음
-- ✅ `npm run import:vendors:dry` · `npm run import:vendors`
-- ⏳ **사용자 실행 대기** · `.env` SUPABASE_URL/KEY 설정 후
-
-**규모** · 예상 **8-12시간** · UI 확장 포함
-
-**관련 메모리**:
-- `.claude/memory/project_vendor_login_rule.md` · 로그인 규칙
-- `.claude/memory/project_vendor_special_notes.md` · note 분리
-- `.claude/memory/project_vendor_scope.md` · xlsx 스코프 + import
-
-### #178-원본스펙 (기록 · 2026-08-20)
-- 📄 원본 · `src/sample/메가타운약국공급사관리정보.xlsx` · 57 시트 · 52 vendor
-- 마스터 헤더 · 제약사·주문방식(사이트)·지역·거래명세서·담당자·연락처·주문현황·계정/비밀번호·특이사항
-- 각 제약사 시트 · `no.·제품명·주문수량·비고` · 기본 주문 템플릿
-- 🔲 Phase A · DB 마이그레이션 · vendors ALTER (`order_method`·`region`·`invoice_method`·`login_credentials`·`special_notes`) + `vendor_order_templates` CREATE
-- 🔲 Phase B · Zod VendorSchema 확장 (optional 필드)
-- 🔲 Phase C · 서버 라우터 GET/PUT vendors + vendor_order_templates CRUD (asyncHandler·HttpError·Zod)
-- 🔲 Phase D · VendorListEditor / VendorDetailModal UI 필드 확장
-- 🔲 Phase E · xlsx → DB import 스크립트 (일회성 · 52 vendor + templates)
-- 💡 결정 필요:
-  - `login_credentials` 암호화 여부 (평문 위험)
-  - `note`(기존) vs `special_notes`(신규) 통합/분리
-  - `vendor_order_templates` 별도 페이지 or 조회 전용
-  - xlsx import 즉시 vs 수동 트리거
-
-### #177 · 상품정보 페이지 신설 · 매장>매입 탭 확장 (✅ **Phase A/B/C/D 완료** · 2026-08-23 · `fe33f65d`·`f43afc45`·`3ee0b766`)
-> Phase A · 매장>매입 서브탭에 "상품정보" 신설 (Info 아이콘 · indigo) ✅
-> Phase B · SplitListPanel + useResizablePanel + Modal · 마스터-디테일 UI ✅
-> Phase C · POST /api/products · authorize(5) · CreateProductSchema · ProductCreateModal 4섹션 ✅
-> Phase D · PATCH /api/products/:code · UpdateProductSchema · 인라인 편집 (조회↔편집 토글) ✅
-> ⚠ Phase C-1 (식약처 OpenAPI) · 사용자 지시 제거 (2026-08-23)
-> ⚠ 서버 PATCH · authorize 미추가 (ScanPage/FlowTab 회귀 방지 · 프론트 게이트만)
-
-### #177-원본스펙 · 상품정보 페이지 (기록 · 2026-08-20)
-
-**최종 스펙 (2026-08-23 사용자 확정)**:
-- **구조** · 매장 > 매입 > **"상품입고"** 옆에 **"상품정보"** 페이지 신설 · **탭으로 상품입고 ↔ 상품정보 전환**
-- **UI 레이아웃** · 마스터-디테일 · SplitPanel 프리미티브 사용
-  - **PC (lg+)** · 좌측 상품리스트 · 오른쪽 상세정보 (SplitPanel · 리사이저)
-  - **모바일** · 좌측 상품리스트만 표시 · 클릭 시 상세정보 **모달** 오픈 (반응형)
-- **UI 프레임워크 필수** · SplitPanel · Card · Modal · SearchBar · StatusPill · SortableTable 등 프리미티브 활용
-- **권한 (2026-08-23 확정)** · 관리자 전체 + 매니저 **level 5 이상** (조회·등록·수정 모두)
-  - `authSession.role === "admin"` OR (`role === "manager"` AND `level >= 5`)
-  - 서버 · 미들웨어 검증 · 프론트 · 조건부 UI
-
-**Phase A · 매장>매입 탭 확장**
-- 🔲 매장>매입 서브탭에 **"상품정보"** 탭 신규 추가 (`productinfo` key)
-- 🔲 기존 "상품입고" 탭 유지 (ProductArrivalPage) · "상품정보" 신설 (ProductInfoPage)
-- 🔲 탭 순서 · 상품입고 → 상품정보 (또는 사용자 결정)
-- 🔲 사이드바 · sideNavGroups.ts · 관련 라벨 확인
-
-**Phase B · ProductInfoPage 신설 · UI 레이아웃 (마스터-디테일)**
-- 🔲 **SplitPanel 사용** · 좌측 리스트 (기본 40%) · 우측 상세 (60%) · 리사이저 (useResizablePanel 훅)
-- 🔲 **좌측 상품리스트**:
-  - SearchBar 프리미티브 (한글 초성 검색)
-  - 필터 · 공급사·카테고리·재고 상태 (Card · StatusPill)
-  - 리스트 · 상품명·코드·공급사·재고 컬럼 · 정렬 (useSortableTable)
-  - 클릭 시 · 선택된 상품 highlight + 우측 상세 로드
-- 🔲 **PC (lg+)** · 우측 패널에 상세 표시 (ProductDetailPanel 재사용 · 편집 모드 토글)
-- 🔲 **모바일 (max-lg)** · 상세 · Modal primitive (v3 · align="bottom-mobile" or center) · SplitPanel 자동 스택
-  - Modal · `size="lg-narrow"` or `"3xl"` · title=상품명
-  - useMediaQuery 훅 활용 (또는 CSS `lg:hidden`/`hidden lg:block`)
-- 🔲 상세 필드 조회 · product_name · code · supplier · category · unit · barcode · spec · price · optimal_stock · real_map · 이미지 등
-
-**Phase C · 상품 등록 기능**
-- 🔲 좌측 리스트 상단 · **"+ 상품 등록" 버튼** (권한 통과 시만 노출)
-- 🔲 클릭 시 · Modal (신규 등록 폼) 열림
-- 🔲 기능 · `products` 테이블 INSERT (기존 컬럼 재사용 · 파생컬럼 X)
-- 🔲 서버 · POST `/api/products` · asyncHandler + HttpError + Zod · **권한 미들웨어**
-- 🔲 Zod 스키마 · `src/shared/schemas/products.ts` 확장 or 신규 CreateProductSchema
-- 🔲 프론트 · apiClient · useToast · 프레임워크 원칙 준수
-- 🔲 중복 검사 · product_code unique
-
-**Phase C-1 · 식약처 OpenAPI 상품 자동 조회 (신규 · 2026-08-23)**
-- 📄 기능 · 상품 등록 폼에서 · **제품명 or 바코드 검색** → 식약처 OpenAPI 조회 → 상세 상품정보 **자동 채움**
-- 🔑 **API 키** · `f30e81d23cbe4bf4ace2` (환경변수 이동 필수 · `.env` · `MFDS_API_KEY` · 코드 하드코딩 절대 X · git 제외)
-- 🔲 등록 폼 상단 · **검색 필드 2가지**:
-  - 제품명 검색 (한글 fuzzy) · SearchBar 프리미티브
-  - 바코드 검색 (정확 일치)
-- 🔲 검색 결과 · 리스트 표시 · 선택 시 · **필드 자동 채움** (제품명·회사명·성분·규격·유효기간 등 · API 스펙에 따름)
-- 🔲 사용자 수동 편집 가능 · 자동 채움 후에도 수정 가능
-- 🔲 서버 프록시 라우터 · GET `/api/mfds/search?query=...&type=name|barcode`
-  - 이유 · API 키 서버 보호 · CORS 회피 · 캐시 가능
-  - asyncHandler + HttpError + Zod 준수
-- 🔲 검색 실패·매칭 없음 · EmptyState + 수동 입력 fallback
-- 🔲 캐시 · 동일 검색 결과 · 서버 in-memory 또는 KV 캐시 (선택)
-- ⚠️ **작업 시작 시 사용자에게 API 상세 스펙 (엔드포인트 URL · 파라미터 · 응답 형식) 요청 필요**
-  - 식약처 여러 OpenAPI 존재 (의약품·화장품·의료기기·건강기능식품 등)
-  - 어느 API 사용할지 · 응답 필드 매핑 확정 필요
-- 💡 필드 매핑 (API 응답 → products 컬럼):
-  - 예시 · `제품명` → product_name · `업체명` → supplier · `바코드` → barcode · `제형/규격` → spec · `보관방법` → note 등 (실제 API 스펙 확인 후 확정)
-- 💡 스캐너 연동 (#179) · 스캔 바코드 자동 검색·자동 채움 통합 가능
-
-**Phase D · 상품 수정 기능 (인라인 편집)**
-- 🔲 우측 상세 (PC) / 모달 (Mobile) · **편집 모드 토글** (조회 → 편집 → 저장/취소 UX · StaffManagePage 벤치마크)
-- 🔲 편집 가능 필드 · product_name · supplier · category · unit · barcode · spec · price · optimal_stock · real_map 등 (product_code 는 read-only)
-- 🔲 서버 · PATCH `/api/products/:id` · asyncHandler + HttpError + Zod (UpdateProductSchema · partial fields) · **권한 미들웨어**
-- 🔲 Zod 스키마 · UpdateProductSchema (모든 필드 optional)
-- 🔲 프론트 · api.patch · useToast (성공 · 실패 tone) · useConfirm (변경 취소 확인)
-- 🔲 유효성 · product_code 변경 금지 · barcode 중복 검사 (자기 자신 제외)
-- 🔲 편집 후 · productsCache 무효화 (lookupProduct fresh)
-- 🔲 감사 로그 (선택) · 누가·언제·무엇을 바꿨는지 (product_edit_log 별도 태스크로 분리 가능)
-
-**공통 · 프레임워크 원칙 준수**
-- **필수 프리미티브** · SplitPanel · Card · Modal · SearchBar · SortableHeader · StatusPill · useResizablePanel · useSortableTable · useToast · useConfirm · apiClient
-- 대원칙 · 매 단계 TS+build+test 검증 · 위험 작업 전 로컬 커밋 · UI 목업 파일 기준
-- **StaffManagePage 마스터-디테일 벤치마크** (참고 구조 · StaffToolbar · StaffListPanel · StaffDetailPanel · StaffMobileDetail 등)
-
-**의존 · #179 (바코드 스캔 미등록 상품 즉시 등록)** · 상품 등록 모달 재사용 구조 필요 (권한도 동일 · 관리자+매니저lv5+)
-
-### #175 · 직원정보 · 퇴사예정 분류 + 사직서 조건부 노출 (✅ 완료 · 2026-08-20 · `2bc6ef8`)
-- ✅ 3-state 파생 · retire_date null=재직 · 미래=**퇴사예정** · 오늘이하=퇴사 (`d2cc2a6`)
-- ✅ DB · employees.retire_date DATE 재사용 · 컬럼 추가 없음 (feedback_no_derived_columns 준수)
-- ✅ lib/employmentStatus.ts · getEmploymentStatus·canWriteResignation·EMPLOYMENT_STATUS_LABEL
-- ✅ EmployeeProfileCard · 이름 옆 상태 배지 (퇴사예정 amber·퇴사 zinc)
-- ✅ ApprovalRequestPage · ResignationGate · 퇴사예정 만 사직서 접근·admin 예외
-- ✅ 재직/퇴사 · 안내 UI (관리자에게 요청 안내)
-- ✅ StaffManagePage · 상태 필터 3-state (재직/퇴사예정/퇴사/전체 · `db27f33`)
-- ✅ StaffManagePage · 퇴사예정 배지 amber · 퇴사 rose · title 툴팁 날짜
-- ✅ 퇴사자 목록 (필터 "퇴사" 탭) · 사직서 보기/업로드 · 기존 UI 재사용
-- ✅ **사이드바 gate** · `useEmploymentStatus` hook · document-writer subTab 조건부 숨김 (`2bc6ef8`)
-  - retire_date null (재직) · admin 아님 → 사직서 항목 숨김
-  - pending_resignation → 노출 · admin (lv9) → 항상 노출 (fetch 스킵)
-  - 로딩/에러 · 안전측 숨김 (admin bypass 유지)
-- ✅ 서버 · GET /api/employees/:id 추가 · self-only or lv9 · asyncHandler·HttpError
-- ✅ 22 신규 tests (hook 9 + sideNavGroups filter matrix 13)
-
-### #174 · 사이드메뉴 종 아이콘 · 테두리·여백 반으로 (✅ 완료 · 2026-08-20 · `31f5d29`)
-- ✅ NotificationBell · compact prop 추가 (하위호환)
-- ✅ SideNav compact=true · w-9 h-9 → w-7 h-7 · rounded-md · shadow 제거
-- ✅ AppNavHeader 상단은 그대로 유지 (compact 미전달)
-
-### #171 · 랜딩페이지 · 오늘 현황 숫자 클릭 · 상세+이동 (✅ 완료 · 2026-08-23 · `4d55af0c`)
-- ✅ 오늘 현황 · "N건" 숫자 아래 링크 추가 · 클릭 시 상세 현황 노출 (Phase 3 · 2026-08-21)
-- ✅ 상세 현황 아래 · "해당 페이지로 이동" 버튼 추가 · 클릭 시 관련 페이지로 이동
-- ✅ 대상 · 발주요청·저재고·진열불일치·재고체크·연차·점심 등 각 현황
-- ✅ UX · 인라인 확장 (accordion)
-- ✅ 접근성 · aria-expanded
-- ✅ **모든 직원에게 노출** (isVendor 만 제외)
-- ✅ **승인대기건수** (2026-08-23 · `4d55af0c`) · 모든 직원 노출 · 연차+사직서 합 · teal 배지 · click → business-manage
-- ✅ **관리자 전용 · 결제요청 건수** (2026-08-23 · `4d55af0c`) · admin (lv9) 만 노출 · violet 배지 · click → display
-- ✅ 백엔드 신규 · GET `/api/supplier-payments/pending-count` · ocr_confirmed_items amount - allocations > 0.5 count
-
-### #149 · UI 프레임워크화 남은 작업
-- 🔲 common/ 재분류 · `common/primitives/` vs `common/features/` (구조 리팩터 · 위험 중)
-- 🔲 500+라인 파일 슬림화 · ProductDetailPanel(647) · EmployeeInfoForm(482) · InventoryEditPanel(390) · ContractWriterPage(5,400 · 대형)
-- ✅ **Unit test 대량 확산 v5~v7** · **2514 tests · 176 files** (2026-08-20 밤 최신 · 1775→2077→2274→2514 · payroll 5파일 113tests · ocr server routes 대량 확산)
-- 🔲 접근성 audit (aria-* · keyboard nav)
-- 🔲 목업 HTML 파일 · 최신 트렌드로 재생성 (문서 · 위험 낮음)
-
-### #151 · 프레임워크 프리미티브 확산 (진행중)
-- ✅ **IconTile v3** · 11 tone · 5 size · 4 shape · 9 tests · 27+곳
-- ✅ **AccentBar** · 5 size + brand-soft + h={n} · 13 tests · 77곳 100%
-- ✅ **StepperInput** · 3 size · brand-deep focus · 13 tests · 2곳
-- ✅ **NotificationToast** · 5 tone · dark frosted · 7 tests · 2곳
-- ✅ **InlineLabel** · 3 size · AccentBar + label · 6 tests · 12곳
-- ✅ **Spinner** · 11 tone (2026-08-19 · orange/violet/red 추가) · label + size · 8 tests · **60+곳 통합** (누적) · 2026-08-20 밤 12 파일 22곳 추가 (`933faf8`~`6cbd628`)
-- ✅ **Modal migration** · 7 파일 (Break/Hidden/PurchaseHistory/ProductPurchase/Ocr balance/SupplierChange/DeleteSynonym)
-- ✅ **BarcodeScanner** · 어제 수정 시작 전 (e1fd6a7 · 2026-08-05) 복원 · UI 재디자인 (Linear/Vercel 톤 · 실시간 진단 오버레이 좌상단 · 로직 완전 유지) · 진단 툴 (URL/mediaDevices/getUserMedia/videoState/UA/에러 실시간 표시)
-- ✅ **정식 PWA 설정 (2026-08-19)** · public/manifest.json + apple-mobile-web-app-capable + apple-touch-icon · iOS 웹앱 카메라 활성화 (WebKit Bug 185448 우회)
-- ✅ **IosInstallGuide (2026-08-19)** · SFSafariViewController 자동 감지 · 3단계 재설치 위저드 · Safari 자동열기·클립보드 복사 · BarcodeScanner 통합
-- ✅ **Card 프리미티브 (2026-08-19)** · variant/padding/rounded/clip/as/onClick · 29 tests · **20곳 확산 🎉 (15+ 파일)** · Stock/Landing/Lunch/ContractSettings/HrForms/Resignation/ProductArrival/OrderManage/Display/ContractWriter/Requests/PharmacistMenu/ReturnList/ScanInfo
-- ✅ **TS strict errors fix (11 파일)** · CategoryChips onChange · Phosphor Icon style · ZONE_DEFS import · SortableHeader JSX 등
-- 🔲 잔여: Card 확산 (17+ 후보 남음) · 대형 Modal migration · Spinner 확산 (button 내부 조건부 60+개)
-
-### 배포 확인 대기 (2026-08-19 · `77530ac`)
-- 🔲 iPhone · 홈화면 아이콘 삭제 → Safari → osanmega.onrender.com → 홈 화면에 추가 → 웹앱 카메라 정상 (iOS 17.4+)
-- 🔲 Android · Chrome → osanmega.onrender.com → 앱 설치 → 웹앱 카메라 정상
-- 🔲 iOS 버전 18.1.1 이상 확인 (18.0.x 는 회귀 · 업데이트 필수)
-
----
-
-## 🐛 사용자 리포트 · 확인 대기
-
-<!-- 2026-08-23 · 로그인화면 · 1주일 전 정보 리포트 · 사용자 삭제 승인 -->
-<!-- 2026-08-23 · 4-color dots 지저분 리포트 · 사용자 취소 · 현재 색상 유지 (c3d7e9d2 → b2634ee6 revert 확정) -->
-- (없음)
-
-
----
-
-## 🆕 소형 작업 (이전 세션 큐 · 계속 유효)
-
-<!-- 2026-08-20 밤 · 12개 모두 이미 구현 완료 확인 · 삭제 (완료 원칙)
-     · #122 (사번 자동생성), #132/#147 (연차신청 버튼), #133 (로그인/카카오),
-       #134 (로고), #139/#140 (Calendar Modal), #141 (폰트+4),
-       #143/#144 (계약서 연동/멘트), #145 (거래처 메뉴), #148 (반응형)
--->
-- (모두 완료)
-
----
-
-## 🛡️ Spring Security · defer 확정 (2026-08-16 사용자)
+## 🛡️ Spring Security · defer 확정 (2026-08-16)
 
 - ✅ S5 Audit · S7 Input Validation · S10 Refresh Token
 - ⏸ S1/S2/S6/S8/S9 · defer
@@ -1739,148 +107,138 @@
 
 ## 🚨 백엔드 보안 · 잔여 (#112)
 
-1. ✅ `/api/auth/set-password` · `authorize(9)` 추가 (2026-08-23 · `9d53756f`)
-2. 🔲 Vendor 로그인 · bcrypt 전환 · 또는 사용자 정책 재확정 (사용자 결정)
-3. ✅ requireAuth 재활성화 · 서버 마운트 완료 (2026-08-16 · server.ts:171)
-4. ✅ tsconfig.json exclude · dist·node_modules·coverage·uploads·logs·.claude·test 모두 반영
-5. ✅ Supabase 부팅 크래시 · warn 격하 (2026-08-16 · src/supabase/client.ts:15)
-6. ✅ 100MB JSON limit · route-level (일반 10MB · 이미지 100MB) (2026-08-05 · server.ts:132)
+1. ✅ `/api/auth/set-password` · `authorize(9)` 추가 (`9d53756f`)
+2. 🔲 Vendor 로그인 · bcrypt 전환 또는 사용자 정책 재확정 (사용자 결정)
+3. ✅ requireAuth 재활성화 · 서버 마운트 완료 (2026-08-16)
+4. ✅ tsconfig.json exclude 정비
+5. ✅ Supabase 부팅 크래시 · warn 격하
+6. ✅ 100MB JSON limit · route-level
 
 ---
 
-## 🔴 사용자 결정 필요
+## 📋 세션별 완료 요약 로그
 
-- #89 · DayTimelineModal · settings.positions 자동 파생 (하드코딩 3 그룹 → settings 순회)
-- #92 · 회사·브랜드 페이지 · 완전 통합 (5탭 → 1페이지)
-- ✅ #95 · 실재고입력 페이지 UI 재설계 완료 (2026-08-18 · 5f182e2) · StockRowCard 카드형 · 필터 KPI 그리드 · 모바일/PC 통일
+### 2026-09-15
+| 커밋 | 내용 |
+|-----|------|
+| `a576ea27` | 탭바 전역 정렬 fix · 초광폭 밀림 해소 |
+| `2277a8a2` | #39 Phase A+B · 발주 진행중 카드 + 지연 tier · 업계 표준 |
+| `b86a4b20` | T-SP-BULK · POST bulk shelf_positions 병합 · 22 tests |
+| `a75958da` | #61 B안 · 지정위치 정합성 · products.spec 제거 · 상품↔실재고 자동 연동 |
+| `8a987279` | DELETE /api/products · DB 정합성 · 회계 이력 차단 + orphan cleanup |
+| `596108af` | T-MENU-BOTTOMNAV · BottomNav perms.hidden 필터 추가 |
+| `5513c8d4` | T-SP-9-REST · ExpiryImminentTab 진열위치 뱃지 확산 |
 
----
+### 2026-09-13 ~ 09-14
+| # | 태스크 | 커밋 |
+|---|-----|------|
+| **#20** | 상품 모달 창고·매장 수평 배치 | `bb3c2647` 확인 |
+| **#36** | 유통기한 임박 SSOT | `d4a2d823`+`a698b4fe` |
+| **#44** | 매장구역도 저장 오류 | `f64ffbd7` |
+| **#47** | 결제-차용 약국 사업장 자동 | `9f4f80c0`·`935a5957`·`b58a6295` |
+| **#48** | 상품검색 최근 검색어 3개 | `a0025044` |
+| **#50** | 승인요청 페이지 UI 통일 | `84078012`·`afe7f6f5`·`0b29dedd`·`7dec1c36` |
+| **#52·#54** | 이벤트 관리 UI | `5434854d` |
+| **#53·#55** | 발주필요 배너 | `bc097349`·`c65e7310` |
+| **#63** | 공급사 이름 무결성 | `62e3830e` |
+| **#64** | 상품정보 편집 모달 PATCH | `33628f2f`·`49c93f99`·`89fd973c` |
+| **#68** | 공급사별 결제내역 검색창 통일 | `033890ed` |
+| **#70** | 공급사별 결제내역 Spinner | `a698b4fe` |
+| **#72·#73** | 재고자산·판매액 SSOT 감사 | `5ae4339a`·`cae5d072`·`7b79d5b0`·`19382a81`·`1cbbb722` |
 
-## 🟡 자율진행 가능 (위험 명시)
+### 2026-09-10
+| 커밋 | 내용 |
+|-----|------|
+| `1bede008` | #64·#65·#67 · ProductCreateModal 편집 모드 · 잔고 셀 색상 |
+| `9de3de02` | #69·#70 · 판매내역 상품별 aggregate |
+| `c4cce17b` | #66 · 월별 판매액 실제 연결 |
+| `2bcaa825` | #71 · 결제탭 통합 툴바 |
+| `1ed40cae` | #72(부분) · 재고자산·잔고 확정 공식 + supplier-balances-map |
+| `1cbbb722` | #72·#73 · 판매액=sale_qty×sale_price |
+| `19382a81` + `7b79d5b0` | #73 · topSales·snapshotSummary 판매액 fix |
+| 이전 커밋들 | #35·#37·#38·#40·#41·#42·#45·#46·#49·#51·#57·#58·#59·#60·#62·#65·#66·#67 |
 
-- ⏸ #90 · ContractWriterPage · JOB_CATEGORIES → wageRates 파생 · **차단됨** (2026-08-23)
-  · ContractCategory 는 strict union `"약사" | "매장" | "창고" | "기타"` · 확장 시 type system 광범위 변경
-  · 저장 계약서 데이터 마이그레이션 필수 · 대형 리팩터 · 사용자 재결정 필요
-  · 현재도 useContractLoad.ts:219-221 · JOB_CATEGORIES ∪ wageRates keys merge 로 부분 해결 상태
-- ⏸ #91 · SchedulePage · position 문자열 매칭 → settings · **보류** (2026-08-23)
-  · 필터 탭 (약사·사원·창고·매장) 은 **개념 기반** (역할 그룹) · settings.positions (직군) 와 다른 개념
-  · 자동 파생 시 · 사용자 익숙한 4탭 UX 붕괴 위험
-  · 사용자 재결정 필요 · "탭 유지 vs 직군 순회로 대체 vs 하이브리드"
-- ✅ #94 · 공급사 재고확인 페이지 · A1 완료 (2026-08-16) · Phase 2 (백엔드 시계열 API) 유보
-- DayTimelineModal 분리 · 2704 lines · 중-高
+### 2026-09-08 (T-SP 세트 · 14커밋)
+| 커밋 | 내용 |
+|-----|------|
+| `6e67a551` | T-SP-1·2·3 · shelf_positions JSONB · KV storage_locations |
+| `d7a2712e` | T-SP-4·6 · 자동배정 + 프리미티브 3종 |
+| `14db14d7` | T-SP-7 · ProductInfoPage 상세 진열위치 섹션 |
+| `b6e70ae3` | T-SP-8 · InventoryEditPanel zone stepper |
+| `3ab74edb`+`4a9820d5` | T-SP-9 · shelf-positions-map API + 6개 파일 뱃지 |
+| `b503c640` | 백필 fix · 판매중 상품만 자동배정 |
+| `7d8f0cca` | 상세위치 중복방지 · (display_location, location_detail) 유일 |
+| `61f663d2` | #14 · UI 실시간 중복 검증 + GET /api/inventory-checks/shelf-conflict |
+| `393390ce` | #12 · 매장구역도 14×8 rectangular grid |
+| `d14e7bb4` | 승인요청 통합 · 사직서승인 탭 · 5개 탭 permission gate |
+| `c48d3d26` | T-MENU-1 · TodayStatusPanel permission gate 통합 |
+| `48281a30` | #13 · 카운터존 EVENT 라벨 |
+| `18373232` | 판매대시보드 · 판매중 상품만 · 미지정구역 fix |
 
----
+### 2026-09-07
+| 커밋 | 내용 |
+|-----|------|
+| `03d4a1f3` | arrivals currentStock null→0 |
+| `b3fb1e48` | 알림종 버그 수정 · 상품정보 UI 개편 |
+| `b1ee07f3` | 가격재고 4-col stat grid |
+| `072aedb7` | expiry_date 버그 · 유통기한 임박 탭 · 검수완료 등록 |
+| `7b9ad077` | #116 · supplier_name 필터 서버측 |
 
-## ⏸ 외부 대기
+### 2026-09-06
+| 커밋 | 내용 |
+|-----|------|
+| `c8b7b547` | #261 · SplitRightHeader + SplitRightLoading 신설 |
+| `c03965cb`+`30b29655` | LIST-UI-2026 +2px global 전체 완료 |
+| `c7cb2635` | audit 위반 0/790 · 100% 클린 |
 
-- #42 · 발주 PDF + 카카오톡 · 사업자등록증 발급 대기 (SolAPI)
+### 2026-09-05 ~ 09-04
+| 커밋 | 내용 |
+|-----|------|
+| `a92cf530` | #73 matchHangul→matchesProductQuery 통일 |
+| `97458c9a` | 공급사 모달 즉시닫힘 버그 2건 · 사이드메뉴 관리자 노출 |
+| `4fa30090` | 발주요청 항목 발주필요 숨김 · bulk-send 미전송 시 ordered 마킹 금지 |
+| `7adf338e` | 공급사재고 전용 페이지 VendorStockPage |
+| `732a69fa` | contract_type HR 필드 PUT Zod strip 수정 |
+| `0f49a8a7` | 스케줄표 모달 탭 순서 · 스케줄설정 페이지 |
 
----
+### 2026-09-02 ~ 09-01 (원격 push 이전)
+- `9d78457e` · 서버 프레임워크 감사 100% 완료 (리모트 push 이후 금지)
+- 2026-09-02 · 14 커밋 · 4 신규 프리미티브 · 11 삭제 · 판매대시보드 차트 7종
+- 2026-09-02 오후 · 30+ 커밋 · 카드결제 · 거래처로그인 · 발주 flow fix
 
-## 📜 완료 로그 (2026-08-20 밤)
+### 2026-08-29 (원격 push 이전 마지막 대량)
+- `c8c198c3` 이후 · 리모트 push 사용자 명시 재요청만
+- #193·#196·#198·#200·#197 · 22 로컬커밋 · purchase_details 통합 · MENU_STRUCTURE 15차
 
-### #151 Spinner 확산 2차 · common/features Phase A · Revert 교훈 (2026-08-20 밤)
-- Spinner · 12 파일 22곳 추가 (`933faf8`~`6cbd628`) · MyPage/HiddenManagerModal/RequestsPage/VendorListEditor/SalesTrendPage/ReturnListPanel/PurchaseHistoryTab/PaymentInfoTab/StockActionsCell/LossHistoryTab/PurchaseHistoryList/StaffManagePage
-- common/features 신설 · PurchaseHistoryModal 이동 (`9a15774`) · VendorSearchModal 이동 (`933faf8`) · Phase A 완료
-- LandingPage dots 색상 통일 revert · `c3d7e9d` 지시 없는 UI → `b2634ee` 즉시 복원 · feedback_only_instructed 원칙 재확인
-- Unit test 2514 tests · 176 files 달성 (payroll 113 + ocr routes 130+ 확산)
-
-## 📜 완료 로그 (2026-08-20)
-
-### #176 · common/ 재분류 리서치 완료 (2026-08-20 · 리서치만 · 마이그레이션 대기)
-- 총 62 소스 · 51 테스트 (113 파일)
-- Primitives 36 (58%) · Features 15 (24%) · Ambiguous 9 · Helpers 2
-- 4단계 마이그레이션 계획 (Phase A~D · 저위험 → 고위험)
-- Phase A · 0-3 usage feature (InventoryEditPanel · PurchaseHistoryModal · VendorSearchModal 등 9개) · 근-제로 위험
-- Phase B · 중위 usage feature (StoreZoneMap · PurchaseHistoryList · ProductDetailPanel 등)
-- Phase C · helpers (`hangulSearch.ts` · `settingsTypography.ts` → `src/lib/`)
-- Phase D · primitives 이동 · `common/index.ts` barrel 유지 시 import 사이트 무변경
-- **결정 대기** · 실제 마이그레이션 착수 여부
-
-### #172 · 모바일 가시성 탭 이관 (2026-08-20 · ✅ · `47104f7`)
-- 회사·브랜드 (CompanyInfoSettingsPage) 5탭 → 4탭
-- 메뉴 설정 (PermissionsPage) · 권한 조정 탭 · 서브탭 3번째 "모바일 가시성" 추가
-- 프레임워크 원칙 준수 · MobileVisibilitySection 컴포넌트 이동 없이 import 만 변경
-- TS + build 통과
-
-### #173 · Unit test v5 확산 · 1200 → 2077 (2026-08-20 · ✅ · 다중 커밋)
-- constants (7 파일 · 89 tests) · displayZones/storeMapLayout/jobCategories/timing/apiLimits/vendorCategories/index
-- hooks (10 파일 · 98 tests) · useSortableTabs/useSidebar/useKvSetting/useMobilePageLevel/useMobileVisibility/useContactInfo/useBrandIdentity/useCompanyInfo/useStampsMap/useVendors/useSettings/useLeaveManager/useAuth/useEmploymentStatus
-- lib (4 파일 · 42 tests) · cellReextract/employeeApi/errorReporter/employmentStatus
-- server middleware/lib (4 파일 · 53 tests) · envValidation/tenantConfig/requireAuth/ownershipCheck/supabaseFetchAll
-- server ocr (3 파일 · 59 tests) · invoice-vocab/excludedSuppliers/schema
-- server config (1 파일 · 17 tests) · ocrConfig
-- server routes (6 파일 · 145 tests) · systemConfig/clientErrors/lossTracking/supplierPayments/ocrDeletedRows/contractClauses/pharmacistMenuItems
-- layout (3 파일 · 42 tests) · sideNavGroups/BottomNav/AppFooter
-- common (5 파일 · 82 tests) · VendorInfoHeader/SeasonButtons/PurchaseHistoryList/PurchaseHistoryModal/hangulSearch/settingsTypography
-- constants schedules (12 tests) · types (18 tests)
-- **114 unpushed 로컬 커밋** · remote push 대기
-
----
-
-## 📜 완료 로그 (2026-08-19)
-
-### #170 · 정식 PWA 설정 + 웹앱 카메라 활성화 (2026-08-19 · ✅ · `77530ac`)
-- public/manifest.json 신규 · display=standalone · icons (logo.png · 512/192/180)
-- index.html · apple-mobile-web-app-capable=yes + apple-touch-icon + theme-color
-- 근거 · WebKit Bug 185448 (getUserMedia standalone) · iOS 17.4+ 카메라 지원 복원
-- 사용자 재설치 1회 필수 · Safari → 홈화면 추가
-
-### #169 · BarcodeScanner 로직 복원 + UI 재디자인 (2026-08-19 · ✅ · `ee79a27`)
-- 카메라 개폐 로직 · 어제 수정 전 (e1fd6a7 · Aug 5) 완전 복원
-- UI · 2026 Linear/Vercel 톤 · Zinc 뉴트럴 + rounded-3xl + ring-1 + dot indicator
-- 진단 오버레이 · 좌상단 · 실시간 URL/mediaDevices/getUserMedia/videoState/UA/에러 표시
-- 로직 시그니처 완전 유지 · additive 만 (onError · video 이벤트 관찰용)
-
-### #168 · Unit test 대량 확산 (2026-08-19 · ✅ · 다중 커밋)
-- 신규 test files 13개 · 신규 tests 274개 · 총 424 tests · 100% pass
-- Panel/PageHeader/CollapseCard/ConfirmDialog/Toolbar/PeriodSelector/MiniCard/LoadingState/TabBar/FieldLabel/ListLoading/Hero/SearchBar/SearchFilterChips/SortableHeader/BottomSheet/FilterBar/PageToolbar/VendorCategoryBadge/ProductClassFilter/SplitPanel
-- 회귀 방지 · Tailwind class 잠금 · A11y 속성 · 이벤트 시그니처 검증
-
-### #167 · Spinner 대량 확산 (2026-08-19 · ✅ · 다중 커밋)
-- Spinner tone 확장 · orange/violet/red 추가 (11 tone 총)
-- 30곳 신규 통합 · 15+ 파일 (GeminiParse/SeasonRanges/ProductSearch/NewVendor/OrderManage/OrderHistory/VendorDetail/PurchaseSubTabs/Supplier/StaffManage/Board/MyPage/VendorStock/Reservation/Pharmacist/RequestsPage/StockArrival)
-- 반복 패턴 (Loader2 + span + text-*-600 font-bold) → Spinner label/tone 통일
-
-## 📜 완료 로그 (2026-08-18)
-
-### #131 · 페이지 안보이기 fix + 입고알림 public (2026-08-18 · ✅ 완료 · `013920a`)
-- 헤더 hidden 필터 admin 적용 (AppNavHeader.tsx)
-  - 이전 버그: `userLevel < 9` 조건 · admin은 hidden 필터 스킵 → 헤더에 여전히 표시 · 클릭 시 flicker
-  - fix: admin 포함 hidden 적용 · ADMIN_ESSENTIAL (permissions/business-manage/account) 만 예외
-- /api/stock-arrivals · public 이동 (server.ts)
-  - 이전 버그: requireAuth 뒤 마운트 → 로그인 화면 401 → 빈 배열
-  - fix: public 섹션 이동 · GET 안전 · POST 내부 level ≥ 3 자체 검증
-
-### #167 · JWT 자동 파생 + 무한 리로드 fix v2 (2026-08-18 · ✅ 완료)
-- JWT_SECRET · SUPABASE_KEY HMAC-SHA256 자동 파생 · Render Dashboard 설정 불필요
-- CRITICAL v1 · handleLogout · fetch POST /api/auth/logout · 서버 쿠키 clear (36bd2ad)
-- CRITICAL v2 · SESSION_EXPIRED 리스너 guard 2개 · 미로그인 no-op + 1초 debounce · 무한 리로드 loop 완전 차단 (03e85a8)
-- envValidation.ts · JWT_SECRET · required → recommended
-- shadow-3xs (미정의 클래스) → shadow-sm · 5곳 fix
-- 보안 영향 0 (UI redirect 만 제어 · 서버 인증 flow 완전 그대로)
-
-### #166 · 승인 요청 실시간 배지 갱신 (2026-08-18 · ✅ 완료)
-- 신규 `src/lib/approvalEvents.ts` · CustomEvent + window focus
-- Dispatch 12곳 · Listener 3곳 (Landing · NotificationBell · RequestsPage)
-- 연차/점심/진열/발주/반품/불일치 · 제출/승인/취소/삭제
-
-### #160·#164 · 프레임워크 v3~v5 완성 (2026-08-17 밤 ~ 2026-08-18 · 커밋 370+)
-- **Nav 세련 v3~v5**: Aurora glow · SVG noise · gradient stripe · 그룹 accent color · underline reveal · 3-layer inset shadow
-- **Framework CSS v2**: 30+ 컴포넌트 (Modal/Button/Input/KpiCard/Toast/Scrollbar 등) · CSS 유틸 (.backdrop-brand · .shadow-brand-modal)
-- **StatusPill 확산**: 12+ 배치 · 30+ 파일
-- **Legacy StatusBadge 삭제** · common/README.md 신규 (527 lines)
-
-### 리모트 push (총 6회 · 사용자 승인만)
-- `71880c5` (프레임워크 P0) · `58846d9` (JWT envVar) · `f90c16f` (JWT auto-derive) · `ea58e89` (approval events) · `03e85a8` (SESSION_EXPIRED v2) · `013920a` (#131 헤더 + 입고알림 public)
-- 2026-08-18 최종 · "이후 리모트 푸시 금지" · 재승인 대기
+### 2026-08-18 ~ 08-28
+- Framework Phase 4 · large-file 분리 · test 2514+ · 리모트 push 6회 (사용자 승인)
+- #151~#175 · Spinner/Card/Modal/SplitPanel/SplitListPanel 프리미티브 확산
+- 마지막 리모트 push `013920a` (2026-08-18) 이후 · 원격 push 금지
 
 ---
 
-## 세션 관리
+## ⚙️ Framework 현황 (2026-09-06 기준)
 
-- **프레임워크 원칙**: `src/components/common/README.md` (v5 확장 · 527 lines)
+- **audit 위반**: 0/790 (100% 클린)
+- **large-file warn**: 완전 탈출
+- **test**: 3355/3355 통과 (2026-09-14)
+- **프리미티브**: 43+ (Card·Modal·Spinner·SplitPanel·SplitListPanel·SearchBar·StatusPill·CategoryChips·ListPanel·ListRow·ShelfPositionInput·ShelfPositionsBadge 등)
+
+### 잔여 large-file 대상 (별도 세션 · P3)
+| 파일 | 현재 줄 |
+|------|---------|
+| OcrPage | ~1215 |
+| PaymentInfoTab | ~1513 |
+| OrderManagePage | ~3089 |
+| LandingPage | ~2319 |
+| ContractWriterPage | 2680+ (critical) |
+
+---
+
+## 📋 세션 관리
+
+- **프레임워크 원칙**: `src/components/common/README.md`
 - **원칙 규칙**: `docs/AGENT_PRINCIPLES.md`
 - **임금 계산**: `docs/PAYROLL_ALGORITHM.md`
-- **contract-master**: `.claude/agents/contract-master.md`
 - **메모리**: `~/.claude/projects/D--antigravity-projects-megatown-staff-scheduler/memory/`
+- **테스트 리스트**: `docs/TEST_LIST_2026-09-11_session.md`
