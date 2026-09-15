@@ -98,25 +98,51 @@ function createMainWindow() {
   });
 }
 
-// ── 인라인 트레이 아이콘 생성 · buffer 로 직접 (16x16 solid brand-deep) ──
-// nativeImage.createFromBuffer · PNG 바이너리 · Electron 표준
+// ── 인라인 트레이 아이콘 · 다운로드 화살표 (16x16) ──
+// brand-deep 배경 + 흰색 아래 화살표 (import 심볼)
 function createTrayIconBuffer(): Buffer {
-  // 16x16 · brand-deep #0A2E4A 색 · solid square PNG
-  // Node.js Buffer · minimal PNG bytes (IHDR + IDAT + IEND)
-  // 실제 이미지는 · 리소스 파일 X 대비 · 최소 fallback
-  // brand-deep RGB (10, 46, 74) · alpha 255
   const width = 16;
   const height = 16;
-  const rowSize = 1 + width * 4; // filter byte + RGBA
+  const rowSize = 1 + width * 4;
   const raw = Buffer.alloc(rowSize * height);
+
+  // 화살표 패턴 · X = 흰색 · . = brand-deep
+  //  0123456789012345
+  const pattern = [
+    "................", // 0
+    "................", // 1
+    "................", // 2
+    "......XXXX......", // 3
+    "......XXXX......", // 4
+    "......XXXX......", // 5
+    "......XXXX......", // 6
+    "......XXXX......", // 7
+    "..XXXXXXXXXXXX..", // 8
+    "...XXXXXXXXXX...", // 9
+    "....XXXXXXXX....", // 10
+    ".....XXXXXX.....", // 11
+    "......XXXX......", // 12
+    ".......XX.......", // 13
+    "................", // 14
+    "................", // 15
+  ];
+
   for (let y = 0; y < height; y++) {
     raw[y * rowSize] = 0; // filter: None
     for (let x = 0; x < width; x++) {
       const off = y * rowSize + 1 + x * 4;
-      raw[off]     = 10;   // R (brand-deep)
-      raw[off + 1] = 46;   // G
-      raw[off + 2] = 74;   // B
-      raw[off + 3] = 255;  // A
+      const isWhite = pattern[y]?.[x] === "X";
+      if (isWhite) {
+        raw[off]     = 255;
+        raw[off + 1] = 255;
+        raw[off + 2] = 255;
+        raw[off + 3] = 255;
+      } else {
+        raw[off]     = 10;   // R (brand-deep)
+        raw[off + 1] = 46;   // G
+        raw[off + 2] = 74;   // B
+        raw[off + 3] = 255;  // A
+      }
     }
   }
   // zlib deflate (Node 내장)
