@@ -25,7 +25,9 @@ import { AutoImportSection } from "./AutoImportSection";
 import { UploadDataModal } from "../LandingPage/UploadDataModal";
 // 2026-08-25 · 사용자 지시 · 세션 만료 시간 · 시스템 설정에 추가
 import { SessionTimeoutSection } from "../PermissionsPage/SessionTimeoutSection";
-import { Timer } from "@phosphor-icons/react";
+import { Timer, MapPin } from "@phosphor-icons/react";
+// 2026-09-15 · T-SP-MASTER-UI · 매장·창고 마스터 관리
+import { StorageLocationsSection } from "./StorageLocationsSection";
 
 interface Props {
   onBack: () => void;
@@ -37,7 +39,7 @@ interface Props {
 // ─── 카테고리별 키 그룹 ─────────────────────────────────────────────────────
 // 2026-08-24 · #253 · "auto-import" 탭 신규 추가 (자동 임포트 · Phase E)
 // 2026-08-26 · 사용자 지시 · "ocr-tenant" 카테고리 제거 (env 는 서버에서 계속 사용)
-type Cat = "db-auth" | "ai-ocr" | "sms" | "cdn" | "webpush" | "upload" | "auto-import" | "session";
+type Cat = "db-auth" | "ai-ocr" | "sms" | "cdn" | "webpush" | "upload" | "auto-import" | "session" | "storage-locations";
 
 const CAT_TABS: TabDef<Cat>[] = [
   { key: "db-auth",     label: "DB · 인증",       icon: Database,       color: "slate" },
@@ -50,6 +52,8 @@ const CAT_TABS: TabDef<Cat>[] = [
   { key: "auto-import", label: "자동 임포트",     icon: Robot,           color: "violet" },
   // 2026-08-25 · 사용자 지시 · 세션 만료 시간 (전역 · 관리자 lv9)
   { key: "session",     label: "세션 설정",       icon: Timer,           color: "sky" },
+  // 2026-09-15 · T-SP-MASTER-UI · 매장·창고 마스터 (관리자 lv9)
+  { key: "storage-locations", label: "매장·창고", icon: MapPin,          color: "teal" },
 ];
 
 const CAT_KEYS: Record<Cat, string[]> = {
@@ -61,6 +65,7 @@ const CAT_KEYS: Record<Cat, string[]> = {
   "upload":     [],
   "auto-import": [],  // 2026-08-24 · #253 · KV 기반 · env keys 없음
   "session":     [],  // 2026-08-25 · KV 기반 · env keys 없음
+  "storage-locations": [],  // 2026-09-15 · T-SP-MASTER-UI · KV 기반 · env keys 없음
 };
 
 const KEY_LABELS: Record<string, { label: string; desc?: string; multiline?: boolean }> = {
@@ -172,8 +177,8 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
 
         <TabBar<Cat> level={2} tabs={CAT_TABS} activeKey={cat} onSelect={setCat} />
 
-        {/* ── 카테고리별 편집 폼 · KV 기반 탭 (upload · auto-import) 제외 ── */}
-        {cat !== "upload" && cat !== "auto-import" && (
+        {/* ── 카테고리별 편집 폼 · KV 기반 탭 (upload · auto-import · session · storage-locations) 제외 ── */}
+        {cat !== "upload" && cat !== "auto-import" && cat !== "session" && cat !== "storage-locations" && (
           <section className={CARD_BASE + " p-5 flex flex-col gap-4"}>
             {CAT_KEYS[cat].map(k => {
               const meta = KEY_LABELS[k] ?? { label: k };
@@ -245,8 +250,11 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
         {/* ── 세션 설정 탭 · 2026-08-25 · 사용자 지시 ── */}
         {cat === "session" && <SessionTimeoutSection />}
 
+        {/* ── 매장·창고 마스터 탭 · 2026-09-15 · T-SP-MASTER-UI ── */}
+        {cat === "storage-locations" && <StorageLocationsSection />}
+
         {/* ── 저장 액션바 · 공통 SET_ACTION_BAR (KV 기반 탭은 자체 저장 · 액션바 숨김) ── */}
-        {cat !== "auto-import" && cat !== "session" && cat !== "upload" && (
+        {cat !== "auto-import" && cat !== "session" && cat !== "upload" && cat !== "storage-locations" && (
         <div className={`${SET_ACTION_BAR} justify-between`}>
           <button onClick={load} className={SET_BTN_SECONDARY}>
             <ArrowsClockwise size={14} /> 다시 불러오기

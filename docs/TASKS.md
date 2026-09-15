@@ -45,6 +45,7 @@
 | [36] | T-PROD-LABEL · 상품정보 왼쪽 리스트 · 한글 라벨 | `0860dc7f` |
 | [37] | T-SP-9-REST · ZoneProductsModal 진열위치 뱃지 | `4af7a227` |
 | [38] | #107·#258 · 발주 리스트 프리미엄 헤더 통계 뱃지 | `752db75b` |
+| [39] | T-SP-MASTER-UI · 매장·창고 마스터 관리 UI · SystemSettings 신규 탭 | (pending commit) |
 
 ---
 
@@ -85,7 +86,7 @@
 | # | 태스크 | 우선순위 | 비고 |
 |---|-----|-------|-----|
 | **#56** | 매장 구역 추가/제거 · X 버튼 권한 | 🟢 P4 LATER | 스펙 애매 · 확인 필요 |
-| **T-SP-MASTER-UI** | 매장·창고 마스터 관리 UI (매장4·5 추가) | 🟢 P3 | 현재 KV JSON 직접 편집 · 관리자 페이지 필요 시 |
+| **T-AUTO-IMPORT-WEB-REDESIGN** | 웹앱 · 시스템설정 · "자동 임포트" 탭 재설계 (Electron sync-agent 다운로드 안내 페이지 · 지금 방식) | 🟡 P2 | 기존 KV 폴더 설정 UI 제거 · exe 다운로드 + 설치 가이드 + 로그인 안내 · Electron 앱 이관 |
 | **#149** | large-file 분리 잔여 · OcrPage(1215)·PaymentInfoTab(1513)·OrderManagePage(3089)·LandingPage(2319)·ContractWriterPage | 🟢 P3 | Framework Phase 4 잔여 · baseline 9 파일 · 대형 |
 | **#115** | real_map 컬럼 DB DROP SQL 실행 · `migrations/20260904_drop_real_map.sql` | 🟡 | 사용자 · Supabase SQL Editor 직접 실행 |
 
