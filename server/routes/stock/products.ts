@@ -540,16 +540,126 @@ router.delete("/api/product-import-log", authorize(9), asyncHandler(async (_req,
 
 // 2026-09-09 · #40 · 상품 삭제 · 관리자 (level ≥ 9) · 사용자 지시
 //   · 참조 데이터 (inventory_checks · order_requests · stock_history 등) 는 유지 · products 마스터만 제거
+// 2026-09-15 · DB 정합성 절대 유지 대원칙 (feedback_db_integrity_absolute_2026-09-15.md)
+//   · 참조 무결성 확인 endpoint · 삭제 pre-check 및 UI 안내용
+//   · 회계·이력 테이블 (purchase_details·stock_history·product_arrivals) count
+//   · 실무 표준 (Odoo·SAP·NetSuite) · 이력 있으면 삭제 X · Soft delete 안내
+router.get("/api/products/:code/references", authorize(1), asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  const code = (req.params.code ?? "").trim();
+  if (!code) throw badRequest("code required");
+
+  // 각 테이블 · product_code 참조 count · best-effort · 미존재 컬럼 무시
+  const tables = [
+    { table: "purchase_details",   label: "매입 이력",   critical: true },
+    { table: "stock_history",      label: "판매 이력",   critical: true },
+    { table: "product_arrivals",   label: "상품 입고",   critical: true },
+    { table: "inventory_checks",   label: "실재고",      critical: false },
+    { table: "order_requests",     label: "발주 요청",   critical: false },
+    { table: "order_dispatches",   label: "발주 발송",   critical: false },
+    { table: "ocr_confirmed_items", label: "OCR 확정",   critical: false },
+    { table: "loss_tracking",      label: "손실 이력",   critical: true },
+    { table: "request_display",    label: "진열 요청",   critical: false },
+  ];
+
+  const counts: Record<string, { label: string; count: number; critical: boolean }> = {};
+  let totalCritical = 0;
+  let totalOther = 0;
+  for (const t of tables) {
+    try {
+      const { count } = await supabase
+        .from(t.table)
+        .select("*", { count: "exact", head: true })
+        .eq("product_code", code);
+      const n = count ?? 0;
+      counts[t.table] = { label: t.label, count: n, critical: t.critical };
+      if (t.critical) totalCritical += n; else totalOther += n;
+    } catch {
+      // 테이블 미존재 · 무시 (스키마 편차 안전)
+    }
+  }
+  res.json({
+    product_code: code,
+    counts,
+    totalCritical,
+    totalOther,
+    canDelete: totalCritical === 0,
+    hint: totalCritical > 0
+      ? "회계·이력 데이터 있음 · 삭제 불가 · 판매중지 (숨김) 처리 안내"
+      : totalOther > 0
+        ? "참조 데이터 있음 (재고·발주 등) · 삭제 시 함께 정리됨"
+        : "참조 데이터 없음 · 안전하게 삭제 가능",
+  });
+}));
+
 router.delete("/api/products/:code", authorize(9), asyncHandler(async (req, res) => {
   const code = (req.params.code ?? "").trim();
   if (!code) throw badRequest("code required");
+
+  // 2026-09-15 · DB 정합성 절대 유지 대원칙
+  //   · 회계·이력 테이블 (purchase_details·stock_history·product_arrivals·loss_tracking) 참조 시 · 삭제 차단
+  //   · 실무 표준 (Odoo·SAP) · 이력 보존 필수
+  //   · 대안 · Soft delete (hidden=true) UI 안내
+  const criticalTables = [
+    { table: "purchase_details", label: "매입 이력" },
+    { table: "stock_history",    label: "판매 이력" },
+    { table: "product_arrivals", label: "상품 입고" },
+    { table: "loss_tracking",    label: "손실 이력" },
+  ];
+  const found: { label: string; count: number }[] = [];
+  for (const t of criticalTables) {
+    try {
+      const { count } = await supabase
+        .from(t.table)
+        .select("*", { count: "exact", head: true })
+        .eq("product_code", code);
+      if ((count ?? 0) > 0) found.push({ label: t.label, count: count! });
+    } catch {
+      // 테이블 미존재 · 무시
+    }
+  }
+  if (found.length > 0) {
+    const details = found.map(f => `${f.label} ${f.count}건`).join(" · ");
+    throw new HttpError(
+      400,
+      `삭제 불가 · 회계·이력 데이터 있음 (${details}) · 이력 보존 필요 · 판매중지 (숨김) 처리를 사용해주세요`,
+      "PRODUCT_HAS_HISTORY",
+    );
+  }
+
+  // 비-critical 참조 테이블 · orphan 방지 정리 (inventory_checks · order_requests · order_dispatches · ocr_confirmed_items · request_display)
+  //   · CASCADE 대신 · 서버 사이드 명시 삭제 (감사 로그 · 예측 가능)
+  //   · best-effort · 실패해도 products 삭제는 진행 (강제 아님)
+  const cleanupTables = ["inventory_checks", "order_requests", "order_dispatches", "ocr_confirmed_items", "request_display"];
+  const cleanup: Record<string, number> = {};
+  for (const t of cleanupTables) {
+    try {
+      const { count } = await supabase
+        .from(t)
+        .select("*", { count: "exact", head: true })
+        .eq("product_code", code);
+      if ((count ?? 0) > 0) {
+        const { error: delErr } = await supabase.from(t).delete().eq("product_code", code);
+        if (delErr) {
+          console.warn(`[products DELETE] ${t} 정리 실패 (경고 · 계속 진행): ${delErr.message}`);
+        } else {
+          cleanup[t] = count!;
+          console.log(`[products DELETE] ${t} orphan 정리 · ${count}건 · ${code}`);
+        }
+      }
+    } catch {
+      // 테이블 미존재 · 무시
+    }
+  }
+
   const { error } = await supabase.from("products").delete().eq("product_code", code);
   if (error) {
     console.error("[products DELETE] error:", error.message);
     throw new HttpError(500, error.message);
   }
   resetProductCache();
-  res.json({ ok: true, product_code: code });
+  console.log(`[products DELETE] 삭제 완료 · ${code} · cleanup=${JSON.stringify(cleanup)}`);
+  res.json({ ok: true, product_code: code, cleanup });
 }));
 
 

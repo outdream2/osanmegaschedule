@@ -749,9 +749,37 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
               onClick={async () => {
                 const target = filtered.find(p => p.product_code === selectedCode);
                 if (!target) return;
+                // 2026-09-15 · DB 정합성 대원칙 · 참조 pre-check · 회계 이력 있으면 삭제 차단
+                //   · GET /api/products/:code/references · 서버 counts · UI 안내
+                let refInfo: {
+                  totalCritical: number;
+                  totalOther: number;
+                  canDelete: boolean;
+                  hint: string;
+                  counts: Record<string, { label: string; count: number; critical: boolean }>;
+                } | null = null;
+                try {
+                  const { data } = await api.get<any>(`/api/products/${encodeURIComponent(selectedCode)}/references`);
+                  refInfo = data;
+                } catch (e: any) {
+                  console.warn("[ProductInfoPage] references pre-check 실패", e?.message);
+                }
+                // 회계 이력 있으면 · 삭제 차단 · Soft delete 안내
+                if (refInfo && !refInfo.canDelete) {
+                  const details = Object.values(refInfo.counts)
+                    .filter(c => c.critical && c.count > 0)
+                    .map(c => `${c.label} ${c.count}건`)
+                    .join(" · ");
+                  showError(`[${target.product_name}]\n삭제 불가 · ${details}\n이력 보존 필요 · [판매중지] or [숨김] 처리를 사용해주세요`);
+                  return;
+                }
+                // 비-critical 참조 (실재고·발주 등) · 정리 후 삭제 안내
+                const cleanupNote = refInfo && refInfo.totalOther > 0
+                  ? `\n\n※ 함께 정리됨:\n${Object.values(refInfo.counts).filter(c => !c.critical && c.count > 0).map(c => `- ${c.label} ${c.count}건`).join("\n")}`
+                  : "";
                 const ok = await confirm({
                   title: "상품 삭제",
-                  message: `[${target.product_name}]\n\n이 상품을 완전히 삭제합니다.\n관련 매입내역·실재고는 유지되지만 상품 마스터에서 사라집니다.\n계속하시겠어요?`,
+                  message: `[${target.product_name}]\n\n이 상품과 참조 데이터를 삭제합니다.${cleanupNote}\n\n계속하시겠어요?`,
                   confirmLabel: "삭제",
                   cancelLabel: "취소",
                 });
