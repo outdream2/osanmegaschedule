@@ -165,9 +165,9 @@
 |---|-----|--------|------|
 | ~~**T-DISPLAY-1**~~ | ✅ 완료 · 진열요청 탭 · 표 형식 · 상품명·상태·진열위치·담당자·**요청횟수**·요청일·완료 | 🟡 P1 | RequestsPage.tabs.tsx L195~207 · 2026-09-09 재구성 |
 | **T-SP-9-REST** | 나머지 표시 파일 · 진열위치 표시 자리에 shelf 뱃지 확장 | 🟢 P3 | 대부분 location 내부 사용 · UI 렌더 파일 위주로 필요 시 추가 · CategoryTab·CriticalTab·ExpiryImminentTab·SalesTrend 등 |
-| **T-SP-BULK** | POST /api/inventory-checks/bulk · shelf_positions 병합 지원 | 🟢 P3 | 현재 단건 POST만 지원 · bulk 는 append-only |
+| ~~**T-SP-BULK**~~ | ✅ 완료 · POST /api/inventory-checks/bulk · shelf_positions 병합 지원 · `b86a4b20` (2026-09-15) · 공용 helper + 22 tests | — | — |
 | **T-SP-MASTER-UI** | 매장·창고 마스터 관리 UI (매장4·5 추가) | 🟢 P3 | 현재는 KV JSON 직접 편집 · 관리자 페이지 필요 시 |
-| **T-MENU-BOTTOMNAV** | BottomNav 모바일 · page_permissions.hidden 반영 | 🟢 P3 | 현재 usePageVisibility 만 사용 · 확장 필요 시 |
+| ~~**T-MENU-BOTTOMNAV**~~ | ✅ 완료 · BottomNav 하단 4탭 · perms.hidden 필터 추가 · 사이드바 정합 · `2026-09-15` | — | — |
 
 ### 📊 완료 · 확정 사항 (2026-09-08)
 

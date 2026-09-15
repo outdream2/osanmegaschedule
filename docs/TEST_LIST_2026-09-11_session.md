@@ -2152,6 +2152,43 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 
 ---
 
+## [33] T-MENU-BOTTOMNAV · BottomNav 하단 4탭 · perms.hidden 필터 (2026-09-15)
+**커밋** · (이 커밋)
+
+### 배경
+- 이전 · BottomNav 하단 4탭 (landing·schedule·requests·board) · `usePageVisibility` 만 반영
+- 사이드바 · 이미 `filterGroupsForSession` 로 perms.hidden 반영
+- 부조화 · 사이드바에서 숨김 처리한 페이지가 · 모바일 하단 탭에는 여전히 노출
+
+### Fix
+- BottomNav.tsx · `permAllowed(pageKey)` 헬퍼 신설
+- 하단 4탭 filter · `mobileVisible(t.key) && permAllowed(t.key)` (두 조건 AND)
+- admin lockout 방지 · 하단 4탭 (landing·schedule·requests·board) 에 해당 없음 (안전)
+
+### 확인 절차
+1. **관리자 로그인** · 설정 > 권한 조정 > 페이지 표시
+2. 예 · "board" (게시판) · **hidden 체크**
+3. 저장
+4. **모바일 (Chrome DevTools 반응형)** · 하단 탭 · 게시판 사라짐 확인
+5. 사이드바 (PC) · 이미 사라짐 (이전과 동일)
+6. hidden 해제 · 하단 탭 다시 나타남 확인
+
+### 기대값
+- 하단 4탭 · perms.hidden 즉시 반영 (사이드바와 정합)
+- usePageVisibility (모바일 가시성) 도 · 병행 유효 · 두 조건 AND
+- 이전 · admin 이 hidden 처리해도 하단 탭 안 사라짐 (버그) · 이후 · 사이드바와 동일하게 사라짐
+
+### 회귀 확인
+- 사이드바 · 이전과 동일 동작
+- 하단 "더보기" 시트 · 이미 filterGroupsForSession 사용 · 이전과 동일
+- BottomNav tests · 14/14 통과
+
+### 관련 원칙
+- 대원칙 · 사이드바 ↔ 하단 탭 정합 · single source (sideNavGroups)
+- admin lockout 방지 · permissions/business-manage/account (해당 안 됨)
+
+---
+
 ## [32] DB 정합성 · DELETE /api/products · 회계 이력 차단 + orphan cleanup (2026-09-15)
 **커밋** · `8a987279`
 

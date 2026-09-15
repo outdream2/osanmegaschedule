@@ -41,6 +41,14 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
   const { perms } = usePagePermissions();
   const { status: employmentStatus } = useEmploymentStatus(authSession);
   const mobileVisible = (pageKey: string) => !visLoaded || isVisible(pageKey, "mobile");
+  // 2026-09-15 · T-MENU-BOTTOMNAV · page_permissions.hidden 반영 (사이드바와 동일 원칙)
+  //   · 이전 · BottomNav 는 usePageVisibility 만 반영 · perms.hidden 미적용
+  //   · 이후 · 하단 4탭 · perms[key].hidden=true 면 숨김 (사이드바와 정합)
+  //   · admin lockout 방지 · permissions/business-manage/account 는 admin 예외 (하단 4탭에 해당 없음)
+  const permAllowed = (pageKey: string) => {
+    const perm = (perms as any)?.[pageKey];
+    return perm?.hidden !== true;
+  };
 
   // 2026-08-29 · #196 · 하단 4탭 · DERIVED_TOP_TABS 에서 · BOTTOM_TAB_KEYS 순서로 선택
   const bottomTabs = useMemo(() => {
@@ -109,7 +117,7 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="grid grid-cols-5 gap-0.5 px-1 pt-1">
           {bottomTabs
-            .filter(t => mobileVisible(t.key))
+            .filter(t => mobileVisible(t.key) && permAllowed(t.key))
             .map(t => {
               const Icon = t.icon;
               const active = isActive(t.key);
