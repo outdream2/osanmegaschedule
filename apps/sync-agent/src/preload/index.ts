@@ -35,8 +35,9 @@ const api = {
 
   // ── Auth ──────────────────────────────────────
   isLoggedIn: () => ipcRenderer.invoke("auth:isLoggedIn") as Promise<boolean>,
-  login: (email: string, password: string) =>
-    ipcRenderer.invoke("auth:login", { email, password }) as Promise<{ ok: boolean; error?: string }>,
+  // 2026-09-15 · fix · 웹앱과 동일 · 핸드폰번호 (email 아님)
+  login: (phone: string, password: string) =>
+    ipcRenderer.invoke("auth:login", { phone, password }) as Promise<{ ok: boolean; error?: string }>,
   logout: () => ipcRenderer.invoke("auth:logout") as Promise<{ ok: boolean }>,
 
   // ── Dialog ────────────────────────────────────

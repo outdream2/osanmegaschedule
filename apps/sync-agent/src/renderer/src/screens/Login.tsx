@@ -1,24 +1,34 @@
 // Login.tsx
-// 2026-09-15 · Phase 2 · 첫 실행 · 로그인 화면 · Email + Password
+// 2026-09-15 · Phase 2 · 첫 실행 · 로그인 화면
+// 2026-09-15 · fix · 웹앱과 동일 · 핸드폰번호 + 비밀번호 (email 아님)
 
 import React, { useState } from "react";
 
+// 핸드폰번호 자동 포맷 · 01012345678 → 010-1234-5678
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/[^0-9]/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
+
 export const Login: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password) {
-      setError("이메일과 비밀번호를 입력해주세요");
+    const cleanPhone = phone.replace(/[^0-9]/g, "");
+    if (!cleanPhone || !password) {
+      setError("핸드폰번호와 비밀번호를 입력해주세요");
       return;
     }
     setSubmitting(true);
     setError(null);
     try {
-      const result = await window.api.login(email.trim(), password);
+      const result = await window.api.login(cleanPhone, password);
       if (result.ok) {
         onSuccess();
       } else {
@@ -43,21 +53,22 @@ export const Login: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
           </div>
           <div>
             <h1 className="text-[20px] font-bold tracking-tight">메가타운 자동임포트</h1>
-            <p className="text-[13px] text-zinc-500">서버 관리자 계정 로그인</p>
+            <p className="text-[13px] text-zinc-500">관리자 로그인 (lv9)</p>
           </div>
         </div>
 
         <label className="block mb-4">
-          <span className="text-[14px] font-semibold text-zinc-700 mb-1 block">이메일</span>
+          <span className="text-[14px] font-semibold text-zinc-700 mb-1 block">핸드폰번호</span>
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(formatPhone(e.target.value))}
             required
             autoFocus
-            className="w-full px-4 py-3 border border-zinc-300 rounded-lg text-[15px] focus:border-brand-deep focus:ring-2 focus:ring-brand-tint outline-none transition"
-            placeholder="admin@megatown.co.kr"
+            className="w-full px-4 py-3 border border-zinc-300 rounded-lg text-[15px] focus:border-brand-deep focus:ring-2 focus:ring-brand-tint outline-none transition tabular-nums"
+            placeholder="010-1234-5678"
             disabled={submitting}
+            inputMode="numeric"
           />
         </label>
 
@@ -88,7 +99,7 @@ export const Login: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
         </button>
 
         <p className="text-[12px] text-zinc-400 text-center mt-6">
-          토큰 · Windows 자격 증명 관리자 · 안전하게 저장
+          웹앱과 동일 · 관리자 (lv9) 계정 · 세션 · 안전하게 저장
         </p>
       </form>
     </div>

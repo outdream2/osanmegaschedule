@@ -28,8 +28,8 @@ export function registerIpcHandlers() {
   // ── Auth ──────────────────────────────────────
   ipcMain.handle("auth:isLoggedIn", () => isLoggedIn());
 
-  ipcMain.handle("auth:login", async (_e, credentials: { email: string; password: string }) => {
-    const result = await login(credentials.email, credentials.password);
+  ipcMain.handle("auth:login", async (_e, credentials: { phone: string; password: string }) => {
+    const result = await login(credentials.phone, credentials.password);
     return result;
   });
 
