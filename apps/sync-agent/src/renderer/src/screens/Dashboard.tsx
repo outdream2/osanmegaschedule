@@ -42,7 +42,11 @@ export const Dashboard: React.FC = () => {
       return;
     }
     const meta = FILE_META[kind];
-    const statusHint = latest.isProcessed ? "\n\n⚠ 이미 임포트됨 (_processed/)  · 다시 임포트?" : "";
+    const statusHint = latest.isFailed
+      ? "\n\n⚠ 이전 임포트 실패 파일 (_failed/) · 재시도?"
+      : latest.isProcessed
+        ? "\n\n⚠ 이미 임포트됨 (_processed/) · 다시 임포트?"
+        : "\n\n✓ 새 파일 · 임포트 대기";
     const msg = `${meta.label} · 최신 파일:\n\n📄 ${latest.name}\n📅 파일 날짜: ${latest.date}${statusHint}\n\n지금 임포트하시겠습니까?`;
     if (!confirm(msg)) return;
 

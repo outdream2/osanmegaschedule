@@ -91,6 +91,7 @@ export function registerIpcHandlers() {
       name: latest.name,
       date: latest.date,
       isProcessed: latest.isProcessed,
+      isFailed: latest.isFailed,
       mtime: latest.mtime,
     };
   });

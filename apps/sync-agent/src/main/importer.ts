@@ -49,6 +49,7 @@ export interface LatestFileInfo {
   date: string;         // YYYY-MM-DD (from filename or mtime)
   mtime: number;
   isProcessed: boolean; // true = _processed 안에 있음
+  isFailed: boolean;    // true = _failed 안에 있음 (이전 실패)
 }
 export function findLatestFile(folder: string): LatestFileInfo | null {
   console.log(`[findLatestFile] 스캔 시작 · ${folder}`);
@@ -57,7 +58,7 @@ export function findLatestFile(folder: string): LatestFileInfo | null {
     return null;
   }
   const candidates: LatestFileInfo[] = [];
-  const scanDir = (dir: string, isProcessed: boolean) => {
+  const scanDir = (dir: string, opts: { isProcessed: boolean; isFailed: boolean }) => {
     if (!existsSync(dir)) {
       console.log(`[findLatestFile] ${dir} · 없음 · skip`);
       return;
@@ -77,27 +78,35 @@ export function findLatestFile(folder: string): LatestFileInfo | null {
         const isFile = st.isFile();
         const lower = f.toLowerCase();
         const isXlsx = lower.endsWith(".xlsx") || lower.endsWith(".xls");
-        // 디버그 · 모든 항목 로그
         if (isXlsx || !isFile) {
           console.log(`[findLatestFile] · ${f} · isFile=${isFile} · isXlsx=${isXlsx} · size=${st.size}`);
         }
         if (!isFile || !isXlsx) continue;
         const date = extractDateFromName(f, st.mtime);
-        candidates.push({ path: p, name: f, date, mtime: st.mtimeMs, isProcessed });
+        candidates.push({ path: p, name: f, date, mtime: st.mtimeMs, isProcessed: opts.isProcessed, isFailed: opts.isFailed });
       } catch (err: any) {
         console.warn(`[findLatestFile] stat 실패 · ${p} · ${err.message}`);
       }
     }
   };
-  scanDir(folder, false);
-  scanDir(join(folder, "_processed"), true);
+  scanDir(folder, { isProcessed: false, isFailed: false });
+  scanDir(join(folder, "_processed"), { isProcessed: true, isFailed: false });
+  scanDir(join(folder, "_failed"), { isProcessed: false, isFailed: true }); // 이전 실패 파일도 · 재시도 대상
   console.log(`[findLatestFile] 후보 · ${candidates.length}개`);
   if (candidates.length === 0) return null;
+  // 정렬 우선순위:
+  //   1. 상태 (main > _failed > _processed) · 실패 파일 · 재시도 우선 · 처리됨은 뒤
+  //   2. 파일명 날짜 · 최신
+  //   3. mtime · 최신
+  const stateRank = (c: LatestFileInfo) => c.isFailed ? 1 : c.isProcessed ? 2 : 0;
   candidates.sort((a, b) => {
+    const sa = stateRank(a);
+    const sb = stateRank(b);
+    if (sa !== sb) return sa - sb;
     if (a.date !== b.date) return b.date.localeCompare(a.date);
     return b.mtime - a.mtime;
   });
-  console.log(`[findLatestFile] 최신 · ${candidates[0].name} · date=${candidates[0].date}`);
+  console.log(`[findLatestFile] 최신 · ${candidates[0].name} · date=${candidates[0].date} · failed=${candidates[0].isFailed} · processed=${candidates[0].isProcessed}`);
   return candidates[0];
 }
 
@@ -160,15 +169,19 @@ async function runImportInternal(kind: FileKind): Promise<ImportResult> {
 
   for (const filePath of files) {
     const fileName = basename(filePath);
-    // 2026-09-15 · _processed 안에 있는 파일 · 재임포트 시 · 이동 skip
-    const isAlreadyInProcessed = filePath.includes(`${processedDir.replace(/\\/g, "/")}/`)
-      || filePath.includes(`${processedDir}\\`);
+    // 2026-09-15 · _processed 재임포트 · 이동 skip · _failed 재시도 · _processed 로 이동 (원본 xlsx만 · .log 는 남김)
+    const inProcessed = filePath.includes("_processed");
+    const inFailed = filePath.includes("_failed");
     try {
       await uploadFile(kind, filePath);
-      if (!isAlreadyInProcessed) {
-        renameSync(filePath, join(processedDir, `${Date.now()}_${fileName}`));
-      } else {
+      if (inProcessed) {
         console.log(`[importer/${kind}] 재임포트 · _processed 유지 · ${fileName}`);
+      } else if (inFailed) {
+        // _failed 파일 · 재시도 성공 · _processed 로 이동 (원본명 유지 · timestamp prefix)
+        renameSync(filePath, join(processedDir, `${Date.now()}_retry_${fileName.replace(/^\d+_/, "")}`));
+        console.log(`[importer/${kind}] _failed → _processed · 재시도 성공 · ${fileName}`);
+      } else {
+        renameSync(filePath, join(processedDir, `${Date.now()}_${fileName}`));
       }
       processed++;
       console.log(`[importer/${kind}] 성공 · ${fileName}`);

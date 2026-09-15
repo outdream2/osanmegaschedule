@@ -42,7 +42,7 @@ interface SyncAgentApi {
   runNow(kind: FileKind): Promise<RunResult>;
   runAll(): Promise<RunResult[]>;
   findLatest(kind: FileKind): Promise<
-    | { ok: true; name: string; date: string; isProcessed: boolean; mtime: number }
+    | { ok: true; name: string; date: string; isProcessed: boolean; isFailed: boolean; mtime: number }
     | { ok: false; error: string }
   >;
   listQueue(): Promise<Array<{

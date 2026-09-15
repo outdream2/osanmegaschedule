@@ -56,7 +56,7 @@ const api = {
   }>>,
   findLatest: (kind: FileKind) =>
     ipcRenderer.invoke("importer:findLatest", kind) as Promise<
-      | { ok: true; name: string; date: string; isProcessed: boolean; mtime: number }
+      | { ok: true; name: string; date: string; isProcessed: boolean; isFailed: boolean; mtime: number }
       | { ok: false; error: string }
     >,
 
