@@ -3,7 +3,7 @@
 //   · Notification API · Windows 10/11 native toast
 //   · 트레이 아이콘 · 3-state (idle/syncing/error) · 색상 변경
 
-import { Notification, Tray, nativeImage } from "electron";
+import { Notification, Tray, nativeImage, dialog, BrowserWindow } from "electron";
 import { loadConfig } from "./config";
 import { generateTrayIcon } from "./trayIcon";
 
@@ -66,8 +66,26 @@ export function notify(title: string, body: string, urgency: "info" | "success" 
   }
 }
 
+/** 에러 대화상자 · 사용자에게 · 실패 상세 표시 (blocking) */
+export function showErrorDialog(title: string, message: string, detail?: string) {
+  const focused = BrowserWindow.getFocusedWindow();
+  try {
+    dialog.showMessageBox(focused ?? undefined!, {
+      type: "error",
+      title,
+      message,
+      detail,
+      buttons: ["확인"],
+      defaultId: 0,
+      noLink: true,
+    });
+  } catch (err) {
+    console.warn("[notifications] showErrorDialog 실패:", err);
+  }
+}
+
 /** 임포트 결과 · 자동 토스트 + 트레이 상태 */
-export function notifyImportResult(kind: string, result: { ok: boolean; message: string; filesProcessed: number; filesFailed: number }) {
+export function notifyImportResult(kind: string, result: { ok: boolean; message: string; filesProcessed: number; filesFailed: number; errors?: string[] }) {
   const label = kind === "products" ? "상품정보" : kind === "stock" ? "재고정보" : kind === "purchase" ? "매입정보" : kind;
 
   if (result.ok && result.filesProcessed > 0) {

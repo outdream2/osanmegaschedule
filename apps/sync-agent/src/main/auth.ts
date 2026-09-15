@@ -26,7 +26,12 @@ export function getApiClient(): AxiosInstance {
       const cookie = decryptToken(c.auth.encryptedToken);
       if (cookie) {
         (config.headers as any).Cookie = cookie;
+        console.log(`[auth] Cookie 첨부 · ${cookie.slice(0, 60)}...`);
+      } else {
+        console.warn("[auth] 쿠키 복호화 실패");
       }
+    } else {
+      console.warn("[auth] 저장된 쿠키 없음 · 로그인 필요");
     }
     return config;
   });
@@ -71,6 +76,12 @@ export async function login(phone: string, password: string): Promise<{ ok: bool
     const data = response.data ?? {};
     // Set-Cookie 헤더에서 · JWT 토큰 쿠키 추출
     const setCookie = response.headers["set-cookie"];
+    console.log(`[auth] login · Set-Cookie 헤더 개수: ${setCookie?.length ?? 0}`);
+    if (setCookie) {
+      for (const c of setCookie) {
+        console.log(`[auth] · ${c.slice(0, 80)}...`);
+      }
+    }
     if (!setCookie || setCookie.length === 0) {
       return { ok: false, error: "서버 응답 · 쿠키 없음 · 인증 실패" };
     }
@@ -79,6 +90,7 @@ export async function login(phone: string, password: string): Promise<{ ok: bool
       .map((c: string) => c.split(";")[0].trim())
       .filter(Boolean)
       .join("; ");
+    console.log(`[auth] 저장할 쿠키 문자열: ${cookieString.slice(0, 100)}`);
 
     const encrypted = encryptToken(cookieString);
     if (!encrypted) {

@@ -84,9 +84,10 @@ async function runImportInternal(kind: FileKind): Promise<ImportResult> {
   ensureDir(failedDir);
 
   // xlsx 파일 목록 · _processed · _failed 폴더 제외
-  let files: string[] = [];
+  // 2026-09-15 · 사용자 지시 · 가장 최근 파일 1개만 · mtime 최신 순
+  let allFiles: string[] = [];
   try {
-    files = readdirSync(folder)
+    allFiles = readdirSync(folder)
       .filter((f) => f.toLowerCase().endsWith(".xlsx") || f.toLowerCase().endsWith(".xls"))
       .map((f) => join(folder, f))
       .filter((p) => statSync(p).isFile());
@@ -94,10 +95,16 @@ async function runImportInternal(kind: FileKind): Promise<ImportResult> {
     return recordAndReturn(kind, { ok: false, filesProcessed: 0, filesFailed: 0, errors: [err.message], message: "폴더 스캔 실패" });
   }
 
-  console.log(`[importer/${kind}] xlsx 파일 · ${files.length}건 발견`);
-  if (files.length === 0) {
+  console.log(`[importer/${kind}] xlsx 파일 · 전체 ${allFiles.length}건 발견`);
+  if (allFiles.length === 0) {
     return recordAndReturn(kind, { ok: true, filesProcessed: 0, filesFailed: 0, errors: [], message: `새 파일 없음 · ${folder}`, skipped: true });
   }
+
+  // 가장 최근 파일 1개만 선택 (mtime 최신)
+  const files = [allFiles
+    .map(f => ({ path: f, mtime: statSync(f).mtimeMs }))
+    .sort((a, b) => b.mtime - a.mtime)[0].path];
+  console.log(`[importer/${kind}] 가장 최근 파일 · ${basename(files[0])} · 처리 시작`);
 
   let processed = 0;
   let failed = 0;

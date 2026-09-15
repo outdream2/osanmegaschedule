@@ -6,7 +6,7 @@
 import cron, { ScheduledTask } from "node-cron";
 import { loadConfig, type FileKind } from "./config";
 import { runImport, retryQueuedItems } from "./importer";
-import { notifyImportResult, setTrayState } from "./notifications";
+import { notifyImportResult, setTrayState, showErrorDialog } from "./notifications";
 
 const activeJobs: Partial<Record<FileKind, ScheduledTask>> = {};
 let queueRetryJob: ScheduledTask | null = null;
@@ -73,6 +73,7 @@ export async function runNow(kind: FileKind) {
   setTrayState("syncing", `${kind} 동기화 중...`);
   const result = await runImport(kind);
   console.log(`[scheduler/${kind}] 수동 실행 결과 · ok=${result.ok} · processed=${result.filesProcessed} · failed=${result.filesFailed} · msg=${result.message}`);
+  console.log(`[scheduler/${kind}] errors:`, result.errors);
   // 수동 실행 · 항상 알림 · 빈 폴더도 · 사용자에게 확인
   const { notify } = await import("./notifications");
   if (result.filesProcessed > 0) {
@@ -83,6 +84,15 @@ export async function runNow(kind: FileKind) {
     notify(`✕ ${kindLabel(kind)} 임포트 실패`, result.message, "error");
     setTrayState("error", `${kind} · 실패`);
     setTimeout(() => setTrayState("idle"), 30_000);
+    // 실패 · 상세 에러 창 · 사용자 인지
+    const detailText = result.errors && result.errors.length > 0
+      ? result.errors.join("\n\n")
+      : result.message;
+    showErrorDialog(
+      `${kindLabel(kind)} 임포트 실패`,
+      `${result.filesProcessed}건 성공 · ${result.filesFailed}건 실패`,
+      detailText
+    );
   } else {
     // 파일 없음 or 폴더 미설정 · 정보성 알림 · 사용자 인지
     notify(`ℹ ${kindLabel(kind)}`, result.message, "info");
