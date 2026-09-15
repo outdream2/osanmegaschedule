@@ -135,6 +135,16 @@ export const Login: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
           웹앱과 동일 · 관리자 (lv9) 계정 · 세션 · 안전하게 저장
         </p>
       </form>
+
+      {/* 하단 · Copyright */}
+      <footer className="fixed bottom-0 inset-x-0 py-3 flex items-center justify-center gap-2 text-[12px]">
+        <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-br from-sky-500 to-brand-deep" />
+        <span className="font-bold text-brand-deep tracking-tight">IRUMs</span>
+        <span className="text-zinc-300">·</span>
+        <span className="text-zinc-500 font-medium">(주)이룸즈</span>
+        <span className="text-zinc-300">·</span>
+        <span className="text-zinc-400 tabular-nums">© {new Date().getFullYear()}</span>
+      </footer>
     </div>
   );
 };

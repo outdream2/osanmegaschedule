@@ -83,11 +83,23 @@ export const App: React.FC = () => {
         ))}
       </nav>
 
-      <main className="p-6">
+      <main className="p-6 pb-20">
         {tab === "dashboard" && <Dashboard />}
         {tab === "settings" && <Settings />}
         {tab === "logs" && <Logs />}
       </main>
+
+      {/* 하단 · Copyright */}
+      <footer className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur border-t border-zinc-200 py-2.5 px-6 flex items-center justify-center gap-2 text-[12px]">
+        <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-br from-sky-500 to-brand-deep" />
+        <span className="font-bold text-brand-deep tracking-tight">IRUMs</span>
+        <span className="text-zinc-300">·</span>
+        <span className="text-zinc-500 font-medium">(주)이룸즈</span>
+        <span className="text-zinc-300">·</span>
+        <span className="text-zinc-400 tabular-nums">© {new Date().getFullYear()}</span>
+        <span className="text-zinc-300">·</span>
+        <span className="text-zinc-400">All rights reserved</span>
+      </footer>
     </div>
   );
 };
