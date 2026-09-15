@@ -6,7 +6,6 @@
 
 import { readFileSync, readdirSync, statSync, existsSync, mkdirSync, renameSync, writeFileSync } from "fs";
 import { join, basename } from "path";
-import FormData from "form-data";
 import { getApiClient } from "./auth";
 import { loadConfig, patchConfig, type FileKind, type LastRun } from "./config";
 import { enqueue, getReadyItems, markSuccess, markFailure } from "./queue";
@@ -105,41 +104,33 @@ export async function runImport(kind: FileKind): Promise<ImportResult> {
   });
 }
 
-/** 실제 서버 업로드 · multipart/form-data */
+/** 실제 서버 업로드 · 웹앱 방식 · application/octet-stream + managerId 쿼리
+ *   · POST /api/upload-{products|stock|purchase-details}?managerId=<employeeId>
+ *   · Body · Buffer · Raw xlsx
+ *   · 서버 · express.raw · authorize(9) · managerId 검증 · Supabase 임포트
+ */
 async function uploadFile(kind: FileKind, filePath: string): Promise<void> {
   const endpoint = ENDPOINT_MAP[kind];
   const api = getApiClient();
 
-  const buf = readFileSync(filePath);
-  const fileName = basename(filePath);
-
-  // 서버 · upload-stock 은 · express.raw 로 raw body 수신
-  //   · Content-Type: application/octet-stream + managerId 쿼리
-  // 다른 endpoint · multipart 여부는 · 각각 확인 필요
-  // 일단 · 모든 파일 · multipart 방식으로 시도 · 서버 지원 여부 · Phase 2 후반 재검토
-  if (kind === "stock") {
-    // 서버 · express.raw · Content-Type: application/octet-stream · managerId 쿼리
-    // 관리자 ID · JWT 에서 서버가 추출 · 별도 전달 X (또는 · 로그인 시 저장 필요)
-    // Phase 2 · JWT 만 사용 · managerId 미지원 → 실패 예상
-    // 우선 · multipart 로 시도 · 서버 방식 변경 필요 시 Phase 2 후반 확인
-    const form = new FormData();
-    form.append("file", buf, { filename: fileName });
-    await api.post(endpoint, form, {
-      headers: form.getHeaders(),
-      maxBodyLength: 100 * 1024 * 1024,
-      maxContentLength: 100 * 1024 * 1024,
-    });
-    return;
+  const cfg = loadConfig();
+  const managerId = cfg.auth.employeeId;
+  if (!managerId) {
+    throw new Error("관리자 ID 없음 · 재로그인 필요");
   }
 
-  // 기타 · multipart · file 필드
-  const form = new FormData();
-  form.append("file", buf, { filename: fileName });
-  await api.post(endpoint, form, {
-    headers: form.getHeaders(),
+  const buf = readFileSync(filePath);
+  const fileName = basename(filePath); // 서버 미사용 · 로그용
+
+  const url = `${endpoint}?managerId=${managerId}`;
+  await api.post(url, buf, {
+    headers: { "Content-Type": "application/octet-stream" },
     maxBodyLength: 100 * 1024 * 1024,
     maxContentLength: 100 * 1024 * 1024,
   });
+
+  // 서버 응답 · count 등 · 성공 시 · 로그
+  console.log(`[importer/${kind}] uploaded ${fileName} · ${buf.length} bytes`);
 }
 
 function ensureDir(path: string): void {

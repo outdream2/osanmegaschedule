@@ -23,6 +23,9 @@ export interface AppConfig {
   auth: {
     email?: string;
     encryptedToken?: string;               // safeStorage encrypted access/refresh token
+    employeeId?: number;                   // 로그인 시 저장 · upload API managerId 쿼리용
+    role?: string;
+    level?: number;
   };
   folders: {
     products?: string;

@@ -58,8 +58,17 @@ export async function login(email: string, password: string): Promise<{ ok: bool
     if (!encrypted) {
       return { ok: false, error: "토큰 암호화 실패" };
     }
+    // 서버 응답 · user·employee 정보 추출 (upload API managerId 쿼리용)
+    const user = data?.user ?? data?.employee ?? {};
+    const employeeId: number | undefined = user?.employeeId ?? user?.employee_id ?? user?.id ?? undefined;
+    const role: string | undefined = user?.role ?? undefined;
+    const level: number | undefined = user?.level ?? undefined;
+    // 관리자 레벨 검증 · lv9 미만이면 · 임포트 endpoint 접근 불가
+    if (level != null && level < 9 && role !== "admin" && role !== "superadmin") {
+      return { ok: false, error: "관리자 계정 (lv9) 만 임포트 가능합니다" };
+    }
     patchConfig({
-      auth: { email, encryptedToken: encrypted },
+      auth: { email, encryptedToken: encrypted, employeeId, role, level },
     });
     // API client · 새 config 반영 위해 · reset
     apiClient = null;
