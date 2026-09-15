@@ -78,6 +78,8 @@ export interface BulkInventoryCheckItem {
   store2_zone?: string | null;
   store3_zone?: string | null;
   warehouse_stock?: number | null;
+  /** 상세 진열위치 · 서버에서 병합 (2026-09-15 · T-SP-BULK) */
+  shelf_positions?: Record<string, string | null>;
   [key: string]: unknown;
 }
 
@@ -92,6 +94,8 @@ export interface BulkInventoryCheckResponse {
   failed?: number;
   total?: number;
   downgraded?: boolean;
+  /** 2026-09-15 · T-SP-BULK · item 별 실패 사유 (shelf_positions 검증·중복 등) */
+  errors?: Array<{ product_code: string; error: string }>;
 }
 
 // ═══════════════════════════════════════════════════════

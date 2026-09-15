@@ -20,6 +20,12 @@ import {
 } from "../../../src/shared/schemas/inventoryChecks";
 // 2026-09-09 · 회귀 복구 · afaf8a65 에서 삭제됐던 · shelf_positions 병합 시 매장 필수 검증용
 import { getStorageLocations } from "../settings/settings";
+// 2026-09-15 · T-SP-BULK · shelf_positions 병합 · 단건/일괄 공용 헬퍼
+import {
+  mergeShelfPositions,
+  checkShelfPositionConflicts,
+  fetchProductDisplayLoc,
+} from "./inventoryChecksShelfMerge";
 import {
   CreateDisplayRequestSchema,
   PrepareDisplayRequestSchema,
@@ -1224,68 +1230,20 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
   // 2026-09-08 · shelf_positions 병합 · 기존 값 보존 + 신규 값 덮어쓰기
   //   · 매장 위치 (required_detail=true) · 값이 명시적으로 들어오면 3자리 강제
   //   · null 은 허용 (미입력 유지) · undefined 는 무시 (부분 업데이트)
-  // 2026-09-09 · 중복 방지 규칙 명확화 (사용자 지시)
-  //   · 유일 키 = (storage_key, display_location, detail_3digit) 3중 조합
-  //   · 예 · (warehouse2, "1A", "312") 조합이 다른 상품과 겹치면 에러
+  // 2026-09-09 · 중복 방지 규칙 · (storage_key, display_location, detail_3digit) 3중 유일
+  // 2026-09-15 · T-SP-BULK · shared helper 로 로직 통일 (단건/일괄 공용)
   if (hasShelfPos && b.shelf_positions && typeof b.shelf_positions === "object") {
     const existingPos = (existing?.shelf_positions ?? {}) as Record<string, string | null>;
-    const incomingPos = b.shelf_positions as Record<string, string | null | undefined>;
-    const merged: Record<string, string | null> = { ...existingPos };
     const storageLocs = await getStorageLocations();
-    const requiredCodes = new Set(storageLocs.filter(s => s.required_detail && s.active).map(s => s.code));
-    const dupCheckTargets: Array<{ key: string; value: string }> = [];
-    for (const [k, v] of Object.entries(incomingPos)) {
-      if (v === undefined) continue;
-      if (v === null || v === "") {
-        if (requiredCodes.has(k) && v === "") {
-          throw badRequest(`매장 위치(${k})는 상세위치가 필수입니다 · 3자리 (예 332) 입력`);
-        }
-        merged[k] = null;
-      } else {
-        const val = String(v).trim().toUpperCase();
-        if (!/^[0-9A-Z]{3}$/.test(val)) {
-          throw badRequest(`상세위치(${k}=${val})는 3자리 (층·칸·순서 · 예 332) 여야 합니다`);
-        }
-        if (existingPos[k] !== val) dupCheckTargets.push({ key: k, value: val });
-        merged[k] = val;
-      }
-    }
-
-    // 중복 방지 pre-check · (storage_key, display_location, detail) 3중 조합 유일
+    const { merged, dupCheckTargets } = mergeShelfPositions(
+      existingPos,
+      b.shelf_positions as Record<string, string | null | undefined>,
+      storageLocs,
+    );
     if (dupCheckTargets.length > 0) {
-      const { data: currentProd } = await supabase
-        .from("products")
-        .select("display_location, location")
-        .eq("product_code", code)
-        .maybeSingle();
-      const currentDisplayLoc = currentProd?.display_location ?? currentProd?.location ?? null;
-      if (currentDisplayLoc) {
-        for (const { key, value } of dupCheckTargets) {
-          const { data: conflicts } = await supabase
-            .from("inventory_checks")
-            .select("product_code, product_name, shelf_positions")
-            .filter("shelf_positions->>" + key, "eq", value)
-            .neq("product_code", code);
-          if (conflicts && conflicts.length > 0) {
-            const otherCodes = conflicts.map(c => String((c as any).product_code));
-            const { data: otherProds } = await supabase
-              .from("products")
-              .select("product_code, product_name, display_location, location")
-              .in("product_code", otherCodes);
-            const conflictOther = (otherProds ?? []).find(op => {
-              const otherLoc = (op as any).display_location ?? (op as any).location ?? null;
-              return String(otherLoc ?? "").trim() === String(currentDisplayLoc).trim();
-            });
-            if (conflictOther) {
-              throw badRequest(
-                `이 위치는 이미 사용 중입니다 · ${currentDisplayLoc}-${value} (${key}) · 기존 상품 · ${(conflictOther as any).product_name} (#${(conflictOther as any).product_code})`
-              );
-            }
-          }
-        }
-      }
+      const currentDisplayLoc = await fetchProductDisplayLoc(code);
+      await checkShelfPositionConflicts(code, currentDisplayLoc, dupCheckTargets);
     }
-
     payload.shelf_positions = merged;
   }
   const applyPayload = async (): Promise<{ error?: string } | null> => {
@@ -1341,6 +1299,7 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
 //   - 구 클라이언트: store_stock / store_stock_2 → store1_stock / store2_stock 로 매핑 (2026-09-14 rename)
 //   - 신규 컬럼 미존재 DB · 신규 필드 stripping 후 재시도 (자동 다운그레이드)
 router.post("/api/inventory-checks/bulk", authorize(1), validateBody(BulkInventoryCheckSchema), asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const b = req.body;
   const items: any[] = b.items;
   const checked_by = String(b.checked_by ?? "").trim() || "익명";
@@ -1351,8 +1310,18 @@ router.post("/api/inventory-checks/bulk", authorize(1), validateBody(BulkInvento
     const s = String(v).trim();
     return s === "" ? null : s;
   };
+  // 2026-09-15 · T-SP-BULK · shelf_positions 병합 · storage_locations 마스터를 루프 밖에서 1회 조회
+  //   · 각 item · 매장 필수 검증 · required_detail 판정에 재사용
+  //   · shelf_positions 없는 item 이 하나라도 있으면 조회 X (lazy)
+  const anyHasShelfPos = items.some(it =>
+    Object.prototype.hasOwnProperty.call(it, "shelf_positions") && it.shelf_positions && typeof it.shelf_positions === "object"
+  );
+  const storageLocs = anyHasShelfPos ? await getStorageLocations() : [];
   let saved = 0, failed = 0;
   let downgraded = false; // 신규 컬럼 없는 DB 감지 후 이후 아이템 전부 스트립 처리
+  // 2026-09-15 · shelf_positions 검증 실패 (매장 필수 · 3자리 · 중복) 시 · 세부 에러 반환
+  //   · item 단위 실패는 failed 카운트에 반영 · 전체 요청 실패 아님
+  const errors: Array<{ product_code: string; error: string }> = [];
   for (const it of items) {
     const code = String(it.product_code ?? "").trim();
     if (!code) { failed++; continue; }
@@ -1382,16 +1351,45 @@ router.post("/api/inventory-checks/bulk", authorize(1), validateBody(BulkInvento
       payload.store3_zone      = str(it.store3_zone);
     }
     // 2026-08-04 · 사용자 요청 · 날짜별 이력 관리 · 같은 날짜면 update (덮어쓰기) · 다른 날짜면 insert (이력 추가)
+    // 2026-09-15 · T-SP-BULK · shelf_positions 병합 위해 · select 확장 (id, checked_at, shelf_positions)
     const todayYmd = now.slice(0, 10);
     const { data: existingList } = await supabase
       .from("inventory_checks")
-      .select("id, checked_at")
+      .select("id, checked_at, shelf_positions")
       .eq("product_code", code)
       .order("checked_at", { ascending: false })
       .limit(1);
     const existing = existingList?.[0] ?? null;
     const existingYmd = existing?.checked_at ? String(existing.checked_at).slice(0, 10) : null;
     const sameDay = existingYmd === todayYmd;
+
+    // 2026-09-15 · T-SP-BULK · shelf_positions 병합 (단건 POST 와 동일 로직)
+    //   · 매장 필수 (required_detail) 검증 · 3자리 강제 · (display_location, key, value) 중복 pre-check
+    //   · 실패 시 · 해당 item 만 failed 처리 · 다른 item 계속 진행 (BC · bulk 반복 유지)
+    const hasShelfPos = Object.prototype.hasOwnProperty.call(it, "shelf_positions")
+      && it.shelf_positions && typeof it.shelf_positions === "object";
+    if (hasShelfPos && !downgraded) {
+      try {
+        const existingPos = ((existing as any)?.shelf_positions ?? {}) as Record<string, string | null>;
+        const { merged, dupCheckTargets } = mergeShelfPositions(
+          existingPos,
+          it.shelf_positions as Record<string, string | null | undefined>,
+          storageLocs,
+        );
+        if (dupCheckTargets.length > 0) {
+          const currentDisplayLoc = await fetchProductDisplayLoc(code);
+          await checkShelfPositionConflicts(code, currentDisplayLoc, dupCheckTargets);
+        }
+        payload.shelf_positions = merged;
+      } catch (e: any) {
+        // badRequest · status/message 보존 · item 단위 실패 처리
+        const msg = e?.message ?? "shelf_positions 병합 실패";
+        errors.push({ product_code: code, error: msg });
+        failed++;
+        continue;
+      }
+    }
+
     const doWrite = async (p: Record<string, any>) => {
       if (existing && sameDay) {
         // 같은 날 재저장 · UPDATE (덮어쓰기)
@@ -1404,20 +1402,25 @@ router.post("/api/inventory-checks/bulk", authorize(1), validateBody(BulkInvento
     if (error && /column .* does not exist|no column named|schema cache/i.test(error.message)) {
       // 신규 컬럼 미존재 DB → 스트립 후 재시도 · 이후 아이템도 스트립
       downgraded = true;
-      for (const k of ["warehouse1_stock","warehouse2_stock","store2_stock","store3_stock","store1_zone","store2_zone","store3_zone"]) {
+      for (const k of ["warehouse1_stock","warehouse2_stock","store2_stock","store3_stock","store1_zone","store2_zone","store3_zone","shelf_positions"]) {
         delete payload[k];
       }
       const retry = await doWrite(payload);
       error = retry.error ?? null;
     }
-    if (error) { failed++; } else {
+    if (error) {
+      failed++;
+      errors.push({ product_code: code, error: error.message });
+    } else {
       saved++;
     }
   }
   clearLowStockCache(); // 2026-08-05 · T-PERF-1a
   scheduleSnapshotBackground(); // 2026-08-06 · T-LOSS-HISTORY · 오늘 손실 스냅샷 자동
   // 2026-09-07 · 사용자 지시 · 실재고 일괄 저장 알림 제거 (스팸)
-  res.json({ ok: true, saved, failed, total: items.length, downgraded });
+  // 2026-09-15 · T-SP-BULK · errors 배열 · item 별 실패 사유 (매장필수·3자리·중복) 노출
+  //   · BC · 기존 { ok, saved, failed, total, downgraded } 필드 100% 유지 · errors 는 추가 필드
+  res.json({ ok: true, saved, failed, total: items.length, downgraded, errors });
 }));
 
 router.patch("/api/inventory-checks/:id", authorize(1), validateBody(PatchInventoryCheckSchema), asyncHandler(async (req, res) => {
