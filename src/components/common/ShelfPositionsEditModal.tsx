@@ -6,7 +6,7 @@
 //   · invalidateShelfPositionsMap + inventory-checks-updated dispatch
 
 import React, { useEffect, useMemo, useState } from "react";
-import { X, Minus, Plus, ChevronDown } from "lucide-react";
+import { Minus, Plus, ChevronDown } from "lucide-react";
 import { api } from "../../lib/apiClient";
 import { useStorageLocations } from "../../hooks/useStorageLocations";
 import { invalidateShelfPositionsMap, refetchShelfPositionsMap, patchShelfPositionsCache } from "../../hooks/useShelfPositionsMap";
@@ -14,6 +14,8 @@ import { Button } from "./Button";
 import { Spinner } from "./Spinner";
 import { useToast, toastClass } from "../../hooks/useToast";
 import type { ShelfPositions } from "../../lib/shelfPositions";
+// 2026-09-15 · #191 Phase B · Modal 프레임워크화 · 인라인 backdrop → common/Modal 프리미티브
+import { Modal } from "./Modal";
 
 export interface ShelfPositionsEditModalProps {
   productCode: string;
@@ -213,11 +215,7 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
     () => typeof window !== "undefined" && window.innerWidth >= 768,
   );
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !saving) onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, saving]);
+  // 2026-09-15 · #191 Phase B · Modal 프리미티브 · ESC 자동 처리 · 별도 리스너 불필요
 
   const setDigit = (code: string, idx: number, v: string) => {
     setDirty(true);
@@ -290,47 +288,45 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
     }
   };
 
+  // 2026-09-15 · #191 Phase B · Modal 프레임워크 · title 다중 라인 · body/footer 분리
+  const modalTitle = (
+    <div className="flex flex-col min-w-0">
+      <span className="text-[17px] font-bold text-ink leading-tight tracking-tight">
+        {activeLocs.length === 1 ? `${activeLocs[0].name} 상세구역 편집` : "상세구역 편집"}
+      </span>
+      {productName && (
+        <span className="text-[13px] text-ink-soft mt-1 truncate">
+          {productName}
+          {displayLocation && <span className="ml-1.5 text-zinc-400">· {displayLocation}</span>}
+        </span>
+      )}
+    </div>
+  );
+
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      style={{ background: "rgba(10, 46, 74, 0.35)", backdropFilter: "blur(6px)" }}
-      onClick={(e) => { if (e.target === e.currentTarget && !saving) onClose(); }}
-      role="dialog"
-      aria-modal="true"
+    <Modal
+      open
+      onClose={() => { if (!saving) onClose(); }}
+      title={modalTitle}
+      titleAccent
+      size="3xl"
+      closeOnEsc={!saving}
+      closeOnBackdrop={!saving}
+      bodyPadding="none"
+      footer={
+        <div className="flex items-center justify-end gap-2 w-full">
+          <Button variant="secondary" size="sm" onClick={onClose} disabled={saving}>
+            취소
+          </Button>
+          <Button variant="primary" size="sm" onClick={handleSave} loading={saving}>
+            {saving ? <Spinner size={11} /> : null}
+            저장
+          </Button>
+        </div>
+      }
     >
       {toast && <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>}
-      <div
-        className="bg-white rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden border border-line"
-        style={{ boxShadow: "0 1px 3px rgba(10,46,74,0.12), 0 8px 32px -8px rgba(10,46,74,0.24)" }}
-      >
-        {/* 헤더 */}
-        <div className="flex items-start gap-3 px-5 py-4 border-b border-line bg-zinc-50/60 shrink-0">
-          <div className="w-1.5 rounded-full bg-brand-deep self-stretch" />
-          <div className="flex-1 min-w-0">
-            <div className="text-[17px] font-bold text-ink leading-tight tracking-tight">
-              {activeLocs.length === 1 ? `${activeLocs[0].name} 상세구역 편집` : "상세구역 편집"}
-            </div>
-            {productName && (
-              <div className="text-[13px] text-ink-soft mt-1 truncate">
-                {productName}
-                {displayLocation && <span className="ml-1.5 text-zinc-400">· {displayLocation}</span>}
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="w-8 h-8 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint flex items-center justify-center text-ink-soft hover:text-brand-deep cursor-pointer shrink-0 transition-colors disabled:opacity-40"
-            title="닫기 (ESC)"
-            aria-label="닫기"
-          >
-            <X size={14} />
-          </button>
-        </div>
-
-        {/* 바디 · 좌측 예시 그림 + 우측 카드 리스트 · 반응형 (md 이하 stack) */}
-        <div className="flex-1 overflow-y-auto p-5">
+      <div className="p-5">
           <div className="flex flex-col md:flex-row gap-5">
             {/* 좌측 · 예시 그림 · md 이상만 사이드 · sm 은 상단 (기본 접힘 · 토글) */}
             <div className="md:w-[240px] shrink-0">
@@ -454,18 +450,7 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
           </div>
         </div>
 
-        {/* 푸터 */}
-        <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-line bg-zinc-50/60 shrink-0">
-          <Button variant="secondary" size="sm" onClick={onClose} disabled={saving}>
-            취소
-          </Button>
-          <Button variant="primary" size="sm" onClick={handleSave} loading={saving}>
-            {saving ? <Spinner size={11} /> : null}
-            저장
-          </Button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 };
 
