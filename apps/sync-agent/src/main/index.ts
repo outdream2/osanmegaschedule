@@ -65,12 +65,11 @@ function createMainWindow() {
   });
 
   mainWindow.on("ready-to-show", () => {
-    // 2026-09-15 · dev 모드 · 첫 실행 · 창 자동 open (확인 편의)
-    // 배포 모드 · 트레이 자동 시작 · 창 숨김 유지 · 아이콘 클릭 시 표시
-    if (is.dev) {
-      mainWindow?.show();
-      mainWindow?.focus();
-    }
+    // 2026-09-15 · createMainWindow · 명시 호출 시 · 항상 창 표시 (dev · 배포 공통)
+    //   · 이전 버그 · dev 만 show · 배포 · 트레이 클릭 후에도 창 안 뜸
+    //   · 부팅 자동 시작 · createTray 만 호출 · createMainWindow X · 트레이만 상주 (openAsHidden)
+    mainWindow?.show();
+    mainWindow?.focus();
   });
 
   mainWindow.on("close", (e) => {
