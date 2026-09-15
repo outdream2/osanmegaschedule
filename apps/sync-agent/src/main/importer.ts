@@ -17,6 +17,9 @@ const ENDPOINT_MAP: Record<FileKind, string> = {
   purchase: "/api/upload-purchase-details",
 };
 
+// 2026-09-15 · Phase 3 · 파일 종류별 · 실행 중 mutex · 중복 실행 방지
+const runningLocks = new Set<FileKind>();
+
 export interface ImportResult {
   kind: FileKind;
   ok: boolean;
@@ -26,8 +29,41 @@ export interface ImportResult {
   message: string;
 }
 
+/** 파일명 · 날짜 (YYYY-MM-DD or YYYYMMDD) 추출 · 없으면 파일 mtime · 없으면 오늘 */
+function extractDateFromName(fileName: string, fallback: Date): string {
+  // 2026-07-06 · 2026-07-01 등
+  const m1 = fileName.match(/(\d{4})[-.](\d{2})[-.](\d{2})/);
+  if (m1) return `${m1[1]}-${m1[2]}-${m1[3]}`;
+  // 20260706 등
+  const m2 = fileName.match(/(\d{4})(\d{2})(\d{2})/);
+  if (m2) return `${m2[1]}-${m2[2]}-${m2[3]}`;
+  return fallback.toISOString().slice(0, 10);
+}
+
+/** 날짜 (YYYY-MM-DD) → period_type · 초순(1-10)·중순(11-20)·하순(21+) */
+function computePeriodType(dateStr: string): "early" | "mid" | "late" {
+  const day = parseInt(dateStr.slice(8, 10), 10) || 1;
+  if (day <= 10) return "early";
+  if (day <= 20) return "mid";
+  return "late";
+}
+
 /** 한 파일 종류 · 폴더 스캔 · xlsx 발견 시 · 서버 업로드 */
 export async function runImport(kind: FileKind): Promise<ImportResult> {
+  // 2026-09-15 · Phase 3 · 중복 실행 방지 mutex
+  if (runningLocks.has(kind)) {
+    console.warn(`[importer/${kind}] 이미 실행 중 · skip`);
+    return { kind, ok: true, filesProcessed: 0, filesFailed: 0, errors: [], message: "이미 실행 중" };
+  }
+  runningLocks.add(kind);
+  try {
+    return await runImportInternal(kind);
+  } finally {
+    runningLocks.delete(kind);
+  }
+}
+
+async function runImportInternal(kind: FileKind): Promise<ImportResult> {
   const cfg = loadConfig();
   const folder = cfg.folders[kind];
   if (!folder) {
@@ -76,17 +112,35 @@ export async function runImport(kind: FileKind): Promise<ImportResult> {
       const isRetriable = isRetriableError(err);
       if (isRetriable) {
         // 파일 · _failed 이동 X · 원본 위치 유지 · 큐 재시도 시 다시 접근
-        // 대신 · 큐에 등록만
         enqueue(kind, filePath, fileName, msg);
         console.log(`[importer/${kind}] 재시도 대상 · 큐 등록 · ${fileName}`);
       } else {
         // 영구 실패 (4xx · validation 등) · _failed 이동 · 큐 X
-        const failPath = join(failedDir, `${Date.now()}_${fileName}`);
-        try {
-          renameSync(filePath, failPath);
-          writeFileSync(`${failPath}.log`, `${new Date().toISOString()}\n${kind}\n${msg}\n\n${err.stack ?? ""}`, "utf-8");
-        } catch (moveErr) {
-          console.warn(`[importer/${kind}] _failed 이동 실패:`, moveErr);
+        // 파일 존재 확인 (동시 실행 · rename 이미 됐을 수 있음)
+        if (existsSync(filePath)) {
+          const failPath = join(failedDir, `${Date.now()}_${fileName}`);
+          try {
+            renameSync(filePath, failPath);
+            writeFileSync(
+              `${failPath}.log`,
+              [
+                `시각: ${new Date().toISOString()}`,
+                `파일 종류: ${kind}`,
+                `원본 파일: ${fileName}`,
+                `HTTP 상태: ${err.response?.status ?? "unknown"}`,
+                `서버 응답: ${JSON.stringify(err.response?.data ?? {}, null, 2)}`,
+                `오류 메시지: ${msg}`,
+                ``,
+                `스택 트레이스:`,
+                err.stack ?? "(없음)",
+              ].join("\n"),
+              "utf-8"
+            );
+          } catch (moveErr) {
+            console.warn(`[importer/${kind}] _failed 이동 실패 (파일 이미 이동됨 or 권한):`, moveErr);
+          }
+        } else {
+          console.log(`[importer/${kind}] 파일 없음 (이미 이동됨) · ${fileName}`);
         }
         console.error(`[importer/${kind}] 영구 실패 · ${fileName} · ${msg}`);
       }
@@ -104,10 +158,13 @@ export async function runImport(kind: FileKind): Promise<ImportResult> {
   });
 }
 
-/** 실제 서버 업로드 · 웹앱 방식 · application/octet-stream + managerId 쿼리
- *   · POST /api/upload-{products|stock|purchase-details}?managerId=<employeeId>
+/** 실제 서버 업로드 · 웹앱 방식 · application/octet-stream + 쿼리 파라미터
+ *   · POST /api/upload-products?managerId=<id>
+ *   · POST /api/upload-stock?managerId=<id>&snapshot_date=YYYY-MM-DD&start_date=YYYY-MM-DD&period_type=early|mid|late&force=true
+ *   · POST /api/upload-purchase-details?managerId=<id>&filename=<name>&from=YYYY-MM-DD&to=YYYY-MM-DD&force=true
  *   · Body · Buffer · Raw xlsx
- *   · 서버 · express.raw · authorize(9) · managerId 검증 · Supabase 임포트
+ *   · 파일명 · 날짜 자동 추출 · 없으면 파일 mtime
+ *   · force=true · 기존 데이터 덮어쓰기 (409 conflict 방지)
  */
 async function uploadFile(kind: FileKind, filePath: string): Promise<void> {
   const endpoint = ENDPOINT_MAP[kind];
@@ -120,17 +177,60 @@ async function uploadFile(kind: FileKind, filePath: string): Promise<void> {
   }
 
   const buf = readFileSync(filePath);
-  const fileName = basename(filePath); // 서버 미사용 · 로그용
+  const fileName = basename(filePath);
 
-  const url = `${endpoint}?managerId=${managerId}`;
-  await api.post(url, buf, {
-    headers: { "Content-Type": "application/octet-stream" },
-    maxBodyLength: 100 * 1024 * 1024,
-    maxContentLength: 100 * 1024 * 1024,
-  });
+  // 파일 mtime · fallback 날짜
+  const mtime = statSync(filePath).mtime;
 
-  // 서버 응답 · count 등 · 성공 시 · 로그
-  console.log(`[importer/${kind}] uploaded ${fileName} · ${buf.length} bytes`);
+  // 파라미터 · 파일 종류별
+  const params = new URLSearchParams({ managerId: String(managerId) });
+
+  if (kind === "stock") {
+    // 재고 · 필수 · snapshot_date · start_date · period_type
+    const snapshotDate = extractDateFromName(fileName, mtime);
+    // 재고 파일 · 기본 · 시작·종료 동일 (일별 스냅샷) or 30일 범위
+    const startDate = snapshotDate; // 초·중·하순 스냅샷 · 시작=종료 · 단일 시점
+    const periodType = computePeriodType(snapshotDate);
+    params.set("snapshot_date", snapshotDate);
+    params.set("start_date", startDate);
+    params.set("period_type", periodType);
+    params.set("force", "true"); // 자동 임포트 · 덮어쓰기 · 409 skip
+    console.log(`[importer/stock] params · snapshot=${snapshotDate} · period=${periodType}`);
+  } else if (kind === "purchase") {
+    // 매입 · filename 필수 · from·to 선택 (파일명 추출)
+    params.set("filename", fileName);
+    // filename 에서 YYYY-MM-DD 두 개 추출 시도 (from · to)
+    const dates = Array.from(fileName.matchAll(/(\d{4})[-.](\d{2})[-.](\d{2})/g))
+      .map(m => `${m[1]}-${m[2]}-${m[3]}`);
+    if (dates.length >= 1) params.set("from", dates[0]);
+    if (dates.length >= 2) params.set("to", dates[1]);
+    params.set("force", "true");
+    console.log(`[importer/purchase] params · filename=${fileName} · dates=${dates.join(",")}`);
+  }
+  // products · managerId 만 필요
+
+  const url = `${endpoint}?${params.toString()}`;
+  console.log(`[importer/${kind}] POST ${url}`);
+
+  try {
+    const res = await api.post(url, buf, {
+      headers: { "Content-Type": "application/octet-stream" },
+      maxBodyLength: 100 * 1024 * 1024,
+      maxContentLength: 100 * 1024 * 1024,
+    });
+    console.log(`[importer/${kind}] 성공 · ${fileName} · 응답:`, JSON.stringify(res.data).slice(0, 200));
+  } catch (err: any) {
+    // 상세 서버 에러 · 로그
+    const status = err.response?.status;
+    const body = err.response?.data;
+    console.error(`[importer/${kind}] 서버 에러 · status=${status} · body:`, JSON.stringify(body).slice(0, 500));
+    // 서버 에러 메시지 · axios err.message 에 병합
+    const serverMsg = body?.error?.message ?? body?.message ?? body?.error;
+    if (serverMsg) {
+      err.message = `[${status}] ${serverMsg}`;
+    }
+    throw err;
+  }
 }
 
 function ensureDir(path: string): void {
