@@ -34,6 +34,7 @@ apps/sync-agent/node_modules/
 apps/sync-agent/out/
 apps/sync-agent/release/
 apps/sync-agent/dist/
+apps/sync-agent/*.tsbuildinfo
 src/sample/*.xlsx
 
 # 2026-08-25 · .omx (로컬 metrics/logs · 프로덕션 무관)

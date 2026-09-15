@@ -11,15 +11,15 @@ const api = {
   getAppInfo: () => ipcRenderer.invoke("app-info"),
 
   // ── 이벤트 리스너 · main → renderer ────────────
-  onNavigate: (callback: (page: string) => void) => {
+  onNavigate: (callback: (page: string) => void): (() => void) => {
     const listener = (_: unknown, page: string) => callback(page);
     ipcRenderer.on("navigate", listener);
-    return () => ipcRenderer.removeListener("navigate", listener);
+    return () => { ipcRenderer.removeListener("navigate", listener); };
   },
-  onUpdateStatus: (callback: (status: { type: string; version?: string }) => void) => {
+  onUpdateStatus: (callback: (status: { type: string; version?: string }) => void): (() => void) => {
     const listener = (_: unknown, status: { type: string; version?: string }) => callback(status);
     ipcRenderer.on("update-status", listener);
-    return () => ipcRenderer.removeListener("update-status", listener);
+    return () => { ipcRenderer.removeListener("update-status", listener); };
   },
 
   // TODO Phase 2 · 설정 CRUD · 로그 조회 · 즉시 실행 · 로그인 등
