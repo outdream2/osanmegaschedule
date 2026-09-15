@@ -92,8 +92,9 @@ function createMainWindow() {
 
   if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
     mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
-    // dev 모드 · DevTools 자동 열기 · 콘솔 오류 확인
-    mainWindow.webContents.openDevTools({ mode: "detach" });
+    // 2026-09-15 · dev 모드 · DevTools 자동 열기 제거 (사용자 요청)
+    //   · 필요 시 · F12 or Ctrl+Shift+I · 수동 open
+    //   · optimizer.watchWindowShortcuts · 이미 등록되어 있음
   } else {
     mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
   }
