@@ -18,9 +18,12 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { OrderNeedFilters } from "./OrderNeedFilters";
 import { OrderNeedTable } from "./OrderNeedTable";
-import type { ProductInfo, OrderNeedFilterConfig } from "./OrderManagePage.types";
+import type { ProductInfo, OrderNeedFilterConfig, OrderRequest } from "./OrderManagePage.types";
 // 2026-09-10 · 사용자 지시 · 발주필요 페이지에도 · 적정재고 기준 일수 안내 (발주요청 탭과 동일 위치)
 import { OptimalStockNoteBanner } from "../common/OptimalStockNoteBanner";
+// 2026-09-15 · #39 Phase B · 발주필요 상단 · "요청 진행중 N건" 접힘 카드
+//   · 업계 표준 PO Lifecycle · 라인 이동 + 상단 접힘 카드 하이브리드
+import { OrderInProgressCard } from "./OrderInProgressCard";
 
 type NeedSortKey = "supplier" | "contact" | "name" | "current" | "inv" | "optimal" | "short" | "sale_month";
 type NeedCategoryFilter = string;
@@ -108,6 +111,10 @@ interface OrderNeedTabProps {
   setOrderQtyOverride?: React.Dispatch<React.SetStateAction<Map<string, number>>>;
   /** 2026-09-10 · #46 · 사용자 지시 · 상품 상세 정보 모달 트리거 (상품명 클릭 · [상세 정보] 버튼) */
   onOpenDetail?: () => void;
+  /** 2026-09-15 · #39 Phase B · 요청 진행중 상품 리스트 (status='requested') · 상단 접힘 카드 표시 */
+  orderReqs?: OrderRequest[];
+  /** 2026-09-15 · #39 Phase B · 발주요청 탭으로 이동 · 접힘 카드 우측 버튼 · 부모 라우팅 콜백 */
+  onNavigateToOrderRequest?: () => void;
 }
 
 export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
@@ -134,13 +141,18 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
   handleRequestOrder,
   orderQtyOverride, setOrderQtyOverride,
   onOpenDetail,
+  orderReqs, onNavigateToOrderRequest,
 }) => {
   const confirm = useConfirm();
   // 2026-09-10 · 사용자 지시 · 판매중 기본값 강제 · storageKey bump v2
   const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "orderNeed.saleFilter.v2" });
 
-  // 2026-09-10 · 사용자 지시 · 발주요청 되어도 · 리스트에 남아있음 · [✓] 배지로만 상태 표시
-  //   · 이전 · 요청됨 상품 자동 숨김 → 제거 · 항상 표시
+  // 2026-09-15 · #39 · 업계 표준 PO Lifecycle 리서치 (Odoo·Zoho·NetSuite·Cin7·SAP Ariba 100%) 결과 반영
+  //   · 라인 아이템 (발주필요 리스트 행) · 완전 이동 · 요청 완료 시 리스트에서 제거 · 발주요청 리스트로
+  //   · 잔류형 (요청됨 배지로만 잔류) · 업계 사례 0건 · 노이즈·판단 방해
+  //   · 대신 · 상단 CollapseCard "요청 진행중 N건" · 이미 요청한 상품 즉시 확인 가능
+  //   · 검색어 있음 or 조건적용 OFF · allProductsMap 전체 · 요청됨 상품도 노출 (✓ 요청됨·N일전 뱃지)
+  //   · 요청 후 2-3일 도착 지연 · 지연 tier 뱃지 · D+N 색상 강화 (formatDaysAgo)
   const displayed = React.useMemo(
     () => lowStockFiltered.filter(p => {
       if (!saleMatches(p.sale_status)) return false;
@@ -233,6 +245,12 @@ export const OrderNeedTab: React.FC<OrderNeedTabProps> = ({
           <span className="text-[15px] text-ink-soft font-medium tracking-tight">현재고 &lt; 적정재고</span>
         }
       />
+
+      {/* 2026-09-15 · #39 Phase B · 요청 진행중 · 상단 접힘 카드 · 업계 표준 PO Lifecycle
+          라인 이동 원칙 · 요청됨 상품 리스트에는 표시 X · 여기서 즉시 확인 가능 · 지연 tier 강조 */}
+      {orderReqs && orderReqs.length > 0 && onNavigateToOrderRequest && (
+        <OrderInProgressCard orderReqs={orderReqs} onNavigateToOrderRequest={onNavigateToOrderRequest} />
+      )}
 
       {/* 2026-09-10 · 사용자 지시 · 적정재고 기준 일수 안내 (발주요청 탭과 동일) */}
       <OptimalStockNoteBanner compact className="self-start" />

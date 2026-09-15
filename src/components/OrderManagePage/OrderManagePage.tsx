@@ -696,6 +696,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               orderQtyOverride={orderQtyOverride}
               setOrderQtyOverride={setOrderQtyOverride}
               onOpenDetail={() => needPanelProduct && setNeedDetailModal(needPanelProduct)}
+              orderReqs={orderReqs}
+              onNavigateToOrderRequest={() => setPurchaseOrderSubTab("order")}
             />
           )}
           {purchaseOrderSubTab === "critical" && (

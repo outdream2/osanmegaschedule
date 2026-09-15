@@ -58,15 +58,19 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
   toggleLowStockOne, clearLowStockSelection, setSelectedLowStock, bulkRequestOrder,
   handleRowClick, handleRequestOrder,
 }) => {
-  // 2026-09-10 · 사용자 지시 · 옵션 A · "N일 전 요청" 표시 helper
-  const formatDaysAgo = (iso?: string): string | null => {
+  // 2026-09-15 · #39 · 지연 tier 뱃지 · 업계 표준 (Odoo·Zoho·Cin7 · lead_time 초과 강조)
+  //   · 오늘·1-2일 · amber (요청 정상) · 3-5일 · orange (도착 임박) · 6일+ · rose (지연 · 확인 필요)
+  //   · 약국 도착 · 통상 2-3일 · 3일 초과 시 · 관리자 주의 필요
+  const formatDaysAgo = (iso?: string): { label: string; tone: "amber" | "orange" | "rose" } | null => {
     if (!iso) return null;
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return null;
     const days = Math.floor((Date.now() - d.getTime()) / 86400000);
-    if (days <= 0) return "오늘";
-    if (days === 1) return "1일 전";
-    return `${days}일 전`;
+    if (days <= 0) return { label: "오늘", tone: "amber" };
+    if (days === 1) return { label: "1일 전", tone: "amber" };
+    if (days <= 2) return { label: `${days}일 전`, tone: "amber" };
+    if (days <= 5) return { label: `${days}일 전`, tone: "orange" };
+    return { label: `⚠ ${days}일 전 (지연)`, tone: "rose" };
   };
   if (productsLoading && displayed.length === 0) {
     return <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩 중..." labelSize={12} /></div>;
@@ -292,10 +296,16 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                       {/* 2026-09-10 · 사용자 지시 · N일전 배지 + 요청됨 버튼 · 가로 나란히 (N일전 앞) */}
                       <div className="inline-flex flex-row items-center gap-1">
                         {alreadyRequested && requestedAtMap && (() => {
-                          const label = formatDaysAgo(requestedAtMap.get(code));
-                          return label ? (
-                            <span className="text-[11px] font-bold text-amber-700 tabular-nums bg-amber-50 border border-amber-300 rounded px-1.5 h-5 inline-flex items-center">{label}</span>
-                          ) : null;
+                          const info = formatDaysAgo(requestedAtMap.get(code));
+                          if (!info) return null;
+                          const toneCls = info.tone === "rose"
+                            ? "text-rose-700 bg-rose-50 border-rose-300"
+                            : info.tone === "orange"
+                              ? "text-orange-700 bg-orange-50 border-orange-300"
+                              : "text-amber-700 bg-amber-50 border-amber-300";
+                          return (
+                            <span className={`text-[11px] font-bold tabular-nums border rounded px-1.5 h-5 inline-flex items-center ${toneCls}`}>{info.label}</span>
+                          );
                         })()}
                         <button
                           onClick={() => handleRequestOrder(p)}
