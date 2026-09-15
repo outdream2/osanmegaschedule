@@ -2152,6 +2152,44 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 
 ---
 
+## [40] T-AUTO-IMPORT-WEB-REDESIGN · 시스템설정 · 자동 임포트 · Electron sync-agent 다운로드 페이지 (2026-09-15)
+**커밋** · `e5fe6584`
+
+### 배경
+- 기존 · SystemSettings > 자동 임포트 · Python 스크립트 + Task Scheduler + KV 폴더 설정 UI
+- 지금 방식 · Electron sync-agent 앱 (`apps/sync-agent/`) · exe 설치 · 앱 자체 UI 에서 폴더/모드 편집
+- 웹 페이지는 · exe 다운로드 + 설치 가이드로 단순화 · 지금 방식과 정합
+
+### 확인 절차
+1. **시스템 설정 > 자동 임포트** 탭 진입 (관리자 lv9)
+2. Hero 카드 (brand-deep 그라디언트) · `Megatown Sync Agent` · Windows StatusPill
+3. **[설치 파일 다운로드 (.exe)]** 버튼 · white bg · 클릭 → `megatown-sync-agent-{ver}-setup.exe` 다운로드
+4. 우측 · 버전 (v0.1.0) · 크기 (79 MB 정도) · 빌드 일시 표시
+5. **[버전 확인]** 버튼 · 재조회
+6. 주요 기능 3열 · 파일 감시 · 스케줄 · 보안·자동 업데이트
+7. 설치 가이드 5단계 · 다운로드 · 더블클릭 설치 · 트레이 상주 · 로그인 · 폴더 모드 설정
+8. 사용 방법 · 지금 실행·최신 파일 규칙·_processed/_failed·Logs·로그아웃
+9. 완료 안내 배너 (emerald) · 설치 후 · 웹 별도 설정 X · 앱 자체 편집
+
+### 기대값
+- 다운로드 클릭 · Chrome 다운로드 시작 · Downloads 폴더 저장
+- 파일 크기 정확 (실제 79MB 정도)
+- 버전 조회 실패 시 · "설치 파일 없음 · 관리자 문의" amber
+- 관리자 아닌 사용자 · 탭 자체 진입 불가 (SystemSettingsPage authorize)
+
+### 회귀 확인
+- 다른 시스템설정 탭 (DB·인증, AI/OCR 등) · 이전과 동일 동작
+- 매장·창고 마스터 탭 [39] · 정상 (같은 페이지)
+- Python 스크립트 (기존) · endpoint 는 유지 · 실행 중이면 계속 작동
+
+### 서버 endpoint
+- `GET /api/sync-agent/version` (public) · 최신 exe 메타 조회
+- `GET /api/sync-agent/installer` (lv9) · exe 스트림 다운로드
+- 파일 위치 · `apps/sync-agent/release/megatown-sync-agent-{ver}-setup.exe`
+- ENV · `SYNC_AGENT_RELEASE_DIR` 로 override 가능 (Render 배포 시)
+
+---
+
 ## [38] #107·#258 · 발주 리스트 프리미엄 UI · 헤더 통계 뱃지 (2026-09-15)
 **커밋** · `752db75b`
 
