@@ -64,7 +64,7 @@
 | # | 태스크 | 우선순위 | 비고 |
 |---|-----|--------|------|
 | **#253** | 자동 임포트 · Phase B (Python 스크립트) · Phase C (PyInstaller .exe) · Phase D (install.bat) · Phase F (README) | 🟢 P3 | Phase A (서버) + Phase E (웹 UI) 완료 |
-| **#193 Phase 2** | 통계설정 · 적정재고일수 소비처 wiring (RequestsPage·OrderManagePage·CategoryTab) | 🟢 P3 | Phase 1 완료 (`885ee110`) |
+<!-- 2026-09-15 · #193 Phase 2 · 완료 확인 · 이미 wiring 완비 · server/lib/optimalStock.ts L184-187 KV 조회 · OptimalStockPeriodSection.tsx L112-121 setDays → runRecalc 자동 · 3 이벤트 dispatch → 9 파일 리스너 자동 반영 -->
 | **#149** | large-file 분리 잔여 · OcrPage(1215)·PaymentInfoTab(1513)·OrderManagePage(3089)·LandingPage(2319)·ContractWriterPage | 🟢 P3 | Framework Phase 4 잔여 |
 
 ### 🔲 다음 진행 대기 (승인·지시 대기)
