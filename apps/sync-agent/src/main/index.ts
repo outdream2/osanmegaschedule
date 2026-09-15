@@ -212,19 +212,12 @@ function createTray() {
     trayImage = nativeImage.createFromBuffer(createTrayIconBuffer());
   }
 
+  // Windows · 트레이 표준 · 16x16 (자동 스케일)
+  trayImage = trayImage.resize({ width: 16, height: 16 });
   console.log("[tray] 이미지 · isEmpty:", trayImage.isEmpty(), "size:", trayImage.getSize());
+
   tray = new Tray(trayImage);
   tray.setToolTip(AGENT_NAME);
-  tray.setTitle(""); // Windows · title 없음
-
-  // Windows 11 · 첫 실행 시 · balloon 표시 · 사용자에게 트레이 아이콘 존재 알림
-  if (process.platform === "win32") {
-    tray.displayBalloon({
-      title: AGENT_NAME,
-      content: "트레이 아이콘이 여기 있습니다. 우클릭 · 메뉴 표시.",
-      iconType: "info",
-    });
-  }
 
   const contextMenu = Menu.buildFromTemplate([
     { label: "열기", click: () => createMainWindow() },
