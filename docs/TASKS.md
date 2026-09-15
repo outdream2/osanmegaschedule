@@ -164,7 +164,7 @@
 | # | 태스크 | 우선순위 | 비고 |
 |---|-----|--------|------|
 | ~~**T-DISPLAY-1**~~ | ✅ 완료 · 진열요청 탭 · 표 형식 · 상품명·상태·진열위치·담당자·**요청횟수**·요청일·완료 | 🟡 P1 | RequestsPage.tabs.tsx L195~207 · 2026-09-09 재구성 |
-| **T-SP-9-REST** | 나머지 표시 파일 · 진열위치 표시 자리에 shelf 뱃지 확장 | 🟢 P3 | 대부분 location 내부 사용 · UI 렌더 파일 위주로 필요 시 추가 · CategoryTab·CriticalTab·ExpiryImminentTab·SalesTrend 등 |
+| **T-SP-9-REST** | 나머지 표시 파일 · 진열위치 표시 자리에 shelf 뱃지 확장 | 🟢 P3 (부분 완료) | ExpiryImminentTab 완료 (`2026-09-15`) · CategoryTab·CriticalTab · location 명시 표시 없음 (뱃지 자리 없음) · 필요 시 사용자 지시로 추가 |
 | ~~**T-SP-BULK**~~ | ✅ 완료 · POST /api/inventory-checks/bulk · shelf_positions 병합 지원 · `b86a4b20` (2026-09-15) · 공용 helper + 22 tests | — | — |
 | **T-SP-MASTER-UI** | 매장·창고 마스터 관리 UI (매장4·5 추가) | 🟢 P3 | 현재는 KV JSON 직접 편집 · 관리자 페이지 필요 시 |
 | ~~**T-MENU-BOTTOMNAV**~~ | ✅ 완료 · BottomNav 하단 4탭 · perms.hidden 필터 추가 · 사이드바 정합 · `2026-09-15` | — | — |

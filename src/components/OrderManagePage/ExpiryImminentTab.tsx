@@ -24,6 +24,9 @@ import { matchesProductQuery } from "../../lib/productMatch";
 // 2026-08-31 · #11 · 공급사명 검색 통합
 import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { resolveProductLocation } from "../../lib/productLocation";
+// 2026-09-15 · T-SP-9-REST · 진열위치 뱃지 확산 · 유통기한 임박 상품 · 상세위치 확인 · 실무 임팩트 (매장 어느 슬롯인지)
+import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
+import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
 
 interface ExpiryProduct {
   product_code: string;
@@ -68,6 +71,8 @@ export const ExpiryImminentTab: React.FC = () => {
   const { toast, showError, showSuccess } = useToast();
   const confirm = useConfirm();
   const [clearingCode, setClearingCode] = useState<string | null>(null);
+  // 2026-09-15 · T-SP-9-REST · 상세위치 map · shelf_positions 뱃지용
+  const shelfPositionsMap = useShelfPositionsMap();
   // 2026-09-13 · #92 · 유통기한 해제 · confirm + PATCH expiry_date=null
   const handleClearExpiry = useCallback(async (p: ExpiryProduct) => {
     const ok = await confirm({
@@ -202,7 +207,15 @@ export const ExpiryImminentTab: React.FC = () => {
                         <div className="text-[14px] font-mono text-zinc-400 mt-0.5">{p.product_code}</div>
                       </td>
                       <td className={tableTdCls("left", "text-zinc-600")}>{p.supplier ?? <span className="text-zinc-400">-</span>}</td>
-                      <td className={tableTdCls("left", "text-zinc-600")}>{resolveProductLocation(p) ?? <span className="text-zinc-400">-</span>}</td>
+                      <td className={tableTdCls("left", "text-zinc-600")}>
+                        <div className="flex flex-col gap-0.5">
+                          <span>{resolveProductLocation(p) ?? <span className="text-zinc-400">-</span>}</span>
+                          {/* 2026-09-15 · T-SP-9-REST · 상세 진열위치 뱃지 · 매장 슬롯별 (3자리) · 유통기한 임박 대응 시 · 정확한 위치 확인 */}
+                          {shelfPositionsMap[p.product_code] && (
+                            <ShelfPositionsBadge positions={shelfPositionsMap[p.product_code]} size="sm" variant="text" />
+                          )}
+                        </div>
+                      </td>
                       <td className={tableTdCls("num", "text-zinc-700")}>{p.current_stock ?? <span className="text-zinc-400">-</span>}</td>
                       <td className={tableTdCls("center", "font-semibold text-ink tabular-nums")}>{fmtDate(p.expiry_date)}</td>
                       <td className={tableTdCls("center")}>{dDayCell(d)}</td>

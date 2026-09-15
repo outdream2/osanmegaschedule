@@ -2152,6 +2152,42 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 
 ---
 
+## [34] T-SP-9-REST · ExpiryImminentTab · 상세 진열위치 뱃지 확산 (2026-09-15)
+**커밋** · (이 커밋)
+
+### 배경
+- 유통기한 임박 상품 · 매장 슬롯별 위치 확인 실무 임팩트
+- 이전 · 구역 (location) 만 표시 · 매장1/2/3·창고1/2 상세위치 (3자리) X
+
+### Fix
+- ExpiryImminentTab.tsx · ShelfPositionsBadge + useShelfPositionsMap 통합
+- 구역 셀 · location + shelf_positions 뱃지 · 세로 배치
+- 매장 슬롯별 상세위치 (예 "매장1: 332 · 매장2: 미입력")
+
+### 확인 절차
+1. **매장 > 매입 > 유통기한 임박** 진입
+2. 임박 상품 리스트 · **구역** 컬럼 확인
+3. 이전 · location (예: "매장 3-1") 만 표시
+4. 이후 · location + 상세 뱃지 · 매장별 · 창고별 위치
+   - 상세위치 입력됨 · brand-deep 텍스트
+   - 미입력 · rose 텍스트 "미입력"
+
+### 기대값
+- 유통기한 임박 상품 · 정확한 위치 즉시 확인
+- 매장 1/2/3 어느 슬롯에 있는지 · 상세 3자리 (층·칸·순서)
+- 회수·교체 시 · 매장 순회 최소화
+
+### 회귀 확인
+- 기존 flow (검색·필터·해제) · 이전과 동일
+- 다른 페이지 (CriticalTab · CategoryTab) · 무영향
+
+### T-SP-9-REST 상태
+- ExpiryImminentTab · ✅ 완료
+- CategoryTab · CriticalTab · location 명시 표시 없음 (뱃지 자리 없음) · skip
+- 필요 시 사용자 지시로 추가 (P3 · 부분 완료)
+
+---
+
 ## [33] T-MENU-BOTTOMNAV · BottomNav 하단 4탭 · perms.hidden 필터 (2026-09-15)
 **커밋** · (이 커밋)
 
