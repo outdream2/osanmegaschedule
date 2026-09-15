@@ -2152,6 +2152,56 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 
 ---
 
+## [32] DB 정합성 · DELETE /api/products · 회계 이력 차단 + orphan cleanup (2026-09-15)
+**커밋** · `8a987279`
+
+### 배경
+- DB 정합성 절대 유지 대원칙 (2026-09-15 등재)
+- 이전 · DELETE · products 만 삭제 · 참조 테이블 orphan 방치
+- 실무 표준 (Odoo·SAP·NetSuite) · 이력 있으면 삭제 X · Soft delete 안내
+
+### 서버 변경
+- **GET /api/products/:code/references** (신규) · 참조 count · UI pre-check 용
+- **DELETE /api/products/:code** · 확장
+  - 회계 이력 (purchase_details·stock_history·product_arrivals·loss_tracking) 참조 시 · 400 PRODUCT_HAS_HISTORY
+  - 비-critical 참조 (inventory_checks·order_requests·order_dispatches·ocr_confirmed_items·request_display) · 서버 사이드 명시 삭제
+
+### 시나리오 1 · 참조 없는 상품 (신규 등록 · 이력 없음)
+1. **매장 > 매입 > 상품정보** 진입
+2. 신규 등록한 상품 (이력 없음) · [삭제] 클릭
+3. Confirm · "이 상품과 참조 데이터를 삭제합니다"
+4. 확인 · 삭제 완료
+5. Supabase · products·inventory_checks·기타 · 모두 사라짐
+
+### 시나리오 2 · 회계 이력 있는 상품 (매입·판매·입고 이력)
+1. 매입 이력 있는 상품 (예: 기존 상품) · [삭제] 클릭
+2. **삭제 차단** · toast · "삭제 불가 · 매입 이력 N건 · 판매 이력 M건 · 이력 보존 필요 · [판매중지] or [숨김] 처리를 사용해주세요"
+3. Confirm dialog · 열리지 않음 (pre-check 통과 X)
+4. Supabase · products·이력 · 모두 유지 (정합성 보존)
+
+### 시나리오 3 · 비-critical 참조만 있는 상품
+1. 상품 · inventory_checks·order_requests 만 있고 · 매입 이력 없음
+2. [삭제] 클릭 · Confirm · "함께 정리됨: 실재고 1건 · 발주 요청 2건"
+3. 확인 · 삭제 완료 · orphan 정리 · 서버 로그 확인
+
+### 서버 로그 확인
+- `[products DELETE] inventory_checks orphan 정리 · N건 · CODE`
+- `[products DELETE] 삭제 완료 · CODE · cleanup={...}`
+- 차단 시 · 400 응답 · error.code=PRODUCT_HAS_HISTORY
+
+### 기대값
+- 회계·감사 이력 · 100% 보존 (매입·판매·입고·손실)
+- Orphan row · 자동 정리 (재고·발주 등)
+- 사용자 실수 방어 · Soft delete (hidden=true) 대안 명시 안내
+- KPI 오염 방지 (매입액·판매액·재고자산·잔고 정확성)
+
+### 회귀 확인
+- 기존 삭제 flow · 참조 없는 상품 · 이전과 동일 (성공)
+- 참조 있는 상품 · 이전에는 orphan 방치 · 이후 · 차단 or 정리
+- ProductInfoPage tests · 21/21 통과
+
+---
+
 ## [31] #61 B안 · 지정위치 표시 정합성 + 상품↔실재고 자동 연동 (2026-09-15)
 **커밋** · `a75958da`
 
