@@ -51,7 +51,7 @@
 
 | # | 태스크 | 우선순위 | 비고 |
 |---|-----|--------|------|
-| **T-SP-9-REST** | 나머지 표시 파일 · CategoryTab·CriticalTab · location 명시 표시 없음 · 뱃지 자리 없음 | 🟢 P3 (부분 완료) | ExpiryImminentTab 완료 (`5513c8d4`) · 필요 시 사용자 지시로 추가 |
+| **T-SP-9-REST** | 진열위치 뱃지 확산 · ExpiryImminentTab · ZoneProductsModal 완료 · 나머지 (CategoryTab·CriticalTab · location 표시 없음 · SalesTrendPage·FlowTab hidden 모달 · 실무 임팩트 미미) | 🟢 P3 (완료) | `5513c8d4` (ExpiryImminentTab) + `4af7a227` (ZoneProductsModal) |
 | **T-SP-MASTER-UI** | 매장·창고 마스터 관리 UI (매장4·5 추가) | 🟢 P3 | 현재는 KV JSON 직접 편집 · 관리자 페이지 필요 시 |
 
 ### 🟡 PENDING · v12 잔여
