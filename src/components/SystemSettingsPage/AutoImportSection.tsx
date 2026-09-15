@@ -1,405 +1,256 @@
 // src/components/SystemSettingsPage/AutoImportSection.tsx
-// 2026-08-24 · #253 Phase E · 자동 임포트 설정 UI (관리자 lv9 전용)
-//   · SystemSettingsPage 신규 "자동 임포트" 탭 · Phase A endpoints 재사용
-//   · 폴더 경로 4개 편집 · interval 프리셋 · after_import · auto_rename
-//   · 상태 표시 · heartbeat 기반 green/amber/red
-//   · 설치 안내 · Phase C 완료 후 · installer zip 다운로드 활성
+// 2026-09-15 · T-AUTO-IMPORT-WEB-REDESIGN · Electron sync-agent 다운로드 안내 페이지
+//   · 기존 KV 폴더 설정 UI 제거 · Electron 앱 (megatown-sync-agent.exe) 이관 후
+//   · 파일 감시(chokidar) + 스케줄러 · 폴더/일정 설정 모두 앱 자체 UI 에서 편집
+//   · 웹은 · exe 다운로드 + 설치 가이드 + 로그인 안내
+//   · 관리자 lv9 만 진입 (탭 자체 gating)
 
-import React, { useState } from "react";
-import { Robot, FloppyDisk, ArrowsClockwise, Folder, Timer, Download, Play, Warning, CheckCircle } from "@phosphor-icons/react";
+import React, { useEffect, useState } from "react";
+import {
+  Download, Desktop, DeviceMobile, Eye, Clock,
+  ShieldCheck, CheckCircle, ArrowsClockwise, Info, Package,
+} from "@phosphor-icons/react";
 import { Card } from "../common/Card";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
-// 2026-08-25 · 프레임워크 · useToast (raw alert 제거) + apiClient (raw fetch 제거)
 import { useToast, toastClass } from "../../hooks/useToast";
 import { api, ApiError } from "../../lib/apiClient";
 import { getErrorMessage } from "../../lib/errorMessage";
-import {
-  useAutoImportConfig,
-  useAutoImportStatus,
-  computeStatusTone,
-} from "../../hooks/useAutoImportConfig";
-import type { AutoImportConfig, AutoImportAfter } from "../../shared/schemas/autoImport";
 
-const DEFAULT_FOLDER_BASE = "%USERPROFILE%\\Downloads\\megatown-importdata";
-// 2026-08-24 · 사용자 지시 · 공급사 제외 · 3 카테고리 (상품·재고·매입)
-const CATEGORIES: Array<{ key: keyof AutoImportConfig["folders"]; label: string; color: string }> = [
-  { key: "products", label: "상품",   color: "text-brand-deep" },
-  { key: "stock",    label: "재고",   color: "text-emerald-600" },
-  { key: "purchase", label: "매입",   color: "text-violet-600" },
-];
-
-const INTERVAL_PRESETS: Array<{ value: number; label: string }> = [
-  { value: 10,   label: "10분" },
-  { value: 30,   label: "30분" },
-  { value: 60,   label: "1시간" },
-  { value: 120,  label: "2시간" },
-  { value: 240,  label: "4시간" },
-  { value: 360,  label: "6시간" },
-  { value: 720,  label: "12시간" },
-  { value: 1440, label: "매일" },
-];
-
-// 2026-08-24 · 사용자 지시 · 폴더 찾기 · showDirectoryPicker (Chrome/Edge)
-//   · 브라우저 보안상 절대경로 획득 불가 · 폴더명만 반환 · 사용자에게 경로 힌트 제공
-//   · 2026-08-25 · 프레임워크 · alert → onNotify 콜백 (호출측 useToast 사용)
-async function pickFolderHint(onNotify?: (msg: string, tone?: "success" | "err") => void): Promise<string | null> {
-  const w = window as any;
-  if (typeof w.showDirectoryPicker !== "function") {
-    onNotify?.("Chrome 또는 Edge 만 지원 · 파일탐색기에서 경로 복사 후 붙여넣기", "err");
-    return null;
-  }
-  try {
-    const handle = await w.showDirectoryPicker();
-    const name = handle?.name ?? "";
-    if (!name) return null;
-    onNotify?.(`폴더 [${name}] 선택 · 파일탐색기 → 경로 복사 → 붙여넣기 (또는 %USERPROFILE%\\Downloads\\megatown-importdata\\${name})`, "success");
-    return name;
-  } catch {
-    return null;  // 사용자 취소
-  }
+interface VersionInfo {
+  available: boolean;
+  version?: string;
+  file?: string;
+  size?: number;
+  mtime?: string;
+  download_url?: string;
+  message?: string;
 }
 
-const AFTER_OPTIONS: Array<{ value: AutoImportAfter; label: string; hint: string }> = [
-  { value: "keep",               label: "유지",   hint: "원본 파일 그대로 · hash 로 중복 방지" },
-  { value: "move_to_processed",  label: "이동",   hint: "_processed/ 로 자동 이동 (권장 · audit trail)" },
-  { value: "delete",             label: "삭제",   hint: "원본 파일 제거 · 되돌릴 수 없음" },
-];
+function formatBytes(bytes: number | undefined): string {
+  if (!bytes) return "-";
+  const mb = bytes / (1024 * 1024);
+  if (mb >= 1) return `${mb.toFixed(1)} MB`;
+  return `${(bytes / 1024).toFixed(0)} KB`;
+}
+
+function formatDate(iso: string | undefined): string {
+  if (!iso) return "-";
+  try {
+    return new Date(iso).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  } catch { return iso; }
+}
 
 export const AutoImportSection: React.FC = () => {
-  const { config, loaded, saveState, saveError, setConfig, save, reload } = useAutoImportConfig();
-  const { status, reload: reloadStatus } = useAutoImportStatus();
-  const [installerError, setInstallerError] = useState<string | null>(null);
   const { toast, showError, showSuccess } = useToast(4500);
-  const notify = React.useCallback((msg: string, tone?: "success" | "err") => {
-    if (tone === "err") showError(msg); else showSuccess(msg);
-  }, [showError, showSuccess]);
+  const [ver, setVer] = useState<VersionInfo | null>(null);
+  const [loadingVer, setLoadingVer] = useState(true);
+  const [downloading, setDownloading] = useState(false);
 
-  const tone = computeStatusTone(status, config.base_interval_minutes);
-  const isInstalled = tone !== "gray";
-
-  const updateFolder = (key: keyof AutoImportConfig["folders"], v: string) => {
-    setConfig({ ...config, folders: { ...config.folders, [key]: v } });
-  };
-  const updateInterval = (key: keyof AutoImportConfig["intervals"], v: number) => {
-    setConfig({ ...config, intervals: { ...config.intervals, [key]: v } });
-  };
-  const updateDailyTime = (key: keyof AutoImportConfig["daily_times"], v: string) => {
-    setConfig({ ...config, daily_times: { ...config.daily_times, [key]: v } });
-  };
-
-  const applyDefaultFolders = () => {
-    setConfig({
-      ...config,
-      folders: {
-        products: `${DEFAULT_FOLDER_BASE}\\products`,
-        stock:    `${DEFAULT_FOLDER_BASE}\\stock`,
-        purchase: `${DEFAULT_FOLDER_BASE}\\purchase`,
-      },
-    });
-  };
-
-  const handlePickFolder = async (key: keyof AutoImportConfig["folders"]) => {
-    const hint = await pickFolderHint(notify);
-    if (hint) {
-      // 사용자에게 힌트 제공 · 실제 절대경로 입력은 여전히 사용자 몫
-      // 폴더명 부분만 반영 · 기존 base 유지
-      const cur = config.folders[key];
-      if (!cur || !cur.includes(hint)) {
-        updateFolder(key, `${DEFAULT_FOLDER_BASE}\\${hint}`);
-      }
-    }
-  };
-
-  // 2026-08-24 · 원클릭 설치 · 단일 .bat 파일 다운로드 · 사용자는 더블클릭 만
-  // 2026-08-25 · 프레임워크 · api.get<blob> + useToast · 안내는 하단 카드로 상시 노출
-  const handleInstallerDownload = async () => {
-    setInstallerError(null);
+  const loadVersion = React.useCallback(async () => {
+    setLoadingVer(true);
     try {
-      const { data: blob } = await api.get<Blob>("/api/auto-import/one-click-installer", { responseType: "blob" });
+      const { data } = await api.get<VersionInfo>("/api/sync-agent/version");
+      setVer(data);
+    } catch (e) {
+      setVer({ available: false, message: e instanceof ApiError ? e.message : "버전 조회 실패" });
+    } finally {
+      setLoadingVer(false);
+    }
+  }, []);
+
+  useEffect(() => { void loadVersion(); }, [loadVersion]);
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const { data: blob } = await api.get<Blob>("/api/sync-agent/installer", { responseType: "blob" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "megatown-auto-import-installer.bat";
+      a.download = ver?.file ?? "megatown-sync-agent-setup.exe";
       a.style.display = "none";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      showSuccess("설치 파일 다운로드 완료 · Downloads 확인 · 아래 6단계 안내 따라 실행");
+      showSuccess(`다운로드 완료 · ${ver?.file ?? "setup.exe"} · Downloads 폴더 확인 후 설치`);
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "다운로드 실패");
-      setInstallerError(msg);
-      showError(`설치 파일 다운로드 실패: ${msg}`);
+      showError(`다운로드 실패 · ${msg}`);
+    } finally {
+      setDownloading(false);
     }
   };
 
   return (
     <>
-    {toast && (
-      <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
-    )}
-    <Card padding="lg" rounded="2xl" className="flex flex-col gap-4">
-      {/* 헤더 · 상태 배지 */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <Robot size={22} className="text-brand-deep shrink-0" />
-        <h3 className="text-[17px] font-bold text-ink tracking-tight">자동 임포트</h3>
-        {tone === "green" && <StatusPill tone="emerald" size="sm" dot>정상</StatusPill>}
-        {tone === "amber" && <StatusPill tone="amber" size="sm" dot>지연</StatusPill>}
-        {tone === "red" && <StatusPill tone="rose" size="sm" dot>오프라인</StatusPill>}
-        {tone === "gray" && <StatusPill tone="zinc" size="sm">미설치</StatusPill>}
-        <div className="ml-auto flex items-center gap-2">
-          {saveState === "saving" && <StatusPill tone="amber" size="sm" pulse>저장 중</StatusPill>}
-          {saveState === "saved" && <StatusPill tone="emerald" size="sm">저장됨</StatusPill>}
-          {saveState === "error" && <StatusPill tone="rose" size="sm">저장 실패</StatusPill>}
-          <button
-            type="button"
-            onClick={() => { void reload(); void reloadStatus(); }}
-            className="inline-flex items-center gap-1 h-8 px-3 rounded-lg text-[14px] font-semibold text-ink-soft hover:text-ink bg-white border border-line hover:bg-zinc-50 cursor-pointer transition"
-            title="새로고침"
-          >
-            <ArrowsClockwise size={14} />
-            새로고침
-          </button>
-        </div>
-      </div>
-
-      {/* 미설치 안내 · installer 다운로드 */}
-      {!isInstalled && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <Warning size={18} className="text-amber-600 shrink-0" />
-            <div className="text-[15px] font-bold text-amber-900">스크립트 미설치 · 3단계 설치 안내</div>
-          </div>
-          {/* 2026-08-24 · 원클릭 설치 · 단일 .bat · 사용자 · 더블클릭 → 자동 */}
-          <ol className="text-[14px] text-ink-soft leading-relaxed list-decimal pl-5 space-y-1">
-            <li>[설치 파일 다운로드] 클릭 · <code className="bg-white px-1.5 py-0.5 rounded text-[14px] border border-line">megatown-auto-import-installer.bat</code> 다운로드</li>
-            <li>Downloads · <b>더블클릭 실행</b> · 6단계 자동 설치 (Python 확인 · 폴더 생성 · 스크립트 다운로드 · pip install · Task Scheduler 등록 · BASE_URL 설정)</li>
-            <li>완료 · 이 페이지 새로고침 → 상태 초록불 확인</li>
-          </ol>
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={handleInstallerDownload}
-              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[14px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white shadow-sm cursor-pointer transition"
-            >
-              <Download size={15} />
-              설치 파일 다운로드
-            </button>
-            {installerError && (
-              <StatusPill tone="amber" size="sm">{installerError}</StatusPill>
-            )}
-          </div>
-        </div>
+      {toast && (
+        <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
       )}
 
-      {/* 상태 상세 · 설치 완료 시 */}
-      {isInstalled && status && (
-        <div className="rounded-xl border border-line bg-zinc-50/60 p-3 flex items-center gap-3 flex-wrap text-[14px]">
-          <span className="text-ink-soft">마지막 실행 ·
-            <b className="text-ink ml-1 tabular-nums">
-              {new Date(status.last_heartbeat_at ?? "").toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-            </b>
-          </span>
-          {status.last_processed && Object.keys(status.last_processed).length > 0 && (
-            <span className="text-ink-soft">
-              처리 · {Object.entries(status.last_processed).filter(([, v]) => v > 0).map(([k, v]) => `${k}(${v})`).join(" · ") || "없음"}
-            </span>
-          )}
-          {status.last_errors && status.last_errors.length > 0 && (
-            <StatusPill tone="rose" size="sm">실패 {status.last_errors.length}건</StatusPill>
-          )}
-        </div>
-      )}
-
-      {/* 자동 임포트 · 활성 토글 */}
-      <div className="flex items-center gap-3">
-        <label className="inline-flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={config.enabled}
-            onChange={(e) => setConfig({ ...config, enabled: e.target.checked })}
-            disabled={!loaded}
-            className="w-5 h-5 accent-brand-deep cursor-pointer"
-          />
-          <span className="text-[15px] font-bold text-ink">자동 임포트 활성화</span>
-        </label>
-        <span className="text-[15px] text-ink-soft">
-          {config.enabled ? "· Python 스크립트가 매 실행에 이 값 확인" : "· 비활성 시 · 스크립트 즉시 종료"}
-        </span>
-      </div>
-
-      {/* 카테고리별 폴더 + 실행 간격 · 3 카테고리 (상품·재고·매입) */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <Folder size={18} className="text-brand-deep shrink-0" />
-          <h4 className="text-[15px] font-bold text-ink">카테고리별 폴더 + 실행 간격</h4>
-          <button
-            type="button"
-            onClick={applyDefaultFolders}
-            className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[15px] font-semibold text-ink-soft hover:text-brand-deep bg-white border border-line hover:border-brand-deep cursor-pointer transition"
-            title="Downloads 기본값으로 복원"
-          >
-            기본값 복원
-          </button>
-        </div>
-        <div className="flex flex-col gap-2">
-          {CATEGORIES.map(({ key, label, color }) => (
-            <div key={key} className="rounded-lg border border-line bg-zinc-50/40 p-2.5 flex flex-col gap-1.5">
-              <div className="flex items-center gap-2">
-                <span className={`w-12 text-[14px] font-bold ${color} shrink-0`}>{label}</span>
-                <input
-                  lang="ko" type="text"
-                  value={config.folders[key]}
-                  onChange={(e) => updateFolder(key, e.target.value)}
-                  disabled={!loaded}
-                  placeholder={`${DEFAULT_FOLDER_BASE}\\${key}`}
-                  className="flex-1 h-9 px-2.5 text-[14px] text-ink border border-line rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 font-mono min-w-0"
-                />
-                <button
-                  type="button"
-                  onClick={() => { void handlePickFolder(key); }}
-                  disabled={!loaded}
-                  className="inline-flex items-center gap-1 h-9 px-2.5 rounded-lg text-[15px] font-semibold text-ink-soft hover:text-brand-deep bg-white border border-line hover:border-brand-deep cursor-pointer transition shrink-0"
-                  title="폴더 찾기 (Chrome/Edge)"
-                >
-                  <Folder size={13} />
-                  찾기
-                </button>
-              </div>
-              <div className="flex items-center gap-1.5 pl-14 flex-wrap">
-                <Timer size={12} className="text-ink-soft shrink-0" />
-                <span className="text-[14px] text-ink-soft font-semibold">간격 ·</span>
-                <select
-                  value={config.intervals[key]}
-                  onChange={(e) => updateInterval(key, Number(e.target.value))}
-                  disabled={!loaded}
-                  className="h-7 px-2 text-[15px] font-semibold text-ink border border-line rounded-md bg-white cursor-pointer disabled:opacity-40"
-                >
-                  {INTERVAL_PRESETS.map(({ value, label: lbl }) => (
-                    <option key={value} value={value}>{lbl}</option>
-                  ))}
-                </select>
-                <span className="text-[14px] text-ink-soft">or</span>
-                <input
-                  type="number"
-                  min={5}
-                  max={1440}
-                  value={config.intervals[key]}
-                  onChange={(e) => {
-                    const n = Math.max(5, Math.min(1440, Math.round(Number(e.target.value) || 60)));
-                    updateInterval(key, n);
-                  }}
-                  disabled={!loaded}
-                  className="w-16 h-7 px-1.5 text-[15px] font-semibold text-ink text-right border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"
-                />
-                <span className="text-[14px] text-ink-soft">분</span>
-                {/* 매일(1440) 선택 시 · 실행 시각 · HH:MM 입력 · 2026-08-24 사용자 지시 */}
-                {config.intervals[key] === 1440 && (
+      <div className="flex flex-col gap-4">
+        {/* ── 히어로 카드 · 다운로드 CTA ───────────────────────── */}
+        <Card padding="lg" rounded="2xl" className="relative overflow-hidden bg-gradient-to-br from-brand-deep via-[#0d3a5c] to-[#08253a] text-white">
+          <div className="absolute inset-0 opacity-10 pointer-events-none">
+            <Desktop size={280} className="absolute -right-8 -bottom-12 text-white/40" weight="duotone" />
+          </div>
+          <div className="relative flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <Package size={22} weight="fill" />
+              <span className="text-[13px] font-bold uppercase tracking-wider opacity-90">Megatown Sync Agent</span>
+              <StatusPill tone="emerald" size="sm" dot>Windows</StatusPill>
+            </div>
+            <div className="flex flex-col gap-1">
+              <h3 className="text-[24px] font-extrabold tracking-tight">자동 임포트 · 데스크탑 앱</h3>
+              <p className="text-[14px] opacity-90 leading-relaxed max-w-xl">
+                구글 드라이브 · 로컬 폴더에 xlsx 파일이 저장되면 <b>자동으로 감지</b>해서
+                Megatown 서버에 임포트하는 · 트레이 상주 데스크탑 앱.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={!ver?.available || downloading}
+                className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-white text-brand-deep hover:bg-brand-tint text-[15px] font-bold shadow-lg ring-2 ring-white/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
+              >
+                {downloading
+                  ? <Spinner size={16} tone="zinc" />
+                  : <Download size={17} weight="fill" />
+                }
+                {downloading ? "다운로드 중..." : "설치 파일 다운로드 (.exe)"}
+              </button>
+              <div className="flex items-center gap-2 text-[13px] opacity-90">
+                {loadingVer ? (
+                  <span className="flex items-center gap-1"><Spinner size={12} tone="white" /> 버전 확인 중...</span>
+                ) : ver?.available ? (
                   <>
-                    <span className="text-[14px] text-ink-soft ml-2">· 매일 실행 시각 ·</span>
-                    <input
-                      type="time"
-                      value={config.daily_times[key]}
-                      onChange={(e) => updateDailyTime(key, e.target.value)}
-                      disabled={!loaded}
-                      className="h-7 px-2 text-[15px] font-semibold text-ink border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"
-                    />
+                    <span className="font-bold">v{ver.version}</span>
+                    <span>· {formatBytes(ver.size)}</span>
+                    <span>· {formatDate(ver.mtime)}</span>
                   </>
+                ) : (
+                  <span className="text-amber-200">설치 파일 없음 · 관리자 문의</span>
                 )}
               </div>
+              <button
+                type="button"
+                onClick={() => { void loadVersion(); }}
+                className="inline-flex items-center gap-1 h-9 px-3 rounded-lg text-[13px] font-semibold text-white/90 bg-white/10 hover:bg-white/20 border border-white/20 cursor-pointer transition"
+              >
+                <ArrowsClockwise size={13} />
+                버전 확인
+              </button>
             </div>
-          ))}
+          </div>
+        </Card>
+
+        {/* ── 주요 기능 3열 ─────────────────────────────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Card padding="md" rounded="xl" className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <Eye size={18} weight="fill" className="text-emerald-600" />
+              </div>
+              <h4 className="text-[15px] font-bold text-ink">파일 감시 모드</h4>
+            </div>
+            <p className="text-[13px] text-ink-soft leading-relaxed">
+              구글 드라이브·폴더에 새 xlsx 저장 시 · 자동 감지 · 10분 debounce 후 임포트.
+              스케줄 시간표 없이 · 파일 생성이 트리거.
+            </p>
+          </Card>
+
+          <Card padding="md" rounded="xl" className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-lg bg-brand-tint flex items-center justify-center">
+                <Clock size={18} weight="fill" className="text-brand-deep" />
+              </div>
+              <h4 className="text-[15px] font-bold text-ink">스케줄 모드</h4>
+            </div>
+            <p className="text-[13px] text-ink-soft leading-relaxed">
+              선택 시 · cron 프리셋 (10분 · 30분 · 1시간 · 매일 지정 시각).
+              파일 감시와 상호배제 · 앱에서 편집.
+            </p>
+          </Card>
+
+          <Card padding="md" rounded="xl" className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center">
+                <ShieldCheck size={18} weight="fill" className="text-violet-600" />
+              </div>
+              <h4 className="text-[15px] font-bold text-ink">보안 · 자동 업데이트</h4>
+            </div>
+            <p className="text-[13px] text-ink-soft leading-relaxed">
+              JWT 쿠키 · Windows DPAPI 암호화 저장 · refresh 자동.
+              GitHub Releases · 신버전 자동 알림.
+            </p>
+          </Card>
         </div>
-        <label className="inline-flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={config.folder_auto_create}
-            onChange={(e) => setConfig({ ...config, folder_auto_create: e.target.checked })}
-            disabled={!loaded}
-            className="w-4 h-4 accent-brand-deep cursor-pointer"
-          />
-          <span className="text-[15px] text-ink-soft">폴더 없으면 · Python 실행 시 자동 생성</span>
-        </label>
-      </div>
 
-      {/* 2026-08-24 · Task Scheduler 실행 간격은 install.bat 이 자동 설정 · UI 노출 X (혼란 방지) */}
+        {/* ── 설치 가이드 ───────────────────────────────────── */}
+        <Card padding="lg" rounded="2xl" className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <Info size={20} weight="fill" className="text-brand-deep" />
+            <h3 className="text-[17px] font-bold text-ink tracking-tight">설치 가이드 · 5단계</h3>
+          </div>
+          <ol className="flex flex-col gap-3">
+            <Step n={1} title="설치 파일 다운로드" desc="위 [설치 파일 다운로드 (.exe)] 클릭 · Downloads 폴더에 저장됩니다." />
+            <Step n={2} title="더블클릭 · 설치 진행"
+              desc={<>다운로드된 <code className="bg-zinc-100 px-1.5 py-0.5 rounded text-[13px] border border-line font-mono">megatown-sync-agent-{ver?.version ?? "x.x.x"}-setup.exe</code> 를 실행 · 사용자 폴더 (%LOCALAPPDATA%) 에 자동 설치 · 관리자 권한 불필요.</>} />
+            <Step n={3} title="트레이 아이콘 · 부팅 시 자동 시작"
+              desc="설치 후 · 트레이(우측 하단 시계 옆) 아이콘 상주 · 컴퓨터 부팅 시 자동 실행 · 우클릭 → 열기." />
+            <Step n={4} title="로그인 · 핸드폰번호"
+              desc={<>웹앱과 <b>동일한 핸드폰번호 + 비밀번호</b> 로 로그인 · JWT 쿠키 15분 · refresh 30일 · 아이디 자동 저장 옵션.</>} />
+            <Step n={5} title="폴더·모드 설정"
+              desc={<>앱의 <b>[설정]</b> 탭 · 상품·재고·매입 폴더 3개 지정 · 감시 모드 or 스케줄 모드 선택 · <b>[저장]</b> · 완료.</>} />
+          </ol>
+        </Card>
 
-      {/* 임포트 후 처리 */}
-      <div className="flex flex-col gap-2">
-        <h4 className="text-[15px] font-bold text-ink">임포트 후 처리</h4>
-        <div className="flex flex-col gap-1.5">
-          {AFTER_OPTIONS.map(({ value, label, hint }) => (
-            <label key={value} className="inline-flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="after_import"
-                checked={config.after_import === value}
-                onChange={() => setConfig({ ...config, after_import: value })}
-                disabled={!loaded}
-                className="w-4 h-4 accent-brand-deep cursor-pointer"
-              />
-              <span className="text-[14px] font-semibold text-ink">{label}</span>
-              <span className="text-[15px] text-ink-soft">· {hint}</span>
-            </label>
-          ))}
+        {/* ── 사용 방법 & 팁 ─────────────────────────────────── */}
+        <Card padding="lg" rounded="2xl" className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <DeviceMobile size={20} weight="fill" className="text-brand-deep" />
+            <h3 className="text-[17px] font-bold text-ink tracking-tight">사용 방법</h3>
+          </div>
+          <ul className="flex flex-col gap-2 text-[14px] text-ink-soft leading-relaxed">
+            <Tip><b>지금 실행</b> · 대시보드에서 파일별 [지금 실행] 버튼 · 최신 파일 즉시 임포트.</Tip>
+            <Tip><b>최신 파일 규칙</b> · 파일명 날짜 우선 (예 <code className="text-[13px]">재고_20260915.xlsx</code>) · 없으면 mtime.</Tip>
+            <Tip><b>_processed / _failed</b> · 성공한 파일 자동 이동 · 실패 시 재시도 대상 (지수 백오프).</Tip>
+            <Tip><b>Logs 탭</b> · 실행 이력 · 데이터 카운트 · 재시도 큐 · 폴더 상태 확인.</Tip>
+            <Tip><b>로그아웃</b> · 앱 상단 우측 · 재로그인 필요 시 클릭 · 저장된 아이디 유지.</Tip>
+          </ul>
+        </Card>
+
+        {/* ── 완료 안내 배너 ─────────────────────────────────── */}
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 flex items-start gap-2">
+          <CheckCircle size={16} weight="fill" className="text-emerald-600 shrink-0 mt-0.5" />
+          <div className="text-[13px] text-emerald-900 leading-relaxed">
+            <b>설치 완료 후</b> · 이 페이지 · 별도 설정 없음 · 모든 자동 임포트 설정은 · Sync Agent 앱 (트레이) 에서 직접 편집.
+            앱은 · 서버 재시작 시 · 자동으로 재연결 (JWT refresh).
+          </div>
         </div>
       </div>
-
-      {/* 파일명 자동 정리 */}
-      <div className="flex flex-col gap-1">
-        <label className="inline-flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={config.auto_rename}
-            onChange={(e) => setConfig({ ...config, auto_rename: e.target.checked })}
-            disabled={!loaded}
-            className="w-4 h-4 accent-brand-deep cursor-pointer"
-          />
-          <span className="text-[14px] font-bold text-ink">파일명 자동 정리 (표준 파일명 rename)</span>
-        </label>
-        <div className="text-[14px] text-ink-soft pl-6 leading-relaxed">
-          · products / vendors · <code>{"{category}_{yyyymmdd_hhmmss}.xlsx"}</code>
-          <br />
-          · stock / purchase · <code>{"{category}_{start}_{end}.xlsx"}</code>
-        </div>
-      </div>
-
-      {/* 저장 · 수동 실행 */}
-      <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-line">
-        <button
-          type="button"
-          onClick={() => { void save(); }}
-          disabled={!loaded || saveState === "saving"}
-          className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[14px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 text-white shadow-sm cursor-pointer transition"
-        >
-          {saveState === "saving" ? <Spinner size={13} tone="white" /> : <FloppyDisk size={14} weight="fill" />}
-          저장
-        </button>
-        {isInstalled && (
-          <button
-            type="button"
-            disabled
-            title="Phase B (Python) 완료 후 활성"
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[14px] font-semibold text-ink-soft bg-white border border-line disabled:opacity-40 disabled:cursor-not-allowed transition"
-          >
-            <Play size={14} />
-            수동 실행 (준비 중)
-          </button>
-        )}
-        {saveError && (
-          <span className="text-[15px] text-rose-600 font-semibold">{saveError}</span>
-        )}
-      </div>
-
-      {/* 안내 */}
-      <div className="text-[15px] text-ink-soft bg-zinc-50/60 border border-line rounded-lg px-3 py-2 leading-relaxed">
-        <CheckCircle size={13} className="inline text-emerald-500 mr-1" />
-        저장 후 · Python 다음 실행 시 즉시 반영 · interval 변경 시 · Task Scheduler 자동 재등록
-      </div>
-    </Card>
     </>
   );
 };
+
+// ── 서브 컴포넌트 ─────────────────────────────────────────
+const Step: React.FC<{ n: number; title: string; desc: React.ReactNode }> = ({ n, title, desc }) => (
+  <li className="flex gap-3">
+    <div className="w-7 h-7 rounded-full bg-brand-deep text-white text-[13px] font-bold flex items-center justify-center shrink-0">{n}</div>
+    <div className="flex-1 min-w-0 pt-0.5">
+      <div className="text-[14px] font-bold text-ink">{title}</div>
+      <div className="text-[13px] text-ink-soft leading-relaxed mt-0.5">{desc}</div>
+    </div>
+  </li>
+);
+
+const Tip: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <li className="flex gap-2">
+    <span className="text-brand-deep shrink-0">·</span>
+    <span>{children}</span>
+  </li>
+);
 
 export default AutoImportSection;

@@ -348,6 +348,63 @@ endlocal
   res.send(bat);
 }));
 
+/**
+ * 2026-09-15 · T-AUTO-IMPORT-WEB-REDESIGN · Electron sync-agent 설치 파일 다운로드
+ *   · GET /api/sync-agent/installer · .exe 스트림 (관리자 lv9)
+ *   · GET /api/sync-agent/version   · 최신 버전 메타 (public · 로그인 후 표시용)
+ *   · 설치 파일 위치 · apps/sync-agent/release/megatown-sync-agent-{ver}-setup.exe
+ */
+function resolveSyncAgentReleaseDir(): string {
+  if (process.env.SYNC_AGENT_RELEASE_DIR) return process.env.SYNC_AGENT_RELEASE_DIR;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cjsDir = (globalThis as any).__dirname;
+  if (typeof cjsDir === "string" && cjsDir.length > 0) {
+    return path.resolve(cjsDir, "..", "apps", "sync-agent", "release");
+  }
+  return path.resolve(process.cwd(), "apps", "sync-agent", "release");
+}
+
+function findLatestInstaller(): { file: string; version: string; size: number; mtime: string } | null {
+  const dir = resolveSyncAgentReleaseDir();
+  if (!fs.existsSync(dir)) return null;
+  const entries = fs.readdirSync(dir).filter(f => /^megatown-sync-agent-.*-setup\.exe$/i.test(f));
+  if (entries.length === 0) return null;
+  // 최신 · mtime 기준
+  const withStat = entries.map(f => {
+    const st = fs.statSync(path.join(dir, f));
+    const m = f.match(/megatown-sync-agent-([\d.]+)-setup\.exe/i);
+    return { file: f, version: m?.[1] ?? "0.0.0", size: st.size, mtime: st.mtime.toISOString() };
+  });
+  withStat.sort((a, b) => b.mtime.localeCompare(a.mtime));
+  return withStat[0];
+}
+
+router.get("/api/sync-agent/version", asyncHandler(async (_req, res) => {
+  const latest = findLatestInstaller();
+  if (!latest) {
+    res.json({ available: false, message: "설치 파일 없음 · 빌드 필요" });
+    return;
+  }
+  res.json({
+    available: true,
+    version: latest.version,
+    file: latest.file,
+    size: latest.size,
+    mtime: latest.mtime,
+    download_url: "/api/sync-agent/installer",
+  });
+}));
+
+router.get("/api/sync-agent/installer", authorize(9), asyncHandler(async (_req, res) => {
+  const latest = findLatestInstaller();
+  if (!latest) throw new HttpError(404, "INSTALLER_NOT_FOUND", "설치 파일 없음 · apps/sync-agent 빌드 필요");
+  const full = path.join(resolveSyncAgentReleaseDir(), latest.file);
+  res.setHeader("Content-Type", "application/octet-stream");
+  res.setHeader("Content-Disposition", `attachment; filename="${latest.file}"`);
+  res.setHeader("Content-Length", String(latest.size));
+  fs.createReadStream(full).pipe(res);
+}));
+
 export default router;
 
 // 최소 export · badRequest silence linter (미사용 warn 제거용 · 향후 확장 대비)
