@@ -111,7 +111,10 @@
 
 | # | 태스크 | 대기 사유 |
 |---|-----|---------|
-| **#191 Phase C · 잔여** | Modal 프레임워크화 · Hybrid panel/modal 3파일 (VendorPaymentPanel · SupplierTab.panels · ProductDetailPanel) · 데스크탑=패널·모바일=풀스크린 이중 구조 | 고위험 · 스펙 확인 필요 · Modal 프리미티브 부적합 (실제 모달 아님) |
+<!-- 2026-09-18 · #191 Phase C 잔여 3파일 · 조사 결과 · Modal 아닌 hybrid panel 패턴 (mobile-fullscreen + desktop-inline)
+     · common/Modal (center 모달) 부적합 · Phase C 스코프 축소 (A안 · 그대로 유지)
+     · 향후 · 유사 패턴 3+곳 발견 시 · 신규 프리미티브 MobileFullscreenPanel 추출 검토 (별도 세션) -->
+| ~~#191 Phase C · 잔여~~ | ~~Hybrid panel/modal 3파일~~ | ✅ **완료 (스코프 축소 · A안)** · Modal 프리미티브 부적합 · 별도 프리미티브 필요 시 신설 |
 <!-- 2026-09-15 · #130 · 차용등록 재설계 · 완료 확인 · Phase E (`eafc05e5`) BorrowingPage v2 스왑 · Detail·Edit 패널 분리 완료 · 원본 legacy 파일 삭제 (`98ae8202`) -->
 | FlowTab·LossHistoryTab·DiffTab | 컬러 bg 정리 (대량) | 승인 후 순차 |
 | **#254~#256** | 세션 보안 강화 · 중복 로그인 방지 · 강제 로그아웃 | 대형 · 별도 세션 · 12-18h |
