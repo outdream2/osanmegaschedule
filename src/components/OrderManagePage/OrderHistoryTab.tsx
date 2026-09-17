@@ -8,6 +8,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Package, ChevronDown, ChevronRight, Mail, Phone, User, Calendar, CalendarCheck, FileDown, ArrowUp, ArrowDown, ListTree } from "lucide-react";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
+import { shortDate } from "../../lib/dateFormat";
 // 2026-09-08 · 사용자 지시 · 발주이력 각 행 PDF 다운 · html2canvas + jsPDF
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
@@ -297,14 +298,7 @@ export const OrderHistoryTab: React.FC = () => {
     "desc",
   );
 
-  // 2026-09-17 · 짧은 날짜 포맷 · "2026-09-11" → "26/9/11"
-  const shortDate = (iso: string | null | undefined): string => {
-    if (!iso) return "";
-    const s = String(iso).slice(0, 10);
-    const [y, m, d] = s.split("-");
-    if (!y || !m || !d) return s;
-    return `${y.slice(-2)}/${Number(m)}/${Number(d)}`;
-  };
+  // 2026-09-17 · 짧은 날짜 포맷 (2026-09-18 · lib/dateFormat.ts 로 추출 · 재사용·테스트 지원)
 
   return (
     <>
