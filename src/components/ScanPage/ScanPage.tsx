@@ -4,7 +4,8 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 // 2026-09-14 · inventoryChecksApi 프리미티브
-import { saveBulkInventoryChecks, listInventoryChecks } from "../../lib/inventoryChecksApi";
+// 2026-09-17 · saveInventoryCheck 추가 · toggleExpiry · inventory_checks SSOT 동기 (유통기한 임박 리스트 노출 fix)
+import { saveBulkInventoryChecks, listInventoryChecks, saveInventoryCheck } from "../../lib/inventoryChecksApi";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
@@ -440,11 +441,19 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   //   · 비어있으면 · 오늘 날짜 저장 (마킹)
   //   · 값 있으면 · null 저장 (해제)
   //   · PATCH /api/products/[code] · 로컬 rows 상태도 동기화
+  // 2026-09-17 · fix · inventory_checks.expiry_date (SSOT) 함께 저장 · 유통기한 임박 리스트 노출
+  //   · 이전 · products.expiry_date 만 저장 → /api/products/expiry-imminent (inventory_checks 기반) 조회 시 누락
+  //   · ExpiryDateModal 과 동일 패턴 · inventory_checks + products 이중 저장
   const toggleExpiry = useCallback(async (row: StockRow) => {
     const cur = (row.product as { expiry_date?: string | null }).expiry_date;
     const isSet = !!(cur && String(cur).trim());
     const next = isSet ? null : new Date().toISOString().slice(0, 10); // YYYY-MM-DD
     try {
+      await saveInventoryCheck({
+        product_code: row.code,
+        product_name: row.product.name,
+        expiry_date: next,
+      });
       await api.patch(`/api/products/${encodeURIComponent(row.code)}`, { expiry_date: next });
       // 로컬 상태 동기화 · row.product 즉시 갱신
       setRows(prev => prev.map(r => (

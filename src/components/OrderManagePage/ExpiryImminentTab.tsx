@@ -27,6 +27,8 @@ import { resolveProductLocation } from "../../lib/productLocation";
 // 2026-09-15 · T-SP-9-REST · 진열위치 뱃지 확산 · 유통기한 임박 상품 · 상세위치 확인 · 실무 임팩트 (매장 어느 슬롯인지)
 import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
 import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
+// 2026-09-17 · fix · 유통기한 해제 · inventory_checks (SSOT) 도 clear · 새로고침 시 재출현 방지
+import { saveInventoryCheck } from "../../lib/inventoryChecksApi";
 
 interface ExpiryProduct {
   product_code: string;
@@ -74,6 +76,8 @@ export const ExpiryImminentTab: React.FC = () => {
   // 2026-09-15 · T-SP-9-REST · 상세위치 map · shelf_positions 뱃지용
   const shelfPositionsMap = useShelfPositionsMap();
   // 2026-09-13 · #92 · 유통기한 해제 · confirm + PATCH expiry_date=null
+  // 2026-09-17 · fix · inventory_checks.expiry_date (SSOT) 도 clear · 새로고침 시 재출현 방지
+  //   · 이전 · products.expiry_date 만 null 로 · inventory_checks 는 유지 → GET /expiry-imminent 조회 시 다시 노출
   const handleClearExpiry = useCallback(async (p: ExpiryProduct) => {
     const ok = await confirm({
       message: `${p.product_name} · 유통기한 (${fmtDate(p.expiry_date)}) 을(를) 해제할까요?\n\n임박 리스트에서 사라집니다.`,
@@ -82,6 +86,11 @@ export const ExpiryImminentTab: React.FC = () => {
     if (!ok) return;
     setClearingCode(p.product_code);
     try {
+      await saveInventoryCheck({
+        product_code: p.product_code,
+        product_name: p.product_name,
+        expiry_date: null,
+      });
       await api.patch(`/api/products/${encodeURIComponent(p.product_code)}`, { expiry_date: null });
       setRows(prev => prev.filter(x => x.product_code !== p.product_code));
       showSuccess(`${p.product_name} · 유통기한 해제`);
