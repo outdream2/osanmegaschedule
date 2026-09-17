@@ -10,6 +10,8 @@ import { sanitizeOrValue } from "../../utils/sanitize";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler";
+// 2026-09-18 · 유통기한 3소스 UNION 집계 유틸 · 순수 함수 (테스트 8건)
+import { mergeMinExpiry, type ExpiryRow } from "../../lib/expiryAggregation";
 import { validateBody } from "../../middleware/zodValidate";
 import { z } from "zod";
 import type { HiddenProductsResponse } from "../../../src/shared/dtos/products";
@@ -664,16 +666,15 @@ router.delete("/api/products/:code", authorize(9), asyncHandler(async (req, res)
 
 
 // 2026-09-10 · #36 · 사용자 지시 · 유통기한 임박 · 소스 = inventory_checks.expiry_date
-//   · products.expiry_date 사용 중단 (임포트 위험) · SSOT = inventory_checks
-//   · 상품 단위 · 최임박 로트 (MIN expiry_date) 표시 · UI 로트 관리 X
+// 2026-09-17 · fix · 3소스 UNION · SSOT + legacy 2 (products·purchase_details)
+// 2026-09-18 · refactor · mergeMinExpiry 유틸 추출 · 순수 함수 · 회귀 테스트 8건 커버
+//   · SSOT · inventory_checks · Legacy · products (임포트) · purchase_details (Phase A DATE)
 //   · /:code 라우트보다 먼저 등록해야 매칭됨
-// 2026-09-17 · fix · legacy 데이터 fallback · products.expiry_date · 이전 등록 상품 · 리스트 노출 복구
-//   · 이유 · 이전 · toggleExpiry · products.expiry_date 만 저장 · inventory_checks 미저장
-//   · 사용자 · '기존 표시한 상품 안 나옴' 재보고 · SSOT 유지 + legacy 포용
-//   · 로직 · UNION · inventory_checks + products · MIN(expiry_date) · hidden=false
 router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
-  // 1. inventory_checks · 상품별 · 최임박 (MIN expiry_date) 집계
+  const minExpiry = new Map<string, string>();
+
+  // 1. inventory_checks · SSOT
   const { data: icRows, error: icErr } = await supabase
     .from("inventory_checks")
     .select("product_code, expiry_date")
@@ -682,16 +683,9 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
     console.error("[expiry-imminent GET] inventory_checks error:", icErr.message);
     throw new HttpError(500, icErr.message);
   }
-  const minExpiry = new Map<string, string>();
-  for (const r of icRows ?? []) {
-    if (!r.product_code || !r.expiry_date) continue;
-    const cur = minExpiry.get(r.product_code);
-    if (!cur || String(r.expiry_date) < cur) minExpiry.set(r.product_code, String(r.expiry_date));
-  }
+  mergeMinExpiry(icRows as ExpiryRow[] | null, minExpiry);
 
-  // 2026-09-17 · fix · 2단계 · products.expiry_date (legacy · SSOT 이전 등록분) 도 함께 집계
-  //   · inventory_checks 에 이미 있으면 · MIN 비교 · 없으면 신규 추가
-  //   · hidden=false 만 (동일 필터 · 아래 products 조회와 통일)
+  // 2. products · legacy (임포트 저장분)
   const { data: prodExpiry, error: prodExpErr } = await supabase
     .from("products")
     .select("product_code, expiry_date")
@@ -701,15 +695,9 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
     console.error("[expiry-imminent GET] products.expiry_date error:", prodExpErr.message);
     throw new HttpError(500, prodExpErr.message);
   }
-  for (const r of prodExpiry ?? []) {
-    if (!r.product_code || !r.expiry_date) continue;
-    const cur = minExpiry.get(r.product_code);
-    if (!cur || String(r.expiry_date) < cur) minExpiry.set(r.product_code, String(r.expiry_date));
-  }
+  mergeMinExpiry(prodExpiry as ExpiryRow[] | null, minExpiry);
 
-  // 2026-09-17 · fix · 3단계 · purchase_details.expiry_date (상품입고 검수 · '임박' 체크) 도 함께 집계
-  //   · Phase A 마이그레이션 완료 · verify_note 파싱 → DATE 컬럼 직접 조회로 전환
-  //   · verified_expiring=true 필터 · expiry_date NOT NULL · MIN 비교 · 타입 안전
+  // 3. purchase_details · legacy (상품입고 검수 임박 · Phase A DATE 컬럼)
   const { data: paRows, error: paErr } = await supabase
     .from("purchase_details")
     .select("product_code, expiry_date")
@@ -719,12 +707,7 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
     console.error("[expiry-imminent GET] purchase_details error:", paErr.message);
     // 3단계 실패 · 1·2단계는 유지 · warn 만 (BC)
   } else {
-    for (const r of paRows ?? []) {
-      if (!r.product_code || !r.expiry_date) continue;
-      const dateStr = String(r.expiry_date).slice(0, 10);
-      const cur = minExpiry.get(String(r.product_code));
-      if (!cur || dateStr < cur) minExpiry.set(String(r.product_code), dateStr);
-    }
+    mergeMinExpiry(paRows as ExpiryRow[] | null, minExpiry);
   }
 
   const codes = Array.from(minExpiry.keys());
