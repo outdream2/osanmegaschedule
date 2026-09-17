@@ -25,6 +25,55 @@
 
 ---
 
+# 🆕 2026-09-17 세션 · 유통기한 3소스 통합 · UI 재정리 · 대원칙 강화
+
+**세션 요약 · 14 커밋 · [41]~[53]** · 항목 순서대로 배치 테스트 권장
+
+| # | 카테고리 | 커밋 |
+|---|---|---|
+| [41] | 🚀 sync-agent README · Phase 3 완료 · 최신 반영 | `2a1f44bf` |
+| [42] | 🧱 #191 Phase C · VendorDetailModal + BorrowingDetailPanel · Modal 프리미티브 (2건) | `a02cf2dd` |
+| [43] | 🗓️ 유통기한 임박 등록 상품 리스트 fix · SSOT 이중 저장 (toggleExpiry) | `62282df0` |
+| [44] | 🎨 실재고확인 스캔 카드 · 코드↔상품명 스왑 · spec 중복 제거 · 왼쪽 진열구역 | `7dc5ca40` |
+| [45] | 🔴 실재고 저장 · 실패 감지 강화 + inventory-checks-updated 이벤트 (연동 refresh) | `f3473c2e` |
+| [46] | 📱 RealStockTablePage · 상단 툴바 2줄 반응형 (좁은 화면) | `780677f5` |
+| [47] | 🛒 캐시 헤더 fix · borrowings 3 + returnRequests 2 · no-store (대원칙) | `1f407e9c` |
+| [48] | 🗓️ 유통기한 임박 · products.expiry_date legacy fallback (기존 상품 복구) | `c351e1dd` |
+| [49] | 🎨 발주이력 · 카드 재정리 + 상단 헤더·자동 정렬 + 상세 시각 구분 | `bbe690a4` |
+| [50] | 🧹 devLog 유틸 · App.tsx + useReextractCell 치환 (21건) | `32c86338` |
+| [51] | 🗓️ purchase_details.expiry_date DATE 컬럼 · Phase B 서버 정합 · 3소스 통합 | `04e6a2f3` |
+| [52] | 📚 docs 대량 갱신 · 신규 대원칙 2건 + SESSION_STATE_2026-09-17 신설 | `8e39566a` |
+| [53] | 🧹 devLog · OCR useMissingSupplierAutoFill 치환 (11건) | `2b8972b7` |
+
+**필수 · 시작 전** · 서버 재시작 (Ctrl+C · npm run dev) · Phase A DB 마이그 반영 후 첫 실행 확인
+
+**핵심 확인 절차**
+
+1. **유통기한 임박 리스트** (3소스 통합)
+   - 매입 > 유통기한 임박 · 이전에 표시했던 모든 상품 노출
+   - 발주필요 우측 판넬 · 유통기한 임박 섹션 · 동일 리스트
+   - 상품입고 검수 · '임박' 체크 상품 · DB `purchase_details.expiry_date` DATE 컬럼 저장 확인
+   - 서버 로그 · `[expiry-imminent GET]` 에러 없음
+
+2. **실재고 저장** (실패 감지 + 이벤트)
+   - 창고/매장 수량 입력 → 저장
+   - 성공 시 · toast + 연동 페이지 (DiffTab · OrderManage · RealStockTable · ShelfPositionsMap) 즉시 반영
+   - 실패 시 · 명확한 에러 토스트 · saveError 표시 (이전 · '0건 저장 완료' 오해 방지)
+
+3. **발주이력**
+   - 카드 · 발주번호 위 · 공급사 아래 · 발주일 26/9/11 짧은 포맷
+   - 상단 헤더 · 컬럼명 클릭 · asc/desc 정렬 토글 (기본 sent_at desc)
+   - 상세 · 좌측 sky-400 accent bar + 그라디언트 · ListTree 아이콘
+
+4. **RealStockTablePage**
+   - 좁은 화면 · 툴바 2줄 · 검색창 full width
+   - 넓은 화면 (lg+) · 1줄 · 검색창 w-80 우측 정렬
+
+5. **캐시 헤더 (F12 Network 탭)**
+   - `/api/borrowings` · `/api/return-requests` · Response Headers · `Cache-Control: no-store, no-cache, must-revalidate`
+
+---
+
 # 🆕 2026-09-14 (자율 세션) · 잔여 정리 + 캐시 대청소 + 보안 fix + 테스트 정리
 
 **세션 요약 (아래 항목 · 순서대로 배치 테스트 권장)**
