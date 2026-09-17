@@ -25,6 +25,8 @@
 - **공급사 이름 · vendors 유효성 검증 필수** (자유 입력 금지 · POST/PATCH /api/products 에서 400 SUPPLIER_NOT_FOUND 반환)
 - **공통 기능 = 단일 endpoint** (2026-09-14) · 같은 목적 route 중복 금지 · 신규 전 grep 필수
 - **DB 정합성 절대 유지** · `feedback_db_integrity_absolute_2026-09-15.md` · 파괴적 SQL X · 스냅샷 파생 X · UNIQUE 이중 방어 · SSOT
+- **유통기한 · 3소스 통합** (2026-09-17 · Phase B 후) · SSOT=`inventory_checks.expiry_date` · legacy 소스=`products.expiry_date`+`purchase_details.expiry_date` (DATE 컬럼 · Phase A 마이그) · `/api/products/expiry-imminent` 3소스 UNION+MIN
+- **문자열에 날짜 저장 금지** (2026-09-17) · verify_note 등 텍스트 필드에 "유통기한: YYYY-MM-DD" 저장 X · 정식 DATE 컬럼 사용 · 파싱·정렬·인덱스 모두 손해
 
 ---
 
@@ -52,6 +54,12 @@
 | [43] | 유통기한 임박 등록 상품 · 리스트 노출 fix · inventory_checks SSOT 이중 저장 | `62282df0` |
 | [44] | 실재고확인 · 스캔 카드 헤더 · 코드↔상품명 스왑 · spec 숫자 중복 제거 · 왼쪽 진열구역 표시 | `7dc5ca40` |
 | [45] | 실재고 저장 · 실패 감지 강화 + inventory-checks-updated 이벤트 dispatch (연동 페이지 자동 refresh) | `f3473c2e` |
+| [46] | RealStockTablePage · 상단 툴바 · 좁은 화면 대응 · 두 줄 분리 (반응형) | `780677f5` |
+| [47] | 캐시 헤더 fix · borrowings 3 + returnRequests 2 · no-store · 대원칙 준수 | `1f407e9c` |
+| [48] | 유통기한 임박 · legacy products.expiry_date fallback · 기존 등록 상품 리스트 복구 | `c351e1dd` |
+| [49] | 발주이력 · 카드 레이아웃 재정리 (발주번호+공급사 2줄) + 상단 헤더 · 자동 정렬 + 상세 시각 구분 | `bbe690a4` |
+| [50] | devLog 유틸 도입 · production 노이즈 제거 (App.tsx 8건 + useReextractCell 13건) | `32c86338` |
+| [51] | 유통기한 임박 · purchase_details.expiry_date DATE 컬럼 · Phase A(DB) + Phase B(서버) · SSOT 3소스 통합 | `04e6a2f3` |
 
 ---
 

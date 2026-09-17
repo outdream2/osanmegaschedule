@@ -2,9 +2,9 @@
 
 > **모든 코딩 · 리팩터 · 테스트 시작 전 · 이 파일 필수 숙지** (사용자 지시 · 2026-08-23)
 >
-> **자매 파일**: [`docs/TASKS_HANDBOOK.md`](./TASKS_HANDBOOK.md) · 태스크·완료·대기·세션 상태
+> **자매 파일**: [`docs/TASKS.md`](./TASKS.md) · 태스크·완료·대기 · [`docs/TEST_LIST_2026-09-11_session.md`](./TEST_LIST_2026-09-11_session.md) · 테스트 절차
 >
-> **최종 업데이트**: 2026-08-23
+> **최종 업데이트**: 2026-09-17 (Phase B · 유통기한 3소스 통합 · devLog · 캐시 헤더 fix · 발주이력 재디자인 등)
 
 ---
 
@@ -29,6 +29,24 @@
 - 3곳 이상 반복 · 즉시 프리미티브 추출
 - 신규 프리미티브 필요 시 · 먼저 `common/*` 또는 `hooks/*` 에 추가 후 사용
 - 참고 · `.claude/memory/feedback_framework_zero_principle.md` · `feedback_framework_first_priority.md`
+
+### 🗄️ 대원칙 C · DB 정합성 · SSOT · schema-first (2026-09-17 확장)
+- **정식 DATE/TIMESTAMP 컬럼 사용** · text 필드에 날짜 문자열 저장 절대 금지 (예: verify_note "유통기한: YYYY-MM-DD" 형식 금지)
+- **파괴적 SQL 금지** · DROP·TRUNCATE 전 · 백업·사용자 승인 필수
+- **스냅샷 파생 컬럼 신설 금지** · optimal_stock·재고자산·잔고 등 · 계산 값 · JOIN 처리
+- **SSOT 명시** · 유통기한 = inventory_checks · 적정재고 = products.optimal_stock · 재고자산 = 매입액−cogs · 실제잔고 = 매입액−결제액
+- 참고 · `.claude/memory/feedback_db_integrity_absolute_2026-09-15.md` · `feedback_no_date_in_text_2026-09-17.md` · `project_expiry_sources_2026-09-17.md`
+
+### 🔗 대원칙 D · 공통 기능 = 단일 endpoint (2026-09-14)
+- 같은 목적 route · 중복 금지 · 신규 전 grep 필수
+- 3곳 이상 같은 endpoint 호출 · 즉시 `src/lib/xxxApi.ts` 프리미티브 추출
+- 발주·결제·잔고 등 중요 데이터 · `Cache-Control: no-store` 필수
+
+### 🚨 대원칙 E · 설명·필요성·허락 없이 진행 절대 금지 (2026-09-08 · 최상위)
+- 모든 작업 · 설명 → 필요성 논의 → 명시적 허락 → 그 범위만
+- Agent 리포트 자동 fix X · 사용자 승인 후에만
+- "자율진행" 도 · 명시된 태스크 범위 안에서만
+- 참고 · `.claude/memory/feedback_explain_ask_permission_STRICT_2026-09-08.md`
 
 ---
 
