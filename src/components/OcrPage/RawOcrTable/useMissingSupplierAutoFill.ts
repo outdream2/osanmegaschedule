@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+// 2026-09-17 · devLog · production 노이즈 제거
+import { devLog, devWarn } from "../../../lib/devLog";
 import type { RawPage } from "./types";
 
 interface UseMissingSupplierAutoFillParams {
@@ -57,7 +59,7 @@ export function useMissingSupplierAutoFill({
         for (const [n, c] of votes) if (c > bestVotes) { bestName = n; bestVotes = c; }
         if (rawSupplierByPage[pn] === undefined && bestVotes >= 1) {
           autoFill[pn] = bestName;
-          console.log(`[client/auto-supplier] page ${pn}: "${bestName}" (${bestVotes}/${productPrefixes.length}상품 매칭)`);
+          devLog(`[client/auto-supplier] page ${pn}: "${bestName}" (${bestVotes}/${productPrefixes.length}상품 매칭)`);
         }
       } else {
         const rtNorm = (pd.rawText ?? "").replace(/\s+/g, "");
@@ -75,7 +77,7 @@ export function useMissingSupplierAutoFill({
         }
         if (best && rawSupplierByPage[pn] === undefined) {
           autoFill[pn] = best;
-          console.log(`[client/auto-supplier] page ${pn}: "${best}" (rawText 스캔)`);
+          devLog(`[client/auto-supplier] page ${pn}: "${best}" (rawText 스캔)`);
         }
       }
     }
@@ -94,15 +96,15 @@ export function useMissingSupplierAutoFill({
     for (const pn of missingSupplierPages) {
       const pd = structuredPages.find(p => p.page === pn);
       const rawText = pd?.rawText ?? "";
-      console.log(`━━━ page ${pn} ━━━`);
-      console.log(`meta.supplier: "${pd?.meta?.supplier ?? "(undefined)"}"`);
-      console.log(`meta.recipient: "${pd?.meta?.recipient ?? "(undefined)"}"`);
-      console.log(`meta.date: "${pd?.meta?.date ?? "(undefined)"}"`);
-      console.log(`headers (${pd?.headers?.length ?? 0}): ${JSON.stringify(pd?.headers ?? [])}`);
-      console.log(`rowCount: ${pd?.rows?.length ?? 0}`);
-      console.log(`rawTextLen: ${rawText.length}`);
-      console.log(`--- rawText (첫 500자) ---\n${rawText.slice(0, 500)}`);
-      if (rawText.length > 500) console.log(`--- ... 총 ${rawText.length}자 ---`);
+      devLog(`━━━ page ${pn} ━━━`);
+      devLog(`meta.supplier: "${pd?.meta?.supplier ?? "(undefined)"}"`);
+      devLog(`meta.recipient: "${pd?.meta?.recipient ?? "(undefined)"}"`);
+      devLog(`meta.date: "${pd?.meta?.date ?? "(undefined)"}"`);
+      devLog(`headers (${pd?.headers?.length ?? 0}): ${JSON.stringify(pd?.headers ?? [])}`);
+      devLog(`rowCount: ${pd?.rows?.length ?? 0}`);
+      devLog(`rawTextLen: ${rawText.length}`);
+      devLog(`--- rawText (첫 500자) ---\n${rawText.slice(0, 500)}`);
+      if (rawText.length > 500) devLog(`--- ... 총 ${rawText.length}자 ---`);
     }
     console.groupEnd();
   }, [missingSupplierPages, structuredPages]);
