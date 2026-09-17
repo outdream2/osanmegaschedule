@@ -2,9 +2,12 @@
 // 마이그레이션 add_order_dispatch_columns_2026-08-10.sql 실행 후 실제 데이터 노출
 // 컬럼 없으면 · 서버가 empty + notice 반환 · UI 는 안내 메시지 표시
 // 2026-08-12 · UI 리디자인 · 폰트 +2 · 굵기 완화 · 발주일·희망입고일 · 헤더 · 상품수 옆
+// 2026-09-17 · 사용자 지시 · 헤더 한 줄 재정리 · 발주번호(위)+공급사(아래) · 발주일/희망 간단 (26/9/11) · 금액 · PDF · 매입확인
+//   · 상단 헤더 + 자동 정렬 (useSortableTable) · 상세내역 시각 구분 강화
 
 import React, { useEffect, useRef, useState } from "react";
-import { Package, ChevronDown, ChevronRight, Mail, Phone, User, Calendar, CalendarCheck, FileDown } from "lucide-react";
+import { Package, ChevronDown, ChevronRight, Mail, Phone, User, Calendar, CalendarCheck, FileDown, ArrowUp, ArrowDown, ListTree } from "lucide-react";
+import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 // 2026-09-08 · 사용자 지시 · 발주이력 각 행 PDF 다운 · html2canvas + jsPDF
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
@@ -37,6 +40,29 @@ import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { Tags, CheckCircle2 } from "lucide-react";
 // 2026-09-13 · #117 · 매입확인 버튼 · confirm
 import { useConfirm } from "../../hooks/useConfirm";
+
+// 2026-09-17 · 사용자 지시 · 상단 헤더 · 클릭 시 asc/desc 토글 · 화살표 표시
+const SortHeader: React.FC<{
+  label: string;
+  active: boolean;
+  dir: "asc" | "desc";
+  onClick: () => void;
+  className?: string;
+}> = ({ label, active, dir, onClick, className = "" }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`inline-flex items-center gap-1 shrink-0 cursor-pointer transition select-none ${active ? "text-brand-deep" : "text-zinc-500 hover:text-brand-deep"} ${className}`}
+    title={`${label} 정렬`}
+  >
+    <span>{label}</span>
+    {active ? (
+      dir === "asc" ? <ArrowUp size={11} /> : <ArrowDown size={11} />
+    ) : (
+      <ArrowDown size={11} className="opacity-25" />
+    )}
+  </button>
+);
 
 interface OrderHistoryItem {
   id: string | number;
@@ -252,6 +278,34 @@ export const OrderHistoryTab: React.FC = () => {
   const totalAmount = filteredOrders.reduce((s, o) => s + (o.total_amount ?? 0), 0);
   const totalItems = filteredOrders.reduce((s, o) => s + o.items.length, 0);
 
+  // 2026-09-17 · 사용자 지시 · 자동 정렬 · 헤더 클릭 시 asc/desc 토글
+  //   · 기본 · 발송일 최신순 (sent_at desc)
+  type OrderSortKey = "order_number" | "supplier" | "order_date" | "desired_arrival" | "total_amount" | "sent_at" | "items";
+  const comparators = React.useMemo<Record<OrderSortKey, Comparator<OrderHistoryOrder>>>(() => ({
+    order_number: (a, b) => String(a.order_number ?? "").localeCompare(String(b.order_number ?? ""), "ko", { numeric: true }),
+    supplier:     (a, b) => String(displayVendorName(a.supplier) ?? "").localeCompare(String(displayVendorName(b.supplier) ?? ""), "ko"),
+    order_date:   (a, b) => String(a.order_date ?? "").localeCompare(String(b.order_date ?? "")),
+    desired_arrival: (a, b) => String(a.desired_arrival ?? "").localeCompare(String(b.desired_arrival ?? "")),
+    total_amount: (a, b) => (a.total_amount ?? 0) - (b.total_amount ?? 0),
+    sent_at:      (a, b) => String(a.sent_at ?? "").localeCompare(String(b.sent_at ?? "")),
+    items:        (a, b) => a.items.length - b.items.length,
+  }), []);
+  const { sorted: sortedOrders, sortKey, sortDir, toggleSort } = useSortableTable<OrderHistoryOrder, OrderSortKey>(
+    filteredOrders,
+    "sent_at",
+    comparators,
+    "desc",
+  );
+
+  // 2026-09-17 · 짧은 날짜 포맷 · "2026-09-11" → "26/9/11"
+  const shortDate = (iso: string | null | undefined): string => {
+    if (!iso) return "";
+    const s = String(iso).slice(0, 10);
+    const [y, m, d] = s.split("-");
+    if (!y || !m || !d) return s;
+    return `${y.slice(-2)}/${Number(m)}/${Number(d)}`;
+  };
+
   return (
     <>
     {toast && (
@@ -341,91 +395,104 @@ export const OrderHistoryTab: React.FC = () => {
           </div>
         ) : (
           <div className="divide-y divide-zinc-100">
-            {filteredOrders.map((o) => {
+            {/* 2026-09-17 · 사용자 지시 · 상단 헤더 + 자동 정렬 · 헤더 클릭 asc/desc 토글 */}
+            <div className="sticky top-0 z-10 bg-zinc-50/95 backdrop-blur-sm border-b-2 border-line px-4 py-2 flex items-center gap-2.5 text-[13px] font-bold tracking-tight text-zinc-600 uppercase">
+              <span className="w-4 shrink-0" aria-hidden />
+              <SortHeader label="발주번호 · 공급사" active={sortKey === "order_number"} dir={sortDir} onClick={() => toggleSort("order_number")} className="flex-1 min-w-[160px] justify-start" />
+              <SortHeader label="발주일" active={sortKey === "order_date"} dir={sortDir} onClick={() => toggleSort("order_date")} className="w-[74px] justify-start" />
+              <SortHeader label="희망" active={sortKey === "desired_arrival"} dir={sortDir} onClick={() => toggleSort("desired_arrival")} className="w-[74px] justify-start" />
+              <SortHeader label="종·개" active={sortKey === "items"} dir={sortDir} onClick={() => toggleSort("items")} className="w-[86px] justify-start" />
+              <SortHeader label="총금액" active={sortKey === "total_amount"} dir={sortDir} onClick={() => toggleSort("total_amount")} className="ml-auto w-[100px] justify-end" />
+              <span className="w-[60px] text-right shrink-0" aria-hidden>PDF</span>
+              <span className="w-[92px] text-right shrink-0" aria-hidden>매입확인</span>
+            </div>
+            {sortedOrders.map((o) => {
               const key = String(o.order_number ?? o.sent_at);
               const isOpen = expanded.has(key);
               return (
                 <div key={key} className="hover:bg-zinc-50/40 transition">
-                  {/* 헤더 · 클릭 확장 · 폰트 +2 · 발주일·희망입고일 헤더로 이동 · 상품수 옆 · 굵기 완화 */}
+                  {/* 2026-09-17 · 사용자 지시 · 한 줄 헤더 · 발주번호(위)+공급사(아래) · 발주일 26/9/11 · 희망 · 총금액 · PDF · 매입확인 */}
                   <button
                     type="button"
                     onClick={() => toggle(key)}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 cursor-pointer text-left flex-wrap"
+                    className="w-full flex items-center gap-2.5 px-4 py-3 cursor-pointer text-left"
                   >
                     {isOpen ? (
                       <ChevronDown size={16} className="text-indigo-400 shrink-0" />
                     ) : (
                       <ChevronRight size={16} className="text-zinc-300 shrink-0" />
                     )}
-                    {/* 발주번호 */}
-                    <span className="text-[16px] font-bold text-sky-700 tabular-nums shrink-0">
-                      #{o.order_number ?? "—"}
-                    </span>
-                    {/* 공급사 · 2026-08-24 · v3 · sky-800 톤 통일 · truncate 제거 */}
-                    <span className="text-[17px] font-bold text-sky-800 whitespace-normal break-words">
-                      {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
-                    </span>
-                    {/* 상품 종·수량 · 2026-08-17 · StatusPill 통일 */}
-                    <StatusPill tone="zinc" size="sm">{o.items.length}종 · {o.total_qty}개</StatusPill>
-                    {/* 2026-08-12 · 발주일 · 헤더로 이동 · 상품수 옆 */}
-                    {o.order_date && (
-                      <span className="inline-flex items-center gap-1 text-[15px] font-medium text-zinc-500 tabular-nums shrink-0">
-                        <Calendar size={13} className="text-zinc-400" />발주 {o.order_date}
+                    {/* 발주번호 (위) + 공급사 (아래) · 2줄 블록 · flex-1 */}
+                    <div className="flex-1 min-w-[160px] min-w-0 flex flex-col leading-tight">
+                      <span className="text-[15px] font-bold text-sky-700 tabular-nums">
+                        #{o.order_number ?? "—"}
                       </span>
-                    )}
-                    {/* 2026-08-12 · 희망입고일 · 헤더로 이동 · 상품수 옆 */}
-                    {o.desired_arrival && (
-                      <span className="inline-flex items-center gap-1 text-[15px] font-semibold text-rose-600 tabular-nums shrink-0">
-                        <CalendarCheck size={13} />희망 {o.desired_arrival}
+                      <span className="text-[16px] font-bold text-sky-800 whitespace-normal break-words">
+                        {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
                       </span>
-                    )}
-                    {/* 총액 · 오른쪽 */}
-                    <span className="ml-auto text-[17px] font-bold text-emerald-700 tabular-nums shrink-0">
+                    </div>
+                    {/* 발주일 · 짧은 포맷 26/9/11 */}
+                    <span className="w-[74px] shrink-0 inline-flex items-center gap-1 text-[14px] font-semibold text-zinc-600 tabular-nums">
+                      <Calendar size={12} className="text-zinc-400" />
+                      {shortDate(o.order_date) || <span className="text-zinc-300">-</span>}
+                    </span>
+                    {/* 희망일 · 짧은 포맷 */}
+                    <span className="w-[74px] shrink-0 inline-flex items-center gap-1 text-[14px] font-semibold text-rose-600 tabular-nums">
+                      <CalendarCheck size={12} />
+                      {shortDate(o.desired_arrival) || <span className="text-zinc-300">-</span>}
+                    </span>
+                    {/* 종·수량 */}
+                    <span className="w-[86px] shrink-0 text-[14px] font-semibold text-zinc-600 tabular-nums">
+                      {o.items.length}종 · {o.total_qty}개
+                    </span>
+                    {/* 총금액 · 오른쪽 */}
+                    <span className="ml-auto w-[100px] shrink-0 text-right text-[16px] font-bold text-emerald-700 tabular-nums">
                       {fmtWon(o.total_amount)}
                     </span>
-                    {/* 발송 시각 */}
-                    <span className="text-[15px] text-zinc-400 tabular-nums shrink-0 min-w-[90px] text-right">
-                      {o.sent_at?.slice(0, 10) ?? "-"}
-                    </span>
-                    {/* 2026-09-08 · 사용자 지시 · PDF 다운 버튼 */}
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); void handleDownloadPdf(o); }}
-                      disabled={pdfSavingKey === String(o.order_number ?? o.sent_at)}
-                      className="ml-1 inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-white border border-line text-[13px] font-bold text-ink-soft hover:border-brand-deep hover:text-brand-deep hover:bg-brand-tint/20 shadow-sm active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
-                      title="발주서 PDF 다운로드"
-                    >
-                      {pdfSavingKey === String(o.order_number ?? o.sent_at)
-                        ? <Spinner size={12} tone="brand" />
-                        : <FileDown size={12} strokeWidth={2.4} />}
-                      PDF
-                    </button>
-                    {/* 2026-09-13 · #117 · 매입확인 버튼 · matched 상태로 변경 · 이후 배지 표시 */}
-                    {o.status === "matched" ? (
-                      <StatusPill tone="emerald" size="sm" dot>
-                        매입확인 완료
-                      </StatusPill>
-                    ) : (
+                    {/* PDF 다운 */}
+                    <span className="w-[60px] shrink-0 flex justify-end">
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); void handleMatch(o); }}
-                        disabled={matchingKey === String(o.order_number)}
-                        className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[13px] font-bold text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 shadow-sm active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
-                        title="발주-매입 매칭 확인 · status=matched"
+                        onClick={(e) => { e.stopPropagation(); void handleDownloadPdf(o); }}
+                        disabled={pdfSavingKey === String(o.order_number ?? o.sent_at)}
+                        className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-white border border-line text-[13px] font-bold text-ink-soft hover:border-brand-deep hover:text-brand-deep hover:bg-brand-tint/20 shadow-sm active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                        title="발주서 PDF 다운로드"
                       >
-                        {matchingKey === String(o.order_number)
+                        {pdfSavingKey === String(o.order_number ?? o.sent_at)
                           ? <Spinner size={12} tone="brand" />
-                          : <CheckCircle2 size={12} strokeWidth={2.4} />}
-                        매입확인
+                          : <FileDown size={12} strokeWidth={2.4} />}
+                        PDF
                       </button>
-                    )}
+                    </span>
+                    {/* 매입확인 */}
+                    <span className="w-[92px] shrink-0 flex justify-end">
+                      {o.status === "matched" ? (
+                        <StatusPill tone="emerald" size="sm" dot>완료</StatusPill>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); void handleMatch(o); }}
+                          disabled={matchingKey === String(o.order_number)}
+                          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[13px] font-bold text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 shadow-sm active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                          title="발주-매입 매칭 확인 · status=matched"
+                        >
+                          {matchingKey === String(o.order_number)
+                            ? <Spinner size={12} tone="brand" />
+                            : <CheckCircle2 size={12} strokeWidth={2.4} />}
+                          매입확인
+                        </button>
+                      )}
+                    </span>
                   </button>
 
-                  {/* 확장 내용 · 아이템 리스트 + 수신처 · 폰트 +2 */}
+                  {/* 2026-09-17 · 사용자 지시 · 상세내역 · 시각 구분 포인트 · 좌측 accent bar (sky) + bg tint + 아이콘 */}
                   {isOpen && (
-                    <div className="px-4 pb-3 space-y-2">
+                    <div className="border-l-4 border-sky-400 bg-gradient-to-r from-sky-50/60 to-transparent px-4 py-3 space-y-2 mx-2 mb-2 rounded-r-lg shadow-inner">
                       {/* 수신처 정보 · 발주일·희망입고일 은 헤더로 이동했으므로 · 여기서는 담당자·연락처·메모만 */}
-                      <div className="flex items-center gap-3 flex-wrap text-[15px] text-zinc-500 bg-zinc-50/60 border border-zinc-100 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-3 flex-wrap text-[15px] text-zinc-500 bg-white/70 border border-sky-100 rounded-lg px-3 py-2">
+                        <span className="inline-flex items-center gap-1 text-sky-700 font-bold shrink-0">
+                          <ListTree size={13} />상세내역
+                        </span>
                         {o.supplier_contact && (
                           <span className="inline-flex items-center gap-1"><User size={13} />{o.supplier_contact}</span>
                         )}
@@ -436,7 +503,7 @@ export const OrderHistoryTab: React.FC = () => {
                           <span className="inline-flex items-center gap-1 tabular-nums"><Phone size={13} />{o.supplier_phone}</span>
                         )}
                         {o.memo && (
-                          <span className="italic text-zinc-600 border-l border-line pl-2">{o.memo}</span>
+                          <span className="italic text-zinc-600 border-l border-sky-200 pl-2">{o.memo}</span>
                         )}
                         {!o.supplier_contact && !o.supplier_email && !o.supplier_phone && !o.memo && (
                           <span className="text-zinc-300">수신처·메모 정보 없음</span>
