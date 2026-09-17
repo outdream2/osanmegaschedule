@@ -565,31 +565,35 @@ export const RealStockTablePage: React.FC = () => {
       )}
       <div className="flex flex-col gap-3">
         {/* 2026-08-27 · UI 목업 반영 · 프리미티브 톤 (Linear/Attio/Vercel 2026) · 가로 구조 통일 */}
+        {/* 2026-09-17 · 사용자 지시 · 좁은 화면 대응 · 제목 (Row 1) + 검색·필터·액션 (Row 2) · 2줄 분리 · lg+ 만 1줄 */}
         <Card padding="md" topAccent>
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* 아이콘 타일 · v9 gradient */}
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-50 to-white border border-emerald-200/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.05)] flex items-center justify-center shrink-0">
-              <PackageCheck size={20} className="text-emerald-600" strokeWidth={2.2} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-baseline gap-2 flex-wrap">
-                <h2 className="text-[20px] font-extrabold text-ink tracking-tight leading-tight">실재고 테이블</h2>
-                <span className="text-[14px] tabular-nums font-bold text-brand-deep bg-brand-tint px-2 py-0.5 rounded-md">
-                  {loading ? <Spinner size={11} tone="brand" className="inline" /> : `${filtered.length.toLocaleString()}${search ? `/${rows.length.toLocaleString()}` : ""}건`}
-                </span>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            {/* Row 1 · 아이콘 + 제목 + 건수 + 부제 (좁은 화면 · 항상 상단) */}
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-50 to-white border border-emerald-200/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.05)] flex items-center justify-center shrink-0">
+                <PackageCheck size={20} className="text-emerald-600" strokeWidth={2.2} />
               </div>
-              <div className="text-[14px] text-ink-soft mt-0.5 leading-tight">상품별 · 진열위치 · ERP · 매장1/2/3 · 창고1/2 · 실재고 편집 저장</div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <h2 className="text-[20px] font-extrabold text-ink tracking-tight leading-tight">실재고 테이블</h2>
+                  <span className="text-[14px] tabular-nums font-bold text-brand-deep bg-brand-tint px-2 py-0.5 rounded-md">
+                    {loading ? <Spinner size={11} tone="brand" className="inline" /> : `${filtered.length.toLocaleString()}${search ? `/${rows.length.toLocaleString()}` : ""}건`}
+                  </span>
+                </div>
+                <div className="text-[14px] text-ink-soft mt-0.5 leading-tight">상품별 · 진열위치 · ERP · 매장1/2/3 · 창고1/2 · 실재고 편집 저장</div>
+              </div>
             </div>
-            <div className="ml-auto flex items-center gap-2 flex-wrap">
-              {/* 검색 · Search 아이콘 · 명확 */}
-              <div className="relative">
+            {/* Row 2 · 검색 + 필터 + 액션 (좁은 화면 · 아래 줄로 · lg+ 만 우측 정렬) */}
+            <div className="flex items-center gap-2 flex-wrap lg:ml-auto">
+              {/* 검색 · Search 아이콘 · 좁은 화면 · full width · lg+ 만 w-80 */}
+              <div className="relative flex-1 min-w-[200px] lg:flex-none">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
                 <input
                   lang="ko" type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="상품명 · 공급사 · 코드 · 진열위치 검색"
-                  className="w-80 h-10 pl-9 pr-3 text-[15px] font-medium border border-line rounded-lg outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white transition"
+                  className="w-full lg:w-80 h-10 pl-9 pr-3 text-[15px] font-medium border border-line rounded-lg outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white transition"
                 />
               </div>
               {/* 2026-08-28 · 사용자 지시 · SaleStatusFilter 프리미티브 · 3-state (전체/판매중/판매중지) */}
