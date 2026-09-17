@@ -7,6 +7,7 @@
 // 2026-09-01 · #93 · 명세서 상태 · 3종→2종 · 기한임박 UI 제거 (expiring 데이터 필드는 유지)
 
 import React, { useRef, useEffect, useState, useMemo } from "react";
+import { devLog, devWarn } from "../../lib/devLog";
 import { Box, Hash, Building2, CheckCircle2, XCircle, Trash2, MapPin, Check, Warehouse, Store, Package, TrendingUp, ArrowRight } from "lucide-react";
 import type { ProductInfo } from "../../lib/productsCache";
 import { StepperInput } from "../common/StepperInput";
@@ -157,7 +158,7 @@ const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
   const [shelfOverride, setShelfOverride] = useState<ShelfPositions | null>(null);
   const shelfPositions = shelfOverride ?? propShelfPositions;
   // 진단 · shelfPositions 갱신 확인
-  console.log("[ArrivalZoneSlotList] render", { productCode, propShelfPositions, shelfOverride, effective: shelfPositions });
+  devLog("[ArrivalZoneSlotList] render", { productCode, propShelfPositions, shelfOverride, effective: shelfPositions });
   const w1 = relatedSlots.find(rs => rs.slot === "w1");
   const w2 = relatedSlots.find(rs => rs.slot === "w2");
   const canAddStore = storeCount < 3;
@@ -297,7 +298,7 @@ const ArrivalZoneSlotList: React.FC<ArrivalZoneSlotListProps> = ({
           locationCode={shelfEditCode}
           onSaved={(saved) => {
             // 로컬 즉시 반영 · UI 지연 완전 방어
-            console.log("[ArrivalZoneSlotList] onSaved override:", saved);
+            devLog("[ArrivalZoneSlotList] onSaved override:", saved);
             setShelfOverride(saved);
           }}
           onClose={() => setShelfEditCode(null)}
@@ -332,7 +333,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
   const shelfMap = useShelfPositionsMap();
   const shelfPositions = item.code ? shelfMap[item.code] : null;
   // 2026-09-09 · 진단 · shelfMap 반영 여부 확인
-  console.log("[ArrivalRowCard] shelfMap size:", Object.keys(shelfMap).length, "has item.code?", item.code, !!shelfMap[item.code], "sample keys:", Object.keys(shelfMap).slice(0, 3));
+  devLog("[ArrivalRowCard] shelfMap size:", Object.keys(shelfMap).length, "has item.code?", item.code, !!shelfMap[item.code], "sample keys:", Object.keys(shelfMap).slice(0, 3));
   const warehouseVis = useMemo(() => resolveWarehouseVisibility(productRealMap), [productRealMap]);
   const slotZones = useMemo(() => assignZonesToSlots(productRealMap, productCategoryCode), [productRealMap, productCategoryCode]);
   const targetSlot = useMemo(() => classifyArrivalSlot(item.location), [item.location]);

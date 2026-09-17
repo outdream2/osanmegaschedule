@@ -7,6 +7,7 @@
 
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { devLog, devWarn } from "../../lib/devLog";
 import { api, ApiError } from "../../lib/apiClient";
 // 2026-09-14 · inventoryChecksApi · productsApi 프리미티브
 import { saveInventoryCheck } from "../../lib/inventoryChecksApi";
@@ -302,7 +303,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     const targetItem = items.find(it => it.key === key);
     const code = targetItem?.product?.code ?? targetItem?.code;
     if (!code) {
-      console.warn(`[setStoreZoneAndSave] product_code 없음 · key=${key}`);
+      devWarn(`[setStoreZoneAndSave] product_code 없음 · key=${key}`);
       return;
     }
     try {
@@ -314,7 +315,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       if (slot === 2) payload.store2_zone = zone;
       if (slot === 3) payload.store3_zone = zone;
       await saveInventoryCheck(payload as any);
-      console.log(`[setStoreZoneAndSave] saved · code=${code} · store${slot}_zone=${zone}`);
+      devLog(`[setStoreZoneAndSave] saved · code=${code} · store${slot}_zone=${zone}`);
     } catch (e: any) {
       console.error(`[setStoreZoneAndSave] failed · code=${code} · store${slot}_zone=${zone} · ${e?.message ?? e}`);
     }
@@ -873,7 +874,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     if (freshLast) setLastScannedProduct(freshLast);
                   }
                 } catch (cacheErr) {
-                  console.warn("[ProductArrivalPage] products cache 재조회 실패 (경고):", cacheErr);
+                  devWarn("[ProductArrivalPage] products cache 재조회 실패 (경고):", cacheErr);
                 }
                 // 2026-09-07 · 사용자 지시 · 입고내역 자동 업데이트 · 저장 후 즉시 리로드
                 void loadArrivals();

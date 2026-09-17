@@ -2,6 +2,7 @@
 // 2026-08-23 · #framework-4 · 전체 분리 완료 · 타입/상수/계산/서브컴포넌트 모두 이관
 
 import React, { useMemo } from "react";
+import { devLog, devWarn } from "../../lib/devLog";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { toastClass } from "../../hooks/useToast";
 import {
@@ -59,10 +60,10 @@ if (typeof window !== "undefined" && (import.meta as any)?.env?.DEV) {
   const anyFail = results.some(r => !r.pass);
   if (anyFail) {
     // eslint-disable-next-line no-console
-    console.warn("[ContractWriter] calcWageBase 검증 실패:", results);
+    devWarn("[ContractWriter] calcWageBase 검증 실패:", results);
   } else {
     // eslint-disable-next-line no-console
-    console.log("[ContractWriter] calcWageBase 5 케이스 통과", results);
+    devLog("[ContractWriter] calcWageBase 5 케이스 통과", results);
   }
 
   // T-Y (2026-08-05) · payroll grossUp 4 케이스 검증 (부양 1인·식대 20만)
@@ -77,10 +78,10 @@ if (typeof window !== "undefined" && (import.meta as any)?.env?.DEV) {
   const anyGrossUpFail = grossUpResults.some(r => !r.pass);
   if (anyGrossUpFail) {
     // eslint-disable-next-line no-console
-    console.warn("[ContractWriter] payroll.grossUp 검증 실패:", grossUpResults);
+    devWarn("[ContractWriter] payroll.grossUp 검증 실패:", grossUpResults);
   } else {
     // eslint-disable-next-line no-console
-    console.log("[ContractWriter] payroll.grossUp 4 케이스 통과", grossUpResults);
+    devLog("[ContractWriter] payroll.grossUp 4 케이스 통과", grossUpResults);
   }
 }
 
