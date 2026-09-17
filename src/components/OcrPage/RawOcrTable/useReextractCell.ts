@@ -1,5 +1,7 @@
 import { useCallback } from "react";
 import { reextractCellCandidates } from "../../../lib/cellReextract";
+// 2026-09-17 · devLog · production 노이즈 제거
+import { devLog, devWarn } from "../../../lib/devLog";
 import { parseNumber } from "./utils";
 import { findNameHeaderIdx, findRowPositionInRawText } from "./productNameReextract";
 import type { RawPage, MatchedItem } from "./types";
@@ -96,8 +98,8 @@ export function useReextractCell({
         }
       }
       const sortedCands = [...priorityCands.sort(), ...fallbackCands.sort()];
-      console.log(`[셀재추출/유통기한] ri=${ri} page=${pn} · 행근처 ${priorityCands.length}개 · 페이지 ${fallbackCands.length}개 · 총 ${sortedCands.length}:`, sortedCands);
-      if (sortedCands.length === 0) { console.log(`[셀재추출/유통기한] ri=${ri} 후보 없음`); return; }
+      devLog(`[셀재추출/유통기한] ri=${ri} page=${pn} · 행근처 ${priorityCands.length}개 · 페이지 ${fallbackCands.length}개 · 총 ${sortedCands.length}:`, sortedCands);
+      if (sortedCands.length === 0) { devLog(`[셀재추출/유통기한] ri=${ri} 후보 없음`); return; }
 
       const existingCands = (numericCellCandidates[cellKey] as string[] | undefined) ?? sortedCands;
       const prevIdx = numericCellCycle[cellKey] ?? -1;
@@ -111,19 +113,19 @@ export function useReextractCell({
           if (Object.keys(rowEdits).length === 0) { const n = { ...prev }; delete n[ri]; return n; }
           return { ...prev, [ri]: rowEdits };
         });
-        console.log(`[셀재추출/유통기한] ri=${ri} 원본 복원`);
+        devLog(`[셀재추출/유통기한] ri=${ri} 원본 복원`);
       } else {
         setNumericCellCandidates(prev => ({ ...prev, [cellKey]: existingCands }));
         setNumericCellCycle(prev => ({ ...prev, [cellKey]: nextIdx }));
         setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [ci]: existingCands[nextIdx] } }));
-        console.log(`[셀재추출/유통기한] ri=${ri} → ${existingCands[nextIdx]} (${nextIdx + 1}/${existingCands.length})`);
+        devLog(`[셀재추출/유통기한] ri=${ri} → ${existingCands[nextIdx]} (${nextIdx + 1}/${existingCands.length})`);
       }
       return;
     }
 
     const pn = pageNums[ri];
     const pageObj = structuredPages.find(p => p.page === pn) ?? pages.find(p => p.page === pn);
-    if (!pageObj) { console.warn(`[셀재추출/단일] page ${pn} 없음`); return; }
+    if (!pageObj) { devWarn(`[셀재추출/단일] page ${pn} 없음`); return; }
     const pageRi = pageNums.slice(0, ri).filter(p => p === pn).length;
 
     let candidateVals: number[] = [];
@@ -188,7 +190,7 @@ export function useReextractCell({
             });
           }
           candidateVals = cands;
-          console.log(`[셀재추출/폴백] ri=${ri} (${colName}) 페이지 전체 rawText 스캔 · ${cands.length}개 후보`);
+          devLog(`[셀재추출/폴백] ri=${ri} (${colName}) 페이지 전체 rawText 스캔 · ${cands.length}개 후보`);
         }
       }
 
@@ -207,7 +209,7 @@ export function useReextractCell({
           candidateVals = [...candidateVals].sort((a, b) =>
             Math.abs(Number(a) - dbPrice) - Math.abs(Number(b) - dbPrice)
           );
-          console.log(`[셀재추출/DB필터+정렬] ri=${ri} 단가 · DB=${dbPrice} · 30배 초과 ${excluded}개 제외`);
+          devLog(`[셀재추출/DB필터+정렬] ri=${ri} 단가 · DB=${dbPrice} · 30배 초과 ${excluded}개 제외`);
         }
       }
 
@@ -260,7 +262,7 @@ export function useReextractCell({
           }).length;
           if (passCount > 0) {
             candidateVals = crossSorted;
-            console.log(`[셀재추출/교차검증] ri=${ri} (${colName}) 방정식 통과 ${passCount}개 → 앞으로 정렬`);
+            devLog(`[셀재추출/교차검증] ri=${ri} (${colName}) 방정식 통과 ${passCount}개 → 앞으로 정렬`);
           }
         }
       }
@@ -299,7 +301,7 @@ export function useReextractCell({
         }
         if (smartSplits.length > 0) {
           candidateVals = [...smartSplits, ...candidateVals.filter(v => !smartSplits.includes(v))];
-          console.log(`[셀재추출/스마트분리] ri=${ri} (${colName}) 분리 후보=${smartSplits.join(",")}`);
+          devLog(`[셀재추출/스마트분리] ri=${ri} (${colName}) 분리 후보=${smartSplits.join(",")}`);
         }
       }
       if (candidateVals.length > 0) {
@@ -312,7 +314,7 @@ export function useReextractCell({
       const nameH = pageObj.headers.indexOf("품명");
       const nameVal = Array.isArray(localRow2) && nameH >= 0 ? String(localRow2[nameH] ?? "").trim() : "";
       const hasCol = pageObj.headers.indexOf(colName) >= 0;
-      console.log(`[셀재추출/단일] ri=${ri} ci=${ci} (${colName}) 후보 없음`,
+      devLog(`[셀재추출/단일] ri=${ri} ci=${ci} (${colName}) 후보 없음`,
         { page: pn, pageRi, headers: pageObj.headers, hasColInPage: hasCol, productName: nameVal, rawTextLen: (pageObj.rawText ?? "").length });
       setNoCandidateCells(prev => new Set(prev).add(cellKey));
       return;
@@ -332,7 +334,7 @@ export function useReextractCell({
         if (Object.keys(rowEdits).length === 0) { const n = { ...prev }; delete n[ri]; return n; }
         return { ...prev, [ri]: rowEdits };
       });
-      console.log(`[셀재추출/단일] ri=${ri} ci=${ci} (${colName}) 원본 복원`);
+      devLog(`[셀재추출/단일] ri=${ri} ci=${ci} (${colName}) 원본 복원`);
     } else {
       setNumericCellCycle(prev => ({ ...prev, [cellKey]: nextIdx2 }));
       const newVal = candidateVals[nextIdx2];
@@ -342,12 +344,12 @@ export function useReextractCell({
           const aIdx = dispHeaders.indexOf("금액");
           if (aIdx >= 0) {
             delete rowEdits[aIdx];
-            console.log(`[재추출/금액잠금해제] ri=${ri} · ${colName}=${newVal} · 금액 자동 재계산 예정`);
+            devLog(`[재추출/금액잠금해제] ri=${ri} · ${colName}=${newVal} · 금액 자동 재계산 예정`);
           }
         }
         return { ...prev, [ri]: rowEdits };
       });
-      console.log(`[셀재추출/단일] ri=${ri} ci=${ci} (${colName}) → ${newVal} (${nextIdx2 + 1}/${candidateVals.length})`);
+      devLog(`[셀재추출/단일] ri=${ri} ci=${ci} (${colName}) → ${newVal} (${nextIdx2 + 1}/${candidateVals.length})`);
     }
   }, [pageNums, structuredPages, pages, numericCellCycle, numericCellCandidates, noCandidateCells, cellEdits, dispHeaders, dispRows, nameIdx]);
 

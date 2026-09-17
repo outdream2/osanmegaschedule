@@ -5,6 +5,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { SK_AUTH_SESSION } from "./lib/storageKeys";
+// 2026-09-17 · devLog 유틸 · production 번들 · 노이즈 제거
+import { devLog, devWarn } from "./lib/devLog";
 import SchedulePage from "./components/SchedulePage";
 import { LandingPage } from "./components/LandingPage";
 // 2026-09-04 · #23 · 공급사 재고확인 · 모달 → 전용 페이지 전환
@@ -122,9 +124,9 @@ export default function App() {
           loginAt: Date.now(),
           lastActiveAt: Date.now(),
         });
-        console.log("[SSO] · 로그인 성공 · %s", data.name);
+        devLog("[SSO] · 로그인 성공 · %s", data.name);
       } catch (e: any) {
-        console.warn("[SSO] · consume 실패:", e?.message ?? e);
+        devWarn("[SSO] · consume 실패:", e?.message ?? e);
       } finally {
         // URL 쿼리 정리 · 다른 사람이 URL 복사 시 재사용 방지
         const url = new URL(window.location.href);
@@ -149,7 +151,7 @@ export default function App() {
   //   · history state 도 clean · 다시 앞으로가기 로 되돌아갈 수 없게
   useEffect(() => {
     if (!authSession && page !== "landing") {
-      console.warn("[auth-gate] unauthenticated · page='%s' · force landing", page);
+      devWarn("[auth-gate] unauthenticated · page='%s' · force landing", page);
       setPage("landing");
       try { history.replaceState({ page: "landing" }, "", "/"); } catch { /* noop */ }
     }
@@ -165,7 +167,7 @@ export default function App() {
     if (page === "landing") return;  // 랜딩은 항상 접근 허용
     const viewport: "pc" | "mobile" = isMobileViewport ? "mobile" : "pc";
     if (!isPageVisibleV(page, viewport)) {
-      console.log(`[app-nav] page='${page}' viewport='${viewport}' hidden by menu setting · redirect to landing`);
+      devLog(`[app-nav] page='${page}' viewport='${viewport}' hidden by menu setting · redirect to landing`);
       setPage("landing");
     }
   }, [page, isMobileViewport, isPageVisibleV, pageVisLoaded]);
@@ -219,12 +221,12 @@ export default function App() {
     if (auth) setAuthSession(auth);
     // 2026-09-01 · 보안 P0 · 미인증 + auth 파라미터 없음 → 이동 차단 · 로그인 유도
     if (!authSession && !auth) {
-      console.warn(`[auth-gate] navigate blocked · unauthenticated → ${next}`);
+      devWarn(`[auth-gate] navigate blocked · unauthenticated → ${next}`);
       navigate("landing");
       return;
     }
     if (isHiddenPage(next)) {
-      console.warn(`[App] Blocked navigation to hidden page: ${next}`);
+      devWarn(`[App] Blocked navigation to hidden page: ${next}`);
       navigate("landing");
       return;
     }
@@ -234,7 +236,7 @@ export default function App() {
   // 렌더 시점에도 · 현재 page 가 hidden 이면 landing 으로 강제 (permissions 뒤늦게 로드된 경우 대비)
   React.useEffect(() => {
     if (page !== "landing" && isHiddenPage(page)) {
-      console.warn(`[App] Current page hidden, redirecting to landing: ${page}`);
+      devWarn(`[App] Current page hidden, redirecting to landing: ${page}`);
       navigate("landing");
     }
   }, [page, isHiddenPage]);
@@ -276,11 +278,11 @@ export default function App() {
       if (!hasSession) {
         // 이미 로그인 화면 (경로 "/") 이면 · loop 방지 무시
         if (window.location.pathname === "/" || window.location.pathname === "") {
-          console.log("[SESSION_EXPIRED] 미로그인 · 이미 로그인 화면 · 무시 (loop 방지)");
+          devLog("[SESSION_EXPIRED] 미로그인 · 이미 로그인 화면 · 무시 (loop 방지)");
           return;
         }
         // 로그인 화면 아니면 · 강제 리다이렉트
-        console.log("[SESSION_EXPIRED] 미로그인 · 로그인 화면으로 강제 이동");
+        devLog("[SESSION_EXPIRED] 미로그인 · 로그인 화면으로 강제 이동");
         window.location.replace("/");
         return;
       }
@@ -288,7 +290,7 @@ export default function App() {
       const now = Date.now();
       if (now - lastExpiredAtRef.current < 1000) return;
       lastExpiredAtRef.current = now;
-      console.log("[SESSION_EXPIRED] 세션 만료 감지 · handleLogout 호출");
+      devLog("[SESSION_EXPIRED] 세션 만료 감지 · handleLogout 호출");
       handleLogout();
     };
     window.addEventListener("api-session-expired", onExpired);
