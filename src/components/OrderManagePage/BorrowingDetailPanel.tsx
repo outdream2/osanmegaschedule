@@ -660,29 +660,18 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
         </Modal>
       )}
 
-      {/* ─── Legacy 서명 미리보기 라이트박스 ─── */}
+      {/* ─── 서명 미리보기 라이트박스 · 2026-09-17 · #191 Phase C · common/Modal 마이그레이션 ─── */}
       {signaturePreview && (
-        <div
-          role="dialog"
-          aria-modal
-          className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 p-4"
-          onClick={() => setSignaturePreview(null)}
+        <Modal
+          open={true}
+          onClose={() => setSignaturePreview(null)}
+          title="서명 미리보기"
+          size="lg-narrow"
+          backdropIntensity="dark"
+          zIndex={9998}
         >
-          <div className="bg-white rounded-xl shadow-xl p-4 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[15px] font-bold text-ink">서명 미리보기</span>
-              <button
-                type="button"
-                onClick={() => setSignaturePreview(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 cursor-pointer"
-                aria-label="닫기"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <img src={signaturePreview} alt="서명" className="w-full h-auto border border-line rounded-lg bg-white" />
-          </div>
-        </div>
+          <img src={signaturePreview} alt="서명" className="w-full h-auto border border-line rounded-lg bg-white" />
+        </Modal>
       )}
     </>
   );

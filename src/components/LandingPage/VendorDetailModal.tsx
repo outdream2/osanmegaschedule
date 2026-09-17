@@ -3,6 +3,7 @@
 //   · 자동 저장 · 매입이력 · 결제 등록 · 삭제 · 총재고 계산
 //   · 관련 helpers: METHOD_OPTIONS · Field · SectionTitle · StatCard
 // 2026-08-26 · large-file 분리 · VendorDetailApprovalBanner/PaymentPanel/PurchasePanel 이관
+// 2026-09-17 · #191 Phase C · 인라인 backdrop → common/Modal 프리미티브 (non-panel 모드만)
 
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { api, ApiError } from "../../lib/apiClient";
@@ -14,6 +15,7 @@ import {
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { Spinner } from "../common/Spinner";
 import { GradientAccent } from "../common/GradientAccent";
+import { Modal } from "../common/Modal";
 import type { Vendor, EditDraft } from "./VendorListEditor.types";
 import {
   vatDraftVal, emptyDraft, fmtWon, inputCls,
@@ -313,24 +315,19 @@ export const VendorDetailModal: React.FC<{
     }
   };
 
-  // ── 래퍼: panel 모드는 인라인 · 기본은 backdrop 모달 ──
+  // ── 래퍼: panel 모드는 인라인 · 기본은 common/Modal 프리미티브 ──
   // 2026-08-17 v2 · Modal 통일 (panel 모드 아닌 경우 backdrop-brand)
-  const backdropCls = panel
-    ? "relative bg-white rounded-xl border border-line shadow-sm flex flex-col overflow-hidden min-h-0 flex-1"
-    : "fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-2 sm:p-4";
+  // 2026-09-17 · #191 Phase C · non-panel 은 common/Modal 사용 · panel 은 인라인 유지
+  const panelBackdropCls = "relative bg-white rounded-xl border border-line shadow-sm flex flex-col overflow-hidden min-h-0 flex-1";
+  const panelInnerCls = "relative flex flex-col flex-1 min-h-0 overflow-hidden";
 
-  const innerCls = panel
-    ? "relative flex flex-col flex-1 min-h-0 overflow-hidden"
-    : "relative bg-white rounded-2xl shadow-brand-modal w-full max-w-5xl h-[95vh] md:h-auto md:min-h-[85vh] md:max-h-[92vh] flex flex-col overflow-hidden";
-
-  return (
-    <div className={backdropCls} onClick={panel ? undefined : onClose}>
-      <div
-        className={innerCls}
-        onClick={panel ? undefined : (e => e.stopPropagation())}
-      >
-        {/* ── 헤더 · v9 · 상단 gradient accent · glass style (2026-08-24) */}
-        <div className="relative flex items-start justify-between px-6 py-4 border-b border-line bg-white shrink-0 gap-3">
+  // 헤더 + 본문 + 하단 승인 버튼 + 결제모달 + toast 를 하나의 content 로 추출
+  //  · panel · 인라인 패널 안에 렌더
+  //  · non-panel · Modal 안에 렌더 (bodyPadding=none · sticky 헤더로 유지)
+  const content = (
+      <>
+        {/* ── 헤더 · v9 · 상단 gradient accent · glass style (2026-08-24) · non-panel 시 sticky (2026-09-17) */}
+        <div className={`relative flex items-start justify-between px-6 py-4 border-b border-line bg-white shrink-0 gap-3 ${panel ? "" : "sticky top-0 z-10"}`}>
           {/* v9 · 상단 2px gradient */}
           <GradientAccent size="thin" className="z-10" />
           {/* 2026-08-10 · 사용자 요청 · 분류 위 · 공급사명 아래 · 옆에 사업자·담당·전화 (PC 한줄 · 모바일 2줄) */}
@@ -727,8 +724,35 @@ export const VendorDetailModal: React.FC<{
             <div className={toastClass(toast.tone)}>{toast.message}</div>
           </div>
         )}
+      </>
+    );
+
+  // panel · 인라인 패널 (부모 grid/flex 안 embed)
+  if (panel) {
+    return (
+      <div className={panelBackdropCls}>
+        <div className={panelInnerCls}>
+          {content}
+        </div>
       </div>
-    </div>
+    );
+  }
+
+  // non-panel · common/Modal 프리미티브 사용 (2026-09-17 · #191 Phase C)
+  //   · showClose=false · 커스텀 헤더 안에 자체 X 버튼 존재
+  //   · bodyPadding=none · 헤더 sticky + 자체 padding
+  //   · className · 원본 max-w-5xl · h-[95vh] md:h-auto md:min-h-[85vh] 유지
+  return (
+    <Modal
+      open={true}
+      onClose={onClose}
+      size="xl"
+      showClose={false}
+      bodyPadding="none"
+      className="!max-w-5xl h-[95vh] md:h-auto md:min-h-[85vh]"
+    >
+      {content}
+    </Modal>
   );
 };
 
