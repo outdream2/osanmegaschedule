@@ -15,7 +15,7 @@
 //   · StockActionsCell 재사용 (기존 3버튼 그대로)
 
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { Box, Hash, ChevronDown, ChevronUp, MapPin, Check, X } from "lucide-react";
+import { Hash, ChevronDown, ChevronUp, MapPin, Check, X } from "lucide-react";
 import type { StockRow } from "./stockRowTypes";
 import { calcRowTotal, calcSlotTotal, calcTotalAdded } from "./stockRowTypes";
 import { StatusPill } from "../common/StatusPill";
@@ -325,29 +325,20 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
           onClick={() => setManuallyExpanded(v => !v)}
           className="flex-1 min-w-0 flex flex-col gap-1 text-left cursor-pointer"
         >
-          {/* Row 1: 상품명 + 배지 */}
+          {/* Row 1: 상품분류코드 · 2026-09-17 · 사용자 지시 · 코드 상단 (배지 오른쪽) */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <h4 className="text-[16px] font-bold text-ink tracking-tight leading-snug break-keep">
-              {row.product.name}
-            </h4>
+            <span className="inline-flex items-center gap-1 text-[14px] font-mono
+              text-zinc-500 bg-zinc-100/70 rounded px-1.5 py-0.5">
+              <Hash size={9} className="text-zinc-400" />
+              {row.code}
+            </span>
             {isWarn && <StatusPill tone="amber" size="xs">이상값</StatusPill>}
             {hasExpiryFlag && <StatusPill tone="rose" size="xs">유통기한 임박</StatusPill>}
           </div>
-          {/* Row 2: spec + code */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {(row.product as any).spec && (
-              <span className="inline-flex items-center gap-1 text-[14px] font-semibold
-                text-zinc-500 bg-zinc-100/70 rounded px-1.5 py-0.5">
-                <Box size={9} className="text-zinc-400" />
-                {(row.product as any).spec}
-              </span>
-            )}
-            <span className="inline-flex items-center gap-1 text-[14px] font-mono
-              text-zinc-400 bg-zinc-100/60 rounded px-1.5 py-0.5">
-              <Hash size={9} className="text-zinc-300" />
-              {row.code}
-            </span>
-          </div>
+          {/* Row 2: 상품명 · 2026-09-17 · 사용자 지시 · 코드 다음줄 · spec 숫자만 표시 제거 (현재고 중복) */}
+          <h4 className="text-[16px] font-bold text-ink tracking-tight leading-snug break-keep">
+            {row.product.name}
+          </h4>
           {/* Row 3: ERP현재고 · 실재고 · 손실 */}
           {(() => {
             const erpQty = Number((row.product as any).current_stock ?? 0);
