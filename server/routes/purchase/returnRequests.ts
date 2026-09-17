@@ -60,7 +60,9 @@ router.post("/api/return-requests", authorize(5), validateBody(ReturnRequestCrea
 }));
 
 // GET /api/return-requests?supplier=X&status=X&days=30&limit=200
+// 2026-09-17 · 대원칙 · 발주·반품 관련 · no-store
 router.get("/api/return-requests", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const supplier = String(req.query.supplier ?? "").trim();
   const status = String(req.query.status ?? "").trim();
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "60"), 10) || 60));
@@ -85,7 +87,9 @@ router.get("/api/return-requests", asyncHandler(async (req, res) => {
 
 // GET /api/return-requests/by-supplier?days=60
 // 공급사별 요약 · [{ supplier, count, total_qty, total_amount, statuses: {pending, sent, done, cancelled} }]
+// 2026-09-17 · 대원칙 · 발주·반품 관련 · no-store
 router.get("/api/return-requests/by-supplier", asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "60"), 10) || 60));
   const since = new Date(); since.setDate(since.getDate() - days);
   const { data, error } = await supabase

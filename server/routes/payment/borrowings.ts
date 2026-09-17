@@ -28,7 +28,9 @@ const SELECT_COLS = "id, created_at, direction, supplier, product_code, product_
 
 // GET /api/borrowings?status=open&supplier=X&direction=lend&days=90&limit=200
 // 2026-08-29 · 보안 감사 P2 fix · authorize(1) · 서명 dataURL 등 민감정보 노출 방지
+// 2026-09-17 · 대원칙 · 결제·잔고 캐시 X · no-store 추가
 router.get("/api/borrowings", authorize(1), asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const status    = String(req.query.status ?? "").trim();
   const supplier  = String(req.query.supplier ?? "").trim();
   const direction = String(req.query.direction ?? "").trim();
@@ -108,7 +110,9 @@ router.post("/api/borrowings", authorize(5), validateBody(CreateBorrowingSchema)
 // ═══════════════════════════════════════════════════════
 // GET /api/borrowings/parties?q=...  · 검색 (name·contact_name)
 // 2026-09-02 · #80 · 사용자 지시 · 자동 병합 · 약국(company_info) + 공급사(vendors) + external(borrowing_parties)
+// 2026-09-17 · 대원칙 · 결제 관련 · no-store
 router.get("/api/borrowings/parties", authorize(1), asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const q = String(req.query.q ?? "").trim();
   const qLower = q.toLowerCase();
   const matches = (name: string | null | undefined) => !q || String(name ?? "").toLowerCase().includes(qLower);
@@ -226,7 +230,9 @@ router.post("/api/borrowings/:id/signatures", authorize(5), validateBody(AddBorr
 }));
 
 // GET /api/borrowings/:id/signatures · 서명 이력 조회
+// 2026-09-17 · 대원칙 · 결제 관련 · no-store
 router.get("/api/borrowings/:id/signatures", authorize(1), asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const id = parseInt(req.params.id, 10);
   if (!Number.isFinite(id)) throw badRequest("invalid id");
   const { data, error } = await supabase
