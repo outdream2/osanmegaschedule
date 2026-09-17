@@ -494,6 +494,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   }, []);
 
   // ── 2026-08-23 · #204 · 개별 행 저장 · bulk endpoint 재사용 (items=[one])
+  // 2026-09-17 · fix · 서버 응답 saved=0 이면 실패로 처리 (이전 · 조용히 "0건 저장 완료" 오해)
   const handleSaveRow = useCallback(async (rowKey: string) => {
     const row = rows.find(r => r.key === rowKey);
     if (!row) return;
@@ -503,7 +504,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     const hasS2 = row.store2AddQty !== "";
     const hasS3 = row.store3AddQty !== "";
     try {
-      await saveBulkInventoryChecks({
+      const resp = await saveBulkInventoryChecks({
         checked_by: authSession?.employeeName ?? "익명",
         items: [{
           product_code:     row.code,
@@ -519,6 +520,13 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           warehouse_stock:  hasW1 ? Number(row.warehouse1AddQty) : null,
         }],
       });
+      // 2026-09-17 · fix · 서버가 실패 반환 · saved=0 or errors 있음 → 명시적 실패 처리
+      if ((resp.saved ?? 0) === 0 || (resp.errors && resp.errors.length > 0)) {
+        const errMsg = resp.errors?.[0]?.error ?? "서버 저장 실패 (saved=0)";
+        console.error("[handleSaveRow] 저장 실패:", resp);
+        showToast(`저장 실패 · ${errMsg}`);
+        return;
+      }
       // 창고 구역 변경 시 products.location 동기화
       if (row.warehouse1Zone || row.warehouse2Zone) {
         const zones = [row.warehouse1Zone, row.warehouse2Zone].filter(Boolean).join("/");
@@ -536,6 +544,11 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         prevStore2Qty:     row.store2AddQty     !== "" ? Number(row.store2AddQty)     : r.prevStore2Qty,
         prevStore3Qty:     row.store3AddQty     !== "" ? Number(row.store3AddQty)     : r.prevStore3Qty,
       } : r)));
+      // 2026-09-17 · fix · 연동된 페이지 자동 refresh · DiffTab · OrderManage · ShelfPositionsMap · RealStockTable 등
+      //   · 이전 · 저장 성공해도 · 다른 페이지 stale 데이터 유지 → 사용자 "저장 안 됨" 오해
+      window.dispatchEvent(new CustomEvent("inventory-checks-updated", {
+        detail: { source: "scan-page", productCode: row.code },
+      }));
       showToast(`${row.product.name} · 저장 완료`);
     } catch (e: unknown) {
       const msg = e instanceof ApiError ? e.message : (e instanceof Error ? e.message : "저장 실패");
@@ -585,15 +598,33 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             };
           }),
       });
-      setSavedCount(j.saved ?? rows.length);
+      // 2026-09-17 · fix · 서버 저장 실패 감지 · saved=0 or errors 있음 → 명시적 실패 처리
+      const savedNum = j.saved ?? 0;
+      const failedNum = j.failed ?? 0;
+      const hasErrors = j.errors && j.errors.length > 0;
+      if (savedNum === 0 && (failedNum > 0 || hasErrors)) {
+        const errMsg = j.errors?.[0]?.error ?? `전체 저장 실패 (saved=0 · failed=${failedNum})`;
+        console.error("[handleBulkSave] 저장 실패:", j);
+        setSaveError(errMsg);
+        setSaveStatus("error");
+        showToast(`저장 실패 · ${errMsg}`);
+        return;
+      }
+      setSavedCount(savedNum);
       setSaveStatus("done");
       // A5 · 서버 저장 성공 시 draft 삭제
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* noop */ }
       setDraftBanner(false);
+      // 2026-09-17 · fix · 전체 저장 후 · 연동된 페이지 자동 refresh (DiffTab · OrderManage · RealStockTable · ShelfPositionsMap 등)
+      window.dispatchEvent(new CustomEvent("inventory-checks-updated", {
+        detail: { source: "scan-page-bulk", saved: savedNum, total: rows.length },
+      }));
       showToast(
         j.downgraded
-          ? `${j.saved ?? rows.length}건 저장 완료 (DB 컬럼 확장 대기 · 레거시 모드)`
-          : `${j.saved ?? rows.length}건 저장 완료`,
+          ? `${savedNum}건 저장 완료 (DB 컬럼 확장 대기 · 레거시 모드)`
+          : failedNum > 0
+            ? `${savedNum}건 저장 · ${failedNum}건 실패 · 서버 로그 확인`
+            : `${savedNum}건 저장 완료`,
       );
     } catch (e: unknown) {
       const msg = e instanceof ApiError ? e.message : (e instanceof Error ? e.message : "저장 실패");
