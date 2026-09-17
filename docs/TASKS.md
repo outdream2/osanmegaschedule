@@ -47,6 +47,11 @@
 | [38] | #107·#258 · 발주 리스트 프리미엄 헤더 통계 뱃지 | `752db75b` |
 | [39] | T-SP-MASTER-UI · 매장·창고 마스터 관리 UI · SystemSettings 신규 탭 | `0ace666c` |
 | [40] | T-AUTO-IMPORT-WEB-REDESIGN · 시스템설정 · Electron sync-agent 다운로드 페이지 | `e5fe6584` |
+| [41] | sync-agent README · Phase 3 완료 · 최신 기능 반영 | `2a1f44bf` |
+| [42] | #191 Phase C · VendorDetailModal + BorrowingDetailPanel · Modal 프리미티브 마이그레이션 (2건) | `a02cf2dd` |
+| [43] | 유통기한 임박 등록 상품 · 리스트 노출 fix · inventory_checks SSOT 이중 저장 | `62282df0` |
+| [44] | 실재고확인 · 스캔 카드 헤더 · 코드↔상품명 스왑 · spec 숫자 중복 제거 · 왼쪽 진열구역 표시 | `7dc5ca40` |
+| [45] | 실재고 저장 · 실패 감지 강화 + inventory-checks-updated 이벤트 dispatch (연동 페이지 자동 refresh) | `f3473c2e` |
 
 ---
 
@@ -89,6 +94,8 @@
 | **#56** | 매장 구역 추가/제거 · X 버튼 권한 | 🟢 P4 LATER | 스펙 애매 · 확인 필요 |
 | **#149** | large-file 분리 잔여 · OcrPage(1215)·PaymentInfoTab(1513)·OrderManagePage(3089)·LandingPage(2319)·ContractWriterPage | 🟢 P3 | Framework Phase 4 잔여 · baseline 9 파일 · 대형 |
 | **#115** | real_map 컬럼 DB DROP SQL 실행 · `migrations/20260904_drop_real_map.sql` | 🟡 | 사용자 · Supabase SQL Editor 직접 실행 |
+| **T-RSTP-TOOLBAR** | RealStockTablePage · 상단 툴바 · 좁은 화면 대응 · 두 줄 분리 (제목·건수·검색·필터) | 🟡 P2 | 화면 폭 좁을 때 wrap 개선 |
+| **T-WAREHOUSE-TAB** | 매장진열 · 창고1/창고2 페이지 → 매장구역도 탭메뉴로 통합 · 기존 페이지도 탭 | 🟡 P2 | 네비 구조 변경 · 라우터·SideNav 재구성 |
 
 ---
 
@@ -96,7 +103,7 @@
 
 | # | 태스크 | 대기 사유 |
 |---|-----|---------|
-| **#191 Phase C** | Modal 프레임워크화 · panel/modal 이중 (VendorDetailModal·VendorPaymentPanel·BorrowingDetailPanel·SupplierTab.panels·ProductDetailPanel) | 고위험 · 5 파일 · 사용자 승인 후 |
+| **#191 Phase C · 잔여** | Modal 프레임워크화 · Hybrid panel/modal 3파일 (VendorPaymentPanel · SupplierTab.panels · ProductDetailPanel) · 데스크탑=패널·모바일=풀스크린 이중 구조 | 고위험 · 스펙 확인 필요 · Modal 프리미티브 부적합 (실제 모달 아님) |
 <!-- 2026-09-15 · #130 · 차용등록 재설계 · 완료 확인 · Phase E (`eafc05e5`) BorrowingPage v2 스왑 · Detail·Edit 패널 분리 완료 · 원본 legacy 파일 삭제 (`98ae8202`) -->
 | FlowTab·LossHistoryTab·DiffTab | 컬러 bg 정리 (대량) | 승인 후 순차 |
 | **#254~#256** | 세션 보안 강화 · 중복 로그인 방지 · 강제 로그아웃 | 대형 · 별도 세션 · 12-18h |
