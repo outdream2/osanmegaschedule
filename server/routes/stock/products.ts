@@ -667,6 +667,10 @@ router.delete("/api/products/:code", authorize(9), asyncHandler(async (req, res)
 //   · products.expiry_date 사용 중단 (임포트 위험) · SSOT = inventory_checks
 //   · 상품 단위 · 최임박 로트 (MIN expiry_date) 표시 · UI 로트 관리 X
 //   · /:code 라우트보다 먼저 등록해야 매칭됨
+// 2026-09-17 · fix · legacy 데이터 fallback · products.expiry_date · 이전 등록 상품 · 리스트 노출 복구
+//   · 이유 · 이전 · toggleExpiry · products.expiry_date 만 저장 · inventory_checks 미저장
+//   · 사용자 · '기존 표시한 상품 안 나옴' 재보고 · SSOT 유지 + legacy 포용
+//   · 로직 · UNION · inventory_checks + products · MIN(expiry_date) · hidden=false
 router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   // 1. inventory_checks · 상품별 · 최임박 (MIN expiry_date) 집계
@@ -684,13 +688,32 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
     const cur = minExpiry.get(r.product_code);
     if (!cur || String(r.expiry_date) < cur) minExpiry.set(r.product_code, String(r.expiry_date));
   }
+
+  // 2026-09-17 · fix · 2단계 · products.expiry_date (legacy · SSOT 이전 등록분) 도 함께 집계
+  //   · inventory_checks 에 이미 있으면 · MIN 비교 · 없으면 신규 추가
+  //   · hidden=false 만 (동일 필터 · 아래 products 조회와 통일)
+  const { data: prodExpiry, error: prodExpErr } = await supabase
+    .from("products")
+    .select("product_code, expiry_date")
+    .not("expiry_date", "is", null)
+    .eq("hidden", false);
+  if (prodExpErr) {
+    console.error("[expiry-imminent GET] products.expiry_date error:", prodExpErr.message);
+    throw new HttpError(500, prodExpErr.message);
+  }
+  for (const r of prodExpiry ?? []) {
+    if (!r.product_code || !r.expiry_date) continue;
+    const cur = minExpiry.get(r.product_code);
+    if (!cur || String(r.expiry_date) < cur) minExpiry.set(r.product_code, String(r.expiry_date));
+  }
+
   const codes = Array.from(minExpiry.keys());
   if (codes.length === 0) {
     res.setHeader("Cache-Control", "no-store");
     return res.json([]);
   }
 
-  // 2. products · JOIN · 상품 정보 (hidden=false)
+  // 3. products · JOIN · 상품 정보 (hidden=false)
   const CHUNK = 500;
   const products: any[] = [];
   for (let i = 0; i < codes.length; i += CHUNK) {
@@ -707,7 +730,7 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
     products.push(...(data ?? []));
   }
 
-  // 3. 상품별 최임박 결합 · 정렬 (오래된 유통기한 우선)
+  // 4. 상품별 최임박 결합 · 정렬 (오래된 유통기한 우선)
   const result = products
     .map(p => ({
       product_code: p.product_code,
