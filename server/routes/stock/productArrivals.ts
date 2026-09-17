@@ -146,8 +146,10 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
     const expiryDate = (it.expiry_date != null && String(it.expiry_date).trim() !== "")
       ? String(it.expiry_date).trim()
       : null;
-    // expiry_date 컬럼 없음 · verify_note 에 "유통기한: YYYY-MM-DD" 형식으로 저장
-    const expiryNote = expiryDate ? `유통기한: ${expiryDate}` : null;
+    // 2026-09-17 · 사용자 지시 · purchase_details.expiry_date DATE 컬럼 사용 (Phase A 마이그레이션 완료)
+    //   · 이전 · verify_note 에 '유통기한: YYYY-MM-DD' 문자열 저장 (파싱 오버헤드 · 정합성 X)
+    //   · 이후 · DATE 컬럼 직접 저장 · verify_note 는 자유 메모 유지
+    const expiryNote = null;
 
     // 오늘 자 · 이미 매입 원본 있는지 확인 (OCR/엑셀 임포트 등)
     const { data: existing, error: checkErr } = await supabase
@@ -176,6 +178,9 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
         updatePayload.unit_price = Number(it.unit_price);
         updatePayload.amount = Number(it.unit_price) * qty;
       }
+      // 2026-09-17 · DATE 컬럼 직접 저장 (Phase B) · expiryDate=null 이면 null 저장 (해제 지원)
+      if (isExpiring) updatePayload.expiry_date = expiryDate;
+      else updatePayload.expiry_date = null;
       if (expiryNote) updatePayload.verify_note = expiryNote;
 
       const { error: uErr } = await supabase
@@ -220,6 +225,8 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
         verified_expiring: isExpiring,
         imported_at: now.toISOString(),
       };
+      // 2026-09-17 · DATE 컬럼 직접 저장 (Phase B) · isExpiring=true 인 경우만
+      if (isExpiring && expiryDate) insertPayload.expiry_date = expiryDate;
       if (expiryNote) insertPayload.verify_note = expiryNote;
 
       const { error: iErr } = await supabase
@@ -495,28 +502,25 @@ router.get("/api/product-arrivals/compare/orders", asyncHandler(async (req, res)
 
 // ─────────────────────────────────────────────────────────────────
 // GET /api/product-arrivals/expiring · 유통기한 임박 리스트
-//   · verified_expiring = true AND verify_note LIKE '유통기한:%' 인 행
-//   · 클라이언트에서 남은 기간 계산 · 필터링
+//   · verified_expiring = true AND expiry_date IS NOT NULL 인 행
+// 2026-09-17 · Phase B · verify_note 파싱 → expiry_date DATE 컬럼 직접 조회 (타입 안전 · 정렬 정확)
 // ─────────────────────────────────────────────────────────────────
 router.get("/api/product-arrivals/expiring", authorize(1), asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const { data, error } = await supabase
     .from("purchase_details")
-    .select("id, purchase_date, product_code, product_name, supplier_name, quantity, unit_price, verify_note, verified_at, verified_by, verified_expiring")
+    .select("id, purchase_date, product_code, product_name, supplier_name, quantity, unit_price, expiry_date, verify_note, verified_at, verified_by, verified_expiring")
     .eq("verified_expiring", true)
-    .not("verify_note", "is", null)
-    .order("verify_note", { ascending: true })
+    .not("expiry_date", "is", null)
+    .order("expiry_date", { ascending: true })
     .limit(1000);
   if (error) throw new HttpError(500, error.message);
 
-  // verify_note 에서 유통기한 파싱 · "유통기한: YYYY-MM-DD" 형식만
-  const rows = (data ?? [])
-    .map((r: any) => {
-      const note = String(r.verify_note ?? "");
-      const match = note.match(/유통기한:\s*(\d{4}-\d{2}-\d{2})/);
-      const expiry_date = match ? match[1] : null;
-      return { ...r, expiry_date };
-    })
-    .filter((r: any) => r.expiry_date !== null);
+  // 2026-09-17 · Phase B · expiry_date DATE 컬럼 직접 · 파싱 제거 · slice(0,10) 정규화만
+  const rows = (data ?? []).map((r: any) => ({
+    ...r,
+    expiry_date: r.expiry_date ? String(r.expiry_date).slice(0, 10) : null,
+  }));
 
   res.json(rows);
 }));

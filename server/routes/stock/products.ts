@@ -707,6 +707,26 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
     if (!cur || String(r.expiry_date) < cur) minExpiry.set(r.product_code, String(r.expiry_date));
   }
 
+  // 2026-09-17 · fix · 3단계 · purchase_details.expiry_date (상품입고 검수 · '임박' 체크) 도 함께 집계
+  //   · Phase A 마이그레이션 완료 · verify_note 파싱 → DATE 컬럼 직접 조회로 전환
+  //   · verified_expiring=true 필터 · expiry_date NOT NULL · MIN 비교 · 타입 안전
+  const { data: paRows, error: paErr } = await supabase
+    .from("purchase_details")
+    .select("product_code, expiry_date")
+    .eq("verified_expiring", true)
+    .not("expiry_date", "is", null);
+  if (paErr) {
+    console.error("[expiry-imminent GET] purchase_details error:", paErr.message);
+    // 3단계 실패 · 1·2단계는 유지 · warn 만 (BC)
+  } else {
+    for (const r of paRows ?? []) {
+      if (!r.product_code || !r.expiry_date) continue;
+      const dateStr = String(r.expiry_date).slice(0, 10);
+      const cur = minExpiry.get(String(r.product_code));
+      if (!cur || dateStr < cur) minExpiry.set(String(r.product_code), dateStr);
+    }
+  }
+
   const codes = Array.from(minExpiry.keys());
   if (codes.length === 0) {
     res.setHeader("Cache-Control", "no-store");
