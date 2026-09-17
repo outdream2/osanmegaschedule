@@ -112,10 +112,11 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
 
   // 2026-08-10 · 사용자 요청 · 각 요청에 product_name 추가 (products JOIN · 프론트 상품명 컬럼용)
   // 2026-09-09 · stale fix · products.display_location · location 도 함께 조회
-  //   · 요청 생성 시 zone_label 스냅샷 저장 · 이후 products 변경되면 진열위치 stale
-  //   · 프론트에 최신 display_location 을 별도 필드로 전달 · UI 에서 우선 표시
+  // 2026-09-18 · fix · 사용자 재보고 · 진열요청 리스트 · 상품명 여전히 안 나옴
+  //   원인 · products 매칭 실패 시 · product_name=null 만 반환 · note 파싱 fallback 안 됨
+  //   fix · 3단계 fallback (1: products 매칭 · 2: leading zero 매칭 · 3: note '<name> 진열 요청' 파싱)
   const rows = data ?? [];
-  const productCodes = Array.from(new Set(
+  const productCodes: string[] = Array.from(new Set(
     rows.map((r: any) => String(r.product_code ?? "").trim()).filter(Boolean)
   ));
   if (productCodes.length > 0) {
@@ -136,16 +137,56 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
           location_detail: (p as any).location_detail ?? null,
         });
       }
+      // 2026-09-18 · 2차 fallback · leading zero 제거된 코드로 재조회
+      //   · display_requests 에는 앞0 있는 원본 · products 는 앞0 제거된 정규화 버전 (or 반대)
+      const unmatchedCodes = productCodes.filter(c => !infoMap.has(c) && /^0+/.test(c));
+      if (unmatchedCodes.length > 0) {
+        const stripped = unmatchedCodes.map(c => c.replace(/^0+/, "")).filter(Boolean);
+        if (stripped.length > 0) {
+          const { data: prods2 } = await supabase
+            .from("products")
+            .select("product_code, product_name, spec, display_location, location, location_detail")
+            .in("product_code", stripped);
+          for (const p of prods2 ?? []) {
+            const strippedCode = String(p.product_code ?? "").trim();
+            // 원본 (앞0 포함) 코드로 다시 매핑
+            const originalCode = unmatchedCodes.find(c => c.replace(/^0+/, "") === strippedCode);
+            if (originalCode) infoMap.set(originalCode, {
+              name: String(p.product_name ?? ""),
+              spec: p.spec ?? null,
+              display_location: (p as any).display_location ?? null,
+              location: (p as any).location ?? null,
+              location_detail: (p as any).location_detail ?? null,
+            });
+          }
+        }
+      }
       for (const r of rows as any[]) {
         const c = String(r.product_code ?? "").trim();
         const info = c ? infoMap.get(c) : null;
-        r.product_name = info?.name ?? null;
+        const productNameFromDb = info?.name?.trim() ?? "";
+        // 3차 fallback · note '<name> 진열 요청' 파싱
+        let productName: string | null = productNameFromDb || null;
+        if (!productName && r.note) {
+          const cleaned = String(r.note).replace(/\s*진열\s*(?:보충\s*)?요청\s*$/u, "").trim();
+          if (cleaned) productName = cleaned;
+        }
+        r.product_name = productName;
         r.product_spec = info?.spec ?? null;
         // 최신 진열위치 · display_location 우선 · 없으면 location · 없으면 null
         r.product_display_location = info?.display_location ?? info?.location ?? null;
         r.product_location_detail = info?.location_detail ?? null;
       }
-    } catch { /* silent · products 조회 실패해도 요청 응답은 반환 */ }
+    } catch (e: any) {
+      console.warn("[display-requests GET] products lookup 실패 (경고):", e?.message ?? e);
+      // silent · products 조회 실패해도 요청 응답은 반환 · note 파싱 fallback 만 시도
+      for (const r of rows as any[]) {
+        if (r.note) {
+          const cleaned = String(r.note).replace(/\s*진열\s*(?:보충\s*)?요청\s*$/u, "").trim();
+          if (cleaned) r.product_name = cleaned;
+        }
+      }
+    }
   }
   res.json(rows);
 }));
