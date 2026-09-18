@@ -296,7 +296,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   // ── 슬림 헤더 (사이드바 데스크탑) ─────────────────────────
   if (SIDEBAR_ENABLED && !isMobileNav) {
     return (
-      <div className="flex items-center justify-between gap-3 px-3 py-1 shrink-0 bg-white/60 backdrop-blur-sm border-b border-line/50">
+      <div className="flex items-center justify-between gap-3 px-3 py-1 shrink-0 bg-white border-b border-line/50 sticky top-0 z-40">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
           {/* 2026-09-01 · 사이드바 토글 · 시각 개선 · 명확한 chip 버튼 (기존 60% 투명 → 명확한 bg+border+icon) */}
           <SidebarTrigger
@@ -315,7 +315,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   // ── 풀 헤더 (모바일 / 사이드바 미사용) ─────────────────────────
   return (
     <header
-      className="relative z-40 border-b border-white/[0.08] shrink-0 shadow-[0_1px_3px_rgba(10,46,74,0.15),0_4px_20px_-4px_rgba(10,46,74,0.20),0_12px_40px_-16px_rgba(10,46,74,0.25)]"
+      className="sticky top-0 z-40 border-b border-white/[0.08] shrink-0 shadow-[0_1px_3px_rgba(10,46,74,0.15),0_4px_20px_-4px_rgba(10,46,74,0.20),0_12px_40px_-16px_rgba(10,46,74,0.25)]"
       style={{ background: "linear-gradient(180deg, #0A2E4A 0%, #0D3350 50%, #0F3855 100%)" }}
     >
       {/* aurora radial glow */}
@@ -398,7 +398,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
 
       {/* 브레드크럼 */}
       {breadcrumbItems.length > 0 && (
-        <div className="relative px-4 sm:px-6 py-1.5 bg-white/[0.96] backdrop-blur-sm border-t border-white/10">
+        <div className="relative px-4 sm:px-6 py-1.5 bg-white border-t border-white/10">
           <Breadcrumb items={breadcrumbItems} onNavigate={handleBreadcrumbNav} />
         </div>
       )}
