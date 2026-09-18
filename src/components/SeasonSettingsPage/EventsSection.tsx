@@ -3,26 +3,25 @@
 //   · GET /api/events · POST /api/events · PATCH · DELETE
 //   · type · spring/summer/fall/winter/holiday/school/custom
 //   · recurring · 매년 반복 (계절·명절 등)
+// 2026-09-18 · 이벤트별 추천 상품 매핑 UI 추가
+//   · SplitPanel · 좌 이벤트 리스트 · 우 매핑 상품 관리 (EventProductPanel)
+//   · 이벤트 선택 시 · 우측에 매핑 상품 CRUD · 상품 검색·복사·붙여넣기·분류 일괄
+//   · 좌측 이벤트 카드 · 상품 개수 배지 (실시간)
 
-import React, { useCallback, useEffect, useState } from "react";
-import { Plus, Trash2, Pencil, Check, X, Calendar, RefreshCw } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Plus, Trash2, Pencil, Check, X, Calendar, RefreshCw, Package } from "lucide-react";
 import { api } from "../../lib/apiClient";
 import { getErrorMessage } from "../../lib/errorMessage";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import { EmptyState } from "../common/EmptyState";
+import { SplitPanel } from "../common/SplitPanel";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 import { getKstYmd } from "../../lib/kstDate";
+import { EventProductPanel, type EventLite } from "./EventProductPanel";
 
-interface EventRow {
-  id: number;
-  name: string;
-  type: string;
-  start_date: string | null;
-  end_date: string | null;
-  recurring: boolean;
-}
+interface EventRow extends EventLite {}
 
 const TYPE_OPTIONS = [
   { key: "spring",  label: "봄" },
@@ -34,14 +33,14 @@ const TYPE_OPTIONS = [
   { key: "custom",  label: "이벤트" },
 ] as const;
 
-const TYPE_TONE: Record<string, { bg: string; text: string }> = {
-  spring:  { bg: "bg-pink-50 border-pink-200",   text: "text-pink-700" },
-  summer:  { bg: "bg-sky-50 border-sky-200",     text: "text-sky-700" },
-  fall:    { bg: "bg-amber-50 border-amber-200", text: "text-amber-700" },
-  winter:  { bg: "bg-indigo-50 border-indigo-200", text: "text-indigo-700" },
-  holiday: { bg: "bg-rose-50 border-rose-200",   text: "text-rose-700" },
-  school:  { bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700" },
-  custom:  { bg: "bg-violet-50 border-violet-200", text: "text-violet-700" },
+const TYPE_TONE: Record<string, { bg: string; text: string; activeBg: string; activeBorder: string }> = {
+  spring:  { bg: "bg-pink-50 border-pink-200",        text: "text-pink-700",    activeBg: "bg-pink-100",    activeBorder: "border-pink-400" },
+  summer:  { bg: "bg-sky-50 border-sky-200",          text: "text-sky-700",     activeBg: "bg-sky-100",     activeBorder: "border-sky-400" },
+  fall:    { bg: "bg-amber-50 border-amber-200",      text: "text-amber-700",   activeBg: "bg-amber-100",   activeBorder: "border-amber-400" },
+  winter:  { bg: "bg-indigo-50 border-indigo-200",    text: "text-indigo-700",  activeBg: "bg-indigo-100",  activeBorder: "border-indigo-400" },
+  holiday: { bg: "bg-rose-50 border-rose-200",        text: "text-rose-700",    activeBg: "bg-rose-100",    activeBorder: "border-rose-400" },
+  school:  { bg: "bg-emerald-50 border-emerald-200",  text: "text-emerald-700", activeBg: "bg-emerald-100", activeBorder: "border-emerald-400" },
+  custom:  { bg: "bg-violet-50 border-violet-200",    text: "text-violet-700",  activeBg: "bg-violet-100",  activeBorder: "border-violet-400" },
 };
 
 const emptyDraft = () => ({ name: "", type: "custom", start_date: "", end_date: "", recurring: false });
@@ -54,6 +53,9 @@ export const EventsSection: React.FC = () => {
   const [draft, setDraft] = useState(emptyDraft());
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+  const [productCounts, setProductCounts] = useState<Record<number, number>>({});
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { toast, showSuccess, showError } = useToast();
   const confirm = useConfirm();
 
@@ -61,13 +63,40 @@ export const EventsSection: React.FC = () => {
     setLoading(true);
     try {
       const { data } = await api.get<{ rows?: EventRow[] }>(`/api/events`);
-      setEvents(Array.isArray(data?.rows) ? data.rows : []);
+      const rows = Array.isArray(data?.rows) ? data.rows : [];
+      setEvents(rows);
+      // 각 이벤트의 매핑 상품 개수 로드 (병렬 · 배지용)
+      // 이벤트가 많지 않다는 가정 · 최대 수십 건
+      if (rows.length > 0) {
+        void loadCounts(rows.map(r => r.id));
+      }
     } catch (e) {
       showError(`이벤트 로드 실패: ${getErrorMessage(e)}`);
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showError]);
+
+  const loadCounts = useCallback(async (ids: number[]) => {
+    try {
+      const results = await Promise.all(
+        ids.map(async id => {
+          try {
+            const { data } = await api.get<{ products?: any[] }>(`/api/events/${id}/products`);
+            return [id, (data?.products ?? []).length] as const;
+          } catch {
+            return [id, 0] as const;
+          }
+        }),
+      );
+      const map: Record<number, number> = {};
+      for (const [id, n] of results) map[id] = n;
+      setProductCounts(map);
+    } catch {
+      // silent · 배지는 optional
+    }
+  }, []);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -126,6 +155,8 @@ export const EventsSection: React.FC = () => {
     try {
       await api.del(`/api/events/${r.id}`);
       setEvents(prev => prev.filter(x => x.id !== r.id));
+      // 선택된 이벤트가 삭제된 경우 · 우측 초기화
+      if (selectedEventId === r.id) setSelectedEventId(null);
       showSuccess("삭제 완료");
     } catch (e) {
       showError(`삭제 실패: ${getErrorMessage(e)}`);
@@ -134,8 +165,23 @@ export const EventsSection: React.FC = () => {
     }
   };
 
-  return (
-    <div className="flex flex-col gap-3">
+  const selectedEvent = useMemo(
+    () => events.find(e => e.id === selectedEventId) ?? null,
+    [events, selectedEventId],
+  );
+
+  const handleSelect = useCallback((id: number) => {
+    setSelectedEventId(id);
+    setMobileOpen(true);
+  }, []);
+
+  const handleCountChange = useCallback((eventId: number, count: number) => {
+    setProductCounts(prev => ({ ...prev, [eventId]: count }));
+  }, []);
+
+  // ── 좌측 · 이벤트 리스트 ──────────────────────────────
+  const leftContent = (
+    <div className="flex flex-col gap-3 p-4">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div className="flex items-baseline gap-2">
@@ -260,15 +306,23 @@ export const EventsSection: React.FC = () => {
           {events.map(r => {
             const tone = TYPE_TONE[r.type] ?? TYPE_TONE.custom;
             const typeLabel = TYPE_OPTIONS.find(t => t.key === r.type)?.label ?? r.type;
+            const cnt = productCounts[r.id];
+            const isSelected = selectedEventId === r.id;
             return (
-              <div
+              <button
                 key={r.id}
-                className={`flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border ${tone.bg} hover:brightness-95 transition-all`}
+                type="button"
+                onClick={() => handleSelect(r.id)}
+                className={`w-full text-left flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border transition-all cursor-pointer ${
+                  isSelected
+                    ? `${tone.activeBg} ${tone.activeBorder} ring-1 ring-brand-deep/25 shadow-sm`
+                    : `${tone.bg} hover:brightness-95`
+                }`}
               >
                 <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-white/70 border border-current/20 shrink-0 ${tone.text}`}>
                   {typeLabel}
                 </span>
-                <span className="text-[14px] font-bold text-zinc-900 shrink-0">{r.name}</span>
+                <span className="text-[14px] font-bold text-zinc-900 break-words whitespace-normal leading-tight">{r.name}</span>
                 {(r.start_date || r.end_date) && (
                   <span className="inline-flex items-center gap-1 text-[12px] text-zinc-600 tabular-nums shrink-0">
                     <Calendar size={11} className="text-zinc-400" />
@@ -277,29 +331,73 @@ export const EventsSection: React.FC = () => {
                   </span>
                 )}
                 {r.recurring && <StatusPill tone="emerald" size="sm">매년</StatusPill>}
+                {cnt != null && cnt > 0 && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-zinc-700 bg-white/80 border border-zinc-200 rounded-md px-1.5 py-0.5 tabular-nums">
+                    <Package size={10} />
+                    {cnt}
+                  </span>
+                )}
                 <div className="ml-auto flex items-center gap-1">
-                  <button
-                    onClick={() => startEdit(r)}
+                  <span
+                    onClick={(e) => { e.stopPropagation(); startEdit(r); }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); startEdit(r); } }}
                     className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-brand-deep hover:bg-white transition cursor-pointer"
                     title="편집"
                   >
                     <Pencil size={13} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(r)}
-                    disabled={deletingId === r.id}
-                    className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-rose-600 hover:bg-white transition cursor-pointer disabled:opacity-40"
+                  </span>
+                  <span
+                    onClick={(e) => { e.stopPropagation(); void handleDelete(r); }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); void handleDelete(r); } }}
+                    aria-disabled={deletingId === r.id}
+                    className={`w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-rose-600 hover:bg-white transition cursor-pointer ${deletingId === r.id ? "opacity-40 pointer-events-none" : ""}`}
                     title="삭제"
                   >
                     <Trash2 size={13} className={deletingId === r.id ? "animate-pulse" : ""} />
-                  </button>
+                  </span>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
       )}
+    </div>
+  );
 
+  // ── 우측 · 매핑 상품 관리 ─────────────────────────────
+  const rightContent = (
+    <EventProductPanel
+      event={selectedEvent}
+      events={events}
+      onCountChange={handleCountChange}
+      onCloseMobile={() => setMobileOpen(false)}
+    />
+  );
+
+  return (
+    <div className="-m-5">
+      {/* SeasonSettingsPage 의 p-5 를 상쇄 · SplitPanel 이 자체 padding 관리 */}
+      <SplitPanel
+        storageKey="seasonSettings.eventsSplit.v1"
+        defaultWidth={420}
+        minWidth={320}
+        maxWidth={720}
+        dividerColor="violet"
+        left={leftContent}
+        right={rightContent}
+        wrapLeft={false}
+        wrapRight={false}
+        leftClassName="bg-white"
+        style={{ minHeight: "70vh" }}
+        mobileRightAsModal={true}
+        mobileModalTitle={selectedEvent ? `${selectedEvent.name} · 상품 매핑` : "상품 매핑"}
+        mobileOpen={mobileOpen && !!selectedEvent}
+        onMobileClose={() => setMobileOpen(false)}
+      />
       {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
     </div>
   );
