@@ -676,6 +676,16 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
             sale_price: Number.isFinite(salePriceNum) ? salePriceNum : null,
           };
         });
+        // devLog · 현재고 데이터 진단 (임시 · 데이터 안 나옴 원인 조사)
+        const noStockCount = arr.filter(r => r.current_stock == null).length;
+        const hasStockCount = arr.length - noStockCount;
+        console.debug("[ProductInfoPage] 현재고 진단", {
+          total: arr.length,
+          hasStock: hasStockCount,
+          noStock: noStockCount,
+          sampleNoStock: arr.filter(r => r.current_stock == null).slice(0, 3).map(r => ({ code: r.product_code, name: r.product_name, rawCurrentStock: r.current_stock })),
+          sampleHasStock: arr.filter(r => r.current_stock != null).slice(0, 3).map(r => ({ code: r.product_code, name: r.product_name, stock: r.current_stock })),
+        });
         arr.sort((a, b) => a.product_name.localeCompare(b.product_name, "ko"));
         setRows(arr);
       })
@@ -808,7 +818,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
             </th>
             <th className="text-left px-2 py-2 w-[110px]"><ListSortHeader label="공급사" k="supplier" /></th>
             <th className="text-right px-2 py-2 w-[80px]"><ListSortHeader label="판매가" k="sale_price" align="right" /></th>
-            <th className="text-right px-2 py-2 w-[60px]"><ListSortHeader label="재고" k="current_stock" align="right" /></th>
+            <th className="text-right px-2 py-2 w-[60px]"><ListSortHeader label="현재고" k="current_stock" align="right" /></th>
             <th className="text-left px-2 py-2 w-[100px]"><ListSortHeader label="위치" k="location" /></th>
           </tr>
         </thead>
