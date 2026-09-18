@@ -768,9 +768,9 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
 
   const listBody = (
     <div className="h-[calc(100vh-240px)] overflow-y-auto overscroll-contain">
-      <table className="w-full text-[14px] border-collapse table-fixed">
+      <table className="w-full text-[15px] border-collapse table-fixed">
         <thead className="sticky top-0 z-10 bg-zinc-50/95 backdrop-blur-sm border-b-2 border-line">
-          <tr className="text-[14px] font-bold tracking-tight uppercase text-zinc-500">
+          <tr className="text-[16px] font-bold tracking-tight uppercase text-zinc-500">
             <th className="text-left px-3 py-2 relative group overflow-hidden" style={{ width: nameColWidth, minWidth: 80, maxWidth: 320 }}>
               <ListSortHeader label="상품명" k="product_name" />
               {/* 드래그 핸들 · 우측 경계선 */}
@@ -798,24 +798,24 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
                 className={`cursor-pointer transition-colors ${active ? "bg-brand-tint/60" : "hover:bg-zinc-50/70"}`}
               >
                 <td className="px-3 py-2.5 align-top overflow-hidden" style={{ width: nameColWidth, minWidth: 80, maxWidth: 320 }}>
-                  <div className={`text-[15px] font-bold leading-tight whitespace-normal break-words break-keep ${active ? "text-brand-deep" : "text-ink"}`}>
+                  <div className={`text-[15px] font-semibold leading-tight whitespace-normal break-words break-keep ${active ? "text-brand-deep" : "text-ink"}`}>
                     {r.product_name || <span className="text-zinc-400 font-normal">(이름없음)</span>}
                   </div>
                 </td>
-                <td className="px-2 py-2.5 align-top text-ink text-[13px]">
+                <td className="px-2 py-2.5 align-top text-ink text-[15px] font-medium">
                   {r.supplier || <span className="text-zinc-300">-</span>}
                 </td>
-                <td className="px-2 py-2.5 align-top text-right text-[13px] font-semibold tabular-nums text-ink">
+                <td className="px-2 py-2.5 align-top text-right text-[15px] font-medium tabular-nums text-ink">
                   {typeof salePrice === "number" && salePrice > 0
                     ? salePrice.toLocaleString()
                     : <span className="text-zinc-300">-</span>}
                 </td>
-                <td className="px-2 py-2.5 align-top text-right text-[13px] font-bold tabular-nums">
+                <td className="px-2 py-2.5 align-top text-right text-[15px] font-medium tabular-nums">
                   {typeof stock === "number"
                     ? <span className={stock <= 0 ? "text-rose-600" : "text-ink"}>{stock}</span>
                     : <span className="text-zinc-300">-</span>}
                 </td>
-                <td className="px-2 py-2.5 align-top text-[12px] text-ink-soft whitespace-normal break-words">
+                <td className="px-2 py-2.5 align-top text-[15px] font-medium text-ink-soft whitespace-normal break-words break-keep">
                   {r.location || <span className="text-zinc-300">-</span>}
                 </td>
               </tr>
