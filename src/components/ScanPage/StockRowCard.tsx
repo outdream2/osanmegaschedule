@@ -493,10 +493,30 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
           const currentZone = warehouseZoneKey
             ? (row[warehouseZoneKey as keyof StockRow] as string | null)
             : (s.zoneKey ? (row[s.zoneKey as keyof StockRow] as string | null) : null);
+          // 2026-09-18 · #56 · 사용자 지시 · 매장2·3 · 슬롯 자체 삭제 X 버튼 (storeCount 축소)
+          //   · ArrivalRowCard.renderStoreSlot !isPrimary 패턴 이식
+          const isPrimaryStore = s.key === "s1";
+          const canRemoveSlot = isStore && !isPrimaryStore;
 
           return (
             <div key={s.key} className={`relative rounded-lg border ${s.softBg} border-zinc-200/70 p-2.5 flex flex-col gap-2`}>
-              {canClearSlot && (
+              {/* 매장2·3 · 슬롯 삭제 버튼 (storeCount 축소) · 입력값 있어도 제거 가능 */}
+              {canRemoveSlot && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearSlot();
+                    setStoreCount(c => Math.max(1, c - 1));
+                  }}
+                  className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-full bg-white/80 hover:bg-rose-50 border border-zinc-200 hover:border-rose-300 text-zinc-400 hover:text-rose-600 transition cursor-pointer active:scale-90"
+                  title={`${s.full} 슬롯 제거`}
+                  aria-label={`${s.full} 슬롯 제거`}
+                >
+                  <span className="text-[16px] font-bold leading-none">×</span>
+                </button>
+              )}
+              {/* 매장 슬롯 (값·구역만 초기화 · 슬롯 유지) · 창고 슬롯에는 표시 안 함 */}
+              {!canRemoveSlot && canClearSlot && (
                 <button
                   type="button"
                   onClick={clearSlot}
