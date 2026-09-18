@@ -46,6 +46,10 @@ export function useWageAuto({ form, setForm, settings, wageAutoLoadedRef, lastAu
   const wageAutoInitRef = useRef(false);
 
   // 직급별 기본 시급 조회
+  //   2026-09-18 · #90 · Plan A · superset ContractCategory (신규 직군 인식)
+  //   · 4-key core (약사·매장·창고) → 동일 이름 posKey
+  //   · "기타" · 빈값 → custom → "사원" fallback
+  //   · 그 외 임의 문자열 (확장 직군 · 예: "배송") → 자체를 posKey 로 사용 (settings.wageRates lookup)
   const resolveWageForCategory = useCallback((
     cat: ContractForm["employeeCategory"],
     custom: string,
@@ -55,7 +59,9 @@ export function useWageAuto({ form, setForm, settings, wageAutoLoadedRef, lastAu
       if (c === "약사") return "약사";
       if (c === "매장") return "매장";
       if (c === "창고") return "창고";
-      return "";
+      if (c === "기타" || !c) return "";
+      // 확장 직군 (superset · settings.wageRates 에 추가된 신규 직군)
+      return String(c);
     };
     const posKey = catToPositionKey(cat) || custom || "사원";
     const override = empId != null ? settings.employeeWageOverrides?.[empId] : undefined;
@@ -126,10 +132,13 @@ export function useWageAuto({ form, setForm, settings, wageAutoLoadedRef, lastAu
   }, [form.contractType, form.contractMonths, form.startDate, form.indefinite]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 매장/창고 → primaryFocus 자동
+  //   2026-09-18 · #90 · Plan A · superset ContractCategory 로 인해 좁히기 실패 → 명시 캐스팅
+  //   · primaryFocus 필드는 "매장" | "창고" | null · legal spec 유지 (확장 X)
   useEffect(() => {
     setForm(prev => {
-      if (prev.employeeCategory === "매장" || prev.employeeCategory === "창고") {
-        if (prev.primaryFocus == null) return { ...prev, primaryFocus: prev.employeeCategory };
+      const cat = prev.employeeCategory;
+      if (cat === "매장" || cat === "창고") {
+        if (prev.primaryFocus == null) return { ...prev, primaryFocus: cat as "매장" | "창고" };
         return prev;
       }
       if (prev.primaryFocus !== null) return { ...prev, primaryFocus: null };

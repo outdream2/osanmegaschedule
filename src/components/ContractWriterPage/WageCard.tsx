@@ -4,7 +4,7 @@
 import React from "react";
 import { Money, Warning, CaretDown } from "@phosphor-icons/react";
 import type { ContractForm, CardKey } from "./types";
-import { INSURANCE_RATES } from "./constants";
+import { INSURANCE_RATES, getCategorySolidClass } from "./constants";
 import {
   WAGE_HOURS, WAGE_DIVISOR,
   computeIncomeTax, isMonthlyWageType, fmtWon,
@@ -250,11 +250,7 @@ const WageCardBody: React.FC<WageCardBodyProps> = ({
           <div className="px-4 py-2 bg-indigo-50/40 border-b border-indigo-100 flex items-baseline flex-wrap gap-x-1.5 text-[15px]">
             {form.employeeCategory && (() => {
               const cat = form.employeeCategory;
-              const cls =
-                cat === "약사"  ? "bg-violet-500 text-white" :
-                cat === "매장"  ? "bg-emerald-500 text-white" :
-                cat === "창고"  ? "bg-orange-500 text-white" :
-                                  "bg-zinc-600 text-white";
+              const cls = getCategorySolidClass(cat);
               return (
                 <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] font-bold ${cls}`}>
                   {cat}

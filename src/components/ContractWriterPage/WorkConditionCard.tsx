@@ -8,6 +8,7 @@ import {
 import type { ContractForm, DayKey, CardKey } from "./types";
 import {
   DAYS, CONTRACT_TYPES, START_TIMES, END_TIMES, BREAK_TIME_OPTIONS,
+  getCategoryActiveClass,
 } from "./constants";
 import { WAGE_HOURS, computeWageFlow, isMonthlyWageType, fmtWon } from "./wageCalc";
 import { SelectOrCustom } from "./subcomponents";
@@ -73,11 +74,7 @@ export const WorkConditionCard: React.FC<WorkConditionCardProps> = ({
       <div className="flex gap-1">
         {jobCategories.map(cat => {
           const active = form.employeeCategory === cat;
-          const activeCls =
-            cat === "약사"  ? "bg-violet-500 text-white border-violet-500" :
-            cat === "매장"  ? "bg-emerald-500 text-white border-emerald-500" :
-            cat === "창고"  ? "bg-orange-500 text-white border-orange-500" :
-                              "bg-zinc-600 text-white border-zinc-600";
+          const activeCls = getCategoryActiveClass(cat);
           return (
             <button key={cat} type="button" onClick={() => upd("employeeCategory", cat)}
               className={`flex-1 min-w-[36px] py-1.5 rounded-lg border text-[11.5px] font-bold transition-colors cursor-pointer ${

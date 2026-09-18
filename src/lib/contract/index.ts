@@ -11,7 +11,11 @@ import { api } from "../apiClient";
 // ContractWriterSettings · 직군별 업무내역
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type ContractCategory = "약사" | "매장" | "창고" | "기타";
+// 2026-09-18 · #90 · Plan A · union 완화
+// · 기본 4-key (약사/매장/창고/기타) 은 legal spec 유지 (ContractWriterSettings 스키마 · 색상 매핑)
+// · superset: settings.wageRates 확장 직군 (예: "배송", "청소") 을 허용 · fallback 색상은 zinc
+// · Record<ContractCategory, ...> 은 여전히 4-key literal 로 좁혀짐 (widen 방지)
+export type ContractCategory = "약사" | "매장" | "창고" | "기타" | (string & {});
 
 export interface ContractWriterSettings {
   약사: string;
@@ -120,7 +124,11 @@ export interface JobWage {
   weekend: number; // 주말 시급 (원)
 }
 
-export type ContractJobWages = Record<ContractCategory, JobWage>;
+// 2026-09-18 · #90 · Plan A · 4-key literal 유지 (스키마 보호)
+// · ContractCategory 는 superset (string 허용) 이지만 · 이 스토리지 스키마는 4-key 고정
+// · settings.wageRates 는 확장 직군 저장소 (별도)
+export type CoreContractCategory = "약사" | "매장" | "창고" | "기타";
+export type ContractJobWages = Record<CoreContractCategory, JobWage>;
 
 export const DEFAULT_JOB_WAGES: ContractJobWages = {
   약사: { weekday: 30000, weekend: 33000 },
@@ -135,7 +143,7 @@ export function loadJobWages(): ContractJobWages {
     if (!raw) return { ...DEFAULT_JOB_WAGES };
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return { ...DEFAULT_JOB_WAGES };
-    const pick = (k: ContractCategory): JobWage => {
+    const pick = (k: CoreContractCategory): JobWage => {
       const v = (parsed as any)[k];
       if (!v || typeof v !== "object") return { ...DEFAULT_JOB_WAGES[k] };
       const wd = Number(v.weekday);

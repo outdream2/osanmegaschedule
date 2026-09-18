@@ -8,6 +8,7 @@ import {
   loadContractSettings,
   DEFAULT_CONTRACT_SETTINGS,
   type ContractCategory,
+  type CoreContractCategory,
   fetchContractWriterSettings,
 } from '../../lib/contract';
 import { api, ApiError } from '../../lib/apiClient';
@@ -216,13 +217,16 @@ export function useContractLoad({ form, setForm }: UseContractLoadProps) {
         const fresh = await fetchContractWriterSettings();
         if (!cancelled) {
           setWriterSettingsVersion(v => v + 1);
-          const universe: string[] = [
-            ...JOB_CATEGORIES,
-            ...Object.keys(settings.wageRates ?? {}).filter(k => !(JOB_CATEGORIES as readonly string[]).includes(k)),
-          ];
-          const cats = universe.filter(
+          // 2026-09-18 · #90 · Plan A · 확장 직군 (settings.wageRates 신규 key) 도 노출
+          //   · 4-key core (약사/매장/창고/기타) · legal spec · fresh 에 string 이 있으면 포함
+          //   · 확장 직군 (예: "배송") · fresh 에는 없지만 settings.wageRates 에 있으면 그대로 포함
+          const freshCats = (JOB_CATEGORIES as readonly string[]).filter(
             k => k in fresh && typeof (fresh as unknown as Record<string, unknown>)[k] === "string",
-          ) as ContractCategory[];
+          );
+          const extraCats = Object.keys(settings.wageRates ?? {}).filter(
+            k => !(JOB_CATEGORIES as readonly string[]).includes(k),
+          );
+          const cats = [...freshCats, ...extraCats] as ContractCategory[];
           if (cats.length > 0) setJobCategories(cats);
         }
       } catch { /* silent */ }
@@ -231,17 +235,34 @@ export function useContractLoad({ form, setForm }: UseContractLoadProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 2026-09-18 · #90 · Plan A · settings.wageRates 확장 직군 실시간 병합
+  //   · 초기 로드 이후 · 관리자가 신규 직군 추가 시 즉시 반영 (jobCategories 확장)
+  //   · core 4-key 는 첫 mount 로드 결과 유지 (fresh 값 신뢰)
+  useEffect(() => {
+    const extraKeys = Object.keys(settings.wageRates ?? {}).filter(
+      k => !(JOB_CATEGORIES as readonly string[]).includes(k),
+    );
+    if (extraKeys.length === 0) return;
+    setJobCategories(prev => {
+      const existing = new Set(prev);
+      const toAdd = extraKeys.filter(k => !existing.has(k));
+      if (toAdd.length === 0) return prev;
+      return [...prev, ...toAdd] as ContractCategory[];
+    });
+  }, [settings.wageRates]);
+
   // 카테고리 → 업무 기본값
+  //   2026-09-18 · #90 · Plan A · Record 는 4-key core 만 · lookup 은 superset key 허용 · fallback = 기타
   useEffect(() => {
     const contractSettings = loadContractSettings();
-    const defaults: Record<ContractCategory, string> = {
+    const defaults: Record<CoreContractCategory, string> = {
       "약사": contractSettings.약사 || DEFAULT_CONTRACT_SETTINGS.약사,
       "매장": contractSettings.매장 || DEFAULT_CONTRACT_SETTINGS.매장,
       "창고": contractSettings.창고 || DEFAULT_CONTRACT_SETTINGS.창고,
       "기타": contractSettings.기타 || DEFAULT_CONTRACT_SETTINGS.기타,
     };
-    const key = form.employeeCategory;
-    const nextDuty = defaults[key] ?? DEFAULT_CONTRACT_SETTINGS.기타;
+    const key = form.employeeCategory as string;
+    const nextDuty = (defaults as Record<string, string>)[key] ?? DEFAULT_CONTRACT_SETTINGS.기타;
     const knownDefaults = new Set<string>([
       ...Object.values(defaults),
       ...Object.values(DEFAULT_CONTRACT_SETTINGS).filter((v): v is string => typeof v === "string" && v.length > 0),

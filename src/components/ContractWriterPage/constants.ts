@@ -46,3 +46,31 @@ export const INSURANCE_RATES = {
 export const DRAFT_STORAGE_KEY = "megatown_contract_writer_draft";
 export const DRAFT_TIMESTAMP_KEY = "megatown_contract_writer_draft_ts";
 export const CARD_COLLAPSE_STORAGE_KEY = "contractWriter:cardCollapsed";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2026-09-18 · #90 · Plan A · 직군별 뱃지 색상 매핑 (공용 helper)
+// · 기본 4-key (약사/매장/창고/기타) legal spec
+// · 신규 직군 (settings.wageRates 확장) · fallback = zinc
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 직군 뱃지 · active 상태 (선택됨) · bg + text + border */
+export function getCategoryActiveClass(cat: string): string {
+  switch (cat) {
+    case "약사": return "bg-violet-500 text-white border-violet-500";
+    case "매장": return "bg-emerald-500 text-white border-emerald-500";
+    case "창고": return "bg-orange-500 text-white border-orange-500";
+    case "기타": return "bg-zinc-600 text-white border-zinc-600";
+    default:     return "bg-zinc-600 text-white border-zinc-600"; // fallback (신규 직군)
+  }
+}
+
+/** 직군 뱃지 · solid 배경 (라벨 배지용) · bg + text (border 없음) */
+export function getCategorySolidClass(cat: string): string {
+  switch (cat) {
+    case "약사": return "bg-violet-500 text-white";
+    case "매장": return "bg-emerald-500 text-white";
+    case "창고": return "bg-orange-500 text-white";
+    case "기타": return "bg-zinc-600 text-white";
+    default:     return "bg-zinc-600 text-white"; // fallback
+  }
+}

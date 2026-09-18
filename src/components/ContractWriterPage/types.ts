@@ -1,6 +1,8 @@
 // src/components/ContractWriterPage/types.ts
 // 근로계약서 페이지 타입 정의
 
+import type { ContractCategory } from '../../lib/contract';
+
 export interface WageComponentEntry {
   hours: number;    // 월평균 시간 (정수부)
   minutes: number;  // 분 (0~59)
@@ -80,7 +82,10 @@ export interface ContractForm {
   annualLeaveDays: string;
 
   // 직원 카테고리
-  employeeCategory: "약사" | "매장" | "창고" | "기타";
+  //   2026-09-18 · #90 · Plan A · union → ContractCategory (superset · string 허용)
+  //   · 기본 4-key (약사/매장/창고/기타) legal 유지
+  //   · settings.wageRates 확장 직군 (예: "배송") 도 허용 · 색상은 fallback (zinc)
+  employeeCategory: ContractCategory;
   employeeCategoryCustom: string;
   primaryFocus: "매장" | "창고" | null;
   primaryFocusPercent: number;
