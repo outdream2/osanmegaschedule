@@ -63,6 +63,8 @@ interface ProductRow {
   // 2026-09-08 · barcode 제거 · product_code 자체가 바코드값
   spec?: string | null;
   sale_status?: string | null; // 2026-08-26 · 사용자 지시 · 판매중 필터용
+  // 2026-09-18 · 사용자 지시 · 왼쪽 리스트 · 판매가 컬럼 표시 · products.sale_price 매핑
+  sale_price?: number | null;
 }
 
 interface ProductDetail extends ProductRow {
@@ -596,27 +598,53 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
 
 
   // 리스트 fetch · /api/products-map (전체) 를 배열화
+  // 2026-09-18 · 사용자 지시 · 재고 컬럼 실제 값 표시 · /api/inventory-latest 병렬 호출
+  //   · products.current_stock 은 매입검수 시에만 갱신 · 대부분 null · 실제 실재고 = inventory_checks (SSOT)
+  //   · warehouse1+warehouse2+store1+store2+store3 합산 = 실재고
   useEffect(() => {
     let alive = true;
     setListLoading(true);
     setListError(null);
     // 2026-08-30 · 사용자 지시 · 관리 페이지 · 판매중지·숨김 상품도 모두 표시
-    api.get<Record<string, Partial<ProductRow> & { product_name?: string }>>("/api/products-map?include_inactive=1&include_hidden=1")
-      .then(({ data }) => {
+    Promise.all([
+      api.get<Record<string, Partial<ProductRow> & { product_name?: string }>>("/api/products-map?include_inactive=1&include_hidden=1"),
+      api.get<Record<string, { warehouse1_stock: number | null; warehouse2_stock: number | null; store1_stock: number | null; store2_stock: number | null; store3_stock: number | null }>>("/api/inventory-latest").catch(() => ({ data: {} })),
+    ])
+      .then(([{ data }, { data: invMap }]) => {
         if (!alive) return;
-        const arr: ProductRow[] = Object.entries(data ?? {}).map(([code, p]) => ({
-          product_code: code,
-          product_name: p.product_name ?? "",
-          supplier: p.supplier ?? null,
-          category: p.category ?? null,
-          unit: p.unit ?? null,
-          current_stock: p.current_stock ?? null,
-          optimal_stock: p.optimal_stock ?? null,
-          location: p.location ?? null,
-          // 2026-09-08 · barcode 제거 · product_code 자체가 바코드값
-          spec: p.spec ?? null,
-          sale_status: (p as any).sale_status ?? null,
-        }));
+        const inv = invMap ?? {};
+        const arr: ProductRow[] = Object.entries(data ?? {}).map(([code, p]) => {
+          // 2026-09-18 · 실재고 합산 · inventory_checks SSOT 우선 · fallback products.current_stock
+          const invRow = inv[code];
+          let realStock: number | null = null;
+          if (invRow) {
+            const sum =
+              Number(invRow.warehouse1_stock ?? 0) +
+              Number(invRow.warehouse2_stock ?? 0) +
+              Number(invRow.store1_stock ?? 0) +
+              Number(invRow.store2_stock ?? 0) +
+              Number(invRow.store3_stock ?? 0);
+            // 실재고 row 있으면 · 합계 저장 (0도 유효한 값)
+            realStock = sum;
+          } else if (p.current_stock != null) {
+            realStock = p.current_stock;
+          }
+          return {
+            product_code: code,
+            product_name: p.product_name ?? "",
+            supplier: p.supplier ?? null,
+            category: p.category ?? null,
+            unit: p.unit ?? null,
+            current_stock: realStock,
+            optimal_stock: p.optimal_stock ?? null,
+            location: p.location ?? null,
+            // 2026-09-08 · barcode 제거 · product_code 자체가 바코드값
+            spec: p.spec ?? null,
+            sale_status: (p as any).sale_status ?? null,
+            // 2026-09-18 · 사용자 지시 · 왼쪽 리스트 · 판매가 표시 · 매핑 누락 fix
+            sale_price: (p as any).sale_price ?? null,
+          };
+        });
         arr.sort((a, b) => a.product_name.localeCompare(b.product_name, "ko"));
         setRows(arr);
       })
