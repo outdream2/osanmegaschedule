@@ -537,13 +537,14 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                   <div className="mt-2 text-[16px] text-rose-500 font-semibold px-1">{submitError}</div>
                 )}
 
+                {/* 2026-09-18 · 사용자 지시 · 최신 트렌드 · 파란 primary + 그림자 hover · "연차신청" 라벨 */}
                 <div className="flex justify-end mt-3">
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-5 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-700 active:bg-zinc-950 disabled:opacity-40 text-white text-[17px] font-bold transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[17px] font-bold tracking-tight shadow-sm hover:shadow-md hover:shadow-blue-200/60 transition-all duration-150 cursor-pointer"
                   >
-                    {submitting ? "신청 중..." : "신청"}
+                    {submitting ? "신청 중..." : "연차신청"}
                   </button>
                 </div>
               </form>
