@@ -24,7 +24,7 @@ import { clearLowStockCache } from "./stockManage";
 // 2026-09-15 · #61 B안 · 사용자 원칙 · 상품테이블 ↔ 실재고테이블 자동 연동
 //   · POST /api/products · buildInitialShelfPositions 로 · inventory_checks row 자동 생성
 //   · products.location 기반 · 창고1/2/매장1 자동 배정 (사용자 원칙)
-import { buildInitialShelfPositions } from "../../utils/shelfPositionAssign";
+import { buildInitialShelfPositions, applyInitialShelfPositionsForCodes, backfillAllShelfPositions } from "../../utils/shelfPositionAssign";
 
 const router = Router();
 
@@ -525,14 +525,47 @@ router.post("/api/upload-products", authorize(9), express.raw({ type: "applicati
   resetProductCache();
   const tLog = Date.now();
   console.log(`[upload] resetProductCache · ${tLog - tCache}ms`);
+
+  // 2026-09-18 · 사용자 지시 · 계층 1 · xlsx 임포트 완료 후 · shelf_positions 자동 배정
+  //   · 방금 upsert 한 상품들 대상 · location 있으면 · inventory_checks.shelf_positions 자동 채움
+  //   · 기존 값 있으면 · 신규 키만 병합 (사용자 입력값 보존)
+  //   · 실패해도 임포트 자체는 성공 (best-effort · log 만)
+  let autoShelfResult = { inserted: 0, updated: 0, skipped: 0, failed: 0, ms: 0 };
+  try {
+    const uploadedCodes = dedupedRows.map(r => String((r as any).product_code ?? "").trim()).filter(Boolean);
+    autoShelfResult = await applyInitialShelfPositionsForCodes(supabase, uploadedCodes, { onlyActive: true });
+    console.log(`[upload] shelf-positions auto-assign · 신규 ${autoShelfResult.inserted}건 · 병합 ${autoShelfResult.updated}건 · skip ${autoShelfResult.skipped} · fail ${autoShelfResult.failed} · ${autoShelfResult.ms}ms`);
+  } catch (autoErr: any) {
+    console.warn(`[upload] shelf-positions auto-assign 실패 (경고 · 임포트는 성공): ${autoErr?.message ?? autoErr}`);
+  }
+
   const { data: logData } = await supabase.from("app_settings").select("value").eq("key", "product_import_log").maybeSingle();
   const prevLogs: unknown[] = Array.isArray(logData?.value) ? logData.value : [];
-  const newEntry = { timestamp: new Date().toISOString(), count: rows.length, restored: restoredCount, hidden: hiddenCount, deleted: deletedCount };
+  const newEntry = { timestamp: new Date().toISOString(), count: rows.length, restored: restoredCount, hidden: hiddenCount, deleted: deletedCount, shelfAutoInserted: autoShelfResult.inserted, shelfAutoUpdated: autoShelfResult.updated };
   const logs = [newEntry, ...prevLogs].slice(0, 20);
   await supabase.from("app_settings").upsert({ key: "product_import_log", value: logs, updated_at: new Date().toISOString() }, { onConflict: "key" });
   console.log(`[upload] app_settings log · ${Date.now() - tLog}ms`);
   console.log(`[upload] ==== 전체 소요 ${Date.now() - t0}ms (upsert ${upsertMs}ms + post ${Date.now() - t0 - upsertMs}ms) ====`);
-  res.json({ ok: true, count: rows.length, restored: restoredCount, hidden: hiddenCount, deleted: deletedCount, timestamp: newEntry.timestamp });
+  res.json({
+    ok: true,
+    count: rows.length,
+    restored: restoredCount,
+    hidden: hiddenCount,
+    deleted: deletedCount,
+    timestamp: newEntry.timestamp,
+    shelfAutoAssign: autoShelfResult,
+  });
+}));
+
+// 2026-09-18 · 사용자 지시 · 관리자 수동 트리거 · 전체 상품 shelf_positions 자동 배정
+//   · 시스템 설정 페이지 [진열위치 자동 배정 실행] 버튼 · 관리자 (level ≥ 9)
+//   · 판매중 상품 전체 순회 · location 있는데 shelf_positions 미배정 · 자동 채움
+//   · 응답 · { inserted, updated, skipped, failed, ms }
+router.post("/api/products/backfill-shelf-positions", authorize(9), asyncHandler(async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  const result = await backfillAllShelfPositions(supabase);
+  console.log(`[backfill-shelf-positions] 완료 · 신규 ${result.inserted} · 병합 ${result.updated} · skip ${result.skipped} · fail ${result.failed} · ${result.ms}ms`);
+  res.json({ ok: true, ...result });
 }));
 
 router.delete("/api/product-import-log", authorize(9), asyncHandler(async (_req, res) => {

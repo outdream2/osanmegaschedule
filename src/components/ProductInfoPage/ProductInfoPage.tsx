@@ -49,6 +49,8 @@ import { ShelfPositionInput } from "../common/ShelfPositionInput";
 import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
 import { useStorageLocations } from "../../hooks/useStorageLocations";
 import type { ShelfPositions } from "../../lib/shelfPositions";
+// 2026-09-18 · 사용자 지시 · 계층 2 클라 폴백 · shelf_positions 비어있어도 · location 있으면 슬롯 계산
+import { mergeShelfPositionsWithFallback } from "../../lib/shelfPositions";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 interface ProductRow {
@@ -162,7 +164,15 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
     setEditing(true);
     setDraft({} as Record<EditableKey, string>);
     // 2026-09-08 · 편집 시작 · 현재 shelf_positions 값을 draft 로 로드 (변경 추적)
-    setShelfDraft({ ...(product?.shelf_positions ?? {}) });
+    // 2026-09-18 · 사용자 지시 · 계층 2 클라 폴백 · shelf_positions 비어있어도 · location 있으면 default 슬롯 seed
+    //   · 레거시 상품 (DB 자동 배정 이전 등록) · 편집 화면 · 창고1/2·매장1 슬롯 즉시 나타남
+    //   · 사용자가 값 입력·저장 시 · DB 반영 (자동 DB 쓰기 X · 편집 액션에서만 저장)
+    const merged = mergeShelfPositionsWithFallback(
+      product?.shelf_positions ?? {},
+      product?.location ?? (product as any)?.display_location ?? null,
+      (product as any)?.category_code ?? null,
+    );
+    setShelfDraft(merged);
   };
   const cancelEdit = async () => {
     const hasShelfChange = JSON.stringify(shelfDraft ?? {}) !== JSON.stringify(product?.shelf_positions ?? {});
@@ -552,11 +562,18 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                     {p.location && (
                       <span className="text-[18px] font-extrabold text-rose-700 bg-rose-50/60 rounded-md px-2.5 py-1 tabular-nums tracking-tight leading-none">구역 {String(p.location)}</span>
                     )}
-                    {(product.shelf_positions && Object.keys(product.shelf_positions).length > 0) ? (
-                      <ShelfPositionsBadge positions={product.shelf_positions} size="md" />
-                    ) : (
-                      <span className="text-[13px] text-zinc-400 italic">상세 진열위치 없음</span>
-                    )}
+                    {/* 2026-09-18 · 사용자 지시 · 계층 2 클라 폴백 · shelf_positions 비어있어도 · location 있으면 default 슬롯 표시 (미입력 상태) */}
+                    {(() => {
+                      const displayPositions = mergeShelfPositionsWithFallback(
+                        product.shelf_positions ?? {},
+                        String(p.location ?? p.display_location ?? "").trim() || null,
+                        (product as any)?.category_code ?? null,
+                      );
+                      const hasAny = Object.keys(displayPositions).length > 0;
+                      return hasAny
+                        ? <ShelfPositionsBadge positions={displayPositions} size="md" />
+                        : <span className="text-[13px] text-zinc-400 italic">진열구역 없음</span>;
+                    })()}
                   </div>
                 )}
               </div>
@@ -635,6 +652,13 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
           } else if (p.current_stock != null) {
             realStock = p.current_stock;
           }
+          // 2026-09-18 · 사용자 재보고 · 판매가·현재고 안 나옴 · Number 강제 변환 fix
+          //   · Supabase JS · NUMERIC 컬럼 · 문자열로 반환되는 케이스 대응
+          //   · 렌더링 side · typeof === 'number' 검사 · 문자열이면 '-' 표시 되던 버그
+          const rawSalePrice = (p as any).sale_price;
+          const salePriceNum = rawSalePrice != null && rawSalePrice !== "" ? Number(rawSalePrice) : null;
+          const rawOptimalStock = (p as any).optimal_stock;
+          const optimalStockNum = rawOptimalStock != null && rawOptimalStock !== "" ? Number(rawOptimalStock) : null;
           return {
             product_code: code,
             product_name: p.product_name ?? "",
@@ -642,13 +666,13 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
             category: p.category ?? null,
             unit: p.unit ?? null,
             current_stock: realStock,
-            optimal_stock: p.optimal_stock ?? null,
+            optimal_stock: optimalStockNum,
             location: p.location ?? null,
             // 2026-09-08 · barcode 제거 · product_code 자체가 바코드값
             spec: p.spec ?? null,
             sale_status: (p as any).sale_status ?? null,
-            // 2026-09-18 · 사용자 지시 · 왼쪽 리스트 · 판매가 표시 · 매핑 누락 fix
-            sale_price: (p as any).sale_price ?? null,
+            // 2026-09-18 · 사용자 지시 · 왼쪽 리스트 · 판매가 표시 · Number 강제 변환 fix
+            sale_price: Number.isFinite(salePriceNum) ? salePriceNum : null,
           };
         });
         arr.sort((a, b) => a.product_name.localeCompare(b.product_name, "ko"));

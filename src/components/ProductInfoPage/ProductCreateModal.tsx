@@ -26,6 +26,8 @@ import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { CreateProductSchema, type CreateProductInput } from "../../shared/schemas/products";
 import { useVendors } from "../../hooks/useVendors";
+// 2026-09-18 · 사용자 지시 · 공급사 필터 · (주)·주식회사 접두어 무시 · 양방향 매칭
+import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { classifyArrivalSlot } from "../../lib/warehouseZoneMap";
 // 2026-08-28 · 사용자 지시 · 분류코드 참조 상품 리스트 (스크롤 · 클릭 시 자동 채움)
@@ -180,11 +182,14 @@ export const ProductCreateModal: React.FC<Props> = ({
   const { vendors } = useVendors();
   const [supplierOpen, setSupplierOpen] = useState(false);
   const supplierWrapRef = useRef<HTMLDivElement | null>(null);
+  // 2026-09-18 · 사용자 지시 · 공급사 자동완성 · (주)·주식회사 무시 · 양방향 매칭
+  //   · 이전 · 단순 includes · 쿼리와 회사명 접두어 불일치 시 · 매칭 실패
+  //   · fix · matchesSupplierQuery 프리미티브 사용 · 정제 후 부분·초성 매칭
   const supplierSuggestions = useMemo(() => {
-    const q = form.supplier.trim().toLowerCase();
+    const q = form.supplier.trim();
     if (!q) return vendors.slice(0, 8);
     return vendors
-      .filter(v => (v.company_name ?? "").toLowerCase().includes(q))
+      .filter(v => matchesSupplierQuery(v as any, q))
       .slice(0, 8);
   }, [form.supplier, vendors]);
   // outside click · close dropdown
@@ -439,8 +444,9 @@ export const ProductCreateModal: React.FC<Props> = ({
 
             <div className="p-5 flex flex-col gap-4">
               {/* 필수 정보 */}
+              {/* 2026-09-18 · 사용자 지시 · 판매 상태 · 상품코드·상품명 아래 다음 줄 (같은 행 X · 필수 정보 섹션 안) */}
               <Section title="필수 정보" required>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Field icon={<Hash size={14} />} label={lockCode ? "상품코드 (스캔 고정)" : "상품코드"} required>
                     <input
                       lang="ko" type="text"
@@ -463,7 +469,9 @@ export const ProductCreateModal: React.FC<Props> = ({
                       maxLength={200}
                     />
                   </Field>
-                  {/* 2026-09-18 · 사용자 지시 · 판매 상태 필수 정보 섹션으로 이동 (기타 섹션에서 이동) */}
+                </div>
+                {/* 다음 줄 · 판매 상태 · 필수 정보 섹션 안 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <Field icon={<Tags size={14} />} label="판매 상태" required>
                     <select
                       value={form.sale_status}

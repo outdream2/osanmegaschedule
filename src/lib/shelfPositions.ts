@@ -3,10 +3,76 @@
 //   · shelf_positions JSON · key=location code · value=3자리 or null
 //   · storage_locations KV · location code → name·kind·required_detail 매핑
 //   · UI 32개 파일에서 진열위치 옆에 뱃지로 표시 · 매장 미입력 빨간 강조
+// 2026-09-18 · 사용자 지시 · 계층 2 (클라 폴백)
+//   · shelf_positions 비어있어도 · location 있으면 · UI 렌더 시 default 슬롯 계산
+//   · 서버 buildInitialShelfPositions 와 동일 로직 (SSOT)
 
 import type { StorageLocation } from "@/shared/schemas/settings";
 
 export type ShelfPositions = Record<string, string | null | undefined>;
+
+// 2026-09-18 · 서버 utils/shelfPositionAssign.ts 와 동일 규칙 (SSOT)
+const WAREHOUSE_1_CODES = new Set<string>(["24", "25", "26", "27", "7B", "8A"]);
+
+function isValidZoneCode(c: string): boolean {
+  if (!c || c.length > 4) return false;
+  const num = parseInt(c, 10);
+  if (!isNaN(num) && String(num) === c) return num >= 1 && num <= 99;
+  return /^[0-9A-Z]{2,4}$/.test(c);
+}
+
+/**
+ * location 문자열 → 자동 shelf_positions 초기값
+ *   · 서버 buildInitialShelfPositions 클라이언트 미러 · SSOT
+ *   · 매장1 default + 창고1/2 (구역 코드 기반)
+ *   · 각 값은 null · 상세위치는 사용자가 편집으로 채움
+ */
+export function buildInitialShelfPositions(
+  location: string | null | undefined,
+  categoryCode?: string | null,
+): Record<string, string | null> {
+  const positions: Record<string, string | null> = { store1: null };
+  const codes = String(location ?? "")
+    .split(/[\/,·]/)
+    .map(s => s.trim().toUpperCase().replace(/\s+/g, ""))
+    .filter(Boolean);
+  let hasW1 = false;
+  let hasW2 = false;
+  for (const c of codes) {
+    if (!isValidZoneCode(c)) continue;
+    if (WAREHOUSE_1_CODES.has(c)) hasW1 = true;
+    else hasW2 = true;
+  }
+  if (!hasW1 && categoryCode) {
+    const cat = String(categoryCode).trim().toUpperCase().replace(/\s+/g, "");
+    if (WAREHOUSE_1_CODES.has(cat)) hasW1 = true;
+  }
+  if (hasW1) positions.warehouse1 = null;
+  if (hasW2) positions.warehouse2 = null;
+  return positions;
+}
+
+/**
+ * shelf_positions (DB 저장값) + location (진열구역) → 렌더용 병합 결과
+ *   · shelf_positions 있고 · key 있으면 그대로 사용
+ *   · shelf_positions 비어있거나 · key 없으면 · location 기반 default 자리 확보 (값 null)
+ *   · **계층 2 클라 폴백** · 레거시 상품 · DB 미갱신 상태에서도 UI 즉시 표시
+ *   · 사용자가 슬롯 값 입력·저장 시 그때 DB 반영 (자동 DB 쓰기 X)
+ */
+export function mergeShelfPositionsWithFallback(
+  shelf: ShelfPositions | null | undefined,
+  location: string | null | undefined,
+  categoryCode?: string | null,
+): Record<string, string | null> {
+  const existing = { ...(shelf ?? {}) } as Record<string, string | null>;
+  const fallback = buildInitialShelfPositions(location, categoryCode);
+  for (const [k, v] of Object.entries(fallback)) {
+    if (!Object.prototype.hasOwnProperty.call(existing, k)) {
+      existing[k] = v; // null · 사용자 편집 대기
+    }
+  }
+  return existing;
+}
 
 /** 3자리 → 하이픈 표시 · "332" → "3-3-2" · 2026-09-09 · 사용자 지시 UI 포맷 */
 export function formatShelfDetail(v: string | null | undefined): string {

@@ -35,11 +35,15 @@ export interface SupplierMatchable {
  *  · query 비어있으면 · true
  *  · 이름 · 원문 · 정제명 · 초성 매칭
  *  · 담당자·연락처 · 원문 부분일치
+ * 2026-09-18 · 사용자 지시 · 양방향 · "(주)녹십자" ↔ "녹십자" 매칭
+ *   · 이전 · 벤더 이름만 정제 · 쿼리 정제 X → "(주)녹십자" 입력 시 · vendor "녹십자" 매칭 실패
+ *   · fix · 쿼리도 displayVendorName 로 정제 · 정제 후 값 · 별도 candidates 매칭
  */
 export function matchesSupplierQuery(supplier: SupplierMatchable, query: string): boolean {
   const q = (query ?? "").trim();
   if (!q) return true;
   const qLower = q.toLowerCase();
+  const qDisplay = displayVendorName(q); // 2026-09-18 · "(주)녹십자" · "녹십자" 등 정제 후
 
   const candidates: string[] = [];
   const names: (string | null | undefined)[] = [supplier.company_name, supplier.supplier_name, supplier.supplier];
@@ -52,9 +56,15 @@ export function matchesSupplierQuery(supplier: SupplierMatchable, query: string)
     const display = displayVendorName(raw);
     if (display && display !== raw && display !== stripped) candidates.push(display);
   }
-  // 이름 · 초성·부분일치
+  // 이름 · 초성·부분일치 · 원본 쿼리 매칭
   for (const c of candidates) {
     if (matchHangul(c, q)) return true;
+  }
+  // 2026-09-18 · 정제된 쿼리도 시도 · 양방향 · "(주)녹십자" 쿼리 → "녹십자" 로 정제 후 재매칭
+  if (qDisplay && qDisplay !== q) {
+    for (const c of candidates) {
+      if (matchHangul(c, qDisplay)) return true;
+    }
   }
   // 담당자·연락처 · 원문 부분일치
   const contact = String(supplier.contact_name ?? "").toLowerCase();
