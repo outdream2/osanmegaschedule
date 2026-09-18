@@ -19,6 +19,9 @@ import { IconTile } from "../common/IconTile";
 import { ZoneCategoryPicker } from "../common/ZoneCategoryPicker";
 // 2026-09-14 · #82 · 상세구역 표시 · shelf_positions JSONB 배지
 import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
+// 2026-09-18 · 상세구역 5-slot 입력 · ShelfPositionInput 재사용
+import { ShelfPositionInput } from "../common/ShelfPositionInput";
+import { useStorageLocations } from "../../hooks/useStorageLocations";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { CreateProductSchema, type CreateProductInput } from "../../shared/schemas/products";
@@ -103,6 +106,14 @@ interface Props {
 const SALE_STATUS_OPTIONS = ["판매중", "판매중지", "숨김"];
 
 // 2026-09-08 · barcode 필드 제거 · product_code 자체가 바코드값 (13자리 EAN)
+// 2026-09-18 · shelf_detail(1슬롯) → shelf_positions(5슬롯) 로 확장 · 상세 뷰와 동일
+type ShelfPositionsDraft = {
+  warehouse1: string | null;
+  warehouse2: string | null;
+  store1: string | null;
+  store2: string | null;
+  store3: string | null;
+};
 type Form = {
   product_code: string;
   product_name: string;
@@ -111,9 +122,8 @@ type Form = {
   unit: string;
   spec: string;
   location: string;
-  // 2026-09-14 · #133 · 상세구역 · 신규 등록·수정 모달에서 직접 지정 (3자리 · 예: "1A5")
-  //   · 저장 시 · location 유형 판별 (창고/매장) · shelf_positions[key] = detail
-  shelf_detail: string;
+  // 2026-09-18 · shelf_positions 5슬롯 · 상세 뷰 ShelfPositionInput 과 동일 구조
+  shelf_positions: ShelfPositionsDraft;
   optimal_stock: string;
   sale_price: string;
   purchase_price: string;
@@ -121,6 +131,11 @@ type Form = {
   manufacturer: string;
   // 2026-09-18 · 사용자 지시 · 편집 모달 · 판매 상태 (판매중/판매중지/숨김) 필드
   sale_status: string;
+};
+
+const EMPTY_SHELF: ShelfPositionsDraft = {
+  warehouse1: null, warehouse2: null,
+  store1: null, store2: null, store3: null,
 };
 
 const EMPTY: Form = {
@@ -131,7 +146,7 @@ const EMPTY: Form = {
   unit: "",
   spec: "",
   location: "",
-  shelf_detail: "",
+  shelf_positions: { ...EMPTY_SHELF },
   optimal_stock: "",
   sale_price: "",
   purchase_price: "",
@@ -156,6 +171,8 @@ export const ProductCreateModal: React.FC<Props> = ({
 }) => {
   const isEdit = mode === "edit";
   const { toast, showSuccess, showError } = useToast();
+  // 2026-09-18 · 5-slot ShelfPositionInput · 활성 창고/매장 목록
+  const storageLocations = useStorageLocations();
   const [form, setForm] = useState<Form>(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -214,12 +231,15 @@ export const ProductCreateModal: React.FC<Props> = ({
   React.useEffect(() => {
     if (!open) return;
     if (isEdit && initialProduct) {
-      // 2026-09-14 · #133 · 편집 모드 · shelf_positions 에서 · 대표 상세구역 초기화
-      //   · warehouse1 → warehouse2 → store1 → store2 → store3 순 · 첫 non-null 값
+      // 2026-09-18 · 편집 모드 · shelf_positions 5슬롯 전체 초기화
       const sp = (initialProduct as any).shelf_positions as Record<string, string | null> | null | undefined;
-      const detail = sp
-        ? (sp.warehouse1 ?? sp.warehouse2 ?? sp.store1 ?? sp.store2 ?? sp.store3 ?? "")
-        : "";
+      const shelfPositions: ShelfPositionsDraft = {
+        warehouse1: sp?.warehouse1 ?? null,
+        warehouse2: sp?.warehouse2 ?? null,
+        store1: sp?.store1 ?? null,
+        store2: sp?.store2 ?? null,
+        store3: sp?.store3 ?? null,
+      };
       setForm({
         product_code: initialProduct.product_code ?? "",
         product_name: initialProduct.product_name ?? "",
@@ -228,7 +248,7 @@ export const ProductCreateModal: React.FC<Props> = ({
         unit: initialProduct.unit ?? "",
         spec: initialProduct.spec ?? "",
         location: initialProduct.location ?? "",
-        shelf_detail: String(detail ?? "").trim(),
+        shelf_positions: shelfPositions,
         optimal_stock: initialProduct.optimal_stock != null ? String(initialProduct.optimal_stock) : "",
         sale_price: initialProduct.sale_price != null ? String(initialProduct.sale_price) : "",
         purchase_price: initialProduct.purchase_price != null ? String(initialProduct.purchase_price) : "",
@@ -240,6 +260,7 @@ export const ProductCreateModal: React.FC<Props> = ({
     } else {
       setForm({
         ...EMPTY,
+        shelf_positions: { ...EMPTY_SHELF },
         product_code: initialCode ?? initialBarcode ?? "",
         product_name: initialName ?? "",
       });
@@ -299,20 +320,17 @@ export const ProductCreateModal: React.FC<Props> = ({
         //   · 신규 등록 · EMPTY 기본 '판매중'
         sale_status: form.sale_status.trim() || "판매중",
       };
-      // 2026-09-14 · #133 · 상세구역 저장 · 등록·수정 성공 후 · shelf_positions PATCH 호출
-      //   · warehouseTag 기반 key 결정 (w1→warehouse1 · w2→warehouse2 · else→store1)
+      // 2026-09-18 · 상세구역 저장 · 5슬롯 전부 PATCH · null = 해당 위치 삭제
       const savedCode = form.product_code.trim();
-      const shelfDetail = form.shelf_detail.trim();
       const saveShelfPositions = async (code: string) => {
-        if (!shelfDetail || shelfDetail.length !== 3) return;
-        const key = warehouseTag?.label === "창고1" ? "warehouse1"
-                  : warehouseTag?.label === "창고2" ? "warehouse2"
-                  : "store1";
+        const sp = form.shelf_positions;
+        const hasAny = Object.values(sp).some(v => v != null);
+        if (!hasAny) return;
         try {
           await api.patch(`/api/products/${encodeURIComponent(code)}/shelf-positions`, {
-            shelf_positions: { [key]: shelfDetail },
+            shelf_positions: sp,
           });
-          // 2026-09-14 · #61 · 실재고 테이블 자동 동기 · inventory_checks 업데이트 이벤트 dispatch
+          // 실재고 테이블 자동 동기
           window.dispatchEvent(new CustomEvent("inventory-checks-updated", {
             detail: { source: "product-modal", productCode: code },
           }));
@@ -367,7 +385,7 @@ export const ProductCreateModal: React.FC<Props> = ({
           location: parsed.data.location ?? null,
         });
         window.dispatchEvent(new CustomEvent("products-map-updated"));
-        setForm(EMPTY);
+        setForm({ ...EMPTY, shelf_positions: { ...EMPTY_SHELF } });
         onClose();
       }
     } catch (e: unknown) {
@@ -380,7 +398,7 @@ export const ProductCreateModal: React.FC<Props> = ({
   };
 
   const handleReset = () => {
-    setForm(EMPTY);
+    setForm({ ...EMPTY, shelf_positions: { ...EMPTY_SHELF } });
     setError(null);
   };
 
@@ -539,32 +557,28 @@ export const ProductCreateModal: React.FC<Props> = ({
                       />
                     </Field>
                   </div>
-                  {/* 2026-09-14 · #133 · 상세구역 · 직접 편집 · 3자리 (예: 1A5)
-                      · 진열구역 있어야 저장 가능 (location 기반 · warehouse/store key 결정)
-                      · 등록/수정 후 · shelf_positions PATCH endpoint 로 저장 */}
-                  <div className="relative min-w-0">
-                    <Field icon={<MapPin size={14} />} label={
-                      <span className="flex items-center gap-2">
-                        상세구역
-                        <span className="text-[12px] font-normal text-zinc-400">(3자리 · 예: 1A5)</span>
-                      </span>
-                    }>
-                      <input
-                        lang="ko"
-                        type="text"
-                        value={form.shelf_detail}
-                        onChange={(e) => set("shelf_detail", e.target.value.trim().slice(0, 3).toUpperCase())}
-                        placeholder={form.location.trim() ? "예: 1A5" : "진열구역 먼저 선택"}
-                        disabled={!form.location.trim()}
-                        maxLength={3}
-                        className={`${inputCls} tabular-nums text-center font-bold text-[16px] tracking-wider ${!form.location.trim() ? "bg-zinc-50 text-zinc-400 cursor-not-allowed" : ""}`}
-                      />
-                      {isEdit && initialProduct && (initialProduct as any).shelf_positions && (
-                        <div className="mt-1.5 flex items-center gap-1.5">
-                          <span className="text-[11px] text-zinc-400">기존 · </span>
-                          <ShelfPositionsBadge positions={(initialProduct as any).shelf_positions} size="sm" />
-                        </div>
-                      )}
+                  {/* 2026-09-18 · 상세구역 5슬롯 · ShelfPositionInput 재사용 · 상세 뷰와 동일 구조 */}
+                  <div className="col-span-full">
+                    <Field icon={<MapPin size={14} />} label="상세구역 (창고·매장별)">
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {storageLocations.filter(l => l.active).map(loc => (
+                          <ShelfPositionInput
+                            key={loc.code}
+                            label={`${loc.name}${loc.kind === "warehouse" ? " (창고)" : ""}`}
+                            required={loc.required_detail}
+                            value={form.shelf_positions[loc.code as keyof ShelfPositionsDraft] ?? null}
+                            onChange={(v) =>
+                              setForm(prev => ({
+                                ...prev,
+                                shelf_positions: { ...prev.shelf_positions, [loc.code]: v },
+                              }))
+                            }
+                            productCode={isEdit ? form.product_code : undefined}
+                            displayLocation={form.location.trim() || null}
+                            storageKey={loc.code}
+                          />
+                        ))}
+                      </div>
                     </Field>
                   </div>
                 </div>

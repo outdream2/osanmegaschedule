@@ -798,8 +798,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
                 className={`cursor-pointer transition-colors ${active ? "bg-brand-tint/60" : "hover:bg-zinc-50/70"}`}
               >
                 <td className="px-3 py-2.5 align-top" style={{ width: nameColWidth, minWidth: 80, maxWidth: 320 }}>
-                  <div className="text-[12px] text-zinc-400 whitespace-normal break-all">{r.product_code}</div>
-                  <div className={`text-[15px] font-bold leading-tight mt-0.5 whitespace-normal break-words break-keep ${active ? "text-brand-deep" : "text-ink"}`}>
+                  <div className={`text-[15px] font-bold leading-tight whitespace-normal break-words break-keep ${active ? "text-brand-deep" : "text-ink"}`}>
                     {r.product_name || <span className="text-zinc-400 font-normal">(이름없음)</span>}
                   </div>
                 </td>
