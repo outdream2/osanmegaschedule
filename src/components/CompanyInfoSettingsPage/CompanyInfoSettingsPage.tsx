@@ -1,14 +1,17 @@
 // src/components/CompanyInfoSettingsPage/CompanyInfoSettingsPage.tsx
 // 2026-08-12 · 회사·브랜드 통합 설정 페이지 (관리자 lv≥9 전용)
-//   · 5탭 UI · 회사정보 · 브랜드 · 연락처·카카오 · 도장 매핑 · 모바일 가시성
+//   · Plan B · 2026-09-18 · sticky nav 제거 → 좌측 anchor rail (IntersectionObserver)
 //   · useCompanyInfo / useBrandIdentity · settings.* KV 서버 저장 (debounce 500ms)
 //   · 계약서·사직서·PDF·랜딩·푸터 등 다른 화면에서 즉시 참조
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+// @deprecated · SK_COMPANY_INFO_TAB · Plan B 이전 탭 상태 저장 · 2026-09-18 이후 미사용
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { SK_COMPANY_INFO_TAB } from "../../lib/storageKeys";
 import {
   Buildings, User, IdentificationBadge, MapPin, Phone,
   Palette, TextT,
   AddressBook, Stamp,
+  type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
 import type { AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
@@ -17,10 +20,9 @@ import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { ImageUploadField } from "../common/ImageUploadField";
 import { SettingsPageShell } from "../common/SettingsPageShell";
 import { StatusPill } from "../common/StatusPill";
-// 2026-08-29 · #122 P2 · SectionCard 프리미티브 · 목업 UI_MOCKUP_SETTINGS_SHELL_V2 반영
+// 2026-08-29 · #122 P2 · SectionCard 프리미티브
 import { SectionCard } from "../common/SectionCard";
-// 2026-08-12 · 연락처·도장 개별 섹션 (개별 export · 4탭 배치용)
-// 2026-08-20 · 모바일 가시성 · 메뉴 설정(PermissionsPage) 으로 이관
+// 2026-08-12 · 연락처·도장 개별 섹션
 import { ContactSection, StampsSection } from "../BrandingSettingsPage/BrandingSettingsPage";
 import { SET_LABEL, SET_INPUT } from "../../lib/settingsTypography";
 import { Spinner } from "../common/Spinner";
@@ -32,8 +34,7 @@ interface Props {
   onLogout?: () => void;
 }
 
-// 2026-08-31 · 사용자 지시 · 회사·브랜드 페이지 · 폰트 +2 (탭메뉴 이하 모든 필드)
-//   · 공용 SET_LABEL/SET_INPUT +2 로 override (다른 설정 페이지는 영향 X · 페이지 로컬 스코프)
+// 2026-08-31 · 폰트 +2 (탭메뉴 이하 모든 필드)
 const LABEL_CLS = "flex items-center gap-1.5 text-[15px] font-bold text-ink mb-1.5";
 const INPUT_CLS =
   "w-full h-11 bg-[#FAFBFC] border border-line rounded-[10px] px-3 text-[16px] font-medium text-ink " +
@@ -41,29 +42,63 @@ const INPUT_CLS =
   "transition disabled:opacity-50";
 void SET_LABEL; void SET_INPUT;
 
-type TabKey = "company" | "brand" | "contact" | "stamps";
-const TABS: Array<{ key: TabKey; label: string; Icon: React.ComponentType<any>; color: string }> = [
-  { key: "company", label: "회사정보",      Icon: Buildings,    color: "text-indigo-500"  },
-  { key: "brand",   label: "브랜드",        Icon: Palette,      color: "text-violet-500"  },
-  { key: "contact", label: "연락처·카카오", Icon: AddressBook,  color: "text-sky-500"     },
-  { key: "stamps",  label: "도장 매핑",     Icon: Stamp,        color: "text-rose-500"    },
+// 2026-09-18 · Plan B · anchor rail 항목
+type SectionId = "section-company" | "section-brand" | "section-contact" | "section-stamps";
+const RAIL_ITEMS: Array<{ id: SectionId; label: string; Icon: PhosphorIcon }> = [
+  { id: "section-company", label: "사업장·법인",   Icon: Buildings   },
+  { id: "section-brand",   label: "브랜드",        Icon: Palette     },
+  { id: "section-contact", label: "연락처·카카오", Icon: AddressBook },
+  { id: "section-stamps",  label: "도장 매핑",     Icon: Stamp       },
 ];
 
 const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const { info, setInfo, loaded, saveState } = useCompanyInfo();
   const { brand, setBrand } = useBrandIdentity();
 
-  // 2026-08-12 · 5탭 상태 · localStorage 저장 (재방문 시 마지막 탭 복원)
-  const [tab, setTab] = useState<TabKey>(() => {
-    try {
-      const v = localStorage.getItem(SK_COMPANY_INFO_TAB) as TabKey | null;
-      return (v && TABS.some(t => t.key === v)) ? v : "company";
-    } catch { return "company"; }
-  });
-  const changeTab = (k: TabKey) => {
-    setTab(k);
-    try { localStorage.setItem(SK_COMPANY_INFO_TAB, k); } catch { /* silent */ }
-  };
+  // 2026-09-18 · Plan B · IntersectionObserver 기반 현재 섹션 추적
+  const [activeSection, setActiveSection] = useState<SectionId>("section-company");
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  useEffect(() => {
+    const sectionIds = RAIL_ITEMS.map(r => r.id);
+    const ratioMap = new Map<string, number>(sectionIds.map(id => [id, 0]));
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          ratioMap.set(entry.target.id, entry.intersectionRatio);
+        });
+        // 가장 높은 교차 비율 섹션 선택
+        let maxRatio = -1;
+        let topId: SectionId = "section-company";
+        ratioMap.forEach((ratio, id) => {
+          if (ratio > maxRatio) {
+            maxRatio = ratio;
+            topId = id as SectionId;
+          }
+        });
+        setActiveSection(topId);
+      },
+      { threshold: [0, 0.1, 0.25, 0.5, 0.75, 1.0] }
+    );
+
+    sectionIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) observerRef.current!.observe(el);
+    });
+
+    return () => {
+      observerRef.current?.disconnect();
+    };
+  }, []);
+
+  const handleRailClick = useCallback((id: SectionId) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      setActiveSection(id);
+    }
+  }, []);
 
   const badgeText =
     saveState === "saving" ? "저장 중..." :
@@ -91,137 +126,142 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
         </StatusPill>
       ) : undefined}
     >
-      {/* 2026-08-23 · #92 · A안 (완전 통합) · 4탭 → 4섹션 스크롤 · 상단 sticky 앵커 nav */}
-      <nav
-        className="mb-4 sticky top-0 z-10 -mx-2 px-2 py-2 bg-zinc-50/85 backdrop-blur-sm border-b border-line flex flex-wrap gap-1"
-        aria-label="회사·브랜드 · 섹션 이동"
-      >
-        {TABS.map(({ key, label, Icon, color }) => {
-          const active = tab === key;
-          return (
-            <a
-              key={key}
-              href={`#section-${key}`}
-              onClick={(e) => {
-                e.preventDefault();
-                changeTab(key);
-                const el = document.getElementById(`section-${key}`);
-                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[16px] font-bold transition-colors cursor-pointer ${
-                active
-                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                  : "text-zinc-600 hover:text-zinc-800 hover:bg-zinc-100 border border-transparent"
-              }`}
+      {/* 2026-09-18 · Plan B · 좌 aside rail + 우 스크롤 레이아웃 */}
+      <div className="flex gap-6 items-start">
+
+        {/* ── 좌측 anchor rail · 데스크탑(≥sm)만 표시 ── */}
+        <aside className="hidden sm:flex flex-col gap-0.5 w-40 flex-shrink-0 sticky top-4 self-start">
+          {RAIL_ITEMS.map(({ id, label, Icon }) => {
+            const active = activeSection === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => handleRailClick(id)}
+                className={[
+                  "flex items-center gap-2 w-full text-left px-3 py-2.5 rounded-lg text-[14px] font-medium transition-colors",
+                  active
+                    ? "bg-brand-tint text-brand-deep font-semibold"
+                    : "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100",
+                ].join(" ")}
+              >
+                <Icon
+                  size={14}
+                  weight={active ? "fill" : "regular"}
+                />
+                {label}
+              </button>
+            );
+          })}
+        </aside>
+
+        {/* ── 우측 섹션 스크롤 영역 ── */}
+        <div className="flex-1 min-w-0 flex flex-col gap-6">
+
+          {/* ── 섹션 1 · 회사정보 (사업장 · 법인) ── */}
+          <section id="section-company">
+            <SectionCard
+              title="사업장 · 법인 정보"
+              icon={<Buildings size={18} />}
+              description="근로계약서·사직서·PDF·각종 서식에 표시되는 사업장 정보 (약국명·대표·사업자·주소·전화)."
             >
-              <Icon size={14} weight={active ? "fill" : "regular"} className={active ? color : "text-zinc-400"} />
-              {label}
-            </a>
-          );
-        })}
-      </nav>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2">
+                  <label className={LABEL_CLS}><Buildings size={12} />약국(사업장) 이름</label>
+                  <input lang="ko" className={INPUT_CLS} value={info.name} onChange={e => setInfo({ name: e.target.value })}
+                         placeholder="예: 오산 메가타운 약국" />
+                </div>
+                <div>
+                  <label className={LABEL_CLS}><User size={12} />대표자 이름</label>
+                  <input lang="ko" className={INPUT_CLS} value={info.representativeName} onChange={e => setInfo({ representativeName: e.target.value })}
+                         placeholder="예: 강남성" />
+                </div>
+                {/* 2026-09-02 · 대표자 직함 필드 제거 (사용자 지시) */}
+                <div>
+                  <label className={LABEL_CLS}><IdentificationBadge size={12} />사업자등록번호</label>
+                  <input lang="ko" className={INPUT_CLS} value={info.regNo} onChange={e => setInfo({ regNo: e.target.value })}
+                         placeholder="000-00-00000" />
+                </div>
+                <div>
+                  <label className={LABEL_CLS}><Phone size={12} />사업장 전화</label>
+                  <input lang="ko" className={INPUT_CLS} value={info.phone ?? ""} onChange={e => setInfo({ phone: e.target.value })}
+                         placeholder="예: 031-000-0000" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={LABEL_CLS}><MapPin size={12} />사업장 주소</label>
+                  <input lang="ko" className={INPUT_CLS} value={info.address} onChange={e => setInfo({ address: e.target.value })}
+                         placeholder="예: 경기도 오산시 경기대로 868-4 2층" />
+                </div>
+              </div>
 
-      {/* ── 섹션 1 · 회사정보 (사업장 · 법인) · 2026-08-29 #122 P2 · SectionCard ── */}
-      <section id="section-company">
-        <SectionCard
-          title="사업장 · 법인 정보"
-          icon={<Buildings size={18} />}
-          description="근로계약서·사직서·PDF·각종 서식에 표시되는 사업장 정보 (약국명·대표·사업자·주소·전화)."
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="sm:col-span-2">
-              <label className={LABEL_CLS}><Buildings size={12} />약국(사업장) 이름</label>
-              <input lang="ko" className={INPUT_CLS} value={info.name} onChange={e => setInfo({ name: e.target.value })}
-                     placeholder="예: 오산 메가타운 약국" />
-            </div>
-            <div>
-              <label className={LABEL_CLS}><User size={12} />대표자 이름</label>
-              <input lang="ko" className={INPUT_CLS} value={info.representativeName} onChange={e => setInfo({ representativeName: e.target.value })}
-                     placeholder="예: 강남성" />
-            </div>
-            {/* 2026-09-02 · 사용자 지시 · 대표자 직함 · 사업장 정보 아래쪽에 · 필요없음 (필드 자체 제거) */}
-            <div>
-              <label className={LABEL_CLS}><IdentificationBadge size={12} />사업자등록번호</label>
-              <input lang="ko" className={INPUT_CLS} value={info.regNo} onChange={e => setInfo({ regNo: e.target.value })}
-                     placeholder="000-00-00000" />
-            </div>
-            <div>
-              <label className={LABEL_CLS}><Phone size={12} />사업장 전화</label>
-              <input lang="ko" className={INPUT_CLS} value={info.phone ?? ""} onChange={e => setInfo({ phone: e.target.value })}
-                     placeholder="예: 031-000-0000" />
-            </div>
-            <div className="sm:col-span-2">
-              <label className={LABEL_CLS}><MapPin size={12} />사업장 주소</label>
-              <input lang="ko" className={INPUT_CLS} value={info.address} onChange={e => setInfo({ address: e.target.value })}
-                     placeholder="예: 경기도 오산시 경기대로 868-4 2층" />
-            </div>
-          </div>
+              {!loaded && (
+                <div className="mt-3 flex justify-center"><Spinner label="서버에서 최신 값을 불러오는 중..." size={14} tone="zinc" labelSize={15} /></div>
+              )}
+            </SectionCard>
+          </section>
 
-          {!loaded && (
-            <div className="mt-3 flex justify-center"><Spinner label="서버에서 최신 값을 불러오는 중..." size={14} tone="zinc" labelSize={15} /></div>
-          )}
-        </SectionCard>
-      </section>
+          {/* ── 섹션 2 · 브랜드 (앱 이름 · 로고) ── */}
+          <section id="section-brand">
+            <SectionCard
+              title="브랜드 정보 (앱 이름 · 로고)"
+              icon={<Palette size={18} />}
+              description="사이드바·랜딩·브라우저 탭에 표시되는 앱 브랜딩. 로고·파비콘은 파일 업로드 지원."
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={LABEL_CLS}><TextT size={12} />앱 이름 (사이드바)</label>
+                  <input lang="ko" className={INPUT_CLS} value={brand.shortName} onChange={e => setBrand({ shortName: e.target.value })}
+                         placeholder="예: 오산 메가타운 약국" />
+                </div>
+                <div>
+                  <label className={LABEL_CLS}><TextT size={12} />앱 타이틀 (브라우저 탭)</label>
+                  <input lang="ko" className={INPUT_CLS} value={brand.appTitle} onChange={e => setBrand({ appTitle: e.target.value })}
+                         placeholder="예: 오산메가타운 관리시스템" />
+                </div>
+                <div>
+                  <label className={LABEL_CLS}><TextT size={12} />영문 브랜드명 (랜딩)</label>
+                  <input lang="ko" className={INPUT_CLS} value={brand.brandNameEn} onChange={e => setBrand({ brandNameEn: e.target.value })}
+                         placeholder="예: OSAN MEGATOWN" />
+                </div>
+                <div>
+                  <label className={LABEL_CLS}><TextT size={12} />영문 강조 단어 (랜딩 컬러)</label>
+                  <input lang="ko" className={INPUT_CLS} value={brand.brandAccentWord} onChange={e => setBrand({ brandAccentWord: e.target.value })}
+                         placeholder="예: MEGATOWN" />
+                </div>
+                <div className="sm:col-span-2">
+                  <ImageUploadField
+                    label="로고 이미지"
+                    value={brand.logoUrl ?? ""}
+                    onChange={v => setBrand({ logoUrl: v || undefined })}
+                    prefix="logo"
+                    hint="비워두면 기본 로고 사용. 파일 업로드 또는 URL 입력"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <ImageUploadField
+                    label="파비콘 이미지"
+                    value={brand.faviconUrl ?? ""}
+                    onChange={v => setBrand({ faviconUrl: v || undefined })}
+                    prefix="favicon"
+                    hint="브라우저 탭 아이콘. 32x32 또는 64x64 png 권장"
+                  />
+                </div>
+              </div>
+            </SectionCard>
+          </section>
 
-      {/* ── 섹션 2 · 브랜드 (앱 이름 · 로고) · 2026-08-29 #122 P2 · SectionCard ── */}
-      <section id="section-brand" className="mt-6">
-        <SectionCard
-          title="브랜드 정보 (앱 이름 · 로고)"
-          icon={<Palette size={18} />}
-          description="사이드바·랜딩·브라우저 탭에 표시되는 앱 브랜딩. 로고·파비콘은 파일 업로드 지원."
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className={LABEL_CLS}><TextT size={12} />앱 이름 (사이드바)</label>
-              <input lang="ko" className={INPUT_CLS} value={brand.shortName} onChange={e => setBrand({ shortName: e.target.value })}
-                     placeholder="예: 오산 메가타운 약국" />
-            </div>
-            <div>
-              <label className={LABEL_CLS}><TextT size={12} />앱 타이틀 (브라우저 탭)</label>
-              <input lang="ko" className={INPUT_CLS} value={brand.appTitle} onChange={e => setBrand({ appTitle: e.target.value })}
-                     placeholder="예: 오산메가타운 관리시스템" />
-            </div>
-            <div>
-              <label className={LABEL_CLS}><TextT size={12} />영문 브랜드명 (랜딩)</label>
-              <input lang="ko" className={INPUT_CLS} value={brand.brandNameEn} onChange={e => setBrand({ brandNameEn: e.target.value })}
-                     placeholder="예: OSAN MEGATOWN" />
-            </div>
-            <div>
-              <label className={LABEL_CLS}><TextT size={12} />영문 강조 단어 (랜딩 컬러)</label>
-              <input lang="ko" className={INPUT_CLS} value={brand.brandAccentWord} onChange={e => setBrand({ brandAccentWord: e.target.value })}
-                     placeholder="예: MEGATOWN" />
-            </div>
-            <div className="sm:col-span-2">
-              <ImageUploadField
-                label="로고 이미지"
-                value={brand.logoUrl ?? ""}
-                onChange={v => setBrand({ logoUrl: v || undefined })}
-                prefix="logo"
-                hint="비워두면 기본 로고 사용. 파일 업로드 또는 URL 입력"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <ImageUploadField
-                label="파비콘 이미지"
-                value={brand.faviconUrl ?? ""}
-                onChange={v => setBrand({ faviconUrl: v || undefined })}
-                prefix="favicon"
-                hint="브라우저 탭 아이콘. 32x32 또는 64x64 png 권장"
-              />
-            </div>
-          </div>
-        </SectionCard>
-      </section>
+          {/* ── 섹션 3 · 연락처·카카오 ── */}
+          <section id="section-contact">
+            <ContactSection />
+          </section>
 
-      {/* ── 섹션 3 · 연락처·카카오 ── */}
-      <section id="section-contact" className="mt-6">
-        <ContactSection />
-      </section>
+          {/* ── 섹션 4 · 도장 매핑 ── */}
+          <section id="section-stamps">
+            <StampsSection />
+          </section>
 
-      {/* ── 섹션 4 · 도장 매핑 ── */}
-      <section id="section-stamps" className="mt-6">
-        <StampsSection />
-      </section>
+        </div>{/* /flex-1 */}
+      </div>{/* /flex gap-6 */}
     </SettingsPageShell>
   );
 };
