@@ -19,6 +19,7 @@ import { EmptyState } from "../common/EmptyState";
 import { Spinner } from "../common/Spinner";
 import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/TableList";
 import { useSortableTable } from "../../hooks/useSortableTable";
+import { SortHeaderContent } from "../common/SortHeader";
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-29 · A0-2 · dead import 제거 · useSaleStatusFilter (D안) 로 이관 완료
 // 2026-08-28 · 사용자 지시 · 판매중 필터 프레임워크 (D안)
@@ -289,7 +290,6 @@ export const RealStockTablePage: React.FC = () => {
     }
   };
 
-  const sortIndicator = (k: SortKey) => sortKey === k ? (sortDir === "asc" ? " ▲" : " ▼") : "";
   // 2026-08-28 · 사용자 지시 · 헤더 2행 · rowSpan=2 는 top-0 · 두 번째 tr(구역/수량)은 top=42px 로 · 스크롤 시 안 사라지게
   const thSortable = (k: SortKey, align: "left" | "center" | "num", label: string, minW?: number, extra = "", rowSpan?: number, subRow?: boolean) => {
     const style: React.CSSProperties = { ...(minW ? { minWidth: minW } : {}), ...(subRow ? { top: 42 } : {}) };
@@ -301,7 +301,7 @@ export const RealStockTablePage: React.FC = () => {
         style={Object.keys(style).length ? style : undefined}
         title={`${label} 정렬`}
       >
-        {label}<span className="ml-1 text-zinc-400 text-[15px]">{sortIndicator(k) || "⇅"}</span>
+        <SortHeaderContent label={label} columnKey={k} activeKey={sortKey} activeDir={sortDir} arrowStyle="text" activeColor="zinc" align={align === "num" ? "right" : align === "center" ? "left" : align} />
       </th>
     );
   };
