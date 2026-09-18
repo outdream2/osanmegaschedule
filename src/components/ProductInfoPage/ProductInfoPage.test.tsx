@@ -180,7 +180,11 @@ describe("ProductInfoPage · 상품 리스트 로드 · 선택 · 상세", () =>
   it("상품 클릭 · 상세 로드 · 우측 패널 표시", async () => {
     const { container } = render(<ProductInfoPage authSession={null} />);
     await waitFor(() => expect(container.textContent).toContain("타이레놀"));
-    const btn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("타이레놀")) as HTMLButtonElement;
+    // 2026-09-18 · 리스트 카드 → 표 형식 · <tbody tr> · 첫 td (상품명 컬럼) startsWith 로 정확 매칭
+    //   · 이전 include 방식 · 다른 행 공급사에 '타이레놀' 포함되면 오매칭
+    const btn = Array.from(container.querySelectorAll("tbody tr")).find(tr =>
+      tr.querySelector("td")?.textContent?.trim().startsWith("타이레놀")
+    ) as HTMLElement;
     fireEvent.click(btn);
     // 2026-09-08 · product_code 헤더에 표시 · PC001 텍스트 (# prefix or without)
     await waitFor(() => {
@@ -205,7 +209,11 @@ describe("ProductInfoPage · 편집 모드 (canEdit)", () => {
     const auth: AuthSession = { role: "admin", level: 8 };
     const { container } = render(<ProductInfoPage authSession={auth} />);
     await waitFor(() => expect(container.textContent).toContain("타이레놀"));
-    const btn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("타이레놀")) as HTMLButtonElement;
+    // 2026-09-18 · 리스트 카드 → 표 형식 · <tbody tr> · 첫 td (상품명 컬럼) startsWith 로 정확 매칭
+    //   · 이전 include 방식 · 다른 행 공급사에 '타이레놀' 포함되면 오매칭
+    const btn = Array.from(container.querySelectorAll("tbody tr")).find(tr =>
+      tr.querySelector("td")?.textContent?.trim().startsWith("타이레놀")
+    ) as HTMLElement;
     fireEvent.click(btn);
     await waitFor(() => {
       // 2026-08-30 · #41 통합 후 · 상세정보 카드 내 [수정] 버튼
@@ -218,7 +226,11 @@ describe("ProductInfoPage · 편집 모드 (canEdit)", () => {
     const auth: AuthSession = { role: "employee", level: 1 };
     const { container } = render(<ProductInfoPage authSession={auth} />);
     await waitFor(() => expect(container.textContent).toContain("타이레놀"));
-    const btn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("타이레놀")) as HTMLButtonElement;
+    // 2026-09-18 · 리스트 카드 → 표 형식 · <tbody tr> · 첫 td (상품명 컬럼) startsWith 로 정확 매칭
+    //   · 이전 include 방식 · 다른 행 공급사에 '타이레놀' 포함되면 오매칭
+    const btn = Array.from(container.querySelectorAll("tbody tr")).find(tr =>
+      tr.querySelector("td")?.textContent?.trim().startsWith("타이레놀")
+    ) as HTMLElement;
     fireEvent.click(btn);
     // 2026-08-30 · #41 통합 후 · 상세 로드 확인 (PC001 코드 표시)
     await waitFor(() => expect(container.textContent).toContain("PC001"));

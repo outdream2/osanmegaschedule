@@ -5,8 +5,16 @@ import { render, fireEvent, cleanup } from "@testing-library/react";
 import { ProductCreateModal } from "./ProductCreateModal";
 
 const mockPost = vi.fn();
+// 2026-09-18 · useStorageLocations · api.get 필요 · shelf 5-slot 추가로 (373eaf78)
+//   · unhandled rejection 방지 · 빈 배열 fallback (DEFAULT_STORAGE_LOCATIONS)
+const mockGet = vi.fn().mockResolvedValue({ data: [] });
+const mockPatch = vi.fn().mockResolvedValue({ data: { ok: true } });
 vi.mock("../../lib/apiClient", () => ({
-  api: { post: (...args: any[]) => mockPost(...args) },
+  api: {
+    post: (...args: any[]) => mockPost(...args),
+    get: (...args: any[]) => mockGet(...args),
+    patch: (...args: any[]) => mockPatch(...args),
+  },
   ApiError: class MockApiError extends Error {
     status: number;
     data: unknown;
