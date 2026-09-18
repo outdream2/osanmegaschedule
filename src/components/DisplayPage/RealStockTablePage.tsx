@@ -7,7 +7,7 @@
 
 import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { PackageCheck, Search, RefreshCw, Check, X, ChevronRight, ChevronDown, ArrowUp, ArrowDown } from "lucide-react";
-import { Modal } from "../common/Modal";
+import { RealStockDetailModal } from "./RealStockDetailModal";
 import { api, ApiError } from "../../lib/apiClient";
 // 2026-09-14 · inventoryChecksApi 프리미티브
 import { saveInventoryCheck } from "../../lib/inventoryChecksApi";
@@ -32,8 +32,6 @@ import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 // 2026-08-27 · 사용자 지시 · 카테고리 → 창고 slot 지능 배정 (8A=창고1 · 32=창고2)
 import { assignZonesToSlots } from "../../lib/warehouseZoneMap";
-// 2026-09-08 · 상세 진열위치 뱃지 · 진열위치 옆 매장/창고별 3자리 표시
-import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
 import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
 import type { Product, InvRow, Row, SortKey } from "./RealStockTablePage.types";
 import { SLOT_LABEL, CMP, PAGE_SIZE } from "./RealStockTablePage.utils";
@@ -428,65 +426,7 @@ export const RealStockTablePage: React.FC = () => {
       )}
       {/* 2026-08-26 · 사용자 지시 · 상품 클릭 · 상세 모달 */}
       {detailRow && (
-        <Modal
-          open={!!detailRow}
-          onClose={() => setDetailRow(null)}
-          title={detailRow.product_name}
-          size="md"
-          titleAccent
-        >
-          <div className="flex flex-col gap-3 text-[15px]">
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="상품코드" value={<span className="font-mono text-[15px] tabular-nums">{detailRow.product_code}</span>} />
-              <Field label="공급사"  value={detailRow.supplier ? (displayVendorName(detailRow.supplier) || detailRow.supplier) : "-"} />
-              <Field label="진열위치" value={
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span>{detailRow.location ?? "미지정"}</span>
-                  <ShelfPositionsBadge positions={shelfMap[detailRow.product_code]} size="sm" />
-                </div>
-              } />
-              <Field label="ERP재고"  value={<b className="text-amber-700 tabular-nums text-[17px]">{detailRow.erp ?? "-"}</b>} />
-              <Field label="실재고합계" value={<b className="text-brand-deep tabular-nums text-[17px]">{detailRow.total > 0 ? detailRow.total : "-"}</b>} />
-            </div>
-            <div className="border-t border-line pt-3">
-              <div className="text-[15px] font-bold text-ink-soft uppercase tracking-wider mb-2">위치별 실재고</div>
-              <div className="grid grid-cols-5 gap-2">
-                {(() => {
-                  const sp = shelfMap[detailRow.product_code] ?? {};
-                  const fmt = (v: string | null | undefined): string | null =>
-                    typeof v === "string" && v.length === 3 ? `${v[0]}-${v[1]}-${v[2]}` : null;
-                  return [
-                    { label: "매장1", qty: detailRow.s1, zone: detailRow.s1zone, tone: "violet", shelfCode: "store1" },
-                    { label: "매장2", qty: detailRow.s2, zone: detailRow.s2zone, tone: "violet", shelfCode: "store2" },
-                    { label: "매장3", qty: detailRow.s3, zone: detailRow.s3zone, tone: "violet", shelfCode: "store3" },
-                    { label: "창고1", qty: detailRow.w1, zone: detailRow.w1zone, tone: "cyan", shelfCode: "warehouse1" },
-                    { label: "창고2", qty: detailRow.w2, zone: detailRow.w2zone, tone: "cyan", shelfCode: "warehouse2" },
-                  ].map((s) => {
-                    const shelfDetail = fmt(sp[s.shelfCode]);
-                    return (
-                      <div key={s.label} className={`rounded-lg border p-2 text-center ${s.tone === "violet" ? "bg-violet-50/40 border-violet-200" : "bg-cyan-50/40 border-cyan-200"}`}>
-                        <div className={`text-[14px] font-bold ${s.tone === "violet" ? "text-violet-700" : "text-cyan-700"}`}>{s.label}</div>
-                        {s.zone && <div className="text-[15px] font-bold text-zinc-500 mt-0.5">{s.zone}</div>}
-                        {shelfDetail && (
-                          <div className={`text-[12px] font-semibold tabular-nums mt-0.5 ${s.tone === "violet" ? "text-violet-600" : "text-cyan-600"}`}>
-                            상세 {shelfDetail}
-                          </div>
-                        )}
-                        <div className={`text-[18px] font-extrabold tabular-nums mt-0.5 ${s.qty != null && s.qty > 0 ? (s.tone === "violet" ? "text-violet-800" : "text-cyan-800") : "text-zinc-300"}`}>{s.qty ?? "-"}</div>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-            </div>
-            <div className="border-t border-line pt-3 flex items-center justify-between">
-              <span className="text-[16px] font-bold text-ink-soft">차이 (ERP − 실재고합계)</span>
-              <span className={`text-[20px] font-extrabold tabular-nums ${detailRow.diff > 0 ? "text-rose-600" : detailRow.diff < 0 ? "text-emerald-600" : "text-zinc-400"}`}>
-                {detailRow.diff !== 0 ? (detailRow.diff > 0 ? `+${detailRow.diff}` : String(detailRow.diff)) : "0"}
-              </span>
-            </div>
-          </div>
-        </Modal>
+        <RealStockDetailModal row={detailRow} shelfMap={shelfMap} onClose={() => setDetailRow(null)} />
       )}
       <div className="flex flex-col gap-3">
         {/* 2026-08-27 · UI 목업 반영 · 프리미티브 톤 (Linear/Attio/Vercel 2026) · 가로 구조 통일 */}
@@ -788,13 +728,5 @@ export const RealStockTablePage: React.FC = () => {
     </div>
   );
 };
-
-// 상세 모달 · Field 헬퍼 · 라벨/값 정렬
-const Field: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
-  <div className="flex flex-col gap-0.5 min-w-0">
-    <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider">{label}</span>
-    <span className="text-[15px] text-ink break-keep">{value}</span>
-  </div>
-);
 
 export default RealStockTablePage;
