@@ -125,16 +125,16 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
                   className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-zinc-100 transition ${sortKey === "opening" ? "text-zinc-800 font-bold" : ""}`}
                   title="시작재고"><span className="inline-flex items-center gap-0.5">시작{arrow("opening")}</span></th>
                 <th onClick={() => handleSort("sale")}
-                  className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-orange-100/60 bg-orange-50/60 transition ${sortKey === "sale" ? "text-orange-700 font-bold" : "text-orange-500"}`}
+                  className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-zinc-100 bg-zinc-50/60 transition ${sortKey === "sale" ? "text-zinc-800 font-bold" : "text-zinc-500"}`}
                   title="판매출고계"><span className="inline-flex items-center gap-0.5">판매{arrow("sale")}</span></th>
                 <th onClick={() => handleSort("current")}
-                  className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-amber-100/60 bg-amber-50/60 transition ${sortKey === "current" ? "text-amber-800 font-bold" : "text-amber-600"}`}
+                  className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-zinc-100 bg-zinc-50/60 transition ${sortKey === "current" ? "text-zinc-800 font-bold" : "text-zinc-500"}`}
                   title="현재고"><span className="inline-flex items-center gap-0.5">현재고{arrow("current")}</span></th>
                 <th onClick={() => handleSort("expected")}
                   className={`text-right px-1 py-1.5 w-14 hidden md:table-cell cursor-pointer select-none hover:bg-zinc-100 transition ${sortKey === "expected" ? "text-zinc-800 font-bold" : ""}`}
                   title="시작 − 판매 = 예상 종료재고"><span className="inline-flex items-center gap-0.5">예상{arrow("expected")}</span></th>
                 <th onClick={() => handleSort("purchase")}
-                  className={`text-right px-1 py-1.5 w-14 hidden md:table-cell cursor-pointer select-none hover:bg-emerald-100/60 bg-emerald-50/60 transition ${sortKey === "purchase" ? "text-emerald-800 font-bold" : "text-emerald-500"}`}
+                  className={`text-right px-1 py-1.5 w-14 hidden md:table-cell cursor-pointer select-none hover:bg-zinc-100 bg-zinc-50/60 transition ${sortKey === "purchase" ? "text-zinc-800 font-bold" : "text-zinc-500"}`}
                   title="입고계 (참고)"><span className="inline-flex items-center gap-0.5">입고{arrow("purchase")}</span></th>
                 <th onClick={() => handleSort("loss")}
                   className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-rose-100/60 bg-rose-50/60 transition ${sortKey === "loss" ? "text-rose-700 font-bold" : "text-rose-500"}`}
@@ -160,10 +160,10 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
                     </td>
                     <td className="px-0.5 py-1.5 text-zinc-500 text-[15px] hidden sm:table-cell break-words whitespace-normal leading-tight align-top">{r.supplier ? displayVendorName(r.supplier) || r.supplier : ""}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-zinc-800 align-top">{fmt(open)}</td>
-                    <td className="text-right px-0.5 py-1.5 tabular-nums text-orange-700 font-bold bg-orange-50/40 align-top">{fmt(sale)}</td>
-                    <td className="text-right px-0.5 py-1.5 tabular-nums text-amber-800 font-bold bg-amber-50/40 align-top">{fmt(close)}</td>
+                    <td className="text-right px-0.5 py-1.5 tabular-nums text-zinc-700 font-bold bg-zinc-50/40 align-top">{fmt(sale)}</td>
+                    <td className="text-right px-0.5 py-1.5 tabular-nums text-zinc-700 font-bold bg-zinc-50/40 align-top">{fmt(close)}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-zinc-800 hidden md:table-cell align-top">{fmt(expected)}</td>
-                    <td className={`text-right px-0.5 py-1.5 tabular-nums hidden md:table-cell bg-emerald-50/40 align-top ${purch > 0 ? "text-emerald-700 font-bold" : "text-zinc-400"}`}>
+                    <td className={`text-right px-0.5 py-1.5 tabular-nums hidden md:table-cell bg-zinc-50/40 align-top ${purch > 0 ? "text-zinc-700 font-bold" : "text-zinc-400"}`}>
                       {purch > 0 ? (
                         <button
                           type="button"

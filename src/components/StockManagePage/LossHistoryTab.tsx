@@ -177,7 +177,7 @@ export const LossHistoryTab: React.FC = () => {
                 onClick={() => setPeriod(k)}
                 className={`px-2.5 py-1 text-[15px] font-bold rounded-md border transition cursor-pointer ${
                   period === k
-                    ? "bg-violet-500 text-white border-violet-500"
+                    ? "bg-brand-deep text-white border-brand-deep"
                     : "bg-white text-zinc-500 border-line hover:bg-zinc-50"
                 }`}
               >
@@ -207,7 +207,7 @@ export const LossHistoryTab: React.FC = () => {
           onClick={runSnapshot}
           disabled={snapshotting}
           title="지금 손실 스냅샷 저장 (실재고 저장 시 자동으로도 저장됨)"
-          className="ml-auto sm:ml-0 flex items-center gap-1 px-2 py-1 text-[15px] font-bold rounded-md border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 transition disabled:opacity-40 cursor-pointer"
+          className="ml-auto sm:ml-0 flex items-center gap-1 px-2 py-1 text-[15px] font-bold rounded-md border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 transition disabled:opacity-40 cursor-pointer"
         >
           {snapshotting ? <Spinner size={11} tone="violet" /> : <Camera size={11} />}
           스냅샷
@@ -310,7 +310,7 @@ export const LossHistoryTab: React.FC = () => {
             <div className={`${CARD_BASE} px-3 py-2`}>
               <div className="flex items-center justify-between mb-1.5">
                 <span className={`${TEXT.caption} text-zinc-600 flex items-center gap-1`}>
-                  <Building2 size={11} className="text-violet-500" />
+                  <Building2 size={11} className="text-brand-deep" />
                   공급사별 Top10 손실액
                 </span>
                 <span className={`${TEXT.caption} text-zinc-400`}>{supplierTop10.length}건</span>
@@ -320,7 +320,7 @@ export const LossHistoryTab: React.FC = () => {
                   {supplierTop10.map((r, i) => (
                     <tr key={`sup-${r.key}`} className="hover:bg-zinc-50/60">
                       <td className="py-1.5 pr-1 text-zinc-400 font-semibold tabular-nums w-6 text-right">{i + 1}</td>
-                      <td className="py-1.5 pl-1 text-zinc-700 font-semibold truncate max-w-[140px]" title={r.label}>
+                      <td className="py-1.5 pl-1 text-zinc-700 font-semibold break-words whitespace-normal leading-snug max-w-[140px]">
                         {displayVendorName(r.label)}
                       </td>
                       <td className="py-1.5 text-right text-rose-700 font-bold tabular-nums">{fmtWon(r.loss_value)}</td>
@@ -346,7 +346,7 @@ export const LossHistoryTab: React.FC = () => {
                   {productTop10.map((r, i) => (
                     <tr key={`prod-${r.key}`} className="hover:bg-zinc-50/60">
                       <td className="py-1.5 pr-1 text-zinc-400 font-semibold tabular-nums w-6 text-right">{i + 1}</td>
-                      <td className="py-1.5 pl-1 text-zinc-700 font-semibold truncate max-w-[140px]" title={r.label}>
+                      <td className="py-1.5 pl-1 text-zinc-700 font-semibold break-words whitespace-normal leading-snug max-w-[140px]">
                         {r.label}
                       </td>
                       <td className="py-1.5 text-right text-rose-700 font-bold tabular-nums">{fmtWon(r.loss_value)}</td>

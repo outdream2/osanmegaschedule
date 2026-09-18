@@ -116,7 +116,7 @@ export const FlowFilterBar: React.FC<FlowFilterBarProps> = ({
                   setInfoSearchResults([]);
                   loadFlowSelectedProduct(p);
                 }}
-                className="w-full text-left px-3 py-2 hover:bg-sky-50 transition flex items-center justify-between gap-2">
+                className="w-full text-left px-3 py-2 hover:bg-zinc-50 transition flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <div className="text-[15px] font-semibold text-zinc-800 whitespace-nowrap">{(p as any).product_name}</div>
                   <div className="text-[15px] tabular-nums text-zinc-400 whitespace-nowrap">#{(p as any).product_code} · {(p as any).supplier ?? "-"}</div>
@@ -193,7 +193,7 @@ export const FlowFilterBar: React.FC<FlowFilterBarProps> = ({
 
       {/* 새로고침 · 분류 세그먼트는 상단 PageToolbar 로 이관 */}
       <button onClick={onFetchStockFlow} disabled={loading}
-        className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
+        className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-zinc-50 hover:border-zinc-300 text-zinc-400 hover:text-zinc-600 transition disabled:opacity-40 cursor-pointer"
         title="새로고침">
         {loading ? <Spinner size={13} tone="zinc" /> : <RefreshCw size={13} />}
       </button>
@@ -264,7 +264,7 @@ export const HiddenManagerModal: React.FC<HiddenManagerModalProps> = ({
                 const code = String((p as any).product_code ?? "");
                 const busy = hiddenUnhideBusyCode === code;
                 return (
-                  <li key={`hidden-${code}`} className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-amber-50/30 transition">
+                  <li key={`hidden-${code}`} className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-zinc-50/60 transition">
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-bold text-zinc-800 break-words leading-tight">{(p as any).product_name}</div>
                       <div className="text-[16px] tabular-nums text-zinc-400 break-words whitespace-normal leading-tight">

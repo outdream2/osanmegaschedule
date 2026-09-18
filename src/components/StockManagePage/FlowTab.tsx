@@ -455,9 +455,9 @@ export const FlowTab: React.FC = () => {
 
       {/* 2026-08-31 · #30 · 자동 확장 안내 배너 · 요청 기간에 데이터 없음 · 확장한 결과 표시 중 */}
       {flowAutoExpanded && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-[15px] self-start">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-zinc-300 bg-zinc-50 text-zinc-700 text-[15px] self-start">
           <span className="font-bold">데이터 안내</span>
-          <span className="text-amber-700">
+          <span className="text-zinc-600">
             최근 {flowAutoExpanded.requested}개월 재고 스냅샷이 없어 <b>{flowAutoExpanded.effective}개월</b>로 자동 확장했습니다
             {flowAutoExpanded.latestSnapshot ? ` · 최신 스냅샷 ${flowAutoExpanded.latestSnapshot}` : ""}
           </span>
@@ -517,8 +517,8 @@ export const FlowTab: React.FC = () => {
 
               <div className="relative flex-1 overflow-auto max-h-[50vh]">
                 {loading && filteredFlow.length > 0 && (
-                  <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mx-1 mb-1 shrink-0">
-                    <Spinner size={11} tone="sky" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
+                  <Card variant="flat" bg="bg-zinc-50" borderColor="border-zinc-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mx-1 mb-1 shrink-0">
+                    <Spinner size={11} tone="zinc" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
                   </Card>
                 )}
 
@@ -591,7 +591,7 @@ export const FlowTab: React.FC = () => {
 
         {/* 리사이즈 핸들 */}
         <div onMouseDown={onFlowResizeStart}
-          className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-teal-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+          className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-zinc-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
           title="드래그하여 폭 조절">
           <span className="text-[15px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
