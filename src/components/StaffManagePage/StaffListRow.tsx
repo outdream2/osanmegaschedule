@@ -1,14 +1,14 @@
-// 2026-09-18 · 직원 리스트 아이템 전수 재설계 · 사용자 지시
-// 테이블 행 → 카드 리스트 행 (flex) · 겹침 제거 · 최신 트렌드
-//   · 이름/직군(좌) + 계약유형(중) + 서류 도트(우)
-//   · Linear/Notion/Vercel 2026 톤 · truncate 절대 금지
+// 2026-09-18 · 직원 리스트 재설계 (사용자 지시 · 2차)
+//   · 동그란 아이콘/아바타 완전 제거
+//   · 텍스트 tabular · Linear/Notion/Vercel 2026 톤
+//   · 좌측 accent bar (border-l-[3px]) 선택 강조
+//   · 말줄임표 금지 · break-keep
 
 import React from "react";
 import { ExternalLink, FileText, Paperclip, PenSquare as NotePencilIcon } from "lucide-react";
 import type { Employee } from "./types";
 import { contractTypeMeta } from "./helpers";
 import { getEmploymentStatus } from "../../lib/employmentStatus";
-import { Avatar } from "./StaffManagePage.subcomponents";
 import { setContractPrefill } from "../../lib/contractPrefill";
 
 interface StaffListRowProps {
@@ -162,44 +162,46 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
     }
   };
 
+  // 재직상태 텍스트
+  const statusLabel = isRetired ? "퇴사" : "재직";
+  const statusCls   = isRetired
+    ? "text-zinc-400"
+    : "text-emerald-600";
+
   return (
     <div
       onClick={() => handleSelect(emp)}
       className={`
-        group flex items-center gap-2.5 px-3 py-2.5 cursor-pointer
+        group flex items-center gap-2 cursor-pointer
         border-b border-zinc-100 last:border-b-0
         transition-colors duration-100
         ${isSelected
-          ? "bg-indigo-50 border-l-[3px] border-l-indigo-400 pl-[9px]"
-          : "hover:bg-zinc-50 border-l-[3px] border-l-transparent pl-[9px]"}
+          ? "bg-brand-tint/60 border-l-[3px] border-l-brand-deep pl-[9px] pr-2.5 py-2.5"
+          : "hover:bg-zinc-50/80 border-l-[3px] border-l-transparent pl-[9px] pr-2.5 py-2.5"}
       `}
     >
-      {/* 아바타 */}
-      <div className="shrink-0">
-        <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
-      </div>
-
-      {/* 이름 + 직군 · 좌측 · flex-1 */}
+      {/* 이름 + 직군/직책 · 좌측 · flex-1 */}
       <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-        <span className={`text-[16px] font-bold leading-tight break-keep whitespace-normal ${isSelected ? "text-indigo-800" : "text-zinc-800"}`}>
+        <span className={`text-[15px] font-bold leading-tight break-keep whitespace-normal ${isSelected ? "text-brand-deep" : "text-zinc-800"}`}>
           {emp.name}
         </span>
-        {emp.position && (
-          <span className={`text-[13px] font-semibold leading-none ${isSelected ? "text-indigo-500" : "text-zinc-400"}`}>
-            {emp.position}{emp.rank ? ` · ${emp.rank}` : ""}
-          </span>
-        )}
+        <span className={`text-[12px] leading-none ${isSelected ? "text-brand-deep/60" : "text-zinc-400"}`}>
+          {[emp.position, emp.rank].filter(Boolean).join(" · ") || <span className="text-zinc-300">직군 미지정</span>}
+        </span>
       </div>
 
-      {/* 계약유형 + D-day · 중앙 · shrink-0 · w-14 */}
-      <div className="shrink-0 w-14 flex flex-col items-end gap-0.5">
+      {/* 재직상태 + 계약 · 중앙 */}
+      <div className="shrink-0 flex flex-col items-end gap-0.5 w-[52px]">
+        <span className={`text-[12px] font-semibold leading-none ${statusCls}`}>
+          {statusLabel}
+        </span>
         {contractLabel && (
-          <span className={`text-[13px] font-bold tabular-nums leading-none ${contractTextCls}`}>
+          <span className={`text-[11px] font-bold tabular-nums leading-none ${contractTextCls}`}>
             {contractLabel}
           </span>
         )}
         {dDayLabel && (
-          <span className={`text-[11px] font-bold px-1 py-px rounded border leading-none tabular-nums ${dDayLabel.cls}`}>
+          <span className={`text-[10px] font-bold tabular-nums leading-none ${dDayLabel.cls.replace("border", "").replace("px-1 py-px rounded", "").trim()}`}>
             {dDayLabel.label}
           </span>
         )}

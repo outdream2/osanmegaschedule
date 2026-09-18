@@ -71,16 +71,14 @@ export const StaffListPanel: React.FC<StaffListPanelProps> = ({
         <div className="text-center text-[15px] text-zinc-300 py-10">해당 조건의 직원이 없습니다</div>
       ) : (
         <div className={`${loading ? "opacity-40 pointer-events-none" : ""} transition-opacity`}>
-          {/* 컬럼 힌트 헤더 · 얇고 조용하게 */}
-          <div className="flex items-center gap-2.5 px-3 py-1.5 border-b border-zinc-100 bg-zinc-50/80">
-            {/* 아바타 placeholder */}
-            <div className="shrink-0 w-8" />
+          {/* 컬럼 힌트 헤더 */}
+          <div className="flex items-center gap-2 pl-[12px] pr-2.5 py-1.5 border-b border-zinc-100 bg-zinc-50/90">
             {/* 이름/직군 */}
             <div className="flex-1 min-w-0 text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
               직원
             </div>
-            {/* 계약유형 */}
-            <div className="shrink-0 w-14 text-right text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+            {/* 재직/계약 */}
+            <div className="shrink-0 w-[52px] text-right text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
               계약
             </div>
             {/* 서류 */}
