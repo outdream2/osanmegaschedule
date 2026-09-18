@@ -5,7 +5,8 @@
 //   · Linear/Attio/Vercel 2026 톤 · border-l-[3px] accent
 
 import React from "react";
-import { ArrowDown, ArrowUp, User, UserPlus } from "lucide-react";
+import { User, UserPlus } from "lucide-react";
+import { SortHeader } from "../common/SortHeader";
 import { Spinner } from "../common/Spinner";
 import { StaffListRow } from "./StaffListRow";
 import type { Employee } from "./types";
@@ -45,7 +46,7 @@ interface StaffListPanelProps {
   onSearchChange?: (v: string) => void;
 }
 
-// 정렬 헤더 버튼 컴포넌트
+// 정렬 헤더 th 래퍼 컴포넌트 (th 구조 유지 · 내부 버튼은 공용 SortHeader)
 const SortTh: React.FC<{
   label: string;
   sortKey: SortKey;
@@ -54,31 +55,22 @@ const SortTh: React.FC<{
   onToggle: (k: SortKey) => void;
   className?: string;
   align?: "left" | "right";
-}> = ({ label, sortKey, activeKey, dir, onToggle, className = "", align = "left" }) => {
-  const active = activeKey === sortKey;
-  return (
-    <th
-      className={`py-2 text-[12px] font-bold tracking-wide uppercase select-none ${align === "right" ? "text-right pr-2" : "text-left"} ${className}`}
-    >
-      <button
-        type="button"
-        onClick={() => onToggle(sortKey)}
-        className={`inline-flex items-center gap-0.5 cursor-pointer transition-colors ${
-          active ? "text-brand-deep" : "text-zinc-400 hover:text-zinc-600"
-        }`}
-        title={`${label} 정렬`}
-      >
-        <span>{label}</span>
-        {active
-          ? (dir === "asc"
-            ? <ArrowUp size={9} strokeWidth={2.5} />
-            : <ArrowDown size={9} strokeWidth={2.5} />)
-          : <ArrowDown size={9} strokeWidth={2} className="opacity-30" />
-        }
-      </button>
-    </th>
-  );
-};
+}> = ({ label, sortKey, activeKey, dir, onToggle, className = "", align = "left" }) => (
+  <th
+    className={`py-2 text-[12px] font-bold tracking-wide uppercase select-none ${align === "right" ? "text-right pr-2" : "text-left"} ${className}`}
+  >
+    <SortHeader
+      label={label}
+      columnKey={sortKey}
+      activeKey={activeKey}
+      activeDir={dir}
+      onToggle={onToggle}
+      arrowStyle="arrow"
+      activeColor="brand"
+      align={align}
+    />
+  </th>
+);
 
 export const StaffListPanel: React.FC<StaffListPanelProps> = ({
   employees, filtered, loading, error,
