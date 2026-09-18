@@ -91,6 +91,17 @@ export const PurchaseHistoryTab: React.FC = () => {
   // 선택 공급사
   const [selectedVendor, setSelectedVendor] = useState<VendorItem | null>(null);
 
+  // 2026-09-18 · #93 · 사용자 지시 · 옵션 C 하이브리드 · 유사 매입이력 병합 모드
+  //   · 선택 vendor 의 purchase_details 가 0건일 때 · 유사 vendor 매입이력 병합 표시
+  //   · vendor·검색어 변경 시 자동 리셋 (정확 검색 기본)
+  const [unionMode, setUnionMode] = useState(false);
+  // union 병합 결과 · unionMode = true 일 때만 세팅됨
+  const [unionLedgerRows, setUnionLedgerRows] = useState<PurchaseLedgerRow[]>([]);
+  const [unionDetailRows, setUnionDetailRows] = useState<PurchaseDetailRow[]>([]);
+  const [unionLoading, setUnionLoading] = useState(false);
+  const [unionError, setUnionError] = useState<string | null>(null);
+  const [unionVendorCount, setUnionVendorCount] = useState(0);
+
   // 우측 서브탭 · controlled · 공급사 클릭 시 강제 "ledger" 전환용
   const [subTab, setSubTab] = useState<PurchaseSubTabKey>("ledger");
 
@@ -348,6 +359,179 @@ export const PurchaseHistoryTab: React.FC = () => {
     if (latest) triggerHighlight(latest.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ledgerRows, ledgerLoading, subTab, selectedVendor?.id]);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  //  #93 · 옵션 C 하이브리드 · 유사 vendor 계산 · union 로드 (2026-09-18)
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // 유사 vendor · 검색어 우선 · 없으면 선택된 vendor 이름
+  const similarVendors = useMemo<VendorItem[]>(() => {
+    if (!selectedVendor) return [];
+    const query = vendorSearch.trim() || selectedVendor.company_name;
+    if (!query) return [];
+    return vendors.filter(v =>
+      v.id !== selectedVendor.id
+      && matchesSupplierQuery({ company_name: v.company_name }, query)
+    );
+  }, [selectedVendor, vendorSearch, vendors]);
+
+  // 유사 vendor 중 · 매입이력 존재 개수 (좌측 summaryMap 기반 판별)
+  const similarWithHistoryCount = useMemo<number>(() => {
+    if (similarVendors.length === 0) return 0;
+    const norm = (s: string): string =>
+      s.replace(/[\s()㈜㈐]/g, "")
+       .replace(/^\(주\)/g, "")
+       .replace(/주식회사/g, "")
+       .replace(/\(주\)$/g, "")
+       .toLowerCase();
+    // summaryMap 은 supplier(=purchase_details.supplier_name) key 이므로
+    // vendors.company_name 을 원본·정규화 양쪽으로 매칭
+    const summaryNormMap = new Map<string, VendorSummary>();
+    for (const [k, v] of summaryMap) {
+      const n = norm(k);
+      if (n && !summaryNormMap.has(n)) summaryNormMap.set(n, v);
+    }
+    let cnt = 0;
+    for (const v of similarVendors) {
+      let s = summaryMap.get(v.company_name);
+      if (!s) {
+        const n = norm(v.company_name);
+        if (n) s = summaryNormMap.get(n);
+      }
+      if (s && ((s.sku_count ?? 0) > 0 || (s.total_amount ?? 0) > 0)) cnt++;
+    }
+    return cnt;
+  }, [similarVendors, summaryMap]);
+
+  // vendor·검색어 변경 시 · unionMode 리셋 (정확 검색 우선)
+  useEffect(() => {
+    setUnionMode(false);
+    setUnionLedgerRows([]);
+    setUnionDetailRows([]);
+    setUnionError(null);
+    setUnionVendorCount(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedVendor?.id, vendorSearch]);
+
+  // union 병합 로드 (선택 vendor + 유사 vendor 전체 · 상한 20개 · Promise.all)
+  //   · Race guard runId · vendor·기간 변경 시 이전 결과 무시
+  const unionRunIdRef = useRef(0);
+  const loadUnionData = useCallback(async () => {
+    if (!selectedVendor) return;
+    const runId = ++unionRunIdRef.current;
+    setUnionLoading(true);
+    setUnionError(null);
+    try {
+      // 대상 vendor 목록 · 선택 + 유사 · dedup · 상한 20개
+      const targetsRaw: string[] = [selectedVendor.company_name, ...similarVendors.map(v => v.company_name)];
+      const seen = new Set<string>();
+      const targets: string[] = [];
+      for (const t of targetsRaw) {
+        const key = String(t ?? "").trim();
+        if (!key) continue;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        targets.push(key);
+        if (targets.length >= 20) break;
+      }
+      setUnionVendorCount(targets.length);
+
+      // 기간 계산 (loadVendorData 와 동일)
+      const isDays10 = periodMonths === 0 && !periodSeason;
+      const days = periodSeason
+        ? 365
+        : isDays10 ? 10 : (periodMonths || 1) * 30;
+      const fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - days);
+      const fromStr = fromDate.toISOString().slice(0, 10);
+
+      const { displayVendorName: dv } = await import("../../utils/vendorNameNormalize");
+
+      // 병렬 fetch · Promise.allSettled · 개별 실패는 무시 (부분 성공 허용)
+      const results = await Promise.allSettled(
+        targets.map(sup => {
+          const params = new URLSearchParams({
+            supplier: sup,
+            from: fromStr,
+            limit: String(API_LIMITS.LARGE),
+            no_cycle: "1",
+          });
+          return api.get<any>(`/api/purchase-details?${params}`);
+        }),
+      );
+      // race guard · 이 호출이 최신 아니면 폐기
+      if (runId !== unionRunIdRef.current) return;
+
+      const merged: any[] = [];
+      for (let i = 0; i < results.length; i++) {
+        const r = results[i];
+        if (r.status !== "fulfilled") continue;
+        const rowsFromApi: any[] = Array.isArray(r.value.data?.rows) ? r.value.data.rows : [];
+        // 정제명 매칭 · 서버가 유사 이름을 반환하는 경우 필터 (loadVendorData 와 동일 로직)
+        const norm = dv(targets[i]);
+        for (const raw of rowsFromApi) {
+          const rn = String(raw.supplier_name ?? raw.supplier ?? "");
+          if (dv(rn) !== norm) continue;
+          merged.push(raw);
+        }
+      }
+
+      // dedup by id · 서버 결과 중복 방지
+      const byId = new Map<string | number, any>();
+      for (const r of merged) {
+        if (r?.id != null && !byId.has(r.id)) byId.set(r.id, r);
+      }
+      const uniq = Array.from(byId.values());
+
+      const purchaseRows: PurchaseLedgerRow[] = uniq.map((r: any) => ({
+        id: r.id,
+        invoice_date: r.purchase_date ?? r.invoice_date ?? null,
+        product_name: r.product_name ?? null,
+        product_code: r.product_code ?? null,
+        quantity: r.quantity != null ? Number(r.quantity) : null,
+        unit_price: r.unit_price != null ? Number(r.unit_price) : null,
+        amount: Number(r.amount ?? r.total) || 0,
+      }));
+      const detRows: PurchaseDetailRow[] = uniq.map((r: any) => ({
+        id: r.id,
+        date: r.purchase_date ?? r.invoice_date ?? "",
+        product_code: r.product_code ?? null,
+        product_name: r.product_name ?? null,
+        quantity: Number(r.quantity) || 0,
+        unit_price: Number(r.unit_price) || 0,
+        amount: Number(r.amount ?? r.total) || 0,
+      }));
+
+      if (runId !== unionRunIdRef.current) return;
+      setUnionLedgerRows(purchaseRows);
+      setUnionDetailRows(detRows);
+    } catch (e: any) {
+      if (runId !== unionRunIdRef.current) return;
+      const msg = e?.message ?? "네트워크 오류";
+      setUnionError(msg);
+      setUnionLedgerRows([]);
+      setUnionDetailRows([]);
+      showError(`유사 매입이력 병합 로드 실패: ${msg}`);
+    } finally {
+      if (runId === unionRunIdRef.current) setUnionLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedVendor, similarVendors, periodMonths, periodSeason]);
+
+  // unionMode ON · vendor·기간 변경 시 재로드
+  useEffect(() => {
+    if (!unionMode) return;
+    if (!selectedVendor) return;
+    loadUnionData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unionMode, selectedVendor?.id, periodMonths, periodSeason]);
+
+  // 최종 render 용 rows · unionMode 여부에 따라 스왑
+  const displayLedgerRows = unionMode ? unionLedgerRows : ledgerRows;
+  const displayDetailRows = unionMode ? unionDetailRows : detailRows;
+  const displayLedgerLoading = unionMode ? unionLoading : ledgerLoading;
+  const displayDetailLoading = unionMode ? unionLoading : detailLoading;
+  const displayLedgerError = unionMode ? unionError : ledgerError;
 
   // ═══════════════════════════════════════════════════════════════════════
   //  상품별 뷰 · 데이터 로드 (#191)
@@ -769,11 +953,11 @@ export const PurchaseHistoryTab: React.FC = () => {
             setSelectedVendor={setSelectedVendor}
             subTab={subTab}
             setSubTab={setSubTab}
-            detailRows={detailRows}
-            detailLoading={detailLoading}
-            ledgerRows={ledgerRows}
-            ledgerLoading={ledgerLoading}
-            ledgerError={ledgerError}
+            detailRows={displayDetailRows}
+            detailLoading={displayDetailLoading}
+            ledgerRows={displayLedgerRows}
+            ledgerLoading={displayLedgerLoading}
+            ledgerError={displayLedgerError}
             setLedgerError={setLedgerError}
             highlightId={highlightId}
             periodMonths={periodMonths}
@@ -782,6 +966,12 @@ export const PurchaseHistoryTab: React.FC = () => {
             setPeriodSeason={setPeriodSeason}
             openVendorInfo={openVendorInfo as (v: VendorRecord) => void}
             loadVendorData={loadVendorData}
+            /* 2026-09-18 · #93 · 옵션 C · 하이브리드 배너 */
+            unionMode={unionMode}
+            onEnableUnion={() => setUnionMode(true)}
+            onDisableUnion={() => setUnionMode(false)}
+            similarWithHistoryCount={similarWithHistoryCount}
+            unionVendorCount={unionVendorCount}
           />
         ) : (
           <ByProductPanel

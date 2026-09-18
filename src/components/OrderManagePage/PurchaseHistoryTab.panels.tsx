@@ -5,7 +5,7 @@
 //   · ByProductPanel · 상품별 SplitPanel (좌 상품리스트 + 우 상품상세/파이차트)
 
 import React from "react";
-import { Building2, Package, RefreshCw } from "lucide-react";
+import { Building2, Package, RefreshCw, Info, ArrowRight, X } from "lucide-react";
 import { SegmentedControl } from "../common/SegmentedControl";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
@@ -181,6 +181,16 @@ interface ByVendorPanelProps {
   setPeriodSeason: (v: SeasonKey | null) => void;
   openVendorInfo: (v: VendorRecord) => void;
   loadVendorData: (supplier: string) => void;
+  /** 2026-09-18 · #93 · 옵션 C · 하이브리드 배너 · union 모드 여부 */
+  unionMode?: boolean;
+  /** union 모드 진입 콜백 · 배너 클릭 */
+  onEnableUnion?: () => void;
+  /** union 모드 해제 콜백 · 정확 검색 복귀 */
+  onDisableUnion?: () => void;
+  /** 유사 vendor · 매입이력 존재 개수 · 배너 텍스트 */
+  similarWithHistoryCount?: number;
+  /** union 병합 대상 vendor 실제 조회 개수 · 헤더 뱃지 */
+  unionVendorCount?: number;
 }
 
 export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
@@ -188,7 +198,21 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
   detailRows, detailLoading, ledgerRows, ledgerLoading, ledgerError, setLedgerError,
   highlightId, periodMonths, setPeriodMonths, periodSeason, setPeriodSeason,
   openVendorInfo, loadVendorData,
+  unionMode = false, onEnableUnion, onDisableUnion,
+  similarWithHistoryCount = 0, unionVendorCount = 0,
 }) => {
+  // 매입이력 없음 · 유사 vendor 존재 · 배너 표시 조건
+  //   · vendor 선택 · 로딩 아님 · 에러 없음 · union 모드 아님 · ledger 0건 · 유사 이력 vendor > 0
+  const showEmptyBanner =
+    !!selectedVendor
+    && !ledgerLoading
+    && !ledgerError
+    && !unionMode
+    && ledgerRows.length === 0
+    && similarWithHistoryCount > 0;
+  const selectedVendorDisplay = selectedVendor
+    ? (displayVendorName(selectedVendor.company_name) || selectedVendor.company_name)
+    : "";
   return (
     <SplitPanel
       key="by-vendor"
@@ -275,6 +299,50 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
               loading={detailLoading}
               onEdit={() => openVendorInfo(selectedVendor as unknown as VendorRecord)}
             />
+            {/* 2026-09-18 · #93 · 옵션 C · 하이브리드 배너
+                · 매입이력 없음 + 유사 vendor 존재 → 병합 모드 진입 유도 */}
+            {showEmptyBanner && (
+              <div className="p-4 rounded-xl bg-sky-50 border border-sky-200 shrink-0">
+                <div className="flex items-start gap-3">
+                  <Info size={18} className="text-sky-600 mt-0.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[14px] font-bold text-sky-900">
+                      &ldquo;{selectedVendorDisplay}&rdquo; · 매입이력 없음
+                    </div>
+                    <div className="text-[13px] text-sky-700 mt-1">
+                      유사 vendor <span className="font-bold">{similarWithHistoryCount}건</span>에 매입이력 있음
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onEnableUnion?.()}
+                      className="mt-2 inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[13px] font-bold transition cursor-pointer"
+                    >
+                      유사 매입이력 보기 <ArrowRight size={12} strokeWidth={2.5} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* 2026-09-18 · #93 · union 모드 인디케이터 · 해제 버튼 · 대상 vendor 수 */}
+            {unionMode && (
+              <div className="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 shrink-0 flex items-center gap-2 flex-wrap">
+                <Info size={14} className="text-amber-600 shrink-0" />
+                <span className="text-[13px] font-bold text-amber-900">
+                  유사 매입이력 병합
+                </span>
+                <span className="text-[13px] text-amber-800">
+                  ({unionVendorCount}개 vendor)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onDisableUnion?.()}
+                  className="ml-auto inline-flex items-center gap-1 h-6 px-2 rounded-md bg-white hover:bg-amber-100 border border-amber-300 text-amber-800 text-[12px] font-semibold transition cursor-pointer"
+                  title="정확 검색으로 복귀"
+                >
+                  <X size={11} strokeWidth={2.5} /> 병합 해제
+                </button>
+              </div>
+            )}
             <PurchaseSubTabs
               ledgerRows={ledgerRows}
               ledgerLoading={ledgerLoading}
