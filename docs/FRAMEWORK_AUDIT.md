@@ -1,6 +1,6 @@
 # Framework Audit Report (자동 생성)
 
-> 생성 · 2026-09-15 · `scripts/audit-framework.cjs` · 매 세션 재실행
+> 생성 · 2026-09-18 · `scripts/audit-framework.cjs` · 매 세션 재실행
 >
 > **로드맵 · `docs/FRAMEWORK_ROADMAP.md` Phase 1 (인벤토리)**
 
@@ -8,46 +8,48 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 832 |
-| 위반 파일 | 9 |
-| 클린 파일 | 823 (99%) |
-| 총 위반 개수 | 9 |
+| 스캔 파일 | 836 |
+| 위반 파일 | 10 |
+| 클린 파일 | 826 (99%) |
+| 총 위반 개수 | 10 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
-| `large-file-warn` | 9 | 9 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `large-file-warn` | 10 | 10 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
-| 1 | `src/components/DisplayPage/RealStockTablePage.tsx` | 872 | 3 | large-file-warn(1) |
-| 2 | `src/components/LandingPage/VendorListEditor.tsx` | 853 | 3 | large-file-warn(1) |
-| 3 | `src/components/OrderManagePage/OrderManagePage.tsx` | 844 | 3 | large-file-warn(1) |
-| 4 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 977 | 3 | large-file-warn(1) |
-| 5 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 805 | 3 | large-file-warn(1) |
-| 6 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 973 | 3 | large-file-warn(1) |
-| 7 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 902 | 3 | large-file-warn(1) |
-| 8 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 | large-file-warn(1) |
-| 9 | `src/components/ScanPage/ScanPage.tsx` | 811 | 3 | large-file-warn(1) |
+| 1 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1035 | 6 | large-file-warn(1) |
+| 2 | `src/components/DisplayPage/RealStockTablePage.tsx` | 879 | 3 | large-file-warn(1) |
+| 3 | `src/components/LandingPage/VendorListEditor.tsx` | 855 | 3 | large-file-warn(1) |
+| 4 | `src/components/OrderManagePage/OrderManagePage.tsx` | 844 | 3 | large-file-warn(1) |
+| 5 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 979 | 3 | large-file-warn(1) |
+| 6 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 811 | 3 | large-file-warn(1) |
+| 7 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 801 | 3 | large-file-warn(1) |
+| 8 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 975 | 3 | large-file-warn(1) |
+| 9 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 | large-file-warn(1) |
+| 10 | `src/components/ScanPage/ScanPage.tsx` | 851 | 3 | large-file-warn(1) |
 
-## 📝 모든 위반 파일 (9개)
+## 📝 모든 위반 파일 (10개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
-| `src/components/DisplayPage/RealStockTablePage.tsx` | 872 | 3 |
-| `src/components/LandingPage/VendorListEditor.tsx` | 853 | 3 |
+| `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1035 | 6 |
+| `src/components/DisplayPage/RealStockTablePage.tsx` | 879 | 3 |
+| `src/components/LandingPage/VendorListEditor.tsx` | 855 | 3 |
 | `src/components/OrderManagePage/OrderManagePage.tsx` | 844 | 3 |
-| `src/components/OrderManagePage/PaymentInputPage.tsx` | 977 | 3 |
-| `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 805 | 3 |
-| `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 973 | 3 |
-| `src/components/ProductInfoPage/ProductInfoPage.tsx` | 902 | 3 |
+| `src/components/OrderManagePage/PaymentInputPage.tsx` | 979 | 3 |
+| `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 811 | 3 |
+| `src/components/OrderManagePage/ReturnListPanel.tsx` | 801 | 3 |
+| `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 975 | 3 |
 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 |
-| `src/components/ScanPage/ScanPage.tsx` | 811 | 3 |
+| `src/components/ScanPage/ScanPage.tsx` | 851 | 3 |
 
 </details>
 
