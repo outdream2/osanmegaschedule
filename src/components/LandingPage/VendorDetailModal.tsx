@@ -367,13 +367,36 @@ export const VendorDetailModal: React.FC<{
               </span>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-white hover:bg-zinc-100 border border-line flex items-center justify-center text-zinc-500 shrink-0 ml-3 transition"
-            title="닫기 (ESC)"
-          >
-            <X size={15} />
-          </button>
+          {/* 2026-09-18 · 사용자 지시 · 헤더 오른쪽 · 저장/취소/닫기 버튼 상단 고정 */}
+          <div className="flex items-center gap-1.5 shrink-0 self-center">
+            {/* 취소 · isDirty 시만 활성 */}
+            <button
+              onClick={() => setDraft(emptyDraft(vendor))}
+              disabled={!isDirty || saving}
+              className="h-8 px-3 text-[13px] font-semibold bg-white border border-zinc-300 hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg text-zinc-700 transition cursor-pointer"
+              title="변경사항 취소 · 원본 값으로 되돌리기"
+            >
+              취소
+            </button>
+            {/* 저장 · isDirty 시만 활성 · brand-deep */}
+            <button
+              onClick={handleSave}
+              disabled={!isDirty || saving}
+              className="inline-flex items-center gap-1.5 h-8 px-4 text-[13px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-lg transition shadow-sm cursor-pointer"
+              title="변경사항 저장"
+            >
+              {saving ? <Spinner size={11} tone="white" /> : <Check size={11} strokeWidth={2.5} />}
+              저장
+            </button>
+            {/* X 닫기 */}
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg bg-white hover:bg-zinc-100 border border-line flex items-center justify-center text-zinc-500 shrink-0 transition"
+              title="닫기 (ESC)"
+            >
+              <X size={15} />
+            </button>
+          </div>
         </div>
 
         {/* 2026-08-09 · 사용자 요청 · 결제·잔고 · 매입이력 탭 제거 · 정보 한 장으로만 */}
@@ -649,60 +672,39 @@ export const VendorDetailModal: React.FC<{
 
         </div>
 
-        {/* ── 푸터 · 저장/닫기 ── */}
-        <div className="px-5 py-3 border-t border-line bg-zinc-50/80 flex items-center gap-2 flex-wrap shrink-0">
-          {saveMsg && (
-            <span className={`inline-flex items-center gap-1 text-[14px] font-bold ${saveMsg.type === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
-              {saveMsg.type === "ok"
-                ? <Check size={13} strokeWidth={3} />
-                : <X size={13} strokeWidth={3} />}
-              {saveMsg.text}
-            </span>
-          )}
-          <div className="flex-1" />
-          {/* 2026-09-11 · 사용자 지시 · 취소 버튼 추가 · isDirty 시 · 원본 draft 복원 */}
-          <button
-            onClick={() => setDraft(emptyDraft(vendor))}
-            disabled={!isDirty || saving}
-            className="h-8 px-4 text-[14px] font-semibold bg-white border border-zinc-300 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-zinc-700 transition cursor-pointer"
-            title="변경사항 취소 · 원본 값으로 되돌리기"
-          >
-            취소
-          </button>
-          <button
-            onClick={onClose}
-            className="h-8 px-4 text-[14px] font-semibold bg-white border border-zinc-300 hover:bg-zinc-50 rounded-lg text-zinc-700 transition cursor-pointer"
-          >
-            닫기
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!isDirty || saving}
-            className="inline-flex items-center gap-1.5 h-8 px-5 text-[14px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition shadow-sm cursor-pointer"
-          >
-            {saving ? <Spinner size={12} tone="white" /> : <Check size={12} strokeWidth={2.5} />}
-            저장
-          </button>
-          {/* 2026-09-02 · 사용자 지시 · [승인 요청] 버튼 · vendor 로그인 · panel 불문 항상 표시 */}
-          {isVendorLogin && approvalStatus !== "approved" && (
-            <button
-              onClick={handleApprovalRequest}
-              disabled={!canRequestApproval || approvalRequesting || saving}
-              className={`inline-flex items-center gap-1.5 h-9 px-5 text-[15px] font-bold rounded-lg transition shadow-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                canRequestApproval
-                  ? "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white ring-2 ring-blue-300/40"
-                  : "bg-zinc-300 text-zinc-500"
-              }`}
-              title={missingRequired.length > 0 ? `필수 항목 미입력: ${missingRequired.join(" · ")}` : "관리자에게 승인 요청 발송"}
-            >
-              {approvalRequesting ? <Spinner size={12} tone="white" /> : <Check size={13} strokeWidth={2.5} />}
-              {approvalStatus === "pending" ? "재요청" : "승인 요청"}
-              {missingRequired.length > 0 && (
-                <span className="ml-1 text-[15px] font-semibold tabular-nums opacity-80">({REQUIRED_TOTAL - missingRequired.length}/{REQUIRED_TOTAL})</span>
-              )}
-            </button>
-          )}
-        </div>
+        {/* ── 푸터 · saveMsg + 승인요청 (저장/취소/닫기는 헤더로 이동) ── */}
+        {(saveMsg || (isVendorLogin && approvalStatus !== "approved")) && (
+          <div className="px-5 py-2.5 border-t border-line bg-zinc-50/80 flex items-center gap-2 flex-wrap shrink-0">
+            {saveMsg && (
+              <span className={`inline-flex items-center gap-1 text-[14px] font-bold ${saveMsg.type === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
+                {saveMsg.type === "ok"
+                  ? <Check size={13} strokeWidth={3} />
+                  : <X size={13} strokeWidth={3} />}
+                {saveMsg.text}
+              </span>
+            )}
+            <div className="flex-1" />
+            {/* 2026-09-02 · 사용자 지시 · [승인 요청] 버튼 · vendor 로그인 · panel 불문 항상 표시 */}
+            {isVendorLogin && approvalStatus !== "approved" && (
+              <button
+                onClick={handleApprovalRequest}
+                disabled={!canRequestApproval || approvalRequesting || saving}
+                className={`inline-flex items-center gap-1.5 h-9 px-5 text-[15px] font-bold rounded-lg transition shadow-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                  canRequestApproval
+                    ? "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white ring-2 ring-blue-300/40"
+                    : "bg-zinc-300 text-zinc-500"
+                }`}
+                title={missingRequired.length > 0 ? `필수 항목 미입력: ${missingRequired.join(" · ")}` : "관리자에게 승인 요청 발송"}
+              >
+                {approvalRequesting ? <Spinner size={12} tone="white" /> : <Check size={13} strokeWidth={2.5} />}
+                {approvalStatus === "pending" ? "재요청" : "승인 요청"}
+                {missingRequired.length > 0 && (
+                  <span className="ml-1 text-[15px] font-semibold tabular-nums opacity-80">({REQUIRED_TOTAL - missingRequired.length}/{REQUIRED_TOTAL})</span>
+                )}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* 결제 등록 모달 (2026-07-31) */}
         {showPayModal && (

@@ -768,10 +768,10 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
 
   const listBody = (
     <div className="h-[calc(100vh-240px)] overflow-y-auto overscroll-contain">
-      <table className="w-full text-[14px] border-collapse">
+      <table className="w-full text-[14px] border-collapse table-fixed">
         <thead className="sticky top-0 z-10 bg-zinc-50/95 backdrop-blur-sm border-b-2 border-line">
           <tr className="text-[14px] font-bold tracking-tight uppercase text-zinc-500">
-            <th className="text-left px-3 py-2 relative group" style={{ width: nameColWidth, minWidth: 80, maxWidth: 320 }}>
+            <th className="text-left px-3 py-2 relative group overflow-hidden" style={{ width: nameColWidth, minWidth: 80, maxWidth: 320 }}>
               <ListSortHeader label="상품명" k="product_name" />
               {/* 드래그 핸들 · 우측 경계선 */}
               <div
@@ -797,7 +797,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
                 onClick={() => handleSelect(r.product_code)}
                 className={`cursor-pointer transition-colors ${active ? "bg-brand-tint/60" : "hover:bg-zinc-50/70"}`}
               >
-                <td className="px-3 py-2.5 align-top" style={{ width: nameColWidth, minWidth: 80, maxWidth: 320 }}>
+                <td className="px-3 py-2.5 align-top overflow-hidden" style={{ width: nameColWidth, minWidth: 80, maxWidth: 320 }}>
                   <div className={`text-[15px] font-bold leading-tight whitespace-normal break-words break-keep ${active ? "text-brand-deep" : "text-ink"}`}>
                     {r.product_name || <span className="text-zinc-400 font-normal">(이름없음)</span>}
                   </div>
