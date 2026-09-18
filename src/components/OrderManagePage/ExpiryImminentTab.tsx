@@ -195,13 +195,12 @@ export const ExpiryImminentTab: React.FC = () => {
             <table className="w-full border-collapse">
               <thead className={tableHeadCls()}>
                 <tr>
-                  <th className={tableThCls("left")} style={{ width: "28%" }}>상품명</th>
-                  <th className={tableThCls("left")} style={{ width: "12%" }}>공급사</th>
-                  <th className={tableThCls("left")} style={{ width: "12%" }}>구역</th>
+                  <th className={tableThCls("left")} style={{ width: "33%" }}>상품명</th>
+                  <th className={tableThCls("left")} style={{ width: "13%" }}>공급사</th>
+                  <th className={tableThCls("left")} style={{ width: "14%" }}>구역</th>
                   <th className={tableThCls("num")}  style={{ width: "10%" }}>현재고</th>
                   <th className={tableThCls("center")} style={{ width: "16%" }}>유통기한</th>
-                  <th className={tableThCls("center")} style={{ width: "12%" }}>남은 일수</th>
-                  <th className={tableThCls("left")} style={{ width: "8%" }}>규격</th>
+                  <th className={tableThCls("center")} style={{ width: "14%" }}>남은 일수</th>
                   <th className={tableThCls("center")} style={{ width: "6%" }}>해제</th>
                 </tr>
               </thead>
@@ -228,7 +227,6 @@ export const ExpiryImminentTab: React.FC = () => {
                       <td className={tableTdCls("num", "text-zinc-700")}>{p.current_stock ?? <span className="text-zinc-400">-</span>}</td>
                       <td className={tableTdCls("center", "font-semibold text-ink tabular-nums")}>{fmtDate(p.expiry_date)}</td>
                       <td className={tableTdCls("center")}>{dDayCell(d)}</td>
-                      <td className={tableTdCls("left", "text-[15px] text-zinc-500")}>{p.spec ?? <span className="text-zinc-400">-</span>}</td>
                       <td className={tableTdCls("center")}>
                         {/* 2026-09-13 · #92 · 유통기한 해제 · confirm dialog */}
                         <button
