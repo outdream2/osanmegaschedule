@@ -40,7 +40,7 @@ import { matchesProductQuery } from "../../lib/productMatch";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 // 2026-09-18 · 사용자 지시 · 왼쪽 리스트 · 카드→표 · 자동정렬 헤더
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
-import { ArrowUp, ArrowDown } from "@phosphor-icons/react";
+import { SortHeader } from "../common/SortHeader";
 import type { AuthSession } from "../../types";
 import { UpdateProductSchema, type UpdateProductInput } from "../../shared/schemas/products";
 import { consumeScanPendingProductCode } from "../../hooks/useScanUnregisteredMode";
@@ -835,20 +835,6 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
   const { sorted: sortedList, sortKey: listSortKey, sortDir: listSortDir, toggleSort: toggleListSort } =
     useSortableTable<ProductRow, ProductListSortKey>(filtered, "product_name", listComparators, "asc");
 
-  const ListSortHeader: React.FC<{ label: string; k: ProductListSortKey; align?: "left" | "right" }> = ({ label, k, align = "left" }) => {
-    const active = listSortKey === k;
-    return (
-      <button
-        type="button"
-        onClick={() => toggleListSort(k)}
-        className={`inline-flex items-center gap-1 cursor-pointer transition select-none ${active ? "text-brand-deep" : "text-zinc-500 hover:text-brand-deep"} ${align === "right" ? "justify-end w-full" : ""}`}
-        title={`${label} 정렬`}
-      >
-        <span>{label}</span>
-        {active ? (listSortDir === "asc" ? <ArrowUp size={10} weight="bold" /> : <ArrowDown size={10} weight="bold" />) : <ArrowDown size={10} className="opacity-25" />}
-      </button>
-    );
-  };
 
   const listBody = (
     <div className="h-[calc(100vh-240px)] overflow-y-auto overscroll-contain">
@@ -856,7 +842,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
         <thead className="sticky top-0 z-10 bg-zinc-50/95 backdrop-blur-sm border-b-2 border-line">
           <tr className="text-[16px] font-bold tracking-tight uppercase text-zinc-500">
             <th className="text-left px-3 py-2 relative group overflow-hidden" style={{ width: nameColWidth, minWidth: 80, maxWidth: 320 }}>
-              <ListSortHeader label="상품명" k="product_name" />
+              <SortHeader label="상품명" columnKey="product_name" activeKey={listSortKey} activeDir={listSortDir} onToggle={toggleListSort} arrowStyle="arrow" activeColor="brand" />
               {/* 드래그 핸들 · 우측 경계선 */}
               <div
                 onMouseDown={startNameColResize}
@@ -864,10 +850,10 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
                 title="드래그하여 폭 조절"
               />
             </th>
-            <th className="text-left px-2 py-2 w-[110px]"><ListSortHeader label="공급사" k="supplier" /></th>
-            <th className="text-right px-2 py-2 w-[80px]"><ListSortHeader label="판매가" k="sale_price" align="right" /></th>
-            <th className="text-right px-2 py-2 w-[60px]"><ListSortHeader label="현재고" k="current_stock" align="right" /></th>
-            <th className="text-left px-2 py-2 w-[100px]"><ListSortHeader label="위치" k="location" /></th>
+            <th className="text-left px-2 py-2 w-[110px]"><SortHeader label="공급사" columnKey="supplier" activeKey={listSortKey} activeDir={listSortDir} onToggle={toggleListSort} arrowStyle="arrow" activeColor="brand" /></th>
+            <th className="text-right px-2 py-2 w-[80px]"><SortHeader label="판매가" columnKey="sale_price" activeKey={listSortKey} activeDir={listSortDir} onToggle={toggleListSort} arrowStyle="arrow" activeColor="brand" align="right" /></th>
+            <th className="text-right px-2 py-2 w-[60px]"><SortHeader label="현재고" columnKey="current_stock" activeKey={listSortKey} activeDir={listSortDir} onToggle={toggleListSort} arrowStyle="arrow" activeColor="brand" align="right" /></th>
+            <th className="text-left px-2 py-2 w-[100px]"><SortHeader label="위치" columnKey="location" activeKey={listSortKey} activeDir={listSortDir} onToggle={toggleListSort} arrowStyle="arrow" activeColor="brand" /></th>
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-100">
