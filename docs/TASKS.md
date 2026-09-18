@@ -103,7 +103,10 @@
 | **#149** | large-file 분리 잔여 · OcrPage(1215)·PaymentInfoTab(1513)·OrderManagePage(3089)·LandingPage(2319)·ContractWriterPage | 🟢 P3 | Framework Phase 4 잔여 · baseline 9 파일 · 대형 |
 | **#115** | real_map 컬럼 DB DROP SQL 실행 · `migrations/20260904_drop_real_map.sql` | 🟡 | 사용자 · Supabase SQL Editor 직접 실행 |
 | **T-RSTP-TOOLBAR** | RealStockTablePage · 상단 툴바 · 좁은 화면 대응 · 두 줄 분리 (제목·건수·검색·필터) | 🟡 P2 | 화면 폭 좁을 때 wrap 개선 |
-| **T-WAREHOUSE-TAB** | 매장진열 · 창고1/창고2 페이지 → 매장구역도 탭메뉴로 통합 · 기존 페이지도 탭 | 🟡 P2 | 네비 구조 변경 · 라우터·SideNav 재구성 |
+<!-- 2026-09-18 · T-WAREHOUSE-TAB 조사 결과 · 창고1/2 이미 매장진열 안의 탭 (DisplayPage L663 SplitRightTabs)
+     · 별도 페이지·라우트 없음 · 이미 요청 목표 달성 상태
+     · 향후 · 2단 탭 (매장구역도 안에 [매장, 창고1, 창고2] 서브탭) 원할 시 · 사용자 명시 후 진행 -->
+| ~~T-WAREHOUSE-TAB~~ | ~~창고1/2 → 매장구역도 탭~~ | ✅ **이미 탭 상태** · DisplayPage SplitRightTabs 에 6개 탭 (map · warehouse1 · warehouse2 · stockTable · mismatch · zoneEdit) 존재 · 2단 탭 원할 시 별도 요청 |
 
 ---
 
