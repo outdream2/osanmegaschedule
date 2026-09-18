@@ -710,8 +710,8 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
     <div className="h-[calc(100vh-240px)] overflow-y-auto overscroll-contain">
       <table className="w-full text-[14px] border-collapse">
         <thead className="sticky top-0 z-10 bg-zinc-50/95 backdrop-blur-sm border-b-2 border-line">
-          <tr className="text-[12px] font-bold tracking-tight uppercase text-zinc-500">
-            <th className="text-left px-3 py-2 min-w-[140px]"><ListSortHeader label="상품명" k="product_name" /></th>
+          <tr className="text-[14px] font-bold tracking-tight uppercase text-zinc-500">
+            <th className="text-left px-3 py-2 w-[120px]"><ListSortHeader label="상품명" k="product_name" /></th>
             <th className="text-left px-2 py-2 w-[110px]"><ListSortHeader label="공급사" k="supplier" /></th>
             <th className="text-right px-2 py-2 w-[80px]"><ListSortHeader label="판매가" k="sale_price" align="right" /></th>
             <th className="text-right px-2 py-2 w-[60px]"><ListSortHeader label="재고" k="current_stock" align="right" /></th>
@@ -729,26 +729,26 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
                 onClick={() => handleSelect(r.product_code)}
                 className={`cursor-pointer transition-colors ${active ? "bg-brand-tint/60" : "hover:bg-zinc-50/70"}`}
               >
-                <td className="px-3 py-2 align-top">
-                  <div className={`text-[15px] font-bold leading-tight break-keep ${active ? "text-brand-deep" : "text-ink"}`}>
+                <td className="px-3 py-2.5 align-top">
+                  <div className={`text-[15px] font-bold leading-tight whitespace-normal break-words ${active ? "text-brand-deep" : "text-ink"}`}>
                     {r.product_name || <span className="text-zinc-400 font-normal">(이름없음)</span>}
                   </div>
-                  <div className="text-[12px] font-mono text-zinc-400 mt-0.5 truncate">{r.product_code}</div>
+                  <div className="text-[12px] text-zinc-400 mt-0.5 whitespace-normal break-all">{r.product_code}</div>
                 </td>
-                <td className="px-2 py-2 align-top text-ink text-[13px]">
+                <td className="px-2 py-2.5 align-top text-ink text-[13px]">
                   {r.supplier || <span className="text-zinc-300">-</span>}
                 </td>
-                <td className="px-2 py-2 align-top text-right text-[13px] font-semibold tabular-nums text-ink">
+                <td className="px-2 py-2.5 align-top text-right text-[13px] font-semibold tabular-nums text-ink">
                   {typeof salePrice === "number" && salePrice > 0
                     ? salePrice.toLocaleString()
                     : <span className="text-zinc-300">-</span>}
                 </td>
-                <td className="px-2 py-2 align-top text-right text-[13px] font-bold tabular-nums">
+                <td className="px-2 py-2.5 align-top text-right text-[13px] font-bold tabular-nums">
                   {typeof stock === "number"
                     ? <span className={stock <= 0 ? "text-rose-600" : "text-ink"}>{stock}</span>
                     : <span className="text-zinc-300">-</span>}
                 </td>
-                <td className="px-2 py-2 align-top text-[12px] text-ink-soft truncate">
+                <td className="px-2 py-2.5 align-top text-[12px] text-ink-soft whitespace-normal break-words">
                   {r.location || <span className="text-zinc-300">-</span>}
                 </td>
               </tr>
