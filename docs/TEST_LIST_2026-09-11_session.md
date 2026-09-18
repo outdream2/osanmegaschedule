@@ -29,7 +29,7 @@
 
 **세션 요약** · 항목 순서대로 배치 테스트 권장 · **서버 재시작 필수**
 
-## 📌 오늘 완료 (2026-09-18 · 후반) · 신규 태스크 [70]~[84]
+## 📌 오늘 완료 (2026-09-18 · 후반) · 신규 태스크 [70]~[87]
 
 ### [70] C · 공휴일 API 연동 · data.go.kr 특일정보 + events 자동 동기
 **커밋** · `3c6dfcdd`
@@ -187,6 +187,58 @@
 5. detail 없는 위치 · "위치 미입력" rose 뱃지
 6. 라벨 폭 · 모든 row · `w-[72px]` 통일 · x축 정렬 일치
 7. 편집 (수정 버튼) · 저장/취소 · 정상 작동
+
+### [85] Dead code · A그룹 정리 · ~29 MB 절약
+**커밋** · `48c0187e` · `654863c2` · `5a3d8f20`
+- YOLO 모델 바이너리 (.onnx + .pt) 제거 · 25.3 MB
+- docs · 2026-08-27 스크립트 백업 13개 제거 · ~3 MB
+- ps1 · xlsm · 사용자 png · requirements.txt 제거 · ~1 MB
+- TS + build · clean · 회귀 없음
+
+**확인 절차**
+1. `npm run dev` · 서버 부팅 정상
+2. `npx tsc --noEmit` · error 0
+3. OCR (PP-OCR) · YOLO 무관 · 정상 작동 (server/models/ppocr/ 유지)
+4. 저장소 크기 · 약 29 MB 감소
+
+### [86] 매입이력 검색 · 하이브리드 배너 · 유사 vendor union 병합
+**커밋** · `f419b713`
+- vendor 선택 · 매입이력 0건 + 유사 vendor 존재 시 · sky 배너 표시
+- `[유사 매입이력 보기]` 클릭 · matchesSupplierQuery 매칭 vendor 전체 병렬 조회 (상한 20)
+- 헤더 · amber 인디케이터 "유사 매입이력 병합 (N개)" + `[병합 해제]`
+- vendor/검색어 변경 · unionMode 자동 리셋 (정확 검색 기본)
+- race guard · Promise.allSettled · dedup · 회귀 없음
+
+**확인 절차**
+1. 매입 > 매입이력 > 공급사별 뷰 · vendor "테스트" 선택 (매입이력 없는 것)
+2. 우측 · sky 배너 · "「테스트」 · 매입이력 없음 · 유사 vendor N건에 매입이력 있음"
+3. `[유사 매입이력 보기]` 클릭 · amber 인디케이터 + 병합 매입이력 표시
+4. 헤더 KPI · 병합 데이터 반영
+5. `[X 병합 해제]` 클릭 · 정확 검색 복귀 · 빈 리스트
+6. 다른 vendor 선택 · union 자동 리셋
+7. 매입이력 있는 vendor 선택 · 배너 X · 정상 표시 (회귀 X)
+
+### [87] #149 · RealStockTablePage 슬림화 · 879 → 733 (146줄 감소)
+**커밋** · `fe76a13d` (R-1) · `67cb3e56` (R-2)
+- R-1 · types/utils 사이드카 분리
+  - 신규 `RealStockTablePage.types.ts` (54줄) · Product / InvRow / Row / SortKey
+  - 신규 `RealStockTablePage.utils.ts` (37줄) · SLOT_LABEL / zoneCmp / CMP / PAGE_SIZE
+- R-2 · 상세 Modal 분리
+  - 신규 `RealStockDetailModal.tsx` (88줄) · props 3개 (row · shelfMap · onClose)
+- 감사 통과 · < 800 (733줄)
+- 회귀 X · state · handler · API · 시그니처 모두 유지
+
+**확인 절차** (10건)
+1. 매장 > 재고 > 실재고 테이블 · 상품 목록 로드
+2. 컬럼 헤더 클릭 · 정렬 ▲▼ 방향 전환
+3. 상품명 클릭 · 상세 Modal 열림 · 5개 위치 카드 · ERP/실재고/차이 정상
+4. Modal 닫기 (X 클릭 or 오버레이) · 정상
+5. 수량 셀 클릭 · 인라인 편집 · Enter 저장 · Esc 취소
+6. 구역별 그룹 · 접기/펼치기 · 전체보기
+7. 판매중/판매중지/전체 필터 · 건수 변경
+8. 창고 미지정 버튼 · 필터 작동
+9. 검색창 · 상품명·공급사·진열위치 필터
+10. 새로고침 · API 재조회 · 스피너
 
 ### [80] 유통기한 임박 리스트 · 규격 컬럼 제거
 **커밋** · `c621332c`
