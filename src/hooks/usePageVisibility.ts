@@ -6,6 +6,7 @@
 //   · 사이드바 gate · 공통헤더 · 뷰포트별 필터
 
 import { useCallback, useEffect, useRef } from "react";
+import { devLog, devWarn } from "../lib/devLog";
 import { useKvSetting } from "./useKvSetting";
 import { useMobilePageLevel } from "./useMobilePageLevel";
 import { type PageVisibilityMap, DEFAULT_PAGE_VISIBILITY } from "../types";
@@ -65,7 +66,7 @@ export function usePageVisibility() {
     }
     if (Object.keys(next).length > 0) {
       setValue(next);
-      console.log("[usePageVisibility] 자동 마이그레이션 · mobile_min_level → page_visibility", next);
+      devLog("[usePageVisibility] 자동 마이그레이션 · mobile_min_level → page_visibility", next);
     }
     migratedRef.current = true;
   }, [loaded, legacyLoaded, value, legacyLevel, setValue]);

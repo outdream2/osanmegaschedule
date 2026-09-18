@@ -5,6 +5,7 @@
 
 // 2026-08-16 · apiClient 마이그레이션 · 401 refresh 자동
 import { useState, useEffect } from "react";
+import { devLog, devWarn } from "../lib/devLog";
 import { api } from "../lib/apiClient";
 import { VENDOR_CATEGORIES } from "../constants/vendorCategories";
 import { POSITIONS, RANKS, CONTRACT_TYPES, WORKPLACES } from "../constants/jobCategories";
@@ -51,7 +52,7 @@ async function _fetchRaw(force = false): Promise<RawValues> {
       _cache = { data, time: Date.now() };
       return data;
     } catch (err) {
-      console.warn("[useReferenceValues] fetch 실패 · 하드코딩 fallback 사용:", err);
+      devWarn("[useReferenceValues] fetch 실패 · 하드코딩 fallback 사용:", err);
       return EMPTY_RAW;
     } finally {
       _inflight = null;

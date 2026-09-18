@@ -7,6 +7,7 @@
 //       · SideNav · document-writer 항목 필터 (pending_resignation 만 노출 · admin 제외)
 //       · 그 외 유사 gate 재사용 가능
 import { useEffect, useState } from "react";
+import { devLog, devWarn } from "../lib/devLog";
 import { api } from "../lib/apiClient";
 import type { AuthSession } from "../types";
 import {
@@ -42,7 +43,7 @@ async function fetchRetireDate(employeeId: number): Promise<string | null> {
       return rd;
     } catch (err) {
       // 조회 실패 시 · 안전측 · active 로 fallback (사직서 미노출)
-      console.warn(`[useEmploymentStatus] fetch 실패 · employeeId=${employeeId} · fallback active`, err);
+      devWarn(`[useEmploymentStatus] fetch 실패 · employeeId=${employeeId} · fallback active`, err);
       cachedRetireDate = null;
       cachedForEmployeeId = employeeId;
       notify();

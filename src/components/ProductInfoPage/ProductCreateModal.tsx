@@ -6,6 +6,7 @@
 // props · open · onClose · onCreated(code) · authSession(권한 표시용)
 
 import React, { useMemo, useState, useRef, useEffect } from "react";
+import { devLog, devWarn } from "../../lib/devLog";
 import ReactDOM from "react-dom";
 import {
   Package, Save, X,
@@ -304,7 +305,7 @@ export const ProductCreateModal: React.FC<Props> = ({
             detail: { source: "product-modal", productCode: code },
           }));
         } catch (spErr: any) {
-          console.warn(`[ProductCreateModal] shelf_positions 저장 실패 (경고 · 등록·수정은 성공): ${spErr?.message ?? spErr}`);
+          devWarn(`[ProductCreateModal] shelf_positions 저장 실패 (경고 · 등록·수정은 성공): ${spErr?.message ?? spErr}`);
         }
       };
 

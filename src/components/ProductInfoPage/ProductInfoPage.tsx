@@ -8,6 +8,7 @@
 // 프레임워크 원칙 · SplitListPanel · Card · Modal · SplitPanel(resize) · apiClient · useToast
 
 import React, { useEffect, useMemo, useState } from "react";
+import { devLog, devWarn } from "../../lib/devLog";
 import {
   Package, PencilSimple, FloppyDisk, X, ArrowSquareOut,
 } from "@phosphor-icons/react";
@@ -768,7 +769,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
                   const { data } = await api.get<any>(`/api/products/${encodeURIComponent(selectedCode)}/references`);
                   refInfo = data;
                 } catch (e: any) {
-                  console.warn("[ProductInfoPage] references pre-check 실패", e?.message);
+                  devWarn("[ProductInfoPage] references pre-check 실패", e?.message);
                 }
                 // 회계 이력 있으면 · 삭제 차단 · Soft delete 안내
                 if (refInfo && !refInfo.canDelete) {

@@ -6,6 +6,7 @@
 //   · brand palette: teal(#0E6B5C) · amber(#E88A3D) · coral(#D9584F) · sky(#3E7CB1)
 //   · surface: white · border #E3E9E7 · shadow soft · radius 14
 import type { ReactNode, ElementType } from "react";
+import { devLog, devWarn } from "../../lib/devLog";
 // 2026-08-27 · 사용자 지시 · 메뉴 설정 · pageKey 기반 visibility gate
 import { usePageVisibility } from "../../hooks/usePageVisibility";
 import { usePagePermissions } from "../../hooks/usePagePermissions";
@@ -85,7 +86,7 @@ export function MenuCard({ color, icon: Icon, title, description, onClick, order
   // 2026-09-02 · defensive · 미정의 color 값이 전달돼도 크래시 방지 · zinc fallback + warn
   const c = COLOR_MAP[color] ?? COLOR_MAP.zinc;
   if (!COLOR_MAP[color]) {
-    console.warn(`[MenuCard] unknown color "${color}" · zinc fallback 적용`);
+    devWarn(`[MenuCard] unknown color "${color}" · zinc fallback 적용`);
   }
   // 2026-08-27 · pageKey 있으면 · usePageVisibility 로 체크 · false 면 안 렌더
   const { isVisible, loaded } = usePageVisibility();

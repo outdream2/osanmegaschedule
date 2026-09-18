@@ -8,6 +8,7 @@
 
 // 2026-08-16 · apiClient 마이그레이션
 import { useEffect, useRef } from "react";
+import { devLog, devWarn } from "../lib/devLog";
 import { api } from "../lib/apiClient";
 import { SK_PUSH_SUBSCRIBED_AUTO } from "../lib/storageKeys";
 
@@ -59,7 +60,7 @@ export function usePushSubscription({ employeeId, auto = true }: Params) {
       const reg = await navigator.serviceWorker.ready;
       const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
       if (!vapidKey) {
-        console.warn("[push] VITE_VAPID_PUBLIC_KEY 미설정");
+        devWarn("[push] VITE_VAPID_PUBLIC_KEY 미설정");
         return { ok: false as const, reason: "no_vapid_key" };
       }
       // 기존 구독 있으면 재사용, 없으면 신규
@@ -74,7 +75,7 @@ export function usePushSubscription({ employeeId, auto = true }: Params) {
       try {
         await api.post("/api/push-subscribe", { employeeId, subscription: sub.toJSON() });
       } catch (e: any) {
-        console.warn("[push] 서버 저장 실패:", e?.message);
+        devWarn("[push] 서버 저장 실패:", e?.message);
         return { ok: false as const, reason: "server_error" };
       }
       // 자동 구독 완료 마킹
@@ -85,7 +86,7 @@ export function usePushSubscription({ employeeId, auto = true }: Params) {
       } catch { /* ignore */ }
       return { ok: true as const, reason: "subscribed" };
     } catch (err: any) {
-      console.warn("[push] 구독 실패:", err?.message);
+      devWarn("[push] 구독 실패:", err?.message);
       return { ok: false as const, reason: "exception" };
     }
   };
