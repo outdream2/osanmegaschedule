@@ -2,14 +2,16 @@
 // 2026-09-04 · #23 · 공급사 재고확인 · 모달 → 전용 페이지 전환
 // 2026-09-18 · f8045e8e · 응답 형식 fix + supplier only 검색 지원 (크리티컬)
 // 2026-09-18 · #301 · 양쪽 대시보드 재설계 · 좌 KPI+알림+도넛 · 우 카드 그룹 (사용자 지시)
+// 2026-09-18 · #302 · 거래처 관점 콘텐츠 강화 + 글씨 +2 (사용자 지시)
 //
 // UI 대원칙 준수 · Linear/Notion 톤 · 화이트 베이스 · 폰트 +2 규칙 (13px+)
 // 안전 규칙 · API 호출 · state · handler · props 시그니처 완전 유지 · UI 만 변경
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Package, PackageCheck, PackageX, AlertTriangle,
-  CalendarRange, TrendingUp, Layers,
+  CalendarRange, TrendingUp, Layers, Phone, RefreshCw,
+  ShoppingCart,
 } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
@@ -102,12 +104,18 @@ interface AlertItem {
   level: StockLevel;
 }
 
+// ─── 오늘 날짜 포맷 ───────────────────────────────────────────────────
+function formatTodayKo(): string {
+  const now = new Date();
+  return `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
+}
+
 // ─── 도넛 차트 커스텀 툴팁 ────────────────────────────────────────────
 const DonutTooltip: React.FC<any> = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
   const { name, value } = payload[0];
   return (
-    <div className="bg-white border border-line rounded-lg px-3 py-2 shadow-md text-[15px] font-semibold text-ink">
+    <div className="bg-white border border-line rounded-lg px-3 py-2 shadow-md text-[17px] font-semibold text-ink">
       {name}: <span className="tabular-nums">{value}</span>종
     </div>
   );
@@ -141,6 +149,10 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
   });
 
   const { toast, showError } = useToast(4000);
+
+  // 재고없음 섹션 ref (스트립 클릭 시 스크롤)
+  const noneRef = useRef<HTMLDivElement>(null);
+  const normalRef = useRef<HTMLDivElement>(null);
 
   // ─── 데이터 로드 ────────────────────────────────────────────────────
   useEffect(() => {
@@ -287,9 +299,31 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
     return { none, low, normal };
   }, [sorted]);
 
+  // 발주 예상 수량 (재고없음 + 부족)
+  const orderExpected = kpi.none + kpi.low;
+
   // ─── 좌측 대시보드 ──────────────────────────────────────────────────
   const dashboardNode = (
     <div className="flex flex-col gap-4 p-4">
+      {/* 환영 배너 · 거래처 관점 */}
+      <div className="rounded-xl bg-gradient-to-br from-brand-deep to-indigo-700 px-4 py-3.5 shadow-sm">
+        <div className="text-[13px] font-semibold text-indigo-200 mb-0.5">{formatTodayKo()}</div>
+        <div className="text-[19px] font-black text-white leading-snug break-words whitespace-normal">
+          안녕하세요, {vendorName || "-"}님
+        </div>
+        <div className="mt-2 flex items-center gap-2 flex-wrap">
+          <span className="text-[14px] text-indigo-100 font-semibold">
+            총 <span className="text-white font-black tabular-nums">{kpi.total}</span>종
+          </span>
+          {orderExpected > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/80 text-white text-[13px] font-bold">
+              <ShoppingCart size={12} />
+              발주 예상 {orderExpected}종
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* 헤더 */}
       <SplitLeftHeader
         icon={<Package size={17} />}
@@ -341,21 +375,21 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
             <Layers size={13} className="text-brand-deep shrink-0" />
             <span className={`${TEXT.caption} text-ink-soft`}>총 재고</span>
           </div>
-          <div className="text-[19px] font-black text-brand-deep tabular-nums leading-tight">
+          <div className="text-[21px] font-black text-brand-deep tabular-nums leading-tight">
             {kpi.totalStock.toLocaleString()}
           </div>
-          <div className="text-[13px] text-ink-soft mt-0.5">수량 합계</div>
+          <div className="text-[15px] text-ink-soft mt-0.5">수량 합계</div>
         </Card>
         <Card padding="sm" variant="sm">
           <div className="flex items-center gap-1.5 mb-1">
             <TrendingUp size={13} className="text-emerald-600 shrink-0" />
             <span className={`${TEXT.caption} text-ink-soft`}>재고율</span>
           </div>
-          <div className="text-[19px] font-black text-emerald-700 tabular-nums leading-tight">
+          <div className="text-[21px] font-black text-emerald-700 tabular-nums leading-tight">
             {kpi.total > 0 ? Math.round((kpi.normal / kpi.total) * 100) : 0}
-            <span className="text-[14px] font-bold ml-0.5">%</span>
+            <span className="text-[16px] font-bold ml-0.5">%</span>
           </div>
-          <div className="text-[13px] text-ink-soft mt-0.5">정상 비율</div>
+          <div className="text-[15px] text-ink-soft mt-0.5">정상 비율</div>
         </Card>
       </div>
 
@@ -390,9 +424,9 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
                 <div key={d.name} className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: d.color }} />
-                    <span className="text-[13px] font-semibold text-ink-soft truncate">{d.name}</span>
+                    <span className="text-[15px] font-semibold text-ink-soft break-words whitespace-normal">{d.name}</span>
                   </div>
-                  <span className="text-[14px] font-bold tabular-nums text-ink shrink-0">{d.value}종</span>
+                  <span className="text-[16px] font-bold tabular-nums text-ink shrink-0">{d.value}종</span>
                 </div>
               ))}
             </div>
@@ -419,10 +453,10 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
                 ].join(" ")}
               >
                 <div className="flex flex-col min-w-0 mr-2">
-                  <span className="text-[14px] font-semibold text-ink break-words whitespace-normal leading-snug">
+                  <span className="text-[16px] font-semibold text-ink break-words whitespace-normal leading-snug">
                     {item.name}
                   </span>
-                  <span className="text-[12px] text-ink-soft">{item.code}</span>
+                  <span className="text-[14px] text-ink-soft">{item.code}</span>
                 </div>
                 <StatusPill
                   tone={item.level === "none" ? "rose" : "amber"}
@@ -508,6 +542,35 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
           </div>
         </div>
       </Card>
+
+      {/* 안내 카드 · 발주 문의 + 데이터 기준 */}
+      <Card padding="md" variant="sm">
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-start gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-brand-deep/10 flex items-center justify-center shrink-0 mt-0.5">
+              <Phone size={13} className="text-brand-deep" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[15px] font-bold text-ink leading-snug">발주 문의</div>
+              <div className="text-[14px] text-ink-soft leading-relaxed mt-0.5">
+                재고 관련 문의 · 약국에 직접 연락 부탁드립니다
+              </div>
+            </div>
+          </div>
+          <div className="h-px bg-line" />
+          <div className="flex items-start gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 mt-0.5">
+              <RefreshCw size={13} className="text-emerald-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[15px] font-bold text-ink leading-snug">데이터 기준</div>
+              <div className="text-[14px] text-ink-soft leading-relaxed mt-0.5">
+                매장 실사 기준 · ERP 현재고 실시간 반영
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 
@@ -543,24 +606,34 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
         </div>
       </div>
 
-      {/* 요약 스트립 */}
+      {/* 요약 스트립 · 강화 버전 */}
       {!loading && !error && sorted.length > 0 && (
-        <div className="shrink-0 px-4 py-2 bg-zinc-50 border-b border-line flex items-center gap-3 flex-wrap">
-          <span className="text-[14px] font-semibold text-ink-soft">
+        <div className="shrink-0 px-4 py-2.5 bg-zinc-50 border-b border-line flex items-center gap-3 flex-wrap">
+          <span className="text-[15px] font-semibold text-ink-soft">
             전체 <span className="text-brand-deep tabular-nums font-black">{sorted.length}</span>종
           </span>
-          {kpi.none > 0 && (
-            <span className="text-[14px] font-semibold text-rose-600 tabular-nums">
-              · 없음 {kpi.none}종
-            </span>
+          {(kpi.none > 0 || kpi.low > 0) && (
+            <button
+              type="button"
+              onClick={() => noneRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100 border border-rose-300 text-rose-700 hover:bg-rose-200 transition cursor-pointer"
+            >
+              <ShoppingCart size={13} />
+              <span className="text-[15px] font-black tabular-nums">발주 필요 {kpi.none + kpi.low}종</span>
+            </button>
           )}
-          {kpi.low > 0 && (
-            <span className="text-[14px] font-semibold text-amber-600 tabular-nums">
-              · 부족 {kpi.low}종
-            </span>
+          {kpi.normal > 0 && (
+            <button
+              type="button"
+              onClick={() => normalRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-700 hover:bg-emerald-100 transition cursor-pointer"
+            >
+              <PackageCheck size={13} />
+              <span className="text-[15px] font-black tabular-nums">재고 정상 {kpi.normal}종</span>
+            </button>
           )}
           {search && (
-            <span className="text-[13px] text-zinc-400">"{search}" 검색 중</span>
+            <span className="text-[15px] text-zinc-400">"{search}" 검색 중</span>
           )}
         </div>
       )}
@@ -569,47 +642,55 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
       <div className="flex-1 overflow-y-auto min-h-0 p-4">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Spinner size={18} tone="zinc" label="불러오는 중..." labelSize={14} />
+            <Spinner size={18} tone="zinc" label="불러오는 중..." labelSize={16} />
           </div>
         ) : error ? (
           <div className="p-10 text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-[14px] font-bold">
+            <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-[16px] font-bold">
               <AlertTriangle size={16} />
               {error}
             </div>
           </div>
         ) : sorted.length === 0 ? (
-          <div className="p-16 text-center text-ink-soft text-[15px]">
+          <div className="p-16 text-center text-ink-soft text-[17px]">
             {search ? "검색 결과가 없습니다" : "표시할 상품이 없습니다"}
           </div>
         ) : (
           <div className="flex flex-col gap-6">
             {/* 섹션 : 재고 없음 */}
             {grouped.none.length > 0 && (
-              <StockSection
-                level="none"
-                items={grouped.none}
-                label="재고 없음"
-                count={grouped.none.length}
-              />
+              <div ref={noneRef}>
+                <StockSection
+                  level="none"
+                  items={grouped.none}
+                  label="재고 없음"
+                  count={grouped.none.length}
+                  isOrderExpected
+                />
+              </div>
             )}
             {/* 섹션 : 재고 부족 */}
             {grouped.low.length > 0 && (
-              <StockSection
-                level="low"
-                items={grouped.low}
-                label="재고 부족"
-                count={grouped.low.length}
-              />
+              <div ref={grouped.none.length === 0 ? noneRef : undefined}>
+                <StockSection
+                  level="low"
+                  items={grouped.low}
+                  label="재고 부족"
+                  count={grouped.low.length}
+                  isOrderExpected
+                />
+              </div>
             )}
             {/* 섹션 : 재고 있음 */}
             {grouped.normal.length > 0 && (
-              <StockSection
-                level="normal"
-                items={grouped.normal}
-                label="재고 있음"
-                count={grouped.normal.length}
-              />
+              <div ref={normalRef}>
+                <StockSection
+                  level="normal"
+                  items={grouped.normal}
+                  label="재고 있음"
+                  count={grouped.normal.length}
+                />
+              </div>
             )}
           </div>
         )}
@@ -640,8 +721,8 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
               <Package size={20} className="text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[15px] font-semibold text-ink-soft leading-tight">공급사 재고현황</div>
-              <div className="text-[22px] font-bold text-ink tracking-tight leading-tight break-words whitespace-normal">
+              <div className="text-[17px] font-semibold text-ink-soft leading-tight">공급사 재고현황</div>
+              <div className="text-[24px] font-bold text-ink tracking-tight leading-tight break-words whitespace-normal">
                 {vendorName || "-"}
               </div>
             </div>
@@ -685,6 +766,7 @@ interface StockSectionProps {
   items: VendorProduct[];
   label: string;
   count: number;
+  isOrderExpected?: boolean;
 }
 
 const SECTION_STYLE: Record<StockLevel, {
@@ -729,7 +811,7 @@ const SECTION_STYLE: Record<StockLevel, {
   },
 };
 
-const StockSection: React.FC<StockSectionProps> = ({ level, items, label, count }) => {
+const StockSection: React.FC<StockSectionProps> = ({ level, items, label, count, isOrderExpected }) => {
   const s = SECTION_STYLE[level];
   const pillTone = level === "normal" ? "emerald" : level === "low" ? "amber" : "rose";
   const pillLabel = level === "normal" ? "정상" : level === "low" ? "부족" : "없음";
@@ -739,8 +821,14 @@ const StockSection: React.FC<StockSectionProps> = ({ level, items, label, count 
       {/* 섹션 헤더 */}
       <div className={`flex items-center gap-2 mb-3 pb-2 border-b ${s.border}`}>
         <span className={`w-2.5 h-2.5 rounded-full ${s.dot} shrink-0`} />
-        <span className={`text-[16px] font-extrabold ${s.header}`}>{label}</span>
-        <span className={`text-[14px] font-bold tabular-nums ${s.labelColor}`}>{count}종</span>
+        <span className={`text-[18px] font-extrabold ${s.header}`}>{label}</span>
+        <span className={`text-[16px] font-bold tabular-nums ${s.labelColor}`}>{count}종</span>
+        {isOrderExpected && (
+          <span className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-100 border border-rose-300 text-rose-700 text-[13px] font-bold">
+            <ShoppingCart size={11} />
+            발주 예상 상품
+          </span>
+        )}
       </div>
 
       {/* 상품 카드 그리드 · 2열 */}
@@ -764,10 +852,15 @@ const StockSection: React.FC<StockSectionProps> = ({ level, items, label, count 
               {/* 상단 : 상품명 + 상태 pill */}
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <div className="text-[15px] font-bold text-ink break-words whitespace-normal leading-snug">
+                  <div className="text-[17px] font-bold text-ink break-words whitespace-normal leading-snug">
                     {p.name}
                   </div>
-                  <div className="text-[13px] text-ink-soft mt-0.5 font-semibold">{p.code}</div>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <span className="text-[15px] text-ink-soft font-semibold">{p.code}</span>
+                    {p.spec && (
+                      <span className="text-[14px] text-zinc-400 font-medium break-words whitespace-normal">{p.spec}</span>
+                    )}
+                  </div>
                 </div>
                 <StatusPill tone={pillTone} size="xs" dot className="shrink-0 mt-0.5">
                   {pillLabel}
@@ -776,33 +869,36 @@ const StockSection: React.FC<StockSectionProps> = ({ level, items, label, count 
 
               {/* 현재고 큰 숫자 */}
               <div className="flex items-baseline gap-1.5">
-                <span className={`text-[26px] font-black tabular-nums leading-none ${s.valueColor}`}>
+                <span className={`text-[28px] font-black tabular-nums leading-none ${s.valueColor}`}>
                   {cur.toLocaleString()}
                 </span>
-                <span className="text-[13px] font-semibold text-ink-soft">개</span>
+                <span className="text-[15px] font-semibold text-ink-soft">개</span>
               </div>
 
-              {/* 진행 바 */}
-              <div className="w-full h-1.5 bg-zinc-200 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${s.barBg}`}
-                  style={{ width: `${barPct}%` }}
-                />
+              {/* 진행 바 · 강화 (두껍게 + 퍼센트 표기) */}
+              <div className="flex flex-col gap-1">
+                <div className="w-full h-2.5 bg-zinc-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${s.barBg}`}
+                    style={{ width: `${barPct}%` }}
+                  />
+                </div>
+                {opt > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13px] text-zinc-400">현재고 / 적정재고</span>
+                    <span className={`text-[14px] font-black tabular-nums ${s.valueColor}`}>{barPct}%</span>
+                  </div>
+                )}
               </div>
 
               {/* 하단 : 최소/적정 */}
-              <div className="flex items-center gap-3 text-[13px] font-semibold text-ink-soft">
+              <div className="flex items-center gap-3 text-[15px] font-semibold text-ink-soft">
                 <span>
                   최소 <span className="tabular-nums font-bold text-ink">{minS > 0 ? minS : "-"}</span>
                 </span>
                 <span>
                   적정 <span className="tabular-nums font-bold text-ink">{opt > 0 ? opt : "-"}</span>
                 </span>
-                {opt > 0 && (
-                  <span className="ml-auto text-[12px] tabular-nums text-zinc-400">
-                    {barPct}%
-                  </span>
-                )}
               </div>
             </div>
           );
