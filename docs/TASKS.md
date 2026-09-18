@@ -117,6 +117,9 @@
 <!-- 2026-09-18 · #56 · 실재고 매장 X 삭제 UI · 완료 (UI agent) -->
 <!-- 2026-09-18 · #149 · large-file 분리 · OcrPage 이미 702줄 (baseline 밖) · 나머지 · 회귀 위험 · 별도 세션 유지 -->
 | **#149** | large-file 분리 잔여 · PaymentInfoTab·OrderManagePage·LandingPage·ContractWriterPage 등 | 🟢 P3 | 별도 세션 · 파일당 신중 · 회귀 위험 큼 |
+| **#301** | 매입 > 공급사현황 · **양쪽 대시보드 형태 재설계** (사용자 지시 · 2026-09-18) | 🟡 P2 | 좌·우 정보 표시 · 카드형 대시보드 · KPI 위주 |
+| **#302** | 공급사 재고확인 페이지 · **DB 매칭 확인** (VendorStockPage · 사용자 보고 · 2026-09-18) | 🔴 P1 | 정보 제대로 안 나옴 · vendor↔products·purchase_details 조인 로직 검증 필요 |
+| **#303** | xlsx CDN 스왑 · Option A · 0.20.3 · npm audit clean | 🟡 P2 | 리서치 완료 (agent) · 승인됨 (A) · 30분 |
 <!-- 2026-09-18 · #115 · real_map DROP · 이미 2026-09-08 실행 완료 확인 (server.ts:95 주석) -->
 <!-- ~~#115~~ · real_map DROP · ✅ 완료 (2026-09-08 · Supabase SQL Editor) -->
 <!-- 2026-09-18 · T-RSTP-TOOLBAR 완료 · [46] 커밋 `780677f5` · flex-col + lg:flex-row 반응형 -->
