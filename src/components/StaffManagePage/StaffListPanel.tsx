@@ -1,11 +1,11 @@
 // src/components/StaffManagePage/StaffListPanel.tsx
-// 2026-09-18 · 직원 리스트 패널 전수 재설계 · 사용자 지시
-//   · 테이블 구조 → flex 카드 리스트 · 겹침 완전 제거
-//   · Linear/Notion/Vercel 2026 톤 · 최신 트렌드 반영
-//   · 컬럼 리사이저 props 유지 (부모 전달) · 렌더 비사용 (회귀 방지)
+// 2026-09-18 · 직원 리스트 패널 완전 재설계 v3
+//   · 테이블 구조 · sticky 정렬 헤더 · ProductInfoPage 패턴 통일
+//   · 동그란 요소 완전 제거 · 말줄임표 금지
+//   · Linear/Attio/Vercel 2026 톤 · border-l-[3px] accent
 
 import React from "react";
-import { User, UserPlus } from "lucide-react";
+import { ArrowDown, ArrowUp, User, UserPlus } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { StaffListRow } from "./StaffListRow";
 import type { Employee } from "./types";
@@ -22,11 +22,11 @@ interface StaffListPanelProps {
   error: string | null;
   selectedId: number | null;
   contractCountByEmp: Map<number, number>;
-  // 정렬 (SortKey · useSortableTable · 유지 · 향후 활용)
+  // 정렬
   sortKey: SortKey;
   sortDir: "asc" | "desc";
   toggleSort: (k: SortKey) => void;
-  // 컬럼 리사이즈 (props 유지 · 렌더 비사용 · 회귀 방지)
+  // 컬럼 리사이즈 (props 유지 · 현재 렌더 비사용 · 회귀 방지)
   getWidth: (col: string) => number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resizerProps: (col: any) => React.HTMLAttributes<HTMLSpanElement> & Record<string, unknown>;
@@ -39,68 +39,125 @@ interface StaffListPanelProps {
   uploadBankbookForRow: (emp: Employee, f: File) => void;
   uploadResignationFileForRow: (emp: Employee, f: File) => void;
   onWriteContract?: (emp: Employee) => void;
-  // 2026-08-31 · 사직서 컬럼 · 재직 필터 시 숨김
   filterStatus?: "active" | "pending_resignation" | "retired" | "all";
-  // 2026-08-31 · 대원칙 · SplitListPanel search prop 필수
+  // 대원칙 · SplitListPanel search prop 필수
   search?: string;
   onSearchChange?: (v: string) => void;
 }
 
+// 정렬 헤더 버튼 컴포넌트
+const SortTh: React.FC<{
+  label: string;
+  sortKey: SortKey;
+  activeKey: SortKey;
+  dir: "asc" | "desc";
+  onToggle: (k: SortKey) => void;
+  className?: string;
+  align?: "left" | "right";
+}> = ({ label, sortKey, activeKey, dir, onToggle, className = "", align = "left" }) => {
+  const active = activeKey === sortKey;
+  return (
+    <th
+      className={`py-2 text-[12px] font-bold tracking-wide uppercase select-none ${align === "right" ? "text-right pr-2" : "text-left"} ${className}`}
+    >
+      <button
+        type="button"
+        onClick={() => onToggle(sortKey)}
+        className={`inline-flex items-center gap-0.5 cursor-pointer transition-colors ${
+          active ? "text-brand-deep" : "text-zinc-400 hover:text-zinc-600"
+        }`}
+        title={`${label} 정렬`}
+      >
+        <span>{label}</span>
+        {active
+          ? (dir === "asc"
+            ? <ArrowUp size={9} strokeWidth={2.5} />
+            : <ArrowDown size={9} strokeWidth={2.5} />)
+          : <ArrowDown size={9} strokeWidth={2} className="opacity-30" />
+        }
+      </button>
+    </th>
+  );
+};
+
 export const StaffListPanel: React.FC<StaffListPanelProps> = ({
   employees, filtered, loading, error,
   selectedId, contractCountByEmp,
-  // sortKey/sortDir/toggleSort: 유지 · 현재 렌더 비사용 (카드 리스트로 전환 · 향후 정렬 버튼 추가 가능)
+  sortKey, sortDir, toggleSort,
   handleSelect, showError, onCreateOpen, onRefresh,
   uploadResumeForRow, uploadBankbookForRow, uploadResignationFileForRow,
   onWriteContract,
   search = "", onSearchChange,
 }) => {
-  // 서류 컬럼 헤더 설명 (접근성용 · 렌더는 아이콘 도트)
+
   const body = (
     <>
       {loading && filtered.length === 0 ? (
-        <div className="flex items-center justify-center py-10">
+        <div className="flex items-center justify-center py-12">
           <Spinner tone="zinc" size={13} label="로딩 중..." labelSize={15} />
         </div>
       ) : error ? (
-        <div className="mx-3 my-2.5 p-2.5 text-[15px] text-red-600 font-semibold bg-red-50 rounded-lg border border-red-200">
+        <div className="mx-3 my-2.5 p-3 text-[15px] text-red-600 font-semibold bg-red-50 rounded-lg border border-red-200">
           {error}
-          <button onClick={onRefresh} className="ml-1.5 underline cursor-pointer">재시도</button>
+          <button onClick={onRefresh} className="ml-1.5 underline cursor-pointer text-red-700">재시도</button>
         </div>
       ) : !loading && filtered.length === 0 ? (
-        <div className="text-center text-[15px] text-zinc-300 py-10">해당 조건의 직원이 없습니다</div>
+        <div className="text-center text-[15px] text-zinc-400 py-12">해당 조건의 직원이 없습니다</div>
       ) : (
         <div className={`${loading ? "opacity-40 pointer-events-none" : ""} transition-opacity`}>
-          {/* 컬럼 힌트 헤더 */}
-          <div className="flex items-center gap-2 pl-[12px] pr-2.5 py-1.5 border-b border-zinc-100 bg-zinc-50/90">
-            {/* 이름/직군 */}
-            <div className="flex-1 min-w-0 text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-              직원
-            </div>
-            {/* 재직/계약 */}
-            <div className="shrink-0 w-[52px] text-right text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-              계약
-            </div>
-            {/* 서류 */}
-            <div className="shrink-0 text-[11px] font-bold text-zinc-400 uppercase tracking-wider pr-0.5">
-              서류
-            </div>
-          </div>
-          {/* 직원 행 목록 */}
-          {filtered.map((emp) => (
-            <StaffListRow
-              key={emp.id}
-              emp={emp}
-              selectedId={selectedId}
-              contractCountByEmp={contractCountByEmp}
-              handleSelect={handleSelect}
-              showError={showError}
-              uploadResumeForRow={uploadResumeForRow}
-              uploadBankbookForRow={uploadBankbookForRow}
-              uploadResignationFileForRow={uploadResignationFileForRow}
-              onWriteContract={onWriteContract}
-            />
-          ))}
+          <table className="w-full text-[15px] border-collapse">
+            {/* sticky 정렬 헤더 */}
+            <thead className="sticky top-0 z-10 bg-zinc-50/95 backdrop-blur-sm border-b-2 border-zinc-200">
+              <tr>
+                {/* border-l 공간 확보 */}
+                <th className="pl-3 pr-0 py-2 w-0" aria-hidden />
+                <SortTh
+                  label="직원"
+                  sortKey="name"
+                  activeKey={sortKey}
+                  dir={sortDir}
+                  onToggle={toggleSort}
+                  className="pl-0"
+                />
+                <SortTh
+                  label="상태"
+                  sortKey="status"
+                  activeKey={sortKey}
+                  dir={sortDir}
+                  onToggle={toggleSort}
+                  className="w-[72px]"
+                />
+                <SortTh
+                  label="근속"
+                  sortKey="tenure"
+                  activeKey={sortKey}
+                  dir={sortDir}
+                  onToggle={toggleSort}
+                  className="w-[58px]"
+                  align="right"
+                />
+                <th className="py-2 pl-1.5 pr-2.5 w-[76px] text-[12px] font-bold text-zinc-400 uppercase tracking-wide text-right">
+                  서류
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100">
+              {filtered.map((emp) => (
+                <StaffListRow
+                  key={emp.id}
+                  emp={emp}
+                  selectedId={selectedId}
+                  contractCountByEmp={contractCountByEmp}
+                  handleSelect={handleSelect}
+                  showError={showError}
+                  uploadResumeForRow={uploadResumeForRow}
+                  uploadBankbookForRow={uploadBankbookForRow}
+                  uploadResignationFileForRow={uploadResignationFileForRow}
+                  onWriteContract={onWriteContract}
+                />
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </>
