@@ -9,7 +9,7 @@
 //   · 좌측 이벤트 카드 · 상품 개수 배지 (실시간)
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Pencil, Check, X, Calendar, RefreshCw, Package } from "lucide-react";
+import { Plus, Trash2, Pencil, Check, X, Calendar, RefreshCw, Package, CalendarSync } from "lucide-react";
 import { api } from "../../lib/apiClient";
 import { getErrorMessage } from "../../lib/errorMessage";
 import { StatusPill } from "../common/StatusPill";
@@ -56,6 +56,8 @@ export const EventsSection: React.FC = () => {
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [productCounts, setProductCounts] = useState<Record<number, number>>({});
   const [mobileOpen, setMobileOpen] = useState(false);
+  // 2026-09-18 · C · 공휴일 동기 (data.go.kr 특일정보)
+  const [syncingHoliday, setSyncingHoliday] = useState(false);
   const { toast, showSuccess, showError } = useToast();
   const confirm = useConfirm();
 
@@ -165,6 +167,56 @@ export const EventsSection: React.FC = () => {
     }
   };
 
+  // 2026-09-18 · C · 공휴일 API 동기 · data.go.kr 특일정보 → events 자동 upsert
+  //   · 올해 · 내년 순차 동기 (다음 연도 공휴일 미리 반영)
+  //   · 관리자 (lv≥9) 만 · authorize(9) 서버 측 강제
+  const handleSyncHolidays = useCallback(async () => {
+    setSyncingHoliday(true);
+    try {
+      const year = new Date().getFullYear();
+      // 올해 · 내년 순차 동기
+      const results = await Promise.all([
+        api.post<{ ok: boolean; year: number; total: number; created: number; updated: number; skipped: number; errors: any[] }>(
+          `/api/holidays/sync?year=${year}`,
+        ).catch(e => ({ data: null, error: e as unknown })),
+        api.post<{ ok: boolean; year: number; total: number; created: number; updated: number; skipped: number; errors: any[] }>(
+          `/api/holidays/sync?year=${year + 1}`,
+        ).catch(e => ({ data: null, error: e as unknown })),
+      ]);
+      let totalCreated = 0;
+      let totalUpdated = 0;
+      let totalErrors = 0;
+      let anyOk = false;
+      const errMsgs: string[] = [];
+      for (const r of results) {
+        if ("error" in r && r.error) {
+          errMsgs.push(getErrorMessage(r.error));
+          continue;
+        }
+        const d = (r as any).data;
+        if (d?.ok) {
+          anyOk = true;
+          totalCreated += Number(d.created ?? 0);
+          totalUpdated += Number(d.updated ?? 0);
+          totalErrors += Number(d.errors?.length ?? 0);
+        }
+      }
+      if (!anyOk) {
+        showError(`공휴일 동기 실패${errMsgs.length ? `: ${errMsgs.join(" · ")}` : ""}`);
+        return;
+      }
+      showSuccess(
+        `공휴일 동기 완료 · 신규 ${totalCreated}건 · 업데이트 ${totalUpdated}건` +
+        (totalErrors > 0 ? ` · 실패 ${totalErrors}건` : ""),
+      );
+      await load();
+    } catch (e) {
+      showError(`공휴일 동기 실패: ${getErrorMessage(e)}`);
+    } finally {
+      setSyncingHoliday(false);
+    }
+  }, [load, showError, showSuccess]);
+
   const selectedEvent = useMemo(
     () => events.find(e => e.id === selectedEventId) ?? null,
     [events, selectedEventId],
@@ -196,6 +248,20 @@ export const EventsSection: React.FC = () => {
             title="새로고침"
           >
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+          </button>
+          {/* 2026-09-18 · C · 공휴일 동기 · data.go.kr 특일정보 · 관리자만 (lv≥9 서버 authorize) */}
+          <button
+            onClick={() => void handleSyncHolidays()}
+            disabled={syncingHoliday || loading}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[13px] font-bold cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed"
+            title="한국 공휴일 · 올해 + 내년 자동 동기 (data.go.kr 특일정보)"
+          >
+            {syncingHoliday ? (
+              <Spinner size={12} tone="rose" />
+            ) : (
+              <CalendarSync size={13} strokeWidth={2.5} />
+            )}
+            <span>{syncingHoliday ? "동기 중..." : "공휴일 동기"}</span>
           </button>
           {!showForm && (
             <button

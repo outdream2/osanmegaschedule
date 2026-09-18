@@ -32,6 +32,8 @@ const ENV_SPECS: EnvSpec[] = [
   { key: "GEMINI_API_KEY",     severity: "recommended", purpose: "Gemini OCR (거래명세서 인식)" },
   { key: "CLOUDINARY_URL",     severity: "recommended", purpose: "이미지 업로드 (게시판·거래명세서)" },
   { key: "GOOGLE_APPLICATION_CREDENTIALS", severity: "recommended", purpose: "Google Drive (이력서 업로드)" },
+  // 2026-09-18 · C · 공휴일 API · data.go.kr 특일정보 (미설정 시 /api/holidays/sync 실패)
+  { key: "HOLIDAY_API_KEY",    severity: "recommended", purpose: "공휴일 자동 동기 (data.go.kr 특일정보)" },
 ];
 
 export interface EnvCheckResult {

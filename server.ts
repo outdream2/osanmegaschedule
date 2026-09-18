@@ -28,6 +28,8 @@ import systemConfigRouter from "./server/routes/settings/systemConfig";
 import autoImportRouter  from "./server/routes/settings/autoImport";
 // 2026-09-10 · #52·#54 · 계절·이벤트 관리 · CRUD + 오늘 활성 조회
 import eventsRouter      from "./server/routes/settings/events";
+// 2026-09-18 · C · 공휴일 API 연동 (data.go.kr 특일정보) · events 자동 동기
+import holidaysRouter    from "./server/routes/settings/holidays";
 import productsRouter, { stockCheckPublicRouter } from "./server/routes/stock/products";
 import requestsRouter    from "./server/routes/display/requests";
 import mismatchesRouter  from "./server/routes/display/mismatches";
@@ -242,6 +244,9 @@ async function startServer() {
   //   POST /api/notifications/kakao-send · authorize(3)
   //   GET  /api/notifications/kakao-send/status · authorize(3)
   app.use(kakaoSendRouter);
+
+  // 2026-09-18 · C · 공휴일 API · GET(캐시) + POST sync(관리자 lv≥9 내부 authorize) · requireAuth 아래
+  app.use(holidaysRouter);
 
   // HR 서류 (근로계약서·사직서 등)
   app.use(hrFormsRouter);
