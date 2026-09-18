@@ -117,7 +117,8 @@
 <!-- 2026-09-18 · #56 · 실재고 매장 X 삭제 UI · 완료 (UI agent) -->
 <!-- 2026-09-18 · #149 · large-file 분리 · OcrPage 이미 702줄 (baseline 밖) · 나머지 · 회귀 위험 · 별도 세션 유지 -->
 | **#149** | large-file 분리 잔여 · PaymentInfoTab·OrderManagePage·LandingPage·ContractWriterPage 등 | 🟢 P3 | 별도 세션 · 파일당 신중 · 회귀 위험 큼 |
-| **#115** | real_map 컬럼 DB DROP SQL 실행 · `migrations/20260904_drop_real_map.sql` | 🟡 | 사용자 · Supabase SQL Editor 직접 실행 |
+<!-- 2026-09-18 · #115 · real_map DROP · 이미 2026-09-08 실행 완료 확인 (server.ts:95 주석) -->
+<!-- ~~#115~~ · real_map DROP · ✅ 완료 (2026-09-08 · Supabase SQL Editor) -->
 <!-- 2026-09-18 · T-RSTP-TOOLBAR 완료 · [46] 커밋 `780677f5` · flex-col + lg:flex-row 반응형 -->
 <!-- 2026-09-18 · T-WAREHOUSE-TAB 조사 결과 · 창고1/2 이미 매장진열 안의 탭 (DisplayPage L663 SplitRightTabs)
      · 별도 페이지·라우트 없음 · 이미 요청 목표 달성 상태
