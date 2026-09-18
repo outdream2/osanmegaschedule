@@ -387,18 +387,20 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             <span className="w-1.5 h-4 rounded-full bg-sky-600" />
             공급사 · 기본 정보
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
+          <div className="space-y-0">
+            {/* 편집모드 · 상품명 full-width */}
             {editing && (
               <div className="col-span-full flex items-baseline justify-between py-1.5 min-h-[36px] border-b border-line/40 gap-3">
                 <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">상품명</span>
                 <div className="flex-1 max-w-md"><EditField k="product_name" label="" /></div>
               </div>
             )}
-            <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
+            {/* 공급사 · full-width row · 줄바꿈 허용 */}
+            <div className="flex items-start gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
               <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">공급사</span>
               {editing ? <div className="flex-1 max-w-[180px]"><EditField k="supplier" label="" /></div> : product.supplier ? (
-                <span className="inline-flex items-center gap-2 min-w-0">
-                  <span className="text-[16px] font-bold text-ink truncate">{product.supplier}</span>
+                <div className="flex-1 min-w-0 flex flex-wrap items-center gap-2">
+                  <span className="text-[16px] font-bold text-ink whitespace-normal break-words break-keep">{product.supplier}</span>
                   <button
                     type="button"
                     onClick={() => vendorModal.openVendorInfo(product.supplier!)}
@@ -406,36 +408,40 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                   >
                     상세<ArrowSquareOut size={10} />
                   </button>
-                </span>
+                </div>
               ) : <span className="text-[12px] text-zinc-300">-</span>}
             </div>
-            {editing && (
-              <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-                <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">분류</span>
-                <div className="flex-1 max-w-[180px]"><EditField k="category" label="" /></div>
-              </div>
-            )}
-            <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">규격</span>
-              {editing ? <div className="flex-1 max-w-[180px]"><EditField k="spec" label="" /></div> : <span className="text-[16px] font-bold text-ink">{dispVal("spec")}</span>}
-            </div>
-            <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">단위</span>
-              {editing ? <div className="flex-1 max-w-[180px]"><EditField k="unit" label="" /></div> : <span className="text-[16px] font-bold text-ink">{dispVal("unit")}</span>}
-            </div>
-            <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">브랜드</span>
-              {editing ? <div className="flex-1 max-w-[180px]"><EditField k="brand" label="" /></div> : <span className="text-[16px] font-bold text-ink">{dispVal("brand")}</span>}
-            </div>
-            <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">제조사</span>
-              {editing ? <div className="flex-1 max-w-[180px]"><EditField k="manufacturer" label="" /></div> : <span className="text-[16px] font-bold text-ink">{dispVal("manufacturer")}</span>}
-            </div>
+            {/* 최근매입 · full-width row */}
             <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
               <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">최근매입</span>
               {p.last_purchase_date ? (
                 <span className="text-[16px] font-bold text-ink tabular-nums">{String(p.last_purchase_date).slice(0, 10)}</span>
               ) : <span className="text-[12px] text-zinc-300">-</span>}
+            </div>
+            {/* 규격·단위·브랜드·제조사·분류 · 2-col grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0">
+              <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
+                <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">규격</span>
+                {editing ? <div className="flex-1 max-w-[180px]"><EditField k="spec" label="" /></div> : <span className="text-[16px] font-bold text-ink whitespace-normal break-words break-keep">{dispVal("spec")}</span>}
+              </div>
+              <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
+                <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">단위</span>
+                {editing ? <div className="flex-1 max-w-[180px]"><EditField k="unit" label="" /></div> : <span className="text-[16px] font-bold text-ink whitespace-normal break-words break-keep">{dispVal("unit")}</span>}
+              </div>
+              <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
+                <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">브랜드</span>
+                {editing ? <div className="flex-1 max-w-[180px]"><EditField k="brand" label="" /></div> : <span className="text-[16px] font-bold text-ink whitespace-normal break-words break-keep">{dispVal("brand")}</span>}
+              </div>
+              <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
+                <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">제조사</span>
+                {editing ? <div className="flex-1 max-w-[180px]"><EditField k="manufacturer" label="" /></div> : <span className="text-[16px] font-bold text-ink whitespace-normal break-words break-keep">{dispVal("manufacturer")}</span>}
+              </div>
+              {editing && (
+                <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
+                  <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">분류</span>
+                  <div className="flex-1 max-w-[180px]"><EditField k="category" label="" /></div>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -792,10 +798,10 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
                 className={`cursor-pointer transition-colors ${active ? "bg-brand-tint/60" : "hover:bg-zinc-50/70"}`}
               >
                 <td className="px-3 py-2.5 align-top" style={{ width: nameColWidth, minWidth: 80, maxWidth: 320 }}>
-                  <div className={`text-[15px] font-bold leading-tight whitespace-normal break-words ${active ? "text-brand-deep" : "text-ink"}`}>
+                  <div className="text-[12px] text-zinc-400 whitespace-normal break-all">{r.product_code}</div>
+                  <div className={`text-[15px] font-bold leading-tight mt-0.5 whitespace-normal break-words break-keep ${active ? "text-brand-deep" : "text-ink"}`}>
                     {r.product_name || <span className="text-zinc-400 font-normal">(이름없음)</span>}
                   </div>
-                  <div className="text-[12px] text-zinc-400 mt-0.5 whitespace-normal break-all">{r.product_code}</div>
                 </td>
                 <td className="px-2 py-2.5 align-top text-ink text-[13px]">
                   {r.supplier || <span className="text-zinc-300">-</span>}
