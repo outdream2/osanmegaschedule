@@ -5,7 +5,7 @@
 //   Right · VendorDetailModal panel 모드 (사업자번호·이메일 · 상세에서만)
 //   Mobile · SplitPanel mobileRightAsModal · 우측 자동 모달
 import React, { useMemo, useState } from "react";
-import { Building2, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { Building2, Trash2 } from "lucide-react";
 import { useVendors as useVendorsHook } from "../../hooks/useVendors";
 import { useAuth } from "../../hooks/useAuth";
 import { api } from "../../lib/apiClient";
@@ -14,6 +14,7 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { Spinner } from "../common/Spinner";
+import { SortHeader } from "../common/SortHeader";
 import { SplitPanel } from "../common/SplitPanel";
 import { NewVendorModal } from "../common/features/NewVendorModal";
 import { StatusPill } from "../common/StatusPill";
@@ -100,21 +101,6 @@ export const VendorManageSplit: React.FC = () => {
 
   const selected = useMemo(() => vendors.find(v => v.id === selectedId) ?? null, [vendors, selectedId]);
 
-  // 정렬 헤더 셀 · 클릭 정렬 · asc/desc 표시
-  const SortTh: React.FC<{ label: string; sk: VmSortKey; className?: string }> = ({ label, sk, className = "" }) => (
-    <button
-      type="button"
-      onClick={() => toggleSort(sk)}
-      className={`inline-flex items-center gap-0.5 select-none cursor-pointer hover:text-indigo-600 transition ${
-        sortKey === sk ? "text-indigo-600" : "text-zinc-600"
-      } ${className}`}
-    >
-      {label}
-      {sortKey === sk
-        ? (sortDir === "asc" ? <ChevronUp size={11} className="shrink-0" /> : <ChevronDown size={11} className="shrink-0" />)
-        : <span className="text-zinc-300 text-[15px]">↕</span>}
-    </button>
-  );
 
   // 2026-08-23 · #198 Phase 3A · CategoryChips 프리미티브 · 5 카테고리 통일
   //   · UI 목업 준수 · Linear/Vercel 톤 · 파스텔 지양 · 프레임워크 색상 시스템
@@ -243,9 +229,9 @@ export const VendorManageSplit: React.FC = () => {
           {/* 2026-08-25 · 폰트 +2 · 담당자 min-w · 전화 min-w 확대 */}
           <thead className="sticky top-0 z-10 bg-zinc-100/70 border-b border-line">
             <tr className="text-zinc-500 uppercase tracking-wider">
-              <th className="text-left px-3 py-3 text-[15px] font-bold min-w-[160px]"><SortTh label="공급사" sk="company_name" /></th>
-              <th className="text-left px-3 py-3 text-[15px] font-bold min-w-[110px]"><SortTh label="담당자" sk="contact_name" /></th>
-              <th className="text-left px-3 py-3 text-[15px] font-bold min-w-[150px]"><SortTh label="전화" sk="phone" /></th>
+              <th className="text-left px-3 py-3 text-[15px] font-bold min-w-[160px]"><SortHeader label="공급사" columnKey="company_name" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="chevron" activeColor="indigo" /></th>
+              <th className="text-left px-3 py-3 text-[15px] font-bold min-w-[110px]"><SortHeader label="담당자" columnKey="contact_name" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="chevron" activeColor="indigo" /></th>
+              <th className="text-left px-3 py-3 text-[15px] font-bold min-w-[150px]"><SortHeader label="전화" columnKey="phone" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="chevron" activeColor="indigo" /></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
