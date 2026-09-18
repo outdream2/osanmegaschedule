@@ -22,7 +22,8 @@ router.get("/api/reservations", asyncHandler(async (req, res) => {
   res.json(body);
 }));
 
-router.post("/api/reservations", authorize(5), validateBody(CreateReservationSchema), asyncHandler(async (req, res) => {
+// 2026-09-18 · authorize(5) → authorize(0) · vendor(level=0) 예약 가능하도록
+router.post("/api/reservations", authorize(0), validateBody(CreateReservationSchema), asyncHandler(async (req, res) => {
   const { date, time, company, contactName, phone, purpose, note, vendorId } = req.body;
   const getTarget = (n: string) => {
     const match = (n || "").match(/^\[대상:(대표|이사|부장)\]/);
