@@ -252,6 +252,32 @@
 2. 발주 관리 · 공급사 매칭 · vendorMap 사용처 (findVendor) · 정상
 3. TS · clean · 컴파일 error 0
 
+### [89] 공통모듈 1 · SortHeader 공용 컴포넌트 신설 + 8파일 마이그레이션
+**커밋** · `fafb2605` (신설) · `8cd9d4b0` · `863e0aaa` · `36b07480` · `ae5a7b50` · `9176c00c` · `97c95fcc` · `08423e94`
+- `src/components/common/SortHeader.tsx` 신설 (SortHeader + SortHeaderContent)
+  - arrowStyle: "arrow" | "chevron" | "text" · activeColor: "brand" | "zinc" | "indigo"
+  - useSortableTable.toggleSort 시그니처 호환
+- OrderHistoryTab · 로컬 SortHeader 삭제 → 공용 대체
+- PaymentInfoTab.subcomponents · SortHeaderBtn 삭제 → 공용 대체
+- ProductInfoPage · ListSortHeader 삭제 → 공용 대체
+- HrFormsPage · 인라인 6개 span → SortHeaderContent 대체
+- RealStockTablePage · sortIndicator 삭제 → SortHeaderContent 대체
+- VendorManageSplit · SortTh 삭제 → 공용 SortHeader 대체
+- VendorListEditor · 인라인 6개 span → SortHeaderContent 대체
+- StaffListPanel (추가 발견) · SortTh 내부 button → 공용 SortHeader 대체
+- TS error 0 · build 성공
+
+**확인 절차**
+1. 매입 > 발주이력 탭 · 발주번호/발주일/희망/종개/총금액 헤더 클릭 · asc↔desc 전환
+2. 결제관리 탭 · 공급사 목록 헤더(공급사/총재고자산/총판매액/총결제액/총잔고) · 정렬 작동
+3. 매장 > 상품 · 좌측 리스트 헤더 (상품명/공급사/판매가/현재고/위치) · 정렬 작동
+4. 경영 > 양식관리 · 헤더 6컬럼 (양식명/분류/파일명/크기/업로더/업로드일) · 정렬 작동
+5. 매장 > 재고 > 실재고 테이블 · 헤더 클릭 정렬 · 화살표 표시
+6. 매장정보 > 공급사관리 · SplitPanel 왼쪽 리스트 헤더 (공급사/담당자/전화) · 정렬
+7. 매장정보 > 공급사 (Landing) · compact 테이블 · 공급사/총잔고/총매입액/총재고자산/총판매액/최근매입 · 정렬
+8. 인사 > 직원관리 · 직원/상태/근속 헤더 · 정렬 작동
+9. 정렬 상태 localStorage 저장 페이지 있으면 · 새로고침 후 유지 확인
+
 ### [80] 유통기한 임박 리스트 · 규격 컬럼 제거
 **커밋** · `c621332c`
 - ExpiryImminentTab · 규격 컬럼 완전 제거
