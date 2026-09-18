@@ -464,10 +464,10 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             재고 · 진열위치
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
-            <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
+            <div className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
               <span className="text-[15px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1 shrink-0">현재고</span>
-              {p.current_stock != null
-                ? <span className="inline-flex items-baseline gap-1.5 min-w-0">
+              {(p.current_stock != null && Number(p.current_stock) !== 0)
+                ? <span className="inline-flex items-center gap-1.5 min-w-0">
                     <span className="text-[20px] font-extrabold text-emerald-700 tabular-nums leading-none tracking-tight">{String(p.current_stock)}<span className="text-[12px] font-semibold ml-0.5 text-emerald-600/70">개</span></span>
                     {p.optimal_stock != null && (() => {
                       const cur = Number(p.current_stock ?? 0);
@@ -477,10 +477,10 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                       return <span className="text-[13px] font-bold text-rose-600 tabular-nums shrink-0">-{short}</span>;
                     })()}
                   </span>
-                : <span className="text-zinc-300 text-[14px]">-</span>}
+                : <span className="text-[14px] font-bold text-rose-500">부족</span>}
             </div>
-            <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="inline-flex items-baseline gap-1 shrink-0">
+            <div className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
+              <span className="inline-flex items-center gap-1 shrink-0">
                 <span className="text-[15px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1">적정재고</span>
                 <span className="text-[11px] font-medium text-zinc-400">· {optimalStockDays}일</span>
               </span>
@@ -490,10 +490,10 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                   ? <span className="text-[18px] font-bold text-ink tabular-nums leading-none tracking-tight">{String(p.optimal_stock)}<span className="text-[12px] font-semibold ml-0.5 text-ink-soft">개</span></span>
                   : <span className="text-zinc-300 text-[14px]">-</span>}
             </div>
-            <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
+            <div className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
               <span className="text-[15px] font-bold text-cyan-700 bg-cyan-50 rounded-md px-2.5 py-1 shrink-0">창고</span>
               {(w1 != null || w2 != null) ? (
-                <span className="inline-flex items-baseline gap-1.5 min-w-0">
+                <span className="inline-flex items-center gap-1.5 min-w-0">
                   <span className="text-[18px] font-bold text-cyan-700 tabular-nums leading-none tracking-tight">{totalWarehouse}<span className="text-[12px] font-semibold ml-0.5 text-cyan-600/70">개</span></span>
                   {(w1 != null && w2 != null) && (
                     <span className="text-[12px] font-medium text-cyan-600/70 tabular-nums shrink-0">({w1}·{w2})</span>
@@ -501,7 +501,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                 </span>
               ) : <span className="text-[12px] text-zinc-400">미조사</span>}
             </div>
-            <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
+            <div className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
               <span className="text-[15px] font-bold text-indigo-700 bg-indigo-50 rounded-md px-2.5 py-1 shrink-0">매장</span>
               {product.store_stock != null
                 ? <span className="text-[18px] font-bold text-indigo-700 tabular-nums leading-none tracking-tight">{totalStore}<span className="text-[12px] font-semibold ml-0.5 text-indigo-600/70">개</span></span>
