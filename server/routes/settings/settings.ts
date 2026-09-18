@@ -241,18 +241,38 @@ router.post("/api/blocked-slots", authorize(5), validateBody(UpsertBlockedSlotSc
 //   · POST /api/settings/order-email · 저장 (app_settings 'order_email_smtp')
 //   · POST /api/settings/order-email/test · 테스트 이메일 발송
 // 서버 재시작 없이 · 저장 즉시 process.env 에 반영 (bulk-send 다음 요청부터 사용)
+// 2026-09-18 · 사용자 지시 · SMTP 비번 · .env 에서 관리
+//   · loadSmtp · .env 값 우선 · DB 는 legacy fallback
+//   · 서버 부팅 시 · DB 값 덮어쓰기 X · .env 값 그대로 유지
 // ═════════════════════════════════════════════════════════════════
 const SMTP_KEY = "order_email_smtp";
 
+/** SMTP 설정 로드 · .env 우선 · DB fallback (legacy · 2026-09-18 · env 우선 정책) */
 async function loadSmtp(): Promise<Record<string, string>> {
+  // 1. .env 우선 · 값이 있으면 그대로 반환 (DB 조회 skip)
+  const envHost = process.env.SMTP_HOST ?? "";
+  const envUser = process.env.SMTP_USER ?? "";
+  const envPass = process.env.SMTP_PASS ?? "";
+  const envFrom = process.env.SMTP_FROM ?? "";
+  const envPort = process.env.SMTP_PORT ?? "587";
+  if (envHost && envUser && envPass) {
+    return {
+      smtp_host: envHost,
+      smtp_port: envPort,
+      smtp_user: envUser,
+      smtp_pass: envPass,
+      smtp_from: envFrom || envUser,
+    };
+  }
+  // 2. .env 값 없으면 · DB 조회 (legacy · 관리자 UI 저장 값)
   const { data } = await supabase.from("app_settings").select("value").eq("key", SMTP_KEY).maybeSingle();
   const raw = (data?.value ?? {}) as Record<string, any>;
   return {
-    smtp_host: String(raw.smtp_host ?? ""),
-    smtp_port: String(raw.smtp_port ?? "587"),
-    smtp_user: String(raw.smtp_user ?? ""),
-    smtp_pass: String(raw.smtp_pass ?? ""),
-    smtp_from: String(raw.smtp_from ?? ""),
+    smtp_host: String(raw.smtp_host ?? envHost),
+    smtp_port: String(raw.smtp_port ?? envPort),
+    smtp_user: String(raw.smtp_user ?? envUser),
+    smtp_pass: String(raw.smtp_pass ?? envPass),
+    smtp_from: String(raw.smtp_from ?? envFrom),
   };
 }
 
@@ -264,13 +284,62 @@ function applySmtpToEnv(cfg: Record<string, string>): void {
   if (cfg.smtp_from) process.env.SMTP_FROM = cfg.smtp_from;
 }
 
-// 서버 부팅 시 · DB에 저장된 SMTP · process.env 로 로드
+// 2026-09-18 · 사용자 지시 · .env 우선 · DB 자동 동기
+//   · .env 값이 기준 (authoritative source)
+//   · 서버 부팅 시 · .env 값과 DB 값 비교
+//   · 다르면 · DB 를 .env 값으로 자동 upsert (덮어쓰기)
+//   · .env 없을 때만 · DB 값으로 process.env 보충 (legacy fallback)
 (async () => {
   try {
-    const cfg = await loadSmtp();
-    if (cfg.smtp_host) {
-      applySmtpToEnv(cfg);
-      console.log(`[settings] SMTP loaded from DB · host=${cfg.smtp_host}`);
+    const envHost = process.env.SMTP_HOST ?? "";
+    const envPort = process.env.SMTP_PORT ?? "587";
+    const envUser = process.env.SMTP_USER ?? "";
+    const envPass = process.env.SMTP_PASS ?? "";
+    const envFrom = process.env.SMTP_FROM ?? envUser;
+
+    if (envHost && envUser && envPass) {
+      // .env 우선 · DB 값과 비교 · 다르면 upsert
+      const { data } = await supabase.from("app_settings").select("value").eq("key", SMTP_KEY).maybeSingle();
+      const dbCfg = (data?.value ?? {}) as Record<string, any>;
+      const isDifferent =
+        String(dbCfg.smtp_host ?? "") !== envHost ||
+        String(dbCfg.smtp_port ?? "587") !== envPort ||
+        String(dbCfg.smtp_user ?? "") !== envUser ||
+        String(dbCfg.smtp_pass ?? "") !== envPass ||
+        String(dbCfg.smtp_from ?? "") !== envFrom;
+      if (isDifferent) {
+        // .env 값으로 DB 덮어쓰기 · authoritative source
+        const nextCfg = {
+          smtp_host: envHost,
+          smtp_port: envPort,
+          smtp_user: envUser,
+          smtp_pass: envPass,
+          smtp_from: envFrom,
+        };
+        const { error } = await supabase.from("app_settings")
+          .upsert({ key: SMTP_KEY, value: nextCfg, updated_at: new Date().toISOString() }, { onConflict: "key" });
+        if (error) {
+          console.warn(`[settings] SMTP · DB 자동 동기 실패 (경고): ${error.message}`);
+        } else {
+          console.log(`[settings] SMTP · .env 값으로 DB 자동 동기 · host=${envHost} · user=${envUser}`);
+        }
+      } else {
+        console.log(`[settings] SMTP loaded from .env · host=${envHost} · user=${envUser} · DB 동일`);
+      }
+      return; // .env 우선 · process.env 는 이미 .env 값
+    }
+    // .env 없으면 · DB fallback (legacy)
+    const { data } = await supabase.from("app_settings").select("value").eq("key", SMTP_KEY).maybeSingle();
+    const raw = (data?.value ?? {}) as Record<string, any>;
+    if (raw.smtp_host) {
+      applySmtpToEnv({
+        smtp_host: String(raw.smtp_host ?? ""),
+        smtp_port: String(raw.smtp_port ?? "587"),
+        smtp_user: String(raw.smtp_user ?? ""),
+        smtp_pass: String(raw.smtp_pass ?? ""),
+        smtp_from: String(raw.smtp_from ?? ""),
+      });
+      console.log(`[settings] SMTP loaded from DB (legacy · .env 없음) · host=${raw.smtp_host}`);
     }
   } catch (e: any) {
     console.warn("[settings] SMTP boot load 실패:", e?.message);
@@ -279,6 +348,11 @@ function applySmtpToEnv(cfg: Record<string, string>): void {
 
 router.get("/api/settings/order-email", authorize(9), asyncHandler(async (_req, res) => {
   const cfg = await loadSmtp();
+  // 2026-09-18 · env 우선 정책 · UI 에 안내 · env_managed flag
+  const envHost = process.env.SMTP_HOST ?? "";
+  const envUser = process.env.SMTP_USER ?? "";
+  const envPass = process.env.SMTP_PASS ?? "";
+  const envManaged = !!(envHost && envUser && envPass);
   res.json({
     smtp_host: cfg.smtp_host,
     smtp_port: cfg.smtp_port,
@@ -286,10 +360,18 @@ router.get("/api/settings/order-email", authorize(9), asyncHandler(async (_req, 
     smtp_pass: cfg.smtp_pass ? "••••••••••••" : "", // 마스킹
     smtp_from: cfg.smtp_from,
     configured: !!cfg.smtp_host && !!cfg.smtp_from,
+    env_managed: envManaged, // .env 로 관리 중 · UI 편집 disabled 힌트
   });
 }));
 
 router.post("/api/settings/order-email", authorize(9), asyncHandler(async (req, res) => {
+  // 2026-09-18 · env 우선 정책 · .env 로 관리 중이면 · UI 저장 차단
+  const envHost = process.env.SMTP_HOST ?? "";
+  const envUser = process.env.SMTP_USER ?? "";
+  const envPass = process.env.SMTP_PASS ?? "";
+  if (envHost && envUser && envPass) {
+    throw new HttpError(409, "SMTP 는 .env 로 관리 중입니다 · 서버 .env 파일에서 SMTP_PASS 를 수정하세요");
+  }
   const b = req.body ?? {};
   const cfg = {
     smtp_host: String(b.smtp_host ?? "").trim(),
