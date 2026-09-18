@@ -6,7 +6,7 @@
 //   · 상단 헤더 + 자동 정렬 (useSortableTable) · 상세내역 시각 구분 강화
 
 import React, { useEffect, useRef, useState } from "react";
-import { Package, ChevronDown, ChevronRight, Mail, Phone, User, Calendar, CalendarCheck, FileDown, ArrowUp, ArrowDown, ListTree } from "lucide-react";
+import { Package, ChevronDown, ChevronRight, Mail, Phone, User, Calendar, CalendarCheck, FileDown, ListTree } from "lucide-react";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 import { shortDate } from "../../lib/dateFormat";
 // 2026-09-08 · 사용자 지시 · 발주이력 각 행 PDF 다운 · html2canvas + jsPDF
@@ -24,6 +24,7 @@ import { matchesProductQuery } from "../../lib/productMatch";
 // 2026-08-30 · 사용자 지시 · 공급사명 검색 프로젝트 전체 endpoint 통합 · matchesSupplierQuery 프리미티브
 import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { AccentBar } from "../common/AccentBar";
+import { SortHeader } from "../common/SortHeader";
 import { GradientAccent } from "../common/GradientAccent";
 import { InlineLabel } from "../common/InlineLabel";
 import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
@@ -42,28 +43,6 @@ import { Tags, CheckCircle2 } from "lucide-react";
 // 2026-09-13 · #117 · 매입확인 버튼 · confirm
 import { useConfirm } from "../../hooks/useConfirm";
 
-// 2026-09-17 · 사용자 지시 · 상단 헤더 · 클릭 시 asc/desc 토글 · 화살표 표시
-const SortHeader: React.FC<{
-  label: string;
-  active: boolean;
-  dir: "asc" | "desc";
-  onClick: () => void;
-  className?: string;
-}> = ({ label, active, dir, onClick, className = "" }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`inline-flex items-center gap-1 shrink-0 cursor-pointer transition select-none ${active ? "text-brand-deep" : "text-zinc-500 hover:text-brand-deep"} ${className}`}
-    title={`${label} 정렬`}
-  >
-    <span>{label}</span>
-    {active ? (
-      dir === "asc" ? <ArrowUp size={11} /> : <ArrowDown size={11} />
-    ) : (
-      <ArrowDown size={11} className="opacity-25" />
-    )}
-  </button>
-);
 
 interface OrderHistoryItem {
   id: string | number;
@@ -392,11 +371,11 @@ export const OrderHistoryTab: React.FC = () => {
             {/* 2026-09-17 · 사용자 지시 · 상단 헤더 + 자동 정렬 · 헤더 클릭 asc/desc 토글 */}
             <div className="sticky top-0 z-10 bg-zinc-50/95 backdrop-blur-sm border-b-2 border-line px-4 py-2 flex items-center gap-2.5 text-[13px] font-bold tracking-tight text-zinc-600 uppercase">
               <span className="w-4 shrink-0" aria-hidden />
-              <SortHeader label="발주번호 · 공급사" active={sortKey === "order_number"} dir={sortDir} onClick={() => toggleSort("order_number")} className="flex-1 min-w-[160px] justify-start" />
-              <SortHeader label="발주일" active={sortKey === "order_date"} dir={sortDir} onClick={() => toggleSort("order_date")} className="w-[74px] justify-start" />
-              <SortHeader label="희망" active={sortKey === "desired_arrival"} dir={sortDir} onClick={() => toggleSort("desired_arrival")} className="w-[74px] justify-start" />
-              <SortHeader label="종·개" active={sortKey === "items"} dir={sortDir} onClick={() => toggleSort("items")} className="w-[86px] justify-start" />
-              <SortHeader label="총금액" active={sortKey === "total_amount"} dir={sortDir} onClick={() => toggleSort("total_amount")} className="ml-auto w-[100px] justify-end" />
+              <SortHeader label="발주번호 · 공급사" columnKey="order_number" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="arrow" activeColor="brand" className="flex-1 min-w-[160px] justify-start shrink-0" />
+              <SortHeader label="발주일" columnKey="order_date" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="arrow" activeColor="brand" className="w-[74px] justify-start shrink-0" />
+              <SortHeader label="희망" columnKey="desired_arrival" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="arrow" activeColor="brand" className="w-[74px] justify-start shrink-0" />
+              <SortHeader label="종·개" columnKey="items" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="arrow" activeColor="brand" className="w-[86px] justify-start shrink-0" />
+              <SortHeader label="총금액" columnKey="total_amount" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="arrow" activeColor="brand" className="ml-auto w-[100px] justify-end shrink-0" />
               <span className="w-[60px] text-right shrink-0" aria-hidden>PDF</span>
               <span className="w-[92px] text-right shrink-0" aria-hidden>매입확인</span>
             </div>

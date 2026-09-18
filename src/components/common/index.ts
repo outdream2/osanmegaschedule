@@ -72,6 +72,8 @@ export { SignaturePad } from "./SignaturePad";
 export { SubmitBar } from "./SubmitBar";
 export type { SubmitBarProps } from "./SubmitBar";
 export { Spinner } from "./Spinner";
+export { SortHeader, SortHeaderContent } from "./SortHeader";
+export type { SortHeaderProps, SortHeaderContentProps } from "./SortHeader";
 export { SplitLeftHeader } from "./SplitLeftHeader";
 export { SplitListPanel } from "./SplitListPanel";
 export { SplitPanel } from "./SplitPanel";
