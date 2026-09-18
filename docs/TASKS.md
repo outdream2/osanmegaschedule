@@ -114,8 +114,9 @@
 
 | # | 태스크 | 우선순위 | 비고 |
 |---|-----|-------|-----|
-| **#56** | 매장 구역 추가/제거 · X 버튼 권한 | 🟢 P4 LATER | 스펙 애매 · 확인 필요 |
-| **#149** | large-file 분리 잔여 · OcrPage(1215)·PaymentInfoTab(1513)·OrderManagePage(3089)·LandingPage(2319)·ContractWriterPage | 🟢 P3 | Framework Phase 4 잔여 · baseline 9 파일 · 대형 |
+<!-- 2026-09-18 · #56 · 실재고 매장 X 삭제 UI · 완료 (UI agent) -->
+<!-- 2026-09-18 · #149 · large-file 분리 · OcrPage 이미 702줄 (baseline 밖) · 나머지 · 회귀 위험 · 별도 세션 유지 -->
+| **#149** | large-file 분리 잔여 · PaymentInfoTab·OrderManagePage·LandingPage·ContractWriterPage 등 | 🟢 P3 | 별도 세션 · 파일당 신중 · 회귀 위험 큼 |
 | **#115** | real_map 컬럼 DB DROP SQL 실행 · `migrations/20260904_drop_real_map.sql` | 🟡 | 사용자 · Supabase SQL Editor 직접 실행 |
 <!-- 2026-09-18 · T-RSTP-TOOLBAR 완료 · [46] 커밋 `780677f5` · flex-col + lg:flex-row 반응형 -->
 <!-- 2026-09-18 · T-WAREHOUSE-TAB 조사 결과 · 창고1/2 이미 매장진열 안의 탭 (DisplayPage L663 SplitRightTabs)
@@ -134,7 +135,7 @@
      · 향후 · 유사 패턴 3+곳 발견 시 · 신규 프리미티브 MobileFullscreenPanel 추출 검토 (별도 세션) -->
 | ~~#191 Phase C · 잔여~~ | ~~Hybrid panel/modal 3파일~~ | ✅ **완료 (스코프 축소 · A안)** · Modal 프리미티브 부적합 · 별도 프리미티브 필요 시 신설 |
 <!-- 2026-09-15 · #130 · 차용등록 재설계 · 완료 확인 · Phase E (`eafc05e5`) BorrowingPage v2 스왑 · Detail·Edit 패널 분리 완료 · 원본 legacy 파일 삭제 (`98ae8202`) -->
-| FlowTab·LossHistoryTab·DiffTab | 컬러 bg 정리 (대량) | 승인 후 순차 |
+<!-- 2026-09-18 · FlowTab·LossHistoryTab·DiffTab 컬러 정리 · 완료 (81ef74d1) -->
 | **#254~#256** | 세션 보안 강화 · 중복 로그인 방지 · 강제 로그아웃 | 대형 · 별도 세션 · 12-18h |
 
 ---
@@ -143,10 +144,10 @@
 
 | # | 태스크 | 결정 사항 |
 |---|-----|---------|
-| **#89** | DayTimelineModal · settings.positions 자동 파생 | 하드코딩 3 그룹 → settings 순회 여부 |
-| **#90** | ContractWriterPage · JOB_CATEGORIES → wageRates 파생 | ContractCategory strict union 광범위 변경 |
-| **#91** | SchedulePage · position 문자열 매칭 → settings | 탭 유지 vs 직군 순회 vs 하이브리드 |
-| **#92** | 회사·브랜드 페이지 · 완전 통합 (5탭 → 1페이지) | 통합 여부 |
+<!-- 2026-09-18 · #89 완료 · 3327f509 · DayTimelineModal 탭 dynamic -->
+<!-- 2026-09-18 · #90 완료 · ef6ca6f7 · ContractCategory Plan A · union 완화 + 색상 fallback -->
+<!-- 2026-09-18 · #91 완료 · c541823f · SchedulePage aggregation 하이브리드 -->
+<!-- 2026-09-18 · #92 완료 · 42d2cda5 · CompanyInfoSettingsPage Plan B · Linear rail 통합 -->
 | **#107·#258 v4** | 발주 리스트 프리미엄 · 헤더 통계 뱃지 유지 여부 | 사용자 테스트 후 결정 |
 | **매입이력 검색** | "테스트" vendor · 매입이력 없음 · union 표시 or 그대로 | 사용자 결정 대기 |
 
