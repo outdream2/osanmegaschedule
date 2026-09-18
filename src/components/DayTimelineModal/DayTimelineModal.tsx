@@ -57,7 +57,9 @@ interface Props {
   scheduleTypeEntries?: ScheduleTypeEntry[];
 }
 
-type TabKey = "전체" | "사원" | "약사" | "기타";
+// 2026-09-18 · #89 · Plan B안 · tabs = settings.positions 순회 dynamic · 3-way 파티션(약사/사원/기타)은 auto-suggest용 유지
+export const TAB_ALL = "전체" as const;
+export type TabKey = string;
 
 export const DayTimelineModal: React.FC<Props> = ({
   date, employees, typeHoursMap, pharmTypeHoursMap, onClose, onDateChange, onEditEmployee, onUpdateSchedule, scheduleTypeEntries,
@@ -69,7 +71,7 @@ export const DayTimelineModal: React.FC<Props> = ({
   // 2026-08-23 · #195 · 재확정 확인 다이얼로그 (이미 확정된 상태에서 확정됨 클릭 시)
   const confirmDialog = useConfirm();
   const [editingWork, setEditingWork] = useState<{ empId: number; value: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<TabKey>("전체");
+  const [activeTab, setActiveTab] = useState<TabKey>(TAB_ALL);
 
   // 모달 첫 마운트 시 30일 초과된 tl_* localStorage 키 정리 (Quota 방어)
   useEffect(() => { cleanupStaleTimelineKeys(); }, []);
@@ -287,19 +289,10 @@ export const DayTimelineModal: React.FC<Props> = ({
   const staffWorkers      = useMemo(() => workers.filter(w => isStaffEmp(w.emp)), [workers]);
   const otherWorkers      = useMemo(() => workers.filter(w => isOtherEmp(w.emp)), [workers]);
 
-  const tabWorkerIds = useMemo(() => new Set((() => {
-    if (activeTab === "약사") return pharmacistWorkers.map(w => w.emp.id);
-    if (activeTab === "사원") return staffWorkers.map(w => w.emp.id);
-    if (activeTab === "기타") return otherWorkers.map(w => w.emp.id);
-    return workers.map(w => w.emp.id);
-  })()), [activeTab, workers, pharmacistWorkers, staffWorkers, otherWorkers]);
-  const isTabAll = activeTab === "전체";
-  const tabWorkers = useMemo(() => {
-    if (activeTab === "약사") return pharmacistWorkers;
-    if (activeTab === "사원") return staffWorkers;
-    if (activeTab === "기타") return otherWorkers;
-    return workers;
-  }, [activeTab, workers, pharmacistWorkers, staffWorkers, otherWorkers]);
+  // 2026-09-18 · #89 · position 값 기반 filter (dynamic tabs)
+  const isTabAll = activeTab === TAB_ALL;
+  const tabWorkers = useMemo(() => isTabAll ? workers : workers.filter(w => String(w.emp.position ?? "").trim() === activeTab), [activeTab, workers, isTabAll]);
+  const tabWorkerIds = useMemo(() => new Set(tabWorkers.map(w => w.emp.id)), [tabWorkers]);
 
   // ── Row ordering ──────────────────────────────────────────────────────────
   const [dragRowId, setDragRowId] = useState<number | null>(null);
@@ -567,12 +560,27 @@ export const DayTimelineModal: React.FC<Props> = ({
     return `${nd.getFullYear()}-${String(nd.getMonth() + 1).padStart(2, "0")}-${String(nd.getDate()).padStart(2, "0")}`;
   }, [date]);
 
-  const tabs = useMemo(() => [
-    { key: "전체" as TabKey, count: workers.length },
-    { key: "사원" as TabKey, count: staffWorkers.length },
-    { key: "약사" as TabKey, count: pharmacistWorkers.length },
-    { key: "기타" as TabKey, count: otherWorkers.length },
-  ], [workers, staffWorkers, pharmacistWorkers, otherWorkers]);
+  // 2026-09-18 · #89 · tabs · "전체" + settings.positions 순회 · 워커 있는 position 만 노출 (count>0) · 미정의 position 은 뒤에 append
+  const tabs = useMemo(() => {
+    const countByPosition = new Map<string, number>();
+    for (const w of workers) {
+      const pos = String(w.emp.position ?? "").trim() || "미지정";
+      countByPosition.set(pos, (countByPosition.get(pos) ?? 0) + 1);
+    }
+    const ordered: string[] = [];
+    for (const pos of settingsPositions ?? []) if (countByPosition.has(pos) && !ordered.includes(pos)) ordered.push(pos);
+    for (const pos of countByPosition.keys()) if (!ordered.includes(pos)) ordered.push(pos);
+    return [
+      { key: TAB_ALL as TabKey, count: workers.length },
+      ...ordered.map(pos => ({ key: pos as TabKey, count: countByPosition.get(pos) ?? 0 })),
+    ];
+  }, [workers, settingsPositions]);
+
+  // activeTab safety guard · positions 변경으로 현재 탭 사라지면 "전체" fallback
+  useEffect(() => {
+    if (activeTab === TAB_ALL) return;
+    if (!tabs.some(t => t.key === activeTab)) setActiveTab(TAB_ALL);
+  }, [tabs, activeTab]);
 
   return (
     <>

@@ -4,7 +4,9 @@
 import React from "react";
 import { X, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
 
-type TabKey = "전체" | "약사" | "사원" | "기타";
+// 2026-09-18 · #89 · Plan B안 · TabKey union → string 완화 (dynamic tabs 지원)
+//   · "전체" + settings.positions 순회 · 부모 (DayTimelineModal) 에서 tabs 배열 dynamic 생성
+type TabKey = string;
 
 interface HeaderBarProps {
   title: string;
