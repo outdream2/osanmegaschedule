@@ -16,6 +16,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Hash, ChevronDown, ChevronUp, MapPin, Check, X } from "lucide-react";
+import { useConfirm } from "../../hooks/useConfirm";
 import type { StockRow } from "./stockRowTypes";
 import { calcRowTotal, calcSlotTotal, calcTotalAdded } from "./stockRowTypes";
 import { StatusPill } from "../common/StatusPill";
@@ -185,6 +186,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
     ?? ((row.product as { shelf_positions?: Record<string, string | null> } | undefined)?.shelf_positions);
   // 2026-09-09 · 슬롯 상세구역 편집 모달 · 관리자만
   const [shelfEditCode, setShelfEditCode] = useState<string | null>(null);
+  const confirm = useConfirm();
   // 2026-08-25 · 유통기한 임박 · product.expiry_date 있으면 빨간 강조
   const hasExpiryFlag = !!((row.product as { expiry_date?: string | null }).expiry_date && String((row.product as { expiry_date?: string | null }).expiry_date).trim());
   const rowTotal = calcRowTotal(row);
@@ -403,7 +405,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
           )}
         </button>
 
-        {/* 우측 · 유통기한임박 버튼 + chevron */}
+        {/* 우측 · 유통기한임박 버튼 + 삭제 + chevron */}
         <div className="shrink-0 flex flex-col items-end gap-1.5">
           {onToggleExpiry && (
             <button
@@ -421,6 +423,19 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
               {hasExpiryFlag ? "임박해제" : "임박"}
             </button>
           )}
+          {/* 2026-09-18 · 사용자 지시 · 스캔 리스트 항목 삭제 버튼 */}
+          <button
+            type="button"
+            onClick={async (e) => {
+              e.stopPropagation();
+              const ok = await confirm({ title: "항목 제거", message: "이 상품을 리스트에서 제거할까요?", danger: true });
+              if (ok) onRemove(row.key);
+            }}
+            className="flex items-center justify-center w-7 h-7 rounded-md text-zinc-400 hover:bg-rose-50 hover:text-rose-500 transition-colors cursor-pointer"
+            title="리스트에서 제거"
+          >
+            <X size={14} strokeWidth={2.5} />
+          </button>
           <button
             type="button"
             onClick={() => setManuallyExpanded(v => !v)}

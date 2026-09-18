@@ -51,7 +51,7 @@ import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
 import { useStorageLocations } from "../../hooks/useStorageLocations";
 import type { ShelfPositions } from "../../lib/shelfPositions";
 // 2026-09-18 · 사용자 지시 · 계층 2 클라 폴백 · shelf_positions 비어있어도 · location 있으면 슬롯 계산
-import { mergeShelfPositionsWithFallback } from "../../lib/shelfPositions";
+import { mergeShelfPositionsWithFallback, formatShelfPositions, formatShelfDetail } from "../../lib/shelfPositions";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 interface ProductRow {
@@ -559,23 +559,54 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-wrap items-center gap-2">
-                    {p.location && (
-                      <span className="text-[18px] font-extrabold text-rose-700 bg-rose-50/60 rounded-md px-2.5 py-1 tabular-nums tracking-tight leading-none">구역 {String(p.location)}</span>
-                    )}
-                    {/* 2026-09-18 · 사용자 지시 · 계층 2 클라 폴백 · shelf_positions 비어있어도 · location 있으면 default 슬롯 표시 (미입력 상태) */}
-                    {(() => {
-                      const displayPositions = mergeShelfPositionsWithFallback(
-                        product.shelf_positions ?? {},
-                        String(p.location ?? p.display_location ?? "").trim() || null,
-                        (product as any)?.category_code ?? null,
+                  // 2026-09-18 · 사용자 지시 · 진열구역 깔끔 표시
+                  //   · 데이터 있는 것만 · 미입력 텍스트 X · "구역N · 창고1 · 매장1" 형태
+                  (() => {
+                    const displayPositions = mergeShelfPositionsWithFallback(
+                      product.shelf_positions ?? {},
+                      String(p.location ?? p.display_location ?? "").trim() || null,
+                      (product as any)?.category_code ?? null,
+                    );
+                    const allItems = formatShelfPositions(displayPositions, storageLocations);
+                    // 데이터 있는 항목만 (미입력 제외)
+                    const presentItems = allItems.filter(item => !item.isMissing);
+                    // 창고 · 매장 순서 정렬
+                    const warehouseItems = presentItems.filter(item => item.kind === "warehouse");
+                    const storeItems = presentItems.filter(item => item.kind === "store");
+                    const hasLocation = !!p.location;
+                    const hasAny = hasLocation || presentItems.length > 0;
+                    if (!hasAny) {
+                      return (
+                        <span className="text-[14px] text-zinc-400">진열구역 없음</span>
                       );
-                      const hasAny = Object.keys(displayPositions).length > 0;
-                      return hasAny
-                        ? <ShelfPositionsBadge positions={displayPositions} size="md" />
-                        : <span className="text-[13px] text-zinc-400 italic">진열구역 없음</span>;
-                    })()}
-                  </div>
+                    }
+                    const parts: React.ReactNode[] = [];
+                    if (hasLocation) {
+                      parts.push(
+                        <span key="loc" className="text-[17px] font-extrabold text-rose-700 tabular-nums tracking-tight leading-none">
+                          구역 {String(p.location)}
+                        </span>
+                      );
+                    }
+                    for (const item of [...warehouseItems, ...storeItems]) {
+                      const label = item.detail ? `${item.name} ${formatShelfDetail(item.detail)}` : item.name;
+                      parts.push(
+                        <span key={item.code} className="text-[16px] font-bold text-ink tracking-tight leading-none">
+                          {label}
+                        </span>
+                      );
+                    }
+                    return (
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        {parts.map((part, idx) => (
+                          <React.Fragment key={idx}>
+                            {idx > 0 && <span className="text-zinc-300 text-[15px] font-light select-none">·</span>}
+                            {part}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    );
+                  })()
                 )}
               </div>
             </div>
