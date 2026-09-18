@@ -25,9 +25,151 @@
 
 ---
 
-# 🆕 2026-09-18 세션 · 대형 세션 · 30+ 커밋 · UI 전수 개선 · 크리티컬 fix · 이벤트 매핑
+# 🆕 2026-09-18 세션 · 대형 세션 · 50+ 커밋 · UI 전수 개선 · 크리티컬 fix · 이벤트 매핑 · 공휴일 API · settings 파생
 
 **세션 요약** · 항목 순서대로 배치 테스트 권장 · **서버 재시작 필수**
+
+## 📌 오늘 완료 (2026-09-18 · 후반) · 신규 태스크 [70]~[80]
+
+### [70] C · 공휴일 API 연동 · data.go.kr 특일정보 + events 자동 동기
+**커밋** · `3c6dfcdd`
+- `.env HOLIDAY_API_KEY` 필수 · data.go.kr 발급
+- GET `/api/holidays?year=YYYY` · 24h 캐시 · JSON 응답
+- POST `/api/holidays/sync?year=YYYY` · authorize(9) · events 자동 upsert
+- 연속 date 병합 (설날 3일 → 하나 event range · start~end)
+- 통계설정 > 이벤트 관리 · 헤더 [공휴일 동기] 버튼 · rose 톤
+- 발주필요 판넬 · 자동 노출 (기존 GET /api/events/today)
+
+**확인 절차**
+1. 서버 재시작 (`npm run dev`)
+2. 관리자 (lv≥9) → 통계설정 > 이벤트 관리
+3. [공휴일 동기] 클릭 → toast "N건 동기 완료"
+4. 리스트 · type='holiday' recurring=true · 2026 18건 + 2027 대체공휴일 · 자동 노출
+5. 설날·추석 · 3일 range · 나머지 1일
+6. 재클릭 · idempotent · skipped
+7. 비관리자 · 403 FORBIDDEN
+
+### [71] #89 · DayTimelineModal · 탭 dynamic (settings.positions 순회)
+**커밋** · `3327f509`
+- TabKey union → string · dynamic
+- tabs · settings.positions 순회 · 워커 존재 탭만 노출
+- 3-way 파티션 (pharmacistWorkers/staffWorkers/otherWorkers) · **유지**
+- auto-suggest 알고리즘 · **안 건드림** · 안전
+
+**확인 절차**
+1. 전체 스케쥴 → 임의 날짜 클릭 · DayTimelineModal 오픈
+2. 상단 탭 · 4개 고정 (전체·사원·약사·기타) → 동적 (전체 + settings.positions 순회)
+3. 각 탭 클릭 · 해당 position 워커만 표시
+4. 시스템설정 · 신규 position 추가 → 워커 배정 → 모달 재오픈 · 신규 탭 자동 노출
+5. auto-suggest ("배치 추천") · 정상 작동
+6. HeaderBar 상단 배지 · 사원·약사·기타 count · 유지
+
+### [72] #91 · SchedulePage · aggregation 하이브리드 · 매핑 상수화
+**커밋** · `c541823f`
+- PositionCategory type + POSITION_TO_CATEGORY 상수 · positionToCategory helper
+- 5탭 유지 (전체·약사·사원·창고·매장) + **"기타" 탭** (신규 직군 흡수 · count>0 시 노출)
+- MonthlySummary 스키마 그대로 (5-field)
+- SummaryRow · "기타" 색상 · zinc
+
+**확인 절차**
+1. 전체 스케쥴 · 상단 필터 탭
+2. 5탭 (전체·약사·사원·창고·매장) 유지 확인
+3. settings.positions · 신규 직군 (예 "관리") 추가 · 직원 배정
+4. 필터 탭 · "기타" 자동 노출 · 클릭 · 관리 직원 표시
+5. 요약 · otherCount · 신규 직군 합산 확인
+6. 인건비 · 3-way (약사·사원·기타) 유지 확인
+
+### [73] B · 계절 정의 탭 · 상품 매핑 accordion + 자동 이벤트
+**커밋** · `284c3762`
+- POST /api/events/seasons/ensure · 4계절 자동 upsert (spring/summer/fall/winter · recurring=true)
+- SeasonRangesEditor · 저장 시 · 자동 ensure (silent)
+- SeasonProductsAccordion · 4계절 카드 · 접기·펼치기 · localStorage 저장
+- EventProductPanel 재사용 · 매핑 개수 배지
+
+**확인 절차**
+1. 통계설정 > 계절 정의 탭
+2. 계절 정의 편집 · 저장 · toast "계절 정의 저장" · 서버 로그 · 4계절 event ensure
+3. 아래 accordion · 봄/여름/가을/겨울 카드 · 클릭 · 확장 · EventProductPanel
+4. 상품 검색·추가·삭제 · 매핑 개수 배지 실시간
+5. 페이지 새로고침 · localStorage 접힘/펼침 상태 유지
+6. 발주필요 → 우측 판넬 · 오늘 계절 이벤트 자동 노출
+
+### [74] A · 발주필요 우측 판넬 재기획 · 안내형 + accordion
+**커밋** · `97277bfc`
+- 상단 안내 · "📅 오늘은 2026년 9월 18일 금요일입니다"
+- 그 아래 · "이 기간은 [가을 시즌] · [이벤트A D-45] 이벤트가 있습니다"
+- 힌트 · "▼ 아래 이벤트를 클릭하면 추천 상품이 표시됩니다" (pulse chevron)
+- 각 이벤트 · ChevronRight/Down · localStorage `salesRecPanel.expanded.{eventId}`
+- [전체 펼치기]·[전체 접기] 편의 버튼 · Maximize2·Minimize2
+
+**확인 절차**
+1. 발주 관리 · 발주필요 · 우측 판넬 · 상품 미선택 상태
+2. 상단 안내형 카드 · "오늘은 X월 X일" · "이 기간은 X, Y 이벤트"
+3. 각 이벤트 카드 · 클릭 · 확장·접힘 · chevron 아이콘 방향 전환
+4. 페이지 재진입 · localStorage 복원
+5. [전체 펼치기]·[전체 접기] 버튼 · 일괄 토글
+
+### [75] SMTP · .env 우선 정책 · DB 자동 동기
+**커밋** · `5ade02bb`
+- `.env` SMTP_HOST/USER/PASS · authoritative source
+- 서버 부팅 · .env 값 · DB 값 비교 · 다르면 · DB 자동 upsert
+- GET /api/settings/order-email · env_managed flag 응답
+- POST · env 관리 중이면 409 · UI 저장 차단
+
+**확인 절차**
+1. `.env SMTP_PASS` 값 변경 · 서버 재시작
+2. 서버 로그 · `[settings] SMTP · .env 값으로 DB 자동 동기` or `DB 동일`
+3. 관리자 · 발주 설정 · SMTP 폼 · disabled (env 관리 중)
+4. 이메일 발주 · 정상 발송
+
+### [76] sync-agent · 하얀 화면 + 트레이 아이콘 2개 fix
+**커밋** · `a3561676`
+- singleInstanceLock 추가 · 두 번째 인스턴스 감지 · quit
+- vite renderer base '/' → './' · Electron file:// 상대 경로 · 스크립트 정상 로드
+- loadFile 실패 catch · 데이터 URL fallback · 상세 진단 로그
+
+**확인 절차** (재빌드 필요)
+1. 작업 관리자 · "메가타운 자동임포트" 프로세스 · 모두 강제 종료
+2. `cd apps/sync-agent && npm run build:win`
+3. 새 setup.exe · 재설치
+4. 트레이 아이콘 · **1개만** 확인
+5. 창 정상 열림 확인 · 하얀 화면 X
+
+### [77] FlowTab · LossHistory · DiffTab · 컬러 bg 정리 · Linear/Attio 톤
+**커밋** · `81ef74d1`
+- 파스텔 34개 → zinc/brand-deep 치환
+- rose (경고) · emerald (성공/링크) · teal (액션) · 유지
+
+**확인 절차**
+1. 재고관리 > FlowTab · DiffTab · SalesTrend > LossHistoryTab
+2. 파스텔 (pink·violet·purple 등) · 안 보임 확인
+3. 경고 (rose) · 성공 (emerald) · 정상 표시
+
+### [78] 열린 이슈 정리 (docs)
+**커밋** · `aac97e42`
+- 상품등록 404 · 웹앱 로그 한글 깨짐 · TASKS.md 에서 제거 (재현 시 재등록)
+
+### [79] 현재고 데이터 안 나옴 · 3차 fix (진짜 원인)
+**커밋** · `bf5bca75`
+- invRow 존재만 체크 → 필드 하나라도 non-null 인 경우만 sum
+- null-only inventory_checks row · fallback products.current_stock 활용
+
+**확인 절차**
+1. 매장 > 상품 · 왼쪽 리스트 · 현재고 컬럼
+2. 실사 안 된 상품 · products.current_stock 값 표시 (0 아님)
+3. 실사한 상품 · inventory_checks 5-슬롯 합계 표시
+
+### [80] 유통기한 임박 리스트 · 규격 컬럼 제거
+**커밋** · `c621332c`
+- ExpiryImminentTab · 규격 컬럼 완전 제거
+
+**확인 절차**
+1. 매입 > 유통기한 임박 · 규격 컬럼 사라짐
+2. 나머지 컬럼 · 자연 확장
+
+---
+
+
 
 ## 🔴 크리티컬 fix (즉시 확인)
 
@@ -232,6 +374,46 @@
 - 리스트/카드 항목 앞 · 동그란 아바타·이니셜 원 · 절대 X
 - 사람 실사진 프로필만 예외
 - accent bar (border-l-2) or bg-tint 로 강조 대체
+
+### [70] C · 공휴일 API 연동 · data.go.kr 특일정보 + events 자동 동기
+**커밋** · `3c6dfcdd`
+
+- 신규 endpoint · GET `/api/holidays?year=YYYY` (캐시 24h) · POST `/api/holidays/sync?year=YYYY` (관리자 lv≥9)
+- 동기 로직 · 같은 name 연속 date 병합 (설날 3일 · 추석 3일 → 하나의 event range)
+- 스마트 skip · 기존이 이미 미래 date 이면 skip (오래된 미래 우선) · 과거 date 만 새 연도로 갱신
+- events 저장 · type='holiday' · recurring=true
+- 발주필요 판넬 · GET /api/events/today · type='holiday' · 자동 노출 (별도 UI 작업 없음)
+
+**확인 절차**
+1. 서버 재시작 · 부팅 로그 · HOLIDAY_API_KEY 관련 warning 없음
+2. 통계설정 > 이벤트 관리 탭 · 헤더 오른쪽 [공휴일 동기] 버튼 (rose 톤 · CalendarSync 아이콘)
+3. 관리자 (lv≥9) 로그인 → 버튼 클릭 · Spinner "동기 중..." · 완료 toast "공휴일 동기 완료 · 신규 N건 · 업데이트 M건"
+4. 리스트 새로고침 · type='holiday' recurring=true 이벤트 자동 노출 (2026 18건 + 2027 대체공휴일 5건 = 총 23건)
+5. 설날 · 추석 · 3일 range (start~end 표시) · 다른 공휴일 1일
+6. 재클릭 · idempotent · "신규 0 · 업데이트 0" (2번째 실행 · 모두 skipped)
+7. 비관리자 (lv<9) · 버튼 클릭 · 403 FORBIDDEN toast
+8. 발주필요 판넬 · 30일 이내 공휴일 자동 노출 (오늘 이후 첫 공휴일)
+
+### [71] 🗓️ #89 · DayTimelineModal 탭 dynamic 화 · Plan B안
+**커밋** · `3327f509`
+
+- TabKey union → string 완화 · dynamic key 지원
+- tabs = "전체" + settings.positions 순회 · 워커 있는 position 만 노출 (count>0)
+- settings 미정의 position (예 · "미지정") 도 워커 있으면 뒤에 append
+- 회귀 방지 · 3-way 파티션 (pharmacistWorkers/staffWorkers/otherWorkers) 유지 (auto-suggest 알고리즘 안 건드림)
+- HeaderBar 상단 뱃지 · staffCount/pharmCount/otherCount 유지
+
+**확인 절차**
+1. 시스템설정 > 직군 관리 · positions 확인 (기본 · 약사·캐셔·물류·대표·임원)
+2. 전체스케쥴 · 임의 날짜 클릭 · DayTimelineModal 오픈
+3. 상단 탭 확인 · "전체" 첫 번째 + workers 존재 position 만 (예 · "전체 · 약사 · 캐셔 · 물류")
+4. 각 탭 클릭 · 해당 position 워커만 표시 (근무시간 섹션 + 구역·점심·휴게 배정 반영)
+5. auto-suggest ("배치추천") 클릭 · 3-way 파티션 로직 그대로 · 약사 로테이션 · 캐셔 로테이션 정상 동작
+6. HeaderBar 상단 배지 · "근무 N명 · 사원 X · 약사 Y · 기타 Z" 유지 (뱃지 형태 그대로)
+7. 시스템설정에서 신규 position 추가 (예 · "매장매니저") → 그 position 워커 배정 → 모달 재오픈 · 탭 자동 노출
+8. settings에 없는 position (예 · legacy 데이터 "미지정") 워커 존재 시 · 탭 마지막에 append
+9. 현재 탭 선택 중 positions 변경으로 그 탭 사라지면 · "전체" 자동 fallback
+10. 확정 버튼 · 재확정 다이얼로그 · 요일 템플릿 저장 · 모두 정상
 
 ---
 
