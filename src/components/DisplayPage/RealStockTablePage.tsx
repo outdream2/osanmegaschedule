@@ -18,7 +18,7 @@ import { SegmentedControl } from "../common/SegmentedControl";
 import { EmptyState } from "../common/EmptyState";
 import { Spinner } from "../common/Spinner";
 import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/TableList";
-import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
+import { useSortableTable } from "../../hooks/useSortableTable";
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-29 · A0-2 · dead import 제거 · useSaleStatusFilter (D안) 로 이관 완료
 // 2026-08-28 · 사용자 지시 · 판매중 필터 프레임워크 (D안)
@@ -35,86 +35,8 @@ import { assignZonesToSlots } from "../../lib/warehouseZoneMap";
 // 2026-09-08 · 상세 진열위치 뱃지 · 진열위치 옆 매장/창고별 3자리 표시
 import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
 import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
-
-interface Product {
-  product_code: string;
-  product_name: string;
-  supplier: string | null;
-  location: string | null;      // 진열위치 (매장/창고 zone code 문자열 · "/" 구분)
-  category_code: string | null;
-  current_stock: number | null; // 2026-08-26 · ERP 재고 (products.current_stock)
-  sale_status: string | null;   // 2026-08-26 · 판매중 필터용
-}
-
-interface InvRow {
-  warehouse1_stock: number | null;
-  warehouse2_stock: number | null;
-  store1_stock: number | null;        // 매장1 (2026-09-14 rename)
-  store2_stock: number | null;        // 매장2 (2026-09-14 rename)
-  store3_stock: number | null;        // 매장3
-  // 2026-09-14 · 하위호환 alias (서버가 아직 함께 반환)
-  store_stock?: number | null;
-  store_stock_2?: number | null;
-  store1_zone: string | null;
-  store2_zone: string | null;
-  store3_zone: string | null;
-}
-
-interface Row {
-  product_code: string;
-  product_name: string;
-  supplier: string | null;
-  category_code: string | null;        // 2026-08-26 · 분류코드
-  location: string | null;             // 진열위치 (매장/창고 zone code 문자열)
-  erp: number | null;                  // 2026-08-26 · ERP 재고 (products.current_stock)
-  w1: number | null;
-  w2: number | null;
-  s1: number | null;
-  s2: number | null;
-  s3: number | null;
-  // 2026-08-26 · 사용자 지시 · real_map "/" 분리 · 매장1/2/3 zone 라벨 · 창고1/2 zone 도
-  s1zone: string | null;
-  s2zone: string | null;
-  s3zone: string | null;
-  w1zone: string | null;
-  w2zone: string | null;
-  sale_status: string | null;
-  total: number;
-  diff: number;                        // 2026-08-26 · ERP - 실재고합계 (음수면 실재고 많음)
-}
-
-// 2026-08-27 · 사용자 지시 · Attio 2026 톤 · dual-chip 정렬 (수량 · 구역) · 위치별 zone 정렬 추가
-type SortKey = "product_name" | "supplier" | "category_code" | "location" | "erp" | "w1" | "w2" | "s1" | "s2" | "s3" | "total" | "diff"
-             | "s1zone" | "s2zone" | "s3zone" | "w1zone" | "w2zone";
-
-const SLOT_LABEL: Record<"w1" | "w2" | "s1" | "s2" | "s3", string> = {
-  w1: "창고1", w2: "창고2", s1: "매장1", s2: "매장2", s3: "매장3",
-};
-
-const zoneCmp = (a: string | null, b: string | null) => (a ?? "").localeCompare(b ?? "", "ko", { numeric: true });
-
-const CMP: Record<SortKey, Comparator<Row>> = {
-  product_name:  (a, b) => (a.product_name ?? "").localeCompare(b.product_name ?? "", "ko"),
-  // 2026-09-18 · 정제 후 정렬
-  supplier:      (a, b) => displayVendorName(a.supplier).localeCompare(displayVendorName(b.supplier), "ko"),
-  category_code: (a, b) => (a.category_code ?? "").localeCompare(b.category_code ?? "", "ko"),
-  location:      (a, b) => (a.location ?? "").localeCompare(b.location ?? "", "ko", { numeric: true }),
-  erp:           (a, b) => (a.erp ?? 0) - (b.erp ?? 0),
-  w1:            (a, b) => (a.w1 ?? 0) - (b.w1 ?? 0),
-  w2:            (a, b) => (a.w2 ?? 0) - (b.w2 ?? 0),
-  s1:            (a, b) => (a.s1 ?? 0) - (b.s1 ?? 0),
-  s2:            (a, b) => (a.s2 ?? 0) - (b.s2 ?? 0),
-  s3:            (a, b) => (a.s3 ?? 0) - (b.s3 ?? 0),
-  s1zone:        (a, b) => zoneCmp(a.s1zone, b.s1zone),
-  s2zone:        (a, b) => zoneCmp(a.s2zone, b.s2zone),
-  s3zone:        (a, b) => zoneCmp(a.s3zone, b.s3zone),
-  w1zone:        (a, b) => zoneCmp(a.w1zone, b.w1zone),
-  w2zone:        (a, b) => zoneCmp(a.w2zone, b.w2zone),
-  total:         (a, b) => a.total - b.total,
-  diff:          (a, b) => a.diff - b.diff,
-};
-
-const PAGE_SIZE = 1000;
+import type { Product, InvRow, Row, SortKey } from "./RealStockTablePage.types";
+import { SLOT_LABEL, CMP, PAGE_SIZE } from "./RealStockTablePage.utils";
 
 export const RealStockTablePage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
