@@ -639,19 +639,29 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
         const inv = invMap ?? {};
         const arr: ProductRow[] = Object.entries(data ?? {}).map(([code, p]) => {
           // 2026-09-18 · 실재고 합산 · inventory_checks SSOT 우선 · fallback products.current_stock
+          // 2026-09-18 · fix (3차) · invRow 존재만 체크 → 필드 중 하나라도 non-null 인 경우만 sum
+          //   · 원인 · xlsx 임포트 시 · applyInitialShelfPositionsForCodes · null-only row 자동 삽입 (계층 1)
+          //   · 결과 · invRow 있지만 5-슬롯 모두 null → sum=0 · fallback products.current_stock 무시 · 빨간 '0' 표시
+          //   · fix · hasInvValue 검사 · null-only invRow · products.current_stock fallback 활성
           const invRow = inv[code];
+          const hasInvValue = invRow && (
+            invRow.warehouse1_stock != null ||
+            invRow.warehouse2_stock != null ||
+            invRow.store1_stock != null ||
+            invRow.store2_stock != null ||
+            invRow.store3_stock != null
+          );
           let realStock: number | null = null;
-          if (invRow) {
+          if (hasInvValue) {
             const sum =
               Number(invRow.warehouse1_stock ?? 0) +
               Number(invRow.warehouse2_stock ?? 0) +
               Number(invRow.store1_stock ?? 0) +
               Number(invRow.store2_stock ?? 0) +
               Number(invRow.store3_stock ?? 0);
-            // 실재고 row 있으면 · 합계 저장 (0도 유효한 값)
             realStock = sum;
           } else if (p.current_stock != null) {
-            realStock = p.current_stock;
+            realStock = Number(p.current_stock);
           }
           // 2026-09-18 · 사용자 재보고 · 판매가·현재고 안 나옴 · Number 강제 변환 fix
           //   · Supabase JS · NUMERIC 컬럼 · 문자열로 반환되는 케이스 대응
