@@ -983,6 +983,8 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
           purchase_price: (editProduct as any).purchase_price ?? null,
           brand: (editProduct as any).brand ?? null,
           manufacturer: (editProduct as any).manufacturer ?? null,
+          // 2026-09-18 · 사용자 지시 · 편집 모달 · 판매 상태 편집 지원
+          sale_status: (editProduct as any).sale_status ?? null,
         } : undefined}
         lockCode={true}
         onCreated={() => {

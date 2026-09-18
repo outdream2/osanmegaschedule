@@ -94,8 +94,13 @@ interface Props {
     purchase_price: number | null;
     brand: string | null;
     manufacturer: string | null;
+    // 2026-09-18 · 사용자 지시 · 편집 모달 · 판매 상태 (판매중/판매중지/숨김) 편집 지원
+    sale_status: string | null;
   }>;
 }
+
+// 2026-09-18 · 판매 상태 옵션 (ProductDetailView 와 동일 · SSOT)
+const SALE_STATUS_OPTIONS = ["판매중", "판매중지", "숨김"];
 
 // 2026-09-08 · barcode 필드 제거 · product_code 자체가 바코드값 (13자리 EAN)
 type Form = {
@@ -114,6 +119,8 @@ type Form = {
   purchase_price: string;
   brand: string;
   manufacturer: string;
+  // 2026-09-18 · 사용자 지시 · 편집 모달 · 판매 상태 (판매중/판매중지/숨김) 필드
+  sale_status: string;
 };
 
 const EMPTY: Form = {
@@ -130,6 +137,8 @@ const EMPTY: Form = {
   purchase_price: "",
   brand: "",
   manufacturer: "",
+  // 2026-09-18 · 신규 등록 · 기본 판매중
+  sale_status: "판매중",
 };
 
 // 문자열 → 숫자 (빈 문자열 → null)
@@ -225,6 +234,8 @@ export const ProductCreateModal: React.FC<Props> = ({
         purchase_price: initialProduct.purchase_price != null ? String(initialProduct.purchase_price) : "",
         brand: initialProduct.brand ?? "",
         manufacturer: initialProduct.manufacturer ?? "",
+        // 2026-09-18 · 편집 모드 · 판매 상태 초기화 · 기본 판매중
+        sale_status: initialProduct.sale_status ?? "판매중",
       });
     } else {
       setForm({
@@ -284,8 +295,9 @@ export const ProductCreateModal: React.FC<Props> = ({
         purchase_price: parseNum(form.purchase_price),
         brand: form.brand.trim() || null,
         manufacturer: form.manufacturer.trim() || null,
-        // 2026-08-30 · 사용자 지시 · 상품 등록 시 · 판매중 자동 설정 (조회 필터 통과)
-        sale_status: "판매중",
+        // 2026-09-18 · 사용자 지시 · 편집 모달 · 판매 상태 편집 지원 · form 값 사용
+        //   · 신규 등록 · EMPTY 기본 '판매중'
+        sale_status: form.sale_status.trim() || "판매중",
       };
       // 2026-09-14 · #133 · 상세구역 저장 · 등록·수정 성공 후 · shelf_positions PATCH 호출
       //   · warehouseTag 기반 key 결정 (w1→warehouse1 · w2→warehouse2 · else→store1)
@@ -324,6 +336,8 @@ export const ProductCreateModal: React.FC<Props> = ({
           purchase_price: payload.purchase_price,
           brand: payload.brand,
           manufacturer: payload.manufacturer,
+          // 2026-09-18 · 사용자 지시 · 편집 모달 · 판매 상태 편집
+          sale_status: payload.sale_status,
         };
         await api.patch(`/api/products/${encodeURIComponent(code)}`, patchBody);
         await saveShelfPositions(code);
@@ -578,6 +592,18 @@ export const ProductCreateModal: React.FC<Props> = ({
                   </Field>
                   <Field icon={<Factory size={14} />} label="제조사">
                     <input lang="ko" type="text" value={form.manufacturer} onChange={(e) => set("manufacturer", e.target.value)} className={inputCls} placeholder="예: 한미약품" maxLength={100} />
+                  </Field>
+                  {/* 2026-09-18 · 사용자 지시 · 편집 모달 · 판매 상태 드롭다운 · 조회 화면 필드 전부 편집 지원 */}
+                  <Field icon={<Tags size={14} />} label="판매 상태">
+                    <select
+                      value={form.sale_status}
+                      onChange={(e) => set("sale_status", e.target.value)}
+                      className={inputCls + " cursor-pointer"}
+                    >
+                      {SALE_STATUS_OPTIONS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
                   </Field>
                 </div>
               </Section>
