@@ -30,6 +30,7 @@ import { Hero, HeroButton } from "../common/Hero";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import type { AuthSession } from "../../types";
 // 2026-08-21 · Framework Phase 4 · large-file 분리
+import { SortHeaderContent } from "../common/SortHeader";
 import type { CategoryKey, HrForm, SortKey } from "./types";
 import { MAX_UPLOAD_BYTES, CATEGORIES, CATEGORY_MAP, HR_FORM_SORT_CMP } from "./constants";
 import { fmtBytes, fmtDateTime, readFileAsDataUrl, downloadFile, fileIconInfo } from "./utils";
@@ -463,10 +464,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                     onClick={() => handleSort("title", sortKey === "title" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
                     title="양식명 · 클릭하여 정렬"
                   >
-                    <span className="inline-flex items-center gap-1">
-                      <span>양식명</span>
-                      {sortKey === "title" ? <span className="text-[13px] text-brand-deep">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[13px] text-zinc-300">↕</span>}
-                    </span>
+                    <SortHeaderContent label="양식명" columnKey="title" activeKey={sortKey} activeDir={sortDir} arrowStyle="text" activeColor="brand" />
                     <span {...resizerProps("title" as any)}
                       className={RESIZER_CLS}
                       style={{ touchAction: "none" }}
@@ -480,10 +478,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                     onClick={() => handleSort("category", sortKey === "category" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
                     title="분류 · 클릭하여 정렬"
                   >
-                    <span className="inline-flex items-center gap-1">
-                      <span>분류</span>
-                      {sortKey === "category" ? <span className="text-[13px] text-brand-deep">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[13px] text-zinc-300">↕</span>}
-                    </span>
+                    <SortHeaderContent label="분류" columnKey="category" activeKey={sortKey} activeDir={sortDir} arrowStyle="text" activeColor="brand" />
                     <span {...resizerProps("category" as any)}
                       className={RESIZER_CLS}
                       style={{ touchAction: "none" }}
@@ -497,10 +492,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                     onClick={() => handleSort("file_name", sortKey === "file_name" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
                     title="파일명 · 클릭하여 정렬"
                   >
-                    <span className="inline-flex items-center gap-1">
-                      <span>파일명</span>
-                      {sortKey === "file_name" ? <span className="text-[13px] text-brand-deep">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[13px] text-zinc-300">↕</span>}
-                    </span>
+                    <SortHeaderContent label="파일명" columnKey="file_name" activeKey={sortKey} activeDir={sortDir} arrowStyle="text" activeColor="brand" />
                     <span {...resizerProps("file_name" as any)}
                       className={RESIZER_CLS}
                       style={{ touchAction: "none" }}
@@ -514,10 +506,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                     onClick={() => handleSort("file_size", sortKey === "file_size" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
                     title="크기 · 클릭하여 정렬"
                   >
-                    <span className="inline-flex items-center gap-1 justify-end w-full">
-                      <span>크기</span>
-                      {sortKey === "file_size" ? <span className="text-[13px] text-brand-deep">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[13px] text-zinc-300">↕</span>}
-                    </span>
+                    <SortHeaderContent label="크기" columnKey="file_size" activeKey={sortKey} activeDir={sortDir} arrowStyle="text" activeColor="brand" align="right" />
                     <span {...resizerProps("file_size" as any)}
                       className={RESIZER_CLS}
                       style={{ touchAction: "none" }}
@@ -531,10 +520,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                     onClick={() => handleSort("uploaded_by", sortKey === "uploaded_by" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
                     title="업로더 · 클릭하여 정렬"
                   >
-                    <span className="inline-flex items-center gap-1">
-                      <span>업로더</span>
-                      {sortKey === "uploaded_by" ? <span className="text-[13px] text-brand-deep">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[13px] text-zinc-300">↕</span>}
-                    </span>
+                    <SortHeaderContent label="업로더" columnKey="uploaded_by" activeKey={sortKey} activeDir={sortDir} arrowStyle="text" activeColor="brand" />
                     <span {...resizerProps("uploaded_by" as any)}
                       className={RESIZER_CLS}
                       style={{ touchAction: "none" }}
@@ -548,10 +534,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                     onClick={() => handleSort("created_at", sortKey === "created_at" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
                     title="업로드일 · 클릭하여 정렬"
                   >
-                    <span className="inline-flex items-center gap-1">
-                      <span>업로드일</span>
-                      {sortKey === "created_at" ? <span className="text-[13px] text-brand-deep">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[13px] text-zinc-300">↕</span>}
-                    </span>
+                    <SortHeaderContent label="업로드일" columnKey="created_at" activeKey={sortKey} activeDir={sortDir} arrowStyle="text" activeColor="brand" />
                     <span {...resizerProps("created_at" as any)}
                       className={RESIZER_CLS}
                       style={{ touchAction: "none" }}
