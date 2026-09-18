@@ -1,14 +1,14 @@
-// 2026-08-22 · Framework Phase 4 · StaffManagePage 좌측 리스트 아이템 이관
-// 원라인 표 형식 · 이름·직군·계약유형·근속·평가·이력서·통장사본·근로계약서·사직서·상태
+// 2026-09-18 · 직원 리스트 아이템 전수 재설계 · 사용자 지시
+// 테이블 행 → 카드 리스트 행 (flex) · 겹침 제거 · 최신 트렌드
+//   · 이름/직군(좌) + 계약유형(중) + 서류 도트(우)
+//   · Linear/Notion/Vercel 2026 톤 · truncate 절대 금지
 
 import React from "react";
-import { ExternalLink, Paperclip, PenSquare as NotePencilIcon } from "lucide-react";
+import { ExternalLink, FileText, Paperclip, PenSquare as NotePencilIcon } from "lucide-react";
 import type { Employee } from "./types";
-import { contractTypeMeta, positionColor } from "./helpers";
+import { contractTypeMeta } from "./helpers";
 import { getEmploymentStatus } from "../../lib/employmentStatus";
 import { Avatar } from "./StaffManagePage.subcomponents";
-import { StatusPill } from "../common/StatusPill";
-import { Badge } from "../common/Badge";
 import { setContractPrefill } from "../../lib/contractPrefill";
 
 interface StaffListRowProps {
@@ -23,6 +23,57 @@ interface StaffListRowProps {
   onWriteContract?: (emp: Employee) => void;
 }
 
+// 아이콘 도트 버튼 · 있음=컬러 / 없음=회색 · 클릭 가능
+const DocIcon: React.FC<{
+  hasFile: boolean;
+  label: string;
+  color: string;       // 파일 있을 때 컬러 (Tailwind class)
+  grayColor: string;   // 없을 때 컬러
+  onClick?: (e: React.MouseEvent) => void;
+  uploadHandler?: React.ChangeEventHandler<HTMLInputElement>;
+  accept?: string;
+  title: string;
+  icon: React.ReactNode;
+}> = ({ hasFile, color, grayColor, onClick, uploadHandler, accept, title, icon }) => {
+  if (hasFile) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        title={title}
+        className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors cursor-pointer ${color}`}
+      >
+        {icon}
+      </button>
+    );
+  }
+  if (uploadHandler) {
+    return (
+      <label
+        onClick={(e) => e.stopPropagation()}
+        title={title}
+        className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors cursor-pointer ${grayColor}`}
+      >
+        {icon}
+        <input
+          type="file"
+          accept={accept}
+          className="hidden"
+          onChange={uploadHandler}
+        />
+      </label>
+    );
+  }
+  return (
+    <div
+      title={title}
+      className={`w-7 h-7 flex items-center justify-center rounded-md ${grayColor}`}
+    >
+      {icon}
+    </div>
+  );
+};
+
 export const StaffListRow: React.FC<StaffListRowProps> = ({
   emp, selectedId, contractCountByEmp,
   handleSelect, showError,
@@ -30,21 +81,48 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
   onWriteContract,
 }) => {
   const isSelected = emp.id === selectedId;
-  const ctMeta   = contractTypeMeta(emp.contract_type);
+  const ctMeta     = contractTypeMeta(emp.contract_type);
   const hasContractFile    = !!emp.contract_file_url;
   const hasResume          = !!emp.resume_url;
   const hasBankbook        = !!emp.bankbook_image_url;
   const hasResignationFile = !!emp.resignation_file_url;
-  const empStatus = getEmploymentStatus((emp as any).retire_date ?? null);
-  const isRetired = empStatus !== "active";
-  const openContract = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (emp.contract_file_url) {
-      window.open(emp.contract_file_url, "_blank", "noopener,noreferrer");
-    } else {
-      showError(`${emp.name}님의 근로계약서가 등록되어 있지 않습니다.\n편집 모드에서 계약서 URL을 입력해 주세요.`);
+  const empStatus  = getEmploymentStatus((emp as any).retire_date ?? null);
+  const isRetired  = empStatus !== "active";
+
+  // 계약 만료 D-day
+  const dDayLabel = (() => {
+    if (isRetired || !emp.contract_end) return null;
+    try {
+      const d = new Date(String(emp.contract_end).slice(0, 10) + "T00:00:00");
+      const now = new Date(); now.setHours(0, 0, 0, 0);
+      const days = Math.round((d.getTime() - now.getTime()) / 86400_000);
+      if (days < 0) return { label: "만료", cls: "text-rose-600 bg-rose-50 border-rose-200" };
+      if (days === 0) return { label: "오늘", cls: "text-rose-600 bg-rose-50 border-rose-200" };
+      if (days <= 30) return { label: `D-${days}`, cls: "text-amber-700 bg-amber-50 border-amber-200" };
+    } catch { /* noop */ }
+    return null;
+  })();
+
+  // 계약유형 라벨 (배지 아님 · 텍스트)
+  const contractLabel = (() => {
+    const count = contractCountByEmp.get(emp.id) ?? 0;
+    if (emp.contract_type === "fixed_term" && count > 0) return `계약${count}`;
+    return ctMeta?.short ?? null;
+  })();
+
+  // 계약유형 텍스트 컬러
+  const contractTextCls = (() => {
+    if (!emp.contract_type) return "text-zinc-300";
+    switch (emp.contract_type) {
+      case "regular":    return "text-blue-600";
+      case "fixed_term": return "text-amber-700";
+      case "part_time":  return "text-zinc-500";
+      case "daily":      return "text-rose-600";
+      case "intern":     return "text-lime-700";
+      default:           return "text-zinc-500";
     }
-  };
+  })();
+
   const openResume = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (emp.resume_url) window.open(emp.resume_url, "_blank", "noopener,noreferrer");
@@ -53,221 +131,157 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
     e.stopPropagation();
     if (emp.bankbook_image_url) window.open(emp.bankbook_image_url, "_blank", "noopener,noreferrer");
   };
+  const openContract = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (emp.contract_file_url) {
+      window.open(emp.contract_file_url, "_blank", "noopener,noreferrer");
+    } else {
+      showError(`${emp.name}님의 근로계약서가 등록되어 있지 않습니다.`);
+    }
+  };
   const openResignationFile = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (emp.resignation_file_url) window.open(emp.resignation_file_url, "_blank", "noopener,noreferrer");
   };
+  const writeContract = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setContractPrefill({
+      employeeId: emp.id,
+      employeeName: emp.name ?? "",
+      employeePhone: emp.phone ?? "",
+      employeeAddress: (emp as any).address ?? "",
+      hireDate: emp.hire_date ?? "",
+      position: emp.position ?? "",
+      employmentType: (emp as any).employmentType ?? (emp as any).employment_type ?? "",
+      annualLeaveDays: (emp as any).annual_leave_days ?? null,
+    });
+    if (onWriteContract) {
+      onWriteContract(emp);
+    } else {
+      window.dispatchEvent(new CustomEvent("staff-write-contract", { detail: { employeeId: emp.id } }));
+    }
+  };
+
   return (
-    <tr
+    <div
       onClick={() => handleSelect(emp)}
-      className={`cursor-pointer transition-colors ${
-        isSelected ? "bg-indigo-50/80" : "hover:bg-zinc-50/70"
-      }`}
+      className={`
+        group flex items-center gap-2.5 px-3 py-2.5 cursor-pointer
+        border-b border-zinc-100 last:border-b-0
+        transition-colors duration-100
+        ${isSelected
+          ? "bg-indigo-50 border-l-[3px] border-l-indigo-400 pl-[9px]"
+          : "hover:bg-zinc-50 border-l-[3px] border-l-transparent pl-[9px]"}
+      `}
     >
-      {/* 이름 · 2026-08-29 · UI 감사 U0-3 · truncate 금지 원칙 · 이름 잘림 방지 */}
-      <td className="px-2 py-2 text-[17px] font-bold text-zinc-800">
-        <div className="flex items-center gap-1">
-          {emp.photo_url && <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />}
-          <span className={`break-words whitespace-normal ${isSelected ? "text-indigo-800" : ""}`}>{emp.name}</span>
-        </div>
-      </td>
-      {/* 2026-08-31 · 사용자 지시 · 직군 · 직급 제외 · 텍스트만 · 왼쪽 정렬 */}
-      <td className="px-2 py-2 text-left">
+      {/* 아바타 */}
+      <div className="shrink-0">
+        <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
+      </div>
+
+      {/* 이름 + 직군 · 좌측 · flex-1 */}
+      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+        <span className={`text-[16px] font-bold leading-tight break-keep whitespace-normal ${isSelected ? "text-indigo-800" : "text-zinc-800"}`}>
+          {emp.name}
+        </span>
         {emp.position && (
-          <span className="text-[17px] font-bold text-ink">{emp.position}</span>
+          <span className={`text-[13px] font-semibold leading-none ${isSelected ? "text-indigo-500" : "text-zinc-400"}`}>
+            {emp.position}{emp.rank ? ` · ${emp.rank}` : ""}
+          </span>
         )}
-      </td>
-      {/* 계약유형 · 계약직 → "계약N" (N=총 계약수) · 정/알 등은 short */}
-      {/* 2026-08-29 · #182 Phase B 확장 · contract_end D-30 이내 · 만료 임박 배지 아래 */}
-      <td className="px-1 py-2 text-center">
-        <div className="flex flex-col items-center gap-0.5">
-          {(() => {
-            const count = contractCountByEmp.get(emp.id) ?? 0;
-            const isContract = emp.contract_type === "fixed_term";
-            if (isContract && count > 0) {
-              return (
-                <Badge
-                  tone="amber"
-                  size="sm"
-                  title={`계약직 · 총 ${count}회 계약 (${count === 1 ? "첫 계약" : `재계약 ${count - 1}회`})`}
-                >
-                  계약{count}
-                </Badge>
-              );
-            }
-            if (ctMeta) {
-              return (
-                <Badge className={ctMeta.color} size="sm">
-                  {ctMeta.short}
-                </Badge>
-              );
-            }
-            return <span className="text-[17px] text-zinc-300">-</span>;
-          })()}
-          {/* 만료 임박 배지 · contract_end 있고 · D-30 이내 · 재직자만 */}
-          {!isRetired && emp.contract_end && (() => {
-            try {
-              const d = new Date(String(emp.contract_end).slice(0, 10) + "T00:00:00");
-              const now = new Date(); now.setHours(0, 0, 0, 0);
-              const days = Math.round((d.getTime() - now.getTime()) / 86400_000);
-              if (days < 0) return (
-                <span className="inline-flex items-center h-4 px-1 rounded text-[12px] font-bold bg-rose-100 text-rose-700 border border-rose-300" title={`계약 만료 ${Math.abs(days)}일 경과`}>
-                  ⚠ 만료
-                </span>
-              );
-              if (days === 0) return (
-                <span className="inline-flex items-center h-4 px-1 rounded text-[12px] font-bold bg-rose-100 text-rose-700 border border-rose-300">
-                  ⚠ 오늘
-                </span>
-              );
-              if (days <= 30) return (
-                <span className="inline-flex items-center h-4 px-1 rounded text-[12px] font-bold bg-amber-100 text-amber-800 border border-amber-300" title={`계약 ${days}일 후 만료`}>
-                  D-{days}
-                </span>
-              );
-              return null;
-            } catch { return null; }
-          })()}
-        </div>
-      </td>
-      {/* 2026-08-24 · 사용자 지시 · 근속·평가 컬럼 제거 · 상세정보 KPI 바 에서만 표시 */}
-      {/* 이력서 · 파일 있음=보기 · 없음=업로드 */}
-      <td className="px-1 py-2 text-center">
-        {hasResume ? (
-          <button
-            type="button"
-            onClick={openResume}
-            className="inline-flex items-center gap-0.5 text-[17px] font-semibold text-emerald-600 hover:text-emerald-800 hover:underline cursor-pointer whitespace-nowrap"
-            title={`이력서 · Google Drive · 새 창으로 보기\n${emp.resume_url ?? ""}`}
-          >
-            <ExternalLink size={10} />보기
-          </button>
-        ) : (
-          <label
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-0.5 text-[17px] font-semibold text-zinc-500 hover:text-emerald-700 hover:bg-emerald-50 border border-line hover:border-emerald-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
-            title="이력서 업로드 · Google Drive (PDF·DOC·이미지 · 10MB)"
-          >
-            <Paperclip size={10} />업로드
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx,.hwp,image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = "";
-                if (f) uploadResumeForRow(emp, f);
-              }}
-            />
-          </label>
+      </div>
+
+      {/* 계약유형 + D-day · 중앙 · shrink-0 · w-14 */}
+      <div className="shrink-0 w-14 flex flex-col items-end gap-0.5">
+        {contractLabel && (
+          <span className={`text-[13px] font-bold tabular-nums leading-none ${contractTextCls}`}>
+            {contractLabel}
+          </span>
         )}
-      </td>
-      {/* 통장사본 · 파일 있음=보기 · 없음=업로드 */}
-      <td className="px-1 py-2 text-center">
-        {hasBankbook ? (
-          <button
-            type="button"
-            onClick={openBankbook}
-            className="inline-flex items-center gap-0.5 text-[17px] font-semibold text-sky-600 hover:text-sky-800 hover:underline cursor-pointer whitespace-nowrap"
-            title="통장사본 · 새 창으로 보기"
-          >
-            <ExternalLink size={10} />보기
-          </button>
-        ) : (
-          <label
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-0.5 text-[17px] font-semibold text-zinc-500 hover:text-sky-700 hover:bg-sky-50 border border-line hover:border-sky-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
-            title="통장사본 업로드 · 이미지 (jpg/png · 5MB)"
-          >
-            <Paperclip size={10} />업로드
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = "";
-                if (f) uploadBankbookForRow(emp, f);
-              }}
-            />
-          </label>
+        {dDayLabel && (
+          <span className={`text-[11px] font-bold px-1 py-px rounded border leading-none tabular-nums ${dDayLabel.cls}`}>
+            {dDayLabel.label}
+          </span>
         )}
-      </td>
-      {/* 근로계약서 · 보기 or 작성 */}
-      <td className="px-1 py-2 text-center">
+      </div>
+
+      {/* 서류 아이콘 그룹 · 우측 · shrink-0 · flex row */}
+      <div
+        className="shrink-0 flex items-center gap-0.5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 이력서 */}
+        <DocIcon
+          hasFile={hasResume}
+          label="이력서"
+          color="text-emerald-500 hover:bg-emerald-50"
+          grayColor="text-zinc-300 hover:text-emerald-400 hover:bg-emerald-50"
+          onClick={openResume}
+          uploadHandler={(e) => {
+            const f = e.target.files?.[0];
+            e.target.value = "";
+            if (f) uploadResumeForRow(emp, f);
+          }}
+          accept=".pdf,.doc,.docx,.hwp,image/*"
+          title={hasResume ? "이력서 보기" : "이력서 업로드"}
+          icon={<Paperclip size={13} />}
+        />
+        {/* 통장사본 */}
+        <DocIcon
+          hasFile={hasBankbook}
+          label="통장"
+          color="text-sky-500 hover:bg-sky-50"
+          grayColor="text-zinc-300 hover:text-sky-400 hover:bg-sky-50"
+          onClick={openBankbook}
+          uploadHandler={(e) => {
+            const f = e.target.files?.[0];
+            e.target.value = "";
+            if (f) uploadBankbookForRow(emp, f);
+          }}
+          accept="image/*"
+          title={hasBankbook ? "통장사본 보기" : "통장사본 업로드"}
+          icon={<Paperclip size={13} />}
+        />
+        {/* 근로계약서 */}
         {hasContractFile ? (
-          <button
-            type="button"
+          <DocIcon
+            hasFile
+            label="계약서"
+            color="text-indigo-500 hover:bg-indigo-50"
+            grayColor=""
             onClick={openContract}
-            className="inline-flex items-center gap-0.5 text-[17px] font-semibold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer whitespace-nowrap"
-            title="근로계약서 새 창으로 보기"
-          >
-            <Paperclip size={10} />보기
-          </button>
+            title="근로계약서 보기"
+            icon={<FileText size={13} />}
+          />
         ) : (
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setContractPrefill({
-                employeeId: emp.id,
-                employeeName: emp.name ?? "",
-                employeePhone: emp.phone ?? "",
-                employeeAddress: (emp as any).address ?? "",
-                hireDate: emp.hire_date ?? "",
-                position: emp.position ?? "",
-                employmentType: (emp as any).employmentType ?? (emp as any).employment_type ?? "",
-                annualLeaveDays: (emp as any).annual_leave_days ?? null,
-              });
-              if (onWriteContract) {
-                onWriteContract(emp);
-              } else {
-                window.dispatchEvent(new CustomEvent("staff-write-contract", { detail: { employeeId: emp.id } }));
-              }
-            }}
-            className="inline-flex items-center gap-0.5 text-[17px] font-bold text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
-            title="근로계약서 작성 · 기본정보 자동 채움"
+            onClick={writeContract}
+            title="근로계약서 작성"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-300 hover:text-indigo-500 hover:bg-indigo-50 transition-colors cursor-pointer"
           >
-            <NotePencilIcon size={10} />작성
+            <NotePencilIcon size={13} />
           </button>
         )}
-      </td>
-      {/* 사직서 · 퇴사자만 표시 · 파일 있음=보기 · 없음=업로드 */}
-      <td className="px-1 py-2 text-center">
-        {isRetired ? (
-          hasResignationFile ? (
-            <button
-              type="button"
-              onClick={openResignationFile}
-              className="inline-flex items-center gap-0.5 text-[17px] font-semibold text-rose-600 hover:text-rose-800 hover:underline cursor-pointer whitespace-nowrap"
-              title={`사직서 · 새 창으로 보기\n${emp.resignation_file_url ?? ""}`}
-            >
-              <ExternalLink size={10} />보기
-            </button>
-          ) : (
-            <label
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-0.5 text-[17px] font-semibold text-zinc-500 hover:text-rose-700 hover:bg-rose-50 border border-line hover:border-rose-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
-              title="사직서 업로드 · PDF 또는 이미지 · 20MB"
-            >
-              <Paperclip size={10} />업로드
-              <input
-                type="file"
-                accept=".pdf,image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  e.target.value = "";
-                  if (f) uploadResignationFileForRow(emp, f);
-                }}
-              />
-            </label>
-          )
-        ) : (
-          <span className="text-[17px] text-zinc-200">-</span>
+        {/* 사직서 · 퇴사자만 */}
+        {isRetired && (
+          <DocIcon
+            hasFile={hasResignationFile}
+            label="사직서"
+            color="text-rose-500 hover:bg-rose-50"
+            grayColor="text-zinc-300 hover:text-rose-400 hover:bg-rose-50"
+            onClick={openResignationFile}
+            uploadHandler={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) uploadResignationFileForRow(emp, f);
+            }}
+            accept=".pdf,image/*"
+            title={hasResignationFile ? "사직서 보기" : "사직서 업로드"}
+            icon={<ExternalLink size={13} />}
+          />
         )}
-      </td>
-      {/* 2026-08-31 · 사용자 지시 · 상태 컬럼 제거 (필터로 대체) */}
-    </tr>
+      </div>
+    </div>
   );
 };
