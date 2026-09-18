@@ -463,9 +463,10 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             <span className="w-1.5 h-4 rounded-full bg-emerald-600" />
             재고 · 진열위치
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
+          {/* 2026-09-18 · 수직 정렬 · label w-[72px] 고정 · 값 left-align 통일 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-0.5">
             <div className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1 shrink-0">현재고</span>
+              <span className="w-[72px] text-[14px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1 text-center shrink-0">현재고</span>
               {(p.current_stock != null && Number(p.current_stock) !== 0)
                 ? <span className="inline-flex items-center gap-1.5 min-w-0">
                     <span className="text-[20px] font-extrabold text-emerald-700 tabular-nums leading-none tracking-tight">{String(p.current_stock)}<span className="text-[12px] font-semibold ml-0.5 text-emerald-600/70">개</span></span>
@@ -480,18 +481,18 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                 : <span className="text-[14px] font-bold text-rose-500">부족</span>}
             </div>
             <div className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="inline-flex items-center gap-1 shrink-0">
-                <span className="text-[15px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1">적정재고</span>
-                <span className="text-[11px] font-medium text-zinc-400">· {optimalStockDays}일</span>
+              <span className="w-[72px] shrink-0 inline-flex flex-col items-center justify-center">
+                <span className="text-[14px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2 py-0.5 leading-snug w-full text-center">적정재고</span>
+                <span className="text-[10px] font-medium text-zinc-400 mt-0.5">· {optimalStockDays}일</span>
               </span>
               {editing
                 ? <input type="number" min={0} value={val("optimal_stock")} onChange={e => set("optimal_stock", e.target.value)} className={inputCls + " tabular-nums text-[14px] max-w-[120px]"} />
                 : p.optimal_stock != null
                   ? <span className="text-[18px] font-bold text-ink tabular-nums leading-none tracking-tight">{String(p.optimal_stock)}<span className="text-[12px] font-semibold ml-0.5 text-ink-soft">개</span></span>
-                  : <span className="text-zinc-300 text-[14px]">-</span>}
+                  : <span className="text-zinc-300 text-[16px] tabular-nums">-</span>}
             </div>
             <div className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-cyan-700 bg-cyan-50 rounded-md px-2.5 py-1 shrink-0">창고</span>
+              <span className="w-[72px] text-[14px] font-bold text-cyan-700 bg-cyan-50 rounded-md px-2.5 py-1 text-center shrink-0">창고</span>
               {(w1 != null || w2 != null) ? (
                 <span className="inline-flex items-center gap-1.5 min-w-0">
                   <span className="text-[18px] font-bold text-cyan-700 tabular-nums leading-none tracking-tight">{totalWarehouse}<span className="text-[12px] font-semibold ml-0.5 text-cyan-600/70">개</span></span>
@@ -499,13 +500,13 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                     <span className="text-[12px] font-medium text-cyan-600/70 tabular-nums shrink-0">({w1}·{w2})</span>
                   )}
                 </span>
-              ) : <span className="text-[12px] text-zinc-400">미조사</span>}
+              ) : <span className="text-zinc-300 text-[16px] tabular-nums">-</span>}
             </div>
             <div className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-indigo-700 bg-indigo-50 rounded-md px-2.5 py-1 shrink-0">매장</span>
+              <span className="w-[72px] text-[14px] font-bold text-indigo-700 bg-indigo-50 rounded-md px-2.5 py-1 text-center shrink-0">매장</span>
               {product.store_stock != null
                 ? <span className="text-[18px] font-bold text-indigo-700 tabular-nums leading-none tracking-tight">{totalStore}<span className="text-[12px] font-semibold ml-0.5 text-indigo-600/70">개</span></span>
-                : <span className="text-[12px] text-zinc-400">미조사</span>}
+                : <span className="text-zinc-300 text-[16px] tabular-nums">-</span>}
             </div>
           </div>
           {/* 진열위치 · full-width row */}
@@ -568,13 +569,12 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                       (product as any)?.category_code ?? null,
                     );
                     const allItems = formatShelfPositions(displayPositions, storageLocations);
-                    // 데이터 있는 항목만 (미입력 제외)
-                    const presentItems = allItems.filter(item => !item.isMissing);
+                    // 2026-09-18 · 미입력 항목도 포함 → "위치 미입력" 뱃지 표시
                     // 창고 · 매장 순서 정렬
-                    const warehouseItems = presentItems.filter(item => item.kind === "warehouse");
-                    const storeItems = presentItems.filter(item => item.kind === "store");
+                    const warehouseItems = allItems.filter(item => item.kind === "warehouse");
+                    const storeItems = allItems.filter(item => item.kind === "store");
                     const hasLocation = !!p.location;
-                    const hasAny = hasLocation || presentItems.length > 0;
+                    const hasAny = hasLocation || allItems.length > 0;
                     if (!hasAny) {
                       return (
                         <span className="text-[14px] text-zinc-400">진열구역 없음</span>
@@ -589,10 +589,17 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                       );
                     }
                     for (const item of [...warehouseItems, ...storeItems]) {
-                      const label = item.detail ? `${item.name} ${formatShelfDetail(item.detail)}` : item.name;
+                      // 2026-09-18 · detail 없으면 "위치 미입력" 뱃지 표시
                       parts.push(
-                        <span key={item.code} className="text-[16px] font-bold text-ink tracking-tight leading-none">
-                          {label}
+                        <span key={item.code} className="inline-flex items-center gap-1.5">
+                          <span className="text-[16px] font-bold text-ink tracking-tight leading-none">
+                            {item.detail ? `${item.name} ${formatShelfDetail(item.detail)}` : item.name}
+                          </span>
+                          {!item.detail && (
+                            <span className="text-[11px] font-semibold text-rose-500 border border-rose-300 rounded px-1.5 py-0.5 leading-none bg-rose-50">
+                              위치 미입력
+                            </span>
+                          )}
                         </span>
                       );
                     }
