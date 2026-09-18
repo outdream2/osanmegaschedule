@@ -29,7 +29,7 @@
 
 **세션 요약** · 항목 순서대로 배치 테스트 권장 · **서버 재시작 필수**
 
-## 📌 오늘 완료 (2026-09-18 · 후반) · 신규 태스크 [70]~[82]
+## 📌 오늘 완료 (2026-09-18 · 후반) · 신규 태스크 [70]~[84]
 
 ### [70] C · 공휴일 API 연동 · data.go.kr 특일정보 + events 자동 동기
 **커밋** · `3c6dfcdd`
@@ -158,6 +158,35 @@
 1. 매장 > 상품 · 왼쪽 리스트 · 현재고 컬럼
 2. 실사 안 된 상품 · products.current_stock 값 표시 (0 아님)
 3. 실사한 상품 · inventory_checks 5-슬롯 합계 표시
+
+### [83] 반응형 초기 로딩 · 우측 잘림 fix
+**커밋** · `3e7ce85b`
+- CSS `@import url(...)` · 렌더 블로킹 · Tailwind 파싱 지연 원인
+- index.html · `<link rel="stylesheet">` + `<link rel="preconnect">` · 병렬 로딩
+- Tailwind 즉시 파싱 · `overflow-x:clip` 초기부터 적용 · 초기 우측 잘림 해소
+- Pretendard + Geist Mono + JetBrains Mono · 동일 유지
+
+**확인 절차**
+1. 모바일/반응형 · 새로고침 (Ctrl+Shift+R) · 초기 로딩 · 우측 잘림 없음
+2. 폰트 · Pretendard 렌더 · 정상
+3. 숫자 · Geist Mono · tabular-nums 정상
+
+### [84] 상품정보 재고·진열위치 · 통합 재설계 (창고/매장 총합 제거 + cyan/indigo 뱃지)
+**커밋** · `6a3a9b0b`
+- 재고 섹션 · 창고/매장 총합 row · **제거** (진열위치에서 개별 표시 · 중복 해소)
+- 재고 · 현재고·적정재고 · `grid-cols-2` 고정 · 항상 나란히
+- 가격 · 판매가·매입가 · `grid-cols-2` 고정 · 이익율 `col-span-2` full-width
+- 진열위치 · 독립 섹션 · 수직 row · 구역(rose)·창고1/2(cyan)·매장1/2/3(indigo) 뱃지 · 라벨 폭 `w-[72px]` 통일
+- 편집 모드 · ShelfPositionInput · EditField · 완전 유지 · 기능 무변경
+
+**확인 절차** (PC + 반응형)
+1. 매장 > 상품 > 상품 선택 · 우측 상세 (모바일은 bottom sheet 오버레이)
+2. 가격 섹션 · 판매가·매입가 나란히 · 이익율 그 아래 full-width
+3. 재고 섹션 · 현재고·적정재고 2-col · 창고/매장 총합 row 없음 (제거)
+4. 진열위치 섹션 · 구역(rose 뱃지) · 창고1/2(cyan) · 매장1/2/3(indigo) · 수직 정렬
+5. detail 없는 위치 · "위치 미입력" rose 뱃지
+6. 라벨 폭 · 모든 row · `w-[72px]` 통일 · x축 정렬 일치
+7. 편집 (수정 버튼) · 저장/취소 · 정상 작동
 
 ### [80] 유통기한 임박 리스트 · 규격 컬럼 제거
 **커밋** · `c621332c`
