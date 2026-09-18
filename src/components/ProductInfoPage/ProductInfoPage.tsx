@@ -37,6 +37,9 @@ import { useOptimalStockPeriod } from "../../hooks/useOptimalStockPeriod";
 import { PAGE_CONTAINER_CLS, CARD_BASE } from "../../styles/tokens";
 import { AccentBar } from "../common/AccentBar";
 import { matchesProductQuery } from "../../lib/productMatch";
+// 2026-09-18 · 사용자 지시 · 왼쪽 리스트 · 카드→표 · 자동정렬 헤더
+import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
+import { ArrowUp, ArrowDown } from "@phosphor-icons/react";
 import type { AuthSession } from "../../types";
 import { UpdateProductSchema, type UpdateProductInput } from "../../shared/schemas/products";
 import { consumeScanPendingProductCode } from "../../hooks/useScanUnregisteredMode";
@@ -673,53 +676,87 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
     setMobileOpen(true);
   };
 
-  // 2026-09-09 · 사용자 지시 · 왼쪽 상품 리스트 · 세로 스크롤 · UI 프레임워크 적용
-  // 2026-09-15 · T-PROD-LABEL · 사용자 지시 · 한글 라벨 · 아이콘·배지 X · 깔끔 텍스트
-  //   · 상품명 (bold · 큰 폰트) · 데이터 설명 라벨 (한글) · 우측 값 정렬
-  //   · 코드 · 공급사 · 카테고리 · 적정재고 · 현재고 (있으면)
-  //   · 밑줄 · 라벨 회색 (label) · 값 진회색 (value) · 활성 시 · brand-tint 배경
-  const rowLabel = (label: string, value: React.ReactNode, valueClass = "text-ink") => (
-    <div className="flex items-baseline gap-2 text-[13px] leading-tight">
-      <span className="text-zinc-400 shrink-0 tracking-tight" style={{ minWidth: 44 }}>{label}</span>
-      <span className={`font-semibold tabular-nums truncate ${valueClass}`}>{value}</span>
-    </div>
-  );
-  const listBody = (
-    <ul className="divide-y divide-zinc-100 h-[calc(100vh-240px)] overflow-y-auto overscroll-contain">
-      {filtered.map(r => {
-        const active = r.product_code === selectedCode;
-        return (
-          <li key={r.product_code}>
-            <button
-              type="button"
-              onClick={() => handleSelect(r.product_code)}
-              className={`w-full text-left px-4 py-3 flex flex-col gap-1.5 cursor-pointer transition-colors ${
-                active ? "bg-brand-tint/60" : "hover:bg-zinc-50"
-              }`}
-            >
-              {/* 상품명 · 헤드 (bold · 큰 폰트) */}
-              <div className={`text-[16px] font-bold truncate tracking-tight leading-tight ${active ? "text-brand-deep" : "text-ink"}`}>
-                {r.product_name || <span className="text-zinc-400 font-normal">(이름없음)</span>}
-              </div>
+  // 2026-09-18 · 사용자 지시 · 왼쪽 리스트 · 카드형식 → 표 형식 · 자동 정렬 헤더
+  //   · 컬럼 · 상품명(코드 아래) · 공급사 · 판매가 · 재고 · 위치
+  //   · useSortableTable · 헤더 클릭 asc/desc 토글
+  //   · 기본 · 상품명 asc
+  type ProductListSortKey = "product_name" | "supplier" | "sale_price" | "current_stock" | "location";
+  const listComparators = useMemo<Record<ProductListSortKey, Comparator<ProductRow>>>(() => ({
+    product_name: (a, b) => String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko"),
+    supplier:     (a, b) => String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko"),
+    sale_price:   (a, b) => (Number((a as any).sale_price ?? 0)) - (Number((b as any).sale_price ?? 0)),
+    current_stock: (a, b) => (Number(a.current_stock ?? 0)) - (Number(b.current_stock ?? 0)),
+    location:     (a, b) => String(a.location ?? "").localeCompare(String(b.location ?? ""), "ko"),
+  }), []);
+  const { sorted: sortedList, sortKey: listSortKey, sortDir: listSortDir, toggleSort: toggleListSort } =
+    useSortableTable<ProductRow, ProductListSortKey>(filtered, "product_name", listComparators, "asc");
 
-              {/* 데이터 설명 · 한글 라벨 + 값 · 세로 정렬 */}
-              <div className="flex flex-col gap-0.5 mt-0.5">
-                {rowLabel("코드", <span className="font-mono text-ink-soft">{r.product_code}</span>)}
-                {r.supplier && rowLabel("공급사", <span className="text-ink">{r.supplier}</span>)}
-                {r.category && rowLabel("카테고리", <span className="text-ink-soft">{r.category}</span>)}
-                {typeof r.optimal_stock === "number" && rowLabel("적정재고", <span className="text-brand-deep">{r.optimal_stock}<span className="font-normal text-zinc-400 ml-0.5">개</span></span>)}
-                {typeof r.current_stock === "number" && rowLabel(
-                  "현재고",
-                  <span className={r.current_stock <= 0 ? "text-rose-600" : "text-ink"}>
-                    {r.current_stock}<span className="font-normal text-zinc-400 ml-0.5">개</span>
-                  </span>
-                )}
-              </div>
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+  const ListSortHeader: React.FC<{ label: string; k: ProductListSortKey; align?: "left" | "right" }> = ({ label, k, align = "left" }) => {
+    const active = listSortKey === k;
+    return (
+      <button
+        type="button"
+        onClick={() => toggleListSort(k)}
+        className={`inline-flex items-center gap-1 cursor-pointer transition select-none ${active ? "text-brand-deep" : "text-zinc-500 hover:text-brand-deep"} ${align === "right" ? "justify-end w-full" : ""}`}
+        title={`${label} 정렬`}
+      >
+        <span>{label}</span>
+        {active ? (listSortDir === "asc" ? <ArrowUp size={10} weight="bold" /> : <ArrowDown size={10} weight="bold" />) : <ArrowDown size={10} className="opacity-25" />}
+      </button>
+    );
+  };
+
+  const listBody = (
+    <div className="h-[calc(100vh-240px)] overflow-y-auto overscroll-contain">
+      <table className="w-full text-[14px] border-collapse">
+        <thead className="sticky top-0 z-10 bg-zinc-50/95 backdrop-blur-sm border-b-2 border-line">
+          <tr className="text-[12px] font-bold tracking-tight uppercase text-zinc-500">
+            <th className="text-left px-3 py-2 min-w-[140px]"><ListSortHeader label="상품명" k="product_name" /></th>
+            <th className="text-left px-2 py-2 w-[110px]"><ListSortHeader label="공급사" k="supplier" /></th>
+            <th className="text-right px-2 py-2 w-[80px]"><ListSortHeader label="판매가" k="sale_price" align="right" /></th>
+            <th className="text-right px-2 py-2 w-[60px]"><ListSortHeader label="재고" k="current_stock" align="right" /></th>
+            <th className="text-left px-2 py-2 w-[100px]"><ListSortHeader label="위치" k="location" /></th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-zinc-100">
+          {sortedList.map(r => {
+            const active = r.product_code === selectedCode;
+            const salePrice = (r as any).sale_price;
+            const stock = r.current_stock;
+            return (
+              <tr
+                key={r.product_code}
+                onClick={() => handleSelect(r.product_code)}
+                className={`cursor-pointer transition-colors ${active ? "bg-brand-tint/60" : "hover:bg-zinc-50/70"}`}
+              >
+                <td className="px-3 py-2 align-top">
+                  <div className={`text-[15px] font-bold leading-tight break-keep ${active ? "text-brand-deep" : "text-ink"}`}>
+                    {r.product_name || <span className="text-zinc-400 font-normal">(이름없음)</span>}
+                  </div>
+                  <div className="text-[12px] font-mono text-zinc-400 mt-0.5 truncate">{r.product_code}</div>
+                </td>
+                <td className="px-2 py-2 align-top text-ink text-[13px]">
+                  {r.supplier || <span className="text-zinc-300">-</span>}
+                </td>
+                <td className="px-2 py-2 align-top text-right text-[13px] font-semibold tabular-nums text-ink">
+                  {typeof salePrice === "number" && salePrice > 0
+                    ? salePrice.toLocaleString()
+                    : <span className="text-zinc-300">-</span>}
+                </td>
+                <td className="px-2 py-2 align-top text-right text-[13px] font-bold tabular-nums">
+                  {typeof stock === "number"
+                    ? <span className={stock <= 0 ? "text-rose-600" : "text-ink"}>{stock}</span>
+                    : <span className="text-zinc-300">-</span>}
+                </td>
+                <td className="px-2 py-2 align-top text-[12px] text-ink-soft truncate">
+                  {r.location || <span className="text-zinc-300">-</span>}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 
   return (
