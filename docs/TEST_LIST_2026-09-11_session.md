@@ -29,7 +29,7 @@
 
 **세션 요약** · 항목 순서대로 배치 테스트 권장 · **서버 재시작 필수**
 
-## 📌 오늘 완료 (2026-09-18 · 후반) · 신규 태스크 [70]~[80]
+## 📌 오늘 완료 (2026-09-18 · 후반) · 신규 태스크 [70]~[82]
 
 ### [70] C · 공휴일 API 연동 · data.go.kr 특일정보 + events 자동 동기
 **커밋** · `3c6dfcdd`
@@ -166,6 +166,31 @@
 **확인 절차**
 1. 매입 > 유통기한 임박 · 규격 컬럼 사라짐
 2. 나머지 컬럼 · 자연 확장
+
+### [81] #90 · ContractCategory union 완화 (Plan A)
+**커밋** · `ef6ca6f7`
+- ContractCategory · superset union (`"약사" | "매장" | "창고" | "기타" | (string & {})`) · 확장 직군 지원
+- CoreContractCategory · 4-key literal · 스키마 보호 (ContractJobWages · ContractWriterSettings 유지)
+- 색상 fallback · getCategoryActiveClass / getCategorySolidClass · 미매칭 = zinc
+- useContractLoad · settings.wageRates 실시간 병합 · jobCategories 확장 자동 반영
+- useWageAuto · 확장 직군 posKey 매핑 fallback
+
+**확인 절차**
+1. 근로계약서 페이지 · 기존 4직군 (약사/매장/창고/기타) · 색상·임금 계산 · 변경 없음
+2. 관리자 · ContractSettingsPage · settings.wageRates 에 새 직군 (예 "배송") 추가 → 근로계약서 자동 표시 · zinc 색상
+3. PDF 생성 · 기존 legal spec · 100% 유지
+
+### [82] 매장·상품·상품정보페이지 · 재고·진열위치 패널 UI 개선 3종
+**커밋** · `13218376`
+- **수직 정렬** · label `w-[72px]` 고정 · 값 좌측 첫 글자 세로 축 일치 (현재고·적정재고·창고·매장)
+- **"미조사" → `-`** · 심플 · `text-zinc-300 text-[16px] tabular-nums` · 창고·매장 row
+- **진열위치 미입력 뱃지** · detail 없는 창고/매장 항목 뒤에 rose 아웃라인 "위치 미입력" 뱃지 (11px)
+
+**확인 절차**
+1. 매장 > 상품 > 상품정보 · 오른쪽 상세 · 재고 섹션
+2. 라벨 뱃지 폭 통일 · 값 세로 정렬 일치
+3. 실재고 조사 안 된 상품 · `-` 표시 (미조사 텍스트 X)
+4. 진열위치 · `창고1 - - -` 대신 · `창고1 [위치 미입력]` 뱃지 · rose 색
 
 ---
 
