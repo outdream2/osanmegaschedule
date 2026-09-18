@@ -60,6 +60,21 @@
 | [49] | 발주이력 · 카드 레이아웃 재정리 (발주번호+공급사 2줄) + 상단 헤더 · 자동 정렬 + 상세 시각 구분 | `bbe690a4` |
 | [50] | devLog 유틸 도입 · production 노이즈 제거 (App.tsx 8건 + useReextractCell 13건) | `32c86338` |
 | [51] | 유통기한 임박 · purchase_details.expiry_date DATE 컬럼 · Phase A(DB) + Phase B(서버) · SSOT 3소스 통합 | `04e6a2f3` |
+| [52] | 판매가·현재고 안 나오는 문제 fix · sale_price 매핑 누락 + Number 강제 변환 | `13bedf24` |
+| [53] | 발주이력 · 카드 자동정렬 헤더 + 시각 구분 (+shortDate 추출) | `bbe690a4` · `2aef6486` |
+| [54] | display-requests 상품명 3단 fallback (products→leading zero→note 파싱) | `10c6d17a` |
+| [55] | **크리티컬** · 실재고 저장 duplicate key + 매장 진열도 조회 미반영 fix | `2a2601d3` |
+| [56] | **크리티컬** · 방문예약 vendor 로그인 (authorize 5→0) + UI 개선 | `41441ed1` |
+| [57] | 상품정보 왼쪽 리스트 · 카드→표 형식 · 자동 정렬 · 폭 드래그 조절 | `919ae8f1` · `28874277` · `bbe02b9f` |
+| [58] | 상품정보 상세 뷰 · 폰트 -2 · 라벨 +2 · 공급사 wrap · 규격/단위 다음줄 | `725deeb9` · `3715e6c2` |
+| [59] | 편집 모달 · 판매 상태 필수 + shelf 5-slot + 상세 뷰 필드 전체 반영 | `2a4decea` · `373eaf78` · `531a5168` · `dd8674e9` |
+| [60] | 이벤트 추천 상품 관리 UI · Phase 1+2 · SplitPanel + 편의 3종 (복사·분류·붙여넣기) | `198650d7` · `216aa015` |
+| [61] | 공급사 (주)·주식회사 전수조사 · 52파일 · 표시·검색·매칭·정렬 정제 (DB 저장 원본 유지) | `60bea16f` · `ecdfa2b2` |
+| [62] | shelf_positions 3중 방어 · 자동 assign (xlsx) + 클라 폴백 + 관리자 트리거 | `59f48b9f` |
+| [63] | devLog 유틸 확산 · 10+파일 (App·OCR·hooks·ProductInfo·MenuCard) | `2b8972b7` · `7e17d68c` · `ba833e49` |
+| [64] | 유통기한 임박 리스트 · 규격 컬럼 제거 | `c621332c` |
+| [65] | 직원관리 리스트 재설계 v3 · Linear/Attio 톤 · 동그란 아이콘 완전 제거 | `4fb61f1a` |
+| [66] | 발주추천 스코어 · 유틸 추출 · 회귀 테스트 8건 · expiry MIN 3소스 UNION | `5ee0bb96` |
 
 ---
 
@@ -102,7 +117,7 @@
 | **#56** | 매장 구역 추가/제거 · X 버튼 권한 | 🟢 P4 LATER | 스펙 애매 · 확인 필요 |
 | **#149** | large-file 분리 잔여 · OcrPage(1215)·PaymentInfoTab(1513)·OrderManagePage(3089)·LandingPage(2319)·ContractWriterPage | 🟢 P3 | Framework Phase 4 잔여 · baseline 9 파일 · 대형 |
 | **#115** | real_map 컬럼 DB DROP SQL 실행 · `migrations/20260904_drop_real_map.sql` | 🟡 | 사용자 · Supabase SQL Editor 직접 실행 |
-| **T-RSTP-TOOLBAR** | RealStockTablePage · 상단 툴바 · 좁은 화면 대응 · 두 줄 분리 (제목·건수·검색·필터) | 🟡 P2 | 화면 폭 좁을 때 wrap 개선 |
+<!-- 2026-09-18 · T-RSTP-TOOLBAR 완료 · [46] 커밋 `780677f5` · flex-col + lg:flex-row 반응형 -->
 <!-- 2026-09-18 · T-WAREHOUSE-TAB 조사 결과 · 창고1/2 이미 매장진열 안의 탭 (DisplayPage L663 SplitRightTabs)
      · 별도 페이지·라우트 없음 · 이미 요청 목표 달성 상태
      · 향후 · 2단 탭 (매장구역도 안에 [매장, 창고1, 창고2] 서브탭) 원할 시 · 사용자 명시 후 진행 -->
@@ -168,7 +183,25 @@
 
 ## 📋 세션 완료 로그 · 최근
 
-### 2026-09-15 (오늘)
+### 2026-09-18 (오늘 · 대형 세션 · 40+ 커밋)
+- **크리티컬 fix 4건** · 실재고 duplicate key · 방문예약 vendor · 판매가/재고 안 나옴 · display-requests 상품명
+- **상품정보 페이지 전수 재설계** · 왼쪽 리스트 표 형식·자동정렬·폭 드래그 · 상세 뷰 폰트 조정 · 편집 모달 shelf 5-slot + 판매상태
+- **이벤트 추천 상품 관리 UI Phase 1+2** · SplitPanel + EventProductPanel · 복사·분류·붙여넣기 3종
+- **공급사 (주) 전수조사 52파일** · 표시·검색·매칭·정렬 정제 · DB 저장 원본 유지
+- **shelf_positions 3중 방어** · xlsx 임포트 hook + 클라 폴백 + 관리자 트리거
+- **직원 리스트 재설계 v3** · Linear/Attio 톤 · 동그란 아이콘 완전 제거
+- **devLog 확산** · 10+파일
+- **테스트 fix** · ProductInfoPage 3건 + unhandled rejection 10건
+- **신규 대원칙 등재** · 리스트 앞 동그란 아이콘 금지
+
+### 2026-09-17 (전날 · 대형 · 13+ 커밋)
+- **유통기한 3소스 통합** · Phase A DB + Phase B 서버 · SSOT + legacy 2 UNION
+- **사용자 지시 fix** · 유통기한 임박 리스트 + 실재고 저장 이벤트 dispatch + 캐시 헤더 (borrowings/return)
+- **발주이력 카드 재정리** · 자동정렬 헤더 · 상세 시각 구분
+- **devLog 유틸 도입** · 프로덕션 노이즈 제거
+- **사용자 결정 정리** · #191 Phase C 스코프 축소 · T-WAREHOUSE-TAB 이미 완료 확인
+
+### 2026-09-15
 - **웹앱 · 12 커밋** · #39·#61·T-SP-BULK·DELETE orphan·T-MENU-BOTTOMNAV·T-SP-9-REST(2)·#191 Phase B·T-PROD-LABEL·#107·#258·탭바 fix
 - **sync-agent · 20+ 커밋** · Electron 앱 · 로그인·파일감시·큐·자동업데이트·copyright
 - **대원칙 등재** · DB 정합성 절대 유지
