@@ -569,66 +569,71 @@ export const LeavePage: React.FC<LeavePageProps> = ({
               ) : !myLoading && myRequests.length === 0 ? (
                 <EmptyState title="신청한 연차 없음" hint="위 폼에서 신청하세요" size="compact" />
               ) : (
-                <div className={`overflow-x-auto ${myLoading ? "opacity-40 pointer-events-none" : ""}`}>
-                  <table className="w-full text-[14px]">
+                <div className={`overflow-x-auto rounded-lg border border-zinc-200 ${myLoading ? "opacity-40 pointer-events-none" : ""}`}>
+                  <table className="w-full text-[14px] border-collapse">
                     <thead>
-                      <tr className="border-b border-zinc-200 bg-zinc-50">
-                        <th className="text-left px-3 py-2.5 font-bold text-zinc-500 whitespace-nowrap">유형</th>
-                        <th className="text-left px-3 py-2.5 font-bold text-zinc-500 whitespace-nowrap">기간</th>
-                        <th className="text-center px-3 py-2.5 font-bold text-zinc-500 whitespace-nowrap">일수</th>
-                        <th className="text-left px-3 py-2.5 font-bold text-zinc-500">사유</th>
-                        <th className="text-center px-3 py-2.5 font-bold text-zinc-500 whitespace-nowrap">상태</th>
-                        <th className="text-center px-3 py-2.5 font-bold text-zinc-500 whitespace-nowrap">PDF</th>
-                        <th className="text-center px-3 py-2.5 font-bold text-zinc-500 whitespace-nowrap">취소</th>
+                      <tr className="bg-zinc-50 border-b border-zinc-200">
+                        <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider whitespace-nowrap">유형</th>
+                        <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider whitespace-nowrap">기간</th>
+                        <th className="text-center px-3 py-2.5 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider whitespace-nowrap">일수</th>
+                        <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">사유</th>
+                        <th className="text-center px-3 py-2.5 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider whitespace-nowrap">상태</th>
+                        <th className="text-center px-3 py-2.5 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider whitespace-nowrap">PDF</th>
+                        <th className="text-center px-3 py-2.5 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider whitespace-nowrap">취소</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-100">
-                      {myRequests.map(r => {
+                    <tbody>
+                      {myRequests.map((r, idx) => {
                         const tone: PillTone = r.status === "pending" ? "amber" : r.status === "approved" ? "emerald" : "rose";
                         return (
-                          <tr key={r.id} className="hover:bg-zinc-50 transition-colors">
-                            <td className="px-3 py-3 font-semibold text-zinc-800 whitespace-nowrap">{r.leave_type}</td>
-                            <td className="px-3 py-3 text-zinc-700 whitespace-nowrap tabular-nums">
+                          <tr
+                            key={r.id}
+                            className={`group transition-colors duration-100 hover:bg-zinc-50 ${idx !== 0 ? "border-t border-zinc-100" : ""}`}
+                          >
+                            <td className="px-4 py-3.5 font-semibold text-[14px] text-zinc-800 whitespace-nowrap">{r.leave_type}</td>
+                            <td className="px-4 py-3.5 text-[14px] text-zinc-600 whitespace-nowrap tabular-nums">
                               {fmtDate(r.start_date)}
                               {r.start_date !== r.end_date && (
                                 <span className="text-zinc-400"> ~ {fmtDate(r.end_date)}</span>
                               )}
                             </td>
-                            <td className="px-3 py-3 text-center text-zinc-700 tabular-nums whitespace-nowrap">
-                              {calcDays(r.start_date, r.end_date)}일
+                            <td className="px-3 py-3.5 text-center text-[14px] font-medium text-zinc-700 tabular-nums whitespace-nowrap">
+                              <span className="inline-flex items-center justify-center min-w-[2rem] bg-zinc-100 text-zinc-600 rounded px-1.5 py-0.5 text-[13px]">
+                                {calcDays(r.start_date, r.end_date)}일
+                              </span>
                             </td>
-                            <td className="px-3 py-3 text-zinc-500 max-w-[160px] break-words whitespace-normal leading-tight">
-                              {r.reason || <span className="text-zinc-300">-</span>}
+                            <td className="px-4 py-3.5 text-[13px] text-zinc-500 max-w-[200px] break-words whitespace-normal leading-snug">
+                              {r.reason || <span className="text-zinc-300 italic">-</span>}
                               {r.reviewer_note && (
-                                <div className="mt-1 text-[12px] text-indigo-600">
-                                  <StickyNote size={11} className="inline mr-0.5" />
-                                  {r.reviewer_note}
+                                <div className="mt-1 flex items-start gap-0.5 text-[12px] text-indigo-500">
+                                  <StickyNote size={11} className="mt-0.5 shrink-0" />
+                                  <span>{r.reviewer_note}</span>
                                 </div>
                               )}
                             </td>
-                            <td className="px-3 py-3 text-center whitespace-nowrap">
+                            <td className="px-3 py-3.5 text-center whitespace-nowrap">
                               <StatusPill tone={tone} size="sm" dot pulse={r.status === "pending"}>
                                 {STATUS_LABEL[r.status]}
                               </StatusPill>
                             </td>
-                            <td className="px-3 py-3 text-center">
+                            <td className="px-3 py-3.5 text-center">
                               <button
                                 type="button"
                                 onClick={() => openPdfModal(r)}
                                 title="신청서 PDF 보기"
-                                className="inline-flex items-center gap-1 text-[13px] font-medium text-zinc-500 hover:text-brand-deep hover:underline transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1 text-[13px] font-medium text-zinc-400 hover:text-brand-deep transition-colors cursor-pointer group-hover:text-zinc-600"
                               >
                                 <FileText size={13} />
-                                PDF
+                                <span className="hidden sm:inline">PDF</span>
                               </button>
                             </td>
-                            <td className="px-3 py-3 text-center">
+                            <td className="px-3 py-3.5 text-center">
                               {r.status === "pending" ? (
                                 <button
                                   onClick={() => handleCancel(r.id)}
                                   disabled={cancellingId === r.id}
                                   title="신청 취소"
-                                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-50 transition-all cursor-pointer disabled:opacity-40"
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition-all cursor-pointer disabled:opacity-40"
                                 >
                                   {cancellingId === r.id
                                     ? <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-rose-400" />
@@ -636,7 +641,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                                   }
                                 </button>
                               ) : (
-                                <span className="text-zinc-200">—</span>
+                                <span className="text-zinc-200 text-[16px]">—</span>
                               )}
                             </td>
                           </tr>
