@@ -27,6 +27,27 @@ let quitting = false;
 
 const AGENT_NAME = "메가타운 자동임포트";
 
+// 2026-09-18 · 사용자 보고 · 트레이 아이콘 2개 · 원인 · 이중 실행 (auto-launch + installer)
+//   · 두 번째 인스턴스 방지 · 첫 번째 인스턴스 · focus/window open
+//   · Windows · 특히 · autoLaunch + installer 직후 launch 동시 · 2 아이콘
+const singleInstanceLock = app.requestSingleInstanceLock();
+if (!singleInstanceLock) {
+  console.log("[main] 두 번째 인스턴스 감지 · 종료 (single instance lock)");
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    console.log("[main] second-instance 이벤트 · 기존 창 focus");
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      if (!mainWindow.isVisible()) mainWindow.show();
+      mainWindow.focus();
+      mainWindow.moveTop();
+    } else {
+      createMainWindow();
+    }
+  });
+}
+
 // ── 부팅 자동 시작 ────────────────────────────────
 const autoLauncher = new AutoLaunch({
   name: AGENT_NAME,
@@ -94,16 +115,34 @@ function createMainWindow() {
     return { action: "deny" };
   });
 
+  // 2026-09-18 · 사용자 보고 · 배포 · 하얀 화면 · loadFile 경로 상세 로그
   if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
+    console.log("[main] dev 모드 · loadURL:", process.env["ELECTRON_RENDERER_URL"]);
     mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
-    // 2026-09-15 · dev 모드 · DevTools 자동 열기 제거 (사용자 요청)
-    //   · 필요 시 · F12 or Ctrl+Shift+I · 수동 open
-    //   · optimizer.watchWindowShortcuts · 이미 등록되어 있음
   } else {
-    mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
+    const htmlPath = join(__dirname, "../renderer/index.html");
+    console.log("[main] production 모드 · loadFile:", htmlPath, "__dirname:", __dirname);
+    mainWindow.loadFile(htmlPath).catch((err) => {
+      console.error("[main] loadFile 실패:", err);
+      // fallback · 데이터 URL · 최소 안내 페이지 (하얀 화면 방지)
+      mainWindow?.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`
+        <html><body style="font-family:sans-serif;padding:40px;color:#475569">
+          <h2 style="color:#dc2626">⚠ 렌더러 로드 실패</h2>
+          <p>파일: ${htmlPath}</p>
+          <p>오류: ${err?.message ?? String(err)}</p>
+          <p style="margin-top:20px;color:#64748b">앱을 재설치하거나 · 관리자에게 문의하세요.</p>
+        </body></html>
+      `)}`);
+    });
   }
 
-  // 로딩 실패 진단
+  // 2026-09-18 · 상세 진단 · 하얀 화면 원인 파악
+  mainWindow.webContents.on("did-finish-load", () => {
+    console.log("[main] Renderer did-finish-load · URL:", mainWindow?.webContents.getURL());
+  });
+  mainWindow.webContents.on("console-message", (_e, level, message, line, sourceId) => {
+    console.log(`[renderer:${level}] ${message} (${sourceId}:${line})`);
+  });
   mainWindow.webContents.on("did-fail-load", (_e, errorCode, errorDescription, validatedURL) => {
     console.error("[main] Renderer 로딩 실패:", { errorCode, errorDescription, validatedURL });
   });
