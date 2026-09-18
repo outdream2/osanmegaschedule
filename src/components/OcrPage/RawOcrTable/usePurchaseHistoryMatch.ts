@@ -9,6 +9,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type { MatchedItem } from "./types";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../../lib/apiClient";
+import { devLog, devWarn } from "../../../lib/devLog";
 
 interface UsePurchaseHistoryMatchParams {
   dispHeaders: string[];
@@ -116,13 +117,13 @@ export function usePurchaseHistoryMatch({
         return next;
       });
       if (dbKeys.length > 0) setDbFilledCells(prev => new Set([...prev, ...dbKeys]));
-      console.log(`[matchRawToPurchaseHistory] page ${pn}: ${targets.length}행 대상 · 수량 매칭 ${matchedQty} · 단가 매칭 ${matchedPri}`);
+      devLog(`[matchRawToPurchaseHistory] page ${pn}: ${targets.length}행 대상 · 수량 매칭 ${matchedQty} · 단가 매칭 ${matchedPri}`);
       if (matchedQty + matchedPri > 0) {
         setSaveConfirmedToast({ type: "success", msg: `📚 매입이력 매칭 · ${pn}번 · 수량 ${matchedQty}건 · 단가 ${matchedPri}건 자동 채움` });
         setTimeout(() => setSaveConfirmedToast(null), TIMING.TOAST_MEDIUM);
       }
     } catch (e: any) {
-      console.warn(`[matchRawToPurchaseHistory] page ${pn}: 실패`, e?.message);
+      devWarn(`[matchRawToPurchaseHistory] page ${pn}: 실패`, e?.message);
     }
   }, [dispHeaders, matchItems, dispRows, pageNums, permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted, setCellEdits, setDbFilledCells, setSaveConfirmedToast]);
 

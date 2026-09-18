@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TIMING } from "../../../constants/timing";
+import { devLog } from "../../../lib/devLog";
 import type { Dispatch, SetStateAction } from "react";
 import type { RawPage } from "./types";
 
@@ -51,23 +52,23 @@ export function useAutoPipeline({
   const runColumnPipeline = useCallback(async (pn: number) => {
     if (runningPipeline[pn]) return;
     setRunningPipeline(prev => ({ ...prev, [pn]: true }));
-    console.log(`\n╔══ [column-pipeline] page ${pn} 시작 ══`);
+    devLog(`\n╔══ [column-pipeline] page ${pn} 시작 ══`);
     // 2026-07-28 · 사용자 요청 "자동정리 안하는 것 같음" · 시작·완료 토스트 표시
     setSaveConfirmedToast({ type: "success", msg: `⏳ ${pn}번 명세서 자동정리 중...` });
     // 이전 상태 snapshot (변경 여부 판단용)
     const beforeCellEditsCount = Object.values(cellEdits).reduce((s, r) => s + Object.keys(r ?? {}).length, 0);
     const beforeMatchCount = Object.keys(autoSynonymMatches).length;
     try {
-      console.log(`║ 1단계: 상품명 매칭 (동의어사전 포함)`);
+      devLog(`║ 1단계: 상품명 매칭 (동의어사전 포함)`);
       await handleMatchPage(pn);
       setConfirmedPages(prev => { const n = new Set(prev); n.delete(pn); return n; });
-      console.log(`║ 2단계: 빈 단가 DB 조회`);
+      devLog(`║ 2단계: 빈 단가 DB 조회`);
       await fillMissingPricesFromDB(pn);
-      console.log(`║ 3단계: OCR vs DB 큰 차이 스왑`);
+      devLog(`║ 3단계: OCR vs DB 큰 차이 스왑`);
       verifyAndSwapPricesWithDB(pn);
-      console.log(`║ 4단계: 매입이력 기반 raw 데이터 매칭 (수량·단가)`);
+      devLog(`║ 4단계: 매입이력 기반 raw 데이터 매칭 (수량·단가)`);
       await matchRawToPurchaseHistory(pn);
-      console.log(`╚══ [column-pipeline] page ${pn} 완료\n`);
+      devLog(`╚══ [column-pipeline] page ${pn} 완료\n`);
       // 변경 개수 계산 · 토스트 갱신
       setTimeout(() => {
         setCellEdits((latestCellEdits: Record<number, Record<number, string | number | null>>) => {
@@ -117,7 +118,7 @@ export function useAutoPipeline({
       toRun.push(p.page);
     }
     if (toRun.length === 0) return;
-    console.log(`[auto-pipeline] 자동 실행 대기 ${toRun.length}개 페이지 · pn:`, toRun);
+    devLog(`[auto-pipeline] 자동 실행 대기 ${toRun.length}개 페이지 · pn:`, toRun);
     (async () => {
       for (const pn of toRun) {
         await runColumnPipelineRef.current(pn);

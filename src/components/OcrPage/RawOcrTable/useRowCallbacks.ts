@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { api } from "../../../lib/apiClient";
+import { devLog } from "../../../lib/devLog";
 import { parseNumber } from "./utils";
 import type { CandidateInfo } from "./types";
 
@@ -43,7 +44,7 @@ export function useRowCallbacks({
         if (currentQty > 0) {
           const derivedPrice = Math.round(numVal / currentQty);
           rowEdits[pIdx] = derivedPrice;
-          console.log(`[commitCellEdit] 금액 ${numVal} / 수량 ${currentQty} = 단가 ${derivedPrice} (역계산)`);
+          devLog(`[commitCellEdit] 금액 ${numVal} / 수량 ${currentQty} = 단가 ${derivedPrice} (역계산)`);
         }
       }
       return { ...prev, [ri]: rowEdits };

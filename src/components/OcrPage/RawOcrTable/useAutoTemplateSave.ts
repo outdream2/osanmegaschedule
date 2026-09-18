@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { RawPage } from "./types";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../../lib/apiClient";
+import { devLog, devWarn } from "../../../lib/devLog";
 
 interface Args {
   structuredPages: RawPage[];
@@ -30,11 +31,11 @@ export function useAutoTemplateSave({ structuredPages, rawSupplierByPage, saveTe
           if (existingSuppliers.has(supplier)) continue;
           if (templateAutoSavedRef.current.has(supplier)) continue;
           templateAutoSavedRef.current.add(supplier);
-          console.log(`[템플릿 자동저장] "${supplier}" DB 에 없음 → 새 템플릿 저장 (page ${pn})`);
+          devLog(`[템플릿 자동저장] "${supplier}" DB 에 없음 → 새 템플릿 저장 (page ${pn})`);
           await saveTemplate(pn, supplier);
         }
       } catch (e: any) {
-        console.warn("[템플릿 자동저장] 실패:", e?.message);
+        devWarn("[템플릿 자동저장] 실패:", e?.message);
       }
     })();
   }, [structuredPages, rawSupplierByPage, saveTemplate]);

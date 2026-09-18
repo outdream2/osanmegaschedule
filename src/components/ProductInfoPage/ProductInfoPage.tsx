@@ -727,7 +727,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
         // devLog · 현재고 데이터 진단 (임시 · 데이터 안 나옴 원인 조사)
         const noStockCount = arr.filter(r => r.current_stock == null).length;
         const hasStockCount = arr.length - noStockCount;
-        console.debug("[ProductInfoPage] 현재고 진단", {
+        devLog("[ProductInfoPage] 현재고 진단", {
           total: arr.length,
           hasStock: hasStockCount,
           noStock: noStockCount,

@@ -1,6 +1,7 @@
 import React from "react";
 import { Wand2, Check } from "lucide-react";
 import { Spinner } from "../../common/Spinner";
+import { devLog } from "../../../lib/devLog";
 import { fmt, parseNumber } from "./utils";
 import type { SummaryEdit, DiscountInfo } from "./RawInvoiceCard.types";
 import type { RawPage } from "./types";
@@ -233,7 +234,7 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
                     const dateForSave = structuredPages.find(p => p.page === pn)?.meta.date ?? null;
                     if (supForSave) {
                       saveSupplierBalance(supForSave, n, dateForSave);
-                      console.log(`[미수금 저장] "${supForSave}" ${dateForSave ?? "날짜없음"} → ${n}원`);
+                      devLog(`[미수금 저장] "${supForSave}" ${dateForSave ?? "날짜없음"} → ${n}원`);
                     }
                   } else {
                     setPageBalanceOverride(prev => { const c = { ...prev }; delete c[pn]; return c; });

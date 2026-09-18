@@ -8,6 +8,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Minus, Plus, ChevronDown } from "lucide-react";
 import { api } from "../../lib/apiClient";
+import { devLog } from "../../lib/devLog";
 import { useStorageLocations } from "../../hooks/useStorageLocations";
 import { invalidateShelfPositionsMap, refetchShelfPositionsMap, patchShelfPositionsCache } from "../../hooks/useShelfPositionsMap";
 import { Button } from "./Button";
@@ -262,19 +263,19 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
         const val = joinDigits(draft[loc.code] ?? ["", "", ""]);
         payload[loc.code] = val;
       }
-      console.log("[ShelfPositionsEditModal] save payload:", { productCode, payload });
+      devLog("[ShelfPositionsEditModal] save payload:", { productCode, payload });
       const resp = await api.patch<{ ok: boolean; product_code: string; shelf_positions?: ShelfPositions }>(
         `/api/products/${encodeURIComponent(productCode)}/shelf-positions`,
         { shelf_positions: payload },
       );
-      console.log("[ShelfPositionsEditModal] server response:", resp.data);
+      devLog("[ShelfPositionsEditModal] server response:", resp.data);
       // 서버 응답 값 (= 방금 DB 저장한 값) 을 · 즉시 캐시에 반영 (UI 즉시 갱신 보장)
       const savedFromServer = resp.data?.shelf_positions ?? payload;
       patchShelfPositionsCache(productCode, savedFromServer);
       // 그리고 · DB 전체 재조회 (다른 상품 최신화)
       invalidateShelfPositionsMap();
       const freshMap = await refetchShelfPositionsMap();
-      console.log("[ShelfPositionsEditModal] refetched map for code:", productCode, "value:", freshMap[productCode]);
+      devLog("[ShelfPositionsEditModal] refetched map for code:", productCode, "value:", freshMap[productCode]);
       const saved = freshMap[productCode] ?? savedFromServer;
       window.dispatchEvent(new CustomEvent("inventory-checks-updated"));
       showSuccess("상세구역 저장 완료");

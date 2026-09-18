@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { api } from "../../../lib/apiClient";
+import { devLog } from "../../../lib/devLog";
 import type { RawPage, MatchedItem } from "./types";
 import {
   findNameHeaderIdx,
@@ -57,7 +58,7 @@ export function useReextractProductName({
     const amt = amtIdxL >= 0 ? Number(cellEdits[ri]?.[amtIdxL] ?? row?.[amtIdxL] ?? 0) : 0;
     const koreanOnlyMode = !(qty > 0) && !(amt > 0);
     if (koreanOnlyMode) {
-      console.log(`[reextractName] ri=${ri} · 수량·금액 없음 → 한글 위주 모드`);
+      devLog(`[reextractName] ri=${ri} · 수량·금액 없음 → 한글 위주 모드`);
     }
     const supplier = rawSupplierByPage[pn]
       ?? structuredPages.find(p => p.page === pn)?.meta.supplier
@@ -81,7 +82,7 @@ export function useReextractProductName({
       } catch { /* silent */ }
     }
     if (synHit) {
-      console.log(`[reextractName] ✓ 동의어 캐시 hit · "${currentName}" → ${synHit.name} (${synHit.code})`);
+      devLog(`[reextractName] ✓ 동의어 캐시 hit · "${currentName}" → ${synHit.name} (${synHit.code})`);
       setAutoSynonymMatches(prev => ({ ...prev, [ri]: { code: synHit!.code, name: synHit!.name } }));
       setCancelledAutoSyn(prev => { const s = new Set(prev); s.delete(ri); return s; });
       setCancelledAutoMap(prev => { const s = new Set(prev); s.delete(ri); return s; });
@@ -108,7 +109,7 @@ export function useReextractProductName({
               };
               return next;
             });
-            console.log(`[reextractName] 상품코드 ${synHit.code} · 판매가 ${p.sale_price} 사입가 ${p.purchase_price} 반영`);
+            devLog(`[reextractName] 상품코드 ${synHit.code} · 판매가 ${p.sale_price} 사입가 ${p.purchase_price} 반영`);
           }
         }
       } catch { /* silent · fallback to handleMatchPage */ }
@@ -119,7 +120,7 @@ export function useReextractProductName({
     const rowPosResult = findRowPositionInRawText(rawText, qty, amt, headerIdx);
     const localScanText = rowPosResult?.localScanText ?? "";
     if (rowPosResult) {
-      console.log(`[reextractName] 행 위치 정확 매치 · pos=${rowPosResult.pos}`);
+      devLog(`[reextractName] 행 위치 정확 매치 · pos=${rowPosResult.pos}`);
     }
     const scanText = computeScanText(rawText, headerIdx, currentName, localScanText);
     const uniqTokens = collectNameCandidates(scanText, currentName);
@@ -132,7 +133,7 @@ export function useReextractProductName({
       return;
     }
     setReextractingName(prev => new Set([...prev, ri]));
-    console.log(`[reextractName] ri=${ri} 후보 ${tokens.length}개 · 공급사="${supplier}" · 첫5개=`, tokens.slice(0, 5));
+    devLog(`[reextractName] ri=${ri} 후보 ${tokens.length}개 · 공급사="${supplier}" · 첫5개=`, tokens.slice(0, 5));
     try {
       const topTokens = tokens.slice(0, 10);
       const queries = topTokens.map(async tok => {
@@ -156,8 +157,8 @@ export function useReextractProductName({
         .sort((a, b) => b.combined - a.combined);
       if (scored.length > 0 && scored[0].sim >= 0.35) {
         const best = scored[0];
-        console.log(`[reextractName] ✓ 매칭 · "${best.tok}" → ${best.hit.product_name} (유사도=${(best.sim * 100).toFixed(0)}%, 종합=${best.combined.toFixed(1)})`);
-        console.log(`[reextractName] 상위 3개 결과:`, scored.slice(0, 3).map(s => `${s.tok}→${s.hit.product_name}(${(s.sim*100).toFixed(0)}%)`));
+        devLog(`[reextractName] ✓ 매칭 · "${best.tok}" → ${best.hit.product_name} (유사도=${(best.sim * 100).toFixed(0)}%, 종합=${best.combined.toFixed(1)})`);
+        devLog(`[reextractName] 상위 3개 결과:`, scored.slice(0, 3).map(s => `${s.tok}→${s.hit.product_name}(${(s.sim*100).toFixed(0)}%)`));
         setAutoSynonymMatches(prev => ({ ...prev, [ri]: { code: best.hit.product_code, name: best.hit.product_name } }));
         setCancelledAutoSyn(prev => { const s = new Set(prev); s.delete(ri); return s; });
         if (best.tok !== best.hit.product_name) {
@@ -165,7 +166,7 @@ export function useReextractProductName({
         }
         return;
       }
-      console.log(`[reextractName] DB 매칭 실패 · 순환 모드 진입 · 후보 ${tokens.length}개`);
+      devLog(`[reextractName] DB 매칭 실패 · 순환 모드 진입 · 후보 ${tokens.length}개`);
       const existingCands = nameCellCandidates[ri];
       const cycleIdx = nameCellCycle[ri] ?? -1;
       let nextCands: string[];
@@ -178,7 +179,7 @@ export function useReextractProductName({
         nextCands = existingCands;
         nextIdx = cycleIdx + 1;
         if (nextIdx >= nextCands.length) {
-          console.log(`[reextractName] 순환 종료 · 원본 복원`);
+          devLog(`[reextractName] 순환 종료 · 원본 복원`);
           setCellEdits(prev => {
             const rowEdits = { ...(prev[ri] ?? {}) };
             delete rowEdits[nameIdx];
@@ -192,7 +193,7 @@ export function useReextractProductName({
       const chosen = nextCands[nextIdx];
       setNameCellCycle(prev => ({ ...prev, [ri]: nextIdx }));
       setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [nameIdx]: chosen } }));
-      console.log(`[reextractName] 후보 ${nextIdx + 1}/${nextCands.length} 채택 · "${chosen}"`);
+      devLog(`[reextractName] 후보 ${nextIdx + 1}/${nextCands.length} 채택 · "${chosen}"`);
     } finally {
       setReextractingName(prev => { const s = new Set(prev); s.delete(ri); return s; });
     }

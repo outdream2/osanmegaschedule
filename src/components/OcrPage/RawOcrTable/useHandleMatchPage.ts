@@ -17,6 +17,7 @@ import {
 } from "../../../lib/ocrRowFilter";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../../lib/apiClient";
+import { devLog, devWarn } from "../../../lib/devLog";
 
 interface UseHandleMatchPageParams {
   dispHeaders: string[];
@@ -92,7 +93,7 @@ export function useHandleMatchPage({
       if (rawName && !isValidProductName(rawName)) {
         const cleaned = cleanProductName(rawName);
         if (cleaned && isValidProductName(cleaned)) {
-          console.log(`[handleMatchPage] 행 ${ri} 잡문자 제거 · "${rawName.slice(0, 30)}" → "${cleaned.slice(0, 30)}"`);
+          devLog(`[handleMatchPage] 행 ${ri} 잡문자 제거 · "${rawName.slice(0, 30)}" → "${cleaned.slice(0, 30)}"`);
           rawName = cleaned;
         }
       }
@@ -122,7 +123,7 @@ export function useHandleMatchPage({
         || permanentlyDeletedRawRows.has(ri)
         || isRowDbDeleted(ri);
       if (skip && rawName && lowScore) {
-        console.log(`[handleMatchPage] 행 ${ri} 스킵 · 저스코어(${score}) · ${reasons.join(",")} · "${rawName.slice(0, 20)}"`);
+        devLog(`[handleMatchPage] 행 ${ri} 스킵 · 저스코어(${score}) · ${reasons.join(",")} · "${rawName.slice(0, 20)}"`);
       }
       return { rowIdx: ri, name: rawName, supplier: sup, skip };
     }).filter((x): x is { rowIdx: number; name: string; supplier: string; skip: boolean } => x !== null);
@@ -130,7 +131,7 @@ export function useHandleMatchPage({
     const activePairs = nameSupplierPairs.filter(p => !p.skip);
     // 2026-07-24 · activePairs 없어도 확정 상태 마킹 + 잔고 저장
     if (activePairs.length === 0) {
-      console.log(`[handleMatchPage] ${targetPage}번 · 매칭할 활성 행 없음 · 확정만 마킹`);
+      devLog(`[handleMatchPage] ${targetPage}번 · 매칭할 활성 행 없음 · 확정만 마킹`);
       setConfirmedPages(prev => new Set([...prev, targetPage]));
       const currentBal0 = pageBalanceOverride[targetPage] ?? pageSupplierBalances[targetPage];
       if (currentBal0 != null && currentBal0 > 0) {
@@ -144,7 +145,7 @@ export function useHandleMatchPage({
     }
     const names = activePairs.map(p => p.name);
     const suppliers = activePairs.map(p => p.supplier);
-    console.log(`[handleMatchPage] ${targetPage}번 명세서 · ${names.length}행 매칭 요청`);
+    devLog(`[handleMatchPage] ${targetPage}번 명세서 · ${names.length}행 매칭 요청`);
     setSaveConfirmedToast({ type: "success", msg: `⏳ ${targetPage}번 · ERP 매칭 요청 (${names.length}행)...` });
 
     setMatchingPage(prev => ({ ...prev, [targetPage]: true }));
@@ -183,7 +184,7 @@ export function useHandleMatchPage({
             return;
           }
           if (!serverItem?.matched || svrScore < MIN_ERP_SCORE) {
-            console.log(`[handleMatchPage] 저스코어 ${svrScore} · "${p.name}" 매칭 안 함 (임계 ${MIN_ERP_SCORE})`);
+            devLog(`[handleMatchPage] 저스코어 ${svrScore} · "${p.name}" 매칭 안 함 (임계 ${MIN_ERP_SCORE})`);
             next[p.rowIdx] = { input: p.name, matched: null };
             lowScoreCount++;
             return;
@@ -206,7 +207,7 @@ export function useHandleMatchPage({
         const dateForBal = structuredPages.find(p => p.page === targetPage)?.meta.date ?? null;
         if (supForBal) {
           saveSupplierBalance(supForBal, currentBal, dateForBal);
-          console.log(`[확정→잔고저장] "${supForBal}" ${dateForBal ?? "날짜없음"} → ${currentBal}원`);
+          devLog(`[확정→잔고저장] "${supForBal}" ${dateForBal ?? "날짜없음"} → ${currentBal}원`);
         }
       }
     } finally {
@@ -260,9 +261,9 @@ export function useHandleMatchPage({
         targets.forEach((t, ai) => { if (matches[ai]) arr[t.rowIdx] = matches[ai]; });
         return arr;
       });
-      console.log(`[fillMissingPricesFromDB] page ${pn}: ${filled}/${targets.length} 행 사입단가 DB 채움`);
+      devLog(`[fillMissingPricesFromDB] page ${pn}: ${filled}/${targets.length} 행 사입단가 DB 채움`);
     } catch (e: any) {
-      console.warn(`[fillMissingPricesFromDB] page ${pn}: DB 조회 실패`, e?.message);
+      devWarn(`[fillMissingPricesFromDB] page ${pn}: DB 조회 실패`, e?.message);
     }
   }, [dispHeaders, nameIdx, dispRows, pageNums, permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted, cellEdits, rawSupplierByPage, structuredPages, globalSupplier, setCellEdits, setDbFilledCells, setMatchItems]);
 
@@ -291,7 +292,7 @@ export function useHandleMatchPage({
       return next;
     });
     if (dbKeys.length > 0) setDbFilledCells(prev => new Set([...prev, ...dbKeys]));
-    console.log(`[verifyAndSwapPricesWithDB] page ${pn}: ${swapped} 행 · OCR vs DB 50%+ 차이 → DB 값으로 스왑`);
+    devLog(`[verifyAndSwapPricesWithDB] page ${pn}: ${swapped} 행 · OCR vs DB 50%+ 차이 → DB 값으로 스왑`);
   }, [dispHeaders, matchItems, dispRows, pageNums, permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted, setCellEdits, setDbFilledCells]);
 
   return { matchingPage, handleMatchPage, fillMissingPricesFromDB, verifyAndSwapPricesWithDB };

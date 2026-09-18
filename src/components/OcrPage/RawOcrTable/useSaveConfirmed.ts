@@ -16,6 +16,7 @@ import type { ConfirmedItem, MatchedItem, BarcodeProduct, CandidateInfo } from "
 import { parseNumber } from "./utils";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api, ApiError } from "../../../lib/apiClient";
+import { devLog, devWarn } from "../../../lib/devLog";
 import { getErrorMessage } from "../../../lib/errorMessage";
 
 // ── 타입 정의 ──────────────────────────────────────────────────────────────
@@ -267,13 +268,13 @@ export function useSaveConfirmed({
             uploadedCount++;
           } else if (r.status === "rejected") {
             failedCount++;
-            console.warn(`[handleSaveConfirmed] 이미지 업로드 실패: ${r.reason?.message ?? r.reason}`);
+            devWarn(`[handleSaveConfirmed] 이미지 업로드 실패: ${r.reason?.message ?? r.reason}`);
           }
         });
         if (failedCount > 0) {
-          console.warn(`[handleSaveConfirmed] 이미지 ${uploadedCount}장 업로드 · ${failedCount}장 실패 (items 저장은 계속)`);
+          devWarn(`[handleSaveConfirmed] 이미지 ${uploadedCount}장 업로드 · ${failedCount}장 실패 (items 저장은 계속)`);
         } else {
-          console.log(`[handleSaveConfirmed] 이미지 ${uploadedCount}장 업로드 완료`);
+          devLog(`[handleSaveConfirmed] 이미지 ${uploadedCount}장 업로드 완료`);
         }
       }
 

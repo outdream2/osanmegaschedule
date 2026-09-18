@@ -2,6 +2,7 @@
 //   pages 재로딩·컬럼 위치 변경 시 · cellEdits[ri][ci] · autoSynonymMatches[ri] 를 안정키 기반으로 재매핑
 //   안정키 = "pn|localRi" (페이지번호+페이지내 인덱스) · 컬럼은 이름 기반
 import { useEffect, useRef } from "react";
+import { devLog, devWarn } from "../../../lib/devLog";
 import type React from "react";
 
 type CellEdits = Record<number, Record<number, string | number | null>>;
@@ -38,7 +39,7 @@ export function useEditMigration({ pageNums, dispHeaders, setCellEdits, setAutoS
     const sameHd = prev.dispHeaders.length === dispHeaders.length && prev.dispHeaders.every((v, i) => v === dispHeaders[i]);
     if (samePn && sameHd) return;
     // 2026-09-01 · fix · DEBUG log 제거 · 구조 변경 요약 만 남김 (아래)
-    console.log(`[cellEdits migration] 구조 변경 감지 · prev: ${prev.pageNums.length}행 ${prev.dispHeaders.length}컬 → new: ${pageNums.length}행 ${dispHeaders.length}컬`);
+    devLog(`[cellEdits migration] 구조 변경 감지 · prev: ${prev.pageNums.length}행 ${prev.dispHeaders.length}컬 → new: ${pageNums.length}행 ${dispHeaders.length}컬`);
     const prevKeys = buildStableKeys(prev.pageNums);
     const newKeys = buildStableKeys(pageNums);
     const prevHeaders = prev.dispHeaders;
@@ -72,10 +73,10 @@ export function useEditMigration({ pageNums, dispHeaders, setCellEdits, setAutoS
           lost++;
         }
       }
-      console.log(`[cellEdits migration] ${editKeys.length}행 → 유지 ${preserved} · 손실 ${lost}`);
+      devLog(`[cellEdits migration] ${editKeys.length}행 → 유지 ${preserved} · 손실 ${lost}`);
       // 2026-09-01 · fix · DEBUG 손실 상세 log 제거 · 손실률 warn 은 유지
       if (lost > 0 && lost >= preserved) {
-        console.warn(`[cellEdits migration] 손실률 ${lost}/${editKeys.length} 이 유지보다 많음 · 안전을 위해 원본 유지 (return prevEdits)`);
+        devWarn(`[cellEdits migration] 손실률 ${lost}/${editKeys.length} 이 유지보다 많음 · 안전을 위해 원본 유지 (return prevEdits)`);
         return prevEdits;
       }
       return next;
@@ -98,9 +99,9 @@ export function useEditMigration({ pageNums, dispHeaders, setCellEdits, setAutoS
         next[newRi] = val;
         preserved++;
       }
-      console.log(`[autoSynonymMatches migration] ${keys.length}행 → 유지 ${preserved} · 손실 ${lost}`);
+      devLog(`[autoSynonymMatches migration] ${keys.length}행 → 유지 ${preserved} · 손실 ${lost}`);
       if (lost > 0 && lost >= preserved) {
-        console.warn(`[autoSynonymMatches migration] 손실률 높음 · 원본 유지`);
+        devWarn(`[autoSynonymMatches migration] 손실률 높음 · 원본 유지`);
         return prevMap;
       }
       return next;

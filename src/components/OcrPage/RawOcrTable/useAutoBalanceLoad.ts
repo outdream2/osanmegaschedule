@@ -1,6 +1,7 @@
 // 2026-07-24 · RawOcrTable 리팩터 · 공급사 잔고 자동 로드 훅 (#4 부분)
 //   OCR 완료 후 · supplierBalanceRecords + structuredPages 매칭 → pageBalanceOverride 채움
 import { useEffect } from "react";
+import { devLog } from "../../../lib/devLog";
 import type React from "react";
 import type { RawPage } from "./types";
 
@@ -47,7 +48,7 @@ export function useAutoBalanceLoad({
         }
       }
       if (!changed) return prev;
-      console.log(`[balance auto-load] ${Object.keys(next).length}개 페이지에 공급사 최신 잔고 자동 채움`);
+      devLog(`[balance auto-load] ${Object.keys(next).length}개 페이지에 공급사 최신 잔고 자동 채움`);
       return next;
     });
   }, [supplierBalanceRecords, structuredPages, rawSupplierByPage, setPageBalanceOverride]);

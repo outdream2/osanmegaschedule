@@ -3,6 +3,7 @@ import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { SK_OCR_ENGINE } from "../../lib/storageKeys";
 // 2026-09-02 · 프레임워크 · axios → api.* (인증·에러 프레임워크 통합)
 import { api } from "../../lib/apiClient";
+import { devLog, devWarn } from "../../lib/devLog";
 import { Upload, X, Zap, AlertCircle, Images, BookOpen, FileText } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import { PageImageViewer } from "./PageImageViewer";
@@ -210,7 +211,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
             el.onerror = () => resolve({ idx, deg: 0, portrait: false });
             el.src = dataUrl;
           })));
-          console.log(`[auto-rotation] ${sampleCount}장 감지:`, measured.map(m => `p${m.idx + 1}=${m.deg}°${m.portrait ? "(세로)" : ""}`).join(" · "));
+          devLog(`[auto-rotation] ${sampleCount}장 감지:`, measured.map(m => `p${m.idx + 1}=${m.deg}°${m.portrait ? "(세로)" : ""}`).join(" · "));
           // 다수결
           const counts = new Map<number, number>();
           for (const m of measured) counts.set(m.deg, (counts.get(m.deg) ?? 0) + 1);
@@ -227,13 +228,13 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
             const portraitCount = measured.filter(m => m.portrait).length;
             if (portraitCount > sampleCount / 2) {
               bestDeg = -90;
-              console.log(`[auto-rotation] → 폴백 · ${portraitCount}/${sampleCount} 세로형 · -90° 로 강제 가로화`);
+              devLog(`[auto-rotation] → 폴백 · ${portraitCount}/${sampleCount} 세로형 · -90° 로 강제 가로화`);
             }
           }
-          console.log(`[auto-rotation] → 최종 채택 ${bestDeg}° (다수결 ${bestCount}/${sampleCount})`);
+          devLog(`[auto-rotation] → 최종 채택 ${bestDeg}° (다수결 ${bestCount}/${sampleCount})`);
           setRotation(bestDeg);
         } catch (e: any) {
-          console.warn("[auto-rotation] 실패:", e?.message);
+          devWarn("[auto-rotation] 실패:", e?.message);
         } finally {
           setDetectingOrient(false);
         }
@@ -315,7 +316,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
             else collectedPages.push(pg as OcrPageResult);
             setPages(prev => {
               if (prev.some(p => p.page === pg.page)) {
-                console.log(`[SSE page ${pg.page}] 이미 로딩됨 · setPages skip (편집 보존)`);
+                devLog(`[SSE page ${pg.page}] 이미 로딩됨 · setPages skip (편집 보존)`);
                 return prev;
               }
               return [...prev, pg as OcrPageResult];
@@ -364,7 +365,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
           if (Array.isArray(parsed) && parsed.length > 0) {
             // 2026-07-23 · 사용자 편집 감지 시 · Gemini 재파싱 결과로 덮어쓰지 않음
             if (hasUserEditsRef.current) {
-              console.warn("[Gemini reparse] 사용자 편집 감지 · setPages 스킵 (편집 보존)");
+              devWarn("[Gemini reparse] 사용자 편집 감지 · setPages 스킵 (편집 보존)");
               setStatusMsg(`Gemini 파싱 완료 · 편집중이라 표는 유지 (${parsed.length}페이지)`);
             } else {
               setPages(parsed);

@@ -35,6 +35,7 @@ import { useLedgerHighlight } from "../../hooks/useLedgerHighlight";
 import { useVendorInfoModal } from "../common/features/VendorInfoModal";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { api, ApiError } from "../../lib/apiClient";
+import { devLog, devWarn } from "../../lib/devLog";
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-21 · Framework Phase 4 · large-file 분리
 import type { VendorItem, SummaryResponse, DataSource, SourceDiagnostics, ViewMode, ProductSort } from "./PurchaseHistoryTab.types";
@@ -171,13 +172,13 @@ export const PurchaseHistoryTab: React.FC = () => {
       setSummarySource(j.source ?? null);
       setSummaryDiagnostics(j.diagnostics ?? null);
       if (j.source === "ocr_confirmed_items") {
-        console.warn(
+        devWarn(
           "[PurchaseHistory] 매입이력 데이터가 거래명세서(ocr_confirmed_items) 폴백으로 로드됨. " +
           "정답 소스는 purchase_details (ERP xlsx 임포트). " +
           "diagnostics:", j.diagnostics,
         );
       } else if (j.source === "purchase_details") {
-        console.log("[PurchaseHistory] source=purchase_details (ERP 임포트) · diagnostics:", j.diagnostics);
+        devLog("[PurchaseHistory] source=purchase_details (ERP 임포트) · diagnostics:", j.diagnostics);
       }
 
       // 공급사별 판매량·판매금액 집계 (top-sales row 는 상품 단위 · supplier 필드로 groupBy)

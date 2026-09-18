@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { api } from "../../../lib/apiClient";
+import { devLog } from "../../../lib/devLog";
 import { isNonProductText, isValidSupplierHint } from "../../../lib/ocrRowFilter";
 import type { MatchedItem, RawPage } from "./types";
 
@@ -74,11 +75,11 @@ export function useHandleMatch({
       return { rowIdx: ri, name: rawName, supplier: sup, skip };
     });
     const skippedCount = nameSupplierPairs.filter(p => p.skip).length;
-    if (skippedCount > 0) console.log(`[handleMatch] ${skippedCount}행 스킵 (빈 품명·배송정보·잡문자·삭제행)`);
+    if (skippedCount > 0) devLog(`[handleMatch] ${skippedCount}행 스킵 (빈 품명·배송정보·잡문자·삭제행)`);
     const activePairs = nameSupplierPairs.filter(p => !p.skip);
     const names = activePairs.map(p => p.name);
     const suppliers = activePairs.map(p => p.supplier);
-    console.log(`[handleMatch] ${names.length}개 행 매칭 요청 · 고유 공급자: ${[...new Set(suppliers)].filter(Boolean).length}개`);
+    devLog(`[handleMatch] ${names.length}개 행 매칭 요청 · 고유 공급자: ${[...new Set(suppliers)].filter(Boolean).length}개`);
     setMatching(true); setMatchItems(null); setOverrides({}); setSupplierOverrides({}); setConfirmed(false); setSavedSynonyms(new Set()); setSavedSupplierAliases(new Set());
     setRetryingRows(new Set()); setCandidatesMap({}); setOpenCandRow(null); setSelectedCands({}); setCancelledRows(new Set());
     try {

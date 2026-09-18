@@ -64,6 +64,7 @@ import type { InventoryEditModalInitialValues } from "../common/features/Invento
 import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { api, ApiError } from "../../lib/apiClient";
+import { devLog } from "../../lib/devLog";
 // 2026-09-14 · orderRequestsApi 프리미티브
 import { createOrderRequest } from "../../lib/orderRequestsApi";
 import { getProductByCode } from "../../lib/productsApi";
@@ -391,16 +392,16 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     const orderQty = orderQtyOverride.get(code) ?? shortage;
     setRequestingOrder(prev => { const n = new Set(prev); n.add(code); return n; });
     try {
-      console.log("[handleRequestOrder] POST /api/order-requests", { code, orderQty });
+      devLog("[handleRequestOrder] POST /api/order-requests", { code, orderQty });
       await createOrderRequest({
         product_code: code, product_name: name,
         current_stock: p.current_stock,
         order_qty: orderQty,
         supplier: p.supplier,
       });
-      console.log("[handleRequestOrder] POST result: ok");
+      devLog("[handleRequestOrder] POST result: ok");
       await loadOrderReqs();
-      console.log("[handleRequestOrder] loadOrderReqs done");
+      devLog("[handleRequestOrder] loadOrderReqs done");
       dispatchApprovalChange("order");
       // 2026-09-10 · 사용자 지시 · 성공 알람 필수
       showSuccess(isAlreadyRequested

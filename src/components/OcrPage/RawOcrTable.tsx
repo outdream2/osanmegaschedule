@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { api } from "../../lib/apiClient";
+import { devLog, devWarn } from "../../lib/devLog";
 import { SK_OCR_DISCOUNT_MODE } from "../../lib/storageKeys";
 
 import type {
@@ -126,7 +127,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
         if (key && syn.prod_name_new) m.set(key, { name: String(syn.prod_name_new), code: String(syn.product_code ?? "") });
       }
       setSynonymsMap(m);
-      console.log(`[synonymsMap] 로드 · ${m.size}건`);
+      devLog(`[synonymsMap] 로드 · ${m.size}건`);
     } catch { /* silent */ }
   }, []);
   useEffect(() => { loadSynonymsMap(); }, [loadSynonymsMap]);
@@ -147,7 +148,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   const prevCellEditsSizeRef = useRef(0);
   useEffect(() => {
     const size = Object.values(cellEdits).reduce<number>((s, row) => s + Object.keys(row as object).length, 0);
-    if (size < prevCellEditsSizeRef.current) console.warn(`[cellEdits 손실] ${prevCellEditsSizeRef.current} → ${size}`);
+    if (size < prevCellEditsSizeRef.current) devWarn(`[cellEdits 손실] ${prevCellEditsSizeRef.current} → ${size}`);
     prevCellEditsSizeRef.current = size;
   }, [cellEdits]);
   const [editingCell, setEditingCell] = useState<{ ri: number; ci: number } | null>(null);
