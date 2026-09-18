@@ -366,7 +366,8 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
             <span className="w-1.5 h-4 rounded-full bg-brand-deep" />
             가격 정보
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
+          {/* 판매가·매입가 나란히 (2-col 고정) · 이익율 그 아래 full-width */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
             <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
               <span className="text-[15px] font-bold text-brand-deep bg-brand-tint rounded-md px-2.5 py-1 shrink-0">판매가</span>
               {editing
@@ -383,7 +384,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                   ? <span className="text-[18px] font-bold text-amber-700 tabular-nums leading-none tracking-tight">{Number(p.purchase_price).toLocaleString()}<span className="text-[12px] font-semibold ml-0.5 text-amber-600">원</span></span>
                   : <span className="text-zinc-300 text-[14px]">-</span>}
             </div>
-            <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
+            <div className="col-span-2 flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
               <span className="text-[15px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1 shrink-0">이익율</span>
               {profitRate != null
                 ? <span className={`text-[18px] font-bold tabular-nums leading-none tracking-tight ${profitRate >= 30 ? "text-emerald-600" : profitRate >= 15 ? "text-amber-600" : "text-rose-600"}`}>{profitRate}<span className="text-[12px] font-semibold ml-0.5">%</span></span>
@@ -457,19 +458,22 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
           </div>
         </section>
 
-        {/* ─── SECTION 3 · 재고 · 진열위치 (통합) · 반응형 grid · 폰트 +2 ─── */}
+        {/* ─── SECTION 3 · 재고 · 현재고+적정재고 2-col · 창고/매장 총합 제거 (진열위치 섹션에서 개별 표시) ─── */}
         <section className="space-y-2.5">
           <h3 className="flex items-center gap-1.5 text-[15px] font-bold text-emerald-700 tracking-tight pb-2 border-b-2 border-emerald-200">
             <span className="w-1.5 h-4 rounded-full bg-emerald-600" />
-            재고 · 진열위치
+            재고
           </h3>
-          {/* 2026-09-18 · 수직 정렬 · label w-[72px] 고정 · 값 left-align 통일 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-0.5">
+          {/* 현재고 · 적정재고 · 2-col 나란히 */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+            {/* 현재고 */}
             <div className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
               <span className="w-[72px] text-[14px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1 text-center shrink-0">현재고</span>
               {(p.current_stock != null && Number(p.current_stock) !== 0)
                 ? <span className="inline-flex items-center gap-1.5 min-w-0">
-                    <span className="text-[20px] font-extrabold text-emerald-700 tabular-nums leading-none tracking-tight">{String(p.current_stock)}<span className="text-[12px] font-semibold ml-0.5 text-emerald-600/70">개</span></span>
+                    <span className="text-[20px] font-extrabold text-emerald-700 tabular-nums leading-none tracking-tight">
+                      {String(p.current_stock)}<span className="text-[12px] font-semibold ml-0.5 text-emerald-600/70">개</span>
+                    </span>
                     {p.optimal_stock != null && (() => {
                       const cur = Number(p.current_stock ?? 0);
                       const opt = Number(p.optimal_stock);
@@ -480,6 +484,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                   </span>
                 : <span className="text-[14px] font-bold text-rose-500">부족</span>}
             </div>
+            {/* 적정재고 */}
             <div className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
               <span className="w-[72px] shrink-0 inline-flex flex-col items-center justify-center">
                 <span className="text-[14px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2 py-0.5 leading-snug w-full text-center">적정재고</span>
@@ -488,136 +493,131 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
               {editing
                 ? <input type="number" min={0} value={val("optimal_stock")} onChange={e => set("optimal_stock", e.target.value)} className={inputCls + " tabular-nums text-[14px] max-w-[120px]"} />
                 : p.optimal_stock != null
-                  ? <span className="text-[18px] font-bold text-ink tabular-nums leading-none tracking-tight">{String(p.optimal_stock)}<span className="text-[12px] font-semibold ml-0.5 text-ink-soft">개</span></span>
+                  ? <span className="text-[18px] font-bold text-ink tabular-nums leading-none tracking-tight">
+                      {String(p.optimal_stock)}<span className="text-[12px] font-semibold ml-0.5 text-ink-soft">개</span>
+                    </span>
                   : <span className="text-zinc-300 text-[16px] tabular-nums">-</span>}
             </div>
-            <div className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="w-[72px] text-[14px] font-bold text-cyan-700 bg-cyan-50 rounded-md px-2.5 py-1 text-center shrink-0">창고</span>
-              {(w1 != null || w2 != null) ? (
-                <span className="inline-flex items-center gap-1.5 min-w-0">
-                  <span className="text-[18px] font-bold text-cyan-700 tabular-nums leading-none tracking-tight">{totalWarehouse}<span className="text-[12px] font-semibold ml-0.5 text-cyan-600/70">개</span></span>
-                  {(w1 != null && w2 != null) && (
-                    <span className="text-[12px] font-medium text-cyan-600/70 tabular-nums shrink-0">({w1}·{w2})</span>
-                  )}
-                </span>
-              ) : <span className="text-zinc-300 text-[16px] tabular-nums">-</span>}
-            </div>
-            <div className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="w-[72px] text-[14px] font-bold text-indigo-700 bg-indigo-50 rounded-md px-2.5 py-1 text-center shrink-0">매장</span>
-              {product.store_stock != null
-                ? <span className="text-[18px] font-bold text-indigo-700 tabular-nums leading-none tracking-tight">{totalStore}<span className="text-[12px] font-semibold ml-0.5 text-indigo-600/70">개</span></span>
-                : <span className="text-zinc-300 text-[16px] tabular-nums">-</span>}
-            </div>
           </div>
-          {/* 진열위치 · full-width row */}
-          <div className="pt-2">
-            <div className="flex items-start justify-between gap-2 min-h-[36px]">
-              <span className="text-[15px] font-bold text-rose-700 bg-rose-50 rounded-md px-2.5 py-1 shrink-0 mt-1">진열위치</span>
-              <div className="flex-1">
-                {editing ? (
-                  <div className="space-y-2">
-                    <div className="text-[12px] text-ink-soft leading-relaxed">
-                      각 위치 <span className="font-bold text-brand-deep">3자리 (층·칸·순서)</span> 입력 · 예 <span className="font-mono text-ink font-bold">332</span> · 매장 필수
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {storageLocations.filter(l => l.active).map(loc => {
-                        const hasKey = Object.prototype.hasOwnProperty.call(shelfDraft, loc.code);
-                        if (!hasKey) return null;
-                        return (
-                          <ShelfPositionInput
-                            key={loc.code}
-                            label={`${loc.name}${loc.kind === "warehouse" ? " (창고)" : ""}`}
-                            required={loc.required_detail}
-                            value={shelfDraft[loc.code] ?? null}
-                            onChange={(v) => setShelf(loc.code, v)}
-                            productCode={product.product_code}
-                            displayLocation={String(p.location ?? p.display_location ?? "").trim() || null}
-                            storageKey={loc.code}
-                          />
-                        );
-                      })}
-                    </div>
-                    {(() => {
-                      const missing = storageLocations.filter(l => l.active && !Object.prototype.hasOwnProperty.call(shelfDraft, l.code));
-                      if (missing.length === 0) return null;
-                      return (
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-[11px] text-ink-soft">위치 추가:</span>
-                          {missing.map(loc => (
-                            <button
-                              key={loc.code}
-                              type="button"
-                              onClick={() => addShelfLocation(loc.code)}
-                              className="text-[12px] font-semibold px-2 h-6 rounded-md border border-brand-tint text-brand-deep hover:bg-brand-tint transition-colors cursor-pointer"
-                            >+ {loc.name}</button>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <EditField k="location" label="구역" />
-                      <EditField k="sale_status" label="판매 상태" />
-                    </div>
+        </section>
+
+        {/* ─── SECTION 4 · 진열위치 · 구역 뱃지 + 창고1/2(cyan) + 매장1/2/3(indigo) · 수직 정렬 그리드 ─── */}
+        <section className="space-y-2.5">
+          <h3 className="flex items-center gap-1.5 text-[15px] font-bold text-rose-700 tracking-tight pb-2 border-b-2 border-rose-200">
+            <span className="w-1.5 h-4 rounded-full bg-rose-600" />
+            진열위치
+          </h3>
+          {editing ? (
+            /* 편집 모드 · 기존 ShelfPositionInput 완전 유지 */
+            <div className="space-y-2">
+              <div className="text-[12px] text-ink-soft leading-relaxed">
+                각 위치 <span className="font-bold text-brand-deep">3자리 (층·칸·순서)</span> 입력 · 예 <span className="font-mono text-ink font-bold">332</span> · 매장 필수
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {storageLocations.filter(l => l.active).map(loc => {
+                  const hasKey = Object.prototype.hasOwnProperty.call(shelfDraft, loc.code);
+                  if (!hasKey) return null;
+                  return (
+                    <ShelfPositionInput
+                      key={loc.code}
+                      label={`${loc.name}${loc.kind === "warehouse" ? " (창고)" : ""}`}
+                      required={loc.required_detail}
+                      value={shelfDraft[loc.code] ?? null}
+                      onChange={(v) => setShelf(loc.code, v)}
+                      productCode={product.product_code}
+                      displayLocation={String(p.location ?? p.display_location ?? "").trim() || null}
+                      storageKey={loc.code}
+                    />
+                  );
+                })}
+              </div>
+              {(() => {
+                const missing = storageLocations.filter(l => l.active && !Object.prototype.hasOwnProperty.call(shelfDraft, l.code));
+                if (missing.length === 0) return null;
+                return (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] text-ink-soft">위치 추가:</span>
+                    {missing.map(loc => (
+                      <button
+                        key={loc.code}
+                        type="button"
+                        onClick={() => addShelfLocation(loc.code)}
+                        className="text-[12px] font-semibold px-2 h-6 rounded-md border border-brand-tint text-brand-deep hover:bg-brand-tint transition-colors cursor-pointer"
+                      >+ {loc.name}</button>
+                    ))}
                   </div>
-                ) : (
-                  // 2026-09-18 · 사용자 지시 · 진열구역 깔끔 표시
-                  //   · 데이터 있는 것만 · 미입력 텍스트 X · "구역N · 창고1 · 매장1" 형태
-                  (() => {
-                    const displayPositions = mergeShelfPositionsWithFallback(
-                      product.shelf_positions ?? {},
-                      String(p.location ?? p.display_location ?? "").trim() || null,
-                      (product as any)?.category_code ?? null,
-                    );
-                    const allItems = formatShelfPositions(displayPositions, storageLocations);
-                    // 2026-09-18 · 미입력 항목도 포함 → "위치 미입력" 뱃지 표시
-                    // 창고 · 매장 순서 정렬
-                    const warehouseItems = allItems.filter(item => item.kind === "warehouse");
-                    const storeItems = allItems.filter(item => item.kind === "store");
-                    const hasLocation = !!p.location;
-                    const hasAny = hasLocation || allItems.length > 0;
-                    if (!hasAny) {
-                      return (
-                        <span className="text-[14px] text-zinc-400">진열구역 없음</span>
-                      );
-                    }
-                    const parts: React.ReactNode[] = [];
-                    if (hasLocation) {
-                      parts.push(
-                        <span key="loc" className="text-[17px] font-extrabold text-rose-700 tabular-nums tracking-tight leading-none">
-                          구역 {String(p.location)}
-                        </span>
-                      );
-                    }
-                    for (const item of [...warehouseItems, ...storeItems]) {
-                      // 2026-09-18 · detail 없으면 "위치 미입력" 뱃지 표시
-                      parts.push(
-                        <span key={item.code} className="inline-flex items-center gap-1.5">
-                          <span className="text-[16px] font-bold text-ink tracking-tight leading-none">
-                            {item.detail ? `${item.name} ${formatShelfDetail(item.detail)}` : item.name}
-                          </span>
-                          {!item.detail && (
-                            <span className="text-[11px] font-semibold text-rose-500 border border-rose-300 rounded px-1.5 py-0.5 leading-none bg-rose-50">
-                              위치 미입력
-                            </span>
-                          )}
-                        </span>
-                      );
-                    }
-                    return (
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        {parts.map((part, idx) => (
-                          <React.Fragment key={idx}>
-                            {idx > 0 && <span className="text-zinc-300 text-[15px] font-light select-none">·</span>}
-                            {part}
-                          </React.Fragment>
-                        ))}
-                      </div>
-                    );
-                  })()
-                )}
+                );
+              })()}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <EditField k="location" label="구역" />
+                <EditField k="sale_status" label="판매 상태" />
               </div>
             </div>
-          </div>
+          ) : (
+            /* 표시 모드 · 수직 정렬 그리드 · 구역→창고→매장 순 */
+            (() => {
+              const displayPositions = mergeShelfPositionsWithFallback(
+                product.shelf_positions ?? {},
+                String(p.location ?? p.display_location ?? "").trim() || null,
+                (product as any)?.category_code ?? null,
+              );
+              const allItems = formatShelfPositions(displayPositions, storageLocations);
+              const warehouseItems = allItems.filter(item => item.kind === "warehouse");
+              const storeItems = allItems.filter(item => item.kind === "store");
+              const hasLocation = !!p.location;
+              const hasAny = hasLocation || allItems.length > 0;
+
+              if (!hasAny) {
+                return <span className="text-[14px] text-zinc-400">진열구역 없음</span>;
+              }
+
+              return (
+                <div className="space-y-0">
+                  {/* 구역 row · rose 톤 · 크게 */}
+                  {hasLocation && (
+                    <div className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
+                      <span className="w-[72px] text-[14px] font-bold text-rose-700 bg-rose-50 rounded-md px-2.5 py-1 text-center shrink-0">구역</span>
+                      <span className="text-[17px] font-extrabold text-rose-700 tabular-nums tracking-tight leading-none">
+                        {String(p.location)}
+                      </span>
+                    </div>
+                  )}
+                  {/* 창고1 · 창고2 · cyan 뱃지 */}
+                  {warehouseItems.map(item => (
+                    <div key={item.code} className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
+                      <span className="w-[72px] text-[14px] font-bold text-cyan-700 bg-cyan-50 rounded-md px-2.5 py-1 text-center shrink-0">
+                        {item.name}
+                      </span>
+                      {item.detail
+                        ? <span className="text-[16px] font-bold text-cyan-700 tabular-nums leading-none tracking-tight">
+                            {formatShelfDetail(item.detail)}
+                          </span>
+                        : <span className="text-[11px] font-semibold text-rose-500 border border-rose-300 rounded px-1.5 py-0.5 leading-none bg-rose-50">
+                            위치 미입력
+                          </span>
+                      }
+                    </div>
+                  ))}
+                  {/* 매장1 · 매장2 · 매장3 · indigo 뱃지 */}
+                  {storeItems.map(item => (
+                    <div key={item.code} className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
+                      <span className="w-[72px] text-[14px] font-bold text-indigo-700 bg-indigo-50 rounded-md px-2.5 py-1 text-center shrink-0">
+                        {item.name}
+                      </span>
+                      {item.detail
+                        ? <span className="text-[16px] font-bold text-indigo-700 tabular-nums leading-none tracking-tight">
+                            {formatShelfDetail(item.detail)}
+                          </span>
+                        : <span className="text-[11px] font-semibold text-rose-500 border border-rose-300 rounded px-1.5 py-0.5 leading-none bg-rose-50">
+                            위치 미입력
+                          </span>
+                      }
+                    </div>
+                  ))}
+                </div>
+              );
+            })()
+          )}
         </section>
 
       </div>
