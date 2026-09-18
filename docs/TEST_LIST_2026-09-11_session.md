@@ -2626,4 +2626,55 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 
 ---
 
+## [54] 이벤트별 추천 상품 매핑 UI · SplitPanel + EventProductPanel (2026-09-18)
+**커밋** · `198650d7`
+
+### 확인 절차
+1. **통계 설정 > 이벤트 관리** 진입 (관리자 lv 9)
+2. 좌측 · 이벤트 리스트 (기존과 동일 카드) + 신규 · 각 카드 우측 상품 개수 배지 (N개 · 실시간)
+3. 이벤트 카드 클릭 · 우측 패널 활성화 (선택된 카드 · brand ring · 강조 배경)
+4. 우측 상단 · 이벤트 이름 · 타입 pill · 매핑 개수 · (매년 배지)
+5. **상품 검색·추가** · ProductSearchInput · 상품명·코드 검색 → 클릭 시 즉시 매핑 · 좌측 배지 +1 즉시 갱신
+6. **중복 방지** · 이미 매핑된 상품 재추가 시 · toast "이미 매핑된 상품" · 무시
+7. **정렬** · 컬럼 헤더 (상품명·공급사·현재고·적정) 클릭 · ▲/▼ 정렬 토글
+8. **내부 검색** · 매핑 리스트 상단 · 검색 · matchesProductQuery (상품명·공급사·코드·초성)
+9. **삭제** · 우측 각 행 휴지통 · confirm → optimistic 삭제 · 실패 시 rollback · 좌측 배지 -1
+10. **다른 이벤트 복사** · 상단 [다른 이벤트 복사] · Modal · 이벤트 리스트 (개수 표시) · 선택 → 복사 (중복 자동 스킵 · toast 알림)
+11. **분류 일괄 추가** · [분류 일괄 추가] · Modal · 카테고리 이름 부분일치 · /api/products-by-category (최대 100건) 조회 후 bulk 매핑
+12. **붙여넣기 임포트** · [붙여넣기 임포트] · Modal · textarea (개행·쉼표·공백·탭 파싱) · 중복 자동 제거 · bulk POST
+13. **회귀** · 기존 이벤트 CRUD (등록·수정·삭제·매년 토글) 100% 동일 flow · 삭제 시 매핑 CASCADE · 우측 초기화
+
+### 모바일 (< 768px)
+- 좌측 리스트만 · 이벤트 클릭 시 우측 패널이 **모달**로 뜸 (SplitPanel mobileRightAsModal)
+- 모달 내 · X · ESC · backdrop 클릭으로 닫기
+- 헤더 · 이벤트 이름 · 상품 매핑 · 폰트 wrap (말줄임 X)
+
+### 서버 API (기존 · 변경 없음)
+- GET `/api/events` · GET `/api/events/:id/products`
+- POST `/api/events/:id/products` (`product_codes: string[]` bulk 지원)
+- DELETE `/api/events/:id/products/:code` · CASCADE
+- 관리자 lv 9 · authorize(9)
+
+### 기대값
+- 우측 매핑 CRUD · 즉시 반영 · 좌측 배지 실시간 동기
+- optimistic 삭제 · 실패 시 rollback (UI 정합)
+- Modal · framework 프리미티브 (Modal · titleAccent · footer) 통일
+- SplitPanel storageKey `seasonSettings.eventsSplit.v1` · 폭 저장
+- 대원칙 · 말줄임표 X (break-words · whitespace-normal)
+- 대원칙 · 공통 기능 = 단일 endpoint · 기존 5개 endpoint 100% 재사용 · 신규 API 없음
+
+### 회귀 없음
+- 기존 EventsSection 3개 페이지 (season·filters·events) 탭 유지
+- 신규 · 이벤트 관리 탭 내부 UI 만 확장 (등록·편집·삭제 로직 동일)
+- 서버 미변경 · client-only
+
+### 관련 원칙
+- 대원칙 · SplitPanel 프레임워크 · 마스터-디테일 통일
+- 대원칙 · Modal + Icon + titleAccent + footer 통일
+- 대원칙 · 공통 기능 = 단일 endpoint · 신규 API 없음
+- 대원칙 · optimistic UI + rollback · 사용자 대기 최소
+- 대원칙 · 말줄임 X · wrap 우선
+
+---
+
 ## 진행 중 태스크 (완료 시 추가)
