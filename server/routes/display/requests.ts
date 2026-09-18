@@ -1431,12 +1431,19 @@ router.post("/api/inventory-checks/bulk", authorize(1), validateBody(BulkInvento
       }
     }
 
+    // 2026-09-18 · 사용자 재보고 · duplicate key 에러 fix
+    //   · 2026-09-09 마이그레이션 (inventory_checks_product_code_uniq · product_code 단독 UNIQUE)
+    //   · 이력 개념 폐기 · 상품당 1 row 원칙 확정
+    //   · 이전 로직 · sameDay=false 이면 INSERT → UNIQUE 위배 · duplicate key 에러
+    //   · fix · existing 있으면 · sameDay 무관 · 항상 UPDATE (단건 POST L1290 패턴 통일)
+    //   · 없으면 · INSERT (신규 상품 · 최초 실재고)
     const doWrite = async (p: Record<string, any>) => {
-      if (existing && sameDay) {
-        // 같은 날 재저장 · UPDATE (덮어쓰기)
+      void sameDay; // 이력 개념 폐기 · sameDay 미사용 (BC · 향후 제거 예정)
+      if (existing) {
+        // 기존 row 있음 · 항상 UPDATE (덮어쓰기) · UNIQUE(product_code) 정합
         return supabase.from("inventory_checks").update(p).eq("id", existing.id);
       }
-      // 다른 날 or 신규 · INSERT (이력 추가 · 상품별 시계열 보존)
+      // 신규 상품 · INSERT
       return supabase.from("inventory_checks").insert([{ ...p, product_code: code }]);
     };
     let { error } = await doWrite(payload);

@@ -121,6 +121,19 @@ export function useDisplayData(selectedDate: string, selectedYM: string): UseDis
   }, []);
 
   // Load products map
+  // 2026-09-18 · 사용자 지시 · 실재고 저장 시 · 매장 진열도 자동 반영
+  //   · 이전 · 마운트 1회만 로드 · inventory-checks-updated 리스너 없음 → stale
+  //   · fix · 리스너 추가 · reloadKey 증가 시 재조회 (기존 RealStockTablePage 패턴 이식)
+  const [reloadKey, setReloadKey] = useState(0);
+  useEffect(() => {
+    const handler = () => setReloadKey(k => k + 1);
+    window.addEventListener("inventory-checks-updated", handler);
+    window.addEventListener("products-map-updated", handler);
+    return () => {
+      window.removeEventListener("inventory-checks-updated", handler);
+      window.removeEventListener("products-map-updated", handler);
+    };
+  }, []);
   useEffect(() => {
     let cancelled = false;
     Promise.all([
@@ -167,7 +180,7 @@ export function useDisplayData(selectedDate: string, selectedYM: string): UseDis
       setProductsMap(merged);
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [reloadKey]);
 
   // Load zone groups from DB
   useEffect(() => {
