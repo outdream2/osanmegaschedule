@@ -239,7 +239,8 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
       map.set(sup, g);
     }
     // 공급사명 오름차순 · 각 그룹 내부 arrival 은 최신순 (원본 순서 유지)
-    return Array.from(map.values()).sort((a, b) => a.supplier.localeCompare(b.supplier, "ko"));
+    // 2026-09-18 · 사용자 지시 · (주)·주식회사 무시 · 정제 후 정렬
+    return Array.from(map.values()).sort((a, b) => displayVendorName(a.supplier).localeCompare(displayVendorName(b.supplier), "ko"));
   }, [arrivals]);
 
   // 아코디언 · 2026-09-07 · 사용자 지시 · 기본 전체 펼침 (개별 입고건 즉시 확인)

@@ -178,7 +178,8 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
         return name.includes(q) || bn.includes(q) || contact.includes(q) || phone.includes(q) || email.includes(q);
       });
     }
-    return list.slice().sort((a, b) => (a.company_name ?? "").localeCompare(b.company_name ?? "", "ko"));
+    // 2026-09-18 · 사용자 지시 · (주)·주식회사 무시 · 정제 후 정렬
+    return list.slice().sort((a, b) => displayVendorName(a.company_name ?? "").localeCompare(displayVendorName(b.company_name ?? ""), "ko"));
   }, [vendors, search, filterMissingBiz, categoryFilter]);
 
   const missingCount = vendors.filter(v => !v.business_number).length;
@@ -191,7 +192,8 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
       let cmp = 0;
       switch (compactSortKey) {
         case "company_name":
-          cmp = (a.company_name ?? "").localeCompare(b.company_name ?? "", "ko"); break;
+          // 2026-09-18 · 정제 후 정렬
+          cmp = displayVendorName(a.company_name ?? "").localeCompare(displayVendorName(b.company_name ?? ""), "ko"); break;
         case "category":
           cmp = (a.category ?? "").localeCompare(b.category ?? "", "ko"); break;
         case "business_number":

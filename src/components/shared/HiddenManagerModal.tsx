@@ -20,6 +20,8 @@ import { Modal } from "../common/Modal";
 import { IconTile } from "../common/IconTile";
 import { StatusPill } from "../common/StatusPill";
 import type { HiddenProduct } from "../../hooks/useHiddenManager";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 interface Props {
   open: boolean;
@@ -85,7 +87,7 @@ export const HiddenManagerModal: React.FC<Props> = ({
                   <div className="text-[14px] font-bold text-ink truncate tracking-tight" title={p.product_name}>{p.product_name}</div>
                   <div className="text-[13px] font-mono text-ink-soft truncate mt-0.5">
                     #{code}
-                    {p.supplier ? ` · ${p.supplier}` : ""}
+                    {p.supplier ? ` · ${displayVendorName(p.supplier) || p.supplier}` : ""}
                     {(p as any).spec ? ` · ${(p as any).spec}` : ""}
                     {p.current_stock != null ? ` · 재고 ${p.current_stock}` : ""}
                   </div>

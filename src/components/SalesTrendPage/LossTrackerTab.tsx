@@ -17,7 +17,8 @@ import { displayVendorName } from "../../utils/vendorNameNormalize";
 type LossSortKey = "name" | "supplier" | "opening" | "sale" | "current" | "expected" | "purchase" | "loss";
 const LOSS_SORT_CMP: Record<LossSortKey, Comparator<any>> = {
   name:     (a, b) => String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko"),
-  supplier: (a, b) => String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko"),
+  // 2026-09-18 · 사용자 지시 · (주)·주식회사 무시 · 정제 후 정렬
+  supplier: (a, b) => displayVendorName(a.supplier ?? "").localeCompare(displayVendorName(b.supplier ?? ""), "ko"),
   opening:  (a, b) => Number(a.opening_stock ?? 0) - Number(b.opening_stock ?? 0),
   sale:     (a, b) => Number(a.sale_qty ?? 0) - Number(b.sale_qty ?? 0),
   current:  (a, b) => Number(a.closing_stock ?? 0) - Number(b.closing_stock ?? 0),

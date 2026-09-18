@@ -6,7 +6,7 @@ import { GradientAccent } from "../common/GradientAccent";
 import { Spinner } from "../common/Spinner";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { StepperInput } from "../common/StepperInput";
-import { stripVendorAnnotation } from "../../utils/vendorNameNormalize";
+import { stripVendorAnnotation, displayVendorName } from "../../utils/vendorNameNormalize";
 import type { ProductInfo } from "./OrderManagePage.types";
 
 type NeedSortKey = "supplier" | "contact" | "name" | "current" | "inv" | "optimal" | "short" | "sale_month";
@@ -90,7 +90,8 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
     const aExtra = aCode ? needExtraMap.get(aCode) : undefined;
     const bExtra = bCode ? needExtraMap.get(bCode) : undefined;
     switch (needSortKey) {
-      case "supplier": return dir * String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko");
+      // 2026-09-18 · 사용자 지시 · (주)·주식회사 무시 · 정제 후 정렬
+      case "supplier": return dir * displayVendorName(a.supplier ?? "").localeCompare(displayVendorName(b.supplier ?? ""), "ko");
       case "contact":  return dir * aContact.localeCompare(bContact, "ko");
       case "name":     return dir * getName(a).localeCompare(getName(b), "ko");
       case "current":  return dir * (Number(a.current_stock ?? 0) - Number(b.current_stock ?? 0));

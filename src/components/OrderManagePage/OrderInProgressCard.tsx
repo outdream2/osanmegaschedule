@@ -10,6 +10,8 @@ import { PackageOpen, ArrowRight } from "lucide-react";
 import { CollapseCard } from "../common/CollapseCard";
 import { StatusPill } from "../common/StatusPill";
 import type { OrderRequest } from "./OrderManagePage.types";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 export interface OrderInProgressCardProps {
   /** 요청 진행중 (status='requested') · 발주 대기 상품 리스트 */
@@ -95,7 +97,7 @@ export const OrderInProgressCard: React.FC<OrderInProgressCardProps> = ({ orderR
                 {r.product_name || r.product_code}
               </span>
               {r.supplier && (
-                <span className="text-[13px] text-ink-soft">· {r.supplier}</span>
+                <span className="text-[13px] text-ink-soft">· {displayVendorName(r.supplier) || r.supplier}</span>
               )}
               {r.order_qty != null && (
                 <span className="text-[13px] font-bold text-brand-deep tabular-nums">· {Number(r.order_qty)}개</span>

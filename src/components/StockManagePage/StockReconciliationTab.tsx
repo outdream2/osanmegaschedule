@@ -24,6 +24,8 @@ import {
 import { SearchBar } from "../common/SearchBar";
 // 2026-08-29 · 상품명 검색 · 통일 로직
 import { matchesProductQuery } from "../../lib/productMatch";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 정제 후 정렬
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 // 2026-08-29 · #154 · 판매중 필터 프레임워크 확산
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
 import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
@@ -211,7 +213,8 @@ export const StockReconciliationTab: React.FC<{
   const supplierOptions = useMemo(() => {
     const set = new Set<string>();
     rows.forEach(r => { if (r.supplier) set.add(r.supplier); });
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
+    // 2026-09-18 · 정제 후 정렬 (원본 · 저장은 그대로 유지 · 표시만 정제 순서)
+    return Array.from(set).sort((a, b) => displayVendorName(a).localeCompare(displayVendorName(b), "ko"));
   }, [rows]);
 
   const filteredRows = useMemo(() => {
@@ -226,7 +229,7 @@ export const StockReconciliationTab: React.FC<{
   // 공용 정렬 훅 (T30-followup · 22파일 중복 통합의 두번째 채택자)
   const sortComparators = useMemo<Record<SortKey, (a: DiffRow, b: DiffRow) => number>>(() => ({
     name:       (a, b) => a.product_name.localeCompare(b.product_name, "ko"),
-    supplier:   (a, b) => (a.supplier ?? "").localeCompare(b.supplier ?? "", "ko"),
+    supplier:   (a, b) => displayVendorName(a.supplier).localeCompare(displayVendorName(b.supplier), "ko"),
     erp:        (a, b) => a.erp_qty - b.erp_qty,
     actual:     (a, b) => a.actual_qty - b.actual_qty,
     checked_at: (a, b) => (new Date(a.checked_at ?? 0).getTime()) - (new Date(b.checked_at ?? 0).getTime()),
@@ -307,7 +310,7 @@ export const StockReconciliationTab: React.FC<{
           >
             <option value="">전체 공급사</option>
             {supplierOptions.map(s => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>{displayVendorName(s) || s}</option>
             ))}
           </select>
         </div>
@@ -414,7 +417,7 @@ export const StockReconciliationTab: React.FC<{
                         <p className="text-[16px] tabular-nums text-zinc-400 mt-0.5">#{r.product_code}</p>
                       </td>
                       <td className="px-2 py-1.5 text-zinc-600 break-words max-w-[160px]" title={r.supplier ?? ""}>
-                        {r.supplier ?? <span className="text-zinc-300">-</span>}
+                        {r.supplier ? (displayVendorName(r.supplier) || r.supplier) : <span className="text-zinc-300">-</span>}
                       </td>
                       <td className="px-2 py-1.5 text-right text-zinc-700 font-bold tabular-nums">{r.erp_qty}</td>
                       <td className="px-2 py-1.5 text-right text-teal-700 font-bold tabular-nums">{r.actual_qty}</td>

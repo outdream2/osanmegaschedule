@@ -7,6 +7,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { api } from "../../lib/apiClient";
 import { SK_SUPPLIER_TOTALS_COLLAPSED, SK_STOCKMANAGE_SUPPLIER_W } from "../../lib/storageKeys";
 import { useVendors } from "../../hooks/useVendors";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 무시 · 표시·정렬·검색 정제
+import { displayVendorName } from "../../utils/vendorNameNormalize";
+import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { CARD_BASE } from "../../styles/tokens";
@@ -246,7 +249,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
     const { key, dir } = supListSort;
     const mult = dir === "asc" ? 1 : -1;
     return [...xlsxSuppliers].sort((a, b) => {
-      if (key === "supplier") return mult * String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko");
+      // 2026-09-18 · 정제 후 정렬 · "(주)녹십자" · "녹십자" 동일 위치
+      if (key === "supplier") return mult * displayVendorName(a.supplier ?? "").localeCompare(displayVendorName(b.supplier ?? ""), "ko");
       if (key === "avgCycleDays") {
         // null 은 정렬 끝으로 (desc 일 때도 asc 일 때도 뒤로)
         const va = cycleFor(a.supplier);
@@ -281,7 +285,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         itemCount: 0, totalStockAmount: 0,
       }))
       // 매입 이력 없는 vendor · 항상 이름 오름차순 · 사용자 예측 가능성
-      .sort((a, b) => a.supplier.localeCompare(b.supplier, "ko"));
+      // 2026-09-18 · 정제 후 정렬
+      .sort((a, b) => displayVendorName(a.supplier).localeCompare(displayVendorName(b.supplier), "ko"));
     const merged: SupplierAgg[] = extra.length > 0 ? [...sortedXlsxSuppliers, ...extra] : sortedXlsxSuppliers;
 
     let filtered = supListCategory === "전체"
@@ -292,12 +297,14 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
           return cat === supListCategory;
         });
     // 2026-08-24 · #262 · 검색 필터 · supplier + supplier_code · 대소문자 무시
-    const q = supplierSearch.trim().toLowerCase();
+    const q = supplierSearch.trim();
     if (q) {
+      // 2026-09-18 · 사용자 지시 · matchesSupplierQuery · "(주)녹십자" ↔ "녹십자" 양방향
+      const qLower = q.toLowerCase();
       filtered = filtered.filter(sup => {
-        const nm = String(sup.supplier ?? "").toLowerCase();
         const code = String(sup.supplier_code ?? "").toLowerCase();
-        return nm.includes(q) || code.includes(q);
+        if (code.includes(qLower)) return true;
+        return matchesSupplierQuery({ supplier: sup.supplier ?? undefined }, q);
       });
     }
     return filtered.slice(0, supListLimit);

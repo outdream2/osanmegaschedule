@@ -28,6 +28,8 @@ import { SaleStatusFilter } from "../common/SaleStatusFilter";
 import { matchesProductQuery } from "../../lib/productMatch";
 // 2026-08-31 · #11 · 공급사명 검색 통합
 import { matchesSupplierQuery } from "../../lib/supplierMatch";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 표시·정렬 정제
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 // 2026-08-27 · 사용자 지시 · 카테고리 → 창고 slot 지능 배정 (8A=창고1 · 32=창고2)
 import { assignZonesToSlots } from "../../lib/warehouseZoneMap";
 // 2026-09-08 · 상세 진열위치 뱃지 · 진열위치 옆 매장/창고별 3자리 표시
@@ -93,7 +95,8 @@ const zoneCmp = (a: string | null, b: string | null) => (a ?? "").localeCompare(
 
 const CMP: Record<SortKey, Comparator<Row>> = {
   product_name:  (a, b) => (a.product_name ?? "").localeCompare(b.product_name ?? "", "ko"),
-  supplier:      (a, b) => (a.supplier ?? "").localeCompare(b.supplier ?? "", "ko"),
+  // 2026-09-18 · 정제 후 정렬
+  supplier:      (a, b) => displayVendorName(a.supplier).localeCompare(displayVendorName(b.supplier), "ko"),
   category_code: (a, b) => (a.category_code ?? "").localeCompare(b.category_code ?? "", "ko"),
   location:      (a, b) => (a.location ?? "").localeCompare(b.location ?? "", "ko", { numeric: true }),
   erp:           (a, b) => (a.erp ?? 0) - (b.erp ?? 0),
@@ -513,7 +516,7 @@ export const RealStockTablePage: React.FC = () => {
           <div className="flex flex-col gap-3 text-[15px]">
             <div className="grid grid-cols-2 gap-3">
               <Field label="상품코드" value={<span className="font-mono text-[15px] tabular-nums">{detailRow.product_code}</span>} />
-              <Field label="공급사"  value={detailRow.supplier ?? "-"} />
+              <Field label="공급사"  value={detailRow.supplier ? (displayVendorName(detailRow.supplier) || detailRow.supplier) : "-"} />
               <Field label="진열위치" value={
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span>{detailRow.location ?? "미지정"}</span>
@@ -784,7 +787,7 @@ export const RealStockTablePage: React.FC = () => {
                       </tr>,
                       ...(collapsedGroups.has(k) ? [] : rows.map(r => (
                         <tr key={r.product_code} className="hover:bg-zinc-50/60 transition text-[15px] whitespace-nowrap">
-                          <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ?? "-"}</td>
+                          <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ? (displayVendorName(r.supplier) || r.supplier) : "-"}</td>
                           <td className={tableTdCls("left")}>
                             <button type="button" onClick={() => setDetailRow(r)} className="text-left font-bold text-zinc-800 break-keep whitespace-normal hover:text-brand-deep hover:underline cursor-pointer" title="상세 정보">
                               {r.product_name}

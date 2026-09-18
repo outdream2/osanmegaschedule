@@ -253,10 +253,10 @@ export const OrderHistoryTab: React.FC = () => {
     const qP = productSearch.trim().toLowerCase();
     const base = (qS || qP)
       ? orders.filter(o => {
-          const s = String(displayVendorName(o.supplier ?? ""));
-          const supplierMatch = !qS || s.toLowerCase().includes(qS);
+          // 2026-09-18 · 사용자 지시 · matchesSupplierQuery 통일 · "(주)" 무시 양방향
+          const supplierMatch = matchesSupplierQuery({ supplier: o.supplier ?? undefined }, supplierSearch);
           // 2026-08-29 · 통일 로직 · matchesProductQuery (초성 + 부분 + 코드 + 바코드)
-      const productMatch = !productSearch.trim() || o.items.some(it => matchesProductQuery(it, productSearch));
+          const productMatch = !productSearch.trim() || o.items.some(it => matchesProductQuery(it, productSearch));
           return supplierMatch && productMatch;
         })
       : orders;

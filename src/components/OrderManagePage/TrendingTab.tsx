@@ -23,6 +23,8 @@ import { InlineLabel } from "../common/InlineLabel";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../lib/apiClient";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { useToast, toastClass } from "../../hooks/useToast";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
@@ -207,7 +209,7 @@ const PeriodBucketCard: React.FC<{
                     <span className="text-[16px] font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded px-1.5 py-0.5 shrink-0">신규</span>
                   )}
                 </div>
-                {r.supplier && <div className="text-[16px] text-zinc-400 mt-0.5">{r.supplier}</div>}
+                {r.supplier && <div className="text-[16px] text-zinc-400 mt-0.5">{displayVendorName(r.supplier) || r.supplier}</div>}
                 <div className="flex items-center gap-2 mt-1 flex-wrap text-[17px] tabular-nums">
                   <span className="font-semibold text-indigo-700">현재 {fmt(r.recent_sale)}</span>
                   <span className="text-zinc-300">·</span>
@@ -545,7 +547,7 @@ export const TrendingTab: React.FC = () => {
                         {r.product_name}
                       </button>
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        {r.supplier && <span className="text-[16px] text-zinc-400">{r.supplier}</span>}
+                        {r.supplier && <span className="text-[16px] text-zinc-400">{displayVendorName(r.supplier) || r.supplier}</span>}
                         {r.newly_trending && (
                           <span className="text-[16px] font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded px-1.5 py-0.5">신규진입</span>
                         )}

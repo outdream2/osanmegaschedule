@@ -8,6 +8,8 @@ import { CARD_BASE } from "../../styles/tokens";
 import { StatusPill } from "../common/StatusPill";
 // 2026-08-29 · #165 A · SearchBar 프리미티브
 import { SearchBar } from "../common/SearchBar";
+// 2026-09-18 · 사용자 지시 · 공급사 검색 · (주)·주식회사 무시
+import { matchesSupplierQuery } from "../../lib/supplierMatch";
 
 interface ReturnItem {
   supplier?: string | null;
@@ -45,13 +47,15 @@ export const ReturnFilterBar: React.FC<ReturnFilterBarProps> = ({
   onBulkConfirm, bulkConfirming,
 }) => {
   // 2026-08-25 · 사용자 지시 · 검색어 · 공급사·상품·상품코드 통합 매칭
-  const q = returnSupplierSearch.trim().toLowerCase();
+  // 2026-09-18 · 공급사 매칭 · matchesSupplierQuery · "(주)녹십자" ↔ "녹십자" 양방향
+  const qRaw = returnSupplierSearch.trim();
+  const q = qRaw.toLowerCase();
   const filteredCount = returnList.filter(x => {
     if (q) {
-      const supplier = String(x.supplier ?? "").toLowerCase();
       const name     = String(x.product_name ?? "").toLowerCase();
       const code     = String(x.product_code ?? "").toLowerCase();
-      if (!supplier.includes(q) && !name.includes(q) && !code.includes(q)) return false;
+      const supplierMatch = matchesSupplierQuery({ supplier: x.supplier ?? undefined }, qRaw);
+      if (!supplierMatch && !name.includes(q) && !code.includes(q)) return false;
     }
     if (returnCategoryFilter !== "전체") {
       const cat = vendorCategoryMap[String(x.supplier ?? "").trim()] ?? null;

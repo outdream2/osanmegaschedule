@@ -12,6 +12,8 @@
 import React from "react";
 import { Package } from "lucide-react";
 import { GradientAccent } from "./GradientAccent";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 export interface ProductDetailHeroInfo {
   product_code: string;
@@ -77,7 +79,7 @@ export const ProductDetailHero: React.FC<ProductDetailHeroProps> = ({
               {product.supplier && (
                 <>
                   <span className="text-zinc-300">·</span>
-                  <span className="text-zinc-600">{product.supplier}</span>
+                  <span className="text-zinc-600">{displayVendorName(product.supplier) || product.supplier}</span>
                 </>
               )}
               {/* 2026-09-08 · barcode 표시 제거 · product_code 이미 위에 표시됨 (동일 값) */}

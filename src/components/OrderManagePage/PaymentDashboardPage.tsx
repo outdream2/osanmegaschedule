@@ -20,6 +20,8 @@ import { listBorrowings, type BorrowingRow } from "../../lib/borrowingsApi";
 import { listCreditCardSummary } from "../../lib/creditCardsApi";
 import type { CardSummary } from "../../shared/schemas/creditCards";
 import { CreditCard } from "lucide-react";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 interface SupplierValues {
   purchase: number;
@@ -232,7 +234,7 @@ export const PaymentDashboardPage: React.FC = () => {
                 >
                   <span className="text-[12px] font-bold text-sky-600 w-5 shrink-0 tabular-nums">{idx + 1}</span>
                   <Building2 size={13} className="text-sky-500 shrink-0" />
-                  <span className="text-[14px] font-bold text-zinc-900 min-w-0 flex-1 truncate">{r.supplier}</span>
+                  <span className="text-[14px] font-bold text-zinc-900 min-w-0 flex-1 truncate">{displayVendorName(r.supplier) || r.supplier}</span>
                   <span className="text-[14px] font-bold text-sky-700 tabular-nums shrink-0">{fmt(r.balance)}원</span>
                 </div>
               ))}
@@ -265,7 +267,7 @@ export const PaymentDashboardPage: React.FC = () => {
                 >
                   <span className="text-[12px] font-bold text-rose-600 w-5 shrink-0 tabular-nums">{idx + 1}</span>
                   <Building2 size={13} className="text-rose-500 shrink-0" />
-                  <span className="text-[14px] font-bold text-zinc-900 min-w-0 flex-1 truncate">{r.supplier}</span>
+                  <span className="text-[14px] font-bold text-zinc-900 min-w-0 flex-1 truncate">{displayVendorName(r.supplier) || r.supplier}</span>
                   <span className="text-[14px] font-bold text-rose-700 tabular-nums shrink-0">{fmt(r.balance)}원</span>
                 </div>
               ))}

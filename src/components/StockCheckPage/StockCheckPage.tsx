@@ -75,7 +75,8 @@ const STOCK_SORT_CMP: Record<StockSortKey, Comparator<StockItem>> = {
   },
   product_name: (a, b) => String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko"),
   location:     (a, b) => String(a.spec ?? "").localeCompare(String(b.spec ?? ""), "ko"),
-  supplier:     (a, b) => String(a.supplier     ?? "").localeCompare(String(b.supplier     ?? ""), "ko"),
+  // 2026-09-18 · 사용자 지시 · (주)·주식회사 무시 · 정제 후 정렬
+  supplier:     (a, b) => displayVendorName(a.supplier ?? "").localeCompare(displayVendorName(b.supplier ?? ""), "ko"),
 };
 
 export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {

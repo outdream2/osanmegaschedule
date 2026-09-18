@@ -14,6 +14,8 @@ import { fmtWonFull, fmtDateSlice } from "../../lib/format";
 import { Spinner } from "../common/Spinner";
 // 2026-09-10 · 사용자 지시 · 월별 재고자산 컬럼 · 신규 API fetch
 import { api } from "../../lib/apiClient";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -221,7 +223,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
         <div className="flex-1 min-w-0 flex flex-col gap-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-[18px] font-bold text-zinc-800 leading-tight break-words">
-              {vendor.company_name}
+              {displayVendorName(vendor.company_name) || vendor.company_name}
             </h2>
             <VendorCategoryBadge category={vendor.category} />
             {/* VAT 배지 · 2026-08-17 · StatusPill 통일 */}

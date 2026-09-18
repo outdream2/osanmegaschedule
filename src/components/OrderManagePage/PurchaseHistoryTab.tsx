@@ -15,6 +15,8 @@ import { useVendors } from "../../hooks/useVendors";
 // 2026-08-29 · 상품명 검색 · 통일 로직
 import { matchesProductQuery } from "../../lib/productMatch";
 import { matchesSupplierQuery } from "../../lib/supplierMatch";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 정제 후 정렬
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { lookupProduct } from "../../lib/productsCache";
 // 2026-08-22 · Framework Phase 4 · UI imports 정리 (panels 로 이관)
 // T-CSS Phase 2 · 2026-08-06
@@ -531,32 +533,35 @@ export const PurchaseHistoryTab: React.FC = () => {
       }
     };
 
+    // 2026-09-18 · 사용자 지시 · (주)·주식회사 무시 · 정제 후 정렬 · "(주)녹십자" · "녹십자" 동일 위치
+    const cmpName = (x: { company_name: string }, y: { company_name: string }) =>
+      displayVendorName(x.company_name).localeCompare(displayVendorName(y.company_name), "ko");
     return list.sort((a, b) => {
       const sa = summaryLookup(a.company_name);
       const sb = summaryLookup(b.company_name);
       // name 정렬 (예외 · 항상 문자열 비교)
       if (leftSort === "name") {
-        return dirSign * a.company_name.localeCompare(b.company_name, "ko");
+        return dirSign * cmpName(a, b);
       }
       // recent · 문자열 (YYYY-MM-DD)
       if (leftSort === "recent") {
         const da = sa?.last_purchase_date ?? "";
         const db = sb?.last_purchase_date ?? "";
         // null 값은 항상 뒤 (dir 무관)
-        if (!da && !db) return a.company_name.localeCompare(b.company_name, "ko");
+        if (!da && !db) return cmpName(a, b);
         if (!da) return 1;
         if (!db) return -1;
         if (da !== db) return dirSign * da.localeCompare(db);
-        return a.company_name.localeCompare(b.company_name, "ko");
+        return cmpName(a, b);
       }
       // 숫자 컬럼 (null → 항상 뒤)
       const va = pickNum(a);
       const vb = pickNum(b);
-      if (va == null && vb == null) return a.company_name.localeCompare(b.company_name, "ko");
+      if (va == null && vb == null) return cmpName(a, b);
       if (va == null) return 1;
       if (vb == null) return -1;
       if (va !== vb) return dirSign * (va - vb);
-      return a.company_name.localeCompare(b.company_name, "ko");
+      return cmpName(a, b);
     });
   }, [vendors, vendorSearch, vendorCategoryFilter, summaryLookup, leftSort, leftDir]);
 

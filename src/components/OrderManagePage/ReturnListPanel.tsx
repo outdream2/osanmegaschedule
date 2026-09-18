@@ -298,7 +298,8 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
       const dir = returnSortDir === "asc" ? 1 : -1;
       switch (returnSortKey) {
         case "product_name":       return dir * String(a.product_name).localeCompare(String(b.product_name), "ko");
-        case "supplier":           return dir * String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko");
+        // 2026-09-18 · 사용자 지시 · (주)·주식회사 무시 · 정제 후 정렬
+        case "supplier":           return dir * displayVendorName(a.supplier ?? "").localeCompare(displayVendorName(b.supplier ?? ""), "ko");
         case "current_stock":      return dir * (a.current_stock - b.current_stock);
         case "actual_stock":       return dir * ((a.actual_stock ?? -1) - (b.actual_stock ?? -1));
         case "purchase_cycle":     return dir * ((a.purchase_cycle ?? 0) - (b.purchase_cycle ?? 0));

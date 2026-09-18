@@ -23,6 +23,8 @@ import {
 import { AmountField, FieldLabel, inputCls } from "./PaymentInfoTab.subcomponents";
 // 2026-09-02 · #69 · 결제카드 dropdown · credit_cards 목록
 import type { CreditCard } from "../../shared/schemas/creditCards";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 interface PaymentEntryFormProps {
   selectedVendor: VendorItem;
@@ -160,7 +162,7 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
         </div>
         <div className="flex flex-col leading-tight">
           <span className="text-[15px] font-bold text-zinc-800">결제 등록</span>
-          <span className="text-[14px] text-zinc-400">{selectedVendor.company_name}</span>
+          <span className="text-[14px] text-zinc-400">{displayVendorName(selectedVendor.company_name) || selectedVendor.company_name}</span>
         </div>
         {vatIncluded && (
           <span className="ml-auto text-[14px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-0.5 shrink-0">

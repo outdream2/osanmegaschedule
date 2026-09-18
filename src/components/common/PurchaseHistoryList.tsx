@@ -28,6 +28,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Spinner } from "./Spinner";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 접두어 표시·정렬 정제
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 
 export interface PurchaseHistoryRow {
@@ -110,7 +112,8 @@ const rowUnit = (r: PurchaseHistoryRow): number => {
 // ─── 정렬 비교 함수 (컴포넌트 외부 · 안정 참조) ───────────────────────────
 const PURCHASE_SORT_CMP: Record<SortKey, Comparator<PurchaseHistoryRow>> = {
   date:          (a, b) => rowDate(a).localeCompare(rowDate(b)),
-  supplier_name: (a, b) => String(a.supplier_name ?? "").localeCompare(String(b.supplier_name ?? ""), "ko"),
+  // 2026-09-18 · 정제 후 정렬 · "(주)녹십자" · "녹십자" 동일 위치
+  supplier_name: (a, b) => displayVendorName(a.supplier_name).localeCompare(displayVendorName(b.supplier_name), "ko"),
   product_name:  (a, b) => String(a.product_name  ?? "").localeCompare(String(b.product_name  ?? ""), "ko"),
   quantity:      (a, b) => rowQty(a)    - rowQty(b),
   unit_price:    (a, b) => rowUnit(a)   - rowUnit(b),
@@ -340,7 +343,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
                     className="px-3 py-1.5 text-zinc-700 truncate max-w-[180px] align-top"
                     title={r.supplier_name ?? undefined}
                   >
-                    {r.supplier_name ?? "-"}
+                    {r.supplier_name ? (displayVendorName(r.supplier_name) || r.supplier_name) : "-"}
                   </td>
                 )}
                 {showProduct && (

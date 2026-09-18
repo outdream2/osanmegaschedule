@@ -18,6 +18,8 @@ import jsPDF from "jspdf";
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-09-02 · fix · 사업장 이름 하드코딩 제거 · useCompanyInfo (설정 · 회사·브랜드)
 import { useCompanyInfo } from "../../hooks/useCompanyInfo";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 export interface OrderModalItem {
   order_request_id: string;
@@ -233,7 +235,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                       <td colSpan={6} className="px-3 py-2">
                         <div className="flex items-baseline gap-x-3 gap-y-1 flex-wrap">
                           <span className="text-[15px] font-bold text-sky-600 bg-white border border-sky-200 rounded-full px-2 py-0.5 shrink-0">공급사</span>
-                          <span className="text-[16px] font-bold text-zinc-900">{s.supplier}</span>
+                          <span className="text-[16px] font-bold text-zinc-900">{displayVendorName(s.supplier) || s.supplier}</span>
                           <span className="text-[15px] tabular-nums text-indigo-600 bg-white border border-indigo-200 rounded px-1.5 py-0.5 shrink-0">#{s.order_number}</span>
                           {s.supplier_contact && (
                             <span className="text-[15px] font-semibold text-zinc-700">👤 {s.supplier_contact}</span>
@@ -282,7 +284,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                       </tr>
                     ))}
                     <tr className="bg-zinc-50 border-b-2 border-zinc-300 font-bold text-[15px]">
-                      <td colSpan={3} className="p-2 text-right text-zinc-500 uppercase">{s.supplier} 소계</td>
+                      <td colSpan={3} className="p-2 text-right text-zinc-500 uppercase">{displayVendorName(s.supplier) || s.supplier} 소계</td>
                       <td className="p-2 text-right text-red-600 tabular-nums">{totalQty}개</td>
                       <td></td>
                       <td className="p-2 text-right text-emerald-700 tabular-nums">{totalAmount > 0 ? totalAmount.toLocaleString() + "원" : "-"}</td>

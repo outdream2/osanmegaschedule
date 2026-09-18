@@ -11,6 +11,8 @@ import React, { useMemo, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { SplitPanel } from "../common/SplitPanel";
 import { SplitListPanel } from "../common/SplitListPanel";
+// 2026-09-18 · 사용자 지시 · 공급사 검색 · (주)·주식회사 무시
+import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { StatusPill } from "../common/StatusPill";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
@@ -84,12 +86,14 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
       const cat = supName ? (getVendorCategory(supName) ?? "미지정") : "미지정";
       return cat === categoryFilter;
     });
-    const q = search.trim().toLowerCase();
+    const qRaw = search.trim();
+    const q = qRaw.toLowerCase();
     if (q) {
       list = list.filter(p =>
         String(p.product_name ?? "").toLowerCase().includes(q) ||
         String(getCode(p)).toLowerCase().includes(q) ||
-        String(p.supplier ?? "").toLowerCase().includes(q)
+        // 2026-09-18 · 공급사 매칭 · "(주)녹십자" ↔ "녹십자" 양방향
+        matchesSupplierQuery({ supplier: p.supplier ?? undefined }, qRaw)
       );
     }
     return list;

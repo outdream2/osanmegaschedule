@@ -5,6 +5,8 @@ import React from "react";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { NotificationToast } from "../common/NotificationToast";
 import type { Comparator, SortDir } from "../../hooks/useSortableTable";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 정제 후 정렬
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 // ─────────────────────────────────────────────────────────────
 // location 파싱 · "/" 기준 분할 → 매장1 · 매장2 · 매장3
@@ -58,7 +60,7 @@ export type ScanSortKey = "addedAt" | "name" | "supplier" | "location";
 export const SCAN_SORT_CMP: Record<ScanSortKey, Comparator<any>> = {
   addedAt:  (a, b) => a.addedAt - b.addedAt,
   name:     (a, b) => a.product.name.localeCompare(b.product.name, "ko"),
-  supplier: (a, b) => ((a.product as any).supplier ?? "").localeCompare(((b.product as any).supplier ?? ""), "ko"),
+  supplier: (a, b) => displayVendorName((a.product as any).supplier ?? "").localeCompare(displayVendorName((b.product as any).supplier ?? ""), "ko"),
   location: (a, b) => {
     const ra = (a.product as any).location ?? (a.product as any).display_location ?? "";
     const rb = (b.product as any).location ?? (b.product as any).display_location ?? "";

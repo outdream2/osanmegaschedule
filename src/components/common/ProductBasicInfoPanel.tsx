@@ -13,6 +13,8 @@ import React, { useState } from "react";
 import { Card } from "./Card";
 import { StatusPill } from "./StatusPill";
 import { Package, Store, Warehouse, MapPin, Coins, Pencil, Check, Barcode } from "lucide-react";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 // 2026-09-08 · 상세 진열위치 뱃지 · 진열위치 옆 필수 표시
 import { ShelfPositionsBadge } from "./ShelfPositionsBadge";
 import type { ShelfPositions } from "../../lib/shelfPositions";
@@ -292,11 +294,11 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
               className={valueCls + " break-words whitespace-normal text-sky-700 hover:text-sky-900 hover:underline cursor-pointer text-left w-full"}
               title="공급사 정보 조회"
             >
-              {product.supplier}
+              {displayVendorName(product.supplier) || product.supplier}
             </button>
           ) : (
             <span className={valueCls + " break-words whitespace-normal"}>
-              {product.supplier || "-"}
+              {product.supplier ? (displayVendorName(product.supplier) || product.supplier) : "-"}
             </span>
           )}
         </Field>

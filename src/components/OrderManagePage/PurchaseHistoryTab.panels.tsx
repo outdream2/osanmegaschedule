@@ -38,6 +38,8 @@ import ProductRowCard, { type ProductSummary } from "./PurchaseHistoryTab/Produc
 import ProductPurchaseDetailPanel, {
   type ProductPurchaseRow,
 } from "./PurchaseHistoryTab/ProductPurchaseDetailPanel";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 import type { Vendor as VendorRecord } from "../LandingPage/VendorListEditor";
 import type { VendorItem, DataSource, SourceDiagnostics, ViewMode, ProductSort } from "./PurchaseHistoryTab.types";
 
@@ -202,7 +204,7 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
       leftClassName="max-h-[calc(100dvh-100px)] lg:max-h-[calc(100dvh-180px)] overflow-y-auto"
       className="flex-1 min-h-0 gap-2 lg:gap-0"
       mobileRightAsModal={true}
-      mobileModalTitle={selectedVendor?.company_name ?? "공급사 상세"}
+      mobileModalTitle={selectedVendor?.company_name ? (displayVendorName(selectedVendor.company_name) || selectedVendor.company_name) : "공급사 상세"}
       mobileOpen={!!selectedVendor}
       onMobileClose={() => setSelectedVendor(null)}
       left={

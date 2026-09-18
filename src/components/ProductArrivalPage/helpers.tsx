@@ -5,6 +5,8 @@ import { ClipboardCheck, CheckCircle2, XCircle, ArrowUpDown, ArrowUp, ArrowDown 
 import { NotificationToast } from "../common/NotificationToast";
 import type { Comparator, SortDir } from "../../hooks/useSortableTable";
 import type { ProductInfo } from "../../lib/productsCache";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 정제 후 정렬
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 // 일치/불일치 배타 · 유통기한임박 독립 toggle
 export type ItemStatus = "pending" | "match" | "mismatch";
@@ -63,7 +65,7 @@ export type ArrivalSortKey = "addedAt" | "supplier" | "name" | "qty" | "status";
 
 export const ARRIVAL_CMP: Record<ArrivalSortKey, Comparator<ArrivalItem>> = {
   addedAt:  (a, b) => a.addedAt - b.addedAt,
-  supplier: (a, b) => (a.product?.supplier ?? "").localeCompare(b.product?.supplier ?? "", "ko"),
+  supplier: (a, b) => displayVendorName(a.product?.supplier ?? "").localeCompare(displayVendorName(b.product?.supplier ?? ""), "ko"),
   name:     (a, b) => (a.product?.name ?? "").localeCompare(b.product?.name ?? "", "ko"),
   qty:      (a, b) => a.qty - b.qty,
   status:   (a, b) => a.status.localeCompare(b.status),

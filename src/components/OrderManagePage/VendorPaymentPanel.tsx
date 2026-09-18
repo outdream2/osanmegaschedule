@@ -10,6 +10,8 @@ import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
 import { PeriodSelector, PERIOD_MONTHS_PRESET } from "../common/PeriodSelector";
 import { SeasonButtons } from "../common/SeasonButtons";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 interface VendorPaymentPanelProps {
   vendorPanelWidth: number;
@@ -93,7 +95,7 @@ export const VendorPaymentPanel: React.FC<VendorPaymentPanelProps> = ({
                 <span className="text-lg font-bold">×</span>
               </button>
               <div className="flex-1 min-w-0">
-                <div className="text-[17px] font-bold text-zinc-800 leading-tight">{vendorSelected.company_name}</div>
+                <div className="text-[17px] font-bold text-zinc-800 leading-tight">{displayVendorName(vendorSelected.company_name) || vendorSelected.company_name}</div>
                 <div className="text-[16px] text-zinc-500">공급사 상세 · 결제잔고 · 매입이력</div>
               </div>
               <button type="button" onClick={() => onSelectVendor(null)}

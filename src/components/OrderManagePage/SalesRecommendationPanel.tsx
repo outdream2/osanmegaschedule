@@ -11,6 +11,8 @@ import { api } from "../../lib/apiClient";
 // 2026-09-14 · 사용자 지시 · 유통기한 임박 상품 · 우측 판넬 표시 (여전히 안 나옴 → 신규 섹션)
 import { listExpiryImminentProducts } from "../../lib/productsApi";
 import type { ProductInfo } from "./OrderManagePage.types";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 // 2026-09-13 · #55 · 임박 이벤트 · GET /api/events/today
 // 2026-09-14 · #85 · products 배열 · [발주 추가] 액션
@@ -272,7 +274,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                                   {shortage > 0 && (
                                     <span className="text-rose-600 font-bold">부족 {shortage}</span>
                                   )}
-                                  {p.supplier && <span className="truncate max-w-[80px]">· {p.supplier}</span>}
+                                  {p.supplier && <span className="truncate max-w-[80px]">· {displayVendorName(p.supplier) || p.supplier}</span>}
                                 </div>
                               </div>
                               {onRequestProduct && !alreadyRequested && !isInactive && (
@@ -456,7 +458,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                           <div className="flex items-center gap-2 text-[11px] text-ink-soft tabular-nums mt-0.5">
                             <span>{p.expiry_date ? String(p.expiry_date).slice(0, 10) : "-"}</span>
                             <span>· 재고 <span className="font-semibold text-ink">{cur}</span></span>
-                            {p.supplier && <span className="truncate max-w-[100px]">· {p.supplier}</span>}
+                            {p.supplier && <span className="truncate max-w-[100px]">· {displayVendorName(p.supplier) || p.supplier}</span>}
                           </div>
                         </div>
                         {onRequestProduct && !alreadyRequested && (

@@ -768,7 +768,8 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
   type ProductListSortKey = "product_name" | "supplier" | "sale_price" | "current_stock" | "location";
   const listComparators = useMemo<Record<ProductListSortKey, Comparator<ProductRow>>>(() => ({
     product_name: (a, b) => String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko"),
-    supplier:     (a, b) => String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko"),
+    // 2026-09-18 · 사용자 지시 · (주)·주식회사 무시 · 정제 후 정렬
+    supplier:     (a, b) => displayVendorName(a.supplier).localeCompare(displayVendorName(b.supplier), "ko"),
     sale_price:   (a, b) => (Number((a as any).sale_price ?? 0)) - (Number((b as any).sale_price ?? 0)),
     current_stock: (a, b) => (Number(a.current_stock ?? 0)) - (Number(b.current_stock ?? 0)),
     location:     (a, b) => String(a.location ?? "").localeCompare(String(b.location ?? ""), "ko"),

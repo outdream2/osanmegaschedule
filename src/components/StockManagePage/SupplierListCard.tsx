@@ -17,6 +17,8 @@ import type { SupplierAgg, SupListSortKey, SupplierGroup } from "./SupplierTab.t
 import { fmt } from "./SupplierTab.types";
 import { SupplierInlineExpansion } from "./SupplierInlineExpansion";
 import { SplitListPanel } from "../common/SplitListPanel";
+// 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 const fmtWon = fmtWonCompact;
 
@@ -349,8 +351,9 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                           return <VendorCategoryBadge category={cat} />;
                         })()}
                         <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제 · displayVendorName 프리미티브 */}
                           <span className={`text-[17px] font-semibold break-words whitespace-normal leading-tight ${isSelected ? "text-sky-800" : "text-zinc-700"}`}>
-                            {sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}
+                            {displayVendorName(sup.supplier ?? "") || sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}
                           </span>
                           {/* 2026-08-30 · 사용자 지시 · 매입이력 embedded 모드 · 공급사 코드 숨김 */}
                           {sup.supplier_code && !embedded && <span className="text-[16px] tabular-nums text-zinc-400 shrink-0 font-mono bg-zinc-100 rounded px-1" title="공급사코드">#{sup.supplier_code}</span>}

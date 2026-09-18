@@ -14,6 +14,8 @@ import { fmt } from "./SalesTrendPage.helpers";
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
 import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
+// 2026-09-18 · 사용자 지시 · 공급사 검색 · (주)·주식회사 무시
+import { matchesSupplierQuery } from "../../lib/supplierMatch";
 
 // ─── 타입 ────────────────────────────────────────────────────────────────────
 type SupplierAggRow = {
@@ -160,9 +162,10 @@ const SupplierTrendTab: React.FC<{
   }, [periodMonths, season]);
 
   const filteredSuppliers = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
     if (!q) return suppliers;
-    return suppliers.filter(s => s.supplier.toLowerCase().includes(q));
+    // 2026-09-18 · matchesSupplierQuery · "(주)녹십자" ↔ "녹십자" 양방향
+    return suppliers.filter(s => matchesSupplierQuery({ supplier: s.supplier }, q));
   }, [suppliers, query]);
 
   // 2026-09-11 · #107 · TopN 삭제 · 전체 표시
