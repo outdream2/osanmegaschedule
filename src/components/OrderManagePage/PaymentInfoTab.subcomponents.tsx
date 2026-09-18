@@ -2,8 +2,9 @@
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · PaymentInfoTab 서브 컴포넌트 이관
 // 프레임워크: Spinner
 import React from "react";
-import { Wallet, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { Wallet } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+import { SortHeader } from "../common/SortHeader";
 import type { VendorSortKey, SortDir } from "./PaymentInfoTab.types";
 
 export const inputCls =
@@ -62,38 +63,6 @@ export const AmountField: React.FC<{
   </FieldLabel>
 );
 
-// ─── 좌측 리스트 헤더 · 자동 정렬 · Task #103 (2026-08-04) ─────────────────
-export const SortHeaderBtn: React.FC<{
-  label: string;
-  columnKey: VendorSortKey;
-  activeKey: VendorSortKey;
-  activeDir: SortDir;
-  onSort: (k: VendorSortKey) => void;
-  className?: string;
-  align?: "left" | "right";
-  title?: string;
-}> = ({ label, columnKey, activeKey, activeDir, onSort, className = "", align = "right", title }) => {
-  const active = columnKey === activeKey;
-  const alignCls = align === "right" ? "justify-end text-right" : "justify-start text-left";
-  return (
-    <button
-      type="button"
-      onClick={() => onSort(columnKey)}
-      title={title ?? `${label} · 클릭하여 정렬`}
-      className={`inline-flex items-center gap-0.5 ${alignCls} h-full transition cursor-pointer select-none ${
-        active ? "text-zinc-800" : "text-zinc-500 hover:text-zinc-700"
-      } ${className}`}
-    >
-      <span>{label}</span>
-      {active
-        ? (activeDir === "asc"
-            ? <ChevronUp size={11} strokeWidth={3} className="shrink-0" />
-            : <ChevronDown size={11} strokeWidth={3} className="shrink-0" />)
-        : <ChevronsUpDown size={10} strokeWidth={2.25} className="opacity-30 shrink-0" />
-      }
-    </button>
-  );
-};
 
 export const VendorListHeader: React.FC<{
   sortKey: VendorSortKey;
@@ -109,7 +78,7 @@ export const VendorListHeader: React.FC<{
     <span className="w-[36px] shrink-0 text-zinc-400 text-center">VAT</span>
     {/* 공급사명 · flex · 로딩 시 · "로딩중" 표시 (2026-08-09) */}
     <span className="flex-1 min-w-0 flex items-center gap-1.5">
-      <SortHeaderBtn label={`공급사 (${count})`} columnKey="name" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="left" />
+      <SortHeader label={`공급사 (${count})`} columnKey="name" activeKey={sortKey} activeDir={sortDir} onToggle={onSort} arrowStyle="chevron" activeColor="zinc" align="left" />
       {loading && (
         <span className="inline-flex items-center gap-1 shrink-0">
           <Spinner size={10} tone="sky" label="로딩중" labelSize={14} />
@@ -118,16 +87,16 @@ export const VendorListHeader: React.FC<{
     </span>
     {/* 2026-08-09 · 4컬럼 재구성 (사용자 요청 · 총재고자산·총판매액·총결제액·총잔고) */}
     <span className="w-[62px] shrink-0">
-      <SortHeaderBtn label="총재고자산" columnKey="stockValue" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-teal-700" title="총재고자산 · stock_history 최근 3개월 · 클릭하여 정렬" />
+      <SortHeader label="총재고자산" columnKey="stockValue" activeKey={sortKey} activeDir={sortDir} onToggle={onSort} arrowStyle="chevron" activeColor="zinc" align="right" className="w-full text-teal-700" title="총재고자산 · stock_history 최근 3개월 · 클릭하여 정렬" />
     </span>
     <span className="w-[58px] shrink-0">
-      <SortHeaderBtn label="총판매액" columnKey="sales" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-indigo-700" title="최근 3개월 총판매 · stock_history · 클릭하여 정렬" />
+      <SortHeader label="총판매액" columnKey="sales" activeKey={sortKey} activeDir={sortDir} onToggle={onSort} arrowStyle="chevron" activeColor="zinc" align="right" className="w-full text-indigo-700" title="최근 3개월 총판매 · stock_history · 클릭하여 정렬" />
     </span>
     <span className="w-[58px] shrink-0">
-      <SortHeaderBtn label="총결제액" columnKey="payment" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-sky-700" title="선택 기간 내 총결제 · supplier_payments · 클릭하여 정렬" />
+      <SortHeader label="총결제액" columnKey="payment" activeKey={sortKey} activeDir={sortDir} onToggle={onSort} arrowStyle="chevron" activeColor="zinc" align="right" className="w-full text-sky-700" title="선택 기간 내 총결제 · supplier_payments · 클릭하여 정렬" />
     </span>
     <span className="w-[58px] shrink-0">
-      <SortHeaderBtn label="총잔고" columnKey="balance" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-amber-700" title="총잔고 (전체 매입-결제) · 클릭하여 정렬" />
+      <SortHeader label="총잔고" columnKey="balance" activeKey={sortKey} activeDir={sortDir} onToggle={onSort} arrowStyle="chevron" activeColor="zinc" align="right" className="w-full text-amber-700" title="총잔고 (전체 매입-결제) · 클릭하여 정렬" />
     </span>
   </div>
 );
