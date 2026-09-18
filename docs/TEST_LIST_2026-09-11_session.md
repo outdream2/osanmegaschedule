@@ -25,6 +25,216 @@
 
 ---
 
+# 🆕 2026-09-18 세션 · 대형 세션 · 30+ 커밋 · UI 전수 개선 · 크리티컬 fix · 이벤트 매핑
+
+**세션 요약** · 항목 순서대로 배치 테스트 권장 · **서버 재시작 필수**
+
+## 🔴 크리티컬 fix (즉시 확인)
+
+### [55] 실재고 저장 · duplicate key 에러 + 매장 진열도 조회 미반영 fix
+**커밋** · `2a2601d3`
+
+- 원인 1 · bulk endpoint · sameDay=false 이면 INSERT → UNIQUE(product_code) 위배
+- 원인 2 · useDisplayData · inventory-checks-updated 리스너 부재 → stale
+- fix 1 · bulk endpoint · existing 있으면 무조건 UPDATE (단건 endpoint 패턴 통일)
+- fix 2 · useDisplayData · 리스너 추가 + reloadKey · 저장 시 자동 refetch
+
+**확인 절차**
+1. 실재고 확인 페이지 · 어제 저장한 상품 · 다른 날 재저장 · **duplicate key 에러 없어야 함**
+2. 저장 후 · 매장 진열도 (매장진열 > 매장구역도) · **즉시 최신 재고 반영**
+3. 서버 로그 · 에러 없음
+
+### [56] 방문예약 · 거래처 로그인 · 대표·이사 안 보임 + 시간대 전부 불가능 fix
+**커밋** · `41441ed1` (테스트 [54] 별도 · 404c0e47)
+
+- 원인 1 · loadReservationStaffList · 빈 배열 시 컬럼 사라짐
+- 원인 2 · `POST /api/reservations` · **authorize(5)** · vendor level=0 → 403
+- fix 1 · fetchStaffAvailability · 빈 배열 시 DEFAULT_STAFF_AVAIL fallback
+- fix 2 · **authorize(5) → authorize(0)** · vendor 도 예약 가능
+
+**확인 절차**
+1. 거래처(vendor) 로그인 → 방문예약 페이지
+2. **대표·이사 컬럼 표시** 확인
+3. 예약 가능 시간대 · 초록 [예약] 버튼 · 클릭 · 모달 · 신청 · 성공
+4. 관리자 로그인 · 회귀 없음 확인
+
+### [57] 판매가·현재고 안 나오는 문제 fix
+**커밋** · `13bedf24`
+
+- 원인 · 프론트 매핑 sale_price 필드 누락 + Number 강제 변환 부재
+- fix · ProductRow.sale_price 필드 추가 + inventory-latest 병렬 호출 · 실재고 합산
+
+**확인 절차**
+1. 매장 > 상품 페이지 · 왼쪽 리스트 · 판매가·현재고 컬럼 · 실제 값 노출
+2. 정렬 · 판매가/재고 클릭 · 정상 정렬
+
+### [58] display-requests 상품명 안 나옴 fix · 3단계 fallback
+**커밋** · `10c6d17a`
+
+- fix · products 매칭 실패 시 · leading zero 재조회 → note 파싱 fallback
+
+**확인 절차**
+1. 승인요청 > 요청목록 > 진열요청 · 리스트에 상품명 정상 노출
+
+---
+
+## 🎨 상품정보 페이지 · 왼쪽 리스트 전수 재설계 (여러 커밋 통합)
+
+### [59] 상품 리스트 · 카드 → 표 형식 · 자동정렬 헤더 + 폰트·폭·컬럼 정돈
+**커밋** · `919ae8f1` → `28874277` → `bbe02b9f` → `373eaf78` → `f64e4697` → `0d28f92f` → `dd8674e9` (통합)
+
+- 카드 → 표 형식 (`<table>` + sticky thead + useSortableTable)
+- 컬럼 · 상품명 · 공급사 · 판매가 · 현재고 · 위치
+- 상품명 컬럼 · **폭 드래그 조절** (localStorage 저장)
+- 상품코드 제거 (상세에 있으므로)
+- 헤더 폰트 +2 · 데이터 폰트 통일 · 굵기 완화 (font-semibold)
+- 헤더 라벨 · "재고" → "현재고" (사용자 지시)
+
+**확인 절차**
+1. 매장 > 상품 · 왼쪽 리스트 · 표 형식 확인
+2. 헤더 클릭 · asc/desc 정렬 · 화살표 아이콘 방향 전환
+3. 상품명 컬럼 우측 경계 · 드래그 · 폭 변화 · 새로고침 후 저장 값 유지
+4. 헤더 라벨 · "현재고" 확인
+5. 활성 행 · brand-tint bg + brand-deep 텍스트
+
+### [60] 상품 상세 페이지 · 폰트 -2 + 라벨 +2 + 공급사 wrap
+**커밋** · `725deeb9` → `bbe02b9f` → `3715e6c2`
+
+- 상품명·데이터 폰트 -2
+- 라벨 15개 폰트 +2 (13→15px)
+- 공급사 이름 · 말줄임표 제거 · full-width row + wrap
+- 규격·단위 · 다음 줄 재배치
+
+**확인 절차**
+1. 매장 > 상품 · 상품 선택 · 우측 상세
+2. 상품명·데이터 크기 · 라벨 크기 확인
+3. 긴 공급사 이름 · 줄바꿈 · 말줄임표 X
+
+---
+
+## 🎨 상품 편집 모달 (ProductCreateModal) 확장
+
+### [61] 편집 모달 · 상세 뷰 모든 필드 편집 지원 + 판매상태 필수·상단 배치
+**커밋** · `2a4decea` → `373eaf78` → `531a5168` → `dd8674e9`
+
+- 판매 상태 (판매중/판매중지/숨김) 필드 신규 · 필수 필드
+- 상세 진열위치 · 5-slot 편집 (창고1/2 · 매장1/2/3)
+- 섹션 순서 · 필수정보 → 가격 → 분류·공급 → 기타
+- 판매 상태 · 필수정보 섹션 내 · 상품코드/명 다음 줄
+
+**확인 절차**
+1. 매장 > 상품 · 상품 선택 · [수정] 클릭
+2. 판매 상태 dropdown · 필수 표시 · 필수정보 섹션 안
+3. 상세 진열위치 · 5-slot 각각 입력
+4. 저장 · 모든 필드 · DB 반영
+
+---
+
+## 🌟 이벤트 추천 상품 관리 (신규 기능)
+
+### [62] 통계설정 > 이벤트관리 · 상품 매핑 UI · Phase 1+2
+**커밋** · `198650d7` + `216aa015`
+
+- SplitPanel · 좌 이벤트 리스트 + 우 상품 매핑 관리 (신규 EventProductPanel.tsx)
+- 이벤트 카드 · 매핑 상품 개수 배지 (실시간)
+- 상품 검색 자동완성 (ProductSearchInput)
+- 매핑 상품 리스트 · 정렬 · 검색 · [삭제]
+- 편의 3종 · 다른 이벤트에서 복사 · 분류 일괄 · 붙여넣기 임포트
+- 모바일 · SplitPanel mobileRightAsModal
+
+**확인 절차** (`docs/TEST_LIST_2026-09-11_session.md` [54] 참조 · 동일)
+1. 통계 설정 > 이벤트 관리
+2. 이벤트 클릭 · 우측 상품 매핑 로드
+3. 상품 검색·추가 · 배지 실시간
+4. 삭제 · 정렬 · 다른 이벤트 복사 · 분류 일괄 · 붙여넣기 각각 확인
+5. **발주필요 우측 판넬** · 등록 이벤트·상품 · 자동 표시 · 발주 버튼
+
+---
+
+## 🧱 대형 확산 리팩터
+
+### [63] 공급사 (주)·주식회사 · 전수조사 · 표시·검색·매칭 정제 (52파일)
+**커밋** · `60bea16f` (20+4파일) + `ecdfa2b2` (32파일)
+
+- DB 저장은 원본 유지 · **UI·검색·정렬에서만 (주) 제거**
+- 표시 · displayVendorName · 33파일
+- 검색·필터 · matchesSupplierQuery · 9파일 (양방향 매칭)
+- 정렬 · localeCompare · displayVendorName 정제 후 비교 (14파일)
+
+**확인 절차**
+1. 공급사 검색 · "녹십자" 입력 · "(주)녹십자" 매칭
+2. "(주)녹십자" 입력 · "녹십자" 매칭 (양방향)
+3. 공급사 표시 · UI 곳곳 · (주) 제거된 이름
+4. DB 저장 · 매입이력·결제·발주 등 · **원본 유지** 확인 (관리자 DB 조회)
+
+### [64] shelf_positions · 3중 방어 · 자동 assign + 클라 폴백 + 관리자 트리거
+**커밋** · `59f48b9f`
+
+- 계층 1 · xlsx 임포트 완료 후 · shelf_positions 자동 배정
+- 계층 2 · 클라 폴백 · shelf_positions 비어있어도 · location 있으면 default 슬롯 표시
+- 관리자 트리거 · POST `/api/products/backfill-shelf-positions`
+
+**확인 절차**
+1. 상품 신규 등록·xlsx 임포트 · 자동 · inventory_checks 슬롯 생성
+2. 매장 > 상품 · 이전 등록 상품 · 진열구역 있으면 · 상세위치 슬롯 즉시 표시
+3. 관리자 · [진열위치 자동 배정] API 호출 (Postman or curl) · 응답 확인
+
+### [65] devLog 확산 · production 노이즈 제거 (10+ 파일)
+**커밋** · `32c86338` → `2b8972b7` → `7e17d68c` → `ba833e49`
+
+- `src/lib/devLog.ts` 유틸 신설 · import.meta.env.DEV 게이트
+- App.tsx · OCR hooks · ProductArrivalPage · ArrivalRowCard · ContractWriterPage · hooks 5 · ProductInfoPage 2 · MenuCard
+- console.log/warn → devLog/devWarn
+- console.error 는 유지 (프로덕션 에러 필수)
+
+**확인 절차**
+1. 개발 서버 (npm run dev) · 브라우저 콘솔 · 기존 로그 유지
+2. **프로덕션 빌드** (npm run build + preview) · 콘솔 · 로그 최소화 확인
+
+---
+
+## 🎨 기타 UI 개선
+
+### [66] 유통기한 임박 리스트 · 규격 컬럼 제거
+**커밋** · `c621332c`
+
+- ExpiryImminentTab · 규격 컬럼 완전 제거 · 다른 컬럼 폭 재배분
+
+**확인 절차**
+1. 매입 > 유통기한 임박 · 규격 컬럼 사라짐 · 다른 컬럼 자연스럽게 확장
+
+### [67] 직원관리 · 왼쪽 리스트 · 재설계 v3 (Linear/Attio 최신 트렌드)
+**커밋** · `575ac46b` → `c288752e` → `4fb61f1a` (v1→v2→v3)
+
+- 최종 · 테이블 구조 · sticky thead + 3 컬럼 정렬 헤더
+- 동그란 이니셜 아바타 완전 제거 (신규 대원칙 · `.claude/memory/feedback_no_circular_icons_2026-09-18.md`)
+- 근속 표시 · 입사일 기준 자동 계산
+
+**확인 절차**
+1. 경영 > 직원관리 · 왼쪽 리스트
+2. 동그란 요소 없음 · 텍스트 tabular
+3. "직원"/"상태"/"근속" 헤더 클릭 · 정렬 확인
+4. 서류 아이콘 (이력서·통장·계약서) · 사각 버튼 · 클릭 · 업로드 정상
+
+### [68] docs 스코프 축소 · #191 Phase C 잔여 + T-WAREHOUSE-TAB
+**커밋** · `57221fbe` + `d3cdb547`
+
+- #191 Phase C 잔여 (Hybrid panel 3파일) · 실제 Modal 아님 · A안 (유지) 채택
+- T-WAREHOUSE-TAB · 창고1/2 이미 매장진열 안 탭 · 이미 완료 상태 확인
+
+---
+
+## 📚 신규 대원칙 등재 (memory)
+
+### [69] 대원칙 · 리스트 앞 동그란 아이콘 금지
+**파일** · `~/.claude/memory/feedback_no_circular_icons_2026-09-18.md`
+
+- 리스트/카드 항목 앞 · 동그란 아바타·이니셜 원 · 절대 X
+- 사람 실사진 프로필만 예외
+- accent bar (border-l-2) or bg-tint 로 강조 대체
+
+---
+
 # 🆕 2026-09-17 세션 · 유통기한 3소스 통합 · UI 재정리 · 대원칙 강화
 
 **세션 요약 · 14 커밋 · [41]~[53]** · 항목 순서대로 배치 테스트 권장
