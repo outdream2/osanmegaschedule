@@ -28,6 +28,7 @@ import { IconTile } from "../common/IconTile";
 import { Spinner } from "../common/Spinner";
 // 2026-09-11 · #68 · 사용자 지시 · 검색창 · SearchBar 프리미티브 통일
 import { SearchBar } from "../common/SearchBar";
+import { SortHeaderContent } from "../common/SortHeader";
 
 interface VendorListEditorProps {
   // 기존 API 호환용 · 무시됨 (모달 방식으로 통일)
@@ -333,14 +334,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                     compactSortKey === "company_name" ? "text-indigo-600 bg-indigo-50/70" : "text-zinc-500 bg-zinc-50",
                   ].join(" ")}
                 >
-                  <span className="inline-flex items-center gap-0.5">
-                    공급사
-                    {compactSortKey === "company_name"
-                      ? (compactSortDir === "asc"
-                          ? <ChevronUp size={9} className="text-indigo-500 ml-0.5 shrink-0" />
-                          : <ChevronDown size={9} className="text-indigo-500 ml-0.5 shrink-0" />)
-                      : <ChevronUp size={9} className="text-zinc-300 ml-0.5 shrink-0" />}
-                  </span>
+                  <SortHeaderContent label="공급사" columnKey="company_name" activeKey={compactSortKey} activeDir={compactSortDir} arrowStyle="chevron" activeColor="indigo" />
                 </th>
                 {/* 2026-08-04 · #101 · 결제/공급사관리 리스트 재정비
                      · 제거: 사업자번호·담당자·전화·VAT (상세 우측 상단으로 이동)
@@ -358,12 +352,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                   ].join(" ")}
                   title="공급사별 최근 청구 잔고"
                 >
-                  <span className="inline-flex items-center flex-row-reverse gap-0.5">
-                    총잔고
-                    {compactSortKey === "balance"
-                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 mr-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 mr-0.5 shrink-0" />)
-                      : <ChevronDown size={9} className="text-zinc-300 mr-0.5 shrink-0" />}
-                  </span>
+                  <SortHeaderContent label="총잔고" columnKey="balance" activeKey={compactSortKey} activeDir={compactSortDir} arrowStyle="chevron" activeColor="indigo" align="right" />
                 </th>
                 {/* 2026-09-11 · 사용자 지시 · 총매입액 컬럼 추가 · v.purchase 기간 누계 */}
                 <th
@@ -377,12 +366,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                   ].join(" ")}
                   title="공급사별 매입액 · 기간 누계"
                 >
-                  <span className="inline-flex items-center flex-row-reverse gap-0.5">
-                    총매입액
-                    {compactSortKey === "purchase_total"
-                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 mr-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 mr-0.5 shrink-0" />)
-                      : <ChevronDown size={9} className="text-zinc-300 mr-0.5 shrink-0" />}
-                  </span>
+                  <SortHeaderContent label="총매입액" columnKey="purchase_total" activeKey={compactSortKey} activeDir={compactSortDir} arrowStyle="chevron" activeColor="indigo" align="right" />
                 </th>
                 {/* 총재고자산 · 우측 정렬 · 최근 3개월 · totalStockAmount */}
                 <th
@@ -396,12 +380,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                   ].join(" ")}
                   title="공급사 상품 재고 총액 · 최근 3개월 stock_history 합계"
                 >
-                  <span className="inline-flex items-center flex-row-reverse gap-0.5">
-                    총재고자산
-                    {compactSortKey === "stock_value"
-                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 mr-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 mr-0.5 shrink-0" />)
-                      : <ChevronDown size={9} className="text-zinc-300 mr-0.5 shrink-0" />}
-                  </span>
+                  <SortHeaderContent label="총재고자산" columnKey="stock_value" activeKey={compactSortKey} activeDir={compactSortDir} arrowStyle="chevron" activeColor="indigo" align="right" />
                 </th>
                 {/* 총판매액 · 우측 정렬 · 최근 3개월 · saleAmount proxy */}
                 <th
@@ -415,12 +394,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                   ].join(" ")}
                   title="공급사 상품 판매 총액 · 최근 3개월"
                 >
-                  <span className="inline-flex items-center flex-row-reverse gap-0.5">
-                    총판매액
-                    {compactSortKey === "sales_total"
-                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 mr-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 mr-0.5 shrink-0" />)
-                      : <ChevronDown size={9} className="text-zinc-300 mr-0.5 shrink-0" />}
-                  </span>
+                  <SortHeaderContent label="총판매액" columnKey="sales_total" activeKey={compactSortKey} activeDir={compactSortDir} arrowStyle="chevron" activeColor="indigo" align="right" />
                 </th>
                 {/* 최근매입 */}
                 <th
@@ -433,12 +407,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                     compactSortKey === "invoice_date" ? "text-indigo-600 bg-indigo-50/70" : "text-zinc-500 bg-zinc-50",
                   ].join(" ")}
                 >
-                  <span className="inline-flex items-center gap-0.5">
-                    최근매입
-                    {compactSortKey === "invoice_date"
-                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 ml-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 ml-0.5 shrink-0" />)
-                      : <ChevronUp size={9} className="text-zinc-300 ml-0.5 shrink-0" />}
-                  </span>
+                  <SortHeaderContent label="최근매입" columnKey="invoice_date" activeKey={compactSortKey} activeDir={compactSortDir} arrowStyle="chevron" activeColor="indigo" />
                 </th>
               </tr>
             </thead>
