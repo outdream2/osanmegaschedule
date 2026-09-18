@@ -145,7 +145,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
   }, []);
 
   if (loading) return <div className="flex items-center justify-center py-16"><Spinner size={22} tone="brand" label="불러오는 중..." /></div>;
-  if (error) return <div className="p-4"><Card variant="flat" padding="md" rounded="lg" bg="bg-rose-50" borderColor="border-rose-200" className="text-[16px] text-rose-700 font-medium">{error}</Card></div>;
+  if (error) return <div className="p-4"><Card variant="flat" padding="md" rounded="lg" bg="bg-rose-50" borderColor="border-rose-200" className="text-[14px] text-rose-700 font-medium">{error}</Card></div>;
   if (!product) return <div className="flex items-center justify-center py-16"><EmptyState icon={Package as any} title="상품을 선택하세요" hint="좌측 리스트에서 상품을 선택하면 상세정보가 표시됩니다" /></div>;
 
   const p = product as unknown as Record<string, unknown>;
@@ -306,7 +306,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             {/* 상품명 · 큰 hero · 이름·코드·상태·카테고리 */}
-            <h1 className="text-[24px] font-extrabold text-ink leading-tight tracking-tight break-keep">
+            <h1 className="text-[22px] font-extrabold text-ink leading-tight tracking-tight break-keep">
               {product.product_name || <span className="text-zinc-300 font-normal">(이름없음)</span>}
             </h1>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -349,54 +349,54 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
 
         {/* ─── SECTION 1 · 가격 정보 (판매가·매입가·이익율) · 반응형 grid (1→3-col) · 폰트 +2 ─── */}
         <section className="space-y-2.5">
-          <h3 className="flex items-center gap-1.5 text-[17px] font-bold text-brand-deep tracking-tight pb-2 border-b-2 border-brand-tint">
+          <h3 className="flex items-center gap-1.5 text-[15px] font-bold text-brand-deep tracking-tight pb-2 border-b-2 border-brand-tint">
             <span className="w-1.5 h-4 rounded-full bg-brand-deep" />
             가격 정보
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
             <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-brand-deep bg-brand-tint rounded-md px-2.5 py-1 shrink-0">판매가</span>
+              <span className="text-[13px] font-bold text-brand-deep bg-brand-tint rounded-md px-2.5 py-1 shrink-0">판매가</span>
               {editing
-                ? <input type="number" min={0} value={val("sale_price")} onChange={e => set("sale_price", e.target.value)} className={inputCls + " tabular-nums text-[16px] max-w-[140px]"} />
+                ? <input type="number" min={0} value={val("sale_price")} onChange={e => set("sale_price", e.target.value)} className={inputCls + " tabular-nums text-[14px] max-w-[140px]"} />
                 : p.sale_price != null
-                  ? <span className="text-[22px] font-extrabold text-brand-deep tabular-nums leading-none tracking-tight">{Number(p.sale_price).toLocaleString()}<span className="text-[14px] font-bold ml-0.5 text-brand-deep/70">원</span></span>
-                  : <span className="text-zinc-300 text-[16px]">-</span>}
+                  ? <span className="text-[20px] font-extrabold text-brand-deep tabular-nums leading-none tracking-tight">{Number(p.sale_price).toLocaleString()}<span className="text-[12px] font-bold ml-0.5 text-brand-deep/70">원</span></span>
+                  : <span className="text-zinc-300 text-[14px]">-</span>}
             </div>
             <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-amber-700 bg-amber-50 rounded-md px-2.5 py-1 shrink-0">매입가</span>
+              <span className="text-[13px] font-bold text-amber-700 bg-amber-50 rounded-md px-2.5 py-1 shrink-0">매입가</span>
               {editing
-                ? <input type="number" min={0} value={val("purchase_price")} onChange={e => set("purchase_price", e.target.value)} className={inputCls + " tabular-nums text-[16px] max-w-[140px]"} />
+                ? <input type="number" min={0} value={val("purchase_price")} onChange={e => set("purchase_price", e.target.value)} className={inputCls + " tabular-nums text-[14px] max-w-[140px]"} />
                 : p.purchase_price != null
-                  ? <span className="text-[20px] font-bold text-amber-700 tabular-nums leading-none tracking-tight">{Number(p.purchase_price).toLocaleString()}<span className="text-[14px] font-semibold ml-0.5 text-amber-600">원</span></span>
-                  : <span className="text-zinc-300 text-[16px]">-</span>}
+                  ? <span className="text-[18px] font-bold text-amber-700 tabular-nums leading-none tracking-tight">{Number(p.purchase_price).toLocaleString()}<span className="text-[12px] font-semibold ml-0.5 text-amber-600">원</span></span>
+                  : <span className="text-zinc-300 text-[14px]">-</span>}
             </div>
             <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1 shrink-0">이익율</span>
+              <span className="text-[13px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1 shrink-0">이익율</span>
               {profitRate != null
-                ? <span className={`text-[20px] font-bold tabular-nums leading-none tracking-tight ${profitRate >= 30 ? "text-emerald-600" : profitRate >= 15 ? "text-amber-600" : "text-rose-600"}`}>{profitRate}<span className="text-[14px] font-semibold ml-0.5">%</span></span>
-                : <span className="text-zinc-300 text-[16px]">-</span>}
+                ? <span className={`text-[18px] font-bold tabular-nums leading-none tracking-tight ${profitRate >= 30 ? "text-emerald-600" : profitRate >= 15 ? "text-amber-600" : "text-rose-600"}`}>{profitRate}<span className="text-[12px] font-semibold ml-0.5">%</span></span>
+                : <span className="text-zinc-300 text-[14px]">-</span>}
             </div>
           </div>
         </section>
 
         {/* ─── SECTION 2 · 공급사·기본 정보 · 반응형 grid (1→2-col) · 폰트 +2 ─── */}
         <section className="space-y-2.5">
-          <h3 className="flex items-center gap-1.5 text-[17px] font-bold text-sky-700 tracking-tight pb-2 border-b-2 border-sky-200">
+          <h3 className="flex items-center gap-1.5 text-[15px] font-bold text-sky-700 tracking-tight pb-2 border-b-2 border-sky-200">
             <span className="w-1.5 h-4 rounded-full bg-sky-600" />
             공급사 · 기본 정보
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
             {editing && (
               <div className="col-span-full flex items-baseline justify-between py-1.5 min-h-[36px] border-b border-line/40 gap-3">
-                <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">상품명</span>
+                <span className="text-[13px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">상품명</span>
                 <div className="flex-1 max-w-md"><EditField k="product_name" label="" /></div>
               </div>
             )}
             <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">공급사</span>
+              <span className="text-[13px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">공급사</span>
               {editing ? <div className="flex-1 max-w-[180px]"><EditField k="supplier" label="" /></div> : product.supplier ? (
                 <span className="inline-flex items-center gap-2 min-w-0">
-                  <span className="text-[18px] font-bold text-ink truncate">{product.supplier}</span>
+                  <span className="text-[16px] font-bold text-ink truncate">{product.supplier}</span>
                   <button
                     type="button"
                     onClick={() => vendorModal.openVendorInfo(product.supplier!)}
@@ -405,51 +405,51 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                     상세<ArrowSquareOut size={10} />
                   </button>
                 </span>
-              ) : <span className="text-[14px] text-zinc-300">-</span>}
+              ) : <span className="text-[12px] text-zinc-300">-</span>}
             </div>
             {editing && (
               <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-                <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">분류</span>
+                <span className="text-[13px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">분류</span>
                 <div className="flex-1 max-w-[180px]"><EditField k="category" label="" /></div>
               </div>
             )}
             <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">규격</span>
-              {editing ? <div className="flex-1 max-w-[180px]"><EditField k="spec" label="" /></div> : <span className="text-[18px] font-bold text-ink">{dispVal("spec")}</span>}
+              <span className="text-[13px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">규격</span>
+              {editing ? <div className="flex-1 max-w-[180px]"><EditField k="spec" label="" /></div> : <span className="text-[16px] font-bold text-ink">{dispVal("spec")}</span>}
             </div>
             <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">단위</span>
-              {editing ? <div className="flex-1 max-w-[180px]"><EditField k="unit" label="" /></div> : <span className="text-[18px] font-bold text-ink">{dispVal("unit")}</span>}
+              <span className="text-[13px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">단위</span>
+              {editing ? <div className="flex-1 max-w-[180px]"><EditField k="unit" label="" /></div> : <span className="text-[16px] font-bold text-ink">{dispVal("unit")}</span>}
             </div>
             <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">브랜드</span>
-              {editing ? <div className="flex-1 max-w-[180px]"><EditField k="brand" label="" /></div> : <span className="text-[18px] font-bold text-ink">{dispVal("brand")}</span>}
+              <span className="text-[13px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">브랜드</span>
+              {editing ? <div className="flex-1 max-w-[180px]"><EditField k="brand" label="" /></div> : <span className="text-[16px] font-bold text-ink">{dispVal("brand")}</span>}
             </div>
             <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">제조사</span>
-              {editing ? <div className="flex-1 max-w-[180px]"><EditField k="manufacturer" label="" /></div> : <span className="text-[18px] font-bold text-ink">{dispVal("manufacturer")}</span>}
+              <span className="text-[13px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">제조사</span>
+              {editing ? <div className="flex-1 max-w-[180px]"><EditField k="manufacturer" label="" /></div> : <span className="text-[16px] font-bold text-ink">{dispVal("manufacturer")}</span>}
             </div>
             <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">최근매입</span>
+              <span className="text-[13px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">최근매입</span>
               {p.last_purchase_date ? (
-                <span className="text-[18px] font-bold text-ink tabular-nums">{String(p.last_purchase_date).slice(0, 10)}</span>
-              ) : <span className="text-[14px] text-zinc-300">-</span>}
+                <span className="text-[16px] font-bold text-ink tabular-nums">{String(p.last_purchase_date).slice(0, 10)}</span>
+              ) : <span className="text-[12px] text-zinc-300">-</span>}
             </div>
           </div>
         </section>
 
         {/* ─── SECTION 3 · 재고 · 진열위치 (통합) · 반응형 grid · 폰트 +2 ─── */}
         <section className="space-y-2.5">
-          <h3 className="flex items-center gap-1.5 text-[17px] font-bold text-emerald-700 tracking-tight pb-2 border-b-2 border-emerald-200">
+          <h3 className="flex items-center gap-1.5 text-[15px] font-bold text-emerald-700 tracking-tight pb-2 border-b-2 border-emerald-200">
             <span className="w-1.5 h-4 rounded-full bg-emerald-600" />
             재고 · 진열위치
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
             <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1 shrink-0">현재고</span>
+              <span className="text-[13px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1 shrink-0">현재고</span>
               {p.current_stock != null
                 ? <span className="inline-flex items-baseline gap-1.5 min-w-0">
-                    <span className="text-[22px] font-extrabold text-emerald-700 tabular-nums leading-none tracking-tight">{String(p.current_stock)}<span className="text-[14px] font-semibold ml-0.5 text-emerald-600/70">개</span></span>
+                    <span className="text-[20px] font-extrabold text-emerald-700 tabular-nums leading-none tracking-tight">{String(p.current_stock)}<span className="text-[12px] font-semibold ml-0.5 text-emerald-600/70">개</span></span>
                     {p.optimal_stock != null && (() => {
                       const cur = Number(p.current_stock ?? 0);
                       const opt = Number(p.optimal_stock);
@@ -458,41 +458,41 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                       return <span className="text-[13px] font-bold text-rose-600 tabular-nums shrink-0">-{short}</span>;
                     })()}
                   </span>
-                : <span className="text-zinc-300 text-[16px]">-</span>}
+                : <span className="text-zinc-300 text-[14px]">-</span>}
             </div>
             <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
               <span className="inline-flex items-baseline gap-1 shrink-0">
-                <span className="text-[15px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1">적정재고</span>
+                <span className="text-[13px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1">적정재고</span>
                 <span className="text-[11px] font-medium text-zinc-400">· {optimalStockDays}일</span>
               </span>
               {editing
-                ? <input type="number" min={0} value={val("optimal_stock")} onChange={e => set("optimal_stock", e.target.value)} className={inputCls + " tabular-nums text-[16px] max-w-[120px]"} />
+                ? <input type="number" min={0} value={val("optimal_stock")} onChange={e => set("optimal_stock", e.target.value)} className={inputCls + " tabular-nums text-[14px] max-w-[120px]"} />
                 : p.optimal_stock != null
-                  ? <span className="text-[20px] font-bold text-ink tabular-nums leading-none tracking-tight">{String(p.optimal_stock)}<span className="text-[14px] font-semibold ml-0.5 text-ink-soft">개</span></span>
-                  : <span className="text-zinc-300 text-[16px]">-</span>}
+                  ? <span className="text-[18px] font-bold text-ink tabular-nums leading-none tracking-tight">{String(p.optimal_stock)}<span className="text-[12px] font-semibold ml-0.5 text-ink-soft">개</span></span>
+                  : <span className="text-zinc-300 text-[14px]">-</span>}
             </div>
             <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-cyan-700 bg-cyan-50 rounded-md px-2.5 py-1 shrink-0">창고</span>
+              <span className="text-[13px] font-bold text-cyan-700 bg-cyan-50 rounded-md px-2.5 py-1 shrink-0">창고</span>
               {(w1 != null || w2 != null) ? (
                 <span className="inline-flex items-baseline gap-1.5 min-w-0">
-                  <span className="text-[20px] font-bold text-cyan-700 tabular-nums leading-none tracking-tight">{totalWarehouse}<span className="text-[14px] font-semibold ml-0.5 text-cyan-600/70">개</span></span>
+                  <span className="text-[18px] font-bold text-cyan-700 tabular-nums leading-none tracking-tight">{totalWarehouse}<span className="text-[12px] font-semibold ml-0.5 text-cyan-600/70">개</span></span>
                   {(w1 != null && w2 != null) && (
                     <span className="text-[12px] font-medium text-cyan-600/70 tabular-nums shrink-0">({w1}·{w2})</span>
                   )}
                 </span>
-              ) : <span className="text-[14px] text-zinc-400">미조사</span>}
+              ) : <span className="text-[12px] text-zinc-400">미조사</span>}
             </div>
             <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-indigo-700 bg-indigo-50 rounded-md px-2.5 py-1 shrink-0">매장</span>
+              <span className="text-[13px] font-bold text-indigo-700 bg-indigo-50 rounded-md px-2.5 py-1 shrink-0">매장</span>
               {product.store_stock != null
-                ? <span className="text-[20px] font-bold text-indigo-700 tabular-nums leading-none tracking-tight">{totalStore}<span className="text-[14px] font-semibold ml-0.5 text-indigo-600/70">개</span></span>
-                : <span className="text-[14px] text-zinc-400">미조사</span>}
+                ? <span className="text-[18px] font-bold text-indigo-700 tabular-nums leading-none tracking-tight">{totalStore}<span className="text-[12px] font-semibold ml-0.5 text-indigo-600/70">개</span></span>
+                : <span className="text-[12px] text-zinc-400">미조사</span>}
             </div>
           </div>
           {/* 진열위치 · full-width row */}
           <div className="pt-2">
             <div className="flex items-start justify-between gap-2 min-h-[36px]">
-              <span className="text-[15px] font-bold text-rose-700 bg-rose-50 rounded-md px-2.5 py-1 shrink-0 mt-1">진열위치</span>
+              <span className="text-[13px] font-bold text-rose-700 bg-rose-50 rounded-md px-2.5 py-1 shrink-0 mt-1">진열위치</span>
               <div className="flex-1">
                 {editing ? (
                   <div className="space-y-2">
@@ -542,7 +542,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                 ) : (
                   <div className="flex flex-wrap items-center gap-2">
                     {p.location && (
-                      <span className="text-[20px] font-extrabold text-rose-700 bg-rose-50/60 rounded-md px-2.5 py-1 tabular-nums tracking-tight leading-none">구역 {String(p.location)}</span>
+                      <span className="text-[18px] font-extrabold text-rose-700 bg-rose-50/60 rounded-md px-2.5 py-1 tabular-nums tracking-tight leading-none">구역 {String(p.location)}</span>
                     )}
                     {(product.shelf_positions && Object.keys(product.shelf_positions).length > 0) ? (
                       <ShelfPositionsBadge positions={product.shelf_positions} size="md" />
