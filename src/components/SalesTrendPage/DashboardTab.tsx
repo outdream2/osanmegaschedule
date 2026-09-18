@@ -32,6 +32,7 @@ import { fmtWon } from "../../lib/format";
 import { matchesProductQuery } from "../../lib/productMatch";
 import { api } from "../../lib/apiClient";
 import { useVendors } from "../../hooks/useVendors";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
@@ -636,7 +637,7 @@ export const DashboardTab: React.FC = () => {
                             </div>
                             {p.supplier && (
                               <div className="text-[15px] text-zinc-400 break-words whitespace-normal mt-0.5">
-                                {p.supplier}
+                                {displayVendorName(p.supplier) || p.supplier}
                               </div>
                             )}
                           </td>

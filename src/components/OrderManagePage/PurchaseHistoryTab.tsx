@@ -14,6 +14,7 @@ import React, { useCallback, useEffect, useMemo, useState, useRef } from "react"
 import { useVendors } from "../../hooks/useVendors";
 // 2026-08-29 · 상품명 검색 · 통일 로직
 import { matchesProductQuery } from "../../lib/productMatch";
+import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { lookupProduct } from "../../lib/productsCache";
 // 2026-08-22 · Framework Phase 4 · UI imports 정리 (panels 로 이관)
 // T-CSS Phase 2 · 2026-08-06
@@ -511,9 +512,9 @@ export const PurchaseHistoryTab: React.FC = () => {
   //   2026-08-03 · leftSort · leftDir 조합 · asc/desc 토글 지원
   //   null 값은 desc 정렬 시 항상 뒤로 · asc 정렬 시 항상 뒤로 (일관성)
   const filteredVendors = useMemo(() => {
-    const q = vendorSearch.trim().toLowerCase();
+    const q = vendorSearch.trim();
     const list = vendors.filter(v => {
-      if (q && !v.company_name.toLowerCase().includes(q)) return false;
+      if (q && !matchesSupplierQuery(v, q)) return false;
       if (vendorCategoryFilter !== "전체" && v.category !== vendorCategoryFilter) return false;
       return true;
     });

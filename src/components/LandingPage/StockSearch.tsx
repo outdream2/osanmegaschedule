@@ -5,6 +5,7 @@ import { Search, X } from "lucide-react";
 import { Package } from "@phosphor-icons/react";
 import { api } from "../../lib/apiClient";
 import { StatusPill, type PillTone } from "../common/StatusPill";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 export interface StockItem {
   product_name: string;
@@ -116,7 +117,7 @@ export function StockSearch() {
                   <div className="min-w-0 flex-1">
                     <div className="text-zinc-800 font-bold text-sm break-words whitespace-normal">{item.product_name}</div>
                     {item.supplier && (
-                      <div className="text-[14px] text-zinc-400 break-words whitespace-normal mt-0.5">{item.supplier}</div>
+                      <div className="text-[14px] text-zinc-400 break-words whitespace-normal mt-0.5">{displayVendorName(item.supplier) || item.supplier}</div>
                     )}
                   </div>
                   <div className="shrink-0 flex items-center gap-1">

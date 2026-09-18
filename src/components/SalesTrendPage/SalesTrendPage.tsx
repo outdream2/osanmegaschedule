@@ -13,6 +13,7 @@ import { useHiddenManager } from "../../hooks/useHiddenManager";
 import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
 import { api } from "../../lib/apiClient";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 // 2026-08-22 · Framework Phase 4 · types + helpers 별도 파일 이관
 import type { PeriodRow, ChartSeries, LineChartProps } from "./SalesTrendPage.helpers";
 import {
@@ -303,7 +304,7 @@ export const SalesTrendPage: React.FC = () => {
                         <div className="text-sm font-bold text-zinc-800 truncate" title={p.product_name}>{p.product_name}</div>
                         <div className="text-[14px] tabular-nums text-zinc-400 truncate">
                           #{code}
-                          {p.supplier ? ` · ${p.supplier}` : ""}
+                          {p.supplier ? ` · ${displayVendorName(p.supplier) || p.supplier}` : ""}
                           {/* location: resolveProductLocation 사용 */}
                           {resolveProductLocation(p) ? ` · ${resolveProductLocation(p)}` : ""}
                           {p.current_stock != null ? ` · 재고 ${p.current_stock}` : ""}

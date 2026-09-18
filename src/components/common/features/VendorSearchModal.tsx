@@ -17,6 +17,8 @@
 import { useMemo, useState } from "react";
 import { X, Search, Building2, Plus, PencilLine } from "lucide-react";
 import { useVendors } from "../../../hooks/useVendors";
+import { matchesSupplierQuery } from "../../../lib/supplierMatch";
+import { displayVendorName } from "../../../utils/vendorNameNormalize";
 import { NewVendorModal } from "./NewVendorModal";
 import { IconTile } from "../IconTile";
 import { Spinner } from "../Spinner";
@@ -36,13 +38,12 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
   const [openNew, setOpenNew] = useState(false);
   const [openDetailId, setOpenDetailId] = useState<number | null>(null);
 
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
   const filtered = useMemo(() => {
     if (!q) return vendors.slice(0, 50); // 검색어 없으면 상위 50
     return vendors.filter(v =>
-      (v.company_name ?? "").toLowerCase().includes(q)
-      || (v.business_number ?? "").toLowerCase().includes(q)
-      || (v.contact_name ?? "").toLowerCase().includes(q)
+      matchesSupplierQuery(v, q)
+      || (v.business_number ?? "").toLowerCase().includes(q.toLowerCase())
     ).slice(0, 100);
   }, [vendors, q]);
 
@@ -158,8 +159,8 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
                     }`}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className={`text-[15px] font-bold truncate ${active ? "text-sky-800" : "text-zinc-800"}`}>
-                        {v.company_name}
+                      <div className={`text-[15px] font-bold break-words break-keep ${active ? "text-sky-800" : "text-zinc-800"}`}>
+                        {displayVendorName(v.company_name)}
                       </div>
                       <div className="text-[12px] text-zinc-400 truncate">
                         {v.business_number || "-"} · {v.contact_name || "-"} · {v.phone || "-"}

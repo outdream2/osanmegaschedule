@@ -26,6 +26,7 @@ import { Building2 } from "lucide-react";
 import { StatusPill, type PillTone } from "../../common/StatusPill";
 import { Spinner } from "../../common/Spinner";
 import { Card } from "../../common/Card";
+import { displayVendorName } from "../../../utils/vendorNameNormalize";
 
 const fmt = (n: number): string => n.toLocaleString("ko-KR");
 
@@ -159,7 +160,7 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
                             selectedVendor === v.supplier_name ? "text-rose-800" : "text-zinc-700"
                           }`}
                         >
-                          {v.supplier_name}
+                          {displayVendorName(v.supplier_name) || v.supplier_name}
                         </span>
                         {!v.deductible && (
                           <span className="text-[13px] font-bold px-1 py-0.5 rounded bg-zinc-100 text-zinc-500" title="매입세액 공제 불가">

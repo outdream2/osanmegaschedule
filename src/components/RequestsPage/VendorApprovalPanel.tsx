@@ -13,6 +13,7 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { Card } from "../common/Card";
 import { Spinner } from "../common/Spinner";
 import { EmptyState } from "../common/EmptyState";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { IconTile } from "../common/IconTile";
 import { StatusPill } from "../common/StatusPill";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
@@ -163,7 +164,7 @@ export const VendorApprovalPanel: React.FC = () => {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-3 flex-wrap">
-                      <div className="text-[24px] font-bold text-ink tracking-tight">{v.company_name}</div>
+                      <div className="text-[24px] font-bold text-ink tracking-tight">{displayVendorName(v.company_name) || v.company_name}</div>
                       {v.category && (
                         <span className="text-[15px] font-semibold text-violet-600 tracking-tight">· {v.category}</span>
                       )}

@@ -7,6 +7,7 @@ import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { fmtWonCompact } from "../../lib/format";
 import { fmt } from "./FlowTab.types";
 import type { StockFlowRow, FlowGroup } from "./FlowTab.types";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 const fmtWon = fmtWonCompact;
 
@@ -78,7 +79,7 @@ export const FlowRow: React.FC<FlowRowProps> = ({
         {p.supplier && (
           <div className="flex items-center gap-1 flex-wrap mt-0.5">
             <VendorCategoryBadge category={vendorCategoryMap[p.supplier] ?? null} />
-            <span className="text-[15px] font-medium text-zinc-400 break-words whitespace-normal">{p.supplier}</span>
+            <span className="text-[15px] font-medium text-zinc-400 break-words whitespace-normal">{displayVendorName(p.supplier) || p.supplier}</span>
           </div>
         )}
       </td>

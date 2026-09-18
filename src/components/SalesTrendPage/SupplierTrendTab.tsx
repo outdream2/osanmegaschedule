@@ -13,6 +13,7 @@ import { fmt } from "./SalesTrendPage.helpers";
 // 2026-09-11 · #106 · 사용자 지시 · 판매중/판매중지 필터 추가
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
 import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 // ─── 타입 ────────────────────────────────────────────────────────────────────
 type SupplierAggRow = {
@@ -247,7 +248,7 @@ const SupplierTrendTab: React.FC<{
                         <span className={`text-zinc-400 text-xs transition-transform shrink-0 ${isExpanded ? "rotate-90" : ""}`}>▶</span>
                         <span className="text-[14px] font-bold text-sky-600 shrink-0">{i + 1}</span>
                         <Building2 size={11} className="text-sky-500 shrink-0" />
-                        <span className="text-xs font-bold text-zinc-700 break-words whitespace-normal leading-tight">{sup.supplier}</span>
+                        <span className="text-xs font-bold text-zinc-700 break-words whitespace-normal leading-tight">{displayVendorName(sup.supplier) || sup.supplier}</span>
                         {sup.supplier_code && (
                           <span className="text-[15px] tabular-nums text-zinc-400 shrink-0" title="공급사코드">#{sup.supplier_code}</span>
                         )}

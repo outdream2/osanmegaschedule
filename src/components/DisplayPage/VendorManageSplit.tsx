@@ -12,6 +12,7 @@ import { api } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
+import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { Spinner } from "../common/Spinner";
 import { SplitPanel } from "../common/SplitPanel";
 import { NewVendorModal } from "../common/features/NewVendorModal";
@@ -75,13 +76,9 @@ export const VendorManageSplit: React.FC = () => {
   };
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = search.trim();
     const list = vendors.filter(v => {
-      if (q && !(
-        String(v.company_name ?? "").toLowerCase().includes(q)
-        || String(v.contact_name ?? "").toLowerCase().includes(q)
-        || String(v.phone ?? "").toLowerCase().includes(q)
-      )) return false;
+      if (q && !matchesSupplierQuery(v, q)) return false;
       if (catFilter !== "전체" && v.category !== catFilter) return false;
       return true;
     });

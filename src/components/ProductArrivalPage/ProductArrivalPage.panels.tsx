@@ -20,6 +20,7 @@ import { AccentBar } from "../common/AccentBar";
 import { Modal } from "../common/Modal";
 import { PeriodSelector, type PeriodOption } from "../common/PeriodSelector";
 import type { ArrivalItem } from "./helpers";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 const ARRIVAL_DAYS_PRESET: readonly PeriodOption<number>[] = [
   { value: 7,  label: "7일",  title: "최근 7일"  },
@@ -317,7 +318,7 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
                       {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                     </span>
                     <Building2 size={16} className="text-indigo-600 shrink-0" />
-                    <span className="text-[15px] font-bold text-ink min-w-0 flex-1 truncate" title={g.supplier}>{g.supplier}</span>
+                    <span className="text-[15px] font-bold text-ink min-w-0 flex-1 break-words break-keep" title={g.supplier}>{displayVendorName(g.supplier) || g.supplier}</span>
                     <StatusPill tone="indigo" size="sm">{g.arrivals.length}건</StatusPill>
                     <span className="text-[15px] font-semibold text-zinc-500 tabular-nums whitespace-nowrap">품목 {g.totalItems.toLocaleString()} · 수량 {g.totalQty.toLocaleString()}</span>
                     {g.matchCount > 0 && (

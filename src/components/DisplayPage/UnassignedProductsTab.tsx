@@ -13,6 +13,7 @@ import { getErrorMessage } from "../../lib/errorMessage";
 import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
 import { Spinner } from "../common/Spinner";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/TableList";
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-29 · #154 Phase 1 · 판매중 필터 프리미티브 · 3-way (전체/판매중/판매중지)
@@ -182,7 +183,7 @@ export const UnassignedProductsTab: React.FC = () => {
                 {filtered.map(p => (
                   <tr key={p.product_code} className="hover:bg-zinc-50/60 transition text-[15px]">
                     <td className={tableTdCls("left", "font-bold text-zinc-800 break-keep whitespace-normal")}>{p.product_name}</td>
-                    <td className={tableTdCls("left", "text-zinc-700")}>{p.supplier ?? "-"}</td>
+                    <td className={tableTdCls("left", "text-zinc-700")}>{p.supplier ? displayVendorName(p.supplier) || p.supplier : "-"}</td>
                     <td className={tableTdCls("left", "font-mono text-[15px] text-zinc-500")}>{p.product_code}</td>
                     <td className={tableTdCls("center", "font-bold text-zinc-700 tabular-nums")}>{p.current_stock ?? "-"}</td>
                     <td className={tableTdCls("center")}>

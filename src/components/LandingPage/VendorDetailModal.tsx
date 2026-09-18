@@ -21,6 +21,7 @@ import {
   vatDraftVal, emptyDraft, fmtWon, inputCls,
   normalizeBizNum, formatBizNum, formatBizNumProgressive,
 } from "./VendorListEditor.utils";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 // 2026-09-02 · 사용자 지시 · 주문방식 dropdown · xlsx 마스터
 import { VENDOR_ORDER_METHODS, findOrderMethodUrl } from "../../data/vendorOrderMethods";
 import { ExternalLink } from "lucide-react";
@@ -336,7 +337,7 @@ export const VendorDetailModal: React.FC<{
             <div className="mb-1"><VendorCategoryBadge category={vendor.category} /></div>
             {/* 공급사명 + 사업자·담당·전화 · PC 한줄 · 모바일 wrap */}
             <div className="flex items-baseline gap-x-4 gap-y-1 flex-wrap text-[17px]">
-              <div className="text-[20px] font-bold text-zinc-900 leading-tight break-words shrink-0">{vendor.company_name}</div>
+              <div className="text-[20px] font-bold text-zinc-900 leading-tight break-words shrink-0">{displayVendorName(vendor.company_name) || vendor.company_name}</div>
               <span className="inline-flex items-baseline gap-1.5">
                 <span className="text-zinc-400 font-semibold">사업자</span>
                 {vendor.business_number

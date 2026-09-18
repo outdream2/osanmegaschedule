@@ -13,6 +13,7 @@ import type { ProductInfo } from "../../lib/productsCache";
 import { StepperInput } from "../common/StepperInput";
 import { Badge } from "../common/Badge";
 import { RealMapSelector } from "../ScanPage/RealMapSelector";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 // 2026-09-01 · 실재고 UI 벤치마킹 · 창고/매장 자동 분류 · 관련 구역 표시
 import { resolveWarehouseVisibility, classifyArrivalSlot, assignZonesToSlots, type ArrivalSlot } from "../../lib/warehouseZoneMap";
 // 2026-09-08 · 상세 진열위치 뱃지 · 매장/창고 구역 옆에 3자리 표시
@@ -377,7 +378,7 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
         <div className="flex items-center gap-2 flex-wrap">
           {item.product?.supplier ? (
             <Badge tone="sky" size="xs" icon={<Building2 size={10} className="text-sky-500" />}>
-              {item.product.supplier}
+              {displayVendorName(item.product.supplier) || item.product.supplier}
             </Badge>
           ) : (
             <Badge tone="zinc" size="xs">공급사 미지정</Badge>

@@ -18,6 +18,7 @@ import { fmtWon } from "../../lib/format";
 import { api } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { CARD_BASE } from "../../styles/tokens";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { fmt } from "./SalesTrendPage.helpers";
@@ -456,7 +457,7 @@ export const StockFlowPanel: React.FC<{
                       </div>
                       {p.supplier && (
                         <div className="flex items-center gap-1 flex-wrap mt-0.5">
-                          <span className="text-[15px] text-zinc-400 break-words whitespace-normal">{p.supplier}</span>
+                          <span className="text-[15px] text-zinc-400 break-words whitespace-normal">{displayVendorName(p.supplier) || p.supplier}</span>
                           {vendorCategoryMap && <VendorCategoryBadge category={vendorCategoryMap[p.supplier] ?? null} />}
                         </div>
                       )}

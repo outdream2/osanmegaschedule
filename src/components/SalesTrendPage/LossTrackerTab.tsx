@@ -12,6 +12,7 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { calcLoss } from "./StockFlowPanel";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 type LossSortKey = "name" | "supplier" | "opening" | "sale" | "current" | "expected" | "purchase" | "loss";
 const LOSS_SORT_CMP: Record<LossSortKey, Comparator<any>> = {
@@ -154,9 +155,9 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
                       <button onClick={() => onOpenProductInfo(r)} className="text-left text-[15px] font-medium text-zinc-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition">
                         {r.product_name}
                       </button>
-                      {r.supplier && <div className="text-[15px] text-zinc-400 break-words whitespace-normal">{r.supplier}</div>}
+                      {r.supplier && <div className="text-[15px] text-zinc-400 break-words whitespace-normal">{displayVendorName(r.supplier) || r.supplier}</div>}
                     </td>
-                    <td className="px-0.5 py-1.5 text-zinc-500 text-[15px] hidden sm:table-cell break-words whitespace-normal leading-tight align-top">{r.supplier}</td>
+                    <td className="px-0.5 py-1.5 text-zinc-500 text-[15px] hidden sm:table-cell break-words whitespace-normal leading-tight align-top">{r.supplier ? displayVendorName(r.supplier) || r.supplier : ""}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-zinc-800 align-top">{fmt(open)}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-orange-700 font-bold bg-orange-50/40 align-top">{fmt(sale)}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-amber-800 font-bold bg-amber-50/40 align-top">{fmt(close)}</td>

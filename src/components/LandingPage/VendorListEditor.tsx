@@ -639,7 +639,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1 mb-0.5 flex-wrap">
                       <Building2 size={11} className="text-teal-500 shrink-0" />
-                      <span className="text-[15px] font-bold text-zinc-800 break-words">{v.company_name}</span>
+                      <span className="text-[15px] font-bold text-zinc-800 break-words">{displayVendorName(v.company_name) || v.company_name}</span>
                       <VendorCategoryBadge category={v.category} />
                     </div>
                     <div className="text-[13px] text-zinc-500 flex items-center gap-1.5 flex-wrap">
@@ -780,7 +780,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                   <td className="px-2 py-1 text-[15px] font-semibold text-zinc-800">
                     <span className="inline-flex items-center gap-1 flex-wrap">
                       <Building2 size={11} className="text-teal-500 shrink-0" />
-                      <span className="underline decoration-dotted decoration-teal-300 underline-offset-2 break-words">{v.company_name}</span>
+                      <span className="underline decoration-dotted decoration-teal-300 underline-offset-2 break-words">{displayVendorName(v.company_name) || v.company_name}</span>
                       <VendorCategoryBadge category={v.category} />
                     </span>
                   </td>

@@ -21,6 +21,8 @@ import {
   CartesianGrid, Legend,
 } from "recharts";
 import { useVendors } from "../../hooks/useVendors";
+import { matchesSupplierQuery } from "../../lib/supplierMatch";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { Card } from "../common/Card";
 import { StatusPill } from "../common/StatusPill";
@@ -148,9 +150,9 @@ export const PaymentInputPage: React.FC = () => {
   const [dataError, setDataError] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
     return vendors.filter(v => {
-      if (q && !String(v.company_name ?? "").toLowerCase().includes(q)) return false;
+      if (q && !matchesSupplierQuery(v, q)) return false;
       if (category !== "전체" && String(v.category ?? "") !== category) return false;
       return true;
     }).slice(0, 20);

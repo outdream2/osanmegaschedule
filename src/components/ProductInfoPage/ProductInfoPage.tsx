@@ -37,6 +37,7 @@ import { useOptimalStockPeriod } from "../../hooks/useOptimalStockPeriod";
 import { PAGE_CONTAINER_CLS, CARD_BASE } from "../../styles/tokens";
 import { AccentBar } from "../common/AccentBar";
 import { matchesProductQuery } from "../../lib/productMatch";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 // 2026-09-18 · 사용자 지시 · 왼쪽 리스트 · 카드→표 · 자동정렬 헤더
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 import { ArrowUp, ArrowDown } from "@phosphor-icons/react";
@@ -410,7 +411,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
               <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">공급사</span>
               {editing ? <div className="flex-1 max-w-[180px]"><EditField k="supplier" label="" /></div> : product.supplier ? (
                 <div className="flex-1 min-w-0 flex flex-wrap items-center gap-2">
-                  <span className="text-[16px] font-bold text-ink whitespace-normal break-words break-keep">{product.supplier}</span>
+                  <span className="text-[16px] font-bold text-ink whitespace-normal break-words break-keep">{displayVendorName(product.supplier) || product.supplier}</span>
                   <button
                     type="button"
                     onClick={() => vendorModal.openVendorInfo(product.supplier!)}

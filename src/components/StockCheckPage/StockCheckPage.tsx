@@ -10,6 +10,7 @@ import type { AuthSession } from "../../types";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 import { StatusPill } from "../common/StatusPill";
 import { Card } from "../common/Card";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 interface StockItem {
   product_name: string;
@@ -294,8 +295,8 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                               </span>
                             )}
                             {item.supplier && (
-                              <span className="text-[14px] font-semibold text-sky-700 whitespace-nowrap">
-                                {item.supplier}
+                              <span className="text-[14px] font-semibold text-sky-700 whitespace-normal break-words">
+                                {displayVendorName(item.supplier) || item.supplier}
                               </span>
                             )}
                           </div>

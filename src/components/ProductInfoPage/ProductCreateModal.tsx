@@ -28,6 +28,7 @@ import { CreateProductSchema, type CreateProductInput } from "../../shared/schem
 import { useVendors } from "../../hooks/useVendors";
 // 2026-09-18 · 사용자 지시 · 공급사 필터 · (주)·주식회사 접두어 무시 · 양방향 매칭
 import { matchesSupplierQuery } from "../../lib/supplierMatch";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { classifyArrivalSlot } from "../../lib/warehouseZoneMap";
 // 2026-08-28 · 사용자 지시 · 분류코드 참조 상품 리스트 (스크롤 · 클릭 시 자동 채움)
@@ -553,7 +554,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                             }}
                             className="w-full text-left px-3 py-2 text-[16px] font-medium text-ink hover:bg-zinc-50 focus:outline-none focus:bg-zinc-50 flex items-center gap-2 transition-colors"
                           >
-                            <span className="truncate">{v.company_name}</span>
+                            <span className="break-words break-keep">{displayVendorName(v.company_name) || v.company_name}</span>
                             {v.category && <span className="ml-auto text-[14px] text-ink-soft shrink-0 tracking-tight">{v.category}</span>}
                           </button>
                         ))}

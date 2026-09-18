@@ -37,6 +37,7 @@ import { resolveProduct } from "../../lib/normalizeProduct";
 // 2026-09-07 · 상품정보 페이지가 사용하는 등록 모달 재사용
 import { ProductCreateModal } from "../ProductInfoPage/ProductCreateModal";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 import type { AuthSession } from "../../types";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 // 2026-08-09 · 사용자 요청 · 상품 검색·확인 · 리스트 등록 (공통)
@@ -672,7 +673,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       <span className="inline-flex items-center gap-1.5 text-[17px] font-bold text-sky-700
                         bg-sky-50 border border-sky-200/70 rounded-lg px-2 py-1">
                         <Building2 size={11} className="text-sky-500" />
-                        {lastScannedProduct.supplier}
+                        {displayVendorName(lastScannedProduct.supplier) || lastScannedProduct.supplier}
                       </span>
                     )}
                   </div>
