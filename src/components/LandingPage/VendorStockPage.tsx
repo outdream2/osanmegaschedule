@@ -1,15 +1,17 @@
 // src/components/LandingPage/VendorStockPage.tsx
 // 2026-09-04 · #23 · 공급사 재고확인 · 모달 → 전용 페이지 전환
-//   · 대시보드(좌 · KPI + 기간 필터) + 리스트(우 · 검색 + 정렬 테이블) 구조
-//   · SplitPanel · KpiCard · SearchBar · StatusPill · SaleStatusFilter · Card 프레임워크 사용
-//   · 데이터 · GET /api/products-search?supplier=VENDOR_NAME&limit=1000
-//   · 기간 필터 · UI 만 · 상품재고는 시점 데이터 (백엔드 시계열 API 확장 후 실적용) · 안내 배너 표시
+// 2026-09-18 · f8045e8e · 응답 형식 fix + supplier only 검색 지원 (크리티컬)
+// 2026-09-18 · #301 · 양쪽 대시보드 재설계 · 좌 KPI+알림+도넛 · 우 카드 그룹 (사용자 지시)
 //
-// UI 대원칙 준수 · Attio/Linear 톤 · 화이트 베이스 · 폰트 +2 규칙 (13px+)
-// 회귀 방지 · 기존 VendorStockModal 은 그대로 두되 · LandingPage 진입점만 페이지 이동으로 변경
+// UI 대원칙 준수 · Linear/Notion 톤 · 화이트 베이스 · 폰트 +2 규칙 (13px+)
+// 안전 규칙 · API 호출 · state · handler · props 시그니처 완전 유지 · UI 만 변경
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Package, PackageCheck, PackageX, AlertTriangle, CalendarRange } from "lucide-react";
+import {
+  Package, PackageCheck, PackageX, AlertTriangle,
+  CalendarRange, TrendingUp, Layers,
+} from "lucide-react";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { PAGE_CONTAINER_CLS, TEXT } from "../../styles/tokens";
 import { SplitPanel } from "../common/SplitPanel";
@@ -92,6 +94,25 @@ function shiftMonths(base: Date, months: number): Date {
   return d;
 }
 
+// ─── 알림 카드 아이템 ──────────────────────────────────────────────────
+interface AlertItem {
+  code: string;
+  name: string;
+  current_stock: number;
+  level: StockLevel;
+}
+
+// ─── 도넛 차트 커스텀 툴팁 ────────────────────────────────────────────
+const DonutTooltip: React.FC<any> = ({ active, payload }) => {
+  if (!active || !payload?.length) return null;
+  const { name, value } = payload[0];
+  return (
+    <div className="bg-white border border-line rounded-lg px-3 py-2 shadow-md text-[15px] font-semibold text-ink">
+      {name}: <span className="tabular-nums">{value}</span>종
+    </div>
+  );
+};
+
 // ─── 페이지 컴포넌트 ──────────────────────────────────────────────────
 export const VendorStockPage: React.FC<VendorStockPageProps> = ({
   vendorName,
@@ -110,6 +131,9 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+
+  // 정렬 선택 (우측 드롭다운)
+  const [sortSelect, setSortSelect] = useState<SortKey>("status");
 
   // 판매중 필터 (default active · localStorage)
   const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({
@@ -175,10 +199,19 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
   // ─── 정렬 ───────────────────────────────────────────────────────────
   const { sorted, sortKey, sortDir, toggleSort } = useSortableTable<VendorProduct, SortKey>(
     filtered,
-    "name",
+    sortSelect,
     COMPARATORS,
-    "asc",
+    sortSelect === "status" ? "asc" : "asc",
   );
+
+  // sortSelect 변경 시 toggleSort 동기화
+  useEffect(() => {
+    // sortKey 와 다를 때만 (무한루프 방지)
+    if (sortKey !== sortSelect) {
+      toggleSort(sortSelect);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortSelect]);
 
   // ─── KPI 집계 (필터 이후 기준 · 사용자 관점 실측) ────────────────────
   const kpi = useMemo(() => {
@@ -202,6 +235,26 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
     };
   }, [filtered]);
 
+  // ─── 알림 리스트 (재고 없음 top3 + 부족 top3) ─────────────────────
+  const alertItems = useMemo((): AlertItem[] => {
+    const noneItems = filtered
+      .filter((p) => getStockLevel(p) === "none")
+      .slice(0, 3)
+      .map((p) => ({ code: p.code, name: p.name, current_stock: Number(p.current_stock ?? 0), level: "none" as StockLevel }));
+    const lowItems = filtered
+      .filter((p) => getStockLevel(p) === "low")
+      .slice(0, 3)
+      .map((p) => ({ code: p.code, name: p.name, current_stock: Number(p.current_stock ?? 0), level: "low" as StockLevel }));
+    return [...noneItems, ...lowItems];
+  }, [filtered]);
+
+  // ─── 도넛 차트 데이터 ────────────────────────────────────────────────
+  const donutData = useMemo(() => [
+    { name: "재고 있음", value: kpi.normal, color: "#10b981" },
+    { name: "재고 부족", value: kpi.low,    color: "#f59e0b" },
+    { name: "재고 없음", value: kpi.none,   color: "#f43f5e" },
+  ].filter((d) => d.value > 0), [kpi]);
+
   // ─── 기간 프리셋 핸들러 ─────────────────────────────────────────────
   const applyPreset = useCallback((preset: Exclude<PeriodPreset, null | "custom">) => {
     const now = new Date();
@@ -220,15 +273,24 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
 
   const periodActive = !!(dateFrom || dateTo);
 
-  // ─── 정렬 아이콘 ────────────────────────────────────────────────────
-  const sortIcon = (key: SortKey) =>
-    sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "";
-  const hdrCls =
-    "px-3 py-2 cursor-pointer hover:bg-zinc-100 transition select-none text-[15px] font-semibold text-zinc-500";
+  // ─── 재고상태별 그룹 분리 ─────────────────────────────────────────────
+  const grouped = useMemo(() => {
+    const none: VendorProduct[] = [];
+    const low: VendorProduct[] = [];
+    const normal: VendorProduct[] = [];
+    for (const p of sorted) {
+      const lv = getStockLevel(p);
+      if (lv === "none") none.push(p);
+      else if (lv === "low") low.push(p);
+      else normal.push(p);
+    }
+    return { none, low, normal };
+  }, [sorted]);
 
   // ─── 좌측 대시보드 ──────────────────────────────────────────────────
   const dashboardNode = (
     <div className="flex flex-col gap-4 p-4">
+      {/* 헤더 */}
       <SplitLeftHeader
         icon={<Package size={17} />}
         title="재고 대시보드"
@@ -272,15 +334,108 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
         />
       </div>
 
-      {/* 총 재고 요약 */}
-      <Card padding="md" variant="sm">
-        <div className="flex items-center justify-between">
-          <span className={`${TEXT.label} text-ink-soft`}>총 재고 수량</span>
-          <span className="text-[19px] font-bold text-brand-deep tabular-nums">
+      {/* 총 재고 수량 + 회전율 · 가로 2분할 */}
+      <div className="grid grid-cols-2 gap-2.5">
+        <Card padding="sm" variant="sm">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Layers size={13} className="text-brand-deep shrink-0" />
+            <span className={`${TEXT.caption} text-ink-soft`}>총 재고</span>
+          </div>
+          <div className="text-[19px] font-black text-brand-deep tabular-nums leading-tight">
             {kpi.totalStock.toLocaleString()}
-          </span>
-        </div>
-      </Card>
+          </div>
+          <div className="text-[13px] text-ink-soft mt-0.5">수량 합계</div>
+        </Card>
+        <Card padding="sm" variant="sm">
+          <div className="flex items-center gap-1.5 mb-1">
+            <TrendingUp size={13} className="text-emerald-600 shrink-0" />
+            <span className={`${TEXT.caption} text-ink-soft`}>재고율</span>
+          </div>
+          <div className="text-[19px] font-black text-emerald-700 tabular-nums leading-tight">
+            {kpi.total > 0 ? Math.round((kpi.normal / kpi.total) * 100) : 0}
+            <span className="text-[14px] font-bold ml-0.5">%</span>
+          </div>
+          <div className="text-[13px] text-ink-soft mt-0.5">정상 비율</div>
+        </Card>
+      </div>
+
+      {/* 도넛 차트 · 재고 상태 비율 */}
+      {donutData.length > 0 && (
+        <Card padding="sm" variant="sm">
+          <div className={`${TEXT.caption} text-ink-soft mb-2`}>재고 상태 비율</div>
+          <div className="flex items-center gap-3">
+            <div style={{ width: 88, height: 88, flexShrink: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={donutData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={26}
+                    outerRadius={42}
+                    dataKey="value"
+                    strokeWidth={1.5}
+                    stroke="#fff"
+                  >
+                    {donutData.map((entry, idx) => (
+                      <Cell key={idx} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<DonutTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+              {donutData.map((d) => (
+                <div key={d.name} className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: d.color }} />
+                    <span className="text-[13px] font-semibold text-ink-soft truncate">{d.name}</span>
+                  </div>
+                  <span className="text-[14px] font-bold tabular-nums text-ink shrink-0">{d.value}종</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* 긴급 알림 카드 · 재고없음/부족 상위 */}
+      {alertItems.length > 0 && (
+        <Card padding="sm" variant="sm">
+          <div className="flex items-center gap-1.5 mb-2">
+            <AlertTriangle size={13} className="text-rose-600 shrink-0" />
+            <span className={`${TEXT.caption} text-rose-700`}>긴급 알림</span>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {alertItems.map((item) => (
+              <div
+                key={item.code}
+                className={[
+                  "flex items-center justify-between px-2.5 py-1.5 rounded-lg border",
+                  item.level === "none"
+                    ? "bg-rose-50 border-rose-200/60"
+                    : "bg-amber-50 border-amber-200/60",
+                ].join(" ")}
+              >
+                <div className="flex flex-col min-w-0 mr-2">
+                  <span className="text-[14px] font-semibold text-ink break-words whitespace-normal leading-snug">
+                    {item.name}
+                  </span>
+                  <span className="text-[12px] text-ink-soft">{item.code}</span>
+                </div>
+                <StatusPill
+                  tone={item.level === "none" ? "rose" : "amber"}
+                  size="xs"
+                  dot
+                >
+                  {item.level === "none" ? "없음" : "부족"}
+                </StatusPill>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* 기간 필터 */}
       <Card padding="md" variant="sm">
@@ -356,10 +511,10 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
     </div>
   );
 
-  // ─── 우측 리스트 ────────────────────────────────────────────────────
+  // ─── 우측 · 대시보드 카드 ────────────────────────────────────────────
   const listNode = (
     <div className="flex flex-col h-full min-h-0">
-      {/* 상단 툴바 · SearchBar + 판매중 필터 */}
+      {/* 스티키 툴바 */}
       <div className="shrink-0 p-4 pb-3 border-b border-line bg-white">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex-1 min-w-[220px]">
@@ -374,11 +529,44 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
             />
           </div>
           <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
+          {/* 정렬 드롭다운 */}
+          <select
+            value={sortSelect}
+            onChange={(e) => setSortSelect(e.target.value as SortKey)}
+            className="h-9 px-2.5 text-[14px] font-semibold border border-line rounded-lg bg-white text-ink-soft hover:border-brand-deep focus:outline-none focus:border-brand-deep transition cursor-pointer"
+          >
+            <option value="status">재고상태순</option>
+            <option value="name">상품명순</option>
+            <option value="code">코드순</option>
+            <option value="current_stock">현재고순</option>
+          </select>
         </div>
       </div>
 
-      {/* 리스트 body */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      {/* 요약 스트립 */}
+      {!loading && !error && sorted.length > 0 && (
+        <div className="shrink-0 px-4 py-2 bg-zinc-50 border-b border-line flex items-center gap-3 flex-wrap">
+          <span className="text-[14px] font-semibold text-ink-soft">
+            전체 <span className="text-brand-deep tabular-nums font-black">{sorted.length}</span>종
+          </span>
+          {kpi.none > 0 && (
+            <span className="text-[14px] font-semibold text-rose-600 tabular-nums">
+              · 없음 {kpi.none}종
+            </span>
+          )}
+          {kpi.low > 0 && (
+            <span className="text-[14px] font-semibold text-amber-600 tabular-nums">
+              · 부족 {kpi.low}종
+            </span>
+          )}
+          {search && (
+            <span className="text-[13px] text-zinc-400">"{search}" 검색 중</span>
+          )}
+        </div>
+      )}
+
+      {/* 카드 body */}
+      <div className="flex-1 overflow-y-auto min-h-0 p-4">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Spinner size={18} tone="zinc" label="불러오는 중..." labelSize={14} />
@@ -395,65 +583,35 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
             {search ? "검색 결과가 없습니다" : "표시할 상품이 없습니다"}
           </div>
         ) : (
-          <table className="w-full text-[14px]">
-            <thead className="sticky top-0 bg-zinc-50 border-b border-line z-10">
-              <tr>
-                <th className="text-center px-2 py-2 w-10 text-[15px] font-semibold text-zinc-500">#</th>
-                <th className={`${hdrCls} text-left w-28`} onClick={() => toggleSort("code")}>
-                  상품코드{sortIcon("code")}
-                </th>
-                <th className={`${hdrCls} text-left`} onClick={() => toggleSort("name")}>
-                  상품명{sortIcon("name")}
-                </th>
-                <th className={`${hdrCls} text-center w-24`} onClick={() => toggleSort("status")}>
-                  재고상태{sortIcon("status")}
-                </th>
-                <th className={`${hdrCls} text-right w-20`} onClick={() => toggleSort("current_stock")}>
-                  현재고{sortIcon("current_stock")}
-                </th>
-                <th className={`${hdrCls} text-right w-20`} onClick={() => toggleSort("min_stock")}>
-                  최소{sortIcon("min_stock")}
-                </th>
-                <th className={`${hdrCls} text-right w-20`} onClick={() => toggleSort("optimal_stock")}>
-                  적정{sortIcon("optimal_stock")}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100">
-              {sorted.map((p, i) => {
-                const level = getStockLevel(p);
-                const pillTone = level === "normal" ? "emerald" : level === "low" ? "amber" : "rose";
-                const pillLabel = level === "normal" ? "정상" : level === "low" ? "부족" : "없음";
-                return (
-                  <tr key={`${p.code}-${i}`} className="hover:bg-sky-50/40 transition-colors">
-                    <td className="text-center px-2 py-2 text-zinc-400 tabular-nums text-[15px]">
-                      {i + 1}
-                    </td>
-                    <td className="px-3 py-2 font-mono text-[15px] text-zinc-600 tabular-nums">
-                      {p.code}
-                    </td>
-                    <td className="px-3 py-2 font-semibold text-ink break-words whitespace-normal leading-tight">
-                      {p.name}
-                    </td>
-                    <td className="text-center px-3 py-2">
-                      <StatusPill tone={pillTone} size="xs" dot>
-                        {pillLabel}
-                      </StatusPill>
-                    </td>
-                    <td className="text-right px-3 py-2 font-bold text-brand-deep tabular-nums">
-                      {p.current_stock ?? "-"}
-                    </td>
-                    <td className="text-right px-3 py-2 text-zinc-500 tabular-nums">
-                      {p.min_stock ?? "-"}
-                    </td>
-                    <td className="text-right px-3 py-2 text-zinc-500 tabular-nums">
-                      {p.optimal_stock ?? "-"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="flex flex-col gap-6">
+            {/* 섹션 : 재고 없음 */}
+            {grouped.none.length > 0 && (
+              <StockSection
+                level="none"
+                items={grouped.none}
+                label="재고 없음"
+                count={grouped.none.length}
+              />
+            )}
+            {/* 섹션 : 재고 부족 */}
+            {grouped.low.length > 0 && (
+              <StockSection
+                level="low"
+                items={grouped.low}
+                label="재고 부족"
+                count={grouped.low.length}
+              />
+            )}
+            {/* 섹션 : 재고 있음 */}
+            {grouped.normal.length > 0 && (
+              <StockSection
+                level="normal"
+                items={grouped.normal}
+                label="재고 있음"
+                count={grouped.normal.length}
+              />
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -483,7 +641,7 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[15px] font-semibold text-ink-soft leading-tight">공급사 재고현황</div>
-              <div className="text-[22px] font-bold text-ink tracking-tight leading-tight truncate">
+              <div className="text-[22px] font-bold text-ink tracking-tight leading-tight break-words whitespace-normal">
                 {vendorName || "-"}
               </div>
             </div>
@@ -495,9 +653,7 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
           </div>
         </Card>
 
-        {/* SplitPanel · 좌 대시보드 / 우 리스트
-              · wrapLeft/wrapRight true (기본) · 프레임워크의 .split-left/.split-right 자동 적용
-              · 별도 raw wrapper 없이 프리미티브 재사용 (Card 스타일 = split-left/right 클래스로 통일) */}
+        {/* SplitPanel · 좌 대시보드 / 우 카드 그룹 */}
         <div className="flex-1 min-h-0">
           <SplitPanel
             storageKey="vendorStockPage.dashboardWidth"
@@ -519,6 +675,139 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
           <div className={toastClass(toast.tone)}>{toast.message}</div>
         </div>
       )}
+    </div>
+  );
+};
+
+// ─── 재고 섹션 컴포넌트 ────────────────────────────────────────────────
+interface StockSectionProps {
+  level: StockLevel;
+  items: VendorProduct[];
+  label: string;
+  count: number;
+}
+
+const SECTION_STYLE: Record<StockLevel, {
+  header: string;
+  dot: string;
+  border: string;
+  cardBorder: string;
+  cardBg: string;
+  barBg: string;
+  valueColor: string;
+  labelColor: string;
+}> = {
+  none: {
+    header:     "text-rose-700",
+    dot:        "bg-rose-500",
+    border:     "border-rose-200",
+    cardBorder: "border-rose-200/60",
+    cardBg:     "bg-rose-50/30",
+    barBg:      "bg-rose-500",
+    valueColor: "text-rose-700",
+    labelColor: "text-rose-600",
+  },
+  low: {
+    header:     "text-amber-700",
+    dot:        "bg-amber-500",
+    border:     "border-amber-200",
+    cardBorder: "border-amber-200/60",
+    cardBg:     "bg-amber-50/30",
+    barBg:      "bg-amber-500",
+    valueColor: "text-amber-700",
+    labelColor: "text-amber-600",
+  },
+  normal: {
+    header:     "text-emerald-700",
+    dot:        "bg-emerald-500",
+    border:     "border-emerald-200",
+    cardBorder: "border-zinc-200/70",
+    cardBg:     "bg-white",
+    barBg:      "bg-emerald-500",
+    valueColor: "text-emerald-700",
+    labelColor: "text-emerald-600",
+  },
+};
+
+const StockSection: React.FC<StockSectionProps> = ({ level, items, label, count }) => {
+  const s = SECTION_STYLE[level];
+  const pillTone = level === "normal" ? "emerald" : level === "low" ? "amber" : "rose";
+  const pillLabel = level === "normal" ? "정상" : level === "low" ? "부족" : "없음";
+
+  return (
+    <div>
+      {/* 섹션 헤더 */}
+      <div className={`flex items-center gap-2 mb-3 pb-2 border-b ${s.border}`}>
+        <span className={`w-2.5 h-2.5 rounded-full ${s.dot} shrink-0`} />
+        <span className={`text-[16px] font-extrabold ${s.header}`}>{label}</span>
+        <span className={`text-[14px] font-bold tabular-nums ${s.labelColor}`}>{count}종</span>
+      </div>
+
+      {/* 상품 카드 그리드 · 2열 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+        {items.map((p, idx) => {
+          const cur = Number(p.current_stock ?? 0);
+          const minS = Number(p.min_stock ?? 0);
+          const opt = Number(p.optimal_stock ?? 0);
+          // 진행바 비율 (현재고 / 적정재고)
+          const barPct = opt > 0 ? Math.min(100, Math.round((cur / opt) * 100)) : (cur > 0 ? 100 : 0);
+
+          return (
+            <div
+              key={`${p.code}-${idx}`}
+              className={[
+                "rounded-xl border p-3.5 flex flex-col gap-2.5 transition-shadow hover:shadow-md",
+                s.cardBg,
+                s.cardBorder,
+              ].join(" ")}
+            >
+              {/* 상단 : 상품명 + 상태 pill */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="text-[15px] font-bold text-ink break-words whitespace-normal leading-snug">
+                    {p.name}
+                  </div>
+                  <div className="text-[13px] text-ink-soft mt-0.5 font-semibold">{p.code}</div>
+                </div>
+                <StatusPill tone={pillTone} size="xs" dot className="shrink-0 mt-0.5">
+                  {pillLabel}
+                </StatusPill>
+              </div>
+
+              {/* 현재고 큰 숫자 */}
+              <div className="flex items-baseline gap-1.5">
+                <span className={`text-[26px] font-black tabular-nums leading-none ${s.valueColor}`}>
+                  {cur.toLocaleString()}
+                </span>
+                <span className="text-[13px] font-semibold text-ink-soft">개</span>
+              </div>
+
+              {/* 진행 바 */}
+              <div className="w-full h-1.5 bg-zinc-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${s.barBg}`}
+                  style={{ width: `${barPct}%` }}
+                />
+              </div>
+
+              {/* 하단 : 최소/적정 */}
+              <div className="flex items-center gap-3 text-[13px] font-semibold text-ink-soft">
+                <span>
+                  최소 <span className="tabular-nums font-bold text-ink">{minS > 0 ? minS : "-"}</span>
+                </span>
+                <span>
+                  적정 <span className="tabular-nums font-bold text-ink">{opt > 0 ? opt : "-"}</span>
+                </span>
+                {opt > 0 && (
+                  <span className="ml-auto text-[12px] tabular-nums text-zinc-400">
+                    {barPct}%
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
