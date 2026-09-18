@@ -112,3 +112,67 @@ export const METHOD_OPTIONS: Array<{ key: string; label: string }> = [
 // 2026-08-10 · 입력창 여백 반 축소 (px-3→px-1.5 · h-10→h-8)
 export const inputCls =
   "w-full h-8 px-1.5 text-[16px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white transition placeholder:text-zinc-300";
+
+// #149 V-1 · compact/일반 테이블 정렬 순수 함수
+// supplierAggMap 을 인자로 전달 · state 참조 없음
+import type { CompactSortKey } from "./VendorListEditor.types";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
+
+export function sortVendors(
+  list: Vendor[],
+  sortKey: CompactSortKey,
+  sortDir: "asc" | "desc",
+  supplierAggMap: Map<string, { stockValue: number; salesTotal: number; balance?: number; purchaseTotal?: number }>,
+): Vendor[] {
+  return list.slice().sort((a, b) => {
+    let cmp = 0;
+    switch (sortKey) {
+      case "company_name":
+        cmp = displayVendorName(a.company_name ?? "").localeCompare(displayVendorName(b.company_name ?? ""), "ko"); break;
+      case "category":
+        cmp = (a.category ?? "").localeCompare(b.category ?? "", "ko"); break;
+      case "business_number":
+        cmp = (a.business_number ?? "").localeCompare(b.business_number ?? ""); break;
+      case "contact_name":
+        cmp = (a.contact_name ?? "").localeCompare(b.contact_name ?? "", "ko"); break;
+      case "phone":
+        cmp = (a.phone ?? "").localeCompare(b.phone ?? ""); break;
+      case "email":
+        cmp = (a.email ?? "").localeCompare(b.email ?? ""); break;
+      case "vat": {
+        const va = detectVatIncluded(a); const vb = detectVatIncluded(b);
+        const toNum = (x: boolean | null) => x === true ? 1 : x === false ? 0 : -1;
+        cmp = toNum(va) - toNum(vb); break;
+      }
+      case "balance":
+        cmp = (a.latestBalance?.balance ?? -Infinity) - (b.latestBalance?.balance ?? -Infinity); break;
+      case "invoice_date": {
+        const da = a.latestBalance?.invoice_date ?? "";
+        const db = b.latestBalance?.invoice_date ?? "";
+        cmp = da < db ? -1 : da > db ? 1 : 0; break;
+      }
+      case "created_at": {
+        const da = a.created_at ?? "";
+        const db = b.created_at ?? "";
+        cmp = da < db ? -1 : da > db ? 1 : 0; break;
+      }
+      case "stock_value": {
+        const va = supplierAggMap.get(normalizeSupplierKey(a.company_name))?.stockValue ?? -Infinity;
+        const vb = supplierAggMap.get(normalizeSupplierKey(b.company_name))?.stockValue ?? -Infinity;
+        cmp = va - vb; break;
+      }
+      case "sales_total": {
+        const va = supplierAggMap.get(normalizeSupplierKey(a.company_name))?.salesTotal ?? -Infinity;
+        const vb = supplierAggMap.get(normalizeSupplierKey(b.company_name))?.salesTotal ?? -Infinity;
+        cmp = va - vb; break;
+      }
+      case "purchase_total": {
+        const va = supplierAggMap.get(normalizeSupplierKey(a.company_name))?.purchaseTotal ?? -Infinity;
+        const vb = supplierAggMap.get(normalizeSupplierKey(b.company_name))?.purchaseTotal ?? -Infinity;
+        cmp = va - vb; break;
+      }
+      default: cmp = 0;
+    }
+    return sortDir === "asc" ? cmp : -cmp;
+  });
+}

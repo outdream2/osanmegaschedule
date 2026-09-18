@@ -45,7 +45,7 @@ import type { Vendor, EditDraft, CompactSortKey } from "./VendorListEditor.types
 import {
   detectVatIncluded, vatDraftVal, emptyDraft, normalizeBizNum, formatBizNum,
   fmtWon, CATEGORY_LEFT_BORDER, CATEGORY_LEFT_BG, normalizeSupplierKey, inputCls,
-  METHOD_LABEL,
+  METHOD_LABEL, sortVendors,
 } from "./VendorListEditor.utils";
 // 2026-08-21 · Framework Phase 4 · PaymentRegisterModal 별도 파일 이관
 import { PaymentRegisterModal } from "./PaymentRegisterModal";
@@ -187,62 +187,11 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
 
   // compact / 일반 테이블 정렬 결과 (compactSortKey/compactSortDir 공용)
   // 2026-08-04 · email / created_at 추가 (일반 모드용 · A-2 모든 헤더 정렬)
-  const compactSorted = useMemo(() => {
-    return filtered.slice().sort((a, b) => {
-      let cmp = 0;
-      switch (compactSortKey) {
-        case "company_name":
-          // 2026-09-18 · 정제 후 정렬
-          cmp = displayVendorName(a.company_name ?? "").localeCompare(displayVendorName(b.company_name ?? ""), "ko"); break;
-        case "category":
-          cmp = (a.category ?? "").localeCompare(b.category ?? "", "ko"); break;
-        case "business_number":
-          cmp = (a.business_number ?? "").localeCompare(b.business_number ?? ""); break;
-        case "contact_name":
-          cmp = (a.contact_name ?? "").localeCompare(b.contact_name ?? "", "ko"); break;
-        case "phone":
-          cmp = (a.phone ?? "").localeCompare(b.phone ?? ""); break;
-        case "email":
-          cmp = (a.email ?? "").localeCompare(b.email ?? ""); break;
-        case "vat": {
-          const va = detectVatIncluded(a); const vb = detectVatIncluded(b);
-          const toNum = (x: boolean | null) => x === true ? 1 : x === false ? 0 : -1;
-          cmp = toNum(va) - toNum(vb); break;
-        }
-        case "balance":
-          cmp = (a.latestBalance?.balance ?? -Infinity) - (b.latestBalance?.balance ?? -Infinity); break;
-        case "invoice_date": {
-          const da = a.latestBalance?.invoice_date ?? "";
-          const db = b.latestBalance?.invoice_date ?? "";
-          cmp = da < db ? -1 : da > db ? 1 : 0; break;
-        }
-        case "created_at": {
-          const da = a.created_at ?? "";
-          const db = b.created_at ?? "";
-          cmp = da < db ? -1 : da > db ? 1 : 0; break;
-        }
-        // 2026-08-04 · #101 · 총재고자산 · 총판매액 정렬 (supplierAggMap 참조)
-        case "stock_value": {
-          const va = supplierAggMap.get(normalizeSupplierKey(a.company_name))?.stockValue ?? -Infinity;
-          const vb = supplierAggMap.get(normalizeSupplierKey(b.company_name))?.stockValue ?? -Infinity;
-          cmp = va - vb; break;
-        }
-        case "sales_total": {
-          const va = supplierAggMap.get(normalizeSupplierKey(a.company_name))?.salesTotal ?? -Infinity;
-          const vb = supplierAggMap.get(normalizeSupplierKey(b.company_name))?.salesTotal ?? -Infinity;
-          cmp = va - vb; break;
-        }
-        // 2026-09-11 · 사용자 지시 · 총매입액 정렬
-        case "purchase_total": {
-          const va = supplierAggMap.get(normalizeSupplierKey(a.company_name))?.purchaseTotal ?? -Infinity;
-          const vb = supplierAggMap.get(normalizeSupplierKey(b.company_name))?.purchaseTotal ?? -Infinity;
-          cmp = va - vb; break;
-        }
-        default: cmp = 0;
-      }
-      return compactSortDir === "asc" ? cmp : -cmp;
-    });
-  }, [filtered, compactSortKey, compactSortDir, supplierAggMap]);
+  // #149 V-1 · sortVendors 순수 함수로 이관
+  const compactSorted = useMemo(
+    () => sortVendors(filtered, compactSortKey, compactSortDir, supplierAggMap),
+    [filtered, compactSortKey, compactSortDir, supplierAggMap],
+  );
 
   return (
     <div className="flex flex-col gap-2 min-h-0 flex-1">
