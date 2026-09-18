@@ -4,7 +4,7 @@
 //   · 상품 상세 정보는 별도 모달 (onOpenDetail 트리거)
 // 2026-09-13 · #55 · 상품 선택 무관 · 임박 이벤트 배너 (GET /api/events/today)
 import React, { useEffect, useMemo, useState } from "react";
-import { Package, TrendingUp, Info, X, Check, Sparkles, Calendar, AlertTriangle, Plus } from "lucide-react";
+import { Package, TrendingUp, Info, X, Check, Sparkles, Calendar, AlertTriangle, Plus, ChevronDown, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
 import { Card } from "../common/Card";
 import { StatusPill } from "../common/StatusPill";
 import { api } from "../../lib/apiClient";
@@ -65,6 +65,33 @@ const dayDiff = (d: string | null): number | null => {
   const now = new Date(); now.setHours(0, 0, 0, 0);
   const target = new Date(String(d).slice(0, 10) + "T00:00:00");
   return Math.round((target.getTime() - now.getTime()) / 86400000);
+};
+
+// 2026-09-18 · Phase 2 · accordion 상태 localStorage · key = salesRecPanel.expanded.{eventId}
+const EXPAND_LS_PREFIX = "salesRecPanel.expanded.";
+const loadExpandedFromLS = (ids: number[]): Set<number> => {
+  const next = new Set<number>();
+  try {
+    for (const id of ids) {
+      if (localStorage.getItem(`${EXPAND_LS_PREFIX}${id}`) === "1") next.add(id);
+    }
+  } catch { /* SSR·private-mode · 무시 */ }
+  return next;
+};
+const persistExpandedLS = (id: number, expanded: boolean): void => {
+  try {
+    if (expanded) localStorage.setItem(`${EXPAND_LS_PREFIX}${id}`, "1");
+    else localStorage.removeItem(`${EXPAND_LS_PREFIX}${id}`);
+  } catch { /* 무시 */ }
+};
+
+// 2026-09-18 · Phase 1 · 오늘 날짜 · 한국식 표기 (2026년 9월 18일 금요일)
+const formatKoreanDate = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  const weekdays = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+  return `${y}년 ${m}월 ${day}일 ${weekdays[d.getDay()]}`;
 };
 
 /** 2026-09-14 · #87 · 스코어 기반 · 자동 추천 상품 */
@@ -158,8 +185,28 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
   const toggleEventExpand = React.useCallback((id: number) => {
     setExpandedEvents(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) { next.delete(id); persistExpandedLS(id, false); }
+      else { next.add(id); persistExpandedLS(id, true); }
       return next;
+    });
+  }, []);
+  // 2026-09-18 · Phase 2 · 편의 · 전체 펼치기·접기
+  const expandAllEvents = React.useCallback(() => {
+    setExpandedEvents(() => {
+      const next = new Set<number>();
+      for (const ev of eventsToday) {
+        if ((ev.products?.length ?? ev.product_count ?? 0) > 0) {
+          next.add(ev.id);
+          persistExpandedLS(ev.id, true);
+        }
+      }
+      return next;
+    });
+  }, [eventsToday]);
+  const collapseAllEvents = React.useCallback(() => {
+    setExpandedEvents(prev => {
+      for (const id of prev) persistExpandedLS(id, false);
+      return new Set<number>();
     });
   }, []);
   useEffect(() => {
@@ -173,6 +220,8 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
           setCurrentSeason(String(data?.current_season ?? ""));
           // 2026-09-14 · 원래 오늘 이벤트 ID 기록 · 수동 추가된 것과 구분 (제거 버튼 표시)
           originalEventIdsRef.current = new Set(initEvents.map(e => e.id));
+          // 2026-09-18 · Phase 2 · 이전 세션 accordion 상태 복원
+          setExpandedEvents(loadExpandedFromLS(initEvents.map(e => e.id)));
         }
       } catch {
         if (alive) { setEventsToday([]); setCurrentSeason(""); }
@@ -192,26 +241,80 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
     return (
       <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
         <Card padding="md" rounded="xl" className="flex-1 min-h-[400px] flex flex-col gap-3 overflow-y-auto">
-          {/* 2026-09-14 · #86 · 오늘 날짜 · 계절 배너 · API 연동 확인용 */}
-          {currentSeason && (
-            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-brand-tint/40 to-emerald-50/40 border border-brand-tint/40">
-              <Calendar size={12} className="text-brand-deep" />
-              <span className="text-[12px] font-semibold text-ink-soft">오늘은</span>
-              <span className={`text-[12px] font-bold px-1.5 py-0.5 rounded-md ${(TYPE_TONE[currentSeason] ?? TYPE_TONE.custom).cls}`}>
-                {(TYPE_TONE[currentSeason] ?? TYPE_TONE.custom).label} 시즌
-              </span>
-              <span className="ml-auto text-[11px] text-ink-soft tabular-nums">
-                {new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" })}
+          {/* 2026-09-18 · Phase 1 · 안내형 문구 · 오늘 날짜 + 진행 이벤트 요약 + 힌트 · 계절 배너 통합 */}
+          <div className="flex flex-col gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-br from-brand-tint/30 via-white to-emerald-50/30 border border-brand-tint/50">
+            <div className="flex items-center gap-2">
+              <Calendar size={14} className="text-brand-deep shrink-0" strokeWidth={2.2} />
+              <span className="text-[14px] font-bold text-ink tracking-tight">
+                오늘은 <span className="tabular-nums">{formatKoreanDate(new Date())}</span>입니다
               </span>
             </div>
-          )}
+            <div className="text-[13px] text-ink-soft leading-relaxed">
+              {(() => {
+                const chips: React.ReactNode[] = [];
+                if (currentSeason) {
+                  const t = TYPE_TONE[currentSeason] ?? TYPE_TONE.custom;
+                  chips.push(
+                    <span key="season" className={`inline-flex items-center text-[12px] font-bold px-1.5 py-0.5 rounded-md ${t.cls}`}>
+                      {t.label} 시즌
+                    </span>
+                  );
+                }
+                for (const ev of eventsToday) {
+                  const t = TYPE_TONE[ev.type] ?? TYPE_TONE.custom;
+                  const d = dayDiff(ev.start_date);
+                  const suffix = d != null && d > 0 ? ` D-${d}` : "";
+                  chips.push(
+                    <span key={`ev-${ev.id}`} className={`inline-flex items-center text-[12px] font-bold px-1.5 py-0.5 rounded-md ${t.cls}`}>
+                      {ev.name}{suffix}
+                    </span>
+                  );
+                }
+                if (chips.length === 0) {
+                  return <span className="text-ink-soft">이 기간에 등록된 이벤트가 없습니다. 아래 [이벤트 추가] 로 선택할 수 있습니다.</span>;
+                }
+                return (
+                  <span className="inline-flex flex-wrap items-center gap-1.5">
+                    <span>이 기간은</span>
+                    {chips.map((chip, i) => (
+                      <React.Fragment key={i}>
+                        {chip}
+                        {i < chips.length - 1 && <span className="text-ink-soft/60">·</span>}
+                      </React.Fragment>
+                    ))}
+                    <span>이벤트가 있습니다.</span>
+                  </span>
+                );
+              })()}
+            </div>
+            {eventsToday.length > 0 && (
+              <div className="flex items-center gap-1.5 text-[12px] text-brand-deep font-semibold">
+                <ChevronDown size={12} strokeWidth={2.5} className="animate-pulse" />
+                아래 이벤트를 클릭하면 추천 상품이 표시됩니다
+              </div>
+            )}
+          </div>
           {/* 임박 이벤트 리스트 · 상단 (#55) */}
-          {eventsToday.length > 0 && (
+          {eventsToday.length > 0 && (() => {
+            const expandableCount = eventsToday.filter(ev => (ev.products?.length ?? ev.product_count ?? 0) > 0).length;
+            const allExpanded = expandableCount > 0 && expandedEvents.size >= expandableCount;
+            return (
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-1.5 pb-1.5 border-b border-line">
                 <Sparkles size={14} className="text-brand-deep" />
                 <span className="text-[14px] font-bold text-ink">진행중·임박 이벤트</span>
                 <span className="text-[12px] tabular-nums text-zinc-400 font-medium">{eventsToday.length}건</span>
+                {expandableCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={allExpanded ? collapseAllEvents : expandAllEvents}
+                    className="ml-auto inline-flex items-center gap-1 rounded-md border border-line hover:border-brand-deep hover:bg-brand-tint/20 px-2 py-0.5 text-[11.5px] font-bold text-ink-soft hover:text-brand-deep transition"
+                    title={allExpanded ? "전체 접기" : "전체 펼치기"}
+                  >
+                    {allExpanded ? <Minimize2 size={11} strokeWidth={2.5} /> : <Maximize2 size={11} strokeWidth={2.5} />}
+                    {allExpanded ? "전체 접기" : "전체 펼치기"}
+                  </button>
+                )}
               </div>
               {eventsToday.map(ev => {
                 const tone = TYPE_TONE[ev.type] ?? TYPE_TONE.custom;
@@ -247,7 +350,9 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                         <span className="ml-auto inline-flex items-center gap-1 text-[12px] font-semibold tabular-nums">
                           상품 {productCount}개
                           {canExpand && (
-                            <span className={`inline-block transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}>▶</span>
+                            isExpanded
+                              ? <ChevronDown size={13} strokeWidth={2.5} className="transition-transform duration-200" />
+                              : <ChevronRight size={13} strokeWidth={2.5} className="transition-transform duration-200" />
                           )}
                         </span>
                       )}
@@ -313,7 +418,8 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                 이벤트 추가
               </button>
             </div>
-          )}
+            );
+          })()}
           {/* 2026-09-14 · 사용자 지시 · 이벤트 추가 · 오늘 이벤트 없을 때도 · 버튼 표시 */}
           {eventsToday.length === 0 && (
             <button
