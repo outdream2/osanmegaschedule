@@ -284,8 +284,13 @@ export const ProductCreateModal: React.FC<Props> = ({
   }, [form.location]);
 
   const canSubmit = useMemo(() => {
-    return form.product_code.trim().length > 0 && form.product_name.trim().length > 0 && !submitting;
-  }, [form.product_code, form.product_name, submitting]);
+    return (
+      form.product_code.trim().length > 0 &&
+      form.product_name.trim().length > 0 &&
+      form.sale_status.trim().length > 0 &&
+      !submitting
+    );
+  }, [form.product_code, form.product_name, form.sale_status, submitting]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -461,6 +466,18 @@ export const ProductCreateModal: React.FC<Props> = ({
                 </div>
               </Section>
 
+              {/* 가격 */}
+              <Section title="가격">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field icon={<ShoppingCart size={14} />} label="판매가">
+                    <PriceInput value={form.sale_price} onChange={(v) => set("sale_price", v)} />
+                  </Field>
+                  <Field icon={<Coins size={14} />} label="매입가">
+                    <PriceInput value={form.purchase_price} onChange={(v) => set("purchase_price", v)} />
+                  </Field>
+                </div>
+              </Section>
+
               {/* 분류·공급 */}
               <Section title="분류 · 공급">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -586,18 +603,6 @@ export const ProductCreateModal: React.FC<Props> = ({
 
               {/* 2026-09-14 · #83 · 사용자 지시 · "동일 분류 참조 상품" 섹션 제거 */}
 
-              {/* 가격 */}
-              <Section title="가격">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field icon={<ShoppingCart size={14} />} label="판매가">
-                    <PriceInput value={form.sale_price} onChange={(v) => set("sale_price", v)} />
-                  </Field>
-                  <Field icon={<Coins size={14} />} label="매입가">
-                    <PriceInput value={form.purchase_price} onChange={(v) => set("purchase_price", v)} />
-                  </Field>
-                </div>
-              </Section>
-
               {/* 기타 */}
               <Section title="기타">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -608,7 +613,8 @@ export const ProductCreateModal: React.FC<Props> = ({
                     <input lang="ko" type="text" value={form.manufacturer} onChange={(e) => set("manufacturer", e.target.value)} className={inputCls} placeholder="예: 한미약품" maxLength={100} />
                   </Field>
                   {/* 2026-09-18 · 사용자 지시 · 편집 모달 · 판매 상태 드롭다운 · 조회 화면 필드 전부 편집 지원 */}
-                  <Field icon={<Tags size={14} />} label="판매 상태">
+                  {/* 2026-09-18 · 사용자 지시 · 판매 상태 필수 항목 */}
+                  <Field icon={<Tags size={14} />} label="판매 상태" required>
                     <select
                       value={form.sale_status}
                       onChange={(e) => set("sale_status", e.target.value)}
