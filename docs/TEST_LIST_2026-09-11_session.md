@@ -3347,4 +3347,41 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 
 ---
 
+### [93] 연차신청 UI 재설계 + 연차신청서 PDF 생성 기능 (사용자 지시)
+**커밋** · `5cd34fa9`
+**파일** · `src/components/LeavePage/LeavePage.tsx` (624→947줄) · `src/components/LeavePage/LeaveRequestPdfPreview.tsx` (신규)
+
+**변경 내용**
+- **apply 뷰 전면 재설계** (approval 뷰 · 변경 없음)
+  - 상단 · 잔여연차 대시보드 KPI 3개(총/사용/잔여) + 프로그레스 바 + 승인대기/반려 count
+  - 좌측 · 신청 폼 · chip 선택 휴가종류 · 날짜 range · 자동 일수 계산 · 3버튼(미리보기/PDF저장/신청제출)
+  - 우측 · A4 신청서 실시간 미리보기 (0.38 scale · visible variant)
+  - 이력 카드 · Download 버튼 · 모든 상태 (승인/대기/반려)
+- **LeaveRequestPdfPreview.tsx 신설** · A4 표준 연차신청서
+  - 회사명 · 결재란(결재/팀장/대표) · 신청자정보 · 신청내용 · 사유 · 서명란
+  - variant="offscreen"|"visible" · offscreen = position absolute left:-99999 캡처용
+  - `useCompanyInfo()` 회사명 자동 · `html2canvas-pro + jsPDF`
+  - 파일명 · `연차신청서_{직원명}_{시작일}.pdf`
+
+**확인 절차**
+1. 서버 재시작 (`npm run dev`)
+2. 직원 계정 로그인 → 연차 메뉴 진입
+3. **대시보드 카드** · KPI 3개(총/사용/잔여) + 프로그레스 바 + 상태 count 표시
+4. **신청 폼** · 휴가종류 chip 클릭 → 선택 상태 강조(brand-deep) · 날짜 변경 → 우측 미리보기 실시간 반영
+5. **PDF 미리보기** 버튼 → 새 탭에서 A4 연차신청서 열림 · 직원명/날짜/회사명 표시
+6. **PDF 저장** 버튼 → `연차신청서_{이름}_{날짜}.pdf` 다운로드
+7. **신청 제출** → 잔여연차 즉시 갱신 · 이력 카드 목록 등장
+8. **이력 카드 PDF 버튼** → 이전 신청 이력 기준 PDF 다운로드 (승인/대기/반려 모두)
+9. **신청 취소** → 대기 중 이력만 · 취소 확인 다이얼로그 후 목록 제거
+10. **관리자 계정** → approval 뷰 진입 · 기존 승인/반려 flow 정상 동작 (회귀 없음)
+
+**회귀 시나리오 5건**
+1. createLeaveRequest 시그니처 · 변경 없음 (employee_id/name/leave_type/start_date/end_date/reason)
+2. reviewLeaveRequest(id, {status, reviewer_note}) · 변경 없음
+3. deleteLeaveRequest(id) · 취소·삭제 양쪽 모두 동일 함수
+4. dispatchApprovalChange("leave") · 승인 대기 배지 즉시 갱신 · 모든 경로 유지
+5. approval 뷰 (mgrTab/pending/reviewed/reviewingId/reviewNote) · 완전 유지
+
+---
+
 ## 진행 중 태스크 (완료 시 추가)
