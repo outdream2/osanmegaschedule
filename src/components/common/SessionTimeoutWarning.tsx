@@ -71,7 +71,7 @@ export const SessionTimeoutWarning: React.FC<Props> = ({
             weight="fill"
             className={urgent ? "text-rose-500" : "text-amber-500"}
           />
-          <span className="text-[12px] font-semibold text-ink tracking-tight">세션 만료 임박</span>
+          <span className="text-[10px] font-semibold text-ink tracking-tight">세션 만료 임박</span>
         </div>
         <button
           onClick={onExtend}
@@ -84,17 +84,17 @@ export const SessionTimeoutWarning: React.FC<Props> = ({
 
       {/* Body */}
       <div className="px-3 pb-2.5">
-        <p className="text-[11px] text-ink-soft leading-relaxed">
+        <p className="text-[9px] text-ink-soft leading-relaxed">
           장시간 활동 없음 · 자동 로그아웃 예정
         </p>
 
         {/* Countdown */}
         <div className="flex items-center gap-1 mt-1.5">
           <Clock size={11} className={urgent ? "text-rose-500" : "text-amber-500"} strokeWidth={2.4} />
-          <span className={`text-[15px] font-bold tabular-nums tracking-tight ${urgent ? "text-rose-600" : "text-amber-600"}`}>
+          <span className={`text-[13px] font-bold tabular-nums tracking-tight ${urgent ? "text-rose-600" : "text-amber-600"}`}>
             {formatTime(countdown)}
           </span>
-          <span className="text-[10px] text-ink-soft/70 ml-0.5">후 로그아웃</span>
+          <span className="text-[8px] text-ink-soft/70 ml-0.5">후 로그아웃</span>
         </div>
       </div>
 
@@ -103,7 +103,7 @@ export const SessionTimeoutWarning: React.FC<Props> = ({
         <button
           onClick={onExtend}
           className={`
-            flex-1 h-7 rounded-lg text-[12px] font-semibold transition-colors cursor-pointer active:scale-[0.98]
+            flex-1 h-7 rounded-lg text-[10px] font-semibold transition-colors cursor-pointer active:scale-[0.98]
             ${urgent
               ? "bg-rose-500 hover:bg-rose-600 text-white shadow-sm"
               : "bg-brand-deep hover:bg-[#0d3a5c] text-white shadow-sm"}
@@ -113,7 +113,7 @@ export const SessionTimeoutWarning: React.FC<Props> = ({
         </button>
         <button
           onClick={onLogout}
-          className="flex-1 h-7 rounded-lg text-[12px] font-semibold bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors cursor-pointer active:scale-[0.98]"
+          className="flex-1 h-7 rounded-lg text-[10px] font-semibold bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors cursor-pointer active:scale-[0.98]"
         >
           로그아웃
         </button>
