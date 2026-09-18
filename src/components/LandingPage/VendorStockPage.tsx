@@ -126,21 +126,25 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
     setError(null);
     (async () => {
       try {
-        const { data } = await api.get<{ items?: any[] }>(
+        // 2026-09-18 · 사용자 지시 fix · 응답 형식 호환 · API 는 배열 직접 반환 · legacy { items } 도 지원
+        const { data } = await api.get<any>(
           `/api/products-search?supplier=${encodeURIComponent(vendorName)}&limit=1000`,
         );
         if (!alive) return;
-        const items: VendorProduct[] = Array.isArray(data?.items)
-          ? data.items.map((it: any) => ({
-              code: String(it.code ?? it.product_code ?? ""),
-              name: String(it.name ?? it.product_name ?? ""),
-              spec: it.spec ?? null,
-              current_stock: it.current_stock ?? null,
-              optimal_stock: it.optimal_stock ?? null,
-              min_stock: it.min_stock ?? null,
-              sale_status: it.sale_status ?? null,
-            }))
-          : [];
+        const rows: any[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.items)
+            ? data.items
+            : [];
+        const items: VendorProduct[] = rows.map((it: any) => ({
+          code: String(it.code ?? it.product_code ?? ""),
+          name: String(it.name ?? it.product_name ?? ""),
+          spec: it.spec ?? null,
+          current_stock: it.current_stock ?? null,
+          optimal_stock: it.optimal_stock ?? null,
+          min_stock: it.min_stock ?? null,
+          sale_status: it.sale_status ?? null,
+        }));
         setProducts(items);
       } catch (e: unknown) {
         if (!alive) return;

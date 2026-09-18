@@ -225,10 +225,14 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
   const includeInactive = req.query.include_inactive === "1" || req.query.include_inactive === "true";
   const { data: saleSetting } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();
   const saleActiveOnly = !includeInactive && (saleSetting?.value !== false);
-  if (rawQ.length < 1) return res.json([]);
+  // 2026-09-18 · 사용자 지시 fix · supplier only 검색 허용 (VendorStockPage 등)
+  //   · 이전 · q 없으면 즉시 빈 배열 · supplier 만 있는 요청 · 데이터 없음 버그
+  //   · 신규 · q 없어도 · supplier (2+글자) 만으로 검색 가능
+  const supplierOnly = rawQ.length < 1 && supplier.length >= 2;
+  if (rawQ.length < 1 && !supplierOnly) return res.json([]);
   // PostgREST or() 특수문자 방어 (쉼표·괄호 등)
   const q = sanitizeOrValue(rawQ);
-  if (q.length < 1) return res.json([]);
+  if (!supplierOnly && q.length < 1) return res.json([]);
   {
     // 상품명 · 검색키워드 · 상품코드 (원본·앞자리0제거·padStart8) 모두 검색
     const stripped = q.replace(/^0+/, "");
@@ -242,29 +246,35 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
     ].join(",");
 
     const cols = "product_code,product_name,spec,supplier,category_code,category,purchase_price,sale_price,profit_rate,expiry_date,location,display_location,current_stock,sale_status,hidden";
+    // 2026-09-18 · 사용자 지시 fix · limit query param 존중 · supplier only 시 최대 1000
+    const rawLimit = Number(req.query.limit ?? 40);
+    const limitVal = Math.min(Math.max(Number.isFinite(rawLimit) ? rawLimit : 40, 1), 1000);
 
     // 1차: search_keywords + hidden 필터 포함 시도
-    let query = supabase.from("products").select(cols).or(buildOr(true));
+    let query = supabase.from("products").select(cols);
+    if (!supplierOnly) query = query.or(buildOr(true));
     if (!includeHidden) query = query.eq("hidden", false);
     if (saleActiveOnly) query = query.eq("sale_status", "판매중");
     if (supplier.length >= 2) query = query.ilike("supplier", `%${supplier}%`);
-    let { data, error } = await query.limit(40);
+    let { data, error } = await query.limit(limitVal);
 
     // 2차 fallback 1: hidden 컬럼 없으면 제외하고 재시도
     if (error && /"?hidden"?|does not exist|column/i.test(error.message) && /hidden/i.test(error.message)) {
       const cols2 = "product_code,product_name,spec,supplier,purchase_price,sale_price,profit_rate,expiry_date,location,display_location,current_stock,sale_status";
-      let q2 = supabase.from("products").select(cols2).or(buildOr(true));
+      let q2 = supabase.from("products").select(cols2);
+      if (!supplierOnly) q2 = q2.or(buildOr(true));
       if (supplier.length >= 2) q2 = q2.ilike("supplier", `%${supplier}%`);
-      const r2 = await q2.limit(40);
+      const r2 = await q2.limit(limitVal);
       data = r2.data as any; error = r2.error;
     }
 
     // 3차 fallback: search_keywords 컬럼 없으면 제외하고 재시도
     if (error && /search_keywords|does not exist|column/i.test(error.message)) {
-      let q3 = supabase.from("products").select(cols).or(buildOr(false));
+      let q3 = supabase.from("products").select(cols);
+      if (!supplierOnly) q3 = q3.or(buildOr(false));
       if (!includeHidden) q3 = q3.eq("hidden", false);
       if (supplier.length >= 2) q3 = q3.ilike("supplier", `%${supplier}%`);
-      const r3 = await q3.limit(40);
+      const r3 = await q3.limit(limitVal);
       data = r3.data; error = r3.error;
     }
     if (error) {
