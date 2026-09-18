@@ -5,6 +5,7 @@ import { api, ApiError } from "../../lib/apiClient";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useApiCall } from "../../hooks/useApiCall";
+import { useVendors } from "../../hooks/useVendors";
 import {
   Calendar,
   ChevronLeft,
@@ -125,6 +126,16 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
   const [company, setCompany] = useState(() => isVendor ? (authSession?.employeeName ?? "") : "");
   const [contactName, setContactName] = useState(() => isVendor ? (authSession?.employeeRank ?? "") : "");
   const [phone, setPhone] = useState("");
+  // 2026-09-18 · 사용자 지시 · vendor 로그인 · 3필드 (거래처·담당자·연락처) DB 조회 · 자동 채움 · 입력 X
+  const { vendors: vendorList } = useVendors();
+  useEffect(() => {
+    if (!isVendor || !authSession?.employeeId || !vendorList?.length) return;
+    const me = vendorList.find(v => Number(v.id) === Number(authSession.employeeId));
+    if (!me) return;
+    setCompany(String(me.company_name ?? ""));
+    setContactName(String(me.contact_name ?? authSession?.employeeRank ?? ""));
+    if (me.phone) setPhone(String(me.phone));
+  }, [isVendor, authSession?.employeeId, authSession?.employeeRank, vendorList]);
   const [purpose, setPurpose] = useState("");
   const [note, setNote] = useState("");
   const { call: submitCall, loading: submitting } = useApiCall({
@@ -473,7 +484,8 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                     }`}
                   >
                     <span className="font-bold">{staff.name}</span>
-                    {staff.displayName && (
+                    {/* 2026-09-18 · 사용자 지시 · displayName = name 중복 방지 · 실제 이름만 노출 */}
+                    {staff.displayName && staff.displayName !== staff.name && (
                       <span className={`text-xs font-medium ${staff.isOff ? "text-gray-400" : "text-indigo-500"}`}>
                         {staff.displayName}
                       </span>
@@ -647,8 +659,9 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                   value={company}
                   onChange={e => setCompany(e.target.value)}
                   placeholder="(주)한국제약"
-                  className="w-full bg-white border border-gray-300 focus:border-indigo-400 rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition"
-                  autoFocus
+                  readOnly={isVendor}
+                  className={`w-full border rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition ${isVendor ? "bg-gray-50 border-gray-200 cursor-not-allowed" : "bg-white border-gray-300 focus:border-indigo-400"}`}
+                  autoFocus={!isVendor}
                 />
               </div>
 
@@ -663,7 +676,8 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                     value={contactName}
                     onChange={e => setContactName(e.target.value)}
                     placeholder="홍길동"
-                    className="w-full bg-white border border-gray-300 focus:border-indigo-400 rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition"
+                    readOnly={isVendor}
+                    className={`w-full border rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition ${isVendor ? "bg-gray-50 border-gray-200 cursor-not-allowed" : "bg-white border-gray-300 focus:border-indigo-400"}`}
                   />
                 </div>
                 <div>
@@ -675,7 +689,8 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                     value={phone}
                     onChange={e => handlePhoneChange(e.target.value)}
                     placeholder="010-0000-0000"
-                    className="w-full bg-white border border-gray-300 focus:border-indigo-400 rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition"
+                    readOnly={isVendor}
+                    className={`w-full border rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition ${isVendor ? "bg-gray-50 border-gray-200 cursor-not-allowed" : "bg-white border-gray-300 focus:border-indigo-400"}`}
                   />
                 </div>
               </div>
