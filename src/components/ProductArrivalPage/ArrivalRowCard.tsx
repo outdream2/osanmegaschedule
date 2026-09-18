@@ -559,6 +559,23 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
                   <span className="text-[15px] text-zinc-400">원</span>
                 </label>
               )}
+              {/* 판매가 (참고) · 읽기 전용 · products.sale_price */}
+              {item.product != null && (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="text-[16px] font-bold text-zinc-400 tracking-tight shrink-0">
+                    판매가 <span className="text-[13px] font-normal text-zinc-400">(참고)</span>
+                  </span>
+                  <span className="text-[14px] tabular-nums text-zinc-500 bg-zinc-50 border border-zinc-200 rounded-md px-2 h-8 flex items-center">
+                    {item.product.sale_price != null
+                      ? Number(item.product.sale_price).toLocaleString()
+                      : <span className="text-zinc-300">미설정</span>
+                    }
+                  </span>
+                  {item.product.sale_price != null && (
+                    <span className="text-[15px] text-zinc-400">원</span>
+                  )}
+                </span>
+              )}
               {onSetExpiring && (
                 <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                   <input
