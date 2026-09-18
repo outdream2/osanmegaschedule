@@ -6,6 +6,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>오산메가타운 관리시스템</title>
 
+  <!-- 2026-09-18 · 반응형 버그 fix · 폰트 CDN → <link rel="stylesheet"> 이관
+       이전: CSS @import url(...) → 렌더 블로킹 → Tailwind 파싱 지연 → overflow-x:clip 미적용 → 초기 가로 잘림
+       수정: <link rel="stylesheet"> 병렬 로딩 → Tailwind CSS 즉시 파싱 가능 → overflow-x:clip 초기부터 적용 -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;700;900&family=JetBrains+Mono:wght@400;550&display=swap" />
+
   <!-- PWA · 웹앱 안에서 카메라 사용 위한 정식 PWA 등록 (WebKit Bug 185448 우회) -->
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#10b981" />

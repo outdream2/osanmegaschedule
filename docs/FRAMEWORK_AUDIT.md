@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 836 |
+| 스캔 파일 | 839 |
 | 위반 파일 | 10 |
-| 클린 파일 | 826 (99%) |
+| 클린 파일 | 829 (99%) |
 | 총 위반 개수 | 10 |
 
 ## 🚨 규칙별 위반 현황
@@ -23,7 +23,7 @@
 
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
-| 1 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1035 | 6 | large-file-warn(1) |
+| 1 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1086 | 6 | large-file-warn(1) |
 | 2 | `src/components/DisplayPage/RealStockTablePage.tsx` | 879 | 3 | large-file-warn(1) |
 | 3 | `src/components/LandingPage/VendorListEditor.tsx` | 855 | 3 | large-file-warn(1) |
 | 4 | `src/components/OrderManagePage/OrderManagePage.tsx` | 844 | 3 | large-file-warn(1) |
@@ -40,7 +40,7 @@
 
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
-| `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1035 | 6 |
+| `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1086 | 6 |
 | `src/components/DisplayPage/RealStockTablePage.tsx` | 879 | 3 |
 | `src/components/LandingPage/VendorListEditor.tsx` | 855 | 3 |
 | `src/components/OrderManagePage/OrderManagePage.tsx` | 844 | 3 |
