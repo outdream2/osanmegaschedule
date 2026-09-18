@@ -216,7 +216,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
   }, [employees]);
 
   // ── Filter & Sort ─────────────────────────────────────────────────────────
-  const [positionTab, setPositionTab]   = useState<"전체" | "약사" | "사원" | "창고" | "매장">("전체");
+  // 2026-09-18 · #91 · Plan C · "기타" 신규 · 매핑 안 된 신규 직군 대응
+  const [positionTab, setPositionTab]   = useState<"전체" | "약사" | "사원" | "창고" | "매장" | "기타">("전체");
   const [searchQuery, setSearchQuery]   = useState("");
   const [sortBy, setSortBy]             = useState<"none" | "today" | "workplace" | "position" | "name">("today");
   const [sortOrder, setSortOrder]       = useState<"asc" | "desc">("asc");

@@ -5,9 +5,12 @@ import { SK_EMPLOYEE_ORDER } from "../../lib/storageKeys";
 import { useConfirm } from "../../hooks/useConfirm";
 import { Employee } from "../../types";
 import { FilterSortLabel, FilterSortGroup, FilterSortRow } from "../common/FilterSortBar";
+// 2026-09-18 · #91 · Plan C · 매핑 상수 SSOT
+import { positionToCategory } from "./scheduleHelpers";
 
 export type WorkplaceTab = "전체" | "매장" | "창고";
-export type PositionTab = "전체" | "약사" | "사원" | "창고" | "매장";
+// 2026-09-18 · #91 · Plan C · "기타" 신규 (매핑 안 된 신규 직군 대응)
+export type PositionTab = "전체" | "약사" | "사원" | "창고" | "매장" | "기타";
 export type SortBy = "none" | "today" | "workplace" | "name" | "position";
 export type SortOrder = "asc" | "desc";
 
@@ -42,13 +45,16 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
   const confirm = useConfirm();
 
   // 2026-08-17 · 공용 FilterSortBar 프레임워크 · 옵션 데이터화
+  // 2026-09-18 · #91 · Plan C · "기타" 탭 · positionToCategory === "기타" · count > 0 일 때만 노출
+  const etcCount = employees.filter(e => e.position !== "약사" && positionToCategory(e.position) === "기타").length;
   const filterOptions = [
     { key: "전체", label: "전체", count: employees.length },
     { key: "약사", label: "약사", count: employees.filter(e => e.position === "약사").length },
     { key: "사원", label: "사원", count: employees.filter(e => e.position === "캐셔" || e.position === "사원").length },
     { key: "창고", label: "창고", count: employees.filter(e => e.position !== "약사" && (e.position.includes("물류") || e.position === "창고")).length },
     { key: "매장", label: "매장", count: employees.filter(e => e.position !== "약사" && e.workplace === "매장").length },
-  ] as const;
+    ...(etcCount > 0 ? [{ key: "기타", label: "기타", count: etcCount }] : []),
+  ] as { key: string; label: string; count: number }[];
   const sortOptions = [
     { key: "today", label: "출근" },
     { key: "position", label: "직군", sortDir: sortBy === "position" ? sortOrder : undefined },

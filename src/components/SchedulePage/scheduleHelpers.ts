@@ -11,6 +11,46 @@ import type { ScheduleTypeEntry } from "../../constants";
 
 export const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 
+// 2026-09-18 · #91 · Plan C 하이브리드 · position → category 매핑 상수화
+// - 신규 직군(settings.positions)이 추가되어도 아래 매핑에 없으면 "기타"로 분류
+// - 필터 탭·요약 카운트·인건비 집계 모두 이 상수를 SSOT로 사용
+export type PositionCategory = "약사" | "사원" | "창고" | "매장" | "기타";
+
+/**
+ * position (원본 문자열) → PositionCategory 매핑
+ * - 약사 → 약사
+ * - 캐셔·진열·사원 → 사원
+ * - 물류·창고 → 창고
+ * - 매장 → 매장
+ * - 그 외 (신규 직군 포함) → "기타"
+ */
+export const POSITION_TO_CATEGORY: Record<string, PositionCategory> = {
+  "약사":  "약사",
+  "캐셔":  "사원",
+  "진열":  "사원",
+  "사원":  "사원",
+  "물류":  "창고",
+  "창고":  "창고",
+  "매장":  "매장",
+};
+
+/**
+ * position 문자열을 PositionCategory 로 분류.
+ * - 정확 매칭이 최우선, 매칭 실패 시 부분 매칭(물류/창고 하위 표기 대응) → "기타"
+ * - 회귀 방지: 기존 buildFilteredEmployees·getCalculatedSummary 규칙과 동치
+ */
+export function positionToCategory(pos: string): PositionCategory {
+  if (!pos) return "기타";
+  const exact = POSITION_TO_CATEGORY[pos];
+  if (exact) return exact;
+  // 부분 매칭 (기존 코드: emp.position.includes("물류"))
+  if (pos.includes("물류")) return "창고";
+  return "기타";
+}
+
+/** 활성 카테고리 순서 (탭·요약 행 정렬용) */
+export const POSITION_CATEGORY_ORDER: PositionCategory[] = ["약사", "사원", "창고", "매장", "기타"];
+
 export const getTodayStr = (): string => {
   const d = new Date();
   const year = d.getFullYear();
@@ -133,11 +173,27 @@ export const getCalculatedSummary = (
 
         const isOff = ["휴무", "월차", "결근"].includes(type);
         if (!isOff && type.trim() !== "") {
+          // 2026-09-18 · #91 · Plan C · positionToCategory + isOtherPosition 하이브리드
+          // - isOtherPosition 은 employmentType(알바 등) 기반 → 우선 판정 유지
+          // - 그 외 · POSITION_TO_CATEGORY 매핑으로 5-field 카운트 계산
           if (isPharm(emp.position)) pharmacistCount++;
           else if (isOtherPosition(emp.position, emp.employmentType)) otherCount++;
-          else if (emp.position === "창고") { warehouseCount++; staffCount++; }
-          else if (emp.position.includes("물류")) { logisticsCount++; staffCount++; }
-          else staffCount++;
+          else {
+            const cat = positionToCategory(emp.position);
+            if (cat === "창고") {
+              // 물류/창고 세분화 (기존 규칙 유지)
+              if (emp.position === "창고") warehouseCount++;
+              else if (emp.position.includes("물류")) logisticsCount++;
+              else warehouseCount++; // 기타 창고 카테고리 · 창고로 흡수
+              staffCount++;
+            } else if (cat === "기타") {
+              // 신규/미매핑 직군 · MonthlySummary 스키마 유지 · otherCount 로 흡수
+              otherCount++;
+            } else {
+              // "사원", "매장" → staffCount
+              staffCount++;
+            }
+          }
         }
       }
     }
@@ -193,14 +249,19 @@ export const buildFilteredEmployees = (
 ): Employee[] => {
   const filtered = employees.filter(emp => {
     if (positionTab !== "전체") {
+      // 2026-09-18 · #91 · Plan C · positionToCategory 상수 활용
+      // - 회귀 방지 · 기존 필터 규칙 그대로 유지
+      // - 신규 필터 "기타" · 매핑 안 된 신규 직군 노출
       const pharm     = isPharm(emp.position);
       const staff     = emp.position === "캐셔" || emp.position === "사원";
       const warehouse = !pharm && (isLogistics(emp.position) || emp.position === "창고");
       const store     = !pharm && emp.workplace === "매장";
+      const etc       = positionToCategory(emp.position) === "기타" && !pharm;
       if (positionTab === "약사")      { if (!pharm)     return false; }
       else if (positionTab === "사원") { if (!staff)     return false; }
       else if (positionTab === "창고") { if (!warehouse) return false; }
       else if (positionTab === "매장") { if (!store)     return false; }
+      else if (positionTab === "기타") { if (!etc)       return false; }
     }
     if (searchQuery.trim() !== "") {
       return emp.name.toLowerCase().includes(searchQuery.toLowerCase().trim());

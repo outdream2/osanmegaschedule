@@ -31,8 +31,9 @@ interface ScheduleGridProps {
   isMonthLocked: boolean;
   showSummary: "hidden" | "summary" | "labor";
   currentSummaryList: MonthlySummary[];
-  /** 2026-08-31 · #50 · 필터 상태 · 합계 행 · 필터별 표시 */
-  positionTab?: "전체" | "약사" | "사원" | "창고" | "매장";
+  /** 2026-08-31 · #50 · 필터 상태 · 합계 행 · 필터별 표시
+   *  2026-09-18 · #91 · Plan C · "기타" 신규 · 매핑 안 된 신규 직군 대응 */
+  positionTab?: "전체" | "약사" | "사원" | "창고" | "매장" | "기타";
   draggedRowId: number | null;
   dragOverRowId: number | null;
   settingsScheduleTypes: ScheduleTypeEntry[];
@@ -281,7 +282,8 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
           {(positionTab === "전체" || positionTab === "창고") && currentSummaryList.some(s => s.warehouseCount > 0) && (
             <SummaryRow summaries={currentSummaryList} label="창고" showMonthTotal={showMonthTotal} />
           )}
-          {positionTab === "전체" && currentSummaryList.some(s => s.otherCount > 0) && (
+          {/* 2026-09-18 · #91 · Plan C · "기타" 필터 활성 or 전체 · otherCount 존재 · 노출 */}
+          {(positionTab === "전체" || positionTab === "기타") && currentSummaryList.some(s => s.otherCount > 0) && (
             <SummaryRow summaries={currentSummaryList} label="기타" showMonthTotal={showMonthTotal} />
           )}
           <SummaryRow summaries={currentSummaryList} label="근무인원" showMonthTotal={showMonthTotal} />
