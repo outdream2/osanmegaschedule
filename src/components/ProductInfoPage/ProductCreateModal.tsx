@@ -440,7 +440,7 @@ export const ProductCreateModal: React.FC<Props> = ({
             <div className="p-5 flex flex-col gap-4">
               {/* 필수 정보 */}
               <Section title="필수 정보" required>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Field icon={<Hash size={14} />} label={lockCode ? "상품코드 (스캔 고정)" : "상품코드"} required>
                     <input
                       lang="ko" type="text"
@@ -462,6 +462,18 @@ export const ProductCreateModal: React.FC<Props> = ({
                       placeholder="예: 타이레놀 500mg"
                       maxLength={200}
                     />
+                  </Field>
+                  {/* 2026-09-18 · 사용자 지시 · 판매 상태 필수 정보 섹션으로 이동 (기타 섹션에서 이동) */}
+                  <Field icon={<Tags size={14} />} label="판매 상태" required>
+                    <select
+                      value={form.sale_status}
+                      onChange={(e) => set("sale_status", e.target.value)}
+                      className={inputCls + " cursor-pointer"}
+                    >
+                      {SALE_STATUS_OPTIONS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
                   </Field>
                 </div>
               </Section>
@@ -611,19 +623,6 @@ export const ProductCreateModal: React.FC<Props> = ({
                   </Field>
                   <Field icon={<Factory size={14} />} label="제조사">
                     <input lang="ko" type="text" value={form.manufacturer} onChange={(e) => set("manufacturer", e.target.value)} className={inputCls} placeholder="예: 한미약품" maxLength={100} />
-                  </Field>
-                  {/* 2026-09-18 · 사용자 지시 · 편집 모달 · 판매 상태 드롭다운 · 조회 화면 필드 전부 편집 지원 */}
-                  {/* 2026-09-18 · 사용자 지시 · 판매 상태 필수 항목 */}
-                  <Field icon={<Tags size={14} />} label="판매 상태" required>
-                    <select
-                      value={form.sale_status}
-                      onChange={(e) => set("sale_status", e.target.value)}
-                      className={inputCls + " cursor-pointer"}
-                    >
-                      {SALE_STATUS_OPTIONS.map(opt => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
                   </Field>
                 </div>
               </Section>
