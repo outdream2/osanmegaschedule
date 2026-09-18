@@ -44,6 +44,28 @@ export const loadOrderNeedConfig = (): OrderNeedFilterConfig => {
   } catch { return DEFAULT_ORDER_NEED_CONFIG; }
 };
 
+// ─── #149 O-3 · vendors[] → Map 변환 순수 함수 ──────────────────────────────
+// 3가지 key 변형: trim · no-space · lowercase
+// useMemo 는 부모 컴포넌트에서 유지 · 내부 로직만 이관
+interface VendorMapEntry {
+  company_name: string;
+  contact_name: string | null;
+  phone: string | null;
+  email: string | null;
+}
+export function buildVendorMap(
+  vendors: VendorMapEntry[],
+): Map<string, { contact_name: string | null; phone: string | null; email: string | null }> {
+  const m = new Map<string, { contact_name: string | null; phone: string | null; email: string | null }>();
+  for (const v of vendors) {
+    const info = { contact_name: v.contact_name, phone: v.phone, email: v.email };
+    m.set(v.company_name.trim(), info);
+    m.set(v.company_name.replace(/\s+/g, ""), info);
+    m.set(v.company_name.trim().toLowerCase(), info);
+  }
+  return m;
+}
+
 // ─── 시간 포맷 · 'N분 전' · 'N시간 전' · 'N일 전' ───────────────────────
 export const fmtDate = (iso: string) => {
   const d = new Date(iso);

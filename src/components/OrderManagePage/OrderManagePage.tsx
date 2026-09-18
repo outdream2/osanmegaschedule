@@ -74,7 +74,7 @@ import type {
   OrderRequest, ProductInfo, OrderManagePageProps,
   NeedCategoryFilterKey, OrderNeedFilterConfig,
 } from "./OrderManagePage.types";
-import { loadOrderNeedConfig } from "./OrderManagePage.utils";
+import { loadOrderNeedConfig, buildVendorMap } from "./OrderManagePage.utils";
 import { useOrderNeedFilter } from "./useOrderNeedFilter";
 import { useOrderModal } from "./useOrderModal";
 import { useOrderManageData } from "./useOrderManageData";
@@ -229,16 +229,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [returnInnerTab, setReturnInnerTab] = useState<"need" | "confirmed">("confirmed");
   const [lowStockCollapsed, setLowStockCollapsed] = useState(false);
 
-  const vendorMap = useMemo(() => {
-    const m = new Map<string, { contact_name: string | null; phone: string | null; email: string | null }>();
-    for (const v of vendors) {
-      const info = { contact_name: v.contact_name, phone: v.phone, email: v.email };
-      m.set(v.company_name.trim(), info);
-      m.set(v.company_name.replace(/\s+/g, ""), info);
-      m.set(v.company_name.trim().toLowerCase(), info);
-    }
-    return m;
-  }, [vendors]);
+  // #149 O-3 · buildVendorMap 순수 함수로 이관
+  const vendorMap = useMemo(() => buildVendorMap(vendors), [vendors]);
   const findVendor = useCallback((supplierName: string | null | undefined) => {
     if (!supplierName) return undefined;
     const s = supplierName.trim();
