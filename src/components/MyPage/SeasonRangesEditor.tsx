@@ -14,10 +14,17 @@ import {
   type SeasonKey,
   type SeasonRanges,
 } from "../../hooks/useSeasonRanges";
+// 2026-09-18 · 계절 저장 시 · 4계절 recurring 이벤트 자동 보장 (계절별 상품 매핑 전제조건)
+import { api } from "../../lib/apiClient";
 
 interface Props {
   employeeId: number;
   onToast?: (msg: string, ms?: number) => void;
+  /**
+   * 2026-09-18 · 저장 완료 시 · 부모 컴포넌트 (SeasonSettingsPage) 에 알림
+   *   · 계절별 상품 매핑 accordion 재조회 (이벤트가 신규 생성될 수 있으므로)
+   */
+  onSaved?: () => void;
 }
 
 const SEASONS: SeasonKey[] = ["spring", "summer", "autumn", "winter"];
@@ -28,7 +35,7 @@ const SEASON_COLOR: Record<SeasonKey, { bg: string; text: string; border: string
   winter: { bg: "bg-sky-50",     text: "text-sky-700",     border: "border-sky-200",     active: "bg-sky-500" },
 };
 
-export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => {
+export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast, onSaved }) => {
   const [ranges, setRanges] = useState<SeasonRanges>({ ...DEFAULT_SEASON_RANGES });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -60,13 +67,22 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
   const handleSave = async () => {
     setSaving(true);
     const res = await saveSeasonRanges(ranges, employeeId);
-    setSaving(false);
     if (res.ok) {
+      // 2026-09-18 · 계절 정의 저장 성공 · 4계절 recurring 이벤트 자동 보장 (silent)
+      //   · 이후 계절별 상품 매핑 UI 에서 즉시 사용 가능
+      //   · 실패해도 계절 저장 자체는 성공한 상태 · 조용히 로그만
+      try {
+        await api.post("/api/events/seasons/ensure", {});
+      } catch (e) {
+        console.warn("[SeasonRangesEditor] 계절 이벤트 자동 생성 실패:", e);
+      }
       setDirty(false);
       onToast?.("계절 정의가 저장되었습니다");
+      onSaved?.();
     } else {
       onToast?.(`저장 실패: ${res.error ?? "알 수 없는 오류"}`, 3000);
     }
+    setSaving(false);
   };
 
   // 각 월이 여러 계절에 중복되어 있으면 경고

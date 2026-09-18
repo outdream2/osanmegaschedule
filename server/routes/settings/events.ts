@@ -98,6 +98,69 @@ router.get("/api/events/today", asyncHandler(async (_req, res) => {
 }));
 
 // ═══════════════════════════════════════════════════════════
+// POST /api/events/seasons/ensure · 4계절 recurring 이벤트 자동 보장
+//   · spring / summer / fall / winter · 없으면 생성 · 있으면 skip
+//   · 계절 정의 저장 시 자동 호출 (SeasonRangesEditor) · 계절별 상품 매핑 UI 전제조건
+//   · 응답 · { ok, seasons: { spring: EventRow, summer: EventRow, ... } }
+// ═══════════════════════════════════════════════════════════
+router.post("/api/events/seasons/ensure", authorize(9), asyncHandler(async (_req, res) => {
+  const SEASON_TYPES = ["spring", "summer", "fall", "winter"] as const;
+  const DEFAULT_NAMES: Record<string, string> = {
+    spring: "봄 시즌",
+    summer: "여름 시즌",
+    fall:   "가을 시즌",
+    winter: "겨울 시즌",
+  };
+
+  // 기존 계절 recurring 이벤트 조회
+  const { data: existing, error: eErr } = await supabase
+    .from("events")
+    .select("*")
+    .in("type", SEASON_TYPES as unknown as string[])
+    .eq("recurring", true);
+  if (eErr) throw new HttpError(500, eErr.message, "DB_ERROR");
+
+  // type 별로 이미 있는지 매핑 (여러 개 있으면 첫 번째 사용 · 순서: start_date asc · nulls first)
+  const byType = new Map<string, any>();
+  const rows = (existing ?? []).slice().sort((a: any, b: any) => {
+    const sa = a.start_date ?? "";
+    const sb = b.start_date ?? "";
+    if (sa === sb) return (a.id ?? 0) - (b.id ?? 0);
+    return sa.localeCompare(sb);
+  });
+  for (const r of rows) {
+    if (!byType.has(r.type)) byType.set(r.type, r);
+  }
+
+  // 없는 계절만 insert
+  const toInsert = SEASON_TYPES
+    .filter(t => !byType.has(t))
+    .map(t => ({
+      name: DEFAULT_NAMES[t],
+      type: t,
+      start_date: null,
+      end_date: null,
+      recurring: true,
+    }));
+
+  let created: any[] = [];
+  if (toInsert.length > 0) {
+    const { data: ins, error: iErr } = await supabase
+      .from("events")
+      .insert(toInsert)
+      .select();
+    if (iErr) throw new HttpError(500, iErr.message, "DB_ERROR");
+    created = ins ?? [];
+    for (const r of created) byType.set(r.type, r);
+  }
+
+  const seasons: Record<string, any> = {};
+  for (const t of SEASON_TYPES) seasons[t] = byType.get(t) ?? null;
+
+  res.json({ ok: true, seasons, created_count: created.length });
+}));
+
+// ═══════════════════════════════════════════════════════════
 // POST /api/events · 이벤트 신규 등록 (관리자 level ≥ 9)
 // ═══════════════════════════════════════════════════════════
 router.post("/api/events", authorize(9), asyncHandler(async (req, res) => {

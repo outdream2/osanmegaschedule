@@ -20,6 +20,8 @@ import { SaleActiveOnlySection } from "./SaleActiveOnlySection";
 import { TabBar, type TabDef } from "../common/TabBar";
 // 2026-09-13 · #52·#54 · 이벤트 관리 UI 신규
 import { EventsSection } from "./EventsSection";
+// 2026-09-18 · 계절 정의 탭 · 계절별 추천 상품 매핑 accordion
+import { SeasonProductsAccordion } from "./SeasonProductsAccordion";
 
 interface Props {
   onBack: () => void;
@@ -53,6 +55,12 @@ const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
   }, []);
 
   const noop = useCallback(() => { /* toast 자리 · 필요 시 추후 */ }, []);
+
+  // 2026-09-18 · 계절 정의 저장 후 · accordion 이벤트 재조회 트리거
+  const [seasonRefreshTick, setSeasonRefreshTick] = useState(0);
+  const handleSeasonSaved = useCallback(() => {
+    setSeasonRefreshTick(t => t + 1);
+  }, []);
 
   const commonShellProps = {
     activePage: "season-settings" as AppNavPage,
@@ -97,9 +105,17 @@ const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
         />
         <div className="flex flex-col gap-4 mt-4">
           {statsTab === "season" && (
-            <div className={`${CARD_BASE} p-5`}>
-              <SeasonRangesEditor employeeId={employeeId} onToast={noop} />
-            </div>
+            <>
+              <div className={`${CARD_BASE} p-5`}>
+                <SeasonRangesEditor
+                  employeeId={employeeId}
+                  onToast={noop}
+                  onSaved={handleSeasonSaved}
+                />
+              </div>
+              {/* 2026-09-18 · 계절별 추천 상품 매핑 accordion · 발주필요 판넬 자동 반영 */}
+              <SeasonProductsAccordion refreshTick={seasonRefreshTick} />
+            </>
           )}
           {statsTab === "filters" && (
             <section
