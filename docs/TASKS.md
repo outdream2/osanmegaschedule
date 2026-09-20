@@ -144,6 +144,7 @@
 |---|-----|-------|---------|
 <!-- E-001 ✅ · SplitPanel capture phase click blocker · isDraggingRef · 2026-09-20 완료 -->
 | **E-002** | **근로계약서 · 구글드라이브 업로드 실패** (사용자 보고 · 2026-09-20) | 🔴 P1 | 서류작성 > 근로계약서 · 완성 후 Google Drive 업로드 · 저장 실패 · Google API 인증·권한·엔드포인트·CORS·토큰 만료 등 원인 조사 필요 |
+| **E-003** | **바코드스캔 · 상품명 입력창 · 한글 우선 입력** (사용자 보고 · 2026-09-20) | 🟡 P2 | 바코드스캔 페이지 · 상품명 input · 포커스 시 IME 한글 모드 우선 · `lang="ko"` + `inputMode` + Safari/Chrome IME 힌트 · 영문으로 시작되는 문제 fix |
 <!-- 2026-09-18 · #115 · real_map DROP · 이미 2026-09-08 실행 완료 확인 (server.ts:95 주석) -->
 <!-- ~~#115~~ · real_map DROP · ✅ 완료 (2026-09-08 · Supabase SQL Editor) -->
 <!-- 2026-09-18 · T-RSTP-TOOLBAR 완료 · [46] 커밋 `780677f5` · flex-col + lg:flex-row 반응형 -->
