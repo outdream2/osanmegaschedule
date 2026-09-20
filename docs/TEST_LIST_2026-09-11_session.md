@@ -115,6 +115,18 @@
 - BottomNav · 3 skip (usePageVisibility timing · 실 UI 정상)
 - **최종 · 3463 pass · 3 skip · 0 fail**
 
+### [126] App.tsx 라우팅 테이블 · PAGE_MAP 도입 (Option A · 사용자 지시)
+**커밋** · `068fd90b`
+- if/else 25-case 체인 → PAGE_MAP + Lazy 헬퍼 · 637→442 (-195 라인)
+- 특수 케이스 3건 클로저로 처리: schedule/business-manage/display
+- **회귀 없음** · TS 0 error · vite build 성공 · 3463/3463 pass
+
+테스트:
+- 모든 25개 페이지 정상 진입 확인
+- SchedulePage → [수정] → BusinessManagePage 직원 선택 flow
+- DisplayPage → 직원 편집 → SchedulePage 이동
+- 미인증 상태 · 모든 경로 LandingPage 강제 확인
+
 ---
 
 ## 📌 2026-09-20 세션 · 추가 태스크 [93]~[110]
