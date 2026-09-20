@@ -290,13 +290,19 @@ export const ProductCreateModal: React.FC<Props> = ({
   }, [form.location]);
 
   const canSubmit = useMemo(() => {
+    const salePriceNum = parseNum(form.sale_price);
+    const purchasePriceNum = parseNum(form.purchase_price);
     return (
       form.product_code.trim().length > 0 &&
       form.product_name.trim().length > 0 &&
       form.sale_status.trim().length > 0 &&
+      form.supplier.trim().length > 0 &&
+      vendors.some(v => (v.company_name ?? "").trim() === form.supplier.trim()) &&
+      salePriceNum !== null && salePriceNum >= 0 &&
+      purchasePriceNum !== null && purchasePriceNum >= 0 &&
       !submitting
     );
-  }, [form.product_code, form.product_name, form.sale_status, submitting]);
+  }, [form.product_code, form.product_name, form.sale_status, form.supplier, form.sale_price, form.purchase_price, submitting, vendors]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -444,9 +450,9 @@ export const ProductCreateModal: React.FC<Props> = ({
             )}
 
             <div className="p-5 flex flex-col gap-4">
-              {/* 필수 정보 */}
-              {/* 2026-09-18 · 사용자 지시 · 판매 상태 · 상품코드·상품명 아래 다음 줄 (같은 행 X · 필수 정보 섹션 안) */}
+              {/* 필수 정보 · 2026-09-20 · 공급사·가격·판매상태 필수 이동 (사용자 지시) */}
               <Section title="필수 정보" required>
+                {/* 행 1 · 상품코드 · 상품명 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Field icon={<Hash size={14} />} label={lockCode ? "상품코드 (스캔 고정)" : "상품코드"} required>
                     <input
@@ -471,39 +477,10 @@ export const ProductCreateModal: React.FC<Props> = ({
                     />
                   </Field>
                 </div>
-                {/* 다음 줄 · 판매 상태 · 필수 정보 섹션 안 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <Field icon={<Tags size={14} />} label="판매 상태" required>
-                    <select
-                      value={form.sale_status}
-                      onChange={(e) => set("sale_status", e.target.value)}
-                      className={inputCls + " cursor-pointer"}
-                    >
-                      {SALE_STATUS_OPTIONS.map(opt => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </Field>
-                </div>
-              </Section>
-
-              {/* 가격 */}
-              <Section title="가격">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field icon={<ShoppingCart size={14} />} label="판매가">
-                    <PriceInput value={form.sale_price} onChange={(v) => set("sale_price", v)} />
-                  </Field>
-                  <Field icon={<Coins size={14} />} label="매입가">
-                    <PriceInput value={form.purchase_price} onChange={(v) => set("purchase_price", v)} />
-                  </Field>
-                </div>
-              </Section>
-
-              {/* 분류·공급 */}
-              <Section title="분류 · 공급">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 행 2 · 공급사 필수 (2026-09-20 · 필수 이동) */}
+                <div className="mt-4">
                   <div ref={supplierWrapRef} className="relative min-w-0">
-                    <Field icon={<Building2 size={14} />} label="공급사">
+                    <Field icon={<Building2 size={14} />} label="공급사" required>
                       {(() => {
                         const s = form.supplier.trim();
                         const isValid = !s || vendors.some(v => (v.company_name ?? "").trim() === s);
@@ -514,8 +491,6 @@ export const ProductCreateModal: React.FC<Props> = ({
                             onChange={(e) => { set("supplier", e.target.value); setSupplierOpen(true); }}
                             onFocus={() => setSupplierOpen(true)}
                             onBlur={() => {
-                              // 2026-09-10 · #63 · 사용자 지시 · vendors 매칭 안 되면 · clear (자유 입력 금지)
-                              // 2026-09-10 · fix · stale closure 회피 · setForm(prev) 로 최신 값 참조 (드롭다운 클릭 반영 후 검증)
                               setTimeout(() => {
                                 setForm(prev => {
                                   const v = prev.supplier.trim();
@@ -527,7 +502,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                               }, 200);
                             }}
                             className={`${inputCls} ${!isValid ? "!border-rose-400 !bg-rose-50/50" : ""}`}
-                            placeholder="검색 · 목록에서 선택 필수"
+                            placeholder="검색 후 목록에서 선택 (필수)"
                             maxLength={100}
                             autoComplete="off"
                             aria-invalid={!isValid}
@@ -546,7 +521,6 @@ export const ProductCreateModal: React.FC<Props> = ({
                           <button
                             key={v.id}
                             type="button"
-                            /* 2026-09-10 · fix · onMouseDown · outside-click·onBlur 발동 전 · 값 세팅 · onClick 은 · dropdown unmount 이후 발동 안 됨 */
                             onMouseDown={(e) => {
                               e.preventDefault();
                               set("supplier", v.company_name ?? "");
@@ -561,6 +535,35 @@ export const ProductCreateModal: React.FC<Props> = ({
                       </div>
                     </PortalDropdown>
                   </div>
+                </div>
+                {/* 행 3 · 판매가·매입가 필수 (2026-09-20 · 필수 이동) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <Field icon={<ShoppingCart size={14} />} label="판매가" required>
+                    <PriceInput value={form.sale_price} onChange={(v) => set("sale_price", v)} />
+                  </Field>
+                  <Field icon={<Coins size={14} />} label="매입가" required>
+                    <PriceInput value={form.purchase_price} onChange={(v) => set("purchase_price", v)} />
+                  </Field>
+                </div>
+                {/* 행 4 · 판매 상태 필수 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <Field icon={<Tags size={14} />} label="판매 상태" required>
+                    <select
+                      value={form.sale_status}
+                      onChange={(e) => set("sale_status", e.target.value)}
+                      className={inputCls + " cursor-pointer"}
+                    >
+                      {SALE_STATUS_OPTIONS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+              </Section>
+
+              {/* 분류 · 기타 */}
+              <Section title="분류 · 기타">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Field icon={<Tags size={14} />} label="분류코드">
                     <input
                       lang="ko" type="text"
@@ -577,8 +580,8 @@ export const ProductCreateModal: React.FC<Props> = ({
                   <Field icon={<Ruler size={14} />} label="규격">
                     <input lang="ko" type="text" value={form.spec} onChange={(e) => set("spec", e.target.value)} className={inputCls} placeholder="예: 10정" maxLength={100} />
                   </Field>
-                  {/* 2026-09-14 · #82 · 배치구역 2분리 · 진열구역 (좌) + 상세구역 (우) · shelf_positions JSONB 활용 */}
-                  <div className="relative min-w-0">
+                  {/* 2026-09-20 · 진열구역 선택 · 창고/매장 자동 결정 (사용자 지시) */}
+                  <div className="col-span-full relative min-w-0">
                     <Field icon={<MapPin size={14} />} label={
                       <span className="flex items-center gap-2">
                         진열구역
@@ -591,34 +594,34 @@ export const ProductCreateModal: React.FC<Props> = ({
                     }>
                       <ZoneCategoryPicker
                         value={form.location}
-                        onChange={(loc) => set("location", loc ?? "")}
+                        onChange={(loc) => {
+                          set("location", loc ?? "");
+                          // 진열위치 변경 시 상세구역 초기화 (이전 값 버림)
+                          setForm(prev => ({
+                            ...prev,
+                            location: loc ?? "",
+                            shelf_positions: { ...EMPTY_SHELF },
+                          }));
+                        }}
                       />
                     </Field>
                   </div>
-                  {/* 2026-09-18 · 상세구역 5슬롯 · ShelfPositionInput 재사용 · 상세 뷰와 동일 구조 */}
-                  <div className="col-span-full">
-                    <Field icon={<MapPin size={14} />} label="상세구역 (창고·매장별)">
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        {storageLocations.filter(l => l.active).map(loc => (
-                          <ShelfPositionInput
-                            key={loc.code}
-                            label={`${loc.name}${loc.kind === "warehouse" ? " (창고)" : ""}`}
-                            required={loc.required_detail}
-                            value={form.shelf_positions[loc.code as keyof ShelfPositionsDraft] ?? null}
-                            onChange={(v) =>
-                              setForm(prev => ({
-                                ...prev,
-                                shelf_positions: { ...prev.shelf_positions, [loc.code]: v },
-                              }))
-                            }
-                            productCode={isEdit ? form.product_code : undefined}
-                            displayLocation={form.location.trim() || null}
-                            storageKey={loc.code}
-                          />
-                        ))}
-                      </div>
-                    </Field>
-                  </div>
+                  {/* 2026-09-20 · 상세구역 · 진열위치 선택 시만 표시 · 창고1/2 중 하나 + 매장 추가 방식 */}
+                  {form.location.trim() && (
+                    <ShelfPositionSection
+                      location={form.location.trim()}
+                      warehouseTag={warehouseTag}
+                      shelfPositions={form.shelf_positions}
+                      storageLocations={storageLocations}
+                      onChange={(code, val) =>
+                        setForm(prev => ({
+                          ...prev,
+                          shelf_positions: { ...prev.shelf_positions, [code]: val },
+                        }))
+                      }
+                      productCode={isEdit ? form.product_code : undefined}
+                    />
+                  )}
                 </div>
               </Section>
 
@@ -725,5 +728,100 @@ const PriceInput: React.FC<{ value: string; onChange: (v: string) => void }> = (
     />
   </div>
 );
+
+// ─── 2026-09-20 · 상세구역 섹션 · 진열위치 선택 시만 표시
+//   · 창고: classifyArrivalSlot 결과 기준 warehouse1 or warehouse2 중 하나만 표시
+//   · 매장: 매장1 기본 표시 · +매장2 +매장3 추가 버튼
+interface ShelfPositionSectionProps {
+  location: string;
+  warehouseTag: { label: string; cls: string } | null;
+  shelfPositions: ShelfPositionsDraft;
+  storageLocations: import("../../shared/schemas/settings").StorageLocation[];
+  onChange: (code: string, val: string | null) => void;
+  productCode?: string;
+}
+const ShelfPositionSection: React.FC<ShelfPositionSectionProps> = ({
+  location, warehouseTag, shelfPositions, storageLocations, onChange, productCode,
+}) => {
+  const [extraStores, setExtraStores] = React.useState<string[]>([]);
+
+  // 창고 슬롯: classifyArrivalSlot 결과로 warehouse1 or warehouse2 하나만
+  const warehouseSlot: "warehouse1" | "warehouse2" | null = (() => {
+    const slot = classifyArrivalSlot(location);
+    if (slot === "w1") return "warehouse1";
+    if (slot === "w2") return "warehouse2";
+    // 창고코드 아닌 경우: warehouseTag 없으면 둘 다 미표시 · warehouseTag 있으면 추론
+    if (warehouseTag?.label === "창고1") return "warehouse1";
+    if (warehouseTag?.label === "창고2") return "warehouse2";
+    return null;
+  })();
+
+  // 매장 슬롯: store1 기본 + 추가된 슬롯
+  const storeSlots: string[] = ["store1", ...extraStores];
+  const availableExtraStores = ["store2", "store3"].filter(s => !extraStores.includes(s));
+
+  const getLocInfo = (code: string) => storageLocations.find(l => l.code === code);
+
+  return (
+    <div className="col-span-full">
+      <div className="flex items-center gap-1.5 mb-2">
+        <MapPin size={14} className="text-ink-soft" />
+        <span className="text-[15px] font-semibold text-ink tracking-tight">상세구역</span>
+        <span className="text-[13px] text-ink-soft">(층·칸·순서 3자리 · 예: 332)</span>
+      </div>
+      <div className="flex flex-wrap gap-3 pt-1">
+        {/* 창고 슬롯 */}
+        {warehouseSlot && (() => {
+          const loc = getLocInfo(warehouseSlot);
+          if (!loc?.active) return null;
+          return (
+            <ShelfPositionInput
+              key={warehouseSlot}
+              label={loc.name}
+              required={false}
+              value={shelfPositions[warehouseSlot as keyof ShelfPositionsDraft] ?? null}
+              onChange={(v) => onChange(warehouseSlot, v)}
+              productCode={productCode}
+              displayLocation={location}
+              storageKey={warehouseSlot}
+            />
+          );
+        })()}
+        {/* 매장 슬롯 */}
+        {storeSlots.map(code => {
+          const loc = getLocInfo(code);
+          if (!loc?.active) return null;
+          return (
+            <ShelfPositionInput
+              key={code}
+              label={loc.name}
+              required={loc.required_detail}
+              value={shelfPositions[code as keyof ShelfPositionsDraft] ?? null}
+              onChange={(v) => onChange(code, v)}
+              productCode={productCode}
+              displayLocation={location}
+              storageKey={code}
+            />
+          );
+        })}
+        {/* 매장 추가 버튼 */}
+        {availableExtraStores.map(code => {
+          const loc = getLocInfo(code);
+          if (!loc?.active) return null;
+          return (
+            <button
+              key={code}
+              type="button"
+              onClick={() => setExtraStores(prev => [...prev, code])}
+              className="h-9 px-3 rounded-lg border border-dashed border-brand-tint text-[14px] font-semibold text-brand-deep hover:bg-brand-tint/50 transition-colors cursor-pointer flex items-center gap-1"
+            >
+              + {loc.name}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 export default ProductCreateModal;
