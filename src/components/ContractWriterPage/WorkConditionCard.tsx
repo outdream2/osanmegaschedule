@@ -42,7 +42,7 @@ export interface WorkConditionCardProps {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const fldInput = "w-full bg-white border border-line rounded-lg px-3 py-2 text-[15px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition placeholder:text-zinc-400 placeholder:font-normal";
-const fldLabel = "block text-[10.5px] font-bold uppercase tracking-wider text-zinc-500 mb-1";
+const fldLabel = "block text-[14.5px] font-bold tracking-wide text-zinc-600 mb-1.5";
 const cardInner = "rounded-lg border border-zinc-100 bg-zinc-50/60 p-2.5 flex flex-col gap-2";
 const cardGroupLabel = "text-[14px] font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-1.5 mb-0.5";
 
@@ -106,7 +106,7 @@ export const WorkConditionCard: React.FC<WorkConditionCardProps> = ({
       </div>
       {form.contractType === "계약직" && (
         <div className="flex items-center gap-2 mt-1.5">
-          <span className="text-[10.5px] text-zinc-400 font-semibold shrink-0">계약 기간</span>
+          <span className="text-[14.5px] font-bold text-zinc-600 shrink-0">계약 기간</span>
           <div className="flex-1">
             <SelectOrCustom value={form.contractMonths} options={["2", "3", "6", "12"]} onChange={(v) => upd("contractMonths", v)} placeholder="예: 9" suffix="개월" />
           </div>
@@ -181,7 +181,7 @@ export const WorkConditionCard: React.FC<WorkConditionCardProps> = ({
             <input type="checkbox" checked={form.socialInsurance} onChange={(e) => upd("socialInsurance", e.target.checked)}
               className="w-4 h-4 rounded accent-indigo-600" />
             <span className="text-[14px] font-semibold text-zinc-700">4대보험 가입</span>
-            <span className="text-[10.5px] text-zinc-400 font-semibold ml-1">고용 · 산재 · 국민연금 · 건강보험</span>
+            <span className="text-[13px] text-zinc-400 font-semibold ml-1">고용 · 산재 · 국민연금 · 건강보험</span>
           </label>
         </div>
       </div>

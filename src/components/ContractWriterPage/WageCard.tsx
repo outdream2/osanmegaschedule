@@ -295,7 +295,7 @@ const WageCardBody: React.FC<WageCardBodyProps> = ({
           {/* 통상시급 입력 헤더 */}
           <div className="px-4 py-2.5 bg-zinc-50/60 border-b border-line flex flex-col gap-1">
             <div className="flex items-baseline flex-wrap gap-x-2">
-              <span className="text-[10.5px] font-bold uppercase tracking-wider text-zinc-500">통상시급</span>
+              <span className="text-[14.5px] font-bold tracking-wide text-zinc-600">통상시급</span>
               <input
                 type="number"
                 step="0.1"

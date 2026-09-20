@@ -39,7 +39,7 @@ export interface EmployeeCardProps {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const fldInput = "w-full bg-white border border-line rounded-lg px-3 py-2 text-[15px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition placeholder:text-zinc-400 placeholder:font-normal";
-const fldLabel = "block text-[10.5px] font-bold uppercase tracking-wider text-zinc-500 mb-1";
+const fldLabel = "block text-[14.5px] font-bold tracking-wide text-zinc-600 mb-1.5";
 const cardInner = "rounded-lg border border-zinc-100 bg-zinc-50/60 p-2.5 flex flex-col gap-2";
 const cardGroupLabel = "text-[14px] font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-1.5 mb-0.5";
 
@@ -103,7 +103,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
       {/* 우선업무 */}
       {(form.employeeCategory === "매장" || form.employeeCategory === "창고") && (
         <div className="rounded-lg border border-indigo-100 bg-indigo-50/40 px-2.5 py-2 flex flex-wrap items-center gap-2">
-          <span className="text-[10.5px] font-bold text-indigo-700 shrink-0">우선업무</span>
+          <span className="text-[14.5px] font-bold text-indigo-700 shrink-0">우선업무</span>
           <div className="flex items-center gap-1">
             {(["매장", "창고"] as const).map(f => {
               const active = form.primaryFocus === f;

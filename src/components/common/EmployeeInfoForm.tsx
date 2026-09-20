@@ -15,7 +15,7 @@
 //   · onSelectEmployee : 성명 검색 드롭다운에서 직원 선택 시 부모 콜백 (계약서 전용)
 
 import React from "react";
-import { Phone, Mail, MapPin, Calendar, User, Briefcase } from "lucide-react";
+import { Phone, Mail, MapPin, Calendar, User, Briefcase, Lock } from "lucide-react";
 import { matchHangul } from "../../lib/hangulSearch";
 import { TIMING } from "../../constants/timing";
 import { POSITIONS } from "../../constants/jobCategories";
@@ -111,7 +111,7 @@ const GENDERS = ["남", "여"] as const;
 
 /** compact (ContractWriter) 스타일 */
 const CMP = {
-  label: "block text-[10.5px] font-bold uppercase tracking-wider text-zinc-500 mb-1",
+  label: "block text-[14.5px] font-bold tracking-wide text-zinc-600 mb-1.5",
   input: "w-full bg-white border border-line rounded-lg px-3 py-2 text-[15px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition placeholder:text-zinc-400 placeholder:font-normal",
   select: "w-full bg-white border border-line rounded-lg px-2 py-2 text-[15px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition cursor-pointer",
 } as const;
@@ -338,9 +338,41 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
 
   return (
     <div className="grid grid-cols-2 gap-2">
-      {/* 성명 (검색 드롭다운 포함) */}
+
+      {/* ① 사번 · readOnly · 유일키 · 성명 앞 첫 번째 필드 */}
+      {show("employeeNumber") && (
+        <div>
+          {isCompact ? (
+            <label className={labelCls}>
+              <span className="flex items-center gap-1">
+                사번
+                <Lock size={10} className="text-zinc-400 shrink-0" />
+              </span>
+            </label>
+          ) : (
+            <span className={labelCls}><User size={9} />사번</span>
+          )}
+          {(isCompact || editing) ? (
+            <div className="relative">
+              <input
+                lang="ko" type="text"
+                value={values.employeeNumber ?? ""}
+                readOnly
+                disabled={disabled}
+                placeholder="직원 선택 시 자동 입력"
+                className={`${inputCls} bg-zinc-50 cursor-not-allowed text-zinc-500 pr-8`}
+              />
+              <Lock size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-300 pointer-events-none" />
+            </div>
+          ) : (
+            <ViewValue value={values.employeeNumber} />
+          )}
+        </div>
+      )}
+
+      {/* ② 성명 (검색 드롭다운 포함) */}
       {show("name") && (
-        <div className={isCompact ? "col-span-2 relative" : "relative"}>
+        <div className={`relative ${show("employeeNumber") ? "" : (isCompact ? "col-span-2" : "")}`}>
           <NameField
             value={values.name ?? ""}
             onChange={(v) => upd("name", v)}
@@ -354,7 +386,27 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
         </div>
       )}
 
-      {/* 2026-08-10 · 이름 아래 · 직군 드롭박스 (사용자 요청 #25 · 기존 position 필드 재활용 · 라벨 "직책" → "직군") */}
+      {/* ③ 생년월일 / 주민번호 */}
+      {show("birthDate") && simpleInput({
+        fieldKey: "birthDate",
+        label: isCompact ? "주민번호" : "생년월일",
+        icon: <Calendar size={9} />,
+        type: isCompact ? "text" : "date",
+        placeholder: isCompact ? "970302-2002227" : undefined,
+      })}
+
+      {/* ④ 성별 */}
+      {show("gender") && <GenderField />}
+
+      {/* ⑤ 직급 */}
+      {show("rank") && simpleInput({
+        fieldKey: "rank",
+        label: "직급",
+        icon: <User size={9} />,
+        placeholder: "사원 · 팀장 · 과장 ...",
+      })}
+
+      {/* ⑥ 직군 드롭박스 */}
       {show("position") && (
         <div>
           {isCompact ? (
@@ -378,27 +430,7 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
         </div>
       )}
 
-      {/* 생년월일 / 주민번호 */}
-      {show("birthDate") && simpleInput({
-        fieldKey: "birthDate",
-        label: isCompact ? "주민번호" : "생년월일",
-        icon: <Calendar size={9} />,
-        type: isCompact ? "text" : "date",
-        placeholder: isCompact ? "970302-2002227" : undefined,
-      })}
-
-      {/* 성별 */}
-      {show("gender") && <GenderField />}
-
-      {/* 직급 */}
-      {show("rank") && simpleInput({
-        fieldKey: "rank",
-        label: "직급",
-        icon: <User size={9} />,
-        placeholder: "사원 · 팀장 · 과장 ...",
-      })}
-
-      {/* 근무지 */}
+      {/* ⑦ 근무지 */}
       {show("workplace") && simpleInput({
         fieldKey: "workplace",
         label: "근무지",
@@ -407,7 +439,7 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
         colSpan: isCompact,
       })}
 
-      {/* 전화번호 */}
+      {/* ⑧ 전화번호 */}
       {show("phone") && simpleInput({
         fieldKey: "phone",
         label: "전화번호",
@@ -415,7 +447,7 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
         placeholder: "010-1234-5678",
       })}
 
-      {/* 이메일 */}
+      {/* ⑨ 이메일 */}
       {show("email") && simpleInput({
         fieldKey: "email",
         label: "이메일",
@@ -424,10 +456,9 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
         placeholder: "email@example.com",
       })}
 
-      {/* 주소 */}
+      {/* ⑩ 주소 */}
       {show("address") && (
         onAddressSearch && (isCompact || editing) ? (
-          /* 주소 검색 버튼 제공 시: 인풋 + 버튼 조합 */
           <div className="col-span-2">
             {isCompact ? (
               <label className={labelCls}>주소</label>
@@ -443,7 +474,6 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
                 disabled={disabled}
                 className={`${inputCls} flex-1 min-w-0`}
               />
-              {/* 2026-08-18 · indigo → brand-deep 통일 */}
               <button
                 type="button"
                 onClick={onAddressSearch}
@@ -465,7 +495,7 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
         )
       )}
 
-      {/* 2026-08-31 · 사용자 지시 · 상세주소 (동·호수·건물명 등) · 주소 아래 별도 입력 */}
+      {/* ⑪ 상세주소 */}
       {show("addressDetail") && simpleInput({
         fieldKey: "addressDetail",
         label: "상세주소",
@@ -474,9 +504,7 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
         colSpan: true,
       })}
 
-      {/* 2026-08-10 · #25 · position 필드 · 이름 아래 직군 드롭박스로 위로 이동됨 · 여기 중복 렌더 제거 */}
-
-      {/* 입사일 */}
+      {/* ⑫ 입사일 */}
       {show("hireDate") && simpleInput({
         fieldKey: "hireDate",
         label: "입사일",
@@ -484,13 +512,6 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
         type: "date",
       })}
 
-      {/* 사번 · 숫자만 · EMP- 접두 X · 관리자 수동 입력 · unique */}
-      {show("employeeNumber") && simpleInput({
-        fieldKey: "employeeNumber",
-        label: "사번",
-        icon: <User size={9} />,
-        placeholder: "예: 1, 100, 2026001",
-      })}
     </div>
   );
 };
