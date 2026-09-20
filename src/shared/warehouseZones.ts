@@ -107,10 +107,12 @@ export function classifyArrivalSlot(locationCode: string | null | undefined): Ar
 // ── Slot zone 파생 ────────────────────────────────────────────────────────────
 
 /** location 문자열 → zone 코드를 slot에 지능 배정
- *  · 창고1 코드 → w1zone · 창고2 코드 → w2zone
- *  · 나머지 (매장 진열구역) → s1/s2/s3 순차
- *  · 예: "1/2/8A" → s1=1, s2=2, w1=8A, w2=null, s3=null
- *  2026-09-20 fix · s1/s2/s3 항상 null 버그 수정 포함 (매장 슬롯 순차 배정)
+ *  · products.location · ERP 위치 · 창고 slot 판별용
+ *  · **창고1 아니면 · 모두 창고2** (classifyArrivalSlot 과 동일 규칙 · 통일)
+ *  · s1/s2/s3 · null (매장 zone 은 inventory_checks.store*_zone 에서 별도 조회)
+ *  2026-09-20 · 원복 · 이전 s1/s2/s3 순차 배정 fix · classifyArrivalSlot 과 불일치 유발
+ *    · 테스트2* 상품 (location=17 등) · 이전 · s1zone="17" · w2zone=null → 실재고 테이블 창고 안 보임 버그
+ *    · 원복 · w2zone="17" · s1/s2/s3=null → ScanPage·ProductArrival·RealStockTable 통일
  */
 export function assignZonesToSlots(
   input: string | null | undefined,
@@ -119,22 +121,21 @@ export function assignZonesToSlots(
   const codes = String(input ?? "").split(/[\/,·]/).map(s => s.trim()).filter(Boolean);
   let w1: string | null = null;
   let w2: string | null = null;
-  const stores: string[] = [];
   for (const raw of codes) {
     const c = raw.toUpperCase().replace(/\s+/g, "");
     if (!isValidZoneCode(c)) continue;
     if (!w1 && WAREHOUSE_1_CODES.has(c)) { w1 = raw; continue; }
-    if (!w2 && WAREHOUSE_2_CODES.has(c)) { w2 = raw; continue; }
-    stores.push(raw);
+    // 창고1 아니면 · 모두 창고2 (classifyArrivalSlot 과 동일)
+    if (!w2) { w2 = raw; continue; }
   }
   if (!w1 && categoryCode) {
     const cat = String(categoryCode).trim().toUpperCase().replace(/\s+/g, "");
     if (WAREHOUSE_1_CODES.has(cat)) w1 = categoryCode.trim();
   }
   return {
-    s1zone: stores[0] ?? null,
-    s2zone: stores[1] ?? null,
-    s3zone: stores[2] ?? null,
+    s1zone: null,
+    s2zone: null,
+    s3zone: null,
     w1zone: w1,
     w2zone: w2,
   };
