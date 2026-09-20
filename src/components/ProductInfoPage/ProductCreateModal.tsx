@@ -484,11 +484,16 @@ export const ProductCreateModal: React.FC<Props> = ({
                   <Field icon={<Type size={14} />} label="상품명" required>
                     <input
                       lang="ko" type="text"
+                      inputMode="text"
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      spellCheck={false}
                       value={form.product_name}
                       onChange={(e) => set("product_name", e.target.value)}
                       className={inputCls}
                       placeholder="예: 타이레놀 500mg"
                       maxLength={200}
+                      autoFocus={lockCode}
                     />
                   </Field>
                 </div>

@@ -133,6 +133,7 @@
 | **#318** | **매장 상세위치 저장 pipeline · 전수 조사** (사용자 지시 · 2026-09-20 · 잔여) | 🟡 P2 | 상품 등록·편집 · 실재고 · 상품입고 · 저장 시 store1 detail 확인 · Task #315 부분 fix 후 잔여 |
 | **#319** | **공통 ShelfPositionPicker 컴포넌트 추출** (사용자 지시 · 2026-09-20 · 잔여) | 🟢 P3 | ProductCreateModal · RealStockTablePage · ProductArrivalPage · InventoryEditModal · 4곳 공통화 · 별도 세션 |
 | **#320** | **근로계약서 작성 · 좌측 페이지 종합 개선** (사용자 지시 · 2026-09-20 · UI 위임 · 다중 chain) | 🟡 P2 | 업무요청 > 서류작성 > 근로계약서 작성 · **1차** (진행 중) · ① 직군 리스트 · settings 값 파생 (하드코딩 X) · ② 계약유형 · 연차 다음줄에 **근무요일** 추가 · ③ 담당업무 섹션에서 **보험 제거** · 하단 보험 섹션에 라벨 추가 · **2차** (chain 대기) · ④ **라벨 폰트 +4 · 전체 통일** (fldLabel 단일 상수 · 들쭉날쭉 X) · ⑤ **근로자 정보 카드** · 라벨+입력 · 라벨+선택 나란히 · **사번 성명 앞** · 사번 = 수정 불가 유일키 (readOnly + 시각적 lock 표시) · ⑥ 목업 (docs/UI_MOCKUP_2026-09-14.html) · 최신 트렌드 · Linear/Vercel 톤 · 세련·예쁨 · UI 대원칙 준수 |
+| **#321** | **발주 발송 · 확인창 · 공급사별 상세내역** (사용자 지시 · 2026-09-20) | 🟡 P2 | 발주서 · 발주 발송 버튼 클릭 시 · 확인창(dialog/modal) 표시 · `공급사 XX의 상품 YY *N개* / 상품 ZZ *M개*` 형식 · 공급사별 그룹핑 · 상품·수량 명시 · 한번 더 확인 후 실제 발송 · 오발주 방지 |
 
 ---
 
@@ -143,8 +144,8 @@
 | # | 버그 | 우선순위 | 재현·비고 |
 |---|-----|-------|---------|
 <!-- E-001 ✅ · SplitPanel capture phase click blocker · isDraggingRef · 2026-09-20 완료 -->
+<!-- E-003 ✅ · ProductCreateModal · 상품명 · autoFocus (lockCode) + autoCapitalize/Correct/spellCheck off · 2026-09-20 완료 -->
 | **E-002** | **근로계약서 · 구글드라이브 업로드 실패** (사용자 보고 · 2026-09-20) | 🔴 P1 | 서류작성 > 근로계약서 · 완성 후 Google Drive 업로드 · 저장 실패 · Google API 인증·권한·엔드포인트·CORS·토큰 만료 등 원인 조사 필요 |
-| **E-003** | **바코드스캔 · 상품명 입력창 · 한글 우선 입력** (사용자 보고 · 2026-09-20) | 🟡 P2 | 바코드스캔 페이지 · 상품명 input · 포커스 시 IME 한글 모드 우선 · `lang="ko"` + `inputMode` + Safari/Chrome IME 힌트 · 영문으로 시작되는 문제 fix |
 <!-- 2026-09-18 · #115 · real_map DROP · 이미 2026-09-08 실행 완료 확인 (server.ts:95 주석) -->
 <!-- ~~#115~~ · real_map DROP · ✅ 완료 (2026-09-08 · Supabase SQL Editor) -->
 <!-- 2026-09-18 · T-RSTP-TOOLBAR 완료 · [46] 커밋 `780677f5` · flex-col + lg:flex-row 반응형 -->
