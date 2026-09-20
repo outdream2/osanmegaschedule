@@ -302,12 +302,14 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                     ].join(" ")}
                     style={active ? { filter: `drop-shadow(0 0 8px ${NAV_ACCENT[item.color].hex}) drop-shadow(0 0 16px ${NAV_ACCENT[item.color].hex}80)` } : undefined}
                   />
-                  <span>{item.label}</span>
-                  {item.label === "승인대기" && (approvalBadge ?? 0) > 0 && (
-                    <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold tabular-nums leading-none shrink-0 group-data-[collapsible=icon]:hidden">
-                      {(approvalBadge ?? 0) > 99 ? "99+" : approvalBadge}
-                    </span>
-                  )}
+                  <span className="inline-flex items-center gap-1.5">
+                    {item.label}
+                    {item.label === "승인대기" && (approvalBadge ?? 0) > 0 && (
+                      <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold tabular-nums leading-none shrink-0 group-data-[collapsible=icon]:hidden">
+                        {(approvalBadge ?? 0) > 99 ? "99+" : approvalBadge}
+                      </span>
+                    )}
+                  </span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             );
