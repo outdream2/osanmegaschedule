@@ -3384,4 +3384,57 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 
 ---
 
+## [83] 연차승인 페이지 재구성 + 카드 UI 개선 + 사이드바 승인대기 배지 (2026-09-20)
+
+**변경 파일:** `src/components/LeavePage/LeavePage.tsx`, `src/components/layout/SideNav.tsx`
+
+### 테스트 방법
+
+**공통 준비:** 서버 재시작 (`npm run dev`) · 관리자 계정(level 2+)으로 로그인
+
+**① LeavePage approval 뷰 재구성**
+1. 사이드바 "승인대기" 클릭 → `approval` 뷰 진입
+2. **TabBar 없음** 확인 · "승인 대기" + "전체 목록" 2탭이 사라짐
+3. 상단 · "승인 대기" 카드 리스트 표시 · pending 건수 amber 배지 표시
+4. 하단 · "전체 이력" 표 표시 · 전체 신청 최근순 정렬
+5. 빈 상태 · 승인 대기 없으면 EmptyState "대기 중인 신청 없음" 표시
+
+**② 승인 대기 카드 UI 개선 확인**
+1. 각 pending 카드 · `rounded-2xl` · 얇은 border-zinc-100
+2. 동그란 avatar 없음 · 이름(bold) + 유형 pill (indigo bg) 수평 배치
+3. 기간 · CalendarDays 아이콘 + tabular-nums
+4. 사유 · bg-zinc-50 박스 (없으면 미표시)
+5. 신청 시각 · 하단 zinc-400
+6. "검토하기" 버튼 → 클릭 시 메모 입력 + 승인(emerald)/반려(rose border) 버튼 확장
+7. 승인 처리 → 카드 즉시 사라짐 · "전체 이력" 표에 승인 상태 반영
+8. 반려 처리 · 사유 입력(선택) → 반려 상태 표로 이동
+9. 삭제 버튼(Trash2) → 확인 다이얼로그 후 목록 제거
+
+**③ 전체 이력 표 (하단)**
+1. 체크박스(관리자) · 개별/전체 선택 → "선택 삭제" 버튼 활성화
+2. "전체 삭제" 버튼 → 확인 다이얼로그 후 전체 제거
+3. PDF 버튼 → 신청서 미리보기 모달 오픈
+4. 상태별 StatusPill · pending(amber) · approved(emerald) · rejected(rose)
+5. 새로고침 버튼 → 최신 데이터 갱신
+
+**④ apply 뷰 (직원/관리자 신청 탭)**
+1. 기존 신청 폼 · 이력 표 · 정상 동작 유지 (회귀 없음)
+2. RequestHistoryTable 재사용 · 직원 뷰 · "취소" 컬럼 표시
+3. 관리자 apply 뷰 · "신청자" 컬럼 + 체크박스 표시
+
+**⑤ 사이드바 승인대기 배지**
+1. 사이드바 "업무요청" 그룹 펼치기 → "승인대기" 항목 우측 rose 배지 표시
+2. 배지 숫자 = leave pending + resignation pending 합계
+3. 승인 처리 후 → 60초 이내 배지 갱신 (또는 즉시 갱신 확인)
+4. 모든 대기 처리 완료 → 배지 사라짐 (0일 때 미표시)
+5. 사이드바 접힘(icon 모드) → 배지 숨김 (group-data-[collapsible=icon]:hidden)
+
+### 회귀 시나리오
+1. `createLeaveRequest` · `reviewLeaveRequest` · `deleteLeaveRequest` 시그니처 변경 없음
+2. `dispatchApprovalChange("leave")` · 모든 경로 호출 유지
+3. apply 뷰 기능 · 신청/취소/삭제 · 100% 동일 동작
+4. PDF 모달 · 오프스크린 캡처 · 다운로드 정상
+
+---
+
 ## 진행 중 태스크 (완료 시 추가)
