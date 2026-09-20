@@ -158,9 +158,11 @@ describe("filterGroupsForSession", () => {
     const emp = { level: 1, role: "employee" } as AuthSession;
     const groups = filterGroupsForSession(emp, null, "active");
     const approvals = groups.find((g) => g.id === "approvals");
+    // 2026-09-20 · 사이드바 재구성 후 · 일반 직원 · approvals 그룹 items 모두 필터 시 · 그룹 제거됨
+    //   · docs writer 안 보임 (SPIRIT) · undefined 도 안전 처리
     const hasDocWriter = approvals?.items.some(
       (it) => it.subTab === "document-writer",
-    );
+    ) ?? false;
     expect(hasDocWriter).toBe(false);
   });
 
@@ -178,9 +180,11 @@ describe("filterGroupsForSession", () => {
     const emp = { level: 1, role: "employee" } as AuthSession;
     const groups = filterGroupsForSession(emp, null, "retired");
     const approvals = groups.find((g) => g.id === "approvals");
+    // 2026-09-20 · 사이드바 재구성 후 · 일반 직원 · approvals 그룹 items 모두 필터 시 · 그룹 제거됨
+    //   · docs writer 안 보임 (SPIRIT) · undefined 도 안전 처리
     const hasDocWriter = approvals?.items.some(
       (it) => it.subTab === "document-writer",
-    );
+    ) ?? false;
     expect(hasDocWriter).toBe(false);
   });
 
@@ -204,9 +208,11 @@ describe("filterGroupsForSession", () => {
     const emp = { level: 1, role: "employee" } as AuthSession;
     const groups = filterGroupsForSession(emp, null);
     const approvals = groups.find((g) => g.id === "approvals");
+    // 2026-09-20 · 사이드바 재구성 후 · 일반 직원 · approvals 그룹 items 모두 필터 시 · 그룹 제거됨
+    //   · docs writer 안 보임 (SPIRIT) · undefined 도 안전 처리
     const hasDocWriter = approvals?.items.some(
       (it) => it.subTab === "document-writer",
-    );
+    ) ?? false;
     expect(hasDocWriter).toBe(false);
   });
 });

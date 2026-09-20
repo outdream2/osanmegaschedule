@@ -84,6 +84,8 @@ describe("checkEnv · recommended · warnings", () => {
     process.env.GEMINI_API_KEY = "x";
     process.env.CLOUDINARY_URL = "x";
     process.env.GOOGLE_APPLICATION_CREDENTIALS = "x";
+    // 2026-09-20 · 공휴일 API 키 추가 (data.go.kr) · #70
+    process.env.HOLIDAY_API_KEY = "x";
     const r = checkEnv();
     expect(r.warnings).toHaveLength(0);
   });
