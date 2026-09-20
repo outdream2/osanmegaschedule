@@ -3604,4 +3604,25 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 2. 인라인 편집 · 저장·취소 flow 100% 동일
 3. 진열위치 편집 · ShelfPositionInput · +위치추가 버튼 정상
 
+---
+
+### [87] warehouseZones SSOT 통합 · 회귀 검증
+
+**배경:** src/shared/warehouseZones.ts 신설 · WAREHOUSE_1_CODES·isValidZoneCode·buildInitialShelfPositions 등 세 곳 복사 → 단일 SSOT
+
+**진입:** 진열위치·창고 관련 기능이 있는 임의 상품
+
+**테스트:**
+1. 상품 등록 (POST /api/products) → shelf_positions 자동 배정 정상 (창고1 코드 포함 location → warehouse1 키 포함)
+2. 스캔 페이지 → 상품 스캔 → 창고1/창고2 슬롯 표시 정상
+3. 실재고 테이블 페이지 → 구역(w1zone/w2zone/s1zone) 표시 정상
+4. 입고 관리 페이지 → ArrivalRowCard 슬롯 배정 정상
+5. 상품정보 페이지 → ShelfPositionsBadge 렌더 정상
+6. backfill-shelf-positions API 호출 → 오류 없음
+
+**회귀 시나리오:**
+- 창고1 코드 ("24","25","26","27","7B","8A") 포함 상품 → showW1=true · showW2=false 확인
+- 나머지 코드 (예: "32") → showW1=false · showW2=true 확인
+- location 없는 상품 → 둘 다 true (기본 표시) 확인
+
 ## 진행 중 태스크 (완료 시 추가)
