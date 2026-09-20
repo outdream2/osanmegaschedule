@@ -128,7 +128,7 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
       // 2026-09-20 · 진단 · products 조회 결과 로그 · RLS 의심
       const { data: prods, error: prodsErr } = await supabase
         .from("products")
-        .select("product_code, product_name, spec, display_location, location, location_detail")
+        .select("product_code, product_name, spec, display_location, location")
         .in("product_code", productCodes);
       console.log(`[display-requests DIAG] products.in query · codes=[${productCodes.slice(0,3).join(",")}] · found=${prods?.length ?? 0} · err=${prodsErr?.message ?? "none"}`);
       const infoMap = new Map<string, { name: string; spec: string | null; display_location: string | null; location: string | null; location_detail: string | null }>();
@@ -139,7 +139,8 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
           spec: p.spec ?? null,
           display_location: (p as any).display_location ?? null,
           location: (p as any).location ?? null,
-          location_detail: (p as any).location_detail ?? null,
+          // 2026-09-20 · location_detail · products 에 없는 컬럼 · null 고정 (Supabase 에러 방지)
+          location_detail: null,
         });
       }
       // 2026-09-18 · 2차 fallback · leading zero 제거된 코드로 재조회
@@ -158,7 +159,7 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
         if (candidates.size > 0) {
           const { data: prods2 } = await supabase
             .from("products")
-            .select("product_code, product_name, spec, display_location, location, location_detail")
+            .select("product_code, product_name, spec, display_location, location")
             .in("product_code", Array.from(candidates));
           for (const p of prods2 ?? []) {
             const dbCode = String(p.product_code ?? "").trim();
@@ -169,7 +170,8 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
               spec: p.spec ?? null,
               display_location: (p as any).display_location ?? null,
               location: (p as any).location ?? null,
-              location_detail: (p as any).location_detail ?? null,
+              // 2026-09-20 · products.location_detail 없음 · null 고정
+              location_detail: null,
             });
           }
         }
