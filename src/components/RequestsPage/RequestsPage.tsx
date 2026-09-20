@@ -511,7 +511,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   //     - 재고 확인 · 구역 불일치 · 점심 불참 · 요청확인 포함 (사용자 지시)
   //   · 현재 tab 이 속한 그룹만 TABS 에 노출
   const APPROVAL_TABS: Tab[] = ["leave", "vendor", "resignation"];
-  const REQUEST_TABS: Tab[] = ["display", "lunch", "inventory", "mismatch"];
+  // 2026-09-20 · 사용자 지시 · 재고확인 (inventory) · 요청확인 그룹에서 제거
+  const REQUEST_TABS: Tab[] = ["display", "lunch", "mismatch"];
   const currentGroup: "approval" | "request" = APPROVAL_TABS.includes(tab) ? "approval" : "request";
 
   const ALL_TABS: [Tab, string, number, string, string, string, string][] = [
@@ -522,8 +523,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       ...(isLunchHidden ? [] : ([
         ["lunch",     "점심불참",   lunchTabCount,     "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
       ] as [Tab, string, number, string, string, string, string][])),
-      // 2026-09-20 · 사용자 지시 · 요청확인 그룹 · 재고 확인 · 구역 불일치 추가 (일단)
-      ["inventory", "재고확인",   inventoryTabCount, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-violet-100 text-violet-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
+      // 2026-09-20 · 사용자 지시 · 요청확인 그룹 · 구역 불일치 (재고확인 제거)
       ["mismatch",  "구역불일치", mismatchTabCount,  "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-rose-100 text-rose-700",      "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
       ...(isLeaveHidden ? [] : ([
         ["leave",     "연차승인",   leavePendingCount, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
