@@ -143,9 +143,13 @@
 - 테스트 · 3463 pass · 회귀 X
 
 ### [129] 전체 탭 메뉴 · 글씨 +1
-**커밋** · `e530f292` (NavDesktopTab · +1)
+**커밋** · `e530f292` (NavDesktopTab) · `9ebe0a66` (통합)
 - NavDesktopTab · text-[19]→[20]·[20]→[21]·[21]→[22]
-- 백그라운드 agent · 나머지 탭 컴포넌트 (NavMobileTab · TabBar 등) · 진행 중
+- NavMobileTab · 14 → 15
+- index.css · tab-l1/l2/l3 CSS 경로 · 각 +1
+- TabBar.tsx · SplitRightTabs.tsx · inline override · 각 +1
+- SplitRightTabs sm · 이전 14 오탈자 · 16 정렬 교정 (부수)
+- TS + build 통과 · 8275 modules · 회귀 X
 
 ---
 
