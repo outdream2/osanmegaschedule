@@ -18,25 +18,20 @@ function readBannerOpen(): boolean {
   }
 }
 
-interface TypePillProps {
+// 2026-09-20 · 사용자 지시 · 배지 대신 · 깔끔한 텍스트
+interface TypeTextProps {
   type: string;
 }
 
-const TYPE_PILL: Record<string, { bg: string; text: string }> = {
-  월차:    { bg: "bg-amber-100",   text: "text-amber-800"  },
-  오전반차: { bg: "bg-sky-100",     text: "text-sky-800"    },
-  오후반차: { bg: "bg-indigo-100",  text: "text-indigo-800" },
+const TYPE_COLOR: Record<string, string> = {
+  월차:    "text-amber-700",
+  오전반차: "text-sky-700",
+  오후반차: "text-indigo-700",
 };
 
-const TypePill: React.FC<TypePillProps> = ({ type }) => {
-  const style = TYPE_PILL[type] ?? { bg: "bg-zinc-100", text: "text-zinc-700" };
-  return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-md text-[13px] font-bold ${style.bg} ${style.text}`}
-    >
-      {type}
-    </span>
-  );
+const TypeText: React.FC<TypeTextProps> = ({ type }) => {
+  const cls = TYPE_COLOR[type] ?? "text-zinc-600";
+  return <span className={`text-[14px] font-semibold ${cls}`}>{type}</span>;
 };
 
 interface UpcomingLeaveBannerProps {
@@ -96,8 +91,8 @@ export const UpcomingLeaveBanner: React.FC<UpcomingLeaveBannerProps> = ({ rows }
               <span className="text-[14px] font-semibold text-zinc-600 tabular-nums">
                 {row.dateLabel}
               </span>
-              {/* 유형 */}
-              <TypePill type={row.type} />
+              {/* 유형 · 텍스트 (배지 X · 사용자 지시) */}
+              <TypeText type={row.type} />
             </div>
           ))}
         </div>
