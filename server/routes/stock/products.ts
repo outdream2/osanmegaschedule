@@ -25,6 +25,9 @@ import { clearLowStockCache } from "./stockManage";
 //   · POST /api/products · buildInitialShelfPositions 로 · inventory_checks row 자동 생성
 //   · products.location 기반 · 창고1/2/매장1 자동 배정 (사용자 원칙)
 import { buildInitialShelfPositions, applyInitialShelfPositionsForCodes, backfillAllShelfPositions } from "../../utils/shelfPositionAssign";
+// 2026-09-20 · #318 P2 · PATCH shelf-positions · POST inventory-checks 와 동일 pipeline 으로 통일
+import { mergeShelfPositions, checkShelfPositionConflicts, fetchProductDisplayLoc } from "../display/inventoryChecksShelfMerge";
+import { getStorageLocations } from "../settings/settings";
 
 const router = Router();
 
@@ -1012,7 +1015,16 @@ router.patch("/api/products/:code/shelf-positions", authorize(1), validateBody(S
   }
   const existing = existingList?.[0] ?? null;
   const existingPos = ((existing?.shelf_positions ?? {}) as Record<string, string | null>);
-  const merged: Record<string, string | null> = { ...existingPos, ...body.shelf_positions };
+
+  // 2026-09-20 · #318 P2 · mergeShelfPositions (정규화 + required_detail 검증) 호출
+  const storageLocs = await getStorageLocations();
+  const { merged, dupCheckTargets } = mergeShelfPositions(existingPos, body.shelf_positions, storageLocs);
+
+  // 2026-09-20 · #318 P2 · checkShelfPositionConflicts (dup pre-check) 호출
+  if (dupCheckTargets.length > 0) {
+    const currentDisplayLoc = await fetchProductDisplayLoc(code);
+    await checkShelfPositionConflicts(code, currentDisplayLoc, dupCheckTargets);
+  }
 
   if (existing) {
     console.log("[inventory_checks PATCH shelf-positions] update", { code, existingId: existing.id, merged });
