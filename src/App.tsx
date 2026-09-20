@@ -328,291 +328,95 @@ export default function App() {
     navigate(next as Page);
   };
 
-  let pageContent: React.ReactElement;
+  // 공통 props (모든 authenticated 페이지)
+  const commonProps = {
+    authSession: authSession!,
+    onBack: goBack,
+    onNavigate: navigateInner,
+    onLogout: handleLogout,
+  };
+
+  // lazy 컴포넌트 Suspense 래퍼
+  const Lazy = ({ Component, extraProps }: { Component: React.ComponentType<any>; extraProps?: Record<string, unknown> }) => (
+    <React.Suspense fallback={<PageFallback />}>
+      <Component {...commonProps} {...extraProps} />
+    </React.Suspense>
+  );
+
+  // 페이지 렌더 매핑 테이블
+  // 특수 케이스 3건 · 클로저로 외부 state/handler 접근
+  type PageRenderer = () => React.ReactElement;
+  const PAGE_MAP: Partial<Record<Page, PageRenderer>> = {
+    schedule: () => (
+      <SchedulePage
+        {...commonProps}
+        initialEditEmployeeId={pendingEditEmpId}
+        onEditEmployeeHandled={() => setPendingEditEmpId(null)}
+        onEditEmployeeAtStaffManage={(empId) => navigateInnerWithOptions("business-manage", { employeeId: empId, fromPage: "schedule" })}
+      />
+    ),
+    reservation: () => <ReservationPage onBack={goBack} authSession={authSession!} />,
+    scan: () => <ScanPage {...commonProps} />,
+    productarrival: () => <ProductArrivalPage {...commonProps} />,
+    ocr: () => <OcrPage {...commonProps} />,
+    requests: () => <RequestsPage {...commonProps} />,
+    leave: () => <LeavePage {...commonProps} />,
+    // 2026-09-04 · DisplayPage · schedule 페이지 연동
+    display: () => (
+      <DisplayPage
+        {...commonProps}
+        onOpenEmployeeEdit={(id) => { setPendingEditEmpId(id); navigate("schedule"); }}
+      />
+    ),
+    lunch: () => <LunchPage {...commonProps} />,
+    stockcheck: () => <StockCheckPage {...commonProps} />,
+    stockarrivals: () => <StockArrivalPage {...commonProps} />,
+    board: () => <BoardPage {...commonProps} />,
+    mypage: () => <MyPage {...commonProps} />,
+    permissions: () => <PermissionsPage {...commonProps} />,
+    // 2026-09-04 · #23 · vendor 로그인 시 employeeName → vendorName
+    "vendor-stock": () => (
+      <VendorStockPage {...commonProps} vendorName={authSession?.employeeName ?? ""} />
+    ),
+    "zone-labels": () => (
+      <React.Suspense fallback={<PageFallback />}>
+        <ZoneLabelsEditor authSession={authSession!} onBack={goBack} />
+      </React.Suspense>
+    ),
+    // 2026-08-10 · business-manage · initialEmployeeId / initialFromPage 특수 케이스
+    "business-manage": () => (
+      <Lazy
+        Component={BusinessManagePage}
+        extraProps={{ initialEmployeeId: bmInitialEmployeeId, initialFromPage: bmInitialFromPage as AppNavPage | null }}
+      />
+    ),
+    pharmacist: () => <Lazy Component={PharmacistPage} />,
+    "hr-forms": () => <Lazy Component={HrFormsPage} />,
+    "approval-request": () => <Lazy Component={ApprovalRequestPage} />,
+    branding: () => <Lazy Component={BrandingSettingsPage} />,
+    "company-info": () => <Lazy Component={CompanyInfoSettingsPage} />,
+    "season-settings": () => <Lazy Component={SeasonSettingsPage} />,
+    "system-settings": () => <Lazy Component={SystemSettingsPage} />,
+    "schedule-settings": () => <Lazy Component={ScheduleSettingsPage} />,
+    "order-settings": () => <Lazy Component={OrderSettingsPage} />,
+    "settings-hub": () => <Lazy Component={SettingsHubPage} />,
+  };
+
+  const landingEl = (
+    <LandingPage
+      onNavigate={handleNavigate}
+      authSession={authSession}
+      onLogout={handleLogout}
+      onAuthOnly={setAuthSession}
+    />
+  );
 
   // 2026-09-01 · 보안 P0 · 미인증 · LandingPage 강제 · 다른 페이지 접근 완전 차단
   //   · authSession null (로그아웃·세션만료·미로그인) 상태 · page 값 무시 · 오직 LandingPage 렌더
   //   · popstate·history 조작·직접 setPage 로 접근 시도 시 · 무조건 로그인 화면
   //   · SSO consume 진행 중 (setAuthSession 완료 전) 도 안전 · null 이면 landing
-  if (!authSession) {
-    pageContent = (
-      <LandingPage
-        onNavigate={handleNavigate}
-        authSession={null}
-        onLogout={handleLogout}
-        onAuthOnly={setAuthSession}
-      />
-    );
-  } else if (page === "schedule") {
-    pageContent = (
-      <SchedulePage
-        onBack={goBack}
-        onLogout={handleLogout}
-        onNavigate={navigateInner}
-        initialEditEmployeeId={pendingEditEmpId}
-        onEditEmployeeHandled={() => setPendingEditEmpId(null)}
-        authSession={authSession}
-        onEditEmployeeAtStaffManage={(empId) => navigateInnerWithOptions("business-manage", { employeeId: empId, fromPage: "schedule" })}
-      />
-    );
-  } else if (page === "reservation") {
-    pageContent = <ReservationPage onBack={goBack} authSession={authSession} />;
-  } else if (page === "scan") {
-    pageContent = (
-      <ScanPage
-        onBack={goBack}
-        authSession={authSession}
-        onNavigate={navigateInner}
-        onLogout={handleLogout}
-      />
-    );
-  } else if (page === "productarrival") {
-    pageContent = (
-      <ProductArrivalPage
-        onBack={goBack}
-        authSession={authSession}
-        onNavigate={navigateInner}
-        onLogout={handleLogout}
-      />
-    );
-  } else if (page === "ocr") {
-    pageContent = (
-      <OcrPage
-        onBack={goBack}
-        authSession={authSession}
-        onNavigate={navigateInner}
-        onLogout={handleLogout}
-      />
-    );
-  } else if (page === "requests") {
-    pageContent = (
-      <RequestsPage
-        onBack={goBack}
-        authSession={authSession}
-        onNavigate={navigateInner}
-        onLogout={handleLogout}
-      />
-    );
-  } else if (page === "leave") {
-    pageContent = (
-      <LeavePage
-        onBack={goBack}
-        authSession={authSession}
-        onNavigate={navigateInner}
-        onLogout={handleLogout}
-      />
-    );
-  } else if (page === "display") {
-    pageContent = (
-      <DisplayPage
-        onBack={goBack}
-        authSession={authSession}
-        onNavigate={navigateInner}
-        onLogout={handleLogout}
-        onOpenEmployeeEdit={(id) => {
-          setPendingEditEmpId(id);
-          navigate("schedule");
-        }}
-      />
-    );
-  } else if (page === "lunch") {
-    pageContent = (
-      <LunchPage
-        onBack={goBack}
-        authSession={authSession}
-        onNavigate={navigateInner}
-        onLogout={handleLogout}
-      />
-    );
-  } else if (page === "stockcheck") {
-    pageContent = <StockCheckPage onBack={goBack} authSession={authSession} onNavigate={navigateInner} onLogout={handleLogout} />;
-  } else if (page === "stockarrivals") {
-    pageContent = <StockArrivalPage authSession={authSession} onBack={goBack} onNavigate={navigateInner} onLogout={handleLogout} />;
-  } else if (page === "board") {
-    pageContent = (
-      <BoardPage
-        authSession={authSession}
-        onBack={goBack}
-        onNavigate={navigateInner}
-        onLogout={handleLogout}
-      />
-    );
-  } else if (page === "mypage") {
-    pageContent = (
-      <MyPage
-        authSession={authSession}
-        onBack={goBack}
-        onNavigate={navigateInner}
-        onLogout={handleLogout}
-      />
-    );
-  } else if (page === "permissions") {
-    pageContent = (
-      <PermissionsPage
-        authSession={authSession}
-        onBack={goBack}
-        onLogout={handleLogout}
-        onNavigate={navigateInner}
-      />
-    );
-  } else if (page === "vendor-stock") {
-    // 2026-09-04 · #23 · 공급사 재고확인 · 전용 페이지 (모달에서 이관)
-    //   · vendor 로그인 시 · authSession.employeeName 을 vendorName 으로 전달
-    //   · admin/superadmin 이 접근하면 · 본인 이름 (기본) · 공급사 미지정 시 조회 결과 없음
-    pageContent = (
-      <VendorStockPage
-        vendorName={authSession?.employeeName ?? ""}
-        authSession={authSession}
-        onBack={goBack}
-        onNavigate={navigateInner}
-        onLogout={handleLogout}
-      />
-    );
-  } else if (page === "zone-labels") {
-    pageContent = (
-      <React.Suspense fallback={<PageFallback />}>
-        <ZoneLabelsEditor authSession={authSession} onBack={goBack} />
-      </React.Suspense>
-    );
-  } else if (page === "business-manage") {
-    // 2026-08-03 · 경영관리 통합 페이지 (직원관리 · 연차승인 · 점심불참 · 직원권한 서브탭)
-    pageContent = (
-      <React.Suspense fallback={<PageFallback />}>
-        <BusinessManagePage
-          authSession={authSession}
-          onBack={goBack}
-          onNavigate={navigateInner}
-          onLogout={handleLogout}
-          initialEmployeeId={bmInitialEmployeeId}
-          initialFromPage={bmInitialFromPage as AppNavPage | null}
-        />
-      </React.Suspense>
-    );
-  } else if (page === "pharmacist") {
-    // 2026-08-03 · 약사 전용 페이지 · 교육자료·복약지도 등 · 약사 rank 만 접근
-    pageContent = (
-      <React.Suspense fallback={<PageFallback />}>
-        <PharmacistPage
-          authSession={authSession}
-          onBack={goBack}
-          onNavigate={navigateInner}
-          onLogout={handleLogout}
-        />
-      </React.Suspense>
-    );
-  } else if (page === "hr-forms") {
-    // 2026-08-03 · 각종 양식 (인사 문서 관리) · 별도 라우팅 진입 시 · BusinessManagePage 안 서브탭에서도 접근 가능
-    pageContent = (
-      <React.Suspense fallback={<PageFallback />}>
-        <HrFormsPage authSession={authSession} onBack={goBack} onNavigate={navigateInner} onLogout={handleLogout} />
-      </React.Suspense>
-    );
-  } else if (page === "approval-request") {
-    // 2026-08-12 · 승인요청 통합 페이지 (연차승인·점심불참·서류작성 서브탭)
-    pageContent = (
-      <React.Suspense fallback={<PageFallback />}>
-        <ApprovalRequestPage
-          authSession={authSession}
-          onBack={goBack}
-          onNavigate={navigateInner}
-          onLogout={handleLogout}
-        />
-      </React.Suspense>
-    );
-  } else if (page === "branding") {
-    // 2026-08-12 · Phase 5 · 브랜딩·연락처·도장·모바일 가시성 통합 설정 페이지
-    pageContent = (
-      <React.Suspense fallback={<PageFallback />}>
-        <BrandingSettingsPage
-          authSession={authSession}
-          onBack={goBack}
-          onNavigate={navigateInner}
-          onLogout={handleLogout}
-        />
-      </React.Suspense>
-    );
-  } else if (page === "company-info") {
-    // 2026-08-12 · 회사정보 설정 페이지 (관리자 lv≥9)
-    pageContent = (
-      <React.Suspense fallback={<PageFallback />}>
-        <CompanyInfoSettingsPage
-          authSession={authSession}
-          onBack={goBack}
-          onNavigate={navigateInner}
-          onLogout={handleLogout}
-        />
-      </React.Suspense>
-    );
-  } else if (page === "season-settings") {
-    // 2026-08-12 · 계절 정의 설정 페이지 (관리자 lv≥9)
-    pageContent = (
-      <React.Suspense fallback={<PageFallback />}>
-        <SeasonSettingsPage
-          authSession={authSession}
-          onBack={goBack}
-          onNavigate={navigateInner}
-          onLogout={handleLogout}
-        />
-      </React.Suspense>
-    );
-  } else if (page === "system-settings") {
-    // 2026-08-12 · 시스템 설정 페이지 (env 편집 · 관리자 lv≥9)
-    pageContent = (
-      <React.Suspense fallback={<PageFallback />}>
-        <SystemSettingsPage
-          authSession={authSession}
-          onBack={goBack}
-          onNavigate={navigateInner}
-          onLogout={handleLogout}
-        />
-      </React.Suspense>
-    );
-  } else if (page === "schedule-settings") {
-    // 2026-09-04 · 스케줄 설정 (기본연차일 직군별 · 관리자 lv≥9)
-    pageContent = (
-      <React.Suspense fallback={<PageFallback />}>
-        <ScheduleSettingsPage
-          authSession={authSession}
-          onBack={goBack}
-          onNavigate={navigateInner}
-          onLogout={handleLogout}
-        />
-      </React.Suspense>
-    );
-  } else if (page === "order-settings") {
-    // 2026-09-07 · 발주 설정 (SMTP · 이메일)
-    pageContent = (
-      <React.Suspense fallback={<PageFallback />}>
-        <OrderSettingsPage
-          authSession={authSession}
-          onBack={goBack}
-          onNavigate={navigateInner}
-          onLogout={handleLogout}
-        />
-      </React.Suspense>
-    );
-  } else if (page === "settings-hub") {
-    // 2026-09-07 · 설정 허브 · 모든 설정 통합 진입
-    pageContent = (
-      <React.Suspense fallback={<PageFallback />}>
-        <SettingsHubPage
-          authSession={authSession}
-          onBack={goBack}
-          onNavigate={navigateInner}
-          onLogout={handleLogout}
-        />
-      </React.Suspense>
-    );
-  } else {
-    pageContent = (
-      <LandingPage
-        onNavigate={handleNavigate}
-        authSession={authSession}
-        onLogout={handleLogout}
-        onAuthOnly={setAuthSession}
-      />
-    );
-  }
+  const renderer = authSession ? PAGE_MAP[page] : undefined;
+  let pageContent: React.ReactElement = renderer ? renderer() : landingEl;
 
   // 2026-08-16 · #113 · lazy chunk 로드 실패 whitescreen 방지 · pageContent 를 ErrorBoundary 로 wrap
   const wrappedContent = <ErrorBoundary>{pageContent}</ErrorBoundary>;
