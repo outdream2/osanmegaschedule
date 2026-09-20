@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { SK_AUTH_SESSION } from "./lib/storageKeys";
 // 2026-09-17 · devLog 유틸 · production 번들 · 노이즈 제거
 import { devLog, devWarn } from "./lib/devLog";
@@ -30,13 +30,14 @@ import { useAuth } from "./hooks/useAuth";
 import { usePushSubscription } from "./hooks/usePushSubscription";
 import type { AuthSession } from "./types";
 import type { AppNavPage } from "./components/layout/AppNavHeader";
+import { useAppNavigation } from "./hooks/useAppNavigation";
+import type { Page } from "./hooks/useAppNavigation";
 import { prefetchProducts } from "./lib/productsCache";
 import { loadZoneLabelsFromServer } from "./constants/zoneLabels";
 // 2026-08-11 · 사이드바 V2 · feature flag (VITE_SIDEBAR_V2=true) · OFF 면 기존 헤더 그대로
 import { useSidebarEnabled } from "./hooks/useSidebar";
 import { useIsMobile } from "./hooks/use-mobile";
 import { usePagePermissions } from "./hooks/usePagePermissions";
-import { isAdminEssentialPage, deriveUserLevel } from "./lib/permissions";
 // 2026-08-16 · #113 · React lazy chunk 로드 실패 whitescreen 방지
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
 // 2026-09-20 · App.tsx 슬림화 · Layout Wrapper 이관 · src/components/layout/AppLayout.tsx
@@ -81,19 +82,11 @@ const SettingsHubPage = React.lazy(() => import("./components/SettingsHubPage/Se
 // 2026-08-23 · #181 · ZoneSettingsPage 제거 · StoreZoneMap 인라인 편집만 유지
 // 2026-09-02 · #74 · 창고 구역 설정 페이지 제거 (규칙 고정 · 수동 편집 불필요)
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding" | "company-info" | "season-settings" | "system-settings" | "vendor-stock" | "schedule-settings" | "order-settings" | "settings-hub";
-
 export default function App() {
   // 2026-08-16 · 사이드바 활성 · 서버 KV 설정 (env 아님)
   const sidebarEnabled = useSidebarEnabled();
   // 2026-08-17 · #131 후속 · 페이지 렌더 레벨 hidden 차단 (사용자 지시 · "안보이기 선택하면 메뉴와 페이지 모두 안보여야")
   const { perms: pagePerms } = usePagePermissions();
-  // 전역 모달 스크롤 잠금은 CSS :has() 셀렉터로 처리 (index.css) · JS 훅 불필요
-  const [page, setPage] = useState<Page>("landing");
-  const [pendingEditEmpId, setPendingEditEmpId] = useState<number | null>(null);
-  // 2026-08-10 · A · 스케쥴 [수정] 라우팅 · business-manage 진입 시 · staff-manage 서브탭 + 이 직원 선택
-  const [bmInitialEmployeeId, setBmInitialEmployeeId] = useState<number | null>(null);
-  const [bmInitialFromPage, setBmInitialFromPage] = useState<Page | null>(null);
   const {
     session: authSession,
     setSession: setAuthSession,
@@ -102,6 +95,19 @@ export default function App() {
     secondsRemaining,
     extendSession,
   } = useAuth();
+
+  // 2026-09-20 · Option C · Navigation Helpers 훅 (page state · popstate · navigate 등 이관)
+  const {
+    page, setPage,
+    pendingEditEmpId, setPendingEditEmpId,
+    bmInitialEmployeeId, setBmInitialEmployeeId,
+    bmInitialFromPage, setBmInitialFromPage,
+    navigate,
+    handleNavigate,
+    navigateInner,
+    navigateInnerWithOptions,
+    goBack,
+  } = useAppNavigation({ authSession, pagePerms, setAuthSession });
 
   // 2026-08-29 · #174 · SSO · 새 브라우저에서 ?sso={token} 감지 시 · 정식 쿠키 발급 · 자동 로그인
   //   · sso-consume 성공 시 · authSession 세팅 · URL 쿼리 정리
@@ -183,65 +189,6 @@ export default function App() {
   // 2026-08-05 · T3 인증 미들웨어 원복으로 · 부트 세션 체크도 제거
   //   · Render 배포 직전 T3 재도입 시 · 이 useEffect 도 함께 복구 필요 (docs/TASKS.md T3-defer)
 
-  // Sync page state with browser History API so the back button works
-  useEffect(() => {
-    // Stamp the initial entry so popstate can always return here
-    history.replaceState({ page: "landing" }, "");
-
-    const onPop = (e: PopStateEvent) => {
-      const p = (e.state as { page?: Page } | null)?.page;
-      setPage(p ?? "landing");
-    };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, []);
-
-  // Push a history entry whenever we move to a non-landing page
-  const navigate = (next: Page) => {
-    setPage(next);
-    if (next === "landing") {
-      history.replaceState({ page: "landing" }, "");
-    } else {
-      history.pushState({ page: next }, "");
-    }
-  };
-
-  // 2026-08-17 · #131 · hidden 페이지 · nav+render 차단 (사용자 지시 · "안보이기 선택하면 메뉴와 페이지 모두 안보여야")
-  //   · admin 은 essential (permissions/business-manage/account) 만 예외
-  const isHiddenPage = React.useCallback((pageKey: string): boolean => {
-    const perm = pagePerms[pageKey as keyof typeof pagePerms];
-    if (!perm?.hidden) return false;
-    const level = deriveUserLevel(authSession);
-    if (level >= 9 && isAdminEssentialPage(pageKey)) return false;
-    return true;
-  }, [pagePerms, authSession]);
-
-  const handleNavigate = (next: Exclude<Page, "landing">, auth?: AuthSession) => {
-    if (auth) setAuthSession(auth);
-    // 2026-09-01 · 보안 P0 · 미인증 + auth 파라미터 없음 → 이동 차단 · 로그인 유도
-    if (!authSession && !auth) {
-      devWarn(`[auth-gate] navigate blocked · unauthenticated → ${next}`);
-      navigate("landing");
-      return;
-    }
-    if (isHiddenPage(next)) {
-      devWarn(`[App] Blocked navigation to hidden page: ${next}`);
-      navigate("landing");
-      return;
-    }
-    navigate(next);
-  };
-
-  // 렌더 시점에도 · 현재 page 가 hidden 이면 landing 으로 강제 (permissions 뒤늦게 로드된 경우 대비)
-  React.useEffect(() => {
-    if (page !== "landing" && isHiddenPage(page)) {
-      devWarn(`[App] Current page hidden, redirecting to landing: ${page}`);
-      navigate("landing");
-    }
-  }, [page, isHiddenPage]);
-
-  const goBack = () => navigate("landing");
-
   const handleLogout = () => {
     // 2026-08-18 · CRITICAL FIX · 무한 리로드 루프 방지
     //   문제: httpOnly JWT 쿠키가 invalid (e.g. secret 변경 · 만료) 상태에서
@@ -304,29 +251,6 @@ export default function App() {
       onLogout={handleLogout}
     />
   ) : null;
-
-  // Simple navigation wrapper used by the shared AppNavHeader on inner pages.
-  // The user is already authenticated here, so no AuthSession is required.
-  // 2026-08-10 · business-manage 로 일반 탭 이동 시 초기 직원 선택 상태 초기화 (스케쥴 [수정] 라우팅 잔재 방지)
-  const navigateInner = (next: AppNavPage) => {
-    if (next === "business-manage") {
-      setBmInitialEmployeeId(null);
-      setBmInitialFromPage(null);
-    }
-    navigate(next as Page);
-  };
-
-  // 2026-08-10 · A · 옵션 파라미터 지원 (스케쥴 [수정] → StaffManage 오른쪽 상세 자동 선택)
-  const navigateInnerWithOptions = (next: AppNavPage, options?: { employeeId?: number | null; fromPage?: AppNavPage | null }) => {
-    if (next === "business-manage" && options?.employeeId != null) {
-      setBmInitialEmployeeId(options.employeeId);
-      setBmInitialFromPage((options.fromPage as Page | undefined) ?? page);
-    } else {
-      setBmInitialEmployeeId(null);
-      setBmInitialFromPage(null);
-    }
-    navigate(next as Page);
-  };
 
   // 공통 props (모든 authenticated 페이지)
   const commonProps = {
