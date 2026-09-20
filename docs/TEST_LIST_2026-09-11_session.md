@@ -29,6 +29,92 @@
 
 **세션 요약** · 항목 순서대로 배치 테스트 권장 · **서버 재시작 필수**
 
+## 📌 2026-09-20 세션 · 추가 태스크 [93]~[110]
+
+### [93] 사이드바 · 업무요청 · 3 하위 (승인대기·요청확인·서류작성) + 승인대기 배지
+**커밋** · `b5a0ede4` · `372b9f53` · `baaf60ff` · (agent) 배지
+- 승인요청 → 업무요청 label
+- 하위 · 승인대기 · 요청확인 · 서류작성
+- 승인대기 · pending count 배지 · rose · gap-1.5 (라벨 옆 가깝게)
+- 연차신청 · 스케줄 그룹으로 독립
+
+### [94] LeavePage · 폰트 +2 전체
+**커밋** · `afe3fc14` · 55건 · text-[N] → text-[N+2]
+
+### [95] LeavePage · 직원 · 읽기 전용 · Bulk delete UI 숨김
+**커밋** · `647d3537` · 관리자만 · 전체/선택 삭제 · 체크박스 · 직원 · pending row 개별 취소만
+
+### [96] LeavePage · 관리자 · 전체 이력 표시 + 승인대기 카드 UI 개선 + 전체목록 탭 제거
+**커밋** · (mobile-ui-designer 통합)
+- TabBar (승인대기/전체목록) · 제거
+- 상단 · PendingLeaveCard (rounded-2xl · Notion 톤)
+- 하단 · 전체 이력 표 (RequestHistoryTable 서브컴포넌트 · apply·approval 양쪽 재사용)
+
+### [97] 승인/요청 그룹 분리 · Tab 필터
+**커밋** · `fd795c75` · `d67b4749`
+- 승인 그룹 · leave · vendor · resignation
+- 요청 그룹 · display · lunch · inventory · mismatch (재고확인·구역불일치 추가 · 일단)
+
+### [98] resignations · signature_url → signature_data_url · 컬럼명 fix
+**커밋** · `99a890fe` · 사직서 승인 페이지 · "테이블 없음" 오탐 해결
+
+### [99] display-requests · location_detail 컬럼 제거 · 상세위치 inventory_checks JOIN
+**커밋** · `39409972` · `a7de86e3` · Supabase 에러 해결 · products 조회 실패로 상품명 null 이던 원인
+
+### [100] display-requests · 상품명 4단 fallback · 요청자 컬럼 · 요청일 줄바꿈
+**커밋** · `02be3ad3` · `cf49b9fa` · `b1590a21` (no-store)
+- products 매칭 실패 시 · 상품코드 X 표시
+- 요청자 · migration 후 자동 채움
+- 요청일 · 위 M/D · 아래 HH:MM
+
+### [101] ProductCreateModal · 공급사·가격·판매상태 · 필수정보 상단
+**커밋** · (agent) · `c1feb252`
+- 필수 정보 섹션 · 공급사·판매가·매입가·판매상태 이동
+- 공급사 + 판매상태 · 2-col 나란히
+- Field 라벨 · text-[15px] → text-[16px] (+1)
+- 필수 미입력 시 · toast · 어느 필드 누락 명시
+
+### [102] ProductCreateModal · 진열위치 조건부 · 창고1/2 하나 + 매장1+추가
+**커밋** · (agent) · ShelfPositionSection 인라인
+- 진열위치 미선택 · 상세구역 숨김
+- classifyArrivalSlot · w1 or w2 · 하나만 · 매장1 기본 · +매장2/3
+
+### [103] ProductInfoPage 우측 · 배지 → 트렌드 텍스트 (Linear/Notion)
+**커밋** · `013b4684`
+- 라벨 · text-[11px] uppercase tracking-wider text-zinc-500
+- 값 · 큰 폰트 강조 · 배지 X
+
+### [104] 반응형 리스트 → 카드 대원칙 등재 + Task #310
+**커밋** · `b6cdce47` · 30+ 대상 파일 · 순차 적용 예정 (별도 세션)
+
+### [105] 사직서 워크플로우 · migration create_resignation_requests.sql 실행 확인
+**커밋** · `58c9dc73` · 승인 시 employees.retireDate 자동 · 서명·PDF·인수인계 저장
+
+### [106] 방문예약 vendor 3필드 자동 조회 + 대표대표 dedup
+**커밋** · `3cdaf619`
+- vendor 로그인 · 거래처·담당자·연락처 · vendors 조회 · 자동 채움 · readOnly
+- displayName === name 중복 방지
+
+### [107] 세션연장 팝업 · 글씨 -2
+**커밋** · `1d491005` · header/body/countdown/버튼 · 모두 -2px
+
+### [108] VendorStockPage · SupplierTab 구조 재사용 (거래처 로그인)
+**커밋** · (agent) · 912→306줄 · 좌 리스트 · 우 상세
+
+### [109] warehouseZoneMap · assignZonesToSlots · s1/s2/s3 순차 배정 fix
+**커밋** · `9339f430` · `216ad887`
+- 이전 · s1/s2/s3 항상 null 반환 · 실재고 테이블 매장 zone 안 나옴
+- Fix · 창고1(6개)·창고2 명시 이외 · 매장 진열 구역 순차 배정
+- Fix2 · store1_zone 빈 문자열 fallback 강화
+
+### [110] 사이드바 · 승인대기 · pending count 배지
+**커밋** · (agent) + `baaf60ff`
+- getLeavePendingCount + getResignationPendingCount 합산
+- 60초 폴링 + approval-count-updated 이벤트
+- rose bg · white · rounded-full · 라벨 옆 gap-1.5
+
+---
+
 ## 📌 오늘 완료 (2026-09-18 · 후반) · 신규 태스크 [70]~[92]
 
 ### [70] C · 공휴일 API 연동 · data.go.kr 특일정보 + events 자동 동기

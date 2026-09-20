@@ -125,10 +125,13 @@
 | **#310** | **반응형 리스트 → 카드 전환** · PC 한 줄 · 모바일 카드형 자동 (사용자 지시 · 2026-09-20) | 🔴 P1 | **전수** · 대원칙 등재 · Tailwind md: breakpoint · 페이지별 순차 · 회귀 X |
 | **#311** | **스케쥴표 · 연차 사용 직원 · 상단 알림** (사용자 지시 · 2026-09-20) | 🟡 P2 | 승인된 연차 · 1주일 전부터 · SchedulePage 상단 배너 · "대체인력 확인 요망" · 관리자 안내 |
 | **#312** | **승인 연차 · 스케쥴 자동 반영 검증** (사용자 지시 · 2026-09-20) | 🟢 P2 | 서버 · leave 승인 시 · schedule 업데이트 로직 확인 · 없으면 신설 |
-| **#313** | **ProductCreateModal · 필수항목 재배치** (사용자 지시 · 2026-09-20) | 🔴 P1 | 공급사·가격(판매·매입)·판매상태 · 필수 상단 배치 · 🔄 UI agent 백그라운드 진행 중 |
-| **#314** | **진열위치 · 공통 ShelfPositionPicker 모듈** (사용자 지시 · 2026-09-20) | 🔴 P1 | 진열위치 선택 · 창고1/2 하나만 · 매장1+추가 · 실재고/입고 페이지 참고 · 공통 모듈화 · 🔄 UI agent 진행 중 |
-| **#315** | **매장1 구역·상세위치 저장 fix · 전 pipeline** (사용자 지시 · 2026-09-20 · 확장) | 🔴 P1 | 상품등록 · 상품편집 · 실재고 · 상품입고 · 모든 저장 pipeline · store1 shelf 저장 안 됨 · PATCH /api/products/:code/shelf-positions + inventory_checks POST · 전수 조사·fix · 🔄 UI agent 진행 중 |
-| **#316** | **ProductInfoPage 우측 라벨 · 배지 → 트렌드 텍스트** (사용자 지시 · 2026-09-20) | 🟡 P2 | Linear/Notion/Attio 2026 톤 · uppercase 얇은 라벨 · 값 굵게 · 배지 제거 · 🔄 UI agent 진행 중 |
+<!-- 2026-09-20 · #313 ✅ · c1feb252 · 공급사+판매상태 나란히 + 라벨 폰트 +1 + 필수 미입력 확인창 -->
+<!-- 2026-09-20 · #314 · 부분 · 인라인 ShelfPositionSection · ProductCreateModal 내부 (공통 파일 추출은 다음 세션) -->
+<!-- 2026-09-20 · #315 · 부분 · s1zone 항상 null 버그 fix (9339f430 · 216ad887) · 매장1 구역 표시 정상화 -->
+<!-- 2026-09-20 · #316 ✅ · 013b4684 · ProductInfoPage 우측 라벨 · 트렌드 텍스트 -->
+| **#317** | **진열요청 · Note 입력 Modal** (사용자 지시 · 2026-09-20) | 🟡 P2 | 스캔 후 진열요청 클릭 · 공통 Modal · note textarea · 자동 note + 사용자 입력 병합 |
+| **#318** | **매장 상세위치 저장 pipeline · 전수 조사** (사용자 지시 · 2026-09-20 · 잔여) | 🟡 P2 | 상품 등록·편집 · 실재고 · 상품입고 · 저장 시 store1 detail 확인 · Task #315 부분 fix 후 잔여 |
+| **#319** | **공통 ShelfPositionPicker 컴포넌트 추출** (사용자 지시 · 2026-09-20 · 잔여) | 🟢 P3 | ProductCreateModal · RealStockTablePage · ProductArrivalPage · InventoryEditModal · 4곳 공통화 · 별도 세션 |
 <!-- 2026-09-18 · #115 · real_map DROP · 이미 2026-09-08 실행 완료 확인 (server.ts:95 주석) -->
 <!-- ~~#115~~ · real_map DROP · ✅ 완료 (2026-09-08 · Supabase SQL Editor) -->
 <!-- 2026-09-18 · T-RSTP-TOOLBAR 완료 · [46] 커밋 `780677f5` · flex-col + lg:flex-row 반응형 -->
