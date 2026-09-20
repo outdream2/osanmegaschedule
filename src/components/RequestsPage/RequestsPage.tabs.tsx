@@ -249,16 +249,16 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                       <StatusPill tone={statusTone} size="xs" dot>{statusLabel}</StatusPill>
                     </td>
                     <td className="px-2 py-2.5 align-middle">
-                      {/* 2026-09-11 · #75 · 사용자 지시 · 진열위치 + 상세위치 (3자리 · 층-칸-순서) 표시 */}
+                      {/* 2026-09-20 · 사용자 지시 · 진열구역 / 1-1-1 형태 인라인 표시 */}
                       {zoneDisplay ? (
-                        <div className="flex flex-col leading-tight">
-                          <span className="font-semibold text-zinc-700 text-[15px]">{zoneDisplay}</span>
+                        <span className="font-semibold text-zinc-700 text-[15px] tabular-nums whitespace-nowrap">
+                          {zoneDisplay}
                           {zoneDetail && typeof zoneDetail === "string" && zoneDetail.length === 3 && (
-                            <span className="text-[12px] font-semibold text-amber-600 tabular-nums mt-0.5">
-                              {zoneDetail[0]}-{zoneDetail[1]}-{zoneDetail[2]}
+                            <span className="text-amber-600 font-semibold ml-1">
+                              / {zoneDetail[0]}-{zoneDetail[1]}-{zoneDetail[2]}
                             </span>
                           )}
-                        </div>
+                        </span>
                       ) : <span className="text-zinc-300 font-normal">—</span>}
                     </td>
                     <td className="px-2 py-2.5 align-middle">
@@ -289,8 +289,15 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                       </span>
                     </td>
                     <td className="px-2 py-2.5 align-middle tabular-nums text-zinc-500">
-                      {/* 2026-09-20 · 사용자 지시 · 요청일만 · 상세시간은 아래 줄바꿈 */}
-                      <div>{fmtDate(r.requested_at)}</div>
+                      {/* 2026-09-20 · 사용자 지시 · 위 날짜만 · 아래 시간만 · 중복 제거 */}
+                      <div>
+                        {(() => {
+                          const dt = new Date(r.requested_at);
+                          return Number.isFinite(dt.getTime())
+                            ? `${dt.getMonth() + 1}/${dt.getDate()}`
+                            : "-";
+                        })()}
+                      </div>
                       {timeStr && (
                         <div className="text-[13px] text-zinc-400 font-normal mt-0.5 tabular-nums">
                           {timeStr}
@@ -298,7 +305,12 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                       )}
                       {showFirstAt && (
                         <div className="text-[13px] text-zinc-400 font-normal mt-0.5">
-                          {fmtDate(firstAt!)} 처음
+                          {(() => {
+                            const dt = new Date(firstAt!);
+                            return Number.isFinite(dt.getTime())
+                              ? `${dt.getMonth() + 1}/${dt.getDate()} 처음`
+                              : "처음";
+                          })()}
                         </div>
                       )}
                     </td>

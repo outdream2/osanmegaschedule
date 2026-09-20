@@ -176,11 +176,30 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
           }
         }
       }
+      // 2026-09-20 · 사용자 지시 · 상세위치 (층-칸-순서) 표시
+      //   · products 에 없음 · inventory_checks.shelf_positions (JSONB) 조회 · zone_id 매칭 slot 선택
+      const matchedCodes: string[] = [];
+      for (const r of rows as any[]) {
+        const c = String(r.product_code ?? "").trim();
+        if (c && infoMap.has(c)) matchedCodes.push(c);
+      }
+      const detailMap = new Map<string, Record<string, string | null>>();
+      if (matchedCodes.length > 0) {
+        try {
+          const { data: invs } = await supabase
+            .from("inventory_checks")
+            .select("product_code, shelf_positions")
+            .in("product_code", matchedCodes);
+          for (const ic of invs ?? []) {
+            const c = String(ic.product_code ?? "").trim();
+            if (c && (ic as any).shelf_positions) {
+              detailMap.set(c, (ic as any).shelf_positions as Record<string, string | null>);
+            }
+          }
+        } catch { /* silent · 조회 실패 시 상세위치만 null */ }
+      }
+
       // 2026-09-20 · 사용자 지시 · products 만 · 상품명 기준 (note fallback 제거)
-      //   · note 는 요청 사유 · 상품명 아님
-      //   · products 매칭 · 양방향 앞0 정규화 · 이미 처리 (위 fallback)
-      //   · 그래도 매칭 실패 · null · 클라이언트 "상품코드 XXX" 표시
-      // 2026-09-20 · 진단 로그 · 매칭 실패 원인 파악 (사용자 재보고 · 상품명 여전히 안 나옴)
       const unmatchedFinal: string[] = [];
       for (const r of rows as any[]) {
         const c = String(r.product_code ?? "").trim();
@@ -189,7 +208,17 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
         r.product_name = info?.name?.trim() || null;
         r.product_spec = info?.spec ?? null;
         r.product_display_location = info?.display_location ?? info?.location ?? null;
-        r.product_location_detail = info?.location_detail ?? null;
+        // 상세위치 · inventory_checks.shelf_positions 에서 · 첫 non-null 값 선택
+        //   · 향후 · zone_id 기준 정확 매칭 원할 시 · 별도 지시
+        const shelves = c ? detailMap.get(c) : null;
+        let detail: string | null = null;
+        if (shelves) {
+          for (const v of Object.values(shelves)) {
+            const s = typeof v === "string" ? v.trim() : "";
+            if (s && s.length === 3) { detail = s; break; }
+          }
+        }
+        r.product_location_detail = detail;
       }
       if (unmatchedFinal.length > 0) {
         console.warn(`[display-requests] products 매칭 실패 ${unmatchedFinal.length}건 · codes:`, unmatchedFinal.slice(0, 10).join(","));
