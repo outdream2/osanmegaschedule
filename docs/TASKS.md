@@ -129,7 +129,7 @@
 <!-- 2026-09-20 · #314 · 부분 · 인라인 ShelfPositionSection · ProductCreateModal 내부 (공통 파일 추출은 다음 세션) -->
 <!-- 2026-09-20 · #315 · 부분 · s1zone 항상 null 버그 fix (9339f430 · 216ad887) · 매장1 구역 표시 정상화 -->
 <!-- 2026-09-20 · #316 ✅ · 013b4684 · ProductInfoPage 우측 라벨 · 트렌드 텍스트 -->
-| **#317** | **진열요청 · Note 입력 Modal** (사용자 지시 · 2026-09-20) | 🟡 P2 | 스캔 후 진열요청 클릭 · 공통 Modal · note textarea · 자동 note + 사용자 입력 병합 |
+<!-- 2026-09-20 · #317 ✅ · e25f53cd · 진열요청 · Note 입력 공통 Modal -->
 | **#318** | **매장 상세위치 저장 pipeline · 전수 조사** (사용자 지시 · 2026-09-20 · 잔여) | 🟡 P2 | 상품 등록·편집 · 실재고 · 상품입고 · 저장 시 store1 detail 확인 · Task #315 부분 fix 후 잔여 |
 | **#319** | **공통 ShelfPositionPicker 컴포넌트 추출** (사용자 지시 · 2026-09-20 · 잔여) | 🟢 P3 | ProductCreateModal · RealStockTablePage · ProductArrivalPage · InventoryEditModal · 4곳 공통화 · 별도 세션 |
 <!-- 2026-09-18 · #115 · real_map DROP · 이미 2026-09-08 실행 완료 확인 (server.ts:95 주석) -->
