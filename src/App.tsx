@@ -33,15 +33,14 @@ import type { AppNavPage } from "./components/layout/AppNavHeader";
 import { prefetchProducts } from "./lib/productsCache";
 import { loadZoneLabelsFromServer } from "./constants/zoneLabels";
 // 2026-08-11 · 사이드바 V2 · feature flag (VITE_SIDEBAR_V2=true) · OFF 면 기존 헤더 그대로
-import { useSidebarEnabled, useSidebarWidth } from "./hooks/useSidebar";
+import { useSidebarEnabled } from "./hooks/useSidebar";
+import { useIsMobile } from "./hooks/use-mobile";
 import { usePagePermissions } from "./hooks/usePagePermissions";
 import { isAdminEssentialPage, deriveUserLevel } from "./lib/permissions";
 // 2026-08-16 · #113 · React lazy chunk 로드 실패 whitescreen 방지
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
-import { SidebarProvider, SidebarInset } from "./components/ui/sidebar";
-import { TooltipProvider } from "./components/ui/tooltip";
-import { SideNav } from "./components/layout/SideNav";
-import { useIsMobile } from "./hooks/use-mobile";
+// 2026-09-20 · App.tsx 슬림화 · Layout Wrapper 이관 · src/components/layout/AppLayout.tsx
+import { SidebarLayoutWrapper } from "./components/layout/AppLayout";
 // 2026-08-12 · Phase 6 · 페이지별 모바일 최소 레벨 게이트 (PC 전용 안내)
 import { MobileOnlyGate } from "./components/common/MobileOnlyGate";
 // 2026-08-29 · 사용자 크리티컬 · 메뉴설정 pc/mobile 언체크 · 라우팅 수준 gate
@@ -635,67 +634,4 @@ export default function App() {
   );
 }
 
-// 2026-08-11 · 사이드바 V2 · 데스크탑만 사이드바 · 모바일은 기존 헤더 fallback
-interface SidebarLayoutProps {
-  pageContent: React.ReactElement;
-  authSession: AuthSession | null;
-  activePage: AppNavPage;
-  navigate: (page: Page) => void;
-  handleLogout: () => void;
-  timeoutWarningOverlay: React.ReactElement | null;
-}
-// 모바일 감지 · 모바일이면 기존 렌더 · 데스크탑이면 사이드바 · React hook rules 준수 위해 wrapper 컴포넌트 분리
-const SidebarLayoutWrapper: React.FC<SidebarLayoutProps> = (props) => {
-  const isMobile = useIsMobile();
-  if (isMobile) {
-    return (
-      <>
-        <MobileOnlyGate pageKey={props.activePage} authSession={props.authSession}>
-          {props.pageContent}
-        </MobileOnlyGate>
-        <AppFooter />
-        {props.timeoutWarningOverlay}
-      </>
-    );
-  }
-  return <SidebarLayout {...props} />;
-};
-const SIDEBAR_OPEN_KEY = "sidebar.open";
-const readSidebarOpen = (): boolean => {
-  if (typeof window === "undefined") return true;
-  const raw = localStorage.getItem(SIDEBAR_OPEN_KEY);
-  return raw === "false" ? false : true; // 기본 true
-};
-
-const SidebarLayout: React.FC<SidebarLayoutProps> = ({ pageContent, authSession, activePage, navigate, handleLogout, timeoutWarningOverlay }) => {
-  const { width } = useSidebarWidth();
-  // 2026-08-12 · PC 사이드바 접기 · localStorage 로 상태 유지 · 헤더 SidebarTrigger 로 토글
-  const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(readSidebarOpen);
-  const handleOpenChange = React.useCallback((next: boolean) => {
-    setSidebarOpen(next);
-    try { localStorage.setItem(SIDEBAR_OPEN_KEY, String(next)); } catch { /* silent */ }
-  }, []);
-  return (
-    <TooltipProvider delayDuration={200}>
-      <SidebarProvider
-        open={sidebarOpen}
-        onOpenChange={handleOpenChange}
-        style={{ "--sidebar-width": `${width}px` } as React.CSSProperties}
-      >
-        <SideNav
-          authSession={authSession}
-          activePage={activePage}
-          onNavigate={(p) => navigate(p as Page)}
-          onLogout={handleLogout}
-        />
-        <SidebarInset>
-          <MobileOnlyGate pageKey={activePage} authSession={authSession}>
-            {pageContent}
-          </MobileOnlyGate>
-          <AppFooter />
-        </SidebarInset>
-        {timeoutWarningOverlay}
-      </SidebarProvider>
-    </TooltipProvider>
-  );
-};
+// 2026-09-20 · App.tsx 슬림화 · SidebarLayoutWrapper 이관 → src/components/layout/AppLayout.tsx
