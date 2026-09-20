@@ -156,7 +156,7 @@
      · 별도 페이지·라우트 없음 · 이미 요청 목표 달성 상태
      · 향후 · 2단 탭 (매장구역도 안에 [매장, 창고1, 창고2] 서브탭) 원할 시 · 사용자 명시 후 진행 -->
 | ~~T-WAREHOUSE-TAB~~ | ~~창고1/2 → 매장구역도 탭~~ | ⚠️ **재해석 · #325 로 재등재** · 이전 "flat 탭 있음" 판단 · 사용자 의도 오해 · 실제 요구는 **2단 탭 nesting** |
-| **#325** | **매장진열 · 매장구역도 안에 창고1·창고2 서브탭 nesting** (사용자 지시 · 서너 번 반복 · 2026-09-20) | 🔴 P1 | 매장진열 · 현재 flat 6탭 (map·warehouse1·warehouse2·stockTable·mismatch·zoneEdit) · **재구성** · 매장구역도(map) 클릭 시 · 내부 서브탭 (매장 · 창고1 · 창고2) · 2단 탭 UI · DisplayPage.tsx SplitRightTabs 재설계 · 나머지 4탭 유지 (stockTable·mismatch·zoneEdit·map-nested) |
+| **#325** | **매장진열 · 매장구역도 안에 창고1·창고2 서브탭 nesting** (사용자 지시 · 서너 번 반복 · 2026-09-20) | 🔴 P1 | 매장진열 · 현재 flat 6탭 · **재구성** · 최상위 탭에서 창고1·창고2 제거 · **매장구역도(map) 클릭 시 · 내부 수평 서브탭 3개** · `매장구역도 · 창고1 · 창고2` (라벨 정확히) · 매장구역도 서브탭 = 기존 map view · 창고1 서브탭 = 기존 warehouse1 view · 창고2 서브탭 = 기존 warehouse2 view · 나머지 flat 탭 (stockTable·mismatch·zoneEdit) 유지 |
 
 ---
 
