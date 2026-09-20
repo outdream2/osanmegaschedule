@@ -30,6 +30,9 @@ import { ScheduleGrid } from "./ScheduleGrid";
 import { SearchInsights } from "./SearchInsights";
 import { AdminLoginModal } from "./AdminLoginModal";
 import { CopyMonthModal } from "./CopyMonthModal";
+// #311 · 다가오는 연차 알림 배너
+import { UpcomingLeaveBanner } from "./UpcomingLeaveBanner";
+import { useUpcomingLeaves } from "../../hooks/useUpcomingLeaves";
 
 interface SchedulePageProps {
   onBack?: () => void;
@@ -133,6 +136,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
   }, [authSession?.level]);
 
   const [editMode, setEditMode] = useState(false);
+
+  // ── #311 · 다가오는 연차 알림 (관리자 level>=2 만) ───────────────────────────
+  const { rows: upcomingLeaveRows } = useUpcomingLeaves(14, userLevel >= 2);
 
   // ── Admin Login Modal ─────────────────────────────────────────────────────
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -548,6 +554,11 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
           onNavigateZoneLabels={onNavigate ? () => onNavigate("zone-labels" as AppNavPage) : undefined}
           onNavigatePermissions={onNavigate ? () => onNavigate("permissions" as AppNavPage) : undefined}
         />
+      )}
+
+      {/* #311 · 다가오는 연차 알림 배너 · 관리자(level>=2) 전용 · 캘린더 위 */}
+      {userLevel >= 2 && upcomingLeaveRows.length > 0 && (
+        <UpcomingLeaveBanner rows={upcomingLeaveRows} />
       )}
 
       {/* Grid Container */}

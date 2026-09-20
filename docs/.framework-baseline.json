@@ -1,7 +1,7 @@
 {
   "created": "2026-09-20",
   "version": 1,
-  "totalViolations": 10,
+  "totalViolations": 11,
   "files": {
     "src/components/LeavePage/LeavePage.tsx": {
       "lines": 1114,
@@ -74,7 +74,7 @@
       "totalWeight": 3
     },
     "src/components/ProductInfoPage/ProductCreateModal.tsx": {
-      "lines": 828,
+      "lines": 841,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -94,7 +94,17 @@
       "totalWeight": 3
     },
     "src/components/ScanPage/ScanPage.tsx": {
-      "lines": 851,
+      "lines": 964,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
+    },
+    "src/components/SchedulePage/SchedulePage.tsx": {
+      "lines": 802,
       "violations": [
         {
           "ruleId": "large-file-warn",

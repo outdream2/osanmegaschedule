@@ -113,6 +113,28 @@
 - 60초 폴링 + approval-count-updated 이벤트
 - rose bg · white · rounded-full · 라벨 옆 gap-1.5
 
+### [111] #311 · 스케줄 상단 · 연차 알림 배너 · 14일 · 관리자용
+**커밋** · (진행)
+- `GET /api/upcoming-leaves?days=14` · authorize(2) · schedules 테이블 조회
+- 오늘~+14일 · 월차/오전반차/오후반차 · 직원 이름 JOIN
+- `useUpcomingLeaves(14, userLevel>=2)` 훅
+- `UpcomingLeaveBanner` 컴포넌트 · 접기/펼치기 localStorage
+- 연속 날짜 자동 병합 (9/26-9/27)
+- 배너 위치 · SchedulePage 상단 (ScheduleToolbar 위)
+- 조건 · userLevel >= 2 AND 데이터 >= 1건일 때만 노출
+
+**확인 절차**
+1. 서버 재시작 (`npm run dev`)
+2. **관리자(level>=2)** 계정으로 스케줄 페이지 접근
+3. 앞으로 14일 이내에 월차/오전반차/오후반차 스케줄이 있는 직원 확인
+   - 있으면 · 상단 amber 배너 표시 · "다가오는 연차 · N명 · 대체 인력 확인 필요"
+   - 직원명 / 날짜 / 유형 pill 세 가지 표시
+4. 배너 클릭 · 접기/펼치기 · 새로고침 후 상태 유지
+5. 연속 날짜 직원 · "9/26–9/27" 형식으로 병합 표시
+6. **일반 직원(level=1)** 계정 · 배너 미노출
+7. 데이터 0건 · 배너 미노출
+8. 기존 SchedulePage 기능 (셀 편집·편집모드·로그인·캘린더 등) 회귀 없음 확인
+
 ---
 
 ## 📌 오늘 완료 (2026-09-18 · 후반) · 신규 태스크 [70]~[92]

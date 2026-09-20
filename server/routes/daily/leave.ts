@@ -11,7 +11,7 @@ import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
 import { CreateLeaveRequestSchema, ReviewLeaveRequestSchema } from "../../../src/shared/schemas/leave";
 import type { LeaveBalanceResponse, LeaveStatsResponse } from "../../../src/shared/dtos/leave";
-import { nextKstYmd, compareYmd } from "../../lib/kstDate";
+import { nextKstYmd, compareYmd, getKstYmd } from "../../lib/kstDate";
 
 const router = Router();
 
@@ -186,6 +186,61 @@ router.put("/api/leave-requests/:id", authorize(5), validateBody(ReviewLeaveRequ
     }
   }
   res.json(data);
+}));
+
+// #311 · 다가오는 연차 알림 · GET /api/upcoming-leaves?days=N · 관리자용 (lv>=2)
+//   · schedules 테이블 · type IN (월차, 오전반차, 오후반차) · today ~ today+days
+//   · employees JOIN · name 포함 · 날짜 오름차순
+router.get("/api/upcoming-leaves", authorize(2), asyncHandler(async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  const days = Math.min(Math.max(Number(req.query.days ?? 14), 1), 90);
+
+  const today = getKstYmd();
+  // today + days 계산 (문자열 + 순수 산술)
+  const todayDate = new Date(`${today}T00:00:00Z`);
+  todayDate.setUTCDate(todayDate.getUTCDate() + days);
+  const toDate = `${todayDate.getUTCFullYear()}-${String(todayDate.getUTCMonth() + 1).padStart(2, "0")}-${String(todayDate.getUTCDate()).padStart(2, "0")}`;
+
+  const LEAVE_TYPES = ["월차", "오전반차", "오후반차"];
+
+  const { data, error } = await supabase
+    .from("schedules")
+    .select("id, employeeId, date, type")
+    .in("type", LEAVE_TYPES)
+    .gte("date", today)
+    .lte("date", toDate)
+    .order("date", { ascending: true })
+    .order("employeeId", { ascending: true });
+
+  if (error) throw new HttpError(500, error.message);
+  const rows = data ?? [];
+
+  if (rows.length === 0) {
+    res.json({ items: [] });
+    return;
+  }
+
+  // 직원 이름 JOIN
+  const empIds = [...new Set(rows.map((r: any) => r.employeeId as number))];
+  const { data: emps, error: empErr } = await supabase
+    .from("employees")
+    .select("id, name")
+    .in("id", empIds);
+  if (empErr) throw new HttpError(500, empErr.message);
+
+  const nameMap: Record<number, string> = {};
+  for (const e of (emps ?? [])) {
+    nameMap[Number(e.id)] = String(e.name ?? "");
+  }
+
+  const items = rows.map((r: any) => ({
+    employeeId: Number(r.employeeId),
+    employeeName: nameMap[Number(r.employeeId)] ?? String(r.employeeId),
+    date: String(r.date),
+    type: String(r.type),
+  }));
+
+  res.json({ items });
 }));
 
 // #112-E1 Phase 2 · 본인 or 관리자만 삭제
