@@ -127,6 +127,18 @@
 - DisplayPage → 직원 편집 → SchedulePage 이동
 - 미인증 상태 · 모든 경로 LandingPage 강제 확인
 
+### [127] 테스트 상품 sale_qty 50 · SQL text→int cast fix (사용자 실행 결과)
+**커밋** · `74240ee2`
+- 초기 SQL · COALESCE(text, 0) type mismatch
+- Fix · NULLIF + `::integer` · `::numeric` cast · 빈 문자열 안전
+- 사용자 · Supabase SQL Editor 실행 완료 확인
+
+### [128] App.tsx · Option C · Navigation Helpers 훅 (useAppNavigation) · 진행 중
+**커밋** · (백그라운드 agent · 완료 시 hash 반영)
+- L200-244 navigation 함수 · state · popstate effect · 훅으로 이관
+- 예상 감소 · 442 → ~390 (-50 라인)
+- 자동 검증 · TS + build + test 3463 pass 유지
+
 ---
 
 ## 📌 2026-09-20 세션 · 추가 태스크 [93]~[110]
