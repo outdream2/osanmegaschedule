@@ -304,7 +304,8 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   />
                   <span className="inline-flex items-center gap-1.5">
                     {item.label}
-                    {item.label === "승인업무" && (approvalBadge ?? 0) > 0 && (
+                    {/* 2026-09-20 · P3-1 fix · 라벨 문자열 대신 · key+subTab 기반 판정 (라벨 변경 취약성 제거) */}
+                    {item.key === "requests" && item.subTab === "leave" && (approvalBadge ?? 0) > 0 && (
                       <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold tabular-nums leading-none shrink-0 group-data-[collapsible=icon]:hidden">
                         {(approvalBadge ?? 0) > 99 ? "99+" : approvalBadge}
                       </span>
