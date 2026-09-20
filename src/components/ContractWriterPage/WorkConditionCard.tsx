@@ -86,61 +86,59 @@ export const WorkConditionCard: React.FC<WorkConditionCardProps> = ({
       </div>
     </div>
 
-    {/* 1행 · 계약 유형 + 연차 · 근무 요일 */}
-    <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-start">
-      <div>
-        <label className={fldLabel}>계약 유형</label>
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            <SelectOrCustom value={form.contractType} options={CONTRACT_TYPES} onChange={(v) => upd("contractType", v)} placeholder="예: 프리랜서" />
-          </div>
-          <div className="shrink-0 w-[100px]">
-            <div className="relative">
-              <input type="number" min={0} value={form.annualLeaveDays} onChange={(e) => upd("annualLeaveDays", e.target.value)}
-                placeholder="15"
-                title="연차 일수"
-                className="w-full bg-white border border-line rounded-lg pl-2 pr-10 py-1.5 text-[15px] text-zinc-800 font-semibold text-right focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition"
-              />
-              <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9.5px] text-zinc-400 font-semibold pointer-events-none leading-tight">일/연차</span>
-            </div>
+    {/* 1행 · 계약 유형 + 연차 */}
+    <div>
+      <label className={fldLabel}>계약 유형</label>
+      <div className="flex items-center gap-2">
+        <div className="flex-1">
+          <SelectOrCustom value={form.contractType} options={CONTRACT_TYPES} onChange={(v) => upd("contractType", v)} placeholder="예: 프리랜서" />
+        </div>
+        <div className="shrink-0 w-[100px]">
+          <div className="relative">
+            <input type="number" min={0} value={form.annualLeaveDays} onChange={(e) => upd("annualLeaveDays", e.target.value)}
+              placeholder="15"
+              title="연차 일수"
+              className="w-full bg-white border border-line rounded-lg pl-2 pr-10 py-1.5 text-[15px] text-zinc-800 font-semibold text-right focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition"
+            />
+            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9.5px] text-zinc-400 font-semibold pointer-events-none leading-tight">일/연차</span>
           </div>
         </div>
-        {form.contractType === "계약직" && (
-          <div className="flex items-center gap-2 mt-1.5">
-            <span className="text-[10.5px] text-zinc-400 font-semibold shrink-0">계약 기간</span>
-            <div className="flex-1">
-              <SelectOrCustom value={form.contractMonths} options={["2", "3", "6", "12"]} onChange={(v) => upd("contractMonths", v)} placeholder="예: 9" suffix="개월" />
-            </div>
-          </div>
-        )}
       </div>
-
-      {/* 근무 요일 */}
-      <div>
-        <label className={fldLabel}>
-          근무 요일 <span className="text-indigo-600 font-bold">주{weeklyDays}일</span>
-          <span className="text-zinc-400 font-semibold normal-case tracking-normal ml-1">
-            (주중 {weeklyWeekdayDays}일 · 주말 {weeklyWeekendDays}일)
-          </span>
-        </label>
-        <div className="flex flex-wrap gap-1">
-          {DAYS.map(d => {
-            const on = form.workDays[d];
-            const isWeekend = d === "토" || d === "일";
-            return (
-              <button key={d} type="button" onClick={() => toggleDay(d)}
-                className={[
-                  "w-7 h-7 rounded-md text-[11.5px] font-bold transition-colors cursor-pointer border",
-                  on
-                    ? isWeekend
-                      ? "bg-rose-500 text-white border-rose-600 shadow-sm"
-                      : "bg-brand-deep text-white border-indigo-600 shadow-sm"
-                    : "bg-white text-zinc-500 border-line hover:bg-zinc-50 hover:border-zinc-300",
-                ].join(" ")}
-              >{d}</button>
-            );
-          })}
+      {form.contractType === "계약직" && (
+        <div className="flex items-center gap-2 mt-1.5">
+          <span className="text-[10.5px] text-zinc-400 font-semibold shrink-0">계약 기간</span>
+          <div className="flex-1">
+            <SelectOrCustom value={form.contractMonths} options={["2", "3", "6", "12"]} onChange={(v) => upd("contractMonths", v)} placeholder="예: 9" suffix="개월" />
+          </div>
         </div>
+      )}
+    </div>
+
+    {/* 2행 · 근무 요일 (단독 행 · 공간 충분) */}
+    <div>
+      <label className={fldLabel}>
+        근무 요일 <span className="text-indigo-600 font-bold">주{weeklyDays}일</span>
+        <span className="text-zinc-400 font-semibold normal-case tracking-normal ml-1">
+          (주중 {weeklyWeekdayDays}일 · 주말 {weeklyWeekendDays}일)
+        </span>
+      </label>
+      <div className="flex flex-wrap gap-1">
+        {DAYS.map(d => {
+          const on = form.workDays[d];
+          const isWeekend = d === "토" || d === "일";
+          return (
+            <button key={d} type="button" onClick={() => toggleDay(d)}
+              className={[
+                "w-8 h-8 rounded-md text-[12px] font-bold transition-colors cursor-pointer border",
+                on
+                  ? isWeekend
+                    ? "bg-rose-500 text-white border-rose-600 shadow-sm"
+                    : "bg-brand-deep text-white border-indigo-600 shadow-sm"
+                  : "bg-white text-zinc-500 border-line hover:bg-zinc-50 hover:border-zinc-300",
+              ].join(" ")}
+            >{d}</button>
+          );
+        })}
       </div>
     </div>
 
@@ -173,16 +171,19 @@ export const WorkConditionCard: React.FC<WorkConditionCardProps> = ({
         </div>
       </div>
       <div className={cardInner}>
-        <div className={cardGroupLabel}>담당업무 · 보험</div>
+        <div className={cardGroupLabel}><Notepad size={10} weight="bold" /> 담당업무</div>
         <input lang="ko" type="text" value={form.jobDuty} onChange={(e) => upd("jobDuty", e.target.value)}
           placeholder="예: 약국 카운터 · OTC 판매 · 재고 관리" className={fldInput}
         />
-        <label className="inline-flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={form.socialInsurance} onChange={(e) => upd("socialInsurance", e.target.checked)}
-            className="w-4 h-4 rounded accent-indigo-600" />
-          <span className="text-[14px] font-semibold text-zinc-700">4대보험 가입</span>
-          <span className="text-[10.5px] text-zinc-400 font-semibold ml-1">고용·산재·국민연금·건강보험</span>
-        </label>
+        <div className="border-t border-zinc-100 pt-2">
+          <div className={cardGroupLabel + " mb-1.5"}>4대보험</div>
+          <label className="inline-flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={form.socialInsurance} onChange={(e) => upd("socialInsurance", e.target.checked)}
+              className="w-4 h-4 rounded accent-indigo-600" />
+            <span className="text-[14px] font-semibold text-zinc-700">4대보험 가입</span>
+            <span className="text-[10.5px] text-zinc-400 font-semibold ml-1">고용 · 산재 · 국민연금 · 건강보험</span>
+          </label>
+        </div>
       </div>
     </div>
 
