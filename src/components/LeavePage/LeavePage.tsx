@@ -602,8 +602,10 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                   <span className="text-[20px] font-medium text-ink-soft tabular-nums">· {displayRequests.length}건</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {/* 2026-09-20 · 선택 삭제 · 선택 시에만 노출 */}
-                  {selectedIds.size > 0 && (
+                  {/* 2026-09-20 · 사용자 지시 · Bulk delete · 관리자만
+                       · 직원 · 개별 pending row 만 취소 가능 (아래 취소 컬럼)
+                       · 승인된 연차 · 관리자만 삭제 가능 */}
+                  {isManager && selectedIds.size > 0 && (
                     <button
                       type="button"
                       onClick={() => handleBulkDelete(Array.from(selectedIds))}
@@ -614,8 +616,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                       <span>선택 삭제 ({selectedIds.size})</span>
                     </button>
                   )}
-                  {/* 전체 삭제 · 이력 존재 시 */}
-                  {displayRequests.length > 0 && (
+                  {isManager && displayRequests.length > 0 && (
                     <button
                       type="button"
                       onClick={() => handleBulkDelete(displayRequests.map(r => r.id))}
@@ -653,17 +654,19 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                   <table className="w-full border-collapse">
                     <thead>
                       <tr className="bg-zinc-50 border-b border-zinc-200">
-                        {/* 2026-09-20 · 선택 체크박스 컬럼 */}
-                        <th className="text-center px-3 py-3 w-10">
-                          <input
-                            type="checkbox"
-                            checked={displayRequests.length > 0 && selectedIds.size === displayRequests.length}
-                            ref={el => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < displayRequests.length; }}
-                            onChange={toggleSelectAll}
-                            className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                            aria-label="전체 선택"
-                          />
-                        </th>
+                        {/* 2026-09-20 · 사용자 지시 · 체크박스 · 관리자만 · 직원은 pending row 개별 취소만 */}
+                        {isManager && (
+                          <th className="text-center px-3 py-3 w-10">
+                            <input
+                              type="checkbox"
+                              checked={displayRequests.length > 0 && selectedIds.size === displayRequests.length}
+                              ref={el => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < displayRequests.length; }}
+                              onChange={toggleSelectAll}
+                              className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                              aria-label="전체 선택"
+                            />
+                          </th>
+                        )}
                         {isManager && (
                           <th className="text-left px-4 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">신청자</th>
                         )}
@@ -684,16 +687,18 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                             key={r.id}
                             className={`group transition-colors duration-100 hover:bg-zinc-50/60 ${idx !== 0 ? "border-t border-zinc-100" : ""} ${selectedIds.has(r.id) ? "bg-blue-50/40" : ""}`}
                           >
-                            {/* 2026-09-20 · 선택 체크박스 */}
-                            <td className="text-center px-3 py-3 w-10">
-                              <input
-                                type="checkbox"
-                                checked={selectedIds.has(r.id)}
-                                onChange={() => toggleSelectRow(r.id)}
-                                className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                                aria-label={`${r.employee_name} ${r.leave_type} 선택`}
-                              />
-                            </td>
+                            {/* 2026-09-20 · 사용자 지시 · 체크박스 · 관리자만 */}
+                            {isManager && (
+                              <td className="text-center px-3 py-3 w-10">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedIds.has(r.id)}
+                                  onChange={() => toggleSelectRow(r.id)}
+                                  className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                  aria-label={`${r.employee_name} ${r.leave_type} 선택`}
+                                />
+                              </td>
+                            )}
                             {isManager && (
                               <td className="px-4 py-3 font-semibold text-[20px] text-zinc-800 whitespace-nowrap">{r.employee_name}</td>
                             )}
