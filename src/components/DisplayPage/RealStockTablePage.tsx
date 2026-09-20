@@ -164,9 +164,12 @@ export const RealStockTablePage: React.FC = () => {
       location: p.location,
       erp,
       w1, w2, s1, s2, s3,
-      s1zone: i?.store1_zone ?? slots.s1zone,
-      s2zone: i?.store2_zone ?? slots.s2zone,
-      s3zone: i?.store3_zone ?? slots.s3zone,
+      // 2026-09-20 · 사용자 지시 fix · 매장1 zone 안 나옴 원인 · store1_zone 빈문자열 처리
+      //   · ?? · null/undefined 만 fallback · 빈 문자열 은 supersede · slot fallback 못 함
+      //   · trim 후 empty 도 null 취급 · assignZonesToSlots 결과 사용
+      s1zone: (typeof i?.store1_zone === "string" && i.store1_zone.trim()) ? i.store1_zone.trim() : slots.s1zone,
+      s2zone: (typeof i?.store2_zone === "string" && i.store2_zone.trim()) ? i.store2_zone.trim() : slots.s2zone,
+      s3zone: (typeof i?.store3_zone === "string" && i.store3_zone.trim()) ? i.store3_zone.trim() : slots.s3zone,
       w1zone: slots.w1zone,
       w2zone: slots.w2zone,
       sale_status: p.sale_status,
