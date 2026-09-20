@@ -75,22 +75,25 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     topTab: { key: "schedule" },
     items: [
       { key: "schedule", label: "스케줄", icon: Calendar, color: "amber" },
+      // 2026-09-20 · 사용자 지시 · 연차신청 · 승인요청에서 독립 · 스케줄 그룹으로 이동
+      //   · 이유 · 직원 신청 성격 · 관리 메뉴 아래 부적합
+      { key: "approval-request", label: "연차신청", icon: CalendarDots, color: "amber", subTab: "leave" },
     ],
   },
   {
     id: "approvals",
-    label: "승인요청",
+    label: "업무요청",
     color: "indigo",
     icon: CheckSquare, // 헤더용 · 기존 TABS 아이콘 유지 (items[0]=CalendarDots 와 다름 · 회귀 방지)
-    topTab: { key: "approval-request", mobileLabel: "승인" },
+    topTab: { key: "approval-request", mobileLabel: "업무" },
     // 2026-08-12 · 직원(lv1) 도 본인 승인 신청 · managerOnly 해제
     items: [
-      // 2026-08-12 · 승인요청 통합 페이지 (approval-request) · 서브탭 3종 라우팅
-      { key: "approval-request", label: "연차신청", icon: CalendarDots, color: "indigo", subTab: "leave"           },
-      { key: "approval-request", label: "점심불참", icon: Coffee,       color: "indigo", subTab: "lunch"           },
+      // 2026-09-20 · 사용자 지시 · 업무요청 아래 3개 하위 · 승인목록 · 요청목록 · 서류작성
+      //   · 연차신청 · 스케줄 그룹으로 이동
+      //   · 점심불참 · 확인 성격 · 요청목록 내부 탭에서 접근
+      { key: "requests",        label: "승인목록", icon: CheckSquare,  color: "indigo", subTab: "leave",           managerOnly: true },
+      { key: "requests",        label: "요청목록", icon: Chat,         color: "indigo", subTab: "display",         managerOnly: true },
       { key: "approval-request", label: "서류작성", icon: PencilLine,   color: "indigo", subTab: "document-writer" },
-      // 2026-08-31 · 사용자 지시 · 경영의 요청목록 · 승인요청 아래로 이동
-      { key: "requests",        label: "요청목록", icon: Chat,         color: "indigo", managerOnly: true         },
     ],
   },
   {
