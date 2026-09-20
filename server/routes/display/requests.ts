@@ -139,18 +139,26 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
       }
       // 2026-09-18 · 2차 fallback · leading zero 제거된 코드로 재조회
       //   · display_requests 에는 앞0 있는 원본 · products 는 앞0 제거된 정규화 버전 (or 반대)
-      const unmatchedCodes = productCodes.filter(c => !infoMap.has(c) && /^0+/.test(c));
-      if (unmatchedCodes.length > 0) {
-        const stripped = unmatchedCodes.map(c => c.replace(/^0+/, "")).filter(Boolean);
-        if (stripped.length > 0) {
+      // 2026-09-20 · 사용자 지시 · 양방향 매칭 · 앞0 있음↔없음 모두 커버 (실제 유일한 원인)
+      const stripOne = (c: string) => c.replace(/^0+/, "");
+      const padOne = (c: string) => (/^\d+$/.test(c) ? c.padStart(8, "0") : c);
+      const unmatched = productCodes.filter(c => !infoMap.has(c));
+      if (unmatched.length > 0) {
+        // 양방향 후보 · exact 미매치 · stripped · padded 두 형식 재조회
+        const candidates = new Set<string>();
+        for (const c of unmatched) {
+          const s = stripOne(c); if (s && s !== c) candidates.add(s);
+          const p = padOne(c);   if (p && p !== c) candidates.add(p);
+        }
+        if (candidates.size > 0) {
           const { data: prods2 } = await supabase
             .from("products")
             .select("product_code, product_name, spec, display_location, location, location_detail")
-            .in("product_code", stripped);
+            .in("product_code", Array.from(candidates));
           for (const p of prods2 ?? []) {
-            const strippedCode = String(p.product_code ?? "").trim();
-            // 원본 (앞0 포함) 코드로 다시 매핑
-            const originalCode = unmatchedCodes.find(c => c.replace(/^0+/, "") === strippedCode);
+            const dbCode = String(p.product_code ?? "").trim();
+            // 원본 코드 (unmatched 안) · dbCode 와 정규화 후 같은 것 찾기
+            const originalCode = unmatched.find(u => stripOne(u) === stripOne(dbCode));
             if (originalCode) infoMap.set(originalCode, {
               name: String(p.product_name ?? ""),
               spec: p.spec ?? null,
@@ -161,39 +169,22 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
           }
         }
       }
+      // 2026-09-20 · 사용자 지시 · products 만 · 상품명 기준 (note fallback 제거)
+      //   · note 는 요청 사유 · 상품명 아님
+      //   · products 매칭 · 양방향 앞0 정규화 · 이미 처리 (위 fallback)
+      //   · 그래도 매칭 실패 · null · 클라이언트 "상품코드 XXX" 표시
       for (const r of rows as any[]) {
         const c = String(r.product_code ?? "").trim();
         const info = c ? infoMap.get(c) : null;
-        const productNameFromDb = info?.name?.trim() ?? "";
-        // 3차 fallback · note '<name> 진열 요청' 파싱 · 다양한 형식 대응
-        //   2026-09-20 · 사용자 재보고 · 진열요청 리스트 · 상품명 여전히 안 나옴 · 파서 강화
-        let productName: string | null = productNameFromDb || null;
-        if (!productName && r.note) {
-          const raw = String(r.note).trim();
-          // 다양한 suffix 처리 · "진열 요청" · "진열보충 요청" · "보충요청" · "진열" · "요청"
-          const cleaned = raw
-            .replace(/\s*진열\s*(?:보충\s*)?요청\s*$/u, "")
-            .replace(/\s*보충\s*요청\s*$/u, "")
-            .replace(/\s*진열\s*$/u, "")
-            .trim();
-          if (cleaned && cleaned !== raw) productName = cleaned;
-          else if (cleaned) productName = cleaned; // note 전체가 상품명
-        }
-        r.product_name = productName;
+        r.product_name = info?.name?.trim() || null;
         r.product_spec = info?.spec ?? null;
-        // 최신 진열위치 · display_location 우선 · 없으면 location · 없으면 null
         r.product_display_location = info?.display_location ?? info?.location ?? null;
         r.product_location_detail = info?.location_detail ?? null;
       }
     } catch (e: any) {
       console.warn("[display-requests GET] products lookup 실패 (경고):", e?.message ?? e);
-      // silent · products 조회 실패해도 요청 응답은 반환 · note 파싱 fallback 만 시도
-      for (const r of rows as any[]) {
-        if (r.note) {
-          const cleaned = String(r.note).replace(/\s*진열\s*(?:보충\s*)?요청\s*$/u, "").trim();
-          if (cleaned) r.product_name = cleaned;
-        }
-      }
+      // 2026-09-20 · products 조회 실패 시 · product_name null · 클라이언트에서 fallback 표시
+      //   · note 파싱 fallback 제거 (사용자 지시 · products 만 상품명 기준)
     }
   }
   res.json(rows);

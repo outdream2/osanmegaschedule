@@ -57,20 +57,15 @@ interface DisplayRequestTabProps {
   onAssignStaff?: (req: DisplayRequest) => void;
 }
 
-// 2026-09-20 · 사용자 지시 · 진열요청 상품명 안 나옴 · 4단계 fallback 강화
+// 2026-09-20 · 사용자 지시 · 상품명 기준 products 만 · note 는 요청 사유 · 상품명 아님
+//   · 서버 · products 양방향 앞0 정규화 매칭 (앞0 있음↔없음 모두 커버)
+//   · 매칭 실패 시 · product_code 표시 (미등록 상품 안내)
 const getProductName = (r: DisplayRequest): string => {
   const pn = String((r as any).product_name ?? "").trim();
   if (pn) return pn;
-  if (r.note) {
-    const cleaned = r.note
-      .replace(/\s*진열\s*(?:보충\s*)?요청\s*$/u, "")
-      .replace(/\s*보충\s*요청\s*$/u, "")
-      .trim();
-    if (cleaned) return cleaned;
-  }
   const code = String((r as any).product_code ?? "").trim();
   if (code) return `상품코드 ${code}`;
-  return r.category || r.zone_label || "—";
+  return r.zone_label || "—";
 };
 
 const STATUS_CHIPS = [
