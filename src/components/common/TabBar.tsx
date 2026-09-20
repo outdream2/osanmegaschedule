@@ -182,7 +182,7 @@ export function TabBar<K extends string = string>({
                   onTouchEnd={dnd?.onTouchEnd}
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
-                    "inline-flex items-center gap-1.5 sm:gap-2 h-11 px-3.5 sm:px-4.5 rounded-xl text-[15px] sm:text-[16px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight",
+                    "inline-flex items-center gap-1.5 sm:gap-2 h-11 px-3.5 sm:px-4.5 rounded-xl text-[16px] sm:text-[17px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight",
                     active
                       ? "bg-white text-ink font-bold shadow-[0_2px_8px_rgba(10,46,74,0.08),0_1px_2px_rgba(10,46,74,0.04)] ring-1 ring-line/80"
                       : "text-ink-soft hover:text-ink hover:bg-white/80",
@@ -264,7 +264,7 @@ export function TabBar<K extends string = string>({
                   onTouchEnd={dnd?.onTouchEnd}
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
-                    "group inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[16px] sm:text-[17px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight border",
+                    "group inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[17px] sm:text-[18px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight border",
                     // Filter Chip · 활성 = Pine Green 청록톤 (#01796F · Hermès Pine Green · 딥네이비 페어링)
                     active
                       ? "bg-[#01796F] text-white border-[#014A44] font-bold shadow-[0_1px_2px_rgba(1,121,111,0.25)]"

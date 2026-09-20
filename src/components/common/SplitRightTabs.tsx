@@ -72,9 +72,9 @@ export function SplitRightTabs<K extends string = string>({
   const visible = tabs.filter(t => t.visible !== false);
   const stickyCls = sticky ? "sticky top-0 z-20" : "";
   const borderCls = withBorder ? "border-b border-line" : "";
-  const sizeCls = size === "lg" ? "text-[18px] sm:text-[19px]"
-                : size === "sm" ? "text-[15px] sm:text-[14px]"
-                :                 "text-[15px] sm:text-[16px]";
+  const sizeCls = size === "lg" ? "text-[19px] sm:text-[20px]"
+                : size === "sm" ? "text-[15px] sm:text-[16px]"
+                :                 "text-[16px] sm:text-[17px]";
   const btnH   = size === "lg" ? "h-12 px-4" : "h-10 px-3";
   return (
     <div
