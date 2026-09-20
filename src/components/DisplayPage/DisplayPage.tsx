@@ -173,14 +173,16 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
   // 2026-08-30 · 사용자 지시 · 접기/펼치기 제거 · 그냥 보이게 (mapCollapsed prop 유지 안 함)
   // 2026-08-25 · 사용자 지시 · 매장구역 subtab 안 · 매장구역도 vs 배치구역 불일치 탭
-  // 2026-08-26 · 창고1 · 창고2 구역도 탭 추가 (storage.webp 기반)
-  const [storeInnerTab, setStoreInnerTab] = useState<"map" | "mismatch" | "warehouse1" | "warehouse2" | "stockTable" | "zoneEdit">(() => {
+  // 2026-09-20 · #325 · 창고1·창고2 → 매장구역도 안 서브탭으로 nesting
+  const [storeInnerTab, setStoreInnerTab] = useState<"map" | "mismatch" | "stockTable" | "zoneEdit">(() => {
     try {
       const raw = sessionStorage.getItem("dpStoreInnerTab");
       if (raw === "mismatch") { sessionStorage.removeItem("dpStoreInnerTab"); return "mismatch"; }
     } catch { /* SSR */ }
     return "map";
   });
+  // 2026-09-20 · #325 · 매장구역도 탭 내부 서브탭 (매장·창고1·창고2)
+  const [mapSubTab, setMapSubTab] = useState<"store" | "warehouse1" | "warehouse2">("store");
 
   const dpTabSortable = useSortableTabs<CommonTabDef<DpSubTabKey>>("tabOrder.displayPage", DP_SUBTAB_DEFAULTS, dpUserLevel >= 8);
 
@@ -660,14 +662,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           {/* 2026-08-25 · 매장구역도/배치불일치 · 2026-08-26 · 창고1/창고2 추가 */}
           <div className="bg-white rounded-xl border border-line overflow-hidden">
             {/* 2026-09-03 · #64 · 진열요청목록 서브탭 삭제 · 상품 스캔 시 진열요청 (RequestsPage 통합) */}
+            {/* 2026-09-20 · #325 · 창고1·창고2 → 매장구역도 내부 서브탭으로 nesting */}
             <SplitRightTabs
               tabs={[
-                { key: "map",            label: "매장구역도" },
-                { key: "warehouse1",     label: "창고1" },
-                { key: "warehouse2",     label: "창고2" },
-                { key: "stockTable",     label: "실재고 테이블" },
-                { key: "mismatch",       label: "배치구역 불일치" },
-                { key: "zoneEdit",       label: "매장구역도 편집" },
+                { key: "map",        label: "매장구역도" },
+                { key: "stockTable", label: "실재고 테이블" },
+                { key: "mismatch",   label: "배치구역 불일치" },
+                { key: "zoneEdit",   label: "매장구역도 편집" },
               ]}
               active={storeInnerTab}
               onSelect={(k) => setStoreInnerTab(k as typeof storeInnerTab)}
@@ -684,9 +685,30 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               {/* 2026-08-31 · 사용자 지시 · 구역그룹설정(ZoneGroupPanel) 제거 · 안 씀 */}
               <ZoneEditPanel canEdit={dpZoneEditable} />
             </div>
-          ) : storeInnerTab === "warehouse1" ? (
+          ) : (<>
+          {/* 2026-09-20 · #325 · 매장구역도 탭 내부 서브탭 (매장·창고1·창고2) */}
+          <div className="bg-white rounded-xl border border-line px-4 pt-3 pb-0">
+            <div className="flex flex-wrap gap-1.5 pb-3">
+              {(["store", "warehouse1", "warehouse2"] as const).map((k) => (
+                <button
+                  key={k}
+                  onClick={() => setMapSubTab(k)}
+                  className={[
+                    "px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors duration-150",
+                    mapSubTab === k
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200",
+                  ].join(" ")}
+                >
+                  {k === "store" ? "매장" : k === "warehouse1" ? "창고1" : "창고2"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {mapSubTab === "warehouse1" ? (
             <WarehouseZoneMap filter="1" />
-          ) : storeInnerTab === "warehouse2" ? (
+          ) : mapSubTab === "warehouse2" ? (
             <WarehouseZoneMap filter="2" />
           ) : (<>
           <DisplayProductPanel
@@ -734,6 +756,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               {/* 2026-08-27 · 사용자 지시 · 진열요청목록 중복 제거 · "진열요청목록" 서브탭에서만 렌더 */}
             </div>
           </section>
+          </>)}
           </>)}
         </main>
       )}
