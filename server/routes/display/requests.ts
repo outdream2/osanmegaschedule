@@ -214,6 +214,10 @@ router.post("/api/display-requests", authorize(1), validateBody(CreateDisplayReq
   let category = String(b.category ?? "");
   const note = String(b.note ?? "");
   let productName: string | null = null;
+  // 2026-09-20 · 사용자 지시 · 요청자 정보 · JWT 에서 추출 (마이그레이션 20260920_display_requests_requester.sql 후 활성)
+  const authUser = (req as any).authUser as { sub?: number; name?: string } | undefined;
+  const requesterId = authUser?.sub != null ? Number(authUser.sub) : null;
+  const requesterName = authUser?.name ?? null;
 
   // 상품 기반 요청: products 에서 location · category · name 자동 조회
   try {
@@ -279,22 +283,33 @@ router.post("/api/display-requests", authorize(1), validateBody(CreateDisplayReq
     if (error) throw new HttpError(500, error.message);
     recordId = (updated as any)?.id ?? (existing as any).id;
   } else {
-    const { data: inserted, error } = await supabase
-      .from("display_requests")
-      .insert([{
-        zone_id: zoneId,
-        zone_label: zoneLabel,
-        category,
-        requested_at: nowIso,
-        first_requested_at: nowIso,
-        request_count: 1,
-        assigned_staff_id: assignedStaffId,
-        assigned_staff_name: assignedStaffName,
-        note: finalNote,
-        status: "pending",
-        product_code: productCode,
-      }])
-      .select("id").single();
+    // 2026-09-20 · 사용자 지시 · 요청자 필드 · 마이그레이션 있으면 저장 · 없으면 무시 (fallback insert)
+    const baseInsert: any = {
+      zone_id: zoneId,
+      zone_label: zoneLabel,
+      category,
+      requested_at: nowIso,
+      first_requested_at: nowIso,
+      request_count: 1,
+      assigned_staff_id: assignedStaffId,
+      assigned_staff_name: assignedStaffName,
+      note: finalNote,
+      status: "pending",
+      product_code: productCode,
+    };
+    const withRequester = { ...baseInsert, requested_by_id: requesterId, requested_by_name: requesterName };
+    let inserted: any = null;
+    let error: any = null;
+    const r1 = await supabase.from("display_requests").insert([withRequester]).select("id").single();
+    if (r1.error && /column|does not exist|requested_by/i.test(r1.error.message)) {
+      // fallback · 마이그레이션 미실행 · 기존 필드만 insert
+      const r2 = await supabase.from("display_requests").insert([baseInsert]).select("id").single();
+      inserted = r2.data;
+      error = r2.error;
+    } else {
+      inserted = r1.data;
+      error = r1.error;
+    }
     if (error) throw new HttpError(500, error.message);
     recordId = (inserted as any)?.id ?? null;
   }
