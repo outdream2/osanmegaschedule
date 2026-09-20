@@ -137,6 +137,22 @@
 
 ---
 
+### [112] #318 P2 · PATCH shelf-positions · mergeShelfPositions + dup pre-check 통일
+**커밋** · `8651c7a3`
+- `server/routes/stock/products.ts:987-1084` · 단순 spread → shared helper pipeline 통일
+- `mergeShelfPositions` (정규화 + required_detail 검증) + `checkShelfPositionConflicts` (dup pre-check) 호출 추가
+
+**확인 절차**
+1. 서버 재시작 (`npm run dev`)
+2. **정상 저장** · 상품 진열위치 편집 (매장 3자리 · 창고 3자리) → 200 성공
+3. **중복 저장 시도** · 다른 상품이 이미 같은 `display_location + 위치코드` 사용 중 → **400** · "이 위치는 이미 사용 중입니다" 에러 메시지 표시
+4. **required_detail 매장 · 빈 문자열** 저장 시도 → 400 · "매장 위치는 상세위치가 필수입니다" 에러
+5. **3자리 아닌 값** (예 "12" 또는 "1234") → zod 400 (기존 동작 유지)
+6. **ProductCreateModal** · 상품 등록 후 진열위치 저장 → 정상
+7. **ShelfPositionsEditModal** · 기존 위치 편집·저장 · 정상 (회귀 없음)
+
+---
+
 ## 📌 오늘 완료 (2026-09-18 · 후반) · 신규 태스크 [70]~[92]
 
 ### [70] C · 공휴일 API 연동 · data.go.kr 특일정보 + events 자동 동기
