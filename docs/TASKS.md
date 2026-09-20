@@ -155,7 +155,8 @@
 <!-- 2026-09-18 · T-WAREHOUSE-TAB 조사 결과 · 창고1/2 이미 매장진열 안의 탭 (DisplayPage L663 SplitRightTabs)
      · 별도 페이지·라우트 없음 · 이미 요청 목표 달성 상태
      · 향후 · 2단 탭 (매장구역도 안에 [매장, 창고1, 창고2] 서브탭) 원할 시 · 사용자 명시 후 진행 -->
-| ~~T-WAREHOUSE-TAB~~ | ~~창고1/2 → 매장구역도 탭~~ | ✅ **이미 탭 상태** · DisplayPage SplitRightTabs 에 6개 탭 (map · warehouse1 · warehouse2 · stockTable · mismatch · zoneEdit) 존재 · 2단 탭 원할 시 별도 요청 |
+| ~~T-WAREHOUSE-TAB~~ | ~~창고1/2 → 매장구역도 탭~~ | ⚠️ **재해석 · #325 로 재등재** · 이전 "flat 탭 있음" 판단 · 사용자 의도 오해 · 실제 요구는 **2단 탭 nesting** |
+| **#325** | **매장진열 · 매장구역도 안에 창고1·창고2 서브탭 nesting** (사용자 지시 · 서너 번 반복 · 2026-09-20) | 🔴 P1 | 매장진열 · 현재 flat 6탭 (map·warehouse1·warehouse2·stockTable·mismatch·zoneEdit) · **재구성** · 매장구역도(map) 클릭 시 · 내부 서브탭 (매장 · 창고1 · 창고2) · 2단 탭 UI · DisplayPage.tsx SplitRightTabs 재설계 · 나머지 4탭 유지 (stockTable·mismatch·zoneEdit·map-nested) |
 
 ---
 
