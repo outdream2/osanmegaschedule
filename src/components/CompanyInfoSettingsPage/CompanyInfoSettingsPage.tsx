@@ -216,7 +216,7 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
                 <div>
                   <label className={LABEL_CLS}><TextT size={12} />앱 타이틀 (브라우저 탭)</label>
                   <input lang="ko" className={INPUT_CLS} value={brand.appTitle} onChange={e => setBrand({ appTitle: e.target.value })}
-                         placeholder="예: 오산메가타운 관리시스템" />
+                         placeholder="예: 오산메가타운약국 관리시스템" />
                 </div>
                 <div>
                   <label className={LABEL_CLS}><TextT size={12} />영문 브랜드명 (랜딩)</label>
