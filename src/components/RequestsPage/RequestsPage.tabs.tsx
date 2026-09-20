@@ -202,13 +202,13 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
             <thead>
               <tr className="text-[14px] font-bold text-zinc-500 border-b border-line bg-zinc-50/60 uppercase tracking-wider">
                 <th className="w-9 py-2.5 pl-3 pr-1 text-left"></th>
-                <th className="py-2.5 px-2 text-left">상품명</th>
+                <th className="py-2.5 px-2 text-left min-w-[240px]">상품명</th>
                 <th className="py-2.5 px-2 text-left w-20">상태</th>
                 <th className="py-2.5 px-2 text-left w-24">진열위치</th>
                 <th className="py-2.5 px-2 text-left w-28">요청자</th>
                 <th className="py-2.5 px-2 text-left w-28">담당자</th>
                 <th className="py-2.5 px-2 text-left w-20">요청횟수</th>
-                <th className="py-2.5 px-2 text-left w-32">요청일</th>
+                <th className="py-2.5 px-2 text-left w-24">요청일</th>
                 <th className="py-2.5 px-3 text-right w-28">완료</th>
               </tr>
             </thead>
