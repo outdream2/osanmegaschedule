@@ -23,7 +23,8 @@ export const NavDesktopTab: React.FC<NavDesktopTabProps> = ({
   const accent = NAV_ACCENT[validColor];
   const iconAccent = accent.iconText;
 
-  const baseCommon = "relative flex items-center gap-1.5 px-3 sm:px-3 md:px-3.5 lg:px-4 py-1.5 rounded-lg text-[19px] sm:text-[19px] md:text-[20px] lg:text-[21px] font-semibold whitespace-nowrap transition-all duration-200 ease-out";
+  // 2026-09-20 · 사용자 지시 · 전체 탭 메뉴 글씨 +1
+  const baseCommon = "relative flex items-center gap-1.5 px-3 sm:px-3 md:px-3.5 lg:px-4 py-1.5 rounded-lg text-[20px] sm:text-[20px] md:text-[21px] lg:text-[22px] font-semibold whitespace-nowrap transition-all duration-200 ease-out";
   const activeClass = `${baseCommon} bg-white/[0.10] text-white font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]`;
   const inactiveClass = `${baseCommon} text-[#C4DAEE] hover:bg-white/[0.06] hover:text-white hover:-translate-y-[1px] active:scale-95 cursor-pointer disabled:opacity-40 group/tab`;
 
