@@ -110,7 +110,7 @@ router.get("/api/resignations", asyncHandler(async (req, res) => {
   const { status, employeeId } = req.query;
   let q = supabase
     .from("resignation_requests")
-    .select("id, employee_id, employee_name, hire_date, last_work_date, reason, reason_detail, handover_notes, signature_url, pdf_url, status, approved_by, approved_by_id, approved_at, reject_reason, created_at")
+    .select("id, employee_id, employee_name, hire_date, last_work_date, reason, reason_detail, handover_notes, signature_data_url, pdf_url, status, approved_by, approved_by_id, approved_at, reject_reason, created_at")
     .order("created_at", { ascending: false });
 
   if (status && typeof status === "string" && status !== "all") {
@@ -178,6 +178,10 @@ router.post("/api/resignations", authorize(1), validateBody(CreateResignationSch
     );
   }
 
+  // 2026-09-20 · 사용자 지시 · signature_url 컬럼 없음 · signature_data_url 만 사용
+  //   · Storage 업로드 URL 필요 시 · 별도 migration ADD COLUMN 후 활성
+  //   · void 로 사용 표시 · TS 미사용 경고 방지
+  void signature_url;
   const { data, error } = await supabase
     .from("resignation_requests")
     .insert([{
@@ -188,10 +192,7 @@ router.post("/api/resignations", authorize(1), validateBody(CreateResignationSch
       reason: String(reason),
       reason_detail: reason_detail ?? null,
       handover_notes: handover_notes ?? null,
-      // deprecated · 하위 호환 · 신규 레코드도 임시 유지 (클라이언트 이관 완료 후 중단 예정)
       signature_data_url: signature_data_url ?? null,
-      // 신규 · Storage URL
-      signature_url,
       pdf_url: pdf_url ?? null,
       status: "pending",
     }])
