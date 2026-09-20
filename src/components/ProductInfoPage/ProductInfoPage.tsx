@@ -263,7 +263,9 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
     return v == null || v === "" ? <span className="text-zinc-300">-</span> : <span className="text-ink font-semibold">{String(v)}</span>;
   };
 
-  // 2026-09-14 · 최신 트렌드 · uppercase 제거 · 라벨 축소 · 시인성 우선
+  // 2026-09-20 · 사용자 지시 · 배지 → Linear/Notion 텍스트 라벨 (uppercase · tracking-wider · zinc-500)
+  //   · 라벨: text-[11px] font-medium text-zinc-500 uppercase tracking-wider
+  //   · 값:   text-[16px] font-semibold text-ink
   const DField = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex flex-col gap-1">
       <span className="text-[12px] font-semibold text-ink-soft">{label}</span>
@@ -360,158 +362,150 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
       {/* 사용자 지시 · 재고보다 가격·공급사 우선 · 텍스트 형식으로 한눈에 · 라벨 +3 크게 */}
       <div className="px-6 py-5 space-y-5">
 
-        {/* ─── SECTION 1 · 가격 정보 (판매가·매입가·이익율) · 반응형 grid (1→3-col) · 폰트 +2 ─── */}
-        <section className="space-y-2.5">
-          <h3 className="flex items-center gap-1.5 text-[15px] font-bold text-brand-deep tracking-tight pb-2 border-b-2 border-brand-tint">
-            <span className="w-1.5 h-4 rounded-full bg-brand-deep" />
+        {/* ─── SECTION 1 · 가격 정보 · 2026-09-20 · 배지 → 텍스트 라벨 (Linear/Notion 톤) ─── */}
+        <section className="space-y-0">
+          <h3 className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 uppercase tracking-wider pb-2 border-b border-zinc-100">
             가격 정보
           </h3>
-          {/* 판매가·매입가 나란히 (2-col 고정) · 이익율 그 아래 full-width */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-            <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-brand-deep bg-brand-tint rounded-md px-2.5 py-1 shrink-0">판매가</span>
+          <div className="grid grid-cols-2 gap-x-4">
+            <div className="flex flex-col gap-0.5 py-3 border-b border-zinc-100">
+              <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">판매가</span>
               {editing
                 ? <input type="number" min={0} value={val("sale_price")} onChange={e => set("sale_price", e.target.value)} className={inputCls + " tabular-nums text-[14px] max-w-[140px]"} />
                 : p.sale_price != null
-                  ? <span className="text-[20px] font-extrabold text-brand-deep tabular-nums leading-none tracking-tight">{Number(p.sale_price).toLocaleString()}<span className="text-[12px] font-bold ml-0.5 text-brand-deep/70">원</span></span>
-                  : <span className="text-zinc-300 text-[14px]">-</span>}
+                  ? <span className="text-[20px] font-extrabold text-brand-deep tabular-nums leading-tight tracking-tight">{Number(p.sale_price).toLocaleString()}<span className="text-[13px] font-bold ml-0.5 text-brand-deep/70">원</span></span>
+                  : <span className="text-zinc-300 text-[15px]">-</span>}
             </div>
-            <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-amber-700 bg-amber-50 rounded-md px-2.5 py-1 shrink-0">매입가</span>
+            <div className="flex flex-col gap-0.5 py-3 border-b border-zinc-100">
+              <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">매입가</span>
               {editing
                 ? <input type="number" min={0} value={val("purchase_price")} onChange={e => set("purchase_price", e.target.value)} className={inputCls + " tabular-nums text-[14px] max-w-[140px]"} />
                 : p.purchase_price != null
-                  ? <span className="text-[18px] font-bold text-amber-700 tabular-nums leading-none tracking-tight">{Number(p.purchase_price).toLocaleString()}<span className="text-[12px] font-semibold ml-0.5 text-amber-600">원</span></span>
-                  : <span className="text-zinc-300 text-[14px]">-</span>}
+                  ? <span className="text-[18px] font-bold text-amber-700 tabular-nums leading-tight tracking-tight">{Number(p.purchase_price).toLocaleString()}<span className="text-[12px] font-semibold ml-0.5 text-amber-600">원</span></span>
+                  : <span className="text-zinc-300 text-[15px]">-</span>}
             </div>
-            <div className="col-span-2 flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1 shrink-0">이익율</span>
+            <div className="col-span-2 flex flex-col gap-0.5 py-3 border-b border-zinc-100">
+              <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">이익율</span>
               {profitRate != null
-                ? <span className={`text-[18px] font-bold tabular-nums leading-none tracking-tight ${profitRate >= 30 ? "text-emerald-600" : profitRate >= 15 ? "text-amber-600" : "text-rose-600"}`}>{profitRate}<span className="text-[12px] font-semibold ml-0.5">%</span></span>
-                : <span className="text-zinc-300 text-[14px]">-</span>}
+                ? <span className={`text-[18px] font-bold tabular-nums leading-tight tracking-tight ${profitRate >= 30 ? "text-emerald-600" : profitRate >= 15 ? "text-amber-600" : "text-rose-600"}`}>{profitRate}<span className="text-[13px] font-semibold ml-0.5">%</span></span>
+                : <span className="text-zinc-300 text-[15px]">-</span>}
             </div>
           </div>
         </section>
 
-        {/* ─── SECTION 2 · 공급사·기본 정보 · 반응형 grid (1→2-col) · 폰트 +2 ─── */}
-        <section className="space-y-2.5">
-          <h3 className="flex items-center gap-1.5 text-[15px] font-bold text-sky-700 tracking-tight pb-2 border-b-2 border-sky-200">
-            <span className="w-1.5 h-4 rounded-full bg-sky-600" />
+        {/* ─── SECTION 2 · 공급사·기본 정보 · 2026-09-20 · 텍스트 라벨 ─── */}
+        <section className="space-y-0">
+          <h3 className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 uppercase tracking-wider pb-2 border-b border-zinc-100">
             공급사 · 기본 정보
           </h3>
           <div className="space-y-0">
-            {/* 편집모드 · 상품명 full-width */}
+            {/* 편집모드 · 상품명 */}
             {editing && (
-              <div className="col-span-full flex items-baseline justify-between py-1.5 min-h-[36px] border-b border-line/40 gap-3">
-                <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">상품명</span>
-                <div className="flex-1 max-w-md"><EditField k="product_name" label="" /></div>
+              <div className="flex flex-col gap-0.5 py-3 border-b border-zinc-100">
+                <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">상품명</span>
+                <div className="max-w-md"><EditField k="product_name" label="" /></div>
               </div>
             )}
-            {/* 공급사 · full-width row · 줄바꿈 허용 */}
-            <div className="flex items-start gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">공급사</span>
-              {editing ? <div className="flex-1 max-w-[180px]"><EditField k="supplier" label="" /></div> : product.supplier ? (
-                <div className="flex-1 min-w-0 flex flex-wrap items-center gap-2">
-                  <span className="text-[16px] font-bold text-ink whitespace-normal break-words break-keep">{displayVendorName(product.supplier) || product.supplier}</span>
-                  <button
-                    type="button"
-                    onClick={() => vendorModal.openVendorInfo(product.supplier!)}
-                    className="inline-flex items-center gap-1 h-6 px-2 rounded-md bg-sky-50 hover:bg-sky-100 text-[13px] font-bold text-sky-700 transition cursor-pointer shrink-0"
-                  >
-                    상세<ArrowSquareOut size={10} />
-                  </button>
-                </div>
-              ) : <span className="text-[12px] text-zinc-300">-</span>}
+            {/* 공급사 */}
+            <div className="flex flex-col gap-0.5 py-3 border-b border-zinc-100">
+              <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">공급사</span>
+              {editing
+                ? <div className="max-w-[220px]"><EditField k="supplier" label="" /></div>
+                : product.supplier
+                  ? <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                      <span className="text-[16px] font-bold text-ink whitespace-normal break-words break-keep">{displayVendorName(product.supplier) || product.supplier}</span>
+                      <button
+                        type="button"
+                        onClick={() => vendorModal.openVendorInfo(product.supplier!)}
+                        className="inline-flex items-center gap-1 h-6 px-2 rounded-md border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-[12px] font-medium text-zinc-600 transition cursor-pointer shrink-0"
+                      >
+                        상세<ArrowSquareOut size={10} />
+                      </button>
+                    </div>
+                  : <span className="text-zinc-300 text-[15px]">-</span>}
             </div>
-            {/* 최근매입 · full-width row */}
-            <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">최근매입</span>
-              {p.last_purchase_date ? (
-                <span className="text-[16px] font-bold text-ink tabular-nums">{String(p.last_purchase_date).slice(0, 10)}</span>
-              ) : <span className="text-[12px] text-zinc-300">-</span>}
+            {/* 최근매입 */}
+            <div className="flex flex-col gap-0.5 py-3 border-b border-zinc-100">
+              <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">최근매입</span>
+              {p.last_purchase_date
+                ? <span className="text-[16px] font-bold text-ink tabular-nums mt-0.5">{String(p.last_purchase_date).slice(0, 10)}</span>
+                : <span className="text-zinc-300 text-[15px]">-</span>}
             </div>
             {/* 규격·단위·브랜드·제조사·분류 · 2-col grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0">
-              <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-                <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">규격</span>
-                {editing ? <div className="flex-1 max-w-[180px]"><EditField k="spec" label="" /></div> : <span className="text-[16px] font-bold text-ink whitespace-normal break-words break-keep">{dispVal("spec")}</span>}
-              </div>
-              <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-                <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">단위</span>
-                {editing ? <div className="flex-1 max-w-[180px]"><EditField k="unit" label="" /></div> : <span className="text-[16px] font-bold text-ink whitespace-normal break-words break-keep">{dispVal("unit")}</span>}
-              </div>
-              <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-                <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">브랜드</span>
-                {editing ? <div className="flex-1 max-w-[180px]"><EditField k="brand" label="" /></div> : <span className="text-[16px] font-bold text-ink whitespace-normal break-words break-keep">{dispVal("brand")}</span>}
-              </div>
-              <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-                <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">제조사</span>
-                {editing ? <div className="flex-1 max-w-[180px]"><EditField k="manufacturer" label="" /></div> : <span className="text-[16px] font-bold text-ink whitespace-normal break-words break-keep">{dispVal("manufacturer")}</span>}
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+              {([
+                { k: "spec" as const, label: "규격" },
+                { k: "unit" as const, label: "단위" },
+                { k: "brand" as const, label: "브랜드" },
+                { k: "manufacturer" as const, label: "제조사" },
+              ] as const).map(({ k, label }) => (
+                <div key={k} className="flex flex-col gap-0.5 py-3 border-b border-zinc-100">
+                  <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">{label}</span>
+                  {editing
+                    ? <div className="max-w-[180px]"><EditField k={k} label="" /></div>
+                    : <span className="text-[16px] font-semibold text-ink whitespace-normal break-words break-keep mt-0.5">{dispVal(k)}</span>}
+                </div>
+              ))}
               {editing && (
-                <div className="flex items-baseline gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-                  <span className="text-[15px] font-bold text-sky-700 bg-sky-50 rounded-md px-2.5 py-1 shrink-0">분류</span>
-                  <div className="flex-1 max-w-[180px]"><EditField k="category" label="" /></div>
+                <div className="flex flex-col gap-0.5 py-3 border-b border-zinc-100">
+                  <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">분류</span>
+                  <div className="max-w-[180px]"><EditField k="category" label="" /></div>
                 </div>
               )}
             </div>
           </div>
         </section>
 
-        {/* ─── SECTION 3 · 재고 · 현재고+적정재고 2-col · 창고/매장 총합 제거 (진열위치 섹션에서 개별 표시) ─── */}
-        <section className="space-y-2.5">
-          <h3 className="flex items-center gap-1.5 text-[15px] font-bold text-emerald-700 tracking-tight pb-2 border-b-2 border-emerald-200">
-            <span className="w-1.5 h-4 rounded-full bg-emerald-600" />
+        {/* ─── SECTION 3 · 재고 · 2026-09-20 · 텍스트 라벨 ─── */}
+        <section className="space-y-0">
+          <h3 className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 uppercase tracking-wider pb-2 border-b border-zinc-100">
             재고
           </h3>
-          {/* 현재고 · 적정재고 · 2-col 나란히 */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+          <div className="grid grid-cols-2 gap-x-4">
             {/* 현재고 */}
-            <div className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="w-[72px] text-[14px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1 text-center shrink-0">현재고</span>
+            <div className="flex flex-col gap-0.5 py-3 border-b border-zinc-100">
+              <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">현재고</span>
               {(p.current_stock != null && Number(p.current_stock) !== 0)
-                ? <span className="inline-flex items-center gap-1.5 min-w-0">
-                    <span className="text-[20px] font-extrabold text-emerald-700 tabular-nums leading-none tracking-tight">
-                      {String(p.current_stock)}<span className="text-[12px] font-semibold ml-0.5 text-emerald-600/70">개</span>
+                ? <span className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <span className="text-[20px] font-extrabold text-emerald-700 tabular-nums leading-tight tracking-tight">
+                      {String(p.current_stock)}<span className="text-[13px] font-semibold ml-0.5 text-emerald-600/70">개</span>
                     </span>
                     {p.optimal_stock != null && (() => {
                       const cur = Number(p.current_stock ?? 0);
                       const opt = Number(p.optimal_stock);
                       const short = opt - cur;
-                      if (short <= 0) return <span className="text-[13px] font-bold text-emerald-600 shrink-0">충분</span>;
-                      return <span className="text-[13px] font-bold text-rose-600 tabular-nums shrink-0">-{short}</span>;
+                      if (short <= 0) return <span className="text-[12px] font-semibold text-emerald-600">충분</span>;
+                      return <span className="text-[12px] font-semibold text-rose-600 tabular-nums">-{short}</span>;
                     })()}
                   </span>
-                : <span className="text-[14px] font-bold text-rose-500">부족</span>}
+                : <span className="text-[15px] font-bold text-rose-500 mt-0.5">부족</span>}
             </div>
             {/* 적정재고 */}
-            <div className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-              <span className="w-[72px] shrink-0 inline-flex flex-col items-center justify-center">
-                <span className="text-[14px] font-bold text-emerald-700 bg-emerald-50 rounded-md px-2 py-0.5 leading-snug w-full text-center">적정재고</span>
-                <span className="text-[10px] font-medium text-zinc-400 mt-0.5">· {optimalStockDays}일</span>
+            <div className="flex flex-col gap-0.5 py-3 border-b border-zinc-100">
+              <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
+                적정재고 <span className="text-zinc-400 normal-case">({optimalStockDays}일)</span>
               </span>
               {editing
                 ? <input type="number" min={0} value={val("optimal_stock")} onChange={e => set("optimal_stock", e.target.value)} className={inputCls + " tabular-nums text-[14px] max-w-[120px]"} />
                 : p.optimal_stock != null
-                  ? <span className="text-[18px] font-bold text-ink tabular-nums leading-none tracking-tight">
+                  ? <span className="text-[18px] font-bold text-ink tabular-nums leading-tight tracking-tight mt-0.5">
                       {String(p.optimal_stock)}<span className="text-[12px] font-semibold ml-0.5 text-ink-soft">개</span>
                     </span>
-                  : <span className="text-zinc-300 text-[16px] tabular-nums">-</span>}
+                  : <span className="text-zinc-300 text-[15px] mt-0.5">-</span>}
             </div>
           </div>
         </section>
 
-        {/* ─── SECTION 4 · 진열위치 · 구역 뱃지 + 창고1/2(cyan) + 매장1/2/3(indigo) · 수직 정렬 그리드 ─── */}
-        <section className="space-y-2.5">
-          <h3 className="flex items-center gap-1.5 text-[15px] font-bold text-rose-700 tracking-tight pb-2 border-b-2 border-rose-200">
-            <span className="w-1.5 h-4 rounded-full bg-rose-600" />
+        {/* ─── SECTION 4 · 진열위치 · 2026-09-20 · 텍스트 라벨 · 색상 계층으로 창고/매장 구분 ─── */}
+        <section className="space-y-0">
+          <h3 className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 uppercase tracking-wider pb-2 border-b border-zinc-100">
             진열위치
           </h3>
           {editing ? (
-            /* 편집 모드 · 기존 ShelfPositionInput 완전 유지 */
-            <div className="space-y-2">
-              <div className="text-[12px] text-ink-soft leading-relaxed">
-                각 위치 <span className="font-bold text-brand-deep">3자리 (층·칸·순서)</span> 입력 · 예 <span className="font-mono text-ink font-bold">332</span> · 매장 필수
+            /* 편집 모드 · ShelfPositionInput 유지 */
+            <div className="py-3 space-y-3">
+              <div className="text-[12px] text-zinc-500">
+                각 위치 <span className="font-bold text-brand-deep">3자리 (층·칸·순서)</span> 입력 · 예 332 · 매장 필수
               </div>
               <div className="flex flex-wrap gap-2">
                 {storageLocations.filter(l => l.active).map(loc => {
@@ -536,13 +530,13 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
                 if (missing.length === 0) return null;
                 return (
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[11px] text-ink-soft">위치 추가:</span>
+                    <span className="text-[11px] text-zinc-500">위치 추가:</span>
                     {missing.map(loc => (
                       <button
                         key={loc.code}
                         type="button"
                         onClick={() => addShelfLocation(loc.code)}
-                        className="text-[12px] font-semibold px-2 h-6 rounded-md border border-brand-tint text-brand-deep hover:bg-brand-tint transition-colors cursor-pointer"
+                        className="text-[12px] font-medium px-2.5 h-7 rounded-lg border border-dashed border-brand-tint text-brand-deep hover:bg-brand-tint/50 transition-colors cursor-pointer"
                       >+ {loc.name}</button>
                     ))}
                   </div>
@@ -554,7 +548,7 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
               </div>
             </div>
           ) : (
-            /* 표시 모드 · 수직 정렬 그리드 · 구역→창고→매장 순 */
+            /* 표시 모드 · 텍스트 라벨 · 구역→창고→매장 순 */
             (() => {
               const displayPositions = mergeShelfPositionsWithFallback(
                 product.shelf_positions ?? {},
@@ -568,49 +562,41 @@ const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, can
               const hasAny = hasLocation || allItems.length > 0;
 
               if (!hasAny) {
-                return <span className="text-[14px] text-zinc-400">진열구역 없음</span>;
+                return <span className="py-3 block text-[14px] text-zinc-400">진열구역 없음</span>;
               }
 
               return (
                 <div className="space-y-0">
-                  {/* 구역 row · rose 톤 · 크게 */}
+                  {/* 구역 · 텍스트 라벨 */}
                   {hasLocation && (
-                    <div className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-                      <span className="w-[72px] text-[14px] font-bold text-rose-700 bg-rose-50 rounded-md px-2.5 py-1 text-center shrink-0">구역</span>
-                      <span className="text-[17px] font-extrabold text-rose-700 tabular-nums tracking-tight leading-none">
+                    <div className="flex flex-col gap-0.5 py-3 border-b border-zinc-100">
+                      <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">구역</span>
+                      <span className="text-[18px] font-extrabold text-ink tabular-nums tracking-tight leading-tight mt-0.5">
                         {String(p.location)}
                       </span>
                     </div>
                   )}
-                  {/* 창고1 · 창고2 · cyan 뱃지 */}
+                  {/* 창고1/창고2 · 텍스트 라벨 + 값 */}
                   {warehouseItems.map(item => (
-                    <div key={item.code} className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-                      <span className="w-[72px] text-[14px] font-bold text-cyan-700 bg-cyan-50 rounded-md px-2.5 py-1 text-center shrink-0">
-                        {item.name}
-                      </span>
+                    <div key={item.code} className="flex flex-col gap-0.5 py-3 border-b border-zinc-100">
+                      <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">{item.name}</span>
                       {item.detail
-                        ? <span className="text-[16px] font-bold text-cyan-700 tabular-nums leading-none tracking-tight">
+                        ? <span className="text-[16px] font-bold text-cyan-700 tabular-nums leading-tight mt-0.5">
                             {formatShelfDetail(item.detail)}
                           </span>
-                        : <span className="text-[11px] font-semibold text-rose-500 border border-rose-300 rounded px-1.5 py-0.5 leading-none bg-rose-50">
-                            위치 미입력
-                          </span>
+                        : <span className="text-[12px] font-medium text-rose-500 mt-0.5">위치 미입력</span>
                       }
                     </div>
                   ))}
-                  {/* 매장1 · 매장2 · 매장3 · indigo 뱃지 */}
+                  {/* 매장1/2/3 · 텍스트 라벨 + 값 */}
                   {storeItems.map(item => (
-                    <div key={item.code} className="flex items-center gap-2.5 py-1.5 min-h-[36px] border-b border-line/40">
-                      <span className="w-[72px] text-[14px] font-bold text-indigo-700 bg-indigo-50 rounded-md px-2.5 py-1 text-center shrink-0">
-                        {item.name}
-                      </span>
+                    <div key={item.code} className="flex flex-col gap-0.5 py-3 border-b border-zinc-100">
+                      <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">{item.name}</span>
                       {item.detail
-                        ? <span className="text-[16px] font-bold text-indigo-700 tabular-nums leading-none tracking-tight">
+                        ? <span className="text-[16px] font-bold text-indigo-700 tabular-nums leading-tight mt-0.5">
                             {formatShelfDetail(item.detail)}
                           </span>
-                        : <span className="text-[11px] font-semibold text-rose-500 border border-rose-300 rounded px-1.5 py-0.5 leading-none bg-rose-50">
-                            위치 미입력
-                          </span>
+                        : <span className="text-[12px] font-medium text-rose-500 mt-0.5">위치 미입력</span>
                       }
                     </div>
                   ))}
