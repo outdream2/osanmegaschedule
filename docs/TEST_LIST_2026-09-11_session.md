@@ -127,6 +127,27 @@
 - DisplayPage → 직원 편집 → SchedulePage 이동
 - 미인증 상태 · 모든 경로 LandingPage 강제 확인
 
+### [127] 구역불일치 · 실재고 vs ERP 차이 자동 계산 (사용자 지시)
+**파일** · `server/routes/display/mismatches.ts` · `src/components/RequestsPage/MismatchPanel.tsx` · `src/components/RequestsPage/types.ts` · `server/routes/display/requests.ts`
+
+**변경 요약**
+- GET /api/zone-mismatches · 새 로직 · products × inventory_checks 최신 스냅샷 JOIN · 실재고 총합 vs ERP 현재고 차이 있는 상품만 반환
+- MismatchPanel UI · 상품명/코드/공급사 + ERP N개 vs 실재고 M개 + 차이 ±K개 · 창고/매장 상세
+- ZoneMismatch interface 신규 필드: erp_stock · real_total · diff · warehouse_stock · store_stock
+- pending-counts · mismatch · 0 고정 (로딩 완료 후 mismatches.length 로 교체)
+- POST/DELETE endpoints · 유지 (zone_mismatches 테이블 · 레거시 · 삭제 X)
+
+**테스트**
+1. 서버 재시작 (npm run dev)
+2. 요청확인 탭 → 구역불일치 탭 진입
+3. ERP 현재고 ≠ 실재고 합계 상품 · 목록 표시 확인
+4. 각 항목: "ERP N개 vs 실재고 M개 · 차이 ±K개" · 창고/매장 세부 수치 확인
+5. diff > 0 (재고 부족) · rose 색 · diff < 0 (초과) · emerald 색 확인
+6. abs(diff) 내림차순 정렬 확인 (큰 차이 상품이 위에 표시)
+7. ERP = 실재고인 상품 · 표시 안 됨 확인
+8. 실재고 기록 없는 상품 · 표시 안 됨 확인
+9. 다른 탭 (진열요청·점심불참) · 영향 없음 확인
+
 ### [127] 테스트 상품 sale_qty 50 · SQL text→int cast fix (사용자 실행 결과)
 **커밋** · `74240ee2`
 - 초기 SQL · COALESCE(text, 0) type mismatch

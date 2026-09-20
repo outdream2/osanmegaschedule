@@ -1,5 +1,5 @@
 // src/components/RequestsPage/MismatchPanel.tsx
-// 2026-08-26 · Framework Phase 4 · large-file 분리 · 구역불일치 탭
+// 2026-09-20 · 재설계 · 실재고 총합 vs ERP 현재고 차이 표시
 import React from "react";
 import { fmtDateMD } from "../../lib/format";
 import { CARD_BASE } from "../../styles/tokens";
@@ -57,26 +57,63 @@ export const MismatchPanel: React.FC<MismatchPanelProps> = ({
         <button onClick={onRefresh} className="mt-2 text-xs text-orange-600 underline cursor-pointer">다시 시도</button>
       </div>
     ) : !mismatchLoading && mismatches.length === 0 ? (
-      <EmptyState title="구역 불일치 없음" hint="진열 요청이 승인되면 표시됩니다" size="compact" />
+      <EmptyState title="재고 차이 없음" hint="ERP 현재고와 실재고 합계가 일치합니다" size="compact" />
     ) : (
       <div className={`${CARD_BASE} divide-y divide-zinc-50 ${mismatchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-        {mismatches.map(m => (
-          <div key={m.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition-all duration-150 ${selectedMismatch.has(m.id) ? "bg-rose-50/50" : "hover:bg-zinc-50/60"}`}>
-            <RequestCheckbox checked={selectedMismatch.has(m.id)} onChange={() => onToggleOne(m.id)} />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[14px] font-bold text-zinc-800 break-keep">{m.product_name}</span>
-                <span className="text-gray-300 text-[14px]">·</span>
-                <span className="text-[14px] font-semibold text-zinc-400">{m.product_code}</span>
-                <span className="text-gray-300 text-[14px]">·</span>
-                <span className="text-[15px] text-zinc-500" title="전산배치구역">전산 <span className="font-bold text-zinc-700">{m.spec_zone || "미지정"}</span></span>
-                <span className="text-gray-300 text-[14px]">→</span>
-                <span className="text-[15px] font-bold text-red-600" title="실제배치구역">실제 {m.real_zone}</span>
+        {mismatches.map(m => {
+          const isShortage = m.diff > 0;   // ERP > 실재고 · 재고 부족
+          const diffLabel  = isShortage ? `−${m.diff}` : `+${Math.abs(m.diff)}`;
+          const diffCls    = isShortage
+            ? "text-rose-600 font-bold"
+            : "text-emerald-600 font-bold";
+
+          return (
+            <div
+              key={m.id}
+              className={`flex items-start gap-3 px-0.5 py-2.5 transition-all duration-150 ${selectedMismatch.has(m.id) ? "bg-rose-50/50" : "hover:bg-zinc-50/60"}`}
+            >
+              <RequestCheckbox checked={selectedMismatch.has(m.id)} onChange={() => onToggleOne(m.id)} />
+
+              <div className="flex-1 min-w-0">
+                {/* 상품명 · 코드 · 공급사 */}
+                <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                  <span className="text-[15px] font-bold text-zinc-800 break-keep">{m.product_name}</span>
+                  <span className="text-gray-300 text-[14px]">·</span>
+                  <span className="text-[13px] font-semibold text-zinc-400">{m.product_code}</span>
+                  {m.supplier && (
+                    <>
+                      <span className="text-gray-300 text-[14px]">·</span>
+                      <span className="text-[13px] text-zinc-400">{m.supplier}</span>
+                    </>
+                  )}
+                </div>
+
+                {/* ERP · 실재고 · 차이 */}
+                <div className="flex items-center gap-3 flex-wrap text-[14px]">
+                  <span className="text-zinc-500">
+                    ERP <span className="font-semibold text-zinc-700">{m.erp_stock}개</span>
+                  </span>
+                  <span className="text-gray-300">vs</span>
+                  <span className="text-zinc-500">
+                    실재고 <span className="font-semibold text-zinc-700">{m.real_total}개</span>
+                  </span>
+                  <span className={diffCls}>
+                    {diffLabel}개
+                  </span>
+                </div>
+
+                {/* 창고·매장 상세 */}
+                <div className="flex items-center gap-2 mt-0.5 text-[12px] text-zinc-400">
+                  <span>창고 {m.warehouse_stock}개</span>
+                  <span className="text-gray-200">·</span>
+                  <span>매장 {m.store_stock}개</span>
+                </div>
               </div>
+
+              <span className="text-[13px] text-gray-400 shrink-0 pt-0.5">{fmtDateMD(m.registered_at)}</span>
             </div>
-            <span className="text-[14px] text-gray-400 shrink-0">{fmtDateMD(m.registered_at)}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     )}
   </div>

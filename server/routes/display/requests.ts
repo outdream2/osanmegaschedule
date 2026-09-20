@@ -46,8 +46,9 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
   const results = await Promise.allSettled([
     supabase.from("display_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("order_requests").select("id", { count: "exact", head: true }).eq("status", "requested"),
-    // 2026-09-04 · real_map 제거 · legacy zone_mismatches 테이블만 사용
-    supabase.from("zone_mismatches").select("product_code"),
+    // 2026-09-20 · 구역불일치 → 실재고 vs ERP 차이 자동 계산 · pending-counts 는 placeholder 0 반환
+    //   (정확한 카운트는 /api/zone-mismatches 에서 계산 · 여기선 초기 배지용 근사값)
+    Promise.resolve({ data: [], count: 0, error: null, status: 200, statusText: "OK" }),
     supabase.from("leave_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("lunch_requests").select("id", { count: "exact", head: true }).eq("date", today).eq("eating", false),
     supabase.from("inventory_checks").select("id", { count: "exact", head: true }).eq("status", "pending"),
@@ -62,8 +63,10 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
     console.warn("[pending-counts] query rejected:", r.reason);
     return { count: 0, data: [], error: r.reason };
   };
-  const [display, order, legacy, leave, lunch, inventory, ret, resignation, vendor] = results.map(unwrap) as any[];
-  const mismatchCount = (legacy.data ?? []).length;
+  const [display, order, _mismatchPlaceholder, leave, lunch, inventory, ret, resignation, vendor] = results.map(unwrap) as any[];
+  // 2026-09-20 · 실재고 vs ERP 차이 자동 계산 · 정확한 카운트는 /api/zone-mismatches 에서 반환
+  //   pending-counts 는 초기 배지용 · 로딩 완료 후 mismatches.length 로 덮어씌워짐
+  const mismatchCount = 0;
   const lunchCount = lunch.count ?? 0;
   const inventoryCount = inventory.count ?? 0;
   const returnCount = ret.error ? 0 : (ret.count ?? 0);
