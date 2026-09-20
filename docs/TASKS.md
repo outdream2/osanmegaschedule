@@ -142,7 +142,8 @@
 
 | # | 버그 | 우선순위 | 재현·비고 |
 |---|-----|-------|---------|
-| **E-001** | **근로계약서 작성 · 좌우 너비 조정 시 · 연차신청 페이지로 이동** (사용자 보고 · 2026-09-20) | 🔴 P1 | 서류작성 > 근로계약서 작성 · 좌우 분할 divider 드래그 시 · 갑자기 연차신청 페이지로 navigation · SplitPanel resize handler 오작동 or navigation trigger 오인식 · 조사 필요 |
+<!-- E-001 ✅ · SplitPanel capture phase click blocker · isDraggingRef · 2026-09-20 완료 -->
+| **E-002** | **근로계약서 · 구글드라이브 업로드 실패** (사용자 보고 · 2026-09-20) | 🔴 P1 | 서류작성 > 근로계약서 · 완성 후 Google Drive 업로드 · 저장 실패 · Google API 인증·권한·엔드포인트·CORS·토큰 만료 등 원인 조사 필요 |
 <!-- 2026-09-18 · #115 · real_map DROP · 이미 2026-09-08 실행 완료 확인 (server.ts:95 주석) -->
 <!-- ~~#115~~ · real_map DROP · ✅ 완료 (2026-09-08 · Supabase SQL Editor) -->
 <!-- 2026-09-18 · T-RSTP-TOOLBAR 완료 · [46] 커밋 `780677f5` · flex-col + lg:flex-row 반응형 -->
